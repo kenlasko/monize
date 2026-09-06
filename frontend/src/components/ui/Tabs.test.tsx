@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { fireEvent, screen } from '@testing-library/react';
 import { render } from '@/test/render';
-import { Tabs, TabPanel, tabId, tabPanelId } from './Tabs';
+import { Tabs, TabPanel, tabId, tabPanelId, overflowEdge } from './Tabs';
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
@@ -148,6 +148,69 @@ describe('Tabs', () => {
       });
       expect(onChange).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('Tabs overflow cue', () => {
+  // jsdom lays nothing out: scrollWidth and clientWidth are both 0, so the
+  // scroller is given the geometry of a phone showing four of five tabs.
+  function fakeGeometry(el: HTMLElement, geometry: { scrollWidth: number; clientWidth: number; scrollLeft: number }) {
+    Object.defineProperty(el, 'scrollWidth', { configurable: true, value: geometry.scrollWidth });
+    Object.defineProperty(el, 'clientWidth', { configurable: true, value: geometry.clientWidth });
+    Object.defineProperty(el, 'scrollLeft', { configurable: true, writable: true, value: geometry.scrollLeft });
+  }
+
+  it('classifies which edge still has content behind it', () => {
+    expect(overflowEdge({ scrollWidth: 300, clientWidth: 300, scrollLeft: 0 })).toBe('none');
+    // Sub-pixel layouts report one pixel of phantom overflow on a row that
+    // does not scroll; that is not a hidden tab.
+    expect(overflowEdge({ scrollWidth: 301, clientWidth: 300, scrollLeft: 0 })).toBe('none');
+    expect(overflowEdge({ scrollWidth: 500, clientWidth: 300, scrollLeft: 0 })).toBe('end');
+    expect(overflowEdge({ scrollWidth: 500, clientWidth: 300, scrollLeft: 200 })).toBe('start');
+    expect(overflowEdge({ scrollWidth: 500, clientWidth: 300, scrollLeft: 199 })).toBe('start');
+    expect(overflowEdge({ scrollWidth: 500, clientWidth: 300, scrollLeft: 80 })).toBe('both');
+  });
+
+  it('fades the far edge when tabs hide beyond it, and the near edge once scrolled there', () => {
+    renderTabs();
+    const scroller = screen.getByRole('tablist').parentElement as HTMLElement;
+    expect(scroller.className).toContain('scroll-fade-x');
+    // Nothing hidden: no fade.
+    expect(scroller.dataset.overflow).toBe('none');
+
+    fakeGeometry(scroller, { scrollWidth: 500, clientWidth: 300, scrollLeft: 0 });
+    fireEvent.scroll(scroller);
+    expect(scroller.dataset.overflow).toBe('end');
+
+    scroller.scrollLeft = 200;
+    fireEvent.scroll(scroller);
+    expect(scroller.dataset.overflow).toBe('start');
+
+    scroller.scrollLeft = 100;
+    fireEvent.scroll(scroller);
+    expect(scroller.dataset.overflow).toBe('both');
+  });
+
+  it('brings the selected tab on screen when the selection changes', () => {
+    const scrolled: string[] = [];
+    const original = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = function (this: HTMLElement) {
+      scrolled.push(this.textContent ?? '');
+    };
+    try {
+      function Harness() {
+        const [value, setValue] = useState<Key>('overview');
+        return (
+          <Tabs tabs={TABS} value={value} onChange={setValue} idPrefix="security" ariaLabel="Security sections" />
+        );
+      }
+      render(<Harness />);
+      expect(scrolled).toEqual(['Overview']);
+      fireEvent.click(screen.getByRole('tab', { name: 'Price history' }));
+      expect(scrolled).toEqual(['Overview', 'Price history']);
+    } finally {
+      HTMLElement.prototype.scrollIntoView = original;
+    }
   });
 });
 

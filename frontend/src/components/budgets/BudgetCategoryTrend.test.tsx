@@ -58,6 +58,15 @@ describe('BudgetCategoryTrend', () => {
     expect(screen.getByTestId('line-chart')).toBeInTheDocument();
   });
 
+  it('draws no chart legend: the toggle pills are the legend', () => {
+    // A recharts legend repeated every pill's name below the plot, and on a
+    // phone it wrapped taller than the container and was drawn up over the
+    // pills -- each category name twice, one on top of the other.
+    render(<BudgetCategoryTrend data={mockData} formatCurrency={mockFormat} />);
+    expect(screen.queryByTestId('legend')).not.toBeInTheDocument();
+    expect(screen.getByTestId('category-toggle-cat-1')).toHaveTextContent('Groceries');
+  });
+
   it('toggles category visibility when clicking toggle button', () => {
     render(<BudgetCategoryTrend data={mockData} formatCurrency={mockFormat} />);
 
@@ -82,9 +91,15 @@ describe('BudgetCategoryTrend', () => {
     // Category names appear in both toggle buttons and summary table
     expect(screen.getAllByText('Groceries').length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText('Dining').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText('Avg Budget')).toBeInTheDocument();
-    expect(screen.getByText('Avg Actual')).toBeInTheDocument();
-    expect(screen.getByText('Avg Variance')).toBeInTheDocument();
+    // Each column label now appears in the column header AND as the per-cell
+    // caption every row carries on a phone (the header row is hidden below
+    // `sm`, so a bare figure has to name its own column), so the label matches
+    // once per row plus once in the header. The VALUES are still unique --
+    // `getByText('+$150.00')` below is untouched -- because a caption is its
+    // own element rather than a text node of the value's cell.
+    expect(screen.getAllByText('Avg Budget').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Avg Actual').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Avg Variance').length).toBeGreaterThan(0);
   });
 
   it('shows positive variance in red and negative in green', () => {

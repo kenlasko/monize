@@ -185,7 +185,9 @@ describe('AmortizationScheduleTable', () => {
       />,
     );
 
-    expect(screen.getByText('Extra Principal')).toBeInTheDocument();
+    // The header and the per-row phone captions both spell the column, so the
+    // label now appears more than once in the DOM (one tree, restyled at `sm`).
+    expect(screen.getAllByText('Extra Principal').length).toBeGreaterThan(0);
     expect(screen.getAllByText('$200.00').length).toBeGreaterThan(0);
   });
 
@@ -212,8 +214,9 @@ describe('AmortizationScheduleTable', () => {
     );
 
     // The extra-principal column appears for a historical overpayment even
-    // without a simulator scenario, and shows the overpaid amount.
-    expect(screen.getByText('Extra Principal')).toBeInTheDocument();
+    // without a simulator scenario, and shows the overpaid amount. (The header
+    // and the phone captions share the label, so it appears more than once.)
+    expect(screen.getAllByText('Extra Principal').length).toBeGreaterThan(0);
     const overpaymentRow = screen
       .getAllByRole('row')
       .find((row) => row.textContent?.includes('Feb 15, 2025'));
@@ -351,7 +354,8 @@ describe('AmortizationScheduleTable', () => {
       />,
     );
 
-    expect(screen.getByText('Rate')).toBeInTheDocument();
+    // The Rate column header, plus the per-row phone caption on the rate cell.
+    expect(screen.getAllByText('Rate').length).toBeGreaterThan(0);
     // Historical rate is the rate observed from the interest charged, shown
     // read-only -- there is no editable cell or controls without `editing`.
     expect(screen.getByText('5.50%')).toBeInTheDocument();
@@ -395,5 +399,27 @@ describe('AmortizationScheduleTable', () => {
     // The first projected row is dated 2026-08-15.
     fireEvent.click(screen.getAllByLabelText(/Edit interest rate/)[0]);
     expect(openAddWith).toHaveBeenCalledWith('2026-08-15', expect.any(Number));
+  });
+
+  it('captions each amount within the row so a phone needs no column header', () => {
+    // Below `sm` the header is hidden and the row wraps into a grid, so every
+    // value must name its own column inside the row -- otherwise a phone reader
+    // sees a column of unlabelled numbers. The table is one tree restyled by
+    // CSS, so these captions ride in each row's markup at every width.
+    render(
+      <AmortizationScheduleTable
+        historyEvents={makeHistoryEvents(2, 5)}
+        projectionRows={[]}
+        currencyCode="CAD"
+      />,
+    );
+
+    const janRow = screen
+      .getAllByRole('row')
+      .find((row) => row.textContent?.includes('Jan 15, 2025'));
+    expect(janRow).toBeDefined();
+    for (const caption of ['Payment', 'Interest', 'Principal', 'Rate', 'Balance']) {
+      expect(janRow?.textContent).toContain(caption);
+    }
   });
 });

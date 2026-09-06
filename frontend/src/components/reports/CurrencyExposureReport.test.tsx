@@ -221,7 +221,11 @@ describe('CurrencyExposureReport', () => {
     mockGetInvestmentAccounts.mockResolvedValue([]);
     render(<CurrencyExposureReport />);
     await waitFor(() => {
-      expect(screen.getByText(/Rate to CAD/)).toBeInTheDocument();
+      // The label appears three times below `sm`: once in the phone sort strip,
+      // once in the column header row, and once as the caption the rate cell
+      // carries in each wrapped row. jsdom applies no media queries, so all
+      // three are in the DOM here -- hence `getAllByText`.
+      expect(screen.getAllByText(/Rate to CAD/).length).toBeGreaterThan(0);
     });
   });
 

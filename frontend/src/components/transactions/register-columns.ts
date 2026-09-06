@@ -28,6 +28,24 @@
  *   padding and secondary content (`useTableDensity`), not columns -- a column
  *   set that changed with density would make the same window show different
  *   registers depending on a toggle about row height.
+ *
+ *   One deliberate exception, and it is about LAYOUT rather than the tiers: on
+ *   a phone (`useIsMobile`, a 639px viewport query) at **Normal** density,
+ *   `TransactionList` sets `TransactionRow`'s `wrapped` prop and the row
+ *   renders as a two-line card in a single `<td>` instead of the tier cells --
+ *   date, payee, amount, balance, category, status and account across two
+ *   lines, and the row's tags on a third line of their own under the category
+ *   when it has any, with description, ref #, attachments and the row actions
+ *   omitted (the long-press action sheet already carries the actions). The
+ *   full column header is replaced there by a slim control header that keeps
+ *   the day/month date toggle and the select-all-on-page box, because the card
+ *   labels its own values. Compact and Dense keep the tier table on a phone,
+ *   and so do the foreign-currency fee surfaces (`showFxColumns`) at every
+ *   level, since the card does not carry their paid-currency / amount / fee
+ *   columns. Every non-phone width keeps it at all three levels. Column
+ *   presence in the TIER TABLE is
+ *   still never density-dependent: the exception swaps one layout for another,
+ *   it does not add or remove a column from the table this file describes.
  * - **The Account column is structural, not responsive.** It renders only when
  *   the list spans more than one account (`!isSingleAccountView`); on a single
  *   account's page it is omitted from the DOM entirely, at every width. When

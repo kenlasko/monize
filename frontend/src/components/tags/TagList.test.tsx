@@ -87,6 +87,23 @@ describe('TagList', () => {
     expect(screen.getByText('42')).toBeInTheDocument();
   });
 
+  it('keeps the Transactions column on every width, phones included', () => {
+    // The tags list has no phone card: the maintainer asked for the count
+    // column at every width instead of a wrapped row. So neither the header
+    // nor the cell may carry a responsive `hidden`, where Icon still does.
+    const { container } = render(
+      <TagList tags={mockTags} transactionCounts={{ 'tag-1': 5 }} onEdit={vi.fn()} onDelete={vi.fn()} />,
+    );
+    const headers = Array.from(container.querySelectorAll('thead th'));
+    const countHeader = headers.find((th) => th.textContent === 'Transactions')!;
+    const iconHeader = headers.find((th) => th.textContent === 'Icon')!;
+    expect(countHeader.className).not.toMatch(/\bhidden\b/);
+    expect(iconHeader.className).toMatch(/\bhidden\b/);
+
+    const countCell = Array.from(container.querySelectorAll('tbody td')).find((td) => td.textContent === '5')!;
+    expect(countCell.className).not.toMatch(/\bhidden\b/);
+  });
+
   it('shows 0 transaction count when transactionCounts not provided', () => {
     render(
       <TagList tags={[mockTags[0]]} onEdit={onEdit} onDelete={onDelete} />,

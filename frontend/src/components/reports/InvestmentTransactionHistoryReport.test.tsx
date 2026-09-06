@@ -35,9 +35,12 @@ vi.mock('@/hooks/useDateRange', () => ({
   }),
 }));
 
-vi.mock('@/lib/utils', () => ({
+// Spread the real module rather than replacing it: the phone captions render
+// `CellLabel`, which reads `cn` from here, and a bare factory blanks every other
+// export of the module for the whole graph under test.
+vi.mock('@/lib/utils', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/utils')>()),
   parseLocalDate: (d: string) => new Date(d + 'T00:00:00'),
-  cn: (...inputs: any[]) => inputs.flat(Infinity).filter(Boolean).join(' '),
 }));
 
 vi.mock('@/components/ui/DateRangeSelector', () => ({
@@ -347,17 +350,20 @@ describe('InvestmentTransactionHistoryReport', () => {
       ({ container } = render(<InvestmentTransactionHistoryReport />));
     });
     await waitFor(() => expect(container.querySelector('table')).toBeInTheDocument());
-    const headerCount = container.querySelectorAll('table thead th').length;
-    expect(headerCount).toBeGreaterThan(0);
-    for (let i = 0; i < headerCount; i += 1) {
-      const ths = container.querySelectorAll('table thead th');
-      if (!ths[i]) break;
-      await act(async () => { fireEvent.click(ths[i]); });
-    }
-    for (let i = 0; i < headerCount; i += 1) {
-      const ths = container.querySelectorAll('table thead th');
-      if (!ths[i]) break;
-      await act(async () => { fireEvent.click(ths[i]); });
+    // `<thead>` now holds TWO rows -- the phone sort strip and the column header
+    // row -- so address the column header row by the class that displays it
+    // rather than taking every `th` in the head (which would click each field
+    // twice per pass and say nothing about which row it exercised).
+    const columnHeaderRow = container.querySelector('table thead tr.hidden');
+    if (!columnHeaderRow) throw new Error('column header row (hidden sm:table-row) not found');
+    const headerCount = columnHeaderRow.querySelectorAll('th').length;
+    expect(headerCount).toBe(7);
+    for (let pass = 0; pass < 2; pass += 1) {
+      for (let i = 0; i < headerCount; i += 1) {
+        const ths = columnHeaderRow.querySelectorAll('th');
+        if (!ths[i]) break;
+        await act(async () => { fireEvent.click(ths[i]); });
+      }
     }
   });
 

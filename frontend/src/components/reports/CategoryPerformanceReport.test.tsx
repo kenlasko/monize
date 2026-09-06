@@ -180,26 +180,34 @@ describe('CategoryPerformanceReport', () => {
     await waitFor(() => {
       expect(screen.getByText('Apples')).toBeInTheDocument();
     });
+    // Every column label now names TWO controls -- the phone sort strip and the
+    // column header row, both built from one column record -- so a header is
+    // addressed by POSITION rather than by text. jsdom applies no media
+    // queries, so both rows are present; the desktop one is identified by the
+    // class that displays it, not by its index among the header rows, so
+    // reordering or removing a header row fails here rather than silently
+    // exercising the other one.
+    const columnHeaderRow = document.querySelector('thead tr.sm\\:table-row')!;
+    expect(columnHeaderRow).not.toBeNull();
+    const columnHeaderTh = (index: number) =>
+      columnHeaderRow.querySelectorAll('th')[index] as HTMLElement;
     // Default sort is avgPercent desc. Click name to switch field, which resets direction to asc.
-    const nameHeader = screen.getByText('Category');
-    const nameTh = nameHeader.closest('th')!;
-    await act(async () => { fireEvent.click(nameHeader); });
+    const nameTh = columnHeaderTh(0);
+    await act(async () => { fireEvent.click(nameTh); });
     // After switching to name, direction is asc (↑)
     await waitFor(() => {
       expect(nameTh.textContent).toContain('↑');
     });
     // Toggle to desc on the same field
-    await act(async () => { fireEvent.click(nameHeader); });
+    await act(async () => { fireEvent.click(nameTh); });
     await waitFor(() => {
       expect(nameTh.textContent).toContain('↓');
     });
     // Switch to variance (resets to asc)
-    const varianceHeader = screen.getByText('Total Variance');
-    await act(async () => { fireEvent.click(varianceHeader); });
+    await act(async () => { fireEvent.click(columnHeaderTh(4)); });
     // Switch to avgPercent (% Used)
-    const pctHeader = screen.getByText('% Used');
-    const pctTh = pctHeader.closest('th')!;
-    await act(async () => { fireEvent.click(pctHeader); });
+    const pctTh = columnHeaderTh(3);
+    await act(async () => { fireEvent.click(pctTh); });
     await waitFor(() => {
       expect(pctTh.textContent).toContain('↑');
     });

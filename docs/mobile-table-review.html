@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monize mobile table review</title>
+<style>
+  :root {
+    --bg: #f2f4f8; --card: #ffffff; --line: #d9dee8; --text: #182033; --muted: #5d6779;
+    --accent: #1f5fbf; --ok: #1a7f4b; --ok-bg: #e4f4ea; --warn: #b4540a; --warn-bg: #fbeadb;
+    --pending-bg: #eef1f6; --focus: #1f5fbf; color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f141f; --card: #171e2d; --line: #2a3446; --text: #e6eaf2; --muted: #98a3b7;
+      --accent: #6ea1ff; --ok: #4cc584; --ok-bg: #163726; --warn: #f0a35a; --warn-bg: #3d2a14;
+      --pending-bg: #1c2434; --focus: #6ea1ff; color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 15px; line-height: 1.45; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .page { max-width: 720px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); }
+  .base { margin: 14px 0 0; display: flex; flex-direction: column; gap: 6px; }
+  .base label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; }
+  .base input { font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); }
+  .base small { color: var(--muted); }
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0 8px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat.ok b { color: var(--ok); } .stat.warn b { color: var(--warn); }
+  .hint { margin: 8px 0 0; color: var(--muted); font-size: 0.85rem; }
+  section { margin-top: 28px; }
+  section h2 { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 8px; display: flex; gap: 8px; align-items: baseline; }
+  section > p { margin: 0 0 10px; color: var(--muted); font-size: 0.9rem; }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .item { background: var(--card); border: 1px solid var(--line); border-left-width: 4px; border-radius: 10px; padding: 12px 12px 12px 14px; }
+  .item[data-status="ok"] { border-left-color: var(--ok); }
+  .item[data-status="remarks"] { border-left-color: var(--warn); }
+  .item[data-status="none"] { border-left-color: var(--line); }
+  .item.keep { background: var(--pending-bg); }
+  .item .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .item .name { font-weight: 600; margin: 0; }
+  .item a.link { color: var(--accent); text-decoration: none; font-size: 0.85rem; word-break: break-all; display: inline-block; margin-top: 2px; }
+  .item a.link:hover, .item a.link:focus-visible { text-decoration: underline; }
+  .item a.link[aria-disabled="true"] { color: var(--muted); pointer-events: none; }
+  .item .what { margin: 6px 0 0; color: var(--muted); font-size: 0.85rem; }
+  .badge { flex: none; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--pending-bg); color: var(--muted); white-space: nowrap; }
+  .badge.live { background: var(--ok-bg); color: var(--ok); }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { appearance: none; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 0.85rem; padding: 7px 12px; cursor: pointer; min-height: 36px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"].ok { background: var(--ok-bg); color: var(--ok); font-weight: 600; }
+  .seg button[aria-pressed="true"].remarks { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .saved { font-size: 0.78rem; color: var(--muted); }
+  textarea { width: 100%; margin-top: 8px; min-height: 72px; resize: vertical; font: inherit; font-size: 0.9rem; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  textarea[hidden] { display: none; }
+  .export { margin-top: 24px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .export button { font: inherit; font-size: 0.85rem; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); cursor: pointer; }
+  .export output { font-size: 0.8rem; color: var(--muted); }
+  pre.dump { display: none; white-space: pre-wrap; font-size: 0.8rem; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-top: 8px; }
+  pre.dump[data-show] { display: block; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Monize mobile table review</h1>
+    <p>A checklist for reviewing the phone layout of Monize's tables on a real device. Open each link on a phone (or a window narrower than 640 px), compare with what the note says to look at, and mark OK or Remarks. Everything you type stays in this browser (localStorage).</p>
+    <div class="base">
+      <label for="baseUrl">Your Monize address</label>
+      <input id="baseUrl" type="url" inputmode="url" placeholder="https://monize.example.com" autocomplete="url" spellcheck="false">
+      <small>Every link below is built from this address. Leave it empty and the links stay inert.</small>
+    </div>
+    <div class="summary">
+      <div class="stat"><b id="statTotal">0</b><span>to review</span></div>
+      <div class="stat ok"><b id="statOk">0</b><span>OK</span></div>
+      <div class="stat warn"><b id="statRemarks">0</b><span>with remarks</span></div>
+    </div>
+    <p class="hint">Lists with a density toggle (accounts, transactions, institutions, currencies, securities, payees, bills, investments) show the card layout only at <b>Normal</b> density. Compact and Dense keep the table. Reports with a chart/table toggle need the <b>Table</b> view.</p>
+  </header>
+
+  <section>
+    <h2>Converted <span class="count" id="countNow"></span></h2>
+    <div class="list" id="listNow"></div>
+  </section>
+
+  <section>
+    <h2>Deliberately unchanged <span class="count" id="countKeep"></span></h2>
+    <p>These were judged narrow enough already. Mark OK if they should stay as they are, or Remarks if you want a card layout after all.</p>
+    <div class="list" id="listKeep"></div>
+  </section>
+
+  <div class="export">
+    <button type="button" id="exportBtn">Show my remarks as text</button>
+    <button type="button" id="resetBtn">Clear all marks</button>
+    <output id="exportOut"></output>
+  </div>
+  <pre class="dump" id="dump"></pre>
+</div>
+
+<script>
+(function () {
+  // `group`: now (converted on this branch) | keep (deliberately unchanged).
+  // `path` is appended to the base URL; `what` says where to look and how.
+  const ITEMS = [
+    { id: 'loan-schedule', group: 'now', name: 'Loan amortization schedule', path: '/accounts', what: 'Open a loan or mortgage account, Schedule tab. Each row wraps onto lines; balance takes half the width.' },
+    { id: 'transactions', group: 'now', name: 'Transaction register', path: '/transactions', what: 'Normal density. Two-line card, tags on a third line under the category; the slim header keeps the day/month date toggle and select-all.' },
+    { id: 'accounts', group: 'now', name: 'Accounts list', path: '/accounts', what: 'Normal density. Groups, selection and sort chips.' },
+    { id: 'institutions', group: 'now', name: 'Institutions list', path: '/institutions', what: 'Normal density.' },
+    { id: 'currencies', group: 'now', name: 'Currencies list', path: '/currencies', what: 'Normal density. Rate and decimals in the second line.' },
+    { id: 'securities', group: 'now', name: 'Securities list', path: '/securities', what: 'Normal density. The name clamps to two lines.' },
+    { id: 'security-tabs', group: 'now', name: 'Security detail: tab bar', path: '/securities', what: 'Open any security. The Overview / Transactions / Price history / Documents / News strip fades at the edge that hides more tabs and scrolls by touch; the selected tab is always on screen.' },
+    { id: 'payees', group: 'now', name: 'Payees list', path: '/payees', what: 'Normal density. Count and aliases beside the name; category and status on the second line; last used and notes on the third.' },
+    { id: 'bills', group: 'now', name: 'Scheduled transactions (bills)', path: '/bills', what: 'Normal density. Three lines: name and amount; due date and account; category and auto-post marker.' },
+    { id: 'investments', group: 'now', name: 'Investment transaction register', path: '/investments', what: 'Normal density. The same component renders on a brokerage account page under /accounts.' },
+    { id: 'r-income-vs-expenses', group: 'now', name: 'Report: Income vs Expenses', path: '/reports/income-vs-expenses', what: 'Switch to the Table view. Two lines: month, savings, income; savings rate and expenses.' },
+    { id: 'r-savings-rate', group: 'now', name: 'Report: Savings Rate', path: '/reports/savings-rate', what: 'Monthly breakdown table at the bottom. Two lines.' },
+    { id: 'r-credit-utilization', group: 'now', name: 'Report: Credit Utilization', path: '/reports/credit-utilization', what: 'Table at the bottom. Two lines: account and utilization; limit, used and available together.' },
+    { id: 'r-currency-exposure', group: 'now', name: 'Report: Currency Exposure', path: '/reports/currency-exposure', what: 'Table at the bottom. Two lines: currency, native and converted value; rate, share and holdings. The 6-decimal rate never wraps; empty footer cells are hidden.' },
+    { id: 'r-sector-weightings', group: 'now', name: 'Report: Sector Weightings', path: '/reports/sector-weightings', what: 'Table at the bottom. Two lines: sector and total; direct, ETF and share together. The Unclassified row with dashes, the totals row.' },
+    { id: 'r-security-type-allocation', group: 'now', name: 'Report: Security Type Allocation', path: '/reports/security-type-allocation', what: 'Table at the bottom. Tap a type row to expand its holdings. Type rows are two lines, holding rows three.' },
+    { id: 'r-budget-vs-actual', group: 'now', name: 'Report: Budget vs Actual', path: '/reports/budget-vs-actual', what: 'Two tables. Overview: the summary table under the chart. Categories: the averages table; the chart has no legend of its own (the toggle pills are the legend).' },
+    { id: 'r-budget-health-score', group: 'now', name: 'Report: Budget Health Score', path: '/reports/budget-health-score', what: 'Category impact table at the bottom. Two lines: category and score impact; group pill and % used.' },
+    { id: 'r-flex-group-analysis', group: 'now', name: 'Report: Flex Group Analysis', path: '/reports/flex-group-analysis', what: 'A table under each group card. Three lines. Sorting one group sorts all of them, as on desktop. Known separate defect: the group card header with the totals still wraps at 320 px.' },
+    { id: 'r-category-performance', group: 'now', name: 'Report: Category Performance', path: '/reports/category-performance', what: 'Eight columns in four lines: category and total variance; avg budget and avg actual; over/total and % used; status pill and trend. The sort strip of eight chips is tall.' },
+    { id: 'r-bill-payment-history', group: 'now', name: 'Report: Bill Payment History', path: '/reports/bill-payment-history', what: 'By Bill view. Three lines: bill with payee and total paid; average and payment count; last payment. Rows still navigate to /bills.' },
+    { id: 'r-recurring-expenses', group: 'now', name: 'Report: Recurring Expenses', path: '/reports/recurring-expenses', what: 'Seven columns in four lines: payee and 6-month total; category and average; frequency pill and last paid; count. Rows with a payee are clickable.' },
+    { id: 'r-investment-transactions', group: 'now', name: 'Report: Investment Transactions', path: '/reports/investment-transactions', what: 'Transaction history table at the bottom. Four lines: security and total; account (hidden on tablets today, restored on the phone card) and price; action pill; quantity and date.' },
+    { id: 'r-uncategorized-transactions', group: 'now', name: 'Report: Uncategorized Transactions', path: '/reports/uncategorized-transactions', what: 'Two lines: payee with description and amount; account and date. The description wraps on a phone (still truncated on desktop). Rows open the register.' },
+
+    { id: 'categories', group: 'keep', name: 'Categories list', path: '/categories', what: 'Narrow enough; the card conversion was reverted.' },
+    { id: 'reports-catalog', group: 'keep', name: 'Reports catalogue', path: '/reports', what: 'Four narrow columns; the description hides below 768 px. Fits.' },
+    { id: 'r-health-score-history', group: 'keep', name: 'Report: Health Score History', path: '/reports/health-score-history', what: 'Four two-digit columns. Fits at 390 px; scrolls a few dozen pixels at 320 px.' },
+    { id: 'r-monthly-spending-trend', group: 'keep', name: 'Report: Monthly Spending Trend', path: '/reports/monthly-spending-trend', what: 'Converted, then reverted after the phone review: the four-column table stays.' },
+    { id: 'r-net-worth', group: 'keep', name: 'Report: Net Worth', path: '/reports/net-worth', what: 'Converted, then reverted after the phone review: the four-column table stays.' },
+    { id: 'r-year-over-year', group: 'keep', name: 'Report: Year over Year', path: '/reports/year-over-year', what: 'Left as is by decision.' },
+    { id: 'ai', group: 'keep', name: 'AI assistant tables', path: '/ai', what: 'Left as is by decision.' },
+  ];
+
+  const LS_STATE = 'monize-mobile-table-review-v1';
+  const LS_BASE = 'monize-mobile-table-review-base';
+  const state = new Map();
+  let base = '';
+  const $ = (id) => document.getElementById(id);
+
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === 'text') node.textContent = v; else node.setAttribute(k, v);
+    }
+    for (const c of children || []) node.appendChild(c);
+    return node;
+  }
+
+  function normalizeBase(value) {
+    const trimmed = value.trim().replace(/\/+$/, '');
+    if (!trimmed) return '';
+    return /^https?:\/\//i.test(trimmed) ? trimmed : 'https://' + trimmed;
+  }
+
+  function formatWhen(iso) {
+    try { return new Date(iso).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+    catch { return ''; }
+  }
+
+  function renderItem(item) {
+    const s = state.get(item.id) || { status: 'none', note: '' };
+    const card = el('div', { class: 'item' + (item.group === 'keep' ? ' keep' : ''), 'data-status': s.status, 'data-id': item.id });
+    const href = base ? base + item.path : '#';
+    const link = el('a', { class: 'link mono', href, text: (base ? base.replace(/^https?:\/\//, '') : '<your address>') + item.path });
+    if (base) { link.setAttribute('target', '_blank'); link.setAttribute('rel', 'noopener'); }
+    else { link.setAttribute('aria-disabled', 'true'); link.setAttribute('tabindex', '-1'); }
+    card.appendChild(el('div', { class: 'top' }, [
+      el('div', {}, [el('p', { class: 'name', text: item.name }), link]),
+      el('span', { class: 'badge' + (item.group === 'now' ? ' live' : ''), text: item.group === 'now' ? 'converted' : 'unchanged' }),
+    ]));
+    card.appendChild(el('p', { class: 'what', text: item.what }));
+
+    const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Review result: ' + item.name });
+    const bOk = el('button', { type: 'button', class: 'ok', 'aria-pressed': String(s.status === 'ok'), text: 'OK' });
+    const bRem = el('button', { type: 'button', class: 'remarks', 'aria-pressed': String(s.status === 'remarks'), text: 'Remarks' });
+    bOk.addEventListener('click', () => setStatus(item.id, s.status === 'ok' ? 'none' : 'ok'));
+    bRem.addEventListener('click', () => setStatus(item.id, s.status === 'remarks' ? 'none' : 'remarks'));
+    seg.appendChild(bOk); seg.appendChild(bRem);
+    card.appendChild(el('div', { class: 'controls' }, [seg, el('span', { class: 'saved', text: s.updatedAt ? 'saved ' + formatWhen(s.updatedAt) : '' })]));
+
+    const ta = el('textarea', { placeholder: 'What should change? Say what you see and on which screen.', 'aria-label': 'Remarks: ' + item.name });
+    ta.value = s.note || '';
+    if (s.status !== 'remarks') ta.hidden = true;
+    ta.addEventListener('input', () => setNote(item.id, ta.value));
+    card.appendChild(ta);
+    return card;
+  }
+
+  function render() {
+    const groups = { now: $('listNow'), keep: $('listKeep') };
+    const counts = { now: 0, keep: 0 };
+    for (const g of Object.values(groups)) g.replaceChildren();
+    for (const item of ITEMS) { groups[item.group].appendChild(renderItem(item)); counts[item.group] += 1; }
+    $('countNow').textContent = counts.now;
+    $('countKeep').textContent = counts.keep;
+    let ok = 0, remarks = 0;
+    for (const item of ITEMS) {
+      const s = state.get(item.id);
+      if (s && s.status === 'ok') ok += 1;
+      if (s && s.status === 'remarks') remarks += 1;
+    }
+    $('statTotal').textContent = String(ITEMS.length - ok - remarks);
+    $('statOk').textContent = String(ok);
+    $('statRemarks').textContent = String(remarks);
+  }
+
+  function persist() {
+    try { localStorage.setItem(LS_STATE, JSON.stringify(Object.fromEntries(state))); } catch {}
+  }
+  function setStatus(id, status) {
+    const prev = state.get(id) || { note: '' };
+    state.set(id, { status, note: prev.note || '', updatedAt: new Date().toISOString() });
+    persist(); render();
+  }
+  let noteTimer = null;
+  function setNote(id, note) {
+    const prev = state.get(id) || { status: 'remarks' };
+    state.set(id, { status: prev.status, note, updatedAt: new Date().toISOString() });
+    clearTimeout(noteTimer); noteTimer = setTimeout(persist, 400);
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(LS_STATE);
+      if (raw) for (const [k, v] of Object.entries(JSON.parse(raw))) state.set(k, v);
+      base = normalizeBase(localStorage.getItem(LS_BASE) || '');
+    } catch {}
+  }
+
+  $('baseUrl').addEventListener('change', (e) => {
+    base = normalizeBase(e.target.value);
+    e.target.value = base;
+    try { localStorage.setItem(LS_BASE, base); } catch {}
+    render();
+  });
+
+  $('exportBtn').addEventListener('click', () => {
+    const lines = [];
+    for (const item of ITEMS) {
+      const s = state.get(item.id);
+      if (!s || s.status === 'none') continue;
+      lines.push(`- ${item.path} (${item.name}): ${s.status === 'ok' ? 'OK' : 'REMARKS'}${s.note ? ' -- ' + s.note.replace(/\s+/g, ' ').trim() : ''}`);
+    }
+    const dump = $('dump');
+    dump.textContent = lines.length ? lines.join('\n') : 'Nothing marked yet.';
+    dump.setAttribute('data-show', '');
+    $('exportOut').textContent = lines.length ? `${lines.length} marked` : '';
+  });
+
+  $('resetBtn').addEventListener('click', () => {
+    if (!window.confirm('Clear every mark and note on this page?')) return;
+    state.clear(); persist(); render();
+    $('dump').removeAttribute('data-show'); $('exportOut').textContent = '';
+  });
+
+  load();
+  $('baseUrl').value = base;
+  render();
+})();
+</script>
+</body>
+</html>

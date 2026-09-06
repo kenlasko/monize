@@ -330,6 +330,43 @@ button {
 }
 
 /* Hide scrollbar while maintaining scroll functionality */
+/* A horizontal scroller that says where its hidden content is.
+ *
+ * A phone draws no scrollbar, so a row of tabs that scrolls sideways looks like
+ * a row that ends at the screen edge: the security detail page's fifth tab was
+ * simply not there. The component keeps `data-overflow` current from its scroll
+ * and resize handlers (`overflowEdge` in `components/ui/Tabs.tsx`), and this
+ * fades the content out at whichever edge still has more behind it. A mask
+ * rather than a painted gradient, so it needs no knowledge of the background
+ * colour and holds on every theme. */
+@utility scroll-fade-x {
+  --scroll-fade: 1.75rem;
+  &[data-overflow='end'] {
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--scroll-fade)), transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--scroll-fade)), transparent);
+  }
+  &[data-overflow='start'] {
+    mask-image: linear-gradient(to left, #000 calc(100% - var(--scroll-fade)), transparent);
+    -webkit-mask-image: linear-gradient(to left, #000 calc(100% - var(--scroll-fade)), transparent);
+  }
+  &[data-overflow='both'] {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--scroll-fade),
+      #000 calc(100% - var(--scroll-fade)),
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--scroll-fade),
+      #000 calc(100% - var(--scroll-fade)),
+      transparent
+    );
+  }
+}
+
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

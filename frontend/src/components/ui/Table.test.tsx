@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@/test/render';
-import { Th, Td, TABLE_CLASS, TABLE_BODY_CLASS, TH_CLASS, TD_CLASS } from './Table';
+import { Th, Td, CellLabel, TABLE_CLASS, TABLE_BODY_CLASS, TH_CLASS, TD_CLASS } from './Table';
 
 function renderCell(cell: React.ReactNode) {
   return render(
@@ -11,6 +11,26 @@ function renderCell(cell: React.ReactNode) {
     </table>,
   );
 }
+
+describe('CellLabel', () => {
+  it('wraps even inside a nowrap money cell, and stays on the gray ramp', () => {
+    // `white-space` is inherited: a caption inside a `whitespace-nowrap` cell
+    // that did not take `whitespace-normal` back could not wrap, and an
+    // unbreakable caption overflowed its grid track at 320px.
+    renderCell(
+      <Td className="whitespace-nowrap">
+        <CellLabel className="sm:hidden">Expenses</CellLabel>
+        1 234 zł
+      </Td>,
+    );
+    const caption = screen.getByText('Expenses');
+    expect(caption.tagName).toBe('SPAN');
+    expect(caption.className).toContain('whitespace-normal');
+    expect(caption.className).toContain('sm:hidden');
+    expect(caption.className).toMatch(/text-gray-/);
+    expect(caption.className).not.toMatch(/#[0-9a-f]{3,6}/i);
+  });
+});
 
 describe('Table chrome', () => {
   it('rules rows on the gray ramp, so the colour themes re-skin them', () => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { CellLabel } from '@/components/ui/Table';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { RateCell } from './RateCell';
@@ -29,13 +30,26 @@ interface ScheduleTableRowProps {
   };
 }
 
-const cellClass = 'px-4 py-3 whitespace-nowrap text-sm';
+// Shared chrome for the second-line money cells: no padding on phones (the row
+// supplies it and the wrapped grid spaces the cells), the table cell's own
+// padding from `sm` up. Slightly smaller type on phones so a four-figure
+// installment still fits a quarter-width column without wrapping mid-number
+// (a locale that groups thousands with a space would otherwise break there).
+const MONEY_CELL =
+  'p-0 text-xs text-right whitespace-nowrap sm:table-cell sm:px-4 sm:py-3 sm:text-sm';
 
 /**
  * One Loan Schedule row: a historical payment, a month aggregate (with an
  * expand toggle), an indented per-date detail row, or a projected installment.
  * Historical and aggregate rows show their rate read-only (it is observed from
  * the interest charged); only projected rows expose the inline rate editor.
+ *
+ * The row is a normal table row from `sm` up. Below `sm` it becomes a
+ * four-column grid so the eight columns wrap onto two lines and fit a phone
+ * without a horizontal scroll: the date (with the payment number folded in) and
+ * the balance share the first line, and payment/interest/principal (+ extra) /
+ * rate fill the second. The `col-start`/`row-start` placements are inert once
+ * the row is `table-row` again, so they never touch the desktop layout.
  */
 export function ScheduleTableRow({
   row,
@@ -49,16 +63,27 @@ export function ScheduleTableRow({
   const { formatCurrency } = useNumberFormat();
   const { formatDate } = useDateFormat();
 
+  // With an extra-principal column the second line holds four money cells, so
+  // the rate drops to a third line; without it the rate takes the fourth slot.
+  const rateCellPlacement = showExtraColumn
+    ? 'col-start-1 row-start-3'
+    : 'col-start-4 row-start-2';
+
   return (
     <tr
-      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+      role="row"
+      className={`grid grid-cols-4 items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:table-row sm:p-0 ${
         row.isProjected ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
       } ${isChild ? 'bg-gray-50/60 dark:bg-gray-900/20' : ''}`}
     >
-      <td className={`${cellClass} text-gray-500 dark:text-gray-400`}>
+      <td role="cell" className="hidden px-4 py-3 text-sm text-gray-500 dark:text-gray-400 sm:table-cell">
         {isChild ? '' : row.paymentNumber}
       </td>
-      <td className={`${cellClass} text-gray-900 dark:text-gray-100 ${isChild ? 'pl-10' : ''}`}>
+      <td
+        className={`col-span-2 row-start-1 p-0 text-sm whitespace-normal text-gray-900 dark:text-gray-100 sm:table-cell sm:whitespace-nowrap sm:px-4 sm:py-3 ${
+          isChild ? 'sm:pl-10' : ''
+        }`}
+      >
         {monthGroup ? (
           <button
             type="button"
@@ -75,6 +100,11 @@ export function ScheduleTableRow({
           </button>
         ) : (
           <>
+            {!isChild && (
+              <span className="mr-2 tabular-nums text-gray-400 dark:text-gray-500 sm:hidden">
+                {row.paymentNumber}
+              </span>
+            )}
             {formatDate(row.date)}
             {row.isProjected && (
               <span className="ml-1.5 text-xs text-blue-500 dark:text-blue-400">*</span>
@@ -95,21 +125,26 @@ export function ScheduleTableRow({
           </>
         )}
       </td>
-      <td className={`${cellClass} text-right text-gray-900 dark:text-gray-100`}>
+      <td role="cell" className={`col-start-1 row-start-2 text-gray-900 dark:text-gray-100 ${MONEY_CELL}`}>
+        <CellLabel className="sm:hidden">{t('loanDetail.schedule.colPayment')}</CellLabel>
         {formatCurrency(row.payment, currencyCode)}
       </td>
-      <td className={`${cellClass} text-right text-orange-600 dark:text-orange-400`}>
+      <td role="cell" className={`col-start-2 row-start-2 text-orange-600 dark:text-orange-400 ${MONEY_CELL}`}>
+        <CellLabel className="sm:hidden">{t('loanDetail.schedule.colInterest')}</CellLabel>
         {formatCurrency(row.interest, currencyCode)}
       </td>
-      <td className={`${cellClass} text-right text-green-600 dark:text-green-400`}>
+      <td role="cell" className={`col-start-3 row-start-2 text-green-600 dark:text-green-400 ${MONEY_CELL}`}>
+        <CellLabel className="sm:hidden">{t('loanDetail.schedule.colPrincipal')}</CellLabel>
         {formatCurrency(row.principal, currencyCode)}
       </td>
       {showExtraColumn && (
-        <td className={`${cellClass} text-right text-blue-600 dark:text-blue-400`}>
+        <td role="cell" className={`col-start-4 row-start-2 text-blue-600 dark:text-blue-400 ${MONEY_CELL}`}>
+          <CellLabel className="sm:hidden">{t('loanDetail.schedule.colExtra')}</CellLabel>
           {row.extraPrincipal > 0 ? formatCurrency(row.extraPrincipal, currencyCode) : '—'}
         </td>
       )}
-      <td className={`${cellClass} text-right`}>
+      <td role="cell" className={`${rateCellPlacement} ${MONEY_CELL}`}>
+        <CellLabel className="sm:hidden">{t('loanDetail.schedule.colRate')}</CellLabel>
         <RateCell
           annualRate={row.annualRate}
           onEdit={
@@ -122,7 +157,10 @@ export function ScheduleTableRow({
           })}
         />
       </td>
-      <td className={`${cellClass} text-right font-medium text-gray-900 dark:text-gray-100`}>
+      {/* Balance takes the right half of the first line (not a quarter): it is
+          the widest figure -- a six-figure balance clips in a quarter column. */}
+      <td role="cell" className="col-start-3 col-span-2 row-start-1 p-0 text-sm text-right whitespace-nowrap font-medium text-gray-900 dark:text-gray-100 sm:table-cell sm:px-4 sm:py-3">
+        <CellLabel className="sm:hidden">{t('loanDetail.schedule.colBalance')}</CellLabel>
         {formatCurrency(row.balance, currencyCode)}
       </td>
     </tr>

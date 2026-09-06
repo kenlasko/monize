@@ -655,6 +655,24 @@ describe('ScheduledTransactionList', () => {
     });
   });
 
+  it('does not refresh the list when an action fails', async () => {
+    // A refetch is a claim that the ledger moved. Before the row actions were
+    // extracted, the rejected `await` skipped `onRefresh` by leaving the try
+    // block; now `runScheduledAction` reports the outcome and the caller checks
+    // it, so the invariant lives in a returned boolean nothing was asserting.
+    mockDelete.mockRejectedValueOnce(new Error('Delete failed'));
+    const onRefresh = vi.fn();
+    render(<ScheduledTransactionList transactions={[createTransaction()]} onRefresh={onRefresh} />);
+
+    fireEvent.click(screen.getByTitle('Delete'));
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to delete');
+    });
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
   // --- Post with confirmation ---
   it('opens confirm dialog when post button is clicked (no onPost prop)', () => {
     const transactions = [createTransaction()];

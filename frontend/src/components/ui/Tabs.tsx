@@ -1,6 +1,6 @@
 'use client';
 
-import { KeyboardEvent, useCallback, useRef, useState } from 'react';
+import { KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 export interface TabItem<K extends string = string> {
   /** Stable identifier, also used to build the aria ids. */
@@ -52,8 +52,34 @@ export function tabPanelId(idPrefix: string, key: string): string {
  * cheap and has no side effects.
  *
  * The row scrolls horizontally on its own when the tabs outgrow the viewport,
- * so a narrow screen never widens the page itself.
+ * so a narrow screen never widens the page itself. A phone draws no scrollbar,
+ * so on its own that scroll is invisible: five tabs on the security detail page
+ * fit a 390px screen up to the fourth, and nothing said a fifth existed. Two
+ * things make the overflow legible without a bar. The wrapper fades the
+ * content out at whichever edge has more behind it (`scroll-fade-x`, driven by
+ * a `data-overflow` attribute the scroll and resize handlers keep current), and
+ * the selected tab is scrolled into view whenever the selection changes, so a
+ * deep link to the last tab opens with that tab on screen.
  */
+
+type OverflowEdge = 'none' | 'start' | 'end' | 'both';
+
+/** Which edge(s) of a horizontal scroller still have content behind them. */
+export function overflowEdge(el: {
+  scrollLeft: number;
+  scrollWidth: number;
+  clientWidth: number;
+}): OverflowEdge {
+  // A 1px tolerance: sub-pixel layouts report a scrollWidth one pixel past
+  // clientWidth on a row that does not scroll at all.
+  const hidden = el.scrollWidth - el.clientWidth;
+  if (hidden <= 1) return 'none';
+  const atStart = el.scrollLeft <= 1;
+  const atEnd = el.scrollLeft >= hidden - 1;
+  if (atStart) return 'end';
+  if (atEnd) return 'start';
+  return 'both';
+}
 export function Tabs<K extends string>({
   tabs,
   value,
@@ -64,6 +90,37 @@ export function Tabs<K extends string>({
   anchorProps,
 }: TabsProps<K>) {
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  // The fade is a DOM attribute written from the scroll and resize handlers,
+  // not React state: reading layout and setting state in an effect is banned
+  // here, and nothing else needs to know which edge is faded.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const update = () => {
+      scroller.dataset.overflow = overflowEdge(scroller);
+    };
+    update();
+    scroller.addEventListener('scroll', update, { passive: true });
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+    observer?.observe(scroller);
+    return () => {
+      scroller.removeEventListener('scroll', update);
+      observer?.disconnect();
+    };
+  }, [tabs]);
+
+  // A tab selected from outside the row (a `?tab=` deep link, a widget's link
+  // to Price history) can sit past the visible edge; bring it on screen.
+  useEffect(() => {
+    const index = tabs.findIndex((tab) => tab.key === value);
+    const button = buttonRefs.current[index];
+    if (button && typeof button.scrollIntoView === 'function') {
+      button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }, [tabs, value]);
 
   const selectAt = useCallback(
     (index: number) => {
@@ -111,7 +168,11 @@ export function Tabs<K extends string>({
     // padding, setting overflow-x makes the browser compute overflow-y to `auto`
     // as well, and that 1px of vertical overflow draws a stray vertical
     // scrollbar beside the tabs.
-    <div className={`overflow-x-auto pb-px ${className}`}>
+    <div
+      ref={scrollerRef}
+      data-overflow="none"
+      className={`scroll-fade-x overflow-x-auto pb-px ${className}`}
+    >
       <div
         role="tablist"
         aria-label={ariaLabel}

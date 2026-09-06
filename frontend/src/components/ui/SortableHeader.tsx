@@ -30,7 +30,11 @@ export function SortableHeader<F extends string>({
   const justify =
     align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : '';
   return (
+    // `role="columnheader"` is the implicit role of a `<th>`, restated so it
+    // survives a table restyled for phones (a `display` other than table-cell
+    // drops the implicit role); inert everywhere else.
     <th
+      role="columnheader"
       onClick={() => onSort(field)}
       className={`cursor-pointer transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 select-none ${className}`}
     >

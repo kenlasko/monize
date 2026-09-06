@@ -153,6 +153,13 @@ export interface TransactionRowProps {
   density: DensityLevel;
   cellPadding: string;
   isSingleAccountView: boolean;
+  /**
+   * Render the row as a wrapped two-line card instead of the tier table's
+   * cells. The list sets it for phones at Normal density only (Model B: on a
+   * phone the density toggle picks the layout); every other width and level
+   * renders the tier row below, unchanged.
+   */
+  wrapped?: boolean;
   showRunningBalance?: boolean;
   runningBalance: number | undefined;
   /** When set, a filter has reduced which splits are visible.  Show this
@@ -215,6 +222,7 @@ export const TransactionRow = memo(function TransactionRow({
   density,
   cellPadding,
   isSingleAccountView,
+  wrapped = false,
   showRunningBalance = isSingleAccountView,
   runningBalance,
   displayAmount,
@@ -288,6 +296,277 @@ export const TransactionRow = memo(function TransactionRow({
   const categoryIcon = transaction.category
     ? (categoryIconMap?.get(transaction.category.id) ?? transaction.category.icon)
     : null;
+
+  // Phone + Normal density: one wrapped card per row instead of the tier
+  // table's cells (see the `wrapped` prop). It is a LAYOUT mode, not a
+  // different set of facts -- every value below is the same value the tier
+  // branch renders, from the same helper. Edit/Copy/Delete are deliberately
+  // absent: on a phone those live in the long-press action sheet the same
+  // handlers below open. Description, Ref #, attachments and the three FX
+  // columns are left out to keep the card to two lines -- three when the row
+  // carries tags, which take a line of their own under the category.
+  if (wrapped) {
+    return (
+      <tr
+        ref={rowRef}
+        onClick={() => onRowClick(transaction)}
+        onContextMenu={(e) => onContextMenu(transaction, e)}
+        onMouseDown={(e) => onLongPressStart(transaction, e)}
+        onMouseUp={onLongPressEnd}
+        onMouseLeave={onLongPressEnd}
+        onTouchStart={(e) => onLongPressStartTouch(transaction, e)}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onLongPressEnd}
+        onTouchCancel={onLongPressEnd}
+        className={`group ${HOVER_ROW_ON_PAGE} select-none touch-manipulation bg-white dark:bg-gray-900 ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+      >
+        <td className="p-0">
+          <div className="px-4 py-3 grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 items-start">
+            <div className="flex items-center gap-2">
+              {selectionMode && (
+                <span onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected || false}
+                    onChange={() => onToggleSelection?.()}
+                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer"
+                  />
+                </span>
+              )}
+              <span
+                className={`flex items-center gap-1.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''}`}
+              >
+                {compactDates && formatCompactDate ? (
+                  <span title={formatDate(transaction.transactionDate)}>
+                    {formatCompactDate(transaction.transactionDate)}
+                  </span>
+                ) : (
+                  formatDate(transaction.transactionDate)
+                )}
+                {staleReason && (
+                  <span
+                    data-testid="stale-reconciliation-chip"
+                    data-stale={staleReason}
+                    className="inline-flex items-center rounded-full bg-amber-200 dark:bg-amber-800 px-1.5 py-0.5 text-[10px] font-medium text-amber-900 dark:text-amber-100"
+                    title={
+                      staleReason === 'missed'
+                        ? tr('stale.missedTooltip')
+                        : tr('stale.overdueTooltip')
+                    }
+                  >
+                    {staleReason === 'missed' ? tr('stale.missedChip') : tr('stale.overdueChip')}
+                  </span>
+                )}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                {/* The card has room for the brand badge at every phone width,
+                    so unlike the tier cell it is not dropped here. */}
+                {payeeLabel && (
+                  <PayeeLogo payee={transaction.payee} name={payeeLabel} size={20} />
+                )}
+                {transaction.payeeId && onPayeeClick ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onPayeeClick(transaction.payeeId!); }}
+                    className={`text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline block truncate text-left ${isVoid ? 'line-through' : ''}`}
+                    title={t('list.row.viewPayeeTitle', { name: payeeLabel ?? '' })}
+                  >
+                    {payeeLabel || '-'}
+                  </button>
+                ) : (
+                  <div
+                    className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate ${isVoid ? 'line-through' : ''}`}
+                    title={payeeLabel || undefined}
+                  >
+                    {payeeLabel || '-'}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div
+              className={`text-right whitespace-nowrap text-sm font-medium ${isVoid ? 'line-through' : ''}`}
+            >
+              {displayAmount !== undefined ? (
+                <span
+                  title={t('list.row.filteredAmountTitle', { amount: formatAmountLocal(Math.abs(transaction.amount), getDecimalPlacesForCurrency(transaction.currencyCode)) })}
+                  className="inline-flex items-center gap-1 justify-end"
+                >
+                  {formatAmount(displayAmount, transaction.currencyCode)}
+                  <span className="text-purple-500 dark:text-purple-400 text-xs font-normal">*</span>
+                </span>
+              ) : (
+                formatAmount(transaction.amount, transaction.currencyCode)
+              )}
+              {!showFxColumns &&
+                transaction.originalCurrencyCode &&
+                transaction.originalAmount !== null && (
+                  <div className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                    {transaction.originalCurrencyCode}{' '}
+                    {formatAmountLocal(
+                      Math.abs(Number(transaction.originalAmount)),
+                      getDecimalPlacesForCurrency(transaction.originalCurrencyCode),
+                    )}
+                  </div>
+                )}
+            </div>
+            <div className="col-span-3 flex flex-wrap items-center gap-1.5">
+              {/* Structural, not responsive, exactly as in the tier row: a
+                  single-account page never repeats its own title. */}
+              {!isSingleAccountView && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {transaction.account?.name || '-'}
+                </span>
+              )}
+              {transaction.linkedInvestmentTransactionId ? (
+                // No `title` here, unlike the tier cell: a hover tooltip is
+                // unreachable on a phone, and the pill's own label already
+                // says what it says.
+                <span className="inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-2 py-1">
+                  {t('list.row.investmentLabel')}
+                </span>
+              ) : transaction.isTransfer ? (
+                <>
+                  {transaction.category && (
+                    <CategoryPill
+                      name={transaction.category.name}
+                      color={categoryColor}
+                      icon={categoryIcon}
+                      density={density}
+                      maxWidthClass="max-w-[160px]"
+                      title={
+                        onCategoryClick
+                          ? t('list.row.filterByCategory', { name: transaction.category.name })
+                          : undefined
+                      }
+                      onClick={
+                        onCategoryClick
+                          ? (e) => { e.stopPropagation(); onCategoryClick(transaction.category!.id); }
+                          : undefined
+                      }
+                    />
+                  )}
+                  {onTransferClick && transaction.linkedTransaction?.account?.id && transaction.linkedTransactionId ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTransferClick(transaction.linkedTransaction!.account!.id, transaction.linkedTransactionId!);
+                      }}
+                      className="inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 truncate max-w-[160px] hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors px-2 py-1"
+                      title={t('list.row.transferTitle', { direction: transferDirection(transaction.amount), name: transaction.linkedTransaction.account.name })}
+                    >
+                      {transferDirection(transaction.amount) === 'to'
+                        ? `\u2192 ${transaction.linkedTransaction.account.name}`
+                        : `${transaction.linkedTransaction.account.name} \u2192`}
+                    </button>
+                  ) : (
+                    <span
+                      className="inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 truncate max-w-[160px] px-2 py-1"
+                      title={transaction.linkedTransaction?.account?.name
+                        ? t('list.row.transferTitle', { direction: transferDirection(transaction.amount), name: transaction.linkedTransaction.account.name })
+                        : t('list.row.transfer')}
+                    >
+                      {transaction.linkedTransaction?.account?.name
+                        ? (transferDirection(transaction.amount) === 'to'
+                            ? `\u2192 ${transaction.linkedTransaction.account.name}`
+                            : `${transaction.linkedTransaction.account.name} \u2192`)
+                        : t('list.row.transfer')}
+                    </span>
+                  )}
+                </>
+              ) : transaction.isSplit ? (
+                <span className="inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1">
+                  {t('list.row.split')}{transaction.splits ? ` (${transaction.splits.length})` : ''}
+                </span>
+              ) : transaction.category ? (
+                <CategoryPill
+                  name={transaction.category.name}
+                  color={categoryColor}
+                  icon={categoryIcon}
+                  density={density}
+                  title={
+                    onCategoryClick
+                      ? t('list.row.filterByCategory', { name: transaction.category.name })
+                      : undefined
+                  }
+                  onClick={
+                    onCategoryClick
+                      ? (e) => { e.stopPropagation(); onCategoryClick(transaction.category!.id); }
+                      : undefined
+                  }
+                />
+              ) : null}
+              <span className="ml-auto flex items-center gap-2">
+                {/* StatusCellButton stops the click itself, so it needs no
+                    wrapper here -- the tier branch mounts it bare too. */}
+                <StatusCellButton
+                  status={transaction.status}
+                  dense={false}
+                  onCycle={() => onCycleStatus(transaction)}
+                />
+                {showRunningBalance && (
+                  <span className="text-right whitespace-nowrap text-sm font-medium">
+                    <span className="block text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 leading-tight">
+                      {t('list.header.balance')}
+                    </span>
+                    {runningBalance !== undefined
+                      ? formatBalance(runningBalance, transaction.currencyCode)
+                      : '-'}
+                  </span>
+                )}
+              </span>
+            </div>
+            {/* Line 3, only when the row carries tags: under the category
+                rather than beside it. Inline after the category, one tag was
+                enough to push the status and balance onto a line of their
+                own, so the card grew a line anyway -- with the pills and the
+                figures interleaved. On their own line the tags wrap among
+                themselves and line 2 keeps its shape. */}
+            {transaction.tags && transaction.tags.length > 0 && (
+              <div className="col-span-3 flex flex-wrap items-center gap-1.5">
+                {transaction.tags.map((tag) => onTagClick ? (
+                  <button
+                    key={tag.id}
+                    onClick={(e) => { e.stopPropagation(); onTagClick(tag.id); }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium hover:opacity-80 transition-opacity"
+                    style={{
+                      backgroundColor: tag.color ? `${tag.color}20` : '#9ca3af20',
+                      color: tag.color || '#6b7280',
+                    }}
+                    title={t('list.row.filterByTag', { name: tag.name })}
+                  >
+                    {tag.icon && (
+                      <span className="w-3 h-3 flex-shrink-0 [&>svg]:w-3 [&>svg]:h-3">
+                        {getIconComponent(tag.icon)}
+                      </span>
+                    )}
+                    {tag.name}
+                  </button>
+                ) : (
+                  <span
+                    key={tag.id}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"
+                    style={{
+                      backgroundColor: tag.color ? `${tag.color}20` : '#9ca3af20',
+                      color: tag.color || '#6b7280',
+                    }}
+                    title={tag.name}
+                  >
+                    {tag.icon && (
+                      <span className="w-3 h-3 flex-shrink-0 [&>svg]:w-3 [&>svg]:h-3">
+                        {getIconComponent(tag.icon)}
+                      </span>
+                    )}
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </td>
+      </tr>
+    );
+  }
 
   return (
     <tr

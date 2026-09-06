@@ -145,7 +145,10 @@ test.describe('Payee detail', () => {
     // aggregate 404s, and the page has to say so rather than render blank.
     await page.goto('/payees/00000000-0000-4000-8000-000000000000');
 
-    await expect(page.getByRole('alert')).toBeVisible();
+    // Scoped to the page's <main>: Next's route announcer is a second
+    // `role="alert"` on every hydrated page, so a page-wide alert locator is
+    // ambiguous and only ever passed by polling before the panel rendered.
+    await expect(page.getByRole('main').getByRole('alert')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Back to Payees' })).toBeVisible();
   });
 });

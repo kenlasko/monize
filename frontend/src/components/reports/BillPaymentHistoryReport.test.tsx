@@ -44,7 +44,11 @@ vi.mock('@/hooks/useDateRange', () => ({
   }),
 }));
 
-vi.mock('@/lib/utils', () => ({
+// Spread the real module rather than replacing it: the by-bill table's phone
+// captions render `CellLabel`, which reads `cn` from here, and a bare factory
+// blanks every other export of the module for the whole graph under test.
+vi.mock('@/lib/utils', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/utils')>()),
   parseLocalDate: (d: string) => new Date(d + 'T00:00:00'),
 }));
 

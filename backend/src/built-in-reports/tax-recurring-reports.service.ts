@@ -382,15 +382,20 @@ export class TaxRecurringReportsService {
       };
     }
 
+    // Keyed by the NORMALIZED name (lowercased, trimmed) because that is what
+    // the transaction query below matches on -- but the value keeps the name
+    // as the user wrote it. The key is a match key, never a display value:
+    // the report once showed the lowercased key as the payee.
     const payeeToScheduled = new Map<
       string,
-      { id: string; name: string; amount: number }
+      { id: string; name: string; payeeName: string; amount: number }
     >();
     scheduledTx.forEach((st) => {
       if (st.payee_name) {
         payeeToScheduled.set(st.payee_name.toLowerCase().trim(), {
           id: st.id,
           name: st.name,
+          payeeName: st.payee_name,
           amount: Math.abs(toMoneyNumber(st.amount)),
         });
       }
@@ -464,7 +469,7 @@ export class TaxRecurringReportsService {
           payment = {
             id: scheduled.id,
             name: scheduled.name,
-            payeeName: tx.payee_name_normalized,
+            payeeName: scheduled.payeeName,
             payments: [],
           };
           billPaymentMap.set(scheduled.id, payment);
