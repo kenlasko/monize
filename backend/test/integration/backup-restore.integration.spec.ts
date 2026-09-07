@@ -710,6 +710,137 @@ describe("Backup export/restore round-trip (integration)", () => {
     },
   );
   /**
+   * A scan pair (`docs/future-plans/document-scanner.md`): the enhanced image a
+   * user sees, and the original photo it came from, linked by
+   * `transaction_attachments.original_of_attachment_id` -- an immediate
+   * self-referential FK, like `accounts.linked_loan_account_id` before it.
+   *
+   * This table's export carries no `ORDER BY`, so its row order is whatever the
+   * heap gives, and any update to the visible row after the pair was written
+   * moves it behind the original that points at it. The `UPDATE` below produces
+   * exactly that order, so the restore meets the reference before its target --
+   * the case `DEFERRED_FK_COLUMNS` exists for. Without the deferral the whole
+   * restore aborts, so this fails loudly rather than silently dropping a link.
+   */
+  it("restores a scanned attachment and the original it came from", async () => {
+    const userA = await createTestUserDirect(dataSource, {
+      email: "scan-pair-a@example.com",
+    });
+    const userB = await createTestUserDirect(dataSource, {
+      email: "scan-pair-b@example.com",
+    });
+    const seeded = await seedUserData(userA.id);
+
+    const enhancedBytes = Buffer.from("the enhanced scan, as bytes");
+    const originalBytes = Buffer.from("the original photo, as bytes");
+    const enhancedId = randomUUID();
+    const originalId = randomUUID();
+
+    const insertAttachment = async (
+      id: string,
+      filename: string,
+      bytes: Buffer,
+      originalOf: string | null,
+    ) => {
+      await dataSource.query(
+        `INSERT INTO transaction_attachments
+           (id, user_id, transaction_id, filename, content_type, byte_size,
+            sha256, storage_provider, storage_key, original_of_attachment_id)
+         VALUES ($1, $2, $3, $4, 'image/jpeg', $5, $6, 'database', $7, $8)`,
+        [
+          id,
+          userA.id,
+          seeded.expenseTxId,
+          filename,
+          bytes.length,
+          createHash("sha256").update(bytes).digest("hex"),
+          id,
+          originalOf,
+        ],
+      );
+      await dataSource.query(
+        `INSERT INTO attachment_blobs (attachment_id, data) VALUES ($1, $2)`,
+        [id, bytes],
+      );
+    };
+
+    // The visible row must exist before the original can reference it.
+    await insertAttachment(enhancedId, "receipt-scan.jpg", enhancedBytes, null);
+    await insertAttachment(
+      originalId,
+      "receipt.jpg",
+      originalBytes,
+      enhancedId,
+    );
+
+    // Rewrite the visible row so the heap puts it *after* the original. A
+    // Postgres UPDATE writes a new tuple at the end of the relation, which is
+    // what makes the export order hostile without contriving anything the
+    // application could not produce.
+    await dataSource.query(
+      `UPDATE transaction_attachments SET filename = $2 WHERE id = $1`,
+      [enhancedId, "receipt-scan.jpg"],
+    );
+    const exportOrder: Array<{ id: string }> = await dataSource.query(
+      `SELECT id FROM transaction_attachments WHERE user_id = $1`,
+      [userA.id],
+    );
+    // If this ever stops holding, the test still passes for the wrong reason --
+    // it would be exercising the easy order.
+    expect(exportOrder.map((row) => row.id)).toEqual([originalId, enhancedId]);
+
+    const { buffer: backup, report } = await withUserContext(userA.id, () =>
+      service.exportToBuffer(userA.id),
+    );
+    // Both halves are one attachment each as far as the archive is concerned.
+    expect(report).toMatchObject({
+      complete: true,
+      expectedAttachments: 2,
+      includedAttachments: 2,
+    });
+
+    const result = await withUserContext(userB.id, () =>
+      service.restoreData(userB.id, {
+        compressedData: backup,
+        password: PASSWORD,
+      }),
+    );
+    expect(result.restored.transactionAttachments).toBe(2);
+
+    // The link survives, points at B's own copy of the visible row, and is not
+    // merely null -- which is what a restore that dropped the column would give.
+    const [restoredOriginal] = await dataSource.query(
+      `SELECT o.id,
+              o.original_of_attachment_id,
+              v.filename AS visible_filename,
+              v.user_id  AS visible_user
+         FROM transaction_attachments o
+         JOIN transaction_attachments v ON v.id = o.original_of_attachment_id
+        WHERE o.user_id = $1 AND o.filename = 'receipt.jpg'`,
+      [userB.id],
+    );
+    expect(restoredOriginal).toBeDefined();
+    expect(restoredOriginal.visible_filename).toBe("receipt-scan.jpg");
+    expect(restoredOriginal.visible_user).toBe(userB.id);
+    expect(restoredOriginal.original_of_attachment_id).not.toBe(enhancedId);
+
+    // And the two sets of bytes stay attached to their own rows.
+    const blobs: Array<{ filename: string; data: Buffer }> =
+      await dataSource.query(
+        `SELECT ta.filename, ab.data
+           FROM attachment_blobs ab
+           JOIN transaction_attachments ta ON ta.id = ab.attachment_id
+          WHERE ta.user_id = $1
+          ORDER BY ta.filename`,
+        [userB.id],
+      );
+    expect(blobs.map((b) => [b.filename, b.data.toString("utf-8")])).toEqual([
+      ["receipt-scan.jpg", enhancedBytes.toString("utf-8")],
+      ["receipt.jpg", originalBytes.toString("utf-8")],
+    ]);
+  });
+
+  /**
    * Currencies are shared: user A defines `PTS`, user B activates it and prices
    * an account in it. B's backup used to select currencies by
    * `created_by_user_id`, so it carried the references without the definition,

@@ -177,13 +177,15 @@ null`; the UI does not offer it.
 The export reads `transaction_attachments` with `SELECT *`
 (`backend/src/backup/export-table-queries.ts`), so the column ships in every
 backup from the migration onwards. The restore inserts rows in archive order,
-and a self-reference can point at a row that sorts later, so
-`original_of_attachment_id` is added to `DEFERRED_FK_COLUMNS` and
-`DEFERRED_FK_REPAIRS` in `backend/src/backup/restore-plan.ts` (the same
-treatment as `accounts.linked_loan_account_id`);
+and this table's export carries no `ORDER BY`, so its row order is unspecified
+heap order: any update to the visible row after the pair was written puts the
+original ahead of the row it references. So `original_of_attachment_id` is
+added to `DEFERRED_FK_COLUMNS` and `DEFERRED_FK_REPAIRS` in
+`backend/src/backup/restore-plan.ts` (the same treatment as
+`accounts.linked_loan_account_id`);
 `backend/src/backup/restore-plan.spec.ts` proves both lists against the schema.
 `backend/test/integration/backup-restore.integration.spec.ts` gains a pair
-whose original id sorts before its visible id. Legacy backups without the
+whose original precedes its visible row in the export. Legacy backups without the
 column restore unchanged (`insertRows` inserts the columns present in the
 archive).
 

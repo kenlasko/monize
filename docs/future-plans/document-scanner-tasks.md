@@ -45,7 +45,7 @@ feature on.
   `DEFERRED_FK_REPAIRS` entry; extend `restore-plan.spec.ts` if its schema
   derivation does not already pick the column up.
 - `backend/test/integration/backup-restore.integration.spec.ts`: a pair whose
-  original id sorts before its visible id round-trips.
+  original precedes its visible row in the export round-trips.
 - Done when `scripts/verify-schema.sh` and `npm run migration:lint` are clean
   and the integration suite passes serially (`npm run test:integration`).
 

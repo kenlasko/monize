@@ -366,11 +366,22 @@ CREATE TABLE transaction_attachments (
     sha256 CHAR(64) NOT NULL, -- hex digest of the original bytes (integrity + dedup)
     storage_provider VARCHAR(20) NOT NULL DEFAULT 'database', -- 'database' | 'local' | 's3'
     storage_key VARCHAR(512) NOT NULL, -- database/local: attachment id; s3: object key
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- Set on the unprocessed original of a scanned document, pointing at the
+    -- visible (enhanced) attachment; NULL for every attachment a user sees.
+    -- The link lives on the original so deleting the visible row cascades to
+    -- it. See docs/future-plans/document-scanner.md.
+    original_of_attachment_id UUID NULL REFERENCES transaction_attachments(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_attachment_not_own_original
+        CHECK (original_of_attachment_id IS NULL OR original_of_attachment_id <> id)
 );
 
 CREATE INDEX idx_transaction_attachments_transaction ON transaction_attachments(transaction_id);
 CREATE INDEX idx_transaction_attachments_user ON transaction_attachments(user_id);
+-- At most one original per attachment: a scan pair is exactly two rows.
+CREATE UNIQUE INDEX uq_transaction_attachments_original_of
+    ON transaction_attachments(original_of_attachment_id)
+    WHERE original_of_attachment_id IS NOT NULL;
 
 -- Attachment bytes for the built-in database storage provider. Kept in a
 -- separate table so the metadata table (and its list queries) never touch BYTEA.

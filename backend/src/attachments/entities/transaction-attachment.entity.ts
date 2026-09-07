@@ -78,6 +78,40 @@ export class TransactionAttachment {
   @Column({ type: "varchar", name: "storage_key", length: 512 })
   storageKey: string;
 
+  /**
+   * Set on the unprocessed original of a scanned document; points at the
+   * visible (enhanced) attachment. NULL for an ordinary attachment and for the
+   * visible half of a scan pair -- which is what "a visible attachment" means
+   * everywhere it is read (`primary-attachment.util.ts`). The link lives on the
+   * original so the database cascade removes it with its visible row.
+   */
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description:
+      "Set on the unprocessed original of a scan pair; points at the visible attachment",
+  })
+  @Column({
+    type: "uuid",
+    name: "original_of_attachment_id",
+    nullable: true,
+  })
+  originalOfAttachmentId: string | null;
+
+  /**
+   * The relation exists so the foreign key and its cascade are part of what
+   * TypeORM builds, not only of `schema.sql` -- the database-backed suites
+   * synchronize from these entities, and a bare `@Column` would give them a
+   * plain uuid with nothing to violate, passing every test about the link by
+   * having no link at all.
+   */
+  @ManyToOne(() => TransactionAttachment, {
+    nullable: true,
+    onDelete: "CASCADE",
+  })
+  @JoinColumn({ name: "original_of_attachment_id" })
+  originalOfAttachment?: TransactionAttachment | null;
+
   @ApiProperty()
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

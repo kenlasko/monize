@@ -299,6 +299,9 @@ export const DEFERRED_FK_COLUMNS: Readonly<Record<string, readonly string[]>> =
       "institution_id",
     ],
     transactions: ["linked_transaction_id", "parent_transaction_id"],
+    // Self-referential: a scan pair's original points at the visible
+    // attachment, and the export's ORDER BY id can put the original first.
+    transaction_attachments: ["original_of_attachment_id"],
     payees: ["default_category_id"],
     // Scheduled transactions/splits are inserted before securities, so their
     // forward reference to securities(id) is deferred to Phase 3.
@@ -343,6 +346,7 @@ export const DEFERRED_FK_REPAIRS: ReadonlyArray<DeferredFkRepair> = [
   { table: "accounts", column: "asset_category_id" },
   { table: "transactions", column: "linked_transaction_id" },
   { table: "transactions", column: "parent_transaction_id" },
+  { table: "transaction_attachments", column: "original_of_attachment_id" },
   { table: "investment_transactions", column: "linked_transaction_id" },
   { table: "payees", column: "default_category_id" },
   { table: "scheduled_transactions", column: "investment_security_id" },
