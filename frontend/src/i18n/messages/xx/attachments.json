@@ -15,5 +15,36 @@
   "deleteFailed": "[XX-Failed to delete attachment-XX]",
   "tooLarge": "[XX-File is too large (maximum {max})-XX]",
   "unsupported": "[XX-Unsupported file type. Allowed: images or PDF-XX]",
-  "tooMany": "[XX-Maximum {max} attachments per transaction-XX]"
+  "tooMany": "[XX-Maximum {max} attachments per transaction-XX]",
+  "scan": {
+    "button": "[XX-Scan document-XX]",
+    "title": "[XX-Scan document-XX]",
+    "description": "[XX-Straighten and clean up a photo of a document before attaching it.-XX]",
+    "analysing": "[XX-Looking for a document in the photo…-XX]",
+    "failed": "[XX-The document could not be scanned. You can still attach the photo as it is.-XX]",
+    "viewEnhanced": "[XX-Enhanced-XX]",
+    "viewOriginal": "[XX-Original-XX]",
+    "rotate": "[XX-Rotate-XX]",
+    "adjustHint": "[XX-Switch to Original to drag the corners if the edges are wrong.-XX]",
+    "noDocumentFound": "[XX-No document edges were found, so the whole photo was used. Switch to Original and drag the corners to set them yourself.-XX]",
+    "previewEnhancedAlt": "[XX-Enhanced scan preview-XX]",
+    "previewOriginalAlt": "[XX-Original photo preview-XX]",
+    "useEnhanced": "[XX-Use enhanced-XX]",
+    "keepOriginal": "[XX-Keep original only-XX]",
+    "retake": "[XX-Retake-XX]",
+    "cancel": "[XX-Cancel-XX]",
+    "originalTooLarge": "[XX-The original photo is larger than {max}, so only the enhanced scan will be attached.-XX]",
+    "warnings": {
+      "blurry": "[XX-The photo looks blurred. Retaking it will give a sharper scan.-XX]",
+      "edgesOutsideFrame": "[XX-Part of the document may be outside the photo. Retake it with the whole page in frame.-XX]",
+      "lowResolution": "[XX-The scan is quite small, so fine print may be hard to read.-XX]"
+    },
+    "corners": {
+      "label": "[XX-Document corners-XX]",
+      "topLeft": "[XX-Top-left corner-XX]",
+      "topRight": "[XX-Top-right corner-XX]",
+      "bottomRight": "[XX-Bottom-right corner-XX]",
+      "bottomLeft": "[XX-Bottom-left corner-XX]"
+    }
+  }
 }

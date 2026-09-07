@@ -15,5 +15,36 @@
   "deleteFailed": "Failed to delete attachment",
   "tooLarge": "File is too large (maximum {max})",
   "unsupported": "Unsupported file type. Allowed: images or PDF",
-  "tooMany": "Maximum {max} attachments per transaction"
+  "tooMany": "Maximum {max} attachments per transaction",
+  "scan": {
+    "button": "Scan document",
+    "title": "Scan document",
+    "description": "Straighten and clean up a photo of a document before attaching it.",
+    "analysing": "Looking for a document in the photo…",
+    "failed": "The document could not be scanned. You can still attach the photo as it is.",
+    "viewEnhanced": "Enhanced",
+    "viewOriginal": "Original",
+    "rotate": "Rotate",
+    "adjustHint": "Switch to Original to drag the corners if the edges are wrong.",
+    "noDocumentFound": "No document edges were found, so the whole photo was used. Switch to Original and drag the corners to set them yourself.",
+    "previewEnhancedAlt": "Enhanced scan preview",
+    "previewOriginalAlt": "Original photo preview",
+    "useEnhanced": "Use enhanced",
+    "keepOriginal": "Keep original only",
+    "retake": "Retake",
+    "cancel": "Cancel",
+    "originalTooLarge": "The original photo is larger than {max}, so only the enhanced scan will be attached.",
+    "warnings": {
+      "blurry": "The photo looks blurred. Retaking it will give a sharper scan.",
+      "edgesOutsideFrame": "Part of the document may be outside the photo. Retake it with the whole page in frame.",
+      "lowResolution": "The scan is quite small, so fine print may be hard to read."
+    },
+    "corners": {
+      "label": "Document corners",
+      "topLeft": "Top-left corner",
+      "topRight": "Top-right corner",
+      "bottomRight": "Bottom-right corner",
+      "bottomLeft": "Bottom-left corner"
+    }
+  }
 }
