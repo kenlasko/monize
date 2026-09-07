@@ -33,6 +33,12 @@ describe("source files contain no raw control bytes", () => {
     "test-results",
     "playwright-report",
     ".turbo",
+    // Third-party build artefacts copied in at build time, not repository
+    // content: `frontend/public/vendor/opencv/opencv.js` is a 13 MB
+    // WebAssembly build whose payload is legitimately full of control bytes.
+    // Same situation as `.claude` above, inverted -- a contributor who has
+    // built the frontend has it, a fresh checkout does not.
+    "vendor",
   ]);
 
   const SCANNED_EXTENSIONS = [
