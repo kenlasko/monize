@@ -7,11 +7,11 @@ import {
   Request,
   Res,
   UseGuards,
-  UploadedFile,
+  UploadedFiles,
   ParseUUIDPipe,
   HttpCode,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { UseInterceptors } from "@nestjs/common";
 import { memoryStorage } from "multer";
 import {
@@ -24,6 +24,7 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { Response } from "express";
 import {
+  AttachmentListItem,
   AttachmentsService,
   MAX_ATTACHMENT_BYTES,
 } from "./attachments.service";
@@ -41,17 +42,35 @@ export class AttachmentsController {
   @ApiConsumes("multipart/form-data")
   @ApiResponse({ status: 201, description: "Attachment metadata" })
   @UseInterceptors(
-    FileInterceptor("file", {
-      storage: memoryStorage(),
-      limits: { fileSize: MAX_ATTACHMENT_BYTES, files: 1 },
-    }),
+    // Two parts, not one: `file` is the attachment the user sees, and the
+    // optional `original` is the unprocessed photo a scan came from. The size
+    // limit is per file, and `files: 2` caps the request at the pair.
+    FileFieldsInterceptor(
+      [
+        { name: "file", maxCount: 1 },
+        { name: "original", maxCount: 1 },
+      ],
+      {
+        storage: memoryStorage(),
+        limits: { fileSize: MAX_ATTACHMENT_BYTES, files: 2 },
+      },
+    ),
   )
   upload(
     @Request() req,
     @Param("transactionId", ParseUUIDPipe) transactionId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles()
+    files: {
+      file?: Express.Multer.File[];
+      original?: Express.Multer.File[];
+    },
   ): Promise<TransactionAttachment> {
-    return this.attachmentsService.create(req.user.id, transactionId, file);
+    return this.attachmentsService.create(
+      req.user.id,
+      transactionId,
+      files?.file?.[0],
+      files?.original?.[0],
+    );
   }
 
   @Get("transactions/:transactionId/attachments")
@@ -60,7 +79,7 @@ export class AttachmentsController {
   findAll(
     @Request() req,
     @Param("transactionId", ParseUUIDPipe) transactionId: string,
-  ): Promise<TransactionAttachment[]> {
+  ): Promise<AttachmentListItem[]> {
     return this.attachmentsService.findAllForTransaction(
       req.user.id,
       transactionId,

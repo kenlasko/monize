@@ -3,7 +3,7 @@ import {
   AttachmentsController,
   contentDisposition,
 } from "./attachments.controller";
-import { AttachmentsService } from "./attachments.service";
+import { AttachmentListItem, AttachmentsService } from "./attachments.service";
 import { TransactionAttachment } from "./entities/transaction-attachment.entity";
 
 describe("AttachmentsController", () => {
@@ -33,14 +33,59 @@ describe("AttachmentsController", () => {
     const created = { id: "a1" } as TransactionAttachment;
     service.create.mockResolvedValue(created);
 
-    const result = await controller.upload(req, "txn-1", file);
+    const result = await controller.upload(req, "txn-1", { file: [file] });
 
     expect(result).toBe(created);
-    expect(service.create).toHaveBeenCalledWith("user-1", "txn-1", file);
+    expect(service.create).toHaveBeenCalledWith(
+      "user-1",
+      "txn-1",
+      file,
+      undefined,
+    );
+  });
+
+  // The pair arrives as two named parts of one request, so the controller has
+  // to hand both down -- an `original` dropped here would store the scan alone
+  // and report success, which is the one outcome the feature exists to avoid.
+  it("passes a scanned pair's original through as the second file", async () => {
+    const file = { originalname: "r-scan.jpg" } as Express.Multer.File;
+    const original = { originalname: "r.jpg" } as Express.Multer.File;
+    const created = { id: "a1" } as TransactionAttachment;
+    service.create.mockResolvedValue(created);
+
+    await controller.upload(req, "txn-1", {
+      file: [file],
+      original: [original],
+    });
+
+    expect(service.create).toHaveBeenCalledWith(
+      "user-1",
+      "txn-1",
+      file,
+      original,
+    );
+  });
+
+  // multer gives no part at all when the client sends none, and the service
+  // owns the "empty upload" refusal -- the controller must reach it rather than
+  // throwing a TypeError on the way.
+  it("passes undefined through when the request carries no file part", async () => {
+    service.create.mockResolvedValue({ id: "a1" } as TransactionAttachment);
+
+    await controller.upload(req, "txn-1", {});
+
+    expect(service.create).toHaveBeenCalledWith(
+      "user-1",
+      "txn-1",
+      undefined,
+      undefined,
+    );
   });
 
   it("delegates list to the service", async () => {
-    const rows = [{ id: "a1" }] as TransactionAttachment[];
+    const rows = [
+      { id: "a1", originalAttachmentId: null },
+    ] as AttachmentListItem[];
     service.findAllForTransaction.mockResolvedValue(rows);
     const result = await controller.findAll(req, "txn-1");
     expect(result).toBe(rows);

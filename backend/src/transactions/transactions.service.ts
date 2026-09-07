@@ -13,6 +13,7 @@ import { Category } from "../categories/entities/category.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { TransactionAttachment } from "../attachments/entities/transaction-attachment.entity";
+import { primaryAttachmentSql } from "../attachments/primary-attachment.util";
 import { CreateTransactionDto } from "./dto/create-transaction.dto";
 import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
@@ -1042,8 +1043,12 @@ export class TransactionsService {
       // transaction_attachments table keeps this out of the heavily-joined main
       // query, so it never multiplies rows or corrupts pagination.
       if (hasAttachments !== undefined) {
+        // Primaries only: a scan pair's hidden original is not an attachment
+        // the user has, so "no attachments" must not be false because one is
+        // stored behind the row they deleted the visible half of.
         const existsSubquery =
-          "SELECT 1 FROM transaction_attachments ta WHERE ta.transaction_id = transaction.id";
+          `SELECT 1 FROM transaction_attachments ta WHERE ta.transaction_id = transaction.id ` +
+          `AND ${primaryAttachmentSql("ta")}`;
         queryBuilder.andWhere(
           hasAttachments
             ? `EXISTS (${existsSubquery})`
@@ -1986,6 +1991,9 @@ export class TransactionsService {
         .select("ta.transactionId", "transactionId")
         .addSelect("COUNT(*)", "count")
         .where("ta.transactionId IN (:...transactionIds)", { transactionIds })
+        // A scan pair counts once: the register's paperclip is a count of what
+        // the attachments list shows, and that list hides originals.
+        .andWhere(primaryAttachmentSql("ta"))
         .groupBy("ta.transactionId")
         .getRawMany<{ transactionId: string; count: string }>();
 

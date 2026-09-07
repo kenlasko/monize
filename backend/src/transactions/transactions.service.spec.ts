@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { Brackets, DataSource } from "typeorm";
 import { TransactionsService } from "./transactions.service";
+import { primaryAttachmentSql } from "../attachments/primary-attachment.util";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -136,6 +137,9 @@ describe("TransactionsService", () => {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        // The count is restricted to primaries -- a scan pair is one
+        // attachment, so its hidden original must not reach the paperclip.
+        andWhere: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([]),
       }),
@@ -2389,6 +2393,25 @@ describe("TransactionsService", () => {
       );
     });
 
+    // "No attachments" must not be false because a scan pair's hidden original
+    // is still there behind the visible row the user deleted -- and the
+    // has-attachments side must not match on one either.
+    it.each([
+      { hasAttachments: true, label: "EXISTS" },
+      { hasAttachments: false, label: "NOT EXISTS" },
+    ])(
+      "restricts the $label attachment filter to visible attachments",
+      async ({ hasAttachments }) => {
+        const mockQb = createMockQueryBuilder();
+        mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+        await findAllWith({ hasAttachments }, mockQb);
+
+        expect(mockQb.andWhere).toHaveBeenCalledWith(
+          expect.stringContaining(primaryAttachmentSql("ta")),
+        );
+      },
+    );
+
     it("does not filter by attachments when unspecified", async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);
@@ -2410,10 +2433,12 @@ describe("TransactionsService", () => {
       ]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
+      const attachmentCountAndWhere = jest.fn().mockReturnThis();
       attachmentsRepository.createQueryBuilder.mockReturnValue({
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: attachmentCountAndWhere,
         groupBy: jest.fn().mockReturnThis(),
         getRawMany: jest
           .fn()
@@ -2424,6 +2449,12 @@ describe("TransactionsService", () => {
 
       expect(result.data[0].attachmentCount).toBe(3);
       expect(result.data[1].attachmentCount).toBe(0);
+      // The paperclip counts what the attachments list shows, and that list
+      // hides a scan pair's original -- so the count is restricted to primaries
+      // through the shared predicate.
+      expect(attachmentCountAndWhere).toHaveBeenCalledWith(
+        primaryAttachmentSql("ta"),
+      );
     });
 
     it("applies pagination with page and limit", async () => {

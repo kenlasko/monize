@@ -6,7 +6,8 @@
     "fileTooLarge": "[XX-File exceeds the maximum size of {{ max }} bytes-XX]",
     "unsupportedType": "[XX-Unsupported file type. Allowed types: {{ types }}-XX]",
     "tooMany": "[XX-This transaction already has the maximum of {{ max }} attachments-XX]",
-    "swept": "[XX-The upload took too long and its storage was reclaimed. Please try again.-XX]"
+    "swept": "[XX-The upload took too long and its storage was reclaimed. Please try again.-XX]",
+    "pairRequiresImages": "[XX-A scanned document and its original must both be images-XX]"
   },
   "accounts": {
     "accountWithIdNotFound": "[XX-Account with ID {{ id }} not found-XX]",

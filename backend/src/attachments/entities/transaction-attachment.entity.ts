@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  Check,
   CreateDateColumn,
   Index,
 } from "typeorm";
@@ -21,6 +22,18 @@ import { Transaction } from "../../transactions/entities/transaction.entity";
  */
 @Entity("transaction_attachments")
 @Index(["transactionId"])
+// Declared here as well as in the migration, because the database-backed suites
+// build their schema from the entities: without them a scan pair's integrity is
+// a property of production alone, and the suites that exist to prove it would
+// be asserting against a table that cannot break.
+@Index("uq_transaction_attachments_original_of", ["originalOfAttachmentId"], {
+  unique: true,
+  where: "original_of_attachment_id IS NOT NULL",
+})
+@Check(
+  "chk_attachment_not_own_original",
+  "original_of_attachment_id IS NULL OR original_of_attachment_id <> id",
+)
 export class TransactionAttachment {
   @ApiProperty({ example: "c5f5d5f0-1234-4567-890a-123456789abc" })
   @PrimaryGeneratedColumn("uuid")

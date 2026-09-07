@@ -61,6 +61,18 @@ the other two.
 Three providers behind one interface (`save`/`load`/`delete`), selected by
 deployment.
 
+**One upload can write two objects.** A scanned document is stored as a pair --
+the enhanced image the user sees and the original photo it came from
+(`docs/future-plans/document-scanner.md`) -- written by one `create` call in one
+transaction. That changes the quantity below, not the mechanism: each object
+gets its own upload intent committed before any byte is written, each intent is
+cleared inside the metadata transaction, and the compensation path deletes
+whichever objects were actually written rather than assuming both were. The
+failure windows described in this section are per object and are otherwise
+unchanged. Deletion is likewise per object: the metadata `DELETE` names the
+original as well as the visible row, so both storage keys come back and both are
+swept after the commit.
+
 **Database provider.** `save` opens `withScopedDb`, which joins the ambient
 transaction, so bytes and metadata are one PostgreSQL transaction. Genuinely
 atomic, genuinely rollback-safe. The FK cascade removes the blob when the

@@ -46,6 +46,12 @@ const PNG_BYTES = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01,
 ]);
 const PDF_BYTES = Buffer.from("%PDF-1.7\n...", "ascii");
+// A second image type, so a pair's two halves are distinguishable by their
+// bytes: asserting the original's size and digest against the scan's would pass
+// for a service that stored the same buffer twice.
+const JPEG_BYTES = Buffer.from([
+  0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46,
+]);
 
 function pngFile(
   overrides: Partial<UploadedAttachmentFile> = {},
@@ -85,7 +91,12 @@ describe("AttachmentsService", () => {
     find: jest.Mock;
     findOne: jest.Mock;
     delete: jest.Mock;
+    createQueryBuilder: jest.Mock;
   };
+  /** The chainable query-builder double the list read walks. */
+  let qb: Record<string, jest.Mock>;
+  /** Every condition the list read applied, in order. */
+  let qbConditions: string[];
 
   beforeEach(() => {
     lockedParent = lockedTransactionRow({ id: "txn-1" });
@@ -96,6 +107,25 @@ describe("AttachmentsService", () => {
       },
       lockedParent ? [lockedParent] : [],
     );
+    // The list read is a query builder (it LEFT JOINs each visible row to its
+    // original), so the double is a chainable builder whose terminal call is
+    // `getRawAndEntities`. Every step returns the builder, which is what lets a
+    // spec assert the conditions the service actually applied.
+    qbConditions = [];
+    qb = {
+      leftJoin: jest.fn(() => qb),
+      addSelect: jest.fn(() => qb),
+      where: jest.fn((c: string) => {
+        qbConditions.push(c);
+        return qb;
+      }),
+      andWhere: jest.fn((c: string) => {
+        qbConditions.push(c);
+        return qb;
+      }),
+      orderBy: jest.fn(() => qb),
+      getRawAndEntities: jest.fn().mockResolvedValue({ entities: [], raw: [] }),
+    };
     attRepo = {
       count: jest.fn().mockResolvedValue(0),
       create: jest.fn((x) => x),
@@ -103,6 +133,7 @@ describe("AttachmentsService", () => {
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(),
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
+      createQueryBuilder: jest.fn(() => qb),
     };
 
     // `remove` deletes with a RETURNING statement, so the manager needs `query`
@@ -323,6 +354,176 @@ describe("AttachmentsService", () => {
      * could not enumerate them either. An upload intent committed before the put
      * is what makes the object findable whatever happens next.
      */
+    /**
+     * A scan pair: the enhanced image the user sees plus the photo it came
+     * from, in ONE request and ONE transaction. Two rows, two objects, and no
+     * intermediate state a reader can observe -- an original stored without its
+     * scan, or a scan reported as saved with the original silently dropped, are
+     * both worse than the upload failing.
+     */
+    describe("a scanned pair", () => {
+      const scan = () =>
+        pngFile({ originalname: "receipt-scan.jpg", buffer: PNG_BYTES });
+      const original = () =>
+        pngFile({ originalname: "receipt.jpg", buffer: JPEG_BYTES });
+
+      it("writes both rows and both objects, linking the original to the visible row", async () => {
+        const result = await service.create(
+          "user-1",
+          "txn-1",
+          scan(),
+          original(),
+        );
+
+        // The visible row is what the caller gets back, and it carries no link:
+        // the link lives on the original, pointing here.
+        expect(result.originalOfAttachmentId).toBeNull();
+        expect(attRepo.save).toHaveBeenCalledTimes(2);
+
+        const [visible, hidden] = attRepo.save.mock.calls.map((c) => c[0]);
+        expect(visible.id).toBe(result.id);
+        expect(hidden.originalOfAttachmentId).toBe(result.id);
+        expect(hidden.filename).toBe("receipt.jpg");
+        expect(hidden.byteSize).toBe(JPEG_BYTES.length);
+        expect(hidden.sha256).toBe(
+          createHash("sha256").update(JPEG_BYTES).digest("hex"),
+        );
+
+        // Both sets of bytes are stored, each under its own row's id.
+        expect(storage.save).toHaveBeenCalledTimes(2);
+        expect(storage.save).toHaveBeenCalledWith(result.id, PNG_BYTES);
+        expect(storage.save).toHaveBeenCalledWith(hidden.id, JPEG_BYTES);
+      });
+
+      // The foreign key is immediate, so the row being referenced has to exist
+      // before the row referencing it. Order is the whole of that guarantee.
+      it("saves the visible row before the original that references it", async () => {
+        const result = await service.create(
+          "user-1",
+          "txn-1",
+          scan(),
+          original(),
+        );
+
+        const savedIds = attRepo.save.mock.calls.map((c) => c[0].id);
+        expect(savedIds[0]).toBe(result.id);
+        expect(attRepo.save.mock.calls[0][0].originalOfAttachmentId).toBeNull();
+      });
+
+      it("counts the pair as one attachment against the cap", async () => {
+        await service.create("user-1", "txn-1", scan(), original());
+
+        // Primaries only -- an original consuming a slot would let ten scans
+        // fill a twenty-attachment transaction the user sees ten rows in.
+        expect(attRepo.count).toHaveBeenCalledTimes(1);
+        expect(attRepo.count.mock.calls[0][0].where).toMatchObject({
+          transactionId: "txn-1",
+          userId: "user-1",
+        });
+        expect(
+          attRepo.count.mock.calls[0][0].where.originalOfAttachmentId,
+        ).toBeDefined();
+      });
+
+      it("refuses a pair whose visible half is not an image", async () => {
+        await expect(
+          service.create(
+            "user-1",
+            "txn-1",
+            pngFile({ originalname: "invoice.pdf", buffer: PDF_BYTES }),
+            original(),
+          ),
+        ).rejects.toBeInstanceOf(UnsupportedMediaTypeException);
+        expect(attRepo.save).not.toHaveBeenCalled();
+        expect(storage.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses a pair whose original is not an image", async () => {
+        await expect(
+          service.create(
+            "user-1",
+            "txn-1",
+            scan(),
+            pngFile({ originalname: "scan.pdf", buffer: PDF_BYTES }),
+          ),
+        ).rejects.toBeInstanceOf(UnsupportedMediaTypeException);
+        expect(attRepo.save).not.toHaveBeenCalled();
+      });
+
+      // The original is stored, downloaded and restored by the same code as the
+      // visible file, so it is admitted on the same terms -- not weaker ones.
+      it("applies the size limit to the original too", async () => {
+        const huge = Buffer.concat([
+          PNG_BYTES,
+          Buffer.alloc(MAX_ATTACHMENT_BYTES),
+        ]);
+        await expect(
+          service.create(
+            "user-1",
+            "txn-1",
+            scan(),
+            pngFile({ buffer: huge, size: huge.length }),
+          ),
+        ).rejects.toBeInstanceOf(PayloadTooLargeException);
+        expect(attRepo.save).not.toHaveBeenCalled();
+      });
+
+      it("commits an upload intent for each object before writing either", async () => {
+        externalStorage();
+
+        await service.create("user-1", "txn-1", scan(), original());
+
+        const inserts = managerQuery.mock.calls.filter(([sql]) =>
+          String(sql).includes("INSERT INTO attachment_blob_tombstones"),
+        );
+        expect(inserts).toHaveLength(2);
+        // Both intents precede both puts: a rollback between the two writes
+        // still leaves the sweeper able to enumerate either object.
+        expect(storage.save).toHaveBeenCalledTimes(2);
+      });
+
+      // The pair can fail with one object already durable and the other not, so
+      // the compensation is per key rather than a single boolean.
+      it("deletes only the object it managed to write when the second put fails", async () => {
+        externalStorage();
+        storage.save
+          .mockResolvedValueOnce(undefined)
+          .mockRejectedValueOnce(new Error("s3 down"));
+
+        await expect(
+          service.create("user-1", "txn-1", scan(), original()),
+        ).rejects.toThrow("s3 down");
+
+        const writtenId = storage.save.mock.calls[0][0];
+        expect(storage.delete).toHaveBeenCalledTimes(1);
+        expect(storage.delete).toHaveBeenCalledWith(writtenId);
+      });
+
+      it("deletes both objects when the transaction rolls back after both puts", async () => {
+        externalStorage();
+        // Three transactions for a pair: one upload intent per object, each on
+        // its own connection so it survives this rollback, then the metadata
+        // one that fails. Only the last may throw, or the puts never happen and
+        // the test would pass with nothing to clean up.
+        mockedTenantTx
+          .mockImplementationOnce((_ds, fn) => fn(manager))
+          .mockImplementationOnce((_ds, fn) => fn(manager))
+          .mockImplementationOnce(async (_ds, fn) => {
+            await fn(manager);
+            throw new Error("commit failed");
+          });
+
+        await expect(
+          service.create("user-1", "txn-1", scan(), original()),
+        ).rejects.toThrow("commit failed");
+
+        expect(storage.delete).toHaveBeenCalledTimes(2);
+        const deleted = storage.delete.mock.calls.map((c) => c[0]).sort();
+        const written = storage.save.mock.calls.map((c) => c[0]).sort();
+        expect(deleted).toEqual(written);
+      });
+    });
+
     describe("the upload intent", () => {
       /** The tombstone inserts recorded across every transaction this run opened. */
       function intentInserts(): unknown[][] {
@@ -459,13 +660,45 @@ describe("AttachmentsService", () => {
   describe("findAllForTransaction", () => {
     it("lists metadata scoped to the user and transaction", async () => {
       const rows = [{ id: "a1" }] as TransactionAttachment[];
-      attRepo.find.mockResolvedValue(rows);
-      const result = await service.findAllForTransaction("user-1", "txn-1");
-      expect(result).toBe(rows);
-      expect(attRepo.find).toHaveBeenCalledWith({
-        where: { transactionId: "txn-1", userId: "user-1" },
-        order: { createdAt: "ASC" },
+      qb.getRawAndEntities.mockResolvedValue({
+        entities: rows,
+        raw: [{ orig_id: null }],
       });
+
+      const result = await service.findAllForTransaction("user-1", "txn-1");
+
+      expect(result).toEqual([{ id: "a1", originalAttachmentId: null }]);
+      expect(qb.where).toHaveBeenCalledWith(
+        "ta.transaction_id = :transactionId",
+        {
+          transactionId: "txn-1",
+        },
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith("ta.user_id = :userId", {
+        userId: "user-1",
+      });
+    });
+
+    // The list is what the user sees, and a scan pair is one attachment: the
+    // original travels as an id on its visible row, never as a row of its own.
+    it("hides originals and carries each one's id on its visible row", async () => {
+      qb.getRawAndEntities.mockResolvedValue({
+        entities: [
+          { id: "scan-1" },
+          { id: "plain-1" },
+        ] as TransactionAttachment[],
+        raw: [{ orig_id: "orig-1" }, { orig_id: null }],
+      });
+
+      const result = await service.findAllForTransaction("user-1", "txn-1");
+
+      expect(result).toEqual([
+        { id: "scan-1", originalAttachmentId: "orig-1" },
+        { id: "plain-1", originalAttachmentId: null },
+      ]);
+      // Not spelled out here: the shared predicate is the only place it is
+      // written, and `primary-attachment.guard.spec.ts` fails a second copy.
+      expect(qbConditions).toContain("ta.original_of_attachment_id IS NULL");
     });
   });
 
@@ -513,6 +746,25 @@ describe("AttachmentsService", () => {
       // The external delete happens AFTER the metadata delete has committed, so
       // a commit failure cannot leave metadata pointing at bytes that are gone.
       expect(orphanSweeper.sweepKey).toHaveBeenCalledWith("a1");
+    });
+
+    // Deleting a scan pair deletes both rows. The database cascade would remove
+    // the original anyway; naming it in the statement is what RETURNS its key,
+    // so its bytes go now instead of waiting for the hourly sweep.
+    it("deletes a scan pair's original with it and sweeps both objects", async () => {
+      managerQuery.mockResolvedValue([
+        { storage_key: "visible-1" },
+        { storage_key: "original-1" },
+      ]);
+
+      await service.remove("user-1", "visible-1");
+
+      const [sql, params] = managerQuery.mock.calls[0];
+      expect(sql).toContain("original_of_attachment_id = $1");
+      expect(params).toEqual(["visible-1", "user-1"]);
+      expect(orphanSweeper.sweepKey).toHaveBeenCalledTimes(2);
+      expect(orphanSweeper.sweepKey).toHaveBeenCalledWith("visible-1");
+      expect(orphanSweeper.sweepKey).toHaveBeenCalledWith("original-1");
     });
 
     it("throws when the attachment is not found for the user", async () => {
