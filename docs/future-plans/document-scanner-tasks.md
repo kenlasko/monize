@@ -17,13 +17,13 @@ stop and re-read I1.
 | ID | Task | Depends on | Deploy impact | Status |
 |----|------|-----------|---------------|--------|
 | S1 | Design + task docs (this file) | -- | none | [x] |
-| D1 | Migration: `original_of_attachment_id` + CHECK + partial unique index; restore plan deferral | S1 | inert | [ ] |
-| B1 | Backend: pair upload, primary-attachment predicate, list with `originalAttachmentId`, pair delete | D1 | neutral | [ ] |
-| F1 | Frontend engine: OpenCV.js dependency, worker, pipeline, quality checks, client, hook, CSP | S1 | inert | [ ] |
-| F2 | `DocumentScanDialog` + `DocumentCornerHandles` | F1 | inert | [ ] |
-| F3 | `AttachmentsSection` integration: scan control, staged pairs, API client, "View original" | B1, F2 | neutral | [ ] |
-| V1 | Playwright journey (`e2e/tests/attachments.spec.ts`) | F3 | none | [ ] |
-| Q1 | Contract docs + full-locale i18n pass (final acceptance commit) | all above | none | [ ] |
+| D1 | Migration: `original_of_attachment_id` + CHECK + partial unique index; restore plan deferral | S1 | inert | [x] |
+| B1 | Backend: pair upload, primary-attachment predicate, list with `originalAttachmentId`, pair delete | D1 | neutral | [x] |
+| F1 | Frontend engine: OpenCV.js dependency, worker, pipeline, quality checks, client, hook, CSP | S1 | inert | [x] |
+| F2 | `DocumentScanDialog` + `DocumentCornerHandles` | F1 | inert | [x] |
+| F3 | `AttachmentsSection` integration: scan control, staged pairs, API client, "View original" | B1, F2 | neutral | [x] |
+| V1 | Playwright journey (`e2e/tests/attachments.spec.ts`) | F3 | none | [x] |
+| Q1 | Contract docs + full-locale i18n pass (final acceptance commit) | all above | none | [x] |
 
 B1 is neutral because no client sends the `original` part until F3; F1 and F2
 are inert because nothing mounts them until F3. F3 is the commit that turns the
