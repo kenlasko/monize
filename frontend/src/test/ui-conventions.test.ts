@@ -405,12 +405,23 @@ describe("a tab bar is the shared Tabs component", () => {
   const TABLIST = /role=["']tablist["']/;
 
   it("declares role=tablist in exactly one place", () => {
+    // Comments stripped, like the other scans whose banned pattern has to be
+    // NAMED to explain itself: a call site that deliberately uses two buttons
+    // instead says so, and quoting the role it avoided is not a violation.
     const offenders = productionSources()
       .filter(([path]) => path !== SHARED)
-      .filter(([, source]) => TABLIST.test(source))
+      .filter(([, source]) => TABLIST.test(withoutComments(source)))
       .map(([path]) => path);
 
     expect(offenders).toEqual([]);
+  });
+
+  it("reads a tablist in code but not one named in a comment", () => {
+    // Both directions, so the stripping cannot quietly disarm the rule.
+    expect(TABLIST.test(withoutComments('<div role="tablist">'))).toBe(true);
+    expect(
+      TABLIST.test(withoutComments('// never hand-roll role="tablist"')),
+    ).toBe(false);
   });
 
   it("still finds the shared tablist, so the rule cannot pass by accident", () => {
