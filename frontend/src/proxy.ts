@@ -61,7 +61,12 @@ function buildCspHeader(nonce: string): string {
   const isDev = process.env.NODE_ENV !== 'production';
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
+    // 'wasm-unsafe-eval' is what lets WebAssembly.instantiate run at all under
+    // a nonce policy; without it the document scanner's engine is refused with
+    // no visible error. It permits WASM compilation only -- it does NOT bring
+    // back eval() for JavaScript, which is why it is separate from the dev-only
+    // 'unsafe-eval' beside it.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",

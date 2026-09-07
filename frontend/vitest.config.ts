@@ -22,6 +22,10 @@ export default defineConfig({
         'src/app/manifest.webmanifest/route.ts',
         'src/proxy.ts',
         'src/types/**',
+        // The worker entry point needs a real `Worker` global, which no test
+        // environment provides. Everything it delegates to is covered
+        // (`document-scan-messages.ts`), and a guard keeps it that thin.
+        'src/lib/document-scanner/document-scan.worker.ts',
       ],
       thresholds: {
         branches: 84,

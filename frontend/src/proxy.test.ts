@@ -204,6 +204,30 @@ describe('proxy security headers', () => {
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
   });
 
+  /**
+   * The document scanner compiles a WebAssembly build in a worker, and under a
+   * nonce policy `WebAssembly.instantiate` is refused without this source --
+   * silently, with nothing in the console pointing at the CSP. It permits WASM
+   * compilation only; it does not restore `eval()` for JavaScript.
+   */
+  it('allows WebAssembly compilation in script-src', async () => {
+    // A public page, so the response is the app shell itself rather than a
+    // redirect -- the CSP is set on what actually renders the scanner.
+    const request = makeRequest('/login', { headers: { accept: 'text/html' } });
+    const response = await proxy(request);
+
+    const csp = response.headers.get('Content-Security-Policy') ?? '';
+    const scriptSrc = csp
+      .split(';')
+      .map((directive) => directive.trim())
+      .find((directive) => directive.startsWith('script-src'));
+
+    expect(scriptSrc).toContain("'wasm-unsafe-eval'");
+    // The nonce policy it sits beside is unchanged.
+    expect(scriptSrc).toContain("'strict-dynamic'");
+    expect(scriptSrc).toContain("'self'");
+  });
+
   it('sets security headers on the 502 backend-unavailable fallback', async () => {
     delete process.env.DISABLE_HTTPS_HEADERS;
     const fetchMock = vi.fn().mockRejectedValue(new Error('connection refused'));
