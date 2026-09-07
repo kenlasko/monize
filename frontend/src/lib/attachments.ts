@@ -19,9 +19,23 @@ export const attachmentsApi = {
     return response.data;
   },
 
-  upload: async (transactionId: string, file: File): Promise<Attachment> => {
+  /**
+   * Upload one attachment, optionally with the unprocessed photo it was
+   * scanned from.
+   *
+   * Both parts travel in ONE request because the server writes them in one
+   * transaction: uploading the original separately would leave a window where
+   * the pair is half stored, and a failure would leave an orphan the user can
+   * see but not explain.
+   */
+  upload: async (
+    transactionId: string,
+    file: File,
+    original?: File,
+  ): Promise<Attachment> => {
     const formData = new FormData();
     formData.append('file', file);
+    if (original) formData.append('original', original);
     const response = await apiClient.post<Attachment>(
       `/transactions/${transactionId}/attachments`,
       formData,

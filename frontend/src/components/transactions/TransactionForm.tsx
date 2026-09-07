@@ -61,6 +61,7 @@ import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { AttachmentsSection } from './AttachmentsSection';
 import { attachmentsApi } from '@/lib/attachments';
+import type { StagedAttachment } from '@/types/attachment';
 import { optionalUuid, optionalString } from '@/lib/zod-helpers';
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
@@ -170,7 +171,9 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   const canCreateAnother = !transaction && !!onCreateAnother;
   // Files chosen in the New Transaction window before the transaction exists;
   // uploaded once it has been created. Empty (and unused) when editing.
-  const [stagedAttachments, setStagedAttachments] = useState<File[]>([]);
+  const [stagedAttachments, setStagedAttachments] = useState<
+    StagedAttachment[]
+  >([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transferCandidates, setTransferCandidates] = useState<
     TransferCandidate[]
@@ -1148,9 +1151,12 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   const uploadStagedAttachments = async (newTransactionId: string) => {
     if (stagedAttachments.length === 0) return;
     let failed = 0;
-    for (const file of stagedAttachments) {
+    for (const { file, original } of stagedAttachments) {
       try {
-        await attachmentsApi.upload(newTransactionId, file);
+        // Both halves of a scan pair go in ONE request: the server writes them
+        // in one transaction, so uploading the original separately would leave
+        // a window where the pair is half stored.
+        await attachmentsApi.upload(newTransactionId, file, original);
       } catch (error) {
         failed += 1;
         logger.error('Failed to upload staged attachment:', error);

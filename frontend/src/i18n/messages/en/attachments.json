@@ -24,6 +24,7 @@
     "failed": "The document could not be scanned. You can still attach the photo as it is.",
     "viewEnhanced": "Enhanced",
     "viewOriginal": "Original",
+    "viewOriginalFile": "View original",
     "rotate": "Rotate",
     "adjustHint": "Switch to Original to drag the corners if the edges are wrong.",
     "noDocumentFound": "No document edges were found, so the whole photo was used. Switch to Original and drag the corners to set them yourself.",
@@ -45,6 +46,7 @@
       "topRight": "Top-right corner",
       "bottomRight": "Bottom-right corner",
       "bottomLeft": "Bottom-left corner"
-    }
+    },
+    "originalKept": "original kept"
   }
 }
