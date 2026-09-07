@@ -590,7 +590,8 @@
     "fileTooLarge": "El archivo supera el tamaño máximo de {{ max }} bytes",
     "unsupportedType": "Tipo de archivo no admitido. Tipos permitidos: {{ types }}",
     "tooMany": "Esta transacción ya tiene el máximo de {{ max }} adjuntos",
-    "swept": "La subida tardó demasiado y su almacenamiento se liberó. Vuelve a intentarlo."
+    "swept": "La subida tardó demasiado y su almacenamiento se liberó. Vuelve a intentarlo.",
+    "pairRequiresImages": "Un documento escaneado y su original deben ser ambos imágenes"
   },
   "strategies": {
     "accountNotFound": "Cuenta no encontrada",

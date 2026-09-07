@@ -15,5 +15,38 @@
   "deleteFailed": "첨부 파일을 삭제하지 못했습니다",
   "tooLarge": "파일이 너무 큽니다 (최대 {max})",
   "unsupported": "지원되지 않는 파일 형식입니다. 허용: 이미지 또는 PDF",
-  "tooMany": "거래당 첨부 파일은 최대 {max}개까지 가능합니다"
+  "tooMany": "거래당 첨부 파일은 최대 {max}개까지 가능합니다",
+  "scan": {
+    "button": "문서 스캔",
+    "title": "문서 스캔",
+    "description": "문서 사진을 첨부하기 전에 기울기를 바로잡고 깔끔하게 정리합니다.",
+    "analysing": "사진에서 문서를 찾는 중…",
+    "failed": "문서를 스캔하지 못했습니다. 사진은 그대로 첨부할 수 있습니다.",
+    "viewEnhanced": "보정본",
+    "viewOriginal": "원본",
+    "viewOriginalFile": "원본 보기",
+    "rotate": "회전",
+    "adjustHint": "가장자리가 잘못되었다면 “원본”으로 전환해 모서리를 끌어 조정하세요.",
+    "noDocumentFound": "문서 가장자리를 찾지 못해 사진 전체를 사용했습니다. “원본”으로 전환해 모서리를 직접 지정하세요.",
+    "previewEnhancedAlt": "보정된 스캔 미리보기",
+    "previewOriginalAlt": "원본 사진 미리보기",
+    "useEnhanced": "보정본 사용",
+    "keepOriginal": "원본만 보관",
+    "retake": "다시 촬영",
+    "cancel": "취소",
+    "originalTooLarge": "원본 사진이 {max}보다 커서 보정된 스캔만 첨부됩니다.",
+    "warnings": {
+      "blurry": "사진이 흐릿해 보입니다. 다시 촬영하면 더 선명한 스캔을 얻을 수 있습니다.",
+      "edgesOutsideFrame": "문서 일부가 사진 밖에 있을 수 있습니다. 페이지 전체가 들어오도록 다시 촬영하세요.",
+      "lowResolution": "스캔이 다소 작아 작은 글씨는 읽기 어려울 수 있습니다."
+    },
+    "corners": {
+      "label": "문서 모서리",
+      "topLeft": "왼쪽 위 모서리",
+      "topRight": "오른쪽 위 모서리",
+      "bottomRight": "오른쪽 아래 모서리",
+      "bottomLeft": "왼쪽 아래 모서리"
+    },
+    "originalKept": "원본 보관됨"
+  }
 }

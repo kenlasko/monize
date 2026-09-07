@@ -15,5 +15,38 @@
   "deleteFailed": "Anhang konnte nicht gelöscht werden",
   "tooLarge": "Datei ist zu groß (maximal {max})",
   "unsupported": "Nicht unterstützter Dateityp. Erlaubt: Bilder oder PDF",
-  "tooMany": "Maximal {max} Anhänge pro Transaktion"
+  "tooMany": "Maximal {max} Anhänge pro Transaktion",
+  "scan": {
+    "button": "Dokument scannen",
+    "title": "Dokument scannen",
+    "description": "Ein Foto eines Dokuments vor dem Anhängen begradigen und aufbereiten.",
+    "analysing": "Dokument wird im Foto gesucht…",
+    "failed": "Das Dokument konnte nicht gescannt werden. Sie können das Foto trotzdem unverändert anhängen.",
+    "viewEnhanced": "Aufbereitet",
+    "viewOriginal": "Original",
+    "viewOriginalFile": "Original ansehen",
+    "rotate": "Drehen",
+    "adjustHint": "Wechseln Sie zu „Original“, um die Ecken zu ziehen, falls die Kanten falsch sind.",
+    "noDocumentFound": "Es wurden keine Dokumentkanten gefunden, daher wurde das ganze Foto verwendet. Wechseln Sie zu „Original“ und ziehen Sie die Ecken selbst.",
+    "previewEnhancedAlt": "Vorschau des aufbereiteten Scans",
+    "previewOriginalAlt": "Vorschau des Originalfotos",
+    "useEnhanced": "Aufbereitete Version verwenden",
+    "keepOriginal": "Nur Original behalten",
+    "retake": "Neu aufnehmen",
+    "cancel": "Abbrechen",
+    "originalTooLarge": "Das Originalfoto ist größer als {max}, daher wird nur der aufbereitete Scan angehängt.",
+    "warnings": {
+      "blurry": "Das Foto wirkt unscharf. Eine neue Aufnahme ergibt einen schärferen Scan.",
+      "edgesOutsideFrame": "Ein Teil des Dokuments liegt möglicherweise außerhalb des Fotos. Nehmen Sie es mit der ganzen Seite im Bild neu auf.",
+      "lowResolution": "Der Scan ist recht klein, kleine Schrift kann schwer lesbar sein."
+    },
+    "corners": {
+      "label": "Dokumentecken",
+      "topLeft": "Ecke oben links",
+      "topRight": "Ecke oben rechts",
+      "bottomRight": "Ecke unten rechts",
+      "bottomLeft": "Ecke unten links"
+    },
+    "originalKept": "Original behalten"
+  }
 }

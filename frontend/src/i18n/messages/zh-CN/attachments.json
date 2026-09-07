@@ -15,5 +15,38 @@
   "deleteFailed": "删除附件失败",
   "tooLarge": "文件过大（最大 {max}）",
   "unsupported": "不支持的文件类型。允许：图片或 PDF",
-  "tooMany": "每笔交易最多 {max} 个附件"
+  "tooMany": "每笔交易最多 {max} 个附件",
+  "scan": {
+    "button": "扫描文档",
+    "title": "扫描文档",
+    "description": "在附加前将文档照片校正并清理干净。",
+    "analysing": "正在照片中寻找文档…",
+    "failed": "无法扫描该文档。您仍可以按原样附加这张照片。",
+    "viewEnhanced": "增强版",
+    "viewOriginal": "原图",
+    "viewOriginalFile": "查看原图",
+    "rotate": "旋转",
+    "adjustHint": "如果边缘不正确，请切换到“原图”并拖动四角。",
+    "noDocumentFound": "未找到文档边缘，因此使用了整张照片。请切换到“原图”并自行拖动四角。",
+    "previewEnhancedAlt": "增强扫描预览",
+    "previewOriginalAlt": "原始照片预览",
+    "useEnhanced": "使用增强版",
+    "keepOriginal": "仅保留原图",
+    "retake": "重拍",
+    "cancel": "取消",
+    "originalTooLarge": "原始照片超过 {max}，因此只会附加增强后的扫描件。",
+    "warnings": {
+      "blurry": "照片看起来有些模糊。重拍可以获得更清晰的扫描件。",
+      "edgesOutsideFrame": "文档的一部分可能在照片之外。请将整页纳入画面后重拍。",
+      "lowResolution": "扫描件较小，细小的文字可能不易辨认。"
+    },
+    "corners": {
+      "label": "文档四角",
+      "topLeft": "左上角",
+      "topRight": "右上角",
+      "bottomRight": "右下角",
+      "bottomLeft": "左下角"
+    },
+    "originalKept": "已保留原图"
+  }
 }

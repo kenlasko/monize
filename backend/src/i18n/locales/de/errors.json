@@ -590,7 +590,8 @@
     "fileTooLarge": "Die Datei überschreitet die maximale Größe von {{ max }} Bytes",
     "unsupportedType": "Nicht unterstützter Dateityp. Erlaubte Typen: {{ types }}",
     "tooMany": "Diese Transaktion hat bereits die maximale Anzahl von {{ max }} Anhängen",
-    "swept": "Der Upload hat zu lange gedauert und sein Speicherplatz wurde freigegeben. Bitte versuchen Sie es erneut."
+    "swept": "Der Upload hat zu lange gedauert und sein Speicherplatz wurde freigegeben. Bitte versuchen Sie es erneut.",
+    "pairRequiresImages": "Ein gescanntes Dokument und sein Original müssen beide Bilder sein"
   },
   "strategies": {
     "accountNotFound": "Konto nicht gefunden",

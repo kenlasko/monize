@@ -590,7 +590,8 @@
     "fileTooLarge": "Le fichier dépasse la taille maximale de {{ max }} octets",
     "unsupportedType": "Type de fichier non pris en charge. Types autorisés : {{ types }}",
     "tooMany": "Cette transaction a déjà le maximum de {{ max }} pièces jointes",
-    "swept": "Le téléversement a pris trop de temps et son stockage a été récupéré. Veuillez réessayer."
+    "swept": "Le téléversement a pris trop de temps et son stockage a été récupéré. Veuillez réessayer.",
+    "pairRequiresImages": "Un document numérisé et son original doivent tous deux être des images"
   },
   "strategies": {
     "accountNotFound": "Compte introuvable",

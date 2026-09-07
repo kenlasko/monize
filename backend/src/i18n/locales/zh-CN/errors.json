@@ -590,7 +590,8 @@
     "fileTooLarge": "文件超过最大大小 {{ max }} 字节",
     "unsupportedType": "不支持的文件类型。允许的类型：{{ types }}",
     "tooMany": "此交易已达到最多 {{ max }} 个附件的上限",
-    "swept": "上传耗时过长，其存储空间已被回收。请重试。"
+    "swept": "上传耗时过长，其存储空间已被回收。请重试。",
+    "pairRequiresImages": "扫描的文档及其原图都必须是图片"
   },
   "strategies": {
     "accountNotFound": "未找到账户",

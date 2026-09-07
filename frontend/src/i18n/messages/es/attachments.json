@@ -15,5 +15,38 @@
   "deleteFailed": "No se pudo eliminar el adjunto",
   "tooLarge": "El archivo es demasiado grande (máximo {max})",
   "unsupported": "Tipo de archivo no admitido. Se permiten: imágenes o PDF",
-  "tooMany": "Máximo {max} adjuntos por transacción"
+  "tooMany": "Máximo {max} adjuntos por transacción",
+  "scan": {
+    "button": "Escanear documento",
+    "title": "Escanear documento",
+    "description": "Endereza y limpia la foto de un documento antes de adjuntarla.",
+    "analysing": "Buscando un documento en la foto…",
+    "failed": "No se pudo escanear el documento. Aun así puede adjuntar la foto tal cual.",
+    "viewEnhanced": "Mejorada",
+    "viewOriginal": "Original",
+    "viewOriginalFile": "Ver original",
+    "rotate": "Girar",
+    "adjustHint": "Cambie a «Original» para arrastrar las esquinas si los bordes no son correctos.",
+    "noDocumentFound": "No se encontraron los bordes del documento, así que se usó la foto completa. Cambie a «Original» y arrastre las esquinas usted mismo.",
+    "previewEnhancedAlt": "Vista previa del escaneo mejorado",
+    "previewOriginalAlt": "Vista previa de la foto original",
+    "useEnhanced": "Usar la mejorada",
+    "keepOriginal": "Conservar solo el original",
+    "retake": "Repetir foto",
+    "cancel": "Cancelar",
+    "originalTooLarge": "La foto original supera {max}, así que solo se adjuntará el escaneo mejorado.",
+    "warnings": {
+      "blurry": "La foto parece borrosa. Repetirla dará un escaneo más nítido.",
+      "edgesOutsideFrame": "Puede que parte del documento quede fuera de la foto. Repítala con toda la página encuadrada.",
+      "lowResolution": "El escaneo es bastante pequeño, la letra pequeña puede costar de leer."
+    },
+    "corners": {
+      "label": "Esquinas del documento",
+      "topLeft": "Esquina superior izquierda",
+      "topRight": "Esquina superior derecha",
+      "bottomRight": "Esquina inferior derecha",
+      "bottomLeft": "Esquina inferior izquierda"
+    },
+    "originalKept": "original conservado"
+  }
 }

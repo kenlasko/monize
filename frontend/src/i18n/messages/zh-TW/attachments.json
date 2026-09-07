@@ -15,5 +15,38 @@
   "deleteFailed": "刪除附件失敗",
   "tooLarge": "檔案過大（最大 {max}）",
   "unsupported": "不支援的檔案類型。允許：圖片或 PDF",
-  "tooMany": "每筆交易最多 {max} 個附件"
+  "tooMany": "每筆交易最多 {max} 個附件",
+  "scan": {
+    "button": "掃描文件",
+    "title": "掃描文件",
+    "description": "在附加前將文件照片校正並清理乾淨。",
+    "analysing": "正在照片中尋找文件…",
+    "failed": "無法掃描此文件。您仍可依原樣附加這張照片。",
+    "viewEnhanced": "強化版",
+    "viewOriginal": "原圖",
+    "viewOriginalFile": "檢視原圖",
+    "rotate": "旋轉",
+    "adjustHint": "若邊緣不正確，請切換到「原圖」並拖曳四角。",
+    "noDocumentFound": "找不到文件邊緣，因此使用了整張照片。請切換到「原圖」並自行拖曳四角。",
+    "previewEnhancedAlt": "強化掃描預覽",
+    "previewOriginalAlt": "原始照片預覽",
+    "useEnhanced": "使用強化版",
+    "keepOriginal": "僅保留原圖",
+    "retake": "重拍",
+    "cancel": "取消",
+    "originalTooLarge": "原始照片超過 {max}，因此只會附加強化後的掃描檔。",
+    "warnings": {
+      "blurry": "照片看起來有些模糊。重拍可獲得更清晰的掃描檔。",
+      "edgesOutsideFrame": "文件的一部分可能在照片之外。請將整頁納入畫面後重拍。",
+      "lowResolution": "掃描檔較小，細小的文字可能不易辨認。"
+    },
+    "corners": {
+      "label": "文件四角",
+      "topLeft": "左上角",
+      "topRight": "右上角",
+      "bottomRight": "右下角",
+      "bottomLeft": "左下角"
+    },
+    "originalKept": "已保留原圖"
+  }
 }

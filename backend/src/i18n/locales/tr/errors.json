@@ -590,7 +590,8 @@
     "fileTooLarge": "Dosya, {{ max }} baytlık maksimum boyutu aşıyor",
     "unsupportedType": "Desteklenmeyen dosya türü. İzin verilen türler: {{ types }}",
     "tooMany": "Bu işlemde zaten en fazla {{ max }} ek var",
-    "swept": "Yükleme çok uzun sürdü ve depolama alanı geri alındı. Lütfen tekrar deneyin."
+    "swept": "Yükleme çok uzun sürdü ve depolama alanı geri alındı. Lütfen tekrar deneyin.",
+    "pairRequiresImages": "Taranan bir belge ve orijinali ikisi de görsel olmalıdır"
   },
   "strategies": {
     "accountNotFound": "Hesap bulunamadı",

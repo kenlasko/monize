@@ -15,5 +15,38 @@
   "deleteFailed": "Échec de la suppression de la pièce jointe",
   "tooLarge": "Le fichier est trop volumineux (maximum {max})",
   "unsupported": "Type de fichier non pris en charge. Autorisés : images ou PDF",
-  "tooMany": "Maximum {max} pièces jointes par transaction"
+  "tooMany": "Maximum {max} pièces jointes par transaction",
+  "scan": {
+    "button": "Numériser un document",
+    "title": "Numériser un document",
+    "description": "Redressez et nettoyez la photo d’un document avant de la joindre.",
+    "analysing": "Recherche d’un document dans la photo…",
+    "failed": "Le document n’a pas pu être numérisé. Vous pouvez tout de même joindre la photo telle quelle.",
+    "viewEnhanced": "Améliorée",
+    "viewOriginal": "Original",
+    "viewOriginalFile": "Voir l’original",
+    "rotate": "Pivoter",
+    "adjustHint": "Passez à « Original » pour déplacer les coins si les bords sont incorrects.",
+    "noDocumentFound": "Aucun bord de document n’a été trouvé, la photo entière a donc été utilisée. Passez à « Original » et placez les coins vous-même.",
+    "previewEnhancedAlt": "Aperçu du scan amélioré",
+    "previewOriginalAlt": "Aperçu de la photo d’origine",
+    "useEnhanced": "Utiliser la version améliorée",
+    "keepOriginal": "Conserver l’original seulement",
+    "retake": "Reprendre",
+    "cancel": "Annuler",
+    "originalTooLarge": "La photo d’origine dépasse {max}, seul le scan amélioré sera joint.",
+    "warnings": {
+      "blurry": "La photo semble floue. La reprendre donnera un scan plus net.",
+      "edgesOutsideFrame": "Une partie du document est peut-être hors du cadre. Reprenez la photo avec toute la page visible.",
+      "lowResolution": "Le scan est assez petit, les petits caractères peuvent être difficiles à lire."
+    },
+    "corners": {
+      "label": "Coins du document",
+      "topLeft": "Coin supérieur gauche",
+      "topRight": "Coin supérieur droit",
+      "bottomRight": "Coin inférieur droit",
+      "bottomLeft": "Coin inférieur gauche"
+    },
+    "originalKept": "original conservé"
+  }
 }

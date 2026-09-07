@@ -109,6 +109,7 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-MCP-004 answered before written | **required** | **required** | -- | -- | -- | -- | -- | -- |
 | INV-CURRENCY-001 currency delete | supporting | **required** | required | required | -- | -- | -- | optional |
 | INV-ATTACHMENT-001 bytes present | supporting | -- | required | optional | -- | **required** | **required** | required |
+| INV-ATTACHMENT-002 scan pair is one | **required** | **required** | **required** | -- | -- | -- | -- | **required** |
 | INV-BACKUP-001 backup complete | supporting | -- | required | -- | optional | **required** | **required** | required |
 | INV-PUSH-001 subscription ownership | required | -- | **required** | required (not yet met) | -- | -- | -- | optional |
 | INV-PUSH-002 private key stays server-side | supporting | **required** | -- | -- | -- | -- | -- | -- |

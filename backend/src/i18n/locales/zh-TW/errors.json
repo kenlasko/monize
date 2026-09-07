@@ -590,7 +590,8 @@
     "fileTooLarge": "檔案超過最大大小 {{ max }} 位元組",
     "unsupportedType": "不支援的檔案類型。允許的類型：{{ types }}",
     "tooMany": "此交易已達到最多 {{ max }} 個附件的上限",
-    "swept": "上傳耗時過長，其儲存空間已被回收。請重試。"
+    "swept": "上傳耗時過長，其儲存空間已被回收。請重試。",
+    "pairRequiresImages": "掃描的文件及其原圖都必須是圖片"
   },
   "strategies": {
     "accountNotFound": "找不到帳戶",

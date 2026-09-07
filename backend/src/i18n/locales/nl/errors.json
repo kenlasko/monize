@@ -590,7 +590,8 @@
     "fileTooLarge": "Bestand overschrijdt de maximale grootte van {{ max }} bytes",
     "unsupportedType": "Niet-ondersteund bestandstype. Toegestane types: {{ types }}",
     "tooMany": "Deze transactie heeft al het maximum van {{ max }} bijlagen",
-    "swept": "Het uploaden duurde te lang en de opslag is vrijgegeven. Probeer het opnieuw."
+    "swept": "Het uploaden duurde te lang en de opslag is vrijgegeven. Probeer het opnieuw.",
+    "pairRequiresImages": "Een gescand document en het origineel moeten allebei afbeeldingen zijn"
   },
   "strategies": {
     "accountNotFound": "Rekening niet gevonden",

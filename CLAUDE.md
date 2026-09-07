@@ -137,6 +137,24 @@ So a backup's owner is recoverable from its path and **an attachment's owner is 
 
 A path built from an id must still be validated (`isShardableId`) and asserted to resolve inside its base before it reaches the filesystem, even when the id is server-generated (CWE-22).
 
+### A scanned document and its original are one attachment
+
+A scan is stored as two rows -- the enhanced image the user sees and the photo
+it came from -- linked by `transaction_attachments.original_of_attachment_id`,
+which is set on the ORIGINAL and NULL on everything a user is meant to see. So
+"is this a visible attachment" is a predicate, not a table scan, and it is
+written once: `primaryAttachmentWhere` / `primaryAttachmentSql`
+(`backend/src/attachments/primary-attachment.util.ts`). Its four readers -- the
+per-transaction cap, the list, the register's `attachmentCount` and the
+`hasAttachments` filter -- all go through it, because four hand-written copies
+of one condition is how a list showing one attachment ends up beside a register
+cell reading "2". `primary-attachment.guard.spec.ts` fails the column being
+named anywhere else without a reason on the record. INV-ATTACHMENT-002.
+
+The pair is written in one transaction and deleted by one cascade; a caller
+that wants both halves sends them in one request (`upload(id, file, original)`)
+rather than uploading the original afterwards.
+
 ### Security (Do Not Regress)
 - Parameterized queries only (TypeORM QueryBuilder or parameterized raw SQL). Never interpolate user input into SQL strings
 - All controllers use `@UseGuards(AuthGuard('jwt'))` at class level (except health + auth)

@@ -122,6 +122,7 @@ implied.
 | INV-MCP-004 | A write happens only on the round a human answered | enforced |
 | INV-CURRENCY-001 | A shared currency is deleted only by its creator, on a global count | enforced |
 | INV-ATTACHMENT-001 | Available metadata resolves to committed bytes | enforced |
+| INV-ATTACHMENT-002 | A scanned document and its original are one attachment | enforced |
 | INV-BACKUP-001 | A backup file is complete, verified and owner-namespaced | enforced |
 | INV-PUSH-001 | A push subscription belongs to the authenticated caller, and no request touches another account's device | enforced |
 | INV-PUSH-002 | The VAPID private key never leaves the server, and is never stored unencrypted | enforced |
@@ -2165,6 +2166,40 @@ Retry semantics     Deletes are idempotent on a missing key; a failed create's
                     bytes are swept.
 Crash semantics     A transient orphan on rollback is durably recoverable by the
                     sweeper, not silent.
+Status              enforced
+```
+
+### INV-ATTACHMENT-002 -- a scan pair is one attachment
+
+```text
+Statement           A scanned document and the unprocessed photo it came from
+                    are one attachment to every reader: one row in the list,
+                    one against the per-transaction cap, one in the register's
+                    attachment count, one in the has-attachments filter. They
+                    are written together or not at all, and deleting the
+                    visible one deletes the original.
+Enforcement         `transaction_attachments.original_of_attachment_id` is set
+                    on the ORIGINAL and points at the visible row, so "a
+                    visible attachment" is `IS NULL` on that column -- written
+                    once in `backend/src/attachments/primary-attachment.util.ts`
+                    and used by all four readers, with
+                    `primary-attachment.guard.spec.ts` failing a second copy.
+                    The link carries ON DELETE CASCADE and a partial unique
+                    index (at most one original per attachment); a CHECK stops
+                    a row being its own original. Both rows and both objects
+                    are written inside one `withScopedDb`, the visible row
+                    first because the foreign key is immediate, each object
+                    behind its own upload intent so INV-ATTACHMENT-001 holds
+                    per object. `remove` deletes both and returns both storage
+                    keys, so the bytes are swept immediately rather than by the
+                    hourly pass.
+Concurrency scope   per transaction (the cap is counted under its row lock)
+Retry semantics     A failed pair leaves neither row; the compensation deletes
+                    whichever objects were written, and any it cannot reach are
+                    swept from their intents.
+Crash semantics     A crash between the two writes rolls both back; the
+                    intents outlive the process, so neither object is orphaned
+                    undiscoverably.
 Status              enforced
 ```
 

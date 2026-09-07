@@ -15,5 +15,38 @@
   "deleteFailed": "Ek silinemedi",
   "tooLarge": "Dosya çok büyük (en fazla {max})",
   "unsupported": "Desteklenmeyen dosya türü. İzin verilenler: görseller veya PDF",
-  "tooMany": "İşlem başına en fazla {max} ek"
+  "tooMany": "İşlem başına en fazla {max} ek",
+  "scan": {
+    "button": "Belgeyi tara",
+    "title": "Belgeyi tara",
+    "description": "Bir belge fotoğrafını eklemeden önce düzeltip temizleyin.",
+    "analysing": "Fotoğrafta belge aranıyor…",
+    "failed": "Belge taranamadı. Fotoğrafı yine de olduğu gibi ekleyebilirsiniz.",
+    "viewEnhanced": "İyileştirilmiş",
+    "viewOriginal": "Orijinal",
+    "viewOriginalFile": "Orijinali görüntüle",
+    "rotate": "Döndür",
+    "adjustHint": "Kenarlar yanlışsa köşeleri sürüklemek için “Orijinal”e geçin.",
+    "noDocumentFound": "Belge kenarları bulunamadı, bu yüzden fotoğrafın tamamı kullanıldı. “Orijinal”e geçip köşeleri kendiniz yerleştirin.",
+    "previewEnhancedAlt": "İyileştirilmiş tarama önizlemesi",
+    "previewOriginalAlt": "Orijinal fotoğraf önizlemesi",
+    "useEnhanced": "İyileştirilmişi kullan",
+    "keepOriginal": "Yalnızca orijinali sakla",
+    "retake": "Yeniden çek",
+    "cancel": "İptal",
+    "originalTooLarge": "Orijinal fotoğraf {max} sınırını aşıyor, bu nedenle yalnızca iyileştirilmiş tarama eklenecek.",
+    "warnings": {
+      "blurry": "Fotoğraf bulanık görünüyor. Yeniden çekmek daha net bir tarama verir.",
+      "edgesOutsideFrame": "Belgenin bir kısmı kare dışında kalmış olabilir. Sayfanın tamamı görünecek şekilde yeniden çekin.",
+      "lowResolution": "Tarama oldukça küçük, küçük yazıları okumak zor olabilir."
+    },
+    "corners": {
+      "label": "Belge köşeleri",
+      "topLeft": "Sol üst köşe",
+      "topRight": "Sağ üst köşe",
+      "bottomRight": "Sağ alt köşe",
+      "bottomLeft": "Sol alt köşe"
+    },
+    "originalKept": "orijinal saklandı"
+  }
 }

@@ -15,5 +15,38 @@
   "deleteFailed": "Falha ao excluir o anexo",
   "tooLarge": "O arquivo é muito grande (máximo {max})",
   "unsupported": "Tipo de arquivo não suportado. Permitidos: imagens ou PDF",
-  "tooMany": "Máximo de {max} anexos por transação"
+  "tooMany": "Máximo de {max} anexos por transação",
+  "scan": {
+    "button": "Digitalizar documento",
+    "title": "Digitalizar documento",
+    "description": "Endireite e limpe a foto de um documento antes de anexá-la.",
+    "analysing": "Procurando um documento na foto…",
+    "failed": "Não foi possível digitalizar o documento. Você ainda pode anexar a foto como está.",
+    "viewEnhanced": "Melhorada",
+    "viewOriginal": "Original",
+    "viewOriginalFile": "Ver original",
+    "rotate": "Girar",
+    "adjustHint": "Mude para “Original” para arrastar os cantos se as bordas estiverem erradas.",
+    "noDocumentFound": "Nenhuma borda do documento foi encontrada, então a foto inteira foi usada. Mude para “Original” e posicione os cantos você mesmo.",
+    "previewEnhancedAlt": "Prévia da digitalização melhorada",
+    "previewOriginalAlt": "Prévia da foto original",
+    "useEnhanced": "Usar a versão melhorada",
+    "keepOriginal": "Manter apenas o original",
+    "retake": "Tirar de novo",
+    "cancel": "Cancelar",
+    "originalTooLarge": "A foto original passa de {max}, então apenas a digitalização melhorada será anexada.",
+    "warnings": {
+      "blurry": "A foto parece tremida. Tirá-la de novo dará uma digitalização mais nítida.",
+      "edgesOutsideFrame": "Parte do documento pode estar fora da foto. Tire de novo com a página inteira no quadro.",
+      "lowResolution": "A digitalização ficou pequena, letras miúdas podem ser difíceis de ler."
+    },
+    "corners": {
+      "label": "Cantos do documento",
+      "topLeft": "Canto superior esquerdo",
+      "topRight": "Canto superior direito",
+      "bottomRight": "Canto inferior direito",
+      "bottomLeft": "Canto inferior esquerdo"
+    },
+    "originalKept": "original mantido"
+  }
 }

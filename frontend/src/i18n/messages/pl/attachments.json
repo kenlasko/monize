@@ -15,5 +15,38 @@
   "deleteFailed": "Nie udało się usunąć załącznika",
   "tooLarge": "Plik jest za duży (maksymalnie {max})",
   "unsupported": "Nieobsługiwany typ pliku. Dozwolone: obrazy lub PDF",
-  "tooMany": "Maksymalnie {max} załączników na transakcję"
+  "tooMany": "Maksymalnie {max} załączników na transakcję",
+  "scan": {
+    "button": "Skanuj dokument",
+    "title": "Skanuj dokument",
+    "description": "Wyprostuj i oczyść zdjęcie dokumentu przed dołączeniem go.",
+    "analysing": "Trwa szukanie dokumentu na zdjęciu…",
+    "failed": "Nie udało się zeskanować dokumentu. Nadal możesz dołączyć zdjęcie w obecnej postaci.",
+    "viewEnhanced": "Poprawione",
+    "viewOriginal": "Oryginał",
+    "viewOriginalFile": "Zobacz oryginał",
+    "rotate": "Obróć",
+    "adjustHint": "Przełącz na „Oryginał”, aby przeciągnąć narożniki, jeśli krawędzie są nieprawidłowe.",
+    "noDocumentFound": "Nie znaleziono krawędzi dokumentu, więc użyto całego zdjęcia. Przełącz na „Oryginał” i ustaw narożniki samodzielnie.",
+    "previewEnhancedAlt": "Podgląd poprawionego skanu",
+    "previewOriginalAlt": "Podgląd oryginalnego zdjęcia",
+    "useEnhanced": "Użyj poprawionej wersji",
+    "keepOriginal": "Zachowaj tylko oryginał",
+    "retake": "Zrób ponownie",
+    "cancel": "Anuluj",
+    "originalTooLarge": "Oryginalne zdjęcie przekracza {max}, więc dołączony zostanie tylko poprawiony skan.",
+    "warnings": {
+      "blurry": "Zdjęcie wygląda na poruszone. Ponowne wykonanie da ostrzejszy skan.",
+      "edgesOutsideFrame": "Część dokumentu może znajdować się poza kadrem. Zrób zdjęcie ponownie, obejmując całą stronę.",
+      "lowResolution": "Skan jest dość mały, drobny druk może być trudny do odczytania."
+    },
+    "corners": {
+      "label": "Narożniki dokumentu",
+      "topLeft": "Lewy górny narożnik",
+      "topRight": "Prawy górny narożnik",
+      "bottomRight": "Prawy dolny narożnik",
+      "bottomLeft": "Lewy dolny narożnik"
+    },
+    "originalKept": "oryginał zachowany"
+  }
 }

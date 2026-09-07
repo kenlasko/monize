@@ -15,5 +15,38 @@
   "deleteFailed": "添付ファイルの削除に失敗しました",
   "tooLarge": "ファイルが大きすぎます（最大 {max}）",
   "unsupported": "サポートされていないファイル形式です。使用可能: 画像または PDF",
-  "tooMany": "1件の取引につき添付ファイルは最大 {max} 件までです"
+  "tooMany": "1件の取引につき添付ファイルは最大 {max} 件までです",
+  "scan": {
+    "button": "書類をスキャン",
+    "title": "書類をスキャン",
+    "description": "書類の写真を添付する前に、傾きを直して見やすく整えます。",
+    "analysing": "写真から書類を検出しています…",
+    "failed": "書類をスキャンできませんでした。写真はそのまま添付できます。",
+    "viewEnhanced": "補正後",
+    "viewOriginal": "元の写真",
+    "viewOriginalFile": "元の写真を表示",
+    "rotate": "回転",
+    "adjustHint": "枠がずれている場合は「元の写真」に切り替えて四隅をドラッグしてください。",
+    "noDocumentFound": "書類の枠を検出できなかったため、写真全体を使用しました。「元の写真」に切り替えて四隅を指定してください。",
+    "previewEnhancedAlt": "補正後のスキャンのプレビュー",
+    "previewOriginalAlt": "元の写真のプレビュー",
+    "useEnhanced": "補正後を使用",
+    "keepOriginal": "元の写真のみ保存",
+    "retake": "撮り直す",
+    "cancel": "キャンセル",
+    "originalTooLarge": "元の写真が {max} を超えるため、補正後のスキャンのみを添付します。",
+    "warnings": {
+      "blurry": "写真がぶれているようです。撮り直すと、より鮮明なスキャンになります。",
+      "edgesOutsideFrame": "書類の一部が写真の外にある可能性があります。ページ全体が入るように撮り直してください。",
+      "lowResolution": "スキャンが小さめのため、細かい文字は読みにくい場合があります。"
+    },
+    "corners": {
+      "label": "書類の四隅",
+      "topLeft": "左上の角",
+      "topRight": "右上の角",
+      "bottomRight": "右下の角",
+      "bottomLeft": "左下の角"
+    },
+    "originalKept": "元の写真を保持"
+  }
 }

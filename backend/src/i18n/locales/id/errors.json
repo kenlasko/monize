@@ -590,7 +590,8 @@
     "fileTooLarge": "File melebihi ukuran maksimum {{ max }} byte",
     "unsupportedType": "Jenis file tidak didukung. Jenis yang diizinkan: {{ types }}",
     "tooMany": "Transaksi ini sudah memiliki maksimum {{ max }} lampiran",
-    "swept": "Unggahan memakan waktu terlalu lama dan penyimpanannya telah dibebaskan. Silakan coba lagi."
+    "swept": "Unggahan memakan waktu terlalu lama dan penyimpanannya telah dibebaskan. Silakan coba lagi.",
+    "pairRequiresImages": "Dokumen yang dipindai dan aslinya harus sama-sama berupa gambar"
   },
   "strategies": {
     "accountNotFound": "Akun tidak ditemukan",

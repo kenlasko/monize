@@ -15,5 +15,38 @@
   "deleteFailed": "Không xóa được tệp đính kèm",
   "tooLarge": "Tệp quá lớn (tối đa {max})",
   "unsupported": "Loại tệp không được hỗ trợ. Cho phép: hình ảnh hoặc PDF",
-  "tooMany": "Tối đa {max} tệp đính kèm cho mỗi giao tác"
+  "tooMany": "Tối đa {max} tệp đính kèm cho mỗi giao tác",
+  "scan": {
+    "button": "Quét tài liệu",
+    "title": "Quét tài liệu",
+    "description": "Làm thẳng và làm sạch ảnh chụp tài liệu trước khi đính kèm.",
+    "analysing": "Đang tìm tài liệu trong ảnh…",
+    "failed": "Không thể quét tài liệu. Bạn vẫn có thể đính kèm ảnh như hiện tại.",
+    "viewEnhanced": "Đã cải thiện",
+    "viewOriginal": "Ảnh gốc",
+    "viewOriginalFile": "Xem ảnh gốc",
+    "rotate": "Xoay",
+    "adjustHint": "Chuyển sang “Ảnh gốc” để kéo các góc nếu đường viền chưa đúng.",
+    "noDocumentFound": "Không tìm thấy đường viền tài liệu nên toàn bộ ảnh được sử dụng. Chuyển sang “Ảnh gốc” và tự đặt các góc.",
+    "previewEnhancedAlt": "Xem trước bản quét đã cải thiện",
+    "previewOriginalAlt": "Xem trước ảnh gốc",
+    "useEnhanced": "Dùng bản đã cải thiện",
+    "keepOriginal": "Chỉ giữ ảnh gốc",
+    "retake": "Chụp lại",
+    "cancel": "Hủy",
+    "originalTooLarge": "Ảnh gốc lớn hơn {max} nên chỉ bản quét đã cải thiện được đính kèm.",
+    "warnings": {
+      "blurry": "Ảnh có vẻ bị nhòe. Chụp lại sẽ cho bản quét sắc nét hơn.",
+      "edgesOutsideFrame": "Một phần tài liệu có thể nằm ngoài khung ảnh. Hãy chụp lại với toàn bộ trang trong khung.",
+      "lowResolution": "Bản quét khá nhỏ, chữ nhỏ có thể khó đọc."
+    },
+    "corners": {
+      "label": "Các góc tài liệu",
+      "topLeft": "Góc trên bên trái",
+      "topRight": "Góc trên bên phải",
+      "bottomRight": "Góc dưới bên phải",
+      "bottomLeft": "Góc dưới bên trái"
+    },
+    "originalKept": "đã giữ ảnh gốc"
+  }
 }

@@ -590,7 +590,8 @@
     "fileTooLarge": "Plik przekracza maksymalny rozmiar {{ max }} bajtów",
     "unsupportedType": "Nieobsługiwany typ pliku. Dozwolone typy: {{ types }}",
     "tooMany": "Ta transakcja ma już maksymalną liczbę {{ max }} załączników",
-    "swept": "Przesyłanie trwało zbyt długo i jego miejsce w magazynie zostało zwolnione. Spróbuj ponownie."
+    "swept": "Przesyłanie trwało zbyt długo i jego miejsce w magazynie zostało zwolnione. Spróbuj ponownie.",
+    "pairRequiresImages": "Zeskanowany dokument i jego oryginał muszą być obrazami"
   },
   "strategies": {
     "accountNotFound": "Nie znaleziono konta",

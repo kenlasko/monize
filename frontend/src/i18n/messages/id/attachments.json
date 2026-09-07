@@ -15,5 +15,38 @@
   "deleteFailed": "Gagal menghapus lampiran",
   "tooLarge": "File terlalu besar (maksimum {max})",
   "unsupported": "Jenis file tidak didukung. Diizinkan: gambar atau PDF",
-  "tooMany": "Maksimum {max} lampiran per transaksi"
+  "tooMany": "Maksimum {max} lampiran per transaksi",
+  "scan": {
+    "button": "Pindai dokumen",
+    "title": "Pindai dokumen",
+    "description": "Luruskan dan bersihkan foto dokumen sebelum melampirkannya.",
+    "analysing": "Mencari dokumen dalam foto…",
+    "failed": "Dokumen tidak dapat dipindai. Anda tetap dapat melampirkan fotonya apa adanya.",
+    "viewEnhanced": "Ditingkatkan",
+    "viewOriginal": "Asli",
+    "viewOriginalFile": "Lihat asli",
+    "rotate": "Putar",
+    "adjustHint": "Beralih ke “Asli” untuk menggeser sudut jika tepinya salah.",
+    "noDocumentFound": "Tepi dokumen tidak ditemukan, jadi seluruh foto digunakan. Beralih ke “Asli” dan tentukan sudutnya sendiri.",
+    "previewEnhancedAlt": "Pratinjau pindaian yang ditingkatkan",
+    "previewOriginalAlt": "Pratinjau foto asli",
+    "useEnhanced": "Gunakan yang ditingkatkan",
+    "keepOriginal": "Simpan yang asli saja",
+    "retake": "Ambil ulang",
+    "cancel": "Batal",
+    "originalTooLarge": "Foto asli lebih besar dari {max}, jadi hanya pindaian yang ditingkatkan yang akan dilampirkan.",
+    "warnings": {
+      "blurry": "Foto tampak buram. Mengambil ulang akan menghasilkan pindaian yang lebih tajam.",
+      "edgesOutsideFrame": "Sebagian dokumen mungkin berada di luar foto. Ambil ulang dengan seluruh halaman masuk bingkai.",
+      "lowResolution": "Pindaian cukup kecil, tulisan halus mungkin sulit dibaca."
+    },
+    "corners": {
+      "label": "Sudut dokumen",
+      "topLeft": "Sudut kiri atas",
+      "topRight": "Sudut kanan atas",
+      "bottomRight": "Sudut kanan bawah",
+      "bottomLeft": "Sudut kiri bawah"
+    },
+    "originalKept": "foto asli disimpan"
+  }
 }

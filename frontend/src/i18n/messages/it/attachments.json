@@ -15,5 +15,38 @@
   "deleteFailed": "Impossibile eliminare l'allegato",
   "tooLarge": "Il file è troppo grande (massimo {max})",
   "unsupported": "Tipo di file non supportato. Consentiti: immagini o PDF",
-  "tooMany": "Massimo {max} allegati per transazione"
+  "tooMany": "Massimo {max} allegati per transazione",
+  "scan": {
+    "button": "Scansiona documento",
+    "title": "Scansiona documento",
+    "description": "Raddrizza e pulisci la foto di un documento prima di allegarla.",
+    "analysing": "Ricerca di un documento nella foto…",
+    "failed": "Non è stato possibile scansionare il documento. Puoi comunque allegare la foto così com’è.",
+    "viewEnhanced": "Migliorata",
+    "viewOriginal": "Originale",
+    "viewOriginalFile": "Vedi originale",
+    "rotate": "Ruota",
+    "adjustHint": "Passa a «Originale» per trascinare gli angoli se i bordi non sono corretti.",
+    "noDocumentFound": "Non sono stati trovati i bordi del documento, quindi è stata usata l’intera foto. Passa a «Originale» e sistema tu gli angoli.",
+    "previewEnhancedAlt": "Anteprima della scansione migliorata",
+    "previewOriginalAlt": "Anteprima della foto originale",
+    "useEnhanced": "Usa la versione migliorata",
+    "keepOriginal": "Conserva solo l’originale",
+    "retake": "Riscatta",
+    "cancel": "Annulla",
+    "originalTooLarge": "La foto originale supera {max}, quindi verrà allegata solo la scansione migliorata.",
+    "warnings": {
+      "blurry": "La foto sembra mossa. Riscattarla darà una scansione più nitida.",
+      "edgesOutsideFrame": "Parte del documento potrebbe essere fuori dalla foto. Riscattala inquadrando l’intera pagina.",
+      "lowResolution": "La scansione è piuttosto piccola, il testo minuto potrebbe risultare difficile da leggere."
+    },
+    "corners": {
+      "label": "Angoli del documento",
+      "topLeft": "Angolo in alto a sinistra",
+      "topRight": "Angolo in alto a destra",
+      "bottomRight": "Angolo in basso a destra",
+      "bottomLeft": "Angolo in basso a sinistra"
+    },
+    "originalKept": "originale conservato"
+  }
 }

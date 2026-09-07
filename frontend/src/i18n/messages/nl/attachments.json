@@ -15,5 +15,38 @@
   "deleteFailed": "Verwijderen van bijlage mislukt",
   "tooLarge": "Bestand is te groot (maximaal {max})",
   "unsupported": "Niet-ondersteund bestandstype. Toegestaan: afbeeldingen of PDF",
-  "tooMany": "Maximaal {max} bijlagen per transactie"
+  "tooMany": "Maximaal {max} bijlagen per transactie",
+  "scan": {
+    "button": "Document scannen",
+    "title": "Document scannen",
+    "description": "Maak een foto van een document recht en schoon voordat u deze bijvoegt.",
+    "analysing": "Er wordt naar een document in de foto gezocht…",
+    "failed": "Het document kon niet worden gescand. U kunt de foto alsnog ongewijzigd bijvoegen.",
+    "viewEnhanced": "Verbeterd",
+    "viewOriginal": "Origineel",
+    "viewOriginalFile": "Origineel bekijken",
+    "rotate": "Draaien",
+    "adjustHint": "Ga naar ‘Origineel’ om de hoeken te verslepen als de randen niet kloppen.",
+    "noDocumentFound": "Er zijn geen documentranden gevonden, dus de hele foto is gebruikt. Ga naar ‘Origineel’ en sleep de hoeken zelf.",
+    "previewEnhancedAlt": "Voorbeeld van de verbeterde scan",
+    "previewOriginalAlt": "Voorbeeld van de originele foto",
+    "useEnhanced": "Verbeterde versie gebruiken",
+    "keepOriginal": "Alleen origineel bewaren",
+    "retake": "Opnieuw maken",
+    "cancel": "Annuleren",
+    "originalTooLarge": "De originele foto is groter dan {max}, dus alleen de verbeterde scan wordt bijgevoegd.",
+    "warnings": {
+      "blurry": "De foto lijkt onscherp. Opnieuw maken geeft een scherpere scan.",
+      "edgesOutsideFrame": "Een deel van het document valt mogelijk buiten de foto. Maak de foto opnieuw met de hele pagina in beeld.",
+      "lowResolution": "De scan is vrij klein, kleine letters kunnen lastig te lezen zijn."
+    },
+    "corners": {
+      "label": "Hoeken van het document",
+      "topLeft": "Hoek linksboven",
+      "topRight": "Hoek rechtsboven",
+      "bottomRight": "Hoek rechtsonder",
+      "bottomLeft": "Hoek linksonder"
+    },
+    "originalKept": "origineel bewaard"
+  }
 }

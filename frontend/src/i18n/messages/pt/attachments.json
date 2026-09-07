@@ -15,5 +15,38 @@
   "deleteFailed": "Falha ao eliminar o anexo",
   "tooLarge": "O ficheiro é demasiado grande (máximo {max})",
   "unsupported": "Tipo de ficheiro não suportado. Permitidos: imagens ou PDF",
-  "tooMany": "Máximo de {max} anexos por transação"
+  "tooMany": "Máximo de {max} anexos por transação",
+  "scan": {
+    "button": "Digitalizar documento",
+    "title": "Digitalizar documento",
+    "description": "Endireite e limpe a fotografia de um documento antes de a anexar.",
+    "analysing": "A procurar um documento na fotografia…",
+    "failed": "Não foi possível digitalizar o documento. Pode mesmo assim anexar a fotografia tal como está.",
+    "viewEnhanced": "Melhorada",
+    "viewOriginal": "Original",
+    "viewOriginalFile": "Ver original",
+    "rotate": "Rodar",
+    "adjustHint": "Mude para «Original» para arrastar os cantos se as margens estiverem erradas.",
+    "noDocumentFound": "Não foram encontradas margens do documento, pelo que foi usada a fotografia inteira. Mude para «Original» e coloque os cantos manualmente.",
+    "previewEnhancedAlt": "Pré-visualização da digitalização melhorada",
+    "previewOriginalAlt": "Pré-visualização da fotografia original",
+    "useEnhanced": "Usar a versão melhorada",
+    "keepOriginal": "Manter apenas o original",
+    "retake": "Repetir fotografia",
+    "cancel": "Cancelar",
+    "originalTooLarge": "A fotografia original excede {max}, pelo que só a digitalização melhorada será anexada.",
+    "warnings": {
+      "blurry": "A fotografia parece desfocada. Repeti-la dará uma digitalização mais nítida.",
+      "edgesOutsideFrame": "Parte do documento pode estar fora da fotografia. Repita-a com a página toda enquadrada.",
+      "lowResolution": "A digitalização é bastante pequena, letras pequenas podem ser difíceis de ler."
+    },
+    "corners": {
+      "label": "Cantos do documento",
+      "topLeft": "Canto superior esquerdo",
+      "topRight": "Canto superior direito",
+      "bottomRight": "Canto inferior direito",
+      "bottomLeft": "Canto inferior esquerdo"
+    },
+    "originalKept": "original mantido"
+  }
 }
