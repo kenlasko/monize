@@ -26,25 +26,7 @@ import Link from 'next/link';
 // from the component module.
 export { AI_CHAT_STORAGE_KEY };
 
-export function ChatInterface({
-  initialFiles,
-  onInitialFilesStaged,
-}: {
-  /**
-   * Files to stage on the composer as soon as the chat mounts, from a surface
-   * that already holds them (the Web Share Target's review screen). They are
-   * staged, never sent: the user still presses send, so a share cannot ask the
-   * assistant anything on its own.
-   */
-  initialFiles?: File[];
-  /**
-   * Called once the staging pass has finished reading those files, so the
-   * caller can release whatever was holding the bytes. Fires even when the
-   * files were refused, which is the caller's cue too: a second attempt would
-   * be refused the same way.
-   */
-  onInitialFilesStaged?: () => void;
-} = {}) {
+export function ChatInterface() {
   const t = useTranslations('ai');
   const messages = useAiChatStore((s) => s.messages);
   const isLoading = useAiChatStore((s) => s.isLoading);
@@ -142,29 +124,6 @@ export function ChatInterface({
     },
     [attachments, t],
   );
-
-  // Stage a caller's files exactly once. `addFiles` changes identity with the
-  // attachment list, so the ref -- not the dependency list -- is what makes it
-  // once: re-running it would duplicate the share on the composer.
-  const stagedInitialRef = useRef(false);
-  useEffect(() => {
-    if (stagedInitialRef.current) return;
-    if (!initialFiles || initialFiles.length === 0) return;
-    stagedInitialRef.current = true;
-    const files = initialFiles;
-
-    const stage = async () => {
-      try {
-        await addFiles(files);
-      } finally {
-        // Even a refusal is an answer: the caller drops the stash on this, and
-        // a second attempt would be refused the same way.
-        onInitialFilesStaged?.();
-      }
-    };
-
-    void stage();
-  }, [initialFiles, addFiles, onInitialFilesStaged]);
 
   const removeAttachment = useCallback((id: string) => {
     setAttachments((prev) => {

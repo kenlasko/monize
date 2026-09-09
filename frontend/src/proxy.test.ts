@@ -244,92 +244,14 @@ describe('proxy security headers', () => {
   });
 });
 
-describe('proxy web share target fallback', () => {
-  const fetchMock = vi.fn();
-
-  beforeEach(() => {
-    fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
-    vi.stubGlobal('fetch', fetchMock);
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    fetchMock.mockReset();
-  });
-
-  /** A share POST as the OS sends it, with a body the proxy must not touch. */
-  function makeShareRequest(): NextRequest {
-    const body = new FormData();
-    body.append('files', new File(['receipt bytes'], 'receipt.png', { type: 'image/png' }));
-    return new NextRequest(`${BASE}/share-target`, { method: 'POST', body });
-  }
-
-  // The worker normally answers this POST and the network never sees it. When
-  // it does reach us, the one thing that must not happen is the bytes going
-  // anywhere: not to the backend, not even read into this process.
-  it('answers a missed share with a 303 to the review page', async () => {
-    const response = await proxy(makeShareRequest());
-
-    expect(response.status).toBe(303);
-    expect(response.headers.get('location')).toBe(`${BASE}/share?missed=1`);
-  });
-
-  it('never reads the shared body, and never forwards it to the backend', async () => {
-    const request = makeShareRequest();
-
-    await proxy(request);
-
-    expect(request.bodyUsed).toBe(false);
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  // Without this branch the POST falls through to the unauthenticated redirect,
-  // which is a 307 -- and a 307 replays the multipart POST against /login.
-  it('answers before the auth check, so a signed-out share is not replayed', async () => {
-    const response = await proxy(makeShareRequest());
-
-    expect(response.status).toBe(303);
-    expect(response.headers.get('location')).not.toContain('/login');
-  });
-
-  it('applies the standard security headers to that redirect', async () => {
-    delete process.env.DISABLE_HTTPS_HEADERS;
-    const response = await proxy(makeShareRequest());
-
-    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
-    expect(response.headers.get('X-Frame-Options')).toBe('DENY');
-  });
-
-  it('leaves a GET of the action path on the ordinary protected path', async () => {
-    const response = await proxy(makeRequest('/share-target'));
-
-    expect(response.status).toBe(307);
-    expect(response.headers.get('location')).toBe(`${BASE}/login`);
-  });
-
-  it('sends a signed-out share review to login carrying the way back', async () => {
-    const response = await proxy(makeRequest('/share?id=abc-123'));
-
-    expect(response.status).toBe(307);
-    expect(response.headers.get('location')).toBe(
-      `${BASE}/login?returnTo=%2Fshare%3Fid%3Dabc-123`,
-    );
-  });
-
-  it('leaves every other protected route redirecting to a bare /login', async () => {
-    const response = await proxy(makeRequest('/dashboard'));
-
-    expect(response.headers.get('location')).toBe(`${BASE}/login`);
-  });
-});
-
 /**
- * The behavioural test above proves this request's body is not read. This scan
- * holds the structural reason it cannot be: the share branch returns before the
- * proxy reaches any code that consumes a body. Someone moving that branch below
- * the API block would keep the behaviour only by accident.
+ * The Web Share Target is gone: the OS share sheet handed files to a review
+ * screen that routinely could not find them again, so Monize no longer sits in
+ * that sheet. This scan is the guard -- a share branch reappearing here is what
+ * would put the workflow back, and it would sit above the body-reading proxy
+ * code where nobody would notice it.
  */
-describe('proxy.ts share branch placement', () => {
+describe('proxy.ts carries no web share target handling', () => {
   const proxySource = import.meta.glob('/src/proxy.ts', {
     query: '?raw',
     eager: true,
@@ -337,9 +259,8 @@ describe('proxy.ts share branch placement', () => {
   }) as Record<string, string>;
 
   /**
-   * Blank comments, keeping line numbering, so the scan reads CODE. The comment
-   * above the share branch necessarily says "without touching the body", and a
-   * scan that its own explanation could satisfy would prove nothing.
+   * Blank comments, keeping line numbering, so the scan reads CODE. Prose about
+   * a removed feature is allowed to name it; code is not.
    */
   function withoutComments(source: string): string {
     return source
@@ -347,29 +268,31 @@ describe('proxy.ts share branch placement', () => {
       .replace(/\/\/[^\n]*/g, (line) => ' '.repeat(line.length));
   }
 
-  const BODY_READ = /request\.(arrayBuffer|formData|text|json|blob)\s*\(|request\.body\b/;
-
   it('resolved the module, and the stripper works in both directions', () => {
     expect(Object.keys(proxySource)).toEqual(['/src/proxy.ts']);
 
     const stripped = withoutComments(
-      ['// request.arrayBuffer()', '/* request.body */', 'await request.arrayBuffer();'].join('\n'),
+      ['// share-target', '/* share-target */', "const x = '/share-target';"].join('\n'),
     );
     const lines = stripped.split('\n');
-    expect(BODY_READ.test(lines[0])).toBe(false);
-    expect(BODY_READ.test(lines[1])).toBe(false);
-    expect(BODY_READ.test(lines[2])).toBe(true);
+    expect(lines[0]).not.toContain('share-target');
+    expect(lines[1]).not.toContain('share-target');
+    expect(lines[2]).toContain('share-target');
     expect(lines).toHaveLength(3);
   });
 
-  it('returns the share redirect before any code that consumes a body', () => {
+  it('names no share route, path constant or review page', () => {
     const code = withoutComments(proxySource['/src/proxy.ts']);
 
-    const shareBranch = code.indexOf('SHARE_TARGET_PATH');
-    const firstBodyRead = code.search(BODY_READ);
+    expect(code).not.toMatch(/SHARE_TARGET_PATH|SHARE_PAGE_PATH|share-target/);
+  });
 
-    expect(shareBranch).toBeGreaterThan(-1);
-    expect(firstBodyRead).toBeGreaterThan(-1);
-    expect(shareBranch).toBeLessThan(firstBodyRead);
+  it('redirects every protected route to a bare /login', async () => {
+    for (const path of ['/dashboard', '/share', '/share-target']) {
+      const response = await proxy(makeRequest(path));
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get('location')).toBe(`${BASE}/login`);
+    }
   });
 });

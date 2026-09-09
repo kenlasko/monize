@@ -1,92 +1,19 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ChatInterface } from '@/components/ai/ChatInterface';
-import { useAuthStore } from '@/store/authStore';
-import { discardSharedBundle, readSharedBundle } from '@/lib/share-inbox';
-import { isShareBundleId } from '@/lib/share-target';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('AiPage');
-
-/**
- * Pick up files handed over by the Web Share Target's review screen.
- *
- * The same hand-off the import wizard uses: the review screen routes here with
- * the bundle id rather than the files, and the bundle is discarded once the
- * composer holds their contents, which is what keeps one owner of those bytes.
- * Nothing is asked of the assistant here -- the files land staged on the
- * composer and the user still presses send (INV-SHARE-002).
- */
-function useSharedFilesHandoff(): {
-  files: File[] | undefined;
-  onStaged: () => void;
-} {
-  const searchParams = useSearchParams();
-  const shareId = searchParams?.get('share') ?? null;
-  // A bundle belongs to one account; the chat reads it as that reader.
-  const viewerUserId = useAuthStore((state) => state.user?.id);
-  const [files, setFiles] = useState<File[] | undefined>(undefined);
-  const takenRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!viewerUserId) return;
-    if (!isShareBundleId(shareId ?? '') || takenRef.current === shareId) return;
-    takenRef.current = shareId;
-    const id = shareId as string;
-
-    const take = async () => {
-      const bundle = await readSharedBundle(id, viewerUserId);
-      if (!bundle || bundle.expired || bundle.files.length === 0) return;
-      setFiles(bundle.files);
-    };
-
-    void take().catch((error) => {
-      logger.error('Failed to take the shared files into the chat:', error);
-    });
-  }, [shareId, viewerUserId]);
-
-  // Discarded only after the composer has read the bytes, never on the way in:
-  // a stash dropped while the files were still being read would leave the user
-  // with neither the share nor the attachments.
-  const onStaged = useCallback(() => {
-    const id = takenRef.current;
-    if (!id) return;
-    void discardSharedBundle(id).catch((error) => {
-      logger.error('Failed to discard the shared bundle:', error);
-    });
-  }, []);
-
-  return { files, onStaged };
-}
 
 export default function AiPage() {
   return (
     <ProtectedRoute>
-      {/* useSearchParams needs a boundary; the chat renders immediately. */}
-      <Suspense fallback={<AiChatPage />}>
-        <AiChatPageWithShare />
-      </Suspense>
+      <AiChatPage />
     </ProtectedRoute>
   );
 }
 
-function AiChatPageWithShare() {
-  const { files, onStaged } = useSharedFilesHandoff();
-  return <AiChatPage initialFiles={files} onInitialFilesStaged={onStaged} />;
-}
-
-function AiChatPage({
-  initialFiles,
-  onInitialFilesStaged,
-}: {
-  initialFiles?: File[];
-  onInitialFilesStaged?: () => void;
-} = {}) {
+function AiChatPage() {
   const t = useTranslations('ai');
   return (
     /*
@@ -105,10 +32,7 @@ function AiChatPage({
           helpUrl="https://github.com/kenlasko/monize/wiki/AI"
         />
         <div className="flex min-h-0 flex-1 flex-col w-full max-w-4xl mx-auto">
-          <ChatInterface
-            initialFiles={initialFiles}
-            onInitialFilesStaged={onInitialFilesStaged}
-          />
+          <ChatInterface />
         </div>
       </main>
     </div>

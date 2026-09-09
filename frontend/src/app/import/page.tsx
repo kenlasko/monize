@@ -1,7 +1,5 @@
 'use client';
 
-import { Suspense, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -21,68 +19,13 @@ import { MnyVerificationReport } from '@/components/import/MnyVerificationReport
 import { MnyPasswordDialog } from '@/components/import/MnyPasswordDialog';
 import { MnyWipeConfirmDialog } from '@/components/import/MnyWipeConfirmDialog';
 import { useImportWizard } from '@/hooks/useImportWizard';
-import { discardSharedBundle, readSharedBundle } from '@/lib/share-inbox';
-import { isShareBundleId } from '@/lib/share-target';
-import { createLogger } from '@/lib/logger';
 import { useAuthStore } from '@/store/authStore';
 import { formatCategoryPath } from './import-utils';
-
-const logger = createLogger('Import');
-
-/**
- * Pick up files handed over by the Web Share Target's review screen.
- *
- * The review screen routes here with the bundle id rather than the files, so
- * this is where they are read and where they stop being the stash's: the bundle
- * is discarded once the wizard holds the contents, which is what keeps one owner
- * of those bytes. The ref makes it happen exactly once -- re-running it would
- * restart a wizard the user has already moved through.
- *
- * Nothing is imported here. The wizard opens on its mapping and review steps
- * exactly as it does for a file the user picked, and the import still takes an
- * explicit press.
- */
-function useSharedFilesHandoff(
-  handleFiles: (files: File[]) => Promise<void>,
-  ready: boolean,
-  // A bundle belongs to one account; the wizard reads it as that reader.
-  viewerUserId: string | undefined,
-) {
-  const searchParams = useSearchParams();
-  const shareId = searchParams?.get('share') ?? null;
-  const takenRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    // `ready` is the wizard's reference data being in. Without it the file
-    // would be matched against empty account, category and security lists, so
-    // every category in it would be offered as one to CREATE even where the
-    // user already has it. The ref is claimed only once we actually proceed,
-    // so a not-yet-ready render does not consume the one attempt.
-    if (!ready || !viewerUserId) return;
-    if (!isShareBundleId(shareId ?? '') || takenRef.current === shareId) return;
-    takenRef.current = shareId;
-    const id = shareId as string;
-
-    const take = async () => {
-      const bundle = await readSharedBundle(id, viewerUserId);
-      if (!bundle || bundle.expired || bundle.files.length === 0) return;
-      await handleFiles(bundle.files);
-      await discardSharedBundle(id);
-    };
-
-    void take().catch((error) => {
-      logger.error('Failed to take the shared files into the wizard:', error);
-    });
-  }, [shareId, handleFiles, ready, viewerUserId]);
-}
 
 export default function ImportPage() {
   return (
     <ProtectedRoute>
-      {/* useSearchParams needs a boundary; the wizard renders immediately. */}
-      <Suspense fallback={null}>
-        <ImportContent />
-      </Suspense>
+      <ImportContent />
     </ProtectedRoute>
   );
 }
@@ -93,7 +36,6 @@ function ImportContent() {
   // An OIDC account confirms the optional wipe by re-authenticating with its
   // provider rather than by typing a password.
   const user = useAuthStore((state) => state.user);
-  useSharedFilesHandoff(wizard.handleFiles, wizard.dataLoaded, user?.id);
 
   const renderStep = () => {
     switch (wizard.step) {

@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createLogger } from '@/lib/logger';
 import { assertedClientAddress } from '@/lib/client-address';
-import { SHARE_PAGE_PATH, SHARE_TARGET_PATH } from '@/lib/share-target';
 import {
   DEFAULT_LOCALE,
   LOCALE_COOKIE,
@@ -161,21 +160,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // A share the service worker did not catch (evicted worker, or a browser that
-  // installed the app without registering one). Answered here, first, and
-  // without touching the body: the shared files are never uploaded anywhere by
-  // this path, and a multipart POST must not be allowed to fall through to the
-  // unauthenticated /login redirect, which would replay it. 303 turns it into a
-  // GET so the user lands on an ordinary page that explains what happened.
-  if (request.method === 'POST' && pathname === SHARE_TARGET_PATH) {
-    return applySecurityHeaders(
-      NextResponse.redirect(
-        new URL(`${SHARE_PAGE_PATH}?missed=1`, request.url),
-        303,
-      ),
-    );
-  }
-
   // Handle API proxying to backend
   const rootMcp = isRootMcpRequest(request, pathname);
   if (pathname.startsWith('/api/') || isOAuthPath(pathname) || rootMcp) {
@@ -252,17 +236,6 @@ export async function proxy(request: NextRequest) {
   // Protect all other routes
   if (!token) {
     const loginUrl = new URL('/login', request.url);
-    // A share can arrive while signed out -- the OS does not know or care. The
-    // files are already stashed on the device, so the sign-in carries the way
-    // back to them rather than dropping the user on the dashboard with an inbox
-    // they have no link to. Scoped to the share page: no other route's redirect
-    // changes here. `safeReturnTo` on the login page re-validates this.
-    if (pathname === SHARE_PAGE_PATH) {
-      loginUrl.searchParams.set(
-        'returnTo',
-        `${pathname}${request.nextUrl.search}`,
-      );
-    }
     return applySecurityHeaders(NextResponse.redirect(loginUrl));
   }
 

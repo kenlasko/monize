@@ -110,11 +110,6 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-CURRENCY-001 currency delete | supporting | **required** | required | required | -- | -- | -- | optional |
 | INV-ATTACHMENT-001 bytes present | supporting | -- | required | optional | -- | **required** | **required** | required |
 | INV-ATTACHMENT-002 scan pair is one | **required** | **required** | **required** | -- | -- | -- | -- | **required** |
-| INV-SHARE-001 existing doors only | **required** | **required** | -- | -- | -- | -- | -- | **required** |
-| INV-SHARE-002 reviewed, never applied | **required** | -- | -- | -- | -- | -- | -- | **required** |
-| INV-SHARE-003 stash bounded and cleared | **required** | **required** | -- | -- | -- | -- | -- | optional |
-| INV-SHARE-004 a share never dead-ends | **required** | -- | -- | -- | -- | -- | -- | supporting |
-| INV-SHARE-005 a share belongs to one account | **required** | -- | -- | -- | -- | -- | -- | -- |
 | INV-BACKUP-001 backup complete | supporting | -- | required | -- | optional | **required** | **required** | required |
 | INV-PUSH-001 subscription ownership | required | -- | **required** | required (not yet met) | -- | -- | -- | optional |
 | INV-PUSH-002 private key stays server-side | supporting | **required** | -- | -- | -- | -- | -- | -- |

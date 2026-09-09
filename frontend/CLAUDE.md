@@ -625,102 +625,22 @@ states the user changes *elsewhere* and then comes back, so the panel re-reads
 them when the page becomes visible. Read once on mount, it kept telling the user
 the browser had refused after they had allowed it, with the Enable button hidden.
 
-### A shared file has one accept list and one reader -- `share-target.ts`, `share-inbox.ts`
+### Monize is not a Web Share Target, and the manifest must not claim it is
 
-The Web Share Target puts Monize in the OS share sheet, and the two halves of it
-each live in exactly one file:
+The installed PWA used to declare `share_target`, so Android offered Monize in
+the OS share sheet: the service worker stashed the files in a Cache API store
+and redirected to a `/share` review screen. It is removed. The screen routinely
+could not find the bundle it had been sent to -- the banner offering a Review
+led to "Nothing here to review" -- so the whole path was a dead end, and files
+are added the way they always were, from inside Monize.
 
-- **`lib/share-target.ts` is the accept list, the limits and the
-  classification.** `SHARE_TARGET_ACCEPT` is *derived* from
-  `ACCEPTED_ATTACHMENT_TYPES` plus `SHARE_STATEMENT_EXTENSIONS`, so the share
-  sheet cannot offer a type the upload then refuses (nor hide one it would take);
-  the per-file and per-share caps come from `MAX_ATTACHMENT_BYTES` and
-  `MAX_ATTACHMENTS_PER_TRANSACTION` rather than being written again. `.mny` is
-  deliberately absent -- a Money file is a whole profile behind a password prompt
-  and a wipe confirmation.
-- **`lib/share-inbox.ts` is the only reader of the stash.** Nothing else names
-  `SHARE_CACHE_NAME` or builds a stash key; a second reader is how the key shape
-  and the worker's writer drift apart. Every function treats an unusable Cache
-  API as an *empty inbox* and resolves rather than rejecting, which is what lets
-  `ShareInboxNotice` call it on mount without a guard -- and why a `catch` around
-  it would put a `setState` on the synchronous path the
-  `react-hooks/set-state-in-effect` rule forbids.
-
-**A bundle belongs to the first authenticated reader that observes it, and the
-reader's id is a required argument.** The worker cannot decide whose share it is
--- a share can arrive with nobody signed in, which is the whole point of the
-logged-out resume -- so `listSharedBundles(viewerUserId)` and
-`readSharedBundle(id, viewerUserId)` stamp `ownerUserId` on an unclaimed index
-and treat a bundle owned by anybody else as absent. **Listing claims too**: a
-share the sharer was merely notified about is already theirs, and it is exactly
-the one nothing else ever observed. Clearing the stash on `logout` is a sweep,
-not the access rule -- two people share a browser profile, and a session that
-simply expired never ran `logout`, which is the same reasoning as the
-push-registration marker's owner. The id is **required**, not optional, because
-an omitted argument is silently indistinguishable from "everyone's": a caller
-that has not resolved the reader yet reads nothing and shows its loading state
-(`src/app/share/page.tsx`, `ShareInboxNotice`, `useSharedFilesHandoff`), rather
-than claiming a share on behalf of whoever the app is still fetching.
-INV-SHARE-005.
-
-**A destination is offered only when it can actually accept the share, and it
-asks the destination's own validators.** The assistant sits beside the
-transaction form and the import wizard on the review screen, gated on two
-questions: `useAiConfigured()` (a provider that can answer -- the rule above),
-and `assistantAcceptsFiles` (`lib/ai-attachments.ts`), which runs the chat's own
-`validateFile`/`validateAddition` over the exact set. Re-stating the caps here
-would be a second copy that drifts, and they genuinely differ: the stash holds
-10 files at 10 MB, the assistant takes 5 at 5 MB and cannot read OFX, QFX or
-QIF, so a share the wizard imports happily is often one the chat would refuse
-file by file. All-or-nothing, because staging the readable subset would send the
-assistant part of what the user shared and say nothing about the rest. The
-hand-off is the wizard's: `/ai?share=<id>`, the page reads the bundle as the
-signed-in reader, and the stash is discarded only once `ChatInterface` reports
-the bytes staged (`onInitialFilesStaged`) -- dropping it on the way in would
-leave the user with neither the share nor the attachments. Staged, never sent:
-the user still presses send (INV-SHARE-002).
-
-**Do not classify a shared file with the import wizard's `detectFileType`.** That
-function falls through to `qif` for every extension it does not recognise, which
-is right for a picker (the user chose the file) and wrong for a share sheet (the
-OS chose it, so anything outside the accept list must be refused with a reason
-rather than handed to the QIF parser). `classifySharedFile` is the share path's
-rule and answers `null` for exactly that case.
-
-**`public/sw.js` cannot import any of this**, so it repeats the paths, keys,
-limits and accept lists as literals and `src/test/sw-share-target.test.ts`
-asserts the two agree -- the mirroring discipline `sw-offline.test.ts` already
-applies to the boot palette. It also reads the worker's own
-`classifySharedFile` out of the sandbox and compares it, case by case, against
-the app's.
-
-**A refused file stays on the list.** The worker records the reason and discards
-the bytes, so the review screen can say which of the files the user picked was
-not used and why; an accepted file whose bytes were later evicted is reported as
-*unavailable*, never silently dropped from a list that would then look complete.
-Those are two different states and the copy for each says so.
-
-**An automatic hand-off makes reference data a prerequisite, not a late
-arrival.** `useSharedFilesHandoff` drives the import wizard from the shared files
-on mount, and the wizard matches the file's categories against the user's
-categories, its symbols against their securities and its filename against their
-accounts. A human picking a file cannot realistically get ahead of those five
-parallel requests; a hand-off that fires on mount loses that race every time --
-and a failed category match is not neutral, it is an offer to **create** a
-category the user already has. So the wizard exposes `dataLoaded` and the
-hand-off waits for it, claiming its one-shot ref only once it actually proceeds.
-A load that failed leaves `dataLoaded` false and the bundle in the stash, which
-is the honest outcome: the files are offered again rather than matched against
-nothing. `src/app/import/share-handoff.test.tsx` holds the ordering with deferred
-requests, and fails if the gate is removed.
-
-**The kind a shared file is comes off the entry the worker wrote, never
-recomputed from the `File`.** The review screen's destination and the glyph in
-its list both read `entry.kind`; deriving it a second time from the rebuilt
-`File` is how a row drawn as a statement comes to offer an attachment's
-destination. `null` there means the worker never classified it, so the file is
-not usable and the screen says exactly that rather than calling the share
-mixed.
+What is left is two guards rather than prose, because the way this comes back is
+a manifest member and a proxy branch: `lib/pwa-manifest.test.ts` fails a
+`share_target` on any theme, and `proxy.test.ts` scans `proxy.ts` for a share
+route, path constant or review page. `public/sw.js` answers no POST at all now,
+and its `activate` handler deletes every cache but the current static one, which
+is what clears the old `monize-share-v1` stash from a device that still holds
+one.
 
 ### The notification permission is asked for once, from a click
 

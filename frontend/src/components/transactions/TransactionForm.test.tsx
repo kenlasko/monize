@@ -4916,11 +4916,10 @@ describe('TransactionForm', () => {
 });
 
 // =========================================================================
-// Web Share Target: the review screen opens this form with the shared files
-// already staged. They travel the same path as files picked in this window --
-// held client-side while the transaction does not exist, uploaded once it does.
+// A new transaction's attachments are held client-side until it exists, then
+// uploaded to it. With no files staged, a create uploads nothing.
 // =========================================================================
-describe('TransactionForm initialStagedFiles', () => {
+describe('TransactionForm staged attachments', () => {
   const mockOnSuccess = vi.fn();
 
   beforeEach(() => {
@@ -4941,55 +4940,7 @@ describe('TransactionForm initialStagedFiles', () => {
     mockCreate.mockResolvedValue({ id: 'tx-created' });
   });
 
-  it('seeds the staged attachment list from the shared files', async () => {
-    render(
-      <TransactionForm
-        onSuccess={mockOnSuccess}
-        defaultAccountId="acc-1"
-        initialStagedFiles={[
-          new File(['a'], 'receipt.png', { type: 'image/png' }),
-          new File(['b'], 'invoice.pdf', { type: 'application/pdf' }),
-        ]}
-      />
-    );
-
-    expect(await screen.findByText('receipt.png')).toBeInTheDocument();
-    expect(screen.getByText('invoice.pdf')).toBeInTheDocument();
-    // Staged, not uploaded: there is no transaction to attach them to yet.
-    expect(mockAttachmentUpload).not.toHaveBeenCalled();
-  });
-
-  it('uploads each shared file to the transaction once it has been created', async () => {
-    render(
-      <TransactionForm
-        onSuccess={mockOnSuccess}
-        defaultAccountId="acc-1"
-        initialStagedFiles={[
-          new File(['a'], 'receipt.png', { type: 'image/png' }),
-          new File(['b'], 'invoice.pdf', { type: 'application/pdf' }),
-        ]}
-      />
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Create Transaction/i })).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
-
-    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
-    await waitFor(() => expect(mockAttachmentUpload).toHaveBeenCalledTimes(2));
-
-    // Addressed to the created transaction, with no scan original beside them:
-    // a shared file is one file, not half of a scan pair.
-    expect(mockAttachmentUpload.mock.calls[0][0]).toBe('tx-created');
-    expect(mockAttachmentUpload.mock.calls[0][1].name).toBe('receipt.png');
-    expect(mockAttachmentUpload.mock.calls[0][2]).toBeUndefined();
-    expect(mockAttachmentUpload.mock.calls[1][1].name).toBe('invoice.pdf');
-    expect(mockOnSuccess).toHaveBeenCalled();
-  });
-
-  it('stages nothing when no shared files are handed over', async () => {
+  it('uploads nothing when the form staged no files', async () => {
     render(<TransactionForm onSuccess={mockOnSuccess} defaultAccountId="acc-1" />);
 
     await waitFor(() => {

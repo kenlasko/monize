@@ -1925,10 +1925,10 @@ describe('useImportWizard - .mny wipe confirmation', () => {
   });
 });
 
-describe('useImportWizard - handleFiles (Web Share Target hand-off)', () => {
-  // The OS hands over `File` objects with no input element behind them, so the
-  // wizard's entry point takes files rather than a change event. Everything
-  // after this point is identical to a file the user picked.
+describe('useImportWizard - handleFiles', () => {
+  // The wizard's entry point takes files rather than a change event, so a
+  // caller holding `File` objects with no input element behind them can drive
+  // it. Everything after this point is identical to a file the user picked.
   it('drives the wizard from a bare File array', async () => {
     mockGetAllAccounts.mockResolvedValue([baseAccount()]);
     mockParseQif.mockResolvedValue(baseParsedQif());
@@ -1937,16 +1937,16 @@ describe('useImportWizard - handleFiles (Web Share Target hand-off)', () => {
     await waitFor(() => expect(result.current.accounts).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleFiles([makeFile('shared.qif', 'data')]);
+      await result.current.handleFiles([makeFile('handed-over.qif', 'data')]);
     });
 
     expect(mockParseQif).toHaveBeenCalled();
     expect(result.current.step).toBe('selectAccount');
     expect(result.current.importFiles).toHaveLength(1);
-    expect(result.current.importFiles[0].fileName).toBe('shared.qif');
+    expect(result.current.importFiles[0].fileName).toBe('handed-over.qif');
   });
 
-  it('detects a shared CSV by extension, as the picker path does', async () => {
+  it('detects a handed-over CSV by extension, as the picker path does', async () => {
     mockGetAllAccounts.mockResolvedValue([baseAccount()]);
     mockParseCsvHeaders.mockResolvedValue({ headers: ['Date', 'Amount'], sampleRows: [] });
     mockAutoMatchCsvColumns.mockReturnValue({});
@@ -1963,7 +1963,7 @@ describe('useImportWizard - handleFiles (Web Share Target hand-off)', () => {
     expect(result.current.fileType).toBe('csv');
   });
 
-  it('is a no-op for an empty hand-off', async () => {
+  it('is a no-op for an empty file list', async () => {
     mockGetAllAccounts.mockResolvedValue([baseAccount()]);
 
     const { result } = renderHook(() => useImportWizard());

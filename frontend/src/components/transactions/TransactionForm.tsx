@@ -149,14 +149,6 @@ interface TransactionFormProps {
    * off and the submit button offers no such option.
    */
   onCreateAndNew?: () => void;
-  /**
-   * Files to open the form with already staged, used by the Web Share Target's
-   * review screen. They travel the same path as files picked in this window:
-   * held client-side while the transaction does not exist, then uploaded by
-   * `uploadStagedAttachments` once it does. Plain files with no scan original,
-   * so each becomes a `StagedAttachment` carrying only `file`.
-   */
-  initialStagedFiles?: File[];
 }
 
 interface TransactionFormFieldsProps extends TransactionFormProps {
@@ -167,7 +159,7 @@ interface TransactionFormFieldsProps extends TransactionFormProps {
 // Transaction mode type
 type TransactionMode = 'normal' | 'split' | 'transfer';
 
-function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles }: TransactionFormFieldsProps) {
+function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother }: TransactionFormFieldsProps) {
   const t = useTranslations('transactions');
   const { defaultCurrency, formatCurrency, formatNumber } = useNumberFormat();
   const showCreatedAt = usePreferencesStore((s) => s.preferences?.showCreatedAt ?? false);
@@ -183,7 +175,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   // uploaded once it has been created. Empty (and unused) when editing.
   const [stagedAttachments, setStagedAttachments] = useState<
     StagedAttachment[]
-  >(() => (initialStagedFiles ?? []).map((file) => ({ file })));
+  >([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transferCandidates, setTransferCandidates] = useState<
     TransferCandidate[]
@@ -1852,9 +1844,6 @@ export function TransactionForm(props: TransactionFormProps) {
       // A restarted form is a blank new entry, not another copy of whatever the
       // first one was duplicated from.
       duplicateFrom={restart ? undefined : props.duplicateFrom}
-      // Same for shared files: they were uploaded to the entry just created, so
-      // re-staging them here would attach a second copy to the next one.
-      initialStagedFiles={restart ? undefined : props.initialStagedFiles}
       defaultAccountId={restart?.accountId ?? defaultAccountId}
       // The host's default category belongs to the account the host named (an
       // asset account's own category). Once the user has filed an entry against

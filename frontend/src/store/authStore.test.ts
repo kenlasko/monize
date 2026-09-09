@@ -15,12 +15,6 @@ vi.mock('@/lib/auth', () => ({
   },
 }));
 
-const clearShareInboxMock = vi.fn();
-vi.mock('@/lib/share-inbox', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/share-inbox')>()),
-  clearShareInbox: clearShareInboxMock,
-}));
-
 describe('authStore', () => {
   beforeEach(() => {
     rehydrateGetProfileMock.mockReset();
@@ -90,16 +84,6 @@ describe('authStore', () => {
       expect(
         window.localStorage.getItem('monize:ai-chat-messages'),
       ).toBeNull();
-    });
-
-    // A share is one account's document sitting in this browser's storage. The
-    // next account to sign in on a shared device must not find it waiting.
-    it('clears the web-share stash so it does not leak across accounts', async () => {
-      useAuthStore.getState().logout();
-
-      // The store reaches the module through a dynamic import, so the call
-      // lands a microtask later.
-      await vi.waitFor(() => expect(clearShareInboxMock).toHaveBeenCalled());
     });
   });
 

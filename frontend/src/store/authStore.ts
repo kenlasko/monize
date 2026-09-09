@@ -93,11 +93,6 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         // Backend clears httpOnly cookies via /auth/logout; we only clear Zustand state
         clearAllCache();
-        // SECURITY: A share is one account's document. Drop the stash so the
-        // next account to sign in on this device does not find it waiting.
-        import('@/lib/share-inbox').then(({ clearShareInbox }) => {
-          void clearShareInbox();
-        });
         // SECURITY: Clear preferences store to remove userId from localStorage
         import('@/store/preferencesStore').then(({ usePreferencesStore }) => {
           usePreferencesStore.getState().clearPreferences();

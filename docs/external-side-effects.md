@@ -239,35 +239,6 @@ two the codebase has would be a regression, not a feature.
 The subscription itself is instance-bound state, not portable user data: see
 `INTENTIONALLY_EXCLUDED_TABLES` and INV-PUSH-005.
 
-## 4b. The web-share stash is the device's, not the server's
-
-The Web Share Target stores the files the OS hands over in a Cache API store on
-the device (`docs/future-plans/pwa-web-share-target.md`). It is in this document
-because it looks like an external side effect and is worth being explicit about
-*not* being one:
-
-- **Nothing on the server is written when a share arrives.** The service worker
-  answers the manifest's POST itself, so on the ordinary path the request never
-  leaves the device. When no worker is controlling, the proxy answers the same
-  POST with a redirect *before* its auth check and without reading the body, so
-  the bytes are not read into the frontend process either, let alone forwarded.
-- **So there is no ordering problem to get right.** The rule this document
-  exists for -- write bytes before the commit, delete them after it -- has
-  nothing to order here: there is no row, no transaction, and no server-side
-  object. The only thing the stash can leak is device storage, and the failure
-  mode is bytes nobody references, which is the survivable side by construction
-  (the bundle index is written last).
-- **What bounds it is expiry and logout, not a reconciliation job.** Bundles are
-  swept by the worker on `activate` and before each new share, and by the app on
-  mount; `authStore.logout` drops the whole store, because a share is one
-  account's document and a browser profile can be shared. INV-SHARE-003 is the
-  invariant; there is no server-side sweeper because there is nothing on the
-  server to sweep.
-
-A share only becomes a side effect this document governs at the moment the user
-presses a destination, and then it is an ordinary attachment upload or an
-ordinary import -- section 2 above, unchanged.
-
 ## 5. Emergency access
 
 The grant path is the only place in the codebase that gets the external-effect

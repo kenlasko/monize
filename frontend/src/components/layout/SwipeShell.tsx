@@ -9,7 +9,6 @@ import { DemoModeBanner } from './DemoModeBanner';
 import { HttpWarningBanner } from './HttpWarningBanner';
 import { SwipeIndicator } from './SwipeIndicator';
 import { PushEnableBanner } from './PushEnableBanner';
-import { ShareInboxNotice } from '@/components/share/ShareInboxNotice';
 import { UpdateAvailableBanner } from './UpdateAvailableBanner';
 import { AiChatBubble } from '@/components/ai/AiChatBubble';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
@@ -51,7 +50,6 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
       <DemoModeBanner />
       <UpdateAvailableBanner />
       <PushEnableBanner />
-      <ShareInboxNotice />
       <SwipeIndicator currentIndex={currentIndex} totalPages={totalPages} isSwipePage={isSwipePage} />
       <div ref={contentRef}>
         {children}
