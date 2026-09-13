@@ -1,6 +1,7 @@
 'use client';
 
 import { PencilSquareIcon } from '@heroicons/react/24/outline';
+import { NOTE_PAPER_CLASS } from '@/components/calendar/note-paper';
 import { dayNoteWeekSpans } from '@/lib/day-note-span';
 import type { DayNote } from '@/types/calendar';
 
@@ -37,7 +38,7 @@ export function CalendarNoteSpans({ week, byDay }: CalendarNoteSpansProps) {
           data-testid="calendar-note-span"
           data-note-columns={span.columns}
           style={{ gridColumn: `${span.startColumn} / span ${span.columns}` }}
-          className={`flex min-w-0 items-center gap-1 overflow-hidden bg-gray-50 px-1 py-0.5 text-xs text-gray-600 ring-1 ring-inset ring-gray-200 dark:bg-gray-700/60 dark:text-gray-300 dark:ring-gray-600 ${
+          className={`flex min-w-0 items-center gap-1 overflow-hidden px-1 py-0.5 text-xs ${NOTE_PAPER_CLASS} ${
             span.opensHere ? 'ml-1 rounded-l' : ''
           } ${span.closesHere ? 'mr-1 rounded-r' : ''}`}
         >

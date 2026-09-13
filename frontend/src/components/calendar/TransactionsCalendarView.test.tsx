@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import { CALENDAR_MAX_PER_SCHEDULE } from '@/hooks/useCalendarMonthData';
 import { SWIPE_ANIMATION_MS, SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
-import { TransactionsCalendarView } from './TransactionsCalendarView';
+import { NOTE_PAPER_CLASS } from './note-paper';
+import { CALENDAR_DAY_CHIP_LIMIT, TransactionsCalendarView } from './TransactionsCalendarView';
 import calendarNs from '@/i18n/messages/en/calendar.json';
 import { useViewModeStore } from '@/store/viewModeStore';
 import { useAuthStore } from '@/store/authStore';
@@ -275,6 +276,37 @@ describe('TransactionsCalendarView', () => {
       const chip = await screen.findByRole('button', { name: /Grocer/ });
       expect(within(cell('06/10/2026')).getByRole('button', { name: /Grocer/ })).toBe(chip);
       expect(chip.className).toContain(ACCOUNT_TYPE_META.CHEQUING.pillClass.split(' ')[0]);
+    });
+
+    it('fills the taller cell with chips, and counts only what is left over', async () => {
+      // The cell grew by half, so the limit grew with it: a day of five rows is
+      // five chips and no "+N more", and the sixth is what the line is for.
+      expect(CALENDAR_DAY_CHIP_LIMIT).toBe(5);
+      mockGetAllPages.mockResolvedValue(
+        Array.from({ length: CALENDAR_DAY_CHIP_LIMIT }, (_, i) =>
+          transaction({ id: `tx-${i}`, payeeName: `Payee ${i}` }),
+        ),
+      );
+      const five = renderView();
+
+      await screen.findAllByRole('button', { name: /Payee 0/ });
+      expect(within(cell('06/10/2026')).getAllByRole('button')).toHaveLength(
+        CALENDAR_DAY_CHIP_LIMIT,
+      );
+      expect(within(cell('06/10/2026')).queryByRole('button', { name: /more/ })).toBeNull();
+      five.unmount();
+
+      mockGetAllPages.mockResolvedValue(
+        Array.from({ length: CALENDAR_DAY_CHIP_LIMIT + 2 }, (_, i) =>
+          transaction({ id: `tx-${i}`, payeeName: `Payee ${i}` }),
+        ),
+      );
+      renderView();
+
+      await screen.findAllByRole('button', { name: /Payee 0/ });
+      expect(
+        within(cell('06/10/2026')).getByRole('button', { name: '+2 more' }),
+      ).toBeInTheDocument();
     });
 
     it('lines the amounts up at the right edge of the day', async () => {
@@ -950,6 +982,32 @@ describe('TransactionsCalendarView', () => {
       for (const band of bands) expect(band).toHaveTextContent('Long weekend');
     });
 
+    it('draws a note on Post-It paper, the same paper on the grid as in the panel', async () => {
+      // A note is the one thing on this calendar that is not a figure, so it is
+      // the one thing that looks like paper -- and it is one yellow, from one
+      // constant, in both places a note is read.
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-10',
+          endDate: '2026-06-10',
+          body: 'Away in Lisbon',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      renderView();
+
+      const paper = NOTE_PAPER_CLASS.split(' ');
+      expect(paper).toContain('bg-yellow-200');
+
+      const band = (await screen.findAllByTestId('calendar-note-span'))[0];
+      for (const className of paper) expect(band.classList.contains(className)).toBe(true);
+
+      fireEvent.click(cell('06/10/2026'));
+      const panel = await screen.findByRole('complementary', { name: '06/10/2026' });
+      const body = within(panel).getByText('Away in Lisbon');
+      for (const className of paper) expect(body.classList.contains(className)).toBe(true);
+    });
+
     it('keeps the note in every covered cell for a screen reader', async () => {
       // The band is decoration the screen reader never sees, so the cell's own
       // marker is what says a day is covered -- on every day of the run.
@@ -1203,12 +1261,11 @@ describe('TransactionsCalendarView', () => {
       // of a list nobody can see adds nothing. It is a breakpoint and not a
       // branch: the line is in the markup, drawn only from sm up.
       viewport(400);
-      mockGetAllPages.mockResolvedValue([
-        transaction({ id: 'tx-1' }),
-        transaction({ id: 'tx-2' }),
-        transaction({ id: 'tx-3' }),
-        transaction({ id: 'tx-4' }),
-      ]);
+      mockGetAllPages.mockResolvedValue(
+        Array.from({ length: CALENDAR_DAY_CHIP_LIMIT + 1 }, (_, i) =>
+          transaction({ id: `tx-${i}` }),
+        ),
+      );
       renderView();
 
       await screen.findAllByRole('button', { name: /Grocer/ });

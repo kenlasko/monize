@@ -42,8 +42,16 @@ import type { Account, AccountType } from '@/types/account';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 import type { Transaction } from '@/types/transaction';
 
-/** How many chips a day cell draws before the rest become a "+N more" line. */
-export const CALENDAR_DAY_CHIP_LIMIT = 3;
+/**
+ * How many chips a day cell draws before the rest become a "+N more" line.
+ *
+ * It is the height of the cell, in chips: a `sm` cell is 10.5rem (168px) and a
+ * chip 20px with 2px between them, so the date row (24px), five chips (108px)
+ * and the "+N more" line (22px) come to 154px and leave the cell whole. Six
+ * would push past it, and a cell that grows with its busiest day takes the whole
+ * week's row with it.
+ */
+export const CALENDAR_DAY_CHIP_LIMIT = 5;
 
 const LAYERS = ['transactions', 'balances'] as const;
 
