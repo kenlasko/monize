@@ -119,6 +119,33 @@ describe('PortfolioValueWidget', () => {
     );
   });
 
+  it('puts the move under the value in smaller type, with the refresh control last', async () => {
+    // Four things in a widget header is more than a phone has beside a title, so
+    // the header is two lines: the value, the window and the refresh button on
+    // the first, the move beneath the figure it belongs to.
+    getPortfolioSummary.mockResolvedValue({ totalPortfolioValue: 10000, holdings: [] });
+    getInvestmentsMonthly.mockResolvedValue([
+      { month: '2026-05', value: 8000 },
+      { month: '2026-06', value: 10000 },
+    ]);
+    await renderWidget();
+
+    const change = screen.getByTestId('portfolio-period-change');
+    const value = screen.getByText('$10000');
+    const range = screen.getByText('1Y');
+    const refresh = screen.getByLabelText('Refresh current value');
+
+    // Smaller than the value it sits under, and not on its line.
+    expect(change.className).toContain('text-xs');
+    expect(value.className).toContain('text-sm');
+    expect(change.parentElement).not.toBe(value.parentElement);
+    expect(value.parentElement).toBe(range.parentElement);
+    // The refresh button is to the right of both the value and the window.
+    expect(range.parentElement).toBe(refresh.parentElement);
+    expect(value.compareDocumentPosition(refresh)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(range.compareDocumentPosition(refresh)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
   it('shows no period change while the series is empty', async () => {
     // An unknown baseline is not a flat market: nothing is printed rather than
     // a change of zero.
