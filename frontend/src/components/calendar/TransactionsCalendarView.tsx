@@ -22,7 +22,16 @@ import {
   type CalendarAccount,
   type CalendarDayRows,
 } from '@/lib/calendar-rows';
-import { monthGridDays, monthOf, type WeekStart } from '@/lib/calendar-month';
+import {
+  CALENDAR_MONTH_PAGES,
+  monthFromPageNumber,
+  monthGridDays,
+  monthOf,
+  monthPageNumber,
+  type WeekStart,
+} from '@/lib/calendar-month';
+import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
+import { SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
 import { occurrenceTouchesAccounts } from '@/lib/scheduled-effective-amount';
 import { useCalendarDayNotes } from '@/hooks/useCalendarDayNotes';
 import { useAuthStore } from '@/store/authStore';
@@ -105,6 +114,34 @@ export function TransactionsCalendarView({
     startDate: gridStart,
     endDate: gridEnd,
     enabled: !isActingDelegate,
+  });
+
+  /**
+   * Move to another month.
+   *
+   * The toolbar's arrows, its month picker and the swipe across the grid all
+   * come through here, so every way of changing the month asks about an unsaved
+   * note the same way and leaves no day selected from the month being left.
+   */
+  const goToMonth = useCallback(
+    (next: string) => {
+      notes.requestChange(() => {
+        setMonth(next);
+        setSelectedDate(null);
+      });
+    },
+    [notes],
+  );
+
+  // A horizontal swipe across the grid turns the month the way one turns a
+  // register page: the months ARE the pages (`monthPageNumber`), so the gesture
+  // is the register's, not a second one written here. The grid is marked as a
+  // pagination zone so the view-level swipe cedes to it instead of leaving the
+  // page for the next section of the app.
+  const { swipeRef } = useSwipeToPaginate({
+    page: monthPageNumber(month),
+    totalPages: CALENDAR_MONTH_PAGES,
+    onPageChange: (page) => goToMonth(monthFromPageNumber(page)),
   });
 
   const data = useCalendarMonthData(gridStart, gridEnd, filters, refreshKey);
@@ -285,12 +322,7 @@ export function TransactionsCalendarView({
     <div>
       <CalendarToolbar
         month={month}
-        onMonthChange={(next) =>
-          notes.requestChange(() => {
-            setMonth(next);
-            setSelectedDate(null);
-          })
-        }
+        onMonthChange={goToMonth}
         today={today}
         monthLabelId={monthLabelId}
         availableLayers={LAYERS}
@@ -319,6 +351,8 @@ export function TransactionsCalendarView({
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div
+          ref={swipeRef}
+          {...{ [SWIPE_PAGINATE_ATTR]: 'true' }}
           className="min-w-0 flex-1"
           aria-busy={data.isLoading || (balancesOn && balances.isLoading)}
           inert={!isActionable}

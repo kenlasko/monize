@@ -30,7 +30,16 @@ import {
   type CalendarAccount,
   type CalendarDayRows,
 } from '@/lib/calendar-rows';
-import { monthGridDays, monthOf, type WeekStart } from '@/lib/calendar-month';
+import {
+  CALENDAR_MONTH_PAGES,
+  monthFromPageNumber,
+  monthGridDays,
+  monthOf,
+  monthPageNumber,
+  type WeekStart,
+} from '@/lib/calendar-month';
+import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
+import { SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
 import { preferredCurrency } from '@/lib/default-currency';
 import { useCalendarDayNotes } from '@/hooks/useCalendarDayNotes';
 import { useAuthStore } from '@/store/authStore';
@@ -134,6 +143,31 @@ export function InvestmentCalendarView({
     startDate: gridStart,
     endDate: gridEnd,
     enabled: !isActingDelegate,
+  });
+
+  /**
+   * Move to another month: the toolbar's arrows, its month picker and the swipe
+   * across the grid all come through here, so every way of changing the month
+   * asks about an unsaved note the same way and leaves no day selected from the
+   * month being left.
+   */
+  const goToMonth = useCallback(
+    (next: string) => {
+      notes.requestChange(() => {
+        setMonth(next);
+        setSelectedDate(null);
+      });
+    },
+    [notes],
+  );
+
+  // The same gesture the register and the Transactions calendar use: a swipe
+  // turns the page, and here the months ARE the pages (`monthPageNumber`). The
+  // grid is marked as a pagination zone so the view-level swipe cedes to it.
+  const { swipeRef } = useSwipeToPaginate({
+    page: monthPageNumber(month),
+    totalPages: CALENDAR_MONTH_PAGES,
+    onPageChange: (page) => goToMonth(monthFromPageNumber(page)),
   });
 
   // The same resolution the portfolio chart makes: a foreign single-account
@@ -334,12 +368,7 @@ export function InvestmentCalendarView({
     <div>
       <CalendarToolbar
         month={month}
-        onMonthChange={(next) =>
-          notes.requestChange(() => {
-            setMonth(next);
-            setSelectedDate(null);
-          })
-        }
+        onMonthChange={goToMonth}
         today={today}
         monthLabelId={monthLabelId}
         availableLayers={LAYERS}
@@ -372,6 +401,8 @@ export function InvestmentCalendarView({
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div
+          ref={swipeRef}
+          {...{ [SWIPE_PAGINATE_ATTR]: 'true' }}
           className="min-w-0 flex-1"
           aria-busy={
             data.isLoading ||

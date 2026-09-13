@@ -1,13 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import {
+  CALENDAR_MONTH_PAGES,
   calendarDaysBetween,
   classifyCalendarDay,
   dayOfWeek,
   daysInMonth,
   isCalendarDate,
   isCalendarMonth,
+  monthFromPageNumber,
   monthGridDays,
   monthOf,
+  monthPageNumber,
   rotateWeekdayLabels,
   shiftDate,
   shiftMonth,
@@ -192,6 +195,51 @@ describe('shiftMonth', () => {
     // either 28 February or 3 March depending on the library; a month string
     // has no day to lose.
     expect(shiftMonth(monthOf('2025-01-31'), 1)).toBe('2025-02');
+  });
+});
+
+describe('month page numbers', () => {
+  it.each([
+    ['0001-01', 1],
+    ['0001-12', 12],
+    ['0002-01', 13],
+    ['2026-06', 24306],
+    ['9999-12', CALENDAR_MONTH_PAGES],
+  ])('%s is page %i', (month, page) => {
+    expect(monthPageNumber(month)).toBe(page);
+    expect(monthFromPageNumber(page)).toBe(month);
+  });
+
+  it('numbers adjacent months adjacently, which is what a swipe steps by', () => {
+    // The gesture adds or subtracts one. Were the numbering not contiguous
+    // across a year end, a swipe in December would land somewhere else entirely.
+    expect(monthFromPageNumber(monthPageNumber('2025-12') + 1)).toBe('2026-01');
+    expect(monthFromPageNumber(monthPageNumber('2026-01') - 1)).toBe('2025-12');
+  });
+
+  it('round-trips every month of a leap year and its neighbours', () => {
+    for (const year of [2023, 2024, 2025]) {
+      for (let monthNumber = 1; monthNumber <= 12; monthNumber += 1) {
+        const month = `${year}-${String(monthNumber).padStart(2, '0')}`;
+        expect(monthFromPageNumber(monthPageNumber(month))).toBe(month);
+      }
+    }
+  });
+
+  it('agrees with shiftMonth, so the two ways to move a month cannot diverge', () => {
+    expect(monthFromPageNumber(monthPageNumber('2026-06') + 1)).toBe(shiftMonth('2026-06', 1));
+    expect(monthFromPageNumber(monthPageNumber('2026-06') - 1)).toBe(shiftMonth('2026-06', -1));
+  });
+
+  it('refuses a page outside the range rather than inventing a month', () => {
+    expect(() => monthFromPageNumber(0)).toThrow(/month page/);
+    expect(() => monthFromPageNumber(CALENDAR_MONTH_PAGES + 1)).toThrow(/month page/);
+    expect(() => monthFromPageNumber(1.5)).toThrow(/month page/);
+  });
+
+  it('refuses anything that is not a calendar month', () => {
+    expect(() => monthPageNumber('2026-13')).toThrow(/calendar month/);
+    expect(() => monthPageNumber('2026-06-15')).toThrow(/calendar month/);
   });
 });
 

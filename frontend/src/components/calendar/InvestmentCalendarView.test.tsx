@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, within } from '@/test/render';
+import { act, render, screen, waitFor, fireEvent, within } from '@/test/render';
 import { InvestmentCalendarView } from './InvestmentCalendarView';
 import calendarNs from '@/i18n/messages/en/calendar.json';
 import commonNs from '@/i18n/messages/en/common.json';
@@ -7,6 +7,7 @@ import { useViewModeStore } from '@/store/viewModeStore';
 import { useAuthStore } from '@/store/authStore';
 import { TransactionsCalendarView } from './TransactionsCalendarView';
 import { ACCOUNT_TYPE_META } from '@/lib/account-type-meta';
+import { SWIPE_ANIMATION_MS, SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
 import { TransactionStatus, type Transaction } from '@/types/transaction';
 import type { Account } from '@/types/account';
 import type { InvestmentTransaction } from '@/types/investment';
@@ -163,6 +164,38 @@ function renderView(
 /** The cell for a day, located by the accessible name MonthGrid gives it. */
 function cell(label: string) {
   return screen.getByLabelText(label);
+}
+
+/** One touch point, the way `useSwipeToPaginate`'s own spec builds them. */
+function touch(
+  type: 'touchstart' | 'touchmove' | 'touchend',
+  clientX: number,
+  clientY: number,
+): TouchEvent {
+  const point = { clientX, clientY, identifier: 0 } as Touch;
+  const init: TouchEventInit = { bubbles: true, cancelable: type === 'touchmove' };
+  if (type === 'touchend') {
+    init.changedTouches = [point];
+    init.touches = [];
+  } else {
+    init.touches = [point];
+    init.changedTouches = [point];
+  }
+  return new TouchEvent(type, init);
+}
+
+/** Drag the grid horizontally and let the commit animation finish. */
+async function swipeGrid(deltaX: number) {
+  const zone = screen.getByRole('grid').parentElement!;
+  const startX = 500;
+  await act(async () => {
+    zone.dispatchEvent(touch('touchstart', startX, 200));
+    zone.dispatchEvent(touch('touchmove', startX + deltaX, 202));
+    zone.dispatchEvent(touch('touchend', startX + deltaX, 202));
+  });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, SWIPE_ANIMATION_MS + 80));
+  });
 }
 
 function withLayers(...layers: Array<'transactions' | 'values' | 'dailyChange'>) {
@@ -762,6 +795,31 @@ describe('InvestmentCalendarView', () => {
 
       await waitFor(() => expect(mockGetAllTransactionPages).toHaveBeenCalled());
       expect(mockListDayNotes).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('swiping the grid', () => {
+    it('turns the month the way it does on the Transactions calendar', async () => {
+      // One gesture for both calendars: a reader who learns it on one page does
+      // not have to learn it again on the other.
+      renderView();
+      await waitFor(() => expect(mockGetAllTransactionPages).toHaveBeenCalled());
+
+      await swipeGrid(-400);
+      expect(await screen.findByRole('heading', { name: '07/2026' })).toBeInTheDocument();
+
+      await swipeGrid(400);
+      expect(await screen.findByRole('heading', { name: '06/2026' })).toBeInTheDocument();
+    });
+
+    it('claims the horizontal gesture, so a swipe does not leave the page instead', async () => {
+      renderView();
+      await waitFor(() => expect(mockGetAllTransactionPages).toHaveBeenCalled());
+
+      expect(screen.getByRole('grid').parentElement).toHaveAttribute(
+        SWIPE_PAGINATE_ATTR,
+        'true',
+      );
     });
   });
 });

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import { CALENDAR_MAX_PER_SCHEDULE } from '@/hooks/useCalendarMonthData';
+import { SWIPE_ANIMATION_MS, SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
 import { TransactionsCalendarView } from './TransactionsCalendarView';
 import calendarNs from '@/i18n/messages/en/calendar.json';
 import { useViewModeStore } from '@/store/viewModeStore';
@@ -193,6 +194,38 @@ function renderView(
 /** The cell for a day, located by the accessible name MonthGrid gives it. */
 function cell(label: string) {
   return screen.getByLabelText(label);
+}
+
+/** One touch point, the way `useSwipeToPaginate`'s own spec builds them. */
+function touch(
+  type: 'touchstart' | 'touchmove' | 'touchend',
+  clientX: number,
+  clientY: number,
+): TouchEvent {
+  const point = { clientX, clientY, identifier: 0 } as Touch;
+  const init: TouchEventInit = { bubbles: true, cancelable: type === 'touchmove' };
+  if (type === 'touchend') {
+    init.changedTouches = [point];
+    init.touches = [];
+  } else {
+    init.touches = [point];
+    init.changedTouches = [point];
+  }
+  return new TouchEvent(type, init);
+}
+
+/** Drag the grid horizontally and let the commit animation finish. */
+async function swipeGrid(deltaX: number) {
+  const zone = screen.getByRole('grid').parentElement!;
+  const startX = 500;
+  await act(async () => {
+    zone.dispatchEvent(touch('touchstart', startX, 200));
+    zone.dispatchEvent(touch('touchmove', startX + deltaX, 202));
+    zone.dispatchEvent(touch('touchend', startX + deltaX, 202));
+  });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, SWIPE_ANIMATION_MS + 80));
+  });
 }
 
 beforeEach(() => {
@@ -462,6 +495,59 @@ describe('TransactionsCalendarView', () => {
         startDate: '2026-06-28',
         endDate: '2026-08-01',
       });
+    });
+
+    it('turns the month on a swipe across the grid: left is forward, right is back', async () => {
+      renderView();
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalledTimes(1));
+
+      await swipeGrid(-400);
+      expect(await screen.findByRole('heading', { name: '07/2026' })).toBeInTheDocument();
+
+      await swipeGrid(400);
+      expect(await screen.findByRole('heading', { name: '06/2026' })).toBeInTheDocument();
+
+      await swipeGrid(400);
+      expect(await screen.findByRole('heading', { name: '05/2026' })).toBeInTheDocument();
+    });
+
+    it('asks for the month a swipe landed on, not the one it left', async () => {
+      renderView();
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalledTimes(1));
+
+      await swipeGrid(-400);
+
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalledTimes(2));
+      // The same grid range the Next month arrow asks for: one month change,
+      // reached two ways.
+      expect(mockGetAllPages.mock.calls[1][0]).toMatchObject({
+        startDate: '2026-06-28',
+        endDate: '2026-08-01',
+      });
+    });
+
+    it('leaves a day selected in the month it left behind', async () => {
+      renderView();
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalledTimes(1));
+      fireEvent.click(cell('06/10/2026'));
+      expect(await screen.findByRole('complementary', { name: '06/10/2026' })).toBeInTheDocument();
+
+      await swipeGrid(-400);
+
+      expect(screen.queryByRole('complementary', { name: '06/10/2026' })).not.toBeInTheDocument();
+    });
+
+    it('claims the horizontal gesture, so a swipe does not leave the page instead', async () => {
+      // `useSwipeNavigation` pages between whole sections of the app and cedes a
+      // touch that starts inside a pagination zone. Without the marker a swipe
+      // over the calendar would navigate away rather than turn the month.
+      renderView();
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalled());
+
+      expect(screen.getByRole('grid').parentElement).toHaveAttribute(
+        SWIPE_PAGINATE_ATTR,
+        'true',
+      );
     });
   });
 
