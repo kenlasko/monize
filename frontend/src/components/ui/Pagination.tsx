@@ -85,8 +85,13 @@ export function Pagination({
         {' '}{itemName}
       </div>
 
-      {/* Navigation controls + optional right content */}
-      <div className="flex items-center gap-2">
+      {/* Navigation controls + optional right content.
+
+          Narrow enough and the two stack: the page stepper is seven controls
+          wide and the buttons beside it belong to the list rather than to the
+          paging, so on a phone the stepper takes a line of its own under them
+          instead of both being squeezed into one. */}
+      <div className="flex flex-col items-end gap-2 min-[820px]:flex-row min-[820px]:items-center">
         {infoRight}
         <div className="flex items-center space-x-1">
         {/* First page */}

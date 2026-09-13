@@ -149,4 +149,14 @@ describe('Pagination', () => {
     render(<Pagination {...defaultProps} infoRight={<span>Extra info</span>} />);
     expect(screen.getByText('Extra info')).toBeInTheDocument();
   });
+
+  it('gives the page stepper its own line under the list buttons on a narrow screen', () => {
+    // Seven paging controls and the list's own buttons do not fit across a phone.
+    // Above 820px -- the width the whole bar stops stacking at -- they share a
+    // row as before.
+    render(<Pagination {...defaultProps} infoRight={<span>Extra info</span>} />);
+    const group = screen.getByText('Extra info').parentElement!;
+    expect(group.className).toContain('flex-col');
+    expect(group.className).toContain('min-[820px]:flex-row');
+  });
 });
