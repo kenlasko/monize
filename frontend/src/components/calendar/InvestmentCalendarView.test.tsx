@@ -789,6 +789,23 @@ describe('InvestmentCalendarView', () => {
       ).toHaveTextContent('Ex-dividend date');
     });
 
+    it('bands a run across the days it covers, as the Transactions calendar does', async () => {
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-10',
+          endDate: '2026-06-12',
+          body: 'Earnings week',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      renderView();
+
+      const bands = await screen.findAllByTestId('calendar-note-span');
+      expect(bands).toHaveLength(1);
+      expect(bands[0]).toHaveTextContent('Earnings week');
+      expect(bands[0].style.gridColumn).toBe('4 / span 3');
+    });
+
     it('offers no note surface at all in an acting-delegate session', async () => {
       useAuthStore.setState({ actingAsUserId: 'owner-1' });
       renderView();

@@ -10,6 +10,7 @@ import {
   CalendarDayPanel,
   type CalendarDayBalance,
 } from '@/components/calendar/CalendarDayPanel';
+import { CalendarNoteSpans } from '@/components/calendar/CalendarNoteSpans';
 import { CalendarToolbar } from '@/components/calendar/CalendarToolbar';
 import {
   CALENDAR_MAX_ROWS,
@@ -365,6 +366,9 @@ export function TransactionsCalendarView({
             selectedDate={selectedDate}
             onSelectDay={(day) => notes.requestChange(() => setSelectedDate(day))}
             labelledBy={monthLabelId}
+            // A note belongs to a run of days, not to one, so it is drawn once
+            // across the days it covers rather than once per cell.
+            renderWeekSpans={(week) => <CalendarNoteSpans week={week} byDay={notes.byDay} />}
             renderDay={(day) => {
               const point = balancesReady ? balances.byDay.get(day.date) : undefined;
               return (
@@ -387,7 +391,10 @@ export function TransactionsCalendarView({
         </div>
 
         {selectedDate !== null && (
-          <div className="lg:w-80 lg:shrink-0">
+          // Wide enough for the note editor's two date fields side by side: at
+          // 20rem they shared 18rem between them and both read as truncated
+          // dates, which is the one thing a date field must not do.
+          <div className="lg:w-96 lg:shrink-0">
             <CalendarDayPanel
               date={selectedDate}
               rows={layers.includes('transactions') ? byDay.get(selectedDate) : undefined}

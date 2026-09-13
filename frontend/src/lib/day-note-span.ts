@@ -59,3 +59,59 @@ export function dayNoteSpanPosition(note: DayNote, date: string): DayNoteSpanPos
   if (date >= note.endDate) return 'end';
   return 'middle';
 }
+
+/**
+ * One note's band across one week of the grid.
+ *
+ * A note that covers Wednesday to the following Tuesday is two bands, one per
+ * week row, because a week row is as far as a grid column span can reach. Each
+ * band is a single element spanning its columns rather than one strip per day,
+ * which is what makes a run read as one thing: there is no seam to hide between
+ * days, and the note's text has the whole run's width to be read in.
+ */
+export interface DayNoteWeekSpan {
+  note: DayNote;
+  /** The column the band starts in, 1-based, as CSS grid numbers them. */
+  startColumn: number;
+  /** How many of this week's columns it covers. */
+  columns: number;
+  /** The note's own first day is in this week, so the band opens here. */
+  opensHere: boolean;
+  /** The note's own last day is in this week, so the band closes here. */
+  closesHere: boolean;
+}
+
+/**
+ * The note bands for one week of the grid, left to right.
+ *
+ * Days are claimed by at most one note (the server refuses overlapping spans),
+ * so the week's seven columns hold a sequence of runs and never two bands over
+ * one day.
+ */
+export function dayNoteWeekSpans(
+  week: readonly string[],
+  byDay: ReadonlyMap<string, DayNote>,
+): DayNoteWeekSpan[] {
+  const columns = week.map((date) => byDay.get(date) ?? null);
+
+  return columns.flatMap((note, index) => {
+    if (note === null) return [];
+    // Only the column a run starts in opens a band; the rest are inside one.
+    if (columns[index - 1]?.startDate === note.startDate) return [];
+
+    let columnsCovered = 1;
+    while (columns[index + columnsCovered]?.startDate === note.startDate) {
+      columnsCovered += 1;
+    }
+
+    return [
+      {
+        note,
+        startColumn: index + 1,
+        columns: columnsCovered,
+        opensHere: note.startDate === week[index],
+        closesHere: note.endDate === week[index + columnsCovered - 1],
+      },
+    ];
+  });
+}

@@ -277,6 +277,32 @@ describe('TransactionsCalendarView', () => {
       expect(chip.className).toContain(ACCOUNT_TYPE_META.CHEQUING.pillClass.split(' ')[0]);
     });
 
+    it('lines the amounts up at the right edge of the day', async () => {
+      // A chip is a row, not a sentence: the payee reads from the left and
+      // truncates, the figure sits at the right edge, so a day's amounts line up
+      // under each other as they do in the register's amount column.
+      mockGetAllPages.mockResolvedValue([
+        transaction({ id: 'tx-1', amount: -25, payeeName: 'A very long grocer name' }),
+        transaction({ id: 'tx-2', amount: -1250.5, payeeName: 'Rent' }),
+      ]);
+      renderView();
+
+      const chip = (await screen.findAllByRole('button', { name: /Rent/ }))[0];
+      expect(chip.className).toContain('flex');
+
+      const amount = within(chip).getByText('$-1250.50');
+      expect(chip.lastElementChild).toBe(amount);
+      expect(amount.className).toContain('shrink-0');
+      expect(amount.className).toContain('tabular-nums');
+
+      // The label gives way first: it takes what is left and truncates rather
+      // than pushing the figure off the chip.
+      const label = chip.firstElementChild!;
+      expect(label).toHaveTextContent('Rent');
+      expect(label.className).toContain('flex-1');
+      expect(label.className).toContain('truncate');
+    });
+
     it('strikes a void row through rather than dropping it', async () => {
       mockGetAllPages.mockResolvedValue([
         transaction({ status: TransactionStatus.VOID }),
@@ -880,6 +906,95 @@ describe('TransactionsCalendarView', () => {
       expect(
         within(cell('06/14/2026')).queryByTestId('calendar-day-note-marker'),
       ).not.toBeInTheDocument();
+    });
+
+    it('draws the note as one band across the days it covers, read once', async () => {
+      // 10 to 13 June 2026 is Wednesday to Saturday: one band over four columns
+      // of one week, not four strips that have to line up.
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-10',
+          endDate: '2026-06-13',
+          body: 'Away in Lisbon\nback on the 14th',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      renderView();
+
+      const bands = await screen.findAllByTestId('calendar-note-span');
+      expect(bands).toHaveLength(1);
+      expect(bands[0]).toHaveTextContent('Away in Lisbon');
+      expect(bands[0]).not.toHaveTextContent('back on the 14th');
+      expect(bands[0]).toHaveAttribute('data-note-columns', '4');
+      expect(bands[0].style.gridColumn).toBe('4 / span 4');
+    });
+
+    it('breaks a run at the week and opens it again on the next row', async () => {
+      // Saturday 13 June to Monday 15 June: two bands, because a week row is as
+      // far as a column span reaches -- and each sits at the bottom of its own
+      // week's days.
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-13',
+          endDate: '2026-06-15',
+          body: 'Long weekend',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      renderView();
+
+      const bands = await screen.findAllByTestId('calendar-note-span');
+      expect(bands).toHaveLength(2);
+      expect(bands[0].style.gridColumn).toBe('7 / span 1');
+      expect(bands[1].style.gridColumn).toBe('1 / span 2');
+      for (const band of bands) expect(band).toHaveTextContent('Long weekend');
+    });
+
+    it('keeps the note in every covered cell for a screen reader', async () => {
+      // The band is decoration the screen reader never sees, so the cell's own
+      // marker is what says a day is covered -- on every day of the run.
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-10',
+          endDate: '2026-06-12',
+          body: 'Away in Lisbon',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      renderView();
+
+      await within(cell('06/10/2026')).findByTestId('calendar-day-note-marker');
+      for (const day of ['06/10/2026', '06/11/2026', '06/12/2026']) {
+        expect(within(cell(day)).getByTestId('calendar-day-note-marker')).toBeInTheDocument();
+      }
+      expect(within(cell('06/13/2026')).queryByTestId('calendar-day-note-marker')).toBeNull();
+    });
+
+    it('keeps the band clear of a busy day rather than printing over its chips', async () => {
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-10',
+          endDate: '2026-06-10',
+          body: 'Away in Lisbon',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      mockGetAllPages.mockResolvedValue([
+        transaction({ id: 'tx-1' }),
+        transaction({ id: 'tx-2' }),
+        transaction({ id: 'tx-3' }),
+        transaction({ id: 'tx-4' }),
+      ]);
+      renderView();
+
+      await screen.findAllByTestId('calendar-note-span');
+      const noted = within(cell('06/10/2026')).getByTestId('calendar-day-note-marker')
+        .parentElement!;
+      expect(noted.className).toContain('sm:pb-6');
+      // A day no note covers keeps every pixel for its own rows.
+      expect(
+        within(cell('06/11/2026')).getByText('11').parentElement!.parentElement!.className,
+      ).not.toContain('sm:pb-6');
     });
 
     it('opens the same note from the middle of a run, for editing', async () => {
