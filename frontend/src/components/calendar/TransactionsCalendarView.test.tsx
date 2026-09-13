@@ -424,6 +424,24 @@ describe('TransactionsCalendarView', () => {
 
       expect(await screen.findByText('Nothing on this day.')).toBeInTheDocument();
     });
+
+    it('signs each amount the way the register does: money in green, money out red', async () => {
+      // The row's amount is already signed, so the panel decides nothing about
+      // direction -- it colours what it was handed, through the same
+      // `gainLossColor` the rest of the app signs a figure with.
+      mockGetAllPages.mockResolvedValue([
+        transaction({ id: 'tx-out', amount: -25, payeeName: 'Grocer' }),
+        transaction({ id: 'tx-in', amount: 900, payeeName: 'Payroll' }),
+      ]);
+      renderView();
+
+      await screen.findAllByRole('button', { name: /Grocer/ });
+      fireEvent.click(cell('06/10/2026'));
+
+      const panel = await screen.findByRole('complementary', { name: '06/10/2026' });
+      expect(within(panel).getByText('$900.00').className).toContain('text-green');
+      expect(within(panel).getByText('$-25.00').className).toContain('text-red');
+    });
   });
 
   describe('the month', () => {

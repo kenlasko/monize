@@ -15,7 +15,7 @@ import { CalendarDayNote } from '@/components/calendar/CalendarDayNote';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { usePayeeDisplay } from '@/hooks/usePayeeDisplay';
-import { balanceColor } from '@/lib/format';
+import { balanceColor, gainLossColor } from '@/lib/format';
 import { useInvestmentActionInfo } from '@/components/investments/InvestmentTransactionListParts';
 import {
   redemptionTotalWithInterest,
@@ -217,7 +217,15 @@ export function CalendarDayPanel({
                       {payeeDisplay(chip.transaction) ?? t('chip.noPayee')}
                     </span>
                   </span>
-                  <span className="shrink-0 text-sm tabular-nums text-gray-900 dark:text-gray-100">
+                  {/* The register's own reading of the sign: money in is green,
+                      money out is red, through the same `gainLossColor` the
+                      rest of the app signs a figure with. The row's amount is
+                      already signed, so nothing here decides the direction. */}
+                  <span
+                    className={`shrink-0 text-sm tabular-nums ${gainLossColor(
+                      Number(chip.transaction.amount),
+                    )}`}
+                  >
                     {formatCurrency(
                       Number(chip.transaction.amount),
                       chip.transaction.currencyCode,
