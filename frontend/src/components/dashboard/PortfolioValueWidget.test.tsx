@@ -119,10 +119,12 @@ describe('PortfolioValueWidget', () => {
     );
   });
 
-  it('puts the move under the value in smaller type, with the refresh control last', async () => {
+  it('puts the move under the value, right-aligned with it and in smaller type', async () => {
     // Four things in a widget header is more than a phone has beside a title, so
-    // the header is two lines: the value, the window and the refresh button on
-    // the first, the move beneath the figure it belongs to.
+    // the header is two lines. The move shares its column with the value and
+    // nothing else: right-aligned there, it ends where the value ends rather
+    // than out at the refresh button, which is what makes it read as the
+    // value's own figure.
     getPortfolioSummary.mockResolvedValue({ totalPortfolioValue: 10000, holdings: [] });
     getInvestmentsMonthly.mockResolvedValue([
       { month: '2026-05', value: 8000 },
@@ -135,13 +137,18 @@ describe('PortfolioValueWidget', () => {
     const range = screen.getByText('1Y');
     const refresh = screen.getByLabelText('Refresh current value');
 
-    // Smaller than the value it sits under, and not on its line.
+    // Smaller than the value it sits under.
     expect(change.className).toContain('text-xs');
     expect(value.className).toContain('text-sm');
-    expect(change.parentElement).not.toBe(value.parentElement);
-    expect(value.parentElement).toBe(range.parentElement);
+    // One column holding the two figures, aligned on their right edges.
+    const figures = value.parentElement!;
+    expect(change.parentElement).toBe(figures);
+    expect(figures.className).toContain('flex-col');
+    expect(figures.className).toContain('items-end');
+    // The window and the refresh button are beside that column, not in it.
+    expect(range.parentElement).not.toBe(figures);
+    expect(refresh.parentElement).not.toBe(figures);
     // The refresh button is to the right of both the value and the window.
-    expect(range.parentElement).toBe(refresh.parentElement);
     expect(value.compareDocumentPosition(refresh)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(range.compareDocumentPosition(refresh)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
