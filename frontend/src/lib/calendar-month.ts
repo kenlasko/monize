@@ -184,6 +184,35 @@ export function shiftMonth(month: string, delta: number): string {
   return `${String((zeroBased - monthIndex) / 12).padStart(4, '0')}-${pad2(monthIndex + 1)}`;
 }
 
+/**
+ * Months, numbered from `0001-01` as page 1, and back again.
+ *
+ * A swipe across the grid turns the month the way a swipe turns a register page,
+ * and `useSwipeToPaginate` asks for the page it is on out of how many there are.
+ * The months ARE those pages: `0001-01` to `9999-12`, the same range
+ * `parseMonthInput` accepts, so every month a reader can type is a page the
+ * gesture can reach and neither end of the range can be stepped off.
+ */
+export const CALENDAR_MONTH_PAGES = 9999 * 12;
+
+/** `month` as its page number, 1 for `0001-01`. */
+export function monthPageNumber(month: string): number {
+  const [year, monthNumber] = requireMonth(month, 'month');
+  return (year - 1) * 12 + monthNumber;
+}
+
+/** The month page `page` numbers, the inverse of {@link monthPageNumber}. */
+export function monthFromPageNumber(page: number): string {
+  if (!Number.isInteger(page) || page < 1 || page > CALENDAR_MONTH_PAGES) {
+    throw new Error(
+      `page must be a month page between 1 and ${CALENDAR_MONTH_PAGES}, received "${page}"`,
+    );
+  }
+  const zeroBased = page - 1;
+  const monthIndex = zeroBased % 12;
+  return `${String((zeroBased - monthIndex) / 12 + 1).padStart(4, '0')}-${pad2(monthIndex + 1)}`;
+}
+
 /** The `YYYY-MM` a calendar date belongs to. */
 export function monthOf(date: string): string {
   requireDate(date, 'date');

@@ -106,9 +106,9 @@
       "label": "Kierunek"
     },
     "metric": {
-      "label": "Sortuj według",
-      "amount": "Kwota",
-      "percent": "Procent"
+      "label": "Pokaż",
+      "price": "Cena",
+      "holdings": "Pozycje"
     }
   },
   "favouriteSecurities": {

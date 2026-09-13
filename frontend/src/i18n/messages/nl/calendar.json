@@ -114,8 +114,6 @@
     "placeholder": "bijv. mrt 1998, 1998-03, 3/1998",
     "unreadable": "Dat kunnen we niet als maand lezen. Probeer een jaar, een maandnaam of 1998-03.",
     "previousYear": "Vorig jaar",
-    "nextYear": "Volgend jaar",
-    "yearBack": "Een jaar terug",
-    "yearForward": "Een jaar vooruit"
+    "nextYear": "Volgend jaar"
   }
 }

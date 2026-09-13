@@ -32,6 +32,18 @@ interface MonthGridProps {
   onSelectDay?: (date: string) => void;
   /** What goes inside a day's cell. The grid never looks at it. */
   renderDay: (day: MonthGridDay) => ReactNode;
+  /**
+   * What spans days rather than belonging to one, drawn across the bottom of a
+   * week's cells: the grid hands over the week's dates and its column tracks,
+   * the view decides what a span is. Each node returned must place itself with
+   * `gridColumn` over those seven columns.
+   *
+   * The layer is decoration: it is hidden from assistive technology and passes
+   * every click through to the day beneath, so whatever it draws must also be in
+   * the cells it covers. Phones do not draw it -- a column is 50px there, which
+   * is no room for a band -- so a cell has to stand on its own below `sm`.
+   */
+  renderWeekSpans?: (week: readonly string[]) => ReactNode;
   /** Id of the element naming this grid, usually the toolbar's month caption. */
   labelledBy?: string;
   /**
@@ -77,6 +89,7 @@ export function MonthGrid({
   selectedDate = null,
   onSelectDay,
   renderDay,
+  renderWeekSpans,
   labelledBy,
   ref,
 }: MonthGridProps) {
@@ -200,7 +213,7 @@ export function MonthGrid({
       </div>
 
       {chunkWeeks(days).map((week) => (
-        <div key={week[0]} role="row" className="grid grid-cols-7">
+        <div key={week[0]} role="row" className="relative grid grid-cols-7">
           {week.map((date) => {
             const index = days.indexOf(date);
             const isSelected = date === selectedDate;
@@ -235,6 +248,19 @@ export function MonthGrid({
               </div>
             );
           })}
+
+          {/* Last in the row, so it paints over the cell borders it crosses and
+              a span reads as one band rather than seven. `aria-hidden` keeps the
+              row's children seven gridcells for a screen reader, which is also
+              why nothing here may be the only copy of what it says. */}
+          {renderWeekSpans && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 hidden grid-cols-7 pb-1 sm:grid"
+            >
+              {renderWeekSpans(week)}
+            </div>
+          )}
         </div>
       ))}
     </div>

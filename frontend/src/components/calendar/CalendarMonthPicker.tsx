@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useClickOutside } from '@/hooks/useClickOutside';
-import { shiftMonth } from '@/lib/calendar-month';
 import { parseMonthInput } from '@/lib/month-input';
 import { SEGMENT_BASE_CLASS } from '@/components/ui/segmented-control';
 import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
@@ -20,8 +19,8 @@ interface CalendarMonthPickerProps {
   anchorRef: React.RefObject<HTMLElement | null>;
 }
 
-/** Enough room for the field, the year row and three rows of months. */
-const PANEL_HEIGHT = 250;
+/** Enough room for the field, the year stepper and three rows of months. */
+const PANEL_HEIGHT = 220;
 const PANEL_WIDTH = 260;
 
 const MONTH_BUTTON = `${SEGMENT_BASE_CLASS} w-full text-center`;
@@ -192,29 +191,6 @@ export function CalendarMonthPicker({
             </button>
           );
         })}
-      </div>
-
-      <div className="mt-2 flex justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            onSelect(shiftMonth(month, -12));
-            onClose();
-          }}
-          className="rounded px-2 py-1 text-xs text-gray-600 hover:underline dark:text-gray-300"
-        >
-          {t('monthPicker.yearBack')}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            onSelect(shiftMonth(month, 12));
-            onClose();
-          }}
-          className="rounded px-2 py-1 text-xs text-gray-600 hover:underline dark:text-gray-300"
-        >
-          {t('monthPicker.yearForward')}
-        </button>
       </div>
     </div>,
     document.body,

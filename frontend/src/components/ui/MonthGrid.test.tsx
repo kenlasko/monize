@@ -299,4 +299,64 @@ describe('MonthGrid', () => {
       expect(screen.getByLabelText('06/01/2026')).toHaveTextContent('in');
     });
   });
+
+  describe('what spans days', () => {
+    it('hands each week its own dates, in the order it drew them', () => {
+      const weeks: string[][] = [];
+      renderGrid({
+        renderWeekSpans: (week) => {
+          weeks.push([...week]);
+          return null;
+        },
+      });
+
+      const days = monthGridDays(MONTH, 0);
+      expect(weeks).toHaveLength(days.length / 7);
+      expect(weeks[0]).toEqual(days.slice(0, 7));
+      expect(weeks.flat()).toEqual(days);
+    });
+
+    it('draws the layer over the week, under no cell, and only from sm up', () => {
+      const { container } = renderGrid({
+        renderWeekSpans: () => <div data-testid="span">Away</div>,
+      });
+
+      const layer = screen.getAllByTestId('span')[0].parentElement!;
+      // Absolute at the bottom of the week's cells, so a band sits at the bottom
+      // of every day it crosses however tall the row is.
+      expect(layer.className).toContain('absolute');
+      expect(layer.className).toContain('bottom-0');
+      // Last in the row, so it paints over the cell borders it crosses.
+      expect(layer.previousElementSibling).toBe(
+        within(container.querySelectorAll('[role="row"]')[1] as HTMLElement)
+          .getAllByRole('gridcell')
+          .at(-1),
+      );
+      // A phone column is 50px wide, which is no room for a band.
+      expect(layer.className).toContain('hidden');
+      expect(layer.className).toContain('sm:grid');
+    });
+
+    it('keeps the layer out of the grid semantics and out of the way of a click', () => {
+      const { container } = renderGrid({
+        renderWeekSpans: () => <div data-testid="span">Away</div>,
+      });
+
+      const layer = screen.getAllByTestId('span')[0].parentElement!;
+      expect(layer).toHaveAttribute('aria-hidden', 'true');
+      // A click over a band is a click on the day beneath it.
+      expect(layer.className).toContain('pointer-events-none');
+      // Every row still holds seven gridcells and nothing else a reader meets.
+      container.querySelectorAll('[role="row"]').forEach((row, index) => {
+        if (index === 0) return; // the weekday header row
+        expect(within(row as HTMLElement).getAllByRole('gridcell')).toHaveLength(7);
+      });
+    });
+
+    it('draws no layer at all when the view has nothing that spans days', () => {
+      const { container } = renderGrid();
+
+      expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
+    });
+  });
 });

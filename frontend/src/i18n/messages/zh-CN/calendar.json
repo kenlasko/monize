@@ -114,8 +114,6 @@
     "placeholder": "例如 3月 1998、1998-03、3/1998",
     "unreadable": "无法将其识别为月份。请尝试年份、月份名称或 1998-03。",
     "previousYear": "上一年",
-    "nextYear": "下一年",
-    "yearBack": "回退一年",
-    "yearForward": "前进一年"
+    "nextYear": "下一年"
   }
 }

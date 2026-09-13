@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DateInput } from '@/components/ui/DateInput';
+import { NOTE_PAPER_CLASS } from '@/components/calendar/note-paper';
 import { LinkifiedText } from '@/components/ui/LinkifiedText';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { getErrorMessage } from '@/lib/errors';
@@ -305,7 +306,11 @@ export function CalendarDayNote({
               })}
             </p>
           )}
-          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100">
+          {/* The same paper the band on the grid is drawn on, so a note is one
+              recognisable thing in both places it is read. */}
+          <p
+            className={`mt-1 whitespace-pre-wrap break-words rounded-md px-2 py-1.5 text-sm ${NOTE_PAPER_CLASS}`}
+          >
             <LinkifiedText text={note.body} />
           </p>
           <div className="mt-2 flex flex-wrap gap-2">

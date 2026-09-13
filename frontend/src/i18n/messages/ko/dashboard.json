@@ -106,9 +106,9 @@
       "label": "방향"
     },
     "metric": {
-      "label": "정렬 기준",
-      "amount": "금액",
-      "percent": "비율"
+      "label": "표시",
+      "price": "가격",
+      "holdings": "보유"
     }
   },
   "favouriteSecurities": {

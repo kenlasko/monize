@@ -106,9 +106,9 @@
       "label": "方向"
     },
     "metric": {
-      "label": "排序依據",
-      "amount": "金額",
-      "percent": "百分比"
+      "label": "顯示",
+      "price": "價格",
+      "holdings": "持倉"
     }
   },
   "favouriteSecurities": {

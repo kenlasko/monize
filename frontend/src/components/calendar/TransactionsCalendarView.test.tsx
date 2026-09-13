@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import { CALENDAR_MAX_PER_SCHEDULE } from '@/hooks/useCalendarMonthData';
-import { TransactionsCalendarView } from './TransactionsCalendarView';
+import { SWIPE_ANIMATION_MS, SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
+import { NOTE_PAPER_CLASS } from './note-paper';
+import { CALENDAR_DAY_CHIP_LIMIT, TransactionsCalendarView } from './TransactionsCalendarView';
 import calendarNs from '@/i18n/messages/en/calendar.json';
 import { useViewModeStore } from '@/store/viewModeStore';
 import { useAuthStore } from '@/store/authStore';
@@ -195,6 +197,38 @@ function cell(label: string) {
   return screen.getByLabelText(label);
 }
 
+/** One touch point, the way `useSwipeToPaginate`'s own spec builds them. */
+function touch(
+  type: 'touchstart' | 'touchmove' | 'touchend',
+  clientX: number,
+  clientY: number,
+): TouchEvent {
+  const point = { clientX, clientY, identifier: 0 } as Touch;
+  const init: TouchEventInit = { bubbles: true, cancelable: type === 'touchmove' };
+  if (type === 'touchend') {
+    init.changedTouches = [point];
+    init.touches = [];
+  } else {
+    init.touches = [point];
+    init.changedTouches = [point];
+  }
+  return new TouchEvent(type, init);
+}
+
+/** Drag the grid horizontally and let the commit animation finish. */
+async function swipeGrid(deltaX: number) {
+  const zone = screen.getByRole('grid').parentElement!;
+  const startX = 500;
+  await act(async () => {
+    zone.dispatchEvent(touch('touchstart', startX, 200));
+    zone.dispatchEvent(touch('touchmove', startX + deltaX, 202));
+    zone.dispatchEvent(touch('touchend', startX + deltaX, 202));
+  });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, SWIPE_ANIMATION_MS + 80));
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetAllPages.mockResolvedValue([]);
@@ -242,6 +276,81 @@ describe('TransactionsCalendarView', () => {
       const chip = await screen.findByRole('button', { name: /Grocer/ });
       expect(within(cell('06/10/2026')).getByRole('button', { name: /Grocer/ })).toBe(chip);
       expect(chip.className).toContain(ACCOUNT_TYPE_META.CHEQUING.pillClass.split(' ')[0]);
+    });
+
+    it('fills the taller cell with chips, and counts only what is left over', async () => {
+      // The cell grew by half, so the limit grew with it: a day of five rows is
+      // five chips and no "+N more", and the sixth is what the line is for.
+      expect(CALENDAR_DAY_CHIP_LIMIT).toBe(5);
+      mockGetAllPages.mockResolvedValue(
+        Array.from({ length: CALENDAR_DAY_CHIP_LIMIT }, (_, i) =>
+          transaction({ id: `tx-${i}`, payeeName: `Payee ${i}` }),
+        ),
+      );
+      const five = renderView();
+
+      await screen.findAllByRole('button', { name: /Payee/ });
+      expect(within(cell('06/10/2026')).getAllByRole('button')).toHaveLength(
+        CALENDAR_DAY_CHIP_LIMIT,
+      );
+      expect(within(cell('06/10/2026')).queryByRole('button', { name: /more/ })).toBeNull();
+      five.unmount();
+
+      mockGetAllPages.mockResolvedValue(
+        Array.from({ length: CALENDAR_DAY_CHIP_LIMIT + 2 }, (_, i) =>
+          transaction({ id: `tx-${i}`, payeeName: `Payee ${i}` }),
+        ),
+      );
+      renderView();
+
+      await screen.findAllByRole('button', { name: /Payee/ });
+      expect(
+        within(cell('06/10/2026')).getByRole('button', { name: '+2 more' }),
+      ).toBeInTheDocument();
+    });
+
+    it('reads a day from earliest to latest, top to bottom', async () => {
+      // The register answers newest first; a day on the calendar is read the
+      // other way round, so the chips run down the cell as the day happened.
+      mockGetAllPages.mockResolvedValue([
+        transaction({ id: 'tx-evening', payeeName: 'Evening' }),
+        transaction({ id: 'tx-noon', payeeName: 'Noon' }),
+        transaction({ id: 'tx-morning', payeeName: 'Morning' }),
+      ]);
+      renderView();
+
+      await screen.findAllByRole('button', { name: /Morning/ });
+      expect(
+        within(cell('06/10/2026'))
+          .getAllByRole('button')
+          .map((chip) => chip.textContent?.replace(/[^A-Za-z]/g, '')),
+      ).toEqual(['Morning', 'Noon', 'Evening']);
+    });
+
+    it('lines the amounts up at the right edge of the day', async () => {
+      // A chip is a row, not a sentence: the payee reads from the left and
+      // truncates, the figure sits at the right edge, so a day's amounts line up
+      // under each other as they do in the register's amount column.
+      mockGetAllPages.mockResolvedValue([
+        transaction({ id: 'tx-1', amount: -25, payeeName: 'A very long grocer name' }),
+        transaction({ id: 'tx-2', amount: -1250.5, payeeName: 'Rent' }),
+      ]);
+      renderView();
+
+      const chip = (await screen.findAllByRole('button', { name: /Rent/ }))[0];
+      expect(chip.className).toContain('flex');
+
+      const amount = within(chip).getByText('$-1250.50');
+      expect(chip.lastElementChild).toBe(amount);
+      expect(amount.className).toContain('shrink-0');
+      expect(amount.className).toContain('tabular-nums');
+
+      // The label gives way first: it takes what is left and truncates rather
+      // than pushing the figure off the chip.
+      const label = chip.firstElementChild!;
+      expect(label).toHaveTextContent('Rent');
+      expect(label.className).toContain('flex-1');
+      expect(label.className).toContain('truncate');
     });
 
     it('strikes a void row through rather than dropping it', async () => {
@@ -424,6 +533,24 @@ describe('TransactionsCalendarView', () => {
 
       expect(await screen.findByText('Nothing on this day.')).toBeInTheDocument();
     });
+
+    it('signs each amount the way the register does: money in green, money out red', async () => {
+      // The row's amount is already signed, so the panel decides nothing about
+      // direction -- it colours what it was handed, through the same
+      // `gainLossColor` the rest of the app signs a figure with.
+      mockGetAllPages.mockResolvedValue([
+        transaction({ id: 'tx-out', amount: -25, payeeName: 'Grocer' }),
+        transaction({ id: 'tx-in', amount: 900, payeeName: 'Payroll' }),
+      ]);
+      renderView();
+
+      await screen.findAllByRole('button', { name: /Grocer/ });
+      fireEvent.click(cell('06/10/2026'));
+
+      const panel = await screen.findByRole('complementary', { name: '06/10/2026' });
+      expect(within(panel).getByText('$900.00').className).toContain('text-green');
+      expect(within(panel).getByText('$-25.00').className).toContain('text-red');
+    });
   });
 
   describe('the month', () => {
@@ -444,6 +571,59 @@ describe('TransactionsCalendarView', () => {
         startDate: '2026-06-28',
         endDate: '2026-08-01',
       });
+    });
+
+    it('turns the month on a swipe across the grid: left is forward, right is back', async () => {
+      renderView();
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalledTimes(1));
+
+      await swipeGrid(-400);
+      expect(await screen.findByRole('heading', { name: '07/2026' })).toBeInTheDocument();
+
+      await swipeGrid(400);
+      expect(await screen.findByRole('heading', { name: '06/2026' })).toBeInTheDocument();
+
+      await swipeGrid(400);
+      expect(await screen.findByRole('heading', { name: '05/2026' })).toBeInTheDocument();
+    });
+
+    it('asks for the month a swipe landed on, not the one it left', async () => {
+      renderView();
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalledTimes(1));
+
+      await swipeGrid(-400);
+
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalledTimes(2));
+      // The same grid range the Next month arrow asks for: one month change,
+      // reached two ways.
+      expect(mockGetAllPages.mock.calls[1][0]).toMatchObject({
+        startDate: '2026-06-28',
+        endDate: '2026-08-01',
+      });
+    });
+
+    it('leaves a day selected in the month it left behind', async () => {
+      renderView();
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalledTimes(1));
+      fireEvent.click(cell('06/10/2026'));
+      expect(await screen.findByRole('complementary', { name: '06/10/2026' })).toBeInTheDocument();
+
+      await swipeGrid(-400);
+
+      expect(screen.queryByRole('complementary', { name: '06/10/2026' })).not.toBeInTheDocument();
+    });
+
+    it('claims the horizontal gesture, so a swipe does not leave the page instead', async () => {
+      // `useSwipeNavigation` pages between whole sections of the app and cedes a
+      // touch that starts inside a pagination zone. Without the marker a swipe
+      // over the calendar would navigate away rather than turn the month.
+      renderView();
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalled());
+
+      expect(screen.getByRole('grid').parentElement).toHaveAttribute(
+        SWIPE_PAGINATE_ATTR,
+        'true',
+      );
     });
   });
 
@@ -778,6 +958,121 @@ describe('TransactionsCalendarView', () => {
       ).not.toBeInTheDocument();
     });
 
+    it('draws the note as one band across the days it covers, read once', async () => {
+      // 10 to 13 June 2026 is Wednesday to Saturday: one band over four columns
+      // of one week, not four strips that have to line up.
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-10',
+          endDate: '2026-06-13',
+          body: 'Away in Lisbon\nback on the 14th',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      renderView();
+
+      const bands = await screen.findAllByTestId('calendar-note-span');
+      expect(bands).toHaveLength(1);
+      expect(bands[0]).toHaveTextContent('Away in Lisbon');
+      expect(bands[0]).not.toHaveTextContent('back on the 14th');
+      expect(bands[0]).toHaveAttribute('data-note-columns', '4');
+      expect(bands[0].style.gridColumn).toBe('4 / span 4');
+    });
+
+    it('breaks a run at the week and opens it again on the next row', async () => {
+      // Saturday 13 June to Monday 15 June: two bands, because a week row is as
+      // far as a column span reaches -- and each sits at the bottom of its own
+      // week's days.
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-13',
+          endDate: '2026-06-15',
+          body: 'Long weekend',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      renderView();
+
+      const bands = await screen.findAllByTestId('calendar-note-span');
+      expect(bands).toHaveLength(2);
+      expect(bands[0].style.gridColumn).toBe('7 / span 1');
+      expect(bands[1].style.gridColumn).toBe('1 / span 2');
+      for (const band of bands) expect(band).toHaveTextContent('Long weekend');
+    });
+
+    it('draws a note on Post-It paper, the same paper on the grid as in the panel', async () => {
+      // A note is the one thing on this calendar that is not a figure, so it is
+      // the one thing that looks like paper -- and it is one yellow, from one
+      // constant, in both places a note is read.
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-10',
+          endDate: '2026-06-10',
+          body: 'Away in Lisbon',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      renderView();
+
+      const paper = NOTE_PAPER_CLASS.split(' ');
+      expect(paper).toContain('bg-yellow-200');
+
+      const band = (await screen.findAllByTestId('calendar-note-span'))[0];
+      for (const className of paper) expect(band.classList.contains(className)).toBe(true);
+
+      fireEvent.click(cell('06/10/2026'));
+      const panel = await screen.findByRole('complementary', { name: '06/10/2026' });
+      const body = within(panel).getByText('Away in Lisbon');
+      for (const className of paper) expect(body.classList.contains(className)).toBe(true);
+    });
+
+    it('keeps the note in every covered cell for a screen reader', async () => {
+      // The band is decoration the screen reader never sees, so the cell's own
+      // marker is what says a day is covered -- on every day of the run.
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-10',
+          endDate: '2026-06-12',
+          body: 'Away in Lisbon',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      renderView();
+
+      await within(cell('06/10/2026')).findByTestId('calendar-day-note-marker');
+      for (const day of ['06/10/2026', '06/11/2026', '06/12/2026']) {
+        expect(within(cell(day)).getByTestId('calendar-day-note-marker')).toBeInTheDocument();
+      }
+      expect(within(cell('06/13/2026')).queryByTestId('calendar-day-note-marker')).toBeNull();
+    });
+
+    it('keeps the band clear of a busy day rather than printing over its chips', async () => {
+      mockListDayNotes.mockResolvedValue([
+        {
+          startDate: '2026-06-10',
+          endDate: '2026-06-10',
+          body: 'Away in Lisbon',
+          updatedAt: '2026-06-09T12:00:00.000Z',
+        },
+      ]);
+      mockGetAllPages.mockResolvedValue([
+        transaction({ id: 'tx-1' }),
+        transaction({ id: 'tx-2' }),
+        transaction({ id: 'tx-3' }),
+        transaction({ id: 'tx-4' }),
+      ]);
+      renderView();
+
+      await screen.findAllByTestId('calendar-note-span');
+      const noted = within(cell('06/10/2026')).getByTestId('calendar-day-note-marker')
+        .parentElement!;
+      expect(noted.className).toContain('sm:pb-6');
+      // A day no note covers keeps every pixel for its own rows.
+      expect(
+        within(cell('06/11/2026')).getByText('11').parentElement!.parentElement!.className,
+      ).not.toContain('sm:pb-6');
+    });
+
     it('opens the same note from the middle of a run, for editing', async () => {
       // Reaching the editor from any covered day is the whole point of a span.
       mockListDayNotes.mockResolvedValue([
@@ -976,6 +1271,41 @@ describe('TransactionsCalendarView', () => {
       // of something, not twice as a stray digit.
       expect(within(dayCell).getByText('2')).toHaveAttribute('aria-hidden', 'true');
       expect(within(cell('06/11/2026')).queryByText(/item/)).toBeNull();
+    });
+
+    it('leaves the "+N more" line to the grid that draws the chips it counts', async () => {
+      // Below sm the chips are dots and the count beside them already says how
+      // many items the day holds, so a second line saying how many were left out
+      // of a list nobody can see adds nothing. It is a breakpoint and not a
+      // branch: the line is in the markup, drawn only from sm up.
+      viewport(400);
+      mockGetAllPages.mockResolvedValue(
+        Array.from({ length: CALENDAR_DAY_CHIP_LIMIT + 1 }, (_, i) =>
+          transaction({ id: `tx-${i}` }),
+        ),
+      );
+      renderView();
+
+      await screen.findAllByRole('button', { name: /Grocer/ });
+      const more = within(cell('06/10/2026')).getByRole('button', { name: '+1 more' });
+      expect(more.classList.contains('hidden')).toBe(true);
+      expect(more.classList.contains('sm:block')).toBe(true);
+    });
+
+    it('puts the day figure under the date on a phone, and beside it from sm up', async () => {
+      // A date and a balance do not fit across a phone's cell, and the figure is
+      // what the reader turned the Balances layer on for.
+      viewport(400);
+      withBalancesLayer();
+      mockGetDailyBalanceTotals.mockResolvedValue(
+        balanceTotals({ days: [balanceDay('2026-06-10')] }),
+      );
+      renderView();
+
+      const figure = await within(cell('06/10/2026')).findByTestId('calendar-balance-actual');
+      const row = figure.parentElement!;
+      expect(row.className).toContain('flex-col');
+      expect(row.className).toContain('sm:flex-row');
     });
 
     it('puts focus back on the day when the panel closes', async () => {

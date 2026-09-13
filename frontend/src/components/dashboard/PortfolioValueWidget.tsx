@@ -195,37 +195,22 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
       titleHref="/reports/portfolio-value"
       widgetId={WIDGET_ID}
       headerRight={
-        <div className="flex items-center gap-2">
-          {totalPortfolioValue !== null && (
-            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {formatCurrency(totalPortfolioValue, defaultCurrency)}
-            </span>
-          )}
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+        /* Two lines, and the same two at every width: the window and the refresh
+           control ride up on the title's line beside the settings gear, and the
+           figures take the line under them -- the value, with the move
+           right-aligned beneath it in smaller type, so the two end on the same
+           edge and read as one figure and its change. */
+        <div className="flex flex-wrap items-center justify-end gap-x-2">
+          <span className="whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
             {t(`widgets.rangeLabels.${config.range}` as Parameters<typeof t>[0])}
           </span>
-          {/* The move over the window, in money and as a share of where it
-              started. An unknown baseline shows nothing at all rather than a
-              change of zero, which would read as a flat market. */}
-          {!loading && change !== null && (
-            <span
-              className={`text-sm font-medium ${gainLossColor(change)}`}
-              data-testid="portfolio-period-change"
-            >
-              {change >= 0 ? '+' : ''}
-              {formatCurrency(change, defaultCurrency)}
-              {changePercent !== null && (
-                <span className="ml-1">({formatSignedPercent(changePercent, 1)})</span>
-              )}
-            </span>
-          )}
           <button
             type="button"
             onClick={handleRefresh}
             disabled={isRefreshing}
             aria-label={t('portfolioValue.refresh')}
             title={t('portfolioValue.refresh')}
-            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-shrink-0 p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
               className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
@@ -237,6 +222,30 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           </button>
+          {/* `w-full` is what puts the figures on their own line: the controls
+              above keep the title's line whatever the card's width. */}
+          <div className="flex w-full flex-col items-end gap-0.5">
+            {totalPortfolioValue !== null && (
+              <span className="whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {formatCurrency(totalPortfolioValue, defaultCurrency)}
+              </span>
+            )}
+            {/* The move over the window, in money and as a share of where it
+                started. An unknown baseline shows nothing at all rather than a
+                change of zero, which would read as a flat market. */}
+            {!loading && change !== null && (
+              <span
+                className={`whitespace-nowrap text-xs font-medium ${gainLossColor(change)}`}
+                data-testid="portfolio-period-change"
+              >
+                {change >= 0 ? '+' : ''}
+                {formatCurrency(change, defaultCurrency)}
+                {changePercent !== null && (
+                  <span className="ml-1">({formatSignedPercent(changePercent, 1)})</span>
+                )}
+              </span>
+            )}
+          </div>
         </div>
       }
       configControls={configControls}

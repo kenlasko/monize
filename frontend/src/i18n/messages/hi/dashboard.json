@@ -106,9 +106,9 @@
       "label": "दिशा"
     },
     "metric": {
-      "label": "क्रम आधार",
-      "amount": "राशि",
-      "percent": "प्रतिशत"
+      "label": "दिखाएं",
+      "price": "मूल्य",
+      "holdings": "होल्डिंग्स"
     }
   },
   "favouriteSecurities": {

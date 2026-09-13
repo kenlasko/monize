@@ -106,9 +106,9 @@
       "label": "Sens"
     },
     "metric": {
-      "label": "Classer par",
-      "amount": "Montant",
-      "percent": "Pourcentage"
+      "label": "Afficher",
+      "price": "Cours",
+      "holdings": "Positions"
     }
   },
   "favouriteSecurities": {

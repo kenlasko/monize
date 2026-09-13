@@ -106,9 +106,9 @@
       "label": "Arah"
     },
     "metric": {
-      "label": "Urutkan menurut",
-      "amount": "Jumlah",
-      "percent": "Persen"
+      "label": "Tampilkan",
+      "price": "Harga",
+      "holdings": "Kepemilikan"
     }
   },
   "favouriteSecurities": {

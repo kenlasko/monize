@@ -1977,6 +1977,49 @@ describe("PortfolioService", () => {
         expect(aaplMover!.currentPrice).toBe(180);
         expect(aaplMover!.previousPrice).toBe(175);
       });
+
+      it("reports what the day's move did to each position held", async () => {
+        securityPriceRepository.query.mockResolvedValue([
+          // AAPL: 175 -> 180 on 10 shares => +50.00
+          {
+            security_id: "sec-1",
+            close_price: "180",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
+          // VFV: 95 -> 90 on 50 shares => -250.00
+          {
+            security_id: "sec-2",
+            close_price: "90",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-2",
+            close_price: "95",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
+        ]);
+
+        const result = await service.getTopMovers(userId);
+
+        // The per-share change alone ranks AAPL's +5 above VFV's -5 in size;
+        // what each did to the portfolio is the quantity-weighted figure, and a
+        // surface that shows holdings must be given it rather than derive it.
+        expect(result.find((m) => m.symbol === "AAPL")!.dailyValueChange).toBe(
+          50,
+        );
+        expect(
+          result.find((m) => m.symbol === "VFV.TO")!.dailyValueChange,
+        ).toBe(-250);
+      });
     });
 
     describe("when user has no investment accounts", () => {

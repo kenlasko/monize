@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   dayNoteSpanLength,
   dayNoteSpanPosition,
+  dayNoteWeekSpans,
   dayNotesByDay,
   isMultiDayNote,
 } from './day-note-span';
@@ -125,5 +126,87 @@ describe('dayNoteSpanPosition', () => {
 
     expect(dayNoteSpanPosition(vacation, '2026-06-13')).toBe('start');
     expect(dayNoteSpanPosition(vacation, '2026-06-19')).toBe('end');
+  });
+});
+
+describe('dayNoteWeekSpans', () => {
+  /** The week of Sunday 7 June 2026, the way the grid hands one over. */
+  const week = [
+    '2026-06-07',
+    '2026-06-08',
+    '2026-06-09',
+    '2026-06-10',
+    '2026-06-11',
+    '2026-06-12',
+    '2026-06-13',
+  ];
+
+  function spansFor(...notes: DayNote[]) {
+    return dayNoteWeekSpans(week, dayNotesByDay(notes, week[0], week[6]));
+  }
+
+  it('finds nothing in a week no note touches', () => {
+    expect(spansFor()).toEqual([]);
+    expect(spansFor(note('2026-07-01', '2026-07-03'))).toEqual([]);
+  });
+
+  it('gives a one-day note a single column', () => {
+    const [span] = spansFor(note('2026-06-10', '2026-06-10'));
+
+    // Wednesday is the fourth column of a Sunday-start week.
+    expect(span).toMatchObject({ startColumn: 4, columns: 1, opensHere: true, closesHere: true });
+  });
+
+  it('gives a run ONE band over all its columns, not one band per day', () => {
+    // The whole point: a span is a single element across the days it covers, so
+    // there is no seam between days to hide and the text has the run's width.
+    const spans = spansFor(note('2026-06-10', '2026-06-13'));
+
+    expect(spans).toHaveLength(1);
+    expect(spans[0]).toMatchObject({
+      startColumn: 4,
+      columns: 4,
+      opensHere: true,
+      closesHere: true,
+    });
+  });
+
+  it('opens square where a run arrives from the week before', () => {
+    // Saturday 6 June to Tuesday 9 June: this week draws Sunday to Tuesday, and
+    // the band must not pretend the note begins on Sunday.
+    const [span] = spansFor(note('2026-06-06', '2026-06-09'));
+
+    expect(span).toMatchObject({ startColumn: 1, columns: 3, opensHere: false, closesHere: true });
+  });
+
+  it('closes square where a run carries on into the week after', () => {
+    const [span] = spansFor(note('2026-06-12', '2026-06-20'));
+
+    expect(span).toMatchObject({ startColumn: 6, columns: 2, opensHere: true, closesHere: false });
+  });
+
+  it('covers the whole week for a note that spans it entirely', () => {
+    const [span] = spansFor(note('2026-05-30', '2026-06-30'));
+
+    expect(span).toMatchObject({ startColumn: 1, columns: 7, opensHere: false, closesHere: false });
+  });
+
+  it('keeps two notes in one week apart, left to right', () => {
+    const spans = spansFor(
+      note('2026-06-12', '2026-06-13', 'Lisbon'),
+      note('2026-06-08', '2026-06-09', 'Dentist'),
+    );
+
+    expect(spans.map((span) => [span.note.body, span.startColumn, span.columns])).toEqual([
+      ['Dentist', 2, 2],
+      ['Lisbon', 6, 2],
+    ]);
+  });
+
+  it('carries the note itself, so a band can print it and be keyed by it', () => {
+    const lisbon = note('2026-06-10', '2026-06-11', 'Away in Lisbon');
+    const [span] = spansFor(lisbon);
+
+    expect(span.note).toBe(lisbon);
   });
 });

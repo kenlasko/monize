@@ -119,6 +119,45 @@ describe('PortfolioValueWidget', () => {
     );
   });
 
+  it('keeps the window, the refresh and the gear on the title line, figures below', async () => {
+    // A widget header is one line for what the widget IS and its controls; the
+    // value and its move take the line under them, right-aligned on one edge so
+    // they read as a figure and its change rather than two numbers.
+    getPortfolioSummary.mockResolvedValue({ totalPortfolioValue: 10000, holdings: [] });
+    getInvestmentsMonthly.mockResolvedValue([
+      { month: '2026-05', value: 8000 },
+      { month: '2026-06', value: 10000 },
+    ]);
+    await renderWidget();
+
+    const change = screen.getByTestId('portfolio-period-change');
+    const value = screen.getByText('$10000');
+    const range = screen.getByText('1Y');
+    const refresh = screen.getByLabelText('Refresh current value');
+    const gear = screen.getByLabelText('Configure Portfolio Value over Time');
+
+    // One column for the two figures, aligned on their right edges, and it takes
+    // a line of its own whatever the card's width.
+    const figures = value.parentElement!;
+    expect(change.parentElement).toBe(figures);
+    expect(figures.className).toContain('flex-col');
+    expect(figures.className).toContain('items-end');
+    expect(figures.className).toContain('w-full');
+    // Smaller than the value it sits under.
+    expect(change.className).toContain('text-xs');
+    expect(value.className).toContain('text-sm');
+
+    // The window and the refresh control are above that column, in the order
+    // they are read: the window, then the button that acts on it.
+    expect(range.parentElement).not.toBe(figures);
+    expect(refresh.parentElement).not.toBe(figures);
+    expect(range.compareDocumentPosition(refresh)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(refresh.compareDocumentPosition(figures)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+
+    // The gear holds the first line with them rather than centring across both.
+    expect(gear.className).toContain('self-start');
+  });
+
   it('shows no period change while the series is empty', async () => {
     // An unknown baseline is not a flat market: nothing is printed rather than
     // a change of zero.

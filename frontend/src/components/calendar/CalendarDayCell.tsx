@@ -53,8 +53,17 @@ interface CalendarDayCellProps {
   figure?: ReactNode;
 }
 
+// A chip is a row, not a line of text: what the row is about reads from the
+// left and its figure is pushed to the right edge, so a day's amounts line up
+// under each other the way the register's amount column does.
 const CHIP =
-  'block w-full truncate rounded px-1 py-0.5 text-left text-xs transition-opacity motion-reduce:transition-none hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+  'flex w-full items-baseline gap-1 rounded px-1 py-0.5 text-left text-xs transition-opacity motion-reduce:transition-none hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+
+/** What a chip is about: as much as fits, and never at the figure's expense. */
+const CHIP_LABEL = 'min-w-0 flex-1 truncate';
+
+/** A chip's figure, at the right-hand edge and never wrapped or shrunk. */
+const CHIP_AMOUNT = 'shrink-0 tabular-nums';
 
 /**
  * One day of the Transactions calendar: its number, its chips, and whatever
@@ -99,8 +108,21 @@ export function CalendarDayCell({
     total - shownInvestments.length - shownTransactions.length - shownOccurrences.length;
 
   return (
-    <div className="min-h-[6rem] sm:min-h-[7rem] flex flex-col gap-0.5">
-      <div className="flex items-baseline justify-between gap-1">
+    <div
+      // A phone cell holds a date, a row of dots and a figure; from sm up the
+      // cell holds the day's chips and the note's band, so it is half again as
+      // tall (7rem -> 10.5rem) and a day with three chips no longer fills it.
+      className={`min-h-[6rem] sm:min-h-[10.5rem] flex flex-col gap-0.5 ${
+        // The note's band is drawn across the bottom of the week from sm up, so
+        // a covered day keeps that much room free rather than letting a busy
+        // day's last chip end up underneath it.
+        note ? 'sm:pb-6' : ''
+      }`}
+    >
+      {/* On a phone the figure goes UNDER the date rather than beside it: a
+          balance and a date share a cell barely wide enough for either, and the
+          figure is what the reader came to the Balances layer for. */}
+      <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-1">
         <span
           className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium ${
             day.isToday
@@ -118,6 +140,7 @@ export function CalendarDayCell({
       {note && (
         <CalendarDayNoteMarker note={note} date={day.date} label={t('notes.title')} />
       )}
+
 
       {/* Below sm the chips are dots and a count: a phone cell has no room for
           a label, and the day panel is the reading surface there. The count is
@@ -162,20 +185,24 @@ export function CalendarDayCell({
               chip.isFuture && !chip.isVoid ? 'opacity-60' : ''
             }`}
           >
-            {chip.transaction.security?.symbol ?? t('chip.noSymbol')}{' '}
-            {actionInfo(chip.transaction.action).shortLabel}{' '}
-            {formatCurrency(
-              // The figure the register shows for this row: a redemption's
-              // accrued interest moved with its proceeds, so the two are one
-              // cash movement.
-              supportsAccruedInterest(chip.transaction.action)
-                ? redemptionTotalWithInterest(
-                    chip.transaction.totalAmount,
-                    chip.transaction.accruedInterest,
-                  )
-                : chip.transaction.totalAmount,
-              chip.transaction.security?.currencyCode,
-            )}
+            <span className={CHIP_LABEL}>
+              {chip.transaction.security?.symbol ?? t('chip.noSymbol')}{' '}
+              {actionInfo(chip.transaction.action).shortLabel}
+            </span>
+            <span className={CHIP_AMOUNT}>
+              {formatCurrency(
+                // The figure the register shows for this row: a redemption's
+                // accrued interest moved with its proceeds, so the two are one
+                // cash movement.
+                supportsAccruedInterest(chip.transaction.action)
+                  ? redemptionTotalWithInterest(
+                      chip.transaction.totalAmount,
+                      chip.transaction.accruedInterest,
+                    )
+                  : chip.transaction.totalAmount,
+                chip.transaction.security?.currencyCode,
+              )}
+            </span>
           </button>
         ))}
 
@@ -188,8 +215,12 @@ export function CalendarDayCell({
               chip.isFuture && !chip.isVoid ? 'opacity-60' : ''
             }`}
           >
-            {payeeDisplay(chip.transaction) ?? t('chip.noPayee')}{' '}
-            {formatCurrency(Number(chip.transaction.amount), chip.transaction.currencyCode)}
+            <span className={CHIP_LABEL}>
+              {payeeDisplay(chip.transaction) ?? t('chip.noPayee')}
+            </span>
+            <span className={CHIP_AMOUNT}>
+              {formatCurrency(Number(chip.transaction.amount), chip.transaction.currencyCode)}
+            </span>
           </button>
         ))}
 
@@ -199,7 +230,7 @@ export function CalendarDayCell({
             href={`/bills?highlight=${chip.occurrence.scheduledTransactionId}`}
             className={`${CHIP} border border-dashed border-current ${chip.className}`}
           >
-            <span className="inline-flex items-center gap-1">
+            <span className={`${CHIP_LABEL} inline-flex items-center gap-1`}>
               {chip.isOverdue ? (
                 <ExclamationTriangleIcon
                   className="w-3 h-3 shrink-0"
@@ -209,23 +240,27 @@ export function CalendarDayCell({
                 <ClockIcon className="w-3 h-3 shrink-0" aria-label={t('chip.scheduled')} />
               )}
               <span className="truncate">{chip.schedule.name}</span>
-              {chip.occurrence.amount === null ? (
-                <UnknownAmount />
-              ) : (
-                <span>
-                  {formatCurrency(chip.occurrence.amount, chip.occurrence.currencyCode)}
-                </span>
-              )}
             </span>
+            {chip.occurrence.amount === null ? (
+              <UnknownAmount className={CHIP_AMOUNT} />
+            ) : (
+              <span className={CHIP_AMOUNT}>
+                {formatCurrency(chip.occurrence.amount, chip.occurrence.currencyCode)}
+              </span>
+            )}
           </Link>
         ))}
       </div>
 
+      {/* "+N more" counts what the chip list left out, so it belongs only where
+          that list is drawn. Below sm the chips are dots and the count beside
+          them already says how many items the day holds, which is the whole of
+          what this line would add. */}
       {hidden > 0 && (
         <button
           type="button"
           onClick={() => onOpenDay(day.date)}
-          className="mt-auto self-start px-1 text-xs text-gray-500 dark:text-gray-400 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="mt-auto hidden self-start px-1 text-xs text-gray-500 dark:text-gray-400 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:block"
         >
           {t('day.moreChips', { count: hidden })}
         </button>
@@ -237,14 +272,16 @@ export function CalendarDayCell({
 /**
  * One day's note, as the cell shows it.
  *
- * A one-day note and the FIRST day of a run read the same: the pencil and the
- * note's first line. The days after it carry a continuation bar instead, so a
- * week away reads as one thing running across the grid rather than as seven
- * separate notes -- and so the same sentence is not printed seven times.
+ * Below `sm` this is the whole of it: the pencil on a one-day note and on the
+ * first day of a run, a continuation bar on the days after it, so a week away
+ * reads as one thing running across the grid rather than as seven separate
+ * notes -- and so the same sentence is not printed seven times.
  *
- * The bar is decoration; the accessible name is what tells a screen reader the
- * day is covered, because `aria-hidden` on the glyph would otherwise leave the
- * continuation days silent.
+ * From `sm` up the note is drawn as a band across the bottom of the days it
+ * covers (`CalendarNoteSpans`), and that band is decoration the screen reader
+ * never sees. So this does not disappear there, it goes `sr-only`: it stays the
+ * thing that tells a screen reader which days a note covers, which is why the
+ * bar carries an accessible name rather than `aria-hidden`.
  */
 function CalendarDayNoteMarker({
   note,
@@ -260,7 +297,7 @@ function CalendarDayNoteMarker({
   if (position === 'middle' || position === 'end') {
     return (
       <p
-        className="flex items-center text-xs text-gray-500 dark:text-gray-400"
+        className="flex items-center text-xs text-gray-500 dark:text-gray-400 sm:sr-only"
         data-testid="calendar-day-note-marker"
         data-note-span={position}
       >
@@ -277,13 +314,14 @@ function CalendarDayNoteMarker({
 
   return (
     <p
-      className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+      className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 sm:sr-only"
       data-testid="calendar-day-note-marker"
       data-note-span={position}
     >
       <PencilSquareIcon className="w-3 h-3 shrink-0" aria-label={label} />
-      {/* The first line only, and on a phone not even that: the day panel is
-          where a note is read. */}
+      {/* The first line, for a screen reader from sm up and for nobody on a
+          phone: there the day panel is where a note is read, and from sm up the
+          band at the bottom of the day is where it is seen. */}
       <span className="hidden sm:inline truncate">{note.body.split('\n')[0]}</span>
     </p>
   );

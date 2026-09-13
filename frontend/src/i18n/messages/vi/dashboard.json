@@ -106,9 +106,9 @@
       "label": "Hướng"
     },
     "metric": {
-      "label": "Xếp hạng theo",
-      "amount": "Số tiền",
-      "percent": "Phần trăm"
+      "label": "Hiện",
+      "price": "Giá",
+      "holdings": "Nắm giữ"
     }
   },
   "favouriteSecurities": {

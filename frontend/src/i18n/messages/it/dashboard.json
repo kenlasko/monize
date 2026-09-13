@@ -106,9 +106,9 @@
       "label": "Direzione"
     },
     "metric": {
-      "label": "Ordina per",
-      "amount": "Importo",
-      "percent": "Percentuale"
+      "label": "Mostra",
+      "price": "Prezzo",
+      "holdings": "Posizioni"
     }
   },
   "favouriteSecurities": {

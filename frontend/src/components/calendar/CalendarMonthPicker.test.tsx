@@ -115,10 +115,16 @@ describe('CalendarMonthPicker', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('steps a whole year from the month the calendar is on', () => {
+  it('reaches another year through the stepper, and only through it', () => {
+    // The stepper moves the twelve buttons' year without moving the calendar, so
+    // the month is chosen in one place. A second pair of whole-year shortcuts
+    // under the grid said the same thing twice and is gone.
     const { onSelect } = renderPicker('2026-06');
 
-    fireEvent.click(screen.getByRole('button', { name: calendarNs.monthPicker.yearBack }));
+    fireEvent.click(screen.getByRole('button', { name: calendarNs.monthPicker.previousYear }));
+    expect(onSelect).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: MONTHS[5] }));
     expect(onSelect).toHaveBeenCalledWith('2025-06');
   });
 });

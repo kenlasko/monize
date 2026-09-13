@@ -106,9 +106,9 @@
       "label": "Richting"
     },
     "metric": {
-      "label": "Sorteren op",
-      "amount": "Bedrag",
-      "percent": "Percentage"
+      "label": "Weergeven",
+      "price": "Koers",
+      "holdings": "Posities"
     }
   },
   "favouriteSecurities": {

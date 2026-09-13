@@ -85,7 +85,11 @@ export function WidgetCard({
       padding="md"
       className={`${minHeightClass} flex flex-col h-full ${className}`}
     >
-      <div className="flex items-start justify-between gap-2 mb-4">
+      {/* The header wraps rather than squeezing the title: a widget whose
+          header-right carries a figure, a range and a button needs more width
+          than a phone has beside a title, and a truncated title names no
+          widget. Above the wrap the row is unchanged. */}
+      <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
         <div className="flex min-w-0 items-start gap-2.5">
           {widgetId && <WidgetIconPuck id={widgetId as DashboardWidgetId} />}
           <div className="min-w-0">
@@ -97,14 +101,17 @@ export function WidgetCard({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
           {headerRight}
           {hasGear && (
             <button
               type="button"
               onClick={() => setShowConfig(true)}
               aria-label={t('widgets.configure', { name: title })}
-              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              // `self-start` keeps the gear on the FIRST line of a header-right
+              // that wraps onto two. A single-line one is the gear's own height,
+              // where start and centre are the same place, so nothing moves.
+              className="self-start p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <Cog6ToothIcon aria-hidden className="h-4 w-4" />
             </button>

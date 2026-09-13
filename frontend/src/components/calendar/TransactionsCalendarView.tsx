@@ -10,6 +10,7 @@ import {
   CalendarDayPanel,
   type CalendarDayBalance,
 } from '@/components/calendar/CalendarDayPanel';
+import { CalendarNoteSpans } from '@/components/calendar/CalendarNoteSpans';
 import { CalendarToolbar } from '@/components/calendar/CalendarToolbar';
 import {
   CALENDAR_MAX_ROWS,
@@ -22,7 +23,16 @@ import {
   type CalendarAccount,
   type CalendarDayRows,
 } from '@/lib/calendar-rows';
-import { monthGridDays, monthOf, type WeekStart } from '@/lib/calendar-month';
+import {
+  CALENDAR_MONTH_PAGES,
+  monthFromPageNumber,
+  monthGridDays,
+  monthOf,
+  monthPageNumber,
+  type WeekStart,
+} from '@/lib/calendar-month';
+import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
+import { SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
 import { occurrenceTouchesAccounts } from '@/lib/scheduled-effective-amount';
 import { useCalendarDayNotes } from '@/hooks/useCalendarDayNotes';
 import { useAuthStore } from '@/store/authStore';
@@ -32,8 +42,16 @@ import type { Account, AccountType } from '@/types/account';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 import type { Transaction } from '@/types/transaction';
 
-/** How many chips a day cell draws before the rest become a "+N more" line. */
-export const CALENDAR_DAY_CHIP_LIMIT = 3;
+/**
+ * How many chips a day cell draws before the rest become a "+N more" line.
+ *
+ * It is the height of the cell, in chips: a `sm` cell is 10.5rem (168px) and a
+ * chip 20px with 2px between them, so the date row (24px), five chips (108px)
+ * and the "+N more" line (22px) come to 154px and leave the cell whole. Six
+ * would push past it, and a cell that grows with its busiest day takes the whole
+ * week's row with it.
+ */
+export const CALENDAR_DAY_CHIP_LIMIT = 5;
 
 const LAYERS = ['transactions', 'balances'] as const;
 
@@ -105,6 +123,34 @@ export function TransactionsCalendarView({
     startDate: gridStart,
     endDate: gridEnd,
     enabled: !isActingDelegate,
+  });
+
+  /**
+   * Move to another month.
+   *
+   * The toolbar's arrows, its month picker and the swipe across the grid all
+   * come through here, so every way of changing the month asks about an unsaved
+   * note the same way and leaves no day selected from the month being left.
+   */
+  const goToMonth = useCallback(
+    (next: string) => {
+      notes.requestChange(() => {
+        setMonth(next);
+        setSelectedDate(null);
+      });
+    },
+    [notes],
+  );
+
+  // A horizontal swipe across the grid turns the month the way one turns a
+  // register page: the months ARE the pages (`monthPageNumber`), so the gesture
+  // is the register's, not a second one written here. The grid is marked as a
+  // pagination zone so the view-level swipe cedes to it instead of leaving the
+  // page for the next section of the app.
+  const { swipeRef } = useSwipeToPaginate({
+    page: monthPageNumber(month),
+    totalPages: CALENDAR_MONTH_PAGES,
+    onPageChange: (page) => goToMonth(monthFromPageNumber(page)),
   });
 
   const data = useCalendarMonthData(gridStart, gridEnd, filters, refreshKey);
@@ -285,12 +331,7 @@ export function TransactionsCalendarView({
     <div>
       <CalendarToolbar
         month={month}
-        onMonthChange={(next) =>
-          notes.requestChange(() => {
-            setMonth(next);
-            setSelectedDate(null);
-          })
-        }
+        onMonthChange={goToMonth}
         today={today}
         monthLabelId={monthLabelId}
         availableLayers={LAYERS}
@@ -319,6 +360,8 @@ export function TransactionsCalendarView({
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div
+          ref={swipeRef}
+          {...{ [SWIPE_PAGINATE_ATTR]: 'true' }}
           className="min-w-0 flex-1"
           aria-busy={data.isLoading || (balancesOn && balances.isLoading)}
           inert={!isActionable}
@@ -331,6 +374,9 @@ export function TransactionsCalendarView({
             selectedDate={selectedDate}
             onSelectDay={(day) => notes.requestChange(() => setSelectedDate(day))}
             labelledBy={monthLabelId}
+            // A note belongs to a run of days, not to one, so it is drawn once
+            // across the days it covers rather than once per cell.
+            renderWeekSpans={(week) => <CalendarNoteSpans week={week} byDay={notes.byDay} />}
             renderDay={(day) => {
               const point = balancesReady ? balances.byDay.get(day.date) : undefined;
               return (
@@ -353,7 +399,10 @@ export function TransactionsCalendarView({
         </div>
 
         {selectedDate !== null && (
-          <div className="lg:w-80 lg:shrink-0">
+          // Wide enough for the note editor's two date fields side by side: at
+          // 20rem they shared 18rem between them and both read as truncated
+          // dates, which is the one thing a date field must not do.
+          <div className="lg:w-96 lg:shrink-0">
             <CalendarDayPanel
               date={selectedDate}
               rows={layers.includes('transactions') ? byDay.get(selectedDate) : undefined}

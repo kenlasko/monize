@@ -106,9 +106,9 @@
       "label": "Yön"
     },
     "metric": {
-      "label": "Sıralama ölçütü",
-      "amount": "Tutar",
-      "percent": "Yüzde"
+      "label": "Göster",
+      "price": "Fiyat",
+      "holdings": "Pozisyonlar"
     }
   },
   "favouriteSecurities": {

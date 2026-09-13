@@ -106,9 +106,9 @@
       "label": "Richtung"
     },
     "metric": {
-      "label": "Sortieren nach",
-      "amount": "Betrag",
-      "percent": "Prozent"
+      "label": "Anzeigen",
+      "price": "Kurs",
+      "holdings": "Bestand"
     }
   },
   "favouriteSecurities": {

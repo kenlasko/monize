@@ -119,6 +119,20 @@ describe('WidgetCard', () => {
     );
     expect(screen.getByText('3M')).toBeInTheDocument();
   });
+
+  it('wraps the header rather than squeezing the title out of it', () => {
+    // A header-right carrying a figure, a range and a button needs more width
+    // than a phone has beside a title, and a title truncated to nothing names no
+    // widget. Wrapped, the header-right keeps its right-hand edge.
+    render(
+      <WidgetCard title="My Widget" headerRight={<span>3M</span>}>
+        body
+      </WidgetCard>,
+    );
+    const right = screen.getByText('3M').parentElement!;
+    expect(right.className).toContain('ml-auto');
+    expect(right.parentElement!.className).toContain('flex-wrap');
+  });
 });
 
 describe('WidgetConfigRow', () => {

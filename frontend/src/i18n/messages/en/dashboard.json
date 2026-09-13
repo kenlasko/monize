@@ -106,9 +106,9 @@
       "label": "Direction"
     },
     "metric": {
-      "label": "Rank by",
-      "amount": "Amount",
-      "percent": "Percent"
+      "label": "Show",
+      "price": "Price",
+      "holdings": "Holdings"
     }
   },
   "favouriteSecurities": {
