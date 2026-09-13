@@ -114,8 +114,6 @@
     "placeholder": "[XX-e.g. Mar 1998, 1998-03, 3/1998-XX]",
     "unreadable": "[XX-That is not a month we can read. Try a year, a month name, or 1998-03.-XX]",
     "previousYear": "[XX-Previous year-XX]",
-    "nextYear": "[XX-Next year-XX]",
-    "yearBack": "[XX-A year back-XX]",
-    "yearForward": "[XX-A year forward-XX]"
+    "nextYear": "[XX-Next year-XX]"
   }
 }

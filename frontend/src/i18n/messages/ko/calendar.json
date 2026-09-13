@@ -114,8 +114,6 @@
     "placeholder": "예: 3월 1998, 1998-03, 3/1998",
     "unreadable": "월로 읽을 수 없습니다. 연도, 월 이름 또는 1998-03을 입력해 보세요.",
     "previousYear": "이전 해",
-    "nextYear": "다음 해",
-    "yearBack": "1년 뒤로",
-    "yearForward": "1년 앞으로"
+    "nextYear": "다음 해"
   }
 }

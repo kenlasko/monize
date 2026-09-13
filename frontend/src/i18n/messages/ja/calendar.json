@@ -114,8 +114,6 @@
     "placeholder": "例: 3月 1998、1998-03、3/1998",
     "unreadable": "月として読み取れませんでした。年、月の名前、または 1998-03 をお試しください。",
     "previousYear": "前の年",
-    "nextYear": "次の年",
-    "yearBack": "1年前へ",
-    "yearForward": "1年先へ"
+    "nextYear": "次の年"
   }
 }

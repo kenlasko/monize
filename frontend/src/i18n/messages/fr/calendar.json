@@ -114,8 +114,6 @@
     "placeholder": "ex. mars 1998, 1998-03, 3/1998",
     "unreadable": "Nous ne pouvons pas lire cela comme un mois. Essayez une année, un nom de mois ou 1998-03.",
     "previousYear": "Année précédente",
-    "nextYear": "Année suivante",
-    "yearBack": "Un an en arrière",
-    "yearForward": "Un an en avant"
+    "nextYear": "Année suivante"
   }
 }
