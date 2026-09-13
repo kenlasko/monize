@@ -978,6 +978,42 @@ describe('TransactionsCalendarView', () => {
       expect(within(cell('06/11/2026')).queryByText(/item/)).toBeNull();
     });
 
+    it('leaves the "+N more" line to the grid that draws the chips it counts', async () => {
+      // Below sm the chips are dots and the count beside them already says how
+      // many items the day holds, so a second line saying how many were left out
+      // of a list nobody can see adds nothing. It is a breakpoint and not a
+      // branch: the line is in the markup, drawn only from sm up.
+      viewport(400);
+      mockGetAllPages.mockResolvedValue([
+        transaction({ id: 'tx-1' }),
+        transaction({ id: 'tx-2' }),
+        transaction({ id: 'tx-3' }),
+        transaction({ id: 'tx-4' }),
+      ]);
+      renderView();
+
+      await screen.findAllByRole('button', { name: /Grocer/ });
+      const more = within(cell('06/10/2026')).getByRole('button', { name: '+1 more' });
+      expect(more.classList.contains('hidden')).toBe(true);
+      expect(more.classList.contains('sm:block')).toBe(true);
+    });
+
+    it('puts the day figure under the date on a phone, and beside it from sm up', async () => {
+      // A date and a balance do not fit across a phone's cell, and the figure is
+      // what the reader turned the Balances layer on for.
+      viewport(400);
+      withBalancesLayer();
+      mockGetDailyBalanceTotals.mockResolvedValue(
+        balanceTotals({ days: [balanceDay('2026-06-10')] }),
+      );
+      renderView();
+
+      const figure = await within(cell('06/10/2026')).findByTestId('calendar-balance-actual');
+      const row = figure.parentElement!;
+      expect(row.className).toContain('flex-col');
+      expect(row.className).toContain('sm:flex-row');
+    });
+
     it('puts focus back on the day when the panel closes', async () => {
       viewport(1280);
       renderView();

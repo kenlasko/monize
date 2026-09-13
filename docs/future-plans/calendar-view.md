@@ -463,7 +463,7 @@ this table.
 | Occurrence, `dueDate >= today`, `amountComplete` | `SCHEDULED_KIND_CHIP_CLASSES[occurrenceKind]`, dashed, clock | name and amount in its own `currencyCode` | `/bills?highlight=<scheduledTransactionId>` |
 | Occurrence, `amountComplete === false` | same | name and `UnknownAmount` | same |
 | Occurrence, `dueDate < today`, unposted | same plus overdue marker | same | same |
-| More than `CALENDAR_DAY_CHIP_LIMIT` on a day | first N chips plus "+K more" | | the day panel |
+| More than `CALENDAR_DAY_CHIP_LIMIT` on a day | first N chips plus "+K more", from `sm` up | | the day panel |
 | More than `CALENDAR_MAX_ROWS` (1000) in the grid | layer withheld with a notice to narrow the filters | | |
 
 An occurrence is in scope when `occurrenceTouchesAccounts(occ, scope)` says so,

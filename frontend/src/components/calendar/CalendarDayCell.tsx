@@ -100,7 +100,10 @@ export function CalendarDayCell({
 
   return (
     <div className="min-h-[6rem] sm:min-h-[7rem] flex flex-col gap-0.5">
-      <div className="flex items-baseline justify-between gap-1">
+      {/* On a phone the figure goes UNDER the date rather than beside it: a
+          balance and a date share a cell barely wide enough for either, and the
+          figure is what the reader came to the Balances layer for. */}
+      <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-1">
         <span
           className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium ${
             day.isToday
@@ -221,11 +224,15 @@ export function CalendarDayCell({
         ))}
       </div>
 
+      {/* "+N more" counts what the chip list left out, so it belongs only where
+          that list is drawn. Below sm the chips are dots and the count beside
+          them already says how many items the day holds, which is the whole of
+          what this line would add. */}
       {hidden > 0 && (
         <button
           type="button"
           onClick={() => onOpenDay(day.date)}
-          className="mt-auto self-start px-1 text-xs text-gray-500 dark:text-gray-400 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="mt-auto hidden self-start px-1 text-xs text-gray-500 dark:text-gray-400 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:block"
         >
           {t('day.moreChips', { count: hidden })}
         </button>
