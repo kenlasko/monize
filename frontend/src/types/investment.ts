@@ -518,6 +518,13 @@ export interface TopMover {
   dailyChange: number;
   dailyChangePercent: number;
   marketValue: number | null;
+  /**
+   * What the day's move did to the position held: `dailyChange * quantity`, in
+   * the security's own currency. The server derives it so no surface multiplies
+   * a price change by a share count of its own; convert before ranking it
+   * against a holding priced in another currency.
+   */
+  dailyValueChange: number | null;
 }
 
 export interface SecurityPrice {

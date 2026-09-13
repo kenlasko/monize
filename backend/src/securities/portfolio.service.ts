@@ -52,6 +52,13 @@ export interface TopMover {
   dailyChange: number;
   dailyChangePercent: number;
   marketValue: number | null;
+  /**
+   * What the day's move did to the position: `dailyChange * quantity held`, in
+   * the security's own currency. Derived here rather than by each surface so the
+   * per-share change, the position's value and the move in that value cannot
+   * disagree; a consumer comparing it across currencies converts first.
+   */
+  dailyValueChange: number | null;
 }
 
 export interface HoldingWithMarketValue {
@@ -966,6 +973,7 @@ export class PortfolioService {
         dailyChange,
         dailyChangePercent,
         marketValue: currentPrice * totalQty,
+        dailyValueChange: roundMoney(dailyChange * totalQty),
       });
     }
 
@@ -1082,6 +1090,7 @@ export class PortfolioService {
         dailyChange,
         dailyChangePercent,
         marketValue: currentPrice * totalQty,
+        dailyValueChange: roundMoney(dailyChange * totalQty),
       });
     }
 

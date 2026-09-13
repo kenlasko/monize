@@ -106,9 +106,9 @@
       "label": "[XX-Direction-XX]"
     },
     "metric": {
-      "label": "[XX-Rank by-XX]",
-      "amount": "[XX-Amount-XX]",
-      "percent": "[XX-Percent-XX]"
+      "label": "[XX-Show-XX]",
+      "price": "[XX-Price-XX]",
+      "holdings": "[XX-Holdings-XX]"
     }
   },
   "favouriteSecurities": {

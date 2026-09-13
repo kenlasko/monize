@@ -6,13 +6,18 @@ import { useTranslations } from 'next-intl';
 import { TopMover } from '@/types/investment';
 import { WidgetHeading } from './widget-meta';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { usePreferencesStore } from '@/store/preferencesStore';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { CARD_CLASS } from '@/components/ui/Card';
-import { preferredCurrency } from '@/lib/default-currency';
+import { gainLossColor } from '@/lib/format';
 
 type MoverFilter = 'all' | 'gainers' | 'losers';
-/** Whether a "biggest" mover is the largest move in money or in percent. */
-type MoverMetric = 'amount' | 'percent';
+/**
+ * Which figures the widget shows, and therefore what "biggest" measures: the
+ * quoted price and its percentage move, or the position held and what the day
+ * did to its value.
+ */
+type MoverMetric = 'price' | 'holdings';
 
 const FILTER_STORAGE_KEY = 'dashboard.topMovers.filter';
 const METRIC_STORAGE_KEY = 'dashboard.topMovers.metric';
@@ -42,7 +47,25 @@ function writeStoredChoice(key: string, value: string): void {
 }
 
 const MOVER_FILTERS = ['all', 'gainers', 'losers'] as const;
-const MOVER_METRICS = ['amount', 'percent'] as const;
+const MOVER_METRICS = ['price', 'holdings'] as const;
+
+/**
+ * A mover together with the one figure the Holdings view can rank it by.
+ *
+ * `dailyValueChange` arrives in the security's own currency, and ranking a
+ * 20,000 JPY move above a 500 USD one is not a ranking of anything -- so the
+ * comparable figure is converted once, here, and carried beside the row that
+ * prints its own native numbers.
+ */
+export interface RankableMover {
+  mover: TopMover;
+  /**
+   * The day's move in the position's value, in the reader's display currency.
+   * `null` when no rate converts the pair: the row's own figures are still
+   * known, it simply has no size that can be compared with the others.
+   */
+  valueChange: number | null;
+}
 
 /**
  * Rank movers for a filter and a metric, and take the top five.
@@ -55,38 +78,64 @@ const MOVER_METRICS = ['amount', 'percent'] as const;
  * holding on screen for a reason the column beside it does not show.
  *
  * Every branch ranks explicitly. The list arrives sorted by absolute daily
- * change *percent*, so a branch that passed the server's order through was
- * showing the percent ranking under the Amount heading -- which is the whole of
- * what the Amount control appeared to do, namely nothing.
+ * change *percent*, so a branch that passed the server's order through would be
+ * showing the percent ranking under the Holdings heading -- which is the whole
+ * of what the control appeared to do, namely nothing.
  *
- * The amount is the per-share change printed on the row, so the order is the
- * order of the numbers on screen.
+ * Price ranks on the percentage move and Holdings on the move in the position's
+ * value, each being the figure the row prints under that setting, so the order
+ * is the order of the numbers on screen.
  */
 export function rankMovers(
-  movers: TopMover[],
+  rows: readonly RankableMover[],
   filter: MoverFilter,
   metric: MoverMetric,
   limit = 5,
-): TopMover[] {
-  const magnitude = (m: TopMover) =>
-    metric === 'amount' ? m.dailyChange : m.dailyChangePercent;
+): RankableMover[] {
+  /** What this setting calls the size of a move, or `null` when unknown. */
+  const magnitude = (row: RankableMover): number | null =>
+    metric === 'price' ? row.mover.dailyChangePercent : row.valueChange;
+  /**
+   * Which way the move went. Known even when the size is not: a position's value
+   * falls in its own currency whether or not a rate reports it in another.
+   */
+  const direction = (row: RankableMover): number | null =>
+    metric === 'price' ? row.mover.dailyChangePercent : row.mover.dailyValueChange;
+
+  // A move with no comparable size is ranked after every one that has it rather
+  // than dropped: its own figures are printed in its own currency, but it
+  // cannot claim a place among the biggest.
+  const ordered = (compare: (a: number, b: number) => number) =>
+    [...rows].sort((a, b) => {
+      const left = magnitude(a);
+      const right = magnitude(b);
+      if (left === null) return right === null ? 0 : 1;
+      if (right === null) return -1;
+      return compare(left, right);
+    });
+
+  const wentUp = (row: RankableMover) => {
+    const moved = direction(row);
+    return moved !== null && moved > 0;
+  };
+  const wentDown = (row: RankableMover) => {
+    const moved = direction(row);
+    return moved !== null && moved < 0;
+  };
+
   if (filter === 'gainers') {
-    return [...movers]
-      .filter((m) => m.dailyChange > 0)
-      .sort((a, b) => magnitude(b) - magnitude(a))
+    return ordered((a, b) => b - a)
+      .filter(wentUp)
       .slice(0, limit);
   }
   if (filter === 'losers') {
-    return [...movers]
-      .filter((m) => m.dailyChange < 0)
-      .sort((a, b) => magnitude(a) - magnitude(b))
+    return ordered((a, b) => a - b)
+      .filter(wentDown)
       .slice(0, limit);
   }
   // Either direction counts, so the biggest mover is the largest move in either
   // direction: rank on the size of the change, not its signed value.
-  return [...movers]
-    .sort((a, b) => Math.abs(magnitude(b)) - Math.abs(magnitude(a)))
-    .slice(0, limit);
+  return ordered((a, b) => Math.abs(b) - Math.abs(a)).slice(0, limit);
 }
 
 interface TopMoversProps {
@@ -165,15 +214,13 @@ function RefreshButton({ onRefresh, isRefreshing, refreshTitle }: { onRefresh?: 
 export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh, isRefreshing }: TopMoversProps) {
   const t = useTranslations('dashboard');
   const router = useRouter();
-  const { formatCurrencyPrecise, formatPercent } = useNumberFormat();
-  const defaultCurrency = preferredCurrency(
-    usePreferencesStore((s) => s.preferences?.defaultCurrency),
-  );
+  const { formatCurrency, formatCurrencyPrecise, formatPercent } = useNumberFormat();
+  const { convertToDefault, defaultCurrency } = useExchangeRates();
   const [filter, setFilter] = useState<MoverFilter>(() =>
     readStoredChoice(FILTER_STORAGE_KEY, MOVER_FILTERS, 'all'),
   );
   const [metric, setMetric] = useState<MoverMetric>(() =>
-    readStoredChoice(METRIC_STORAGE_KEY, MOVER_METRICS, 'amount'),
+    readStoredChoice(METRIC_STORAGE_KEY, MOVER_METRICS, 'price'),
   );
 
   useEffect(() => {
@@ -190,8 +237,8 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
     { value: 'losers', label: t('topMovers.filter.losers') },
   ];
   const metricOptions: { value: MoverMetric; label: string }[] = [
-    { value: 'amount', label: t('topMovers.metric.amount') },
-    { value: 'percent', label: t('topMovers.metric.percent') },
+    { value: 'price', label: t('topMovers.metric.price') },
+    { value: 'holdings', label: t('topMovers.metric.holdings') },
   ];
 
   if (isLoading) {
@@ -233,7 +280,17 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
     );
   }
 
-  const topMovers = rankMovers(movers, filter, metric);
+  // Each row's comparable size, worked out once before ranking: the figures the
+  // row prints are the security's own, and this is the only one expressed in the
+  // currency the five are chosen in.
+  const rows: RankableMover[] = movers.map((mover) => ({
+    mover,
+    valueChange:
+      mover.dailyValueChange === null
+        ? null
+        : convertToDefault(mover.dailyValueChange, mover.currencyCode),
+  }));
+  const topMovers = rankMovers(rows, filter, metric);
 
   return (
     <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
@@ -266,13 +323,17 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
         </p>
       ) : (
       <div className="space-y-2 sm:space-y-3">
-        {topMovers.map((mover) => {
+        {topMovers.map(({ mover }) => {
           const isPositive = mover.dailyChange >= 0;
           const isForeign = mover.currencyCode && mover.currencyCode !== defaultCurrency;
-          const fmtPrice = (value: number) => {
-            const formatted = formatCurrencyPrecise(value, mover.currencyCode);
-            return isForeign ? `${formatted} ${mover.currencyCode}` : formatted;
-          };
+          const withCode = (formatted: string) =>
+            isForeign ? `${formatted} ${mover.currencyCode}` : formatted;
+          // A quote takes the sub-penny precision; a position's value is money
+          // and takes the currency's own.
+          const fmtPrice = (value: number) =>
+            withCode(formatCurrencyPrecise(value, mover.currencyCode));
+          const fmtValue = (value: number) =>
+            withCode(formatCurrency(value, mover.currencyCode));
           return (
             <button
               key={mover.securityId}
@@ -296,19 +357,46 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
                   {mover.name}
                 </div>
               </div>
+              {/* Price shows the quote and how far it moved; Holdings shows what
+                  is held and what the day did to its value. Both print the
+                  security's own currency: the position's value is the server's
+                  `marketValue`, never a price multiplied by a share count here,
+                  and an unpriced holding has no value to show rather than a
+                  zero. */}
               <div className="text-right flex-shrink-0 ml-3">
-                <div className="text-sm text-gray-600 dark:text-gray-300">
-                  {fmtPrice(mover.currentPrice)}
-                </div>
-                <div
-                  className={`text-sm font-medium ${
-                    isPositive
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-red-600 dark:text-red-400'
-                  }`}
-                >
-                  {isPositive ? '+' : ''}{formatCurrencyPrecise(mover.dailyChange, mover.currencyCode)} ({isPositive ? '+' : ''}{formatPercent(mover.dailyChangePercent)})
-                </div>
+                {metric === 'holdings' ? (
+                  <>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
+                      {mover.marketValue === null ? (
+                        <UnknownAmount reason="noPrice" />
+                      ) : (
+                        fmtValue(mover.marketValue)
+                      )}
+                    </div>
+                    <div
+                      className={`text-sm font-medium ${
+                        mover.dailyValueChange === null
+                          ? ''
+                          : gainLossColor(mover.dailyValueChange)
+                      }`}
+                    >
+                      {mover.dailyValueChange === null ? (
+                        <UnknownAmount reason="noPrice" />
+                      ) : (
+                        `${mover.dailyValueChange >= 0 ? '+' : ''}${fmtValue(mover.dailyValueChange)}`
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
+                      {fmtPrice(mover.currentPrice)}
+                    </div>
+                    <div className={`text-sm font-medium ${gainLossColor(mover.dailyChange)}`}>
+                      {isPositive ? '+' : ''}{formatCurrencyPrecise(mover.dailyChange, mover.currencyCode)} ({isPositive ? '+' : ''}{formatPercent(mover.dailyChangePercent)})
+                    </div>
+                  </>
+                )}
               </div>
             </button>
           );

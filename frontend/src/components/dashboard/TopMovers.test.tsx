@@ -26,8 +26,15 @@ vi.mock('@/hooks/useNumberFormat', async () => {
     }),
   };
 });
-vi.mock('@/store/preferencesStore', () => ({
-  usePreferencesStore: (selector: any) => selector({ preferences: { defaultCurrency: 'USD' } }),
+// The widget ranks Holdings by the day's move converted into the reader's own
+// currency, so the table is mocked with one pair that converts (EUR) and one
+// that does not (GBP) -- both branches of the ranking rule have a fixture.
+vi.mock('@/hooks/useExchangeRates', () => ({
+  useExchangeRates: () => ({
+    defaultCurrency: 'USD',
+    convertToDefault: (amount: number, from: string) =>
+      from === 'USD' ? amount : from === 'EUR' ? amount * 2 : null,
+  }),
 }));
 
 describe('TopMovers', () => {
@@ -247,13 +254,22 @@ describe('TopMovers', () => {
     expect(mockPush).toHaveBeenCalledWith('/securities/sec-1?tab=prices');
   });
 
-  it('re-ranks the list when the rank-by toggle changes, and remembers it', () => {
-    // In the order the server sends: biggest percentage move first. Both
-    // settings therefore have to reorder, so neither can look right by
-    // accidentally inheriting the incoming order.
+  it('re-ranks and re-labels the list when the Price/Holdings toggle changes, and remembers it', () => {
+    // In the order the server sends: biggest percentage move first. BIG holds
+    // one share of an expensive security and SMALL holds a thousand of a cheap
+    // one, so the percentage ranking and the "what did this do to my portfolio"
+    // ranking are opposites and neither can look right by inheriting the other.
     const movers = [
-      { securityId: '2', symbol: 'SMALL', name: 'Small', currentPrice: 20, dailyChange: 8, dailyChangePercent: 40, currencyCode: 'USD' },
-      { securityId: '1', symbol: 'BIG', name: 'Big', currentPrice: 900, dailyChange: 400, dailyChangePercent: 0.5, currencyCode: 'USD' },
+      {
+        securityId: '2', symbol: 'SMALL', name: 'Small', currencyCode: 'USD',
+        currentPrice: 20, dailyChange: 8, dailyChangePercent: 40,
+        marketValue: 20000, dailyValueChange: 8000,
+      },
+      {
+        securityId: '1', symbol: 'BIG', name: 'Big', currencyCode: 'USD',
+        currentPrice: 900, dailyChange: 400, dailyChangePercent: 0.5,
+        marketValue: 900, dailyValueChange: 400,
+      },
     ] as any[];
 
     const { unmount } = render(
@@ -263,18 +279,65 @@ describe('TopMovers', () => {
       screen.getAllByRole('button', { name: /Price history for/ }).map((row) =>
         row.textContent?.includes('BIG') ? 'BIG' : 'SMALL',
       );
-    expect(symbolsInOrder()).toEqual(['BIG', 'SMALL']);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Percent' }));
+    // Price: the steepest percentage move first, and the quote on the row.
     expect(symbolsInOrder()).toEqual(['SMALL', 'BIG']);
+    expect(screen.getByText('$20.00')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Holdings' }));
+    // Holdings: the position's value and what the day did to it, biggest first.
+    expect(symbolsInOrder()).toEqual(['SMALL', 'BIG']);
+    expect(screen.getByText('$20000.00')).toBeInTheDocument();
+    expect(screen.getByText('+$8000.00')).toBeInTheDocument();
+    expect(screen.queryByText('$20.00')).not.toBeInTheDocument();
 
     // The choice is a per-browser convenience, kept across a remount.
     unmount();
     render(<TopMovers movers={movers} isLoading={false} hasInvestmentAccounts={true} />);
-    expect(screen.getByRole('button', { name: 'Percent' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Holdings' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+  });
+
+  it('ranks Holdings by the move in value, putting the biggest mover of money first', () => {
+    // SMALL has the steeper percentage move; BIG moved more of the reader's
+    // money. Under Holdings the order is the order of the figures on screen.
+    const movers = [
+      {
+        securityId: '1', symbol: 'SMALL', name: 'Small', currencyCode: 'USD',
+        currentPrice: 20, dailyChange: 8, dailyChangePercent: 40,
+        marketValue: 200, dailyValueChange: 80,
+      },
+      {
+        securityId: '2', symbol: 'BIG', name: 'Big', currencyCode: 'USD',
+        currentPrice: 900, dailyChange: 9, dailyChangePercent: 1,
+        marketValue: 90000, dailyValueChange: 900,
+      },
+    ] as any[];
+
+    render(<TopMovers movers={movers} isLoading={false} hasInvestmentAccounts={true} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Holdings' }));
+
+    expect(
+      screen.getAllByRole('button', { name: /Price history for/ }).map((row) =>
+        row.textContent?.includes('BIG') ? 'BIG' : 'SMALL',
+      ),
+    ).toEqual(['BIG', 'SMALL']);
+  });
+
+  it('shows the unknown marker for a holding with no price rather than a zero value', () => {
+    const movers = [
+      {
+        securityId: '1', symbol: 'GIC', name: 'No price', currencyCode: 'USD',
+        currentPrice: 100, dailyChange: 1, dailyChangePercent: 1,
+        marketValue: null, dailyValueChange: null,
+      },
+    ] as any[];
+
+    render(<TopMovers movers={movers} isLoading={false} hasInvestmentAccounts={true} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Holdings' }));
+
+    expect(screen.getAllByTestId('unknown-amount')).toHaveLength(2);
   });
 
   it('does not show currency code for default currency securities', () => {
@@ -293,62 +356,91 @@ describe('rankMovers', () => {
   // A big holding moves the most money on a small percentage; a small one moves
   // the most percent on very little. The two orders are genuinely different, so
   // each is pinned here rather than assumed to follow from the other.
-  const mover = (symbol: string, dailyChange: number, dailyChangePercent: number) =>
-    ({ securityId: symbol, symbol, name: symbol, currentPrice: 100, dailyChange, dailyChangePercent, currencyCode: 'USD' }) as any;
+  const row = (
+    symbol: string,
+    dailyChangePercent: number,
+    dailyValueChange: number,
+    valueChange: number | null = dailyValueChange,
+  ) => ({
+    mover: {
+      securityId: symbol,
+      symbol,
+      name: symbol,
+      currencyCode: 'USD',
+      currentPrice: 100,
+      previousPrice: 100,
+      dailyChange: dailyChangePercent,
+      dailyChangePercent,
+      marketValue: 10_000,
+      dailyValueChange,
+    },
+    valueChange,
+  });
 
   /**
    * In the order the server sends: descending absolute daily change PERCENT.
    * The fixture is deliberately not in money order -- a branch that passed the
-   * incoming order through showed the percent ranking under the Amount heading,
-   * and a fixture already sorted by money could not tell the two apart.
+   * incoming order through showed the percent ranking under the Holdings
+   * heading, and a fixture already sorted by money could not tell the two apart.
    */
-  const movers = [
-    mover('SMALL', 8, 40),
-    mover('MID', -120, -6),
-    mover('BIG', 400, 0.5),
-  ];
+  const rows = [row('SMALL', 40, 8), row('MID', -6, -120), row('BIG', 0.5, 400)];
+  const symbols = (ranked: ReturnType<typeof rankMovers>) =>
+    ranked.map((r) => r.mover.symbol);
 
-  it('ranks by the size of the money move for all + amount', () => {
-    expect(rankMovers(movers, 'all', 'amount').map((m) => m.symbol)).toEqual([
-      'BIG',
-      'MID',
-      'SMALL',
-    ]);
+  it('ranks by what the day did to the position for all + holdings', () => {
+    expect(symbols(rankMovers(rows, 'all', 'holdings'))).toEqual(['BIG', 'MID', 'SMALL']);
   });
 
-  it('re-ranks by the size of the percentage move for all + percent', () => {
-    expect(rankMovers(movers, 'all', 'percent').map((m) => m.symbol)).toEqual([
-      'SMALL',
-      'MID',
-      'BIG',
-    ]);
+  it('re-ranks by the size of the percentage move for all + price', () => {
+    expect(symbols(rankMovers(rows, 'all', 'price'))).toEqual(['SMALL', 'MID', 'BIG']);
   });
 
   it('ranks gainers by the chosen metric', () => {
-    expect(rankMovers(movers, 'gainers', 'amount').map((m) => m.symbol)).toEqual([
-      'BIG',
-      'SMALL',
-    ]);
-    expect(rankMovers(movers, 'gainers', 'percent').map((m) => m.symbol)).toEqual([
-      'SMALL',
-      'BIG',
-    ]);
+    expect(symbols(rankMovers(rows, 'gainers', 'holdings'))).toEqual(['BIG', 'SMALL']);
+    expect(symbols(rankMovers(rows, 'gainers', 'price'))).toEqual(['SMALL', 'BIG']);
   });
 
   it('ranks losers by the steepest fall under the chosen metric', () => {
-    const losers = [mover('A', -50, -1), mover('B', -10, -25)];
-    expect(rankMovers(losers, 'losers', 'amount').map((m) => m.symbol)).toEqual(['A', 'B']);
-    expect(rankMovers(losers, 'losers', 'percent').map((m) => m.symbol)).toEqual(['B', 'A']);
+    const losers = [row('A', -1, -50), row('B', -25, -10)];
+    expect(symbols(rankMovers(losers, 'losers', 'holdings'))).toEqual(['A', 'B']);
+    expect(symbols(rankMovers(losers, 'losers', 'price'))).toEqual(['B', 'A']);
+  });
+
+  it("ranks the day's move in the reader's currency, not in the security's", () => {
+    // 100 in a currency worth twice the reader's moved more of their money than
+    // 150 in their own. Ranking the native figures would print them the other
+    // way round.
+    const mixed = [row('HOME', 1, 150, 150), row('ABROAD', 1, 100, 200)];
+    expect(symbols(rankMovers(mixed, 'all', 'holdings'))).toEqual(['ABROAD', 'HOME']);
+  });
+
+  it('ranks a move with no comparable size after every move that has one', () => {
+    // No rate into the display currency: the row keeps its own figures and its
+    // own direction, but it cannot claim to be the biggest of anything.
+    const unconvertible = row('NORATE', 1, 9_999, null);
+    expect(symbols(rankMovers([unconvertible, row('KNOWN', 1, 10)], 'all', 'holdings'))).toEqual([
+      'KNOWN',
+      'NORATE',
+    ]);
+    // Its direction is still known, so it is a gainer -- last among them.
+    expect(
+      symbols(rankMovers([unconvertible, row('KNOWN', 1, 10)], 'gainers', 'holdings')),
+    ).toEqual(['KNOWN', 'NORATE']);
+    // Under Price nothing is unknown: the percentage is the security's own.
+    expect(symbols(rankMovers([unconvertible, row('KNOWN', 5, 10)], 'all', 'price'))).toEqual([
+      'KNOWN',
+      'NORATE',
+    ]);
   });
 
   it('takes at most the limit', () => {
-    const many = Array.from({ length: 9 }, (_, i) => mover(`S${i}`, 9 - i, 9 - i));
-    expect(rankMovers(many, 'all', 'amount')).toHaveLength(5);
+    const many = Array.from({ length: 9 }, (_, i) => row(`S${i}`, 9 - i, 9 - i));
+    expect(rankMovers(many, 'all', 'holdings')).toHaveLength(5);
   });
 
-  it('leaves the caller\'s array alone', () => {
-    const order = movers.map((m) => m.symbol);
-    rankMovers(movers, 'all', 'percent');
-    expect(movers.map((m) => m.symbol)).toEqual(order);
+  it("leaves the caller's array alone", () => {
+    const order = symbols(rows as never[]);
+    rankMovers(rows, 'all', 'price');
+    expect(symbols(rows as never[])).toEqual(order);
   });
 });

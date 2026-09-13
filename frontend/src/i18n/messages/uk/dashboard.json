@@ -106,9 +106,9 @@
       "label": "Напрямок"
     },
     "metric": {
-      "label": "Сортувати за",
-      "amount": "Сума",
-      "percent": "Відсоток"
+      "label": "Показати",
+      "price": "Ціна",
+      "holdings": "Активи"
     }
   },
   "favouriteSecurities": {

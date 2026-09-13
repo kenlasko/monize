@@ -106,9 +106,9 @@
       "label": "方向"
     },
     "metric": {
-      "label": "並べ替え",
-      "amount": "金額",
-      "percent": "変化率"
+      "label": "表示",
+      "price": "株価",
+      "holdings": "保有"
     }
   },
   "favouriteSecurities": {
