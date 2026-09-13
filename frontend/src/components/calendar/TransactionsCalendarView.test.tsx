@@ -289,7 +289,7 @@ describe('TransactionsCalendarView', () => {
       );
       const five = renderView();
 
-      await screen.findAllByRole('button', { name: /Payee 0/ });
+      await screen.findAllByRole('button', { name: /Payee/ });
       expect(within(cell('06/10/2026')).getAllByRole('button')).toHaveLength(
         CALENDAR_DAY_CHIP_LIMIT,
       );
@@ -303,10 +303,28 @@ describe('TransactionsCalendarView', () => {
       );
       renderView();
 
-      await screen.findAllByRole('button', { name: /Payee 0/ });
+      await screen.findAllByRole('button', { name: /Payee/ });
       expect(
         within(cell('06/10/2026')).getByRole('button', { name: '+2 more' }),
       ).toBeInTheDocument();
+    });
+
+    it('reads a day from earliest to latest, top to bottom', async () => {
+      // The register answers newest first; a day on the calendar is read the
+      // other way round, so the chips run down the cell as the day happened.
+      mockGetAllPages.mockResolvedValue([
+        transaction({ id: 'tx-evening', payeeName: 'Evening' }),
+        transaction({ id: 'tx-noon', payeeName: 'Noon' }),
+        transaction({ id: 'tx-morning', payeeName: 'Morning' }),
+      ]);
+      renderView();
+
+      await screen.findAllByRole('button', { name: /Morning/ });
+      expect(
+        within(cell('06/10/2026'))
+          .getAllByRole('button')
+          .map((chip) => chip.textContent?.replace(/[^A-Za-z]/g, '')),
+      ).toEqual(['Morning', 'Noon', 'Evening']);
     });
 
     it('lines the amounts up at the right edge of the day', async () => {

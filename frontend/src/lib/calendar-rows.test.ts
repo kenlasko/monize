@@ -183,6 +183,47 @@ describe('chipForOccurrence', () => {
 describe('groupCalendarRows', () => {
   const schedulesById = new Map([['st-1', schedule()]]);
 
+  it('reads a day top to bottom as it happened, not newest first', () => {
+    // The register answers newest first and its within-day order is total, so a
+    // day's slice reversed IS its ascending register order. Arrival order here is
+    // the register's: the latest row first.
+    const days = groupCalendarRows({
+      transactions: [
+        withOverrides({ id: 'tx-evening' }),
+        withOverrides({ id: 'tx-noon' }),
+        withOverrides({ id: 'tx-morning' }),
+      ],
+      occurrences: [],
+      schedulesById,
+      accountsById,
+      today: TODAY,
+    });
+
+    expect(days.get('2026-06-10')?.transactions.map((c) => c.key)).toEqual([
+      'tx-morning',
+      'tx-noon',
+      'tx-evening',
+    ]);
+  });
+
+  it('leaves the occurrences in the order they arrived, which is already by due date', () => {
+    const days = groupCalendarRows({
+      transactions: [],
+      occurrences: [
+        occurrence({ scheduledTransactionId: 'st-1', originalDate: '2026-06-20' }),
+        occurrence({ scheduledTransactionId: 'st-1', originalDate: '2026-06-20b' }),
+      ],
+      schedulesById,
+      accountsById,
+      today: TODAY,
+    });
+
+    expect(days.get('2026-06-20')?.occurrences.map((c) => c.key)).toEqual([
+      'st-1:2026-06-20',
+      'st-1:2026-06-20b',
+    ]);
+  });
+
   it('puts rows and occurrences on their own days', () => {
     const days = groupCalendarRows({
       transactions: [transaction(), withOverrides({ id: 'tx-2', transactionDate: '2026-06-11' })],

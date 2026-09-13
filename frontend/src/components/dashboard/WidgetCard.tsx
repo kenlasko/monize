@@ -108,7 +108,10 @@ export function WidgetCard({
               type="button"
               onClick={() => setShowConfig(true)}
               aria-label={t('widgets.configure', { name: title })}
-              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              // `self-start` keeps the gear on the FIRST line of a header-right
+              // that wraps onto two. A single-line one is the gear's own height,
+              // where start and centre are the same place, so nothing moves.
+              className="self-start p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <Cog6ToothIcon aria-hidden className="h-4 w-4" />
             </button>

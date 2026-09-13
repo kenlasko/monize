@@ -141,6 +141,33 @@ export function chipForOccurrence(
 }
 
 /**
+ * A day's rows, earliest first.
+ *
+ * The register answers newest first, and within a day its order is TOTAL:
+ * `applyRegisterOrder` sorts on the date, then `created_at`, then credits before
+ * debits, then the id, all in the one direction. Reversing a day's slice is
+ * therefore that same ordering read the other way -- the register's own ascending
+ * order, not a second opinion about it -- and it is what makes a calendar day
+ * read top to bottom as the day happened. The brokerage list is ordered the same
+ * way (`transactionDate`, then `createdAt`, descending), so it reverses with it.
+ *
+ * Occurrences are left alone: they arrive by due date ascending, which is
+ * already earliest first, and a scheduled item has no time of day to order by.
+ */
+function earliestFirst(days: Map<string, CalendarDayRows>): Map<string, CalendarDayRows> {
+  return new Map(
+    [...days].map(([date, rows]) => [
+      date,
+      {
+        ...rows,
+        transactions: [...rows.transactions].reverse(),
+        investments: [...rows.investments].reverse(),
+      },
+    ]),
+  );
+}
+
+/**
  * Every chip the Transactions calendar draws, keyed by day.
  *
  * An occurrence whose schedule the client does not hold is dropped: its chip
@@ -179,7 +206,7 @@ export function groupCalendarRows(input: {
     );
   }
 
-  return days;
+  return earliestFirst(days);
 }
 
 /**
@@ -257,5 +284,5 @@ export function groupInvestmentCalendarRows(input: {
     );
   }
 
-  return days;
+  return earliestFirst(days);
 }
