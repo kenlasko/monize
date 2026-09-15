@@ -762,7 +762,65 @@
       "downloadButton": "Scarica",
       "restoreButton": "Ripristina",
       "workingButton": "Elaborazione...",
-      "downloadFailed": "Impossibile scaricare il backup"
+      "downloadFailed": "Impossibile scaricare il backup",
+      "offsite": {
+        "disclosure": "Destinazioni fuori sede",
+        "disclosureDescription": "Dopo ogni backup automatico completo, una copia cifrata può essere inviata a uno storage S3, via email o a entrambi: tre copie, due tipi di archiviazione, uno dei quali fuori da questa macchina. Viene inviato solo un backup cifrato.",
+        "encryptionUnavailable": "Questo server non ha una chiave di cifratura impostata, quindi le credenziali di un bucket tuo non possono essere memorizzate. Il bucket del server e le copie inviate via email continuano a funzionare.",
+        "loading": "Caricamento delle tue destinazioni fuori sede...",
+        "loadFailed": "Impossibile caricare le tue destinazioni di backup fuori sede",
+        "retryButton": "Riprova",
+        "demoNote": "Le destinazioni fuori sede non possono essere modificate nella demo.",
+        "saveButton": "Salva destinazioni",
+        "savingButton": "Salvataggio...",
+        "saved": "Destinazioni fuori sede salvate",
+        "saveFailed": "Impossibile salvare le tue destinazioni di backup fuori sede",
+        "s3": {
+          "heading": "Storage S3",
+          "modeLabel": "Dove vengono inviate le copie",
+          "modeOff": "Disattivo",
+          "modeDeployment": "Bucket di questo server",
+          "modeOwn": "Un mio bucket",
+          "deploymentUnavailable": "Questo server non ha un bucket fuori sede proprio: dovrebbe configurarlo un amministratore. In alternativa puoi usare un bucket tuo.",
+          "bucketLabel": "Bucket",
+          "regionLabel": "Regione",
+          "regionHelp": "Molti servizi compatibili con S3 lo ignorano.",
+          "prefixLabel": "Prefisso chiave",
+          "prefixHelp": "Cartella facoltativa all'interno del bucket, così i tuoi backup possono condividerlo con altri dati.",
+          "endpointLabel": "Endpoint",
+          "endpointHelp": "Solo per un servizio compatibile con S3 come MinIO, R2 o B2. Lascia vuoto per AWS.",
+          "forcePathStyleLabel": "Usa indirizzamento path-style",
+          "forcePathStyleHelp": "Richiesto da MinIO e da altri servizi compatibili con S3.",
+          "accessKeyIdLabel": "ID chiave di accesso",
+          "secretAccessKeyLabel": "Chiave di accesso segreta",
+          "storedPlaceholder": "•••• memorizzata",
+          "credentialsHelp": "Le credenziali sono memorizzate cifrate su questo server e non vengono più mostrate. Lascia vuoti questi campi per mantenere quelle già memorizzate.",
+          "clearCredentialsButton": "Rimuovi credenziali memorizzate",
+          "clearConfirmTitle": "Rimuovere le credenziali memorizzate?",
+          "clearConfirmMessage": "Questo server dimenticherà il tuo ID chiave di accesso e la chiave di accesso segreta. Nessuna altra copia verrà inviata al tuo bucket finché non le inserisci di nuovo.",
+          "credentialsCleared": "Credenziali memorizzate rimosse",
+          "clearFailed": "Impossibile rimuovere le credenziali memorizzate"
+        },
+        "email": {
+          "heading": "Email",
+          "toggleLabel": "Inviami via email una copia di ogni backup automatico completato",
+          "addressLabel": "Invia le copie a",
+          "addressPlaceholder": "utente@esempio.com",
+          "sizeNote": "Un backup oltre il limite di dimensione di questo server non viene allegato; ricevi invece un avviso con il nome del file."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "Email",
+          "statusPending": "In attesa",
+          "statusUploading": "Invio",
+          "statusUploaded": "Copiata",
+          "statusFailed": "Non riuscita",
+          "statusConflict": "Conflitto",
+          "statusSkippedUnencrypted": "Saltata: non cifrata",
+          "statusSkippedTooLarge": "Saltata: troppo grande"
+        }
+      }
     }
   },
   "sharedAccess": {

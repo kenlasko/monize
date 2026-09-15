@@ -150,6 +150,17 @@ export const INTENTIONALLY_EXCLUDED_TABLES: ReadonlySet<string> = new Set([
   // the backup/restore lifecycle of ENCRYPTION_KEY rather than of a ledger.
   "push_instance_config",
   "push_chart_artifacts",
+  // Instance-bound delivery ledger for this deployment's egress; not portable
+  // user data. Same category as push_subscriptions above: a row names an object
+  // key in a bucket this instance uploads to, and restored elsewhere it would
+  // claim a copy the new instance never made.
+  "backup_offsite_uploads",
+  // Egress destination credentials encrypted under this instance's
+  // ENCRYPTION_KEY; re-entered on a new instance, never carried in an artifact.
+  // Unlike ai_provider_configs, these are not decrypted into the file: an
+  // artifact that can be mailed to its own destination must not carry the
+  // credential for that destination.
+  "backup_offsite_settings",
 ]);
 
 export function buildExportTableQueries(

@@ -290,5 +290,27 @@
       "title": "價格變動提醒: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}：相對於上一個有資料的交易日變動 {{ percent }}%。"
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Monize 備份 {{ filename }}",
+    "copyHeading": "您的 Monize 備份已隨信附上",
+    "copyIntro": "這是您 Monize 帳戶 {{ date }} 的自動{{ tier }}備份。檔案已附在這封郵件中。",
+    "copyEncrypted": "附件已使用您的 Monize 備份密碼加密。沒有該密碼就無法開啟，Monize 也無法為您找回，請將密碼保存在這個信箱以外的地方。",
+    "copyRestore": "若要還原，請開啟 Monize，前往 設定、備份與還原，上傳此檔案並輸入您的備份密碼。",
+    "copyVerify": "上方的 SHA-256 是附件位元組的雜湊值，日後您可以核對保留的副本是否就是這封郵件送達的那一份。",
+    "tooLargeSubject": "Monize 備份 {{ filename }} 太大，無法以郵件寄送",
+    "tooLargeHeading": "您的 Monize 備份未以郵件寄送",
+    "tooLargeIntro": "今天的備份為 {{ size }}，超過此部署對以郵件寄送的備份所允許的 {{ limit }}（BACKUP_EMAIL_MAX_BYTES）。",
+    "tooLargeNoBytes": "這封郵件未附上任何內容，也不提供下載連結：下載連結需要一組能從儲存空間讀回您備份的認證資訊，而此功能並未持有。",
+    "tooLargeUnaffected": "備份本身已正常寫入。此伺服器上的副本不受影響；若您已啟用 S3 目的地，該處的副本同樣不受影響。",
+    "tooLargeWhatToDo": "若要在本機之外保留這種大小的備份副本，請在 設定、備份與還原 中下載，啟用 S3 目的地，或請管理員提高郵件大小上限。",
+    "labelFile": "檔案",
+    "labelSize": "大小",
+    "labelTier": "保留週期",
+    "labelLimit": "郵件上限",
+    "labelDigest": "SHA-256",
+    "tierDaily": "每日",
+    "tierWeekly": "每週",
+    "tierMonthly": "每月"
   }
 }

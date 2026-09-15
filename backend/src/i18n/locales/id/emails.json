@@ -290,5 +290,27 @@
       "title": "Peringatan perubahan harga: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% dibandingkan sesi sebelumnya yang tersedia."
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Cadangan Monize {{ filename }}",
+    "copyHeading": "Cadangan Monize Anda terlampir",
+    "copyIntro": "Ini adalah cadangan otomatis {{ tier }} akun Monize Anda untuk {{ date }}. Berkasnya dilampirkan pada surel ini.",
+    "copyEncrypted": "Lampiran ini dienkripsi dengan kata sandi cadangan Monize Anda. Lampiran tidak dapat dibuka tanpa kata sandi tersebut, dan Monize tidak dapat memulihkannya untuk Anda -- simpan kata sandi di tempat selain kotak surat ini.",
+    "copyRestore": "Untuk memulihkannya, buka Monize, masuk ke Pengaturan, Cadangkan &amp; Pulihkan, unggah berkas ini dan masukkan kata sandi cadangan Anda.",
+    "copyVerify": "SHA-256 di atas dihitung dari byte yang dilampirkan, sehingga nanti Anda dapat memeriksa bahwa salinan yang Anda simpan sama dengan yang dikirim surel ini.",
+    "tooLargeSubject": "Cadangan Monize {{ filename }} terlalu besar untuk dikirim lewat surel",
+    "tooLargeHeading": "Cadangan Monize Anda tidak dikirim lewat surel",
+    "tooLargeIntro": "Cadangan hari ini berukuran {{ size }}, melebihi {{ limit }} yang diizinkan deployment ini untuk cadangan yang dikirim lewat surel (BACKUP_EMAIL_MAX_BYTES).",
+    "tooLargeNoBytes": "Tidak ada yang dilampirkan pada surel ini, dan tidak ada tautan unduhan yang diberikan -- tautan semacam itu memerlukan kredensial yang dapat membaca kembali cadangan Anda dari penyimpanan, dan fitur ini tidak memilikinya.",
+    "tooLargeUnaffected": "Cadangannya sendiri ditulis seperti biasa. Salinan di server ini tidak terpengaruh, begitu pula salinan di tujuan S3 Anda jika Anda mengaktifkannya.",
+    "tooLargeWhatToDo": "Untuk menyimpan salinan cadangan sebesar ini di luar mesin ini, unduh dari Pengaturan, Cadangkan &amp; Pulihkan, aktifkan tujuan S3, atau minta administrator Anda menaikkan batas surel.",
+    "labelFile": "Berkas",
+    "labelSize": "Ukuran",
+    "labelTier": "Retensi",
+    "labelLimit": "Batas surel",
+    "labelDigest": "SHA-256",
+    "tierDaily": "harian",
+    "tierWeekly": "mingguan",
+    "tierMonthly": "bulanan"
   }
 }

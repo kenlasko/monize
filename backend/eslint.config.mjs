@@ -32,6 +32,12 @@ const WITH_CONTEXT_ALLOWLIST = [
   "src/auth/strategies/jwt.strategy.ts",
   "src/auth/token.service.ts",
   "src/backup/auto-backup.service.ts",
+  // The off-machine copy of a completed artifact: dispatched on the tail of a
+  // backup run, so it seeds the owner's own withUserContext -- no bypass.
+  "src/backup/offsite/backup-offsite-dispatch.service.ts",
+  // The off-site retry sweep: a cross-user cron fan-out (withSystemContext)
+  // over failed copies, each re-attempted under its owner (withUserContext).
+  "src/backup/offsite/backup-offsite-retry.service.ts",
   // `withPreserveTimestamps` (identity inherited, never granted) around the
   // restore's single transaction, so the GUC-aware `updated_at` trigger keeps
   // the backup's own timestamps. It moved here from `backup.service.ts` when

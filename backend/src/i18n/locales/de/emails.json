@@ -290,5 +290,27 @@
       "title": "Alarm bei Kursänderung: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% gegenüber der letzten verfügbaren Sitzung."
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Monize-Backup {{ filename }}",
+    "copyHeading": "Ihr Monize-Backup ist angehängt",
+    "copyIntro": "Dies ist das automatische Backup ({{ tier }}) Ihres Monize-Kontos für {{ date }}. Die Datei ist an diese E-Mail angehängt.",
+    "copyEncrypted": "Der Anhang ist mit Ihrem Monize-Backup-Passwort verschlüsselt. Ohne dieses Passwort lässt er sich nicht öffnen, und Monize kann es nicht für Sie wiederherstellen -- bewahren Sie das Passwort an einem anderen Ort als in diesem Postfach auf.",
+    "copyRestore": "Zum Wiederherstellen öffnen Sie Monize, gehen Sie zu Einstellungen, Backup &amp; Wiederherstellung, laden Sie diese Datei hoch und geben Sie Ihr Backup-Passwort ein.",
+    "copyVerify": "Der SHA-256 oben gilt für die angehängten Bytes, sodass Sie später prüfen können, ob die aufbewahrte Kopie die ist, die diese E-Mail geliefert hat.",
+    "tooLargeSubject": "Monize-Backup {{ filename }} war zu groß für den E-Mail-Versand",
+    "tooLargeHeading": "Ihr Monize-Backup wurde nicht per E-Mail versendet",
+    "tooLargeIntro": "Das heutige Backup ist {{ size }} groß und liegt damit über den {{ limit }}, die diese Installation für ein per E-Mail versendetes Backup erlaubt (BACKUP_EMAIL_MAX_BYTES).",
+    "tooLargeNoBytes": "Dieser E-Mail wurde nichts angehängt, und es wird kein Download-Link angeboten -- ein Link bräuchte Zugangsdaten, die Ihre Backups wieder aus dem Speicher lesen könnten, und über die diese Funktion nicht verfügt.",
+    "tooLargeUnaffected": "Das Backup selbst wurde normal geschrieben. Die Kopie auf diesem Server ist davon nicht betroffen, ebenso wenig die Kopie an Ihrem S3-Ziel, falls Sie eines aktiviert haben.",
+    "tooLargeWhatToDo": "Um eine Kopie eines Backups dieser Größe außerhalb dieses Rechners zu behalten, laden Sie es unter Einstellungen, Backup &amp; Wiederherstellung herunter, aktivieren Sie das S3-Ziel oder bitten Sie Ihren Administrator, das E-Mail-Limit zu erhöhen.",
+    "labelFile": "Datei",
+    "labelSize": "Größe",
+    "labelTier": "Aufbewahrung",
+    "labelLimit": "E-Mail-Limit",
+    "labelDigest": "SHA-256",
+    "tierDaily": "täglich",
+    "tierWeekly": "wöchentlich",
+    "tierMonthly": "monatlich"
   }
 }

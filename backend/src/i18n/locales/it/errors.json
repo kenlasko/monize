@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "Tempo scaduto in attesa della capacità di ripristino: un altro ripristino è ancora in corso. Riprova tra un momento.",
     "restoreTicketUnavailable": "Questa installazione non può autorizzare i caricamenti di ripristino.",
     "invalidNotificationFields": "Notifica del backup non valida: il titolo deve essere testo; la destinazione e la chiave di deduplicazione devono essere testo o null",
-    "storedBackupNotFound": "File di backup non trovato"
+    "storedBackupNotFound": "File di backup non trovato",
+    "offsiteDeploymentBucketUnset": "Questo server non ha un bucket proprio per i backup esterni. Chiedi a un amministratore di impostare BACKUP_S3_BUCKET oppure usa un bucket tuo.",
+    "offsiteOwnBucketRequired": "Indica il bucket in cui copiare i tuoi backup.",
+    "offsiteOwnCredentialsRequired": "Inserisci un access key id e una secret access key per il tuo bucket.",
+    "offsiteEncryptionKeyRequired": "Questo server non può memorizzare credenziali S3 perché ENCRYPTION_KEY non è impostata. Chiedi a un amministratore di configurarla oppure usa il bucket dell'installazione.",
+    "offsiteEmailAddressRequired": "Indica l'indirizzo a cui inviare i tuoi backup."
   },
   "budgets": {
     "notFound": "Budget con ID {{ id }} non trovato",

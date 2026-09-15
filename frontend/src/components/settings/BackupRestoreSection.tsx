@@ -408,6 +408,9 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
         </Button>
       </div>
 
+      {/* The automatic backups the server holds for this user, with each
+          artifact's off-site copy status and the off-site destination settings
+          folded in as a collapsible block of their own. */}
       <StoredBackupsSubsection onRestore={handleStoredBackupSelected} />
 
       {/* Restore Section */}

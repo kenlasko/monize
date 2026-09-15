@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "Time-out bij het wachten op herstelcapaciteit: een andere herstelbewerking is nog bezig. Probeer het over een moment opnieuw.",
     "restoreTicketUnavailable": "Deze installatie kan herstel-uploads niet autoriseren.",
     "invalidNotificationFields": "Ongeldige melding in de back-up: de titel moet tekst zijn; het doel en de deduplicatiesleutel moeten tekst of null zijn",
-    "storedBackupNotFound": "Back-upbestand niet gevonden"
+    "storedBackupNotFound": "Back-upbestand niet gevonden",
+    "offsiteDeploymentBucketUnset": "Deze server heeft geen eigen bucket voor back-ups buiten deze machine. Vraag een beheerder om BACKUP_S3_BUCKET in te stellen, of gebruik je eigen bucket.",
+    "offsiteOwnBucketRequired": "Vul de bucket in waarheen je back-ups gekopieerd moeten worden.",
+    "offsiteOwnCredentialsRequired": "Vul een access key id en een secret access key voor je bucket in.",
+    "offsiteEncryptionKeyRequired": "Deze server kan geen S3-inloggegevens opslaan omdat ENCRYPTION_KEY niet is ingesteld. Vraag een beheerder om die te configureren, of gebruik de bucket van deze installatie.",
+    "offsiteEmailAddressRequired": "Vul het adres in waarnaar je back-ups gemaild moeten worden."
   },
   "budgets": {
     "notFound": "Budget met ID {{ id }} niet gevonden",

@@ -72,6 +72,55 @@ describe("EmailService", () => {
       );
     });
 
+    it("hands attachments to the transporter", async () => {
+      // The off-site backup destination is the one caller that sends bytes:
+      // the encrypted artifact IS the mail (docs/specs/backup-off-machine.md).
+      const content = Buffer.from("MZBE encrypted artifact");
+      await service.sendMail("to@example.com", "Subject", "<p>Body</p>", {
+        attachments: [
+          {
+            filename: "monize-backup-daily-2026-09-14.mzbe",
+            content,
+            contentType: "application/octet-stream",
+          },
+        ],
+      });
+
+      const transporter = (nodemailer.createTransport as jest.Mock).mock
+        .results[0].value;
+      expect(transporter.sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "to@example.com",
+          attachments: [
+            {
+              filename: "monize-backup-daily-2026-09-14.mzbe",
+              content,
+              contentType: "application/octet-stream",
+            },
+          ],
+        }),
+      );
+    });
+
+    it("sends no attachments key when none were supplied", async () => {
+      // Every existing caller is three-argument, and nodemailer treats an
+      // `attachments` key as part of the message: an empty one must not appear.
+      const sent = (nodemailer.createTransport as jest.Mock).mock.results[0]
+        .value.sendMail as jest.Mock;
+      sent.mockClear();
+
+      await service.sendMail("to@example.com", "Subject", "<p>Body</p>");
+      await service.sendMail("to@example.com", "Subject", "<p>Body</p>", {});
+      await service.sendMail("to@example.com", "Subject", "<p>Body</p>", {
+        attachments: [],
+      });
+
+      expect(sent).toHaveBeenCalledTimes(3);
+      for (const call of sent.mock.calls) {
+        expect(call[0]).not.toHaveProperty("attachments");
+      }
+    });
+
     it("verifies connection successfully", async () => {
       const result = await service.verifyConnection();
       expect(result).toBe(true);

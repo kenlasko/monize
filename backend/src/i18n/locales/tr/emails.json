@@ -290,5 +290,27 @@
       "title": "Fiyat değişimi uyarısı: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: önceki mevcut seansa göre %{{ percent }}."
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Monize yedeği {{ filename }}",
+    "copyHeading": "Monize yedeğiniz ekte",
+    "copyIntro": "Bu, Monize hesabınızın {{ date }} tarihli otomatik {{ tier }} yedeğidir. Dosya bu e-postaya eklenmiştir.",
+    "copyEncrypted": "Ek, Monize yedek parolanızla şifrelenmiştir. O parola olmadan açılamaz ve Monize onu sizin için kurtaramaz -- parolayı bu posta kutusu dışında bir yerde saklayın.",
+    "copyRestore": "Geri yüklemek için Monize'yi açın, Ayarlar, Yedekleme ve Geri Yükleme bölümüne gidin, bu dosyayı yükleyin ve yedek parolanızı girin.",
+    "copyVerify": "Yukarıdaki SHA-256 ekteki baytlara aittir; böylece sakladığınız kopyanın bu e-postanın ilettiği kopya olduğunu daha sonra doğrulayabilirsiniz.",
+    "tooLargeSubject": "Monize yedeği {{ filename }} e-postayla gönderilemeyecek kadar büyüktü",
+    "tooLargeHeading": "Monize yedeğiniz e-postayla gönderilmedi",
+    "tooLargeIntro": "Bugünkü yedek {{ size }} boyutunda ve bu kurulumun e-postayla gönderilen bir yedek için izin verdiği {{ limit }} sınırının üzerinde (BACKUP_EMAIL_MAX_BYTES).",
+    "tooLargeNoBytes": "Bu e-postaya hiçbir şey eklenmedi ve indirme bağlantısı da sunulmuyor -- böyle bir bağlantı, yedeklerinizi depodan geri okuyabilecek bir kimlik bilgisi gerektirirdi; bu özellik böyle bir bilgi taşımıyor.",
+    "tooLargeUnaffected": "Yedeğin kendisi normal şekilde yazıldı. Bu sunucudaki kopya etkilenmedi; etkinleştirdiyseniz S3 hedefinizdeki kopya da etkilenmedi.",
+    "tooLargeWhatToDo": "Bu boyuttaki bir yedeğin makine dışında bir kopyasını tutmak için Ayarlar, Yedekleme ve Geri Yükleme bölümünden indirin, S3 hedefini etkinleştirin veya yöneticinizden e-posta sınırını yükseltmesini isteyin.",
+    "labelFile": "Dosya",
+    "labelSize": "Boyut",
+    "labelTier": "Saklama",
+    "labelLimit": "E-posta sınırı",
+    "labelDigest": "SHA-256",
+    "tierDaily": "günlük",
+    "tierWeekly": "haftalık",
+    "tierMonthly": "aylık"
   }
 }

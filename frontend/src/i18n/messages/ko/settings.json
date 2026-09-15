@@ -762,7 +762,65 @@
       "downloadButton": "내려받기",
       "restoreButton": "복원",
       "workingButton": "처리 중...",
-      "downloadFailed": "백업을 내려받지 못했습니다"
+      "downloadFailed": "백업을 내려받지 못했습니다",
+      "offsite": {
+        "disclosure": "오프사이트 대상",
+        "disclosureDescription": "완전한 자동 백업이 끝날 때마다 암호화된 사본을 S3 저장소, 이메일 또는 두 곳 모두로 보낼 수 있습니다. 사본 세 개, 저장 방식 두 가지, 그중 하나는 이 컴퓨터 밖에 있습니다. 암호화된 백업만 전송됩니다.",
+        "encryptionUnavailable": "이 서버에는 암호화 키가 설정되어 있지 않아 본인 버킷의 자격 증명을 저장할 수 없습니다. 서버 자체 버킷과 이메일 사본은 계속 사용할 수 있습니다.",
+        "loading": "오프사이트 대상을 불러오는 중...",
+        "loadFailed": "오프사이트 백업 대상을 불러오지 못했습니다",
+        "retryButton": "다시 시도",
+        "demoNote": "데모에서는 오프사이트 대상을 변경할 수 없습니다.",
+        "saveButton": "대상 저장",
+        "savingButton": "저장 중...",
+        "saved": "오프사이트 대상이 저장되었습니다",
+        "saveFailed": "오프사이트 백업 대상을 저장하지 못했습니다",
+        "s3": {
+          "heading": "S3 저장소",
+          "modeLabel": "사본을 보낼 위치",
+          "modeOff": "꺼짐",
+          "modeDeployment": "이 서버의 버킷",
+          "modeOwn": "내 버킷",
+          "deploymentUnavailable": "이 서버에는 자체 오프사이트 버킷이 없어 관리자가 준비해야 합니다. 대신 본인 버킷을 사용할 수 있습니다.",
+          "bucketLabel": "버킷",
+          "regionLabel": "리전",
+          "regionHelp": "많은 S3 호환 서비스는 이 값을 무시합니다.",
+          "prefixLabel": "키 접두사",
+          "prefixHelp": "버킷 안의 선택적 폴더로, 백업이 다른 데이터와 같은 버킷을 함께 쓸 수 있습니다.",
+          "endpointLabel": "엔드포인트",
+          "endpointHelp": "MinIO, R2, B2 같은 S3 호환 서비스에만 사용합니다. AWS라면 비워 두세요.",
+          "forcePathStyleLabel": "경로 방식 주소 사용",
+          "forcePathStyleHelp": "MinIO와 일부 S3 호환 서비스에서 필요합니다.",
+          "accessKeyIdLabel": "액세스 키 ID",
+          "secretAccessKeyLabel": "비밀 액세스 키",
+          "storedPlaceholder": "•••• 저장됨",
+          "credentialsHelp": "자격 증명은 이 서버에 암호화되어 저장되며 다시 표시되지 않습니다. 이미 저장된 값을 유지하려면 이 칸을 비워 두세요.",
+          "clearCredentialsButton": "저장된 자격 증명 삭제",
+          "clearConfirmTitle": "저장된 자격 증명을 삭제할까요?",
+          "clearConfirmMessage": "이 서버는 액세스 키 ID와 비밀 액세스 키를 잊습니다. 다시 입력할 때까지 버킷으로 사본이 전송되지 않습니다.",
+          "credentialsCleared": "저장된 자격 증명이 삭제되었습니다",
+          "clearFailed": "저장된 자격 증명을 삭제하지 못했습니다"
+        },
+        "email": {
+          "heading": "이메일",
+          "toggleLabel": "완료된 자동 백업의 사본을 이메일로 받기",
+          "addressLabel": "사본을 받을 주소",
+          "addressPlaceholder": "user@example.com",
+          "sizeNote": "이 서버의 크기 제한을 넘는 백업은 첨부되지 않으며, 대신 파일 이름을 알리는 안내를 받습니다."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "이메일",
+          "statusPending": "대기 중",
+          "statusUploading": "전송 중",
+          "statusUploaded": "복사됨",
+          "statusFailed": "실패",
+          "statusConflict": "충돌",
+          "statusSkippedUnencrypted": "건너뜀: 미암호화",
+          "statusSkippedTooLarge": "건너뜀: 용량 초과"
+        }
+      }
     }
   },
   "sharedAccess": {

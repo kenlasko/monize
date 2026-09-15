@@ -762,7 +762,65 @@
       "downloadButton": "Herunterladen",
       "restoreButton": "Wiederherstellen",
       "workingButton": "Wird bearbeitet...",
-      "downloadFailed": "Die Sicherung konnte nicht heruntergeladen werden"
+      "downloadFailed": "Die Sicherung konnte nicht heruntergeladen werden",
+      "offsite": {
+        "disclosure": "Externe Ziele",
+        "disclosureDescription": "Nach jedem vollständigen automatischen Backup kann eine verschlüsselte Kopie an einen S3-Speicher, per E-Mail oder an beides gesendet werden: drei Kopien, zwei Arten der Speicherung, eine davon außerhalb dieses Rechners. Gesendet wird ausschließlich ein verschlüsseltes Backup.",
+        "encryptionUnavailable": "Auf diesem Server ist kein Verschlüsselungsschlüssel hinterlegt, daher können Zugangsdaten für einen eigenen Bucket nicht gespeichert werden. Der eigene Bucket dieses Servers und per E-Mail versendete Kopien funktionieren weiterhin.",
+        "loading": "Externe Ziele werden geladen...",
+        "loadFailed": "Ihre externen Backup-Ziele konnten nicht geladen werden",
+        "retryButton": "Erneut versuchen",
+        "demoNote": "Externe Ziele können in der Demo nicht geändert werden.",
+        "saveButton": "Ziele speichern",
+        "savingButton": "Wird gespeichert...",
+        "saved": "Externe Ziele gespeichert",
+        "saveFailed": "Ihre externen Backup-Ziele konnten nicht gespeichert werden",
+        "s3": {
+          "heading": "S3-Speicher",
+          "modeLabel": "Wohin Kopien gesendet werden",
+          "modeOff": "Aus",
+          "modeDeployment": "Bucket dieses Servers",
+          "modeOwn": "Mein eigener Bucket",
+          "deploymentUnavailable": "Dieser Server hat keinen eigenen externen Bucket; ein Administrator müsste erst einen einrichten. Sie können stattdessen einen eigenen Bucket verwenden.",
+          "bucketLabel": "Bucket",
+          "regionLabel": "Region",
+          "regionHelp": "Viele S3-kompatible Dienste ignorieren dies.",
+          "prefixLabel": "Schlüsselpräfix",
+          "prefixHelp": "Optionaler Ordner innerhalb des Buckets, damit Ihre Backups ihn mit anderen Daten teilen können.",
+          "endpointLabel": "Endpunkt",
+          "endpointHelp": "Nur für einen S3-kompatiblen Dienst wie MinIO, R2 oder B2. Für AWS leer lassen.",
+          "forcePathStyleLabel": "Pfadbasierte Adressierung verwenden",
+          "forcePathStyleHelp": "Von MinIO und einigen anderen S3-kompatiblen Diensten benötigt.",
+          "accessKeyIdLabel": "Zugriffsschlüssel-ID",
+          "secretAccessKeyLabel": "Geheimer Zugriffsschlüssel",
+          "storedPlaceholder": "•••• gespeichert",
+          "credentialsHelp": "Zugangsdaten werden auf diesem Server verschlüsselt gespeichert und nie wieder angezeigt. Lassen Sie diese Felder leer, um die bereits gespeicherten beizubehalten.",
+          "clearCredentialsButton": "Gespeicherte Zugangsdaten entfernen",
+          "clearConfirmTitle": "Gespeicherte Zugangsdaten entfernen?",
+          "clearConfirmMessage": "Dieser Server vergisst Ihre Zugriffsschlüssel-ID und Ihren geheimen Zugriffsschlüssel. Es werden keine weiteren Kopien an Ihren Bucket gesendet, bis Sie sie erneut eingeben.",
+          "credentialsCleared": "Gespeicherte Zugangsdaten entfernt",
+          "clearFailed": "Die gespeicherten Zugangsdaten konnten nicht entfernt werden"
+        },
+        "email": {
+          "heading": "E-Mail",
+          "toggleLabel": "Mir eine Kopie jedes abgeschlossenen automatischen Backups per E-Mail senden",
+          "addressLabel": "Kopien senden an",
+          "addressPlaceholder": "benutzer@beispiel.de",
+          "sizeNote": "Ein Backup oberhalb der Größenbeschränkung dieses Servers wird nicht angehängt; Sie erhalten stattdessen einen Hinweis mit dem Dateinamen."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "E-Mail",
+          "statusPending": "Ausstehend",
+          "statusUploading": "Wird gesendet",
+          "statusUploaded": "Kopiert",
+          "statusFailed": "Fehlgeschlagen",
+          "statusConflict": "Konflikt",
+          "statusSkippedUnencrypted": "Übersprungen: nicht verschlüsselt",
+          "statusSkippedTooLarge": "Übersprungen: zu groß"
+        }
+      }
     }
   },
   "sharedAccess": {

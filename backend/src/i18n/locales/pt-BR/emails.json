@@ -290,5 +290,27 @@
       "title": "Alerta de variação do preço: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% em relação à sessão anterior disponível."
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Backup do Monize {{ filename }}",
+    "copyHeading": "O seu backup do Monize está em anexo",
+    "copyIntro": "Este é o backup automático {{ tier }} da sua conta Monize de {{ date }}. O arquivo está anexado a este e-mail.",
+    "copyEncrypted": "O anexo está criptografado com a sua senha de backup do Monize. Ele não pode ser aberto sem essa senha, e o Monize não consegue recuperá-la para você -- guarde a senha em um lugar diferente desta caixa de entrada.",
+    "copyRestore": "Para restaurá-lo, abra o Monize, vá em Configurações, Backup e Restauração, envie este arquivo e informe a sua senha de backup.",
+    "copyVerify": "O SHA-256 acima é dos bytes anexados, assim você pode conferir mais tarde se a cópia que guardou é a que este e-mail entregou.",
+    "tooLargeSubject": "O backup do Monize {{ filename }} era grande demais para ser enviado por e-mail",
+    "tooLargeHeading": "O seu backup do Monize não foi enviado por e-mail",
+    "tooLargeIntro": "O backup de hoje tem {{ size }}, acima dos {{ limit }} que esta instalação permite para um backup enviado por e-mail (BACKUP_EMAIL_MAX_BYTES).",
+    "tooLargeNoBytes": "Nada foi anexado a este e-mail e nenhum link de download é oferecido -- um link exigiria uma credencial capaz de ler os seus backups de volta do armazenamento, e este recurso não a possui.",
+    "tooLargeUnaffected": "O backup em si foi gravado normalmente. A cópia neste servidor não foi afetada, assim como a cópia no seu destino S3, se você tiver um habilitado.",
+    "tooLargeWhatToDo": "Para manter fora desta máquina uma cópia de um backup deste tamanho, baixe-o em Configurações, Backup e Restauração, habilite o destino S3 ou peça ao seu administrador para aumentar o limite de e-mail.",
+    "labelFile": "Arquivo",
+    "labelSize": "Tamanho",
+    "labelTier": "Retenção",
+    "labelLimit": "Limite de e-mail",
+    "labelDigest": "SHA-256",
+    "tierDaily": "diário",
+    "tierWeekly": "semanal",
+    "tierMonthly": "mensal"
   }
 }

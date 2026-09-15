@@ -1,33 +1,3 @@
-Direction           Bill or deposit, outflow or income, is decided from
-                    EffectiveScheduledOccurrence.directionAmount, which is
-                    `number | null`: the occurrence's own amount when known, the
-                    snapshot's sign only where that sign is PROVABLE without the
-                    missing rate (a top-level investment is one scalar times one
-                    positive rate; a split whose lines all point the same way
-                    stays on that side of zero, because an investment line's cash
-                    impact is signed by its action), and `null` for a mixed-sign
-                    aggregate, whose direction the missing rate decides. "An
-                    exchange rate is positive, so it cannot flip a sign" holds for
-                    the first two and fails for the third: a +10 parent made of a
-                    fixed +100 beside an unpriceable BUY posts -20 or +20.
-                    `null` travels rather than collapsing: AI/MCP report
-                    `kind: "unknown"` and withhold BOTH bucket totals (the item
-                    could belong to either), the reminder email draws a neutral
-                    badge, the forecast prompt says DIRECTION UNKNOWN, the client's
-                    occurrenceKind answers `'unknown'` with neutral styling and no
-                    sign, and an outflow-only read KEEPS the occurrence -- its
-                    amount is unknown too, so the consumer's total is withheld,
-                    where dropping it would hide a possible payment behind a total
-                    that still looked complete.
-                    The candidate read may narrow on the stored sign only for
-                    shapes nothing can move: it keeps every FX-sensitive schedule
-                    AND every schedule carrying an override with an amount or its
-                    own splits (an override replaces the amount and the SHAPE, so
-                    a +100 schedule overridden to -250, or to a split holding an
-                    embedded investment with no amount of its own, is a genuine
-                    outflow the snapshot cannot see). The direction is applied
-                    after pricing, and the per-schedule cap after that -- capping
-                    first let an overridden credit hide the real outflow behind it.
 # System Invariants
 
 The conditions that must hold regardless of which controller, service, cron,
@@ -129,6 +99,10 @@ implied.
 | INV-SHARE-004 | A share always lands on a Monize page that explains what happened | enforced |
 | INV-SHARE-005 | A stashed share belongs to one account, and no other account can see it | enforced |
 | INV-BACKUP-001 | A backup file is complete, verified and owner-namespaced | enforced |
+| INV-BACKUP-002 | An artifact is encrypted before it leaves the machine | enforced |
+| INV-BACKUP-003 | A complete local copy exists before any off-machine copy | enforced |
+| INV-BACKUP-004 | The application can add an off-machine copy and never delete or overwrite one | partial |
+| INV-BACKUP-005 | An off-machine copy is verified before it is recorded as done, and a claim nobody finishes is reclaimed | partial |
 | INV-PUSH-001 | A push subscription belongs to the authenticated caller, and no request touches another account's device | enforced |
 | INV-PUSH-002 | The VAPID private key never leaves the server, and is never stored unencrypted | enforced |
 | INV-PUSH-006 | A push channel is offered only while its key pair can actually be used | enforced |
@@ -1642,20 +1616,35 @@ Aggregation rule    A total is null when any component is unknown; the partial s
                     default-currency.util.ts) -- thirteen copies had drifted to
                     two different currencies.
 Direction           Bill or deposit, outflow or income, is decided from
-                    EffectiveScheduledOccurrence.directionAmount -- the
-                    occurrence's own amount when known, the snapshot's sign only
-                    when it is not. "An exchange rate is positive, so it cannot
-                    flip a sign" holds for one scalar times one rate and fails for
-                    a mixed-sign split parent, where only the investment line
-                    re-prices: a parent stored at -200 posts +150 once that line
-                    moves. Reading the snapshot reported a re-priced deposit as a
-                    bill (AI/MCP, the forecast) and a SQL prefilter on
-                    `st.amount < 0` dropped the reverse case from the budget
-                    entirely. The candidate read therefore narrows on the stored
-                    sign only for shapes no rate can move and keeps every
-                    FX-sensitive row; the direction is applied after pricing.
-                    The client's equivalent is occurrenceKind, which already read
-                    the occurrence first.
+                    EffectiveScheduledOccurrence.directionAmount, which is
+                    `number | null`: the occurrence's own amount when known, the
+                    snapshot's sign only where that sign is PROVABLE without the
+                    missing rate (a top-level investment is one scalar times one
+                    positive rate; a split whose lines all point the same way
+                    stays on that side of zero, because an investment line's cash
+                    impact is signed by its action), and `null` for a mixed-sign
+                    aggregate, whose direction the missing rate decides. "An
+                    exchange rate is positive, so it cannot flip a sign" holds for
+                    the first two and fails for the third: a +10 parent made of a
+                    fixed +100 beside an unpriceable BUY posts -20 or +20.
+                    `null` travels rather than collapsing: AI/MCP report
+                    `kind: "unknown"` and withhold BOTH bucket totals (the item
+                    could belong to either), the reminder email draws a neutral
+                    badge, the forecast prompt says DIRECTION UNKNOWN, the client's
+                    occurrenceKind answers `'unknown'` with neutral styling and no
+                    sign, and an outflow-only read KEEPS the occurrence -- its
+                    amount is unknown too, so the consumer's total is withheld,
+                    where dropping it would hide a possible payment behind a total
+                    that still looked complete.
+                    The candidate read may narrow on the stored sign only for
+                    shapes nothing can move: it keeps every FX-sensitive schedule
+                    AND every schedule carrying an override with an amount or its
+                    own splits (an override replaces the amount and the SHAPE, so
+                    a +100 schedule overridden to -250, or to a split holding an
+                    embedded investment with no amount of its own, is a genuine
+                    outflow the snapshot cannot see). The direction is applied
+                    after pricing, and the per-schedule cap after that -- capping
+                    first let an overridden credit hide the real outflow behind it.
 Concurrency scope   per occurrence; the resolver's FX caches are per read
 Failure response    the occurrence renders as unavailable (UnknownAmount, or the
                     localized budgets.alerts.billDue.amountUnavailable copy) and
@@ -2706,6 +2695,191 @@ has not enabled it". Plaintext remains a legitimate outcome for an account with
 no captured password, which is why the boot check announces rather than refuses;
 when the requirement lands, the unkeyed branch of `logEncryptionKeyStatus`
 becomes a throw and this paragraph becomes one sentence.
+
+### INV-BACKUP-002 -- an artifact is encrypted before it leaves the machine
+
+```text
+Statement           Only an encrypted (.mzbe) artifact is copied off the machine.
+                    An unencrypted (.json.gz) one is refused for egress and the
+                    refusal is recorded, never shipped in clear.
+Source of truth     The artifact's own filename extension, written by the same
+                    code that chose the encryption (backup/backup-file-names.ts).
+Enforcement         isEncryptedBackupFileName gates every egress door.
+                    BackupOffsiteDispatchService.dispatchScoped refuses before
+                    any destination is reached; perform() asserts it again,
+                    because the retry sweep is a second entry point; and
+                    BackupOffsiteEmailSender.send throws on a plaintext name
+                    rather than mailing the account's third-party API keys, which
+                    the artifact carries in the clear inside it.
+                    backup-offsite.guard.spec.ts holds all three mechanically:
+                    both doors call the helper, no non-spec file under
+                    backend/src/backup/offsite/ names the plaintext extension,
+                    and every branch the gate refuses exits as
+                    skipped-unencrypted.
+Concurrency scope   per artifact
+Retry semantics     The refusal is terminal: the row is written once with
+                    ON CONFLICT DO NOTHING and the sweep never re-attempts a
+                    skipped-unencrypted row.
+Failure response    skipped-unencrypted on every destination the user enabled,
+                    plus one BACKUP_PARTIAL admin alert per user per day saying
+                    the copy was withheld. The local artifact is unaffected.
+Required tests      Unit: backup-offsite-dispatch.service.spec.ts ("a plaintext
+                    artifact (INV-BACKUP-002)" and "refuses a plaintext artifact
+                    here too"), backup-offsite-email.sender.spec.ts (a plaintext
+                    name throws rather than sending). Source scan:
+                    backup-offsite.guard.spec.ts ("only an encrypted artifact
+                    reaches a destination").
+Status              enforced
+```
+
+The deployment that produces a plaintext artifact at all is the one with no
+`ENCRYPTION_KEY` and no usable backup password (INV-BACKUP-001's closing
+paragraph). For those the correct off-machine state is *no copy plus a visible
+alert*: a durable row, because "off-site backups are working" and "off-site
+backups are deliberately not happening" are otherwise indistinguishable.
+
+### INV-BACKUP-003 -- a complete local copy exists before any off-machine copy
+
+```text
+Statement           No off-machine copy is attempted until the local artifact is
+                    completely written and recorded. The copy never precedes,
+                    replaces or deletes the local one, and its failure never
+                    turns a written backup into a failed one.
+Source of truth     The published artifact on disk, its run's report
+                    (report.complete), and lastBackupStatus.
+Enforcement         AutoBackupService.dispatchOffsiteCopy runs on the tail of a
+                    run -- after applyBackupOutcome, outside the export
+                    transaction, the push-after-commit shape of
+                    docs/external-side-effects.md section 4a. It returns early
+                    unless report.complete, and unless publishedOffsiteTier
+                    recognises the name, so a partial-tier artifact is never a
+                    candidate. dispatchAfterBackup never throws and the call site
+                    catches anyway, because the cron's per-user catch would
+                    otherwise record a complete backup as a failed window. The
+                    copy re-reads the artifact by name under a containment-
+                    checked join and refuses bytes whose size or digest no longer
+                    match what was recorded, so what leaves is the artifact that
+                    was measured.
+Concurrency scope   per artifact, per user
+Retry semantics     Re-dispatching the same complete artifact is a no-op: same
+                    bytes, same digest, same key, and the claim's ON CONFLICT
+                    keeps one row per (user, destination, key).
+Crash semantics     A crash before the local rename leaves no candidate and no
+                    copy. A crash after the local write leaves the artifact
+                    intact and the copy pending or claimed; the retry sweep and
+                    its lease pick it up (INV-BACKUP-005).
+Failure response    An egress failure is its own durable row in
+                    backup_offsite_uploads; lastBackupStatus is untouched.
+Required tests      Unit: auto-backup.service.spec.ts ("is dispatched after a
+                    complete automatic run, with the artifact's own digest", the
+                    dispatch-after-outcome ordering case, the partial artifact
+                    that dispatches nothing, "does not let a dispatch rejection
+                    change the recorded status"), and
+                    backup-offsite-dispatch.service.spec.ts ("refuses an
+                    artifact whose name is not a published tier", "does not
+                    upload an artifact whose bytes changed under it").
+Status              enforced
+```
+
+### INV-BACKUP-004 -- the application cannot delete or overwrite an off-machine copy
+
+```text
+Statement           The code and the credential used for egress can add a new
+                    object and can neither delete nor overwrite an existing one.
+                    Retention off-machine is the operator's bucket lifecycle or
+                    object-lock policy, never the application's.
+Source of truth     The egress code path (backup/offsite/), and the IAM policy on
+                    the token the operator issued.
+Enforcement         Two independent layers, and only one of them is code.
+                    (1) Application, enforced: BackupOffsiteS3Uploader is a
+                    separate class from S3StorageProvider precisely because that
+                    one implements delete; it constructs no DeleteObject,
+                    GetObject or HeadObject, and every completing write
+                    (PutObjectCommand, CompleteMultipartUploadCommand) carries
+                    IfNoneMatch: "*", so even a mis-scoped token cannot clobber
+                    an existing key. backup-offsite.guard.spec.ts scans the whole
+                    directory from git ls-files -- so a split, a rename or a new
+                    file is scanned too -- and fails a banned construction or an
+                    unconditional completing write. AbortMultipartUpload discards
+                    incomplete parts and is not object deletion.
+                    (2) Operator, documentation only: the s3:PutObject +
+                    s3:AbortMultipartUpload token on a versioned, object-locked
+                    bucket is described in docs/specs/backup-off-machine.md
+                    section 4 and docs/future-plans/backup-off-machine.md, and
+                    nothing in this repository can observe the policy a
+                    deployment actually issued. That half is why this entry is
+                    partial rather than enforced.
+Concurrency scope   deployment (one bucket) / per object (one key)
+Retry semantics     A retry re-puts the same bytes under the same key; the
+                    conditional put refuses and the caller reconciles by digest
+                    rather than overwriting (section 6 of the spec).
+Failure response    A taken key with the recorded digest is uploaded
+                    (idempotent); a taken key with a different digest is
+                    conflict plus an admin alert, never an overwrite.
+Required tests      Source scan: backup-offsite.guard.spec.ts ("the off-site
+                    egress path is append-only"). Unit against a local fake S3
+                    endpoint: backup-offsite-s3.uploader.spec.ts (an existing key
+                    is not replaced; a multipart failure aborts its parts).
+                    Owed: nothing tests the operator's IAM policy, and nothing
+                    can from here.
+Status              partial
+```
+
+### INV-BACKUP-005 -- an off-machine copy is verified before it is recorded as done
+
+```text
+Statement           A copy is reported uploaded only after the destination has
+                    verified it received the exact bytes, not after the call
+                    returned. A copy that cannot be verified is recorded in a
+                    form that says so, and a later pass finds it.
+Source of truth     backup_offsite_uploads, one row per (user, destination,
+                    object_key), carrying the egress digest, the status, the
+                    attempt count and claimed_at.
+Enforcement         S3: every put declares ChecksumSHA256, so the destination --
+                    not this process -- validates the bytes, and the row moves to
+                    uploaded only when the echoed checksum matches the declared
+                    digest; a multipart upload re-hashes the whole object over
+                    the same slices its parts were cut from and refuses a part
+                    count the destination did not assemble
+                    (backup-offsite-s3.uploader.ts). Claim: the row is moved
+                    pending/failed -> uploading by one conditional UPDATE ...
+                    RETURNING, so exactly one replica performs the copy. Lease:
+                    handleRetrySweep expires a claim older than
+                    OFFSITE_CLAIM_LEASE_MINUTES (60) back to failed in one
+                    statement before it selects anything, because a replica
+                    killed mid-upload would otherwise leave the row uploading
+                    forever -- the unverifiable effect EXT-003 forbids. The trade
+                    is stated rather than hidden: an S3 re-attempt of bytes that
+                    did land is a digest-reconciled no-op, while an email
+                    re-attempt can deliver the same artifact twice.
+                    Email is the weaker half and is why this entry is partial:
+                    sendMail resolving is the whole verification SMTP offers, so
+                    "uploaded" there means the relay accepted the message, not
+                    that a mailbox holds it.
+Concurrency scope   per (user, destination, object key)
+Retry semantics     A transient failure leaves failed with the digest recorded;
+                    the sweep re-attempts the same bytes under the same key with
+                    a doubling backoff and gives up at MAX_OFFSITE_ATTEMPTS,
+                    alerting once.
+Crash semantics     A crash between the verified put and the outcome write leaves
+                    the row uploading; the lease hands it back after an hour and
+                    the re-attempt reconciles by digest (S3) or re-sends (email).
+Failure response    failed, conflict, skipped-unencrypted and skipped-too-large
+                    are durable, attributable states; a withheld copy is never
+                    silence.
+Required tests      Unit against a local fake S3 endpoint:
+                    backup-offsite-s3.uploader.spec.ts (a corrupted body is
+                    rejected; an unconfirmed checksum is not recorded as a copy;
+                    a re-run of an uploaded artifact is a no-op). Unit:
+                    backup-offsite-retry.service.spec.ts (the expiry runs before
+                    the selection, on the claim's own age, and logs what it
+                    reclaimed). Two connections / PostgreSQL integration:
+                    test/integration/backup-offsite-claim.integration.spec.ts
+                    (one winner between two replicas; the backoff the database
+                    evaluates). Owed: the lease's reclamation has no
+                    two-connection test of its own yet.
+Status              partial
+```
 
 ### INV-CRON-001 -- one logical effect per tick
 

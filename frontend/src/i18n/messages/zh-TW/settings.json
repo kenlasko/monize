@@ -762,7 +762,65 @@
       "downloadButton": "下載",
       "restoreButton": "還原",
       "workingButton": "處理中...",
-      "downloadFailed": "無法下載該備份"
+      "downloadFailed": "無法下載該備份",
+      "offsite": {
+        "disclosure": "異地目的地",
+        "disclosureDescription": "每次完整的自動備份完成後，可以將加密副本傳送到 S3 儲存、以電子郵件寄出，或兩者並行：三份副本、兩種儲存方式，其中一種在本機之外。只會傳送加密備份。",
+        "encryptionUnavailable": "此伺服器未設定加密金鑰，因此無法儲存你自己儲存貯體的認證資訊。伺服器自有的儲存貯體與郵件副本仍可使用。",
+        "loading": "正在載入你的異地目的地...",
+        "loadFailed": "無法載入你的異地備份目的地",
+        "retryButton": "重試",
+        "demoNote": "示範模式中無法變更異地目的地。",
+        "saveButton": "儲存目的地",
+        "savingButton": "儲存中...",
+        "saved": "異地目的地已儲存",
+        "saveFailed": "無法儲存你的異地備份目的地",
+        "s3": {
+          "heading": "S3 儲存",
+          "modeLabel": "副本要傳送到何處",
+          "modeOff": "關閉",
+          "modeDeployment": "此伺服器的儲存貯體",
+          "modeOwn": "我自己的儲存貯體",
+          "deploymentUnavailable": "此伺服器沒有自己的異地儲存貯體，需要管理員先行設定。你可以改用自己的儲存貯體。",
+          "bucketLabel": "儲存貯體",
+          "regionLabel": "區域",
+          "regionHelp": "許多相容 S3 的服務會忽略此項。",
+          "prefixLabel": "索引鍵前置字串",
+          "prefixHelp": "儲存貯體內的選用資料夾，讓備份可以與其他資料共用同一個儲存貯體。",
+          "endpointLabel": "端點",
+          "endpointHelp": "僅適用於 MinIO、R2 或 B2 等相容 S3 的服務。使用 AWS 時請留空。",
+          "forcePathStyleLabel": "使用路徑樣式定址",
+          "forcePathStyleHelp": "MinIO 及其他部分相容 S3 的服務需要此項。",
+          "accessKeyIdLabel": "存取金鑰 ID",
+          "secretAccessKeyLabel": "私密存取金鑰",
+          "storedPlaceholder": "•••• 已儲存",
+          "credentialsHelp": "認證資訊會以加密方式儲存在此伺服器上，且不會再次顯示。若要保留已儲存的認證資訊，請將這些欄位留空。",
+          "clearCredentialsButton": "移除已儲存的認證資訊",
+          "clearConfirmTitle": "移除已儲存的認證資訊？",
+          "clearConfirmMessage": "此伺服器將忘記你的存取金鑰 ID 與私密存取金鑰。在你重新輸入之前，不會再向你的儲存貯體傳送副本。",
+          "credentialsCleared": "已移除儲存的認證資訊",
+          "clearFailed": "無法移除已儲存的認證資訊"
+        },
+        "email": {
+          "heading": "電子郵件",
+          "toggleLabel": "每次自動備份完成後，以電子郵件寄給我一份副本",
+          "addressLabel": "副本寄送至",
+          "addressPlaceholder": "user@example.com",
+          "sizeNote": "超過此伺服器大小上限的備份不會夾帶附件；你會收到一封載明檔名的通知。"
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "電子郵件",
+          "statusPending": "等待中",
+          "statusUploading": "傳送中",
+          "statusUploaded": "已複製",
+          "statusFailed": "失敗",
+          "statusConflict": "衝突",
+          "statusSkippedUnencrypted": "已略過：未加密",
+          "statusSkippedTooLarge": "已略過：過大"
+        }
+      }
     }
   },
   "sharedAccess": {

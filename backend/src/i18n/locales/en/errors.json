@@ -219,7 +219,12 @@
     "restoreQueueWaitTimeout": "Timed out waiting for restore capacity: another restore is still running. Retry in a moment.",
     "restoreTicketUnavailable": "This deployment cannot authorize restore uploads.",
     "invalidNotificationFields": "Invalid backup notification: title must be text; target and dedupe key must be text or null",
-    "storedBackupNotFound": "Backup file not found"
+    "storedBackupNotFound": "Backup file not found",
+    "offsiteDeploymentBucketUnset": "This server has no off-site backup bucket of its own. Ask an administrator to set BACKUP_S3_BUCKET, or use your own bucket.",
+    "offsiteOwnBucketRequired": "Enter the bucket your backups should be copied to.",
+    "offsiteOwnCredentialsRequired": "Enter an access key id and a secret access key for your bucket.",
+    "offsiteEncryptionKeyRequired": "This server cannot store S3 credentials because ENCRYPTION_KEY is not set. Ask an administrator to configure it, or use the deployment's bucket.",
+    "offsiteEmailAddressRequired": "Enter the address your backups should be emailed to."
   },
   "budgets": {
     "notFound": "Budget with ID {{ id }} not found",

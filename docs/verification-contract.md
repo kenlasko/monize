@@ -116,6 +116,10 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-SHARE-004 a share never dead-ends | **required** | -- | -- | -- | -- | -- | -- | supporting |
 | INV-SHARE-005 a share belongs to one account | **required** | -- | -- | -- | -- | -- | -- | -- |
 | INV-BACKUP-001 backup complete | supporting | -- | required | -- | optional | **required** | **required** | required |
+| INV-BACKUP-002 encrypted before egress | required | **required** | -- | -- | -- | -- | -- | -- |
+| INV-BACKUP-003 local copy first | **required** | -- | -- | -- | -- | optional | -- | -- |
+| INV-BACKUP-004 egress adds, never replaces | required | **required** | -- | -- | -- | -- | optional | -- |
+| INV-BACKUP-005 verified, claimed, leased | **required** | -- | required | **required** | optional | required (not yet met) | optional | -- |
 | INV-PUSH-001 subscription ownership | required | -- | **required** | required (not yet met) | -- | -- | -- | optional |
 | INV-PUSH-002 private key stays server-side | supporting | **required** | -- | -- | -- | -- | -- | -- |
 | INV-PUSH-006 channel offered only while usable | **required** | -- | optional | -- | -- | -- | -- | -- |
@@ -195,6 +199,22 @@ counting tests will not reveal it. The failpoint that would:
 
 A test that throws *inside* the import transaction passes today and proves
 nothing about this.
+
+The off-machine backup rows (`INV-BACKUP-002`..`-005`) split along a line worth
+naming, because the obvious reading of their columns is wrong. The S3 semantics
+the copy depends on -- a conditional write refusing a taken key, server-side
+checksum validation, the multipart sequence -- are proven against a local HTTP
+endpoint that implements them (`backup-offsite-s3.uploader.spec.ts`, the pattern
+`s3-storage.provider.deadline.spec.ts` established), so they are **unit** tests
+against a fake destination, not PostgreSQL integration ones, and the provider
+column stays `optional` rather than claiming a round trip nobody makes in CI.
+What genuinely needs the database is the claim: one conditional `UPDATE ...
+RETURNING` deciding which of two replicas uploads, and the backoff arithmetic the
+database evaluates, both in
+`backend/test/integration/backup-offsite-claim.integration.spec.ts`. The one
+`required (not yet met)` is `INV-BACKUP-005`'s failpoint: a crash between the
+verified put and the outcome write is exactly the window the claim lease exists
+for, and nothing yet throws at that boundary.
 
 ## 4. CI ownership
 

@@ -290,5 +290,27 @@
       "title": "价格变动提醒: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}：相对于上一个有数据的交易日变动 {{ percent }}%。"
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Monize 备份 {{ filename }}",
+    "copyHeading": "您的 Monize 备份已作为附件发送",
+    "copyIntro": "这是您 Monize 账户 {{ date }} 的自动{{ tier }}备份。文件已附在本邮件中。",
+    "copyEncrypted": "附件已使用您的 Monize 备份密码加密。没有该密码无法打开，Monize 也无法为您找回，请将密码保存在本邮箱以外的地方。",
+    "copyRestore": "要恢复它，请打开 Monize，前往 设置、备份与恢复，上传此文件并输入您的备份密码。",
+    "copyVerify": "上面的 SHA-256 针对的是附件的字节内容，因此您以后可以核对所保留的副本是否就是本邮件送达的那一份。",
+    "tooLargeSubject": "Monize 备份 {{ filename }} 过大，无法通过邮件发送",
+    "tooLargeHeading": "您的 Monize 备份未通过邮件发送",
+    "tooLargeIntro": "今天的备份为 {{ size }}，超过了此部署对邮件发送备份所允许的 {{ limit }}（BACKUP_EMAIL_MAX_BYTES）。",
+    "tooLargeNoBytes": "本邮件未附带任何内容，也不提供下载链接：下载链接需要一个能够从存储中读回您备份的凭据，而此功能并不持有这样的凭据。",
+    "tooLargeUnaffected": "备份本身已正常写入。此服务器上的副本不受影响；若您启用了 S3 目标，那里的副本同样不受影响。",
+    "tooLargeWhatToDo": "若要在本机之外保留这种大小的备份副本，请在 设置、备份与恢复 中下载，启用 S3 目标，或请管理员提高邮件大小上限。",
+    "labelFile": "文件",
+    "labelSize": "大小",
+    "labelTier": "保留周期",
+    "labelLimit": "邮件上限",
+    "labelDigest": "SHA-256",
+    "tierDaily": "每日",
+    "tierWeekly": "每周",
+    "tierMonthly": "每月"
   }
 }

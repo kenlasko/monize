@@ -290,5 +290,27 @@
       "title": "Cảnh báo biến động giá: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% so với phiên có dữ liệu trước đó."
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Bản sao lưu Monize {{ filename }}",
+    "copyHeading": "Bản sao lưu Monize của bạn được đính kèm",
+    "copyIntro": "Đây là bản sao lưu tự động {{ tier }} của tài khoản Monize của bạn cho ngày {{ date }}. Tệp được đính kèm trong email này.",
+    "copyEncrypted": "Tệp đính kèm được mã hoá bằng mật khẩu sao lưu Monize của bạn. Không thể mở tệp nếu không có mật khẩu đó, và Monize không thể khôi phục mật khẩu giúp bạn -- hãy giữ mật khẩu ở nơi khác ngoài hộp thư này.",
+    "copyRestore": "Để khôi phục, hãy mở Monize, vào Cài đặt, Sao lưu &amp; Khôi phục, tải tệp này lên và nhập mật khẩu sao lưu của bạn.",
+    "copyVerify": "SHA-256 ở trên là của các byte đính kèm, nên sau này bạn có thể kiểm tra bản sao mình giữ đúng là bản mà email này đã gửi.",
+    "tooLargeSubject": "Bản sao lưu Monize {{ filename }} quá lớn để gửi qua email",
+    "tooLargeHeading": "Bản sao lưu Monize của bạn chưa được gửi qua email",
+    "tooLargeIntro": "Bản sao lưu hôm nay là {{ size }}, vượt quá {{ limit }} mà bản triển khai này cho phép đối với bản sao lưu gửi qua email (BACKUP_EMAIL_MAX_BYTES).",
+    "tooLargeNoBytes": "Không có gì được đính kèm trong email này, và cũng không có liên kết tải xuống -- một liên kết như vậy sẽ cần thông tin xác thực có thể đọc lại các bản sao lưu của bạn từ kho lưu trữ, điều mà tính năng này không có.",
+    "tooLargeUnaffected": "Bản sao lưu vẫn được ghi bình thường. Bản sao trên máy chủ này không bị ảnh hưởng, và bản sao tại đích S3 của bạn cũng vậy nếu bạn đã bật.",
+    "tooLargeWhatToDo": "Để giữ một bản sao ngoài máy cho bản sao lưu cỡ này, hãy tải xuống từ Cài đặt, Sao lưu &amp; Khôi phục, bật đích S3, hoặc đề nghị quản trị viên nâng giới hạn email.",
+    "labelFile": "Tệp",
+    "labelSize": "Kích thước",
+    "labelTier": "Lưu giữ",
+    "labelLimit": "Giới hạn email",
+    "labelDigest": "SHA-256",
+    "tierDaily": "hằng ngày",
+    "tierWeekly": "hằng tuần",
+    "tierMonthly": "hằng tháng"
   }
 }

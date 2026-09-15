@@ -290,5 +290,27 @@
       "title": "Alert zmiany ceny: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: zmiana o {{ percent }}% względem poprzedniej dostępnej sesji."
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Kopia zapasowa Monize {{ filename }}",
+    "copyHeading": "Twoja kopia zapasowa Monize jest w załączniku",
+    "copyIntro": "To automatyczna {{ tier }} kopia zapasowa Twojego konta Monize z dnia {{ date }}. Plik jest dołączony do tej wiadomości.",
+    "copyEncrypted": "Załącznik jest zaszyfrowany Twoim hasłem kopii zapasowej Monize. Bez tego hasła nie da się go otworzyć, a Monize go nie odzyska -- trzymaj hasło w innym miejscu niż ta skrzynka pocztowa.",
+    "copyRestore": "Aby ją przywrócić, otwórz Monize, przejdź do Ustawienia, Kopia zapasowa i przywracanie, wyślij ten plik i podaj swoje hasło kopii zapasowej.",
+    "copyVerify": "Powyższy SHA-256 dotyczy załączonych bajtów, więc później możesz sprawdzić, czy zachowana kopia to ta, którą dostarczyła ta wiadomość.",
+    "tooLargeSubject": "Kopia zapasowa Monize {{ filename }} była za duża, aby wysłać ją e-mailem",
+    "tooLargeHeading": "Twoja kopia zapasowa Monize nie została wysłana e-mailem",
+    "tooLargeIntro": "Dzisiejsza kopia zapasowa ma {{ size }}, czyli powyżej {{ limit }}, na które ta instalacja pozwala dla kopii wysyłanej e-mailem (BACKUP_EMAIL_MAX_BYTES).",
+    "tooLargeNoBytes": "Do tej wiadomości nie dołączono niczego i nie ma linku do pobrania -- link wymagałby poświadczeń pozwalających odczytać Twoje kopie zapasowe z magazynu, a ta funkcja ich nie posiada.",
+    "tooLargeUnaffected": "Sama kopia zapasowa została zapisana normalnie. Kopia na tym serwerze pozostaje nienaruszona, podobnie jak kopia w Twoim miejscu docelowym S3, jeśli je masz włączone.",
+    "tooLargeWhatToDo": "Aby zachować kopię tego rozmiaru poza tą maszyną, pobierz ją w sekcji Ustawienia, Kopia zapasowa i przywracanie, włącz miejsce docelowe S3 albo poproś administratora o podniesienie limitu dla wiadomości e-mail.",
+    "labelFile": "Plik",
+    "labelSize": "Rozmiar",
+    "labelTier": "Przechowywanie",
+    "labelLimit": "Limit e-mail",
+    "labelDigest": "SHA-256",
+    "tierDaily": "dzienna",
+    "tierWeekly": "tygodniowa",
+    "tierMonthly": "miesięczna"
   }
 }

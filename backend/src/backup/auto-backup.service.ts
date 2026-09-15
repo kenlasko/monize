@@ -19,7 +19,7 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { affectedRowCount } from "../common/db/query-result";
 import { Cron } from "@nestjs/schedule";
 import { promises as fs, readdirSync, unlinkSync } from "fs";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { resolve } from "path";
 import {
   cleanStaleTempFiles,
@@ -57,6 +57,13 @@ import {
   isEncryptedBackupFileName,
   PARTIAL_TIER_NAME,
 } from "./backup-file-names";
+import { BackupOffsiteDispatchService } from "./offsite/backup-offsite-dispatch.service";
+import { offsiteArtifactFileName } from "./offsite/backup-offsite-keys";
+import {
+  BackupOffsiteTier,
+  BackupOffsiteUpload,
+  BackupOffsiteUploadStatus,
+} from "./offsite/entities/backup-offsite-upload.entity";
 import { tr } from "../i18n/translate";
 
 /**
@@ -104,6 +111,20 @@ export const WEEKLY_DAYS = [7, 14, 21, 28];
 export const MONTHLY_DAY = 1;
 
 /**
+ * How many of this user's off-site ledger rows one stored-backups listing reads,
+ * newest first, to attach each artifact's copy status.
+ *
+ * Generous by design and never a correctness bound: only a published `daily`
+ * artifact is dispatched off-machine (`dispatchOffsiteCopy`), the currently
+ * stored dailies are the newest recovery points, and their ledger rows are
+ * therefore the newest rows -- so the artifacts a listing can show a status for
+ * always sit at the top of this window, well inside it for any realistic
+ * retention. The cap only keeps an append-only table's whole history out of one
+ * read.
+ */
+const OFFSITE_STATUS_SCAN_LIMIT = 500;
+
+/**
  * A per-user backup directory name: the user's UUID. Used to keep those
  * directories out of the folder picker -- listing them would turn it into user
  * enumeration, and offering one as a destination would nest a second level
@@ -136,6 +157,17 @@ export interface StoredBackup {
   size: number;
   /** True for an encrypted Monize envelope, which needs its password to restore. */
   encrypted: boolean;
+  /**
+   * The newest off-machine copy status per destination for this artifact, as an
+   * icon on its row. Present only when at least one off-site ledger row names
+   * the artifact: a weekly or monthly promotion, a partial, or a file that was
+   * never dispatched has no rows and no `offsite`
+   * (`docs/specs/backup-off-machine.md`).
+   */
+  offsite?: {
+    s3?: BackupOffsiteUploadStatus;
+    email?: BackupOffsiteUploadStatus;
+  };
 }
 
 /**
@@ -150,6 +182,30 @@ export interface StoredBackup {
 export interface StoredBackupsReport {
   enabled: boolean;
   backups: StoredBackup[];
+}
+
+/**
+ * What one written artifact is, to anything downstream of the write.
+ *
+ * `digest` is the **egress digest** (`docs/specs/backup-off-machine.md` section
+ * 3): the SHA-256 of the exact bytes handed to `writeFileAtomic`, computed once
+ * over the buffer that was written rather than re-read from the file, so the
+ * value is the identity of the artifact this run produced and not of whatever
+ * happens to sit under that name later. It is the checksum an off-machine copy
+ * declares (INV-BACKUP-005), the disambiguator in its object key, and the
+ * durable identity its state row carries -- one digest, computed once.
+ *
+ * `sizeBytes` travels with it because the two are one claim about the same
+ * bytes: a size that disagrees with the file on disk means the digest describes
+ * something the reader is not holding.
+ */
+interface WrittenArtifact {
+  filename: string;
+  report: BackupCompletenessReport;
+  /** SHA-256 of the written bytes, lowercase hex. */
+  digest: string;
+  /** Length of the written bytes. */
+  sizeBytes: number;
 }
 
 interface BackupFile {
@@ -203,6 +259,11 @@ export class AutoBackupService {
     private readonly demoMode: DemoModeService,
     private readonly maintenance: UserMaintenanceService,
     private readonly systemAlerts: SystemAlertService,
+    // The off-machine copy of a completed artifact. Dispatched on the tail of a
+    // run, after the local outcome is durable and outside the export
+    // transaction (INV-BACKUP-003); it never throws, so it cannot turn a written
+    // backup into a failed one.
+    private readonly offsiteDispatch: BackupOffsiteDispatchService,
     config: ConfigService,
   ) {
     this.defaultFolderPath = this.resolveConfiguredFolderPath(
@@ -277,6 +338,24 @@ export class AutoBackupService {
   }
 
   /**
+   * The folder one user's stored artifacts are read back from, for a caller
+   * outside this class -- the off-site retry sweep, which holds a durable row
+   * describing a copy and has to find the artifact again hours later.
+   *
+   * It resolves from the user's *current* settings rather than from anything
+   * remembered, because an operator may have moved the backup root since the
+   * artifact was written, and it runs the same containment checks every other
+   * read does (`resolveUserFolderForRead`): a public entry point that skipped
+   * them would be the one hole in a fence this class otherwise keeps whole.
+   */
+  async resolveStoredBackupFolder(userId: string): Promise<string> {
+    const settings = await this.scoped(AutoBackupSettings, (repo) =>
+      repo.findOne({ where: { userId } }),
+    );
+    return this.resolveUserFolderForRead(userId, settings?.folderPath);
+  }
+
+  /**
    * The automatic backups this deployment is holding for one user.
    *
    * Only the caller's own sharded folder is read. The flat base folder a
@@ -306,6 +385,11 @@ export class AutoBackupService {
       return { enabled, backups: [] };
     }
 
+    // Each artifact's off-machine copy status, keyed by the local filename its
+    // ledger row round-trips to. One scoped read for the whole listing, matched
+    // in memory -- there is no per-file query.
+    const offsiteByFilename = await this.offsiteStatusByFilename(userId);
+
     const backups: StoredBackup[] = [];
     for (const name of entries) {
       if (isTempBackupName(name)) continue;
@@ -313,11 +397,15 @@ export class AutoBackupService {
       try {
         const stat = await fs.stat(this.safePath(folder, name));
         if (!stat.isFile()) continue;
+        const offsite = offsiteByFilename.get(name);
         backups.push({
           filename: name,
           modifiedAt: stat.mtime.toISOString(),
           size: stat.size,
           encrypted: isEncryptedBackupFileName(name),
+          // Only when a ledger row names this artifact; a promotion, a partial
+          // or an un-dispatched file simply has none.
+          ...(offsite ? { offsite } : {}),
         });
       } catch {
         // Retention can delete a file between the listing and the stat. A row
@@ -330,6 +418,47 @@ export class AutoBackupService {
     // one written.
     backups.sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt));
     return { enabled, backups };
+  }
+
+  /**
+   * The newest off-machine copy status per destination, for every artifact of
+   * this user's that a ledger row names -- the icon each stored-backup row
+   * shows.
+   *
+   * Read under the caller's own scope like the rest of this listing, newest
+   * first, and grouped by the LOCAL filename each row round-trips to through
+   * `offsiteArtifactFileName` (the inverse of the key the dispatcher wrote), so
+   * the two directions cannot drift and no object key is hand-parsed here. Rows
+   * arrive newest first, so the first status seen for a (filename, destination)
+   * pair -- for example a same-day re-export that produced a second row -- is
+   * the current one. A filename with no row is absent from the map, and its
+   * `offsite` stays undefined.
+   */
+  private async offsiteStatusByFilename(
+    userId: string,
+  ): Promise<Map<string, NonNullable<StoredBackup["offsite"]>>> {
+    const rows = await this.scoped(BackupOffsiteUpload, (repo) =>
+      repo.find({
+        where: { userId },
+        order: { createdAt: "DESC" },
+        take: OFFSITE_STATUS_SCAN_LIMIT,
+      }),
+    );
+    const byFilename = new Map<string, NonNullable<StoredBackup["offsite"]>>();
+    for (const row of rows) {
+      const filename = offsiteArtifactFileName(
+        row.destination,
+        row.objectKey,
+        row.digest,
+      );
+      const group = byFilename.get(filename) ?? {};
+      // Newest first, so the first status seen for a destination wins.
+      if (group[row.destination] === undefined) {
+        group[row.destination] = row.status;
+      }
+      byFilename.set(filename, group);
+    }
+    return byFilename;
   }
 
   /**
@@ -779,11 +908,8 @@ export class AutoBackupService {
       settings.folderPath,
     );
     const timezone = settings.timezone || "UTC";
-    const { filename, report } = await this.exportToFile(
-      userId,
-      userFolder,
-      timezone,
-    );
+    const artifact = await this.exportToFile(userId, userFolder, timezone);
+    const { filename, report } = artifact;
     // A partial artifact is published under its own `partial-<date>` name and
     // its own retention tier, so it cannot replace this day's complete artifact
     // and no later retention pass counts it as one (F3RB-001, issue #1069). It
@@ -808,6 +934,10 @@ export class AutoBackupService {
       );
     }
     await this.scoped(AutoBackupSettings, (repo) => repo.save(settings));
+
+    // After the local artifact exists and this run's own bookkeeping is durable,
+    // and outside every transaction above (INV-BACKUP-003).
+    await this.dispatchOffsiteCopy(userId, userFolder, artifact, "manual");
 
     return {
       message: report.complete
@@ -1212,9 +1342,10 @@ export class AutoBackupService {
     const timezone = settings.timezone || "UTC";
     // RLS (task C2): the export reads this user's entire dataset, and the
     // settings write below is that user's row -- both under a user context.
-    const { filename, report } = await withUserContext(settings.userId, () =>
+    const artifact = await withUserContext(settings.userId, () =>
       this.exportToFile(settings.userId, userFolder, timezone),
     );
+    const { filename, report } = artifact;
     // Promotion and retention run only for a complete artifact; a partial is
     // written but never allowed to displace a complete copy (F3R7-001).
     await this.applyBackupOutcome(
@@ -1238,9 +1369,66 @@ export class AutoBackupService {
       settings.lastBackupError,
     );
 
+    // Last, and only now: the local copy is written and the run is recorded, so
+    // the off-machine copy can neither precede it nor take it down with it
+    // (INV-BACKUP-003, and the push-after-commit shape of
+    // `docs/external-side-effects.md` section 4a).
+    await this.dispatchOffsiteCopy(
+      settings.userId,
+      userFolder,
+      artifact,
+      "automatic",
+    );
+
     this.logger.log(
       `Auto-backup ${report.complete ? "completed" : "written (partial)"} for user ${settings.userId}: ${filename}`,
     );
+  }
+
+  /**
+   * Offer one written artifact to the user's off-machine destinations.
+   *
+   * Two gates, and both are invariants rather than tidiness. **Only a complete
+   * artifact is a candidate** (INV-BACKUP-003): a partial one is published under
+   * its own `partial-` tier precisely because it is not this day's recovery
+   * point, and copying it off-machine would put a backup that cannot be restored
+   * in full where an operator reaches for it in a crisis. **The tier comes out
+   * of the filename**, the same source retention and the owner-facing listing
+   * read it from, so the durable off-site row cannot disagree with the artifact
+   * it names.
+   *
+   * `dispatchAfterBackup` never throws, and this method catches anyway. The
+   * containment has to be a property of *this* class: the cron's per-user catch
+   * records a failed window, so a rejection escaping here would turn a backup
+   * that is complete and on disk into one recorded as failed -- and the manual
+   * path would answer a 500 for a backup it had already written.
+   */
+  private async dispatchOffsiteCopy(
+    userId: string,
+    userFolder: string,
+    artifact: WrittenArtifact,
+    origin: BackupRunOrigin,
+  ): Promise<void> {
+    if (!artifact.report.complete) return;
+    const tier = publishedOffsiteTier(artifact.filename);
+    if (!tier) return;
+    try {
+      await this.offsiteDispatch.dispatchAfterBackup({
+        userId,
+        folder: userFolder,
+        filename: artifact.filename,
+        tier,
+        digest: artifact.digest,
+        sizeBytes: artifact.sizeBytes,
+        origin,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Off-site dispatch of ${artifact.filename} for user ${userId} could ` +
+          `not be started: ${error instanceof Error ? error.message : String(error)}. ` +
+          "The local backup is unaffected.",
+      );
+    }
   }
 
   /**
@@ -1381,12 +1569,16 @@ export class AutoBackupService {
     return changed ? managed : null;
   }
 
-  /** Write one export into `userFolder` and return the filename written. */
+  /**
+   * Write one export into `userFolder` and describe what was written: the
+   * filename, the completeness report the name was chosen from, and the egress
+   * digest and size of the exact bytes (`WrittenArtifact`).
+   */
   private async exportToFile(
     userId: string,
     userFolder: string,
     timezone: string,
-  ): Promise<{ filename: string; report: BackupCompletenessReport }> {
+  ): Promise<WrittenArtifact> {
     const user = await this.scoped(User, (repo) =>
       repo.findOne({ where: { id: userId } }),
     );
@@ -1460,10 +1652,19 @@ export class AutoBackupService {
     // extension that sorted newest and that retention counted.
     await writeFileAtomic(filepath, buffer);
 
+    // Over `buffer`, the bytes `writeFileAtomic` just published, and not over a
+    // re-read of `filepath`: a hash of the file answers "what is under this name
+    // now", which a concurrent same-day run can already have changed, while the
+    // egress digest has to name the artifact this run wrote. `writeFileAtomic`
+    // has already refused to publish a file whose length disagrees with the
+    // buffer, so the two are the same bytes at the moment of the rename.
+    const digest = createHash("sha256").update(buffer).digest("hex");
+
     this.logger.log(
-      `Backup written to ${filepath}${encryptionPassword ? " (encrypted)" : ""}`,
+      `Backup written to ${filepath}${encryptionPassword ? " (encrypted)" : ""} ` +
+        `(sha256 ${digest}, ${buffer.length} bytes)`,
     );
-    return { filename, report };
+    return { filename, report, digest, sizeBytes: buffer.length };
   }
 
   /** Returns the copy error's message when the promotion failed, else null. */
@@ -1936,4 +2137,18 @@ export class AutoBackupService {
  */
 function utcDateString(at: Date = new Date()): string {
   return at.toISOString().slice(0, 10);
+}
+
+/**
+ * The retention tier a *published* artifact's name declares, or `null` for a
+ * `partial-` one and for anything this module did not write.
+ *
+ * `BackupOffsiteTier` is the narrower of the two vocabularies -- the off-site
+ * table's CHECK constraint admits only the three published tiers -- so this is
+ * where the wider one is narrowed, once, rather than at each call site.
+ */
+function publishedOffsiteTier(filename: string): BackupOffsiteTier | null {
+  const classified = classifyBackupFileName(filename);
+  if (!classified || classified.tier === PARTIAL_TIER_NAME) return null;
+  return classified.tier;
 }

@@ -290,5 +290,27 @@
       "title": "Alerte de variation du cours: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }} : {{ percent }}% par rapport à la séance précédente disponible."
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Sauvegarde Monize {{ filename }}",
+    "copyHeading": "Votre sauvegarde Monize est jointe",
+    "copyIntro": "Voici la sauvegarde automatique {{ tier }} de votre compte Monize du {{ date }}. Le fichier est joint à cet e-mail.",
+    "copyEncrypted": "La pièce jointe est chiffrée avec votre mot de passe de sauvegarde Monize. Elle ne peut pas être ouverte sans ce mot de passe, et Monize ne peut pas le récupérer pour vous -- conservez-le ailleurs que dans cette boîte de réception.",
+    "copyRestore": "Pour la restaurer, ouvrez Monize, allez dans Paramètres, Sauvegarde et restauration, téléversez ce fichier et saisissez votre mot de passe de sauvegarde.",
+    "copyVerify": "Le SHA-256 ci-dessus porte sur les octets joints : vous pourrez ainsi vérifier plus tard que la copie conservée est bien celle que cet e-mail a livrée.",
+    "tooLargeSubject": "La sauvegarde Monize {{ filename }} était trop volumineuse pour être envoyée par e-mail",
+    "tooLargeHeading": "Votre sauvegarde Monize n'a pas été envoyée par e-mail",
+    "tooLargeIntro": "La sauvegarde du jour fait {{ size }}, ce qui dépasse la limite de {{ limit }} que cette installation autorise pour une sauvegarde envoyée par e-mail (BACKUP_EMAIL_MAX_BYTES).",
+    "tooLargeNoBytes": "Rien n'a été joint à cet e-mail et aucun lien de téléchargement n'est proposé -- un lien nécessiterait un identifiant capable de relire vos sauvegardes depuis le stockage, ce dont cette fonctionnalité ne dispose pas.",
+    "tooLargeUnaffected": "La sauvegarde elle-même a été écrite normalement. La copie sur ce serveur n'est pas affectée, ni celle sur votre destination S3 si vous en avez activé une.",
+    "tooLargeWhatToDo": "Pour conserver hors de cette machine une copie d'une sauvegarde de cette taille, téléchargez-la depuis Paramètres, Sauvegarde et restauration, activez la destination S3, ou demandez à votre administrateur d'augmenter la limite d'envoi par e-mail.",
+    "labelFile": "Fichier",
+    "labelSize": "Taille",
+    "labelTier": "Conservation",
+    "labelLimit": "Limite e-mail",
+    "labelDigest": "SHA-256",
+    "tierDaily": "quotidienne",
+    "tierWeekly": "hebdomadaire",
+    "tierMonthly": "mensuelle"
   }
 }

@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "Tempo esgotado aguardando a capacidade de restauração: outra restauração ainda está em andamento. Tente novamente em um momento.",
     "restoreTicketUnavailable": "Esta instalação não pode autorizar envios de restauração.",
     "invalidNotificationFields": "Notificação inválida no backup: o título deve ser texto; o destino e a chave de deduplicação devem ser texto ou null",
-    "storedBackupNotFound": "Arquivo de backup não encontrado"
+    "storedBackupNotFound": "Arquivo de backup não encontrado",
+    "offsiteDeploymentBucketUnset": "Este servidor não tem um bucket próprio para backups externos. Peça a um administrador que defina BACKUP_S3_BUCKET ou use o seu próprio bucket.",
+    "offsiteOwnBucketRequired": "Informe o bucket para onde os seus backups devem ser copiados.",
+    "offsiteOwnCredentialsRequired": "Informe um id de chave de acesso e uma chave de acesso secreta do seu bucket.",
+    "offsiteEncryptionKeyRequired": "Este servidor não pode armazenar credenciais do S3 porque ENCRYPTION_KEY não está definida. Peça a um administrador que a configure ou use o bucket desta instalação.",
+    "offsiteEmailAddressRequired": "Informe o endereço para o qual os seus backups devem ser enviados."
   },
   "budgets": {
     "notFound": "Orçamento com ID {{ id }} não encontrado",

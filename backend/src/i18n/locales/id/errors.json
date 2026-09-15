@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "Waktu tunggu kapasitas pemulihan habis: pemulihan lain masih berjalan. Coba lagi sebentar.",
     "restoreTicketUnavailable": "Instalasi ini tidak dapat mengizinkan unggahan pemulihan.",
     "invalidNotificationFields": "Notifikasi cadangan tidak valid: judul harus berupa teks; tujuan dan kunci deduplikasi harus berupa teks atau null",
-    "storedBackupNotFound": "Berkas cadangan tidak ditemukan"
+    "storedBackupNotFound": "Berkas cadangan tidak ditemukan",
+    "offsiteDeploymentBucketUnset": "Server ini tidak memiliki bucket sendiri untuk cadangan luar lokasi. Minta administrator menyetel BACKUP_S3_BUCKET, atau gunakan bucket Anda sendiri.",
+    "offsiteOwnBucketRequired": "Masukkan bucket tujuan penyalinan cadangan Anda.",
+    "offsiteOwnCredentialsRequired": "Masukkan access key id dan secret access key untuk bucket Anda.",
+    "offsiteEncryptionKeyRequired": "Server ini tidak dapat menyimpan kredensial S3 karena ENCRYPTION_KEY belum disetel. Minta administrator mengonfigurasinya, atau gunakan bucket milik deployment ini.",
+    "offsiteEmailAddressRequired": "Masukkan alamat tujuan pengiriman cadangan Anda."
   },
   "budgets": {
     "notFound": "Anggaran dengan ID {{ id }} tidak ditemukan",

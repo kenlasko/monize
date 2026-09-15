@@ -116,32 +116,25 @@ bytes" half is what it breaches.
 
 ## 3. Backups
 
-`AutoBackupService` builds the whole payload in memory and writes it in one call
-straight to the final filename:
+`AutoBackupService` writes every artifact through `writeFileAtomic`
+(`backend/src/backup/atomic-file.ts`): a temp name, `fsync`, a size check, the
+`rename`, then an `fsync` of the directory. `rename` within a filesystem is
+atomic, so a process killed mid-write or an `ENOSPC` leaves a temp file that the
+next run sweeps, never a truncated file under the final name. Promotion to the
+weekly and monthly tiers goes through `copyFileAtomic` with the same size check.
+`lastBackupStatus` records what the export found -- `success` or `partial` --
+and the same verdict travels inside the document (`completeness` in the
+envelope, `backup-format.ts`), so restore refuses an artifact whose
+`completeness.complete` is false. That is INV-BACKUP-001, and it closes the
+direct-write breach of EXT-002 this section used to describe.
 
-```typescript
-await fs.writeFile(filepath, payload);
-```
-
-There is no temp file, no `fsync`, no rename, no read-back, and no checksum
-computed or stored anywhere. `lastBackupStatus` is set to `"success"`
-immediately afterwards, with nothing between the write and that claim.
-
-Three consequences follow, and they are separate problems:
-
-- A process killed mid-write, or an `ENOSPC`, leaves a **truncated file under the
-  final, expected name**. Nothing distinguishes it from a complete one, because
-  nothing recorded what complete looks like. This breaches EXT-002.
-- Retention promotes the daily file to weekly and monthly with `copyFileSync`,
-  so a truncated daily becomes a truncated weekly and monthly.
-- Restore cannot detect it either: `validateBackupFormat` checks only that
-  `data` is an object, that `version` equals the hardcoded `BACKUP_VERSION`, and
-  that `exportedAt` is present. There is no content hash to compare against,
-  because none was ever written.
-
-The atomic-write fix is small and standard -- write to a temp name, verify the
-byte count, `fsync`, `rename` -- and `rename` within a filesystem is atomic, so
-a crash leaves either the old file or the new one.
+What remains is narrower, and it splits by encryption. An encrypted `.mzbe`
+artifact is authenticated frame by frame (`backup-envelope.ts`): truncation,
+reordering and tampering are rejected on open. A plaintext `.json.gz` carries no
+content hash of its own; truncation and random corruption are caught by the gzip
+trailer and `JSON.parse` on restore, a deliberate alteration is not. That gap is
+recorded in section 8, and it is one more reason a plaintext artifact never
+leaves the machine (INV-BACKUP-002).
 
 **Per-user namespacing is already correct on `main`,** and worth recording as
 settled: `userFolderPath` uses `shardedSegments(userId)` to build
@@ -160,11 +153,12 @@ stored password cannot be decrypted (a rotated key) the backup is **refused**
 rather than silently written in clear. Refusing is the right failure: it is
 visible, and it does not downgrade.
 
-**The writability probe** names its file with `Date.now()`, so two users or two
-replicas probing the same folder in the same millisecond collide, and the
-`unlink` sits inside the `try` that decides the verdict -- so "I could write but
-could not clean up" is reported as "not writable". The probe's answer is whether
-the write succeeded; a failed cleanup is a log line.
+**The writability probe** names its file with `randomUUID()`, so two users or two
+replicas probing the same folder in the same millisecond cannot collide on the
+name, and the `unlink` sits outside the `try` that decides the verdict: the
+write is the answer, and a probe file that could not be removed is a warning
+in the log, not a "not writable" that would contradict the write that just
+succeeded.
 
 **Restore** is the strongest workflow here. The whole thing -- delete existing
 data, insert backup data, fix deferred FKs -- runs inside
@@ -175,6 +169,46 @@ restoring user, every backup id is remapped to a fresh UUID so a backup restored
 into a different account cannot collide with that account's rows, and every table
 and column is checked against an allowlist. What it lacks is integrity
 verification of the payload, per EXT-002 above.
+
+### Off-machine copies
+
+A completed automatic backup is also copied to the user's off-machine
+destinations -- an S3 bucket, an emailed attachment, or both
+(`docs/specs/backup-off-machine.md`, INV-BACKUP-002..005). It is the first backup
+egress path in the codebase, and every rule this document argues for is visible
+in it:
+
+- **The local artifact is durable and recorded first, and the copy happens
+  after, outside the transaction.** `AutoBackupService.dispatchOffsiteCopy` runs
+  on the tail of a run, after `applyBackupOutcome`, and only for an artifact
+  whose report is complete -- the push-after-commit shape of section 4a. The copy
+  never fails the backup: `dispatchAfterBackup` does not throw and the call site
+  catches anyway.
+- **Each (user, destination, key) copy is claimed before it is attempted.**
+  Every replica fires the backup cron and the hourly retry sweep, so the durable
+  row is moved `pending`/`failed` -> `uploading` by one conditional
+  `UPDATE ... RETURNING`; exactly one caller gets the row back. The claim, the
+  external call and the outcome are three separate short steps, with no
+  transaction open across the call.
+- **Verified, then recorded.** An S3 put declares the artifact's SHA-256 so the
+  destination validates it, and the row becomes `uploaded` only when the echoed
+  checksum matches (EXT-002). For email, `sendMail` resolving is the whole of the
+  verification the medium offers, and the row says `uploaded` only after it.
+- **A claim is a lease.** A replica killed mid-upload used to leave the row
+  `uploading` with nothing able to reclaim it -- an effect nobody could verify
+  and nobody would find, which EXT-003 forbids. Each sweep now expires claims
+  older than `OFFSITE_CLAIM_LEASE_MINUTES` (one hour, comfortably above the S3
+  deadline times its attempts) back to `failed` before selecting candidates. The
+  trade is deliberate and asymmetric: a re-attempted S3 put is a
+  digest-reconciled no-op because the key carries the digest, while a re-attempted
+  email can deliver the same encrypted artifact twice. A duplicate copy is the
+  survivable direction against no copy at all.
+- **The application never deletes off-machine.** The uploader constructs no
+  delete and no read command and every completing write is conditional, so
+  retention of the copies is the operator's bucket lifecycle or object-lock
+  policy (INV-BACKUP-004). Nothing here can un-write what it wrote, which is why
+  a taken key holding a different digest is recorded as `conflict` and alerted
+  rather than resolved.
 
 ## 4. Email
 
@@ -454,17 +488,19 @@ added rather than as it stands.
 | Attachment create, local and S3 | Bytes durable before commit; no orphan detection, no reconciliation sweep, no compensation | EXT-001, EXT-003 |
 | Attachment delete, local and S3 | Bytes deleted before commit; a failed commit leaves a metadata row resolving to nothing | EXT-001 |
 | Attachment provider comment | Claims joint commit for all providers; true only of the database provider | EXT-004 |
-| Automatic backup write | Direct write to the final name -- no temp file, fsync, rename, size check or checksum; a truncated file is indistinguishable from a complete one and is promoted to weekly and monthly by `copyFileSync` | EXT-002 |
-| Backup restore validation | Version and `exportedAt` only; no payload integrity check, because nothing was recorded at write time | EXT-002 |
-| Backup folder probe | `Date.now()` in the probe filename; unlink failure reported as "not writable" | EXT-003 |
+| Backup restore validation, plaintext `.json.gz` | No content hash of its own: truncation and random corruption are caught by the gzip trailer and `JSON.parse`, a deliberate alteration is not. An encrypted `.mzbe` is authenticated frame by frame and has no such gap | EXT-002 |
 | Bill and mortgage reminders | No dedup state of any kind; duplicate sends unbounded across replicas and restarts | EXT-001 |
 | Budget alerts | Durable state written before the send, but the dedup read and insert are not atomic and no unique constraint backs them | EXT-001 |
 | Emergency-access reminder | `lastReminderSentAt` written after the send, and it is the gate | EXT-001 |
 | AI insight generation | Process-local `Set` as the reentrancy guard; cooldown is a check-then-act; inserts carry no idempotency key | EXT-001 |
 | Payee contact enrichment | In-flight guard and admission queue are process-local; two replicas can both pay for one lookup (the second UPDATE affects zero rows, so the data is right and only the cost is duplicated) | EXT-001 |
+| Off-machine backup copy (email) | An accepted trade, not an omission: a claim expired by the lease is re-attempted, and SMTP offers no way to tell a message already delivered from one never sent, so the same artifact can arrive twice. Delivering a duplicate copy is the survivable direction against never delivering it | EXT-003 |
+| Off-machine backup copy (S3) | A stuck `uploading` row is reclaimed after the lease and re-attempted, reconciled by digest. What remains: nothing reconciles a bucket object against the ledger, so an object written by an attempt whose row never reached `uploaded` is referenced by nothing -- bytes nobody references, the survivable side, and the operator's lifecycle policy is what ages them out | EXT-003 |
 
-Two rows are absent from this table on purpose, and both are settled: per-user
-backup sharding with admin-gated folder endpoints, and the FX/price natural-key
-upserts. Section 5's grant-commit-after-delivery belongs in the same category.
-Those three are the patterns the rest of this table should be closed by
-imitating.
+Four rows are absent from this table on purpose, and all four are settled:
+per-user backup sharding with admin-gated folder endpoints, the FX/price
+natural-key upserts, the atomic backup write with its in-document completeness
+verdict (INV-BACKUP-001), and the UUID-named writability probe whose failed
+cleanup is a log line rather than a verdict. Section 5's
+grant-commit-after-delivery belongs in the same category. Those are the patterns
+the rest of this table should be closed by imitating.

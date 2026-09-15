@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "Hết thời gian chờ dung lượng khôi phục: một lượt khôi phục khác vẫn đang chạy. Hãy thử lại sau một lát.",
     "restoreTicketUnavailable": "Bản triển khai này không thể cấp quyền cho việc tải lên khôi phục.",
     "invalidNotificationFields": "Thông báo trong bản sao lưu không hợp lệ: tiêu đề phải là văn bản; đích và khóa khử trùng lặp phải là văn bản hoặc null",
-    "storedBackupNotFound": "Không tìm thấy tệp sao lưu"
+    "storedBackupNotFound": "Không tìm thấy tệp sao lưu",
+    "offsiteDeploymentBucketUnset": "Máy chủ này không có bucket riêng cho bản sao lưu ngoài máy. Hãy đề nghị quản trị viên đặt BACKUP_S3_BUCKET, hoặc dùng bucket của riêng bạn.",
+    "offsiteOwnBucketRequired": "Hãy nhập bucket mà các bản sao lưu của bạn sẽ được sao chép tới.",
+    "offsiteOwnCredentialsRequired": "Hãy nhập access key id và secret access key cho bucket của bạn.",
+    "offsiteEncryptionKeyRequired": "Máy chủ này không thể lưu thông tin xác thực S3 vì ENCRYPTION_KEY chưa được đặt. Hãy đề nghị quản trị viên cấu hình nó, hoặc dùng bucket của bản triển khai này.",
+    "offsiteEmailAddressRequired": "Hãy nhập địa chỉ mà các bản sao lưu của bạn sẽ được gửi tới."
   },
   "budgets": {
     "notFound": "Không tìm thấy ngân sách với ID {{ id }}",

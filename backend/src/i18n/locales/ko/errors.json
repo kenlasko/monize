@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "복원 용량을 기다리다 시간이 초과되었습니다. 다른 복원이 아직 실행 중입니다. 잠시 후 다시 시도하세요.",
     "restoreTicketUnavailable": "이 배포에서는 복원 업로드를 승인할 수 없습니다.",
     "invalidNotificationFields": "백업 알림이 올바르지 않습니다. 제목은 문자열이어야 하며, 대상과 중복 제거 키는 문자열 또는 null이어야 합니다",
-    "storedBackupNotFound": "백업 파일을 찾을 수 없습니다"
+    "storedBackupNotFound": "백업 파일을 찾을 수 없습니다",
+    "offsiteDeploymentBucketUnset": "이 서버에는 자체 오프사이트 백업 버킷이 없습니다. 관리자에게 BACKUP_S3_BUCKET 설정을 요청하거나 본인의 버킷을 사용하세요.",
+    "offsiteOwnBucketRequired": "백업을 복사할 버킷을 입력하세요.",
+    "offsiteOwnCredentialsRequired": "버킷의 액세스 키 ID와 비밀 액세스 키를 입력하세요.",
+    "offsiteEncryptionKeyRequired": "ENCRYPTION_KEY가 설정되지 않아 이 서버는 S3 자격 증명을 저장할 수 없습니다. 관리자에게 설정을 요청하거나 이 배포의 버킷을 사용하세요.",
+    "offsiteEmailAddressRequired": "백업을 보낼 이메일 주소를 입력하세요."
   },
   "budgets": {
     "notFound": "ID가 {{ id }}인 예산을 찾을 수 없습니다",

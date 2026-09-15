@@ -762,7 +762,65 @@
       "downloadButton": "Unduh",
       "restoreButton": "Pulihkan",
       "workingButton": "Memproses...",
-      "downloadFailed": "Gagal mengunduh cadangan"
+      "downloadFailed": "Gagal mengunduh cadangan",
+      "offsite": {
+        "disclosure": "Tujuan luar lokasi",
+        "disclosureDescription": "Setelah setiap pencadangan otomatis yang lengkap, salinan terenkripsi dapat dikirim ke penyimpanan S3, melalui email, atau keduanya: tiga salinan, dua jenis penyimpanan, salah satunya di luar mesin ini. Hanya cadangan terenkripsi yang dikirim.",
+        "encryptionUnavailable": "Server ini tidak memiliki kunci enkripsi, sehingga kredensial untuk bucket milik Anda sendiri tidak dapat disimpan. Bucket milik server ini dan salinan lewat email tetap berfungsi.",
+        "loading": "Memuat tujuan luar lokasi Anda...",
+        "loadFailed": "Gagal memuat tujuan cadangan luar lokasi Anda",
+        "retryButton": "Coba Lagi",
+        "demoNote": "Tujuan luar lokasi tidak dapat diubah dalam mode demo.",
+        "saveButton": "Simpan Tujuan",
+        "savingButton": "Menyimpan...",
+        "saved": "Tujuan luar lokasi disimpan",
+        "saveFailed": "Gagal menyimpan tujuan cadangan luar lokasi Anda",
+        "s3": {
+          "heading": "Penyimpanan S3",
+          "modeLabel": "Ke mana salinan dikirim",
+          "modeOff": "Nonaktif",
+          "modeDeployment": "Bucket server ini",
+          "modeOwn": "Bucket saya sendiri",
+          "deploymentUnavailable": "Server ini tidak memiliki bucket luar lokasi sendiri, jadi administrator harus menyiapkannya. Anda dapat memakai bucket milik Anda sendiri sebagai gantinya.",
+          "bucketLabel": "Bucket",
+          "regionLabel": "Wilayah",
+          "regionHelp": "Banyak layanan yang kompatibel dengan S3 mengabaikan ini.",
+          "prefixLabel": "Awalan kunci",
+          "prefixHelp": "Folder opsional di dalam bucket, agar cadangan Anda dapat berbagi bucket dengan data lain.",
+          "endpointLabel": "Endpoint",
+          "endpointHelp": "Hanya untuk layanan yang kompatibel dengan S3 seperti MinIO, R2, atau B2. Biarkan kosong untuk AWS.",
+          "forcePathStyleLabel": "Gunakan pengalamatan gaya path",
+          "forcePathStyleHelp": "Dibutuhkan oleh MinIO dan beberapa layanan lain yang kompatibel dengan S3.",
+          "accessKeyIdLabel": "ID kunci akses",
+          "secretAccessKeyLabel": "Kunci akses rahasia",
+          "storedPlaceholder": "•••• tersimpan",
+          "credentialsHelp": "Kredensial disimpan terenkripsi di server ini dan tidak pernah ditampilkan lagi. Biarkan kotak ini kosong untuk mempertahankan yang sudah tersimpan.",
+          "clearCredentialsButton": "Hapus Kredensial Tersimpan",
+          "clearConfirmTitle": "Hapus kredensial tersimpan?",
+          "clearConfirmMessage": "Server ini akan melupakan ID kunci akses dan kunci akses rahasia Anda. Tidak ada salinan lagi yang dikirim ke bucket Anda sampai Anda memasukkannya kembali.",
+          "credentialsCleared": "Kredensial tersimpan dihapus",
+          "clearFailed": "Gagal menghapus kredensial tersimpan"
+        },
+        "email": {
+          "heading": "Email",
+          "toggleLabel": "Kirimi saya email berisi salinan setiap cadangan otomatis yang selesai",
+          "addressLabel": "Kirim salinan ke",
+          "addressPlaceholder": "pengguna@contoh.com",
+          "sizeNote": "Cadangan yang melebihi batas ukuran server ini tidak dilampirkan; Anda menerima pemberitahuan yang menyebutkan nama berkasnya."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "Email",
+          "statusPending": "Menunggu",
+          "statusUploading": "Mengirim",
+          "statusUploaded": "Tersalin",
+          "statusFailed": "Gagal",
+          "statusConflict": "Konflik",
+          "statusSkippedUnencrypted": "Dilewati: tidak terenkripsi",
+          "statusSkippedTooLarge": "Dilewati: terlalu besar"
+        }
+      }
     }
   },
   "sharedAccess": {

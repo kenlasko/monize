@@ -290,5 +290,27 @@
       "title": "Avviso variazione prezzo: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% rispetto alla precedente seduta disponibile."
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Backup Monize {{ filename }}",
+    "copyHeading": "Il tuo backup Monize è in allegato",
+    "copyIntro": "Questo è il backup automatico {{ tier }} del tuo account Monize del {{ date }}. Il file è allegato a questa email.",
+    "copyEncrypted": "L'allegato è cifrato con la tua password di backup Monize. Senza quella password non può essere aperto e Monize non può recuperarla per te -- conserva la password in un posto diverso da questa casella di posta.",
+    "copyRestore": "Per ripristinarlo, apri Monize, vai su Impostazioni, Backup e ripristino, carica questo file e inserisci la tua password di backup.",
+    "copyVerify": "Lo SHA-256 qui sopra si riferisce ai byte allegati, così in seguito puoi verificare che la copia che hai conservato sia quella consegnata da questa email.",
+    "tooLargeSubject": "Il backup Monize {{ filename }} era troppo grande per essere inviato via email",
+    "tooLargeHeading": "Il tuo backup Monize non è stato inviato via email",
+    "tooLargeIntro": "Il backup di oggi è di {{ size }}, oltre i {{ limit }} che questa installazione consente per un backup inviato via email (BACKUP_EMAIL_MAX_BYTES).",
+    "tooLargeNoBytes": "A questa email non è stato allegato nulla e non viene offerto alcun link di download -- un link richiederebbe una credenziale in grado di rileggere i tuoi backup dall'archivio, che questa funzione non possiede.",
+    "tooLargeUnaffected": "Il backup in sé è stato scritto normalmente. La copia su questo server non è interessata, così come quella sulla tua destinazione S3 se ne hai abilitata una.",
+    "tooLargeWhatToDo": "Per conservare fuori da questa macchina una copia di un backup di queste dimensioni, scaricalo da Impostazioni, Backup e ripristino, abilita la destinazione S3 oppure chiedi al tuo amministratore di alzare il limite per l'email.",
+    "labelFile": "File",
+    "labelSize": "Dimensione",
+    "labelTier": "Conservazione",
+    "labelLimit": "Limite email",
+    "labelDigest": "SHA-256",
+    "tierDaily": "giornaliero",
+    "tierWeekly": "settimanale",
+    "tierMonthly": "mensile"
   }
 }

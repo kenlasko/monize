@@ -290,5 +290,27 @@
       "title": "Melding bij koerswijziging: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% ten opzichte van de vorige beschikbare sessie."
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Monize-back-up {{ filename }}",
+    "copyHeading": "Je Monize-back-up zit als bijlage bij deze e-mail",
+    "copyIntro": "Dit is de automatische back-up ({{ tier }}) van je Monize-account van {{ date }}. Het bestand zit als bijlage bij deze e-mail.",
+    "copyEncrypted": "De bijlage is versleuteld met je Monize-back-upwachtwoord. Zonder dat wachtwoord kan hij niet worden geopend, en Monize kan het niet voor je herstellen -- bewaar het wachtwoord ergens anders dan in deze mailbox.",
+    "copyRestore": "Om hem te herstellen open je Monize, ga je naar Instellingen, Back-up en herstel, upload je dit bestand en voer je je back-upwachtwoord in.",
+    "copyVerify": "De SHA-256 hierboven hoort bij de bijgevoegde bytes, zodat je later kunt controleren of de kopie die je bewaarde dezelfde is als die deze e-mail heeft bezorgd.",
+    "tooLargeSubject": "Monize-back-up {{ filename }} was te groot om te mailen",
+    "tooLargeHeading": "Je Monize-back-up is niet gemaild",
+    "tooLargeIntro": "De back-up van vandaag is {{ size }} en dat is meer dan de {{ limit }} die deze installatie toestaat voor een gemailde back-up (BACKUP_EMAIL_MAX_BYTES).",
+    "tooLargeNoBytes": "Er is niets aan deze e-mail toegevoegd en er wordt geen downloadlink aangeboden -- zo'n link zou inloggegevens nodig hebben waarmee je back-ups weer uit de opslag gelezen kunnen worden, en die heeft deze functie niet.",
+    "tooLargeUnaffected": "De back-up zelf is normaal weggeschreven. De kopie op deze server is ongewijzigd, en dat geldt ook voor de kopie op je S3-bestemming als je die hebt ingeschakeld.",
+    "tooLargeWhatToDo": "Wil je van een back-up van dit formaat een kopie buiten deze machine bewaren, download hem dan via Instellingen, Back-up en herstel, schakel de S3-bestemming in, of vraag je beheerder om de e-maillimiet te verhogen.",
+    "labelFile": "Bestand",
+    "labelSize": "Grootte",
+    "labelTier": "Bewaartermijn",
+    "labelLimit": "E-maillimiet",
+    "labelDigest": "SHA-256",
+    "tierDaily": "dagelijks",
+    "tierWeekly": "wekelijks",
+    "tierMonthly": "maandelijks"
   }
 }

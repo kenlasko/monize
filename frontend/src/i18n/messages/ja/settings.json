@@ -762,7 +762,65 @@
       "downloadButton": "ダウンロード",
       "restoreButton": "復元",
       "workingButton": "処理中...",
-      "downloadFailed": "バックアップをダウンロードできませんでした"
+      "downloadFailed": "バックアップをダウンロードできませんでした",
+      "offsite": {
+        "disclosure": "オフサイトの送信先",
+        "disclosureDescription": "完全な自動バックアップが終わるたびに、暗号化されたコピーを S3 ストレージ、メール、またはその両方に送信できます。コピーは3つ、保管方法は2種類、うち1つはこのマシンの外です。送信されるのは暗号化されたバックアップのみです。",
+        "encryptionUnavailable": "このサーバーには暗号化キーが設定されていないため、ご自身のバケットの認証情報を保存できません。このサーバー自身のバケットとメールでのコピーは引き続き利用できます。",
+        "loading": "オフサイトの送信先を読み込んでいます...",
+        "loadFailed": "オフサイトのバックアップ送信先を読み込めませんでした",
+        "retryButton": "再試行",
+        "demoNote": "デモではオフサイトの送信先を変更できません。",
+        "saveButton": "送信先を保存",
+        "savingButton": "保存中...",
+        "saved": "オフサイトの送信先を保存しました",
+        "saveFailed": "オフサイトのバックアップ送信先を保存できませんでした",
+        "s3": {
+          "heading": "S3 ストレージ",
+          "modeLabel": "コピーの送信先",
+          "modeOff": "オフ",
+          "modeDeployment": "このサーバーのバケット",
+          "modeOwn": "自分のバケット",
+          "deploymentUnavailable": "このサーバーには専用のオフサイトバケットがないため、管理者が用意する必要があります。代わりにご自身のバケットを使用できます。",
+          "bucketLabel": "バケット",
+          "regionLabel": "リージョン",
+          "regionHelp": "S3 互換サービスの多くはこれを無視します。",
+          "prefixLabel": "キープレフィックス",
+          "prefixHelp": "バケット内の任意のフォルダーです。他のデータと同じバケットを共有できます。",
+          "endpointLabel": "エンドポイント",
+          "endpointHelp": "MinIO、R2、B2 などの S3 互換サービス専用です。AWS の場合は空のままにします。",
+          "forcePathStyleLabel": "パス形式のアドレスを使用",
+          "forcePathStyleHelp": "MinIO や一部の S3 互換サービスで必要です。",
+          "accessKeyIdLabel": "アクセスキー ID",
+          "secretAccessKeyLabel": "シークレットアクセスキー",
+          "storedPlaceholder": "•••• 保存済み",
+          "credentialsHelp": "認証情報はこのサーバーに暗号化して保存され、再表示されることはありません。保存済みのものを残す場合は空欄のままにしてください。",
+          "clearCredentialsButton": "保存した認証情報を削除",
+          "clearConfirmTitle": "保存した認証情報を削除しますか？",
+          "clearConfirmMessage": "このサーバーはアクセスキー ID とシークレットアクセスキーを破棄します。再入力するまで、バケットへのコピーは送信されません。",
+          "credentialsCleared": "保存した認証情報を削除しました",
+          "clearFailed": "保存した認証情報を削除できませんでした"
+        },
+        "email": {
+          "heading": "メール",
+          "toggleLabel": "完了した自動バックアップのコピーをメールで受け取る",
+          "addressLabel": "コピーの送信先アドレス",
+          "addressPlaceholder": "user@example.com",
+          "sizeNote": "このサーバーのサイズ上限を超えるバックアップは添付されず、代わりにファイル名を知らせる通知が届きます。"
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "メール",
+          "statusPending": "保留中",
+          "statusUploading": "送信中",
+          "statusUploaded": "コピー済み",
+          "statusFailed": "失敗",
+          "statusConflict": "競合",
+          "statusSkippedUnencrypted": "スキップ: 未暗号化",
+          "statusSkippedTooLarge": "スキップ: サイズ超過"
+        }
+      }
     }
   },
   "sharedAccess": {

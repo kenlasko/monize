@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "Upłynął limit czasu oczekiwania na moc przywracania: inne przywracanie nadal trwa. Spróbuj ponownie za chwilę.",
     "restoreTicketUnavailable": "To wdrożenie nie może autoryzować przesyłania kopii do przywrócenia.",
     "invalidNotificationFields": "Nieprawidłowe powiadomienie w kopii zapasowej: tytuł musi być tekstem, a cel i klucz deduplikacji tekstem lub wartością null",
-    "storedBackupNotFound": "Nie znaleziono pliku kopii zapasowej"
+    "storedBackupNotFound": "Nie znaleziono pliku kopii zapasowej",
+    "offsiteDeploymentBucketUnset": "Ten serwer nie ma własnego bucketu na kopie zapasowe poza tą maszyną. Poproś administratora o ustawienie BACKUP_S3_BUCKET albo użyj własnego bucketu.",
+    "offsiteOwnBucketRequired": "Podaj bucket, do którego mają być kopiowane Twoje kopie zapasowe.",
+    "offsiteOwnCredentialsRequired": "Podaj access key id i secret access key do swojego bucketu.",
+    "offsiteEncryptionKeyRequired": "Ten serwer nie może przechowywać poświadczeń S3, ponieważ nie ustawiono ENCRYPTION_KEY. Poproś administratora o jego skonfigurowanie albo użyj bucketu tej instalacji.",
+    "offsiteEmailAddressRequired": "Podaj adres, na który mają być wysyłane Twoje kopie zapasowe."
   },
   "budgets": {
     "notFound": "Nie znaleziono budżetu o ID {{ id }}",

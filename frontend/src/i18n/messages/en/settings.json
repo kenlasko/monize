@@ -762,7 +762,65 @@
       "downloadButton": "Download",
       "restoreButton": "Restore",
       "workingButton": "Working...",
-      "downloadFailed": "Failed to download the backup"
+      "downloadFailed": "Failed to download the backup",
+      "offsite": {
+        "disclosure": "Off-site destinations",
+        "disclosureDescription": "After each complete automatic backup, an encrypted copy can be sent to S3 storage, by email, or both: three copies, two kinds of storage, one of them off this machine. Only an encrypted backup is ever sent.",
+        "encryptionUnavailable": "This server has no encryption key set, so credentials for a bucket of your own cannot be stored. This server's own bucket and emailed copies still work.",
+        "loading": "Loading your off-site destinations...",
+        "loadFailed": "Failed to load your off-site backup destinations",
+        "retryButton": "Try Again",
+        "demoNote": "Off-site destinations cannot be changed in the demo.",
+        "saveButton": "Save Destinations",
+        "savingButton": "Saving...",
+        "saved": "Off-site destinations saved",
+        "saveFailed": "Failed to save your off-site backup destinations",
+        "s3": {
+          "heading": "S3 storage",
+          "modeLabel": "Where copies are sent",
+          "modeOff": "Off",
+          "modeDeployment": "This server's bucket",
+          "modeOwn": "My own bucket",
+          "deploymentUnavailable": "This server has no off-site bucket of its own, so an administrator would have to set one up. You can use a bucket of your own instead.",
+          "bucketLabel": "Bucket",
+          "regionLabel": "Region",
+          "regionHelp": "Many S3-compatible services ignore this.",
+          "prefixLabel": "Key prefix",
+          "prefixHelp": "Optional folder inside the bucket, so your backups can share it with other data.",
+          "endpointLabel": "Endpoint",
+          "endpointHelp": "Only for an S3-compatible service such as MinIO, R2 or B2. Leave this empty for AWS.",
+          "forcePathStyleLabel": "Use path-style addressing",
+          "forcePathStyleHelp": "Required by MinIO and some other S3-compatible services.",
+          "accessKeyIdLabel": "Access key ID",
+          "secretAccessKeyLabel": "Secret access key",
+          "storedPlaceholder": "•••• stored",
+          "credentialsHelp": "Credentials are stored encrypted on this server and are never shown again. Leave these boxes empty to keep the ones already stored.",
+          "clearCredentialsButton": "Remove Stored Credentials",
+          "clearConfirmTitle": "Remove stored credentials?",
+          "clearConfirmMessage": "This server will forget your access key ID and secret access key. No further copies will be sent to your bucket until you enter them again.",
+          "credentialsCleared": "Stored credentials removed",
+          "clearFailed": "Failed to remove the stored credentials"
+        },
+        "email": {
+          "heading": "Email",
+          "toggleLabel": "Email me a copy of each completed automatic backup",
+          "addressLabel": "Send copies to",
+          "addressPlaceholder": "you@example.com",
+          "sizeNote": "A backup above this server's size limit is not attached; you receive a notice naming the file instead."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "Email",
+          "statusPending": "Pending",
+          "statusUploading": "Sending",
+          "statusUploaded": "Copied",
+          "statusFailed": "Failed",
+          "statusConflict": "Conflict",
+          "statusSkippedUnencrypted": "Skipped: not encrypted",
+          "statusSkippedTooLarge": "Skipped: too large"
+        }
+      }
     }
   },
   "sharedAccess": {

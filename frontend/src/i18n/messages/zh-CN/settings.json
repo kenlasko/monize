@@ -762,7 +762,65 @@
       "downloadButton": "下载",
       "restoreButton": "恢复",
       "workingButton": "处理中...",
-      "downloadFailed": "无法下载该备份"
+      "downloadFailed": "无法下载该备份",
+      "offsite": {
+        "disclosure": "异地目标",
+        "disclosureDescription": "每次完整的自动备份完成后，可以将加密副本发送到 S3 存储、通过电子邮件发送，或两者兼用：三份副本、两种存储方式，其中一种在本机之外。只会发送加密备份。",
+        "encryptionUnavailable": "此服务器未设置加密密钥，因此无法保存你自己存储桶的凭据。服务器自有的存储桶和邮件副本仍可使用。",
+        "loading": "正在加载你的异地目标...",
+        "loadFailed": "无法加载你的异地备份目标",
+        "retryButton": "重试",
+        "demoNote": "演示模式下无法更改异地目标。",
+        "saveButton": "保存目标",
+        "savingButton": "保存中...",
+        "saved": "异地目标已保存",
+        "saveFailed": "无法保存你的异地备份目标",
+        "s3": {
+          "heading": "S3 存储",
+          "modeLabel": "副本发送到何处",
+          "modeOff": "关闭",
+          "modeDeployment": "此服务器的存储桶",
+          "modeOwn": "我自己的存储桶",
+          "deploymentUnavailable": "此服务器没有自己的异地存储桶，需要管理员先行配置。你可以改用自己的存储桶。",
+          "bucketLabel": "存储桶",
+          "regionLabel": "区域",
+          "regionHelp": "许多兼容 S3 的服务会忽略此项。",
+          "prefixLabel": "键前缀",
+          "prefixHelp": "存储桶内的可选文件夹，便于备份与其他数据共用同一个存储桶。",
+          "endpointLabel": "端点",
+          "endpointHelp": "仅适用于 MinIO、R2 或 B2 等兼容 S3 的服务。使用 AWS 时留空。",
+          "forcePathStyleLabel": "使用路径样式寻址",
+          "forcePathStyleHelp": "MinIO 及其他一些兼容 S3 的服务需要此项。",
+          "accessKeyIdLabel": "访问密钥 ID",
+          "secretAccessKeyLabel": "私有访问密钥",
+          "storedPlaceholder": "•••• 已保存",
+          "credentialsHelp": "凭据以加密方式保存在此服务器上，且不会再次显示。若要保留已保存的凭据，请将这些输入框留空。",
+          "clearCredentialsButton": "删除已保存的凭据",
+          "clearConfirmTitle": "删除已保存的凭据？",
+          "clearConfirmMessage": "此服务器将忘记你的访问密钥 ID 和私有访问密钥。在你重新输入之前，不会再向你的存储桶发送副本。",
+          "credentialsCleared": "已保存的凭据已删除",
+          "clearFailed": "无法删除已保存的凭据"
+        },
+        "email": {
+          "heading": "电子邮件",
+          "toggleLabel": "每次自动备份完成后，将副本通过电子邮件发送给我",
+          "addressLabel": "副本发送至",
+          "addressPlaceholder": "user@example.com",
+          "sizeNote": "超过此服务器大小上限的备份不会作为附件发送；你会收到一封写明文件名的通知。"
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "电子邮件",
+          "statusPending": "等待中",
+          "statusUploading": "发送中",
+          "statusUploaded": "已复制",
+          "statusFailed": "失败",
+          "statusConflict": "冲突",
+          "statusSkippedUnencrypted": "已跳过：未加密",
+          "statusSkippedTooLarge": "已跳过：过大"
+        }
+      }
     }
   },
   "sharedAccess": {

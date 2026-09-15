@@ -290,5 +290,27 @@
       "title": "Alerta de cambio de precio: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% respecto a la sesión anterior disponible."
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Copia de seguridad de Monize {{ filename }}",
+    "copyHeading": "Tu copia de seguridad de Monize va adjunta",
+    "copyIntro": "Esta es la copia de seguridad automática {{ tier }} de tu cuenta de Monize del {{ date }}. El archivo va adjunto a este correo.",
+    "copyEncrypted": "El adjunto está cifrado con tu contraseña de copia de seguridad de Monize. No se puede abrir sin esa contraseña y Monize no puede recuperarla por ti -- guarda la contraseña en un lugar que no sea este buzón.",
+    "copyRestore": "Para restaurarla, abre Monize, ve a Configuración, Copia de seguridad y restauración, sube este archivo e introduce tu contraseña de copia de seguridad.",
+    "copyVerify": "El SHA-256 anterior corresponde a los bytes adjuntos, así que más adelante puedes comprobar que la copia que guardaste es la que entregó este correo.",
+    "tooLargeSubject": "La copia de seguridad de Monize {{ filename }} era demasiado grande para enviarla por correo",
+    "tooLargeHeading": "Tu copia de seguridad de Monize no se envió por correo",
+    "tooLargeIntro": "La copia de seguridad de hoy ocupa {{ size }}, por encima de los {{ limit }} que esta instalación permite para una copia enviada por correo (BACKUP_EMAIL_MAX_BYTES).",
+    "tooLargeNoBytes": "No se adjuntó nada a este correo y no se ofrece ningún enlace de descarga -- un enlace necesitaría una credencial capaz de volver a leer tus copias de seguridad del almacenamiento, y esta función no la tiene.",
+    "tooLargeUnaffected": "La copia de seguridad en sí se escribió con normalidad. La copia de este servidor no se ve afectada, ni tampoco la de tu destino S3 si tienes uno activado.",
+    "tooLargeWhatToDo": "Para conservar fuera de esta máquina una copia de este tamaño, descárgala desde Configuración, Copia de seguridad y restauración, activa el destino S3 o pide a tu administrador que aumente el límite de correo.",
+    "labelFile": "Archivo",
+    "labelSize": "Tamaño",
+    "labelTier": "Retención",
+    "labelLimit": "Límite de correo",
+    "labelDigest": "SHA-256",
+    "tierDaily": "diaria",
+    "tierWeekly": "semanal",
+    "tierMonthly": "mensual"
   }
 }

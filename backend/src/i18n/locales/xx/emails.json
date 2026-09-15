@@ -290,5 +290,27 @@
       "title": "[XX-Price change alert: {{ symbol }} ({{ percent }}%)-XX]",
       "message": "[XX-{{ symbol }}: {{ percent }}% compared with the previous available session.-XX]"
     }
+  },
+  "backupOffsite": {
+    "copySubject": "[XX-Monize backup {{ filename }}-XX]",
+    "copyHeading": "[XX-Your Monize backup is attached-XX]",
+    "copyIntro": "[XX-This is the automatic {{ tier }} backup of your Monize account for {{ date }}. The file is attached to this email.-XX]",
+    "copyEncrypted": "[XX-The attachment is encrypted with your Monize backup password. It cannot be opened without that password, and Monize cannot recover it for you -- keep the password somewhere other than this mailbox.-XX]",
+    "copyRestore": "[XX-To restore it, open Monize, go to Settings, Backup &amp; Restore, upload this file and enter your backup password.-XX]",
+    "copyVerify": "[XX-The SHA-256 above is of the attached bytes, so you can check later that the copy you kept is the one this email delivered.-XX]",
+    "tooLargeSubject": "[XX-Monize backup {{ filename }} was too large to email-XX]",
+    "tooLargeHeading": "[XX-Your Monize backup was not emailed-XX]",
+    "tooLargeIntro": "[XX-Today's backup is {{ size }}, which is over the {{ limit }} this deployment allows for an emailed backup (BACKUP_EMAIL_MAX_BYTES).-XX]",
+    "tooLargeNoBytes": "[XX-Nothing was attached to this email, and no download link is offered -- a link would need a credential that could read your backups back out of storage, which this feature does not hold.-XX]",
+    "tooLargeUnaffected": "[XX-The backup itself was written normally. The copy on this server is unaffected, and so is the copy on your S3 destination if you have one enabled.-XX]",
+    "tooLargeWhatToDo": "[XX-To keep an off-machine copy of a backup this size, download it from Settings, Backup &amp; Restore, enable the S3 destination, or ask your administrator to raise the email limit.-XX]",
+    "labelFile": "[XX-File-XX]",
+    "labelSize": "[XX-Size-XX]",
+    "labelTier": "[XX-Retention-XX]",
+    "labelLimit": "[XX-Email limit-XX]",
+    "labelDigest": "[XX-SHA-256-XX]",
+    "tierDaily": "[XX-daily-XX]",
+    "tierWeekly": "[XX-weekly-XX]",
+    "tierMonthly": "[XX-monthly-XX]"
   }
 }

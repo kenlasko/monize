@@ -18,6 +18,8 @@ vi.mock('@/lib/backupApi', () => ({
     disableEncryption: vi.fn(),
     listStoredBackups: vi.fn(),
     downloadStoredBackup: vi.fn(),
+    getOffsiteSettings: vi.fn(),
+    updateOffsiteSettings: vi.fn(),
   },
   BACKUP_PASSWORD_REQUIRED_CODE: 'BACKUP_PASSWORD_REQUIRED',
   // Mirror the real magic-byte sniffing so the restore form shows the
@@ -101,6 +103,26 @@ describe('BackupRestoreSection', () => {
       enabled: false,
       backups: [],
     });
+    // Off-site destinations are off: the folded destinations form renders its
+    // own controls, which no test below is about. It only mounts when the
+    // stored-backups sub-section itself renders (schedule armed or artifacts on
+    // disk), so most tests below never reach it.
+    (backupApi.getOffsiteSettings as ReturnType<typeof vi.fn>).mockResolvedValue(
+      {
+        s3Mode: 'off',
+        s3Bucket: null,
+        s3Region: null,
+        s3Prefix: null,
+        s3Endpoint: null,
+        s3ForcePathStyle: false,
+        s3AccessKeyIdSet: false,
+        s3SecretAccessKeySet: false,
+        emailEnabled: false,
+        emailTo: null,
+        deploymentS3Available: true,
+        encryptionConfigured: true,
+      },
+    );
   });
 
   it('renders backup and restore sections', async () => {

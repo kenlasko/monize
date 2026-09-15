@@ -762,7 +762,65 @@
       "downloadButton": "Tải xuống",
       "restoreButton": "Khôi phục",
       "workingButton": "Đang xử lý...",
-      "downloadFailed": "Không tải xuống được bản sao lưu"
+      "downloadFailed": "Không tải xuống được bản sao lưu",
+      "offsite": {
+        "disclosure": "Đích ngoài máy chủ",
+        "disclosureDescription": "Sau mỗi lần sao lưu tự động hoàn tất, một bản sao đã mã hóa có thể được gửi tới kho lưu trữ S3, qua email, hoặc cả hai: ba bản sao, hai kiểu lưu trữ, một trong số đó nằm ngoài máy này. Chỉ bản sao lưu đã mã hóa mới được gửi đi.",
+        "encryptionUnavailable": "Máy chủ này chưa đặt khóa mã hóa, nên không thể lưu thông tin đăng nhập cho bucket của riêng bạn. Bucket của chính máy chủ và các bản sao gửi qua email vẫn hoạt động.",
+        "loading": "Đang tải các đích ngoài máy chủ của bạn...",
+        "loadFailed": "Không tải được các đích sao lưu ngoài máy chủ của bạn",
+        "retryButton": "Thử lại",
+        "demoNote": "Không thể thay đổi các đích ngoài máy chủ trong bản demo.",
+        "saveButton": "Lưu các đích",
+        "savingButton": "Đang lưu...",
+        "saved": "Đã lưu các đích ngoài máy chủ",
+        "saveFailed": "Không lưu được các đích sao lưu ngoài máy chủ của bạn",
+        "s3": {
+          "heading": "Kho lưu trữ S3",
+          "modeLabel": "Nơi gửi bản sao",
+          "modeOff": "Tắt",
+          "modeDeployment": "Bucket của máy chủ này",
+          "modeOwn": "Bucket của riêng tôi",
+          "deploymentUnavailable": "Máy chủ này không có bucket ngoài máy chủ của riêng nó, nên quản trị viên sẽ phải thiết lập. Thay vào đó, bạn có thể dùng bucket của riêng mình.",
+          "bucketLabel": "Bucket",
+          "regionLabel": "Vùng",
+          "regionHelp": "Nhiều dịch vụ tương thích S3 bỏ qua giá trị này.",
+          "prefixLabel": "Tiền tố khóa",
+          "prefixHelp": "Thư mục tùy chọn bên trong bucket, để bản sao lưu của bạn có thể dùng chung bucket với dữ liệu khác.",
+          "endpointLabel": "Endpoint",
+          "endpointHelp": "Chỉ dành cho dịch vụ tương thích S3 như MinIO, R2 hoặc B2. Để trống nếu dùng AWS.",
+          "forcePathStyleLabel": "Dùng địa chỉ kiểu đường dẫn",
+          "forcePathStyleHelp": "Bắt buộc với MinIO và một số dịch vụ tương thích S3 khác.",
+          "accessKeyIdLabel": "ID khóa truy cập",
+          "secretAccessKeyLabel": "Khóa truy cập bí mật",
+          "storedPlaceholder": "•••• đã lưu",
+          "credentialsHelp": "Thông tin đăng nhập được lưu ở dạng mã hóa trên máy chủ này và không bao giờ hiển thị lại. Để trống các ô này nếu muốn giữ thông tin đã lưu.",
+          "clearCredentialsButton": "Xóa thông tin đăng nhập đã lưu",
+          "clearConfirmTitle": "Xóa thông tin đăng nhập đã lưu?",
+          "clearConfirmMessage": "Máy chủ này sẽ quên ID khóa truy cập và khóa truy cập bí mật của bạn. Sẽ không có bản sao nào được gửi tới bucket của bạn cho đến khi bạn nhập lại.",
+          "credentialsCleared": "Đã xóa thông tin đăng nhập đã lưu",
+          "clearFailed": "Không xóa được thông tin đăng nhập đã lưu"
+        },
+        "email": {
+          "heading": "Email",
+          "toggleLabel": "Gửi email cho tôi một bản sao của mỗi bản sao lưu tự động đã hoàn tất",
+          "addressLabel": "Gửi bản sao tới",
+          "addressPlaceholder": "user@example.com",
+          "sizeNote": "Bản sao lưu vượt quá giới hạn kích thước của máy chủ này sẽ không được đính kèm; thay vào đó bạn nhận được thông báo nêu tên tệp."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "Email",
+          "statusPending": "Đang chờ",
+          "statusUploading": "Đang gửi",
+          "statusUploaded": "Đã sao chép",
+          "statusFailed": "Thất bại",
+          "statusConflict": "Xung đột",
+          "statusSkippedUnencrypted": "Đã bỏ qua: chưa mã hóa",
+          "statusSkippedTooLarge": "Đã bỏ qua: quá lớn"
+        }
+      }
     }
   },
   "sharedAccess": {

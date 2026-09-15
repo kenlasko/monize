@@ -31,6 +31,25 @@ export interface EmailFailureSnapshot {
   recipientRejections: number;
 }
 
+/**
+ * One file carried by an email.
+ *
+ * Deliberately the narrow subset of nodemailer's attachment shape this codebase
+ * needs -- a name, the bytes, and what they are -- rather than nodemailer's own
+ * type: a caller must not be able to hand the transport a `path` or a `href`
+ * and make the SMTP layer read a file or fetch a URL on its behalf.
+ */
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+}
+
+/** Everything about a send beyond the address, the subject and the body. */
+export interface SendMailOptions {
+  attachments?: EmailAttachment[];
+}
+
 const FAILURE_MESSAGE_MAX_LENGTH = 300;
 
 /**
@@ -185,7 +204,21 @@ export class EmailService implements OnModuleInit {
     };
   }
 
-  async sendMail(to: string, subject: string, html: string): Promise<void> {
+  /**
+   * Send one message, optionally carrying files.
+   *
+   * `options` is absent for every notification email: the message then goes out
+   * with no `attachments` key at all, so nothing about the existing sends
+   * changes. The off-site backup destination
+   * (`src/backup/offsite/backup-offsite-email.sender.ts`) is what needs the
+   * other branch -- the encrypted artifact itself is the mail.
+   */
+  async sendMail(
+    to: string,
+    subject: string,
+    html: string,
+    options?: SendMailOptions,
+  ): Promise<void> {
     if (!this.transporter || !this.configured) {
       throw new Error("SMTP is not configured");
     }
@@ -194,8 +227,15 @@ export class EmailService implements OnModuleInit {
       "EMAIL_FROM",
       "noreply@monize.app",
     );
+    const attachments = options?.attachments ?? [];
     try {
-      await this.transporter.sendMail({ from, to, subject, html });
+      await this.transporter.sendMail({
+        from,
+        to,
+        subject,
+        html,
+        ...(attachments.length > 0 ? { attachments } : {}),
+      });
     } catch (error) {
       // Record for the SMTP-health sweep, then rethrow unchanged -- callers
       // already own their per-recipient isolation and their own logging.

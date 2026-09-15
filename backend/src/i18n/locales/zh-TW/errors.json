@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "等待還原處理能力逾時：另一個還原作業仍在進行。請稍後再試。",
     "restoreTicketUnavailable": "此部署無法授權還原上傳。",
     "invalidNotificationFields": "備份中的通知無效：標題必須是文字；目標和去重鍵必須是文字或 null",
-    "storedBackupNotFound": "找不到備份檔案"
+    "storedBackupNotFound": "找不到備份檔案",
+    "offsiteDeploymentBucketUnset": "此伺服器沒有自己的異地備份儲存貯體。請要求管理員設定 BACKUP_S3_BUCKET，或使用您自己的儲存貯體。",
+    "offsiteOwnBucketRequired": "請輸入備份要複製到的儲存貯體。",
+    "offsiteOwnCredentialsRequired": "請輸入該儲存貯體的存取金鑰 ID 與私密存取金鑰。",
+    "offsiteEncryptionKeyRequired": "由於未設定 ENCRYPTION_KEY，此伺服器無法儲存 S3 認證資訊。請要求管理員進行設定，或使用此部署的儲存貯體。",
+    "offsiteEmailAddressRequired": "請輸入備份要寄送到的電子郵件地址。"
   },
   "budgets": {
     "notFound": "找不到 ID 為 {{ id }} 的預算",

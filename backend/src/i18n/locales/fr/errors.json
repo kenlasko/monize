@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "Délai dépassé en attendant la capacité de restauration : une autre restauration est encore en cours. Réessayez dans un instant.",
     "restoreTicketUnavailable": "Ce déploiement ne peut pas autoriser les téléversements de restauration.",
     "invalidNotificationFields": "Notification de sauvegarde non valide : le titre doit être du texte ; la cible et la clé de déduplication doivent être du texte ou null",
-    "storedBackupNotFound": "Fichier de sauvegarde introuvable"
+    "storedBackupNotFound": "Fichier de sauvegarde introuvable",
+    "offsiteDeploymentBucketUnset": "Ce serveur ne dispose pas de son propre bucket pour les sauvegardes externes. Demandez à un administrateur de définir BACKUP_S3_BUCKET, ou utilisez votre propre bucket.",
+    "offsiteOwnBucketRequired": "Indiquez le bucket vers lequel vos sauvegardes doivent être copiées.",
+    "offsiteOwnCredentialsRequired": "Saisissez un identifiant de clé d'accès et une clé d'accès secrète pour votre bucket.",
+    "offsiteEncryptionKeyRequired": "Ce serveur ne peut pas stocker d'identifiants S3 car ENCRYPTION_KEY n'est pas défini. Demandez à un administrateur de le configurer, ou utilisez le bucket de l'installation.",
+    "offsiteEmailAddressRequired": "Indiquez l'adresse à laquelle vos sauvegardes doivent être envoyées."
   },
   "budgets": {
     "notFound": "Budget avec l'ID {{ id }} introuvable",

@@ -762,7 +762,65 @@
       "downloadButton": "Baixar",
       "restoreButton": "Restaurar",
       "workingButton": "Processando...",
-      "downloadFailed": "Não foi possível baixar o backup"
+      "downloadFailed": "Não foi possível baixar o backup",
+      "offsite": {
+        "disclosure": "Destinos externos",
+        "disclosureDescription": "Após cada backup automático completo, uma cópia criptografada pode ser enviada para armazenamento S3, por e-mail ou para ambos: três cópias, dois tipos de armazenamento, um deles fora desta máquina. Somente backups criptografados são enviados.",
+        "encryptionUnavailable": "Este servidor não tem uma chave de criptografia definida, então as credenciais de um bucket seu não podem ser armazenadas. O bucket do próprio servidor e as cópias por e-mail continuam funcionando.",
+        "loading": "Carregando seus destinos externos...",
+        "loadFailed": "Não foi possível carregar seus destinos externos de backup",
+        "retryButton": "Tentar novamente",
+        "demoNote": "Os destinos externos não podem ser alterados na demonstração.",
+        "saveButton": "Salvar destinos",
+        "savingButton": "Salvando...",
+        "saved": "Destinos externos salvos",
+        "saveFailed": "Não foi possível salvar seus destinos externos de backup",
+        "s3": {
+          "heading": "Armazenamento S3",
+          "modeLabel": "Para onde as cópias são enviadas",
+          "modeOff": "Inativo",
+          "modeDeployment": "Bucket deste servidor",
+          "modeOwn": "Meu próprio bucket",
+          "deploymentUnavailable": "Este servidor não tem um bucket externo próprio, então um administrador precisaria configurar um. Você pode usar um bucket seu no lugar.",
+          "bucketLabel": "Bucket",
+          "regionLabel": "Região",
+          "regionHelp": "Muitos serviços compatíveis com S3 ignoram este campo.",
+          "prefixLabel": "Prefixo de chave",
+          "prefixHelp": "Pasta opcional dentro do bucket, para que seus backups possam compartilhá-lo com outros dados.",
+          "endpointLabel": "Endpoint",
+          "endpointHelp": "Apenas para um serviço compatível com S3, como MinIO, R2 ou B2. Deixe vazio para a AWS.",
+          "forcePathStyleLabel": "Usar endereçamento por caminho",
+          "forcePathStyleHelp": "Exigido pelo MinIO e por alguns outros serviços compatíveis com S3.",
+          "accessKeyIdLabel": "ID da chave de acesso",
+          "secretAccessKeyLabel": "Chave de acesso secreta",
+          "storedPlaceholder": "•••• armazenada",
+          "credentialsHelp": "As credenciais são armazenadas criptografadas neste servidor e nunca são exibidas novamente. Deixe estes campos vazios para manter as que já estão armazenadas.",
+          "clearCredentialsButton": "Remover credenciais armazenadas",
+          "clearConfirmTitle": "Remover as credenciais armazenadas?",
+          "clearConfirmMessage": "Este servidor esquecerá seu ID de chave de acesso e sua chave de acesso secreta. Nenhuma outra cópia será enviada para o seu bucket até você inseri-las novamente.",
+          "credentialsCleared": "Credenciais armazenadas removidas",
+          "clearFailed": "Não foi possível remover as credenciais armazenadas"
+        },
+        "email": {
+          "heading": "E-mail",
+          "toggleLabel": "Enviar por e-mail uma cópia de cada backup automático concluído",
+          "addressLabel": "Enviar cópias para",
+          "addressPlaceholder": "usuario@exemplo.com",
+          "sizeNote": "Um backup acima do limite de tamanho deste servidor não é anexado; em vez disso, você recebe um aviso com o nome do arquivo."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "E-mail",
+          "statusPending": "Pendente",
+          "statusUploading": "Enviando",
+          "statusUploaded": "Copiada",
+          "statusFailed": "Falhou",
+          "statusConflict": "Conflito",
+          "statusSkippedUnencrypted": "Ignorada: sem criptografia",
+          "statusSkippedTooLarge": "Ignorada: grande demais"
+        }
+      }
     }
   },
   "sharedAccess": {

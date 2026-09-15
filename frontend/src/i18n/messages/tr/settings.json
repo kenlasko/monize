@@ -762,7 +762,65 @@
       "downloadButton": "İndir",
       "restoreButton": "Geri Yükle",
       "workingButton": "İşleniyor...",
-      "downloadFailed": "Yedek indirilemedi"
+      "downloadFailed": "Yedek indirilemedi",
+      "offsite": {
+        "disclosure": "Site dışı hedefler",
+        "disclosureDescription": "Tamamlanan her otomatik yedeklemeden sonra şifreli bir kopya S3 depolamasına, e-postayla veya her ikisine gönderilebilir: üç kopya, iki tür depolama, biri bu makinenin dışında. Yalnızca şifreli yedekler gönderilir.",
+        "encryptionUnavailable": "Bu sunucuda şifreleme anahtarı tanımlı değil, bu yüzden kendi bucket'ınızın kimlik bilgileri saklanamaz. Sunucunun kendi bucket'ı ve e-postayla gönderilen kopyalar çalışmaya devam eder.",
+        "loading": "Site dışı hedefleriniz yükleniyor...",
+        "loadFailed": "Site dışı yedekleme hedefleriniz yüklenemedi",
+        "retryButton": "Yeniden Dene",
+        "demoNote": "Demo modunda site dışı hedefler değiştirilemez.",
+        "saveButton": "Hedefleri Kaydet",
+        "savingButton": "Kaydediliyor...",
+        "saved": "Site dışı hedefler kaydedildi",
+        "saveFailed": "Site dışı yedekleme hedefleriniz kaydedilemedi",
+        "s3": {
+          "heading": "S3 depolama",
+          "modeLabel": "Kopyaların gönderileceği yer",
+          "modeOff": "Kapalı",
+          "modeDeployment": "Bu sunucunun bucket'ı",
+          "modeOwn": "Kendi bucket'ım",
+          "deploymentUnavailable": "Bu sunucunun kendine ait bir site dışı bucket'ı yok; bunu bir yöneticinin kurması gerekir. Bunun yerine kendi bucket'ınızı kullanabilirsiniz.",
+          "bucketLabel": "Bucket",
+          "regionLabel": "Bölge",
+          "regionHelp": "S3 uyumlu birçok hizmet bunu yok sayar.",
+          "prefixLabel": "Anahtar öneki",
+          "prefixHelp": "Bucket içinde isteğe bağlı bir klasör; böylece yedekleriniz bucket'ı başka verilerle paylaşabilir.",
+          "endpointLabel": "Uç nokta",
+          "endpointHelp": "Yalnızca MinIO, R2 veya B2 gibi S3 uyumlu hizmetler için. AWS için boş bırakın.",
+          "forcePathStyleLabel": "Yol tabanlı adresleme kullan",
+          "forcePathStyleHelp": "MinIO ve bazı diğer S3 uyumlu hizmetler için gereklidir.",
+          "accessKeyIdLabel": "Erişim anahtarı kimliği",
+          "secretAccessKeyLabel": "Gizli erişim anahtarı",
+          "storedPlaceholder": "•••• kayıtlı",
+          "credentialsHelp": "Kimlik bilgileri bu sunucuda şifrelenerek saklanır ve bir daha gösterilmez. Hâlihazırda kayıtlı olanları korumak için bu kutuları boş bırakın.",
+          "clearCredentialsButton": "Kayıtlı Kimlik Bilgilerini Kaldır",
+          "clearConfirmTitle": "Kayıtlı kimlik bilgileri kaldırılsın mı?",
+          "clearConfirmMessage": "Bu sunucu erişim anahtarı kimliğinizi ve gizli erişim anahtarınızı unutacak. Bunları yeniden girene kadar bucket'ınıza başka kopya gönderilmez.",
+          "credentialsCleared": "Kayıtlı kimlik bilgileri kaldırıldı",
+          "clearFailed": "Kayıtlı kimlik bilgileri kaldırılamadı"
+        },
+        "email": {
+          "heading": "E-posta",
+          "toggleLabel": "Tamamlanan her otomatik yedeğin bir kopyasını bana e-postayla gönder",
+          "addressLabel": "Kopyaların gönderileceği adres",
+          "addressPlaceholder": "kullanici@ornek.com",
+          "sizeNote": "Bu sunucunun boyut sınırını aşan bir yedek eklenmez; bunun yerine dosyanın adını bildiren bir bildirim alırsınız."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "E-posta",
+          "statusPending": "Beklemede",
+          "statusUploading": "Gönderiliyor",
+          "statusUploaded": "Kopyalandı",
+          "statusFailed": "Başarısız",
+          "statusConflict": "Çakışma",
+          "statusSkippedUnencrypted": "Atlandı: şifresiz",
+          "statusSkippedTooLarge": "Atlandı: çok büyük"
+        }
+      }
     }
   },
   "sharedAccess": {

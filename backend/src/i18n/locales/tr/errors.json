@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "Geri yükleme kapasitesi beklenirken zaman aşımı: başka bir geri yükleme hâlâ sürüyor. Birazdan yeniden deneyin.",
     "restoreTicketUnavailable": "Bu kurulum geri yükleme yüklemelerini yetkilendiremiyor.",
     "invalidNotificationFields": "Yedekte geçersiz bildirim: başlık metin olmalıdır; hedef ve tekilleştirme anahtarı metin veya null olmalıdır",
-    "storedBackupNotFound": "Yedek dosyası bulunamadı"
+    "storedBackupNotFound": "Yedek dosyası bulunamadı",
+    "offsiteDeploymentBucketUnset": "Bu sunucunun kendine ait bir dış yedek bucket'ı yok. Bir yöneticiden BACKUP_S3_BUCKET değerini ayarlamasını isteyin veya kendi bucket'ınızı kullanın.",
+    "offsiteOwnBucketRequired": "Yedeklerinizin kopyalanacağı bucket'ı girin.",
+    "offsiteOwnCredentialsRequired": "Bucket'ınız için bir erişim anahtarı kimliği ve bir gizli erişim anahtarı girin.",
+    "offsiteEncryptionKeyRequired": "ENCRYPTION_KEY ayarlanmadığı için bu sunucu S3 kimlik bilgilerini saklayamıyor. Bir yöneticiden bunu yapılandırmasını isteyin veya kurulumun bucket'ını kullanın.",
+    "offsiteEmailAddressRequired": "Yedeklerinizin gönderileceği e-posta adresini girin."
   },
   "budgets": {
     "notFound": "{{ id }} kimliğine sahip bütçe bulunamadı",

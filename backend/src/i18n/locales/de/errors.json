@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "Zeitüberschreitung beim Warten auf Wiederherstellungskapazität: Eine andere Wiederherstellung läuft noch. Versuchen Sie es in einem Moment erneut.",
     "restoreTicketUnavailable": "Diese Instanz kann Wiederherstellungs-Uploads nicht autorisieren.",
     "invalidNotificationFields": "Ungültige Benachrichtigung in der Sicherung: Der Titel muss Text sein; Ziel und Deduplizierungsschlüssel müssen Text oder null sein",
-    "storedBackupNotFound": "Sicherungsdatei nicht gefunden"
+    "storedBackupNotFound": "Sicherungsdatei nicht gefunden",
+    "offsiteDeploymentBucketUnset": "Dieser Server hat keinen eigenen Bucket für externe Backups. Bitten Sie einen Administrator, BACKUP_S3_BUCKET zu setzen, oder verwenden Sie Ihren eigenen Bucket.",
+    "offsiteOwnBucketRequired": "Geben Sie den Bucket an, in den Ihre Backups kopiert werden sollen.",
+    "offsiteOwnCredentialsRequired": "Geben Sie eine Access Key ID und einen Secret Access Key für Ihren Bucket an.",
+    "offsiteEncryptionKeyRequired": "Dieser Server kann keine S3-Zugangsdaten speichern, weil ENCRYPTION_KEY nicht gesetzt ist. Bitten Sie einen Administrator, ihn zu konfigurieren, oder verwenden Sie den Bucket dieser Installation.",
+    "offsiteEmailAddressRequired": "Geben Sie die Adresse an, an die Ihre Backups gesendet werden sollen."
   },
   "budgets": {
     "notFound": "Budget mit ID {{ id }} nicht gefunden",

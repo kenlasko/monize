@@ -762,7 +762,65 @@
       "downloadButton": "Pobierz",
       "restoreButton": "Przywróć",
       "workingButton": "Trwa praca...",
-      "downloadFailed": "Nie udało się pobrać kopii zapasowej"
+      "downloadFailed": "Nie udało się pobrać kopii zapasowej",
+      "offsite": {
+        "disclosure": "Miejsca docelowe poza serwerem",
+        "disclosureDescription": "Po każdej ukończonej automatycznej kopii zapasowej zaszyfrowana kopia może trafić do magazynu S3, na e-mail albo w oba miejsca: trzy kopie, dwa rodzaje przechowywania, jedno poza tą maszyną. Wysyłana jest wyłącznie zaszyfrowana kopia zapasowa.",
+        "encryptionUnavailable": "Ten serwer nie ma ustawionego klucza szyfrowania, więc nie można zapisać poświadczeń do Twojego własnego bucketa. Bucket należący do tego serwera i kopie wysyłane e-mailem nadal działają.",
+        "loading": "Wczytywanie miejsc docelowych poza serwerem...",
+        "loadFailed": "Nie udało się wczytać miejsc docelowych kopii poza serwerem",
+        "retryButton": "Spróbuj ponownie",
+        "demoNote": "W wersji demonstracyjnej nie można zmieniać miejsc docelowych poza serwerem.",
+        "saveButton": "Zapisz miejsca docelowe",
+        "savingButton": "Zapisywanie...",
+        "saved": "Zapisano miejsca docelowe poza serwerem",
+        "saveFailed": "Nie udało się zapisać miejsc docelowych kopii poza serwerem",
+        "s3": {
+          "heading": "Magazyn S3",
+          "modeLabel": "Dokąd trafiają kopie",
+          "modeOff": "Wyłączone",
+          "modeDeployment": "Bucket tego serwera",
+          "modeOwn": "Mój własny bucket",
+          "deploymentUnavailable": "Ten serwer nie ma własnego zdalnego bucketa, więc musiałby go skonfigurować administrator. Zamiast tego możesz użyć własnego bucketa.",
+          "bucketLabel": "Bucket",
+          "regionLabel": "Region",
+          "regionHelp": "Wiele usług zgodnych z S3 ignoruje tę wartość.",
+          "prefixLabel": "Prefiks klucza",
+          "prefixHelp": "Opcjonalny folder wewnątrz bucketa, dzięki czemu Twoje kopie mogą dzielić go z innymi danymi.",
+          "endpointLabel": "Endpoint",
+          "endpointHelp": "Tylko dla usług zgodnych z S3, takich jak MinIO, R2 lub B2. Dla AWS pozostaw puste.",
+          "forcePathStyleLabel": "Użyj adresowania path-style",
+          "forcePathStyleHelp": "Wymagane przez MinIO i niektóre inne usługi zgodne z S3.",
+          "accessKeyIdLabel": "Identyfikator klucza dostępu",
+          "secretAccessKeyLabel": "Tajny klucz dostępu",
+          "storedPlaceholder": "•••• zapisano",
+          "credentialsHelp": "Poświadczenia są przechowywane na tym serwerze w postaci zaszyfrowanej i nigdy nie są pokazywane ponownie. Pozostaw te pola puste, aby zachować już zapisane.",
+          "clearCredentialsButton": "Usuń zapisane poświadczenia",
+          "clearConfirmTitle": "Usunąć zapisane poświadczenia?",
+          "clearConfirmMessage": "Ten serwer zapomni Twój identyfikator klucza dostępu i tajny klucz dostępu. Do czasu ponownego ich wpisania żadne kopie nie będą wysyłane do Twojego bucketa.",
+          "credentialsCleared": "Usunięto zapisane poświadczenia",
+          "clearFailed": "Nie udało się usunąć zapisanych poświadczeń"
+        },
+        "email": {
+          "heading": "E-mail",
+          "toggleLabel": "Wysyłaj mi e-mailem kopię każdej ukończonej automatycznej kopii zapasowej",
+          "addressLabel": "Wysyłaj kopie na",
+          "addressPlaceholder": "user@example.com",
+          "sizeNote": "Kopia przekraczająca limit rozmiaru na tym serwerze nie jest załączana; zamiast niej otrzymujesz powiadomienie z nazwą pliku."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "E-mail",
+          "statusPending": "Oczekuje",
+          "statusUploading": "Wysyłanie",
+          "statusUploaded": "Skopiowana",
+          "statusFailed": "Niepowodzenie",
+          "statusConflict": "Konflikt",
+          "statusSkippedUnencrypted": "Pominięta: bez szyfrowania",
+          "statusSkippedTooLarge": "Pominięta: za duża"
+        }
+      }
     }
   },
   "sharedAccess": {

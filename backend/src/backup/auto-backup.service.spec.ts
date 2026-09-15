@@ -16,6 +16,7 @@ import {
 } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { createHash } from "crypto";
 import {
   AutoBackupService,
   DEFAULT_BACKUP_CONTAINER_DIR,
@@ -28,6 +29,13 @@ import { AutoBackupSettings } from "./entities/auto-backup-settings.entity";
 import { User } from "../users/entities/user.entity";
 import { DemoModeService } from "../common/demo-mode.service";
 import { SystemAlertService } from "../system-alerts/system-alert.service";
+import { BackupOffsiteDispatchService } from "./offsite/backup-offsite-dispatch.service";
+import { offsiteObjectKey } from "./offsite/backup-offsite-keys";
+import {
+  BackupOffsiteDestination,
+  BackupOffsiteUpload,
+  BackupOffsiteUploadStatus,
+} from "./offsite/entities/backup-offsite-upload.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import {
   createUserMaintenanceMock,
@@ -83,6 +91,7 @@ describe("AutoBackupService", () => {
   let service: AutoBackupService;
   let mockSettingsRepo: Record<string, jest.Mock>;
   let mockUsersRepo: Record<string, jest.Mock>;
+  let mockOffsiteUploadRepo: Record<string, jest.Mock>;
   let mockBackupService: Record<string, jest.Mock>;
   let mockBackupEncryption: Record<string, jest.Mock>;
   let updateBuilder: Record<string, jest.Mock>;
@@ -91,6 +100,16 @@ describe("AutoBackupService", () => {
   let mockSystemAlerts: {
     raiseAdminAlert: jest.Mock;
     raiseUserAlert: jest.Mock;
+  };
+  /**
+   * The off-machine copy, typed to the real method so a call this suite accepts
+   * is one `BackupOffsiteDispatchService` could serve. It is a collaborator of
+   * ours, not a driver's, so `docs/backend/testing.md` asks for the type.
+   */
+  let mockOffsiteDispatch: {
+    dispatchAfterBackup: jest.MockedFunction<
+      BackupOffsiteDispatchService["dispatchAfterBackup"]
+    >;
   };
 
   /** A real directory, standing in for the operator's mounted backup volume. */
@@ -164,6 +183,7 @@ describe("AutoBackupService", () => {
     scoped = createScopedDbMocks([
       [AutoBackupSettings, mockSettingsRepo as never],
       [User, mockUsersRepo as never],
+      [BackupOffsiteUpload, mockOffsiteUploadRepo as never],
     ]);
     // The cron claims each due window with a guarded
     // `UPDATE ... RETURNING`, which the pg driver answers as
@@ -202,6 +222,10 @@ describe("AutoBackupService", () => {
         {
           provide: SystemAlertService,
           useValue: mockSystemAlerts,
+        },
+        {
+          provide: BackupOffsiteDispatchService,
+          useValue: mockOffsiteDispatch,
         },
         {
           provide: ConfigService,
@@ -275,6 +299,13 @@ describe("AutoBackupService", () => {
       find: jest.fn().mockResolvedValue([]),
     };
 
+    // The off-site ledger the stored-backups listing reads to attach each
+    // artifact's copy status. Empty by default, so listings that are not about
+    // off-site status carry no `offsite` field.
+    mockOffsiteUploadRepo = {
+      find: jest.fn().mockResolvedValue([]),
+    };
+
     maintenance = createUserMaintenanceMock();
 
     mockBackupService = {
@@ -302,6 +333,12 @@ describe("AutoBackupService", () => {
       // The real service never throws; the double keeps that contract.
       raiseAdminAlert: jest.fn().mockResolvedValue({ created: 1, emailed: 0 }),
       raiseUserAlert: jest.fn().mockResolvedValue({ created: true }),
+    };
+
+    mockOffsiteDispatch = {
+      // As the real one: it resolves whatever happened off-machine, because a
+      // copy's failure is never the backup's (INV-BACKUP-003).
+      dispatchAfterBackup: jest.fn().mockResolvedValue(undefined) as never,
     };
 
     service = await createService();
@@ -1260,6 +1297,122 @@ describe("AutoBackupService", () => {
         ),
       ).rejects.toThrow(NotFoundException);
     });
+
+    /**
+     * The off-machine copy status the read endpoint attaches to each stored
+     * backup, so the Settings row can show a per-destination icon. The ledger
+     * rows are seeded through the same mocked DataSource the rest of this suite
+     * uses, and each is a real `BackupOffsiteUpload` whose object key is built by
+     * the production helper -- so the filename the listing groups by is the one
+     * the dispatcher would actually have written.
+     */
+    describe("off-site copy status", () => {
+      /** A ledger row a real dispatch could have written for `filename`. */
+      function offsiteRow(opts: {
+        destination: BackupOffsiteDestination;
+        filename: string;
+        digest: string;
+        status: BackupOffsiteUploadStatus;
+      }): BackupOffsiteUpload {
+        const row = new BackupOffsiteUpload();
+        row.userId = userId;
+        row.destination = opts.destination;
+        // S3 addresses the artifact by its sharded, digest-suffixed key; email
+        // by the filename itself. `offsiteArtifactFileName` inverts both, so the
+        // listing recovers `filename` either way.
+        row.objectKey =
+          opts.destination === "s3"
+            ? offsiteObjectKey(userId, opts.filename, opts.digest)
+            : opts.filename;
+        row.tier = "daily";
+        row.digest = opts.digest;
+        row.sizeBytes = 10;
+        row.status = opts.status;
+        row.attempts = 1;
+        row.lastError = null;
+        row.claimedAt = null;
+        row.createdAt = new Date();
+        row.updatedAt = new Date();
+        return row;
+      }
+
+      it("reports each destination's newest status on the artifact it names", async () => {
+        mockSettingsRepo.findOne.mockResolvedValue(
+          createSettings({ enabled: true }),
+        );
+        const filename = "monize-backup-daily-2026-04-15.mzbe";
+        await seed(filename, userId, "bytes");
+        const digest = "a".repeat(64);
+        // Newest first, as `order: { createdAt: "DESC" }` returns them.
+        mockOffsiteUploadRepo.find.mockResolvedValue([
+          offsiteRow({
+            destination: "s3",
+            filename,
+            digest,
+            status: "uploaded",
+          }),
+          offsiteRow({
+            destination: "email",
+            filename,
+            digest,
+            status: "failed",
+          }),
+        ]);
+
+        const result = await service.listStoredBackups(userId);
+
+        expect(result.backups).toHaveLength(1);
+        expect(result.backups[0].offsite).toEqual({
+          s3: "uploaded",
+          email: "failed",
+        });
+      });
+
+      it("leaves offsite undefined for an artifact with no ledger row", async () => {
+        mockSettingsRepo.findOne.mockResolvedValue(
+          createSettings({ enabled: true }),
+        );
+        await seed("monize-backup-daily-2026-04-15.mzbe");
+        mockOffsiteUploadRepo.find.mockResolvedValue([]);
+
+        const result = await service.listStoredBackups(userId);
+
+        expect(result.backups).toHaveLength(1);
+        expect(result.backups[0].offsite).toBeUndefined();
+        // Absent, not present-and-empty: a weekly/monthly/partial or an
+        // un-dispatched file carries no `offsite` at all.
+        expect("offsite" in result.backups[0]).toBe(false);
+      });
+
+      it("keeps the newest row when two exist for one (artifact, destination)", async () => {
+        mockSettingsRepo.findOne.mockResolvedValue(
+          createSettings({ enabled: true }),
+        );
+        const filename = "monize-backup-daily-2026-04-15.mzbe";
+        await seed(filename);
+        // A same-day re-export writes a second S3 row under a new digest -- a
+        // different object key that still round-trips to this same filename. The
+        // read is newest first, so the first row seen is the current status.
+        mockOffsiteUploadRepo.find.mockResolvedValue([
+          offsiteRow({
+            destination: "s3",
+            filename,
+            digest: "b".repeat(64),
+            status: "uploaded",
+          }),
+          offsiteRow({
+            destination: "s3",
+            filename,
+            digest: "a".repeat(64),
+            status: "failed",
+          }),
+        ]);
+
+        const result = await service.listStoredBackups(userId);
+
+        expect(result.backups[0].offsite).toEqual({ s3: "uploaded" });
+      });
+    });
   });
 
   describe("browseFolders", () => {
@@ -1521,6 +1674,248 @@ describe("AutoBackupService", () => {
       await expect(service.runManualBackup(userId)).rejects.toThrow(
         /not found/,
       );
+    });
+  });
+
+  /**
+   * The egress digest (`docs/specs/backup-off-machine.md` section 3, foundation
+   * of INV-BACKUP-005).
+   *
+   * The write path had no integrity record at all: nothing said what the bytes
+   * under a final filename were supposed to be, which is why an off-machine copy
+   * could not be verified and a truncated artifact could not be recognised. The
+   * digest is computed once over the buffer handed to `writeFileAtomic`, and the
+   * claim these tests make is the one that matters downstream -- it is the
+   * SHA-256 of the bytes a reader actually finds on disk, not merely of
+   * something the service held in memory. So they recompute it from the file.
+   */
+  describe("the egress digest of a written artifact", () => {
+    /** The digest and size the service logged for the artifact it just wrote. */
+    const loggedIdentity = (
+      log: jest.SpyInstance,
+    ): { digest: string; sizeBytes: number } => {
+      const line = log.mock.calls
+        .map((call) => String(call[0]))
+        .find((message) => message.includes("Backup written to"));
+      const match = /\(sha256 ([0-9a-f]{64}), (\d+) bytes\)/.exec(line ?? "");
+      if (!match) {
+        throw new Error(`No artifact identity in the log: ${line ?? "(none)"}`);
+      }
+      return { digest: match[1], sizeBytes: Number(match[2]) };
+    };
+
+    it("is the SHA-256 of the bytes that ended up on disk", async () => {
+      mockSettingsRepo.findOne.mockResolvedValue(
+        createSettings({ enabled: true, folderPath: root }),
+      );
+      // Not the default fixture's bytes: a digest test whose payload every
+      // other test shares cannot tell "hashed the artifact" from "hashed a
+      // constant this suite happens to write everywhere".
+      const payload = Buffer.concat([
+        Buffer.from("egress-digest-payload-", "utf8"),
+        // Bytes rather than escapes: a NUL and a high byte written into the
+        // source are what `source-bytes.spec.ts` bans, and the artifact under
+        // test is compressed or encrypted, so it is binary either way.
+        Buffer.from([0x00, 0xff]),
+      ]);
+      mockBackupService.exportToBuffer.mockResolvedValue({
+        buffer: payload,
+        report: {
+          complete: true,
+          expectedAttachments: 0,
+          includedAttachments: 0,
+          missingAttachments: 0,
+          inconsistentAttachments: 0,
+        },
+      });
+      const log = jest
+        .spyOn(Logger.prototype, "log")
+        .mockImplementation(() => undefined);
+
+      try {
+        const result = await service.runManualBackup(userId);
+
+        const onDisk = readFileSync(join(folderFor(), result.filename));
+        const recomputed = createHash("sha256").update(onDisk).digest("hex");
+        const identity = loggedIdentity(log);
+        expect(identity.digest).toBe(recomputed);
+        expect(identity.sizeBytes).toBe(onDisk.length);
+        // And it is a digest of these bytes specifically, so a future change
+        // that hashed the filename or an empty buffer fails here.
+        expect(identity.digest).toBe(
+          createHash("sha256").update(payload).digest("hex"),
+        );
+      } finally {
+        log.mockRestore();
+      }
+    });
+
+    it("differs when the bytes differ", async () => {
+      // The anti-constant check: two runs of the same user on the same day
+      // produce the same filename, and the digest is what distinguishes the two
+      // artifacts (it is the key's disambiguator off-machine). A digest that did
+      // not move with the bytes would collapse them into one recovery point.
+      mockSettingsRepo.findOne.mockResolvedValue(
+        createSettings({ enabled: true, folderPath: root }),
+      );
+      const log = jest
+        .spyOn(Logger.prototype, "log")
+        .mockImplementation(() => undefined);
+
+      try {
+        mockBackupService.exportToBuffer.mockResolvedValue({
+          buffer: Buffer.from("first-export"),
+          report: {
+            complete: true,
+            expectedAttachments: 0,
+            includedAttachments: 0,
+            missingAttachments: 0,
+            inconsistentAttachments: 0,
+          },
+        });
+        await service.runManualBackup(userId);
+        const first = loggedIdentity(log);
+
+        log.mockClear();
+        mockBackupService.exportToBuffer.mockResolvedValue({
+          buffer: Buffer.from("second-export-with-an-attachment"),
+          report: {
+            complete: true,
+            expectedAttachments: 0,
+            includedAttachments: 0,
+            missingAttachments: 0,
+            inconsistentAttachments: 0,
+          },
+        });
+        const second = await service.runManualBackup(userId);
+        const secondIdentity = loggedIdentity(log);
+
+        expect(secondIdentity.digest).not.toBe(first.digest);
+        expect(secondIdentity.sizeBytes).not.toBe(first.sizeBytes);
+        expect(secondIdentity.digest).toBe(
+          createHash("sha256")
+            .update(readFileSync(join(folderFor(), second.filename)))
+            .digest("hex"),
+        );
+      } finally {
+        log.mockRestore();
+      }
+    });
+  });
+
+  /**
+   * The off-machine copy is dispatched from the tail of a run, and only from a
+   * run that produced a complete artifact (INV-BACKUP-003).
+   *
+   * Both halves matter and they fail in opposite directions. Dispatching a
+   * partial artifact would put a backup that cannot be restored in full where an
+   * operator reaches for it in a crisis; letting the dispatch's failure reach
+   * the run would turn a backup that is on disk into one recorded as failed, so
+   * the next window's retention would count one fewer artifact than exists.
+   */
+  describe("the off-machine copy (INV-BACKUP-003)", () => {
+    const dueSettings = () =>
+      createSettings({
+        enabled: true,
+        folderPath: root,
+        nextBackupAt: new Date(Date.now() - 3600000),
+      });
+
+    it("is dispatched after a complete automatic run, with the artifact's own digest", async () => {
+      mockSettingsRepo.find.mockResolvedValue([dueSettings()]);
+
+      await service.handleAutoBackupCron();
+
+      expect(mockOffsiteDispatch.dispatchAfterBackup).toHaveBeenCalledTimes(1);
+      const [dispatched] =
+        mockOffsiteDispatch.dispatchAfterBackup.mock.calls[0];
+      const filename = (await listBackups(folderFor()))[0];
+      const onDisk = readFileSync(join(folderFor(), filename));
+      expect(dispatched).toEqual({
+        userId,
+        folder: folderFor(),
+        filename,
+        tier: "daily",
+        digest: createHash("sha256").update(onDisk).digest("hex"),
+        sizeBytes: onDisk.length,
+        origin: "automatic",
+      });
+    });
+
+    it("is dispatched only after the run's outcome is durable", async () => {
+      mockSettingsRepo.find.mockResolvedValue([dueSettings()]);
+      const order: string[] = [];
+      updateBuilder.execute.mockImplementation(async () => {
+        order.push("outcome");
+        return { affected: 1 };
+      });
+      mockOffsiteDispatch.dispatchAfterBackup.mockImplementation(async () => {
+        order.push("dispatch");
+      });
+
+      await service.handleAutoBackupCron();
+
+      // A copy that preceded the outcome write could be the only record of a
+      // run whose own row never landed.
+      expect(order).toEqual(["outcome", "dispatch"]);
+    });
+
+    it("is dispatched from a manual run too, marked as one", async () => {
+      mockSettingsRepo.findOne.mockResolvedValue(
+        createSettings({ folderPath: root }),
+      );
+
+      await service.runManualBackup(userId);
+
+      expect(
+        mockOffsiteDispatch.dispatchAfterBackup.mock.calls[0][0],
+      ).toMatchObject({ origin: "manual", tier: "daily" });
+    });
+
+    it("is not dispatched for a partial artifact", async () => {
+      mockSettingsRepo.find.mockResolvedValue([dueSettings()]);
+      mockBackupService.exportToBuffer.mockResolvedValue({
+        buffer: Buffer.from("incomplete-export"),
+        report: {
+          complete: false,
+          expectedAttachments: 3,
+          includedAttachments: 1,
+          missingAttachments: 2,
+          inconsistentAttachments: 0,
+        },
+      });
+
+      await service.handleAutoBackupCron();
+
+      expect(await listBackups(folderFor())).toEqual([
+        expect.stringMatching(/^monize-backup-partial-/),
+      ]);
+      expect(mockOffsiteDispatch.dispatchAfterBackup).not.toHaveBeenCalled();
+    });
+
+    it("does not let a dispatch rejection change the recorded status", async () => {
+      mockSettingsRepo.find.mockResolvedValue([dueSettings()]);
+      // The real service never rejects; this is the double doing what it must
+      // not, so the assertion is about this class's containment rather than the
+      // other's promise.
+      mockOffsiteDispatch.dispatchAfterBackup.mockRejectedValue(
+        new Error("the bucket is on fire"),
+      );
+
+      await expect(service.handleAutoBackupCron()).resolves.toBeUndefined();
+
+      expect(updateBuilder.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lastBackupStatus: "success",
+          lastBackupError: null,
+        }),
+      );
+      expect(updateBuilder.set).not.toHaveBeenCalledWith(
+        expect.objectContaining({ lastBackupStatus: "failed" }),
+      );
+      // The artifact is still on disk, which is the whole point of the copy
+      // being a copy.
+      expect(await listBackups(folderFor())).toHaveLength(1);
     });
   });
 

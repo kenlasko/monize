@@ -576,6 +576,18 @@ jobs:
           # longer detected" is only evidence if it ran the version CI runs.
           # b04cb91b90deb5e16504baa7ab95f678_0 - resolve() of the backup filename against its validated base [CWE-22] - review-by: 2026-12-08
           # b04cb91b90deb5e16504baa7ab95f678_1 - containment check on the resolved backup path [CWE-22] - review-by: 2026-12-08
+          # The two below are readArtifact() in
+          # backend/src/backup/offsite/backup-offsite-dispatch.service.ts, the off-site
+          # copy reading the artifact back to upload it. Same shape and same false
+          # positive as the safePath pair above: what reaches resolve() is the
+          # server-computed user backup folder and a directory entry the service just
+          # listed, the requested name is only matched against that listing
+          # (classifyBackupFileName rejects any separator first), and the startsWith()
+          # guard on the next line is the very check Bearer reports while being what
+          # constrains the path. No request input reaches it. Same NOTE as above: the
+          # finding depends on Bearer's dataflow at CI's version (v2.1.1).
+          # fae1b07dcb3c5444235e7e0b4bcae188_0 - resolve() of an off-site backup artifact against its validated folder [CWE-22] - review-by: 2026-12-08
+          # fae1b07dcb3c5444235e7e0b4bcae188_1 - containment check on the resolved off-site backup path [CWE-22] - review-by: 2026-12-08
           # The five below are in backend/src/updates/release-notes.service.ts, which reads the
           # committed docs/release-notes/<version>.md digest. The version is the trusted
           # package.json value matched against a strict semver regex that forbids path separators,
@@ -682,7 +694,7 @@ jobs:
           # that line, so splitting the condition re-reports it under a new id.
           # 242a05abd45296bc2ba6d9174dc6f3dd_0 - Observable timing discrepancy [CWE-208] in the E2E push fixture's stub backend, e2e/push/fixture.ts, a mock comparing its own invented token - review-by: 2026-12-08
           # 90aa4e42622acc64795b7d291a5d74f9_0 - Observable timing discrepancy [CWE-208] on the SW CSRF presence guard, frontend/public/sw.js, a typeof/length check with no value compared - review-by: 2026-12-08
-          exclude-fingerprint: "df1db3090cab23fd55c9a22789aa6b2f_0,9a51af5fd92c92c4c022addd331ee9c6_0,8145f16fcf77da087020769e5609a11b_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,b6c4552155ecc9b65a9205911f502bf1_0,b6c4552155ecc9b65a9205911f502bf1_1,b6c4552155ecc9b65a9205911f502bf1_2,b6c4552155ecc9b65a9205911f502bf1_3,c055716bae113b20589f9ea5c5963e65_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_1,f6196720ad017b3d11d24487792c1479_0,45093073db7d96d61cd30bceb943f63f_0,45093073db7d96d61cd30bceb943f63f_1,45093073db7d96d61cd30bceb943f63f_2,b7502b6ea7c0a272ab08099b55d0392c_0,4beb484f871a7489b5f5ff2df93f72f1_0,0ff64c8083ce01b1e8c867832c0dff85_0,1f87dd3b3950178c2eac383cfcead816_0,e717be7fe9c133adba7d48ccb371c6ba_0,173289a7a56f6f6b27dc2314746e9451_0,242a05abd45296bc2ba6d9174dc6f3dd_0,90aa4e42622acc64795b7d291a5d74f9_0"
+          exclude-fingerprint: "df1db3090cab23fd55c9a22789aa6b2f_0,9a51af5fd92c92c4c022addd331ee9c6_0,8145f16fcf77da087020769e5609a11b_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,b6c4552155ecc9b65a9205911f502bf1_0,b6c4552155ecc9b65a9205911f502bf1_1,b6c4552155ecc9b65a9205911f502bf1_2,b6c4552155ecc9b65a9205911f502bf1_3,c055716bae113b20589f9ea5c5963e65_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_0,f9b26e7d59d0f577ff9a0e93ea4f7b7c_1,f6196720ad017b3d11d24487792c1479_0,45093073db7d96d61cd30bceb943f63f_0,45093073db7d96d61cd30bceb943f63f_1,45093073db7d96d61cd30bceb943f63f_2,b7502b6ea7c0a272ab08099b55d0392c_0,4beb484f871a7489b5f5ff2df93f72f1_0,0ff64c8083ce01b1e8c867832c0dff85_0,1f87dd3b3950178c2eac383cfcead816_0,e717be7fe9c133adba7d48ccb371c6ba_0,173289a7a56f6f6b27dc2314746e9451_0,242a05abd45296bc2ba6d9174dc6f3dd_0,90aa4e42622acc64795b7d291a5d74f9_0,fae1b07dcb3c5444235e7e0b4bcae188_0,fae1b07dcb3c5444235e7e0b4bcae188_1"
 
   # Resolve the release version and shared build metadata ONCE, so the parallel
   # backend/frontend build jobs below stamp identical version/date/sha values.

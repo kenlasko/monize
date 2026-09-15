@@ -25,6 +25,8 @@ import {
 } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { OffsiteDestinationsForm } from './OffsiteDestinationsForm';
+import { OffsiteStatusIcons } from './OffsiteStatusIcons';
 
 interface StoredBackupsSubsectionProps {
   /**
@@ -70,6 +72,11 @@ export function StoredBackupsSubsection({
   const timeFormat = preferences?.timeFormat || '24h';
 
   const [open, setOpen] = useState(false);
+  // The off-site destinations fold within this sub-section, collapsed by
+  // default: the configuration is most visits' business no more than the file
+  // listing is, and the maintainer asked for it under this heading rather than
+  // as a section of its own.
+  const [offsiteOpen, setOffsiteOpen] = useState(false);
   const [report, setReport] = useState<StoredBackupsReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // A failed read is not "no backups", and it is not "the schedule is off"
@@ -114,6 +121,16 @@ export function StoredBackupsSubsection({
     // this page is open, and a list that is wrong about which artifacts exist
     // is worse than one that takes a moment to arrive.
     if (next) load();
+  };
+
+  // The inner off-site disclosure. Controlled the same way and for the same
+  // reason: jsdom flips `open` on a summary click but fires no `toggle` event,
+  // so `onToggle` cannot be the only mover.
+  const offsiteOpenRef = useRef(false);
+  const handleOffsiteToggle = (next: boolean) => {
+    if (offsiteOpenRef.current === next) return;
+    offsiteOpenRef.current = next;
+    setOffsiteOpen(next);
   };
 
   const handleDownload = async (backup: StoredBackup) => {
@@ -200,6 +217,33 @@ export function StoredBackupsSubsection({
           </p>
         )}
 
+        {/* The user's own off-machine destinations for these artifacts, folded
+            in here rather than shown as a section of its own: a copy off the
+            machine is a fact about the same automatic backups this sub-section
+            lists. Collapsed by default. */}
+        <details
+          className="mt-4"
+          open={offsiteOpen}
+          onToggle={(event) => handleOffsiteToggle(event.currentTarget.open)}
+        >
+          <summary
+            className="cursor-pointer"
+            data-testid="offsite-destinations-summary"
+            onClick={(event) => {
+              event.preventDefault();
+              handleOffsiteToggle(!offsiteOpen);
+            }}
+          >
+            <h4 className="inline text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {t('offsite.disclosure')}
+            </h4>
+          </summary>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            {t('offsite.disclosureDescription')}
+          </p>
+          <OffsiteDestinationsForm />
+        </details>
+
         <div className="mt-4">
           {isLoading && (
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -239,7 +283,12 @@ export function StoredBackupsSubsection({
             // `Working...`), so the cell beside it has to be the one figure that
             // cannot be crowded. A datetime there overflowed 320px in a locale
             // with a long label, reopening the sideways scroll the card closes.
-            <div className="overflow-x-auto">
+            //
+            // The whole list sits in a fixed-height window (`max-h-96`, about a
+            // dozen rows) that scrolls: a deployment can hold months of daily
+            // artifacts, and a listing that grows without bound dominates the
+            // Settings page. Newest-first order is the server's.
+            <div className="max-h-96 overflow-y-auto overflow-x-auto">
               <table role="table" className={cn(TABLE_CLASS, 'block sm:table')}>
                 <thead role="rowgroup" className="block sm:table-header-group">
                   <tr role="row" className="hidden sm:table-row">
@@ -268,6 +317,13 @@ export function StoredBackupsSubsection({
                         className="col-span-2 row-start-1 p-0 break-all font-mono text-xs sm:table-cell sm:px-4 sm:py-3"
                       >
                         {backup.filename}
+                        {/* Whether each configured destination copied this
+                            artifact off the machine, one small icon each, drawn
+                            only for a destination that has a status for it. */}
+                        <OffsiteStatusIcons
+                          offsite={backup.offsite}
+                          className="mt-1 flex"
+                        />
                       </Td>
                       <Td
                         role="cell"

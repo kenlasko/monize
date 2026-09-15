@@ -66,6 +66,9 @@ describe("R7 modules RLS context smoke (real withScopedDb)", () => {
           .fn()
           .mockResolvedValue({ created: 0, emailed: 0 }),
       } as never,
+      // The off-site dispatch: never reached here (no user is due), and never
+      // throwing when it is.
+      { dispatchAfterBackup: jest.fn().mockResolvedValue(undefined) } as never,
       { get: jest.fn() } as never,
     );
 

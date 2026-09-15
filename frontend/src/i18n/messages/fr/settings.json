@@ -762,7 +762,65 @@
       "downloadButton": "Télécharger",
       "restoreButton": "Restaurer",
       "workingButton": "Traitement...",
-      "downloadFailed": "Impossible de télécharger la sauvegarde"
+      "downloadFailed": "Impossible de télécharger la sauvegarde",
+      "offsite": {
+        "disclosure": "Destinations hors site",
+        "disclosureDescription": "Après chaque sauvegarde automatique complète, une copie chiffrée peut être envoyée vers un stockage S3, par e-mail, ou les deux : trois copies, deux types de stockage, dont un hors de cette machine. Seule une sauvegarde chiffrée est envoyée.",
+        "encryptionUnavailable": "Ce serveur n'a aucune clé de chiffrement définie ; les identifiants d'un bucket personnel ne peuvent donc pas y être stockés. Le bucket propre à ce serveur et les copies envoyées par e-mail restent disponibles.",
+        "loading": "Chargement de vos destinations hors site...",
+        "loadFailed": "Impossible de charger vos destinations de sauvegarde hors site",
+        "retryButton": "Réessayer",
+        "demoNote": "Les destinations hors site ne peuvent pas être modifiées dans la démo.",
+        "saveButton": "Enregistrer les destinations",
+        "savingButton": "Enregistrement...",
+        "saved": "Destinations hors site enregistrées",
+        "saveFailed": "Impossible d'enregistrer vos destinations de sauvegarde hors site",
+        "s3": {
+          "heading": "Stockage S3",
+          "modeLabel": "Où les copies sont envoyées",
+          "modeOff": "Désactivé",
+          "modeDeployment": "Bucket de ce serveur",
+          "modeOwn": "Mon propre bucket",
+          "deploymentUnavailable": "Ce serveur n'a pas de bucket hors site qui lui soit propre ; un administrateur devrait en configurer un. Vous pouvez utiliser votre propre bucket à la place.",
+          "bucketLabel": "Bucket",
+          "regionLabel": "Région",
+          "regionHelp": "De nombreux services compatibles S3 l'ignorent.",
+          "prefixLabel": "Préfixe de clé",
+          "prefixHelp": "Dossier facultatif dans le bucket, pour que vos sauvegardes puissent le partager avec d'autres données.",
+          "endpointLabel": "Point de terminaison",
+          "endpointHelp": "Uniquement pour un service compatible S3 tel que MinIO, R2 ou B2. Laissez vide pour AWS.",
+          "forcePathStyleLabel": "Utiliser l'adressage par chemin",
+          "forcePathStyleHelp": "Requis par MinIO et quelques autres services compatibles S3.",
+          "accessKeyIdLabel": "ID de clé d'accès",
+          "secretAccessKeyLabel": "Clé d'accès secrète",
+          "storedPlaceholder": "•••• enregistrée",
+          "credentialsHelp": "Les identifiants sont stockés chiffrés sur ce serveur et ne sont plus jamais affichés. Laissez ces champs vides pour conserver ceux déjà enregistrés.",
+          "clearCredentialsButton": "Supprimer les identifiants enregistrés",
+          "clearConfirmTitle": "Supprimer les identifiants enregistrés ?",
+          "clearConfirmMessage": "Ce serveur oubliera votre ID de clé d'accès et votre clé d'accès secrète. Plus aucune copie ne sera envoyée vers votre bucket tant que vous ne les aurez pas saisis à nouveau.",
+          "credentialsCleared": "Identifiants enregistrés supprimés",
+          "clearFailed": "Impossible de supprimer les identifiants enregistrés"
+        },
+        "email": {
+          "heading": "E-mail",
+          "toggleLabel": "M'envoyer par e-mail une copie de chaque sauvegarde automatique terminée",
+          "addressLabel": "Envoyer les copies à",
+          "addressPlaceholder": "utilisateur@exemple.com",
+          "sizeNote": "Une sauvegarde dépassant la limite de taille de ce serveur n'est pas jointe ; vous recevez à la place un avis indiquant le nom du fichier."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "E-mail",
+          "statusPending": "En attente",
+          "statusUploading": "Envoi",
+          "statusUploaded": "Copiée",
+          "statusFailed": "Échec",
+          "statusConflict": "Conflit",
+          "statusSkippedUnencrypted": "Ignorée : non chiffrée",
+          "statusSkippedTooLarge": "Ignorée : trop volumineuse"
+        }
+      }
     }
   },
   "sharedAccess": {

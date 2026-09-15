@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "復元処理の空き待ちがタイムアウトしました。別の復元がまだ実行中です。しばらくしてからもう一度お試しください。",
     "restoreTicketUnavailable": "このデプロイでは復元のアップロードを承認できません。",
     "invalidNotificationFields": "バックアップの通知が無効です。タイトルは文字列、リンク先と重複排除キーは文字列または null である必要があります",
-    "storedBackupNotFound": "バックアップファイルが見つかりません"
+    "storedBackupNotFound": "バックアップファイルが見つかりません",
+    "offsiteDeploymentBucketUnset": "このサーバーには専用のオフサイトバックアップ用バケットがありません。管理者に BACKUP_S3_BUCKET の設定を依頼するか、ご自身のバケットを使用してください。",
+    "offsiteOwnBucketRequired": "バックアップのコピー先となるバケットを入力してください。",
+    "offsiteOwnCredentialsRequired": "バケットのアクセスキー ID とシークレットアクセスキーを入力してください。",
+    "offsiteEncryptionKeyRequired": "ENCRYPTION_KEY が設定されていないため、このサーバーは S3 の認証情報を保存できません。管理者に設定を依頼するか、このデプロイのバケットを使用してください。",
+    "offsiteEmailAddressRequired": "バックアップの送信先となるメールアドレスを入力してください。"
   },
   "budgets": {
     "notFound": "ID {{ id }} の予算が見つかりません",

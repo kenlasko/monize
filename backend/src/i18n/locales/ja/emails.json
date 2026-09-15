@@ -290,5 +290,27 @@
       "title": "価格変動アラート: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}：直前の利用可能な取引日比 {{ percent }}%。"
     }
+  },
+  "backupOffsite": {
+    "copySubject": "Monize バックアップ {{ filename }}",
+    "copyHeading": "Monize のバックアップを添付しました",
+    "copyIntro": "これは {{ date }} 時点の Monize アカウントの自動{{ tier }}バックアップです。ファイルはこのメールに添付されています。",
+    "copyEncrypted": "添付ファイルは Monize のバックアップパスワードで暗号化されています。そのパスワードなしでは開けず、Monize が復元することもできません。パスワードはこのメールボックス以外の場所に保管してください。",
+    "copyRestore": "復元するには、Monize を開き、設定、バックアップと復元 に移動して、このファイルをアップロードし、バックアップパスワードを入力してください。",
+    "copyVerify": "上の SHA-256 は添付されたバイト列のものです。保管したコピーがこのメールで届いたものと同じかどうか、後から確認できます。",
+    "tooLargeSubject": "Monize バックアップ {{ filename }} はメールで送るには大きすぎました",
+    "tooLargeHeading": "Monize のバックアップはメール送信されませんでした",
+    "tooLargeIntro": "本日のバックアップは {{ size }} で、このデプロイがメール送信するバックアップに許可している {{ limit }} を超えています（BACKUP_EMAIL_MAX_BYTES）。",
+    "tooLargeNoBytes": "このメールには何も添付されておらず、ダウンロードリンクも提供されません。リンクにはストレージからバックアップを読み出せる認証情報が必要ですが、この機能はそれを保持していません。",
+    "tooLargeUnaffected": "バックアップ自体は通常どおり書き込まれました。このサーバー上のコピーに影響はなく、S3 の保存先を有効にしている場合はそちらのコピーにも影響はありません。",
+    "tooLargeWhatToDo": "このサイズのバックアップをマシン外に保管するには、設定、バックアップと復元 からダウンロードするか、S3 の保存先を有効にするか、管理者にメールの上限を引き上げるよう依頼してください。",
+    "labelFile": "ファイル",
+    "labelSize": "サイズ",
+    "labelTier": "保存期間",
+    "labelLimit": "メールの上限",
+    "labelDigest": "SHA-256",
+    "tierDaily": "日次",
+    "tierWeekly": "週次",
+    "tierMonthly": "月次"
   }
 }

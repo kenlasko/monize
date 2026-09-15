@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "Se agotó el tiempo de espera de la capacidad de restauración: otra restauración sigue en curso. Vuelve a intentarlo en un momento.",
     "restoreTicketUnavailable": "Esta instalación no puede autorizar cargas de restauración.",
     "invalidNotificationFields": "Notificación no válida en la copia de seguridad: el título debe ser texto; el destino y la clave de deduplicación deben ser texto o null",
-    "storedBackupNotFound": "Archivo de copia de seguridad no encontrado"
+    "storedBackupNotFound": "Archivo de copia de seguridad no encontrado",
+    "offsiteDeploymentBucketUnset": "Este servidor no tiene un bucket propio para copias de seguridad externas. Pida a un administrador que configure BACKUP_S3_BUCKET o use su propio bucket.",
+    "offsiteOwnBucketRequired": "Indique el bucket al que se deben copiar sus copias de seguridad.",
+    "offsiteOwnCredentialsRequired": "Introduzca un id de clave de acceso y una clave de acceso secreta para su bucket.",
+    "offsiteEncryptionKeyRequired": "Este servidor no puede almacenar credenciales de S3 porque ENCRYPTION_KEY no está configurada. Pida a un administrador que la configure o use el bucket de la instalación.",
+    "offsiteEmailAddressRequired": "Indique la dirección a la que se deben enviar sus copias de seguridad."
   },
   "budgets": {
     "notFound": "Presupuesto con ID {{ id }} no encontrado",

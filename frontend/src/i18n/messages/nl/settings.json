@@ -762,7 +762,65 @@
       "downloadButton": "Downloaden",
       "restoreButton": "Herstellen",
       "workingButton": "Bezig...",
-      "downloadFailed": "De back-up kon niet worden gedownload"
+      "downloadFailed": "De back-up kon niet worden gedownload",
+      "offsite": {
+        "disclosure": "Externe bestemmingen",
+        "disclosureDescription": "Na elke volledige automatische back-up kan een versleutelde kopie naar S3-opslag worden gestuurd, per e-mail, of allebei: drie kopieën, twee soorten opslag, waarvan één buiten deze machine. Alleen een versleutelde back-up wordt verstuurd.",
+        "encryptionUnavailable": "Deze server heeft geen versleutelingssleutel ingesteld, dus inloggegevens voor een eigen bucket kunnen niet worden opgeslagen. De eigen bucket van deze server en kopieën per e-mail blijven werken.",
+        "loading": "Uw externe bestemmingen laden...",
+        "loadFailed": "Uw externe back-upbestemmingen konden niet worden geladen",
+        "retryButton": "Opnieuw proberen",
+        "demoNote": "Externe bestemmingen kunnen niet worden gewijzigd in de demo.",
+        "saveButton": "Bestemmingen opslaan",
+        "savingButton": "Opslaan...",
+        "saved": "Externe bestemmingen opgeslagen",
+        "saveFailed": "Uw externe back-upbestemmingen konden niet worden opgeslagen",
+        "s3": {
+          "heading": "S3-opslag",
+          "modeLabel": "Waar kopieën naartoe gaan",
+          "modeOff": "Uit",
+          "modeDeployment": "Bucket van deze server",
+          "modeOwn": "Mijn eigen bucket",
+          "deploymentUnavailable": "Deze server heeft geen eigen externe bucket; een beheerder zou er een moeten inrichten. U kunt in plaats daarvan een eigen bucket gebruiken.",
+          "bucketLabel": "Bucket",
+          "regionLabel": "Regio",
+          "regionHelp": "Veel S3-compatibele diensten negeren dit.",
+          "prefixLabel": "Sleutelprefix",
+          "prefixHelp": "Optionele map in de bucket, zodat uw back-ups die met andere gegevens kunnen delen.",
+          "endpointLabel": "Endpoint",
+          "endpointHelp": "Alleen voor een S3-compatibele dienst zoals MinIO, R2 of B2. Laat dit leeg voor AWS.",
+          "forcePathStyleLabel": "Padgebaseerde adressering gebruiken",
+          "forcePathStyleHelp": "Vereist door MinIO en enkele andere S3-compatibele diensten.",
+          "accessKeyIdLabel": "Toegangssleutel-ID",
+          "secretAccessKeyLabel": "Geheime toegangssleutel",
+          "storedPlaceholder": "•••• opgeslagen",
+          "credentialsHelp": "Inloggegevens worden versleuteld op deze server bewaard en worden nooit meer getoond. Laat deze velden leeg om de reeds opgeslagen gegevens te behouden.",
+          "clearCredentialsButton": "Opgeslagen inloggegevens verwijderen",
+          "clearConfirmTitle": "Opgeslagen inloggegevens verwijderen?",
+          "clearConfirmMessage": "Deze server vergeet uw toegangssleutel-ID en geheime toegangssleutel. Er worden geen kopieën meer naar uw bucket gestuurd totdat u ze opnieuw invoert.",
+          "credentialsCleared": "Opgeslagen inloggegevens verwijderd",
+          "clearFailed": "De opgeslagen inloggegevens konden niet worden verwijderd"
+        },
+        "email": {
+          "heading": "E-mail",
+          "toggleLabel": "Mail mij een kopie van elke voltooide automatische back-up",
+          "addressLabel": "Kopieën sturen naar",
+          "addressPlaceholder": "gebruiker@voorbeeld.nl",
+          "sizeNote": "Een back-up boven de groottelimiet van deze server wordt niet bijgevoegd; u ontvangt in plaats daarvan een bericht met de bestandsnaam."
+        },
+        "rowStatus": {
+          "iconTitle": "{destination}: {status}",
+          "destinationS3": "S3",
+          "destinationEmail": "E-mail",
+          "statusPending": "In afwachting",
+          "statusUploading": "Verzenden",
+          "statusUploaded": "Gekopieerd",
+          "statusFailed": "Mislukt",
+          "statusConflict": "Conflict",
+          "statusSkippedUnencrypted": "Overgeslagen: niet versleuteld",
+          "statusSkippedTooLarge": "Overgeslagen: te groot"
+        }
+      }
     }
   },
   "sharedAccess": {

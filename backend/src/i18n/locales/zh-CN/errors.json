@@ -209,7 +209,12 @@
     "restoreQueueWaitTimeout": "等待恢复处理能力超时：另一个恢复操作仍在进行。请稍后重试。",
     "restoreTicketUnavailable": "此部署无法授权恢复上传。",
     "invalidNotificationFields": "备份中的通知无效：标题必须是文本；目标和去重键必须是文本或 null",
-    "storedBackupNotFound": "未找到备份文件"
+    "storedBackupNotFound": "未找到备份文件",
+    "offsiteDeploymentBucketUnset": "此服务器没有自己的异地备份存储桶。请让管理员设置 BACKUP_S3_BUCKET，或使用您自己的存储桶。",
+    "offsiteOwnBucketRequired": "请输入备份要复制到的存储桶。",
+    "offsiteOwnCredentialsRequired": "请输入该存储桶的访问密钥 ID 和私有访问密钥。",
+    "offsiteEncryptionKeyRequired": "由于未设置 ENCRYPTION_KEY，此服务器无法保存 S3 凭据。请让管理员进行配置，或使用此部署的存储桶。",
+    "offsiteEmailAddressRequired": "请输入备份要发送到的邮箱地址。"
   },
   "budgets": {
     "notFound": "未找到 ID 为 {{ id }} 的预算",
