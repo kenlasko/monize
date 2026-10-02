@@ -15,6 +15,8 @@ import * as path from "path";
 
 import {
   BALANCE_NOTIFICATION_TYPES,
+  BANK_SYNC_ACTIVITY_NOTIFICATION_TYPES,
+  BANK_SYNC_NOTIFICATION_TYPES,
   INVESTMENT_NOTIFICATION_TYPES,
   NotificationCategory,
   NotificationSeverity,
@@ -136,6 +138,23 @@ describe("notification type partition", () => {
     expect(byCategory[NotificationCategory.STRATEGIES].sort()).toEqual(
       [...STRATEGY_NOTIFICATION_TYPES].sort(),
     );
+    // Bank sync: what needs the user's action, and what only reports.
+    expect(byCategory[NotificationCategory.BANK_SYNC].sort()).toEqual(
+      [
+        NotificationType.BANK_SYNC_CONSENT_EXPIRING,
+        NotificationType.BANK_SYNC_CONSENT_EXPIRED,
+        NotificationType.BANK_SYNC_FAILED,
+      ].sort(),
+    );
+    expect(byCategory[NotificationCategory.BANK_SYNC].sort()).toEqual(
+      [...BANK_SYNC_NOTIFICATION_TYPES].sort(),
+    );
+    expect(byCategory[NotificationCategory.BANK_SYNC_ACTIVITY]).toEqual([
+      NotificationType.BANK_SYNC_IMPORTED,
+    ]);
+    expect(byCategory[NotificationCategory.BANK_SYNC_ACTIVITY]).toEqual([
+      ...BANK_SYNC_ACTIVITY_NOTIFICATION_TYPES,
+    ]);
     // BUDGETS is the remainder: everything not in one of the explicit sets
     // above -- never a second list, so this arm proves the partition is total.
     expect(byCategory[NotificationCategory.BUDGETS].sort()).toEqual(
@@ -146,7 +165,9 @@ describe("notification type partition", () => {
           !SYSTEM_NOTIFICATION_TYPES.includes(t) &&
           !BALANCE_NOTIFICATION_TYPES.includes(t) &&
           !INVESTMENT_NOTIFICATION_TYPES.includes(t) &&
-          !STRATEGY_NOTIFICATION_TYPES.includes(t),
+          !STRATEGY_NOTIFICATION_TYPES.includes(t) &&
+          !BANK_SYNC_NOTIFICATION_TYPES.includes(t) &&
+          !BANK_SYNC_ACTIVITY_NOTIFICATION_TYPES.includes(t),
       ).sort(),
     );
   });
@@ -166,6 +187,20 @@ describe("notification type partition", () => {
     ["target", () => TARGET_MAX_LENGTH],
   ])("the door's bound for %s is the column's own width", (column, bound) => {
     expect(bound()).toBe(varcharLength(column));
+  });
+
+  it("every category fits the notification_preferences.category column", () => {
+    const sql = fs.readFileSync(SCHEMA_SQL, "utf8");
+    const start = sql.indexOf("CREATE TABLE notification_preferences (");
+    expect(start).toBeGreaterThan(-1);
+    const body = sql.slice(start, sql.indexOf("\n);", start));
+    const match = /^\s*category\s+VARCHAR\((\d+)\)/im.exec(body);
+    expect(match).not.toBeNull();
+    const limit = Number((match as RegExpExecArray)[1]);
+    const tooLong = Object.values(NotificationCategory).filter(
+      (c) => c.length > limit,
+    );
+    expect(tooLong).toEqual([]);
   });
 
   it("has no stored category column to disagree with the derivation", () => {

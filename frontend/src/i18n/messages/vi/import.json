@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "Tệp Money đó được bảo vệ bằng mật khẩu.",
     "mnyPasswordIncorrect": "Mật khẩu đó không mở được tệp Money.",
     "mnyUnreadableDatabase": "Tệp Money đó đã được giải mã nhưng không thể đọc nội dung. Tệp có thể đã bị hỏng."
+  },
+  "preview": {
+    "choice": {
+      "legend": "Làm gì với {payee} nếu không nhập",
+      "skip": "Bỏ qua lúc này",
+      "except": "Thêm vào ngoại lệ"
+    },
+    "payeeTip": {
+      "name": "Từ ngân hàng: {original}. Ánh xạ tới: {name}",
+      "alias": "Từ ngân hàng: {original}. Ánh xạ tới: {name} (bí danh \"{pattern}\")",
+      "aliasNoPattern": "Từ ngân hàng: {original}. Ánh xạ tới: {name} (bí danh)",
+      "new": "Từ ngân hàng: {original}. Ánh xạ tới: {name} (người nhận mới)",
+      "rule": "Từ ngân hàng: {original}. Ánh xạ tới: {name} (do quy tắc đặt)",
+      "ruleNone": "Từ ngân hàng: {original}. Ánh xạ tới: không có người nhận (do quy tắc đặt)"
+    },
+    "expand": {
+      "show": "Hiện chi tiết của {payee}",
+      "hide": "Ẩn chi tiết của {payee}"
+    },
+    "rules": {
+      "heading": "Quy tắc nhập",
+      "none": "Không có quy tắc nhập nào khớp với giao dịch này.",
+      "unnamed": "Quy tắc",
+      "skipped": "{action}: đã bỏ qua ({reason})",
+      "stopped": "Dừng các quy tắc sau nó.",
+      "applied": "Đã áp dụng: {actions}",
+      "openNewTab": "Mở quy tắc {name} trong tab mới"
+    },
+    "payee": {
+      "heading": "Người nhận",
+      "unknown": "Không có thông tin người nhận cho giao dịch này.",
+      "original": "Văn bản của ngân hàng: {original}",
+      "name": "Khớp với người nhận hiện có {name}.",
+      "alias": "Ánh xạ tới {name} qua bí danh \"{pattern}\".",
+      "aliasNoPattern": "Ánh xạ tới {name} qua một bí danh.",
+      "new": "Chưa có người nhận nào mang tên này, nên {name} sẽ được tạo.",
+      "rule": "Một quy tắc nhập đặt người nhận: {name}.",
+      "ruleNone": "Một quy tắc nhập xóa người nhận.",
+      "none": "Ngân hàng không nêu đối tác, nên giao dịch không có người nhận.",
+      "openAliases": "Mở các bí danh của người nhận",
+      "openAliasesNewTab": "Mở các bí danh của người nhận trong tab mới"
+    }
   }
 }

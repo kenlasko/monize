@@ -308,6 +308,22 @@
     "priceMovement": {
       "title": "[XX-Price change alert: {{ symbol }} ({{ percent }}%)-XX]",
       "message": "[XX-{{ symbol }}: {{ percent }}% compared with the previous available session.-XX]"
+    },
+    "bankSync": {
+      "expiringTitleToday": "[XX-{{ institution }}: bank access ends today-XX]",
+      "expiringTitleOneDay": "[XX-{{ institution }}: bank access ends within 1 day-XX]",
+      "expiringTitleDays": "[XX-{{ institution }}: bank access ends within {{ days }} days-XX]",
+      "expiringMessage": "[XX-Your consent for Monize to read {{ institution }} ends on {{ date }}. Renew the connection in Monize to keep syncing.-XX]",
+      "expiredTitle": "[XX-{{ institution }}: bank access has ended-XX]",
+      "expiredMessage": "[XX-Your consent for Monize to read {{ institution }} has ended. Renew the connection in Monize to resume syncing.-XX]",
+      "failedTitle": "[XX-{{ institution }}: sync failed-XX]",
+      "failedMessage": "[XX-The daily sync of {{ institution }} failed for: {{ accounts }}. Open bank sync settings to see why.-XX]",
+      "failedCredentialsMessage": "[XX-The daily sync of {{ institution }} could not start because the bank sync credentials are missing or were rejected. Check them in bank sync settings.-XX]",
+      "unnamedAccount": "[XX-an account-XX]",
+      "importedTitle": "[XX-{{ institution }}: new transactions imported-XX]",
+      "importedMessage": "[XX-Transactions imported from {{ institution }} by the daily sync: {{ imported }}.-XX]",
+      "importedNoneTitle": "[XX-{{ institution }}: no new transactions-XX]",
+      "importedNoneMessage": "[XX-The daily sync of {{ institution }} found no new transactions.-XX]"
     }
   },
   "backupOffsite": {

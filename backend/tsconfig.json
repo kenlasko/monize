@@ -7,6 +7,9 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    // Source profiles (src/bank-sync/profiles/*.json) are imported as modules so
+    // the compiler emits each one into dist/ beside the code that reads it.
+    "resolveJsonModule": true,
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",

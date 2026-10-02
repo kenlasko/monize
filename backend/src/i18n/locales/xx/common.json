@@ -24,5 +24,20 @@
       "stalled": "[XX-I kept saying I would keep working instead of finishing, so this answer is based on the data I gathered before stopping.-XX]"
     },
     "synthesisFailed": "[XX-I gathered data for this question but couldn't complete the analysis, so I don't have a reliable answer. Try asking something narrower.-XX]"
+  },
+  "bankSync": {
+    "operationTypes": {
+      "cardPayment": "[XX-Card payment-XX]",
+      "transferIn": "[XX-Incoming transfer-XX]",
+      "transferOut": "[XX-Outgoing transfer-XX]",
+      "mobilePayment": "[XX-Mobile payment-XX]",
+      "cashWithdrawal": "[XX-Cash withdrawal-XX]",
+      "cashWithdrawalBlik": "[XX-Cash withdrawal (BLIK)-XX]",
+      "mobilePaymentRefund": "[XX-Mobile payment refund-XX]",
+      "standingOrder": "[XX-Standing order-XX]",
+      "cashback": "[XX-Cashback-XX]",
+      "loanRepayment": "[XX-Loan repayment-XX]",
+      "creditCardRepayment": "[XX-Credit card repayment-XX]"
+    }
   }
 }

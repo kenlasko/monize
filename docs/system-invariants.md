@@ -59,6 +59,10 @@ implied.
 | INV-IMPORT-001 | At most one pending or running MNY import per user | enforced |
 | INV-IMPORT-002 | A retry never double-imports | enforced |
 | INV-IMPORT-003 | A category collision does not abort an import | unenforced |
+| INV-BANKSYNC-001 | A bank transaction is imported into a Monize account at most once | partial |
+| INV-BANKSYNC-002 | A bank sync provider private key never leaves the server | enforced |
+| INV-BANKSYNC-003 | A synced row is written in the Monize account's currency or not at all | enforced |
+| INV-BANKSYNC-004 | Nothing imports a bank account awaiting its first preview except the confirmed single-account sync | enforced |
 | INV-BALANCE-001 | `current_balance` equals opening balance plus included ledger rows | enforced |
 | INV-HOLDING-001 | A holding equals a deterministic replay of the investment ledger | enforced |
 | INV-HOLDING-002 | Every view replays the ledger the same way | enforced |
@@ -268,6 +272,114 @@ RETURNING id` plus adopting the winner's row is the fix, and per
 re-read rather than reuse the pre-insert snapshot. Note that no unique index
 currently covers top-level categories (`parent_id IS NULL`), so closing this
 properly needs the index too.
+
+## Bank sync
+
+The specification is `docs/specs/bank-sync.md`.
+
+### INV-BANKSYNC-001 -- a bank transaction is imported into a Monize account at most once
+
+```text
+Statement           For one Monize account, a provider transaction (identified
+                    by its external key, docs/specs/bank-sync.md section 6)
+                    produces at most one transaction row, across every sync,
+                    replica, reconnection and re-authorization.
+Source of truth     bank_sync_imported_transactions(account_id, external_key)
+Enforcement         Unique index on (account_id, external_key). The writer
+                    inserts the ledger row with ON CONFLICT DO NOTHING RETURNING
+                    before the transaction row, in the same withScopedDb
+                    transaction; no returned row means nothing else is written
+                    for that provider row. The ledger is keyed on the Monize
+                    account, so a new connection does not re-import.
+Concurrency scope   Monize account
+Retry semantics     A retry re-fetches and re-plans; every already-imported row
+                    hits the index and is skipped. The per-account lease
+                    (JobClaimType.BankSyncAccount) only saves provider quota.
+Crash semantics     Before commit: nothing written. After commit: the ledger and
+                    the rows exist together; the next sync skips them.
+Failure response    skipped (counted in the result), never an error
+Required tests      Integration against real PostgreSQL: a second sync of the
+                    same rows imports nothing; two concurrent syncs import each
+                    row once (backend/test/integration/bank-sync.integration.spec.ts).
+Status              partial -- the index holds one row per external key; a
+                    bank transaction keeps one key only while the provider's
+                    entry reference is stable (docs/specs/bank-sync.md
+                    section 6). A bank that sends no entry reference on one
+                    fetch and one on a later fetch changes the key from hash:
+                    to ref: and the row is imported twice. BS10 verifies the
+                    provider's behaviour against a sandbox.
+```
+
+A deleted transaction keeps its ledger row with `transaction_id` NULL, so a
+deleted row is not brought back by the next sync. The ledger is not in the
+backup yet (docs/future-plans/bank-sync-tasks.md BS11); the link form's
+default cut-off date is the mitigation after a restore.
+
+### INV-BANKSYNC-002 -- a bank sync provider private key never leaves the server
+
+```text
+Statement           The RSA private key a user stores for a bank sync provider
+                    is never returned by any route, logged, or written to a
+                    backup.
+Source of truth     bank_sync_credentials.private_key_enc
+Enforcement         Encrypted with EncryptionService (AES-256-GCM). The view type
+                    has privateKeySet: boolean and no field for the key; the
+                    table is in INTENTIONALLY_EXCLUDED_TABLES; the column is not
+                    named api_key_enc, so the backup key transport ignores it.
+Concurrency scope   user
+Retry semantics     --
+Crash semantics     --
+Failure response    --
+Required tests      Unit: the credentials view and every controller answer carry
+                    no key material (bank-sync-credentials.service.spec.ts).
+Status              enforced
+```
+
+### INV-BANKSYNC-003 -- a synced row is written in the Monize account's currency or not at all
+
+```text
+Statement           A provider transaction whose currency differs from the
+                    linked Monize account's currency is refused and counted; it
+                    is never converted, and never written with the foreign
+                    amount in the account's currency.
+Source of truth     accounts.currency_code
+Enforcement         planBankImport refuses the row (currency_mismatch); the
+                    writer derives currency_code from the locked account row
+                    (assertTransactionCurrencyMatchesAccount). Linking refuses
+                    an account whose currency differs from the bank account's
+                    known currency.
+Concurrency scope   Monize account
+Retry semantics     A refused row is refused again on every sync.
+Crash semantics     --
+Failure response    refused (counted per reason in the sync result)
+Required tests      Unit: planner truth table; integration: a mismatched row
+                    writes nothing.
+Status              enforced
+```
+
+### INV-BANKSYNC-004 -- nothing imports an unconfirmed bank account
+
+```text
+Statement           A bank account that needs its preview (linked, and
+                    last_success_at NULL after a link or cut-off change) is
+                    imported only by the single-account sync the user confirms
+                    from the preview; the daily sync and the sync-all route skip
+                    it.
+Source of truth     bank_sync_accounts.account_id, sync_from_date,
+                    last_success_at
+Enforcement         One predicate, bankAccountNeedsPreview, read by the account
+                    view, BankSyncService.syncConnection and the daily cron;
+                    linkAccount clears last_success_at on every link or cut-off
+                    change.
+Concurrency scope   bank account
+Retry semantics     A skipped account stays skipped until the user confirms.
+Crash semantics     --
+Failure response    needs_preview entry in the sync-all answer; a log line in
+                    the cron
+Required tests      Unit (predicate, sync-all) and integration (the cron does not
+                    import a needs-preview account).
+Status              enforced
+```
 
 ## Ledger and derived values
 

@@ -27,6 +27,14 @@
     "strategies": {
       "title": "Segnale di strategia",
       "body": "Una delle tue strategie ha cambiato la sua raccomandazione. Apri Monize per i dettagli."
+    },
+    "bank_sync": {
+      "title": "Collegamento bancario",
+      "body": "Un collegamento bancario richiede la tua attenzione. Apri Monize per i dettagli."
+    },
+    "bank_sync_activity": {
+      "title": "Sincronizzazione bancaria",
+      "body": "La tua sincronizzazione bancaria ha novità. Apri Monize per i dettagli."
     }
   },
   "actions": {

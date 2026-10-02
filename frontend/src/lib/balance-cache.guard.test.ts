@@ -31,6 +31,9 @@ const BALANCE_WRITING_ROUTES = [
   /['`]\/scheduled-transactions\/\$\{[^}]+\}\/post['`]/,
   /['`]\/investment-transactions/,
   /['`]\/import\/(qif|ofx|csv)['`]/,
+  // Bank sync: the two sync routes create transaction rows from the bank's
+  // booked entries. The credential, connection and link writes move none.
+  /['`]\/bank-sync\/(accounts|connections)\/\$\{[^}]+\}\/sync['`]/,
 ];
 
 /**
@@ -117,5 +120,7 @@ describe('a write that moves money drops the cached balances', () => {
     expect(covered).toContain('createTransfer');
     expect(covered).toContain('importCsv');
     expect(covered).toContain('createTransaction'); // investmentsApi
+    expect(covered).toContain('syncAccount'); // bankSyncApi
+    expect(covered).toContain('syncConnection'); // bankSyncApi
   });
 });

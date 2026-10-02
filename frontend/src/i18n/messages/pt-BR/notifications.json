@@ -119,5 +119,21 @@
   "priceMovement": {
     "title": "Alerta de variação do preço: {symbol} ({percent}%)",
     "message": "{symbol}: {percent}% em relação à sessão anterior disponível."
+  },
+  "bankSync": {
+    "expiringTitleToday": "{institution}: o acesso bancário termina hoje",
+    "expiringTitleOneDay": "{institution}: o acesso bancário termina em até 1 dia",
+    "expiringTitleDays": "{institution}: o acesso bancário termina em até {days} dias",
+    "expiringMessage": "Seu consentimento para o Monize ler {institution} termina em {date}. Renove a conexão no Monize para continuar sincronizando.",
+    "expiredTitle": "{institution}: o acesso bancário terminou",
+    "expiredMessage": "Seu consentimento para o Monize ler {institution} terminou. Renove a conexão no Monize para retomar a sincronização.",
+    "failedTitle": "{institution}: falha na sincronização",
+    "failedMessage": "A sincronização diária de {institution} falhou para: {accounts}. Abra as configurações da sincronização bancária para ver o motivo.",
+    "failedCredentialsMessage": "A sincronização diária de {institution} não pôde começar porque as credenciais da sincronização bancária estão ausentes ou foram rejeitadas. Verifique-as nas configurações da sincronização bancária.",
+    "unnamedAccount": "uma conta",
+    "importedTitle": "{institution}: novas transações importadas",
+    "importedMessage": "Transações importadas de {institution} pela sincronização diária: {imported}.",
+    "importedNoneTitle": "{institution}: nenhuma transação nova",
+    "importedNoneMessage": "A sincronização diária de {institution} não encontrou transações novas."
   }
 }

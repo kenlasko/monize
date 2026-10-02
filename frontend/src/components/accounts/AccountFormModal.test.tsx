@@ -4,12 +4,14 @@ import { AccountFormModal } from './AccountFormModal';
 import { Account } from '@/types/account';
 
 let capturedOnSubmit: ((data: any) => Promise<void>) | null = null;
+let capturedInitialValues: unknown;
 
 // Stand-in for the dynamically loaded AccountForm: captures the onSubmit so the
 // test can drive the modal's submit logic directly.
 vi.mock('next/dynamic', () => ({
   default: () => (props: any) => {
     capturedOnSubmit = props.onSubmit ?? null;
+    capturedInitialValues = props.initialValues;
     return <div data-testid="account-form" />;
   },
 }));
@@ -86,6 +88,77 @@ describe('AccountFormModal', () => {
     expect(mockCreate).toHaveBeenCalled();
     expect(close).toHaveBeenCalled();
     expect(onSaved).toHaveBeenCalled();
+  });
+
+  it('hands the account it created to onCreated, after onSaved, and only on a create', async () => {
+    const created = { id: 'new', name: 'New' } as Account;
+    mockCreate.mockResolvedValue(created);
+    const order: string[] = [];
+    const onSaved = vi.fn(() => {
+      order.push('saved');
+    });
+    const onCreated = vi.fn(() => {
+      order.push('created');
+    });
+    render(
+      <AccountFormModal formModal={buildFormModal()} onSaved={onSaved} onCreated={onCreated} />,
+    );
+
+    await waitFor(() => expect(capturedOnSubmit).not.toBeNull());
+    await act(async () => {
+      await capturedOnSubmit!({ name: 'New', accountType: 'CHEQUING' });
+    });
+
+    expect(onCreated).toHaveBeenCalledWith(created);
+    // onSaved takes no argument: a refresh function with parameters of its own
+    // is never handed an account.
+    expect(onSaved).toHaveBeenCalledWith();
+    expect(order).toEqual(['saved', 'created']);
+  });
+
+  it('does not call onCreated for an update, or when the create fails', async () => {
+    const onCreated = vi.fn();
+    mockUpdate.mockResolvedValue({});
+    const { unmount } = render(
+      <AccountFormModal
+        formModal={buildFormModal({
+          editingItem: { id: 'a-1', accountType: 'CHEQUING' } as Account,
+          isEditing: true,
+        })}
+        onSaved={vi.fn()}
+        onCreated={onCreated}
+      />,
+    );
+    await waitFor(() => expect(capturedOnSubmit).not.toBeNull());
+    await act(async () => {
+      await capturedOnSubmit!({ name: 'Renamed', accountType: 'CHEQUING' });
+    });
+    expect(onCreated).not.toHaveBeenCalled();
+    unmount();
+
+    capturedOnSubmit = null;
+    mockCreate.mockRejectedValue(new Error('nope'));
+    render(
+      <AccountFormModal formModal={buildFormModal()} onSaved={vi.fn()} onCreated={onCreated} />,
+    );
+    await waitFor(() => expect(capturedOnSubmit).not.toBeNull());
+    await act(async () => {
+      await capturedOnSubmit!({ name: 'New', accountType: 'CHEQUING' }).catch(() => undefined);
+    });
+    expect(onCreated).not.toHaveBeenCalled();
+  });
+
+  it('passes the initial values to the form', async () => {
+    const initialValues = { name: 'From the bank', accountType: 'SAVINGS' as const };
+    render(
+      <AccountFormModal
+        formModal={buildFormModal()}
+        onSaved={vi.fn()}
+        initialValues={initialValues}
+      />,
+    );
+    await waitFor(() => expect(capturedOnSubmit).not.toBeNull());
+    expect(capturedInitialValues).toBe(initialValues);
   });
 
   it('updates an existing account on submit', async () => {

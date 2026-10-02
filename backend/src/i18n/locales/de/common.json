@@ -24,5 +24,20 @@
       "stalled": "Ich habe wiederholt angekündigt weiterzuarbeiten, statt fertig zu werden, daher beruht diese Antwort auf den Daten, die ich bis zum Abbruch gesammelt habe."
     },
     "synthesisFailed": "Ich habe Daten zu dieser Frage gesammelt, konnte die Analyse aber nicht abschließen und habe daher keine verlässliche Antwort. Versuchen Sie es mit einer enger gefassten Frage."
+  },
+  "bankSync": {
+    "operationTypes": {
+      "cardPayment": "Kartenzahlung",
+      "transferIn": "Eingehende Überweisung",
+      "transferOut": "Ausgehende Überweisung",
+      "mobilePayment": "Mobile Zahlung",
+      "cashWithdrawal": "Bargeldabhebung",
+      "cashWithdrawalBlik": "Bargeldabhebung (BLIK)",
+      "mobilePaymentRefund": "Erstattung einer mobilen Zahlung",
+      "standingOrder": "Dauerauftrag",
+      "cashback": "Cashback",
+      "loanRepayment": "Kreditrückzahlung",
+      "creditCardRepayment": "Kreditkartenrückzahlung"
+    }
   }
 }

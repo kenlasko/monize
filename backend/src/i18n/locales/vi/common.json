@@ -24,5 +24,20 @@
       "stalled": "Tôi cứ nói rằng sẽ tiếp tục làm việc thay vì hoàn thành, nên câu trả lời này dựa trên dữ liệu tôi đã thu thập được trước khi dừng."
     },
     "synthesisFailed": "Tôi đã thu thập dữ liệu cho câu hỏi này nhưng không thể hoàn tất phân tích, nên tôi không có câu trả lời đáng tin cậy. Hãy thử hỏi điều gì đó hẹp hơn."
+  },
+  "bankSync": {
+    "operationTypes": {
+      "cardPayment": "Thanh toán bằng thẻ",
+      "transferIn": "Chuyển khoản đến",
+      "transferOut": "Chuyển khoản đi",
+      "mobilePayment": "Thanh toán di động",
+      "cashWithdrawal": "Rút tiền mặt",
+      "cashWithdrawalBlik": "Rút tiền mặt (BLIK)",
+      "mobilePaymentRefund": "Hoàn tiền thanh toán di động",
+      "standingOrder": "Lệnh chuyển tiền định kỳ",
+      "cashback": "Cashback",
+      "loanRepayment": "Trả nợ khoản vay",
+      "creditCardRepayment": "Thanh toán thẻ tín dụng"
+    }
   }
 }

@@ -138,6 +138,18 @@ export const INTENTIONALLY_EXCLUDED_TABLES: ReadonlySet<string> = new Set([
   // suppress a reminder that was never sent to that account, which is the one
   // failure this table exists to prevent.
   "job_claims",
+  // Bank sync (docs/specs/bank-sync.md section 4). Credentials hold the user's
+  // provider application key encrypted under THIS instance's ENCRYPTION_KEY, so
+  // a restore elsewhere could not read it and a backup must never carry it
+  // (INV-BANKSYNC-002); connections are provider sessions bound to this
+  // instance's redirect URL and consent; bank accounts are re-created by a new
+  // connection. The ledger is excluded in the first release too (task BS11
+  // exports it): after a restore the link form defaults the cut-off date to the
+  // day after the newest transaction so history is not re-imported.
+  "bank_sync_credentials",
+  "bank_sync_connections",
+  "bank_sync_accounts",
+  "bank_sync_imported_transactions",
   // Reclamation bookkeeping for objects in *this* instance's storage provider,
   // keyed by (provider, storage_key). Those keys name nothing on the machine a
   // backup is restored onto, and a future sweeper reading a restored row could

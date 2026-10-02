@@ -24,5 +24,20 @@
       "stalled": "J'ai répété que j'allais continuer au lieu de terminer ; cette réponse repose donc sur les données recueillies avant l'arrêt."
     },
     "synthesisFailed": "J'ai recueilli des données pour cette question, mais je n'ai pas pu terminer l'analyse : je n'ai donc pas de réponse fiable. Essayez de poser une question plus précise."
+  },
+  "bankSync": {
+    "operationTypes": {
+      "cardPayment": "Paiement par carte",
+      "transferIn": "Virement entrant",
+      "transferOut": "Virement sortant",
+      "mobilePayment": "Paiement mobile",
+      "cashWithdrawal": "Retrait d'espèces",
+      "cashWithdrawalBlik": "Retrait d'espèces (BLIK)",
+      "mobilePaymentRefund": "Remboursement de paiement mobile",
+      "standingOrder": "Ordre permanent",
+      "cashback": "Cashback",
+      "loanRepayment": "Remboursement de prêt",
+      "creditCardRepayment": "Remboursement de carte de crédit"
+    }
   }
 }

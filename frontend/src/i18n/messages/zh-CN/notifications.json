@@ -119,5 +119,21 @@
   "priceMovement": {
     "title": "价格变动提醒: {symbol} ({percent}%)",
     "message": "{symbol}：相对于上一个有数据的交易日变动 {percent}%。"
+  },
+  "bankSync": {
+    "expiringTitleToday": "{institution}：银行访问权限今天到期",
+    "expiringTitleOneDay": "{institution}：银行访问权限将在 1 天内到期",
+    "expiringTitleDays": "{institution}：银行访问权限将在 {days} 天内到期",
+    "expiringMessage": "您授权 Monize 读取 {institution} 的有效期至 {date} 结束。请在 Monize 中续期连接以继续同步。",
+    "expiredTitle": "{institution}：银行访问权限已到期",
+    "expiredMessage": "您授权 Monize 读取 {institution} 的有效期已结束。请在 Monize 中续期连接以恢复同步。",
+    "failedTitle": "{institution}：同步失败",
+    "failedMessage": "{institution} 的每日同步在以下账户失败：{accounts}。请打开银行同步设置查看原因。",
+    "failedCredentialsMessage": "由于银行同步凭据缺失或被拒绝，{institution} 的每日同步无法启动。请在银行同步设置中检查凭据。",
+    "unnamedAccount": "一个账户",
+    "importedTitle": "{institution}：已导入新交易",
+    "importedMessage": "每日同步从 {institution} 导入的交易：{imported} 笔。",
+    "importedNoneTitle": "{institution}：没有新交易",
+    "importedNoneMessage": "{institution} 的每日同步没有发现新交易。"
   }
 }

@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "Ten plik Money jest chroniony hasłem.",
     "mnyPasswordIncorrect": "To hasło nie otwiera pliku Money.",
     "mnyUnreadableDatabase": "Ten plik Money został odszyfrowany, ale nie udało się odczytać jego zawartości. Może być uszkodzony."
+  },
+  "preview": {
+    "choice": {
+      "legend": "Co zrobić z transakcją {payee}, jeśli nie zostanie zaimportowana",
+      "skip": "Pomiń teraz",
+      "except": "Dodaj do wyjątków"
+    },
+    "payeeTip": {
+      "name": "Z banku: {original}. Przypisano do: {name}",
+      "alias": "Z banku: {original}. Przypisano do: {name} (alias \"{pattern}\")",
+      "aliasNoPattern": "Z banku: {original}. Przypisano do: {name} (alias)",
+      "new": "Z banku: {original}. Przypisano do: {name} (nowy odbiorca)",
+      "rule": "Z banku: {original}. Przypisano do: {name} (ustawione przez regułę)",
+      "ruleNone": "Z banku: {original}. Przypisano do: brak odbiorcy (ustawione przez regułę)"
+    },
+    "expand": {
+      "show": "Pokaż szczegóły: {payee}",
+      "hide": "Ukryj szczegóły: {payee}"
+    },
+    "rules": {
+      "heading": "Reguły importu",
+      "none": "Żadna reguła importu nie pasuje do tej transakcji.",
+      "unnamed": "Reguła",
+      "skipped": "{action}: pominięto ({reason})",
+      "stopped": "Zatrzymuje kolejne reguły.",
+      "applied": "Zastosowano: {actions}",
+      "openNewTab": "Otwórz regułę {name} w nowej karcie"
+    },
+    "payee": {
+      "heading": "Odbiorca",
+      "unknown": "Brak informacji o odbiorcy dla tej transakcji.",
+      "original": "Tekst z banku: {original}",
+      "name": "Pasuje do istniejącego odbiorcy {name}.",
+      "alias": "Przypisano do {name} przez alias \"{pattern}\".",
+      "aliasNoPattern": "Przypisano do {name} przez alias.",
+      "new": "Żaden odbiorca nie ma jeszcze tej nazwy, więc zostałby utworzony {name}.",
+      "rule": "Reguła importu ustawia odbiorcę: {name}.",
+      "ruleNone": "Reguła importu usuwa odbiorcę.",
+      "none": "Bank nie podał kontrahenta, więc transakcja nie ma odbiorcy.",
+      "openAliases": "Otwórz aliasy odbiorcy",
+      "openAliasesNewTab": "Otwórz aliasy odbiorcy w nowej karcie"
+    }
   }
 }

@@ -39,6 +39,7 @@ const SETTINGS_SECTION_IDS = [
   { id: 'emergency-access', navKey: 'emergencyAccess', href: '/settings/emergency-access', demoVisible: false },
   { id: 'api-access', navKey: 'apiAccess', demoVisible: false },
   { id: 'ai-settings', navKey: 'aiSettings', href: '/settings/ai', demoVisible: false },
+  { id: 'bank-sync', navKey: 'bankSync', href: '/settings/bank-sync', demoVisible: false },
   { id: 'payee-lookup', navKey: 'payeeLookup', demoVisible: false },
   // Manual export/restore for the current user's own data. Automatic-backup
   // configuration is a deployment/operator concern and lives on its own
@@ -372,6 +373,22 @@ function OwnerSettingsView() {
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {t('aiSettingsCard.description')}
+                  </p>
+                </Link>
+              </div>
+            )}
+
+            {!isDemoMode && (
+              <div id="bank-sync" className="scroll-mt-32 lg:scroll-mt-22">
+                <Link
+                  href="/settings/bank-sync"
+                  className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                    {t('bankSyncCard.title')}
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('bankSyncCard.description')}
                   </p>
                 </Link>
               </div>

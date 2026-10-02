@@ -308,6 +308,22 @@
     "priceMovement": {
       "title": "Alerta de cambio de precio: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% respecto a la sesión anterior disponible."
+    },
+    "bankSync": {
+      "expiringTitleToday": "{{ institution }}: el acceso bancario termina hoy",
+      "expiringTitleOneDay": "{{ institution }}: el acceso bancario termina en un plazo de 1 día",
+      "expiringTitleDays": "{{ institution }}: el acceso bancario termina en un plazo de {{ days }} días",
+      "expiringMessage": "Tu consentimiento para que Monize lea {{ institution }} termina el {{ date }}. Renueva la conexión en Monize para seguir sincronizando.",
+      "expiredTitle": "{{ institution }}: el acceso bancario ha terminado",
+      "expiredMessage": "Tu consentimiento para que Monize lea {{ institution }} ha terminado. Renueva la conexión en Monize para reanudar la sincronización.",
+      "failedTitle": "{{ institution }}: error de sincronización",
+      "failedMessage": "La sincronización diaria de {{ institution }} ha fallado para: {{ accounts }}. Abre los ajustes de sincronización bancaria para ver el motivo.",
+      "failedCredentialsMessage": "La sincronización diaria de {{ institution }} no pudo iniciarse porque faltan las credenciales de la sincronización bancaria o fueron rechazadas. Revísalas en los ajustes de sincronización bancaria.",
+      "unnamedAccount": "una cuenta",
+      "importedTitle": "{{ institution }}: nuevas transacciones importadas",
+      "importedMessage": "Transacciones importadas de {{ institution }} por la sincronización diaria: {{ imported }}.",
+      "importedNoneTitle": "{{ institution }}: sin transacciones nuevas",
+      "importedNoneMessage": "La sincronización diaria de {{ institution }} no encontró transacciones nuevas."
     }
   },
   "backupOffsite": {

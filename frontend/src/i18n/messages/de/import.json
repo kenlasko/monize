@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "Diese Money-Datei ist kennwortgeschützt.",
     "mnyPasswordIncorrect": "Mit diesem Kennwort lässt sich die Money-Datei nicht öffnen.",
     "mnyUnreadableDatabase": "Diese Money-Datei wurde entschlüsselt, ihr Inhalt konnte aber nicht gelesen werden. Sie ist möglicherweise beschädigt."
+  },
+  "preview": {
+    "choice": {
+      "legend": "Was mit {payee} geschehen soll, wenn es nicht importiert wird",
+      "skip": "Jetzt überspringen",
+      "except": "Zu den Ausnahmen hinzufügen"
+    },
+    "payeeTip": {
+      "name": "Von der Bank: {original}. Zugeordnet zu: {name}",
+      "alias": "Von der Bank: {original}. Zugeordnet zu: {name} (Alias \"{pattern}\")",
+      "aliasNoPattern": "Von der Bank: {original}. Zugeordnet zu: {name} (Alias)",
+      "new": "Von der Bank: {original}. Zugeordnet zu: {name} (neuer Zahlungsempfänger)",
+      "rule": "Von der Bank: {original}. Zugeordnet zu: {name} (durch eine Regel festgelegt)",
+      "ruleNone": "Von der Bank: {original}. Zugeordnet zu: kein Zahlungsempfänger (durch eine Regel festgelegt)"
+    },
+    "expand": {
+      "show": "Details zu {payee} anzeigen",
+      "hide": "Details zu {payee} ausblenden"
+    },
+    "rules": {
+      "heading": "Importregeln",
+      "none": "Keine Importregel hat auf diese Buchung gepasst.",
+      "unnamed": "Regel",
+      "skipped": "{action}: übersprungen ({reason})",
+      "stopped": "Beendet die Regelverarbeitung danach.",
+      "applied": "Angewendet: {actions}",
+      "openNewTab": "Regel {name} in einem neuen Tab öffnen"
+    },
+    "payee": {
+      "heading": "Zahlungsempfänger",
+      "unknown": "Keine Angaben zum Zahlungsempfänger für diese Buchung.",
+      "original": "Text der Bank: {original}",
+      "name": "Entspricht Ihrem vorhandenen Zahlungsempfänger {name}.",
+      "alias": "Wird über den Alias \"{pattern}\" {name} zugeordnet.",
+      "aliasNoPattern": "Wird über einen Alias {name} zugeordnet.",
+      "new": "Noch kein Zahlungsempfänger hat diesen Namen, daher würde {name} angelegt.",
+      "rule": "Eine Importregel legt den Zahlungsempfänger fest: {name}.",
+      "ruleNone": "Eine Importregel entfernt den Zahlungsempfänger.",
+      "none": "Die Bank hat keine Gegenpartei angegeben, daher hat die Buchung keinen Zahlungsempfänger.",
+      "openAliases": "Aliase des Zahlungsempfängers öffnen",
+      "openAliasesNewTab": "Aliase des Zahlungsempfängers in einem neuen Tab öffnen"
+    }
   }
 }

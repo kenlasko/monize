@@ -119,5 +119,21 @@
   "priceMovement": {
     "title": "Fiyat değişimi uyarısı: {symbol} ({percent}%)",
     "message": "{symbol}: önceki mevcut seansa göre %{percent}."
+  },
+  "bankSync": {
+    "expiringTitleToday": "{institution}: banka erişimi bugün sona eriyor",
+    "expiringTitleOneDay": "{institution}: banka erişimi 1 gün içinde sona eriyor",
+    "expiringTitleDays": "{institution}: banka erişimi {days} gün içinde sona eriyor",
+    "expiringMessage": "Monize'in {institution} kaydını okumasına verdiğiniz onay {date} tarihinde sona eriyor. Senkronizasyonu sürdürmek için Monize'de bağlantıyı yenileyin.",
+    "expiredTitle": "{institution}: banka erişimi sona erdi",
+    "expiredMessage": "Monize'in {institution} kaydını okumasına verdiğiniz onay sona erdi. Senkronizasyonu yeniden başlatmak için Monize'de bağlantıyı yenileyin.",
+    "failedTitle": "{institution}: senkronizasyon başarısız",
+    "failedMessage": "{institution} günlük senkronizasyonu şu hesaplar için başarısız oldu: {accounts}. Nedenini görmek için banka senkronizasyonu ayarlarını açın.",
+    "failedCredentialsMessage": "Banka senkronizasyonu kimlik bilgileri eksik olduğu veya reddedildiği için {institution} günlük senkronizasyonu başlatılamadı. Bunları banka senkronizasyonu ayarlarında kontrol edin.",
+    "unnamedAccount": "bir hesap",
+    "importedTitle": "{institution}: yeni işlemler içe aktarıldı",
+    "importedMessage": "Günlük senkronizasyonla {institution} kaynağından içe aktarılan işlemler: {imported}.",
+    "importedNoneTitle": "{institution}: yeni işlem yok",
+    "importedNoneMessage": "{institution} günlük senkronizasyonu yeni işlem bulamadı."
   }
 }

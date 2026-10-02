@@ -171,6 +171,24 @@ describe('Tabs overflow cue', () => {
     expect(overflowEdge({ scrollWidth: 500, clientWidth: 300, scrollLeft: 80 })).toBe('both');
   });
 
+  it('wraps onto further lines, with no scroller and no edge fade, when asked to', () => {
+    render(
+      <Tabs
+        tabs={TABS}
+        value="overview"
+        onChange={vi.fn()}
+        idPrefix="security"
+        ariaLabel="Security sections"
+        wrap
+      />,
+    );
+    const tablist = screen.getByRole('tablist');
+    const scroller = tablist.parentElement as HTMLElement;
+    expect(tablist.className).toContain('flex-wrap');
+    expect(scroller.className).not.toContain('overflow-x-auto');
+    expect(scroller.className).not.toContain('scroll-fade-x');
+  });
+
   it('fades the far edge when tabs hide beyond it, and the near edge once scrolled there', () => {
     renderTabs();
     const scroller = screen.getByRole('tablist').parentElement as HTMLElement;

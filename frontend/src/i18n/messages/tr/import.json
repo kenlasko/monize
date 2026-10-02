@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "Bu Money dosyası parola korumalı.",
     "mnyPasswordIncorrect": "Bu parola Money dosyasını açmıyor.",
     "mnyUnreadableDatabase": "Bu Money dosyasının şifresi çözüldü ancak içeriği okunamadı. Dosya bozuk olabilir."
+  },
+  "preview": {
+    "choice": {
+      "legend": "İçe aktarılmazsa {payee} için ne yapılsın",
+      "skip": "Şimdilik atla",
+      "except": "İstisnalara ekle"
+    },
+    "payeeTip": {
+      "name": "Bankadan: {original}. Eşleşen: {name}",
+      "alias": "Bankadan: {original}. Eşleşen: {name} (\"{pattern}\" takma adı)",
+      "aliasNoPattern": "Bankadan: {original}. Eşleşen: {name} (takma ad)",
+      "new": "Bankadan: {original}. Eşleşen: {name} (yeni alacaklı)",
+      "rule": "Bankadan: {original}. Eşleşen: {name} (bir kural belirledi)",
+      "ruleNone": "Bankadan: {original}. Eşleşen: alacaklı yok (bir kural belirledi)"
+    },
+    "expand": {
+      "show": "{payee} ayrıntılarını göster",
+      "hide": "{payee} ayrıntılarını gizle"
+    },
+    "rules": {
+      "heading": "İçe aktarma kuralları",
+      "none": "Hiçbir içe aktarma kuralı bu işlemle eşleşmedi.",
+      "unnamed": "Kural",
+      "skipped": "{action}: atlandı ({reason})",
+      "stopped": "Sonraki kuralları durdurur.",
+      "applied": "Uygulananlar: {actions}",
+      "openNewTab": "{name} kuralını yeni sekmede aç"
+    },
+    "payee": {
+      "heading": "Alacaklı",
+      "unknown": "Bu işlem için alacaklı bilgisi yok.",
+      "original": "Bankanın metni: {original}",
+      "name": "Mevcut alacaklınız {name} ile eşleşiyor.",
+      "alias": "\"{pattern}\" takma adıyla {name} ile eşleşiyor.",
+      "aliasNoPattern": "Bir takma adla {name} ile eşleşiyor.",
+      "new": "Henüz hiçbir alacaklı bu ada sahip değil, bu yüzden {name} oluşturulur.",
+      "rule": "Bir içe aktarma kuralı alacaklıyı belirler: {name}.",
+      "ruleNone": "Bir içe aktarma kuralı alacaklıyı kaldırır.",
+      "none": "Banka karşı taraf belirtmedi, bu yüzden işlemin alacaklısı yok.",
+      "openAliases": "Alacaklının takma adlarını aç",
+      "openAliasesNewTab": "Alacaklının takma adlarını yeni sekmede aç"
+    }
   }
 }

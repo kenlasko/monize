@@ -31,6 +31,8 @@ export const NOTIFICATION_PREFERENCE_CATEGORIES: readonly NotificationCategory[]
     NotificationCategory.BALANCES,
     NotificationCategory.INVESTMENTS,
     NotificationCategory.STRATEGIES,
+    NotificationCategory.BANK_SYNC,
+    NotificationCategory.BANK_SYNC_ACTIVITY,
   ];
 
 /**
@@ -121,6 +123,68 @@ export const NOTIFICATION_CATEGORY_CHANNELS: Record<
     push: true,
     unifiedpush: true,
   },
+  // Bank sync has no report-mode digest, so its report-email cell is not
+  // applicable (like SYSTEM's); the immediate email and both push wires are
+  // live controls, read by the dispatch for every bank sync notification.
+  [NotificationCategory.BANK_SYNC]: {
+    email: false,
+    emailNotification: true,
+    push: true,
+    unifiedpush: true,
+  },
+  [NotificationCategory.BANK_SYNC_ACTIVITY]: {
+    email: false,
+    emailNotification: true,
+    push: true,
+    unifiedpush: true,
+  },
+};
+
+/** A category's channel state when the user has stored no row for it. */
+export interface CategoryChannelDefaults {
+  email: boolean;
+  emailNotification: boolean;
+  push: boolean;
+  unifiedpush: boolean;
+}
+
+/**
+ * What a category delivers on until its user stores a matrix row. Read only
+ * where no row exists (and as the first-write value of a channel a partial
+ * update did not name): a stored row always wins. Total over the enum, so a new
+ * category is a decision made here, never an inherited default.
+ *
+ * Every category before bank sync defaults to the global rule, report email on
+ * and everything interrupting off (`docs/specs/notification-preferences.md`
+ * section 3); `notification-preference.service.spec.ts` pins them unchanged.
+ * Bank sync is "by importance" (`docs/specs/bank-sync-notifications.md`
+ * section 2): what needs the user's action interrupts by immediate email and
+ * push, what only reports stays in the bell. A push default needs a registered
+ * device to mean anything, and UnifiedPush stays off for the same reason.
+ */
+const GLOBAL_DEFAULTS: CategoryChannelDefaults = {
+  email: true,
+  emailNotification: false,
+  push: false,
+  unifiedpush: false,
+};
+
+export const NOTIFICATION_CATEGORY_DEFAULTS: Readonly<
+  Record<NotificationCategory, CategoryChannelDefaults>
+> = {
+  [NotificationCategory.PAYMENTS]: GLOBAL_DEFAULTS,
+  [NotificationCategory.BUDGETS]: GLOBAL_DEFAULTS,
+  [NotificationCategory.SYSTEM]: GLOBAL_DEFAULTS,
+  [NotificationCategory.BALANCES]: GLOBAL_DEFAULTS,
+  [NotificationCategory.INVESTMENTS]: GLOBAL_DEFAULTS,
+  [NotificationCategory.STRATEGIES]: GLOBAL_DEFAULTS,
+  [NotificationCategory.BANK_SYNC]: {
+    email: true,
+    emailNotification: true,
+    push: true,
+    unifiedpush: false,
+  },
+  [NotificationCategory.BANK_SYNC_ACTIVITY]: GLOBAL_DEFAULTS,
 };
 
 /**
@@ -229,6 +293,7 @@ export class NotificationPreferenceService {
     throttleMinutes: number;
   }> {
     const support = NOTIFICATION_CATEGORY_CHANNELS[category];
+    const defaults = NOTIFICATION_CATEGORY_DEFAULTS[category];
     return withScopedDb(this.dataSource, async (manager) => {
       const master = await manager.getRepository(UserPreference).findOne({
         where: { userId },
@@ -242,13 +307,13 @@ export class NotificationPreferenceService {
           support.emailNotification && !emailKilled
             ? row
               ? row.emailNotification
-              : false
+              : defaults.emailNotification
             : false,
-        push: support.push ? (row ? row.push : false) : false,
+        push: support.push ? (row ? row.push : defaults.push) : false,
         unifiedpush: support.unifiedpush
           ? row
             ? row.unifiedpush
-            : false
+            : defaults.unifiedpush
           : false,
         throttleMinutes: row ? this.clampThrottle(row.throttleMinutes) : 0,
       };
@@ -308,13 +373,21 @@ export class NotificationPreferenceService {
         ? null
         : this.clampThrottle(patch.throttleMinutes);
 
+    // The first write of a category stores the channels the patch did not name
+    // at the category's own defaults, never at a hard-coded off: a user who
+    // switches push off on a category that defaults push and email on must not
+    // find the email gone with it.
+    const defaults = NOTIFICATION_CATEGORY_DEFAULTS[category];
+
     return withScopedDb(this.dataSource, async (manager) => {
       await manager.query(
         `INSERT INTO notification_preferences
            (user_id, category, email, email_notification, throttle_minutes,
             push, unifiedpush)
-         VALUES ($1, $2, COALESCE($3, true), COALESCE($4, false),
-                 COALESCE($5, 0), COALESCE($6, false), COALESCE($7, false))
+         VALUES ($1, $2, COALESCE($3::boolean, $8::boolean),
+                 COALESCE($4::boolean, $9::boolean), COALESCE($5, 0),
+                 COALESCE($6::boolean, $10::boolean),
+                 COALESCE($7::boolean, $11::boolean))
          ON CONFLICT (user_id, category) DO UPDATE SET
            email = COALESCE($3, notification_preferences.email),
            email_notification =
@@ -331,6 +404,10 @@ export class NotificationPreferenceService {
           throttle,
           push,
           unifiedpush,
+          defaults.email,
+          defaults.emailNotification,
+          defaults.push,
+          defaults.unifiedpush,
         ],
       );
       const row = await manager.getRepository(NotificationPreference).findOne({
@@ -345,12 +422,15 @@ export class NotificationPreferenceService {
     category: NotificationCategory,
     row: NotificationPreference | null | undefined,
   ): NotificationChannelPreference {
+    const defaults = NOTIFICATION_CATEGORY_DEFAULTS[category];
     return {
       category,
-      email: row ? row.email : true,
-      emailNotification: row ? row.emailNotification : false,
-      push: row ? row.push : false,
-      unifiedpush: row ? row.unifiedpush : false,
+      email: row ? row.email : defaults.email,
+      emailNotification: row
+        ? row.emailNotification
+        : defaults.emailNotification,
+      push: row ? row.push : defaults.push,
+      unifiedpush: row ? row.unifiedpush : defaults.unifiedpush,
       throttleMinutes: row ? this.clampThrottle(row.throttleMinutes) : 0,
       supportedChannels: NOTIFICATION_CATEGORY_CHANNELS[category],
     };

@@ -1538,6 +1538,104 @@ describe('AccountForm', () => {
     });
   });
 
+  describe('initialValues (a new account created from a bank account)', () => {
+    it('starts the create form on the given name, type, currency and number', async () => {
+      render(
+        <AccountForm
+          initialValues={{
+            name: 'Card **** 2743',
+            accountType: 'CREDIT_CARD',
+            currencyCode: 'EUR',
+            accountNumber: '5276000000002743',
+          }}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => {
+        expect(screen.getByLabelText('Account Name')).toHaveValue('Card **** 2743');
+      });
+      expect(screen.getByLabelText('Account Type')).toHaveValue('CREDIT_CARD');
+      expect(screen.getByLabelText('Account Number (optional)')).toHaveValue('5276000000002743');
+      // The options load after mount; the select settles on the prefilled code.
+      await waitFor(() => {
+        expect(screen.getByLabelText('Currency')).toHaveValue('EUR');
+      });
+    });
+
+    it('leaves the opening balance empty for null, and keeps 0 when the key is absent', async () => {
+      const { unmount } = render(
+        <AccountForm
+          initialValues={{ name: 'A', openingBalance: null }}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => {
+        expect(screen.getByLabelText('Opening Balance')).toBeInTheDocument();
+      });
+      expect((screen.getByLabelText('Opening Balance') as HTMLInputElement).value).toBe('');
+      unmount();
+
+      render(
+        <AccountForm
+          initialValues={{ name: 'A' }}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => {
+        expect((screen.getByLabelText('Opening Balance') as HTMLInputElement).value).toBe('0.00');
+      });
+    });
+
+    it('submits what was prefilled, with nothing invented for the opening balance', async () => {
+      render(
+        <AccountForm
+          initialValues={{
+            name: 'Savings **** 1111',
+            accountType: 'SAVINGS',
+            currencyCode: 'USD',
+            accountNumber: 'DE89370400440532013000',
+            openingBalance: null,
+          }}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => {
+        expect(screen.getByLabelText('Account Name')).toHaveValue('Savings **** 1111');
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Create Account/i }));
+      });
+      await waitFor(() => expect(mockOnSubmit).toHaveBeenCalled());
+      const submitted = mockOnSubmit.mock.calls[0][0];
+      expect(submitted).toMatchObject({
+        name: 'Savings **** 1111',
+        accountType: 'SAVINGS',
+        currencyCode: 'USD',
+        accountNumber: 'DE89370400440532013000',
+      });
+      expect(submitted.openingBalance).toBeUndefined();
+    });
+
+    it('is ignored when editing: an account starts from itself', async () => {
+      render(
+        <AccountForm
+          account={createExistingAccount({ name: 'My Chequing' })}
+          initialValues={{ name: 'Ignored', accountType: 'CREDIT_CARD' }}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => {
+        expect(screen.getByLabelText('Account Name')).toHaveValue('My Chequing');
+      });
+      expect(screen.getByLabelText('Account Type')).toHaveValue('CHEQUING');
+    });
+  });
+
   describe('AssetFields callbacks', () => {
     beforeEach(() => {
       capturedHandleAssetCategoryChange = null;

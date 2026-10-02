@@ -25,6 +25,28 @@ export const NOTIFICATION_EMAIL_MESSAGES = {
   "gemSignal.roles.RISK_FREE": "Risk-free benchmark",
   "gemSignal.allocationMessageUnknown":
     'Your GEM strategy "{{ strategy }}" changed its target. Open to review the recommendation.',
+  "bankSync.expiringTitleToday": "{{ institution }}: bank access ends today",
+  "bankSync.expiringTitleOneDay":
+    "{{ institution }}: bank access ends within 1 day",
+  "bankSync.expiringTitleDays":
+    "{{ institution }}: bank access ends within {{ days }} days",
+  "bankSync.expiringMessage":
+    "Your consent for Monize to read {{ institution }} ends on {{ date }}. Renew the connection in Monize to keep syncing.",
+  "bankSync.expiredTitle": "{{ institution }}: bank access has ended",
+  "bankSync.expiredMessage":
+    "Your consent for Monize to read {{ institution }} has ended. Renew the connection in Monize to resume syncing.",
+  "bankSync.failedTitle": "{{ institution }}: sync failed",
+  "bankSync.failedMessage":
+    "The daily sync of {{ institution }} failed for: {{ accounts }}. Open bank sync settings to see why.",
+  "bankSync.failedCredentialsMessage":
+    "The daily sync of {{ institution }} could not start because the bank sync credentials are missing or were rejected. Check them in bank sync settings.",
+  "bankSync.unnamedAccount": "an account",
+  "bankSync.importedTitle": "{{ institution }}: new transactions imported",
+  "bankSync.importedMessage":
+    "Transactions imported from {{ institution }} by the daily sync: {{ imported }}.",
+  "bankSync.importedNoneTitle": "{{ institution }}: no new transactions",
+  "bankSync.importedNoneMessage":
+    "The daily sync of {{ institution }} found no new transactions.",
   "portfolioMovement.titleUp": "Investments up {{ percent }}%",
   "portfolioMovement.titleDown": "Investments down {{ percent }}%",
   "portfolioMovement.messageUp":

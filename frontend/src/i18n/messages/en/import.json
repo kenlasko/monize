@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "That Money file is password protected.",
     "mnyPasswordIncorrect": "That password does not open the Money file.",
     "mnyUnreadableDatabase": "That Money file was decrypted but its contents could not be read. It may be damaged."
+  },
+  "preview": {
+    "choice": {
+      "legend": "What to do with {payee} if it is not imported",
+      "skip": "Skip now",
+      "except": "Add to exceptions"
+    },
+    "payeeTip": {
+      "name": "From the bank: {original}. Maps to: {name}",
+      "alias": "From the bank: {original}. Maps to: {name} (alias \"{pattern}\")",
+      "aliasNoPattern": "From the bank: {original}. Maps to: {name} (alias)",
+      "new": "From the bank: {original}. Maps to: {name} (new payee)",
+      "rule": "From the bank: {original}. Maps to: {name} (set by a rule)",
+      "ruleNone": "From the bank: {original}. Maps to: no payee (set by a rule)"
+    },
+    "expand": {
+      "show": "Show details of {payee}",
+      "hide": "Hide details of {payee}"
+    },
+    "rules": {
+      "heading": "Import rules",
+      "none": "No import rule matched this transaction.",
+      "unnamed": "Rule",
+      "skipped": "{action}: skipped ({reason})",
+      "stopped": "Stops the rules after it.",
+      "applied": "Applied: {actions}",
+      "openNewTab": "Open the rule {name} in a new tab"
+    },
+    "payee": {
+      "heading": "Payee",
+      "unknown": "No payee information for this transaction.",
+      "original": "The bank's text: {original}",
+      "name": "Matches your existing payee {name}.",
+      "alias": "Maps to {name} through the alias \"{pattern}\".",
+      "aliasNoPattern": "Maps to {name} through an alias.",
+      "new": "No payee has this name yet, so {name} would be created.",
+      "rule": "An import rule sets the payee: {name}.",
+      "ruleNone": "An import rule clears the payee.",
+      "none": "The bank gave no counterparty, so the transaction has no payee.",
+      "openAliases": "Open the payee's aliases",
+      "openAliasesNewTab": "Open the payee's aliases in a new tab"
+    }
   }
 }

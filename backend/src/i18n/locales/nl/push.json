@@ -27,6 +27,14 @@
     "strategies": {
       "title": "Strategiesignaal",
       "body": "Een van uw strategieën heeft de aanbeveling gewijzigd. Open Monize voor de details."
+    },
+    "bank_sync": {
+      "title": "Bankkoppeling",
+      "body": "Een bankkoppeling vraagt uw aandacht. Open Monize voor de details."
+    },
+    "bank_sync_activity": {
+      "title": "Banksynchronisatie",
+      "body": "Er is nieuws over uw banksynchronisatie. Open Monize voor de details."
     }
   },
   "actions": {

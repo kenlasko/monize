@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "這個 Money 檔案受密碼保護。",
     "mnyPasswordIncorrect": "這個密碼無法開啟 Money 檔案。",
     "mnyUnreadableDatabase": "這個 Money 檔案已解密，但無法讀取其內容，檔案可能已損壞。"
+  },
+  "preview": {
+    "choice": {
+      "legend": "{payee} 不匯入時如何處理",
+      "skip": "暫時略過",
+      "except": "加入例外"
+    },
+    "payeeTip": {
+      "name": "來自銀行：{original}。對應：{name}",
+      "alias": "來自銀行：{original}。對應：{name}（別名「{pattern}」）",
+      "aliasNoPattern": "來自銀行：{original}。對應：{name}（別名）",
+      "new": "來自銀行：{original}。對應：{name}（新收款人）",
+      "rule": "來自銀行：{original}。對應：{name}（由規則設定）",
+      "ruleNone": "來自銀行：{original}。對應：無收款人（由規則設定）"
+    },
+    "expand": {
+      "show": "顯示 {payee} 的詳細資料",
+      "hide": "隱藏 {payee} 的詳細資料"
+    },
+    "rules": {
+      "heading": "匯入規則",
+      "none": "沒有匯入規則符合這筆交易。",
+      "unnamed": "規則",
+      "skipped": "{action}：已略過（{reason}）",
+      "stopped": "停止其後的規則。",
+      "applied": "已套用：{actions}",
+      "openNewTab": "在新分頁中開啟規則 {name}"
+    },
+    "payee": {
+      "heading": "收款人",
+      "unknown": "這筆交易沒有收款人資訊。",
+      "original": "銀行文字：{original}",
+      "name": "與您現有的收款人 {name} 相符。",
+      "alias": "透過別名「{pattern}」對應到 {name}。",
+      "aliasNoPattern": "透過別名對應到 {name}。",
+      "new": "還沒有收款人使用此名稱，因此將建立 {name}。",
+      "rule": "匯入規則設定收款人：{name}。",
+      "ruleNone": "匯入規則清除收款人。",
+      "none": "銀行沒有提供交易對象，因此這筆交易沒有收款人。",
+      "openAliases": "開啟收款人的別名",
+      "openAliasesNewTab": "在新分頁中開啟收款人的別名"
+    }
   }
 }

@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "Ese archivo de Money está protegido con contraseña.",
     "mnyPasswordIncorrect": "Esa contraseña no abre el archivo de Money.",
     "mnyUnreadableDatabase": "Ese archivo de Money se descifró, pero no se pudo leer su contenido. Puede estar dañado."
+  },
+  "preview": {
+    "choice": {
+      "legend": "Qué hacer con {payee} si no se importa",
+      "skip": "Omitir ahora",
+      "except": "Añadir a las excepciones"
+    },
+    "payeeTip": {
+      "name": "Del banco: {original}. Corresponde a: {name}",
+      "alias": "Del banco: {original}. Corresponde a: {name} (alias \"{pattern}\")",
+      "aliasNoPattern": "Del banco: {original}. Corresponde a: {name} (alias)",
+      "new": "Del banco: {original}. Corresponde a: {name} (beneficiario nuevo)",
+      "rule": "Del banco: {original}. Corresponde a: {name} (fijado por una regla)",
+      "ruleNone": "Del banco: {original}. Corresponde a: ningún beneficiario (fijado por una regla)"
+    },
+    "expand": {
+      "show": "Mostrar los detalles de {payee}",
+      "hide": "Ocultar los detalles de {payee}"
+    },
+    "rules": {
+      "heading": "Reglas de importación",
+      "none": "Ninguna regla de importación coincidió con esta transacción.",
+      "unnamed": "Regla",
+      "skipped": "{action}: omitida ({reason})",
+      "stopped": "Detiene las reglas posteriores.",
+      "applied": "Aplicadas: {actions}",
+      "openNewTab": "Abrir la regla {name} en una pestaña nueva"
+    },
+    "payee": {
+      "heading": "Beneficiario",
+      "unknown": "No hay información del beneficiario para esta transacción.",
+      "original": "Texto del banco: {original}",
+      "name": "Coincide con tu beneficiario existente {name}.",
+      "alias": "Se asigna a {name} mediante el alias \"{pattern}\".",
+      "aliasNoPattern": "Se asigna a {name} mediante un alias.",
+      "new": "Ningún beneficiario tiene todavía este nombre, así que se crearía {name}.",
+      "rule": "Una regla de importación fija el beneficiario: {name}.",
+      "ruleNone": "Una regla de importación quita el beneficiario.",
+      "none": "El banco no indicó contraparte, así que la transacción no tiene beneficiario.",
+      "openAliases": "Abrir los alias del beneficiario",
+      "openAliasesNewTab": "Abrir los alias del beneficiario en una pestaña nueva"
+    }
   }
 }

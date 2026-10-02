@@ -24,5 +24,20 @@
       "stalled": "I kept saying I would keep working instead of finishing, so this answer is based on the data I gathered before stopping."
     },
     "synthesisFailed": "I gathered data for this question but couldn't complete the analysis, so I don't have a reliable answer. Try asking something narrower."
+  },
+  "bankSync": {
+    "operationTypes": {
+      "cardPayment": "Card payment",
+      "transferIn": "Incoming transfer",
+      "transferOut": "Outgoing transfer",
+      "mobilePayment": "Mobile payment",
+      "cashWithdrawal": "Cash withdrawal",
+      "cashWithdrawalBlik": "Cash withdrawal (BLIK)",
+      "mobilePaymentRefund": "Mobile payment refund",
+      "standingOrder": "Standing order",
+      "cashback": "Cashback",
+      "loanRepayment": "Loan repayment",
+      "creditCardRepayment": "Credit card repayment"
+    }
   }
 }

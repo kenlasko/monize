@@ -308,6 +308,22 @@
     "priceMovement": {
       "title": "Alarm bei Kursänderung: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% gegenüber der letzten verfügbaren Sitzung."
+    },
+    "bankSync": {
+      "expiringTitleToday": "{{ institution }}: Bankzugriff endet heute",
+      "expiringTitleOneDay": "{{ institution }}: Bankzugriff endet innerhalb von 1 Tag",
+      "expiringTitleDays": "{{ institution }}: Bankzugriff endet innerhalb von {{ days }} Tagen",
+      "expiringMessage": "Ihre Einwilligung, dass Monize auf {{ institution }} zugreifen darf, endet am {{ date }}. Erneuern Sie die Verbindung in Monize, um weiter zu synchronisieren.",
+      "expiredTitle": "{{ institution }}: Bankzugriff ist beendet",
+      "expiredMessage": "Ihre Einwilligung, dass Monize auf {{ institution }} zugreifen darf, ist beendet. Erneuern Sie die Verbindung in Monize, um die Synchronisierung fortzusetzen.",
+      "failedTitle": "{{ institution }}: Synchronisierung fehlgeschlagen",
+      "failedMessage": "Die tägliche Synchronisierung von {{ institution }} ist fehlgeschlagen für: {{ accounts }}. Öffnen Sie die Einstellungen der Bank-Synchronisierung, um den Grund zu sehen.",
+      "failedCredentialsMessage": "Die tägliche Synchronisierung von {{ institution }} konnte nicht starten, weil die Zugangsdaten der Bank-Synchronisierung fehlen oder abgelehnt wurden. Prüfen Sie sie in den Einstellungen der Bank-Synchronisierung.",
+      "unnamedAccount": "ein Konto",
+      "importedTitle": "{{ institution }}: neue Buchungen importiert",
+      "importedMessage": "Durch die tägliche Synchronisierung aus {{ institution }} importierte Buchungen: {{ imported }}.",
+      "importedNoneTitle": "{{ institution }}: keine neuen Buchungen",
+      "importedNoneMessage": "Die tägliche Synchronisierung von {{ institution }} hat keine neuen Buchungen gefunden."
     }
   },
   "backupOffsite": {

@@ -189,15 +189,41 @@ const buildAccountSchema = (t: (key: string) => string, isEditing: boolean) => z
 
 type AccountFormData = z.infer<ReturnType<typeof buildAccountSchema>>;
 
+/**
+ * What a surface that creates an account on someone's behalf (a bank account
+ * being linked) can start the create form with. Read once, when the form opens,
+ * and only when creating: an edit always starts from the account itself.
+ */
+export interface AccountFormInitialValues {
+  name?: string;
+  accountType?: AccountFormData['accountType'];
+  currencyCode?: string;
+  accountNumber?: string;
+  /**
+   * A number starts the field there; `null` leaves it empty for the person to
+   * enter; absent keeps the form's usual 0.
+   */
+  openingBalance?: number | null;
+}
+
 interface AccountFormProps {
   account?: Account;
+  /** Prefill for a new account; ignored when `account` is given. */
+  initialValues?: AccountFormInitialValues;
   onSubmit: (data: AccountFormData) => Promise<void>;
   onCancel: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
   submitRef?: MutableRefObject<(() => void) | null>;
 }
 
-export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submitRef }: AccountFormProps) {
+export function AccountForm({
+  account,
+  initialValues,
+  onSubmit,
+  onCancel,
+  onDirtyChange,
+  submitRef,
+}: AccountFormProps) {
   const t = useTranslations('accounts');
   const stripAccountName = useMainAccountName();
   const router = useRouter();
@@ -304,8 +330,14 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           mortgagePaymentFrequency: (account as any).mortgagePaymentFrequency || undefined,
         }
       : {
-          currencyCode: defaultCurrency,
-          openingBalance: 0,
+          currencyCode: initialValues?.currencyCode ?? defaultCurrency,
+          ...(initialValues?.name ? { name: initialValues.name } : {}),
+          ...(initialValues?.accountType ? { accountType: initialValues.accountType } : {}),
+          ...(initialValues?.accountNumber ? { accountNumber: initialValues.accountNumber } : {}),
+          openingBalance:
+            initialValues?.openingBalance === null
+              ? undefined
+              : (initialValues?.openingBalance ?? 0),
           isFavourite: false,
           excludeFromNetWorth: false,
           paymentFrequency: 'MONTHLY' as PaymentFrequency,

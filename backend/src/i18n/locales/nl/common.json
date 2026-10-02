@@ -24,5 +24,20 @@
       "stalled": "Ik bleef zeggen dat ik verder zou werken in plaats van af te ronden, dus dit antwoord is gebaseerd op de gegevens die ik voor het stoppen heb verzameld."
     },
     "synthesisFailed": "Ik heb gegevens voor deze vraag verzameld, maar kon de analyse niet afronden, dus ik heb geen betrouwbaar antwoord. Probeer iets specifiekers te vragen."
+  },
+  "bankSync": {
+    "operationTypes": {
+      "cardPayment": "Kaartbetaling",
+      "transferIn": "Inkomende overboeking",
+      "transferOut": "Uitgaande overboeking",
+      "mobilePayment": "Mobiele betaling",
+      "cashWithdrawal": "Geldopname",
+      "cashWithdrawalBlik": "Geldopname (BLIK)",
+      "mobilePaymentRefund": "Terugbetaling mobiele betaling",
+      "standingOrder": "Doorlopende opdracht",
+      "cashback": "Cashback",
+      "loanRepayment": "Aflossing lening",
+      "creditCardRepayment": "Creditcardaflossing"
+    }
   }
 }

@@ -27,6 +27,14 @@
     "strategies": {
       "title": "[XX-Strategy signal-XX]",
       "body": "[XX-One of your strategies changed its recommendation. Open Monize for the details.-XX]"
+    },
+    "bank_sync": {
+      "title": "[XX-Bank connection-XX]",
+      "body": "[XX-A bank connection needs your attention. Open Monize for the details.-XX]"
+    },
+    "bank_sync_activity": {
+      "title": "[XX-Bank sync-XX]",
+      "body": "[XX-Your bank sync has news. Open Monize for the details.-XX]"
     }
   },
   "actions": {

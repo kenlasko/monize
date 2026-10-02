@@ -6,6 +6,7 @@ import {
   Notification,
   NotificationType,
 } from "../notification-center/entities/notification.entity";
+import { CONSENT_REMINDER_THRESHOLDS } from "../bank-sync/bank-sync-notifications";
 import { NOTIFICATION_EMAIL_MESSAGES } from "./notification-email-messages";
 
 type Copy = Pick<Notification, "title" | "message">;
@@ -33,6 +34,41 @@ function numbers<K extends string>(
 
 function hasCurrency(data: Data): data is Data & { currencyCode: string } {
   return strings(data, "currencyCode") && /^[A-Z]{3}$/.test(data.currencyCode);
+}
+
+/**
+ * The `failures` a bank sync notification carries, or null when the list is
+ * absent, empty or malformed: a row written before the producer carried it, or
+ * one of another shape, falls back WHOLE rather than being relabelled.
+ */
+function bankSyncFailures(
+  value: unknown,
+): { label: string | null; code: string }[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const failures: { label: string | null; code: string }[] = [];
+  for (const item of value) {
+    if (typeof item !== "object" || item === null) return null;
+    const { label, code } = item as Record<string, unknown>;
+    if (typeof code !== "string" || code === "") return null;
+    if (label !== null && typeof label !== "string") return null;
+    failures.push({
+      label: label === "" ? null : (label as string | null),
+      code,
+    });
+  }
+  return failures;
+}
+
+/** A list as the reader's language joins it ("A, B and C"), never a comma written here. */
+function joinList(items: string[], locale: string): string {
+  try {
+    return new Intl.ListFormat(locale, {
+      style: "long",
+      type: "conjunction",
+    }).format(items);
+  } catch {
+    return items.join(", ");
+  }
 }
 
 /** Calendar dates stay in UTC; parsing never shifts them into the preceding day. */
@@ -228,6 +264,79 @@ export function composeLocalizedNotificationCopy(
           { strategy },
         );
       return null;
+    }
+    case NotificationType.BANK_SYNC_CONSENT_EXPIRING: {
+      // The mark is the producer's fact ("ends within N days"); nothing here
+      // counts days from `now`, so a copy rendered a day later says the same.
+      const end = calendarDate(data.validUntil);
+      if (
+        !strings(data, "institutionName") ||
+        end === null ||
+        !numbers(data, "threshold") ||
+        !CONSENT_REMINDER_THRESHOLDS.some((mark) => mark === data.threshold)
+      )
+        return null;
+      const days = data.threshold;
+      return {
+        title: text(
+          days === 0
+            ? "bankSync.expiringTitleToday"
+            : days === 1
+              ? "bankSync.expiringTitleOneDay"
+              : "bankSync.expiringTitleDays",
+          { institution: data.institutionName, days: number(days, 0) },
+        ),
+        message: text("bankSync.expiringMessage", {
+          institution: data.institutionName,
+          date: dateLabel(end),
+        }),
+      };
+    }
+    case NotificationType.BANK_SYNC_CONSENT_EXPIRED:
+      if (!strings(data, "institutionName")) return null;
+      return pair("bankSync.expiredTitle", "bankSync.expiredMessage", {
+        institution: data.institutionName,
+      });
+    case NotificationType.BANK_SYNC_FAILED: {
+      const failures = bankSyncFailures(data.failures);
+      if (!strings(data, "institutionName") || failures === null) return null;
+      const args = { institution: data.institutionName };
+      // One repair for the reader when every account failed on the credentials.
+      if (failures.every((failure) => failure.code === "credentials"))
+        return pair(
+          "bankSync.failedTitle",
+          "bankSync.failedCredentialsMessage",
+          args,
+        );
+      return pair("bankSync.failedTitle", "bankSync.failedMessage", {
+        ...args,
+        accounts: joinList(
+          failures.map(
+            (failure) => failure.label ?? text("bankSync.unnamedAccount"),
+          ),
+          locale,
+        ),
+      });
+    }
+    case NotificationType.BANK_SYNC_IMPORTED: {
+      if (
+        !strings(data, "institutionName") ||
+        !numbers(data, "imported") ||
+        !Number.isInteger(data.imported) ||
+        data.imported < 0
+      )
+        return null;
+      const args = { institution: data.institutionName };
+      return data.imported === 0
+        ? pair(
+            "bankSync.importedNoneTitle",
+            "bankSync.importedNoneMessage",
+            args,
+          )
+        : pair("bankSync.importedTitle", "bankSync.importedMessage", {
+            ...args,
+            imported: number(data.imported, 0),
+          });
     }
     case NotificationType.BILL_DUE: {
       const due = calendarDate(data.dueDate);

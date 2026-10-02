@@ -413,6 +413,7 @@ worth keeping: CONC-003 can only be checked against a list of all writers.
 | `transactions/transaction-reconciliation.service.ts`, `transactions/transaction-bulk-update.service.ts`, `transactions/transactions.service.ts` `update`, `transactions/transaction-split.service.ts` `updateSplits` (split-parent writes) | advisory, per brokerage account (`lockEmbeddedInvestmentScopes`), first statement of the transaction | The embedded rows' rebuild takes the same lock, and an investment write row-locks the same parent after taking it |
 | `import/import.service.ts` | advisory, per investment account (`lockHoldingScope`), first statement of the import transaction | The import's balance writes row-lock `accounts` before `rebuildImportedHoldings` |
 | `transaction-rules/transaction-rules.service.ts` `create`, `update`, `setEnabled`, `remove`, `reorder` | advisory, per user (`lockTransactionRuleList`), first statement of the transaction | Create's `max + 1` position, the per-user cap, delete's compaction and reorder each read the whole rule list before writing it; the deferred unique `(user_id, position)` is the backstop |
+| `bank-sync/bank-sync-writer.service.ts` `write` | `bank_sync_accounts` row `FOR UPDATE`, then the Monize account (`lockAccountsForBalanceWrite`) | Two syncs of one bank account serialize, and a re-link or a new cut-off date committed during the fetch is seen before any row is written |
 | `transaction-rules/transaction-rules-run.service.ts` `run` | `transaction_rules` row `FOR SHARE`, then the candidate `transactions` rows (`lockTransactionRows`, ascending id) | A rule edit waits for a run on it, and the rows are re-read and re-planned under the lock before the fingerprint is compared; the run takes no advisory lock and no account lock |
 
 ### Conditional claims that exist
@@ -429,7 +430,15 @@ claim (`payee-lookup-quota.service.ts`, INV-PAYEE-002), whose conditional
 limit, so no caller ever reads a count it then writes back. Its compensating
 `release` is deliberately NOT conditional: it is a `GREATEST(x - 1, 0)` applied
 after an answered refusal, and the floor is what keeps a release that crossed a
-month boundary from minting quota rather than returning it. There is no `@VersionColumn`
+month boundary from minting quota rather than returning it. The bank sync consent callback
+(`bank-sync-connections.service.ts` `completeCallback`) claims its connection
+with one `UPDATE bank_sync_connections SET auth_state_hash = NULL ... WHERE
+user_id = $1 AND auth_state_hash = $2 AND auth_started_at > now() - ttl
+RETURNING`, so a replayed or concurrent callback gets zero rows and is refused
+having written nothing; the bank sync ledger insert
+(`bank-sync-writer.service.ts`, INV-BANKSYNC-001) is mechanism 2, an
+`ON CONFLICT DO NOTHING RETURNING` on the unique `(account_id, external_key)`
+run before the transaction row it guards. There is no `@VersionColumn`
 anywhere in the codebase -- conditional `WHERE` is the whole of its optimistic
 concurrency control.
 

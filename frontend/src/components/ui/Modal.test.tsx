@@ -733,6 +733,76 @@ describe('Modal header, footer and body', () => {
     expect(wrapper.className).toContain('p-4');
   });
 
+  describe('fixedHeight', () => {
+    const open = (props: Partial<React.ComponentProps<typeof Modal>> = {}) =>
+      render(
+        <Modal isOpen={true} title="Heading" footer={<button>Save</button>} {...props}>
+          <p>Body text</p>
+        </Modal>,
+      );
+
+    it('makes the panel a fixed-height column that does not scroll itself', () => {
+      open({ fixedHeight: true });
+      const dialog = screen.getByRole('dialog');
+      for (const cls of ['h-[min(90vh,56rem)]', 'flex', 'flex-col', 'overflow-hidden']) {
+        expect(dialog.className).toContain(cls);
+      }
+      expect(dialog.className).not.toContain('max-h-[90vh]');
+      expect(dialog.className).not.toContain('overflow-y-auto');
+    });
+
+    it('keeps the header and the footer at their own height around a body that takes the rest', () => {
+      open({ fixedHeight: true });
+      const dialog = screen.getByRole('dialog');
+      const header = screen.getByRole('heading', { name: 'Heading' }).parentElement!.parentElement!;
+      const body = screen.getByText('Body text').parentElement!;
+      const footer = screen.getByRole('button', { name: 'Save' }).parentElement!;
+      expect(header.className).toContain('shrink-0');
+      expect(footer.className).toContain('shrink-0');
+      for (const cls of ['flex', 'flex-col', 'flex-1', 'min-h-0']) {
+        expect(body.className).toContain(cls);
+      }
+      expect(Array.from(dialog.children)).toEqual([header, body, footer]);
+    });
+
+    it('wraps the body even without padding, and pads it when asked', () => {
+      const { unmount } = open({ fixedHeight: true });
+      expect(screen.getByText('Body text').parentElement!.className).not.toContain('p-4');
+      unmount();
+      open({ fixedHeight: true, padding: 'md' });
+      expect(screen.getByText('Body text').parentElement!.className).toContain('p-4');
+    });
+
+    it('gives a phone the whole viewport together with fullScreenOnPhone', () => {
+      open({ fixedHeight: true, fullScreenOnPhone: true });
+      const dialog = screen.getByRole('dialog');
+      expect(dialog.className).toContain('max-sm:h-dvh');
+      expect(dialog.className).toContain('h-[min(90vh,56rem)]');
+    });
+
+    it('changes nothing by default', () => {
+      open({ padding: 'md' });
+      const dialog = screen.getByRole('dialog');
+      expect(dialog.className).toContain('max-h-[90vh]');
+      expect(dialog.className).toContain('overflow-y-auto');
+      expect(dialog.className).not.toContain('h-[min(90vh,56rem)]');
+      expect(dialog.className).not.toContain('flex-col');
+      const header = screen.getByRole('heading', { name: 'Heading' }).parentElement!.parentElement!;
+      const footer = screen.getByRole('button', { name: 'Save' }).parentElement!;
+      expect(header.className).not.toContain('shrink-0');
+      expect(footer.className).not.toContain('shrink-0');
+      const body = screen.getByText('Body text').parentElement!;
+      expect(body.className).toBe('p-4 sm:p-6');
+    });
+
+    it('is ignored by the drawer variant', () => {
+      open({ fixedHeight: true, variant: 'drawer-left' });
+      const dialog = screen.getByRole('dialog');
+      expect(dialog.className).not.toContain('h-[min(90vh,56rem)]');
+      expect(screen.getByText('Body text').parentElement!.className).not.toContain('min-h-0');
+    });
+  });
+
   describe('fullScreenOnPhone', () => {
     it('fills the phone viewport with max-sm variants and leaves the base classes alone', () => {
       render(

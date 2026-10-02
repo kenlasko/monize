@@ -3,6 +3,7 @@ import {
   configurableCategoriesFor,
   NOTIFICATION_PREFERENCE_CATEGORIES,
   NOTIFICATION_CATEGORY_CHANNELS,
+  NOTIFICATION_CATEGORY_DEFAULTS,
   THROTTLE_MAX_MINUTES,
 } from "./notification-preference.service";
 import { NotificationCategory } from "./entities/notification.entity";
@@ -10,6 +11,45 @@ import { UserPreference } from "../users/entities/user-preference.entity";
 import * as scopedDb from "../common/db/scoped-db";
 
 jest.mock("../common/db/scoped-db");
+
+/**
+ * What each category delivers on before its user stores a row, written out as a
+ * literal and NOT derived from the table under test: a change to a default is a
+ * product decision (docs/specs/notification-preferences.md section 3,
+ * docs/specs/bank-sync-notifications.md section 2) and must fail here by name.
+ * Every category that existed before bank sync keeps today's global rule.
+ */
+const GLOBAL_DEFAULT = {
+  email: true,
+  emailNotification: false,
+  push: false,
+  unifiedpush: false,
+};
+const PINNED_DEFAULTS: Record<
+  NotificationCategory,
+  {
+    email: boolean;
+    emailNotification: boolean;
+    push: boolean;
+    unifiedpush: boolean;
+  }
+> = {
+  [NotificationCategory.PAYMENTS]: GLOBAL_DEFAULT,
+  [NotificationCategory.BUDGETS]: GLOBAL_DEFAULT,
+  [NotificationCategory.SYSTEM]: GLOBAL_DEFAULT,
+  [NotificationCategory.BALANCES]: GLOBAL_DEFAULT,
+  [NotificationCategory.INVESTMENTS]: GLOBAL_DEFAULT,
+  [NotificationCategory.STRATEGIES]: GLOBAL_DEFAULT,
+  // What needs the user's action: immediate email and push on.
+  [NotificationCategory.BANK_SYNC]: {
+    email: true,
+    emailNotification: true,
+    push: true,
+    unifiedpush: false,
+  },
+  // What only reports: the bell alone.
+  [NotificationCategory.BANK_SYNC_ACTIVITY]: GLOBAL_DEFAULT,
+};
 
 describe("NotificationPreferenceService", () => {
   let service: NotificationPreferenceService;
@@ -120,16 +160,13 @@ describe("NotificationPreferenceService", () => {
   });
 
   describe("list", () => {
-    it("returns the default shape per category: report email on, notification off, push off, throttle 0, with each category's supported channels", async () => {
+    it("returns the default shape per category, with each category's supported channels", async () => {
       expect(
         await service.list("u1", NOTIFICATION_PREFERENCE_CATEGORIES),
       ).toEqual(
         NOTIFICATION_PREFERENCE_CATEGORIES.map((category) => ({
           category,
-          email: true,
-          emailNotification: false,
-          push: false,
-          unifiedpush: false,
+          ...PINNED_DEFAULTS[category],
           throttleMinutes: 0,
           supportedChannels: NOTIFICATION_CATEGORY_CHANNELS[category],
         })),
@@ -241,6 +278,11 @@ describe("NotificationPreferenceService", () => {
         null,
         null,
         null,
+        // first-write values: the category's defaults (global for these two)
+        true,
+        false,
+        false,
+        false,
       ]);
       expect(result).toEqual({
         category: NotificationCategory.PAYMENTS,
@@ -276,6 +318,11 @@ describe("NotificationPreferenceService", () => {
         15,
         null,
         null,
+        // first-write values: the category's defaults (global for these two)
+        true,
+        false,
+        false,
+        false,
       ]);
     });
 
@@ -299,6 +346,11 @@ describe("NotificationPreferenceService", () => {
         null,
         true,
         null,
+        // first-write values: the category's defaults (global for these two)
+        true,
+        false,
+        false,
+        false,
       ]);
     });
 
@@ -323,6 +375,11 @@ describe("NotificationPreferenceService", () => {
         null,
         null,
         true,
+        // first-write values: the category's defaults (global for these two)
+        true,
+        false,
+        false,
+        false,
       ]);
     });
 
@@ -345,6 +402,11 @@ describe("NotificationPreferenceService", () => {
         THROTTLE_MAX_MINUTES,
         null,
         null,
+        // first-write values: the category's defaults (global for these two)
+        true,
+        false,
+        false,
+        false,
       ]);
     });
 
@@ -367,6 +429,148 @@ describe("NotificationPreferenceService", () => {
         0,
         null,
         null,
+        // first-write values: the category's defaults (global for these two)
+        true,
+        false,
+        false,
+        false,
+      ]);
+    });
+  });
+
+  describe("per-category defaults (no stored row)", () => {
+    it("pins every category's defaults: the six that existed are unchanged, bank sync is by importance", () => {
+      expect(NOTIFICATION_CATEGORY_DEFAULTS).toEqual(PINNED_DEFAULTS);
+      // Total over the enum: a new category cannot inherit a default silently.
+      expect(Object.keys(NOTIFICATION_CATEGORY_DEFAULTS).sort()).toEqual(
+        Object.values(NotificationCategory).sort(),
+      );
+    });
+
+    it.each(Object.values(NotificationCategory))(
+      "resolves %s's immediate channels from the table when no row exists, subject to the channels it exposes",
+      async (category) => {
+        const support = NOTIFICATION_CATEGORY_CHANNELS[category];
+        const pinned = PINNED_DEFAULTS[category];
+        expect(
+          await service.resolveNotificationDelivery("u1", category),
+        ).toEqual({
+          emailNotification:
+            support.emailNotification && pinned.emailNotification,
+          push: support.push && pinned.push,
+          unifiedpush: support.unifiedpush && pinned.unifiedpush,
+          throttleMinutes: 0,
+        });
+      },
+    );
+
+    it("delivers a bank connection notice by immediate email and push, and a sync report by neither", async () => {
+      expect(
+        await service.resolveNotificationDelivery(
+          "u1",
+          NotificationCategory.BANK_SYNC,
+        ),
+      ).toEqual({
+        emailNotification: true,
+        push: true,
+        unifiedpush: false,
+        throttleMinutes: 0,
+      });
+      expect(
+        await service.resolveNotificationDelivery(
+          "u1",
+          NotificationCategory.BANK_SYNC_ACTIVITY,
+        ),
+      ).toEqual({
+        emailNotification: false,
+        push: false,
+        unifiedpush: false,
+        throttleMinutes: 0,
+      });
+    });
+
+    it("lets a stored row win over the default, in both directions", async () => {
+      notifPrefRepo.findOne.mockResolvedValue({
+        emailNotification: false,
+        push: false,
+        unifiedpush: true,
+        throttleMinutes: 0,
+      });
+      expect(
+        await service.resolveNotificationDelivery(
+          "u1",
+          NotificationCategory.BANK_SYNC,
+        ),
+      ).toEqual({
+        emailNotification: false,
+        push: false,
+        unifiedpush: true,
+        throttleMinutes: 0,
+      });
+    });
+
+    it("still lets the master email switch kill the default immediate email, and not the default push", async () => {
+      userPrefRepo.findOne.mockResolvedValue({ notificationEmail: false });
+      expect(
+        await service.resolveNotificationDelivery(
+          "u1",
+          NotificationCategory.BANK_SYNC,
+        ),
+      ).toMatchObject({ emailNotification: false, push: true });
+    });
+
+    it("shows the defaults in the matrix when no row is stored", async () => {
+      const rows = await service.list("u1", [
+        NotificationCategory.BANK_SYNC,
+        NotificationCategory.BANK_SYNC_ACTIVITY,
+      ]);
+      expect(rows).toEqual([
+        {
+          category: NotificationCategory.BANK_SYNC,
+          email: true,
+          emailNotification: true,
+          push: true,
+          unifiedpush: false,
+          throttleMinutes: 0,
+          supportedChannels:
+            NOTIFICATION_CATEGORY_CHANNELS[NotificationCategory.BANK_SYNC],
+        },
+        {
+          category: NotificationCategory.BANK_SYNC_ACTIVITY,
+          email: true,
+          emailNotification: false,
+          push: false,
+          unifiedpush: false,
+          throttleMinutes: 0,
+          supportedChannels:
+            NOTIFICATION_CATEGORY_CHANNELS[
+              NotificationCategory.BANK_SYNC_ACTIVITY
+            ],
+        },
+      ]);
+    });
+
+    it("keeps the other defaults when a first write names one channel", async () => {
+      // Switching push off on a category that defaults push AND email on must
+      // not store the email off with it: the first-write value of a channel the
+      // patch did not name is the category's default, not a hard-coded false.
+      await service.updatePreference("u1", NotificationCategory.BANK_SYNC, {
+        push: false,
+      });
+      const [sql, params] = query.mock.calls[0];
+      expect(String(sql)).toContain("COALESCE($4::boolean, $9::boolean)");
+      expect(params).toEqual([
+        "u1",
+        NotificationCategory.BANK_SYNC,
+        null, // email: keep the stored value on conflict
+        null, // emailNotification
+        null, // throttle
+        false, // push: the patch
+        null, // unifiedpush
+        true, // first-write email = default
+        true, // first-write emailNotification = default
+        true, // first-write push = default (overridden by the patch above)
+        false, // first-write unifiedpush = default
       ]);
     });
   });

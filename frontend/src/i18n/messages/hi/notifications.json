@@ -119,5 +119,21 @@
   "priceMovement": {
     "title": "कीमत में बदलाव का अलर्ट: {symbol} ({percent}%)",
     "message": "{symbol}: पिछले उपलब्ध कारोबारी सत्र की तुलना में {percent}%।"
+  },
+  "bankSync": {
+    "expiringTitleToday": "{institution}: बैंक पहुंच आज समाप्त हो रही है",
+    "expiringTitleOneDay": "{institution}: बैंक पहुंच 1 दिन के भीतर समाप्त हो रही है",
+    "expiringTitleDays": "{institution}: बैंक पहुंच {days} दिनों के भीतर समाप्त हो रही है",
+    "expiringMessage": "{institution} को पढ़ने के लिए Monize को दी गई आपकी सहमति {date} को समाप्त हो रही है। सिंक जारी रखने के लिए Monize में कनेक्शन का नवीनीकरण करें।",
+    "expiredTitle": "{institution}: बैंक पहुंच समाप्त हो गई है",
+    "expiredMessage": "{institution} को पढ़ने के लिए Monize को दी गई आपकी सहमति समाप्त हो गई है। सिंक फिर शुरू करने के लिए Monize में कनेक्शन का नवीनीकरण करें।",
+    "failedTitle": "{institution}: सिंक विफल रहा",
+    "failedMessage": "{institution} का दैनिक सिंक इन खातों के लिए विफल रहा: {accounts}। कारण देखने के लिए बैंक सिंक सेटिंग्स खोलें।",
+    "failedCredentialsMessage": "{institution} का दैनिक सिंक शुरू नहीं हो सका, क्योंकि बैंक सिंक के क्रेडेंशियल मौजूद नहीं हैं या अस्वीकार कर दिए गए थे। उन्हें बैंक सिंक सेटिंग्स में जांचें।",
+    "unnamedAccount": "एक खाता",
+    "importedTitle": "{institution}: नए लेन-देन आयात हुए",
+    "importedMessage": "दैनिक सिंक द्वारा {institution} से आयात किए गए लेन-देन: {imported}।",
+    "importedNoneTitle": "{institution}: कोई नया लेन-देन नहीं",
+    "importedNoneMessage": "{institution} के दैनिक सिंक में कोई नया लेन-देन नहीं मिला।"
   }
 }

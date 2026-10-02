@@ -308,6 +308,22 @@
     "priceMovement": {
       "title": "Price change alert: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% compared with the previous available session."
+    },
+    "bankSync": {
+      "expiringTitleToday": "{{ institution }}: bank access ends today",
+      "expiringTitleOneDay": "{{ institution }}: bank access ends within 1 day",
+      "expiringTitleDays": "{{ institution }}: bank access ends within {{ days }} days",
+      "expiringMessage": "Your consent for Monize to read {{ institution }} ends on {{ date }}. Renew the connection in Monize to keep syncing.",
+      "expiredTitle": "{{ institution }}: bank access has ended",
+      "expiredMessage": "Your consent for Monize to read {{ institution }} has ended. Renew the connection in Monize to resume syncing.",
+      "failedTitle": "{{ institution }}: sync failed",
+      "failedMessage": "The daily sync of {{ institution }} failed for: {{ accounts }}. Open bank sync settings to see why.",
+      "failedCredentialsMessage": "The daily sync of {{ institution }} could not start because the bank sync credentials are missing or were rejected. Check them in bank sync settings.",
+      "unnamedAccount": "an account",
+      "importedTitle": "{{ institution }}: new transactions imported",
+      "importedMessage": "Transactions imported from {{ institution }} by the daily sync: {{ imported }}.",
+      "importedNoneTitle": "{{ institution }}: no new transactions",
+      "importedNoneMessage": "The daily sync of {{ institution }} found no new transactions."
     }
   },
   "backupOffsite": {

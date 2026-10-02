@@ -27,6 +27,14 @@
     "strategies": {
       "title": "Sinyal strategi",
       "body": "Salah satu strategi Anda mengubah rekomendasinya. Buka Monize untuk detailnya."
+    },
+    "bank_sync": {
+      "title": "Koneksi bank",
+      "body": "Sebuah koneksi bank memerlukan perhatian Anda. Buka Monize untuk detailnya."
+    },
+    "bank_sync_activity": {
+      "title": "Sinkronisasi bank",
+      "body": "Sinkronisasi bank Anda memiliki kabar. Buka Monize untuk detailnya."
     }
   },
   "actions": {

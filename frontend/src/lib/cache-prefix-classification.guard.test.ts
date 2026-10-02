@@ -74,6 +74,10 @@ const REFERENCE_DATA: ReadonlyArray<[string, string]> = [
     'payee-lookup:',
     "whether a payee contact lookup can run and which source would answer it -- the Google Places configuration and cap, plus whether an AI provider exists. Its own settings writes drop it, and so does every AI provider mutation, because the answer depends on both; a transaction cannot change it",
   ],
+  [
+    'bank-sync:',
+    "bank sync status, institutions and connections with their bank accounts: the bank's own balance and the sync outcome, none of it summed from Monize transactions. The sync routes drop it themselves and, when a row was written, the balance caches as well",
+  ],
 ];
 
 /** Prefix literals passed to any cache call, e.g. `'accounts:all'` -> `accounts:`. */

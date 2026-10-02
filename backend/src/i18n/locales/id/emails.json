@@ -308,6 +308,22 @@
     "priceMovement": {
       "title": "Peringatan perubahan harga: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: {{ percent }}% dibandingkan sesi sebelumnya yang tersedia."
+    },
+    "bankSync": {
+      "expiringTitleToday": "{{ institution }}: akses bank berakhir hari ini",
+      "expiringTitleOneDay": "{{ institution }}: akses bank berakhir dalam 1 hari",
+      "expiringTitleDays": "{{ institution }}: akses bank berakhir dalam {{ days }} hari",
+      "expiringMessage": "Persetujuan Anda agar Monize dapat membaca {{ institution }} berakhir pada {{ date }}. Perbarui koneksi di Monize agar sinkronisasi tetap berjalan.",
+      "expiredTitle": "{{ institution }}: akses bank telah berakhir",
+      "expiredMessage": "Persetujuan Anda agar Monize dapat membaca {{ institution }} telah berakhir. Perbarui koneksi di Monize untuk melanjutkan sinkronisasi.",
+      "failedTitle": "{{ institution }}: sinkronisasi gagal",
+      "failedMessage": "Sinkronisasi harian {{ institution }} gagal untuk: {{ accounts }}. Buka pengaturan sinkronisasi bank untuk melihat penyebabnya.",
+      "failedCredentialsMessage": "Sinkronisasi harian {{ institution }} tidak dapat dimulai karena kredensial sinkronisasi bank tidak ada atau ditolak. Periksa kredensial tersebut di pengaturan sinkronisasi bank.",
+      "unnamedAccount": "sebuah akun",
+      "importedTitle": "{{ institution }}: transaksi baru diimpor",
+      "importedMessage": "Transaksi yang diimpor dari {{ institution }} oleh sinkronisasi harian: {{ imported }}.",
+      "importedNoneTitle": "{{ institution }}: tidak ada transaksi baru",
+      "importedNoneMessage": "Sinkronisasi harian {{ institution }} tidak menemukan transaksi baru."
     }
   },
   "backupOffsite": {

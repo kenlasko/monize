@@ -27,6 +27,14 @@
     "strategies": {
       "title": "策略信号",
       "body": "您的某个策略更改了推荐。打开 Monize 查看详情。"
+    },
+    "bank_sync": {
+      "title": "银行连接",
+      "body": "有银行连接需要您关注。打开 Monize 查看详情。"
+    },
+    "bank_sync_activity": {
+      "title": "银行同步",
+      "body": "您的银行同步有新消息。打开 Monize 查看详情。"
     }
   },
   "actions": {

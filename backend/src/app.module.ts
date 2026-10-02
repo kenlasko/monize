@@ -27,6 +27,7 @@ import { APPLICATION_NAME } from "./common/cluster/instance-id";
 import { DemoModeModule } from "./common/demo-mode.module";
 import { EventBusModule } from "./common/events/event-bus.module";
 import { JobClaimModule } from "./common/jobs/job-claim.module";
+import { BankSyncModule } from "./bank-sync/bank-sync.module";
 
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
@@ -218,6 +219,7 @@ import { I18nModule } from "./i18n/i18n.module";
     StrategiesModule,
     DelegationModule,
     EmergencyAccessModule,
+    BankSyncModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

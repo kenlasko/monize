@@ -308,6 +308,22 @@
     "priceMovement": {
       "title": "Alert zmiany ceny: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }}: zmiana o {{ percent }}% względem poprzedniej dostępnej sesji."
+    },
+    "bankSync": {
+      "expiringTitleToday": "{{ institution }}: dostęp do banku kończy się dzisiaj",
+      "expiringTitleOneDay": "{{ institution }}: dostęp do banku kończy się w ciągu 1 dnia",
+      "expiringTitleDays": "{{ institution }}: dostęp do banku kończy się w ciągu {{ days }} dni",
+      "expiringMessage": "Twoja zgoda na odczyt {{ institution }} przez Monize kończy się w dniu {{ date }}. Odnów połączenie w Monize, aby dalej synchronizować.",
+      "expiredTitle": "{{ institution }}: dostęp do banku wygasł",
+      "expiredMessage": "Twoja zgoda na odczyt {{ institution }} przez Monize wygasła. Odnów połączenie w Monize, aby wznowić synchronizację.",
+      "failedTitle": "{{ institution }}: synchronizacja nie powiodła się",
+      "failedMessage": "Codzienna synchronizacja {{ institution }} nie powiodła się dla: {{ accounts }}. Otwórz ustawienia synchronizacji bankowej, aby zobaczyć przyczynę.",
+      "failedCredentialsMessage": "Codzienna synchronizacja {{ institution }} nie mogła się rozpocząć, ponieważ brakuje danych uwierzytelniających synchronizacji bankowej lub zostały odrzucone. Sprawdź je w ustawieniach synchronizacji bankowej.",
+      "unnamedAccount": "konto bez nazwy",
+      "importedTitle": "{{ institution }}: zaimportowano nowe transakcje",
+      "importedMessage": "Transakcje zaimportowane z {{ institution }} przez codzienną synchronizację: {{ imported }}.",
+      "importedNoneTitle": "{{ institution }}: brak nowych transakcji",
+      "importedNoneMessage": "Codzienna synchronizacja {{ institution }} nie znalazła nowych transakcji."
     }
   },
   "backupOffsite": {

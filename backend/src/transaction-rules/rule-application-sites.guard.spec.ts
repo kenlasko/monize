@@ -62,6 +62,10 @@ export const APPLYING_SITES: Readonly<Record<string, string>> = {
   // over the regular rows it wrote, on the import's own manager.
   "import/mny/writers/write-transactions.ts":
     "import/mny/mny-import.service.ts",
+  // The bank sync's write transaction creates the rows and applies the import
+  // rules to them in the same transaction (docs/specs/bank-sync.md section 7).
+  "bank-sync/bank-sync-writer.service.ts":
+    "bank-sync/bank-sync-writer.service.ts",
 };
 
 /**

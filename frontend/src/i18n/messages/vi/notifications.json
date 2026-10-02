@@ -119,5 +119,21 @@
   "priceMovement": {
     "title": "Cảnh báo biến động giá: {symbol} ({percent}%)",
     "message": "{symbol}: {percent}% so với phiên có dữ liệu trước đó."
+  },
+  "bankSync": {
+    "expiringTitleToday": "{institution}: quyền truy cập ngân hàng kết thúc hôm nay",
+    "expiringTitleOneDay": "{institution}: quyền truy cập ngân hàng kết thúc trong vòng 1 ngày",
+    "expiringTitleDays": "{institution}: quyền truy cập ngân hàng kết thúc trong vòng {days} ngày",
+    "expiringMessage": "Sự đồng ý của bạn cho Monize đọc {institution} sẽ kết thúc vào {date}. Hãy gia hạn kết nối trong Monize để tiếp tục đồng bộ.",
+    "expiredTitle": "{institution}: quyền truy cập ngân hàng đã kết thúc",
+    "expiredMessage": "Sự đồng ý của bạn cho Monize đọc {institution} đã kết thúc. Hãy gia hạn kết nối trong Monize để đồng bộ trở lại.",
+    "failedTitle": "{institution}: đồng bộ thất bại",
+    "failedMessage": "Đồng bộ hằng ngày của {institution} đã thất bại với: {accounts}. Mở cài đặt đồng bộ ngân hàng để xem lý do.",
+    "failedCredentialsMessage": "Không thể bắt đầu đồng bộ hằng ngày của {institution} vì thông tin xác thực đồng bộ ngân hàng bị thiếu hoặc bị từ chối. Hãy kiểm tra chúng trong cài đặt đồng bộ ngân hàng.",
+    "unnamedAccount": "một tài khoản",
+    "importedTitle": "{institution}: đã nhập giao dịch mới",
+    "importedMessage": "Các giao dịch được nhập từ {institution} bởi đồng bộ hằng ngày: {imported}.",
+    "importedNoneTitle": "{institution}: không có giao dịch mới",
+    "importedNoneMessage": "Đồng bộ hằng ngày của {institution} không tìm thấy giao dịch mới."
   }
 }

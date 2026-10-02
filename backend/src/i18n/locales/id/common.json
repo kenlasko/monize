@@ -24,5 +24,20 @@
       "stalled": "Saya terus mengatakan akan melanjutkan alih-alih menyelesaikannya, jadi jawaban ini didasarkan pada data yang saya kumpulkan sebelum berhenti."
     },
     "synthesisFailed": "Saya mengumpulkan data untuk pertanyaan ini, tetapi tidak dapat menyelesaikan analisisnya, jadi saya tidak punya jawaban yang dapat diandalkan. Coba tanyakan sesuatu yang lebih spesifik."
+  },
+  "bankSync": {
+    "operationTypes": {
+      "cardPayment": "Pembayaran kartu",
+      "transferIn": "Transfer masuk",
+      "transferOut": "Transfer keluar",
+      "mobilePayment": "Pembayaran seluler",
+      "cashWithdrawal": "Penarikan tunai",
+      "cashWithdrawalBlik": "Penarikan tunai (BLIK)",
+      "mobilePaymentRefund": "Pengembalian dana pembayaran seluler",
+      "standingOrder": "Perintah pembayaran tetap",
+      "cashback": "Cashback",
+      "loanRepayment": "Pelunasan pinjaman",
+      "creditCardRepayment": "Pembayaran kartu kredit"
+    }
   }
 }

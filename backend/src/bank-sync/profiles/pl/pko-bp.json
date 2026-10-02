@@ -1,0 +1,73 @@
+{
+  "id": "pl/pko-bp",
+  "version": 1,
+  "source": "enable_banking",
+  "institution": {
+    "country": "PL",
+    "names": ["PKO Bank Polski"]
+  },
+  "operation": {
+    "location": ["remittance_line"]
+  },
+  "types": [
+    {
+      "key": "CARD-PAYMENT",
+      "match": { "exact": "CARD-PAYMENT" },
+      "label": "cardPayment"
+    },
+    {
+      "key": "MOBILE-PAYMENT-RETURN",
+      "match": { "prefix": "MOBILE-PAYMENT-", "suffix": "-RETURN" },
+      "label": "mobilePaymentRefund"
+    },
+    {
+      "key": "MOBILE-PAYMENT-ATM",
+      "match": { "prefix": "MOBILE-PAYMENT-ATM-" },
+      "label": "cashWithdrawalBlik"
+    },
+    {
+      "key": "MOBILE-PAYMENT",
+      "match": { "prefix": "MOBILE-PAYMENT-" },
+      "label": "mobilePayment"
+    },
+    {
+      "key": "ATM",
+      "match": { "prefix": "ATM-" },
+      "label": "cashWithdrawal"
+    },
+    {
+      "key": "TRANSFER-IN",
+      "match": { "exact": "TRANSFER-IN" },
+      "label": "transferIn"
+    },
+    {
+      "key": "TRANSFER-OUT",
+      "match": { "exact": "TRANSFER-OUT" },
+      "label": "transferOut"
+    },
+    {
+      "match": { "exact": "TRANSFER" },
+      "byDirection": { "credit": "TRANSFER-IN", "debit": "TRANSFER-OUT" }
+    },
+    {
+      "key": "STANDING-ORDER",
+      "match": { "exact": "STANDING-ORDER" },
+      "label": "standingOrder"
+    },
+    {
+      "key": "CASHBACK",
+      "match": { "exact": "CASHBACK" },
+      "label": "cashback"
+    },
+    {
+      "key": "LOAN-PAYOFF",
+      "match": { "exact": "LOAN-PAYOFF" },
+      "label": "loanRepayment"
+    },
+    {
+      "key": "CREDIT-CARD-AUTO-REPAYMENT",
+      "match": { "exact": "CREDIT-CARD-AUTO-REPAYMENT" },
+      "label": "creditCardRepayment"
+    }
+  ]
+}

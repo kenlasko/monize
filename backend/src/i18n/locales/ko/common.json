@@ -24,5 +24,20 @@
       "stalled": "마무리하지 않고 계속 작업하겠다는 말만 반복하여, 이 답변은 중단하기 전까지 수집한 데이터를 기반으로 합니다."
     },
     "synthesisFailed": "이 질문에 대한 데이터를 수집했지만 분석을 완료하지 못해 신뢰할 수 있는 답변이 없습니다. 범위를 좁혀서 다시 질문해 보세요."
+  },
+  "bankSync": {
+    "operationTypes": {
+      "cardPayment": "카드 결제",
+      "transferIn": "입금 이체",
+      "transferOut": "출금 이체",
+      "mobilePayment": "모바일 결제",
+      "cashWithdrawal": "현금 인출",
+      "cashWithdrawalBlik": "현금 인출 (BLIK)",
+      "mobilePaymentRefund": "모바일 결제 환불",
+      "standingOrder": "정기 이체",
+      "cashback": "캐시백",
+      "loanRepayment": "대출 상환",
+      "creditCardRepayment": "신용카드 상환"
+    }
   }
 }

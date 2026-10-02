@@ -11,7 +11,16 @@ import type { NotificationCategory } from '@/types/notification';
  * is a severity-driven admin fan-out, not a user toggle).
  */
 export const NOTIFICATION_PREFERENCE_CATEGORIES: readonly NotificationCategory[] =
-  ['PAYMENTS', 'BUDGETS', 'SYSTEM', 'BALANCES', 'INVESTMENTS', 'STRATEGIES'];
+  [
+    'PAYMENTS',
+    'BUDGETS',
+    'SYSTEM',
+    'BALANCES',
+    'INVESTMENTS',
+    'STRATEGIES',
+    'BANK_SYNC',
+    'BANK_SYNC_ACTIVITY',
+  ];
 
 /**
  * Which channels a matrix category exposes as a live control -- the client
@@ -47,6 +56,9 @@ export const NOTIFICATION_CATEGORY_CHANNELS: Record<
   BALANCES: { email: true, emailNotification: true, push: true, unifiedpush: true },
   INVESTMENTS: { email: true, emailNotification: true, push: true, unifiedpush: true },
   STRATEGIES: { email: true, emailNotification: true, push: true, unifiedpush: true },
+  // No report-mode digest for bank sync, so its report-email cell is not applicable.
+  BANK_SYNC: { email: false, emailNotification: true, push: true, unifiedpush: true },
+  BANK_SYNC_ACTIVITY: { email: false, emailNotification: true, push: true, unifiedpush: true },
 };
 
 /**

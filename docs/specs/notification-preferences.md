@@ -92,6 +92,16 @@ Proposed default matrix (a preference-less user):
 | investments  |   on   |  off  | off  |     off     |   0 min  |
 | prices       |   on   |  off  | off  |     off     |   5 min  |
 | goals        |   on   |  off  | off  |     off     |   0 min  |
+| bank_sync    |   on   |  on   |  on  |     off     |   0 min  |
+| bank_sync_activity | on |  off  | off  |     off     |   0 min  |
+
+The two bank sync groups (`docs/specs/bank-sync-notifications.md`, proposed)
+are the first with their own defaults: `NOTIFICATION_CATEGORY_DEFAULTS`, read
+only where no matrix row is stored, keeps every older group on the global
+defaults and gives `bank_sync` immediate email and push, because a consent
+about to end or a failed sync needs the user's action. A preference-less
+user's first matrix write starts from these defaults. Push still needs a
+device enabled first.
 
 Rationale: in-app is always the record (a user opts a group *out* of the bell
 deliberately, which is allowed but off the default path). email defaults on only

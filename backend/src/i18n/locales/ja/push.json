@@ -27,6 +27,14 @@
     "strategies": {
       "title": "戦略シグナル",
       "body": "いずれかの戦略が推奨内容を変更しました。詳細は Monize を開いてご確認ください。"
+    },
+    "bank_sync": {
+      "title": "銀行接続",
+      "body": "銀行接続の確認が必要です。詳細は Monize を開いてご確認ください。"
+    },
+    "bank_sync_activity": {
+      "title": "銀行同期",
+      "body": "銀行同期に新しいお知らせがあります。詳細は Monize を開いてご確認ください。"
     }
   },
   "actions": {

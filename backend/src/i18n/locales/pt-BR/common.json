@@ -24,5 +24,20 @@
       "stalled": "Continuei dizendo que seguiria trabalhando em vez de concluir, então esta resposta se baseia nos dados que coletei antes de parar."
     },
     "synthesisFailed": "Coletei dados para esta pergunta, mas não consegui concluir a análise, então não tenho uma resposta confiável. Tente perguntar algo mais específico."
+  },
+  "bankSync": {
+    "operationTypes": {
+      "cardPayment": "Pagamento com cartão",
+      "transferIn": "Transferência recebida",
+      "transferOut": "Transferência enviada",
+      "mobilePayment": "Pagamento móvel",
+      "cashWithdrawal": "Saque em dinheiro",
+      "cashWithdrawalBlik": "Saque em dinheiro (BLIK)",
+      "mobilePaymentRefund": "Estorno de pagamento móvel",
+      "standingOrder": "Ordem permanente",
+      "cashback": "Cashback",
+      "loanRepayment": "Pagamento de empréstimo",
+      "creditCardRepayment": "Pagamento de cartão de crédito"
+    }
   }
 }

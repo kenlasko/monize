@@ -76,6 +76,10 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-IMPORT-001 one active import | supporting | -- | required | **required** | required | supporting | -- | optional |
 | INV-IMPORT-002 retry never doubles | supporting | -- | required | required | -- | **required** | -- | required |
 | INV-IMPORT-003 category collision | supporting | -- | required | **required** | -- | -- | -- | -- |
+| INV-BANKSYNC-001 imported at most once | supporting | -- | **required** | required | supporting | -- | -- | -- |
+| INV-BANKSYNC-002 key never leaves the server | **required** | supporting | -- | -- | -- | -- | -- | -- |
+| INV-BANKSYNC-003 account currency or nothing | **required** | -- | required | -- | -- | -- | -- | -- |
+| INV-BANKSYNC-004 no import before the preview | required | -- | **required** | -- | -- | -- | -- | -- |
 | INV-BALANCE-001 balance equals ledger | supporting | -- | required | **required** | optional | required | -- | required |
 | INV-HOLDING-001 holding replay | supporting | -- | required | **required** | optional | required | -- | optional |
 | INV-HOLDING-002 one reducer | required | **required** | supporting | -- | -- | -- | -- | required |

@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "[XX-That Money file is password protected.-XX]",
     "mnyPasswordIncorrect": "[XX-That password does not open the Money file.-XX]",
     "mnyUnreadableDatabase": "[XX-That Money file was decrypted but its contents could not be read. It may be damaged.-XX]"
+  },
+  "preview": {
+    "choice": {
+      "legend": "[XX-What to do with {payee} if it is not imported-XX]",
+      "skip": "[XX-Skip now-XX]",
+      "except": "[XX-Add to exceptions-XX]"
+    },
+    "payeeTip": {
+      "name": "[XX-From the bank: {original}. Maps to: {name}-XX]",
+      "alias": "[XX-From the bank: {original}. Maps to: {name} (alias \"{pattern}\")-XX]",
+      "aliasNoPattern": "[XX-From the bank: {original}. Maps to: {name} (alias)-XX]",
+      "new": "[XX-From the bank: {original}. Maps to: {name} (new payee)-XX]",
+      "rule": "[XX-From the bank: {original}. Maps to: {name} (set by a rule)-XX]",
+      "ruleNone": "[XX-From the bank: {original}. Maps to: no payee (set by a rule)-XX]"
+    },
+    "expand": {
+      "show": "[XX-Show details of {payee}-XX]",
+      "hide": "[XX-Hide details of {payee}-XX]"
+    },
+    "rules": {
+      "heading": "[XX-Import rules-XX]",
+      "none": "[XX-No import rule matched this transaction.-XX]",
+      "unnamed": "[XX-Rule-XX]",
+      "skipped": "[XX-{action}: skipped ({reason})-XX]",
+      "stopped": "[XX-Stops the rules after it.-XX]",
+      "applied": "[XX-Applied: {actions}-XX]",
+      "openNewTab": "[XX-Open the rule {name} in a new tab-XX]"
+    },
+    "payee": {
+      "heading": "[XX-Payee-XX]",
+      "unknown": "[XX-No payee information for this transaction.-XX]",
+      "original": "[XX-The bank's text: {original}-XX]",
+      "name": "[XX-Matches your existing payee {name}.-XX]",
+      "alias": "[XX-Maps to {name} through the alias \"{pattern}\".-XX]",
+      "aliasNoPattern": "[XX-Maps to {name} through an alias.-XX]",
+      "new": "[XX-No payee has this name yet, so {name} would be created.-XX]",
+      "rule": "[XX-An import rule sets the payee: {name}.-XX]",
+      "ruleNone": "[XX-An import rule clears the payee.-XX]",
+      "none": "[XX-The bank gave no counterparty, so the transaction has no payee.-XX]",
+      "openAliases": "[XX-Open the payee's aliases-XX]",
+      "openAliasesNewTab": "[XX-Open the payee's aliases in a new tab-XX]"
+    }
   }
 }

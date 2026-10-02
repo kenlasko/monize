@@ -282,6 +282,18 @@ describe('SettingsPage', () => {
     });
   });
 
+  it('links the Bank Sync card at the bank sync page', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      // The card, not the nav entry: the nav link is an in-page anchor.
+      const card = screen
+        .getAllByText('Bank Sync')
+        .map((el) => el.closest('a'))
+        .find((a) => a?.getAttribute('href') === '/settings/bank-sync');
+      expect(card).toBeTruthy();
+    });
+  });
+
   it('links the Guided Tours card at the tours page', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
@@ -338,6 +350,9 @@ describe('SettingsPage', () => {
 
     expect(anchors.length).toBeGreaterThan(3);
     expect(navIds.length).toBe(anchors.length);
+    // Bank Sync sits immediately below AI Settings, in both.
+    expect(anchors.indexOf('bank-sync')).toBe(anchors.indexOf('ai-settings') + 1);
+    expect(navIds.indexOf('Bank Sync')).toBe(navIds.indexOf('AI Settings') + 1);
     // Guided Tours sits immediately above About, in both.
     expect(anchors.indexOf('tours')).toBe(anchors.indexOf('about') - 1);
     expect(navIds.indexOf('Guided Tours')).toBe(navIds.indexOf('About') - 1);

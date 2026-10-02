@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "Berkas Money itu dilindungi kata sandi.",
     "mnyPasswordIncorrect": "Kata sandi itu tidak membuka berkas Money.",
     "mnyUnreadableDatabase": "Berkas Money itu berhasil didekripsi, tetapi isinya tidak dapat dibaca. Mungkin rusak."
+  },
+  "preview": {
+    "choice": {
+      "legend": "Apa yang dilakukan dengan {payee} jika tidak diimpor",
+      "skip": "Lewati sekarang",
+      "except": "Tambahkan ke pengecualian"
+    },
+    "payeeTip": {
+      "name": "Dari bank: {original}. Dipetakan ke: {name}",
+      "alias": "Dari bank: {original}. Dipetakan ke: {name} (alias \"{pattern}\")",
+      "aliasNoPattern": "Dari bank: {original}. Dipetakan ke: {name} (alias)",
+      "new": "Dari bank: {original}. Dipetakan ke: {name} (penerima baru)",
+      "rule": "Dari bank: {original}. Dipetakan ke: {name} (ditetapkan oleh aturan)",
+      "ruleNone": "Dari bank: {original}. Dipetakan ke: tanpa penerima (ditetapkan oleh aturan)"
+    },
+    "expand": {
+      "show": "Tampilkan rincian {payee}",
+      "hide": "Sembunyikan rincian {payee}"
+    },
+    "rules": {
+      "heading": "Aturan impor",
+      "none": "Tidak ada aturan impor yang cocok dengan transaksi ini.",
+      "unnamed": "Aturan",
+      "skipped": "{action}: dilewati ({reason})",
+      "stopped": "Menghentikan aturan setelahnya.",
+      "applied": "Diterapkan: {actions}",
+      "openNewTab": "Buka aturan {name} di tab baru"
+    },
+    "payee": {
+      "heading": "Penerima",
+      "unknown": "Tidak ada informasi penerima untuk transaksi ini.",
+      "original": "Teks dari bank: {original}",
+      "name": "Cocok dengan penerima Anda yang sudah ada, {name}.",
+      "alias": "Dipetakan ke {name} melalui alias \"{pattern}\".",
+      "aliasNoPattern": "Dipetakan ke {name} melalui sebuah alias.",
+      "new": "Belum ada penerima dengan nama ini, sehingga {name} akan dibuat.",
+      "rule": "Aturan impor menetapkan penerima: {name}.",
+      "ruleNone": "Aturan impor menghapus penerima.",
+      "none": "Bank tidak menyebutkan pihak lawan, sehingga transaksi tidak memiliki penerima.",
+      "openAliases": "Buka alias penerima",
+      "openAliasesNewTab": "Buka alias penerima di tab baru"
+    }
   }
 }

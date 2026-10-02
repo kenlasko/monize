@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "이 Money 파일은 암호로 보호되어 있습니다.",
     "mnyPasswordIncorrect": "이 암호로는 Money 파일을 열 수 없습니다.",
     "mnyUnreadableDatabase": "이 Money 파일은 복호화되었지만 내용을 읽을 수 없습니다. 손상되었을 수 있습니다."
+  },
+  "preview": {
+    "choice": {
+      "legend": "{payee}을(를) 가져오지 않을 때의 처리",
+      "skip": "지금은 건너뛰기",
+      "except": "예외에 추가"
+    },
+    "payeeTip": {
+      "name": "은행 정보: {original}. 매핑: {name}",
+      "alias": "은행 정보: {original}. 매핑: {name} (별칭 \"{pattern}\")",
+      "aliasNoPattern": "은행 정보: {original}. 매핑: {name} (별칭)",
+      "new": "은행 정보: {original}. 매핑: {name} (새 수취인)",
+      "rule": "은행 정보: {original}. 매핑: {name} (규칙으로 설정됨)",
+      "ruleNone": "은행 정보: {original}. 매핑: 수취인 없음 (규칙으로 설정됨)"
+    },
+    "expand": {
+      "show": "{payee} 세부 정보 보기",
+      "hide": "{payee} 세부 정보 숨기기"
+    },
+    "rules": {
+      "heading": "가져오기 규칙",
+      "none": "이 거래와 일치하는 가져오기 규칙이 없습니다.",
+      "unnamed": "규칙",
+      "skipped": "{action}: 건너뜀 ({reason})",
+      "stopped": "이후 규칙을 중단합니다.",
+      "applied": "적용됨: {actions}",
+      "openNewTab": "규칙 {name}을 새 탭에서 열기"
+    },
+    "payee": {
+      "heading": "수취인",
+      "unknown": "이 거래의 수취인 정보가 없습니다.",
+      "original": "은행 텍스트: {original}",
+      "name": "기존 수취인 {name}과(와) 일치합니다.",
+      "alias": "별칭 \"{pattern}\"을(를) 통해 {name}에 매핑됩니다.",
+      "aliasNoPattern": "별칭을 통해 {name}에 매핑됩니다.",
+      "new": "이 이름의 수취인이 아직 없어 {name}이(가) 생성됩니다.",
+      "rule": "가져오기 규칙이 수취인을 설정합니다: {name}.",
+      "ruleNone": "가져오기 규칙이 수취인을 제거합니다.",
+      "none": "은행이 거래 상대방을 알려 주지 않아 이 거래에는 수취인이 없습니다.",
+      "openAliases": "수취인 별칭 열기",
+      "openAliasesNewTab": "수취인 별칭을 새 탭에서 열기"
+    }
   }
 }

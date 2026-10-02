@@ -1,0 +1,20 @@
+{
+  "id": "default",
+  "version": 1,
+  "source": "enable_banking",
+  "operation": {
+    "location": ["bank_transaction_code", "remittance_line"]
+  },
+  "types": [
+    {
+      "key": "TRANSFER-IN",
+      "match": { "exact": "TRANSFER-IN" },
+      "label": "transferIn"
+    },
+    {
+      "key": "TRANSFER-OUT",
+      "match": { "exact": "TRANSFER-OUT" },
+      "label": "transferOut"
+    }
+  ]
+}

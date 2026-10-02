@@ -508,6 +508,27 @@ least correct on failure: the provider is called and the response parsed before
 anything is saved, so a failed call leaves no partial rows, and a total provider
 failure throws rather than fabricating a result.
 
+### Bank sync
+
+A bank sync reads from the provider and writes only to PostgreSQL, so the
+external call has no effect to undo; what it has to get right is the order
+(`docs/specs/bank-sync.md` section 7). Every provider call runs outside any
+transaction: the fetch first, then one `withScopedDb` write that inserts the
+ledger row (`ON CONFLICT DO NOTHING RETURNING`, INV-BANKSYNC-001) before each
+transaction row. A process that dies between the fetch and the write has
+written nothing, and the next sync fetches again. The per-account lease
+(`JobClaimType.BankSyncAccount`) is released in a `finally`; it saves the
+bank's unattended-read allowance, and the ledger, not the lease, is what keeps
+a race correct.
+
+Two calls do have an effect at the provider. Starting an authorization is
+preceded by durable state (the connection row with the state hash, EXT-001),
+so an authorization that the user never completes is a `pending` row, not an
+orphan. Disconnecting asks the provider to delete the session before the
+local delete, and does not block on the answer: a session the provider kept
+expires with its consent. The previous session after a re-authorization is
+revoked the same way.
+
 ### Payee contact enrichment
 
 `backend/src/payees/lookup/` looks a new payee's website, address, email and

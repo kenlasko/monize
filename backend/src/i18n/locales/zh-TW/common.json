@@ -24,5 +24,20 @@
       "stalled": "我一再表示會繼續處理而沒有給出結論，因此這個回答是根據停止前已收集的資料。"
     },
     "synthesisFailed": "我已為本次提問收集資料，但無法完成分析，因此沒有可靠的答案。請嘗試提出範圍更小的問題。"
+  },
+  "bankSync": {
+    "operationTypes": {
+      "cardPayment": "刷卡消費",
+      "transferIn": "轉入",
+      "transferOut": "轉出",
+      "mobilePayment": "行動支付",
+      "cashWithdrawal": "提領現金",
+      "cashWithdrawalBlik": "提領現金 (BLIK)",
+      "mobilePaymentRefund": "行動支付退款",
+      "standingOrder": "定期轉帳",
+      "cashback": "現金回饋",
+      "loanRepayment": "貸款還款",
+      "creditCardRepayment": "信用卡還款"
+    }
   }
 }

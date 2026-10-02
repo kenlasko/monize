@@ -59,6 +59,14 @@ export enum NotificationType {
   // category). `data.kind` is "risk" (RISK_ON<->RISK_OFF) or "allocation".
   // See `docs/specs/gem-signal-change-notifications.md`.
   GEM_SIGNAL_CHANGED = "GEM_SIGNAL_CHANGED",
+  // Bank sync (BANK_SYNC and BANK_SYNC_ACTIVITY categories): consent reminders
+  // and the daily sync's outcomes. Each carries a dedupe_key (`bsc:...`) so a
+  // replica that loses the insert sends nothing. See
+  // `docs/specs/bank-sync-notifications.md`.
+  BANK_SYNC_CONSENT_EXPIRING = "BANK_SYNC_CONSENT_EXPIRING",
+  BANK_SYNC_CONSENT_EXPIRED = "BANK_SYNC_CONSENT_EXPIRED",
+  BANK_SYNC_FAILED = "BANK_SYNC_FAILED",
+  BANK_SYNC_IMPORTED = "BANK_SYNC_IMPORTED",
 }
 
 /**
@@ -114,6 +122,12 @@ export enum NotificationCategory {
   BALANCES = "BALANCES",
   INVESTMENTS = "INVESTMENTS",
   STRATEGIES = "STRATEGIES",
+  // What needs the user's action at a bank connection (consent ending or ended,
+  // a failed sync) versus what only reports (rows imported): two categories so
+  // the matrix can give them different default channels
+  // (`docs/specs/bank-sync-notifications.md` section 2).
+  BANK_SYNC = "BANK_SYNC",
+  BANK_SYNC_ACTIVITY = "BANK_SYNC_ACTIVITY",
 }
 
 /**
@@ -134,6 +148,13 @@ export const INVESTMENT_NOTIFICATION_TYPES: readonly NotificationType[] = [
 export const STRATEGY_NOTIFICATION_TYPES: readonly NotificationType[] = [
   NotificationType.GEM_SIGNAL_CHANGED,
 ];
+export const BANK_SYNC_NOTIFICATION_TYPES: readonly NotificationType[] = [
+  NotificationType.BANK_SYNC_CONSENT_EXPIRING,
+  NotificationType.BANK_SYNC_CONSENT_EXPIRED,
+  NotificationType.BANK_SYNC_FAILED,
+];
+export const BANK_SYNC_ACTIVITY_NOTIFICATION_TYPES: readonly NotificationType[] =
+  [NotificationType.BANK_SYNC_IMPORTED];
 
 /**
  * The category a type belongs to, derived rather than chosen -- and derived
@@ -171,6 +192,12 @@ export function notificationCategoryOf(
   }
   if (STRATEGY_NOTIFICATION_TYPES.includes(type)) {
     return NotificationCategory.STRATEGIES;
+  }
+  if (BANK_SYNC_NOTIFICATION_TYPES.includes(type)) {
+    return NotificationCategory.BANK_SYNC;
+  }
+  if (BANK_SYNC_ACTIVITY_NOTIFICATION_TYPES.includes(type)) {
+    return NotificationCategory.BANK_SYNC_ACTIVITY;
   }
   return NotificationCategory.BUDGETS;
 }

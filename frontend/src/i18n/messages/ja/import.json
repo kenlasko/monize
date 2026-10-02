@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "この Money ファイルはパスワードで保護されています。",
     "mnyPasswordIncorrect": "そのパスワードでは Money ファイルを開けません。",
     "mnyUnreadableDatabase": "この Money ファイルは復号できましたが、内容を読み取れませんでした。破損している可能性があります。"
+  },
+  "preview": {
+    "choice": {
+      "legend": "{payee} をインポートしない場合の扱い",
+      "skip": "今回はスキップ",
+      "except": "例外に追加"
+    },
+    "payeeTip": {
+      "name": "銀行から: {original}。対応先: {name}",
+      "alias": "銀行から: {original}。対応先: {name}（エイリアス「{pattern}」）",
+      "aliasNoPattern": "銀行から: {original}。対応先: {name}（エイリアス）",
+      "new": "銀行から: {original}。対応先: {name}（新しい支払先）",
+      "rule": "銀行から: {original}。対応先: {name}（ルールで設定）",
+      "ruleNone": "銀行から: {original}。対応先: 支払先なし（ルールで設定）"
+    },
+    "expand": {
+      "show": "{payee} の詳細を表示",
+      "hide": "{payee} の詳細を非表示"
+    },
+    "rules": {
+      "heading": "インポートルール",
+      "none": "この取引に一致するインポートルールはありません。",
+      "unnamed": "ルール",
+      "skipped": "{action}: スキップしました（{reason}）",
+      "stopped": "これ以降のルールを停止します。",
+      "applied": "適用: {actions}",
+      "openNewTab": "ルール {name} を新しいタブで開く"
+    },
+    "payee": {
+      "heading": "支払先",
+      "unknown": "この取引の支払先情報はありません。",
+      "original": "銀行のテキスト: {original}",
+      "name": "既存の支払先 {name} と一致します。",
+      "alias": "エイリアス「{pattern}」により {name} に対応します。",
+      "aliasNoPattern": "エイリアスにより {name} に対応します。",
+      "new": "この名前の支払先はまだないため、{name} が作成されます。",
+      "rule": "インポートルールが支払先を設定します: {name}。",
+      "ruleNone": "インポートルールが支払先を削除します。",
+      "none": "銀行から取引相手が示されなかったため、この取引には支払先がありません。",
+      "openAliases": "支払先のエイリアスを開く",
+      "openAliasesNewTab": "支払先のエイリアスを新しいタブで開く"
+    }
   }
 }

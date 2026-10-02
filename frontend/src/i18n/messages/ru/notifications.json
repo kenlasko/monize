@@ -119,5 +119,21 @@
   "priceMovement": {
     "title": "Уведомление об изменении цены: {symbol} ({percent}%)",
     "message": "{symbol}: {percent}% относительно предыдущей доступной сессии."
+  },
+  "bankSync": {
+    "expiringTitleToday": "{institution}: доступ к банку заканчивается сегодня",
+    "expiringTitleOneDay": "{institution}: доступ к банку заканчивается в течение 1 дня",
+    "expiringTitleDays": "{institution}: доступ к банку заканчивается в течение {days} дн.",
+    "expiringMessage": "Ваше согласие на чтение {institution} в Monize заканчивается {date}. Продлите подключение в Monize, чтобы синхронизация продолжалась.",
+    "expiredTitle": "{institution}: доступ к банку закончился",
+    "expiredMessage": "Ваше согласие на чтение {institution} в Monize закончилось. Продлите подключение в Monize, чтобы возобновить синхронизацию.",
+    "failedTitle": "{institution}: сбой синхронизации",
+    "failedMessage": "Ежедневная синхронизация {institution} не удалась для счетов: {accounts}. Откройте настройки банковской синхронизации, чтобы узнать причину.",
+    "failedCredentialsMessage": "Ежедневную синхронизацию {institution} не удалось запустить: учётные данные банковской синхронизации отсутствуют или были отклонены. Проверьте их в настройках банковской синхронизации.",
+    "unnamedAccount": "счёт без названия",
+    "importedTitle": "{institution}: импортированы новые проводки",
+    "importedMessage": "Проводки, импортированные из {institution} ежедневной синхронизацией: {imported}.",
+    "importedNoneTitle": "{institution}: новых проводок нет",
+    "importedNoneMessage": "Ежедневная синхронизация {institution} не нашла новых проводок."
   }
 }

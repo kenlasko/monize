@@ -308,6 +308,22 @@
     "priceMovement": {
       "title": "Alerte de variation du cours: {{ symbol }} ({{ percent }}%)",
       "message": "{{ symbol }} : {{ percent }}% par rapport à la séance précédente disponible."
+    },
+    "bankSync": {
+      "expiringTitleToday": "{{ institution }} : l'accès bancaire prend fin aujourd'hui",
+      "expiringTitleOneDay": "{{ institution }} : l'accès bancaire prend fin d'ici 1 jour",
+      "expiringTitleDays": "{{ institution }} : l'accès bancaire prend fin d'ici {{ days }} jours",
+      "expiringMessage": "Votre consentement permettant à Monize de lire {{ institution }} prend fin le {{ date }}. Renouvelez la connexion dans Monize pour continuer à synchroniser.",
+      "expiredTitle": "{{ institution }} : l'accès bancaire a pris fin",
+      "expiredMessage": "Votre consentement permettant à Monize de lire {{ institution }} a pris fin. Renouvelez la connexion dans Monize pour reprendre la synchronisation.",
+      "failedTitle": "{{ institution }} : échec de la synchronisation",
+      "failedMessage": "La synchronisation quotidienne de {{ institution }} a échoué pour : {{ accounts }}. Ouvrez les paramètres de synchronisation bancaire pour en voir la cause.",
+      "failedCredentialsMessage": "La synchronisation quotidienne de {{ institution }} n'a pas pu démarrer, car les identifiants de la synchronisation bancaire sont absents ou ont été refusés. Vérifiez-les dans les paramètres de synchronisation bancaire.",
+      "unnamedAccount": "un compte",
+      "importedTitle": "{{ institution }} : nouvelles transactions importées",
+      "importedMessage": "Transactions importées depuis {{ institution }} par la synchronisation quotidienne : {{ imported }}.",
+      "importedNoneTitle": "{{ institution }} : aucune nouvelle transaction",
+      "importedNoneMessage": "La synchronisation quotidienne de {{ institution }} n'a trouvé aucune nouvelle transaction."
     }
   },
   "backupOffsite": {

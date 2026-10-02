@@ -66,6 +66,10 @@ export const JobClaimType = {
   SystemAlertEmail: "system_alert_email",
   BudgetPeriodRollover: "budget_period_rollover",
   BudgetWeeklyDigest: "budget_weekly_digest",
+  /** One bank account's sync, held as a lease (spec docs/specs/bank-sync.md section 7). */
+  BankSyncAccount: "bank_sync_account",
+  /** One user's daily bank sync, claimed once per UTC day (spec section 8). */
+  BankSyncDaily: "bank_sync_daily",
 } as const;
 
 export type JobClaimType = (typeof JobClaimType)[keyof typeof JobClaimType];

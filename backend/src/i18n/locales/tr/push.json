@@ -27,6 +27,14 @@
     "strategies": {
       "title": "Strateji sinyali",
       "body": "Stratejilerinizden biri önerisini değiştirdi. Ayrıntılar için Monize'i açın."
+    },
+    "bank_sync": {
+      "title": "Banka bağlantısı",
+      "body": "Bir banka bağlantısı ilginizi bekliyor. Ayrıntılar için Monize'i açın."
+    },
+    "bank_sync_activity": {
+      "title": "Banka senkronizasyonu",
+      "body": "Banka senkronizasyonunuzda yenilikler var. Ayrıntılar için Monize'i açın."
     }
   },
   "actions": {

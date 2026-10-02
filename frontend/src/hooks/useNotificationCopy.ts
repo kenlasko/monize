@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 
@@ -70,8 +70,42 @@ function daysUntil(dueDate: string): number {
   return Math.round((due.getTime() - today.getTime()) / 86_400_000);
 }
 
+/**
+ * The days-left marks a consent reminder is written at. Mirrors the backend's
+ * `CONSENT_REMINDER_THRESHOLDS` (`bank-sync-notifications.ts`), held equal by
+ * `bank-sync-notifications.contract.test.ts`.
+ */
+export const BANK_SYNC_REMINDER_MARKS: readonly number[] = [30, 14, 7, 3, 2, 1, 0];
+
+/**
+ * The `failures` a bank sync failure row carries, or null when absent, empty or
+ * malformed (the row then shows its stored English whole).
+ */
+function bankSyncFailures(value: unknown): { label: string | null; code: string }[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const failures: { label: string | null; code: string }[] = [];
+  for (const item of value) {
+    if (typeof item !== 'object' || item === null) return null;
+    const { label, code } = item as Record<string, unknown>;
+    if (typeof code !== 'string' || code === '') return null;
+    if (label !== null && label !== undefined && typeof label !== 'string') return null;
+    failures.push({ label: typeof label === 'string' && label !== '' ? label : null, code });
+  }
+  return failures;
+}
+
+/** A list as the reader's language joins it ("A, B and C"); no separator is written here. */
+function joinList(items: string[], locale: string): string {
+  try {
+    return new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(items);
+  } catch {
+    return new Intl.ListFormat(undefined, { style: 'long', type: 'conjunction' }).format(items);
+  }
+}
+
 export function useNotificationCopy() {
   const t = useTranslations('notifications');
+  const locale = useLocale();
   const { formatCurrency, formatNumber } = useNumberFormat();
   const { formatDate } = useDateFormat();
   /**
@@ -375,6 +409,82 @@ export function useNotificationCopy() {
         });
   };
 
+  /**
+   * A bank sync row (consent reminder, expiry notice, failed or successful daily
+   * sync), composed from the producer's `data` facts
+   * (`docs/specs/bank-sync-notifications.md`). Nothing here counts days from
+   * "now": a reminder says what the stored mark and end date say, so the copy is
+   * the same on the day it is read as on the day it was written. A row whose
+   * facts are missing or malformed returns null and shows its stored English.
+   */
+  const bankSyncCopy = (notification: Notification, part: 'title' | 'message'): string | null => {
+    const data = notification.data ?? {};
+    const institution = typeof data.institutionName === 'string' ? data.institutionName : '';
+    if (institution === '') return null;
+    switch (notification.type) {
+      case 'BANK_SYNC_CONSENT_EXPIRING': {
+        const { threshold, validUntil } = data;
+        if (
+          typeof threshold !== 'number' ||
+          !BANK_SYNC_REMINDER_MARKS.includes(threshold) ||
+          typeof validUntil !== 'string' ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(validUntil)
+        ) {
+          return null;
+        }
+        if (part === 'message') {
+          return t('bankSync.expiringMessage', { institution, date: formatDate(validUntil) });
+        }
+        return t(
+          threshold === 0
+            ? 'bankSync.expiringTitleToday'
+            : threshold === 1
+              ? 'bankSync.expiringTitleOneDay'
+              : 'bankSync.expiringTitleDays',
+          { institution, days: formatNumber(threshold, 0) },
+        );
+      }
+      case 'BANK_SYNC_CONSENT_EXPIRED':
+        return t(part === 'title' ? 'bankSync.expiredTitle' : 'bankSync.expiredMessage', {
+          institution,
+        });
+      case 'BANK_SYNC_FAILED': {
+        const failures = bankSyncFailures(data.failures);
+        if (failures === null) return null;
+        if (part === 'title') return t('bankSync.failedTitle', { institution });
+        // One repair for the reader when every account failed on the credentials.
+        if (failures.every((failure) => failure.code === 'credentials')) {
+          return t('bankSync.failedCredentialsMessage', { institution });
+        }
+        return t('bankSync.failedMessage', {
+          institution,
+          accounts: joinList(
+            failures.map((failure) => failure.label ?? t('bankSync.unnamedAccount')),
+            locale,
+          ),
+        });
+      }
+      case 'BANK_SYNC_IMPORTED': {
+        const imported = data.imported;
+        if (typeof imported !== 'number' || !Number.isInteger(imported) || imported < 0) {
+          return null;
+        }
+        if (imported === 0) {
+          return t(
+            part === 'title' ? 'bankSync.importedNoneTitle' : 'bankSync.importedNoneMessage',
+            { institution },
+          );
+        }
+        return t(part === 'title' ? 'bankSync.importedTitle' : 'bankSync.importedMessage', {
+          institution,
+          imported: formatNumber(imported, 0),
+        });
+      }
+      default:
+        return null;
+    }
+  };
+
   const priceCopy = (notification: Notification, part: 'title' | 'message'): string | null => {
     const data = notification.data;
     if (notification.type !== 'SECURITY_PRICE_MOVEMENT' || typeof data?.symbol !== 'string' ||
@@ -390,6 +500,7 @@ export function useNotificationCopy() {
       gemSignalTitle(notification) ??
       portfolioMovementTitle(notification) ??
       balanceThresholdTitle(notification) ??
+      bankSyncCopy(notification, 'title') ??
       notification.title,
     message:
       priceCopy(notification, 'message') ??
@@ -398,6 +509,7 @@ export function useNotificationCopy() {
       gemSignalMessage(notification) ??
       portfolioMovementMessage(notification) ??
       balanceThresholdMessage(notification) ??
+      bankSyncCopy(notification, 'message') ??
       notification.message,
   });
 }

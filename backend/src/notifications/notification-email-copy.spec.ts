@@ -123,6 +123,29 @@ const examples = {
     fromState: "RISK_ON",
     toState: "RISK_OFF",
   },
+  BANK_SYNC_CONSENT_EXPIRING: {
+    connectionId: "c1",
+    institutionName: "Test Bank",
+    validUntil: "2027-03-30",
+    threshold: 7,
+  },
+  BANK_SYNC_CONSENT_EXPIRED: {
+    connectionId: "c1",
+    institutionName: "Test Bank",
+    validUntil: "2027-03-30",
+  },
+  BANK_SYNC_FAILED: {
+    connectionId: "c1",
+    institutionName: "Test Bank",
+    failures: [{ bankAccountId: "b1", label: "Main account", code: "refused" }],
+  },
+  BANK_SYNC_IMPORTED: {
+    connectionId: "c1",
+    institutionName: "Test Bank",
+    imported: 1234,
+    skipped: 1,
+    accounts: 2,
+  },
 } satisfies Record<
   Exclude<NotificationType, NotificationType.PACE_WARNING>,
   Record<string, unknown>
@@ -451,6 +474,40 @@ describe("notification email copy", () => {
       NotificationType.SEASONAL_SPIKE,
       { ...examples.SEASONAL_SPIKE, highMonth: 13 },
     ],
+    [
+      NotificationType.BANK_SYNC_CONSENT_EXPIRING,
+      { ...examples.BANK_SYNC_CONSENT_EXPIRING, threshold: 5 },
+    ],
+    [
+      NotificationType.BANK_SYNC_CONSENT_EXPIRING,
+      { ...examples.BANK_SYNC_CONSENT_EXPIRING, validUntil: "2027-02-30" },
+    ],
+    [
+      NotificationType.BANK_SYNC_CONSENT_EXPIRING,
+      { ...examples.BANK_SYNC_CONSENT_EXPIRING, institutionName: "" },
+    ],
+    [NotificationType.BANK_SYNC_CONSENT_EXPIRED, { connectionId: "c1" }],
+    [
+      NotificationType.BANK_SYNC_FAILED,
+      { ...examples.BANK_SYNC_FAILED, failures: [] },
+    ],
+    [
+      NotificationType.BANK_SYNC_FAILED,
+      { ...examples.BANK_SYNC_FAILED, failures: [{ label: "x" }] },
+    ],
+    [NotificationType.BANK_SYNC_FAILED, { institutionName: "Test Bank" }],
+    [
+      NotificationType.BANK_SYNC_IMPORTED,
+      { ...examples.BANK_SYNC_IMPORTED, imported: -1 },
+    ],
+    [
+      NotificationType.BANK_SYNC_IMPORTED,
+      { ...examples.BANK_SYNC_IMPORTED, imported: 1.5 },
+    ],
+    [
+      NotificationType.BANK_SYNC_IMPORTED,
+      { institutionName: "Test Bank", imported: undefined },
+    ],
   ])(
     "retains the entire stored copy for incomplete or malformed %s data",
     (type, data) => {
@@ -488,6 +545,123 @@ describe("notification email copy", () => {
         message: "Stored message",
       });
     }
+  });
+
+  describe("bank sync copy", () => {
+    const copyOf = (
+      type: NotificationType,
+      data: Record<string, unknown>,
+      lang = "en",
+    ) =>
+      notificationEmailCopy(
+        source(type, data),
+        emailTranslator(i18n, lang),
+        lang,
+        { now },
+      );
+
+    it.each([
+      [30, "Test Bank: bank access ends within 30 days"],
+      [14, "Test Bank: bank access ends within 14 days"],
+      [3, "Test Bank: bank access ends within 3 days"],
+      [1, "Test Bank: bank access ends within 1 day"],
+      [0, "Test Bank: bank access ends today"],
+    ])(
+      "words the %s-day consent reminder from the stored mark",
+      (mark, title) => {
+        const copy = copyOf(NotificationType.BANK_SYNC_CONSENT_EXPIRING, {
+          ...examples.BANK_SYNC_CONSENT_EXPIRING,
+          threshold: mark,
+        });
+        expect(copy.title).toBe(title);
+        // The end is a stored date, rendered in the reader's language.
+        expect(copy.message).toContain("Mar 30, 2027");
+      },
+    );
+
+    it("renders the reminder from the stored facts, whatever day it is delivered", () => {
+      // The mark and the date are the producer's; nothing counts from `now`.
+      const row = source(
+        NotificationType.BANK_SYNC_CONSENT_EXPIRING,
+        examples.BANK_SYNC_CONSENT_EXPIRING,
+      );
+      const later = notificationEmailCopy(row, englishEmailT, "en", {
+        now: new Date("2027-03-29T12:00:00Z"),
+      });
+      expect(later).toEqual(
+        notificationEmailCopy(row, englishEmailT, "en", { now }),
+      );
+    });
+
+    it("names the reader's language for the date and the list of accounts", () => {
+      const pl = copyOf(
+        NotificationType.BANK_SYNC_CONSENT_EXPIRING,
+        examples.BANK_SYNC_CONSENT_EXPIRING,
+        "pl",
+      );
+      expect(pl.message).toContain("30 mar 2027");
+      const failed = copyOf(NotificationType.BANK_SYNC_FAILED, {
+        institutionName: "Test Bank",
+        failures: [
+          { bankAccountId: "b1", label: "Main", code: "refused" },
+          { bankAccountId: "b2", label: "Savings", code: "refused" },
+          { bankAccountId: "b3", label: null, code: "rate_limited" },
+        ],
+      });
+      expect(failed.message).toContain("Main, Savings, and an account");
+    });
+
+    it("says one thing when every failure is the credentials", () => {
+      const copy = copyOf(NotificationType.BANK_SYNC_FAILED, {
+        institutionName: "Test Bank",
+        failures: [
+          { bankAccountId: "b1", label: "Main", code: "credentials" },
+          { bankAccountId: "b2", label: null, code: "credentials" },
+        ],
+      });
+      expect(copy.message).toContain("credentials");
+      expect(copy.message).not.toContain("Main");
+    });
+
+    it("formats the imported count in the recipient's number format and reports none as none", () => {
+      const row = source(
+        NotificationType.BANK_SYNC_IMPORTED,
+        examples.BANK_SYNC_IMPORTED,
+      );
+      expect(
+        notificationEmailCopy(row, englishEmailT, "en", {
+          now,
+          numberFormat: "pl-PL",
+        }).message,
+      ).toContain("1234");
+      expect(
+        notificationEmailCopy(row, englishEmailT, "en", {
+          now,
+          numberFormat: "en-US",
+        }).message,
+      ).toContain("1,234");
+      const none = copyOf(NotificationType.BANK_SYNC_IMPORTED, {
+        ...examples.BANK_SYNC_IMPORTED,
+        imported: 0,
+      });
+      expect(none.title).toBe("Test Bank: no new transactions");
+      expect(none.message).not.toMatch(/\b0\b/);
+    });
+
+    it("keeps an institution name literal and the template escapes it once", () => {
+      const copy = copyOf(NotificationType.BANK_SYNC_CONSENT_EXPIRED, {
+        institutionName: "<img src=x> & {{ days }}",
+      });
+      expect(copy.message).toContain("<img src=x> & {{ days }}");
+      const html = notificationImmediateTemplate({
+        ...copy,
+        severity: "critical",
+        url: "https://example.com",
+      });
+      expect(html).toContain("&lt;img src=x&gt; &amp; {{ days }}");
+      expect(html).not.toContain("<img");
+      expect(html).not.toContain("&amp;lt;");
+    });
   });
 
   it.each(SUPPORTED_LOCALE_CODES)(

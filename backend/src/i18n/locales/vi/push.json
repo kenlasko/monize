@@ -27,6 +27,14 @@
     "strategies": {
       "title": "Tín hiệu chiến lược",
       "body": "Một trong các chiến lược của bạn đã thay đổi khuyến nghị. Mở Monize để xem chi tiết."
+    },
+    "bank_sync": {
+      "title": "Kết nối ngân hàng",
+      "body": "Một kết nối ngân hàng cần được chú ý. Mở Monize để xem chi tiết."
+    },
+    "bank_sync_activity": {
+      "title": "Đồng bộ ngân hàng",
+      "body": "Đồng bộ ngân hàng của bạn có tin mới. Mở Monize để xem chi tiết."
     }
   },
   "actions": {

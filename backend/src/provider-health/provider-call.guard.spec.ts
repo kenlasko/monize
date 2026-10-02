@@ -14,13 +14,21 @@ const SRC_ROOT = join(__dirname, "..");
  * per payee, from every user, against one third-party host -- even though it
  * runs in front of a waiting person rather than in a background refresh.
  *
+ * `bank-sync/providers/enable-banking` joined for the same reason: the daily
+ * bank sync makes one call per linked bank account for every user, against one
+ * third-party host.
+ *
  * Still scoped deliberately. The FX, AI, favicon, release-check and
  * breach-check callers have the same shape and are named in
  * `docs/specs/provider-outage-alerts.md` as the next adopters; widening this
  * scan before they adopt would only be a failing test nobody can fix in one
  * change.
  */
-const GUARDED_DIRS = ["securities", "payees/lookup/google-places"];
+const GUARDED_DIRS = [
+  "securities",
+  "payees/lookup/google-places",
+  "bank-sync/providers/enable-banking",
+];
 
 /** A bare global `fetch(` or a raw `https.get(` -- an outbound request. */
 const OUTBOUND_CALL = /(?<![.\w])fetch\(|https\.(get|request)\(/;
@@ -57,6 +65,7 @@ describe("outbound provider calls are answerable to the breaker", () => {
       OUTBOUND_CALL.test(file.source),
     );
     expect(callers.map((file) => file.path).sort()).toEqual([
+      "bank-sync/providers/enable-banking/enable-banking.client.ts",
       "payees/lookup/google-places/google-places.client.ts",
       "securities/deutsche-boerse-finance.service.ts",
       "securities/lse-finance.service.ts",
@@ -133,6 +142,9 @@ describe("a response is recorded in one place per client", () => {
     // Google Places: two. The non-2xx branch, which is a complete answer, and
     // the point the body finishes arriving -- the same split Yahoo documents.
     ["payees/lookup/google-places/google-places.client.ts", 2],
+    // Enable Banking: two, the same split as Google Places. Every call funnels
+    // through one `request` method, so the rule lives there once.
+    ["bank-sync/providers/enable-banking/enable-banking.client.ts", 2],
   ])("%s records an arrived response in at most %i places", (file, allowed) => {
     const source = readFileSync(join(SRC_ROOT, file), "utf8");
     const occurrences = source.split("recordSuccess(").length - 1;

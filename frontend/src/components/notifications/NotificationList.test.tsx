@@ -984,6 +984,162 @@ describe('NotificationList', () => {
     });
   });
 
+  describe('bank sync notifications', () => {
+    // The producer (`docs/specs/bank-sync-notifications.md`) writes facts, never
+    // "in 3 days": the stored mark and date are rendered, so a row read weeks
+    // after it was written says what it said on the day.
+    const bankSyncRow = (
+      type: Notification['type'],
+      data: Record<string, unknown>,
+      over: Partial<Notification> = {},
+    ): Notification =>
+      makeNotification({
+        id: 'bank-sync-1',
+        budgetId: null,
+        budgetCategoryId: null,
+        type,
+        severity: 'warning',
+        title: 'STORED ENGLISH TITLE',
+        message: 'STORED ENGLISH MESSAGE',
+        target: '/settings/bank-sync',
+        data,
+        ...over,
+      });
+
+    const renderRow = (row: Notification) =>
+      render(<NotificationList {...defaultProps} notifications={[row]} />);
+
+    it.each([
+      [30, 'Alpha Bank: bank access ends within 30 days'],
+      [7, 'Alpha Bank: bank access ends within 7 days'],
+      [2, 'Alpha Bank: bank access ends within 2 days'],
+      [1, 'Alpha Bank: bank access ends within 1 day'],
+      [0, 'Alpha Bank: bank access ends today'],
+    ])('words the %s-day consent reminder from the stored mark', (threshold, title) => {
+      renderRow(
+        bankSyncRow('BANK_SYNC_CONSENT_EXPIRING', {
+          connectionId: 'c1',
+          institutionName: 'Alpha Bank',
+          validUntil: '2027-03-30',
+          threshold,
+        }),
+      );
+
+      expect(screen.getByText(title)).toBeInTheDocument();
+      // The end is a stored date in the reader's date format, not the raw ISO.
+      expect(
+        screen.getByText(/ends on 30\.03\.2027\. Renew the connection/),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('STORED ENGLISH TITLE')).not.toBeInTheDocument();
+    });
+
+    it('says the same on any day it is read: nothing is counted from the clock', () => {
+      renderRow(
+        bankSyncRow(
+          'BANK_SYNC_CONSENT_EXPIRING',
+          {
+            institutionName: 'Alpha Bank',
+            validUntil: '2020-01-31',
+            threshold: 14,
+          },
+          { createdAt: '2019-12-31T06:23:00.000Z' },
+        ),
+      );
+      // A row whose end is long past still reads as it was written.
+      expect(
+        screen.getByText('Alpha Bank: bank access ends within 14 days'),
+      ).toBeInTheDocument();
+    });
+
+    it('opens the bank sync settings when the row is clicked', () => {
+      renderRow(
+        bankSyncRow('BANK_SYNC_CONSENT_EXPIRED', {
+          institutionName: 'Alpha Bank',
+          validUntil: '2027-03-30',
+        }),
+      );
+      fireEvent.click(screen.getByTestId('notification-item-bank-sync-1'));
+      expect(mockPush).toHaveBeenCalledWith('/settings/bank-sync');
+    });
+
+    it('says the consent has ended', () => {
+      renderRow(
+        bankSyncRow('BANK_SYNC_CONSENT_EXPIRED', {
+          institutionName: 'Alpha Bank',
+          validUntil: null,
+        }),
+      );
+      expect(screen.getByText('Alpha Bank: bank access has ended')).toBeInTheDocument();
+      expect(screen.getByText(/has ended\. Renew the connection in Monize to resume syncing/)).toBeInTheDocument();
+    });
+
+    it('lists the failed accounts by label, in the reader\'s language', () => {
+      renderRow(
+        bankSyncRow('BANK_SYNC_FAILED', {
+          institutionName: 'Alpha Bank',
+          failures: [
+            { bankAccountId: 'b1', label: 'Main account', code: 'rate_limited' },
+            { bankAccountId: 'b2', label: 'Savings', code: 'unavailable' },
+            { bankAccountId: 'b3', label: null, code: 'unavailable' },
+          ],
+        }),
+      );
+      expect(screen.getByText('Alpha Bank: sync failed')).toBeInTheDocument();
+      expect(
+        screen.getByText(/failed for: Main account, Savings, and an account\./),
+      ).toBeInTheDocument();
+    });
+
+    it('says one thing when every account failed on the credentials', () => {
+      renderRow(
+        bankSyncRow('BANK_SYNC_FAILED', {
+          institutionName: 'Alpha Bank',
+          failures: [{ bankAccountId: 'b1', label: 'Main', code: 'credentials' }],
+        }),
+      );
+      expect(screen.getByText(/credentials are missing or were rejected/)).toBeInTheDocument();
+      expect(screen.queryByText(/Main/)).not.toBeInTheDocument();
+    });
+
+    it('formats the imported count in the reader\'s number format', () => {
+      renderRow(
+        bankSyncRow(
+          'BANK_SYNC_IMPORTED',
+          { institutionName: 'Alpha Bank', imported: 1234, skipped: 0, accounts: 2 },
+          { severity: 'success' },
+        ),
+      );
+      expect(screen.getByText('Alpha Bank: new transactions imported')).toBeInTheDocument();
+      expect(screen.getByText(/imported from Alpha Bank by the daily sync: 1,234\./)).toBeInTheDocument();
+    });
+
+    it('reports a sync that found nothing as such', () => {
+      renderRow(
+        bankSyncRow(
+          'BANK_SYNC_IMPORTED',
+          { institutionName: 'Alpha Bank', imported: 0, skipped: 3, accounts: 1 },
+          { severity: 'success' },
+        ),
+      );
+      expect(screen.getByText('Alpha Bank: no new transactions')).toBeInTheDocument();
+      expect(screen.getByText(/found no new transactions/)).toBeInTheDocument();
+    });
+
+    it.each([
+      ['an unknown mark', 'BANK_SYNC_CONSENT_EXPIRING', { institutionName: 'A', validUntil: '2027-03-30', threshold: 5 }],
+      ['no date', 'BANK_SYNC_CONSENT_EXPIRING', { institutionName: 'A', threshold: 7 }],
+      ['no institution', 'BANK_SYNC_CONSENT_EXPIRED', {}],
+      ['an empty failure list', 'BANK_SYNC_FAILED', { institutionName: 'A', failures: [] }],
+      ['a malformed failure', 'BANK_SYNC_FAILED', { institutionName: 'A', failures: [{ label: 'x' }] }],
+      ['a fractional count', 'BANK_SYNC_IMPORTED', { institutionName: 'A', imported: 1.5 }],
+      ['a negative count', 'BANK_SYNC_IMPORTED', { institutionName: 'A', imported: -1 }],
+    ] as const)('falls back to the stored English for %s', (_label, type, data) => {
+      renderRow(bankSyncRow(type, { ...data }));
+      expect(screen.getByText('STORED ENGLISH TITLE')).toBeInTheDocument();
+      expect(screen.getByText('STORED ENGLISH MESSAGE')).toBeInTheDocument();
+    });
+  });
+
   describe('filters', () => {
     it('renders one chip per severity and per category', () => {
       render(<NotificationList {...defaultProps} />);

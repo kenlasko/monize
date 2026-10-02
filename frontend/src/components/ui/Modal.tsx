@@ -97,6 +97,19 @@ interface ModalProps {
    *  win below 640px and vanish above it without touching the base classes
    *  the other call sites rely on. Centre variant only. */
   fullScreenOnPhone?: boolean;
+  /** Give the panel a fixed height (the smaller of 90vh and 56rem) as a flex
+   *  column, so the header and the footer stay where they are and the body is a
+   *  flex child (`min-h-0 flex-1`, itself a flex column) that takes whatever
+   *  height is left. The panel no longer scrolls: the caller makes one region
+   *  of its body scroll (`min-h-0 flex-1 overflow-y-auto`), which is how a long
+   *  list keeps its footer's action on the screen with no second scrollbar and
+   *  no gap under the footer.
+   *
+   *  The body is always wrapped here, with the `padding` asked for. It scrolls
+   *  only as a last resort, when a viewport is too short for what the caller
+   *  gave a floor to. Off by default; combined with `fullScreenOnPhone` the
+   *  phone gets the whole viewport. Centre variant only. */
+  fixedHeight?: boolean;
 }
 
 const maxWidthClasses = {
@@ -127,6 +140,7 @@ export function Modal({
   footer,
   padding = 'none',
   fullScreenOnPhone = false,
+  fixedHeight = false,
 }: ModalProps) {
   const t = useTranslations('common');
   const generatedId = useId();
@@ -340,6 +354,7 @@ export function Modal({
 
   const isDrawer = variant === 'drawer-left';
   const fillPhone = fullScreenOnPhone && !isDrawer;
+  const fixed = fixedHeight && !isDrawer;
 
   // Backdrop alignment: drawer pins its panel to the left edge; the default
   // centers the card with padding.
@@ -362,7 +377,11 @@ export function Modal({
   // and popstate machinery for a few hundred milliseconds of polish.
   const panelClassName = isDrawer
     ? `bg-white dark:bg-gray-800 shadow-xl dark:shadow-gray-700/50 h-full w-[85%] max-w-sm ${overflowClass} outline-none transition-transform duration-200 ease-out translate-x-0 starting:-translate-x-full motion-reduce:transition-none ${className}`
-    : `bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] ${overflowClass} outline-none transition duration-200 ease-out opacity-100 scale-100 starting:opacity-0 starting:scale-95 motion-reduce:transition-none${fillPhone ? ' max-sm:h-dvh max-sm:max-h-none max-sm:max-w-none max-sm:rounded-none' : ''} ${className}`;
+    : `bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 ${maxWidthClasses[maxWidth]} w-full ${
+        fixed
+          ? `h-[min(90vh,56rem)] flex flex-col ${allowOverflow ? 'overflow-visible' : 'overflow-hidden'}`
+          : `max-h-[90vh] ${overflowClass}`
+      } outline-none transition duration-200 ease-out opacity-100 scale-100 starting:opacity-0 starting:scale-95 motion-reduce:transition-none${fillPhone ? ' max-sm:h-dvh max-sm:max-h-none max-sm:max-w-none max-sm:rounded-none' : ''} ${className}`;
 
   return createPortal(
     <div
@@ -381,7 +400,9 @@ export function Modal({
         onSubmit={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-4 py-3 sm:px-6 dark:border-gray-700">
+          <div
+            className={`flex items-start justify-between gap-4 border-b border-gray-200 px-4 py-3 sm:px-6 dark:border-gray-700${fixed ? ' shrink-0' : ''}`}
+          >
             <div className="min-w-0">
               <h2
                 id={titleId}
@@ -411,9 +432,21 @@ export function Modal({
             call sites that predate these props render exactly the tree they
             did before -- several make the panel their own scroll or flex
             parent, which an unconditional div would break. */}
-        {padding === 'md' ? <div className="p-4 sm:p-6">{children}</div> : children}
+        {fixed ? (
+          <div
+            className={`flex min-h-0 flex-1 flex-col overflow-y-auto${padding === 'md' ? ' p-4 sm:p-6' : ''}`}
+          >
+            {children}
+          </div>
+        ) : padding === 'md' ? (
+          <div className="p-4 sm:p-6">{children}</div>
+        ) : (
+          children
+        )}
         {footer && (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-200 px-4 py-3 sm:px-6 dark:border-gray-700">
+          <div
+            className={`flex flex-wrap items-center justify-end gap-2 border-t border-gray-200 px-4 py-3 sm:px-6 dark:border-gray-700${fixed ? ' shrink-0' : ''}`}
+          >
             {footer}
           </div>
         )}

@@ -63,6 +63,14 @@ export const PUSH_CATEGORY_COPY: Readonly<
     title: "Strategy signal",
     body: "One of your strategies changed its recommendation. Open Monize for the details.",
   },
+  [NotificationCategory.BANK_SYNC]: {
+    title: "Bank connection",
+    body: "A bank connection needs your attention. Open Monize for the details.",
+  },
+  [NotificationCategory.BANK_SYNC_ACTIVITY]: {
+    title: "Bank sync",
+    body: "Your bank sync has news. Open Monize for the details.",
+  },
 };
 
 export interface NotifyOptions {

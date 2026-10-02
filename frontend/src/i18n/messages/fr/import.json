@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "Ce fichier Money est protégé par un mot de passe.",
     "mnyPasswordIncorrect": "Ce mot de passe n'ouvre pas le fichier Money.",
     "mnyUnreadableDatabase": "Ce fichier Money a été déchiffré mais son contenu n'a pas pu être lu. Il est peut-être endommagé."
+  },
+  "preview": {
+    "choice": {
+      "legend": "Que faire de {payee} s'il n'est pas importé",
+      "skip": "Ignorer pour l'instant",
+      "except": "Ajouter aux exceptions"
+    },
+    "payeeTip": {
+      "name": "De la banque : {original}. Correspond à : {name}",
+      "alias": "De la banque : {original}. Correspond à : {name} (alias « {pattern} »)",
+      "aliasNoPattern": "De la banque : {original}. Correspond à : {name} (alias)",
+      "new": "De la banque : {original}. Correspond à : {name} (nouveau bénéficiaire)",
+      "rule": "De la banque : {original}. Correspond à : {name} (défini par une règle)",
+      "ruleNone": "De la banque : {original}. Correspond à : aucun bénéficiaire (défini par une règle)"
+    },
+    "expand": {
+      "show": "Afficher les détails de {payee}",
+      "hide": "Masquer les détails de {payee}"
+    },
+    "rules": {
+      "heading": "Règles d'import",
+      "none": "Aucune règle d'import ne correspond à cette transaction.",
+      "unnamed": "Règle",
+      "skipped": "{action} : ignorée ({reason})",
+      "stopped": "Arrête les règles suivantes.",
+      "applied": "Appliquées : {actions}",
+      "openNewTab": "Ouvrir la règle {name} dans un nouvel onglet"
+    },
+    "payee": {
+      "heading": "Bénéficiaire",
+      "unknown": "Aucune information de bénéficiaire pour cette transaction.",
+      "original": "Texte de la banque : {original}",
+      "name": "Correspond à votre bénéficiaire existant {name}.",
+      "alias": "Associé à {name} par l'alias « {pattern} ».",
+      "aliasNoPattern": "Associé à {name} par un alias.",
+      "new": "Aucun bénéficiaire ne porte encore ce nom : {name} serait créé.",
+      "rule": "Une règle d'import définit le bénéficiaire : {name}.",
+      "ruleNone": "Une règle d'import supprime le bénéficiaire.",
+      "none": "La banque n'a indiqué aucune contrepartie : la transaction n'a pas de bénéficiaire.",
+      "openAliases": "Ouvrir les alias du bénéficiaire",
+      "openAliasesNewTab": "Ouvrir les alias du bénéficiaire dans un nouvel onglet"
+    }
   }
 }

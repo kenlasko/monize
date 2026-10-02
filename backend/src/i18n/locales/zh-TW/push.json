@@ -27,6 +27,14 @@
     "strategies": {
       "title": "策略訊號",
       "body": "您的某個策略變更了建議。開啟 Monize 查看詳細資訊。"
+    },
+    "bank_sync": {
+      "title": "銀行連線",
+      "body": "有銀行連線需要您留意。開啟 Monize 查看詳細資訊。"
+    },
+    "bank_sync_activity": {
+      "title": "銀行同步",
+      "body": "您的銀行同步有新消息。開啟 Monize 查看詳細資訊。"
     }
   },
   "actions": {

@@ -22,6 +22,17 @@ interface TabsProps<K extends string> {
   ariaLabel: string;
   className?: string;
   /**
+   * Fold the tabs onto further lines when they outgrow the row, instead of
+   * scrolling the row sideways.
+   *
+   * For a dialog whose tab labels carry a count and are long enough that the
+   * row needs a horizontal scrollbar on a desktop screen, where a bar under
+   * the tabs reads as a rendering fault. The scroller, its edge fade and the
+   * scroll-into-view of the selected tab are all unnecessary then, because
+   * nothing can be hidden.
+   */
+  wrap?: boolean;
+  /**
    * Attributes (a `data-tour-id`) for the tablist itself, following the same
    * convention as `FormActions`. A guided tour rings the row of tabs, and a
    * wrapper element around this component would ring the negative gutters a
@@ -87,6 +98,7 @@ export function Tabs<K extends string>({
   idPrefix,
   ariaLabel,
   className = '',
+  wrap = false,
   anchorProps,
 }: TabsProps<K>) {
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -97,7 +109,7 @@ export function Tabs<K extends string>({
   // here, and nothing else needs to know which edge is faded.
   useEffect(() => {
     const scroller = scrollerRef.current;
-    if (!scroller) return;
+    if (!scroller || wrap) return;
     const update = () => {
       scroller.dataset.overflow = overflowEdge(scroller);
     };
@@ -110,17 +122,18 @@ export function Tabs<K extends string>({
       scroller.removeEventListener('scroll', update);
       observer?.disconnect();
     };
-  }, [tabs]);
+  }, [tabs, wrap]);
 
   // A tab selected from outside the row (a `?tab=` deep link, a widget's link
   // to Price history) can sit past the visible edge; bring it on screen.
   useEffect(() => {
+    if (wrap) return;
     const index = tabs.findIndex((tab) => tab.key === value);
     const button = buttonRefs.current[index];
     if (button && typeof button.scrollIntoView === 'function') {
       button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
-  }, [tabs, value]);
+  }, [tabs, value, wrap]);
 
   const selectAt = useCallback(
     (index: number) => {
@@ -171,13 +184,13 @@ export function Tabs<K extends string>({
     <div
       ref={scrollerRef}
       data-overflow="none"
-      className={`scroll-fade-x overflow-x-auto pb-px ${className}`}
+      className={`${wrap ? '' : 'scroll-fade-x overflow-x-auto'} pb-px ${className}`}
     >
       <div
         role="tablist"
         aria-label={ariaLabel}
         {...anchorProps}
-        className="flex gap-1 border-b border-gray-200 dark:border-gray-700"
+        className={`flex gap-1 border-b border-gray-200 dark:border-gray-700${wrap ? ' flex-wrap' : ''}`}
       >
         {tabs.map((tab, index) => {
           const isSelected = tab.key === value;

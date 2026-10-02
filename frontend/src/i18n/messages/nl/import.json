@@ -546,5 +546,47 @@
     "mnyPasswordRequired": "Dit Money-bestand is met een wachtwoord beveiligd.",
     "mnyPasswordIncorrect": "Met dit wachtwoord kan het Money-bestand niet worden geopend.",
     "mnyUnreadableDatabase": "Dit Money-bestand is ontsleuteld, maar de inhoud kon niet worden gelezen. Het is mogelijk beschadigd."
+  },
+  "preview": {
+    "choice": {
+      "legend": "Wat te doen met {payee} als het niet wordt geïmporteerd",
+      "skip": "Nu overslaan",
+      "except": "Toevoegen aan uitzonderingen"
+    },
+    "payeeTip": {
+      "name": "Van de bank: {original}. Gekoppeld aan: {name}",
+      "alias": "Van de bank: {original}. Gekoppeld aan: {name} (alias \"{pattern}\")",
+      "aliasNoPattern": "Van de bank: {original}. Gekoppeld aan: {name} (alias)",
+      "new": "Van de bank: {original}. Gekoppeld aan: {name} (nieuwe begunstigde)",
+      "rule": "Van de bank: {original}. Gekoppeld aan: {name} (ingesteld door een regel)",
+      "ruleNone": "Van de bank: {original}. Gekoppeld aan: geen begunstigde (ingesteld door een regel)"
+    },
+    "expand": {
+      "show": "Details van {payee} tonen",
+      "hide": "Details van {payee} verbergen"
+    },
+    "rules": {
+      "heading": "Importregels",
+      "none": "Geen importregel kwam overeen met deze transactie.",
+      "unnamed": "Regel",
+      "skipped": "{action}: overgeslagen ({reason})",
+      "stopped": "Stopt de regels daarna.",
+      "applied": "Toegepast: {actions}",
+      "openNewTab": "Regel {name} in een nieuw tabblad openen"
+    },
+    "payee": {
+      "heading": "Begunstigde",
+      "unknown": "Geen begunstigdegegevens voor deze transactie.",
+      "original": "Tekst van de bank: {original}",
+      "name": "Komt overeen met je bestaande begunstigde {name}.",
+      "alias": "Gekoppeld aan {name} via de alias \"{pattern}\".",
+      "aliasNoPattern": "Gekoppeld aan {name} via een alias.",
+      "new": "Geen enkele begunstigde heeft deze naam al, dus {name} zou worden aangemaakt.",
+      "rule": "Een importregel stelt de begunstigde in: {name}.",
+      "ruleNone": "Een importregel wist de begunstigde.",
+      "none": "De bank gaf geen tegenpartij op, dus de transactie heeft geen begunstigde.",
+      "openAliases": "Aliassen van de begunstigde openen",
+      "openAliasesNewTab": "Aliassen van de begunstigde in een nieuw tabblad openen"
+    }
   }
 }

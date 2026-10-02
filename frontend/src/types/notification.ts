@@ -38,7 +38,12 @@ export type NotificationType =
   | 'BALANCE_ABOVE_THRESHOLD'
   | 'PORTFOLIO_MOVEMENT'
   | 'SECURITY_PRICE_MOVEMENT'
-  | 'GEM_SIGNAL_CHANGED';
+  | 'GEM_SIGNAL_CHANGED'
+  // Bank sync: consent reminders and the daily sync's outcomes. All financial.
+  | 'BANK_SYNC_CONSENT_EXPIRING'
+  | 'BANK_SYNC_CONSENT_EXPIRED'
+  | 'BANK_SYNC_FAILED'
+  | 'BANK_SYNC_IMPORTED';
 
 /** How urgent, and how it is drawn. */
 export type NotificationSeverity = 'info' | 'warning' | 'critical' | 'success';
@@ -76,7 +81,9 @@ export type NotificationCategory =
   | 'SYSTEM'
   | 'BALANCES'
   | 'INVESTMENTS'
-  | 'STRATEGIES';
+  | 'STRATEGIES'
+  | 'BANK_SYNC'
+  | 'BANK_SYNC_ACTIVITY';
 
 export interface Notification {
   id: string;

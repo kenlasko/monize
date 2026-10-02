@@ -119,5 +119,21 @@
   "priceMovement": {
     "title": "価格変動アラート: {symbol} ({percent}%)",
     "message": "{symbol}：直前の利用可能な取引日比 {percent}%。"
+  },
+  "bankSync": {
+    "expiringTitleToday": "{institution}: 銀行へのアクセスは本日終了します",
+    "expiringTitleOneDay": "{institution}: 銀行へのアクセスは 1 日以内に終了します",
+    "expiringTitleDays": "{institution}: 銀行へのアクセスは {days} 日以内に終了します",
+    "expiringMessage": "Monize が {institution} を読み取るための同意は {date} に終了します。同期を続けるには、Monize で接続を更新してください。",
+    "expiredTitle": "{institution}: 銀行へのアクセスは終了しました",
+    "expiredMessage": "Monize が {institution} を読み取るための同意は終了しました。同期を再開するには、Monize で接続を更新してください。",
+    "failedTitle": "{institution}: 同期に失敗しました",
+    "failedMessage": "{institution} の毎日の同期が次の口座で失敗しました: {accounts}。原因は銀行同期の設定で確認してください。",
+    "failedCredentialsMessage": "銀行同期の認証情報がないか拒否されたため、{institution} の毎日の同期を開始できませんでした。銀行同期の設定で認証情報を確認してください。",
+    "unnamedAccount": "名称のない口座",
+    "importedTitle": "{institution}: 新しい取引をインポートしました",
+    "importedMessage": "毎日の同期で {institution} からインポートした取引: {imported} 件。",
+    "importedNoneTitle": "{institution}: 新しい取引はありません",
+    "importedNoneMessage": "{institution} の毎日の同期では新しい取引が見つかりませんでした。"
   }
 }
