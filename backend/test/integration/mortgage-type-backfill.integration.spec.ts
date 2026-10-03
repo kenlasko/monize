@@ -7,49 +7,57 @@ import {
   cleanTables,
   createTestUserDirect,
 } from "../helpers/integration-setup";
-import {
-  calculateEffectiveAnnualRate,
-  calculateMortgageAmortization,
-  calculatePaymentAmount,
-  getPeriodicRate,
-} from "../../src/accounts/mortgage-amortization.util";
-import { mortgageTypeOf } from "../../src/accounts/mortgage-type.util";
-import { roundMoney } from "../../src/common/round.util";
 
 /**
- * The `accounts.mortgage_type` migration's backfill, against the flag
- * combinations a pre-migration database holds (docs/specs/mortgage-types.md,
- * table 4.2).
+ * The two `accounts.mortgage_type` migrations against the legacy flag
+ * combinations a deployed database holds (docs/specs/mortgage-types.md, table
+ * 4.2): the Phase 1 expand migration's backfill, and the contract migration
+ * (P3-B1) that re-derives any mortgage still null from the flags, makes the
+ * column NOT NULL DEFAULT 'ANNUITY' and drops the flags.
  *
- * The backfill must name, for every existing mortgage, the convention
- * `getPeriodicRate` already applies to it: semi-annual compounding only when
- * the row is Canadian and not variable, the nominal rate otherwise. A unit test
- * cannot check this, because the claim is about what a SQL `CASE` concludes
- * from production-shaped rows, including the NULL flags the columns permit; so
- * the fixture is a real database and the migration is read from disk.
+ * A unit test cannot check this, because the claim is about what a SQL `CASE`
+ * concludes from production-shaped rows, including the NULL flags the columns
+ * permitted; so the fixture is a real database, rebuilt to the pre-Phase-1
+ * shape before each case, and the migrations are read from disk.
  */
-describe("mortgage_type migration backfill over the legacy flags", () => {
+describe("mortgage_type migrations over the legacy flags", () => {
   let dataSource: DataSource;
   let owner: string;
 
   const MIGRATIONS_DIR = path.join(__dirname, "../../../database/migrations");
-  const MIGRATION_FILE = fs
-    .readdirSync(MIGRATIONS_DIR)
-    .find((f) => /^\d{14}_accounts_mortgage_type\.sql$/.test(f));
+  const migration = (suffix: string): string => {
+    const file = fs
+      .readdirSync(MIGRATIONS_DIR)
+      .find((f) => new RegExp(`^\\d{14}_${suffix}\\.sql$`).test(f));
+    if (!file) {
+      throw new Error(`No *_${suffix}.sql migration in ${MIGRATIONS_DIR}`);
+    }
+    return fs.readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
+  };
+  const applyExpand = () =>
+    dataSource.query(migration("accounts_mortgage_type"));
+  const applyContract = () =>
+    dataSource.query(migration("accounts_mortgage_type_required"));
 
-  const applyMigration = () =>
-    dataSource.query(
-      fs.readFileSync(path.join(MIGRATIONS_DIR, MIGRATION_FILE!), "utf8"),
-    );
-
-  /** Undo the migration, so each case starts from a genuinely pre-migration table. */
-  const removeColumn = async () => {
+  /**
+   * Rebuild the pre-Phase-1 table: no type column, and the two nullable flags
+   * schema.sql carried, so each case starts where a deployed database did.
+   */
+  const restorePrePhase1 = async () => {
     await dataSource.query(
       `ALTER TABLE accounts
          DROP CONSTRAINT IF EXISTS accounts_mortgage_type_check`,
     );
     await dataSource.query(
       `ALTER TABLE accounts DROP COLUMN IF EXISTS mortgage_type`,
+    );
+    await dataSource.query(
+      `ALTER TABLE accounts
+         ADD COLUMN IF NOT EXISTS is_canadian_mortgage BOOLEAN DEFAULT false`,
+    );
+    await dataSource.query(
+      `ALTER TABLE accounts
+         ADD COLUMN IF NOT EXISTS is_variable_rate BOOLEAN DEFAULT false`,
     );
   };
 
@@ -70,7 +78,7 @@ describe("mortgage_type migration backfill over the legacy flags", () => {
         id,
         owner,
         fields.accountType ?? "MORTGAGE",
-        `Mortgage ${id}`,
+        `Account ${id}`,
         fields.isCanadian,
         fields.isVariable,
       ],
@@ -85,29 +93,27 @@ describe("mortgage_type migration backfill over the legacy flags", () => {
     return row.mortgage_type;
   };
 
+  const accountColumns = async (): Promise<string[]> =>
+    (
+      (await dataSource.query(
+        `SELECT column_name FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'accounts'`,
+      )) as { column_name: string }[]
+    ).map((r) => r.column_name);
+
   beforeAll(async () => {
-    if (!MIGRATION_FILE) {
-      throw new Error(
-        `No *_accounts_mortgage_type.sql migration found in ${MIGRATIONS_DIR}`,
-      );
-    }
     dataSource = new DataSource(INTEGRATION_TYPEORM_OPTIONS as never);
     await dataSource.initialize();
-    // The harness builds the schema from the entities, which declare both
-    // flags without `nullable: true`, so TypeORM makes them NOT NULL here.
-    // schema.sql leaves them nullable, and production rows can hold a NULL;
-    // match production so the NULL-flag case can be seeded at all.
-    await dataSource.query(
-      `ALTER TABLE accounts
-         ALTER COLUMN is_canadian_mortgage DROP NOT NULL,
-         ALTER COLUMN is_variable_rate DROP NOT NULL`,
-    );
   });
 
   afterAll(async () => {
     if (dataSource?.isInitialized) {
-      // Leave the shared schema as the entity maps it.
-      await applyMigration();
+      // Leave the shared schema as the entity maps it: the type NOT NULL
+      // DEFAULT 'ANNUITY', no flags.
+      await cleanTables(dataSource, ["accounts", "users"]);
+      await restorePrePhase1();
+      await applyExpand();
+      await applyContract();
       await dataSource.destroy();
     }
   });
@@ -119,7 +125,7 @@ describe("mortgage_type migration backfill over the legacy flags", () => {
         email: "mortgage-type@example.com",
       })
     ).id;
-    await removeColumn();
+    await restorePrePhase1();
   });
 
   it("lands one mortgage per row of table 4.2 on its type", async () => {
@@ -133,122 +139,69 @@ describe("mortgage_type migration backfill over the legacy flags", () => {
       await seedAccount(row.id, { isCanadian: row.c, isVariable: row.v });
     }
 
-    await applyMigration();
+    await applyExpand();
+    await applyContract();
 
     expect(await mortgageType(rows[0].id)).toBe("ANNUITY");
     expect(await mortgageType(rows[1].id)).toBe("ANNUITY");
     expect(await mortgageType(rows[2].id)).toBe("CANADIAN_FIXED");
-    // Canadian variable computes as a plain annuity today: the variable flag
-    // cancels the semi-annual branch, so there is no CANADIAN_VARIABLE type.
+    // Canadian variable computed as a plain annuity: the variable flag
+    // cancelled the semi-annual branch, so there is no CANADIAN_VARIABLE type.
     expect(await mortgageType(rows[3].id)).toBe("ANNUITY");
   });
 
-  it("prices every backfilled row through its type as the flags priced it", async () => {
-    // Spec decision 2, checked where the column is first read (P1-B3): one
-    // mortgage per row of table 4.2, plus the NULL-flag rows, has the same
-    // payment, first split and EAR read through the stored type as the
-    // two-flag forms gave it before the type existed.
-    const rows = [
-      { id: "60000000-0000-4000-8000-000000000001", c: false, v: false },
-      { id: "60000000-0000-4000-8000-000000000002", c: false, v: true },
-      { id: "60000000-0000-4000-8000-000000000003", c: true, v: false },
-      { id: "60000000-0000-4000-8000-000000000004", c: true, v: true },
-      { id: "60000000-0000-4000-8000-000000000005", c: true, v: null },
-      { id: "60000000-0000-4000-8000-000000000006", c: null, v: false },
-    ];
-    for (const row of rows) {
-      await seedAccount(row.id, { isCanadian: row.c, isVariable: row.v });
-    }
+  it("re-derives a mortgage left null at the Phase 1 schema from its flags before dropping them", async () => {
+    // A pre-Phase-1 pod serving during the Phase 1 rollout inserted mortgages
+    // with the flags and no type; the expand migration had already run, so
+    // only the contract migration can still read their flags.
+    await applyExpand();
+    const fixed = "20000000-0000-4000-8000-000000000001";
+    const variable = "20000000-0000-4000-8000-000000000002";
+    const plain = "20000000-0000-4000-8000-000000000003";
+    await seedAccount(fixed, { isCanadian: true, isVariable: false });
+    await seedAccount(variable, { isCanadian: true, isVariable: true });
+    await seedAccount(plain, { isCanadian: false, isVariable: false });
+    expect(await mortgageType(fixed)).toBeNull();
 
-    await applyMigration();
+    await applyContract();
 
-    const principal = 300000;
-    const annualRate = 5;
-    const amortizationMonths = 300;
-    for (const row of rows) {
-      const [stored] = (await dataSource.query(
-        `SELECT mortgage_type, is_canadian_mortgage, is_variable_rate
-           FROM accounts WHERE id = $1`,
-        [row.id],
-      )) as {
-        mortgage_type: "ANNUITY" | "CANADIAN_FIXED";
-        is_canadian_mortgage: boolean | null;
-        is_variable_rate: boolean | null;
-      }[];
-      const type = mortgageTypeOf({
-        mortgageType: stored.mortgage_type,
-        isCanadianMortgage: stored.is_canadian_mortgage,
-        isVariableRate: stored.is_variable_rate,
-      });
-
-      for (const ppy of [12, 26]) {
-        const flagsRate = getPeriodicRate(
-          annualRate,
-          ppy,
-          stored.is_canadian_mortgage,
-          stored.is_variable_rate,
-        );
-        expect(getPeriodicRate(annualRate, ppy, type)).toBe(flagsRate);
-        expect(calculateEffectiveAnnualRate(annualRate, ppy, type)).toBe(
-          calculateEffectiveAnnualRate(
-            annualRate,
-            stored.is_canadian_mortgage,
-            stored.is_variable_rate,
-            ppy,
-          ),
-        );
-      }
-
-      const flagsMonthlyRate = getPeriodicRate(
-        annualRate,
-        12,
-        stored.is_canadian_mortgage,
-        stored.is_variable_rate,
-      );
-      const flagsPayment = calculatePaymentAmount(
-        principal,
-        flagsMonthlyRate,
-        amortizationMonths,
-      );
-      const preview = calculateMortgageAmortization({
-        principal,
-        annualRate,
-        amortizationMonths,
-        paymentFrequency: "MONTHLY",
-        mortgageType: type,
-        startDate: new Date(2025, 0, 1),
-      });
-      expect(preview.paymentAmount).toBe(flagsPayment);
-      const flagsInterest = roundMoney(principal * flagsMonthlyRate);
-      expect(preview.interestPayment).toBe(flagsInterest);
-      expect(preview.principalPayment).toBe(
-        roundMoney(flagsPayment - flagsInterest),
-      );
-    }
+    expect(await mortgageType(fixed)).toBe("CANADIAN_FIXED");
+    expect(await mortgageType(variable)).toBe("ANNUITY");
+    expect(await mortgageType(plain)).toBe("ANNUITY");
+    const columns = await accountColumns();
+    expect(columns).not.toContain("is_canadian_mortgage");
+    expect(columns).not.toContain("is_variable_rate");
   });
 
-  it("reads a NULL flag as false, the way getPeriodicRate does", async () => {
-    // `isCanadian && !isVariableRate` takes the semi-annual branch for
-    // (true, null), so that row is CANADIAN_FIXED today; a bare
-    // `NOT is_variable_rate` would evaluate to NULL and backfill it ANNUITY,
-    // changing its payment.
-    const canadianNullVariable = "20000000-0000-4000-8000-000000000001";
-    const nullCanadian = "20000000-0000-4000-8000-000000000002";
+  it("reads a NULL flag as false, as the pre-type periodic rate did", async () => {
+    // `isCanadian && !isVariableRate` took the semi-annual branch for
+    // (true, null), so that row is CANADIAN_FIXED; a bare
+    // `NOT is_variable_rate` would evaluate to NULL and land it on ANNUITY,
+    // changing its payment. Checked through both migrations' CASE.
+    const canadianNullVariable = "30000000-0000-4000-8000-000000000001";
+    const nullCanadian = "30000000-0000-4000-8000-000000000002";
     await seedAccount(canadianNullVariable, {
       isCanadian: true,
       isVariable: null,
     });
     await seedAccount(nullCanadian, { isCanadian: null, isVariable: false });
+    await applyExpand();
 
-    await applyMigration();
+    const lateCanadianNullVariable = "30000000-0000-4000-8000-000000000003";
+    await seedAccount(lateCanadianNullVariable, {
+      isCanadian: true,
+      isVariable: null,
+    });
+    await applyContract();
 
     expect(await mortgageType(canadianNullVariable)).toBe("CANADIAN_FIXED");
     expect(await mortgageType(nullCanadian)).toBe("ANNUITY");
+    expect(await mortgageType(lateCanadianNullVariable)).toBe("CANADIAN_FIXED");
   });
 
-  it("leaves non-mortgage accounts null, flags or not", async () => {
-    const loan = "30000000-0000-4000-8000-000000000001";
-    const chequing = "30000000-0000-4000-8000-000000000002";
+  it("gives every non-mortgage account the default, flags or not", async () => {
+    const loan = "40000000-0000-4000-8000-000000000001";
+    const chequing = "40000000-0000-4000-8000-000000000002";
     await seedAccount(loan, {
       accountType: "LOAN",
       isCanadian: true,
@@ -260,53 +213,82 @@ describe("mortgage_type migration backfill over the legacy flags", () => {
       isVariable: false,
     });
 
-    await applyMigration();
-
+    await applyExpand();
+    // The expand migration types mortgages only.
     expect(await mortgageType(loan)).toBeNull();
-    expect(await mortgageType(chequing)).toBeNull();
+    await applyContract();
+
+    expect(await mortgageType(loan)).toBe("ANNUITY");
+    expect(await mortgageType(chequing)).toBe("ANNUITY");
   });
 
-  it("refuses an unknown type and accepts every listed one and null", async () => {
-    const id = "40000000-0000-4000-8000-000000000001";
-    await seedAccount(id, { isCanadian: false, isVariable: false });
-    await applyMigration();
+  it("never overwrites a stored type", async () => {
+    const id = "50000000-0000-4000-8000-000000000001";
+    await seedAccount(id, { isCanadian: true, isVariable: false });
+    await applyExpand();
+    // A type chosen after Phase 1 outlives the contract, even where it
+    // disagrees with the flags.
+    await dataSource.query(
+      `UPDATE accounts SET mortgage_type = 'LINEAR' WHERE id = $1`,
+      [id],
+    );
+
+    await applyContract();
+
+    expect(await mortgageType(id)).toBe("LINEAR");
+  });
+
+  it("leaves the column NOT NULL DEFAULT 'ANNUITY' under the CHECK", async () => {
+    await applyExpand();
+    await applyContract();
+
+    const defaulted = "60000000-0000-4000-8000-000000000001";
+    await dataSource.query(
+      `INSERT INTO accounts (id, user_id, account_type, name, currency_code,
+                             opening_balance, current_balance)
+       VALUES ($1, $2, 'CHEQUING', 'Chequing', 'CAD', 0, 0)`,
+      [defaulted, owner],
+    );
+    expect(await mortgageType(defaulted)).toBe("ANNUITY");
 
     await expect(
       dataSource.query(
+        `UPDATE accounts SET mortgage_type = NULL WHERE id = $1`,
+        [defaulted],
+      ),
+    ).rejects.toThrow(/null value/);
+    await expect(
+      dataSource.query(
         `UPDATE accounts SET mortgage_type = 'CANADIAN_VARIABLE' WHERE id = $1`,
-        [id],
+        [defaulted],
       ),
     ).rejects.toThrow(/accounts_mortgage_type_check/);
-
     for (const type of [
       "ANNUITY",
       "CANADIAN_FIXED",
       "LINEAR",
       "INTEREST_ONLY",
-      null,
     ]) {
       await dataSource.query(
         `UPDATE accounts SET mortgage_type = $2 WHERE id = $1`,
-        [id, type],
+        [defaulted, type],
       );
-      expect(await mortgageType(id)).toBe(type);
+      expect(await mortgageType(defaulted)).toBe(type);
     }
   });
 
-  it("is re-runnable and never overwrites a stored type", async () => {
-    const id = "50000000-0000-4000-8000-000000000001";
+  it("re-applies both migrations as no-ops once the flags are gone", async () => {
+    // A second apply, and a fresh install replaying every migration on top of
+    // a schema.sql that no longer has the flags: neither may name a dropped
+    // column outside its existence check.
+    const id = "70000000-0000-4000-8000-000000000001";
     await seedAccount(id, { isCanadian: true, isVariable: false });
-    await applyMigration();
+    await applyExpand();
+    await applyContract();
+
+    await applyExpand();
+    await applyContract();
+
     expect(await mortgageType(id)).toBe("CANADIAN_FIXED");
-
-    // A type the user chose after the first apply outlives a second one, even
-    // where it disagrees with the flags.
-    await dataSource.query(
-      `UPDATE accounts SET mortgage_type = 'LINEAR' WHERE id = $1`,
-      [id],
-    );
-    await applyMigration();
-
-    expect(await mortgageType(id)).toBe("LINEAR");
   });
 });

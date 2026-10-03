@@ -94,7 +94,7 @@ export class SetupLoanPaymentsDto {
 
   @ApiPropertyOptional({
     description:
-      "For mortgages: the mortgage type, ANNUITY (nominal rate divided by the payments per year), CANADIAN_FIXED (semi-annual compounding), LINEAR (constant principal) or INTEREST_ONLY (no principal until the final payment). For LINEAR and INTEREST_ONLY the server prices the first installment and paymentAmount must equal it plus extraPrincipal. Wins over isCanadianMortgage/isVariableRate; when absent, a flag sent decides it.",
+      "For mortgages: the mortgage type, ANNUITY (nominal rate divided by the payments per year), CANADIAN_FIXED (semi-annual compounding), LINEAR (constant principal) or INTEREST_ONLY (no principal until the final payment). For LINEAR and INTEREST_ONLY the server prices the first installment and paymentAmount must equal it plus extraPrincipal. The account's stored type when absent.",
     enum: MORTGAGE_TYPES,
   })
   @IsOptional()
@@ -110,24 +110,6 @@ export class SetupLoanPaymentsDto {
   @IsOptional()
   @IsIn(PREPAYMENT_MODES)
   prepaymentMode?: PrepaymentMode | null;
-
-  @ApiPropertyOptional({
-    description:
-      "For mortgages, legacy flag superseded by mortgageType: a Canadian mortgage that is not variable-rate is CANADIAN_FIXED (semi-annual compounding)",
-    default: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  isCanadianMortgage?: boolean;
-
-  @ApiPropertyOptional({
-    description:
-      "For mortgages, legacy flag superseded by mortgageType: a Canadian variable-rate mortgage is ANNUITY",
-    default: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  isVariableRate?: boolean;
 
   @ApiPropertyOptional({
     description: "For mortgages: total amortization period in months",
@@ -222,22 +204,6 @@ export class PreviewLoanPaymentSetupDto {
   @IsOptional()
   @IsIn(PREPAYMENT_MODES)
   prepaymentMode?: PrepaymentMode | null;
-
-  @ApiPropertyOptional({
-    description:
-      "Legacy flag superseded by mortgageType: a Canadian mortgage that is not variable-rate is CANADIAN_FIXED",
-  })
-  @IsOptional()
-  @IsBoolean()
-  isCanadianMortgage?: boolean;
-
-  @ApiPropertyOptional({
-    description:
-      "Legacy flag superseded by mortgageType: a Canadian variable-rate mortgage is ANNUITY",
-  })
-  @IsOptional()
-  @IsBoolean()
-  isVariableRate?: boolean;
 
   @ApiPropertyOptional({
     description:

@@ -34,8 +34,7 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
     paymentStartDate: '2025-01-15',
     originalPrincipal: 10000,
     amortizationMonths: 21,
-    isCanadianMortgage: false,
-    isVariableRate: false,
+    mortgageType: 'ANNUITY',
     ...overrides,
   } as Account;
 }

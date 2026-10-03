@@ -1,7 +1,6 @@
 import {
   IsNumber,
   IsPositive,
-  IsBoolean,
   IsDateString,
   IsIn,
   IsOptional,
@@ -59,30 +58,12 @@ export class MortgagePreviewDto {
   @ApiPropertyOptional({
     example: "CANADIAN_FIXED",
     description:
-      "Mortgage type: ANNUITY (nominal rate divided by the payments per year), CANADIAN_FIXED (semi-annual compounding), LINEAR (constant principal) or INTEREST_ONLY (no principal until the final payment). LINEAR and INTEREST_ONLY refuse an accelerated frequency. Wins over isCanadian/isVariableRate; when all three are absent the type is ANNUITY.",
+      "Mortgage type: ANNUITY (nominal rate divided by the payments per year), CANADIAN_FIXED (semi-annual compounding), LINEAR (constant principal) or INTEREST_ONLY (no principal until the final payment). LINEAR and INTEREST_ONLY refuse an accelerated frequency. ANNUITY when absent.",
     enum: MORTGAGE_TYPES,
   })
   @IsOptional()
   @IsIn(MORTGAGE_TYPES)
   mortgageType?: MortgageType;
-
-  @ApiPropertyOptional({
-    example: true,
-    description:
-      "Legacy flag, superseded by mortgageType: a Canadian mortgage that is not variable-rate is CANADIAN_FIXED (semi-annual compounding)",
-  })
-  @IsOptional()
-  @IsBoolean()
-  isCanadian?: boolean;
-
-  @ApiPropertyOptional({
-    example: false,
-    description:
-      "Legacy flag, superseded by mortgageType: cancels the semi-annual compounding of a Canadian mortgage, which then computes as ANNUITY",
-  })
-  @IsOptional()
-  @IsBoolean()
-  isVariableRate?: boolean;
 }
 
 export class MortgagePreviewResponseDto {

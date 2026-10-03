@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { MORTGAGE_TYPES } from '@/types/account';
 import {
   PREPAYMENT_MODES,
   amortizationMethodFor,
@@ -11,34 +12,10 @@ import {
 } from '@/lib/mortgage-type';
 
 describe('mortgageTypeOf', () => {
-  it('reads the stored column first', () => {
-    expect(
-      mortgageTypeOf({ mortgageType: 'CANADIAN_FIXED', isCanadianMortgage: false }),
-    ).toBe('CANADIAN_FIXED');
-    expect(
-      mortgageTypeOf({
-        mortgageType: 'ANNUITY',
-        isCanadianMortgage: true,
-        isVariableRate: false,
-      }),
-    ).toBe('ANNUITY');
-  });
-
-  it('falls back to the flags when the column is null or absent', () => {
-    // A previous release clears the column when a save changes a flag, so a
-    // null reads through the flags rather than as ANNUITY.
-    expect(
-      mortgageTypeOf({ mortgageType: null, isCanadianMortgage: true, isVariableRate: false }),
-    ).toBe('CANADIAN_FIXED');
-    expect(mortgageTypeOf({ isCanadianMortgage: true, isVariableRate: true })).toBe('ANNUITY');
-    expect(mortgageTypeOf({ isCanadianMortgage: true, isVariableRate: null })).toBe(
-      'CANADIAN_FIXED',
-    );
-  });
-
-  it('reads a plain loan with no type and no flags as ANNUITY', () => {
-    expect(mortgageTypeOf({ mortgageType: null })).toBe('ANNUITY');
-    expect(mortgageTypeOf({})).toBe('ANNUITY');
+  it('reads the stored type', () => {
+    for (const type of MORTGAGE_TYPES) {
+      expect(mortgageTypeOf({ mortgageType: type })).toBe(type);
+    }
   });
 });
 

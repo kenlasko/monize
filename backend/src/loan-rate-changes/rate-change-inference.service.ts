@@ -16,7 +16,6 @@ import {
 import { roundMoney } from "../common/round.util";
 import {
   annualizationFor,
-  mortgageTypeFromFlags,
   mortgageTypeOf,
 } from "../accounts/mortgage-type.util";
 import {
@@ -223,9 +222,9 @@ export class RateChangeInferenceService {
    *    annualizes here too (table 4.2, last row); it used `x periodsPerYear`
    *    before the type existed.
    *
-   * A mortgage's type is read through `mortgageTypeOf`; any other account has
-   * no type, so it keeps the annualization its flags denote even if a stale
-   * column survived an edit that moved it off MORTGAGE.
+   * A mortgage's type is read through `mortgageTypeOf`; any other account
+   * annualizes as `ANNUITY`, the engine a plain loan uses, whatever its column
+   * holds.
    */
   private annualizeRate(
     account: Account,
@@ -236,10 +235,7 @@ export class RateChangeInferenceService {
     const type =
       account.accountType === AccountType.MORTGAGE
         ? mortgageTypeOf(account)
-        : mortgageTypeFromFlags(
-            account.isCanadianMortgage,
-            account.isVariableRate,
-          );
+        : "ANNUITY";
     if (annualizationFor(type) === "SEMI_ANNUAL") {
       return (Math.pow(1 + periodicRate, periodsPerYear / 2) - 1) * 2 * 100;
     }

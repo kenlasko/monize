@@ -81,38 +81,6 @@ export function annualizationFor(type: MortgageType): MortgageAnnualization {
 }
 
 /**
- * The type the two legacy flags denote (spec table 4.2): Canadian and not
- * variable is `CANADIAN_FIXED`, every other combination `ANNUITY`. A NULL flag
- * reads as false, as the P1-B1 backfill and the pre-type `getPeriodicRate`
- * test (`isCanadian && !isVariableRate`) did. Used where
- * `accounts.mortgage_type` is null until P3-B1 makes it NOT NULL.
- */
-export function mortgageTypeFromFlags(
-  isCanadian: boolean | null | undefined,
-  isVariableRate: boolean | null | undefined,
-): MortgageType {
-  return isCanadian === true && isVariableRate !== true
-    ? "CANADIAN_FIXED"
-    : "ANNUITY";
-}
-
-/**
- * The flags a save writes beside the type while the booleans still exist:
- * `CANADIAN_FIXED` is `(true, false)`, every other type `(false, false)`. The
- * inverse of `mortgageTypeFromFlags` for those two types; a `(true, true)` row
- * reads back as `(false, false)`, which denotes the same arithmetic.
- */
-export function flagsFromMortgageType(type: MortgageType): {
-  isCanadianMortgage: boolean;
-  isVariableRate: boolean;
-} {
-  return {
-    isCanadianMortgage: type === "CANADIAN_FIXED",
-    isVariableRate: false,
-  };
-}
-
-/**
  * What an extra repayment does to a LINEAR mortgage's constant principal
  * (spec decision 4, table 4.3), stored in `accounts.prepayment_mode`. The list
  * is the `accounts_prepayment_mode_check` CHECK in `database/schema.sql`.
@@ -159,61 +127,14 @@ export function storesConstantPayment(type: MortgageType): boolean {
   return amortizationMethodFor(type) === "ANNUITY";
 }
 
-interface MortgageFlags {
-  isCanadianMortgage?: boolean | null;
-  isVariableRate?: boolean | null;
-}
-
 /**
- * The type a stored mortgage row carries: `accounts.mortgage_type`, else the
- * type its two legacy flags denote. The column is nullable until P3-B1, and a
- * pod of the previous release clears it when a save changes a flag, so a null
- * column is read through the flags rather than as `ANNUITY`. Every consumer of
- * the type reads it through here.
+ * The type a stored account carries: `accounts.mortgage_type`, NOT NULL since
+ * the contract migration (P3-B1). Read only on a MORTGAGE; every other account
+ * carries the column's default, `ANNUITY`, the annuity engine a plain `LOAN`
+ * uses. Every consumer of the type reads it through here.
  */
-export function mortgageTypeOf(
-  row: MortgageFlags & { mortgageType?: MortgageType | null },
-): MortgageType {
-  return (
-    row.mortgageType ??
-    mortgageTypeFromFlags(row.isCanadianMortgage, row.isVariableRate)
-  );
-}
-
-/**
- * The type a write asks for, or `undefined` when the request says nothing about
- * it. `mortgageType` wins when present; otherwise a request carrying either
- * legacy flag denotes the type of the flags it leaves behind, a flag it omits
- * keeping its stored value. A writer stores the result together with
- * `flagsFromMortgageType` of it, so the row a request carrying only the flags
- * writes and the row a request carrying only the type writes are the same, and
- * a pod of the previous release reading the flags prices it identically.
- */
-export function requestedMortgageType(
-  request: MortgageFlags & { mortgageType?: MortgageType | null },
-  stored: MortgageFlags = {},
-): MortgageType | undefined {
-  if (request.mortgageType != null) return request.mortgageType;
-  if (
-    request.isCanadianMortgage === undefined &&
-    request.isVariableRate === undefined
-  ) {
-    return undefined;
-  }
-  return mortgageTypeFromFlags(
-    request.isCanadianMortgage ?? stored.isCanadianMortgage,
-    request.isVariableRate ?? stored.isVariableRate,
-  );
-}
-
-/**
- * The columns a save writes for `type`: the type and the flags it maps to,
- * always together while the booleans exist (spec decision 6).
- */
-export function mortgageTypeColumns(type: MortgageType): {
+export function mortgageTypeOf(row: {
   mortgageType: MortgageType;
-  isCanadianMortgage: boolean;
-  isVariableRate: boolean;
-} {
-  return { mortgageType: type, ...flagsFromMortgageType(type) };
+}): MortgageType {
+  return row.mortgageType;
 }

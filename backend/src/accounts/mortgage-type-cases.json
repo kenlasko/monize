@@ -1,5 +1,5 @@
 {
-  "comment": "Shared truth table for the mortgage types (docs/specs/mortgage-types.md, tables 4.1 and 4.2). Read by backend/src/accounts/mortgage-type.contract.spec.ts and, from P1-F1, by frontend/src/lib/mortgage-type.contract.test.ts, because the two layers cannot import each other and must agree on each type's compounding, method and annualization (INV-LOAN-003, INV-LOAN-007). The numeric rows were derived independently of the implementation, in 50-digit decimal arithmetic with each money figure rounded half away from zero to 4dp: periodicRate per the compounding trait, firstInterest = principal * periodicRate, firstPrincipal per the method (ANNUITY: the level payment P * r(1+r)^N / ((1+r)^N - 1) at 4dp minus firstInterest; LINEAR: P / N; INTEREST_ONLY: 0), effectiveAnnualRate as a percentage at 2dp. The ANNUITY, LINEAR and INTEREST_ONLY rows are spec table 7.5's first payment.",
+  "comment": "Shared truth table for the mortgage types (docs/specs/mortgage-types.md, table 4.1). Read by backend/src/accounts/mortgage-type.contract.spec.ts and, from P1-F1, by frontend/src/lib/mortgage-type.contract.test.ts, because the two layers cannot import each other and must agree on each type's compounding, method and annualization (INV-LOAN-003, INV-LOAN-007). The numeric rows were derived independently of the implementation, in 50-digit decimal arithmetic with each money figure rounded half away from zero to 4dp: periodicRate per the compounding trait, firstInterest = principal * periodicRate, firstPrincipal per the method (ANNUITY: the level payment P * r(1+r)^N / ((1+r)^N - 1) at 4dp minus firstInterest; LINEAR: P / N; INTEREST_ONLY: 0), effectiveAnnualRate as a percentage at 2dp. The ANNUITY, LINEAR and INTEREST_ONLY rows are spec table 7.5's first payment.",
   "types": [
     {
       "type": "ANNUITY",
@@ -8,7 +8,6 @@
         "method": "ANNUITY",
         "annualization": "DAY_COUNT"
       },
-      "flags": { "isCanadianMortgage": false, "isVariableRate": false },
       "example": {
         "principal": 300000,
         "annualRate": 2,
@@ -27,7 +26,6 @@
         "method": "ANNUITY",
         "annualization": "SEMI_ANNUAL"
       },
-      "flags": { "isCanadianMortgage": true, "isVariableRate": false },
       "example": {
         "principal": 400000,
         "annualRate": 5,
@@ -46,7 +44,6 @@
         "method": "LINEAR",
         "annualization": "DAY_COUNT"
       },
-      "flags": { "isCanadianMortgage": false, "isVariableRate": false },
       "example": {
         "principal": 300000,
         "annualRate": 2,
@@ -65,7 +62,6 @@
         "method": "INTEREST_ONLY",
         "annualization": "DAY_COUNT"
       },
-      "flags": { "isCanadianMortgage": false, "isVariableRate": false },
       "example": {
         "principal": 300000,
         "annualRate": 2,
@@ -77,15 +73,5 @@
         "effectiveAnnualRate": 2.02
       }
     }
-  ],
-  "fromFlags": [
-    { "isCanadianMortgage": false, "isVariableRate": false, "type": "ANNUITY" },
-    { "isCanadianMortgage": false, "isVariableRate": true, "type": "ANNUITY" },
-    {
-      "isCanadianMortgage": true,
-      "isVariableRate": false,
-      "type": "CANADIAN_FIXED"
-    },
-    { "isCanadianMortgage": true, "isVariableRate": true, "type": "ANNUITY" }
   ]
 }

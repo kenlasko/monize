@@ -26,8 +26,6 @@ const account = {
   accountType: 'MORTGAGE',
   currencyCode: 'CAD',
   mortgageType: 'ANNUITY',
-  isCanadianMortgage: false,
-  isVariableRate: false,
 } as Account;
 
 const canadian: MortgageTypeHistoryDetection = {

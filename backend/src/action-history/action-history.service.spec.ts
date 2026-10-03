@@ -1853,6 +1853,70 @@ describe("ActionHistoryService", () => {
       expect(mockQueryRunner.manager.delete).toHaveBeenCalled();
     });
 
+    it("re-inserts a deleted account recorded before the mortgage-type contract with its type", async () => {
+      // docs/specs/mortgage-types.md, task P3-B1: the snapshot carries the
+      // dropped flags and a null type, which NOT NULL would refuse.
+      const action = {
+        ...mockAction,
+        entityType: "account",
+        action: "delete",
+        entityId: "acc-1",
+        beforeData: {
+          id: "acc-1",
+          name: "Home",
+          accountType: "MORTGAGE",
+          mortgageType: null,
+          isCanadianMortgage: true,
+          isVariableRate: false,
+        },
+        afterData: null,
+      };
+      mockRepository.findOne.mockResolvedValue(action);
+      mockQueryRunner.query.mockResolvedValue([]);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.undo(userId);
+
+      const insert = mockQueryRunner.query.mock.calls.find(([sql]: [string]) =>
+        sql.includes('INSERT INTO "accounts"'),
+      );
+      expect(insert[0]).toContain('"mortgage_type"');
+      expect(insert[0]).not.toContain("is_canadian_mortgage");
+      expect(insert[0]).not.toContain("is_variable_rate");
+      expect(insert[1]).toContain("CANADIAN_FIXED");
+    });
+
+    it("restores an account update recorded before the contract without a null type", async () => {
+      const action = {
+        ...mockAction,
+        entityType: "account",
+        action: "update",
+        entityId: "acc-1",
+        beforeData: {
+          id: "acc-1",
+          name: "Chequing",
+          accountType: "CHEQUING",
+          mortgageType: null,
+          isCanadianMortgage: false,
+          isVariableRate: false,
+        },
+        afterData: { id: "acc-1", name: "Renamed" },
+      };
+      mockRepository.findOne.mockResolvedValue(action);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.undo(userId);
+
+      const [, , fields] = mockQueryRunner.manager.update.mock.calls.find(
+        ([, id]: [unknown, string]) => id === "acc-1",
+      );
+      expect(fields).toMatchObject({
+        name: "Chequing",
+        mortgageType: "ANNUITY",
+      });
+      expect(fields).not.toHaveProperty("isCanadianMortgage");
+    });
+
     it("should undo scheduled_transaction delete", async () => {
       const action = {
         ...mockAction,

@@ -968,6 +968,109 @@ describe("Backup export/restore round-trip (integration)", () => {
     ]);
   });
 
+  it("restores every mortgage of a backup taken before the type was required with its type", async () => {
+    // docs/specs/mortgage-types.md, task P3-B1. A backup taken before Phase 1
+    // carries is_canadian_mortgage / is_variable_rate and no mortgage_type; one
+    // taken in Phases 1 and 2 carries a mortgage_type that is null on every
+    // non-mortgage row and on a mortgage a pre-Phase-1 pod wrote. The flags
+    // are gone from today's schema, so the restore resolves the type the
+    // contract migration would have given each row before its column filter
+    // drops them: the column default would turn a Canadian fixed-rate mortgage
+    // into ANNUITY, and an explicit null fails NOT NULL.
+    const userA = await createTestUserDirect(dataSource, {
+      email: "legacy-type-a@example.com",
+    });
+    const userB = await createTestUserDirect(dataSource, {
+      email: "legacy-type-b@example.com",
+    });
+    await dataSource.query(
+      `INSERT INTO currencies (code, name, symbol, created_by_user_id)
+       VALUES ('CAD', 'Canadian Dollar', '$', $1)`,
+      [userA.id],
+    );
+    const names = [
+      "Pre-Phase-1 Canadian fixed",
+      "Pre-Phase-1 Canadian variable",
+      "Phase 1 untyped Canadian fixed",
+      "Stored interest-only",
+    ];
+    for (const name of names) {
+      await dataSource.query(
+        `INSERT INTO accounts (id, user_id, account_type, name, currency_code,
+                               current_balance, opening_balance)
+         VALUES ($1, $2, 'MORTGAGE', $3, 'CAD', -300000, -300000)`,
+        [randomUUID(), userA.id, name],
+      );
+    }
+    await dataSource.query(
+      `INSERT INTO accounts (id, user_id, account_type, name, currency_code,
+                             current_balance, opening_balance)
+       VALUES ($1, $2, 'CHEQUING', 'Phase 1 chequing', 'CAD', 0, 0)`,
+      [randomUUID(), userA.id],
+    );
+
+    const { buffer } = await withUserContext(userA.id, () =>
+      service.exportToBuffer(userA.id),
+    );
+    const doc = JSON.parse(gunzipSync(buffer).toString("utf8")) as {
+      accounts: Record<string, unknown>[];
+    };
+    const legacyShape: Record<string, Record<string, unknown>> = {
+      "Pre-Phase-1 Canadian fixed": {
+        is_canadian_mortgage: true,
+        is_variable_rate: false,
+      },
+      "Pre-Phase-1 Canadian variable": {
+        is_canadian_mortgage: true,
+        is_variable_rate: true,
+      },
+      "Phase 1 untyped Canadian fixed": {
+        mortgage_type: null,
+        is_canadian_mortgage: true,
+        is_variable_rate: false,
+      },
+      "Stored interest-only": {
+        mortgage_type: "INTEREST_ONLY",
+        is_canadian_mortgage: true,
+        is_variable_rate: false,
+      },
+      "Phase 1 chequing": {
+        mortgage_type: null,
+        is_canadian_mortgage: false,
+        is_variable_rate: false,
+      },
+    };
+    const legacy = {
+      ...doc,
+      accounts: doc.accounts.map((row) => {
+        // The pre-Phase-1 shapes name no mortgage_type, so the key is absent.
+        const { mortgage_type: _dropped, ...rest } = row;
+        return { ...rest, ...legacyShape[row.name as string] };
+      }),
+    };
+
+    await withUserContext(userB.id, () =>
+      service.restoreData(userB.id, {
+        compressedData: gzipSync(Buffer.from(JSON.stringify(legacy))),
+        password: PASSWORD,
+      }),
+    );
+
+    const restored = (await dataSource.query(
+      `SELECT name, mortgage_type FROM accounts WHERE user_id = $1`,
+      [userB.id],
+    )) as { name: string; mortgage_type: string }[];
+    expect(
+      Object.fromEntries(restored.map((r) => [r.name, r.mortgage_type])),
+    ).toEqual({
+      "Pre-Phase-1 Canadian fixed": "CANADIAN_FIXED",
+      "Pre-Phase-1 Canadian variable": "ANNUITY",
+      "Phase 1 untyped Canadian fixed": "CANADIAN_FIXED",
+      "Stored interest-only": "INTEREST_ONLY",
+      "Phase 1 chequing": "ANNUITY",
+    });
+  });
+
   it("rejects a restore when the confirmation password is invalid", async () => {
     const userA = await createTestUserDirect(dataSource, {
       email: "auth-a@example.com",

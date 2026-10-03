@@ -1441,10 +1441,6 @@ function assignObservedRates(
 
   const periodDays = 365 / periodsPerYear;
   const mortgageType = mortgageTypeOf(account);
-  // Whether the configured rate was in effect on a row that charged no
-  // interest: a question about the rate's variability, not its compounding, so
-  // it reads the flag rather than the type.
-  const isVariable = account.isVariableRate || false;
   // No rate history here (this branch only runs when rateChanges is empty), so
   // the account's scalar rate is the only reference available -- both to
   // sanity-check a reconstructed figure against and, for a fixed-rate loan, as
@@ -1486,9 +1482,7 @@ function assignObservedRates(
       // nominal periods per year -- the convention the lender quotes.
       // `DAY_COUNT` annualizes over the actual accrual window (days since
       // interest was last settled), which self-corrects for overpayments and
-      // payment gaps. A Canadian variable-rate account is `ANNUITY` and
-      // annualizes by day count too (table 4.2, last row); it used
-      // `x periodsPerYear` before the type existed.
+      // payment gaps.
       const observed =
         annualizationFor(mortgageType) === 'SEMI_ANNUAL'
           ? (Math.pow(1 + periodicRate, periodsPerYear / 2) - 1) * 2 * 100
@@ -1507,12 +1501,12 @@ function assignObservedRates(
         expectedFullPeriodInterest <= 0 ||
         event.interest >= expectedFullPeriodInterest * FULL_PERIOD_INTEREST_RATIO;
       event.annualRate = isFullPeriod ? observed : (configuredRate ?? observed);
-    } else if (event.type === 'REGULAR' && !isVariable && configuredRate != null) {
+    } else if (event.type === 'REGULAR' && configuredRate != null) {
       // Nothing to reconstruct from (a principal-only payment, or a row against
-      // no balance), but a fixed loan's configured rate was still the rate in
-      // effect on this date -- so the Rate column keeps it rather than dropping
-      // to "--" alongside the interest. Deliberately not extended to variable
-      // rates: there the scalar rate is only today's, and this row's is unknown.
+      // no balance), but with no rate history the configured rate is the only
+      // rate on record for this date -- so the Rate column keeps it rather than
+      // dropping to "--" alongside the interest. A rate that changed is
+      // recorded as rate history, which takes the branch above this function.
       event.annualRate = configuredRate;
     } else {
       event.annualRate = null;

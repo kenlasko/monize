@@ -22,6 +22,7 @@ function repoDouble(existing: Record<string, unknown> | null = {}) {
             paymentAmount: null,
             paymentFrequency: null,
             paymentStartDate: null,
+            mortgageType: "ANNUITY",
             ...existing,
           },
     ),
@@ -101,9 +102,7 @@ describe("writeLoans", () => {
   it("still fills an annuity mortgage's missing payment", async () => {
     const repo = repoDouble({
       accountType: "MORTGAGE",
-      mortgageType: null,
-      isCanadianMortgage: true,
-      isVariableRate: false,
+      mortgageType: "CANADIAN_FIXED",
     });
 
     await writeLoans(managerFor(repo), "user-1", input());

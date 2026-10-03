@@ -24,8 +24,7 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
     interestRate: 6,
     paymentAmount: 500,
     paymentFrequency: 'MONTHLY',
-    isCanadianMortgage: false,
-    isVariableRate: false,
+    mortgageType: 'ANNUITY',
     ...overrides,
   } as Account;
 }
@@ -101,7 +100,7 @@ describe('LoanSummaryCards', () => {
   it('shows the effective rate note for Canadian fixed mortgages', () => {
     render(
       <LoanSummaryCards
-        account={makeAccount({ accountType: 'MORTGAGE', isCanadianMortgage: true, interestRate: 5 })}
+        account={makeAccount({ accountType: 'MORTGAGE', mortgageType: 'CANADIAN_FIXED', interestRate: 5 })}
         startingBalance={10000}
         currentInstallment={500}
         currentAnnualRate={5}
@@ -113,47 +112,12 @@ describe('LoanSummaryCards', () => {
     expect(screen.getByText(/5\.062\d?% effective/)).toBeInTheDocument();
   });
 
-  it('omits the effective rate for variable-rate mortgages', () => {
-    render(
-      <LoanSummaryCards
-        account={makeAccount({ isCanadianMortgage: true, isVariableRate: true, interestRate: 5 })}
-        startingBalance={10000}
-        currentInstallment={500}
-        currentAnnualRate={5}
-        baseline={null}
-      />,
-    );
-
-    expect(screen.queryByText(/effective/)).not.toBeInTheDocument();
-  });
-
-  it('reads the stored type: a CANADIAN_FIXED column shows the note over flags that say otherwise', () => {
-    render(
-      <LoanSummaryCards
-        account={makeAccount({
-          accountType: 'MORTGAGE',
-          mortgageType: 'CANADIAN_FIXED',
-          isCanadianMortgage: false,
-          interestRate: 5,
-        })}
-        startingBalance={10000}
-        currentInstallment={500}
-        currentAnnualRate={5}
-        baseline={null}
-      />,
-    );
-
-    expect(screen.getByText(/5\.062\d?% effective/)).toBeInTheDocument();
-  });
-
-  it('omits the note for an ANNUITY column over Canadian-fixed flags', () => {
+  it('omits the effective rate for an ANNUITY mortgage', () => {
     render(
       <LoanSummaryCards
         account={makeAccount({
           accountType: 'MORTGAGE',
           mortgageType: 'ANNUITY',
-          isCanadianMortgage: true,
-          isVariableRate: false,
           interestRate: 5,
         })}
         startingBalance={10000}

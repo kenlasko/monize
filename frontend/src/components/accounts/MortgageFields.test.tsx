@@ -65,8 +65,8 @@ const mockAccounts: Account[] = [
     isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null, overpaymentCategoryId: null, overpaymentMemo: null, overpaymentPayeeId: null, fxFeePercent: null,
     scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null, linkedLoanAccountId: null,
-    mortgageType: null,
-    isCanadianMortgage: false, isVariableRate: false, termMonths: null, termEndDate: null,
+    mortgageType: 'ANNUITY',
+    termMonths: null, termEndDate: null,
     amortizationMonths: null, originalPrincipal: null,
     statementDueDay: null, statementSettlementDay: null,
     createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
@@ -79,8 +79,8 @@ const mockAccounts: Account[] = [
     isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null, overpaymentCategoryId: null, overpaymentMemo: null, overpaymentPayeeId: null, fxFeePercent: null,
     scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null, linkedLoanAccountId: null,
-    mortgageType: null,
-    isCanadianMortgage: false, isVariableRate: false, termMonths: null, termEndDate: null,
+    mortgageType: 'ANNUITY',
+    termMonths: null, termEndDate: null,
     amortizationMonths: null, originalPrincipal: null,
     statementDueDay: null, statementSettlementDay: null,
     createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
@@ -623,10 +623,7 @@ describe('MortgageFields', () => {
     });
   });
 
-  it.each([
-    ['CANADIAN_FIXED', true],
-    ['ANNUITY', false],
-  ] as const)('sends the %s type and the flags it maps to the preview API', async (mortgageType, isCanadian) => {
+  it.each(['CANADIAN_FIXED', 'ANNUITY'] as const)('sends the %s type to the preview API', async (mortgageType) => {
     vi.mocked(accountsApi.previewMortgageAmortization).mockResolvedValue({
       paymentAmount: 1500, effectiveAnnualRate: 5.06,
       principalPayment: 1200, interestPayment: 300,
@@ -642,11 +639,7 @@ describe('MortgageFields', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(600); });
 
     expect(accountsApi.previewMortgageAmortization).toHaveBeenCalledWith(
-      expect.objectContaining({
-        mortgageType,
-        isCanadian,
-        isVariableRate: false,
-      })
+      expect.objectContaining({ mortgageType })
     );
 
     // Switch to real timers so waitFor can poll properly

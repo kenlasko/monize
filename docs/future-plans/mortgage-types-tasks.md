@@ -43,7 +43,7 @@ Every task is safe to merge in any order that respects its dependencies: the col
 | P2-B2 | #1511 | Detect mortgage type from sample installments and from history (backend) | P2-B1 | inert | [x] | #1529 |
 | P2-F2 | #1512 | Type detection UI | P2-B2 | inert | [x] | #1530 |
 | P2-Q | #1513 | Phase 2 acceptance: spec, invariants, locales | P2-F1, P2-F2 | none | [x] | the PR closing #1513 |
-| P3-B1 | #1514 | Contract migration: NOT NULL default, drop the booleans, delete overloads and guard | P2-Q, one release after P1 | neutral | [ ] | -- |
+| P3-B1 | #1514 | Contract migration: NOT NULL default, drop the booleans, delete overloads and guard | P2-Q, one release after P1 | neutral | [x] | the PR closing #1514 |
 
 **Why P3-B1 waits a release:** a rollback to the image before Phase 1 reads the two booleans; dropping them in the same release that stopped writing them leaves no image to roll back to.
 
@@ -152,3 +152,4 @@ Every task is safe to merge in any order that respects its dependencies: the col
 
 - Before `NOT NULL` and before the booleans are dropped, the migration re-derives every MORTGAGE row whose type is still null from the flags (the P1-B1 backfill `CASE`): a previous-release insert and a P1-B1 flag change both leave one.
 - Restoring a backup taken before Phase 1 maps the booleans through `mortgageTypeFromFlags`; a backup integration case asserts it.
+- Done: `20261003152748_accounts_mortgage_type_required.sql` re-derives a null MORTGAGE type from the flags, gives every other null row `ANNUITY` (the column is NOT NULL for every account, so a plain `LOAN` reads as the annuity engine it uses), sets the default and NOT NULL and drops both flags; the Phase 1 migration's backfill now runs only while the flags exist, so a fresh install replays it on top of `schema.sql`. The entity, DTOs, demo seed, action-history allowlist and support-backup rules drop the flags; `mortgageTypeFromFlags`, `flagsFromMortgageType`, `requestedMortgageType`, `mortgageTypeColumns`, the two-flag overloads and the flags guard are deleted, and `mortgageTypeOf` is a plain read on both layers. `mortgageTypeFromFlags` itself went with the rest: a backup restore and an action-history undo resolve a pre-contract account snapshot through `backend/src/accounts/legacy-mortgage-type.util.ts`, the one source file that still names the flags, with the migration's rule (a stored type stands; a null MORTGAGE type is the flags' type; any other account `ANNUITY`), asserted by `backup-restore.integration.spec.ts` and `legacy-mortgage-type-restore.spec.ts`. On the client, the reconstructed-rate history no longer reads the variable flag: with no rate history a principal-only row shows the configured rate.

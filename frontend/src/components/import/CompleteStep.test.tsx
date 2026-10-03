@@ -81,8 +81,8 @@ function createAccount(overrides: Partial<Account> = {}): Account {
     isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null, overpaymentCategoryId: null, overpaymentMemo: null, overpaymentPayeeId: null, fxFeePercent: null,
     scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null, linkedLoanAccountId: null,
-    mortgageType: null,
-    isCanadianMortgage: false, isVariableRate: false, termMonths: null, termEndDate: null,
+    mortgageType: 'ANNUITY',
+    termMonths: null, termEndDate: null,
     amortizationMonths: null, originalPrincipal: null,
     statementDueDay: null, statementSettlementDay: null,
     createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
@@ -553,45 +553,16 @@ describe('CompleteStep', () => {
       return dialog.dataset.mortgageType;
     };
 
-    it('seeds the stored type over the flags', () => {
+    it.each(['CANADIAN_FIXED', 'ANNUITY'] as const)('seeds the stored %s type', (type) => {
       expect(
         openFor(
           createAccount({
             id: 'loan-1',
             accountType: 'MORTGAGE',
-            mortgageType: 'CANADIAN_FIXED',
-            isCanadianMortgage: false,
+            mortgageType: type,
           }),
         ),
-      ).toBe('CANADIAN_FIXED');
-    });
-
-    it('seeds a Canadian variable-rate row as the ANNUITY it is', () => {
-      expect(
-        openFor(
-          createAccount({
-            id: 'loan-1',
-            accountType: 'MORTGAGE',
-            mortgageType: null,
-            isCanadianMortgage: true,
-            isVariableRate: true,
-          }),
-        ),
-      ).toBe('ANNUITY');
-    });
-
-    it('reads a null type with Canadian fixed-rate flags as CANADIAN_FIXED', () => {
-      expect(
-        openFor(
-          createAccount({
-            id: 'loan-1',
-            accountType: 'MORTGAGE',
-            mortgageType: null,
-            isCanadianMortgage: true,
-            isVariableRate: false,
-          }),
-        ),
-      ).toBe('CANADIAN_FIXED');
+      ).toBe(type);
     });
 
     it('passes no type for an account it cannot find', () => {

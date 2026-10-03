@@ -12,7 +12,7 @@ number.
 
 Status: **approved** in discussion #1486 (with input from WMP), tracked by
 issue #1501. Each task is a sub-issue (#1502 to #1514), one PR each.
-Phases 1 and 2 are implemented (through P2-Q); Phase 3 (P3-B1) remains.
+All three phases are implemented, through the contract migration (P3-B1).
 
 ## 1. Goal
 

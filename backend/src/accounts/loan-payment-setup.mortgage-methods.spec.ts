@@ -46,8 +46,6 @@ describe("LoanPaymentSetupService: LINEAR and INTEREST_ONLY", () => {
     scheduledTransactionId: null,
     mortgageType: "ANNUITY",
     prepaymentMode: null,
-    isCanadianMortgage: false,
-    isVariableRate: false,
     originalPrincipal: 300000,
     amortizationMonths: 360,
   };

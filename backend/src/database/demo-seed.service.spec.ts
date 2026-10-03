@@ -542,7 +542,7 @@ describe("DemoSeedService", () => {
       );
     });
 
-    it("writes the mortgage type, and null on every other account", async () => {
+    it("writes the mortgage type, and the default on every other account", async () => {
       await service.seedDemoData("user-123");
 
       const accountCalls = dataSource.query.mock.calls.filter(
@@ -569,7 +569,8 @@ describe("DemoSeedService", () => {
       expect(typeOf(mortgages[0])).toBe("CANADIAN_FIXED");
       for (const call of accountCalls) {
         if (call !== mortgages[0]) {
-          expect(typeOf(call)).toBeNull();
+          // The column is NOT NULL; every non-mortgage row carries ANNUITY.
+          expect(typeOf(call)).toBe("ANNUITY");
         }
       }
     });

@@ -14,7 +14,7 @@ import {
   calculateMortgagePaymentSplit,
   recalculateMortgageAfterRateChange,
 } from "./mortgage-amortization.util";
-import { MortgageType, mortgageTypeFromFlags } from "./mortgage-type.util";
+import { MortgageType } from "./mortgage-type.util";
 
 describe("Mortgage Amortization Utility", () => {
   describe("getMortgagePeriodsPerYear", () => {
@@ -205,13 +205,13 @@ describe("Mortgage Amortization Utility", () => {
   describe("calculateEffectiveAnnualRate", () => {
     it("calculates EAR for Canadian fixed (semi-annual compounding)", () => {
       // EAR = (1 + 0.05/2)^2 - 1 = 0.050625 = 5.06%
-      const ear = calculateEffectiveAnnualRate(5, true, false, 12);
+      const ear = calculateEffectiveAnnualRate(5, 12, "CANADIAN_FIXED");
       expect(ear).toBeCloseTo(5.06, 1);
     });
 
     it("calculates EAR for a monthly mortgage on the nominal convention", () => {
       // EAR = (1 + 0.05/12)^12 - 1 = ~0.05116 = 5.12%
-      const ear = calculateEffectiveAnnualRate(5, false, false, 12);
+      const ear = calculateEffectiveAnnualRate(5, 12, "ANNUITY");
       expect(ear).toBeCloseTo(5.12, 1);
     });
 
@@ -220,12 +220,12 @@ describe("Mortgage Amortization Utility", () => {
       // twenty-six times, so the EAR it costs over a year is
       // (1 + 0.05/26)^26 - 1 = 5.1245%, not the monthly figure. Independently
       // computed here, not read back from the implementation.
-      const biweekly = calculateEffectiveAnnualRate(5, false, false, 26);
+      const biweekly = calculateEffectiveAnnualRate(5, 26, "ANNUITY");
       expect(biweekly).toBeCloseTo(
         Math.round((Math.pow(1 + 0.05 / 26, 26) - 1) * 10000) / 100,
         2,
       );
-      const weekly = calculateEffectiveAnnualRate(5, false, false, 52);
+      const weekly = calculateEffectiveAnnualRate(5, 52, "ANNUITY");
       expect(weekly).toBeCloseTo(
         Math.round((Math.pow(1 + 0.05 / 52, 52) - 1) * 10000) / 100,
         2,
@@ -235,34 +235,28 @@ describe("Mortgage Amortization Utility", () => {
     it("orders the frequencies: more compounding periods cost more", () => {
       // At 5% the three EARs all round to 5.12%, so the ordering is asserted at
       // a rate where two display decimals can separate them.
-      expect(calculateEffectiveAnnualRate(12, false, false, 12)).toBeLessThan(
-        calculateEffectiveAnnualRate(12, false, false, 26),
+      expect(calculateEffectiveAnnualRate(12, 12, "ANNUITY")).toBeLessThan(
+        calculateEffectiveAnnualRate(12, 26, "ANNUITY"),
       );
-      expect(calculateEffectiveAnnualRate(12, false, false, 26)).toBeLessThan(
-        calculateEffectiveAnnualRate(12, false, false, 52),
+      expect(calculateEffectiveAnnualRate(12, 26, "ANNUITY")).toBeLessThan(
+        calculateEffectiveAnnualRate(12, 52, "ANNUITY"),
       );
-    });
-
-    it("Canadian variable uses the nominal convention (same as non-Canadian)", () => {
-      const canadianVariable = calculateEffectiveAnnualRate(5, true, true, 26);
-      const standard = calculateEffectiveAnnualRate(5, false, false, 26);
-      expect(canadianVariable).toBe(standard);
     });
 
     it("Canadian fixed ignores the payment frequency (semi-annual by law)", () => {
-      expect(calculateEffectiveAnnualRate(5, true, false, 26)).toBe(
-        calculateEffectiveAnnualRate(5, true, false, 12),
+      expect(calculateEffectiveAnnualRate(5, 26, "CANADIAN_FIXED")).toBe(
+        calculateEffectiveAnnualRate(5, 12, "CANADIAN_FIXED"),
       );
     });
 
     it("returns 0 for 0% rate", () => {
-      expect(calculateEffectiveAnnualRate(0, true, false, 12)).toBe(0);
-      expect(calculateEffectiveAnnualRate(0, false, false, 12)).toBe(0);
+      expect(calculateEffectiveAnnualRate(0, 12, "CANADIAN_FIXED")).toBe(0);
+      expect(calculateEffectiveAnnualRate(0, 12, "ANNUITY")).toBe(0);
     });
 
     it("semi-annual compounding EAR is lower than the nominal-monthly EAR", () => {
-      const semiAnnual = calculateEffectiveAnnualRate(6, true, false, 12);
-      const monthly = calculateEffectiveAnnualRate(6, false, false, 12);
+      const semiAnnual = calculateEffectiveAnnualRate(6, 12, "CANADIAN_FIXED");
+      const monthly = calculateEffectiveAnnualRate(6, 12, "ANNUITY");
       expect(semiAnnual).toBeLessThan(monthly);
     });
   });
@@ -297,7 +291,7 @@ describe("Mortgage Amortization Utility", () => {
         const periodic = calculateStandardPeriodicRate(6, periodsPerYear);
         const compounded = Math.pow(1 + periodic, periodsPerYear) - 1;
         expect(
-          calculateEffectiveAnnualRate(6, false, false, periodsPerYear),
+          calculateEffectiveAnnualRate(6, periodsPerYear, "ANNUITY"),
         ).toBeCloseTo(Math.round(compounded * 10000) / 100, 2);
       }
     });
@@ -346,66 +340,6 @@ describe("Mortgage Amortization Utility", () => {
           expect(
             calculateEffectiveAnnualRate(6, periodsPerYear, type),
           ).toBeCloseTo(Math.round(ear(6, periodsPerYear) * 10000) / 100, 2);
-        }
-      },
-    );
-
-    // Spec table 4.2: every flag combination keeps the periodic rate it had
-    // before the type existed ("Today's periodic rate"), and the two-flag
-    // overloads and the type the flags denote give the same answer to the bit.
-    // Both columns are nullable and the entity hands a NULL through unchanged
-    // (the scheduled-installment path passes them without `|| false`), so the
-    // NULL rows read as false exactly as `isCanadian && !isVariableRate` did,
-    // rather than being looked up as a type.
-    const FLAG_ROWS: [
-      boolean | null | undefined,
-      boolean | null | undefined,
-      (rate: number, n: number) => number,
-    ][] = [
-      [false, false, nominalPeriodic],
-      [false, true, nominalPeriodic],
-      [true, false, semiAnnualPeriodic],
-      [true, true, nominalPeriodic],
-      [null, null, nominalPeriodic],
-      [null, false, nominalPeriodic],
-      [null, true, nominalPeriodic],
-      [false, null, nominalPeriodic],
-      [true, null, semiAnnualPeriodic],
-      [undefined, undefined, nominalPeriodic],
-    ];
-    it.each(FLAG_ROWS)(
-      "flags (%s, %s): the type-keyed and two-flag forms agree",
-      (isCanadian, isVariableRate, todaysPeriodic) => {
-        const type = mortgageTypeFromFlags(isCanadian, isVariableRate);
-        for (const annualRate of [0, 2, 5, 6, 12]) {
-          for (const periodsPerYear of [12, 24, 26, 52]) {
-            expect(
-              getPeriodicRate(
-                annualRate,
-                periodsPerYear,
-                isCanadian,
-                isVariableRate,
-              ),
-            ).toBeCloseTo(todaysPeriodic(annualRate, periodsPerYear), 15);
-            expect(getPeriodicRate(annualRate, periodsPerYear, type)).toBe(
-              getPeriodicRate(
-                annualRate,
-                periodsPerYear,
-                isCanadian,
-                isVariableRate,
-              ),
-            );
-            expect(
-              calculateEffectiveAnnualRate(annualRate, periodsPerYear, type),
-            ).toBe(
-              calculateEffectiveAnnualRate(
-                annualRate,
-                isCanadian,
-                isVariableRate,
-                periodsPerYear,
-              ),
-            );
-          }
         }
       },
     );
