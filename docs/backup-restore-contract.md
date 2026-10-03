@@ -1157,6 +1157,17 @@ ignored when restoring older artifacts: `insertRows` filters columns against
 the per-category push matrix are restored normally; the retired flag is never
 translated into matrix values because it did not gate delivery.
 
+The two dropped mortgage flags, `accounts.is_canadian_mortgage` and
+`accounts.is_variable_rate` (the mortgage-type contract migration), ARE
+translated before that filter drops them, because they decided how a mortgage
+compounds: `insertRows` resolves every `accounts` row through
+`backend/src/accounts/legacy-mortgage-type.util.ts`, so a backup taken before
+the type existed restores a Canadian fixed-rate mortgage as `CANADIAN_FIXED`
+rather than the column default, and a row whose `mortgage_type` is null (any
+non-mortgage, or a mortgage an older release wrote) restores with the type the
+migration gives it rather than failing `NOT NULL`
+(`docs/specs/mortgage-types.md`, section 4.2).
+
 Known and unresolved; none of these is a bug report waiting to be filed:
 
 - **Format version is strict equality.** Only `1` is accepted, rejected before

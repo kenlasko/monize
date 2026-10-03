@@ -1,12 +1,11 @@
 # Spec: mortgage types
 
-Status: implemented through Phase 2 (P2-Q). Phase 1 (P1-B1 to P1-Q: the
-column, the traits, the type-keyed consumers and the Select), the LINEAR and
-INTEREST_ONLY methods with `prepayment_mode` on both layers (P2-B1, P2-F1) and
-type detection (P2-B2, P2-F2) are shipped, and every truth-table row below
-names the spec that asserts it. The contract migration (P3-B1: `NOT NULL`, the
-two booleans dropped) is not yet; until it lands the column is nullable and
-read through `mortgageTypeFromFlags` (section 8).
+Status: implemented (P3-B1). Phase 1 (P1-B1 to P1-Q: the column, the traits,
+the type-keyed consumers and the Select), the LINEAR and INTEREST_ONLY methods
+with `prepayment_mode` on both layers (P2-B1, P2-F1), type detection (P2-B2,
+P2-F2) and the contract migration (P3-B1: the column `NOT NULL DEFAULT
+'ANNUITY'`, the two legacy flags dropped) are shipped, and every truth-table
+row below names the spec that asserts it.
 Governs: issue #1501 (tracking) and its sub-issues #1502 to #1514, agreed in
 discussion #1486 in line with the direction set in #787. The plan is
 `docs/future-plans/mortgage-types.md`, the task list
@@ -65,12 +64,12 @@ Decisions 1 to 6 were agreed in #1486; 7 to 11 are made here.
    constraint is the only list the database accepts, and a contract spec
    reconciles it with `MORTGAGE_TYPES` in both directions (the
    `backend/src/common/db/rls-exempt-tables.spec.ts` pattern).
-2. **Backfill**: `is_canadian_mortgage AND NOT is_variable_rate` becomes
-   `CANADIAN_FIXED`; every other MORTGAGE row becomes `ANNUITY`; non-mortgage
-   rows stay null. No existing account's payment, split or EAR changes, because
-   `getPeriodicRate` today takes the semi-annual branch for exactly the
-   `CANADIAN_FIXED` population (table 4.2) and the migration test asserts the
-   payment, split and EAR of one account per population before and after.
+2. **Backfill**: a mortgage that was Canadian and not variable-rate under the
+   two legacy flags became `CANADIAN_FIXED`; every other MORTGAGE row became
+   `ANNUITY` (table 4.2); the contract migration gave every non-mortgage row
+   the column default, `ANNUITY`. No existing account's payment, split or EAR
+   changed, because the pre-type periodic rate took the semi-annual branch for
+   exactly the `CANADIAN_FIXED` population.
 3. **Term Length is shown for every type**, as the rate-fixed period (a UK fixed
    deal, a Dutch rentevaste periode, a German Zinsbindung). The renewal
    reminder (`backend/src/accounts/mortgage-reminder.service.ts`) reads
@@ -90,10 +89,12 @@ Decisions 1 to 6 were agreed in #1486; 7 to 11 are made here.
    (`UpdateMortgageRateDto`), read `account.currentBalance` today, a
    through-today read model that is stale for a future-dated change. Fixed in P1-B3 for ANNUITY and
    CANADIAN_FIXED, before the new methods depend on it.
-6. **Expand now, contract later** (`database/CLAUDE.md`): the column is
-   nullable in Phase 1 and read through `mortgageTypeFromFlags` when null; it
-   becomes `NOT NULL DEFAULT 'ANNUITY'` and the two booleans are dropped in
-   Phase 3 (P3-B1), one release after Phase 1 shipped.
+6. **Expand now, contract later** (`database/CLAUDE.md`): the column was
+   nullable in Phases 1 and 2 and read through the legacy flags when null; it
+   became `NOT NULL DEFAULT 'ANNUITY'` and the two flags were dropped in Phase 3
+   (P3-B1), one release after Phase 1 shipped. A backup or an action-history
+   snapshot written before then is resolved by the same rule on replay
+   (section 4.2).
 7. **Precision: the methods compute at storage precision, not at cents.** The
    constant principal is `roundMoney(P / N)` = 833.3333 in the worked example,
    not 833.33. This is the precision the annuity engine already uses (its
@@ -170,36 +171,38 @@ The effective annual rate follows the compounding trait exactly as
 `calculateEffectiveAnnualRate` does today: `(1 + annualRate / 200)^2 - 1` for
 `SEMI_ANNUAL`, `(1 + annualRate / 100 / ppy)^ppy - 1` for `NOMINAL`.
 
-### 4.2 Flags to type, and what changes
+### 4.2 Legacy flags to type, and what changed
 
-| `is_canadian_mortgage` | `is_variable_rate` | Today's periodic rate | Today's inference | Type | Rate change | Inference change |
+| `is_canadian_mortgage` | `is_variable_rate` | Pre-type periodic rate | Pre-type inference | Type | Rate change | Inference change |
 | --- | --- | --- | --- | --- | --- | --- |
 | false | false | nominal | day count | `ANNUITY` | none | none |
 | false | true | nominal | day count | `ANNUITY` | none | none |
 | true | false | semi-annual | semi-annual inversion | `CANADIAN_FIXED` | none | none |
 | true | true | nominal | `periodicRate * ppy` | `ANNUITY` | none | day count |
 
-Asserted by: the Type column for every row (and a NULL flag read as false) by
-`mortgage-type.util.spec.ts` ("mortgageTypeFromFlags") and the `fromFlags`
-rows of `mortgage-type-cases.json` on both layers; the backfill landing each
-row on its type, with the same payment, split and EAR through the type as
-through the flags, by `mortgage-type-backfill.integration.spec.ts`; "Rate
-change: none" for every row by `mortgage-amortization.util.spec.ts` (the
-type-keyed and two-flag forms agree on each flag pair); the last row's
-inference change by `rate-change-inference.service.spec.ts` ("annualizes a
-Canadian variable-rate account by day count, as ANNUITY").
+A NULL flag reads as false. Asserted by: both migrations landing each row on
+its type, a NULL flag included, and every non-mortgage row on `ANNUITY`, by
+`mortgage-type-backfill.integration.spec.ts`; the same rule on a replayed
+snapshot by `legacy-mortgage-type.util.spec.ts`,
+`legacy-mortgage-type-restore.spec.ts`, `action-history.service.spec.ts` and
+`backup-restore.integration.spec.ts` ("restores every mortgage of a backup
+taken before the type was required with its type"); the last row's inference
+change by `rate-change-inference.service.spec.ts` ("annualizes an ANNUITY
+mortgage by day count").
 
-The last row is the only behaviour change of Phase 1, and it touches detected
-rate changes only: a Canadian variable-rate account's inferred rate moves from
+The last row was the only behaviour change of Phase 1, and it touched detected
+rate changes only: a Canadian variable-rate account's inferred rate moved from
 `periodicRate * ppy` to the day-count annualization every other nominal
-mortgage already uses (`annualizeRate` in
+mortgage uses (`annualizeRate` in
 `backend/src/loan-rate-changes/rate-change-inference.service.ts` and its mirror
 in `frontend/src/lib/loan-history.ts`). The release note of P1-Q names it.
 
-`flagsFromMortgageType` is the inverse used while the booleans still exist:
-`CANADIAN_FIXED` writes `(true, false)`, every other type `(false, false)`. A
-`(true, true)` row therefore reads back as `(false, false)` after its first
-save; both denote the same arithmetic (rows 2 and 4 above).
+Since the contract migration the flags exist only in what was written before
+it: a backup's `accounts` rows and an action-history account snapshot. The
+backup restore and the undo resolve such a row through
+`backend/src/accounts/legacy-mortgage-type.util.ts` before today's column
+filter drops the flags: a stored type stands, a missing or null one on a
+MORTGAGE is this table's type, and any other account takes `ANNUITY`.
 
 ### 4.3 `prepayment_mode`
 
@@ -386,7 +389,7 @@ INTEREST_ONLY:
 | `RateChangeInferenceService` | a segment's most common payment becomes `new_payment_amount` | null (5.3); segments are still cut on the rate alone | P2-B1 | `rate-change-inference.service.spec.ts` |
 | `LlmAccountRow.paymentAmount` (`getLlmAccounts`, the MCP accounts tool, the in-app assistant) | the column | null, beside `mortgageType` (P1-B3) and the next occurrence's amount and date; INTEREST_ONLY also carries the bullet and its date | P2-B1 | `accounts.service.spec.ts` ("carries a dated installment for LINEAR and INTEREST_ONLY, and the bullet"); `mortgage-installment-facts.spec.ts` |
 | `LoanPaymentDetectorService` | a detected payment offered for setup | a suggestion for the template; not written to the column (the CHECK refuses it) | P2-B2 | `loan-payment-setup.mortgage-methods.spec.ts` (the setup stores no payment); `mortgage-method-checks.integration.spec.ts` (the CHECK refuses one) |
-| MNY import (`backend/src/import/mny/map/map-loans.ts`, `backend/src/import/mny/writers/write-loans.ts`) | writes the imported payment | imported mortgages carry the flags and read as ANNUITY or CANADIAN_FIXED; a re-import into a profile where the user switched one to LINEAR or INTEREST_ONLY leaves its payment null | P2-B1 | `write-loans.spec.ts` ("leaves a %s mortgage's payment null on a re-import") |
+| MNY import (`backend/src/import/mny/map/map-loans.ts`, `backend/src/import/mny/writers/write-loans.ts`) | writes the imported payment | imported mortgages carry the account's type (the default ANNUITY on an account the import creates); a re-import into a profile where the user switched one to LINEAR or INTEREST_ONLY leaves its payment null | P2-B1 | `write-loans.spec.ts` ("leaves a %s mortgage's payment null on a re-import") |
 | `resolveCurrentLoanTerms` (`frontend/src/lib/loan-history.ts`) | a stated rate-change payment, the observed installment, then `account.paymentAmount` | none of the three; the current installment is the next occurrence's | P2-F1 | `loan-history.mortgage-methods.test.ts` ("resolveCurrentLoanTerms") |
 | `generateLoanSchedule` (`frontend/src/lib/loan-schedule.ts`) | `paymentAmount`, then a stated payment per rate change | per-row principal from table 4.3; stated payments not read (5.4) | P2-F1 | `loan-schedule-methods.test.ts` |
 | `LoanSummaryCards` (`frontend/src/components/accounts/loan-detail/LoanSummaryCards.tsx`) | `currentInstallment` from `resolveCurrentLoanTerms` | the next installment, captioned with its due date; INTEREST_ONLY adds the bullet and its date | P2-F1 | `LoanSummaryCards.test.tsx` |
@@ -405,8 +408,7 @@ A mortgage's amortization method is a function of its type alone, and every
 surface that prices, projects or infers -- the creation preview, the persisted
 payment, the scheduled installment (template and posting), the rate-change
 recalculation, the frontend projection and rate inference -- reads it through
-the type's traits, not from the two booleans (held by the guard below, then
-removed in P3-B1) or a surface-local rule.
+the type's traits, not from a surface-local rule.
 
 Mechanism, built by the tasks named:
 
@@ -419,19 +421,16 @@ Mechanism, built by the tasks named:
   backend spec and `frontend/src/lib/mortgage-type.contract.test.ts`, because
   the layers are separate packages that do not import each other (the `loan-rate-timeline-cases.json`
   pattern);
-- a shrink-only guard naming every remaining caller of the boolean overloads
-  (the `mortgage-frequency-cast.guard.spec.ts` pattern), deleted with the
-  overloads in P3-B1;
 - the CHECK constraint on `accounts.mortgage_type`, reconciled with
-  `MORTGAGE_TYPES` by a contract spec;
+  `MORTGAGE_TYPES` by a contract spec, on a column that is `NOT NULL` since
+  P3-B1;
 - the CHECK keeping `accounts.payment_amount` null for LINEAR and
   INTEREST_ONLY (decision 11, section 5.6), so no stored constant payment can
   disagree with the method.
 
 Status: `enforced` in `docs/system-invariants.md` from P2-Q. It was registered
 `unenforced` at S1 and was `partial` from P1-Q, while the traits, the parity
-fixture, the flags guard and the CHECK contract spec existed but the method
-branch did not. The tests that hold it are the "Asserted by" entries of
+fixture and the CHECK contract spec existed but the method branch did not. The tests that hold it are the "Asserted by" entries of
 sections 4, 5 and 7 to 10.
 
 ### 6.2 INV-LOAN-006 (extended): the remaining count is dated too
@@ -445,11 +444,10 @@ INV-LOAN-006 entry's Statement says so from P2-Q.
 
 ### 6.3 INV-LOAN-003 (mechanism moves): one compounding convention, named
 
-The convention does not change. Its mechanism moves from the
-`isCanadian && !isVariableRate` test in `getPeriodicRate` and
-`calculateEffectiveAnnualRate` to `compoundingFor(type)`; the boolean overloads
-delegate to the type-keyed functions during Phase 1 (P1-B2) and are deleted in
-Phase 3. P1-Q updates the entry and `docs/financial-semantics.md` section 9.
+The convention does not change. Its mechanism moved from a two-flag test in
+`getPeriodicRate` and `calculateEffectiveAnnualRate` to `compoundingFor(type)`;
+the two-flag overloads delegated to the type-keyed functions during Phases 1
+and 2 (P1-B2) and were deleted in Phase 3 (P3-B1). P1-Q updates the entry and `docs/financial-semantics.md` section 9.
 The wrong "uses monthly compounding" copy goes with the task that owns each
 file: the schema comment in P1-B1, `create-account.dto.ts` and
 `mortgage-preview.dto.ts` in P1-B3, `mortgageFields.variableRateDesc` in
@@ -606,7 +604,7 @@ tables, not their own results.
 | `original_principal` | LINEAR, SHORTEN_TERM | `abs(opening_balance)`, the amount borrowed when the account was opened. Stated here because it is a substitution, not a guess: a mortgage account's opening balance is the advance. | `mortgage-installment.util.spec.ts` ("falls back to the opening balance when original_principal is null"); `scheduled-transaction-loan.mortgage-methods.spec.ts` ("reads a mortgage whose original_principal is null from its opening balance"); `loan-schedule-methods.test.ts` ("reads abs(opening balance) when the original principal is unset") |
 | `original_principal` and `opening_balance` 0 | LINEAR, SHORTEN_TERM | Refused as above: `c` would be 0 and the loan would not amortize. | `mortgage-installment.util.spec.ts` ("needs a principal only for SHORTEN_TERM"); `mortgage-amortization.util.spec.ts` ("LINEAR refuses a zero principal: c would be 0"); `loan-schedule-methods.test.ts` (c unknown, not 0) |
 | `prepayment_mode` | LINEAR | `SHORTEN_TERM` (decision 10). | `mortgage-type.util.spec.ts` ("reads a null mode as SHORTEN_TERM"); `mortgage-type.test.ts` ("prepaymentModeOf") |
-| `mortgage_type` | MORTGAGE, Phase 1 and 2 | `mortgageTypeFromFlags(is_canadian_mortgage, is_variable_rate)`. After P3-B1 the column is `NOT NULL`. | `mortgage-type.util.spec.ts` and `mortgage-type.test.ts` ("mortgageTypeOf": the flags when the column is null) |
+| `mortgage_type` | any | Cannot be missing: the column is `NOT NULL DEFAULT 'ANNUITY'` since P3-B1, and a snapshot written before it is resolved on replay by table 4.2. | `mortgage-type-backfill.integration.spec.ts` ("leaves the column NOT NULL DEFAULT 'ANNUITY' under the CHECK"); `legacy-mortgage-type.util.spec.ts` |
 | a rate for `d` | any | As today: `effectiveAnnualRateOn` falls back to `accounts.interest_rate`. | `loan-rate-timeline-cases.json` on both layers (INV-LOAN-006); `loan-rate-changes.mortgage-methods.spec.ts` (no linear template priced at a defaulted 0%) |
 | `debt(d)` unreadable | any | As today: the posting rolls back and the anchor endpoint errors (`docs/specs/scheduled-loan-installment-pricing.md` section 3). | `scheduled-transaction-loan.service.spec.ts` ("refuses rather than posting a stale split when the ledger cannot be read"); `loan-payment-setup.mortgage-methods.spec.ts` ("refuses when the ledger cannot be read, writing nothing") |
 
@@ -749,11 +747,11 @@ the E2E one, which has no spec to hold it and says why.
 
 | Layer | Suite | What it asserts | Task |
 | --- | --- | --- | --- |
-| Database | `mortgage-type-backfill.integration.spec.ts`, `scripts/verify-schema.sh` | backfill per table 4.2; CHECK refuses an unknown type; `schema.sql` and the migration agree | P1-B1 |
-| Backend unit | `mortgage-type.util.spec.ts` | traits per 4.1; `mortgageTypeFromFlags` and `flagsFromMortgageType` per 4.2; prepayment mode per decisions 4 and 10 | P1-B2, P2-B1 |
-| Backend unit | `mortgage-amortization.util.spec.ts` ("periodic-rate convention") | type-keyed rate and EAR equal the boolean overloads for every row of 4.2 | P1-B2 |
+| Database | `mortgage-type-backfill.integration.spec.ts`, `scripts/verify-schema.sh` | both migrations per table 4.2; NOT NULL and the default; CHECK refuses an unknown type; `schema.sql` and the migrations agree, the flags gone | P1-B1, P3-B1 |
+| Backup and undo | `legacy-mortgage-type.util.spec.ts`, `legacy-mortgage-type-restore.spec.ts`, `action-history.service.spec.ts`, `backup-restore.integration.spec.ts` | a pre-contract snapshot replays with its table 4.2 type | P3-B1 |
+| Backend unit | `mortgage-type.util.spec.ts` | traits per 4.1; prepayment mode per decisions 4 and 10 | P1-B2, P2-B1 |
+| Backend unit | `mortgage-amortization.util.spec.ts` ("periodic-rate convention") | rate and EAR per type follow its compounding trait | P1-B2 |
 | Backend contract | `mortgage-type.contract.spec.ts` (reads `database/schema.sql`) | the `mortgage_type` and `prepayment_mode` CHECK lists equal `MORTGAGE_TYPES` and `PREPAYMENT_MODES`, both directions | P1-B2, P2-B1 |
-| Backend source scan | `mortgage-type-flags.guard.spec.ts` | names every remaining boolean caller; shrink-only, baseline empty | P1-B2 |
 | Parity | `mortgage-type-cases.json`, read by `mortgage-type.contract.spec.ts` and `mortgage-type.contract.test.ts` | traits, rate, first installment and EAR per type agree | P1-B2, P1-F1 |
 | Backend unit | `loan-rate-changes.service.spec.ts` | the rate-change paths read `debt(effectiveDate)`, not `currentBalance`, with a future-dated change | P1-B3 |
 | Backend unit | `mortgage-amortization.util.spec.ts` ("calculateMortgageAmortization: LINEAR and INTEREST_ONLY") | table 7.5; accelerated frequencies refused for both new methods | P2-B1 |
