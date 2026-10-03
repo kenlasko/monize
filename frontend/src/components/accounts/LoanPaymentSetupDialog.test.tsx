@@ -78,8 +78,8 @@ function createAccount(overrides: Partial<Account> = {}): Account {
     isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null, overpaymentCategoryId: null, overpaymentMemo: null, overpaymentPayeeId: null, fxFeePercent: null,
     scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null, linkedLoanAccountId: null,
-    mortgageType: null,
-    isCanadianMortgage: false, isVariableRate: false, termMonths: null, termEndDate: null,
+    mortgageType: 'ANNUITY',
+    termMonths: null, termEndDate: null,
     amortizationMonths: null, originalPrincipal: null,
     statementDueDay: null, statementSettlementDay: null,
     createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
@@ -325,8 +325,6 @@ describe('LoanPaymentSetupDialog', () => {
     await act(async () => fireEvent.click(buttons[buttons.length - 1]));
     expect(mockSetupLoanPayments).toHaveBeenCalledWith('m-1', expect.objectContaining({
       mortgageType: 'CANADIAN_FIXED',
-      isCanadianMortgage: true,
-      isVariableRate: false,
     }));
   });
 
@@ -379,8 +377,6 @@ describe('LoanPaymentSetupDialog', () => {
         paymentAmount: 1333.3333,
         mortgageType: 'LINEAR',
         prepaymentMode: 'LOWER_INSTALLMENT',
-        isCanadianMortgage: false,
-        isVariableRate: false,
       });
       expect(data).not.toHaveProperty('detectedInterestAmount');
     });
@@ -524,12 +520,10 @@ describe('LoanPaymentSetupDialog', () => {
     await act(async () => fireEvent.click(buttons[buttons.length - 1]));
     expect(mockSetupLoanPayments).toHaveBeenCalledWith('m-1', expect.objectContaining({
       mortgageType: 'ANNUITY',
-      isCanadianMortgage: false,
-      isVariableRate: false,
     }));
   });
 
-  it('sends no mortgage type or flags for an ordinary loan', async () => {
+  it('sends no mortgage type for an ordinary loan', async () => {
     mockDetectLoanPayments.mockResolvedValue(defaultDetected);
     mockSetupLoanPayments.mockResolvedValue({} as any);
     await renderDialog();
@@ -538,7 +532,6 @@ describe('LoanPaymentSetupDialog', () => {
     await act(async () => fireEvent.click(buttons[buttons.length - 1]));
     const data = mockSetupLoanPayments.mock.calls[0][1];
     expect(data).not.toHaveProperty('mortgageType');
-    expect(data).not.toHaveProperty('isCanadianMortgage');
   });
 
   it('stops offering quarterly and yearly once the mortgage compounds semi-annually', async () => {

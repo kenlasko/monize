@@ -64,6 +64,8 @@ const makeAccount = (overrides: Partial<Account> = {}): Account =>
     creditLimit: null,
     interestRate: null,
     isClosed: false,
+    // The column default every account carries.
+    mortgageType: 'ANNUITY',
     ...overrides,
   }) as Account;
 
@@ -465,8 +467,7 @@ describe('AccountInfoWidget', () => {
         interestRate: 4.5,
         paymentAmount: 1800,
         paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false,
-        isVariableRate: false,
+        mortgageType: 'ANNUITY',
         ...overrides,
       });
 

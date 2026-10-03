@@ -16,11 +16,7 @@ import {
 } from '@/types/account';
 import { Category } from '@/types/category';
 import { accountsApi } from '@/lib/accounts';
-import {
-  PREPAYMENT_MODES,
-  flagsFromMortgageType,
-  storesConstantPayment,
-} from '@/lib/mortgage-type';
+import { PREPAYMENT_MODES, storesConstantPayment } from '@/lib/mortgage-type';
 import { OverpaymentRecognitionFields } from './OverpaymentRecognitionFields';
 import { MortgageTypeDetector } from './MortgageTypeDetector';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
@@ -237,11 +233,8 @@ export function MortgageFields({
         amortizationMonths,
         paymentFrequency: mortgagePaymentFrequency,
         paymentStartDate,
-        // The type decides the convention; the two legacy flags it maps to
-        // travel beside it until the booleans are dropped (P3-B1).
+        // The type decides the convention.
         mortgageType,
-        isCanadian: flagsFromMortgageType(mortgageType).isCanadianMortgage,
-        isVariableRate: flagsFromMortgageType(mortgageType).isVariableRate,
       });
       setMortgagePreview(preview);
     } catch (error) {

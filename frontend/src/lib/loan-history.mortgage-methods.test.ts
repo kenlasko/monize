@@ -41,8 +41,6 @@ function mortgage(overrides: Partial<Account> = {}): Account {
     originalPrincipal: 300000,
     mortgageType: 'LINEAR',
     prepaymentMode: null,
-    isCanadianMortgage: false,
-    isVariableRate: false,
     ...overrides,
   } as Account;
 }

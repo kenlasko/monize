@@ -38,8 +38,7 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
     openingBalance: 0,
     currentBalance: -3000,
     creditLimit: 10000,
-    isCanadianMortgage: false,
-    isVariableRate: false,
+    mortgageType: 'ANNUITY',
     ...overrides,
   } as Account;
 }
