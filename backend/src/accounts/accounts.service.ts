@@ -259,10 +259,10 @@ export class AccountsService {
     }
 
     // Only a mortgage takes a requested type; a request naming none is the
-    // default type, as is every other account type's row (the column default). LINEAR and INTEREST_ONLY are refused
-    // without the terms their method prices from (spec section 8), store no
-    // constant payment (decision 11), and only LINEAR keeps a prepayment mode
-    // (decision 10).
+    // default type, as is every other account type's row (the column
+    // default). LINEAR and INTEREST_ONLY are refused without the terms their
+    // method prices from (spec section 8), store no constant payment
+    // (decision 11), and only LINEAR keeps a prepayment mode (decision 10).
     const mortgageType =
       accountData.accountType === AccountType.MORTGAGE
         ? (accountData.mortgageType ?? "ANNUITY")
@@ -959,7 +959,9 @@ export class AccountsService {
         // edit moves a mortgage to another type, as every non-mortgage row
         // holds it).
         if (effectiveType === AccountType.MORTGAGE) {
-          if (updateAccountDto.mortgageType !== undefined)
+          // `@IsOptional()` admits null; like an absent field it leaves the
+          // stored type alone, never a null the NOT NULL column refuses.
+          if (updateAccountDto.mortgageType != null)
             account.mortgageType = updateAccountDto.mortgageType;
         } else {
           account.mortgageType = "ANNUITY";

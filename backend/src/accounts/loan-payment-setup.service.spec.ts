@@ -523,6 +523,17 @@ describe("LoanPaymentSetupService", () => {
         .mockResolvedValueOnce(mockSourceAccount);
       await service.setupLoanPayments("user-1", "mortgage-4", request);
       expect(lastUpdate()).not.toHaveProperty("mortgageType");
+
+      // A null, which `@IsOptional()` admits, names none too: it is neither
+      // written to the NOT NULL column nor priced as a type.
+      accountsRepository.findOne
+        .mockResolvedValueOnce(storedFixed)
+        .mockResolvedValueOnce(mockSourceAccount);
+      await service.setupLoanPayments("user-1", "mortgage-4", {
+        ...request,
+        mortgageType: null,
+      } as never);
+      expect(lastUpdate()).not.toHaveProperty("mortgageType");
     });
 
     it("splits an ANNUITY mortgage at the nominal rate, at every cadence", async () => {

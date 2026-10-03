@@ -2484,8 +2484,10 @@ Statement           Interest attributed to a historical loan payment is a
                     The rate is a separate fact from the interest and does not
                     fall with it: a loan with no recorded rate history keeps
                     its configured rate on a zero-interest row, the only rate on
-                    record for that date; a rate that changed is recorded as
-                    rate history, whose rate for the date the row shows.
+                    record for that date. Nothing marks a rate as variable since
+                    the variable-rate flag was dropped, so a variable loan whose
+                    changes were never recorded shows its current rate there;
+                    recorded rate history replaces it with the dated rate.
                     And 0% is a rate, distinct from "no rate recorded", at every
                     step: a fixed interest-free loan carries 0 on every row
                     (`Number(null)` is also 0, so the test is `!= null`, never

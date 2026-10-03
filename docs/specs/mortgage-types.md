@@ -67,9 +67,13 @@ Decisions 1 to 6 were agreed in #1486; 7 to 11 are made here.
 2. **Backfill**: a mortgage that was Canadian and not variable-rate under the
    two legacy flags became `CANADIAN_FIXED`; every other MORTGAGE row became
    `ANNUITY` (table 4.2); the contract migration gave every non-mortgage row
-   the column default, `ANNUITY`. No existing account's payment, split or EAR
+   the column default, `ANNUITY`. No existing mortgage's payment, split or EAR
    changed, because the pre-type periodic rate took the semi-annual branch for
-   exactly the `CANADIAN_FIXED` population.
+   exactly the `CANADIAN_FIXED` population. The one deliberate exception is a
+   non-mortgage row that still carried a Canadian, not variable-rate flag pair
+   (a mortgage edited into a `LOAN` kept its flags and lost its type): it was read as
+   `CANADIAN_FIXED` and compounded semi-annually, and from the contract
+   migration it is `ANNUITY`, the engine every other loan uses.
 3. **Term Length is shown for every type**, as the rate-fixed period (a UK fixed
    deal, a Dutch rentevaste periode, a German Zinsbindung). The renewal
    reminder (`backend/src/accounts/mortgage-reminder.service.ts`) reads

@@ -914,6 +914,22 @@ describe("AccountsService", () => {
       });
     });
 
+    it("reads a null type as naming none, never writing null to the NOT NULL column", async () => {
+      // `@IsOptional()` lets a null through validation; an API or MCP caller
+      // sending one must not reach the column or the traits lookup with it.
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        accountType: "MORTGAGE",
+        mortgageType: "CANADIAN_FIXED",
+      });
+      await service.update("user-1", "account-1", {
+        mortgageType: null,
+      } as never);
+      expect(mockQueryRunner.manager.save.mock.calls[0][0]).toMatchObject({
+        mortgageType: "CANADIAN_FIXED",
+      });
+    });
+
     it("resets the type to the default when an edit moves a mortgage to another type", async () => {
       // Every non-mortgage row carries the column default; a stale
       // CANADIAN_FIXED left on a LOAN would describe a mortgage it is not.

@@ -402,9 +402,9 @@ export function AccountForm({
   const handleValidatedSubmit = useCallback(
     (data: AccountFormData) => {
       // A mortgage sends its type; any other account type sends none. The
-      // prepayment mode belongs to a
-      // LINEAR mortgage alone: every other type sends null, which is what the
-      // server stores for it whatever it is sent.
+      // prepayment mode belongs to a LINEAR mortgage alone: every other type
+      // sends null, which is what the server stores for it whatever it is
+      // sent.
       const { mortgageType, prepaymentMode, ...withoutMortgageType } = data;
       let payload: AccountSubmitData =
         data.accountType === 'MORTGAGE' && mortgageType

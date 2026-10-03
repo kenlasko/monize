@@ -502,8 +502,8 @@ export class LoanPaymentSetupService {
 
     if (account.accountType === AccountType.MORTGAGE) {
       // The type only when the request names one; otherwise the stored
-      // column stands.
-      if (dto.mortgageType !== undefined) {
+      // column stands. A null, which `@IsOptional()` admits, names none.
+      if (dto.mortgageType != null) {
         updateData.mortgageType = dto.mortgageType;
       }
       // Null unless the type this request leaves is LINEAR (spec decision 10).
