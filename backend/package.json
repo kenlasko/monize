@@ -94,7 +94,7 @@
     "@types/he": "^1.2.3",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.0.0",
-    "@types/node": "^25.2.0",
+    "@types/node": "^26.6.3",
     "@types/nodemailer": "^7.0.9",
     "@types/oidc-provider": "^9.5.0",
     "@types/passport-jwt": "^4.0.1",
