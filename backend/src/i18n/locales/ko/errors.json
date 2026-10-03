@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "엔터티 유형에 대한 실행 취소가 지원되지 않습니다: {{ entityType }}",
     "unsupportedTransactionAction": "지원되지 않는 거래 작업입니다: {{ action }}",
     "undoTransactionGone": "실행 취소할 수 없습니다: 거래가 더 이상 존재하지 않습니다",
+    "redoCreateWithLegs": "이 거래는 다른 계좌에 항목을 만들었으므로 다시 실행할 수 없습니다. 대신 거래를 다시 만드세요",
     "undoAccountGone": "실행 취소할 수 없습니다: 계정이 더 이상 존재하지 않습니다",
     "unsupportedTransferAction": "지원되지 않는 이체 작업입니다: {{ action }}",
     "unsupportedInvestmentAction": "지원되지 않는 투자 작업입니다: {{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "미리보기 이후 거래 또는 규칙이 변경되었습니다. 새 미리보기를 확인한 후 다시 실행하세요",
     "ruleInvalid": "이 규칙은 유효하지 않아 실행할 수 없습니다. 먼저 규칙을 열어 수정하세요",
     "dateRangeInvalid": "시작일은 종료일보다 늦을 수 없습니다",
-    "runTooLarge": "이 실행은 변경하는 거래가 너무 많아 한 번에 실행 취소할 수 없습니다. 계좌나 날짜 범위를 좁혀 다시 시도하세요"
+    "activeWindowInvalid": "활성 시작일은 활성 종료일보다 늦을 수 없습니다",
+    "runTooLarge": "이 실행은 변경하는 거래가 너무 많아 한 번에 실행 취소할 수 없습니다. 계좌나 날짜 범위를 좁혀 다시 시도하세요",
+    "runRedoStructural": "이 실행에서 거래 구조(이체 또는 분할)가 변경되어 다시 실행할 수 없습니다. 대신 규칙을 다시 실행하세요",
+    "runUndoStructureChanged": "이 실행으로 구조가 변경된 거래가 이후 수정되어(분할 행 또는 이체) 실행을 안전하게 취소할 수 없습니다. 직접 복원하세요"
   },
   "transactions": {
     "invalidStatus": "유효하지 않은 거래 상태입니다: {{ status }}",
     "reconciledLocked": "이 거래는 조정되어 잠겨 있습니다. 변경하려면 설정에서 '조정된 거래 잠금'을 끄세요.",
+    "convertToTransferRefused": "이 거래는 더 이상 이체로 변환할 수 없습니다. 거래를 확인한 뒤 규칙을 다시 실행하세요",
     "pagePositiveInteger": "page는 양의 정수여야 합니다",
     "limitPositiveInteger": "limit은 양의 정수여야 합니다",
     "limitMax200": "limit은 200을 초과할 수 없습니다",

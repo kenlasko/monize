@@ -32,6 +32,8 @@ const definition = {
   enabled: true,
   triggers: ["create", "import"] as ("create" | "import")[],
   stopProcessing: false,
+  activeFrom: "2026-10-01" as string | null,
+  activeTo: null as string | null,
   condition: { field: "payeeId", op: "eq", value: PAYEE } as const,
   actions: [
     { type: "set_category", categoryId: CAT, onlyIfEmpty: true },
@@ -132,11 +134,49 @@ describe("AiActionsService transaction rule actions", () => {
         enabled: true,
         triggers: ["create", "import"],
         stopProcessing: false,
+        activeFrom: "2026-10-01",
+        activeTo: null,
         condition: definition.condition,
         actions: definition.actions,
       }),
     );
     expect(result).toEqual({ type: "create_transaction_rule", id: RULE });
+  });
+
+  it("confirms a descriptor signed before the window existed without touching the stored window", async () => {
+    const { activeFrom: _from, activeTo: _to, ...old } = definition;
+    const descriptor = {
+      ...updateDescriptor(),
+      rule: { ...old, actions: [...definition.actions] },
+    } as AiActionDescriptor;
+
+    await service.confirm(USER, dtoFor(descriptor));
+
+    const dto = rules.update.mock.calls[0][2];
+    expect(dto.activeFrom).toBeUndefined();
+    expect(dto.activeTo).toBeUndefined();
+  });
+
+  it("updates the window with the rest of the rule", async () => {
+    await service.confirm(
+      USER,
+      dtoFor({
+        ...updateDescriptor(),
+        rule: {
+          ...definition,
+          activeTo: "2026-12-31",
+          actions: [...definition.actions],
+        },
+      } as AiActionDescriptor),
+    );
+    expect(rules.update).toHaveBeenCalledWith(
+      USER,
+      RULE,
+      expect.objectContaining({
+        activeFrom: "2026-10-01",
+        activeTo: "2026-12-31",
+      }),
+    );
   });
 
   it("updates with the revision the card was built from", async () => {

@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "Rückgängig machen wird für den Entitätstyp nicht unterstützt: {{ entityType }}",
     "unsupportedTransactionAction": "Nicht unterstützte Buchungsaktion: {{ action }}",
     "undoTransactionGone": "Rückgängig machen nicht möglich: Buchung existiert nicht mehr",
+    "redoCreateWithLegs": "Diese Transaktion hat Einträge in anderen Konten angelegt und kann daher nicht wiederholt werden. Legen Sie sie stattdessen neu an",
     "undoAccountGone": "Rückgängig machen nicht möglich: Das Konto existiert nicht mehr",
     "unsupportedTransferAction": "Nicht unterstützte Überweisungsaktion: {{ action }}",
     "unsupportedInvestmentAction": "Nicht unterstützte Investmentaktion: {{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "Die Transaktionen oder die Regel haben sich seit der Vorschau geändert. Prüfen Sie die neue Vorschau und führen Sie die Regel erneut aus",
     "ruleInvalid": "Diese Regel ist ungültig und kann nicht ausgeführt werden. Öffnen Sie sie und reparieren Sie sie zuerst",
     "dateRangeInvalid": "Das Startdatum darf nicht nach dem Enddatum liegen",
-    "runTooLarge": "Dieser Lauf ändert zu viele Transaktionen, um in einem Schritt rückgängig gemacht zu werden. Schränken Sie die Konten oder Daten ein und versuchen Sie es erneut"
+    "activeWindowInvalid": "Das erste Aktivdatum darf nicht nach dem letzten Aktivdatum liegen",
+    "runTooLarge": "Dieser Lauf ändert zu viele Transaktionen, um in einem Schritt rückgängig gemacht zu werden. Schränken Sie die Konten oder Daten ein und versuchen Sie es erneut",
+    "runRedoStructural": "Dieser Lauf hat Transaktionen umstrukturiert (Überweisungen oder Aufteilungen) und kann nicht wiederholt werden. Führen Sie stattdessen die Regel erneut aus",
+    "runUndoStructureChanged": "Eine von diesem Lauf umstrukturierte Transaktion wurde seitdem geändert (ihre Aufteilungszeilen oder ihre Überweisung), daher kann der Lauf nicht sicher rückgängig gemacht werden. Stellen Sie sie manuell wieder her"
   },
   "transactions": {
     "invalidStatus": "Ungültiger Buchungsstatus: {{ status }}",
     "reconciledLocked": "Diese Buchung ist abgeglichen und gesperrt. Deaktivieren Sie „Abgeglichene Buchungen sperren“ in den Einstellungen, um sie zu ändern.",
+    "convertToTransferRefused": "Diese Transaktion kann nicht mehr in eine Überweisung umgewandelt werden. Prüfen Sie sie und führen Sie die Regel erneut aus",
     "pagePositiveInteger": "page muss eine positive ganze Zahl sein",
     "limitPositiveInteger": "limit muss eine positive ganze Zahl sein",
     "limitMax200": "limit darf 200 nicht überschreiten",

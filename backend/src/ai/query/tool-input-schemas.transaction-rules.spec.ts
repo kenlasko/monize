@@ -170,6 +170,68 @@ describe("transaction rule tool schemas", () => {
       expect(disabled.enabled).toBe(false);
     });
 
+    it("takes the active window as real dates, with an empty string to clear", () => {
+      const parsed = manageTransactionRulesSchema.parse({
+        operation: "create",
+        name: "x",
+        condition,
+        actions,
+        activeFrom: "2026-10-01",
+        activeTo: "",
+      });
+      expect(parsed.activeFrom).toBe("2026-10-01");
+      expect(parsed.activeTo).toBe("");
+      expect(
+        manageTransactionRulesSchema.safeParse({
+          operation: "test",
+          ruleId: RULE,
+          activeFrom: "2026-10-01",
+        }).success,
+      ).toBe(true);
+    });
+
+    it("reads null as a cleared side", () => {
+      const parsed = manageTransactionRulesSchema.parse({
+        operation: "update",
+        ruleId: RULE,
+        activeFrom: null,
+      });
+      expect(parsed.activeFrom).toBe("");
+    });
+
+    it.each(["2026-02-31", "2026-10-1", "01.10.2026", 20261001])(
+      "refuses the window side %j",
+      (bad) => {
+        for (const field of ["activeFrom", "activeTo"]) {
+          expect(
+            manageTransactionRulesSchema.safeParse({
+              operation: "create",
+              name: "x",
+              condition,
+              actions,
+              [field]: bad,
+            }).success,
+          ).toBe(false);
+        }
+      },
+    );
+
+    it("counts a window as a change for update", () => {
+      expect(
+        manageTransactionRulesSchema.safeParse({
+          operation: "update",
+          ruleId: RULE,
+          activeTo: "2026-12-31",
+        }).success,
+      ).toBe(true);
+      expect(
+        manageTransactionRulesSchema.safeParse({
+          operation: "update",
+          ruleId: RULE,
+        }).success,
+      ).toBe(false);
+    });
+
     it("is what validateToolInput applies to both tools", () => {
       expect(
         validateToolInput("manage_transaction_rules", { operation: "delete" })

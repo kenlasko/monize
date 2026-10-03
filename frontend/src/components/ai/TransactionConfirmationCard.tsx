@@ -416,7 +416,7 @@ export function TransactionConfirmationCard({
               {t('confirmAction.reconciledWarning')}
             </p>
           )}
-        <RuleEffectsLines effects={preview.ruleEffects} />
+        <RuleEffectsLines effects={preview.ruleEffects} currencyCode={preview.currencyCode} />
       </div>
       <div className="px-3 py-2 border-t border-blue-200 dark:border-blue-900/60">
         {status === 'pending' && (

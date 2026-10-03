@@ -33,6 +33,7 @@ function facts(overrides: Partial<RuleFacts> = {}): RuleFacts {
     tagIds: [T1, T2],
     hasSplits: false,
     referenceNumber: null,
+    date: null,
     dayOfMonth: null,
     weekday: null,
     status: null,

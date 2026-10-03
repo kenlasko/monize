@@ -41,7 +41,7 @@ import {
   type CelError,
 } from '@/lib/rule-cel/types';
 import { RULE_CONDITION_FIELDS, RULE_OPERATOR_SHAPES, isRuleField } from '@/lib/rule-fields';
-import { createGroup, newUid, type EditorGroup, type EditorLeaf, type EditorNode } from '@/lib/rule-tree';
+import { createGroup, newUid, type EditorGroup, type EditorLeaf, type EditorNode, type EditorValue } from '@/lib/rule-tree';
 import type { RuleField, RuleOperator } from '@/types/transaction-rule';
 
 export type CelParseResult =
@@ -259,7 +259,7 @@ class Parser {
     this.cursor.expectPunct('(');
     const shape = RULE_OPERATOR_SHAPES[op];
     const value =
-      shape === 'list' ? readList(this.cursor, ctx) : shape === 'range' ? readRange(this.cursor, ctx) : readScalar(this.cursor, ctx, true);
+      shape === 'list' ? readList(this.cursor, ctx) : shape === 'range' ? (readRange(this.cursor, ctx) as EditorValue) : readScalar(this.cursor, ctx, true);
     this.cursor.expectPunct(')');
     return { node: this.leaf(field, op, value, start), group: false };
   }

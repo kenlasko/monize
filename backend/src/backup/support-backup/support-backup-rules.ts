@@ -256,6 +256,8 @@ export const RULES: Record<string, TableRules> = {
     condition: konst({}),
     actions: konst([]),
     stop_processing: keep,
+    active_from: keep, // a date, the first day the rule applies to
+    active_to: keep, // a date, the last day the rule applies to
     revision: keep,
     created_at: keep,
     updated_at: keep,

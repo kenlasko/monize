@@ -339,7 +339,11 @@ export class ScheduledTransactionsController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body() postDto: PostScheduledTransactionDto,
   ) {
-    return this.scheduledTransactionsService.post(req.user.id, id, postDto);
+    // A delegate acting as the owner posts the owner's bill but is not the
+    // owner: the owner's structural rules must not run on the posted row.
+    return this.scheduledTransactionsService.post(req.user.id, id, postDto, {
+      actorIsNotOwner: req.user.isActing === true,
+    });
   }
 
   @Post(":id/skip")

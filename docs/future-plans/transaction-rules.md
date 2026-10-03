@@ -3,6 +3,7 @@
 Design for user-defined transaction rules: a rule has a trigger, a condition
 tree and an ordered list of actions (WHEN / IF / THEN). A rule changes how a
 new transaction is labelled (tags, category, payee). A rule never moves money.
+(Superseded in part by [`docs/specs/transaction-rules-structural-actions.md`](../specs/transaction-rules-structural-actions.md): structural actions now add a counterpart leg or split lines that move a balance in another account.)
 This is the design half of a two-document plan; the task list is
 [`transaction-rules-tasks.md`](./transaction-rules-tasks.md).
 
@@ -242,11 +243,18 @@ The same function runs in the preview, the test panel and the commit (I3).
 | `set_category` | `categoryId`, `onlyIfEmpty` | Sets the category | the row has splits; the row is a transfer leg |
 | `set_payee` | `payeeId`, `onlyIfEmpty` | Sets the payee | the row is a leg of a cross-owner transfer |
 | `request_ai_review` | `instruction` (1..1000 chars), at most one per rule | Adds a durable request to the AI review queue (section 6.5) | never |
+| `convert_to_transfer` | `toAccountId` or `fromAccountId`, `clearCategory`, `payeeId` | Added later: turns the row into one leg of a transfer and creates the counterpart leg | see `docs/specs/transaction-rules-structural-actions.md` section 4 |
+| `split` | `parts[]` (2..10), `payeeId` | Added later: turns the row into a split whose part amounts come from the rule's captures | see `docs/specs/transaction-rules-structural-actions.md` section 4 |
 
 The first four are ledger actions (`isLedgerAction`); `request_ai_review` writes
 only to the queue. No action changes `amount`, `accountId`, `date`, `status`, splits or links. So
 a rule cannot move a balance (I1). A refused action is skipped and the trace
 records the reason; the other actions of the rule still run.
+
+The two rows added after this plan (`convert_to_transfer`, `split`) are the
+exception to the sentence above: they move the balance of the counterpart
+account only. The restated I1 is in `docs/specs/transaction-rules-structural-actions.md`
+section 2 and `INV-RULE-001` in `docs/system-invariants.md`.
 
 ### 6.2 Additive tags
 
@@ -326,7 +334,7 @@ ai_review_requests
 
 | ID | Statement | Mechanism |
 |---|---|---|
-| I1 | A rule never moves a balance, and an AI proposal is never committed without a human approval | The action list in section 6.1 is a closed union type; a proposal is a `PendingAiAction` committed only by the confirm path; the DTO refuses any other action; a unit test asserts that no action writes `amount`, `account_id`, `status` or a link. |
+| I1 | A rule never moves a balance (superseded by `docs/specs/transaction-rules-structural-actions.md`: a structural action moves the target account's balance), and an AI proposal is never committed without a human approval | The action list in section 6.1 is a closed union type; a proposal is a `PendingAiAction` committed only by the confirm path; the DTO refuses any other action; a unit test asserts that no action writes `amount`, `account_id`, `status` or a link. |
 | I2 | A rule applies in the same transaction as the insert, on every creation path in 6.3 | The applier takes an `EntityManager`; a source-scanning guard lists every `create(Transaction)` / `insert` site on `transactions` and fails on a site that is neither a call to the applier nor in the exempt list. |
 | I3 | A preview shows what the commit will do | `previewCreate`, the test panel and the manual-run preview call the same `planRuleEffects(facts, rules)`; the commit applies its result. A test compares preview and commit for the same input. |
 | I4 | A rule runs at most once per row per trigger, in `position` order | One call site per path; a test with two rules and `stopProcessing`. |
@@ -531,6 +539,11 @@ row into a transfer or changes its account, amount or date (breaks I1; the
 import profile does it before the row exists), `split_by_template`,
 `notify`, an `update` trigger, rule export and rule groups. Each can be a
 later proposal.
+
+Update: `docs/specs/transaction-rules-structural-actions.md` supersedes this
+for an action that turns a row into a transfer (`convert_to_transfer`) and for
+splitting a row (`split`, with amounts from captures rather than a template);
+the rest of this list is unchanged.
 
 ## 11. Open questions
 

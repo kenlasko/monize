@@ -90,7 +90,16 @@
       "imported": "匯入交易時",
       "atLeastOne": "請至少保持勾選一個選項",
       "stopProcessing": "停止處理其他規則",
-      "stopProcessingHelp": "此規則與某筆交易相符後，清單中排在它之後的規則將不再對該筆交易執行。"
+      "stopProcessingHelp": "此規則與某筆交易相符後，清單中排在它之後的規則將不再對該筆交易執行。",
+      "window": {
+        "title": "生效期間",
+        "help": "此規則僅適用於日期在該期間內的交易：建立或匯入時，以及測試或執行規則時。日期留空表示不限。",
+        "from": "起始日期",
+        "to": "結束日期",
+        "backwards": "結束日期不可早於起始日期",
+        "noLimit": "不限",
+        "words": "僅適用於日期從 {from} 到 {to} 的交易"
+      }
     },
     "if": {
       "description": "僅對相符的交易執行動作",
@@ -138,7 +147,8 @@
       "dayOfMonth": "每月的日期",
       "weekday": "星期幾",
       "status": "狀態",
-      "hasAttachment": "有附件"
+      "hasAttachment": "有附件",
+      "date": "日期"
     },
     "operators": {
       "eq": "等於",
@@ -215,7 +225,33 @@
         "replace": "取代說明",
         "append": "加在說明之後",
         "prepend": "加在說明之前"
-      }
+      },
+      "convertHelp": "符合的收入或支出會成為轉帳的一方。另一方會建立在您選擇的帳戶中,該帳戶必須使用相同的幣別。",
+      "direction": "方向",
+      "directionTo": "支出:資金轉入另一個帳戶",
+      "directionFrom": "收入:資金來自另一個帳戶",
+      "clearCategory": "清除分類",
+      "clearCategoryHelp": "轉帳沒有分類。關閉此項可保留交易已有的分類。",
+      "splitPayee": "交易的收款對象(選填)",
+      "splitHint": "每個部分的金額取自上方模式中的擷取值,或取剩餘部分。各部分的總和必須等於交易金額,否則規則不會變更該交易。",
+      "splitNoCaptures": "尚未定義任何擷取值。請在上方的模式中用大括號寫一個名稱,例如 PRINCIPAL: {example},即可在此用作金額。",
+      "partAmountPlaceholder": "選擇金額...",
+      "partRest": "其餘部分",
+      "partAccount": "帳戶",
+      "partPayee": "另一方的收款對象(選填)",
+      "partsLimit": "一次拆分最多可以有 {max} 個部分。",
+      "guideTitle": "使用方式",
+      "splitGuideHow": "在「如果」中，針對收款人文字或說明新增條件，運算子選擇「符合模式」，並在金額所在位置用大括號寫上名稱，例如 {first}。每個名稱都會成為可為某個部分選擇的金額，也可以選擇「其餘部分」。各部分的總和必須等於交易金額，否則規則不會變更該交易。一個部分可以是類別，也可以是轉到另一個帳戶的轉帳（轉帳會改變該帳戶的餘額）。",
+      "splitGuideExampleTitle": "範例：一筆貸款還款",
+      "splitGuideBank": "銀行文字：本金: 1200.50 利息: 300.25 違約金: 0.00",
+      "splitGuidePattern": "模式：*本金: {first} 利息: {second} 違約金*",
+      "splitGuidePart1": "部分 1：{first} 作為轉到貸款帳戶的轉帳",
+      "splitGuidePart2": "部分 2：{second} 歸入類別「貸款：利息」",
+      "splitGuideResult": "-1500.75 的結果：-1200.50 轉入貸款帳戶，-300.25 記為利息支出。",
+      "splitGuideTip": "提示：在「生效期間」中設定開始日期，以免變更較早已對帳的交易，並在儲存前使用測試面板。",
+      "convertGuide": "支出會變成轉到所選帳戶的轉帳，收入會變成從該帳戶轉入的轉帳。只有另一個帳戶的餘額會變動。提示：使用「生效期間」，以免變更較早的交易。",
+      "splitGuideName1": "benjin",
+      "splitGuideName2": "lixi"
     },
     "actionTypes": {
       "add_tags": "新增標籤",
@@ -224,7 +260,9 @@
       "set_payee": "設定收款對象",
       "request_ai_review": "請求 AI 審核",
       "set_payee_from_text": "依文字設定收款對象",
-      "set_description": "設定說明"
+      "set_description": "設定說明",
+      "convert_to_transfer": "轉為轉帳",
+      "split": "拆分交易"
     },
     "save": {
       "button": "儲存規則",
@@ -273,16 +311,17 @@
         "MAX_NODES": "條件和群組過多。上限為 {maxNodes} 個。",
         "NO_ACTIONS": "請至少新增一個動作。",
         "TOO_MANY_ACTIONS": "動作過多。上限為 {maxActions} 個。",
-        "DUPLICATE_ACTION": "一條規則只能請求一次 AI 審核。",
-        "REFERENCE_NOT_FOUND": "此處選擇的項目已不存在。請選擇其他項目。",
-        "NAME_REQUIRED": "請輸入規則名稱。",
-        "UNKNOWN": "此部分無效。",
+        "DUPLICATE_ACTION": "一條規則只能有一個 AI 審核、一個轉帳或拆分,以及一個取剩餘部分的拆分部分。",
+        "CONFLICTING_ACTIONS": "轉帳或拆分動作不能與「設定分類」組合，且其每個部分要麼有分類，要麼有帳戶。",
         "INVALID_CAPTURE": "擷取名稱由小寫字母和數字組成，以字母開頭，最長 20 個字元。",
         "TOO_MANY_CAPTURES": "一個模式最多可包含 5 個擷取。",
         "DUPLICATE_CAPTURE": "每個擷取名稱在一條規則中只能使用一次。",
-        "UNKNOWN_CAPTURE": "文字使用了此規則中沒有任何條件定義的擷取。",
+        "UNKNOWN_CAPTURE": "這裡使用了此規則中沒有任何條件定義的擷取值。",
         "LOOKS_LIKE_REGEX": "不支援正規表示式：| \\ 和 [xy] 這類簡短的方括號字元類別會被視為一般字元，因此以正規表示式寫成的模式永遠比對不到原意。若要比對多個文字之一，請新增「符合以下任一項」群組，並為每個文字各放一個條件。",
-        "PATTERN_WITHOUT_WILDCARD": "不含 * 時，此模式必須與整段文字完全相同。整段文字請用「等於」，部分文字請用「包含」，或在文字兩側加上 *，例如 *咖啡*。"
+        "PATTERN_WITHOUT_WILDCARD": "不含 * 時，此模式必須與整段文字完全相同。整段文字請用「等於」，部分文字請用「包含」，或在文字兩側加上 *，例如 *咖啡*。",
+        "REFERENCE_NOT_FOUND": "此處選擇的項目已不存在。請選擇其他項目。",
+        "NAME_REQUIRED": "請輸入規則名稱。",
+        "UNKNOWN": "此部分無效。"
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "是轉給其他擁有者的轉帳，此規則不能變更其收款對象",
       "empty_render": "某個動作的文字對它而言為空",
       "payee_not_found": "沒有收款對象使用規則產生的名稱，且規則不會建立",
-      "other": "規則無法變更它"
+      "other": "規則無法變更它",
+      "row_is_transfer_leg": "它已經是轉帳",
+      "row_has_splits": "它已經被拆分",
+      "row_is_void": "它已作廢",
+      "zero_amount": "它的金額為零",
+      "transfer_direction_mismatch": "轉帳方向不符:支出轉入帳戶,收入來自帳戶",
+      "transfer_same_account": "轉帳帳戶就是交易本身的帳戶",
+      "transfer_account_unavailable": "轉帳帳戶無法使用(已刪除或不屬於您)",
+      "transfer_currency_mismatch": "轉帳帳戶使用的幣別不同",
+      "split_amount_unparseable": "其文字中的金額無法讀取為數字",
+      "split_sum_mismatch": "各部分的總和與其金額不符",
+      "split_too_few_parts": "去掉零金額後剩餘部分不足兩個"
     },
     "change": {
       "category": "分類：{before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "已刪除的項目",
       "payeeCreated": "{done, select, yes {已建立新收款對象：{name}} other {將建立新收款對象：{name}}}",
       "description": "說明：{before} → {after}",
-      "descriptionSet": "將說明設為 {value}"
+      "descriptionSet": "將說明設為 {value}",
+      "transfer": "{done, select, yes {已成為與 {account} 的轉帳} other {將成為與 {account} 的轉帳}}",
+      "split": "{done, select, yes {已拆分為 {count, plural, other {# 個部分}}} other {將拆分為 {count, plural, other {# 個部分}}}}",
+      "splitPart": "部分 {number}:{amount} {target}",
+      "splitPartMemo": ",備註「{memo}」",
+      "splitToTransfer": "轉入 {account}",
+      "splitToTransferPayee": "轉入 {account},收款對象 {payee}",
+      "splitToCategory": "歸為 {category}",
+      "splitUncategorised": "無分類"
     },
     "filters": {
       "accounts": "帳戶",
@@ -471,7 +529,15 @@
       "set_payee": "將收款對象設定為 {name}{onlyIfEmpty, select, yes {（僅在為空時）} other {}}",
       "request_ai_review": "請求 AI 審核：{instruction}",
       "set_payee_from_text": "依文字設定收款對象：「{template}」{createIfMissing, select, yes {（不存在則建立）} other {}}{onlyIfEmpty, select, yes {（僅在為空時）} other {}}",
-      "set_description": "設定說明（{mode, select, append {附加} prepend {前置} other {取代}}）：「{template}」{onlyIfEmpty, select, yes {（僅在為空時）} other {}}"
+      "set_description": "設定說明（{mode, select, append {附加} prepend {前置} other {取代}}）：「{template}」{onlyIfEmpty, select, yes {（僅在為空時）} other {}}",
+      "convert_to_transfer": "轉為{direction, select, from {來自} other {轉至}} {account} 的轉帳",
+      "split": "拆分為：{parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} 轉入 {account}",
+      "category": "{amount} 計入 {category}",
+      "plain": "{amount}",
+      "rest": "其餘部分"
     }
   }
 }

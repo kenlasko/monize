@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "Desfazer não suportado para o tipo de entidade: {{ entityType }}",
     "unsupportedTransactionAction": "Ação de transação não suportada: {{ action }}",
     "undoTransactionGone": "Não é possível desfazer: a transação já não existe",
+    "redoCreateWithLegs": "Esta transação criou lançamentos noutras contas, pelo que não pode ser refeita. Crie-a novamente",
     "undoAccountGone": "Não é possível desfazer: a conta já não existe",
     "unsupportedTransferAction": "Ação de transferência não suportada: {{ action }}",
     "unsupportedInvestmentAction": "Ação de investimento não suportada: {{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "As transações ou a regra mudaram desde a pré-visualização. Reveja a nova pré-visualização e execute novamente",
     "ruleInvalid": "Esta regra não é válida, por isso não pode ser executada. Abra-a e repare-a primeiro",
     "dateRangeInvalid": "A data de início não pode ser posterior à data de fim",
-    "runTooLarge": "Esta execução altera demasiadas transações para poder ser anulada num único passo. Restrinja as contas ou as datas e tente novamente"
+    "activeWindowInvalid": "A primeira data ativa não pode ser posterior à última data ativa",
+    "runTooLarge": "Esta execução altera demasiadas transações para poder ser anulada num único passo. Restrinja as contas ou as datas e tente novamente",
+    "runRedoStructural": "Esta execução reestruturou transações (transferências ou divisões), pelo que não pode ser refeita. Execute a regra novamente",
+    "runUndoStructureChanged": "Uma transação reestruturada por esta execução foi alterada desde então (as suas linhas de divisão ou a transferência), pelo que a execução não pode ser desfeita em segurança. Reponha-a manualmente"
   },
   "transactions": {
     "invalidStatus": "Estado de transação inválido: {{ status }}",
     "reconciledLocked": "Esta transação está reconciliada e bloqueada. Desative «Bloquear transações reconciliadas» nas Definições para a alterar.",
+    "convertToTransferRefused": "Esta transação já não pode ser convertida numa transferência. Reveja-a e execute a regra novamente",
     "pagePositiveInteger": "page deve ser um número inteiro positivo",
     "limitPositiveInteger": "limit deve ser um número inteiro positivo",
     "limitMax200": "limit não deve exceder 200",

@@ -1383,6 +1383,8 @@ export class ToolExecutorService {
       enabled: input.enabled as boolean | undefined,
       triggers: input.triggers as RuleToolInput["triggers"],
       stopProcessing: input.stopProcessing as boolean | undefined,
+      activeFrom: input.activeFrom as string | null | undefined,
+      activeTo: input.activeTo as string | null | undefined,
       condition: input.condition as Record<string, unknown> | undefined,
       actions: input.actions as Record<string, unknown>[] | undefined,
     };

@@ -123,7 +123,31 @@ describe("TransactionsController", () => {
       const result = await controller.create(mockReq, dto as any);
 
       expect(result).toEqual(expected);
-      expect(mockService.create).toHaveBeenCalledWith("user-1", dto);
+      expect(mockService.create).toHaveBeenCalledWith("user-1", dto, {
+        actorIsNotOwner: false,
+      });
+    });
+
+    it("tells the service the actor is not the owner when a delegate is acting", async () => {
+      const dto = { accountId: uuid1, amount: -50 };
+      mockService.create.mockResolvedValue({ id: "tx-1" });
+
+      await controller.create(
+        {
+          user: {
+            id: "owner-1",
+            realUserId: "delegate-1",
+            isActing: true,
+            delegationId: "d1",
+          },
+        },
+        dto as any,
+      );
+
+      expect(mockService.create).toHaveBeenCalledWith("owner-1", dto, {
+        actorIsNotOwner: true,
+      });
+      expect(mockCrossOwnerAccess.isAccountOwnedBy).not.toHaveBeenCalled();
     });
   });
 

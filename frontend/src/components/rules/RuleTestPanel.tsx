@@ -27,7 +27,7 @@ const logger = createLogger('RuleTestPanel');
 
 /**
  * Each state carries the key of the request that produced it (the draft's
- * condition and actions plus the filters), so a result is never read as the
+ * condition, actions and active window plus the filters), so a result is never read as the
  * answer for a draft it was not computed from.
  */
 type TestState =
@@ -75,14 +75,25 @@ export function RuleTestPanel({ draft, accountOptions, blocked = false, loaded =
   const latest = useRef(0);
 
   const request = useMemo(() => {
-    const { condition, actions } = draftToPayload(draft);
-    return { ...(ruleId ? { ruleId } : {}), condition, actions, filters: filtersToRequest(filters) };
+    // The window is part of what the rule does (INV-RULE-004): the test reaches only the rows the saved rule would.
+    // An open side is left out; the server reads absent as open.
+    const { condition, actions, activeFrom, activeTo } = draftToPayload(draft);
+    return {
+      ...(ruleId ? { ruleId } : {}),
+      condition,
+      actions,
+      ...(activeFrom ? { activeFrom } : {}),
+      ...(activeTo ? { activeTo } : {}),
+      filters: filtersToRequest(filters),
+    };
   }, [draft, filters, ruleId]);
   const key = useMemo(() => JSON.stringify(request), [request]);
 
   // The name is not part of a test; every other gap would be refused by the server.
   const incomplete = blocked || draftGaps(draft, loaded).some((entry) => entry.path !== NAME_KEY);
-  const backwards = hasBackwardsRange(filters);
+  // A window that ends before it starts is refused by the server; do not send it.
+  const windowBackwards = draft.activeFrom !== '' && draft.activeTo !== '' && draft.activeFrom > draft.activeTo;
+  const backwards = hasBackwardsRange(filters) || windowBackwards;
   const busy = state.status === 'loading';
 
   const test = async () => {

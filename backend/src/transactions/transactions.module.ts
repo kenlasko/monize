@@ -67,6 +67,7 @@ import { CurrenciesModule } from "../currencies/currencies.module";
   controllers: [TransactionsController],
   exports: [
     TransactionsService,
+    TransactionSplitService,
     TransactionAnalyticsService,
     TransactionTransferService,
     TransactionToolPrepService,

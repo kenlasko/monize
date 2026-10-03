@@ -79,9 +79,11 @@ describe("validateRuleDefinition: accepted definitions", () => {
                 ? (spec.enumValues as readonly string[])[0]
                 : spec.kind === "dayOfMonth"
                   ? 15
-                  : spec.kind === "text"
-                    ? "abc"
-                    : U1;
+                  : spec.kind === "date"
+                    ? "2026-10-05"
+                    : spec.kind === "text"
+                      ? "abc"
+                      : U1;
       if (op === "isEmpty") return leaf(field, op);
       if (op === "matches") return leaf(field, op, "*abc*");
       if (op === "between") return leaf(field, op, [one, one]);

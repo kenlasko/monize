@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "Cofnięcie nie jest obsługiwane dla typu encji: {{ entityType }}",
     "unsupportedTransactionAction": "Nieobsługiwana operacja transakcji: {{ action }}",
     "undoTransactionGone": "Nie można cofnąć: transakcja już nie istnieje",
+    "redoCreateWithLegs": "Ta transakcja utworzyła wpisy na innych kontach, więc nie można jej ponowić. Utwórz ją ponownie",
     "undoAccountGone": "Nie można cofnąć: konto już nie istnieje",
     "unsupportedTransferAction": "Nieobsługiwana operacja przelewu: {{ action }}",
     "unsupportedInvestmentAction": "Nieobsługiwana operacja inwestycyjna: {{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "Transakcje lub reguła zmieniły się od czasu podglądu. Sprawdź nowy podgląd i uruchom ponownie",
     "ruleInvalid": "Ta reguła jest nieprawidłowa, więc nie można jej uruchomić. Otwórz ją i najpierw ją napraw",
     "dateRangeInvalid": "Data początkowa nie może być późniejsza niż data końcowa",
-    "runTooLarge": "To uruchomienie zmienia zbyt wiele transakcji, aby można je było cofnąć jednym krokiem. Zawęź konta lub daty i spróbuj ponownie"
+    "activeWindowInvalid": "Pierwsza data aktywności nie może być późniejsza niż ostatnia data aktywności",
+    "runTooLarge": "To uruchomienie zmienia zbyt wiele transakcji, aby można je było cofnąć jednym krokiem. Zawęź konta lub daty i spróbuj ponownie",
+    "runRedoStructural": "To uruchomienie zmieniło strukturę transakcji (przelewy lub podziały), więc nie można go ponowić. Uruchom regułę ponownie",
+    "runUndoStructureChanged": "Transakcja przekształcona przez to uruchomienie została od tego czasu zmieniona (jej linie podziału lub przelew), więc nie można bezpiecznie cofnąć uruchomienia. Przywróć ją ręcznie"
   },
   "transactions": {
     "invalidStatus": "Nieprawidłowy status transakcji: {{ status }}",
     "reconciledLocked": "Ta transakcja jest uzgodniona i zablokowana. Wyłącz opcję „Zablokuj uzgodnione transakcje” w Ustawieniach, aby ją zmienić.",
+    "convertToTransferRefused": "Tej transakcji nie można już zamienić na przelew. Sprawdź ją i uruchom regułę ponownie",
     "pagePositiveInteger": "page musi być dodatnią liczbą całkowitą",
     "limitPositiveInteger": "limit musi być dodatnią liczbą całkowitą",
     "limitMax200": "limit nie może przekraczać 200",

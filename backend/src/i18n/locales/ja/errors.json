@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "エンティティタイプ {{ entityType }} の元に戻す操作はサポートされていません",
     "unsupportedTransactionAction": "サポートされていない取引アクション：{{ action }}",
     "undoTransactionGone": "元に戻せません：取引がすでに存在しません",
+    "redoCreateWithLegs": "この取引は他の口座に明細を作成したため、やり直しはできません。代わりに取引をもう一度作成してください",
     "undoAccountGone": "元に戻せません：口座がすでに存在しません",
     "unsupportedTransferAction": "サポートされていない振替アクション：{{ action }}",
     "unsupportedInvestmentAction": "サポートされていない投資アクション：{{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "プレビュー後に取引またはルールが変更されました。新しいプレビューを確認して、もう一度実行してください",
     "ruleInvalid": "このルールは無効なため実行できません。先にルールを開いて修正してください",
     "dateRangeInvalid": "開始日は終了日より後にできません",
-    "runTooLarge": "この実行は変更する取引が多すぎて、1 回の操作では元に戻せません。口座または日付を絞ってもう一度お試しください"
+    "activeWindowInvalid": "有効期間の開始日は終了日より後にできません",
+    "runTooLarge": "この実行は変更する取引が多すぎて、1 回の操作では元に戻せません。口座または日付を絞ってもう一度お試しください",
+    "runRedoStructural": "この実行で取引の構造(振替または分割)が変更されたため、やり直しはできません。代わりにルールをもう一度実行してください",
+    "runUndoStructureChanged": "この実行で構造が変更された取引はその後変更されており(分割行または振替)、実行を安全に元に戻せません。手動で復元してください"
   },
   "transactions": {
     "invalidStatus": "無効な取引ステータス：{{ status }}",
     "reconciledLocked": "この取引は照合済みでロックされています。変更するには設定で「照合済み取引をロックする」をオフにしてください。",
+    "convertToTransferRefused": "この取引はもう振替に変換できません。内容を確認して、ルールをもう一度実行してください",
     "pagePositiveInteger": "page は正の整数でなければなりません",
     "limitPositiveInteger": "limit は正の整数でなければなりません",
     "limitMax200": "limit は200を超えてはなりません",

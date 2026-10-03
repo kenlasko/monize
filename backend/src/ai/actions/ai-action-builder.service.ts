@@ -82,6 +82,8 @@ function toRuleDescriptor(rule: AiActionRuleState): RuleDefinitionDescriptor {
     condition: rule.condition,
     actions: [...rule.actions],
     stopProcessing: rule.stopProcessing,
+    activeFrom: rule.activeFrom,
+    activeTo: rule.activeTo,
   };
 }
 

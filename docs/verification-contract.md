@@ -175,7 +175,9 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-HA-003 a single-use artifact is spent once | supporting | -- | required | **required** | optional | required | -- | optional |
 | INV-HA-004 one OIDC signing key set | supporting | -- | required | optional | **required** | -- | -- | optional |
 | INV-HA-005 one claimant, one answer | supporting | -- | required | **required** | **required** | -- | -- | optional |
-| INV-RULE-001 a rule never moves a balance | **required** | -- | supporting | -- | -- | -- | -- | -- |
+| INV-RULE-001 a rule moves only a structural action's counterpart | **required** | -- | **required** | -- | -- | -- | -- | -- |
+| INV-RULE-003 a rule run commits only the plan that was previewed | **required** | -- | **required** | -- | -- | -- | -- | -- |
+| INV-RULE-004 a rule runs only inside its active window | **required** | -- | **required** | -- | -- | -- | -- | -- |
 | INV-RULE-002 a rule applies inside the inserting transaction | supporting | **required** | **required** | -- | -- | required | -- | optional |
 
 Bold marks the kind that is load-bearing -- the one whose absence means the

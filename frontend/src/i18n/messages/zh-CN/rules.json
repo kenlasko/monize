@@ -90,7 +90,16 @@
       "imported": "导入交易时",
       "atLeastOne": "请至少保持选中一个选项",
       "stopProcessing": "停止处理其他规则",
-      "stopProcessingHelp": "此规则与某笔交易匹配后，列表中排在它之后的规则将不再对该交易运行。"
+      "stopProcessingHelp": "此规则与某笔交易匹配后，列表中排在它之后的规则将不再对该交易运行。",
+      "window": {
+        "title": "生效期间",
+        "help": "此规则仅适用于日期在该期间内的交易：创建或导入时，以及测试或运行规则时。日期留空表示不限。",
+        "from": "起始日期",
+        "to": "结束日期",
+        "backwards": "结束日期不能早于起始日期",
+        "noLimit": "不限",
+        "words": "仅适用于日期从 {from} 到 {to} 的交易"
+      }
     },
     "if": {
       "description": "仅对匹配的交易执行操作",
@@ -138,7 +147,8 @@
       "dayOfMonth": "每月的日期",
       "weekday": "星期几",
       "status": "状态",
-      "hasAttachment": "有附件"
+      "hasAttachment": "有附件",
+      "date": "日期"
     },
     "operators": {
       "eq": "等于",
@@ -215,7 +225,33 @@
         "replace": "替换说明",
         "append": "添加到说明之后",
         "prepend": "添加到说明之前"
-      }
+      },
+      "convertHelp": "匹配的收入或支出会成为转账的一方。另一方将在你选择的账户中创建,该账户必须使用相同的币种。",
+      "direction": "方向",
+      "directionTo": "支出:资金转入另一个账户",
+      "directionFrom": "收入:资金来自另一个账户",
+      "clearCategory": "清除分类",
+      "clearCategoryHelp": "转账没有分类。关闭此项可保留交易已有的分类。",
+      "splitPayee": "交易的收款方(可选)",
+      "splitHint": "每个部分的金额取自上方模式中的捕获值,或取剩余部分。各部分之和必须等于交易金额,否则规则不会改动该交易。",
+      "splitNoCaptures": "尚未定义任何捕获值。请在上方的模式中用花括号写一个名称,例如 PRINCIPAL: {example},即可在此用作金额。",
+      "partAmountPlaceholder": "选择金额...",
+      "partRest": "其余部分",
+      "partAccount": "账户",
+      "partPayee": "另一方的收款方(可选)",
+      "partsLimit": "一次拆分最多可以有 {max} 个部分。",
+      "guideTitle": "使用方法",
+      "splitGuideHow": "在“如果”中，针对收款人文本或描述添加条件，运算符选择“匹配模式”，并在金额所在位置用花括号写上名称，例如 {first}。每个名称都会成为可为某个部分选择的金额，也可以选择“其余部分”。各部分之和必须等于交易金额，否则规则不会改动该交易。一个部分可以是类别，也可以是转到另一账户的转账（转账会改变该账户的余额）。",
+      "splitGuideExampleTitle": "示例：一笔贷款还款",
+      "splitGuideBank": "银行文本：本金: 1200.50 利息: 300.25 罚息: 0.00",
+      "splitGuidePattern": "模式：*本金: {first} 利息: {second} 罚息*",
+      "splitGuidePart1": "部分 1：{first} 作为转到贷款账户的转账",
+      "splitGuidePart2": "部分 2：{second} 归入类别“贷款：利息”",
+      "splitGuideResult": "对于 -1500.75 的结果：-1200.50 转入贷款账户，-300.25 记为利息支出。",
+      "splitGuideTip": "提示：在“生效期间”中设置开始日期，以免改动较早已对账的交易，并在保存前使用测试面板。",
+      "convertGuide": "支出会变成转到所选账户的转账，收入会变成从该账户转入的转账。只有另一个账户的余额会变化。提示：使用“生效期间”，以免改动较早的交易。",
+      "splitGuideName1": "benjin",
+      "splitGuideName2": "lixi"
     },
     "actionTypes": {
       "add_tags": "添加标签",
@@ -224,7 +260,9 @@
       "set_payee": "设置收款方",
       "request_ai_review": "请求 AI 审核",
       "set_payee_from_text": "根据文本设置收款方",
-      "set_description": "设置说明"
+      "set_description": "设置说明",
+      "convert_to_transfer": "转为转账",
+      "split": "拆分交易"
     },
     "save": {
       "button": "保存规则",
@@ -273,16 +311,17 @@
         "MAX_NODES": "条件和条件组过多。上限为 {maxNodes} 个。",
         "NO_ACTIONS": "请至少添加一个操作。",
         "TOO_MANY_ACTIONS": "操作过多。上限为 {maxActions} 个。",
-        "DUPLICATE_ACTION": "一条规则只能请求一次 AI 审核。",
-        "REFERENCE_NOT_FOUND": "此处选择的项目已不存在。请选择其他项目。",
-        "NAME_REQUIRED": "请输入规则名称。",
-        "UNKNOWN": "此部分无效。",
+        "DUPLICATE_ACTION": "一条规则只能有一个 AI 审核、一个转账或拆分,以及一个取剩余部分的拆分部分。",
+        "CONFLICTING_ACTIONS": "转账或拆分操作不能与“设置分类”组合，且其每个部分要么有分类，要么有账户。",
         "INVALID_CAPTURE": "捕获名称由小写字母和数字组成，以字母开头，最长 20 个字符。",
         "TOO_MANY_CAPTURES": "一个模式最多可包含 5 个捕获。",
         "DUPLICATE_CAPTURE": "每个捕获名称在一条规则中只能使用一次。",
-        "UNKNOWN_CAPTURE": "文本使用了此规则中没有任何条件定义的捕获。",
+        "UNKNOWN_CAPTURE": "这里使用了此规则中没有任何条件定义的捕获值。",
         "LOOKS_LIKE_REGEX": "不支持正则表达式：| \\ 和 [xy] 这类简短的方括号字符类会被当作普通字符，因此按正则写的模式永远匹配不到本意。若要匹配多个文本之一，请添加“满足以下任意一项”分组，并为每个文本各放一个条件。",
-        "PATTERN_WITHOUT_WILDCARD": "不含 * 时，此模式必须与整段文本完全相同。整段文本请用“等于”，部分文本请用“包含”，或在文本两侧加上 *，例如 *咖啡*。"
+        "PATTERN_WITHOUT_WILDCARD": "不含 * 时，此模式必须与整段文本完全相同。整段文本请用“等于”，部分文本请用“包含”，或在文本两侧加上 *，例如 *咖啡*。",
+        "REFERENCE_NOT_FOUND": "此处选择的项目已不存在。请选择其他项目。",
+        "NAME_REQUIRED": "请输入规则名称。",
+        "UNKNOWN": "此部分无效。"
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "是转给其他所有者的转账，此规则不能更改其收款方",
       "empty_render": "某个操作的文本对它而言为空",
       "payee_not_found": "没有收款方使用规则生成的名称，且规则不会创建",
-      "other": "规则无法更改它"
+      "other": "规则无法更改它",
+      "row_is_transfer_leg": "它已经是转账",
+      "row_has_splits": "它已经被拆分",
+      "row_is_void": "它已作废",
+      "zero_amount": "它的金额为零",
+      "transfer_direction_mismatch": "转账方向不匹配:支出转入账户,收入来自账户",
+      "transfer_same_account": "转账账户就是交易本身的账户",
+      "transfer_account_unavailable": "转账账户不可用(已删除或不属于你)",
+      "transfer_currency_mismatch": "转账账户使用的币种不同",
+      "split_amount_unparseable": "其文本中的金额无法读取为数字",
+      "split_sum_mismatch": "各部分之和与其金额不符",
+      "split_too_few_parts": "去掉零金额后剩余部分不足两个"
     },
     "change": {
       "category": "分类：{before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "已删除的项目",
       "payeeCreated": "{done, select, yes {已创建新收款方：{name}} other {将创建新收款方：{name}}}",
       "description": "说明：{before} → {after}",
-      "descriptionSet": "将说明设为 {value}"
+      "descriptionSet": "将说明设为 {value}",
+      "transfer": "{done, select, yes {已成为与 {account} 的转账} other {将成为与 {account} 的转账}}",
+      "split": "{done, select, yes {已拆分为 {count, plural, other {# 个部分}}} other {将拆分为 {count, plural, other {# 个部分}}}}",
+      "splitPart": "部分 {number}:{amount} {target}",
+      "splitPartMemo": ",备注“{memo}”",
+      "splitToTransfer": "转入 {account}",
+      "splitToTransferPayee": "转入 {account},收款方 {payee}",
+      "splitToCategory": "归为 {category}",
+      "splitUncategorised": "无分类"
     },
     "filters": {
       "accounts": "账户",
@@ -471,7 +529,15 @@
       "set_payee": "将收款方设置为 {name}{onlyIfEmpty, select, yes {（仅在为空时）} other {}}",
       "request_ai_review": "请求 AI 审核：{instruction}",
       "set_payee_from_text": "根据文本设置收款方：“{template}”{createIfMissing, select, yes {（不存在则创建）} other {}}{onlyIfEmpty, select, yes {（仅在为空时）} other {}}",
-      "set_description": "设置说明（{mode, select, append {追加} prepend {前置} other {替换}}）：“{template}”{onlyIfEmpty, select, yes {（仅在为空时）} other {}}"
+      "set_description": "设置说明（{mode, select, append {追加} prepend {前置} other {替换}}）：“{template}”{onlyIfEmpty, select, yes {（仅在为空时）} other {}}",
+      "convert_to_transfer": "转为{direction, select, from {来自} other {转至}} {account} 的转账",
+      "split": "拆分为：{parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} 转入 {account}",
+      "category": "{amount} 计入 {category}",
+      "plain": "{amount}",
+      "rest": "其余部分"
     }
   }
 }

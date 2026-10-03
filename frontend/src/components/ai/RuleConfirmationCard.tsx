@@ -7,6 +7,7 @@ import { ConfirmationCardShell } from '@/components/ai/ConfirmationCardShell';
 import { RuleTestResult } from '@/components/ai/RuleTestResult';
 import {
   RuleActionsInWords,
+  RuleActiveWindowInWords,
   RuleConditionInWords,
   RuleInWords,
   RuleTriggersInWords,
@@ -49,6 +50,8 @@ function PartValue({ part, rule, labels }: { part: RulePart; rule: PendingAction
           {rule.stopProcessing ? t('value.yes') : t('value.no')}
         </p>
       );
+    case 'activeWindow':
+      return <RuleActiveWindowInWords activeFrom={rule.activeFrom} activeTo={rule.activeTo} />;
     case 'triggers':
       return <RuleTriggersInWords triggers={rule.triggers} labels={labels} />;
     case 'condition':
@@ -70,6 +73,7 @@ function RuleDiff({ rule, current }: { rule: PendingActionRule; current: Pending
     condition: t('sections.if'),
     actions: t('sections.then'),
     stopProcessing: t('when.stopProcessing'),
+    activeWindow: t('when.window.title'),
   };
 
   if (parts.length === 0) {

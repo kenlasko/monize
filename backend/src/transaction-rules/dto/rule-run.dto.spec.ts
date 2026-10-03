@@ -118,4 +118,29 @@ describe("PreviewDraftRuleDto", () => {
       await check(PreviewDraftRuleDto, { ...draft(), filters: { limit: 0 } }),
     ).toEqual(["filters"]);
   });
+
+  it("accepts the draft's active window as real dates, null or blank", async () => {
+    for (const window of [
+      { activeFrom: "2026-10-01" },
+      { activeTo: "2026-12-31" },
+      { activeFrom: null, activeTo: null },
+      { activeFrom: "", activeTo: "" },
+    ]) {
+      expect(
+        await check(PreviewDraftRuleDto, { ...draft(), ...window }),
+      ).toEqual([]);
+    }
+  });
+
+  it.each(["2026-02-31", "10/01/2026", 5])(
+    "refuses the window side %p",
+    async (bad) => {
+      expect(
+        await check(PreviewDraftRuleDto, { ...draft(), activeFrom: bad }),
+      ).toEqual(["activeFrom"]);
+      expect(
+        await check(PreviewDraftRuleDto, { ...draft(), activeTo: bad }),
+      ).toEqual(["activeTo"]);
+    },
+  );
 });

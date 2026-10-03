@@ -9,7 +9,15 @@
  * editor says so. Writing is the opposite: `draftToPayload` emits exactly what
  * the create and update DTOs accept, and the server validates it again.
  */
-import { createAction, isDescriptionMode, isEditorActionType, type EditorAction } from '@/lib/rule-actions';
+import {
+  createAction,
+  createSplitPart,
+  isDescriptionMode,
+  isEditorActionType,
+  type EditorAction,
+  type EditorSplitPart,
+  type TransferDirection,
+} from '@/lib/rule-actions';
 import {
   RULE_CONDITION_FIELDS,
   RULE_OPERATOR_SHAPES,
@@ -32,6 +40,7 @@ import type {
   RuleConditionNode,
   RuleLeafValue,
   RuleTrigger,
+  SplitActionPart,
   TransactionRule,
 } from '@/types/transaction-rule';
 
@@ -40,6 +49,9 @@ export interface RuleDraft {
   readonly enabled: boolean;
   readonly triggers: readonly RuleTrigger[];
   readonly stopProcessing: boolean;
+  /** The active window, `YYYY-MM-DD` or empty (open on that side). */
+  readonly activeFrom: string;
+  readonly activeTo: string;
   readonly condition: EditorGroup;
   readonly actions: readonly EditorAction[];
 }
@@ -51,6 +63,8 @@ export function emptyDraft(): RuleDraft {
     enabled: true,
     triggers: [...RULE_TRIGGERS],
     stopProcessing: false,
+    activeFrom: '',
+    activeTo: '',
     condition: createGroup('all'),
     actions: [],
   };
@@ -88,7 +102,10 @@ function readValue(field: EditorLeaf['field'], op: EditorLeaf['op'], raw: unknow
   let ok: boolean;
   if (shape === 'scalar') ok = scalarOk(raw);
   else if (shape === 'list') ok = kind === 'dayOfMonth' ? isNumberList(raw) : isStringList(raw);
-  else ok = Array.isArray(raw) && raw.length === 2 && raw.every((v) => typeof v === 'number');
+  else {
+    const endType = kind === 'date' ? 'string' : 'number';
+    ok = Array.isArray(raw) && raw.length === 2 && raw.every((v) => typeof v === endType);
+  }
   if (ok) return raw as EditorValue;
   repairs.note();
   return defaultValue(field, op);
@@ -180,7 +197,94 @@ function readAction(input: unknown, repairs: Repairs): EditorAction | null {
     case 'request_ai_review':
       if (typeof input.instruction !== 'string') repairs.note();
       return { ...blank, instruction: typeof input.instruction === 'string' ? input.instruction : '' };
+    case 'convert_to_transfer':
+      return readConvert(blank, input, repairs);
+    case 'split':
+      return readSplit(blank, input, repairs);
   }
+}
+
+/** An optional id: absent reads as none, a non-string is repaired. */
+function readOptionalId(value: unknown, repairs: Repairs): string {
+  if (value === undefined) return '';
+  if (typeof value === 'string') return value;
+  repairs.note();
+  return '';
+}
+
+function readConvert(
+  blank: Extract<EditorAction, { type: 'convert_to_transfer' }>,
+  input: Record_,
+  repairs: Repairs,
+): EditorAction {
+  const hasTo = input.toAccountId !== undefined;
+  const hasFrom = input.fromAccountId !== undefined;
+  // Exactly one is stored; both (or neither) is repaired to the "to" side.
+  if (hasTo === hasFrom) repairs.note();
+  // Only the income side names `fromAccountId`; anything else reads as the expense side.
+  let direction: TransferDirection = 'to';
+  if (hasFrom && !hasTo) direction = 'from';
+  const accountId = readOptionalId(direction === 'from' ? input.fromAccountId : input.toAccountId, repairs);
+  if (input.clearCategory !== undefined && typeof input.clearCategory !== 'boolean') repairs.note();
+  return {
+    ...blank,
+    direction,
+    accountId,
+    // A missing flag reads as the server's default: a transfer has no category.
+    clearCategory: typeof input.clearCategory === 'boolean' ? input.clearCategory : blank.clearCategory,
+    payeeId: readOptionalId(input.payeeId, repairs),
+  };
+}
+
+function readSplitPart(input: unknown, repairs: Repairs): EditorSplitPart {
+  if (!isRecord(input)) {
+    repairs.note();
+    return createSplitPart();
+  }
+  const blank = createSplitPart();
+  const categoryId = readOptionalId(input.categoryId, repairs);
+  const transferAccountId = readOptionalId(input.transferAccountId, repairs);
+  // A category and a transfer account together is refused by the server; the transfer wins here.
+  if (categoryId !== '' && transferAccountId !== '') repairs.note();
+  const kind = transferAccountId !== '' ? 'transfer' : 'category';
+  const payeeId = readOptionalId(input.payeeId, repairs);
+  // A payee belongs to the counterpart leg of a transfer part, so it means nothing on a category line.
+  if (payeeId !== '' && kind !== 'transfer') repairs.note();
+  if (input.description !== undefined && typeof input.description !== 'string') repairs.note();
+  if (typeof input.amount !== 'string') repairs.note();
+  return {
+    ...blank,
+    amount: typeof input.amount === 'string' ? input.amount : '',
+    kind,
+    categoryId: kind === 'category' ? categoryId : '',
+    transferAccountId,
+    payeeId: kind === 'transfer' ? payeeId : '',
+    description: typeof input.description === 'string' ? input.description : '',
+  };
+}
+
+function readSplit(
+  blank: Extract<EditorAction, { type: 'split' }>,
+  input: Record_,
+  repairs: Repairs,
+): EditorAction {
+  let parts: EditorSplitPart[] = [];
+  if (Array.isArray(input.parts)) parts = input.parts.map((part) => readSplitPart(part, repairs));
+  else repairs.note();
+  // A split has at least two parts; a definition with fewer is padded so the editor can open it.
+  if (parts.length === 0) parts = blank.parts.map((part) => ({ ...part }));
+  return { ...blank, payeeId: readOptionalId(input.payeeId, repairs), parts };
+}
+
+function partToApi(part: EditorSplitPart): SplitActionPart {
+  return {
+    amount: part.amount,
+    ...(part.kind === 'category' && part.categoryId !== '' ? { categoryId: part.categoryId } : {}),
+    ...(part.kind === 'transfer' && part.transferAccountId !== '' ? { transferAccountId: part.transferAccountId } : {}),
+    ...(part.kind === 'transfer' && part.transferAccountId !== '' && part.payeeId !== '' ? { payeeId: part.payeeId } : {}),
+    // Kept as typed; a whitespace-only text is the server's to refuse (VALUE_EMPTY).
+    ...(part.description !== '' ? { description: part.description } : {}),
+  };
 }
 
 export interface DraftFromRule {
@@ -207,6 +311,8 @@ export function draftFromRule(rule: TransactionRule): DraftFromRule {
       enabled: rule.enabled === true,
       triggers,
       stopProcessing: rule.stopProcessing === true,
+      activeFrom: typeof rule.activeFrom === 'string' ? rule.activeFrom : '',
+      activeTo: typeof rule.activeTo === 'string' ? rule.activeTo : '',
       condition,
       actions,
     },
@@ -253,11 +359,46 @@ export function actionToApi(action: EditorAction): RuleAction {
       };
     case 'request_ai_review':
       return { type: 'request_ai_review', instruction: action.instruction };
+    case 'convert_to_transfer':
+      return {
+        type: 'convert_to_transfer',
+        // An account not chosen yet is left out, so the server names the missing field.
+        ...(action.accountId === ''
+          ? {}
+          : action.direction === 'from'
+            ? { fromAccountId: action.accountId }
+            : { toAccountId: action.accountId }),
+        clearCategory: action.clearCategory,
+        ...(action.payeeId !== '' ? { payeeId: action.payeeId } : {}),
+      };
+    case 'split':
+      return {
+        type: 'split',
+        ...(action.payeeId !== '' ? { payeeId: action.payeeId } : {}),
+        parts: action.parts.map(partToApi),
+      };
   }
 }
 
-/** Exactly what the create DTO accepts; an update adds `revision` to it. */
-export function draftToPayload(draft: RuleDraft): CreateTransactionRuleData {
+/**
+ * One side of the active window as the API takes it. An open side that was
+ * never set is left out, so a backend that predates the window (and refuses an
+ * unknown key) still accepts the save; a side the loaded rule had and the
+ * draft cleared is sent as null, which clears it.
+ */
+function windowSide(value: string, loadedValue: string): string | null | undefined {
+  if (value !== '') return value;
+  return loadedValue !== '' ? null : undefined;
+}
+
+/**
+ * Exactly what the create DTO accepts; an update adds `revision` to it. Pass
+ * the draft the rule was opened with (`loaded`) when updating, so a cleared
+ * window side is sent as null.
+ */
+export function draftToPayload(draft: RuleDraft, loaded: RuleDraft | null = null): CreateTransactionRuleData {
+  const activeFrom = windowSide(draft.activeFrom, loaded?.activeFrom ?? '');
+  const activeTo = windowSide(draft.activeTo, loaded?.activeTo ?? '');
   return {
     name: draft.name.trim(),
     enabled: draft.enabled,
@@ -265,6 +406,8 @@ export function draftToPayload(draft: RuleDraft): CreateTransactionRuleData {
     condition: conditionToApi(draft.condition),
     actions: draft.actions.map(actionToApi),
     stopProcessing: draft.stopProcessing,
+    ...(activeFrom !== undefined ? { activeFrom } : {}),
+    ...(activeTo !== undefined ? { activeTo } : {}),
   };
 }
 

@@ -77,6 +77,7 @@
     "undoNotSupportedForEntityType": "Undo not supported for entity type: {{ entityType }}",
     "unsupportedTransactionAction": "Unsupported transaction action: {{ action }}",
     "undoTransactionGone": "Cannot undo: transaction no longer exists",
+    "redoCreateWithLegs": "This transaction created entries in other accounts, so it cannot be redone. Create it again instead",
     "undoAccountGone": "Cannot undo: the account no longer exists",
     "unsupportedTransferAction": "Unsupported transfer action: {{ action }}",
     "unsupportedInvestmentAction": "Unsupported investment action: {{ action }}",
@@ -551,11 +552,15 @@
     "previewChanged": "The transactions or the rule changed since the preview. Review the new preview and run again",
     "ruleInvalid": "This rule is not valid, so it cannot be run. Open it and repair it first",
     "dateRangeInvalid": "The start date must not be after the end date",
-    "runTooLarge": "This run changes too many transactions to be undone in one step. Narrow the accounts or the dates and try again"
+    "activeWindowInvalid": "The first active date must not be after the last active date",
+    "runTooLarge": "This run changes too many transactions to be undone in one step. Narrow the accounts or the dates and try again",
+    "runRedoStructural": "This run restructured transactions (transfers or splits), so it cannot be redone. Run the rule again instead",
+    "runUndoStructureChanged": "A transaction this run restructured has been changed since (its split lines or its transfer), so the run cannot be undone safely. Restore it by hand"
   },
   "transactions": {
     "invalidStatus": "Invalid transaction status: {{ status }}",
     "reconciledLocked": "This transaction is reconciled and locked. Turn off 'Lock reconciled transactions' in Settings to change it.",
+    "convertToTransferRefused": "This transaction can no longer be converted to a transfer. Review it and run the rule again",
     "pagePositiveInteger": "page must be a positive integer",
     "limitPositiveInteger": "limit must be a positive integer",
     "limitMax200": "limit must not exceed 200",

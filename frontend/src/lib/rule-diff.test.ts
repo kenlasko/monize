@@ -15,6 +15,15 @@ describe('changedRuleParts', () => {
     expect(changedRuleParts(base, { ...base })).toEqual([]);
   });
 
+  it('reports a moved window, and reads an absent side as an open one', () => {
+    expect(changedRuleParts(base, { ...base, activeFrom: '2026-10-01' })).toEqual(['activeWindow']);
+    expect(changedRuleParts({ ...base, activeTo: null }, { ...base })).toEqual([]);
+    expect(
+      changedRuleParts({ ...base, activeFrom: '2026-10-01' }, { ...base, activeFrom: '2026-10-01', activeTo: '2026-12-31' }),
+    ).toEqual(['activeWindow']);
+    expect(changedRuleParts({ ...base, activeFrom: '2026-10-01' }, { ...base, activeFrom: null })).toEqual(['activeWindow']);
+  });
+
   it('does not read a different trigger order as a change', () => {
     expect(changedRuleParts(base, { ...base, triggers: ['import', 'create'] })).toEqual([]);
   });

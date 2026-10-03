@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Combobox } from '@/components/ui/Combobox';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
+import { DateInput } from '@/components/ui/DateInput';
 import { Input } from '@/components/ui/Input';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { NumericInput } from '@/components/ui/NumericInput';
@@ -46,6 +47,10 @@ const asStrings = (v: EditorValue): string[] =>
   Array.isArray(v) ? (v as unknown[]).filter((x): x is string => typeof x === 'string') : [];
 const asDays = (v: EditorValue): string[] =>
   Array.isArray(v) ? (v as unknown[]).filter((x): x is number => typeof x === 'number').map(String) : [];
+const asDateRange = (v: EditorValue): [string, string] => {
+  const list = Array.isArray(v) ? (v as unknown[]) : [];
+  return [typeof list[0] === 'string' ? list[0] : '', typeof list[1] === 'string' ? list[1] : ''];
+};
 const asRange = (v: EditorValue): [number | undefined, number | undefined] => {
   const list = Array.isArray(v) ? (v as (number | undefined)[]) : [];
   return [list[0], list[1]];
@@ -166,6 +171,18 @@ export function RuleValueControl({ leaf, options, onChange, captureCodes = [] }:
         );
       }
       return <NumericInput id={id} label={label} value={asNumber(value)} {...dayProps} onChange={onChange} />;
+    }
+    case 'date': {
+      if (shape === 'range') {
+        const [from, to] = asDateRange(value);
+        return (
+          <div className="grid grid-cols-2 gap-2">
+            <DateInput id={`${id}-from`} label={t('value.from')} value={from} onDateChange={(next) => onChange([next, to])} />
+            <DateInput id={`${id}-to`} label={t('value.to')} value={to} onDateChange={(next) => onChange([from, next])} />
+          </div>
+        );
+      }
+      return <DateInput id={id} label={label} value={asString(value)} onDateChange={onChange} />;
     }
     case 'currency': {
       const codes = withSelected(options.currencyCodes, shape === 'list' ? asStrings(value) : [asString(value)]);

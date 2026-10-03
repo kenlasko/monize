@@ -1051,7 +1051,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "list_transaction_rules",
     description:
-      "List the user's transaction rules (they set a category or payee and add or remove tags on new and imported transactions), in the order they run. Each rule has id, name, revision, triggers, condition and actions, with accounts, payees, categories and tags as names, and invalid=true when it cannot run. Call it to find a rule's id before manage_transaction_rules. Reports totalCount and truncated.",
+      "List the user's transaction rules (they set a category or payee and add or remove tags on new and imported transactions), in the order they run. Each rule has id, name, revision, triggers, activeFrom/activeTo, condition and actions, with accounts, payees, categories and tags as names, and invalid=true when it cannot run. Call it to find a rule's id before manage_transaction_rules. Reports totalCount and truncated.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1100,6 +1100,16 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
           type: "boolean",
           description:
             "Later rules do not run for a transaction this rule matched.",
+        },
+        activeFrom: {
+          type: "string",
+          description:
+            "create/update/test: first transaction date the rule applies to, YYYY-MM-DD inclusive; an empty string clears it.",
+        },
+        activeTo: {
+          type: "string",
+          description:
+            "create/update/test: last transaction date the rule applies to, YYYY-MM-DD inclusive; an empty string clears it.",
         },
         condition: { type: "object", description: RULE_CONDITION_HELP },
         actions: {

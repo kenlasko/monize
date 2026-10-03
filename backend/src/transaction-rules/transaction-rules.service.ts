@@ -27,6 +27,10 @@ import { RuleDefinition, validateRuleDefinition } from "./rule-validation";
 import { toRuleResponse, toRuleResponses } from "./transaction-rule-view";
 import { MAX_TRANSACTION_RULES_PER_USER } from "./transaction-rules.limits";
 
+/** A blank or absent date clears a side of the window. */
+const blankToNull = (value: string | null | undefined): string | null =>
+  value === undefined || value === null || value === "" ? null : value;
+
 @Injectable()
 export class TransactionRulesService {
   constructor(private readonly dataSource: DataSource) {}
@@ -72,6 +76,9 @@ export class TransactionRulesService {
           errorCode: "RULE_LIMIT_REACHED",
         });
       }
+      const activeFrom = blankToNull(dto.activeFrom);
+      const activeTo = blankToNull(dto.activeTo);
+      this.assertActiveWindow(activeFrom, activeTo);
       const definition = await this.checkedDefinition(
         m,
         userId,
@@ -88,6 +95,8 @@ export class TransactionRulesService {
           condition: definition.condition,
           actions: [...definition.actions],
           stopProcessing: dto.stopProcessing ?? false,
+          activeFrom,
+          activeTo,
         }),
       );
       // Just validated in this transaction, so it is not invalid.
@@ -112,6 +121,12 @@ export class TransactionRulesService {
       if (Object.keys(changes).length === 0) {
         return (await toRuleResponses(m, userId, [rule]))[0];
       }
+      // The window as it will be stored: a side the request leaves out keeps
+      // its stored value, so moving one side cannot invert the other.
+      this.assertActiveWindow(
+        changes.activeFrom === undefined ? rule.activeFrom : changes.activeFrom,
+        changes.activeTo === undefined ? rule.activeTo : changes.activeTo,
+      );
       const definition = await this.checkedDefinition(
         m,
         userId,
@@ -320,6 +335,8 @@ export class TransactionRulesService {
       | "condition"
       | "actions"
       | "stopProcessing"
+      | "activeFrom"
+      | "activeTo"
     >
   > {
     const next = {
@@ -331,6 +348,11 @@ export class TransactionRulesService {
         | TransactionRule["actions"]
         | undefined,
       stopProcessing: dto.stopProcessing,
+      // A blank or null clears the side; an absent key leaves it alone.
+      activeFrom:
+        dto.activeFrom === undefined ? undefined : blankToNull(dto.activeFrom),
+      activeTo:
+        dto.activeTo === undefined ? undefined : blankToNull(dto.activeTo),
     };
     const changes: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(next)) {
@@ -367,6 +389,30 @@ export class TransactionRulesService {
     const missing = await checkReferences(m, userId, definition);
     if (missing.length > 0) throw this.invalidDefinition(missing);
     return definition;
+  }
+
+  /**
+   * An empty window (from after to) could never match a row; refused before
+   * anything is written. `YYYY-MM-DD` strings compare in date order.
+   */
+  private assertActiveWindow(
+    activeFrom: string | null,
+    activeTo: string | null,
+  ): void {
+    if (activeFrom !== null && activeTo !== null && activeFrom > activeTo) {
+      throw this.activeWindowInvalid();
+    }
+  }
+
+  /** The refusal for a window whose first day is after its last. */
+  activeWindowInvalid(): BadRequestException {
+    return new BadRequestException({
+      message: tr(
+        "errors.transactionRules.activeWindowInvalid",
+        "The first active date must not be after the last active date",
+      ),
+      errorCode: "ACTIVE_WINDOW_INVALID",
+    });
   }
 
   private invalidDefinition(

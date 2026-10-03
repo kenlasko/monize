@@ -101,6 +101,32 @@ export class PreviewDraftRuleDto {
   @ArrayMaxSize(MAX_RULE_ACTIONS)
   actions: Record<string, unknown>[];
 
+  @ApiPropertyOptional({
+    example: "2026-10-01",
+    nullable: true,
+    description:
+      "The draft's active window start (inclusive); rows dated before it are not evaluated, as for a saved rule",
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsCalendarDate({
+    message: "activeFrom must be a real YYYY-MM-DD calendar date",
+  })
+  activeFrom?: string | null;
+
+  @ApiPropertyOptional({
+    example: "2026-12-31",
+    nullable: true,
+    description:
+      "The draft's active window end (inclusive); rows dated after it are not evaluated, as for a saved rule",
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsCalendarDate({
+    message: "activeTo must be a real YYYY-MM-DD calendar date",
+  })
+  activeTo?: string | null;
+
   @ApiPropertyOptional({ type: RuleRunFiltersDto })
   @IsOptional()
   @ValidateNested()

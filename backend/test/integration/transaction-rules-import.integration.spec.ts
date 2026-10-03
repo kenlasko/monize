@@ -284,7 +284,7 @@ describe("Transaction rules on the import paths (integration)", () => {
         mapped(ids[1], { payeeHandle: null, transactionDate: "2025-01-16" }),
       ];
 
-      const changed = await asAlice(() =>
+      const { changed, affectedAccountIds } = await asAlice(() =>
         withScopedDb(harness.app, async (manager: EntityManager) => {
           const written = await writeTransactions(manager, aliceId, {
             transactions,
@@ -303,6 +303,8 @@ describe("Transaction rules on the import paths (integration)", () => {
       );
 
       expect(changed).toBe(1);
+      // A rule that only sets a category moves no other account's balance.
+      expect(affectedAccountIds.size).toBe(0);
       const stored = await rows();
       expect(stored.map((r) => [r.id, r.category_id])).toEqual([
         [ids[0], groceriesId],

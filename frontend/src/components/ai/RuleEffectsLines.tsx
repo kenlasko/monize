@@ -1,6 +1,7 @@
 'use client';
 
 import { useFormatter, useTranslations } from 'next-intl';
+import { useRuleChangeText } from '@/components/rules/use-rule-change-text';
 import type { PendingActionRuleEffects } from '@/types/ai';
 
 /**
@@ -9,11 +10,19 @@ import type { PendingActionRuleEffects } from '@/types/ai';
  * nothing when no rule has an effect, so a card without rule effects keeps its
  * layout. A name the server could not resolve reads as a deleted item.
  */
-export function RuleEffectsLines({ effects }: { effects: PendingActionRuleEffects | undefined }) {
+export function RuleEffectsLines({
+  effects,
+  currencyCode,
+}: {
+  effects: PendingActionRuleEffects | undefined;
+  /** The row's currency: the parts of a split are written in it. */
+  currencyCode?: string;
+}) {
   const t = useTranslations('ai.confirmAction.ruleEffects');
   const tr = useTranslations('rules.run.change');
   const tw = useTranslations('rules.words');
   const format = useFormatter();
+  const changeText = useRuleChangeText();
   if (!effects) return null;
 
   const { changes, labels } = effects;
@@ -50,6 +59,21 @@ export function RuleEffectsLines({ effects }: { effects: PendingActionRuleEffect
   if (changes.removeTagIds.length > 0) lines.push(tr('tagsRemoved', { tags: tagNames(changes.removeTagIds) }));
   if (effects.aiReviewRequests.length > 0) {
     lines.push(t('aiReview', { count: effects.aiReviewRequests.length }));
+  }
+  // A transfer or a split moves another account's balance: never left off the card.
+  if (changes.structure) {
+    lines.push(
+      ...changeText(
+        { structure: { before: null, after: changes.structure } },
+        {
+          category: (id) => labels.categories[id],
+          payee: (id) => labels.payees[id],
+          tag: (id) => labels.tags[id],
+          account: (id) => labels.accounts?.[id],
+        },
+        { currencyCode },
+      ),
+    );
   }
   if (lines.length === 0) return null;
 

@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "{{ entityType }} varlık türü için geri alma desteklenmiyor",
     "unsupportedTransactionAction": "Desteklenmeyen işlem eylemi: {{ action }}",
     "undoTransactionGone": "Geri alınamıyor: işlem artık mevcut değil",
+    "redoCreateWithLegs": "Bu işlem başka hesaplarda kayıtlar oluşturdu, bu yüzden yinelenemez. Bunun yerine işlemi yeniden oluşturun",
     "undoAccountGone": "Geri alınamıyor: hesap artık mevcut değil",
     "unsupportedTransferAction": "Desteklenmeyen transfer eylemi: {{ action }}",
     "unsupportedInvestmentAction": "Desteklenmeyen yatırım eylemi: {{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "İşlemler veya kural önizlemeden sonra değişti. Yeni önizlemeyi inceleyin ve yeniden çalıştırın",
     "ruleInvalid": "Bu kural geçerli değil, bu yüzden çalıştırılamaz. Önce kuralı açıp düzeltin",
     "dateRangeInvalid": "Başlangıç tarihi bitiş tarihinden sonra olmamalıdır",
-    "runTooLarge": "Bu çalıştırma tek adımda geri alınamayacak kadar çok işlemi değiştiriyor. Hesapları veya tarihleri daraltıp yeniden deneyin"
+    "activeWindowInvalid": "İlk etkin tarih son etkin tarihten sonra olmamalıdır",
+    "runTooLarge": "Bu çalıştırma tek adımda geri alınamayacak kadar çok işlemi değiştiriyor. Hesapları veya tarihleri daraltıp yeniden deneyin",
+    "runRedoStructural": "Bu çalıştırma işlemlerin yapısını değiştirdi (transferler veya bölmeler), bu yüzden yinelenemez. Bunun yerine kuralı yeniden çalıştırın",
+    "runUndoStructureChanged": "Bu çalıştırmanın yapısını değiştirdiği bir işlem sonradan değiştirildi (bölme satırları veya transfer), bu yüzden çalıştırma güvenle geri alınamaz. Elle geri yükleyin"
   },
   "transactions": {
     "invalidStatus": "Geçersiz işlem durumu: {{ status }}",
     "reconciledLocked": "Bu işlem mutabık kılınmış ve kilitli. Değiştirmek için Ayarlar'da 'Mutabık kılınan işlemleri kilitle' seçeneğini kapatın.",
+    "convertToTransferRefused": "Bu işlem artık bir transfere dönüştürülemez. İşlemi gözden geçirip kuralı yeniden çalıştırın",
     "pagePositiveInteger": "page pozitif bir tamsayı olmalıdır",
     "limitPositiveInteger": "limit pozitif bir tamsayı olmalıdır",
     "limitMax200": "limit 200'ü geçemez",

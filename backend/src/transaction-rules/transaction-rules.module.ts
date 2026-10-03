@@ -13,6 +13,8 @@ import { TransactionRulesController } from "./transaction-rules.controller";
 import { TransactionRuleToolPrepService } from "./rule-tool-prep.service";
 import { AccountsModule } from "../accounts/accounts.module";
 import { PayeesModule } from "../payees/payees.module";
+import { NetWorthModule } from "../net-worth/net-worth.module";
+import { TransactionsModule } from "../transactions/transactions.module";
 
 @Module({
   imports: [
@@ -24,6 +26,11 @@ import { PayeesModule } from "../payees/payees.module";
     // modules reach this one back through TransactionsModule.
     forwardRef(() => AccountsModule),
     forwardRef(() => PayeesModule),
+    // The structural actions write through the split service and refresh net
+    // worth after a manual run. forwardRef: TransactionsModule imports this
+    // module for create()'s rules step.
+    forwardRef(() => TransactionsModule),
+    forwardRef(() => NetWorthModule),
   ],
   providers: [
     TransactionRulesService,

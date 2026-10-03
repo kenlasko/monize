@@ -6,6 +6,7 @@ import {
   numberArg,
   booleanArg,
 } from "../../common/tool-schemas";
+import { isCalendarDate } from "../../common/validators/is-calendar-date.validator";
 import { MAX_BULK_ACTION_ROWS } from "../actions/ai-action.types";
 import { MAX_ATTACHMENTS as MAX_CHAT_ATTACHMENTS } from "./dto/ai-query.dto";
 import {
@@ -209,6 +210,22 @@ const ruleActionsJson = z.preprocess((value) => {
   return Array.isArray(parsed) ? parsed.map(parseJsonArgument) : parsed;
 }, z.array(ruleJson).min(1).max(MAX_RULE_ACTIONS));
 
+/**
+ * A rule's active-window side: a real calendar day, or "" (null is read the
+ * same) to clear it. The published JSON schema stays a plain string to keep
+ * the tool small (`tools-list-budget.spec.ts`); the prep service reads "" as
+ * null.
+ */
+const ruleWindowDate = z.preprocess(
+  (value) => (value === null ? "" : value),
+  z
+    .string()
+    .refine(
+      (value) => value === "" || isCalendarDate(value),
+      "Expected a real calendar date as YYYY-MM-DD, or an empty string to clear",
+    ),
+);
+
 /** The object half of `manage_transaction_rules`, exported so a second surface reuses the fields. */
 export const manageTransactionRulesFields = z.object({
   operation: z.enum(["create", "update", "delete", "run", "test"]),
@@ -221,6 +238,8 @@ export const manageTransactionRulesFields = z.object({
     .max(RULE_TRIGGERS.length)
     .optional(),
   stopProcessing: booleanArg().optional(),
+  activeFrom: ruleWindowDate.optional(),
+  activeTo: ruleWindowDate.optional(),
   condition: ruleJson.describe(RULE_CONDITION_HELP).optional(),
   actions: ruleActionsJson.describe(RULE_ACTIONS_HELP).optional(),
   // run and test only
@@ -256,12 +275,14 @@ export const manageTransactionRulesSchema =
           value.enabled === undefined &&
           value.triggers === undefined &&
           value.stopProcessing === undefined &&
+          value.activeFrom === undefined &&
+          value.activeTo === undefined &&
           value.condition === undefined &&
           value.actions === undefined
         ) {
           need(
             "ruleId",
-            "Provide at least one field to change (name, enabled, triggers, stopProcessing, condition, or actions).",
+            "Provide at least one field to change (name, enabled, triggers, stopProcessing, activeFrom, activeTo, condition, or actions).",
           );
         }
         break;

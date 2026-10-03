@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "Annulation non prise en charge pour le type d'entité : {{ entityType }}",
     "unsupportedTransactionAction": "Action de transaction non prise en charge : {{ action }}",
     "undoTransactionGone": "Impossible d'annuler : la transaction n'existe plus",
+    "redoCreateWithLegs": "Cette transaction a créé des écritures dans d'autres comptes et ne peut pas être rétablie. Créez-la plutôt à nouveau",
     "undoAccountGone": "Impossible d'annuler : le compte n'existe plus",
     "unsupportedTransferAction": "Action de virement non prise en charge : {{ action }}",
     "unsupportedInvestmentAction": "Action d'investissement non prise en charge : {{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "Les transactions ou la règle ont changé depuis l'aperçu. Vérifiez le nouvel aperçu puis relancez",
     "ruleInvalid": "Cette règle n'est pas valide et ne peut pas être exécutée. Ouvrez-la et réparez-la d'abord",
     "dateRangeInvalid": "La date de début ne doit pas être postérieure à la date de fin",
-    "runTooLarge": "Cette exécution modifie trop de transactions pour être annulée en une seule étape. Restreignez les comptes ou les dates et réessayez"
+    "activeWindowInvalid": "La première date active ne doit pas être postérieure à la dernière date active",
+    "runTooLarge": "Cette exécution modifie trop de transactions pour être annulée en une seule étape. Restreignez les comptes ou les dates et réessayez",
+    "runRedoStructural": "Cette exécution a restructuré des transactions (virements ou ventilations) et ne peut pas être rétablie. Exécutez plutôt la règle à nouveau",
+    "runUndoStructureChanged": "Une transaction restructurée par cette exécution a été modifiée depuis (ses lignes de ventilation ou son virement), l'exécution ne peut donc pas être annulée en toute sécurité. Rétablissez-la manuellement"
   },
   "transactions": {
     "invalidStatus": "Statut de transaction invalide : {{ status }}",
     "reconciledLocked": "Cette transaction est rapprochée et verrouillée. Désactivez « Verrouiller les transactions rapprochées » dans les Paramètres pour la modifier.",
+    "convertToTransferRefused": "Cette transaction ne peut plus être convertie en virement. Vérifiez-la et exécutez la règle à nouveau",
     "pagePositiveInteger": "page doit être un entier positif",
     "limitPositiveInteger": "limit doit être un entier positif",
     "limitMax200": "limit ne doit pas dépasser 200",

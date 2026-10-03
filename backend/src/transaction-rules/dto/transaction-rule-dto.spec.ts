@@ -124,6 +124,65 @@ describe("CreateTransactionRuleDto", () => {
   });
 });
 
+describe("the active window on create and update", () => {
+  it.each([CreateTransactionRuleDto, UpdateTransactionRuleDto])(
+    "%p accepts real dates, null and an absent window",
+    async (cls) => {
+      const base = cls === UpdateTransactionRuleDto ? { revision: 1 } : {};
+      for (const window of [
+        {},
+        { activeFrom: "2026-10-01" },
+        { activeTo: "2026-12-31" },
+        { activeFrom: "2026-10-01", activeTo: "2026-10-01" },
+        { activeFrom: null, activeTo: null },
+        { activeFrom: "", activeTo: "" },
+        { activeFrom: "2024-02-29" },
+      ]) {
+        expect(
+          (await check(cls as never, { ...valid(), ...base, ...window }))
+            .fields,
+        ).toEqual([]);
+      }
+    },
+  );
+
+  it.each([
+    ["not a real day", "2026-02-31"],
+    ["a month 13", "2026-13-01"],
+    ["the wrong shape", "01.10.2026"],
+    ["a timestamp", "2026-10-01T00:00:00Z"],
+    ["a number", 20261001],
+  ])("refuses a side that is %s", async (_label, bad) => {
+    for (const field of ["activeFrom", "activeTo"]) {
+      expect(
+        (await check(CreateTransactionRuleDto, { ...valid(), [field]: bad }))
+          .fields,
+      ).toEqual([field]);
+      expect(
+        (
+          await check(UpdateTransactionRuleDto, {
+            ...valid(),
+            revision: 1,
+            [field]: bad,
+          })
+        ).fields,
+      ).toEqual([field]);
+    }
+  });
+
+  it("leaves the order of the two sides to the service, which holds the stored side too", async () => {
+    expect(
+      (
+        await check(CreateTransactionRuleDto, {
+          ...valid(),
+          activeFrom: "2026-12-31",
+          activeTo: "2026-10-01",
+        })
+      ).fields,
+    ).toEqual([]);
+  });
+});
+
 describe("UpdateTransactionRuleDto", () => {
   it("requires the revision", async () => {
     expect(

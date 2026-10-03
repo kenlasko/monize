@@ -36,7 +36,7 @@ banks that export "a few fixed columns plus labelled fragments":
   reconciled by hand.
 
 Transaction rules (`transaction-rules.md`) run after a row exists and never
-change its account, amount, links or type (INV-RULE-001). Everything above
+change its account, amount, date or status (INV-RULE-001; a rule's `convert_to_transfer` and `split` actions restructure a row, see `docs/specs/transaction-rules-structural-actions.md`). Everything above
 that changes what a row **is** belongs here, before the row is written.
 Categorisation and tagging stay with the rules; with phase 2 of the rules
 (`transaction-rules.md` section 10) they also set the payee and the

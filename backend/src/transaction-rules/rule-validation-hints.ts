@@ -29,7 +29,28 @@ export const RULE_ACTION_TOOL_KEYS: Readonly<
   request_ai_review: ["type", "instruction"],
   set_payee_from_text: ["type", "template", "createIfMissing", "onlyIfEmpty"],
   set_description: ["type", "template", "mode", "onlyIfEmpty"],
+  convert_to_transfer: [
+    "type",
+    "toAccountName",
+    "fromAccountName",
+    "clearCategory",
+    "payeeName",
+  ],
+  split: ["type", "payeeName", "parts"],
 };
+
+/** The keys of one `split` part as a model writes them. */
+const SPLIT_PART_TOOL_KEYS = [
+  "amount",
+  "categoryName",
+  "transferTo",
+  "payeeName",
+  "description",
+] as const;
+const SPLIT_FORM = `a split has 2-10 parts, each {"amount":"{capture}" or "rest" (at most one), then categoryName or transferTo (an account; not both), payeeName only with transferTo, description?}; the parts must add up to the transaction's amount.`;
+
+const inSplitParts = (segments: readonly Segment[]): boolean =>
+  segments[0] === "actions" && segments.includes("parts");
 
 const MAX_HINTS = 6;
 const LEAF_EXAMPLE = '{"field":"description","op":"contains","value":"ASSECO"}';
@@ -114,8 +135,11 @@ function shapeOfLeafValue(
     return `${leaf.op} takes a JSON array of ${kind} values, e.g. ["a","b"].`;
   }
   if (shape === "range") {
-    return `${leaf.op} takes exactly two numbers [min,max], min first.`;
+    return kind === "date"
+      ? `${leaf.op} takes exactly two "YYYY-MM-DD" strings [from,to], earliest first.`
+      : `${leaf.op} takes exactly two numbers [min,max], min first.`;
   }
+  if (kind === "date") return `${leaf.field} takes a "YYYY-MM-DD" string.`;
   if (kind === "money" || kind === "dayOfMonth") {
     return `${leaf.field} takes a JSON number (not a string).`;
   }
@@ -133,6 +157,8 @@ const HINTS: Record<RuleValidationCode, HintFn> = {
     const first = segments[0];
     const last = segments[segments.length - 1];
     if (segments.length === 1 && first === "actions") return ACTIONS_FORM;
+    if (inSplitParts(segments))
+      return `parts is an array of objects: ${SPLIT_FORM}`;
     if (first === "actions") {
       return `Each action is a JSON object with a "type", e.g. {"type":"set_category","categoryName":"Groceries"}.`;
     }
@@ -145,6 +171,9 @@ const HINTS: Record<RuleValidationCode, HintFn> = {
   UNKNOWN_KEY: (segments, definition) => {
     const key = String(segments[segments.length - 1]);
     const parent = parentNode(segments, definition);
+    if (inSplitParts(segments) && segments.length > 3) {
+      return `"${key}" is not a key of a split part; a part takes only ${SPLIT_PART_TOOL_KEYS.join(", ")}.`;
+    }
     if (segments[0] === "actions") {
       const type = isRecord(parent) ? parent.type : undefined;
       const keys =
@@ -175,16 +204,17 @@ const HINTS: Record<RuleValidationCode, HintFn> = {
       ? `For field ${String((leaf as Record<string, unknown>).field)} op must be one of: ${ops}.`
       : `op must be one of the operators listed for the field: ${RULE_FIELDS.map((f) => `${f}(${RULE_CONDITION_FIELDS[f].operators.join(",")})`).join(" ")}.`;
   },
-  VALUE_REQUIRED: generic(
-    'This operator needs a "value"; only isEmpty takes none.',
-  ),
+  VALUE_REQUIRED: (segments) =>
+    segments[0] === "actions"
+      ? "convert_to_transfer needs toAccountName (an expense) or fromAccountName (an income)."
+      : 'This operator needs a "value"; only isEmpty takes none.',
   VALUE_NOT_ALLOWED: generic('isEmpty takes no "value"; remove it.'),
   VALUE_TYPE: (segments, definition) =>
     segments[0] === "condition"
       ? shapeOfLeafValue(segments, definition)
       : "This value has the wrong JSON type (booleans are true/false, not strings).",
   VALUE_OUT_OF_RANGE: generic(
-    "The number is out of range (dayOfMonth 1-31; amounts are finite numbers with at most 4 decimals).",
+    "The value is out of range (dayOfMonth 1-31; amounts are finite numbers with at most 4 decimals; date is a real calendar day as YYYY-MM-DD).",
   ),
   VALUE_TOO_LONG: generic(
     "The text is too long (a condition value is at most 500 characters).",
@@ -199,9 +229,17 @@ const HINTS: Record<RuleValidationCode, HintFn> = {
   INVALID_CURRENCY: generic(
     'currencyCode is a three-letter ISO code, e.g. "PLN".',
   ),
-  ARRAY_EMPTY: generic("This list needs at least one entry."),
-  ARRAY_TOO_LARGE: generic("This list has too many entries."),
-  RANGE_ORDER: generic("between takes [min,max] with min not above max."),
+  ARRAY_EMPTY: (segments) =>
+    inSplitParts(segments)
+      ? `A split needs 2 to 10 parts: ${SPLIT_FORM}`
+      : "This list needs at least one entry.",
+  ARRAY_TOO_LARGE: (segments) =>
+    inSplitParts(segments)
+      ? "A split has at most 10 parts."
+      : "This list has too many entries.",
+  RANGE_ORDER: generic(
+    "between takes [min,max] (for date: [from,to]) with the first not above the second.",
+  ),
   MAX_DEPTH: generic("Groups nest at most 4 deep; flatten the condition."),
   MAX_LEAVES: generic("A rule has at most 50 leaves; simplify it."),
   MAX_NODES: generic("A rule has at most 100 groups and leaves; simplify it."),
@@ -209,15 +247,32 @@ const HINTS: Record<RuleValidationCode, HintFn> = {
     'actions needs at least one, e.g. [{"type":"set_category","categoryName":"Groceries"}].',
   ),
   TOO_MANY_ACTIONS: generic(`A rule has at most ${MAX_RULE_ACTIONS} actions.`),
-  DUPLICATE_ACTION: generic("A rule has at most one request_ai_review action."),
+  DUPLICATE_ACTION: (segments) =>
+    inSplitParts(segments)
+      ? 'Only one part of a split may have the amount "rest".'
+      : "A rule has at most one request_ai_review action and at most one convert_to_transfer or split action.",
+  CONFLICTING_ACTIONS: (segments, definition) => {
+    if (inSplitParts(segments)) {
+      return "A split part has a category or a transfer account, not both, and a payee only together with a transfer account.";
+    }
+    const action = nodeAt(definition, segments);
+    const bothAccounts =
+      isRecord(action) &&
+      ("toAccountName" in action || "toAccountId" in action) &&
+      ("fromAccountName" in action || "fromAccountId" in action);
+    return bothAccounts
+      ? "convert_to_transfer takes toAccountName (an expense) or fromAccountName (an income), not both."
+      : "A rule with convert_to_transfer or split must not also have set_category: the structural action decides the category.";
+  },
   INVALID_CAPTURE: generic(
     "A capture is {name} with name a-z0-9, starting with a letter, at most 20 characters, and not 'description'.",
   ),
   TOO_MANY_CAPTURES: generic("A pattern has at most 5 captures."),
   DUPLICATE_CAPTURE: generic("Each capture name is used once per rule."),
-  UNKNOWN_CAPTURE: generic(
-    "A template may use {payeeText}, {description} and the captures defined by a matches pattern of the same rule.",
-  ),
+  UNKNOWN_CAPTURE: (segments) =>
+    inSplitParts(segments)
+      ? 'A split part amount is "rest" or {name} of a capture some matches pattern of the same rule defines, e.g. matches "PRINCIPAL: {principal} INTEREST: *" gives "{principal}".'
+      : "A template may use {payeeText}, {description} and the captures defined by a matches pattern of the same rule.",
   LOOKS_LIKE_REGEX: generic(
     'matches is a glob, not a regex: | \\ and a short [xy] class are matched literally, so a pattern written as a regex never matches what was meant. For alternatives use an any group of leaves, e.g. {"any":[{"field":"description","op":"contains","value":"a"},{"field":"description","op":"contains","value":"b"}]}.',
   ),

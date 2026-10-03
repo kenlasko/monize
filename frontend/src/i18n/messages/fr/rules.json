@@ -90,7 +90,16 @@
       "imported": "Une transaction est importée",
       "atLeastOne": "Gardez au moins une option cochée",
       "stopProcessing": "Arrêter le traitement des autres règles",
-      "stopProcessingHelp": "Lorsque cette règle correspond à une transaction, les règles qui la suivent dans la liste sont ignorées pour cette transaction."
+      "stopProcessingHelp": "Lorsque cette règle correspond à une transaction, les règles qui la suivent dans la liste sont ignorées pour cette transaction.",
+      "window": {
+        "title": "Active entre",
+        "help": "La règle ne s'applique qu'aux transactions datées dans cette période : à leur création ou leur import, et lors du test ou de l'exécution de la règle. Laissez une date vide pour ne mettre aucune limite.",
+        "from": "Première date",
+        "to": "Dernière date",
+        "backwards": "La dernière date ne doit pas être antérieure à la première",
+        "noLimit": "sans limite",
+        "words": "Uniquement pour les transactions datées du {from} au {to}"
+      }
     },
     "if": {
       "description": "Les actions ne s'exécutent que pour les transactions qui correspondent",
@@ -138,7 +147,8 @@
       "dayOfMonth": "Jour du mois",
       "weekday": "Jour de la semaine",
       "status": "Statut",
-      "hasAttachment": "A une pièce jointe"
+      "hasAttachment": "A une pièce jointe",
+      "date": "Date"
     },
     "operators": {
       "eq": "est",
@@ -215,7 +225,33 @@
         "replace": "Remplacer la description",
         "append": "Ajouter après la description",
         "prepend": "Ajouter avant la description"
-      }
+      },
+      "convertHelp": "Le revenu ou la dépense correspondant devient un côté d'un virement. L'autre côté est créé dans le compte choisi, qui doit utiliser la même devise.",
+      "direction": "Sens",
+      "directionTo": "Dépense : l'argent va vers un autre compte",
+      "directionFrom": "Revenu : l'argent vient d'un autre compte",
+      "clearCategory": "Retirer la catégorie",
+      "clearCategoryHelp": "Un virement n'a pas de catégorie. Désactivez pour conserver la catégorie déjà présente sur la transaction.",
+      "splitPayee": "Bénéficiaire de la transaction (facultatif)",
+      "splitHint": "Chaque partie prend son montant dans une capture des motifs ci-dessus, ou prend le reste. Les parties doivent totaliser le montant de la transaction, sinon la règle la laisse telle quelle.",
+      "splitNoCaptures": "Aucune capture n'est encore définie. Placez un nom entre accolades dans un motif ci-dessus, par exemple PRINCIPAL: {example}, pour l'utiliser ici comme montant.",
+      "partAmountPlaceholder": "Choisir le montant...",
+      "partRest": "Le reste",
+      "partAccount": "Compte",
+      "partPayee": "Bénéficiaire de l'autre côté (facultatif)",
+      "partsLimit": "Un fractionnement peut avoir au plus {max} parties.",
+      "guideTitle": "Mode d’emploi",
+      "splitGuideHow": "Dans « Si », ajoutez une condition sur le texte du bénéficiaire ou la description avec l’opérateur « correspond au motif », et placez des noms entre accolades à l’endroit des montants, par exemple {first}. Chaque nom devient un montant que vous pouvez choisir pour une partie, ou choisissez « Le reste ». Les parties doivent totaliser le montant de la transaction, sinon la règle la laisse inchangée. Une partie peut être une catégorie ou un virement vers un autre compte (un virement modifie le solde de ce compte).",
+      "splitGuideExampleTitle": "Exemple : une échéance de prêt",
+      "splitGuideBank": "Texte de la banque : CAPITAL : 1200,50 INTERETS : 300,25 PENALITE : 0,00",
+      "splitGuidePattern": "Motif : *CAPITAL : {first} INTERETS : {second} PENALITE*",
+      "splitGuidePart1": "Partie 1 : {first} en virement vers le compte du prêt",
+      "splitGuidePart2": "Partie 2 : {second} dans la catégorie « Prêts : Intérêts »",
+      "splitGuideResult": "Résultat pour -1500,75 : -1200,50 virés vers le compte du prêt et -300,25 de charge d’intérêts.",
+      "splitGuideTip": "Conseil : définissez une date de début dans « Active entre » pour ne pas modifier les anciennes transactions rapprochées, et utilisez le panneau Test avant d’enregistrer.",
+      "convertGuide": "Une dépense devient un virement vers le compte choisi, et un revenu un virement depuis ce compte. Seul le solde de l’autre compte change. Conseil : utilisez « Active entre » pour ne pas modifier les anciennes transactions.",
+      "splitGuideName1": "capital",
+      "splitGuideName2": "interets"
     },
     "actionTypes": {
       "add_tags": "Ajouter des tags",
@@ -224,7 +260,9 @@
       "set_payee": "Définir le bénéficiaire",
       "request_ai_review": "Demander une révision par l'IA",
       "set_payee_from_text": "Définir le bénéficiaire à partir du texte",
-      "set_description": "Définir la description"
+      "set_description": "Définir la description",
+      "convert_to_transfer": "Convertir en virement",
+      "split": "Fractionner la transaction"
     },
     "save": {
       "button": "Enregistrer la règle",
@@ -273,16 +311,17 @@
         "MAX_NODES": "Il y a trop de conditions et de groupes. La limite est de {maxNodes}.",
         "NO_ACTIONS": "Ajoutez au moins une action.",
         "TOO_MANY_ACTIONS": "Il y a trop d'actions. La limite est de {maxActions}.",
-        "DUPLICATE_ACTION": "Une règle ne peut demander une révision par l'IA qu'une seule fois.",
-        "REFERENCE_NOT_FOUND": "Un élément choisi ici n'existe plus. Choisissez-en un autre.",
-        "NAME_REQUIRED": "Saisissez un nom pour la règle.",
-        "UNKNOWN": "Cette partie n'est pas valide.",
+        "DUPLICATE_ACTION": "Une règle ne peut avoir qu'une seule revue par l'IA, un seul virement ou fractionnement, et une seule partie de fractionnement qui prend le reste.",
+        "CONFLICTING_ACTIONS": "Une action de virement ou de fractionnement ne peut pas être combinée avec « Définir la catégorie », et chacune de ses parties a soit une catégorie, soit un compte.",
         "INVALID_CAPTURE": "Un nom de capture utilise des lettres minuscules et des chiffres, commence par une lettre et compte 20 caractères au plus.",
         "TOO_MANY_CAPTURES": "Un motif peut contenir 5 captures au plus.",
         "DUPLICATE_CAPTURE": "Chaque nom de capture ne peut être utilisé qu’une fois dans une règle.",
-        "UNKNOWN_CAPTURE": "Le texte utilise une capture qu’aucune condition de cette règle ne définit.",
+        "UNKNOWN_CAPTURE": "Ceci utilise une capture qu'aucune condition de cette règle ne définit.",
         "LOOKS_LIKE_REGEX": "Les expressions régulières ne sont pas prises en charge : | \\ et les classes courtes entre crochets comme [xy] sont traités comme des caractères ordinaires, donc un motif écrit comme une regex ne correspond jamais à ce qui était voulu. Pour correspondre à l'un de plusieurs textes, ajoutez un groupe « N'importe laquelle de celles-ci » avec une condition pour chaque texte.",
-        "PATTERN_WITHOUT_WILDCARD": "Sans *, ce motif doit être égal à tout le texte. Utilisez l'opérateur « est » pour le texte entier, « contient » pour une partie, ou entourez le texte de *, par exemple *café*."
+        "PATTERN_WITHOUT_WILDCARD": "Sans *, ce motif doit être égal à tout le texte. Utilisez l'opérateur « est » pour le texte entier, « contient » pour une partie, ou entourez le texte de *, par exemple *café*.",
+        "REFERENCE_NOT_FOUND": "Un élément choisi ici n'existe plus. Choisissez-en un autre.",
+        "NAME_REQUIRED": "Saisissez un nom pour la règle.",
+        "UNKNOWN": "Cette partie n'est pas valide."
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "c’est un virement vers un autre propriétaire, dont la règle ne peut pas modifier le bénéficiaire",
       "empty_render": "le texte d'une action est resté vide pour elle",
       "payee_not_found": "aucun bénéficiaire n'a le nom construit par la règle, et elle n'en crée pas",
-      "other": "la règle ne peut pas la modifier"
+      "other": "la règle ne peut pas la modifier",
+      "row_is_transfer_leg": "elle est déjà un virement",
+      "row_has_splits": "elle est déjà fractionnée",
+      "row_is_void": "elle est annulée",
+      "zero_amount": "son montant est nul",
+      "transfer_direction_mismatch": "le virement va dans le mauvais sens : une dépense va vers un compte, un revenu vient d'un compte",
+      "transfer_same_account": "le compte du virement est le compte de la transaction elle-même",
+      "transfer_account_unavailable": "le compte du virement n'est pas disponible (supprimé ou n'est pas le vôtre)",
+      "transfer_currency_mismatch": "le compte du virement utilise une autre devise",
+      "split_amount_unparseable": "un montant de son texte n'a pas pu être lu comme un nombre",
+      "split_sum_mismatch": "les parties ne totalisent pas son montant",
+      "split_too_few_parts": "il reste moins de deux parties une fois les montants nuls écartés"
     },
     "change": {
       "category": "Catégorie : {before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "un élément supprimé",
       "payeeCreated": "{done, select, yes {Un nouveau bénéficiaire a été créé : {name}} other {Un nouveau bénéficiaire sera créé : {name}}}",
       "description": "Description : {before} → {after}",
-      "descriptionSet": "Définir la description sur {value}"
+      "descriptionSet": "Définir la description sur {value}",
+      "transfer": "{done, select, yes {Est devenue un virement avec {account}} other {Deviendra un virement avec {account}}}",
+      "split": "{done, select, yes {A été fractionnée en {count, plural, one {# partie} other {# parties}}} other {Sera fractionnée en {count, plural, one {# partie} other {# parties}}}}",
+      "splitPart": "Partie {number} : {amount} {target}",
+      "splitPartMemo": ", note « {memo} »",
+      "splitToTransfer": "vers {account}",
+      "splitToTransferPayee": "vers {account}, bénéficiaire {payee}",
+      "splitToCategory": "comme {category}",
+      "splitUncategorised": "sans catégorie"
     },
     "filters": {
       "accounts": "Comptes",
@@ -471,7 +529,15 @@
       "set_payee": "Définir le bénéficiaire sur {name}{onlyIfEmpty, select, yes { (seulement si vide)} other {}}",
       "request_ai_review": "Demander une révision par l'IA : {instruction}",
       "set_payee_from_text": "Définir le bénéficiaire à partir du texte : « {template} »{createIfMissing, select, yes { (créé s’il n’existe pas)} other {}}{onlyIfEmpty, select, yes { (seulement si vide)} other {}}",
-      "set_description": "Définir la description ({mode, select, append {ajouter après} prepend {ajouter avant} other {remplacer}}) : « {template} »{onlyIfEmpty, select, yes { (seulement si vide)} other {}}"
+      "set_description": "Définir la description ({mode, select, append {ajouter après} prepend {ajouter avant} other {remplacer}}) : « {template} »{onlyIfEmpty, select, yes { (seulement si vide)} other {}}",
+      "convert_to_transfer": "Convertir en virement {direction, select, from {depuis} other {vers}} {account}",
+      "split": "Fractionner en : {parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} vers {account}",
+      "category": "{amount} en {category}",
+      "plain": "{amount}",
+      "rest": "le reste"
     }
   }
 }

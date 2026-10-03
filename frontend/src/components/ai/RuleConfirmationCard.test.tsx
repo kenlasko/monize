@@ -258,6 +258,25 @@ describe('RuleConfirmationCard: update', () => {
     expectNoIds();
   });
 
+  it('shows a moved active window as its own changed part, and the window of a new rule', () => {
+    const windowed: PendingActionRule = makeRule({
+      activeFrom: '2026-10-01',
+      activeTo: null,
+      current: { ...proposed.current!, activeFrom: null, activeTo: null },
+    });
+    renderCard(makeRuleAction('update_transaction_rule', windowed));
+    const diff = within(screen.getByTestId('rule-diff'));
+    const part = within(diff.getByTestId('rule-diff-activeWindow'));
+    expect(part.getByText('Active between')).toBeInTheDocument();
+    expect(part.getByText(/Only for transactions dated from .*2026.* to no limit/)).toBeInTheDocument();
+    expect(diff.queryByTestId('rule-diff-name')).not.toBeInTheDocument();
+  });
+
+  it('shows the window on a card that reads the whole rule', () => {
+    renderCard(makeRuleAction('create_transaction_rule', makeRule({ activeFrom: '2026-10-01', activeTo: '2026-12-31' })));
+    expect(screen.getByText(/Only for transactions dated from .*2026.* to .*2026/)).toBeInTheDocument();
+  });
+
   it('shows the test result of the edited rule', () => {
     renderCard(makeRuleAction('update_transaction_rule', proposed));
     expect(screen.getByTestId('rule-test-result')).toBeInTheDocument();

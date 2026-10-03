@@ -119,12 +119,15 @@ function setup(
     applierDeps as never,
     { enqueue } as never,
     payees as never,
+    {} as never,
+    {} as never,
   );
   const loadTagIds = jest
     .spyOn(applier, "loadTagIds")
     .mockResolvedValue(new Map<string, string[]>());
   jest.spyOn(applier, "chainsFor").mockResolvedValue(new Map());
   jest.spyOn(applier, "labelsFor").mockResolvedValue({
+    accounts: {},
     categories: { [CAT]: "Groceries" },
     payees: { [PAYEE]: "Shop payee" },
     tags: {},
@@ -157,6 +160,7 @@ function setup(
     rulesService as unknown as TransactionRulesService,
     applier,
     { record } as unknown as ActionHistoryService,
+    { triggerDebouncedRecalc: jest.fn() } as never,
   );
   return {
     service,
@@ -673,6 +677,7 @@ describe("TransactionRulesRunService", () => {
           changes: expect.objectContaining({ categoryId: CAT }),
         }),
         "manual",
+        expect.any(Set),
       );
       expect(s.record).toHaveBeenCalledTimes(1);
       const entry = s.record.mock.calls[0][1];
@@ -1099,6 +1104,7 @@ describe("TransactionRulesRunService", () => {
           }),
         }),
         "manual",
+        expect.any(Set),
       );
       const entry = s.record.mock.calls[0][1];
       expect(entry.beforeData.transactions).toEqual([

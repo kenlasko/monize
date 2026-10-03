@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeRule } from '@/components/rules/rules-test-fixtures';
-import { createAction } from './rule-actions';
+import { createAction, createSplitPart, type EditorAction } from './rule-actions';
 import {
   actionToApi,
   conditionToApi,
@@ -199,6 +199,69 @@ describe('draftFromRule', () => {
   });
 });
 
+describe('the active window', () => {
+  it('opens an unlimited rule with both sides empty and sends neither key', () => {
+    const { draft, repaired } = read({});
+    expect(repaired).toBe(0);
+    expect(draft).toMatchObject({ activeFrom: '', activeTo: '' });
+    // Absent, not null: a backend that predates the window refuses an unknown key.
+    const payload = draftToPayload(draft, draft);
+    expect(payload).not.toHaveProperty('activeFrom');
+    expect(payload).not.toHaveProperty('activeTo');
+    expect(draftToPayload(draft)).not.toHaveProperty('activeFrom');
+  });
+
+  it('opens and saves a stored window as it is', () => {
+    const { draft } = read({ activeFrom: '2026-10-01', activeTo: '2026-12-31' });
+    expect(draft).toMatchObject({ activeFrom: '2026-10-01', activeTo: '2026-12-31' });
+    expect(draftToPayload(draft)).toMatchObject({ activeFrom: '2026-10-01', activeTo: '2026-12-31' });
+  });
+
+  it('reads a stored rule from an older server, with no window at all, as open', () => {
+    const { draft } = read({ activeFrom: undefined as never, activeTo: undefined as never });
+    expect(draft).toMatchObject({ activeFrom: '', activeTo: '' });
+  });
+
+  it('keeps one open side out of the payload: a date is itself, an untouched open side is absent', () => {
+    const draft = { ...emptyDraft(), activeFrom: '2026-10-01' };
+    const payload = draftToPayload(draft, emptyDraft());
+    expect(payload).toMatchObject({ activeFrom: '2026-10-01' });
+    expect(payload).not.toHaveProperty('activeTo');
+  });
+
+  it('sends null for a side the stored rule had and the draft cleared, and only for that side', () => {
+    const { draft: loaded } = read({ activeFrom: '2026-10-01', activeTo: '2026-12-31' });
+    const cleared = { ...loaded, activeFrom: '' };
+    const payload = draftToPayload(cleared, loaded);
+    expect(payload).toMatchObject({ activeFrom: null, activeTo: '2026-12-31' });
+    const { draft: halfOpen } = read({ activeFrom: '2026-10-01' });
+    expect(draftToPayload({ ...halfOpen, activeFrom: '' }, halfOpen)).toMatchObject({ activeFrom: null });
+    expect(draftToPayload({ ...halfOpen, activeFrom: '' }, halfOpen)).not.toHaveProperty('activeTo');
+  });
+
+  it('is part of the signature, so moving the window is an unsaved change', () => {
+    const base = emptyDraft();
+    expect(draftSignature({ ...base, activeTo: '2026-12-31' })).not.toBe(draftSignature(base));
+  });
+
+  it('reads and writes a date condition with its text value and a range of two texts', () => {
+    const condition = {
+      all: [
+        { field: 'date', op: 'gte', value: '2026-10-01' },
+        { field: 'date', op: 'between', value: ['2026-10-01', '2026-10-31'] },
+      ],
+    };
+    const { draft, repaired } = read({ condition: condition as never });
+    expect(repaired).toBe(0);
+    expect(conditionToApi(draft.condition)).toEqual(condition);
+  });
+
+  it('repairs a date range stored as numbers', () => {
+    const { repaired } = read({ condition: { all: [{ field: 'date', op: 'between', value: [1, 2] }] } as never });
+    expect(repaired).toBe(1);
+  });
+});
+
 describe('draftToPayload', () => {
   it('sends exactly the fields the DTO accepts, with the name trimmed', () => {
     const draft = { ...emptyDraft(), name: '  Rent  ', actions: [{ ...createAction('add_tags'), tagIds: [UUID] } as never] };
@@ -244,5 +307,105 @@ describe('draftToPayload', () => {
     expect(draftSignature(a)).toBe(draftSignature(b));
     expect(draftSignature({ ...a, name: 'Other' })).not.toBe(draftSignature(a));
     expect(draftSignature({ ...a, name: ' Coffee shops ' })).toBe(draftSignature(a));
+  });
+});
+
+describe('the structural actions', () => {
+  const ACCOUNT = '22222222-2222-4222-8222-222222222222';
+  const actions = [
+    { type: 'convert_to_transfer', toAccountId: ACCOUNT, clearCategory: true, payeeId: UUID },
+    {
+      type: 'split',
+      payeeId: UUID,
+      parts: [
+        { amount: '{principal}', transferAccountId: ACCOUNT, payeeId: UUID },
+        { amount: '{interest}', categoryId: UUID, description: 'interest' },
+        { amount: 'rest' },
+      ],
+    },
+  ];
+
+  it('opens and saves exactly as stored, with nothing repaired', () => {
+    const { draft, repaired } = read({ actions: actions as never });
+    expect(repaired).toBe(0);
+    expect(draft.actions.map((a) => a.type)).toEqual(['convert_to_transfer', 'split']);
+    expect(draft.actions.map(actionToApi)).toEqual(actions);
+    expect(draftToPayload(draft).actions).toEqual(actions);
+  });
+
+  it('reads a transfer part and a category part as the kind they are', () => {
+    const { draft } = read({ actions: [actions[1]] as never });
+    const split = draft.actions[0];
+    if (split.type !== 'split') throw new Error('not a split');
+    expect(split.parts.map((p) => p.kind)).toEqual(['transfer', 'category', 'category']);
+    expect(split.parts[0]).toMatchObject({ amount: '{principal}', transferAccountId: ACCOUNT, payeeId: UUID, categoryId: '' });
+    expect(split.parts[1]).toMatchObject({ categoryId: UUID, description: 'interest', transferAccountId: '' });
+    expect(split.parts[2]).toMatchObject({ amount: 'rest', categoryId: '', transferAccountId: '', description: '' });
+  });
+
+  it('writes the income side as fromAccountId and a card with no payee without one', () => {
+    const stored = { type: 'convert_to_transfer', fromAccountId: ACCOUNT, clearCategory: false };
+    const { draft, repaired } = read({ actions: [stored] as never });
+    expect(repaired).toBe(0);
+    expect(draft.actions[0]).toMatchObject({ direction: 'from', accountId: ACCOUNT, clearCategory: false, payeeId: '' });
+    expect(actionToApi(draft.actions[0])).toEqual(stored);
+  });
+
+  it('writes what the editor holds: a category line has no payee, a transfer line no category', () => {
+    const split = {
+      ...createAction('split'),
+      payeeId: UUID,
+      parts: [
+        { ...createSplitPart('{principal}'), kind: 'transfer' as const, transferAccountId: ACCOUNT, payeeId: UUID, categoryId: 'stale' },
+        { ...createSplitPart('rest'), kind: 'category' as const, categoryId: UUID, payeeId: 'stale', description: 'interest' },
+      ],
+    } as EditorAction;
+    expect(actionToApi(split)).toEqual({
+      type: 'split',
+      payeeId: UUID,
+      parts: [
+        { amount: '{principal}', transferAccountId: ACCOUNT, payeeId: UUID },
+        { amount: 'rest', categoryId: UUID, description: 'interest' },
+      ],
+    });
+  });
+
+  it('leaves out a transfer account that is not chosen yet, so the server names the field', () => {
+    expect(actionToApi(createAction('convert_to_transfer'))).toEqual({ type: 'convert_to_transfer', clearCategory: true });
+  });
+
+  it('gives each a card of its own that survives a signature round trip', () => {
+    const { draft } = read({ actions: actions as never });
+    const again = draftFromRule(makeRule({ actions: draftToPayload(draft).actions as never })).draft;
+    expect(draftSignature(again)).toBe(draftSignature(draft));
+  });
+
+  it('repairs what the server would refuse and counts it', () => {
+    const { draft, repaired } = read({
+      actions: [
+        { type: 'convert_to_transfer', toAccountId: ACCOUNT, fromAccountId: ACCOUNT, clearCategory: true },
+        {
+          type: 'split',
+          parts: [
+            { amount: '{a}', categoryId: UUID, transferAccountId: ACCOUNT },
+            { amount: '{b}', categoryId: UUID, payeeId: UUID },
+          ],
+        },
+      ] as never,
+    });
+    expect(repaired).toBe(3);
+    expect(draft.actions[0]).toMatchObject({ direction: 'to', accountId: ACCOUNT });
+    const split = draft.actions[1];
+    if (split.type !== 'split') throw new Error('not a split');
+    expect(split.parts[0]).toMatchObject({ kind: 'transfer', transferAccountId: ACCOUNT, categoryId: '' });
+    expect(split.parts[1]).toMatchObject({ kind: 'category', categoryId: UUID, payeeId: '' });
+  });
+
+  it('opens a split with no parts as two blank ones', () => {
+    const { draft, repaired } = read({ actions: [{ type: 'split' }] as never });
+    expect(repaired).toBeGreaterThan(0);
+    const split = draft.actions[0];
+    if (split.type !== 'split') throw new Error('not a split');
+    expect(split.parts).toHaveLength(2);
   });
 });

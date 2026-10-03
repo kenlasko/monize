@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@/test/render';
 import { RuleApplications, transactionHref } from './RuleApplications';
 import { testOptions } from './rule-test-harness';
-import { COFFEE_ID, PAYEE_ID, TAG_ID, makeApplication } from './rules-test-fixtures';
+import { ACCOUNT_ID, COFFEE_ID, PAYEE_ID, TAG_ID, makeApplication } from './rules-test-fixtures';
 import { usePreferencesStore } from '@/store/preferencesStore';
 
 const api = vi.hoisted(() => ({ getApplications: vi.fn() }));
@@ -42,6 +42,39 @@ afterEach(() => {
   // Unmount before the store is reset, or the mounted table re-renders outside act().
   cleanup();
   usePreferencesStore.setState({ preferences: null, isLoaded: false } as never);
+});
+
+describe('RuleApplications: a structural application', () => {
+  it('reads a written transfer and split in the past tense, naming the accounts from the pickers', async () => {
+    api.getApplications.mockResolvedValue([
+      makeApplication({
+        id: 'app-t',
+        changes: { structure: { before: null, after: { kind: 'transfer', accountId: ACCOUNT_ID, clearCategory: true } } },
+      }),
+      makeApplication({
+        id: 'app-s',
+        transactionId: 'tx-2',
+        currencyCode: 'CAD',
+        changes: {
+          structure: {
+            before: null,
+            after: {
+              kind: 'split',
+              parts: [
+                { amount: -10, categoryId: null, transferAccountId: ACCOUNT_ID, payeeId: PAYEE_ID, memo: null },
+                { amount: -5, categoryId: COFFEE_ID, transferAccountId: null, payeeId: null, memo: null },
+              ],
+            },
+          },
+        },
+      }),
+    ]);
+    await renderApplications();
+    expect(screen.getByText('Became a transfer with Chequing (CAD)')).toBeInTheDocument();
+    expect(screen.getByText('Was split into 2 parts')).toBeInTheDocument();
+    expect(screen.getByText(/^Part 1: .*10\.00.* to Chequing \(CAD\), payee Corner Cafe$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Part 2: .*5\.00.* as Food: Coffee$/)).toBeInTheDocument();
+  });
 });
 
 describe('RuleApplications', () => {

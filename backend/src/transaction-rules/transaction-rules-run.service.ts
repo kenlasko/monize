@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
+  forwardRef,
 } from "@nestjs/common";
 import { isDeepStrictEqual } from "node:util";
 import { DataSource, EntityManager } from "typeorm";
@@ -10,7 +12,9 @@ import {
   MAX_JSONB_SIZE_BYTES,
 } from "../action-history/action-history.service";
 import { RULE_RUN_ENTITY_TYPE } from "../action-history/rule-run-undo";
+import { lockAccountsForBalanceWrite } from "../common/db/locks";
 import { withScopedDb } from "../common/db/scoped-db";
+import { NetWorthService } from "../net-worth/net-worth.service";
 import { tr } from "../i18n/translate";
 import { TransactionStatus } from "../transactions/entities/transaction-status.enum";
 import { isReconciledLockEnabled } from "../transactions/reconciled-lock.util";
@@ -22,6 +26,8 @@ import { effectiveRunLimit, loadCandidateUnits } from "./rule-run-candidates";
 import { loadRuleApplications } from "./rule-run-applications";
 import { planFingerprint } from "./rule-run-fingerprint";
 import { PlannedUnit, buildRunSnapshots } from "./rule-run-snapshot";
+import { structureTargetAccountIds } from "./rule-structure";
+import { loadRuleTargetAccounts } from "./rule-target-accounts";
 import {
   RuleApplicationRow,
   RuleRunChanges,
@@ -53,6 +59,26 @@ interface Plan {
   readonly tagsByRow: ReadonlyMap<string, readonly string[]>;
 }
 
+/**
+ * The run's date filters cut down to the rule's active window: the later of
+ * the two starts and the earlier of the two ends (`YYYY-MM-DD` strings
+ * compare in date order). Null when nothing is left to scan.
+ */
+function narrowToActiveWindow(
+  filters: RuleRunFilters,
+  rule: PlannableRule,
+): RuleRunFilters | null {
+  const startDate = [filters.startDate, rule.activeFrom]
+    .filter((d): d is string => !!d)
+    .sort()
+    .pop();
+  const endDate = [filters.endDate, rule.activeTo]
+    .filter((d): d is string => !!d)
+    .sort()[0];
+  if (startDate && endDate && startDate > endDate) return null;
+  return { ...filters, startDate, endDate };
+}
+
 /** The planner's refusals that a person can act on, in the words of the preview. */
 const REFUSAL_REASONS: Readonly<Record<string, RuleRunSkipReason>> = {
   row_is_transfer_leg: "transfer_leg_category",
@@ -61,6 +87,39 @@ const REFUSAL_REASONS: Readonly<Record<string, RuleRunSkipReason>> = {
   empty_render: "empty_render",
   payee_not_found: "payee_not_found",
 };
+
+/** Every refusal only a structural action can make, named as the planner names it. */
+const STRUCTURAL_REFUSAL_REASONS: ReadonlySet<string> = new Set([
+  "row_is_void",
+  "zero_amount",
+  "transfer_direction_mismatch",
+  "transfer_same_account",
+  "transfer_account_unavailable",
+  "transfer_currency_mismatch",
+  "split_amount_unparseable",
+  "split_sum_mismatch",
+  "split_too_few_parts",
+]);
+
+/**
+ * The preview's word for a skipped action. A structural action keeps the
+ * planner's own name (the category words of `set_category` would mislead).
+ */
+function runSkipReason(refused: {
+  type: string;
+  reason: string;
+}): RuleRunSkipReason | undefined {
+  const structural =
+    refused.type === "convert_to_transfer" || refused.type === "split";
+  if (structural) {
+    return refused.reason === "row_is_transfer_leg" ||
+      refused.reason === "row_has_splits" ||
+      STRUCTURAL_REFUSAL_REASONS.has(refused.reason)
+      ? (refused.reason as RuleRunSkipReason)
+      : undefined;
+  }
+  return REFUSAL_REASONS[refused.reason];
+}
 
 /**
  * Run a rule on existing transactions (design 3.6, invariants I3 and I6).
@@ -78,6 +137,10 @@ export class TransactionRulesRunService {
     private readonly rulesService: TransactionRulesService,
     private readonly applier: TransactionRulesApplierService,
     private readonly actionHistory: ActionHistoryService,
+    // forwardRef: the net-worth module reaches the transactions module, which
+    // reaches this one (create's rules step).
+    @Inject(forwardRef(() => NetWorthService))
+    private readonly netWorth: NetWorthService,
   ) {}
 
   /** What running a saved rule on existing transactions would change. Writes nothing. */
@@ -136,7 +199,17 @@ export class TransactionRulesRunService {
         revision: 0,
         condition: definition.condition,
         actions: withActionDefaults(definition.actions) as RunRule["actions"],
+        // A blank side is open, exactly as a save reads it.
+        activeFrom: dto.activeFrom || null,
+        activeTo: dto.activeTo || null,
       };
+      if (
+        draft.activeFrom &&
+        draft.activeTo &&
+        draft.activeFrom > draft.activeTo
+      ) {
+        throw this.rulesService.activeWindowInvalid();
+      }
       return (await this.plan(m, userId, draft, filters, false)).preview;
     });
   }
@@ -191,26 +264,50 @@ export class TransactionRulesRunService {
       ) {
         throw tooLarge();
       }
+      // Every account a structural write will credit is row-locked now, in
+      // ascending id order and in one statement, after the transaction rows
+      // the plan locked (the order the other transaction writers use) and
+      // before the first write. Without it each row's write locked its own
+      // target as it went, so two runs (or a run and a create) converting in
+      // opposite directions could take two accounts in opposite orders.
+      await lockAccountsForBalanceWrite(
+        m,
+        plan.writable.flatMap(({ effects }) =>
+          effects.changes.structure
+            ? structureTargetAccountIds(effects.changes.structure)
+            : [],
+        ),
+        userId,
+      );
       // A payee the rule creates is created once per row (both legs of a
       // transfer share it), inside this transaction, before the row is
       // written; the snapshots then hold its id.
       const written: PlannedUnit[] = [];
+      // Accounts a structural action moved; their net-worth state is
+      // invalidated after the commit, never in here (INV-CACHE-001).
+      const affectedAccountIds = new Set<string>();
       for (const { unit, effects } of plan.writable) {
         const resolved = await this.applier.resolveCreatedPayee(
           m,
           userId,
           effects,
         );
+        // The effects as written: a structural write adds the counterpart ids
+        // the snapshot (and so the undo) needs. A structural action is never
+        // planned on a transfer pair, so its unit has one leg.
+        let writtenEffects = resolved;
         for (const leg of unit.legs) {
-          await this.applier.writeEffects(
+          const result = await this.applier.writeEffects(
             m,
             userId,
             leg.id,
             resolved,
             "manual",
+            affectedAccountIds,
           );
+          if (leg === unit.primary) writtenEffects = result;
         }
-        written.push({ unit, effects: resolved });
+        written.push({ unit, effects: writtenEffects });
       }
       const { before, after } = buildRunSnapshots(
         written,
@@ -228,10 +325,17 @@ export class TransactionRulesRunService {
         plan.asking.map(({ unit, effects }) => ({
           transactionId: unit.primary.id,
           effects,
+          affectedAccountIds: [],
         })),
       );
-      return { rule, plan, before, after };
+      return { rule, plan, before, after, affectedAccountIds };
     });
+
+    // After the commit, so a rollback leaves nothing queued: the accounts a
+    // structural action credited have derived state (net worth) to refresh.
+    for (const accountId of done.affectedAccountIds) {
+      this.netWorth.triggerDebouncedRecalc(accountId, userId);
+    }
 
     const changed = done.before.length;
     // After the commit: a history write inside the transaction would hide an
@@ -305,6 +409,8 @@ export class TransactionRulesRunService {
       revision: rule.revision,
       condition: rule.condition,
       actions: rule.actions,
+      activeFrom: rule.activeFrom,
+      activeTo: rule.activeTo,
     };
   }
 
@@ -336,12 +442,18 @@ export class TransactionRulesRunService {
     filters: RuleRunFilters,
     lock: boolean,
   ): Promise<Plan> {
-    const { units, truncated } = await loadCandidateUnits(
-      m,
-      userId,
-      { ...filters, limit: effectiveRunLimit(filters.limit) },
-      { lock },
-    );
+    // INV-RULE-004: the window only narrows the scan; the planner still
+    // decides every row. An empty intersection scans nothing.
+    const scan = narrowToActiveWindow(filters, rule);
+    const { units, truncated } =
+      scan === null
+        ? { units: [], truncated: false }
+        : await loadCandidateUnits(
+            m,
+            userId,
+            { ...scan, limit: effectiveRunLimit(filters.limit) },
+            { lock },
+          );
     const legIds = units.flatMap((unit) => unit.legs.map((leg) => leg.id));
     const tagsByRow =
       legIds.length > 0
@@ -360,6 +472,7 @@ export class TransactionRulesRunService {
       units.map((unit) => unit.primary.categoryId),
     );
 
+    const accounts = await loadRuleTargetAccounts(m, userId, [rule]);
     const skipped: RuleRunSkippedRow[] = [];
     // Payee names looked up for this preview or commit; nothing is created here.
     const payeeLookups = new Map<string, PayeeResolution | null>();
@@ -391,13 +504,13 @@ export class TransactionRulesRunService {
         },
         [rule],
         chains,
-        { crossOwnerTransferLeg: unit.crossOwnerTransferLeg },
+        { crossOwnerTransferLeg: unit.crossOwnerTransferLeg, accounts },
         payeeLookups,
       );
       const entry = effects.trace[0];
       if (entry?.matched) conditionMatchedCount += 1;
       for (const refused of entry?.skipped ?? []) {
-        const reason = REFUSAL_REASONS[refused.reason];
+        const reason = runSkipReason(refused);
         if (reason) skipped.push({ transactionId: primary.id, reason });
       }
       if (entry && Object.keys(entry.changes).length > 0) {

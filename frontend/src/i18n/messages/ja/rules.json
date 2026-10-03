@@ -90,7 +90,16 @@
       "imported": "取引がインポートされたとき",
       "atLeastOne": "少なくとも1つのオプションを選択したままにしてください",
       "stopProcessing": "ほかのルールの処理を停止",
-      "stopProcessingHelp": "このルールが取引に一致した場合、一覧でこのルールより後にあるルールは、その取引についてはスキップされます。"
+      "stopProcessingHelp": "このルールが取引に一致した場合、一覧でこのルールより後にあるルールは、その取引についてはスキップされます。",
+      "window": {
+        "title": "有効期間",
+        "help": "このルールは、日付がこの期間内の取引にのみ適用されます（作成時・インポート時、およびルールのテスト・実行時）。日付を空にすると制限なしになります。",
+        "from": "開始日",
+        "to": "終了日",
+        "backwards": "終了日は開始日より前にできません",
+        "noLimit": "制限なし",
+        "words": "{from} から {to} までの日付の取引のみ"
+      }
     },
     "if": {
       "description": "アクションは一致する取引にのみ実行されます",
@@ -138,7 +147,8 @@
       "dayOfMonth": "月の日",
       "weekday": "曜日",
       "status": "状態",
-      "hasAttachment": "添付ファイルあり"
+      "hasAttachment": "添付ファイルあり",
+      "date": "日付"
     },
     "operators": {
       "eq": "である",
@@ -215,7 +225,33 @@
         "replace": "説明を置き換える",
         "append": "説明の後ろに追加",
         "prepend": "説明の前に追加"
-      }
+      },
+      "convertHelp": "一致した収入または支出が振替の片側になります。もう片側は、選択した口座(同じ通貨の口座)に作成されます。",
+      "direction": "方向",
+      "directionTo": "支出: お金が別の口座へ移ります",
+      "directionFrom": "収入: お金が別の口座から入ります",
+      "clearCategory": "カテゴリを消去",
+      "clearCategoryHelp": "振替にはカテゴリがありません。取引がすでに持っているカテゴリを残す場合はオフにします。",
+      "splitPayee": "取引の支払先(任意)",
+      "splitHint": "各パーツの金額は、上のパターンのキャプチャから取るか、残りになります。パーツの合計が取引の金額と一致しない場合、ルールはその取引を変更しません。",
+      "splitNoCaptures": "キャプチャがまだ定義されていません。上のパターンで名前を波括弧で囲む(例: PRINCIPAL: {example})と、ここで金額として使えます。",
+      "partAmountPlaceholder": "金額を選択...",
+      "partRest": "残り",
+      "partAccount": "口座",
+      "partPayee": "もう片側の支払先(任意)",
+      "partsLimit": "分割は最大 {max} パーツまでです。",
+      "guideTitle": "使い方",
+      "splitGuideHow": "「もし」で、取引先テキストまたは説明に対する条件を、演算子「パターンに一致する」で追加し、金額の位置に波括弧で名前を入れます。例: {first}。各名前は、パーツに選べる金額になります。「残り」も選べます。パーツの合計は取引金額と一致する必要があり、一致しない場合、ルールは取引を変更しません。パーツには、カテゴリまたは別の口座への振替を指定できます(振替ではその口座の残高が動きます)。",
+      "splitGuideExampleTitle": "例: ローンの返済",
+      "splitGuideBank": "銀行のテキスト: 元金: 1200.50 利息: 300.25 違約金: 0.00",
+      "splitGuidePattern": "パターン: *元金: {first} 利息: {second} 違約金*",
+      "splitGuidePart1": "パーツ1: {first} をローン口座への振替にする",
+      "splitGuidePart2": "パーツ2: {second} をカテゴリ「ローン: 利息」にする",
+      "splitGuideResult": "-1500.75 の場合の結果: -1200.50 がローン口座へ振り替えられ、-300.25 が利息の支出になります。",
+      "splitGuideTip": "ヒント: 照合済みの古い取引が変更されないよう、「有効期間」に開始日を設定し、保存前にテストパネルで確認してください。",
+      "convertGuide": "支出は選んだ口座への振替になり、収入はその口座からの振替になります。変更されるのは相手口座の残高だけです。ヒント: 古い取引が変更されないよう「有効期間」を使ってください。",
+      "splitGuideName1": "gankin",
+      "splitGuideName2": "risoku"
     },
     "actionTypes": {
       "add_tags": "タグを追加",
@@ -224,7 +260,9 @@
       "set_payee": "支払先を設定",
       "request_ai_review": "AIレビューを依頼",
       "set_payee_from_text": "テキストから支払先を設定",
-      "set_description": "説明を設定"
+      "set_description": "説明を設定",
+      "convert_to_transfer": "振替に変換",
+      "split": "取引を分割"
     },
     "save": {
       "button": "ルールを保存",
@@ -273,16 +311,17 @@
         "MAX_NODES": "条件とグループが多すぎます。上限は{maxNodes}件です。",
         "NO_ACTIONS": "アクションを少なくとも1つ追加してください。",
         "TOO_MANY_ACTIONS": "アクションが多すぎます。上限は{maxActions}件です。",
-        "DUPLICATE_ACTION": "1つのルールでAIレビューを依頼できるのは1回だけです。",
-        "REFERENCE_NOT_FOUND": "ここで選択した項目は存在しなくなりました。別の項目を選択してください。",
-        "NAME_REQUIRED": "ルールの名前を入力してください。",
-        "UNKNOWN": "この部分は無効です。",
+        "DUPLICATE_ACTION": "1 つのルールに指定できるのは、AI レビュー 1 つ、振替または分割 1 つ、残りを取る分割パーツ 1 つまでです。",
+        "CONFLICTING_ACTIONS": "振替または分割のアクションは「カテゴリを設定」と組み合わせられず、各パートにはカテゴリまたは口座のいずれかが設定されます。",
         "INVALID_CAPTURE": "キャプチャ名は小文字の英字と数字で、英字から始め、20文字以内にしてください。",
         "TOO_MANY_CAPTURES": "1つのパターンに含められるキャプチャは最大5つです。",
         "DUPLICATE_CAPTURE": "キャプチャ名は1つのルール内で1回だけ使えます。",
-        "UNKNOWN_CAPTURE": "このルールのどの条件でも定義されていないキャプチャがテキストで使われています。",
+        "UNKNOWN_CAPTURE": "このルールのどの条件も定義していないキャプチャを使用しています。",
         "LOOKS_LIKE_REGEX": "正規表現には対応していません。| \\ と [xy] のような短い角括弧クラスは通常の文字として扱われるため、正規表現として書いたパターンは意図したものに一致しません。複数のテキストのいずれかに一致させるには、「次のいずれか」のグループを追加し、テキストごとに条件を1つ入れてください。",
-        "PATTERN_WITHOUT_WILDCARD": "* がない場合、このパターンはテキスト全体と一致する必要があります。テキスト全体には「である」、一部には「を含む」を使うか、テキストを * で囲んでください。例: *コーヒー*"
+        "PATTERN_WITHOUT_WILDCARD": "* がない場合、このパターンはテキスト全体と一致する必要があります。テキスト全体には「である」、一部には「を含む」を使うか、テキストを * で囲んでください。例: *コーヒー*",
+        "REFERENCE_NOT_FOUND": "ここで選択した項目は存在しなくなりました。別の項目を選択してください。",
+        "NAME_REQUIRED": "ルールの名前を入力してください。",
+        "UNKNOWN": "この部分は無効です。"
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "他の所有者への振替で、その支払先はこのルールでは変更できません",
       "empty_render": "アクションのテキストが空になったため",
       "payee_not_found": "ルールが作った名前の支払先がなく、ルールは作成しないため",
-      "other": "ルールでは変更できません"
+      "other": "ルールでは変更できません",
+      "row_is_transfer_leg": "すでに振替です",
+      "row_has_splits": "すでに分割されています",
+      "row_is_void": "無効になっています",
+      "zero_amount": "金額がゼロです",
+      "transfer_direction_mismatch": "振替の方向が合いません: 支出は口座へ、収入は口座から入ります",
+      "transfer_same_account": "振替先の口座が取引自身の口座です",
+      "transfer_account_unavailable": "振替先の口座は利用できません(削除済み、またはあなたのものではありません)",
+      "transfer_currency_mismatch": "振替先の口座の通貨が異なります",
+      "split_amount_unparseable": "テキスト内の金額を数値として読み取れませんでした",
+      "split_sum_mismatch": "パーツの合計が金額と一致しません",
+      "split_too_few_parts": "ゼロの金額を除くとパーツが 2 つ未満になります"
     },
     "change": {
       "category": "カテゴリ: {before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "削除された項目",
       "payeeCreated": "{done, select, yes {新しい支払先を作成しました: {name}} other {新しい支払先を作成します: {name}}}",
       "description": "説明: {before} → {after}",
-      "descriptionSet": "説明を{value}に設定"
+      "descriptionSet": "説明を{value}に設定",
+      "transfer": "{done, select, yes {{account} との振替になりました} other {{account} との振替になります}}",
+      "split": "{done, select, yes {{count, plural, other {# 個}}のパーツに分割されました} other {{count, plural, other {# 個}}のパーツに分割されます}}",
+      "splitPart": "パーツ {number}: {amount} {target}",
+      "splitPartMemo": "、メモ「{memo}」",
+      "splitToTransfer": "{account} へ",
+      "splitToTransferPayee": "{account} へ、支払先 {payee}",
+      "splitToCategory": "{category} として",
+      "splitUncategorised": "カテゴリなし"
     },
     "filters": {
       "accounts": "口座",
@@ -471,7 +529,15 @@
       "set_payee": "支払先を {name} に設定{onlyIfEmpty, select, yes {（空の場合のみ）} other {}}",
       "request_ai_review": "AIレビューを依頼: {instruction}",
       "set_payee_from_text": "テキストから支払先を設定：「{template}」{createIfMissing, select, yes {（なければ作成）} other {}}{onlyIfEmpty, select, yes {（空の場合のみ）} other {}}",
-      "set_description": "説明を設定（{mode, select, append {後ろに追加} prepend {前に追加} other {置換}}）：「{template}」{onlyIfEmpty, select, yes {（空の場合のみ）} other {}}"
+      "set_description": "説明を設定（{mode, select, append {後ろに追加} prepend {前に追加} other {置換}}）：「{template}」{onlyIfEmpty, select, yes {（空の場合のみ）} other {}}",
+      "convert_to_transfer": "{account}{direction, select, from {から} other {へ}}の振替に変換",
+      "split": "次に分割: {parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} を {account} へ",
+      "category": "{amount} を {category} として",
+      "plain": "{amount}",
+      "rest": "残り"
     }
   }
 }

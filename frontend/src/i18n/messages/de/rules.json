@@ -90,7 +90,16 @@
       "imported": "Eine Transaktion wird importiert",
       "atLeastOne": "Mindestens eine Option muss ausgewählt bleiben",
       "stopProcessing": "Weitere Regeln nicht mehr verarbeiten",
-      "stopProcessingHelp": "Wenn diese Regel auf eine Transaktion zutrifft, werden die Regeln, die in der Liste danach stehen, für diese Transaktion übersprungen."
+      "stopProcessingHelp": "Wenn diese Regel auf eine Transaktion zutrifft, werden die Regeln, die in der Liste danach stehen, für diese Transaktion übersprungen.",
+      "window": {
+        "title": "Aktiv zwischen",
+        "help": "Die Regel gilt nur für Transaktionen, deren Datum in diesem Zeitraum liegt: beim Erstellen oder Importieren sowie beim Testen oder Ausführen der Regel. Ein leeres Datum bedeutet keine Begrenzung.",
+        "from": "Erstes Datum",
+        "to": "Letztes Datum",
+        "backwards": "Das letzte Datum darf nicht vor dem ersten Datum liegen",
+        "noLimit": "keine Begrenzung",
+        "words": "Nur für Transaktionen vom {from} bis {to}"
+      }
     },
     "if": {
       "description": "Die Aktionen laufen nur für Transaktionen, die zutreffen",
@@ -138,7 +147,8 @@
       "dayOfMonth": "Tag des Monats",
       "weekday": "Wochentag",
       "status": "Status",
-      "hasAttachment": "Hat einen Anhang"
+      "hasAttachment": "Hat einen Anhang",
+      "date": "Datum"
     },
     "operators": {
       "eq": "ist",
@@ -215,7 +225,33 @@
         "replace": "Beschreibung ersetzen",
         "append": "Nach der Beschreibung anfügen",
         "prepend": "Vor der Beschreibung einfügen"
-      }
+      },
+      "convertHelp": "Die passende Einnahme oder Ausgabe wird zu einer Seite einer Überweisung. Die andere Seite wird auf dem gewählten Konto angelegt, das dieselbe Währung haben muss.",
+      "direction": "Richtung",
+      "directionTo": "Ausgabe: Das Geld geht auf ein anderes Konto",
+      "directionFrom": "Einnahme: Das Geld kommt von einem anderen Konto",
+      "clearCategory": "Kategorie entfernen",
+      "clearCategoryHelp": "Eine Überweisung hat keine Kategorie. Deaktivieren, um die vorhandene Kategorie der Transaktion zu behalten.",
+      "splitPayee": "Zahlungsempfänger der Transaktion (optional)",
+      "splitHint": "Jeder Teil übernimmt seinen Betrag aus einer Erfassung in den Mustern oben oder nimmt den Rest. Die Teile müssen zusammen den Betrag der Transaktion ergeben, sonst lässt die Regel sie unverändert.",
+      "splitNoCaptures": "Es ist noch keine Erfassung definiert. Setzen Sie in einem Muster oben einen Namen in geschweifte Klammern, zum Beispiel PRINCIPAL: {example}, um ihn hier als Betrag zu verwenden.",
+      "partAmountPlaceholder": "Betrag wählen ...",
+      "partRest": "Der Rest",
+      "partAccount": "Konto",
+      "partPayee": "Zahlungsempfänger der anderen Seite (optional)",
+      "partsLimit": "Eine Aufteilung kann höchstens {max} Teile haben.",
+      "guideTitle": "So wird es verwendet",
+      "splitGuideHow": "Füge unter „Wenn“ eine Bedingung für den Zahlungsempfängertext oder die Beschreibung mit dem Operator „entspricht dem Muster“ hinzu und setze an die Stelle der Beträge Namen in geschweiften Klammern, zum Beispiel {first}. Jeder Name wird zu einem Betrag, den du für einen Teil auswählen kannst, oder wähle „Der Rest“. Die Teile müssen zusammen den Betrag der Transaktion ergeben, sonst lässt die Regel die Transaktion unverändert. Ein Teil kann eine Kategorie oder eine Überweisung auf ein anderes Konto sein (eine Überweisung ändert den Kontostand dieses Kontos).",
+      "splitGuideExampleTitle": "Beispiel: eine Darlehensrate",
+      "splitGuideBank": "Banktext: TILGUNG: 1200,50 ZINSEN: 300,25 GEBÜHR: 0,00",
+      "splitGuidePattern": "Muster: *TILGUNG: {first} ZINSEN: {second} GEBÜHR*",
+      "splitGuidePart1": "Teil 1: {first} als Überweisung auf das Darlehenskonto",
+      "splitGuidePart2": "Teil 2: {second} als Kategorie „Darlehen: Zinsen“",
+      "splitGuideResult": "Ergebnis für -1500,75: -1200,50 auf das Darlehenskonto überwiesen und -300,25 Zinsaufwand.",
+      "splitGuideTip": "Tipp: Lege unter „Aktiv zwischen“ ein Startdatum fest, damit ältere abgeglichene Transaktionen nicht geändert werden, und nutze vor dem Speichern den Bereich Test.",
+      "convertGuide": "Eine Ausgabe wird zu einer Überweisung auf das gewählte Konto, eine Einnahme zu einer Überweisung von diesem Konto. Nur der Kontostand des anderen Kontos ändert sich. Tipp: Nutze „Aktiv zwischen“, damit ältere Transaktionen nicht geändert werden.",
+      "splitGuideName1": "tilgung",
+      "splitGuideName2": "zinsen"
     },
     "actionTypes": {
       "add_tags": "Tags hinzufügen",
@@ -224,7 +260,9 @@
       "set_payee": "Zahlungsempfänger festlegen",
       "request_ai_review": "KI-Prüfung anfordern",
       "set_payee_from_text": "Zahlungsempfänger aus Text festlegen",
-      "set_description": "Beschreibung festlegen"
+      "set_description": "Beschreibung festlegen",
+      "convert_to_transfer": "In eine Überweisung umwandeln",
+      "split": "Transaktion aufteilen"
     },
     "save": {
       "button": "Regel speichern",
@@ -273,16 +311,17 @@
         "MAX_NODES": "Es gibt zu viele Bedingungen und Gruppen. Das Limit ist {maxNodes}.",
         "NO_ACTIONS": "Fügen Sie mindestens eine Aktion hinzu.",
         "TOO_MANY_ACTIONS": "Es gibt zu viele Aktionen. Das Limit ist {maxActions}.",
-        "DUPLICATE_ACTION": "Eine Regel kann nur einmal um eine KI-Prüfung bitten.",
-        "REFERENCE_NOT_FOUND": "Ein hier gewählter Eintrag existiert nicht mehr. Wählen Sie einen anderen.",
-        "NAME_REQUIRED": "Geben Sie einen Namen für die Regel ein.",
-        "UNKNOWN": "Dieser Teil ist ungültig.",
+        "DUPLICATE_ACTION": "Eine Regel kann nur eine KI-Prüfung, eine Überweisung oder Aufteilung und einen Aufteilungsteil für den Rest enthalten.",
+        "CONFLICTING_ACTIONS": "Eine Überweisungs- oder Aufteilungsaktion kann nicht mit „Kategorie festlegen“ kombiniert werden, und jeder ihrer Teile hat entweder eine Kategorie oder ein Konto.",
         "INVALID_CAPTURE": "Ein Erfassungsname besteht aus Kleinbuchstaben und Ziffern, beginnt mit einem Buchstaben und ist höchstens 20 Zeichen lang.",
         "TOO_MANY_CAPTURES": "Ein Muster darf höchstens 5 Erfassungen enthalten.",
         "DUPLICATE_CAPTURE": "Jeder Erfassungsname darf in einer Regel nur einmal vorkommen.",
-        "UNKNOWN_CAPTURE": "Der Text verwendet eine Erfassung, die keine Bedingung dieser Regel definiert.",
+        "UNKNOWN_CAPTURE": "Dies verwendet eine Erfassung, die keine Bedingung dieser Regel definiert.",
         "LOOKS_LIKE_REGEX": "Reguläre Ausdrücke werden nicht unterstützt: | \\ und kurze Klammerklassen wie [xy] gelten als gewöhnliche Zeichen, daher trifft ein als Regex geschriebenes Muster nie das Gemeinte. Um einen von mehreren Texten zu treffen, fügen Sie eine Gruppe „Eine dieser“ hinzu und legen Sie darin für jeden Text eine Bedingung an.",
-        "PATTERN_WITHOUT_WILDCARD": "Ohne * muss dieses Muster dem gesamten Text entsprechen. Verwenden Sie „ist“ für den ganzen Text, „enthält“ für einen Teil davon oder setzen Sie * um den Text, zum Beispiel *Kaffee*."
+        "PATTERN_WITHOUT_WILDCARD": "Ohne * muss dieses Muster dem gesamten Text entsprechen. Verwenden Sie „ist“ für den ganzen Text, „enthält“ für einen Teil davon oder setzen Sie * um den Text, zum Beispiel *Kaffee*.",
+        "REFERENCE_NOT_FOUND": "Ein hier gewählter Eintrag existiert nicht mehr. Wählen Sie einen anderen.",
+        "NAME_REQUIRED": "Geben Sie einen Namen für die Regel ein.",
+        "UNKNOWN": "Dieser Teil ist ungültig."
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "sie ist eine Überweisung an einen anderen Eigentümer, dessen Zahlungsempfänger diese Regel nicht ändern darf",
       "empty_render": "der Text einer Aktion ist dafür leer geworden",
       "payee_not_found": "kein Zahlungsempfänger hat den von der Regel gebildeten Namen, und sie legt keinen an",
-      "other": "die Regel kann sie nicht ändern"
+      "other": "die Regel kann sie nicht ändern",
+      "row_is_transfer_leg": "sie ist bereits eine Überweisung",
+      "row_has_splits": "sie ist bereits aufgeteilt",
+      "row_is_void": "sie ist ungültig (storniert)",
+      "zero_amount": "ihr Betrag ist null",
+      "transfer_direction_mismatch": "die Überweisung passt nicht zur Richtung: Eine Ausgabe geht auf ein Konto, eine Einnahme kommt von einem Konto",
+      "transfer_same_account": "das Überweisungskonto ist das Konto der Transaktion selbst",
+      "transfer_account_unavailable": "das Überweisungskonto ist nicht verfügbar (gelöscht oder nicht Ihres)",
+      "transfer_currency_mismatch": "das Überweisungskonto hat eine andere Währung",
+      "split_amount_unparseable": "ein Betrag in ihrem Text ließ sich nicht als Zahl lesen",
+      "split_sum_mismatch": "die Teile ergeben zusammen nicht ihren Betrag",
+      "split_too_few_parts": "nach dem Weglassen von Nullbeträgen bleiben weniger als zwei Teile übrig"
     },
     "change": {
       "category": "Kategorie: {before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "ein gelöschtes Element",
       "payeeCreated": "{done, select, yes {Ein neuer Zahlungsempfänger wurde angelegt: {name}} other {Ein neuer Zahlungsempfänger wird angelegt: {name}}}",
       "description": "Beschreibung: {before} → {after}",
-      "descriptionSet": "Beschreibung festlegen auf {value}"
+      "descriptionSet": "Beschreibung festlegen auf {value}",
+      "transfer": "{done, select, yes {Wurde zu einer Überweisung mit {account}} other {Wird zu einer Überweisung mit {account}}}",
+      "split": "{done, select, yes {Wurde in {count, plural, one {# Teil} other {# Teile}} aufgeteilt} other {Wird in {count, plural, one {# Teil} other {# Teile}} aufgeteilt}}",
+      "splitPart": "Teil {number}: {amount} {target}",
+      "splitPartMemo": ", Notiz „{memo}“",
+      "splitToTransfer": "auf {account}",
+      "splitToTransferPayee": "auf {account}, Zahlungsempfänger {payee}",
+      "splitToCategory": "als {category}",
+      "splitUncategorised": "ohne Kategorie"
     },
     "filters": {
       "accounts": "Konten",
@@ -471,7 +529,15 @@
       "set_payee": "Zahlungsempfänger festlegen auf {name}{onlyIfEmpty, select, yes { (nur wenn leer)} other {}}",
       "request_ai_review": "KI-Prüfung anfordern: {instruction}",
       "set_payee_from_text": "Zahlungsempfänger aus Text festlegen: „{template}“{createIfMissing, select, yes { (angelegt, falls nicht vorhanden)} other {}}{onlyIfEmpty, select, yes { (nur wenn leer)} other {}}",
-      "set_description": "Beschreibung festlegen ({mode, select, append {anfügen} prepend {voranstellen} other {ersetzen}}): „{template}“{onlyIfEmpty, select, yes { (nur wenn leer)} other {}}"
+      "set_description": "Beschreibung festlegen ({mode, select, append {anfügen} prepend {voranstellen} other {ersetzen}}): „{template}“{onlyIfEmpty, select, yes { (nur wenn leer)} other {}}",
+      "convert_to_transfer": "In eine Überweisung {direction, select, from {von} other {auf}} {account} umwandeln",
+      "split": "Aufteilen in: {parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} an {account}",
+      "category": "{amount} als {category}",
+      "plain": "{amount}",
+      "rest": "der Rest"
     }
   }
 }

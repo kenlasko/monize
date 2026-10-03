@@ -29,19 +29,20 @@ const RULE_FIELD_OPERATORS = (() => {
  * MCP description under the limit.
  */
 export const RULE_LANGUAGE_GUIDE =
-  'Rule JSON: condition is an OBJECT and actions an ARRAY, never strings. Example: condition {"all":[{"field":"description","op":"contains","value":"ASSECO"}]}, actions [{"type":"set_category","categoryName":"Work: Software"}]. ' +
-  "Groups: all or any (an array of conditions), optional not:true, at most 4 deep. Leaf keys exactly field, op, value (none for isEmpty). Operators by field: " +
+  'Rule JSON: condition is an OBJECT and actions an ARRAY, never strings. Example: condition {"all":[{"field":"description","op":"contains","value":"ASSECO"}]}, actions [{"type":"set_category","categoryName":"Groceries"}]. ' +
+  "Groups: all|any (an array), optional not:true, at most 4 deep. Leaf keys exactly field, op, value (none for isEmpty). Operators by field: " +
   RULE_FIELD_OPERATORS +
-  ". matches is a glob over the WHOLE text: * is a wildcard, {name} a capture; without * or {name} it is equality, so use eq, or contains / matches *text* for a part. No regex: | \\ and [xy] are matched literally (^ $ and longer [words] are fine); for alternatives use an any group of contains leaves. " +
+  ". matches is a glob over the WHOLE text (* wildcard, {name} capture); with neither it equals the text (use eq, or contains / matches *text*). No regex: | \\ and [xy] are literal (^ $ and longer [words] are fine); for alternatives use an any group. " +
   "actions (1-" +
   MAX_RULE_ACTIONS +
-  ", in order) are {type, ...}: set_category(categoryName, onlyIfEmpty?), set_payee(payeeName, onlyIfEmpty?), add_tags|remove_tags(tagNames:[...]), request_ai_review(instruction), set_payee_from_text(template, createIfMissing?, onlyIfEmpty?), set_description(template, mode?: replace|append|prepend, onlyIfEmpty?). " +
-  "Test before create: conditionMatchedCount 0 means the rule is probably wrong; matchedCount 0 with conditionMatchedCount > 0 means nothing would change (not an error).";
+  ', in order) are {type, ...}: set_category(categoryName, onlyIfEmpty?), set_payee(payeeName, onlyIfEmpty?), add_tags|remove_tags(tagNames:[...]), request_ai_review(instruction), set_payee_from_text(template, createIfMissing?, onlyIfEmpty?), set_description(template, mode?: replace|append|prepend, onlyIfEmpty?), convert_to_transfer (see actions), split(payeeName?, parts 2-10: {amount:"{capture}"|"rest", categoryName|transferTo, payeeName?, description?}). ' +
+  "activeFrom/activeTo (YYYY-MM-DD, inclusive) bound the transaction dates a rule applies to. " +
+  "Test before create: conditionMatchedCount 0 = condition probably wrong; matchedCount 0 with conditionMatchedCount > 0 = nothing to change.";
 
 /** The `condition` field: what a leaf's value looks like per field. */
 export const RULE_CONDITION_HELP =
-  "Names for account/payee/category ('Parent: Child')/tag fields; a list for in/notIn/hasAny/All/None; between [min,max]; amount signed, absAmount unsigned; hasSplits/hasAttachment true|false; type EXPENSE|INCOME|TRANSFER; weekday MON..SUN; dayOfMonth 1-31; status UNRECONCILED|CLEARED|RECONCILED|VOID.";
+  "Names for account/payee/category ('Parent: Child')/tag; a list for in/notIn/has*; between [min,max]; amount signed, absAmount unsigned; hasSplits/hasAttachment true|false; type EXPENSE|INCOME|TRANSFER; weekday MON..SUN; dayOfMonth 1-31; date YYYY-MM-DD; status UNRECONCILED|CLEARED|RECONCILED|VOID.";
 
 /** The `actions` field: what the guide leaves out. */
 export const RULE_ACTIONS_HELP =
-  "Array of action objects. Names, never ids. A template reads {name} (a matches capture), {payeeText} and {description}. Capture names are lowercase letters and digits (1-20 characters, starting with a letter), at most 5 per pattern. onlyIfEmpty defaults to true (false for set_description).";
+  "Names, never ids. Templates read {name} (a matches capture), {payeeText}, {description}. onlyIfEmpty defaults to true (false for set_description). convert_to_transfer(toAccountName|fromAccountName, clearCategory?, payeeName?); transfer and split parts: same currency, amounts add up.";

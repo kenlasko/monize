@@ -17,6 +17,8 @@ export function makeRule(overrides: Partial<TransactionRule> = {}): TransactionR
       { type: 'set_payee', payeeId: 'payee-1', onlyIfEmpty: true },
     ],
     stopProcessing: false,
+    activeFrom: null,
+    activeTo: null,
     revision: 1,
     createdAt: '2026-09-01T00:00:00.000Z',
     updatedAt: '2026-09-01T00:00:00.000Z',
@@ -78,6 +80,7 @@ export function makePreview(overrides: Partial<RuleRunPreview> = {}): RuleRunPre
     truncated: false,
     fingerprint: 'a'.repeat(64),
     labels: {
+      accounts: { [ACCOUNT_ID]: 'Chequing' },
       categories: { [COFFEE_ID]: 'Food: Coffee' },
       payees: { [PAYEE_ID]: 'Corner Cafe' },
       tags: { [TAG_ID]: 'Coffee run' },

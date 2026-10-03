@@ -310,6 +310,28 @@ describe("McpRulesTools", () => {
       expect(prep.prepareUpdate).not.toHaveBeenCalled();
     });
 
+    it("hands the active window to the preparation", async () => {
+      await call({
+        ...createArgs,
+        activeFrom: "2026-10-01",
+        activeTo: "2026-12-31",
+      });
+      expect(prep.prepareCreate).toHaveBeenCalledWith(
+        "u1",
+        expect.objectContaining({
+          activeFrom: "2026-10-01",
+          activeTo: "2026-12-31",
+        }),
+      );
+    });
+
+    it("refuses a window side that is not a real date, preparing nothing", async () => {
+      const result = await call({ ...createArgs, activeFrom: "2026-02-31" });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("activeFrom");
+      expect(prep.prepareCreate).not.toHaveBeenCalled();
+    });
+
     it("strips HTML from the name before it is prepared", async () => {
       await call({ ...createArgs, name: "<b>Biedronka</b>" });
       expect(prep.prepareCreate).toHaveBeenCalledWith(

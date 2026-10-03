@@ -90,7 +90,16 @@
       "imported": "Se importa una transacción",
       "atLeastOne": "Mantén al menos una opción seleccionada",
       "stopProcessing": "Dejar de procesar otras reglas",
-      "stopProcessingHelp": "Cuando esta regla coincide con una transacción, las reglas que van después en la lista se omiten para esa transacción."
+      "stopProcessingHelp": "Cuando esta regla coincide con una transacción, las reglas que van después en la lista se omiten para esa transacción.",
+      "window": {
+        "title": "Activa entre",
+        "help": "La regla solo se aplica a las transacciones con fecha dentro de este período: al crearlas o importarlas y al probar o ejecutar la regla. Deja una fecha vacía para no poner límite.",
+        "from": "Primera fecha",
+        "to": "Última fecha",
+        "backwards": "La última fecha no puede ser anterior a la primera",
+        "noLimit": "sin límite",
+        "words": "Solo para transacciones con fecha del {from} al {to}"
+      }
     },
     "if": {
       "description": "Las acciones se ejecutan solo para las transacciones que coinciden",
@@ -138,7 +147,8 @@
       "dayOfMonth": "Día del mes",
       "weekday": "Día de la semana",
       "status": "Estado",
-      "hasAttachment": "Tiene un adjunto"
+      "hasAttachment": "Tiene un adjunto",
+      "date": "Fecha"
     },
     "operators": {
       "eq": "es",
@@ -215,7 +225,33 @@
         "replace": "Reemplazar la descripción",
         "append": "Añadir después de la descripción",
         "prepend": "Añadir antes de la descripción"
-      }
+      },
+      "convertHelp": "El ingreso o gasto coincidente se convierte en un lado de una transferencia. El otro lado se crea en la cuenta que elijas, que debe usar la misma moneda.",
+      "direction": "Dirección",
+      "directionTo": "Gasto: el dinero va a otra cuenta",
+      "directionFrom": "Ingreso: el dinero viene de otra cuenta",
+      "clearCategory": "Quitar la categoría",
+      "clearCategoryHelp": "Una transferencia no tiene categoría. Desactívalo para conservar la categoría que ya tiene la transacción.",
+      "splitPayee": "Beneficiario de la transacción (opcional)",
+      "splitHint": "Cada parte toma su importe de una captura de los patrones anteriores, o toma el resto. Las partes deben sumar el importe de la transacción; si no, la regla la deja sin tocar.",
+      "splitNoCaptures": "Todavía no hay ninguna captura definida. Pon un nombre entre llaves en un patrón anterior, por ejemplo PRINCIPAL: {example}, para usarlo aquí como importe.",
+      "partAmountPlaceholder": "Elige el importe...",
+      "partRest": "El resto",
+      "partAccount": "Cuenta",
+      "partPayee": "Beneficiario del otro lado (opcional)",
+      "partsLimit": "Una división puede tener como máximo {max} partes.",
+      "guideTitle": "Cómo se usa",
+      "splitGuideHow": "En “Si”, añade una condición sobre el texto del beneficiario o la descripción con el operador “coincide con el patrón” y escribe nombres entre llaves donde estén los importes, por ejemplo {first}. Cada nombre se convierte en un importe que puedes elegir para una parte, o elige “El resto”. Las partes deben sumar el importe de la transacción; de lo contrario, la regla la deja sin cambios. Una parte puede ser una categoría o una transferencia a otra cuenta (una transferencia modifica el saldo de esa cuenta).",
+      "splitGuideExampleTitle": "Ejemplo: una cuota de préstamo",
+      "splitGuideBank": "Texto del banco: CAPITAL: 1200,50 INTERESES: 300,25 MORA: 0,00",
+      "splitGuidePattern": "Patrón: *CAPITAL: {first} INTERESES: {second} MORA*",
+      "splitGuidePart1": "Parte 1: {first} como transferencia a la cuenta del préstamo",
+      "splitGuidePart2": "Parte 2: {second} como categoría “Préstamos: Intereses”",
+      "splitGuideResult": "Resultado para -1500,75: -1200,50 transferidos a la cuenta del préstamo y -300,25 de gasto en intereses.",
+      "splitGuideTip": "Consejo: define una fecha de inicio en “Activa entre” para no cambiar transacciones antiguas ya conciliadas, y usa el panel Prueba antes de guardar.",
+      "convertGuide": "Un gasto se convierte en una transferencia a la cuenta elegida y un ingreso, en una transferencia desde ella. Solo cambia el saldo de la otra cuenta. Consejo: usa “Activa entre” para no cambiar transacciones antiguas.",
+      "splitGuideName1": "capital",
+      "splitGuideName2": "intereses"
     },
     "actionTypes": {
       "add_tags": "Añadir etiquetas",
@@ -224,7 +260,9 @@
       "set_payee": "Establecer el beneficiario",
       "request_ai_review": "Pedir una revisión de IA",
       "set_payee_from_text": "Establecer el beneficiario desde el texto",
-      "set_description": "Establecer la descripción"
+      "set_description": "Establecer la descripción",
+      "convert_to_transfer": "Convertir en transferencia",
+      "split": "Dividir la transacción"
     },
     "save": {
       "button": "Guardar regla",
@@ -273,16 +311,17 @@
         "MAX_NODES": "Hay demasiadas condiciones y grupos. El límite es {maxNodes}.",
         "NO_ACTIONS": "Añade al menos una acción.",
         "TOO_MANY_ACTIONS": "Hay demasiadas acciones. El límite es {maxActions}.",
-        "DUPLICATE_ACTION": "Una regla solo puede pedir una revisión de IA una vez.",
-        "REFERENCE_NOT_FOUND": "Un elemento elegido aquí ya no existe. Elige otro.",
-        "NAME_REQUIRED": "Introduce un nombre para la regla.",
-        "UNKNOWN": "Esta parte no es válida.",
+        "DUPLICATE_ACTION": "Una regla puede tener solo una revisión de IA, una transferencia o división, y una parte de la división que toma el resto.",
+        "CONFLICTING_ACTIONS": "Una acción de transferencia o de división no se puede combinar con «Establecer la categoría», y cada una de sus partes tiene una categoría o una cuenta.",
         "INVALID_CAPTURE": "El nombre de una captura usa letras minúsculas y dígitos, empieza por una letra y tiene como máximo 20 caracteres.",
         "TOO_MANY_CAPTURES": "Un patrón puede contener como máximo 5 capturas.",
         "DUPLICATE_CAPTURE": "Cada nombre de captura solo puede usarse una vez en una regla.",
-        "UNKNOWN_CAPTURE": "El texto usa una captura que ninguna condición de esta regla define.",
+        "UNKNOWN_CAPTURE": "Esto usa una captura que ninguna condición de esta regla define.",
         "LOOKS_LIKE_REGEX": "No se admiten las expresiones regulares: | \\ y las clases cortas entre corchetes como [xy] se tratan como caracteres normales, así que un patrón escrito como regex nunca coincide con lo que se pretendía. Para coincidir con uno de varios textos, añade un grupo «Cualquiera de estas» y pon en él una condición para cada texto.",
-        "PATTERN_WITHOUT_WILDCARD": "Sin * este patrón debe ser igual a todo el texto. Usa el operador «es» para el texto completo, «contiene» para una parte, o pon * alrededor del texto, por ejemplo *café*."
+        "PATTERN_WITHOUT_WILDCARD": "Sin * este patrón debe ser igual a todo el texto. Usa el operador «es» para el texto completo, «contiene» para una parte, o pon * alrededor del texto, por ejemplo *café*.",
+        "REFERENCE_NOT_FOUND": "Un elemento elegido aquí ya no existe. Elige otro.",
+        "NAME_REQUIRED": "Introduce un nombre para la regla.",
+        "UNKNOWN": "Esta parte no es válida."
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "es una transferencia a otro propietario, cuyo beneficiario esta regla no puede cambiar",
       "empty_render": "el texto de una acción quedó vacío para ella",
       "payee_not_found": "ningún beneficiario tiene el nombre que formó la regla, y esta no lo crea",
-      "other": "la regla no puede cambiarla"
+      "other": "la regla no puede cambiarla",
+      "row_is_transfer_leg": "ya es una transferencia",
+      "row_has_splits": "ya está dividida",
+      "row_is_void": "está anulada",
+      "zero_amount": "su importe es cero",
+      "transfer_direction_mismatch": "la transferencia va en sentido contrario: un gasto va a una cuenta, un ingreso viene de una",
+      "transfer_same_account": "la cuenta de la transferencia es la propia cuenta de la transacción",
+      "transfer_account_unavailable": "la cuenta de la transferencia no está disponible (se eliminó o no es tuya)",
+      "transfer_currency_mismatch": "la cuenta de la transferencia usa otra moneda",
+      "split_amount_unparseable": "un importe de su texto no se pudo leer como número",
+      "split_sum_mismatch": "las partes no suman su importe",
+      "split_too_few_parts": "quedan menos de dos partes al descartar los importes cero"
     },
     "change": {
       "category": "Categoría: {before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "un elemento eliminado",
       "payeeCreated": "{done, select, yes {Se creó un beneficiario nuevo: {name}} other {Se creará un beneficiario nuevo: {name}}}",
       "description": "Descripción: {before} → {after}",
-      "descriptionSet": "Establecer la descripción en {value}"
+      "descriptionSet": "Establecer la descripción en {value}",
+      "transfer": "{done, select, yes {Se convirtió en una transferencia con {account}} other {Se convertirá en una transferencia con {account}}}",
+      "split": "{done, select, yes {Se dividió en {count, plural, one {# parte} other {# partes}}} other {Se dividirá en {count, plural, one {# parte} other {# partes}}}}",
+      "splitPart": "Parte {number}: {amount} {target}",
+      "splitPartMemo": ", nota «{memo}»",
+      "splitToTransfer": "a {account}",
+      "splitToTransferPayee": "a {account}, beneficiario {payee}",
+      "splitToCategory": "como {category}",
+      "splitUncategorised": "sin categoría"
     },
     "filters": {
       "accounts": "Cuentas",
@@ -471,7 +529,15 @@
       "set_payee": "Establecer el beneficiario en {name}{onlyIfEmpty, select, yes { (solo si está vacío)} other {}}",
       "request_ai_review": "Pedir una revisión de IA: {instruction}",
       "set_payee_from_text": "Establecer el beneficiario desde el texto: «{template}»{createIfMissing, select, yes { (se crea si no existe)} other {}}{onlyIfEmpty, select, yes { (solo si está vacío)} other {}}",
-      "set_description": "Establecer la descripción ({mode, select, append {añadir al final} prepend {añadir al inicio} other {reemplazar}}): «{template}»{onlyIfEmpty, select, yes { (solo si está vacío)} other {}}"
+      "set_description": "Establecer la descripción ({mode, select, append {añadir al final} prepend {añadir al inicio} other {reemplazar}}): «{template}»{onlyIfEmpty, select, yes { (solo si está vacío)} other {}}",
+      "convert_to_transfer": "Convertir en transferencia {direction, select, from {desde} other {a}} {account}",
+      "split": "Dividir en: {parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} a {account}",
+      "category": "{amount} como {category}",
+      "plain": "{amount}",
+      "rest": "el resto"
     }
   }
 }

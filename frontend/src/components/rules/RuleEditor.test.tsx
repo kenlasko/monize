@@ -217,6 +217,35 @@ describe('RuleEditor: a new rule', () => {
     });
   });
 
+  it('sends the active window the dates were typed into, and nothing for a side left empty', async () => {
+    mocks.rules.create.mockResolvedValue(makeRule({ id: 'x' }));
+    await renderEditor();
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Mortgage' } });
+    const from = screen.getByLabelText('First date');
+    fireEvent.change(from, { target: { value: '2026-10-01' } });
+    fireEvent.blur(from);
+    addTagAction(0, 'Work');
+
+    await save();
+
+    expect(mocks.rules.create).toHaveBeenCalledWith(
+      expect.objectContaining({ activeFrom: '2026-10-01' }),
+    );
+  });
+
+  it('says so when the last date is before the first', async () => {
+    await renderEditor();
+    for (const [label, value] of [
+      ['First date', '2026-12-31'],
+      ['Last date', '2026-10-01'],
+    ]) {
+      const input = screen.getByLabelText(label);
+      fireEvent.change(input, { target: { value } });
+      fireEvent.blur(input);
+    }
+    expect(screen.getByText('The last date must not be before the first date')).toBeInTheDocument();
+  });
+
   it('keeps at least one trigger checked', async () => {
     await renderEditor();
     fireEvent.click(screen.getByLabelText('A transaction is created'));
@@ -307,7 +336,7 @@ describe('RuleEditor: a new rule', () => {
 
     expect(within(card('Condition', 0)).getByText('An item chosen here no longer exists. Choose another.')).toBeInTheDocument();
     expect(within(card('Condition', 1)).getByText('The text is too long.')).toBeInTheDocument();
-    expect(within(card('Action', 0)).getByText('A rule can ask for an AI review only once.')).toBeInTheDocument();
+    expect(within(card('Action', 0)).getByText('A rule can have only one AI review, one transfer or split, and one split part that takes the rest.')).toBeInTheDocument();
     expect(within(card('Action', 1)).getByText('Choose an item from the list.')).toBeInTheDocument();
     expect(within(screen.getByRole('region', { name: 'Then' })).getByText(/There are too many actions/)).toBeInTheDocument();
     // What names no card is said at the top, in words.
@@ -690,5 +719,67 @@ describe('RuleEditor: the pickers\' lists', () => {
     expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
     await act(async () => release(makeRule({ id: 'rule-1' })));
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
+  });
+});
+
+describe('RuleEditor: a date range and the active window', () => {
+  const dated = makeRule({
+    id: 'rule-d',
+    name: 'October',
+    revision: 3,
+    condition: { all: [{ field: 'date', op: 'between', value: ['2026-10-01', '2026-10-31'] }] },
+    actions: [{ type: 'add_tags', tagIds: [TAG_ID] }],
+  });
+  const typeDate = (label: string, value: string) => {
+    const input = screen.getByLabelText(label);
+    fireEvent.change(input, { target: { value } });
+    fireEvent.blur(input);
+  };
+
+  it('saves and tests a stored rule whose condition is a complete date range', async () => {
+    mocks.rules.getById.mockResolvedValue(dated);
+    mocks.rules.update.mockResolvedValue({ ...dated, name: 'October 2026', revision: 4 });
+    mocks.rules.previewDraft.mockResolvedValue(makePreview());
+    await renderEditor('rule-d');
+
+    expect(screen.getByRole('button', { name: 'Test rule' })).toBeEnabled();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Test rule' }));
+    });
+    expect(mocks.rules.previewDraft).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'October 2026' } });
+    await save();
+    expect(mocks.rules.update).toHaveBeenCalledTimes(1);
+    expect(mocks.rules.update.mock.calls[0][1].condition).toEqual(dated.condition);
+  });
+
+  it('sends the draft window with the test, and marks the result out of date when the window moves', async () => {
+    mocks.rules.previewDraft.mockResolvedValue(makePreview());
+    await renderEditor();
+    typeDate('First date', '2026-10-01');
+    addTagAction(0, 'Work');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Test rule' }));
+    });
+    const sent = mocks.rules.previewDraft.mock.calls[0][0];
+    expect(sent.activeFrom).toBe('2026-10-01');
+    // An open side is left out rather than sent as null.
+    expect(sent).not.toHaveProperty('activeTo');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+
+    typeDate('Last date', '2026-10-31');
+    expect(screen.getByRole('status')).toHaveTextContent('The rule or the filters changed since this result.');
+  });
+
+  it('sends null to clear a side the stored rule had, and nothing for the side it left open', async () => {
+    mocks.rules.getById.mockResolvedValue({ ...dated, activeFrom: '2026-10-01' });
+    mocks.rules.update.mockResolvedValue({ ...dated, revision: 4 });
+    await renderEditor('rule-d');
+    typeDate('First date', '');
+    await save();
+    const payload = mocks.rules.update.mock.calls[0][1];
+    expect(payload.activeFrom).toBeNull();
+    expect(payload).not.toHaveProperty('activeTo');
   });
 });

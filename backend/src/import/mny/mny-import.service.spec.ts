@@ -1007,6 +1007,44 @@ describe("MnyImportService", () => {
       );
     });
 
+    it("hands the accounts a structural rule action moved to the post-commit recompute", async () => {
+      rulesApplier.loadRulesFor.mockResolvedValue([{ id: "rule-1" }]);
+      const base = parsedFile();
+      parser.parse.mockReturnValue({
+        ...base,
+        transactions: {
+          ...base.transactions,
+          transactions: [mapped("tx-1")],
+        },
+      });
+      rulesApplier.applyToNew.mockResolvedValue([
+        {
+          transactionId: "tx-1",
+          effects: { trace: [] },
+          affectedAccountIds: ["loan-account"],
+        },
+      ]);
+      mockedWriteTransactions.mockResolvedValue({
+        transactionsCreated: 1,
+        splitsCreated: 0,
+        linksApplied: 0,
+        affectedAccountIds: new Set(["account-1"]),
+        writtenTransactionIds: new Set(["tx-1"]),
+        writtenSplitIds: new Set<string>(),
+      });
+
+      await service.runImport(
+        "user-1",
+        "staged-1",
+        DEFAULT_MNY_IMPORT_OPTIONS,
+        context,
+      );
+
+      const affected = postProcessing.run.mock.calls[0][2] as Set<string>;
+      expect(affected.has("loan-account")).toBe(true);
+      expect(affected.has("account-1")).toBe(true);
+    });
+
     it("does nothing when no row was written", async () => {
       await service.runImport(
         "user-1",

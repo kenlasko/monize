@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "不支援復原實體類型：{{ entityType }}",
     "unsupportedTransactionAction": "不支援的交易操作：{{ action }}",
     "undoTransactionGone": "無法復原：交易已不存在",
+    "redoCreateWithLegs": "此交易在其他帳戶中建立了項目,因此無法重做。請改為重新建立該交易",
     "undoAccountGone": "無法復原：科目已不存在",
     "unsupportedTransferAction": "不支援的轉帳操作：{{ action }}",
     "unsupportedInvestmentAction": "不支援的投資操作：{{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "自預覽以來，交易或規則已變更。請查看新的預覽後重新執行",
     "ruleInvalid": "此規則無效，無法執行。請先開啟並修復它",
     "dateRangeInvalid": "開始日期不能晚於結束日期",
-    "runTooLarge": "本次執行變更的交易過多，無法一步復原。請縮小帳戶或日期範圍後再試一次"
+    "activeWindowInvalid": "生效起始日期不能晚於生效結束日期",
+    "runTooLarge": "本次執行變更的交易過多，無法一步復原。請縮小帳戶或日期範圍後再試一次",
+    "runRedoStructural": "此次執行變更了交易結構(轉帳或拆分),因此無法重做。請改為重新執行該規則",
+    "runUndoStructureChanged": "此次執行重組的某筆交易之後已被變更(其拆分列或轉帳),因此無法安全地復原該次執行。請手動還原"
   },
   "transactions": {
     "invalidStatus": "無效的交易狀態：{{ status }}",
     "reconciledLocked": "此交易已對帳並遭鎖定。要修改請在設定中關閉「鎖定已對帳交易」。",
+    "convertToTransferRefused": "此交易已無法轉換為轉帳。請檢查後重新執行規則",
     "pagePositiveInteger": "page 必須是正整數",
     "limitPositiveInteger": "limit 必須是正整數",
     "limitMax200": "limit 不得超過 200",

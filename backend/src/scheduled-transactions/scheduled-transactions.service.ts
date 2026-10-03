@@ -2674,6 +2674,12 @@ export class ScheduledTransactionsService {
        * whatever the schedule's `next_due_date` has advanced to since.
        */
       expectedDueDate?: string;
+      /**
+       * The poster is a delegate acting as the owner (see
+       * `TransactionsService.create`): the owner's structural rules are
+       * skipped on the posted row. Set from the verified identity only.
+       */
+      actorIsNotOwner?: boolean;
     } = {},
   ): Promise<ScheduledTransaction | null> {
     const scheduled = await this.findOne(userId, id);
@@ -3413,7 +3419,13 @@ export class ScheduledTransactionsService {
           m,
         );
       } else if (!skipFinancialWrite) {
-        await this.transactionsService.create(userId, transactionPayload);
+        await this.transactionsService.create(
+          userId,
+          transactionPayload,
+          ...(options.actorIsNotOwner === true
+            ? [{ actorIsNotOwner: true }]
+            : []),
+        );
       } else {
         this.logger.log(
           `Scheduled loan payment ${id} posted no money: the loan owes nothing ` +

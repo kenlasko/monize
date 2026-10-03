@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "Annullamento non supportato per il tipo di entità: {{ entityType }}",
     "unsupportedTransactionAction": "Azione transazione non supportata: {{ action }}",
     "undoTransactionGone": "Impossibile annullare: la transazione non esiste più",
+    "redoCreateWithLegs": "Questa transazione ha creato voci in altri conti, quindi non può essere ripristinata. Creala di nuovo",
     "undoAccountGone": "Impossibile annullare: il conto non esiste più",
     "unsupportedTransferAction": "Azione trasferimento non supportata: {{ action }}",
     "unsupportedInvestmentAction": "Azione investimento non supportata: {{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "Le transazioni o la regola sono cambiate dopo l'anteprima. Controlla la nuova anteprima ed esegui di nuovo",
     "ruleInvalid": "Questa regola non è valida e non può essere eseguita. Aprila e correggila prima",
     "dateRangeInvalid": "La data di inizio non deve essere successiva alla data di fine",
-    "runTooLarge": "Questa esecuzione modifica troppe transazioni per essere annullata in un solo passaggio. Restringi i conti o le date e riprova"
+    "activeWindowInvalid": "La prima data attiva non deve essere successiva all'ultima data attiva",
+    "runTooLarge": "Questa esecuzione modifica troppe transazioni per essere annullata in un solo passaggio. Restringi i conti o le date e riprova",
+    "runRedoStructural": "Questa esecuzione ha ristrutturato delle transazioni (trasferimenti o suddivisioni), quindi non può essere ripristinata. Esegui di nuovo la regola",
+    "runUndoStructureChanged": "Una transazione ristrutturata da questa esecuzione è stata modificata da allora (le sue righe di suddivisione o il suo trasferimento), quindi l'esecuzione non può essere annullata in sicurezza. Ripristinala manualmente"
   },
   "transactions": {
     "invalidStatus": "Stato transazione non valido: {{ status }}",
     "reconciledLocked": "Questa transazione è riconciliata e bloccata. Disattiva «Blocca le transazioni riconciliate» nelle Impostazioni per modificarla.",
+    "convertToTransferRefused": "Questa transazione non può più essere convertita in un trasferimento. Controllala ed esegui di nuovo la regola",
     "pagePositiveInteger": "page deve essere un numero intero positivo",
     "limitPositiveInteger": "limit deve essere un numero intero positivo",
     "limitMax200": "limit non deve superare 200",

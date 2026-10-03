@@ -12,13 +12,21 @@ import { draftToPayload, type RuleDraft } from '@/lib/rule-draft';
 import {
   MAX_RULE_DESCRIPTION_TEMPLATE_LENGTH,
   MAX_RULE_PAYEE_TEMPLATE_LENGTH,
+  MAX_RULE_SPLIT_DESCRIPTION_LENGTH,
   MAX_RULE_TAG_IDS,
   MAX_RULE_VALUE_LIST,
+  RULE_CONDITION_FIELDS,
   RULE_OPERATOR_SHAPES,
   RULE_VALIDATION_CODES,
   type RuleErrorCode,
 } from '@/lib/rule-fields';
-import { actionKey } from '@/lib/rule-actions';
+import {
+  SPLIT_REST,
+  actionKey,
+  captureOfAmount,
+  isStructuralActionType,
+  type EditorAction,
+} from '@/lib/rule-actions';
 import { checkTemplate, scanCaptures } from '@/lib/rule-captures';
 import { conditionKey, type EditorGroup, type EditorNode } from '@/lib/rule-tree';
 
@@ -81,6 +89,12 @@ export const NAME_KEY = 'name';
 export interface PlacedErrors {
   /** Codes per card key, each once, in the order reported. */
   readonly byKey: Readonly<Record<string, readonly string[]>>;
+  /**
+   * Codes per full server path (`actions[0].parts[1].amount`), each once: the
+   * structural actions show an error at the field it names
+   * (`structuralFieldErrors`), where `byKey` only knows the card.
+   */
+  readonly byPath: Readonly<Record<string, readonly string[]>>;
   /** Entries whose path names no card; shown at the top. */
   readonly unplaced: readonly RuleErrorEntry[];
 }
@@ -103,8 +117,12 @@ export function keyForPath(path: string): string | null {
 
 export function placeErrors(entries: readonly RuleErrorEntry[]): PlacedErrors {
   const byKey: Record<string, string[]> = {};
+  const byPath: Record<string, string[]> = {};
   const unplaced: RuleErrorEntry[] = [];
   for (const entry of entries) {
+    const atPath = byPath[entry.path] ?? [];
+    if (!atPath.includes(entry.code)) atPath.push(entry.code);
+    byPath[entry.path] = atPath;
     const key = keyForPath(entry.path);
     if (key === null) {
       unplaced.push(entry);
@@ -114,10 +132,42 @@ export function placeErrors(entries: readonly RuleErrorEntry[]): PlacedErrors {
     if (!codes.includes(entry.code)) codes.push(entry.code);
     byKey[key] = codes;
   }
-  return { byKey, unplaced };
+  return { byKey, byPath, unplaced };
 }
 
-export const NO_ERRORS: PlacedErrors = { byKey: {}, unplaced: [] };
+export const NO_ERRORS: PlacedErrors = { byKey: {}, byPath: {}, unplaced: [] };
+
+/**
+ * What a structural action card shows where: `shell` is for the card as a
+ * whole (the codes at `actions[i]` itself and any path the card has no field
+ * for), `fields` is keyed by the path under the action (`toAccountId`,
+ * `parts`, `parts[1]`, `parts[1].amount`).
+ */
+export interface StructuralFieldErrors {
+  readonly shell: readonly string[];
+  readonly fields: Readonly<Record<string, readonly string[]>>;
+}
+
+const FIELD_PATH = /^(?:toAccountId|fromAccountId|payeeId|parts|parts\[\d+\](?:\.(?:amount|categoryId|transferAccountId|payeeId|description))?)$/;
+
+/** The entries under `actions[index]`, split into the card's own list and its fields. */
+export function structuralFieldErrors(placed: PlacedErrors, index: number): StructuralFieldErrors {
+  const own = `actions[${index}]`;
+  const shell: string[] = [];
+  const fields: Record<string, string[]> = {};
+  const addTo = (list: string[], codes: readonly string[]) => {
+    for (const code of codes) if (!list.includes(code)) list.push(code);
+  };
+  for (const [path, codes] of Object.entries(placed.byPath)) {
+    if (path === own) addTo(shell, codes);
+    else if (path.startsWith(`${own}.`) || path.startsWith(`${own}[`)) {
+      const rest = path.slice(own.length).replace(/^\./, '');
+      if (FIELD_PATH.test(rest)) addTo((fields[rest] ??= []), codes);
+      else addTo(shell, codes);
+    }
+  }
+  return { shell, fields };
+}
 
 // ---- what the reader has not filled in yet -------------------------------
 
@@ -133,7 +183,12 @@ function conditionEntries(node: EditorNode, path: string, out: RuleErrorEntry[])
     if (!Array.isArray(value) || value.length === 0) out.push({ path, code: 'ARRAY_EMPTY' });
     else if (value.length > MAX_RULE_VALUE_LIST) out.push({ path, code: 'ARRAY_TOO_LARGE' });
   } else if (shape === 'range') {
-    const complete = Array.isArray(value) && value.length === 2 && value.every((v) => typeof v === 'number');
+    // A date range is a pair of `YYYY-MM-DD` texts (an unset end is ''); every other range is a pair of numbers.
+    const isDate = RULE_CONDITION_FIELDS[node.field].kind === 'date';
+    const complete =
+      Array.isArray(value) &&
+      value.length === 2 &&
+      value.every((v) => (isDate ? typeof v === 'string' && v !== '' : typeof v === 'number'));
     if (!complete) out.push({ path, code: 'VALUE_REQUIRED' });
   } else if (value === undefined || value === '') {
     out.push({ path, code: 'VALUE_REQUIRED' });
@@ -192,6 +247,7 @@ export function draftGaps(draft: RuleDraft, loaded?: RuleDraft | null): RuleErro
     }
   }
   if (draft.actions.length === 0) out.push({ path: ACTIONS_LIST_KEY, code: 'NO_ACTIONS' });
+  out.push(...structuralGaps(draft.actions, scan.names));
   draft.actions.forEach((action, i) => {
     const path = `actions[${i}]`;
     if ((action.type === 'add_tags' || action.type === 'remove_tags') && action.tagIds.length === 0) {
@@ -207,6 +263,48 @@ export function draftGaps(draft: RuleDraft, loaded?: RuleDraft | null): RuleErro
     } else if (action.type === 'set_payee_from_text' || action.type === 'set_description') {
       out.push(...templateEntries(path, action.type, action.template, scan.names));
     }
+  });
+  return out;
+}
+
+/**
+ * The gaps of the two structural actions: an account or an amount not chosen
+ * yet, a capture the patterns do not define, a second `rest`, and the two
+ * combinations the server refuses (`DUPLICATE_ACTION`, `CONFLICTING_ACTIONS`).
+ * Paths and codes are the server's (`rule-validation.ts`).
+ */
+function structuralGaps(actions: readonly EditorAction[], captures: readonly string[]): RuleErrorEntry[] {
+  const out: RuleErrorEntry[] = [];
+  const setsCategory = actions.some((a) => a.type === 'set_category');
+  let seen = 0;
+  actions.forEach((action, i) => {
+    if (!isStructuralActionType(action.type)) return;
+    const path = `actions[${i}]`;
+    if (++seen > 1) out.push({ path, code: 'DUPLICATE_ACTION' });
+    else if (setsCategory) out.push({ path, code: 'CONFLICTING_ACTIONS' });
+    if (action.type === 'convert_to_transfer') {
+      if (action.accountId === '') {
+        out.push({ path: `${path}.${action.direction === 'from' ? 'fromAccountId' : 'toAccountId'}`, code: 'VALUE_REQUIRED' });
+      }
+      return;
+    }
+    if (action.type !== 'split') return;
+    let rests = 0;
+    action.parts.forEach((part, j) => {
+      const at = `${path}.parts[${j}]`;
+      const name = captureOfAmount(part.amount);
+      if (part.amount === '') out.push({ path: `${at}.amount`, code: 'VALUE_REQUIRED' });
+      else if (part.amount === SPLIT_REST) {
+        if (++rests > 1) out.push({ path: `${at}.amount`, code: 'DUPLICATE_ACTION' });
+      } else if (name === null) out.push({ path: `${at}.amount`, code: 'INVALID_SHAPE' });
+      else if (!captures.includes(name)) out.push({ path: `${at}.amount`, code: 'UNKNOWN_CAPTURE' });
+      if (part.kind === 'transfer' && part.transferAccountId === '') {
+        out.push({ path: `${at}.transferAccountId`, code: 'VALUE_REQUIRED' });
+      }
+      const length = part.description.trim().length;
+      if (part.description !== '' && length === 0) out.push({ path: `${at}.description`, code: 'VALUE_EMPTY' });
+      else if (length > MAX_RULE_SPLIT_DESCRIPTION_LENGTH) out.push({ path: `${at}.description`, code: 'VALUE_TOO_LONG' });
+    });
   });
   return out;
 }

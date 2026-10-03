@@ -295,7 +295,31 @@ describe("ScheduledTransactionsController", () => {
       const result = await controller.post(mockReq, "st-1", dto as any);
 
       expect(result).toEqual(expected);
-      expect(mockService.post).toHaveBeenCalledWith("user-1", "st-1", dto);
+      expect(mockService.post).toHaveBeenCalledWith("user-1", "st-1", dto, {
+        actorIsNotOwner: false,
+      });
+    });
+
+    it("tells the service the poster is not the owner when a delegate is acting", async () => {
+      const dto = { date: "2024-01-15" };
+      mockService.post.mockResolvedValue({ id: "tx-1" });
+
+      await controller.post(
+        {
+          user: {
+            id: "owner-1",
+            realUserId: "delegate-1",
+            isActing: true,
+            delegationId: "d1",
+          },
+        },
+        "st-1",
+        dto as any,
+      );
+
+      expect(mockService.post).toHaveBeenCalledWith("owner-1", "st-1", dto, {
+        actorIsNotOwner: true,
+      });
     });
   });
 

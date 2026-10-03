@@ -22,6 +22,10 @@ export class TransactionRuleResponseDto {
   condition: RuleConditionNode;
   actions: RuleAction[];
   stopProcessing: boolean;
+  @ApiProperty({ type: String, nullable: true, example: "2026-10-01" })
+  activeFrom: string | null;
+  @ApiProperty({ type: String, nullable: true, example: "2026-12-31" })
+  activeTo: string | null;
   revision: number;
   createdAt: Date;
   updatedAt: Date;

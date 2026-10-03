@@ -9,6 +9,7 @@ import {
   MAX_RULE_ACTIONS,
   MAX_RULE_CONDITION_DEPTH,
   MAX_RULE_CONDITION_NODES,
+  MAX_RULE_SPLIT_PARTS,
 } from "./rule-validation";
 
 /**
@@ -55,27 +56,43 @@ const KIND_OF_VALUE: Readonly<Record<string, RuleNameKind>> = {
   tagIds: "tags",
 };
 
-/** Where an action keeps the name(s) of what it points at, and the id key it replaces. */
-const ACTION_NAME_KEYS: Readonly<
-  Record<string, { kind: RuleNameKind; nameKey: string; idKey: string }>
-> = {
-  set_category: {
-    kind: "categories",
-    nameKey: "categoryName",
-    idKey: "categoryId",
-  },
-  set_payee: {
-    kind: "payees",
-    nameKey: "payeeName",
-    idKey: "payeeId",
-  },
-  add_tags: { kind: "tags", nameKey: "tagNames", idKey: "tagIds" },
-  remove_tags: {
-    kind: "tags",
-    nameKey: "tagNames",
-    idKey: "tagIds",
-  },
+/** Where an action keeps a name (or names) and the id key it replaces. */
+interface ActionNameKey {
+  readonly kind: RuleNameKind;
+  readonly nameKey: string;
+  readonly idKey: string;
+}
+
+const PAYEE_NAME: ActionNameKey = {
+  kind: "payees",
+  nameKey: "payeeName",
+  idKey: "payeeId",
 };
+
+const ACTION_NAME_KEYS: Readonly<Record<string, readonly ActionNameKey[]>> = {
+  set_category: [
+    { kind: "categories", nameKey: "categoryName", idKey: "categoryId" },
+  ],
+  set_payee: [PAYEE_NAME],
+  add_tags: [{ kind: "tags", nameKey: "tagNames", idKey: "tagIds" }],
+  remove_tags: [{ kind: "tags", nameKey: "tagNames", idKey: "tagIds" }],
+  convert_to_transfer: [
+    { kind: "accounts", nameKey: "toAccountName", idKey: "toAccountId" },
+    { kind: "accounts", nameKey: "fromAccountName", idKey: "fromAccountId" },
+    PAYEE_NAME,
+  ],
+  split: [PAYEE_NAME],
+};
+
+/** The names of one `split` part: its category, the account it transfers to, its payee. */
+const SPLIT_PART_NAME_KEYS: readonly ActionNameKey[] = [
+  { kind: "categories", nameKey: "categoryName", idKey: "categoryId" },
+  { kind: "accounts", nameKey: "transferTo", idKey: "transferAccountId" },
+  PAYEE_NAME,
+];
+
+/** The most parts read for names; the validator refuses more (`MAX_RULE_SPLIT_PARTS`). */
+const MAX_NAMED_SPLIT_PARTS = MAX_RULE_SPLIT_PARTS;
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -84,6 +101,56 @@ const stringsOf = (value: unknown): string[] =>
   (Array.isArray(value) ? value : [value]).filter(
     (v): v is string => typeof v === "string",
   );
+
+/** The name keys of an action, or none for a type this file does not map. */
+const nameKeysOf = (action: unknown): readonly ActionNameKey[] =>
+  isRecord(action) &&
+  Object.prototype.hasOwnProperty.call(ACTION_NAME_KEYS, String(action.type))
+    ? ACTION_NAME_KEYS[String(action.type)]
+    : [];
+
+/** The `split` parts of an action as far as they can be read (bounded; a bad shape is the validator's). */
+const splitPartsOf = (action: unknown): unknown[] =>
+  isRecord(action) && action.type === "split" && Array.isArray(action.parts)
+    ? action.parts.slice(0, MAX_NAMED_SPLIT_PARTS)
+    : [];
+
+/**
+ * Swap each present name key of `record` for its id key, converting the value
+ * with `convert`. A key the record does not have is left alone.
+ */
+function nameKeysToIds(
+  record: Record<string, unknown>,
+  keys: readonly ActionNameKey[],
+  path: string,
+  convert: (kind: RuleNameKind, value: unknown, at: string) => unknown,
+): Record<string, unknown> {
+  let out = record;
+  for (const spec of keys) {
+    if (out[spec.nameKey] === undefined) continue;
+    const { [spec.nameKey]: names, ...rest } = out;
+    out = {
+      ...rest,
+      [spec.idKey]: convert(spec.kind, names, `${path}.${spec.nameKey}`),
+    };
+  }
+  return out;
+}
+
+/** The inverse: swap each present id key for its name key. */
+function idKeysToNames(
+  record: Record<string, unknown>,
+  keys: readonly ActionNameKey[],
+  convert: (kind: RuleNameKind, value: unknown) => unknown,
+): Record<string, unknown> {
+  let out = record;
+  for (const spec of keys) {
+    if (out[spec.idKey] === undefined) continue;
+    const { [spec.idKey]: ids, ...rest } = out;
+    out = { ...rest, [spec.nameKey]: convert(spec.kind, ids) };
+  }
+  return out;
+}
 
 /** The id kind a leaf's field carries, or undefined for any other leaf. */
 function leafKind(node: Record<string, unknown>): RuleNameKind | undefined {
@@ -164,12 +231,19 @@ export function collectNamedReferences(
   );
   if (Array.isArray(actions)) {
     for (const action of actions.slice(0, MAX_RULE_ACTIONS)) {
-      const spec = isRecord(action)
-        ? ACTION_NAME_KEYS[String(action.type)]
-        : null;
-      if (!spec || !isRecord(action)) continue;
-      for (const name of stringsOf(action[spec.nameKey])) {
-        sets[spec.kind].add(name);
+      if (!isRecord(action)) continue;
+      for (const spec of nameKeysOf(action)) {
+        for (const name of stringsOf(action[spec.nameKey])) {
+          sets[spec.kind].add(name);
+        }
+      }
+      for (const part of splitPartsOf(action)) {
+        if (!isRecord(part)) continue;
+        for (const spec of SPLIT_PART_NAME_KEYS) {
+          for (const name of stringsOf(part[spec.nameKey])) {
+            sets[spec.kind].add(name);
+          }
+        }
       }
     }
   }
@@ -233,21 +307,26 @@ export function namesToIds(
 
   const mappedActions = Array.isArray(actions)
     ? actions.map((action, i) => {
-        const spec = isRecord(action)
-          ? ACTION_NAME_KEYS[String(action.type)]
-          : undefined;
-        if (!spec || !isRecord(action) || action[spec.nameKey] === undefined) {
-          return action;
+        if (!isRecord(action)) return action;
+        const path = `actions[${i}]`;
+        let out = nameKeysToIds(action, nameKeysOf(action), path, convert);
+        if (splitPartsOf(action).length > 0) {
+          const parts = out.parts as unknown[];
+          out = {
+            ...out,
+            parts: parts.map((part, j) =>
+              j < MAX_NAMED_SPLIT_PARTS && isRecord(part)
+                ? nameKeysToIds(
+                    part,
+                    SPLIT_PART_NAME_KEYS,
+                    `${path}.parts[${j}]`,
+                    convert,
+                  )
+                : part,
+            ),
+          };
         }
-        const { [spec.nameKey]: names, ...rest } = action;
-        return {
-          ...rest,
-          [spec.idKey]: convert(
-            spec.kind,
-            names,
-            `actions[${i}].${spec.nameKey}`,
-          ),
-        };
+        return out;
       })
     : actions;
 
@@ -290,13 +369,19 @@ export function idsToNames(
   );
 
   const actions = definition.actions.map((action) => {
-    const spec = ACTION_NAME_KEYS[action.type];
-    if (!spec) return action;
-    const { [spec.idKey]: ids, ...rest } = action as unknown as Record<
-      string,
-      unknown
-    >;
-    return { ...rest, [spec.nameKey]: convert(spec.kind, ids) };
+    const record = action as unknown as Record<string, unknown>;
+    let out = idKeysToNames(record, nameKeysOf(record), convert);
+    if (action.type === "split" && Array.isArray(out.parts)) {
+      out = {
+        ...out,
+        parts: out.parts.map((part: unknown) =>
+          isRecord(part)
+            ? idKeysToNames(part, SPLIT_PART_NAME_KEYS, convert)
+            : part,
+        ),
+      };
+    }
+    return out;
   });
   return { condition, actions };
 }

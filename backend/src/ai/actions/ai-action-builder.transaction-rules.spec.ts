@@ -25,6 +25,8 @@ const rule = {
   enabled: true,
   triggers: ["create", "import"] as ("create" | "import")[],
   stopProcessing: false,
+  activeFrom: "2026-10-01" as string | null,
+  activeTo: null as string | null,
   condition: { field: "payeeId", op: "eq", value: "p1" } as const,
   actions: [
     { type: "set_category", categoryId: CAT, onlyIfEmpty: true },
@@ -45,7 +47,7 @@ const test = {
   skipped: [],
   skippedCount: 0,
   aiReviewRequests: 0,
-  labels: { categories: {}, payees: {}, tags: {}, rules: {} },
+  labels: { accounts: {}, categories: {}, payees: {}, tags: {}, rules: {} },
 };
 
 const createPreview = (): CreateRulePreview => ({
@@ -163,12 +165,16 @@ describe("AiActionBuilderService transaction rule actions", () => {
         name: "Streaming",
         enabled: true,
         triggers: ["create", "import"],
+        activeFrom: "2026-10-01",
+        activeTo: null,
         actions: [{ type: "set_category", categoryId: CAT, onlyIfEmpty: true }],
       },
     });
     expect(JSON.stringify(action.descriptor)).not.toContain("Bills: Streaming");
     expect(action.preview.rule).toMatchObject({
       name: "Streaming",
+      activeFrom: "2026-10-01",
+      activeTo: null,
       labels: { categories: { [CAT]: "Bills: Streaming" } },
       test: { matchedCount: 1, scanned: 10 },
     });

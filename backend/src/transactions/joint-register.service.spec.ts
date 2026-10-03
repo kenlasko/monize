@@ -80,6 +80,9 @@ describe("JointRegisterService", () => {
       // update and net-worth recalc all land on the owner's ledger.
       expect(transactionsService.create).toHaveBeenCalledWith(OWNER, dto, {
         createPayeeIfMissing: false,
+        // Set from the joint grant, never from the request: the owner's
+        // structural rules must not run on a grantee's row.
+        actorIsNotOwner: true,
       });
     });
 
@@ -126,7 +129,7 @@ describe("JointRegisterService", () => {
         expect(transactionsService.create).toHaveBeenCalledWith(
           OWNER,
           freeText,
-          { createPayeeIfMissing: true },
+          { createPayeeIfMissing: true, actorIsNotOwner: true },
         );
       });
 

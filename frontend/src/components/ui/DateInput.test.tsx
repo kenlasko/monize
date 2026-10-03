@@ -259,6 +259,25 @@ describe('DateInput', () => {
       expect(document.querySelector('[role="tooltip"]')).not.toBeInTheDocument();
     });
 
+    it('keeps the shortcuts tooltip inside the viewport near the left edge', () => {
+      const { container } = renderDateInput();
+      const wrapper = container.querySelector('svg.cursor-help')!.parentElement!;
+      vi.spyOn(wrapper, 'getBoundingClientRect').mockReturnValue({
+        top: 100, bottom: 114, left: 2, right: 16, width: 14, height: 14, x: 2, y: 100,
+        toJSON: () => ({}),
+      } as DOMRect);
+      const originalWidth = window.innerWidth;
+      Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true });
+      try {
+        fireEvent.mouseEnter(wrapper);
+        const tooltip = document.querySelector('[role="tooltip"]') as HTMLElement;
+        expect(parseFloat(tooltip.style.left)).toBeGreaterThanOrEqual(8);
+        expect(tooltip.className).not.toContain('-translate-x-1/2');
+      } finally {
+        Object.defineProperty(window, 'innerWidth', { value: originalWidth, configurable: true });
+      }
+    });
+
     it('does not show tooltip icon when label is not provided', () => {
       const { container } = render(
         <DateInput

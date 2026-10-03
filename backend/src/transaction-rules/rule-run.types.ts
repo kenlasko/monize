@@ -1,3 +1,4 @@
+import type { StructuralRefusal } from "./rule-structure";
 import { RuleEffectsLabels } from "./transaction-rules-applier.service";
 
 /** The filters of a manual run or a test, as the service reads them. */
@@ -17,7 +18,9 @@ export type RuleRunSkipReason =
   /** A text action rendered to nothing for this row (design 10.2). */
   | "empty_render"
   /** No payee has the rendered name and the action does not create one. */
-  | "payee_not_found";
+  | "payee_not_found"
+  /** A structural action the row cannot take: the planner's name, unchanged (spec section 4). */
+  | StructuralRefusal;
 
 /** `{field: {before, after}}`, the shape the trace stores. */
 export type RuleRunChanges = Readonly<

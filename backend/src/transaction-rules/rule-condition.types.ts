@@ -19,7 +19,8 @@ export type RuleValueKind =
   | "enum"
   | "currency"
   | "boolean"
-  | "dayOfMonth";
+  | "dayOfMonth"
+  | "date";
 
 export const RULE_OPERATORS = [
   "eq",
@@ -167,6 +168,11 @@ export const RULE_CONDITION_FIELDS = {
     enumValues: RULE_TRANSACTION_STATUSES,
   },
   hasAttachment: { kind: "boolean", operators: ["eq"] },
+  // The transaction's own calendar date, compared as a `YYYY-MM-DD` string.
+  date: {
+    kind: "date",
+    operators: ["eq", "lt", "lte", "gt", "gte", "between"],
+  },
 } as const satisfies Record<string, RuleConditionFieldSpec>;
 
 export type RuleField = keyof typeof RULE_CONDITION_FIELDS;
@@ -231,6 +237,8 @@ export interface RuleFacts {
   readonly referenceNumber: string | null;
   /** 1..31 from the transaction's calendar date (never a clock reading); null when the date is unknown. */
   readonly dayOfMonth: number | null;
+  /** The transaction's calendar date, `YYYY-MM-DD`; null when it is not a real date. */
+  readonly date: string | null;
   /** The weekday of the transaction's calendar date; null when the date is unknown. */
   readonly weekday: RuleWeekday | null;
   /** The reconciliation status; null when the source does not know it yet. */

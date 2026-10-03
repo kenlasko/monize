@@ -64,6 +64,7 @@ function scalarText(index: EntityIndex, leaf: EditorLeaf, value: unknown): strin
     case 'boolean':
       return value === false ? 'false' : 'true';
     case 'currency':
+    case 'date':
       return typeof value === 'string' && value !== '' ? quoteString(value) : CEL_UNFILLED;
     default:
       return quoteString(typeof value === 'string' ? value : '');

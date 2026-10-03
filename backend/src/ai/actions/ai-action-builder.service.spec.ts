@@ -75,6 +75,7 @@ describe("AiActionBuilderService", () => {
       trace: [],
       aiReviewRequests: [],
       labels: {
+        accounts: {},
         categories: { c9: "Groceries" },
         payees: {},
         tags: {},
@@ -671,7 +672,13 @@ describe("AiActionBuilderService", () => {
       changes: { addTagIds: ["t1"], removeTagIds: [] },
       trace: [],
       aiReviewRequests: [],
-      labels: { categories: {}, payees: {}, tags: { t1: "rent" }, rules: {} },
+      labels: {
+        accounts: {},
+        categories: {},
+        payees: {},
+        tags: { t1: "rent" },
+        rules: {},
+      },
     };
     const preview = {
       fromAccountId: "a1",

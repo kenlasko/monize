@@ -162,6 +162,9 @@ export function RulesManager() {
           condition: rule.condition,
           actions: rule.actions,
           stopProcessing: rule.stopProcessing,
+          // An open side is left out, so a backend that predates the window still accepts the copy.
+          ...(rule.activeFrom ? { activeFrom: rule.activeFrom } : {}),
+          ...(rule.activeTo ? { activeTo: rule.activeTo } : {}),
         });
         toast.success(t('toasts.duplicated'));
         await load();

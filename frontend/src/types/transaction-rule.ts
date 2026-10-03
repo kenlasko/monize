@@ -26,7 +26,8 @@ export type RuleField =
   | 'dayOfMonth'
   | 'weekday'
   | 'status'
-  | 'hasAttachment';
+  | 'hasAttachment'
+  | 'date';
 
 export type RuleOperator =
   | 'eq'
@@ -117,6 +118,38 @@ export interface SetDescriptionAction {
   readonly onlyIfEmpty: boolean;
 }
 
+/**
+ * Makes the matched row one leg of a transfer. Exactly one of `toAccountId`
+ * (an expense) and `fromAccountId` (an income). Created in the rule editor, the
+ * assistant or MCP.
+ */
+export interface ConvertToTransferAction {
+  readonly type: 'convert_to_transfer';
+  readonly toAccountId?: string;
+  readonly fromAccountId?: string;
+  readonly clearCategory: boolean;
+  readonly payeeId?: string;
+}
+
+/** One part of a `split`: `amount` is `"{capture}"` or `"rest"`. */
+export interface SplitActionPart {
+  readonly amount: string;
+  readonly categoryId?: string;
+  readonly transferAccountId?: string;
+  readonly payeeId?: string;
+  readonly description?: string;
+}
+
+/** Turns the matched row into a split whose part amounts come from the rule's captures. */
+export interface SplitAction {
+  readonly type: 'split';
+  readonly payeeId?: string;
+  readonly parts: readonly SplitActionPart[];
+}
+
+/** The two actions that restructure the row (a transfer, a split). */
+export type StructuralRuleAction = ConvertToTransferAction | SplitAction;
+
 /** Queues a person-approved AI review; never changes the row itself. */
 export interface RequestAiReviewAction {
   readonly type: 'request_ai_review';
@@ -130,6 +163,7 @@ export type RuleAction =
   | SetPayeeAction
   | SetPayeeFromTextAction
   | SetDescriptionAction
+  | StructuralRuleAction
   | RequestAiReviewAction;
 
 export type RuleActionType = RuleAction['type'];
@@ -150,6 +184,13 @@ export interface TransactionRule {
   condition: RuleConditionNode;
   actions: RuleAction[];
   stopProcessing: boolean;
+  /**
+   * The active window: first and last transaction date (`YYYY-MM-DD`, both
+   * inclusive) the rule is evaluated for, on every path. Null is open on that
+   * side.
+   */
+  activeFrom: string | null;
+  activeTo: string | null;
   /** Compare-and-swap token: send the value last read with every update. */
   revision: number;
   createdAt: string;
@@ -170,6 +211,9 @@ export interface CreateTransactionRuleData {
   condition: RuleConditionNode;
   actions: RuleAction[];
   stopProcessing?: boolean;
+  /** `YYYY-MM-DD`; null (on an update) clears the side. */
+  activeFrom?: string | null;
+  activeTo?: string | null;
 }
 
 export interface UpdateTransactionRuleData extends Partial<CreateTransactionRuleData> {

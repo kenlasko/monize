@@ -8,7 +8,15 @@ import { tr } from "../i18n/translate";
 import { DataSource, EntityManager } from "typeorm";
 import { Cron } from "@nestjs/schedule";
 import { ActionHistory } from "./entities/action-history.entity";
-import { RULE_RUN_ENTITY_TYPE, undoRuleRun } from "./rule-run-undo";
+import {
+  RULE_RUN_ENTITY_TYPE,
+  assertRuleRunRedoable,
+  undoRuleRun,
+} from "./rule-run-undo";
+import {
+  LegBalanceWriter,
+  removeLockedTransactionLeg,
+} from "../transactions/remove-transaction-leg";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { assertReconciledRowsMutable } from "../transactions/reconciled-lock.util";
@@ -30,11 +38,38 @@ import { CustomReport } from "../reports/entities/custom-report.entity";
 import { withSystemContext } from "../common/db/with-context";
 import { withScopedDb } from "../common/db/scoped-db";
 import {
+  LockedTransactionRow,
   lockAccountsForBalanceWrite,
   lockHoldingScope,
+  lockTransactionRows,
 } from "../common/db/locks";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
 import { invalidatePortfolioSummary } from "../securities/portfolio-summary-memo";
+
+/**
+ * A create whose snapshot links the row to a counterpart leg (a transfer leg,
+ * or a split line with a linked leg) cannot be redone: the undo deleted the
+ * leg, and re-inserting the row would point at a row that is gone.
+ */
+function assertTransactionCreateRedoable(action: ActionHistory): void {
+  const after = action.afterData;
+  const splits: unknown[] = Array.isArray(after?.splits) ? after.splits : [];
+  const hasLegs =
+    (after?.isTransfer === true && !!after?.linkedTransactionId) ||
+    splits.some(
+      (split) =>
+        !!(split as { linkedTransactionId?: string | null })
+          ?.linkedTransactionId,
+    );
+  if (!hasLegs) return;
+  throw new ConflictException({
+    message: tr(
+      "errors.actionHistory.redoCreateWithLegs",
+      "This transaction created entries in other accounts, so it cannot be redone. Create it again instead",
+    ),
+    errorCode: "REDO_CREATE_WITH_LEGS",
+  });
+}
 
 export interface RecordActionParams {
   entityType: string;
@@ -514,7 +549,7 @@ export class ActionHistoryService {
         await this.undoBulkTransaction(action, manager);
         break;
       case RULE_RUN_ENTITY_TYPE:
-        await undoRuleRun(action, manager);
+        await undoRuleRun(action, manager, this.legBalances(manager, action));
         break;
       default:
         throw new ConflictException(
@@ -531,6 +566,17 @@ export class ActionHistoryService {
     action: ActionHistory,
     manager: EntityManager,
   ): Promise<void> {
+    // A run that restructured rows cannot be replayed from its snapshot.
+    if (action.entityType === RULE_RUN_ENTITY_TYPE) {
+      assertRuleRunRedoable(action);
+    }
+    // Redo of a create replays the row from its stored snapshot, which names
+    // the legs the undo deleted (a rule's transfer counterpart, transfer split
+    // lines): they cannot be replayed, so a create that had any is refused
+    // before anything is written, as a structural rule run's redo is.
+    if (action.entityType === "transaction" && action.action === "create") {
+      assertTransactionCreateRedoable(action);
+    }
     // Redo is the inverse of undo: swap before/after and flip the action
     const invertedAction: ActionHistory = {
       ...action,
@@ -591,11 +637,70 @@ export class ActionHistoryService {
   ): Promise<void> {
     if (!action.entityId) return;
 
+    const peek = await manager.findOne(Transaction, {
+      where: { id: action.entityId, userId: action.userId },
+    });
+    if (!peek) return;
+
+    // A create can leave legs in other accounts: the counterpart of a rule's
+    // `convert_to_transfer`, and the linked leg of every transfer split line
+    // (a rule's `split` or a person's). They are part of what the create wrote,
+    // so the undo removes them with their balance, `deletionBalanceEffect` per
+    // leg like the undo of a rule run. Locks: the row with a transfer
+    // counterpart in one ascending batch, then the split legs after their
+    // parent (`common/db/locks.ts`); the reconciled check runs on all of them
+    // before the first write, so a refusal changes nothing.
+    const locked = await lockTransactionRows(
+      manager,
+      [
+        peek.id,
+        ...(peek.isTransfer && peek.linkedTransactionId
+          ? [peek.linkedTransactionId]
+          : []),
+      ],
+      action.userId,
+    );
+    const parent = locked.get(peek.id);
+    if (!parent) return;
+
     const transaction = await manager.findOne(Transaction, {
       where: { id: action.entityId, userId: action.userId },
       relations: ["splits"],
     });
     if (!transaction) return;
+
+    const legs = new Map<string, LockedTransactionRow>();
+    if (parent.linkedTransactionId) {
+      const transferLeg =
+        locked.get(parent.linkedTransactionId) ??
+        (
+          await lockTransactionRows(
+            manager,
+            [parent.linkedTransactionId],
+            action.userId,
+          )
+        ).get(parent.linkedTransactionId);
+      if (transferLeg) legs.set(transferLeg.id, transferLeg);
+    }
+    const splitLegIds = (transaction.splits ?? [])
+      .map((split) => split.linkedTransactionId)
+      .filter((id): id is string => !!id && !legs.has(id));
+    for (const leg of (
+      await lockTransactionRows(manager, splitLegIds, action.userId)
+    ).values()) {
+      legs.set(leg.id, leg);
+    }
+    await assertReconciledRowsMutable(manager, action.userId, [
+      parent,
+      ...legs.values(),
+    ]);
+
+    const balances = this.legBalances(manager, action);
+    for (const leg of legs.values()) {
+      // A leg linked elsewhere is not this create's to remove.
+      if (leg.linkedTransactionId !== transaction.id) continue;
+      await removeLockedTransactionLeg(manager, leg, action.userId, balances);
+    }
 
     // Delete splits first
     if (transaction.splits && transaction.splits.length > 0) {
@@ -1391,6 +1496,29 @@ export class ActionHistoryService {
   }
 
   // --- Utility methods ---
+
+  /**
+   * The two balance operations `removeLockedTransactionLeg` needs, on the
+   * undo's own manager and scoped to the action's user: an atomic delta (the
+   * statement every delta writer uses, `docs/concurrency-and-idempotency.md`
+   * section 2) and the locked absolute recomputation.
+   */
+  private legBalances(
+    manager: EntityManager,
+    action: ActionHistory,
+  ): LegBalanceWriter {
+    return {
+      updateBalance: (accountId, amount) =>
+        manager.query(
+          `UPDATE accounts
+              SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 4)
+            WHERE id = $2 AND user_id = $3`,
+          [amount, accountId, action.userId],
+        ),
+      recalculateCurrentBalance: (userId, accountId) =>
+        this.recalculateBalance(userId, accountId, manager),
+    };
+  }
 
   private async recalculateBalance(
     userId: string,

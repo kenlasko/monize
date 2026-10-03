@@ -81,10 +81,12 @@ export function RuleApplications({ ruleId, options }: RuleApplicationsProps) {
     const categories = byValue(options.categories);
     const payees = byValue(options.payees);
     const tags = byValue(options.tags);
+    const accounts = byValue(options.accounts);
     return {
       category: (id: string) => categories.get(id),
       payee: (id: string) => payees.get(id),
       tag: (id: string) => tags.get(id),
+      account: (id: string) => accounts.get(id),
     };
   }, [options]);
 
@@ -144,7 +146,7 @@ export function RuleApplications({ ruleId, options }: RuleApplicationsProps) {
                 </Td>
                 <Td>
                   <ul className="space-y-0.5">
-                    {changeText(application.changes, names, { done: true }).map((line) => (
+                    {changeText(application.changes, names, { done: true, currencyCode: application.currencyCode }).map((line) => (
                       <li key={line}>{line}</li>
                     ))}
                   </ul>

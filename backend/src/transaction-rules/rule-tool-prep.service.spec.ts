@@ -36,6 +36,8 @@ function storedDto(
     condition: VALID_CONDITION,
     actions: VALID_ACTIONS,
     stopProcessing: false,
+    activeFrom: null,
+    activeTo: null,
     revision: 3,
     createdAt: new Date("2026-09-01T00:00:00Z"),
     updatedAt: new Date("2026-09-01T00:00:00Z"),
@@ -64,6 +66,7 @@ function runPreview(rows = 2): RuleRunPreview {
     truncated: false,
     fingerprint: "f".repeat(64),
     labels: {
+      accounts: {},
       categories: { [CATEGORY_ID]: "Bills: Streaming" },
       payees: {},
       tags: { [TAG_ID]: "Subscriptions" },
@@ -154,6 +157,67 @@ const namedActions = [
 
 describe("TransactionRuleToolPrepService", () => {
   describe("prepareCreate", () => {
+    it("resolves the names of a split and a conversion and fills clearCategory", async () => {
+      const { service, runService } = build();
+      const condition = {
+        all: [
+          {
+            field: "payeeText",
+            op: "matches",
+            value: "PRINCIPAL: {principal} INTEREST: {interest}*",
+          },
+        ],
+      };
+      const prep = await service.prepareCreate(USER_ID, {
+        name: "Loan",
+        condition,
+        actions: [
+          {
+            type: "split",
+            payeeName: "Netflix",
+            parts: [
+              {
+                amount: "{principal}",
+                transferTo: "Checking",
+                payeeName: "Netflix",
+              },
+              { amount: "{interest}", categoryName: "Bills: Streaming" },
+            ],
+          },
+        ],
+      });
+      expect(prep.ok).toBe(true);
+      if (!prep.ok) return;
+      expect(prep.preview.rule.actions).toEqual([
+        {
+          type: "split",
+          payeeId: PAYEE_ID,
+          parts: [
+            {
+              amount: "{principal}",
+              transferAccountId: ACCOUNT_ID,
+              payeeId: PAYEE_ID,
+            },
+            { amount: "{interest}", categoryId: CATEGORY_ID },
+          ],
+        },
+      ]);
+      expect(runService.previewDraft).toHaveBeenCalled();
+
+      const converted = await service.prepareCreate(USER_ID, {
+        name: "Loan",
+        condition,
+        actions: [{ type: "convert_to_transfer", toAccountName: "Checking" }],
+      });
+      expect(converted.ok && converted.preview.rule.actions).toEqual([
+        {
+          type: "convert_to_transfer",
+          toAccountId: ACCOUNT_ID,
+          clearCategory: true,
+        },
+      ]);
+    });
+
     it("resolves names with the shared resolvers and tests the rule with ids", async () => {
       const { service, runService } = build();
       const prep = await service.prepareCreate(USER_ID, {
@@ -169,6 +233,8 @@ describe("TransactionRuleToolPrepService", () => {
         enabled: true,
         triggers: ["create", "import"],
         stopProcessing: false,
+        activeFrom: null,
+        activeTo: null,
         condition: VALID_CONDITION,
         actions: [
           { type: "set_category", categoryId: CATEGORY_ID, onlyIfEmpty: true },
@@ -187,6 +253,8 @@ describe("TransactionRuleToolPrepService", () => {
             },
             { type: "add_tags", tagIds: [TAG_ID] },
           ],
+          activeFrom: null,
+          activeTo: null,
           filters: {},
         },
         { authoring: true },
@@ -196,6 +264,68 @@ describe("TransactionRuleToolPrepService", () => {
         payees: { [PAYEE_ID]: "Netflix" },
         categories: { [CATEGORY_ID]: "Bills: Streaming" },
         tags: { [TAG_ID]: "Subscriptions" },
+      });
+    });
+
+    it("carries the active window on the card and tests the draft with it", async () => {
+      const { service, runService } = build();
+      const prep = await service.prepareCreate(USER_ID, {
+        name: "Mortgage",
+        condition: namedCondition,
+        actions: namedActions,
+        activeFrom: "2026-10-01",
+        activeTo: "2026-12-31",
+      });
+      if (!prep.ok) throw new Error(`expected a preview: ${prep.message}`);
+      expect(prep.preview.rule).toMatchObject({
+        activeFrom: "2026-10-01",
+        activeTo: "2026-12-31",
+      });
+      expect(runService.previewDraft).toHaveBeenCalledWith(
+        USER_ID,
+        expect.objectContaining({
+          activeFrom: "2026-10-01",
+          activeTo: "2026-12-31",
+        }),
+        { authoring: true },
+      );
+    });
+
+    it("reads an empty string as an open side", async () => {
+      const { service } = build();
+      const prep = await service.prepareCreate(USER_ID, {
+        name: "Mortgage",
+        condition: namedCondition,
+        actions: namedActions,
+        activeFrom: "",
+        activeTo: "2026-12-31",
+      });
+      if (!prep.ok) throw new Error("expected a preview");
+      expect(prep.preview.rule).toMatchObject({
+        activeFrom: null,
+        activeTo: "2026-12-31",
+      });
+    });
+
+    it("refuses a window whose first day is after its last, with the draft preview's entry", async () => {
+      const { service, runService } = build();
+      runService.previewDraft.mockRejectedValue(
+        new BadRequestException({
+          message:
+            "The first active date must not be after the last active date",
+          errorCode: "ACTIVE_WINDOW_INVALID",
+        }),
+      );
+      const prep = await service.prepareCreate(USER_ID, {
+        name: "Mortgage",
+        condition: namedCondition,
+        actions: namedActions,
+        activeFrom: "2026-12-31",
+        activeTo: "2026-10-01",
+      });
+      expect(prep).toMatchObject({
+        ok: false,
+        errors: [{ path: "", code: "ACTIVE_WINDOW_INVALID" }],
       });
     });
 
@@ -392,6 +522,8 @@ describe("TransactionRuleToolPrepService", () => {
         enabled: true,
         triggers: ["create", "import"],
         stopProcessing: false,
+        activeFrom: null,
+        activeTo: null,
         // The condition the model did not send is the stored one, ids intact.
         condition: VALID_CONDITION,
         actions: [{ type: "add_tags", tagIds: [TAG_ID] }],
@@ -480,6 +612,54 @@ describe("TransactionRuleToolPrepService", () => {
         });
         expect(prep.ok).toBe(true);
       });
+    });
+
+    it("tests a moved window although condition and actions are untouched", async () => {
+      const { service, runService } = build();
+      const prep = await service.prepareUpdate(USER_ID, {
+        ruleId: RULE_ID,
+        activeFrom: "2026-10-01",
+      });
+      if (!prep.ok) throw new Error("expected a preview");
+      expect(prep.preview.rule).toMatchObject({
+        activeFrom: "2026-10-01",
+        activeTo: null,
+      });
+      expect(prep.preview.current).toMatchObject({ activeFrom: null });
+      expect(prep.preview.test).toBeDefined();
+      expect(runService.previewDraft).toHaveBeenCalledWith(
+        USER_ID,
+        expect.objectContaining({ activeFrom: "2026-10-01", activeTo: null }),
+        { authoring: false },
+      );
+    });
+
+    it("clears one side of a stored window with an empty string and keeps the other", async () => {
+      const { service, rulesService } = build();
+      rulesService.get.mockResolvedValue(
+        storedDto({ activeFrom: "2026-10-01", activeTo: "2026-12-31" }),
+      );
+      const prep = await service.prepareUpdate(USER_ID, {
+        ruleId: RULE_ID,
+        activeTo: "",
+      });
+      if (!prep.ok) throw new Error("expected a preview");
+      expect(prep.preview.rule).toMatchObject({
+        activeFrom: "2026-10-01",
+        activeTo: null,
+      });
+    });
+
+    it("refuses an edit that sends the stored window back", async () => {
+      const { service, rulesService } = build();
+      rulesService.get.mockResolvedValue(
+        storedDto({ activeFrom: "2026-10-01" }),
+      );
+      const prep = await service.prepareUpdate(USER_ID, {
+        ruleId: RULE_ID,
+        activeFrom: "2026-10-01",
+      });
+      expect(prep).toMatchObject({ ok: false, errors: [] });
     });
 
     it("does not test a change that leaves condition and actions alone", async () => {
@@ -643,6 +823,52 @@ describe("TransactionRuleToolPrepService", () => {
       );
       expect(runService.previewRun).not.toHaveBeenCalled();
       expect(rulesService.get).not.toHaveBeenCalled();
+    });
+
+    it("tests a saved rule with a replaced window as a draft built on it", async () => {
+      const { service, runService } = build();
+      const prep = await service.prepareTest(
+        USER_ID,
+        { ruleId: RULE_ID, activeFrom: "2026-10-01" },
+        {},
+      );
+      if (!prep.ok) throw new Error("expected a result");
+      expect(runService.previewRun).not.toHaveBeenCalled();
+      expect(runService.previewDraft).toHaveBeenCalledWith(
+        USER_ID,
+        expect.objectContaining({
+          condition: VALID_CONDITION,
+          actions: VALID_ACTIONS,
+          activeFrom: "2026-10-01",
+          activeTo: null,
+        }),
+        { authoring: false },
+      );
+      expect(prep.preview.rule.activeFrom).toBe("2026-10-01");
+    });
+
+    it("tests a draft built on a saved rule with that rule's window", async () => {
+      const { service, runService, rulesService } = build();
+      rulesService.get.mockResolvedValue(
+        storedDto({ activeFrom: "2026-10-01", activeTo: "2026-12-31" }),
+      );
+      const prep = await service.prepareTest(
+        USER_ID,
+        {
+          ruleId: RULE_ID,
+          condition: { field: "payeeId", op: "eq", value: "Netflix" },
+        },
+        {},
+      );
+      if (!prep.ok) throw new Error("expected a result");
+      expect(runService.previewDraft).toHaveBeenCalledWith(
+        USER_ID,
+        expect.objectContaining({
+          activeFrom: "2026-10-01",
+          activeTo: "2026-12-31",
+        }),
+        expect.anything(),
+      );
     });
 
     it("tests a saved rule through the run preview", async () => {
@@ -816,6 +1042,110 @@ describe("TransactionRuleToolPrepService", () => {
     });
   });
 
+  describe("toLlmTest: a planned structure", () => {
+    const LOAN = "a0000000-0000-4000-8000-0000000000a1";
+    const INTEREST = "c0000000-0000-4000-8000-0000000000c1";
+    const OVERPAY = "b0000000-0000-4000-8000-0000000000b1";
+    const base = {
+      matchedCount: 1,
+      conditionMatchedCount: 1,
+      scanned: 5,
+      truncated: false,
+      skipped: [],
+      skippedCount: 0,
+      aiReviewRequests: 0,
+      labels: {
+        accounts: { [LOAN]: "Loan account" },
+        payees: { [OVERPAY]: "Loan overpayment" },
+        categories: { [INTEREST]: "Loans: Interest" },
+        tags: {},
+        rules: {},
+      },
+    };
+    const rowWith = (structure: unknown) => ({
+      transactionId: "t1",
+      date: "2026-10-05",
+      payeeName: "x",
+      amount: -1500.75,
+      currencyCode: "PLN",
+      changes: { structure: { before: null, after: structure } },
+    });
+
+    it("names the accounts, categories and payees of a split's parts", () => {
+      const { service } = build();
+      const llm = service.toLlmTest(
+        {
+          ...base,
+          rows: [
+            rowWith({
+              kind: "split",
+              parts: [
+                {
+                  amount: -1200.5,
+                  categoryId: null,
+                  transferAccountId: LOAN,
+                  payeeId: OVERPAY,
+                  memo: null,
+                },
+                {
+                  amount: -300.25,
+                  categoryId: INTEREST,
+                  transferAccountId: null,
+                  payeeId: null,
+                  memo: "interest",
+                },
+              ],
+            }),
+          ],
+        } as never,
+        base.labels as never,
+      );
+      expect(llm.rows[0].changes).toEqual({
+        structure: {
+          kind: "split",
+          parts: [
+            {
+              amount: -1200.5,
+              category: null,
+              transferTo: "Loan account",
+              payee: "Loan overpayment",
+              memo: null,
+            },
+            {
+              amount: -300.25,
+              category: "Loans: Interest",
+              transferTo: null,
+              payee: null,
+              memo: "interest",
+            },
+          ],
+        },
+      });
+    });
+
+    it("names the account of a transfer and keeps the id of one it has no name for", () => {
+      const { service } = build();
+      const llm = service.toLlmTest(
+        {
+          ...base,
+          rows: [
+            rowWith({ kind: "transfer", accountId: LOAN, clearCategory: true }),
+            rowWith({
+              kind: "transfer",
+              accountId: "gone",
+              clearCategory: false,
+            }),
+          ],
+        } as never,
+        base.labels as never,
+      );
+      expect(llm.rows.map((r) => r.changes.structure)).toEqual([
+        { kind: "transfer", account: "Loan account", clearCategory: true },
+        { kind: "transfer", account: "gone", clearCategory: false },
+      ]);
+    });
+  });
+
   describe("a test that matches nothing", () => {
     const empty = {
       matchedCount: 0,
@@ -932,6 +1262,18 @@ describe("TransactionRuleToolPrepService", () => {
           { type: "add_tags", tagNames: ["Subscriptions"] },
         ],
         invalid: false,
+      });
+    });
+
+    it("returns the active window of each rule", async () => {
+      const { service, rulesService } = build();
+      rulesService.list.mockResolvedValue([
+        storedDto({ activeFrom: "2026-10-01", activeTo: null }),
+      ]);
+      const list = await service.list(USER_ID);
+      expect(list.rules[0]).toMatchObject({
+        activeFrom: "2026-10-01",
+        activeTo: null,
       });
     });
 

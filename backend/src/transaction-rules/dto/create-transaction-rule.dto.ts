@@ -10,8 +10,10 @@ import {
   IsOptional,
   IsString,
   Length,
+  ValidateIf,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsCalendarDate } from "../../common/validators/is-calendar-date.validator";
 import { MAX_RULE_ACTIONS } from "../rule-validation";
 import { RULE_TRIGGERS, RuleTrigger } from "../rule-trigger.types";
 
@@ -79,4 +81,30 @@ export class CreateTransactionRuleDto {
   @IsOptional()
   @IsBoolean()
   stopProcessing?: boolean;
+
+  @ApiPropertyOptional({
+    example: "2026-10-01",
+    nullable: true,
+    description:
+      "First transaction date (inclusive) the rule applies to; null or absent is open",
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsCalendarDate({
+    message: "activeFrom must be a real YYYY-MM-DD calendar date",
+  })
+  activeFrom?: string | null;
+
+  @ApiPropertyOptional({
+    example: "2026-12-31",
+    nullable: true,
+    description:
+      "Last transaction date (inclusive) the rule applies to; null or absent is open",
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsCalendarDate({
+    message: "activeTo must be a real YYYY-MM-DD calendar date",
+  })
+  activeTo?: string | null;
 }

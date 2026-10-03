@@ -25,6 +25,7 @@ function setup() {
     rulesService as unknown as TransactionRulesService,
     {} as TransactionRulesApplierService,
     {} as ActionHistoryService,
+    {} as never,
   );
   return { service, manager, rulesService };
 }

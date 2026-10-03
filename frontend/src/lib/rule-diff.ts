@@ -1,7 +1,7 @@
 import type { RuleTrigger } from '@/types/transaction-rule';
 
 /** The parts of a rule a card compares, in the order the editor shows them. */
-export type RulePart = 'name' | 'enabled' | 'triggers' | 'condition' | 'actions' | 'stopProcessing';
+export type RulePart = 'name' | 'enabled' | 'triggers' | 'condition' | 'actions' | 'stopProcessing' | 'activeWindow';
 
 /** What a comparison needs of a rule; both the stored and the proposed one have it. */
 export interface RuleDiffInput {
@@ -11,6 +11,8 @@ export interface RuleDiffInput {
   condition: unknown;
   actions: readonly unknown[];
   stopProcessing: boolean;
+  activeFrom?: string | null;
+  activeTo?: string | null;
 }
 
 /**
@@ -29,5 +31,8 @@ export function changedRuleParts(before: RuleDiffInput, after: RuleDiffInput): R
   if (JSON.stringify(before.condition) !== JSON.stringify(after.condition)) changed.push('condition');
   if (JSON.stringify(before.actions) !== JSON.stringify(after.actions)) changed.push('actions');
   if (before.stopProcessing !== after.stopProcessing) changed.push('stopProcessing');
+  if ((before.activeFrom ?? null) !== (after.activeFrom ?? null) || (before.activeTo ?? null) !== (after.activeTo ?? null)) {
+    changed.push('activeWindow');
+  }
   return changed;
 }

@@ -33,6 +33,7 @@ export function RuleTestResult({ test, title }: RuleTestResultProps) {
     category: (id: string) => labels.categories[id],
     payee: (id: string) => labels.payees[id],
     tag: (id: string) => labels.tags[id],
+    account: (id: string) => labels.accounts?.[id],
   };
 
   // One line per reason among the rows shown; the total is the server's count.
@@ -73,7 +74,7 @@ export function RuleTestResult({ test, title }: RuleTestResultProps) {
                 <span className="whitespace-nowrap">{formatCurrency(row.amount, row.currencyCode)}</span>
               </div>
               <ul className="pl-3 text-gray-600 dark:text-gray-300">
-                {changeText(row.changes, names).map((line) => (
+                {changeText(row.changes, names, { currencyCode: row.currencyCode }).map((line) => (
                   <li key={line}>{line}</li>
                 ))}
               </ul>

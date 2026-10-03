@@ -90,7 +90,16 @@
       "imported": "Transakcja zostaje zaimportowana",
       "atLeastOne": "Zostaw zaznaczoną co najmniej jedną opcję",
       "stopProcessing": "Zatrzymaj przetwarzanie kolejnych reguł",
-      "stopProcessingHelp": "Gdy ta reguła pasuje do transakcji, reguły znajdujące się po niej na liście są dla tej transakcji pomijane."
+      "stopProcessingHelp": "Gdy ta reguła pasuje do transakcji, reguły znajdujące się po niej na liście są dla tej transakcji pomijane.",
+      "window": {
+        "title": "Aktywna w okresie",
+        "help": "Reguła dotyczy tylko transakcji z datą z tego okresu: przy ich tworzeniu lub imporcie oraz przy testowaniu i uruchamianiu reguły. Pozostaw datę pustą, aby nie ograniczać.",
+        "from": "Data początkowa",
+        "to": "Data końcowa",
+        "backwards": "Data końcowa nie może być wcześniejsza niż początkowa",
+        "noLimit": "bez ograniczenia",
+        "words": "Tylko dla transakcji z datą od {from} do {to}"
+      }
     },
     "if": {
       "description": "Akcje wykonują się tylko dla transakcji, które pasują",
@@ -138,7 +147,8 @@
       "dayOfMonth": "Dzień miesiąca",
       "weekday": "Dzień tygodnia",
       "status": "Status",
-      "hasAttachment": "Ma załącznik"
+      "hasAttachment": "Ma załącznik",
+      "date": "Data"
     },
     "operators": {
       "eq": "jest",
@@ -215,7 +225,33 @@
         "replace": "Zastąp opis",
         "append": "Dodaj po opisie",
         "prepend": "Dodaj przed opisem"
-      }
+      },
+      "convertHelp": "Dopasowany przychód lub wydatek staje się jedną stroną przelewu. Druga strona powstaje na wybranym koncie, które musi mieć tę samą walutę.",
+      "direction": "Kierunek",
+      "directionTo": "Wydatek: pieniądze trafiają na inne konto",
+      "directionFrom": "Przychód: pieniądze pochodzą z innego konta",
+      "clearCategory": "Usuń kategorię",
+      "clearCategoryHelp": "Przelew nie ma kategorii. Wyłącz, aby zachować kategorię, którą transakcja już ma.",
+      "splitPayee": "Odbiorca transakcji (opcjonalnie)",
+      "splitHint": "Kwota każdej części pochodzi z przechwyconej wartości we wzorcach powyżej albo jest resztą. Części muszą sumować się do kwoty transakcji, w przeciwnym razie reguła jej nie zmieni.",
+      "splitNoCaptures": "Nie zdefiniowano jeszcze żadnej przechwyconej wartości. Wpisz nazwę w nawiasach klamrowych we wzorcu powyżej, na przykład PRINCIPAL: {example}, aby użyć jej tutaj jako kwoty.",
+      "partAmountPlaceholder": "Wybierz kwotę...",
+      "partRest": "Reszta",
+      "partAccount": "Konto",
+      "partPayee": "Odbiorca drugiej strony (opcjonalnie)",
+      "partsLimit": "Podział może mieć co najwyżej {max} części.",
+      "guideTitle": "Jak tego używać",
+      "splitGuideHow": "W sekcji „Jeśli” dodaj warunek dotyczący tekstu odbiorcy lub opisu z operatorem „pasuje do wzorca” i wpisz nazwy w nawiasach klamrowych w miejscach, gdzie są kwoty, na przykład {first}. Każda nazwa staje się kwotą, którą możesz wybrać dla części, albo wybierz „Reszta”. Części muszą sumować się do kwoty transakcji, w przeciwnym razie reguła jej nie zmieni. Częścią może być kategoria lub przelew na inne konto (przelew zmienia saldo tego konta).",
+      "splitGuideExampleTitle": "Przykład: rata kredytu",
+      "splitGuideBank": "Tekst z banku: KAPITAŁ: 1200,50 ODSETKI: 300,25 KARNE: 0,00",
+      "splitGuidePattern": "Wzorzec: *KAPITAŁ: {first} ODSETKI: {second} KARNE*",
+      "splitGuidePart1": "Część 1: {first} jako przelew na konto kredytu",
+      "splitGuidePart2": "Część 2: {second} jako kategoria „Kredyty: Odsetki”",
+      "splitGuideResult": "Wynik dla -1500,75: -1200,50 przelane na konto kredytu i -300,25 wydatku na odsetki.",
+      "splitGuideTip": "Wskazówka: ustaw datę początkową w polu „Aktywna w okresie”, aby nie zmieniać starszych uzgodnionych transakcji, i użyj panelu Test przed zapisaniem.",
+      "convertGuide": "Wydatek staje się przelewem na wybrane konto, a przychód przelewem z tego konta. Zmienia się tylko saldo drugiego konta. Wskazówka: użyj pola „Aktywna w okresie”, aby nie zmieniać starszych transakcji.",
+      "splitGuideName1": "kapital",
+      "splitGuideName2": "odsetki"
     },
     "actionTypes": {
       "add_tags": "Dodaj tagi",
@@ -224,7 +260,9 @@
       "set_payee": "Ustaw odbiorcę",
       "request_ai_review": "Poproś o przegląd AI",
       "set_payee_from_text": "Ustaw odbiorcę z tekstu",
-      "set_description": "Ustaw opis"
+      "set_description": "Ustaw opis",
+      "convert_to_transfer": "Zamień w przelew",
+      "split": "Podziel transakcję"
     },
     "save": {
       "button": "Zapisz regułę",
@@ -273,16 +311,17 @@
         "MAX_NODES": "Warunków i grup jest zbyt wiele. Limit to {maxNodes}.",
         "NO_ACTIONS": "Dodaj co najmniej jedną akcję.",
         "TOO_MANY_ACTIONS": "Akcji jest zbyt wiele. Limit to {maxActions}.",
-        "DUPLICATE_ACTION": "Reguła może prosić o przegląd AI tylko raz.",
-        "REFERENCE_NOT_FOUND": "Wybrana tu pozycja już nie istnieje. Wybierz inną.",
-        "NAME_REQUIRED": "Wpisz nazwę reguły.",
-        "UNKNOWN": "Ta część jest nieprawidłowa.",
+        "DUPLICATE_ACTION": "Reguła może mieć tylko jeden przegląd AI, jedną zamianę w przelew lub podział oraz jedną część podziału, która bierze resztę.",
+        "CONFLICTING_ACTIONS": "Akcji przelewu lub podziału nie można łączyć z „Ustaw kategorię”, a każda jej część ma kategorię albo konto.",
         "INVALID_CAPTURE": "Nazwa przechwytywania składa się z małych liter i cyfr, zaczyna się od litery i ma najwyżej 20 znaków.",
         "TOO_MANY_CAPTURES": "Wzorzec może zawierać najwyżej 5 przechwyceń.",
         "DUPLICATE_CAPTURE": "Każdą nazwę przechwytywania można użyć w regule tylko raz.",
-        "UNKNOWN_CAPTURE": "Tekst używa przechwytywania, którego nie definiuje żaden warunek tej reguły.",
+        "UNKNOWN_CAPTURE": "Używa wartości przechwyconej, której nie definiuje żaden warunek tej reguły.",
         "LOOKS_LIKE_REGEX": "Wyrażenia regularne nie są obsługiwane: | \\ oraz krótkie klasy w nawiasach, jak [xy], są traktowane jak zwykłe znaki, więc wzorzec zapisany jako regex nigdy nie dopasuje tego, o co chodziło. Aby dopasować jeden z kilku tekstów, dodaj grupę „Dowolny z poniższych” i umieść w niej po jednym warunku dla każdego tekstu.",
-        "PATTERN_WITHOUT_WILDCARD": "Bez * ten wzorzec musi być równy całemu tekstowi. Użyj operatora „jest” dla całego tekstu, „zawiera” dla jego części albo otocz tekst znakami *, na przykład *kawa*."
+        "PATTERN_WITHOUT_WILDCARD": "Bez * ten wzorzec musi być równy całemu tekstowi. Użyj operatora „jest” dla całego tekstu, „zawiera” dla jego części albo otocz tekst znakami *, na przykład *kawa*.",
+        "REFERENCE_NOT_FOUND": "Wybrana tu pozycja już nie istnieje. Wybierz inną.",
+        "NAME_REQUIRED": "Wpisz nazwę reguły.",
+        "UNKNOWN": "Ta część jest nieprawidłowa."
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "jest przelewem do innego właściciela, którego odbiorcy ta reguła nie może zmieniać",
       "empty_render": "tekst akcji okazał się dla niej pusty",
       "payee_not_found": "żaden odbiorca nie ma nazwy zbudowanej przez regułę, a reguła go nie tworzy",
-      "other": "reguła nie może jej zmienić"
+      "other": "reguła nie może jej zmienić",
+      "row_is_transfer_leg": "jest już przelewem",
+      "row_has_splits": "jest już podzielona",
+      "row_is_void": "jest unieważniona",
+      "zero_amount": "jej kwota wynosi zero",
+      "transfer_direction_mismatch": "kierunek przelewu nie pasuje: wydatek trafia na konto, przychód pochodzi z konta",
+      "transfer_same_account": "konto przelewu jest kontem samej transakcji",
+      "transfer_account_unavailable": "konto przelewu jest niedostępne (zostało usunięte lub nie należy do Ciebie)",
+      "transfer_currency_mismatch": "konto przelewu ma inną walutę",
+      "split_amount_unparseable": "kwoty z jej tekstu nie da się odczytać jako liczby",
+      "split_sum_mismatch": "części nie sumują się do jej kwoty",
+      "split_too_few_parts": "po pominięciu zerowych kwot zostaje mniej niż dwie części"
     },
     "change": {
       "category": "Kategoria: {before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "usunięty element",
       "payeeCreated": "{done, select, yes {Utworzono nowego odbiorcę: {name}} other {Zostanie utworzony nowy odbiorca: {name}}}",
       "description": "Opis: {before} → {after}",
-      "descriptionSet": "Ustaw opis na {value}"
+      "descriptionSet": "Ustaw opis na {value}",
+      "transfer": "{done, select, yes {Stała się przelewem z kontem {account}} other {Stanie się przelewem z kontem {account}}}",
+      "split": "{done, select, yes {Podzielono na {count, plural, one {# część} few {# części} many {# części} other {# części}}} other {Zostanie podzielona na {count, plural, one {# część} few {# części} many {# części} other {# części}}}}",
+      "splitPart": "Część {number}: {amount} {target}",
+      "splitPartMemo": ", notatka „{memo}”",
+      "splitToTransfer": "na konto {account}",
+      "splitToTransferPayee": "na konto {account}, odbiorca {payee}",
+      "splitToCategory": "jako {category}",
+      "splitUncategorised": "bez kategorii"
     },
     "filters": {
       "accounts": "Konta",
@@ -471,7 +529,15 @@
       "set_payee": "Ustaw odbiorcę na {name}{onlyIfEmpty, select, yes { (tylko jeśli pusty)} other {}}",
       "request_ai_review": "Poproś o przegląd AI: {instruction}",
       "set_payee_from_text": "Ustaw odbiorcę z tekstu: „{template}”{createIfMissing, select, yes { (utworzony, jeśli nie istnieje)} other {}}{onlyIfEmpty, select, yes { (tylko jeśli pusty)} other {}}",
-      "set_description": "Ustaw opis ({mode, select, append {dołącz na końcu} prepend {dołącz na początku} other {zastąp}}): „{template}”{onlyIfEmpty, select, yes { (tylko jeśli pusty)} other {}}"
+      "set_description": "Ustaw opis ({mode, select, append {dołącz na końcu} prepend {dołącz na początku} other {zastąp}}): „{template}”{onlyIfEmpty, select, yes { (tylko jeśli pusty)} other {}}",
+      "convert_to_transfer": "Zamień na przelew {direction, select, from {z konta} other {na konto}} {account}",
+      "split": "Podziel na: {parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} na konto {account}",
+      "category": "{amount} jako {category}",
+      "plain": "{amount}",
+      "rest": "reszta"
     }
   }
 }

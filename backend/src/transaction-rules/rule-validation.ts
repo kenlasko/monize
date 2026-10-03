@@ -1,8 +1,10 @@
 import { UUID_REGEX } from "../common/query-param-utils";
+import { isCalendarDate } from "../common/validators/is-calendar-date.validator";
 import {
   RULE_ACTION_TYPES,
   RULE_DESCRIPTION_MODES,
   RuleAction,
+  SPLIT_REST_AMOUNT,
 } from "./rule-action.types";
 import {
   RULE_CONDITION_FIELDS,
@@ -33,10 +35,16 @@ export const MAX_RULE_TAG_IDS = 20;
 export const MIN_RULE_AI_INSTRUCTION_LENGTH = 1;
 export const MAX_RULE_AI_INSTRUCTION_LENGTH = 1000;
 export const MAX_RULE_AI_REVIEW_ACTIONS = 1;
+export const MAX_RULE_STRUCTURAL_ACTIONS = 1;
 /** Template lengths of `set_payee_from_text` and `set_description` (design 10.2). */
 export const MIN_RULE_TEMPLATE_LENGTH = 1;
 export const MAX_RULE_PAYEE_TEMPLATE_LENGTH = 200;
 export const MAX_RULE_DESCRIPTION_TEMPLATE_LENGTH = 500;
+/** Parts of a `split` action (spec 3.4) and the length of a part's memo. */
+export const MIN_RULE_SPLIT_PARTS = 2;
+export const MAX_RULE_SPLIT_PARTS = 10;
+export const MIN_RULE_SPLIT_DESCRIPTION_LENGTH = 1;
+export const MAX_RULE_SPLIT_DESCRIPTION_LENGTH = 200;
 /** Same limit as `matchesAliasPattern`, which returns false beyond it. */
 export const MAX_RULE_TEXT_LENGTH = 500;
 /** Entries in an `in` / `notIn` / `hasAny` / `hasAll` / `hasNone` list. */
@@ -66,6 +74,7 @@ export const RULE_VALIDATION_CODES = [
   "NO_ACTIONS",
   "TOO_MANY_ACTIONS",
   "DUPLICATE_ACTION",
+  "CONFLICTING_ACTIONS",
   "INVALID_CAPTURE",
   "TOO_MANY_CAPTURES",
   "DUPLICATE_CAPTURE",
@@ -261,7 +270,12 @@ function validateLeaf(
     push(valuePath, "VALUE_TYPE");
   } else {
     const ok = value.map((v, i) => checkOne(v, `${valuePath}[${i}]`));
-    if (ok[0] && ok[1] && (value[0] as number) > (value[1] as number)) {
+    // Numbers and `YYYY-MM-DD` strings both order with `>`.
+    if (
+      ok[0] &&
+      ok[1] &&
+      (value[0] as number | string) > (value[1] as number | string)
+    ) {
       push(valuePath, "RANGE_ORDER");
     }
   }
@@ -366,6 +380,9 @@ function validateScalar(
           value <= RULE_MAX_DAY_OF_MONTH) ||
         fail("VALUE_OUT_OF_RANGE")
       );
+    case "date":
+      if (typeof value !== "string") return fail("VALUE_TYPE");
+      return isCalendarDate(value) || fail("VALUE_OUT_OF_RANGE");
     case "text":
       if (typeof value !== "string") return fail("VALUE_TYPE");
       return value.length <= MAX_RULE_TEXT_LENGTH || fail("VALUE_TOO_LONG");
@@ -391,15 +408,35 @@ function validateActions(
   if (actions.length === 0) return push("actions", "NO_ACTIONS");
   if (actions.length > MAX_RULE_ACTIONS) push("actions", "TOO_MANY_ACTIONS");
   let aiReviews = 0;
+  let structural = 0;
+  let structuralPath: string | null = null;
+  let setsCategory = false;
   actions.slice(0, MAX_RULE_ACTIONS).forEach((action, i) => {
     const path = `actions[${i}]`;
     validateAction(action, path, captures, push);
-    if (isRecord(action) && action.type === "request_ai_review") {
+    if (!isRecord(action)) return;
+    if (action.type === "request_ai_review") {
       if (++aiReviews > MAX_RULE_AI_REVIEW_ACTIONS) {
         push(path, "DUPLICATE_ACTION");
       }
+    } else if (action.type === "set_category") {
+      setsCategory = true;
+    } else if (
+      action.type === "convert_to_transfer" ||
+      action.type === "split"
+    ) {
+      // At most one structural action per rule (spec 3.6).
+      if (++structural > MAX_RULE_STRUCTURAL_ACTIONS) {
+        push(path, "DUPLICATE_ACTION");
+      } else {
+        structuralPath = path;
+      }
     }
   });
+  // A structural action decides the category itself (none, or one per part).
+  if (structuralPath !== null && setsCategory) {
+    push(structuralPath, "CONFLICTING_ACTIONS");
+  }
 }
 
 function validateAction(
@@ -476,12 +513,149 @@ function validateAction(
     }
     return;
   }
+  if (type === "convert_to_transfer") {
+    validateConvertToTransfer(action, path, push);
+    return;
+  }
+  if (type === "split") {
+    validateSplit(action, path, captures, push);
+    return;
+  }
   const idKey = type === "set_category" ? "categoryId" : "payeeId";
   checkKeys(action, ["type", idKey, "onlyIfEmpty"], path, push);
   uuid(action[idKey], `${path}.${idKey}`);
   if (typeof action.onlyIfEmpty !== "boolean") {
     push(`${path}.onlyIfEmpty`, "VALUE_TYPE");
   }
+}
+
+/** An optional id key: absent is fine, present must be a UUID. */
+function optionalUuid(
+  record: Record<string, unknown>,
+  key: string,
+  path: string,
+  push: Sink,
+): void {
+  if (hasKey(record, key)) {
+    validateScalar(record[key], "tagIds", [], `${path}.${key}`, push);
+  }
+}
+
+/**
+ * `convert_to_transfer` (spec 3.3): exactly one of `toAccountId` and
+ * `fromAccountId`, `clearCategory` a boolean (stored rules carry it; the
+ * defaults fill it for a draft), an optional `payeeId`.
+ */
+function validateConvertToTransfer(
+  action: Record<string, unknown>,
+  path: string,
+  push: Sink,
+): void {
+  checkKeys(
+    action,
+    ["type", "toAccountId", "fromAccountId", "clearCategory", "payeeId"],
+    path,
+    push,
+  );
+  const hasTo = hasKey(action, "toAccountId");
+  const hasFrom = hasKey(action, "fromAccountId");
+  if (hasTo && hasFrom) push(path, "CONFLICTING_ACTIONS");
+  else if (!hasTo && !hasFrom) push(`${path}.toAccountId`, "VALUE_REQUIRED");
+  optionalUuid(action, "toAccountId", path, push);
+  optionalUuid(action, "fromAccountId", path, push);
+  optionalUuid(action, "payeeId", path, push);
+  if (typeof action.clearCategory !== "boolean") {
+    push(`${path}.clearCategory`, "VALUE_TYPE");
+  }
+}
+
+/**
+ * `split` (spec 3.4): 2..10 parts, each with an amount that is `rest` (at
+ * most one) or `{capture}` naming a capture the rule defines, at most one of
+ * a category and a transfer account, a payee only on a transfer part, and an
+ * optional memo.
+ */
+function validateSplit(
+  action: Record<string, unknown>,
+  path: string,
+  captures: ReadonlySet<string>,
+  push: Sink,
+): void {
+  checkKeys(action, ["type", "payeeId", "parts"], path, push);
+  optionalUuid(action, "payeeId", path, push);
+  const partsPath = `${path}.parts`;
+  const parts = action.parts;
+  if (!Array.isArray(parts)) return push(partsPath, "INVALID_SHAPE");
+  if (parts.length < MIN_RULE_SPLIT_PARTS)
+    return push(partsPath, "ARRAY_EMPTY");
+  if (parts.length > MAX_RULE_SPLIT_PARTS) {
+    return push(partsPath, "ARRAY_TOO_LARGE");
+  }
+  let rests = 0;
+  parts.forEach((part, i) => {
+    const at = `${partsPath}[${i}]`;
+    if (!isRecord(part)) return push(at, "INVALID_SHAPE");
+    checkKeys(
+      part,
+      ["amount", "categoryId", "transferAccountId", "payeeId", "description"],
+      at,
+      push,
+    );
+    if (validatePartAmount(part.amount, `${at}.amount`, captures, push)) {
+      if (part.amount === SPLIT_REST_AMOUNT && ++rests > 1) {
+        push(`${at}.amount`, "DUPLICATE_ACTION");
+      }
+    }
+    optionalUuid(part, "categoryId", at, push);
+    optionalUuid(part, "transferAccountId", at, push);
+    optionalUuid(part, "payeeId", at, push);
+    if (hasKey(part, "categoryId") && hasKey(part, "transferAccountId")) {
+      push(at, "CONFLICTING_ACTIONS");
+    } else if (hasKey(part, "payeeId") && !hasKey(part, "transferAccountId")) {
+      push(`${at}.payeeId`, "CONFLICTING_ACTIONS");
+    }
+    if (hasKey(part, "description")) {
+      validatePartDescription(part.description, `${at}.description`, push);
+    }
+  });
+}
+
+const PART_CAPTURE = /^\{([a-z][a-z0-9]{0,19})\}$/;
+
+/** `rest`, or exactly `{name}` for a capture of the rule; returns whether the shape was acceptable. */
+function validatePartAmount(
+  value: unknown,
+  path: string,
+  captures: ReadonlySet<string>,
+  push: Sink,
+): boolean {
+  if (typeof value !== "string") {
+    push(path, "VALUE_TYPE");
+    return false;
+  }
+  if (value === SPLIT_REST_AMOUNT) return true;
+  const match = PART_CAPTURE.exec(value);
+  if (match === null) {
+    push(path, "INVALID_SHAPE");
+    return false;
+  }
+  if (!captures.has(match[1])) {
+    push(path, "UNKNOWN_CAPTURE");
+    return false;
+  }
+  return true;
+}
+
+function validatePartDescription(
+  value: unknown,
+  path: string,
+  push: Sink,
+): void {
+  if (typeof value !== "string") return push(path, "VALUE_TYPE");
+  const length = value.trim().length;
+  if (length < MIN_RULE_SPLIT_DESCRIPTION_LENGTH)
+    return push(path, "VALUE_EMPTY");
+  if (length > MAX_RULE_SPLIT_DESCRIPTION_LENGTH) push(path, "VALUE_TOO_LONG");
 }
 
 /**
@@ -550,6 +724,21 @@ export function collectReferencedIds(
     else if (action.type === "set_payee") sets.payeeIds.add(action.payeeId);
     else if (action.type === "add_tags" || action.type === "remove_tags") {
       addAll(sets.tagIds, action.tagIds);
+    } else if (action.type === "convert_to_transfer") {
+      for (const id of [action.toAccountId, action.fromAccountId]) {
+        if (id !== undefined) sets.accountIds.add(id);
+      }
+      if (action.payeeId !== undefined) sets.payeeIds.add(action.payeeId);
+    } else if (action.type === "split") {
+      if (action.payeeId !== undefined) sets.payeeIds.add(action.payeeId);
+      for (const part of action.parts) {
+        if (part.categoryId !== undefined)
+          sets.categoryIds.add(part.categoryId);
+        if (part.transferAccountId !== undefined) {
+          sets.accountIds.add(part.transferAccountId);
+        }
+        if (part.payeeId !== undefined) sets.payeeIds.add(part.payeeId);
+      }
     }
   }
   return {

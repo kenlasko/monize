@@ -2491,6 +2491,22 @@ describe("ScheduledTransactionsService", () => {
       );
     });
 
+    it("forwards actorIsNotOwner to the create so an acting delegate's post skips the owner's structural rules", async () => {
+      stubFindOne(makeScheduled());
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId, undefined, { actorIsNotOwner: true });
+
+      expect(transactionsService.create).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ accountId: "acc-1" }),
+        { actorIsNotOwner: true },
+      );
+    });
+
     it("should use prepareTransfer for transfer transactions", async () => {
       const scheduled = makeScheduled({
         isTransfer: true,

@@ -1,9 +1,10 @@
-import { ChangeEvent, forwardRef, InputHTMLAttributes, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, forwardRef, InputHTMLAttributes, KeyboardEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { Input } from './Input';
 import { CalendarPopover } from './CalendarPopover';
+import { placePopover } from './InfoTooltip';
 import { cn, getLocalDateString, formatDate, parseDateFromFormat, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 import {
   TYPEABLE_DATE_SEPARATORS,
@@ -38,17 +39,28 @@ function parseOrToday(value: string): Date {
 function DateShortcutTooltip() {
   const t = useTranslations('common');
   const iconRef = useRef<HTMLSpanElement>(null);
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
 
-  const showTooltip = useCallback(() => {
-    if (!iconRef.current) return;
-    const rect = iconRef.current.getBoundingClientRect();
-    setPosition({ top: rect.bottom + 6, left: rect.left + rect.width / 2 });
-  }, []);
+  const showTooltip = useCallback(() => setOpen(true), []);
+  const hideTooltip = useCallback(() => setOpen(false), []);
 
-  const hideTooltip = useCallback(() => {
-    setPosition(null);
-  }, []);
+  // Measured before paint: left-aligned to the icon, clamped inside the
+  // viewport and flipped above when it does not fit below (placePopover).
+  useLayoutEffect(() => {
+    if (!open) return;
+    const anchor = iconRef.current;
+    const tooltip = tooltipRef.current;
+    if (!anchor || !tooltip) return;
+    const { top, left } = placePopover(
+      anchor.getBoundingClientRect(),
+      { width: tooltip.offsetWidth, height: tooltip.offsetHeight },
+      'bottom',
+      { width: window.innerWidth, height: window.innerHeight },
+    );
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${left}px`;
+  }, [open]);
 
   return (
     <span
@@ -61,11 +73,12 @@ function DateShortcutTooltip() {
         className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 cursor-help"
         strokeWidth={2}
       />
-      {position && createPortal(
+      {open && createPortal(
         <div
+          ref={tooltipRef}
           role="tooltip"
-          className="fixed -translate-x-1/2 px-3 py-2 text-xs font-normal text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg whitespace-nowrap z-[100] pointer-events-none"
-          style={{ top: position.top, left: position.left }}
+          className="fixed px-3 py-2 text-xs font-normal text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-[100] pointer-events-none"
+          style={{ top: 0, left: 0, maxWidth: 'calc(100vw - 16px)' }}
         >
           <>
             <span className="block font-medium mb-1">{t('dateInput.shortcutsTitle')}</span>

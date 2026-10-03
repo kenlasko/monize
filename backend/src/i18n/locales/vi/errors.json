@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "Hoàn tác không được hỗ trợ cho loại thực thể: {{ entityType }}",
     "unsupportedTransactionAction": "Hành động giao tác không được hỗ trợ: {{ action }}",
     "undoTransactionGone": "Không thể hoàn tác: giao tác không còn tồn tại",
+    "redoCreateWithLegs": "Giao dịch này đã tạo các mục ở tài khoản khác nên không thể làm lại. Hãy tạo lại giao dịch",
     "undoAccountGone": "Không thể hoàn tác: tài khoản không còn tồn tại",
     "unsupportedTransferAction": "Hành động chuyển tiền không được hỗ trợ: {{ action }}",
     "unsupportedInvestmentAction": "Hành động đầu tư không được hỗ trợ: {{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "Các giao dịch hoặc quy tắc đã thay đổi kể từ bản xem trước. Hãy xem lại bản xem trước mới và chạy lại",
     "ruleInvalid": "Quy tắc này không hợp lệ nên không thể chạy. Hãy mở và sửa quy tắc trước",
     "dateRangeInvalid": "Ngày bắt đầu không được sau ngày kết thúc",
-    "runTooLarge": "Lần chạy này thay đổi quá nhiều giao dịch để có thể hoàn tác trong một bước. Hãy thu hẹp tài khoản hoặc khoảng ngày rồi thử lại"
+    "activeWindowInvalid": "Ngày hoạt động đầu tiên không được sau ngày hoạt động cuối cùng",
+    "runTooLarge": "Lần chạy này thay đổi quá nhiều giao dịch để có thể hoàn tác trong một bước. Hãy thu hẹp tài khoản hoặc khoảng ngày rồi thử lại",
+    "runRedoStructural": "Lần chạy này đã thay đổi cấu trúc giao dịch (chuyển khoản hoặc tách khoản) nên không thể làm lại. Hãy chạy lại quy tắc",
+    "runUndoStructureChanged": "Một giao dịch mà lần chạy này đã thay đổi cấu trúc đã bị sửa từ đó (các dòng tách khoản hoặc khoản chuyển), nên không thể hoàn tác lần chạy một cách an toàn. Hãy khôi phục thủ công"
   },
   "transactions": {
     "invalidStatus": "Trạng thái giao tác không hợp lệ: {{ status }}",
     "reconciledLocked": "Giao dịch này đã đối soát và bị khóa. Hãy tắt \"Khóa giao dịch đã đối soát\" trong Cài đặt để thay đổi.",
+    "convertToTransferRefused": "Giao dịch này không còn có thể chuyển thành chuyển khoản. Hãy xem lại và chạy lại quy tắc",
     "pagePositiveInteger": "page phải là số nguyên dương",
     "limitPositiveInteger": "limit phải là số nguyên dương",
     "limitMax200": "limit không được vượt quá 200",

@@ -61,6 +61,10 @@ export class JointRegisterService {
     return withSystemContext(() =>
       this.transactionsService.create(access.ownerUserId, dto, {
         createPayeeIfMissing,
+        // The grantee is the actor and the owner the row's user: the owner's
+        // structural rules (transfer, split) must not run on it, or the
+        // grantee would move, and be shown, the owner's other accounts.
+        actorIsNotOwner: true,
       }),
     );
   }

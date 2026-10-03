@@ -149,6 +149,8 @@ function harness(fx: Fixture = {}) {
     tags as unknown as TagsService,
     { enqueue } as unknown as AiReviewRequestsService,
     payees as unknown as PayeesService,
+    {} as never,
+    {} as never,
   );
   const writes = (): unknown[] => [
     ...m.update.mock.calls,
@@ -954,5 +956,61 @@ describe("the X3 fields (design 10.3) on the write paths", () => {
       await h.service.applyToNewTransfer(h.m, legs);
       expect(h.tags.addTransactionTags).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("the active window (INV-RULE-004) on the write paths", () => {
+  const windowed = rule(
+    RULE_1,
+    [{ type: "set_category", categoryId: CAT, onlyIfEmpty: true }],
+    { activeFrom: "2026-10-01" },
+  );
+  const preview = (transactionDate: string) => ({
+    accountId: ACCOUNT,
+    currencyCode: "PLN",
+    amount: -102.21,
+    isTransfer: false,
+    payeeId: null,
+    payeeText: "KAPITAL: 0,00 ODSETKI: 102,21",
+    categoryId: null,
+    description: null,
+    tagIds: [],
+    hasSplits: false,
+    transactionDate,
+  });
+
+  it("create and import leave a row dated before activeFrom unchanged and write nothing", async () => {
+    const h = harness({
+      rules: [windowed],
+      rows: [row({ transactionDate: "2026-09-07" })],
+    });
+    const applied = await h.service.applyToNew(h.m, USER, [TX], "import");
+    expect(h.writes()).toEqual([]);
+    expect(
+      applied.every((a) => a.effects.changes.categoryId === undefined),
+    ).toBe(true);
+  });
+
+  it("changes a row dated on activeFrom", async () => {
+    const h = harness({
+      rules: [windowed],
+      rows: [row({ transactionDate: "2026-10-01" })],
+    });
+    await h.service.applyToNew(h.m, USER, [TX], "create");
+    expect(h.mock.update).toHaveBeenCalledWith(
+      Transaction,
+      expect.anything(),
+      expect.objectContaining({ categoryId: CAT }),
+    );
+  });
+
+  it("the card preview and the commit agree for a row outside and a row inside", async () => {
+    const h = harness({ rules: [windowed] });
+    expect(
+      await h.service.previewForRow(h.m, USER, preview("2026-09-07")),
+    ).toBeNull();
+    expect(
+      await h.service.previewForRow(h.m, USER, preview("2026-10-05")),
+    ).not.toBeNull();
   });
 });

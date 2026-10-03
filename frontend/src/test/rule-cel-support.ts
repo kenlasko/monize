@@ -89,6 +89,7 @@ const int = (rand: Random, min: number, max: number): number => min + Math.floor
 const TEXT_PARTS = ['coffee', '*BIEDRONKA*', 'a"b', "it's", 'back\\slash', 'two\nlines', '\ttab', 'zażółć', '日本語', '😀', '', ' ', '\u0001'];
 const NUMBERS = [0, -0, 1, -1, 12.5, -500, -100, 0.0001, 1e21, 1e-7, 123456789.1234, 5];
 const CURRENCIES = ['CAD', 'USD', 'eur'];
+const DATES = ['2026-01-01', '2026-09-07', '2026-10-01', '2026-12-31'];
 
 function text(rand: Random): string {
   const value = Array.from({ length: int(rand, 0, 3) }, () => pick(rand, TEXT_PARTS)).join('');
@@ -118,6 +119,8 @@ function scalar(rand: Random, field: RuleField, list: boolean): string | number 
       return pick(rand, spec.enumValues ?? []);
     case 'currency':
       return !list && rand() < 0.1 ? '' : pick(rand, CURRENCIES);
+    case 'date':
+      return rand() < 0.1 ? '' : pick(rand, DATES);
     case 'boolean':
       return rand() < 0.5;
     default:

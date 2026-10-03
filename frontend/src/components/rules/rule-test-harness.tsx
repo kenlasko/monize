@@ -8,6 +8,7 @@ import { ACCOUNT_ID, COFFEE_ID, FOOD_ID, PAYEE_ID, TAG_ID, TAG_WORK_ID } from '.
 /** The lists the pickers offer, already built. */
 export const testOptions: RuleOptions = {
   accounts: [{ value: ACCOUNT_ID, label: 'Chequing (CAD)' }],
+  transferAccounts: [{ value: ACCOUNT_ID, label: 'Chequing (CAD)' }],
   payees: [{ value: PAYEE_ID, label: 'Corner Cafe' }],
   categories: [
     { value: FOOD_ID, label: 'Food' },

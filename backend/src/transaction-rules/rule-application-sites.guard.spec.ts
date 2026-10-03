@@ -88,6 +88,8 @@ export const EXEMPT_INSERT_SITES: Readonly<Record<string, string>> = {
     "MNY investment import: the cash rows of a trade are derived from it (design 6.3, out of scope)",
   "transactions/transaction-split.service.ts":
     "the counterpart leg of a split transfer, created by createSplits and addSplit; not evaluated until Q2 of the design is decided",
+  "transactions/convert-to-transfer.ts":
+    "the counterpart leg of a rule's own convert_to_transfer action, written by the applier as that rule's effect (spec transaction-rules-structural-actions.md section 5); rules never re-evaluate a row a rule created, and a structural action is refused on any transfer leg",
 };
 
 type SiteKind =

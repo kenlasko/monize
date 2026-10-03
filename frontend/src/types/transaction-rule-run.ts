@@ -21,6 +21,31 @@ export interface RuleRunFieldChange<T> {
   after: T;
 }
 
+/** The planned or written transfer: the account that receives the other leg. */
+export interface RuleTransferPlan {
+  kind: 'transfer';
+  accountId: string;
+  clearCategory: boolean;
+}
+
+/** One part of a planned split; `amount` is signed like the row. */
+export interface RuleSplitPlanPart {
+  amount: number;
+  categoryId: string | null;
+  transferAccountId: string | null;
+  /** The payee of the counterpart leg of a transfer part. */
+  payeeId: string | null;
+  memo: string | null;
+}
+
+export interface RuleSplitPlan {
+  kind: 'split';
+  parts: RuleSplitPlanPart[];
+}
+
+/** What a structural action makes of the row (`RuleStructurePlan`). */
+export type RuleStructurePlan = RuleTransferPlan | RuleSplitPlan;
+
 /** What a rule changed on one row; an absent key was left alone. */
 export interface RuleRunChanges {
   categoryId?: RuleRunFieldChange<string | null>;
@@ -33,6 +58,8 @@ export interface RuleRunChanges {
   description?: RuleRunFieldChange<string | null>;
   /** The tag id sets before and after. */
   tagIds?: RuleRunFieldChange<string[]>;
+  /** Set by `convert_to_transfer` and `split`: what the row becomes. */
+  structure?: RuleRunFieldChange<RuleStructurePlan | null>;
 }
 
 export interface RuleRunMatchedRow {
@@ -50,7 +77,19 @@ export type RuleRunSkipReason =
   | 'split_category'
   | 'cross_owner_transfer_payee'
   | 'empty_render'
-  | 'payee_not_found';
+  | 'payee_not_found'
+  // A structural action the row cannot take (spec section 4).
+  | 'row_is_transfer_leg'
+  | 'row_has_splits'
+  | 'row_is_void'
+  | 'zero_amount'
+  | 'transfer_direction_mismatch'
+  | 'transfer_same_account'
+  | 'transfer_account_unavailable'
+  | 'transfer_currency_mismatch'
+  | 'split_amount_unparseable'
+  | 'split_sum_mismatch'
+  | 'split_too_few_parts';
 
 export interface RuleRunSkippedRow {
   transactionId: string;
@@ -59,6 +98,8 @@ export interface RuleRunSkippedRow {
 
 /** Names for the ids `changes` mentions, so no raw id reaches the screen. */
 export interface RuleRunLabels {
+  /** The accounts a transfer or a split part names. */
+  accounts: Record<string, string>;
   categories: Record<string, string>;
   payees: Record<string, string>;
   tags: Record<string, string>;
@@ -96,6 +137,9 @@ export interface PreviewDraftRuleData {
   ruleId?: string;
   condition: RuleConditionNode;
   actions: RuleAction[];
+  /** The draft's active window, `YYYY-MM-DD`; absent is open on that side (INV-RULE-004). */
+  activeFrom?: string | null;
+  activeTo?: string | null;
   filters?: RuleRunFilters;
 }
 

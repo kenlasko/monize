@@ -126,6 +126,7 @@ export function buildRuleFacts(input: RuleFactsInput): RuleFacts {
     tagIds: Object.freeze([...new Set(input.tagIds)]),
     hasSplits: input.hasSplits,
     referenceNumber: blankToNull(input.referenceNumber),
+    date: parts === null ? null : (input.transactionDate ?? null),
     dayOfMonth: parts?.dayOfMonth ?? null,
     weekday: parts?.weekday ?? null,
     status: blankToNull(input.status),

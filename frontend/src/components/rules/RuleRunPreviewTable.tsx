@@ -19,6 +19,17 @@ export function useSkipReasonText(): (reason: string) => string {
       case 'cross_owner_transfer_payee':
       case 'empty_render':
       case 'payee_not_found':
+      case 'row_is_transfer_leg':
+      case 'row_has_splits':
+      case 'row_is_void':
+      case 'zero_amount':
+      case 'transfer_direction_mismatch':
+      case 'transfer_same_account':
+      case 'transfer_account_unavailable':
+      case 'transfer_currency_mismatch':
+      case 'split_amount_unparseable':
+      case 'split_sum_mismatch':
+      case 'split_too_few_parts':
         return t(reason);
       default:
         // A reason newer than this client still says that the row was left alone.
@@ -70,6 +81,7 @@ export function RuleRunPreviewTable({ preview }: RuleRunPreviewTableProps) {
     category: (id: string) => labels.categories[id],
     payee: (id: string) => labels.payees[id],
     tag: (id: string) => labels.tags[id],
+    account: (id: string) => labels.accounts[id],
   };
 
   return (
@@ -115,7 +127,7 @@ export function RuleRunPreviewTable({ preview }: RuleRunPreviewTableProps) {
                   </Td>
                   <Td>
                     <ul className="space-y-0.5">
-                      {changeText(row.changes, names).map((line) => (
+                      {changeText(row.changes, names, { currencyCode: row.currencyCode }).map((line) => (
                         <li key={line}>{line}</li>
                       ))}
                     </ul>

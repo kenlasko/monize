@@ -41,6 +41,8 @@ export function storedRule(
     condition: VALID_CONDITION,
     actions: VALID_ACTIONS,
     stopProcessing: false,
+    activeFrom: null,
+    activeTo: null,
     revision: 3,
     createdAt: new Date("2026-09-01T00:00:00Z"),
     updatedAt: new Date("2026-09-01T00:00:00Z"),

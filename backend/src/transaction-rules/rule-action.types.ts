@@ -1,12 +1,16 @@
 /**
- * The closed list of rule actions (design section 6.1). No action can change
- * an amount, an account, a date, a status, a split or a link, so a rule cannot
- * move a balance (INV-RULE-001): anything not in this union is not
- * representable, and the validator refuses it.
+ * The closed list of rule actions (design section 6.1). INV-RULE-001 (restated
+ * in docs/specs/transaction-rules-structural-actions.md section 2): no action
+ * changes the matched row's amount, account, date or status, and none deletes
+ * or relinks a row that exists. The only balance a rule moves is the one a
+ * structural action (`convert_to_transfer`, `split`) creates, by exactly the
+ * counterpart leg's amount. Anything not in this union is not representable,
+ * and the validator refuses it.
  *
  * `request_ai_review` is the one action that is not a ledger write: it asks
  * for a person-approved AI review of the row and never changes the row itself.
- * `isLedgerAction` tells the two groups apart for the applier.
+ * `isLedgerAction` tells the two groups apart for the applier;
+ * `isStructuralAction` picks out the two that restructure the row.
  */
 
 export const RULE_ACTION_TYPES = [
@@ -17,6 +21,8 @@ export const RULE_ACTION_TYPES = [
   "request_ai_review",
   "set_payee_from_text",
   "set_description",
+  "convert_to_transfer",
+  "split",
 ] as const;
 export type RuleActionType = (typeof RULE_ACTION_TYPES)[number];
 
@@ -73,8 +79,50 @@ export interface RequestAiReviewAction {
 }
 
 /**
- * The actions that change the row's tags, category, payee or description.
- * None of them touches amount, account, date, status, splits or links.
+ * Makes the matched income or expense one leg of a transfer; the other leg is
+ * created in the named account. Exactly one of `toAccountId` (an expense: the
+ * money goes there) and `fromAccountId` (an income: it came from there).
+ */
+export interface ConvertToTransferAction {
+  readonly type: "convert_to_transfer";
+  readonly toAccountId?: string;
+  readonly fromAccountId?: string;
+  /** Clears the row's category (a transfer has none). Defaults to true. */
+  readonly clearCategory: boolean;
+  /** The payee of both legs. */
+  readonly payeeId?: string;
+}
+
+/** The amount of a split part that takes whatever the other parts leave. */
+export const SPLIT_REST_AMOUNT = "rest";
+
+/** One part of a `split`: its amount and where it goes. */
+export interface SplitActionPart {
+  /** `"{capture}"` naming a capture of the rule's `matches` patterns, or `"rest"`. */
+  readonly amount: string;
+  readonly categoryId?: string;
+  readonly transferAccountId?: string;
+  /** Only with `transferAccountId`: the payee of the counterpart leg. */
+  readonly payeeId?: string;
+  /** The split line's memo (1..200 characters). */
+  readonly description?: string;
+}
+
+/** Turns the matched row into a split whose part amounts come from captures. */
+export interface SplitAction {
+  readonly type: "split";
+  /** The parent row's payee. */
+  readonly payeeId?: string;
+  readonly parts: readonly SplitActionPart[];
+}
+
+/** The actions that restructure the row: a transfer leg or a split. */
+export type StructuralRuleAction = ConvertToTransferAction | SplitAction;
+
+/**
+ * The actions that change the row's tags, category, payee or description, or
+ * restructure it (`StructuralRuleAction`). None of them touches the row's
+ * amount, account, date or status.
  */
 export type LedgerRuleAction =
   | AddTagsAction
@@ -82,11 +130,19 @@ export type LedgerRuleAction =
   | SetCategoryAction
   | SetPayeeAction
   | SetPayeeFromTextAction
-  | SetDescriptionAction;
+  | SetDescriptionAction
+  | StructuralRuleAction;
 
 export type RuleAction = LedgerRuleAction | RequestAiReviewAction;
 
 /** True for an action that writes to the ledger; false for `request_ai_review`. */
 export function isLedgerAction(action: RuleAction): action is LedgerRuleAction {
   return action.type !== "request_ai_review";
+}
+
+/** True for `convert_to_transfer` and `split`, the actions that restructure the row. */
+export function isStructuralAction(
+  action: RuleAction,
+): action is StructuralRuleAction {
+  return action.type === "convert_to_transfer" || action.type === "split";
 }

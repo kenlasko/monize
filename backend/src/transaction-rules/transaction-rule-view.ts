@@ -67,6 +67,8 @@ export function toRuleResponse(
     condition: rule.condition,
     actions: rule.actions,
     stopProcessing: rule.stopProcessing,
+    activeFrom: rule.activeFrom ?? null,
+    activeTo: rule.activeTo ?? null,
     revision: rule.revision,
     createdAt: rule.createdAt,
     updatedAt: rule.updatedAt,

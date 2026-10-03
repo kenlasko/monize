@@ -1,6 +1,7 @@
 import type { ContactLookupSource } from './payee';
 import type { InvestmentAction } from './investment';
 import type { RuleAction, RuleConditionNode, RuleTrigger } from './transaction-rule';
+import type { RuleStructurePlan } from './transaction-rule-run';
 import type {
   RuleRunFilters,
   RuleRunMatchedRow,
@@ -382,6 +383,8 @@ export interface PendingActionPreview {
 
 /** Names for the ids a rule's effects mention; a missing id is a deleted item. */
 export interface PendingActionRuleEffectsLabels {
+  /** The accounts a transfer or a split part names; absent in a card built before they were sent. */
+  accounts?: Record<string, string>;
   categories: Record<string, string>;
   payees: Record<string, string>;
   tags: Record<string, string>;
@@ -401,6 +404,8 @@ export interface PendingActionRuleEffects {
     description?: string | null;
     addTagIds: string[];
     removeTagIds: string[];
+    /** A structural action's plan: the row becomes a transfer leg or a split. */
+    structure?: RuleStructurePlan;
   };
   aiReviewRequests: Array<{ ruleId: string; instruction: string }>;
   labels: PendingActionRuleEffectsLabels;
@@ -422,6 +427,9 @@ export interface PendingActionRuleState {
   condition: RuleConditionNode;
   actions: RuleAction[];
   stopProcessing: boolean;
+  /** The active window, `YYYY-MM-DD`; null or absent is open on that side. */
+  activeFrom?: string | null;
+  activeTo?: string | null;
 }
 
 /** What running a rule on existing transactions would do (`AiActionRuleTestPreview`). */
@@ -487,6 +495,11 @@ export interface PendingActionPreviewRow {
   }>;
   /** True when this bulk update/delete row targets a reconciled transaction. */
   isReconciled?: boolean;
+  /**
+   * What the user's rules will also do to this created row on approval, with a
+   * transfer or split they add (display-only; the single card's shape).
+   */
+  ruleEffects?: PendingActionRuleEffects;
   investmentAction?: InvestmentAction;
   symbol?: string | null;
   securityName?: string | null;

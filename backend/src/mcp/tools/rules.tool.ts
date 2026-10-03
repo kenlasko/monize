@@ -71,7 +71,7 @@ export class McpRulesTools {
         annotations: WRITE,
         description:
           RULE_LANGUAGE_GUIDE +
-          " Rules run in order on new and imported transactions. list returns them with revision, and invalid=true when one cannot run. Every change is confirmed by the user before anything is saved; a run applies a saved rule to existing transactions; test previews a saved or draft rule and saves nothing. update: ruleId plus only the fields to change (condition or actions replaces the whole one).",
+          " Rules run in order. Changes need the user's confirmation; run applies a rule to existing transactions; test previews and saves nothing. update: ruleId plus only the changed fields (condition or actions replaces the whole one).",
         inputSchema: manageTransactionRulesFields.extend({
           operation: z.enum([
             "list",
@@ -81,14 +81,8 @@ export class McpRulesTools {
             "run",
             "test",
           ]),
-          ruleId: uuidString()
-            .optional()
-            .describe("The rule to act on; omit to test a draft."),
-          search: z
-            .string()
-            .max(100)
-            .optional()
-            .describe("list: case-insensitive substring of the rule name."),
+          ruleId: uuidString().optional().describe("Omit to test a draft."),
+          search: z.string().max(100).optional().describe("list: name filter."),
         }),
         outputSchema: manageTransactionRulesOutput,
       },
@@ -127,6 +121,8 @@ export class McpRulesTools {
             enabled: args.enabled,
             triggers: args.triggers,
             stopProcessing: args.stopProcessing,
+            activeFrom: args.activeFrom,
+            activeTo: args.activeTo,
             condition: args.condition,
             actions: args.actions,
           };

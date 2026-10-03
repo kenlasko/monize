@@ -169,6 +169,8 @@ export class TransactionTransferService {
     private actionHistoryService: ActionHistoryService,
     private crossOwnerAccess: CrossOwnerAccessService,
     private exchangeRateService: ExchangeRateService,
+    // forwardRef: the applier reaches this file back through its imports.
+    @Inject(forwardRef(() => TransactionRulesApplierService))
     private rulesApplier: TransactionRulesApplierService,
   ) {}
 

@@ -6,7 +6,8 @@
 
 - **No task starts before S1.** The discussion must carry the `approved-to-build` label.
 - **One task per session and per PR.** Each task names its files. A change outside them is a scope violation: stop and leave a note.
-- **The governing invariants apply to every task:** a rule never moves a balance (design I1), and a rule runs inside the transaction that inserts the row (design I2). A task that adds an action which writes `amount`, `account_id`, `status` or a link is wrong: stop.
+- **Superseded in part:** `docs/specs/transaction-rules-structural-actions.md` restates I1 (a structural action moves its counterpart's balance only).
+- **The governing invariants apply to every task:** a rule never changes the matched row's amount, account, date or status, and the only balance it moves is a structural action's counterpart (design I1 as restated by `docs/specs/transaction-rules-structural-actions.md`, INV-RULE-001), and a rule runs inside the transaction that inserts the row (design I2). A task that adds an action which writes `amount`, `account_id` or `status` on the matched row, or any link other than the counterpart a structural action creates, is wrong: stop.
 - **The evaluator is written once** (`evaluateRuleCondition`, design 5.3). The preview, the test panel, the manual run and the commit call it; a second copy in a controller, a tool or a component is off the plan.
 - **Definition of done for every task**, in addition to its acceptance:
   - `backend/`: `npm run lint && npx tsc --noEmit && npm run typecheck`, `TZ=UTC npm run test:unit -- --coverage`; plus `npm run build && npm run test:integration` when a query, an entity, a migration or an RLS context changed.

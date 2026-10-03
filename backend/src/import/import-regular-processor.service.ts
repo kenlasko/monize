@@ -137,6 +137,14 @@ export class ImportRegularProcessorService {
         payeeTextById: new Map([[transactionId, payeeText ?? null]]),
       },
     );
+    // A structural action credited another account; the import's
+    // post-processing recomputes its balance absolutely and then refreshes net
+    // worth, after the import commits (INV-CACHE-001).
+    for (const row of applied) {
+      for (const accountId of row.affectedAccountIds) {
+        ctx.affectedAccountIds.add(accountId);
+      }
+    }
     // A traced change is a real one: the applier writes a trace row only for
     // a rule that changed the category, the payee or the tags.
     if (

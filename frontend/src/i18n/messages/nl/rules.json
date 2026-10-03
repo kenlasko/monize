@@ -90,7 +90,16 @@
       "imported": "Een transactie wordt geïmporteerd",
       "atLeastOne": "Houd minstens één optie aangevinkt",
       "stopProcessing": "Verwerking van andere regels stoppen",
-      "stopProcessingHelp": "Als deze regel bij een transactie past, worden de regels die in de lijst na haar komen voor die transactie overgeslagen."
+      "stopProcessingHelp": "Als deze regel bij een transactie past, worden de regels die in de lijst na haar komen voor die transactie overgeslagen.",
+      "window": {
+        "title": "Actief tussen",
+        "help": "De regel geldt alleen voor transacties met een datum binnen deze periode: bij het aanmaken of importeren en bij het testen of uitvoeren van de regel. Laat een datum leeg voor geen limiet.",
+        "from": "Eerste datum",
+        "to": "Laatste datum",
+        "backwards": "De laatste datum mag niet vóór de eerste datum liggen",
+        "noLimit": "geen limiet",
+        "words": "Alleen voor transacties van {from} tot {to}"
+      }
     },
     "if": {
       "description": "De acties worden alleen uitgevoerd voor transacties die passen",
@@ -138,7 +147,8 @@
       "dayOfMonth": "Dag van de maand",
       "weekday": "Dag van de week",
       "status": "Status",
-      "hasAttachment": "Heeft een bijlage"
+      "hasAttachment": "Heeft een bijlage",
+      "date": "Datum"
     },
     "operators": {
       "eq": "is",
@@ -215,7 +225,33 @@
         "replace": "Omschrijving vervangen",
         "append": "Toevoegen na de omschrijving",
         "prepend": "Toevoegen vóór de omschrijving"
-      }
+      },
+      "convertHelp": "De overeenkomende inkomsten of uitgave wordt één kant van een overboeking. De andere kant wordt aangemaakt op de gekozen rekening, die dezelfde valuta moet hebben.",
+      "direction": "Richting",
+      "directionTo": "Uitgave: het geld gaat naar een andere rekening",
+      "directionFrom": "Inkomsten: het geld komt van een andere rekening",
+      "clearCategory": "Categorie wissen",
+      "clearCategoryHelp": "Een overboeking heeft geen categorie. Schakel uit om de categorie te behouden die de transactie al heeft.",
+      "splitPayee": "Begunstigde van de transactie (optioneel)",
+      "splitHint": "Elk onderdeel neemt zijn bedrag uit een opgevangen waarde in de patronen hierboven, of neemt de rest. De onderdelen moeten samen het bedrag van de transactie vormen, anders laat de regel haar ongemoeid.",
+      "splitNoCaptures": "Er is nog geen opgevangen waarde gedefinieerd. Zet in een patroon hierboven een naam tussen accolades, bijvoorbeeld PRINCIPAL: {example}, om die hier als bedrag te gebruiken.",
+      "partAmountPlaceholder": "Kies het bedrag...",
+      "partRest": "De rest",
+      "partAccount": "Rekening",
+      "partPayee": "Begunstigde van de andere kant (optioneel)",
+      "partsLimit": "Een splitsing kan hooguit {max} onderdelen hebben.",
+      "guideTitle": "Zo gebruik je het",
+      "splitGuideHow": "Voeg onder “Als” een voorwaarde toe op de tekst van de begunstigde of de omschrijving met de operator “komt overeen met het patroon” en zet namen tussen accolades op de plek van de bedragen, bijvoorbeeld {first}. Elke naam wordt een bedrag dat je voor een deel kunt kiezen, of kies “De rest”. De delen moeten samen het bedrag van de transactie vormen, anders laat de regel de transactie ongewijzigd. Een deel kan een categorie zijn of een overboeking naar een andere rekening (een overboeking wijzigt het saldo van die rekening).",
+      "splitGuideExampleTitle": "Voorbeeld: een leningtermijn",
+      "splitGuideBank": "Banktekst: AFLOSSING: 1200,50 RENTE: 300,25 BOETE: 0,00",
+      "splitGuidePattern": "Patroon: *AFLOSSING: {first} RENTE: {second} BOETE*",
+      "splitGuidePart1": "Deel 1: {first} als overboeking naar de leningrekening",
+      "splitGuidePart2": "Deel 2: {second} als categorie “Leningen: Rente”",
+      "splitGuideResult": "Resultaat voor -1500,75: -1200,50 overgeboekt naar de leningrekening en -300,25 aan rentekosten.",
+      "splitGuideTip": "Tip: stel een begindatum in bij “Actief tussen” zodat oudere afgestemde transacties niet worden gewijzigd, en gebruik het paneel Test voordat je opslaat.",
+      "convertGuide": "Een uitgave wordt een overboeking naar de gekozen rekening en een inkomen een overboeking vanaf die rekening. Alleen het saldo van de andere rekening wijzigt. Tip: gebruik “Actief tussen” zodat oudere transacties niet worden gewijzigd.",
+      "splitGuideName1": "aflossing",
+      "splitGuideName2": "rente"
     },
     "actionTypes": {
       "add_tags": "Tags toevoegen",
@@ -224,7 +260,9 @@
       "set_payee": "Begunstigde instellen",
       "request_ai_review": "AI-controle aanvragen",
       "set_payee_from_text": "Begunstigde instellen vanuit tekst",
-      "set_description": "Omschrijving instellen"
+      "set_description": "Omschrijving instellen",
+      "convert_to_transfer": "Omzetten naar een overboeking",
+      "split": "Transactie splitsen"
     },
     "save": {
       "button": "Regel opslaan",
@@ -273,16 +311,17 @@
         "MAX_NODES": "Er zijn te veel voorwaarden en groepen. De limiet is {maxNodes}.",
         "NO_ACTIONS": "Voeg minstens één actie toe.",
         "TOO_MANY_ACTIONS": "Er zijn te veel acties. De limiet is {maxActions}.",
-        "DUPLICATE_ACTION": "Een regel kan maar één keer om een AI-controle vragen.",
-        "REFERENCE_NOT_FOUND": "Een hier gekozen item bestaat niet meer. Kies een ander.",
-        "NAME_REQUIRED": "Voer een naam voor de regel in.",
-        "UNKNOWN": "Dit onderdeel is ongeldig.",
+        "DUPLICATE_ACTION": "Een regel kan maar één AI-beoordeling hebben, één overboeking of splitsing, en één onderdeel van een splitsing dat de rest neemt.",
+        "CONFLICTING_ACTIONS": "Een overboeking- of splitsactie kan niet worden gecombineerd met ‘Categorie instellen’, en elk onderdeel heeft een categorie of een rekening.",
         "INVALID_CAPTURE": "Een opnamenaam bestaat uit kleine letters en cijfers, begint met een letter en is hooguit 20 tekens lang.",
         "TOO_MANY_CAPTURES": "Een patroon mag hooguit 5 opnamen bevatten.",
         "DUPLICATE_CAPTURE": "Elke opnamenaam mag in een regel maar één keer voorkomen.",
-        "UNKNOWN_CAPTURE": "De tekst gebruikt een opname die geen enkele voorwaarde van deze regel definieert.",
+        "UNKNOWN_CAPTURE": "Dit gebruikt een opgevangen waarde die geen enkele voorwaarde van deze regel definieert.",
         "LOOKS_LIKE_REGEX": "Reguliere expressies worden niet ondersteund: | \\ en korte haakjesklassen zoals [xy] worden als gewone tekens behandeld, dus een patroon dat als regex is geschreven komt nooit overeen met wat bedoeld was. Om met een van meerdere teksten overeen te komen, voeg je een groep “Een van deze” toe met voor elke tekst één voorwaarde.",
-        "PATTERN_WITHOUT_WILDCARD": "Zonder * moet dit patroon gelijk zijn aan de hele tekst. Gebruik “is” voor de hele tekst, “bevat” voor een deel ervan, of zet * om de tekst, bijvoorbeeld *koffie*."
+        "PATTERN_WITHOUT_WILDCARD": "Zonder * moet dit patroon gelijk zijn aan de hele tekst. Gebruik “is” voor de hele tekst, “bevat” voor een deel ervan, of zet * om de tekst, bijvoorbeeld *koffie*.",
+        "REFERENCE_NOT_FOUND": "Een hier gekozen item bestaat niet meer. Kies een ander.",
+        "NAME_REQUIRED": "Voer een naam voor de regel in.",
+        "UNKNOWN": "Dit onderdeel is ongeldig."
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "ze is een overboeking naar een andere eigenaar, van wie deze regel de begunstigde niet mag wijzigen",
       "empty_render": "de tekst van een actie is hiervoor leeg uitgekomen",
       "payee_not_found": "geen begunstigde heeft de naam die de regel heeft gemaakt, en de regel maakt er geen aan",
-      "other": "de regel kan haar niet wijzigen"
+      "other": "de regel kan haar niet wijzigen",
+      "row_is_transfer_leg": "ze is al een overboeking",
+      "row_has_splits": "ze is al gesplitst",
+      "row_is_void": "ze is ongeldig gemaakt",
+      "zero_amount": "het bedrag is nul",
+      "transfer_direction_mismatch": "de overboeking gaat de verkeerde kant op: een uitgave gaat naar een rekening, inkomsten komen van een rekening",
+      "transfer_same_account": "de overboekingsrekening is de rekening van de transactie zelf",
+      "transfer_account_unavailable": "de overboekingsrekening is niet beschikbaar (verwijderd of niet van jou)",
+      "transfer_currency_mismatch": "de overboekingsrekening heeft een andere valuta",
+      "split_amount_unparseable": "een bedrag in de tekst kon niet als getal worden gelezen",
+      "split_sum_mismatch": "de onderdelen vormen samen niet het bedrag",
+      "split_too_few_parts": "er blijven minder dan twee onderdelen over nadat nulbedragen zijn weggelaten"
     },
     "change": {
       "category": "Categorie: {before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "een verwijderd item",
       "payeeCreated": "{done, select, yes {Er is een nieuwe begunstigde aangemaakt: {name}} other {Er wordt een nieuwe begunstigde aangemaakt: {name}}}",
       "description": "Omschrijving: {before} → {after}",
-      "descriptionSet": "Omschrijving instellen op {value}"
+      "descriptionSet": "Omschrijving instellen op {value}",
+      "transfer": "{done, select, yes {Is een overboeking met {account} geworden} other {Wordt een overboeking met {account}}}",
+      "split": "{done, select, yes {Is gesplitst in {count, plural, one {# onderdeel} other {# onderdelen}}} other {Wordt gesplitst in {count, plural, one {# onderdeel} other {# onderdelen}}}}",
+      "splitPart": "Onderdeel {number}: {amount} {target}",
+      "splitPartMemo": ", notitie “{memo}”",
+      "splitToTransfer": "naar {account}",
+      "splitToTransferPayee": "naar {account}, begunstigde {payee}",
+      "splitToCategory": "als {category}",
+      "splitUncategorised": "zonder categorie"
     },
     "filters": {
       "accounts": "Rekeningen",
@@ -471,7 +529,15 @@
       "set_payee": "Begunstigde instellen op {name}{onlyIfEmpty, select, yes { (alleen als leeg)} other {}}",
       "request_ai_review": "AI-controle aanvragen: {instruction}",
       "set_payee_from_text": "Begunstigde instellen vanuit tekst: “{template}”{createIfMissing, select, yes { (aangemaakt als die ontbreekt)} other {}}{onlyIfEmpty, select, yes { (alleen als leeg)} other {}}",
-      "set_description": "Omschrijving instellen ({mode, select, append {toevoegen na} prepend {toevoegen vóór} other {vervangen}}): “{template}”{onlyIfEmpty, select, yes { (alleen als leeg)} other {}}"
+      "set_description": "Omschrijving instellen ({mode, select, append {toevoegen na} prepend {toevoegen vóór} other {vervangen}}): “{template}”{onlyIfEmpty, select, yes { (alleen als leeg)} other {}}",
+      "convert_to_transfer": "Omzetten naar een overboeking {direction, select, from {van} other {naar}} {account}",
+      "split": "Splitsen in: {parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} naar {account}",
+      "category": "{amount} als {category}",
+      "plain": "{amount}",
+      "rest": "de rest"
     }
   }
 }

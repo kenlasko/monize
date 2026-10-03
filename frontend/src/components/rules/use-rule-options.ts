@@ -15,6 +15,11 @@ export interface RuleOption {
 /** The lists the editor's pickers offer, built once from the loaded lookups. */
 export interface RuleOptions {
   readonly accounts: RuleOption[];
+  /**
+   * The accounts a transfer may name: the transfer form's own rule (no
+   * brokerage account, no closed one), in the same order and labels as `accounts`.
+   */
+  readonly transferAccounts: RuleOption[];
   readonly payees: RuleOption[];
   readonly categories: RuleOption[];
   readonly tags: RuleOption[];
@@ -28,6 +33,13 @@ export function useRuleOptions(lookups: RuleLookups): RuleOptions {
   return useMemo(
     () => ({
       accounts: buildAccountDropdownOptions([...lookups.accounts], () => true, accountLabel)
+        .filter((option) => option.value !== SEPARATOR)
+        .map(({ value, label }) => ({ value, label })),
+      transferAccounts: buildAccountDropdownOptions(
+        [...lookups.accounts],
+        (account) => account.accountSubType !== 'INVESTMENT_BROKERAGE' && !account.isClosed,
+        accountLabel,
+      )
         .filter((option) => option.value !== SEPARATOR)
         .map(({ value, label }) => ({ value, label })),
       payees: lookups.payees.map((p) => ({ value: p.id, label: p.name })),

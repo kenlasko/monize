@@ -652,6 +652,8 @@ CREATE TABLE transaction_rules (
     actions JSONB NOT NULL DEFAULT '[]'::jsonb,
     stop_processing BOOLEAN NOT NULL DEFAULT false,
     revision INTEGER NOT NULL DEFAULT 1, -- compare-and-swap counter for updates
+    active_from DATE, -- first transaction date the rule applies to (inclusive); NULL = open
+    active_to DATE,   -- last transaction date the rule applies to (inclusive); NULL = open
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT ck_transaction_rules_name_length
@@ -660,6 +662,8 @@ CREATE TABLE transaction_rules (
     CONSTRAINT ck_transaction_rules_revision CHECK (revision >= 1),
     CONSTRAINT ck_transaction_rules_triggers
       CHECK (cardinality(triggers) >= 1 AND triggers <@ ARRAY['create', 'import']::text[]),
+    CONSTRAINT ck_transaction_rules_active_window
+      CHECK (active_from IS NULL OR active_to IS NULL OR active_from <= active_to),
     CONSTRAINT uq_transaction_rules_user_position
       UNIQUE (user_id, position) DEFERRABLE INITIALLY DEFERRED
 );

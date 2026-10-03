@@ -39,6 +39,8 @@ const KIND_BY_VALUE_KIND: Readonly<Record<string, ReferenceKind>> = {
   tagIds: "tagIds",
 };
 
+const isString = (v: unknown): v is string => typeof v === "string";
+
 const toList = (value: unknown): string[] =>
   (Array.isArray(value) ? value : [value]).filter(
     (v): v is string => typeof v === "string",
@@ -49,6 +51,7 @@ const toList = (value: unknown): string[] =>
  * `set_payee_from_text` fill (`onlyIfEmpty: true`, design section 3 decision
  * 3), `set_description` overwrites (`onlyIfEmpty: false`, `mode: "replace"`),
  * and `set_payee_from_text` creates nothing (`createIfMissing: false`).
+ * `convert_to_transfer` clears the category (`clearCategory: true`, spec 3.3).
  */
 const ACTION_DEFAULTS: Readonly<
   Record<string, Readonly<Record<string, unknown>>>
@@ -57,6 +60,7 @@ const ACTION_DEFAULTS: Readonly<
   set_payee: { onlyIfEmpty: true },
   set_payee_from_text: { onlyIfEmpty: true, createIfMissing: false },
   set_description: { onlyIfEmpty: false, mode: "replace" },
+  convert_to_transfer: { clearCategory: true },
 };
 
 /**
@@ -122,6 +126,41 @@ function actionSites(
       out.push({ path, kind: "payeeIds", ids: [action.payeeId] });
     } else if (action.type === "add_tags" || action.type === "remove_tags") {
       out.push({ path, kind: "tagIds", ids: [...action.tagIds] });
+    } else if (action.type === "convert_to_transfer") {
+      out.push({
+        path,
+        kind: "accountIds",
+        ids: [action.toAccountId, action.fromAccountId].filter(isString),
+      });
+      out.push({
+        path,
+        kind: "payeeIds",
+        ids: [action.payeeId].filter(isString),
+      });
+    } else if (action.type === "split") {
+      out.push({
+        path,
+        kind: "payeeIds",
+        ids: [action.payeeId].filter(isString),
+      });
+      action.parts.forEach((part, p) => {
+        const at = `${path}.parts[${p}]`;
+        out.push({
+          path: at,
+          kind: "categoryIds",
+          ids: [part.categoryId].filter(isString),
+        });
+        out.push({
+          path: at,
+          kind: "accountIds",
+          ids: [part.transferAccountId].filter(isString),
+        });
+        out.push({
+          path: at,
+          kind: "payeeIds",
+          ids: [part.payeeId].filter(isString),
+        });
+      });
     }
   });
 }
@@ -175,12 +214,17 @@ export function referenceErrors(
     categoryIds: new Set(missing.categoryIds),
     tagIds: new Set(missing.tagIds),
   };
-  return sites
-    .filter((site) => site.ids.some((id) => lost[site.kind].has(id)))
-    .map((site) => ({
-      path: site.path,
-      code: "REFERENCE_NOT_FOUND" as const,
-    }));
+  // One entry per path: an action naming a lost account and a lost payee is
+  // one card with one problem.
+  const paths = new Set(
+    sites
+      .filter((site) => site.ids.some((id) => lost[site.kind].has(id)))
+      .map((site) => site.path),
+  );
+  return [...paths].map((path) => ({
+    path,
+    code: "REFERENCE_NOT_FOUND" as const,
+  }));
 }
 
 /** Every referenced id of a valid definition, and the ones that do not exist. */

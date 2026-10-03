@@ -66,6 +66,7 @@
     "undoNotSupportedForEntityType": "不支持对实体类型撤销：{{ entityType }}",
     "unsupportedTransactionAction": "不支持的交易操作：{{ action }}",
     "undoTransactionGone": "无法撤销：交易已不存在",
+    "redoCreateWithLegs": "此交易在其他账户中创建了条目,因此无法重做。请改为重新创建该交易",
     "undoAccountGone": "无法撤销：账户已不存在",
     "unsupportedTransferAction": "不支持的转账操作：{{ action }}",
     "unsupportedInvestmentAction": "不支持的投资操作：{{ action }}",
@@ -540,11 +541,15 @@
     "previewChanged": "自预览以来，交易或规则已发生变化。请查看新的预览后重新运行",
     "ruleInvalid": "此规则无效，无法运行。请先打开并修复它",
     "dateRangeInvalid": "开始日期不能晚于结束日期",
-    "runTooLarge": "本次运行更改的交易过多，无法一步撤销。请缩小账户或日期范围后重试"
+    "activeWindowInvalid": "生效起始日期不能晚于生效结束日期",
+    "runTooLarge": "本次运行更改的交易过多，无法一步撤销。请缩小账户或日期范围后重试",
+    "runRedoStructural": "此次运行更改了交易结构(转账或拆分),因此无法重做。请改为重新运行该规则",
+    "runUndoStructureChanged": "此次运行重组的某笔交易此后已被更改(其拆分行或转账),因此无法安全地撤销该运行。请手动恢复"
   },
   "transactions": {
     "invalidStatus": "无效的交易状态：{{ status }}",
     "reconciledLocked": "该交易已对账并被锁定。要修改它，请在设置中关闭“锁定已对账交易”。",
+    "convertToTransferRefused": "此交易已无法转换为转账。请检查后重新运行规则",
     "pagePositiveInteger": "page 必须是正整数",
     "limitPositiveInteger": "limit 必须是正整数",
     "limitMax200": "limit 不得超过 200",

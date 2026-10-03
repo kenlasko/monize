@@ -254,7 +254,12 @@ export class TransactionsController {
         createTransactionDto,
       );
     }
-    return this.transactionsService.create(req.user.id, createTransactionDto);
+    // An acting delegate writes as the owner but is not the owner: the owner's
+    // structural rules would land in accounts the delegate guard never checked
+    // (no moving money via an account the delegate cannot access).
+    return this.transactionsService.create(req.user.id, createTransactionDto, {
+      actorIsNotOwner: req.user.isActing === true,
+    });
   }
 
   @Get()

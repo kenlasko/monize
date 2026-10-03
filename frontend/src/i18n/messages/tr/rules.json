@@ -90,7 +90,16 @@
       "imported": "Bir işlem içe aktarıldığında",
       "atLeastOne": "En az bir seçenek işaretli kalsın",
       "stopProcessing": "Diğer kuralları işlemeyi durdur",
-      "stopProcessingHelp": "Bu kural bir işlemle eşleştiğinde, listede kendisinden sonra gelen kurallar o işlem için atlanır."
+      "stopProcessingHelp": "Bu kural bir işlemle eşleştiğinde, listede kendisinden sonra gelen kurallar o işlem için atlanır.",
+      "window": {
+        "title": "Şu tarihler arasında etkin",
+        "help": "Kural yalnızca tarihi bu aralıkta olan işlemlere uygulanır: işlemler oluşturulurken veya içe aktarılırken ve kural test edilirken ya da çalıştırılırken. Sınır koymamak için bir tarihi boş bırakın.",
+        "from": "İlk tarih",
+        "to": "Son tarih",
+        "backwards": "Son tarih ilk tarihten önce olamaz",
+        "noLimit": "sınır yok",
+        "words": "Yalnızca {from} ile {to} arasında tarihli işlemler için"
+      }
     },
     "if": {
       "description": "Eylemler yalnızca eşleşen işlemler için çalışır",
@@ -138,7 +147,8 @@
       "dayOfMonth": "Ayın günü",
       "weekday": "Haftanın günü",
       "status": "Durum",
-      "hasAttachment": "Eki var"
+      "hasAttachment": "Eki var",
+      "date": "Tarih"
     },
     "operators": {
       "eq": "şudur",
@@ -215,7 +225,33 @@
         "replace": "Açıklamayı değiştir",
         "append": "Açıklamanın sonuna ekle",
         "prepend": "Açıklamanın başına ekle"
-      }
+      },
+      "convertHelp": "Eşleşen gelir veya gider, bir havalenin bir tarafı olur. Diğer taraf, aynı para birimini kullanan seçtiğiniz hesapta oluşturulur.",
+      "direction": "Yön",
+      "directionTo": "Gider: para başka bir hesaba gider",
+      "directionFrom": "Gelir: para başka bir hesaptan gelir",
+      "clearCategory": "Kategoriyi temizle",
+      "clearCategoryHelp": "Havalenin kategorisi olmaz. İşlemin mevcut kategorisini korumak için kapatın.",
+      "splitPayee": "İşlemin alıcısı (isteğe bağlı)",
+      "splitHint": "Her parça tutarını yukarıdaki desenlerdeki bir yakalamadan alır ya da kalanı alır. Parçaların toplamı işlem tutarına eşit olmalıdır, aksi halde kural işleme dokunmaz.",
+      "splitNoCaptures": "Henüz tanımlı bir yakalama yok. Tutar olarak kullanmak için yukarıdaki bir desende küme parantezi içine bir ad yazın, örneğin PRINCIPAL: {example}.",
+      "partAmountPlaceholder": "Tutarı seçin...",
+      "partRest": "Kalan",
+      "partAccount": "Hesap",
+      "partPayee": "Diğer tarafın alıcısı (isteğe bağlı)",
+      "partsLimit": "Bir bölmede en fazla {max} parça olabilir.",
+      "guideTitle": "Nasıl kullanılır",
+      "splitGuideHow": "“Eğer” bölümünde, alıcı metni veya açıklama için “şu kalıba uyar” işleciyle bir koşul ekleyin ve tutarların bulunduğu yerlere küme parantezi içinde adlar yazın, örneğin {first}. Her ad, bir parça için seçebileceğiniz bir tutar olur; ya da “Kalan”ı seçin. Parçaların toplamı işlem tutarına eşit olmalıdır, aksi halde kural işlemi değiştirmeden bırakır. Bir parça bir kategori ya da başka bir hesaba yapılan transfer olabilir (transfer o hesabın bakiyesini değiştirir).",
+      "splitGuideExampleTitle": "Örnek: bir kredi taksiti",
+      "splitGuideBank": "Banka metni: ANAPARA: 1200,50 FAIZ: 300,25 GECIKME: 0,00",
+      "splitGuidePattern": "Kalıp: *ANAPARA: {first} FAIZ: {second} GECIKME*",
+      "splitGuidePart1": "Parça 1: {first} kredi hesabına transfer olarak",
+      "splitGuidePart2": "Parça 2: {second} “Krediler: Faiz” kategorisi olarak",
+      "splitGuideResult": "-1500,75 için sonuç: kredi hesabına -1200,50 transfer edilir ve -300,25 faiz gideri yazılır.",
+      "splitGuideTip": "İpucu: eski mutabakatı yapılmış işlemler değişmesin diye “Şu tarihler arasında etkin” alanında bir başlangıç tarihi belirleyin ve kaydetmeden önce Test panelini kullanın.",
+      "convertGuide": "Bir gider, seçtiğiniz hesaba transfere; bir gelir ise o hesaptan transfere dönüşür. Yalnızca diğer hesabın bakiyesi değişir. İpucu: eski işlemler değişmesin diye “Şu tarihler arasında etkin” alanını kullanın.",
+      "splitGuideName1": "anapara",
+      "splitGuideName2": "faiz"
     },
     "actionTypes": {
       "add_tags": "Etiket ekle",
@@ -224,7 +260,9 @@
       "set_payee": "Alıcıyı ayarla",
       "request_ai_review": "Yapay zekâ incelemesi iste",
       "set_payee_from_text": "Alıcıyı metinden ayarla",
-      "set_description": "Açıklamayı ayarla"
+      "set_description": "Açıklamayı ayarla",
+      "convert_to_transfer": "Havaleye dönüştür",
+      "split": "İşlemi böl"
     },
     "save": {
       "button": "Kuralı kaydet",
@@ -273,16 +311,17 @@
         "MAX_NODES": "Çok fazla koşul ve grup var. Sınır {maxNodes}.",
         "NO_ACTIONS": "En az bir eylem ekleyin.",
         "TOO_MANY_ACTIONS": "Çok fazla eylem var. Sınır {maxActions}.",
-        "DUPLICATE_ACTION": "Bir kural yapay zekâ incelemesini yalnızca bir kez isteyebilir.",
-        "REFERENCE_NOT_FOUND": "Burada seçilen bir öğe artık yok. Başka bir öğe seçin.",
-        "NAME_REQUIRED": "Kural için bir ad girin.",
-        "UNKNOWN": "Bu bölüm geçersiz.",
+        "DUPLICATE_ACTION": "Bir kuralda yalnızca bir yapay zekâ incelemesi, bir havale veya bölme ve kalanı alan bir bölme parçası olabilir.",
+        "CONFLICTING_ACTIONS": "Havale veya bölme eylemi “Kategoriyi ayarla” ile birleştirilemez ve parçalarının her birinin bir kategorisi ya da bir hesabı vardır.",
         "INVALID_CAPTURE": "Yakalama adı küçük harf ve rakamlardan oluşur, harfle başlar ve en fazla 20 karakter uzunluğundadır.",
         "TOO_MANY_CAPTURES": "Bir desen en fazla 5 yakalama içerebilir.",
         "DUPLICATE_CAPTURE": "Her yakalama adı bir kuralda yalnızca bir kez kullanılabilir.",
-        "UNKNOWN_CAPTURE": "Metin, bu kuralın hiçbir koşulunda tanımlanmamış bir yakalama kullanıyor.",
+        "UNKNOWN_CAPTURE": "Bu, bu kuralın hiçbir koşulunun tanımlamadığı bir yakalama kullanıyor.",
         "LOOKS_LIKE_REGEX": "Düzenli ifadeler desteklenmez: | \\ ve [xy] gibi kısa köşeli parantez sınıfları sıradan karakterler olarak eşleştirilir, bu yüzden regex olarak yazılmış bir desen amaçlananla asla eşleşmez. Birkaç metinden biriyle eşleşmek için “Bunlardan herhangi biri” grubu ekleyin ve her metin için içine bir koşul koyun.",
-        "PATTERN_WITHOUT_WILDCARD": "* olmadan bu desen metnin tamamına eşit olmalıdır. Metnin tamamı için “şudur”, bir parçası için “şunu içerir” işlecini kullanın ya da metnin etrafına * koyun, örneğin *kahve*."
+        "PATTERN_WITHOUT_WILDCARD": "* olmadan bu desen metnin tamamına eşit olmalıdır. Metnin tamamı için “şudur”, bir parçası için “şunu içerir” işlecini kullanın ya da metnin etrafına * koyun, örneğin *kahve*.",
+        "REFERENCE_NOT_FOUND": "Burada seçilen bir öğe artık yok. Başka bir öğe seçin.",
+        "NAME_REQUIRED": "Kural için bir ad girin.",
+        "UNKNOWN": "Bu bölüm geçersiz."
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "başka bir sahibe yapılan bir transfer ve bu kural onun alıcısını değiştiremez",
       "empty_render": "bir eylemin metni bunun için boş çıktı",
       "payee_not_found": "kuralın oluşturduğu ada sahip bir alıcı yok ve kural da oluşturmuyor",
-      "other": "kural bunu değiştiremez"
+      "other": "kural bunu değiştiremez",
+      "row_is_transfer_leg": "zaten bir havale",
+      "row_has_splits": "zaten bölünmüş",
+      "row_is_void": "geçersiz kılınmış",
+      "zero_amount": "tutarı sıfır",
+      "transfer_direction_mismatch": "havale yönü uymuyor: gider bir hesaba gider, gelir bir hesaptan gelir",
+      "transfer_same_account": "havale hesabı işlemin kendi hesabı",
+      "transfer_account_unavailable": "havale hesabı kullanılamıyor (silinmiş ya da size ait değil)",
+      "transfer_currency_mismatch": "havale hesabı başka bir para birimi kullanıyor",
+      "split_amount_unparseable": "metnindeki bir tutar sayı olarak okunamadı",
+      "split_sum_mismatch": "parçaların toplamı tutarına eşit değil",
+      "split_too_few_parts": "sıfır tutarlar çıkarıldığında ikiden az parça kalıyor"
     },
     "change": {
       "category": "Kategori: {before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "silinmiş bir öğe",
       "payeeCreated": "{done, select, yes {Yeni bir alıcı oluşturuldu: {name}} other {Yeni bir alıcı oluşturulacak: {name}}}",
       "description": "Açıklama: {before} → {after}",
-      "descriptionSet": "Açıklamayı {value} olarak ayarla"
+      "descriptionSet": "Açıklamayı {value} olarak ayarla",
+      "transfer": "{done, select, yes {{account} ile bir havale oldu} other {{account} ile bir havale olacak}}",
+      "split": "{done, select, yes {{count, plural, other {# parçaya}} bölündü} other {{count, plural, other {# parçaya}} bölünecek}}",
+      "splitPart": "Parça {number}: {amount} {target}",
+      "splitPartMemo": ", not “{memo}”",
+      "splitToTransfer": "{account} hesabına",
+      "splitToTransferPayee": "{account} hesabına, alıcı {payee}",
+      "splitToCategory": "{category} olarak",
+      "splitUncategorised": "kategorisiz"
     },
     "filters": {
       "accounts": "Hesaplar",
@@ -471,7 +529,15 @@
       "set_payee": "Alıcıyı {name} olarak ayarla{onlyIfEmpty, select, yes { (yalnızca boşsa)} other {}}",
       "request_ai_review": "Yapay zekâ incelemesi iste: {instruction}",
       "set_payee_from_text": "Alıcıyı metinden ayarla: “{template}”{createIfMissing, select, yes { (yoksa oluşturulur)} other {}}{onlyIfEmpty, select, yes { (yalnızca boşsa)} other {}}",
-      "set_description": "Açıklamayı ayarla ({mode, select, append {sona ekle} prepend {başa ekle} other {değiştir}}): “{template}”{onlyIfEmpty, select, yes { (yalnızca boşsa)} other {}}"
+      "set_description": "Açıklamayı ayarla ({mode, select, append {sona ekle} prepend {başa ekle} other {değiştir}}): “{template}”{onlyIfEmpty, select, yes { (yalnızca boşsa)} other {}}",
+      "convert_to_transfer": "{direction, select, from {{account} hesabından} other {{account} hesabına}} havaleye dönüştür",
+      "split": "Şuna böl: {parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} tutarı {account} hesabına",
+      "category": "{amount} tutarı {category} olarak",
+      "plain": "{amount}",
+      "rest": "kalan"
     }
   }
 }

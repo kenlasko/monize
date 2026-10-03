@@ -90,7 +90,16 @@
       "imported": "Một giao dịch được nhập",
       "atLeastOne": "Giữ ít nhất một tùy chọn được chọn",
       "stopProcessing": "Dừng xử lý các quy tắc khác",
-      "stopProcessingHelp": "Khi quy tắc này khớp với một giao dịch, các quy tắc đứng sau nó trong danh sách sẽ bị bỏ qua đối với giao dịch đó."
+      "stopProcessingHelp": "Khi quy tắc này khớp với một giao dịch, các quy tắc đứng sau nó trong danh sách sẽ bị bỏ qua đối với giao dịch đó.",
+      "window": {
+        "title": "Hoạt động trong khoảng",
+        "help": "Quy tắc chỉ áp dụng cho các giao dịch có ngày nằm trong khoảng này: khi tạo hoặc nhập giao dịch, và khi thử hoặc chạy quy tắc. Để trống một ngày nếu không giới hạn.",
+        "from": "Ngày đầu",
+        "to": "Ngày cuối",
+        "backwards": "Ngày cuối không được trước ngày đầu",
+        "noLimit": "không giới hạn",
+        "words": "Chỉ áp dụng cho giao dịch có ngày từ {from} đến {to}"
+      }
     },
     "if": {
       "description": "Các hành động chỉ chạy với những giao dịch khớp",
@@ -138,7 +147,8 @@
       "dayOfMonth": "Ngày trong tháng",
       "weekday": "Ngày trong tuần",
       "status": "Trạng thái",
-      "hasAttachment": "Có tệp đính kèm"
+      "hasAttachment": "Có tệp đính kèm",
+      "date": "Ngày"
     },
     "operators": {
       "eq": "là",
@@ -215,7 +225,33 @@
         "replace": "Thay thế mô tả",
         "append": "Thêm vào sau mô tả",
         "prepend": "Thêm vào trước mô tả"
-      }
+      },
+      "convertHelp": "Khoản thu hoặc chi khớp trở thành một phía của giao dịch chuyển khoản. Phía còn lại được tạo trong tài khoản bạn chọn, tài khoản này phải dùng cùng loại tiền tệ.",
+      "direction": "Chiều",
+      "directionTo": "Chi: tiền chuyển sang tài khoản khác",
+      "directionFrom": "Thu: tiền đến từ tài khoản khác",
+      "clearCategory": "Xóa danh mục",
+      "clearCategoryHelp": "Giao dịch chuyển khoản không có danh mục. Tắt để giữ danh mục mà giao dịch đã có.",
+      "splitPayee": "Người nhận của giao dịch (tùy chọn)",
+      "splitHint": "Mỗi phần lấy số tiền từ một giá trị bắt được trong các mẫu ở trên, hoặc lấy phần còn lại. Các phần phải cộng lại bằng số tiền của giao dịch, nếu không quy tắc sẽ bỏ qua giao dịch đó.",
+      "splitNoCaptures": "Chưa có giá trị bắt nào được định nghĩa. Hãy đặt một tên trong dấu ngoặc nhọn ở một mẫu phía trên, ví dụ PRINCIPAL: {example}, để dùng làm số tiền ở đây.",
+      "partAmountPlaceholder": "Chọn số tiền...",
+      "partRest": "Phần còn lại",
+      "partAccount": "Tài khoản",
+      "partPayee": "Người nhận của phía còn lại (tùy chọn)",
+      "partsLimit": "Một giao dịch tách có tối đa {max} phần.",
+      "guideTitle": "Cách sử dụng",
+      "splitGuideHow": "Trong “Nếu”, thêm một điều kiện về văn bản người nhận hoặc mô tả với toán tử “khớp với mẫu”, rồi đặt tên trong dấu ngoặc nhọn ở vị trí các số tiền, ví dụ {first}. Mỗi tên trở thành một số tiền bạn có thể chọn cho một phần, hoặc chọn “Phần còn lại”. Các phần phải cộng lại bằng số tiền của giao dịch, nếu không quy tắc sẽ giữ nguyên giao dịch. Một phần có thể là danh mục hoặc chuyển khoản sang tài khoản khác (chuyển khoản làm thay đổi số dư của tài khoản đó).",
+      "splitGuideExampleTitle": "Ví dụ: một kỳ trả khoản vay",
+      "splitGuideBank": "Văn bản ngân hàng: GOC: 1200,50 LAI: 300,25 PHAT: 0,00",
+      "splitGuidePattern": "Mẫu: *GOC: {first} LAI: {second} PHAT*",
+      "splitGuidePart1": "Phần 1: {first} dưới dạng chuyển khoản sang tài khoản khoản vay",
+      "splitGuidePart2": "Phần 2: {second} dưới dạng danh mục “Khoản vay: Lãi”",
+      "splitGuideResult": "Kết quả cho -1500,75: -1200,50 được chuyển sang tài khoản khoản vay và -300,25 chi phí lãi.",
+      "splitGuideTip": "Mẹo: đặt ngày bắt đầu trong “Hoạt động trong khoảng” để không thay đổi các giao dịch cũ đã đối chiếu, và dùng bảng Kiểm tra trước khi lưu.",
+      "convertGuide": "Một khoản chi trở thành chuyển khoản sang tài khoản bạn chọn, và một khoản thu trở thành chuyển khoản từ tài khoản đó. Chỉ số dư của tài khoản kia thay đổi. Mẹo: dùng “Hoạt động trong khoảng” để không thay đổi các giao dịch cũ.",
+      "splitGuideName1": "goc",
+      "splitGuideName2": "lai"
     },
     "actionTypes": {
       "add_tags": "Thêm thẻ",
@@ -224,7 +260,9 @@
       "set_payee": "Đặt người nhận",
       "request_ai_review": "Yêu cầu AI xem xét",
       "set_payee_from_text": "Đặt người nhận từ văn bản",
-      "set_description": "Đặt mô tả"
+      "set_description": "Đặt mô tả",
+      "convert_to_transfer": "Chuyển thành giao dịch chuyển khoản",
+      "split": "Tách giao dịch"
     },
     "save": {
       "button": "Lưu quy tắc",
@@ -273,16 +311,17 @@
         "MAX_NODES": "Có quá nhiều điều kiện và nhóm. Giới hạn là {maxNodes}.",
         "NO_ACTIONS": "Hãy thêm ít nhất một hành động.",
         "TOO_MANY_ACTIONS": "Có quá nhiều hành động. Giới hạn là {maxActions}.",
-        "DUPLICATE_ACTION": "Một quy tắc chỉ có thể yêu cầu AI xem xét một lần.",
-        "REFERENCE_NOT_FOUND": "Một mục được chọn ở đây không còn tồn tại. Hãy chọn mục khác.",
-        "NAME_REQUIRED": "Hãy nhập tên cho quy tắc.",
-        "UNKNOWN": "Phần này không hợp lệ.",
+        "DUPLICATE_ACTION": "Một quy tắc chỉ có thể có một lần xem xét bằng AI, một giao dịch chuyển khoản hoặc tách, và một phần tách lấy phần còn lại.",
+        "CONFLICTING_ACTIONS": "Hành động chuyển khoản hoặc tách không thể kết hợp với “Đặt danh mục”, và mỗi phần của nó có danh mục hoặc tài khoản.",
         "INVALID_CAPTURE": "Tên phần bắt giữ gồm chữ thường và chữ số, bắt đầu bằng chữ cái và dài tối đa 20 ký tự.",
         "TOO_MANY_CAPTURES": "Một mẫu có thể chứa tối đa 5 phần bắt giữ.",
         "DUPLICATE_CAPTURE": "Mỗi tên phần bắt giữ chỉ được dùng một lần trong một quy tắc.",
-        "UNKNOWN_CAPTURE": "Văn bản dùng một phần bắt giữ mà không điều kiện nào của quy tắc này định nghĩa.",
+        "UNKNOWN_CAPTURE": "Mục này dùng một giá trị bắt mà không điều kiện nào của quy tắc này định nghĩa.",
         "LOOKS_LIKE_REGEX": "Biểu thức chính quy không được hỗ trợ: | \\ và các lớp ngoặc vuông ngắn như [xy] được coi là ký tự thông thường, nên mẫu viết như regex không bao giờ khớp với ý định. Để khớp một trong nhiều văn bản, hãy thêm nhóm “Bất kỳ điều nào sau đây” và đặt vào đó một điều kiện cho mỗi văn bản.",
-        "PATTERN_WITHOUT_WILDCARD": "Không có * thì mẫu này phải bằng toàn bộ văn bản. Dùng toán tử “là” cho toàn bộ văn bản, “chứa” cho một phần, hoặc đặt * quanh văn bản, ví dụ *cà phê*."
+        "PATTERN_WITHOUT_WILDCARD": "Không có * thì mẫu này phải bằng toàn bộ văn bản. Dùng toán tử “là” cho toàn bộ văn bản, “chứa” cho một phần, hoặc đặt * quanh văn bản, ví dụ *cà phê*.",
+        "REFERENCE_NOT_FOUND": "Một mục được chọn ở đây không còn tồn tại. Hãy chọn mục khác.",
+        "NAME_REQUIRED": "Hãy nhập tên cho quy tắc.",
+        "UNKNOWN": "Phần này không hợp lệ."
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "là chuyển khoản cho chủ sở hữu khác, người nhận của nó quy tắc này không được thay đổi",
       "empty_render": "văn bản của một hành động bị trống đối với nó",
       "payee_not_found": "không có người nhận nào mang tên mà quy tắc đã tạo, và quy tắc không tạo mới",
-      "other": "quy tắc không thể thay đổi nó"
+      "other": "quy tắc không thể thay đổi nó",
+      "row_is_transfer_leg": "nó đã là giao dịch chuyển khoản",
+      "row_has_splits": "nó đã được tách",
+      "row_is_void": "nó đã bị hủy",
+      "zero_amount": "số tiền của nó bằng 0",
+      "transfer_direction_mismatch": "chiều chuyển khoản không khớp: khoản chi đi tới một tài khoản, khoản thu đến từ một tài khoản",
+      "transfer_same_account": "tài khoản chuyển khoản chính là tài khoản của giao dịch",
+      "transfer_account_unavailable": "tài khoản chuyển khoản không khả dụng (đã bị xóa hoặc không phải của bạn)",
+      "transfer_currency_mismatch": "tài khoản chuyển khoản dùng loại tiền tệ khác",
+      "split_amount_unparseable": "không đọc được một số tiền trong văn bản của nó thành số",
+      "split_sum_mismatch": "các phần cộng lại không bằng số tiền của nó",
+      "split_too_few_parts": "còn ít hơn hai phần sau khi bỏ các số tiền bằng 0"
     },
     "change": {
       "category": "Danh mục: {before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "một mục đã bị xóa",
       "payeeCreated": "{done, select, yes {Đã tạo người nhận mới: {name}} other {Sẽ tạo người nhận mới: {name}}}",
       "description": "Mô tả: {before} → {after}",
-      "descriptionSet": "Đặt mô tả thành {value}"
+      "descriptionSet": "Đặt mô tả thành {value}",
+      "transfer": "{done, select, yes {Đã trở thành giao dịch chuyển khoản với {account}} other {Sẽ trở thành giao dịch chuyển khoản với {account}}}",
+      "split": "{done, select, yes {Đã được tách thành {count, plural, other {# phần}}} other {Sẽ được tách thành {count, plural, other {# phần}}}}",
+      "splitPart": "Phần {number}: {amount} {target}",
+      "splitPartMemo": ", ghi chú “{memo}”",
+      "splitToTransfer": "tới {account}",
+      "splitToTransferPayee": "tới {account}, người nhận {payee}",
+      "splitToCategory": "là {category}",
+      "splitUncategorised": "không có danh mục"
     },
     "filters": {
       "accounts": "Tài khoản",
@@ -471,7 +529,15 @@
       "set_payee": "Đặt người nhận thành {name}{onlyIfEmpty, select, yes { (chỉ khi trống)} other {}}",
       "request_ai_review": "Yêu cầu AI xem xét: {instruction}",
       "set_payee_from_text": "Đặt người nhận từ văn bản: “{template}”{createIfMissing, select, yes { (tạo mới nếu chưa có)} other {}}{onlyIfEmpty, select, yes { (chỉ khi trống)} other {}}",
-      "set_description": "Đặt mô tả ({mode, select, append {thêm vào sau} prepend {thêm vào trước} other {thay thế}}): “{template}”{onlyIfEmpty, select, yes { (chỉ khi trống)} other {}}"
+      "set_description": "Đặt mô tả ({mode, select, append {thêm vào sau} prepend {thêm vào trước} other {thay thế}}): “{template}”{onlyIfEmpty, select, yes { (chỉ khi trống)} other {}}",
+      "convert_to_transfer": "Chuyển thành chuyển khoản {direction, select, from {từ} other {đến}} {account}",
+      "split": "Tách thành: {parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} đến {account}",
+      "category": "{amount} làm {category}",
+      "plain": "{amount}",
+      "rest": "phần còn lại"
     }
   }
 }

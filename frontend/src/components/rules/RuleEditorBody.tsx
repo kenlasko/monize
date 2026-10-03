@@ -41,6 +41,7 @@ import {
   removeAction,
   updateAction,
   actionKey,
+  isStructuralActionType,
 } from '@/lib/rule-actions';
 import { draftFromRule, draftSignature, draftToPayload, emptyDraft, type RuleDraft } from '@/lib/rule-draft';
 import {
@@ -51,6 +52,7 @@ import {
   isRevisionConflict,
   placeErrors,
   readRuleApiError,
+  structuralFieldErrors,
   type PlacedErrors,
 } from '@/lib/rule-errors';
 import { MAX_RULE_ACTIONS, MAX_RULE_NAME_LENGTH } from '@/lib/rule-fields';
@@ -155,7 +157,7 @@ export function RuleEditorBody({ rule, lookups, onSaved, onReload }: RuleEditorB
     }
     setSaving(true);
     try {
-      const payload = draftToPayload(draft);
+      const payload = draftToPayload(draft, loadedDraft);
       if (rule) {
         const saved = await transactionRulesApi.update(rule.id, {
           ...payload,
@@ -227,6 +229,10 @@ export function RuleEditorBody({ rule, lookups, onSaved, onReload }: RuleEditorB
           stopProcessing={draft.stopProcessing}
           onTriggersChange={(triggers) => edit((current) => ({ ...current, triggers }))}
           onStopProcessingChange={(stopProcessing) => edit((current) => ({ ...current, stopProcessing }))}
+          activeFrom={draft.activeFrom}
+          activeTo={draft.activeTo}
+          onActiveFromChange={(activeFrom) => edit((current) => ({ ...current, activeFrom }))}
+          onActiveToChange={(activeTo) => edit((current) => ({ ...current, activeTo }))}
         />
 
         <RuleIfSection expression={expression} env={env} index={index} conditionCodes={conditionCodes} />
@@ -248,6 +254,7 @@ export function RuleEditorBody({ rule, lookups, onSaved, onReload }: RuleEditorB
                 options={options}
                 captures={captures}
                 errors={errors.byKey[actionKey(index)] ?? []}
+                fieldErrors={isStructuralActionType(action.type) ? structuralFieldErrors(errors, index) : undefined}
                 onChange={(next) => setActions((list) => updateAction(list, index, next))}
                 actions={cardActions({
                   canDuplicate: canDuplicateAction(draft.actions, index),

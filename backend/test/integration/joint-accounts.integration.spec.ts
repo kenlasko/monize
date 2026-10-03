@@ -6,7 +6,10 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { TransactionsService } from "@/transactions/transactions.service";
+import { TransactionsController } from "@/transactions/transactions.controller";
 import { TransactionsModule } from "@/transactions/transactions.module";
+import { TransactionRulesModule } from "@/transaction-rules/transaction-rules.module";
+import { TransactionRulesService } from "@/transaction-rules/transaction-rules.service";
 import { JointRegisterService } from "@/transactions/joint-register.service";
 import { JointCategoriesService } from "@/categories/joint-categories.service";
 import { CategoriesModule } from "@/categories/categories.module";
@@ -134,6 +137,7 @@ describe("Joint accounts (integration)", () => {
   beforeAll(async () => {
     module = await createIntegrationModule([
       TransactionsModule,
+      TransactionRulesModule,
       CategoriesModule,
     ]);
     transactions = module.get(TransactionsService);
@@ -151,6 +155,8 @@ describe("Joint accounts (integration)", () => {
 
   beforeEach(async () => {
     await cleanTables(dataSource, [
+      "transaction_rule_applications",
+      "transaction_rules",
       "action_history",
       "transaction_tags",
       "transaction_splits",
@@ -374,6 +380,253 @@ describe("Joint accounts (integration)", () => {
   // The capability existed on both sides -- stored, editable by the owner,
   // reported in the joint reference data -- and reached no endpoint, so a
   // grantee holding it still could not create a category.
+  describe("the owner's structural rules on a grantee's create", () => {
+    it("skips convert_to_transfer and split: no counterpart, no owner balance change, no owner account in the response", async () => {
+      await grantJoint({ create: true });
+      const mortgageId = (
+        await createTestAccount(dataSource, ownerId, {
+          name: "Private Mortgage",
+          accountType: "LOAN",
+          openingBalance: -20000,
+          currentBalance: -20000,
+        })
+      ).id;
+      const loansCategory = await ownerCategory("Loans");
+      const rules = module.get(TransactionRulesService, { strict: false });
+      const matches = {
+        field: "description",
+        op: "contains",
+        value: "LOAN-0000",
+      };
+      await withUserContext(ownerId, async () => {
+        await rules.create(ownerId, {
+          name: "Principal",
+          triggers: ["create"],
+          condition: matches,
+          actions: [
+            {
+              type: "convert_to_transfer",
+              toAccountId: mortgageId,
+              clearCategory: true,
+            },
+          ],
+        } as never);
+        await rules.create(ownerId, {
+          name: "Principal split",
+          triggers: ["create"],
+          condition: {
+            field: "description",
+            op: "matches",
+            value: "LOAN-0000 {principal}/{interest}",
+          },
+          actions: [
+            {
+              type: "split",
+              parts: [
+                { amount: "{principal}", transferAccountId: mortgageId },
+                { amount: "{interest}", categoryId: loansCategory },
+              ],
+            },
+          ],
+        } as never);
+        // Category rules still apply to the member's row.
+        await rules.create(ownerId, {
+          name: "Categorise",
+          triggers: ["create"],
+          condition: matches,
+          actions: [
+            {
+              type: "set_category",
+              categoryId: loansCategory,
+              onlyIfEmpty: false,
+            },
+          ],
+        } as never);
+      });
+
+      const created = await withUserContext(granteeId, () =>
+        jointRegister.create(granteeId, {
+          accountId: jointAccountId,
+          amount: -640.15,
+          transactionDate: "2026-01-10",
+          currencyCode: "USD",
+          description: "LOAN-0000 400,15/240,00",
+        } as never),
+      );
+
+      const row = (await dataSource.manager.findOne(Transaction, {
+        where: { id: created.id },
+      }))!;
+      // The row stays a plain expense of the owner's joint account, with the
+      // category rule applied; nothing was converted or split.
+      expect(row).toMatchObject({
+        accountId: jointAccountId,
+        isTransfer: false,
+        isSplit: false,
+        linkedTransactionId: null,
+        categoryId: loansCategory,
+      });
+      expect(
+        await dataSource.manager.count(Transaction, {
+          where: { userId: ownerId },
+        }),
+      ).toBe(1);
+      // The owner's private account did not move.
+      expect(Number((await loadAccount(mortgageId)).currentBalance)).toBe(
+        -20000,
+      );
+      // And the response carries no other account of the owner.
+      expect(JSON.stringify(created)).not.toContain(mortgageId);
+      expect(JSON.stringify(created)).not.toContain("Private Mortgage");
+      expect(created.linkedTransaction ?? null).toBeNull();
+      expect(created.splits ?? []).toEqual([]);
+      // The trace says why.
+      const traced = await dataSource.query(
+        `SELECT changes FROM transaction_rule_applications WHERE transaction_id = $1`,
+        [created.id],
+      );
+      expect(traced).toHaveLength(1);
+    });
+
+    it("an owner's own create with the same rule still converts (the flag is the grantee's only)", async () => {
+      const mortgageId = (
+        await createTestAccount(dataSource, ownerId, {
+          name: "Private Mortgage",
+          accountType: "LOAN",
+          openingBalance: -20000,
+          currentBalance: -20000,
+        })
+      ).id;
+      const rules = module.get(TransactionRulesService, { strict: false });
+      await withUserContext(ownerId, async () => {
+        await rules.create(ownerId, {
+          name: "Principal",
+          triggers: ["create"],
+          condition: {
+            field: "description",
+            op: "contains",
+            value: "LOAN-0000",
+          },
+          actions: [
+            {
+              type: "convert_to_transfer",
+              toAccountId: mortgageId,
+              clearCategory: true,
+            },
+          ],
+        } as never);
+      });
+      const created = await withUserContext(ownerId, () =>
+        transactions.create(ownerId, {
+          accountId: jointAccountId,
+          amount: -640.15,
+          transactionDate: "2026-01-10",
+          currencyCode: "USD",
+          description: "LOAN-0000 instalment",
+        } as never),
+      );
+      expect(created.isTransfer).toBe(true);
+      expect(Number((await loadAccount(mortgageId)).currentBalance)).toBe(
+        -20000 + 640.15,
+      );
+    });
+  });
+
+  describe("the owner's structural rules on an acting delegate's create", () => {
+    it("skips convert_to_transfer and split: no counterpart, the ungranted loan does not move, nothing of it in the response", async () => {
+      // The delegate is granted Checking only (a plain, non-joint grant).
+      await grantJoint({ create: true, joint: false });
+      const loanId = (
+        await createTestAccount(dataSource, ownerId, {
+          name: "Private Mortgage",
+          accountType: "LOAN",
+          openingBalance: -20000,
+          currentBalance: -20000,
+        })
+      ).id;
+      const loansCategory = await ownerCategory("Loans");
+      const rules = module.get(TransactionRulesService, { strict: false });
+      await withUserContext(ownerId, async () => {
+        await rules.create(ownerId, {
+          name: "Principal",
+          triggers: ["create"],
+          condition: {
+            field: "description",
+            op: "contains",
+            value: "CONVERT-0000",
+          },
+          actions: [
+            {
+              type: "convert_to_transfer",
+              toAccountId: loanId,
+              clearCategory: true,
+            },
+          ],
+        } as never);
+        await rules.create(ownerId, {
+          name: "Principal split",
+          triggers: ["create"],
+          condition: {
+            field: "description",
+            op: "matches",
+            value: "SPLIT-0000 {principal}/{interest}",
+          },
+          actions: [
+            {
+              type: "split",
+              parts: [
+                { amount: "{principal}", transferAccountId: loanId },
+                { amount: "{interest}", categoryId: loansCategory },
+              ],
+            },
+          ],
+        } as never);
+      });
+      const controller = module.get(TransactionsController);
+      // What the JWT strategy builds for a delegate acting as the owner.
+      const actingReq = {
+        user: {
+          id: ownerId,
+          realUserId: granteeId,
+          isActing: true,
+          delegationId,
+        },
+      };
+
+      for (const description of [
+        "CONVERT-0000 instalment",
+        "SPLIT-0000 400,15/240,00",
+      ]) {
+        const created = await withUserContext(ownerId, () =>
+          controller.create(actingReq, {
+            accountId: jointAccountId,
+            amount: -640.15,
+            transactionDate: "2026-01-10",
+            currencyCode: "USD",
+            description,
+          } as never),
+        );
+        const row = (await dataSource.manager.findOne(Transaction, {
+          where: { id: created.id },
+        }))!;
+        expect(row).toMatchObject({
+          accountId: jointAccountId,
+          isTransfer: false,
+          isSplit: false,
+          linkedTransactionId: null,
+        });
+        expect(JSON.stringify(created)).not.toContain(loanId);
+        expect(JSON.stringify(created)).not.toContain("Private Mortgage");
+      }
+      expect(
+        await dataSource.manager.count(Transaction, {
+          where: { userId: ownerId },
+        }),
+      ).toBe(2);
+      expect(Number((await loadAccount(loanId)).currentBalance)).toBe(-20000);
+    });
+  });
+
   describe("native category creation (owner's ledger)", () => {
     it("creates the category AS THE OWNER, usable on the joint row", async () => {
       await grantJoint({ create: true });

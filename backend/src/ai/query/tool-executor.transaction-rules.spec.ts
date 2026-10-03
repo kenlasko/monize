@@ -40,6 +40,8 @@ const rule = {
   enabled: true,
   triggers: ["create", "import"] as ("create" | "import")[],
   stopProcessing: false,
+  activeFrom: null,
+  activeTo: null,
   condition: { field: "payeeId", op: "eq", value: "p1" } as const,
   actions: [{ type: "set_category", categoryId: CAT, onlyIfEmpty: true }],
 };
@@ -241,6 +243,30 @@ describe("ToolExecutorService transaction rule tools", () => {
           endDate: "2026-02-01",
           limit: 20,
         },
+      );
+    });
+
+    it("hands the active window to the preparation, for a draft test as for a write", async () => {
+      await service.execute(USER, "manage_transaction_rules", {
+        operation: "create",
+        name: "Mortgage",
+        activeFrom: "2026-10-01",
+        activeTo: "",
+        ...draft,
+      });
+      expect(prep.prepareCreate).toHaveBeenCalledWith(
+        USER,
+        expect.objectContaining({ activeFrom: "2026-10-01", activeTo: "" }),
+      );
+      await service.execute(USER, "manage_transaction_rules", {
+        operation: "test",
+        activeFrom: "2026-10-01",
+        ...draft,
+      });
+      expect(prep.prepareTest).toHaveBeenCalledWith(
+        USER,
+        expect.objectContaining({ activeFrom: "2026-10-01" }),
+        expect.anything(),
       );
     });
 

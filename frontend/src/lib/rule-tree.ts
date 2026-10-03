@@ -64,7 +64,8 @@ export function defaultValue(field: RuleField, op: RuleOperator): EditorValue {
     case 'list':
       return [];
     case 'range':
-      return [undefined, undefined];
+      // A date range is a pair of texts, an unset end the empty one.
+      return spec.kind === 'date' ? ['', ''] : [undefined, undefined];
     default:
       if (spec.kind === 'boolean') return true;
       if (spec.kind === 'enum') return spec.enumValues?.[0] ?? '';
@@ -105,9 +106,13 @@ function coerceValue(leaf: EditorLeaf, op: RuleOperator): EditorValue {
     return fresh;
   }
   if (from === 'scalar' && to === 'range') {
+    if (RULE_CONDITION_FIELDS[leaf.field].kind === 'date') {
+      return typeof value === 'string' && value !== '' ? [value, ''] : fresh;
+    }
     return typeof value === 'number' ? [value, undefined] : fresh;
   }
   if (from === 'range' && to === 'scalar') {
+    if (Array.isArray(value) && typeof value[0] === 'string' && value[0] !== '') return value[0];
     return Array.isArray(value) && typeof value[0] === 'number' ? value[0] : fresh;
   }
   return fresh;

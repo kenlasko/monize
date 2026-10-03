@@ -99,14 +99,14 @@ describe("apply-import-rules", () => {
     });
 
     it("loads nothing when no row is eligible", async () => {
-      expect(await run([tx("t", { isTransfer: true })])).toBe(0);
+      expect((await run([tx("t", { isTransfer: true })])).changed).toBe(0);
       expect(applier.loadRulesFor).not.toHaveBeenCalled();
       expect(applier.applyToNew).not.toHaveBeenCalled();
     });
 
     it("writes nothing when the user has no import rule", async () => {
       applier.loadRulesFor.mockResolvedValue([]);
-      expect(await run([tx("a")])).toBe(0);
+      expect((await run([tx("a")])).changed).toBe(0);
       expect(applier.applyToNew).not.toHaveBeenCalled();
     });
 
@@ -132,13 +132,38 @@ describe("apply-import-rules", () => {
           effects: {
             trace: [{ ruleId: "r", matched: true, changes: { x: 1 } }],
           },
+          affectedAccountIds: [],
         },
         {
           transactionId: "b",
           effects: { trace: [{ ruleId: "r", matched: true, changes: {} }] },
+          affectedAccountIds: [],
         },
       ]);
-      expect(await run([tx("a"), tx("b")])).toBe(1);
+      expect((await run([tx("a"), tx("b")])).changed).toBe(1);
+    });
+
+    it("returns the accounts a structural action moved, once each, across batches", async () => {
+      applier.applyToNew.mockResolvedValue([
+        {
+          transactionId: "a",
+          effects: { trace: [] },
+          affectedAccountIds: ["loan", "other"],
+        },
+        {
+          transactionId: "b",
+          effects: { trace: [] },
+          affectedAccountIds: ["loan"],
+        },
+      ]);
+      const result = await run([tx("a"), tx("b")]);
+      expect([...result.affectedAccountIds].sort()).toEqual(["loan", "other"]);
+    });
+
+    it("returns no accounts when no rule applies", async () => {
+      applier.loadRulesFor.mockResolvedValue([]);
+      const result = await run([tx("a")]);
+      expect(result).toEqual({ changed: 0, affectedAccountIds: new Set() });
     });
   });
 });

@@ -35,6 +35,7 @@ import {
   namesToIds,
 } from "./rule-name-mapping";
 import { withActionDefaults } from "./rule-references";
+import type { RuleStructurePlan } from "./rule-structure";
 import { RuleHintDefinition, ruleErrorHints } from "./rule-validation-hints";
 import { RuleRunPreview } from "./rule-run.types";
 import {
@@ -64,6 +65,9 @@ export interface RuleToolInput {
   enabled?: boolean;
   triggers?: RuleTrigger[];
   stopProcessing?: boolean;
+  /** The active window, `YYYY-MM-DD` (INV-RULE-004); null clears a side, absent leaves it. */
+  activeFrom?: string | null;
+  activeTo?: string | null;
   condition?: Record<string, unknown>;
   actions?: Record<string, unknown>[];
 }
@@ -137,6 +141,8 @@ export interface LlmRule {
   position: number;
   triggers: RuleTrigger[];
   stopProcessing: boolean;
+  activeFrom: string | null;
+  activeTo: string | null;
   revision: number;
   condition: unknown;
   actions: unknown[];
@@ -161,8 +167,23 @@ export interface LlmRuleTestRow {
     category?: { before: string | null; after: string | null };
     payee?: { before: string | null; after: string | null };
     tags?: { before: string[]; after: string[] };
+    /** A structural action's plan with names: the parts a split makes, or the transfer's account. */
+    structure?: LlmRuleStructure;
   };
 }
+
+export type LlmRuleStructure =
+  | { kind: "transfer"; account: string; clearCategory: boolean }
+  | {
+      kind: "split";
+      parts: {
+        amount: number;
+        category: string | null;
+        transferTo: string | null;
+        payee: string | null;
+        memo: string | null;
+      }[];
+    };
 
 export interface LlmRuleTest {
   /** Set when the test matched nothing: what that usually means and what to do. */
@@ -276,8 +297,9 @@ export class TransactionRuleToolPrepService {
 
   async prepareCreate(
     userId: string,
-    input: RuleToolInput,
+    raw: RuleToolInput,
   ): Promise<RulePrep<CreateRulePreview>> {
+    const input = withWindowCleared(raw);
     const name = this.checkedName(input.name);
     if (!name.ok) return name;
     const definition = await this.resolveDefinition(
@@ -292,6 +314,8 @@ export class TransactionRuleToolPrepService {
       enabled: input.enabled ?? true,
       triggers: input.triggers ?? [...RULE_TRIGGERS],
       stopProcessing: input.stopProcessing ?? false,
+      activeFrom: input.activeFrom ?? null,
+      activeTo: input.activeTo ?? null,
       ...definition.value,
     };
     const tested = await this.testDraft(userId, rule, {});
@@ -308,8 +332,9 @@ export class TransactionRuleToolPrepService {
 
   async prepareUpdate(
     userId: string,
-    input: RuleToolInput,
+    raw: RuleToolInput,
   ): Promise<RulePrep<UpdateRulePreview>> {
+    const input = withWindowCleared(raw);
     const stored = await this.loadRule(userId, input.ruleId);
     if (!stored.ok) return stored;
     const current = toState(stored.value);
@@ -340,6 +365,11 @@ export class TransactionRuleToolPrepService {
       enabled: input.enabled ?? current.enabled,
       triggers: input.triggers ?? current.triggers,
       stopProcessing: input.stopProcessing ?? current.stopProcessing,
+      // null clears a side of the window; absent leaves it as stored.
+      activeFrom:
+        input.activeFrom === undefined ? current.activeFrom : input.activeFrom,
+      activeTo:
+        input.activeTo === undefined ? current.activeTo : input.activeTo,
       ...definition,
     };
     // A change is a value difference, not a field being present.
@@ -349,8 +379,13 @@ export class TransactionRuleToolPrepService {
       );
     }
 
+    // A moved window changes which rows the rule reaches, so it is tested too
+    // (and its order is checked before the card is built).
+    const windowMoved =
+      rule.activeFrom !== current.activeFrom ||
+      rule.activeTo !== current.activeTo;
     let test: AiActionRuleTestPreview | undefined;
-    if (redefined) {
+    if (redefined || windowMoved) {
       // The same decision the REST update makes: the glob-trap advice applies
       // only when the condition changes, so a stored rule that predates it can
       // still have its actions edited.
@@ -434,13 +469,19 @@ export class TransactionRuleToolPrepService {
    */
   async prepareTest(
     userId: string,
-    input: RuleToolInput,
+    raw: RuleToolInput,
     run: RuleToolRunInput,
   ): Promise<RulePrep<TestRulePreview>> {
+    const input = withWindowCleared(raw);
     const filters = await this.resolveFilters(userId, run);
     if (!filters.ok) return filters;
 
-    if (input.condition === undefined && input.actions === undefined) {
+    if (
+      input.condition === undefined &&
+      input.actions === undefined &&
+      input.activeFrom === undefined &&
+      input.activeTo === undefined
+    ) {
       const stored = await this.loadRule(userId, input.ruleId);
       if (!stored.ok) return stored;
       const planned = await this.guard(async () =>
@@ -481,6 +522,14 @@ export class TransactionRuleToolPrepService {
       enabled: input.enabled ?? base?.enabled ?? true,
       triggers: input.triggers ?? base?.triggers ?? [...RULE_TRIGGERS],
       stopProcessing: input.stopProcessing ?? base?.stopProcessing ?? false,
+      activeFrom:
+        input.activeFrom === undefined
+          ? (base?.activeFrom ?? null)
+          : input.activeFrom,
+      activeTo:
+        input.activeTo === undefined
+          ? (base?.activeTo ?? null)
+          : input.activeTo,
       ...resolved.value,
     };
     // The same decision prepareUpdate and the REST preview make: the glob-trap
@@ -531,10 +580,11 @@ export class TransactionRuleToolPrepService {
         reason: s.reason,
       })),
       rows: test.rows.map((row) => {
-        const { categoryId, payeeId, tagIds } = row.changes as {
+        const { categoryId, payeeId, tagIds, structure } = row.changes as {
           categoryId?: { before: string | null; after: string | null };
           payeeId?: { before: string | null; after: string | null };
           tagIds?: { before: string[]; after: string[] };
+          structure?: { before: null; after: RuleStructurePlan | null };
         };
         const tagName = (id: string): string =>
           test.labels.tags[id] ?? labels.tags[id] ?? id;
@@ -575,9 +625,42 @@ export class TransactionRuleToolPrepService {
                 after: tagIds.after.map(tagName),
               },
             }),
+            ...(structure?.after && {
+              structure: this.namedStructure(structure.after, labels, test),
+            }),
           },
         };
       }),
+    };
+  }
+
+  /** A planned structure with the names of the accounts, categories and payees it points at. */
+  private namedStructure(
+    plan: RuleStructurePlan,
+    labels: RuleDefinitionLabels,
+    test: AiActionRuleTestPreview,
+  ): LlmRuleStructure {
+    const nameOf = (
+      kind: "accounts" | "categories" | "payees",
+      id: string | null,
+    ): string | null =>
+      id === null ? null : (test.labels[kind][id] ?? labels[kind][id] ?? id);
+    if (plan.kind === "transfer") {
+      return {
+        kind: "transfer",
+        account: nameOf("accounts", plan.accountId) ?? plan.accountId,
+        clearCategory: plan.clearCategory,
+      };
+    }
+    return {
+      kind: "split",
+      parts: plan.parts.map((part) => ({
+        amount: part.amount,
+        category: nameOf("categories", part.categoryId),
+        transferTo: nameOf("accounts", part.transferAccountId),
+        payee: nameOf("payees", part.payeeId),
+        memo: part.memo,
+      })),
     };
   }
 
@@ -844,6 +927,8 @@ export class TransactionRuleToolPrepService {
           {
             condition: rule.condition as unknown as Record<string, unknown>,
             actions: rule.actions as unknown as Record<string, unknown>[],
+            activeFrom: rule.activeFrom,
+            activeTo: rule.activeTo,
             filters: { ...filters },
           },
           { authoring },
@@ -952,6 +1037,8 @@ export class TransactionRuleToolPrepService {
       position: rule.position,
       triggers: rule.triggers,
       stopProcessing: rule.stopProcessing,
+      activeFrom: rule.activeFrom,
+      activeTo: rule.activeTo,
       revision: rule.revision,
       condition: definition.condition,
       actions: definition.actions,
@@ -964,6 +1051,17 @@ export class TransactionRuleToolPrepService {
   }
 }
 
+/** A blank side of the window ("" from a tool call) means open, the same as null. */
+function withWindowCleared(input: RuleToolInput): RuleToolInput {
+  const open = (side: string | null | undefined): string | null | undefined =>
+    side === "" ? null : side;
+  return {
+    ...input,
+    activeFrom: open(input.activeFrom),
+    activeTo: open(input.activeTo),
+  };
+}
+
 function refusal(message: string): RuleToolRefusal {
   return { ok: false, message, errors: [] };
 }
@@ -974,6 +1072,8 @@ function toState(rule: TransactionRuleResponseDto): AiActionRuleState {
     enabled: rule.enabled,
     triggers: [...rule.triggers],
     stopProcessing: rule.stopProcessing,
+    activeFrom: rule.activeFrom,
+    activeTo: rule.activeTo,
     condition: rule.condition,
     actions: [...rule.actions],
   };

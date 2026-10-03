@@ -90,7 +90,16 @@
       "imported": "Transaksi diimpor",
       "atLeastOne": "Biarkan setidaknya satu opsi tetap dipilih",
       "stopProcessing": "Hentikan pemrosesan aturan lain",
-      "stopProcessingHelp": "Jika aturan ini cocok dengan sebuah transaksi, aturan yang berada setelahnya dalam daftar dilewati untuk transaksi tersebut."
+      "stopProcessingHelp": "Jika aturan ini cocok dengan sebuah transaksi, aturan yang berada setelahnya dalam daftar dilewati untuk transaksi tersebut.",
+      "window": {
+        "title": "Aktif antara",
+        "help": "Aturan hanya berlaku untuk transaksi yang tanggalnya berada dalam rentang ini: saat dibuat atau diimpor, serta saat aturan diuji atau dijalankan. Kosongkan tanggal agar tanpa batas.",
+        "from": "Tanggal pertama",
+        "to": "Tanggal terakhir",
+        "backwards": "Tanggal terakhir tidak boleh sebelum tanggal pertama",
+        "noLimit": "tanpa batas",
+        "words": "Hanya untuk transaksi bertanggal {from} sampai {to}"
+      }
     },
     "if": {
       "description": "Tindakan hanya dijalankan untuk transaksi yang cocok",
@@ -138,7 +147,8 @@
       "dayOfMonth": "Hari dalam bulan",
       "weekday": "Hari dalam minggu",
       "status": "Status",
-      "hasAttachment": "Memiliki lampiran"
+      "hasAttachment": "Memiliki lampiran",
+      "date": "Tanggal"
     },
     "operators": {
       "eq": "adalah",
@@ -215,7 +225,33 @@
         "replace": "Ganti deskripsi",
         "append": "Tambahkan setelah deskripsi",
         "prepend": "Tambahkan sebelum deskripsi"
-      }
+      },
+      "convertHelp": "Pemasukan atau pengeluaran yang cocok menjadi satu sisi transfer. Sisi lainnya dibuat di akun yang Anda pilih, yang harus memakai mata uang yang sama.",
+      "direction": "Arah",
+      "directionTo": "Pengeluaran: uang pergi ke akun lain",
+      "directionFrom": "Pemasukan: uang datang dari akun lain",
+      "clearCategory": "Hapus kategori",
+      "clearCategoryHelp": "Transfer tidak memiliki kategori. Matikan untuk mempertahankan kategori yang sudah dimiliki transaksi.",
+      "splitPayee": "Penerima transaksi (opsional)",
+      "splitHint": "Setiap bagian mengambil jumlahnya dari tangkapan pada pola di atas, atau mengambil sisanya. Bagian-bagian harus berjumlah sama dengan jumlah transaksi, jika tidak aturan tidak akan mengubahnya.",
+      "splitNoCaptures": "Belum ada tangkapan yang didefinisikan. Tulis nama dalam kurung kurawal pada pola di atas, misalnya PRINCIPAL: {example}, untuk memakainya di sini sebagai jumlah.",
+      "partAmountPlaceholder": "Pilih jumlah...",
+      "partRest": "Sisanya",
+      "partAccount": "Akun",
+      "partPayee": "Penerima sisi lainnya (opsional)",
+      "partsLimit": "Pemecahan dapat memiliki paling banyak {max} bagian.",
+      "guideTitle": "Cara menggunakan",
+      "splitGuideHow": "Di “Jika”, tambahkan kondisi pada teks penerima atau deskripsi dengan operator “cocok dengan pola”, lalu tulis nama dalam kurung kurawal di tempat jumlahnya berada, misalnya {first}. Setiap nama menjadi jumlah yang dapat Anda pilih untuk sebuah bagian, atau pilih “Sisanya”. Bagian-bagian harus berjumlah sama dengan jumlah transaksi, jika tidak, aturan membiarkan transaksi tanpa perubahan. Sebuah bagian dapat berupa kategori atau transfer ke akun lain (transfer mengubah saldo akun tersebut).",
+      "splitGuideExampleTitle": "Contoh: cicilan pinjaman",
+      "splitGuideBank": "Teks bank: POKOK: 1200,50 BUNGA: 300,25 DENDA: 0,00",
+      "splitGuidePattern": "Pola: *POKOK: {first} BUNGA: {second} DENDA*",
+      "splitGuidePart1": "Bagian 1: {first} sebagai transfer ke akun pinjaman",
+      "splitGuidePart2": "Bagian 2: {second} sebagai kategori “Pinjaman: Bunga”",
+      "splitGuideResult": "Hasil untuk -1500,75: -1200,50 ditransfer ke akun pinjaman dan -300,25 beban bunga.",
+      "splitGuideTip": "Tips: atur tanggal mulai di “Aktif antara” agar transaksi lama yang sudah direkonsiliasi tidak berubah, dan gunakan panel Uji sebelum menyimpan.",
+      "convertGuide": "Pengeluaran menjadi transfer ke akun yang dipilih, dan pemasukan menjadi transfer dari akun itu. Hanya saldo akun lainnya yang berubah. Tips: gunakan “Aktif antara” agar transaksi lama tidak berubah.",
+      "splitGuideName1": "pokok",
+      "splitGuideName2": "bunga"
     },
     "actionTypes": {
       "add_tags": "Tambah tag",
@@ -224,7 +260,9 @@
       "set_payee": "Atur penerima",
       "request_ai_review": "Minta peninjauan AI",
       "set_payee_from_text": "Atur penerima dari teks",
-      "set_description": "Atur deskripsi"
+      "set_description": "Atur deskripsi",
+      "convert_to_transfer": "Ubah menjadi transfer",
+      "split": "Pecah transaksi"
     },
     "save": {
       "button": "Simpan aturan",
@@ -273,16 +311,17 @@
         "MAX_NODES": "Terlalu banyak kondisi dan grup. Batasnya {maxNodes}.",
         "NO_ACTIONS": "Tambahkan setidaknya satu tindakan.",
         "TOO_MANY_ACTIONS": "Terlalu banyak tindakan. Batasnya {maxActions}.",
-        "DUPLICATE_ACTION": "Satu aturan hanya dapat meminta peninjauan AI satu kali.",
-        "REFERENCE_NOT_FOUND": "Item yang dipilih di sini sudah tidak ada. Pilih yang lain.",
-        "NAME_REQUIRED": "Masukkan nama untuk aturan.",
-        "UNKNOWN": "Bagian ini tidak valid.",
+        "DUPLICATE_ACTION": "Sebuah aturan hanya dapat memiliki satu tinjauan AI, satu transfer atau pemecahan, dan satu bagian pemecahan yang mengambil sisanya.",
+        "CONFLICTING_ACTIONS": "Tindakan transfer atau pemecahan tidak dapat digabungkan dengan “Atur kategori”, dan setiap bagiannya memiliki kategori atau akun.",
         "INVALID_CAPTURE": "Nama tangkapan memakai huruf kecil dan angka, diawali huruf, dan panjangnya paling banyak 20 karakter.",
         "TOO_MANY_CAPTURES": "Satu pola dapat memuat paling banyak 5 tangkapan.",
         "DUPLICATE_CAPTURE": "Setiap nama tangkapan hanya boleh dipakai satu kali dalam satu aturan.",
-        "UNKNOWN_CAPTURE": "Teks memakai tangkapan yang tidak didefinisikan oleh kondisi mana pun dalam aturan ini.",
+        "UNKNOWN_CAPTURE": "Ini memakai tangkapan yang tidak didefinisikan oleh kondisi mana pun dalam aturan ini.",
         "LOOKS_LIKE_REGEX": "Ekspresi reguler tidak didukung: | \\ dan kelas kurung pendek seperti [xy] dicocokkan sebagai karakter biasa, jadi pola yang ditulis sebagai regex tidak pernah cocok dengan yang dimaksud. Untuk mencocokkan salah satu dari beberapa teks, tambahkan grup “Salah satu dari ini” dan isi dengan satu kondisi untuk tiap teks.",
-        "PATTERN_WITHOUT_WILDCARD": "Tanpa * pola ini harus sama dengan seluruh teks. Gunakan operator “adalah” untuk seluruh teks, “mengandung” untuk sebagiannya, atau beri * di sekitar teks, misalnya *kopi*."
+        "PATTERN_WITHOUT_WILDCARD": "Tanpa * pola ini harus sama dengan seluruh teks. Gunakan operator “adalah” untuk seluruh teks, “mengandung” untuk sebagiannya, atau beri * di sekitar teks, misalnya *kopi*.",
+        "REFERENCE_NOT_FOUND": "Item yang dipilih di sini sudah tidak ada. Pilih yang lain.",
+        "NAME_REQUIRED": "Masukkan nama untuk aturan.",
+        "UNKNOWN": "Bagian ini tidak valid."
       }
     },
     "run": {
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "merupakan transfer ke pemilik lain, yang penerimanya tidak boleh diubah aturan ini",
       "empty_render": "teks sebuah tindakan menjadi kosong untuknya",
       "payee_not_found": "tidak ada penerima dengan nama yang dibentuk aturan, dan aturan tidak membuatnya",
-      "other": "aturan tidak dapat mengubahnya"
+      "other": "aturan tidak dapat mengubahnya",
+      "row_is_transfer_leg": "sudah berupa transfer",
+      "row_has_splits": "sudah dipecah",
+      "row_is_void": "sudah dibatalkan",
+      "zero_amount": "jumlahnya nol",
+      "transfer_direction_mismatch": "arah transfer tidak cocok: pengeluaran pergi ke akun, pemasukan datang dari akun",
+      "transfer_same_account": "akun transfer adalah akun transaksi itu sendiri",
+      "transfer_account_unavailable": "akun transfer tidak tersedia (sudah dihapus atau bukan milik Anda)",
+      "transfer_currency_mismatch": "akun transfer memakai mata uang lain",
+      "split_amount_unparseable": "jumlah dalam teksnya tidak dapat dibaca sebagai angka",
+      "split_sum_mismatch": "bagian-bagiannya tidak berjumlah sama dengan jumlahnya",
+      "split_too_few_parts": "kurang dari dua bagian tersisa setelah jumlah nol dibuang"
     },
     "change": {
       "category": "Kategori: {before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "item yang sudah dihapus",
       "payeeCreated": "{done, select, yes {Penerima baru telah dibuat: {name}} other {Penerima baru akan dibuat: {name}}}",
       "description": "Deskripsi: {before} → {after}",
-      "descriptionSet": "Atur deskripsi menjadi {value}"
+      "descriptionSet": "Atur deskripsi menjadi {value}",
+      "transfer": "{done, select, yes {Menjadi transfer dengan {account}} other {Akan menjadi transfer dengan {account}}}",
+      "split": "{done, select, yes {Dipecah menjadi {count, plural, other {# bagian}}} other {Akan dipecah menjadi {count, plural, other {# bagian}}}}",
+      "splitPart": "Bagian {number}: {amount} {target}",
+      "splitPartMemo": ", memo “{memo}”",
+      "splitToTransfer": "ke {account}",
+      "splitToTransferPayee": "ke {account}, penerima {payee}",
+      "splitToCategory": "sebagai {category}",
+      "splitUncategorised": "tanpa kategori"
     },
     "filters": {
       "accounts": "Akun",
@@ -471,7 +529,15 @@
       "set_payee": "Atur penerima ke {name}{onlyIfEmpty, select, yes { (hanya jika kosong)} other {}}",
       "request_ai_review": "Minta peninjauan AI: {instruction}",
       "set_payee_from_text": "Atur penerima dari teks: “{template}”{createIfMissing, select, yes { (dibuat jika belum ada)} other {}}{onlyIfEmpty, select, yes { (hanya jika kosong)} other {}}",
-      "set_description": "Atur deskripsi ({mode, select, append {tambahkan setelah} prepend {tambahkan sebelum} other {ganti}}): “{template}”{onlyIfEmpty, select, yes { (hanya jika kosong)} other {}}"
+      "set_description": "Atur deskripsi ({mode, select, append {tambahkan setelah} prepend {tambahkan sebelum} other {ganti}}): “{template}”{onlyIfEmpty, select, yes { (hanya jika kosong)} other {}}",
+      "convert_to_transfer": "Ubah menjadi transfer {direction, select, from {dari} other {ke}} {account}",
+      "split": "Pecah menjadi: {parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} ke {account}",
+      "category": "{amount} sebagai {category}",
+      "plain": "{amount}",
+      "rest": "sisanya"
     }
   }
 }

@@ -487,16 +487,21 @@ export class MnyImportService {
       // Transaction rules (design 6.3): one bulk pass over the regular rows just
       // inserted, in this transaction. Transfers and the cash rows a trade
       // adopts are not evaluated.
-      await applyImportRules(manager, this.rulesApplier, userId, {
-        transactions: parsed.transactions.transactions,
-        writtenTransactionIds: transactions.writtenTransactionIds,
-        payeeNameByHandle: parsed.payees.nameByHandle,
-        investmentCashTransactionIds: new Set(
-          [...parsed.transactions.investmentCashSources.values()]
-            .map((source) => source.transactionId)
-            .filter((id): id is string => id !== null),
-        ),
-      });
+      const ruleResult = await applyImportRules(
+        manager,
+        this.rulesApplier,
+        userId,
+        {
+          transactions: parsed.transactions.transactions,
+          writtenTransactionIds: transactions.writtenTransactionIds,
+          payeeNameByHandle: parsed.payees.nameByHandle,
+          investmentCashTransactionIds: new Set(
+            [...parsed.transactions.investmentCashSources.values()]
+              .map((source) => source.transactionId)
+              .filter((id): id is string => id !== null),
+          ),
+        },
+      );
 
       await context.reportProgress({
         phase: "investments",
@@ -645,6 +650,9 @@ export class MnyImportService {
         affectedAccountIds: new Set([
           ...transactions.affectedAccountIds,
           ...investments.affectedAccountIds,
+          // Accounts a structural rule action credited: recomputed and
+          // refreshed with the rest after the commit.
+          ...ruleResult.affectedAccountIds,
         ]),
       };
 

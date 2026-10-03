@@ -710,6 +710,12 @@ export interface RuleDefinitionDescriptor {
   condition: RuleConditionNode;
   actions: RuleAction[];
   stopProcessing: boolean;
+  /**
+   * The active window (INV-RULE-004). Optional so a descriptor signed before
+   * the window existed still confirms; absent is "leave as stored" on an edit.
+   */
+  activeFrom?: string | null;
+  activeTo?: string | null;
 }
 
 /** Create a rule (appended at the end of the user's list). */
@@ -832,6 +838,9 @@ export interface AiActionRuleState {
   condition: RuleConditionNode;
   actions: RuleAction[];
   stopProcessing: boolean;
+  /** The active window, `YYYY-MM-DD`; null is open on that side. */
+  activeFrom: string | null;
+  activeTo: string | null;
 }
 
 /**

@@ -90,7 +90,16 @@
       "imported": "[XX-A transaction is imported-XX]",
       "atLeastOne": "[XX-Keep at least one option selected-XX]",
       "stopProcessing": "[XX-Stop processing other rules-XX]",
-      "stopProcessingHelp": "[XX-When this rule matches a transaction, the rules after it in the list are skipped for that transaction.-XX]"
+      "stopProcessingHelp": "[XX-When this rule matches a transaction, the rules after it in the list are skipped for that transaction.-XX]",
+      "window": {
+        "title": "[XX-Active between-XX]",
+        "help": "[XX-The rule only applies to transactions dated inside this window, when they are created or imported and when the rule is tested or run. Leave a date empty for no limit.-XX]",
+        "from": "[XX-First date-XX]",
+        "to": "[XX-Last date-XX]",
+        "backwards": "[XX-The last date must not be before the first date-XX]",
+        "noLimit": "[XX-no limit-XX]",
+        "words": "[XX-Only for transactions dated from {from} to {to}-XX]"
+      }
     },
     "if": {
       "description": "[XX-The actions run only for transactions that match-XX]",
@@ -138,7 +147,8 @@
       "dayOfMonth": "[XX-Day of the month-XX]",
       "weekday": "[XX-Day of the week-XX]",
       "status": "[XX-Status-XX]",
-      "hasAttachment": "[XX-Has an attachment-XX]"
+      "hasAttachment": "[XX-Has an attachment-XX]",
+      "date": "[XX-Date-XX]"
     },
     "operators": {
       "eq": "[XX-is-XX]",
@@ -215,7 +225,33 @@
         "replace": "[XX-Replace the description-XX]",
         "append": "[XX-Add after the description-XX]",
         "prepend": "[XX-Add before the description-XX]"
-      }
+      },
+      "convertHelp": "[XX-The matched income or expense becomes one leg of a transfer. The other leg is created in the account you choose, which must use the same currency.-XX]",
+      "direction": "[XX-Direction-XX]",
+      "directionTo": "[XX-Expense: the money goes to another account-XX]",
+      "directionFrom": "[XX-Income: the money comes from another account-XX]",
+      "clearCategory": "[XX-Clear the category-XX]",
+      "clearCategoryHelp": "[XX-A transfer has no category. Turn this off to keep the category the transaction already has.-XX]",
+      "splitPayee": "[XX-Payee of the transaction (optional)-XX]",
+      "splitHint": "[XX-Each part takes its amount from a capture in the patterns above, or takes the rest. The parts must add up to the amount of the transaction, otherwise the rule leaves it alone.-XX]",
+      "splitNoCaptures": "[XX-No capture is defined yet. Put a name in braces in a pattern above, for example PRINCIPAL: {example}, to use it as an amount here.-XX]",
+      "partAmountPlaceholder": "[XX-Choose the amount...-XX]",
+      "partRest": "[XX-The rest-XX]",
+      "partAccount": "[XX-Account-XX]",
+      "partPayee": "[XX-Payee of the other leg (optional)-XX]",
+      "partsLimit": "[XX-A split can have at most {max} parts.-XX]",
+      "guideTitle": "[XX-How to use this-XX]",
+      "splitGuideHow": "[XX-In “If”, add a condition on the payee text or description with the operator “matches the pattern”, and put names in curly braces where the amounts are, for example {first}. Each name becomes an amount you can pick for a part, or choose “The rest”. The parts must add up to the transaction amount, otherwise the rule leaves the transaction unchanged. A part can be a category or a transfer to another account (a transfer moves the balance of that account).-XX]",
+      "splitGuideExampleTitle": "[XX-Example: a loan payment-XX]",
+      "splitGuideBank": "[XX-Bank text: PRINCIPAL: 1200,50 INTEREST: 300,25 PENALTY: 0,00-XX]",
+      "splitGuidePattern": "[XX-Pattern: *PRINCIPAL: {first} INTEREST: {second} PENALTY*-XX]",
+      "splitGuidePart1": "[XX-Part 1: {first} as a transfer to the loan account-XX]",
+      "splitGuidePart2": "[XX-Part 2: {second} as the category “Loans: Interest”-XX]",
+      "splitGuideResult": "[XX-Result for -1500,75: -1200,50 transferred to the loan account and -300,25 of interest expense.-XX]",
+      "splitGuideTip": "[XX-Tip: set a start date under “Active between” so older reconciled transactions are not changed, and use the Test panel before saving.-XX]",
+      "convertGuide": "[XX-An expense becomes a transfer to the account you choose, and an income becomes a transfer from it. Only the balance of the other account changes. Tip: use “Active between” so older transactions are not changed.-XX]",
+      "splitGuideName1": "[XX-principal-XX]",
+      "splitGuideName2": "[XX-interest-XX]"
     },
     "actionTypes": {
       "add_tags": "[XX-Add tags-XX]",
@@ -224,7 +260,9 @@
       "set_payee": "[XX-Set the payee-XX]",
       "request_ai_review": "[XX-Ask for an AI review-XX]",
       "set_payee_from_text": "[XX-Set the payee from text-XX]",
-      "set_description": "[XX-Set the description-XX]"
+      "set_description": "[XX-Set the description-XX]",
+      "convert_to_transfer": "[XX-Convert to transfer-XX]",
+      "split": "[XX-Split transaction-XX]"
     },
     "save": {
       "button": "[XX-Save rule-XX]",
@@ -273,11 +311,12 @@
         "MAX_NODES": "[XX-There are too many conditions and groups. The limit is {maxNodes}.-XX]",
         "NO_ACTIONS": "[XX-Add at least one action.-XX]",
         "TOO_MANY_ACTIONS": "[XX-There are too many actions. The limit is {maxActions}.-XX]",
-        "DUPLICATE_ACTION": "[XX-A rule can ask for an AI review only once.-XX]",
+        "DUPLICATE_ACTION": "[XX-A rule can have only one AI review, one transfer or split, and one split part that takes the rest.-XX]",
+        "CONFLICTING_ACTIONS": "[XX-A transfer or split action cannot be combined with “Set the category”, and each of its parts has either a category or an account.-XX]",
         "INVALID_CAPTURE": "[XX-A capture name must be lowercase letters and digits, starting with a letter, and up to 20 long.-XX]",
         "TOO_MANY_CAPTURES": "[XX-A pattern can hold at most 5 captures.-XX]",
         "DUPLICATE_CAPTURE": "[XX-Each capture name can be used once in a rule.-XX]",
-        "UNKNOWN_CAPTURE": "[XX-The text uses a capture that no condition of this rule defines.-XX]",
+        "UNKNOWN_CAPTURE": "[XX-This uses a capture that no condition of this rule defines.-XX]",
         "LOOKS_LIKE_REGEX": "[XX-Regular expressions are not supported: | \\ and short bracket classes like [xy] are matched as plain characters, so a pattern written as a regex never matches what was meant. To match one of several texts, add a group of “Any of these” and put one condition in it for each text.-XX]",
         "PATTERN_WITHOUT_WILDCARD": "[XX-Without a * this pattern must equal the whole text. Use the operator “is” for the whole text, “contains” for a part of it, or put * around the text, for example *coffee*.-XX]",
         "REFERENCE_NOT_FOUND": "[XX-An item chosen here no longer exists. Choose another.-XX]",
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "[XX-it is a transfer to another owner, whose payee this rule may not change-XX]",
       "empty_render": "[XX-the text of an action came out empty for it-XX]",
       "payee_not_found": "[XX-no payee has the name the rule built, and it does not create one-XX]",
-      "other": "[XX-the rule cannot change it-XX]"
+      "other": "[XX-the rule cannot change it-XX]",
+      "row_is_transfer_leg": "[XX-it is already a transfer-XX]",
+      "row_has_splits": "[XX-it is already split-XX]",
+      "row_is_void": "[XX-it is void-XX]",
+      "zero_amount": "[XX-its amount is zero-XX]",
+      "transfer_direction_mismatch": "[XX-the transfer goes the wrong way for it: an expense goes to an account, an income comes from one-XX]",
+      "transfer_same_account": "[XX-the transfer account is the account of the transaction itself-XX]",
+      "transfer_account_unavailable": "[XX-the transfer account is not available (it was deleted or is not yours)-XX]",
+      "transfer_currency_mismatch": "[XX-the transfer account uses another currency-XX]",
+      "split_amount_unparseable": "[XX-an amount in its text could not be read as a number-XX]",
+      "split_sum_mismatch": "[XX-the parts do not add up to its amount-XX]",
+      "split_too_few_parts": "[XX-fewer than two parts are left once zero amounts are dropped-XX]"
     },
     "change": {
       "category": "[XX-Category: {before} → {after}-XX]",
@@ -390,7 +440,15 @@
       "unknown": "[XX-a deleted item-XX]",
       "payeeCreated": "[XX-{done, select, yes {A new payee was created: {name}} other {A new payee will be created: {name}}}-XX]",
       "description": "[XX-Description: {before} → {after}-XX]",
-      "descriptionSet": "[XX-Set the description to {value}-XX]"
+      "descriptionSet": "[XX-Set the description to {value}-XX]",
+      "transfer": "[XX-{done, select, yes {Became a transfer with {account}} other {Becomes a transfer with {account}}}-XX]",
+      "split": "[XX-{done, select, yes {Was split into {count, plural, one {# part} other {# parts}}} other {Will be split into {count, plural, one {# part} other {# parts}}}}-XX]",
+      "splitPart": "[XX-Part {number}: {amount} {target}-XX]",
+      "splitPartMemo": "[XX-, memo “{memo}”-XX]",
+      "splitToTransfer": "[XX-to {account}-XX]",
+      "splitToTransferPayee": "[XX-to {account}, payee {payee}-XX]",
+      "splitToCategory": "[XX-as {category}-XX]",
+      "splitUncategorised": "[XX-uncategorised-XX]"
     },
     "filters": {
       "accounts": "[XX-Accounts-XX]",
@@ -471,7 +529,15 @@
       "set_payee": "[XX-Set the payee to {name}{onlyIfEmpty, select, yes { (only if empty)} other {}}-XX]",
       "request_ai_review": "[XX-Ask for an AI review: {instruction}-XX]",
       "set_payee_from_text": "[XX-Set the payee from text: \"{template}\"{createIfMissing, select, yes { (created if missing)} other {}}{onlyIfEmpty, select, yes { (only if empty)} other {}}-XX]",
-      "set_description": "[XX-Set the description ({mode, select, append {append} prepend {prepend} other {replace}}): \"{template}\"{onlyIfEmpty, select, yes { (only if empty)} other {}}-XX]"
+      "set_description": "[XX-Set the description ({mode, select, append {append} prepend {prepend} other {replace}}): \"{template}\"{onlyIfEmpty, select, yes { (only if empty)} other {}}-XX]",
+      "convert_to_transfer": "[XX-Turn into a transfer {direction, select, from {from} other {to}} {account}-XX]",
+      "split": "[XX-Split into: {parts}-XX]"
+    },
+    "splitPart": {
+      "transfer": "[XX-{amount} to {account}-XX]",
+      "category": "[XX-{amount} as {category}-XX]",
+      "plain": "[XX-{amount}-XX]",
+      "rest": "[XX-the rest-XX]"
     }
   }
 }

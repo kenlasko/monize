@@ -2,6 +2,7 @@
 
 import { useFormatter, useTranslations } from 'next-intl';
 import { useRuleEnumLabels } from '@/components/rules/use-rule-enum-labels';
+import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import {
   RULE_CONDITION_FIELDS,
@@ -16,6 +17,7 @@ import type {
   RuleConditionNode,
   RuleLeafValue,
   RuleTrigger,
+  SplitActionPart,
 } from '@/types/transaction-rule';
 
 /** Names for the ids a rule definition mentions; an id with no name is a deleted item. */
@@ -34,10 +36,11 @@ function isGroup(node: RuleConditionNode): node is Exclude<RuleConditionNode, Ru
 }
 
 /** The sentences a rule is read in, from the `rules` catalog and the reader's own formats. */
-function useRuleWords(labels: RuleWordsLabels) {
+export function useRuleWords(labels: RuleWordsLabels) {
   const t = useTranslations('rules');
   const format = useFormatter();
   const { formatNumber } = useNumberFormat();
+  const { formatDate } = useDateFormat();
   const unknown = t('run.change.unknown');
   const enumLabels = useRuleEnumLabels();
 
@@ -62,6 +65,8 @@ function useRuleWords(labels: RuleWordsLabels) {
         return typeof value === 'number' ? formatNumber(value) : unknown;
       case 'dayOfMonth':
         return String(value);
+      case 'date':
+        return typeof value === 'string' && value !== '' ? formatDate(value) : unknown;
       case 'boolean':
         return value === true ? t('editor.value.yes') : value === false ? t('editor.value.no') : unknown;
       case 'enum':
@@ -100,6 +105,17 @@ function useRuleWords(labels: RuleWordsLabels) {
   const triggerText = (trigger: RuleTrigger): string =>
     trigger === 'create' ? t('editor.when.created') : t('editor.when.imported');
 
+  const partText = (part: SplitActionPart): string => {
+    const amount = part.amount === 'rest' ? t('words.splitPart.rest') : part.amount;
+    if (part.transferAccountId !== undefined) {
+      return t('words.splitPart.transfer', { amount, account: named(labels.accounts, part.transferAccountId) });
+    }
+    if (part.categoryId !== undefined) {
+      return t('words.splitPart.category', { amount, category: named(labels.categories, part.categoryId) });
+    }
+    return t('words.splitPart.plain', { amount });
+  };
+
   const actionText = (action: RuleAction): string => {
     if (!isRuleActionType(action.type)) return t('words.unknownAction');
     switch (action.type) {
@@ -130,6 +146,13 @@ function useRuleWords(labels: RuleWordsLabels) {
           mode: action.mode,
           onlyIfEmpty: action.onlyIfEmpty ? 'yes' : 'no',
         });
+      case 'convert_to_transfer':
+        return t('words.action.convert_to_transfer', {
+          direction: action.fromAccountId !== undefined ? 'from' : 'other',
+          account: named(labels.accounts, action.fromAccountId ?? action.toAccountId),
+        });
+      case 'split':
+        return t('words.action.split', { parts: list(action.parts.map(partText)) });
     }
   };
 
@@ -206,12 +229,35 @@ export function RuleActionsInWords({ actions, labels }: RuleWordsProps & { actio
   );
 }
 
+/** The active window in the reader's date format: "Active between 1 Oct 2026 and (no limit)". */
+export function RuleActiveWindowInWords({
+  activeFrom,
+  activeTo,
+}: {
+  activeFrom?: string | null;
+  activeTo?: string | null;
+}) {
+  const t = useTranslations('rules.editor');
+  const { formatDate } = useDateFormat();
+  const noLimit = t('when.window.noLimit');
+  return (
+    <p className="text-sm text-gray-900 dark:text-gray-100">
+      {t('when.window.words', {
+        from: activeFrom ? formatDate(activeFrom) : noLimit,
+        to: activeTo ? formatDate(activeTo) : noLimit,
+      })}
+    </p>
+  );
+}
+
 export interface RuleInWordsProps extends RuleWordsProps {
   rule: {
     triggers: readonly RuleTrigger[];
     condition: RuleConditionNode;
     actions: readonly RuleAction[];
     stopProcessing: boolean;
+    activeFrom?: string | null;
+    activeTo?: string | null;
   };
 }
 
@@ -223,6 +269,9 @@ export function RuleInWords({ rule, labels }: RuleInWordsProps) {
       <section>
         <h4 className={HEADING_CLASS}>{t('sections.when')}</h4>
         <RuleTriggersInWords triggers={rule.triggers} labels={labels} />
+        {(rule.activeFrom || rule.activeTo) && (
+          <RuleActiveWindowInWords activeFrom={rule.activeFrom} activeTo={rule.activeTo} />
+        )}
       </section>
       <section>
         <h4 className={HEADING_CLASS}>{t('sections.if')}</h4>

@@ -129,6 +129,8 @@ function harness(
     } as unknown as TagsService,
     { enqueue: jest.fn() } as unknown as AiReviewRequestsService,
     payees as unknown as PayeesService,
+    {} as never,
+    {} as never,
   );
   return { m: m as never, mock: m, payees, service };
 }

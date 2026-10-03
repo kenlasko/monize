@@ -354,6 +354,8 @@ export class AiActionsService {
       condition: descriptor.rule.condition,
       actions: descriptor.rule.actions,
       stopProcessing: descriptor.rule.stopProcessing,
+      activeFrom: descriptor.rule.activeFrom,
+      activeTo: descriptor.rule.activeTo,
     });
     const rule = await this.transactionRulesService.create(userId, dto);
     return { type: "create_transaction_rule", id: rule.id };
@@ -370,6 +372,8 @@ export class AiActionsService {
       condition: descriptor.rule.condition,
       actions: descriptor.rule.actions,
       stopProcessing: descriptor.rule.stopProcessing,
+      activeFrom: descriptor.rule.activeFrom,
+      activeTo: descriptor.rule.activeTo,
       revision: descriptor.expectedRevision,
     });
     const rule = await this.transactionRulesService.update(

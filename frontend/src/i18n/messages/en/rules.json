@@ -90,7 +90,16 @@
       "imported": "A transaction is imported",
       "atLeastOne": "Keep at least one option selected",
       "stopProcessing": "Stop processing other rules",
-      "stopProcessingHelp": "When this rule matches a transaction, the rules after it in the list are skipped for that transaction."
+      "stopProcessingHelp": "When this rule matches a transaction, the rules after it in the list are skipped for that transaction.",
+      "window": {
+        "title": "Active between",
+        "help": "The rule only applies to transactions dated inside this window, when they are created or imported and when the rule is tested or run. Leave a date empty for no limit.",
+        "from": "First date",
+        "to": "Last date",
+        "backwards": "The last date must not be before the first date",
+        "noLimit": "no limit",
+        "words": "Only for transactions dated from {from} to {to}"
+      }
     },
     "if": {
       "description": "The actions run only for transactions that match",
@@ -138,7 +147,8 @@
       "dayOfMonth": "Day of the month",
       "weekday": "Day of the week",
       "status": "Status",
-      "hasAttachment": "Has an attachment"
+      "hasAttachment": "Has an attachment",
+      "date": "Date"
     },
     "operators": {
       "eq": "is",
@@ -215,7 +225,33 @@
         "replace": "Replace the description",
         "append": "Add after the description",
         "prepend": "Add before the description"
-      }
+      },
+      "convertHelp": "The matched income or expense becomes one leg of a transfer. The other leg is created in the account you choose, which must use the same currency.",
+      "direction": "Direction",
+      "directionTo": "Expense: the money goes to another account",
+      "directionFrom": "Income: the money comes from another account",
+      "clearCategory": "Clear the category",
+      "clearCategoryHelp": "A transfer has no category. Turn this off to keep the category the transaction already has.",
+      "splitPayee": "Payee of the transaction (optional)",
+      "splitHint": "Each part takes its amount from a capture in the patterns above, or takes the rest. The parts must add up to the amount of the transaction, otherwise the rule leaves it alone.",
+      "splitNoCaptures": "No capture is defined yet. Put a name in braces in a pattern above, for example PRINCIPAL: {example}, to use it as an amount here.",
+      "partAmountPlaceholder": "Choose the amount...",
+      "partRest": "The rest",
+      "partAccount": "Account",
+      "partPayee": "Payee of the other leg (optional)",
+      "partsLimit": "A split can have at most {max} parts.",
+      "guideTitle": "How to use this",
+      "splitGuideHow": "In “If”, add a condition on the payee text or description with the operator “matches the pattern”, and put names in curly braces where the amounts are, for example {first}. Each name becomes an amount you can pick for a part, or choose “The rest”. The parts must add up to the transaction amount, otherwise the rule leaves the transaction unchanged. A part can be a category or a transfer to another account (a transfer moves the balance of that account).",
+      "splitGuideExampleTitle": "Example: a loan payment",
+      "splitGuideBank": "Bank text: PRINCIPAL: 1200,50 INTEREST: 300,25 PENALTY: 0,00",
+      "splitGuidePattern": "Pattern: *PRINCIPAL: {first} INTEREST: {second} PENALTY*",
+      "splitGuidePart1": "Part 1: {first} as a transfer to the loan account",
+      "splitGuidePart2": "Part 2: {second} as the category “Loans: Interest”",
+      "splitGuideResult": "Result for -1500,75: -1200,50 transferred to the loan account and -300,25 of interest expense.",
+      "splitGuideTip": "Tip: set a start date under “Active between” so older reconciled transactions are not changed, and use the Test panel before saving.",
+      "convertGuide": "An expense becomes a transfer to the account you choose, and an income becomes a transfer from it. Only the balance of the other account changes. Tip: use “Active between” so older transactions are not changed.",
+      "splitGuideName1": "principal",
+      "splitGuideName2": "interest"
     },
     "actionTypes": {
       "add_tags": "Add tags",
@@ -224,7 +260,9 @@
       "set_payee": "Set the payee",
       "request_ai_review": "Ask for an AI review",
       "set_payee_from_text": "Set the payee from text",
-      "set_description": "Set the description"
+      "set_description": "Set the description",
+      "convert_to_transfer": "Convert to transfer",
+      "split": "Split transaction"
     },
     "save": {
       "button": "Save rule",
@@ -273,11 +311,12 @@
         "MAX_NODES": "There are too many conditions and groups. The limit is {maxNodes}.",
         "NO_ACTIONS": "Add at least one action.",
         "TOO_MANY_ACTIONS": "There are too many actions. The limit is {maxActions}.",
-        "DUPLICATE_ACTION": "A rule can ask for an AI review only once.",
+        "DUPLICATE_ACTION": "A rule can have only one AI review, one transfer or split, and one split part that takes the rest.",
+        "CONFLICTING_ACTIONS": "A transfer or split action cannot be combined with “Set the category”, and each of its parts has either a category or an account.",
         "INVALID_CAPTURE": "A capture name must be lowercase letters and digits, starting with a letter, and up to 20 long.",
         "TOO_MANY_CAPTURES": "A pattern can hold at most 5 captures.",
         "DUPLICATE_CAPTURE": "Each capture name can be used once in a rule.",
-        "UNKNOWN_CAPTURE": "The text uses a capture that no condition of this rule defines.",
+        "UNKNOWN_CAPTURE": "This uses a capture that no condition of this rule defines.",
         "LOOKS_LIKE_REGEX": "Regular expressions are not supported: | \\ and short bracket classes like [xy] are matched as plain characters, so a pattern written as a regex never matches what was meant. To match one of several texts, add a group of “Any of these” and put one condition in it for each text.",
         "PATTERN_WITHOUT_WILDCARD": "Without a * this pattern must equal the whole text. Use the operator “is” for the whole text, “contains” for a part of it, or put * around the text, for example *coffee*.",
         "REFERENCE_NOT_FOUND": "An item chosen here no longer exists. Choose another.",
@@ -378,7 +417,18 @@
       "cross_owner_transfer_payee": "it is a transfer to another owner, whose payee this rule may not change",
       "empty_render": "the text of an action came out empty for it",
       "payee_not_found": "no payee has the name the rule built, and it does not create one",
-      "other": "the rule cannot change it"
+      "other": "the rule cannot change it",
+      "row_is_transfer_leg": "it is already a transfer",
+      "row_has_splits": "it is already split",
+      "row_is_void": "it is void",
+      "zero_amount": "its amount is zero",
+      "transfer_direction_mismatch": "the transfer goes the wrong way for it: an expense goes to an account, an income comes from one",
+      "transfer_same_account": "the transfer account is the account of the transaction itself",
+      "transfer_account_unavailable": "the transfer account is not available (it was deleted or is not yours)",
+      "transfer_currency_mismatch": "the transfer account uses another currency",
+      "split_amount_unparseable": "an amount in its text could not be read as a number",
+      "split_sum_mismatch": "the parts do not add up to its amount",
+      "split_too_few_parts": "fewer than two parts are left once zero amounts are dropped"
     },
     "change": {
       "category": "Category: {before} → {after}",
@@ -390,7 +440,15 @@
       "unknown": "a deleted item",
       "payeeCreated": "{done, select, yes {A new payee was created: {name}} other {A new payee will be created: {name}}}",
       "description": "Description: {before} → {after}",
-      "descriptionSet": "Set the description to {value}"
+      "descriptionSet": "Set the description to {value}",
+      "transfer": "{done, select, yes {Became a transfer with {account}} other {Becomes a transfer with {account}}}",
+      "split": "{done, select, yes {Was split into {count, plural, one {# part} other {# parts}}} other {Will be split into {count, plural, one {# part} other {# parts}}}}",
+      "splitPart": "Part {number}: {amount} {target}",
+      "splitPartMemo": ", memo “{memo}”",
+      "splitToTransfer": "to {account}",
+      "splitToTransferPayee": "to {account}, payee {payee}",
+      "splitToCategory": "as {category}",
+      "splitUncategorised": "uncategorised"
     },
     "filters": {
       "accounts": "Accounts",
@@ -471,7 +529,15 @@
       "set_payee": "Set the payee to {name}{onlyIfEmpty, select, yes { (only if empty)} other {}}",
       "request_ai_review": "Ask for an AI review: {instruction}",
       "set_payee_from_text": "Set the payee from text: \"{template}\"{createIfMissing, select, yes { (created if missing)} other {}}{onlyIfEmpty, select, yes { (only if empty)} other {}}",
-      "set_description": "Set the description ({mode, select, append {append} prepend {prepend} other {replace}}): \"{template}\"{onlyIfEmpty, select, yes { (only if empty)} other {}}"
+      "set_description": "Set the description ({mode, select, append {append} prepend {prepend} other {replace}}): \"{template}\"{onlyIfEmpty, select, yes { (only if empty)} other {}}",
+      "convert_to_transfer": "Turn into a transfer {direction, select, from {from} other {to}} {account}",
+      "split": "Split into: {parts}"
+    },
+    "splitPart": {
+      "transfer": "{amount} to {account}",
+      "category": "{amount} as {category}",
+      "plain": "{amount}",
+      "rest": "the rest"
     }
   }
 }

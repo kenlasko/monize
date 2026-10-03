@@ -99,7 +99,7 @@ export function readScalar(cursor: Cursor, ctx: ValueContext, unfilled: boolean)
     cursor.next();
     return token.text === 'true';
   }
-  if (spec.kind === 'currency' && unfilled && token.kind === 'ident' && token.text === CEL_UNFILLED) {
+  if ((spec.kind === 'currency' || spec.kind === 'date') && unfilled && token.kind === 'ident' && token.text === CEL_UNFILLED) {
     cursor.next();
     return '';
   }
@@ -137,9 +137,9 @@ export function readList(cursor: Cursor, ctx: ValueContext): string[] {
 }
 
 /** The two ends of `between(a, b)`; either may be `_` while the rule is being built. */
-export function readRange(cursor: Cursor, ctx: ValueContext): (number | undefined)[] {
-  const low = readScalar(cursor, ctx, true) as number | undefined;
+export function readRange(cursor: Cursor, ctx: ValueContext): (number | string | undefined)[] {
+  const low = readScalar(cursor, ctx, true) as number | string | undefined;
   cursor.expectPunct(',');
-  const high = readScalar(cursor, ctx, true) as number | undefined;
+  const high = readScalar(cursor, ctx, true) as number | string | undefined;
   return [low, high];
 }

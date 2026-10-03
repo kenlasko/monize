@@ -14,6 +14,7 @@ export function canonicalChanges(changes: RuleTraceChanges): {
   payeeName?: RuleTraceChanges["payeeName"];
   payeeCreated?: true;
   description?: RuleTraceChanges["description"];
+  structure?: RuleTraceChanges["structure"];
 } {
   const sortedSet = (
     change: RuleTraceChanges["tagIds"],
@@ -33,6 +34,8 @@ export function canonicalChanges(changes: RuleTraceChanges): {
     ...(changes.payeeName ? { payeeName: changes.payeeName } : {}),
     ...(changes.payeeCreated ? { payeeCreated: true as const } : {}),
     ...(changes.description ? { description: changes.description } : {}),
+    // The planned parts and amounts are part of what a run writes (INV-RULE-003).
+    ...(changes.structure ? { structure: changes.structure } : {}),
   };
 }
 

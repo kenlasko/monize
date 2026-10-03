@@ -7,6 +7,8 @@ import {
   settlePendingHistoryWrites,
 } from "./action-history.service";
 import { ActionHistory } from "./entities/action-history.entity";
+import { Transaction } from "../transactions/entities/transaction.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -31,6 +33,44 @@ describe("ActionHistoryService", () => {
     isUndone: false,
     description: 'Created tag "Test Tag"',
     createdAt: new Date(),
+  };
+
+  /**
+   * The row-lock `SELECT ... FOR UPDATE` over `transactions` answers with the
+   * rows given (by id); every other query answers like the balance recompute.
+   */
+  const mockLockedRows = (
+    rows: Record<
+      string,
+      {
+        account_id: string;
+        amount: string;
+        linked_transaction_id?: string | null;
+        status?: string;
+        transaction_date?: string;
+      }
+    >,
+  ) => {
+    mockQueryRunner.query.mockImplementation(
+      async (sql: string, params: unknown[]) => {
+        if (/FROM transactions/.test(sql) && /FOR UPDATE/.test(sql)) {
+          return (params[0] as string[])
+            .filter((id) => rows[id] !== undefined)
+            .map((id) => ({
+              id,
+              status: "UNRECONCILED",
+              transaction_date: "2020-01-15",
+              is_split: false,
+              linked_transaction_id: null,
+              parent_transaction_id: null,
+              payee_id: null,
+              payee_name: null,
+              ...rows[id],
+            }));
+        }
+        return [{ opening_balance: "0", tx_sum: "0" }];
+      },
+    );
   };
 
   beforeEach(async () => {
@@ -2072,14 +2112,253 @@ describe("ActionHistoryService", () => {
       mockQueryRunner.manager.delete.mockResolvedValue({ affected: 2 });
       mockQueryRunner.manager.remove.mockResolvedValue(undefined);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
-      mockQueryRunner.query.mockResolvedValue([
-        { opening_balance: "0", tx_sum: "0" },
-      ]);
+      mockLockedRows({ "tx-1": { account_id: "acc-1", amount: "100" } });
 
       const result = await service.undo(userId);
 
       expect(result.description).toContain("Undone");
       expect(mockQueryRunner.manager.delete).toHaveBeenCalled();
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalled();
+    });
+
+    describe("a create that wrote legs in other accounts", () => {
+      // A rule's convert_to_transfer (or split with a transfer part) writes a
+      // counterpart leg in another account in the create's own transaction.
+      // Undoing the create must remove it and reverse its balance.
+      const createAction = (after: Record<string, unknown>) => ({
+        ...mockAction,
+        entityType: "transaction",
+        action: "create",
+        entityId: "tx-1",
+        afterData: after,
+      });
+
+      it("removes the transfer counterpart and reverses its balance", async () => {
+        mockRepository.findOne.mockResolvedValue(
+          createAction({ id: "tx-1", accountId: "acc-1" }),
+        );
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          id: "tx-1",
+          userId,
+          accountId: "acc-1",
+          amount: -640.15,
+          isTransfer: true,
+          linkedTransactionId: "leg-1",
+          splits: [],
+        });
+        mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+        mockQueryRunner.manager.remove.mockResolvedValue(undefined);
+        mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+        mockLockedRows({
+          "tx-1": {
+            account_id: "acc-1",
+            amount: "-640.15",
+            linked_transaction_id: "leg-1",
+          },
+          "leg-1": {
+            account_id: "loan",
+            amount: "640.15",
+            linked_transaction_id: "tx-1",
+          },
+        });
+
+        await service.undo(userId);
+
+        expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
+          Transaction,
+          { id: "leg-1", userId },
+        );
+        const balanceWrites = mockQueryRunner.query.mock.calls.filter(
+          ([sql]: [string]) => /SET current_balance = ROUND/.test(sql),
+        );
+        expect(balanceWrites).toEqual([
+          [expect.any(String), [-640.15, "loan", userId]],
+        ]);
+      });
+
+      it("removes the legs of transfer split lines, each reversed by its own amount", async () => {
+        mockRepository.findOne.mockResolvedValue(
+          createAction({ id: "tx-1", accountId: "acc-1" }),
+        );
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          id: "tx-1",
+          userId,
+          accountId: "acc-1",
+          amount: -1500.75,
+          isSplit: true,
+          splits: [
+            { id: "s1", amount: -1200.5, linkedTransactionId: "leg-1" },
+            { id: "s2", amount: -300.25, linkedTransactionId: null },
+          ],
+        });
+        mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+        mockQueryRunner.manager.remove.mockResolvedValue(undefined);
+        mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+        mockLockedRows({
+          "tx-1": { account_id: "acc-1", amount: "-1500.75" },
+          "leg-1": {
+            account_id: "loan",
+            amount: "1200.50",
+            linked_transaction_id: "tx-1",
+          },
+        });
+
+        await service.undo(userId);
+
+        expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
+          Transaction,
+          { id: "leg-1", userId },
+        );
+        expect(
+          mockQueryRunner.query.mock.calls.filter(([sql]: [string]) =>
+            /SET current_balance = ROUND/.test(sql),
+          ),
+        ).toEqual([[expect.any(String), [-1200.5, "loan", userId]]]);
+      });
+
+      it("refuses, before any write, when the counterpart is reconciled and the strict lock is on", async () => {
+        mockRepository.findOne.mockResolvedValue(
+          createAction({ id: "tx-1", accountId: "acc-1" }),
+        );
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          id: "tx-1",
+          userId,
+          accountId: "acc-1",
+          amount: -640.15,
+          isTransfer: true,
+          linkedTransactionId: "leg-1",
+          splits: [],
+        });
+        mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+        mockQueryRunner.manager.remove.mockResolvedValue(undefined);
+        mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+        mockLockedRows({
+          "tx-1": {
+            account_id: "acc-1",
+            amount: "-640.15",
+            linked_transaction_id: "leg-1",
+          },
+          "leg-1": {
+            account_id: "loan",
+            amount: "640.15",
+            status: "RECONCILED",
+            linked_transaction_id: "tx-1",
+          },
+        });
+        const routeRepository =
+          mockQueryRunner.manager.getRepository.getMockImplementation();
+        mockQueryRunner.manager.getRepository.mockImplementation(
+          (entity: unknown) =>
+            entity === UserPreference
+              ? {
+                  findOne: jest
+                    .fn()
+                    .mockResolvedValue({ lockReconciledTransactions: true }),
+                }
+              : routeRepository(entity),
+        );
+
+        await expect(service.undo(userId)).rejects.toBeInstanceOf(
+          ConflictException,
+        );
+
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+        expect(
+          mockQueryRunner.query.mock.calls.filter(([sql]: [string]) =>
+            /SET current_balance = ROUND/.test(sql),
+          ),
+        ).toEqual([]);
+      });
+
+      it("leaves a leg alone that is linked to another row, and a VOID leg moves nothing", async () => {
+        mockRepository.findOne.mockResolvedValue(
+          createAction({ id: "tx-1", accountId: "acc-1" }),
+        );
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          id: "tx-1",
+          userId,
+          accountId: "acc-1",
+          amount: -10,
+          isSplit: true,
+          splits: [
+            { id: "s1", amount: -5, linkedTransactionId: "leg-1" },
+            { id: "s2", amount: -5, linkedTransactionId: "leg-2" },
+          ],
+        });
+        mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+        mockQueryRunner.manager.remove.mockResolvedValue(undefined);
+        mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+        mockLockedRows({
+          "tx-1": { account_id: "acc-1", amount: "-10" },
+          "leg-1": {
+            account_id: "loan",
+            amount: "5",
+            linked_transaction_id: "someone-else",
+          },
+          "leg-2": {
+            account_id: "loan",
+            amount: "5",
+            status: "VOID",
+            linked_transaction_id: "tx-1",
+          },
+        });
+
+        await service.undo(userId);
+
+        const deletedLegs = mockQueryRunner.manager.delete.mock.calls
+          .filter(([entity]: [unknown]) => entity === Transaction)
+          .map(([, where]: [unknown, { id: string }]) => where.id);
+        expect(deletedLegs).toEqual(["leg-2"]);
+        expect(
+          mockQueryRunner.query.mock.calls.filter(([sql]: [string]) =>
+            /SET current_balance = ROUND/.test(sql),
+          ),
+        ).toEqual([]);
+      });
+    });
+
+    describe("redo of a create that wrote legs in other accounts", () => {
+      const undoneCreate = (after: Record<string, unknown>) => ({
+        ...mockAction,
+        entityType: "transaction",
+        action: "create",
+        entityId: "tx-1",
+        isUndone: true,
+        beforeData: null,
+        afterData: after,
+      });
+
+      it("is refused for a transfer leg, before anything is written", async () => {
+        mockRepository.findOne.mockResolvedValue(
+          undoneCreate({
+            id: "tx-1",
+            accountId: "acc-1",
+            isTransfer: true,
+            linkedTransactionId: "leg-1",
+          }),
+        );
+        await expect(service.redo(userId)).rejects.toMatchObject({
+          response: expect.objectContaining({
+            errorCode: "REDO_CREATE_WITH_LEGS",
+          }),
+        });
+        expect(mockQueryRunner.query).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
+      it("is refused for a split with a linked leg", async () => {
+        mockRepository.findOne.mockResolvedValue(
+          undoneCreate({
+            id: "tx-1",
+            accountId: "acc-1",
+            splits: [{ id: "s1", linkedTransactionId: "leg-1" }],
+          }),
+        );
+        await expect(service.redo(userId)).rejects.toBeInstanceOf(
+          ConflictException,
+        );
+      });
     });
 
     it("should return early if entityId is null", async () => {

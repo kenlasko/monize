@@ -96,7 +96,11 @@ describe("ImportRegularProcessorService import rules", () => {
     }) as unknown as RuleEffects;
 
   const applied = (changes: object): AppliedRuleRow[] => [
-    { transactionId: "saved-tx", effects: effectsWith(changes) },
+    {
+      transactionId: "saved-tx",
+      effects: effectsWith(changes),
+      affectedAccountIds: [],
+    },
   ];
 
   beforeEach(() => {
@@ -221,6 +225,19 @@ describe("ImportRegularProcessorService import rules", () => {
     await service.processTransaction(ctx, { date: "2025-01-17", amount: -3 });
     expect(ctx.importResult.transactionsChangedByRules).toBe(2);
     expect(ctx.importResult.imported).toBe(3);
+  });
+
+  it("adds the accounts a structural action moved to the import's affected accounts", async () => {
+    const ctx = makeContext();
+    applier.applyToNew.mockResolvedValueOnce([
+      {
+        transactionId: "saved-tx",
+        effects: effectsWith({}),
+        affectedAccountIds: ["loan-account"],
+      },
+    ]);
+    await service.processTransaction(ctx, { date: "2025-01-15", amount: -1 });
+    expect(ctx.affectedAccountIds.has("loan-account")).toBe(true);
   });
 
   it("leaves the counter absent when no rule changed a row", async () => {

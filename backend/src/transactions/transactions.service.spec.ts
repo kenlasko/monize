@@ -576,6 +576,51 @@ describe("TransactionsService", () => {
       expect(options.payeeTextById.get("tx-1")).toBe("Biedronka 123");
     });
 
+    it("recalculates the accounts a structural rule moved, after the commit and not twice", async () => {
+      transactionsRepository.findOne.mockResolvedValue(rowInDb);
+      rulesApplier.applyToNew.mockResolvedValue([
+        {
+          transactionId: "tx-1",
+          effects: {},
+          affectedAccountIds: ["loan-account", "account-1"],
+        },
+      ]);
+      const order: string[] = [];
+      accountsService.updateBalance.mockImplementation(async () => {
+        order.push("balance");
+      });
+      netWorthService.triggerDebouncedRecalc.mockImplementation(
+        (accountId: string) => {
+          order.push(`recalc:${accountId}`);
+        },
+      );
+
+      await service.create("user-1", {
+        accountId: "account-1",
+        transactionDate: "2026-01-15",
+        amount: -50,
+        currencyCode: "USD",
+        payeeName: "Loan",
+      } as any);
+
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        "loan-account",
+        "user-1",
+      );
+      const forAccount1 =
+        netWorthService.triggerDebouncedRecalc.mock.calls.filter(
+          (call: string[]) => call[0] === "account-1",
+        );
+      expect(forAccount1).toHaveLength(1);
+      // Inside the transaction the balance is written; the recompute is
+      // dispatched only after it, once per account.
+      expect(order).toEqual([
+        "balance",
+        "recalc:account-1",
+        "recalc:loan-account",
+      ]);
+    });
+
     it("hands a rule the payee's own name as payeeText when only an id was given", async () => {
       transactionsRepository.findOne.mockResolvedValue(rowInDb);
       payeesService.findOne.mockResolvedValue({
@@ -594,6 +639,32 @@ describe("TransactionsService", () => {
 
       const options = rulesApplier.applyToNew.mock.calls[0][4];
       expect(options.payeeTextById.get("tx-1")).toBe("Biedronka");
+    });
+
+    it("allows structural rule actions for an owner's create and forbids them when a joint member is the actor", async () => {
+      transactionsRepository.findOne.mockResolvedValue(rowInDb);
+      const dto = {
+        accountId: "account-1",
+        transactionDate: "2026-01-15",
+        amount: -50,
+        currencyCode: "USD",
+      } as any;
+
+      await service.create("user-1", dto);
+      expect(
+        rulesApplier.applyToNew.mock.calls[0][4].structuralNotAllowed,
+      ).toBe(false);
+
+      // The option is the joint register's, set from the grant; a request field
+      // of the same name is not read.
+      await service.create(
+        "user-1",
+        { ...dto, actorIsNotOwner: false } as any,
+        { actorIsNotOwner: true },
+      );
+      expect(
+        rulesApplier.applyToNew.mock.calls[1][4].structuralNotAllowed,
+      ).toBe(true);
     });
 
     it("does not run the applier when the request is rejected before the write", async () => {

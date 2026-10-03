@@ -72,6 +72,8 @@ function evaluateLeaf(leaf: RuleConditionLeaf, facts: RuleFacts): boolean {
       );
     case "dayOfMonth":
       return evaluateDayOfMonth(leaf, facts.dayOfMonth);
+    case "date":
+      return evaluateDate(leaf, facts.date);
     default:
       // "enum" and "currency" compare as case-insensitive codes.
       return evaluateCode(leaf.op, codeFact(leaf, facts), leaf.value);
@@ -223,6 +225,37 @@ function evaluateDayOfMonth(
       return day > wanted;
     default: // gte: the field table admits no other operator
       return day >= wanted;
+  }
+}
+
+/**
+ * Calendar dates compared as `YYYY-MM-DD` strings (fixed width, so the text
+ * order is the date order), never through a `Date`; an unknown date is false
+ * for every operator.
+ */
+function evaluateDate(leaf: RuleConditionLeaf, date: string | null): boolean {
+  if (date === null) return false;
+  if (leaf.op === "between") {
+    const [min, max] = asList(leaf.value);
+    return (
+      typeof min === "string" &&
+      typeof max === "string" &&
+      date >= min &&
+      date <= max
+    );
+  }
+  if (typeof leaf.value !== "string") return false;
+  switch (leaf.op) {
+    case "eq":
+      return date === leaf.value;
+    case "lt":
+      return date < leaf.value;
+    case "lte":
+      return date <= leaf.value;
+    case "gt":
+      return date > leaf.value;
+    default: // gte: the field table admits no other operator
+      return date >= leaf.value;
   }
 }
 

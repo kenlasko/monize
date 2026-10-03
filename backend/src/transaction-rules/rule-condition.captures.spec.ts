@@ -20,6 +20,7 @@ function facts(over: Partial<RuleFacts> = {}): RuleFacts {
     tagIds: [],
     hasSplits: false,
     referenceNumber: null,
+    date: null,
     dayOfMonth: null,
     weekday: null,
     status: null,

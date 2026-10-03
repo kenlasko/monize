@@ -88,6 +88,8 @@ describe("validateRuleDefinition: actions", () => {
       "request_ai_review",
       "set_payee_from_text",
       "set_description",
+      "convert_to_transfer",
+      "split",
     ]);
   });
 
@@ -252,6 +254,13 @@ describe("validateRuleDefinition: error codes", () => {
       ],
       [{ all: [] }, []],
       [{ all: [] }, Array(11).fill(OK_ACTIONS[0])],
+      [
+        { all: [] },
+        [
+          { type: "convert_to_transfer", toAccountId: U1, clearCategory: true },
+          { type: "set_category", categoryId: U1, onlyIfEmpty: true },
+        ],
+      ],
       [leaf("referenceNumber", "matches", "a|b*"), OK_ACTIONS],
       [leaf("referenceNumber", "matches", "nagroda"), OK_ACTIONS],
       [leaf("referenceNumber", "matches", "{Bad}"), OK_ACTIONS],

@@ -1,6 +1,6 @@
 import { AxiosError, AxiosHeaders, type AxiosResponse } from 'axios';
 import { describe, expect, it } from 'vitest';
-import { createAction } from './rule-actions';
+import { createAction, createSplitPart, type EditorAction } from './rule-actions';
 import { emptyDraft, type RuleDraft } from './rule-draft';
 import {
   draftGaps,
@@ -9,6 +9,7 @@ import {
   keyForPath,
   placeErrors,
   readRuleApiError,
+  structuralFieldErrors,
 } from './rule-errors';
 import { RULE_VALIDATION_CODES } from './rule-fields';
 import { createGroup, createLeaf, type EditorLeaf } from './rule-tree';
@@ -113,6 +114,17 @@ describe('draftGaps', () => {
 
   it('is empty for a complete draft', () => {
     expect(draftGaps(draft({ actions: [tags] }))).toEqual([]);
+  });
+
+  it('accepts a complete date range and asks for an end that is still empty', () => {
+    const condition = createGroup('all', [
+      leaf({ field: 'date', op: 'between', value: ['2026-10-01', '2026-10-31'] }),
+      leaf({ field: 'date', op: 'between', value: ['2026-10-01', ''] }),
+      leaf({ field: 'date', op: 'gte', value: '2026-10-01' }),
+    ]);
+    expect(draftGaps(draft({ condition, actions: [tags] }))).toEqual([
+      { path: 'condition.all[1]', code: 'VALUE_REQUIRED' },
+    ]);
   });
 
   it('asks for a name and an action', () => {
@@ -238,5 +250,105 @@ describe('draftGaps', () => {
       { path: 'condition.all[2]', code: 'INVALID_CAPTURE' },
       { path: 'condition.all[3]', code: 'TOO_MANY_CAPTURES' },
     ]);
+  });
+});
+
+describe('the structural actions', () => {
+  const draft = (actions: RuleDraft['actions'], condition = emptyDraft().condition): RuleDraft => ({
+    ...emptyDraft(),
+    name: 'Rule',
+    condition,
+    actions,
+  });
+  const principal = createGroup('all', [
+    { ...createLeaf('description'), op: 'matches', value: 'PRINCIPAL: {principal} INTEREST: {interest}PENALTY*' } as EditorLeaf,
+  ]);
+  const ACCOUNT = '22222222-2222-4222-8222-222222222222';
+  const part = (over: Partial<ReturnType<typeof createSplitPart>>) => ({ ...createSplitPart('{principal}'), ...over });
+  const split = (parts: ReturnType<typeof createSplitPart>[]): EditorAction => ({ ...createAction('split'), parts }) as EditorAction;
+
+  it('asks for the other account of a transfer, on the side the direction names', () => {
+    expect(draftGaps(draft([createAction('convert_to_transfer')]))).toEqual([
+      { path: 'actions[0].toAccountId', code: 'VALUE_REQUIRED' },
+    ]);
+    expect(
+      draftGaps(draft([{ ...createAction('convert_to_transfer'), direction: 'from' } as EditorAction])),
+    ).toEqual([{ path: 'actions[0].fromAccountId', code: 'VALUE_REQUIRED' }]);
+    expect(
+      draftGaps(draft([{ ...createAction('convert_to_transfer'), accountId: ACCOUNT } as EditorAction])),
+    ).toEqual([]);
+  });
+
+  it('asks for each part its amount, a capture the patterns define, and an account for a transfer part', () => {
+    const actions = [
+      split([
+        part({ amount: '' }),
+        part({ amount: '{nothing}' }),
+        part({ amount: 'principal' }),
+        part({ amount: '{interest}', kind: 'transfer' }),
+        part({ amount: '{principal}', categoryId: ACCOUNT }),
+      ]),
+    ];
+    expect(draftGaps(draft(actions, principal))).toEqual([
+      { path: 'actions[0].parts[0].amount', code: 'VALUE_REQUIRED' },
+      { path: 'actions[0].parts[1].amount', code: 'UNKNOWN_CAPTURE' },
+      { path: 'actions[0].parts[2].amount', code: 'INVALID_SHAPE' },
+      { path: 'actions[0].parts[3].transferAccountId', code: 'VALUE_REQUIRED' },
+    ]);
+  });
+
+  it('refuses a second rest and a whitespace-only or overlong memo', () => {
+    const actions = [
+      split([part({ amount: 'rest' }), part({ amount: 'rest', description: '   ' }), part({ description: 'x'.repeat(201) })]),
+    ];
+    expect(draftGaps(draft(actions, principal))).toEqual([
+      { path: 'actions[0].parts[1].amount', code: 'DUPLICATE_ACTION' },
+      { path: 'actions[0].parts[1].description', code: 'VALUE_EMPTY' },
+      { path: 'actions[0].parts[2].description', code: 'VALUE_TOO_LONG' },
+    ]);
+  });
+
+  it('reports a structural action next to set_category as CONFLICTING_ACTIONS on the structural card', () => {
+    const category = { ...createAction('set_category'), categoryId: ACCOUNT } as EditorAction;
+    const convert = { ...createAction('convert_to_transfer'), accountId: ACCOUNT } as EditorAction;
+    expect(draftGaps(draft([category, convert]))).toEqual([{ path: 'actions[1]', code: 'CONFLICTING_ACTIONS' }]);
+    expect(draftGaps(draft([convert, category]))).toEqual([{ path: 'actions[0]', code: 'CONFLICTING_ACTIONS' }]);
+  });
+
+  it('refuses a second structural action as DUPLICATE_ACTION', () => {
+    const convert = { ...createAction('convert_to_transfer'), accountId: ACCOUNT } as EditorAction;
+    expect(draftGaps(draft([convert, convert]))).toEqual([{ path: 'actions[1]', code: 'DUPLICATE_ACTION' }]);
+  });
+});
+
+describe('structuralFieldErrors', () => {
+  it('puts each entry at the field its path names and the rest on the card', () => {
+    const placed = placeErrors([
+      { path: 'actions[0]', code: 'CONFLICTING_ACTIONS' },
+      { path: 'actions[0].toAccountId', code: 'REFERENCE_NOT_FOUND' },
+      { path: 'actions[0].parts', code: 'ARRAY_TOO_LARGE' },
+      { path: 'actions[0].parts[1]', code: 'CONFLICTING_ACTIONS' },
+      { path: 'actions[0].parts[1].amount', code: 'UNKNOWN_CAPTURE' },
+      { path: 'actions[0].parts[1].amount', code: 'UNKNOWN_CAPTURE' },
+      { path: 'actions[0].parts[2].payeeId', code: 'CONFLICTING_ACTIONS' },
+      { path: 'actions[0].stray', code: 'UNKNOWN_KEY' },
+      { path: 'actions[1].parts[0].amount', code: 'VALUE_TYPE' },
+    ]);
+    expect(placed.byPath['actions[0].parts[1].amount']).toEqual(['UNKNOWN_CAPTURE']);
+    const result = structuralFieldErrors(placed, 0);
+    expect(result.shell).toEqual(['CONFLICTING_ACTIONS', 'UNKNOWN_KEY']);
+    expect(result.fields).toEqual({
+      toAccountId: ['REFERENCE_NOT_FOUND'],
+      parts: ['ARRAY_TOO_LARGE'],
+      'parts[1]': ['CONFLICTING_ACTIONS'],
+      'parts[1].amount': ['UNKNOWN_CAPTURE'],
+      'parts[2].payeeId': ['CONFLICTING_ACTIONS'],
+    });
+    expect(structuralFieldErrors(placed, 1).fields).toEqual({ 'parts[0].amount': ['VALUE_TYPE'] });
+  });
+
+  it('still lands every entry on its card in byKey', () => {
+    const placed = placeErrors([{ path: 'actions[0].parts[1].amount', code: 'UNKNOWN_CAPTURE' }]);
+    expect(placed.byKey).toEqual({ 'a:0': ['UNKNOWN_CAPTURE'] });
   });
 });

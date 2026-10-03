@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { PendingAction, PendingActionPreviewRow } from '@/types/ai';
 import { formatPhoneForDisplay } from '@/lib/phone-number';
+import { RuleEffectsLines } from '@/components/ai/RuleEffectsLines';
 
 interface BulkConfirmationCardProps {
   action: PendingAction;
@@ -294,6 +295,10 @@ export function BulkConfirmationCard({
                 <div className="text-xs text-gray-500 dark:text-gray-400">
                   {secondary}
                 </div>
+              )}
+              {!isError && (
+                // A transfer or split the rules add moves another account's balance: never hidden.
+                <RuleEffectsLines effects={row.ruleEffects} currencyCode={row.currencyCode} />
               )}
               {isError && row.error && (
                 <div className="text-xs text-amber-700 dark:text-amber-400">

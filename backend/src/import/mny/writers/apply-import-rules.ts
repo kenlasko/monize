@@ -3,6 +3,18 @@ import { TransactionRulesApplierService } from "../../../transaction-rules/trans
 import { MappedTransaction } from "../model/mny-import-model";
 import { INSERT_CHUNK_SIZE, chunk } from "./chunk";
 
+/** What the rule pass did: rows changed, and accounts a structural action moved. */
+export interface ApplyImportRulesResult {
+  readonly changed: number;
+  /**
+   * Accounts a structural action credited (conversion target, split transfer
+   * targets). The import's post-processing recomputes their balance and net
+   * worth after the commit (INV-CACHE-001), exactly as for the accounts the
+   * file wrote to.
+   */
+  readonly affectedAccountIds: ReadonlySet<string>;
+}
+
 export interface ApplyImportRulesInput {
   readonly transactions: readonly MappedTransaction[];
   /** Ids that really reached the database (`WrittenTransactions`). */
@@ -37,18 +49,19 @@ export function eligibleImportRuleIds(input: ApplyImportRulesInput): string[] {
  * of the import drops the rule effects with the rows. The rules are loaded once
  * and the rows go through the applier in chunks, so the facts (rows, tags,
  * category chains) are read per chunk rather than per row. Returns the number
- * of rows a rule changed.
+ * of rows a rule changed and the accounts a structural action moved.
  */
 export async function applyImportRules(
   manager: EntityManager,
   applier: TransactionRulesApplierService,
   userId: string,
   input: ApplyImportRulesInput,
-): Promise<number> {
+): Promise<ApplyImportRulesResult> {
+  const affectedAccountIds = new Set<string>();
   const ids = eligibleImportRuleIds(input);
-  if (ids.length === 0) return 0;
+  if (ids.length === 0) return { changed: 0, affectedAccountIds };
   const rules = await applier.loadRulesFor(manager, userId, "import");
-  if (rules.length === 0) return 0;
+  if (rules.length === 0) return { changed: 0, affectedAccountIds };
 
   const payeeTextById = new Map<string, string | null>();
   for (const transaction of input.transactions) {
@@ -69,6 +82,11 @@ export async function applyImportRules(
     changed += applied.filter((row) =>
       row.effects.trace.some((entry) => Object.keys(entry.changes).length > 0),
     ).length;
+    for (const row of applied) {
+      for (const accountId of row.affectedAccountIds) {
+        affectedAccountIds.add(accountId);
+      }
+    }
   }
-  return changed;
+  return { changed, affectedAccountIds };
 }
