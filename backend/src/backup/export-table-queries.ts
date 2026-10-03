@@ -225,6 +225,22 @@ export const INTENTIONALLY_EXCLUDED_TABLES: ReadonlySet<string> = new Set([
   // (`transaction_rules`) are exported and ask again as they run. It cascades
   // from the user and the transaction, so a restore's deletes clear it.
   "ai_review_requests",
+  // The user's IMAP mailbox login: host, username and a password encrypted
+  // under THIS instance's ENCRYPTION_KEY, so restored elsewhere it is an
+  // unreadable ciphertext, and decrypted into the file it would be a mailbox
+  // credential in an artifact that can be mailed around. Same category as
+  // `backup_offsite_settings`: re-entered on the new instance, never carried.
+  // Its cursor (uid_validity, last_uid) names messages in a mailbox that the new
+  // instance has not read, so it is meaningless there too. The parsers that read
+  // the mail (`email_receipt_parsers`) are exported.
+  "email_receipt_mailboxes",
+  // A stored copy of mail the user can re-read from their own mailbox: subject,
+  // sender and body text of order confirmations, which a backup of the ledger
+  // has no business multiplying. Each row also names a transaction id that a
+  // restore re-mints and a mailbox row this table cascades from, so a restored
+  // receipt would point at rows that no longer exist under those ids. The
+  // receipts rebuild from the mailbox on the next poll.
+  "email_receipts",
 ]);
 
 export function buildExportTableQueries(
@@ -330,6 +346,15 @@ export function buildExportTableQueries(
       // evaluation order.
       key: "transaction_rules",
       sql: "SELECT * FROM transaction_rules WHERE user_id = $1 ORDER BY position",
+    },
+    {
+      // The user's email-receipt parsers (their own work, or an AI draft they
+      // approved). The payee is a real foreign key, remapped like every other
+      // reference; the category ids a definition names are inside its JSONB,
+      // which the restore's id remap rewrites, so the parsers keep pointing at
+      // the restored rows. Ordered by creation so the file reads stably.
+      key: "email_receipt_parsers",
+      sql: "SELECT * FROM email_receipt_parsers WHERE user_id = $1 ORDER BY created_at, id",
     },
     {
       key: "transactions",

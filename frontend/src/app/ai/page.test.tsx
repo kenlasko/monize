@@ -3,6 +3,7 @@ import { act, cleanup, render, screen, waitFor } from '@/test/render';
 import { setAuthenticatedState } from '@/test/mocks/stores';
 import { useAuthStore } from '@/store/authStore';
 import type { User } from '@/types/auth';
+import { peekChatHandoff, stageChatHandoff } from '@/lib/ai-chat-handoff';
 import AiPage from './page';
 
 // The page reads `?share=` for the Web Share Target hand-off, so the search
@@ -39,6 +40,7 @@ vi.mock('@/components/ai/ChatInterface', () => ({
   ChatInterface: (props: {
     initialFiles?: File[];
     onInitialFilesStaged?: () => void;
+    initialDraft?: string;
   }) => {
     chatInterface(props);
     return <div data-testid="chat-interface">ChatInterface</div>;
@@ -115,6 +117,47 @@ describe('AiPage', () => {
 
     expect(mocks.readSharedBundle).not.toHaveBeenCalled();
     expect(lastChatProps().initialFiles).toBeUndefined();
+  });
+
+  describe('the in-app hand-off (the receipts page)', () => {
+    const files = () => [new File(['From: a'], 'order-email-2026-09-10.txt', { type: 'text/plain' })];
+
+    it('stages the parked file and the drafted message on the composer, and sends nothing', async () => {
+      const handed = files();
+      const id = stageChatHandoff({ files: handed, draft: 'Recognize the products' });
+      searchParams.value = new URLSearchParams(`handoff=${id}`);
+
+      await renderPage();
+
+      expect(lastChatProps().initialFiles).toEqual(handed);
+      expect(lastChatProps().initialDraft).toBe('Recognize the products');
+      expect(mocks.readSharedBundle).not.toHaveBeenCalled();
+      // Still parked until the composer reports it holds the files.
+      expect(peekChatHandoff(id)).not.toBeNull();
+    });
+
+    it('discards the parked entry once the chat reports the files are staged', async () => {
+      const id = stageChatHandoff({ files: files(), draft: 'x' });
+      searchParams.value = new URLSearchParams(`handoff=${id}`);
+      await renderPage();
+
+      await act(async () => {
+        lastChatProps().onInitialFilesStaged?.();
+      });
+
+      expect(peekChatHandoff(id)).toBeNull();
+    });
+
+    it('stages nothing for an unknown or malformed id', async () => {
+      searchParams.value = new URLSearchParams('handoff=not-an-id');
+      await renderPage();
+      expect(lastChatProps().initialFiles).toBeUndefined();
+      expect(lastChatProps().initialDraft).toBeUndefined();
+
+      searchParams.value = new URLSearchParams(`handoff=${crypto.randomUUID()}`);
+      await renderPage();
+      expect(lastChatProps().initialFiles).toBeUndefined();
+    });
   });
 
   describe('the Web Share Target hand-off', () => {

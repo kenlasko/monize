@@ -32,9 +32,13 @@
     "transactionMissing": "Transaksi ini sudah tidak ada",
     "rule": "Aturan: {name}",
     "manualRequest": "Diminta secara manual",
+    "emailReceipt": "Struk surel: {subject} dari {sender}",
+    "emailReceiptMissing": "Struk surel (surel telah dihapus)",
+    "viewEmailReceipts": "Lihat struk surel",
     "agentNote": "Catatan dari asisten: {reason}",
     "dates": "Dibuat {created}, kedaluwarsa {expires}",
-    "viewTransaction": "Lihat transaksi"
+    "viewTransaction": "Lihat transaksi",
+    "waitingForAgent": "Menunggu agen AI. <link>Hubungkan penyedia AI di Pengaturan</link>, atau biarkan klien MCP mengambilnya."
   },
   "actions": {
     "dismiss": "Abaikan"

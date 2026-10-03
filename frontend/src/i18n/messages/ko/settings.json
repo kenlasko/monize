@@ -962,6 +962,7 @@
     "emergencyAccess": "긴급 접근",
     "apiAccess": "API 접근",
     "aiSettings": "AI 설정",
+    "emailReceipts": "이메일 영수증",
     "backupRestore": "백업 및 복원",
     "help": "도움말 및 지원",
     "dangerZone": "위험 구역",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "AI 설정",
       "description": "AI 제공자를 구성하고, API 키를 관리하며, 사용 통계를 확인합니다."
+    },
+    "emailReceiptsCard": {
+      "title": "이메일 영수증",
+      "description": "주문 확인 메일용 메일함을 연결하고, 이를 읽는 파서를 관리합니다."
     },
     "delegateSecurityError": "보안 설정을 로드할 수 없습니다.",
     "toasts": {

@@ -32,9 +32,13 @@
     "transactionMissing": "This transaction no longer exists",
     "rule": "Rule: {name}",
     "manualRequest": "Requested manually",
+    "emailReceipt": "Email receipt: {subject} from {sender}",
+    "emailReceiptMissing": "Email receipt (the email was deleted)",
+    "viewEmailReceipts": "View email receipts",
     "agentNote": "Note from the assistant: {reason}",
     "dates": "Created {created}, expires {expires}",
-    "viewTransaction": "View transaction"
+    "viewTransaction": "View transaction",
+    "waitingForAgent": "Waiting for an AI agent. <link>Connect an AI provider in Settings</link>, or let an MCP client claim it."
   },
   "actions": {
     "dismiss": "Dismiss"

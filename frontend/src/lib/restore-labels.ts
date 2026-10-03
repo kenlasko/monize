@@ -14,6 +14,7 @@ export const RESTORE_LABELS: Record<string, string> = {
   accounts: 'Accounts',
   tags: 'Tags',
   transactionRules: 'Transaction Rules',
+  emailReceiptParsers: 'Email Receipt Parsers',
   scheduledTransactions: 'Scheduled Transactions',
   scheduledTransactionSplits: 'Scheduled Transaction Splits',
   scheduledTransactionOverrides: 'Scheduled Transaction Overrides',

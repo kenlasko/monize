@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "Zurück zu den Einstellungen",
+    "title": "E-Mail-Belege",
+    "subtitle": "Bestellbestätigungen aus einem Postfach lesen und in aufgeschlüsselte Buchungen umwandeln",
+    "receiptsLink": "Gespeicherte E-Mails öffnen",
+    "demoRestricted": {
+      "heading": "Im Demomodus eingeschränkt",
+      "body": "Das Verbinden eines Postfachs ist im Demomodus deaktiviert."
+    }
+  },
+  "page": {
+    "title": "E-Mail-Belege",
+    "subtitle": "Die Bestellbestätigungen, die aus deinem Postfach gelesen wurden, und was aus jeder geworden ist"
+  },
+  "mailbox": {
+    "heading": "Postfach",
+    "description": "Bestellbestätigungen werden über IMAP aus einem eigens dafür vorgesehenen Postfach gelesen. Monize liest es nur: Es ändert, verschiebt oder löscht niemals eine Nachricht.",
+    "loading": "Postfach wird geladen",
+    "dedicatedWarning": "Verwende ein eigenes Postfach. Jede Nachricht im Ordner wird gelesen, daher sollte er nur Bestellbestätigungen enthalten.",
+    "encryptionUnavailable": "Dieser Server kann keine Geheimnisse verschlüsseln, daher können ein Postfachpasswort oder eine Verbindung nicht gespeichert werden. Bitte den Administrator, die Verschlüsselung einzurichten.",
+    "error": {
+      "title": "Das Postfach konnte nicht geladen werden",
+      "body": "Die Anfrage ist fehlgeschlagen, daher ist noch nichts über dein Postfach bekannt. Versuche es erneut.",
+      "retry": "Erneut versuchen"
+    },
+    "oauth": {
+      "heading": "Konto verbinden",
+      "explanation": "Google und Microsoft 365 lehnen ein einfaches Passwort meist ab. Melde dich stattdessen beim Anbieter an: Du gewährst Monize Zugriff auf das Postfach und gibst dessen Passwort hier nie ein.",
+      "connect": {
+        "google": "Mit Google verbinden",
+        "microsoft": "Mit Microsoft verbinden"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "Ob die Anmeldung über Google oder Microsoft verfügbar ist, konnte nicht geprüft werden. Das manuelle Formular unten funktioniert weiterhin.",
+      "startFailed": "Die Anmeldung konnte nicht gestartet werden",
+      "badAuthorizationUrl": "Der Server hat eine Anmeldeadresse zurückgegeben, die keine sichere Webseite ist, daher wurde sie nicht geöffnet.",
+      "connectedAs": "Mit {provider} verbunden als {username}.",
+      "notConnected": "Die Verbindung zu {provider} ist nicht aktiv, daher wird das Postfach nicht gelesen. Verbinde erneut, um fortzufahren.",
+      "reconnect": "Erneut verbinden",
+      "disconnect": "Trennen",
+      "disconnectDialog": {
+        "title": "Postfach trennen?",
+        "message": "Monize löscht den gespeicherten Zugriff auf {provider} und liest das Postfach nicht mehr. Bereits gespeicherte E-Mails bleiben erhalten."
+      },
+      "disconnected": "Postfach getrennt",
+      "disconnectFailed": "Das Postfach konnte nicht getrennt werden",
+      "revokeNote": "Das Trennen entzieht die erteilte Berechtigung nicht. Um sie zurückzuziehen, entferne Monize auf der Berechtigungsseite von {provider}.",
+      "revokeLink": {
+        "google": "Berechtigungen des Google-Kontos öffnen",
+        "microsoft": "Microsoft-App-Berechtigungen öffnen"
+      },
+      "saveButton": "Einstellungen speichern",
+      "saved": "Postfacheinstellungen gespeichert",
+      "saveFailed": "Die Postfacheinstellungen konnten nicht gespeichert werden"
+    },
+    "form": {
+      "intro": "Oder gib die Daten eines beliebigen IMAP-Postfachs ein. Die meisten Anbieter verlangen ein App-Passwort statt deines Kontopassworts.",
+      "hostLabel": "IMAP-Server",
+      "portLabel": "Port",
+      "securityLabel": "Verbindungssicherheit",
+      "securityOptions": {
+        "tls": "TLS (meist Port 993)",
+        "starttls": "STARTTLS (meist Port 143)"
+      },
+      "usernameLabel": "Benutzername",
+      "passwordLabel": "Passwort",
+      "passwordStoredPlaceholder": "Ein Passwort ist gespeichert. Tippe, um es zu ersetzen.",
+      "passwordRequiredHelp": "Erforderlich für ein neues Postfach oder wenn sich Server oder Benutzername ändern.",
+      "passwordKeepHelp": "Leer lassen, um das gespeicherte Passwort zu behalten. Es wird nie wieder angezeigt.",
+      "saveButton": "Postfach speichern",
+      "saved": "Postfach gespeichert",
+      "saveFailed": "Das Postfach konnte nicht gespeichert werden",
+      "test": {
+        "button": "Verbindung testen",
+        "ok": "{count, plural, one {Die Verbindung funktioniert. Der Ordner enthält # Nachricht.} other {Die Verbindung funktioniert. Der Ordner enthält # Nachrichten.}}",
+        "error": "Die Verbindung ist fehlgeschlagen: {error}",
+        "failed": "Die Verbindung konnte nicht getestet werden"
+      }
+    },
+    "settings": {
+      "folderLabel": "Ordner",
+      "folderHelp": "Der Ordner, der gelesen wird. Er wird schreibgeschützt geöffnet.",
+      "enabledLabel": "Postfach automatisch lesen",
+      "enabledHelp": "Wenn aktiviert, wird das Postfach alle 15 Minuten abgerufen. Du kannst jederzeit Jetzt abrufen verwenden.",
+      "aiModeLabel": "KI-Modus",
+      "aiModeHelp": "Ob der von dir eingerichtete KI-Anbieter für Belege verwendet werden darf. Eine KI-Antwort ist immer ein Vorschlag oder ein Entwurf, den du freigibst.",
+      "aiModes": {
+        "off": "Aus",
+        "on_demand": "Auf Abruf",
+        "automatic": "Automatisch"
+      },
+      "aiModeDescriptions": {
+        "off": "Die KI wird für Belege nie aufgerufen.",
+        "on_demand": "Die KI wird nur aufgerufen, wenn du Mit KI erkennen oder Parser mit KI entwerfen drückst.",
+        "automatic": "Beim Abruf fragt die KI zu einem zugeordneten Beleg nach, den kein freigegebener Parser vollständig lesen konnte, und entwirft einen Parser für einen Absender, der noch keinen hat."
+      },
+      "autoApplyLabel": "Vorschläge automatisch anwenden",
+      "autoApplyHelp": "Standardmäßig aus. Ein Vorschlag wird nur dann ohne Rückfrage angewendet, wenn alles Folgende zutrifft: Ein freigegebener Parser hat die ganze E-Mail gelesen, die Buchung wurde über die Bestellnummer oder über genauen Betrag und Zahlungsempfänger mit nur einem Kandidaten gefunden, und der Vorschlag geht auf den Cent auf. Alles andere wartet auf deine Freigabe."
+    },
+    "status": {
+      "lastPolled": "Letzter Abruf",
+      "lastSuccess": "Letzter erfolgreicher Abruf",
+      "never": "Nie",
+      "lastError": "Letzter Fehler: {error}",
+      "lastErrorAt": "Letzter Fehler ({at}): {error}",
+      "pollNow": "Jetzt abrufen",
+      "pollResult": "Abruf abgeschlossen: {fetched, plural, one {# E-Mail gespeichert} other {# E-Mails gespeichert}}, {skipped} übersprungen, {processed} verarbeitet.",
+      "pollFailed": "Der Abruf ist fehlgeschlagen",
+      "deleteButton": "Postfach löschen",
+      "deleteDialog": {
+        "title": "Postfach löschen?",
+        "message": "Die Postfacheinstellungen und alle gespeicherten E-Mails werden gelöscht, und offene Prüfanfragen dazu werden verworfen. Die E-Mails im Postfach selbst bleiben unberührt."
+      },
+      "deleted": "Postfach gelöscht",
+      "deleteFailed": "Das Postfach konnte nicht gelöscht werden"
+    }
+  },
+  "parsers": {
+    "heading": "Parser",
+    "description": "Ein Parser liest die Bestellbestätigungen eines Absenders anhand von Mustern, die du schreibst oder prüfst. Nach der Freigabe läuft er ohne die KI.",
+    "newButton": "Neuer Parser",
+    "loading": "Parser werden geladen",
+    "error": {
+      "title": "Die Parser konnten nicht geladen werden",
+      "body": "Die Anfrage ist fehlgeschlagen. Versuche es erneut.",
+      "retry": "Erneut versuchen"
+    },
+    "empty": {
+      "title": "Noch keine Parser",
+      "body": "Erstelle einen für einen Absender von Bestellbestätigungen oder entwirf einen aus einer gespeicherten E-Mail auf der Seite E-Mail-Belege."
+    },
+    "columns": {
+      "name": "Parser",
+      "status": "Status",
+      "payee": "Zahlungsempfänger",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "draft": "Entwurf",
+      "approved": "Freigegeben"
+    },
+    "source": {
+      "manual": "Von dir geschrieben",
+      "ai": "Von der KI entworfen"
+    },
+    "invalid": "Ungültig",
+    "noPayee": "Kein Zahlungsempfänger",
+    "payeeUnknown": "Zahlungsempfänger nicht gefunden",
+    "payeeUnavailable": "Zahlungsempfängerliste nicht verfügbar",
+    "actions": {
+      "approve": "Freigeben"
+    },
+    "toasts": {
+      "approved": "Parser freigegeben",
+      "approveFailed": "Der Parser konnte nicht freigegeben werden",
+      "changedElsewhere": "Dieser Parser wurde an anderer Stelle geändert. Die Liste wurde neu geladen.",
+      "deleted": "Parser gelöscht",
+      "deleteFailed": "Der Parser konnte nicht gelöscht werden"
+    },
+    "deleteDialog": {
+      "title": "Parser löschen?",
+      "message": "Der Parser {name} wird gelöscht. E-Mails, die er bereits gelesen hat, behalten ihre Ergebnisse."
+    }
+  },
+  "editor": {
+    "createTitle": "Neuer Parser",
+    "editTitle": "Parser bearbeiten",
+    "loading": "Zahlungsempfänger und Kategorien werden geladen",
+    "lookupsError": {
+      "title": "Zahlungsempfänger und Kategorien konnten nicht geladen werden",
+      "body": "Die Auswahlfelder brauchen sie, daher kann der Editor noch nicht geöffnet werden. Versuche es erneut.",
+      "retry": "Erneut versuchen"
+    },
+    "draftNote": "Dieser Parser ist ein Entwurf. Er liest nichts, bis du ihn freigibst.",
+    "draftAiNote": "Die KI hat diesen Parser aus einer Beispiel-E-Mail entworfen. Prüfe jedes Muster anhand deiner E-Mails und gib ihn dann in der Liste frei. Er liest nichts, bis du das tust.",
+    "identityHeading": "Welche E-Mails er liest",
+    "nameLabel": "Name",
+    "payeeLabel": "Zahlungsempfänger",
+    "payeePlaceholder": "Kein Zahlungsempfänger",
+    "domainsLabel": "Absenderdomains",
+    "domainsHelp": "Eine pro Zeile, höchstens {max}. Eine Subdomain einer aufgeführten Domain passt ebenfalls.",
+    "subjectLabel": "Betreff enthält",
+    "subjectHelp": "Optional, eines pro Zeile, höchstens {max}. Der Betreff muss mindestens eines davon enthalten, Groß- und Kleinschreibung wird ignoriert.",
+    "saveButton": "Parser speichern",
+    "created": "Parser erstellt",
+    "updated": "Parser gespeichert",
+    "saveFailed": "Der Parser konnte nicht gespeichert werden",
+    "conflict": "Dieser Parser wurde an anderer Stelle geändert, seit du ihn geöffnet hast. Lade ihn neu, um die aktuelle Version zu sehen. Deine Änderungen hier sind nicht gespeichert.",
+    "conflictReload": "Parser neu laden",
+    "patterns": {
+      "globHelp": "Jedes Muster wird mit einer ganzen Zeile der E-Mail verglichen, Groß- und Kleinschreibung wird ignoriert. Verwende {star} für beliebigen Text und einen Namen in geschweiften Klammern, etwa {capture}, um einen Wert zu erfassen. Jedes Feld nimmt bis zu {max} Muster auf, eines pro Zeile.",
+      "orderIdLabel": "Muster für die Bestellnummer",
+      "orderIdHint": "Muss {capture} erfassen. Beispiel: Bestellnummer: {capture}",
+      "totalLabel": "Muster für die Summe",
+      "amountHint": "Muss {capture} erfassen. Beispiel: Bestellsumme {capture}",
+      "shippingLabel": "Muster für die Versandkosten",
+      "discountLabel": "Muster für den Rabatt",
+      "itemsHeading": "Positionen",
+      "startAfterLabel": "Positionen beginnen nach",
+      "startAfterHint": "Optional. Die Positionen werden ab der Zeile nach der ersten Zeile gelesen, die diesen Text enthält.",
+      "stopAtLabel": "Positionen enden bei",
+      "stopAtHint": "Optional. Die Positionen enden vor der ersten Zeile, die diesen Text enthält.",
+      "itemPatternsLabel": "Positionsmuster",
+      "itemPatternsHint": "Muss {name} erfassen und entweder {amount} (die Zeilensumme) oder {price} (den Einzelpreis, optional mit {qty}), nie beides. Beispiel: {name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "Kategorieregeln",
+      "rulesHelp": "Die erste Regel, deren Muster passt, legt die Kategorie einer Position fest. Die Muster verwenden dieselbe Syntax, zum Beispiel {example}. Bis zu {max} Regeln.",
+      "noRules": "Keine Kategorieregeln. Jede Position erhält die Standardkategorie.",
+      "rulePatternLabel": "Muster von Regel {number}",
+      "ruleCategoryLabel": "Kategorie von Regel {number}",
+      "categoryPlaceholder": "Keine Kategorie",
+      "removeRule": "Regel {number} entfernen",
+      "addRule": "Regel hinzufügen",
+      "ruleLimit": "Das Limit von {max} Regeln ist erreicht.",
+      "defaultLabel": "Standardkategorie",
+      "defaultHelp": "Wird für Positionen verwendet, auf die keine Regel passt.",
+      "shippingLabel": "Versandkategorie",
+      "shippingHelp": "Die Kategorie der Versandzeile."
+    }
+  },
+  "problems": {
+    "heading": "Die Parser-Definition ist nicht gültig:",
+    "item": "{where}: {problem}",
+    "paths": {
+      "definition": "Die Definition",
+      "line": "{field}, Zeile {line}",
+      "rule": "Kategorieregel {rule}, {part}"
+    },
+    "fields": {
+      "orderId": "Muster für die Bestellnummer",
+      "total": "Muster für die Summe",
+      "shipping": "Muster für die Versandkosten",
+      "discount": "Muster für den Rabatt",
+      "itemPatterns": "Positionsmuster",
+      "startAfter": "Positionen beginnen nach",
+      "stopAt": "Positionen enden bei",
+      "items": "Positionen",
+      "categoryRules": "Kategorieregeln",
+      "rulePattern": "Muster",
+      "ruleCategory": "Kategorie",
+      "defaultCategory": "Standardkategorie",
+      "shippingCategory": "Versandkategorie"
+    },
+    "codes": {
+      "not_object": "ist keine gültige Definition",
+      "unknown_key": "ist nichts, was ein Parser enthalten kann",
+      "invalid_version": "ist eine Version, die dieser Server nicht liest",
+      "invalid_type": "hat die falsche Art von Wert",
+      "empty": "darf nicht leer sein",
+      "too_many": "hat zu viele Einträge (höchstens {max})",
+      "too_long": "ist zu lang (höchstens {max} Zeichen)",
+      "control_character": "enthält ein Steuerzeichen",
+      "malformed_capture": "enthält eine ungültige Erfassung in geschweiften Klammern",
+      "too_many_captures": "enthält zu viele Erfassungen",
+      "duplicate_capture": "verwendet denselben Erfassungsnamen zweimal",
+      "capture_not_allowed": "verwendet einen Erfassungsnamen, den dieses Feld nicht akzeptiert",
+      "capture_missing": "fehlt eine Erfassung, die dieses Feld braucht",
+      "capture_conflict": "erfasst sowohl die Zeilensumme als auch den Einzelpreis. Verwende nur eines davon.",
+      "invalid_uuid": "ist keine gültige Kategorie"
+    }
+  },
+  "test": {
+    "heading": "Mit einer gespeicherten E-Mail testen",
+    "help": "Liest eine gespeicherte E-Mail mit den obigen Mustern, gespeichert oder nicht, und zeigt, was gefunden würde und welche Buchung dazu passen würde. Es wird nichts geschrieben.",
+    "loadFailed": "Die gespeicherten E-Mails konnten nicht geladen werden, daher gibt es noch nichts zum Testen.",
+    "noReceipts": "Noch keine E-Mails gespeichert. Rufe zuerst das Postfach ab.",
+    "receiptLabel": "E-Mail",
+    "choosePlaceholder": "E-Mail auswählen",
+    "receiptOption": "{subject} von {sender} ({date})",
+    "button": "Testen",
+    "failed": "Der Test ist fehlgeschlagen",
+    "matchHeading": "Buchungszuordnung",
+    "matched": "Würde die Buchung vom {date} über {amount} ({payee}) verknüpfen, gefunden über {how}.",
+    "matchKinds": {
+      "order_id": "Bestellnummer",
+      "amount_payee": "Betrag und Zahlungsempfänger",
+      "amount_only": "Betrag",
+      "manual": "deine Auswahl"
+    },
+    "noPayee": "kein Zahlungsempfänger",
+    "ambiguous": "{count, plural, one {# Buchung passt} other {# Buchungen passen}} gleich gut, daher würde keine verknüpft, bis du eine auswählst.",
+    "unmatched": "Keine Buchung passt, geprüft wurden {count, plural, one {# Kandidat} other {# Kandidaten}}."
+  },
+  "parsed": {
+    "notFound": "Nicht gefunden",
+    "noCategory": "Keine Kategorie",
+    "unknownCategory": "Unbekannte Kategorie",
+    "categoryUnavailable": "Kategorien nicht geladen",
+    "noItems": "Es wurden keine Positionen gelesen.",
+    "orderId": "Bestellnummer",
+    "total": "Summe",
+    "shipping": "Versand",
+    "discount": "Rabatt",
+    "columns": {
+      "item": "Position",
+      "qty": "Menge",
+      "amount": "Betrag",
+      "category": "Kategorie"
+    },
+    "complete": "Vollständig gelesen",
+    "incomplete": "Nicht vollständig gelesen",
+    "reasons": {
+      "no_total": "Die E-Mail nennt keine Summe.",
+      "no_items": "Es wurden keine Positionen gefunden.",
+      "items_unbalanced": "Die Positionen ergeben nicht die Summe.",
+      "items_uncategorized": "Einige Positionen haben keine Kategorie.",
+      "shipping_uncategorized": "Die Versandzeile hat keine Kategorie."
+    },
+    "readByAi": "Von der KI gelesen"
+  },
+  "state": {
+    "pending": "Wartet auf das Einlesen",
+    "skipped": "Übersprungen",
+    "no_parser": "Kein Parser",
+    "parse_failed": "Konnte nicht gelesen werden",
+    "unmatched": "Keine Buchung gefunden",
+    "ambiguous": "Mehrere Buchungen passen",
+    "review_conflict": "Andere Anfrage offen",
+    "ignored": "Ignoriert",
+    "proposed": "Wartet auf Freigabe",
+    "applied": "Angewendet",
+    "dismissed": "Verworfen",
+    "expired": "Abgelaufen",
+    "pending_ai": "Wartet auf die KI",
+    "request_missing": "Anfrage fehlt"
+  },
+  "receipts": {
+    "loading": "E-Mails werden geladen",
+    "links": {
+      "reviewInbox": "KI-Prüfungseingang öffnen",
+      "settings": "Postfach- und Parser-Einstellungen"
+    },
+    "filter": {
+      "label": "Nach Status filtern",
+      "all": "Alle",
+      "pending": "Wartet auf das Einlesen",
+      "skipped": "Übersprungen",
+      "no_parser": "Kein Parser",
+      "parse_failed": "Konnte nicht gelesen werden",
+      "unmatched": "Keine Buchung gefunden",
+      "ambiguous": "Mehrere Buchungen passen",
+      "review_conflict": "Andere Anfrage offen",
+      "review": "In Prüfung",
+      "ignored": "Ignoriert"
+    },
+    "columns": {
+      "received": "Empfangen",
+      "email": "E-Mail",
+      "transaction": "Buchung",
+      "state": "Status",
+      "actions": "Aktionen"
+    },
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "kein Zahlungsempfänger",
+    "noTransaction": "Noch keine",
+    "error": {
+      "title": "Die E-Mails konnten nicht geladen werden",
+      "body": "Die Anfrage ist fehlgeschlagen, daher ist noch nichts über deine E-Mails bekannt. Versuche es erneut.",
+      "retry": "Erneut versuchen"
+    },
+    "empty": {
+      "title": "Keine E-Mails",
+      "body": "Bestellbestätigungen erscheinen hier, sobald das Postfach gelesen wurde.",
+      "filteredTitle": "Keine E-Mails mit diesem Status",
+      "filteredBody": "Wähle einen anderen Status, um die übrigen zu sehen.",
+      "noMailboxBody": "Es ist noch kein Postfach verbunden. Verbinde eines, um Bestellbestätigungen zu lesen.",
+      "connectButton": "Postfach verbinden"
+    },
+    "actions": {
+      "view": "Anzeigen",
+      "reprocess": "Erneut verarbeiten",
+      "link": "Buchung auswählen",
+      "recognizeAi": "Mit KI erkennen",
+      "draftParser": "Parser mit KI entwerfen",
+      "createParser": "Parser erstellen",
+      "ignore": "Ignorieren"
+    },
+    "toasts": {
+      "reprocessed": "E-Mail erneut verarbeitet",
+      "reprocessFailed": "Die E-Mail konnte nicht erneut verarbeitet werden",
+      "draftFailed": "Es konnte kein Parser entworfen werden",
+      "ignored": "E-Mail ignoriert",
+      "ignoreFailed": "Die E-Mail konnte nicht ignoriert werden",
+      "deleted": "E-Mail gelöscht",
+      "deleteFailed": "Die E-Mail konnte nicht gelöscht werden"
+    },
+    "notices": {
+      "draftCreated": "Die KI hat den Parser {name} entworfen. Er liest nichts, bis du ihn prüfst und freigibst.",
+      "draftLink": "In den Parser-Einstellungen prüfen"
+    },
+    "ignoreDialog": {
+      "title": "Diese E-Mail ignorieren?",
+      "message": "Die E-Mail {subject} schlägt nichts vor, und ihre offene Prüfanfrage wird verworfen.",
+      "confirm": "Ignorieren"
+    },
+    "deleteDialog": {
+      "title": "Diese E-Mail löschen?",
+      "message": "Die gespeicherte E-Mail {subject} wird gelöscht und ihre offene Prüfanfrage verworfen. Die Nachricht im Postfach bleibt unberührt, und ein späterer Abruf holt sie nicht erneut."
+    }
+  },
+  "detail": {
+    "title": "E-Mail-Beleg",
+    "loading": "E-Mail wird geladen",
+    "error": {
+      "title": "Die E-Mail konnte nicht geladen werden",
+      "body": "Die Anfrage ist fehlgeschlagen. Versuche es erneut.",
+      "retry": "Erneut versuchen"
+    },
+    "from": "Von",
+    "received": "Empfangen",
+    "subject": "Betreff",
+    "state": "Status",
+    "parser": "Parser",
+    "noParser": "Keiner",
+    "matchedBy": "Zugeordnet über",
+    "matchKinds": {
+      "order_id": "Bestellnummer",
+      "amount_payee": "Betrag und Zahlungsempfänger",
+      "amount_only": "Betrag",
+      "manual": "Deine Auswahl"
+    },
+    "transaction": "Buchung",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "kein Zahlungsempfänger",
+    "viewTransaction": "Buchung anzeigen",
+    "noTransaction": "Noch keine",
+    "reasons": {
+      "too_large": "Die E-Mail ist größer als das Größenlimit, daher wurde sie gespeichert, ohne gelesen zu werden.",
+      "undecodable": "Die E-Mail konnte nicht dekodiert werden, daher wurde sie gespeichert, ohne gelesen zu werden.",
+      "draft_failed": "Die KI konnte für diesen Absender keinen Parser entwerfen.",
+      "parser_invalid": "Der Parser für diesen Absender ist nicht gültig. Bearbeite ihn in den Parser-Einstellungen.",
+      "no_total": "Der Parser hat in dieser E-Mail keine Summe gefunden.",
+      "no_items": "Der Parser hat keine Positionen gefunden.",
+      "items_unbalanced": "Die Positionen ergeben nicht die Summe.",
+      "items_uncategorized": "Einige Positionen haben keine Kategorie.",
+      "shipping_uncategorized": "Die Versandzeile hat keine Kategorie.",
+      "amount_differs": "Die gelesene Summe weicht vom Betrag der Buchung ab, daher wird nur eine Beschreibung vorgeschlagen.",
+      "proposal_fallback": "Der aufgeschlüsselte Vorschlag wurde abgelehnt, daher wird nur eine Beschreibung vorgeschlagen.",
+      "nothing_to_propose": "Die E-Mail ergänzt diese Buchung um nichts.",
+      "proposal_refused": "Der Vorschlag wurde abgelehnt, daher wurde nichts vorgeschlagen."
+    },
+    "reasonUnknown": "Grund: {reason}",
+    "requestNote": "Prüfanfrage ({state}): {note}",
+    "parsedHeading": "Was der Parser gelesen hat",
+    "notParsed": "Aus dieser E-Mail wurde noch nichts gelesen.",
+    "candidatesHeading": "Passende Buchungen",
+    "candidatesHelp": "Mehrere Buchungen passen gleich gut zu dieser E-Mail. Wähle die, die damit bezahlt wurde.",
+    "linkButton": "Mit dieser Buchung verknüpfen",
+    "linked": "E-Mail mit der Buchung verknüpft",
+    "linkFailed": "Die E-Mail konnte nicht verknüpft werden",
+    "textHeading": "E-Mail-Text",
+    "textLabel": "Text der E-Mail",
+    "noText": "Die E-Mail enthält keinen Text."
+  },
+  "picker": {
+    "heading": "Buchung auswählen",
+    "help": "Es wurde keine Buchung automatisch zugeordnet. Hier siehst du deine Buchungen vom {from} bis zum {to}, den Tagen rund um die E-Mail. Wähle die, die damit bezahlt wurde.",
+    "searchLabel": "Suchen",
+    "searchPlaceholder": "Zahlungsempfänger, Beschreibung oder Betrag",
+    "searchButton": "Suchen",
+    "loading": "Buchungen werden geladen",
+    "error": "Die Buchungen konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "empty": "In diesem Zeitraum hast du keine Buchungen, die verknüpft werden können.",
+    "emptySearch": "In diesem Zeitraum passt keine Buchung zur Suche.",
+    "row": "{date}, {amount}, {payee}",
+    "noPayee": "kein Zahlungsempfänger",
+    "linkButton": "Verknüpfen",
+    "hasMore": "Es werden nur die ersten {count} angezeigt. Grenze die Liste mit der Suche ein.",
+    "ai": {
+      "heading": "Buchung für die KI auswählen",
+      "help": "Hier siehst du deine Buchungen vom {from} bis zum {to}, den Tagen rund um die E-Mail. Wähle die, die die KI nach den Produkten in der E-Mail aufteilen soll.",
+      "linkButton": "Diese Buchung verwenden"
+    }
+  },
+  "callback": {
+    "title": "Postfach wird verbunden",
+    "connecting": "Verbindung wird abgeschlossen",
+    "toasts": {
+      "connected": "Postfach verbunden"
+    },
+    "success": {
+      "title": "Postfach verbunden",
+      "body": "Verbunden als {username}. Weiterleitung zu den Einstellungen."
+    },
+    "providerError": {
+      "title": "Die Anmeldung wurde nicht abgeschlossen",
+      "withDescription": "Der Anbieter meldete: {error}. {description}",
+      "withoutDescription": "Der Anbieter meldete: {error}."
+    },
+    "missingParameters": {
+      "title": "Diese Seite wurde ohne Anmeldeergebnis geöffnet",
+      "body": "Beginne erneut in den Einstellungen für E-Mail-Belege und verwende eine der Schaltflächen zum Verbinden."
+    },
+    "failed": {
+      "title": "Das Postfach konnte nicht verbunden werden",
+      "fallback": "Der Server hat die Verbindung abgelehnt. Beginne erneut in den Einstellungen für E-Mail-Belege."
+    },
+    "backLink": "Zurück zu den Einstellungen für E-Mail-Belege"
+  },
+  "recognize": {
+    "title": "Mit KI erkennen",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "kein Zahlungsempfänger",
+    "confirmMessage": "Diese E-Mail ist mit der Buchung {summary} verknüpft. Die KI liest die E-Mail und schlägt vor, wie diese Buchung nach Produkten aufgeteilt wird. Mit dieser Buchung fortfahren?",
+    "confirm": "Mit KI erkennen",
+    "chooseOther": "Andere Buchung auswählen",
+    "candidatesHeading": "Welche Buchung wurde mit der E-Mail bezahlt?",
+    "candidatesHelp": "Mehrere Buchungen passen zu dieser E-Mail. Wähle die, die die KI verwenden soll, oder suche nach einer anderen.",
+    "candidatesLoading": "Passende Buchungen werden geladen",
+    "candidatesError": "Die passenden Buchungen konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "useButton": "Diese Buchung verwenden",
+    "searchOther": "Andere Buchungen suchen",
+    "back": "Zurück",
+    "failed": "Die Erkennung konnte nicht gestartet werden",
+    "queued": "In der Warteschlange: Derzeit steht kein KI-Assistent für eine Antwort bereit, daher wartet die Anfrage im KI-Prüfungseingang auf einen Agenten (zum Beispiel über MCP).",
+    "handoffFailed": "Die Anfrage steht in der Warteschlange, aber die E-Mail konnte nicht im Chat geöffnet werden. Sie wartet im KI-Prüfungseingang auf einen Agenten (zum Beispiel über MCP).",
+    "inboxLink": "KI-Prüfungseingang öffnen",
+    "opened": "Der Chat wurde mit der angehängten E-Mail geöffnet. Lies die Nachricht und drücke auf Senden.",
+    "chatPrompt": "Erkenne die Produkte, Mengen und Preise in der angehängten Bestell-E-Mail und teile meine Buchung vom {date} ({payee}, {amount}) nach Produkten auf, mit je einer Kategorie. Übernimm die KI-Prüfungsanfrage {requestId} und reiche deinen Vorschlag dafür ein."
+  }
+}

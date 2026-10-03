@@ -32,9 +32,13 @@
     "transactionMissing": "Cette transaction n'existe plus",
     "rule": "Règle : {name}",
     "manualRequest": "Demandée manuellement",
+    "emailReceipt": "Reçu par e-mail : {subject} de {sender}",
+    "emailReceiptMissing": "Reçu par e-mail (l'e-mail a été supprimé)",
+    "viewEmailReceipts": "Voir les reçus par e-mail",
     "agentNote": "Note de l'assistant : {reason}",
     "dates": "Créée le {created}, expire le {expires}",
-    "viewTransaction": "Voir la transaction"
+    "viewTransaction": "Voir la transaction",
+    "waitingForAgent": "En attente d'un agent IA. <link>Connectez un fournisseur d'IA dans les Paramètres</link> ou laissez un client MCP la prendre en charge."
   },
   "actions": {
     "dismiss": "Ignorer"

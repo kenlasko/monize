@@ -32,9 +32,13 @@
     "transactionMissing": "Diese Buchung existiert nicht mehr",
     "rule": "Regel: {name}",
     "manualRequest": "Manuell angefordert",
+    "emailReceipt": "E-Mail-Beleg: {subject} von {sender}",
+    "emailReceiptMissing": "E-Mail-Beleg (die E-Mail wurde gelöscht)",
+    "viewEmailReceipts": "E-Mail-Belege anzeigen",
     "agentNote": "Hinweis des Assistenten: {reason}",
     "dates": "Erstellt {created}, läuft ab {expires}",
-    "viewTransaction": "Buchung anzeigen"
+    "viewTransaction": "Buchung anzeigen",
+    "waitingForAgent": "Wartet auf einen KI-Agenten. <link>Verbinde in den Einstellungen einen KI-Anbieter</link> oder lass einen MCP-Client die Anfrage übernehmen."
   },
   "actions": {
     "dismiss": "Verwerfen"

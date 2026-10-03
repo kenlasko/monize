@@ -260,6 +260,29 @@ export const RULES: Record<string, TableRules> = {
     created_at: keep,
     updated_at: keep,
   },
+  // A parser is the user's own extraction recipe for a merchant's emails: its
+  // name, the sender domains and subject words it matches, and the patterns
+  // (which quote the merchant's wording) are all free text about what the user
+  // buys and from whom. The payee id, the state and the dates are structure.
+  // `konst`, not `drop`, on the three NOT NULL columns, with values their own
+  // CHECKs accept (from_domains needs one entry); a parser restored from a
+  // support backup has an empty definition, which the reader treats as invalid
+  // and never evaluates.
+  email_receipt_parsers: {
+    id: keep,
+    user_id: keep,
+    name: mask,
+    payee_id: keep,
+    from_domains: konst(["example.invalid"]),
+    subject_contains: konst([]),
+    definition: konst({}),
+    status: keep,
+    source: keep,
+    approved_at: keep,
+    revision: keep,
+    created_at: keep,
+    updated_at: keep,
+  },
   transactions: {
     id: keep,
     user_id: keep,

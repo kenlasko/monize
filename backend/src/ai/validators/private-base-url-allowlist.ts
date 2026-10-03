@@ -66,6 +66,18 @@ function parseEntry(raw: string): PrivateBaseUrlEntry | null {
 export function privateBaseUrlAllowlist(
   raw = process.env.AI_PRIVATE_BASE_URL_ALLOWLIST,
 ): PrivateBaseUrlAllowlist {
+  return parsePrivateHostAllowlist(raw);
+}
+
+/**
+ * The parser behind `privateBaseUrlAllowlist`, taking the raw text and no
+ * environment default, so another operator allowlist with the same grammar
+ * (`EMAIL_RECEIPTS_PRIVATE_HOST_ALLOWLIST`) reuses it without being able to
+ * fall back, by an omitted argument, to the AI variable.
+ */
+export function parsePrivateHostAllowlist(
+  raw: string | undefined,
+): PrivateBaseUrlAllowlist {
   if (!raw?.trim()) return { entries: [], invalid: [] };
   if (raw.length > MAX_RAW_LENGTH) return { entries: [], invalid: [raw] };
   const parts = raw
@@ -109,5 +121,24 @@ export function isAllowlistedPrivateBaseUrl(
   return allowlist.entries.some(
     (entry) =>
       entry.host === host && (entry.port === null || entry.port === port),
+  );
+}
+
+/**
+ * Whether a bare host and port are on an allowlist (no URL, no scheme). The host
+ * is compared on the spelling the URL parser gives it, exactly as a URL is, so
+ * `0x7f.1` and `127.0.0.1` are one host here too.
+ */
+export function isAllowlistedPrivateHostPort(
+  host: string,
+  port: number,
+  allowlist: PrivateBaseUrlAllowlist,
+): boolean {
+  if (allowlist.entries.length === 0) return false;
+  const canonical = canonicalHost(unbracketHost(host.trim().toLowerCase()));
+  if (!canonical) return false;
+  return allowlist.entries.some(
+    (entry) =>
+      entry.host === canonical && (entry.port === null || entry.port === port),
   );
 }

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { CARD_CLASS, HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ProfileSection } from '@/components/settings/ProfileSection';
 import { PreferencesSection } from '@/components/settings/PreferencesSection';
@@ -39,6 +40,7 @@ const SETTINGS_SECTION_IDS = [
   { id: 'emergency-access', navKey: 'emergencyAccess', href: '/settings/emergency-access', demoVisible: false },
   { id: 'api-access', navKey: 'apiAccess', demoVisible: false },
   { id: 'ai-settings', navKey: 'aiSettings', href: '/settings/ai', demoVisible: false },
+  { id: 'email-receipts', navKey: 'emailReceipts', href: '/settings/email-receipts', demoVisible: false },
   { id: 'payee-lookup', navKey: 'payeeLookup', demoVisible: false },
   // Manual export/restore for the current user's own data. Automatic-backup
   // configuration is a deployment/operator concern and lives on its own
@@ -372,6 +374,22 @@ function OwnerSettingsView() {
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {t('aiSettingsCard.description')}
+                  </p>
+                </Link>
+              </div>
+            )}
+
+            {!isDemoMode && (
+              <div id="email-receipts" className="scroll-mt-32 lg:scroll-mt-22">
+                <Link
+                  href="/settings/email-receipts"
+                  className={`block ${CARD_CLASS} p-6 mb-6 ${HOVER_ROW_ON_CARD}`}
+                >
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                    {t('emailReceiptsCard.title')}
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('emailReceiptsCard.description')}
                   </p>
                 </Link>
               </div>

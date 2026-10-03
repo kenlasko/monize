@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "返回設定",
+    "title": "郵件收據",
+    "subtitle": "從信箱讀取訂單確認郵件，並將其轉換為含明細的交易",
+    "receiptsLink": "開啟已儲存的郵件",
+    "demoRestricted": {
+      "heading": "示範模式下無法使用",
+      "body": "示範模式下已停用連接信箱。"
+    }
+  },
+  "page": {
+    "title": "郵件收據",
+    "subtitle": "從信箱讀取的訂單確認郵件，以及每封郵件的處理結果"
+  },
+  "mailbox": {
+    "heading": "信箱",
+    "description": "訂單確認郵件透過 IMAP 從專用信箱讀取。Monize 只會讀取郵件，絕不會修改、移動或刪除任何郵件。",
+    "loading": "正在載入信箱",
+    "dedicatedWarning": "請使用專用信箱。資料夾中的每封郵件都會被讀取，因此其中只應存放訂單確認郵件。",
+    "encryptionUnavailable": "此伺服器無法加密機密資訊，因此無法儲存信箱密碼或連線。請聯絡管理員設定加密。",
+    "error": {
+      "title": "無法載入信箱",
+      "body": "請求失敗，因此目前還不清楚您的信箱狀態。請重試。",
+      "retry": "重試"
+    },
+    "oauth": {
+      "heading": "連接帳戶",
+      "explanation": "Google 和 Microsoft 365 通常會拒絕一般密碼。請改為透過服務供應商登入：您授予 Monize 存取信箱的權限，無需在此輸入信箱密碼。",
+      "connect": {
+        "google": "使用 Google 連接",
+        "microsoft": "使用 Microsoft 連接"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "無法檢查 Google 或 Microsoft 登入是否可用。下方的手動表單仍可使用。",
+      "startFailed": "無法開始登入",
+      "badAuthorizationUrl": "伺服器傳回的登入網址不是安全的網頁，因此未開啟。",
+      "connectedAs": "已以 {username} 的身分連接到 {provider}。",
+      "notConnected": "與 {provider} 的連線未處於作用中狀態，因此未在讀取信箱。請重新連接以恢復。",
+      "reconnect": "重新連接",
+      "disconnect": "中斷連線",
+      "disconnectDialog": {
+        "title": "中斷信箱連線？",
+        "message": "Monize 將刪除已儲存的 {provider} 存取憑證，並停止讀取信箱。已儲存的郵件會保留。"
+      },
+      "disconnected": "信箱已中斷連線",
+      "disconnectFailed": "無法中斷信箱連線",
+      "revokeNote": "中斷連線不會撤銷您已授予的權限。如需撤銷，請在 {provider} 的權限頁面中移除 Monize。",
+      "revokeLink": {
+        "google": "開啟 Google 帳戶權限",
+        "microsoft": "開啟 Microsoft 應用程式權限"
+      },
+      "saveButton": "儲存設定",
+      "saved": "信箱設定已儲存",
+      "saveFailed": "無法儲存信箱設定"
+    },
+    "form": {
+      "intro": "或者輸入任一 IMAP 信箱的詳細資訊。大多數服務供應商需要使用應用程式專用密碼，而不是帳戶密碼。",
+      "hostLabel": "IMAP 伺服器",
+      "portLabel": "連接埠",
+      "securityLabel": "連線安全性",
+      "securityOptions": {
+        "tls": "TLS（通常為 993 連接埠）",
+        "starttls": "STARTTLS（通常為 143 連接埠）"
+      },
+      "usernameLabel": "使用者名稱",
+      "passwordLabel": "密碼",
+      "passwordStoredPlaceholder": "已儲存密碼。輸入新密碼可取代。",
+      "passwordRequiredHelp": "新信箱，或伺服器、使用者名稱變更時必填。",
+      "passwordKeepHelp": "留空則保留已儲存的密碼。密碼不會再次顯示。",
+      "saveButton": "儲存信箱",
+      "saved": "信箱已儲存",
+      "saveFailed": "無法儲存信箱",
+      "test": {
+        "button": "測試連線",
+        "ok": "{count, plural, one {連線正常。資料夾中有 # 封郵件。} other {連線正常。資料夾中有 # 封郵件。}}",
+        "error": "連線失敗：{error}",
+        "failed": "無法測試連線"
+      }
+    },
+    "settings": {
+      "folderLabel": "資料夾",
+      "folderHelp": "要讀取的資料夾。將以唯讀方式開啟。",
+      "enabledLabel": "自動讀取信箱",
+      "enabledHelp": "開啟後，每 15 分鐘檢查一次信箱。您也可以隨時使用「立即檢查」。",
+      "aiModeLabel": "AI 模式",
+      "aiModeHelp": "是否允許對收據使用您設定的 AI 供應商。AI 的回答一律只是供您核准的提議或草稿。",
+      "aiModes": {
+        "off": "關閉",
+        "on_demand": "依需求",
+        "automatic": "自動"
+      },
+      "aiModeDescriptions": {
+        "off": "從不對收據呼叫 AI。",
+        "on_demand": "僅在您按下「用 AI 辨識」或「用 AI 起草解析器」時呼叫 AI。",
+        "automatic": "檢查信箱時，對於已比對但已核准的解析器無法完整讀取的收據，會詢問 AI；對於沒有解析器的寄件者，會起草解析器。"
+      },
+      "autoApplyLabel": "自動套用提議",
+      "autoApplyHelp": "預設為關閉。僅當以下條件全部成立時，提議才會不經詢問直接套用：已核准的解析器讀取了整封郵件；透過訂單編號，或透過完全相符的金額和收款人找到了交易，且只有一個候選；提議的合計精確到最小貨幣單位。其他情況都會等待您的核准。"
+    },
+    "status": {
+      "lastPolled": "上次檢查",
+      "lastSuccess": "上次成功檢查",
+      "never": "從未",
+      "lastError": "上次錯誤：{error}",
+      "lastErrorAt": "上次錯誤（{at}）：{error}",
+      "pollNow": "立即檢查",
+      "pollResult": "檢查完成：{fetched, plural, one {已儲存 # 封郵件} other {已儲存 # 封郵件}}，略過 {skipped} 封，處理 {processed} 封。",
+      "pollFailed": "檢查失敗",
+      "deleteButton": "刪除信箱",
+      "deleteDialog": {
+        "title": "刪除信箱？",
+        "message": "信箱設定和所有已儲存的郵件都將被刪除，由這些郵件產生的未完成審核請求將被駁回。信箱中的郵件本身不會受到影響。"
+      },
+      "deleted": "信箱已刪除",
+      "deleteFailed": "無法刪除信箱"
+    }
+  },
+  "parsers": {
+    "heading": "解析器",
+    "description": "解析器使用您撰寫或審核過的模式，讀取某個寄件者的訂單確認郵件。一旦獲得核准，它無需 AI 即可執行。",
+    "newButton": "新增解析器",
+    "loading": "正在載入解析器",
+    "error": {
+      "title": "無法載入解析器",
+      "body": "請求失敗。請重試。",
+      "retry": "重試"
+    },
+    "empty": {
+      "title": "尚無解析器",
+      "body": "為訂單確認郵件的寄件者建立一個解析器，或在「郵件收據」頁面根據已儲存的郵件起草一個。"
+    },
+    "columns": {
+      "name": "解析器",
+      "status": "狀態",
+      "payee": "收款人",
+      "actions": "操作"
+    },
+    "status": {
+      "draft": "草稿",
+      "approved": "已核准"
+    },
+    "source": {
+      "manual": "由您撰寫",
+      "ai": "由 AI 起草"
+    },
+    "invalid": "無效",
+    "noPayee": "無收款人",
+    "payeeUnknown": "找不到收款人",
+    "payeeUnavailable": "收款人清單無法使用",
+    "actions": {
+      "approve": "核准"
+    },
+    "toasts": {
+      "approved": "解析器已核准",
+      "approveFailed": "無法核准解析器",
+      "changedElsewhere": "此解析器已在別處被修改。清單已重新載入。",
+      "deleted": "解析器已刪除",
+      "deleteFailed": "無法刪除解析器"
+    },
+    "deleteDialog": {
+      "title": "刪除解析器？",
+      "message": "解析器 {name} 將被刪除。它已讀取的郵件會保留其結果。"
+    }
+  },
+  "editor": {
+    "createTitle": "新增解析器",
+    "editTitle": "編輯解析器",
+    "loading": "正在載入收款人和類別",
+    "lookupsError": {
+      "title": "無法載入收款人和類別",
+      "body": "選擇器需要它們，因此編輯器暫時無法開啟。請重試。",
+      "retry": "重試"
+    },
+    "draftNote": "此解析器是草稿。在您核准之前，它不會讀取任何內容。",
+    "draftAiNote": "AI 根據一封範例郵件起草了此解析器。請對照您的郵件檢查每個模式，然後在清單中核准它。在您核准之前，它不會讀取任何內容。",
+    "identityHeading": "讀取哪些郵件",
+    "nameLabel": "名稱",
+    "payeeLabel": "收款人",
+    "payeePlaceholder": "無收款人",
+    "domainsLabel": "寄件者網域",
+    "domainsHelp": "每行一個，最多 {max} 個。所列網域的子網域也會相符。",
+    "subjectLabel": "主旨包含",
+    "subjectHelp": "選填，每行一個，最多 {max} 個。主旨必須至少包含其中之一，不區分大小寫。",
+    "saveButton": "儲存解析器",
+    "created": "解析器已建立",
+    "updated": "解析器已儲存",
+    "saveFailed": "無法儲存解析器",
+    "conflict": "自您開啟以來，此解析器已在別處被修改。請重新載入以檢視目前版本。您在此所做的修改尚未儲存。",
+    "conflictReload": "重新載入解析器",
+    "patterns": {
+      "globHelp": "每個模式都會與郵件的整整一行比對，不區分大小寫。用 {star} 比對任意文字，用大括號中的名稱（例如 {capture}）擷取一個值。每個欄位最多可填 {max} 個模式，每行一個。",
+      "orderIdLabel": "訂單編號模式",
+      "orderIdHint": "必須擷取 {capture}。範例：訂單編號：{capture}",
+      "totalLabel": "合計模式",
+      "amountHint": "必須擷取 {capture}。範例：訂單合計 {capture}",
+      "shippingLabel": "運費模式",
+      "discountLabel": "折扣模式",
+      "itemsHeading": "明細行",
+      "startAfterLabel": "明細開始於",
+      "startAfterHint": "選填。從第一個包含此文字的行的下一行開始讀取明細。",
+      "stopAtLabel": "明細結束於",
+      "stopAtHint": "選填。明細在第一個包含此文字的行之前結束。",
+      "itemPatternsLabel": "明細模式",
+      "itemPatternsHint": "必須擷取 {name}，以及 {amount}（該行合計）或 {price}（單價，可同時擷取 {qty}）之一，不能兩者都擷取。範例：{name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "類別規則",
+      "rulesHelp": "第一條模式與商品名稱相符的規則會決定該商品的類別。模式使用相同的語法，例如 {example}。最多 {max} 條規則。",
+      "noRules": "沒有類別規則。所有商品都使用預設類別。",
+      "rulePatternLabel": "規則 {number} 的模式",
+      "ruleCategoryLabel": "規則 {number} 的類別",
+      "categoryPlaceholder": "無類別",
+      "removeRule": "刪除規則 {number}",
+      "addRule": "新增規則",
+      "ruleLimit": "已達到 {max} 條規則的上限。",
+      "defaultLabel": "預設類別",
+      "defaultHelp": "用於沒有任何規則相符的商品。",
+      "shippingLabel": "運費類別",
+      "shippingHelp": "運費行所屬的類別。"
+    }
+  },
+  "problems": {
+    "heading": "解析器定義無效：",
+    "item": "{where}：{problem}",
+    "paths": {
+      "definition": "定義",
+      "line": "{field}，第 {line} 行",
+      "rule": "類別規則 {rule}，{part}"
+    },
+    "fields": {
+      "orderId": "訂單編號模式",
+      "total": "合計模式",
+      "shipping": "運費模式",
+      "discount": "折扣模式",
+      "itemPatterns": "明細模式",
+      "startAfter": "明細開始於",
+      "stopAt": "明細結束於",
+      "items": "明細行",
+      "categoryRules": "類別規則",
+      "rulePattern": "模式",
+      "ruleCategory": "類別",
+      "defaultCategory": "預設類別",
+      "shippingCategory": "運費類別"
+    },
+    "codes": {
+      "not_object": "不是有效的定義",
+      "unknown_key": "不是解析器可以包含的內容",
+      "invalid_version": "是此伺服器無法讀取的版本",
+      "invalid_type": "的值類型不正確",
+      "empty": "不能為空",
+      "too_many": "的項目過多（最多 {max} 個）",
+      "too_long": "過長（最多 {max} 個字元）",
+      "control_character": "包含控制字元",
+      "malformed_capture": "中大括號內的擷取無效",
+      "too_many_captures": "的擷取過多",
+      "duplicate_capture": "兩次使用了同一個擷取名稱",
+      "capture_not_allowed": "使用了此欄位不接受的擷取名稱",
+      "capture_missing": "缺少此欄位所需的擷取",
+      "capture_conflict": "同時擷取了該行合計和單價。請只使用其中之一。",
+      "invalid_uuid": "不是有效的類別"
+    }
+  },
+  "test": {
+    "heading": "用已儲存的郵件測試",
+    "help": "使用上方的模式（無論是否已儲存）讀取一封已儲存的郵件，並顯示會找到什麼內容以及會比對到哪筆交易。不會寫入任何資料。",
+    "loadFailed": "無法載入已儲存的郵件，因此暫時沒有可供測試的對象。",
+    "noReceipts": "尚未儲存任何郵件。請先檢查信箱。",
+    "receiptLabel": "郵件",
+    "choosePlaceholder": "選擇郵件",
+    "receiptOption": "{subject}，來自 {sender}（{date}）",
+    "button": "測試",
+    "failed": "測試失敗",
+    "matchHeading": "交易比對",
+    "matched": "將連結 {date} 金額為 {amount} 的交易（{payee}），比對依據：{how}。",
+    "matchKinds": {
+      "order_id": "訂單編號",
+      "amount_payee": "金額和收款人",
+      "amount_only": "金額",
+      "manual": "您的選擇"
+    },
+    "noPayee": "無收款人",
+    "ambiguous": "{count, plural, one {# 筆交易} other {# 筆交易}}同樣相符，因此在您選擇之前不會連結任何一筆。",
+    "unmatched": "在 {count, plural, one {# 個候選} other {# 個候選}}中沒有相符的交易。"
+  },
+  "parsed": {
+    "notFound": "找不到",
+    "noCategory": "無類別",
+    "unknownCategory": "未知類別",
+    "categoryUnavailable": "類別未載入",
+    "noItems": "未讀取到任何明細行。",
+    "orderId": "訂單編號",
+    "total": "合計",
+    "shipping": "運費",
+    "discount": "折扣",
+    "columns": {
+      "item": "商品",
+      "qty": "數量",
+      "amount": "金額",
+      "category": "類別"
+    },
+    "complete": "已完整讀取",
+    "incomplete": "未完整讀取",
+    "reasons": {
+      "no_total": "郵件中沒有註明合計。",
+      "no_items": "找不到明細行。",
+      "items_unbalanced": "明細行之和與合計不符。",
+      "items_uncategorized": "部分明細行沒有類別。",
+      "shipping_uncategorized": "運費行沒有類別。"
+    },
+    "readByAi": "由 AI 讀取"
+  },
+  "state": {
+    "pending": "等待讀取",
+    "skipped": "已略過",
+    "no_parser": "無解析器",
+    "parse_failed": "無法讀取",
+    "unmatched": "找不到交易",
+    "ambiguous": "多筆交易相符",
+    "review_conflict": "已有其他請求未完成",
+    "ignored": "已忽略",
+    "proposed": "等待核准",
+    "applied": "已套用",
+    "dismissed": "已駁回",
+    "expired": "已過期",
+    "pending_ai": "等待 AI",
+    "request_missing": "請求遺失"
+  },
+  "receipts": {
+    "loading": "正在載入郵件",
+    "links": {
+      "reviewInbox": "開啟 AI 審核收件匣",
+      "settings": "信箱和解析器設定"
+    },
+    "filter": {
+      "label": "依狀態篩選",
+      "all": "全部",
+      "pending": "等待讀取",
+      "skipped": "已略過",
+      "no_parser": "無解析器",
+      "parse_failed": "無法讀取",
+      "unmatched": "找不到交易",
+      "ambiguous": "多筆交易相符",
+      "review_conflict": "已有其他請求未完成",
+      "review": "審核中",
+      "ignored": "已忽略"
+    },
+    "columns": {
+      "received": "接收時間",
+      "email": "郵件",
+      "transaction": "交易",
+      "state": "狀態",
+      "actions": "操作"
+    },
+    "transactionSummary": "{date}，{amount}，{payee}",
+    "noPayee": "無收款人",
+    "noTransaction": "尚無",
+    "error": {
+      "title": "無法載入郵件",
+      "body": "請求失敗，因此目前還不清楚您的郵件情況。請重試。",
+      "retry": "重試"
+    },
+    "empty": {
+      "title": "沒有郵件",
+      "body": "讀取信箱後，訂單確認郵件會顯示在這裡。",
+      "filteredTitle": "沒有此狀態的郵件",
+      "filteredBody": "選擇其他狀態以檢視其餘郵件。",
+      "noMailboxBody": "尚未連接信箱。請連接一個信箱以開始讀取訂單確認郵件。",
+      "connectButton": "連接信箱"
+    },
+    "actions": {
+      "view": "檢視",
+      "reprocess": "重新處理",
+      "link": "選擇交易",
+      "recognizeAi": "用 AI 辨識",
+      "draftParser": "用 AI 起草解析器",
+      "createParser": "建立解析器",
+      "ignore": "忽略"
+    },
+    "toasts": {
+      "reprocessed": "郵件已重新處理",
+      "reprocessFailed": "無法重新處理郵件",
+      "draftFailed": "無法起草解析器",
+      "ignored": "郵件已忽略",
+      "ignoreFailed": "無法忽略郵件",
+      "deleted": "郵件已刪除",
+      "deleteFailed": "無法刪除郵件"
+    },
+    "notices": {
+      "draftCreated": "AI 起草了解析器 {name}。在您審核並核准之前，它不會讀取任何內容。",
+      "draftLink": "在解析器設定中審核"
+    },
+    "ignoreDialog": {
+      "title": "忽略此郵件？",
+      "message": "郵件 {subject} 將不會產生任何提議，其未完成的審核請求將被駁回。",
+      "confirm": "忽略"
+    },
+    "deleteDialog": {
+      "title": "刪除此郵件？",
+      "message": "已儲存的郵件 {subject} 將被刪除，其未完成的審核請求將被駁回。信箱中的郵件本身不會受到影響，之後的檢查也不會再次擷取它。"
+    }
+  },
+  "detail": {
+    "title": "郵件收據",
+    "loading": "正在載入郵件",
+    "error": {
+      "title": "無法載入郵件",
+      "body": "請求失敗。請重試。",
+      "retry": "重試"
+    },
+    "from": "寄件者",
+    "received": "接收時間",
+    "subject": "主旨",
+    "state": "狀態",
+    "parser": "解析器",
+    "noParser": "無",
+    "matchedBy": "比對依據",
+    "matchKinds": {
+      "order_id": "訂單編號",
+      "amount_payee": "金額和收款人",
+      "amount_only": "金額",
+      "manual": "您的選擇"
+    },
+    "transaction": "交易",
+    "transactionSummary": "{date}，{amount}，{payee}",
+    "noPayee": "無收款人",
+    "viewTransaction": "檢視交易",
+    "noTransaction": "尚無",
+    "reasons": {
+      "too_large": "郵件超過大小限制，因此僅儲存而未讀取。",
+      "undecodable": "郵件無法解碼，因此僅儲存而未讀取。",
+      "draft_failed": "AI 無法為此寄件者起草解析器。",
+      "parser_invalid": "此寄件者的解析器無效。請在解析器設定中編輯。",
+      "no_total": "解析器在這封郵件中找不到合計。",
+      "no_items": "解析器找不到明細行。",
+      "items_unbalanced": "明細行之和與合計不符。",
+      "items_uncategorized": "部分明細行沒有類別。",
+      "shipping_uncategorized": "運費行沒有類別。",
+      "amount_differs": "解析出的合計與交易金額不同，因此僅提議更新說明。",
+      "proposal_fallback": "含明細的提議被拒絕，因此僅提議更新說明。",
+      "nothing_to_propose": "這封郵件沒有為這筆交易增加任何資訊。",
+      "proposal_refused": "提議被拒絕，因此沒有提出任何提議。"
+    },
+    "reasonUnknown": "原因：{reason}",
+    "requestNote": "審核請求（{state}）：{note}",
+    "parsedHeading": "解析器讀取的內容",
+    "notParsed": "尚未從這封郵件中讀取到任何內容。",
+    "candidatesHeading": "相符的交易",
+    "candidatesHelp": "有多筆交易與這封郵件同樣相符。請選擇它所支付的那一筆。",
+    "linkButton": "連結到此交易",
+    "linked": "郵件已連結到交易",
+    "linkFailed": "無法連結郵件",
+    "textHeading": "郵件內文",
+    "textLabel": "郵件內文",
+    "noText": "這封郵件沒有內文。"
+  },
+  "picker": {
+    "heading": "選擇交易",
+    "help": "沒有自動比對到交易。以下是您在 {from} 至 {to}（郵件前後幾天）的交易。請選擇它所支付的那一筆。",
+    "searchLabel": "搜尋",
+    "searchPlaceholder": "收款人、說明或金額",
+    "searchButton": "搜尋",
+    "loading": "正在載入交易",
+    "error": "無法載入交易。",
+    "retry": "重試",
+    "empty": "此期間沒有可以連結的交易。",
+    "emptySearch": "此期間沒有與搜尋相符的交易。",
+    "row": "{date}，{amount}，{payee}",
+    "noPayee": "無收款人",
+    "linkButton": "連結",
+    "hasMore": "僅顯示前 {count} 筆。請使用搜尋縮小範圍。",
+    "ai": {
+      "heading": "選擇供 AI 使用的交易",
+      "help": "這是 {from} 至 {to} 期間的交易，也就是郵件前後的日期。請選擇 AI 應依郵件中的商品拆分的那一筆。",
+      "linkButton": "使用此交易"
+    }
+  },
+  "callback": {
+    "title": "正在連接信箱",
+    "connecting": "正在完成連線",
+    "toasts": {
+      "connected": "信箱已連接"
+    },
+    "success": {
+      "title": "信箱已連接",
+      "body": "已以 {username} 的身分連接。正在返回設定。"
+    },
+    "providerError": {
+      "title": "登入未完成",
+      "withDescription": "服務供應商回報：{error}。{description}",
+      "withoutDescription": "服務供應商回報：{error}。"
+    },
+    "missingParameters": {
+      "title": "開啟此頁面時沒有登入結果",
+      "body": "請從郵件收據設定重新開始，並使用其中一個「連接」按鈕。"
+    },
+    "failed": {
+      "title": "無法連接信箱",
+      "fallback": "伺服器拒絕了連線。請從郵件收據設定重新開始。"
+    },
+    "backLink": "返回郵件收據設定"
+  },
+  "recognize": {
+    "title": "用 AI 辨識",
+    "transactionSummary": "{date}，{amount}，{payee}",
+    "noPayee": "無收款人",
+    "confirmMessage": "此郵件已連結到交易 {summary}。AI 將讀取郵件，並提議如何依商品拆分這筆交易。要使用這筆交易繼續嗎？",
+    "confirm": "用 AI 辨識",
+    "chooseOther": "選擇其他交易",
+    "candidatesHeading": "這封郵件支付的是哪一筆交易？",
+    "candidatesHelp": "有多筆交易與這封郵件相符。請選擇 AI 應使用的那一筆，或搜尋其他交易。",
+    "candidatesLoading": "正在載入相符的交易",
+    "candidatesError": "無法載入相符的交易。",
+    "retry": "重試",
+    "useButton": "使用此交易",
+    "searchOther": "搜尋其他交易",
+    "back": "返回",
+    "failed": "無法開始辨識",
+    "queued": "已排入佇列：目前沒有可回答的 AI 助理，因此請求會在 AI 審核收件匣中等待代理（例如透過 MCP）處理。",
+    "handoffFailed": "請求已排入佇列，但無法在聊天中開啟該郵件。它會在 AI 審核收件匣中等待代理（例如透過 MCP）處理。",
+    "inboxLink": "開啟 AI 審核收件匣",
+    "opened": "已開啟聊天並附上該郵件。請閱讀訊息並按下「傳送」。",
+    "chatPrompt": "請辨識所附訂單郵件中的商品、數量和價格，並將我 {date} 的交易（{payee}，{amount}）依商品拆分，並為每項指定類別。請認領 AI 審核請求 {requestId}，並為它提交你的提議。"
+  }
+}

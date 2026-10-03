@@ -84,6 +84,12 @@ export enum LockScope {
   UserImport = 3,
   /** One user's transaction-rule list (positions, the per-user cap). */
   TransactionRules = 4,
+  /**
+   * The open review requests of one transaction (id = the transaction's id): a
+   * request with no rule is outside the partial unique index, so queueing one
+   * serializes here instead.
+   */
+  AiReviewRequests = 5,
 }
 
 /**

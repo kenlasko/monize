@@ -962,6 +962,7 @@
     "emergencyAccess": "Accesso di emergenza",
     "apiAccess": "Accesso API",
     "aiSettings": "Impostazioni AI",
+    "emailReceipts": "Ricevute via email",
     "backupRestore": "Backup e ripristino",
     "help": "Guida e supporto",
     "dangerZone": "Zona pericolosa",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "Impostazioni AI",
       "description": "Configura i provider AI, gestisci le chiavi API e visualizza le statistiche di utilizzo."
+    },
+    "emailReceiptsCard": {
+      "title": "Ricevute via email",
+      "description": "Collega una casella di posta per le conferme d'ordine e gestisci i parser che le leggono."
     },
     "delegateSecurityError": "Impossibile caricare le impostazioni di sicurezza.",
     "toasts": {

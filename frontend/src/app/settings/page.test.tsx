@@ -282,6 +282,21 @@ describe('SettingsPage', () => {
     });
   });
 
+  it('links the Email Receipts card at its settings page, right after AI Settings in both places', async () => {
+    const { container } = render(<SettingsPage />);
+    await waitFor(() => {
+      const card = screen
+        .getAllByText('Email Receipts')
+        .map((el) => el.closest('a'))
+        .find((a) => a?.getAttribute('href') === '/settings/email-receipts' && a.closest('#email-receipts'));
+      expect(card).toBeTruthy();
+    });
+    const anchors = Array.from(container.querySelectorAll('[id].scroll-mt-32'))
+      .filter((el) => !el.parentElement?.closest('[id].scroll-mt-32'))
+      .map((el) => el.id);
+    expect(anchors.indexOf('email-receipts')).toBe(anchors.indexOf('ai-settings') + 1);
+  });
+
   it('links the Guided Tours card at the tours page', async () => {
     render(<SettingsPage />);
     await waitFor(() => {

@@ -962,6 +962,7 @@
     "emergencyAccess": "緊急アクセス",
     "apiAccess": "APIアクセス",
     "aiSettings": "AI設定",
+    "emailReceipts": "メールレシート",
     "backupRestore": "バックアップと復元",
     "help": "ヘルプ＆サポート",
     "dangerZone": "危険な操作",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "AI設定",
       "description": "AIプロバイダーの設定、APIキーの管理、使用統計の確認をします。"
+    },
+    "emailReceiptsCard": {
+      "title": "メールレシート",
+      "description": "注文確認メール用のメールボックスを接続し、それを読み取るパーサーを管理します。"
     },
     "delegateSecurityError": "セキュリティ設定を読み込めません。",
     "toasts": {

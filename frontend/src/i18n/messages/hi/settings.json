@@ -962,6 +962,7 @@
     "emergencyAccess": "आपातकालीन पहुंच",
     "apiAccess": "API पहुंच",
     "aiSettings": "AI सेटिंग",
+    "emailReceipts": "ईमेल रसीदें",
     "backupRestore": "बैकअप और पुनर्स्थापना",
     "help": "सहायता और समर्थन",
     "dangerZone": "खतरनाक क्षेत्र",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "AI सेटिंग",
       "description": "AI प्रदाताओं को कॉन्फ़िगर करें, API कुंजियां प्रबंधित करें और उपयोग आंकड़े देखें।"
+    },
+    "emailReceiptsCard": {
+      "title": "ईमेल रसीदें",
+      "description": "ऑर्डर पुष्टि के लिए मेलबॉक्स कनेक्ट करें और उन्हें पढ़ने वाले पार्सर प्रबंधित करें।"
     },
     "delegateSecurityError": "आपकी सुरक्षा सेटिंग लोड करने में असमर्थ।",
     "toasts": {

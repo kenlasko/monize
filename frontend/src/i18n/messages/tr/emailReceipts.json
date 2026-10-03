@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "Ayarlara Geri Dön",
+    "title": "E-posta Makbuzları",
+    "subtitle": "Sipariş onaylarını bir posta kutusundan okuyun ve kalem kalem işlemlere dönüştürün",
+    "receiptsLink": "Saklanan e-postaları aç",
+    "demoRestricted": {
+      "heading": "Demo Modunda Kısıtlı",
+      "body": "Posta kutusu bağlama demo modunda devre dışıdır."
+    }
+  },
+  "page": {
+    "title": "E-posta Makbuzları",
+    "subtitle": "Posta kutunuzdan okunan sipariş onayı e-postaları ve her birine ne olduğu"
+  },
+  "mailbox": {
+    "heading": "Posta kutusu",
+    "description": "Sipariş onayları, IMAP üzerinden ayrılmış bir posta kutusundan okunur. Monize yalnızca okur: hiçbir iletiyi değiştirmez, taşımaz veya silmez.",
+    "loading": "Posta kutusu yükleniyor",
+    "dedicatedWarning": "Ayrılmış bir posta kutusu kullanın. Klasördeki her ileti okunur, bu yüzden içinde yalnızca sipariş onayları bulunmalıdır.",
+    "encryptionUnavailable": "Bu sunucu gizli bilgileri şifreleyemiyor, bu yüzden posta kutusu parolası veya bağlantısı kaydedilemez. Yöneticiden şifrelemeyi kurmasını isteyin.",
+    "error": {
+      "title": "Posta kutusu yüklenemedi",
+      "body": "İstek başarısız oldu, bu yüzden posta kutunuz hakkında henüz bir şey bilinmiyor. Yeniden deneyin.",
+      "retry": "Yeniden dene"
+    },
+    "oauth": {
+      "heading": "Bir hesap bağlayın",
+      "explanation": "Google ve Microsoft 365 genellikle düz bir parolayı reddeder. Bunun yerine sağlayıcıyla oturum açın: Monize posta kutusuna erişim izni verirsiniz ve parolasını burada hiç yazmazsınız.",
+      "connect": {
+        "google": "Google ile bağlan",
+        "microsoft": "Microsoft ile bağlan"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "Google veya Microsoft ile oturum açmanın kullanılabilir olup olmadığı denetlenemedi. Aşağıdaki elle giriş formu yine de çalışır.",
+      "startFailed": "Oturum açma başlatılamadı",
+      "badAuthorizationUrl": "Sunucu, güvenli bir web sayfası olmayan bir oturum açma adresi döndürdü, bu yüzden adres açılmadı.",
+      "connectedAs": "{provider} bağlantısı kuruldu, hesap: {username}.",
+      "notConnected": "{provider} bağlantısı etkin değil, bu yüzden posta kutusu okunmuyor. Devam etmek için yeniden bağlanın.",
+      "reconnect": "Yeniden bağlan",
+      "disconnect": "Bağlantıyı kes",
+      "disconnectDialog": {
+        "title": "Posta kutusunun bağlantısı kesilsin mi?",
+        "message": "Monize, {provider} için saklanan erişimi silecek ve posta kutusunu okumayı bırakacak. Zaten saklanan e-postalar korunur."
+      },
+      "disconnected": "Posta kutusunun bağlantısı kesildi",
+      "disconnectFailed": "Posta kutusunun bağlantısı kesilemedi",
+      "revokeNote": "Bağlantıyı kesmek verdiğiniz izni kaldırmaz. İzni geri çekmek için {provider} izin sayfasında Monize uygulamasını kaldırın.",
+      "revokeLink": {
+        "google": "Google hesap izinlerini aç",
+        "microsoft": "Microsoft uygulama izinlerini aç"
+      },
+      "saveButton": "Ayarları kaydet",
+      "saved": "Posta kutusu ayarları kaydedildi",
+      "saveFailed": "Posta kutusu ayarları kaydedilemedi"
+    },
+    "form": {
+      "intro": "Ya da herhangi bir IMAP posta kutusunun bilgilerini girin. Çoğu sağlayıcı hesap parolanız yerine bir uygulama parolası ister.",
+      "hostLabel": "IMAP sunucusu",
+      "portLabel": "Bağlantı noktası",
+      "securityLabel": "Bağlantı güvenliği",
+      "securityOptions": {
+        "tls": "TLS (genellikle 993 numaralı bağlantı noktası)",
+        "starttls": "STARTTLS (genellikle 143 numaralı bağlantı noktası)"
+      },
+      "usernameLabel": "Kullanıcı adı",
+      "passwordLabel": "Parola",
+      "passwordStoredPlaceholder": "Kayıtlı bir parola var. Değiştirmek için yazın.",
+      "passwordRequiredHelp": "Yeni bir posta kutusu için veya sunucu ya da kullanıcı adı değiştiğinde gereklidir.",
+      "passwordKeepHelp": "Kayıtlı parolayı korumak için boş bırakın. Bir daha asla gösterilmez.",
+      "saveButton": "Posta kutusunu kaydet",
+      "saved": "Posta kutusu kaydedildi",
+      "saveFailed": "Posta kutusu kaydedilemedi",
+      "test": {
+        "button": "Bağlantıyı sına",
+        "ok": "{count, plural, one {Bağlantı çalışıyor. Klasörde # ileti var.} other {Bağlantı çalışıyor. Klasörde # ileti var.}}",
+        "error": "Bağlantı başarısız oldu: {error}",
+        "failed": "Bağlantı sınanamadı"
+      }
+    },
+    "settings": {
+      "folderLabel": "Klasör",
+      "folderHelp": "Okunacak klasör. Salt okunur olarak açılır.",
+      "enabledLabel": "Posta kutusunu otomatik oku",
+      "enabledHelp": "Açıkken posta kutusu her 15 dakikada bir yoklanır. İstediğiniz zaman Şimdi yokla düğmesini kullanabilirsiniz.",
+      "aiModeLabel": "Yapay zekâ modu",
+      "aiModeHelp": "Yapılandırdığınız yapay zekâ sağlayıcısının makbuzlarda kullanılıp kullanılamayacağı. Yapay zekâ yanıtı her zaman onayladığınız bir öneri veya taslaktır.",
+      "aiModes": {
+        "off": "Kapalı",
+        "on_demand": "İstek üzerine",
+        "automatic": "Otomatik"
+      },
+      "aiModeDescriptions": {
+        "off": "Makbuzlar için yapay zekâ hiç çağrılmaz.",
+        "on_demand": "Yapay zekâ yalnızca Yapay zekâ ile tanı veya Yapay zekâ ile ayrıştırıcı taslağı oluştur düğmesine bastığınızda çağrılır.",
+        "automatic": "Yoklama sırasında, onaylı hiçbir ayrıştırıcının tamamen okuyamadığı eşleşmiş bir makbuz için yapay zekâya sorulur ve ayrıştırıcısı olmayan bir gönderen için ayrıştırıcı taslağı oluşturulur."
+      },
+      "autoApplyLabel": "Önerileri otomatik uygula",
+      "autoApplyHelp": "Varsayılan olarak kapalıdır. Bir öneri, ancak şunların hepsi geçerliyse sormadan uygulanır: onaylı bir ayrıştırıcı e-postanın tamamını okudu, işlem sipariş numarasıyla ya da tam tutar ve alıcıyla tek bir adayla bulundu ve öneri kuruşu kuruşuna tutuyor. Geri kalan her şey onayınızı bekler."
+    },
+    "status": {
+      "lastPolled": "Son yoklama",
+      "lastSuccess": "Son başarılı yoklama",
+      "never": "Hiç",
+      "lastError": "Son hata: {error}",
+      "lastErrorAt": "Son hata ({at}): {error}",
+      "pollNow": "Şimdi yokla",
+      "pollResult": "Yoklama tamamlandı: {fetched, plural, one {# e-posta saklandı} other {# e-posta saklandı}}, atlanan: {skipped}, işlenen: {processed}.",
+      "pollFailed": "Yoklama başarısız oldu",
+      "deleteButton": "Posta kutusunu sil",
+      "deleteDialog": {
+        "title": "Posta kutusu silinsin mi?",
+        "message": "Posta kutusu ayarları ve saklanan tüm e-postalar silinecek, bunlardan gelen açık inceleme istekleri yoksayılacak. Posta kutusunun kendisindeki e-postalara dokunulmaz."
+      },
+      "deleted": "Posta kutusu silindi",
+      "deleteFailed": "Posta kutusu silinemedi"
+    }
+  },
+  "parsers": {
+    "heading": "Ayrıştırıcılar",
+    "description": "Ayrıştırıcı, tek bir göndericinin sipariş onaylarını sizin yazdığınız veya incelediğiniz desenlerle okur. Onaylandıktan sonra yapay zekâ olmadan çalışır.",
+    "newButton": "Yeni ayrıştırıcı",
+    "loading": "Ayrıştırıcılar yükleniyor",
+    "error": {
+      "title": "Ayrıştırıcılar yüklenemedi",
+      "body": "İstek başarısız oldu. Yeniden deneyin.",
+      "retry": "Yeniden dene"
+    },
+    "empty": {
+      "title": "Henüz ayrıştırıcı yok",
+      "body": "Bir sipariş onayı göndericisi için ayrıştırıcı oluşturun veya E-posta Makbuzları sayfasında saklanan bir e-postadan taslak oluşturun."
+    },
+    "columns": {
+      "name": "Ayrıştırıcı",
+      "status": "Durum",
+      "payee": "Alıcı",
+      "actions": "Eylemler"
+    },
+    "status": {
+      "draft": "Taslak",
+      "approved": "Onaylandı"
+    },
+    "source": {
+      "manual": "Sizin yazdığınız",
+      "ai": "Yapay zekâ taslağı"
+    },
+    "invalid": "Geçersiz",
+    "noPayee": "Alıcı yok",
+    "payeeUnknown": "Alıcı bulunamadı",
+    "payeeUnavailable": "Alıcı listesi kullanılamıyor",
+    "actions": {
+      "approve": "Onayla"
+    },
+    "toasts": {
+      "approved": "Ayrıştırıcı onaylandı",
+      "approveFailed": "Ayrıştırıcı onaylanamadı",
+      "changedElsewhere": "Bu ayrıştırıcı başka bir yerde değiştirildi. Liste yeniden yüklendi.",
+      "deleted": "Ayrıştırıcı silindi",
+      "deleteFailed": "Ayrıştırıcı silinemedi"
+    },
+    "deleteDialog": {
+      "title": "Ayrıştırıcı silinsin mi?",
+      "message": "{name} ayrıştırıcısı silinecek. Daha önce okuduğu e-postalar sonuçlarını korur."
+    }
+  },
+  "editor": {
+    "createTitle": "Yeni ayrıştırıcı",
+    "editTitle": "Ayrıştırıcıyı düzenle",
+    "loading": "Alıcılar ve kategoriler yükleniyor",
+    "lookupsError": {
+      "title": "Alıcılar ve kategoriler yüklenemedi",
+      "body": "Seçiciler bunlara ihtiyaç duyuyor, bu yüzden düzenleyici henüz açılamıyor. Yeniden deneyin.",
+      "retry": "Yeniden dene"
+    },
+    "draftNote": "Bu ayrıştırıcı bir taslaktır. Siz onaylayana kadar hiçbir şey okumaz.",
+    "draftAiNote": "Yapay zekâ bu ayrıştırıcıyı tek bir örnek e-postadan oluşturdu. Her deseni kendi e-postalarınızla denetleyin, sonra listeden onaylayın. Siz onaylayana kadar hiçbir şey okumaz.",
+    "identityHeading": "Hangi e-postaları okur",
+    "nameLabel": "Ad",
+    "payeeLabel": "Alıcı",
+    "payeePlaceholder": "Alıcı yok",
+    "domainsLabel": "Gönderen alan adları",
+    "domainsHelp": "Satır başına bir tane, en fazla {max}. Listelenen bir alan adının alt alan adı da eşleşir.",
+    "subjectLabel": "Konu şunu içerir",
+    "subjectHelp": "İsteğe bağlı, satır başına bir tane, en fazla {max}. Konu, büyük/küçük harf ayrımı yapılmadan bunlardan en az birini içermelidir.",
+    "saveButton": "Ayrıştırıcıyı kaydet",
+    "created": "Ayrıştırıcı oluşturuldu",
+    "updated": "Ayrıştırıcı kaydedildi",
+    "saveFailed": "Ayrıştırıcı kaydedilemedi",
+    "conflict": "Bu ayrıştırıcı, siz açtıktan sonra başka bir yerde değiştirildi. Güncel sürümü görmek için yeniden yükleyin. Buradaki düzenlemeleriniz kaydedilmedi.",
+    "conflictReload": "Ayrıştırıcıyı yeniden yükle",
+    "patterns": {
+      "globHelp": "Her desen, e-postanın tek bir satırının tamamıyla büyük/küçük harf ayrımı yapılmadan eşleştirilir. Herhangi bir metin için {star}, bir değeri yakalamak için ise {capture} gibi küme parantezi içinde bir ad kullanın. Her alan en fazla {max} desen alır, satır başına bir tane.",
+      "orderIdLabel": "Sipariş numarası desenleri",
+      "orderIdHint": "{capture} değerini yakalamalıdır. Örnek: Sipariş numarası: {capture}",
+      "totalLabel": "Toplam desenleri",
+      "amountHint": "{capture} değerini yakalamalıdır. Örnek: Sipariş toplamı {capture}",
+      "shippingLabel": "Kargo desenleri",
+      "discountLabel": "İndirim desenleri",
+      "itemsHeading": "Kalemler",
+      "startAfterLabel": "Kalemler şundan sonra başlar",
+      "startAfterHint": "İsteğe bağlı. Kalemler, bu metni içeren ilk satırdan sonraki satırdan itibaren okunur.",
+      "stopAtLabel": "Kalemler şurada biter",
+      "stopAtHint": "İsteğe bağlı. Kalemler, bu metni içeren ilk satırdan önce biter.",
+      "itemPatternsLabel": "Kalem desenleri",
+      "itemPatternsHint": "{name} değerini ve ya {amount} (satır toplamı) ya da {price} (birim fiyat, isteğe bağlı olarak {qty} ile birlikte) değerini yakalamalıdır, ikisini birden değil. Örnek: {name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "Kategori kuralları",
+      "rulesHelp": "Deseni bir kalemin adıyla eşleşen ilk kural onun kategorisini belirler. Desenler aynı sözdizimini kullanır, örneğin {example}. En fazla {max} kural.",
+      "noRules": "Kategori kuralı yok. Her kalem varsayılan kategoriyi alır.",
+      "rulePatternLabel": "{number}. kural deseni",
+      "ruleCategoryLabel": "{number}. kural kategorisi",
+      "categoryPlaceholder": "Kategori yok",
+      "removeRule": "{number}. kuralı kaldır",
+      "addRule": "Kural ekle",
+      "ruleLimit": "{max} kural sınırına ulaşıldı.",
+      "defaultLabel": "Varsayılan kategori",
+      "defaultHelp": "Hiçbir kuralla eşleşmeyen kalemler için kullanılır.",
+      "shippingLabel": "Kargo kategorisi",
+      "shippingHelp": "Kargo satırının kategorisi."
+    }
+  },
+  "problems": {
+    "heading": "Ayrıştırıcı tanımı geçerli değil:",
+    "item": "{where}: {problem}",
+    "paths": {
+      "definition": "Tanım",
+      "line": "{field}, {line}. satır",
+      "rule": "Kategori kuralı {rule}, {part}"
+    },
+    "fields": {
+      "orderId": "Sipariş numarası desenleri",
+      "total": "Toplam desenleri",
+      "shipping": "Kargo desenleri",
+      "discount": "İndirim desenleri",
+      "itemPatterns": "Kalem desenleri",
+      "startAfter": "Kalemler şundan sonra başlar",
+      "stopAt": "Kalemler şurada biter",
+      "items": "Kalemler",
+      "categoryRules": "Kategori kuralları",
+      "rulePattern": "desen",
+      "ruleCategory": "kategori",
+      "defaultCategory": "Varsayılan kategori",
+      "shippingCategory": "Kargo kategorisi"
+    },
+    "codes": {
+      "not_object": "geçerli bir tanım değil",
+      "unknown_key": "bir ayrıştırıcıda bulunabilecek bir şey değil",
+      "invalid_version": "bu sunucunun okumadığı bir sürüm",
+      "invalid_type": "yanlış türde bir değer içeriyor",
+      "empty": "boş olmamalı",
+      "too_many": "çok fazla girdi içeriyor (en fazla {max})",
+      "too_long": "çok uzun (en fazla {max} karakter)",
+      "control_character": "bir denetim karakteri içeriyor",
+      "malformed_capture": "küme parantezi içinde geçerli olmayan bir yakalama içeriyor",
+      "too_many_captures": "çok fazla yakalama içeriyor",
+      "duplicate_capture": "aynı yakalama adını iki kez kullanıyor",
+      "capture_not_allowed": "bu alanın kabul etmediği bir yakalama adı kullanıyor",
+      "capture_missing": "bu alanın ihtiyaç duyduğu bir yakalamayı içermiyor",
+      "capture_conflict": "hem satır toplamını hem birim fiyatı yakalıyor. Birini seçin.",
+      "invalid_uuid": "geçerli bir kategori değil"
+    }
+  },
+  "test": {
+    "heading": "Saklanan bir e-postayla sına",
+    "help": "Saklanan bir e-postayı yukarıdaki desenlerle, kaydedilmiş olsun olmasın, okur ve nelerin bulunacağını ve hangi işlemle eşleşeceğini gösterir. Hiçbir şey yazılmaz.",
+    "loadFailed": "Saklanan e-postalar yüklenemedi, bu yüzden henüz sınanacak bir şey yok.",
+    "noReceipts": "Henüz saklanan e-posta yok. Önce posta kutusunu yoklayın.",
+    "receiptLabel": "E-posta",
+    "choosePlaceholder": "Bir e-posta seçin",
+    "receiptOption": "{subject}, gönderen: {sender} ({date})",
+    "button": "Sına",
+    "failed": "Sınama başarısız oldu",
+    "matchHeading": "İşlem eşleşmesi",
+    "matched": "{date} tarihli {amount} tutarındaki işlem ({payee}) bağlanır. Bulunma ölçütü: {how}.",
+    "matchKinds": {
+      "order_id": "sipariş numarası",
+      "amount_payee": "tutar ve alıcı",
+      "amount_only": "tutar",
+      "manual": "sizin seçiminiz"
+    },
+    "noPayee": "alıcı yok",
+    "ambiguous": "{count, plural, one {# işlem} other {# işlem}} eşit derecede uyuyor, bu yüzden siz seçene kadar hiçbiri bağlanmaz.",
+    "unmatched": "{count, plural, one {# aday} other {# aday}} arasında eşleşen işlem yok."
+  },
+  "parsed": {
+    "notFound": "Bulunamadı",
+    "noCategory": "Kategori yok",
+    "unknownCategory": "Bilinmeyen kategori",
+    "categoryUnavailable": "Kategoriler yüklenmedi",
+    "noItems": "Hiç kalem okunmadı.",
+    "orderId": "Sipariş numarası",
+    "total": "Toplam",
+    "shipping": "Kargo",
+    "discount": "İndirim",
+    "columns": {
+      "item": "Kalem",
+      "qty": "Adet",
+      "amount": "Tutar",
+      "category": "Kategori"
+    },
+    "complete": "Tamamen okundu",
+    "incomplete": "Tamamen okunmadı",
+    "reasons": {
+      "no_total": "E-postada toplam belirtilmemiş.",
+      "no_items": "Hiç kalem bulunamadı.",
+      "items_unbalanced": "Kalemler toplamla tutmuyor.",
+      "items_uncategorized": "Bazı kalemlerin kategorisi yok.",
+      "shipping_uncategorized": "Kargo satırının kategorisi yok."
+    },
+    "readByAi": "Yapay zekâ okudu"
+  },
+  "state": {
+    "pending": "Okunmayı bekliyor",
+    "skipped": "Atlandı",
+    "no_parser": "Ayrıştırıcı yok",
+    "parse_failed": "Okunamadı",
+    "unmatched": "İşlem bulunamadı",
+    "ambiguous": "Birden çok işlem uyuyor",
+    "review_conflict": "Başka bir istek açık",
+    "ignored": "Yoksayıldı",
+    "proposed": "Onay bekliyor",
+    "applied": "Uygulandı",
+    "dismissed": "Yoksayıldı",
+    "expired": "Süresi doldu",
+    "pending_ai": "Yapay zekâyı bekliyor",
+    "request_missing": "İstek eksik"
+  },
+  "receipts": {
+    "loading": "E-postalar yükleniyor",
+    "links": {
+      "reviewInbox": "Yapay zekâ inceleme kutusunu aç",
+      "settings": "Posta kutusu ve ayrıştırıcı ayarları"
+    },
+    "filter": {
+      "label": "Duruma göre filtrele",
+      "all": "Tümü",
+      "pending": "Okunmayı bekliyor",
+      "skipped": "Atlandı",
+      "no_parser": "Ayrıştırıcı yok",
+      "parse_failed": "Okunamadı",
+      "unmatched": "İşlem bulunamadı",
+      "ambiguous": "Birden çok işlem uyuyor",
+      "review_conflict": "Başka bir istek açık",
+      "review": "İncelemede",
+      "ignored": "Yoksayıldı"
+    },
+    "columns": {
+      "received": "Alındı",
+      "email": "E-posta",
+      "transaction": "İşlem",
+      "state": "Durum",
+      "actions": "Eylemler"
+    },
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "alıcı yok",
+    "noTransaction": "Henüz yok",
+    "error": {
+      "title": "E-postalar yüklenemedi",
+      "body": "İstek başarısız oldu, bu yüzden e-postalarınız hakkında henüz bir şey bilinmiyor. Yeniden deneyin.",
+      "retry": "Yeniden dene"
+    },
+    "empty": {
+      "title": "E-posta yok",
+      "body": "Sipariş onayları, posta kutusu okunduktan sonra burada görünür.",
+      "filteredTitle": "Bu durumda e-posta yok",
+      "filteredBody": "Geri kalanları görmek için başka bir durum seçin.",
+      "noMailboxBody": "Henüz bağlı bir posta kutusu yok. Sipariş onaylarını okumaya başlamak için bir tane bağlayın.",
+      "connectButton": "Posta kutusu bağla"
+    },
+    "actions": {
+      "view": "Görüntüle",
+      "reprocess": "Yeniden işle",
+      "link": "İşlem seç",
+      "recognizeAi": "Yapay zekâ ile tanı",
+      "draftParser": "Yapay zekâ ile ayrıştırıcı taslağı oluştur",
+      "createParser": "Ayrıştırıcı oluştur",
+      "ignore": "Yoksay"
+    },
+    "toasts": {
+      "reprocessed": "E-posta yeniden işlendi",
+      "reprocessFailed": "E-posta yeniden işlenemedi",
+      "draftFailed": "Ayrıştırıcı taslağı oluşturulamadı",
+      "ignored": "E-posta yoksayıldı",
+      "ignoreFailed": "E-posta yoksayılamadı",
+      "deleted": "E-posta silindi",
+      "deleteFailed": "E-posta silinemedi"
+    },
+    "notices": {
+      "draftCreated": "Yapay zekâ {name} ayrıştırıcısının taslağını oluşturdu. Siz inceleyip onaylayana kadar hiçbir şey okumaz.",
+      "draftLink": "Ayrıştırıcı ayarlarında incele"
+    },
+    "ignoreDialog": {
+      "title": "Bu e-posta yoksayılsın mı?",
+      "message": "{subject} e-postası hiçbir şey önermeyecek ve açık inceleme isteği yoksayılacak.",
+      "confirm": "Yoksay"
+    },
+    "deleteDialog": {
+      "title": "Bu e-posta silinsin mi?",
+      "message": "Saklanan {subject} e-postası silinecek ve açık inceleme isteği yoksayılacak. Posta kutusundaki ileti değişmez ve sonraki bir yoklama onu yeniden almaz."
+    }
+  },
+  "detail": {
+    "title": "E-posta makbuzu",
+    "loading": "E-posta yükleniyor",
+    "error": {
+      "title": "E-posta yüklenemedi",
+      "body": "İstek başarısız oldu. Yeniden deneyin.",
+      "retry": "Yeniden dene"
+    },
+    "from": "Gönderen",
+    "received": "Alındı",
+    "subject": "Konu",
+    "state": "Durum",
+    "parser": "Ayrıştırıcı",
+    "noParser": "Yok",
+    "matchedBy": "Eşleşme ölçütü",
+    "matchKinds": {
+      "order_id": "Sipariş numarası",
+      "amount_payee": "Tutar ve alıcı",
+      "amount_only": "Tutar",
+      "manual": "Sizin seçiminiz"
+    },
+    "transaction": "İşlem",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "alıcı yok",
+    "viewTransaction": "İşlemi görüntüle",
+    "noTransaction": "Henüz yok",
+    "reasons": {
+      "too_large": "E-posta boyut sınırından büyük, bu yüzden okunmadan saklandı.",
+      "undecodable": "E-posta çözülemedi, bu yüzden okunmadan saklandı.",
+      "draft_failed": "Yapay zekâ bu gönderen için ayrıştırıcı taslağı oluşturamadı.",
+      "parser_invalid": "Bu göndericinin ayrıştırıcısı geçerli değil. Ayrıştırıcı ayarlarında düzenleyin.",
+      "no_total": "Ayrıştırıcı bu e-postada toplam bulamadı.",
+      "no_items": "Ayrıştırıcı hiç kalem bulamadı.",
+      "items_unbalanced": "Kalemler toplamla tutmuyor.",
+      "items_uncategorized": "Bazı kalemlerin kategorisi yok.",
+      "shipping_uncategorized": "Kargo satırının kategorisi yok.",
+      "amount_differs": "Okunan toplam işlem tutarından farklı, bu yüzden yalnızca bir açıklama öneriliyor.",
+      "proposal_fallback": "Kalem kalem öneri reddedildi, bu yüzden yalnızca bir açıklama öneriliyor.",
+      "nothing_to_propose": "E-posta bu işleme bir şey eklemiyor.",
+      "proposal_refused": "Öneri reddedildi, bu yüzden hiçbir şey önerilmedi."
+    },
+    "reasonUnknown": "Neden: {reason}",
+    "requestNote": "İnceleme isteği ({state}): {note}",
+    "parsedHeading": "Ayrıştırıcının okuduğu",
+    "notParsed": "Bu e-postadan henüz bir şey okunmadı.",
+    "candidatesHeading": "Uyan işlemler",
+    "candidatesHelp": "Birden çok işlem bu e-postaya eşit derecede uyuyor. E-postanın ödediği işlemi seçin.",
+    "linkButton": "Bu işleme bağla",
+    "linked": "E-posta işleme bağlandı",
+    "linkFailed": "E-posta bağlanamadı",
+    "textHeading": "E-posta metni",
+    "textLabel": "E-posta metni",
+    "noText": "E-postada metin yok."
+  },
+  "picker": {
+    "heading": "İşlemi seçin",
+    "help": "Hiçbir işlem otomatik olarak eşleşmedi. Bunlar, e-postanın çevresindeki günler olan {from} ile {to} arasındaki işlemleriniz. E-postanın ödediği işlemi seçin.",
+    "searchLabel": "Ara",
+    "searchPlaceholder": "Alıcı, açıklama veya tutar",
+    "searchButton": "Ara",
+    "loading": "İşlemler yükleniyor",
+    "error": "İşlemler yüklenemedi.",
+    "retry": "Yeniden dene",
+    "empty": "Bu dönemde bağlanabilecek işleminiz yok.",
+    "emptySearch": "Bu dönemde aramayla eşleşen işlem yok.",
+    "row": "{date}, {amount}, {payee}",
+    "noPayee": "alıcı yok",
+    "linkButton": "Bağla",
+    "hasMore": "Yalnızca ilk {count} gösteriliyor. Listeyi daraltmak için aramayı kullanın.",
+    "ai": {
+      "heading": "Yapay zekâ için işlemi seçin",
+      "help": "Bunlar, e-postanın çevresindeki günler olan {from} ile {to} arasındaki işlemleriniz. Yapay zekânın e-postadaki ürünlere göre bölmesini istediğiniz işlemi seçin.",
+      "linkButton": "Bu işlemi kullan"
+    }
+  },
+  "callback": {
+    "title": "Posta kutusu bağlanıyor",
+    "connecting": "Bağlantı tamamlanıyor",
+    "toasts": {
+      "connected": "Posta kutusu bağlandı"
+    },
+    "success": {
+      "title": "Posta kutusu bağlandı",
+      "body": "{username} olarak bağlandı. Ayarlara dönülüyor."
+    },
+    "providerError": {
+      "title": "Oturum açma tamamlanmadı",
+      "withDescription": "Sağlayıcı şunu bildirdi: {error}. {description}",
+      "withoutDescription": "Sağlayıcı şunu bildirdi: {error}."
+    },
+    "missingParameters": {
+      "title": "Bu sayfa bir oturum açma sonucu olmadan açıldı",
+      "body": "E-posta makbuzu ayarlarından yeniden başlayın ve Bağlan düğmelerinden birini kullanın."
+    },
+    "failed": {
+      "title": "Posta kutusu bağlanamadı",
+      "fallback": "Sunucu bağlantıyı reddetti. E-posta makbuzu ayarlarından yeniden başlayın."
+    },
+    "backLink": "E-posta makbuzu ayarlarına geri dön"
+  },
+  "recognize": {
+    "title": "Yapay zekâ ile tanı",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "alıcı yok",
+    "confirmMessage": "Bu e-posta {summary} işlemine bağlı. Yapay zekâ e-postayı okuyacak ve bu işlemin ürünlere göre nasıl bölüneceğini önerecek. Bu işlemle devam edilsin mi?",
+    "confirm": "Yapay zekâ ile tanı",
+    "chooseOther": "Başka bir işlem seç",
+    "candidatesHeading": "E-posta hangi işlemi ödedi?",
+    "candidatesHelp": "Bu e-postaya birden fazla işlem uyuyor. Yapay zekânın kullanacağı işlemi seçin veya başka birini arayın.",
+    "candidatesLoading": "Uyan işlemler yükleniyor",
+    "candidatesError": "Uyan işlemler yüklenemedi.",
+    "retry": "Yeniden dene",
+    "useButton": "Bu işlemi kullan",
+    "searchOther": "Diğer işlemleri ara",
+    "back": "Geri",
+    "failed": "Tanıma başlatılamadı",
+    "queued": "Kuyruğa alındı: şu anda yanıt verebilecek bir yapay zekâ asistanı yok, bu yüzden istek yapay zekâ inceleme kutusunda bir ajanı (örneğin MCP üzerinden) bekliyor.",
+    "handoffFailed": "İstek kuyruğa alındı, ancak e-posta sohbette açılamadı. Yapay zekâ inceleme kutusunda bir ajanı (örneğin MCP üzerinden) bekliyor.",
+    "inboxLink": "Yapay zekâ inceleme kutusunu aç",
+    "opened": "Sohbet, e-posta ekli olarak açıldı. Mesajı okuyun ve Gönder'e basın.",
+    "chatPrompt": "Ekteki sipariş e-postasındaki ürünleri, miktarları ve fiyatları tanı; {date} tarihli işlemimi ({payee}, {amount}) her biri için bir kategoriyle ürünlere göre böl. {requestId} numaralı yapay zekâ inceleme isteğini üstlen ve önerini onun için gönder."
+  }
+}

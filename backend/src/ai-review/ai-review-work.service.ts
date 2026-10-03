@@ -16,14 +16,17 @@ import { TransactionsService } from "../transactions/transactions.service";
 import { TransactionToolPrepService } from "../transactions/transaction-tool-prep.service";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionRule } from "../transaction-rules/transaction-rule.entity";
+import { EmailReceipt } from "../email-receipts/entities/email-receipt.entity";
 import { AiReviewRequest } from "./ai-review-request.entity";
 import { AiReviewRequestsService } from "./ai-review-requests.service";
 import {
+  AI_REVIEW_EMAIL_TEXT_MAX_CHARS,
   AiReviewInboxItem,
   AiReviewProposalInput,
   AiReviewSubmitResult,
   DEFAULT_AI_REVIEW_TOOL_LIST_LIMIT,
   LlmAiReviewClaim,
+  LlmAiReviewEmailReceipt,
   LlmAiReviewList,
   LlmAiReviewRequest,
   MAX_AI_REVIEW_TOOL_LIST_LIMIT,
@@ -47,6 +50,20 @@ function agentNoteOf(request: AiReviewRequest): AgentNote | undefined {
   return note && typeof note.reason === "string"
     ? { reason: note.reason, at: String(note.at ?? "") }
     : undefined;
+}
+
+/** The inbox's view of a stored email: who, what, when -- never its text. */
+function inboxEmail(
+  receipt: EmailReceipt | undefined,
+): AiReviewInboxItem["emailReceipt"] {
+  return receipt
+    ? {
+        id: receipt.id,
+        fromAddress: receipt.fromAddress,
+        subject: receipt.subject,
+        receivedAt: receipt.receivedAt.toISOString(),
+      }
+    : null;
 }
 
 /**
@@ -80,6 +97,7 @@ export class AiReviewWorkService {
       instruction: request.instruction,
       transactionId: request.transactionId,
       ruleId: request.ruleId,
+      emailReceiptId: request.emailReceiptId ?? null,
       claimedByYou: request.claimedBy === caller,
       createdAt: request.createdAt.toISOString(),
       expiresAt: request.expiresAt.toISOString(),
@@ -111,26 +129,75 @@ export class AiReviewWorkService {
   }
 
   /**
-   * Take the oldest pending request for `caller` and read its transaction
+   * Take the oldest pending request (or the one named by `requestId`) for
+   * `caller` and read its transaction
    * through the same projection `list_transactions` uses. A read that fails
    * after the claim gives the request back rather than stranding it.
    */
-  async claim(userId: string, caller: string): Promise<LlmAiReviewClaim> {
-    const request = await this.requests.claimNext(userId, caller);
+  async claim(
+    userId: string,
+    caller: string,
+    requestId?: string,
+  ): Promise<LlmAiReviewClaim> {
+    // A named request is claimed by id (the receipts page hands the assistant
+    // the request it just queued); none is the oldest pending one. A named
+    // request that is not pending, expired or someone else's is "nothing".
+    const request = requestId
+      ? await this.requests.claimById(userId, requestId, caller)
+      : await this.requests.claimNext(userId, caller);
     if (!request) return { request: null };
     try {
       const transaction = await this.transactionsService.getLlmTransactionById(
         userId,
         request.transactionId,
       );
-      return { request: this.toLlm(request, caller), transaction };
+      const emailReceipt = await this.loadEmailForClaim(userId, request);
+      return {
+        request: this.toLlm(request, caller),
+        transaction,
+        ...(emailReceipt ? { emailReceipt } : {}),
+      };
     } catch (err) {
       await this.requests.release(userId, request.id, caller, {
         final: false,
-        note: "The transaction could not be read.",
+        note: "The transaction or its email could not be read.",
       });
       throw err;
     }
+  }
+
+  /**
+   * The email behind a request of kind `email_receipt`: who sent it, when, and
+   * its text cut to `AI_REVIEW_EMAIL_TEXT_MAX_CHARS`. Read through the user's
+   * own scope by id and owner, so another user's email is absent, never read.
+   * Undefined for any other kind, and when the email was deleted since.
+   */
+  private async loadEmailForClaim(
+    userId: string,
+    request: AiReviewRequest,
+  ): Promise<LlmAiReviewEmailReceipt | undefined> {
+    if (request.kind !== "email_receipt" || !request.emailReceiptId) {
+      return undefined;
+    }
+    const receipt = await withScopedDb(this.dataSource, (m) =>
+      m.getRepository(EmailReceipt).findOne({
+        where: { id: request.emailReceiptId as string, userId },
+        select: {
+          id: true,
+          fromAddress: true,
+          subject: true,
+          receivedAt: true,
+          bodyText: true,
+        },
+      }),
+    );
+    if (!receipt) return undefined;
+    return {
+      fromAddress: receipt.fromAddress,
+      subject: receipt.subject,
+      receivedAt: receipt.receivedAt.toISOString(),
+      text: receipt.bodyText.slice(0, AI_REVIEW_EMAIL_TEXT_MAX_CHARS),
+    };
   }
 
   /** The claim check every agent write starts with; nothing is written before it passes. */
@@ -327,7 +394,12 @@ export class AiReviewWorkService {
     const ruleIds = [
       ...new Set(rows.flatMap((r) => (r.ruleId ? [r.ruleId] : []))),
     ];
-    const { transactions, rules } = await withScopedDb(
+    const receiptIds = [
+      ...new Set(
+        rows.flatMap((r) => (r.emailReceiptId ? [r.emailReceiptId] : [])),
+      ),
+    ];
+    const { transactions, rules, receipts } = await withScopedDb(
       this.dataSource,
       async (m) => ({
         transactions: await m.getRepository(Transaction).find({
@@ -340,10 +412,22 @@ export class AiReviewWorkService {
               select: { id: true, name: true },
             })
           : [],
+        receipts: receiptIds.length
+          ? await m.getRepository(EmailReceipt).find({
+              where: { userId, id: In(receiptIds) },
+              select: {
+                id: true,
+                fromAddress: true,
+                subject: true,
+                receivedAt: true,
+              },
+            })
+          : [],
       }),
     );
     const txById = new Map(transactions.map((t) => [t.id, t]));
     const ruleName = new Map(rules.map((r) => [r.id, r.name]));
+    const receiptById = new Map(receipts.map((r) => [r.id, r]));
 
     const items: AiReviewInboxItem[] = [];
     for (const request of rows) {
@@ -360,6 +444,11 @@ export class AiReviewWorkService {
         ruleName: request.ruleId
           ? (ruleName.get(request.ruleId) ?? null)
           : null,
+        emailReceipt: inboxEmail(
+          request.emailReceiptId
+            ? receiptById.get(request.emailReceiptId)
+            : undefined,
+        ),
         createdAt: request.createdAt.toISOString(),
         expiresAt: request.expiresAt.toISOString(),
         transaction: t

@@ -962,6 +962,7 @@
     "emergencyAccess": "Acesso de Emergência",
     "apiAccess": "Acesso à API",
     "aiSettings": "Definições de IA",
+    "emailReceipts": "Recibos por e-mail",
     "backupRestore": "Cópia de Segurança e Restauro",
     "help": "Ajuda e Suporte",
     "dangerZone": "Zona de Perigo",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "Definições de IA",
       "description": "Configure fornecedores de IA, gira chaves de API e veja estatísticas de utilização."
+    },
+    "emailReceiptsCard": {
+      "title": "Recibos por e-mail",
+      "description": "Ligue uma caixa de correio para confirmações de encomenda e gira os analisadores que as leem."
     },
     "delegateSecurityError": "Não foi possível carregar as suas definições de segurança.",
     "toasts": {

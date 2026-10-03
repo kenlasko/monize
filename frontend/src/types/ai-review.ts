@@ -15,6 +15,20 @@ export const AI_REVIEW_STATUSES = [
 
 export type AiReviewStatus = (typeof AI_REVIEW_STATUSES)[number];
 
+/** What raised a request: a rule or a person (`transaction_review`), or a stored order-confirmation email. */
+export const AI_REVIEW_KINDS = ['transaction_review', 'email_receipt'] as const;
+
+export type AiReviewKind = (typeof AI_REVIEW_KINDS)[number];
+
+/** The email a request of kind `email_receipt` was raised for (`AiReviewInboxEmailReceipt`). */
+export interface AiReviewEmailReceipt {
+  id: string;
+  fromAddress: string;
+  subject: string;
+  /** ISO timestamp. */
+  receivedAt: string;
+}
+
 /** The reviewed transaction as the inbox shows it (not a raw row). */
 export interface AiReviewTransactionSummary {
   id: string;
@@ -41,12 +55,14 @@ export type AiReviewProposal =
 
 export interface AiReviewItem {
   id: string;
-  kind: 'transaction_review';
+  kind: AiReviewKind;
   status: AiReviewStatus;
   instruction: string;
   transactionId: string;
   ruleId: string | null;
   ruleName: string | null;
+  /** Null unless the request is of kind `email_receipt` and its email still exists. */
+  emailReceipt: AiReviewEmailReceipt | null;
   createdAt: string;
   expiresAt: string;
   /** Null when the transaction no longer exists. */

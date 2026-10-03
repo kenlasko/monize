@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "返回设置",
+    "title": "邮件收据",
+    "subtitle": "从邮箱读取订单确认邮件，并将其转换为带明细的交易",
+    "receiptsLink": "打开已保存的邮件",
+    "demoRestricted": {
+      "heading": "演示模式下不可用",
+      "body": "演示模式下已禁用连接邮箱。"
+    }
+  },
+  "page": {
+    "title": "邮件收据",
+    "subtitle": "从邮箱读取的订单确认邮件，以及每封邮件的处理结果"
+  },
+  "mailbox": {
+    "heading": "邮箱",
+    "description": "订单确认邮件通过 IMAP 从专用邮箱读取。Monize 只读取邮件，绝不会修改、移动或删除任何邮件。",
+    "loading": "正在加载邮箱",
+    "dedicatedWarning": "请使用专用邮箱。文件夹中的每封邮件都会被读取，因此其中只应存放订单确认邮件。",
+    "encryptionUnavailable": "此服务器无法加密机密信息，因此无法保存邮箱密码或连接。请联系管理员设置加密。",
+    "error": {
+      "title": "无法加载邮箱",
+      "body": "请求失败，因此目前还不清楚您的邮箱状态。请重试。",
+      "retry": "重试"
+    },
+    "oauth": {
+      "heading": "连接账户",
+      "explanation": "Google 和 Microsoft 365 通常会拒绝普通密码。请改为通过服务提供商登录：您授予 Monize 访问邮箱的权限，无需在此输入邮箱密码。",
+      "connect": {
+        "google": "使用 Google 连接",
+        "microsoft": "使用 Microsoft 连接"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "无法检查 Google 或 Microsoft 登录是否可用。下方的手动表单仍可使用。",
+      "startFailed": "无法开始登录",
+      "badAuthorizationUrl": "服务器返回的登录地址不是安全的网页，因此未打开。",
+      "connectedAs": "已以 {username} 的身份连接到 {provider}。",
+      "notConnected": "与 {provider} 的连接未处于活动状态，因此未在读取邮箱。请重新连接以恢复。",
+      "reconnect": "重新连接",
+      "disconnect": "断开连接",
+      "disconnectDialog": {
+        "title": "断开邮箱连接？",
+        "message": "Monize 将删除已保存的 {provider} 访问凭据，并停止读取邮箱。已保存的邮件会保留。"
+      },
+      "disconnected": "邮箱已断开连接",
+      "disconnectFailed": "无法断开邮箱连接",
+      "revokeNote": "断开连接不会撤销您已授予的权限。如需撤销，请在 {provider} 的权限页面中移除 Monize。",
+      "revokeLink": {
+        "google": "打开 Google 账户权限",
+        "microsoft": "打开 Microsoft 应用权限"
+      },
+      "saveButton": "保存设置",
+      "saved": "邮箱设置已保存",
+      "saveFailed": "无法保存邮箱设置"
+    },
+    "form": {
+      "intro": "或者输入任意 IMAP 邮箱的详细信息。大多数服务提供商需要使用应用专用密码，而不是账户密码。",
+      "hostLabel": "IMAP 服务器",
+      "portLabel": "端口",
+      "securityLabel": "连接安全性",
+      "securityOptions": {
+        "tls": "TLS（通常为 993 端口）",
+        "starttls": "STARTTLS（通常为 143 端口）"
+      },
+      "usernameLabel": "用户名",
+      "passwordLabel": "密码",
+      "passwordStoredPlaceholder": "已保存密码。输入新密码可替换。",
+      "passwordRequiredHelp": "新邮箱，或服务器、用户名更改时必填。",
+      "passwordKeepHelp": "留空则保留已保存的密码。密码不会再次显示。",
+      "saveButton": "保存邮箱",
+      "saved": "邮箱已保存",
+      "saveFailed": "无法保存邮箱",
+      "test": {
+        "button": "测试连接",
+        "ok": "{count, plural, one {连接正常。文件夹中有 # 封邮件。} other {连接正常。文件夹中有 # 封邮件。}}",
+        "error": "连接失败：{error}",
+        "failed": "无法测试连接"
+      }
+    },
+    "settings": {
+      "folderLabel": "文件夹",
+      "folderHelp": "要读取的文件夹。将以只读方式打开。",
+      "enabledLabel": "自动读取邮箱",
+      "enabledHelp": "开启后，每 15 分钟检查一次邮箱。您也可以随时使用“立即检查”。",
+      "aiModeLabel": "AI 模式",
+      "aiModeHelp": "是否允许对收据使用您配置的 AI 提供商。AI 的回答始终只是供您批准的提议或草稿。",
+      "aiModes": {
+        "off": "关闭",
+        "on_demand": "按需",
+        "automatic": "自动"
+      },
+      "aiModeDescriptions": {
+        "off": "从不对收据调用 AI。",
+        "on_demand": "仅在您点击“用 AI 识别”或“用 AI 起草解析器”时调用 AI。",
+        "automatic": "检查邮箱时，对于已匹配但已批准的解析器无法完整读取的收据，会询问 AI；对于没有解析器的发件人，会起草解析器。"
+      },
+      "autoApplyLabel": "自动应用提议",
+      "autoApplyHelp": "默认关闭。仅当以下条件全部满足时，提议才会不经询问直接应用：已批准的解析器读取了整封邮件；通过订单号，或通过完全一致的金额和收款人找到了交易，且只有一个候选；提议的合计精确到最小货币单位。其他情况都会等待您的批准。"
+    },
+    "status": {
+      "lastPolled": "上次检查",
+      "lastSuccess": "上次成功检查",
+      "never": "从未",
+      "lastError": "上次错误：{error}",
+      "lastErrorAt": "上次错误（{at}）：{error}",
+      "pollNow": "立即检查",
+      "pollResult": "检查完成：{fetched, plural, one {已保存 # 封邮件} other {已保存 # 封邮件}}，跳过 {skipped} 封，处理 {processed} 封。",
+      "pollFailed": "检查失败",
+      "deleteButton": "删除邮箱",
+      "deleteDialog": {
+        "title": "删除邮箱？",
+        "message": "邮箱设置和所有已保存的邮件都将被删除，由这些邮件产生的未完成审核请求将被驳回。邮箱中的邮件本身不会受到影响。"
+      },
+      "deleted": "邮箱已删除",
+      "deleteFailed": "无法删除邮箱"
+    }
+  },
+  "parsers": {
+    "heading": "解析器",
+    "description": "解析器使用您编写或审核过的模式，读取某个发件人的订单确认邮件。一旦获得批准，它无需 AI 即可运行。",
+    "newButton": "新建解析器",
+    "loading": "正在加载解析器",
+    "error": {
+      "title": "无法加载解析器",
+      "body": "请求失败。请重试。",
+      "retry": "重试"
+    },
+    "empty": {
+      "title": "还没有解析器",
+      "body": "为订单确认邮件的发件人创建一个解析器，或在“邮件收据”页面根据已保存的邮件起草一个。"
+    },
+    "columns": {
+      "name": "解析器",
+      "status": "状态",
+      "payee": "收款人",
+      "actions": "操作"
+    },
+    "status": {
+      "draft": "草稿",
+      "approved": "已批准"
+    },
+    "source": {
+      "manual": "由您编写",
+      "ai": "由 AI 起草"
+    },
+    "invalid": "无效",
+    "noPayee": "无收款人",
+    "payeeUnknown": "未找到收款人",
+    "payeeUnavailable": "收款人列表不可用",
+    "actions": {
+      "approve": "批准"
+    },
+    "toasts": {
+      "approved": "解析器已批准",
+      "approveFailed": "无法批准解析器",
+      "changedElsewhere": "此解析器已在别处被修改。列表已重新加载。",
+      "deleted": "解析器已删除",
+      "deleteFailed": "无法删除解析器"
+    },
+    "deleteDialog": {
+      "title": "删除解析器？",
+      "message": "解析器 {name} 将被删除。它已读取的邮件会保留其结果。"
+    }
+  },
+  "editor": {
+    "createTitle": "新建解析器",
+    "editTitle": "编辑解析器",
+    "loading": "正在加载收款人和类别",
+    "lookupsError": {
+      "title": "无法加载收款人和类别",
+      "body": "选择器需要它们，因此编辑器暂时无法打开。请重试。",
+      "retry": "重试"
+    },
+    "draftNote": "此解析器是草稿。在您批准之前，它不会读取任何内容。",
+    "draftAiNote": "AI 根据一封示例邮件起草了此解析器。请对照您的邮件检查每个模式，然后在列表中批准它。在您批准之前，它不会读取任何内容。",
+    "identityHeading": "读取哪些邮件",
+    "nameLabel": "名称",
+    "payeeLabel": "收款人",
+    "payeePlaceholder": "无收款人",
+    "domainsLabel": "发件人域名",
+    "domainsHelp": "每行一个，最多 {max} 个。所列域名的子域名也会匹配。",
+    "subjectLabel": "主题包含",
+    "subjectHelp": "可选，每行一个，最多 {max} 个。主题必须至少包含其中之一，不区分大小写。",
+    "saveButton": "保存解析器",
+    "created": "解析器已创建",
+    "updated": "解析器已保存",
+    "saveFailed": "无法保存解析器",
+    "conflict": "自您打开以来，此解析器已在别处被修改。请重新加载以查看当前版本。您在此所做的修改尚未保存。",
+    "conflictReload": "重新加载解析器",
+    "patterns": {
+      "globHelp": "每个模式都会与邮件的整整一行匹配，不区分大小写。用 {star} 匹配任意文本，用花括号中的名称（例如 {capture}）捕获一个值。每个字段最多可填 {max} 个模式，每行一个。",
+      "orderIdLabel": "订单号模式",
+      "orderIdHint": "必须捕获 {capture}。示例：订单号：{capture}",
+      "totalLabel": "合计模式",
+      "amountHint": "必须捕获 {capture}。示例：订单合计 {capture}",
+      "shippingLabel": "运费模式",
+      "discountLabel": "折扣模式",
+      "itemsHeading": "明细行",
+      "startAfterLabel": "明细开始于",
+      "startAfterHint": "可选。从第一个包含此文本的行的下一行开始读取明细。",
+      "stopAtLabel": "明细结束于",
+      "stopAtHint": "可选。明细在第一个包含此文本的行之前结束。",
+      "itemPatternsLabel": "明细模式",
+      "itemPatternsHint": "必须捕获 {name}，以及 {amount}（该行合计）或 {price}（单价，可同时捕获 {qty}）之一，不能两者都捕获。示例：{name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "类别规则",
+      "rulesHelp": "第一条模式与商品名称匹配的规则会决定该商品的类别。模式使用相同的语法，例如 {example}。最多 {max} 条规则。",
+      "noRules": "没有类别规则。所有商品都使用默认类别。",
+      "rulePatternLabel": "规则 {number} 的模式",
+      "ruleCategoryLabel": "规则 {number} 的类别",
+      "categoryPlaceholder": "无类别",
+      "removeRule": "删除规则 {number}",
+      "addRule": "添加规则",
+      "ruleLimit": "已达到 {max} 条规则的上限。",
+      "defaultLabel": "默认类别",
+      "defaultHelp": "用于没有任何规则匹配的商品。",
+      "shippingLabel": "运费类别",
+      "shippingHelp": "运费行所属的类别。"
+    }
+  },
+  "problems": {
+    "heading": "解析器定义无效：",
+    "item": "{where}：{problem}",
+    "paths": {
+      "definition": "定义",
+      "line": "{field}，第 {line} 行",
+      "rule": "类别规则 {rule}，{part}"
+    },
+    "fields": {
+      "orderId": "订单号模式",
+      "total": "合计模式",
+      "shipping": "运费模式",
+      "discount": "折扣模式",
+      "itemPatterns": "明细模式",
+      "startAfter": "明细开始于",
+      "stopAt": "明细结束于",
+      "items": "明细行",
+      "categoryRules": "类别规则",
+      "rulePattern": "模式",
+      "ruleCategory": "类别",
+      "defaultCategory": "默认类别",
+      "shippingCategory": "运费类别"
+    },
+    "codes": {
+      "not_object": "不是有效的定义",
+      "unknown_key": "不是解析器可以包含的内容",
+      "invalid_version": "是此服务器无法读取的版本",
+      "invalid_type": "的值类型不正确",
+      "empty": "不能为空",
+      "too_many": "的条目过多（最多 {max} 个）",
+      "too_long": "过长（最多 {max} 个字符）",
+      "control_character": "包含控制字符",
+      "malformed_capture": "中花括号内的捕获无效",
+      "too_many_captures": "的捕获过多",
+      "duplicate_capture": "两次使用了同一个捕获名称",
+      "capture_not_allowed": "使用了此字段不接受的捕获名称",
+      "capture_missing": "缺少此字段所需的捕获",
+      "capture_conflict": "同时捕获了该行合计和单价。请只使用其中之一。",
+      "invalid_uuid": "不是有效的类别"
+    }
+  },
+  "test": {
+    "heading": "用已保存的邮件测试",
+    "help": "使用上方的模式（无论是否已保存）读取一封已保存的邮件，并显示会发现什么内容以及会匹配哪笔交易。不会写入任何数据。",
+    "loadFailed": "无法加载已保存的邮件，因此暂时没有可供测试的对象。",
+    "noReceipts": "尚未保存任何邮件。请先检查邮箱。",
+    "receiptLabel": "邮件",
+    "choosePlaceholder": "选择邮件",
+    "receiptOption": "{subject}，来自 {sender}（{date}）",
+    "button": "测试",
+    "failed": "测试失败",
+    "matchHeading": "交易匹配",
+    "matched": "将关联 {date} 金额为 {amount} 的交易（{payee}），匹配依据：{how}。",
+    "matchKinds": {
+      "order_id": "订单号",
+      "amount_payee": "金额和收款人",
+      "amount_only": "金额",
+      "manual": "您的选择"
+    },
+    "noPayee": "无收款人",
+    "ambiguous": "{count, plural, one {# 笔交易} other {# 笔交易}}同样匹配，因此在您选择之前不会关联任何一笔。",
+    "unmatched": "在 {count, plural, one {# 个候选} other {# 个候选}}中没有匹配的交易。"
+  },
+  "parsed": {
+    "notFound": "未找到",
+    "noCategory": "无类别",
+    "unknownCategory": "未知类别",
+    "categoryUnavailable": "类别未加载",
+    "noItems": "未读取到任何明细行。",
+    "orderId": "订单号",
+    "total": "合计",
+    "shipping": "运费",
+    "discount": "折扣",
+    "columns": {
+      "item": "商品",
+      "qty": "数量",
+      "amount": "金额",
+      "category": "类别"
+    },
+    "complete": "已完整读取",
+    "incomplete": "未完整读取",
+    "reasons": {
+      "no_total": "邮件中没有注明合计。",
+      "no_items": "未找到明细行。",
+      "items_unbalanced": "明细行之和与合计不符。",
+      "items_uncategorized": "部分明细行没有类别。",
+      "shipping_uncategorized": "运费行没有类别。"
+    },
+    "readByAi": "由 AI 读取"
+  },
+  "state": {
+    "pending": "等待读取",
+    "skipped": "已跳过",
+    "no_parser": "无解析器",
+    "parse_failed": "无法读取",
+    "unmatched": "未找到交易",
+    "ambiguous": "多笔交易匹配",
+    "review_conflict": "已有其他请求未完成",
+    "ignored": "已忽略",
+    "proposed": "等待批准",
+    "applied": "已应用",
+    "dismissed": "已驳回",
+    "expired": "已过期",
+    "pending_ai": "等待 AI",
+    "request_missing": "请求缺失"
+  },
+  "receipts": {
+    "loading": "正在加载邮件",
+    "links": {
+      "reviewInbox": "打开 AI 审核收件箱",
+      "settings": "邮箱和解析器设置"
+    },
+    "filter": {
+      "label": "按状态筛选",
+      "all": "全部",
+      "pending": "等待读取",
+      "skipped": "已跳过",
+      "no_parser": "无解析器",
+      "parse_failed": "无法读取",
+      "unmatched": "未找到交易",
+      "ambiguous": "多笔交易匹配",
+      "review_conflict": "已有其他请求未完成",
+      "review": "审核中",
+      "ignored": "已忽略"
+    },
+    "columns": {
+      "received": "接收时间",
+      "email": "邮件",
+      "transaction": "交易",
+      "state": "状态",
+      "actions": "操作"
+    },
+    "transactionSummary": "{date}，{amount}，{payee}",
+    "noPayee": "无收款人",
+    "noTransaction": "暂无",
+    "error": {
+      "title": "无法加载邮件",
+      "body": "请求失败，因此目前还不清楚您的邮件情况。请重试。",
+      "retry": "重试"
+    },
+    "empty": {
+      "title": "没有邮件",
+      "body": "读取邮箱后，订单确认邮件会显示在这里。",
+      "filteredTitle": "没有此状态的邮件",
+      "filteredBody": "选择其他状态以查看其余邮件。",
+      "noMailboxBody": "尚未连接邮箱。请连接一个邮箱以开始读取订单确认邮件。",
+      "connectButton": "连接邮箱"
+    },
+    "actions": {
+      "view": "查看",
+      "reprocess": "重新处理",
+      "link": "选择交易",
+      "recognizeAi": "用 AI 识别",
+      "draftParser": "用 AI 起草解析器",
+      "createParser": "创建解析器",
+      "ignore": "忽略"
+    },
+    "toasts": {
+      "reprocessed": "邮件已重新处理",
+      "reprocessFailed": "无法重新处理邮件",
+      "draftFailed": "无法起草解析器",
+      "ignored": "邮件已忽略",
+      "ignoreFailed": "无法忽略邮件",
+      "deleted": "邮件已删除",
+      "deleteFailed": "无法删除邮件"
+    },
+    "notices": {
+      "draftCreated": "AI 起草了解析器 {name}。在您审核并批准之前，它不会读取任何内容。",
+      "draftLink": "在解析器设置中审核"
+    },
+    "ignoreDialog": {
+      "title": "忽略此邮件？",
+      "message": "邮件 {subject} 将不会产生任何提议，其未完成的审核请求将被驳回。",
+      "confirm": "忽略"
+    },
+    "deleteDialog": {
+      "title": "删除此邮件？",
+      "message": "已保存的邮件 {subject} 将被删除，其未完成的审核请求将被驳回。邮箱中的邮件本身不会受到影响，之后的检查也不会再次获取它。"
+    }
+  },
+  "detail": {
+    "title": "邮件收据",
+    "loading": "正在加载邮件",
+    "error": {
+      "title": "无法加载邮件",
+      "body": "请求失败。请重试。",
+      "retry": "重试"
+    },
+    "from": "发件人",
+    "received": "接收时间",
+    "subject": "主题",
+    "state": "状态",
+    "parser": "解析器",
+    "noParser": "无",
+    "matchedBy": "匹配依据",
+    "matchKinds": {
+      "order_id": "订单号",
+      "amount_payee": "金额和收款人",
+      "amount_only": "金额",
+      "manual": "您的选择"
+    },
+    "transaction": "交易",
+    "transactionSummary": "{date}，{amount}，{payee}",
+    "noPayee": "无收款人",
+    "viewTransaction": "查看交易",
+    "noTransaction": "暂无",
+    "reasons": {
+      "too_large": "邮件超过大小限制，因此仅保存而未读取。",
+      "undecodable": "邮件无法解码，因此仅保存而未读取。",
+      "draft_failed": "AI 无法为此发件人起草解析器。",
+      "parser_invalid": "此发件人的解析器无效。请在解析器设置中编辑。",
+      "no_total": "解析器在这封邮件中没有找到合计。",
+      "no_items": "解析器没有找到明细行。",
+      "items_unbalanced": "明细行之和与合计不符。",
+      "items_uncategorized": "部分明细行没有类别。",
+      "shipping_uncategorized": "运费行没有类别。",
+      "amount_differs": "解析出的合计与交易金额不同，因此仅提议更新说明。",
+      "proposal_fallback": "带明细的提议被拒绝，因此仅提议更新说明。",
+      "nothing_to_propose": "这封邮件没有给这笔交易增加任何信息。",
+      "proposal_refused": "提议被拒绝，因此没有提出任何提议。"
+    },
+    "reasonUnknown": "原因：{reason}",
+    "requestNote": "审核请求（{state}）：{note}",
+    "parsedHeading": "解析器读取的内容",
+    "notParsed": "尚未从这封邮件中读取到任何内容。",
+    "candidatesHeading": "匹配的交易",
+    "candidatesHelp": "有多笔交易与这封邮件同样匹配。请选择它所支付的那一笔。",
+    "linkButton": "关联到此交易",
+    "linked": "邮件已关联到交易",
+    "linkFailed": "无法关联邮件",
+    "textHeading": "邮件正文",
+    "textLabel": "邮件正文内容",
+    "noText": "这封邮件没有正文。"
+  },
+  "picker": {
+    "heading": "选择交易",
+    "help": "没有自动匹配到交易。以下是您在 {from} 至 {to}（邮件前后几天）的交易。请选择它所支付的那一笔。",
+    "searchLabel": "搜索",
+    "searchPlaceholder": "收款人、说明或金额",
+    "searchButton": "搜索",
+    "loading": "正在加载交易",
+    "error": "无法加载交易。",
+    "retry": "重试",
+    "empty": "此期间没有可以关联的交易。",
+    "emptySearch": "此期间没有与搜索匹配的交易。",
+    "row": "{date}，{amount}，{payee}",
+    "noPayee": "无收款人",
+    "linkButton": "关联",
+    "hasMore": "仅显示前 {count} 条。请使用搜索缩小范围。",
+    "ai": {
+      "heading": "选择供 AI 使用的交易",
+      "help": "这是 {from} 至 {to} 期间的交易，即邮件前后的日期。请选择 AI 应按邮件中的商品拆分的那一笔。",
+      "linkButton": "使用此交易"
+    }
+  },
+  "callback": {
+    "title": "正在连接邮箱",
+    "connecting": "正在完成连接",
+    "toasts": {
+      "connected": "邮箱已连接"
+    },
+    "success": {
+      "title": "邮箱已连接",
+      "body": "已以 {username} 的身份连接。正在返回设置。"
+    },
+    "providerError": {
+      "title": "登录未完成",
+      "withDescription": "服务提供商报告：{error}。{description}",
+      "withoutDescription": "服务提供商报告：{error}。"
+    },
+    "missingParameters": {
+      "title": "打开此页面时没有登录结果",
+      "body": "请从邮件收据设置重新开始，并使用其中一个“连接”按钮。"
+    },
+    "failed": {
+      "title": "无法连接邮箱",
+      "fallback": "服务器拒绝了连接。请从邮件收据设置重新开始。"
+    },
+    "backLink": "返回邮件收据设置"
+  },
+  "recognize": {
+    "title": "用 AI 识别",
+    "transactionSummary": "{date}，{amount}，{payee}",
+    "noPayee": "无收款人",
+    "confirmMessage": "此邮件已关联到交易 {summary}。AI 将读取邮件，并提议如何按商品拆分这笔交易。要使用这笔交易继续吗？",
+    "confirm": "用 AI 识别",
+    "chooseOther": "选择其他交易",
+    "candidatesHeading": "这封邮件支付的是哪一笔交易？",
+    "candidatesHelp": "有多笔交易与这封邮件相符。请选择 AI 应使用的那一笔，或搜索其他交易。",
+    "candidatesLoading": "正在加载相符的交易",
+    "candidatesError": "无法加载相符的交易。",
+    "retry": "重试",
+    "useButton": "使用此交易",
+    "searchOther": "搜索其他交易",
+    "back": "返回",
+    "failed": "无法开始识别",
+    "queued": "已排队：目前没有可回答的 AI 助手，因此请求会在 AI 审核收件箱中等待代理（例如通过 MCP）处理。",
+    "handoffFailed": "请求已排队，但无法在聊天中打开该邮件。它会在 AI 审核收件箱中等待代理（例如通过 MCP）处理。",
+    "inboxLink": "打开 AI 审核收件箱",
+    "opened": "已打开聊天并附上该邮件。请阅读消息并点击“发送”。",
+    "chatPrompt": "请识别所附订单邮件中的商品、数量和价格，并将我 {date} 的交易（{payee}，{amount}）按商品拆分，并为每项指定类别。请认领 AI 审核请求 {requestId}，并为它提交你的提议。"
+  }
+}

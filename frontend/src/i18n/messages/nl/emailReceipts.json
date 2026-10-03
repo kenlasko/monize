@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "Terug naar instellingen",
+    "title": "E-mailbonnen",
+    "subtitle": "Lees bestelbevestigingen uit een mailbox en zet ze om in gespecificeerde transacties",
+    "receiptsLink": "Opgeslagen e-mails openen",
+    "demoRestricted": {
+      "heading": "Beperkt in demomodus",
+      "body": "Een mailbox koppelen is uitgeschakeld in de demomodus."
+    }
+  },
+  "page": {
+    "title": "E-mailbonnen",
+    "subtitle": "De bestelbevestigingen die uit je mailbox zijn gelezen, en wat er met elk ervan is gebeurd"
+  },
+  "mailbox": {
+    "heading": "Mailbox",
+    "description": "Bestelbevestigingen worden via IMAP gelezen uit een speciale mailbox. Monize leest hem alleen: er wordt nooit een bericht gewijzigd, verplaatst of verwijderd.",
+    "loading": "Mailbox laden",
+    "dedicatedWarning": "Gebruik een speciale mailbox. Elk bericht in de map wordt gelezen, dus de map moet alleen bestelbevestigingen bevatten.",
+    "encryptionUnavailable": "Deze server kan geen geheimen versleutelen, dus een mailboxwachtwoord of -verbinding kan niet worden opgeslagen. Vraag de beheerder om versleuteling in te stellen.",
+    "error": {
+      "title": "De mailbox kon niet worden geladen",
+      "body": "Het verzoek is mislukt, dus er is nog niets bekend over je mailbox. Probeer het opnieuw.",
+      "retry": "Opnieuw proberen"
+    },
+    "oauth": {
+      "heading": "Een account koppelen",
+      "explanation": "Google en Microsoft 365 weigeren meestal een gewoon wachtwoord. Log in via de provider: je geeft Monize toegang tot de mailbox en typt het wachtwoord ervan nooit hier in.",
+      "connect": {
+        "google": "Koppelen met Google",
+        "microsoft": "Koppelen met Microsoft"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "Of inloggen met Google of Microsoft beschikbaar is, kon niet worden gecontroleerd. Het handmatige formulier hieronder werkt nog steeds.",
+      "startFailed": "Het inloggen kon niet worden gestart",
+      "badAuthorizationUrl": "De server gaf een inlogadres terug dat geen beveiligde webpagina is, dus het is niet geopend.",
+      "connectedAs": "Gekoppeld aan {provider} als {username}.",
+      "notConnected": "De koppeling met {provider} is niet actief, dus de mailbox wordt niet gelezen. Koppel opnieuw om verder te gaan.",
+      "reconnect": "Opnieuw koppelen",
+      "disconnect": "Ontkoppelen",
+      "disconnectDialog": {
+        "title": "De mailbox ontkoppelen?",
+        "message": "Monize verwijdert de opgeslagen toegang tot {provider} en stopt met het lezen van de mailbox. Al opgeslagen e-mails blijven bewaard."
+      },
+      "disconnected": "Mailbox ontkoppeld",
+      "disconnectFailed": "De mailbox kon niet worden ontkoppeld",
+      "revokeNote": "Ontkoppelen trekt de toestemming die je hebt gegeven niet in. Verwijder Monize op de machtigingenpagina van {provider} om die in te trekken.",
+      "revokeLink": {
+        "google": "Machtigingen van het Google-account openen",
+        "microsoft": "Machtigingen voor Microsoft-apps openen"
+      },
+      "saveButton": "Instellingen opslaan",
+      "saved": "Mailboxinstellingen opgeslagen",
+      "saveFailed": "De mailboxinstellingen konden niet worden opgeslagen"
+    },
+    "form": {
+      "intro": "Of voer de gegevens van een willekeurige IMAP-mailbox in. De meeste providers vereisen een app-wachtwoord in plaats van je accountwachtwoord.",
+      "hostLabel": "IMAP-server",
+      "portLabel": "Poort",
+      "securityLabel": "Verbindingsbeveiliging",
+      "securityOptions": {
+        "tls": "TLS (meestal poort 993)",
+        "starttls": "STARTTLS (meestal poort 143)"
+      },
+      "usernameLabel": "Gebruikersnaam",
+      "passwordLabel": "Wachtwoord",
+      "passwordStoredPlaceholder": "Er is een wachtwoord opgeslagen. Typ om het te vervangen.",
+      "passwordRequiredHelp": "Vereist voor een nieuwe mailbox, of wanneer de server of gebruikersnaam verandert.",
+      "passwordKeepHelp": "Laat leeg om het opgeslagen wachtwoord te behouden. Het wordt nooit meer getoond.",
+      "saveButton": "Mailbox opslaan",
+      "saved": "Mailbox opgeslagen",
+      "saveFailed": "De mailbox kon niet worden opgeslagen",
+      "test": {
+        "button": "Verbinding testen",
+        "ok": "{count, plural, one {De verbinding werkt. De map bevat # bericht.} other {De verbinding werkt. De map bevat # berichten.}}",
+        "error": "De verbinding is mislukt: {error}",
+        "failed": "De verbinding kon niet worden getest"
+      }
+    },
+    "settings": {
+      "folderLabel": "Map",
+      "folderHelp": "De map die wordt gelezen. Hij wordt alleen-lezen geopend.",
+      "enabledLabel": "De mailbox automatisch lezen",
+      "enabledHelp": "Als dit aan staat, wordt de mailbox elke 15 minuten opgehaald. Je kunt altijd Nu ophalen gebruiken.",
+      "aiModeLabel": "AI-modus",
+      "aiModeHelp": "Of de AI-provider die je hebt ingesteld voor bonnen mag worden gebruikt. Een AI-antwoord is altijd een voorstel of concept dat jij goedkeurt.",
+      "aiModes": {
+        "off": "Uit",
+        "on_demand": "Op verzoek",
+        "automatic": "Automatisch"
+      },
+      "aiModeDescriptions": {
+        "off": "De AI wordt nooit aangeroepen voor bonnen.",
+        "on_demand": "De AI wordt alleen aangeroepen wanneer je op Herkennen met AI of Parser laten opstellen door AI drukt.",
+        "automatic": "Bij het ophalen vraagt de AI naar een gekoppelde bon die geen enkele goedgekeurde parser volledig kon lezen, en stelt hij een parser op voor een afzender die er geen heeft."
+      },
+      "autoApplyLabel": "Voorstellen automatisch toepassen",
+      "autoApplyHelp": "Standaard uit. Een voorstel wordt alleen zonder te vragen toegepast als dit allemaal geldt: een goedgekeurde parser heeft de hele e-mail gelezen, de transactie is gevonden via het ordernummer of via het exacte bedrag en de begunstigde met maar één kandidaat, en het voorstel klopt tot op de cent. Al het andere wacht op jouw goedkeuring."
+    },
+    "status": {
+      "lastPolled": "Laatst opgehaald",
+      "lastSuccess": "Laatst geslaagd opgehaald",
+      "never": "Nooit",
+      "lastError": "Laatste fout: {error}",
+      "lastErrorAt": "Laatste fout ({at}): {error}",
+      "pollNow": "Nu ophalen",
+      "pollResult": "Ophalen voltooid: {fetched, plural, one {# e-mail opgeslagen} other {# e-mails opgeslagen}}, {skipped} overgeslagen, {processed} verwerkt.",
+      "pollFailed": "Het ophalen is mislukt",
+      "deleteButton": "Mailbox verwijderen",
+      "deleteDialog": {
+        "title": "De mailbox verwijderen?",
+        "message": "De mailboxinstellingen en alle opgeslagen e-mails worden verwijderd, en openstaande controleverzoeken daarvan worden genegeerd. De e-mails in de mailbox zelf blijven ongemoeid."
+      },
+      "deleted": "Mailbox verwijderd",
+      "deleteFailed": "De mailbox kon niet worden verwijderd"
+    }
+  },
+  "parsers": {
+    "heading": "Parsers",
+    "description": "Een parser leest de bestelbevestigingen van één afzender met patronen die je zelf schrijft of controleert. Eenmaal goedgekeurd werkt hij zonder de AI.",
+    "newButton": "Nieuwe parser",
+    "loading": "Parsers laden",
+    "error": {
+      "title": "De parsers konden niet worden geladen",
+      "body": "Het verzoek is mislukt. Probeer het opnieuw.",
+      "retry": "Opnieuw proberen"
+    },
+    "empty": {
+      "title": "Nog geen parsers",
+      "body": "Maak er een voor een afzender van bestelbevestigingen, of laat er een opstellen uit een opgeslagen e-mail op de pagina E-mailbonnen."
+    },
+    "columns": {
+      "name": "Parser",
+      "status": "Status",
+      "payee": "Begunstigde",
+      "actions": "Acties"
+    },
+    "status": {
+      "draft": "Concept",
+      "approved": "Goedgekeurd"
+    },
+    "source": {
+      "manual": "Door jou geschreven",
+      "ai": "Opgesteld door AI"
+    },
+    "invalid": "Ongeldig",
+    "noPayee": "Geen begunstigde",
+    "payeeUnknown": "Begunstigde niet gevonden",
+    "payeeUnavailable": "Lijst met begunstigden niet beschikbaar",
+    "actions": {
+      "approve": "Goedkeuren"
+    },
+    "toasts": {
+      "approved": "Parser goedgekeurd",
+      "approveFailed": "De parser kon niet worden goedgekeurd",
+      "changedElsewhere": "Deze parser is elders gewijzigd. De lijst is opnieuw geladen.",
+      "deleted": "Parser verwijderd",
+      "deleteFailed": "De parser kon niet worden verwijderd"
+    },
+    "deleteDialog": {
+      "title": "De parser verwijderen?",
+      "message": "De parser {name} wordt verwijderd. E-mails die hij al heeft gelezen behouden hun resultaten."
+    }
+  },
+  "editor": {
+    "createTitle": "Nieuwe parser",
+    "editTitle": "Parser bewerken",
+    "loading": "Begunstigden en categorieën laden",
+    "lookupsError": {
+      "title": "Begunstigden en categorieën konden niet worden geladen",
+      "body": "De keuzelijsten hebben ze nodig, dus de editor kan nog niet openen. Probeer het opnieuw.",
+      "retry": "Opnieuw proberen"
+    },
+    "draftNote": "Deze parser is een concept. Hij leest niets totdat je hem goedkeurt.",
+    "draftAiNote": "De AI heeft deze parser opgesteld uit één voorbeeld-e-mail. Controleer elk patroon aan de hand van je e-mails en keur hem daarna goed vanuit de lijst. Hij leest niets totdat je dat doet.",
+    "identityHeading": "Welke e-mails hij leest",
+    "nameLabel": "Naam",
+    "payeeLabel": "Begunstigde",
+    "payeePlaceholder": "Geen begunstigde",
+    "domainsLabel": "Afzenderdomeinen",
+    "domainsHelp": "Eén per regel, maximaal {max}. Een subdomein van een vermeld domein komt ook overeen.",
+    "subjectLabel": "Onderwerp bevat",
+    "subjectHelp": "Optioneel, één per regel, maximaal {max}. Het onderwerp moet minstens één ervan bevatten, hoofdletters worden genegeerd.",
+    "saveButton": "Parser opslaan",
+    "created": "Parser aangemaakt",
+    "updated": "Parser opgeslagen",
+    "saveFailed": "De parser kon niet worden opgeslagen",
+    "conflict": "Deze parser is elders gewijzigd sinds je hem hebt geopend. Laad hem opnieuw om de huidige versie te zien. Je wijzigingen hier zijn niet opgeslagen.",
+    "conflictReload": "De parser opnieuw laden",
+    "patterns": {
+      "globHelp": "Elk patroon wordt vergeleken met één hele regel van de e-mail, hoofdletters worden genegeerd. Gebruik {star} voor willekeurige tekst en een naam tussen accolades, zoals {capture}, om een waarde vast te leggen. Elk veld accepteert maximaal {max} patronen, één per regel.",
+      "orderIdLabel": "Patronen voor het ordernummer",
+      "orderIdHint": "Moet {capture} vastleggen. Voorbeeld: Ordernummer: {capture}",
+      "totalLabel": "Patronen voor het totaal",
+      "amountHint": "Moet {capture} vastleggen. Voorbeeld: Totaal van de bestelling {capture}",
+      "shippingLabel": "Patronen voor de verzendkosten",
+      "discountLabel": "Patronen voor de korting",
+      "itemsHeading": "Artikelregels",
+      "startAfterLabel": "Artikelen beginnen na",
+      "startAfterHint": "Optioneel. Artikelen worden gelezen vanaf de regel na de eerste regel die deze tekst bevat.",
+      "stopAtLabel": "Artikelen stoppen bij",
+      "stopAtHint": "Optioneel. Artikelen eindigen voor de eerste regel die deze tekst bevat.",
+      "itemPatternsLabel": "Artikelpatronen",
+      "itemPatternsHint": "Moet {name} vastleggen en ofwel {amount} (het regeltotaal) ofwel {price} (de stukprijs, eventueel met {qty}), nooit allebei. Voorbeeld: {name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "Categorieregels",
+      "rulesHelp": "De eerste regel waarvan het patroon overeenkomt, bepaalt de categorie van een artikel. Patronen gebruiken dezelfde syntaxis, bijvoorbeeld {example}. Maximaal {max} regels.",
+      "noRules": "Geen categorieregels. Elk artikel krijgt de standaardcategorie.",
+      "rulePatternLabel": "Patroon van regel {number}",
+      "ruleCategoryLabel": "Categorie van regel {number}",
+      "categoryPlaceholder": "Geen categorie",
+      "removeRule": "Regel {number} verwijderen",
+      "addRule": "Een regel toevoegen",
+      "ruleLimit": "De limiet van {max} regels is bereikt.",
+      "defaultLabel": "Standaardcategorie",
+      "defaultHelp": "Wordt gebruikt voor artikelen waar geen enkele regel bij past.",
+      "shippingLabel": "Verzendcategorie",
+      "shippingHelp": "De categorie van de verzendregel."
+    }
+  },
+  "problems": {
+    "heading": "De parserdefinitie is niet geldig:",
+    "item": "{where}: {problem}",
+    "paths": {
+      "definition": "De definitie",
+      "line": "{field}, regel {line}",
+      "rule": "Categorieregel {rule}, {part}"
+    },
+    "fields": {
+      "orderId": "Patronen voor het ordernummer",
+      "total": "Patronen voor het totaal",
+      "shipping": "Patronen voor de verzendkosten",
+      "discount": "Patronen voor de korting",
+      "itemPatterns": "Artikelpatronen",
+      "startAfter": "Artikelen beginnen na",
+      "stopAt": "Artikelen stoppen bij",
+      "items": "Artikelregels",
+      "categoryRules": "Categorieregels",
+      "rulePattern": "patroon",
+      "ruleCategory": "categorie",
+      "defaultCategory": "Standaardcategorie",
+      "shippingCategory": "Verzendcategorie"
+    },
+    "codes": {
+      "not_object": "is geen geldige definitie",
+      "unknown_key": "is niets wat een parser kan hebben",
+      "invalid_version": "is een versie die deze server niet leest",
+      "invalid_type": "heeft het verkeerde soort waarde",
+      "empty": "mag niet leeg zijn",
+      "too_many": "heeft te veel items (maximaal {max})",
+      "too_long": "is te lang (maximaal {max} tekens)",
+      "control_character": "bevat een stuurteken",
+      "malformed_capture": "heeft een vastlegging tussen accolades die niet geldig is",
+      "too_many_captures": "heeft te veel vastleggingen",
+      "duplicate_capture": "gebruikt dezelfde vastleggingsnaam twee keer",
+      "capture_not_allowed": "gebruikt een vastleggingsnaam die dit veld niet accepteert",
+      "capture_missing": "mist een vastlegging die dit veld nodig heeft",
+      "capture_conflict": "legt zowel het regeltotaal als de stukprijs vast. Gebruik er één van.",
+      "invalid_uuid": "is geen geldige categorie"
+    }
+  },
+  "test": {
+    "heading": "Testen met een opgeslagen e-mail",
+    "help": "Leest een opgeslagen e-mail met de bovenstaande patronen, opgeslagen of niet, en toont wat er gevonden zou worden en met welke transactie het zou overeenkomen. Er wordt niets geschreven.",
+    "loadFailed": "De opgeslagen e-mails konden niet worden geladen, dus er is nog niets om mee te testen.",
+    "noReceipts": "Er zijn nog geen e-mails opgeslagen. Haal eerst de mailbox op.",
+    "receiptLabel": "E-mail",
+    "choosePlaceholder": "Kies een e-mail",
+    "receiptOption": "{subject} van {sender} ({date})",
+    "button": "Testen",
+    "failed": "De test is mislukt",
+    "matchHeading": "Transactieovereenkomst",
+    "matched": "Zou de transactie van {date} voor {amount} ({payee}) koppelen, gevonden via {how}.",
+    "matchKinds": {
+      "order_id": "ordernummer",
+      "amount_payee": "bedrag en begunstigde",
+      "amount_only": "bedrag",
+      "manual": "jouw keuze"
+    },
+    "noPayee": "geen begunstigde",
+    "ambiguous": "{count, plural, one {# transactie past} other {# transacties passen}} even goed, dus er zou er geen worden gekoppeld totdat je er een kiest.",
+    "unmatched": "Er komt geen transactie overeen, uit {count, plural, one {# kandidaat} other {# kandidaten}}."
+  },
+  "parsed": {
+    "notFound": "Niet gevonden",
+    "noCategory": "Geen categorie",
+    "unknownCategory": "Onbekende categorie",
+    "categoryUnavailable": "Categorieën niet geladen",
+    "noItems": "Er zijn geen artikelregels gelezen.",
+    "orderId": "Ordernummer",
+    "total": "Totaal",
+    "shipping": "Verzending",
+    "discount": "Korting",
+    "columns": {
+      "item": "Artikel",
+      "qty": "Aantal",
+      "amount": "Bedrag",
+      "category": "Categorie"
+    },
+    "complete": "Volledig gelezen",
+    "incomplete": "Niet volledig gelezen",
+    "reasons": {
+      "no_total": "De e-mail vermeldt geen totaal.",
+      "no_items": "Er zijn geen artikelregels gevonden.",
+      "items_unbalanced": "De artikelregels tellen niet op tot het totaal.",
+      "items_uncategorized": "Sommige artikelregels hebben geen categorie.",
+      "shipping_uncategorized": "De verzendregel heeft geen categorie."
+    },
+    "readByAi": "Gelezen door de AI"
+  },
+  "state": {
+    "pending": "Wacht om gelezen te worden",
+    "skipped": "Overgeslagen",
+    "no_parser": "Geen parser",
+    "parse_failed": "Kon niet worden gelezen",
+    "unmatched": "Geen transactie gevonden",
+    "ambiguous": "Meerdere transacties passen",
+    "review_conflict": "Er staat een ander verzoek open",
+    "ignored": "Genegeerd",
+    "proposed": "Wacht op goedkeuring",
+    "applied": "Toegepast",
+    "dismissed": "Verworpen",
+    "expired": "Verlopen",
+    "pending_ai": "Wacht op de AI",
+    "request_missing": "Verzoek ontbreekt"
+  },
+  "receipts": {
+    "loading": "E-mails laden",
+    "links": {
+      "reviewInbox": "Het AI-controlepostvak openen",
+      "settings": "Mailbox- en parserinstellingen"
+    },
+    "filter": {
+      "label": "Filteren op status",
+      "all": "Alle",
+      "pending": "Wacht om gelezen te worden",
+      "skipped": "Overgeslagen",
+      "no_parser": "Geen parser",
+      "parse_failed": "Kon niet worden gelezen",
+      "unmatched": "Geen transactie gevonden",
+      "ambiguous": "Meerdere transacties passen",
+      "review_conflict": "Er staat een ander verzoek open",
+      "review": "In controle",
+      "ignored": "Genegeerd"
+    },
+    "columns": {
+      "received": "Ontvangen",
+      "email": "E-mail",
+      "transaction": "Transactie",
+      "state": "Status",
+      "actions": "Acties"
+    },
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "geen begunstigde",
+    "noTransaction": "Nog geen",
+    "error": {
+      "title": "De e-mails konden niet worden geladen",
+      "body": "Het verzoek is mislukt, dus er is nog niets bekend over je e-mails. Probeer het opnieuw.",
+      "retry": "Opnieuw proberen"
+    },
+    "empty": {
+      "title": "Geen e-mails",
+      "body": "Bestelbevestigingen verschijnen hier zodra de mailbox is gelezen.",
+      "filteredTitle": "Geen e-mails met deze status",
+      "filteredBody": "Kies een andere status om de rest te zien.",
+      "noMailboxBody": "Er is nog geen mailbox gekoppeld. Koppel er een om bestelbevestigingen te gaan lezen.",
+      "connectButton": "Een mailbox koppelen"
+    },
+    "actions": {
+      "view": "Bekijken",
+      "reprocess": "Opnieuw verwerken",
+      "link": "Transactie kiezen",
+      "recognizeAi": "Herkennen met AI",
+      "draftParser": "Parser laten opstellen door AI",
+      "createParser": "Parser maken",
+      "ignore": "Negeren"
+    },
+    "toasts": {
+      "reprocessed": "E-mail opnieuw verwerkt",
+      "reprocessFailed": "De e-mail kon niet opnieuw worden verwerkt",
+      "draftFailed": "Er kon geen parser worden opgesteld",
+      "ignored": "E-mail genegeerd",
+      "ignoreFailed": "De e-mail kon niet worden genegeerd",
+      "deleted": "E-mail verwijderd",
+      "deleteFailed": "De e-mail kon niet worden verwijderd"
+    },
+    "notices": {
+      "draftCreated": "De AI heeft de parser {name} opgesteld. Hij leest niets totdat je hem controleert en goedkeurt.",
+      "draftLink": "Controleer hem in de parserinstellingen"
+    },
+    "ignoreDialog": {
+      "title": "Deze e-mail negeren?",
+      "message": "De e-mail {subject} stelt niets voor, en het openstaande controleverzoek wordt genegeerd.",
+      "confirm": "Negeren"
+    },
+    "deleteDialog": {
+      "title": "Deze e-mail verwijderen?",
+      "message": "De opgeslagen e-mail {subject} wordt verwijderd en het openstaande controleverzoek genegeerd. Het bericht in de mailbox blijft ongemoeid, en bij een volgende keer ophalen wordt het niet opnieuw opgehaald."
+    }
+  },
+  "detail": {
+    "title": "E-mailbon",
+    "loading": "E-mail laden",
+    "error": {
+      "title": "De e-mail kon niet worden geladen",
+      "body": "Het verzoek is mislukt. Probeer het opnieuw.",
+      "retry": "Opnieuw proberen"
+    },
+    "from": "Van",
+    "received": "Ontvangen",
+    "subject": "Onderwerp",
+    "state": "Status",
+    "parser": "Parser",
+    "noParser": "Geen",
+    "matchedBy": "Gekoppeld via",
+    "matchKinds": {
+      "order_id": "Ordernummer",
+      "amount_payee": "Bedrag en begunstigde",
+      "amount_only": "Bedrag",
+      "manual": "Jouw keuze"
+    },
+    "transaction": "Transactie",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "geen begunstigde",
+    "viewTransaction": "Transactie bekijken",
+    "noTransaction": "Nog geen",
+    "reasons": {
+      "too_large": "De e-mail is groter dan de groottelimiet, dus hij is opgeslagen zonder te worden gelezen.",
+      "undecodable": "De e-mail kon niet worden gedecodeerd, dus hij is opgeslagen zonder te worden gelezen.",
+      "draft_failed": "De AI kon geen parser opstellen voor deze afzender.",
+      "parser_invalid": "De parser voor deze afzender is niet geldig. Bewerk hem in de parserinstellingen.",
+      "no_total": "De parser heeft in deze e-mail geen totaal gevonden.",
+      "no_items": "De parser heeft geen artikelregels gevonden.",
+      "items_unbalanced": "De artikelregels tellen niet op tot het totaal.",
+      "items_uncategorized": "Sommige artikelregels hebben geen categorie.",
+      "shipping_uncategorized": "De verzendregel heeft geen categorie.",
+      "amount_differs": "Het gelezen totaal wijkt af van het bedrag van de transactie, dus er wordt alleen een omschrijving voorgesteld.",
+      "proposal_fallback": "Het gespecificeerde voorstel is geweigerd, dus er wordt alleen een omschrijving voorgesteld.",
+      "nothing_to_propose": "De e-mail voegt niets toe aan deze transactie.",
+      "proposal_refused": "Het voorstel is geweigerd, dus er is niets voorgesteld."
+    },
+    "reasonUnknown": "Reden: {reason}",
+    "requestNote": "Controleverzoek ({state}): {note}",
+    "parsedHeading": "Wat de parser heeft gelezen",
+    "notParsed": "Er is nog niets uit deze e-mail gelezen.",
+    "candidatesHeading": "Transacties die passen",
+    "candidatesHelp": "Meerdere transacties passen even goed bij deze e-mail. Kies de transactie die ermee is betaald.",
+    "linkButton": "Aan deze transactie koppelen",
+    "linked": "E-mail aan de transactie gekoppeld",
+    "linkFailed": "De e-mail kon niet worden gekoppeld",
+    "textHeading": "Tekst van de e-mail",
+    "textLabel": "Tekst van de e-mail",
+    "noText": "De e-mail heeft geen tekst."
+  },
+  "picker": {
+    "heading": "Kies de transactie",
+    "help": "Er is automatisch geen transactie gekoppeld. Dit zijn je transacties van {from} tot {to}, de dagen rond de e-mail. Kies de transactie die ermee is betaald.",
+    "searchLabel": "Zoeken",
+    "searchPlaceholder": "Begunstigde, omschrijving of bedrag",
+    "searchButton": "Zoeken",
+    "loading": "Transacties laden",
+    "error": "De transacties konden niet worden geladen.",
+    "retry": "Opnieuw proberen",
+    "empty": "Je hebt in deze periode geen transacties die kunnen worden gekoppeld.",
+    "emptySearch": "Geen enkele transactie in deze periode komt overeen met de zoekopdracht.",
+    "row": "{date}, {amount}, {payee}",
+    "noPayee": "geen begunstigde",
+    "linkButton": "Koppelen",
+    "hasMore": "Alleen de eerste {count} worden getoond. Gebruik het zoekveld om de lijst te beperken.",
+    "ai": {
+      "heading": "Kies de transactie voor de AI",
+      "help": "Dit zijn je transacties van {from} tot {to}, de dagen rond de e-mail. Kies de transactie die de AI moet splitsen op basis van de producten in de e-mail.",
+      "linkButton": "Deze transactie gebruiken"
+    }
+  },
+  "callback": {
+    "title": "De mailbox koppelen",
+    "connecting": "De koppeling voltooien",
+    "toasts": {
+      "connected": "Mailbox gekoppeld"
+    },
+    "success": {
+      "title": "Mailbox gekoppeld",
+      "body": "Gekoppeld als {username}. Je gaat terug naar de instellingen."
+    },
+    "providerError": {
+      "title": "Het inloggen is niet voltooid",
+      "withDescription": "De provider meldde: {error}. {description}",
+      "withoutDescription": "De provider meldde: {error}."
+    },
+    "missingParameters": {
+      "title": "Deze pagina is geopend zonder inlogresultaat",
+      "body": "Begin opnieuw vanuit de instellingen voor e-mailbonnen en gebruik een van de koppelknoppen."
+    },
+    "failed": {
+      "title": "De mailbox kon niet worden gekoppeld",
+      "fallback": "De server heeft de verbinding geweigerd. Begin opnieuw vanuit de instellingen voor e-mailbonnen."
+    },
+    "backLink": "Terug naar de instellingen voor e-mailbonnen"
+  },
+  "recognize": {
+    "title": "Herkennen met AI",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "geen begunstigde",
+    "confirmMessage": "Deze e-mail is gekoppeld aan de transactie {summary}. De AI leest de e-mail en stelt voor hoe deze transactie per product wordt gesplitst. Doorgaan met deze transactie?",
+    "confirm": "Herkennen met AI",
+    "chooseOther": "Een andere transactie kiezen",
+    "candidatesHeading": "Welke transactie is met de e-mail betaald?",
+    "candidatesHelp": "Meerdere transacties passen bij deze e-mail. Kies de transactie die de AI moet gebruiken of zoek een andere.",
+    "candidatesLoading": "Passende transacties laden",
+    "candidatesError": "De passende transacties konden niet worden geladen.",
+    "retry": "Opnieuw proberen",
+    "useButton": "Deze transactie gebruiken",
+    "searchOther": "Andere transacties zoeken",
+    "back": "Terug",
+    "failed": "Kon de herkenning niet starten",
+    "queued": "In de wachtrij: er is nu geen AI-assistent beschikbaar om te antwoorden, dus het verzoek wacht in het AI-controlepostvak op een agent (bijvoorbeeld via MCP).",
+    "handoffFailed": "Het verzoek staat in de wachtrij, maar de e-mail kon niet in de chat worden geopend. Het wacht in het AI-controlepostvak op een agent (bijvoorbeeld via MCP).",
+    "inboxLink": "Het AI-controlepostvak openen",
+    "opened": "De chat is geopend met de e-mail als bijlage. Lees het bericht en druk op Verzenden.",
+    "chatPrompt": "Herken de producten, aantallen en prijzen in de bijgevoegde bestel-e-mail en splits mijn transactie van {date} ({payee}, {amount}) per product, met een categorie voor elk. Neem AI-controleverzoek {requestId} over en dien je voorstel ervoor in."
+  }
+}

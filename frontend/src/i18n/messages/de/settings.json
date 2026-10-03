@@ -962,6 +962,7 @@
     "emergencyAccess": "Notfallzugang",
     "apiAccess": "API-Zugang",
     "aiSettings": "KI-Einstellungen",
+    "emailReceipts": "E-Mail-Belege",
     "backupRestore": "Backup & Wiederherstellung",
     "help": "Hilfe & Support",
     "dangerZone": "Gefahrenbereich",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "KI-Einstellungen",
       "description": "KI-Anbieter konfigurieren, API-Schlüssel verwalten und Nutzungsstatistiken einsehen."
+    },
+    "emailReceiptsCard": {
+      "title": "E-Mail-Belege",
+      "description": "Verbinde ein Postfach für Bestellbestätigungen und verwalte die Parser, die sie lesen."
     },
     "delegateSecurityError": "Ihre Sicherheitseinstellungen konnten nicht geladen werden.",
     "toasts": {

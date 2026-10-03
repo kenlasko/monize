@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "Voltar às Configurações",
+    "title": "Recibos por e-mail",
+    "subtitle": "Leia confirmações de pedido de uma caixa de e-mail e transforme-as em transações detalhadas",
+    "receiptsLink": "Abrir os e-mails armazenados",
+    "demoRestricted": {
+      "heading": "Restrito no Modo de Demonstração",
+      "body": "A conexão com uma caixa de e-mail está desativada no modo de demonstração."
+    }
+  },
+  "page": {
+    "title": "Recibos por e-mail",
+    "subtitle": "Os e-mails de confirmação de pedido lidos da sua caixa de e-mail e o que aconteceu com cada um"
+  },
+  "mailbox": {
+    "heading": "Caixa de e-mail",
+    "description": "As confirmações de pedido são lidas de uma caixa de e-mail dedicada por IMAP. O Monize apenas a lê: nunca altera, move nem exclui uma mensagem.",
+    "loading": "Carregando a caixa de e-mail",
+    "dedicatedWarning": "Use uma caixa de e-mail dedicada. Todas as mensagens da pasta são lidas, então ela deve conter somente confirmações de pedido.",
+    "encryptionUnavailable": "Este servidor não consegue criptografar segredos, então não é possível salvar a senha nem a conexão de uma caixa de e-mail. Peça ao administrador que configure a criptografia.",
+    "error": {
+      "title": "Não foi possível carregar a caixa de e-mail",
+      "body": "A solicitação falhou, então ainda não se sabe nada sobre a sua caixa de e-mail. Tente novamente.",
+      "retry": "Tentar novamente"
+    },
+    "oauth": {
+      "heading": "Conectar uma conta",
+      "explanation": "O Google e o Microsoft 365 costumam recusar uma senha simples. Entre pelo provedor: você concede ao Monize acesso à caixa de e-mail e nunca digita a senha dela aqui.",
+      "connect": {
+        "google": "Conectar com o Google",
+        "microsoft": "Conectar com a Microsoft"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "Não foi possível verificar se o login com Google ou Microsoft está disponível. O formulário manual abaixo continua funcionando.",
+      "startFailed": "Não foi possível iniciar o login",
+      "badAuthorizationUrl": "O servidor devolveu um endereço de login que não é uma página web segura, então ele não foi aberto.",
+      "connectedAs": "Conectado a {provider} como {username}.",
+      "notConnected": "A conexão com {provider} não está ativa, então a caixa de e-mail não está sendo lida. Conecte novamente para retomar.",
+      "reconnect": "Reconectar",
+      "disconnect": "Desconectar",
+      "disconnectDialog": {
+        "title": "Desconectar a caixa de e-mail?",
+        "message": "O Monize vai excluir o acesso armazenado a {provider} e parar de ler a caixa de e-mail. Os e-mails já armazenados são mantidos."
+      },
+      "disconnected": "Caixa de e-mail desconectada",
+      "disconnectFailed": "Não foi possível desconectar a caixa de e-mail",
+      "revokeNote": "Desconectar não remove a permissão que você concedeu. Para retirá-la, remova o Monize na página de permissões de {provider}.",
+      "revokeLink": {
+        "google": "Abrir as permissões da conta Google",
+        "microsoft": "Abrir as permissões de aplicativos da Microsoft"
+      },
+      "saveButton": "Salvar configurações",
+      "saved": "Configurações da caixa de e-mail salvas",
+      "saveFailed": "Não foi possível salvar as configurações da caixa de e-mail"
+    },
+    "form": {
+      "intro": "Ou informe os dados de qualquer caixa de e-mail IMAP. A maioria dos provedores exige uma senha de aplicativo em vez da senha da conta.",
+      "hostLabel": "Servidor IMAP",
+      "portLabel": "Porta",
+      "securityLabel": "Segurança da conexão",
+      "securityOptions": {
+        "tls": "TLS (normalmente porta 993)",
+        "starttls": "STARTTLS (normalmente porta 143)"
+      },
+      "usernameLabel": "Nome de usuário",
+      "passwordLabel": "Senha",
+      "passwordStoredPlaceholder": "Há uma senha armazenada. Digite para substituí-la.",
+      "passwordRequiredHelp": "Obrigatória para uma nova caixa de e-mail ou quando o servidor ou o nome de usuário mudam.",
+      "passwordKeepHelp": "Deixe em branco para manter a senha armazenada. Ela nunca é mostrada novamente.",
+      "saveButton": "Salvar caixa de e-mail",
+      "saved": "Caixa de e-mail salva",
+      "saveFailed": "Não foi possível salvar a caixa de e-mail",
+      "test": {
+        "button": "Testar conexão",
+        "ok": "{count, plural, one {A conexão funciona. A pasta contém # mensagem.} other {A conexão funciona. A pasta contém # mensagens.}}",
+        "error": "A conexão falhou: {error}",
+        "failed": "Não foi possível testar a conexão"
+      }
+    },
+    "settings": {
+      "folderLabel": "Pasta",
+      "folderHelp": "A pasta a ser lida. Ela é aberta somente para leitura.",
+      "enabledLabel": "Ler a caixa de e-mail automaticamente",
+      "enabledHelp": "Quando ativado, a caixa de e-mail é verificada a cada 15 minutos. Você sempre pode usar Verificar agora.",
+      "aiModeLabel": "Modo de IA",
+      "aiModeHelp": "Define se o provedor de IA que você configurou pode ser usado nos recibos. Uma resposta da IA é sempre uma proposta ou um rascunho que você aprova.",
+      "aiModes": {
+        "off": "Desligado",
+        "on_demand": "Sob demanda",
+        "automatic": "Automático"
+      },
+      "aiModeDescriptions": {
+        "off": "A IA nunca é chamada para os recibos.",
+        "on_demand": "A IA só é chamada quando carrega em Reconhecer com IA ou em Redigir analisador com IA.",
+        "automatic": "A verificação pergunta à IA sobre um recibo correspondido que nenhum analisador aprovado conseguiu ler por completo e redige um analisador para um remetente que não tem nenhum."
+      },
+      "autoApplyLabel": "Aplicar propostas automaticamente",
+      "autoApplyHelp": "Desativado por padrão. Uma proposta só é aplicada sem perguntar quando todas estas condições são atendidas: um analisador aprovado leu o e-mail inteiro, a transação foi encontrada pelo número do pedido ou pelo valor e beneficiário exatos com um único candidato, e a proposta fecha até o centavo. Todo o resto aguarda a sua aprovação."
+    },
+    "status": {
+      "lastPolled": "Última verificação",
+      "lastSuccess": "Última verificação bem-sucedida",
+      "never": "Nunca",
+      "lastError": "Último erro: {error}",
+      "lastErrorAt": "Último erro ({at}): {error}",
+      "pollNow": "Verificar agora",
+      "pollResult": "Verificação concluída: {fetched, plural, one {# e-mail armazenado} other {# e-mails armazenados}}, ignorados: {skipped}, processados: {processed}.",
+      "pollFailed": "A verificação falhou",
+      "deleteButton": "Excluir caixa de e-mail",
+      "deleteDialog": {
+        "title": "Excluir a caixa de e-mail?",
+        "message": "As configurações da caixa de e-mail e todos os e-mails armazenados serão excluídos, e as solicitações de revisão abertas a partir deles serão dispensadas. Os e-mails na própria caixa de e-mail não são alterados."
+      },
+      "deleted": "Caixa de e-mail excluída",
+      "deleteFailed": "Não foi possível excluir a caixa de e-mail"
+    }
+  },
+  "parsers": {
+    "heading": "Analisadores",
+    "description": "Um analisador lê as confirmações de pedido de um remetente com padrões que você escreve ou revisa. Depois de aprovado, funciona sem a IA.",
+    "newButton": "Novo analisador",
+    "loading": "Carregando os analisadores",
+    "error": {
+      "title": "Não foi possível carregar os analisadores",
+      "body": "A solicitação falhou. Tente novamente.",
+      "retry": "Tentar novamente"
+    },
+    "empty": {
+      "title": "Nenhum analisador ainda",
+      "body": "Crie um para um remetente de confirmações de pedido ou redija um a partir de um e-mail armazenado na página Recibos por e-mail."
+    },
+    "columns": {
+      "name": "Analisador",
+      "status": "Status",
+      "payee": "Beneficiário",
+      "actions": "Ações"
+    },
+    "status": {
+      "draft": "Rascunho",
+      "approved": "Aprovado"
+    },
+    "source": {
+      "manual": "Escrito por você",
+      "ai": "Redigido pela IA"
+    },
+    "invalid": "Inválido",
+    "noPayee": "Sem beneficiário",
+    "payeeUnknown": "Beneficiário não encontrado",
+    "payeeUnavailable": "Lista de beneficiários indisponível",
+    "actions": {
+      "approve": "Aprovar"
+    },
+    "toasts": {
+      "approved": "Analisador aprovado",
+      "approveFailed": "Não foi possível aprovar o analisador",
+      "changedElsewhere": "Este analisador foi alterado em outro lugar. A lista foi recarregada.",
+      "deleted": "Analisador excluído",
+      "deleteFailed": "Não foi possível excluir o analisador"
+    },
+    "deleteDialog": {
+      "title": "Excluir o analisador?",
+      "message": "O analisador {name} será excluído. Os e-mails que ele já leu mantêm os respectivos resultados."
+    }
+  },
+  "editor": {
+    "createTitle": "Novo analisador",
+    "editTitle": "Editar analisador",
+    "loading": "Carregando beneficiários e categorias",
+    "lookupsError": {
+      "title": "Não foi possível carregar os beneficiários e as categorias",
+      "body": "Os seletores precisam deles, então o editor ainda não pode abrir. Tente novamente.",
+      "retry": "Tentar novamente"
+    },
+    "draftNote": "Este analisador é um rascunho. Ele não lê nada até você aprová-lo.",
+    "draftAiNote": "A IA redigiu este analisador a partir de um e-mail de exemplo. Confira cada padrão nos seus e-mails e depois aprove-o na lista. Ele não lê nada até você fazer isso.",
+    "identityHeading": "Quais e-mails ele lê",
+    "nameLabel": "Nome",
+    "payeeLabel": "Beneficiário",
+    "payeePlaceholder": "Sem beneficiário",
+    "domainsLabel": "Domínios do remetente",
+    "domainsHelp": "Um por linha, até {max}. Um subdomínio de um domínio listado também corresponde.",
+    "subjectLabel": "O assunto contém",
+    "subjectHelp": "Opcional, um por linha, até {max}. O assunto precisa conter pelo menos um deles, sem diferenciar maiúsculas de minúsculas.",
+    "saveButton": "Salvar analisador",
+    "created": "Analisador criado",
+    "updated": "Analisador salvo",
+    "saveFailed": "Não foi possível salvar o analisador",
+    "conflict": "Este analisador foi alterado em outro lugar desde que você o abriu. Recarregue-o para ver a versão atual. Suas edições aqui não são salvas.",
+    "conflictReload": "Recarregar o analisador",
+    "patterns": {
+      "globHelp": "Cada padrão é comparado com uma linha inteira do e-mail, sem diferenciar maiúsculas de minúsculas. Use {star} para qualquer texto e um nome entre chaves, como {capture}, para capturar um valor. Cada campo aceita até {max} padrões, um por linha.",
+      "orderIdLabel": "Padrões do número do pedido",
+      "orderIdHint": "Precisa capturar {capture}. Exemplo: Número do pedido: {capture}",
+      "totalLabel": "Padrões do total",
+      "amountHint": "Precisa capturar {capture}. Exemplo: Total do pedido {capture}",
+      "shippingLabel": "Padrões do frete",
+      "discountLabel": "Padrões do desconto",
+      "itemsHeading": "Linhas de itens",
+      "startAfterLabel": "Os itens começam depois de",
+      "startAfterHint": "Opcional. Os itens são lidos a partir da linha seguinte à primeira linha que contém este texto.",
+      "stopAtLabel": "Os itens terminam em",
+      "stopAtHint": "Opcional. Os itens terminam antes da primeira linha que contém este texto.",
+      "itemPatternsLabel": "Padrões dos itens",
+      "itemPatternsHint": "Precisa capturar {name} e {amount} (o total da linha) ou {price} (o preço unitário, opcionalmente com {qty}), nunca ambos. Exemplo: {name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "Regras de categoria",
+      "rulesHelp": "A primeira regra cujo padrão corresponde ao nome de um item define a categoria dele. Os padrões usam a mesma sintaxe, por exemplo {example}. Até {max} regras.",
+      "noRules": "Sem regras de categoria. Todos os itens recebem a categoria padrão.",
+      "rulePatternLabel": "Padrão da regra {number}",
+      "ruleCategoryLabel": "Categoria da regra {number}",
+      "categoryPlaceholder": "Sem categoria",
+      "removeRule": "Remover a regra {number}",
+      "addRule": "Adicionar uma regra",
+      "ruleLimit": "O limite de {max} regras foi atingido.",
+      "defaultLabel": "Categoria padrão",
+      "defaultHelp": "Usada para itens a que nenhuma regra corresponde.",
+      "shippingLabel": "Categoria do frete",
+      "shippingHelp": "A categoria da linha de frete."
+    }
+  },
+  "problems": {
+    "heading": "A definição do analisador não é válida:",
+    "item": "{where}: {problem}",
+    "paths": {
+      "definition": "A definição",
+      "line": "{field}, linha {line}",
+      "rule": "Regra de categoria {rule}, {part}"
+    },
+    "fields": {
+      "orderId": "Padrões do número do pedido",
+      "total": "Padrões do total",
+      "shipping": "Padrões do frete",
+      "discount": "Padrões do desconto",
+      "itemPatterns": "Padrões dos itens",
+      "startAfter": "Os itens começam depois de",
+      "stopAt": "Os itens terminam em",
+      "items": "Linhas de itens",
+      "categoryRules": "Regras de categoria",
+      "rulePattern": "padrão",
+      "ruleCategory": "categoria",
+      "defaultCategory": "Categoria padrão",
+      "shippingCategory": "Categoria do frete"
+    },
+    "codes": {
+      "not_object": "não é uma definição válida",
+      "unknown_key": "não é algo que um analisador possa ter",
+      "invalid_version": "é uma versão que este servidor não lê",
+      "invalid_type": "tem o tipo de valor errado",
+      "empty": "não pode estar vazio",
+      "too_many": "tem entradas demais (no máximo {max})",
+      "too_long": "é longo demais (no máximo {max} caracteres)",
+      "control_character": "contém um caractere de controle",
+      "malformed_capture": "tem uma captura entre chaves que não é válida",
+      "too_many_captures": "tem capturas demais",
+      "duplicate_capture": "usa o mesmo nome de captura duas vezes",
+      "capture_not_allowed": "usa um nome de captura que este campo não aceita",
+      "capture_missing": "não tem uma captura de que este campo precisa",
+      "capture_conflict": "captura o total da linha e o preço unitário. Use apenas um deles.",
+      "invalid_uuid": "não é uma categoria válida"
+    }
+  },
+  "test": {
+    "heading": "Testar com um e-mail armazenado",
+    "help": "Lê um e-mail armazenado com os padrões acima, salvos ou não, e mostra o que seria encontrado e com qual transação ele corresponderia. Nada é gravado.",
+    "loadFailed": "Não foi possível carregar os e-mails armazenados, então ainda não há nada com que testar.",
+    "noReceipts": "Ainda não há e-mails armazenados. Verifique primeiro a caixa de e-mail.",
+    "receiptLabel": "E-mail",
+    "choosePlaceholder": "Escolha um e-mail",
+    "receiptOption": "{subject} de {sender} ({date})",
+    "button": "Testar",
+    "failed": "O teste falhou",
+    "matchHeading": "Correspondência da transação",
+    "matched": "Vincularia a transação de {date} no valor de {amount} ({payee}), encontrada por {how}.",
+    "matchKinds": {
+      "order_id": "número do pedido",
+      "amount_payee": "valor e beneficiário",
+      "amount_only": "valor",
+      "manual": "sua escolha"
+    },
+    "noPayee": "sem beneficiário",
+    "ambiguous": "{count, plural, one {# transação corresponde} other {# transações correspondem}} igualmente bem, então nenhuma seria vinculada até você escolher.",
+    "unmatched": "Nenhuma transação corresponde, entre {count, plural, one {# candidata} other {# candidatas}}."
+  },
+  "parsed": {
+    "notFound": "Não encontrado",
+    "noCategory": "Sem categoria",
+    "unknownCategory": "Categoria desconhecida",
+    "categoryUnavailable": "Categorias não carregadas",
+    "noItems": "Nenhuma linha de item foi lida.",
+    "orderId": "Número do pedido",
+    "total": "Total",
+    "shipping": "Frete",
+    "discount": "Desconto",
+    "columns": {
+      "item": "Item",
+      "qty": "Qtd.",
+      "amount": "Valor",
+      "category": "Categoria"
+    },
+    "complete": "Lido por completo",
+    "incomplete": "Não lido por completo",
+    "reasons": {
+      "no_total": "O e-mail não informa nenhum total.",
+      "no_items": "Nenhuma linha de item foi encontrada.",
+      "items_unbalanced": "As linhas de itens não fecham com o total.",
+      "items_uncategorized": "Algumas linhas de itens não têm categoria.",
+      "shipping_uncategorized": "A linha de frete não tem categoria."
+    },
+    "readByAi": "Lido pela IA"
+  },
+  "state": {
+    "pending": "Aguardando leitura",
+    "skipped": "Ignorado",
+    "no_parser": "Sem analisador",
+    "parse_failed": "Não foi possível ler",
+    "unmatched": "Nenhuma transação encontrada",
+    "ambiguous": "Várias transações correspondem",
+    "review_conflict": "Há outra solicitação aberta",
+    "ignored": "Ignorado",
+    "proposed": "Aguardando aprovação",
+    "applied": "Aplicado",
+    "dismissed": "Dispensado",
+    "expired": "Expirado",
+    "pending_ai": "Aguardando a IA",
+    "request_missing": "Solicitação ausente"
+  },
+  "receipts": {
+    "loading": "Carregando os e-mails",
+    "links": {
+      "reviewInbox": "Abrir a caixa de revisão de IA",
+      "settings": "Configurações da caixa de e-mail e dos analisadores"
+    },
+    "filter": {
+      "label": "Filtrar por status",
+      "all": "Todos",
+      "pending": "Aguardando leitura",
+      "skipped": "Ignorado",
+      "no_parser": "Sem analisador",
+      "parse_failed": "Não foi possível ler",
+      "unmatched": "Nenhuma transação encontrada",
+      "ambiguous": "Várias transações correspondem",
+      "review_conflict": "Há outra solicitação aberta",
+      "review": "Em revisão",
+      "ignored": "Ignorado"
+    },
+    "columns": {
+      "received": "Recebido",
+      "email": "E-mail",
+      "transaction": "Transação",
+      "state": "Status",
+      "actions": "Ações"
+    },
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "sem beneficiário",
+    "noTransaction": "Nenhuma ainda",
+    "error": {
+      "title": "Não foi possível carregar os e-mails",
+      "body": "A solicitação falhou, então ainda não se sabe nada sobre os seus e-mails. Tente novamente.",
+      "retry": "Tentar novamente"
+    },
+    "empty": {
+      "title": "Nenhum e-mail",
+      "body": "As confirmações de pedido aparecem aqui depois que a caixa de e-mail é lida.",
+      "filteredTitle": "Nenhum e-mail neste status",
+      "filteredBody": "Escolha outro status para ver os demais.",
+      "noMailboxBody": "Ainda não há nenhuma caixa de e-mail conectada. Conecte uma para começar a ler confirmações de pedido.",
+      "connectButton": "Conectar uma caixa de e-mail"
+    },
+    "actions": {
+      "view": "Ver",
+      "reprocess": "Reprocessar",
+      "link": "Escolher transação",
+      "recognizeAi": "Reconhecer com IA",
+      "draftParser": "Redigir analisador com IA",
+      "createParser": "Criar analisador",
+      "ignore": "Ignorar"
+    },
+    "toasts": {
+      "reprocessed": "E-mail reprocessado",
+      "reprocessFailed": "Não foi possível reprocessar o e-mail",
+      "draftFailed": "Não foi possível redigir um analisador",
+      "ignored": "E-mail ignorado",
+      "ignoreFailed": "Não foi possível ignorar o e-mail",
+      "deleted": "E-mail excluído",
+      "deleteFailed": "Não foi possível excluir o e-mail"
+    },
+    "notices": {
+      "draftCreated": "A IA redigiu o analisador {name}. Ele não lê nada até você revisá-lo e aprová-lo.",
+      "draftLink": "Revise-o nas configurações dos analisadores"
+    },
+    "ignoreDialog": {
+      "title": "Ignorar este e-mail?",
+      "message": "O e-mail {subject} não vai propor nada e a respectiva solicitação de revisão aberta será dispensada.",
+      "confirm": "Ignorar"
+    },
+    "deleteDialog": {
+      "title": "Excluir este e-mail?",
+      "message": "O e-mail armazenado {subject} será excluído e a respectiva solicitação de revisão aberta dispensada. A mensagem na caixa de e-mail não é alterada, e uma verificação posterior não vai buscá-la de novo."
+    }
+  },
+  "detail": {
+    "title": "Recibo por e-mail",
+    "loading": "Carregando o e-mail",
+    "error": {
+      "title": "Não foi possível carregar o e-mail",
+      "body": "A solicitação falhou. Tente novamente.",
+      "retry": "Tentar novamente"
+    },
+    "from": "De",
+    "received": "Recebido",
+    "subject": "Assunto",
+    "state": "Status",
+    "parser": "Analisador",
+    "noParser": "Nenhum",
+    "matchedBy": "Correspondido por",
+    "matchKinds": {
+      "order_id": "Número do pedido",
+      "amount_payee": "Valor e beneficiário",
+      "amount_only": "Valor",
+      "manual": "Sua escolha"
+    },
+    "transaction": "Transação",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "sem beneficiário",
+    "viewTransaction": "Ver transação",
+    "noTransaction": "Nenhuma ainda",
+    "reasons": {
+      "too_large": "O e-mail excede o limite de tamanho, então foi armazenado sem ser lido.",
+      "undecodable": "Não foi possível decodificar o e-mail, então ele foi armazenado sem ser lido.",
+      "draft_failed": "A IA não conseguiu redigir um analisador para este remetente.",
+      "parser_invalid": "O analisador deste remetente não é válido. Edite-o nas configurações dos analisadores.",
+      "no_total": "O analisador não encontrou nenhum total neste e-mail.",
+      "no_items": "O analisador não encontrou nenhuma linha de item.",
+      "items_unbalanced": "As linhas de itens não fecham com o total.",
+      "items_uncategorized": "Algumas linhas de itens não têm categoria.",
+      "shipping_uncategorized": "A linha de frete não tem categoria.",
+      "amount_differs": "O total lido difere do valor da transação, então só uma descrição é proposta.",
+      "proposal_fallback": "A proposta detalhada foi recusada, então só uma descrição é proposta.",
+      "nothing_to_propose": "O e-mail não acrescenta nada a esta transação.",
+      "proposal_refused": "A proposta foi recusada, então nada foi proposto."
+    },
+    "reasonUnknown": "Motivo: {reason}",
+    "requestNote": "Solicitação de revisão ({state}): {note}",
+    "parsedHeading": "O que o analisador leu",
+    "notParsed": "Ainda não foi lido nada deste e-mail.",
+    "candidatesHeading": "Transações que correspondem",
+    "candidatesHelp": "Várias transações correspondem igualmente bem a este e-mail. Escolha aquela que ele pagou.",
+    "linkButton": "Vincular a esta transação",
+    "linked": "E-mail vinculado à transação",
+    "linkFailed": "Não foi possível vincular o e-mail",
+    "textHeading": "Texto do e-mail",
+    "textLabel": "Texto do e-mail",
+    "noText": "O e-mail não tem texto."
+  },
+  "picker": {
+    "heading": "Escolha a transação",
+    "help": "Nenhuma transação foi correspondida automaticamente. Estas são as suas transações de {from} a {to}, os dias em torno do e-mail. Escolha aquela que ele pagou.",
+    "searchLabel": "Pesquisar",
+    "searchPlaceholder": "Beneficiário, descrição ou valor",
+    "searchButton": "Pesquisar",
+    "loading": "Carregando as transações",
+    "error": "Não foi possível carregar as transações.",
+    "retry": "Tentar novamente",
+    "empty": "Você não tem transações neste período que possam ser vinculadas.",
+    "emptySearch": "Nenhuma transação neste período corresponde à pesquisa.",
+    "row": "{date}, {amount}, {payee}",
+    "noPayee": "sem beneficiário",
+    "linkButton": "Vincular",
+    "hasMore": "Somente as primeiras {count} são mostradas. Use a pesquisa para reduzir a lista.",
+    "ai": {
+      "heading": "Escolha a transação para a IA",
+      "help": "Estas são as suas transações de {from} a {to}, os dias em torno do e-mail. Escolha aquela que a IA deve dividir pelos produtos do e-mail.",
+      "linkButton": "Usar esta transação"
+    }
+  },
+  "callback": {
+    "title": "Conectando a caixa de e-mail",
+    "connecting": "Concluindo a conexão",
+    "toasts": {
+      "connected": "Caixa de e-mail conectada"
+    },
+    "success": {
+      "title": "Caixa de e-mail conectada",
+      "body": "Conectado como {username}. Voltando às configurações."
+    },
+    "providerError": {
+      "title": "O login não foi concluído",
+      "withDescription": "O provedor informou: {error}. {description}",
+      "withoutDescription": "O provedor informou: {error}."
+    },
+    "missingParameters": {
+      "title": "Esta página foi aberta sem um resultado de login",
+      "body": "Recomece a partir das configurações de recibos por e-mail e use um dos botões Conectar."
+    },
+    "failed": {
+      "title": "Não foi possível conectar a caixa de e-mail",
+      "fallback": "O servidor recusou a conexão. Recomece a partir das configurações de recibos por e-mail."
+    },
+    "backLink": "Voltar às configurações de recibos por e-mail"
+  },
+  "recognize": {
+    "title": "Reconhecer com IA",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "sem beneficiário",
+    "confirmMessage": "Este e-mail está vinculado à transação {summary}. A IA vai ler o e-mail e propor como dividir esta transação por produto. Continuar com esta transação?",
+    "confirm": "Reconhecer com IA",
+    "chooseOther": "Escolher outra transação",
+    "candidatesHeading": "Que transação o e-mail pagou?",
+    "candidatesHelp": "Várias transações correspondem a este e-mail. Escolha aquela que a IA deve usar ou pesquise outra.",
+    "candidatesLoading": "Carregando as transações correspondentes",
+    "candidatesError": "Não foi possível carregar as transações correspondentes.",
+    "retry": "Tentar novamente",
+    "useButton": "Usar esta transação",
+    "searchOther": "Pesquisar outras transações",
+    "back": "Voltar",
+    "failed": "Não foi possível iniciar o reconhecimento",
+    "queued": "Na fila: no momento não há nenhum assistente de IA disponível para responder, então a solicitação aguarda na caixa de revisão de IA por um agente (por exemplo, via MCP).",
+    "handoffFailed": "A solicitação está na fila, mas não foi possível abrir o e-mail no chat. Ela aguarda na caixa de revisão de IA por um agente (por exemplo, via MCP).",
+    "inboxLink": "Abrir a caixa de revisão de IA",
+    "opened": "O chat foi aberto com o e-mail anexado. Leia a mensagem e clique em Enviar.",
+    "chatPrompt": "Reconheça os produtos, as quantidades e os preços no e-mail de pedido anexado e divida minha transação de {date} ({payee}, {amount}) por produto, com uma categoria para cada um. Assuma a solicitação de revisão de IA {requestId} e envie sua proposta para ela."
+  }
+}

@@ -32,9 +32,13 @@
     "transactionMissing": "Deze transactie bestaat niet meer",
     "rule": "Regel: {name}",
     "manualRequest": "Handmatig aangevraagd",
+    "emailReceipt": "E-mailbon: {subject} van {sender}",
+    "emailReceiptMissing": "E-mailbon (de e-mail is verwijderd)",
+    "viewEmailReceipts": "E-mailbonnen bekijken",
     "agentNote": "Opmerking van de assistent: {reason}",
     "dates": "Aangemaakt op {created}, verloopt op {expires}",
-    "viewTransaction": "Transactie bekijken"
+    "viewTransaction": "Transactie bekijken",
+    "waitingForAgent": "Wacht op een AI-agent. <link>Koppel een AI-provider in de Instellingen</link> of laat een MCP-client het verzoek oppakken."
   },
   "actions": {
     "dismiss": "Negeren"

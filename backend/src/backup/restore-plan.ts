@@ -100,6 +100,14 @@ export const RESTORE_PLAN: ReadonlyArray<RestoreStep> = [
     scopeToUser: true,
   },
   {
+    // After `payees`, which it references (nullable, ON DELETE SET NULL). The
+    // category ids a definition names are inside its JSONB, rewritten by the
+    // restore's id remap.
+    table: "email_receipt_parsers",
+    countKey: "emailReceiptParsers",
+    scopeToUser: true,
+  },
+  {
     table: "scheduled_transactions",
     countKey: "scheduledTransactions",
     scopeToUser: true,

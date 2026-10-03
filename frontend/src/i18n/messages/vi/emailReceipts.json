@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "Quay lại Cài đặt",
+    "title": "Hóa đơn qua email",
+    "subtitle": "Đọc email xác nhận đơn hàng từ một hộp thư và chuyển thành các giao dịch có chi tiết từng mục",
+    "receiptsLink": "Mở các email đã lưu",
+    "demoRestricted": {
+      "heading": "Bị hạn chế trong chế độ demo",
+      "body": "Việc kết nối hộp thư bị tắt trong chế độ demo."
+    }
+  },
+  "page": {
+    "title": "Hóa đơn qua email",
+    "subtitle": "Các email xác nhận đơn hàng được đọc từ hộp thư của bạn, và kết quả xử lý của từng email"
+  },
+  "mailbox": {
+    "heading": "Hộp thư",
+    "description": "Email xác nhận đơn hàng được đọc từ một hộp thư riêng qua IMAP. Monize chỉ đọc: không bao giờ thay đổi, di chuyển hay xóa bất kỳ thư nào.",
+    "loading": "Đang tải hộp thư",
+    "dedicatedWarning": "Hãy dùng một hộp thư riêng. Mọi thư trong thư mục đều được đọc, nên thư mục chỉ nên chứa email xác nhận đơn hàng.",
+    "encryptionUnavailable": "Máy chủ này không thể mã hóa thông tin bí mật, nên không thể lưu mật khẩu hay kết nối của hộp thư. Hãy nhờ quản trị viên thiết lập mã hóa.",
+    "error": {
+      "title": "Không thể tải hộp thư",
+      "body": "Yêu cầu không thành công, nên chưa biết gì về hộp thư của bạn. Hãy thử lại.",
+      "retry": "Thử lại"
+    },
+    "oauth": {
+      "heading": "Kết nối tài khoản",
+      "explanation": "Google và Microsoft 365 thường từ chối mật khẩu thông thường. Thay vào đó, hãy đăng nhập qua nhà cung cấp: bạn cấp cho Monize quyền truy cập hộp thư và không cần nhập mật khẩu của nó ở đây.",
+      "connect": {
+        "google": "Kết nối với Google",
+        "microsoft": "Kết nối với Microsoft"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "Không thể kiểm tra xem đăng nhập Google hoặc Microsoft có khả dụng hay không. Biểu mẫu thủ công bên dưới vẫn dùng được.",
+      "startFailed": "Không thể bắt đầu đăng nhập",
+      "badAuthorizationUrl": "Máy chủ trả về một địa chỉ đăng nhập không phải trang web an toàn, nên không được mở.",
+      "connectedAs": "Đã kết nối với {provider} bằng tài khoản {username}.",
+      "notConnected": "Kết nối với {provider} không còn hoạt động, nên hộp thư không được đọc. Hãy kết nối lại để tiếp tục.",
+      "reconnect": "Kết nối lại",
+      "disconnect": "Ngắt kết nối",
+      "disconnectDialog": {
+        "title": "Ngắt kết nối hộp thư?",
+        "message": "Monize sẽ xóa quyền truy cập đã lưu vào {provider} và ngừng đọc hộp thư. Các email đã lưu được giữ lại."
+      },
+      "disconnected": "Đã ngắt kết nối hộp thư",
+      "disconnectFailed": "Không thể ngắt kết nối hộp thư",
+      "revokeNote": "Ngắt kết nối không thu hồi quyền bạn đã cấp. Để thu hồi, hãy gỡ Monize trên trang quyền của {provider}.",
+      "revokeLink": {
+        "google": "Mở quyền của tài khoản Google",
+        "microsoft": "Mở quyền của ứng dụng Microsoft"
+      },
+      "saveButton": "Lưu cài đặt",
+      "saved": "Đã lưu cài đặt hộp thư",
+      "saveFailed": "Không thể lưu cài đặt hộp thư"
+    },
+    "form": {
+      "intro": "Hoặc nhập thông tin của một hộp thư IMAP bất kỳ. Hầu hết nhà cung cấp yêu cầu mật khẩu ứng dụng thay vì mật khẩu tài khoản.",
+      "hostLabel": "Máy chủ IMAP",
+      "portLabel": "Cổng",
+      "securityLabel": "Bảo mật kết nối",
+      "securityOptions": {
+        "tls": "TLS (thường là cổng 993)",
+        "starttls": "STARTTLS (thường là cổng 143)"
+      },
+      "usernameLabel": "Tên người dùng",
+      "passwordLabel": "Mật khẩu",
+      "passwordStoredPlaceholder": "Đã lưu một mật khẩu. Nhập để thay thế.",
+      "passwordRequiredHelp": "Bắt buộc với hộp thư mới, hoặc khi máy chủ hay tên người dùng thay đổi.",
+      "passwordKeepHelp": "Để trống để giữ mật khẩu đã lưu. Mật khẩu sẽ không được hiển thị lại.",
+      "saveButton": "Lưu hộp thư",
+      "saved": "Đã lưu hộp thư",
+      "saveFailed": "Không thể lưu hộp thư",
+      "test": {
+        "button": "Kiểm tra kết nối",
+        "ok": "{count, plural, one {Kết nối hoạt động. Thư mục có # thư.} other {Kết nối hoạt động. Thư mục có # thư.}}",
+        "error": "Kết nối không thành công: {error}",
+        "failed": "Không thể kiểm tra kết nối"
+      }
+    },
+    "settings": {
+      "folderLabel": "Thư mục",
+      "folderHelp": "Thư mục cần đọc. Thư mục được mở ở chế độ chỉ đọc.",
+      "enabledLabel": "Tự động đọc hộp thư",
+      "enabledHelp": "Khi bật, hộp thư được kiểm tra mỗi 15 phút. Bạn luôn có thể dùng Kiểm tra ngay.",
+      "aiModeLabel": "Chế độ AI",
+      "aiModeHelp": "Có cho phép dùng nhà cung cấp AI bạn đã cấu hình cho các hóa đơn hay không. Câu trả lời của AI luôn là một đề xuất hoặc bản nháp để bạn phê duyệt.",
+      "aiModes": {
+        "off": "Tắt",
+        "on_demand": "Theo yêu cầu",
+        "automatic": "Tự động"
+      },
+      "aiModeDescriptions": {
+        "off": "Không bao giờ gọi AI cho các hóa đơn.",
+        "on_demand": "Chỉ gọi AI khi bạn nhấn Nhận dạng bằng AI hoặc Nhờ AI soạn trình phân tích.",
+        "automatic": "Mỗi lần kiểm tra sẽ hỏi AI về hóa đơn đã khớp mà không trình phân tích nào đã duyệt đọc được đầy đủ, và soạn trình phân tích cho người gửi chưa có."
+      },
+      "autoApplyLabel": "Tự động áp dụng đề xuất",
+      "autoApplyHelp": "Mặc định là tắt. Một đề xuất chỉ được áp dụng mà không hỏi khi thỏa mãn tất cả điều sau: một trình phân tích đã duyệt đọc được toàn bộ email, giao dịch được tìm thấy theo mã đơn hàng hoặc theo đúng số tiền và người nhận với duy nhất một ứng viên, và đề xuất khớp tổng đến đơn vị tiền tệ nhỏ nhất. Mọi trường hợp khác đều chờ bạn phê duyệt."
+    },
+    "status": {
+      "lastPolled": "Lần kiểm tra gần nhất",
+      "lastSuccess": "Lần kiểm tra thành công gần nhất",
+      "never": "Chưa bao giờ",
+      "lastError": "Lỗi gần nhất: {error}",
+      "lastErrorAt": "Lỗi gần nhất ({at}): {error}",
+      "pollNow": "Kiểm tra ngay",
+      "pollResult": "Đã kiểm tra xong: {fetched, plural, one {đã lưu # email} other {đã lưu # email}}, bỏ qua {skipped}, đã xử lý {processed}.",
+      "pollFailed": "Kiểm tra không thành công",
+      "deleteButton": "Xóa hộp thư",
+      "deleteDialog": {
+        "title": "Xóa hộp thư?",
+        "message": "Cài đặt hộp thư và mọi email đã lưu sẽ bị xóa, và các yêu cầu xem xét đang mở từ chúng sẽ được bỏ qua. Các email trong chính hộp thư không bị động đến."
+      },
+      "deleted": "Đã xóa hộp thư",
+      "deleteFailed": "Không thể xóa hộp thư"
+    }
+  },
+  "parsers": {
+    "heading": "Trình phân tích",
+    "description": "Một trình phân tích đọc email xác nhận đơn hàng của một người gửi bằng các mẫu do bạn viết hoặc xem xét. Sau khi được duyệt, nó chạy mà không cần AI.",
+    "newButton": "Trình phân tích mới",
+    "loading": "Đang tải các trình phân tích",
+    "error": {
+      "title": "Không thể tải các trình phân tích",
+      "body": "Yêu cầu không thành công. Hãy thử lại.",
+      "retry": "Thử lại"
+    },
+    "empty": {
+      "title": "Chưa có trình phân tích nào",
+      "body": "Hãy tạo một trình phân tích cho người gửi email xác nhận đơn hàng, hoặc soạn từ một email đã lưu trên trang Hóa đơn qua email."
+    },
+    "columns": {
+      "name": "Trình phân tích",
+      "status": "Trạng thái",
+      "payee": "Người nhận",
+      "actions": "Thao tác"
+    },
+    "status": {
+      "draft": "Bản nháp",
+      "approved": "Đã duyệt"
+    },
+    "source": {
+      "manual": "Do bạn viết",
+      "ai": "AI soạn"
+    },
+    "invalid": "Không hợp lệ",
+    "noPayee": "Không có người nhận",
+    "payeeUnknown": "Không tìm thấy người nhận",
+    "payeeUnavailable": "Danh sách người nhận không khả dụng",
+    "actions": {
+      "approve": "Duyệt"
+    },
+    "toasts": {
+      "approved": "Đã duyệt trình phân tích",
+      "approveFailed": "Không thể duyệt trình phân tích",
+      "changedElsewhere": "Trình phân tích này đã được thay đổi ở nơi khác. Danh sách đã được tải lại.",
+      "deleted": "Đã xóa trình phân tích",
+      "deleteFailed": "Không thể xóa trình phân tích"
+    },
+    "deleteDialog": {
+      "title": "Xóa trình phân tích?",
+      "message": "Trình phân tích {name} sẽ bị xóa. Các email nó đã đọc vẫn giữ kết quả."
+    }
+  },
+  "editor": {
+    "createTitle": "Trình phân tích mới",
+    "editTitle": "Sửa trình phân tích",
+    "loading": "Đang tải người nhận và danh mục",
+    "lookupsError": {
+      "title": "Không thể tải người nhận và danh mục",
+      "body": "Các bộ chọn cần chúng, nên chưa thể mở trình soạn thảo. Hãy thử lại.",
+      "retry": "Thử lại"
+    },
+    "draftNote": "Trình phân tích này là bản nháp. Nó không đọc gì cho đến khi bạn duyệt.",
+    "draftAiNote": "AI đã soạn trình phân tích này từ một email mẫu. Hãy đối chiếu từng mẫu với các email của bạn, rồi duyệt nó từ danh sách. Nó không đọc gì cho đến khi bạn duyệt.",
+    "identityHeading": "Các email nó đọc",
+    "nameLabel": "Tên",
+    "payeeLabel": "Người nhận",
+    "payeePlaceholder": "Không có người nhận",
+    "domainsLabel": "Tên miền người gửi",
+    "domainsHelp": "Mỗi dòng một tên miền, tối đa {max}. Tên miền phụ của một tên miền trong danh sách cũng khớp.",
+    "subjectLabel": "Tiêu đề chứa",
+    "subjectHelp": "Không bắt buộc, mỗi dòng một cụm, tối đa {max}. Tiêu đề phải chứa ít nhất một trong số đó, không phân biệt hoa thường.",
+    "saveButton": "Lưu trình phân tích",
+    "created": "Đã tạo trình phân tích",
+    "updated": "Đã lưu trình phân tích",
+    "saveFailed": "Không thể lưu trình phân tích",
+    "conflict": "Trình phân tích này đã được thay đổi ở nơi khác kể từ khi bạn mở. Hãy tải lại để xem phiên bản hiện tại. Các chỉnh sửa của bạn ở đây chưa được lưu.",
+    "conflictReload": "Tải lại trình phân tích",
+    "patterns": {
+      "globHelp": "Mỗi mẫu được so khớp với toàn bộ một dòng của email, không phân biệt hoa thường. Dùng {star} cho văn bản bất kỳ và một tên đặt trong dấu ngoặc nhọn, chẳng hạn {capture}, để lấy một giá trị. Mỗi trường nhận tối đa {max} mẫu, mỗi dòng một mẫu.",
+      "orderIdLabel": "Mẫu mã đơn hàng",
+      "orderIdHint": "Phải lấy {capture}. Ví dụ: Mã đơn hàng: {capture}",
+      "totalLabel": "Mẫu tổng cộng",
+      "amountHint": "Phải lấy {capture}. Ví dụ: Tổng đơn hàng {capture}",
+      "shippingLabel": "Mẫu phí vận chuyển",
+      "discountLabel": "Mẫu giảm giá",
+      "itemsHeading": "Các dòng mục hàng",
+      "startAfterLabel": "Các mục bắt đầu sau",
+      "startAfterHint": "Không bắt buộc. Các mục được đọc từ dòng sau dòng đầu tiên chứa văn bản này.",
+      "stopAtLabel": "Các mục dừng tại",
+      "stopAtHint": "Không bắt buộc. Các mục kết thúc trước dòng đầu tiên chứa văn bản này.",
+      "itemPatternsLabel": "Mẫu mục hàng",
+      "itemPatternsHint": "Phải lấy {name} và một trong hai: {amount} (tổng của dòng) hoặc {price} (đơn giá, có thể kèm {qty}), không được lấy cả hai. Ví dụ: {name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "Quy tắc danh mục",
+      "rulesHelp": "Quy tắc đầu tiên có mẫu khớp với tên một mục hàng sẽ đặt danh mục cho mục đó. Các mẫu dùng cùng cú pháp, ví dụ {example}. Tối đa {max} quy tắc.",
+      "noRules": "Chưa có quy tắc danh mục. Mọi mục hàng đều dùng danh mục mặc định.",
+      "rulePatternLabel": "Mẫu của quy tắc {number}",
+      "ruleCategoryLabel": "Danh mục của quy tắc {number}",
+      "categoryPlaceholder": "Không có danh mục",
+      "removeRule": "Xóa quy tắc {number}",
+      "addRule": "Thêm quy tắc",
+      "ruleLimit": "Đã đạt giới hạn {max} quy tắc.",
+      "defaultLabel": "Danh mục mặc định",
+      "defaultHelp": "Dùng cho các mục hàng không khớp quy tắc nào.",
+      "shippingLabel": "Danh mục phí vận chuyển",
+      "shippingHelp": "Danh mục của dòng phí vận chuyển."
+    }
+  },
+  "problems": {
+    "heading": "Định nghĩa của trình phân tích không hợp lệ:",
+    "item": "{where}: {problem}",
+    "paths": {
+      "definition": "Định nghĩa",
+      "line": "{field}, dòng {line}",
+      "rule": "Quy tắc danh mục {rule}, {part}"
+    },
+    "fields": {
+      "orderId": "Mẫu mã đơn hàng",
+      "total": "Mẫu tổng cộng",
+      "shipping": "Mẫu phí vận chuyển",
+      "discount": "Mẫu giảm giá",
+      "itemPatterns": "Mẫu mục hàng",
+      "startAfter": "Các mục bắt đầu sau",
+      "stopAt": "Các mục dừng tại",
+      "items": "Các dòng mục hàng",
+      "categoryRules": "Quy tắc danh mục",
+      "rulePattern": "mẫu",
+      "ruleCategory": "danh mục",
+      "defaultCategory": "Danh mục mặc định",
+      "shippingCategory": "Danh mục phí vận chuyển"
+    },
+    "codes": {
+      "not_object": "không phải là một định nghĩa hợp lệ",
+      "unknown_key": "không phải thứ một trình phân tích có thể có",
+      "invalid_version": "là phiên bản mà máy chủ này không đọc được",
+      "invalid_type": "có kiểu giá trị không đúng",
+      "empty": "không được để trống",
+      "too_many": "có quá nhiều mục (tối đa {max})",
+      "too_long": "quá dài (tối đa {max} ký tự)",
+      "control_character": "chứa ký tự điều khiển",
+      "malformed_capture": "có một phần lấy giá trị trong dấu ngoặc nhọn không hợp lệ",
+      "too_many_captures": "có quá nhiều phần lấy giá trị",
+      "duplicate_capture": "dùng cùng một tên lấy giá trị hai lần",
+      "capture_not_allowed": "dùng một tên lấy giá trị mà trường này không chấp nhận",
+      "capture_missing": "thiếu một phần lấy giá trị mà trường này cần",
+      "capture_conflict": "lấy cả tổng của dòng lẫn đơn giá. Hãy chỉ dùng một trong hai.",
+      "invalid_uuid": "không phải là một danh mục hợp lệ"
+    }
+  },
+  "test": {
+    "heading": "Kiểm thử với một email đã lưu",
+    "help": "Đọc một email đã lưu bằng các mẫu ở trên, dù đã lưu hay chưa, và cho thấy những gì sẽ tìm được và giao dịch nào sẽ khớp. Không có gì được ghi.",
+    "loadFailed": "Không thể tải các email đã lưu, nên chưa có gì để kiểm thử.",
+    "noReceipts": "Chưa có email nào được lưu. Hãy kiểm tra hộp thư trước.",
+    "receiptLabel": "Email",
+    "choosePlaceholder": "Chọn một email",
+    "receiptOption": "{subject} từ {sender} ({date})",
+    "button": "Kiểm thử",
+    "failed": "Kiểm thử không thành công",
+    "matchHeading": "Giao dịch khớp",
+    "matched": "Sẽ liên kết giao dịch ngày {date} với số tiền {amount} ({payee}), tìm thấy theo {how}.",
+    "matchKinds": {
+      "order_id": "mã đơn hàng",
+      "amount_payee": "số tiền và người nhận",
+      "amount_only": "số tiền",
+      "manual": "lựa chọn của bạn"
+    },
+    "noPayee": "không có người nhận",
+    "ambiguous": "{count, plural, one {# giao dịch} other {# giao dịch}} đều khớp như nhau, nên sẽ không liên kết giao dịch nào cho đến khi bạn chọn.",
+    "unmatched": "Không có giao dịch nào khớp, trong số {count, plural, one {# ứng viên} other {# ứng viên}}."
+  },
+  "parsed": {
+    "notFound": "Không tìm thấy",
+    "noCategory": "Không có danh mục",
+    "unknownCategory": "Danh mục không xác định",
+    "categoryUnavailable": "Danh mục chưa được tải",
+    "noItems": "Không đọc được dòng mục hàng nào.",
+    "orderId": "Mã đơn hàng",
+    "total": "Tổng cộng",
+    "shipping": "Phí vận chuyển",
+    "discount": "Giảm giá",
+    "columns": {
+      "item": "Mục hàng",
+      "qty": "SL",
+      "amount": "Số tiền",
+      "category": "Danh mục"
+    },
+    "complete": "Đã đọc đầy đủ",
+    "incomplete": "Chưa đọc đầy đủ",
+    "reasons": {
+      "no_total": "Email không ghi tổng cộng.",
+      "no_items": "Không tìm thấy dòng mục hàng nào.",
+      "items_unbalanced": "Các dòng mục hàng không cộng lại đúng bằng tổng cộng.",
+      "items_uncategorized": "Một số dòng mục hàng chưa có danh mục.",
+      "shipping_uncategorized": "Dòng phí vận chuyển chưa có danh mục."
+    },
+    "readByAi": "AI đã đọc"
+  },
+  "state": {
+    "pending": "Đang chờ đọc",
+    "skipped": "Đã bỏ qua",
+    "no_parser": "Chưa có trình phân tích",
+    "parse_failed": "Không đọc được",
+    "unmatched": "Không tìm thấy giao dịch",
+    "ambiguous": "Nhiều giao dịch phù hợp",
+    "review_conflict": "Đang có yêu cầu khác mở",
+    "ignored": "Đã phớt lờ",
+    "proposed": "Đang chờ phê duyệt",
+    "applied": "Đã áp dụng",
+    "dismissed": "Đã bỏ qua yêu cầu",
+    "expired": "Đã hết hạn",
+    "pending_ai": "Đang chờ AI",
+    "request_missing": "Thiếu yêu cầu"
+  },
+  "receipts": {
+    "loading": "Đang tải các email",
+    "links": {
+      "reviewInbox": "Mở hộp thư xem xét của AI",
+      "settings": "Cài đặt hộp thư và trình phân tích"
+    },
+    "filter": {
+      "label": "Lọc theo trạng thái",
+      "all": "Tất cả",
+      "pending": "Đang chờ đọc",
+      "skipped": "Đã bỏ qua",
+      "no_parser": "Chưa có trình phân tích",
+      "parse_failed": "Không đọc được",
+      "unmatched": "Không tìm thấy giao dịch",
+      "ambiguous": "Nhiều giao dịch phù hợp",
+      "review_conflict": "Đang có yêu cầu khác mở",
+      "review": "Đang xem xét",
+      "ignored": "Đã phớt lờ"
+    },
+    "columns": {
+      "received": "Nhận lúc",
+      "email": "Email",
+      "transaction": "Giao dịch",
+      "state": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "không có người nhận",
+    "noTransaction": "Chưa có",
+    "error": {
+      "title": "Không thể tải các email",
+      "body": "Yêu cầu không thành công, nên chưa biết gì về các email của bạn. Hãy thử lại.",
+      "retry": "Thử lại"
+    },
+    "empty": {
+      "title": "Không có email",
+      "body": "Email xác nhận đơn hàng sẽ xuất hiện ở đây sau khi hộp thư được đọc.",
+      "filteredTitle": "Không có email ở trạng thái này",
+      "filteredBody": "Hãy chọn trạng thái khác để xem phần còn lại.",
+      "noMailboxBody": "Chưa kết nối hộp thư nào. Hãy kết nối một hộp thư để bắt đầu đọc email xác nhận đơn hàng.",
+      "connectButton": "Kết nối hộp thư"
+    },
+    "actions": {
+      "view": "Xem",
+      "reprocess": "Xử lý lại",
+      "link": "Chọn giao dịch",
+      "recognizeAi": "Nhận dạng bằng AI",
+      "draftParser": "Nhờ AI soạn trình phân tích",
+      "createParser": "Tạo trình phân tích",
+      "ignore": "Phớt lờ"
+    },
+    "toasts": {
+      "reprocessed": "Đã xử lý lại email",
+      "reprocessFailed": "Không thể xử lý lại email",
+      "draftFailed": "Không thể soạn trình phân tích",
+      "ignored": "Đã phớt lờ email",
+      "ignoreFailed": "Không thể phớt lờ email",
+      "deleted": "Đã xóa email",
+      "deleteFailed": "Không thể xóa email"
+    },
+    "notices": {
+      "draftCreated": "AI đã soạn trình phân tích {name}. Nó không đọc gì cho đến khi bạn xem xét và duyệt.",
+      "draftLink": "Xem xét trong cài đặt trình phân tích"
+    },
+    "ignoreDialog": {
+      "title": "Phớt lờ email này?",
+      "message": "Email {subject} sẽ không đề xuất gì, và yêu cầu xem xét đang mở của nó sẽ được bỏ qua.",
+      "confirm": "Phớt lờ"
+    },
+    "deleteDialog": {
+      "title": "Xóa email này?",
+      "message": "Email đã lưu {subject} sẽ bị xóa và yêu cầu xem xét đang mở của nó sẽ được bỏ qua. Thư trong hộp thư không bị động đến, và lần kiểm tra sau sẽ không lấy lại nó."
+    }
+  },
+  "detail": {
+    "title": "Hóa đơn qua email",
+    "loading": "Đang tải email",
+    "error": {
+      "title": "Không thể tải email",
+      "body": "Yêu cầu không thành công. Hãy thử lại.",
+      "retry": "Thử lại"
+    },
+    "from": "Từ",
+    "received": "Nhận lúc",
+    "subject": "Tiêu đề",
+    "state": "Trạng thái",
+    "parser": "Trình phân tích",
+    "noParser": "Không có",
+    "matchedBy": "Khớp theo",
+    "matchKinds": {
+      "order_id": "Mã đơn hàng",
+      "amount_payee": "Số tiền và người nhận",
+      "amount_only": "Số tiền",
+      "manual": "Lựa chọn của bạn"
+    },
+    "transaction": "Giao dịch",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "không có người nhận",
+    "viewTransaction": "Xem giao dịch",
+    "noTransaction": "Chưa có",
+    "reasons": {
+      "too_large": "Email lớn hơn giới hạn dung lượng, nên được lưu mà không đọc.",
+      "undecodable": "Không thể giải mã email, nên được lưu mà không đọc.",
+      "draft_failed": "AI không thể soạn trình phân tích cho người gửi này.",
+      "parser_invalid": "Trình phân tích của người gửi này không hợp lệ. Hãy sửa nó trong cài đặt trình phân tích.",
+      "no_total": "Trình phân tích không tìm thấy tổng cộng trong email này.",
+      "no_items": "Trình phân tích không tìm thấy dòng mục hàng nào.",
+      "items_unbalanced": "Các dòng mục hàng không cộng lại đúng bằng tổng cộng.",
+      "items_uncategorized": "Một số dòng mục hàng chưa có danh mục.",
+      "shipping_uncategorized": "Dòng phí vận chuyển chưa có danh mục.",
+      "amount_differs": "Tổng cộng đọc được khác với số tiền của giao dịch, nên chỉ đề xuất một mô tả.",
+      "proposal_fallback": "Đề xuất chi tiết từng mục bị từ chối, nên chỉ đề xuất một mô tả.",
+      "nothing_to_propose": "Email này không bổ sung gì cho giao dịch này.",
+      "proposal_refused": "Đề xuất bị từ chối, nên không có gì được đề xuất."
+    },
+    "reasonUnknown": "Lý do: {reason}",
+    "requestNote": "Yêu cầu xem xét ({state}): {note}",
+    "parsedHeading": "Những gì trình phân tích đã đọc",
+    "notParsed": "Chưa đọc được gì từ email này.",
+    "candidatesHeading": "Các giao dịch phù hợp",
+    "candidatesHelp": "Nhiều giao dịch phù hợp với email này như nhau. Hãy chọn giao dịch mà nó đã thanh toán.",
+    "linkButton": "Liên kết với giao dịch này",
+    "linked": "Đã liên kết email với giao dịch",
+    "linkFailed": "Không thể liên kết email",
+    "textHeading": "Nội dung email",
+    "textLabel": "Nội dung của email",
+    "noText": "Email không có nội dung."
+  },
+  "picker": {
+    "heading": "Chọn giao dịch",
+    "help": "Không có giao dịch nào được khớp tự động. Đây là các giao dịch của bạn từ {from} đến {to}, những ngày quanh thời điểm email. Hãy chọn giao dịch mà nó đã thanh toán.",
+    "searchLabel": "Tìm kiếm",
+    "searchPlaceholder": "Người nhận, mô tả hoặc số tiền",
+    "searchButton": "Tìm kiếm",
+    "loading": "Đang tải các giao dịch",
+    "error": "Không thể tải các giao dịch.",
+    "retry": "Thử lại",
+    "empty": "Bạn không có giao dịch nào trong khoảng thời gian này có thể liên kết.",
+    "emptySearch": "Không có giao dịch nào trong khoảng thời gian này khớp với tìm kiếm.",
+    "row": "{date}, {amount}, {payee}",
+    "noPayee": "không có người nhận",
+    "linkButton": "Liên kết",
+    "hasMore": "Chỉ hiển thị {count} giao dịch đầu tiên. Hãy dùng tìm kiếm để thu hẹp danh sách.",
+    "ai": {
+      "heading": "Chọn giao dịch cho AI",
+      "help": "Đây là các giao dịch của bạn từ {from} đến {to}, tức những ngày quanh thời điểm của email. Hãy chọn giao dịch mà AI nên chia theo các sản phẩm trong email.",
+      "linkButton": "Dùng giao dịch này"
+    }
+  },
+  "callback": {
+    "title": "Đang kết nối hộp thư",
+    "connecting": "Đang hoàn tất kết nối",
+    "toasts": {
+      "connected": "Đã kết nối hộp thư"
+    },
+    "success": {
+      "title": "Đã kết nối hộp thư",
+      "body": "Đã kết nối bằng tài khoản {username}. Đang quay lại cài đặt."
+    },
+    "providerError": {
+      "title": "Chưa hoàn tất đăng nhập",
+      "withDescription": "Nhà cung cấp báo: {error}. {description}",
+      "withoutDescription": "Nhà cung cấp báo: {error}."
+    },
+    "missingParameters": {
+      "title": "Trang này được mở mà không có kết quả đăng nhập",
+      "body": "Hãy bắt đầu lại từ cài đặt Hóa đơn qua email và dùng một trong các nút Kết nối."
+    },
+    "failed": {
+      "title": "Không thể kết nối hộp thư",
+      "fallback": "Máy chủ đã từ chối kết nối. Hãy bắt đầu lại từ cài đặt Hóa đơn qua email."
+    },
+    "backLink": "Quay lại cài đặt Hóa đơn qua email"
+  },
+  "recognize": {
+    "title": "Nhận dạng bằng AI",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "không có người nhận",
+    "confirmMessage": "Email này được liên kết với giao dịch {summary}. AI sẽ đọc email và đề xuất cách chia giao dịch này theo sản phẩm. Tiếp tục với giao dịch này?",
+    "confirm": "Nhận dạng bằng AI",
+    "chooseOther": "Chọn giao dịch khác",
+    "candidatesHeading": "Email đã thanh toán cho giao dịch nào?",
+    "candidatesHelp": "Có nhiều giao dịch khớp với email này. Hãy chọn giao dịch AI nên dùng, hoặc tìm một giao dịch khác.",
+    "candidatesLoading": "Đang tải các giao dịch phù hợp",
+    "candidatesError": "Không thể tải các giao dịch phù hợp.",
+    "retry": "Thử lại",
+    "useButton": "Dùng giao dịch này",
+    "searchOther": "Tìm giao dịch khác",
+    "back": "Quay lại",
+    "failed": "Không thể bắt đầu nhận dạng",
+    "queued": "Đã xếp hàng: hiện không có trợ lý AI nào để trả lời, nên yêu cầu chờ trong hộp thư xem xét của AI cho một tác nhân (ví dụ qua MCP).",
+    "handoffFailed": "Yêu cầu đã được xếp hàng, nhưng không thể mở email trong cuộc trò chuyện. Yêu cầu chờ trong hộp thư xem xét của AI cho một tác nhân (ví dụ qua MCP).",
+    "inboxLink": "Mở hộp thư xem xét của AI",
+    "opened": "Đã mở cuộc trò chuyện kèm email. Hãy đọc tin nhắn và nhấn Gửi.",
+    "chatPrompt": "Hãy nhận dạng các sản phẩm, số lượng và giá trong email đơn hàng đính kèm, rồi chia giao dịch ngày {date} của tôi ({payee}, {amount}) theo sản phẩm, mỗi sản phẩm có một danh mục. Hãy nhận yêu cầu xem xét AI {requestId} và gửi đề xuất của bạn cho yêu cầu đó."
+  }
+}

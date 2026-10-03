@@ -32,9 +32,13 @@
     "transactionMissing": "此交易已不存在",
     "rule": "規則：{name}",
     "manualRequest": "手動請求",
+    "emailReceipt": "郵件收據：來自 {sender} 的 {subject}",
+    "emailReceiptMissing": "郵件收據（該郵件已被刪除）",
+    "viewEmailReceipts": "檢視郵件收據",
     "agentNote": "助理備註：{reason}",
     "dates": "建立於 {created}，到期於 {expires}",
-    "viewTransaction": "檢視交易"
+    "viewTransaction": "檢視交易",
+    "waitingForAgent": "正在等待 AI 代理。請<link>在設定中連接 AI 提供者</link>，或讓 MCP 用戶端來認領。"
   },
   "actions": {
     "dismiss": "忽略"

@@ -34,6 +34,7 @@ const NAMESPACES = [
   "categoryDetail",
   "currencies",
   "dashboard",
+  "emailReceipts",
   "emergencyAccess",
   "import",
   "insights",

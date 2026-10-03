@@ -962,6 +962,7 @@
     "emergencyAccess": "Acil Durum Erişimi",
     "apiAccess": "API Erişimi",
     "aiSettings": "AI Ayarları",
+    "emailReceipts": "E-posta Makbuzları",
     "backupRestore": "Yedekleme ve Geri Yükleme",
     "help": "Yardım ve Destek",
     "dangerZone": "Tehlikeli Alan",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "AI Ayarları",
       "description": "AI sağlayıcılarını yapılandırın, API anahtarlarını yönetin ve kullanım istatistiklerini görüntüleyin."
+    },
+    "emailReceiptsCard": {
+      "title": "E-posta Makbuzları",
+      "description": "Sipariş onayları için bir posta kutusu bağlayın ve onları okuyan ayrıştırıcıları yönetin."
     },
     "delegateSecurityError": "Güvenlik ayarlarınız yüklenemiyor.",
     "toasts": {

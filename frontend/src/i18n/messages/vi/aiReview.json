@@ -32,9 +32,13 @@
     "transactionMissing": "Giao dịch này không còn tồn tại",
     "rule": "Quy tắc: {name}",
     "manualRequest": "Yêu cầu thủ công",
+    "emailReceipt": "Hóa đơn qua email: {subject} từ {sender}",
+    "emailReceiptMissing": "Hóa đơn qua email (email đã bị xóa)",
+    "viewEmailReceipts": "Xem hóa đơn qua email",
     "agentNote": "Ghi chú của trợ lý: {reason}",
     "dates": "Tạo ngày {created}, hết hạn ngày {expires}",
-    "viewTransaction": "Xem giao dịch"
+    "viewTransaction": "Xem giao dịch",
+    "waitingForAgent": "Đang chờ một tác nhân AI. <link>Kết nối nhà cung cấp AI trong Cài đặt</link>, hoặc để một ứng dụng khách MCP nhận yêu cầu."
   },
   "actions": {
     "dismiss": "Bỏ qua"

@@ -45,6 +45,7 @@ export const RESTORE_REFERENCE_COLUMNS: Readonly<
   categories: { parent_id: "categories" },
   payees: { default_category_id: "categories" },
   payee_aliases: { payee_id: "payees" },
+  email_receipt_parsers: { payee_id: "payees" },
   accounts: {
     linked_account_id: "accounts",
     source_account_id: "accounts",

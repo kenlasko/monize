@@ -962,6 +962,7 @@
     "emergencyAccess": "Dostęp awaryjny",
     "apiAccess": "Dostęp do API",
     "aiSettings": "Ustawienia AI",
+    "emailReceipts": "Paragony z e-maili",
     "backupRestore": "Kopia zapasowa i przywracanie",
     "help": "Pomoc i wsparcie",
     "dangerZone": "Strefa zagrożenia",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "Ustawienia AI",
       "description": "Skonfiguruj dostawców AI, zarządzaj kluczami API i przeglądaj statystyki użycia."
+    },
+    "emailReceiptsCard": {
+      "title": "Paragony z e-maili",
+      "description": "Połącz skrzynkę pocztową z potwierdzeniami zamówień i zarządzaj parserami, które je odczytują."
     },
     "delegateSecurityError": "Nie można wczytać Twoich ustawień bezpieczeństwa.",
     "toasts": {

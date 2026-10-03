@@ -32,9 +32,13 @@
     "transactionMissing": "यह लेन-देन अब मौजूद नहीं है",
     "rule": "नियम: {name}",
     "manualRequest": "मैन्युअल रूप से अनुरोध किया गया",
+    "emailReceipt": "ईमेल रसीद: {subject}, प्रेषक {sender}",
+    "emailReceiptMissing": "ईमेल रसीद (ईमेल हटा दिया गया)",
+    "viewEmailReceipts": "ईमेल रसीदें देखें",
     "agentNote": "सहायक का नोट: {reason}",
     "dates": "बनाया गया {created}, समाप्ति {expires}",
-    "viewTransaction": "लेन-देन देखें"
+    "viewTransaction": "लेन-देन देखें",
+    "waitingForAgent": "AI एजेंट की प्रतीक्षा है। <link>सेटिंग में AI प्रदाता जोड़ें</link>, या किसी MCP क्लाइंट को इसे अपने हाथ में लेने दें।"
   },
   "actions": {
     "dismiss": "ख़ारिज करें"

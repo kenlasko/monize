@@ -1,12 +1,13 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ChatInterface } from '@/components/ai/ChatInterface';
 import { useAuthStore } from '@/store/authStore';
+import { discardChatHandoff, peekChatHandoff } from '@/lib/ai-chat-handoff';
 import { discardSharedBundle, readSharedBundle } from '@/lib/share-inbox';
 import { isShareBundleId } from '@/lib/share-target';
 import { createLogger } from '@/lib/logger';
@@ -64,6 +65,33 @@ function useSharedFilesHandoff(): {
   return { files, onStaged };
 }
 
+/**
+ * Pick up what a screen of this app parked for the chat (`/ai?handoff=<id>`,
+ * `lib/ai-chat-handoff.ts`): the receipts page's order email as a text file and
+ * the message that asks the assistant about it. The entry is read here and
+ * discarded once the composer holds the files, as the share hand-off is.
+ * Nothing is asked of the assistant: the files and the text land STAGED on the
+ * composer and the user still presses send (INV-SHARE-002's contract).
+ */
+function useChatHandoff(): {
+  id: string | null;
+  files: File[] | undefined;
+  draft: string | undefined;
+  onStaged: () => void;
+} {
+  const searchParams = useSearchParams();
+  const id = searchParams?.get('handoff') ?? null;
+  // A pure read of module state: safe to repeat (StrictMode), unlike a take.
+  const handoff = useMemo(() => peekChatHandoff(id), [id]);
+  const onStaged = useCallback(() => discardChatHandoff(id), [id]);
+  return {
+    id: handoff ? id : null,
+    files: handoff?.files,
+    draft: handoff?.draft,
+    onStaged,
+  };
+}
+
 export default function AiPage() {
   return (
     <ProtectedRoute>
@@ -76,16 +104,31 @@ export default function AiPage() {
 }
 
 function AiChatPageWithShare() {
-  const { files, onStaged } = useSharedFilesHandoff();
-  return <AiChatPage initialFiles={files} onInitialFilesStaged={onStaged} />;
+  const shared = useSharedFilesHandoff();
+  const handoff = useChatHandoff();
+  const files = handoff.files ?? shared.files;
+  const onStaged = handoff.files ? handoff.onStaged : shared.onStaged;
+  return (
+    <AiChatPage
+      initialFiles={files}
+      onInitialFilesStaged={onStaged}
+      initialDraft={handoff.draft}
+      chatKey={handoff.id ?? undefined}
+    />
+  );
 }
 
 function AiChatPage({
   initialFiles,
   onInitialFilesStaged,
+  initialDraft,
+  chatKey,
 }: {
   initialFiles?: File[];
   onInitialFilesStaged?: () => void;
+  initialDraft?: string;
+  /** A new hand-off remounts the chat, so its draft and files are staged afresh. */
+  chatKey?: string;
 } = {}) {
   const t = useTranslations('ai');
   return (
@@ -106,8 +149,10 @@ function AiChatPage({
         />
         <div className="flex min-h-0 flex-1 flex-col w-full max-w-4xl mx-auto">
           <ChatInterface
+            key={chatKey}
             initialFiles={initialFiles}
             onInitialFilesStaged={onInitialFilesStaged}
+            initialDraft={initialDraft}
           />
         </div>
       </main>

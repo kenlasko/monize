@@ -962,6 +962,7 @@
     "emergencyAccess": "Truy cập khẩn cấp",
     "apiAccess": "Truy cập API",
     "aiSettings": "Cài đặt AI",
+    "emailReceipts": "Hóa đơn qua email",
     "backupRestore": "Sao lưu & Khôi phục",
     "help": "Trợ giúp & Hỗ trợ",
     "dangerZone": "Khu vực nguy hiểm",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "Cài đặt AI",
       "description": "Cấu hình nhà cung cấp AI, quản lý khóa API và xem số liệu thống kê sử dụng."
+    },
+    "emailReceiptsCard": {
+      "title": "Hóa đơn qua email",
+      "description": "Kết nối một hộp thư cho email xác nhận đơn hàng và quản lý các trình phân tích đọc chúng."
     },
     "delegateSecurityError": "Không thể tải cài đặt bảo mật của bạn.",
     "toasts": {

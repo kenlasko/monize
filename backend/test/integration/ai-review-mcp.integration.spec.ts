@@ -170,6 +170,8 @@ describe("AI review requests over MCP (integration)", () => {
     await cleanTables(db, [
       "single_use_tokens",
       "ai_review_requests",
+      "email_receipts",
+      "email_receipt_mailboxes",
       "transaction_rule_applications",
       "transaction_rules",
       "action_history",
@@ -440,6 +442,130 @@ describe("AI review requests over MCP (integration)", () => {
         status: "claimed",
         claimed_by: AGENT_1,
       });
+    });
+  });
+  describe("a request raised for an email receipt", () => {
+    const seedEmail = async (
+      userId: string,
+      text = "Books 30.00\nToys 20.00",
+    ) => {
+      const [mailbox] = await db.query(
+        `INSERT INTO email_receipt_mailboxes (user_id, host, username, password_enc)
+         VALUES ($1, 'imap.example.com', 'r@example.com', 'ciphertext') RETURNING id`,
+        [userId],
+      );
+      const [receipt] = await db.query(
+        `INSERT INTO email_receipts
+           (user_id, mailbox_id, uid_validity, uid, from_address, from_domain, subject, received_at, body_text)
+         VALUES ($1, $2, 1, 1, 'orders@shop.example.com', 'shop.example.com', 'Order 123', '2026-03-10T08:00:00Z', $3)
+         RETURNING id`,
+        [userId, mailbox.id, text],
+      );
+      return receipt.id as string;
+    };
+    const plainTx = async () =>
+      (
+        await asAlice(() =>
+          transactions.create(aliceId, {
+            accountId,
+            transactionDate: "2026-03-10",
+            amount: -50,
+            currencyCode: "USD",
+            payeeName: "SHOP ORDER",
+          } as never),
+        )
+      ).id;
+
+    it("is claimed with its email, proposed through the same submit, and applied by the same confirm", async () => {
+      const txId = await plainTx();
+      const emailId = await seedEmail(aliceId);
+      const created = await asAlice(() =>
+        withScopedDb(harness.app, (m) =>
+          queue.enqueuePendingForReceipt(m, aliceId, {
+            transactionId: txId,
+            emailReceiptId: emailId,
+            instruction: "Enrich this purchase from its order email",
+          }),
+        ),
+      );
+
+      const claim = await asAlice(() => work.claim(aliceId, AGENT_1));
+
+      expect(claim.request).toMatchObject({
+        id: created!.id,
+        kind: "email_receipt",
+        emailReceiptId: emailId,
+        ruleId: null,
+      });
+      expect(claim.emailReceipt).toEqual({
+        fromAddress: "orders@shop.example.com",
+        subject: "Order 123",
+        receivedAt: "2026-03-10T08:00:00.000Z",
+        text: "Books 30.00\nToys 20.00",
+      });
+      expect(claim.transaction?.[0]).toMatchObject({ id: txId, amount: -50 });
+
+      const submitted = await asAlice(() =>
+        work.submit(aliceId, AGENT_1, created!.id, { splits: lines }),
+      );
+      expect(submitted.request.status).toBe("proposed");
+      const [item] = await asAlice(() => work.listInbox(aliceId));
+      expect(item).toMatchObject({
+        kind: "email_receipt",
+        ruleName: null,
+        emailReceipt: {
+          id: emailId,
+          fromAddress: "orders@shop.example.com",
+          subject: "Order 123",
+        },
+      });
+
+      await asAlice(() =>
+        actions.confirm(aliceId, confirmDto(submitted.action)),
+      );
+      expect((await requestRow(created!.id)).status).toBe("applied");
+      expect(await splitCount(txId)).toBe(2);
+    });
+
+    it("cuts the email text to 20000 characters in a claim", async () => {
+      const txId = await plainTx();
+      const emailId = await seedEmail(aliceId, "x".repeat(50_000));
+      await asAlice(() =>
+        withScopedDb(harness.app, (m) =>
+          queue.enqueueClaimed(m, aliceId, {
+            transactionId: txId,
+            kind: "email_receipt",
+            emailReceiptId: emailId,
+            instruction: "Enrich",
+            claimedBy: "email-receipts",
+          }),
+        ),
+      );
+      await db.query(
+        `UPDATE ai_review_requests SET status = 'pending', claimed_by = NULL, claimed_at = NULL`,
+      );
+
+      const claim = await asAlice(() => work.claim(aliceId, AGENT_1));
+
+      expect(claim.emailReceipt?.text).toHaveLength(20_000);
+    });
+
+    it("never hands a claim another user's email", async () => {
+      const txId = await plainTx();
+      const bobsEmail = await seedEmail(bobId);
+      // A row pointing at another user's email cannot be written through the
+      // owner's identity's policy, so it is planted as the owner connection.
+      await db.query(
+        `INSERT INTO ai_review_requests (user_id, transaction_id, kind, instruction, email_receipt_id)
+         VALUES ($1, $2, 'email_receipt', 'Enrich', $3)`,
+        [aliceId, txId, bobsEmail],
+      );
+
+      const claim = await asAlice(() => work.claim(aliceId, AGENT_1));
+
+      expect(claim.request?.kind).toBe("email_receipt");
+      expect(claim).not.toHaveProperty("emailReceipt");
+      expect(JSON.stringify(claim)).not.toContain("orders@shop.example.com");
     });
   });
 });

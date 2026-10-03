@@ -157,6 +157,7 @@ export interface BackupData {
   accounts: Record<string, unknown>[];
   tags: Record<string, unknown>[];
   transaction_rules: Record<string, unknown>[];
+  email_receipt_parsers: Record<string, unknown>[];
   transactions: Record<string, unknown>[];
   transaction_splits: Record<string, unknown>[];
   transaction_attachments: Record<string, unknown>[];

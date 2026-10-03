@@ -962,6 +962,7 @@
     "emergencyAccess": "緊急存取",
     "apiAccess": "API 存取",
     "aiSettings": "AI 設定",
+    "emailReceipts": "郵件收據",
     "backupRestore": "備份與還原",
     "help": "說明與支援",
     "dangerZone": "危險區域",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "AI 設定",
       "description": "設定 AI 提供者、管理 API 金鑰並查看使用統計。"
+    },
+    "emailReceiptsCard": {
+      "title": "郵件收據",
+      "description": "連接用於接收訂單確認郵件的信箱，並管理讀取這些郵件的解析器。"
     },
     "delegateSecurityError": "無法載入您的安全設定。",
     "toasts": {

@@ -32,9 +32,13 @@
     "transactionMissing": "이 거래는 더 이상 존재하지 않습니다",
     "rule": "규칙: {name}",
     "manualRequest": "수동으로 요청됨",
+    "emailReceipt": "이메일 영수증: {sender}의 {subject}",
+    "emailReceiptMissing": "이메일 영수증 (이메일이 삭제됨)",
+    "viewEmailReceipts": "이메일 영수증 보기",
     "agentNote": "어시스턴트의 메모: {reason}",
     "dates": "생성 {created}, 만료 {expires}",
-    "viewTransaction": "거래 보기"
+    "viewTransaction": "거래 보기",
+    "waitingForAgent": "AI 에이전트를 기다리는 중입니다. <link>설정에서 AI 제공자를 연결</link>하거나 MCP 클라이언트가 맡도록 하세요."
   },
   "actions": {
     "dismiss": "무시"

@@ -133,6 +133,11 @@ const WITH_CONTEXT_ALLOWLIST = [
   // owner-scoped mutation window, both fully decided by jointAccessFor
   // before the bypass opens (joint-accounts spec W1).
   "src/transactions/joint-register.service.ts",
+  // The receipts poll: a cron with no request behind it. The fan-out over every
+  // user's enabled mailbox is withSystemContext (it reads across users by
+  // design); each mailbox then runs under its owner's withUserContext, the
+  // per-mailbox lease included, so nothing inside it is cross-user.
+  "src/email-receipts/poll/email-receipt-poll.service.ts",
   "src/emergency-access/emergency-access-claim.controller.ts",
   "src/emergency-access/emergency-access-monitor.service.ts",
   "src/import/mny/mny-import-job.service.ts",

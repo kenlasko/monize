@@ -685,6 +685,143 @@ CREATE INDEX idx_transaction_rule_applications_rule
 CREATE INDEX idx_transaction_rule_applications_transaction
     ON transaction_rule_applications(transaction_id);
 
+-- Email receipts (docs/future-plans/email-receipts.md section 4): a user's
+-- dedicated IMAP mailbox (one per user), per-merchant parsers, and the stored
+-- emails. password_enc and oauth_refresh_token_enc are AES-256-GCM ciphertext
+-- and never returned to a client; a mailbox is a password mailbox (a password, no
+-- provider) or an oauth2 one (a provider, no password; the refresh token is
+-- absent while it is disconnected), which ck_email_receipt_mailboxes_credentials
+-- holds;
+-- uid_validity and last_uid are the poll's cursor; UNIQUE (mailbox_id,
+-- uid_validity, uid) is the ingestion idempotency. email_receipts.ai_review_request_id
+-- has no foreign key: ai_review_requests references email_receipts. Defined
+-- before ai_review_requests, whose email_receipt_id points here. The defaults on
+-- the CHECKed columns exist for the RLS spec's generic row seeder.
+CREATE TABLE email_receipt_mailboxes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    host VARCHAR(255) NOT NULL,
+    port INTEGER NOT NULL DEFAULT 993,
+    security VARCHAR(10) NOT NULL DEFAULT 'tls',
+    username VARCHAR(320) NOT NULL,
+    password_enc TEXT,
+    auth_method VARCHAR(10) NOT NULL DEFAULT 'password',
+    oauth_provider VARCHAR(12),
+    oauth_refresh_token_enc TEXT,
+    folder VARCHAR(255) NOT NULL DEFAULT 'INBOX',
+    enabled BOOLEAN NOT NULL DEFAULT false,
+    ai_mode VARCHAR(12) NOT NULL DEFAULT 'off',
+    auto_apply BOOLEAN NOT NULL DEFAULT false,
+    uid_validity BIGINT,
+    last_uid BIGINT,
+    last_polled_at TIMESTAMPTZ,
+    last_success_at TIMESTAMPTZ,
+    last_error VARCHAR(300),
+    last_error_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_email_receipt_mailboxes_user UNIQUE (user_id),
+    CONSTRAINT ck_email_receipt_mailboxes_host_length
+      CHECK (char_length(host) BETWEEN 1 AND 255),
+    CONSTRAINT ck_email_receipt_mailboxes_port
+      CHECK (port BETWEEN 1 AND 65535),
+    CONSTRAINT ck_email_receipt_mailboxes_security
+      CHECK (security IN ('tls', 'starttls')),
+    CONSTRAINT ck_email_receipt_mailboxes_ai_mode
+      CHECK (ai_mode IN ('off', 'on_demand', 'automatic')),
+    CONSTRAINT ck_email_receipt_mailboxes_auth_method
+      CHECK (auth_method IN ('password', 'oauth2')),
+    CONSTRAINT ck_email_receipt_mailboxes_oauth_provider
+      CHECK (oauth_provider IS NULL OR oauth_provider IN ('google', 'microsoft')),
+    CONSTRAINT ck_email_receipt_mailboxes_credentials
+      CHECK (
+        (auth_method = 'password'
+          AND password_enc IS NOT NULL
+          AND oauth_provider IS NULL
+          AND oauth_refresh_token_enc IS NULL)
+        OR
+        (auth_method = 'oauth2'
+          AND oauth_provider IS NOT NULL
+          AND password_enc IS NULL)
+      )
+);
+
+CREATE TABLE email_receipt_parsers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    payee_id UUID REFERENCES payees(id) ON DELETE SET NULL,
+    from_domains TEXT[] NOT NULL DEFAULT ARRAY['example.invalid']::text[],
+    subject_contains TEXT[] NOT NULL DEFAULT '{}'::text[],
+    definition JSONB NOT NULL DEFAULT '{}'::jsonb,
+    status VARCHAR(10) NOT NULL DEFAULT 'draft',
+    source VARCHAR(10) NOT NULL DEFAULT 'manual',
+    approved_at TIMESTAMPTZ,
+    revision INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_email_receipt_parsers_name_length
+      CHECK (char_length(name) BETWEEN 1 AND 100),
+    CONSTRAINT ck_email_receipt_parsers_from_domains
+      CHECK (cardinality(from_domains) BETWEEN 1 AND 10),
+    CONSTRAINT ck_email_receipt_parsers_subject_contains
+      CHECK (cardinality(subject_contains) BETWEEN 0 AND 10),
+    CONSTRAINT ck_email_receipt_parsers_status
+      CHECK (status IN ('draft', 'approved')),
+    CONSTRAINT ck_email_receipt_parsers_source
+      CHECK (source IN ('manual', 'ai')),
+    CONSTRAINT ck_email_receipt_parsers_revision CHECK (revision >= 1)
+);
+
+CREATE TABLE email_receipts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mailbox_id UUID NOT NULL REFERENCES email_receipt_mailboxes(id) ON DELETE CASCADE,
+    uid_validity BIGINT NOT NULL,
+    uid BIGINT NOT NULL,
+    message_id VARCHAR(500),
+    from_address VARCHAR(320) NOT NULL,
+    from_domain VARCHAR(255) NOT NULL,
+    subject VARCHAR(500) NOT NULL,
+    received_at TIMESTAMPTZ NOT NULL,
+    body_text TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    status_reason VARCHAR(40),
+    parser_id UUID REFERENCES email_receipt_parsers(id) ON DELETE SET NULL,
+    parsed JSONB,
+    transaction_id UUID REFERENCES transactions(id) ON DELETE SET NULL,
+    candidate_transaction_ids UUID[] NOT NULL DEFAULT '{}'::uuid[],
+    match_kind VARCHAR(20),
+    ai_review_request_id UUID,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_email_receipts_message UNIQUE (mailbox_id, uid_validity, uid),
+    CONSTRAINT ck_email_receipts_body_length
+      CHECK (char_length(body_text) <= 100000),
+    CONSTRAINT ck_email_receipts_status
+      CHECK (status IN ('pending', 'skipped', 'no_parser', 'parse_failed',
+                        'unmatched', 'ambiguous', 'review_conflict', 'review',
+                        'ignored')),
+    CONSTRAINT ck_email_receipts_match_kind
+      CHECK (match_kind IS NULL
+             OR match_kind IN ('order_id', 'amount_payee', 'amount_only', 'manual')),
+    CONSTRAINT ck_email_receipts_candidates
+      CHECK (cardinality(candidate_transaction_ids) <= 10)
+);
+
+-- The receipts page and the poll's rematch both read a user's receipts by state,
+-- newest first. The unique key above already serves the mailbox cascade.
+CREATE INDEX idx_email_receipts_user_status
+    ON email_receipts(user_id, status, received_at);
+CREATE INDEX idx_email_receipts_transaction
+    ON email_receipts(transaction_id) WHERE transaction_id IS NOT NULL;
+CREATE INDEX idx_email_receipts_parser
+    ON email_receipts(parser_id) WHERE parser_id IS NOT NULL;
+CREATE INDEX idx_email_receipt_parsers_user
+    ON email_receipt_parsers(user_id);
+CREATE INDEX idx_email_receipt_parsers_payee
+    ON email_receipt_parsers(payee_id) WHERE payee_id IS NOT NULL;
+
 -- AI review requests: the durable queue behind a rule's `request_ai_review`
 -- action (docs/future-plans/transaction-rules.md section 6.5). pending ->
 -- claimed -> proposed -> applied | rejected, expired from any open state; the
@@ -708,8 +845,9 @@ CREATE TABLE ai_review_requests (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP + INTERVAL '30 days',
+    email_receipt_id UUID REFERENCES email_receipts(id) ON DELETE SET NULL,
     CONSTRAINT ck_ai_review_requests_kind
-      CHECK (kind IN ('transaction_review')),
+      CHECK (kind IN ('transaction_review', 'email_receipt')),
     CONSTRAINT ck_ai_review_requests_instruction_length
       CHECK (char_length(instruction) BETWEEN 1 AND 1000),
     CONSTRAINT ck_ai_review_requests_status
@@ -727,6 +865,8 @@ CREATE INDEX idx_ai_review_requests_expiry
 CREATE UNIQUE INDEX uq_ai_review_requests_open
     ON ai_review_requests(transaction_id, rule_id)
     WHERE status IN ('pending', 'claimed', 'proposed');
+CREATE INDEX idx_ai_review_requests_email_receipt
+    ON ai_review_requests(email_receipt_id) WHERE email_receipt_id IS NOT NULL;
 
 -- Securities (stocks, bonds, mutual funds, ETFs)
 -- Defined before scheduled_transactions because that table (and others below)
@@ -2500,6 +2640,9 @@ CREATE INDEX idx_single_use_tokens_expiry
 CREATE TRIGGER update_tags_updated_at BEFORE UPDATE ON tags FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_transaction_rules_updated_at BEFORE UPDATE ON transaction_rules FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_ai_review_requests_updated_at BEFORE UPDATE ON ai_review_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_email_receipt_mailboxes_updated_at BEFORE UPDATE ON email_receipt_mailboxes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_email_receipt_parsers_updated_at BEFORE UPDATE ON email_receipt_parsers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_email_receipts_updated_at BEFORE UPDATE ON email_receipts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Action History (undo/redo support)
 CREATE TABLE action_history (
@@ -3057,6 +3200,9 @@ DECLARE
         'budgets',
         'calendar_day_notes',
         'custom_reports',
+        'email_receipt_mailboxes',
+        'email_receipt_parsers',
+        'email_receipts',
         'gem_strategies',
         'gem_strategy_accounts',
         'gem_strategy_assets',

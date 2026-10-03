@@ -962,6 +962,7 @@
     "emergencyAccess": "[XX-Emergency Access-XX]",
     "apiAccess": "[XX-API Access-XX]",
     "aiSettings": "[XX-AI Settings-XX]",
+    "emailReceipts": "[XX-Email Receipts-XX]",
     "backupRestore": "[XX-Backup & Restore-XX]",
     "help": "[XX-Help & Support-XX]",
     "dangerZone": "[XX-Danger Zone-XX]",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "[XX-AI Settings-XX]",
       "description": "[XX-Configure AI providers, manage API keys, and view usage statistics.-XX]"
+    },
+    "emailReceiptsCard": {
+      "title": "[XX-Email Receipts-XX]",
+      "description": "[XX-Connect a mailbox for order confirmations and manage the parsers that read them.-XX]"
     },
     "delegateSecurityError": "[XX-Unable to load your security settings.-XX]",
     "toasts": {

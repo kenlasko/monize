@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "Torna alle impostazioni",
+    "title": "Ricevute via email",
+    "subtitle": "Leggi le conferme d'ordine da una casella di posta e trasformale in transazioni dettagliate",
+    "receiptsLink": "Apri le email salvate",
+    "demoRestricted": {
+      "heading": "Limitato in modalità demo",
+      "body": "Il collegamento di una casella di posta è disattivato in modalità demo."
+    }
+  },
+  "page": {
+    "title": "Ricevute via email",
+    "subtitle": "Le email di conferma d'ordine lette dalla tua casella di posta e che cosa ne è stato di ciascuna"
+  },
+  "mailbox": {
+    "heading": "Casella di posta",
+    "description": "Le conferme d'ordine vengono lette via IMAP da una casella di posta dedicata. Monize la legge soltanto: non modifica, non sposta e non elimina mai alcun messaggio.",
+    "loading": "Caricamento della casella di posta",
+    "dedicatedWarning": "Usa una casella di posta dedicata. Ogni messaggio della cartella viene letto, quindi dovrebbe contenere solo conferme d'ordine.",
+    "encryptionUnavailable": "Questo server non può cifrare i segreti, quindi non è possibile salvare la password o la connessione di una casella di posta. Chiedi all'amministratore di configurare la cifratura.",
+    "error": {
+      "title": "Impossibile caricare la casella di posta",
+      "body": "La richiesta non è riuscita, quindi non si sa ancora nulla della tua casella di posta. Riprova.",
+      "retry": "Riprova"
+    },
+    "oauth": {
+      "heading": "Collega un account",
+      "explanation": "Google e Microsoft 365 di solito rifiutano una semplice password. Accedi invece con il provider: concedi a Monize l'accesso alla casella di posta senza digitare qui la sua password.",
+      "connect": {
+        "google": "Collega con Google",
+        "microsoft": "Collega con Microsoft"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "Non è stato possibile verificare se l'accesso con Google o Microsoft è disponibile. Il modulo manuale qui sotto funziona comunque.",
+      "startFailed": "Impossibile avviare l'accesso",
+      "badAuthorizationUrl": "Il server ha restituito un indirizzo di accesso che non è una pagina web sicura, quindi non è stato aperto.",
+      "connectedAs": "Collegato a {provider} come {username}.",
+      "notConnected": "La connessione a {provider} non è attiva, quindi la casella di posta non viene letta. Collegati di nuovo per riprendere.",
+      "reconnect": "Ricollega",
+      "disconnect": "Scollega",
+      "disconnectDialog": {
+        "title": "Scollegare la casella di posta?",
+        "message": "Monize eliminerà l'accesso salvato a {provider} e smetterà di leggere la casella di posta. Le email già salvate vengono conservate."
+      },
+      "disconnected": "Casella di posta scollegata",
+      "disconnectFailed": "Impossibile scollegare la casella di posta",
+      "revokeNote": "Scollegare non rimuove l'autorizzazione che hai concesso. Per ritirarla, rimuovi Monize dalla pagina delle autorizzazioni di {provider}.",
+      "revokeLink": {
+        "google": "Apri le autorizzazioni dell'account Google",
+        "microsoft": "Apri le autorizzazioni delle app Microsoft"
+      },
+      "saveButton": "Salva impostazioni",
+      "saved": "Impostazioni della casella di posta salvate",
+      "saveFailed": "Impossibile salvare le impostazioni della casella di posta"
+    },
+    "form": {
+      "intro": "Oppure inserisci i dati di una qualsiasi casella di posta IMAP. La maggior parte dei provider richiede una password per le app anziché la password del tuo account.",
+      "hostLabel": "Server IMAP",
+      "portLabel": "Porta",
+      "securityLabel": "Sicurezza della connessione",
+      "securityOptions": {
+        "tls": "TLS (di solito porta 993)",
+        "starttls": "STARTTLS (di solito porta 143)"
+      },
+      "usernameLabel": "Nome utente",
+      "passwordLabel": "Password",
+      "passwordStoredPlaceholder": "Una password è salvata. Digita per sostituirla.",
+      "passwordRequiredHelp": "Obbligatoria per una nuova casella di posta o quando cambiano il server o il nome utente.",
+      "passwordKeepHelp": "Lascia vuoto per mantenere la password salvata. Non viene mai più mostrata.",
+      "saveButton": "Salva casella di posta",
+      "saved": "Casella di posta salvata",
+      "saveFailed": "Impossibile salvare la casella di posta",
+      "test": {
+        "button": "Prova la connessione",
+        "ok": "{count, plural, one {La connessione funziona. La cartella contiene # messaggio.} other {La connessione funziona. La cartella contiene # messaggi.}}",
+        "error": "Connessione non riuscita: {error}",
+        "failed": "Impossibile provare la connessione"
+      }
+    },
+    "settings": {
+      "folderLabel": "Cartella",
+      "folderHelp": "La cartella da leggere. Viene aperta in sola lettura.",
+      "enabledLabel": "Leggi la casella di posta automaticamente",
+      "enabledHelp": "Se attivo, la casella di posta viene controllata ogni 15 minuti. Puoi sempre usare Controlla ora.",
+      "aiModeLabel": "Modalità IA",
+      "aiModeHelp": "Indica se il provider IA che hai configurato può essere usato sulle ricevute. Una risposta dell'IA è sempre una proposta o una bozza che approvi tu.",
+      "aiModes": {
+        "off": "Disattivata",
+        "on_demand": "Su richiesta",
+        "automatic": "Automatica"
+      },
+      "aiModeDescriptions": {
+        "off": "L'IA non viene mai chiamata per le ricevute.",
+        "on_demand": "L'IA viene chiamata solo quando premi Riconosci con l'IA o Prepara parser con l'IA.",
+        "automatic": "Il controllo interroga l'IA su una ricevuta abbinata che nessun parser approvato ha potuto leggere per intero, e prepara un parser per un mittente che non ne ha."
+      },
+      "autoApplyLabel": "Applica le proposte automaticamente",
+      "autoApplyHelp": "Disattivato per impostazione predefinita. Una proposta viene applicata senza chiedere solo quando valgono tutte queste condizioni: un parser approvato ha letto l'intera email, la transazione è stata trovata tramite il numero d'ordine oppure tramite importo esatto e beneficiario con un solo candidato, e la proposta torna al centesimo. Tutto il resto attende la tua approvazione."
+    },
+    "status": {
+      "lastPolled": "Ultimo controllo",
+      "lastSuccess": "Ultimo controllo riuscito",
+      "never": "Mai",
+      "lastError": "Ultimo errore: {error}",
+      "lastErrorAt": "Ultimo errore ({at}): {error}",
+      "pollNow": "Controlla ora",
+      "pollResult": "Controllo terminato: {fetched, plural, one {# email salvata} other {# email salvate}}, {skipped} saltate, {processed} elaborate.",
+      "pollFailed": "Il controllo non è riuscito",
+      "deleteButton": "Elimina casella di posta",
+      "deleteDialog": {
+        "title": "Eliminare la casella di posta?",
+        "message": "Le impostazioni della casella di posta e tutte le email salvate verranno eliminate, e le richieste di revisione aperte che ne derivano verranno scartate. Le email nella casella di posta stessa non vengono toccate."
+      },
+      "deleted": "Casella di posta eliminata",
+      "deleteFailed": "Impossibile eliminare la casella di posta"
+    }
+  },
+  "parsers": {
+    "heading": "Parser",
+    "description": "Un parser legge le conferme d'ordine di un mittente con modelli che scrivi o controlli tu. Una volta approvato, funziona senza l'IA.",
+    "newButton": "Nuovo parser",
+    "loading": "Caricamento dei parser",
+    "error": {
+      "title": "Impossibile caricare i parser",
+      "body": "La richiesta non è riuscita. Riprova.",
+      "retry": "Riprova"
+    },
+    "empty": {
+      "title": "Ancora nessun parser",
+      "body": "Creane uno per un mittente di conferme d'ordine, oppure preparane uno da un'email salvata nella pagina Ricevute via email."
+    },
+    "columns": {
+      "name": "Parser",
+      "status": "Stato",
+      "payee": "Beneficiario",
+      "actions": "Azioni"
+    },
+    "status": {
+      "draft": "Bozza",
+      "approved": "Approvato"
+    },
+    "source": {
+      "manual": "Scritto da te",
+      "ai": "Preparato dall'IA"
+    },
+    "invalid": "Non valido",
+    "noPayee": "Nessun beneficiario",
+    "payeeUnknown": "Beneficiario non trovato",
+    "payeeUnavailable": "Elenco dei beneficiari non disponibile",
+    "actions": {
+      "approve": "Approva"
+    },
+    "toasts": {
+      "approved": "Parser approvato",
+      "approveFailed": "Impossibile approvare il parser",
+      "changedElsewhere": "Questo parser è stato modificato altrove. L'elenco è stato ricaricato.",
+      "deleted": "Parser eliminato",
+      "deleteFailed": "Impossibile eliminare il parser"
+    },
+    "deleteDialog": {
+      "title": "Eliminare il parser?",
+      "message": "Il parser {name} verrà eliminato. Le email che ha già letto mantengono i loro risultati."
+    }
+  },
+  "editor": {
+    "createTitle": "Nuovo parser",
+    "editTitle": "Modifica parser",
+    "loading": "Caricamento di beneficiari e categorie",
+    "lookupsError": {
+      "title": "Impossibile caricare beneficiari e categorie",
+      "body": "I selettori ne hanno bisogno, quindi l'editor non può ancora aprirsi. Riprova.",
+      "retry": "Riprova"
+    },
+    "draftNote": "Questo parser è una bozza. Non legge nulla finché non lo approvi.",
+    "draftAiNote": "L'IA ha preparato questo parser da un'email di esempio. Controlla ogni modello con le tue email, poi approvalo dall'elenco. Non legge nulla finché non lo fai.",
+    "identityHeading": "Quali email legge",
+    "nameLabel": "Nome",
+    "payeeLabel": "Beneficiario",
+    "payeePlaceholder": "Nessun beneficiario",
+    "domainsLabel": "Domini del mittente",
+    "domainsHelp": "Uno per riga, fino a {max}. Corrisponde anche un sottodominio di un dominio elencato.",
+    "subjectLabel": "L'oggetto contiene",
+    "subjectHelp": "Facoltativo, uno per riga, fino a {max}. L'oggetto deve contenere almeno uno di essi, senza distinguere maiuscole e minuscole.",
+    "saveButton": "Salva parser",
+    "created": "Parser creato",
+    "updated": "Parser salvato",
+    "saveFailed": "Impossibile salvare il parser",
+    "conflict": "Questo parser è stato modificato altrove da quando lo hai aperto. Ricaricalo per vedere la versione attuale. Le tue modifiche qui non sono salvate.",
+    "conflictReload": "Ricarica il parser",
+    "patterns": {
+      "globHelp": "Ogni modello viene confrontato con un'intera riga dell'email, senza distinguere maiuscole e minuscole. Usa {star} per qualsiasi testo e un nome tra parentesi graffe, come {capture}, per catturare un valore. Ogni campo accetta fino a {max} modelli, uno per riga.",
+      "orderIdLabel": "Modelli del numero d'ordine",
+      "orderIdHint": "Deve catturare {capture}. Esempio: Numero d'ordine: {capture}",
+      "totalLabel": "Modelli del totale",
+      "amountHint": "Deve catturare {capture}. Esempio: Totale dell'ordine {capture}",
+      "shippingLabel": "Modelli della spedizione",
+      "discountLabel": "Modelli dello sconto",
+      "itemsHeading": "Righe degli articoli",
+      "startAfterLabel": "Gli articoli iniziano dopo",
+      "startAfterHint": "Facoltativo. Gli articoli vengono letti dalla riga successiva alla prima riga che contiene questo testo.",
+      "stopAtLabel": "Gli articoli terminano a",
+      "stopAtHint": "Facoltativo. Gli articoli terminano prima della prima riga che contiene questo testo.",
+      "itemPatternsLabel": "Modelli degli articoli",
+      "itemPatternsHint": "Deve catturare {name} e anche {amount} (il totale della riga) oppure {price} (il prezzo unitario, facoltativamente con {qty}), mai entrambi. Esempio: {name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "Regole di categoria",
+      "rulesHelp": "La prima regola il cui modello corrisponde imposta la categoria di un articolo. I modelli usano la stessa sintassi, ad esempio {example}. Fino a {max} regole.",
+      "noRules": "Nessuna regola di categoria. Ogni articolo riceve la categoria predefinita.",
+      "rulePatternLabel": "Modello della regola {number}",
+      "ruleCategoryLabel": "Categoria della regola {number}",
+      "categoryPlaceholder": "Nessuna categoria",
+      "removeRule": "Rimuovi la regola {number}",
+      "addRule": "Aggiungi una regola",
+      "ruleLimit": "Il limite di {max} regole è stato raggiunto.",
+      "defaultLabel": "Categoria predefinita",
+      "defaultHelp": "Usata per gli articoli a cui non corrisponde nessuna regola.",
+      "shippingLabel": "Categoria della spedizione",
+      "shippingHelp": "La categoria della riga di spedizione."
+    }
+  },
+  "problems": {
+    "heading": "La definizione del parser non è valida:",
+    "item": "{where}: {problem}",
+    "paths": {
+      "definition": "La definizione",
+      "line": "{field}, riga {line}",
+      "rule": "Regola di categoria {rule}, {part}"
+    },
+    "fields": {
+      "orderId": "Modelli del numero d'ordine",
+      "total": "Modelli del totale",
+      "shipping": "Modelli della spedizione",
+      "discount": "Modelli dello sconto",
+      "itemPatterns": "Modelli degli articoli",
+      "startAfter": "Gli articoli iniziano dopo",
+      "stopAt": "Gli articoli terminano a",
+      "items": "Righe degli articoli",
+      "categoryRules": "Regole di categoria",
+      "rulePattern": "modello",
+      "ruleCategory": "categoria",
+      "defaultCategory": "Categoria predefinita",
+      "shippingCategory": "Categoria della spedizione"
+    },
+    "codes": {
+      "not_object": "non è una definizione valida",
+      "unknown_key": "non è qualcosa che un parser può avere",
+      "invalid_version": "è una versione che questo server non legge",
+      "invalid_type": "ha un tipo di valore sbagliato",
+      "empty": "non deve essere vuoto",
+      "too_many": "ha troppe voci (al massimo {max})",
+      "too_long": "è troppo lungo (al massimo {max} caratteri)",
+      "control_character": "contiene un carattere di controllo",
+      "malformed_capture": "ha una cattura tra parentesi graffe non valida",
+      "too_many_captures": "ha troppe catture",
+      "duplicate_capture": "usa due volte lo stesso nome di cattura",
+      "capture_not_allowed": "usa un nome di cattura che questo campo non accetta",
+      "capture_missing": "manca di una cattura di cui questo campo ha bisogno",
+      "capture_conflict": "cattura sia il totale della riga sia il prezzo unitario. Usane uno solo.",
+      "invalid_uuid": "non è una categoria valida"
+    }
+  },
+  "test": {
+    "heading": "Prova con un'email salvata",
+    "help": "Legge un'email salvata con i modelli qui sopra, salvati o no, e mostra che cosa verrebbe trovato e con quale transazione corrisponderebbe. Non viene scritto nulla.",
+    "loadFailed": "Impossibile caricare le email salvate, quindi non c'è ancora nulla con cui provare.",
+    "noReceipts": "Non ci sono ancora email salvate. Controlla prima la casella di posta.",
+    "receiptLabel": "Email",
+    "choosePlaceholder": "Scegli un'email",
+    "receiptOption": "{subject} da {sender} ({date})",
+    "button": "Prova",
+    "failed": "La prova non è riuscita",
+    "matchHeading": "Abbinamento della transazione",
+    "matched": "Collegherebbe la transazione del {date} di {amount} ({payee}), trovata tramite {how}.",
+    "matchKinds": {
+      "order_id": "numero d'ordine",
+      "amount_payee": "importo e beneficiario",
+      "amount_only": "importo",
+      "manual": "la tua scelta"
+    },
+    "noPayee": "nessun beneficiario",
+    "ambiguous": "{count, plural, one {# transazione corrisponde} other {# transazioni corrispondono}} ugualmente bene, quindi nessuna verrebbe collegata finché non ne scegli una.",
+    "unmatched": "Nessuna transazione corrisponde, su {count, plural, one {# candidata} other {# candidate}}."
+  },
+  "parsed": {
+    "notFound": "Non trovato",
+    "noCategory": "Nessuna categoria",
+    "unknownCategory": "Categoria sconosciuta",
+    "categoryUnavailable": "Categorie non caricate",
+    "noItems": "Non è stata letta alcuna riga di articolo.",
+    "orderId": "Numero d'ordine",
+    "total": "Totale",
+    "shipping": "Spedizione",
+    "discount": "Sconto",
+    "columns": {
+      "item": "Articolo",
+      "qty": "Qtà",
+      "amount": "Importo",
+      "category": "Categoria"
+    },
+    "complete": "Letto per intero",
+    "incomplete": "Non letto per intero",
+    "reasons": {
+      "no_total": "L'email non indica alcun totale.",
+      "no_items": "Non è stata trovata alcuna riga di articolo.",
+      "items_unbalanced": "Le righe degli articoli non sommano al totale.",
+      "items_uncategorized": "Alcune righe degli articoli non hanno una categoria.",
+      "shipping_uncategorized": "La riga di spedizione non ha una categoria."
+    },
+    "readByAi": "Letto dall'IA"
+  },
+  "state": {
+    "pending": "In attesa di lettura",
+    "skipped": "Saltata",
+    "no_parser": "Nessun parser",
+    "parse_failed": "Non leggibile",
+    "unmatched": "Nessuna transazione trovata",
+    "ambiguous": "Corrispondono più transazioni",
+    "review_conflict": "Un'altra richiesta è aperta",
+    "ignored": "Ignorata",
+    "proposed": "In attesa di approvazione",
+    "applied": "Applicata",
+    "dismissed": "Scartata",
+    "expired": "Scaduta",
+    "pending_ai": "In attesa dell'IA",
+    "request_missing": "Richiesta mancante"
+  },
+  "receipts": {
+    "loading": "Caricamento delle email",
+    "links": {
+      "reviewInbox": "Apri la posta di revisione IA",
+      "settings": "Impostazioni di casella di posta e parser"
+    },
+    "filter": {
+      "label": "Filtra per stato",
+      "all": "Tutte",
+      "pending": "In attesa di lettura",
+      "skipped": "Saltata",
+      "no_parser": "Nessun parser",
+      "parse_failed": "Non leggibile",
+      "unmatched": "Nessuna transazione trovata",
+      "ambiguous": "Corrispondono più transazioni",
+      "review_conflict": "Un'altra richiesta è aperta",
+      "review": "In revisione",
+      "ignored": "Ignorata"
+    },
+    "columns": {
+      "received": "Ricevuta",
+      "email": "Email",
+      "transaction": "Transazione",
+      "state": "Stato",
+      "actions": "Azioni"
+    },
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "nessun beneficiario",
+    "noTransaction": "Ancora nessuna",
+    "error": {
+      "title": "Impossibile caricare le email",
+      "body": "La richiesta non è riuscita, quindi non si sa ancora nulla delle tue email. Riprova.",
+      "retry": "Riprova"
+    },
+    "empty": {
+      "title": "Nessuna email",
+      "body": "Le conferme d'ordine compaiono qui una volta letta la casella di posta.",
+      "filteredTitle": "Nessuna email con questo stato",
+      "filteredBody": "Scegli un altro stato per vedere le altre.",
+      "noMailboxBody": "Nessuna casella di posta è ancora collegata. Collegane una per iniziare a leggere le conferme d'ordine.",
+      "connectButton": "Collega una casella di posta"
+    },
+    "actions": {
+      "view": "Vedi",
+      "reprocess": "Rielabora",
+      "link": "Scegli transazione",
+      "recognizeAi": "Riconosci con l'IA",
+      "draftParser": "Prepara parser con l'IA",
+      "createParser": "Crea parser",
+      "ignore": "Ignora"
+    },
+    "toasts": {
+      "reprocessed": "Email rielaborata",
+      "reprocessFailed": "Impossibile rielaborare l'email",
+      "draftFailed": "Impossibile preparare un parser",
+      "ignored": "Email ignorata",
+      "ignoreFailed": "Impossibile ignorare l'email",
+      "deleted": "Email eliminata",
+      "deleteFailed": "Impossibile eliminare l'email"
+    },
+    "notices": {
+      "draftCreated": "L'IA ha preparato il parser {name}. Non legge nulla finché non lo controlli e lo approvi.",
+      "draftLink": "Controllalo nelle impostazioni dei parser"
+    },
+    "ignoreDialog": {
+      "title": "Ignorare questa email?",
+      "message": "L'email {subject} non proporrà nulla, e la sua richiesta di revisione aperta verrà scartata.",
+      "confirm": "Ignora"
+    },
+    "deleteDialog": {
+      "title": "Eliminare questa email?",
+      "message": "L'email salvata {subject} verrà eliminata e la sua richiesta di revisione aperta scartata. Il messaggio nella casella di posta non viene toccato, e un controllo successivo non lo recupererà di nuovo."
+    }
+  },
+  "detail": {
+    "title": "Ricevuta via email",
+    "loading": "Caricamento dell'email",
+    "error": {
+      "title": "Impossibile caricare l'email",
+      "body": "La richiesta non è riuscita. Riprova.",
+      "retry": "Riprova"
+    },
+    "from": "Da",
+    "received": "Ricevuta",
+    "subject": "Oggetto",
+    "state": "Stato",
+    "parser": "Parser",
+    "noParser": "Nessuno",
+    "matchedBy": "Abbinata tramite",
+    "matchKinds": {
+      "order_id": "Numero d'ordine",
+      "amount_payee": "Importo e beneficiario",
+      "amount_only": "Importo",
+      "manual": "La tua scelta"
+    },
+    "transaction": "Transazione",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "nessun beneficiario",
+    "viewTransaction": "Vedi transazione",
+    "noTransaction": "Ancora nessuna",
+    "reasons": {
+      "too_large": "L'email supera il limite di dimensione, quindi è stata salvata senza essere letta.",
+      "undecodable": "L'email non ha potuto essere decodificata, quindi è stata salvata senza essere letta.",
+      "draft_failed": "L'IA non ha potuto preparare un parser per questo mittente.",
+      "parser_invalid": "Il parser per questo mittente non è valido. Modificalo nelle impostazioni dei parser.",
+      "no_total": "Il parser non ha trovato alcun totale in questa email.",
+      "no_items": "Il parser non ha trovato alcuna riga di articolo.",
+      "items_unbalanced": "Le righe degli articoli non sommano al totale.",
+      "items_uncategorized": "Alcune righe degli articoli non hanno una categoria.",
+      "shipping_uncategorized": "La riga di spedizione non ha una categoria.",
+      "amount_differs": "Il totale letto differisce dall'importo della transazione, quindi viene proposta solo una descrizione.",
+      "proposal_fallback": "La proposta dettagliata è stata rifiutata, quindi viene proposta solo una descrizione.",
+      "nothing_to_propose": "L'email non aggiunge nulla a questa transazione.",
+      "proposal_refused": "La proposta è stata rifiutata, quindi non è stato proposto nulla."
+    },
+    "reasonUnknown": "Motivo: {reason}",
+    "requestNote": "Richiesta di revisione ({state}): {note}",
+    "parsedHeading": "Che cosa ha letto il parser",
+    "notParsed": "Da questa email non è ancora stato letto nulla.",
+    "candidatesHeading": "Transazioni che corrispondono",
+    "candidatesHelp": "Più transazioni corrispondono ugualmente bene a questa email. Scegli quella che ha pagato.",
+    "linkButton": "Collega a questa transazione",
+    "linked": "Email collegata alla transazione",
+    "linkFailed": "Impossibile collegare l'email",
+    "textHeading": "Testo dell'email",
+    "textLabel": "Testo dell'email",
+    "noText": "L'email non ha testo."
+  },
+  "picker": {
+    "heading": "Scegli la transazione",
+    "help": "Nessuna transazione è stata abbinata automaticamente. Queste sono le tue transazioni dal {from} al {to}, i giorni intorno all'email. Scegli quella che ha pagato.",
+    "searchLabel": "Cerca",
+    "searchPlaceholder": "Beneficiario, descrizione o importo",
+    "searchButton": "Cerca",
+    "loading": "Caricamento delle transazioni",
+    "error": "Impossibile caricare le transazioni.",
+    "retry": "Riprova",
+    "empty": "In questo periodo non hai transazioni che possano essere collegate.",
+    "emptySearch": "Nessuna transazione di questo periodo corrisponde alla ricerca.",
+    "row": "{date}, {amount}, {payee}",
+    "noPayee": "nessun beneficiario",
+    "linkButton": "Collega",
+    "hasMore": "Vengono mostrate solo le prime {count}. Usa la ricerca per restringere l'elenco.",
+    "ai": {
+      "heading": "Scegli la transazione per l'IA",
+      "help": "Queste sono le tue transazioni dal {from} al {to}, i giorni intorno all'email. Scegli quella che l'IA deve suddividere in base ai prodotti dell'email.",
+      "linkButton": "Usa questa transazione"
+    }
+  },
+  "callback": {
+    "title": "Collegamento della casella di posta",
+    "connecting": "Completamento del collegamento",
+    "toasts": {
+      "connected": "Casella di posta collegata"
+    },
+    "success": {
+      "title": "Casella di posta collegata",
+      "body": "Collegato come {username}. Ritorno alle impostazioni."
+    },
+    "providerError": {
+      "title": "L'accesso non è stato completato",
+      "withDescription": "Il provider ha segnalato: {error}. {description}",
+      "withoutDescription": "Il provider ha segnalato: {error}."
+    },
+    "missingParameters": {
+      "title": "Questa pagina è stata aperta senza un risultato di accesso",
+      "body": "Ricomincia dalle impostazioni delle ricevute via email e usa uno dei pulsanti Collega."
+    },
+    "failed": {
+      "title": "Impossibile collegare la casella di posta",
+      "fallback": "Il server ha rifiutato la connessione. Ricomincia dalle impostazioni delle ricevute via email."
+    },
+    "backLink": "Torna alle impostazioni delle ricevute via email"
+  },
+  "recognize": {
+    "title": "Riconosci con l'IA",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "nessun beneficiario",
+    "confirmMessage": "Questa email è collegata alla transazione {summary}. L'IA leggerà l'email e proporrà come suddividere questa transazione per prodotto. Continuare con questa transazione?",
+    "confirm": "Riconosci con l'IA",
+    "chooseOther": "Scegli un'altra transazione",
+    "candidatesHeading": "Quale transazione è stata pagata con l'email?",
+    "candidatesHelp": "Diverse transazioni corrispondono a questa email. Scegli quella che l'IA deve usare oppure cercane un'altra.",
+    "candidatesLoading": "Caricamento delle transazioni corrispondenti",
+    "candidatesError": "Impossibile caricare le transazioni corrispondenti.",
+    "retry": "Riprova",
+    "useButton": "Usa questa transazione",
+    "searchOther": "Cerca altre transazioni",
+    "back": "Indietro",
+    "failed": "Impossibile avviare il riconoscimento",
+    "queued": "In coda: al momento nessun assistente IA può rispondere, quindi la richiesta resta nella posta di revisione IA in attesa di un agente (ad esempio tramite MCP).",
+    "handoffFailed": "La richiesta è in coda, ma non è stato possibile aprire l'email nella chat. Resta nella posta di revisione IA in attesa di un agente (ad esempio tramite MCP).",
+    "inboxLink": "Apri la posta di revisione IA",
+    "opened": "Chat aperta con l'email allegata. Leggi il messaggio e premi Invia.",
+    "chatPrompt": "Riconosci i prodotti, le quantità e i prezzi nell'email d'ordine allegata e suddividi la mia transazione del {date} ({payee}, {amount}) per prodotto, con una categoria per ciascuno. Prendi in carico la richiesta di revisione IA {requestId} e invia la tua proposta per essa."
+  }
+}

@@ -855,6 +855,34 @@ describe('ChatInterface', () => {
       expect(screen.queryByLabelText('Remove attachment')).not.toBeInTheDocument();
     });
 
+    // The receipts page's "Recognize with AI" parks a drafted message with the
+    // email file. It is staged for the user to read and send, never sent.
+    it("puts a handed-over draft in the composer, sends nothing, and keeps it editable", async () => {
+      const { aiApi } = await import("@/lib/ai");
+      await act(async () => {
+        render(
+          <ChatInterface
+            initialFiles={[pngFile()]}
+            initialDraft="Recognize the products in the attached order email."
+          />,
+        );
+      });
+
+      const textarea = screen.getByPlaceholderText(
+        "Ask about your finances...",
+      ) as HTMLTextAreaElement;
+      expect(textarea.value).toBe(
+        "Recognize the products in the attached order email.",
+      );
+      await waitFor(() =>
+        expect(screen.getByText("receipt.png")).toBeInTheDocument(),
+      );
+      expect(aiApi.queryStream).not.toHaveBeenCalled();
+
+      fireEvent.change(textarea, { target: { value: "Edited by the user" } });
+      expect(textarea.value).toBe("Edited by the user");
+    });
+
     it('allows attachments when relay is active and sends them on the relay path', async () => {
       const { aiApi } = await import('@/lib/ai');
       vi.mocked(aiApi.getStatus).mockResolvedValueOnce({

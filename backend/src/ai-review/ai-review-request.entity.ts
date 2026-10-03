@@ -11,8 +11,15 @@ import {
 import { User } from "../users/entities/user.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionRule } from "../transaction-rules/transaction-rule.entity";
+import { EmailReceipt } from "../email-receipts/entities/email-receipt.entity";
 
-export type AiReviewRequestKind = "transaction_review";
+/**
+ * What a request asks for. `transaction_review` is a rule's (or a person's)
+ * question about one transaction; `email_receipt` is raised for a stored order
+ * confirmation and carries `emailReceiptId` (email-receipts design section 4).
+ * Mirrors the schema's `ck_ai_review_requests_kind`.
+ */
+export type AiReviewRequestKind = "transaction_review" | "email_receipt";
 
 export type AiReviewRequestStatus =
   | "pending"
@@ -108,4 +115,16 @@ export class AiReviewRequest {
     default: () => `now() + INTERVAL '${AI_REVIEW_REQUEST_LIFETIME_DAYS} days'`,
   })
   expiresAt: Date;
+
+  /**
+   * The stored email a request of kind `email_receipt` was raised for; null for
+   * every other kind, and after the email was deleted (ON DELETE SET NULL: the
+   * request outlives its email).
+   */
+  @Column({ type: "uuid", name: "email_receipt_id", nullable: true })
+  emailReceiptId: string | null;
+
+  @ManyToOne(() => EmailReceipt, { onDelete: "SET NULL", nullable: true })
+  @JoinColumn({ name: "email_receipt_id" })
+  emailReceipt?: EmailReceipt | null;
 }

@@ -849,7 +849,13 @@ const reviewSplitLineSchema = manageTransactionSplitSchema.extend({
 
 export const aiReviewRequestsFields = z.object({
   operation: z.enum(AI_REVIEW_OPERATIONS),
-  requestId: z.string().uuid().optional(),
+  requestId: z
+    .string()
+    .uuid()
+    .optional()
+    .describe(
+      "claim: this pending request, not the oldest. submit/reject: the claimed one.",
+    ),
   splits: z
     .array(reviewSplitLineSchema)
     .min(2)

@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "設定に戻る",
+    "title": "メールレシート",
+    "subtitle": "メールボックスから注文確認メールを読み取り、明細付きの取引に変換します",
+    "receiptsLink": "保存されたメールを開く",
+    "demoRestricted": {
+      "heading": "デモモードでは利用できません",
+      "body": "デモモードではメールボックスの接続は無効です。"
+    }
+  },
+  "page": {
+    "title": "メールレシート",
+    "subtitle": "メールボックスから読み取った注文確認メールと、それぞれの処理状況"
+  },
+  "mailbox": {
+    "heading": "メールボックス",
+    "description": "注文確認メールは、専用のメールボックスからIMAPで読み取ります。Monizeは読み取るだけで、メッセージの変更、移動、削除は一切行いません。",
+    "loading": "メールボックスを読み込み中",
+    "dedicatedWarning": "専用のメールボックスを使用してください。フォルダ内のすべてのメッセージが読み取られるため、注文確認メール以外は入れないでください。",
+    "encryptionUnavailable": "このサーバーはシークレットを暗号化できないため、メールボックスのパスワードや接続を保存できません。管理者に暗号化の設定を依頼してください。",
+    "error": {
+      "title": "メールボックスを読み込めませんでした",
+      "body": "リクエストが失敗したため、メールボックスの状態はまだわかりません。もう一度お試しください。",
+      "retry": "再試行"
+    },
+    "oauth": {
+      "heading": "アカウントを接続",
+      "explanation": "GoogleやMicrosoft 365では、通常のパスワードは受け付けられないことが多くあります。代わりにプロバイダーでサインインしてください。Monizeにメールボックスへのアクセスを許可するだけで、パスワードをここで入力する必要はありません。",
+      "connect": {
+        "google": "Googleで接続",
+        "microsoft": "Microsoftで接続"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "GoogleまたはMicrosoftのサインインが利用できるかどうかを確認できませんでした。下の手動フォームは引き続き使用できます。",
+      "startFailed": "サインインを開始できませんでした",
+      "badAuthorizationUrl": "サーバーが返したサインイン先は安全なWebページではないため、開きませんでした。",
+      "connectedAs": "{provider} に {username} として接続しています。",
+      "notConnected": "{provider} への接続が有効ではないため、メールボックスは読み取られていません。再開するには、もう一度接続してください。",
+      "reconnect": "再接続",
+      "disconnect": "接続を解除",
+      "disconnectDialog": {
+        "title": "メールボックスの接続を解除しますか?",
+        "message": "Monizeは保存している {provider} へのアクセス情報を削除し、メールボックスの読み取りを停止します。保存済みのメールはそのまま残ります。"
+      },
+      "disconnected": "メールボックスの接続を解除しました",
+      "disconnectFailed": "メールボックスの接続を解除できませんでした",
+      "revokeNote": "接続を解除しても、付与した権限は取り消されません。権限を取り消すには、{provider} の権限ページでMonizeを削除してください。",
+      "revokeLink": {
+        "google": "Googleアカウントの権限を開く",
+        "microsoft": "Microsoftアプリの権限を開く"
+      },
+      "saveButton": "設定を保存",
+      "saved": "メールボックスの設定を保存しました",
+      "saveFailed": "メールボックスの設定を保存できませんでした"
+    },
+    "form": {
+      "intro": "または、任意のIMAPメールボックスの情報を入力してください。ほとんどのプロバイダーでは、アカウントのパスワードではなくアプリパスワードが必要です。",
+      "hostLabel": "IMAPサーバー",
+      "portLabel": "ポート",
+      "securityLabel": "接続のセキュリティ",
+      "securityOptions": {
+        "tls": "TLS (通常はポート993)",
+        "starttls": "STARTTLS (通常はポート143)"
+      },
+      "usernameLabel": "ユーザー名",
+      "passwordLabel": "パスワード",
+      "passwordStoredPlaceholder": "パスワードは保存済みです。置き換えるには入力してください。",
+      "passwordRequiredHelp": "新しいメールボックスの場合、またはサーバーやユーザー名を変更する場合は必須です。",
+      "passwordKeepHelp": "保存済みのパスワードを維持するには空欄のままにしてください。パスワードが再表示されることはありません。",
+      "saveButton": "メールボックスを保存",
+      "saved": "メールボックスを保存しました",
+      "saveFailed": "メールボックスを保存できませんでした",
+      "test": {
+        "button": "接続をテスト",
+        "ok": "{count, plural, one {接続できました。フォルダには # 件のメッセージがあります。} other {接続できました。フォルダには # 件のメッセージがあります。}}",
+        "error": "接続に失敗しました: {error}",
+        "failed": "接続をテストできませんでした"
+      }
+    },
+    "settings": {
+      "folderLabel": "フォルダ",
+      "folderHelp": "読み取るフォルダです。読み取り専用で開かれます。",
+      "enabledLabel": "メールボックスを自動で読み取る",
+      "enabledHelp": "オンにすると、メールボックスを15分ごとに確認します。「今すぐ確認」はいつでも使えます。",
+      "aiModeLabel": "AIモード",
+      "aiModeHelp": "設定済みのAIプロバイダーをレシートに使用してよいかどうかを選びます。AIの回答は常に提案または下書きであり、承認するのはあなたです。",
+      "aiModes": {
+        "off": "オフ",
+        "on_demand": "オンデマンド",
+        "automatic": "自動"
+      },
+      "aiModeDescriptions": {
+        "off": "レシートにAIは使用されません。",
+        "on_demand": "「AIで認識」または「AIでパーサーを下書き」を押したときだけAIを使用します。",
+        "automatic": "確認の際に、承認済みのパーサーで完全に読み取れなかった一致済みのレシートについてAIに問い合わせ、パーサーのない送信元にはパーサーを下書きします。"
+      },
+      "autoApplyLabel": "提案を自動で適用",
+      "autoApplyHelp": "既定ではオフです。次のすべてを満たす場合にのみ、確認なしで提案が適用されます。承認済みのパーサーがメール全体を読み取れたこと、注文番号、または金額と支払先の完全一致で候補が1件だけ見つかったこと、提案の合計が通貨の最小単位まで一致していること。それ以外は、あなたの承認を待ちます。"
+    },
+    "status": {
+      "lastPolled": "前回の確認",
+      "lastSuccess": "前回の成功した確認",
+      "never": "なし",
+      "lastError": "前回のエラー: {error}",
+      "lastErrorAt": "前回のエラー ({at}): {error}",
+      "pollNow": "今すぐ確認",
+      "pollResult": "確認が完了しました: {fetched, plural, one {# 件のメールを保存} other {# 件のメールを保存}}、{skipped} 件をスキップ、{processed} 件を処理しました。",
+      "pollFailed": "確認に失敗しました",
+      "deleteButton": "メールボックスを削除",
+      "deleteDialog": {
+        "title": "メールボックスを削除しますか?",
+        "message": "メールボックスの設定と保存済みのすべてのメールが削除され、それらに紐づく未処理のレビュー依頼は却下されます。メールボックス内のメールには手を加えません。"
+      },
+      "deleted": "メールボックスを削除しました",
+      "deleteFailed": "メールボックスを削除できませんでした"
+    }
+  },
+  "parsers": {
+    "heading": "パーサー",
+    "description": "パーサーは、あなたが作成または確認したパターンを使って、特定の送信元の注文確認メールを読み取ります。承認されると、AIなしで動作します。",
+    "newButton": "新しいパーサー",
+    "loading": "パーサーを読み込み中",
+    "error": {
+      "title": "パーサーを読み込めませんでした",
+      "body": "リクエストが失敗しました。もう一度お試しください。",
+      "retry": "再試行"
+    },
+    "empty": {
+      "title": "パーサーはまだありません",
+      "body": "注文確認メールの送信元ごとにパーサーを作成するか、メールレシートのページで保存済みのメールから下書きしてください。"
+    },
+    "columns": {
+      "name": "パーサー",
+      "status": "ステータス",
+      "payee": "支払先",
+      "actions": "操作"
+    },
+    "status": {
+      "draft": "下書き",
+      "approved": "承認済み"
+    },
+    "source": {
+      "manual": "自分で作成",
+      "ai": "AIが下書き"
+    },
+    "invalid": "無効",
+    "noPayee": "支払先なし",
+    "payeeUnknown": "支払先が見つかりません",
+    "payeeUnavailable": "支払先の一覧を利用できません",
+    "actions": {
+      "approve": "承認"
+    },
+    "toasts": {
+      "approved": "パーサーを承認しました",
+      "approveFailed": "パーサーを承認できませんでした",
+      "changedElsewhere": "このパーサーは別の場所で変更されました。一覧を再読み込みしました。",
+      "deleted": "パーサーを削除しました",
+      "deleteFailed": "パーサーを削除できませんでした"
+    },
+    "deleteDialog": {
+      "title": "パーサーを削除しますか?",
+      "message": "パーサー {name} を削除します。このパーサーがすでに読み取ったメールの結果は保持されます。"
+    }
+  },
+  "editor": {
+    "createTitle": "新しいパーサー",
+    "editTitle": "パーサーを編集",
+    "loading": "支払先とカテゴリを読み込み中",
+    "lookupsError": {
+      "title": "支払先とカテゴリを読み込めませんでした",
+      "body": "選択項目に必要なため、エディターはまだ開けません。もう一度お試しください。",
+      "retry": "再試行"
+    },
+    "draftNote": "このパーサーは下書きです。承認するまで何も読み取りません。",
+    "draftAiNote": "AIが1通のサンプルメールからこのパーサーを下書きしました。すべてのパターンをお手元のメールと照らし合わせて確認し、一覧から承認してください。承認するまで何も読み取りません。",
+    "identityHeading": "読み取るメール",
+    "nameLabel": "名前",
+    "payeeLabel": "支払先",
+    "payeePlaceholder": "支払先なし",
+    "domainsLabel": "送信元ドメイン",
+    "domainsHelp": "1行に1つ、最大 {max} 個です。一覧にあるドメインのサブドメインも一致します。",
+    "subjectLabel": "件名に含まれる語句",
+    "subjectHelp": "任意です。1行に1つ、最大 {max} 個。件名にそのうち少なくとも1つが含まれている必要があります (大文字と小文字は区別しません)。",
+    "saveButton": "パーサーを保存",
+    "created": "パーサーを作成しました",
+    "updated": "パーサーを保存しました",
+    "saveFailed": "パーサーを保存できませんでした",
+    "conflict": "このパーサーは、開いた後に別の場所で変更されました。再読み込みして最新の状態を確認してください。ここでの編集内容は保存されていません。",
+    "conflictReload": "パーサーを再読み込み",
+    "patterns": {
+      "globHelp": "各パターンは、メールの1行全体と照合されます (大文字と小文字は区別しません)。任意のテキストには {star} を、値を取り込むには {capture} のように波かっこで囲んだ名前を使います。各フィールドには最大 {max} 個のパターンを、1行に1つずつ指定できます。",
+      "orderIdLabel": "注文番号のパターン",
+      "orderIdHint": "{capture} を取り込む必要があります。例: 注文番号: {capture}",
+      "totalLabel": "合計のパターン",
+      "amountHint": "{capture} を取り込む必要があります。例: ご注文合計 {capture}",
+      "shippingLabel": "送料のパターン",
+      "discountLabel": "割引のパターン",
+      "itemsHeading": "明細行",
+      "startAfterLabel": "明細の開始位置",
+      "startAfterHint": "任意です。このテキストを含む最初の行の次の行から、明細を読み取ります。",
+      "stopAtLabel": "明細の終了位置",
+      "stopAtHint": "任意です。このテキストを含む最初の行の手前で、明細を終了します。",
+      "itemPatternsLabel": "明細のパターン",
+      "itemPatternsHint": "{name} と、{amount} (行の合計) または {price} (単価。{qty} を併用可) のいずれかを取り込む必要があります。両方は指定できません。例: {name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "カテゴリのルール",
+      "rulesHelp": "商品名に最初に一致したパターンのルールが、その商品のカテゴリを決めます。パターンの書式は同じです。例: {example}。ルールは最大 {max} 件です。",
+      "noRules": "カテゴリのルールはありません。すべての商品に既定のカテゴリが設定されます。",
+      "rulePatternLabel": "ルール {number} のパターン",
+      "ruleCategoryLabel": "ルール {number} のカテゴリ",
+      "categoryPlaceholder": "カテゴリなし",
+      "removeRule": "ルール {number} を削除",
+      "addRule": "ルールを追加",
+      "ruleLimit": "ルールの上限 {max} 件に達しました。",
+      "defaultLabel": "既定のカテゴリ",
+      "defaultHelp": "どのルールにも一致しない商品に使用されます。",
+      "shippingLabel": "送料のカテゴリ",
+      "shippingHelp": "送料の行に設定するカテゴリです。"
+    }
+  },
+  "problems": {
+    "heading": "パーサーの定義が正しくありません:",
+    "item": "{where}: {problem}",
+    "paths": {
+      "definition": "定義",
+      "line": "{field}、{line} 行目",
+      "rule": "カテゴリのルール {rule}、{part}"
+    },
+    "fields": {
+      "orderId": "注文番号のパターン",
+      "total": "合計のパターン",
+      "shipping": "送料のパターン",
+      "discount": "割引のパターン",
+      "itemPatterns": "明細のパターン",
+      "startAfter": "明細の開始位置",
+      "stopAt": "明細の終了位置",
+      "items": "明細行",
+      "categoryRules": "カテゴリのルール",
+      "rulePattern": "パターン",
+      "ruleCategory": "カテゴリ",
+      "defaultCategory": "既定のカテゴリ",
+      "shippingCategory": "送料のカテゴリ"
+    },
+    "codes": {
+      "not_object": "は有効な定義ではありません",
+      "unknown_key": "はパーサーに指定できない項目です",
+      "invalid_version": "はこのサーバーが読み取れないバージョンです",
+      "invalid_type": "の値の種類が正しくありません",
+      "empty": "は空にできません",
+      "too_many": "の項目数が多すぎます (最大 {max} 個)",
+      "too_long": "が長すぎます (最大 {max} 文字)",
+      "control_character": "に制御文字が含まれています",
+      "malformed_capture": "の波かっこで囲んだキャプチャが正しくありません",
+      "too_many_captures": "のキャプチャが多すぎます",
+      "duplicate_capture": "で同じキャプチャ名が2回使われています",
+      "capture_not_allowed": "でこのフィールドが受け付けないキャプチャ名が使われています",
+      "capture_missing": "に、このフィールドに必要なキャプチャがありません",
+      "capture_conflict": "が行の合計と単価の両方を取り込んでいます。どちらか一方にしてください。",
+      "invalid_uuid": "は有効なカテゴリではありません"
+    }
+  },
+  "test": {
+    "heading": "保存済みのメールでテスト",
+    "help": "上のパターン (保存前でも可) で保存済みのメールを読み取り、何が見つかるか、どの取引に一致するかを表示します。何も書き込まれません。",
+    "loadFailed": "保存済みのメールを読み込めなかったため、まだテストする対象がありません。",
+    "noReceipts": "保存されたメールはまだありません。先にメールボックスを確認してください。",
+    "receiptLabel": "メール",
+    "choosePlaceholder": "メールを選択",
+    "receiptOption": "{subject} ({sender}、{date})",
+    "button": "テスト",
+    "failed": "テストに失敗しました",
+    "matchHeading": "取引の一致",
+    "matched": "{date} の {amount} の取引 ({payee}) に、{how} で見つかって紐づけられます。",
+    "matchKinds": {
+      "order_id": "注文番号",
+      "amount_payee": "金額と支払先",
+      "amount_only": "金額",
+      "manual": "あなたの選択"
+    },
+    "noPayee": "支払先なし",
+    "ambiguous": "{count, plural, one {# 件の取引が} other {# 件の取引が}}同じ程度に一致するため、あなたが選ぶまでどれにも紐づけられません。",
+    "unmatched": "{count, plural, one {# 件の候補} other {# 件の候補}}のうち、一致する取引はありません。"
+  },
+  "parsed": {
+    "notFound": "見つかりません",
+    "noCategory": "カテゴリなし",
+    "unknownCategory": "不明なカテゴリ",
+    "categoryUnavailable": "カテゴリが読み込まれていません",
+    "noItems": "明細行は読み取られませんでした。",
+    "orderId": "注文番号",
+    "total": "合計",
+    "shipping": "送料",
+    "discount": "割引",
+    "columns": {
+      "item": "商品",
+      "qty": "数量",
+      "amount": "金額",
+      "category": "カテゴリ"
+    },
+    "complete": "完全に読み取れました",
+    "incomplete": "完全には読み取れませんでした",
+    "reasons": {
+      "no_total": "メールに合計が記載されていません。",
+      "no_items": "明細行が見つかりませんでした。",
+      "items_unbalanced": "明細行の合計が総額と一致しません。",
+      "items_uncategorized": "カテゴリのない明細行があります。",
+      "shipping_uncategorized": "送料の行にカテゴリがありません。"
+    },
+    "readByAi": "AIが読み取り"
+  },
+  "state": {
+    "pending": "読み取り待ち",
+    "skipped": "スキップ",
+    "no_parser": "パーサーなし",
+    "parse_failed": "読み取れませんでした",
+    "unmatched": "取引が見つかりません",
+    "ambiguous": "複数の取引が一致",
+    "review_conflict": "別の依頼が未処理",
+    "ignored": "無視済み",
+    "proposed": "承認待ち",
+    "applied": "適用済み",
+    "dismissed": "却下済み",
+    "expired": "期限切れ",
+    "pending_ai": "AIの回答待ち",
+    "request_missing": "依頼が見つかりません"
+  },
+  "receipts": {
+    "loading": "メールを読み込み中",
+    "links": {
+      "reviewInbox": "AIレビュー受信箱を開く",
+      "settings": "メールボックスとパーサーの設定"
+    },
+    "filter": {
+      "label": "状態で絞り込み",
+      "all": "すべて",
+      "pending": "読み取り待ち",
+      "skipped": "スキップ",
+      "no_parser": "パーサーなし",
+      "parse_failed": "読み取れませんでした",
+      "unmatched": "取引が見つかりません",
+      "ambiguous": "複数の取引が一致",
+      "review_conflict": "別の依頼が未処理",
+      "review": "レビュー中",
+      "ignored": "無視済み"
+    },
+    "columns": {
+      "received": "受信日時",
+      "email": "メール",
+      "transaction": "取引",
+      "state": "状態",
+      "actions": "操作"
+    },
+    "transactionSummary": "{date}、{amount}、{payee}",
+    "noPayee": "支払先なし",
+    "noTransaction": "まだありません",
+    "error": {
+      "title": "メールを読み込めませんでした",
+      "body": "リクエストが失敗したため、メールの状態はまだわかりません。もう一度お試しください。",
+      "retry": "再試行"
+    },
+    "empty": {
+      "title": "メールはありません",
+      "body": "メールボックスが読み取られると、注文確認メールがここに表示されます。",
+      "filteredTitle": "この状態のメールはありません",
+      "filteredBody": "ほかのメールを見るには、別の状態を選んでください。",
+      "noMailboxBody": "メールボックスはまだ接続されていません。注文確認メールの読み取りを始めるには、接続してください。",
+      "connectButton": "メールボックスを接続"
+    },
+    "actions": {
+      "view": "表示",
+      "reprocess": "再処理",
+      "link": "取引を選択",
+      "recognizeAi": "AIで認識",
+      "draftParser": "AIでパーサーを下書き",
+      "createParser": "パーサーを作成",
+      "ignore": "無視"
+    },
+    "toasts": {
+      "reprocessed": "メールを再処理しました",
+      "reprocessFailed": "メールを再処理できませんでした",
+      "draftFailed": "パーサーを下書きできませんでした",
+      "ignored": "メールを無視しました",
+      "ignoreFailed": "メールを無視できませんでした",
+      "deleted": "メールを削除しました",
+      "deleteFailed": "メールを削除できませんでした"
+    },
+    "notices": {
+      "draftCreated": "AIがパーサー {name} を下書きしました。確認して承認するまで、何も読み取りません。",
+      "draftLink": "パーサーの設定で確認する"
+    },
+    "ignoreDialog": {
+      "title": "このメールを無視しますか?",
+      "message": "メール {subject} からは何も提案されなくなり、未処理のレビュー依頼は却下されます。",
+      "confirm": "無視"
+    },
+    "deleteDialog": {
+      "title": "このメールを削除しますか?",
+      "message": "保存済みのメール {subject} を削除し、未処理のレビュー依頼を却下します。メールボックス内のメッセージには手を加えず、以降の確認でも再取得されません。"
+    }
+  },
+  "detail": {
+    "title": "メールレシート",
+    "loading": "メールを読み込み中",
+    "error": {
+      "title": "メールを読み込めませんでした",
+      "body": "リクエストが失敗しました。もう一度お試しください。",
+      "retry": "再試行"
+    },
+    "from": "送信元",
+    "received": "受信日時",
+    "subject": "件名",
+    "state": "状態",
+    "parser": "パーサー",
+    "noParser": "なし",
+    "matchedBy": "一致の根拠",
+    "matchKinds": {
+      "order_id": "注文番号",
+      "amount_payee": "金額と支払先",
+      "amount_only": "金額",
+      "manual": "あなたの選択"
+    },
+    "transaction": "取引",
+    "transactionSummary": "{date}、{amount}、{payee}",
+    "noPayee": "支払先なし",
+    "viewTransaction": "取引を表示",
+    "noTransaction": "まだありません",
+    "reasons": {
+      "too_large": "メールがサイズの上限を超えているため、読み取らずに保存しました。",
+      "undecodable": "メールをデコードできなかったため、読み取らずに保存しました。",
+      "draft_failed": "AIはこの送信元のパーサーを下書きできませんでした。",
+      "parser_invalid": "この送信元のパーサーは無効です。パーサーの設定で編集してください。",
+      "no_total": "パーサーはこのメールから合計を見つけられませんでした。",
+      "no_items": "パーサーは明細行を見つけられませんでした。",
+      "items_unbalanced": "明細行の合計が総額と一致しません。",
+      "items_uncategorized": "カテゴリのない明細行があります。",
+      "shipping_uncategorized": "送料の行にカテゴリがありません。",
+      "amount_differs": "読み取った合計が取引の金額と異なるため、説明のみを提案しています。",
+      "proposal_fallback": "明細付きの提案は拒否されたため、説明のみを提案しています。",
+      "nothing_to_propose": "このメールからこの取引に追加できる情報はありません。",
+      "proposal_refused": "提案が拒否されたため、何も提案されませんでした。"
+    },
+    "reasonUnknown": "理由: {reason}",
+    "requestNote": "レビュー依頼 ({state}): {note}",
+    "parsedHeading": "パーサーが読み取った内容",
+    "notParsed": "このメールからはまだ何も読み取られていません。",
+    "candidatesHeading": "一致する取引",
+    "candidatesHelp": "このメールと同じ程度に一致する取引が複数あります。このメールが支払った取引を選んでください。",
+    "linkButton": "この取引に紐づける",
+    "linked": "メールを取引に紐づけました",
+    "linkFailed": "メールを紐づけられませんでした",
+    "textHeading": "メール本文",
+    "textLabel": "メールの本文",
+    "noText": "メールに本文がありません。"
+  },
+  "picker": {
+    "heading": "取引を選択",
+    "help": "自動で一致した取引はありません。メールの前後の日付にあたる、{from} から {to} までの取引です。このメールが支払った取引を選んでください。",
+    "searchLabel": "検索",
+    "searchPlaceholder": "支払先、説明、または金額",
+    "searchButton": "検索",
+    "loading": "取引を読み込み中",
+    "error": "取引を読み込めませんでした。",
+    "retry": "再試行",
+    "empty": "この期間に紐づけられる取引はありません。",
+    "emptySearch": "この期間に検索条件に一致する取引はありません。",
+    "row": "{date}、{amount}、{payee}",
+    "noPayee": "支払先なし",
+    "linkButton": "紐づける",
+    "hasMore": "最初の {count} 件のみ表示しています。検索で絞り込んでください。",
+    "ai": {
+      "heading": "AIに使う取引を選択",
+      "help": "メールの前後の日付にあたる、{from} から {to} までの取引です。メールに記載された商品ごとにAIに分割させる取引を選んでください。",
+      "linkButton": "この取引を使う"
+    }
+  },
+  "callback": {
+    "title": "メールボックスを接続中",
+    "connecting": "接続を完了しています",
+    "toasts": {
+      "connected": "メールボックスを接続しました"
+    },
+    "success": {
+      "title": "メールボックスを接続しました",
+      "body": "{username} として接続しました。設定に戻ります。"
+    },
+    "providerError": {
+      "title": "サインインが完了しませんでした",
+      "withDescription": "プロバイダーからの報告: {error}。{description}",
+      "withoutDescription": "プロバイダーからの報告: {error}。"
+    },
+    "missingParameters": {
+      "title": "サインインの結果なしでこのページが開かれました",
+      "body": "メールレシートの設定から最初にやり直し、いずれかの「接続」ボタンを使用してください。"
+    },
+    "failed": {
+      "title": "メールボックスを接続できませんでした",
+      "fallback": "サーバーが接続を拒否しました。メールレシートの設定から最初にやり直してください。"
+    },
+    "backLink": "メールレシートの設定に戻る"
+  },
+  "recognize": {
+    "title": "AIで認識",
+    "transactionSummary": "{date}、{amount}、{payee}",
+    "noPayee": "支払先なし",
+    "confirmMessage": "このメールは取引 {summary} に紐づいています。AIがメールを読み取り、この取引を商品ごとに分割する方法を提案します。この取引で続行しますか？",
+    "confirm": "AIで認識",
+    "chooseOther": "別の取引を選択",
+    "candidatesHeading": "メールが支払った取引はどれですか？",
+    "candidatesHelp": "このメールに該当する取引が複数あります。AIに使わせる取引を選ぶか、別の取引を検索してください。",
+    "candidatesLoading": "該当する取引を読み込み中",
+    "candidatesError": "該当する取引を読み込めませんでした。",
+    "retry": "再試行",
+    "useButton": "この取引を使う",
+    "searchOther": "他の取引を検索",
+    "back": "戻る",
+    "failed": "認識を開始できませんでした",
+    "queued": "キューに追加しました: 現在応答できるAIアシスタントがないため、依頼はAIレビュー受信箱でエージェント (たとえばMCP経由) を待ちます。",
+    "handoffFailed": "依頼はキューに追加されましたが、チャットでメールを開けませんでした。AIレビュー受信箱でエージェント (たとえばMCP経由) を待ちます。",
+    "inboxLink": "AIレビュー受信箱を開く",
+    "opened": "メールを添付してチャットを開きました。メッセージを確認して送信を押してください。",
+    "chatPrompt": "添付された注文メールの商品、数量、価格を認識し、{date} の私の取引 ({payee}、{amount}) を、それぞれにカテゴリを付けて商品ごとに分割してください。AIレビュー依頼 {requestId} を引き受け、その提案を送信してください。"
+  }
+}

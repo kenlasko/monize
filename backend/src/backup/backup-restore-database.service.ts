@@ -43,6 +43,13 @@ export class BackupRestoreDatabaseService {
       userId,
     ]);
 
+    // Email-receipt parsers. The stored receipts and the mailbox are not part of
+    // a backup and are left alone; a receipt's parser_id is ON DELETE SET NULL.
+    await manager.query(
+      "DELETE FROM email_receipt_parsers WHERE user_id = $1",
+      [userId],
+    );
+
     // GEM strategies (accounts, assets and signals cascade on strategy delete,
     // but are deleted explicitly first so the order is self-documenting)
     await manager.query("DELETE FROM gem_strategy_signals WHERE user_id = $1", [

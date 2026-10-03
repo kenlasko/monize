@@ -160,6 +160,13 @@ implied.
 | INV-HA-005 | A relay prompt is claimed by exactly one agent poll and answered at most once | enforced |
 | INV-RULE-001 | A transaction rule never moves a balance | enforced |
 | INV-RULE-002 | A transaction rule applies inside the transaction that inserts the row, on every creation path | partial |
+| INV-RECEIPT-001 | A receipt mailbox is read, never written | enforced |
+| INV-RECEIPT-002 | A receipt email is stored once, and the poll cursor moves with the rows it covers | enforced |
+| INV-RECEIPT-003 | A receipt changes the ledger only through the review card and the confirm path, and never moves money | enforced |
+| INV-RECEIPT-004 | A receipt mailbox connection reaches only a public address unless the owner is an admin or the operator allowed the host | enforced |
+| INV-RECEIPT-005 | A mailbox password or OAuth token is encrypted at rest and never returned | enforced |
+| INV-RECEIPT-006 | One poll per mailbox at a time across replicas | enforced |
+| INV-RECEIPT-007 | An OAuth callback completes only the flow the same user started, once | enforced |
 
 ## Imports
 
@@ -5580,6 +5587,163 @@ unevaluated by decision (Q2), and the exemption list is a reviewed decision, not
 a proof that no exempt path should ever apply rules. It becomes `enforced` when
 Q2 is decided and those legs either call the applier or move to a per-site
 exemption the guard can check.
+
+## Email receipts
+
+Design: `docs/future-plans/email-receipts.md` (section 7). Arithmetic:
+`docs/specs/email-receipt-matching.md`.
+
+### INV-RECEIPT-001 -- a receipt mailbox is read, never written
+
+```text
+Statement           Monize never sets a flag on, moves, copies, deletes or appends
+                    to a message in a receipt mailbox, whichever way it logged in.
+Source of truth     the IMAP server's folder
+Enforcement         backend/src/email-receipts/imap/imap-mailbox-client.ts is the
+                    only importer of imapflow; it opens the folder with
+                    readOnly: true (EXAMINE) and fetches with source: true, which
+                    imapflow sends as BODY.PEEK[]. imap-source-scan.spec.ts fails
+                    on a write call anywhere under backend/src/email-receipts/,
+                    on an open without readOnly: true, and on a second importer.
+Concurrency scope   mailbox
+Retry semantics     a read repeated is a read
+Crash semantics     nothing on the server to undo
+Failure response    --
+Required tests      Present: imap-mailbox-client.spec.ts (options),
+                    imap-source-scan.spec.ts. Missing: a run against a real IMAP
+                    server asserting \Seen stays unset (task E1).
+Status              enforced
+```
+
+### INV-RECEIPT-002 -- a receipt email is stored once, and the cursor moves with the rows
+
+```text
+Statement           A message (mailbox, UIDVALIDITY, UID) is one email_receipts
+                    row however many polls read it, and the stored UID cursor
+                    never passes a message that was not stored.
+Source of truth     email_receipts, email_receipt_mailboxes.last_uid
+Enforcement         UNIQUE (mailbox_id, uid_validity, uid) with INSERT ... ON
+                    CONFLICT DO NOTHING; the cursor is advanced by a conditional
+                    UPDATE (it only rises on one UIDVALIDITY) in the transaction
+                    that inserts the rows (email-receipt-poll.service.ts).
+Concurrency scope   mailbox
+Retry semantics     a failed poll leaves the cursor where it was; the next poll
+                    re-reads and the unique key drops what was stored
+Crash semantics     before commit: neither rows nor cursor; after: both
+Failure response    the mailbox's last_error, shown on the settings screen
+Required tests      Present: email-receipts-pipeline.integration.spec.ts (the
+                    same UID twice gives one row), poll service unit spec.
+Status              enforced
+```
+
+### INV-RECEIPT-003 -- a receipt changes the ledger only through the review card
+
+```text
+Statement           Nothing a receipt carries is written to a transaction except
+                    by /ai/actions/confirm with the signed card built for it, and
+                    the card never carries an amount, a date, an account or a
+                    status change. Auto-apply, when the user turned it on, calls
+                    the same confirm with the card it built.
+Source of truth     ai_review_requests (kind email_receipt), transactions
+Enforcement         The proposal is AiReviewProposalInput (splits, category,
+                    payee, description); AiReviewWorkService.submit validates it
+                    (exact split sum, owned categories, no transfer) and signs the
+                    card; confirm marks the request applied in the write's own
+                    transaction (markApplied). The auto-apply gate is a pure
+                    function with a table test (email-receipt-pipeline.service.spec.ts).
+Concurrency scope   transaction row
+Retry semantics     a second confirm of the same card is refused by the
+                    single-use claim and by markApplied
+Crash semantics     the request stays proposed until the write commits
+Failure response    409 when the request is no longer proposed; the proposal
+                    stays in the inbox when auto-apply is refused
+Required tests      Present: email-receipts-pipeline.integration.spec.ts (a
+                    proposal applied end to end), ai-review-requests integration.
+Status              enforced
+```
+
+### INV-RECEIPT-004 -- a mailbox connection reaches only a public address
+
+```text
+Statement           The IMAP socket of a non-admin's mailbox connects to a public
+                    address unless the operator listed the host (or host:port)
+                    in EMAIL_RECEIPTS_PRIVATE_HOST_ALLOWLIST.
+Source of truth     DNS at connect time
+Enforcement         mailbox-host-policy.ts: on save, an IP literal, a blocked
+                    name and a name that resolves privately are refused; at
+                    connect, an IP literal is refused and publicOnlyLookup is the
+                    socket's lookup, so the address checked is the address
+                    connected to. An OAuth mailbox connects to the provider's
+                    fixed host only.
+Concurrency scope   connection
+Retry semantics     --
+Crash semantics     --
+Failure response    400 on save; the poll records the refusal as last_error
+Required tests      Present: mailbox-host-policy.spec.ts,
+                    imap-mailbox-client.spec.ts (lookup passed, literal refused).
+Status              enforced
+```
+
+### INV-RECEIPT-005 -- a mailbox secret is encrypted and never returned
+
+```text
+Statement           The mailbox password and the OAuth refresh token are stored
+                    only as EncryptionService ciphertext, an access token only in
+                    memory, and none of them is returned by the API, written to a
+                    log line or stored in last_error.
+Source of truth     email_receipt_mailboxes.password_enc, oauth_refresh_token_enc
+Enforcement         the view carries passwordSet / oauthConnected booleans; the
+                    entity column is select: false; the table is excluded from
+                    backups; mailbox-failure.util.ts redacts the password, the
+                    tokens and the SASL PLAIN / XOAUTH2 strings; the OAuth token
+                    client redacts every request-body value from a transport
+                    error.
+Concurrency scope   mailbox
+Retry semantics     --
+Crash semantics     --
+Failure response    --
+Required tests      Present: email-receipt-mailbox.integration.spec.ts
+                    (ciphertext stored, no secret in any stored error),
+                    mailbox-failure.util.spec.ts, oauth-token.client.spec.ts.
+Status              enforced
+```
+
+### INV-RECEIPT-006 -- one poll per mailbox at a time
+
+```text
+Statement           Two replicas, or the cron and "Poll now", never read one
+                    mailbox at the same time.
+Source of truth     job_claims (email_receipt_poll, user, mailbox)
+Enforcement         JobClaimService.claimLease around the whole poll, released by
+                    token in finally; withUserContext wraps the lease.
+Concurrency scope   mailbox
+Retry semantics     a lost lease expires after 10 minutes; the poll starts no new
+                    work after 8
+Crash semantics     the lease expires; INV-RECEIPT-002 makes a repeated read safe
+Failure response    "Poll now" answers busy
+Required tests      Present: rls-context-smoke.spec.ts (real lease), poll service
+                    unit spec. Missing: a two-instance cron test.
+Status              enforced
+```
+
+### INV-RECEIPT-007 -- an OAuth callback completes only its own flow, once
+
+```text
+Statement           A code posted to oauth/complete is exchanged only for the user
+                    who started the flow, within 10 minutes, and only once.
+Source of truth     the encrypted state envelope, single_use_tokens
+Enforcement         oauth-state.ts: the state is EncryptionService ciphertext of
+                    the user id, provider, PKCE verifier, nonce and expiry; the
+                    user id is compared with the JWT's before the nonce is claimed
+                    with SingleUseTokenService.
+Concurrency scope   OAuth flow
+Retry semantics     a failed exchange spends the state; the user starts again
+Crash semantics     --
+Failure response    400
+Required tests      Present: oauth-state.spec.ts, email-receipt-mailbox
+                    integration (replay and foreign user against the real table).
+Status              enforced
+```
 
 ## Candidates not yet admitted
 

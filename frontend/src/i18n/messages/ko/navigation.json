@@ -11,6 +11,7 @@
   "institutions": "금융기관",
   "tags": "태그",
   "rules": "규칙",
+  "emailReceipts": "이메일 영수증",
   "securities": "유가증권",
   "currencies": "통화",
   "import": "거래 가져오기",

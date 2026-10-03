@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "Retour aux paramètres",
+    "title": "Reçus par e-mail",
+    "subtitle": "Lisez les confirmations de commande d'une boîte mail et transformez-les en transactions détaillées",
+    "receiptsLink": "Ouvrir les e-mails enregistrés",
+    "demoRestricted": {
+      "heading": "Restreint en mode démo",
+      "body": "La connexion d'une boîte mail est désactivée en mode démo."
+    }
+  },
+  "page": {
+    "title": "Reçus par e-mail",
+    "subtitle": "Les e-mails de confirmation de commande lus dans votre boîte mail, et ce qu'il est advenu de chacun"
+  },
+  "mailbox": {
+    "heading": "Boîte mail",
+    "description": "Les confirmations de commande sont lues en IMAP dans une boîte mail dédiée. Monize ne fait que la lire : il ne modifie, ne déplace et ne supprime jamais aucun message.",
+    "loading": "Chargement de la boîte mail",
+    "dedicatedWarning": "Utilisez une boîte mail dédiée. Tous les messages du dossier sont lus, il ne doit donc contenir que des confirmations de commande.",
+    "encryptionUnavailable": "Ce serveur ne peut pas chiffrer les secrets, le mot de passe ou la connexion d'une boîte mail ne peut donc pas être enregistré. Demandez à l'administrateur de configurer le chiffrement.",
+    "error": {
+      "title": "Impossible de charger la boîte mail",
+      "body": "La requête a échoué, on ne sait donc encore rien de votre boîte mail. Réessayez.",
+      "retry": "Réessayer"
+    },
+    "oauth": {
+      "heading": "Connecter un compte",
+      "explanation": "Google et Microsoft 365 refusent généralement un simple mot de passe. Connectez-vous plutôt auprès du fournisseur : vous accordez à Monize l'accès à la boîte mail sans jamais saisir ici son mot de passe.",
+      "connect": {
+        "google": "Se connecter avec Google",
+        "microsoft": "Se connecter avec Microsoft"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "Impossible de vérifier si la connexion via Google ou Microsoft est disponible. Le formulaire manuel ci-dessous fonctionne toujours.",
+      "startFailed": "Impossible de lancer la connexion",
+      "badAuthorizationUrl": "Le serveur a renvoyé une adresse de connexion qui n'est pas une page web sécurisée, elle n'a donc pas été ouverte.",
+      "connectedAs": "Connecté à {provider} en tant que {username}.",
+      "notConnected": "La connexion à {provider} n'est pas active, la boîte mail n'est donc pas lue. Reconnectez-vous pour reprendre.",
+      "reconnect": "Se reconnecter",
+      "disconnect": "Déconnecter",
+      "disconnectDialog": {
+        "title": "Déconnecter la boîte mail ?",
+        "message": "Monize supprimera son accès enregistré à {provider} et cessera de lire la boîte mail. Les e-mails déjà enregistrés sont conservés."
+      },
+      "disconnected": "Boîte mail déconnectée",
+      "disconnectFailed": "Impossible de déconnecter la boîte mail",
+      "revokeNote": "La déconnexion ne retire pas l'autorisation que vous avez accordée. Pour la retirer, supprimez Monize dans la page des autorisations de {provider}.",
+      "revokeLink": {
+        "google": "Ouvrir les autorisations du compte Google",
+        "microsoft": "Ouvrir les autorisations d'applications Microsoft"
+      },
+      "saveButton": "Enregistrer les paramètres",
+      "saved": "Paramètres de la boîte mail enregistrés",
+      "saveFailed": "Impossible d'enregistrer les paramètres de la boîte mail"
+    },
+    "form": {
+      "intro": "Ou saisissez les informations d'une boîte mail IMAP quelconque. La plupart des fournisseurs exigent un mot de passe d'application plutôt que le mot de passe de votre compte.",
+      "hostLabel": "Serveur IMAP",
+      "portLabel": "Port",
+      "securityLabel": "Sécurité de la connexion",
+      "securityOptions": {
+        "tls": "TLS (généralement le port 993)",
+        "starttls": "STARTTLS (généralement le port 143)"
+      },
+      "usernameLabel": "Nom d'utilisateur",
+      "passwordLabel": "Mot de passe",
+      "passwordStoredPlaceholder": "Un mot de passe est enregistré. Saisissez-en un pour le remplacer.",
+      "passwordRequiredHelp": "Obligatoire pour une nouvelle boîte mail, ou lorsque le serveur ou le nom d'utilisateur change.",
+      "passwordKeepHelp": "Laissez vide pour conserver le mot de passe enregistré. Il n'est plus jamais affiché.",
+      "saveButton": "Enregistrer la boîte mail",
+      "saved": "Boîte mail enregistrée",
+      "saveFailed": "Impossible d'enregistrer la boîte mail",
+      "test": {
+        "button": "Tester la connexion",
+        "ok": "{count, plural, one {La connexion fonctionne. Le dossier contient # message.} other {La connexion fonctionne. Le dossier contient # messages.}}",
+        "error": "La connexion a échoué : {error}",
+        "failed": "Impossible de tester la connexion"
+      }
+    },
+    "settings": {
+      "folderLabel": "Dossier",
+      "folderHelp": "Le dossier à lire. Il est ouvert en lecture seule.",
+      "enabledLabel": "Lire la boîte mail automatiquement",
+      "enabledHelp": "Si cette option est activée, la boîte mail est relevée toutes les 15 minutes. Vous pouvez toujours utiliser Relever maintenant.",
+      "aiModeLabel": "Mode IA",
+      "aiModeHelp": "Indique si le fournisseur d'IA que vous avez configuré peut être utilisé sur les reçus. Une réponse de l'IA est toujours une proposition ou un brouillon que vous approuvez.",
+      "aiModes": {
+        "off": "Désactivé",
+        "on_demand": "À la demande",
+        "automatic": "Automatique"
+      },
+      "aiModeDescriptions": {
+        "off": "L'IA n'est jamais sollicitée pour les reçus.",
+        "on_demand": "L'IA n'est sollicitée que lorsque vous appuyez sur Reconnaître avec l'IA ou Rédiger un analyseur avec l'IA.",
+        "automatic": "La relève interroge l'IA sur un reçu associé qu'aucun analyseur approuvé n'a pu lire entièrement, et rédige un analyseur pour un expéditeur qui n'en a pas."
+      },
+      "autoApplyLabel": "Appliquer les propositions automatiquement",
+      "autoApplyHelp": "Désactivé par défaut. Une proposition n'est appliquée sans demander que si toutes ces conditions sont réunies : un analyseur approuvé a lu l'e-mail en entier, la transaction a été trouvée par le numéro de commande ou par le montant exact et le bénéficiaire avec un seul candidat, et la proposition tombe juste au centime. Tout le reste attend votre approbation."
+    },
+    "status": {
+      "lastPolled": "Dernière relève",
+      "lastSuccess": "Dernière relève réussie",
+      "never": "Jamais",
+      "lastError": "Dernière erreur : {error}",
+      "lastErrorAt": "Dernière erreur ({at}) : {error}",
+      "pollNow": "Relever maintenant",
+      "pollResult": "Relève terminée : {fetched, plural, one {# e-mail enregistré} other {# e-mails enregistrés}}, {skipped} omis, {processed} traités.",
+      "pollFailed": "La relève a échoué",
+      "deleteButton": "Supprimer la boîte mail",
+      "deleteDialog": {
+        "title": "Supprimer la boîte mail ?",
+        "message": "Les paramètres de la boîte mail et tous les e-mails enregistrés seront supprimés, et les demandes de révision ouvertes qui en proviennent seront ignorées. Les e-mails de la boîte mail elle-même ne sont pas touchés."
+      },
+      "deleted": "Boîte mail supprimée",
+      "deleteFailed": "Impossible de supprimer la boîte mail"
+    }
+  },
+  "parsers": {
+    "heading": "Analyseurs",
+    "description": "Un analyseur lit les confirmations de commande d'un expéditeur à l'aide de motifs que vous écrivez ou vérifiez. Une fois approuvé, il fonctionne sans l'IA.",
+    "newButton": "Nouvel analyseur",
+    "loading": "Chargement des analyseurs",
+    "error": {
+      "title": "Impossible de charger les analyseurs",
+      "body": "La requête a échoué. Réessayez.",
+      "retry": "Réessayer"
+    },
+    "empty": {
+      "title": "Aucun analyseur pour l'instant",
+      "body": "Créez-en un pour un expéditeur de confirmations de commande, ou rédigez-en un à partir d'un e-mail enregistré sur la page Reçus par e-mail."
+    },
+    "columns": {
+      "name": "Analyseur",
+      "status": "Statut",
+      "payee": "Bénéficiaire",
+      "actions": "Actions"
+    },
+    "status": {
+      "draft": "Brouillon",
+      "approved": "Approuvé"
+    },
+    "source": {
+      "manual": "Écrit par vous",
+      "ai": "Rédigé par l'IA"
+    },
+    "invalid": "Non valide",
+    "noPayee": "Aucun bénéficiaire",
+    "payeeUnknown": "Bénéficiaire introuvable",
+    "payeeUnavailable": "Liste des bénéficiaires indisponible",
+    "actions": {
+      "approve": "Approuver"
+    },
+    "toasts": {
+      "approved": "Analyseur approuvé",
+      "approveFailed": "Impossible d'approuver l'analyseur",
+      "changedElsewhere": "Cet analyseur a été modifié ailleurs. La liste a été rechargée.",
+      "deleted": "Analyseur supprimé",
+      "deleteFailed": "Impossible de supprimer l'analyseur"
+    },
+    "deleteDialog": {
+      "title": "Supprimer l'analyseur ?",
+      "message": "L'analyseur {name} sera supprimé. Les e-mails qu'il a déjà lus conservent leurs résultats."
+    }
+  },
+  "editor": {
+    "createTitle": "Nouvel analyseur",
+    "editTitle": "Modifier l'analyseur",
+    "loading": "Chargement des bénéficiaires et des catégories",
+    "lookupsError": {
+      "title": "Impossible de charger les bénéficiaires et les catégories",
+      "body": "Les sélecteurs en ont besoin, l'éditeur ne peut donc pas encore s'ouvrir. Réessayez.",
+      "retry": "Réessayer"
+    },
+    "draftNote": "Cet analyseur est un brouillon. Il ne lit rien tant que vous ne l'avez pas approuvé.",
+    "draftAiNote": "L'IA a rédigé cet analyseur à partir d'un e-mail d'exemple. Vérifiez chaque motif avec vos e-mails, puis approuvez-le depuis la liste. Il ne lit rien tant que vous ne l'avez pas fait.",
+    "identityHeading": "Les e-mails qu'il lit",
+    "nameLabel": "Nom",
+    "payeeLabel": "Bénéficiaire",
+    "payeePlaceholder": "Aucun bénéficiaire",
+    "domainsLabel": "Domaines de l'expéditeur",
+    "domainsHelp": "Un par ligne, jusqu'à {max}. Un sous-domaine d'un domaine listé correspond aussi.",
+    "subjectLabel": "L'objet contient",
+    "subjectHelp": "Facultatif, un par ligne, jusqu'à {max}. L'objet doit contenir au moins l'un d'eux, sans tenir compte de la casse.",
+    "saveButton": "Enregistrer l'analyseur",
+    "created": "Analyseur créé",
+    "updated": "Analyseur enregistré",
+    "saveFailed": "Impossible d'enregistrer l'analyseur",
+    "conflict": "Cet analyseur a été modifié ailleurs depuis que vous l'avez ouvert. Rechargez-le pour voir la version actuelle. Vos modifications ici ne sont pas enregistrées.",
+    "conflictReload": "Recharger l'analyseur",
+    "patterns": {
+      "globHelp": "Chaque motif est comparé à une ligne entière de l'e-mail, sans tenir compte de la casse. Utilisez {star} pour n'importe quel texte et un nom entre accolades, comme {capture}, pour capturer une valeur. Chaque champ accepte jusqu'à {max} motifs, un par ligne.",
+      "orderIdLabel": "Motifs du numéro de commande",
+      "orderIdHint": "Doit capturer {capture}. Exemple : Numéro de commande : {capture}",
+      "totalLabel": "Motifs du total",
+      "amountHint": "Doit capturer {capture}. Exemple : Total de la commande {capture}",
+      "shippingLabel": "Motifs des frais de livraison",
+      "discountLabel": "Motifs de la remise",
+      "itemsHeading": "Lignes d'articles",
+      "startAfterLabel": "Les articles commencent après",
+      "startAfterHint": "Facultatif. Les articles sont lus à partir de la ligne qui suit la première ligne contenant ce texte.",
+      "stopAtLabel": "Les articles s'arrêtent à",
+      "stopAtHint": "Facultatif. Les articles se terminent avant la première ligne contenant ce texte.",
+      "itemPatternsLabel": "Motifs des articles",
+      "itemPatternsHint": "Doit capturer {name} et soit {amount} (le total de la ligne), soit {price} (le prix unitaire, éventuellement avec {qty}), jamais les deux. Exemple : {name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "Règles de catégorie",
+      "rulesHelp": "La première règle dont le motif correspond définit la catégorie d'un article. Les motifs utilisent la même syntaxe, par exemple {example}. Jusqu'à {max} règles.",
+      "noRules": "Aucune règle de catégorie. Chaque article reçoit la catégorie par défaut.",
+      "rulePatternLabel": "Motif de la règle {number}",
+      "ruleCategoryLabel": "Catégorie de la règle {number}",
+      "categoryPlaceholder": "Aucune catégorie",
+      "removeRule": "Supprimer la règle {number}",
+      "addRule": "Ajouter une règle",
+      "ruleLimit": "La limite de {max} règles est atteinte.",
+      "defaultLabel": "Catégorie par défaut",
+      "defaultHelp": "Utilisée pour les articles qu'aucune règle ne retient.",
+      "shippingLabel": "Catégorie de livraison",
+      "shippingHelp": "La catégorie de la ligne de livraison."
+    }
+  },
+  "problems": {
+    "heading": "La définition de l'analyseur n'est pas valide :",
+    "item": "{where} : {problem}",
+    "paths": {
+      "definition": "La définition",
+      "line": "{field}, ligne {line}",
+      "rule": "Règle de catégorie {rule}, {part}"
+    },
+    "fields": {
+      "orderId": "Motifs du numéro de commande",
+      "total": "Motifs du total",
+      "shipping": "Motifs des frais de livraison",
+      "discount": "Motifs de la remise",
+      "itemPatterns": "Motifs des articles",
+      "startAfter": "Les articles commencent après",
+      "stopAt": "Les articles s'arrêtent à",
+      "items": "Lignes d'articles",
+      "categoryRules": "Règles de catégorie",
+      "rulePattern": "motif",
+      "ruleCategory": "catégorie",
+      "defaultCategory": "Catégorie par défaut",
+      "shippingCategory": "Catégorie de livraison"
+    },
+    "codes": {
+      "not_object": "n'est pas une définition valide",
+      "unknown_key": "n'est pas quelque chose qu'un analyseur peut avoir",
+      "invalid_version": "est une version que ce serveur ne lit pas",
+      "invalid_type": "a un mauvais type de valeur",
+      "empty": "ne doit pas être vide",
+      "too_many": "a trop d'entrées (au maximum {max})",
+      "too_long": "est trop long (au maximum {max} caractères)",
+      "control_character": "contient un caractère de contrôle",
+      "malformed_capture": "contient une capture entre accolades qui n'est pas valide",
+      "too_many_captures": "contient trop de captures",
+      "duplicate_capture": "utilise deux fois le même nom de capture",
+      "capture_not_allowed": "utilise un nom de capture que ce champ n'accepte pas",
+      "capture_missing": "n'a pas une capture dont ce champ a besoin",
+      "capture_conflict": "capture à la fois le total de la ligne et le prix unitaire. Utilisez-en un seul.",
+      "invalid_uuid": "n'est pas une catégorie valide"
+    }
+  },
+  "test": {
+    "heading": "Tester avec un e-mail enregistré",
+    "help": "Lit un e-mail enregistré avec les motifs ci-dessus, enregistrés ou non, et indique ce qui serait trouvé et avec quelle transaction il correspondrait. Rien n'est écrit.",
+    "loadFailed": "Impossible de charger les e-mails enregistrés, il n'y a donc encore rien à tester.",
+    "noReceipts": "Aucun e-mail n'est encore enregistré. Relevez d'abord la boîte mail.",
+    "receiptLabel": "E-mail",
+    "choosePlaceholder": "Choisir un e-mail",
+    "receiptOption": "{subject} de {sender} ({date})",
+    "button": "Tester",
+    "failed": "Le test a échoué",
+    "matchHeading": "Correspondance de transaction",
+    "matched": "Associerait la transaction du {date} de {amount} ({payee}), trouvée par {how}.",
+    "matchKinds": {
+      "order_id": "numéro de commande",
+      "amount_payee": "montant et bénéficiaire",
+      "amount_only": "montant",
+      "manual": "votre choix"
+    },
+    "noPayee": "aucun bénéficiaire",
+    "ambiguous": "{count, plural, one {# transaction convient} other {# transactions conviennent}} aussi bien, aucune ne serait donc associée avant que vous en choisissiez une.",
+    "unmatched": "Aucune transaction ne correspond, sur {count, plural, one {# candidate} other {# candidates}}."
+  },
+  "parsed": {
+    "notFound": "Introuvable",
+    "noCategory": "Aucune catégorie",
+    "unknownCategory": "Catégorie inconnue",
+    "categoryUnavailable": "Catégories non chargées",
+    "noItems": "Aucune ligne d'article n'a été lue.",
+    "orderId": "Numéro de commande",
+    "total": "Total",
+    "shipping": "Livraison",
+    "discount": "Remise",
+    "columns": {
+      "item": "Article",
+      "qty": "Qté",
+      "amount": "Montant",
+      "category": "Catégorie"
+    },
+    "complete": "Lu entièrement",
+    "incomplete": "Non lu entièrement",
+    "reasons": {
+      "no_total": "L'e-mail n'indique aucun total.",
+      "no_items": "Aucune ligne d'article n'a été trouvée.",
+      "items_unbalanced": "Les lignes d'articles ne s'additionnent pas au total.",
+      "items_uncategorized": "Certaines lignes d'articles n'ont pas de catégorie.",
+      "shipping_uncategorized": "La ligne de livraison n'a pas de catégorie."
+    },
+    "readByAi": "Lu par l'IA"
+  },
+  "state": {
+    "pending": "En attente de lecture",
+    "skipped": "Omis",
+    "no_parser": "Aucun analyseur",
+    "parse_failed": "Illisible",
+    "unmatched": "Aucune transaction trouvée",
+    "ambiguous": "Plusieurs transactions conviennent",
+    "review_conflict": "Une autre demande est ouverte",
+    "ignored": "Ignoré",
+    "proposed": "En attente d'approbation",
+    "applied": "Appliqué",
+    "dismissed": "Écarté",
+    "expired": "Expiré",
+    "pending_ai": "En attente de l'IA",
+    "request_missing": "Demande manquante"
+  },
+  "receipts": {
+    "loading": "Chargement des e-mails",
+    "links": {
+      "reviewInbox": "Ouvrir la boîte de révision par l'IA",
+      "settings": "Paramètres de la boîte mail et des analyseurs"
+    },
+    "filter": {
+      "label": "Filtrer par statut",
+      "all": "Tous",
+      "pending": "En attente de lecture",
+      "skipped": "Omis",
+      "no_parser": "Aucun analyseur",
+      "parse_failed": "Illisible",
+      "unmatched": "Aucune transaction trouvée",
+      "ambiguous": "Plusieurs transactions conviennent",
+      "review_conflict": "Une autre demande est ouverte",
+      "review": "En cours de révision",
+      "ignored": "Ignoré"
+    },
+    "columns": {
+      "received": "Reçu",
+      "email": "E-mail",
+      "transaction": "Transaction",
+      "state": "Statut",
+      "actions": "Actions"
+    },
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "aucun bénéficiaire",
+    "noTransaction": "Aucune pour l'instant",
+    "error": {
+      "title": "Impossible de charger les e-mails",
+      "body": "La requête a échoué, on ne sait donc encore rien de vos e-mails. Réessayez.",
+      "retry": "Réessayer"
+    },
+    "empty": {
+      "title": "Aucun e-mail",
+      "body": "Les confirmations de commande apparaissent ici une fois la boîte mail lue.",
+      "filteredTitle": "Aucun e-mail avec ce statut",
+      "filteredBody": "Choisissez un autre statut pour voir les autres.",
+      "noMailboxBody": "Aucune boîte mail n'est encore connectée. Connectez-en une pour commencer à lire les confirmations de commande.",
+      "connectButton": "Connecter une boîte mail"
+    },
+    "actions": {
+      "view": "Voir",
+      "reprocess": "Retraiter",
+      "link": "Choisir la transaction",
+      "recognizeAi": "Reconnaître avec l'IA",
+      "draftParser": "Rédiger un analyseur avec l'IA",
+      "createParser": "Créer un analyseur",
+      "ignore": "Ignorer"
+    },
+    "toasts": {
+      "reprocessed": "E-mail retraité",
+      "reprocessFailed": "Impossible de retraiter l'e-mail",
+      "draftFailed": "Impossible de rédiger un analyseur",
+      "ignored": "E-mail ignoré",
+      "ignoreFailed": "Impossible d'ignorer l'e-mail",
+      "deleted": "E-mail supprimé",
+      "deleteFailed": "Impossible de supprimer l'e-mail"
+    },
+    "notices": {
+      "draftCreated": "L'IA a rédigé l'analyseur {name}. Il ne lit rien tant que vous ne l'avez pas vérifié et approuvé.",
+      "draftLink": "Le vérifier dans les paramètres des analyseurs"
+    },
+    "ignoreDialog": {
+      "title": "Ignorer cet e-mail ?",
+      "message": "L'e-mail {subject} ne proposera rien, et sa demande de révision ouverte sera écartée.",
+      "confirm": "Ignorer"
+    },
+    "deleteDialog": {
+      "title": "Supprimer cet e-mail ?",
+      "message": "L'e-mail enregistré {subject} sera supprimé et sa demande de révision ouverte écartée. Le message dans la boîte mail n'est pas touché, et une relève ultérieure ne le récupérera pas de nouveau."
+    }
+  },
+  "detail": {
+    "title": "Reçu par e-mail",
+    "loading": "Chargement de l'e-mail",
+    "error": {
+      "title": "Impossible de charger l'e-mail",
+      "body": "La requête a échoué. Réessayez.",
+      "retry": "Réessayer"
+    },
+    "from": "De",
+    "received": "Reçu",
+    "subject": "Objet",
+    "state": "Statut",
+    "parser": "Analyseur",
+    "noParser": "Aucun",
+    "matchedBy": "Associé par",
+    "matchKinds": {
+      "order_id": "Numéro de commande",
+      "amount_payee": "Montant et bénéficiaire",
+      "amount_only": "Montant",
+      "manual": "Votre choix"
+    },
+    "transaction": "Transaction",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "aucun bénéficiaire",
+    "viewTransaction": "Voir la transaction",
+    "noTransaction": "Aucune pour l'instant",
+    "reasons": {
+      "too_large": "L'e-mail dépasse la limite de taille, il a donc été enregistré sans être lu.",
+      "undecodable": "L'e-mail n'a pas pu être décodé, il a donc été enregistré sans être lu.",
+      "draft_failed": "L'IA n'a pas pu rédiger d'analyseur pour cet expéditeur.",
+      "parser_invalid": "L'analyseur de cet expéditeur n'est pas valide. Modifiez-le dans les paramètres des analyseurs.",
+      "no_total": "L'analyseur n'a trouvé aucun total dans cet e-mail.",
+      "no_items": "L'analyseur n'a trouvé aucune ligne d'article.",
+      "items_unbalanced": "Les lignes d'articles ne s'additionnent pas au total.",
+      "items_uncategorized": "Certaines lignes d'articles n'ont pas de catégorie.",
+      "shipping_uncategorized": "La ligne de livraison n'a pas de catégorie.",
+      "amount_differs": "Le total lu diffère du montant de la transaction, seule une description est donc proposée.",
+      "proposal_fallback": "La proposition détaillée a été refusée, seule une description est donc proposée.",
+      "nothing_to_propose": "L'e-mail n'apporte rien à cette transaction.",
+      "proposal_refused": "La proposition a été refusée, rien n'a donc été proposé."
+    },
+    "reasonUnknown": "Motif : {reason}",
+    "requestNote": "Demande de révision ({state}) : {note}",
+    "parsedHeading": "Ce que l'analyseur a lu",
+    "notParsed": "Rien n'a encore été lu dans cet e-mail.",
+    "candidatesHeading": "Transactions qui conviennent",
+    "candidatesHelp": "Plusieurs transactions conviennent aussi bien à cet e-mail. Choisissez celle qu'il a réglée.",
+    "linkButton": "Associer à cette transaction",
+    "linked": "E-mail associé à la transaction",
+    "linkFailed": "Impossible d'associer l'e-mail",
+    "textHeading": "Texte de l'e-mail",
+    "textLabel": "Texte de l'e-mail",
+    "noText": "L'e-mail ne contient aucun texte."
+  },
+  "picker": {
+    "heading": "Choisir la transaction",
+    "help": "Aucune transaction n'a été associée automatiquement. Voici vos transactions du {from} au {to}, les jours autour de l'e-mail. Choisissez celle qu'il a réglée.",
+    "searchLabel": "Rechercher",
+    "searchPlaceholder": "Bénéficiaire, description ou montant",
+    "searchButton": "Rechercher",
+    "loading": "Chargement des transactions",
+    "error": "Impossible de charger les transactions.",
+    "retry": "Réessayer",
+    "empty": "Vous n'avez aucune transaction à associer sur cette période.",
+    "emptySearch": "Aucune transaction de cette période ne correspond à la recherche.",
+    "row": "{date}, {amount}, {payee}",
+    "noPayee": "aucun bénéficiaire",
+    "linkButton": "Associer",
+    "hasMore": "Seules les {count} premières sont affichées. Utilisez la recherche pour affiner la liste.",
+    "ai": {
+      "heading": "Choisir la transaction pour l'IA",
+      "help": "Voici vos transactions du {from} au {to}, les jours autour de l'e-mail. Choisissez celle que l'IA doit répartir selon les produits de l'e-mail.",
+      "linkButton": "Utiliser cette transaction"
+    }
+  },
+  "callback": {
+    "title": "Connexion de la boîte mail",
+    "connecting": "Finalisation de la connexion",
+    "toasts": {
+      "connected": "Boîte mail connectée"
+    },
+    "success": {
+      "title": "Boîte mail connectée",
+      "body": "Connecté en tant que {username}. Retour aux paramètres."
+    },
+    "providerError": {
+      "title": "La connexion n'a pas abouti",
+      "withDescription": "Le fournisseur a signalé : {error}. {description}",
+      "withoutDescription": "Le fournisseur a signalé : {error}."
+    },
+    "missingParameters": {
+      "title": "Cette page a été ouverte sans résultat de connexion",
+      "body": "Recommencez depuis les paramètres des reçus par e-mail et utilisez l'un des boutons de connexion."
+    },
+    "failed": {
+      "title": "Impossible de connecter la boîte mail",
+      "fallback": "Le serveur a refusé la connexion. Recommencez depuis les paramètres des reçus par e-mail."
+    },
+    "backLink": "Retour aux paramètres des reçus par e-mail"
+  },
+  "recognize": {
+    "title": "Reconnaître avec l'IA",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "aucun bénéficiaire",
+    "confirmMessage": "Cet e-mail est associé à la transaction {summary}. L'IA lira l'e-mail et proposera comment répartir cette transaction par produit. Continuer avec cette transaction ?",
+    "confirm": "Reconnaître avec l'IA",
+    "chooseOther": "Choisir une autre transaction",
+    "candidatesHeading": "Quelle transaction l'e-mail a-t-il réglée ?",
+    "candidatesHelp": "Plusieurs transactions correspondent à cet e-mail. Choisissez celle que l'IA doit utiliser ou cherchez-en une autre.",
+    "candidatesLoading": "Chargement des transactions correspondantes",
+    "candidatesError": "Impossible de charger les transactions correspondantes.",
+    "retry": "Réessayer",
+    "useButton": "Utiliser cette transaction",
+    "searchOther": "Rechercher d'autres transactions",
+    "back": "Retour",
+    "failed": "Impossible de lancer la reconnaissance",
+    "queued": "En attente : aucun assistant IA n'est disponible pour répondre maintenant, la demande attend donc dans la boîte de révision par l'IA qu'un agent la prenne en charge (par exemple via MCP).",
+    "handoffFailed": "La demande est en attente, mais l'e-mail n'a pas pu être ouvert dans le chat. Elle attend dans la boîte de révision par l'IA qu'un agent la prenne en charge (par exemple via MCP).",
+    "inboxLink": "Ouvrir la boîte de révision par l'IA",
+    "opened": "Le chat est ouvert avec l'e-mail joint. Lisez le message et appuyez sur Envoyer.",
+    "chatPrompt": "Reconnaissez les produits, les quantités et les prix dans l'e-mail de commande joint et répartissez ma transaction du {date} ({payee}, {amount}) par produit, avec une catégorie pour chacun. Prenez en charge la demande de révision par l'IA {requestId} et soumettez votre proposition pour celle-ci."
+  }
+}

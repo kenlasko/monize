@@ -962,6 +962,7 @@
     "emergencyAccess": "紧急访问",
     "apiAccess": "API 访问",
     "aiSettings": "AI 设置",
+    "emailReceipts": "邮件收据",
     "backupRestore": "备份与恢复",
     "help": "帮助与支持",
     "dangerZone": "危险区域",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "AI 设置",
       "description": "配置 AI 提供商、管理 API 密钥并查看使用统计。"
+    },
+    "emailReceiptsCard": {
+      "title": "邮件收据",
+      "description": "连接用于接收订单确认邮件的邮箱，并管理读取这些邮件的解析器。"
     },
     "delegateSecurityError": "无法加载您的安全设置。",
     "toasts": {

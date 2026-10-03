@@ -962,6 +962,7 @@
     "emergencyAccess": "Noodtoegang",
     "apiAccess": "API-toegang",
     "aiSettings": "AI-instellingen",
+    "emailReceipts": "E-mailbonnen",
     "backupRestore": "Back-up en herstel",
     "help": "Help & ondersteuning",
     "dangerZone": "Gevarenzone",
@@ -989,6 +990,10 @@
     "aiSettingsCard": {
       "title": "AI-instellingen",
       "description": "Configureer AI-providers, beheer API-sleutels en bekijk gebruiksstatistieken."
+    },
+    "emailReceiptsCard": {
+      "title": "E-mailbonnen",
+      "description": "Koppel een mailbox voor bestelbevestigingen en beheer de parsers die ze lezen."
     },
     "delegateSecurityError": "Kan jouw beveiligingsinstellingen niet laden.",
     "toasts": {

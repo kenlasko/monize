@@ -584,6 +584,35 @@ server -- so an IP restriction is the one that actually constrains it. The heade
 is sent because a deployment with no stable egress address cannot use an IP
 restriction at all.
 
+### Mailbox OAuth token endpoints (Google, Microsoft 365)
+
+The email receipts mailbox can sign in with OAuth2 instead of a password
+(`docs/future-plans/email-receipts.md` section 3a). Two calls leave the process,
+both from `backend/src/email-receipts/oauth/oauth-token.client.ts` and nowhere
+else: the code exchange that connects a mailbox and the refresh that obtains an
+access token for each IMAP connection. Neither writes anything the provider must
+later undo; what a failure leaves is decided by the caller:
+
+- **The secrets travel in the form body, never in a header**, so the platform
+  cannot quote one in a `TypeError` for an unsendable header value (the failure
+  `isSendableApiKey` exists for in `docs/backend/ai-and-payees.md`). The request
+  uses `redirect: "error"` and a 15 second `AbortSignal.timeout`.
+- **An error message is the code and the HTTP status** (`invalid_grant`,
+  `invalid_client`, `rejected`, `unavailable`, `invalid_response`) plus
+  `describeFetchFailure`'s socket line with every request-body value redacted:
+  never the authorization code, a token, the client secret or the provider's
+  `error_description`.
+- **A refusal of the grant (`invalid_grant`) deletes the stored refresh token**
+  with a conditional `UPDATE ... WHERE oauth_refresh_token_enc = <ciphertext read>`;
+  the mailbox keeps its row and receipts, the poll skips it, and its `last_error`
+  says to connect again. A rotated refresh token is stored the same way, before
+  the access token is used. Any other failure keeps the token and is an ordinary
+  poll failure: the next poll asks again.
+- **The call runs outside any database transaction**; `withScopedDb` is entered
+  only to write the rotated or deleted token. The one-time `state` nonce is
+  claimed in its own transaction before the exchange, so a failed exchange leaves
+  it spent and the user starts the flow again (INV-RECEIPT-007).
+
 ## 7. There is no shared lifecycle, and one workflow shows what it would look like
 
 No generic `pending -> externally_created -> verified -> available` state machine

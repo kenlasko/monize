@@ -29,6 +29,7 @@ export { AI_CHAT_STORAGE_KEY };
 export function ChatInterface({
   initialFiles,
   onInitialFilesStaged,
+  initialDraft,
 }: {
   /**
    * Files to stage on the composer as soon as the chat mounts, from a surface
@@ -44,6 +45,13 @@ export function ChatInterface({
    * be refused the same way.
    */
   onInitialFilesStaged?: () => void;
+  /**
+   * Text to put in the composer when the chat mounts, from a surface that
+   * already composed it (the receipts page's "Recognize with AI"). It is staged
+   * for the user to read, edit and send, never sent: only the mount reads it, so
+   * a caller that wants another draft remounts the chat with a new `key`.
+   */
+  initialDraft?: string;
 } = {}) {
   const t = useTranslations('ai');
   const messages = useAiChatStore((s) => s.messages);
@@ -53,7 +61,7 @@ export function ChatInterface({
   const cancel = useAiChatStore((s) => s.cancel);
   const clear = useAiChatStore((s) => s.clear);
 
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(initialDraft ?? '');
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);

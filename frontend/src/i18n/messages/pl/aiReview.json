@@ -32,9 +32,13 @@
     "transactionMissing": "Ta transakcja już nie istnieje",
     "rule": "Reguła: {name}",
     "manualRequest": "Zgłoszono ręcznie",
+    "emailReceipt": "Paragon z e-maila: {subject}, nadawca: {sender}",
+    "emailReceiptMissing": "Paragon z e-maila (wiadomość została usunięta)",
+    "viewEmailReceipts": "Zobacz paragony z e-maili",
     "agentNote": "Uwaga asystenta: {reason}",
     "dates": "Utworzono {created}, wygasa {expires}",
-    "viewTransaction": "Zobacz transakcję"
+    "viewTransaction": "Zobacz transakcję",
+    "waitingForAgent": "Oczekiwanie na agenta AI. <link>Połącz dostawcę AI w Ustawieniach</link> lub pozwól klientowi MCP ją przejąć."
   },
   "actions": {
     "dismiss": "Odrzuć"

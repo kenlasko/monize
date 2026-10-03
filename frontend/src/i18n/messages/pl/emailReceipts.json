@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "Powrót do Ustawień",
+    "title": "Paragony z e-maili",
+    "subtitle": "Odczytuj potwierdzenia zamówień ze skrzynki pocztowej i zamieniaj je na transakcje ze szczegółami pozycji",
+    "receiptsLink": "Otwórz zapisane wiadomości",
+    "demoRestricted": {
+      "heading": "Ograniczone w trybie demo",
+      "body": "Łączenie skrzynki pocztowej jest wyłączone w trybie demo."
+    }
+  },
+  "page": {
+    "title": "Paragony z e-maili",
+    "subtitle": "Potwierdzenia zamówień odczytane z Twojej skrzynki pocztowej i to, co się z każdym z nich stało"
+  },
+  "mailbox": {
+    "heading": "Skrzynka pocztowa",
+    "description": "Potwierdzenia zamówień są odczytywane przez IMAP z osobnej skrzynki pocztowej. Monize tylko ją odczytuje: nigdy nie zmienia, nie przenosi ani nie usuwa żadnej wiadomości.",
+    "loading": "Wczytywanie skrzynki pocztowej",
+    "dedicatedWarning": "Użyj osobnej skrzynki pocztowej. Odczytywana jest każda wiadomość w folderze, więc powinny w nim być wyłącznie potwierdzenia zamówień.",
+    "encryptionUnavailable": "Ten serwer nie potrafi szyfrować sekretów, więc hasło ani połączenie ze skrzynką nie mogą zostać zapisane. Poproś administratora o skonfigurowanie szyfrowania.",
+    "error": {
+      "title": "Nie udało się wczytać skrzynki pocztowej",
+      "body": "Żądanie nie powiodło się, więc nic jeszcze nie wiadomo o Twojej skrzynce. Spróbuj ponownie.",
+      "retry": "Spróbuj ponownie"
+    },
+    "oauth": {
+      "heading": "Połącz konto",
+      "explanation": "Google i Microsoft 365 zwykle odrzucają zwykłe hasło. Zaloguj się zamiast tego u dostawcy: dajesz Monize dostęp do skrzynki i nigdy nie wpisujesz tu jej hasła.",
+      "connect": {
+        "google": "Połącz z Google",
+        "microsoft": "Połącz z Microsoft"
+      },
+      "providerNames": {
+        "google": "Google",
+        "microsoft": "Microsoft 365"
+      },
+      "providersUnavailable": "Nie udało się sprawdzić, czy logowanie przez Google lub Microsoft jest dostępne. Ręczny formularz poniżej nadal działa.",
+      "startFailed": "Nie udało się rozpocząć logowania",
+      "badAuthorizationUrl": "Serwer zwrócił adres logowania, który nie jest bezpieczną stroną internetową, więc nie został otwarty.",
+      "connectedAs": "Połączono z {provider} jako {username}.",
+      "notConnected": "Połączenie z {provider} nie jest aktywne, więc skrzynka nie jest odczytywana. Połącz ponownie, aby wznowić.",
+      "reconnect": "Połącz ponownie",
+      "disconnect": "Rozłącz",
+      "disconnectDialog": {
+        "title": "Rozłączyć skrzynkę pocztową?",
+        "message": "Monize usunie zapisany dostęp do {provider} i przestanie odczytywać skrzynkę. Zapisane już wiadomości zostaną zachowane."
+      },
+      "disconnected": "Skrzynka pocztowa rozłączona",
+      "disconnectFailed": "Nie udało się rozłączyć skrzynki pocztowej",
+      "revokeNote": "Rozłączenie nie cofa udzielonego uprawnienia. Aby je wycofać, usuń Monize na stronie uprawnień {provider}.",
+      "revokeLink": {
+        "google": "Otwórz uprawnienia konta Google",
+        "microsoft": "Otwórz uprawnienia aplikacji Microsoft"
+      },
+      "saveButton": "Zapisz ustawienia",
+      "saved": "Ustawienia skrzynki pocztowej zapisane",
+      "saveFailed": "Nie udało się zapisać ustawień skrzynki pocztowej"
+    },
+    "form": {
+      "intro": "Albo wpisz dane dowolnej skrzynki IMAP. Większość dostawców wymaga hasła aplikacji zamiast hasła do konta.",
+      "hostLabel": "Serwer IMAP",
+      "portLabel": "Port",
+      "securityLabel": "Zabezpieczenie połączenia",
+      "securityOptions": {
+        "tls": "TLS (zwykle port 993)",
+        "starttls": "STARTTLS (zwykle port 143)"
+      },
+      "usernameLabel": "Nazwa użytkownika",
+      "passwordLabel": "Hasło",
+      "passwordStoredPlaceholder": "Hasło jest zapisane. Wpisz nowe, aby je zastąpić.",
+      "passwordRequiredHelp": "Wymagane dla nowej skrzynki lub gdy zmieni się serwer albo nazwa użytkownika.",
+      "passwordKeepHelp": "Zostaw puste, aby zachować zapisane hasło. Nigdy nie jest ponownie wyświetlane.",
+      "saveButton": "Zapisz skrzynkę",
+      "saved": "Skrzynka pocztowa zapisana",
+      "saveFailed": "Nie udało się zapisać skrzynki pocztowej",
+      "test": {
+        "button": "Testuj połączenie",
+        "ok": "{count, plural, one {Połączenie działa. Folder zawiera # wiadomość.} few {Połączenie działa. Folder zawiera # wiadomości.} many {Połączenie działa. Folder zawiera # wiadomości.} other {Połączenie działa. Folder zawiera # wiadomości.}}",
+        "error": "Połączenie nie powiodło się: {error}",
+        "failed": "Nie udało się przetestować połączenia"
+      }
+    },
+    "settings": {
+      "folderLabel": "Folder",
+      "folderHelp": "Folder do odczytu. Jest otwierany tylko do odczytu.",
+      "enabledLabel": "Odczytuj skrzynkę automatycznie",
+      "enabledHelp": "Gdy włączone, skrzynka jest sprawdzana co 15 minut. Zawsze możesz użyć opcji Sprawdź teraz.",
+      "aiModeLabel": "Tryb AI",
+      "aiModeHelp": "Czy skonfigurowany przez Ciebie dostawca AI może być używany przy paragonach. Odpowiedź AI to zawsze propozycja lub szkic, który akceptujesz Ty.",
+      "aiModes": {
+        "off": "Wyłączony",
+        "on_demand": "Na żądanie",
+        "automatic": "Automatyczny"
+      },
+      "aiModeDescriptions": {
+        "off": "AI nigdy nie jest wywoływane dla paragonów.",
+        "on_demand": "AI jest wywoływane tylko po naciśnięciu Rozpoznaj z AI lub Przygotuj parser z AI.",
+        "automatic": "Podczas sprawdzania skrzynki AI jest pytane o dopasowany paragon, którego żaden zatwierdzony parser nie odczytał w całości, i przygotowuje parser dla nadawcy, który go nie ma."
+      },
+      "autoApplyLabel": "Stosuj propozycje automatycznie",
+      "autoApplyHelp": "Domyślnie wyłączone. Propozycja jest stosowana bez pytania tylko wtedy, gdy spełnione jest wszystko naraz: zatwierdzony parser odczytał całą wiadomość, transakcję znaleziono po numerze zamówienia albo po dokładnej kwocie i odbiorcy przy jednym kandydacie, a propozycja zgadza się co do grosza. Wszystko inne czeka na Twoją akceptację."
+    },
+    "status": {
+      "lastPolled": "Ostatnie sprawdzenie",
+      "lastSuccess": "Ostatnie udane sprawdzenie",
+      "never": "Nigdy",
+      "lastError": "Ostatni błąd: {error}",
+      "lastErrorAt": "Ostatni błąd ({at}): {error}",
+      "pollNow": "Sprawdź teraz",
+      "pollResult": "Sprawdzanie zakończone: {fetched, plural, one {zapisano # wiadomość} few {zapisano # wiadomości} many {zapisano # wiadomości} other {zapisano # wiadomości}}, pominięto {skipped}, przetworzono {processed}.",
+      "pollFailed": "Sprawdzanie nie powiodło się",
+      "deleteButton": "Usuń skrzynkę",
+      "deleteDialog": {
+        "title": "Usunąć skrzynkę pocztową?",
+        "message": "Ustawienia skrzynki i wszystkie zapisane wiadomości zostaną usunięte, a otwarte prośby o przegląd z nich pochodzące odrzucone. Wiadomości w samej skrzynce nie zostaną naruszone."
+      },
+      "deleted": "Skrzynka pocztowa usunięta",
+      "deleteFailed": "Nie udało się usunąć skrzynki pocztowej"
+    }
+  },
+  "parsers": {
+    "heading": "Parsery",
+    "description": "Parser odczytuje potwierdzenia zamówień jednego nadawcy za pomocą wzorców, które piszesz lub sprawdzasz. Po zatwierdzeniu działa bez AI.",
+    "newButton": "Nowy parser",
+    "loading": "Wczytywanie parserów",
+    "error": {
+      "title": "Nie udało się wczytać parserów",
+      "body": "Żądanie nie powiodło się. Spróbuj ponownie.",
+      "retry": "Spróbuj ponownie"
+    },
+    "empty": {
+      "title": "Brak parserów",
+      "body": "Utwórz parser dla nadawcy potwierdzeń zamówień albo przygotuj go z zapisanej wiadomości na stronie Paragony z e-maili."
+    },
+    "columns": {
+      "name": "Parser",
+      "status": "Status",
+      "payee": "Odbiorca",
+      "actions": "Akcje"
+    },
+    "status": {
+      "draft": "Szkic",
+      "approved": "Zatwierdzony"
+    },
+    "source": {
+      "manual": "Napisany przez Ciebie",
+      "ai": "Przygotowany przez AI"
+    },
+    "invalid": "Nieprawidłowy",
+    "noPayee": "Brak odbiorcy",
+    "payeeUnknown": "Nie znaleziono odbiorcy",
+    "payeeUnavailable": "Lista odbiorców niedostępna",
+    "actions": {
+      "approve": "Zatwierdź"
+    },
+    "toasts": {
+      "approved": "Parser zatwierdzony",
+      "approveFailed": "Nie udało się zatwierdzić parsera",
+      "changedElsewhere": "Ten parser został zmieniony w innym miejscu. Lista została wczytana ponownie.",
+      "deleted": "Parser usunięty",
+      "deleteFailed": "Nie udało się usunąć parsera"
+    },
+    "deleteDialog": {
+      "title": "Usunąć parser?",
+      "message": "Parser {name} zostanie usunięty. Wiadomości, które już odczytał, zachowają swoje wyniki."
+    }
+  },
+  "editor": {
+    "createTitle": "Nowy parser",
+    "editTitle": "Edytuj parser",
+    "loading": "Wczytywanie odbiorców i kategorii",
+    "lookupsError": {
+      "title": "Nie udało się wczytać odbiorców i kategorii",
+      "body": "Listy wyboru ich potrzebują, więc edytor nie może jeszcze się otworzyć. Spróbuj ponownie.",
+      "retry": "Spróbuj ponownie"
+    },
+    "draftNote": "Ten parser jest szkicem. Nic nie odczytuje, dopóki go nie zatwierdzisz.",
+    "draftAiNote": "AI przygotowało ten parser na podstawie jednej przykładowej wiadomości. Sprawdź każdy wzorzec na swoich wiadomościach, a potem zatwierdź parser z listy. Nic nie odczytuje, dopóki tego nie zrobisz.",
+    "identityHeading": "Jakie wiadomości odczytuje",
+    "nameLabel": "Nazwa",
+    "payeeLabel": "Odbiorca",
+    "payeePlaceholder": "Brak odbiorcy",
+    "domainsLabel": "Domeny nadawcy",
+    "domainsHelp": "Po jednej w wierszu, maksymalnie {max}. Poddomena wymienionej domeny też pasuje.",
+    "subjectLabel": "Temat zawiera",
+    "subjectHelp": "Opcjonalne, po jednym w wierszu, maksymalnie {max}. Temat musi zawierać co najmniej jedno z nich, bez rozróżniania wielkości liter.",
+    "saveButton": "Zapisz parser",
+    "created": "Parser utworzony",
+    "updated": "Parser zapisany",
+    "saveFailed": "Nie udało się zapisać parsera",
+    "conflict": "Ten parser został zmieniony w innym miejscu od chwili jego otwarcia. Wczytaj go ponownie, aby zobaczyć aktualną wersję. Twoje zmiany tutaj nie są zapisane.",
+    "conflictReload": "Wczytaj parser ponownie",
+    "patterns": {
+      "globHelp": "Każdy wzorzec jest porównywany z całym wierszem wiadomości, bez rozróżniania wielkości liter. Użyj {star} dla dowolnego tekstu oraz nazwy w nawiasach klamrowych, na przykład {capture}, aby przechwycić wartość. Każde pole przyjmuje do {max} wzorców, po jednym w wierszu.",
+      "orderIdLabel": "Wzorce numeru zamówienia",
+      "orderIdHint": "Musi przechwytywać {capture}. Przykład: Numer zamówienia: {capture}",
+      "totalLabel": "Wzorce sumy",
+      "amountHint": "Musi przechwytywać {capture}. Przykład: Suma zamówienia {capture}",
+      "shippingLabel": "Wzorce kosztów wysyłki",
+      "discountLabel": "Wzorce rabatu",
+      "itemsHeading": "Pozycje zamówienia",
+      "startAfterLabel": "Pozycje zaczynają się po",
+      "startAfterHint": "Opcjonalne. Pozycje są odczytywane od wiersza po pierwszym wierszu zawierającym ten tekst.",
+      "stopAtLabel": "Pozycje kończą się na",
+      "stopAtHint": "Opcjonalne. Pozycje kończą się przed pierwszym wierszem zawierającym ten tekst.",
+      "itemPatternsLabel": "Wzorce pozycji",
+      "itemPatternsHint": "Musi przechwytywać {name} oraz albo {amount} (sumę wiersza), albo {price} (cenę jednostkową, opcjonalnie z {qty}), nigdy obu naraz. Przykład: {name} x {qty} {price}"
+    },
+    "categories": {
+      "rulesHeading": "Reguły kategorii",
+      "rulesHelp": "Pierwsza reguła, której wzorzec pasuje, ustawia kategorię pozycji. Wzorce mają tę samą składnię, na przykład {example}. Do {max} reguł.",
+      "noRules": "Brak reguł kategorii. Każda pozycja dostaje kategorię domyślną.",
+      "rulePatternLabel": "Wzorzec reguły {number}",
+      "ruleCategoryLabel": "Kategoria reguły {number}",
+      "categoryPlaceholder": "Brak kategorii",
+      "removeRule": "Usuń regułę {number}",
+      "addRule": "Dodaj regułę",
+      "ruleLimit": "Osiągnięto limit {max} reguł.",
+      "defaultLabel": "Kategoria domyślna",
+      "defaultHelp": "Używana dla pozycji, do których nie pasuje żadna reguła.",
+      "shippingLabel": "Kategoria wysyłki",
+      "shippingHelp": "Kategoria wiersza z kosztami wysyłki."
+    }
+  },
+  "problems": {
+    "heading": "Definicja parsera jest nieprawidłowa:",
+    "item": "{where}: {problem}",
+    "paths": {
+      "definition": "Definicja",
+      "line": "{field}, wiersz {line}",
+      "rule": "Reguła kategorii {rule}, {part}"
+    },
+    "fields": {
+      "orderId": "Wzorce numeru zamówienia",
+      "total": "Wzorce sumy",
+      "shipping": "Wzorce kosztów wysyłki",
+      "discount": "Wzorce rabatu",
+      "itemPatterns": "Wzorce pozycji",
+      "startAfter": "Pozycje zaczynają się po",
+      "stopAt": "Pozycje kończą się na",
+      "items": "Pozycje zamówienia",
+      "categoryRules": "Reguły kategorii",
+      "rulePattern": "wzorzec",
+      "ruleCategory": "kategoria",
+      "defaultCategory": "Kategoria domyślna",
+      "shippingCategory": "Kategoria wysyłki"
+    },
+    "codes": {
+      "not_object": "nie jest prawidłową definicją",
+      "unknown_key": "nie jest czymś, co parser może mieć",
+      "invalid_version": "to wersja, której ten serwer nie odczytuje",
+      "invalid_type": "ma wartość niewłaściwego rodzaju",
+      "empty": "nie może być puste",
+      "too_many": "ma zbyt wiele wpisów (najwyżej {max})",
+      "too_long": "jest zbyt długie (najwyżej {max} znaków)",
+      "control_character": "zawiera znak sterujący",
+      "malformed_capture": "ma przechwytywanie w nawiasach klamrowych, które jest nieprawidłowe",
+      "too_many_captures": "ma zbyt wiele przechwyceń",
+      "duplicate_capture": "używa dwa razy tej samej nazwy przechwytywania",
+      "capture_not_allowed": "używa nazwy przechwytywania, której to pole nie przyjmuje",
+      "capture_missing": "brakuje przechwytywania, którego to pole potrzebuje",
+      "capture_conflict": "przechwytuje jednocześnie sumę wiersza i cenę jednostkową. Użyj jednego z nich.",
+      "invalid_uuid": "nie jest prawidłową kategorią"
+    }
+  },
+  "test": {
+    "heading": "Testuj na zapisanej wiadomości",
+    "help": "Odczytuje zapisaną wiadomość za pomocą powyższych wzorców, zapisanych lub nie, i pokazuje, co zostałoby znalezione i z którą transakcją by się powiązało. Nic nie jest zapisywane.",
+    "loadFailed": "Nie udało się wczytać zapisanych wiadomości, więc nie ma jeszcze na czym testować.",
+    "noReceipts": "Nie zapisano jeszcze żadnych wiadomości. Najpierw sprawdź skrzynkę pocztową.",
+    "receiptLabel": "Wiadomość",
+    "choosePlaceholder": "Wybierz wiadomość",
+    "receiptOption": "{subject} od {sender} ({date})",
+    "button": "Testuj",
+    "failed": "Test nie powiódł się",
+    "matchHeading": "Dopasowanie transakcji",
+    "matched": "Powiąże transakcję z dnia {date} na kwotę {amount} ({payee}), znalezioną według: {how}.",
+    "matchKinds": {
+      "order_id": "numeru zamówienia",
+      "amount_payee": "kwoty i odbiorcy",
+      "amount_only": "kwoty",
+      "manual": "Twojego wyboru"
+    },
+    "noPayee": "brak odbiorcy",
+    "ambiguous": "{count, plural, one {Pasuje # transakcja} few {Pasują # transakcje} many {Pasuje # transakcji} other {Pasuje # transakcji}} jednakowo dobrze, więc żadna nie zostanie powiązana, dopóki jednej nie wybierzesz.",
+    "unmatched": "Żadna transakcja nie pasuje (sprawdzono {count, plural, one {# kandydata} few {# kandydatów} many {# kandydatów} other {# kandydatów}})."
+  },
+  "parsed": {
+    "notFound": "Nie znaleziono",
+    "noCategory": "Brak kategorii",
+    "unknownCategory": "Nieznana kategoria",
+    "categoryUnavailable": "Kategorie nie zostały wczytane",
+    "noItems": "Nie odczytano żadnych pozycji.",
+    "orderId": "Numer zamówienia",
+    "total": "Suma",
+    "shipping": "Wysyłka",
+    "discount": "Rabat",
+    "columns": {
+      "item": "Pozycja",
+      "qty": "Ilość",
+      "amount": "Kwota",
+      "category": "Kategoria"
+    },
+    "complete": "Odczytano w całości",
+    "incomplete": "Nie odczytano w całości",
+    "reasons": {
+      "no_total": "Wiadomość nie podaje sumy.",
+      "no_items": "Nie znaleziono żadnych pozycji.",
+      "items_unbalanced": "Pozycje nie sumują się do łącznej kwoty.",
+      "items_uncategorized": "Niektóre pozycje nie mają kategorii.",
+      "shipping_uncategorized": "Wiersz z kosztami wysyłki nie ma kategorii."
+    },
+    "readByAi": "Odczytano przez AI"
+  },
+  "state": {
+    "pending": "Czeka na odczyt",
+    "skipped": "Pominięta",
+    "no_parser": "Brak parsera",
+    "parse_failed": "Nie udało się odczytać",
+    "unmatched": "Nie znaleziono transakcji",
+    "ambiguous": "Pasuje kilka transakcji",
+    "review_conflict": "Otwarta jest inna prośba",
+    "ignored": "Zignorowana",
+    "proposed": "Czeka na akceptację",
+    "applied": "Zastosowana",
+    "dismissed": "Odrzucona",
+    "expired": "Wygasła",
+    "pending_ai": "Czeka na AI",
+    "request_missing": "Brak prośby"
+  },
+  "receipts": {
+    "loading": "Wczytywanie wiadomości",
+    "links": {
+      "reviewInbox": "Otwórz skrzynkę przeglądów AI",
+      "settings": "Ustawienia skrzynki i parserów"
+    },
+    "filter": {
+      "label": "Filtruj według statusu",
+      "all": "Wszystkie",
+      "pending": "Czeka na odczyt",
+      "skipped": "Pominięta",
+      "no_parser": "Brak parsera",
+      "parse_failed": "Nie udało się odczytać",
+      "unmatched": "Nie znaleziono transakcji",
+      "ambiguous": "Pasuje kilka transakcji",
+      "review_conflict": "Otwarta jest inna prośba",
+      "review": "W trakcie przeglądu",
+      "ignored": "Zignorowana"
+    },
+    "columns": {
+      "received": "Odebrano",
+      "email": "Wiadomość",
+      "transaction": "Transakcja",
+      "state": "Status",
+      "actions": "Akcje"
+    },
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "brak odbiorcy",
+    "noTransaction": "Jeszcze brak",
+    "error": {
+      "title": "Nie udało się wczytać wiadomości",
+      "body": "Żądanie nie powiodło się, więc nic jeszcze nie wiadomo o Twoich wiadomościach. Spróbuj ponownie.",
+      "retry": "Spróbuj ponownie"
+    },
+    "empty": {
+      "title": "Brak wiadomości",
+      "body": "Potwierdzenia zamówień pojawią się tutaj po odczytaniu skrzynki pocztowej.",
+      "filteredTitle": "Brak wiadomości o tym statusie",
+      "filteredBody": "Wybierz inny status, aby zobaczyć pozostałe.",
+      "noMailboxBody": "Nie połączono jeszcze żadnej skrzynki pocztowej. Połącz ją, aby zacząć odczytywać potwierdzenia zamówień.",
+      "connectButton": "Połącz skrzynkę pocztową"
+    },
+    "actions": {
+      "view": "Zobacz",
+      "reprocess": "Przetwórz ponownie",
+      "link": "Wybierz transakcję",
+      "recognizeAi": "Rozpoznaj z AI",
+      "draftParser": "Przygotuj parser z AI",
+      "createParser": "Utwórz parser",
+      "ignore": "Zignoruj"
+    },
+    "toasts": {
+      "reprocessed": "Wiadomość przetworzona ponownie",
+      "reprocessFailed": "Nie udało się ponownie przetworzyć wiadomości",
+      "draftFailed": "Nie udało się przygotować parsera",
+      "ignored": "Wiadomość zignorowana",
+      "ignoreFailed": "Nie udało się zignorować wiadomości",
+      "deleted": "Wiadomość usunięta",
+      "deleteFailed": "Nie udało się usunąć wiadomości"
+    },
+    "notices": {
+      "draftCreated": "AI przygotowało parser {name}. Nic nie odczytuje, dopóki go nie sprawdzisz i nie zatwierdzisz.",
+      "draftLink": "Sprawdź go w ustawieniach parserów"
+    },
+    "ignoreDialog": {
+      "title": "Zignorować tę wiadomość?",
+      "message": "Wiadomość {subject} niczego nie zaproponuje, a jej otwarta prośba o przegląd zostanie odrzucona.",
+      "confirm": "Zignoruj"
+    },
+    "deleteDialog": {
+      "title": "Usunąć tę wiadomość?",
+      "message": "Zapisana wiadomość {subject} zostanie usunięta, a jej otwarta prośba o przegląd odrzucona. Wiadomość w skrzynce nie zostanie naruszona, a kolejne sprawdzanie nie pobierze jej ponownie."
+    }
+  },
+  "detail": {
+    "title": "Paragon z e-maila",
+    "loading": "Wczytywanie wiadomości",
+    "error": {
+      "title": "Nie udało się wczytać wiadomości",
+      "body": "Żądanie nie powiodło się. Spróbuj ponownie.",
+      "retry": "Spróbuj ponownie"
+    },
+    "from": "Od",
+    "received": "Odebrano",
+    "subject": "Temat",
+    "state": "Status",
+    "parser": "Parser",
+    "noParser": "Brak",
+    "matchedBy": "Dopasowano według",
+    "matchKinds": {
+      "order_id": "Numer zamówienia",
+      "amount_payee": "Kwota i odbiorca",
+      "amount_only": "Kwota",
+      "manual": "Twój wybór"
+    },
+    "transaction": "Transakcja",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "brak odbiorcy",
+    "viewTransaction": "Zobacz transakcję",
+    "noTransaction": "Jeszcze brak",
+    "reasons": {
+      "too_large": "Wiadomość przekracza limit rozmiaru, więc została zapisana bez odczytu.",
+      "undecodable": "Nie udało się zdekodować wiadomości, więc została zapisana bez odczytu.",
+      "draft_failed": "AI nie zdołało przygotować parsera dla tego nadawcy.",
+      "parser_invalid": "Parser dla tego nadawcy jest nieprawidłowy. Edytuj go w ustawieniach parserów.",
+      "no_total": "Parser nie znalazł w tej wiadomości sumy.",
+      "no_items": "Parser nie znalazł żadnych pozycji.",
+      "items_unbalanced": "Pozycje nie sumują się do łącznej kwoty.",
+      "items_uncategorized": "Niektóre pozycje nie mają kategorii.",
+      "shipping_uncategorized": "Wiersz z kosztami wysyłki nie ma kategorii.",
+      "amount_differs": "Odczytana suma różni się od kwoty transakcji, więc proponowany jest tylko opis.",
+      "proposal_fallback": "Propozycja ze szczegółami pozycji została odrzucona, więc proponowany jest tylko opis.",
+      "nothing_to_propose": "Wiadomość niczego nie wnosi do tej transakcji.",
+      "proposal_refused": "Propozycja została odrzucona, więc nic nie zaproponowano."
+    },
+    "reasonUnknown": "Powód: {reason}",
+    "requestNote": "Prośba o przegląd ({state}): {note}",
+    "parsedHeading": "Co odczytał parser",
+    "notParsed": "Z tej wiadomości nic jeszcze nie odczytano.",
+    "candidatesHeading": "Pasujące transakcje",
+    "candidatesHelp": "Kilka transakcji pasuje do tej wiadomości jednakowo dobrze. Wybierz tę, którą opłacono.",
+    "linkButton": "Powiąż z tą transakcją",
+    "linked": "Wiadomość powiązana z transakcją",
+    "linkFailed": "Nie udało się powiązać wiadomości",
+    "textHeading": "Treść wiadomości",
+    "textLabel": "Treść wiadomości",
+    "noText": "Wiadomość nie ma treści."
+  },
+  "picker": {
+    "heading": "Wybierz transakcję",
+    "help": "Żadna transakcja nie została dopasowana automatycznie. To Twoje transakcje od {from} do {to}, czyli z dni wokół daty wiadomości. Wybierz tę, którą opłacono.",
+    "searchLabel": "Szukaj",
+    "searchPlaceholder": "Odbiorca, opis lub kwota",
+    "searchButton": "Szukaj",
+    "loading": "Wczytywanie transakcji",
+    "error": "Nie udało się wczytać transakcji.",
+    "retry": "Spróbuj ponownie",
+    "empty": "W tym okresie nie masz transakcji, które można powiązać.",
+    "emptySearch": "Żadna transakcja z tego okresu nie pasuje do wyszukiwania.",
+    "row": "{date}, {amount}, {payee}",
+    "noPayee": "brak odbiorcy",
+    "linkButton": "Powiąż",
+    "hasMore": "Pokazano tylko pierwsze {count}. Zawęź listę za pomocą wyszukiwania.",
+    "ai": {
+      "heading": "Wybierz transakcję dla AI",
+      "help": "To Twoje transakcje od {from} do {to}, czyli z dni wokół daty wiadomości. Wybierz tę, którą AI ma podzielić według produktów z wiadomości.",
+      "linkButton": "Użyj tej transakcji"
+    }
+  },
+  "callback": {
+    "title": "Łączenie skrzynki pocztowej",
+    "connecting": "Kończenie łączenia",
+    "toasts": {
+      "connected": "Skrzynka pocztowa połączona"
+    },
+    "success": {
+      "title": "Skrzynka pocztowa połączona",
+      "body": "Połączono jako {username}. Powrót do ustawień."
+    },
+    "providerError": {
+      "title": "Logowanie nie zostało ukończone",
+      "withDescription": "Dostawca zgłosił: {error}. {description}",
+      "withoutDescription": "Dostawca zgłosił: {error}."
+    },
+    "missingParameters": {
+      "title": "Ta strona została otwarta bez wyniku logowania",
+      "body": "Zacznij od nowa w ustawieniach paragonów z e-maili i użyj jednego z przycisków Połącz."
+    },
+    "failed": {
+      "title": "Nie udało się połączyć skrzynki pocztowej",
+      "fallback": "Serwer odrzucił połączenie. Zacznij od nowa w ustawieniach paragonów z e-maili."
+    },
+    "backLink": "Powrót do ustawień paragonów z e-maili"
+  },
+  "recognize": {
+    "title": "Rozpoznaj z AI",
+    "transactionSummary": "{date}, {amount}, {payee}",
+    "noPayee": "brak odbiorcy",
+    "confirmMessage": "Ta wiadomość jest powiązana z transakcją {summary}. AI odczyta wiadomość i zaproponuje podział tej transakcji według produktów. Kontynuować z tą transakcją?",
+    "confirm": "Rozpoznaj z AI",
+    "chooseOther": "Wybierz inną transakcję",
+    "candidatesHeading": "Którą transakcję opłacono tą wiadomością?",
+    "candidatesHelp": "Do tej wiadomości pasuje kilka transakcji. Wybierz tę, której ma użyć AI, lub wyszukaj inną.",
+    "candidatesLoading": "Wczytywanie pasujących transakcji",
+    "candidatesError": "Nie udało się wczytać pasujących transakcji.",
+    "retry": "Spróbuj ponownie",
+    "useButton": "Użyj tej transakcji",
+    "searchOther": "Szukaj innych transakcji",
+    "back": "Wstecz",
+    "failed": "Nie udało się rozpocząć rozpoznawania",
+    "queued": "W kolejce: żaden asystent AI nie może teraz odpowiedzieć, więc prośba czeka w skrzynce przeglądów AI na agenta (na przykład przez MCP).",
+    "handoffFailed": "Prośba jest w kolejce, ale nie udało się otworzyć wiadomości w czacie. Czeka w skrzynce przeglądów AI na agenta (na przykład przez MCP).",
+    "inboxLink": "Otwórz skrzynkę przeglądów AI",
+    "opened": "Otwarto czat z dołączoną wiadomością. Przeczytaj treść i naciśnij Wyślij.",
+    "chatPrompt": "Rozpoznaj produkty, ilości i ceny w załączonej wiadomości z zamówieniem i podziel moją transakcję z {date} ({payee}, {amount}) według produktów, przypisując każdemu kategorię. Przejmij prośbę o przegląd AI {requestId} i prześlij do niej swoją propozycję."
+  }
+}

@@ -177,6 +177,13 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-HA-005 one claimant, one answer | supporting | -- | required | **required** | **required** | -- | -- | optional |
 | INV-RULE-001 a rule never moves a balance | **required** | -- | supporting | -- | -- | -- | -- | -- |
 | INV-RULE-002 a rule applies inside the inserting transaction | supporting | **required** | **required** | -- | -- | required | -- | optional |
+| INV-RECEIPT-001 a receipt mailbox is read, never written | required | **required** | -- | -- | -- | -- | optional | optional |
+| INV-RECEIPT-002 a receipt email is stored once | supporting | -- | **required** | optional | -- | optional | -- | -- |
+| INV-RECEIPT-003 a receipt reaches the ledger only through the card | required | -- | **required** | -- | -- | -- | -- | optional |
+| INV-RECEIPT-004 a mailbox reaches only a public address | **required** | -- | -- | -- | -- | -- | -- | -- |
+| INV-RECEIPT-005 a mailbox secret is encrypted and never returned | required | -- | **required** | -- | -- | -- | -- | -- |
+| INV-RECEIPT-006 one poll per mailbox at a time | supporting | -- | required | optional | **required** | -- | -- | -- |
+| INV-RECEIPT-007 an OAuth callback completes its own flow once | **required** | -- | required | -- | -- | -- | -- | -- |
 
 Bold marks the kind that is load-bearing -- the one whose absence means the
 invariant is unverified no matter how many others pass. `INV-PROFILE-001`'s is a

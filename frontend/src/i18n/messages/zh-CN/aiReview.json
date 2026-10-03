@@ -32,9 +32,13 @@
     "transactionMissing": "此交易已不存在",
     "rule": "规则：{name}",
     "manualRequest": "手动请求",
+    "emailReceipt": "邮件收据：来自 {sender} 的 {subject}",
+    "emailReceiptMissing": "邮件收据（该邮件已被删除）",
+    "viewEmailReceipts": "查看邮件收据",
     "agentNote": "助手备注：{reason}",
     "dates": "创建于 {created}，到期于 {expires}",
-    "viewTransaction": "查看交易"
+    "viewTransaction": "查看交易",
+    "waitingForAgent": "正在等待 AI 代理。请<link>在设置中连接 AI 提供商</link>，或让 MCP 客户端来认领。"
   },
   "actions": {
     "dismiss": "忽略"

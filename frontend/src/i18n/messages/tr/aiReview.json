@@ -32,9 +32,13 @@
     "transactionMissing": "Bu işlem artık yok",
     "rule": "Kural: {name}",
     "manualRequest": "Elle istendi",
+    "emailReceipt": "E-posta makbuzu: {subject}, gönderen: {sender}",
+    "emailReceiptMissing": "E-posta makbuzu (e-posta silindi)",
+    "viewEmailReceipts": "E-posta makbuzlarını görüntüle",
     "agentNote": "Asistanın notu: {reason}",
     "dates": "Oluşturulma {created}, bitiş {expires}",
-    "viewTransaction": "İşlemi görüntüle"
+    "viewTransaction": "İşlemi görüntüle",
+    "waitingForAgent": "Bir yapay zekâ ajanı bekleniyor. <link>Ayarlar'dan bir yapay zekâ sağlayıcısı bağlayın</link> veya bir MCP istemcisinin üstlenmesine izin verin."
   },
   "actions": {
     "dismiss": "Yoksay"

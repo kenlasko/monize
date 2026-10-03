@@ -1,0 +1,528 @@
+{
+  "settingsPage": {
+    "backLink": "[XX-Back to Settings-XX]",
+    "title": "[XX-Email Receipts-XX]",
+    "subtitle": "[XX-Read order confirmations from a mailbox and turn them into itemized transactions-XX]",
+    "receiptsLink": "[XX-Open the stored emails-XX]",
+    "demoRestricted": {
+      "heading": "[XX-Restricted in Demo Mode-XX]",
+      "body": "[XX-Connecting a mailbox is disabled in demo mode.-XX]"
+    }
+  },
+  "page": {
+    "title": "[XX-Email Receipts-XX]",
+    "subtitle": "[XX-The order-confirmation emails read from your mailbox, and what became of each one-XX]"
+  },
+  "mailbox": {
+    "heading": "[XX-Mailbox-XX]",
+    "description": "[XX-Order confirmations are read from a dedicated mailbox over IMAP. Monize only reads it: it never changes, moves or deletes a message.-XX]",
+    "loading": "[XX-Loading the mailbox-XX]",
+    "dedicatedWarning": "[XX-Use a dedicated mailbox. Every message in the folder is read, so it should hold nothing but order confirmations.-XX]",
+    "encryptionUnavailable": "[XX-This server cannot encrypt secrets, so a mailbox password or connection cannot be saved. Ask the administrator to set up encryption.-XX]",
+    "error": {
+      "title": "[XX-The mailbox could not be loaded-XX]",
+      "body": "[XX-The request failed, so nothing is known about your mailbox yet. Try again.-XX]",
+      "retry": "[XX-Try again-XX]"
+    },
+    "oauth": {
+      "heading": "[XX-Connect an account-XX]",
+      "explanation": "[XX-Google and Microsoft 365 usually refuse a plain password. Sign in with the provider instead: you grant Monize access to the mailbox and never type its password here.-XX]",
+      "connect": {
+        "google": "[XX-Connect with Google-XX]",
+        "microsoft": "[XX-Connect with Microsoft-XX]"
+      },
+      "providerNames": {
+        "google": "[XX-Google-XX]",
+        "microsoft": "[XX-Microsoft 365-XX]"
+      },
+      "providersUnavailable": "[XX-Whether Google or Microsoft sign-in is available could not be checked. The manual form below still works.-XX]",
+      "startFailed": "[XX-Could not start the sign-in-XX]",
+      "badAuthorizationUrl": "[XX-The server returned a sign-in address that is not a secure web page, so it was not opened.-XX]",
+      "connectedAs": "[XX-Connected to {provider} as {username}.-XX]",
+      "notConnected": "[XX-The connection to {provider} is not active, so the mailbox is not being read. Connect again to resume.-XX]",
+      "reconnect": "[XX-Reconnect-XX]",
+      "disconnect": "[XX-Disconnect-XX]",
+      "disconnectDialog": {
+        "title": "[XX-Disconnect the mailbox?-XX]",
+        "message": "[XX-Monize will delete its stored access to {provider} and stop reading the mailbox. Emails already stored are kept.-XX]"
+      },
+      "disconnected": "[XX-Mailbox disconnected-XX]",
+      "disconnectFailed": "[XX-Could not disconnect the mailbox-XX]",
+      "revokeNote": "[XX-Disconnecting does not remove the permission you granted. To withdraw it, remove Monize on the {provider} permissions page.-XX]",
+      "revokeLink": {
+        "google": "[XX-Open Google account permissions-XX]",
+        "microsoft": "[XX-Open Microsoft app permissions-XX]"
+      },
+      "saveButton": "[XX-Save settings-XX]",
+      "saved": "[XX-Mailbox settings saved-XX]",
+      "saveFailed": "[XX-Could not save the mailbox settings-XX]"
+    },
+    "form": {
+      "intro": "[XX-Or enter the details of any IMAP mailbox. Most providers need an app password rather than your account password.-XX]",
+      "hostLabel": "[XX-IMAP server-XX]",
+      "portLabel": "[XX-Port-XX]",
+      "securityLabel": "[XX-Connection security-XX]",
+      "securityOptions": {
+        "tls": "[XX-TLS (usually port 993)-XX]",
+        "starttls": "[XX-STARTTLS (usually port 143)-XX]"
+      },
+      "usernameLabel": "[XX-User name-XX]",
+      "passwordLabel": "[XX-Password-XX]",
+      "passwordStoredPlaceholder": "[XX-A password is stored. Type to replace it.-XX]",
+      "passwordRequiredHelp": "[XX-Required for a new mailbox, or when the server or user name changes.-XX]",
+      "passwordKeepHelp": "[XX-Leave blank to keep the stored password. It is never shown again.-XX]",
+      "saveButton": "[XX-Save mailbox-XX]",
+      "saved": "[XX-Mailbox saved-XX]",
+      "saveFailed": "[XX-Could not save the mailbox-XX]",
+      "test": {
+        "button": "[XX-Test connection-XX]",
+        "ok": "[XX-{count, plural, one {The connection works. The folder holds # message.} other {The connection works. The folder holds # messages.}}-XX]",
+        "error": "[XX-The connection failed: {error}-XX]",
+        "failed": "[XX-Could not test the connection-XX]"
+      }
+    },
+    "settings": {
+      "folderLabel": "[XX-Folder-XX]",
+      "folderHelp": "[XX-The folder to read. It is opened read-only.-XX]",
+      "enabledLabel": "[XX-Read the mailbox automatically-XX]",
+      "enabledHelp": "[XX-When on, the mailbox is polled every 15 minutes. You can always use Poll now.-XX]",
+      "aiModeLabel": "[XX-AI mode-XX]",
+      "aiModeHelp": "[XX-Whether the AI provider you configured may be used on receipts. An AI answer is always a proposal or a draft that you approve.-XX]",
+      "aiModes": {
+        "off": "[XX-Off-XX]",
+        "on_demand": "[XX-On demand-XX]",
+        "automatic": "[XX-Automatic-XX]"
+      },
+      "aiModeDescriptions": {
+        "off": "[XX-The AI is never called for receipts.-XX]",
+        "on_demand": "[XX-The AI is called only when you press Recognize with AI or Draft parser with AI.-XX]",
+        "automatic": "[XX-The poll asks the AI about a matched receipt that no approved parser could read completely, and drafts a parser for a sender that has none.-XX]"
+      },
+      "autoApplyLabel": "[XX-Apply proposals automatically-XX]",
+      "autoApplyHelp": "[XX-Off by default. A proposal is applied without asking only when all of these hold: an approved parser read the whole email, the transaction was found by order number or by exact amount and payee with a single candidate, and the proposal adds up to the cent. Everything else waits for your approval.-XX]"
+    },
+    "status": {
+      "lastPolled": "[XX-Last poll-XX]",
+      "lastSuccess": "[XX-Last successful poll-XX]",
+      "never": "[XX-Never-XX]",
+      "lastError": "[XX-Last error: {error}-XX]",
+      "lastErrorAt": "[XX-Last error ({at}): {error}-XX]",
+      "pollNow": "[XX-Poll now-XX]",
+      "pollResult": "[XX-Poll finished: {fetched, plural, one {# email stored} other {# emails stored}}, {skipped} skipped, {processed} processed.-XX]",
+      "pollFailed": "[XX-The poll failed-XX]",
+      "deleteButton": "[XX-Delete mailbox-XX]",
+      "deleteDialog": {
+        "title": "[XX-Delete the mailbox?-XX]",
+        "message": "[XX-The mailbox settings and every stored email will be deleted, and open review requests from them dismissed. The emails in the mailbox itself are not touched.-XX]"
+      },
+      "deleted": "[XX-Mailbox deleted-XX]",
+      "deleteFailed": "[XX-Could not delete the mailbox-XX]"
+    }
+  },
+  "parsers": {
+    "heading": "[XX-Parsers-XX]",
+    "description": "[XX-A parser reads the order confirmations of one sender with patterns you write or review. Once approved it runs without the AI.-XX]",
+    "newButton": "[XX-New parser-XX]",
+    "loading": "[XX-Loading parsers-XX]",
+    "error": {
+      "title": "[XX-The parsers could not be loaded-XX]",
+      "body": "[XX-The request failed. Try again.-XX]",
+      "retry": "[XX-Try again-XX]"
+    },
+    "empty": {
+      "title": "[XX-No parsers yet-XX]",
+      "body": "[XX-Create one for a sender of order confirmations, or draft one from a stored email on the Email Receipts page.-XX]"
+    },
+    "columns": {
+      "name": "[XX-Parser-XX]",
+      "status": "[XX-Status-XX]",
+      "payee": "[XX-Payee-XX]",
+      "actions": "[XX-Actions-XX]"
+    },
+    "status": {
+      "draft": "[XX-Draft-XX]",
+      "approved": "[XX-Approved-XX]"
+    },
+    "source": {
+      "manual": "[XX-Written by you-XX]",
+      "ai": "[XX-Drafted by AI-XX]"
+    },
+    "invalid": "[XX-Invalid-XX]",
+    "noPayee": "[XX-No payee-XX]",
+    "payeeUnknown": "[XX-Payee not found-XX]",
+    "payeeUnavailable": "[XX-Payee list unavailable-XX]",
+    "actions": {
+      "approve": "[XX-Approve-XX]"
+    },
+    "toasts": {
+      "approved": "[XX-Parser approved-XX]",
+      "approveFailed": "[XX-Could not approve the parser-XX]",
+      "changedElsewhere": "[XX-This parser was changed elsewhere. The list has been reloaded.-XX]",
+      "deleted": "[XX-Parser deleted-XX]",
+      "deleteFailed": "[XX-Could not delete the parser-XX]"
+    },
+    "deleteDialog": {
+      "title": "[XX-Delete the parser?-XX]",
+      "message": "[XX-The parser {name} will be deleted. Emails it already read keep their results.-XX]"
+    }
+  },
+  "editor": {
+    "createTitle": "[XX-New parser-XX]",
+    "editTitle": "[XX-Edit parser-XX]",
+    "loading": "[XX-Loading payees and categories-XX]",
+    "lookupsError": {
+      "title": "[XX-Payees and categories could not be loaded-XX]",
+      "body": "[XX-The pickers need them, so the editor cannot open yet. Try again.-XX]",
+      "retry": "[XX-Try again-XX]"
+    },
+    "draftNote": "[XX-This parser is a draft. It reads nothing until you approve it.-XX]",
+    "draftAiNote": "[XX-The AI drafted this parser from one sample email. Check every pattern against your emails, then approve it from the list. It reads nothing until you do.-XX]",
+    "identityHeading": "[XX-Which emails it reads-XX]",
+    "nameLabel": "[XX-Name-XX]",
+    "payeeLabel": "[XX-Payee-XX]",
+    "payeePlaceholder": "[XX-No payee-XX]",
+    "domainsLabel": "[XX-Sender domains-XX]",
+    "domainsHelp": "[XX-One per line, up to {max}. A sub-domain of a listed domain also matches.-XX]",
+    "subjectLabel": "[XX-Subject contains-XX]",
+    "subjectHelp": "[XX-Optional, one per line, up to {max}. The subject must contain at least one of them, ignoring case.-XX]",
+    "saveButton": "[XX-Save parser-XX]",
+    "created": "[XX-Parser created-XX]",
+    "updated": "[XX-Parser saved-XX]",
+    "saveFailed": "[XX-Could not save the parser-XX]",
+    "conflict": "[XX-This parser was changed elsewhere since you opened it. Reload it to see the current version. Your edits here are not saved.-XX]",
+    "conflictReload": "[XX-Reload the parser-XX]",
+    "patterns": {
+      "globHelp": "[XX-Each pattern is matched against one whole line of the email, ignoring case. Use {star} for any text and a name in braces, such as {capture}, to capture a value. Each field takes up to {max} patterns, one per line.-XX]",
+      "orderIdLabel": "[XX-Order number patterns-XX]",
+      "orderIdHint": "[XX-Must capture {capture}. Example: Order number: {capture}-XX]",
+      "totalLabel": "[XX-Total patterns-XX]",
+      "amountHint": "[XX-Must capture {capture}. Example: Order total {capture}-XX]",
+      "shippingLabel": "[XX-Shipping patterns-XX]",
+      "discountLabel": "[XX-Discount patterns-XX]",
+      "itemsHeading": "[XX-Line items-XX]",
+      "startAfterLabel": "[XX-Items start after-XX]",
+      "startAfterHint": "[XX-Optional. Items are read from the line after the first line containing this text.-XX]",
+      "stopAtLabel": "[XX-Items stop at-XX]",
+      "stopAtHint": "[XX-Optional. Items end before the first line containing this text.-XX]",
+      "itemPatternsLabel": "[XX-Item patterns-XX]",
+      "itemPatternsHint": "[XX-Must capture {name} and either {amount} (the line total) or {price} (the unit price, optionally with {qty}), never both. Example: {name} x {qty} {price}-XX]"
+    },
+    "categories": {
+      "rulesHeading": "[XX-Category rules-XX]",
+      "rulesHelp": "[XX-The first rule whose pattern matches an item name sets its category. Patterns use the same syntax, for example {example}. Up to {max} rules.-XX]",
+      "noRules": "[XX-No category rules. Every item gets the default category.-XX]",
+      "rulePatternLabel": "[XX-Rule {number} pattern-XX]",
+      "ruleCategoryLabel": "[XX-Rule {number} category-XX]",
+      "categoryPlaceholder": "[XX-No category-XX]",
+      "removeRule": "[XX-Remove rule {number}-XX]",
+      "addRule": "[XX-Add a rule-XX]",
+      "ruleLimit": "[XX-The limit of {max} rules is reached.-XX]",
+      "defaultLabel": "[XX-Default category-XX]",
+      "defaultHelp": "[XX-Used for items that no rule matches.-XX]",
+      "shippingLabel": "[XX-Shipping category-XX]",
+      "shippingHelp": "[XX-The category of the shipping line.-XX]"
+    }
+  },
+  "problems": {
+    "heading": "[XX-The parser definition is not valid:-XX]",
+    "item": "[XX-{where}: {problem}-XX]",
+    "paths": {
+      "definition": "[XX-The definition-XX]",
+      "line": "[XX-{field}, line {line}-XX]",
+      "rule": "[XX-Category rule {rule}, {part}-XX]"
+    },
+    "fields": {
+      "orderId": "[XX-Order number patterns-XX]",
+      "total": "[XX-Total patterns-XX]",
+      "shipping": "[XX-Shipping patterns-XX]",
+      "discount": "[XX-Discount patterns-XX]",
+      "itemPatterns": "[XX-Item patterns-XX]",
+      "startAfter": "[XX-Items start after-XX]",
+      "stopAt": "[XX-Items stop at-XX]",
+      "items": "[XX-Line items-XX]",
+      "categoryRules": "[XX-Category rules-XX]",
+      "rulePattern": "[XX-pattern-XX]",
+      "ruleCategory": "[XX-category-XX]",
+      "defaultCategory": "[XX-Default category-XX]",
+      "shippingCategory": "[XX-Shipping category-XX]"
+    },
+    "codes": {
+      "not_object": "[XX-is not a valid definition-XX]",
+      "unknown_key": "[XX-is not something a parser can have-XX]",
+      "invalid_version": "[XX-is a version this server does not read-XX]",
+      "invalid_type": "[XX-has the wrong kind of value-XX]",
+      "empty": "[XX-must not be empty-XX]",
+      "too_many": "[XX-has too many entries (at most {max})-XX]",
+      "too_long": "[XX-is too long (at most {max} characters)-XX]",
+      "control_character": "[XX-contains a control character-XX]",
+      "malformed_capture": "[XX-has a capture in braces that is not valid-XX]",
+      "too_many_captures": "[XX-has too many captures-XX]",
+      "duplicate_capture": "[XX-uses the same capture name twice-XX]",
+      "capture_not_allowed": "[XX-uses a capture name this field does not accept-XX]",
+      "capture_missing": "[XX-is missing a capture this field needs-XX]",
+      "capture_conflict": "[XX-captures both the line total and the unit price. Use one of them.-XX]",
+      "invalid_uuid": "[XX-is not a valid category-XX]"
+    }
+  },
+  "test": {
+    "heading": "[XX-Test against a stored email-XX]",
+    "help": "[XX-Reads a stored email with the patterns above, saved or not, and shows what would be found and which transaction it would match. Nothing is written.-XX]",
+    "loadFailed": "[XX-The stored emails could not be loaded, so there is nothing to test against yet.-XX]",
+    "noReceipts": "[XX-No emails are stored yet. Poll the mailbox first.-XX]",
+    "receiptLabel": "[XX-Email-XX]",
+    "choosePlaceholder": "[XX-Choose an email-XX]",
+    "receiptOption": "[XX-{subject} from {sender} ({date})-XX]",
+    "button": "[XX-Test-XX]",
+    "failed": "[XX-The test failed-XX]",
+    "matchHeading": "[XX-Transaction match-XX]",
+    "matched": "[XX-Would link the transaction of {date} for {amount} ({payee}), found by {how}.-XX]",
+    "matchKinds": {
+      "order_id": "[XX-order number-XX]",
+      "amount_payee": "[XX-amount and payee-XX]",
+      "amount_only": "[XX-amount-XX]",
+      "manual": "[XX-your choice-XX]"
+    },
+    "noPayee": "[XX-no payee-XX]",
+    "ambiguous": "[XX-{count, plural, one {# transaction fits} other {# transactions fit}} equally well, so none would be linked until you choose.-XX]",
+    "unmatched": "[XX-No transaction matches, out of {count, plural, one {# candidate} other {# candidates}}.-XX]"
+  },
+  "parsed": {
+    "notFound": "[XX-Not found-XX]",
+    "noCategory": "[XX-No category-XX]",
+    "unknownCategory": "[XX-Unknown category-XX]",
+    "categoryUnavailable": "[XX-Categories not loaded-XX]",
+    "noItems": "[XX-No line items were read.-XX]",
+    "orderId": "[XX-Order number-XX]",
+    "total": "[XX-Total-XX]",
+    "shipping": "[XX-Shipping-XX]",
+    "discount": "[XX-Discount-XX]",
+    "columns": {
+      "item": "[XX-Item-XX]",
+      "qty": "[XX-Qty-XX]",
+      "amount": "[XX-Amount-XX]",
+      "category": "[XX-Category-XX]"
+    },
+    "complete": "[XX-Read completely-XX]",
+    "incomplete": "[XX-Not read completely-XX]",
+    "reasons": {
+      "no_total": "[XX-The email states no total.-XX]",
+      "no_items": "[XX-No line items were found.-XX]",
+      "items_unbalanced": "[XX-The line items do not add up to the total.-XX]",
+      "items_uncategorized": "[XX-Some line items have no category.-XX]",
+      "shipping_uncategorized": "[XX-The shipping line has no category.-XX]"
+    },
+    "readByAi": "[XX-Read by the AI-XX]"
+  },
+  "state": {
+    "pending": "[XX-Waiting to be read-XX]",
+    "skipped": "[XX-Skipped-XX]",
+    "no_parser": "[XX-No parser-XX]",
+    "parse_failed": "[XX-Could not be read-XX]",
+    "unmatched": "[XX-No transaction found-XX]",
+    "ambiguous": "[XX-Several transactions fit-XX]",
+    "review_conflict": "[XX-Another request is open-XX]",
+    "ignored": "[XX-Ignored-XX]",
+    "proposed": "[XX-Waiting for approval-XX]",
+    "applied": "[XX-Applied-XX]",
+    "dismissed": "[XX-Dismissed-XX]",
+    "expired": "[XX-Expired-XX]",
+    "pending_ai": "[XX-Waiting for the AI-XX]",
+    "request_missing": "[XX-Request missing-XX]"
+  },
+  "receipts": {
+    "loading": "[XX-Loading emails-XX]",
+    "links": {
+      "reviewInbox": "[XX-Open the AI review inbox-XX]",
+      "settings": "[XX-Mailbox and parser settings-XX]"
+    },
+    "filter": {
+      "label": "[XX-Filter by state-XX]",
+      "all": "[XX-All-XX]",
+      "pending": "[XX-Waiting to be read-XX]",
+      "skipped": "[XX-Skipped-XX]",
+      "no_parser": "[XX-No parser-XX]",
+      "parse_failed": "[XX-Could not be read-XX]",
+      "unmatched": "[XX-No transaction found-XX]",
+      "ambiguous": "[XX-Several transactions fit-XX]",
+      "review_conflict": "[XX-Another request is open-XX]",
+      "review": "[XX-In review-XX]",
+      "ignored": "[XX-Ignored-XX]"
+    },
+    "columns": {
+      "received": "[XX-Received-XX]",
+      "email": "[XX-Email-XX]",
+      "transaction": "[XX-Transaction-XX]",
+      "state": "[XX-State-XX]",
+      "actions": "[XX-Actions-XX]"
+    },
+    "transactionSummary": "[XX-{date}, {amount}, {payee}-XX]",
+    "noPayee": "[XX-no payee-XX]",
+    "noTransaction": "[XX-None yet-XX]",
+    "error": {
+      "title": "[XX-The emails could not be loaded-XX]",
+      "body": "[XX-The request failed, so nothing is known about your emails yet. Try again.-XX]",
+      "retry": "[XX-Try again-XX]"
+    },
+    "empty": {
+      "title": "[XX-No emails-XX]",
+      "body": "[XX-Order confirmations appear here once the mailbox has been read.-XX]",
+      "filteredTitle": "[XX-No emails in this state-XX]",
+      "filteredBody": "[XX-Choose another state to see the rest.-XX]",
+      "noMailboxBody": "[XX-No mailbox is connected yet. Connect one to start reading order confirmations.-XX]",
+      "connectButton": "[XX-Connect a mailbox-XX]"
+    },
+    "actions": {
+      "view": "[XX-View-XX]",
+      "reprocess": "[XX-Reprocess-XX]",
+      "link": "[XX-Choose transaction-XX]",
+      "recognizeAi": "[XX-Recognize with AI-XX]",
+      "draftParser": "[XX-Draft parser with AI-XX]",
+      "createParser": "[XX-Create parser-XX]",
+      "ignore": "[XX-Ignore-XX]"
+    },
+    "toasts": {
+      "reprocessed": "[XX-Email reprocessed-XX]",
+      "reprocessFailed": "[XX-Could not reprocess the email-XX]",
+      "draftFailed": "[XX-Could not draft a parser-XX]",
+      "ignored": "[XX-Email ignored-XX]",
+      "ignoreFailed": "[XX-Could not ignore the email-XX]",
+      "deleted": "[XX-Email deleted-XX]",
+      "deleteFailed": "[XX-Could not delete the email-XX]"
+    },
+    "notices": {
+      "draftCreated": "[XX-The AI drafted the parser {name}. It reads nothing until you review and approve it.-XX]",
+      "draftLink": "[XX-Review it in the parser settings-XX]"
+    },
+    "ignoreDialog": {
+      "title": "[XX-Ignore this email?-XX]",
+      "message": "[XX-The email {subject} will propose nothing, and its open review request will be dismissed.-XX]",
+      "confirm": "[XX-Ignore-XX]"
+    },
+    "deleteDialog": {
+      "title": "[XX-Delete this email?-XX]",
+      "message": "[XX-The stored email {subject} will be deleted and its open review request dismissed. The message in the mailbox is not touched, and a later poll will not fetch it again.-XX]"
+    }
+  },
+  "detail": {
+    "title": "[XX-Email receipt-XX]",
+    "loading": "[XX-Loading the email-XX]",
+    "error": {
+      "title": "[XX-The email could not be loaded-XX]",
+      "body": "[XX-The request failed. Try again.-XX]",
+      "retry": "[XX-Try again-XX]"
+    },
+    "from": "[XX-From-XX]",
+    "received": "[XX-Received-XX]",
+    "subject": "[XX-Subject-XX]",
+    "state": "[XX-State-XX]",
+    "parser": "[XX-Parser-XX]",
+    "noParser": "[XX-None-XX]",
+    "matchedBy": "[XX-Matched by-XX]",
+    "matchKinds": {
+      "order_id": "[XX-Order number-XX]",
+      "amount_payee": "[XX-Amount and payee-XX]",
+      "amount_only": "[XX-Amount-XX]",
+      "manual": "[XX-Your choice-XX]"
+    },
+    "transaction": "[XX-Transaction-XX]",
+    "transactionSummary": "[XX-{date}, {amount}, {payee}-XX]",
+    "noPayee": "[XX-no payee-XX]",
+    "viewTransaction": "[XX-View transaction-XX]",
+    "noTransaction": "[XX-None yet-XX]",
+    "reasons": {
+      "too_large": "[XX-The email is larger than the size limit, so it was stored without being read.-XX]",
+      "undecodable": "[XX-The email could not be decoded, so it was stored without being read.-XX]",
+      "draft_failed": "[XX-The AI could not draft a parser for this sender.-XX]",
+      "parser_invalid": "[XX-The parser for this sender is not valid. Edit it in the parser settings.-XX]",
+      "no_total": "[XX-The parser found no total in this email.-XX]",
+      "no_items": "[XX-The parser found no line items.-XX]",
+      "items_unbalanced": "[XX-The line items do not add up to the total.-XX]",
+      "items_uncategorized": "[XX-Some line items have no category.-XX]",
+      "shipping_uncategorized": "[XX-The shipping line has no category.-XX]",
+      "amount_differs": "[XX-The parsed total differs from the transaction amount, so only a description is proposed.-XX]",
+      "proposal_fallback": "[XX-The itemized proposal was refused, so only a description is proposed.-XX]",
+      "nothing_to_propose": "[XX-The email adds nothing to this transaction.-XX]",
+      "proposal_refused": "[XX-The proposal was refused, so nothing was proposed.-XX]"
+    },
+    "reasonUnknown": "[XX-Reason: {reason}-XX]",
+    "requestNote": "[XX-Review request ({state}): {note}-XX]",
+    "parsedHeading": "[XX-What the parser read-XX]",
+    "notParsed": "[XX-Nothing has been read from this email yet.-XX]",
+    "candidatesHeading": "[XX-Transactions that fit-XX]",
+    "candidatesHelp": "[XX-Several transactions fit this email equally well. Choose the one it paid for.-XX]",
+    "linkButton": "[XX-Link to this transaction-XX]",
+    "linked": "[XX-Email linked to the transaction-XX]",
+    "linkFailed": "[XX-Could not link the email-XX]",
+    "textHeading": "[XX-Email text-XX]",
+    "textLabel": "[XX-Text of the email-XX]",
+    "noText": "[XX-The email has no text.-XX]"
+  },
+  "picker": {
+    "heading": "[XX-Choose the transaction-XX]",
+    "help": "[XX-No transaction was matched automatically. These are your transactions from {from} to {to}, the days around the email. Choose the one it paid for.-XX]",
+    "searchLabel": "[XX-Search-XX]",
+    "searchPlaceholder": "[XX-Payee, description or amount-XX]",
+    "searchButton": "[XX-Search-XX]",
+    "loading": "[XX-Loading transactions-XX]",
+    "error": "[XX-The transactions could not be loaded.-XX]",
+    "retry": "[XX-Try again-XX]",
+    "empty": "[XX-You have no transactions in this period that can be linked.-XX]",
+    "emptySearch": "[XX-No transaction in this period matches the search.-XX]",
+    "row": "[XX-{date}, {amount}, {payee}-XX]",
+    "noPayee": "[XX-no payee-XX]",
+    "linkButton": "[XX-Link-XX]",
+    "hasMore": "[XX-Only the first {count} are shown. Use the search to narrow the list.-XX]",
+    "ai": {
+      "heading": "[XX-Choose the transaction for the AI-XX]",
+      "help": "[XX-These are your transactions from {from} to {to}, the days around the email. Choose the one the AI should split by the products in the email.-XX]",
+      "linkButton": "[XX-Use this transaction-XX]"
+    }
+  },
+  "callback": {
+    "title": "[XX-Connecting the mailbox-XX]",
+    "connecting": "[XX-Finishing the connection-XX]",
+    "toasts": {
+      "connected": "[XX-Mailbox connected-XX]"
+    },
+    "success": {
+      "title": "[XX-Mailbox connected-XX]",
+      "body": "[XX-Connected as {username}. Returning to the settings.-XX]"
+    },
+    "providerError": {
+      "title": "[XX-The sign-in was not completed-XX]",
+      "withDescription": "[XX-The provider reported: {error}. {description}-XX]",
+      "withoutDescription": "[XX-The provider reported: {error}.-XX]"
+    },
+    "missingParameters": {
+      "title": "[XX-This page was opened without a sign-in result-XX]",
+      "body": "[XX-Start again from the email receipts settings and use one of the Connect buttons.-XX]"
+    },
+    "failed": {
+      "title": "[XX-The mailbox could not be connected-XX]",
+      "fallback": "[XX-The server refused the connection. Start again from the email receipts settings.-XX]"
+    },
+    "backLink": "[XX-Back to the email receipts settings-XX]"
+  },
+  "recognize": {
+    "title": "[XX-Recognize with AI-XX]",
+    "transactionSummary": "[XX-{date}, {amount}, {payee}-XX]",
+    "noPayee": "[XX-no payee-XX]",
+    "confirmMessage": "[XX-This email is linked to the transaction {summary}. The AI will read the email and propose how to split this transaction by product. Continue with this transaction?-XX]",
+    "confirm": "[XX-Recognize with AI-XX]",
+    "chooseOther": "[XX-Choose another transaction-XX]",
+    "candidatesHeading": "[XX-Which transaction did the email pay for?-XX]",
+    "candidatesHelp": "[XX-Several transactions fit this email. Choose the one the AI should use, or search for another.-XX]",
+    "candidatesLoading": "[XX-Loading the transactions that fit-XX]",
+    "candidatesError": "[XX-The transactions that fit could not be loaded.-XX]",
+    "retry": "[XX-Try again-XX]",
+    "useButton": "[XX-Use this transaction-XX]",
+    "searchOther": "[XX-Search other transactions-XX]",
+    "back": "[XX-Back-XX]",
+    "failed": "[XX-Could not start the recognition-XX]",
+    "queued": "[XX-Queued: no AI assistant is available to answer now, so the request waits in the AI review inbox for an agent (for example over MCP).-XX]",
+    "handoffFailed": "[XX-The request is queued, but the email could not be opened in the chat. It waits in the AI review inbox for an agent (for example over MCP).-XX]",
+    "inboxLink": "[XX-Open the AI review inbox-XX]",
+    "opened": "[XX-Opened the chat with the email attached. Read the message and press Send.-XX]",
+    "chatPrompt": "[XX-Recognize the products, quantities and prices in the attached order email and split my transaction of {date} ({payee}, {amount}) by product with a category for each. Claim AI review request {requestId} and submit your proposal for it.-XX]"
+  }
+}

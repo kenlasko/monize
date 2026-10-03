@@ -39,6 +39,11 @@ const REFS: Record<string, RefRule[]> = {
   payee_aliases: [
     { column: "payee_id", refTable: "payees", onMissing: "dropRow" },
   ],
+  // A parser outlives its payee (the column is ON DELETE SET NULL), so a payee
+  // the file does not carry clears the reference instead of dropping the parser.
+  email_receipt_parsers: [
+    { column: "payee_id", refTable: "payees", onMissing: "null" },
+  ],
   // transaction_attachments.transaction_id is a real FK (the entity models the
   // relation) between two fully-exported tables, so the coverage guard requires
   // it here even though the de-identified support backup excludes the table. A

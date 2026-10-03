@@ -10,6 +10,7 @@ export function makeReviewItem(overrides: Partial<AiReviewItem> = {}): AiReviewI
     transactionId: 'tx-1',
     ruleId: 'rule-1',
     ruleName: 'Allegro orders',
+    emailReceipt: null,
     createdAt: '2026-09-01T10:00:00.000Z',
     expiresAt: '2026-10-01T10:00:00.000Z',
     transaction: {
