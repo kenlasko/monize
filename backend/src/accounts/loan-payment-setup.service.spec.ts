@@ -28,8 +28,7 @@ describe("LoanPaymentSetupService", () => {
     interestRate: null,
     institution: "Bank of Test",
     scheduledTransactionId: null,
-    isCanadianMortgage: false,
-    isVariableRate: false,
+    mortgageType: "ANNUITY",
     originalPrincipal: null,
   };
 
@@ -390,8 +389,6 @@ describe("LoanPaymentSetupService", () => {
         id: "mortgage-1",
         name: "Home Mortgage",
         accountType: AccountType.MORTGAGE,
-        isCanadianMortgage: false,
-        isVariableRate: false,
         originalPrincipal: null,
       };
 
@@ -405,7 +402,7 @@ describe("LoanPaymentSetupService", () => {
         sourceAccountId: "source-1",
         nextDueDate: "2026-04-01",
         interestRate: 4.25,
-        isCanadianMortgage: true,
+        mortgageType: "CANADIAN_FIXED",
         amortizationMonths: 300,
         termMonths: 60,
       });
@@ -413,7 +410,7 @@ describe("LoanPaymentSetupService", () => {
       expect(accountsRepository.update).toHaveBeenCalledWith(
         "mortgage-1",
         expect.objectContaining({
-          isCanadianMortgage: true,
+          mortgageType: "CANADIAN_FIXED",
           amortizationMonths: 300,
           termMonths: 60,
           originalPrincipal: 20000,
@@ -435,8 +432,7 @@ describe("LoanPaymentSetupService", () => {
         ...mockLoanAccount,
         id: "mortgage-2",
         accountType: AccountType.MORTGAGE,
-        isCanadianMortgage: true,
-        isVariableRate: false,
+        mortgageType: "CANADIAN_FIXED",
       };
 
       for (const paymentFrequency of ["QUARTERLY", "YEARLY"]) {
@@ -460,19 +456,15 @@ describe("LoanPaymentSetupService", () => {
       }
     });
 
-    it("lets an explicit false override a stored Canadian flag", async () => {
-      // The same request writes the flag, so unticking the box means "this is
-      // not a Canadian mortgage" and must decide the split it arrives with.
-      // Under `||` the stored `true` won: the account was saved as non-Canadian
-      // while its first split was computed the Canadian way, and the setup
-      // dialog -- which filters its cadence list on the checkbox -- offered
-      // quarterly to an account the server then refused with a 400.
+    it("lets a requested type override the stored one", async () => {
+      // The same request writes the type, so choosing ANNUITY decides the
+      // split it arrives with: a CANADIAN_FIXED account switched to ANNUITY is
+      // not refused the cadences the semi-annual convention refuses.
       const storedCanadian = {
         ...mockLoanAccount,
         id: "mortgage-3",
         accountType: AccountType.MORTGAGE,
-        isCanadianMortgage: true,
-        isVariableRate: false,
+        mortgageType: "CANADIAN_FIXED",
       };
 
       accountsRepository.findOne
@@ -486,24 +478,22 @@ describe("LoanPaymentSetupService", () => {
         sourceAccountId: "source-1",
         nextDueDate: "2026-04-01",
         interestRate: 4.25,
-        isCanadianMortgage: false,
+        mortgageType: "ANNUITY",
       });
 
-      // No refusal, and the flag is written as the request asked.
+      // No refusal, and the type is written as the request asked.
       expect(scheduledTransactionsService.create).toHaveBeenCalled();
       expect(accountsRepository.update).toHaveBeenCalledWith(
         "mortgage-3",
-        expect.objectContaining({ isCanadianMortgage: false }),
+        expect.objectContaining({ mortgageType: "ANNUITY" }),
       );
     });
 
-    it("writes the type with the flags it maps to, only when the request names one", async () => {
+    it("writes the type only when the request names one", async () => {
       const storedFixed = {
         ...mockLoanAccount,
         id: "mortgage-4",
         accountType: AccountType.MORTGAGE,
-        isCanadianMortgage: true,
-        isVariableRate: false,
         mortgageType: "CANADIAN_FIXED",
       };
       const request = {
@@ -523,43 +513,23 @@ describe("LoanPaymentSetupService", () => {
         .mockResolvedValueOnce(mockSourceAccount);
       await service.setupLoanPayments("user-1", "mortgage-4", {
         ...request,
-        isCanadianMortgage: false,
-      });
-      expect(lastUpdate()).toMatchObject({
         mortgageType: "ANNUITY",
-        isCanadianMortgage: false,
-        isVariableRate: false,
       });
+      expect(lastUpdate()).toMatchObject({ mortgageType: "ANNUITY" });
 
-      // A type-only request stores the same row a flags-only one does.
-      accountsRepository.findOne
-        .mockResolvedValueOnce(storedFixed)
-        .mockResolvedValueOnce(mockSourceAccount);
-      await service.setupLoanPayments("user-1", "mortgage-4", {
-        ...request,
-        mortgageType: "ANNUITY",
-      });
-      expect(lastUpdate()).toMatchObject({
-        mortgageType: "ANNUITY",
-        isCanadianMortgage: false,
-        isVariableRate: false,
-      });
-
-      // Naming neither leaves the stored columns alone.
+      // Naming none leaves the stored column alone.
       accountsRepository.findOne
         .mockResolvedValueOnce(storedFixed)
         .mockResolvedValueOnce(mockSourceAccount);
       await service.setupLoanPayments("user-1", "mortgage-4", request);
       expect(lastUpdate()).not.toHaveProperty("mortgageType");
-      expect(lastUpdate()).not.toHaveProperty("isCanadianMortgage");
     });
 
     it("splits an ANNUITY mortgage at the nominal rate, at every cadence", async () => {
       // Every mortgage is split by its type now (spec 5.5), and ANNUITY is
       // the nominal rate over the payments per year -- the arithmetic the loan
-      // helper split it with before, quarterly included. A Canadian
-      // variable-rate mortgage is ANNUITY, so it is no longer refused the
-      // cadences the Canadian fixed-rate convention refuses.
+      // helper split it with before, quarterly included, and it is not refused
+      // the cadences the Canadian fixed-rate convention refuses.
       for (const [paymentFrequency, ppy] of [
         ["MONTHLY", 12],
         ["SEMIMONTHLY", 24],
@@ -570,9 +540,7 @@ describe("LoanPaymentSetupService", () => {
             ...mockLoanAccount,
             id: "mortgage-5",
             accountType: AccountType.MORTGAGE,
-            isCanadianMortgage: true,
-            isVariableRate: true,
-            mortgageType: null,
+            mortgageType: "ANNUITY",
           })
           .mockResolvedValueOnce(mockSourceAccount);
         scheduledTransactionsService.create.mockClear();
@@ -601,8 +569,6 @@ describe("LoanPaymentSetupService", () => {
           ...mockLoanAccount,
           id: "mortgage-6",
           accountType: AccountType.MORTGAGE,
-          isCanadianMortgage: false,
-          isVariableRate: false,
           mortgageType: "CANADIAN_FIXED",
         })
         .mockResolvedValueOnce(mockSourceAccount);

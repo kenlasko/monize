@@ -3,6 +3,7 @@ import { EntityManager } from "typeorm";
 import { resolveCurrencyMetadata } from "../currencies/currency-metadata";
 import { tr } from "../i18n/translate";
 import { boundRestoredNotification } from "./notification-restore-bounds";
+import { withResolvedMortgageTypeColumn } from "../accounts/legacy-mortgage-type.util";
 import { BackupData, backupTables } from "./backup-format";
 import {
   DEFERRED_FK_COLUMNS,
@@ -569,10 +570,16 @@ export class BackupRestoreDatabaseService {
 
     let count = 0;
     for (const row of rows) {
+      // An `accounts` row from a backup taken before the mortgage-type
+      // contract migration carries the dropped legacy flags and a null or
+      // missing type; it is given the type the migration would have given it
+      // before the column filter below drops the flags.
       const filteredRow =
         table === "notifications"
           ? boundRestoredNotification(row, this.logger)
-          : { ...row };
+          : table === "accounts"
+            ? withResolvedMortgageTypeColumn(row)
+            : { ...row };
 
       // Override user_id to ensure data stays scoped to the restoring user
       if (userId !== null && "user_id" in filteredRow) {

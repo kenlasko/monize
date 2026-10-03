@@ -420,10 +420,10 @@ export class DemoSeedService {
             user_id, account_type, name, description, currency_code,
             opening_balance, current_balance, credit_limit, interest_rate,
             institution, institution_id, is_favourite,
-            is_canadian_mortgage, is_variable_rate, mortgage_type, term_months, amortization_months, original_principal,
+            mortgage_type, term_months, amortization_months, original_principal,
             payment_amount, payment_frequency, interest_category_id,
             created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
           RETURNING id`,
             [
               userId,
@@ -438,9 +438,7 @@ export class DemoSeedService {
               acc.institution || null,
               institutionId,
               acc.isFavourite || false,
-              acc.isCanadianMortgage || false,
-              acc.isVariableRate || false,
-              acc.mortgageType ?? null,
+              acc.mortgageType ?? "ANNUITY",
               acc.termMonths || null,
               acc.amortizationMonths || null,
               acc.originalPrincipal || null,

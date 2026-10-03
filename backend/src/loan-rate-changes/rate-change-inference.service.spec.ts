@@ -116,8 +116,7 @@ describe("RateChangeInferenceService", () => {
       interestRate: 5.5,
       paymentAmount: 2500,
       paymentFrequency: "MONTHLY",
-      isCanadianMortgage: false,
-      isVariableRate: true,
+      mortgageType: "ANNUITY",
       isClosed: true,
       scheduledTransactionId: null,
       ...overrides,
@@ -285,7 +284,7 @@ describe("RateChangeInferenceService", () => {
 
   it("recovers the quoted rate for Canadian semi-annual compounding", async () => {
     rateChangesService.verifyLoanAccount.mockResolvedValue(
-      makeAccount({ isCanadianMortgage: true, isVariableRate: false }),
+      makeAccount({ mortgageType: "CANADIAN_FIXED" }),
     );
     const { records, balanceMap } = generateHistory(
       400000,
@@ -300,13 +299,12 @@ describe("RateChangeInferenceService", () => {
     expect(Math.abs(initial.annualRate - 5.5)).toBeLessThanOrEqual(0.05);
   });
 
-  it("annualizes a Canadian variable-rate account by day count, as ANNUITY", async () => {
-    // docs/specs/mortgage-types.md table 4.2, last row: the one behaviour
-    // change of Phase 1. (true, true) is ANNUITY, so its observed rate is
-    // scaled by the days the period spans, like every other nominal mortgage,
-    // not by the nominal periods per year as before the type existed.
+  it("annualizes an ANNUITY mortgage by day count", async () => {
+    // docs/specs/mortgage-types.md table 4.2, last row: a Canadian
+    // variable-rate account is ANNUITY, so its observed rate is scaled by the
+    // days the period spans, like every other nominal mortgage.
     rateChangesService.verifyLoanAccount.mockResolvedValue(
-      makeAccount({ isCanadianMortgage: true, isVariableRate: true }),
+      makeAccount({ mortgageType: "ANNUITY" }),
     );
     const { records, balanceMap } = generateHistory(400000, [
       { annualRate: 5.5, payments: 24, paymentAmount: 2500 },
@@ -320,38 +318,13 @@ describe("RateChangeInferenceService", () => {
     expect(Math.abs(rows[0].annualRate - 5.5)).toBeLessThanOrEqual(0.01);
   });
 
-  it("reads the stored mortgage type over the flags", async () => {
-    // A stored CANADIAN_FIXED with flags that say otherwise still inverts the
-    // semi-annual compounding: the column is the type, the flags its fallback.
-    rateChangesService.verifyLoanAccount.mockResolvedValue(
-      makeAccount({
-        mortgageType: "CANADIAN_FIXED",
-        isCanadianMortgage: false,
-        isVariableRate: false,
-      }),
-    );
-    const { records, balanceMap } = generateHistory(
-      400000,
-      [{ annualRate: 5.5, payments: 24, paymentAmount: 2500 }],
-      { isCanadianFixed: true },
-    );
-    setHistory(records, balanceMap);
-
-    await service.detectAndPersist(userId, accountId);
-
-    const initial = createdRows()[0];
-    expect(Math.abs(initial.annualRate - 5.5)).toBeLessThanOrEqual(0.05);
-  });
-
-  it("annualizes a non-mortgage by its flags, ignoring a stale stored type", async () => {
-    // A LOAN has no type; a CANADIAN_FIXED left on the row by an older edit
-    // must not switch its inference to the semi-annual inversion.
+  it("annualizes a non-mortgage as ANNUITY, ignoring a stale stored type", async () => {
+    // Only a mortgage has a type; a CANADIAN_FIXED left on a LOAN by an older
+    // edit must not switch its inference to the semi-annual inversion.
     rateChangesService.verifyLoanAccount.mockResolvedValue(
       makeAccount({
         accountType: AccountType.LOAN,
         mortgageType: "CANADIAN_FIXED",
-        isCanadianMortgage: false,
-        isVariableRate: false,
       }),
     );
     const { records, balanceMap } = generateHistory(400000, [

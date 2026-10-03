@@ -17,8 +17,6 @@ export interface DemoAccount {
   paymentAmount?: number;
   paymentFrequency?: string;
   // Mortgage-specific
-  isCanadianMortgage?: boolean;
-  isVariableRate?: boolean;
   mortgageType?: MortgageType;
   termMonths?: number;
   amortizationMonths?: number;
@@ -92,8 +90,6 @@ export const demoAccounts: DemoAccount[] = [
     paymentFrequency: "MONTHLY",
     description: "Primary residence - 25 year amortization",
     institution: "Scotiabank",
-    isCanadianMortgage: true,
-    isVariableRate: false,
     mortgageType: "CANADIAN_FIXED",
     termMonths: 60,
     amortizationMonths: 300,

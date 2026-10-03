@@ -26,8 +26,6 @@ describe("derivedInstallmentFacts", () => {
       userId: "user-1",
       accountType: AccountType.MORTGAGE,
       mortgageType: "INTEREST_ONLY",
-      isCanadianMortgage: false,
-      isVariableRate: false,
       interestRate: 2,
       paymentFrequency: "MONTHLY",
       paymentStartDate: "2024-01-01",

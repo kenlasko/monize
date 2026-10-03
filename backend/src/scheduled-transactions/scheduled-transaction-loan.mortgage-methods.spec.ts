@@ -42,8 +42,6 @@ describe("ScheduledTransactionLoanService: LINEAR and INTEREST_ONLY", () => {
       name: "Hypotheek",
       mortgageType: "LINEAR",
       prepaymentMode: null,
-      isCanadianMortgage: false,
-      isVariableRate: false,
       interestRate: 2,
       paymentAmount: null,
       extraPaymentAmount: null,

@@ -14,8 +14,6 @@ import {
   PREPAYMENT_MODES,
   MortgageType,
   MortgageTypeTraits,
-  flagsFromMortgageType,
-  mortgageTypeFromFlags,
 } from "./mortgage-type.util";
 
 /**
@@ -56,7 +54,6 @@ export function parseMortgageTypeCheck(sql: string): string[] {
 interface MortgageTypeCase {
   type: MortgageType;
   traits: MortgageTypeTraits;
-  flags: { isCanadianMortgage: boolean; isVariableRate: boolean };
   example: {
     principal: number;
     annualRate: number;
@@ -71,11 +68,6 @@ interface MortgageTypeCase {
 
 interface MortgageTypeCases {
   types: MortgageTypeCase[];
-  fromFlags: {
-    isCanadianMortgage: boolean;
-    isVariableRate: boolean;
-    type: MortgageType;
-  }[];
 }
 
 const cases: MortgageTypeCases = JSON.parse(
@@ -158,26 +150,6 @@ describe("mortgage-type-cases.json", () => {
     "%s: traits match MORTGAGE_TYPE_TRAITS",
     (type, c) => {
       expect(MORTGAGE_TYPE_TRAITS[type]).toEqual(c.traits);
-    },
-  );
-
-  it.each(cases.types.map((c) => [c.type, c] as const))(
-    "%s: flagsFromMortgageType writes the case's flags",
-    (type, c) => {
-      expect(flagsFromMortgageType(type)).toEqual(c.flags);
-    },
-  );
-
-  it.each(
-    cases.fromFlags.map(
-      (c) => [c.isCanadianMortgage, c.isVariableRate, c.type] as const,
-    ),
-  )(
-    "mortgageTypeFromFlags(%s, %s) is %s",
-    (isCanadianMortgage, isVariableRate, type) => {
-      expect(mortgageTypeFromFlags(isCanadianMortgage, isVariableRate)).toBe(
-        type,
-      );
     },
   );
 

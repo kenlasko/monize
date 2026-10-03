@@ -18,14 +18,32 @@
 ALTER TABLE accounts
   ADD COLUMN IF NOT EXISTS mortgage_type VARCHAR(20);
 
-UPDATE accounts
-   SET mortgage_type = CASE
-         WHEN COALESCE(is_canadian_mortgage, false)
-              AND NOT COALESCE(is_variable_rate, false) THEN 'CANADIAN_FIXED'
-         ELSE 'ANNUITY'
-       END
- WHERE account_type = 'MORTGAGE'
-   AND mortgage_type IS NULL;
+-- The backfill runs only while the flags exist: the contract migration
+-- (20261003152748_accounts_mortgage_type_required.sql) drops them, and a fresh
+-- install replays this file on top of a schema.sql that no longer has them.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'accounts'
+          AND column_name = 'is_canadian_mortgage'
+    ) AND EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'accounts'
+          AND column_name = 'is_variable_rate'
+    ) THEN
+        UPDATE accounts
+           SET mortgage_type = CASE
+                 WHEN COALESCE(is_canadian_mortgage, false)
+                      AND NOT COALESCE(is_variable_rate, false) THEN 'CANADIAN_FIXED'
+                 ELSE 'ANNUITY'
+               END
+         WHERE account_type = 'MORTGAGE'
+           AND mortgage_type IS NULL;
+    END IF;
+END $$;
 
 ALTER TABLE accounts
   DROP CONSTRAINT IF EXISTS accounts_mortgage_type_check;
