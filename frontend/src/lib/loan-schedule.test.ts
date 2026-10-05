@@ -18,7 +18,6 @@ import {
   LoanScheduleInput,
   RecurringOverpaymentFrequency,
 } from './loan-schedule';
-import { mortgageTypeFromFlags } from './mortgage-type';
 import { MORTGAGE_TYPES } from '@/types/account';
 
 function baseInput(overrides: Partial<LoanScheduleInput> = {}): LoanScheduleInput {
@@ -107,8 +106,8 @@ describe('getPeriodicRate', () => {
     );
   });
 
-  it('uses simple division for Canadian variable-rate mortgages, which are ANNUITY', () => {
-    expect(getPeriodicRate(6, 12, mortgageTypeFromFlags(true, true))).toBeCloseTo(0.005, 10);
+  it('uses simple division for an ANNUITY mortgage', () => {
+    expect(getPeriodicRate(6, 12, 'ANNUITY')).toBeCloseTo(0.005, 10);
   });
 
   it('yields a lower rate than simple division for Canadian fixed', () => {
@@ -142,8 +141,8 @@ describe('effectiveAnnualRate', () => {
     const expected = (Math.pow(1 + 0.05 / 2, 2) - 1) * 100;
     expect(effectiveAnnualRate(5, 12, 'CANADIAN_FIXED')).toBeCloseTo(expected, 10);
     expect(effectiveAnnualRate(5, 26, 'CANADIAN_FIXED')).toBeCloseTo(expected, 10);
-    // A Canadian VARIABLE mortgage is on the nominal convention, like any other.
-    expect(effectiveAnnualRate(5, 26, mortgageTypeFromFlags(true, true))).toBeCloseTo(
+    // ANNUITY is on the nominal convention, compounded at the payment frequency.
+    expect(effectiveAnnualRate(5, 26, 'ANNUITY')).toBeCloseTo(
       (Math.pow(1 + 0.05 / 26, 26) - 1) * 100,
       10,
     );
@@ -295,14 +294,6 @@ describe('generateLoanSchedule', () => {
     );
     expect(canadian.totalInterest).toBeLessThan(standard.totalInterest);
     expect(canadian.numPayments).toBeLessThanOrEqual(standard.numPayments);
-  });
-
-  it('treats Canadian variable-rate as standard compounding', () => {
-    const variable = generateLoanSchedule(
-      baseInput({ mortgageType: mortgageTypeFromFlags(true, true) }),
-    );
-    const standard = generateLoanSchedule(baseInput());
-    expect(variable.totalInterest).toBe(standard.totalInterest);
   });
 
   it('seeds cumulative totals from prior history', () => {

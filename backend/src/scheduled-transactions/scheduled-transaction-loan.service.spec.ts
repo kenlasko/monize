@@ -33,6 +33,8 @@ describe("ScheduledTransactionLoanService", () => {
       interestRate: 5.5,
       paymentFrequency: "MONTHLY",
       paymentAmount: 500,
+      // The column default every row carries; a mortgage case overrides it.
+      mortgageType: "ANNUITY",
       ...overrides,
     }) as Account;
 
@@ -374,8 +376,6 @@ describe("ScheduledTransactionLoanService", () => {
               currentBalance: -300000,
               interestRate: 6,
               paymentFrequency,
-              isCanadianMortgage: false,
-              isVariableRate: false,
             }),
           );
           scheduledTransactionsRepository.findOne.mockResolvedValue(
@@ -1274,8 +1274,7 @@ describe("ScheduledTransactionLoanService", () => {
         currentBalance: -199487.65,
         interestRate: 6,
         paymentFrequency: "MONTHLY",
-        isCanadianMortgage: true,
-        isVariableRate: false,
+        mortgageType: "CANADIAN_FIXED",
       });
       accountsRepository.findOne.mockResolvedValue(mortgageAccount);
 
@@ -1312,64 +1311,6 @@ describe("ScheduledTransactionLoanService", () => {
       expect(interestSave[0].amount).toBe(-985.1941);
     });
 
-    it("prices by the stored mortgage type over the flags", async () => {
-      // The column is the type; the flags are only its fallback while the
-      // column is null. Each row below disagrees with its own flags, so the
-      // interest shows which one priced it (the figures of the two tests
-      // around this one).
-      const splits = [
-        {
-          id: "split-principal",
-          transferAccountId: loanAccountId,
-          categoryId: null,
-          amount: -512.35,
-          memo: "Principal",
-        },
-        {
-          id: "split-interest",
-          transferAccountId: null,
-          categoryId: "cat-interest",
-          amount: -987.65,
-          memo: "Interest",
-        },
-      ] as any;
-      const interestFor = async (overrides: Partial<Account>) => {
-        splitsRepository.save.mockClear();
-        accountsRepository.findOne.mockResolvedValue(
-          makeLoanAccount({
-            accountType: "MORTGAGE" as any,
-            currentBalance: -199487.65,
-            interestRate: 6,
-            paymentFrequency: "MONTHLY",
-            ...overrides,
-          }),
-        );
-        scheduledTransactionsRepository.findOne.mockResolvedValue(
-          makeScheduledTransaction({ amount: -1500, splits }),
-        );
-        await service.recalculateLoanPaymentSplits(scheduledTransactionId);
-        return splitsRepository.save.mock.calls.find(
-          (call: any) => call[0].categoryId === "cat-interest",
-        )[0].amount;
-      };
-
-      expect(
-        await interestFor({
-          mortgageType: "CANADIAN_FIXED",
-          isCanadianMortgage: false,
-          isVariableRate: false,
-        }),
-      ).toBe(-985.1941);
-      // 199,487.65 x 0.06 / 12
-      expect(
-        await interestFor({
-          mortgageType: "ANNUITY",
-          isCanadianMortgage: true,
-          isVariableRate: false,
-        }),
-      ).toBe(-997.4383);
-    });
-
     it("should use standard rate calculation for non-Canadian MORTGAGE accounts", async () => {
       // Non-Canadian mortgage: standard monthly compounding, same as loans
       // periodicRate = 0.06/12 = 0.005
@@ -1381,8 +1322,7 @@ describe("ScheduledTransactionLoanService", () => {
         currentBalance: -199500,
         interestRate: 6,
         paymentFrequency: "MONTHLY",
-        isCanadianMortgage: false,
-        isVariableRate: false,
+        mortgageType: "ANNUITY",
       });
       accountsRepository.findOne.mockResolvedValue(mortgageAccount);
 

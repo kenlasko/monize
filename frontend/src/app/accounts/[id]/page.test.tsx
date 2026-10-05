@@ -196,8 +196,7 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
     interestRate: 6,
     paymentAmount: 500,
     paymentFrequency: 'MONTHLY',
-    isCanadianMortgage: false,
-    isVariableRate: false,
+    mortgageType: 'ANNUITY',
     ...overrides,
   } as Account;
 }

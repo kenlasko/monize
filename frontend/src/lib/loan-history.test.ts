@@ -33,8 +33,7 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
     interestRate: 6,
     paymentAmount: 500,
     paymentFrequency: 'MONTHLY',
-    isCanadianMortgage: false,
-    isVariableRate: false,
+    mortgageType: 'ANNUITY',
     ...overrides,
   } as Account;
 }
@@ -411,24 +410,20 @@ describe('deriveLoanPaymentHistory', () => {
   });
 
   // Every shape the estimate used to reach a row through. It read the account
-  // type, the Canadian and variable flags, the payment frequency and the rate
-  // timeline, so a single-fixture test only closes one door; the interest of a
-  // principal-only payment is zero for all of them.
+  // type, the mortgage type, the payment frequency and the rate timeline, so a
+  // single-fixture test only closes one door; the interest of a principal-only
+  // payment is zero for all of them.
   const PRINCIPAL_ONLY_SHAPES: Array<{ label: string; account: Partial<Account> }> = [
     { label: 'loan', account: { accountType: 'LOAN' } },
     { label: 'mortgage', account: { accountType: 'MORTGAGE' } },
     { label: 'line of credit', account: { accountType: 'LINE_OF_CREDIT' } },
     {
       label: 'Canadian fixed mortgage',
-      account: { accountType: 'MORTGAGE', isCanadianMortgage: true, isVariableRate: false },
+      account: { accountType: 'MORTGAGE', mortgageType: 'CANADIAN_FIXED' },
     },
     {
-      label: 'Canadian variable mortgage',
-      account: { accountType: 'MORTGAGE', isCanadianMortgage: true, isVariableRate: true },
-    },
-    {
-      label: 'variable-rate loan',
-      account: { accountType: 'LOAN', isVariableRate: true },
+      label: 'annuity mortgage',
+      account: { accountType: 'MORTGAGE', mortgageType: 'ANNUITY' },
     },
     {
       label: 'biweekly loan',
@@ -582,8 +577,8 @@ describe('observedInstallment', () => {
   });
 
   it('keeps a principal-only row incomplete when the rate is unknown', () => {
-    // A variable-rate loan with no recorded history: this row's rate is genuinely
-    // unknown, so the interest could be anything. Strictly `=== 0`, never falsy.
+    // No rate on record for this row, so the interest could be anything.
+    // Strictly `=== 0`, never falsy.
     expect(
       observedInstallment(
         history([{ principal: 450, interest: 0, type: 'REGULAR', annualRate: null }]),
@@ -989,7 +984,7 @@ describe('buildLoanProjectionInput scheduled-installment anchor (issue #1253)', 
 
 describe('buildLoanProjectionInput mortgage type', () => {
   // The projection is priced by the account's type, read through
-  // `mortgageTypeOf`: the stored column, else the type the two flags denote.
+  // `mortgageTypeOf`.
   const project = (overrides: Partial<Account>) => {
     const acct = makeAccount({
       accountType: 'MORTGAGE',
@@ -1005,22 +1000,12 @@ describe('buildLoanProjectionInput mortgage type', () => {
     return buildLoanProjectionInput(acct, history, [])!;
   };
 
-  it('carries the stored type, whatever the flags say', () => {
+  it('carries the stored type', () => {
     expect(project({ mortgageType: 'CANADIAN_FIXED' }).mortgageType).toBe('CANADIAN_FIXED');
-    expect(
-      project({ mortgageType: 'ANNUITY', isCanadianMortgage: true }).mortgageType,
-    ).toBe('ANNUITY');
-  });
-
-  it('falls back to the flags when the column is null', () => {
-    expect(
-      project({ mortgageType: null, isCanadianMortgage: true }).mortgageType,
-    ).toBe('CANADIAN_FIXED');
-    expect(
-      project({ mortgageType: null, isCanadianMortgage: true, isVariableRate: true })
-        .mortgageType,
-    ).toBe('ANNUITY');
-    expect(project({ accountType: 'LOAN', mortgageType: null }).mortgageType).toBe('ANNUITY');
+    expect(project({ mortgageType: 'ANNUITY' }).mortgageType).toBe('ANNUITY');
+    expect(project({ accountType: 'LOAN', mortgageType: 'ANNUITY' }).mortgageType).toBe(
+      'ANNUITY',
+    );
   });
 });
 
@@ -1244,7 +1229,6 @@ describe('buildLoanProjectionInput rate authority', () => {
     // the missing-data rule.
     const acct = makeAccount({
       interestRate: 0,
-      isVariableRate: false,
       paymentAmount: null as unknown as number,
       openingBalance: -1200,
       currentBalance: -900,
@@ -1276,7 +1260,6 @@ describe('buildLoanProjectionInput rate authority', () => {
     // the installment.
     const acct = makeAccount({
       interestRate: 6,
-      isVariableRate: false,
       paymentAmount: null as unknown as number,
       openingBalance: -1200,
       currentBalance: -900,
@@ -1645,7 +1628,6 @@ describe('deriveLoanPaymentHistory with a rate timeline but no recorded interest
       openingBalance: -200000,
       currentBalance: -199430,
       interestRate: 5.5,
-      isVariableRate: true,
     });
     const transactions = [
       makeTransaction({ transactionDate: '2021-08-05', amount: 285 }),
@@ -1678,8 +1660,7 @@ describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => 
     // regression the #1255 fix must not cause.
     const account = makeAccount({
       accountType: 'MORTGAGE',
-      isCanadianMortgage: true,
-      isVariableRate: false,
+      mortgageType: 'CANADIAN_FIXED',
       openingBalance: -200000,
       currentBalance: -199715,
       interestRate: 5.5,
@@ -1694,8 +1675,7 @@ describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => 
   it('keeps a non-Canadian fixed loan on its configured rate for a principal-only row', () => {
     const account = makeAccount({
       accountType: 'MORTGAGE',
-      isCanadianMortgage: false,
-      isVariableRate: false,
+      mortgageType: 'ANNUITY',
       openingBalance: -200000,
       currentBalance: -199000,
       interestRate: 6,
@@ -1714,7 +1694,6 @@ describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => 
     // books no interest, and every row's rate is known.
     const account = makeAccount({
       interestRate: 0,
-      isVariableRate: false,
       openingBalance: -10000,
       currentBalance: -9550,
     });
@@ -1729,26 +1708,9 @@ describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => 
     // The other side of the same distinction: absent is not 0%.
     const account = makeAccount({
       interestRate: null as unknown as number,
-      isVariableRate: false,
     });
     const { events } = deriveLoanPaymentHistory(account, [
       makeTransaction({ transactionDate: '2026-01-15', amount: 450 }),
-    ]);
-    expect(events[0].annualRate).toBeNull();
-  });
-
-  it('shows no rate for a variable-rate loan with nothing to reconstruct from', () => {
-    // A variable loan's scalar rate is only today's, so this row's rate is
-    // genuinely unknown -- the fixed-rate fallback must not be extended to it.
-    const account = makeAccount({
-      accountType: 'MORTGAGE',
-      isVariableRate: true,
-      openingBalance: -200000,
-      currentBalance: -199000,
-      interestRate: 6,
-    });
-    const { events } = deriveLoanPaymentHistory(account, [
-      makeTransaction({ transactionDate: '2024-01-05', amount: 1000 }),
     ]);
     expect(events[0].annualRate).toBeNull();
   });
@@ -1758,7 +1720,6 @@ describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => 
     // the configured-rate fallback is for regular rows only.
     const account = makeAccount({
       overpaymentCategoryId: 'cat-over',
-      isVariableRate: false,
       interestRate: 6,
     });
     const { events } = deriveLoanPaymentHistory(account, [
@@ -1779,8 +1740,7 @@ describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => 
     // day-count annualization (x365/days) would read ~5.44%.
     const account = makeAccount({
       accountType: 'MORTGAGE',
-      isCanadianMortgage: true,
-      isVariableRate: false,
+      mortgageType: 'CANADIAN_FIXED',
       openingBalance: -200000,
       currentBalance: -199715,
       interestRate: 5.5,
@@ -1802,7 +1762,7 @@ describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => 
     // first period recovers 6% from balance x rate/12 of recorded interest.
     const account = makeAccount({
       accountType: 'MORTGAGE',
-      isCanadianMortgage: false,
+      mortgageType: 'ANNUITY',
       openingBalance: -200000,
       currentBalance: -199000,
       interestRate: 6,
@@ -1819,16 +1779,13 @@ describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => 
     expect(events[0].annualRate).toBeCloseTo(6, 1);
   });
 
-  it('annualizes a Canadian variable-rate mortgage by day count, as ANNUITY', () => {
-    // docs/specs/mortgage-types.md table 4.2, last row: Canadian and variable is
-    // ANNUITY, whose annualization trait is DAY_COUNT. It used `x periodsPerYear`
-    // before the type existed; the two differ on any period that is not exactly
-    // 365/12 days, so the second, 31-day period tells them apart.
+  it('annualizes an ANNUITY mortgage by day count, not by the periods per year', () => {
+    // docs/specs/mortgage-types.md table 4.1: ANNUITY's annualization trait is
+    // DAY_COUNT. The two differ on any period that is not exactly 365/12 days,
+    // so the second, 31-day period tells them apart.
     const account = makeAccount({
       accountType: 'MORTGAGE',
-      mortgageType: null,
-      isCanadianMortgage: true,
-      isVariableRate: true,
+      mortgageType: 'ANNUITY',
       openingBalance: -200000,
       currentBalance: -198000,
       interestRate: 6,
@@ -1851,10 +1808,9 @@ describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => 
     expect(second.annualRate).not.toBeCloseTo(periodicRate * 12 * 100, 2);
   });
 
-  it('reads the stored type over the flags it was saved beside', () => {
-    // The column wins (`mortgageTypeOf`); the flags are only its fallback.
+  it('annualizes the same interest by the stored type', () => {
     // CANADIAN_FIXED inverts the semi-annual compounding and recovers 5.5%
-    // exactly from flags that alone would say ANNUITY.
+    // exactly.
     const recordedInterest = 200000 * getPeriodicRate(5.5, 12, 'CANADIAN_FIXED');
     const history = (overrides: Partial<Account>) =>
       deriveLoanPaymentHistory(
@@ -1875,13 +1831,11 @@ describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => 
       ).events[0].annualRate;
 
     expect(
-      history({ mortgageType: 'CANADIAN_FIXED', isCanadianMortgage: false }),
+      history({ mortgageType: 'CANADIAN_FIXED' }),
     ).toBeCloseTo(5.5, 3);
-    // And the other way: an ANNUITY column over Canadian-fixed flags annualizes
-    // by day count, reading the same interest as about 5.44%.
-    expect(
-      history({ mortgageType: 'ANNUITY', isCanadianMortgage: true, isVariableRate: false }),
-    ).toBeCloseTo(5.44, 2);
+    // ANNUITY annualizes by day count, reading the same interest as about
+    // 5.44%.
+    expect(history({ mortgageType: 'ANNUITY' })).toBeCloseTo(5.44, 2);
   });
 });
 

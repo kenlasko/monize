@@ -30,7 +30,6 @@ import {
 } from '@/types/account';
 import {
   PREPAYMENT_MODES,
-  flagsFromMortgageType,
   isAcceleratedFrequency,
   mortgageTypeOf,
   prepaymentModeOf,
@@ -226,14 +225,11 @@ const buildAccountSchema = (
 type AccountFormData = z.infer<ReturnType<typeof buildAccountSchema>>;
 
 /**
- * What the form submits: its fields plus, for a mortgage, the two legacy flags
- * its type maps to (`flagsFromMortgageType`), which travel beside the type
- * until P3-B1 drops the booleans.
+ * What the form submits: its fields, with a LINEAR mortgage's prepayment mode
+ * or the null every other type stores.
  */
 type AccountSubmitData = Omit<AccountFormData, 'prepaymentMode'> & {
   prepaymentMode?: PrepaymentMode | null;
-  isCanadianMortgage?: boolean;
-  isVariableRate?: boolean;
 };
 
 /** The cash ledger's own fields as the form loads them from the stored row. */
@@ -428,10 +424,10 @@ export function AccountForm({
   // form happened to load.
   const handleValidatedSubmit = useCallback(
     (data: AccountFormData) => {
-      // A mortgage sends its type and the flags it maps to together; any
-      // other account type sends neither. The prepayment mode belongs to a
-      // LINEAR mortgage alone: every other type sends null, which is what the
-      // server stores for it whatever it is sent.
+      // A mortgage sends its type; any other account type sends none. The
+      // prepayment mode belongs to a LINEAR mortgage alone: every other type
+      // sends null, which is what the server stores for it whatever it is
+      // sent.
       const { mortgageType, prepaymentMode, ...withoutMortgageType } = data;
       let payload: AccountSubmitData =
         data.accountType === 'MORTGAGE' && mortgageType
@@ -440,7 +436,6 @@ export function AccountForm({
               mortgageType,
               prepaymentMode:
                 mortgageType === 'LINEAR' ? (prepaymentMode ?? 'SHORTEN_TERM') : null,
-              ...flagsFromMortgageType(mortgageType),
             }
           : withoutMortgageType;
       // Editing: an emptied threshold means "clear it", so send null rather than

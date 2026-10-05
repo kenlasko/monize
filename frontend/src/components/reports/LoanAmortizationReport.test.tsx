@@ -135,8 +135,7 @@ describe('LoanAmortizationReport', () => {
         paymentFrequency: 'MONTHLY',
         interestCategoryId: 'cat-int',
         sourceAccountId: 'src-1',
-        isCanadianMortgage: false,
-        isVariableRate: false,
+        mortgageType: 'ANNUITY',
         isClosed: false,
       },
     ]);
@@ -172,8 +171,7 @@ describe('LoanAmortizationReport', () => {
         interestRate: 5.0,
         paymentAmount: 400,
         paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false,
-        isVariableRate: false,
+        mortgageType: 'ANNUITY',
         isClosed: false,
       },
     ]);
@@ -203,8 +201,7 @@ describe('LoanAmortizationReport', () => {
         interestRate: 3.5,
         paymentAmount: 200,
         paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false,
-        isVariableRate: false,
+        mortgageType: 'ANNUITY',
         isClosed: false,
       },
     ]);
@@ -227,13 +224,13 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -10000, openingBalance: -20000, interestRate: 5.0,
         paymentAmount: 400, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
       {
         id: 'mortgage-1', name: 'Home Mortgage', accountType: 'MORTGAGE',
         currentBalance: -200000, openingBalance: -300000, interestRate: 4.0,
         paymentAmount: 1500, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: true, isVariableRate: false, isClosed: false,
+        mortgageType: 'CANADIAN_FIXED', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -254,13 +251,13 @@ describe('LoanAmortizationReport', () => {
         id: 'chequing-1', name: 'Chequing', accountType: 'CHEQUING',
         currentBalance: 5000, openingBalance: 5000, interestRate: null,
         paymentAmount: null, paymentFrequency: null,
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
       {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -15000, interestRate: 5.0,
         paymentAmount: 300, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -280,7 +277,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'New Loan', accountType: 'LOAN',
         currentBalance: -10000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: null, paymentFrequency: null,
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -298,7 +295,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -8000, openingBalance: -20000, interestRate: 5.0,
         paymentAmount: 400, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -324,7 +321,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loc-1', name: 'Line of Credit', accountType: 'LINE_OF_CREDIT',
         currentBalance: -3000, openingBalance: -5000, interestRate: null,
         paymentAmount: null, paymentFrequency: null,
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -350,7 +347,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-0', name: 'Interest-free loan', accountType: 'LOAN',
         currentBalance: -900, openingBalance: -1200, interestRate: 0,
         paymentAmount: 150, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -373,7 +370,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'My Loan', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -10000, interestRate: 4.0,
         paymentAmount: 300, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -399,7 +396,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Old Loan', accountType: 'LOAN',
         currentBalance: 0, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: 300, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: true,
+        mortgageType: 'ANNUITY', isClosed: true,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -420,7 +417,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -9000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: 500, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -447,7 +444,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -9000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: 500, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -478,7 +475,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: 300, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -499,7 +496,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -10000, interestRate: null,
         paymentAmount: null, paymentFrequency: null,
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -520,7 +517,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: 300, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -559,7 +556,7 @@ describe('LoanAmortizationReport', () => {
           id: 'loan-1', name: 'Mortgage', accountType: 'LOAN',
           currentBalance: -200000, openingBalance: -210000, interestRate: 6,
           paymentAmount: 1500, paymentFrequency: 'MONTHLY',
-          isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+          mortgageType: 'ANNUITY', isClosed: false,
         },
       ]);
       mockGetAllTransactions.mockResolvedValue({
@@ -608,7 +605,7 @@ describe('LoanAmortizationReport', () => {
       paymentAmount: null, paymentFrequency: 'MONTHLY', paymentStartDate: '2025-02-15',
       amortizationMonths: 360, originalPrincipal: 300000,
       mortgageType, prepaymentMode: null,
-      isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      isClosed: false,
     });
 
     it('shows a LINEAR mortgage\'s next installment with its date', async () => {
@@ -639,7 +636,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: 500, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -660,7 +657,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: 500, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -681,7 +678,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -10000, interestRate: null,
         paymentAmount: null, paymentFrequency: null,
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -702,7 +699,7 @@ describe('LoanAmortizationReport', () => {
         id: 'mortgage-1', name: 'Home Mortgage', accountType: 'MORTGAGE',
         currentBalance: -200000, openingBalance: -300000, interestRate: 4.0,
         paymentAmount: 1500, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: true, isVariableRate: false, isClosed: false,
+        mortgageType: 'CANADIAN_FIXED', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -723,7 +720,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loc-1', name: 'LOC', accountType: 'LINE_OF_CREDIT',
         currentBalance: -3000, openingBalance: -5000, interestRate: 8.0,
         paymentAmount: 200, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -752,7 +749,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Loan', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: 300, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockRejectedValue(new Error('boom'));
@@ -781,7 +778,7 @@ describe('LoanAmortizationReport', () => {
         currentBalance: -100000, openingBalance: -120000, interestRate: 5.0,
         paymentAmount: 800, paymentFrequency: 'MONTHLY',
         interestCategoryId: 'cat-int', sourceAccountId: 'src-1',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -808,7 +805,7 @@ describe('LoanAmortizationReport', () => {
         currentBalance: -100000, openingBalance: -120000, interestRate: 5.0,
         paymentAmount: 800, paymentFrequency: 'MONTHLY',
         interestCategoryId: 'cat-int', sourceAccountId: 'src-1',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -845,7 +842,7 @@ describe('LoanAmortizationReport', () => {
       id: 'loan-1', name: 'Mortgage', accountType: 'MORTGAGE',
       currentBalance: -100000, openingBalance: -100000, interestRate: 5,
       paymentAmount: 500, paymentFrequency: 'MONTHLY',
-      isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      mortgageType: 'ANNUITY', isClosed: false,
     },
   ];
   const onePayment = {
@@ -900,7 +897,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loc-1', name: 'LOC', accountType: 'LINE_OF_CREDIT',
         currentBalance: -3000, openingBalance: -5000, interestRate: 8,
         paymentAmount: 200, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -927,7 +924,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'My Car Loan!', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: 300, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
         currencyCode: 'CAD',
       },
     ]);
@@ -973,7 +970,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Loan', accountType: 'LOAN',
         currentBalance: -1000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: null, paymentFrequency: null,
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({ data: txs, pagination: { hasMore: false } });
@@ -999,7 +996,7 @@ describe('LoanAmortizationReport', () => {
           id: 'loan-1', name: 'Loan', accountType: 'LOAN',
           currentBalance: -2000, openingBalance: -5000, interestRate: 5.0,
           paymentAmount: 100, paymentFrequency: freq,
-          isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+          mortgageType: 'ANNUITY', isClosed: false,
         },
       ]);
       mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
@@ -1017,7 +1014,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Loan', accountType: 'LOAN',
         currentBalance: -100000, openingBalance: -100000, interestRate: 50,
         paymentAmount: 10, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
@@ -1033,7 +1030,7 @@ describe('LoanAmortizationReport', () => {
         id: 'loan-1', name: 'Loan', accountType: 'LOAN',
         currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
         paymentAmount: 300, paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        mortgageType: 'ANNUITY', isClosed: false,
       },
     ]);
     // First page has more, second page doesn't
@@ -1069,6 +1066,7 @@ describe('LoanAmortizationReport', () => {
         loanStartDate: '2020-01-01',
         loanEndDate: '2050-01-01',
         loanPayment: 1500,
+        mortgageType: 'ANNUITY',
       },
     ]);
     mockGetAllTransactions.mockResolvedValue({
@@ -1113,8 +1111,7 @@ describe('LoanAmortizationReport', () => {
         interestRate: 5.0,
         paymentAmount: 400,
         paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false,
-        isVariableRate: false,
+        mortgageType: 'ANNUITY',
         isClosed: false,
       },
       {
@@ -1126,8 +1123,7 @@ describe('LoanAmortizationReport', () => {
         interestRate: 5.0,
         paymentAmount: 400,
         paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false,
-        isVariableRate: false,
+        mortgageType: 'ANNUITY',
         isClosed: false,
       },
     ]);
@@ -1153,8 +1149,7 @@ describe('LoanAmortizationReport', () => {
         interestRate: 5.0,
         paymentAmount: 400,
         paymentFrequency: 'MONTHLY',
-        isCanadianMortgage: false,
-        isVariableRate: false,
+        mortgageType: 'ANNUITY',
         isClosed: false,
       }]);
     mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });

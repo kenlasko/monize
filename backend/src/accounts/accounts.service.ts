@@ -58,11 +58,9 @@ import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
 import {
   MortgageType,
   PrepaymentMode,
-  mortgageTypeColumns,
   mortgageTypeOf,
   prepaymentModeColumn,
   prepaymentModeOf,
-  requestedMortgageType,
   storesConstantPayment,
 } from "./mortgage-type.util";
 import { assertMortgageMethodTerms } from "./mortgage-installment.util";
@@ -110,8 +108,7 @@ export interface LlmAccountRow {
   originalPrincipal: number | null;
   /**
    * How a mortgage's rate compounds and its principal amortizes
-   * (`mortgage-type.util.ts`), the column or else the type its two legacy
-   * flags denote; null on every other account type.
+   * (`mortgage-type.util.ts`); null on every other account type.
    */
   mortgageType: MortgageType | null;
   /** A LINEAR mortgage's prepayment mode; null on every other account. */
@@ -261,14 +258,14 @@ export class AccountsService {
       delete accountData.statementSettlementDay;
     }
 
-    // Only a mortgage has a type, written with the flags it maps to; a request
-    // naming neither is the default type. LINEAR and INTEREST_ONLY are refused
-    // without the terms their method prices from (spec section 8), store no
-    // constant payment (decision 11), and only LINEAR keeps a prepayment mode
-    // (decision 10).
+    // Only a mortgage takes a requested type; a request naming none is the
+    // default type, as is every other account type's row (the column
+    // default). LINEAR and INTEREST_ONLY are refused without the terms their
+    // method prices from (spec section 8), store no constant payment
+    // (decision 11), and only LINEAR keeps a prepayment mode (decision 10).
     const mortgageType =
       accountData.accountType === AccountType.MORTGAGE
-        ? (requestedMortgageType(accountData) ?? "ANNUITY")
+        ? (accountData.mortgageType ?? "ANNUITY")
         : null;
     const prepaymentMode = mortgageType
       ? prepaymentModeColumn(mortgageType, accountData.prepaymentMode)
@@ -285,7 +282,7 @@ export class AccountsService {
       (derivesInstallment ? accountData.mortgagePaymentFrequency : undefined);
     const mortgageColumns = mortgageType
       ? {
-          ...mortgageTypeColumns(mortgageType),
+          mortgageType,
           prepaymentMode,
           ...(derivesInstallment ? { paymentFrequency } : {}),
         }
@@ -957,23 +954,17 @@ export class AccountsService {
             : null;
         if (updateAccountDto.linkedLoanAccountId !== undefined)
           account.linkedLoanAccountId = updateAccountDto.linkedLoanAccountId;
-        // Mortgage-specific fields. A mortgage writes its type and the flags
-        // it maps to together, so a previous-release pod reading the flags
-        // prices the row as this one does. Any other account type has no type
-        // (cleared when an edit moves a mortgage to another type, as the
-        // backfill leaves non-mortgage rows null) and keeps the flags as sent.
-        const requestedType =
-          effectiveType === AccountType.MORTGAGE
-            ? requestedMortgageType(updateAccountDto, account)
-            : undefined;
-        if (requestedType !== undefined) {
-          Object.assign(account, mortgageTypeColumns(requestedType));
-        } else if (effectiveType !== AccountType.MORTGAGE) {
-          account.mortgageType = null;
-          if (updateAccountDto.isCanadianMortgage !== undefined)
-            account.isCanadianMortgage = updateAccountDto.isCanadianMortgage;
-          if (updateAccountDto.isVariableRate !== undefined)
-            account.isVariableRate = updateAccountDto.isVariableRate;
+        // Mortgage-specific fields. Only a mortgage takes a requested type;
+        // any other account type carries the column's default (reset when an
+        // edit moves a mortgage to another type, as every non-mortgage row
+        // holds it).
+        if (effectiveType === AccountType.MORTGAGE) {
+          // `@IsOptional()` admits null; like an absent field it leaves the
+          // stored type alone, never a null the NOT NULL column refuses.
+          if (updateAccountDto.mortgageType != null)
+            account.mortgageType = updateAccountDto.mortgageType;
+        } else {
+          account.mortgageType = "ANNUITY";
         }
         if (updateAccountDto.termMonths !== undefined) {
           account.termMonths = updateAccountDto.termMonths || null;

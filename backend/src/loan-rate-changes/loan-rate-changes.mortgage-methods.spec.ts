@@ -39,8 +39,6 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
       accountType: AccountType.MORTGAGE,
       mortgageType: "LINEAR",
       prepaymentMode: null,
-      isCanadianMortgage: false,
-      isVariableRate: false,
       currentBalance: -235833.3345,
       openingBalance: -300000,
       originalPrincipal: 300000,

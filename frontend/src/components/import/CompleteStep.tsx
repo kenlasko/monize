@@ -46,8 +46,7 @@ export function CompleteStep({
 
   // The mortgage type of a matched account, read from the accounts list rather
   // than from the import summary, which never carried it, through
-  // `mortgageTypeOf`, so the dialog seeds the convention the server prices: a
-  // Canadian variable-rate row reads as `ANNUITY`.
+  // `mortgageTypeOf`, so the dialog seeds the convention the server prices.
   const mortgageTypeOfAccount = (accountId: string) => {
     const account = accounts.find((a) => a.id === accountId);
     return account ? mortgageTypeOf(account) : undefined;

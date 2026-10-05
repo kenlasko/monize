@@ -23,8 +23,6 @@ describe("applyMortgageMethodColumns", () => {
       accountType: AccountType.MORTGAGE,
       mortgageType: "LINEAR",
       prepaymentMode: null,
-      isCanadianMortgage: false,
-      isVariableRate: false,
       interestRate: 2,
       paymentAmount: null,
       paymentFrequency: "MONTHLY",
@@ -66,7 +64,7 @@ describe("applyMortgageMethodColumns", () => {
   it("clears both columns' method state off a non-mortgage", async () => {
     const account = makeMortgage({
       accountType: AccountType.LOAN,
-      mortgageType: null,
+      mortgageType: "ANNUITY",
       prepaymentMode: "LOWER_INSTALLMENT",
       paymentAmount: 500,
     });

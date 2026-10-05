@@ -331,7 +331,7 @@ export class UpdateAccountDto {
   @ApiPropertyOptional({
     example: "CANADIAN_FIXED",
     description:
-      "Mortgage type: ANNUITY (nominal rate divided by the payments per year), CANADIAN_FIXED (semi-annual compounding), LINEAR (constant principal) or INTEREST_ONLY (no principal until the final payment). Wins over isCanadianMortgage/isVariableRate; when absent, a flag sent decides it.",
+      "Mortgage type: ANNUITY (nominal rate divided by the payments per year), CANADIAN_FIXED (semi-annual compounding), LINEAR (constant principal) or INTEREST_ONLY (no principal until the final payment). Absent leaves the stored type unchanged.",
     enum: MORTGAGE_TYPES,
   })
   @IsOptional()
@@ -347,24 +347,6 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsIn(PREPAYMENT_MODES)
   prepaymentMode?: PrepaymentMode | null;
-
-  @ApiPropertyOptional({
-    example: true,
-    description:
-      "Legacy flag, superseded by mortgageType: a Canadian mortgage that is not variable-rate is CANADIAN_FIXED",
-  })
-  @IsOptional()
-  @IsBoolean()
-  isCanadianMortgage?: boolean;
-
-  @ApiPropertyOptional({
-    example: false,
-    description:
-      "Legacy flag, superseded by mortgageType: a Canadian variable-rate mortgage is ANNUITY",
-  })
-  @IsOptional()
-  @IsBoolean()
-  isVariableRate?: boolean;
 
   @ApiPropertyOptional({
     example: 60,

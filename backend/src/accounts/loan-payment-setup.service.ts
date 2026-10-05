@@ -42,10 +42,8 @@ import {
   MortgageType,
   PrepaymentMode,
   compoundingFor,
-  mortgageTypeColumns,
   mortgageTypeOf,
   prepaymentModeColumn,
-  requestedMortgageType,
   storesConstantPayment,
 } from "./mortgage-type.util";
 import {
@@ -93,7 +91,7 @@ export class LoanPaymentSetupService {
     }
     const mortgageType =
       account.accountType === AccountType.MORTGAGE
-        ? (requestedMortgageType(dto, account) ?? mortgageTypeOf(account))
+        ? (dto.mortgageType ?? mortgageTypeOf(account))
         : null;
     if (mortgageType === null || storesConstantPayment(mortgageType)) {
       return {
@@ -244,11 +242,11 @@ export class LoanPaymentSetupService {
       }
     }
 
-    // The type this request leaves the mortgage with: its own type or flags,
-    // else the stored type. Null for any other account type.
+    // The type this request leaves the mortgage with: its own type, else the
+    // stored type. Null for any other account type.
     const mortgageType =
       account.accountType === AccountType.MORTGAGE
-        ? (requestedMortgageType(dto, account) ?? mortgageTypeOf(account))
+        ? (dto.mortgageType ?? mortgageTypeOf(account))
         : null;
 
     // Calculate principal/interest split for the next payment
@@ -315,7 +313,7 @@ export class LoanPaymentSetupService {
       }
     } else if (mortgageType !== null) {
       // Every mortgage is split by its type (spec section 5.5), the type this
-      // same request writes: a request's own type or flags decide the split it
+      // same request writes: a request's own type decides the split it
       // is submitted with, never the stored ones they replace.
       //
       // The DTO's frequency is a *recurrence* spelling, read through the one
@@ -503,11 +501,10 @@ export class LoanPaymentSetupService {
     }
 
     if (account.accountType === AccountType.MORTGAGE) {
-      // The type and the flags it maps to, together, only when the request
-      // names the type or a flag; otherwise the stored columns stand.
-      const requestedType = requestedMortgageType(dto, account);
-      if (requestedType !== undefined) {
-        Object.assign(updateData, mortgageTypeColumns(requestedType));
+      // The type only when the request names one; otherwise the stored
+      // column stands. A null, which `@IsOptional()` admits, names none.
+      if (dto.mortgageType != null) {
+        updateData.mortgageType = dto.mortgageType;
       }
       // Null unless the type this request leaves is LINEAR (spec decision 10).
       updateData.prepaymentMode = prepaymentMode;

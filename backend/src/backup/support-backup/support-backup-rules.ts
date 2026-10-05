@@ -222,8 +222,6 @@ export const RULES: Record<string, TableRules> = {
     asset_category_id: keep,
     date_acquired: keep,
     linked_loan_account_id: keep,
-    is_canadian_mortgage: keep,
-    is_variable_rate: keep,
     mortgage_type: keep,
     prepayment_mode: keep,
     term_months: keep,

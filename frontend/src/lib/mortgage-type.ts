@@ -1,9 +1,9 @@
 /**
  * A mortgage type's behaviour, decided once: the browser-side twin of
  * `backend/src/accounts/mortgage-type.util.ts` (docs/specs/mortgage-types.md,
- * tables 4.1 and 4.2). A consumer asks a trait through the accessors below
- * rather than comparing type literals or reading the two legacy flags, so a
- * new type is one row here plus whatever the compiler then names.
+ * table 4.1). A consumer asks a trait through the accessors below rather than
+ * comparing type literals, so a new type is one row here plus whatever the
+ * compiler then names.
  *
  * `mortgage-type.contract.test.ts` reads the backend's
  * `mortgage-type-cases.json` and fails when the two layers disagree.
@@ -78,52 +78,16 @@ export function annualizationFor(type: MortgageType): MortgageAnnualization {
 }
 
 /**
- * The type the two legacy flags denote (spec table 4.2): Canadian and not
- * variable is `CANADIAN_FIXED`, every other combination `ANNUITY`. A missing
- * flag reads as false, as the backend's twin and its backfill do.
- */
-export function mortgageTypeFromFlags(
-  isCanadian: boolean | null | undefined,
-  isVariableRate: boolean | null | undefined,
-): MortgageType {
-  return isCanadian === true && isVariableRate !== true
-    ? "CANADIAN_FIXED"
-    : "ANNUITY";
-}
-
-/**
- * The flags a request sends beside the type while the booleans still exist:
- * `CANADIAN_FIXED` is `(true, false)`, every other type `(false, false)`.
- */
-export function flagsFromMortgageType(type: MortgageType): {
-  isCanadianMortgage: boolean;
-  isVariableRate: boolean;
-} {
-  return {
-    isCanadianMortgage: type === "CANADIAN_FIXED",
-    isVariableRate: false,
-  };
-}
-
-/**
- * The type an account carries: its stored `mortgageType`, else the type its two
- * legacy flags denote. The column is nullable until P3-B1 and a previous
- * release clears it when a save changes a flag, so a null is read through the
- * flags rather than as `ANNUITY`. Mirrors the backend's `mortgageTypeOf`; every
- * frontend consumer of the type reads it through here.
- *
- * A non-mortgage loan carries a null type and no flags, so it reads as
- * `ANNUITY`: the annuity engine every `LOAN` account uses.
+ * The type an account carries: its stored `mortgageType`, NOT NULL since the
+ * contract migration (P3-B1). Read only on a mortgage; every other account
+ * carries the column default, `ANNUITY`, the annuity engine every `LOAN`
+ * account uses. Mirrors the backend's `mortgageTypeOf`; every frontend
+ * consumer of the type reads it through here.
  */
 export function mortgageTypeOf(account: {
-  mortgageType?: MortgageType | null;
-  isCanadianMortgage?: boolean | null;
-  isVariableRate?: boolean | null;
+  mortgageType: MortgageType;
 }): MortgageType {
-  return (
-    account.mortgageType ??
-    mortgageTypeFromFlags(account.isCanadianMortgage, account.isVariableRate)
-  );
+  return account.mortgageType;
 }
 
 /**

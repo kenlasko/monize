@@ -21,8 +21,7 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
     // A repayment period is required in the UI; ~21 months amortizes the
     // default 10k at 6% near the default 500 payment.
     amortizationMonths: 21,
-    isCanadianMortgage: false,
-    isVariableRate: false,
+    mortgageType: 'ANNUITY',
     ...overrides,
   } as Account;
 }
@@ -203,7 +202,7 @@ describe('computePastImpact', () => {
     // (2022-05-13). The starting payment must fall back to that row's recorded
     // installment -- otherwise the schedule silently drops to the PMT-over-term
     // minimum payment and stretches a ~4-year payoff to the full 25-year
-    // amortization. Variable-rate Canadian mortgage, accelerated bi-weekly,
+    // amortization. An annuity mortgage, accelerated bi-weekly,
     // with the recorded rate/payment steps.
     const account = makeAccount({
       accountType: 'MORTGAGE',
@@ -215,8 +214,7 @@ describe('computePastImpact', () => {
       amortizationMonths: 300,
       termMonths: 60,
       paymentStartDate: '2022-04-25',
-      isCanadianMortgage: true,
-      isVariableRate: true,
+      mortgageType: 'ANNUITY',
     });
     // The schedule now starts at the earliest actual payment, so the recorded
     // transactions sit on the real installment dates (2022-05-13 onward), not a
@@ -270,8 +268,7 @@ describe('computePastImpact', () => {
       amortizationMonths: 300,
       termMonths: 60,
       paymentStartDate: '2025-01-15',
-      isCanadianMortgage: true,
-      isVariableRate: false,
+      mortgageType: 'CANADIAN_FIXED',
     });
     const history = makeHistory(account, []);
 
@@ -588,7 +585,7 @@ describe('computePastImpact', () => {
       currentBalance: -290000,
       interestRate: 5,
       amortizationMonths: 300,
-      isCanadianMortgage: true,
+      mortgageType: 'CANADIAN_FIXED',
       paymentAmount: 2000,
     });
     const history = makeHistory(account, [10000]);
@@ -602,28 +599,6 @@ describe('computePastImpact', () => {
     expect(impact!.originalSchedule.rows[0].payment).toBeCloseTo(expectedPayment, 0);
     expect(impact!.originalSchedule.numPayments).toBeGreaterThan(295);
     expect(impact!.originalSchedule.numPayments).toBeLessThanOrEqual(301);
-  });
-
-  it('prices the contractual payment by the stored type, not the flags', () => {
-    // CANADIAN_FIXED read from the column over flags that alone say ANNUITY:
-    // 1744.81 rather than the nominal 1753.77.
-    const account = makeAccount({
-      accountType: 'MORTGAGE',
-      originalPrincipal: 300000,
-      currentBalance: -290000,
-      interestRate: 5,
-      amortizationMonths: 300,
-      mortgageType: 'CANADIAN_FIXED',
-      isCanadianMortgage: false,
-      paymentAmount: 2000,
-    });
-
-    const impact = computePastImpact(account, makeHistory(account, [10000]));
-
-    expect(impact!.originalSchedule.rows[0].payment).toBeCloseTo(
-      calculateMortgagePaymentAmount(300000, 5, 300, 'MONTHLY', 'CANADIAN_FIXED'),
-      2,
-    );
   });
 
   it('uses the final actual payment as payoff for an already paid-off loan', () => {

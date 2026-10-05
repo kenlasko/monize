@@ -173,16 +173,14 @@ export interface Account {
   // Links an asset/other account to its financing loan/mortgage (equity view)
   linkedLoanAccountId: string | null;
   // Mortgage-specific fields
-  // The stored type: null on a non-mortgage, and on a mortgage a previous
-  // release wrote or whose flags it changed. Read it through `mortgageTypeOf`
-  // (`lib/mortgage-type.ts`), which falls back to the two flags below.
-  mortgageType: MortgageType | null;
+  // The stored type, read only on a mortgage; every other account carries the
+  // column default, `ANNUITY`, the engine a plain loan uses. Read it through
+  // `mortgageTypeOf` (`lib/mortgage-type.ts`).
+  mortgageType: MortgageType;
   // What an extra repayment does to a LINEAR mortgage's principal; null on
   // every other type. Read it through `prepaymentModeOf`, which reads a null
   // on a LINEAR mortgage as `SHORTEN_TERM`.
   prepaymentMode?: PrepaymentMode | null;
-  isCanadianMortgage: boolean;
-  isVariableRate: boolean;
   termMonths: number | null;
   termEndDate: string | null;
   amortizationMonths: number | null;
@@ -243,13 +241,10 @@ export interface CreateAccountData {
   assetCategoryId?: string;
   dateAcquired?: string;
   linkedLoanAccountId?: string | null;
-  // Mortgage-specific fields. `mortgageType` wins over the two legacy flags
-  // when sent.
+  // Mortgage-specific fields. `ANNUITY` when a mortgage is sent without one.
   mortgageType?: MortgageType;
   // LINEAR only; the server writes null for every other type.
   prepaymentMode?: PrepaymentMode | null;
-  isCanadianMortgage?: boolean;
-  isVariableRate?: boolean;
   termMonths?: number;
   amortizationMonths?: number;
   mortgagePaymentFrequency?: MortgagePaymentFrequency;
@@ -312,10 +307,8 @@ export interface MortgagePreviewData {
   amortizationMonths: number;
   paymentFrequency: MortgagePaymentFrequency;
   paymentStartDate: string;
-  /** Wins over the two legacy flags when sent. */
+  /** `ANNUITY` when absent. */
   mortgageType?: MortgageType;
-  isCanadian: boolean;
-  isVariableRate: boolean;
 }
 
 export interface MortgageAmortizationPreview {
@@ -457,12 +450,10 @@ export interface SetupLoanPaymentsData {
   payeeId?: string;
   payeeName?: string;
   autoPost?: boolean;
-  /** Wins over the two legacy flags when sent. */
+  /** The account's stored type when absent. */
   mortgageType?: MortgageType;
   /** LINEAR only; the server writes null for every other type. */
   prepaymentMode?: PrepaymentMode | null;
-  isCanadianMortgage?: boolean;
-  isVariableRate?: boolean;
   amortizationMonths?: number;
   termMonths?: number;
   extraPrincipal?: number;
@@ -480,8 +471,6 @@ export type PreviewLoanPaymentSetupData = Pick<
   | 'interestRate'
   | 'mortgageType'
   | 'prepaymentMode'
-  | 'isCanadianMortgage'
-  | 'isVariableRate'
   | 'amortizationMonths'
   | 'extraPrincipal'
 >;

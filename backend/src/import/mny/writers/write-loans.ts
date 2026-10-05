@@ -63,8 +63,6 @@ export async function writeLoans(
         "paymentStartDate",
         "accountType",
         "mortgageType",
-        "isCanadianMortgage",
-        "isVariableRate",
       ],
     });
     if (!account) {
