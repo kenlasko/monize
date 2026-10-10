@@ -1,8 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "./entities/scheduled-transaction-split.entity";
+import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
 import { Account, AccountType } from "../accounts/entities/account.entity";
 import { LoanRateChange } from "../loan-rate-changes/entities/loan-rate-change.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
@@ -17,6 +19,7 @@ describe("ScheduledTransactionLoanService", () => {
   let splitsRepository: Record<string, jest.Mock>;
   let accountsRepository: Record<string, jest.Mock>;
   let rateChangesRepository: Record<string, jest.Mock>;
+  let overridesRepository: Record<string, jest.Mock>;
   let manager: Record<string, jest.Mock>;
 
   const loanAccountId = "acc-loan";
@@ -96,11 +99,16 @@ describe("ScheduledTransactionLoanService", () => {
       find: jest.fn().mockResolvedValue([]),
     };
 
+    overridesRepository = {
+      find: jest.fn().mockResolvedValue([]),
+    };
+
     const scopedDb = createScopedDbMocks([
       [ScheduledTransaction, scheduledTransactionsRepository],
       [ScheduledTransactionSplit, splitsRepository],
       [Account, accountsRepository],
       [LoanRateChange, rateChangesRepository],
+      [ScheduledTransactionOverride, overridesRepository],
     ]);
     manager = scopedDb.manager;
     // The dated ledger balance comes from a raw as-of query; by default answer
@@ -2287,6 +2295,346 @@ describe("ScheduledTransactionLoanService", () => {
       );
 
       expect(result).toEqual({ nextDueDate: "2026-08-01", debt: 0 });
+    });
+  });
+
+  /**
+   * The projection read (`docs/specs/scheduled-loan-installment-pricing.md`
+   * section 8). The numbers are the pure fold's own spec's; these cases are
+   * about what the service reads, refuses and hands over: fixture 5.1 with
+   * Timeline A, nothing posted, the cursor at 2023-02-03.
+   */
+  describe("projectLoanOccurrences", () => {
+    const annuityMortgage = (overrides: Partial<Account> = {}): Account =>
+      makeLoanAccount({
+        accountType: "MORTGAGE" as AccountType,
+        mortgageType: "ANNUITY",
+        interestRate: 5,
+        paymentAmount: 584.59,
+        paymentStartDate: "2023-02-03",
+        amortizationMonths: 300,
+        currentBalance: -100000,
+        currencyCode: "CAD",
+        interestCategoryId: "cat-interest",
+        ...overrides,
+      } as Partial<Account>);
+
+    const mortgageSchedule = (
+      overrides: Partial<ScheduledTransaction> = {},
+    ): ScheduledTransaction =>
+      makeScheduledTransaction({
+        amount: -584.59,
+        startDate: "2023-02-03",
+        nextDueDate: "2023-02-03",
+        endDate: null,
+        occurrencesRemaining: null,
+        currencyCode: "CAD",
+        splits: [
+          {
+            id: "split-principal",
+            transferAccountId: loanAccountId,
+            categoryId: null,
+            amount: -167.92,
+            memo: "Principal",
+          },
+          {
+            id: "split-interest",
+            transferAccountId: null,
+            categoryId: "cat-interest",
+            amount: -416.67,
+            memo: "Interest",
+          },
+        ],
+        ...overrides,
+      } as Partial<ScheduledTransaction>);
+
+    const timelineA = [
+      {
+        effectiveDate: "2023-02-03",
+        annualRate: 5,
+        newPaymentAmount: 584.59,
+        source: "initial",
+      },
+      {
+        effectiveDate: "2023-04-15",
+        annualRate: 4.5,
+        newPaymentAmount: 560,
+        source: "manual",
+      },
+    ];
+
+    /** The as-of SQL in both shapes: one date, or one row per date asked for. */
+    const ledgerAt = (balance: string | null) =>
+      manager.query.mockImplementation(
+        async (sql: unknown, params?: unknown[]) => {
+          const text = String(sql);
+          if (text.includes("unnest")) {
+            if (balance === null) return [];
+            return (params?.[2] as string[]).map((as_of) => ({
+              as_of,
+              balance,
+            }));
+          }
+          if (text.includes("opening_balance")) {
+            return balance === null ? [] : [{ balance }];
+          }
+          return [];
+        },
+      );
+
+    beforeEach(() => {
+      accountsRepository.findOne.mockResolvedValue(annuityMortgage());
+      scheduledTransactionsRepository.findOne.mockResolvedValue(
+        mortgageSchedule(),
+      );
+      rateChangesRepository.find.mockResolvedValue(timelineA);
+      ledgerAt("-100000");
+    });
+
+    it("prices the next occurrences at their own dates, the identity from the one expander, the ledger in one statement", async () => {
+      const result = await service.projectLoanOccurrences(
+        userId,
+        scheduledTransactionId,
+        5,
+      );
+
+      expect(result).toMatchObject({
+        scheduledTransactionId,
+        loanAccountId,
+        status: "priced",
+        currencyCode: "CAD",
+      });
+      expect(
+        result.occurrences.map((o) => [o.dueDate, o.amount, o.interest]),
+      ).toEqual([
+        ["2023-02-03", 584.59, 416.67],
+        ["2023-03-03", 584.59, 415.97],
+        ["2023-04-03", 584.59, 415.26],
+        ["2023-05-03", 560, 373.1],
+        ["2023-06-03", 560, 372.4],
+      ]);
+      // The schedule is read for the caller, and the ledger once, for every
+      // date the five occurrences fall on.
+      expect(scheduledTransactionsRepository.findOne).toHaveBeenCalledWith({
+        where: { id: scheduledTransactionId, userId },
+      });
+      const ledgerCalls = manager.query.mock.calls.filter(([sql]) =>
+        String(sql).includes("unnest"),
+      );
+      expect(ledgerCalls).toHaveLength(1);
+      expect(ledgerCalls[0][1]).toEqual([
+        loanAccountId,
+        userId,
+        ["2023-02-03", "2023-03-03", "2023-04-03", "2023-05-03", "2023-06-03"],
+      ]);
+    });
+
+    it("prices the first occurrence as the posting boundary prices it on the same ledger (INV-LOAN-006)", async () => {
+      const scheduled = mortgageSchedule();
+      const posting = await service.resolvePostingAllocation(
+        scheduled,
+        scheduled.splits as unknown as ScheduledTransactionSplit[],
+        "2023-02-03",
+      );
+      const [first] = (
+        await service.projectLoanOccurrences(userId, scheduledTransactionId, 1)
+      ).occurrences;
+
+      expect(posting.kind).toBe("allocation");
+      if (posting.kind !== "allocation") return;
+      expect(first.amount).toBe(-posting.parentAmount);
+      expect(first.principal).toBe(
+        -Number(posting.amountsBySplitId.get("split-principal")),
+      );
+      expect(first.interest).toBe(
+        -Number(posting.amountsBySplitId.get("split-interest")),
+      );
+      // And it is the stored template, which is what the occurrence service
+      // answers for a same-currency base occurrence.
+      expect(first.amount).toBe(584.59);
+    });
+
+    it("hands the count to the expansion", async () => {
+      const result = await service.projectLoanOccurrences(
+        userId,
+        scheduledTransactionId,
+        2,
+      );
+      expect(result.occurrences.map((o) => o.dueDate)).toEqual([
+        "2023-02-03",
+        "2023-03-03",
+      ]);
+    });
+
+    it("matches each occurrence to its override through the expander and names it", async () => {
+      overridesRepository.find.mockResolvedValue([
+        {
+          id: "ovr-march",
+          scheduledTransactionId,
+          originalDate: "2023-03-03",
+          overrideDate: "2023-03-03",
+          amount: -610,
+          splits: null,
+        },
+      ]);
+      const result = await service.projectLoanOccurrences(
+        userId,
+        scheduledTransactionId,
+        2,
+      );
+      expect(result.occurrences[1]).toMatchObject({
+        overrideId: "ovr-march",
+        amount: 610,
+        interest: 415.97,
+        principal: 194.03,
+      });
+      expect(overridesRepository.find).toHaveBeenCalledWith({
+        where: { scheduledTransactionId },
+      });
+    });
+
+    it("is not found for a schedule that is not the caller's", async () => {
+      scheduledTransactionsRepository.findOne.mockResolvedValue(null);
+      await expect(
+        service.projectLoanOccurrences(userId, scheduledTransactionId, 5),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("answers not-a-loan, with no rows, when no line transfers to a loan-like account", async () => {
+      accountsRepository.findOne.mockResolvedValue(
+        makeLoanAccount({ accountType: "CHECKING" as AccountType }),
+      );
+      const result = await service.projectLoanOccurrences(
+        userId,
+        scheduledTransactionId,
+        5,
+      );
+      expect(result).toEqual({
+        scheduledTransactionId,
+        loanAccountId: null,
+        status: "not-a-loan",
+        currencyCode: "CAD",
+        occurrences: [],
+      });
+      expect(manager.query).not.toHaveBeenCalled();
+    });
+
+    it("answers declined, with no rows, for a loan template the core does not price", async () => {
+      scheduledTransactionsRepository.findOne.mockResolvedValue(
+        mortgageSchedule({
+          splits: [
+            {
+              id: "split-principal",
+              transferAccountId: loanAccountId,
+              categoryId: null,
+              amount: -167.92,
+              memo: "Principal",
+            },
+            {
+              id: "split-interest",
+              transferAccountId: null,
+              categoryId: "cat-interest",
+              amount: -416.67,
+              memo: "Interest",
+            },
+            {
+              id: "split-escrow",
+              transferAccountId: null,
+              categoryId: "cat-escrow",
+              amount: -50,
+              memo: "Escrow",
+            },
+          ],
+        } as Partial<ScheduledTransaction>),
+      );
+      const result = await service.projectLoanOccurrences(
+        userId,
+        scheduledTransactionId,
+        5,
+      );
+      expect(result).toMatchObject({
+        loanAccountId,
+        status: "declined",
+        occurrences: [],
+      });
+    });
+
+    it("has no occurrence to price on an inactive schedule", async () => {
+      scheduledTransactionsRepository.findOne.mockResolvedValue(
+        mortgageSchedule({ isActive: false }),
+      );
+      const result = await service.projectLoanOccurrences(
+        userId,
+        scheduledTransactionId,
+        5,
+      );
+      expect(result).toMatchObject({ status: "priced", occurrences: [] });
+      expect(overridesRepository.find).not.toHaveBeenCalled();
+    });
+
+    it("answers declined, with no rows, for a foreign-currency schedule, which the posting does not re-price", async () => {
+      scheduledTransactionsRepository.findOne.mockResolvedValue(
+        mortgageSchedule({
+          originalCurrencyCode: "USD",
+          originalAmount: -430,
+        } as Partial<ScheduledTransaction>),
+      );
+      const result = await service.projectLoanOccurrences(
+        userId,
+        scheduledTransactionId,
+        5,
+      );
+      expect(result).toEqual({
+        scheduledTransactionId,
+        loanAccountId,
+        status: "declined",
+        currencyCode: "CAD",
+        occurrences: [],
+      });
+      expect(manager.query).not.toHaveBeenCalled();
+    });
+
+    it("walks the chain through a cursor an override moved past the count, and reads the ledger at its dates too", async () => {
+      scheduledTransactionsRepository.findOne.mockResolvedValue(
+        mortgageSchedule({ amount: -560 } as Partial<ScheduledTransaction>),
+      );
+      overridesRepository.find.mockResolvedValue([
+        {
+          id: "ovr-cursor",
+          scheduledTransactionId,
+          originalDate: "2023-02-03",
+          overrideDate: "2023-06-10",
+          amount: null,
+          splits: null,
+        },
+      ]);
+      const result = await service.projectLoanOccurrences(
+        userId,
+        scheduledTransactionId,
+        2,
+      );
+      // The cursor bills the stored 560.00 when it posts on 2023-06-10; the
+      // two slots before that date bill the advancement.
+      expect(
+        result.occurrences.map((o) => [o.originalDate, o.dueDate, o.amount]),
+      ).toEqual([
+        ["2023-03-03", "2023-03-03", 584.59],
+        ["2023-04-03", "2023-04-03", 584.59],
+      ]);
+      const ledgerCalls = manager.query.mock.calls.filter(([sql]) =>
+        String(sql).includes("unnest"),
+      );
+      expect(ledgerCalls).toHaveLength(1);
+      expect(ledgerCalls[0][1]?.[2]).toEqual(
+        expect.arrayContaining(["2023-02-03", "2023-06-10"]),
+      );
+    });
+
+    it("refuses, rather than guesses, when the ledger cannot be read (8.4)", async () => {
+      ledgerAt(null);
+      await expect(
+        service.projectLoanOccurrences(userId, scheduledTransactionId, 5),
+      ).rejects.toBeInstanceOf(ServiceUnavailableException);
     });
   });
 });

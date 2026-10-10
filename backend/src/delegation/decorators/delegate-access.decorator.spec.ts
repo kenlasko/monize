@@ -8,6 +8,7 @@ import {
   DelegateRequires,
   DelegateRequiresCapability,
   DelegatedScheduledParam,
+  DelegateReadsEveryScheduledAccount,
   DelegateRequiresSection,
   ALLOW_DELEGATE_KEY,
   DELEGATED_ACCOUNT_PARAM_KEY,
@@ -15,6 +16,7 @@ import {
   DELEGATED_TRANSFER_BODY_KEY,
   DELEGATED_TRANSFER_PARAM_KEY,
   DELEGATED_SCHEDULED_PARAM_KEY,
+  DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY,
   DELEGATE_OPERATION_KEY,
   DELEGATE_CAPABILITY_KEY,
   DELEGATE_SECTION_KEY,
@@ -114,6 +116,20 @@ describe("delegate-access decorators", () => {
     expect(reflector.get(DELEGATED_SCHEDULED_PARAM_KEY, C.prototype.b)).toBe(
       "scheduledId",
     );
+  });
+
+  it("DelegateReadsEveryScheduledAccount marks the route", () => {
+    class C {
+      @DelegateReadsEveryScheduledAccount()
+      a() {}
+      b() {}
+    }
+    expect(
+      reflector.get(DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY, C.prototype.a),
+    ).toBe(true);
+    expect(
+      reflector.get(DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY, C.prototype.b),
+    ).toBeUndefined();
   });
 
   it("DelegateRequiresSection sets the section", () => {

@@ -16,6 +16,7 @@ import {
   DELEGATED_TRANSFER_BODY_KEY,
   DELEGATED_TRANSFER_PARAM_KEY,
   DELEGATED_SCHEDULED_PARAM_KEY,
+  DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY,
   DELEGATE_OPERATION_KEY,
   DELEGATE_CAPABILITY_KEY,
   DELEGATE_SECTION_KEY,
@@ -240,9 +241,18 @@ export class AccountDelegateGuard implements CanActivate {
         // counterpart is masked by the interceptor, not blocked. WRITES must
         // hold the op on EVERY account the schedule posts into -- transfer
         // leg, funding account, split and override-split transfer accounts
-        // (no moving money via a hidden account).
+        // (no moving money via a hidden account). So must a read that
+        // answers a counterpart's own figures, which no mask hides
+        // (@DelegateReadsEveryScheduledAccount).
+        const readsEveryAccount =
+          this.reflector.getAllAndOverride<boolean>(
+            DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY,
+            [context.getHandler(), context.getClass()],
+          ) === true;
         const gated =
-          operation === "read" ? accountIds.slice(0, 1) : accountIds;
+          operation === "read" && !readsEveryAccount
+            ? accountIds.slice(0, 1)
+            : accountIds;
         for (const accountId of gated) {
           // Reads keep the strict check (the primary account is always the
           // owner's); scheduled WRITES get the cross-owner relaxation so a

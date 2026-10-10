@@ -3,6 +3,10 @@ import { ScheduledTransactionsController } from "./scheduled-transactions.contro
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
 import { DelegationService } from "../delegation/delegation.service";
 import { JointAccountsService } from "../delegation/joint-accounts.service";
+import {
+  DELEGATED_SCHEDULED_PARAM_KEY,
+  DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY,
+} from "../delegation/decorators/delegate-access.decorator";
 
 describe("ScheduledTransactionsController", () => {
   let controller: ScheduledTransactionsController;
@@ -24,6 +28,7 @@ describe("ScheduledTransactionsController", () => {
       post: jest.fn(),
       skip: jest.fn(),
       getLoanProjectionAnchor: jest.fn(),
+      projectLoanOccurrences: jest.fn(),
       findOverrides: jest.fn(),
       hasOverrides: jest.fn(),
       findOverrideByDate: jest.fn(),
@@ -338,6 +343,54 @@ describe("ScheduledTransactionsController", () => {
         "user-1",
         "acc-loan",
       );
+    });
+  });
+
+  describe("projectLoanOccurrences()", () => {
+    it("delegates with the caller's id, the schedule and the count asked for", async () => {
+      const expected = {
+        scheduledTransactionId: "st-1",
+        loanAccountId: "acc-loan",
+        status: "priced",
+        currencyCode: "CAD",
+        occurrences: [],
+      };
+      mockService.projectLoanOccurrences.mockResolvedValue(expected);
+
+      const result = await controller.projectLoanOccurrences(mockReq, "st-1", {
+        count: 3,
+      });
+
+      expect(result).toEqual(expected);
+      expect(mockService.projectLoanOccurrences).toHaveBeenCalledWith(
+        "user-1",
+        "st-1",
+        3,
+      );
+    });
+
+    it("asks for twelve occurrences when the query names no count", async () => {
+      mockService.projectLoanOccurrences.mockResolvedValue({});
+      await controller.projectLoanOccurrences(mockReq, "st-1", {});
+      expect(mockService.projectLoanOccurrences).toHaveBeenCalledWith(
+        "user-1",
+        "st-1",
+        12,
+      );
+    });
+
+    it("needs a delegate's READ on the loan, not only on the paying account: it answers the loan's debt and rate", () => {
+      const handler =
+        ScheduledTransactionsController.prototype.projectLoanOccurrences;
+      expect(Reflect.getMetadata(DELEGATED_SCHEDULED_PARAM_KEY, handler)).toBe(
+        "id",
+      );
+      expect(
+        Reflect.getMetadata(
+          DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY,
+          handler,
+        ),
+      ).toBe(true);
     });
   });
 

@@ -124,4 +124,4 @@ written the user did not see); F1 follows B2 directly.
 | A skipped slot misses the step into a lower payment | Named as a known gap (spec 7.6 item 1); the projection shows it, and re-running the sync repairs it |
 | Edit and delete stop applying until F1 ships | F1 follows B2; the interim is "not yet applied", never a wrong write (section 4) |
 | Templates written by the old sync stay wrong | Q resyncs the dev data; the release note tells users to confirm a sync (decision 6) |
-| The projection and the posting disagree | Both price through `priceInstallment` with the posting purpose for the lines; B3 asserts the first occurrence against `ScheduledOccurrenceService` and the lines against `resolvePostingAllocation` on the same ledger |
+| The projection and the posting disagree | Both price through `priceInstallment` with the posting purpose for the lines; B3 asserts the first occurrence's total and lines against `resolvePostingAllocation` on the same ledger, and its total against the stored template, which is what `ScheduledOccurrenceService` answers for a same-currency base occurrence |

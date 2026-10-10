@@ -81,6 +81,19 @@ export const DelegatedScheduledParam = (key = "id") =>
   SetMetadata(DELEGATED_SCHEDULED_PARAM_KEY, key);
 
 /**
+ * A scheduled READ whose answer discloses the other accounts' own figures,
+ * not just their names (the loan occurrence projection answers the loan's
+ * dated debt and rate). Pair with @DelegatedScheduledParam: the read then
+ * needs READ on every account the schedule touches, as a write needs its
+ * operation, because the interceptor masks a counterpart's name and nothing
+ * else.
+ */
+export const DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY =
+  "delegatedScheduledReadsEveryAccount";
+export const DelegateReadsEveryScheduledAccount = () =>
+  SetMetadata(DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY, true);
+
+/**
  * 2C: a route that creates/edits/deletes shared reference data (payees,
  * categories, tags). A delegate may reach it only if the owner granted the
  * matching per-delegation manage capability.
