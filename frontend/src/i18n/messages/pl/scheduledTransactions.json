@@ -142,6 +142,25 @@
     "noteChange": "Notatka: {note}",
     "splitModified": "Podział zmodyfikowany"
   },
+  "loanOccurrence": {
+    "loading": "Obliczanie płatności każdej raty.",
+    "loadFailed": "Nie udało się wczytać płatności poszczególnych rat.",
+    "retry": "Spróbuj ponownie",
+    "amountUnknown": "Płatność nieznana",
+    "notProjected": "Płatność nie została obliczona tak daleko naprzód",
+    "paymentChangesBadge": "Zmiana płatności",
+    "editorUnknown": "Płatności tej raty nie można obliczyć, więc kwota jest pusta. {reason}",
+    "editorLinesUnknown": "Podziału tej raty na kapitał i odsetki nie można obliczyć, więc pozycje zaczynają się od pozycji harmonogramu. {reason}",
+    "amountRequired": "Przed zapisaniem wpisz kwotę tej raty.",
+    "missing": {
+      "rate": "Brak zapisanej stopy procentowej na {date}. Dodaj ją do historii stóp pożyczki.",
+      "cadence": "Częstotliwości spłat pożyczki ({frequency}) nie można obliczyć. Sprawdź częstotliwość spłat pożyczki.",
+      "overrideLines": "Pozycje tej raty to nie kapitał, odsetki i dodatkowy kapitał. Edytuj jej pozycje.",
+      "overrideOnSettledDebt": "Do tej daty pożyczka jest spłacona, więc kwoty tej raty nie można podzielić na kapitał i odsetki. Edytuj lub zresetuj ratę.",
+      "earlierOccurrence": "Zależy od raty z {date}, której płatności nie można obliczyć.",
+      "unknown": "Nie podano przyczyny."
+    }
+  },
   "overrideEditor": {
     "title": "Edytuj wystąpienie",
     "descriptionInvestment": "Modyfikowanie {action} {security} na koncie {account} tylko dla tego wystąpienia.",

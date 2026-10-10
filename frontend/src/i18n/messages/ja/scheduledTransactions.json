@@ -142,6 +142,25 @@
     "noteChange": "メモ: {note}",
     "splitModified": "分割が変更されました"
   },
+  "loanOccurrence": {
+    "loading": "各回の支払額を計算しています。",
+    "loadFailed": "各回の支払額を読み込めませんでした。",
+    "retry": "再試行",
+    "amountUnknown": "支払額不明",
+    "notProjected": "この先の支払額は計算されていません",
+    "paymentChangesBadge": "支払額が変わります",
+    "editorUnknown": "この回の支払額を計算できないため、金額は空欄です。{reason}",
+    "editorLinesUnknown": "この回の元金と利息の内訳を計算できないため、明細はスケジュールの内容から始まります。{reason}",
+    "amountRequired": "保存する前にこの回の金額を入力してください。",
+    "missing": {
+      "rate": "{date} の金利が記録されていません。ローンの金利履歴に追加してください。",
+      "cadence": "ローンの支払頻度 ({frequency}) では計算できません。ローンの支払頻度を確認してください。",
+      "overrideLines": "この回の明細が元金、利息、追加元金になっていません。明細を編集してください。",
+      "overrideOnSettledDebt": "この日付までにローンは完済されているため、この回の金額を元金と利息に分けられません。この回を編集するかリセットしてください。",
+      "earlierOccurrence": "支払額を計算できない {date} の回に依存しています。",
+      "unknown": "理由は示されていません。"
+    }
+  },
   "overrideEditor": {
     "title": "発生を編集",
     "descriptionInvestment": "{account}での{security}の{action}をこの発生のみ変更します。",

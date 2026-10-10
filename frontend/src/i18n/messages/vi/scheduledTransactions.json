@@ -142,6 +142,25 @@
     "noteChange": "Ghi chú: {note}",
     "splitModified": "Phần chia đã được sửa"
   },
+  "loanOccurrence": {
+    "loading": "Đang tính khoản thanh toán của từng kỳ.",
+    "loadFailed": "Không thể tải khoản thanh toán của từng kỳ.",
+    "retry": "Thử lại",
+    "amountUnknown": "Không rõ khoản thanh toán",
+    "notProjected": "Chưa tính khoản thanh toán xa đến vậy",
+    "paymentChangesBadge": "Khoản thanh toán thay đổi",
+    "editorUnknown": "Không thể tính khoản thanh toán của kỳ này, nên số tiền để trống. {reason}",
+    "editorLinesUnknown": "Không thể tính phần gốc và lãi của kỳ này, nên các dòng bắt đầu từ các dòng của lịch. {reason}",
+    "amountRequired": "Hãy nhập số tiền của kỳ này trước khi lưu.",
+    "missing": {
+      "rate": "Chưa ghi nhận lãi suất cho ngày {date}. Hãy thêm vào lịch sử lãi suất của khoản vay.",
+      "cadence": "Không thể tính theo tần suất thanh toán của khoản vay ({frequency}). Hãy kiểm tra tần suất thanh toán của khoản vay.",
+      "overrideLines": "Các dòng của kỳ này không phải là gốc, lãi và gốc trả thêm. Hãy sửa các dòng.",
+      "overrideOnSettledDebt": "Khoản vay đã tất toán trước ngày này, nên không thể chia số tiền của kỳ này thành gốc và lãi. Hãy sửa hoặc đặt lại kỳ này.",
+      "earlierOccurrence": "Phụ thuộc vào kỳ ngày {date}, kỳ mà khoản thanh toán không thể tính được.",
+      "unknown": "Không có lý do được đưa ra."
+    }
+  },
   "overrideEditor": {
     "title": "Chỉnh sửa lần xuất hiện",
     "descriptionInvestment": "Đang sửa đổi {action} {security} trên {account} chỉ cho lần xuất hiện này.",

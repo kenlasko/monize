@@ -142,6 +142,25 @@
     "noteChange": "Notiz: {note}",
     "splitModified": "Buchungsteil geändert"
   },
+  "loanOccurrence": {
+    "loading": "Die Zahlung jedes Termins wird berechnet.",
+    "loadFailed": "Die Zahlung der einzelnen Termine konnte nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "amountUnknown": "Zahlung unbekannt",
+    "notProjected": "So weit im Voraus nicht berechnet",
+    "paymentChangesBadge": "Zahlung ändert sich",
+    "editorUnknown": "Die Zahlung dieses Termins lässt sich nicht berechnen, daher ist der Betrag leer. {reason}",
+    "editorLinesUnknown": "Die Aufteilung dieses Termins in Tilgung und Zinsen lässt sich nicht berechnen, daher beginnen die Positionen mit denen der Planung. {reason}",
+    "amountRequired": "Geben Sie vor dem Speichern den Betrag dieses Termins ein.",
+    "missing": {
+      "rate": "Für den {date} ist kein Zinssatz erfasst. Fügen Sie ihn im Zinsverlauf des Darlehens hinzu.",
+      "cadence": "Die Zahlungshäufigkeit des Darlehens ({frequency}) kann nicht berechnet werden. Prüfen Sie die Zahlungshäufigkeit des Darlehens.",
+      "overrideLines": "Die Positionen dieses Termins sind nicht Tilgung, Zinsen und Sondertilgung. Bearbeiten Sie die Positionen.",
+      "overrideOnSettledDebt": "Das Darlehen ist zu diesem Datum getilgt, daher lässt sich der Betrag dieses Termins nicht in Tilgung und Zinsen aufteilen. Bearbeiten oder setzen Sie den Termin zurück.",
+      "earlierOccurrence": "Sie hängt vom Termin am {date} ab, dessen Zahlung sich nicht berechnen lässt.",
+      "unknown": "Es wurde kein Grund angegeben."
+    }
+  },
   "overrideEditor": {
     "title": "Ausführung bearbeiten",
     "descriptionInvestment": "{action} {security} auf {account} nur für diese Ausführung ändern.",

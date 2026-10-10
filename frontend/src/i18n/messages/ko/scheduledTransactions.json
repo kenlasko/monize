@@ -142,6 +142,25 @@
     "noteChange": "메모: {note}",
     "splitModified": "분할 수정됨"
   },
+  "loanOccurrence": {
+    "loading": "각 회차의 납부액을 계산하고 있습니다.",
+    "loadFailed": "각 회차의 납부액을 불러오지 못했습니다.",
+    "retry": "다시 시도",
+    "amountUnknown": "납부액 알 수 없음",
+    "notProjected": "이후의 납부액은 계산되지 않았습니다",
+    "paymentChangesBadge": "납부액 변경",
+    "editorUnknown": "이 회차의 납부액을 계산할 수 없어 금액이 비어 있습니다. {reason}",
+    "editorLinesUnknown": "이 회차의 원금과 이자 구분을 계산할 수 없어 항목이 일정의 항목으로 시작됩니다. {reason}",
+    "amountRequired": "저장하기 전에 이 회차의 금액을 입력하세요.",
+    "missing": {
+      "rate": "{date}에 기록된 이자율이 없습니다. 대출의 이자율 기록에 추가하세요.",
+      "cadence": "대출의 납부 주기({frequency})로는 계산할 수 없습니다. 대출의 납부 주기를 확인하세요.",
+      "overrideLines": "이 회차의 항목이 원금, 이자, 추가 원금이 아닙니다. 항목을 편집하세요.",
+      "overrideOnSettledDebt": "이 날짜까지 대출이 상환되어 이 회차의 금액을 원금과 이자로 나눌 수 없습니다. 이 회차를 편집하거나 초기화하세요.",
+      "earlierOccurrence": "납부액을 계산할 수 없는 {date} 회차에 따라 달라집니다.",
+      "unknown": "이유가 제공되지 않았습니다."
+    }
+  },
   "overrideEditor": {
     "title": "발생 편집",
     "descriptionInvestment": "{account}에서 {security}의 {action}을(를) 이번 발생에 한해 수정합니다.",

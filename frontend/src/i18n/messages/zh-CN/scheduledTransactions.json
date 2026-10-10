@@ -142,6 +142,25 @@
     "noteChange": "备注：{note}",
     "splitModified": "拆分已修改"
   },
+  "loanOccurrence": {
+    "loading": "正在计算每期的还款额。",
+    "loadFailed": "无法加载每期的还款额。",
+    "retry": "重试",
+    "amountUnknown": "还款额未知",
+    "notProjected": "尚未计算这么远的还款额",
+    "paymentChangesBadge": "还款额变更",
+    "editorUnknown": "无法计算本期的还款额，因此金额为空。{reason}",
+    "editorLinesUnknown": "无法计算本期本金与利息的划分，因此明细沿用计划中的明细。{reason}",
+    "amountRequired": "保存前请输入本期的金额。",
+    "missing": {
+      "rate": "{date} 没有记录利率。请将其添加到贷款的利率历史中。",
+      "cadence": "无法按贷款的还款频率（{frequency}）计算。请检查贷款的还款频率。",
+      "overrideLines": "本期的明细不是本金、利息和额外本金。请编辑其明细。",
+      "overrideOnSettledDebt": "贷款在此日期前已还清，因此本期金额无法划分为本金和利息。请编辑或重置本期。",
+      "earlierOccurrence": "它取决于 {date} 那一期，而那一期的还款额无法计算。",
+      "unknown": "未给出原因。"
+    }
+  },
   "overrideEditor": {
     "title": "编辑发生",
     "descriptionInvestment": "仅修改 {account} 上本次 {action} {security} 的发生。",

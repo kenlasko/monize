@@ -142,6 +142,25 @@
     "noteChange": "Note : {note}",
     "splitModified": "Répartition modifiée"
   },
+  "loanOccurrence": {
+    "loading": "Calcul du paiement de chaque échéance.",
+    "loadFailed": "Le paiement de chaque échéance n'a pas pu être chargé.",
+    "retry": "Réessayer",
+    "amountUnknown": "Paiement inconnu",
+    "notProjected": "Paiement non calculé aussi loin",
+    "paymentChangesBadge": "Le paiement change",
+    "editorUnknown": "Le paiement de cette échéance ne peut pas être calculé, le montant est donc vide. {reason}",
+    "editorLinesUnknown": "La répartition de cette échéance entre capital et intérêts ne peut pas être calculée, les lignes reprennent donc celles de la planification. {reason}",
+    "amountRequired": "Saisissez le montant de cette échéance avant d'enregistrer.",
+    "missing": {
+      "rate": "Aucun taux d'intérêt n'est enregistré pour le {date}. Ajoutez-le à l'historique des taux du prêt.",
+      "cadence": "La fréquence de paiement du prêt ({frequency}) ne peut pas être calculée. Vérifiez la fréquence de paiement du prêt.",
+      "overrideLines": "Les lignes de cette échéance ne sont pas capital, intérêts et capital supplémentaire. Modifiez ses lignes.",
+      "overrideOnSettledDebt": "Le prêt est remboursé à cette date, le montant de cette échéance ne peut donc pas être réparti entre capital et intérêts. Modifiez ou réinitialisez l'échéance.",
+      "earlierOccurrence": "Il dépend de l'échéance du {date}, dont le paiement ne peut pas être calculé.",
+      "unknown": "Aucune raison n'a été donnée."
+    }
+  },
   "overrideEditor": {
     "title": "Modifier l'occurrence",
     "descriptionInvestment": "Modification de {action} {security} sur {account} pour cette occurrence uniquement.",

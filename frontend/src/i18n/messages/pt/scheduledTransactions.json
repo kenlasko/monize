@@ -142,6 +142,25 @@
     "noteChange": "Nota: {note}",
     "splitModified": "Parcela modificada"
   },
+  "loanOccurrence": {
+    "loading": "A calcular o pagamento de cada vencimento.",
+    "loadFailed": "Não foi possível carregar o pagamento de cada vencimento.",
+    "retry": "Tentar novamente",
+    "amountUnknown": "Pagamento desconhecido",
+    "notProjected": "Pagamento não calculado com tanta antecedência",
+    "paymentChangesBadge": "O pagamento muda",
+    "editorUnknown": "Não é possível calcular o pagamento deste vencimento, por isso o montante começa vazio. {reason}",
+    "editorLinesUnknown": "Não é possível calcular a divisão deste vencimento entre capital e juros, por isso as linhas começam com as do agendamento. {reason}",
+    "amountRequired": "Introduza o montante deste vencimento antes de guardar.",
+    "missing": {
+      "rate": "Não há taxa de juro registada para {date}. Adicione-a ao histórico de taxas do empréstimo.",
+      "cadence": "A frequência de pagamento do empréstimo ({frequency}) não pode ser calculada. Verifique a frequência de pagamento do empréstimo.",
+      "overrideLines": "As linhas deste vencimento não são capital, juros e capital extra. Edite as linhas.",
+      "overrideOnSettledDebt": "O empréstimo está liquidado nesta data, por isso o montante deste vencimento não pode ser dividido entre capital e juros. Edite ou reponha o vencimento.",
+      "earlierOccurrence": "Depende do vencimento de {date}, cujo pagamento não pode ser calculado.",
+      "unknown": "O motivo não foi indicado."
+    }
+  },
   "overrideEditor": {
     "title": "Editar Ocorrência",
     "descriptionInvestment": "A modificar {action} {security} em {account} apenas para esta ocorrência.",

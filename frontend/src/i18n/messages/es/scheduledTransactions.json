@@ -142,6 +142,25 @@
     "noteChange": "Nota: {note}",
     "splitModified": "Desglose modificado"
   },
+  "loanOccurrence": {
+    "loading": "Calculando el pago de cada vencimiento.",
+    "loadFailed": "No se pudo cargar el pago de cada vencimiento.",
+    "retry": "Reintentar",
+    "amountUnknown": "Pago desconocido",
+    "notProjected": "Pago no calculado con tanta antelación",
+    "paymentChangesBadge": "Cambia el pago",
+    "editorUnknown": "No se puede calcular el pago de este vencimiento, así que el importe empieza vacío. {reason}",
+    "editorLinesUnknown": "No se puede calcular el reparto de este vencimiento entre capital e intereses, así que las líneas empiezan con las de la programación. {reason}",
+    "amountRequired": "Introduce el importe de este vencimiento antes de guardar.",
+    "missing": {
+      "rate": "No hay ningún tipo de interés registrado para el {date}. Añádelo al historial de tipos del préstamo.",
+      "cadence": "La frecuencia de pago del préstamo ({frequency}) no se puede calcular. Revisa la frecuencia de pago del préstamo.",
+      "overrideLines": "Las líneas de este vencimiento no son capital, intereses y capital adicional. Edita sus líneas.",
+      "overrideOnSettledDebt": "El préstamo está liquidado en esta fecha, así que el importe de este vencimiento no se puede dividir en capital e intereses. Edita o restablece el vencimiento.",
+      "earlierOccurrence": "Depende del vencimiento del {date}, cuyo pago no se puede calcular.",
+      "unknown": "No se indicó el motivo."
+    }
+  },
   "overrideEditor": {
     "title": "Editar ocurrencia",
     "descriptionInvestment": "Modificando {action} {security} en {account} solo para esta ocurrencia.",

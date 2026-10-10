@@ -142,6 +142,25 @@
     "noteChange": "Catatan: {note}",
     "splitModified": "Pembagian dimodifikasi"
   },
+  "loanOccurrence": {
+    "loading": "Menghitung pembayaran setiap jadwal.",
+    "loadFailed": "Pembayaran setiap jadwal tidak dapat dimuat.",
+    "retry": "Coba lagi",
+    "amountUnknown": "Pembayaran tidak diketahui",
+    "notProjected": "Pembayaran tidak dihitung sejauh ini",
+    "paymentChangesBadge": "Pembayaran berubah",
+    "editorUnknown": "Pembayaran jadwal ini tidak dapat dihitung, jadi jumlahnya dibiarkan kosong. {reason}",
+    "editorLinesUnknown": "Pembagian jadwal ini antara pokok dan bunga tidak dapat dihitung, jadi barisnya dimulai dari baris jadwal. {reason}",
+    "amountRequired": "Masukkan jumlah jadwal ini sebelum menyimpan.",
+    "missing": {
+      "rate": "Tidak ada suku bunga yang tercatat untuk {date}. Tambahkan ke riwayat suku bunga pinjaman.",
+      "cadence": "Frekuensi pembayaran pinjaman ({frequency}) tidak dapat dihitung. Periksa frekuensi pembayaran pinjaman.",
+      "overrideLines": "Baris jadwal ini bukan pokok, bunga, dan pokok tambahan. Edit barisnya.",
+      "overrideOnSettledDebt": "Pinjaman sudah lunas pada tanggal ini, jadi jumlah jadwal ini tidak dapat dibagi menjadi pokok dan bunga. Edit atau atur ulang jadwal ini.",
+      "earlierOccurrence": "Ini bergantung pada jadwal {date}, yang pembayarannya tidak dapat dihitung.",
+      "unknown": "Alasannya tidak diberikan."
+    }
+  },
   "overrideEditor": {
     "title": "Edit Kemunculan",
     "descriptionInvestment": "Memodifikasi {action} {security} di {account} hanya untuk kemunculan ini.",
