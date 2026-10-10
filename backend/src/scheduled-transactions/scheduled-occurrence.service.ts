@@ -12,6 +12,20 @@ import {
 } from "../common/scheduled-occurrences";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { withScopedDb } from "../common/db/scoped-db";
+import { addDaysYMD, todayYMD } from "../common/date-utils";
+import { ensureYMD } from "../common/recurrence";
+import {
+  LoanOccurrencesProjection,
+  ScheduledTransactionLoanService,
+} from "./scheduled-transaction-loan.service";
+
+/**
+ * How far ahead of today a loan bill's occurrences after the next are priced
+ * per occurrence (spec 8.7): one year, through the same date next year
+ * whichever of the two is a leap year. An occurrence due later keeps the
+ * template's amount, as every occurrence did before the projection.
+ */
+export const LOAN_OCCURRENCE_HORIZON_DAYS = 366;
 
 /**
  * One occurrence of one schedule, priced at what it would post *today*.
@@ -117,6 +131,7 @@ export class ScheduledOccurrenceService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly effectiveAmounts: ScheduledEffectiveAmountService,
+    private readonly loanService: ScheduledTransactionLoanService,
   ) {}
 
   /**
@@ -182,7 +197,13 @@ export class ScheduledOccurrenceService {
       }
     }
 
-    return occurrences.sort((a, b) =>
+    const priced = await this.priceLoanOccurrences(
+      userId,
+      occurrences,
+      overridesBySchedule,
+    );
+
+    return priced.sort((a, b) =>
       a.dueDate === b.dueDate
         ? a.scheduledTransactionId.localeCompare(b.scheduledTransactionId)
         : a.dueDate.localeCompare(b.dueDate),
@@ -318,6 +339,74 @@ export class ScheduledOccurrenceService {
     return kept;
   }
 
+  /**
+   * A loan bill's occurrences after the next, each at its own due date
+   * (spec 8.7, INV-OCCURRENCE-003, INV-LOAN-009).
+   *
+   * The template is the next installment's bill, not every installment's:
+   * the debt falls, the rate and the dated payment change, so "what this
+   * occurrence would post today" for a later loan occurrence is what posting
+   * it would move once the slots before it have posted, which is the
+   * projection's amount (spec section 8). The cursor keeps the answer above,
+   * which is what posting it today moves; so does any occurrence due beyond
+   * `LOAN_OCCURRENCE_HORIZON_DAYS`, and any schedule the projection does not
+   * price (`not-a-loan`, `declined`).
+   *
+   * A projected occurrence whose amount is unknown (no rate at its date, an
+   * earlier one unknown, the ledger unreadable) is reported unknown, never as
+   * the template; its direction stays the template's, which no rate moves.
+   */
+  private async priceLoanOccurrences(
+    userId: string,
+    occurrences: ResolvedScheduledOccurrence[],
+    overridesBySchedule: Map<string, ScheduledTransactionOverride[]>,
+  ): Promise<ResolvedScheduledOccurrence[]> {
+    const horizon = addDaysYMD(todayYMD(), LOAN_OCCURRENCE_HORIZON_DAYS);
+    const projected = (o: ResolvedScheduledOccurrence): boolean =>
+      o.schedule.isActive !== false &&
+      o.dueDate <= horizon &&
+      o.originalDate !== ensureYMD(o.schedule.nextDueDate) &&
+      // A loan bill is a split template with a transfer line into the loan;
+      // anything else is not one, and is not read again to find that out.
+      (o.schedule.splits ?? []).some((split) => !!split.transferAccountId);
+
+    const candidates = new Map<string, ScheduledTransaction>();
+    for (const occurrence of occurrences) {
+      if (projected(occurrence)) {
+        candidates.set(occurrence.scheduledTransactionId, occurrence.schedule);
+      }
+    }
+    if (candidates.size === 0) return occurrences;
+
+    // The projection walks from the cursor, so it is asked for every
+    // occurrence from there through the last date this expansion prices,
+    // whatever lower bound the caller's window had.
+    const requests = [...candidates.values()].map((schedule) => {
+      const through = occurrences
+        .filter((o) => o.scheduledTransactionId === schedule.id && projected(o))
+        .reduce((last, o) => (o.dueDate > last ? o.dueDate : last), "");
+      return {
+        scheduledTransactionId: schedule.id,
+        count: expandOccurrenceSlots(
+          schedule,
+          overridesBySchedule.get(schedule.id) ?? [],
+          { through },
+        ).length,
+      };
+    });
+    const projections = await this.loanService.projectLoanOccurrencesMany(
+      userId,
+      requests,
+    );
+
+    return occurrences.flatMap((occurrence) => {
+      if (!projected(occurrence)) return [occurrence];
+      const projection = projections.get(occurrence.scheduledTransactionId);
+      const priced = withLoanAmount(occurrence, projection);
+      return priced === null ? [] : [priced];
+    });
+  }
+
   private async loadOverrides(
     scheduleIds: string[],
   ): Promise<Map<string, ScheduledTransactionOverride[]>> {
@@ -334,4 +423,51 @@ export class ScheduledOccurrenceService {
     }
     return bySchedule;
   }
+}
+
+/**
+ * One occurrence with its projected loan amount, or `null` for an occurrence
+ * that never posts. `projection` is `null` when the loan's ledger could not
+ * be read, so every projected figure is unknown.
+ */
+function withLoanAmount(
+  occurrence: ResolvedScheduledOccurrence,
+  projection: LoanOccurrencesProjection | null | undefined,
+): ResolvedScheduledOccurrence | null {
+  if (projection === undefined) return occurrence;
+  if (projection !== null && projection.status !== "priced") return occurrence;
+  const rows = projection?.occurrences ?? [];
+  const row = rows.find((o) => o.originalDate === occurrence.originalDate);
+  if (projection !== null && row === undefined) {
+    // The projection ends before a slot by which the debt is settled (8.2):
+    // the advancement deactivates the schedule, so that occurrence never
+    // posts and is not listed. Any other gap (the schedule moved between the
+    // two reads) leaves the occurrence as it was.
+    const lastSlot = rows.reduce(
+      (last, o) => (o.originalDate > last ? o.originalDate : last),
+      "",
+    );
+    return lastSlot !== "" && occurrence.originalDate > lastSlot
+      ? null
+      : occurrence;
+  }
+  // The template's sign is the bill's direction; the projection is unsigned.
+  const snapshot = Number(occurrence.schedule.amount);
+  const sign = snapshot > 0 ? 1 : -1;
+  const amount = row?.amount ?? null;
+  if (amount === null) {
+    return {
+      ...occurrence,
+      amount: null,
+      directionAmount: snapshot,
+      complete: false,
+    };
+  }
+  const signed = amount === 0 ? 0 : sign * amount;
+  return {
+    ...occurrence,
+    amount: signed,
+    directionAmount: signed,
+    complete: true,
+  };
 }

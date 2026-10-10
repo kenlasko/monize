@@ -7,6 +7,7 @@ import { ScheduledTransaction } from "../scheduled-transactions/entities/schedul
 import { ScheduledTransactionOverride } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
 import { ScheduledEffectiveAmountService } from "../scheduled-transactions/scheduled-effective-amount.service";
 import { ScheduledOccurrenceService } from "../scheduled-transactions/scheduled-occurrence.service";
+import { ScheduledTransactionLoanService } from "../scheduled-transactions/scheduled-transaction-loan.service";
 import { InvestmentTransactionsService } from "../securities/investment-transactions.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import {
@@ -64,6 +65,14 @@ describe("BalanceForecastService", () => {
         // the amounts and the account each occurrence is charged to ARE their
         // output, so a double would test nothing (issue #1247).
         ScheduledOccurrenceService,
+        // No loan bill here: the per-occurrence loan pricing is
+        // `scheduled-occurrence.service.spec.ts`'s.
+        {
+          provide: ScheduledTransactionLoanService,
+          useValue: {
+            projectLoanOccurrencesMany: jest.fn().mockResolvedValue(new Map()),
+          },
+        },
         ScheduledEffectiveAmountService,
         {
           provide: InvestmentTransactionsService,

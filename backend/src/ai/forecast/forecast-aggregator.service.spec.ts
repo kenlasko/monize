@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { ForecastAggregatorService } from "./forecast-aggregator.service";
 import { ScheduledEffectiveAmountService } from "../../scheduled-transactions/scheduled-effective-amount.service";
 import { ScheduledOccurrenceService } from "../../scheduled-transactions/scheduled-occurrence.service";
+import { ScheduledTransactionLoanService } from "../../scheduled-transactions/scheduled-transaction-loan.service";
 import { ScheduledTransactionOverride } from "../../scheduled-transactions/entities/scheduled-transaction-override.entity";
 import {
   createInvestmentFxMock,
@@ -109,6 +110,14 @@ describe("ForecastAggregatorService", () => {
         // The real read-side services over a mocked FX source (issue #1247):
         // the dates and amounts these assertions read ARE their output.
         ScheduledOccurrenceService,
+        // No loan bill here: the per-occurrence loan pricing is
+        // `scheduled-occurrence.service.spec.ts`'s.
+        {
+          provide: ScheduledTransactionLoanService,
+          useValue: {
+            projectLoanOccurrencesMany: jest.fn().mockResolvedValue(new Map()),
+          },
+        },
         ScheduledEffectiveAmountService,
         {
           provide: InvestmentTransactionsService,

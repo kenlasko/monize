@@ -2806,16 +2806,20 @@ Required tests      Met (B1): every row of the spec's table 7.4, its
                     (useLoanRateEditing.test.ts), the picker and editor
                     pricing a loan bill per occurrence
                     (OccurrenceDatePicker.loan.test.tsx,
-                    OverrideEditorDialog.loan.test.tsx).
+                    OverrideEditorDialog.loan.test.tsx). Met (F3): the
+                    occurrence contract pricing a loan bill's later
+                    occurrences through the projection
+                    (scheduled-occurrence.service.spec.ts).
 Known gaps          A cursor moved without an advancement (skip, an edit of
                     next_due_date) can miss the step into a lower payment; an
                     initial row outranks a later edit of the account's payment;
                     a method change re-levels the column, not the timeline; an
                     override with an amount and no lines posts over the
-                    template's lines (spec 7.6); the Bills calendar and the
-                    Upcoming Bills widget still show a loan bill's template
-                    amount for an occurrence after the next (F3, issue #1645,
-                    not in approved scope).
+                    template's lines (spec 7.6); a loan occurrence due more
+                    than a year ahead keeps the template's amount on the
+                    occurrence contract (spec 8.7); the client cash-flow
+                    forecast (lib/forecast.ts) still projects a loan bill's
+                    later occurrences from the schedule-level amount.
 Status              enforced
 ```
 
@@ -3053,7 +3057,10 @@ Statement           Every surface that presents or aggregates a scheduled
                     payment and rate (INV-LOAN-009) rather than repeated from the
                     next occurrence or the template: the occurrence picker and
                     the override editor read the loan occurrence projection, one
-                    GET per loan schedule, not this service.
+                    GET per loan schedule, and this service prices a loan bill's
+                    occurrences after the next, through one year ahead, by the
+                    same projection (spec scheduled-loan-installment-pricing.md
+                    8.7); one due later keeps the template's amount.
 Source of truth     Two files, and only two:
                     common/scheduled-occurrences.ts (expandOccurrenceSlots) owns
                     occurrence IDENTITY -- walking a recurrence over a window and

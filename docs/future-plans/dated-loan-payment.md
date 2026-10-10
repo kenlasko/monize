@@ -16,8 +16,9 @@ on every number and every refusal.
 
 Status: **done** (B1 to B3, F1, F2, and Q, the acceptance task, all merged);
 decisions agreed in the planning session and recorded on the tracking issue
-#1637. Each task was a sub-issue (#1638 to #1644), one PR each. F3 (#1645) is
-filed for later and is not in the approved scope.
+#1637. Each task was a sub-issue (#1638 to #1644), one PR each. F3 (#1645),
+filed for later, was approved afterwards and prices a loan bill's later
+occurrences on the occurrence contract (spec 8.7).
 
 ## 1. Goal
 
@@ -79,7 +80,7 @@ ones that decide the shape of the work:
 | 2 | B2, B3 | The sync at the template's due date, asking on every change; the projection read | Editing or deleting a rate change no longer rewrites the bill until the user confirms; the preview carries two new fields; a new read nothing calls yet |
 | 3 | F1, F2 | The confirmation on edit and delete; the priced occurrence picker and override editor | The dialogs show the due date and per-occurrence amounts |
 | 4 | Q | Every locale, INV-LOAN-009 enforced, release note, dev data resynced | none |
-| later | F3 | Bills calendar and Upcoming Bills priced per loan occurrence | not approved |
+| later | F3 | Loan occurrences after the next priced by `ScheduledOccurrenceService`, one year ahead | Every server surface and the occurrence read show a later loan occurrence at its projected amount (spec 8.7) |
 
 B2 changes the response of `PATCH` and `DELETE /accounts/:accountId/rate-changes/:id`
 (a preview, nothing applied) before F1 shows it: between the two merges an
