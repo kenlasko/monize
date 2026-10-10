@@ -5,6 +5,7 @@ import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { BudgetsService } from "./budgets.service";
 import { ScheduledEffectiveAmountService } from "../scheduled-transactions/scheduled-effective-amount.service";
 import { ScheduledOccurrenceService } from "../scheduled-transactions/scheduled-occurrence.service";
+import { ScheduledTransactionLoanService } from "../scheduled-transactions/scheduled-transaction-loan.service";
 import { CreateNotificationInput } from "../notification-center/notification.service";
 import { NotificationDispatchService } from "../notifications/notification-dispatch.service";
 import { InvestmentTransactionsService } from "../securities/investment-transactions.service";
@@ -254,6 +255,14 @@ describe("BudgetsService", () => {
         // its stored one and every pre-existing expectation still holds.
         ScheduledEffectiveAmountService,
         ScheduledOccurrenceService,
+        // No loan bill here: the per-occurrence loan pricing is
+        // `scheduled-occurrence.service.spec.ts`'s.
+        {
+          provide: ScheduledTransactionLoanService,
+          useValue: {
+            projectLoanOccurrencesMany: jest.fn().mockResolvedValue(new Map()),
+          },
+        },
         {
           provide: InvestmentTransactionsService,
           useValue: investmentTransactionsService,

@@ -411,103 +411,140 @@ export class ScheduledTransactionLoanService {
     scheduledTransactionId: string,
     count: number,
   ): Promise<LoanOccurrencesProjection> {
-    return withScopedDb(this.dataSource, async (m) => {
-      const schedule = await m
-        .getRepository(ScheduledTransaction)
-        .findOne({ where: { id: scheduledTransactionId, userId } });
-      if (!schedule) {
-        throw new NotFoundException(
-          tr(
-            "errors.scheduled.notFound",
-            `Scheduled transaction with ID ${scheduledTransactionId} not found`,
-            { id: scheduledTransactionId },
-          ),
-        );
-      }
-      const splits = await m
-        .getRepository(ScheduledTransactionSplit)
-        .find({ where: { scheduledTransactionId } });
-      const loanAccount = await findLoanAccount(m, splits);
-      if (!loanAccount) {
-        return {
-          scheduledTransactionId,
-          loanAccountId: null,
-          status: "not-a-loan" as const,
-          currencyCode: schedule.currencyCode ?? "",
-          occurrences: [],
-        };
-      }
-      const currencyCode = schedule.currencyCode ?? loanAccount.currencyCode;
-      // `post()` posts a foreign-currency schedule's converted amounts and
-      // never re-prices them (its `!fx` gate), so a figure priced here would
-      // be one the posting does not move. The snapshot answers it.
-      if (schedule.originalCurrencyCode && schedule.originalAmount !== null) {
-        return {
-          scheduledTransactionId,
-          loanAccountId: loanAccount.id,
-          status: "declined" as const,
-          currencyCode,
-          occurrences: [],
-        };
-      }
-
-      // Identity is the one expander's (INV-OCCURRENCE-003): the slots from
-      // the cursor, each matched to its override, ordered by the date it
-      // falls on, the first `count` of them.
-      const overrides = schedule.isActive
-        ? await m
-            .getRepository(ScheduledTransactionOverride)
-            .find({ where: { scheduledTransactionId } })
-        : [];
-      const occurrences = schedule.isActive
-        ? loanProjectionOccurrences(
-            schedule,
-            overrides,
-            count,
-            addDaysYMD(
-              ensureYMD(schedule.nextDueDate),
-              LOAN_PROJECTION_WALK_DAYS,
-            ),
-          )
-        : [];
-
-      const rateChanges = await m.getRepository(LoanRateChange).find({
-        where: { accountId: loanAccount.id },
-        order: { effectiveDate: "ASC" },
-      });
-      // Both dates of every occurrence: the slot prices the template chain,
-      // the date it falls on prices its lines (8.2).
-      const debtLedger = await datedLoanDebts(
-        m,
-        loanAccount,
-        occurrences.flatMap((o) => [o.originalDate, o.dueDate]),
+    const projection = await withScopedDb(this.dataSource, (m) =>
+      this.projectWithin(m, userId, scheduledTransactionId, count),
+    );
+    if (projection === null) {
+      throw new ServiceUnavailableException(
+        tr(
+          "errors.scheduled.loanLedgerUnreadable",
+          "This loan payment could not be priced because its ledger balance could not be read. Try again.",
+        ),
       );
-      if (debtLedger === null) {
-        throw new ServiceUnavailableException(
-          tr(
-            "errors.scheduled.loanLedgerUnreadable",
-            "This loan payment could not be priced because its ledger balance could not be read. Try again.",
-          ),
+    }
+    return projection;
+  }
+
+  /**
+   * `projectLoanOccurrences` for several schedules in one transaction, for
+   * `ScheduledOccurrenceService` (spec 8.7). A schedule whose ledger cannot
+   * be read answers `null` rather than failing the read: one loan's unknown
+   * figures are that loan's, and the bills, budgets and forecasts beside it
+   * still have theirs. The caller reports that schedule's projected
+   * occurrences as unknown, never as the template.
+   */
+  async projectLoanOccurrencesMany(
+    userId: string,
+    requests: ReadonlyArray<{ scheduledTransactionId: string; count: number }>,
+  ): Promise<Map<string, LoanOccurrencesProjection | null>> {
+    const projections = new Map<string, LoanOccurrencesProjection | null>();
+    if (requests.length === 0) return projections;
+    await withScopedDb(this.dataSource, async (m) => {
+      for (const { scheduledTransactionId, count } of requests) {
+        projections.set(
+          scheduledTransactionId,
+          await this.projectWithin(m, userId, scheduledTransactionId, count),
         );
       }
+    });
+    return projections;
+  }
 
-      const projection = projectLoanOccurrences({
-        schedule,
-        splits,
-        loanAccount,
-        rateChanges,
-        occurrences,
-        count,
-        debtLedger,
-      });
+  /** The body of both projections; `null` when the ledger cannot be read (8.4). */
+  private async projectWithin(
+    m: EntityManager,
+    userId: string,
+    scheduledTransactionId: string,
+    count: number,
+  ): Promise<LoanOccurrencesProjection | null> {
+    const schedule = await m
+      .getRepository(ScheduledTransaction)
+      .findOne({ where: { id: scheduledTransactionId, userId } });
+    if (!schedule) {
+      throw new NotFoundException(
+        tr(
+          "errors.scheduled.notFound",
+          `Scheduled transaction with ID ${scheduledTransactionId} not found`,
+          { id: scheduledTransactionId },
+        ),
+      );
+    }
+    const splits = await m
+      .getRepository(ScheduledTransactionSplit)
+      .find({ where: { scheduledTransactionId } });
+    const loanAccount = await findLoanAccount(m, splits);
+    if (!loanAccount) {
+      return {
+        scheduledTransactionId,
+        loanAccountId: null,
+        status: "not-a-loan" as const,
+        currencyCode: schedule.currencyCode ?? "",
+        occurrences: [],
+      };
+    }
+    const currencyCode = schedule.currencyCode ?? loanAccount.currencyCode;
+    // `post()` posts a foreign-currency schedule's converted amounts and
+    // never re-prices them (its `!fx` gate), so a figure priced here would
+    // be one the posting does not move. The snapshot answers it.
+    if (schedule.originalCurrencyCode && schedule.originalAmount !== null) {
       return {
         scheduledTransactionId,
         loanAccountId: loanAccount.id,
-        status: projection.status,
+        status: "declined" as const,
         currencyCode,
-        occurrences: projection.occurrences,
+        occurrences: [],
       };
+    }
+
+    // Identity is the one expander's (INV-OCCURRENCE-003): the slots from
+    // the cursor, each matched to its override, ordered by the date it
+    // falls on, the first `count` of them.
+    const overrides = schedule.isActive
+      ? await m
+          .getRepository(ScheduledTransactionOverride)
+          .find({ where: { scheduledTransactionId } })
+      : [];
+    const occurrences = schedule.isActive
+      ? loanProjectionOccurrences(
+          schedule,
+          overrides,
+          count,
+          addDaysYMD(
+            ensureYMD(schedule.nextDueDate),
+            LOAN_PROJECTION_WALK_DAYS,
+          ),
+        )
+      : [];
+
+    const rateChanges = await m.getRepository(LoanRateChange).find({
+      where: { accountId: loanAccount.id },
+      order: { effectiveDate: "ASC" },
     });
+    // Both dates of every occurrence: the slot prices the template chain,
+    // the date it falls on prices its lines (8.2).
+    const debtLedger = await datedLoanDebts(
+      m,
+      loanAccount,
+      occurrences.flatMap((o) => [o.originalDate, o.dueDate]),
+    );
+    if (debtLedger === null) return null;
+
+    const projection = projectLoanOccurrences({
+      schedule,
+      splits,
+      loanAccount,
+      rateChanges,
+      occurrences,
+      count,
+      debtLedger,
+    });
+    return {
+      scheduledTransactionId,
+      loanAccountId: loanAccount.id,
+      status: projection.status,
+      currencyCode,
+      occurrences: projection.occurrences,
+    };
   }
 
   /**

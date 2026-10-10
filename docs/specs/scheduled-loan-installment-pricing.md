@@ -862,3 +862,50 @@ schedule, a cursor moved past the count, the 404 and the 503). The delegate
 gate is `scheduled-transactions.controller.spec.ts` and
 `account-delegate.guard.spec.ts`. The count bound
 of 8.5 is `backend/src/scheduled-transactions/dto/loan-occurrences-query.dto.spec.ts`.
+
+### 8.7 The occurrence contract (F3)
+
+Issue #1645. `ScheduledOccurrenceService.expand`
+(`backend/src/scheduled-transactions/scheduled-occurrence.service.ts`) answers
+every server surface's "what does THIS occurrence cost" (INV-OCCURRENCE-003):
+`GET /scheduled-transactions/occurrences` (the transactions calendar, the
+Upcoming Bills report), the balance forecast, budgets, bill reminders, the
+assistant and MCP. For a loan bill, "what it would post today" for an
+occurrence after the next is defined as what posting it would move once the
+slots before it have posted: the projection's `amount` (8.2), signed as the
+template is.
+
+| Occurrence | `amount` |
+| --- | --- |
+| The cursor (`originalDate` = `next_due_date`) | the effective amount, as for any schedule: what posting it today moves |
+| A later slot due on or before today + `LOAN_OCCURRENCE_HORIZON_DAYS` (366: through the same date next year) | the projection's `amount`, the template's sign; `directionAmount` the same |
+| Such a slot whose projected `amount` is null (8.4), or every such slot when the ledger cannot be read | `null`, `complete: false`, `directionAmount` the template's: no rate moves a loan payment's direction |
+| A slot after the one by which the debt is settled (the projection ends, 8.2) | not listed: the advancement deactivates the schedule before it posts |
+| A slot due after the horizon | the effective amount (the template's), as before this section |
+| A schedule the projection answers `not-a-loan` or `declined` | the effective amount |
+
+The projection's `amount` with lines unknown (`override-lines`,
+`override-on-settled-debt`) is a known amount: the occurrence is
+`complete: true`, because the occurrence contract carries no lines.
+
+Only a schedule with a transfer line, an occurrence after the cursor and an
+occurrence inside the horizon is projected, so a surface listing one row per
+schedule (`maxOccurrences: 1`) reads nothing more. The projection is asked
+from the cursor whatever the window's lower bound, for every occurrence through
+the latest one the expansion prices; all the expansion's loan schedules are
+projected in one transaction (`projectLoanOccurrencesMany`), which answers
+`null` for a loan whose ledger cannot be read rather than failing every
+schedule's read (8.4's 503 is the single read's).
+
+The client surfaces that print a later occurrence's amount read the server's
+occurrences: the transactions calendar (`useCalendarMonthData`) and the
+Upcoming Bills report. The Bills calendar grid (`ScheduledCalendarGrid`) labels
+a chip with the schedule's name and the Upcoming Bills widget lists each
+schedule's next occurrence only, so neither prints a later occurrence's amount.
+
+Asserted by `scheduled-occurrence.service.spec.ts` ("loan bill occurrences
+after the next": Timeline A's five occurrences, the cursor kept, the window
+starting later, the horizon, an unknown occurrence, the unreadable ledger, the
+two statuses left alone, the settled end, no read for a next-only listing or a
+schedule with no transfer line) and `scheduled-transaction-loan.service.spec.ts`
+("projectLoanOccurrencesMany").

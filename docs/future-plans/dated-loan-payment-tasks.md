@@ -39,7 +39,7 @@ Every task is safe to merge in any order that respects its dependencies: nothing
 | F1 | #1642 | Rate-change dialogs: confirm on edit and delete, preview names the due date | B2 | inert | [x] | the PR closing #1642 |
 | F2 | #1643 | Occurrence picker and override editor priced per occurrence | B3 | inert | [x] | the PR closing #1643 |
 | Q | #1644 | Acceptance: INV-LOAN-009 enforced, locales, release note, dev data resync | B2, F1, F2 | none | [x] | the PR closing #1644 |
-| F3 | #1645 | (Later, not approved) Bills calendar and Upcoming Bills priced per loan occurrence | B3 | inert | [ ] | |
+| F3 | #1645 | Loan occurrences after the next priced on the occurrence contract (`ScheduledOccurrenceService`), one year ahead | B3 | neutral | [x] | the PR closing #1645 |
 
 **Why B1 is neutral:** an annuity template whose timeline states a payment for a later installment steps into it at that installment (spec 7.3), down as well as up; every other template advances exactly as before, and posting is unchanged.
 
@@ -107,6 +107,20 @@ Every task is safe to merge in any order that respects its dependencies: nothing
 
 - Dev data: confirm a sync on the affected dev accounts (BBTest, AAMortgage) and record the before and after template in the PR.
 
-### F3 -- (Later, not approved) Bills calendar and Upcoming Bills
+### F3 -- Loan occurrences after the next on the occurrence contract
 
-Filed without `approved-to-build`; no work until it is approved.
+Approved on #1645 with two answers: through `ScheduledOccurrenceService`, so
+every server surface (forecasts, budgets, reminders, AI, MCP, and
+`GET /scheduled-transactions/occurrences` for the transactions calendar and the
+Upcoming Bills report) gets the loan-aware amount; and one year ahead.
+
+**Files:** `backend/src/scheduled-transactions/scheduled-occurrence.service.ts`,
+`backend/src/scheduled-transactions/scheduled-transaction-loan.service.ts`
+(`projectLoanOccurrencesMany`), their specs, the specs that build the
+occurrence service, spec section 8.7.
+
+- Neutral, not inert: every surface reading a loan bill's later occurrences
+  changes from the template to the projection (spec 8.7's table).
+- The Bills calendar grid and the Upcoming Bills widget print no later
+  occurrence's amount (a chip is the schedule's name; the widget lists the next
+  occurrence), so neither changes.

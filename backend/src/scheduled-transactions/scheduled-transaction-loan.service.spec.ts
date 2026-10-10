@@ -2636,5 +2636,40 @@ describe("ScheduledTransactionLoanService", () => {
         service.projectLoanOccurrences(userId, scheduledTransactionId, 5),
       ).rejects.toBeInstanceOf(ServiceUnavailableException);
     });
+
+    describe("projectLoanOccurrencesMany (spec 8.7)", () => {
+      it("answers the same projection as the single read, keyed by schedule", async () => {
+        const many = await service.projectLoanOccurrencesMany(userId, [
+          { scheduledTransactionId, count: 5 },
+        ]);
+        const single = await service.projectLoanOccurrences(
+          userId,
+          scheduledTransactionId,
+          5,
+        );
+
+        expect(many.get(scheduledTransactionId)).toEqual(single);
+        expect(
+          many.get(scheduledTransactionId)?.occurrences.map((o) => o.amount),
+        ).toEqual([584.59, 584.59, 584.59, 560, 560]);
+      });
+
+      it("answers null for a loan whose ledger cannot be read, rather than failing every schedule's read", async () => {
+        ledgerAt(null);
+        const many = await service.projectLoanOccurrencesMany(userId, [
+          { scheduledTransactionId, count: 5 },
+        ]);
+
+        expect(many.has(scheduledTransactionId)).toBe(true);
+        expect(many.get(scheduledTransactionId)).toBeNull();
+      });
+
+      it("reads nothing when asked for nothing", async () => {
+        const many = await service.projectLoanOccurrencesMany(userId, []);
+
+        expect(many.size).toBe(0);
+        expect(scheduledTransactionsRepository.findOne).not.toHaveBeenCalled();
+      });
+    });
   });
 });
