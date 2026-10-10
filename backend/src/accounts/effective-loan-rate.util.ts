@@ -3,8 +3,8 @@
  *
  * A rate change recorded through the rate-history UI deliberately does NOT
  * write `accounts.interest_rate` -- that column stays user-owned, settable only
- * from the account edit form (`LoanRateChangesService.resolveCurrentTimeline`
- * says so in its own doc). So the scalar holds the OLD terms after any recorded
+ * from the account edit form (`LoanRateChangesService.create` says so in its
+ * own doc). So the scalar holds the OLD terms after any recorded
  * change, and anything pricing money at it prices at a rate nobody pays.
  *
  * That is how the scheduled loan bill and the amortization report came to

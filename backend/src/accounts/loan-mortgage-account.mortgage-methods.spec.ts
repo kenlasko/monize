@@ -95,6 +95,7 @@ describe("LoanMortgageAccountService: LINEAR and INTEREST_ONLY", () => {
           source: "manual",
         }),
       ),
+      applyScheduledPaymentSync: jest.fn().mockResolvedValue(null),
     };
 
     const mocks = createScopedDbMocks([
@@ -293,6 +294,20 @@ describe("LoanMortgageAccountService: LINEAR and INTEREST_ONLY", () => {
         interestPayment: 783.3333,
         effectiveDate: "2027-01-01",
       });
+    });
+
+    it("applies the sync through the rate-change service's apply and writes nothing on the account", async () => {
+      await service.updateMortgageRate(
+        makeMortgage(),
+        userId,
+        4,
+        new Date("2027-01-01"),
+      );
+
+      expect(
+        loanRateChangesService.applyScheduledPaymentSync,
+      ).toHaveBeenCalledWith(userId, "mortgage-1");
+      expect(accountsRepository.save).not.toHaveBeenCalled();
     });
 
     it("answers the interest alone for an INTEREST_ONLY mortgage", async () => {

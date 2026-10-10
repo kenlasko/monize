@@ -89,6 +89,7 @@ describe("LoanMortgageAccountService", () => {
           source: "manual",
         }),
       ),
+      applyScheduledPaymentSync: jest.fn().mockResolvedValue(null),
     };
 
     const mocks = createScopedDbMocks([
@@ -848,6 +849,46 @@ describe("LoanMortgageAccountService", () => {
       expect(result.principalPayment).toBeGreaterThan(0);
       expect(result.interestPayment).toBeGreaterThan(0);
       expect(result.effectiveDate).toBe("2025-06-01");
+    });
+
+    it("applies the scheduled-payment sync at once through the rate-change service's apply, after recording the change", async () => {
+      await service.updateMortgageRate(
+        makeMortgageAccount(),
+        userId,
+        4.5,
+        new Date("2025-06-01"),
+      );
+
+      expect(
+        loanRateChangesService.applyScheduledPaymentSync,
+      ).toHaveBeenCalledWith(userId, "acc-mortgage");
+      const createOrder =
+        loanRateChangesService.create.mock.invocationCallOrder[0];
+      const applyOrder =
+        loanRateChangesService.applyScheduledPaymentSync.mock
+          .invocationCallOrder[0];
+      expect(createOrder).toBeLessThan(applyOrder);
+      // The template is written by the loan core, never by the schedule
+      // service's update (which writes accounts.payment_amount), and the
+      // account row is not saved here.
+      expect(scheduledTransactionsService.update).not.toHaveBeenCalled();
+      expect(accountsRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("answers the rate update when the sync fails after the change is recorded", async () => {
+      loanRateChangesService.applyScheduledPaymentSync.mockRejectedValue(
+        new Error("ledger unreadable"),
+      );
+
+      const result = await service.updateMortgageRate(
+        makeMortgageAccount(),
+        userId,
+        4.5,
+        new Date("2025-06-01"),
+      );
+
+      expect(result.newRate).toBe(4.5);
+      expect(loanRateChangesService.create).toHaveBeenCalledTimes(1);
     });
 
     it("should record a rate-history row with the recalculate default", async () => {

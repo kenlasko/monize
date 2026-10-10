@@ -30,7 +30,8 @@ export type LoanRateChangeSource = "manual" | "inferred" | "initial";
 /**
  * A point on a loan/mortgage account's interest-rate timeline. These rows are
  * the record of what the loan's terms ARE: the rate in effect on any date is the
- * latest row not dated in the future (`resolveCurrentTimeline`).
+ * latest row effective on or before it (`effectiveAnnualRateOn`), and the
+ * annuity payment likewise (`datedAnnuityPayment`, INV-LOAN-009).
  *
  * The account's scalar `interestRate` / `paymentAmount` are **not** denormalized
  * from them and never written by this module -- they stay user-owned, settable
