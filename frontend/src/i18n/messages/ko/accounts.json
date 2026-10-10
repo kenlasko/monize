@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "정산된 할부금",
+        "titleWithCount": "정산된 할부금 ({count})",
         "colDueDate": "기일",
         "colTransaction": "거래",
         "colPrincipal": "원금",

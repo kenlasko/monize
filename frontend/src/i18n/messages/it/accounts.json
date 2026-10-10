@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "Rate imputate",
+        "titleWithCount": "Rate imputate ({count})",
         "colDueDate": "Data di scadenza",
         "colTransaction": "Transazione",
         "colPrincipal": "Capitale",

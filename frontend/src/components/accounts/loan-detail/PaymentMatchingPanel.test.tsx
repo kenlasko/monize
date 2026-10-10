@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, within } from '@/test/render';
 import { PaymentMatchingPanel, type LoanSettlementsState } from './PaymentMatchingPanel';
+import { SETTLEMENTS_COLLAPSED_STORAGE_KEY } from './LoanSettlementsTable';
 import type { Account, LoanSettlementRow } from '@/types/account';
 import type { RuleRunPreview } from '@/types/transaction-rule-run';
 
@@ -243,7 +244,7 @@ describe('PaymentMatchingPanel', () => {
     expect(mockPush).toHaveBeenCalledWith('/transactions?targetTransactionId=tx-1');
   });
 
-  it('collapses and expands the settled installments from their title', async () => {
+  it('collapses and expands the settled installments from their title, and remembers the choice', async () => {
     await renderPanel(LOAN, { status: 'ready', rows: [settlement()] });
     const toggle = screen.getByRole('button', { name: /Settled installments/ });
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -253,10 +254,43 @@ describe('PaymentMatchingPanel', () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(localStorage.getItem(SETTLEMENTS_COLLAPSED_STORAGE_KEY)).toBe('true');
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(localStorage.getItem(SETTLEMENTS_COLLAPSED_STORAGE_KEY)).toBe('false');
+  });
+
+  it('opens folded when the reader folded the table away before', async () => {
+    localStorage.setItem(SETTLEMENTS_COLLAPSED_STORAGE_KEY, 'true');
+    await renderPanel(LOAN, { status: 'ready', rows: [settlement()] });
+    expect(screen.getByRole('button', { name: /Settled installments/ })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('shows the table when the stored choice is not a boolean', async () => {
+    localStorage.setItem(SETTLEMENTS_COLLAPSED_STORAGE_KEY, '"yes"');
+    await renderPanel(LOAN, { status: 'ready', rows: [settlement()] });
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+
+  it('counts the settled installments in the title', async () => {
+    await renderPanel(LOAN, {
+      status: 'ready',
+      rows: [settlement(), settlement({ claimId: 'c-2', transactionId: 'tx-2' })],
+    });
+    expect(screen.getByRole('button', { name: 'Settled installments (2)' })).toBeInTheDocument();
+  });
+
+  it('counts an empty list as zero', async () => {
+    await renderPanel();
+    expect(screen.getByRole('button', { name: 'Settled installments (0)' })).toBeInTheDocument();
+  });
+
+  it('shows no count when the settlements could not be loaded', async () => {
+    await renderPanel(LOAN, { status: 'error' });
+    expect(screen.getByRole('button', { name: 'Settled installments' })).toBeInTheDocument();
   });
 
   it('says when nothing has been settled yet', async () => {

@@ -784,6 +784,7 @@
       },
       "settled": {
         "title": "Settled installments",
+        "titleWithCount": "Settled installments ({count})",
         "colDueDate": "Due date",
         "colTransaction": "Transaction",
         "colPrincipal": "Principal",

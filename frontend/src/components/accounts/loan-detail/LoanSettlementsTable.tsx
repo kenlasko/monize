@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -12,6 +12,7 @@ import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { TABLE_BODY_CLASS, TABLE_CLASS, Td, Th } from '@/components/ui/Table';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useLongPress } from '@/hooks/useLongPress';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { LoanSettlementRow } from '@/types/account';
@@ -28,6 +29,12 @@ interface LoanSettlementsTableProps {
   onRetry: () => void;
 }
 
+/**
+ * Whether the reader folded the table away: browser-local, like the other
+ * page-level view preferences, since it is a fact about the screen.
+ */
+export const SETTLEMENTS_COLLAPSED_STORAGE_KEY = 'monize-loan-settlements-collapsed';
+
 /** A control inside the clickable row keeps its own press (`docs/frontend/ui-conventions.md`). */
 const stop = (event: { stopPropagation: () => void }) => event.stopPropagation();
 
@@ -36,14 +43,20 @@ const stop = (event: { stopPropagation: () => void }) => event.stopPropagation()
  * due date, the settled bank row, and the lines and the debt the server
  * stored when it priced the installment (the claim's `pricing`). Nothing is
  * derived here; a figure the claim did not record reads as not recorded.
- * The title toggles the table, like the Rate History panel's header.
+ * The title toggles the table, like the Rate History panel's header, and
+ * counts the rows once they are known; a failed request shows no count.
  */
 export function LoanSettlementsTable({ settlements, currencyCode, onRetry }: LoanSettlementsTableProps) {
   const t = useTranslations('accounts.loanDetail.paymentMatching.settled');
   const router = useRouter();
   const { formatDate } = useDateFormat();
-  const { formatCurrency } = useNumberFormat();
-  const [collapsed, setCollapsed] = useState(false);
+  const { formatCurrency, formatNumber } = useNumberFormat();
+  const [storedCollapsed, setCollapsed] = useLocalStorage<boolean>(
+    SETTLEMENTS_COLLAPSED_STORAGE_KEY,
+    false,
+  );
+  // A hand-edited or corrupted entry is not a reason to hide the table.
+  const collapsed = storedCollapsed === true;
 
   const open = useCallback(
     (row: LoanSettlementRow) => router.push(transactionHref(row.transactionId)),
@@ -126,7 +139,7 @@ export function LoanSettlementsTable({ settlements, currencyCode, onRetry }: Loa
       <h4 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
         <button
           type="button"
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={() => setCollapsed(!collapsed)}
           aria-expanded={!collapsed}
           className="flex items-center gap-2 text-left group"
         >
@@ -136,7 +149,9 @@ export function LoanSettlementsTable({ settlements, currencyCode, onRetry }: Loa
           >
             {collapsed ? '▸' : '▾'}
           </span>
-          {t('title')}
+          {settlements.status === 'ready'
+            ? t('titleWithCount', { count: formatNumber(settlements.rows.length, 0) })
+            : t('title')}
         </button>
       </h4>
       {!collapsed && body}

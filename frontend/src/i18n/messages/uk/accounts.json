@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "Погашені платежі",
+        "titleWithCount": "Погашені платежі ({count})",
         "colDueDate": "Строк",
         "colTransaction": "Операція",
         "colPrincipal": "Основний борг",

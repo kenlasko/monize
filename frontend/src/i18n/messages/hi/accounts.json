@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "निपटाई गई किस्तें",
+        "titleWithCount": "निपटाई गई किस्तें ({count})",
         "colDueDate": "देय तिथि",
         "colTransaction": "लेन-देन",
         "colPrincipal": "मूलधन",

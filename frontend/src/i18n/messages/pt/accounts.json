@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "Prestações liquidadas",
+        "titleWithCount": "Prestações liquidadas ({count})",
         "colDueDate": "Data de vencimento",
         "colTransaction": "Transação",
         "colPrincipal": "Capital",

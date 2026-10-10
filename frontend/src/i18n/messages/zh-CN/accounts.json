@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "已结算的还款",
+        "titleWithCount": "已结算的还款（{count}）",
         "colDueDate": "到期日",
         "colTransaction": "交易",
         "colPrincipal": "本金",

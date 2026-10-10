@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "Kapatılan taksitler",
+        "titleWithCount": "Kapatılan taksitler ({count})",
         "colDueDate": "Vade tarihi",
         "colTransaction": "İşlem",
         "colPrincipal": "Anapara",
