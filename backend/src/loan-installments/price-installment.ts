@@ -309,8 +309,12 @@ async function readRateTimeline(
   });
 }
 
-/** The pure half of `datedAnnualRate`, over rows already read. */
-function annualRateOn(
+/**
+ * The pure half of `datedAnnualRate`, over rows already read: the one rule
+ * for every consumer that holds the timeline itself (the projection reads it
+ * once per request and asks for a rate at each occurrence's two dates).
+ */
+export function annualRateOn(
   rows: readonly RateTimelineRow[],
   loanAccount: Pick<Account, "interestRate">,
   asOfDate: string,

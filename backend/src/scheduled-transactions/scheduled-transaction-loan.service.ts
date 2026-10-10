@@ -1,8 +1,21 @@
-import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "./entities/scheduled-transaction-split.entity";
+import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
+import { LoanRateChange } from "../loan-rate-changes/entities/loan-rate-change.entity";
 import { Account } from "../accounts/entities/account.entity";
+import { expandOccurrenceSlots } from "../common/scheduled-occurrences";
+import { ensureYMD } from "../common/recurrence";
+import { addDaysYMD } from "../common/date-utils";
+import {
+  LoanOccurrence,
+  projectLoanOccurrences,
+} from "../loan-installments/project-loan-occurrences";
 import { bookLoanAllocation } from "../accounts/loan-payment-waterfall.util";
 import {
   bookSplitsAtMinorUnit,
@@ -12,7 +25,10 @@ import {
 } from "../common/currency-minor-unit.util";
 import { withScopedDb } from "../common/db/scoped-db";
 import { tr } from "../i18n/translate";
-import { datedLoanDebt } from "../accounts/dated-loan-debt.util";
+import {
+  datedLoanDebt,
+  datedLoanDebts,
+} from "../accounts/dated-loan-debt.util";
 import {
   findLoanAccount,
   InstallmentPurpose,
@@ -69,6 +85,30 @@ export type LoanPostingDecision =
   /** A managed template whose debt is already retired: post no money. */
   | { kind: "retired" }
   | ({ kind: "allocation" } & LoanPostingAllocation);
+
+/**
+ * The answer of `GET /scheduled-transactions/:id/loan-occurrences`
+ * (`docs/specs/scheduled-loan-installment-pricing.md` section 8.1).
+ * `occurrences` is empty unless `status` is `priced`; for the other two the
+ * client shows what the posting will move, which is the snapshot
+ * `ScheduledOccurrenceService` already answers.
+ */
+export interface LoanOccurrencesProjection {
+  scheduledTransactionId: string;
+  loanAccountId: string | null;
+  /** `not-a-loan`: no transfer into a loan-like account; `declined`: a shape the core does not price. */
+  status: "priced" | "not-a-loan" | "declined";
+  currencyCode: string;
+  occurrences: LoanOccurrence[];
+}
+
+/**
+ * How far past the cursor the recurrence may be walked for a projection: a
+ * runaway bound, not a horizon. The count bounds the result, and the walk
+ * stops once that many occurrences are settled (`expandOccurrenceSlots`), so
+ * only a schedule with fewer occurrences left than asked for reaches this.
+ */
+const LOAN_PROJECTION_WALK_DAYS = 36_525;
 
 @Injectable()
 export class ScheduledTransactionLoanService {
@@ -346,6 +386,106 @@ export class ScheduledTransactionLoanService {
         );
       }
       return { nextDueDate, debt };
+    });
+  }
+
+  /**
+   * The next `count` occurrences of a loan bill, each priced at its own due
+   * date (spec section 8): identity from `expandOccurrenceSlots`, the ledger
+   * debt at every date in one statement, the timeline in one read, and the
+   * fold of `projectLoanOccurrences` over them. Nothing is locked: this is a
+   * read, and what the posting books is decided at the posting boundary.
+   *
+   * A schedule that is not the caller's is not found; one that transfers to
+   * no loan-like account answers `not-a-loan`; an inactive one has no
+   * occurrence to price and answers an empty list. **Throws when the ledger
+   * cannot be read** (8.4): a projected figure a default stood in for would
+   * be a guess the reader cannot tell from a fact.
+   */
+  async projectLoanOccurrences(
+    userId: string,
+    scheduledTransactionId: string,
+    count: number,
+  ): Promise<LoanOccurrencesProjection> {
+    return withScopedDb(this.dataSource, async (m) => {
+      const schedule = await m
+        .getRepository(ScheduledTransaction)
+        .findOne({ where: { id: scheduledTransactionId, userId } });
+      if (!schedule) {
+        throw new NotFoundException(
+          tr(
+            "errors.scheduled.notFound",
+            `Scheduled transaction with ID ${scheduledTransactionId} not found`,
+            { id: scheduledTransactionId },
+          ),
+        );
+      }
+      const splits = await m
+        .getRepository(ScheduledTransactionSplit)
+        .find({ where: { scheduledTransactionId } });
+      const loanAccount = await findLoanAccount(m, splits);
+      if (!loanAccount) {
+        return {
+          scheduledTransactionId,
+          loanAccountId: null,
+          status: "not-a-loan" as const,
+          currencyCode: schedule.currencyCode ?? "",
+          occurrences: [],
+        };
+      }
+      const currencyCode = schedule.currencyCode ?? loanAccount.currencyCode;
+
+      // Identity is the one expander's (INV-OCCURRENCE-003): the slots from
+      // the cursor, each matched to its override, ordered by the date it
+      // falls on, the first `count` of them.
+      const overrides = schedule.isActive
+        ? await m
+            .getRepository(ScheduledTransactionOverride)
+            .find({ where: { scheduledTransactionId } })
+        : [];
+      const nextDueDate = ensureYMD(schedule.nextDueDate);
+      const occurrences = schedule.isActive
+        ? expandOccurrenceSlots(schedule, overrides, {
+            through: addDaysYMD(nextDueDate, LOAN_PROJECTION_WALK_DAYS),
+            maxOccurrences: count,
+          })
+        : [];
+
+      const rateChanges = await m.getRepository(LoanRateChange).find({
+        where: { accountId: loanAccount.id },
+        order: { effectiveDate: "ASC" },
+      });
+      // Both dates of every occurrence: the slot prices the template chain,
+      // the date it falls on prices its lines (8.2).
+      const debtLedger = await datedLoanDebts(
+        m,
+        loanAccount,
+        occurrences.flatMap((o) => [o.originalDate, o.dueDate]),
+      );
+      if (debtLedger === null) {
+        throw new ServiceUnavailableException(
+          tr(
+            "errors.scheduled.loanLedgerUnreadable",
+            "This loan payment could not be priced because its ledger balance could not be read. Try again.",
+          ),
+        );
+      }
+
+      const projection = projectLoanOccurrences({
+        schedule,
+        splits,
+        loanAccount,
+        rateChanges,
+        occurrences,
+        debtLedger,
+      });
+      return {
+        scheduledTransactionId,
+        loanAccountId: loanAccount.id,
+        status: projection.status,
+        currencyCode,
+        occurrences: projection.occurrences,
+      };
     });
   }
 

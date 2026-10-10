@@ -30,6 +30,10 @@ import { UpdateScheduledTransactionDto } from "./dto/update-scheduled-transactio
 import { PostScheduledTransactionDto } from "./dto/post-scheduled-transaction.dto";
 import { ScheduledOccurrencesQueryDto } from "./dto/scheduled-occurrences-query.dto";
 import {
+  LOAN_OCCURRENCES_DEFAULT_COUNT,
+  LoanOccurrencesQueryDto,
+} from "./dto/loan-occurrences-query.dto";
+import {
   CreateScheduledTransactionOverrideDto,
   UpdateScheduledTransactionOverrideDto,
 } from "./dto/scheduled-transaction-override.dto";
@@ -363,6 +367,41 @@ export class ScheduledTransactionsController {
   }
 
   // ==================== Override Endpoints ====================
+
+  @Get(":id/loan-occurrences")
+  @ApiOperation({
+    summary:
+      "Project the next occurrences of a loan bill, each priced at its own due date",
+    description:
+      "Each occurrence is priced through the same path the posting prices " +
+      "it with, on the ledger debt the earlier projected occurrences leave " +
+      "and at the rate and payment the loan's timeline dates to it " +
+      "(INV-LOAN-006, INV-LOAN-009). A bill that transfers to no loan, or " +
+      "whose shape the pricing declines, answers its status and no rows.",
+  })
+  @ApiParam({ name: "id", description: "Scheduled transaction UUID" })
+  @ApiResponse({ status: 200, description: "Projected occurrences" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Scheduled transaction not found" })
+  @ApiResponse({
+    status: 503,
+    description: "The loan's ledger balance could not be read",
+  })
+  @AllowDelegate()
+  @DelegateRequiresSection("bills")
+  @DelegatedScheduledParam("id")
+  projectLoanOccurrences(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query() query: LoanOccurrencesQueryDto,
+  ) {
+    return this.scheduledTransactionsService.projectLoanOccurrences(
+      req.user.id,
+      id,
+      query.count ?? LOAN_OCCURRENCES_DEFAULT_COUNT,
+    );
+  }
 
   @Get(":id/overrides")
   @ApiOperation({ summary: "Get all overrides for a scheduled transaction" })

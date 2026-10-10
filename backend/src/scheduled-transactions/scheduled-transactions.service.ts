@@ -58,7 +58,10 @@ import {
   ScheduledOccurrenceService,
 } from "./scheduled-occurrence.service";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
-import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
+import {
+  LoanOccurrencesProjection,
+  ScheduledTransactionLoanService,
+} from "./scheduled-transaction-loan.service";
 import { advanceScheduleCursor } from "./schedule-cursor";
 import { addDaysYMD, todayInTimezone, todayYMD } from "../common/date-utils";
 import {
@@ -3965,6 +3968,19 @@ export class ScheduledTransactionsService {
     loanAccountId: string,
   ): Promise<{ nextDueDate: string | null; debt: number | null }> {
     return this.loanService.getLoanProjectionAnchor(userId, loanAccountId);
+  }
+
+  /** See `ScheduledTransactionLoanService.projectLoanOccurrences`. */
+  async projectLoanOccurrences(
+    userId: string,
+    scheduledTransactionId: string,
+    count: number,
+  ): Promise<LoanOccurrencesProjection> {
+    return this.loanService.projectLoanOccurrences(
+      userId,
+      scheduledTransactionId,
+      count,
+    );
   }
 }
 

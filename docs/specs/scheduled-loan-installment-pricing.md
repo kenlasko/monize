@@ -792,3 +792,12 @@ Timeline A with the Scenario 2 template (560.00 at 2023-02-03, no resync):
 the first occurrence is 560.00 = 416.67 + 143.33, what posting it would book,
 and the second is 584.59 = 416.07 + 168.52 on 99,856.67 (A13). The projection
 shows the defect rather than hiding it; the resync is the repair.
+
+Asserted by `backend/src/loan-installments/project-loan-occurrences.spec.ts`
+(every table above, the override of 8.3 with its own lines and with lines
+the identification does not recognise, each row of 8.4, the payoff, the
+declines) and `backend/src/scheduled-transactions/scheduled-transaction-loan.service.spec.ts`
+("projectLoanOccurrences": the one ledger statement over both dates of every
+occurrence, the first occurrence equal to `resolvePostingAllocation` on the
+same ledger, `not-a-loan`, `declined`, the 404 and the 503). The count bound
+of 8.5 is `backend/src/scheduled-transactions/dto/loan-occurrences-query.dto.spec.ts`.
