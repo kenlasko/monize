@@ -37,7 +37,7 @@ Every task is safe to merge in any order that respects its dependencies: nothing
 | B2 | #1640 | Rate-change sync prices the template's own due date; confirm on create, update, delete; no `payment_amount` write | B1 | neutral | [x] | the PR closing #1640 |
 | B3 | #1641 | Loan occurrence projection read | B1 | inert | [x] | the PR closing #1641 |
 | F1 | #1642 | Rate-change dialogs: confirm on edit and delete, preview names the due date | B2 | inert | [ ] | |
-| F2 | #1643 | Occurrence picker and override editor priced per occurrence | B3 | inert | [ ] | |
+| F2 | #1643 | Occurrence picker and override editor priced per occurrence | B3 | inert | [x] | the PR closing #1643 |
 | Q | #1644 | Acceptance: INV-LOAN-009 enforced, locales, release note, dev data resync | B2, F1, F2 | none | [ ] | |
 | F3 | #1645 | (Later, not approved) Bills calendar and Upcoming Bills priced per loan occurrence | B3 | inert | [ ] | |
 

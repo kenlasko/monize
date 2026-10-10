@@ -15,7 +15,14 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows } from '@/components/transactions/SplitEditor';
 import { toOverrideSplits } from './splitSerialization';
 import { bookSplitRowsAtMinorUnit } from '@/lib/minor-unit-booking';
-import { ScheduledTransaction, ScheduledTransactionOverride } from '@/types/scheduled-transaction';
+import {
+  LoanOccurrenceMissing,
+  ScheduledTransaction,
+  ScheduledTransactionOverride,
+  SelectedLoanOccurrence,
+} from '@/types/scheduled-transaction';
+import { loanOccurrenceLines } from '@/lib/loan-occurrence';
+import { useLoanOccurrenceMissingText } from './useLoanOccurrenceMissingText';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
@@ -43,6 +50,13 @@ interface OverrideEditorDialogProps {
   // the post-reconciliation flow to prefill a liability payment with the
   // reconciled balance.
   prefillAmount?: number | null;
+  /**
+   * For a loan bill, the occurrence as the server priced it at its own due
+   * date (INV-LOAN-009): the dialog opens on its amount and its principal,
+   * interest and extra principal lines, never the template's. An override
+   * with lines of its own keeps them; `prefillAmount` outranks it.
+   */
+  loanOccurrence?: SelectedLoanOccurrence | null;
   onClose: () => void;
   onSave: () => void;
   /**
@@ -62,6 +76,7 @@ export function OverrideEditorDialog({
   accounts,
   existingOverride,
   prefillAmount,
+  loanOccurrence,
   onClose,
   onSave,
   onCreateCategory,
@@ -73,6 +88,15 @@ export function OverrideEditorDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(overrideDate);
   const [amount, setAmount] = useState<number>(0);
+  // True while a loan occurrence's amount is unknown and the user has not
+  // entered one: the field is empty rather than holding the template's amount.
+  const [amountUnknown, setAmountUnknown] = useState(false);
+  // Why a loan occurrence's amount, or only its lines, could not be seeded.
+  const [loanSeedGap, setLoanSeedGap] = useState<{
+    part: 'amount' | 'lines';
+    missing: LoanOccurrenceMissing | null;
+  } | null>(null);
+  const missingText = useLoanOccurrenceMissingText();
   const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [isSplit, setIsSplit] = useState(false);
@@ -195,6 +219,41 @@ export function OverrideEditorDialog({
         );
       }
 
+      // A loan bill's occurrence opens on the figures the server priced for
+      // it at its own due date, not the template's (INV-LOAN-009). An
+      // override's own lines stand as the user wrote them.
+      setAmountUnknown(false);
+      setLoanSeedGap(null);
+      const overrideHasOwnLines = !!(existingOverride?.isSplit && existingOverride.splits);
+      if (loanOccurrence && !isInvestmentKind && prefillAmount == null && !overrideHasOwnLines) {
+        const { occurrence, loanAccountId } = loanOccurrence;
+        // Direction only: the projection's money is unsigned, and the bill
+        // moves it the way the template does.
+        const sign: 1 | -1 = Number(scheduledTransaction.amount) < 0 ? -1 : 1;
+        const templateRows =
+          scheduledTransaction.isSplit && scheduledTransaction.splits
+            ? toSplitRows(scheduledTransaction.splits)
+            : null;
+        if (occurrence.amount === null) {
+          setAmount(0);
+          setAmountUnknown(true);
+          setLoanSeedGap({ part: 'amount', missing: occurrence.missing });
+          if (templateRows) setSplits(templateRows.map((row) => ({ ...row, amount: 0 })));
+        } else {
+          const parent = scheduledTransaction.isTransfer
+            ? Math.abs(occurrence.amount)
+            : sign * occurrence.amount;
+          const lines = templateRows
+            ? loanOccurrenceLines(templateRows, occurrence, loanAccountId, sign)
+            : null;
+          if (templateRows && !lines) {
+            setLoanSeedGap({ part: 'lines', missing: occurrence.missing });
+          }
+          setAmount(roundToCents(parent));
+          if (lines ?? templateRows) initSplits(lines ?? templateRows, parent, parent);
+        }
+      }
+
       // Investment-mode prefill: existing override values fall back to the
       // base scheduled transaction's saved values.
       const initialQty =
@@ -244,7 +303,7 @@ export function OverrideEditorDialog({
       setMarketPriceDate(null);
       setPriceHistoryEmpty(false);
     }
-  }, [isOpen, existingOverride, scheduledTransaction, overrideDate, prefillAmount]);
+  }, [isOpen, existingOverride, scheduledTransaction, overrideDate, prefillAmount, loanOccurrence, isInvestmentKind]);
 
   // Fetch the most recent close price for the security so we can auto-fill
   // the Price field (matching the new-scheduled-transaction form behaviour).
@@ -446,6 +505,11 @@ export function OverrideEditorDialog({
       }
     }
 
+    if (!isInvestmentKind && amountUnknown) {
+      toast.error(t('loanOccurrence.amountRequired'));
+      return;
+    }
+
     setIsLoading(true);
     try {
       // For transfers, negate the amount (user enters positive, stored as negative)
@@ -525,6 +589,7 @@ export function OverrideEditorDialog({
   // Handler for SplitEditor to update amount
   const handleAmountChange = (newAmount: number) => {
     setAmount(roundToCents(newAmount));
+    setAmountUnknown(false);
   };
 
   const currentCategory = categoryId ? categories.find(c => c.id === categoryId) : null;
@@ -676,10 +741,23 @@ export function OverrideEditorDialog({
           <CurrencyInput
             label={t('overrideEditor.amountLabel')}
             prefix={getCurrencySymbol(scheduledTransaction.currencyCode)}
-            value={amount}
-            onChange={(value) => setAmount(value ?? 0)}
+            value={amountUnknown ? undefined : amount}
+            onChange={(value) => {
+              setAmount(value ?? 0);
+              setAmountUnknown(false);
+            }}
             allowSignToggle
           />
+        )}
+        {!isInvestmentKind && loanSeedGap && (
+          <p className="-mt-2 text-xs text-amber-700 dark:text-amber-300" role="note">
+            {t(
+              loanSeedGap.part === 'amount'
+                ? 'loanOccurrence.editorUnknown'
+                : 'loanOccurrence.editorLinesUnknown',
+              { reason: missingText(loanSeedGap.missing) },
+            )}
+          </p>
         )}
 
         {/* Transfer indicator - shown instead of category for transfers */}

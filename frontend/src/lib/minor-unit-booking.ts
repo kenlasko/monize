@@ -34,7 +34,7 @@ export function bookSplitsAtMinorUnit(
 }
 
 /** The server's `LOAN_LIKE_ACCOUNT_TYPES`; the parity fixture holds the two together. */
-const LOAN_LIKE_ACCOUNT_TYPES: ReadonlySet<string> = new Set(['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);
+export const LOAN_LIKE_ACCOUNT_TYPES: ReadonlySet<string> = new Set(['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);
 
 interface BookableLine {
   amount: number;

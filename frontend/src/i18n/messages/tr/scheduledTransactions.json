@@ -142,6 +142,25 @@
     "noteChange": "Not: {note}",
     "splitModified": "Bölüm değiştirildi"
   },
+  "loanOccurrence": {
+    "loading": "Her taksitin ödemesi hesaplanıyor.",
+    "loadFailed": "Her taksitin ödemesi yüklenemedi.",
+    "retry": "Yeniden dene",
+    "amountUnknown": "Ödeme bilinmiyor",
+    "notProjected": "Ödeme bu kadar ileri için hesaplanmadı",
+    "paymentChangesBadge": "Ödeme değişiyor",
+    "editorUnknown": "Bu taksitin ödemesi hesaplanamıyor, bu yüzden tutar boş. {reason}",
+    "editorLinesUnknown": "Bu taksitin anapara ve faiz dağılımı hesaplanamıyor, bu yüzden satırlar planlamanın satırlarıyla başlıyor. {reason}",
+    "amountRequired": "Kaydetmeden önce bu taksitin tutarını girin.",
+    "missing": {
+      "rate": "{date} için kayıtlı faiz oranı yok. Bunu kredinin faiz geçmişine ekleyin.",
+      "cadence": "Kredinin ödeme sıklığı ({frequency}) hesaplanamıyor. Kredinin ödeme sıklığını kontrol edin.",
+      "overrideLines": "Bu taksitin satırları anapara, faiz ve ek anapara değil. Satırlarını düzenleyin.",
+      "overrideOnSettledDebt": "Kredi bu tarihe kadar kapanmış, bu yüzden bu taksitin tutarı anapara ve faize bölünemiyor. Taksiti düzenleyin veya sıfırlayın.",
+      "earlierOccurrence": "Ödemesi hesaplanamayan {date} taksitine bağlıdır.",
+      "unknown": "Neden belirtilmedi."
+    }
+  },
   "overrideEditor": {
     "title": "Tekrarı Düzenle",
     "descriptionInvestment": "{account} hesabında {security} için {action} işlemi yalnızca bu tekrar için değiştiriliyor.",

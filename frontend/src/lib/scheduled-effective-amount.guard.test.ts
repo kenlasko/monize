@@ -89,7 +89,7 @@ const CLIENT_EXPANDERS = new Map([
   ],
   [
     '/src/components/scheduled-transactions/OccurrenceDatePicker.tsx',
-    'offers the next N dates to attach an override to -- dates only, no amounts',
+    'offers the next N dates to attach an override to; the amount of each date of a loan bill comes from the server (getLoanOccurrences), never the template',
   ],
   [
     '/src/lib/forecast.ts',

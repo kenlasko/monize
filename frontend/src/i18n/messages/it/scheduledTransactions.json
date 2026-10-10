@@ -142,6 +142,25 @@
     "noteChange": "Nota: {note}",
     "splitModified": "Suddivisione modificata"
   },
+  "loanOccurrence": {
+    "loading": "Calcolo del pagamento di ogni scadenza.",
+    "loadFailed": "Non è stato possibile caricare il pagamento di ogni scadenza.",
+    "retry": "Riprova",
+    "amountUnknown": "Pagamento sconosciuto",
+    "notProjected": "Pagamento non calcolato così avanti",
+    "paymentChangesBadge": "Il pagamento cambia",
+    "editorUnknown": "Il pagamento di questa scadenza non può essere calcolato, quindi l'importo è vuoto. {reason}",
+    "editorLinesUnknown": "La ripartizione di questa scadenza tra capitale e interessi non può essere calcolata, quindi le righe partono da quelle della pianificazione. {reason}",
+    "amountRequired": "Inserisci l'importo di questa scadenza prima di salvare.",
+    "missing": {
+      "rate": "Nessun tasso di interesse registrato per il {date}. Aggiungilo alla cronologia dei tassi del prestito.",
+      "cadence": "La frequenza di pagamento del prestito ({frequency}) non può essere calcolata. Controlla la frequenza di pagamento del prestito.",
+      "overrideLines": "Le righe di questa scadenza non sono capitale, interessi e capitale aggiuntivo. Modifica le righe.",
+      "overrideOnSettledDebt": "Il prestito è estinto a questa data, quindi l'importo di questa scadenza non può essere diviso tra capitale e interessi. Modifica o ripristina la scadenza.",
+      "earlierOccurrence": "Dipende dalla scadenza del {date}, il cui pagamento non può essere calcolato.",
+      "unknown": "Il motivo non è stato indicato."
+    }
+  },
   "overrideEditor": {
     "title": "Modifica occorrenza",
     "descriptionInvestment": "Modifica {action} {security} su {account} solo per questa occorrenza.",

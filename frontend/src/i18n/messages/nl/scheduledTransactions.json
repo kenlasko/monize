@@ -142,6 +142,25 @@
     "noteChange": "Notitie: {note}",
     "splitModified": "Splitsing gewijzigd"
   },
+  "loanOccurrence": {
+    "loading": "De betaling van elke termijn wordt berekend.",
+    "loadFailed": "De betaling van elke termijn kon niet worden geladen.",
+    "retry": "Opnieuw proberen",
+    "amountUnknown": "Betaling onbekend",
+    "notProjected": "Betaling zo ver vooruit niet berekend",
+    "paymentChangesBadge": "Betaling verandert",
+    "editorUnknown": "De betaling van deze termijn kan niet worden berekend, dus het bedrag is leeg. {reason}",
+    "editorLinesUnknown": "De verdeling van deze termijn over aflossing en rente kan niet worden berekend, dus de regels beginnen bij die van de planning. {reason}",
+    "amountRequired": "Voer het bedrag van deze termijn in voordat u opslaat.",
+    "missing": {
+      "rate": "Er is geen rente vastgelegd voor {date}. Voeg die toe aan de rentegeschiedenis van de lening.",
+      "cadence": "De betalingsfrequentie van de lening ({frequency}) kan niet worden berekend. Controleer de betalingsfrequentie van de lening.",
+      "overrideLines": "De regels van deze termijn zijn niet aflossing, rente en extra aflossing. Bewerk de regels.",
+      "overrideOnSettledDebt": "De lening is op deze datum afgelost, dus het bedrag van deze termijn kan niet worden verdeeld over aflossing en rente. Bewerk of herstel de termijn.",
+      "earlierOccurrence": "Het hangt af van de termijn van {date}, waarvan de betaling niet kan worden berekend.",
+      "unknown": "Er is geen reden opgegeven."
+    }
+  },
   "overrideEditor": {
     "title": "Herhaling bewerken",
     "descriptionInvestment": "Uitsluitend {action} {security} op {account} voor deze herhaling wijzigen.",
