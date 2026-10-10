@@ -243,6 +243,22 @@ describe('PaymentMatchingPanel', () => {
     expect(mockPush).toHaveBeenCalledWith('/transactions?targetTransactionId=tx-1');
   });
 
+  it('collapses and expands the settled installments from their title', async () => {
+    await renderPanel(LOAN, { status: 'ready', rows: [settlement()] });
+    const toggle = screen.getByRole('button', { name: /Settled installments/ });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('heading', { name: /Settled installments/ })).toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+
   it('says when nothing has been settled yet', async () => {
     await renderPanel();
     expect(screen.getByText('No installments settled yet')).toBeInTheDocument();

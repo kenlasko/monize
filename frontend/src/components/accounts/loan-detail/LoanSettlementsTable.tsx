@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -36,12 +36,14 @@ const stop = (event: { stopPropagation: () => void }) => event.stopPropagation()
  * due date, the settled bank row, and the lines and the debt the server
  * stored when it priced the installment (the claim's `pricing`). Nothing is
  * derived here; a figure the claim did not record reads as not recorded.
+ * The title toggles the table, like the Rate History panel's header.
  */
 export function LoanSettlementsTable({ settlements, currencyCode, onRetry }: LoanSettlementsTableProps) {
   const t = useTranslations('accounts.loanDetail.paymentMatching.settled');
   const router = useRouter();
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
+  const [collapsed, setCollapsed] = useState(false);
 
   const open = useCallback(
     (row: LoanSettlementRow) => router.push(transactionHref(row.transactionId)),
@@ -121,8 +123,23 @@ export function LoanSettlementsTable({ settlements, currencyCode, onRetry }: Loa
 
   return (
     <div>
-      <h4 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">{t('title')}</h4>
-      {body}
+      <h4 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          aria-expanded={!collapsed}
+          className="flex items-center gap-2 text-left group"
+        >
+          <span
+            aria-hidden="true"
+            className="text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+          >
+            {collapsed ? '▸' : '▾'}
+          </span>
+          {t('title')}
+        </button>
+      </h4>
+      {!collapsed && body}
     </div>
   );
 }
