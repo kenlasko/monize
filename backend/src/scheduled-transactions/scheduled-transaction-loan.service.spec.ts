@@ -2572,6 +2572,64 @@ describe("ScheduledTransactionLoanService", () => {
       expect(overridesRepository.find).not.toHaveBeenCalled();
     });
 
+    it("answers declined, with no rows, for a foreign-currency schedule, which the posting does not re-price", async () => {
+      scheduledTransactionsRepository.findOne.mockResolvedValue(
+        mortgageSchedule({
+          originalCurrencyCode: "USD",
+          originalAmount: -430,
+        } as Partial<ScheduledTransaction>),
+      );
+      const result = await service.projectLoanOccurrences(
+        userId,
+        scheduledTransactionId,
+        5,
+      );
+      expect(result).toEqual({
+        scheduledTransactionId,
+        loanAccountId,
+        status: "declined",
+        currencyCode: "CAD",
+        occurrences: [],
+      });
+      expect(manager.query).not.toHaveBeenCalled();
+    });
+
+    it("walks the chain through a cursor an override moved past the count, and reads the ledger at its dates too", async () => {
+      scheduledTransactionsRepository.findOne.mockResolvedValue(
+        mortgageSchedule({ amount: -560 } as Partial<ScheduledTransaction>),
+      );
+      overridesRepository.find.mockResolvedValue([
+        {
+          id: "ovr-cursor",
+          scheduledTransactionId,
+          originalDate: "2023-02-03",
+          overrideDate: "2023-06-10",
+          amount: null,
+          splits: null,
+        },
+      ]);
+      const result = await service.projectLoanOccurrences(
+        userId,
+        scheduledTransactionId,
+        2,
+      );
+      // The cursor bills the stored 560.00 when it posts on 2023-06-10; the
+      // two slots before that date bill the advancement.
+      expect(
+        result.occurrences.map((o) => [o.originalDate, o.dueDate, o.amount]),
+      ).toEqual([
+        ["2023-03-03", "2023-03-03", 584.59],
+        ["2023-04-03", "2023-04-03", 584.59],
+      ]);
+      const ledgerCalls = manager.query.mock.calls.filter(([sql]) =>
+        String(sql).includes("unnest"),
+      );
+      expect(ledgerCalls).toHaveLength(1);
+      expect(ledgerCalls[0][1]?.[2]).toEqual(
+        expect.arrayContaining(["2023-02-03", "2023-06-10"]),
+      );
+    });
+
     it("refuses, rather than guesses, when the ledger cannot be read (8.4)", async () => {
       ledgerAt(null);
       await expect(

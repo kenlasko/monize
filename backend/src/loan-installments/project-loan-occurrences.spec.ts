@@ -1,9 +1,9 @@
 import {
   LoanOccurrence,
   LoanOccurrenceOverride,
+  loanProjectionOccurrences,
   projectLoanOccurrences,
 } from "./project-loan-occurrences";
-import { expandOccurrenceSlots } from "../common/scheduled-occurrences";
 import { Account } from "../accounts/entities/account.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
@@ -105,11 +105,7 @@ describe("projectLoanOccurrences", () => {
     schedule: ScheduledTransaction,
     overrides: LoanOccurrenceOverride[],
     count: number,
-  ) =>
-    expandOccurrenceSlots(schedule, overrides, {
-      through: "2030-12-31",
-      maxOccurrences: count,
-    });
+  ) => loanProjectionOccurrences(schedule, overrides, count, "2030-12-31");
 
   /** The ledger with nothing posted: the same debt at every date asked for. */
   const flatLedger = (
@@ -133,17 +129,15 @@ describe("projectLoanOccurrences", () => {
     debt?: number;
   }) => {
     const schedule = options.schedule ?? makeSchedule();
-    const occurrences = occurrencesOf(
-      schedule,
-      options.overrides ?? [],
-      options.count ?? 5,
-    );
+    const count = options.count ?? 5;
+    const occurrences = occurrencesOf(schedule, options.overrides ?? [], count);
     return projectLoanOccurrences({
       schedule,
       splits: options.splits ?? makeSplits(),
       loanAccount: options.account ?? makeMortgage(),
       rateChanges: options.rateChanges ?? timelineA,
       occurrences,
+      count,
       debtLedger: flatLedger(occurrences, options.debt ?? 100000),
     });
   };
@@ -406,12 +400,14 @@ describe("projectLoanOccurrences", () => {
         annualRate: 5,
         debtBefore: 99832.08,
         complete: false,
+        missing: { kind: "override-lines", overrideId: "ovr-march" },
       });
       expect(april).toMatchObject({
         amount: null,
         principal: null,
         debtBefore: null,
         complete: false,
+        missing: { kind: "earlier-occurrence", originalDate: "2023-03-03" },
       });
     });
 
@@ -433,6 +429,7 @@ describe("projectLoanOccurrences", () => {
         loanAccount: makeMortgage(),
         rateChanges: timelineA,
         occurrences,
+        count: 2,
         debtLedger: flatLedger(occurrences, 100000),
       });
       expect(result.occurrences[1]).toMatchObject({
@@ -463,6 +460,7 @@ describe("projectLoanOccurrences", () => {
       loanAccount: makeMortgage(),
       rateChanges: timelineA,
       occurrences,
+      count: 3,
       debtLedger,
     });
     // 99,000.00 - 167.92 - 168.62
@@ -470,24 +468,308 @@ describe("projectLoanOccurrences", () => {
     expect(result.occurrences[2].interest).toBe(411.1);
   });
 
-  it("lists a retired debt as the payoff at zero and ends the projection after it (8.2)", () => {
-    const result = project({ debt: 100, count: 4 });
-    expect(result.occurrences).toHaveLength(2);
-    expect(result.occurrences[0]).toMatchObject({
-      amount: 100.42,
-      principal: 100,
-      interest: 0.42,
-      debtBefore: 100,
-      complete: true,
+  describe("a settled debt (8.2)", () => {
+    it("ends the projection at the slot the final payment settles, as the advancement after it deactivates the schedule", () => {
+      const result = project({ debt: 100, count: 4 });
+      expect(result.occurrences).toHaveLength(1);
+      expect(result.occurrences[0]).toMatchObject({
+        amount: 100.42,
+        principal: 100,
+        interest: 0.42,
+        debtBefore: 100,
+        complete: true,
+      });
     });
-    expect(result.occurrences[1]).toMatchObject({
-      dueDate: "2023-03-03",
-      amount: 0,
-      principal: 0,
-      interest: 0,
-      extraPrincipal: 0,
-      debtBefore: 0,
-      complete: true,
+
+    it("lists the cursor of a settled debt as the payoff at zero, and nothing after it", () => {
+      const result = project({ debt: 0, count: 4 });
+      expect(result.occurrences).toEqual([
+        {
+          originalDate: "2023-02-03",
+          dueDate: "2023-02-03",
+          overrideId: null,
+          amount: 0,
+          principal: 0,
+          interest: 0,
+          extraPrincipal: 0,
+          annualRate: 5,
+          debtBefore: 0,
+          complete: true,
+          missing: null,
+        },
+      ]);
+    });
+
+    it("lists a payoff with no rate at its date as incomplete, naming the rate, without withholding the zero figures", () => {
+      const result = project({
+        account: makeMortgage({ interestRate: null }),
+        rateChanges: [],
+        debt: 0,
+        count: 2,
+      });
+      expect(result.occurrences).toEqual([
+        expect.objectContaining({
+          amount: 0,
+          principal: 0,
+          interest: 0,
+          annualRate: null,
+          complete: false,
+          missing: { kind: "rate", date: "2023-02-03" },
+        }),
+      ]);
+    });
+
+    it("ends the projection where the debt at the slot is settled even when the debt at the moved date is not", () => {
+      // The cursor's 100.42 settles the loan by 2023-03-03; a charge recorded
+      // for 2023-03-05 makes the debt at the moved date 50.00. The
+      // advancement at the slot reads 0.00 and deactivates the schedule, so
+      // the moved occurrence never posts.
+      const schedule = makeSchedule();
+      const overrides: LoanOccurrenceOverride[] = [
+        {
+          id: "ovr-moved",
+          originalDate: "2023-03-03",
+          overrideDate: "2023-03-10",
+          amount: null,
+          splits: null,
+        },
+      ];
+      const occurrences = occurrencesOf(schedule, overrides, 3);
+      const result = projectLoanOccurrences({
+        schedule,
+        splits: makeSplits(),
+        loanAccount: makeMortgage(),
+        rateChanges: timelineA,
+        occurrences,
+        count: 3,
+        debtLedger: new Map([
+          ["2023-02-03", 100],
+          ["2023-03-03", 100],
+          ["2023-03-10", 150],
+          ["2023-04-03", 150],
+        ]),
+      });
+      expect(result.occurrences.map((o) => o.originalDate)).toEqual([
+        "2023-02-03",
+      ]);
+    });
+
+    it("posts an override's amount on a settled debt, as post() does, and names what cannot be priced of it", () => {
+      const result = project({
+        overrides: [
+          {
+            id: "ovr-feb",
+            originalDate: "2023-02-03",
+            overrideDate: "2023-02-03",
+            amount: -610,
+            splits: null,
+          },
+        ],
+        debt: 0,
+        count: 2,
+      });
+      expect(result.occurrences[0]).toEqual({
+        originalDate: "2023-02-03",
+        dueDate: "2023-02-03",
+        overrideId: "ovr-feb",
+        amount: 610,
+        principal: null,
+        interest: null,
+        extraPrincipal: null,
+        annualRate: 5,
+        debtBefore: 0,
+        complete: false,
+        missing: { kind: "override-on-settled-debt", overrideId: "ovr-feb" },
+      });
+    });
+
+    it("books an override's own lines on a settled debt as given", () => {
+      const result = project({
+        overrides: [
+          {
+            id: "ovr-feb",
+            originalDate: "2023-02-03",
+            overrideDate: "2023-02-03",
+            amount: -50,
+            splits: [
+              {
+                categoryId: null,
+                transferAccountId: loanAccountId,
+                amount: -50,
+                memo: "Principal",
+              },
+              {
+                categoryId: "cat-interest",
+                transferAccountId: null,
+                amount: 0,
+                memo: "Interest",
+              },
+            ],
+          },
+        ],
+        debt: 0,
+        count: 2,
+      });
+      expect(result.occurrences).toHaveLength(1);
+      expect(result.occurrences[0]).toMatchObject({
+        amount: 50,
+        principal: 50,
+        interest: 0,
+        complete: true,
+        missing: null,
+      });
+    });
+
+    it("keeps a line of credit's schedule running at a settled debt and prices it again once it is drawn on", () => {
+      const lineOfCredit = makeMortgage({
+        accountType: "LINE_OF_CREDIT",
+        mortgageType: null,
+        paymentAmount: 100,
+      } as Partial<Account>);
+      const schedule = makeSchedule({ amount: -100 });
+      const occurrences = occurrencesOf(schedule, [], 4);
+      // A 1,200.00 draw recorded for 2023-04-15.
+      const result = projectLoanOccurrences({
+        schedule,
+        splits: makeSplits(95, 5),
+        loanAccount: lineOfCredit,
+        rateChanges: [],
+        occurrences,
+        count: 4,
+        debtLedger: new Map([
+          ["2023-02-03", 0],
+          ["2023-03-03", 0],
+          ["2023-04-03", 0],
+          ["2023-05-03", 1200],
+        ]),
+      });
+      expect(result.occurrences.map(figures)).toEqual([
+        {
+          dueDate: "2023-02-03",
+          amount: 0,
+          interest: 0,
+          principal: 0,
+          debtBefore: 0,
+          annualRate: 5,
+          complete: true,
+        },
+        {
+          dueDate: "2023-03-03",
+          amount: 0,
+          interest: 0,
+          principal: 0,
+          debtBefore: 0,
+          annualRate: 5,
+          complete: true,
+        },
+        {
+          dueDate: "2023-04-03",
+          amount: 0,
+          interest: 0,
+          principal: 0,
+          debtBefore: 0,
+          annualRate: 5,
+          complete: true,
+        },
+        // 1,200.00 x 5 % / 12 = 5.00; the template's 100.00 stands.
+        {
+          dueDate: "2023-05-03",
+          amount: 100,
+          interest: 5,
+          principal: 95,
+          debtBefore: 1200,
+          annualRate: 5,
+          complete: true,
+        },
+      ]);
+    });
+  });
+
+  describe("slot order", () => {
+    it("bills the cursor's stored template to the cursor even when an override moves it past the next slot", () => {
+      // The Scenario 2 template (560.00) at the cursor 2023-02-03, moved to
+      // 2023-03-10, after the 2023-03-03 slot. `post()` claims the cursor
+      // first, so the cursor posts the stored 560.00 and the 2023-03-03 slot
+      // the advancement, 584.59; neither books before the other's date, so
+      // both are priced on 100,000.00.
+      const result = project({
+        schedule: makeSchedule({ amount: -560 }),
+        splits: makeSplits(185, 375),
+        overrides: [
+          {
+            id: "ovr-cursor",
+            originalDate: "2023-02-03",
+            overrideDate: "2023-03-10",
+            amount: null,
+            splits: null,
+          },
+        ],
+        count: 2,
+      });
+      expect(
+        result.occurrences.map((o) => ({
+          originalDate: o.originalDate,
+          ...figures(o),
+        })),
+      ).toEqual([
+        {
+          originalDate: "2023-03-03",
+          dueDate: "2023-03-03",
+          amount: 584.59,
+          interest: 416.67,
+          principal: 167.92,
+          debtBefore: 100000,
+          annualRate: 5,
+          complete: true,
+        },
+        {
+          originalDate: "2023-02-03",
+          dueDate: "2023-03-10",
+          amount: 560,
+          interest: 416.67,
+          principal: 143.33,
+          debtBefore: 100000,
+          annualRate: 5,
+          complete: true,
+        },
+      ]);
+    });
+
+    it("advances the chain through a slot moved past the reported rows without reporting it", () => {
+      // The cursor moved to 2023-06-10: the first two by date are the
+      // 2023-03-03 and 2023-04-03 slots, and the cursor still bills the
+      // stored 560.00 while they bill the advancement.
+      const schedule = makeSchedule({ amount: -560 });
+      const overrides: LoanOccurrenceOverride[] = [
+        {
+          id: "ovr-cursor",
+          originalDate: "2023-02-03",
+          overrideDate: "2023-06-10",
+          amount: null,
+          splits: null,
+        },
+      ];
+      const occurrences = occurrencesOf(schedule, overrides, 2);
+      expect(occurrences.map((o) => o.originalDate)).toEqual([
+        "2023-03-03",
+        "2023-04-03",
+        "2023-02-03",
+      ]);
+      const result = projectLoanOccurrences({
+        schedule,
+        splits: makeSplits(185, 375),
+        loanAccount: makeMortgage(),
+        rateChanges: timelineA,
+        occurrences,
+        count: 2,
+        debtLedger: flatLedger(occurrences, 100000),
+      });
+      expect(result.occurrences.map((o) => [o.originalDate, o.amount])).toEqual(
+        [
+          ["2023-03-03", 584.59],
+          ["2023-04-03", 584.59],
+        ],
+      );
     });
   });
 
@@ -538,6 +820,12 @@ describe("projectLoanOccurrences", () => {
           complete: false,
         },
       ]);
+      expect(result.occurrences.map((o) => o.missing)).toEqual([
+        { kind: "rate", date: "2023-02-03" },
+        { kind: "earlier-occurrence", originalDate: "2023-02-03" },
+        { kind: "earlier-occurrence", originalDate: "2023-02-03" },
+        { kind: "earlier-occurrence", originalDate: "2023-02-03" },
+      ]);
     });
 
     it("reports every occurrence as unknown on a cadence it cannot count, instead of the posting path's monthly default", () => {
@@ -547,6 +835,10 @@ describe("projectLoanOccurrences", () => {
       });
       expect(result.occurrences.map((o) => o.complete)).toEqual([false, false]);
       expect(result.occurrences.map((o) => o.amount)).toEqual([null, null]);
+      expect(result.occurrences.map((o) => o.missing)).toEqual([
+        { kind: "cadence", frequency: "EVERY_SO_OFTEN" },
+        { kind: "cadence", frequency: "EVERY_SO_OFTEN" },
+      ]);
     });
 
     it("keeps the template's amount when nothing dates a payment (the advancement's rule)", () => {
@@ -575,6 +867,7 @@ describe("projectLoanOccurrences", () => {
           loanAccount: makeMortgage(),
           rateChanges: timelineA,
           occurrences,
+          count: 2,
           debtLedger: new Map([["2023-02-03", 100000]]),
         }),
       ).toThrow("2023-03-03");
@@ -626,6 +919,7 @@ describe("projectLoanOccurrences", () => {
         loanAccount: makeMortgage(),
         rateChanges: timelineA,
         occurrences: [],
+        count: 12,
         debtLedger: new Map(),
       }),
     ).toEqual({ status: "priced", occurrences: [] });

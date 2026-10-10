@@ -42,6 +42,7 @@ import {
   DelegatedBodyAccounts,
   DelegatedTransferBody,
   DelegatedScheduledParam,
+  DelegateReadsEveryScheduledAccount,
   DelegateRequires,
   DelegateRequiresSection,
 } from "../delegation/decorators/delegate-access.decorator";
@@ -391,6 +392,9 @@ export class ScheduledTransactionsController {
   @AllowDelegate()
   @DelegateRequiresSection("bills")
   @DelegatedScheduledParam("id")
+  // The answer is the loan's own dated debt and rate, which the transfer
+  // mask does not hide: READ on the loan, not only on the paying account.
+  @DelegateReadsEveryScheduledAccount()
   projectLoanOccurrences(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,

@@ -3,6 +3,10 @@ import { ScheduledTransactionsController } from "./scheduled-transactions.contro
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
 import { DelegationService } from "../delegation/delegation.service";
 import { JointAccountsService } from "../delegation/joint-accounts.service";
+import {
+  DELEGATED_SCHEDULED_PARAM_KEY,
+  DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY,
+} from "../delegation/decorators/delegate-access.decorator";
 
 describe("ScheduledTransactionsController", () => {
   let controller: ScheduledTransactionsController;
@@ -373,6 +377,20 @@ describe("ScheduledTransactionsController", () => {
         "st-1",
         12,
       );
+    });
+
+    it("needs a delegate's READ on the loan, not only on the paying account: it answers the loan's debt and rate", () => {
+      const handler =
+        ScheduledTransactionsController.prototype.projectLoanOccurrences;
+      expect(Reflect.getMetadata(DELEGATED_SCHEDULED_PARAM_KEY, handler)).toBe(
+        "id",
+      );
+      expect(
+        Reflect.getMetadata(
+          DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY,
+          handler,
+        ),
+      ).toBe(true);
     });
   });
 

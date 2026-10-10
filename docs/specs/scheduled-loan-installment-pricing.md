@@ -687,29 +687,52 @@ LoanOccurrence {
   annualRate:     number | null      // the rate at dueDate (section 1)
   debtBefore:     number | null      // the folded debt at dueDate (8.2)
   complete:       boolean            // every figure above is known
+  missing:        LoanOccurrenceMissing | null   // why not, null exactly when complete (8.4)
 }
+
+LoanOccurrenceMissing =
+  | { kind: "rate", date }                      // no rate recorded at that date
+  | { kind: "cadence", frequency }              // a cadence the pricing cannot count
+  | { kind: "override-lines", overrideId }      // lines the identification does not recognise
+  | { kind: "override-on-settled-debt", overrideId }  // 8.3
+  | { kind: "earlier-occurrence", originalDate }      // the slot whose figure is unknown
 ```
 
 `not-a-loan`: the schedule is not the template shape this core prices (no
 transfer into a loan-like account); `declined`: it is, and
-`identifyLoanTemplate` or `missingMethodTerms` declines it. In both the
+`identifyLoanTemplate` or `missingMethodTerms` declines it, or it is a
+foreign-currency schedule (`original_currency_code` and `original_amount`
+set), whose converted amounts `post()` posts without re-pricing. In each the
 client shows what the posting will move, which for those shapes is the
 snapshot `ScheduledOccurrenceService` already answers.
 
+The answer is the loan's dated debt and rate, which the transfer mask does
+not hide, so a delegate needs READ on every account the schedule touches,
+the loan included (`@DelegateReadsEveryScheduledAccount`), not only on the
+paying account an ordinary scheduled read gates.
+
 ### 8.2 The fold
 
-Occurrences are `expandOccurrenceSlots` (`backend/src/common/scheduled-occurrences.ts`)
+The reported occurrences are `expandOccurrenceSlots` (`backend/src/common/scheduled-occurrences.ts`)
 from `next_due_date`, with the schedule's overrides, `maxOccurrences = count`,
 ordered by `dueDate`; the schedule's `end_date` and `occurrences_remaining`
-bound it as they bound every consumer. With `debtLedger(x)` from
-`datedLoanDebts` (one statement for every date, `backend/src/accounts/dated-loan-debt.util.ts`):
+bound it as they bound every consumer. The fold walks them in SLOT order,
+k = 1 the cursor: `post()` claims only the cursor, so slots post in that
+order whatever date an override moves one to, and `rewriteLoanTemplate`
+advances the template in it. It walks every slot from the cursor through the
+last reported one (`loanProjectionOccurrences`, a second read of the same
+expander), so a slot an override moved past the `count`-th date still
+carries the chain; only the first `count` by `dueDate` are answered. With
+`debtLedger(x)` from `datedLoanDebts` (one statement for every date,
+`backend/src/accounts/dated-loan-debt.util.ts`):
 
 ```text
 debtAt(x)        = debtLedger(x) - sum(principal + extraPrincipal)
-                   over the occurrences projected earlier whose dueDate <= x
+                   over the earlier slots whose dueDate <= x
 chain(1)         = the template's amount (the cursor's bill as stored)
 chain(k), k >= 2 = the advancement (purpose template, 7.3) at originalDate(k)
-                   with templateAmount = chain(k-1), on debtAt(originalDate(k))
+                   with templateAmount = chain(k-1), on debtAt(originalDate(k)),
+                   prev(D) = originalDate(k-1)
 bill(k)          = the override's amount when occurrence k has one (8.3),
                    else chain(k)
 lines(k)         = priceInstallment, purpose posting, with templateAmount =
@@ -725,10 +748,18 @@ so its principal is what the ledger will hold. With no ledger row after
 `next_due_date` this is `datedLoanDebt(next_due_date)` less the booked
 principal so far.
 
-An occurrence whose `debtAt(dueDate) <= 0.01` is the payoff `post()` writes no
-money for (section 3): it is listed with `amount`, `principal`, `interest` and
-`extraPrincipal` 0.00, and the projection ends after it, as the recalculation
-deactivates the schedule.
+The advancement before slot k reads the debt first, as `rewriteLoanTemplate`
+does: when `debtAt(originalDate(k)) <= 0.01` the recalculation deactivates
+the schedule, slot k never posts, and the projection ends before it. A line
+of credit is the exception there too: its schedule stays active and its
+template unchanged, and the projection goes on, so a draw recorded for a
+later date is billed again.
+
+An occurrence whose `debtAt(dueDate) <= 0.01` and which states no override
+amount is the payoff `post()` writes no money for (section 3): it is listed
+with `amount`, `principal`, `interest` and `extraPrincipal` 0.00. Zero needs
+no rate, but `annualRate` is a figure of the row: with no rate at the date
+the row is `complete: false` with `missing` naming it, and the fold goes on.
 
 ### 8.3 An override
 
@@ -741,6 +772,12 @@ deactivates the schedule.
   `lines(k)` at its `dueDate` (7.6, item 4).
 - An override without an amount (a date move, a description): the bill is
   the template chain's, divided at the override's `dueDate`.
+- An override with an amount on a debt settled by its `dueDate`: `post()`
+  checks the payoff only for a bill priced from the template, so the amount
+  posts. With its own lines they stand as above; without, no division of it
+  is priced on a settled debt, so the occurrence's `amount` is the override's
+  and its lines are null, `missing` is `override-on-settled-debt`, and every
+  later occurrence is unknown.
 - An override never enters the template chain: `chain(k+1)` follows from
   `chain(k)`, because the advancement after an overridden posting
   (`rewriteLoanTemplate`) reads the stored template's amount, which an
@@ -753,8 +790,8 @@ deactivates the schedule.
 | Missing | Response |
 | --- | --- |
 | The ledger cannot be read (`datedLoanDebts` answers null) | the read fails: 503 with `errors.scheduled.loanLedgerUnreadable` (the message the posting path already refuses with), never a guessed figure |
-| No rate at an occurrence's `dueDate` or slot (`datedAnnualRate` null) | that occurrence and every later one `complete: false` with `amount`, `principal`, `interest` and `extraPrincipal` null; that occurrence still carries its `debtBefore`, the later ones null |
-| An unknown cadence (`periodsPerYearForStoredFrequency` null) | every occurrence as for a missing rate |
+| No rate at an occurrence's `dueDate` or slot (`datedAnnualRate` null) | that occurrence and every later one `complete: false` with `amount`, `principal`, `interest` and `extraPrincipal` null; that occurrence still carries its `debtBefore` and `missing` `rate` with the date, the later ones a null `debtBefore` and `missing` `earlier-occurrence` naming its slot |
+| An unknown cadence (`periodsPerYearForStoredFrequency` null) | every occurrence as for a missing rate, each with `missing` `cadence` |
 | No dated payment for an annuity (`payment(D)` null) | none: the advancement keeps the template's amount (7.2), as it does today |
 | The schedule is not found for the user | 404 |
 
@@ -795,9 +832,15 @@ shows the defect rather than hiding it; the resync is the repair.
 
 Asserted by `backend/src/loan-installments/project-loan-occurrences.spec.ts`
 (every table above, the override of 8.3 with its own lines and with lines
-the identification does not recognise, each row of 8.4, the payoff, the
-declines) and `backend/src/scheduled-transactions/scheduled-transaction-loan.service.spec.ts`
+the identification does not recognise, each row of 8.4 with its `missing`,
+the payoff at the cursor and with no rate, the end at a settled slot, an
+override amount on a settled debt, a line of credit drawn on again, a cursor
+moved past the next slot and past the reported rows, the declines) and
+`backend/src/scheduled-transactions/scheduled-transaction-loan.service.spec.ts`
 ("projectLoanOccurrences": the one ledger statement over both dates of every
 occurrence, the first occurrence equal to `resolvePostingAllocation` on the
-same ledger, `not-a-loan`, `declined`, the 404 and the 503). The count bound
+same ledger, `not-a-loan`, `declined` for a shape and for a foreign-currency
+schedule, a cursor moved past the count, the 404 and the 503). The delegate
+gate is `scheduled-transactions.controller.spec.ts` and
+`account-delegate.guard.spec.ts`. The count bound
 of 8.5 is `backend/src/scheduled-transactions/dto/loan-occurrences-query.dto.spec.ts`.

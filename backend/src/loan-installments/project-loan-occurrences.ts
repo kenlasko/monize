@@ -5,27 +5,29 @@ import {
   OverrideSplit,
   ScheduledTransactionOverride,
 } from "../scheduled-transactions/entities/scheduled-transaction-override.entity";
-import { ExpandedOccurrence } from "../common/scheduled-occurrences";
+import {
+  ExpandedOccurrence,
+  expandOccurrenceSlots,
+  OccurrenceOverrideInput,
+  OccurrenceScheduleInput,
+} from "../common/scheduled-occurrences";
+import { ensureYMD } from "../common/recurrence";
 import { currencyMinorUnitDecimals } from "../common/currency-minor-unit.util";
 import { MONEY_DECIMALS, roundMoney } from "../common/round.util";
 import { bookLoanAllocation } from "../accounts/loan-payment-waterfall.util";
-import {
-  amortizationMethodFor,
-  mortgageTypeOf,
-} from "../accounts/mortgage-type.util";
-import { missingMethodTerms } from "../accounts/mortgage-installment.util";
 import { periodsPerYearForStoredFrequency } from "../accounts/payment-frequency.util";
 import {
   annualRateOn,
   datedAnnuityPayment,
   declineReason,
   identifyLoanTemplate,
+  isAnnuity,
   LoanTemplateSplits,
+  methodTermsDecline,
   paymentNewlyApplies,
   priceInstallment,
   RateTimelineRow,
 } from "./price-installment";
-import { precedingSlotDate, SlotCalendarSchedule } from "./occurrence-slots";
 
 /**
  * The projection of a loan bill's next occurrences, each priced at its own
@@ -37,15 +39,40 @@ import { precedingSlotDate, SlotCalendarSchedule } from "./occurrence-slots";
  * and books it as the posting books it, so what it shows for an occurrence
  * is what posting that occurrence would move.
  *
- * Two chains run side by side (section 8.2). The TEMPLATE chain is what
- * `rewriteLoanTemplate` would write after each posting: the stored amount
- * for the cursor, then the advancement (purpose `template`, spec 7.3) at
- * each later slot. The BILL of an occurrence is its override's amount when
- * it states one, else the chain's figure; the override never enters the
- * chain, because the advancement reads the stored template an override does
- * not write (8.3). The lines of each bill are the posting's re-division at
- * the date the occurrence falls on, on the debt the fold has reached.
+ * The fold walks the occurrences in SLOT order, the order `post()` claims
+ * them in (it posts only the cursor) and `rewriteLoanTemplate` advances the
+ * template in, whatever date an override moves one to; the rows are answered
+ * in the expander's `dueDate` order. Two chains run side by side (section
+ * 8.2). The TEMPLATE chain is what `rewriteLoanTemplate` would write after
+ * each posting: the stored amount for the cursor, then the advancement
+ * (purpose `template`, spec 7.3) at each later slot. The BILL of an
+ * occurrence is its override's amount when it states one, else the chain's
+ * figure; the override never enters the chain, because the advancement reads
+ * the stored template an override does not write (8.3). The lines of each
+ * bill are the posting's re-division at the date the occurrence falls on, on
+ * the debt the earlier slots leave.
  */
+
+/**
+ * What an incomplete occurrence lacks, and so where the reader repairs it
+ * (spec 8.4; AGENTS.md, "withholding a figure is only honest if the reader
+ * learns why"). Structured, so the client names it in the reader's language.
+ */
+export type LoanOccurrenceMissing =
+  /** No rate is recorded at `date` (the slot or the due date): the loan's rate history. */
+  | { readonly kind: "rate"; readonly date: string }
+  /** The cadence the loan is priced at is not one the pricing knows: the loan's payment frequency. */
+  | { readonly kind: "cadence"; readonly frequency: string }
+  /** The override's lines are not the loan's principal, interest and extra: the override. */
+  | { readonly kind: "override-lines"; readonly overrideId: string }
+  /**
+   * The override states an amount, and no lines, for a date by which the debt
+   * is settled: the posting moves the amount, but no division of it into the
+   * loan's lines is priced on a settled debt. The override.
+   */
+  | { readonly kind: "override-on-settled-debt"; readonly overrideId: string }
+  /** An earlier slot's figures are unknown, so the debt this one starts from is: that occurrence's own `missing`. */
+  | { readonly kind: "earlier-occurrence"; readonly originalDate: string };
 
 /** One projected occurrence (spec 8.1). Unsigned money, booked in the minor unit. */
 export interface LoanOccurrence {
@@ -64,6 +91,8 @@ export interface LoanOccurrence {
   debtBefore: number | null;
   /** True when every figure above is known. */
   complete: boolean;
+  /** Why a figure above is null; null exactly when `complete`. */
+  missing: LoanOccurrenceMissing | null;
 }
 
 /** The columns of an override the fold reads; the rest decide nothing here. */
@@ -75,21 +104,23 @@ export type LoanOccurrenceOverride = Pick<
 export interface ProjectLoanOccurrencesInput {
   readonly schedule: Pick<
     ScheduledTransaction,
-    | "amount"
-    | "frequency"
-    | "startDate"
-    | "nextDueDate"
-    | "endDate"
-    | "occurrencesRemaining"
-    | "currencyCode"
+    "amount" | "frequency" | "currencyCode"
   >;
   /** The stored template lines. */
   readonly splits: ScheduledTransactionSplit[];
   readonly loanAccount: Account;
   /** The loan's rate timeline, ascending by effective date. */
   readonly rateChanges: readonly RateTimelineRow[];
-  /** The occurrences to price, as `expandOccurrenceSlots` ordered them (by `dueDate`). */
+  /**
+   * Every occurrence from the cursor through the last slot to report, as
+   * `expandOccurrenceSlots` ordered them (by `dueDate`). Every slot in that
+   * span is here, including one an override moved past the reported rows:
+   * the template advances at each slot in turn, so a slot left out would
+   * break the chain.
+   */
   readonly occurrences: readonly ExpandedOccurrence<LoanOccurrenceOverride>[];
+  /** How many rows to answer: the first `count` by `dueDate`. */
+  readonly count: number;
   /** `datedLoanDebt` at every `originalDate` and `dueDate` among `occurrences`. */
   readonly debtLedger: ReadonlyMap<string, number>;
 }
@@ -107,11 +138,12 @@ const SCALE = 10 ** MONEY_DECIMALS;
 const toUnits = (value: number): number => Math.round(value * SCALE);
 const fromUnits = (units: number): number => units / SCALE;
 
-/** An occurrence nothing can be said about beyond its identity and its dated rate. */
+/** An occurrence nothing can be said about beyond its identity, its dated rate and why. */
 function unknownOccurrence(
   occurrence: ExpandedOccurrence<LoanOccurrenceOverride>,
   annualRate: number | null,
   debtBefore: number | null,
+  missing: LoanOccurrenceMissing,
   amount: number | null = null,
 ): LoanOccurrence {
   return {
@@ -125,6 +157,7 @@ function unknownOccurrence(
     annualRate,
     debtBefore,
     complete: false,
+    missing,
   };
 }
 
@@ -147,22 +180,45 @@ function overrideLinesAsSplits(
   );
 }
 
-/**
- * Why the pure tail did not price. It answers `paid-off` only from the core's
- * own debt check, never over the facts handed to it here, so that branch is a
- * defect named rather than a figure guessed.
- */
-function notPricedReason(
-  result: Exclude<ReturnType<typeof priceInstallment>, { kind: "ok" }>,
-): string {
-  return result.kind === "paid-off"
-    ? "the installment priced as paid off on a positive debt"
-    : result.reason;
-}
-
 /** The unsigned amount of a line, 0 for a line the template does not carry. */
 function lineAmount(split: ScheduledTransactionSplit | undefined): number {
   return split ? roundMoney(Math.abs(Number(split.amount))) : 0;
+}
+
+/**
+ * The occurrences the fold takes (`ProjectLoanOccurrencesInput.occurrences`):
+ * the first `count` by the date each falls on, walked no further than
+ * `horizon`, and every slot between the cursor and the last of them. The
+ * template advances at each slot in turn, so a slot an override moved past
+ * the `count`-th date still carries the chain to the slots after it; the fold
+ * reports only the first `count`. Both reads are the one expander's
+ * (INV-OCCURRENCE-003): the second walks through the latest date any of
+ * those slots falls on.
+ */
+export function loanProjectionOccurrences<O extends OccurrenceOverrideInput>(
+  schedule: OccurrenceScheduleInput,
+  overrides: readonly O[],
+  count: number,
+  horizon: string,
+): ExpandedOccurrence<O>[] {
+  const reported = expandOccurrenceSlots(schedule, overrides, {
+    through: horizon,
+    maxOccurrences: count,
+  });
+  if (reported.length === 0) return reported;
+  const lastSlot = reported.reduce(
+    (last, o) => (o.originalDate > last ? o.originalDate : last),
+    reported[0].originalDate,
+  );
+  let through = lastSlot;
+  for (const override of overrides) {
+    const slot = ensureYMD(override.originalDate as string);
+    const due = ensureYMD(override.overrideDate as string);
+    if (slot <= lastSlot && due > through) through = due;
+  }
+  return expandOccurrenceSlots(schedule, overrides, { through }).filter(
+    (o) => o.originalDate <= lastSlot,
+  );
 }
 
 export function projectLoanOccurrences(
@@ -179,39 +235,25 @@ export function projectLoanOccurrences(
     };
   }
   // A LINEAR or INTEREST_ONLY mortgage without its terms declines before any
-  // date is priced, as `priceInstallment` would at the first one.
-  const mortgageType =
-    loanAccount.accountType === AccountType.MORTGAGE
-      ? mortgageTypeOf(loanAccount)
-      : null;
-  if (mortgageType && amortizationMethodFor(mortgageType) !== "ANNUITY") {
-    const missing = missingMethodTerms(mortgageType, loanAccount);
-    if (missing.length > 0) {
-      return {
-        status: "declined",
-        reason: `the ${mortgageType} mortgage ${loanAccount.id} has no ${missing.join(", ")}`,
-        occurrences: [],
-      };
-    }
+  // date is priced, as `priceInstallment` would at the first one: the shape
+  // decides it, not a date, so a projection that ends before pricing anything
+  // still answers the same status.
+  const missingTerms = methodTermsDecline(loanAccount);
+  if (missingTerms !== null) {
+    return { status: "declined", reason: missingTerms, occurrences: [] };
   }
-  const isAnnuity =
-    mortgageType === null || amortizationMethodFor(mortgageType) === "ANNUITY";
+  const annuity = isAnnuity(loanAccount);
+  // `rewriteLoanTemplate` keeps a line of credit's schedule active at a
+  // settled debt (it can be drawn on again) and deactivates every other.
+  const revolving = loanAccount.accountType === AccountType.LINE_OF_CREDIT;
 
   const frequency = loanAccount.paymentFrequency || schedule.frequency;
-  // The posting path defaults an unknown cadence to monthly; a projected
-  // figure from that default would be a guess (8.4), so the cadence is
-  // checked once and every occurrence is reported as unknown.
-  const cadenceKnown = periodsPerYearForStoredFrequency(frequency) !== null;
+  // The posting books in the schedule's currency, which is the paying
+  // account's: the service declines a foreign-currency schedule, which the
+  // posting does not re-price.
   const decimals = currencyMinorUnitDecimals(
     schedule.currencyCode ?? loanAccount.currencyCode,
   );
-  const calendar: SlotCalendarSchedule = {
-    startDate: schedule.startDate,
-    nextDueDate: schedule.nextDueDate,
-    frequency: schedule.frequency,
-    endDate: schedule.endDate ?? null,
-    occurrencesRemaining: schedule.occurrencesRemaining ?? null,
-  };
 
   // The template chain: its parent amount, and its extra line as the
   // advancement rewrites it (`rewriteLoanTemplate` writes the extra line
@@ -229,127 +271,184 @@ export function projectLoanOccurrences(
       : undefined,
   });
 
-  // The fold: what the projection has booked so far, dated, so the debt at
-  // a date subtracts only what falls on or before it (8.2).
+  // The fold: what the earlier slots book, dated, so the debt at a date
+  // subtracts only what falls on or before it (8.2). A later slot is not in
+  // it yet when an earlier one is priced, whatever its date: it posts after.
   const booked: Array<{ dueDate: string; units: number }> = [];
-  const debtAt = (date: string): number | undefined => {
+  const debtAt = (date: string): number => {
     const ledger = debtLedger.get(date);
-    if (ledger === undefined) return undefined;
+    if (ledger === undefined) {
+      // The caller reads the ledger at every date it hands over; a date it
+      // missed is a defect in the caller, not a figure to guess.
+      throw new RangeError(
+        `projectLoanOccurrences: no ledger debt was supplied for ${date}`,
+      );
+    }
     const folded = booked
       .filter((b) => b.dueDate <= date)
       .reduce((sum, b) => sum + b.units, 0);
     return roundMoney(fromUnits(toUnits(ledger) - folded));
   };
 
-  const rows: LoanOccurrence[] = [];
+  const bySlot = [...occurrences].sort((a, b) =>
+    a.originalDate < b.originalDate
+      ? -1
+      : a.originalDate > b.originalDate
+        ? 1
+        : 0,
+  );
+  const rowsBySlot = new Map<string, LoanOccurrence>();
   // Once a figure is unknown the debt after it is too, and so is every
-  // later occurrence (8.4): identity and the dated rate are all that remain.
-  let unknown = !cadenceKnown;
+  // later slot (8.4): identity, the dated rate and the reason are all that
+  // remain. The posting path defaults an unknown cadence to monthly; a
+  // projected figure from that default would be a guess, so the cadence is
+  // checked once and names every occurrence.
+  const cadenceKnown = periodsPerYearForStoredFrequency(frequency) !== null;
+  let firstUnknownSlot: string | null = null;
+  let precedingSlot: string | null = null;
 
-  for (const [index, occurrence] of occurrences.entries()) {
+  for (const occurrence of bySlot) {
     const { originalDate, dueDate } = occurrence;
+    const isCursor = precedingSlot === null;
+    const previous = precedingSlot;
+    precedingSlot = originalDate;
     const rateAtDue = annualRateOn(rateChanges, loanAccount, dueDate);
-    if (unknown) {
-      rows.push(unknownOccurrence(occurrence, rateAtDue, null));
+    if (!cadenceKnown || firstUnknownSlot !== null) {
+      rowsBySlot.set(
+        originalDate,
+        unknownOccurrence(
+          occurrence,
+          rateAtDue,
+          null,
+          firstUnknownSlot === null
+            ? { kind: "cadence", frequency }
+            : { kind: "earlier-occurrence", originalDate: firstUnknownSlot },
+        ),
+      );
       continue;
     }
-    const debtDue = debtAt(dueDate);
-    if (debtDue === undefined) {
-      // The caller reads the ledger at every date it hands over; a date it
-      // missed is a defect in the caller, not a figure to guess.
-      throw new RangeError(
-        `projectLoanOccurrences: no ledger debt was supplied for ${dueDate}`,
-      );
+
+    // The template chain advances at the slot (purpose `template`, 7.3) from
+    // the second slot on, as `rewriteLoanTemplate` does after the posting
+    // before it; the cursor's bill is the template as stored. That rewrite
+    // reads the debt first: settled, it deactivates the schedule, so this
+    // slot never posts, or for a line of credit keeps the template as it is.
+    if (!isCursor) {
+      const debtSlot = debtAt(originalDate);
+      if (debtSlot <= 0.01 && !revolving) break;
+      if (debtSlot > 0.01) {
+        const rateAtSlot = annualRateOn(rateChanges, loanAccount, originalDate);
+        if (rateAtSlot === null) {
+          firstUnknownSlot = originalDate;
+          rowsBySlot.set(
+            originalDate,
+            unknownOccurrence(occurrence, rateAtDue, debtAt(dueDate), {
+              kind: "rate",
+              date: originalDate,
+            }),
+          );
+          continue;
+        }
+        const datedPayment = annuity
+          ? datedAnnuityPayment(
+              rateChanges,
+              originalDate,
+              loanAccount.paymentAmount,
+            )
+          : null;
+        const advanced = priceInstallment({
+          debt: debtSlot,
+          annualRate: rateAtSlot,
+          loanAccount,
+          template: templateOf(chainExtra),
+          templateAmount: chainAmount,
+          datedPayment,
+          // The slots are contiguous from the cursor, so the one before this
+          // is `prev(D)` (7.3) without walking the calendar again.
+          paymentNewlyApplies: paymentNewlyApplies(datedPayment, previous),
+          frequency,
+          asOfDate: originalDate,
+          purpose: "template",
+        });
+        if (advanced.kind !== "ok") {
+          return {
+            status: "declined",
+            reason: advanced.reason,
+            occurrences: [],
+          };
+        }
+        // `rewriteLoanTemplate` writes the parent only when the installment
+        // is positive; the extra line whenever it differs.
+        if (advanced.allocation.total > 0) {
+          chainAmount = advanced.allocation.total;
+        }
+        chainExtra = advanced.allocation.extraPrincipal;
+      }
     }
 
-    // The payoff `post()` writes no money for (section 3): listed at zero,
-    // and the projection ends, as the recalculation deactivates the schedule.
-    if (debtDue <= 0.01) {
-      rows.push({
+    const debtDue = debtAt(dueDate);
+    const override = occurrence.override;
+    const statedAmount =
+      override?.amount != null && Number.isFinite(Number(override.amount))
+        ? roundMoney(Math.abs(Number(override.amount)))
+        : null;
+    const overrideLines =
+      statedAmount !== null && override?.splits && override.splits.length > 0
+        ? override.splits
+        : null;
+
+    // The payoff `post()` writes no money for (section 3). `post()` checks it
+    // only for a bill priced from the template; an override's amount is the
+    // user's statement for the occurrence and posts as given. Zero needs no
+    // rate, but `annualRate` is a figure of the row like any other.
+    if (debtDue <= 0.01 && statedAmount === null) {
+      rowsBySlot.set(originalDate, {
         originalDate,
         dueDate,
-        overrideId: occurrence.override?.id ?? null,
+        overrideId: override?.id ?? null,
         amount: 0,
         principal: 0,
         interest: 0,
         extraPrincipal: 0,
         annualRate: rateAtDue,
         debtBefore: debtDue,
-        complete: true,
+        complete: rateAtDue !== null,
+        missing: rateAtDue === null ? { kind: "rate", date: dueDate } : null,
       });
-      break;
-    }
-
-    // The template chain advances at the slot (purpose `template`, 7.3) from
-    // the second occurrence on; the cursor's bill is the template as stored.
-    if (index > 0) {
-      const rateAtSlot = annualRateOn(rateChanges, loanAccount, originalDate);
-      const debtSlot = debtAt(originalDate);
-      if (rateAtSlot === null || debtSlot === undefined) {
-        unknown = true;
-        rows.push(unknownOccurrence(occurrence, rateAtDue, debtDue));
-        continue;
-      }
-      const datedPayment = isAnnuity
-        ? datedAnnuityPayment(
-            rateChanges,
-            originalDate,
-            loanAccount.paymentAmount,
-          )
-        : null;
-      const advanced = priceInstallment({
-        debt: debtSlot,
-        annualRate: rateAtSlot,
-        loanAccount,
-        template: templateOf(chainExtra),
-        templateAmount: chainAmount,
-        datedPayment,
-        paymentNewlyApplies: paymentNewlyApplies(
-          datedPayment,
-          precedingSlotDate(calendar, originalDate),
-        ),
-        frequency,
-        asOfDate: originalDate,
-        purpose: "template",
-      });
-      if (advanced.kind !== "ok") {
-        return {
-          status: "declined",
-          reason: notPricedReason(advanced),
-          occurrences: [],
-        };
-      }
-      chainAmount = advanced.allocation.total;
-      chainExtra = advanced.allocation.extraPrincipal;
-    }
-
-    if (rateAtDue === null) {
-      unknown = true;
-      rows.push(unknownOccurrence(occurrence, rateAtDue, debtDue));
       continue;
     }
 
-    const override = occurrence.override;
-    const statedAmount =
-      override?.amount != null && Number.isFinite(Number(override.amount))
-        ? roundMoney(Math.abs(Number(override.amount)))
-        : null;
-    const bill = statedAmount ?? chainAmount;
+    if (rateAtDue === null) {
+      firstUnknownSlot = originalDate;
+      rowsBySlot.set(
+        originalDate,
+        unknownOccurrence(occurrence, rateAtDue, debtDue, {
+          kind: "rate",
+          date: dueDate,
+        }),
+      );
+      continue;
+    }
 
     // An override with an amount and its own lines: the lines stand as
     // given (8.3), and the fold takes their principal and extra.
-    if (
-      statedAmount !== null &&
-      override?.splits &&
-      override.splits.length > 0
-    ) {
+    if (overrideLines !== null && override && statedAmount !== null) {
       const lines = identifyLoanTemplate(
-        overrideLinesAsSplits(override.splits),
+        overrideLinesAsSplits(overrideLines),
         loanAccount,
       );
       if (!lines.managed) {
-        unknown = true;
-        rows.push(unknownOccurrence(occurrence, rateAtDue, debtDue, bill));
+        firstUnknownSlot = originalDate;
+        rowsBySlot.set(
+          originalDate,
+          unknownOccurrence(
+            occurrence,
+            rateAtDue,
+            debtDue,
+            { kind: "override-lines", overrideId: override.id },
+            statedAmount,
+          ),
+        );
         continue;
       }
       const principal = lineAmount(lines.principalSplit);
@@ -359,18 +458,34 @@ export function projectLoanOccurrences(
         dueDate,
         units: toUnits(principal) + toUnits(extraPrincipal),
       });
-      rows.push({
+      rowsBySlot.set(originalDate, {
         originalDate,
         dueDate,
         overrideId: override.id,
-        amount: bill,
+        amount: statedAmount,
         principal,
         interest,
         extraPrincipal,
         annualRate: rateAtDue,
         debtBefore: debtDue,
         complete: true,
+        missing: null,
       });
+      continue;
+    }
+
+    if (debtDue <= 0.01 && override && statedAmount !== null) {
+      firstUnknownSlot = originalDate;
+      rowsBySlot.set(
+        originalDate,
+        unknownOccurrence(
+          occurrence,
+          rateAtDue,
+          debtDue,
+          { kind: "override-on-settled-debt", overrideId: override.id },
+          statedAmount,
+        ),
+      );
       continue;
     }
 
@@ -381,7 +496,7 @@ export function projectLoanOccurrences(
       annualRate: rateAtDue,
       loanAccount,
       template: templateOf(chainExtra),
-      templateAmount: bill,
+      templateAmount: statedAmount ?? chainAmount,
       datedPayment: null,
       paymentNewlyApplies: false,
       frequency,
@@ -389,18 +504,14 @@ export function projectLoanOccurrences(
       purpose: "posting",
     });
     if (priced.kind !== "ok") {
-      return {
-        status: "declined",
-        reason: notPricedReason(priced),
-        occurrences: [],
-      };
+      return { status: "declined", reason: priced.reason, occurrences: [] };
     }
     const allocation = bookLoanAllocation(priced.allocation, decimals, debtDue);
     booked.push({
       dueDate,
       units: toUnits(allocation.principal) + toUnits(allocation.extraPrincipal),
     });
-    rows.push({
+    rowsBySlot.set(originalDate, {
       originalDate,
       dueDate,
       overrideId: override?.id ?? null,
@@ -411,8 +522,16 @@ export function projectLoanOccurrences(
       annualRate: rateAtDue,
       debtBefore: debtDue,
       complete: true,
+      missing: null,
     });
   }
 
+  // Answered in the expander's order (by the date each falls on), the first
+  // `count`: a slot walked only to carry the chain past one an override
+  // moved later is not reported.
+  const rows = occurrences
+    .map((occurrence) => rowsBySlot.get(occurrence.originalDate))
+    .filter((row): row is LoanOccurrence => row !== undefined)
+    .slice(0, input.count);
   return { status: "priced", occurrences: rows };
 }

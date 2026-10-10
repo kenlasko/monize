@@ -472,6 +472,32 @@ export function periodicRateFor(
     : interestRate / 100 / periodsPerYear;
 }
 
+/**
+ * What the pure tail answers: an installment, or a shape it declines. The
+ * ledger and debt outcomes of `ResolvedInstallment` belong to the core, which
+ * reads the ledger; the tail is handed a debt and never reports one.
+ */
+export type PricedInstallment = Extract<
+  ResolvedInstallment,
+  { kind: "ok" | "declined" }
+>;
+
+/**
+ * Why a LINEAR or INTEREST_ONLY mortgage cannot be priced at any date: the
+ * terms its method derives the installment from that the account lacks (spec
+ * section 8 of `docs/specs/mortgage-types.md`), or null when nothing is
+ * missing. Dated facts play no part, so a consumer pricing many dates (the
+ * occurrence projection) asks once.
+ */
+export function methodTermsDecline(loanAccount: Account): string | null {
+  if (isAnnuity(loanAccount)) return null;
+  const mortgageType = mortgageTypeOf(loanAccount);
+  const missing = missingMethodTerms(mortgageType, loanAccount);
+  return missing.length > 0
+    ? `the ${mortgageType} mortgage ${loanAccount.id} has no ${missing.join(", ")}`
+    : null;
+}
+
 /** The facts the pure tail prices from; every one dated at `asOfDate`. */
 export interface PriceInstallmentInput {
   /** The ledger debt through `asOfDate`, positive and not yet retired. */
@@ -516,7 +542,7 @@ export interface PriceInstallmentInput {
  */
 export function priceInstallment(
   input: PriceInstallmentInput,
-): ResolvedInstallment {
+): PricedInstallment {
   const {
     debt,
     annualRate,
@@ -530,7 +556,6 @@ export function priceInstallment(
     purpose,
   } = input;
   const { extraPrincipalSplit } = template;
-  const loanAccountId = loanAccount.id;
 
   // The amortization method decides the principal (INV-LOAN-007). Only a
   // mortgage has one; every other loan-like account is an annuity.
@@ -538,19 +563,13 @@ export function priceInstallment(
     loanAccount.accountType === AccountType.MORTGAGE
       ? mortgageTypeOf(loanAccount)
       : null;
-  const method = mortgageType ? amortizationMethodFor(mortgageType) : null;
   // A LINEAR or INTEREST_ONLY mortgage without its terms has no `N`, no
   // calendar or no principal to divide (spec section 8): decline, so the
   // persisted amounts post as for any shape this module cannot account for,
   // rather than price a guess.
-  if (mortgageType && method !== "ANNUITY") {
-    const missing = missingMethodTerms(mortgageType, loanAccount);
-    if (missing.length > 0) {
-      return {
-        kind: "declined",
-        reason: `the ${mortgageType} mortgage ${loanAccountId} has no ${missing.join(", ")}`,
-      };
-    }
+  const missingTerms = methodTermsDecline(loanAccount);
+  if (missingTerms !== null) {
+    return { kind: "declined", reason: missingTerms };
   }
 
   // What the template holds is what was just posted -- including any clamp
@@ -805,7 +824,7 @@ export async function resolveInstallmentCore(
 }
 
 /** Whether the account's installment is an annuity: every loan-like account but a LINEAR or INTEREST_ONLY mortgage. */
-function isAnnuity(loanAccount: Account): boolean {
+export function isAnnuity(loanAccount: Account): boolean {
   return (
     loanAccount.accountType !== AccountType.MORTGAGE ||
     amortizationMethodFor(mortgageTypeOf(loanAccount)) === "ANNUITY"

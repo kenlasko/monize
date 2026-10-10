@@ -9,11 +9,11 @@ import { ScheduledTransactionSplit } from "./entities/scheduled-transaction-spli
 import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
 import { LoanRateChange } from "../loan-rate-changes/entities/loan-rate-change.entity";
 import { Account } from "../accounts/entities/account.entity";
-import { expandOccurrenceSlots } from "../common/scheduled-occurrences";
 import { ensureYMD } from "../common/recurrence";
 import { addDaysYMD } from "../common/date-utils";
 import {
   LoanOccurrence,
+  loanProjectionOccurrences,
   projectLoanOccurrences,
 } from "../loan-installments/project-loan-occurrences";
 import { bookLoanAllocation } from "../accounts/loan-payment-waterfall.util";
@@ -96,7 +96,11 @@ export type LoanPostingDecision =
 export interface LoanOccurrencesProjection {
   scheduledTransactionId: string;
   loanAccountId: string | null;
-  /** `not-a-loan`: no transfer into a loan-like account; `declined`: a shape the core does not price. */
+  /**
+   * `not-a-loan`: no transfer into a loan-like account; `declined`: a shape
+   * the core does not price, or a foreign-currency schedule, which the
+   * posting does not re-price either.
+   */
   status: "priced" | "not-a-loan" | "declined";
   currencyCode: string;
   occurrences: LoanOccurrence[];
@@ -434,6 +438,18 @@ export class ScheduledTransactionLoanService {
         };
       }
       const currencyCode = schedule.currencyCode ?? loanAccount.currencyCode;
+      // `post()` posts a foreign-currency schedule's converted amounts and
+      // never re-prices them (its `!fx` gate), so a figure priced here would
+      // be one the posting does not move. The snapshot answers it.
+      if (schedule.originalCurrencyCode && schedule.originalAmount !== null) {
+        return {
+          scheduledTransactionId,
+          loanAccountId: loanAccount.id,
+          status: "declined" as const,
+          currencyCode,
+          occurrences: [],
+        };
+      }
 
       // Identity is the one expander's (INV-OCCURRENCE-003): the slots from
       // the cursor, each matched to its override, ordered by the date it
@@ -443,12 +459,16 @@ export class ScheduledTransactionLoanService {
             .getRepository(ScheduledTransactionOverride)
             .find({ where: { scheduledTransactionId } })
         : [];
-      const nextDueDate = ensureYMD(schedule.nextDueDate);
       const occurrences = schedule.isActive
-        ? expandOccurrenceSlots(schedule, overrides, {
-            through: addDaysYMD(nextDueDate, LOAN_PROJECTION_WALK_DAYS),
-            maxOccurrences: count,
-          })
+        ? loanProjectionOccurrences(
+            schedule,
+            overrides,
+            count,
+            addDaysYMD(
+              ensureYMD(schedule.nextDueDate),
+              LOAN_PROJECTION_WALK_DAYS,
+            ),
+          )
         : [];
 
       const rateChanges = await m.getRepository(LoanRateChange).find({
@@ -477,6 +497,7 @@ export class ScheduledTransactionLoanService {
         loanAccount,
         rateChanges,
         occurrences,
+        count,
         debtLedger,
       });
       return {

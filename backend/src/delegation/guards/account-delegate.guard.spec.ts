@@ -8,6 +8,7 @@ import {
   DELEGATED_TRANSFER_BODY_KEY,
   DELEGATED_TRANSFER_PARAM_KEY,
   DELEGATED_SCHEDULED_PARAM_KEY,
+  DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY,
   DELEGATE_OPERATION_KEY,
   DELEGATE_CAPABILITY_KEY,
   DELEGATE_SECTION_KEY,
@@ -410,6 +411,42 @@ describe("AccountDelegateGuard", () => {
       "a1",
       "read",
     );
+  });
+
+  it("READ of a scheduled txn that discloses its other accounts' figures gates every account", async () => {
+    jwtService.verify.mockReturnValue({
+      sub: "d1111111-1111-4111-8111-111111111111",
+      actingAsUserId: "01111111-1111-4111-8111-111111111111",
+      delegationId: "g1",
+    });
+    reflector.getAllAndOverride.mockImplementation((key: string) => {
+      if (key === ALLOW_DELEGATE_KEY) return true;
+      if (key === DELEGATED_SCHEDULED_PARAM_KEY) return "id";
+      if (key === DELEGATED_SCHEDULED_READS_EVERY_ACCOUNT_KEY) return true;
+      return undefined;
+    });
+    // READ on the chequing account that pays, none on the mortgage.
+    delegationService.accountIdsForScheduled.mockResolvedValue([
+      "chequing",
+      "mortgage",
+    ]);
+    delegationService.hasAccountPermission.mockImplementation(
+      async (_g: string, accId: string) => accId === "chequing",
+    );
+    const ctx = makeContext({
+      headers: { authorization: "Bearer x" },
+      params: { id: "s-1" },
+    });
+    await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(delegationService.hasAccountPermission).toHaveBeenCalledWith(
+      "g1",
+      "mortgage",
+      "read",
+    );
+    // Strict: an account the delegate owns is no licence to read the loan.
+    expect(crossOwnerAccess.isAccountOwnedBy).not.toHaveBeenCalled();
   });
 
   it("blocks a delegate lacking the required section grant", async () => {
