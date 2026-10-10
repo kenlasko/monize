@@ -689,7 +689,11 @@ export class LoanMortgageAccountService {
    * Legacy mortgage-rate endpoint, now a thin wrapper over the rate-change
    * timeline: every call records a history row (finally persisting the
    * effective date) and, when no explicit payment is given, keeps the old
-   * recalculate-to-hold-amortization default via recalculatePayment.
+   * recalculate-to-hold-amortization default via recalculatePayment. No UI
+   * asks here, so the scheduled bill's sync is applied at once, through the
+   * same apply the confirmation prompt uses: the template is priced at its
+   * own due date and `accounts.payment_amount` is not written
+   * (`docs/specs/scheduled-loan-installment-pricing.md` section 7.5).
    */
   async updateMortgageRate(
     account: Account,
@@ -760,6 +764,19 @@ export class LoanMortgageAccountService {
         recalculatePayment: newPaymentAmount == null,
       },
     );
+    // Best-effort, as this flow has always been: the rate history is already
+    // committed, and the template is what the next posting reprices at the
+    // consumption boundary anyway (INV-LOAN-006).
+    try {
+      await this.loanRateChangesService.applyScheduledPaymentSync(
+        userId,
+        account.id,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Could not sync the scheduled payment of mortgage ${account.id} after its rate update: ${error.message}`,
+      );
+    }
 
     const periodicRate = getPeriodicRate(
       newRate,

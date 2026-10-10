@@ -1,7 +1,10 @@
 import { BadRequestException } from "@nestjs/common";
+import { EntityManager } from "typeorm";
 import { LoanRateChangesService } from "./loan-rate-changes.service";
 import { LoanRateChange } from "./entities/loan-rate-change.entity";
 import { Account, AccountType } from "../accounts/entities/account.entity";
+import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
+import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
 import { ACCOUNT_BALANCE_AS_OF_SQL } from "../common/ledger-balance.sql";
 import {
   createScopedDbMocks,
@@ -16,16 +19,17 @@ jest.mock("../common/db/scoped-db", () =>
 /**
  * The rate-change paths for LINEAR and INTEREST_ONLY mortgages
  * (docs/specs/mortgage-types.md, section 5.3): the template is repriced by the
- * method on the dated debt -- principal from table 4.3, interest at the rate
- * in force on the installment's date -- and no payment is ever recorded on the
- * rate row, because the method states every installment. Figures are the
- * spec's section 7 worked example.
+ * method at its own due date -- principal from table 4.3, interest at the
+ * rate in force on that date -- through the loan core, and no payment is ever
+ * recorded on the rate row, because the method states every installment.
+ * Figures are the spec's section 7 worked example.
  */
 describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
   let service: LoanRateChangesService;
   let rateChangesRepository: Record<string, jest.Mock>;
   let accountsRepository: Record<string, jest.Mock>;
-  let scheduledTransactionsService: Record<string, jest.Mock>;
+  let scheduledTransactionsRepository: Record<string, jest.Mock>;
+  let splitsRepository: Record<string, jest.Mock>;
   let manager: ManagerMock;
   let dataSource: DataSourceMock;
 
@@ -56,7 +60,7 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
       ...overrides,
     }) as unknown as Account;
 
-  const timeline = [
+  const timeline = (changeDate = "2027-01-01") => [
     {
       id: "rc-initial",
       accountId,
@@ -68,56 +72,74 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
     {
       id: "rc-new",
       accountId,
-      effectiveDate: "2027-01-01",
+      effectiveDate: changeDate,
       annualRate: 4,
       newPaymentAmount: null,
       source: "manual",
     },
   ];
 
-  const template = (principal: number, interest: number) => ({
-    id: "sched-1",
-    name: "Mortgage Payment",
-    currencyCode: "EUR",
-    amount: -(principal + interest),
-    nextDueDate: "2027-01-01",
-    splits: [
-      { transferAccountId: accountId, amount: -principal, memo: "Principal" },
-      { categoryId: "cat-interest", amount: -interest, memo: "Interest" },
-    ],
-  });
+  /** The linked bill as the schedule holds it, due 2027-01-01. */
+  const template = (principal: number, interest: number) => {
+    scheduledTransactionsRepository.findOne.mockResolvedValue({
+      id: "sched-1",
+      userId,
+      accountId: "acc-chequing",
+      name: "Mortgage Payment",
+      currencyCode: "EUR",
+      amount: -(principal + interest),
+      frequency: "MONTHLY",
+      startDate: "2024-01-01",
+      nextDueDate: "2027-01-01",
+      endDate: null,
+      occurrencesRemaining: null,
+      isActive: true,
+    });
+    splitsRepository.find.mockResolvedValue([
+      {
+        id: "split-principal",
+        transferAccountId: accountId,
+        categoryId: null,
+        amount: -principal,
+        memo: "Principal",
+      },
+      {
+        id: "split-interest",
+        transferAccountId: null,
+        categoryId: "cat-interest",
+        amount: -interest,
+        memo: "Interest",
+      },
+    ]);
+  };
 
   beforeEach(() => {
-    // Recorded on 2026-12-15 for 2027-01-01: the change is in the future.
-    jest.useFakeTimers({
-      doNotFake: [
-        "nextTick",
-        "setImmediate",
-        "setTimeout",
-        "setInterval",
-        "queueMicrotask",
-      ],
-    });
-    jest.setSystemTime(new Date(2026, 11, 15, 12));
-
     rateChangesRepository = {
-      find: jest.fn().mockResolvedValue([]),
+      find: jest.fn().mockResolvedValue(timeline()),
       findOne: jest.fn().mockResolvedValue(null),
     };
     accountsRepository = {
       findOne: jest.fn().mockResolvedValue(makeMortgage()),
+      save: jest.fn(),
+      update: jest.fn(),
     };
-    scheduledTransactionsService = {
-      findOne: jest.fn().mockResolvedValue(template(833.3333, 393.0556)),
-      update: jest.fn().mockResolvedValue({ id: "sched-1" }),
+    scheduledTransactionsRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
+    splitsRepository = {
+      find: jest.fn().mockResolvedValue([]),
+      save: jest.fn().mockImplementation((split) => Promise.resolve(split)),
+    };
+    template(833.3333, 393.0556);
 
     ({ manager, dataSource } = createScopedDbMocks([
       [LoanRateChange, rateChangesRepository],
       [Account, accountsRepository],
+      [ScheduledTransaction, scheduledTransactionsRepository],
+      [ScheduledTransactionSplit, splitsRepository],
     ]));
     manager.count.mockResolvedValue(1);
-    manager.find.mockResolvedValue(timeline);
     manager.findOne.mockResolvedValue(null);
     manager.create.mockImplementation((_entity, data) => ({ ...data }));
     manager.save.mockImplementation((data) =>
@@ -126,23 +148,14 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
     // The ledger debt through 2027-01-01, as posted (spec table 7.1).
     manager.query.mockResolvedValue([{ balance: "-235000.0012" }]);
 
-    service = new LoanRateChangesService(
-      dataSource as never,
-      scheduledTransactionsService as never,
-    );
+    service = new LoanRateChangesService(dataSource as never);
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it("a future-dated change on a linear mortgage changes the template's interest line only", async () => {
-    const result = await service.create(
-      userId,
-      accountId,
-      { effectiveDate: "2027-01-01", annualRate: 4 },
-      { deferScheduledSync: true },
-    );
+  it("a change dated on the template's due date on a linear mortgage changes the template's interest line only", async () => {
+    const result = await service.create(userId, accountId, {
+      effectiveDate: "2027-01-01",
+      annualRate: 4,
+    });
 
     // Priced on the ledger debt through the installment's own date.
     expect(manager.query).toHaveBeenCalledWith(ACCOUNT_BALANCE_AS_OF_SQL, [
@@ -151,40 +164,57 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
       "2027-01-01",
     ]);
     expect(result.scheduledPaymentPreview).toMatchObject({
+      dueDate: "2027-01-01",
       currentPrincipal: 833.3333,
       proposedPrincipal: 833.3333,
       currentInterest: 393.0556,
       proposedInterest: 783.3333,
       proposedPaymentAmount: 1616.6666,
+      // A derived installment states no payment on its rows.
+      nextPaymentChange: null,
     });
-    // No payment is recorded on the rate row.
+    // No payment is recorded on the rate row, and nothing is written yet.
     expect(manager.create).toHaveBeenCalledWith(
       LoanRateChange,
       expect.objectContaining({ newPaymentAmount: null }),
     );
+    expect(splitsRepository.save).not.toHaveBeenCalled();
+    expect(scheduledTransactionsRepository.update).not.toHaveBeenCalled();
   });
 
-  it("applies the confirmed sync with the method's split", async () => {
-    await service.create(userId, accountId, {
-      effectiveDate: "2027-01-01",
+  it("a change dated after the template's due date leaves the next installment's interest at the old rate", async () => {
+    rateChangesRepository.find.mockResolvedValue(timeline("2027-01-15"));
+
+    const result = await service.create(userId, accountId, {
+      effectiveDate: "2027-01-15",
       annualRate: 4,
     });
 
-    expect(scheduledTransactionsService.update).toHaveBeenCalledWith(
-      userId,
-      "sched-1",
-      {
-        amount: -1616.6666,
-        splits: [
-          {
-            transferAccountId: accountId,
-            amount: -833.3333,
-            memo: "Principal",
-          },
-          { categoryId: "cat-interest", amount: -783.3333, memo: "Interest" },
-        ],
-      },
+    // 2027-01-01 is still priced at 2.00 %: 235,000.0012 x 2 % / 12.
+    expect(result.scheduledPaymentPreview).toMatchObject({
+      dueDate: "2027-01-01",
+      proposedPrincipal: 833.3333,
+      proposedInterest: 391.6667,
+      proposedPaymentAmount: 1225,
+    });
+  });
+
+  it("applies the confirmed sync with the method's split, through the template rewrite", async () => {
+    await service.applyScheduledPaymentSync(userId, accountId);
+
+    expect(splitsRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "split-principal", amount: -833.3333 }),
     );
+    expect(splitsRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "split-interest", amount: -783.3333 }),
+    );
+    expect(scheduledTransactionsRepository.update).toHaveBeenCalledWith(
+      "sched-1",
+      { amount: -1616.6666 },
+    );
+    // The account row is not written (spec 5.6).
+    expect(accountsRepository.save).not.toHaveBeenCalled();
+    expect(accountsRepository.update).not.toHaveBeenCalled();
   });
 
   it("re-derives a LOWER_INSTALLMENT principal from the remaining payments, not from the rate", async () => {
@@ -193,12 +223,10 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
     );
     manager.query.mockResolvedValue([{ balance: "-236588.347" }]);
 
-    const result = await service.create(
-      userId,
-      accountId,
-      { effectiveDate: "2027-01-01", annualRate: 4 },
-      { deferScheduledSync: true },
-    );
+    const result = await service.create(userId, accountId, {
+      effectiveDate: "2027-01-01",
+      annualRate: 4,
+    });
 
     expect(result.scheduledPaymentPreview).toMatchObject({
       proposedPrincipal: 730.2109,
@@ -211,17 +239,13 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
     accountsRepository.findOne.mockResolvedValue(
       makeMortgage({ mortgageType: "INTEREST_ONLY" }),
     );
-    scheduledTransactionsService.findOne.mockResolvedValue(
-      template(0, 441.6667),
-    );
+    template(0, 441.6667);
     manager.query.mockResolvedValue([{ balance: "-265000" }]);
 
-    const result = await service.create(
-      userId,
-      accountId,
-      { effectiveDate: "2027-01-01", annualRate: 4 },
-      { deferScheduledSync: true },
-    );
+    const result = await service.create(userId, accountId, {
+      effectiveDate: "2027-01-01",
+      annualRate: 4,
+    });
 
     expect(result.scheduledPaymentPreview).toMatchObject({
       proposedPrincipal: 0,
@@ -284,16 +308,20 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
   });
 
   it("does not price a linear template at a defaulted 0% when no rate is known", async () => {
-    manager.find.mockResolvedValue([]);
-
-    const plan = await service.buildScheduledUpdate(
-      userId,
+    rateChangesRepository.find.mockResolvedValue([]);
+    // The plan prices the loan row the template's lines pay, as read in its
+    // own transaction.
+    accountsRepository.findOne.mockResolvedValue(
       makeMortgage({ interestRate: null }),
-      { annualRate: 4, paymentAmount: null, effectiveDate: "2027-01-01" },
     );
 
-    // The override's rate is today's; the installment is priced at the rate
-    // dated to its due date, and there is none to read.
+    const plan = await service.buildScheduledUpdate(
+      manager as unknown as EntityManager,
+      makeMortgage({ interestRate: null }),
+    );
+
+    // The installment is priced at the rate dated to its due date, and there
+    // is none to read: the sync declines rather than offering 0 %.
     expect(plan).toBeNull();
   });
 
@@ -302,12 +330,10 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
       makeMortgage({ amortizationMonths: null }),
     );
 
-    const result = await service.create(
-      userId,
-      accountId,
-      { effectiveDate: "2027-01-01", annualRate: 4 },
-      { deferScheduledSync: true },
-    );
+    const result = await service.create(userId, accountId, {
+      effectiveDate: "2027-01-01",
+      annualRate: 4,
+    });
 
     expect(result.scheduledPaymentPreview).toBeNull();
   });

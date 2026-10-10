@@ -49,7 +49,11 @@ export class LoanRateChangesController {
   }
 
   @Post()
-  @ApiOperation({ summary: "Record an interest-rate change" })
+  @ApiOperation({
+    summary: "Record an interest-rate change",
+    description:
+      "Writes the rate change and returns it with scheduledPaymentPreview: how the linked scheduled bill payment would be rewritten at its own next due date. Nothing is applied to the bill until apply-scheduled-payment is called.",
+  })
   @ApiResponse({ status: 201, description: "Rate change created successfully" })
   @ApiResponse({ status: 404, description: "Account not found" })
   @ApiResponse({
@@ -65,7 +69,6 @@ export class LoanRateChangesController {
       req.user.id,
       accountId,
       createDto,
-      { deferScheduledSync: true },
     );
   }
 
@@ -73,7 +76,7 @@ export class LoanRateChangesController {
   @ApiOperation({
     summary: "Apply the pending scheduled-payment change for a loan account",
     description:
-      "Resyncs the account's linked scheduled bill payment to its current rate and payment. Called after the user grants permission from the rate-change confirmation prompt.",
+      "Rewrites the account's linked scheduled bill payment to the installment due at its own next due date, priced from the rate timeline. Called after the user grants permission from the confirmation prompt a create, update or delete returned.",
   })
   @ApiResponse({ status: 201, description: "Scheduled payment synced" })
   @ApiResponse({ status: 404, description: "Account not found" })
@@ -107,7 +110,11 @@ export class LoanRateChangesController {
   }
 
   @Patch(":id")
-  @ApiOperation({ summary: "Update a rate change" })
+  @ApiOperation({
+    summary: "Update a rate change",
+    description:
+      "Writes the edit and returns the row with scheduledPaymentPreview; the bill is rewritten only by apply-scheduled-payment.",
+  })
   @ApiResponse({ status: 200, description: "Rate change updated successfully" })
   @ApiResponse({ status: 404, description: "Rate change not found" })
   @ApiResponse({
@@ -129,7 +136,11 @@ export class LoanRateChangesController {
   }
 
   @Delete(":id")
-  @ApiOperation({ summary: "Delete a rate change" })
+  @ApiOperation({
+    summary: "Delete a rate change",
+    description:
+      "Deletes the row and returns scheduledPaymentPreview for the remaining timeline; the bill is rewritten only by apply-scheduled-payment.",
+  })
   @ApiResponse({ status: 200, description: "Rate change deleted successfully" })
   @ApiResponse({ status: 404, description: "Rate change not found" })
   remove(

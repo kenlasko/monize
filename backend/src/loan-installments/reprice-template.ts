@@ -3,55 +3,64 @@ import { DataSource, EntityManager } from "typeorm";
 import { getActiveScopedManager, withScopedDb } from "../common/db/scoped-db";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
-import { AccountType } from "../accounts/entities/account.entity";
+import { Account, AccountType } from "../accounts/entities/account.entity";
 import { mortgageTypeOf } from "../accounts/mortgage-type.util";
 import { roundMoney } from "../common/round.util";
 import { ensureYMD } from "../common/recurrence";
 import {
   findLoanAccount,
   InstallmentPurpose,
+  ResolvedInstallment,
   resolveInstallmentCore,
 } from "./price-installment";
 
 const logger = new Logger("LoanInstallments");
 
 /**
- * The two purposes that rewrite a stored template. A posting re-divides the
+ * The purposes that rewrite a stored template. A posting re-divides the
  * bill it was shown and a settlement books a bank row; neither writes the
  * template.
  */
 export type TemplateRewritePurpose = Extract<
   InstallmentPurpose,
-  "template" | "reconfigure"
+  "template" | "reconfigure" | "sync"
 >;
 
 /**
- * Rewrite a loan template's principal, interest and extra-principal lines, and
- * its parent, to the installment due at its `next_due_date`.
- *
- * `template` is the advancement after each posting
- * (`ScheduledTransactionLoanService.recalculateLoanPaymentSplits`) and the
- * reprice every settlement caller dispatches after its commit
- * (`docs/specs/loan-installment-settlement.md` section 4.7). `reconfigure` is
- * the rewrite after a mortgage's amortization method changed
- * (`repriceLoanTemplate`, `docs/specs/mortgage-types.md` section 5.6).
- *
- * Runs inside the caller's transaction (`m`), which every caller opens
- * through `withScopedDb`.
+ * What a template rewrite would write: the schedule row (locked), its lines,
+ * the loan they pay and the installment priced at its `next_due_date`. The
+ * rate-change sync's preview is read off it and its apply writes it, so the
+ * two cannot price two dates (`docs/specs/scheduled-loan-installment-pricing.md`
+ * section 7.5).
  */
-export async function rewriteLoanTemplate(
+export interface LoanTemplateRewritePlan {
+  readonly scheduledTransaction: ScheduledTransaction;
+  readonly splits: ScheduledTransactionSplit[];
+  readonly loanAccount: Account;
+  readonly installment: ResolvedInstallment;
+}
+
+/**
+ * Lock the schedule row, read its lines and price the installment due at its
+ * `next_due_date` for `purpose`. Null when the schedule is missing or
+ * inactive, or when no line of it pays a loan-like account: there is nothing
+ * to rewrite. Runs inside the caller's transaction (`m`).
+ *
+ * This reader takes the parent's write lock because its result is written by
+ * `applyLoanTemplateRewrite`, which mutates the child split set, so it must
+ * serialize through the same parent lock the posting path takes (issue #1154
+ * re-review): a recalculation that changed principal/interest without the
+ * lock could land between a poster's split-set guard and its write, and
+ * because a P/I reallocation leaves the parent total unchanged, the poster's
+ * own parent lock would not have blocked it. Lock the parent, then read the
+ * current child set and derive the loan from it -- never from a loan id
+ * captured off a pre-lock snapshot.
+ */
+export async function planLoanTemplateRewrite(
   m: EntityManager,
   scheduledTransactionId: string,
   purpose: TemplateRewritePurpose,
-): Promise<void> {
-  // This writer mutates the child split set, so it must serialize through
-  // the same parent lock the posting path takes (issue #1154 re-review): a
-  // recalculation that changed principal/interest without the lock could
-  // land between a poster's split-set guard and its write, and because a
-  // P/I reallocation leaves the parent total unchanged, the poster's own
-  // parent lock would not have blocked it. Lock the parent, then read the
-  // current child set and derive the loan from it -- never from a loan id
-  // captured off a pre-lock snapshot.
+): Promise<LoanTemplateRewritePlan | null> {
   const scheduledTransaction = await m
     .getRepository(ScheduledTransaction)
     .findOne({
@@ -60,7 +69,7 @@ export async function rewriteLoanTemplate(
     });
 
   if (!scheduledTransaction || !scheduledTransaction.isActive) {
-    return;
+    return null;
   }
 
   const splits = await m.getRepository(ScheduledTransactionSplit).find({
@@ -69,7 +78,7 @@ export async function rewriteLoanTemplate(
 
   const loanAccount = await findLoanAccount(m, splits);
   if (!loanAccount) {
-    return;
+    return null;
   }
 
   // Recalculation runs after the schedule advances, so the installment being
@@ -81,6 +90,54 @@ export async function rewriteLoanTemplate(
     asOfDate: ensureYMD(scheduledTransaction.nextDueDate),
     purpose,
   });
+  return { scheduledTransaction, splits, loanAccount, installment };
+}
+
+/**
+ * Rewrite a loan template's principal, interest and extra-principal lines, and
+ * its parent, to the installment due at its `next_due_date`.
+ *
+ * `template` is the advancement after each posting
+ * (`ScheduledTransactionLoanService.recalculateLoanPaymentSplits`) and the
+ * reprice every settlement caller dispatches after its commit
+ * (`docs/specs/loan-installment-settlement.md` section 4.7). `reconfigure` is
+ * the rewrite after a mortgage's amortization method changed
+ * (`repriceLoanTemplate`, `docs/specs/mortgage-types.md` section 5.6). `sync`
+ * is the rate-change sync the user confirmed
+ * (`LoanRateChangesService.applyScheduledPaymentSync`, pricing spec 7.5),
+ * which plans through `planLoanTemplateRewrite` itself so that its preview and
+ * its write read one plan, and applies only a priced plan.
+ *
+ * Runs inside the caller's transaction (`m`), which every caller opens
+ * through `withScopedDb`.
+ */
+export async function rewriteLoanTemplate(
+  m: EntityManager,
+  scheduledTransactionId: string,
+  purpose: TemplateRewritePurpose,
+): Promise<void> {
+  const plan = await planLoanTemplateRewrite(
+    m,
+    scheduledTransactionId,
+    purpose,
+  );
+  if (plan) {
+    await applyLoanTemplateRewrite(m, plan);
+  }
+}
+
+/**
+ * Write what `planLoanTemplateRewrite` resolved: the lines and the parent for
+ * a priced installment, the schedule's deactivation for a retired loan, and a
+ * logged skip for anything the pricing declined or could not read. Runs
+ * inside the transaction that planned it, under the lock the plan took.
+ */
+export async function applyLoanTemplateRewrite(
+  m: EntityManager,
+  plan: LoanTemplateRewritePlan,
+): Promise<void> {
+  const { scheduledTransaction, loanAccount, installment } = plan;
+  const scheduledTransactionId = scheduledTransaction.id;
 
   // A failed ledger read is not a template this module cannot account for,
   // and the remedy below ("set the interest category") would send the

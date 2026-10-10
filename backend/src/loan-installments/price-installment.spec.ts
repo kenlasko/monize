@@ -487,6 +487,83 @@ describe("priceInstallment", () => {
     });
   });
 
+  describe('purpose "sync" (the rate-change sync, spec 7.5)', () => {
+    const annuityLoan = (overrides: Partial<Account> = {}): Account =>
+      makeMortgage({
+        accountType: AccountType.LOAN,
+        mortgageType: null,
+        interestRate: 6,
+        paymentAmount: 1500,
+        paymentStartDate: null,
+        amortizationMonths: null,
+        originalPrincipal: null,
+        ...overrides,
+      });
+
+    it("takes the dated payment exactly, replacing a raised template, where the advancement keeps the max", () => {
+      const raised = makeTemplate(600, 1000, "2024-02-01");
+      expect(priced(annuityLoan(), raised, 200000, 6, "sync")).toEqual({
+        principal: 500,
+        interest: 1000,
+        extra: 0,
+        parent: 1500,
+      });
+      expect(priced(annuityLoan(), raised, 200000, 6, "template").parent).toBe(
+        1600,
+      );
+    });
+
+    it("takes a stated payment exactly, down as well as up, with the standing extra on top of a stated base", () => {
+      const stated: DatedAnnuityPayment = {
+        amount: 1400,
+        statesBase: true,
+        effectiveDate: "2024-01-15",
+        source: "manual",
+      };
+      expect(
+        priced(
+          annuityLoan(),
+          makeTemplate(480, 1000, "2024-02-01", 100),
+          200000,
+          6,
+          "sync",
+          { datedPayment: stated },
+        ),
+      ).toEqual({ principal: 400, interest: 1000, extra: 100, parent: 1500 });
+    });
+
+    it("grows the extra line back toward the account's configured extra, as every template rewrite does", () => {
+      expect(
+        priced(
+          annuityLoan({ extraPaymentAmount: 300 }),
+          makeTemplate(400, 1000, "2024-02-01", 100),
+          200000,
+          6,
+          "sync",
+        ),
+      ).toEqual({ principal: 200, interest: 1000, extra: 300, parent: 1500 });
+    });
+
+    it("keeps the template's amount when nothing dates a payment", () => {
+      expect(
+        priced(
+          annuityLoan({ paymentAmount: null }),
+          makeTemplate(500, 1000, "2024-02-01"),
+          200000,
+          6,
+          "sync",
+        ),
+      ).toEqual({ principal: 500, interest: 1000, extra: 0, parent: 1500 });
+    });
+
+    it("prices LINEAR through the method installment as the template purpose does", () => {
+      const template = makeTemplate(833.3333, 393.0556, "2027-01-01");
+      expect(priced(makeMortgage(), template, 235000.0012, 4, "sync")).toEqual(
+        priced(makeMortgage(), template, 235000.0012, 4),
+      );
+    });
+  });
+
   describe("identifyLoanTemplate", () => {
     it("names the principal, interest and extra lines of a managed template", () => {
       const template = makeTemplate(800, 500, "2024-02-01", 100);
@@ -630,6 +707,21 @@ describe("priceInstallment", () => {
       expect(result.allocation).toMatchObject({
         principal: 833.3333,
         interest: 0,
+      });
+    });
+
+    it("declines the sync purpose when no rate is recorded: an offer never prices 0 %", async () => {
+      const template = makeTemplate(833.3333, 393.0556, "2027-01-01");
+      const result = await resolveInstallmentCore(m(), {
+        scheduledTransaction: template,
+        splits: template.splits as ScheduledTransactionSplit[],
+        loanAccount: makeMortgage({ interestRate: null }),
+        asOfDate: "2027-01-01",
+        purpose: "sync",
+      });
+      expect(result).toEqual({
+        kind: "declined",
+        reason: `no interest rate is recorded for loan account ${loanAccountId} on 2027-01-01`,
       });
     });
 

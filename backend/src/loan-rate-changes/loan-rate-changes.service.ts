@@ -1,7 +1,5 @@
 import {
   Injectable,
-  Inject,
-  forwardRef,
   Logger,
   NotFoundException,
   ConflictException,
@@ -14,35 +12,39 @@ import { LoanRateChange } from "./entities/loan-rate-change.entity";
 import { Account, AccountType } from "../accounts/entities/account.entity";
 import { CreateLoanRateChangeDto } from "./dto/create-loan-rate-change.dto";
 import { UpdateLoanRateChangeDto } from "./dto/update-loan-rate-change.dto";
-import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
-import { getPeriodicRate } from "../accounts/mortgage-amortization.util";
-import { roundMoney } from "../common/round.util";
-import { datedLoanDebt } from "../accounts/dated-loan-debt.util";
 import {
   MortgageType,
   mortgageTypeOf,
   storesConstantPayment,
 } from "../accounts/mortgage-type.util";
-import { nonAnnuityInstallment } from "../accounts/mortgage-installment.util";
 import { datedAnnuityInstallment } from "../accounts/annuity-relevel.util";
-import { effectiveAnnualRateOn } from "../accounts/effective-loan-rate.util";
-import { todayYMD, formatDateYMDLocal } from "../common/date-utils";
+import { formatDateYMDLocal } from "../common/date-utils";
+import { ensureYMD } from "../common/recurrence";
 import {
-  DEFAULT_PERIODS_PER_YEAR,
-  periodsPerYearForStoredFrequency,
-} from "../accounts/payment-frequency.util";
+  applyLoanTemplateRewrite,
+  LoanTemplateRewritePlan,
+  planLoanTemplateRewrite,
+} from "../loan-installments/reprice-template";
+import {
+  NextPaymentChange,
+  nextPaymentChangeAfter,
+} from "../loan-installments/next-payment-change";
 
 const RATE_CHANGE_ACCOUNT_TYPES = [AccountType.LOAN, AccountType.MORTGAGE];
 
 /**
  * A before/after summary of how a linked scheduled bill payment would change
- * to match the account's new rate/payment. Returned by `create` when the caller
- * defers the sync so the UI can ask the user for permission before applying it.
+ * to match the rate timeline at the template's own due date. Returned by
+ * `create`, `update` and `remove`, which apply nothing, so the UI can ask the
+ * user before `applyScheduledPaymentSync` writes it
+ * (`docs/specs/scheduled-loan-installment-pricing.md` section 7.5).
  */
 export interface ScheduledPaymentPreview {
   scheduledTransactionId: string;
   scheduledTransactionName: string | null;
   currencyCode: string;
+  /** The installment the proposed figures are for: the template's `next_due_date`. */
+  dueDate: string;
   /** Absolute total payment amounts (null when unknown from the schedule) */
   currentPaymentAmount: number | null;
   proposedPaymentAmount: number;
@@ -52,31 +54,31 @@ export interface ScheduledPaymentPreview {
   proposedPrincipal: number;
   currentInterest: number | null;
   proposedInterest: number;
-  /** Extra-principal split preserved as-is (0 when there is none) */
+  /** The extra-principal line the rewritten template carries (0 when there is none) */
   extraPrincipal: number;
+  /**
+   * The first later due date from which the bill becomes a different stated
+   * payment, and that payment; null when no row stating a payment is dated
+   * after `dueDate`.
+   */
+  nextPaymentChange: NextPaymentChange | null;
 }
 
-/** The scheduled-payment update to apply, plus its user-facing preview. */
-interface ScheduledUpdatePlan {
-  scheduledTransactionId: string;
-  payload: Parameters<ScheduledTransactionsService["update"]>[2];
+/** The template rewrite the sync would apply, plus its user-facing preview. */
+export interface ScheduledSyncPlan {
+  rewrite: LoanTemplateRewritePlan;
   preview: ScheduledPaymentPreview;
 }
 
-/**
- * The rate and payment in effect today from the timeline, and the date the
- * rate took effect (absent when the caller supplies a rate of its own).
- */
-export interface ResolvedTimeline {
-  annualRate: number;
-  paymentAmount: number | null;
-  effectiveDate?: string;
-}
-
-/** A created rate change plus the pending scheduled-payment change, if any. */
+/** A rate change plus the pending scheduled-payment change, if any. */
 export type CreateLoanRateChangeResult = LoanRateChange & {
   scheduledPaymentPreview: ScheduledPaymentPreview | null;
 };
+
+/** The deleted change's pending scheduled-payment change, if any. */
+export interface RemoveLoanRateChangeResult {
+  scheduledPaymentPreview: ScheduledPaymentPreview | null;
+}
 
 /** Normalize a DATE column value (string at runtime, Date in tests) to YYYY-MM-DD */
 export function toYmd(value: Date | string | null | undefined): string | null {
@@ -89,11 +91,6 @@ function dayBefore(ymd: string): string {
   const [year, month, day] = ymd.split("-").map(Number);
   const date = new Date(year, month - 1, day - 1);
   return formatDateYMDLocal(date);
-}
-
-/** The later of two YYYY-MM-DD dates; `b` when `a` is absent. */
-function laterYmd(a: string | undefined, b: string): string {
-  return a !== undefined && a > b ? a : b;
 }
 
 /**
@@ -129,11 +126,7 @@ export function refuseStatedPayment(
 export class LoanRateChangesService {
   private readonly logger = new Logger(LoanRateChangesService.name);
 
-  constructor(
-    private dataSource: DataSource,
-    @Inject(forwardRef(() => ScheduledTransactionsService))
-    private scheduledTransactionsService: ScheduledTransactionsService,
-  ) {}
+  constructor(private dataSource: DataSource) {}
 
   async findAll(userId: string, accountId: string): Promise<LoanRateChange[]> {
     await this.verifyLoanAccount(userId, accountId);
@@ -147,18 +140,15 @@ export class LoanRateChangesService {
 
   /**
    * Record a rate change. The account's own `interestRate`/`paymentAmount` are
-   * left untouched (they are user-owned via the edit form); only the linked
-   * scheduled bill payment is realigned to the timeline's current rate. By
-   * default that resync is applied immediately (the legacy mortgage-rate
-   * behaviour). Pass `deferScheduledSync` to instead return a preview of the
-   * pending scheduled-payment change and leave it unapplied, so the caller can
-   * confirm with the user before applying it via `applyScheduledPaymentSync`.
+   * left untouched (they are user-owned via the edit form), and so is the
+   * linked scheduled bill: the result carries a preview of how the sync would
+   * rewrite it at its own due date, and nothing is applied until the caller
+   * confirms through `applyScheduledPaymentSync` (spec 7.5).
    */
   async create(
     userId: string,
     accountId: string,
     dto: CreateLoanRateChangeDto,
-    options?: { deferScheduledSync?: boolean },
   ): Promise<CreateLoanRateChangeResult> {
     const account = await this.verifyLoanAccount(userId, accountId);
 
@@ -190,408 +180,242 @@ export class LoanRateChangesService {
       }
     }
 
-    const { saved, resolved } = await withScopedDb(
-      this.dataSource,
-      async (m) => {
-        await this.rejectDuplicateDate(m, accountId, dto.effectiveDate);
-        // Read in the same transaction as the insert, so the payment recorded
-        // is priced from the ledger the row is written against.
-        const newPaymentAmount = dto.recalculatePayment
-          ? await this.recalculatePaymentForRate(
-              m,
-              account,
-              dto.annualRate,
-              dto.effectiveDate,
-            )
-          : (dto.newPaymentAmount ?? null);
-        await this.insertInitialRowIfFirst(m, account, dto.effectiveDate);
+    const saved = await withScopedDb(this.dataSource, async (m) => {
+      await this.rejectDuplicateDate(m, accountId, dto.effectiveDate);
+      // Read in the same transaction as the insert, so the payment recorded
+      // is priced from the ledger the row is written against.
+      const newPaymentAmount = dto.recalculatePayment
+        ? await this.recalculatePaymentForRate(
+            m,
+            account,
+            dto.annualRate,
+            dto.effectiveDate,
+          )
+        : (dto.newPaymentAmount ?? null);
+      await this.insertInitialRowIfFirst(m, account, dto.effectiveDate);
 
-        const rateChange = m.create(LoanRateChange, {
-          userId,
-          accountId,
-          effectiveDate: dto.effectiveDate,
-          annualRate: dto.annualRate,
-          newPaymentAmount,
-          source: "manual" as const,
-          note: dto.note ?? null,
-        });
+      const rateChange = m.create(LoanRateChange, {
+        userId,
+        accountId,
+        effectiveDate: dto.effectiveDate,
+        annualRate: dto.annualRate,
+        newPaymentAmount,
+        source: "manual" as const,
+        note: dto.note ?? null,
+      });
 
-        return {
-          saved: await m.save(rateChange),
-          resolved: await this.resolveCurrentTimeline(m, account),
-        };
-      },
-    );
+      return m.save(rateChange);
+    });
 
-    let scheduledPaymentPreview: ScheduledPaymentPreview | null = null;
-    if (resolved) {
-      if (options?.deferScheduledSync) {
-        const plan = await this.buildScheduledUpdate(userId, account, resolved);
-        scheduledPaymentPreview = plan?.preview ?? null;
-      } else {
-        await this.syncScheduledTransaction(userId, account, resolved);
-      }
-    }
-    return { ...saved, scheduledPaymentPreview };
+    return {
+      ...saved,
+      scheduledPaymentPreview: await this.previewScheduledPayment(account),
+    };
   }
 
+  /**
+   * Edit a rate change. Like `create`, it writes the row and returns the
+   * preview of the sync; the bill is rewritten only once the user confirms
+   * (spec 7.5: Scenario 2 of issue #1637 wrote a stated payment into every
+   * earlier occurrence because the edit applied at once).
+   */
   async update(
     userId: string,
     accountId: string,
     id: string,
     dto: UpdateLoanRateChangeDto,
-  ): Promise<LoanRateChange> {
+  ): Promise<CreateLoanRateChangeResult> {
     const account = await this.verifyLoanAccount(userId, accountId);
     refuseStatedPayment(account, dto.newPaymentAmount);
     const rateChange = await this.findOne(userId, accountId, id);
 
-    const { saved, resolved } = await withScopedDb(
-      this.dataSource,
-      async (m) => {
-        if (
-          dto.effectiveDate !== undefined &&
-          dto.effectiveDate !== rateChange.effectiveDate
-        ) {
-          await this.rejectDuplicateDate(m, accountId, dto.effectiveDate);
-        }
+    const saved = await withScopedDb(this.dataSource, async (m) => {
+      if (
+        dto.effectiveDate !== undefined &&
+        dto.effectiveDate !== rateChange.effectiveDate
+      ) {
+        await this.rejectDuplicateDate(m, accountId, dto.effectiveDate);
+      }
 
-        const merged = m.merge(LoanRateChange, rateChange, {
-          ...(dto.effectiveDate !== undefined
-            ? { effectiveDate: dto.effectiveDate }
-            : {}),
-          ...(dto.annualRate !== undefined
-            ? { annualRate: dto.annualRate }
-            : {}),
-          ...(dto.newPaymentAmount !== undefined
-            ? { newPaymentAmount: dto.newPaymentAmount }
-            : {}),
-          ...(dto.note !== undefined ? { note: dto.note } : {}),
-          // A user-edited inferred row becomes manual so re-running detection
-          // never clobbers their correction.
-          ...(rateChange.source === "inferred"
-            ? { source: "manual" as const }
-            : {}),
-        });
+      const merged = m.merge(LoanRateChange, rateChange, {
+        ...(dto.effectiveDate !== undefined
+          ? { effectiveDate: dto.effectiveDate }
+          : {}),
+        ...(dto.annualRate !== undefined ? { annualRate: dto.annualRate } : {}),
+        ...(dto.newPaymentAmount !== undefined
+          ? { newPaymentAmount: dto.newPaymentAmount }
+          : {}),
+        ...(dto.note !== undefined ? { note: dto.note } : {}),
+        // A user-edited inferred row becomes manual so re-running detection
+        // never clobbers their correction.
+        ...(rateChange.source === "inferred"
+          ? { source: "manual" as const }
+          : {}),
+      });
 
-        return {
-          saved: await m.save(merged),
-          resolved: await this.resolveCurrentTimeline(m, account),
-        };
-      },
-    );
-
-    if (resolved) {
-      await this.syncScheduledTransaction(userId, account, resolved);
-    }
-    return saved;
-  }
-
-  async remove(userId: string, accountId: string, id: string): Promise<void> {
-    const account = await this.verifyLoanAccount(userId, accountId);
-    const rateChange = await this.findOne(userId, accountId, id);
-
-    const resolved = await withScopedDb(this.dataSource, async (m) => {
-      await m.remove(rateChange);
-      return this.resolveCurrentTimeline(m, account);
+      return m.save(merged);
     });
-
-    if (resolved) {
-      await this.syncScheduledTransaction(userId, account, resolved);
-    }
-  }
-
-  /**
-   * Resolve the rate and payment in effect today from the timeline WITHOUT
-   * mutating the account: the rate is the latest row not in the future; the
-   * payment is the latest non-null newPaymentAmount at or before today. Rows
-   * dated in the future are recorded but not applied. The account's own
-   * `interestRate`/`paymentAmount` remain user-owned (set only via the account
-   * edit form) and are never overwritten from the timeline -- so editing rates
-   * or running detection can never clobber a manually-set rate/payment. Returns
-   * null for a closed account or when no row applies (nothing to resync).
-   */
-  async resolveCurrentTimeline(
-    manager: EntityManager,
-    account: Account,
-  ): Promise<ResolvedTimeline | null> {
-    if (account.isClosed) return null;
-
-    const rows = await manager.find(LoanRateChange, {
-      where: { accountId: account.id },
-      order: { effectiveDate: "ASC" },
-    });
-    const today = todayYMD();
-    const applicable = rows.filter((row) => row.effectiveDate <= today);
-    if (applicable.length === 0) return null;
-
-    const latest = applicable[applicable.length - 1];
-    const latestWithPayment = [...applicable]
-      .reverse()
-      .find((row) => row.newPaymentAmount != null);
 
     return {
-      annualRate: Number(latest.annualRate),
-      paymentAmount:
-        latestWithPayment?.newPaymentAmount != null
-          ? Number(latestWithPayment.newPaymentAmount)
-          : null,
-      effectiveDate: toYmd(latest.effectiveDate) ?? undefined,
+      ...saved,
+      scheduledPaymentPreview: await this.previewScheduledPayment(account),
     };
   }
 
   /**
-   * Resync the linked scheduled payment to the account's current rate and
-   * payment. Best-effort, mirroring the tolerance of the mortgage-rate update
-   * flow -- the rate history itself is already committed.
+   * Delete a rate change and return the preview of the sync the remaining
+   * timeline calls for (the `initial` row's payment when the only change
+   * goes); the bill is rewritten only once the user confirms.
    */
-  async syncScheduledTransaction(
+  async remove(
     userId: string,
+    accountId: string,
+    id: string,
+  ): Promise<RemoveLoanRateChangeResult> {
+    const account = await this.verifyLoanAccount(userId, accountId);
+    const rateChange = await this.findOne(userId, accountId, id);
+
+    await withScopedDb(this.dataSource, (m) => m.remove(rateChange));
+
+    return {
+      scheduledPaymentPreview: await this.previewScheduledPayment(account),
+    };
+  }
+
+  /**
+   * The pending scheduled-payment change for an account, applied to nothing:
+   * what `applyScheduledPaymentSync` would write. Null when the account has no
+   * applicable linked bill, when its installment cannot be priced, or when
+   * the read failed (logged).
+   */
+  async previewScheduledPayment(
     account: Account,
-    override?: ResolvedTimeline,
-  ): Promise<void> {
-    const plan = await this.buildScheduledUpdate(userId, account, override);
-    if (!plan) return;
+  ): Promise<ScheduledPaymentPreview | null> {
     try {
-      await this.scheduledTransactionsService.update(
-        userId,
-        plan.scheduledTransactionId,
-        plan.payload,
+      const plan = await withScopedDb(this.dataSource, (m) =>
+        this.buildScheduledUpdate(m, account),
       );
+      return plan?.preview ?? null;
     } catch (error) {
+      // The rate change itself is already committed; a preview that cannot
+      // be read must not fail the request that recorded it (the tolerance
+      // this flow has always had). The apply endpoint reads it again.
       this.logger.warn(
-        `Could not update scheduled transaction: ${error.message}`,
+        `Could not preview the scheduled payment of loan account ${account.id}: ${error.message}`,
       );
+      return null;
     }
   }
 
   /**
    * Apply the pending scheduled-payment change for an account after the user
-   * has granted permission. Recomputes from the account's current (already
-   * updated) rate/payment so it matches the preview shown at rate-change time.
-   * Returns the applied change, or null when there is nothing to sync.
+   * has granted permission. Plans through the same function as the preview,
+   * inside one transaction with the write, and writes what it returned
+   * through `applyLoanTemplateRewrite`: the template's parent and its managed
+   * lines, and nothing on the account (spec 7.5; `accounts.payment_amount`
+   * stays the contractual payment, decision 5). Returns the applied change,
+   * or null when there is nothing to sync.
    */
   async applyScheduledPaymentSync(
     userId: string,
     accountId: string,
   ): Promise<ScheduledPaymentPreview | null> {
     const account = await this.verifyLoanAccount(userId, accountId);
-    const resolved = await withScopedDb(this.dataSource, (m) =>
-      this.resolveCurrentTimeline(m, account),
-    );
-    const plan = await this.buildScheduledUpdate(
-      userId,
-      account,
-      resolved ?? undefined,
-    );
-    if (!plan) return null;
-    await this.scheduledTransactionsService.update(
-      userId,
-      plan.scheduledTransactionId,
-      plan.payload,
-    );
-    return plan.preview;
+    return withScopedDb(this.dataSource, async (m) => {
+      const plan = await this.buildScheduledUpdate(m, account);
+      if (!plan) return null;
+      await applyLoanTemplateRewrite(m, plan.rewrite);
+      return plan.preview;
+    });
   }
 
   /**
-   * Recompute the linked scheduled payment's principal/interest split from the
-   * account's dated ledger debt and current rate, preserving any separate
-   * extra-principal split (memo contains "extra"). Returns the update to apply
-   * plus a before/after preview, or null when the account has no applicable
-   * linked scheduled bill payment. Does not apply anything.
+   * Price the linked scheduled bill at its own `next_due_date` through the
+   * one installment pricing path (`planLoanTemplateRewrite`, purpose `sync`:
+   * the debt, the rate and the annuity payment all dated there, INV-LOAN-006
+   * and INV-LOAN-009) and describe the rewrite as a before/after preview.
+   * Runs inside the caller's transaction, which locks the schedule row.
+   *
+   * A change dated after the template's due date does not move that
+   * installment: the preview's `nextPaymentChange` names the first later due
+   * date from which the bill becomes the stated payment (spec 7.5). Null
+   * when the account is closed or has no linked bill, when the bill is not a
+   * template this module manages, when its ledger cannot be read, or when
+   * the debt is retired: the sync is an offer, and it offers nothing it
+   * cannot price.
    */
   async buildScheduledUpdate(
-    userId: string,
+    m: EntityManager,
     account: Account,
-    override?: ResolvedTimeline,
-  ): Promise<ScheduledUpdatePlan | null> {
+  ): Promise<ScheduledSyncPlan | null> {
     if (account.isClosed || !account.scheduledTransactionId) return null;
-    // A LINEAR or INTEREST_ONLY mortgage has no payment to carry: the method
-    // states the installment from the debt and the rate (spec section 5.3).
-    const derivedType = derivedInstallmentType(account);
-    // The current rate/payment come from the resolved timeline when supplied,
-    // else the account's own (user-owned) scalars. The timeline never mutates
-    // the account, so this override is how a rate change reaches the bill.
-    const annualRate = override?.annualRate ?? account.interestRate;
-    const effectivePayment =
-      override?.paymentAmount ?? account.paymentAmount ?? null;
+
+    const rewrite = await planLoanTemplateRewrite(
+      m,
+      account.scheduledTransactionId,
+      "sync",
+    );
+    if (!rewrite) return null;
+    const { scheduledTransaction: scheduled, installment } = rewrite;
+    // The pointer is the account's own statement of which bill is its
+    // payment; a bill that pays another loan, or another owner's bill, is not
+    // this account's to rewrite.
     if (
-      (derivedType === null && (annualRate == null || !effectivePayment)) ||
-      !account.paymentFrequency
+      rewrite.loanAccount.id !== account.id ||
+      scheduled.userId !== account.userId
     ) {
-      return null;
-    }
-
-    let scheduled: Awaited<ReturnType<ScheduledTransactionsService["findOne"]>>;
-    try {
-      scheduled = await this.scheduledTransactionsService.findOne(
-        userId,
-        account.scheduledTransactionId,
-      );
-    } catch (error) {
       this.logger.warn(
-        `Could not load scheduled transaction: ${error.message}`,
+        `Scheduled transaction ${scheduled.id} is not the loan payment of account ${account.id}; not syncing it`,
       );
       return null;
     }
-
-    // The debt the rewritten template first applies to, from the ledger
-    // through that date (spec decision 5), the as-of read its next posting is
-    // priced from (`resolveInstallment`): the template's next due date, or the
-    // rate's effective date when that is later. `current_balance` stops at
-    // today, so it missed a payment already posted for a date before the
-    // installment this split describes. The timeline override only carries a
-    // rate effective today or earlier (`resolveCurrentTimeline`), so the
-    // effective date wins only over an overdue template; a future-dated
-    // change is priced by `recalculatePaymentForRate`, not here -- except for
-    // a LINEAR or INTEREST_ONLY mortgage, whose template is priced at the rate
-    // dated to its own due date below.
-    const pricingDate = laterYmd(
-      override?.effectiveDate,
-      toYmd(scheduled.nextDueDate) ?? todayYMD(),
-    );
-    const { balance, datedRate } = await withScopedDb(
-      this.dataSource,
-      async (m) => ({
-        balance: await datedLoanDebt(m, account, pricingDate),
-        // A derived installment is priced at the rate in force on the date it
-        // is due (INV-LOAN-006), so a change recorded for a future date that
-        // reaches this installment moves its interest, and only that.
-        datedRate:
-          derivedType === null
-            ? null
-            : effectiveAnnualRateOn(
-                await m.find(LoanRateChange, {
-                  where: { accountId: account.id },
-                  order: { effectiveDate: "ASC" },
-                }),
-                pricingDate,
-                account.interestRate == null
-                  ? null
-                  : Number(account.interestRate),
-              ),
-      }),
-    );
-    // No rate in the timeline or on the account is unknown, never 0%.
-    if (derivedType !== null && datedRate === null) return null;
-    if (balance === null) {
-      this.logger.warn(
-        `Could not read the ledger balance of loan account ${account.id}`,
-      );
-      return null;
-    }
-    if (balance <= 0.01) return null;
-
-    const isMortgage = account.accountType === AccountType.MORTGAGE;
-    // One lookup for both spellings of the stored cadence; only the COMPOUNDING
-    // is mortgage-specific. Two casts into two domain functions meant a
-    // semi-monthly mortgage was split at a monthly rate and a quarterly one at
-    // three times its rate.
-    const periodsPerYear =
-      periodsPerYearForStoredFrequency(account.paymentFrequency) ??
-      DEFAULT_PERIODS_PER_YEAR;
-    const rateForSplit =
-      derivedType === null ? Number(annualRate) : Number(datedRate);
-    const periodicRate = isMortgage
-      ? getPeriodicRate(rateForSplit, periodsPerYear, mortgageTypeOf(account))
-      : rateForSplit / 100 / periodsPerYear;
-
-    const splits = scheduled.splits || [];
-    const extraSplit = splits.find(
-      (s) =>
-        s.transferAccountId === account.id &&
-        s.memo?.toLowerCase().includes("extra"),
-    );
-    const extraAmount = extraSplit ? Math.abs(Number(extraSplit.amount)) : 0;
-
-    let interest: number;
-    let principal: number;
-    let proposedPaymentAmount: number;
-    if (derivedType !== null) {
-      // The method's installment on the dated debt: principal from table 4.3
-      // (unchanged by the rate), interest at the new rate (spec section 5.3).
-      const installment = nonAnnuityInstallment(
-        derivedType,
-        account,
-        pricingDate,
-        balance,
-        periodicRate,
-      );
-      if (!installment) {
+    if (installment.kind !== "ok") {
+      if (installment.kind !== "paid-off") {
         this.logger.warn(
-          `Could not price the ${derivedType} installment of loan account ${account.id}: a term it needs is missing`,
+          `Not syncing scheduled transaction ${scheduled.id}: ${installment.reason}`,
         );
-        return null;
       }
-      ({ principal, interest } = installment);
-      proposedPaymentAmount = roundMoney(principal + interest + extraAmount);
-    } else {
-      const paymentAmount = Number(effectivePayment);
-      interest = roundMoney(balance * periodicRate);
-      if (interest > paymentAmount) interest = paymentAmount;
-      principal = roundMoney(paymentAmount - interest);
-      if (principal > balance) principal = roundMoney(balance);
-      proposedPaymentAmount = roundMoney(paymentAmount + extraAmount);
+      return null;
     }
 
-    const payload = {
-      amount: -proposedPaymentAmount,
-      splits: [
-        {
-          transferAccountId: account.id,
-          amount: -principal,
-          memo: "Principal",
-        },
-        {
-          categoryId: account.interestCategoryId || undefined,
-          amount: -interest,
-          memo: "Interest",
-        },
-        ...(extraSplit
-          ? [
-              {
-                transferAccountId: account.id,
-                amount: -extraAmount,
-                memo: extraSplit.memo || "Extra Principal",
-              },
-            ]
-          : []),
-      ],
-    };
-
-    const principalSplit = splits.find(
-      (s) =>
-        s.transferAccountId === account.id &&
-        !s.memo?.toLowerCase().includes("extra"),
-    );
-    const interestSplit = splits.find(
-      (s) =>
-        !s.transferAccountId &&
-        (s.categoryId != null || s.memo?.toLowerCase().includes("interest")),
-    );
-
+    const dueDate = ensureYMD(scheduled.nextDueDate);
+    const timeline = await m.getRepository(LoanRateChange).find({
+      where: { accountId: account.id },
+      order: { effectiveDate: "ASC" },
+    });
+    const { allocation, template } = installment;
     const preview: ScheduledPaymentPreview = {
-      scheduledTransactionId: account.scheduledTransactionId,
+      scheduledTransactionId: scheduled.id,
       scheduledTransactionName: scheduled.name ?? null,
       currencyCode: scheduled.currencyCode ?? account.currencyCode ?? "",
-      currentPaymentAmount:
-        scheduled.amount != null ? Math.abs(Number(scheduled.amount)) : null,
-      proposedPaymentAmount,
-      currentPrincipal: principalSplit
-        ? Math.abs(Number(principalSplit.amount))
+      dueDate,
+      currentPaymentAmount: installment.templateAmount,
+      proposedPaymentAmount: allocation.total,
+      currentPrincipal: template.principalSplit
+        ? Math.abs(Number(template.principalSplit.amount))
         : null,
-      proposedPrincipal: principal,
-      currentInterest: interestSplit
-        ? Math.abs(Number(interestSplit.amount))
-        : null,
-      proposedInterest: interest,
-      extraPrincipal: extraAmount,
+      proposedPrincipal: allocation.principal,
+      currentInterest: Math.abs(Number(template.interestSplit.amount)),
+      proposedInterest: allocation.interest,
+      extraPrincipal: allocation.extraPrincipal,
+      // A derived installment (LINEAR, INTEREST_ONLY) states no payment on
+      // its rows (`refuseStatedPayment`), so the search finds none.
+      nextPaymentChange: nextPaymentChangeAfter(
+        timeline,
+        {
+          startDate: scheduled.startDate,
+          nextDueDate: scheduled.nextDueDate,
+          frequency: scheduled.frequency,
+          endDate: scheduled.endDate ?? null,
+          occurrencesRemaining: scheduled.occurrencesRemaining ?? null,
+        },
+        dueDate,
+        installment.extraPrincipalAmount,
+        account.paymentAmount,
+      ),
     };
 
-    return {
-      scheduledTransactionId: account.scheduledTransactionId,
-      payload,
-      preview,
-    };
+    return { rewrite, preview };
   }
 
   /**

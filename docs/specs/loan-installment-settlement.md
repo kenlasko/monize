@@ -139,8 +139,8 @@ review surface of this document.
     (`LOAN`, `ANNUITY`, `CANADIAN_FIXED`) the configured installment at slot
     `s` is the `new_payment_amount` of the latest `loan_rate_changes` row
     effective on or before `s` that carries one, else
-    `accounts.payment_amount` -- the rule
-    `LoanRateChangesService.resolveCurrentTimeline` applies with today, dated
+    `accounts.payment_amount` -- the rule `datedAnnuityPayment`
+    (`backend/src/loan-installments/price-installment.ts`) states, dated
     at `s`. Not the template's amount: the template is a snapshot for
     `next_due_date` that may hold a one-off clamp, and history spans payment
     changes. The two sources hold different figures: a `manual` or

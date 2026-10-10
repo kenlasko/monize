@@ -16,7 +16,7 @@ describe("LoanRateChangesController", () => {
       findAll: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockResolvedValue({ id: "rc-1" }),
       update: jest.fn().mockResolvedValue({ id: "rc-1" }),
-      remove: jest.fn().mockResolvedValue(undefined),
+      remove: jest.fn().mockResolvedValue({ scheduledPaymentPreview: null }),
       applyScheduledPaymentSync: jest.fn().mockResolvedValue(null),
     };
     inferenceService = {
@@ -43,11 +43,17 @@ describe("LoanRateChangesController", () => {
     expect(service.findAll).toHaveBeenCalledWith("user-1", accountId);
   });
 
-  it("creates a rate change, deferring the scheduled-payment sync for confirmation", async () => {
+  it("creates a rate change and returns the service's result, preview included", async () => {
     const dto = { effectiveDate: "2024-06-01", annualRate: 4.9 };
-    await controller.create(req, accountId, dto as any);
-    expect(service.create).toHaveBeenCalledWith("user-1", accountId, dto, {
-      deferScheduledSync: true,
+    service.create.mockResolvedValue({
+      id: "rc-1",
+      scheduledPaymentPreview: { scheduledTransactionId: "sched-1" },
+    });
+    const result = await controller.create(req, accountId, dto as any);
+    expect(service.create).toHaveBeenCalledWith("user-1", accountId, dto);
+    expect(result).toEqual({
+      id: "rc-1",
+      scheduledPaymentPreview: { scheduledTransactionId: "sched-1" },
     });
   });
 
@@ -68,19 +74,32 @@ describe("LoanRateChangesController", () => {
     expect(result).toEqual({ created: [], replacedCount: 0, warnings: [] });
   });
 
-  it("updates a rate change", async () => {
+  it("updates a rate change and returns the preview the service answered", async () => {
     const dto = { annualRate: 5.1 };
-    await controller.update(req, accountId, "rc-1", dto as any);
+    service.update.mockResolvedValue({
+      id: "rc-1",
+      scheduledPaymentPreview: { scheduledTransactionId: "sched-1" },
+    });
+    const result = await controller.update(req, accountId, "rc-1", dto as any);
     expect(service.update).toHaveBeenCalledWith(
       "user-1",
       accountId,
       "rc-1",
       dto,
     );
+    expect(result.scheduledPaymentPreview).toEqual({
+      scheduledTransactionId: "sched-1",
+    });
   });
 
-  it("removes a rate change", async () => {
-    await controller.remove(req, accountId, "rc-1");
+  it("removes a rate change and returns the preview the service answered", async () => {
+    service.remove.mockResolvedValue({
+      scheduledPaymentPreview: { scheduledTransactionId: "sched-1" },
+    });
+    const result = await controller.remove(req, accountId, "rc-1");
     expect(service.remove).toHaveBeenCalledWith("user-1", accountId, "rc-1");
+    expect(result).toEqual({
+      scheduledPaymentPreview: { scheduledTransactionId: "sched-1" },
+    });
   });
 });
