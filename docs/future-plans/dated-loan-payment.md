@@ -14,10 +14,10 @@ sections 5.1 to 5.3, 7 and 8, and
 plan says what to edit, in what order, and what to run, and defers to the spec
 on every number and every refusal.
 
-Status: **approved**, decisions agreed in the planning session and recorded on
-the tracking issue #1637. Each task is a sub-issue (#1638 to #1645), one PR
-each; Q, the acceptance task, closes the feature. F3 is filed for later and is
-not in the approved scope.
+Status: **done** (B1 to B3, F1, F2, and Q, the acceptance task, all merged);
+decisions agreed in the planning session and recorded on the tracking issue
+#1637. Each task was a sub-issue (#1638 to #1644), one PR each. F3 (#1645) is
+filed for later and is not in the approved scope.
 
 ## 1. Goal
 

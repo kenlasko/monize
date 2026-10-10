@@ -96,7 +96,7 @@ implied.
 | INV-LOAN-006 | A scheduled loan installment prices the ledger debt, the rate, and the remaining count through its own due date | enforced |
 | INV-LOAN-007 | One amortization method per mortgage type, from preview to pricing to projection | enforced |
 | INV-LOAN-008 | One settlement per scheduled occurrence, and the claim commits with the split | enforced |
-| INV-LOAN-009 | An annuity installment's payment is the one stated for its own due date | unenforced |
+| INV-LOAN-009 | An annuity installment's payment is the one stated for its own due date | enforced |
 | INV-LOAN-HISTORY-001 | Historical loan interest counted as paid is ledger-backed | partial |
 | INV-OCCURRENCE-001 | One scheduled occurrence has at most one financial effect | enforced |
 | INV-OCCURRENCE-002 | A stored override price survives reopening | enforced |
@@ -2400,7 +2400,9 @@ Statement           The interest of a scheduled loan installment is
                     postings: a skipped occurrence or an extra manual payment
                     does not move the term end, and a due date moved off the
                     calendar counts the calendar dates before it
-                    (docs/specs/mortgage-types.md sections 2 and 6.2).
+                    (docs/specs/mortgage-types.md sections 2 and 6.2). The
+                    ANNUITY and CANADIAN_FIXED payment beside this rate is
+                    dated the same way: INV-LOAN-009.
 Source of truth     The transactions ledger plus accounts.opening_balance
                     (INV-BALANCE-001's source) for the debt, and
                     loan_rate_changes for the rate, both bounded by the
@@ -2756,10 +2758,17 @@ Enforcement         The core and the advancement (B1, issue #1639):
                     return the preview and apply nothing; a source scan in
                     loan-rate-changes.service.spec.ts refuses any reference
                     to ScheduledTransactionsService from the rate-change
-                    module. Still violated: no read prices an occurrence
-                    other than the next one. The remaining mechanism, built
-                    by docs/future-plans/dated-loan-payment-tasks.md: the
-                    occurrence projection read through priceInstallment (B3).
+                    module. The occurrence projection (B3, issue #1641):
+                    projectLoanOccurrences in
+                    backend/src/loan-installments/project-loan-occurrences.ts,
+                    a pure fold over priceInstallment at each listed
+                    occurrence's own due date, exposed by
+                    GET /scheduled-transactions/:id/loan-occurrences; the
+                    picker and the override editor read it for a loan bill
+                    (F2, issue #1643) instead of repeating
+                    scheduledTransaction.amount, and the rate-change dialogs
+                    confirm on edit and delete and name the due date the bill
+                    changes at (F1, issue #1642).
 Concurrency scope   per schedule: rewriteLoanTemplate takes the schedule row
                     lock (pessimistic_write) before it reads the template, as
                     the advancement does today; the projection is a read
@@ -2787,14 +2796,27 @@ Required tests      Met (B1): every row of the spec's table 7.4, its
                     sync at the template's own due date leaving
                     accounts.payment_amount unchanged
                     (dated-loan-payment.integration.spec.ts), the source scan.
-                    Owed: table 8.6 (B3).
+                    Met (B3): every example of spec 8.6 and every row of 8.4
+                    as named unit cases (project-loan-occurrences.spec.ts),
+                    the first occurrence matched against
+                    ScheduledOccurrenceService and resolvePostingAllocation
+                    on the same ledger, the count bound refused by the DTO
+                    (loan-occurrences-query.dto.spec.ts). Met (F1, F2): the
+                    confirmation on edit and delete naming the due date
+                    (useLoanRateEditing.test.ts), the picker and editor
+                    pricing a loan bill per occurrence
+                    (OccurrenceDatePicker.loan.test.tsx,
+                    OverrideEditorDialog.loan.test.tsx).
 Known gaps          A cursor moved without an advancement (skip, an edit of
                     next_due_date) can miss the step into a lower payment; an
                     initial row outranks a later edit of the account's payment;
                     a method change re-levels the column, not the timeline; an
                     override with an amount and no lines posts over the
-                    template's lines (spec 7.6).
-Status              unenforced
+                    template's lines (spec 7.6); the Bills calendar and the
+                    Upcoming Bills widget still show a loan bill's template
+                    amount for an occurrence after the next (F3, issue #1645,
+                    not in approved scope).
+Status              enforced
 ```
 
 ### INV-LOAN-HISTORY-001 -- historical loan interest counted as paid is ledger-backed
@@ -3026,7 +3048,12 @@ Statement           Every surface that presents or aggregates a scheduled
                     amount as unavailable when it cannot be determined. The
                     persisted amount is never substituted, and the recurrence
                     slot is never reported as the due date when an override moved
-                    the occurrence off it.
+                    the occurrence off it. For a loan bill, an occurrence other
+                    than the next one is priced the same way, by the dated
+                    payment and rate (INV-LOAN-009) rather than repeated from the
+                    next occurrence or the template: the occurrence picker and
+                    the override editor read the loan occurrence projection, one
+                    GET per loan schedule, not this service.
 Source of truth     Two files, and only two:
                     common/scheduled-occurrences.ts (expandOccurrenceSlots) owns
                     occurrence IDENTITY -- walking a recurrence over a window and

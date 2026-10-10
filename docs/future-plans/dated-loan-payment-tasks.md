@@ -36,9 +36,9 @@ Every task is safe to merge in any order that respects its dependencies: nothing
 | B1 | #1639 | Dated payment in the pricing core and the template advancement | S1 | neutral | [x] | the PR closing #1639 |
 | B2 | #1640 | Rate-change sync prices the template's own due date; confirm on create, update, delete; no `payment_amount` write | B1 | neutral | [x] | the PR closing #1640 |
 | B3 | #1641 | Loan occurrence projection read | B1 | inert | [x] | the PR closing #1641 |
-| F1 | #1642 | Rate-change dialogs: confirm on edit and delete, preview names the due date | B2 | inert | [ ] | |
+| F1 | #1642 | Rate-change dialogs: confirm on edit and delete, preview names the due date | B2 | inert | [x] | the PR closing #1642 |
 | F2 | #1643 | Occurrence picker and override editor priced per occurrence | B3 | inert | [x] | the PR closing #1643 |
-| Q | #1644 | Acceptance: INV-LOAN-009 enforced, locales, release note, dev data resync | B2, F1, F2 | none | [ ] | |
+| Q | #1644 | Acceptance: INV-LOAN-009 enforced, locales, release note, dev data resync | B2, F1, F2 | none | [x] | the PR closing #1644 |
 | F3 | #1645 | (Later, not approved) Bills calendar and Upcoming Bills priced per loan occurrence | B3 | inert | [ ] | |
 
 **Why B1 is neutral:** an annuity template whose timeline states a payment for a later installment steps into it at that installment (spec 7.3), down as well as up; every other template advances exactly as before, and posting is unchanged.
