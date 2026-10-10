@@ -644,7 +644,7 @@ describe("LoanRateChangesService", () => {
         scheduledTransactionName: "Mortgage Payment",
         currencyCode: "USD",
         dueDate: "2023-02-03",
-        nextPaymentChange: { dueDate: "2023-05-03", paymentAmount: 560 },
+        upcomingPaymentChanges: [{ dueDate: "2023-05-03", paymentAmount: 560 }],
       });
       expect(inCents(preview)).toEqual({
         current: 584.59,
@@ -660,6 +660,31 @@ describe("LoanRateChangesService", () => {
         userId,
         "2023-02-03",
       ]);
+      expectTemplateUntouched();
+      expectAccountUntouched();
+    });
+
+    it("create: a second change added after Timeline A, nothing posted: the preview names both later payments, not only the first", async () => {
+      template(167.92, 416.67, "2023-02-03");
+      debt(100000);
+      rateChangesRepository.find.mockResolvedValue([
+        ...timelineA,
+        rateRow("rc-second", "2023-08-10", 4, 575),
+      ]);
+
+      const result = await service.create(userId, accountId, {
+        effectiveDate: "2023-08-10",
+        annualRate: 4,
+        newPaymentAmount: 575,
+      });
+
+      const preview = result.scheduledPaymentPreview!;
+      expect(preview.dueDate).toBe("2023-02-03");
+      expect(preview.upcomingPaymentChanges).toEqual([
+        { dueDate: "2023-05-03", paymentAmount: 560 },
+        { dueDate: "2023-09-03", paymentAmount: 575 },
+      ]);
+      expect(inCents(preview)).toMatchObject({ payment: 584.59 });
       expectTemplateUntouched();
       expectAccountUntouched();
     });
@@ -684,10 +709,9 @@ describe("LoanRateChangesService", () => {
       });
       expect(preview.currentPrincipal).toBe(185);
       expect(preview.currentInterest).toBe(375);
-      expect(preview.nextPaymentChange).toEqual({
-        dueDate: "2023-05-03",
-        paymentAmount: 560,
-      });
+      expect(preview.upcomingPaymentChanges).toEqual([
+        { dueDate: "2023-05-03", paymentAmount: 560 },
+      ]);
       expectTemplateUntouched();
       expectAccountUntouched();
     });
@@ -728,7 +752,7 @@ describe("LoanRateChangesService", () => {
       expect(result).toMatchObject({
         dueDate: "2023-04-03",
         currentPaymentAmount: 600,
-        nextPaymentChange: { dueDate: "2023-05-03", paymentAmount: 560 },
+        upcomingPaymentChanges: [{ dueDate: "2023-05-03", paymentAmount: 560 }],
       });
       expect(inCents(result!)).toMatchObject({
         payment: 584.59,
@@ -746,7 +770,7 @@ describe("LoanRateChangesService", () => {
 
       expect(preview).toMatchObject({
         dueDate: "2023-06-03",
-        nextPaymentChange: null,
+        upcomingPaymentChanges: [],
       });
       expect(inCents(preview!)).toEqual({
         current: 560,
@@ -769,7 +793,7 @@ describe("LoanRateChangesService", () => {
       expect(manager.remove).toHaveBeenCalledWith(change);
       expect(result.scheduledPaymentPreview).toMatchObject({
         dueDate: "2023-02-03",
-        nextPaymentChange: null,
+        upcomingPaymentChanges: [],
       });
       expect(inCents(result.scheduledPaymentPreview!)).toEqual({
         current: 560,
@@ -804,10 +828,9 @@ describe("LoanRateChangesService", () => {
         principal: 167.92,
         extra: 50,
       });
-      expect(preview!.nextPaymentChange).toEqual({
-        dueDate: "2023-05-03",
-        paymentAmount: 610,
-      });
+      expect(preview!.upcomingPaymentChanges).toEqual([
+        { dueDate: "2023-05-03", paymentAmount: 610 },
+      ]);
     });
 
     it("applies nothing and offers nothing when the ledger cannot be read", async () => {

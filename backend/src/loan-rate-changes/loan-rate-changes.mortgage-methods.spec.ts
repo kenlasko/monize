@@ -171,7 +171,7 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
       proposedInterest: 783.3333,
       proposedPaymentAmount: 1616.6666,
       // A derived installment states no payment on its rows.
-      nextPaymentChange: null,
+      upcomingPaymentChanges: [],
     });
     // No payment is recorded on the rate row, and nothing is written yet.
     expect(manager.create).toHaveBeenCalledWith(

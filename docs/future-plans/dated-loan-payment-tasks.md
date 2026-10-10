@@ -72,7 +72,7 @@ Every task is safe to merge in any order that respects its dependencies: nothing
 
 - One plan function prices the template at its own `next_due_date` through `resolveInstallmentCore` with the payment of spec 7.2's sync row; the preview returns it and `applyScheduledPaymentSync` writes it through `rewriteLoanTemplate` (spec 7.5). `buildScheduledUpdate`'s own arithmetic and its `max(effectiveDate, next_due_date)` go.
 - `update` and `remove` return `scheduledPaymentPreview` and apply nothing, as `create` with `deferScheduledSync` does today; `create` loses the immediate-apply path. The mortgage rate update prices the template by the same function.
-- `ScheduledPaymentPreview` gains `dueDate` and `nextPaymentChange` (spec 7.5).
+- `ScheduledPaymentPreview` gains `dueDate` and the later payment changes, now `upcomingPaymentChanges` (spec 7.5).
 - No rate-change path calls `ScheduledTransactionsService.update`: a source-scanning case in the service's spec fails such a call, and the apply's unit case asserts the account row is not saved.
 - Acceptance: every row of spec table 7.5, the raised-template row included; Scenario 2 of #1637 (edit to 560.00) leaves the template at 584.59 and `accounts.payment_amount` unchanged; delete returns a preview and writes nothing until applied.
 - Doc line: the "Until B2" clauses of `docs/specs/mortgage-types.md` 5.3 and 5.6 removed.
@@ -90,7 +90,7 @@ Every task is safe to merge in any order that respects its dependencies: nothing
 
 **Files:** `frontend/src/components/accounts/loan-detail/useLoanRateEditing.ts`, `frontend/src/components/accounts/loan-detail/LoanRateControls.tsx`, `frontend/src/components/accounts/loan-detail/RateHistorySidebar.tsx`, `frontend/src/lib/loan-rate-changes.ts`, `frontend/src/types/loan-rate-change.ts`, `frontend/src/i18n/messages/en/accounts.json`, their tests.
 
-- The confirmation already shown after a create is shown after an edit and a delete; it names the installment the proposed figures are for (`dueDate`) and, when `nextPaymentChange` is present, the due date from which the bill becomes that amount.
+- The confirmation already shown after a create is shown after an edit and a delete; it names the installment the proposed figures are for (`dueDate`) and, for each entry of `upcomingPaymentChanges`, the due date from which the bill becomes that amount.
 - After the apply, the scheduled-transaction caches are invalidated (INV-CACHE-001), as the create path's apply does.
 - Grep `e2e/` for any accessible name the dialogs change.
 
