@@ -8,9 +8,9 @@ a report anchored on today disagrees with a bill anchored on its due date.
 Registered as INV-LOAN-006 in `docs/system-invariants.md`.
 
 Sections 7 and 8 (the dated payment and the occurrence projection, issue
-#1637) are specified ahead of the code: they are built by the tasks of
+#1637) are built by the tasks of
 `docs/future-plans/dated-loan-payment-tasks.md` and registered as INV-LOAN-009,
-`unenforced` until that list's acceptance task.
+`enforced` from that list's acceptance task (#1644).
 
 Read `docs/financial-calculation-contract.md` sections 1, 7 and 8, and
 `docs/specs/account-balances-as-of.md`, before changing anything here.
