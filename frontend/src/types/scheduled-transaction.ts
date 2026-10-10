@@ -328,6 +328,62 @@ export interface LoanProjectionAnchor {
   debt: number | null;
 }
 
+/**
+ * Why a projected loan occurrence's figures are unknown, and so where the
+ * reader repairs it (`docs/specs/scheduled-loan-installment-pricing.md` 8.4).
+ */
+export type LoanOccurrenceMissing =
+  /** No rate is recorded at `date`: the loan's rate history. */
+  | { kind: 'rate'; date: string }
+  /** A payment frequency the pricing cannot count: the loan's frequency. */
+  | { kind: 'cadence'; frequency: string }
+  /** The override's lines are not principal, interest and extra principal. */
+  | { kind: 'override-lines'; overrideId: string }
+  /** The override states an amount for a date by which the debt is settled. */
+  | { kind: 'override-on-settled-debt'; overrideId: string }
+  /** An earlier occurrence's figures are unknown, so this one's debt is. */
+  | { kind: 'earlier-occurrence'; originalDate: string };
+
+/**
+ * One occurrence of a loan bill, priced at its own due date by the server
+ * (spec 8.1). Money is unsigned and booked in the minor unit; `null` is
+ * unknown, never zero, and `missing` says why.
+ */
+export interface LoanOccurrence {
+  /** The recurrence slot: the occurrence's identity. */
+  originalDate: string;
+  /** The date it falls on: an override's date when one moved it. */
+  dueDate: string;
+  overrideId: string | null;
+  amount: number | null;
+  principal: number | null;
+  interest: number | null;
+  extraPrincipal: number | null;
+  annualRate: number | null;
+  debtBefore: number | null;
+  complete: boolean;
+  missing: LoanOccurrenceMissing | null;
+}
+
+/**
+ * `GET /scheduled-transactions/:id/loan-occurrences`. `occurrences` is empty
+ * unless `status` is `priced`; for the other two the bill is not one the loan
+ * pricing re-prices, and its stored figures are what the posting moves.
+ */
+export interface LoanOccurrencesProjection {
+  scheduledTransactionId: string;
+  loanAccountId: string | null;
+  status: 'priced' | 'not-a-loan' | 'declined';
+  currencyCode: string;
+  occurrences: LoanOccurrence[];
+}
+
+/** One projected loan occurrence with the loan its lines pay, as the editor opens it. */
+export interface SelectedLoanOccurrence {
+  loanAccountId: string | null;
+  occurrence: LoanOccurrence;
+}
+
 export interface PostScheduledTransactionData {
   transactionDate?: string;
   amount?: number | null;

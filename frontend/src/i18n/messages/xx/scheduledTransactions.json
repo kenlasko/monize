@@ -142,6 +142,25 @@
     "noteChange": "[XX-Note: {note}-XX]",
     "splitModified": "[XX-Split modified-XX]"
   },
+  "loanOccurrence": {
+    "loading": "[XX-Working out each occurrence's payment.-XX]",
+    "loadFailed": "[XX-The payment of each occurrence could not be loaded.-XX]",
+    "retry": "[XX-Retry-XX]",
+    "amountUnknown": "[XX-Payment unknown-XX]",
+    "notProjected": "[XX-Payment not worked out this far ahead-XX]",
+    "paymentChangesBadge": "[XX-Payment changes-XX]",
+    "editorUnknown": "[XX-This occurrence's payment cannot be worked out, so the amount starts empty. {reason}-XX]",
+    "editorLinesUnknown": "[XX-This occurrence's split between principal and interest cannot be worked out, so the lines start from the schedule's. {reason}-XX]",
+    "amountRequired": "[XX-Enter this occurrence's amount before saving.-XX]",
+    "missing": {
+      "rate": "[XX-No interest rate is recorded for {date}. Add it to the loan's rate history.-XX]",
+      "cadence": "[XX-The loan's payment frequency ({frequency}) cannot be priced. Check the loan's payment frequency.-XX]",
+      "overrideLines": "[XX-This occurrence's lines are not principal, interest and extra principal. Edit its lines.-XX]",
+      "overrideOnSettledDebt": "[XX-The loan is paid off by this date, so this occurrence's amount cannot be divided into principal and interest. Edit or reset the occurrence.-XX]",
+      "earlierOccurrence": "[XX-It depends on the occurrence of {date}, whose payment cannot be worked out.-XX]",
+      "unknown": "[XX-The reason was not given.-XX]"
+    }
+  },
   "overrideEditor": {
     "title": "[XX-Edit Occurrence-XX]",
     "descriptionInvestment": "[XX-Modifying {action} {security} on {account} for this occurrence only.-XX]",

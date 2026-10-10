@@ -10,8 +10,12 @@ import {
   OverrideCheckResult,
   PostScheduledTransactionData,
   LoanProjectionAnchor,
+  LoanOccurrencesProjection,
 } from '@/types/scheduled-transaction';
 import { dedupe, invalidateBalanceCaches, invalidateCache } from './apiCache';
+
+/** The most occurrences one loan projection prices (spec 8.5; the server's DTO bound). */
+export const LOAN_OCCURRENCES_MAX_COUNT = 60;
 
 export const scheduledTransactionsApi = {
   // Create a new scheduled transaction
@@ -82,6 +86,23 @@ export const scheduledTransactionsApi = {
   ): Promise<LoanProjectionAnchor> => {
     const response = await apiClient.get<LoanProjectionAnchor>(
       `/scheduled-transactions/loan-anchor/${accountId}`,
+    );
+    return response.data;
+  },
+
+  /**
+   * The next `count` occurrences of a loan bill, each priced at its own due
+   * date on the debt the earlier ones leave (INV-LOAN-009). The server bounds
+   * `count` to `LOAN_OCCURRENCES_MAX_COUNT`. Not cached: the answer moves with
+   * every posting, override and rate change on the loan.
+   */
+  getLoanOccurrences: async (
+    id: string,
+    count: number,
+  ): Promise<LoanOccurrencesProjection> => {
+    const response = await apiClient.get<LoanOccurrencesProjection>(
+      `/scheduled-transactions/${id}/loan-occurrences`,
+      { params: { count } },
     );
     return response.data;
   },

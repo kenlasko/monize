@@ -26,7 +26,7 @@ import { categoriesApi } from '@/lib/categories';
 import { createCategoryFromInput } from '@/lib/category-create';
 import { buildCategoryColorMap } from '@/lib/categoryUtils';
 import { accountsApi } from '@/lib/accounts';
-import { ScheduledTransaction, ScheduledTransactionOverride } from '@/types/scheduled-transaction';
+import { SelectedLoanOccurrence, ScheduledTransaction, ScheduledTransactionOverride } from '@/types/scheduled-transaction';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { useBillsFilters } from '@/hooks/useBillsFilters';
@@ -64,6 +64,9 @@ interface OverrideEditorState {
   existingOverride: ScheduledTransactionOverride | null;
   // When set (post-reconciliation flow), seeds the Amount field with this value.
   prefillAmount: number | null;
+  // A loan bill's occurrence as the server priced it at its own due date: the
+  // editor opens on its amount and lines rather than the template's.
+  loanOccurrence: SelectedLoanOccurrence | null;
 }
 
 /**
@@ -127,6 +130,7 @@ function BillsContent() {
     date: '',
     existingOverride: null,
     prefillAmount: null,
+    loanOccurrence: null,
   });
   // Prefill state for a new transfer schedule created from the reconcile flow.
   const [createPrefill, setCreatePrefill] = useState<{
@@ -316,6 +320,7 @@ function BillsContent() {
       date,
       existingOverride,
       prefillAmount: prefillAmount ?? null,
+      loanOccurrence: null,
     });
   };
 
@@ -336,7 +341,7 @@ function BillsContent() {
     });
   };
 
-  const handleDatePickerSelect = async (date: string) => {
+  const handleDatePickerSelect = async (date: string, loanOccurrence?: SelectedLoanOccurrence) => {
     const transaction = datePicker.transaction;
     if (!transaction) return;
 
@@ -371,6 +376,7 @@ function BillsContent() {
         date: overrideByOverrideDate?.originalDate || date, // Use original date if this was an override
         existingOverride,
         prefillAmount: null,
+        loanOccurrence: loanOccurrence ?? null,
       });
     } catch (error) {
       logger.error('Failed to check for existing override:', error);
@@ -381,6 +387,7 @@ function BillsContent() {
         date,
         existingOverride: null,
         prefillAmount: null,
+        loanOccurrence: loanOccurrence ?? null,
       });
     }
   };
@@ -419,6 +426,7 @@ function BillsContent() {
       date: '',
       existingOverride: null,
       prefillAmount: null,
+      loanOccurrence: null,
     });
     if (wasReconcileDeepLink) {
       clearReconcileParams();
@@ -879,6 +887,7 @@ function BillsContent() {
           accounts={accounts}
           existingOverride={overrideEditor.existingOverride}
           prefillAmount={overrideEditor.prefillAmount}
+          loanOccurrence={overrideEditor.loanOccurrence}
           onClose={handleOverrideEditorClose}
           onSave={handleOverrideEditorSave}
           onCreateCategory={createCategoryFromTypedName}
