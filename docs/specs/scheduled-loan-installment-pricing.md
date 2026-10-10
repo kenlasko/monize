@@ -92,18 +92,21 @@ The one pricing path is `backend/src/loan-installments/price-installment.ts`:
 template's managed lines (`identifyLoanTemplate`), and the pure
 `priceInstallment` prices them (the method principal, the interest, the
 waterfall). `ScheduledTransactionLoanService.resolveInstallment` delegates to
-the core for the three consumers below and keeps the posting path's defaults;
-the template rewrite they share is `rewriteLoanTemplate`
-(`backend/src/loan-installments/reprice-template.ts`). The core reads two
+the core for the first three consumers below and keeps the posting path's
+defaults; the template rewrite they share is `rewriteLoanTemplate`
+(`backend/src/loan-installments/reprice-template.ts`), whose two halves
+`planLoanTemplateRewrite` and `applyLoanTemplateRewrite` the rate-change
+sync calls apart, so its preview and its write read one plan (section 7.5).
+The core reads two
 dated inputs from `loan_rate_changes`, through one function each:
 `datedAnnualRate`, the rate at `d` (section 1), and, from B1 of
 `docs/future-plans/dated-loan-payment-tasks.md`, `datedPaymentAmount` beside
 it, the annuity payment at `d` (section 7.1). `resolveInstallmentCore`
 calls both with the one `asOfDate` the consumer prices at, so a consumer that
-prices through it dates both inputs or neither. The fourth consumer,
-the settlement, calls the pure tail with its own facts
-(`planLoanSettlement`, `docs/specs/loan-installment-settlement.md`). Each
-one answered differently is a reported drift:
+prices through it dates both inputs or neither. The settlement calls the
+pure tail with its own facts (`planLoanSettlement`,
+`docs/specs/loan-installment-settlement.md`). Each one answered differently
+is a reported drift:
 
 | Consumer | Boundary `d` | When |
 | --- | --- | --- |
@@ -111,6 +114,7 @@ one answered differently is a reported drift:
 | `resolvePostingAllocation` | the occurrence's own due date | inside the posting transaction, under the parent lock, immediately before the financial write |
 | `getLoanProjectionAnchor` | the schedule's `next_due_date` | on demand, for the amortization report's projection (`buildLoanProjectionInput`'s `anchor`) |
 | `planLoanSettlement` (`backend/src/loan-installments/plan-loan-settlement.ts`, `docs/specs/loan-installment-settlement.md`) | the matched slot's due date, with the debt less the settlements planned earlier in the same rule pass | when a `settle_loan_installment` rule matches a bank row, inside the create's, import's or run's transaction, under the schedule row and `lockAccountsForBalanceWrite(source, loan)` |
+| `LoanRateChangesService.buildScheduledUpdate` (purpose `sync`, section 7.5) | the schedule's `next_due_date` | after a rate change is created, edited or deleted, for the preview; inside `applyScheduledPaymentSync`'s transaction, under the schedule row lock, for the write the user confirmed |
 
 Which schedule is "the loan's payment" is the account's own statement --
 `accounts.scheduled_transaction_id`, written by the two paths that set a loan
@@ -256,7 +260,7 @@ enumerated by `frontend/src/lib/loan-projection-anchor.guard.test.ts` rather
 than left to an optional argument nobody has to think about.
 
 The **payment** is deliberately outside this: a rate change reaches the
-schedule's installment through `LoanRateChangesService.syncScheduledTransaction`,
+schedule's installment through `LoanRateChangesService.applyScheduledPaymentSync`,
 which asks the user first, so a declined sync leaves the bill at the old
 payment by their decision. Interest is unaffected -- it is debt x rate. From
 B1 of the dated-payment plan a declined sync holds the old payment only until
@@ -484,7 +488,7 @@ to (decision 5). No rate-change path writes it (7.5).
 | `posting` | `templateAmount`: the bill shown, re-divided at the posting boundary (section 3) | unchanged |
 | `settlement` | `total(D, E)` at the matched slot; null refuses `loan_not_configured`, missing `payment` | unchanged: already dated (settlement decision 12) |
 | `reconfigure` | `accounts.payment_amount` when positive, else `templateAmount` | unchanged (7.6, item 3) |
-| the rate-change sync (B2, 7.5) | `total(D, E)` exactly at `D` = the template's `next_due_date`; `templateAmount` when `payment(D)` is null | the payment in force today, priced at `max(effectiveDate, next_due_date)` with its own arithmetic |
+| `sync` (the rate-change sync, 7.5) | `total(D, E)` exactly at `D` = the template's `next_due_date`; `templateAmount` when `payment(D)` is null; a rate nothing records declines rather than pricing 0 % | before B2: the payment in force today, priced at `max(effectiveDate, next_due_date)` with its own arithmetic |
 
 The sync takes the dated payment exactly, not the `max`, because it exists to
 correct a template the timeline no longer agrees with: a template left at a
@@ -583,11 +587,14 @@ Decision 3 of issue #1637.
 
 - **Priced at the template's own due date, never at the effective date.**
   The preview and the apply price through `resolveInstallmentCore` at
-  `D` = the template's `next_due_date`, with the payment of 7.2's last row.
-  Mechanism: one function computes the plan, and the apply calls it and writes
-  what it returned, so the preview and the commit cannot price two dates. A
-  change dated after `D` does not move the payment at `D`, which stays the
-  timeline's figure for `D`.
+  `D` = the template's `next_due_date`, with the payment of 7.2's `sync` row.
+  Mechanism: one function computes the plan
+  (`LoanRateChangesService.buildScheduledUpdate`, over
+  `planLoanTemplateRewrite` with purpose `sync`), and the apply calls it in
+  the transaction that writes what it returned (`applyLoanTemplateRewrite`),
+  so the preview and the commit cannot price two dates. A change dated after
+  `D` does not move the payment at `D`, which stays the timeline's figure for
+  `D`.
 - **The figure at `D` is the timeline's, exactly.** It replaces whatever the
   template holds, a payment the user raised on the template included (the
   third row below): that is the price of repairing Scenario 2, where the
@@ -596,26 +603,28 @@ Decision 3 of issue #1637.
   payment with no `max`). The preview shows the current and the proposed figure side by side,
   so the user sees the raise go before confirming, and declining keeps it.
 - **Applied through `rewriteLoanTemplate`, never `ScheduledTransactionsService.update`.**
-  `rewriteLoanTemplate` writes the template's parent and its managed lines and
-  nothing on the account, so the sync does not write `accounts.payment_amount`
-  (decision 5). The schedule update writes that column when a template amount
-  is edited, which is how Scenario 2 overwrote it; B2's spec asserts the
-  account row is not saved by the apply, and a source-scanning case in B2
-  fails a call of `ScheduledTransactionsService.update` from the rate-change
-  service.
+  `applyLoanTemplateRewrite` writes the template's parent and its managed
+  lines and nothing on the account, so the sync does not write
+  `accounts.payment_amount` (decision 5). The schedule update writes that
+  column when a template amount is edited, which is how Scenario 2 overwrote
+  it; `loan-rate-changes.service.spec.ts` asserts the account row is not
+  saved on any path, and its source-scanning case fails any reference to
+  `ScheduledTransactionsService` from the rate-change module, whose Nest
+  module no longer imports the scheduled-transactions one.
 - **Create, update and delete all ask.** Each returns its
   `scheduledPaymentPreview` and applies nothing; the existing
   `POST /accounts/:accountId/rate-changes/apply-scheduled-payment` applies
   after the user confirms, recomputing through the same function. The
-  mortgage rate update (`PATCH /accounts/:id/mortgage-rate`) prices and
-  writes the template by the same rule.
-- **The preview names the due date.** `ScheduledPaymentPreview` gains
+  mortgage rate update (`PATCH /accounts/:id/mortgage-rate`), which no UI
+  confirms, calls that same apply at once after recording the change.
+- **The preview names the due date.** `ScheduledPaymentPreview` carries
   `dueDate` (`D`, the installment the proposed figures are for) and
   `nextPaymentChange: { dueDate, paymentAmount } | null`: the first slot after
   `D` at which `newly` holds (7.3), and `total` there. Null when no row stating
   a payment is dated after `D`. The search is bounded: only rows dated after
   `D` can make a later slot `newly`, and each maps to the first slot on or
-  after its date.
+  after its date (`nextPaymentChangeAfter`,
+  `backend/src/loan-installments/next-payment-change.ts`).
 
 | Sync case | Template written (at `D`) | `nextPaymentChange` |
 | --- | --- | --- |
@@ -624,6 +633,15 @@ Decision 3 of issue #1637.
 | Timeline A added with the A7 template (600.00, 2023-02-03 posted 584.59, 2023-03-03 posted 600.00), `D` = 2023-04-03 | 584.59 = 415.20 + 169.39 on 99,648.05: the raise is replaced (current 600.00 shown beside it) | 2023-05-03, 560.00 |
 | Timeline A, `D` = 2023-06-03 (2023-02-03 to 2023-05-03 posted per table 5.2) | 560.00 = 372.40 + 187.60 | null |
 | Timeline A deleted, `D` = 2023-02-03 | 584.59 = 416.67 + 167.92 (the `initial` row) | null |
+
+Asserted by: every row, Scenario 2's edit and the account row untouched on
+every path by `backend/src/loan-rate-changes/loan-rate-changes.service.spec.ts`
+("the scheduled-payment sync (spec 7.5)"); the `sync` purpose's rules by
+`backend/src/loan-installments/price-installment.spec.ts` ('purpose "sync"');
+`nextPaymentChange` by `backend/src/loan-installments/next-payment-change.spec.ts`;
+the same on a real ledger, timeline and schedule by
+`backend/test/integration/dated-loan-payment.integration.spec.ts` ("the
+rate-change sync at the template's own due date").
 
 ### 7.6 Known gaps
 

@@ -89,15 +89,24 @@ export interface LoanTemplateSplits {
  * LINEAR and INTEREST_ONLY derive the installment from the method, as the
  * template purpose does.
  *
+ * `sync` is the rate-change sync (spec 7.5, `LoanRateChangesService
+ * .buildScheduledUpdate`): a template rewrite at the template's own
+ * `next_due_date` that takes the payment dated there exactly, a raised
+ * template included, because it exists to correct a template the timeline no
+ * longer agrees with. It grows the extra line back toward the account's
+ * configured extra as every template rewrite does, and declines a rate
+ * nothing records rather than pricing 0 %: it is an offer the user confirms,
+ * never a posting path's default.
+ *
  * The annuity payment every purpose but `reconfigure` prices from is dated
  * at `asOfDate` (INV-LOAN-009, spec section 7.2): `template` takes it exactly
  * when it newly applies to the installment (7.3) and otherwise grows the
- * template toward it; `settlement` takes it exactly; `posting` keeps the
- * bill shown. `reconfigure` alone targets `accounts.payment_amount`, the
- * column a method change re-levels in the same transaction (7.6, item 3).
+ * template toward it; `settlement` and `sync` take it exactly; `posting`
+ * keeps the bill shown. `reconfigure` alone targets `accounts.payment_amount`,
+ * the column a method change re-levels in the same transaction (7.6, item 3).
  */
 export type InstallmentPurpose =
-  "template" | "posting" | "reconfigure" | "settlement";
+  "template" | "posting" | "reconfigure" | "settlement" | "sync";
 
 /** One resolved installment: what the next posting of this template should move. */
 export type ResolvedInstallment =
@@ -511,7 +520,7 @@ export interface PriceInstallmentInput {
   templateAmount: number;
   /**
    * The annuity payment dated at `asOfDate` (`datedAnnuityPayment`), null
-   * when nothing states one. Read by the `template` and `settlement`
+   * when nothing states one. Read by the `template`, `settlement` and `sync`
    * purposes; ignored by `posting` (the bill shown), by `reconfigure` (the
    * account column) and by a derived method (LINEAR, INTEREST_ONLY).
    */
@@ -626,9 +635,10 @@ export function priceInstallment(
   // template advancement may grow back toward it, and it steps into it
   // exactly, down as well as up, when the stating row newly applies to this
   // installment (7.3); a posting re-divides the bill it was shown (see
-  // `InstallmentPurpose`); a settlement takes it exactly; a reconfigure
-  // alone targets `accounts.payment_amount`, which the method change
-  // re-levels. With no dated payment the template's amount stands.
+  // `InstallmentPurpose`); a settlement and the rate-change sync take it
+  // exactly (7.5); a reconfigure alone targets `accounts.payment_amount`,
+  // which the method change re-levels. With no dated payment the template's
+  // amount stands.
   const datedTotal =
     datedPayment === null
       ? null
@@ -650,7 +660,7 @@ export function priceInstallment(
           : templateAmount
         : datedTotal === null
           ? templateAmount
-          : purpose === "settlement" || newlyApplies
+          : purpose === "settlement" || purpose === "sync" || newlyApplies
             ? datedTotal
             : Math.max(templateAmount, datedTotal);
   const basePaymentAmount = paymentAmount - extraPrincipalAmount;
@@ -726,10 +736,13 @@ export interface ResolveInstallmentInput {
  * A rate nothing records is 0 % for the template, posting and reconfigure
  * purposes, the posting path's historical default
  * (`docs/specs/loan-installment-settlement.md` section 15 item 5); a
- * settlement declines, naming the rate (decision 16), and declines an
- * annuity nothing states a payment for, naming the payment (spec 7.2). Both
- * come from one read of the timeline, taken only once the shape and the debt
- * have passed, because a retired or unmanaged template needs neither.
+ * settlement declines, naming the rate (decision 16), and so does the
+ * rate-change sync, an offer that must not price a template at 0 %. A
+ * settlement also declines an annuity nothing states a payment for, naming
+ * the payment (spec 7.2); the sync keeps the template's amount there (7.5).
+ * Both inputs come from one read of the timeline, taken only once the shape
+ * and the debt have passed, because a retired or unmanaged template needs
+ * neither.
  */
 export async function resolveInstallmentCore(
   m: EntityManager,
@@ -770,7 +783,10 @@ export async function resolveInstallmentCore(
   // installment are read from the same rows at the same date.
   const timeline = await readRateTimeline(m, loanAccountId);
   const recordedRate = annualRateOn(timeline, loanAccount, asOfDate);
-  if (recordedRate === null && purpose === "settlement") {
+  if (
+    recordedRate === null &&
+    (purpose === "settlement" || purpose === "sync")
+  ) {
     return {
       kind: "declined",
       reason: `no interest rate is recorded for loan account ${loanAccountId} on ${asOfDate}`,
