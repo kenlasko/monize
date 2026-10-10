@@ -728,7 +728,10 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "¿Actualizar el pago programado?",
-      "scheduledUpdateMessage": "El pago programado de la factura \"{name}\" puede actualizarse según la nueva tasa: {payment} en total, dividido en {principal} de capital y {interest} de intereses. ¿Actualizarlo ahora?",
+      "scheduledUpdateNextPaymentUnchanged": "El pago programado de la factura \"{name}\" coincide con la línea de tasas. Próximo pago el {date}: sin cambios ({payment}).",
+      "scheduledUpdateNextPaymentChanged": "El pago programado de la factura \"{name}\" puede actualizarse según la línea de tasas. Próximo pago el {date}: {before} → {after}, dividido en {principal} de capital y {interest} de intereses.",
+      "scheduledUpdateNextPaymentNew": "El pago programado de la factura \"{name}\" puede actualizarse según la línea de tasas. Próximo pago el {date}: {payment}, dividido en {principal} de capital y {interest} de intereses.",
+      "scheduledUpdateUpcomingChange": "A partir del {date} el pago pasa a ser {amount}.",
       "scheduledUpdateDefaultName": "esta hipoteca",
       "scheduledUpdateConfirm": "Actualizar pago",
       "scheduledUpdateSkip": "Dejar como está",

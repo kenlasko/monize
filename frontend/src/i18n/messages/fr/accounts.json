@@ -728,7 +728,10 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "Mettre à jour le paiement planifié ?",
-      "scheduledUpdateMessage": "Le paiement de facture planifié « {name} » peut être mis à jour selon le nouveau taux : {payment} au total, réparti en {principal} de capital et {interest} d’intérêts. Le mettre à jour maintenant ?",
+      "scheduledUpdateNextPaymentUnchanged": "Le paiement de facture planifié « {name} » correspond déjà à l’échéancier des taux. Prochain paiement le {date} : inchangé ({payment}).",
+      "scheduledUpdateNextPaymentChanged": "Le paiement de facture planifié « {name} » peut être mis à jour selon l’échéancier des taux. Prochain paiement le {date} : {before} → {after}, réparti en {principal} de capital et {interest} d’intérêts.",
+      "scheduledUpdateNextPaymentNew": "Le paiement de facture planifié « {name} » peut être mis à jour selon l’échéancier des taux. Prochain paiement le {date} : {payment}, réparti en {principal} de capital et {interest} d’intérêts.",
+      "scheduledUpdateUpcomingChange": "À partir du {date}, le paiement devient {amount}.",
       "scheduledUpdateDefaultName": "ce prêt hypothécaire",
       "scheduledUpdateConfirm": "Mettre à jour le paiement",
       "scheduledUpdateSkip": "Laisser tel quel",

@@ -728,7 +728,10 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "予定支払いを更新しますか？",
-      "scheduledUpdateMessage": "予定された請求支払い「{name}」を新しい金利に合わせて更新できます：合計 {payment}（元金 {principal}、利息 {interest}）。今すぐ更新しますか？",
+      "scheduledUpdateNextPaymentUnchanged": "予定された請求支払い「{name}」は金利履歴と一致しています。次回の支払い（{date}）：変更なし（{payment}）。",
+      "scheduledUpdateNextPaymentChanged": "予定された請求支払い「{name}」を金利履歴に合わせて更新できます。次回の支払い（{date}）：{before} → {after}（元金 {principal}、利息 {interest}）。",
+      "scheduledUpdateNextPaymentNew": "予定された請求支払い「{name}」を金利履歴に合わせて更新できます。次回の支払い（{date}）：{payment}（元金 {principal}、利息 {interest}）。",
+      "scheduledUpdateUpcomingChange": "{date}から支払いは{amount}になります。",
       "scheduledUpdateDefaultName": "この住宅ローン",
       "scheduledUpdateConfirm": "支払いを更新",
       "scheduledUpdateSkip": "そのままにする",

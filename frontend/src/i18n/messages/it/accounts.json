@@ -728,7 +728,10 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "Aggiornare il pagamento pianificato?",
-      "scheduledUpdateMessage": "Il pagamento pianificato della bolletta \"{name}\" può essere aggiornato in base al nuovo tasso: {payment} totali, suddivisi in {principal} di capitale e {interest} di interessi. Aggiornarlo ora?",
+      "scheduledUpdateNextPaymentUnchanged": "Il pagamento pianificato della bolletta \"{name}\" corrisponde già alla cronologia dei tassi. Prossimo pagamento il {date}: invariato ({payment}).",
+      "scheduledUpdateNextPaymentChanged": "Il pagamento pianificato della bolletta \"{name}\" può essere aggiornato in base alla cronologia dei tassi. Prossimo pagamento il {date}: {before} → {after}, suddiviso in {principal} di capitale e {interest} di interessi.",
+      "scheduledUpdateNextPaymentNew": "Il pagamento pianificato della bolletta \"{name}\" può essere aggiornato in base alla cronologia dei tassi. Prossimo pagamento il {date}: {payment}, suddiviso in {principal} di capitale e {interest} di interessi.",
+      "scheduledUpdateUpcomingChange": "Dal {date} il pagamento diventa {amount}.",
       "scheduledUpdateDefaultName": "questo mutuo",
       "scheduledUpdateConfirm": "Aggiorna pagamento",
       "scheduledUpdateSkip": "Lascia invariato",

@@ -9,6 +9,8 @@ import { Account } from '@/types/account';
 import { getErrorMessage } from '@/lib/errors';
 import { getCurrencySymbol } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useDateFormat } from '@/hooks/useDateFormat';
+import { invalidateBalanceCaches, invalidateCache } from '@/lib/apiCache';
 
 export type RatePaymentMode = 'keep' | 'set' | 'recalculate';
 
@@ -28,6 +30,75 @@ const emptyForm = (): RateFormState => ({
   note: '',
 });
 
+/** Cents-level tolerance for "did the payment actually change". */
+const PAYMENT_UNCHANGED_TOLERANCE = 0.005;
+
+interface ScheduledUpdateFormatters {
+  t: (key: string, values?: Record<string, string | number>) => string;
+  formatDate: (date: Date | string) => string;
+  formatCurrency: (value: number, currencyCode?: string) => string;
+}
+
+/**
+ * The scheduled-payment confirmation's message: the next installment with
+ * its due date (unchanged, or before/after when the sync would change it),
+ * and, when the timeline states a later payment, from which due date the
+ * bill becomes that payment (spec `scheduled-loan-installment-pricing.md`
+ * section 7.5). Pure so it can be unit tested without rendering the hook.
+ */
+export function buildScheduledUpdateMessage(
+  preview: ScheduledPaymentPreview | null,
+  { t, formatDate, formatCurrency }: ScheduledUpdateFormatters,
+): string {
+  if (!preview) return '';
+
+  const name =
+    preview.scheduledTransactionName || t('loanDetail.rateHistory.scheduledUpdateDefaultName');
+  const date = formatDate(preview.dueDate);
+  const payment = formatCurrency(preview.proposedPaymentAmount, preview.currencyCode);
+  const unchanged =
+    preview.currentPaymentAmount != null &&
+    Math.abs(preview.currentPaymentAmount - preview.proposedPaymentAmount) <
+      PAYMENT_UNCHANGED_TOLERANCE;
+
+  let nextPaymentLine: string;
+  if (unchanged) {
+    nextPaymentLine = t('loanDetail.rateHistory.scheduledUpdateNextPaymentUnchanged', {
+      name,
+      date,
+      payment,
+    });
+  } else {
+    const principal = formatCurrency(preview.proposedPrincipal, preview.currencyCode);
+    const interest = formatCurrency(preview.proposedInterest, preview.currencyCode);
+    nextPaymentLine =
+      preview.currentPaymentAmount != null
+        ? t('loanDetail.rateHistory.scheduledUpdateNextPaymentChanged', {
+            name,
+            date,
+            before: formatCurrency(preview.currentPaymentAmount, preview.currencyCode),
+            after: payment,
+            principal,
+            interest,
+          })
+        : t('loanDetail.rateHistory.scheduledUpdateNextPaymentNew', {
+            name,
+            date,
+            payment,
+            principal,
+            interest,
+          });
+  }
+
+  if (!preview.nextPaymentChange) return nextPaymentLine;
+
+  const upcomingLine = t('loanDetail.rateHistory.scheduledUpdateUpcomingChange', {
+    date: formatDate(preview.nextPaymentChange.dueDate),
+    amount: formatCurrency(preview.nextPaymentChange.paymentAmount, preview.currencyCode),
+  });
+  return `${nextPaymentLine} ${upcomingLine}`;
+}
+
 /**
  * The rate-timeline editing behaviour shared by the Loan Schedule's rate cells
  * (each opens the Add form pre-filled with its date and rate), the rate
@@ -39,6 +110,7 @@ const emptyForm = (): RateFormState => ({
 export function useLoanRateEditing(account: Account, onChanged: () => void) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
+  const { formatDate } = useDateFormat();
 
   const [formModal, setFormModal] = useState<
     { mode: 'add' } | { mode: 'edit'; change: LoanRateChange } | null
@@ -121,7 +193,7 @@ export function useLoanRateEditing(account: Account, onChanged: () => void) {
         }
         return;
       }
-      await loanRateChangesApi.update(account.id, formModal.change.id, {
+      const updated = await loanRateChangesApi.update(account.id, formModal.change.id, {
         effectiveDate: form.effectiveDate,
         annualRate: parsedRate,
         newPaymentAmount: form.paymentMode === 'set' ? parsedPayment : null,
@@ -130,6 +202,11 @@ export function useLoanRateEditing(account: Account, onChanged: () => void) {
       toast.success(t('loanDetail.rateHistory.updatedToast'));
       setFormModal(null);
       onChanged();
+      // Editing a rate change can also realign the linked scheduled bill, but
+      // only with the user's permission -- surface the pending change.
+      if (updated.scheduledPaymentPreview) {
+        setScheduledPreview(updated.scheduledPaymentPreview);
+      }
     } catch (err) {
       toast.error(getErrorMessage(err, t('loanDetail.rateHistory.saveFailed')));
     } finally {
@@ -143,9 +220,14 @@ export function useLoanRateEditing(account: Account, onChanged: () => void) {
   const confirmDelete = async () => {
     if (!changeToDelete) return;
     try {
-      await loanRateChangesApi.delete(account.id, changeToDelete.id);
+      const result = await loanRateChangesApi.delete(account.id, changeToDelete.id);
       toast.success(t('loanDetail.rateHistory.deletedToast'));
       onChanged();
+      // Deleting a rate change can also realign the linked scheduled bill to
+      // what the remaining timeline calls for -- surface the pending change.
+      if (result.scheduledPaymentPreview) {
+        setScheduledPreview(result.scheduledPaymentPreview);
+      }
     } catch (err) {
       toast.error(getErrorMessage(err, t('loanDetail.rateHistory.deleteFailed')));
     } finally {
@@ -158,6 +240,10 @@ export function useLoanRateEditing(account: Account, onChanged: () => void) {
     setScheduledPreview(null);
     try {
       await loanRateChangesApi.applyScheduledPayment(account.id);
+      // The rewritten template moves the bill's next payment and the
+      // balances it projects, including the ones other screens cache.
+      invalidateBalanceCaches();
+      invalidateCache('scheduled:');
       toast.success(t('loanDetail.rateHistory.scheduledUpdateAppliedToast'));
       onChanged();
     } catch (err) {
@@ -194,25 +280,11 @@ export function useLoanRateEditing(account: Account, onChanged: () => void) {
     }
   };
 
-  const scheduledUpdateMessage = scheduledPreview
-    ? t('loanDetail.rateHistory.scheduledUpdateMessage', {
-        name:
-          scheduledPreview.scheduledTransactionName ||
-          t('loanDetail.rateHistory.scheduledUpdateDefaultName'),
-        payment: formatCurrency(
-          scheduledPreview.proposedPaymentAmount,
-          scheduledPreview.currencyCode,
-        ),
-        principal: formatCurrency(
-          scheduledPreview.proposedPrincipal,
-          scheduledPreview.currencyCode,
-        ),
-        interest: formatCurrency(
-          scheduledPreview.proposedInterest,
-          scheduledPreview.currencyCode,
-        ),
-      })
-    : '';
+  const scheduledUpdateMessage = buildScheduledUpdateMessage(scheduledPreview, {
+    t,
+    formatDate,
+    formatCurrency,
+  });
 
   return {
     isMortgage,

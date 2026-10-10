@@ -728,7 +728,10 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "예약된 결제를 업데이트할까요?",
-      "scheduledUpdateMessage": "예약된 청구서 결제 \"{name}\"을(를) 새 금리에 맞게 업데이트할 수 있습니다: 총 {payment}, 원금 {principal} 및 이자 {interest}로 구성. 지금 업데이트할까요?",
+      "scheduledUpdateNextPaymentUnchanged": "예약된 청구서 결제 \"{name}\"은(는) 금리 기록과 일치합니다. 다음 결제일 {date}: 변경 없음 ({payment}).",
+      "scheduledUpdateNextPaymentChanged": "예약된 청구서 결제 \"{name}\"을(를) 금리 기록에 맞게 업데이트할 수 있습니다. 다음 결제일 {date}: {before} → {after}, 원금 {principal} 및 이자 {interest}로 구성.",
+      "scheduledUpdateNextPaymentNew": "예약된 청구서 결제 \"{name}\"을(를) 금리 기록에 맞게 업데이트할 수 있습니다. 다음 결제일 {date}: {payment}, 원금 {principal} 및 이자 {interest}로 구성.",
+      "scheduledUpdateUpcomingChange": "{date}부터 결제 금액이 {amount}로 바뀝니다.",
       "scheduledUpdateDefaultName": "이 대출",
       "scheduledUpdateConfirm": "결제 업데이트",
       "scheduledUpdateSkip": "그대로 두기",

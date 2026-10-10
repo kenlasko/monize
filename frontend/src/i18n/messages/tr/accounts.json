@@ -728,7 +728,10 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "Planlanan ödeme güncellensin mi?",
-      "scheduledUpdateMessage": "Planlanan fatura ödemesi \"{name}\" yeni orana göre güncellenebilir: toplam {payment}, {principal} anapara ve {interest} faiz. Şimdi güncellensin mi?",
+      "scheduledUpdateNextPaymentUnchanged": "Planlanan fatura ödemesi \"{name}\" oran geçmişiyle eşleşiyor. Sonraki ödeme {date}: değişmedi ({payment}).",
+      "scheduledUpdateNextPaymentChanged": "Planlanan fatura ödemesi \"{name}\" oran geçmişine göre güncellenebilir. Sonraki ödeme {date}: {before} → {after}, {principal} anapara ve {interest} faiz olarak bölünmüş.",
+      "scheduledUpdateNextPaymentNew": "Planlanan fatura ödemesi \"{name}\" oran geçmişine göre güncellenebilir. Sonraki ödeme {date}: {payment}, {principal} anapara ve {interest} faiz olarak bölünmüş.",
+      "scheduledUpdateUpcomingChange": "{date} itibarıyla ödeme {amount} olacak.",
       "scheduledUpdateDefaultName": "bu konut kredisi",
       "scheduledUpdateConfirm": "Ödemeyi güncelle",
       "scheduledUpdateSkip": "Olduğu gibi bırak",
