@@ -21,15 +21,27 @@ export interface LoanRateChange {
 }
 
 /**
+ * The first later due date from which a loan bill becomes a different stated
+ * payment, and that payment; null when no row stating a payment is dated
+ * after the previewed installment's due date.
+ */
+export interface NextPaymentChange {
+  dueDate: string;
+  paymentAmount: number;
+}
+
+/**
  * Before/after summary of how a mortgage's linked scheduled bill payment would
- * change to match a newly recorded rate/payment. Present on a create response
- * when the account has an applicable linked scheduled payment; the user is
- * asked for permission before it is applied.
+ * change to match the rate timeline at the template's own due date. Returned
+ * by create, update and delete when the account has an applicable linked
+ * scheduled payment; the user is asked for permission before it is applied.
  */
 export interface ScheduledPaymentPreview {
   scheduledTransactionId: string;
   scheduledTransactionName: string | null;
   currencyCode: string;
+  /** The installment the proposed figures are for: the template's next due date. */
+  dueDate: string;
   currentPaymentAmount: number | null;
   proposedPaymentAmount: number;
   currentPrincipal: number | null;
@@ -37,10 +49,16 @@ export interface ScheduledPaymentPreview {
   currentInterest: number | null;
   proposedInterest: number;
   extraPrincipal: number;
+  nextPaymentChange: NextPaymentChange | null;
 }
 
-/** A created rate change plus the pending scheduled-payment change, if any. */
+/** A created or edited rate change plus the pending scheduled-payment change, if any. */
 export interface CreateLoanRateChangeResult extends LoanRateChange {
+  scheduledPaymentPreview: ScheduledPaymentPreview | null;
+}
+
+/** The deleted change's pending scheduled-payment change, if any. */
+export interface RemoveLoanRateChangeResult {
   scheduledPaymentPreview: ScheduledPaymentPreview | null;
 }
 

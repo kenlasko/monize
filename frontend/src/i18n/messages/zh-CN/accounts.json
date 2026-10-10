@@ -728,7 +728,13 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "更新预定付款？",
-      "scheduledUpdateMessage": "预定账单付款“{name}”可更新以匹配新利率：共 {payment}，其中本金 {principal}、利息 {interest}。立即更新？",
+      "scheduledUpdateNextPaymentUnchanged": "预定账单付款“{name}”与利率时间线一致。下次付款日 {date}：不变（{payment}）。",
+
+      "scheduledUpdateNextPaymentChanged": "预定账单付款“{name}”可根据利率时间线更新。下次付款日 {date}：{before} → {after}，其中本金 {principal}、利息 {interest}。",
+
+      "scheduledUpdateNextPaymentNew": "预定账单付款“{name}”可根据利率时间线更新。下次付款日 {date}：{payment}，其中本金 {principal}、利息 {interest}。",
+
+      "scheduledUpdateUpcomingChange": "自 {date} 起，付款将变为 {amount}。",
       "scheduledUpdateDefaultName": "此抵押贷款",
       "scheduledUpdateConfirm": "更新付款",
       "scheduledUpdateSkip": "保持不变",

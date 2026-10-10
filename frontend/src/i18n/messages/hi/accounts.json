@@ -728,7 +728,13 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "निर्धारित भुगतान अपडेट करें?",
-      "scheduledUpdateMessage": "निर्धारित बिल भुगतान \"{name}\" को नई दर के अनुसार अपडेट किया जा सकता है: कुल {payment}, जिसमें {principal} मूलधन और {interest} ब्याज शामिल है। अभी अपडेट करें?",
+      "scheduledUpdateNextPaymentUnchanged": "निर्धारित बिल भुगतान \"{name}\" दर समयरेखा से मेल खाता है। अगला भुगतान {date} पर: अविगत रहेगी ({payment})।",
+
+      "scheduledUpdateNextPaymentChanged": "निर्धारित बिल भुगतान \"{name}\" को दर समयरेखा के अनुसार अपडेट किया जा सकता है। अगला भुगतान {date} पर: {before} → {after}, जिसमें {principal} मूलधन और {interest} ब्याज शामिल है।",
+
+      "scheduledUpdateNextPaymentNew": "निर्धारित बिल भुगतान \"{name}\" को दर समयरेखा के अनुसार अपडेट किया जा सकता है। अगला भुगतान {date} पर: {payment}, जिसमें {principal} मूलधन और {interest} ब्याज शामिल है।",
+
+      "scheduledUpdateUpcomingChange": "{date} से भुगतान {amount} हो जाओगा।",
       "scheduledUpdateDefaultName": "यह बंधक",
       "scheduledUpdateConfirm": "भुगतान अपडेट करें",
       "scheduledUpdateSkip": "जैसा है वैसा रहने दें",

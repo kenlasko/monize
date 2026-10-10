@@ -4,6 +4,7 @@ import {
   LoanRateChange,
   CreateLoanRateChangeData,
   CreateLoanRateChangeResult,
+  RemoveLoanRateChangeResult,
   UpdateLoanRateChangeData,
   DetectRateChangesResult,
   ScheduledPaymentPreview,
@@ -94,12 +95,17 @@ export const loanRateChangesApi = {
     return response.data;
   },
 
+  /**
+   * Edit a rate change. Returns the row with `scheduledPaymentPreview`, the
+   * way `create` does: the bill is rewritten only once the user confirms
+   * through `applyScheduledPayment`.
+   */
   update: async (
     accountId: string,
     id: string,
     data: UpdateLoanRateChangeData,
-  ): Promise<LoanRateChange> => {
-    const response = await apiClient.patch<LoanRateChange>(
+  ): Promise<CreateLoanRateChangeResult> => {
+    const response = await apiClient.patch<CreateLoanRateChangeResult>(
       `/accounts/${accountId}/rate-changes/${id}`,
       data,
     );
@@ -107,9 +113,20 @@ export const loanRateChangesApi = {
     return response.data;
   },
 
-  delete: async (accountId: string, id: string): Promise<void> => {
-    await apiClient.delete(`/accounts/${accountId}/rate-changes/${id}`);
+  /**
+   * Delete a rate change. Returns the remaining timeline's
+   * `scheduledPaymentPreview`; the bill is rewritten only once the user
+   * confirms through `applyScheduledPayment`.
+   */
+  delete: async (
+    accountId: string,
+    id: string,
+  ): Promise<RemoveLoanRateChangeResult> => {
+    const response = await apiClient.delete<RemoveLoanRateChangeResult>(
+      `/accounts/${accountId}/rate-changes/${id}`,
+    );
     invalidateAfterMutation(accountId);
+    return response.data;
   },
 
   detect: async (accountId: string): Promise<DetectRateChangesResult> => {

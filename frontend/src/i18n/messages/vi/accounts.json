@@ -728,7 +728,13 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "Cập nhật khoản thanh toán đã lên lịch?",
-      "scheduledUpdateMessage": "Khoản thanh toán hóa đơn đã lên lịch \"{name}\" có thể được cập nhật theo lãi suất mới: tổng {payment}, gồm {principal} gốc và {interest} lãi. Cập nhật ngay?",
+      "scheduledUpdateNextPaymentUnchanged": "Khoản thanh toán hóa đơn đã lên lᲣch \"{name}\" khớp với dòng lãi suất. Lần thanh toán tiếp theo vào {date}: không đổi ({payment}).",
+
+      "scheduledUpdateNextPaymentChanged": "Khoản thanh toán hóa đơn đã lên lᲣch \"{name}\" có thể được cập nhật theo dòng lãi suất. Lần thanh toán tiếp theo vào {date}: {before} → {after}, gồm {principal} gốc và {interest} lãi.",
+
+      "scheduledUpdateNextPaymentNew": "Khoản thanh toán hóa đơn đã lên lᲣch \"{name}\" có thể được cập nhật theo dòng lãi suất. Lần thanh toán tiếp theo vào {date}: {payment}, gồm {principal} gốc và {interest} lãi.",
+
+      "scheduledUpdateUpcomingChange": "Từ {date}, khoản thanh toán sẽ là {amount}.",
       "scheduledUpdateDefaultName": "khoản thế chấp này",
       "scheduledUpdateConfirm": "Cập nhật thanh toán",
       "scheduledUpdateSkip": "Giữ nguyên",

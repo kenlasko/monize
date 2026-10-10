@@ -728,7 +728,13 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "Perbarui pembayaran terjadwal?",
-      "scheduledUpdateMessage": "Pembayaran tagihan terjadwal \"{name}\" dapat diperbarui sesuai suku bunga baru: total {payment}, terbagi menjadi {principal} pokok dan {interest} bunga. Perbarui sekarang?",
+      "scheduledUpdateNextPaymentUnchanged": "Pembayaran tagihan terjadwal \"{name}\" sudah sesuai dengan riwayat suku bunga. Pembayaran berikutnya pada {date}: tidak berubah ({payment}).",
+
+      "scheduledUpdateNextPaymentChanged": "Pembayaran tagihan terjadwal \"{name}\" dapat diperbarui sesuai riwayat suku bunga. Pembayaran berikutnya pada {date}: {before} → {after}, terbagi menjadi {principal} pokok dan {interest} bunga.",
+
+      "scheduledUpdateNextPaymentNew": "Pembayaran tagihan terjadwal \"{name}\" dapat diperbarui sesuai riwayat suku bunga. Pembayaran berikutnya pada {date}: {payment}, terbagi menjadi {principal} pokok dan {interest} bunga.",
+
+      "scheduledUpdateUpcomingChange": "Mulai {date} pembayaran menjadi {amount}.",
       "scheduledUpdateDefaultName": "hipotek ini",
       "scheduledUpdateConfirm": "Perbarui pembayaran",
       "scheduledUpdateSkip": "Biarkan apa adanya",

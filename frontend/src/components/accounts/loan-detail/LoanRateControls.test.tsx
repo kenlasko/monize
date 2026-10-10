@@ -36,6 +36,7 @@ describe('LoanRateControls + useLoanRateEditing', () => {
         scheduledTransactionId: 'sched-1',
         scheduledTransactionName: 'Mortgage',
         currencyCode: 'CAD',
+        dueDate: '2024-07-01',
         currentPaymentAmount: 1000,
         proposedPaymentAmount: 1100,
         currentPrincipal: 300,
@@ -43,6 +44,7 @@ describe('LoanRateControls + useLoanRateEditing', () => {
         currentInterest: 700,
         proposedInterest: 750,
         extraPrincipal: 0,
+        nextPaymentChange: null,
       },
     });
     (

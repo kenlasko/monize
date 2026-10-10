@@ -728,7 +728,13 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "Atualizar o pagamento agendado?",
-      "scheduledUpdateMessage": "O pagamento agendado da conta \"{name}\" pode ser atualizado para corresponder à nova taxa: {payment} no total, dividido em {principal} de principal e {interest} de juros. Atualizar agora?",
+      "scheduledUpdateNextPaymentUnchanged": "O pagamento agendado da conta \"{name}\" corresponde ao histórico de taxas. Próximo pagamento em {date}: sem alteração ({payment}).",
+
+      "scheduledUpdateNextPaymentChanged": "O pagamento agendado da conta \"{name}\" pode ser atualizado conforme o histórico de taxas. Próximo pagamento em {date}: {before} → {after}, dividido em {principal} de principal e {interest} de juros.",
+
+      "scheduledUpdateNextPaymentNew": "O pagamento agendado da conta \"{name}\" pode ser atualizado conforme o histórico de taxas. Próximo pagamento em {date}: {payment}, dividido em {principal} de principal e {interest} de juros.",
+
+      "scheduledUpdateUpcomingChange": "A partir de {date} o pagamento passa a ser {amount}.",
       "scheduledUpdateDefaultName": "esta hipoteca",
       "scheduledUpdateConfirm": "Atualizar pagamento",
       "scheduledUpdateSkip": "Deixar como está",
