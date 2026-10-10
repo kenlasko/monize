@@ -729,11 +729,8 @@
     "rateHistory": {
       "scheduledUpdateTitle": "Обновить запланированный платёж?",
       "scheduledUpdateNextPaymentUnchanged": "Запланированный платёж по счёту «{name}» соответствует истории ставок. Следующий платёж {date}: без изменений ({payment}).",
-
       "scheduledUpdateNextPaymentChanged": "Запланированный платёж по счёту «{name}» можно обновить в соответствии с историей ставок. Следующий платёж {date}: {before} → {after}, из них {principal} основного долга и {interest} процентов.",
-
       "scheduledUpdateNextPaymentNew": "Запланированный платёж по счёту «{name}» можно обновить в соответствии с историей ставок. Следующий платёж {date}: {payment}, из них {principal} основного долга и {interest} процентов.",
-
       "scheduledUpdateUpcomingChange": "С {date} платёж составит {amount}.",
       "scheduledUpdateDefaultName": "эта ипотека",
       "scheduledUpdateConfirm": "Обновить платёж",

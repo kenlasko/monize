@@ -729,11 +729,8 @@
     "rateHistory": {
       "scheduledUpdateTitle": "Оновити запланований платіж?",
       "scheduledUpdateNextPaymentUnchanged": "Запланований платіж за рахунком «{name}» відповідає історії ставок. Наступний платіж {date}: без змін ({payment}).",
-
       "scheduledUpdateNextPaymentChanged": "Запланований платіж за рахунком «{name}» можна оновити відповідно до історії ставок. Наступний платіж {date}: {before} → {after}, з них {principal} основної суми та {interest} відсотків.",
-
       "scheduledUpdateNextPaymentNew": "Запланований платіж за рахунком «{name}» можна оновити відповідно до історії ставок. Наступний платіж {date}: {payment}, з них {principal} основної суми та {interest} відсотків.",
-
       "scheduledUpdateUpcomingChange": "з {date} платіж становитиме {amount}.",
       "scheduledUpdateDefaultName": "ця іпотека",
       "scheduledUpdateConfirm": "Оновити платіж",

@@ -729,11 +729,8 @@
     "rateHistory": {
       "scheduledUpdateTitle": "Geplante Zahlung aktualisieren?",
       "scheduledUpdateNextPaymentUnchanged": "Die geplante Rechnungszahlung \"{name}\" entspricht bereits dem Zinsplan. Nächste Zahlung am {date}: unverändert ({payment}).",
-
       "scheduledUpdateNextPaymentChanged": "Die geplante Rechnungszahlung \"{name}\" kann an den Zinsplan angepasst werden. Nächste Zahlung am {date}: {before} → {after}, aufgeteilt in {principal} Tilgung und {interest} Zinsen.",
-
       "scheduledUpdateNextPaymentNew": "Die geplante Rechnungszahlung \"{name}\" kann an den Zinsplan angepasst werden. Nächste Zahlung am {date}: {payment}, aufgeteilt in {principal} Tilgung und {interest} Zinsen.",
-
       "scheduledUpdateUpcomingChange": "Ab dem {date} beträgt die Zahlung {amount}.",
       "scheduledUpdateDefaultName": "diese Hypothek",
       "scheduledUpdateConfirm": "Zahlung aktualisieren",

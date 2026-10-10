@@ -728,12 +728,9 @@
     },
     "rateHistory": {
       "scheduledUpdateTitle": "更新排定的付款？",
-      "scheduledUpdateNextPaymentUnchanged": "排定的帳单付款「{name}」與利率時間表一致。下次付款日 {date}：不變（{payment}）。",
-
-      "scheduledUpdateNextPaymentChanged": "排定的帳单付款「{name}」可依利率時間表更新。下次付款日 {date}：{before} → {after}，其中本金 {principal}、利息 {interest}。",
-
-      "scheduledUpdateNextPaymentNew": "排定的帳单付款「{name}」可依利率時間表更新。下次付款日 {date}：{payment}，其中本金 {principal}、利息 {interest}。",
-
+      "scheduledUpdateNextPaymentUnchanged": "排定的帳單付款「{name}」與利率時間表一致。下次付款日 {date}：不變（{payment}）。",
+      "scheduledUpdateNextPaymentChanged": "排定的帳單付款「{name}」可依利率時間表更新。下次付款日 {date}：{before} → {after}，其中本金 {principal}、利息 {interest}。",
+      "scheduledUpdateNextPaymentNew": "排定的帳單付款「{name}」可依利率時間表更新。下次付款日 {date}：{payment}，其中本金 {principal}、利息 {interest}。",
       "scheduledUpdateUpcomingChange": "自 {date} 起，付款將變為 {amount}。",
       "scheduledUpdateDefaultName": "此抵押貸款",
       "scheduledUpdateConfirm": "更新付款",

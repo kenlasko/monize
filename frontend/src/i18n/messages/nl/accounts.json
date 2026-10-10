@@ -729,11 +729,8 @@
     "rateHistory": {
       "scheduledUpdateTitle": "Geplande betaling bijwerken?",
       "scheduledUpdateNextPaymentUnchanged": "De geplande factuurbetaling \"{name}\" komt overeen met de rentetijdlijn. Volgende betaling op {date}: ongewijzigd ({payment}).",
-
       "scheduledUpdateNextPaymentChanged": "De geplande factuurbetaling \"{name}\" kan worden aangepast aan de rentetijdlijn. Volgende betaling op {date}: {before} → {after}, verdeeld in {principal} aflossing en {interest} rente.",
-
       "scheduledUpdateNextPaymentNew": "De geplande factuurbetaling \"{name}\" kan worden aangepast aan de rentetijdlijn. Volgende betaling op {date}: {payment}, verdeeld in {principal} aflossing en {interest} rente.",
-
       "scheduledUpdateUpcomingChange": "Vanaf {date} wordt de betaling {amount}.",
       "scheduledUpdateDefaultName": "deze hypotheek",
       "scheduledUpdateConfirm": "Betaling bijwerken",

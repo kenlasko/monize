@@ -734,11 +734,8 @@
     "rateHistory": {
       "scheduledUpdateTitle": "Zaktualizować zaplanowaną płatność?",
       "scheduledUpdateNextPaymentUnchanged": "Zaplanowana płatność rachunku „{name}” jest zgodna z historią stóp. Następna płatność {date}: bez zmian ({payment}).",
-
       "scheduledUpdateNextPaymentChanged": "Zaplanowaną płatność rachunku „{name}” można zaktualizować zgodnie z historią stóp. Następna płatność {date}: {before} → {after}, w tym {principal} kapitału i {interest} odsetek.",
-
       "scheduledUpdateNextPaymentNew": "Zaplanowaną płatność rachunku „{name}” można zaktualizować zgodnie z historią stóp. Następna płatność {date}: {payment}, w tym {principal} kapitału i {interest} odsetek.",
-
       "scheduledUpdateUpcomingChange": "Od {date} płatność wynosi {amount}.",
       "scheduledUpdateDefaultName": "ten kredyt hipoteczny",
       "scheduledUpdateConfirm": "Zaktualizuj płatność",
