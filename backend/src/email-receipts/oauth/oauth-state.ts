@@ -68,7 +68,20 @@ export function createPkcePair(): { verifier: string; challenge: string } {
   return { verifier, challenge: pkceChallenge(verifier) };
 }
 
+/**
+ * RFC 7636 section 4.2's S256 transform: SHA-256 of a 256-bit random
+ * verifier, never a password. The spec mandates this exact, deterministic
+ * algorithm -- the authorization server recomputes it from the verifier the
+ * client later sends to match the challenge given at `/authorize`, so a
+ * slow, randomly-salted password hash would not just be unnecessary, it would
+ * break the protocol. CodeQL reports js/insufficient-password-hash on the
+ * `.update(...)` call below; the alert is a false positive dismissed on the
+ * Security tab with its reason (docs/backend/modules-and-runtime.md, CodeQL
+ * suppressions), and the annotation is placed where it takes effect the day
+ * the suppression query is added to default setup.
+ */
 export function pkceChallenge(verifier: string): string {
+  // codeql[js/insufficient-password-hash]
   return base64url(createHash("sha256").update(verifier, "ascii").digest());
 }
 
