@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "決済済みの返済",
+        "titleWithCount": "決済済みの返済（{count}）",
         "colDueDate": "期日",
         "colTransaction": "取引",
         "colPrincipal": "元本",

@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "Angsuran yang dilunasi",
+        "titleWithCount": "Angsuran yang dilunasi ({count})",
         "colDueDate": "Jatuh tempo",
         "colTransaction": "Transaksi",
         "colPrincipal": "Pokok",

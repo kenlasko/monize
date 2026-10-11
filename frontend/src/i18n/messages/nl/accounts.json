@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "Verrekende termijnen",
+        "titleWithCount": "Verrekende termijnen ({count})",
         "colDueDate": "Vervaldatum",
         "colTransaction": "Transactie",
         "colPrincipal": "Hoofdsom",

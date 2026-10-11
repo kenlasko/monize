@@ -784,6 +784,7 @@
       },
       "settled": {
         "title": "[XX-Settled installments-XX]",
+        "titleWithCount": "[XX-Settled installments ({count})-XX]",
         "colDueDate": "[XX-Due date-XX]",
         "colTransaction": "[XX-Transaction-XX]",
         "colPrincipal": "[XX-Principal-XX]",

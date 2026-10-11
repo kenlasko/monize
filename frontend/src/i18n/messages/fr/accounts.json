@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "Échéances imputées",
+        "titleWithCount": "Échéances imputées ({count})",
         "colDueDate": "Date d'échéance",
         "colTransaction": "Transaction",
         "colPrincipal": "Capital",

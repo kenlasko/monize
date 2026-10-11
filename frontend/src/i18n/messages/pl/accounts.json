@@ -702,6 +702,7 @@
       },
       "settled": {
         "title": "Rozliczone raty",
+        "titleWithCount": "Rozliczone raty ({count})",
         "colDueDate": "Termin płatności",
         "colTransaction": "Transakcja",
         "colPrincipal": "Kapitał",

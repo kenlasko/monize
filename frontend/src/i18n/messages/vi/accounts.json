@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "Các kỳ trả góp đã tất toán",
+        "titleWithCount": "Các kỳ trả góp đã tất toán ({count})",
         "colDueDate": "Ngày đến hạn",
         "colTransaction": "Giao dịch",
         "colPrincipal": "Gốc",

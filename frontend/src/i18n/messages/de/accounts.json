@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "Verrechnete Raten",
+        "titleWithCount": "Verrechnete Raten ({count})",
         "colDueDate": "Fälligkeitsdatum",
         "colTransaction": "Buchung",
         "colPrincipal": "Tilgung",

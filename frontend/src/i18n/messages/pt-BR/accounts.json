@@ -697,6 +697,7 @@
       },
       "settled": {
         "title": "Parcelas liquidadas",
+        "titleWithCount": "Parcelas liquidadas ({count})",
         "colDueDate": "Vencimento",
         "colTransaction": "Transação",
         "colPrincipal": "Principal",
