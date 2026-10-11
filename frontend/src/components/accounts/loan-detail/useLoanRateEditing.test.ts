@@ -19,7 +19,7 @@ const basePreview: ScheduledPaymentPreview = {
   currentInterest: 416.67,
   proposedInterest: 416.67,
   extraPrincipal: 0,
-  nextPaymentChange: null,
+  upcomingPaymentChanges: [],
 };
 
 describe('buildScheduledUpdateMessage', () => {
@@ -57,12 +57,30 @@ describe('buildScheduledUpdateMessage', () => {
   it('appends the upcoming-change line when the timeline states a later payment', () => {
     const preview: ScheduledPaymentPreview = {
       ...basePreview,
-      nextPaymentChange: { dueDate: '2023-05-03', paymentAmount: 560 },
+      upcomingPaymentChanges: [{ dueDate: '2023-05-03', paymentAmount: 560 }],
     };
     const message = buildScheduledUpdateMessage(preview, { t, formatDate, formatCurrency });
     expect(message).toContain('scheduledUpdateUpcomingChange');
     expect(message).toContain('"date":"2023-05-03"');
     expect(message).toContain('"amount":"560.00"');
+  });
+
+  // A second change added after Timeline A: the message names both later
+  // payments, not the first one twice.
+  it('appends one upcoming-change line per later payment, in date order', () => {
+    const preview: ScheduledPaymentPreview = {
+      ...basePreview,
+      upcomingPaymentChanges: [
+        { dueDate: '2023-05-03', paymentAmount: 560 },
+        { dueDate: '2023-09-03', paymentAmount: 575 },
+      ],
+    };
+    const message = buildScheduledUpdateMessage(preview, { t, formatDate, formatCurrency });
+    const first = message.indexOf('"date":"2023-05-03","amount":"560.00"');
+    const second = message.indexOf('"date":"2023-09-03","amount":"575.00"');
+    expect(message.split('scheduledUpdateUpcomingChange')).toHaveLength(3);
+    expect(first).toBeGreaterThan(-1);
+    expect(second).toBeGreaterThan(first);
   });
 
   it('omits the upcoming-change line when the timeline states no later payment', () => {

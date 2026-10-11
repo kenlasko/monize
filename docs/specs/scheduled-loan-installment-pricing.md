@@ -619,26 +619,31 @@ Decision 3 of issue #1637.
   confirms, calls that same apply at once after recording the change.
 - **The preview names the due date.** `ScheduledPaymentPreview` carries
   `dueDate` (`D`, the installment the proposed figures are for) and
-  `nextPaymentChange: { dueDate, paymentAmount } | null`: the first slot after
-  `D` at which `newly` holds (7.3), and `total` there. Null when no row stating
-  a payment is dated after `D`. The search is bounded: only rows dated after
-  `D` can make a later slot `newly`, and each maps to the first slot on or
-  after its date (`nextPaymentChangeAfter`,
-  `backend/src/loan-installments/next-payment-change.ts`).
+  `upcomingPaymentChanges: { dueDate, paymentAmount }[]`: every slot after
+  `D` at which `newly` holds (7.3), in date order, each with `total` there.
+  Empty when no row stating a payment is dated after `D`. Listing every one,
+  not only the first, is what lets a confirmation shown after a second
+  later change name that change: with only the first, adding a second
+  change repeated the first one's date and payment. The search is bounded:
+  only rows dated after `D` can make a later slot `newly`, each maps to the
+  first slot on or after its date, and rows that map to one slot name it
+  once, at the latest row's payment (`upcomingPaymentChangesAfter`,
+  `backend/src/loan-installments/upcoming-payment-changes.ts`).
 
-| Sync case | Template written (at `D`) | `nextPaymentChange` |
+| Sync case | Template written (at `D`) | `upcomingPaymentChanges` |
 | --- | --- | --- |
 | Timeline A added, nothing posted, `D` = 2023-02-03 | 584.59 = 416.67 + 167.92 | 2023-05-03, 560.00 |
 | Timeline A edited (Scenario 2: the template held 560.00) | 584.59 = 416.67 + 167.92 | 2023-05-03, 560.00 |
 | Timeline A added with the A7 template (600.00, 2023-02-03 posted 584.59, 2023-03-03 posted 600.00), `D` = 2023-04-03 | 584.59 = 415.20 + 169.39 on 99,648.05: the raise is replaced (current 600.00 shown beside it) | 2023-05-03, 560.00 |
-| Timeline A, `D` = 2023-06-03 (2023-02-03 to 2023-05-03 posted per table 5.2) | 560.00 = 372.40 + 187.60 | null |
-| Timeline A deleted, `D` = 2023-02-03 | 584.59 = 416.67 + 167.92 (the `initial` row) | null |
+| Timeline A, `D` = 2023-06-03 (2023-02-03 to 2023-05-03 posted per table 5.2) | 560.00 = 372.40 + 187.60 | none |
+| Timeline A deleted, `D` = 2023-02-03 | 584.59 = 416.67 + 167.92 (the `initial` row) | none |
+| Timeline A plus a second change (4.0 %, 575.00, 2023-08-10) added, nothing posted, `D` = 2023-02-03 | 584.59 = 416.67 + 167.92 | 2023-05-03, 560.00; 2023-09-03, 575.00 |
 
 Asserted by: every row, Scenario 2's edit and the account row untouched on
 every path by `backend/src/loan-rate-changes/loan-rate-changes.service.spec.ts`
 ("the scheduled-payment sync (spec 7.5)"); the `sync` purpose's rules by
 `backend/src/loan-installments/price-installment.spec.ts` ('purpose "sync"');
-`nextPaymentChange` by `backend/src/loan-installments/next-payment-change.spec.ts`;
+`upcomingPaymentChanges` by `backend/src/loan-installments/upcoming-payment-changes.spec.ts`;
 the same on a real ledger, timeline and schedule by
 `backend/test/integration/dated-loan-payment.integration.spec.ts` ("the
 rate-change sync at the template's own due date").

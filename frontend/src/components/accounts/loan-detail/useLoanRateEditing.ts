@@ -42,7 +42,7 @@ interface ScheduledUpdateFormatters {
 /**
  * The scheduled-payment confirmation's message: the next installment with
  * its due date (unchanged, or before/after when the sync would change it),
- * and, when the timeline states a later payment, from which due date the
+ * and, for each later payment the timeline states, from which due date the
  * bill becomes that payment (spec `scheduled-loan-installment-pricing.md`
  * section 7.5). Pure so it can be unit tested without rendering the hook.
  */
@@ -90,13 +90,13 @@ export function buildScheduledUpdateMessage(
           });
   }
 
-  if (!preview.nextPaymentChange) return nextPaymentLine;
-
-  const upcomingLine = t('loanDetail.rateHistory.scheduledUpdateUpcomingChange', {
-    date: formatDate(preview.nextPaymentChange.dueDate),
-    amount: formatCurrency(preview.nextPaymentChange.paymentAmount, preview.currencyCode),
-  });
-  return `${nextPaymentLine} ${upcomingLine}`;
+  const upcomingLines = preview.upcomingPaymentChanges.map((change) =>
+    t('loanDetail.rateHistory.scheduledUpdateUpcomingChange', {
+      date: formatDate(change.dueDate),
+      amount: formatCurrency(change.paymentAmount, preview.currencyCode),
+    }),
+  );
+  return [nextPaymentLine, ...upcomingLines].join(' ');
 }
 
 /**

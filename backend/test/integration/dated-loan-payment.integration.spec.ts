@@ -342,7 +342,7 @@ describe("Dated loan payment: the advancement across a stated change (integratio
         currentPaymentAmount: 560,
         currentPrincipal: 185,
         currentInterest: 375,
-        nextPaymentChange: { dueDate: "2023-05-03", paymentAmount: 560 },
+        upcomingPaymentChanges: [{ dueDate: "2023-05-03", paymentAmount: 560 }],
       });
       expect(cents(preview.proposedPaymentAmount)).toBe(584.59);
       expect(cents(preview.proposedInterest)).toBe(416.67);
@@ -364,7 +364,7 @@ describe("Dated loan payment: the advancement across a stated change (integratio
 
       expect(applied).toMatchObject({
         dueDate: "2023-02-03",
-        nextPaymentChange: { dueDate: "2023-05-03", paymentAmount: 560 },
+        upcomingPaymentChanges: [{ dueDate: "2023-05-03", paymentAmount: 560 }],
       });
       expect(await templateAmounts()).toEqual({
         principal: -167.92,
@@ -388,7 +388,7 @@ describe("Dated loan payment: the advancement across a stated change (integratio
 
       expect(result.scheduledPaymentPreview).toMatchObject({
         dueDate: "2023-02-03",
-        nextPaymentChange: null,
+        upcomingPaymentChanges: [],
       });
       expect(cents(result.scheduledPaymentPreview!.proposedPaymentAmount)).toBe(
         584.59,

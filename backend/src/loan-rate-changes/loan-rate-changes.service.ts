@@ -26,9 +26,9 @@ import {
   planLoanTemplateRewrite,
 } from "../loan-installments/reprice-template";
 import {
-  NextPaymentChange,
-  nextPaymentChangeAfter,
-} from "../loan-installments/next-payment-change";
+  UpcomingPaymentChange,
+  upcomingPaymentChangesAfter,
+} from "../loan-installments/upcoming-payment-changes";
 
 const RATE_CHANGE_ACCOUNT_TYPES = [AccountType.LOAN, AccountType.MORTGAGE];
 
@@ -57,11 +57,11 @@ export interface ScheduledPaymentPreview {
   /** The extra-principal line the rewritten template carries (0 when there is none) */
   extraPrincipal: number;
   /**
-   * The first later due date from which the bill becomes a different stated
-   * payment, and that payment; null when no row stating a payment is dated
-   * after `dueDate`.
+   * Every later due date from which the bill becomes a different stated
+   * payment, and that payment, in date order; empty when no row stating a
+   * payment is dated after `dueDate`.
    */
-  nextPaymentChange: NextPaymentChange | null;
+  upcomingPaymentChanges: UpcomingPaymentChange[];
 }
 
 /** The template rewrite the sync would apply, plus its user-facing preview. */
@@ -337,8 +337,8 @@ export class LoanRateChangesService {
    * Runs inside the caller's transaction, which locks the schedule row.
    *
    * A change dated after the template's due date does not move that
-   * installment: the preview's `nextPaymentChange` names the first later due
-   * date from which the bill becomes the stated payment (spec 7.5). Null
+   * installment: the preview's `upcomingPaymentChanges` name each later due
+   * date from which the bill becomes a stated payment (spec 7.5). Null
    * when the account is closed or has no linked bill, when the bill is not a
    * template this module manages, when its ledger cannot be read, or when
    * the debt is retired: the sync is an offer, and it offers nothing it
@@ -400,7 +400,7 @@ export class LoanRateChangesService {
       extraPrincipal: allocation.extraPrincipal,
       // A derived installment (LINEAR, INTEREST_ONLY) states no payment on
       // its rows (`refuseStatedPayment`), so the search finds none.
-      nextPaymentChange: nextPaymentChangeAfter(
+      upcomingPaymentChanges: upcomingPaymentChangesAfter(
         timeline,
         {
           startDate: scheduled.startDate,

@@ -44,7 +44,7 @@ describe('LoanRateControls + useLoanRateEditing', () => {
         currentInterest: 700,
         proposedInterest: 750,
         extraPrincipal: 0,
-        nextPaymentChange: null,
+        upcomingPaymentChanges: [],
       },
     });
     (

@@ -184,7 +184,7 @@ describe('RateHistorySidebar', () => {
         currentInterest: 375,
         proposedInterest: 416.67,
         extraPrincipal: 0,
-        nextPaymentChange: { dueDate: '2023-05-03', paymentAmount: 560 },
+        upcomingPaymentChanges: [{ dueDate: '2023-05-03', paymentAmount: 560 }],
       },
     });
     (
@@ -225,7 +225,7 @@ describe('RateHistorySidebar', () => {
         currentInterest: 375,
         proposedInterest: 416.67,
         extraPrincipal: 0,
-        nextPaymentChange: null,
+        upcomingPaymentChanges: [],
       },
     });
     const onChanged = vi.fn();

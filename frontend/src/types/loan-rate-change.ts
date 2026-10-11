@@ -21,11 +21,10 @@ export interface LoanRateChange {
 }
 
 /**
- * The first later due date from which a loan bill becomes a different stated
- * payment, and that payment; null when no row stating a payment is dated
- * after the previewed installment's due date.
+ * A later due date from which a loan bill becomes a different stated payment,
+ * and that payment.
  */
-export interface NextPaymentChange {
+export interface UpcomingPaymentChange {
   dueDate: string;
   paymentAmount: number;
 }
@@ -49,7 +48,12 @@ export interface ScheduledPaymentPreview {
   currentInterest: number | null;
   proposedInterest: number;
   extraPrincipal: number;
-  nextPaymentChange: NextPaymentChange | null;
+  /**
+   * Every later due date from which the bill becomes a different stated
+   * payment, in date order; empty when no row stating a payment is dated after
+   * `dueDate`.
+   */
+  upcomingPaymentChanges: UpcomingPaymentChange[];
 }
 
 /** A created or edited rate change plus the pending scheduled-payment change, if any. */
