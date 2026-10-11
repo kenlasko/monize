@@ -445,7 +445,7 @@ describe('AccountDetailPage', () => {
     expect(mockGetLoanSettlements).toHaveBeenCalledTimes(1);
     expect(mockGetLoanSettlements).toHaveBeenCalledWith('loan-1');
     expect(screen.getByText('Payment matching')).toBeInTheDocument();
-    expect(screen.getByText('Settled installments')).toBeInTheDocument();
+    expect(screen.getByText('Settled installments (1)')).toBeInTheDocument();
     expect(screen.getByText('$833.33')).toBeInTheDocument();
   });
 
