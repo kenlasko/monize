@@ -1,3 +1,4 @@
+import { reportingFailure } from "../../accruals/reporting-errors";
 import { HttpException, HttpStatus, Logger } from "@nestjs/common";
 import { QueryFailedError } from "typeorm";
 import { tr } from "../../i18n/translate";
@@ -12,6 +13,7 @@ import { getRlsMode } from "../db/rls-config";
  * route would have given, which only holds while both read this mapping.
  */
 export interface HttpErrorBody {
+  reporting?: Record<string, unknown>;
   statusCode: number;
   message: string | string[];
   /**
@@ -83,8 +85,10 @@ export function httpErrorBody(
     }
     if (typeof exceptionResponse === "object" && exceptionResponse !== null) {
       const resp = exceptionResponse as Record<string, unknown>;
+      const reporting = reportingFailure(exception);
       return {
         statusCode,
+        ...(reporting ? { errorCode: String(reporting.code), reporting } : {}),
         message: (resp.message as string | string[]) || exception.message,
         ...(typeof resp.errorCode === "string"
           ? { errorCode: resp.errorCode }

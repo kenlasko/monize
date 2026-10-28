@@ -208,33 +208,9 @@
     "11月",
     "12月"
   ],
-  "weekdaysShort": [
-    "日",
-    "一",
-    "二",
-    "三",
-    "四",
-    "五",
-    "六"
-  ],
-  "weekdaysMin": [
-    "日",
-    "一",
-    "二",
-    "三",
-    "四",
-    "五",
-    "六"
-  ],
-  "weekdaysNarrow": [
-    "日",
-    "一",
-    "二",
-    "三",
-    "四",
-    "五",
-    "六"
-  ],
+  "weekdaysShort": ["日", "一", "二", "三", "四", "五", "六"],
+  "weekdaysMin": ["日", "一", "二", "三", "四", "五", "六"],
+  "weekdaysNarrow": ["日", "一", "二", "三", "四", "五", "六"],
   "dateFormat": {
     "browserAuto": "使用浏览器区域设置（自动检测为 {sample}）",
     "custom": "自定义..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "包含 {count, plural, one {# 笔} other {# 笔}}逾期定期交易"
+  },
+  "reportingBasis": {
+    "label": "报告基础",
+    "default": "{basis}（用户默认）",
+    "help": "期间合计使用所选基础。",
+    "detailHelp": "期间合计使用所选基础。",
+    "cashOnly": "此视图跟踪实际付款，使用现金基础。",
+    "exportCaption": "会计基础：{basis}"
+  },
+  "recognitionDetails": {
+    "help": "只读的权责发生制明细。付款链接打开原始记录。必要时请缩小日期范围。",
+    "fxHelp": "部分金额无法估值。请添加本期间的历史汇率后重试。",
+    "unsupported": "无法安全展开此筛选组合。请选择更简单的筛选。",
+    "failed": "无法加载记录。若行数过多，请缩小日期范围后重试。",
+    "identity": "来源／拆分／计划 ID",
+    "native": "原币金额",
+    "reporting": "报告金额",
+    "payment": "付款日期",
+    "title": "已按期分配",
+    "effective": "确认日期",
+    "source": "付款日期",
+    "retry": "重试",
+    "unknown": "金额不可用",
+    "start": "开始日期",
+    "end": "结束日期",
+    "partial": "（部分合计）",
+    "empty": "无交易数据"
+  },
+  "systemAccruals": {
+    "title": "权责发生制账户",
+    "help": "以原币显示的系统管理余额。仅供查看；请编辑原始交易以进行更改。",
+    "ownerOnly": "仅所有者可以查看这些账户。",
+    "empty": "尚无权责发生制账户。请从收入或支出交易创建分摊。",
+    "position": "类别",
+    "closing": "期末余额",
+    "back": "账户",
+    "asOf": "余额截至",
+    "account": "账户",
+    "currency": "货币",
+    "balance": "余额",
+    "prepaid": "预付费用（净额）",
+    "unearned": "预收收入（净额）",
+    "signHelp": "负余额表示应计负债或应收款。",
+    "asset": "资产",
+    "liability": "负债",
+    "opening": "期初余额",
+    "date": "日期",
+    "movement": "组成部分",
+    "amount": "金额",
+    "payment": "付款日期",
+    "recognition": "确认日期",
+    "range": "{start} – {end}"
   }
 }

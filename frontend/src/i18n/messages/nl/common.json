@@ -208,33 +208,9 @@
     "nov",
     "dec"
   ],
-  "weekdaysShort": [
-    "zo",
-    "ma",
-    "di",
-    "wo",
-    "do",
-    "vr",
-    "za"
-  ],
-  "weekdaysMin": [
-    "zo",
-    "ma",
-    "di",
-    "wo",
-    "do",
-    "vr",
-    "za"
-  ],
-  "weekdaysNarrow": [
-    "Z",
-    "M",
-    "D",
-    "W",
-    "D",
-    "V",
-    "Z"
-  ],
+  "weekdaysShort": ["zo", "ma", "di", "wo", "do", "vr", "za"],
+  "weekdaysMin": ["zo", "ma", "di", "wo", "do", "vr", "za"],
+  "weekdaysNarrow": ["Z", "M", "D", "W", "D", "V", "Z"],
   "dateFormat": {
     "browserAuto": "Browserinstelling gebruiken (automatisch gedetecteerd als {sample})",
     "custom": "Aangepast..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "Inclusief {count, plural, one {# achterstallige geplande transactie} other {# achterstallige geplande transacties}}"
+  },
+  "reportingBasis": {
+    "label": "Rapportagebasis",
+    "default": "{basis} (gebruikersstandaard)",
+    "help": "Periodetotalen gebruiken de gekozen basis.",
+    "detailHelp": "Periodetotalen gebruiken de gekozen basis.",
+    "cashOnly": "Deze weergave volgt werkelijke betalingen en gebruikt de kasbasis.",
+    "exportCaption": "Boekhoudbasis: {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Alleen-lezen toerekeningsregels. Betalingslinks openen de oorspronkelijke boeking. Verklein zo nodig het datumbereik.",
+    "fxHelp": "Sommige bedragen kunnen niet worden gewaardeerd. Voeg historische wisselkoersen voor deze periode toe en probeer opnieuw.",
+    "unsupported": "Deze filtercombinatie kan niet veilig worden uitgesplitst. Kies een eenvoudiger filter.",
+    "failed": "Boekingen konden niet worden geladen. Verklein de periode bij te veel rijen en probeer opnieuw.",
+    "identity": "Bron- / splitsings- / schema-ID’s",
+    "native": "Oorspronkelijk bedrag",
+    "reporting": "Rapportbedrag",
+    "payment": "Betaaldatum",
+    "title": "Toegerekend",
+    "effective": "Verwerkingsdatum",
+    "source": "Betaaldatum",
+    "retry": "Opnieuw proberen",
+    "unknown": "Bedrag niet beschikbaar",
+    "start": "Begindatum",
+    "end": "Einddatum",
+    "partial": "(deeltotaal)",
+    "empty": "Geen transactiegegevens beschikbaar"
+  },
+  "systemAccruals": {
+    "title": "Overlopende rekeningen",
+    "help": "Door het systeem beheerde saldi in de oorspronkelijke valuta. Alleen-lezen; wijzig de oorspronkelijke boeking om ze aan te passen.",
+    "ownerOnly": "Alleen de eigenaar kan deze rekeningen bekijken.",
+    "empty": "Nog geen overlopende rekeningen. Maak een toerekening vanuit een inkomsten- of uitgavenboeking.",
+    "position": "Positie",
+    "closing": "Eindsaldo",
+    "back": "Rekeningen",
+    "asOf": "Saldo per",
+    "account": "Rekening",
+    "currency": "Valuta",
+    "balance": "Saldo",
+    "prepaid": "Vooruitbetaalde kosten (netto)",
+    "unearned": "Vooruitontvangen opbrengsten (netto)",
+    "signHelp": "Negatieve saldi staan voor opgebouwde verplichtingen of vorderingen.",
+    "asset": "Activa",
+    "liability": "Passiva",
+    "opening": "Beginsaldo",
+    "date": "Datum",
+    "movement": "Onderdeel",
+    "amount": "Bedrag",
+    "payment": "Betaaldatum",
+    "recognition": "Verwerkingsdatum",
+    "range": "{start} – {end}"
   }
 }

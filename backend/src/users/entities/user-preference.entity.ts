@@ -1,5 +1,6 @@
 import {
   Entity,
+  Check,
   Column,
   PrimaryColumn,
   CreateDateColumn,
@@ -21,12 +22,30 @@ export interface TourProgressEntry {
 export type TourProgressMap = Record<string, TourProgressEntry>;
 
 @Entity("user_preferences")
+@Check(
+  "ck_user_preferences_reporting_basis",
+  "reporting_basis IN ('cash', 'accrual')",
+)
 export class UserPreference {
   @PrimaryColumn("uuid", { name: "user_id" })
   userId: string;
 
   @Column({ name: "default_currency", length: 3, default: "USD" })
   defaultCurrency: string;
+
+  @Column({
+    name: "reporting_basis",
+    type: "varchar",
+    length: 10,
+    default: "cash",
+  })
+  reportingBasis: "cash" | "accrual";
+
+  // Master reporting switch for the whole accrual feature (tab, Accounts/
+  // Other balances, Cash/Accrual report switch). Off by default: a user who
+  // has never heard of accrual accounting sees none of it until they opt in.
+  @Column({ name: "accrual_enabled", default: false })
+  accrualEnabled: boolean;
 
   @Column({ name: "date_format", default: "YYYY-MM-DD" })
   dateFormat: string;

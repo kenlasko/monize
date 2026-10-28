@@ -39,5 +39,8 @@
       "loanRepayment": "Trả nợ khoản vay",
       "creditCardRepayment": "Thanh toán thẻ tín dụng"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "Đã xóa {{ count }} giao dịch"
   }
 }

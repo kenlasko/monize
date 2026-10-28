@@ -1,3 +1,4 @@
+import { accrualErrors } from "../accruals/accrual-errors";
 import {
   HttpException,
   Injectable,
@@ -3212,6 +3213,11 @@ export class InvestmentTransactionsService {
     // the split amount used to happen before the parent was even loaded, which is
     // why this had to move above that write rather than beside it.
     await assertReconciledRowsMutable(manager, userId, [parentTransaction]);
+    const accrued = await manager.query(
+      "SELECT id FROM accrual_schedules WHERE user_id=$1 AND source_transaction_id=$2 LIMIT 1",
+      [userId, parentTransaction.id],
+    );
+    if (accrued.length) throw accrualErrors.historyUnsupported();
 
     await manager.update(TransactionSplit, splitId, {
       amount: newSplitAmount,

@@ -64,3 +64,15 @@ describe('IncomeBySourceWidget', () => {
     expect(screen.queryByText('$0')).not.toBeInTheDocument();
   });
 });
+
+it('requests the scope basis when the dashboard switches views',async()=>{
+ const {ReportingBasisScope,ReportingBasisControl}=await import('@/components/reports/ReportingBasis');
+ const {usePreferencesStore}=await import('@/store/preferencesStore');
+ const {fireEvent,waitFor}=await import('@/test/render');
+ usePreferencesStore.setState({preferences:{accrualEnabled:true,reportingBasis:"accrual"} as never});
+ getIncomeBySource.mockResolvedValue({data:[],totalIncome:0});
+ await act(async()=>{render(<ReportingBasisScope surface="widget-test"><ReportingBasisControl/><IncomeBySourceWidget isLoading={false}/></ReportingBasisScope>);});
+ expect(getIncomeBySource).toHaveBeenLastCalledWith(expect.objectContaining({basis:'accrual'}));
+ fireEvent.click(screen.getByRole('button', { name: /^Cash(?: \(user default\))?$/ }));
+ await waitFor(()=>expect(getIncomeBySource).toHaveBeenLastCalledWith(expect.objectContaining({basis:'cash'})));
+});

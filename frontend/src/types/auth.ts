@@ -157,6 +157,8 @@ export interface AuthState {
 }
 
 export interface UserPreferences {
+  reportingBasis?: 'cash' | 'accrual';
+  accrualEnabled?: boolean;
   userId: string;
   defaultCurrency: string;
   dateFormat: string; // 'browser' = use browser locale
@@ -310,6 +312,8 @@ export interface UpdateProfileData {
 }
 
 export interface UpdatePreferencesData {
+  reportingBasis?: 'cash' | 'accrual';
+  accrualEnabled?: boolean;
   defaultCurrency?: string;
   dateFormat?: string;
   numberFormat?: string;

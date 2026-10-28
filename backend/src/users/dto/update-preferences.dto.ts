@@ -45,6 +45,20 @@ export const MAP_PROVIDERS = [
 export type MapProvider = (typeof MAP_PROVIDERS)[number];
 
 export class UpdatePreferencesDto {
+  @ApiPropertyOptional({ enum: ["cash", "accrual"], default: "accrual" })
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsIn(["cash", "accrual"])
+  reportingBasis?: "cash" | "accrual";
+
+  @ApiPropertyOptional({
+    description:
+      "Master visibility switch for the accrual feature (tab, Accounts/Other balances, Cash/Accrual report switch)",
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  accrualEnabled?: boolean;
+
   @ApiPropertyOptional({
     description: "Default currency code (ISO 4217)",
     example: "USD",

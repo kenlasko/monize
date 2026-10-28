@@ -1,5 +1,9 @@
 'use client';
 
+import { CashReportingNotice } from '@/components/reports/CashReportingNotice';
+import { AccrualSystemAccounts } from '@/components/accounts/AccrualSystemAccounts';
+import { useAuthStore } from '@/store/authStore';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
@@ -47,6 +51,9 @@ export default function AccountsPage() {
 
 function AccountsContent() {
   const t = useTranslations('accounts');
+  const acting = useAuthStore(s=>s.actingAsUserId);
+  const accrualEnabled = usePreferencesStore((s) => s.preferences?.accrualEnabled ?? false);
+  const ownerKey = useAuthStore(s => JSON.stringify([s.user?.id, s.actingAsUserId]));
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
@@ -239,6 +246,7 @@ function AccountsContent() {
             </Button>
           }
         />
+        <CashReportingNotice />
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6">
           <SummaryCard
@@ -295,7 +303,7 @@ function AccountsContent() {
           {isLoading ? (
             <LoadingSpinner text={t('page.loadingAccounts')} />
           ) : (
-            <AccountList accounts={accounts} institutions={institutions} brokerageMarketValues={brokerageMarketValues} unpricedHoldingCounts={unpricedHoldingCounts} incompleteHoldingAccountIds={incompleteHoldingAccountIds} portfolioFailed={portfolioFailed} defaultCurrency={defaultCurrency} convertToDefault={convertToDefault} onEdit={openEdit} onRefresh={loadAccounts} />
+            <AccountList otherAccounts={!acting && accrualEnabled ? <AccrualSystemAccounts key={ownerKey} embedded /> : undefined} accounts={accounts} institutions={institutions} brokerageMarketValues={brokerageMarketValues} unpricedHoldingCounts={unpricedHoldingCounts} incompleteHoldingAccountIds={incompleteHoldingAccountIds} portfolioFailed={portfolioFailed} defaultCurrency={defaultCurrency} convertToDefault={convertToDefault} onEdit={openEdit} onRefresh={loadAccounts} />
           )}
         </div>
       </main>

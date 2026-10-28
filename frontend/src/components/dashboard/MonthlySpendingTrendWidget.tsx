@@ -1,5 +1,6 @@
 'use client';
 
+import { useReportingBasis } from '@/components/reports/ReportingBasis';
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { parseISO } from 'date-fns';
@@ -37,6 +38,7 @@ interface MonthlySpendingTrendWidgetProps {
 }
 
 export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWidgetProps) {
+  const basis = useReportingBasis();
   const t = useTranslations('dashboard');
   const { formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
@@ -53,10 +55,12 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
   const { data: response, isLoading: dataLoading } = useReportData(
     () =>
       builtInReportsApi.getIncomeVsExpenses({
+        ...(basis ? {basis} : {}),
         startDate: start || undefined,
         endDate: end,
       }),
-    [start, end],
+    [start, end, basis],
+    { requestKey: JSON.stringify([start, end, basis]), maskStaleData: true },
   );
 
   const chartData = useMemo(

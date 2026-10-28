@@ -223,12 +223,14 @@ describe('SavingsRateReport', () => {
     );
   });
 
-  it('handles getAll error gracefully', async () => {
-    mockGetAll.mockRejectedValue(new Error('boom'));
+  it('shows a retryable budget load failure and distinguishes an empty success', async () => {
+    mockGetAll.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce([]);
     await renderReport();
-    await waitFor(() => {
-      expect(screen.getByText(/No budgets found/i)).toBeInTheDocument();
-    });
+    await screen.findByText(/Failed to load report data/i);
+    expect(screen.queryByText(/No budgets found/i)).not.toBeInTheDocument();
+    await act(async () => { fireEvent.click(screen.getByRole('button', {name:'Try again'})); });
+    await screen.findByText(/No budgets found/i);
+    expect(mockGetAll).toHaveBeenCalledTimes(2);
   });
 
   it('handles getSavingsRate error gracefully', async () => {

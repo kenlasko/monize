@@ -135,7 +135,7 @@ describe('CreditCardDetailView', () => {
     await waitFor(() => expect(screen.getByText('Groceries')).toBeInTheDocument());
     expect(screen.getByText('Gas')).toBeInTheDocument();
     expect(mockGetGroupedTotals).toHaveBeenCalledWith(
-      expect.objectContaining({ groupBy: 'category', accountIds: ['cc-1'] }),
+      expect.objectContaining({ basis:'cash', groupBy: 'category', accountIds: ['cc-1'] }),
     );
   });
 

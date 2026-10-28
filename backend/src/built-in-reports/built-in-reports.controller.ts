@@ -1,3 +1,4 @@
+import { ReportingEndpoint } from "../accruals/reporting-endpoint";
 import { Controller, Get, Query, UseGuards, Request } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import {
@@ -46,6 +47,7 @@ import {
 export class BuiltInReportsController {
   constructor(private readonly reportsService: BuiltInReportsService) {}
 
+  @ReportingEndpoint()
   @Get("spending-by-category")
   @ApiOperation({ summary: "Get spending aggregated by category" })
   @ApiResponse({ status: 200, type: SpendingByCategoryResponse })
@@ -66,6 +68,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint()
   @Get("spending-by-payee")
   @ApiOperation({ summary: "Get spending aggregated by payee" })
   @ApiResponse({ status: 200, type: SpendingByPayeeResponse })
@@ -80,6 +83,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint()
   @Get("income-by-source")
   @ApiOperation({ summary: "Get income aggregated by category" })
   @ApiResponse({ status: 200, type: IncomeBySourceResponse })
@@ -95,6 +99,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint()
   @Get("monthly-spending-trend")
   @ApiOperation({ summary: "Get monthly spending trend by category" })
   @ApiResponse({ status: 200, type: MonthlySpendingTrendResponse })
@@ -109,6 +114,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint()
   @Get("income-vs-expenses")
   @ApiOperation({
     summary: "Get income vs expenses, bucketed by month or week",
@@ -132,6 +138,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("cash-flow")
   @ApiOperation({ summary: "Get monthly cash flow (income, expenses, net)" })
   @ApiResponse({ status: 200, type: IncomeVsExpensesResponse })
@@ -152,6 +159,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("cash-flow-sankey")
   @ApiOperation({
     summary:
@@ -170,6 +178,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint()
   @Get("year-over-year")
   @ApiOperation({ summary: "Get year-over-year comparison data" })
   @ApiResponse({ status: 200, type: YearOverYearResponse })
@@ -181,6 +190,7 @@ export class BuiltInReportsController {
     return this.reportsService.getYearOverYear(req.user.id, years);
   }
 
+  @ReportingEndpoint("cash")
   @Get("weekend-vs-weekday")
   @ApiOperation({ summary: "Get weekend vs weekday spending analysis" })
   @ApiResponse({ status: 200, type: WeekendVsWeekdayResponse })
@@ -195,6 +205,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("spending-anomalies")
   @ApiOperation({ summary: "Get spending anomalies" })
   @ApiResponse({ status: 200, type: SpendingAnomaliesResponse })
@@ -209,6 +220,7 @@ export class BuiltInReportsController {
     return this.reportsService.getSpendingAnomalies(req.user.id, safeThreshold);
   }
 
+  @ReportingEndpoint("cash")
   @Get("tax-summary")
   @ApiOperation({ summary: "Get tax summary for a year" })
   @ApiResponse({ status: 200, type: TaxSummaryResponse })
@@ -223,6 +235,7 @@ export class BuiltInReportsController {
     return this.reportsService.getTaxSummary(req.user.id, safeYear);
   }
 
+  @ReportingEndpoint("cash")
   @Get("recurring-expenses")
   @ApiOperation({ summary: "Get recurring expenses analysis" })
   @ApiResponse({ status: 200, type: RecurringExpensesResponse })
@@ -246,6 +259,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("bill-payment-history")
   @ApiOperation({ summary: "Get bill payment history" })
   @ApiResponse({ status: 200, type: BillPaymentHistoryResponse })
@@ -260,6 +274,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("uncategorized-transactions")
   @ApiOperation({ summary: "Get uncategorized transactions" })
   @ApiResponse({ status: 200, type: UncategorizedTransactionsResponse })
@@ -275,6 +290,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("duplicate-transactions")
   @ApiOperation({ summary: "Find potential duplicate transactions" })
   @ApiResponse({ status: 200, type: DuplicateTransactionsResponse })
@@ -290,6 +306,7 @@ export class BuiltInReportsController {
     );
   }
 
+  @ReportingEndpoint()
   @Get("monthly-comparison")
   @ApiOperation({
     summary: "Get monthly comparison report (month vs previous month)",
@@ -302,6 +319,7 @@ export class BuiltInReportsController {
     return this.reportsService.getMonthlyComparison(req.user.id, query.month);
   }
 
+  @ReportingEndpoint()
   @Get("monthly-category-breakdown")
   @ApiOperation({
     summary: "Get expense and income amounts broken down by category and month",

@@ -208,33 +208,9 @@
     "Nov",
     "Dic"
   ],
-  "weekdaysShort": [
-    "Dom",
-    "Lun",
-    "Mar",
-    "Mer",
-    "Gio",
-    "Ven",
-    "Sab"
-  ],
-  "weekdaysMin": [
-    "Do",
-    "Lu",
-    "Ma",
-    "Me",
-    "Gi",
-    "Ve",
-    "Sa"
-  ],
-  "weekdaysNarrow": [
-    "D",
-    "L",
-    "M",
-    "M",
-    "G",
-    "V",
-    "S"
-  ],
+  "weekdaysShort": ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"],
+  "weekdaysMin": ["Do", "Lu", "Ma", "Me", "Gi", "Ve", "Sa"],
+  "weekdaysNarrow": ["D", "L", "M", "M", "G", "V", "S"],
   "dateFormat": {
     "browserAuto": "Usa localizzazione del browser (rilevata automaticamente: {sample})",
     "custom": "Personalizzato..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "Include {count, plural, one {# transazione pianificata scaduta} other {# transazioni pianificate scadute}}"
+  },
+  "reportingBasis": {
+    "label": "Base contabile",
+    "default": "{basis} (predefinita utente)",
+    "help": "I totali usano la base scelta.",
+    "detailHelp": "I totali usano la base scelta.",
+    "cashOnly": "Questa vista segue i pagamenti effettivi e usa la base di cassa.",
+    "exportCaption": "Base contabile: {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Componenti per competenza in sola lettura. I collegamenti aprono il movimento originale. Riduci il periodo se necessario.",
+    "fxHelp": "Alcuni importi non sono valutabili. Aggiungi i cambi storici del periodo e riprova.",
+    "unsupported": "Questa combinazione di filtri non può essere espansa in sicurezza. Scegli un filtro più semplice.",
+    "failed": "Impossibile caricare i movimenti. Riduci il periodo se le righe sono troppe e riprova.",
+    "identity": "ID origine / ripartizione / piano",
+    "native": "Importo originale",
+    "reporting": "Importo del rapporto",
+    "payment": "Data del pagamento",
+    "title": "Per competenza",
+    "effective": "Data di rilevazione",
+    "source": "Data del pagamento",
+    "retry": "Riprova",
+    "unknown": "Importo non disponibile",
+    "start": "Data inizio",
+    "end": "Data fine",
+    "partial": "(totale parziale)",
+    "empty": "Nessun dato transazione disponibile"
+  },
+  "systemAccruals": {
+    "title": "Conti di competenza",
+    "help": "Saldi gestiti dal sistema nella valuta originale. Sola lettura; modificarli tramite la registrazione originale.",
+    "ownerOnly": "Solo il proprietario può visualizzare questi conti.",
+    "empty": "Nessun conto di competenza. Crea una ripartizione da un’entrata o una spesa.",
+    "position": "Posizione",
+    "closing": "Saldo finale",
+    "back": "Conti",
+    "asOf": "Saldo al",
+    "account": "Conto",
+    "currency": "Valuta",
+    "balance": "Saldo",
+    "prepaid": "Costi anticipati (netti)",
+    "unearned": "Ricavi anticipati (netti)",
+    "signHelp": "I saldi negativi rappresentano debiti maturati o crediti.",
+    "asset": "Attività",
+    "liability": "Passività",
+    "opening": "Saldo d'apertura",
+    "date": "Data",
+    "movement": "Componente",
+    "amount": "Importo",
+    "payment": "Data del pagamento",
+    "recognition": "Data di rilevazione",
+    "range": "{start} – {end}"
   }
 }

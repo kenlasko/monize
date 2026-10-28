@@ -1,3 +1,4 @@
+import { ReportingRead } from "../accruals/reporting-basis";
 import { Injectable } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -47,6 +48,7 @@ export class DataQualityReportsService {
     private currencyService: ReportCurrencyService,
   ) {}
 
+  @ReportingRead("cash")
   async getUncategorizedTransactions(
     userId: string,
     startDate: string | undefined,
@@ -255,6 +257,7 @@ export class DataQualityReportsService {
     };
   }
 
+  @ReportingRead("cash")
   async getDuplicateTransactions(
     userId: string,
     startDate: string | undefined,

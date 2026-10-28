@@ -1,3 +1,4 @@
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act, fireEvent, waitFor, within } from '@/test/render';
 import toast from 'react-hot-toast';
@@ -190,6 +191,7 @@ async function renderPage() {
 
 describe('PayeeDetailPage', () => {
   beforeEach(() => {
+    usePreferencesStore.setState({preferences:{accrualEnabled:true,reportingBasis:"accrual"} as never});
     vi.clearAllMocks();
     chartProps.length = 0;
     searchParams.current = new URLSearchParams();
@@ -209,6 +211,22 @@ describe('PayeeDetailPage', () => {
     });
   });
 
+  it('uses the user basis for trends and supports a view override', async () => {
+    usePreferencesStore.getState().updatePreferences({reportingBasis:'cash'});
+    await renderPage();
+    expect(mockGetMonthlyTotals).toHaveBeenLastCalledWith({basis:'cash', payeeIds:['payee-1']});
+    await act(async()=>fireEvent.click(screen.getByRole('button', { name: /^Accrual(?: \(user default\))?$/ })));
+    expect(mockGetMonthlyTotals).toHaveBeenLastCalledWith({basis:'accrual', payeeIds:['payee-1']});
+    expect(usePreferencesStore.getState().preferences?.reportingBasis).toBe('cash');
+    await act(async()=>usePreferencesStore.setState({preferences:null}));
+  });
+  it('shows a retryable error rather than empty history when a required trend fails', async () => {
+    mockGetMonthlyTotals.mockRejectedValueOnce(new Error('trend unavailable'));
+    await renderPage();
+    expect(screen.getByRole('alert')).toHaveTextContent('Failed to load payee details');
+    expect(screen.queryByTestId('chart')).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Reporting basis' })).toBeInTheDocument();
+  });
   it('renders the header, cards and overview panels', async () => {
     await renderPage();
 
@@ -239,7 +257,7 @@ describe('PayeeDetailPage', () => {
     );
   });
 
-  it('survives every analytics call failing: the page still renders', async () => {
+  it('shows a retryable error when every analytics call fails', async () => {
     mockGetSummary.mockRejectedValue(new Error('summary down'));
     mockGetMonthlyTotals.mockRejectedValue(new Error('down'));
     mockGetGroupedTotals.mockRejectedValue(new Error('down'));
@@ -247,8 +265,9 @@ describe('PayeeDetailPage', () => {
 
     await renderPage();
 
-    expect(screen.getByRole('heading', { name: 'Starbucks' })).toBeInTheDocument();
-    expect(screen.getByText('Spent This Year')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name:'Retry'})).toBeInTheDocument();
+    expect(screen.queryByTestId('chart')).not.toBeInTheDocument();
   });
 
   it('opens on the tab a deep link names', async () => {
@@ -266,7 +285,7 @@ describe('PayeeDetailPage', () => {
     // accountStatus=all, or the register hides payments made from an account
     // that has since been closed.
     expect(mockPush).toHaveBeenCalledWith(
-      '/transactions?payeeId=payee-1&accountStatus=all',
+      '/transactions?payeeId=payee-1&accountStatus=all&basis=accrual',
     );
   });
 
@@ -276,11 +295,12 @@ describe('PayeeDetailPage', () => {
     fireEvent.click(screen.getByText('Chequing'));
 
     expect(mockPush).toHaveBeenCalledWith(
-      '/transactions?payeeId=payee-1&accountStatus=all&accountId=acct-1',
+      '/transactions?payeeId=payee-1&accountStatus=all&accountId=acct-1&basis=accrual',
     );
   });
 
   it('carries accountStatus=all on a category row too', async () => {
+      usePreferencesStore.getState().updatePreferences({reportingBasis:'cash'});
     await renderPage();
 
     // "Coffee" is also the payee's default category in Key Information, so the
@@ -302,14 +322,14 @@ describe('PayeeDetailPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /95\.20/ }));
 
     expect(mockPush).toHaveBeenCalledWith(
-      '/transactions?payeeId=payee-1&accountStatus=all&startDate=2025-12-24&endDate=2025-12-24',
+      '/transactions?payeeId=payee-1&accountStatus=all&startDate=2025-12-24&endDate=2025-12-24&basis=cash',
     );
   });
 
   it('asks for the whole history for the chart, not a window', async () => {
     await renderPage();
 
-    expect(mockGetMonthlyTotals).toHaveBeenCalledWith({ payeeIds: ['payee-1'] });
+    expect(mockGetMonthlyTotals).toHaveBeenCalledWith({ basis: 'accrual', payeeIds: ['payee-1'] });
   });
 
   describe('Top Categories range toggle', () => {
@@ -360,6 +380,7 @@ describe('PayeeDetailPage', () => {
     });
 
     it('drops the date filter from a category link when showing all time', async () => {
+      usePreferencesStore.getState().updatePreferences({reportingBasis:'cash'});
       await renderPage();
 
       const panel = screen.getByText('Top Categories').closest('section')!;
@@ -369,7 +390,7 @@ describe('PayeeDetailPage', () => {
       fireEvent.click(within(panel).getByText('Pastry'));
 
       expect(mockPush).toHaveBeenCalledWith(
-        '/transactions?payeeId=payee-1&accountStatus=all&categoryId=cat-2',
+        '/transactions?payeeId=payee-1&accountStatus=all&categoryId=cat-2&basis=cash',
       );
     });
 
@@ -392,6 +413,7 @@ describe('PayeeDetailPage', () => {
     });
 
     it('carries the 12-month window into a category link', async () => {
+      usePreferencesStore.getState().updatePreferences({reportingBasis:'cash'});
       await renderPage();
 
       const panel = screen.getByText('Top Categories').closest('section')!;

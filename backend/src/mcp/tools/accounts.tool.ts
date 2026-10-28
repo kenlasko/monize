@@ -25,7 +25,7 @@ export class McpAccountsTools {
         title: "List accounts",
         annotations: READ_ONLY,
         description:
-          "The user's accounts and an assets / liabilities / net-worth summary " +
+          "Cash-basis accounts and an assets / liabilities / net-worth summary " +
           "matching the dashboard. A brokerage account's `balance` is its " +
           "market value; others include future transactions (`currentBalance` " +
           "is through today). Both are also in `defaultCurrency` (the totals' " +
@@ -36,6 +36,7 @@ export class McpAccountsTools {
           "or `unpricedSymbols`. Loan and mortgage rows carry their schedule. " +
           "`totalAccounts` counts AFTER filtering.",
         inputSchema: z.object({
+          basis: z.literal("cash").optional(),
           accountNames: z
             .array(z.string().max(100))
             .max(100)

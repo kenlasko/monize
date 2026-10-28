@@ -1,3 +1,10 @@
+jest.mock("./rule-accrual", () => ({
+  planRuleAccruals: async () => [],
+  ruleAccrualFingerprint: (base: string) => base,
+  captureRuleAccrualHistory: async () => undefined,
+  assertRuleAccrualWrite: async () => false,
+  assertAutomaticRuleSources: async () => undefined,
+}));
 import { Account } from "../accounts/entities/account.entity";
 import { AiReviewRequestsService } from "../ai-review/ai-review-requests.service";
 import { Category } from "../categories/entities/category.entity";
@@ -83,6 +90,7 @@ function harness(rowOver: Partial<Transaction> = {}) {
     [Tag, { find: jest.fn().mockResolvedValue([]) }],
   ]);
   const m = {
+    query: jest.fn().mockResolvedValue([]),
     getRepository: jest.fn((entity: unknown) => repos.get(entity)),
     find: jest.fn(async (entity: unknown) =>
       entity === Transaction

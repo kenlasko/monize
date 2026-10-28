@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { gainLossColor } from '@/lib/format';
-import { Skeleton } from '@/components/ui/LoadingSkeleton';
+import { useReportExportMetadata } from "@/hooks/useReportExportMetadata";
+import { useReportingBasis } from "./ReportingBasis";
+import { useState, useMemo, useRef } from "react";
+import { gainLossColor } from "@/lib/format";
+import { Skeleton } from "@/components/ui/LoadingSkeleton";
 import {
   BarChart,
   Bar,
@@ -13,27 +15,33 @@ import {
   Legend,
   ReferenceLine,
   ResponsiveContainer,
-} from 'recharts';
-import { budgetsApi } from '@/lib/budgets';
-import type { Budget, FlexGroupCategory, FlexGroupStatus } from '@/types/budget';
-import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { useReportData } from '@/hooks/useReportData';
-import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
-import { ReportError } from '@/components/reports/ReportError';
-import { SortableHeader } from '@/components/ui/SortableHeader';
-import { CAPTION_CLASS, CellLabel, PHONE_HEADER_CLASS } from '@/components/ui/Table';
+} from "recharts";
+import { budgetsApi } from "@/lib/budgets";
+import type {
+  Budget,
+  FlexGroupCategory,
+  FlexGroupStatus,
+} from "@/types/budget";
+import { useNumberFormat } from "@/hooks/useNumberFormat";
+import { useReportData } from "@/hooks/useReportData";
+import { ReportToolbarActions } from "@/components/reports/ReportToolbarActions";
+import { ReportError } from "@/components/reports/ReportError";
+import { SortableHeader } from "@/components/ui/SortableHeader";
+import {
+  CAPTION_CLASS,
+  CellLabel,
+  PHONE_HEADER_CLASS,
+} from "@/components/ui/Table";
 import type {
   SortColumn as TableSortColumn,
   SortColumnsByField as TableSortColumnsByField,
-} from '@/components/ui/Table';
-import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
-import { chartColors } from '@/lib/chart-colors';
-import { useTranslations } from 'next-intl';
+} from "@/components/ui/Table";
+import { useSortableTable, compareValues } from "@/hooks/useSortableTable";
+import { chartColors } from "@/lib/chart-colors";
+import { useTranslations } from "next-intl";
 
-const logger = createLogger('FlexGroupAnalysisReport');
-
-type FlexGroupSortField = 'category' | 'budgeted' | 'spent' | 'remaining' | 'percentUsed';
+type FlexGroupSortField =
+  "category" | "budgeted" | "spent" | "remaining" | "percentUsed";
 
 // The three-way percent-used colour, written once: over budget is red, close
 // to it amber, otherwise green. The group header above the chart and the
@@ -41,10 +49,10 @@ type FlexGroupSortField = 'category' | 'budgeted' | 'spent' | 'remaining' | 'per
 // kind of figure, and used to spell the same ternary twice.
 const percentUsedColor = (percentUsed: number) =>
   percentUsed > 100
-    ? 'text-red-600 dark:text-red-400'
+    ? "text-red-600 dark:text-red-400"
     : percentUsed > 80
-      ? 'text-yellow-600 dark:text-yellow-400'
-      : 'text-green-600 dark:text-green-400';
+      ? "text-yellow-600 dark:text-yellow-400"
+      : "text-green-600 dark:text-green-400";
 
 // What is left of a category's budget. Written once because the cell, the
 // sort comparator and the PDF export all state it.
@@ -56,7 +64,7 @@ const categoryRemaining = (cat: FlexGroupCategory) => cat.budgeted - cat.spent;
  * (from `sm` up) and the phone sort strip -- so the two can never list
  * different fields.
  */
-interface SortColumn extends TableSortColumn<FlexGroupSortField, 'right'> {
+interface SortColumn extends TableSortColumn<FlexGroupSortField, "right"> {
   /**
    * This column's cell, as text. The PDF export builds its headings AND its
    * row cells from the same ordered record the table renders, so the export
@@ -88,17 +96,21 @@ interface SortColumn extends TableSortColumn<FlexGroupSortField, 'right'> {
  * which a test comparing header LABELS can see, because the labels stay right.
  * Here it is a compile error instead.
  */
-type SortColumnsByField = TableSortColumnsByField<FlexGroupSortField, SortColumn>;
+type SortColumnsByField = TableSortColumnsByField<
+  FlexGroupSortField,
+  SortColumn
+>;
 
 // Today's header cell, unchanged.
 const headerClass = (col: SortColumn) =>
   col.last
-    ? 'py-2 font-medium text-gray-500 dark:text-gray-400'
-    : 'py-2 pr-4 font-medium text-gray-500 dark:text-gray-400';
+    ? "py-2 font-medium text-gray-500 dark:text-gray-400"
+    : "py-2 pr-4 font-medium text-gray-500 dark:text-gray-400";
 
 // Today's body cell padding, restored from `sm` up and absent below it (the
 // wrapped row supplies the vertical inset and the grid does the spacing).
-const cellPadding = (col: SortColumn) => (col.last ? 'sm:py-2' : 'sm:py-2 sm:pr-4');
+const cellPadding = (col: SortColumn) =>
+  col.last ? "sm:py-2" : "sm:py-2 sm:pr-4";
 
 // The phone sort strip -- `PHONE_HEADER_CLASS` in `components/ui/Table.tsx`,
 // which is where that class and its own doc live. The same sort controls as
@@ -194,28 +206,61 @@ const cellPadding = (col: SortColumn) => (col.last ? 'sm:py-2' : 'sm:py-2 sm:pr-
 // 104px, then `% wykorzystania` (pl) at 103px and `% использован` (ru) at
 // 96px. So no column takes a spanning track here, unlike the sibling tables
 // where a single-word `Gebudgetteerd` or `Запланировано` forced one.
-const MONEY_CELL = 'p-0 text-right text-xs whitespace-nowrap sm:table-cell sm:text-sm';
+const MONEY_CELL =
+  "p-0 text-right text-xs whitespace-nowrap sm:table-cell sm:text-sm";
 
 export function FlexGroupAnalysisReport() {
-  const t = useTranslations('reports');
-  const { formatCurrencyCompact: formatCurrency, formatPercentTrimmed } = useNumberFormat();
+  const { withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
+  const t = useTranslations("reports");
+  const { formatCurrencyCompact: formatCurrency, formatPercentTrimmed } =
+    useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
-  const { sortField, sortDirection, handleSort } = useSortableTable<FlexGroupSortField>(
-    'reports.flex-group-analysis.sort',
-    { field: 'spent', direction: 'desc' },
+  const {
+    data: budgetRows,
+    isLoading: budgetsLoading,
+    error: budgetsError,
+    reload: reloadBudgets,
+  } = useReportData(
+    () => budgetsApi.getAll(...(basis ? ([basis] as const) : [])),
+    [basis],
+    { requestKey: JSON.stringify([basis]), maskStaleData: true },
   );
+  const budgets = useMemo<Budget[]>(() => budgetRows ?? [], [budgetRows]);
+  const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>("");
+  const selectedBudgetId = budgets.some((b) => b.id === selectedBudgetIdState)
+    ? selectedBudgetIdState
+    : (budgets.find((b) => b.isActive)?.id ?? budgets[0]?.id ?? "");
+  const { sortField, sortDirection, handleSort } =
+    useSortableTable<FlexGroupSortField>("reports.flex-group-analysis.sort", {
+      field: "spent",
+      direction: "desc",
+    });
 
-  const { data: response, isLoading, error, reload } = useReportData(
+  const {
+    data: response,
+    isLoading,
+    error,
+    reload,
+  } = useReportData(
     () =>
       selectedBudgetId
-        ? budgetsApi.getFlexGroupStatus(selectedBudgetId)
+        ? budgetsApi.getFlexGroupStatus(
+            selectedBudgetId,
+            ...(basis ? ([basis] as const) : []),
+          )
         : Promise.resolve<FlexGroupStatus[]>([]),
-    [selectedBudgetId],
+    [selectedBudgetId, basis],
+    {
+      requestKey: JSON.stringify([selectedBudgetId, basis]),
+      maskStaleData: true,
+    },
   );
 
-  const flexGroups = useMemo<FlexGroupStatus[]>(() => response ?? [], [response]);
+  const flexGroups = useMemo<FlexGroupStatus[]>(
+    () => response ?? [],
+    [response],
+  );
 
   const sortedFlexGroups = useMemo(() => {
     return flexGroups.map((group) => {
@@ -223,78 +268,63 @@ export function FlexGroupAnalysisReport() {
       sortedCategories.sort((a, b) => {
         let comparison = 0;
         switch (sortField) {
-          case 'category':
+          case "category":
             comparison = compareValues(a.categoryName, b.categoryName);
             break;
-          case 'budgeted':
+          case "budgeted":
             comparison = compareValues(a.budgeted, b.budgeted);
             break;
-          case 'spent':
+          case "spent":
             comparison = compareValues(a.spent, b.spent);
             break;
-          case 'remaining':
-            comparison = compareValues(categoryRemaining(a), categoryRemaining(b));
+          case "remaining":
+            comparison = compareValues(
+              categoryRemaining(a),
+              categoryRemaining(b),
+            );
             break;
-          case 'percentUsed':
+          case "percentUsed":
             comparison = compareValues(a.percentUsed, b.percentUsed);
             break;
         }
-        return sortDirection === 'asc' ? comparison : -comparison;
+        return sortDirection === "asc" ? comparison : -comparison;
       });
       return { ...group, categories: sortedCategories };
     });
   }, [flexGroups, sortField, sortDirection]);
-
-  useEffect(() => {
-    const loadBudgets = async () => {
-      try {
-        const budgetList = await budgetsApi.getAll();
-        setBudgets(budgetList);
-        const active = budgetList.find((b) => b.isActive);
-        if (active) {
-          setSelectedBudgetId(active.id);
-        } else if (budgetList.length > 0) {
-          setSelectedBudgetId(budgetList[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load budgets:', error);
-      }
-    };
-    loadBudgets();
-  }, []);
 
   // The five sortable columns, keyed by field so the record is exhaustive and
   // each entry must name its own key (see `SortColumnsByField`). Built once
   // for the whole report: every group's table renders from this one record.
   const columns: SortColumnsByField = {
     category: {
-      field: 'category',
-      label: t('flexGroupAnalysis.colCategory'),
+      field: "category",
+      label: t("flexGroupAnalysis.colCategory"),
       value: (cat) => cat.categoryName,
     },
     budgeted: {
-      field: 'budgeted',
-      label: t('flexGroupAnalysis.colBudget'),
+      field: "budgeted",
+      label: t("flexGroupAnalysis.colBudget"),
       value: (cat) => formatCurrency(cat.budgeted),
-      align: 'right',
+      align: "right",
     },
     spent: {
-      field: 'spent',
-      label: t('flexGroupAnalysis.colSpent'),
+      field: "spent",
+      label: t("flexGroupAnalysis.colSpent"),
       value: (cat) => formatCurrency(cat.spent),
-      align: 'right',
+      align: "right",
     },
     remaining: {
-      field: 'remaining',
-      label: t('flexGroupAnalysis.colRemaining'),
+      field: "remaining",
+      label: t("flexGroupAnalysis.colRemaining"),
       value: (cat) => formatCurrency(categoryRemaining(cat)),
-      align: 'right',
+      align: "right",
     },
     percentUsed: {
-      field: 'percentUsed',
-      label: t('flexGroupAnalysis.colPercentUsed'),
+      field: "percentUsed",
+      label: t("flexGroupAnalysis.colPercentUsed"),
       value: (cat) => formatPercentTrimmed(cat.percentUsed),
-      align: 'right',
+      align: "right",
       last: true,
     },
   };
@@ -310,13 +340,16 @@ export function FlexGroupAnalysisReport() {
   const sortColumns: readonly SortColumn[] = Object.values(columns);
 
   const handleExportPdf = async () => {
-    const { exportToPdf } = await import('@/lib/pdf-export');
+    const { exportToPdf } = await import("@/lib/pdf-export");
     // Headings and row cells both come from the ordered column record, so the
     // export cannot carry the screen's old column order (see `SortColumn`).
     // The group name is the export's own extra leading column -- on screen it
     // is the card's heading rather than a table column -- and it is prepended
     // to the headings and to every row together.
-    const headers = [t('flexGroupAnalysis.colGroup'), ...sortColumns.map((col) => col.label)];
+    const headers = [
+      t("flexGroupAnalysis.colGroup"),
+      ...sortColumns.map((col) => col.label),
+    ];
     // The ROWS stay in the order the server sent, not the order on screen --
     // deliberately, and as every sibling report export does: the PDF is a
     // report of the period, not a snapshot of a transient sort.
@@ -326,19 +359,23 @@ export function FlexGroupAnalysisReport() {
         ...sortColumns.map((col) => col.value(cat)),
       ]),
     );
-    await exportToPdf({
-      title: t('flexGroupAnalysis.pdfTitle'),
-      chartContainer: chartRef.current,
-      tableData: { headers, rows },
-      filename: 'flex-group-analysis',
-    });
+    await exportToPdf(
+      withPdfBasis({
+        title: t("flexGroupAnalysis.pdfTitle"),
+        chartContainer: chartRef.current,
+        tableData: { headers, rows },
+        filename: "flex-group-analysis",
+      }),
+    );
   };
+
+  if (budgetsError) return <ReportError onRetry={reloadBudgets} />;
 
   if (error) {
     return <ReportError onRetry={reload} />;
   }
 
-  if (isLoading) {
+  if (isLoading || budgetsLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="space-y-4">
@@ -353,7 +390,7 @@ export function FlexGroupAnalysisReport() {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
         <p className="text-gray-500 dark:text-gray-400">
-          {t('flexGroupAnalysis.noBudgets')}
+          {t("flexGroupAnalysis.noBudgets")}
         </p>
       </div>
     );
@@ -369,13 +406,15 @@ export function FlexGroupAnalysisReport() {
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             {budgets.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
             ))}
           </select>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
           <p className="text-gray-500 dark:text-gray-400">
-            {t('flexGroupAnalysis.noFlexGroups')}
+            {t("flexGroupAnalysis.noFlexGroups")}
           </p>
         </div>
       </div>
@@ -393,7 +432,9 @@ export function FlexGroupAnalysisReport() {
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             {budgets.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
             ))}
           </select>
           <ReportToolbarActions onExportPdf={handleExportPdf} />
@@ -402,78 +443,102 @@ export function FlexGroupAnalysisReport() {
 
       {/* Per-group charts */}
       <div ref={chartRef}>
-      {sortedFlexGroups.map((group) => {
-        const chartData = group.categories.map((cat) => ({
-          name: cat.categoryName,
-          spent: cat.spent,
-          budgeted: cat.budgeted,
-        }));
+        {sortedFlexGroups.map((group) => {
+          const chartData = group.categories.map((cat) => ({
+            name: cat.categoryName,
+            spent: cat.spent,
+            budgeted: cat.budgeted,
+          }));
 
-        return (
-          <div key={group.groupName} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {group.groupName}
-              </h2>
-              <div className="flex items-center gap-3 text-sm">
-                <span className="text-gray-500 dark:text-gray-400">
-                  {formatCurrency(group.totalSpent)} / {formatCurrency(group.totalBudgeted)}
-                </span>
-                <span className={`font-medium ${percentUsedColor(group.percentUsed)}`}>
-                  {formatPercentTrimmed(group.percentUsed)}
-                </span>
+          return (
+            <div
+              key={group.groupName}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {group.groupName}
+                </h2>
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {formatCurrency(group.totalSpent)} /{" "}
+                    {formatCurrency(group.totalBudgeted)}
+                  </span>
+                  <span
+                    className={`font-medium ${percentUsedColor(group.percentUsed)}`}
+                  >
+                    {formatPercentTrimmed(group.percentUsed)}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <BarChart data={chartData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis
-                    type="number"
-                    tickFormatter={(v) => formatCurrency(v)}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    tick={{ fontSize: 12 }}
-                    width={120}
-                  />
-                  <Tooltip
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload || payload.length === 0) return null;
-                      return (
-                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{label}</p>
-                          {payload.map((entry) => (
-                            <p key={entry.dataKey as string} className="text-sm" style={{ color: entry.color }}>
-                              {entry.name}: {formatCurrency(entry.value as number)}
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <BarChart data={chartData} layout="vertical">
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="opacity-30"
+                    />
+                    <XAxis
+                      type="number"
+                      tickFormatter={(v) => formatCurrency(v)}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      tick={{ fontSize: 12 }}
+                      width={120}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload || payload.length === 0)
+                          return null;
+                        return (
+                          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                              {label}
                             </p>
-                          ))}
-                        </div>
-                      );
-                    }}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="spent"
-                    name={t('flexGroupAnalysis.seriesSpent')}
-                    fill={chartColors.primary}
-                    radius={[0, 4, 4, 0]}
-                  />
-                  <ReferenceLine
-                    x={group.totalBudgeted}
-                    stroke={chartColors.expense}
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    label={{ value: t('flexGroupAnalysis.limitLabel', { amount: formatCurrency(group.totalBudgeted) }), position: 'top', fill: chartColors.expense, fontSize: 11 }}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+                            {payload.map((entry) => (
+                              <p
+                                key={entry.dataKey as string}
+                                className="text-sm"
+                                style={{ color: entry.color }}
+                              >
+                                {entry.name}:{" "}
+                                {formatCurrency(entry.value as number)}
+                              </p>
+                            ))}
+                          </div>
+                        );
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="spent"
+                      name={t("flexGroupAnalysis.seriesSpent")}
+                      fill={chartColors.primary}
+                      radius={[0, 4, 4, 0]}
+                    />
+                    <ReferenceLine
+                      x={group.totalBudgeted}
+                      stroke={chartColors.expense}
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      label={{
+                        value: t("flexGroupAnalysis.limitLabel", {
+                          amount: formatCurrency(group.totalBudgeted),
+                        }),
+                        position: "top",
+                        fill: chartColors.expense,
+                        fontSize: 11,
+                      }}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
 
-            {/* Category breakdown table.
+              {/* Category breakdown table.
 
                 Below `sm` the table becomes a block and each row wraps into a
                 two-column grid of EQUAL `minmax(0,1fr)` tracks (for the reason
@@ -527,82 +592,114 @@ export function FlexGroupAnalysisReport() {
                 the phone reading order differs from the DOM order, which is
                 the desktop column order the grid placement overrides visually.
                 Both are properties of the mechanism, not of this table. */}
-            <div className="mt-4 overflow-x-auto">
-              <table role="table" className="block min-w-full text-sm sm:table">
-                <thead role="rowgroup" className="block sm:table-header-group">
-                  {/* Phone sort strip: the same five controls, wrapped. */}
-                  <tr role="row" className="flex flex-wrap gap-x-2 gap-y-1 pb-2 border-b border-gray-200 dark:border-gray-700 sm:hidden">
-                    {sortColumns.map((col) => (
-                      <SortableHeader<FlexGroupSortField>
-                        key={col.field}
-                        field={col.field}
-                        sortField={sortField}
-                        sortDirection={sortDirection}
-                        onSort={handleSort}
-                        className={PHONE_HEADER_CLASS}
-                      >
-                        {col.label}
-                      </SortableHeader>
-                    ))}
-                  </tr>
-                  <tr role="row" className="hidden border-b border-gray-200 dark:border-gray-700 sm:table-row">
-                    {sortColumns.map((col) => (
-                      <SortableHeader<FlexGroupSortField>
-                        key={col.field}
-                        field={col.field}
-                        sortField={sortField}
-                        sortDirection={sortDirection}
-                        onSort={handleSort}
-                        align={col.align}
-                        className={headerClass(col)}
-                      >
-                        {col.label}
-                      </SortableHeader>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody role="rowgroup" className="block sm:table-row-group">
-                  {group.categories.map((cat) => (
+              <div className="mt-4 overflow-x-auto">
+                <table
+                  role="table"
+                  className="block min-w-full text-sm sm:table"
+                >
+                  <thead
+                    role="rowgroup"
+                    className="block sm:table-header-group"
+                  >
+                    {/* Phone sort strip: the same five controls, wrapped. */}
                     <tr
-                      key={cat.categoryId}
                       role="row"
-                      className="grid grid-cols-2 items-start gap-x-3 gap-y-1.5 py-2 border-b border-gray-100 dark:border-gray-700/50 sm:table-row sm:py-0"
+                      className="flex flex-wrap gap-x-2 gap-y-1 pb-2 border-b border-gray-200 dark:border-gray-700 sm:hidden"
                     >
-                      <td
-                        role="cell"
-                        className={`col-start-1 row-start-1 min-w-0 break-words p-0 text-gray-900 dark:text-gray-100 sm:table-cell sm:break-normal ${cellPadding(columns.category)}`}
+                      {sortColumns.map((col) => (
+                        <SortableHeader<FlexGroupSortField>
+                          key={col.field}
+                          field={col.field}
+                          sortField={sortField}
+                          sortDirection={sortDirection}
+                          onSort={handleSort}
+                          className={PHONE_HEADER_CLASS}
+                        >
+                          {col.label}
+                        </SortableHeader>
+                      ))}
+                    </tr>
+                    <tr
+                      role="row"
+                      className="hidden border-b border-gray-200 dark:border-gray-700 sm:table-row"
+                    >
+                      {sortColumns.map((col) => (
+                        <SortableHeader<FlexGroupSortField>
+                          key={col.field}
+                          field={col.field}
+                          sortField={sortField}
+                          sortDirection={sortDirection}
+                          onSort={handleSort}
+                          align={col.align}
+                          className={headerClass(col)}
+                        >
+                          {col.label}
+                        </SortableHeader>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody role="rowgroup" className="block sm:table-row-group">
+                    {group.categories.map((cat) => (
+                      <tr
+                        key={cat.categoryId}
+                        role="row"
+                        className="grid grid-cols-2 items-start gap-x-3 gap-y-1.5 py-2 border-b border-gray-100 dark:border-gray-700/50 sm:table-row sm:py-0"
                       >
-                        {columns.category.value(cat)}
-                      </td>
-                      <td role="cell" className={`col-start-1 row-start-2 text-gray-600 dark:text-gray-400 ${cellPadding(columns.budgeted)} ${MONEY_CELL}`}>
-                        <CellLabel className={CAPTION_CLASS}>{columns.budgeted.label}</CellLabel>
-                        {columns.budgeted.value(cat)}
-                      </td>
-                      <td role="cell" className={`col-start-2 row-start-2 text-gray-600 dark:text-gray-400 ${cellPadding(columns.spent)} ${MONEY_CELL}`}>
-                        <CellLabel className={CAPTION_CLASS}>{columns.spent.label}</CellLabel>
-                        {columns.spent.value(cat)}
-                      </td>
-                      {/* What is left takes the right of line 1 beside the
+                        <td
+                          role="cell"
+                          className={`col-start-1 row-start-1 min-w-0 break-words p-0 text-gray-900 dark:text-gray-100 sm:table-cell sm:break-normal ${cellPadding(columns.category)}`}
+                        >
+                          {columns.category.value(cat)}
+                        </td>
+                        <td
+                          role="cell"
+                          className={`col-start-1 row-start-2 text-gray-600 dark:text-gray-400 ${cellPadding(columns.budgeted)} ${MONEY_CELL}`}
+                        >
+                          <CellLabel className={CAPTION_CLASS}>
+                            {columns.budgeted.label}
+                          </CellLabel>
+                          {columns.budgeted.value(cat)}
+                        </td>
+                        <td
+                          role="cell"
+                          className={`col-start-2 row-start-2 text-gray-600 dark:text-gray-400 ${cellPadding(columns.spent)} ${MONEY_CELL}`}
+                        >
+                          <CellLabel className={CAPTION_CLASS}>
+                            {columns.spent.label}
+                          </CellLabel>
+                          {columns.spent.value(cat)}
+                        </td>
+                        {/* What is left takes the right of line 1 beside the
                           category: it is the figure the row is read for. */}
-                      <td role="cell" className={`col-start-2 row-start-1 font-medium ${gainLossColor(categoryRemaining(cat))} ${cellPadding(columns.remaining)} ${MONEY_CELL}`}>
-                        <CellLabel className={CAPTION_CLASS}>{columns.remaining.label}</CellLabel>
-                        {columns.remaining.value(cat)}
-                      </td>
-                      {/* Percent used sits under the spend it is a share of.
+                        <td
+                          role="cell"
+                          className={`col-start-2 row-start-1 font-medium ${gainLossColor(categoryRemaining(cat))} ${cellPadding(columns.remaining)} ${MONEY_CELL}`}
+                        >
+                          <CellLabel className={CAPTION_CLASS}>
+                            {columns.remaining.label}
+                          </CellLabel>
+                          {columns.remaining.value(cat)}
+                        </td>
+                        {/* Percent used sits under the spend it is a share of.
                           It is also the last column, so it drops its right
                           padding. */}
-                      <td role="cell" className={`col-start-2 row-start-3 font-medium ${percentUsedColor(cat.percentUsed)} ${cellPadding(columns.percentUsed)} ${MONEY_CELL}`}>
-                        <CellLabel className={CAPTION_CLASS}>{columns.percentUsed.label}</CellLabel>
-                        {columns.percentUsed.value(cat)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <td
+                          role="cell"
+                          className={`col-start-2 row-start-3 font-medium ${percentUsedColor(cat.percentUsed)} ${cellPadding(columns.percentUsed)} ${MONEY_CELL}`}
+                        >
+                          <CellLabel className={CAPTION_CLASS}>
+                            {columns.percentUsed.label}
+                          </CellLabel>
+                          {columns.percentUsed.value(cat)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
       </div>
     </div>
   );

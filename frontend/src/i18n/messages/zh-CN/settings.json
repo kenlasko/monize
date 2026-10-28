@@ -242,7 +242,13 @@
       "applyHere": "在此浏览器中使用这些默认设置",
       "applyHereHelp": "清除此浏览器已保存的视图设置，使上述默认设置在此处也生效。",
       "appliedHere": "此浏览器现在使用您的默认视图"
-    }
+    },
+    "reportingBasisLabel": "默认报告基础",
+    "reportingAccrual": "权责发生制",
+    "reportingCash": "收付实现制",
+    "reportingBasisHelp": "选择报表、类别和收款人趋势的默认核算方式。仅现金制视图保留付款日期。",
+    "accrualEnabledLabel": "启用权责发生制会计",
+    "accrualEnabledTooltip": "启用权责发生制分摊计划、余额和报表控件。关闭后，报表使用现金制。已保存的计划会保留，并在原始交易更改时更新。"
   },
   "notifications": {
     "heading": "通知",
@@ -836,7 +842,10 @@
       },
       "doneButton": "完成",
       "unlinkedBondSecuritiesList": "受影响的证券:{symbols}。",
-      "unlinkedBondSecuritiesMore": "以及另外 {count} 个"
+      "unlinkedBondSecuritiesMore": "以及另外 {count} 个",
+      "accrualSystemAccounts": "系统权责发生制账户",
+      "accrualSchedules": "权责发生制分配计划",
+      "accrualAllocations": "权责发生制分配"
     },
     "storedBackups": {
       "heading": "自动备份",

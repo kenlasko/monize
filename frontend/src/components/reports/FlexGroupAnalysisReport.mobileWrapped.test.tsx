@@ -26,7 +26,7 @@ const mockExportToPdf = vi.fn();
 // assertion about behaviour rather than about a class. Built inside the
 // factory because `vi.mock` is hoisted above the const it would close over,
 // and returned as one stable object, as the shared setup's router is.
-const mockPush = vi.fn();
+const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
 vi.mock('next/navigation', () => {
   const router = { push: mockPush, replace: vi.fn(), refresh: vi.fn(), back: vi.fn(), prefetch: vi.fn() };
   return {

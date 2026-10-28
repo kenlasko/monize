@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL tem de ser um endereço http ou https",
       "invalidField": "{{ field }} não é válido"
     }
+  },
+  "accruals": {
+    "notFound": "A transação ou o plano de especialização não foi encontrado.",
+    "ineligible": "Escolha um rendimento, uma despesa ou uma divisão por categoria. Transferências, operações de investimento e transações anuladas estão excluídas.",
+    "invalidPeriod": "Escolha um mês inicial válido e entre 1 e 600 meses.",
+    "changed": "A transação ou o plano foi alterado. Reveja uma nova pré-visualização antes de guardar.",
+    "ownerOnly": "Só o proprietário pode gerir os planos de especialização.",
+    "familyRequired": "Escolha despesa ou rendimento para uma transação sem categoria.",
+    "historyUnsupported": "Este lote não pode ser restaurado com segurança a partir do histórico. Divida-o ou exclua as transferências ou investimentos não suportados da seleção.",
+    "ruleUnsupported": "Para lançamentos por competência, execute as regras manualmente após rever o impacto. Mantenha a estrutura da transação e escolha um beneficiário existente."
   }
 }

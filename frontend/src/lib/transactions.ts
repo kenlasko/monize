@@ -70,6 +70,7 @@ function buildFilterParams(params?: {
 }
 
 export interface TransactionsGetAllParams {
+  basis?: 'cash' | 'accrual';
   accountId?: string;
   accountIds?: string[];
   startDate?: string;
@@ -117,6 +118,7 @@ export const transactionsApi = {
   getAll: async (params?: TransactionsGetAllParams): Promise<PaginatedTransactions> => {
     const apiParams = {
       ...buildFilterParams(params),
+      ...(params?.basis ? { basis: params.basis } : {}),
       startDate: params?.startDate,
       endDate: params?.endDate,
       page: params?.page,
@@ -168,11 +170,16 @@ export const transactionsApi = {
       });
       // Defend against a backend that returns hasMore=true on an empty page;
       // without new rows there is nothing left to fetch.
-      if (result.data.length === 0) break;
+      if (result.data.length === 0) {
+        if (result.pagination.hasMore) throw new Error('Incomplete transaction pages; retry or narrow the filters');
+        hasMore = false;
+        break;
+      }
       all.push(...result.data);
       hasMore = result.pagination.hasMore;
       page++;
     }
+    if (hasMore) throw new Error('Transaction selection exceeds the page limit; narrow the filters');
     return all;
   },
 
@@ -244,6 +251,7 @@ export const transactionsApi = {
 
   // Get transaction summary
   getSummary: async (params?: {
+    basis?: 'cash' | 'accrual';
     accountId?: string;
     accountIds?: string[];
     startDate?: string;
@@ -258,6 +266,7 @@ export const transactionsApi = {
     tagIds?: string[];
   }): Promise<TransactionSummary> => {
     const apiParams = {
+      ...(params?.basis ? { basis: params.basis } : {}),
       ...buildFilterParams(params),
       startDate: params?.startDate,
       endDate: params?.endDate,
@@ -275,6 +284,7 @@ export const transactionsApi = {
 
   // Get totals grouped by category or payee under the same filters as the summary
   getGroupedTotals: async (params: {
+    basis?: 'cash' | 'accrual';
     groupBy: 'category' | 'payee';
     accountIds?: string[];
     startDate?: string;
@@ -294,6 +304,7 @@ export const transactionsApi = {
     includeUnreconciledBeforeStart?: boolean;
   }): Promise<GroupedTotal[]> => {
     const apiParams = {
+      ...(params?.basis ? { basis: params.basis } : {}),
       ...buildFilterParams(params),
       groupBy: params.groupBy,
       startDate: params.startDate,
@@ -316,6 +327,7 @@ export const transactionsApi = {
   // "country" -> a total per country). Rows are per-currency, like grouped
   // totals, so the caller converts to one display currency.
   getTagKeyBreakdown: async (params: {
+    basis?: 'cash' | 'accrual';
     key: string;
     accountIds?: string[];
     startDate?: string;
@@ -329,6 +341,7 @@ export const transactionsApi = {
     limit?: number;
   }): Promise<GroupedTotal[]> => {
     const apiParams = {
+      ...(params?.basis ? { basis: params.basis } : {}),
       ...buildFilterParams(params),
       key: params.key,
       startDate: params.startDate,
@@ -378,6 +391,7 @@ export const transactionsApi = {
 
   // Get monthly transaction totals (for category/payee bar chart)
   getMonthlyTotals: async (params?: {
+    basis?: 'cash' | 'accrual';
     accountIds?: string[];
     startDate?: string;
     endDate?: string;
@@ -389,6 +403,7 @@ export const transactionsApi = {
     tagIds?: string[];
   }): Promise<MonthlyTotal[]> => {
     const apiParams = {
+      ...(params?.basis ? { basis: params.basis } : {}),
       ...buildFilterParams(params),
       startDate: params?.startDate,
       endDate: params?.endDate,

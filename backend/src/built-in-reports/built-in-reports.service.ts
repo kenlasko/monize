@@ -1,4 +1,16 @@
-import { Injectable } from "@nestjs/common";
+import { DataSource } from "typeorm";
+import {
+  currentReportingRead,
+  withReportingRead,
+} from "../accruals/reporting-basis";
+import { assertReportingComplete } from "../accruals/reporting-errors";
+import { NetWorthService } from "../net-worth/net-worth.service";
+import {
+  getDefaultDateRange,
+  getDefaultPreviousMonth,
+} from "../common/tool-schemas";
+import { BuiltInReportRequest } from "./report-tool.types";
+import { Injectable, BadRequestException } from "@nestjs/common";
 import { SpendingReportsService } from "./spending-reports.service";
 import { IncomeReportsService } from "./income-reports.service";
 import { ComparisonReportsService } from "./comparison-reports.service";
@@ -50,7 +62,79 @@ export class BuiltInReportsService {
     private monthlyComparison: MonthlyComparisonService,
     private monthlyCategoryBreakdown: MonthlyCategoryBreakdownService,
     private cashFlowSankey: CashFlowSankeyService,
+    private readonly dataSource: DataSource,
+    private readonly netWorthService: NetWorthService,
   ) {}
+
+  /** Shared assistant/MCP read door; the domain resolves defaults and money. */
+  async getLlmReport(userId: string, input: BuiltInReportRequest) {
+    const fixed = input.type === "spending_anomalies" ? "cash" : undefined;
+    if (fixed && input.basis !== undefined && input.basis !== fixed)
+      throw new BadRequestException({
+        code: "REPORTING_BASIS_UNSUPPORTED",
+        allowed: [fixed],
+        repair: "report_parameters",
+      });
+    return withReportingRead(
+      this.dataSource,
+      userId,
+      () => this.readLlmReport(userId, input),
+      fixed ?? input.basis,
+    );
+  }
+  private async readLlmReport(userId: string, input: BuiltInReportRequest) {
+    const defaults = getDefaultDateRange(),
+      start = input.startDate ?? defaults.startDate,
+      end = input.endDate ?? defaults.endDate;
+    let result: unknown;
+    switch (input.type) {
+      case "net_worth_history":
+        result = await this.netWorthService.getLlmHistory(
+          userId,
+          input.startDate,
+          input.endDate,
+        );
+        break;
+      case "spending_anomalies":
+        result = await this.getSpendingAnomalies(
+          userId,
+          SPENDING_ANOMALY_DEFAULT_THRESHOLD,
+          input.months ?? SPENDING_ANOMALY_DEFAULT_MONTHS,
+        );
+        break;
+      case "month_comparison":
+        result = await this.getMonthlyComparison(
+          userId,
+          input.month ?? getDefaultPreviousMonth(),
+        );
+        break;
+      case "spending_by_category":
+        result = await this.getSpendingByCategory(userId, start, end);
+        break;
+      case "spending_by_payee":
+        result = await this.getSpendingByPayee(userId, start, end);
+        break;
+      case "income_vs_expenses":
+        result = await this.getIncomeVsExpenses(userId, start, end);
+        break;
+      case "monthly_trend":
+        result = await this.getMonthlySpendingTrend(userId, start, end);
+        break;
+      case "income_by_source":
+        result = await this.getIncomeBySource(userId, start, end);
+        break;
+      default:
+        throw new BadRequestException({ code: "REPORTING_TYPE_INVALID" });
+    }
+    assertReportingComplete(result);
+    return {
+      type: input.type,
+      basis: currentReportingRead(userId)!.basis,
+      currency: currentReportingRead(userId)!.currency,
+      fxComplete: true,
+      result,
+    };
+  }
 
   getSpendingByCategory(
     userId: string,

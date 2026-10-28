@@ -242,7 +242,13 @@
       "applyHere": "Użyj tych ustawień domyślnych w tej przeglądarce",
       "applyHereHelp": "Czyści ustawienia widoku zapisane przez tę przeglądarkę, aby powyższe ustawienia domyślne obowiązywały także tutaj.",
       "appliedHere": "Ta przeglądarka używa teraz Twoich widoków domyślnych"
-    }
+    },
+    "reportingBasisLabel": "Domyślna podstawa raportowania",
+    "reportingAccrual": "Memoriałowa",
+    "reportingCash": "Kasowa",
+    "reportingBasisHelp": "Wybierz domyślną podstawę raportów oraz trendów kategorii i odbiorców. Widoki kasowe zachowują daty płatności.",
+    "accrualEnabledLabel": "Włącz rozliczenia międzyokresowe",
+    "accrualEnabledTooltip": "Włącza harmonogramy memoriałowe, salda i opcje raportów. Po wyłączeniu raporty używają metody kasowej. Zapisane harmonogramy są zachowywane i aktualizowane po zmianie ich transakcji."
   },
   "notifications": {
     "heading": "Powiadomienia",
@@ -836,7 +842,10 @@
       },
       "doneButton": "Gotowe",
       "unlinkedBondSecuritiesList": "Dotyczy papierów wartościowych: {symbols}.",
-      "unlinkedBondSecuritiesMore": "i jeszcze {count}"
+      "unlinkedBondSecuritiesMore": "i jeszcze {count}",
+      "accrualSystemAccounts": "Systemowe konta rozliczeń międzyokresowych",
+      "accrualSchedules": "Harmonogramy rozliczeń międzyokresowych",
+      "accrualAllocations": "Alokacje rozliczeń międzyokresowych"
     },
     "storedBackups": {
       "heading": "Kopie automatyczne",

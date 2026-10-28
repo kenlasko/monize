@@ -11,6 +11,7 @@ export interface ForeignKey {
   table: string;
   column: string;
   referencedTable: string;
+  referencedColumn: string;
 }
 
 export const SCHEMA_PATH = join(
@@ -53,33 +54,48 @@ export function parseForeignKeys(sql: string): ForeignKey[] {
   );
   for (const [, table, body] of tableBlocks) {
     for (const match of body.matchAll(
-      /^\s*(\w+)\s+[A-Za-z0-9_() ,]*?REFERENCES\s+(\w+)\s*\(\w+\)/gm,
+      /^\s*(\w+)\s+[A-Za-z0-9_() ,]*?REFERENCES\s+(\w+)\s*\((\w+)\)/gm,
     )) {
       foreignKeys.push({
         table,
         column: match[1],
         referencedTable: match[2],
+        referencedColumn: match[3],
       });
     }
     for (const match of body.matchAll(
-      /FOREIGN KEY\s*\((\w+)\)\s*REFERENCES\s+(\w+)\s*\(\w+\)/g,
+      /FOREIGN KEY\s*\(([^)]+)\)\s*REFERENCES\s+(\w+)\s*\(([^)]+)\)/g,
     )) {
-      foreignKeys.push({
-        table,
-        column: match[1],
-        referencedTable: match[2],
-      });
+      const columns = match[1].split(",").map((value) => value.trim());
+      const targets = match[3].split(",").map((value) => value.trim());
+      if (columns.length !== targets.length)
+        throw new Error("Mismatched FK column lists");
+      for (const [index, column] of columns.entries()) {
+        foreignKeys.push({
+          table,
+          column,
+          referencedTable: match[2],
+          referencedColumn: targets[index],
+        });
+      }
     }
   }
 
   for (const match of clean.matchAll(
-    /ALTER TABLE\s+(?:IF EXISTS\s+)?(\w+)\s+ADD CONSTRAINT\s+\w+\s+FOREIGN KEY\s*\((\w+)\)\s*REFERENCES\s+(\w+)\s*\(\w+\)/g,
+    /ALTER TABLE\s+(?:IF EXISTS\s+)?(\w+)\s+ADD CONSTRAINT\s+\w+\s+FOREIGN KEY\s*\(([^)]+)\)\s*REFERENCES\s+(\w+)\s*\(([^)]+)\)/g,
   )) {
-    foreignKeys.push({
-      table: match[1],
-      column: match[2],
-      referencedTable: match[3],
-    });
+    const columns = match[2].split(",").map((value) => value.trim());
+    const targets = match[4].split(",").map((value) => value.trim());
+    if (columns.length !== targets.length)
+      throw new Error("Mismatched FK column lists");
+    for (const [index, column] of columns.entries()) {
+      foreignKeys.push({
+        table: match[1],
+        column,
+        referencedTable: match[3],
+        referencedColumn: targets[index],
+      });
+    }
   }
 
   return foreignKeys;

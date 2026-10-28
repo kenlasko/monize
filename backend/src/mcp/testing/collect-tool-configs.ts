@@ -62,7 +62,7 @@ export function collectToolConfigs(): CapturedToolConfig[] {
       {} as any,
       {} as any,
     ) as unknown as ToolProvider,
-    new McpReportsTools({} as any, {} as any) as unknown as ToolProvider,
+    new McpReportsTools({} as any) as unknown as ToolProvider,
     new McpInvestmentsTools(
       {} as any,
       {} as any,

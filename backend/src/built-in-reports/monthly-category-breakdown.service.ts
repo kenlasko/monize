@@ -1,3 +1,5 @@
+import { ReportingRead } from "../accruals/reporting-basis";
+import { reportingQuery } from "../accruals/reporting-query";
 import { Injectable } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -35,6 +37,9 @@ const INVESTMENT_EXCLUSION = investmentExclusionSql({
 interface RawBreakdownAggregate {
   month: string;
   category_id: string | null;
+  conversion_date?: string;
+  original_currency_code?: string | null;
+  exchange_rate?: string | number | null;
   currency_code: string;
   deposits: string;
   withdrawals: string;
@@ -49,6 +54,9 @@ interface RawTransferAggregate {
   month: string;
   account_id: string;
   account_name: string;
+  conversion_date?: string;
+  original_currency_code?: string | null;
+  exchange_rate?: string | number | null;
   currency_code: string;
   outflow: string;
   inflow: string;
@@ -74,6 +82,7 @@ export class MonthlyCategoryBreakdownService {
     private currencyService: ReportCurrencyService,
   ) {}
 
+  @ReportingRead()
   async getMonthlyCategoryBreakdown(
     userId: string,
     startDate: string | undefined,
@@ -95,7 +104,7 @@ export class MonthlyCategoryBreakdownService {
       SELECT
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
         COALESCE(ts.category_id, t.category_id) as category_id,
-        t.currency_code,
+        t.currency_code, TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS conversion_date, t.original_currency_code, t.exchange_rate,
         SUM(CASE WHEN COALESCE(ts.amount, t.amount) > 0
               THEN COALESCE(ts.amount, t.amount) ELSE 0 END) as deposits,
         SUM(CASE WHEN COALESCE(ts.amount, t.amount) < 0
@@ -152,13 +161,13 @@ export class MonthlyCategoryBreakdownService {
 
     query += `
       GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'),
-               COALESCE(ts.category_id, t.category_id), t.currency_code
+               COALESCE(ts.category_id, t.category_id), t.currency_code, t.transaction_date, t.original_currency_code, t.exchange_rate
       ORDER BY month
     `;
 
     const rawResults: RawBreakdownAggregate[] = await withScopedDb(
       this.dataSource,
-      (m) => m.query(query, params),
+      (m) => reportingQuery(m, userId, query, params),
     );
 
     const categories = await withScopedDb(this.dataSource, (m) =>
@@ -183,12 +192,14 @@ export class MonthlyCategoryBreakdownService {
         row.currency_code,
         defaultCurrency,
         rateMap,
+        row,
       );
       const withdrawals = this.currencyService.tryConvertAmount(
         toMoneyNumber(row.withdrawals),
         row.currency_code,
         defaultCurrency,
         rateMap,
+        row,
       );
       if (deposits === null || withdrawals === null) {
         gaps.record(row.currency_code);
@@ -279,7 +290,7 @@ export class MonthlyCategoryBreakdownService {
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
         t.account_id,
         a.name as account_name,
-        t.currency_code,
+        t.currency_code, TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS conversion_date, t.original_currency_code, t.exchange_rate,
         SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END) as outflow,
         SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) as inflow
       FROM transactions t
@@ -310,13 +321,13 @@ export class MonthlyCategoryBreakdownService {
 
     query += `
       GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'),
-               t.account_id, a.name, t.currency_code
+               t.account_id, a.name, t.currency_code, t.transaction_date, t.original_currency_code, t.exchange_rate
       ORDER BY month
     `;
 
     const rawResults: RawTransferAggregate[] = await withScopedDb(
       this.dataSource,
-      (m) => m.query(query, params),
+      (m) => reportingQuery(m, userId, query, params),
     );
 
     // Accumulate the signed flow per (account, direction) across currencies.
@@ -353,12 +364,14 @@ export class MonthlyCategoryBreakdownService {
         row.currency_code,
         defaultCurrency,
         rateMap,
+        row,
       );
       const inflow = this.currencyService.tryConvertAmount(
         toMoneyNumber(row.inflow),
         row.currency_code,
         defaultCurrency,
         rateMap,
+        row,
       );
       if (outflow === null || inflow === null) {
         gaps.record(row.currency_code);

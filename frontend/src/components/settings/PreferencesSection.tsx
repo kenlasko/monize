@@ -39,7 +39,10 @@ function getBrowserTimezone(): string {
 function buildTimezoneOptions(): { value: string; label: string }[] {
   const browserTz = getBrowserTimezone();
   const options: { value: string; label: string }[] = [
-    { value: 'browser', label: `Use browser timezone (auto-detected as ${browserTz})` },
+    {
+      value: 'browser',
+      label: `Use browser timezone (auto-detected as ${browserTz})`,
+    },
     { value: 'UTC', label: 'UTC' },
   ];
 
@@ -149,6 +152,16 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
     [onPreferencesUpdated, updatePreferencesStore, t],
   );
 
+  const reportingBasis = useSavedPreference(
+    'reportingBasis',
+    preferences.reportingBasis ?? 'cash',
+    commitPreference,
+  );
+  const accrualEnabled = useSavedPreference(
+    'accrualEnabled',
+    preferences.accrualEnabled ?? false,
+    commitPreference,
+  );
   const dateFormat = useSavedPreference('dateFormat', preferences.dateFormat, commitPreference);
   const numberFormat = useSavedPreference(
     'numberFormat',
@@ -194,11 +207,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
   const defaultQuoteProvider = useSavedPreference<
     'defaultQuoteProvider',
     'yahoo' | 'msn' | 'lse' | 'deutsche_boerse'
-  >(
-    'defaultQuoteProvider',
-    preferences.defaultQuoteProvider ?? 'yahoo',
-    commitPreference,
-  );
+  >('defaultQuoteProvider', preferences.defaultQuoteProvider ?? 'yahoo', commitPreference);
   const recentTransactionsLimit = useSavedPreference(
     'recentTransactionsLimit',
     preferences.recentTransactionsLimit ?? 5,
@@ -221,7 +230,10 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
   const [msnReady, setMsnReady] = useState<boolean | null>(null);
 
   useEffect(() => {
-    exchangeRatesApi.getCurrencies().then(setAvailableCurrencies).catch(() => {});
+    exchangeRatesApi
+      .getCurrencies()
+      .then(setAvailableCurrencies)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -244,13 +256,13 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('heading')}</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        {t('heading')}
+      </h2>
 
       <div className="space-y-6">
         <div>
-          <h3 className={GROUP_HEADING_CLASS}>
-            {t('groups.languageRegion')}
-          </h3>
+          <h3 className={GROUP_HEADING_CLASS}>{t('groups.languageRegion')}</h3>
           <div className="space-y-4">
             <LanguageSelector value={language} onChange={setLanguage} />
 
@@ -264,9 +276,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
         </div>
 
         <div className={GROUP_DIVIDER_CLASS}>
-          <h3 className={GROUP_HEADING_CLASS}>
-            {t('groups.appearance')}
-          </h3>
+          <h3 className={GROUP_HEADING_CLASS}>{t('groups.appearance')}</h3>
           <div className="space-y-4">
             <ThemeSelector value={theme} onChange={setTheme} />
 
@@ -275,9 +285,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
         </div>
 
         <div className={GROUP_DIVIDER_CLASS}>
-          <h3 className={GROUP_HEADING_CLASS}>
-            {t('groups.datesNumbers')}
-          </h3>
+          <h3 className={GROUP_HEADING_CLASS}>{t('groups.datesNumbers')}</h3>
           <div className="space-y-4">
             <Select
               label={t('dateFormatLabel')}
@@ -292,7 +300,9 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
                 value: o.value,
                 label:
                   o.value === 'browser'
-                    ? t('numberFormatOptions.browser', { sample: numberFormatSample })
+                    ? t('numberFormatOptions.browser', {
+                        sample: numberFormatSample,
+                      })
                     : t(o.labelKey),
               }))}
               value={numberFormat.value}
@@ -301,7 +311,15 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
 
             <Combobox
               label={t('timezoneLabel')}
-              options={[{ value: 'browser', label: t('timezoneBrowserOption', { tz: getBrowserTimezone() }) }, ...TIMEZONE_OPTIONS.slice(1)]}
+              options={[
+                {
+                  value: 'browser',
+                  label: t('timezoneBrowserOption', {
+                    tz: getBrowserTimezone(),
+                  }),
+                },
+                ...TIMEZONE_OPTIONS.slice(1),
+              ]}
               value={timezone.value}
               onChange={(value) => timezone.set(value)}
               placeholder={t('timezonePlaceholder')}
@@ -309,16 +327,16 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
 
             <Select
               label={t('weekStartsOnLabel')}
-              options={WEEK_STARTS_ON_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
+              options={WEEK_STARTS_ON_OPTIONS.map((o) => ({
+                value: o.value,
+                label: t(o.labelKey),
+              }))}
               value={String(weekStartsOn.value)}
               onChange={(e) => weekStartsOn.set(Number(e.target.value))}
             />
 
             <div className="flex items-center">
-              <label
-                htmlFor="showCreatedAt"
-                className="flex items-center gap-2 cursor-pointer"
-              >
+              <label htmlFor="showCreatedAt" className="flex items-center gap-2 cursor-pointer">
                 <ToggleSwitch
                   checked={showCreatedAt.value}
                   onChange={showCreatedAt.set}
@@ -346,16 +364,18 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
         </div>
 
         <div className={GROUP_DIVIDER_CLASS}>
-          <h3 className={GROUP_HEADING_CLASS}>
-            {t('groups.investments')}
-          </h3>
+          <h3 className={GROUP_HEADING_CLASS}>{t('groups.investments')}</h3>
           <div className="space-y-4">
             <div>
               <Select
                 label={t('defaultQuoteProviderLabel')}
                 options={QUOTE_PROVIDER_OPTIONS}
                 value={defaultQuoteProvider.value}
-                onChange={(e) => defaultQuoteProvider.set(e.target.value as 'yahoo' | 'msn' | 'lse' | 'deutsche_boerse')}
+                onChange={(e) =>
+                  defaultQuoteProvider.set(
+                    e.target.value as 'yahoo' | 'msn' | 'lse' | 'deutsche_boerse',
+                  )
+                }
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {t('defaultQuoteProviderHelp')}
@@ -385,13 +405,11 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
                 {[0, 1, 2].map((i) => (
                   <Combobox
                     key={i}
-                    options={EXCHANGE_OPTIONS
-                      .filter(
-                        (opt) =>
-                          !preferredExchanges.value.includes(opt.value) ||
-                          preferredExchanges.value[i] === opt.value,
-                      )
-                      .sort((a, b) => a.label.localeCompare(b.label))}
+                    options={EXCHANGE_OPTIONS.filter(
+                      (opt) =>
+                        !preferredExchanges.value.includes(opt.value) ||
+                        preferredExchanges.value[i] === opt.value,
+                    ).sort((a, b) => a.label.localeCompare(b.label))}
                     value={preferredExchanges.value[i] || ''}
                     onChange={(value) => {
                       const updated = [...preferredExchanges.value];
@@ -412,10 +430,38 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
         </div>
 
         <div className={GROUP_DIVIDER_CLASS}>
-          <h3 className={GROUP_HEADING_CLASS}>
-            {t('groups.transactions')}
-          </h3>
+          <h3 className={GROUP_HEADING_CLASS}>{t('groups.transactions')}</h3>
           <div className="space-y-4">
+            <div className="flex items-center">
+              <label htmlFor="accrualEnabled" className="flex items-center gap-2 cursor-pointer">
+                <ToggleSwitch
+                  checked={accrualEnabled.value}
+                  onChange={accrualEnabled.set}
+                  label={t('accrualEnabledLabel')}
+                />
+                <span className="text-sm text-gray-900 dark:text-gray-100">
+                  {t('accrualEnabledLabel')}
+                </span>
+              </label>
+              <InfoTooltip text={t('accrualEnabledTooltip')} />
+            </div>
+
+            {accrualEnabled.value && (
+              <>
+                <Select
+                  label={t('reportingBasisLabel')}
+                  value={reportingBasis.value}
+                  options={[
+                    { value: 'accrual', label: t('reportingAccrual') },
+                    { value: 'cash', label: t('reportingCash') },
+                  ]}
+                  onChange={(event) => reportingBasis.set(event.target.value as 'cash' | 'accrual')}
+                />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('reportingBasisHelp')}
+                </p>
+              </>
+            )}
             <div>
               <Select
                 label={t('recentTransactionsLabel')}
@@ -455,9 +501,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
         />
 
         <div className={GROUP_DIVIDER_CLASS}>
-          <h3 className={GROUP_HEADING_CLASS}>
-            {t('groups.application')}
-          </h3>
+          <h3 className={GROUP_HEADING_CLASS}>{t('groups.application')}</h3>
           <div className="space-y-4">
             <div>
               <Select
@@ -467,23 +511,15 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
                   label: t(option.labelKey),
                 }))}
                 value={defaultMapProvider.value}
-                onChange={(e) =>
-                  defaultMapProvider.set(e.target.value as MapProvider)
-                }
+                onChange={(e) => defaultMapProvider.set(e.target.value as MapProvider)}
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {t('mapProviderHelp')}
               </p>
             </div>
 
-            <div
-              {...tourAnchor(TOUR_ANCHORS.settingsWhatsNewToggle)}
-              className="flex items-center"
-            >
-              <label
-                htmlFor="showWhatsNew"
-                className="flex items-center gap-2 cursor-pointer"
-              >
+            <div {...tourAnchor(TOUR_ANCHORS.settingsWhatsNewToggle)} className="flex items-center">
+              <label htmlFor="showWhatsNew" className="flex items-center gap-2 cursor-pointer">
                 <ToggleSwitch
                   checked={showWhatsNew.value}
                   onChange={showWhatsNew.set}

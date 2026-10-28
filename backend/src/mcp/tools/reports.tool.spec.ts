@@ -1,3 +1,9 @@
+jest.mock("../../accruals/reporting-basis", () =>
+  jest
+    .requireActual("../../test-helpers/reporting-read-testing")
+    .reportingBasisMockModule(),
+);
+import { reportToolFixture } from "../../test-helpers/reporting-tool-fixture";
 import { McpReportsTools } from "./reports.tool";
 import { mcpTestCtx, McpTestContext } from "../testing/mcp-test-context";
 
@@ -23,7 +29,10 @@ describe("McpReportsTools", () => {
       getLlmHistory: jest.fn(),
     };
 
-    tool = new McpReportsTools(reportsService as any, netWorthService as any);
+    reportsService.getLlmReport = jest.fn(
+      reportToolFixture(reportsService, netWorthService),
+    );
+    tool = new McpReportsTools(reportsService as any);
 
     server = {
       registerTool: jest.fn((name, _opts, handler) => {
@@ -74,7 +83,7 @@ describe("McpReportsTools", () => {
       expect(result.isError).toBeUndefined();
     });
 
-    it("should pass a withheld total and its gap through unchanged (INV-FX-001)", async () => {
+    it("refuses an incomplete report and names its gap (INV-FX-001)", async () => {
       ctx.setUser({ userId: "u1", scopes: "read" });
       const report = {
         data: [],
@@ -95,7 +104,14 @@ describe("McpReportsTools", () => {
         ctx,
       );
 
-      expect(result.structuredContent).toEqual(report);
+      expect(result.isError).toBe(true);
+      expect(result.structuredContent).toMatchObject({
+        error: {
+          code: "REPORTING_FX_INCOMPLETE",
+          missingRatePairs: ["JPY"],
+          repair: "currency_rate_history",
+        },
+      });
     });
 
     it("should run spending_by_payee report", async () => {
@@ -209,7 +225,7 @@ describe("McpReportsTools", () => {
           "u1",
           "2026-01",
         );
-        const parsed = result.structuredContent as any;
+        const parsed = (result.structuredContent as any).result;
         expect(parsed.currentMonth).toBe("2026-01");
       });
 
@@ -307,7 +323,7 @@ describe("McpReportsTools", () => {
         );
         // A bare array is wrapped under `items`: structured content must be an
         // object, and this report type is the one that returns a plain list.
-        const parsed = (result.structuredContent as any).items;
+        const parsed = (result.structuredContent as any).result;
         expect(parsed).toHaveLength(2);
       });
 

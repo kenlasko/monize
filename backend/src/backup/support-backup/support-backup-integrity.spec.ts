@@ -217,3 +217,71 @@ describe("the real REFS graph stays inside the pass bound", () => {
     expect((longest as number) + 1).toBeLessThanOrEqual(MAX_SCRUB_PASSES);
   });
 });
+
+describe("composite reference scrub", () => {
+  const refs: Record<string, RefRule[]> = {
+    child: [
+      {
+        column: "parent_id",
+        refTable: "parent",
+        onMissing: "dropRow",
+        targetColumns: [
+          { local: "parent_id", remote: "id" },
+          { local: "user_id", remote: "user_id" },
+        ],
+      },
+    ],
+  };
+  it("requires the entire tuple on one target row", () => {
+    const out = scrubToFixedPoint(
+      {
+        parent: [
+          { id: "a", user_id: "alice" },
+          { id: "b", user_id: "bob" },
+        ],
+        child: [
+          { id: "valid", parent_id: "a", user_id: "alice" },
+          { id: "mixed", parent_id: "a", user_id: "bob" },
+        ],
+      },
+      refs,
+      4,
+    );
+    expect(out.child.map((row) => row.id)).toEqual(["valid"]);
+  });
+  it("preserves nullable MATCH SIMPLE references", () => {
+    expect(
+      scrubToFixedPoint(
+        {
+          parent: [],
+          child: [{ id: "nullable", parent_id: null, user_id: "alice" }],
+        },
+        refs,
+        4,
+      ).child,
+    ).toHaveLength(1);
+  });
+  it("rechecks tuples after a target is removed", () => {
+    const chain: Record<string, RefRule[]> = {
+      ...refs,
+      parent: [
+        {
+          column: "grandparent_id",
+          refTable: "grandparent",
+          onMissing: "dropRow",
+        },
+      ],
+    };
+    const out = scrubToFixedPoint(
+      {
+        grandparent: [],
+        parent: [{ id: "a", user_id: "alice", grandparent_id: "gone" }],
+        child: [{ id: "dependent", parent_id: "a", user_id: "alice" }],
+      },
+      chain,
+      4,
+    );
+    expect(out.parent).toEqual([]);
+    expect(out.child).toEqual([]);
+  });
+});

@@ -1,5 +1,6 @@
 "use client";
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
 import { useMemo, useRef, useState } from "react";
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from "next/navigation";
@@ -115,6 +116,7 @@ function CashFlowTooltip({
 }
 
 export function CashFlowReport() {
+  const { withPdfBasis } = useReportExportMetadata('cash');
   const t = useTranslations('reports');
   const router = useRouter();
   const chartRef = useRef<HTMLDivElement>(null);
@@ -314,7 +316,7 @@ export function CashFlowReport() {
     const inflowRows = incomeItems.map((item) => [item.categoryName, formatCurrency(item.total)]);
     const outflowRows = expenseItems.map((item) => [item.categoryName, formatCurrency(item.total)]);
 
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('cashFlow.monthlyCashFlow'),
       summaryCards: balance
         ? [
@@ -348,7 +350,7 @@ export function CashFlowReport() {
         }] : []),
       ],
       filename: "cash-flow",
-    });
+    }));
   };
 
   const handleChartClick = (state: any) => {

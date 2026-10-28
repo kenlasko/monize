@@ -242,7 +242,13 @@
       "applyHere": "Use these defaults in this browser",
       "applyHereHelp": "Clears the view settings this browser has saved, so the defaults above take effect here too.",
       "appliedHere": "This browser now uses your default views"
-    }
+    },
+    "reportingBasisLabel": "Default reporting basis",
+    "reportingAccrual": "Accrual",
+    "reportingCash": "Cash",
+    "reportingBasisHelp": "Choose the default for reports, category and payee trends. Cash-only views keep payment dates.",
+    "accrualEnabledLabel": "Enable accrual accounting",
+    "accrualEnabledTooltip": "Enables accrual schedules, balances and report controls. When off, reports use Cash. Saved schedules are kept and updated when their transactions change."
   },
   "notifications": {
     "heading": "Notifications",
@@ -836,7 +842,10 @@
       },
       "doneButton": "Done",
       "unlinkedBondSecuritiesList": "Affected securities: {symbols}.",
-      "unlinkedBondSecuritiesMore": "and {count} more"
+      "unlinkedBondSecuritiesMore": "and {count} more",
+      "accrualSystemAccounts": "Accrual System Accounts",
+      "accrualSchedules": "Accrual Schedules",
+      "accrualAllocations": "Accrual Allocations"
     },
     "storedBackups": {
       "heading": "Automatic Backups",

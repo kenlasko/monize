@@ -208,33 +208,9 @@
     "Nov",
     "Dec"
   ],
-  "weekdaysShort": [
-    "Sun",
-    "Mon",
-    "Tue",
-    "Wed",
-    "Thu",
-    "Fri",
-    "Sat"
-  ],
-  "weekdaysMin": [
-    "Su",
-    "Mo",
-    "Tu",
-    "We",
-    "Th",
-    "Fr",
-    "Sa"
-  ],
-  "weekdaysNarrow": [
-    "S",
-    "M",
-    "T",
-    "W",
-    "T",
-    "F",
-    "S"
-  ],
+  "weekdaysShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  "weekdaysMin": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+  "weekdaysNarrow": ["S", "M", "T", "W", "T", "F", "S"],
   "dateFormat": {
     "browserAuto": "Use browser locale (auto-detected as {sample})",
     "custom": "Custom..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "Includes {count, plural, one {# overdue scheduled transaction} other {# overdue scheduled transactions}}"
+  },
+  "reportingBasis": {
+    "label": "Reporting basis",
+    "default": "{basis} (user default)",
+    "help": "Period totals use the selected basis.",
+    "detailHelp": "Period totals use the selected basis.",
+    "cashOnly": "This view follows actual payments and uses the cash basis.",
+    "exportCaption": "Reporting basis: {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Read-only recognition components. Payment links open the original entry. Narrow the date range if needed.",
+    "fxHelp": "Some amounts cannot be valued. Add historical exchange rates for this period, then retry.",
+    "unsupported": "This filter combination cannot be expanded safely. Choose a simpler report filter.",
+    "failed": "Could not load entries. Narrow the dates if there are too many rows, then retry.",
+    "identity": "Source / split / schedule IDs",
+    "native": "Native amount",
+    "reporting": "Reporting amount",
+    "payment": "Payment date",
+    "title": "Accrued",
+    "effective": "Recognition date",
+    "source": "Payment date",
+    "retry": "Retry",
+    "unknown": "Amount not available",
+    "start": "Start Date",
+    "end": "End Date",
+    "partial": "(partial total)",
+    "empty": "No transaction data available"
+  },
+  "systemAccruals": {
+    "title": "Accrual accounts",
+    "help": "System-controlled balances in native currency. Read-only; edit the original entry to change them.",
+    "ownerOnly": "Only the owner can view these accounts.",
+    "empty": "No accrual accounts yet. Create an accrual from an income or expense entry.",
+    "position": "Position",
+    "closing": "Closing balance",
+    "back": "Accounts",
+    "asOf": "Balance as of",
+    "account": "Account",
+    "currency": "Currency",
+    "balance": "Balance",
+    "prepaid": "Prepaid expenses (net)",
+    "unearned": "Unearned revenue (net)",
+    "signHelp": "Negative balances represent accrued liabilities or receivables.",
+    "asset": "Assets",
+    "liability": "Liabilities",
+    "opening": "Opening Balance",
+    "date": "Date",
+    "movement": "Component",
+    "amount": "Amount",
+    "payment": "Payment date",
+    "recognition": "Recognition date",
+    "range": "{start} – {end}"
   }
 }

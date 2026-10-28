@@ -1,3 +1,4 @@
+import { ReportingRead } from "../accruals/reporting-basis";
 import { Injectable } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -46,6 +47,7 @@ export class MonthlyComparisonService {
     private dataSource: DataSource,
   ) {}
 
+  @ReportingRead()
   async getMonthlyComparison(
     userId: string,
     month: string,

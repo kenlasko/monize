@@ -1688,7 +1688,7 @@ describe('AccountList', () => {
 
       fireEvent.click(screen.getByText('Main Chequing'));
 
-      expect(mockPush).toHaveBeenCalledWith('/transactions?accountId=chequing-1');
+      expect(mockPush).toHaveBeenCalledWith('/transactions?basis=cash&accountId=chequing-1');
     });
 
     describe('when the reader chose to open accounts on their dashboard', () => {
@@ -2366,7 +2366,7 @@ describe('AccountList', () => {
       openContextMenu(account);
 
       fireEvent.click(screen.getByText('View Transactions'));
-      expect(mockPush).toHaveBeenCalledWith('/transactions?accountId=acc-1');
+      expect(mockPush).toHaveBeenCalledWith('/transactions?basis=cash&accountId=acc-1');
     });
 
     it('context menu navigates to /investments for brokerage account View Transactions', () => {
@@ -2971,4 +2971,15 @@ describe('AccountList', () => {
       expect(screen.queryByTitle('Delete')).not.toBeInTheDocument();
     });
   });
+});
+
+it('places read-only system content in the collapsible Other group even without cash accounts', () => {
+  render(<AccountList accounts={[]} otherAccounts={<span>System accrual rows</span>}
+    defaultCurrency="USD" convertToDefault={value => value} onEdit={vi.fn()} onRefresh={vi.fn()} />);
+  expect(screen.getByText('System accrual rows')).toBeInTheDocument();
+  const other = screen.getByText('Other');
+  fireEvent.click(other.closest('tr')!);
+  expect(screen.queryByText('System accrual rows')).not.toBeInTheDocument();
+  fireEvent.click(other.closest('tr')!);
+  expect(screen.getByText('System accrual rows')).toBeInTheDocument();
 });

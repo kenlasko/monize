@@ -1,5 +1,7 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis } from './ReportingBasis';
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
@@ -38,6 +40,8 @@ function getScoreColor(score: number): string {
 }
 
 export function HealthScoreHistoryReport() {
+  const { withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
   // A month column follows the user's date-format preference; a month axis
   // localizes the month name. `useChartMonthFormat` explains the split.
@@ -65,7 +69,7 @@ export function HealthScoreHistoryReport() {
     isLoading: budgetsLoading,
     error: budgetsError,
     reload: reloadBudgets,
-  } = useReportData(() => budgetsApi.getAll(), []);
+  } = useReportData(() => budgetsApi.getAll(...(basis ? [basis] as const : [])), [basis], {requestKey:JSON.stringify([basis]),maskStaleData:true});
 
   const budgets = useMemo(() => budgetsData ?? [], [budgetsData]);
 
@@ -85,9 +89,10 @@ export function HealthScoreHistoryReport() {
   } = useReportData(
     () =>
       selectedBudgetId
-        ? budgetsApi.getHealthScoreHistory(selectedBudgetId, months)
+        ? budgetsApi.getHealthScoreHistory(selectedBudgetId, months, ...(basis ? [basis] as const : []))
         : Promise.resolve(null),
-    [selectedBudgetId, months],
+    [selectedBudgetId, months, basis],
+    { requestKey: JSON.stringify([selectedBudgetId, months, basis]), maskStaleData: true },
   );
 
   const data = useMemo<HealthScoreHistoryPoint[]>(() => historyData ?? [], [historyData]);
@@ -137,7 +142,7 @@ export function HealthScoreHistoryReport() {
     const worst = data.length > 0 ? Math.min(...data.map((p) => p.score)) : 0;
     const up = data.length >= 2 && data[data.length - 1].score > data[0].score;
     const curColor = curScore >= 80 ? '#16a34a' : curScore >= 60 ? '#ca8a04' : '#dc2626';
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('healthScoreHistory.pdfTitle'),
       summaryCards: [
         { label: t('healthScoreHistory.currentScore'), value: String(curScore), color: curColor },
@@ -163,7 +168,7 @@ export function HealthScoreHistoryReport() {
         }),
       }] : undefined,
       filename: 'health-score-history',
-    });
+    }));
   };
 
   if (error) {

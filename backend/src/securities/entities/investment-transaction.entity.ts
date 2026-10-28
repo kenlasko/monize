@@ -19,7 +19,7 @@ import { Security } from "./security.entity";
 import { User } from "../../users/entities/user.entity";
 import { BondInstrument } from "../../bonds/entities/bond-instrument.entity";
 
-const numericTransformer = {
+export const numericTransformer = {
   to: (value: number | null): number | null => value,
   from: (value: string | null): number | null =>
     value === null ? null : Number(value),

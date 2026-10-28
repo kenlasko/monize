@@ -14,6 +14,7 @@ const REPORTS_CACHE_KEY = 'reports:all';
 const REPORTS_CACHE_TTL = 300_000; // 5 minutes
 
 export interface ExecuteReportParams {
+  basis?: 'cash' | 'accrual';
   timeframeType?: TimeframeType;
   startDate?: string;
   endDate?: string;

@@ -39,5 +39,8 @@
       "loanRepayment": "Remboursement de prêt",
       "creditCardRepayment": "Remboursement de carte de crédit"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "{{ count }} opérations supprimées"
   }
 }

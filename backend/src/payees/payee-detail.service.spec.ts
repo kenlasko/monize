@@ -1,3 +1,7 @@
+jest.mock("../accruals/accrual-taxonomy-operation", () => ({
+  beginTaxonomyOperation: async () => undefined,
+  recordTaxonomyOperation: async () => undefined,
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { NotFoundException } from "@nestjs/common";
 import { DataSource, In } from "typeorm";

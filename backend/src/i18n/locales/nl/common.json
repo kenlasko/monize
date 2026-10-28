@@ -39,5 +39,8 @@
       "loanRepayment": "Aflossing lening",
       "creditCardRepayment": "Creditcardaflossing"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "{{ count }} transacties verwijderd"
   }
 }

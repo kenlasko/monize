@@ -1,3 +1,4 @@
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
@@ -175,6 +176,15 @@ describe("BudgetPeriodService", () => {
 
     ({ manager: scopedManager, dataSource: scopedDataSource } =
       createScopedDbMocks([
+        [
+          UserPreference,
+          {
+            findOne: jest.fn().mockResolvedValue({
+              accrualEnabled: false,
+              reportingBasis: "cash",
+            }),
+          } as never,
+        ],
         [BudgetPeriod, periodsRepository as never],
         [BudgetPeriodCategory, periodCategoriesRepository as never],
         [Transaction, transactionsRepository as never],

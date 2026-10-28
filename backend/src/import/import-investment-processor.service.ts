@@ -1,3 +1,4 @@
+import { rememberImportedAccrualSource } from "./import-accrual-guard";
 import { statusFromQifFlags } from "./qif-status.util";
 import { Injectable, Logger } from "@nestjs/common";
 import { Account, AccountSubType } from "../accounts/entities/account.entity";
@@ -450,6 +451,7 @@ export class ImportInvestmentProcessorService {
       isTransfer: !!transferAccountId,
     });
     const savedCashTx = await ctx.manager.save(cashTx);
+    rememberImportedAccrualSource(ctx.manager, ctx.userId, savedCashTx.id);
     await updateAccountBalance(ctx.manager, cashAccountId, cashAmount);
 
     if (transferAccountId) {
@@ -498,6 +500,11 @@ export class ImportInvestmentProcessorService {
           linkedTransactionId: savedCashTx.id,
         });
         const savedLinkedTx = await ctx.manager.save(linkedTx);
+        rememberImportedAccrualSource(
+          ctx.manager,
+          ctx.userId,
+          savedLinkedTx.id,
+        );
 
         await ctx.manager.update(Transaction, savedCashTx.id, {
           linkedTransactionId: savedLinkedTx.id,
@@ -626,6 +633,7 @@ export class ImportInvestmentProcessorService {
     cashTx.isTransfer = isCrossAccountTransfer;
 
     const savedCashTx = await ctx.manager.save(cashTx);
+    rememberImportedAccrualSource(ctx.manager, ctx.userId, savedCashTx.id);
 
     // Create linked transaction on the brokerage side so the target account
     // is visible from both sides of the transfer
@@ -670,6 +678,11 @@ export class ImportInvestmentProcessorService {
         brokerageTx.linkedTransactionId = savedCashTx.id;
 
         const savedBrokerageTx = await ctx.manager.save(brokerageTx);
+        rememberImportedAccrualSource(
+          ctx.manager,
+          ctx.userId,
+          savedBrokerageTx.id,
+        );
 
         savedCashTx.linkedTransactionId = savedBrokerageTx.id;
         await ctx.manager.save(savedCashTx);

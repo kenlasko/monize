@@ -1,5 +1,6 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
 import { useCallback, useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { format } from 'date-fns';
@@ -23,7 +24,6 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { chartSeriesColor } from '@/lib/chart-colors';
 import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
-import { exportToCsv } from '@/lib/csv-export';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { CAPTION_CLASS, CellLabel, PHONE_HEADER_CLASS } from '@/components/ui/Table';
@@ -241,6 +241,7 @@ function RecurringExpenseTooltip({ active, payload, formatCurrency, frequencyLab
 }
 
 export function RecurringExpensesReport() {
+  const { exportCsvWithBasis, withPdfBasis } = useReportExportMetadata('cash');
   const t = useTranslations('reports');
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency, defaultCurrency } = useNumberFormat();
@@ -407,14 +408,14 @@ export function RecurringExpensesReport() {
   const handleExportCsv = () => {
     const data = getExportData('csv');
     if (!data) return;
-    exportToCsv('recurring-expenses', data.headers, data.rows);
+    exportCsvWithBasis('recurring-expenses', data.headers, data.rows);
   };
 
   const handleExportPdf = async () => {
     const expData = getExportData('pdf');
     if (!expData || !recurringData) return;
     const { exportToPdf } = await import('@/lib/pdf-export');
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('recurringExpenses.pdfTitle'),
       subtitle: t('recurringExpenses.pdfSubtitle', { count: recurringData.summary.uniquePayees }),
       summaryCards: [
@@ -429,7 +430,7 @@ export function RecurringExpensesReport() {
       })),
       tableData: { headers: expData.headers, rows: expData.rows },
       filename: 'recurring-expenses',
-    });
+    }));
   };
 
   const handlePayeeClick = (payeeId: string | null) => {

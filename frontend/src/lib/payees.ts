@@ -103,7 +103,7 @@ export const payeesApi = {
 
   // Get the detail-page aggregate (stats, account breakdown, largest transaction)
   getDetail: async (id: string): Promise<PayeeDetail> => {
-    const response = await apiClient.get<PayeeDetail>(`/payees/${id}/detail`);
+    const response = await apiClient.get<PayeeDetail>(`/payees/${id}/detail`, { params: { basis: 'cash' } });
     return response.data;
   },
 

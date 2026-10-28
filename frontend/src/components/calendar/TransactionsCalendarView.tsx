@@ -1,5 +1,6 @@
 'use client';
 
+import { CashReportingNotice } from '@/components/reports/CashReportingNotice';
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { MonthGrid, type MonthGridHandle } from '@/components/ui/MonthGrid';
@@ -329,6 +330,7 @@ export function TransactionsCalendarView({
 
   return (
     <div>
+      {filters.basis === 'accrual' && layers.includes('balances') && <CashReportingNotice balances />}
       <CalendarToolbar
         month={month}
         onMonthChange={goToMonth}

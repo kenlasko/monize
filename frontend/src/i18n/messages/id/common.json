@@ -208,33 +208,9 @@
     "Nov",
     "Des"
   ],
-  "weekdaysShort": [
-    "Min",
-    "Sen",
-    "Sel",
-    "Rab",
-    "Kam",
-    "Jum",
-    "Sab"
-  ],
-  "weekdaysMin": [
-    "Mi",
-    "Se",
-    "Sl",
-    "Ra",
-    "Ka",
-    "Ju",
-    "Sa"
-  ],
-  "weekdaysNarrow": [
-    "M",
-    "S",
-    "S",
-    "R",
-    "K",
-    "J",
-    "S"
-  ],
+  "weekdaysShort": ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
+  "weekdaysMin": ["Mi", "Se", "Sl", "Ra", "Ka", "Ju", "Sa"],
+  "weekdaysNarrow": ["M", "S", "S", "R", "K", "J", "S"],
   "dateFormat": {
     "browserAuto": "Gunakan lokal browser (deteksi otomatis: {sample})",
     "custom": "Kustom..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "Termasuk {count, plural, one {# transaksi terjadwal lewat jatuh tempo} other {# transaksi terjadwal lewat jatuh tempo}}"
+  },
+  "reportingBasis": {
+    "label": "Dasar pelaporan",
+    "default": "{basis} (default pengguna)",
+    "help": "Total periode menggunakan dasar yang dipilih.",
+    "detailHelp": "Total periode menggunakan dasar yang dipilih.",
+    "cashOnly": "Tampilan ini mengikuti pembayaran aktual dan menggunakan dasar kas.",
+    "exportCaption": "Basis akuntansi: {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Komponen akrual hanya baca. Tautan pembayaran membuka entri asli. Persempit rentang tanggal bila perlu.",
+    "fxHelp": "Sebagian jumlah tidak dapat dinilai. Tambahkan kurs historis periode ini lalu coba lagi.",
+    "unsupported": "Kombinasi filter ini tidak dapat diperluas dengan aman. Pilih filter yang lebih sederhana.",
+    "failed": "Entri tidak dapat dimuat. Persempit tanggal jika baris terlalu banyak lalu coba lagi.",
+    "identity": "ID sumber / bagian / jadwal",
+    "native": "Jumlah asli",
+    "reporting": "Jumlah laporan",
+    "payment": "Tanggal pembayaran",
+    "title": "Diakru",
+    "effective": "Tanggal pengakuan",
+    "source": "Tanggal pembayaran",
+    "retry": "Coba lagi",
+    "unknown": "Jumlah tidak tersedia",
+    "start": "Tanggal Mulai",
+    "end": "Tanggal Selesai",
+    "partial": "(total sebagian)",
+    "empty": "Tidak ada data transaksi yang tersedia"
+  },
+  "systemAccruals": {
+    "title": "Akun akrual",
+    "help": "Saldo yang dikelola sistem dalam mata uang asli. Hanya baca; ubah entri asli untuk mengubahnya.",
+    "ownerOnly": "Hanya pemilik yang dapat melihat akun ini.",
+    "empty": "Belum ada akun akrual. Buat akrual dari entri pendapatan atau pengeluaran.",
+    "position": "Posisi",
+    "closing": "Saldo akhir",
+    "back": "Akun",
+    "asOf": "Saldo per",
+    "account": "Akun",
+    "currency": "Mata Uang",
+    "balance": "Saldo",
+    "prepaid": "Beban dibayar di muka (neto)",
+    "unearned": "Pendapatan diterima di muka (neto)",
+    "signHelp": "Saldo negatif menunjukkan kewajiban akrual atau piutang.",
+    "asset": "Aset",
+    "liability": "Liabilitas",
+    "opening": "Saldo Awal",
+    "date": "Tanggal",
+    "movement": "Komponen",
+    "amount": "Jumlah",
+    "payment": "Tanggal pembayaran",
+    "recognition": "Tanggal pengakuan",
+    "range": "{start} – {end}"
   }
 }

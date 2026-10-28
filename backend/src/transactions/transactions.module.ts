@@ -1,3 +1,5 @@
+import { AccrualsModule } from "../accruals/accruals.module";
+import { TransactionAccrualEditorController } from "./transaction-accrual-editor.controller";
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Transaction } from "./entities/transaction.entity";
@@ -28,6 +30,7 @@ import { CurrenciesModule } from "../currencies/currencies.module";
 
 @Module({
   imports: [
+    AccrualsModule,
     TypeOrmModule.forFeature([
       Transaction,
       TransactionSplit,
@@ -67,7 +70,7 @@ import { CurrenciesModule } from "../currencies/currencies.module";
     JointRegisterService,
     TransactionBulkCreateService,
   ],
-  controllers: [TransactionsController],
+  controllers: [TransactionsController, TransactionAccrualEditorController],
   exports: [
     TransactionsService,
     TransactionSplitService,

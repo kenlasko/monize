@@ -1,25 +1,29 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { budgetsApi } from '@/lib/budgets';
-import { DashboardBudgetSummary } from '@/types/budget';
-import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { CARD_CLASS } from '@/components/ui/Card';
-import { WidgetHeading } from './widget-meta';
+import { useReportingBasis } from "@/components/reports/ReportingBasis";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { budgetsApi } from "@/lib/budgets";
+import { DashboardBudgetSummary } from "@/types/budget";
+import { useNumberFormat } from "@/hooks/useNumberFormat";
+import { CARD_CLASS } from "@/components/ui/Card";
+import { WidgetHeading } from "./widget-meta";
 import {
   budgetPercentColor,
   budgetProgressBarColor,
   budgetCategoryBarColor,
-} from '@/components/budgets/utils/budget-colors';
+} from "@/components/budgets/utils/budget-colors";
 
 interface BudgetStatusWidgetProps {
   isLoading: boolean;
 }
 
-export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWidgetProps) {
-  const t = useTranslations('dashboard');
+export function BudgetStatusWidget({
+  isLoading: parentLoading,
+}: BudgetStatusWidgetProps) {
+  const basis = useReportingBasis();
+  const t = useTranslations("dashboard");
   const router = useRouter();
   const { formatCurrency, formatPercent } = useNumberFormat();
   const [summary, setSummary] = useState<DashboardBudgetSummary | null>(null);
@@ -31,7 +35,9 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
 
     const loadBudgetSummary = async () => {
       try {
-        const data = await budgetsApi.getDashboardSummary();
+        const data = await budgetsApi.getDashboardSummary(
+          ...(basis ? ([basis] as const) : []),
+        );
         setSummary(data);
       } catch {
         setHasError(true);
@@ -41,9 +47,9 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
     };
 
     loadBudgetSummary();
-  }, [parentLoading]);
+  }, [parentLoading, basis]);
 
-  const sectionTitle = t('budgetStatus.title');
+  const sectionTitle = t("budgetStatus.title");
 
   if (isLoading || parentLoading) {
     return (
@@ -67,13 +73,13 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
           {sectionTitle}
         </WidgetHeading>
         <p className="text-gray-500 dark:text-gray-400 text-sm">
-          {t('budgetStatus.noBudget')}
+          {t("budgetStatus.noBudget")}
         </p>
         <button
-          onClick={() => router.push('/budgets')}
+          onClick={() => router.push("/budgets")}
           className="mt-3 w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
         >
-          {t('budgetStatus.createBudget')}
+          {t("budgetStatus.createBudget")}
         </button>
       </div>
     );
@@ -86,18 +92,21 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
           {sectionTitle}
         </WidgetHeading>
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {t('budgetStatus.daysLeft', { count: summary.daysRemaining })}
+          {t("budgetStatus.daysLeft", { count: summary.daysRemaining })}
         </span>
       </div>
 
       {/* Overall progress */}
       <div className="mb-3">
         <div className="flex items-baseline justify-between mb-1">
-          <span className={`text-xl font-bold ${budgetPercentColor(summary.percentUsed)}`}>
+          <span
+            className={`text-xl font-bold ${budgetPercentColor(summary.percentUsed)}`}
+          >
             {formatPercent(summary.percentUsed, 0)}
           </span>
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            {formatCurrency(summary.totalSpent)} / {formatCurrency(summary.totalBudgeted)}
+            {formatCurrency(summary.totalSpent)} /{" "}
+            {formatCurrency(summary.totalBudgeted)}
           </span>
         </div>
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -111,7 +120,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
       {/* Safe daily spend */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2 sm:p-3 mb-3">
         <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-          {t('budgetStatus.safeToSpend')}
+          {t("budgetStatus.safeToSpend")}
         </div>
         <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
           {formatCurrency(summary.safeDailySpend)}
@@ -122,7 +131,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
       {summary.topCategories.length > 0 && (
         <div className="space-y-2">
           <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-            {t('budgetStatus.topCategories')}
+            {t("budgetStatus.topCategories")}
           </div>
           {summary.topCategories.map((cat) => (
             <div key={cat.categoryName} className="flex items-center gap-2">
@@ -131,7 +140,9 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
                   <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
                     {cat.categoryName}
                   </span>
-                  <span className={`text-xs font-medium ${budgetPercentColor(cat.percentUsed)}`}>
+                  <span
+                    className={`text-xs font-medium ${budgetPercentColor(cat.percentUsed)}`}
+                  >
                     {formatPercent(cat.percentUsed, 0)}
                   </span>
                 </div>
@@ -151,7 +162,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
         onClick={() => router.push(`/budgets/${summary.budgetId}`)}
         className="mt-3 w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
       >
-        {t('budgetStatus.viewFullBudget')}
+        {t("budgetStatus.viewFullBudget")}
       </button>
     </div>
   );

@@ -1,3 +1,8 @@
+jest.mock("../accruals/reporting-basis", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingBasisMockModule(),
+);
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 

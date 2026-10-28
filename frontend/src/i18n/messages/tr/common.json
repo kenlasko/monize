@@ -208,33 +208,9 @@
     "Kas",
     "Ara"
   ],
-  "weekdaysShort": [
-    "Paz",
-    "Pzt",
-    "Sal",
-    "Çar",
-    "Per",
-    "Cum",
-    "Cmt"
-  ],
-  "weekdaysMin": [
-    "Pz",
-    "Pt",
-    "Sa",
-    "Ça",
-    "Pe",
-    "Cu",
-    "Ct"
-  ],
-  "weekdaysNarrow": [
-    "P",
-    "P",
-    "S",
-    "Ç",
-    "P",
-    "C",
-    "C"
-  ],
+  "weekdaysShort": ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"],
+  "weekdaysMin": ["Pz", "Pt", "Sa", "Ça", "Pe", "Cu", "Ct"],
+  "weekdaysNarrow": ["P", "P", "S", "Ç", "P", "C", "C"],
   "dateFormat": {
     "browserAuto": "Tarayıcı yerel ayarını kullan (otomatik algılama: {sample})",
     "custom": "Özel..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "{count, plural, one {# vadesi geçmiş zamanlanmış işlem} other {# vadesi geçmiş zamanlanmış işlem}} dahil"
+  },
+  "reportingBasis": {
+    "label": "Raporlama esası",
+    "default": "{basis} (kullanıcı varsayılanı)",
+    "help": "Dönem toplamları seçili esası kullanır.",
+    "detailHelp": "Dönem toplamları seçili esası kullanır.",
+    "cashOnly": "Bu görünüm gerçek ödemeleri izler ve nakit esasını kullanır.",
+    "exportCaption": "Muhasebe esası: {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Salt okunur tahakkuk bileşenleri. Ödeme bağlantıları özgün kaydı açar. Gerekirse tarih aralığını daraltın.",
+    "fxHelp": "Bazı tutarlar değerlenemiyor. Bu dönem için geçmiş kurları ekleyip tekrar deneyin.",
+    "unsupported": "Bu filtre birleşimi güvenle genişletilemiyor. Daha basit bir filtre seçin.",
+    "failed": "Kayıtlar yüklenemedi. Satır sayısı fazlaysa tarihleri daraltıp tekrar deneyin.",
+    "identity": "Kaynak / bölünme / plan kimlikleri",
+    "native": "Özgün tutar",
+    "reporting": "Rapor tutarı",
+    "payment": "Ödeme tarihi",
+    "title": "Tahakkuk edilmiş",
+    "effective": "Muhasebeleştirme tarihi",
+    "source": "Ödeme tarihi",
+    "retry": "Yeniden dene",
+    "unknown": "Tutar kullanılamıyor",
+    "start": "Başlangıç Tarihi",
+    "end": "Bitiş Tarihi",
+    "partial": "(kısmi toplam)",
+    "empty": "İşlem verisi mevcut değil"
+  },
+  "systemAccruals": {
+    "title": "Tahakkuk hesapları",
+    "help": "Özgün para biriminde sistem tarafından yönetilen bakiyeler. Salt okunur; değiştirmek için özgün kaydı düzenleyin.",
+    "ownerOnly": "Bu hesapları yalnızca sahibi görüntüleyebilir.",
+    "empty": "Henüz tahakkuk hesabı yok. Bir gelir veya gider kaydından tahakkuk oluşturun.",
+    "position": "Pozisyon",
+    "closing": "Kapanış bakiyesi",
+    "back": "Hesaplar",
+    "asOf": "Bakiye tarihi",
+    "account": "Hesap",
+    "currency": "Para Birimi",
+    "balance": "Bakiye",
+    "prepaid": "Peşin ödenmiş giderler (net)",
+    "unearned": "Ertelenmiş gelirler (net)",
+    "signHelp": "Negatif bakiyeler tahakkuk etmiş borçları veya alacakları gösterir.",
+    "asset": "Varlıklar",
+    "liability": "Yükümlülükler",
+    "opening": "Açılış Bakiyesi",
+    "date": "Tarih",
+    "movement": "Bileşen",
+    "amount": "Tutar",
+    "payment": "Ödeme tarihi",
+    "recognition": "Muhasebeleştirme tarihi",
+    "range": "{start} – {end}"
   }
 }

@@ -1,3 +1,9 @@
+import {
+  prepareImportAccrualSources,
+  assertImportAccrualMatch,
+  rememberImportedAccrualSource,
+  assertImportAccrualEntry,
+} from "./import-accrual-guard";
 import { statusFromQifFlags } from "./qif-status.util";
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { Account, AccountType } from "../accounts/entities/account.entity";
@@ -89,11 +95,15 @@ export class ImportRegularProcessorService {
       return;
     }
 
+    await prepareImportAccrualSources(ctx.manager, ctx.userId);
+
     // Check for pending cross-currency transfers to update
     if (await this.matchPendingTransfer(ctx, qifTx, externalId)) {
       ctx.importResult.imported++;
       return;
     }
+
+    await assertImportAccrualEntry(ctx, qifTx);
 
     // Get or create payee (with alias matching)
     const resolvedPayee = await this.resolvePayee(ctx, qifTx);
@@ -141,6 +151,7 @@ export class ImportRegularProcessorService {
     });
 
     const savedTx = await ctx.manager.save(transaction);
+    rememberImportedAccrualSource(ctx.manager, ctx.userId, savedTx.id);
 
     // Assign tags to the transaction
     await this.assignTransactionTags(ctx, savedTx.id, qifTx.tagNames);
@@ -288,6 +299,10 @@ export class ImportRegularProcessorService {
 
     if (!pendingTransfer) return false;
 
+    await assertImportAccrualMatch(ctx, [
+      pendingTransfer.id,
+      pendingTransfer.linkedTransactionId,
+    ]);
     const oldAmount = Number(pendingTransfer.amount);
     const newAmount = qifTx.amount;
     const balanceDiff = newAmount - oldAmount;
@@ -585,6 +600,10 @@ export class ImportRegularProcessorService {
       .getOne();
 
     if (pendingTransfer) {
+      await assertImportAccrualMatch(ctx, [
+        pendingTransfer.id,
+        pendingTransfer.linkedTransactionId,
+      ]);
       const oldAmount = Number(pendingTransfer.amount);
       const balanceDiff = linkedAmount - oldAmount;
 
@@ -632,6 +651,11 @@ export class ImportRegularProcessorService {
     });
 
     const savedLinkedSplitTx = await ctx.manager.save(linkedSplitTx);
+    rememberImportedAccrualSource(
+      ctx.manager,
+      ctx.userId,
+      savedLinkedSplitTx.id,
+    );
 
     await ctx.manager.update(TransactionSplit, savedSplit.id, {
       linkedTransactionId: savedLinkedSplitTx.id,
@@ -718,6 +742,10 @@ export class ImportRegularProcessorService {
     savedSplit: TransactionSplit,
     existingLinkedTx: Transaction,
   ): Promise<void> {
+    await assertImportAccrualMatch(ctx, [
+      existingLinkedTx.id,
+      existingLinkedTx.linkedTransactionId,
+    ]);
     await ctx.manager.update(TransactionSplit, savedSplit.id, {
       linkedTransactionId: existingLinkedTx.id,
     });
@@ -832,6 +860,10 @@ export class ImportRegularProcessorService {
     }
 
     if (existingPendingTransfer) {
+      await assertImportAccrualMatch(ctx, [
+        existingPendingTransfer.id,
+        existingPendingTransfer.linkedTransactionId,
+      ]);
       // Same rule as the split path above: blank transfer payees stay blank
       // (issue #1214); only the loan-payment stamp survives.
       const linkedPayeeName = isLoanPaymentTx
@@ -875,6 +907,7 @@ export class ImportRegularProcessorService {
     });
 
     const savedLinkedTx = await ctx.manager.save(linkedTx);
+    rememberImportedAccrualSource(ctx.manager, ctx.userId, savedLinkedTx.id);
 
     await ctx.manager.update(Transaction, savedTx.id, {
       linkedTransactionId: savedLinkedTx.id,

@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL doit être une adresse http ou https",
       "invalidField": "{{ field }} n'est pas valide"
     }
+  },
+  "accruals": {
+    "notFound": "La transaction ou le plan de régularisation est introuvable.",
+    "ineligible": "Choisissez un revenu, une dépense ou une ventilation par catégorie. Les virements, opérations de placement et transactions annulées sont exclus.",
+    "invalidPeriod": "Choisissez un mois de début valide et entre 1 et 600 mois.",
+    "changed": "La transaction ou le plan a changé. Vérifiez un nouvel aperçu avant d’enregistrer.",
+    "ownerOnly": "Seul le propriétaire peut gérer les plans de régularisation.",
+    "familyRequired": "Choisissez dépense ou revenu pour une transaction sans catégorie.",
+    "historyUnsupported": "Ce lot ne peut pas être restauré en toute sécurité depuis l’historique. Divisez-le ou retirez les virements ou investissements non pris en charge.",
+    "ruleUnsupported": "Pour les écritures réparties, exécutez les règles manuellement après avoir vérifié leur impact. Conservez la structure de la transaction et choisissez un bénéficiaire existant."
   }
 }

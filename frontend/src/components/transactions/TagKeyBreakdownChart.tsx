@@ -14,6 +14,7 @@ import { aggregateGroupedTotals, DisplayCurrencyStrategy } from './widget-shared
 const logger = createLogger('TagKeyBreakdownChart');
 
 export interface TagKeyBreakdownParams {
+  basis?: 'cash' | 'accrual';
   accountIds?: string[];
   categoryIds?: string[];
   startDate?: string;

@@ -39,5 +39,8 @@
       "loanRepayment": "Pagamento de empréstimo",
       "creditCardRepayment": "Pagamento de cartão de crédito"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "{{ count }} transações excluídas"
   }
 }

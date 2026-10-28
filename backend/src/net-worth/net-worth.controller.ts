@@ -1,3 +1,5 @@
+import { ParseOptionalCalendarDatePipe } from "../common/pipes/parse-calendar-date.pipe";
+import { ReportingEndpoint } from "../accruals/reporting-endpoint";
 import {
   Controller,
   Get,
@@ -116,6 +118,7 @@ export class NetWorthController {
     return eff.length > 0 ? eff : [NO_READABLE_ACCOUNT];
   }
 
+  @ReportingEndpoint()
   @Get("monthly")
   @ApiOperation({ summary: "Get monthly net worth data" })
   @ApiQuery({ name: "startDate", required: false, example: "2023-01-01" })
@@ -124,34 +127,22 @@ export class NetWorthController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   async getMonthlyNetWorth(
     @Request() req,
-    @Query("startDate") startDate?: string,
-    @Query("endDate") endDate?: string,
+    @Query("startDate", new ParseOptionalCalendarDatePipe()) startDate?: string,
+    @Query("endDate", new ParseOptionalCalendarDatePipe()) endDate?: string,
   ) {
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (startDate && !dateRegex.test(startDate))
-      throw new BadRequestException(
-        tr(
-          "errors.params.mustBeCalendarDate",
-          'The value of "startDate" must be a date in YYYY-MM-DD format',
-          { param: "startDate" },
-        ),
-      );
-    if (endDate && !dateRegex.test(endDate))
-      throw new BadRequestException(
-        tr(
-          "errors.params.mustBeCalendarDate",
-          'The value of "endDate" must be a date in YYYY-MM-DD format',
-          { param: "endDate" },
-        ),
-      );
+    const parsedStart = new ParseOptionalCalendarDatePipe().transform(
+      startDate,
+    );
+    const parsedEnd = new ParseOptionalCalendarDatePipe().transform(endDate);
     return this.netWorthService.getMonthlyNetWorth(
       req.user.id,
-      startDate,
-      endDate,
+      parsedStart,
+      parsedEnd,
       await this.jointScopeFor(req),
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("investments-monthly")
   @AllowDelegate()
   @DelegateRequiresSection("investments")
@@ -225,6 +216,7 @@ export class NetWorthController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("investments-daily")
   @AllowDelegate()
   @DelegateRequiresSection("investments")
@@ -323,6 +315,7 @@ export class NetWorthController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("investments-period-result")
   @AllowDelegate()
   @DelegateRequiresSection("investments")
@@ -449,6 +442,7 @@ export class NetWorthController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("investments-period-results")
   @AllowDelegate()
   @DelegateRequiresSection("investments")
@@ -508,6 +502,7 @@ export class NetWorthController {
     });
   }
 
+  @ReportingEndpoint("cash")
   @Get("investments-breakdown")
   @AllowDelegate()
   @DelegateRequiresSection("investments")

@@ -1,5 +1,7 @@
 'use client';
 
+import { CashReportingNotice } from '@/components/reports/ReportingBasis';
+
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -173,6 +175,7 @@ export function CashFlowSankeyWidget({ accounts, isLoading }: CashFlowSankeyWidg
       configControls={configControls}
       configTitle={t('cashFlowSankey.title')}
     >
+      <CashReportingNotice />
       {loading ? (
         <div className="flex-1 min-h-[300px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : !data ? (

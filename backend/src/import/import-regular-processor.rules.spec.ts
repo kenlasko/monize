@@ -1,3 +1,10 @@
+jest.mock("./import-accrual-guard", () => ({
+  prepareImportAccrualSources: async () => new Set<string>(),
+  assertImportAccrualMatch: async () => undefined,
+  assertImportAccrualIds: async () => undefined,
+  assertImportAccrualEntry: async () => undefined,
+  rememberImportedAccrualSource: () => undefined,
+}));
 import { ImportRegularProcessorService } from "./import-regular-processor.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { ImportContext } from "./import-context";

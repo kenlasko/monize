@@ -1,3 +1,7 @@
+jest.mock("../accruals/accrual-taxonomy-operation", () => ({
+  beginTaxonomyOperation: async () => undefined,
+  recordTaxonomyOperation: async () => undefined,
+}));
 import { NotFoundException } from "@nestjs/common";
 import { PayeeToolPrepService } from "./payee-tool-prep.service";
 

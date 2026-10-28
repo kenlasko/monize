@@ -1,5 +1,5 @@
-import { IsEnum } from "class-validator";
-import { ApiProperty } from "@nestjs/swagger";
+import { IsEnum, IsOptional, Matches } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { TransactionStatus } from "../entities/transaction.entity";
 
 export class UpdateTransactionStatusDto {
@@ -9,4 +9,11 @@ export class UpdateTransactionStatusDto {
   })
   @IsEnum(TransactionStatus)
   status: TransactionStatus;
+
+  @ApiPropertyOptional({
+    description: "Fingerprint from the accrual source-edit preview",
+  })
+  @IsOptional()
+  @Matches(/^[a-f0-9]{64}$/)
+  accrualImpactFingerprint?: string;
 }

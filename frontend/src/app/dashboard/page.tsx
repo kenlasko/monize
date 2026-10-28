@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportingBasisScope, ReportingBasisControl, useReportingBasis } from '@/components/reports/ReportingBasis';
 import { Fragment, useState, useEffect, useCallback, useMemo } from 'react';
 import { subMonths, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
@@ -7,6 +8,7 @@ import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { Button } from '@/components/ui/Button';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
 import { CustomizeDashboardModal } from '@/components/dashboard/CustomizeDashboardModal';
 import {
@@ -38,13 +40,15 @@ const logger = createLogger('Dashboard');
 export default function DashboardPage() {
   return (
     <ProtectedRoute>
-      <DashboardContent />
+      <ReportingBasisScope surface="dashboard" resetOnBasis><DashboardContent /></ReportingBasisScope>
     </ProtectedRoute>
   );
 }
 
 function DashboardContent() {
+  const basis = useReportingBasis();
   const t = useTranslations('dashboard');
+  const tc = useTranslations('common.recognitionDetails');
   const user = useAuthStore((s) => s.user);
   const actingAsUserId = useAuthStore((s) => s.actingAsUserId);
   const isDelegateView = !!actingAsUserId;
@@ -69,6 +73,7 @@ function DashboardContent() {
   const [favouriteSecurities, setFavouriteSecurities] = useState<FavouriteSecurityQuote[]>([]);
   const [hasSecurities, setHasSecurities] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
 
   const brokerageMarketValues = useMemo(() => {
@@ -165,7 +170,7 @@ function DashboardContent() {
         const [accountsData, scheduledData, netWorth, favouriteSecs, securitiesList] = await Promise.all([
           accountsApi.getAll(),
           scheduledTransactionsApi.getAll(),
-          netWorthApi.getMonthly({ startDate: twelveMonthsAgo, endDate: today }).catch((error) => {
+          netWorthApi.getMonthly({ basis, startDate: twelveMonthsAgo, endDate: today }).catch((error) => {
             logger.error('Failed to load net worth history:', error);
             return null;
           }),
@@ -175,6 +180,7 @@ function DashboardContent() {
 
         setAccounts(accountsData);
         setScheduledTransactions(scheduledData);
+        setLoadError(false);
         setNetWorthData(netWorth ?? []);
         setNetWorthFailed(netWorth === null);
         setFavouriteSecurities(favouriteSecs);
@@ -201,12 +207,13 @@ function DashboardContent() {
         }
       } catch (error) {
         logger.error('Failed to load dashboard data:', error);
+        setLoadError(true);
       } finally {
         setIsLoading(false);
       }
     };
     return run();
-  }, [authHydrated, isDelegateView, delegateBills]);
+  }, [authHydrated, isDelegateView, delegateBills, basis]);
 
   const loadDashboardData = useCallback(() => {
     if (authHydrated) setIsLoading(true);
@@ -286,14 +293,16 @@ function DashboardContent() {
             }
           />
 
+          <ReportingBasisControl />
           {!isDelegateView && <GettingStarted />}
 
+          {loadError && <div role="alert" className="mb-4"><p>{tc('failed')}</p><Button onClick={() => loadDashboardData()}>{tc('retry')}</Button></div>}
           {/* Widget grid: consecutive visible widgets pair up into rows */}
           <div
             {...tourAnchor(TOUR_ANCHORS.dashboardWidgets)}
             className="grid grid-cols-1 lg:grid-cols-2 gap-6"
           >
-            {visibleWidgets
+            {!loadError && visibleWidgets
               .filter((w) => !w.shouldRender || w.shouldRender(widgetContext))
               .map((w) => (
                 <Fragment key={w.id}>{w.render(widgetContext)}</Fragment>

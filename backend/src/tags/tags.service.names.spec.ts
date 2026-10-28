@@ -1,3 +1,7 @@
+jest.mock("../accruals/accrual-tag-guard", () => ({
+  guardAccruedTagDeletion: async () => undefined,
+  guardLegacyTagRestore: async () => undefined,
+}));
 import { MAX_TAGS_PER_CALL, TagsService } from "./tags.service";
 import { Tag } from "./entities/tag.entity";
 

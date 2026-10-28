@@ -203,6 +203,15 @@ describe("Budget Period Lifecycle Integration", () => {
 
     ({ manager: scopedManager, dataSource: scopedDataSource } =
       createScopedDbMocks([
+        [
+          UserPreference,
+          {
+            findOne: jest.fn().mockResolvedValue({
+              accrualEnabled: false,
+              reportingBasis: "cash",
+            }),
+          } as never,
+        ],
         [BudgetPeriod, periodsRepository as never],
         [BudgetPeriodCategory, periodCategoriesRepository as never],
         [Transaction, transactionsRepository as never],

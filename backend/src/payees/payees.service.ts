@@ -1,4 +1,24 @@
 import {
+  beginTaxonomyOperation,
+  recordTaxonomyOperation,
+} from "../accruals/accrual-taxonomy-operation";
+import { accrualErrors } from "../accruals/accrual-errors";
+import {
+  beginPayeeRelationshipHistory,
+  recordRelationshipHistory,
+} from "../accruals/accrual-relationship-history";
+import { preparePayeeRemoval, removePayeeWithAccruals } from "./payee-removal";
+import { prepareSuggestionCategoryBatch } from "./payee-category-batch";
+import {
+  preparePayeeCategoryEdit,
+  applyPayeeCategoryEdit,
+} from "./payee-category-impact";
+import { verifyBulkAccrualEdit } from "../accruals/accrual-bulk-edit";
+import {
+  lockPayeeSources,
+  updatePayeeSourceMetadata,
+} from "./payee-source-metadata";
+import {
   Injectable,
   NotFoundException,
   ConflictException,
@@ -26,11 +46,7 @@ import { ActionHistoryService } from "../action-history/action-history.service";
 import { toCountMap } from "../common/count-map.util";
 import { matchesAliasPattern } from "./alias-match.util";
 import { insertPayeeAliasIgnoringDuplicate } from "./insert-payee-alias.util";
-import {
-  applyPayeeCategoryToAll,
-  backfillPayeeCategory,
-  countUncategorizedTransactionsByPayee,
-} from "./payee-backfill.util";
+import { countUncategorizedTransactionsByPayee } from "./payee-backfill.util";
 import { stripHtml } from "../common/sanitization.util";
 import type { LlmPayeeList, LlmPayeeQuery } from "./llm-payee-query";
 import { getActiveScopedManager, withScopedDb } from "../common/db/scoped-db";
@@ -1090,6 +1106,19 @@ export class PayeesService {
     return payee;
   }
 
+  async previewCategoryImpact(userId: string, id: string, dto: UpdatePayeeDto) {
+    await this.findOne(userId, id);
+    return withScopedDb(this.dataSource, async (m) => {
+      const edit = await preparePayeeCategoryEdit(m, userId, id, dto);
+      return {
+        ...edit.preview,
+        categoryId: edit.categoryId,
+        mode: edit.mode,
+        transactionsCategorized: edit.preview.transactionIds.length,
+      };
+    });
+  }
+
   async update(
     userId: string,
     id: string,
@@ -1102,7 +1131,8 @@ export class PayeesService {
     }
   > {
     const payee = await this.findOne(userId, id);
-    const beforeData = {
+    let recordedAccrualHistory = false;
+    let beforeData = {
       name: payee.name,
       notes: payee.notes,
       website: payee.website,
@@ -1143,8 +1173,6 @@ export class PayeesService {
     // only the scalar (or nulling the relation) makes save() clobber the FK,
     // which silently wiped the default category on an unchanged re-save.
     const updateFields: Partial<Payee> = {};
-    const nameChanged =
-      updatePayeeDto.name !== undefined && updatePayeeDto.name !== payee.name;
     if (updatePayeeDto.name !== undefined)
       updateFields.name = updatePayeeDto.name;
     if (updatePayeeDto.defaultCategoryId !== undefined)
@@ -1191,16 +1219,6 @@ export class PayeesService {
     if (updatePayeeDto.isActive !== undefined)
       updateFields.isActive = updatePayeeDto.isActive;
 
-    // The default category the payee ends up with: the new value when one was
-    // supplied, otherwise the existing one. Drives the optional backfill below
-    // and is read from the DTO (not a save()-mutated entity).
-    const effectiveCategoryId =
-      updatePayeeDto.defaultCategoryId !== undefined
-        ? updatePayeeDto.defaultCategoryId
-        : payee.defaultCategoryId;
-
-    // Optionally apply the (new) default category to the payee's existing
-    // transactions. Only meaningful when the payee ends up with a category.
     const applyMode = updatePayeeDto.applyCategoryToTransactions ?? "none";
 
     // Save the payee and cascade the name change to existing transactions and
@@ -1211,16 +1229,48 @@ export class PayeesService {
     const transactionsCategorized = await withScopedDb(
       this.dataSource,
       async (m) => {
+        const relationshipBefore = await beginPayeeRelationshipHistory(
+          m,
+          userId,
+          id,
+        );
+        const livePayee = await m.findOne(Payee, { where: { id, userId } });
+        if (!livePayee) throw accrualErrors.missing();
+        const changedName =
+          updateFields.name !== undefined &&
+          updateFields.name !== livePayee.name;
+        beforeData = {
+          name: livePayee.name,
+          notes: livePayee.notes,
+          website: livePayee.website,
+          address: livePayee.address,
+          email: livePayee.email,
+          phone: livePayee.phone,
+          defaultCategoryId: livePayee.defaultCategoryId,
+          isActive: livePayee.isActive,
+        };
+
+        const categoryEdit =
+          applyMode !== "none" ||
+          updatePayeeDto.accrualImpactFingerprint !== undefined
+            ? await preparePayeeCategoryEdit(m, userId, id, updatePayeeDto)
+            : undefined;
+        if (categoryEdit)
+          verifyBulkAccrualEdit(
+            categoryEdit.preview,
+            updatePayeeDto.accrualImpactFingerprint,
+          );
+        const sources =
+          categoryEdit?.sources ??
+          (changedName ? await lockPayeeSources(m, userId, [id]) : []);
         if (Object.keys(updateFields).length > 0) {
           await m.update(Payee, { id, userId }, updateFields);
         }
 
-        if (nameChanged) {
-          await m.update(
-            Transaction,
-            { payeeId: id, userId },
-            { payeeName: updatePayeeDto.name },
-          );
+        if (changedName) {
+          await updatePayeeSourceMetadata(m, userId, sources, id, {
+            payeeName: updatePayeeDto.name!,
+          });
           await m.update(
             ScheduledTransaction,
             { payeeId: id, userId },
@@ -1228,12 +1278,14 @@ export class PayeesService {
           );
         }
 
-        if (applyMode !== "none" && effectiveCategoryId) {
-          return applyMode === "all"
-            ? applyPayeeCategoryToAll(m, userId, id, effectiveCategoryId)
-            : backfillPayeeCategory(m, userId, id, effectiveCategoryId);
+        const categorized = categoryEdit
+          ? await applyPayeeCategoryEdit(m, userId, id, categoryEdit)
+          : 0;
+        if (relationshipBefore) {
+          await recordRelationshipHistory(m, userId, relationshipBefore);
+          recordedAccrualHistory = true;
         }
-        return 0;
+        return categorized;
       },
     );
 
@@ -1250,25 +1302,26 @@ export class PayeesService {
         }),
       }),
     );
-    this.actionHistoryService.record(userId, {
-      entityType: "payee",
-      entityId: id,
-      action: "update",
-      beforeData,
-      afterData: {
-        name: refreshed.name,
-        notes: refreshed.notes,
-        website: refreshed.website,
-        address: refreshed.address,
-        email: refreshed.email,
-        phone: refreshed.phone,
-        defaultCategoryId: refreshed.defaultCategoryId,
-        isActive: refreshed.isActive,
-      },
-      description: `Updated payee "${refreshed.name}"`,
-      descriptionKey: "updatedPayee",
-      descriptionParams: { name: refreshed.name },
-    });
+    if (!recordedAccrualHistory)
+      this.actionHistoryService.record(userId, {
+        entityType: "payee",
+        entityId: id,
+        action: "update",
+        beforeData,
+        afterData: {
+          name: refreshed.name,
+          notes: refreshed.notes,
+          website: refreshed.website,
+          address: refreshed.address,
+          email: refreshed.email,
+          phone: refreshed.phone,
+          defaultCategoryId: refreshed.defaultCategoryId,
+          isActive: refreshed.isActive,
+        },
+        description: `Updated payee "${refreshed.name}"`,
+        descriptionKey: "updatedPayee",
+        descriptionParams: { name: refreshed.name },
+      });
     return {
       ...refreshed,
       aliasCount,
@@ -1277,8 +1330,24 @@ export class PayeesService {
     };
   }
 
-  async remove(userId: string, id: string): Promise<void> {
-    const payee = await this.findOne(userId, id);
+  async previewRemoval(userId: string, id: string) {
+    await this.findOne(userId, id);
+    return withScopedDb(this.dataSource, async (m) => {
+      const edit = await preparePayeeRemoval(m, userId, id);
+      return { ...edit.preview, scheduledReferences: edit.scheduled.length };
+    });
+  }
+
+  async remove(
+    userId: string,
+    id: string,
+    accrualImpactFingerprint?: string,
+  ): Promise<void> {
+    await this.findOne(userId, id);
+    const payee = await withScopedDb(this.dataSource, (m) =>
+      removePayeeWithAccruals(m, userId, id, accrualImpactFingerprint),
+    );
+    if (payee.relationshipRecorded) return;
     // Undo re-inserts exactly the columns this snapshot carries, so a field
     // missing from it does not come back -- the same reason `update` snapshots
     // the contact fields on both sides.
@@ -1293,9 +1362,6 @@ export class PayeesService {
       defaultCategoryId: payee.defaultCategoryId,
       isActive: payee.isActive,
     };
-    await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Payee).remove(payee),
-    );
     this.actionHistoryService.record(userId, {
       entityType: "payee",
       entityId: id,
@@ -1707,6 +1773,21 @@ export class PayeesService {
    * category and backfilling span two tables, so the whole batch runs in one
    * transaction.
    */
+  async previewCategorySuggestionsImpact(
+    userId: string,
+    assignments: Array<{
+      payeeId: string;
+      categoryId: string;
+      backfillTransactions?: boolean;
+    }>,
+  ) {
+    return withScopedDb(
+      this.dataSource,
+      async (m) =>
+        (await prepareSuggestionCategoryBatch(m, userId, assignments)).preview,
+    );
+  }
+
   async applyCategorySuggestions(
     userId: string,
     assignments: Array<{
@@ -1714,6 +1795,7 @@ export class PayeesService {
       categoryId: string;
       backfillTransactions?: boolean;
     }>,
+    accrualImpactFingerprint?: string,
   ): Promise<{ updated: number; transactionsBackfilled: number }> {
     // M24: Batch-verify all categoryIds belong to the user
     const uniqueCategoryIds = [
@@ -1741,37 +1823,28 @@ export class PayeesService {
       }
     }
 
-    const payeeIds = [...new Set(assignments.map((a) => a.payeeId))];
-
     return withScopedDb(this.dataSource, async (m) => {
-      const payees = await m.find(Payee, {
-        where: { id: In(payeeIds), userId },
-      });
-      const payeeMap = new Map(payees.map((p) => [p.id, p]));
-
-      const toSave: Payee[] = [];
+      const batch = await prepareSuggestionCategoryBatch(
+        m,
+        userId,
+        assignments,
+      );
+      verifyBulkAccrualEdit(batch.preview, accrualImpactFingerprint);
       let transactionsBackfilled = 0;
-      for (const assignment of assignments) {
-        const payee = payeeMap.get(assignment.payeeId);
-        if (!payee) continue;
-        payee.defaultCategoryId = assignment.categoryId;
-        toSave.push(payee);
-
-        if (assignment.backfillTransactions) {
-          transactionsBackfilled += await backfillPayeeCategory(
-            m,
-            userId,
-            assignment.payeeId,
-            assignment.categoryId,
-          );
-        }
+      for (const plan of batch.plans) {
+        await m.update(
+          Payee,
+          { id: plan.payeeId, userId },
+          { defaultCategoryId: plan.edit.categoryId },
+        );
+        transactionsBackfilled += await applyPayeeCategoryEdit(
+          m,
+          userId,
+          plan.payeeId,
+          plan.edit,
+        );
       }
-
-      if (toSave.length > 0) {
-        await m.save(toSave);
-      }
-
-      return { updated: toSave.length, transactionsBackfilled };
+      return { updated: batch.plans.length, transactionsBackfilled };
     });
   }
 
@@ -1971,19 +2044,32 @@ export class PayeesService {
     const sourcePayee = await this.findOne(userId, sourcePayeeId);
 
     return withScopedDb(this.dataSource, async (m) => {
-      // 1. Reassign transactions from source to target
-      const txResult = await m.update(
-        Transaction,
-        { payeeId: sourcePayeeId, userId },
-        { payeeId: targetPayeeId, payeeName: targetPayee.name },
+      const history = await beginTaxonomyOperation(m, userId, "payee", [
+        sourcePayeeId,
+        targetPayeeId,
+      ]);
+      const liveTarget = history
+        ? await m.findOne(Payee, { where: { id: targetPayeeId, userId } })
+        : targetPayee;
+      const liveSource = history
+        ? await m.findOne(Payee, { where: { id: sourcePayeeId, userId } })
+        : sourcePayee;
+      if (!liveTarget || !liveSource) throw accrualErrors.conflict();
+      const sources = await lockPayeeSources(m, userId, [sourcePayeeId]);
+      // 1. Reassign the locked source set and maintain linked accrual metadata.
+      const transactionsMigrated = await updatePayeeSourceMetadata(
+        m,
+        userId,
+        sources,
+        sourcePayeeId,
+        { payeeId: targetPayeeId, payeeName: liveTarget.name },
       );
-      const transactionsMigrated = txResult.affected || 0;
 
       // Also reassign scheduled transactions
       await m.update(
         ScheduledTransaction,
         { payeeId: sourcePayeeId, userId },
-        { payeeId: targetPayeeId, payeeName: targetPayee.name },
+        { payeeId: targetPayeeId, payeeName: liveTarget.name },
       );
 
       // 2. Optionally add source payee name as alias on target
@@ -1994,7 +2080,7 @@ export class PayeesService {
           .createQueryBuilder(PayeeAlias, "alias")
           .where("alias.user_id = :userId", { userId })
           .andWhere("LOWER(alias.alias) = LOWER(:alias)", {
-            alias: sourcePayee.name,
+            alias: liveSource.name,
           })
           .getOne();
 
@@ -2002,7 +2088,7 @@ export class PayeesService {
           const newAlias = m.create(PayeeAlias, {
             payeeId: targetPayeeId,
             userId,
-            alias: sourcePayee.name,
+            alias: liveSource.name,
           });
           // The existence check above and this insert are not atomic: a
           // concurrent merge can create the same alias in between, so guard the
@@ -2025,7 +2111,8 @@ export class PayeesService {
       );
 
       // 4. Delete the source payee
-      await m.remove(Payee, sourcePayee);
+      await m.remove(Payee, liveSource);
+      await recordTaxonomyOperation(m, userId, history);
 
       return {
         transactionsMigrated,

@@ -1,3 +1,19 @@
+jest.mock("../accruals/reporting-basis", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingBasisMockModule(),
+);
+jest.mock("../accruals/reporting-query", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingQueryMockModule(),
+);
+jest.mock("../accruals/reporting-basis.interceptor", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingInterceptorMockModule(),
+);
+
 import { DataSource } from "typeorm";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -86,6 +102,7 @@ describe("SpendingReportsService", () => {
     };
 
     exchangeRateService = {
+      getRateHistory: jest.fn().mockResolvedValue([]),
       getLatestRates: jest.fn().mockResolvedValue(mockExchangeRates),
     };
 
@@ -944,7 +961,9 @@ describe("SpendingReportsService", () => {
       const sql = scopedManager.query.mock.calls[0][0];
       expect(sql).toContain("NOT EXISTS");
       expect(sql).toContain("asset_category_id");
-      expect(sql).toMatch(/ax\.asset_category_id\s*=\s*t\.category_id/);
+      expect(sql).toMatch(
+        /ax\.asset_category_id\s*=\s*COALESCE\(ts\.category_id,\s*t\.category_id\)/,
+      );
     });
   });
 

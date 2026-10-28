@@ -1,3 +1,19 @@
+jest.mock("../accruals/reporting-basis", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingBasisMockModule(),
+);
+jest.mock("../accruals/reporting-query", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingQueryMockModule(),
+);
+jest.mock("../accruals/reporting-basis.interceptor", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingInterceptorMockModule(),
+);
+
 import { DataSource } from "typeorm";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -92,6 +108,7 @@ describe("MonthlyCategoryBreakdownService", () => {
       findOne: jest.fn().mockResolvedValue({ defaultCurrency: "USD" }),
     };
     exchangeRateService = {
+      getRateHistory: jest.fn().mockResolvedValue([]),
       getLatestRates: jest.fn().mockResolvedValue(mockExchangeRates),
     };
 

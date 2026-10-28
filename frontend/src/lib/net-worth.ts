@@ -12,6 +12,7 @@ import {
 
 export const netWorthApi = {
   getMonthly: async (params?: {
+    basis?: 'cash' | 'accrual';
     startDate?: string;
     endDate?: string;
   }): Promise<MonthlyNetWorth[]> => {

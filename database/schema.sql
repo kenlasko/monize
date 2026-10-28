@@ -4495,6 +4495,88 @@ BEGIN
     END LOOP;
 END $$;
 
+-- One global answer to "is this currency code still referenced?" (migration 136)
+-- and which currency codes one user references (migration 137) are defined
+-- further below, once accrual_system_accounts exists -- see the note there.
+
+-- SimpleFIN request reservations are direct user-owned instance state.
+ALTER TABLE bank_sync_provider_requests ENABLE ROW LEVEL SECURITY;
+
+-- Add owner-scoped accrual schedules and derived timing-account identities.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_accrual_transaction_owner ON transactions(id, user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_accrual_split_parent ON transaction_splits(id, transaction_id);
+
+CREATE TABLE IF NOT EXISTS accrual_system_accounts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    family VARCHAR(10) NOT NULL,
+    currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_accrual_system_identity UNIQUE (user_id, family, currency_code),
+    CONSTRAINT ck_accrual_system_family CHECK (family IN ('expense', 'income'))
+);
+CREATE TABLE IF NOT EXISTS accrual_schedules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    source_transaction_id UUID NOT NULL,
+    source_split_id UUID,
+    family VARCHAR(10) NOT NULL,
+    currency_code VARCHAR(3) NOT NULL,
+    preset VARCHAR(10) NOT NULL,
+    recognition_date_rule VARCHAR(20) NOT NULL DEFAULT 'MONTH_END',
+    start_month DATE NOT NULL,
+    month_count INTEGER NOT NULL,
+    revision INTEGER NOT NULL DEFAULT 1,
+    source_fingerprint CHAR(64) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_accrual_schedule_owner UNIQUE (id, user_id),
+    CONSTRAINT fk_accrual_schedule_source FOREIGN KEY (source_transaction_id, user_id) REFERENCES transactions(id, user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_accrual_schedule_split FOREIGN KEY (source_split_id, source_transaction_id) REFERENCES transaction_splits(id, transaction_id) ON DELETE CASCADE,
+    CONSTRAINT fk_accrual_schedule_system FOREIGN KEY (user_id, family, currency_code) REFERENCES accrual_system_accounts(user_id, family, currency_code),
+    CONSTRAINT ck_accrual_schedule_count CHECK (month_count BETWEEN 1 AND 600),
+    CONSTRAINT ck_accrual_schedule_start CHECK (EXTRACT(DAY FROM start_month) = 1 AND start_month >= DATE '0001-01-01' AND start_month <= DATE '9999-12-01'),
+    CONSTRAINT ck_accrual_schedule_end CHECK (start_month + (month_count - 1) * INTERVAL '1 month' <= DATE '9999-12-01'),
+    CONSTRAINT ck_accrual_schedule_preset CHECK (preset IN ('LTM', 'NTM', 'CUSTOM')),
+    CONSTRAINT ck_accrual_schedule_date_rule CHECK (recognition_date_rule IN ('MONTH_END', 'FIRST_BUSINESS_DAY')),
+    CONSTRAINT ck_accrual_schedule_revision CHECK (revision > 0),
+    CONSTRAINT ck_accrual_schedule_fingerprint CHECK (source_fingerprint ~ '^[a-f0-9]{64}$')
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_accrual_schedule_transaction ON accrual_schedules(source_transaction_id) WHERE source_split_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_accrual_schedule_split ON accrual_schedules(source_split_id) WHERE source_split_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_accrual_schedule_user ON accrual_schedules(user_id);
+
+CREATE TABLE IF NOT EXISTS accrual_allocations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    schedule_id UUID NOT NULL,
+    period_index INTEGER NOT NULL,
+    recognition_date DATE NOT NULL,
+    amount NUMERIC(20,4) NOT NULL,
+    CONSTRAINT fk_accrual_allocation_owner FOREIGN KEY (schedule_id, user_id) REFERENCES accrual_schedules(id, user_id) ON DELETE CASCADE,
+    CONSTRAINT uq_accrual_allocation_period UNIQUE (schedule_id, period_index),
+    CONSTRAINT ck_accrual_allocation_period CHECK (period_index BETWEEN 0 AND 599),
+    CONSTRAINT ck_accrual_allocation_date CHECK (recognition_date >= DATE '0001-01-01' AND recognition_date <= DATE '9999-12-31' AND recognition_date = (date_trunc('month', recognition_date::timestamp) + INTERVAL '1 month - 1 day')::date)
+);
+CREATE INDEX IF NOT EXISTS idx_accrual_allocation_user_date ON accrual_allocations(user_id, recognition_date);
+
+ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS reporting_basis VARCHAR(10) NOT NULL DEFAULT 'cash';
+ALTER TABLE user_preferences DROP CONSTRAINT IF EXISTS ck_user_preferences_reporting_basis;
+ALTER TABLE user_preferences ADD CONSTRAINT ck_user_preferences_reporting_basis CHECK (reporting_basis IN ('cash', 'accrual'));
+
+ALTER TABLE accrual_allocations DROP CONSTRAINT IF EXISTS ck_accrual_allocation_date;
+ALTER TABLE accrual_allocations ADD CONSTRAINT ck_accrual_allocation_date CHECK (
+  recognition_date >= DATE '0001-01-01' AND recognition_date <= DATE '9999-12-31' AND (
+    recognition_date = (date_trunc('month', recognition_date::timestamp) + INTERVAL '1 month - 1 day')::date
+    OR (
+      (EXTRACT(DAY FROM recognition_date) = 1 AND EXTRACT(ISODOW FROM recognition_date) BETWEEN 1 AND 5)
+      OR (EXTRACT(DAY FROM recognition_date) IN (2, 3) AND EXTRACT(ISODOW FROM recognition_date) = 1)
+    )
+  )
+);
+
+ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS accrual_enabled BOOLEAN NOT NULL DEFAULT false;
+
 -- -------------------------------------------------------------------------
 -- One global answer to "is this currency code still referenced?" (migration 136).
 --
@@ -4525,6 +4607,12 @@ END $$;
 --
 -- `currency-references.spec.ts` fails when a FK to `currencies(code)` is not
 -- consulted below, so a migration adding one cannot leave this behind.
+--
+-- Defined here rather than immediately after migration 136/137's own section
+-- above: both functions now consult accrual_system_accounts, created only
+-- later in this file, and `LANGUAGE sql` functions are parsed -- object
+-- references and all -- at CREATE time, so a fresh install reading this file
+-- top to bottom needs the table to exist first.
 CREATE OR REPLACE FUNCTION currency_code_in_use_globally(p_code VARCHAR)
 RETURNS boolean
 LANGUAGE sql
@@ -4548,6 +4636,7 @@ AS $$
       WHERE currency_code = p_code OR original_currency_code = p_code
     UNION ALL SELECT 1 FROM budgets WHERE currency_code = p_code
     UNION ALL SELECT 1 FROM warranties WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM accrual_system_accounts WHERE currency_code = p_code
     UNION ALL SELECT 1 FROM user_preferences WHERE default_currency = p_code
   )
 $$;
@@ -4631,6 +4720,7 @@ AS $$
     UNION SELECT original_currency_code FROM scheduled_transactions WHERE user_id = p_user_id
     UNION SELECT currency_code FROM budgets WHERE user_id = p_user_id
     UNION SELECT currency_code FROM warranties WHERE user_id = p_user_id
+    UNION SELECT currency_code FROM accrual_system_accounts WHERE user_id = p_user_id
   ) referenced
   WHERE code IS NOT NULL
 $$;
@@ -4661,5 +4751,337 @@ COMMENT ON FUNCTION currency_codes_referenced_by_user(uuid) IS
   'Derives from currency_codes_referenced_by_user_data rather than repeating its '
   'branches -- that list has drifted three times.';
 
--- SimpleFIN request reservations are direct user-owned instance state.
-ALTER TABLE bank_sync_provider_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS accrual_system_accounts_isolation ON accrual_system_accounts;
+CREATE POLICY accrual_system_accounts_isolation ON accrual_system_accounts
+    USING (user_id = (SELECT app_current_user_id()) OR (SELECT app_bypass_rls()))
+    WITH CHECK (user_id = (SELECT app_current_user_id()) OR (SELECT app_bypass_rls()));
+ALTER TABLE accrual_system_accounts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS accrual_schedules_isolation ON accrual_schedules;
+CREATE POLICY accrual_schedules_isolation ON accrual_schedules
+    USING (user_id = (SELECT app_current_user_id()) OR (SELECT app_bypass_rls()))
+    WITH CHECK (user_id = (SELECT app_current_user_id()) OR (SELECT app_bypass_rls()));
+ALTER TABLE accrual_schedules ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS accrual_allocations_isolation ON accrual_allocations;
+CREATE POLICY accrual_allocations_isolation ON accrual_allocations
+    USING (user_id = (SELECT app_current_user_id()) OR (SELECT app_bypass_rls()))
+    WITH CHECK (user_id = (SELECT app_current_user_id()) OR (SELECT app_bypass_rls()));
+ALTER TABLE accrual_allocations ENABLE ROW LEVEL SECURITY;
+
+-- Read-only accrual facts follow the source transaction's existing RLS visibility.
+-- Owner-only ALL/WITH CHECK policies remain in force for every write. A revoked
+-- account grant removes recognition facts on the next read, without a cache.
+ALTER TABLE accrual_schedules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS accrual_schedules_source_read ON accrual_schedules;
+CREATE POLICY accrual_schedules_source_read ON accrual_schedules FOR SELECT
+  USING ((SELECT app_bypass_rls()) OR EXISTS (SELECT 1 FROM transactions t
+    WHERE t.id=accrual_schedules.source_transaction_id AND t.user_id=accrual_schedules.user_id));
+
+ALTER TABLE accrual_allocations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS accrual_allocations_source_read ON accrual_allocations;
+CREATE POLICY accrual_allocations_source_read ON accrual_allocations FOR SELECT
+  USING ((SELECT app_bypass_rls()) OR EXISTS (SELECT 1 FROM accrual_schedules s
+    WHERE s.id=accrual_allocations.schedule_id AND s.user_id=accrual_allocations.user_id));
+
+ALTER TABLE accrual_system_accounts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS accrual_system_accounts_source_read ON accrual_system_accounts;
+CREATE POLICY accrual_system_accounts_source_read ON accrual_system_accounts FOR SELECT
+  USING ((SELECT app_bypass_rls()) OR EXISTS (SELECT 1 FROM accrual_schedules s
+    WHERE s.user_id=accrual_system_accounts.user_id AND s.family=accrual_system_accounts.family
+      AND s.currency_code=accrual_system_accounts.currency_code));
+
+-- New installations opt into accrual reporting; preserve existing choices and schedules.
+ALTER TABLE user_preferences ALTER COLUMN reporting_basis SET DEFAULT 'cash';
+
+-- Explicit invoker read models over persisted allocations; no shadow tables or JSON record conversion.
+-- A SQL-string function body avoids base-column view dependencies during
+-- historical migration replay. Invoker SQL functions remain planner-inlineable.
+CREATE OR REPLACE FUNCTION public.accrual_reporting_components_rows() RETURNS TABLE(
+ "source_id" uuid,
+ "split_id" uuid,
+ "user_id" uuid,
+ "account_id" uuid,
+ "effective_date" date,
+ "amount" numeric(20,4),
+ "currency_code" character varying(3),
+ "original_currency_code" character varying(3),
+ "exchange_rate" numeric(20,10),
+ "cash_date" date,
+ "source_amount" numeric(20,4),
+ "schedule_id" uuid
+) LANGUAGE sql STABLE SECURITY INVOKER AS $read_model$
+SELECT t.id AS source_id,sp.id AS split_id,t.user_id,t.account_id,t.transaction_date AS effective_date,
+ COALESCE(sp.amount,t.amount) AS amount,t.currency_code,t.original_currency_code,t.exchange_rate,
+ t.transaction_date AS cash_date,COALESCE(sp.amount,t.amount) AS source_amount,NULL::uuid AS schedule_id
+FROM public.transactions t LEFT JOIN public.transaction_splits sp ON sp.transaction_id=t.id AND t.is_split
+WHERE NOT EXISTS(SELECT 1 FROM public.accrual_schedules s WHERE s.source_transaction_id=t.id AND s.user_id=t.user_id AND NOT t.is_transfer AND t.status IS DISTINCT FROM 'VOID' AND s.source_split_id IS NOT DISTINCT FROM sp.id)
+UNION ALL
+SELECT t.id,sp.id,t.user_id,t.account_id,a.recognition_date,a.amount,t.currency_code,t.original_currency_code,t.exchange_rate,
+ t.transaction_date,COALESCE(sp.amount,t.amount),s.id
+FROM public.accrual_schedules s JOIN public.transactions t ON t.id=s.source_transaction_id AND t.user_id=s.user_id
+JOIN public.accrual_allocations a ON a.schedule_id=s.id AND a.user_id=s.user_id
+LEFT JOIN public.transaction_splits sp ON sp.id=s.source_split_id AND sp.transaction_id=t.id
+WHERE NOT t.is_transfer AND t.status IS DISTINCT FROM 'VOID'
+ AND ((NOT t.is_split AND s.source_split_id IS NULL) OR (t.is_split AND sp.id IS NOT NULL))
+$read_model$;
+CREATE OR REPLACE VIEW public.accrual_reporting_components WITH (security_invoker=true) AS
+SELECT * FROM public.accrual_reporting_components_rows();
+
+CREATE OR REPLACE FUNCTION public.accrual_reporting_cash_id(p_source uuid) RETURNS uuid
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path=public,pg_temp AS $$
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM public.accrual_schedules s WHERE s.source_transaction_id=t.id AND s.user_id=t.user_id AND NOT t.is_transfer AND t.status IS DISTINCT FROM 'VOID')
+  AND EXISTS(SELECT 1 FROM public.accrual_reporting_components c WHERE c.source_id=t.id AND c.effective_date=t.transaction_date)
+ THEN md5(t.id::text||TO_CHAR(t.transaction_date,'YYYY-MM-DD')||'accrual-report-v1')::uuid ELSE t.id END
+ FROM public.transactions t WHERE t.id=p_source
+$$;
+CREATE OR REPLACE FUNCTION public.accrual_reporting_cash_split_id(p_split uuid) RETURNS uuid
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path=public,pg_temp AS $$
+ SELECT CASE WHEN public.accrual_reporting_cash_id(s.transaction_id) IS DISTINCT FROM s.transaction_id
+ THEN md5(s.id::text||TO_CHAR(t.transaction_date,'YYYY-MM-DD')||'accrual-report-split-v1')::uuid ELSE s.id END
+ FROM public.transaction_splits s JOIN public.transactions t ON t.id=s.transaction_id WHERE s.id=p_split
+$$;
+
+-- A SQL-string function body avoids base-column view dependencies during
+-- historical migration replay. Invoker SQL functions remain planner-inlineable.
+CREATE OR REPLACE FUNCTION public.accrual_reporting_transactions_rows() RETURNS TABLE(
+ "id" uuid,
+ "user_id" uuid,
+ "account_id" uuid,
+ "transaction_date" date,
+ "payee_id" uuid,
+ "payee_name" character varying(255),
+ "category_id" uuid,
+ "amount" numeric,
+ "currency_code" character varying(3),
+ "exchange_rate" numeric(20,10),
+ "original_amount" numeric(20,4),
+ "original_currency_code" character varying(3),
+ "description" text,
+ "reference_number" character varying(100),
+ "status" character varying(20),
+ "reconciled_date" date,
+ "is_split" boolean,
+ "parent_transaction_id" uuid,
+ "is_transfer" boolean,
+ "linked_transaction_id" uuid,
+ "external_id" character varying(255),
+ "created_at" timestamp without time zone,
+ "updated_at" timestamp without time zone,
+ "is_recognition" boolean,
+ "source_transaction_id" uuid,
+ "source_cash_date" date,
+ "source_amount" numeric(20,4),
+ "source_linked_id" uuid,
+ "source_parent_id" uuid
+) LANGUAGE sql STABLE SECURITY INVOKER AS $read_model$
+SELECT t.id AS id,
+ t.user_id AS user_id,
+ t.account_id AS account_id,
+ t.transaction_date AS transaction_date,
+ t.payee_id AS payee_id,
+ t.payee_name AS payee_name,
+ t.category_id AS category_id,
+ t.amount AS amount,
+ t.currency_code AS currency_code,
+ t.exchange_rate AS exchange_rate,
+ t.original_amount AS original_amount,
+ t.original_currency_code AS original_currency_code,
+ t.description AS description,
+ t.reference_number AS reference_number,
+ t.status AS status,
+ t.reconciled_date AS reconciled_date,
+ t.is_split AS is_split,
+ CASE WHEN t.parent_transaction_id IS NULL THEN NULL ELSE COALESCE(public.accrual_reporting_cash_id(t.parent_transaction_id),t.parent_transaction_id) END AS parent_transaction_id,
+ t.is_transfer AS is_transfer,
+ CASE WHEN t.linked_transaction_id IS NULL THEN NULL ELSE COALESCE(public.accrual_reporting_cash_id(t.linked_transaction_id),t.linked_transaction_id) END AS linked_transaction_id,
+ t.external_id AS external_id,
+ t.created_at AS created_at,
+ t.updated_at AS updated_at,false AS is_recognition,t.id AS source_transaction_id,t.transaction_date AS source_cash_date,t.amount AS source_amount,t.linked_transaction_id AS source_linked_id,t.parent_transaction_id AS source_parent_id
+FROM public.transactions t WHERE NOT EXISTS(SELECT 1 FROM public.accrual_schedules s WHERE s.source_transaction_id=t.id AND s.user_id=t.user_id AND NOT t.is_transfer AND t.status IS DISTINCT FROM 'VOID')
+UNION ALL
+SELECT md5(t.id::text||TO_CHAR(p.effective_date,'YYYY-MM-DD')||'accrual-report-v1')::uuid AS id,
+ t.user_id AS user_id,
+ t.account_id AS account_id,
+ p.effective_date AS transaction_date,
+ t.payee_id AS payee_id,
+ t.payee_name AS payee_name,
+ t.category_id AS category_id,
+ p.amount AS amount,
+ t.currency_code AS currency_code,
+ t.exchange_rate AS exchange_rate,
+ t.original_amount AS original_amount,
+ t.original_currency_code AS original_currency_code,
+ t.description AS description,
+ t.reference_number AS reference_number,
+ t.status AS status,
+ t.reconciled_date AS reconciled_date,
+ t.is_split AS is_split,
+ CASE WHEN t.parent_transaction_id IS NULL THEN NULL ELSE COALESCE(public.accrual_reporting_cash_id(t.parent_transaction_id),t.parent_transaction_id) END AS parent_transaction_id,
+ t.is_transfer AS is_transfer,
+ CASE WHEN t.linked_transaction_id IS NULL THEN NULL ELSE COALESCE(public.accrual_reporting_cash_id(t.linked_transaction_id),t.linked_transaction_id) END AS linked_transaction_id,
+ t.external_id AS external_id,
+ t.created_at AS created_at,
+ t.updated_at AS updated_at,p.is_recognition,t.id AS source_transaction_id,t.transaction_date AS source_cash_date,t.amount AS source_amount,t.linked_transaction_id AS source_linked_id,t.parent_transaction_id AS source_parent_id
+FROM public.transactions t CROSS JOIN LATERAL (
+ SELECT c.effective_date,SUM(c.amount) AS amount,BOOL_OR(c.schedule_id IS NOT NULL) AS is_recognition
+ FROM public.accrual_reporting_components c WHERE c.source_id=t.id GROUP BY c.effective_date
+) p WHERE EXISTS(SELECT 1 FROM public.accrual_schedules s WHERE s.source_transaction_id=t.id AND s.user_id=t.user_id AND NOT t.is_transfer AND t.status IS DISTINCT FROM 'VOID')
+$read_model$;
+CREATE OR REPLACE VIEW public.accrual_reporting_transactions WITH (security_invoker=true) AS
+SELECT * FROM public.accrual_reporting_transactions_rows();
+
+-- A SQL-string function body avoids base-column view dependencies during
+-- historical migration replay. Invoker SQL functions remain planner-inlineable.
+CREATE OR REPLACE FUNCTION public.accrual_reporting_transaction_splits_rows() RETURNS TABLE(
+ "id" uuid,
+ "transaction_id" uuid,
+ "kind" character varying(20),
+ "category_id" uuid,
+ "transfer_account_id" uuid,
+ "linked_transaction_id" uuid,
+ "amount" numeric(20,4),
+ "memo" text,
+ "created_at" timestamp without time zone,
+ "source_split_id" uuid,
+ "source_amount" numeric(20,4),
+ "schedule_id" uuid,
+ "source_cash_date" date,
+ "effective_date" date,
+ "source_linked_id" uuid,
+ "reporting_user_id" uuid
+) LANGUAGE sql STABLE SECURITY INVOKER AS $read_model$
+SELECT sp.id AS id,
+ sp.transaction_id AS transaction_id,
+ sp.kind AS kind,
+ sp.category_id AS category_id,
+ sp.transfer_account_id AS transfer_account_id,
+ CASE WHEN sp.linked_transaction_id IS NULL THEN NULL ELSE COALESCE(public.accrual_reporting_cash_id(sp.linked_transaction_id),sp.linked_transaction_id) END AS linked_transaction_id,
+ sp.amount AS amount,
+ sp.memo AS memo,
+ sp.created_at AS created_at,sp.id AS source_split_id,sp.amount AS source_amount,NULL::uuid AS schedule_id,t.transaction_date AS source_cash_date,t.transaction_date AS effective_date,sp.linked_transaction_id AS source_linked_id,t.user_id AS reporting_user_id
+FROM public.transaction_splits sp JOIN public.transactions t ON t.id=sp.transaction_id
+WHERE NOT EXISTS(SELECT 1 FROM public.accrual_schedules s WHERE s.source_transaction_id=t.id AND s.user_id=t.user_id AND NOT t.is_transfer AND t.status IS DISTINCT FROM 'VOID')
+UNION ALL
+SELECT md5(sp.id::text||TO_CHAR(t.transaction_date,'YYYY-MM-DD')||'accrual-report-split-v1')::uuid AS id,
+ md5(t.id::text||TO_CHAR(t.transaction_date,'YYYY-MM-DD')||'accrual-report-v1')::uuid AS transaction_id,
+ sp.kind AS kind,
+ sp.category_id AS category_id,
+ sp.transfer_account_id AS transfer_account_id,
+ CASE WHEN sp.linked_transaction_id IS NULL THEN NULL ELSE COALESCE(public.accrual_reporting_cash_id(sp.linked_transaction_id),sp.linked_transaction_id) END AS linked_transaction_id,
+ sp.amount AS amount,
+ sp.memo AS memo,
+ sp.created_at AS created_at,
+ sp.id AS source_split_id,
+ sp.amount AS source_amount,
+ NULL::uuid AS schedule_id,
+ t.transaction_date AS source_cash_date,
+ t.transaction_date AS effective_date,
+ sp.linked_transaction_id AS source_linked_id,t.user_id AS reporting_user_id
+FROM public.transaction_splits sp JOIN public.transactions t ON t.id=sp.transaction_id
+WHERE EXISTS(SELECT 1 FROM public.accrual_schedules s WHERE s.source_transaction_id=t.id AND s.user_id=t.user_id AND NOT t.is_transfer AND t.status IS DISTINCT FROM 'VOID')
+AND NOT EXISTS(SELECT 1 FROM public.accrual_schedules s WHERE s.source_split_id=sp.id AND s.source_transaction_id=t.id AND s.user_id=t.user_id)
+UNION ALL
+SELECT md5(sp.id::text||TO_CHAR(a.recognition_date,'YYYY-MM-DD')||'accrual-report-split-v1')::uuid AS id,
+ md5(t.id::text||TO_CHAR(a.recognition_date,'YYYY-MM-DD')||'accrual-report-v1')::uuid AS transaction_id,
+ sp.kind AS kind,
+ sp.category_id AS category_id,
+ sp.transfer_account_id AS transfer_account_id,
+ CASE WHEN sp.linked_transaction_id IS NULL THEN NULL ELSE COALESCE(public.accrual_reporting_cash_id(sp.linked_transaction_id),sp.linked_transaction_id) END AS linked_transaction_id,
+ a.amount AS amount,
+ sp.memo AS memo,
+ sp.created_at AS created_at,
+ sp.id AS source_split_id,
+ sp.amount AS source_amount,
+ s.id AS schedule_id,
+ t.transaction_date AS source_cash_date,
+ a.recognition_date AS effective_date,
+ sp.linked_transaction_id AS source_linked_id,t.user_id AS reporting_user_id
+FROM public.transaction_splits sp JOIN public.transactions t ON t.id=sp.transaction_id
+JOIN public.accrual_schedules s ON s.source_transaction_id=t.id AND s.user_id=t.user_id AND s.source_split_id=sp.id
+JOIN public.accrual_allocations a ON a.schedule_id=s.id AND a.user_id=s.user_id
+WHERE NOT t.is_transfer AND t.status IS DISTINCT FROM 'VOID'
+$read_model$;
+CREATE OR REPLACE VIEW public.accrual_reporting_transaction_splits WITH (security_invoker=true) AS
+SELECT * FROM public.accrual_reporting_transaction_splits_rows();
+
+-- A SQL-string function body avoids base-column view dependencies during
+-- historical migration replay. Invoker SQL functions remain planner-inlineable.
+CREATE OR REPLACE FUNCTION public.accrual_reporting_transaction_tags_rows() RETURNS TABLE(
+ "transaction_id" uuid,
+ "tag_id" uuid,
+ "reporting_user_id" uuid
+) LANGUAGE sql STABLE SECURITY INVOKER AS $read_model$
+SELECT t.id AS transaction_id,l.tag_id,t.user_id AS reporting_user_id FROM public.transactions t JOIN public.transaction_tags l ON l.transaction_id=t.id
+WHERE NOT EXISTS(SELECT 1 FROM public.accrual_schedules s WHERE s.source_transaction_id=t.id AND s.user_id=t.user_id AND NOT t.is_transfer AND t.status IS DISTINCT FROM 'VOID')
+UNION ALL
+SELECT md5(t.id::text||TO_CHAR(p.effective_date,'YYYY-MM-DD')||'accrual-report-v1')::uuid,l.tag_id,t.user_id AS reporting_user_id
+FROM public.transactions t JOIN public.transaction_tags l ON l.transaction_id=t.id
+CROSS JOIN LATERAL (SELECT DISTINCT c.effective_date FROM public.accrual_reporting_components c WHERE c.source_id=t.id) p
+WHERE EXISTS(SELECT 1 FROM public.accrual_schedules s WHERE s.source_transaction_id=t.id AND s.user_id=t.user_id AND NOT t.is_transfer AND t.status IS DISTINCT FROM 'VOID')
+$read_model$;
+CREATE OR REPLACE VIEW public.accrual_reporting_transaction_tags WITH (security_invoker=true) AS
+SELECT * FROM public.accrual_reporting_transaction_tags_rows();
+-- A SQL-string function body avoids base-column view dependencies during
+-- historical migration replay. Invoker SQL functions remain planner-inlineable.
+CREATE OR REPLACE FUNCTION public.accrual_reporting_transaction_split_tags_rows() RETURNS TABLE(
+ "transaction_split_id" uuid,
+ "tag_id" uuid,
+ "reporting_user_id" uuid
+) LANGUAGE sql STABLE SECURITY INVOKER AS $read_model$
+SELECT s.id AS transaction_split_id,l.tag_id,s.reporting_user_id FROM public.accrual_reporting_transaction_splits s
+JOIN public.transaction_split_tags l ON l.transaction_split_id=s.source_split_id
+$read_model$;
+CREATE OR REPLACE VIEW public.accrual_reporting_transaction_split_tags WITH (security_invoker=true) AS
+SELECT * FROM public.accrual_reporting_transaction_split_tags_rows();
+
+-- A SQL-string function body avoids base-column view dependencies during
+-- historical migration replay. Invoker SQL functions remain planner-inlineable.
+CREATE OR REPLACE FUNCTION public.accrual_reporting_investment_transactions_rows() RETURNS TABLE(
+ "id" uuid,
+ "user_id" uuid,
+ "account_id" uuid,
+ "transaction_id" uuid,
+ "transaction_split_id" uuid,
+ "linked_transaction_id" uuid,
+ "security_id" uuid,
+ "funding_account_id" uuid,
+ "action" character varying(50),
+ "transaction_date" date,
+ "quantity" numeric(20,8),
+ "price" numeric(24,10),
+ "commission" numeric(20,4),
+ "total_amount" numeric(20,4),
+ "exchange_rate" numeric(20,10),
+ "description" text,
+ "status" character varying(20),
+ "bond_instrument_id" uuid,
+ "created_at" timestamp without time zone,
+ "updated_at" timestamp without time zone,
+ "source_transaction_id" uuid,
+ "source_transaction_split_id" uuid
+) LANGUAGE sql STABLE SECURITY INVOKER AS $read_model$
+SELECT i.id AS id,
+ i.user_id AS user_id,
+ i.account_id AS account_id,
+ COALESCE(public.accrual_reporting_cash_id(i.transaction_id),i.transaction_id) AS transaction_id,
+ COALESCE(public.accrual_reporting_cash_split_id(i.transaction_split_id),i.transaction_split_id) AS transaction_split_id,
+ i.linked_transaction_id AS linked_transaction_id,
+ i.security_id AS security_id,
+ i.funding_account_id AS funding_account_id,
+ i.action AS action,
+ i.transaction_date AS transaction_date,
+ i.quantity AS quantity,
+ i.price AS price,
+ i.commission AS commission,
+ i.total_amount AS total_amount,
+ i.exchange_rate AS exchange_rate,
+ i.description AS description,
+ i.status AS status,
+ i.bond_instrument_id AS bond_instrument_id,
+ i.created_at AS created_at,
+ i.updated_at AS updated_at,i.transaction_id AS source_transaction_id,i.transaction_split_id AS source_transaction_split_id
+FROM public.investment_transactions i
+$read_model$;
+CREATE OR REPLACE VIEW public.accrual_reporting_investment_transactions WITH (security_invoker=true) AS
+SELECT * FROM public.accrual_reporting_investment_transactions_rows();

@@ -1,3 +1,29 @@
+jest.mock("../accruals/reporting-money", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingMoneyMockModule(),
+);
+jest.mock("../accruals/reporting-custom-money", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingCustomMoneyMockModule(),
+);
+jest.mock("../accruals/reporting-basis", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingBasisMockModule(),
+);
+jest.mock("../accruals/reporting-query", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingQueryMockModule(),
+);
+jest.mock("../accruals/reporting-basis.interceptor", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingInterceptorMockModule(),
+);
+
 import { DataSource } from "typeorm";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -1934,6 +1960,8 @@ describe("ReportsService", () => {
 
           expect(result.data[0].value).toBe(2);
           expect(result.summary.total).toBe(2);
+          expect(result.data[0].percentage).toBe(100);
+          expect(result.missingCurrencies).toEqual([]);
         });
 
         it("leaves a zero amount in without a rate", async () => {
@@ -3324,7 +3352,7 @@ describe("ReportsService", () => {
         expect(groceries!.budgeted).toBe(200);
       });
 
-      it("returns original data when no budgets exist", async () => {
+      it("withholds budget variance when no budgets exist", async () => {
         const transactions = [
           createMockTransaction({
             id: "tx-1",
@@ -3346,16 +3374,14 @@ describe("ReportsService", () => {
 
         budgetsService.findAll.mockResolvedValue([]);
 
-        const result = await service.execute("user-1", "report-1");
-
-        // Should return data without enrichment
-        const groceries = result.data.find((d) => d.label === "Groceries");
-        expect(groceries).toBeDefined();
-        expect(groceries!.value).toBe(50);
-        expect(groceries!.budgeted).toBeUndefined();
+        await expect(
+          service.execute("user-1", "report-1"),
+        ).rejects.toMatchObject({
+          response: { code: "REPORTING_BUDGET_REQUIRED" },
+        });
       });
 
-      it("returns original data when budgets service throws an error", async () => {
+      it("propagates a failed budget lookup rather than labelling actuals as variance", async () => {
         const transactions = [
           createMockTransaction({
             id: "tx-1",
@@ -3377,12 +3403,9 @@ describe("ReportsService", () => {
 
         budgetsService.findAll.mockRejectedValue(new Error("DB error"));
 
-        const result = await service.execute("user-1", "report-1");
-
-        // Should gracefully return unenriched data
-        const groceries = result.data.find((d) => d.label === "Groceries");
-        expect(groceries).toBeDefined();
-        expect(groceries!.value).toBe(50);
+        await expect(service.execute("user-1", "report-1")).rejects.toThrow(
+          "DB error",
+        );
       });
 
       it("skips income budget categories", async () => {
@@ -3761,10 +3784,15 @@ describe("ReportsService", () => {
         );
         categoriesRepository.find.mockResolvedValue([mockCategory]);
 
-        // Mock budgets to return empty so enrichment returns original data
+        // A zero plan isolates metric precision while retaining the variance contract.
         (service as any).budgetsService = {
-          findAll: jest.fn().mockResolvedValue([]),
-          findOne: jest.fn(),
+          findAll: jest
+            .fn()
+            .mockResolvedValue([{ id: "budget-1", isActive: true }]),
+          findOne: jest.fn().mockResolvedValue({
+            currencyCode: "USD",
+            categories: [{ categoryId: "cat-1", amount: 0 }],
+          }),
         };
 
         const result = await service.execute("user-1", "report-1");

@@ -1,4 +1,19 @@
 import {
+  beginTaxonomyOperation,
+  recordTaxonomyOperation,
+} from "../accruals/accrual-taxonomy-operation";
+import { lockPayeeCategoryBatch } from "./payee-category-batch";
+import {
+  preparePayeeCategoryEdit,
+  applyPayeeCategoryEdit,
+} from "./payee-category-impact";
+import { verifyBulkAccrualEdit } from "../accruals/accrual-bulk-edit";
+import { accrualErrors } from "../accruals/accrual-errors";
+import {
+  updatePayeeSourceMetadata,
+  type PayeeSourceRow,
+} from "./payee-source-metadata";
+import {
   Injectable,
   BadRequestException,
   ConflictException,
@@ -20,10 +35,7 @@ import {
   significantTokens,
   similarity,
 } from "./payee-normalize.util";
-import {
-  backfillPayeeCategory,
-  countUncategorizedTransactionsByPayee,
-} from "./payee-backfill.util";
+import { countUncategorizedTransactionsByPayee } from "./payee-backfill.util";
 import { withScopedDb } from "../common/db/scoped-db";
 
 export type CategoryMatchMode = "off" | "category" | "subcategory";
@@ -70,6 +82,7 @@ export interface AutoMergeGroupPreview {
 }
 
 export interface ApplyAutoMergeGroup {
+  accrualImpactFingerprint?: string;
   canonicalPayeeId: string;
   canonicalName?: string;
   sourcePayeeIds: string[];
@@ -732,6 +745,86 @@ export class PayeeAutoMergeService {
     };
   }
 
+  async previewCategoryImpact(userId: string, group: ApplyAutoMergeGroup) {
+    return withScopedDb(this.dataSource, async (m) => {
+      const prepared = await this.prepareGroupCategory(m, userId, group);
+      return {
+        canonicalPayeeId: group.canonicalPayeeId,
+        ...prepared.categoryEdit.preview,
+      };
+    });
+  }
+
+  private async prepareGroupCategory(
+    m: EntityManager,
+    userId: string,
+    group: ApplyAutoMergeGroup,
+  ) {
+    const ids = [group.canonicalPayeeId, ...group.sourcePayeeIds];
+    if (new Set(ids).size !== ids.length) throw accrualErrors.conflict();
+    const locked = await lockPayeeCategoryBatch(
+      m,
+      userId,
+      ids,
+      group.defaultCategoryId ? [group.defaultCategoryId] : [],
+    );
+    const canonical = await m.findOne(Payee, {
+      where: { id: group.canonicalPayeeId, userId },
+    });
+    if (!canonical) {
+      throw new BadRequestException(
+        tr(
+          "errors.payees.notFound",
+          `Payee with ID ${group.canonicalPayeeId} not found`,
+          { id: group.canonicalPayeeId },
+        ),
+      );
+    }
+
+    const sources = await m.find(Payee, {
+      where: group.sourcePayeeIds.map((id) => ({ id, userId })),
+    });
+    if (sources.length !== group.sourcePayeeIds.length) {
+      throw new BadRequestException(
+        tr(
+          "errors.payees.autoMergeSourceNotFound",
+          "One or more source payees were not found",
+        ),
+      );
+    }
+
+    if (locked.payees.length !== ids.length) throw accrualErrors.missing();
+    const { accrualImpactFingerprint: _ignored, ...command } = group;
+    const categoryEdit = await preparePayeeCategoryEdit(
+      m,
+      userId,
+      canonical.id,
+      {
+        name: group.canonicalName?.trim() || canonical.name,
+        defaultCategoryId: group.defaultCategoryId ?? null,
+        applyCategoryToTransactions:
+          group.backfillTransactions && group.defaultCategoryId
+            ? "uncategorized"
+            : "none",
+      },
+      {
+        sources: locked.sources,
+        command: {
+          group: command,
+          payees: locked.payees,
+          sources: locked.snapshots,
+        },
+        projectedPayeeId: canonical.id,
+      },
+    );
+    return {
+      canonical,
+      sources,
+      transactionSources: locked.sources,
+      categoryEdit,
+    };
+  }
+
   private async applyGroup(
     userId: string,
     group: ApplyAutoMergeGroup,
@@ -743,37 +836,23 @@ export class PayeeAutoMergeService {
     transactionsBackfilled: number;
   }> {
     return withScopedDb(this.dataSource, async (m) => {
-      const canonical = await m.findOne(Payee, {
-        where: { id: group.canonicalPayeeId, userId },
-      });
-      if (!canonical) {
-        throw new BadRequestException(
-          tr(
-            "errors.payees.notFound",
-            `Payee with ID ${group.canonicalPayeeId} not found`,
-            { id: group.canonicalPayeeId },
-          ),
-        );
-      }
-
-      const sources = await m.find(Payee, {
-        where: group.sourcePayeeIds.map((id) => ({ id, userId })),
-      });
-      if (sources.length !== group.sourcePayeeIds.length) {
-        throw new BadRequestException(
-          tr(
-            "errors.payees.autoMergeSourceNotFound",
-            "One or more source payees were not found",
-          ),
-        );
-      }
-
+      const history = await beginTaxonomyOperation(m, userId, "payee", [
+        group.canonicalPayeeId,
+        ...group.sourcePayeeIds,
+      ]);
+      const { canonical, sources, transactionSources, categoryEdit } =
+        await this.prepareGroupCategory(m, userId, group);
+      verifyBulkAccrualEdit(
+        categoryEdit.preview,
+        group.accrualImpactFingerprint,
+      );
       // Optional rename of the canonical payee.
       const canonicalName = await this.maybeRenameCanonical(
         m,
         userId,
         canonical,
         group,
+        transactionSources,
       );
 
       // Optionally set the chosen default category on the canonical. Ownership
@@ -789,12 +868,13 @@ export class PayeeAutoMergeService {
       // Reassign each source's data to the canonical, then delete the source.
       let transactionsMigrated = 0;
       for (const source of sources) {
-        const txResult = await m.update(
-          Transaction,
-          { payeeId: source.id, userId },
+        transactionsMigrated += await updatePayeeSourceMetadata(
+          m,
+          userId,
+          transactionSources,
+          source.id,
           { payeeId: canonical.id, payeeName: canonicalName },
         );
-        transactionsMigrated += txResult.affected || 0;
 
         await m.update(
           ScheduledTransaction,
@@ -822,16 +902,14 @@ export class PayeeAutoMergeService {
       // Optionally backfill the canonical's uncategorized transactions with the
       // chosen default category. Runs after reassignment so it covers every
       // member's transactions, and only ever touches rows with no category.
-      let transactionsBackfilled = 0;
-      if (group.backfillTransactions && group.defaultCategoryId) {
-        transactionsBackfilled = await backfillPayeeCategory(
-          m,
-          userId,
-          canonical.id,
-          group.defaultCategoryId,
-        );
-      }
+      const transactionsBackfilled = await applyPayeeCategoryEdit(
+        m,
+        userId,
+        canonical.id,
+        categoryEdit,
+      );
 
+      await recordTaxonomyOperation(m, userId, history);
       return {
         payeesMerged: sources.length,
         transactionsMigrated,
@@ -847,6 +925,7 @@ export class PayeeAutoMergeService {
     userId: string,
     canonical: Payee,
     group: ApplyAutoMergeGroup,
+    transactionSources: readonly PayeeSourceRow[],
   ): Promise<string> {
     const desired = group.canonicalName?.trim();
     if (!desired || desired === canonical.name) {
@@ -873,10 +952,14 @@ export class PayeeAutoMergeService {
 
     await m.update(Payee, { id: canonical.id, userId }, { name: desired });
     // Keep the denormalized snapshot in sync on the canonical's own rows.
-    await m.update(
-      Transaction,
-      { payeeId: canonical.id, userId },
-      { payeeName: desired },
+    await updatePayeeSourceMetadata(
+      m,
+      userId,
+      transactionSources,
+      canonical.id,
+      {
+        payeeName: desired,
+      },
     );
     await m.update(
       ScheduledTransaction,

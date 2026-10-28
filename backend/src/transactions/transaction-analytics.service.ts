@@ -1,5 +1,18 @@
+import { reportingSummaryRows } from "../accruals/reporting-summary-money";
+import { reportingMoneyMany } from "../accruals/reporting-money";
+import {
+  ReportingRead,
+  currentReportingRead,
+  type ReportingBasis,
+} from "../accruals/reporting-basis";
+import { reportingRawMany } from "../accruals/reporting-query";
 import { Injectable, Logger } from "@nestjs/common";
-import { Brackets, DataSource, EntityManager } from "typeorm";
+import {
+  Brackets,
+  DataSource,
+  EntityManager,
+  SelectQueryBuilder,
+} from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -26,6 +39,7 @@ import {
   UNKNOWN_CATEGORY_LABEL,
 } from "../categories/category-name.util";
 import { roundMoney, sumMoney } from "../common/round.util";
+import { applyFxConversion } from "../common/fx-entry.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import {
@@ -83,6 +97,8 @@ export interface TransferAccountSummary {
 }
 
 export interface TransfersByAccountResult {
+  currency?: string;
+  fxComplete?: boolean;
   accounts: TransferAccountSummary[];
   totalInbound: number;
   totalOutbound: number;
@@ -128,6 +144,7 @@ export interface LlmQueryTransactionsInput {
  * `from->to`). `fxComplete` is the contract a caller reads with `=== false`.
  */
 export interface LlmConvertedFlowFields {
+  currency?: string;
   totalIncome: number | null;
   totalExpenses: number | null;
   netCashFlow: number | null;
@@ -194,6 +211,7 @@ export type LlmComparisonGroupBy = "category" | "payee";
 export type LlmComparisonDirection = "expenses" | "income" | "both";
 
 export interface LlmPeriodComparisonInput {
+  basis?: ReportingBasis;
   period1Start: string;
   period1End: string;
   period2Start: string;
@@ -214,6 +232,8 @@ export interface LlmComparisonPeriodTotal {
 }
 
 export interface LlmPeriodComparisonResult {
+  currency?: string;
+  basis?: ReportingBasis;
   period1: LlmComparisonPeriodTotal;
   period2: LlmComparisonPeriodTotal;
   /** `null` unless both periods converted completely. */
@@ -248,6 +268,7 @@ export class TransactionAnalyticsService {
    * `totalInbound` equals `totalOutbound` (modulo multi-currency conversions)
    * because every transfer is stored as two linked rows, one on each side.
    */
+  @ReportingRead("cash")
   async getTransfersByAccount(
     userId: string,
     startDate: string,
@@ -285,26 +306,44 @@ export class TransactionAnalyticsService {
         qb.andWhere("t.accountId IN (:...accountIds)", { accountIds });
       }
 
-      const rows = await qb.getRawMany();
+      const rows = await reportingSummaryRows(
+        m,
+        userId,
+        qb,
+        currentReportingRead(userId)!.currency,
+        "inbound",
+        "outbound",
+      );
 
-      const accounts: TransferAccountSummary[] = rows.map((r) => {
+      const accountRows = new Map<string, TransferAccountSummary>();
+      for (const r of rows) {
         const inbound = roundMoney(Number(r.inbound) || 0);
         const outbound = roundMoney(Number(r.outbound) || 0);
-        return {
+        const key = JSON.stringify([r.accountId, r.currencyCode]);
+        const previous = accountRows.get(key);
+        accountRows.set(key, {
           accountId: r.accountId ?? null,
           accountName: r.accountName,
           currency: r.currencyCode,
-          inbound,
-          outbound,
-          net: roundMoney(inbound - outbound),
-          transferCount: Number(r.count) || 0,
-        };
-      });
+          inbound: sumMoney([previous?.inbound ?? 0, inbound]),
+          outbound: sumMoney([previous?.outbound ?? 0, outbound]),
+          net: sumMoney([previous?.net ?? 0, inbound, -outbound]),
+          transferCount:
+            (previous?.transferCount ?? 0) + (Number(r.count) || 0),
+        });
+      }
+      const accounts = [...accountRows.values()];
 
       return {
         accounts,
-        totalInbound: sumMoney(accounts.map((a) => a.inbound)),
-        totalOutbound: sumMoney(accounts.map((a) => a.outbound)),
+        currency: currentReportingRead(userId)!.currency,
+        fxComplete: true,
+        totalInbound: sumMoney(
+          rows.map((r) => Number(r.convertedIncome ?? r.inbound)),
+        ),
+        totalOutbound: sumMoney(
+          rows.map((r) => Number(r.convertedExpenses ?? r.outbound)),
+        ),
         transferCount: accounts.reduce((s, a) => s + a.transferCount, 0),
       };
     });
@@ -318,6 +357,7 @@ export class TransactionAnalyticsService {
    * filter matches split lines, and a picker that could not offer those
    * categories would be narrower than the filter it feeds.
    */
+  @ReportingRead("cash")
   async getRegisterFilterOptions(
     userId: string,
     filters: { accountIds?: string[]; jointAccountIds?: string[] } = {},
@@ -336,38 +376,44 @@ export class TransactionAnalyticsService {
         return qb;
       };
 
-      const payeeRows = await scoped(
-        m
-          .getRepository(Transaction)
-          .createQueryBuilder("transaction")
-          .innerJoin("transaction.payee", "payee")
-          .select("payee.id", "id")
-          .addSelect("payee.name", "name")
-          .distinct(true),
-      )
-        .orderBy("payee.name", "ASC")
-        .getRawMany<{ id: string; name: string }>();
+      const payeeRows = await reportingRawMany<{ id: string; name: string }>(
+        m,
+        userId,
+        scoped(
+          m
+            .getRepository(Transaction)
+            .createQueryBuilder("transaction")
+            .innerJoin("transaction.payee", "payee")
+            .select("payee.id", "id")
+            .addSelect("payee.name", "name")
+            .distinct(true),
+        ).orderBy("payee.name", "ASC"),
+      );
 
-      const ownCategoryRows = await scoped(
-        m
-          .getRepository(Transaction)
-          .createQueryBuilder("transaction")
-          .select("transaction.categoryId", "id")
-          .distinct(true),
-      )
-        .andWhere("transaction.categoryId IS NOT NULL")
-        .getRawMany<{ id: string }>();
+      const ownCategoryRows = await reportingRawMany<{ id: string }>(
+        m,
+        userId,
+        scoped(
+          m
+            .getRepository(Transaction)
+            .createQueryBuilder("transaction")
+            .select("transaction.categoryId", "id")
+            .distinct(true),
+        ).andWhere("transaction.categoryId IS NOT NULL"),
+      );
 
-      const splitCategoryRows = await scoped(
-        m
-          .getRepository(Transaction)
-          .createQueryBuilder("transaction")
-          .innerJoin("transaction.splits", "split")
-          .select("split.categoryId", "id")
-          .distinct(true),
-      )
-        .andWhere("split.categoryId IS NOT NULL")
-        .getRawMany<{ id: string }>();
+      const splitCategoryRows = await reportingRawMany<{ id: string }>(
+        m,
+        userId,
+        scoped(
+          m
+            .getRepository(Transaction)
+            .createQueryBuilder("transaction")
+            .innerJoin("transaction.splits", "split")
+            .select("split.categoryId", "id")
+            .distinct(true),
+        ).andWhere("split.categoryId IS NOT NULL"),
+      );
 
       const usedCategoryIds = new Set(
         [...ownCategoryRows, ...splitCategoryRows].map((r) => r.id),
@@ -406,6 +452,7 @@ export class TransactionAnalyticsService {
     });
   }
 
+  @ReportingRead()
   async getSummary(
     userId: string,
     accountIds?: string[],
@@ -420,7 +467,10 @@ export class TransactionAnalyticsService {
     excludeTransfers?: boolean,
     tagIds?: string[],
     jointAccountIds?: string[],
+    nativeCurrencyBuckets = false,
   ): Promise<{
+    currency?: string;
+    fxComplete?: boolean;
     totalIncome: number;
     totalExpenses: number;
     netCashFlow: number;
@@ -480,7 +530,15 @@ export class TransactionAnalyticsService {
         )
         .groupBy("transaction.currencyCode");
 
-      const rows = await queryBuilder.getRawMany();
+      const rows = await reportingSummaryRows(
+        m,
+        userId,
+        queryBuilder,
+        currentReportingRead(userId)!.currency,
+        "totalIncome",
+        "totalExpenses",
+        nativeCurrencyBuckets,
+      );
 
       let totalIncome = 0;
       let totalExpenses = 0;
@@ -497,13 +555,23 @@ export class TransactionAnalyticsService {
         }
       > = {};
 
-      for (const row of rows) {
+      const seen = new Set<string>();
+      for (const [index, row] of rows.entries()) {
         const income = Number(row.totalIncome) || 0;
         const expenses = Number(row.totalExpenses) || 0;
         const count = Number(row.transactionCount) || 0;
-        totalIncome += income;
-        totalExpenses += expenses;
-        transactionCount += count;
+        totalIncome = sumMoney([
+          totalIncome,
+          Number(row.convertedIncome ?? income),
+        ]);
+        totalExpenses = sumMoney([
+          totalExpenses,
+          Number(row.convertedExpenses ?? expenses),
+        ]);
+        const identity = row.__sourceId ?? String(index);
+        const increment = seen.has(identity) ? 0 : count;
+        seen.add(identity);
+        transactionCount += increment;
         // ISO date strings compare correctly as strings, so the min/max
         // across per-currency rows reduces with a plain comparison.
         if (
@@ -519,19 +587,27 @@ export class TransactionAnalyticsService {
           lastTransactionDate = row.lastDate;
         }
         if (row.currencyCode) {
+          const previous = byCurrency[row.currencyCode];
+          const nativeIncome = sumMoney([previous?.totalIncome ?? 0, income]);
+          const nativeExpenses = sumMoney([
+            previous?.totalExpenses ?? 0,
+            expenses,
+          ]);
           byCurrency[row.currencyCode] = {
-            totalIncome: income,
-            totalExpenses: expenses,
-            netCashFlow: income - expenses,
-            transactionCount: count,
+            totalIncome: nativeIncome,
+            totalExpenses: nativeExpenses,
+            netCashFlow: roundMoney(nativeIncome - nativeExpenses),
+            transactionCount: (previous?.transactionCount ?? 0) + increment,
           };
         }
       }
 
       return {
+        currency: currentReportingRead(userId)!.currency,
+        fxComplete: true,
         totalIncome,
         totalExpenses,
-        netCashFlow: totalIncome - totalExpenses,
+        netCashFlow: roundMoney(totalIncome - totalExpenses),
         transactionCount,
         firstTransactionDate,
         lastTransactionDate,
@@ -816,6 +892,7 @@ export class TransactionAnalyticsService {
    * Unlike the private LLM breakdown, this returns ids (rows must be
    * clickable in the UI) and applies no minimum-count aggregation.
    */
+  @ReportingRead()
   async getGroupedTotals(
     userId: string,
     params: {
@@ -892,7 +969,7 @@ export class TransactionAnalyticsService {
         .orderBy(`SUM(ABS(${amountExpr}))`, "DESC")
         .limit(Math.min(Math.max(limit ?? 100, 1), 500));
 
-      const rows = await queryBuilder.getRawMany();
+      const rows = await reportingRawMany(m, userId, queryBuilder);
 
       return rows.map((row) => ({
         id: row.id ?? null,
@@ -916,6 +993,7 @@ export class TransactionAnalyticsService {
    * are not considered here. Rows are per-currency (like `getGroupedTotals`) so
    * the caller converts to a single display currency.
    */
+  @ReportingRead()
   async getTransactionBreakdownByTagKey(
     userId: string,
     key: string,
@@ -971,7 +1049,7 @@ export class TransactionAnalyticsService {
         .orderBy(`SUM(ABS(${amountExpr}))`, "DESC")
         .limit(Math.min(Math.max(limit ?? 100, 1), 500));
 
-      const rows = await queryBuilder.getRawMany();
+      const rows = await reportingRawMany(m, userId, queryBuilder);
 
       return rows.map((row) => ({
         id: row.value,
@@ -983,6 +1061,7 @@ export class TransactionAnalyticsService {
     });
   }
 
+  @ReportingRead()
   async getMonthlyTotals(
     userId: string,
     accountIds?: string[],
@@ -1031,7 +1110,12 @@ export class TransactionAnalyticsService {
         .groupBy("month")
         .orderBy("month", "ASC");
 
-      const rows = await queryBuilder.getRawMany();
+      const rows = await reportingMoneyMany(
+        m,
+        userId,
+        queryBuilder,
+        currentReportingRead(userId)!.currency,
+      );
 
       return rows.map((row) => ({
         month: row.month,
@@ -1054,6 +1138,7 @@ export class TransactionAnalyticsService {
    * transactions predate the account's fee percentage sums to 0 rather than
    * being dropped. Fee amounts are returned positive in the account currency.
    */
+  @ReportingRead("cash")
   async getFxFeeSummary(
     userId: string,
     accountId: string,
@@ -1064,25 +1149,28 @@ export class TransactionAnalyticsService {
         "ELSE ROUND(transaction.originalAmount * transaction.exchangeRate, 2) - transaction.amount " +
         "END";
 
-      const rows = await m
-        .getRepository(Transaction)
-        .createQueryBuilder("transaction")
-        .where("transaction.userId = :userId", { userId })
-        .andWhere("transaction.accountId = :accountId", { accountId })
-        .andWhere("transaction.originalCurrencyCode IS NOT NULL")
-        .andWhere("transaction.parentTransactionId IS NULL")
-        .andWhere("transaction.status != :voidStatus", {
-          voidStatus: TransactionStatus.VOID,
-        })
-        .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
-        .addSelect("transaction.originalCurrencyCode", "currencyCode")
-        .addSelect(`COALESCE(SUM(${feeExpr}), 0)`, "feeTotal")
-        .addSelect("COUNT(DISTINCT transaction.id)", "count")
-        .groupBy("month")
-        .addGroupBy("transaction.originalCurrencyCode")
-        .orderBy("month", "ASC")
-        .addOrderBy("transaction.originalCurrencyCode", "ASC")
-        .getRawMany();
+      const rows = await reportingRawMany(
+        m,
+        userId,
+        m
+          .getRepository(Transaction)
+          .createQueryBuilder("transaction")
+          .where("transaction.userId = :userId", { userId })
+          .andWhere("transaction.accountId = :accountId", { accountId })
+          .andWhere("transaction.originalCurrencyCode IS NOT NULL")
+          .andWhere("transaction.parentTransactionId IS NULL")
+          .andWhere("transaction.status != :voidStatus", {
+            voidStatus: TransactionStatus.VOID,
+          })
+          .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
+          .addSelect("transaction.originalCurrencyCode", "currencyCode")
+          .addSelect(`COALESCE(SUM(${feeExpr}), 0)`, "feeTotal")
+          .addSelect("COUNT(DISTINCT transaction.id)", "count")
+          .groupBy("month")
+          .addGroupBy("transaction.originalCurrencyCode")
+          .orderBy("month", "ASC")
+          .addOrderBy("transaction.originalCurrencyCode", "ASC"),
+      );
 
       return rows.map((row) => ({
         month: row.month,
@@ -1175,6 +1263,7 @@ export class TransactionAnalyticsService {
    *
    * Callers resolve account/category names to IDs before calling.
    */
+  @ReportingRead()
   async getLlmQueryTransactions(
     userId: string,
     input: LlmQueryTransactionsInput,
@@ -1252,6 +1341,7 @@ export class TransactionAnalyticsService {
    * by the AI Assistant tool executor and the MCP server so both surfaces
    * return the same shape.
    */
+  @ReportingRead("cash")
   async getLlmListTransactions(
     userId: string,
     input: LlmListTransactionsInput,
@@ -1269,6 +1359,11 @@ export class TransactionAnalyticsService {
       input.minAmount,
       input.maxAmount,
       true,
+      true,
+      undefined,
+      undefined,
+      // Only counts and native buckets are consumed here. Nullable converted
+      // totals are resolved independently below, including missing-rate gaps.
       true,
     );
     const converted = await this.getConvertedFlowTotals(userId, {
@@ -1377,7 +1472,7 @@ export class TransactionAnalyticsService {
         .groupBy("transaction.currencyCode")
         .addGroupBy(dayExpr);
 
-      const rows = await qb.getRawMany();
+      const rows = await this.llmFlowRows(m, userId, qb);
       const rates = await this.loadRateIndex(
         m,
         rows,
@@ -1418,6 +1513,7 @@ export class TransactionAnalyticsService {
    * `excludeTransfers` follows the caller. Same fields, same withholding, as the
    * `list_transactions` totals.
    */
+  @ReportingRead("cash")
   async getLlmFlowTotals(
     userId: string,
     filters: { startDate: string; endDate: string; excludeTransfers?: boolean },
@@ -1451,9 +1547,28 @@ export class TransactionAnalyticsService {
       knownIncomeSubtotal: income,
       knownExpensesSubtotal: expenses,
       totalsCurrency: converted.totalsCurrency,
+      currency: converted.totalsCurrency,
       fxComplete,
       missingRatePairs: all.missingPairs,
     };
+  }
+
+  /** Keep entered-rate groups intact until the upstream nullable FX fold. */
+  private llmFlowRows(
+    m: EntityManager,
+    userId: string,
+    qb: SelectQueryBuilder<Transaction>,
+  ) {
+    const alias = qb.alias;
+    return reportingRawMany(
+      m,
+      userId,
+      qb
+        .addSelect(`${alias}.originalCurrencyCode`, "originalCurrencyCode")
+        .addSelect(`${alias}.exchangeRate`, "exchangeRate")
+        .addGroupBy(`${alias}.originalCurrencyCode`)
+        .addGroupBy(`${alias}.exchangeRate`),
+    );
   }
 
   /** Every stored rate the rows' foreign currencies can need, loaded once. */
@@ -1610,7 +1725,7 @@ export class TransactionAnalyticsService {
             .groupBy(`${SPLIT_CATEGORY_ID}::text`);
           byCurrencyAndDay();
 
-          const rows = await qb.getRawMany();
+          const rows = await this.llmFlowRows(m, userId, qb);
           const rates = await this.loadRateIndex(
             m,
             rows,
@@ -1652,7 +1767,7 @@ export class TransactionAnalyticsService {
             .groupBy("t.payeeName");
           byCurrencyAndDay();
 
-          const rows = await qb.getRawMany();
+          const rows = await this.llmFlowRows(m, userId, qb);
           const rates = await this.loadRateIndex(
             m,
             rows,
@@ -1704,7 +1819,7 @@ export class TransactionAnalyticsService {
             .groupBy(periodExpr);
           byCurrencyAndDay();
 
-          const rows = await qb.getRawMany();
+          const rows = await this.llmFlowRows(m, userId, qb);
           const rates = await this.loadRateIndex(
             m,
             rows,
@@ -1749,6 +1864,7 @@ export class TransactionAnalyticsService {
    * always was; a row's own `changePercent` is `100` for a label new in the
    * second period.
    */
+  @ReportingRead(undefined, false, 0)
   async getLlmPeriodComparison(
     userId: string,
     input: LlmPeriodComparisonInput,
@@ -1822,6 +1938,8 @@ export class TransactionAnalyticsService {
           : 0;
 
     return {
+      basis: currentReportingRead(userId)?.basis,
+      currency: period1.totalsCurrency,
       period1: {
         start: input.period1Start,
         end: input.period1End,
@@ -1905,7 +2023,7 @@ export class TransactionAnalyticsService {
         .addGroupBy("t.currencyCode")
         .addGroupBy(DAY_SQL);
 
-      const rows = await qb.getRawMany();
+      const rows = await this.llmFlowRows(m, userId, qb);
       const rates = await this.loadRateIndex(
         m,
         rows,
@@ -1979,6 +2097,7 @@ export class TransactionAnalyticsService {
    * the account first -- this method trusts the id it is handed, exactly as it
    * trusts `userId`.
    */
+  @ReportingRead("cash")
   async getRecurringCharges(
     userId: string,
     startDate: string,
@@ -2055,7 +2174,7 @@ export class TransactionAnalyticsService {
         });
       }
 
-      const rows = await qb.getRawMany();
+      const rows = await this.llmFlowRows(m, userId, qb);
       // Qualified so a recurring charge on "Business: Cell Phone" is not
       // reported against "Bills: Cell Phone" in an insight or a forecast.
       const names = await loadQualifiedCategoryNames(m, userId);
@@ -2142,6 +2261,15 @@ function addDatedAmount(
   if (amount === 0) return;
   if (row.currencyCode === reporting) {
     agg.addConverted(amount);
+    return;
+  }
+  const enteredRate = Number(row.exchangeRate);
+  if (
+    row.originalCurrencyCode === reporting &&
+    Number.isFinite(enteredRate) &&
+    enteredRate > 0
+  ) {
+    agg.addConverted(applyFxConversion(amount, 1 / enteredRate).amount);
     return;
   }
   agg.add(

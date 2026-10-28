@@ -176,6 +176,7 @@ describe("queryCategorySpending split transfers (integration)", () => {
           })) as BudgetCategory[],
           "2026-07-01",
           "2026-07-31",
+          "CAD",
         ),
       ),
     );

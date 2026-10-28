@@ -1,5 +1,9 @@
 'use client';
 
+import { useDemoMode } from '@/hooks/useDemoMode';
+import { useAuthStore } from '@/store/authStore';
+import { AccrualEditorTab, useAccrualEditorDraft } from './AccrualEditorTab';
+import { useAccrualSourceEditReview } from './AccrualSourceEditReview';
 import { useState, useEffect, useMemo, useRef, useCallback, MutableRefObject, type BaseSyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm, useWatch, Resolver } from 'react-hook-form';
@@ -7,6 +11,7 @@ import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import { AxiosError } from 'axios';
 import { Select } from '@/components/ui/Select';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from './SplitEditor';
 import { NormalTransactionFields } from './NormalTransactionFields';
@@ -59,7 +64,6 @@ import { buildCategoryTree, signAmountByCategory } from '@/lib/categoryUtils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { useAuthStore } from '@/store/authStore';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { AttachmentsSection } from './AttachmentsSection';
@@ -146,6 +150,7 @@ interface TransactionFormProps {
    */
   defaultDate?: string;
   onSuccess?: () => void;
+  onAccrualChanged?: () => void;
   onCancel?: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
   submitRef?: MutableRefObject<(() => void) | null>;
@@ -203,6 +208,14 @@ type AfterCreate = 'addWarranty';
 type TransactionMode = 'normal' | 'split' | 'transfer';
 
 function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, defaultDate, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles, onAddWarranty, onAddWarrantyAfterCreate, onOpenWarranty }: TransactionFormFieldsProps) {
+  const isDemoMode = useDemoMode();
+  const ownerId = useAuthStore(state => state.user?.id);
+  const actingAsUserId = useAuthStore(state => state.actingAsUserId);
+  const editor = useAccrualEditorDraft(transaction && ownerId && transaction.userId === ownerId && !actingAsUserId && !isDemoMode && !transaction.account?.isJoint && !transaction.isTransfer && !transaction.parentTransactionId && !transaction.linkedInvestmentTransactionId ? transaction.id : undefined);
+  const [editorTab,setEditorTab]=useState<'source'|'accrual'|null>(null);
+  const accrualEnabled = usePreferencesStore((s) => s.preferences?.accrualEnabled ?? false);
+  const accrualTabActive=accrualEnabled&&(editorTab==='accrual'||(editorTab===null&&editor.hasSchedules));
+  const accrualReview = useAccrualSourceEditReview(transaction && ownerId && transaction.userId === ownerId && !actingAsUserId ? transaction.id : undefined);
   const t = useTranslations('transactions');
   // An acting delegate never sees the Warranties line: a warranty is the
   // owner's to add, and the same rule makes the Warranties page read-only.
@@ -407,7 +420,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         },
   });
 
-  useFormDirtyNotify(isDirty, onDirtyChange);
+  useFormDirtyNotify(isDirty || editor.changed, onDirtyChange);
 
   const watchedAccountId = useWatch({ control, name: 'accountId' });
   const watchedAmount = useWatch({ control, name: 'amount' });
@@ -545,6 +558,8 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
 
   // Handle mode changes
   const handleModeChange = (newMode: TransactionMode) => {
+    setEditorTab('source');
+    if(newMode!==mode) editor.invalidate();
     setMode(newMode);
 
     if (newMode === 'split') {
@@ -1009,6 +1024,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   // Currency picker selection. '' (or the account currency) resets to an
   // ordinary account-currency transaction, clearing the FX fields.
   const handleEntryCurrencyChange = (code: string) => {
+    editor.invalidate();
     rateOverriddenRef.current = false;
     setFxRateLookupFailed(false);
     if (!code || code.toUpperCase() === accountCurrency.toUpperCase()) {
@@ -1271,7 +1287,11 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     onSuccess?.();
   };
 
-  const performSubmit = async (data: TransactionFormData, then?: AfterCreate) => {
+  const performSubmit = async (data: TransactionFormData, then?: AfterCreate, previewOnly = false) => {
+    if (transaction && (accrualTabActive || editor.settings.length) && !editor.ready) {
+      toast.error(t('accrual.failed'));
+      return;
+    }
     // Joint accounts: a free-text payee would auto-create on the OWNER's
     // ledger, which needs the delegation's payees-can-create capability. The
     // server enforces this too; refusing here keeps the form's state intact.
@@ -1298,6 +1318,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           setIsLoading(false);
           return;
         }
+        if (transaction && (editor.hasSchedules || editor.settings.length)) { toast.error(t('accrual.failed')); return; }
         if (!transferToAccountId) {
           toast.error(t('form.toasts.destinationRequired'));
           setIsLoading(false);
@@ -1365,7 +1386,11 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       // (`undefined` means "leave splits untouched", which is wrong here.)
       const wasSplit = Boolean(transaction?.isSplit);
       const splitsData = isSplitMode
-        ? toCreateSplitData(splits)
+        ? toCreateSplitData(splits).map((line, index) => ({
+            ...line,
+            // The update DTO's id retains category allocations across ordinary edits.
+            id: transaction && splits[index].splitType === 'category' ? splits[index].sourceSplitId : undefined,
+          }))
         : wasSplit
           ? []
           : undefined;
@@ -1434,7 +1459,23 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         if (showCreatedAt && createdAtValue && createdAtValue !== createdAtOriginal) {
           updatePayload.createdAt = datetimeLocalToIso(createdAtValue, userTimezone);
         }
-        await transactionsApi.update(transaction.id, updatePayload);
+        if (editor.ready && (editor.hasSchedules || editor.settings.length || accrualTabActive)) {
+          if (!editor.settings.length && accrualTabActive) {
+            const componentId = isSplitMode ? splits.find(value => value.splitType === 'category' && value.sourceSplitId)?.sourceSplitId : null;
+            if (isSplitMode && !componentId) { toast.error(t('accrual.noEligible')); return; }
+            editor.update([{sourceTransactionId: transaction.id, sourceSplitId: componentId ?? null, preset:'NTM', family:'expense'}]);
+          }
+          if (previewOnly) { await editor.preview(updatePayload); return; }
+          if (!await editor.save(updatePayload)) { setEditorTab('accrual'); return; }
+          toast.success(t('form.toasts.transactionUpdated'));
+          onSuccess?.();
+          return;
+        }
+        const reviewed = ownerId && transaction.userId === ownerId && !actingAsUserId
+          ? await accrualReview.review(updatePayload)
+          : updatePayload;
+        if (!reviewed) return;
+        await transactionsApi.update(transaction.id, reviewed);
         toast.success(t('form.toasts.transactionUpdated'));
         onSuccess?.();
       } else {
@@ -1449,7 +1490,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       }
     } catch (error) {
       logger.error('Submit error:', error);
-      toast.error(getErrorMessage(error, t('form.toasts.saveFailed')));
+      toast.error(error instanceof AxiosError && error.response?.status === 409 && ownerId && transaction?.userId === ownerId ? t('accrual.changed') : getErrorMessage(error, t('form.toasts.saveFailed')));
     } finally {
       setIsLoading(false);
     }
@@ -1609,6 +1650,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   return (
     <form
       {...tourAnchor(TOUR_ANCHORS.transactionForm)}
+      onChangeCapture={() => editor.invalidate()}
       onSubmit={(event) => guardedSubmit(undefined, event)}
       className="space-y-4"
     >
@@ -1617,12 +1659,12 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           that converts the row, and creating a transfer beside it would book
           the money twice (A26-H14). */}
       {(!transaction || !transaction.isTransfer) && (
-        <div className="flex space-x-2 pb-2 border-b dark:border-gray-700">
+        <div className="flex flex-wrap items-center gap-2 pb-2 border-b dark:border-gray-700">
           <button
             type="button"
             onClick={() => handleModeChange('normal')}
             className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
-              mode === 'normal'
+              !accrualTabActive && mode === 'normal'
                 ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
@@ -1643,7 +1685,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
                   : undefined
             }
             className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              mode === 'split'
+              !accrualTabActive && mode === 'split'
                 ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:hover:bg-transparent'
             }`}
@@ -1655,7 +1697,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
               type="button"
               onClick={() => handleModeChange('transfer')}
               className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
-                mode === 'transfer'
+                !accrualTabActive && mode === 'transfer'
                   ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
@@ -1663,9 +1705,17 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
               {t('form.modeTransfer')}
             </button>
           )}
+          {accrualEnabled && transaction && transaction.userId === ownerId && !actingAsUserId && !isDemoMode && !selectedIsJoint && !transaction.account?.isJoint && !transaction.parentTransactionId && !transaction.linkedInvestmentTransactionId && (
+            <button type="button" disabled={mode === 'transfer'} aria-pressed={accrualTabActive} onClick={()=>setEditorTab('accrual')} className={`px-3 py-1.5 text-sm rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed ${accrualTabActive ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400'}`}>{t('accrual.title')}</button>
+          )}
         </div>
       )}
 
+      {transaction && accrualTabActive && <AccrualEditorTab sourceId={transaction.id} paymentMonth={watchedDate.slice(0,7)}
+        components={isSplitMode ? splits.filter(value=>value.splitType==='category'&&value.sourceSplitId).map((value,index)=>({id:value.sourceSplitId!,label:t('accrual.split',{number:index+1,amount:formatCurrency(value.amount,watchedCurrencyCode)}),family:null})) : [{id:null,label:t('accrual.whole'),family:transaction.category ? transaction.category.isIncome ? 'income' : 'expense' : null}]}
+        editor={editor} busy={isLoading} onPreview={()=>void handleSubmit(data=>performSubmit(data,undefined,true), () => setEditorTab('source'))()}
+        highlightDate={editor.changed||isDirty ? undefined : transaction.accrualRecognitionDate} />}
+      <div hidden={accrualTabActive} className={accrualTabActive ? 'hidden' : 'space-y-4'}>
       {/* Transfer mode indicator for editing existing transfers */}
       {transaction?.isTransfer && (
         <div className="flex items-center space-x-2 pb-2 border-b dark:border-gray-700">
@@ -1786,7 +1836,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           </div>
           <SplitEditor
             splits={splits}
-            onChange={setSplits}
+            onChange={value => { editor.invalidate(); setSplits(value); }}
             categories={effectiveCategories}
             tags={tags}
             tagUsage={tagUsage}
@@ -1814,13 +1864,14 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           label={t('form.fields.tags')}
           options={tagOptions}
           value={selectedTagIds}
-          onChange={setSelectedTagIds}
+          onChange={value => { editor.invalidate(); setSelectedTagIds(value); }}
           placeholder={t('form.placeholders.selectTags')}
           onCreateNew={() => setShowTagForm(true)}
           createNewLabel={t('form.placeholders.createNewTag')}
         />
       )}
 
+      {accrualReview.dialog}
       {/* Tag Creation Modal */}
       <Modal isOpen={showTagForm} onClose={() => setShowTagForm(false)} maxWidth="lg" allowOverflow pushHistory className="p-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
@@ -1889,12 +1940,13 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         />
       )}
 
+      </div>
       {/* Actions. anchorProps, not a wrapper, so a guided tour rings the
           Cancel/Save pair rather than the full-width row around it. */}
       <FormActions
         anchorProps={tourAnchor(TOUR_ANCHORS.transactionFormActions)}
         onCancel={onCancel}
-        submitLabel={t(transaction ? 'form.submitUpdate' : 'form.submitCreate', { mode: modeLabel })}
+        submitLabel={transaction && (editor.hasSchedules || editor.settings.length || accrualTabActive) ? t(editor.reviewed ? 'accrual.saveChanges' : 'accrual.reviewEdit') : t(transaction ? 'form.submitUpdate' : 'form.submitCreate', { mode: modeLabel })}
         isSubmitting={isLoading}
         submitOptions={canCreateAnother ? submitOptions : undefined}
         selectedSubmitOptionId={submitMode}

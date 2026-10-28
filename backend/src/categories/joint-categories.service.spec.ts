@@ -1,3 +1,7 @@
+jest.mock("../accruals/accrual-taxonomy-operation", () => ({
+  beginTaxonomyOperation: async () => undefined,
+  recordTaxonomyOperation: async () => undefined,
+}));
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import { JointCategoriesService } from "./joint-categories.service";
 import { AccountDelegate } from "../delegation/entities/account-delegate.entity";

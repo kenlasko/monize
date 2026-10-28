@@ -1,3 +1,10 @@
+jest.mock("./rule-accrual", () => ({
+  planRuleAccruals: async () => [],
+  ruleAccrualFingerprint: (base: string) => base,
+  captureRuleAccrualHistory: async () => undefined,
+  assertRuleAccrualWrite: async () => false,
+  assertAutomaticRuleSources: async () => undefined,
+}));
 import { NotFoundException } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { ActionHistoryService } from "../action-history/action-history.service";

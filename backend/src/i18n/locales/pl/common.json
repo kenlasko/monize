@@ -39,5 +39,8 @@
       "loanRepayment": "Spłata kredytu",
       "creditCardRepayment": "Spłata karty kredytowej"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "Usunięto transakcje: {{ count }}"
   }
 }

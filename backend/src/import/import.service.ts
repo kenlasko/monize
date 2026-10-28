@@ -1,4 +1,8 @@
 import {
+  prepareImportAccrualSources,
+  assertImportAccrualIds,
+} from "./import-accrual-guard";
+import {
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -321,6 +325,7 @@ export class ImportService {
       await withScopedDb(this.dataSource, async (manager) => {
         // First lock of the transaction: advisory before row locks.
         await this.lockImportedHoldingScopes(manager, userId);
+        await prepareImportAccrualSources(manager, userId);
 
         // The user's import-trigger rules, once for the whole file (design 6.3).
         const importRules = await this.rulesApplier.loadRulesFor(
@@ -1319,6 +1324,7 @@ export class ImportService {
       await withScopedDb(this.dataSource, async (manager) => {
         // First lock of the transaction: advisory before row locks.
         await this.lockImportedHoldingScopes(manager, userId);
+        await prepareImportAccrualSources(manager, userId);
 
         const ctx: ImportContext = {
           manager,
@@ -1761,6 +1767,10 @@ export class ImportService {
         if (total === expected && Number(group.splitCount) >= 2) {
           // Reliable match: delete the merged transfer and its linked counterpart
           const linkedId = candidate.linked_transaction_id;
+          await assertImportAccrualIds(manager, userId, [
+            candidate.id,
+            linkedId,
+          ]);
 
           // Reverse only what each row contributed: a VOID or future-dated row
           // was never in the balance, and reversing it would create money.

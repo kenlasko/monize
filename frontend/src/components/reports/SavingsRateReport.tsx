@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis } from './ReportingBasis';
+import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
@@ -31,9 +33,7 @@ import type {
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
-import { createLogger } from '@/lib/logger';
 
-const logger = createLogger('SavingsRateReport');
 
 type SavingsRateSortField = 'month' | 'income' | 'expenses' | 'savings' | 'rate';
 
@@ -124,6 +124,8 @@ const cellPadding = (col: SortColumn) => (col.last ? 'sm:py-2' : 'sm:py-2 sm:pr-
 const MONEY_CELL = 'p-0 text-right text-xs whitespace-nowrap sm:table-cell sm:text-sm';
 
 export function SavingsRateReport() {
+  const { withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
   const { formatCurrencyCompact: formatCurrency, formatPercent, formatPercentTrimmed } = useNumberFormat();
   // Two month formatters, because a month column and a month axis are not the
@@ -133,8 +135,13 @@ export function SavingsRateReport() {
   const { formatMonth } = useDateFormat();
   const formatChartMonth = useChartMonthFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
+  const {data: budgetRows, isLoading: budgetsLoading, error: budgetsError, reload: reloadBudgets} = useReportData(
+    () => budgetsApi.getAll(...(basis ? [basis] as const : [])), [basis],
+    {requestKey:JSON.stringify([basis]),maskStaleData:true},
+  );
+  const budgets = useMemo<Budget[]>(() => budgetRows ?? [], [budgetRows]);
+  const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>('');
+  const selectedBudgetId = budgets.some(b=>b.id===selectedBudgetIdState) ? selectedBudgetIdState : (budgets.find(b=>b.isActive)?.id ?? budgets[0]?.id ?? '');
   const [months, setMonths] = useState(12);
   const [targetRate, setTargetRate] = useState(20);
   const { sortField, sortDirection, handleSort } = useSortableTable<SavingsRateSortField>(
@@ -145,9 +152,10 @@ export function SavingsRateReport() {
   const { data: response, isLoading, error, reload } = useReportData(
     () =>
       selectedBudgetId
-        ? budgetsApi.getSavingsRate(selectedBudgetId, months)
+        ? budgetsApi.getSavingsRate(selectedBudgetId, months, ...(basis ? [basis] as const : []))
         : Promise.resolve(null),
-    [selectedBudgetId, months],
+    [selectedBudgetId, months, basis],
+    { requestKey: JSON.stringify([selectedBudgetId, months, basis]), maskStaleData: true },
   );
 
   const data = useMemo<SavingsRatePoint[]>(() => response ?? [], [response]);
@@ -201,27 +209,11 @@ export function SavingsRateReport() {
   // cannot disagree about which column is last and drops its right padding.
   const sortColumns: readonly SortColumn[] = Object.values(columns);
 
-  useEffect(() => {
-    const loadBudgets = async () => {
-      try {
-        const budgetList = await budgetsApi.getAll();
-        setBudgets(budgetList);
-        const active = budgetList.find((b) => b.isActive);
-        if (active) {
-          setSelectedBudgetId(active.id);
-        } else if (budgetList.length > 0) {
-          setSelectedBudgetId(budgetList[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load budgets:', error);
-      }
-    };
-    loadBudgets();
-  }, []);
+
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('savingsRate.pdfTitle'),
       summaryCards: [
         { label: t('savingsRate.pdfCurrentRate'), value: formatPercent(currentRate, 1), color: meetsTarget ? '#16a34a' : '#dc2626' },
@@ -248,14 +240,16 @@ export function SavingsRateReport() {
         ]),
       }] : undefined,
       filename: 'savings-rate',
-    });
+    }));
   };
+
+  if (budgetsError) return <ReportError onRetry={reloadBudgets} />;
 
   if (error) {
     return <ReportError onRetry={reload} />;
   }
 
-  if (isLoading) {
+  if (isLoading || budgetsLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="space-y-4">

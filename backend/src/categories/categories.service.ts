@@ -1,4 +1,15 @@
 import {
+  beginTaxonomyOperation,
+  recordTaxonomyOperation,
+} from "../accruals/accrual-taxonomy-operation";
+import {
+  beginRelationshipHistory,
+  recordRelationshipHistory,
+} from "../accruals/accrual-relationship-history";
+import { prepareCategoryMutation } from "./category-mutation";
+import { verifyBulkAccrualEdit } from "../accruals/accrual-bulk-edit";
+import { refreshSourceAccruals } from "../accruals/accrual-lifecycle";
+import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -6,7 +17,7 @@ import {
 import { I18nService } from "nestjs-i18n";
 import { tr, translateInLocale } from "../i18n/translate";
 import { resolveUserEmailLocale } from "../i18n/resolve-user-email-locale";
-import { IsNull, DataSource, EntityManager } from "typeorm";
+import { IsNull, In, DataSource } from "typeorm";
 import { Category } from "./entities/category.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import {
@@ -437,7 +448,8 @@ export class CategoriesService {
     updateCategoryDto: UpdateCategoryDto,
   ): Promise<Category> {
     const category = await this.findOne(userId, id);
-    const beforeData = {
+    let recordedAccrualHistory = false;
+    let beforeData = {
       name: category.name,
       description: category.description,
       icon: category.icon,
@@ -518,62 +530,83 @@ export class CategoriesService {
     // subcategories atomically, so a partial failure cannot leave children
     // with a type that disagrees with their parent.
     const saved = await withScopedDb(this.dataSource, async (m) => {
-      // Pass the explicit entity target: findOne returns a plain object
-      // (spread with effectiveColor), not a Category instance, so the
-      // single-arg form would throw CannotDetermineEntityError.
-      const savedCategory = await m.save(Category, category);
-
-      if (
-        !category.parentId &&
-        updateCategoryDto.isIncome !== undefined &&
-        updateCategoryDto.isIncome !== beforeData.isIncome
-      ) {
-        await this.updateDescendantTypes(userId, id, savedCategory.isIncome, m);
+      const edit = await prepareCategoryMutation(m, userId, id, {
+        operation: "update",
+        dto: updateCategoryDto,
+      });
+      verifyBulkAccrualEdit(
+        edit.preview,
+        updateCategoryDto.accrualImpactFingerprint,
+      );
+      beforeData = {
+        name: edit.category.name,
+        description: edit.category.description,
+        icon: edit.category.icon,
+        color: edit.category.color,
+        isIncome: edit.category.isIncome,
+        autoSign: edit.category.autoSign,
+        parentId: edit.category.parentId,
+      };
+      const relationshipBefore = await beginRelationshipHistory(
+        m,
+        userId,
+        "category",
+        id,
+        edit.sources.map((row) => row.id),
+        edit.affected,
+      );
+      const { snapshot: _ignored, ...live } = edit.category;
+      const fields = {
+        ...live,
+        parentId: edit.parentId,
+        isIncome: edit.newIncome,
+      };
+      for (const key of [
+        "name",
+        "description",
+        "icon",
+        "color",
+        "autoSign",
+      ] as const)
+        if (updateCategoryDto[key] !== undefined)
+          Object.assign(fields, { [key]: updateCategoryDto[key] });
+      const savedCategory = await m.save(Category, fields);
+      for (const changedId of edit.families.keys())
+        if (changedId !== id)
+          await m.update(
+            Category,
+            { id: changedId, userId },
+            { isIncome: edit.newIncome },
+          );
+      for (const impact of edit.preview.impacts)
+        await refreshSourceAccruals(m, userId, impact.transactionId);
+      if (relationshipBefore) {
+        await recordRelationshipHistory(m, userId, relationshipBefore);
+        recordedAccrualHistory = true;
       }
-
       return savedCategory;
     });
 
-    this.actionHistoryService.record(userId, {
-      entityType: "category",
-      entityId: id,
-      action: "update",
-      beforeData,
-      afterData: {
-        name: saved.name,
-        description: saved.description,
-        icon: saved.icon,
-        color: saved.color,
-        isIncome: saved.isIncome,
-        autoSign: saved.autoSign,
-        parentId: saved.parentId,
-      },
-      description: `Updated category "${saved.name}"`,
-      descriptionKey: "updatedCategory",
-      descriptionParams: { name: saved.name },
-    });
+    if (!recordedAccrualHistory)
+      this.actionHistoryService.record(userId, {
+        entityType: "category",
+        entityId: id,
+        action: "update",
+        beforeData,
+        afterData: {
+          name: saved.name,
+          description: saved.description,
+          icon: saved.icon,
+          color: saved.color,
+          isIncome: saved.isIncome,
+          autoSign: saved.autoSign,
+          parentId: saved.parentId,
+        },
+        description: `Updated category "${saved.name}"`,
+        descriptionKey: "updatedCategory",
+        descriptionParams: { name: saved.name },
+      });
     return saved;
-  }
-
-  private async updateDescendantTypes(
-    userId: string,
-    parentId: string,
-    isIncome: boolean,
-    manager: EntityManager,
-  ): Promise<void> {
-    const children = await manager.find(Category, {
-      where: { userId, parentId },
-      select: ["id"],
-    });
-
-    if (children.length === 0) {
-      return;
-    }
-
-    for (const child of children) {
-      await manager.update(Category, { id: child.id, userId }, { isIncome });
-      await this.updateDescendantTypes(userId, child.id, isIncome, manager);
-    }
   }
 
   async remove(userId: string, id: string): Promise<void> {
@@ -615,7 +648,7 @@ export class CategoriesService {
       );
     }
 
-    const beforeData = {
+    let beforeData = {
       id: category.id,
       name: category.name,
       description: category.description,
@@ -629,7 +662,45 @@ export class CategoriesService {
     // Clear the default-category reference on any payees and delete the
     // category atomically, so a failure cannot leave payees pointing at a
     // category that no longer exists.
+    let relationshipRecorded = false;
     await withScopedDb(this.dataSource, async (m) => {
+      const history = await beginTaxonomyOperation(m, userId, "category", [id]);
+      const edit = await prepareCategoryMutation(m, userId, id, {
+        operation: "delete",
+      });
+      if (edit.category.isSystem)
+        throw new BadRequestException(
+          tr(
+            "errors.categories.cannotDeleteSystem",
+            "Cannot delete system categories",
+          ),
+        );
+      if (edit.graph.some((row) => row.parentId === id))
+        throw new BadRequestException(
+          tr(
+            "errors.categories.hasSubcategories",
+            "Cannot delete category with subcategories. Delete or reassign subcategories first.",
+          ),
+        );
+      const references = await this.getTransactionCount(userId, id);
+      if (references > 0)
+        throw new BadRequestException(
+          tr(
+            "errors.categories.hasTransactions",
+            `Cannot delete category with ${references} referencing transaction(s). Reassign transactions first.`,
+            { count: references },
+          ),
+        );
+      beforeData = {
+        id: edit.category.id,
+        name: edit.category.name,
+        description: edit.category.description,
+        icon: edit.category.icon,
+        color: edit.category.color,
+        isIncome: edit.category.isIncome,
+        parentId: edit.category.parentId,
+        isSystem: edit.category.isSystem,
+      };
       await m.update(
         Payee,
         { userId, defaultCategoryId: id },
@@ -638,8 +709,11 @@ export class CategoriesService {
       // Explicit entity target: `category` here is a plain object from
       // findOne (spread with effectiveColor), not a Category instance.
       await m.remove(Category, category);
+      await recordTaxonomyOperation(m, userId, history);
+      relationshipRecorded = !!history;
     });
 
+    if (relationshipRecorded) return;
     this.actionHistoryService.record(userId, {
       entityType: "category",
       entityId: id,
@@ -697,10 +771,50 @@ export class CategoriesService {
     });
   }
 
+  async previewCategoryUpdate(
+    userId: string,
+    id: string,
+    dto: UpdateCategoryDto,
+  ) {
+    await this.findOne(userId, id);
+    return withScopedDb(this.dataSource, async (m) => {
+      const edit = await prepareCategoryMutation(m, userId, id, {
+        operation: "update",
+        dto,
+      });
+      return {
+        ...edit.preview,
+        categoryIds: edit.affected,
+        changedCategoryIds: [...edit.families.keys()],
+        parentId: edit.parentId,
+        isIncome: edit.newIncome,
+      };
+    });
+  }
+
+  async previewCategoryReassignment(
+    userId: string,
+    id: string,
+    toCategoryId: string | null,
+  ) {
+    await this.findOne(userId, id);
+    return withScopedDb(
+      this.dataSource,
+      async (m) =>
+        (
+          await prepareCategoryMutation(m, userId, id, {
+            operation: "reassign",
+            toCategoryId,
+          })
+        ).preview,
+    );
+  }
+
   async reassignTransactions(
     userId: string,
     fromCategoryId: string,
     toCategoryId: string | null,
+    accrualImpactFingerprint?: string,
   ): Promise<{
     transactionsUpdated: number;
     splitsUpdated: number;
@@ -714,19 +828,23 @@ export class CategoriesService {
 
     // M22: All UPDATE operations run in a single transaction.
     return withScopedDb(this.dataSource, async (m) => {
-      const transactionResult = await m.update(
-        Transaction,
-        { userId, categoryId: fromCategoryId },
-        { categoryId: toCategoryId },
-      );
-
-      const userTransactionIds = await m
-        .createQueryBuilder(Transaction, "t")
-        .select("t.id")
-        .where("t.userId = :userId", { userId })
-        .getMany();
-
-      const transactionIds = userTransactionIds.map((t) => t.id);
+      const history = await beginTaxonomyOperation(m, userId, "category", [
+        fromCategoryId,
+        ...(toCategoryId ? [toCategoryId] : []),
+      ]);
+      const edit = await prepareCategoryMutation(m, userId, fromCategoryId, {
+        operation: "reassign",
+        toCategoryId,
+      });
+      verifyBulkAccrualEdit(edit.preview, accrualImpactFingerprint);
+      const transactionIds = edit.sources.map((row) => row.id);
+      const transactionResult = transactionIds.length
+        ? await m.update(
+            Transaction,
+            { userId, id: In(transactionIds), categoryId: fromCategoryId },
+            { categoryId: toCategoryId },
+          )
+        : { affected: 0 };
 
       let splitsUpdated = 0;
       if (transactionIds.length > 0) {
@@ -766,6 +884,9 @@ export class CategoriesService {
           .execute();
       }
 
+      for (const impact of edit.preview.impacts)
+        await refreshSourceAccruals(m, userId, impact.transactionId);
+      await recordTaxonomyOperation(m, userId, history);
       return {
         transactionsUpdated: transactionResult.affected || 0,
         splitsUpdated,

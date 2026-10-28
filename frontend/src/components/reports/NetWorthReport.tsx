@@ -1,5 +1,7 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis } from './ReportingBasis';
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
@@ -32,7 +34,6 @@ import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions'
 import { NetWorthByAccountTypeChart, type NetWorthBarStyle } from '@/components/reports/NetWorthByAccountTypeChart';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { SortableHeader } from '@/components/ui/SortableHeader';
-import { exportToCsv } from '@/lib/csv-export';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
@@ -117,6 +118,8 @@ function CompositionTooltip({ active, payload, formatCurrency, formatPercent, t 
 }
 
 export function NetWorthReport() {
+  const { exportCsvWithBasis, withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
   const formatChartDate = useChartDateFormat();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, formatCurrencyLabel, formatSignedPercent, formatPercent, formatPercentTrimmed, defaultCurrency } = useNumberFormat();
@@ -143,11 +146,13 @@ export function NetWorthReport() {
     () =>
       isValid && rangeEnd
         ? netWorthApi.getMonthly({
+            ...(basis ? { basis } : {}),
             startDate: rangeStart || undefined,
             endDate: rangeEnd,
           })
         : Promise.resolve(null),
-    [isValid, rangeStart, rangeEnd],
+    [isValid, rangeStart, rangeEnd, basis],
+    { requestKey: JSON.stringify([isValid, rangeStart, rangeEnd, basis]), maskStaleData: true },
   );
 
   const monthlyData = useMemo<MonthlyNetWorth[]>(
@@ -325,7 +330,7 @@ export function NetWorthReport() {
     const { exportToPdf } = await import('@/lib/pdf-export');
     const currentIsPartial = !isComplete(summary.currentTotal);
     const unknown = t('netWorth.notAvailable');
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('netWorth.pdfTitle'),
       subtitle: `${chartData[0]?.name || ''} - ${chartData[chartData.length - 1]?.name || ''}`,
       summaryCards: [
@@ -347,7 +352,7 @@ export function NetWorthReport() {
       ],
       chartContainer: chartRef.current,
       filename: 'net-worth-report',
-    });
+    }));
   };
 
   const handleExportCsv = () => {
@@ -361,7 +366,7 @@ export function NetWorthReport() {
       d.netWorthValue,
       d.partial ? t('netWorth.partialMonthNote', { pairs: partialPairsLabel(d.pairs) }) : '',
     ]);
-    exportToCsv('net-worth-report', headers, rows);
+    exportCsvWithBasis('net-worth-report', headers, rows);
   };
 
   // Per-bar value labels are only legible on the shorter (1y/2y) ranges; longer

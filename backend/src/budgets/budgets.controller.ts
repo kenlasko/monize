@@ -1,3 +1,4 @@
+import { ReportingEndpoint } from "../accruals/reporting-endpoint";
 import {
   Controller,
   Get,
@@ -64,6 +65,7 @@ export class BudgetsController {
     return this.budgetsService.create(req.user.id, createBudgetDto);
   }
 
+  @ReportingEndpoint()
   @Get()
   @AllowDelegate()
   @ApiOperation({ summary: "Get all budgets for the authenticated user" })
@@ -73,6 +75,7 @@ export class BudgetsController {
     return this.budgetsService.findAll(req.user.id);
   }
 
+  @ReportingEndpoint()
   @Get("dashboard-summary")
   @AllowDelegate()
   @ApiOperation({
@@ -88,6 +91,7 @@ export class BudgetsController {
     return this.budgetsService.getDashboardSummary(req.user.id);
   }
 
+  @ReportingEndpoint()
   @Post("category-budget-status")
   @ApiOperation({
     summary:
@@ -137,6 +141,7 @@ export class BudgetsController {
     return this.budgetGeneratorService.apply(req.user.id, dto);
   }
 
+  @ReportingEndpoint()
   @Get(":id")
   @AllowDelegate()
   @ApiOperation({ summary: "Get a specific budget with categories" })
@@ -242,6 +247,7 @@ export class BudgetsController {
     );
   }
 
+  @ReportingEndpoint()
   @Get(":id/summary")
   @AllowDelegate()
   @ApiOperation({ summary: "Get current period budget summary" })
@@ -253,6 +259,7 @@ export class BudgetsController {
     return this.budgetsService.getSummary(req.user.id, id);
   }
 
+  @ReportingEndpoint()
   @Get(":id/velocity")
   @AllowDelegate()
   @ApiOperation({ summary: "Get spending velocity and projections" })
@@ -264,6 +271,7 @@ export class BudgetsController {
     return this.budgetsService.getVelocity(req.user.id, id);
   }
 
+  @ReportingEndpoint("cash")
   @Get(":id/periods")
   @AllowDelegate()
   @ApiOperation({ summary: "List historical budget periods" })
@@ -275,6 +283,7 @@ export class BudgetsController {
     return this.budgetPeriodService.findAll(req.user.id, id);
   }
 
+  @ReportingEndpoint("cash")
   @Get(":id/periods/:periodId")
   @AllowDelegate()
   @ApiOperation({ summary: "Get period detail with category breakdowns" })
@@ -304,6 +313,7 @@ export class BudgetsController {
 
   // --- Budget Reports ---
 
+  @ReportingEndpoint()
   @Get(":id/reports/trend")
   @AllowDelegate()
   @ApiOperation({ summary: "Get budget vs actual trend over N months" })
@@ -329,6 +339,7 @@ export class BudgetsController {
     );
   }
 
+  @ReportingEndpoint()
   @Get(":id/reports/category-trend")
   @AllowDelegate()
   @ApiOperation({ summary: "Get per-category trend over time" })
@@ -361,6 +372,7 @@ export class BudgetsController {
     );
   }
 
+  @ReportingEndpoint()
   @Get(":id/reports/health-score")
   @AllowDelegate()
   @ApiOperation({ summary: "Get budget health score (0-100)" })
@@ -372,6 +384,7 @@ export class BudgetsController {
     return this.budgetReportsService.getHealthScore(req.user.id, id);
   }
 
+  @ReportingEndpoint()
   @Get(":id/reports/seasonal")
   @AllowDelegate()
   @ApiOperation({ summary: "Get seasonal spending patterns" })
@@ -383,6 +396,7 @@ export class BudgetsController {
     return this.budgetReportsService.getSeasonalPatterns(req.user.id, id);
   }
 
+  @ReportingEndpoint()
   @Get(":id/reports/flex-groups")
   @AllowDelegate()
   @ApiOperation({ summary: "Get flex group aggregation status" })
@@ -394,6 +408,7 @@ export class BudgetsController {
     return this.budgetReportsService.getFlexGroupStatus(req.user.id, id);
   }
 
+  @ReportingEndpoint()
   @Get(":id/reports/daily-spending")
   @AllowDelegate()
   @ApiOperation({ summary: "Get daily spending for current period (heatmap)" })
@@ -405,6 +420,7 @@ export class BudgetsController {
     return this.budgetReportsService.getDailySpending(req.user.id, id);
   }
 
+  @ReportingEndpoint()
   @Get(":id/reports/savings-rate")
   @AllowDelegate()
   @ApiOperation({ summary: "Get savings rate over N months" })
@@ -430,6 +446,7 @@ export class BudgetsController {
     );
   }
 
+  @ReportingEndpoint()
   @Get(":id/reports/health-score-history")
   @AllowDelegate()
   @ApiOperation({ summary: "Get health score history over N months" })

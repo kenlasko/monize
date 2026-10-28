@@ -39,6 +39,14 @@ describe('userSettingsApi', () => {
     expect(apiClient.patch).toHaveBeenCalledWith('/users/preferences', { theme: 'light' });
   });
 
+  it('clears report caches when the reporting basis changes successfully', async () => {
+    setCache('budgets:summary', { totalSpent: 1200 });
+    vi.mocked(apiClient.patch).mockResolvedValue({ data: { reportingBasis: 'accrual' } });
+    await userSettingsApi.updatePreferences({ reportingBasis: 'accrual' });
+    expect(getCached('budgets:summary')).toBeUndefined();
+    expect(apiClient.patch).toHaveBeenLastCalledWith('/users/preferences', { reportingBasis: 'accrual' });
+  });
+
   it('changePassword posts to /users/change-password', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({});
     await userSettingsApi.changePassword({ currentPassword: 'old', newPassword: 'new' } as any);
@@ -135,6 +143,17 @@ describe('userSettingsApi.updatePreferences cache scope (INV-CACHE-001)', () => 
   it('a timezone change drops every cached figure', async () => {
     await userSettingsApi.updatePreferences({ timezone: 'Europe/Warsaw' });
     expectDropped();
+  });
+
+  it.each([true, false])('an accrual feature change (%s) drops every cached figure', async (enabled) => {
+    await userSettingsApi.updatePreferences({ accrualEnabled: enabled });
+    expectDropped();
+  });
+
+  it('a rejected accrual feature change keeps the valid cached figures', async () => {
+    vi.mocked(apiClient.patch).mockRejectedValueOnce(new Error('save failed'));
+    await expect(userSettingsApi.updatePreferences({ accrualEnabled: false })).rejects.toThrow('save failed');
+    expect(getCached('budgets:dashboard')).toEqual({ id: 'b' });
   });
 
   it('an unrelated preference leaves the caches', async () => {

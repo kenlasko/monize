@@ -48,6 +48,7 @@ function harness(
   });
   const into = jest.fn().mockReturnValue({ values });
   const m = {
+    query: jest.fn().mockResolvedValue([]),
     findOne: jest.fn(async (entity: unknown) => {
       if (entity === Transaction) return row(rowOver);
       if (entity === Account) return target;
@@ -81,6 +82,19 @@ const convert = (
   });
 
 describe("convertRowToTransfer", () => {
+  it("refuses a linked accrual before creating or updating either bank leg", async () => {
+    const h = harness();
+    h.m.query.mockResolvedValueOnce([{ id: "schedule" }]);
+    await expect(convert(h)).rejects.toMatchObject({
+      response: expect.objectContaining({
+        errorCode: "CONVERT_TO_TRANSFER_REFUSED",
+      }),
+    });
+    expect(h.m.save).not.toHaveBeenCalled();
+    expect(h.m.update).not.toHaveBeenCalled();
+    expect(h.accounts.updateBalance).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => {
     jest.resetAllMocks();
     (lockTransactionRow as jest.Mock).mockResolvedValue({ id: ROW });

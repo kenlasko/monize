@@ -1,5 +1,7 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis } from './ReportingBasis';
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
@@ -34,6 +36,8 @@ function getTextColor(value: number, max: number): string {
 }
 
 export function SeasonalSpendingMapReport() {
+  const { withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
   const tc = useTranslations('common');
   const MONTH_LABELS = tc.raw('monthsShort') as string[];
@@ -50,7 +54,7 @@ export function SeasonalSpendingMapReport() {
     isLoading: budgetsLoading,
     error: budgetsError,
     reload: reloadBudgets,
-  } = useReportData(() => budgetsApi.getAll(), []);
+  } = useReportData(() => budgetsApi.getAll(...(basis ? [basis] as const : [])), [basis], {requestKey:JSON.stringify([basis]),maskStaleData:true});
 
   const budgetList = budgets ?? [];
 
@@ -68,9 +72,10 @@ export function SeasonalSpendingMapReport() {
   } = useReportData(
     () =>
       selectedBudgetId
-        ? budgetsApi.getSeasonalPatterns(selectedBudgetId)
+        ? budgetsApi.getSeasonalPatterns(selectedBudgetId, ...(basis ? [basis] as const : []))
         : Promise.resolve([]),
-    [selectedBudgetId],
+    [selectedBudgetId, basis],
+    { requestKey: JSON.stringify([selectedBudgetId, basis]), maskStaleData: true },
   );
 
   const isLoading = budgetsLoading || patternsLoading;
@@ -151,12 +156,12 @@ export function SeasonalSpendingMapReport() {
       }),
       formatCurrency(row.typical),
     ]);
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('seasonalSpendingMap.pdfTitle'),
       chartContainer: chartRef.current,
       tableData: { headers, rows },
       filename: 'seasonal-spending-map',
-    });
+    }));
   };
 
   if (error) {

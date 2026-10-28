@@ -1,3 +1,10 @@
+jest.mock("./rule-accrual", () => ({
+  planRuleAccruals: async () => [],
+  ruleAccrualFingerprint: (base: string) => base,
+  captureRuleAccrualHistory: async () => undefined,
+  assertRuleAccrualWrite: async () => false,
+  assertAutomaticRuleSources: async () => undefined,
+}));
 import { Account } from "../accounts/entities/account.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";

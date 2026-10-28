@@ -14,6 +14,8 @@ export type DateColumn = string | Date;
 
 /** One `monthly_account_balances` row joined to its account. */
 export interface MonthlySnapshotRow {
+  timing_family?: "expense" | "income";
+  valuation_date?: string;
   month: DateColumn;
   balance: NumericColumn;
   market_value: NumericColumn | null;

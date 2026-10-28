@@ -242,7 +242,13 @@
       "applyHere": "Usar estas predefinições neste navegador",
       "applyHereHelp": "Limpa as definições de vista guardadas por este navegador, para que as predefinições acima também se apliquem aqui.",
       "appliedHere": "Este navegador usa agora as suas vistas predefinidas"
-    }
+    },
+    "reportingBasisLabel": "Base de relato predefinida",
+    "reportingAccrual": "Competência",
+    "reportingCash": "Caixa",
+    "reportingBasisHelp": "Escolha a predefinição para relatórios e tendências por categoria e beneficiário. As vistas de caixa mantêm as datas de pagamento.",
+    "accrualEnabledLabel": "Ativar contabilidade por competência",
+    "accrualEnabledTooltip": "Ativa os planos de acréscimo, saldos e controlos dos relatórios. Quando desativado, os relatórios usam caixa. Os planos guardados são mantidos e atualizados quando as suas transações mudam."
   },
   "notifications": {
     "heading": "Notificações",
@@ -836,7 +842,10 @@
       },
       "doneButton": "Concluído",
       "unlinkedBondSecuritiesList": "Títulos afetados: {symbols}.",
-      "unlinkedBondSecuritiesMore": "e mais {count}"
+      "unlinkedBondSecuritiesMore": "e mais {count}",
+      "accrualSystemAccounts": "Contas de competência do sistema",
+      "accrualSchedules": "Cronogramas de competência",
+      "accrualAllocations": "Alocações por competência"
     },
     "storedBackups": {
       "heading": "Cópias de segurança automáticas",

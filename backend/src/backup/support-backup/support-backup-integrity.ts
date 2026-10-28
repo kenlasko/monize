@@ -1,3 +1,4 @@
+import { ACCRUAL_REFS } from "./support-backup-integrity.accruals";
 import { TableMap } from "./support-backup-scope";
 
 /**
@@ -23,9 +24,15 @@ export interface RefRule {
   column: string;
   refTable: string;
   onMissing: "null" | "dropRow";
+  /** Full composite tuple, with PostgreSQL MATCH SIMPLE null semantics. */
+  targetColumns?: readonly {
+    readonly local: string;
+    readonly remote: string;
+  }[];
 }
 
 const REFS: Record<string, RefRule[]> = {
+  ...ACCRUAL_REFS,
   categories: [
     { column: "parent_id", refTable: "categories", onMissing: "null" },
   ],
@@ -434,6 +441,8 @@ export function scrubToFixedPoint(
     return ids;
   };
 
+  const tupleSets = new Map<string, Set<string>>();
+
   let converged = false;
   for (let pass = 0; pass < maxPasses; pass++) {
     const changedTables = new Set<string>();
@@ -446,6 +455,27 @@ export function scrubToFixedPoint(
       const next: Record<string, unknown>[] = [];
       for (const row of rows) {
         const toNull = rules.filter((rule) => {
+          if (rule.targetColumns) {
+            const columns = rule.targetColumns;
+            const values = columns.map(({ local }) => str(row[local]));
+            if (values.some((value) => value === null)) return false;
+            const key = JSON.stringify([
+              rule.refTable,
+              columns.map(({ remote }) => remote),
+            ]);
+            let tuples = tupleSets.get(key);
+            if (!tuples) {
+              tuples = new Set(
+                (out[rule.refTable] ?? []).map((target) =>
+                  JSON.stringify(
+                    columns.map(({ remote }) => str(target[remote])),
+                  ),
+                ),
+              );
+              tupleSets.set(key, tuples);
+            }
+            return !tuples.has(JSON.stringify(values));
+          }
           const ref = str(row[rule.column]);
           return ref !== null && !idsOf(rule.refTable).has(ref);
         });
@@ -467,6 +497,7 @@ export function scrubToFixedPoint(
         out[table] = next;
         // This table's id set shrank, so any reference to it must re-check.
         idSets.delete(table);
+        tupleSets.clear();
         changedTables.add(table);
       }
     }

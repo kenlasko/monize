@@ -84,6 +84,21 @@ describe('PreferencesSection', () => {
     vi.clearAllMocks();
   });
 
+  it('hides the reporting-basis control until accrual accounting is enabled', async () => {
+    await act(async () => { render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />); });
+    expect(screen.queryByLabelText('Default reporting basis')).not.toBeInTheDocument();
+  });
+
+  it('defaults reporting to cash and saves the single user-level accrual preference', async () => {
+    vi.mocked(userSettingsApi.updatePreferences).mockResolvedValue({ ...mockPreferences, accrualEnabled: true, reportingBasis: 'accrual' });
+    await act(async () => { render(<PreferencesSection preferences={{ ...mockPreferences, accrualEnabled: true }} onPreferencesUpdated={mockOnPreferencesUpdated} />); });
+    const control = screen.getByLabelText('Default reporting basis');
+    expect(control).toHaveValue('cash');
+    await act(async () => { fireEvent.change(control, { target: { value: 'accrual' } }); });
+    expect(userSettingsApi.updatePreferences).toHaveBeenLastCalledWith({ reportingBasis: 'accrual' });
+    expect(mockOnPreferencesUpdated).toHaveBeenLastCalledWith(expect.objectContaining({ reportingBasis: 'accrual' }));
+  });
+
   it('renders the preferences heading and all selects', async () => {
     render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
 

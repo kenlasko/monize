@@ -1,3 +1,19 @@
+jest.mock("../accruals/reporting-basis", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingBasisMockModule(),
+);
+jest.mock("../accruals/reporting-query", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingQueryMockModule(),
+);
+jest.mock("../accruals/reporting-basis.interceptor", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingInterceptorMockModule(),
+);
+
 import { BadRequestException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { NetWorthController } from "./net-worth.controller";
@@ -98,6 +114,18 @@ describe("NetWorthController", () => {
       );
     });
 
+    it.each(["2026-02-30", "9999-99-99", ["2026-01-01", "2026-01-02"]])(
+      "rejects a malformed or repeated monthly date before querying",
+      async (value) => {
+        await expect(
+          controller.getMonthlyNetWorth(mockReq, value as string, undefined),
+        ).rejects.toThrow(BadRequestException);
+        await expect(
+          controller.getMonthlyNetWorth(mockReq, undefined, value as string),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockNetWorthService.getMonthlyNetWorth).not.toHaveBeenCalled();
+      },
+    );
     it("builds the joint scope from grants minus the caller's exclusions", async () => {
       mockNetWorthService.getMonthlyNetWorth!.mockReturnValue("netWorth");
       const OWNER = "cccccccc-3333-4333-8333-333333333333";
@@ -695,12 +723,12 @@ describe("NetWorthController", () => {
     it("throws on invalid startDate format", async () => {
       await expect(
         controller.getMonthlyNetWorth(mockReq, "not-a-date"),
-      ).rejects.toThrow(/startDate/);
+      ).rejects.toThrow(/real YYYY-MM-DD calendar date/);
     });
     it("throws on invalid endDate format", async () => {
       await expect(
         controller.getMonthlyNetWorth(mockReq, "2024-01-01", "bad"),
-      ).rejects.toThrow(/endDate/);
+      ).rejects.toThrow(/real YYYY-MM-DD calendar date/);
     });
   });
 

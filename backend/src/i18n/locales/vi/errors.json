@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL phải là địa chỉ http hoặc https",
       "invalidField": "{{ field }} không hợp lệ"
     }
+  },
+  "accruals": {
+    "notFound": "Không tìm thấy giao dịch hoặc lịch phân bổ dồn tích.",
+    "ineligible": "Chọn khoản thu, khoản chi hoặc phần tách theo danh mục. Không thể phân bổ giao dịch chuyển khoản, đầu tư hoặc đã hủy.",
+    "invalidPeriod": "Chọn tháng bắt đầu hợp lệ và thời hạn từ 1 đến 600 tháng.",
+    "changed": "Giao dịch hoặc lịch đã thay đổi. Hãy xem bản xem trước mới trước khi lưu.",
+    "ownerOnly": "Chỉ chủ sở hữu mới có thể quản lý lịch phân bổ.",
+    "familyRequired": "Chọn khoản chi hoặc khoản thu cho giao dịch chưa có danh mục.",
+    "historyUnsupported": "Không thể khôi phục an toàn nhóm này từ lịch sử. Hãy chia nhỏ nhóm hoặc bỏ các mục chuyển khoản hay đầu tư chưa được hỗ trợ khỏi lựa chọn.",
+    "ruleUnsupported": "Đối với bút toán dồn tích, hãy chạy quy tắc thủ công sau khi xem xét tác động. Giữ nguyên cấu trúc giao dịch và chọn người nhận hiện có."
   }
 }

@@ -62,6 +62,7 @@ describe("McpBudgetsTools", () => {
         "u1",
         "CURRENT",
         undefined,
+        undefined,
       );
       const parsed = result.structuredContent as any;
       expect(parsed.totalBudgeted).toBe(1000);
@@ -82,6 +83,7 @@ describe("McpBudgetsTools", () => {
         "u1",
         "2026-04",
         "Household",
+        undefined,
       );
     });
 

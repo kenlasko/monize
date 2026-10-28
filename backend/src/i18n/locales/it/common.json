@@ -39,5 +39,8 @@
       "loanRepayment": "Rimborso del prestito",
       "creditCardRepayment": "Rimborso carta di credito"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "Eliminate {{ count }} transazioni"
   }
 }

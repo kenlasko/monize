@@ -1,5 +1,6 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { format } from 'date-fns';
@@ -13,7 +14,6 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
-import { exportToCsv } from '@/lib/csv-export';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { CAPTION_CLASS, CellLabel, PHONE_HEADER_CLASS } from '@/components/ui/Table';
@@ -124,6 +124,7 @@ const DATE_CELL = 'p-0 text-xs whitespace-nowrap max-sm:text-right sm:table-cell
 type ExportSurface = 'csv' | 'pdf';
 
 export function UncategorizedTransactionsReport() {
+  const { exportCsvWithBasis, withPdfBasis } = useReportExportMetadata('cash');
   const t = useTranslations('reports');
   const router = useRouter();
   const { formatCurrency, defaultCurrency } = useNumberFormat();
@@ -262,18 +263,18 @@ export function UncategorizedTransactionsReport() {
 
   const handleExportCsv = () => {
     const { headers, rows } = getExportData('csv');
-    exportToCsv('uncategorized-transactions', headers, rows);
+    exportCsvWithBasis('uncategorized-transactions', headers, rows);
   };
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
     const { headers, rows } = getExportData('pdf');
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('uncategorizedTransactions.pdfTitle'),
       subtitle: t('uncategorizedTransactions.pdfSubtitle', { count: filteredAndSortedTransactions.length }),
       tableData: { headers, rows },
       filename: 'uncategorized-transactions',
-    });
+    }));
   };
 
   if (error) {

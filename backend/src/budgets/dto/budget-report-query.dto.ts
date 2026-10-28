@@ -1,8 +1,21 @@
-import { IsOptional, IsInt, Min, Max, IsArray, IsUUID } from "class-validator";
+import {
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+  IsArray,
+  IsUUID,
+  IsIn,
+} from "class-validator";
 import { Transform, Type } from "class-transformer";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 
 export class BudgetReportQueryDto {
+  @ApiPropertyOptional({ enum: ["cash", "accrual"] })
+  @IsOptional()
+  @IsIn(["cash", "accrual"])
+  basis?: "cash" | "accrual";
+
   @ApiPropertyOptional({
     description: "Number of months to include in the report (1-24)",
     default: 6,

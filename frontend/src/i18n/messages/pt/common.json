@@ -208,33 +208,9 @@
     "nov",
     "dez"
   ],
-  "weekdaysShort": [
-    "dom",
-    "seg",
-    "ter",
-    "qua",
-    "qui",
-    "sex",
-    "sáb"
-  ],
-  "weekdaysMin": [
-    "do",
-    "se",
-    "te",
-    "qu",
-    "qu",
-    "se",
-    "sá"
-  ],
-  "weekdaysNarrow": [
-    "D",
-    "S",
-    "T",
-    "Q",
-    "Q",
-    "S",
-    "S"
-  ],
+  "weekdaysShort": ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"],
+  "weekdaysMin": ["do", "se", "te", "qu", "qu", "se", "sá"],
+  "weekdaysNarrow": ["D", "S", "T", "Q", "Q", "S", "S"],
   "dateFormat": {
     "browserAuto": "Utilizar locale do browser (detetado automaticamente como {sample})",
     "custom": "Personalizado..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "Inclui {count, plural, one {# transação agendada em atraso} other {# transações agendadas em atraso}}"
+  },
+  "reportingBasis": {
+    "label": "Base de relato",
+    "default": "{basis} (predefinição do utilizador)",
+    "help": "Os totais usam a base escolhida.",
+    "detailHelp": "Os totais usam a base escolhida.",
+    "cashOnly": "Esta vista segue os pagamentos reais e usa a base de caixa.",
+    "exportCaption": "Base contabilística: {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Componentes de competência só de leitura. As ligações de pagamento abrem o lançamento original. Reduza o período se necessário.",
+    "fxHelp": "Alguns montantes não podem ser avaliados. Adicione taxas históricas deste período e tente novamente.",
+    "unsupported": "Esta combinação de filtros não pode ser expandida em segurança. Escolha um filtro mais simples.",
+    "failed": "Não foi possível carregar os lançamentos. Reduza o período se houver demasiadas linhas e tente novamente.",
+    "identity": "IDs de origem / repartição / plano",
+    "native": "Montante original",
+    "reporting": "Montante do relatório",
+    "payment": "Data de pagamento",
+    "title": "Reconhecido por competência",
+    "effective": "Data de reconhecimento",
+    "source": "Data de pagamento",
+    "retry": "Tentar novamente",
+    "unknown": "Valor não disponível",
+    "start": "Data de início",
+    "end": "Data de fim",
+    "partial": "(total parcial)",
+    "empty": "Sem dados de transações disponíveis"
+  },
+  "systemAccruals": {
+    "title": "Contas de acréscimos e diferimentos",
+    "help": "Saldos geridos pelo sistema na moeda original. Apenas leitura; edite o lançamento original para os alterar.",
+    "ownerOnly": "Apenas o proprietário pode consultar estas contas.",
+    "empty": "Ainda não existem contas de acréscimos. Crie uma periodização a partir de uma receita ou despesa.",
+    "position": "Posição",
+    "closing": "Saldo final",
+    "back": "Contas",
+    "asOf": "Saldo em",
+    "account": "Conta",
+    "currency": "Moeda",
+    "balance": "Saldo",
+    "prepaid": "Despesas antecipadas (líquidas)",
+    "unearned": "Rendimentos antecipados (líquidos)",
+    "signHelp": "Os saldos negativos representam passivos acrescidos ou valores a receber.",
+    "asset": "Ativos",
+    "liability": "Passivos",
+    "opening": "Saldo Inicial",
+    "date": "Data",
+    "movement": "Componente",
+    "amount": "Montante",
+    "payment": "Data de pagamento",
+    "recognition": "Data de reconhecimento",
+    "range": "{start} – {end}"
   }
 }

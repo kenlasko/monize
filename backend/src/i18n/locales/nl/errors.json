@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL moet een http- of https-adres zijn",
       "invalidField": "{{ field }} is ongeldig"
     }
+  },
+  "accruals": {
+    "notFound": "De transactie of het toerekeningsschema is niet gevonden.",
+    "ineligible": "Kies inkomsten, uitgaven of een categorie-splitsing. Overboekingen, beleggingsboekingen en vervallen transacties kunnen niet worden toegerekend.",
+    "invalidPeriod": "Kies een geldige startmaand en 1 tot 600 maanden.",
+    "changed": "De transactie of het schema is gewijzigd. Bekijk een nieuw voorbeeld voordat u opslaat.",
+    "ownerOnly": "Alleen de eigenaar kan toerekeningsschema’s beheren.",
+    "familyRequired": "Kies uitgaven of inkomsten voor een transactie zonder categorie.",
+    "historyUnsupported": "Deze batch kan niet veilig uit de geschiedenis worden hersteld. Splits de batch of verwijder niet-ondersteunde overboekingen of beleggingen uit de selectie.",
+    "ruleUnsupported": "Voer regels voor toegerekende boekingen handmatig uit nadat u de impact hebt bekeken. Behoud de transactiestructuur en kies een bestaande begunstigde."
   }
 }

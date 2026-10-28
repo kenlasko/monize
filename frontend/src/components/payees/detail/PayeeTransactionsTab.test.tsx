@@ -64,13 +64,14 @@ function page(total: number, totalPages = 1, pageNumber = 1) {
   return { page: pageNumber, limit: 50, total, totalPages, hasMore: totalPages > pageNumber };
 }
 
-async function renderTab() {
+async function renderTab(basis: 'cash'|'accrual' = 'cash') {
   const onChanged = vi.fn();
   const onViewInRegister = vi.fn();
   const onSelectDate = vi.fn();
   await act(async () => {
     render(
       <PayeeTransactionsTab
+        basis={basis}
         payeeId="payee-1"
         refreshKey={0}
         categoryLabelMap={categoryLabelMap}
@@ -95,6 +96,7 @@ describe('PayeeTransactionsTab', () => {
     await renderTab();
 
     expect(mockGetAll).toHaveBeenCalledWith({
+      basis: 'cash',
       payeeId: 'payee-1',
       page: 1,
       limit: expect.any(Number),
@@ -173,3 +175,8 @@ describe('PayeeTransactionsTab', () => {
     expect(screen.getByText('Failed to load transactions')).toBeInTheDocument();
   });
 });
+
+ it('requests recognition rows when the surrounding view selects accrual', async () => {
+   await renderTab('accrual');
+   expect(mockGetAll).toHaveBeenCalledWith(expect.objectContaining({basis:'accrual',page:1}));
+ });

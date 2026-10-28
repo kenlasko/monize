@@ -1,10 +1,18 @@
+jest.mock("../accruals/accrual-taxonomy-operation", () => ({
+  beginTaxonomyOperation: async () => undefined,
+  recordTaxonomyOperation: async () => undefined,
+}));
+jest.mock("../accruals/accrual-relationship-history", () => ({
+  beginPayeeRelationshipHistory: async () => undefined,
+  recordRelationshipHistory: async () => undefined,
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import {
   ConflictException,
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
-import { DataSource, IsNull, QueryFailedError } from "typeorm";
+import { DataSource, In, QueryFailedError } from "typeorm";
 import { PayeesService } from "./payees.service";
 import { Payee } from "./entities/payee.entity";
 import { PayeeAlias } from "./entities/payee-alias.entity";
@@ -98,7 +106,10 @@ describe("PayeesService", () => {
     Pick<PayeeContactEnrichmentService, "dispatchAfterCreate">
   >;
 
+  let backfillSourceCount = 3;
+
   beforeEach(async () => {
+    backfillSourceCount = 3;
     faviconService = { fetchFavicon: jest.fn().mockResolvedValue(null) };
     contactLookup = {
       lookup: jest
@@ -209,6 +220,92 @@ describe("PayeesService", () => {
     ]);
     mockDataSource = dataSource;
     txManager = manager;
+    // The locked scalar read returns the same stored fixture as ownership lookup;
+    // it is independent of the separate relation re-fetch sequence.
+    txManager.findOne.mockImplementation(
+      async (entity: unknown, options: { where: { id: string } }) => {
+        if (entity !== Payee) return null;
+        for (const result of [
+          ...payeesRepository.findOne.mock.results,
+        ].reverse()) {
+          const value = await result.value;
+          if (value?.id === options.where.id) return { ...value };
+        }
+        return null;
+      },
+    );
+
+    // Stored cash-only source fixtures for the locked metadata writer.
+    txManager.query.mockImplementation((sql: string, args?: unknown[]) => {
+      if (sql.includes('payee_id AS "payeeId"')) {
+        return Promise.resolve(
+          (args?.[1] as string[]).flatMap((payeeId) =>
+            Array.from({ length: backfillSourceCount }, (_, index) => ({
+              id: `${payeeId}-tx-${index}`,
+              payeeId,
+            })),
+          ),
+        );
+      }
+      if (sql.includes("FROM payees p") && sql.includes("id=ANY"))
+        return Promise.resolve(
+          (args?.[1] as string[]).map((id) => ({
+            id,
+            snapshot: JSON.stringify({ id }),
+          })),
+        );
+      if (sql.includes("FROM categories WHERE user_id=$1 AND id=ANY"))
+        return Promise.resolve((args?.[1] as string[]).map((id) => ({ id })));
+      if (sql.includes("SELECT id,to_jsonb(t)::text"))
+        return Promise.resolve(
+          (args?.[1] as string[]).map((id) => ({
+            id,
+            snapshot: JSON.stringify({ id }),
+          })),
+        );
+      if (
+        sql.includes(
+          "SELECT id FROM transactions WHERE user_id=$1 AND payee_id=ANY",
+        )
+      )
+        return Promise.resolve(
+          (args?.[1] as string[]).flatMap((payeeId) =>
+            Array.from({ length: 3 }, (_, index) => ({
+              id: `${payeeId}-tx-${index}`,
+            })),
+          ),
+        );
+      if (sql.includes("FROM payees p"))
+        return Promise.resolve([
+          { defaultCategoryId: null, snapshot: "stored payee fixture" },
+        ]);
+      if (sql.includes("SELECT id FROM categories"))
+        return Promise.resolve([{ id: args?.[0] }]);
+      if (sql.includes("to_jsonb(t)::text AS snapshot"))
+        return Promise.resolve(
+          (args?.[1] as string[]).map((id) => ({
+            id,
+            categoryId: null,
+            isSplit: false,
+            isTransfer: false,
+            status: "UNRECONCILED",
+            snapshot: JSON.stringify({ id }),
+          })),
+        );
+      if (sql.includes('SELECT id,is_split AS "isSplit",status'))
+        return Promise.resolve(
+          (args?.[1] as string[]).map((id) => ({
+            id,
+            isSplit: false,
+            status: "UNRECONCILED",
+          })),
+        );
+      if (sql.includes("FROM scheduled_transactions st"))
+        return Promise.resolve([]);
+      if (sql.includes("FROM accrual_schedules")) return Promise.resolve([]);
+      return Promise.resolve([]);
+    });
+
     txManager.find.mockResolvedValue([]);
     txManager.update.mockResolvedValue({ affected: 0 });
     txManager.create.mockImplementation((_, data) => data);
@@ -1173,7 +1270,11 @@ describe("PayeesService", () => {
       const manager = mockQueryRunner.manager;
       expect(manager.update).toHaveBeenCalledWith(
         Transaction,
-        { payeeId: "payee-1", userId },
+        {
+          payeeId: "payee-1",
+          userId,
+          id: In(["payee-1-tx-0", "payee-1-tx-1", "payee-1-tx-2"]),
+        },
         { payeeName: "NewName" },
       );
       expect(manager.update).toHaveBeenCalledWith(
@@ -1223,6 +1324,7 @@ describe("PayeesService", () => {
     });
 
     it("applies the new default category to uncategorized transactions when requested", async () => {
+      backfillSourceCount = 4;
       const existingPayee = {
         ...mockPayee,
         defaultCategoryId: null,
@@ -1240,14 +1342,16 @@ describe("PayeesService", () => {
       });
 
       expect(result.transactionsCategorized).toBe(4);
-      // Uncategorized-only backfill: rows with no category, excluding
-      // transfers and split parents.
+      // The resolver freezes uncategorized ordinary rows; the update uses
+      // exactly those IDs, excluding transfers and split parents.
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         Transaction,
         {
           userId,
           payeeId: "payee-1",
-          categoryId: IsNull(),
+          id: In(
+            Array.from({ length: 4 }, (_, index) => `payee-1-tx-${index}`),
+          ),
           isTransfer: false,
           isSplit: false,
         },
@@ -1256,6 +1360,7 @@ describe("PayeesService", () => {
     });
 
     it("applies the new default category to all transactions when requested", async () => {
+      backfillSourceCount = 9;
       const existingPayee = {
         ...mockPayee,
         defaultCategoryId: null,
@@ -1273,12 +1378,15 @@ describe("PayeesService", () => {
       });
 
       expect(result.transactionsCategorized).toBe(9);
-      // "all" overwrites every non-transfer, non-split row (no categoryId filter).
+      // "all" writes the complete locked ordinary-row selection.
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         Transaction,
         {
           userId,
           payeeId: "payee-1",
+          id: In(
+            Array.from({ length: 9 }, (_, index) => `payee-1-tx-${index}`),
+          ),
           isTransfer: false,
           isSplit: false,
         },
@@ -1871,19 +1979,18 @@ describe("PayeesService", () => {
       );
 
       expect(result).toEqual({ updated: 2, transactionsBackfilled: 0 });
-      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
-      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: "payee-2",
-            defaultCategoryId: "cat-food",
-          }),
-          expect.objectContaining({
-            id: "payee-1",
-            defaultCategoryId: "cat-coffee",
-          }),
-        ]),
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledTimes(2);
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Payee,
+        { id: "payee-2", userId },
+        { defaultCategoryId: "cat-food" },
       );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Payee,
+        { id: "payee-1", userId },
+        { defaultCategoryId: "cat-coffee" },
+      );
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
       expect(mockDataSource.transaction).toHaveBeenCalled();
     });
 
@@ -1906,14 +2013,11 @@ describe("PayeesService", () => {
       );
 
       expect(result).toEqual({ updated: 1, transactionsBackfilled: 0 });
-      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
-      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: "payee-1",
-            defaultCategoryId: "cat-2",
-          }),
-        ]),
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Payee,
+        { id: "payee-1", userId },
+        { defaultCategoryId: "cat-2" },
       );
     });
 
@@ -1939,7 +2043,7 @@ describe("PayeesService", () => {
       expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
 
-    it("should set defaultCategoryId on the payee entity before saving", async () => {
+    it("writes the scalar default without saving a hydrated payee relation", async () => {
       const payee = { ...mockPayeeNoCategory, defaultCategoryId: null };
       mockQueryRunner.manager.find.mockResolvedValue([payee]);
       categoriesRepository.find.mockResolvedValue([{ id: "cat-new" }]);
@@ -1948,12 +2052,13 @@ describe("PayeesService", () => {
         { payeeId: "payee-2", categoryId: "cat-new" },
       ]);
 
-      expect(payee.defaultCategoryId).toBe("cat-new");
-      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ defaultCategoryId: "cat-new" }),
-        ]),
+      expect(payee.defaultCategoryId).toBeNull();
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Payee,
+        { id: "payee-2", userId },
+        { defaultCategoryId: "cat-new" },
       );
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
 
     it("should backfill uncategorized transactions when requested and report the count", async () => {
@@ -1995,7 +2100,16 @@ describe("PayeesService", () => {
       ]);
 
       expect(result).toEqual({ updated: 1, transactionsBackfilled: 0 });
-      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(
+        Transaction,
+        expect.anything(),
+        expect.anything(),
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Payee,
+        { id: "payee-2", userId },
+        { defaultCategoryId: "cat-new" },
+      );
     });
 
     it("should roll back when the category ownership check fails", async () => {

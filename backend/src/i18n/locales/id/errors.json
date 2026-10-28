@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL harus berupa alamat http atau https",
       "invalidField": "{{ field }} tidak valid"
     }
+  },
+  "accruals": {
+    "notFound": "Transaksi atau jadwal akrual tidak ditemukan.",
+    "ineligible": "Pilih pendapatan, pengeluaran, atau rincian kategori. Transfer, entri investasi, dan transaksi batal tidak dapat diakru.",
+    "invalidPeriod": "Pilih bulan awal yang valid dan antara 1 hingga 600 bulan.",
+    "changed": "Transaksi atau jadwal berubah. Tinjau pratinjau baru sebelum menyimpan.",
+    "ownerOnly": "Hanya pemilik yang dapat mengelola jadwal akrual.",
+    "familyRequired": "Pilih pengeluaran atau pendapatan untuk transaksi tanpa kategori.",
+    "historyUnsupported": "Kumpulan ini tidak dapat dipulihkan dengan aman dari riwayat. Pisahkan kumpulan atau keluarkan entri transfer atau investasi yang tidak didukung.",
+    "ruleUnsupported": "Untuk entri akrual, jalankan aturan secara manual setelah meninjau dampaknya. Pertahankan struktur transaksi dan pilih penerima pembayaran yang sudah ada."
   }
 }

@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { CARD_CLASS, HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import { useIsBelowDesktop } from '@/hooks/useIsMobile';
 import { CategoryPill } from '@/components/transactions/CategoryPill';
+import { Badge } from '@/components/ui/Badge';
 import { PayeeLogo } from '@/components/payees/PayeeLogo';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { BalanceForecastUnavailable } from '@/components/accounts/shared/BalanceForecastUnavailable';
@@ -104,6 +105,7 @@ export function CalendarDayPanel({
   categoryLabelMap,
 }: CalendarDayPanelProps) {
   const t = useTranslations('calendar');
+  const ta = useTranslations('transactions');
   const common = useTranslations('common');
   const { formatDate } = useDateFormat();
   // Below `lg` there is no column to put a panel in, so the day opens over the
@@ -216,6 +218,15 @@ export function CalendarDayPanel({
                     <span className="truncate text-sm text-gray-900 dark:text-gray-100">
                       {payeeDisplay(chip.transaction) ?? t('chip.noPayee')}
                     </span>
+                    {/* Same recognition-row signal the register badges: a
+                        row not yet reached is a plan, not a bank movement. */}
+                    {(() => {
+                      const prov = chip.transaction.reportingProvenance;
+                      const isRecognitionRow = !!prov && (prov.isRecognition ?? chip.transaction.id !== prov.sourceTransactionId);
+                      return isRecognitionRow ? (
+                        <Badge>{ta(chip.isFuture ? 'accrual.scheduled' : 'accrual.existing')}</Badge>
+                      ) : null;
+                    })()}
                   </span>
                   {/* The register's own reading of the sign: money in is green,
                       money out is red, through the same `gainLossColor` the

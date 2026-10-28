@@ -1,3 +1,4 @@
+import type { ExchangeRateService } from "@/currencies/exchange-rate.service";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 // Import order matters: `securities.module` sits in a require cycle with the
@@ -76,7 +77,11 @@ describe("Income vs Expenses tag-key breakdown (integration)", () => {
     // never resolves.
     const currency = new ReportCurrencyService(dataSource, {
       getLatestRates: async () => [],
-    } as never);
+      getRateHistory: async () => [],
+    } satisfies Pick<
+      ExchangeRateService,
+      "getLatestRates" | "getRateHistory"
+    > as unknown as ExchangeRateService);
     income = new IncomeReportsService(dataSource, currency);
   });
 

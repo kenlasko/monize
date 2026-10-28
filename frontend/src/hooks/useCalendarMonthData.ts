@@ -190,7 +190,7 @@ export function useCalendarMonthData(
     async () => {
       const [transactions, scheduled] = await Promise.all([
         transactionsApi.getAllPages({ ...filters, startDate, endDate }),
-        loadOccurrences(startDate, endDate),
+        filters.basis === 'accrual' ? Promise.resolve({occurrences: [], occurrencesUnavailable:false, occurrencesTruncated:false}) : loadOccurrences(startDate, endDate),
       ]);
 
       return {

@@ -168,6 +168,21 @@ export const RESTORE_PLAN: ReadonlyArray<RestoreStep> = [
   },
   { table: "warranty_claims", countKey: "warrantyClaims", scopeToUser: true },
   {
+    table: "accrual_system_accounts",
+    countKey: "accrualSystemAccounts",
+    scopeToUser: true,
+  },
+  {
+    table: "accrual_schedules",
+    countKey: "accrualSchedules",
+    scopeToUser: true,
+  },
+  {
+    table: "accrual_allocations",
+    countKey: "accrualAllocations",
+    scopeToUser: true,
+  },
+  {
     table: "transaction_attachments",
     countKey: "transactionAttachments",
     scopeToUser: true,

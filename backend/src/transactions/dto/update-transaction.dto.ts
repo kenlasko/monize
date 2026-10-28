@@ -1,6 +1,8 @@
 import { OmitType, PartialType } from "@nestjs/swagger";
 import {
   IsOptional,
+  Matches,
+  ArrayMaxSize,
   IsArray,
   IsDateString,
   ValidateNested,
@@ -8,7 +10,7 @@ import {
 import { Type } from "class-transformer";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { CreateTransactionDto } from "./create-transaction.dto";
-import { CreateTransactionSplitDto } from "./create-transaction-split.dto";
+import { UpdateTransactionSplitDto } from "./update-transaction-split.dto";
 
 // `externalId` is set once, by the create that the key makes idempotent; an
 // edit that could change it would let a retry of that create miss its row.
@@ -17,13 +19,18 @@ export class UpdateTransactionDto extends PartialType(
 ) {
   @ApiPropertyOptional({
     description: "Splits for split transactions",
-    type: [CreateTransactionSplitDto],
+    type: [UpdateTransactionSplitDto],
   })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
-  @Type(() => CreateTransactionSplitDto)
-  splits?: CreateTransactionSplitDto[];
+  @Type(() => UpdateTransactionSplitDto)
+  splits?: UpdateTransactionSplitDto[];
+
+  @IsOptional()
+  @Matches(/^[a-f0-9]{64}$/)
+  accrualImpactFingerprint?: string;
 
   @ApiPropertyOptional({
     description:

@@ -242,7 +242,13 @@
       "applyHere": "Utiliser ces réglages dans ce navigateur",
       "applyHereHelp": "Efface les réglages d’affichage enregistrés par ce navigateur, pour que les valeurs ci-dessus s’appliquent ici aussi.",
       "appliedHere": "Ce navigateur utilise maintenant vos vues par défaut"
-    }
+    },
+    "reportingBasisLabel": "Base comptable par défaut",
+    "reportingAccrual": "Engagement",
+    "reportingCash": "Trésorerie",
+    "reportingBasisHelp": "Choisissez la valeur par défaut pour les rapports et les tendances par catégorie et bénéficiaire. Les vues de trésorerie conservent les dates de paiement.",
+    "accrualEnabledLabel": "Activer la comptabilité de régularisation",
+    "accrualEnabledTooltip": "Active les échéanciers de régularisation, les soldes et les commandes des rapports. Si désactivé, les rapports utilisent la trésorerie. Les échéanciers enregistrés sont conservés et mis à jour lorsque leurs transactions changent."
   },
   "notifications": {
     "heading": "Notifications",
@@ -836,7 +842,10 @@
       },
       "doneButton": "Terminer",
       "unlinkedBondSecuritiesList": "Titres concernés : {symbols}.",
-      "unlinkedBondSecuritiesMore": "et {count} de plus"
+      "unlinkedBondSecuritiesMore": "et {count} de plus",
+      "accrualSystemAccounts": "Comptes de régularisation système",
+      "accrualSchedules": "Échéanciers de régularisation",
+      "accrualAllocations": "Répartitions de régularisation"
     },
     "storedBackups": {
       "heading": "Sauvegardes automatiques",

@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/ui/Badge';
 import { memo, useState, useRef, useEffect, useCallback, type JSX } from 'react';
 import { useTranslations } from 'next-intl';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -25,6 +26,7 @@ import { getDecimalPlacesForCurrency } from '@/lib/format';
 import { foreignTransactionFee } from '@/lib/fx-fees';
 import { transferDirection } from '@/lib/transfer-label';
 import { usePayeeDisplay } from '@/hooks/usePayeeDisplay';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useLocalizedAmount } from '@/hooks/useLocalizedAmount';
 import { LinkifiedText } from '@/components/ui/LinkifiedText';
@@ -222,6 +224,7 @@ export interface TransactionRowProps {
   onCycleStatus: (transaction: Transaction) => void;
   /** Joint accounts: hides the delete button when the grant lacks delete. */
   hideDelete?: boolean;
+  accrualCount?: number;
   onEdit?: (transaction: Transaction) => void;
   onDuplicate?: (transaction: Transaction) => void;
   onScheduleRecurring?: (transaction: Transaction) => void;
@@ -278,6 +281,7 @@ export const TransactionRow = memo(function TransactionRow({
   onTagClick,
   onCycleStatus,
   hideDelete,
+  accrualCount,
   onEdit,
   onDuplicate,
   onScheduleRecurring,
@@ -303,6 +307,13 @@ export const TransactionRow = memo(function TransactionRow({
   const { formatCurrency, formatPercent } = useNumberFormat();
   // Read-only amounts, grouped in the user's number locale (en-US unchanged).
   const formatAmountLocal = useLocalizedAmount();
+  const readOnly = !!transaction.reportingProvenance;
+  const isRecognitionRow = readOnly && (transaction.reportingProvenance?.isRecognition ?? transaction.id !== transaction.reportingProvenance?.sourceTransactionId);
+  // A recognition row dated after today is a planned allocation, not yet
+  // reached -- distinct from one whose month has already passed, which the
+  // existing "Accrued" badge already covered (A26-WMP1).
+  const financialToday = useFinancialToday();
+  const isScheduledRecognition = isRecognitionRow && transaction.transactionDate > financialToday;
   const isVoid = transaction.status === TransactionStatus.VOID;
   const hasWarranties = rowHasWarranties(transaction);
 
@@ -422,7 +433,7 @@ export const TransactionRow = memo(function TransactionRow({
                 formatAmount(transaction.amount, transaction.currencyCode)
               )}
               {!showFxColumns &&
-                transaction.originalCurrencyCode &&
+                !readOnly && transaction.originalCurrencyCode &&
                 transaction.originalAmount !== null && (
                   <div className="text-xs font-normal text-gray-500 dark:text-gray-400">
                     {transaction.originalCurrencyCode}{' '}
@@ -434,6 +445,7 @@ export const TransactionRow = memo(function TransactionRow({
                 )}
             </div>
             <div className="col-span-3 flex flex-wrap items-center gap-1.5">
+              {(isRecognitionRow || (accrualCount !== undefined && accrualCount > 0)) && <Badge>{t(isScheduledRecognition ? 'accrual.scheduled' : 'accrual.existing')}</Badge>}
               {/* Structural, not responsive, exactly as in the tier row: a
                   single-account page never repeats its own title. */}
               {!isSingleAccountView && (
@@ -536,7 +548,7 @@ export const TransactionRow = memo(function TransactionRow({
               <span className="ml-auto flex items-center gap-2">
                 {/* StatusCellButton stops the click itself, so it needs no
                     wrapper here -- the tier branch mounts it bare too. */}
-                {isVisible('status') && (
+                {isVisible('status') && !readOnly && (
                   <StatusCellButton
                     status={transaction.status}
                     dense={false}
@@ -928,6 +940,7 @@ export const TransactionRow = memo(function TransactionRow({
         </td>
       )}
       <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right ${isVoid ? 'line-through' : ''}`}>
+        {(isRecognitionRow || (accrualCount !== undefined && accrualCount > 0)) && <Badge>{t(isScheduledRecognition ? 'accrual.scheduled' : 'accrual.existing')}</Badge>}
         {displayAmount !== undefined ? (
           <span
             title={t('list.row.filteredAmountTitle', { amount: formatAmountLocal(Math.abs(transaction.amount), getDecimalPlacesForCurrency(transaction.currencyCode)) })}
@@ -940,7 +953,7 @@ export const TransactionRow = memo(function TransactionRow({
           formatAmount(transaction.amount, transaction.currencyCode)
         )}
         {!showFxColumns &&
-          transaction.originalCurrencyCode &&
+          !readOnly && transaction.originalCurrencyCode &&
           transaction.originalAmount !== null && (
             <div className="text-xs font-normal text-gray-500 dark:text-gray-400">
               {transaction.originalCurrencyCode}{' '}
@@ -957,7 +970,7 @@ export const TransactionRow = memo(function TransactionRow({
             {transaction.originalCurrencyCode || '-'}
           </td>
           <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right ${isVoid ? 'line-through' : ''}`}>
-            {transaction.originalCurrencyCode && transaction.originalAmount !== null
+            {!readOnly && transaction.originalCurrencyCode && transaction.originalAmount !== null
               ? formatAmount(
                   Number(transaction.originalAmount),
                   transaction.originalCurrencyCode,
@@ -984,11 +997,11 @@ export const TransactionRow = memo(function TransactionRow({
       )}
       {isVisible('status') && (
         <td className={`${cellPadding} whitespace-nowrap text-center ${registerColumnClass('status')}`}>
-          <StatusCellButton
+          {!readOnly && <StatusCellButton
             status={transaction.status}
             dense={density === 'dense'}
             onCycle={() => onCycleStatus(transaction)}
-          />
+          />}
         </td>
       )}
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium space-x-2 ${registerColumnClass('actions')} sticky right-0 ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800 ${isHighlighted ? HIGHLIGHT_FLASH_CELL : ''}`}>
@@ -1003,7 +1016,7 @@ export const TransactionRow = memo(function TransactionRow({
           >
             {transaction.linkedInvestmentTransactionId
               ? (density === 'dense' ? '\uD83D\uDCC8' : t('list.row.viewButton'))
-              : (density === 'dense' ? '\u270E' : tc('edit'))}
+              : (readOnly ? t('list.row.viewButton') : density === 'dense' ? '\u270E' : tc('edit'))}
           </button>
         )}
         {!transaction.linkedInvestmentTransactionId && (onDuplicate || onScheduleRecurring) && (
@@ -1013,7 +1026,7 @@ export const TransactionRow = memo(function TransactionRow({
             onScheduleRecurring={onScheduleRecurring ? () => onScheduleRecurring(transaction) : undefined}
           />
         )}
-        {!transaction.linkedInvestmentTransactionId && !hideDelete && (
+        {!readOnly && !transaction.linkedInvestmentTransactionId && !hideDelete && (
           <button
             onClick={(e) => { e.stopPropagation(); onDeleteClick(transaction); }}
             disabled={isDeleting}

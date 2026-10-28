@@ -1,5 +1,7 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis } from './ReportingBasis';
 import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
@@ -25,6 +27,8 @@ import { chartColors } from '@/lib/chart-colors';
 type SeasonalPatternsSortField = 'category' | 'typical' | 'highMonths';
 
 export function BudgetSeasonalPatternsReport() {
+  const { withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
   const tc = useTranslations('common');
   const monthsShort = tc.raw('monthsShort') as string[];
@@ -42,7 +46,7 @@ export function BudgetSeasonalPatternsReport() {
     isLoading: budgetsLoading,
     error: budgetsError,
     reload: reloadBudgets,
-  } = useReportData(() => budgetsApi.getAll(), []);
+  } = useReportData(() => budgetsApi.getAll(...(basis ? [basis] as const : [])), [basis], {requestKey:JSON.stringify([basis]),maskStaleData:true});
 
   const budgets = useMemo(() => budgetsData ?? [], [budgetsData]);
 
@@ -62,9 +66,10 @@ export function BudgetSeasonalPatternsReport() {
   } = useReportData(
     () =>
       selectedBudgetId
-        ? budgetsApi.getSeasonalPatterns(selectedBudgetId)
+        ? budgetsApi.getSeasonalPatterns(selectedBudgetId, ...(basis ? [basis] as const : []))
         : Promise.resolve(null),
-    [selectedBudgetId],
+    [selectedBudgetId, basis],
+    { requestKey: JSON.stringify([selectedBudgetId, basis]), maskStaleData: true },
   );
 
   const patterns = useMemo(() => patternsData ?? [], [patternsData]);
@@ -123,12 +128,12 @@ export function BudgetSeasonalPatternsReport() {
         ? p.highMonths.map((m) => monthsShort[m - 1]).join(', ')
         : t('budgetSeasonalPatterns.noneDetected'),
     ]);
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('budgetSeasonalPatterns.pdfTitle'),
       chartContainer: chartRef.current,
       tableData: { headers, rows },
       filename: 'budget-seasonal-patterns',
-    });
+    }));
   };
 
   if (error) {

@@ -273,5 +273,57 @@
   },
   "scheduledOverdue": {
     "included": "[XX-Includes {count, plural, one {# overdue scheduled transaction} other {# overdue scheduled transactions}}-XX]"
+  },
+  "reportingBasis": {
+    "label": "[XX-Reporting basis-XX]",
+    "default": "[XX-{basis} (user default)-XX]",
+    "help": "[XX-Period totals use the selected basis.-XX]",
+    "detailHelp": "[XX-Period totals use the selected basis.-XX]",
+    "cashOnly": "[XX-This view follows actual payments and uses the cash basis.-XX]",
+    "exportCaption": "[XX-Reporting basis: {basis}-XX]"
+  },
+  "recognitionDetails": {
+    "help": "[XX-Read-only recognition components. Payment links open the original entry. Narrow the date range if needed.-XX]",
+    "fxHelp": "[XX-Some amounts cannot be valued. Add historical exchange rates for this period, then retry.-XX]",
+    "unsupported": "[XX-This filter combination cannot be expanded safely. Choose a simpler report filter.-XX]",
+    "failed": "[XX-Could not load entries. Narrow the dates if there are too many rows, then retry.-XX]",
+    "identity": "[XX-Source / split / schedule IDs-XX]",
+    "native": "[XX-Native amount-XX]",
+    "reporting": "[XX-Reporting amount-XX]",
+    "payment": "[XX-Payment date-XX]",
+    "title": "[XX-Accrued-XX]",
+    "effective": "[XX-Recognition date-XX]",
+    "source": "[XX-Payment date-XX]",
+    "retry": "[XX-Retry-XX]",
+    "unknown": "[XX-Amount not available-XX]",
+    "start": "[XX-Start Date-XX]",
+    "end": "[XX-End Date-XX]",
+    "partial": "[XX-(partial total)-XX]",
+    "empty": "[XX-No transaction data available-XX]"
+  },
+  "systemAccruals": {
+    "title": "[XX-Accrual accounts-XX]",
+    "help": "[XX-System-controlled balances in native currency. Read-only; edit the original entry to change them.-XX]",
+    "ownerOnly": "[XX-Only the owner can view these accounts.-XX]",
+    "empty": "[XX-No accrual accounts yet. Create an accrual from an income or expense entry.-XX]",
+    "position": "[XX-Position-XX]",
+    "closing": "[XX-Closing balance-XX]",
+    "back": "[XX-Accounts-XX]",
+    "asOf": "[XX-Balance as of-XX]",
+    "account": "[XX-Account-XX]",
+    "currency": "[XX-Currency-XX]",
+    "balance": "[XX-Balance-XX]",
+    "prepaid": "[XX-Prepaid expenses (net)-XX]",
+    "unearned": "[XX-Unearned revenue (net)-XX]",
+    "signHelp": "[XX-Negative balances represent accrued liabilities or receivables.-XX]",
+    "asset": "[XX-Assets-XX]",
+    "liability": "[XX-Liabilities-XX]",
+    "opening": "[XX-Opening Balance-XX]",
+    "date": "[XX-Date-XX]",
+    "movement": "[XX-Component-XX]",
+    "amount": "[XX-Amount-XX]",
+    "payment": "[XX-Payment date-XX]",
+    "recognition": "[XX-Recognition date-XX]",
+    "range": "[XX-{start} – {end}-XX]"
   }
 }

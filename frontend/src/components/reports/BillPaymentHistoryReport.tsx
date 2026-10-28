@@ -1,5 +1,6 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
 import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from 'next/navigation';
@@ -21,7 +22,6 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useChartMonthFormat } from '@/hooks/useChartMonthFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
-import { exportToCsv } from '@/lib/csv-export';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { CAPTION_CLASS, CellLabel, PHONE_HEADER_CLASS } from '@/components/ui/Table';
@@ -149,6 +149,7 @@ function BillPaymentTooltip({ active, payload, label, formatCurrency }: BillPaym
 }
 
 export function BillPaymentHistoryReport() {
+  const { exportCsvWithBasis, withPdfBasis } = useReportExportMetadata('cash');
   const t = useTranslations('reports');
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, defaultCurrency } = useNumberFormat();
@@ -288,14 +289,14 @@ export function BillPaymentHistoryReport() {
   const handleExportCsv = () => {
     const data = getExportData('csv');
     if (!data) return;
-    exportToCsv('bill-payment-history', data.headers, data.rows);
+    exportCsvWithBasis('bill-payment-history', data.headers, data.rows);
   };
 
   const handleExportPdf = async () => {
     const data = getExportData('pdf');
     if (!data || !billData) return;
     const { exportToPdf } = await import('@/lib/pdf-export');
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('billPaymentHistory.paymentHistoryByBill'),
       subtitle: `${billData.summary.uniqueBills} ${t('billPaymentHistory.uniqueBills')}, ${billData.summary.totalPayments} ${t('billPaymentHistory.totalPayments').toLowerCase()}`,
       summaryCards: [
@@ -307,7 +308,7 @@ export function BillPaymentHistoryReport() {
       chartContainer: chartRef.current,
       tableData: { headers: data.headers, rows: data.rows },
       filename: 'bill-payment-history',
-    });
+    }));
   };
 
   if (error) {

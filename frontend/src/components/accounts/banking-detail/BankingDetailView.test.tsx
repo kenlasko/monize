@@ -119,6 +119,7 @@ describe('BankingDetailView', () => {
     await renderView();
     await waitFor(() => expect(mockGetBalanceForecast).toHaveBeenCalledWith('chq-1'));
     // History is requested up to today so the forecast owns the future.
+    expect(mockGetSummary).toHaveBeenCalledWith(expect.objectContaining({basis:'cash',accountId:'chq-1'}));
     expect(mockGetDailyBalances).toHaveBeenCalledWith(
       expect.objectContaining({ accountIds: 'chq-1', endDate: expect.any(String) }),
     );
@@ -266,7 +267,7 @@ describe('BankingDetailView', () => {
       fireEvent.click(screen.getByText('Groceries'));
     });
     expect(mockPush).toHaveBeenCalledWith(
-      expect.stringMatching(/^\/transactions\?accountId=chq-1&categoryId=c1&startDate=.+&endDate=.+$/),
+      expect.stringMatching(/^\/transactions\?basis=cash&accountId=chq-1&categoryId=c1&startDate=.+&endDate=.+$/),
     );
   });
 
@@ -290,7 +291,7 @@ describe('BankingDetailView', () => {
     });
     expect(mockPush).toHaveBeenCalledWith(
       expect.stringMatching(
-        /^\/transactions\?accountId=chq-1&payeeId=p1&startDate=.+&endDate=.+$/,
+        /^\/transactions\?basis=cash&accountId=chq-1&payeeId=p1&startDate=.+&endDate=.+$/,
       ),
     );
     expect(mockPush).not.toHaveBeenCalledWith('/payees/p1');

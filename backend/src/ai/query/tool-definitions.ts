@@ -1,3 +1,4 @@
+import { REPORT_TOOL_TYPES } from "../../built-in-reports/report-tool.types";
 import { AiToolDefinition } from "../providers/ai-provider.interface";
 import {
   SECURITY_EXCHANGES,
@@ -38,6 +39,12 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        basis: {
+          type: "string",
+          enum: ["cash"],
+          description:
+            "Omit for the reporting default; list_transactions is cash-only.",
+        },
         searchText: {
           type: "string",
           description: SEARCH_SYNTAX_SUMMARY,
@@ -129,6 +136,11 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        basis: {
+          type: "string",
+          enum: ["cash"],
+          description: "Account/register balances are cash-only.",
+        },
         accountNames: {
           type: "array",
           items: { type: "string" },
@@ -202,6 +214,12 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        basis: {
+          type: "string",
+          enum: ["cash", "accrual"],
+          description:
+            "Omit for the reporting default; list_transactions is cash-only.",
+        },
         period1Start: {
           type: "string",
           description:
@@ -394,6 +412,12 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        basis: {
+          type: "string",
+          enum: ["cash", "accrual"],
+          description:
+            "Omit for the reporting default; list_transactions is cash-only.",
+        },
         period: {
           type: "string",
           description:
@@ -1030,18 +1054,15 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
+        basis: {
+          type: "string",
+          enum: ["cash", "accrual"],
+          description:
+            "Omit for the reporting default; list_transactions is cash-only.",
+        },
         type: {
           type: "string",
-          enum: [
-            "spending_by_category",
-            "spending_by_payee",
-            "income_vs_expenses",
-            "monthly_trend",
-            "income_by_source",
-            "spending_anomalies",
-            "month_comparison",
-            "net_worth_history",
-          ],
+          enum: [...REPORT_TOOL_TYPES],
           description:
             "Which report to run. MUST be exactly one of the listed values.",
         },

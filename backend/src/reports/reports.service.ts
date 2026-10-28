@@ -1,3 +1,9 @@
+import { exportReport } from "../accruals/reporting-export";
+import { reportingAmount, reportingRates } from "../accruals/reporting-money";
+import { convertReportTransactions } from "../accruals/reporting-custom-money";
+import { ServiceUnavailableException } from "@nestjs/common";
+import { ReportingRead } from "../accruals/reporting-basis";
+import { reportingEntities } from "../accruals/reporting-query";
 import {
   Injectable,
   NotFoundException,
@@ -19,6 +25,7 @@ import {
 } from "../transactions/apply-transaction-search";
 import { ParsedSearch } from "../transactions/transaction-search-query.util";
 import { createNetCells, netLinesOf } from "./report-net-cells";
+import { FxAggregate } from "../common/fx-aggregate";
 import {
   CustomReport,
   TimeframeType,
@@ -86,10 +93,15 @@ export class ReportsService {
     private currencyService: ReportCurrencyService,
   ) {}
 
-  private async createConverter(userId: string): Promise<RowConverter> {
+  private async createConverter(
+    userId: string,
+    countOnly = false,
+  ): Promise<RowConverter> {
     const currency = await this.currencyService.getDefaultCurrency(userId);
-    const rateMap = await this.currencyService.buildRateMap(currency);
     const gaps = new ConversionGaps();
+    // An event count has no converted amount: its cells retain only event ids.
+    if (countOnly) return { currency, gaps, convert: () => null };
+    const rateMap = await this.currencyService.buildRateMap(currency);
     return {
       currency,
       gaps,
@@ -258,6 +270,11 @@ export class ReportsService {
     });
   }
 
+  async export(userId: string, id: string, options?: ExecuteReportDto) {
+    return exportReport(await this.execute(userId, id, options));
+  }
+
+  @ReportingRead(undefined, false, 1)
   async execute(
     userId: string,
     id: string,
@@ -289,7 +306,15 @@ export class ReportsService {
     );
     // A split parent reached the aggregators whatever its own sign, so its lines
     // are narrowed here, where each line's own amount and kind are readable.
-    const transactions = this.narrowSplitLines(selected, report.config);
+    const converted = await withScopedDb(this.dataSource, (manager) =>
+      convertReportTransactions(
+        manager,
+        userId,
+        this.narrowSplitLines(selected, report.config),
+        report.config.metric !== MetricType.COUNT,
+      ),
+    );
+    const transactions = converted.transactions;
 
     // Only fetch category/payee maps when the report groups by them (avoid over-fetching)
     const categoryMap = new Map<string, Category>();
@@ -309,7 +334,10 @@ export class ReportsService {
       for (const p of payees) payeeMap.set(p.id, p);
     }
 
-    const converter = await this.createConverter(userId);
+    const converter = await this.createConverter(
+      userId,
+      report.config.metric === MetricType.COUNT,
+    );
 
     // Aggregate data based on groupBy type
     let data = this.aggregateData(
@@ -326,7 +354,12 @@ export class ReportsService {
       report.config.metric === MetricType.BUDGET_VARIANCE &&
       report.groupBy === GroupByType.CATEGORY
     ) {
-      data = await this.enrichWithBudgetVariance(userId, data);
+      data = await this.enrichWithBudgetVariance(
+        userId,
+        data,
+        converted.currency,
+        endDate,
+      );
     }
 
     // Apply custom sorting if configured
@@ -346,6 +379,7 @@ export class ReportsService {
     );
 
     return {
+      fxComplete: converter.gaps.isComplete,
       reportId: report.id,
       name: report.name,
       viewType: report.viewType,
@@ -476,8 +510,8 @@ export class ReportsService {
     transactions: Transaction[],
     config: ReportConfig,
   ): Transaction[] {
-    // Only the list of single transactions judges a line by its own sign; every
-    // other metric nets a category's lines of both signs (audit A26-M33).
+    // The single-row list narrows signs here; COUNT selects native event signs
+    // in NetCells, and monetary metrics net each category (audit A26-M33).
     const narrowsDirection =
       config.metric === MetricType.NONE &&
       config.direction !== DirectionFilter.BOTH;
@@ -697,10 +731,17 @@ export class ReportsService {
       }
 
       // M29: Limit result set to prevent unbounded memory consumption
-      return queryBuilder
-        .orderBy("transaction.transactionDate", "ASC")
-        .take(50000)
-        .getMany();
+      const rows = await reportingEntities(
+        m,
+        userId,
+        queryBuilder.orderBy("transaction.transactionDate", "ASC").take(50001),
+      );
+      if (rows.length > 50000)
+        throw new ServiceUnavailableException({
+          code: "REPORTING_ROW_LIMIT",
+          limit: 50000,
+        });
+      return rows;
     });
   }
 
@@ -930,6 +971,7 @@ export class ReportsService {
             if (value === null) continue;
             result.push({
               id: tx.id,
+              reportingProvenance: split.reportingProvenance,
               label:
                 split.memo ||
                 tx.payeeName ||
@@ -955,6 +997,7 @@ export class ReportsService {
           if (value === null) continue;
           result.push({
             id: tx.id,
+            reportingProvenance: tx.reportingProvenance,
             label:
               tx.payeeName || transferLabel || tx.description || "Transaction",
             value,
@@ -1029,9 +1072,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const totalSum = sumMoney(
-      Array.from(dataMap.values()).map((v) => v.agg.knownSubtotal),
-    );
+    const totalSum = this.percentageTotal(dataMap, metric);
 
     const result: AggregatedDataPoint[] = [];
     for (const [categoryId, data] of dataMap) {
@@ -1054,7 +1095,13 @@ export class ReportsService {
         ),
         color: category?.color || undefined,
         percentage:
-          totalSum > 0 ? (data.agg.knownSubtotal / totalSum) * 100 : 0,
+          totalSum > 0
+            ? ((this.keepsUnconverted(metric)
+                ? data.count
+                : data.agg.knownSubtotal) /
+                totalSum) *
+              100
+            : 0,
         count: data.count,
       });
     }
@@ -1092,9 +1139,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const totalSum = sumMoney(
-      Array.from(dataMap.values()).map((v) => v.agg.knownSubtotal),
-    );
+    const totalSum = this.percentageTotal(dataMap, metric);
 
     const result: AggregatedDataPoint[] = [];
     for (const [payeeId, data] of dataMap) {
@@ -1108,7 +1153,13 @@ export class ReportsService {
           metric,
         ),
         percentage:
-          totalSum > 0 ? (data.agg.knownSubtotal / totalSum) * 100 : 0,
+          totalSum > 0
+            ? ((this.keepsUnconverted(metric)
+                ? data.count
+                : data.agg.knownSubtotal) /
+                totalSum) *
+              100
+            : 0,
         count: data.count,
       });
     }
@@ -1174,9 +1225,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const totalSum = sumMoney(
-      Array.from(dataMap.values()).map((v) => v.agg.knownSubtotal),
-    );
+    const totalSum = this.percentageTotal(dataMap, metric);
 
     const result: AggregatedDataPoint[] = [];
     for (const [tagId, data] of dataMap) {
@@ -1191,7 +1240,13 @@ export class ReportsService {
         ),
         color: info?.color,
         percentage:
-          totalSum > 0 ? (data.agg.knownSubtotal / totalSum) * 100 : 0,
+          totalSum > 0
+            ? ((this.keepsUnconverted(metric)
+                ? data.count
+                : data.agg.knownSubtotal) /
+                totalSum) *
+              100
+            : 0,
         count: data.count,
       });
     }
@@ -1263,6 +1318,18 @@ export class ReportsService {
     return result.sort((a, b) => a.id!.localeCompare(b.id!));
   }
 
+  /** Count shares use event counts; monetary shares retain converted amounts. */
+  private percentageTotal(
+    data: ReadonlyMap<string, { agg: FxAggregate; count: number }>,
+    metric: MetricType,
+  ): number {
+    return sumMoney(
+      Array.from(data.values()).map((value) =>
+        this.keepsUnconverted(metric) ? value.count : value.agg.knownSubtotal,
+      ),
+    );
+  }
+
   private calculateMetricValue(
     sum: number,
     count: number,
@@ -1288,33 +1355,39 @@ export class ReportsService {
   private async enrichWithBudgetVariance(
     userId: string,
     data: AggregatedDataPoint[],
+    currency: string,
+    asOf: string,
   ): Promise<AggregatedDataPoint[]> {
-    try {
-      const budgets = await this.budgetsService.findAll(userId);
-      const activeBudget = budgets.find((b) => b.isActive) || budgets[0];
-      if (!activeBudget) return data;
-
-      const budget = await this.budgetsService.findOne(userId, activeBudget.id);
-      const budgetMap = new Map<string, number>();
-      for (const bc of budget.categories || []) {
-        if (bc.categoryId && !bc.isIncome) {
-          budgetMap.set(bc.categoryId, Number(bc.amount) || 0);
-        }
-      }
-
-      return data.map((point) => {
-        const budgeted = budgetMap.get(point.id || "") || 0;
-        const variance = point.value - budgeted;
-        return {
-          ...point,
-          value: roundMoney(variance),
-          budgeted: roundMoney(budgeted),
-          actual: roundMoney(point.value),
-        };
+    const budgets = await this.budgetsService.findAll(userId);
+    const activeBudget =
+      budgets.find((budget) => budget.isActive) || budgets[0];
+    if (!activeBudget)
+      throw new ServiceUnavailableException({
+        code: "REPORTING_BUDGET_REQUIRED",
+        repair: "create_budget",
       });
-    } catch {
-      return data;
-    }
+    const budget = await this.budgetsService.findOne(userId, activeBudget.id);
+    const source = { currencyCode: budget.currencyCode, transactionDate: asOf };
+    const budgetMap = await withScopedDb(this.dataSource, async (manager) => {
+      const rates = await reportingRates(manager, [source], currency);
+      return new Map(
+        (budget.categories ?? [])
+          .filter((category) => category.categoryId && !category.isIncome)
+          .map((category) => [
+            category.categoryId!,
+            reportingAmount(category.amount, source, currency, rates),
+          ]),
+      );
+    });
+    return data.map((point) => {
+      const budgeted = budgetMap.get(point.id || "") ?? 0;
+      return {
+        ...point,
+        value: roundMoney(point.value - budgeted),
+        budgeted,
+        actual: roundMoney(point.value),
+      };
+    });
   }
 
   /**

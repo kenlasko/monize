@@ -1,3 +1,4 @@
+import { ReportingRead } from "../accruals/reporting-basis";
 import { Injectable } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -119,6 +120,7 @@ export class TaxRecurringReportsService {
     private currencyService: ReportCurrencyService,
   ) {}
 
+  @ReportingRead("cash")
   async getTaxSummary(
     userId: string,
     year: number,
@@ -288,6 +290,7 @@ export class TaxRecurringReportsService {
     };
   }
 
+  @ReportingRead("cash")
   async getRecurringExpenses(
     userId: string,
     minOccurrences: number = 3,
@@ -475,6 +478,7 @@ export class TaxRecurringReportsService {
     };
   }
 
+  @ReportingRead("cash")
   async getBillPaymentHistory(
     userId: string,
     startDate: string | undefined,

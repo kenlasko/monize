@@ -56,7 +56,20 @@ export interface TransactionSplit {
   createdAt: string;
 }
 
+export interface RegisterProvenance {
+  readOnly: true;
+  isRecognition?: boolean;
+  reportId: string;
+  sourceTransactionId: string;
+  cashDate: string;
+  effectiveDate: string;
+  sourceAmount: string;
+  nativeAmount: string;
+}
 export interface Transaction {
+  /** Transient editor navigation context, never sent to the ledger API. */
+  accrualRecognitionDate?: string;
+  reportingProvenance?: RegisterProvenance;
   id: string;
   userId: string;
   accountId: string;
@@ -150,6 +163,7 @@ export interface CreateTransactionData {
 }
 
 export interface UpdateTransactionData extends Partial<CreateTransactionData> {
+  accrualImpactFingerprint?: string;
   createdAt?: string;
 }
 
@@ -161,6 +175,8 @@ export interface CurrencySummary {
 }
 
 export interface TransactionSummary {
+  currency?: string;
+  fxComplete?: boolean;
   totalIncome: number;
   totalExpenses: number;
   netCashFlow: number;

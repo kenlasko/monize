@@ -1,3 +1,5 @@
+import { ReportingRead } from "../accruals/reporting-basis";
+import { reportingQuery } from "../accruals/reporting-query";
 import { Injectable } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -38,10 +40,6 @@ const INVESTMENT_EXCLUSION = investmentExclusionSql({
   accountAlias: "a",
   transactionAlias: "t",
   splitAlias: "ts",
-});
-const INVESTMENT_EXCLUSION_NO_SPLITS = investmentExclusionSql({
-  accountAlias: "a",
-  transactionAlias: "t",
 });
 
 /**
@@ -107,6 +105,7 @@ export class SpendingReportsService {
    * and asset-category exclusions all still apply; with neither the SQL and its
    * parameters are exactly what they were.
    */
+  @ReportingRead()
   async getSpendingByCategory(
     userId: string,
     startDate: string | undefined,
@@ -126,7 +125,7 @@ export class SpendingReportsService {
     let query = `
       SELECT
         COALESCE(ts.category_id, t.category_id) as category_id,
-        t.currency_code,
+        t.currency_code, TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS conversion_date, t.original_currency_code, t.exchange_rate,
         SUM(${NET_SPEND_AMOUNT}) as total
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
@@ -178,11 +177,11 @@ export class SpendingReportsService {
       params.push(tagKey, tagValue);
     }
 
-    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), t.currency_code`;
+    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), t.currency_code, t.transaction_date, t.original_currency_code, t.exchange_rate, t.id, ts.id`;
 
     const rawResults: RawCategoryAggregate[] = await withScopedDb(
       this.dataSource,
-      (m) => m.query(query, params),
+      (m) => reportingQuery(m, userId, query, params),
     );
 
     const categories = await withScopedDb(this.dataSource, (m) =>
@@ -224,6 +223,7 @@ export class SpendingReportsService {
         row.currency_code,
         defaultCurrency,
         rateMap,
+        row,
       );
       if (converted === null) {
         missingCurrencies.add(row.currency_code);
@@ -289,6 +289,7 @@ export class SpendingReportsService {
     };
   }
 
+  @ReportingRead()
   async getSpendingByPayee(
     userId: string,
     startDate: string | undefined,
@@ -302,9 +303,10 @@ export class SpendingReportsService {
       SELECT
         t.payee_id,
         t.payee_name,
-        t.currency_code,
-        SUM(ABS(${REPORTABLE_TX_AMOUNT})) as total
+        t.currency_code, TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS conversion_date, t.original_currency_code, t.exchange_rate,
+        SUM(-COALESCE(ts.amount,t.amount)) as total
       FROM transactions t
+      LEFT JOIN transaction_splits ts ON ts.transaction_id=t.id
       LEFT JOIN accounts a ON a.id = t.account_id
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
@@ -312,12 +314,13 @@ export class SpendingReportsService {
         AND t.is_transfer = false
         AND (t.status IS NULL OR t.status != 'VOID')
         AND t.parent_transaction_id IS NULL
-        AND ${INVESTMENT_EXCLUSION_NO_SPLITS}
+        AND ${INVESTMENT_EXCLUSION}
+        AND ts.transfer_account_id IS NULL
         AND NOT EXISTS (
           SELECT 1 FROM accounts ax
           WHERE ax.user_id = t.user_id
             AND ax.asset_category_id IS NOT NULL
-            AND ax.asset_category_id = t.category_id
+            AND ax.asset_category_id = COALESCE(ts.category_id,t.category_id)
         )
       `;
 
@@ -328,11 +331,11 @@ export class SpendingReportsService {
       params.push(startDate);
     }
 
-    query += ` GROUP BY t.payee_id, t.payee_name, t.currency_code`;
+    query += ` GROUP BY t.payee_id, t.payee_name, t.currency_code, t.transaction_date, t.original_currency_code, t.exchange_rate, t.id, ts.id`;
 
     const rawResults: RawPayeeAggregate[] = await withScopedDb(
       this.dataSource,
-      (m) => m.query(query, params),
+      (m) => reportingQuery(m, userId, query, params),
     );
 
     const payeeIds = rawResults
@@ -361,6 +364,7 @@ export class SpendingReportsService {
         row.currency_code,
         defaultCurrency,
         rateMap,
+        row,
       );
       if (total === null) {
         gaps.record(row.currency_code);
@@ -403,6 +407,7 @@ export class SpendingReportsService {
     };
   }
 
+  @ReportingRead()
   async getMonthlySpendingTrend(
     userId: string,
     startDate: string | undefined,
@@ -416,7 +421,7 @@ export class SpendingReportsService {
       SELECT
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
         COALESCE(ts.category_id, t.category_id) as category_id,
-        t.currency_code,
+        t.currency_code, TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS conversion_date, t.original_currency_code, t.exchange_rate,
         SUM(${NET_SPEND_AMOUNT}) as total
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
@@ -445,13 +450,13 @@ export class SpendingReportsService {
     }
 
     query += `
-      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'), COALESCE(ts.category_id, t.category_id), t.currency_code
+      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'), COALESCE(ts.category_id, t.category_id), t.currency_code, t.transaction_date, t.original_currency_code, t.exchange_rate, t.id, ts.id
       ORDER BY month
     `;
 
     const rawResults: RawMonthlyCategoryAggregate[] = await withScopedDb(
       this.dataSource,
-      (m) => m.query(query, params),
+      (m) => reportingQuery(m, userId, query, params),
     );
 
     const categories = await withScopedDb(this.dataSource, (m) =>
@@ -477,6 +482,7 @@ export class SpendingReportsService {
         row.currency_code,
         defaultCurrency,
         rateMap,
+        row,
       );
       if (total === null) {
         gaps.record(row.currency_code);

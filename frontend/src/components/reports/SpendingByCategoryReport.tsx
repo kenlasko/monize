@@ -1,9 +1,11 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis, useReportingRouter } from './ReportingBasis';
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
-import { useRouter } from 'next/navigation';
+
 import {
   PieChart,
   Pie,
@@ -49,7 +51,6 @@ import type {
 import { INTERACTIVE_ROW_FOCUS_CLASS, activateOnKey } from '@/components/ui/interactive-row';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { ReportError } from '@/components/reports/ReportError';
-import { exportToCsv } from '@/lib/csv-export';
 import type { ChartDatum } from '@/types/chart';
 
 type SpendingCategorySortField = 'name' | 'value' | 'percentage';
@@ -139,8 +140,10 @@ const ACCOUNTS_STORAGE_KEY = 'monize-reports-spending-by-category-accounts';
 const INCLUDE_TRANSFERS_STORAGE_KEY = 'monize-reports-spending-by-category-include-transfers';
 
 export function SpendingByCategoryReport() {
+  const { exportCsvWithBasis, withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
-  const router = useRouter();
+  const router = useReportingRouter();
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency, formatPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
@@ -167,13 +170,15 @@ export function SpendingByCategoryReport() {
     () =>
       isValid
         ? builtInReportsApi.getSpendingByCategory({
+            ...(basis ? { basis } : {}),
             startDate: rangeStart || undefined,
             endDate: rangeEnd,
             ...(selectedAccountIds.length > 0 ? { accountIds: selectedAccountIds } : {}),
             ...tagFilter,
           })
         : Promise.resolve(null),
-    [isValid, rangeStart, rangeEnd, accountIdsKey, fundsFilter.active, fundsFilter.tagKey, fundsFilter.tagValue],
+    [isValid, rangeStart, rangeEnd, accountIdsKey, fundsFilter.active, fundsFilter.tagKey, fundsFilter.tagValue, basis],
+    { requestKey: JSON.stringify([isValid, rangeStart, rangeEnd, accountIdsKey, fundsFilter.active, fundsFilter.tagKey, fundsFilter.tagValue, basis]), maskStaleData: true },
   );
 
   // The Available funds / Spent / Balance strip: only with the switch on, from
@@ -292,7 +297,7 @@ export function SpendingByCategoryReport() {
       };
     });
 
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('spendingByCategory.pdfTitle'),
       summaryCards: [
         { label: t('spendingByCategory.totalExpenses'), value: formatCurrency(totalExpenses), color: '#dc2626', note: noteFor(spendingTotal) },
@@ -303,7 +308,7 @@ export function SpendingByCategoryReport() {
       chartContainer: chartRef.current,
       chartLegend: legendItems.length > 0 ? legendItems : undefined,
       filename: 'spending-by-category',
-    });
+    }));
   };
 
   const handleExportCsv = () => {
@@ -316,7 +321,7 @@ export function SpendingByCategoryReport() {
       const percentage = totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0;
       return [item.name, item.value, formatPercent(percentage, 2)];
     });
-    exportToCsv('spending-by-category', headers, rows);
+    exportCsvWithBasis('spending-by-category', headers, rows);
   };
 
   const handleCategoryClick = (categoryId: string) => {

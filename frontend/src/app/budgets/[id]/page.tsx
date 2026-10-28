@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportingBasisScope, ReportingBasisControl, useReportingBasis, useReportingRouter, CashReportingNotice } from '@/components/reports/ReportingBasis';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -31,7 +32,7 @@ import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 export default function BudgetDetailPage() {
   return (
     <ProtectedRoute>
-      <BudgetDetailContent />
+      <ReportingBasisScope surface="budget-detail" resetOnBasis><BudgetDetailContent /></ReportingBasisScope>
     </ProtectedRoute>
   );
 }
@@ -59,10 +60,12 @@ function computeHealthScore(summary: BudgetSummary): number {
 }
 
 function BudgetDetailContent() {
+  const basis = useReportingBasis();
   const t = useTranslations('budgets');
   const tc = useTranslations('common');
   const params = useParams();
   const router = useRouter();
+  const reportingRouter = useReportingRouter();
   const { formatCurrency } = useNumberFormat();
   const budgetId = params.id as string;
 
@@ -101,12 +104,12 @@ function BudgetDetailContent() {
       try {
         const [summaryData, velocityData, periodsData, stData, dailyData, trend] =
           await Promise.all([
-            budgetsApi.getSummary(budgetId),
-            budgetsApi.getVelocity(budgetId),
+            budgetsApi.getSummary(budgetId, ...(basis ? [basis] as const : [])),
+            budgetsApi.getVelocity(budgetId, ...(basis ? [basis] as const : [])),
             budgetsApi.getPeriods(budgetId),
             scheduledTransactionsApi.getAll(),
-            budgetsApi.getDailySpending(budgetId).catch(() => []),
-            budgetsApi.getTrend(budgetId).catch(() => []),
+            budgetsApi.getDailySpending(budgetId, ...(basis ? [basis] as const : [])),
+            (basis ? budgetsApi.getTrend(budgetId, undefined, basis) : budgetsApi.getTrend(budgetId)),
           ]);
 
         setSummary(summaryData);
@@ -124,7 +127,7 @@ function BudgetDetailContent() {
       }
     };
     return run();
-  }, [budgetId, t]);
+  }, [budgetId, t, basis]);
 
   const loadData = useCallback(() => {
     setIsLoading(true);
@@ -202,16 +205,18 @@ function BudgetDetailContent() {
         startDate: summary.budget.periodStart,
         endDate: periodEndVal,
         categoryIds: cat.categoryId,
+        accountStatus: 'all',
       });
-      router.push(`/transactions?${params.toString()}`);
+      (selectedPeriod && selectedPeriod.status !== 'OPEN' ? router : reportingRouter).push(`/transactions?${params.toString()}`);
     },
-    [summary, router],
+    [summary, router, reportingRouter, selectedPeriod],
   );
 
   if (isLoading) {
     return (
       <PageLayout>
         <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+        <ReportingBasisControl />
           <LoadingSpinner />
         </main>
       </PageLayout>
@@ -222,6 +227,7 @@ function BudgetDetailContent() {
     return (
       <PageLayout>
         <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+        <ReportingBasisControl />
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-12 text-center">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               {error || t('pages.detail.notFound')}
@@ -242,6 +248,7 @@ function BudgetDetailContent() {
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+        <ReportingBasisControl />
         <PageHeader
           title={summary.budget.name}
           subtitle={`${STRATEGY_LABELS[summary.budget.strategy] ?? summary.budget.strategy} budget - ${currencyCode}`}
@@ -273,10 +280,13 @@ function BudgetDetailContent() {
         {isPeriodLoading ? (
           <LoadingSpinner />
         ) : isViewingHistoricalPeriod ? (
+          <>
+          <CashReportingNotice />
           <BudgetPeriodDetail
             period={selectedPeriod}
             formatCurrency={(amount) => formatCurrency(amount, currencyCode)}
           />
+          </>
         ) : (
           <BudgetDashboard
             summary={summary}

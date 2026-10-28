@@ -1,4 +1,15 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { reportingFailure } from "../accruals/reporting-errors";
+import {
+  ReportingRead,
+  type ReportingBasis,
+} from "../accruals/reporting-basis";
+import { DataSource } from "typeorm";
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  Optional,
+} from "@nestjs/common";
 import { BudgetTrendReportsService } from "./budget-trend-reports.service";
 import { BudgetHealthReportsService } from "./budget-health-reports.service";
 import { BudgetActivityReportsService } from "./budget-activity-reports.service";
@@ -107,6 +118,9 @@ export interface HealthScoreHistoryPoint {
 }
 
 export interface LlmBudgetStatusResult {
+  basis?: ReportingBasis;
+  currency?: string;
+  fxComplete?: boolean;
   budgetName: string;
   strategy: string;
   period: { start: string; end: string };
@@ -164,6 +178,7 @@ export class BudgetReportsService {
     private readonly healthReports: BudgetHealthReportsService,
     private readonly activityReports: BudgetActivityReportsService,
     private readonly budgetsService: BudgetsService,
+    @Optional() private readonly dataSource?: DataSource,
   ) {}
 
   getTrend(
@@ -238,10 +253,12 @@ export class BudgetReportsService {
    * When `budgetName` is omitted, picks the first active budget; returns an
    * error payload when the named budget is not found.
    */
+  @ReportingRead(undefined, false, 2)
   async getLlmBudgetStatus(
     userId: string,
     period: string = "CURRENT",
     budgetName?: string,
+    _basis?: ReportingBasis,
   ): Promise<LlmBudgetStatusResult | LlmBudgetStatusError> {
     const allBudgets = await this.budgetsService.findAll(userId);
     const activeBudgets = allBudgets.filter((b) => b.isActive);
@@ -267,18 +284,28 @@ export class BudgetReportsService {
 
     let summary: Awaited<ReturnType<BudgetsService["getSummary"]>>;
     try {
-      summary = await this.budgetsService.getSummary(userId, budget.id);
+      summary = await this.budgetsService.getSummary(userId, budget.id, {
+        periodStart,
+        periodEnd,
+      });
     } catch (err) {
+      if (reportingFailure(err)) throw err;
       this.logger.warn(
         `Failed to retrieve budget summary for ${budget.id}: ${err instanceof Error ? err.message : err}`,
       );
       return { error: "Failed to retrieve budget summary" };
     }
 
+    const current = getCurrentMonthPeriodDates();
+    const isCurrent =
+      periodStart === current.periodStart && periodEnd === current.periodEnd;
     let velocity: Awaited<ReturnType<BudgetsService["getVelocity"]>> | null;
     try {
-      velocity = await this.budgetsService.getVelocity(userId, budget.id);
+      velocity = isCurrent
+        ? await this.budgetsService.getVelocity(userId, budget.id)
+        : null;
     } catch (err) {
+      if (reportingFailure(err)) throw err;
       this.logger.warn(
         `Failed to compute budget velocity for ${budget.id}: ${err instanceof Error ? err.message : err}`,
       );
@@ -287,8 +314,11 @@ export class BudgetReportsService {
 
     let healthScore: HealthScoreResult | null;
     try {
-      healthScore = await this.getHealthScore(userId, budget.id);
+      healthScore = isCurrent
+        ? await this.getHealthScore(userId, budget.id)
+        : null;
     } catch (err) {
+      if (reportingFailure(err)) throw err;
       this.logger.warn(
         `Failed to compute budget health score for ${budget.id}: ${err instanceof Error ? err.message : err}`,
       );
@@ -315,6 +345,8 @@ export class BudgetReportsService {
       }));
 
     const result: LlmBudgetStatusResult = {
+      currency: budget.currencyCode,
+      fxComplete: true,
       budgetName: budget.name,
       strategy: budget.strategy,
       period: { start: periodStart, end: periodEnd },
@@ -364,6 +396,7 @@ export class BudgetReportsService {
       return parsed;
     }
 
-    return getCurrentMonthPeriodDates();
+    if (period === "CURRENT") return getCurrentMonthPeriodDates();
+    throw new BadRequestException({ code: "REPORTING_PERIOD_INVALID" });
   }
 }

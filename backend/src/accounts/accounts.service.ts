@@ -1,3 +1,4 @@
+import { ReportingRead } from "../accruals/reporting-basis";
 import {
   Injectable,
   NotFoundException,
@@ -1807,6 +1808,7 @@ export class AccountsService {
    * positions is unpriced or unconverted. `missingRatePairs` is the union of
    * the per-row pairs and the totals' pairs.
    */
+  @ReportingRead("cash")
   async getLlmAccounts(
     userId: string,
     opts?: {

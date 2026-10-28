@@ -1,3 +1,9 @@
+import { SPENDING_ANOMALY_DEFAULT_MONTHS } from "../../built-in-reports/anomaly-reports.service";
+import type { BuiltInReportRequest } from "../../built-in-reports/report-tool.types";
+import {
+  reportingFailure,
+  reportingFailureNote,
+} from "../../accruals/reporting-errors";
 import {
   Injectable,
   Inject,
@@ -78,10 +84,6 @@ import {
   LlmScheduledKind,
 } from "../../scheduled-transactions/scheduled-transactions.service";
 import { BuiltInReportsService } from "../../built-in-reports/built-in-reports.service";
-import {
-  SPENDING_ANOMALY_DEFAULT_MONTHS,
-  SPENDING_ANOMALY_DEFAULT_THRESHOLD,
-} from "../../built-in-reports/anomaly-reports.service";
 import { WarrantiesService } from "../../warranties/warranties.service";
 import { LlmWarrantyQuery } from "../../warranties/warranty-llm-shape";
 import { validateToolInput } from "./tool-input-schemas";
@@ -104,7 +106,6 @@ import { sanitizePromptValue } from "../../common/sanitization.util";
 import { formatDidYouMean } from "../../common/name-suggestions.util";
 import {
   getDefaultDateRange,
-  getDefaultPreviousMonth,
   resolveComparePeriods,
 } from "../../common/tool-schemas";
 
@@ -354,6 +355,14 @@ export class ToolExecutorService {
       );
       return result;
     } catch (error) {
+      const failure = reportingFailure(error);
+      if (failure)
+        return {
+          data: { error: failure },
+          summary: `Report unavailable: ${failure.code}. Repair: ${failure.repair}.${reportingFailureNote(failure)}`,
+          sources: [],
+          isError: true,
+        };
       const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.error(
         `execute failed tool=${toolName} user=${userId} ms=${Date.now() - start}: ${message}`,
@@ -2543,6 +2552,7 @@ export class ToolExecutorService {
       period2End,
       groupBy,
       direction,
+      basis: input.basis as "cash" | "accrual" | undefined,
     });
 
     // Totals are in `totalsCurrency`; while a pair has no rate they are
@@ -2789,6 +2799,7 @@ export class ToolExecutorService {
       userId,
       period,
       budgetName,
+      input.basis as "cash" | "accrual" | undefined,
     );
 
     if ("error" in data) {
@@ -2981,156 +2992,18 @@ export class ToolExecutorService {
     userId: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const type = input.type as
-      | "spending_by_category"
-      | "spending_by_payee"
-      | "income_vs_expenses"
-      | "monthly_trend"
-      | "income_by_source"
-      | "spending_anomalies"
-      | "month_comparison"
-      | "net_worth_history";
-
-    if (type === "net_worth_history") {
-      const startDate = input.startDate as string | undefined;
-      const endDate = input.endDate as string | undefined;
-
-      const history = await this.netWorthService.getLlmHistory(
-        userId,
-        startDate,
-        endDate,
-      );
-
-      const start =
-        startDate ??
-        (history.length > 0
-          ? history[0].month
-          : new Date().toISOString().substring(0, 10));
-      const end =
-        endDate ??
-        (history.length > 0
-          ? history[history.length - 1].month
-          : new Date().toISOString().substring(0, 10));
-
-      return {
-        // Bare array, matching the MCP generate_report net_worth_history payload
-        // exactly (shared-tool data-shape parity).
-        data: history,
-        summary: `Net worth history: ${history.length} months from ${start} to ${end}`,
-        sources: [
-          {
-            type: "net_worth",
-            description: "Monthly net worth history",
-            dateRange: `${start} to ${end}`,
-          },
-        ],
-      };
-    }
-
-    if (type === "spending_anomalies") {
-      // The window and the threshold are two arguments: the months were once
-      // passed as the z-score threshold (audit A26-M34). The threshold is the
-      // Reports page's own default, so both surfaces answer alike.
-      const months =
-        (input.months as number | undefined) ?? SPENDING_ANOMALY_DEFAULT_MONTHS;
-      const data = await this.builtInReportsService.getSpendingAnomalies(
-        userId,
-        SPENDING_ANOMALY_DEFAULT_THRESHOLD,
-        months,
-      );
-      const count = data.anomalies.length;
-      return {
-        data,
-        summary: `${count} spending anomal${count === 1 ? "y" : "ies"} detected over the last ${months} month${months === 1 ? "" : "s"}.${this.missingRateNote(data, "Transactions in those currencies were left out of the analysis")}`,
-        sources: [
-          {
-            type: "anomalies",
-            description: "Spending anomaly detection",
-          },
-        ],
-      };
-    }
-
-    if (type === "month_comparison") {
-      const month = (input.month as string) ?? getDefaultPreviousMonth();
-      const data = await this.builtInReportsService.getMonthlyComparison(
-        userId,
-        month,
-      );
-      // A month with a component that did not convert has no net worth: the
-      // figures in `data.netWorth` are null and the pairs are named here too.
-      const netWorthNote =
-        data.netWorth.fxComplete === false
-          ? ` Net worth is withheld for an incomplete month: ${
-              data.netWorth.missingRatePairs.length
-                ? `no exchange rate for ${data.netWorth.missingRatePairs.join(", ")}`
-                : "a component could not be converted"
-            } (the user can add a rate on the Currencies page).`
-          : "";
-      return {
-        data,
-        summary: `Comparison of ${data.currentMonthLabel} vs ${data.previousMonthLabel}.${netWorthNote}`,
-        sources: [
-          {
-            type: "monthly_comparison",
-            description: `Monthly comparison for ${data.currentMonthLabel}`,
-          },
-        ],
-      };
-    }
-
-    const defaults = getDefaultDateRange();
-    const startDate = (input.startDate as string) ?? defaults.startDate;
-    const endDate = (input.endDate as string) ?? defaults.endDate;
-
-    let data: unknown;
-    switch (type) {
-      case "spending_by_category":
-        data = await this.builtInReportsService.getSpendingByCategory(
-          userId,
-          startDate,
-          endDate,
-        );
-        break;
-      case "spending_by_payee":
-        data = await this.builtInReportsService.getSpendingByPayee(
-          userId,
-          startDate,
-          endDate,
-        );
-        break;
-      case "income_vs_expenses":
-        data = await this.builtInReportsService.getIncomeVsExpenses(
-          userId,
-          startDate,
-          endDate,
-        );
-        break;
-      case "monthly_trend":
-        data = await this.builtInReportsService.getMonthlySpendingTrend(
-          userId,
-          startDate,
-          endDate,
-        );
-        break;
-      case "income_by_source":
-        data = await this.builtInReportsService.getIncomeBySource(
-          userId,
-          startDate,
-          endDate,
-        );
-        break;
-    }
-
+    const data = await this.builtInReportsService.getLlmReport(
+      userId,
+      input as unknown as BuiltInReportRequest,
+    );
     return {
       data,
-      summary: `Report "${type}" from ${startDate} to ${endDate}.${this.missingRateNote(data)}`,
+      summary:
+        input.type === "spending_anomalies"
+          ? `Spending anomaly report over the last ${input.months ?? SPENDING_ANOMALY_DEFAULT_MONTHS} months on ${data.basis} basis in ${data.currency}.`
+          : `${data.type} report on ${data.basis} basis in ${data.currency}.`,
       sources: [
-        {
-          type: "report",
-          description: `Built-in report: ${type}`,
-          dateRange: `${startDate} to ${endDate}`,
-        },
+        { type: "report", description: `Built-in report: ${data.type}` },
       ],
     };
   }

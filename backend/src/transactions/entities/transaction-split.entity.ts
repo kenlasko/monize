@@ -1,5 +1,7 @@
+import type { ReportingProvenance } from "../../accruals/reporting-provenance";
 import {
   Entity,
+  Index,
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
@@ -18,7 +20,10 @@ import { InvestmentTransaction } from "../../securities/entities/investment-tran
 import { SplitKind } from "./split-kind.enum";
 
 @Entity("transaction_splits")
+@Index("uq_accrual_split_parent", ["id", "transactionId"], { unique: true })
 export class TransactionSplit {
+  /** Reporting copies only; never persisted. */
+  reportingProvenance?: ReportingProvenance;
   @ApiProperty({ example: "split-uuid" })
   @PrimaryGeneratedColumn("uuid")
   id: string;

@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   IsBoolean,
   IsOptional,
+  Matches,
   IsUUID,
   ValidateNested,
 } from "class-validator";
@@ -29,6 +30,14 @@ export class CategorySuggestionAssignmentDto {
 }
 
 export class ApplyCategorySuggestionsDto {
+  @ApiProperty({
+    required: false,
+    description: "Fingerprint from the category impact preview",
+  })
+  @IsOptional()
+  @Matches(/^[a-f0-9]{64}$/)
+  accrualImpactFingerprint?: string;
+
   @ApiProperty({
     description: "Array of payee-to-category assignments",
     type: [CategorySuggestionAssignmentDto],

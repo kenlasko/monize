@@ -1,5 +1,6 @@
 'use client';
 
+import { useReportingBasis } from '@/components/reports/ReportingBasis';
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -39,6 +40,7 @@ interface SpendingByPayeeWidgetProps {
 }
 
 export function SpendingByPayeeWidget({ isLoading }: SpendingByPayeeWidgetProps) {
+  const basis = useReportingBasis();
   const t = useTranslations('dashboard');
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, formatPercent, defaultCurrency } = useNumberFormat();
@@ -55,10 +57,12 @@ export function SpendingByPayeeWidget({ isLoading }: SpendingByPayeeWidgetProps)
   const { data: response, isLoading: dataLoading } = useReportData(
     () =>
       builtInReportsApi.getSpendingByPayee({
+        ...(basis ? {basis} : {}),
         startDate: start || undefined,
         endDate: end,
       }),
-    [start, end],
+    [start, end, basis],
+    { requestKey: JSON.stringify([start, end, basis]), maskStaleData: true },
   );
 
   const chartData = useMemo(

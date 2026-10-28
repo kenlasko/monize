@@ -1,3 +1,4 @@
+import { ReportingEndpoint } from "../accruals/reporting-endpoint";
 import {
   Controller,
   Get,
@@ -183,6 +184,7 @@ export class AccountsController {
     return this.accountsService.create(req.user.id, createAccountDto);
   }
 
+  @ReportingEndpoint("cash")
   @Get()
   @ApiOperation({ summary: "Get all accounts for the authenticated user" })
   @ApiQuery({
@@ -339,6 +341,7 @@ export class AccountsController {
    * Declared before every `:id` route: "daily-balance-totals" is a literal path
    * segment, and a `:id` route above it would swallow it as an account id.
    */
+  @ReportingEndpoint("cash")
   @Get("daily-balance-totals")
   @ApiOperation({
     summary: "Get the scope's end-of-day total for every day of a date range",
@@ -394,6 +397,7 @@ export class AccountsController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("daily-balances")
   @ApiOperation({ summary: "Get daily running balances for accounts" })
   @ApiQuery({ name: "startDate", required: false, example: "2025-01-01" })
@@ -474,6 +478,7 @@ export class AccountsController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("balances-as-of")
   @ApiOperation({
     summary: "Get every account's balance measured at a single date",
@@ -534,6 +539,7 @@ export class AccountsController {
     );
   }
 
+  @ReportingEndpoint("cash")
   @Get("summary")
   @ApiOperation({ summary: "Get account summary statistics" })
   @ApiResponse({
@@ -691,6 +697,7 @@ export class AccountsController {
         { expandSplits: shouldExpandSplits, dateFormat: df },
         req.user.realUserId ?? req.user.id,
       );
+      res.setHeader("X-Reporting-Basis", "cash");
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       res.setHeader("X-Content-Type-Options", "nosniff");
       res.setHeader(
@@ -765,6 +772,7 @@ export class AccountsController {
     return overlaid;
   }
 
+  @ReportingEndpoint("cash")
   @Get(":id/balance")
   @ApiOperation({ summary: "Get the current balance of an account" })
   @ApiParam({
@@ -846,6 +854,7 @@ export class AccountsController {
     return this.statementCycleService.getStatementCycle(req.user.id, id);
   }
 
+  @ReportingEndpoint("cash")
   @Get(":id/balance-forecast")
   @ApiOperation({
     summary:
@@ -896,6 +905,7 @@ export class AccountsController {
     }
   }
 
+  @ReportingEndpoint("cash")
   @Get(":id/interest-paid")
   @ApiOperation({
     summary: "Get interest/fees charged to a card in a date range",

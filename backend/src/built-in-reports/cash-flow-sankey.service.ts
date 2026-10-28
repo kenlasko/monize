@@ -1,3 +1,4 @@
+import { ReportingRead } from "../accruals/reporting-basis";
 import {
   Injectable,
   InternalServerErrorException,
@@ -265,6 +266,7 @@ export class CashFlowSankeyService {
     private currencyService: ReportCurrencyService,
   ) {}
 
+  @ReportingRead("cash")
   async getCashFlowSankey(
     userId: string,
     startDate: string | undefined,

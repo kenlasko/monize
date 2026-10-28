@@ -9,6 +9,7 @@ import {
   IsUUID,
   Max,
   MaxLength,
+  Matches,
   Min,
   ValidateNested,
   ValidateIf,
@@ -77,6 +78,13 @@ export class BulkUpdateFilterDto {
 }
 
 export class BulkUpdateDto {
+  @ApiPropertyOptional({
+    description: "Fingerprint from the accrual bulk preview",
+  })
+  @IsOptional()
+  @Matches(/^[a-f0-9]{64}$/)
+  accrualImpactFingerprint?: string;
+
   @ApiProperty({
     description:
       'Selection mode: "ids" for explicit IDs, "filter" for filter-based',

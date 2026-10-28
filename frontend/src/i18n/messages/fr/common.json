@@ -208,33 +208,9 @@
     "nov.",
     "déc."
   ],
-  "weekdaysShort": [
-    "Dim",
-    "Lun",
-    "Mar",
-    "Mer",
-    "Jeu",
-    "Ven",
-    "Sam"
-  ],
-  "weekdaysMin": [
-    "Di",
-    "Lu",
-    "Ma",
-    "Me",
-    "Je",
-    "Ve",
-    "Sa"
-  ],
-  "weekdaysNarrow": [
-    "D",
-    "L",
-    "M",
-    "M",
-    "J",
-    "V",
-    "S"
-  ],
+  "weekdaysShort": ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"],
+  "weekdaysMin": ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"],
+  "weekdaysNarrow": ["D", "L", "M", "M", "J", "V", "S"],
   "dateFormat": {
     "browserAuto": "Utiliser les paramètres régionaux du navigateur (détecté automatiquement : {sample})",
     "custom": "Personnalisé..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "Inclut {count, plural, one {# transaction récurrente en retard} other {# transactions récurrentes en retard}}"
+  },
+  "reportingBasis": {
+    "label": "Base comptable",
+    "default": "{basis} (défaut utilisateur)",
+    "help": "Les totaux utilisent la base choisie.",
+    "detailHelp": "Les totaux utilisent la base choisie.",
+    "cashOnly": "Cette vue suit les paiements réels et utilise la base de trésorerie.",
+    "exportCaption": "Base comptable : {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Composants de répartition en lecture seule. Les liens de paiement ouvrent l’écriture d’origine. Réduisez la période si nécessaire.",
+    "fxHelp": "Certains montants ne peuvent pas être évalués. Ajoutez les taux de change historiques de cette période puis réessayez.",
+    "unsupported": "Cette combinaison de filtres ne peut pas être détaillée de façon sûre. Choisissez un filtre plus simple.",
+    "failed": "Impossible de charger les écritures. Réduisez les dates si les lignes sont trop nombreuses puis réessayez.",
+    "identity": "Identifiants source / ventilation / échéancier",
+    "native": "Montant d’origine",
+    "reporting": "Montant du rapport",
+    "payment": "Date du paiement",
+    "title": "Réparti",
+    "effective": "Date de comptabilisation",
+    "source": "Date du paiement",
+    "retry": "Réessayer",
+    "unknown": "Montant non disponible",
+    "start": "Date de début",
+    "end": "Date de fin",
+    "partial": "(total partiel)",
+    "empty": "Aucune donnée de transaction disponible"
+  },
+  "systemAccruals": {
+    "title": "Comptes de régularisation",
+    "help": "Soldes gérés par le système en devise native. Lecture seule ; modifiez l’écriture d’origine pour les changer.",
+    "ownerOnly": "Seul le propriétaire peut consulter ces comptes.",
+    "empty": "Aucun compte de régularisation. Créez une régularisation depuis une recette ou une dépense.",
+    "position": "Position",
+    "closing": "Solde de clôture",
+    "back": "Comptes",
+    "asOf": "Solde au",
+    "account": "Compte",
+    "currency": "Devise",
+    "balance": "Solde",
+    "prepaid": "Charges constatées d’avance (nettes)",
+    "unearned": "Produits constatés d’avance (nets)",
+    "signHelp": "Les soldes négatifs représentent des charges à payer ou des créances.",
+    "asset": "Actifs",
+    "liability": "Passifs",
+    "opening": "Solde d'ouverture",
+    "date": "Date",
+    "movement": "Composant",
+    "amount": "Montant",
+    "payment": "Date du paiement",
+    "recognition": "Date de comptabilisation",
+    "range": "{start} – {end}"
   }
 }

@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsUUID,
   IsArray,
+  ArrayMaxSize,
   IsEnum,
   ValidateNested,
   ValidateIf,
@@ -17,6 +18,7 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { InvestmentAction } from "../../securities/entities/investment-transaction.entity";
 import { SplitKind } from "../entities/split-kind.enum";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
+import { MAX_TAGS_PER_CALL } from "../../tags/tags.service";
 
 export class InvestmentSplitDto {
   @ApiProperty({ enum: InvestmentAction, description: "Investment action" })
@@ -158,6 +160,7 @@ export class CreateTransactionSplitDto {
   })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(MAX_TAGS_PER_CALL)
   @IsUUID(undefined, { each: true })
   tagIds?: string[];
 }

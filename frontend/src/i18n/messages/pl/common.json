@@ -208,33 +208,9 @@
     "lis",
     "gru"
   ],
-  "weekdaysShort": [
-    "Nd",
-    "Pn",
-    "Wt",
-    "Śr",
-    "Czw",
-    "Pt",
-    "Sob"
-  ],
-  "weekdaysMin": [
-    "Nd",
-    "Pn",
-    "Wt",
-    "Śr",
-    "Cz",
-    "Pt",
-    "So"
-  ],
-  "weekdaysNarrow": [
-    "N",
-    "S",
-    "W",
-    "Ś",
-    "C",
-    "P",
-    "S"
-  ],
+  "weekdaysShort": ["Nd", "Pn", "Wt", "Śr", "Czw", "Pt", "Sob"],
+  "weekdaysMin": ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"],
+  "weekdaysNarrow": ["N", "S", "W", "Ś", "C", "P", "S"],
   "dateFormat": {
     "browserAuto": "Użyj ustawień regionalnych przeglądarki (wykryto {sample})",
     "custom": "Niestandardowy..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "Zawiera {count, plural, one {# zaległą zaplanowaną transakcję} few {# zaległe zaplanowane transakcje} many {# zaległych zaplanowanych transakcji} other {# zaległej zaplanowanej transakcji}}"
+  },
+  "reportingBasis": {
+    "label": "Podstawa raportowania",
+    "default": "{basis} (domyślna użytkownika)",
+    "help": "Sumy okresów używają wybranej podstawy.",
+    "detailHelp": "Sumy okresów używają wybranej podstawy.",
+    "cashOnly": "Ten widok obejmuje rzeczywiste płatności i używa podstawy kasowej.",
+    "exportCaption": "Podstawa rachunkowości: {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Składniki memoriałowe tylko do odczytu. Łącza płatności otwierają pierwotny zapis. W razie potrzeby zawęź daty.",
+    "fxHelp": "Niektórych kwot nie można wycenić. Dodaj historyczne kursy dla tego okresu i spróbuj ponownie.",
+    "unsupported": "Nie można bezpiecznie rozwinąć tej kombinacji filtrów. Wybierz prostszy filtr.",
+    "failed": "Nie udało się wczytać zapisów. Jeśli wierszy jest zbyt wiele, zawęź daty i ponów próbę.",
+    "identity": "Identyfikatory źródła / części / harmonogramu",
+    "native": "Kwota oryginalna",
+    "reporting": "Kwota raportowa",
+    "payment": "Data płatności",
+    "title": "Rozliczono memoriałowo",
+    "effective": "Data ujęcia",
+    "source": "Data płatności",
+    "retry": "Spróbuj ponownie",
+    "unknown": "Kwota niedostępna",
+    "start": "Data początkowa",
+    "end": "Data końcowa",
+    "partial": "(suma częściowa)",
+    "empty": "Brak danych o transakcjach"
+  },
+  "systemAccruals": {
+    "title": "Konta rozliczeń międzyokresowych",
+    "help": "Salda zarządzane przez system w walucie źródłowej. Tylko do odczytu; zmiany wprowadza się w oryginalnym zapisie.",
+    "ownerOnly": "Tylko właściciel może przeglądać te konta.",
+    "empty": "Brak kont rozliczeń międzyokresowych. Utwórz rozliczenie z zapisu przychodu lub wydatku.",
+    "position": "Pozycja",
+    "closing": "Saldo końcowe",
+    "back": "Konta",
+    "asOf": "Saldo na dzień",
+    "account": "Konto",
+    "currency": "Waluta",
+    "balance": "Saldo",
+    "prepaid": "Koszty opłacone z góry (netto)",
+    "unearned": "Przychody przyszłych okresów (netto)",
+    "signHelp": "Ujemne salda oznaczają naliczone zobowiązania lub należności.",
+    "asset": "Aktywa",
+    "liability": "Zobowiązania",
+    "opening": "Saldo początkowe",
+    "date": "Data",
+    "movement": "Składnik",
+    "amount": "Kwota",
+    "payment": "Data płatności",
+    "recognition": "Data ujęcia",
+    "range": "{start} – {end}"
   }
 }

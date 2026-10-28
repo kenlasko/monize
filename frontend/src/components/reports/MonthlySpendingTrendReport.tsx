@@ -1,10 +1,12 @@
 "use client";
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis, useReportingRouter } from './ReportingBasis';
 import { useState, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
-import { useRouter } from "next/navigation";
+
 import {
   LineChart,
   Line,
@@ -29,7 +31,6 @@ import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions'
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { ChartTooltip } from "@/components/reports/ChartTooltip";
 import { ReportError } from "@/components/reports/ReportError";
-import { exportToCsv } from "@/lib/csv-export";
 import { chartColors } from "@/lib/chart-colors";
 import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
 
@@ -70,8 +71,10 @@ function SpendingTrendTooltip({ active, payload, formatCurrency }: SpendingTrend
 }
 
 export function MonthlySpendingTrendReport() {
+  const { exportCsvWithBasis, withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
-  const router = useRouter();
+  const router = useReportingRouter();
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } =
     useNumberFormat();
@@ -98,11 +101,13 @@ export function MonthlySpendingTrendReport() {
     () =>
       isValid
         ? builtInReportsApi.getIncomeVsExpenses({
+            ...(basis ? { basis } : {}),
             startDate: rangeStart || undefined,
             endDate: rangeEnd,
           })
         : Promise.resolve(null),
-    [isValid, rangeStart, rangeEnd],
+    [isValid, rangeStart, rangeEnd, basis],
+    { requestKey: JSON.stringify([isValid, rangeStart, rangeEnd, basis]), maskStaleData: true },
   );
 
   // Map response to chart data. `name` must be unique across the dataset
@@ -160,7 +165,7 @@ export function MonthlySpendingTrendReport() {
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import("@/lib/pdf-export");
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('monthlySpendingTrend.pdfTitle'),
       summaryCards: [
         { label: t('monthlySpendingTrend.totalIncome'), value: formatCurrency(totals.totalIncome), color: '#16a34a' },
@@ -174,13 +179,13 @@ export function MonthlySpendingTrendReport() {
         { color: resolvePdfColor(chartColors.income), label: t('monthlySpendingTrend.seriesIncome') },
       ],
       filename: "monthly-spending-trend",
-    });
+    }));
   };
 
   const handleExportCsv = () => {
     const headers = [t('monthlySpendingTrend.colMonth'), t('monthlySpendingTrend.colIncome'), t('monthlySpendingTrend.colExpenses'), t('monthlySpendingTrend.colNet')];
     const rows = sortedTableData.map((d) => [d.fullName, d.Income, d.Expenses, d.Net]);
-    exportToCsv('monthly-spending-trend', headers, rows);
+    exportCsvWithBasis('monthly-spending-trend', headers, rows);
   };
 
   const handleChartClick = (state: any) => {

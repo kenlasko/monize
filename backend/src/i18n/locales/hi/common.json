@@ -39,5 +39,8 @@
       "loanRepayment": "ऋण चुकौती",
       "creditCardRepayment": "क्रेडिट कार्ड भुगतान"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "{{ count }} लेन-देन हटाए गए"
   }
 }

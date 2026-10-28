@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL bir http veya https adresi olmalıdır",
       "invalidField": "{{ field }} geçerli değil"
     }
+  },
+  "accruals": {
+    "notFound": "İşlem veya tahakkuk planı bulunamadı.",
+    "ineligible": "Gelir, gider veya kategori bölümü seçin. Transferler, yatırım kayıtları ve iptal edilmiş işlemler tahakkuk ettirilemez.",
+    "invalidPeriod": "Geçerli bir başlangıç ayı ve 1 ile 600 ay arasında bir süre seçin.",
+    "changed": "İşlem veya plan değişti. Kaydetmeden önce yeni önizlemeyi inceleyin.",
+    "ownerOnly": "Tahakkuk planlarını yalnızca sahibi yönetebilir.",
+    "familyRequired": "Kategorisiz bir işlem için gider veya gelir seçin.",
+    "historyUnsupported": "Bu toplu işlem geçmişten güvenle geri yüklenemez. İşlemi bölün veya desteklenmeyen transfer ve yatırım kayıtlarını seçimden çıkarın.",
+    "ruleUnsupported": "Tahakkuk kayıtları için etkileri inceledikten sonra kuralları elle çalıştırın. İşlem yapısını koruyun ve mevcut bir alıcı seçin."
   }
 }

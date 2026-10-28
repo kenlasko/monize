@@ -1,3 +1,4 @@
+import { guardAccruedTagDeletion } from "../accruals/accrual-tag-guard";
 import {
   Injectable,
   NotFoundException,
@@ -177,9 +178,10 @@ export class TagsService {
       color: tag.color,
       icon: tag.icon,
     };
-    await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Tag).remove(tag),
-    );
+    await withScopedDb(this.dataSource, async (m) => {
+      await guardAccruedTagDeletion(m, userId, id);
+      await m.getRepository(Tag).remove(tag);
+    });
     this.actionHistoryService.record(userId, {
       entityType: "tag",
       entityId: id,

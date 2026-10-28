@@ -6,20 +6,33 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { convertWithRateLookup } from "../common/currency-conversion.util";
 import { preferredCurrency } from "../common/default-currency.util";
 
-export interface RawCategoryAggregate {
+import {
+  resolveFxRate,
+  type DatedRate,
+} from "../common/time-series/fx-rate-resolver";
+import { roundMoney } from "../common/round.util";
+
+/** Preserve the recognition day and source-entered rate until after conversion. */
+export interface ReportingFxRow {
+  conversion_date?: string;
+  original_currency_code?: string | null;
+  exchange_rate?: string | number | null;
+}
+
+export interface RawCategoryAggregate extends ReportingFxRow {
   category_id: string | null;
   currency_code: string;
   total: string;
 }
 
-export interface RawPayeeAggregate {
+export interface RawPayeeAggregate extends ReportingFxRow {
   payee_id: string | null;
   payee_name: string | null;
   currency_code: string;
   total: string;
 }
 
-export interface RawMonthlyAggregate {
+export interface RawMonthlyAggregate extends ReportingFxRow {
   month: string;
   currency_code: string;
   income: string;
@@ -27,21 +40,23 @@ export interface RawMonthlyAggregate {
 }
 
 /** One income/expense bucket, keyed by the date the bucket opens. */
-export interface RawPeriodAggregate {
+export interface RawPeriodAggregate extends ReportingFxRow {
   period_start: string;
   currency_code: string;
   income: string;
   expenses: string;
 }
 
-export interface RawMonthlyCategoryAggregate {
+export interface RawMonthlyCategoryAggregate extends ReportingFxRow {
   month: string;
   category_id: string | null;
   currency_code: string;
   total: string;
 }
 
-export type RateMap = Map<string, number>;
+export type RateMap = Map<string, number> & {
+  history?: Map<string, DatedRate[]>;
+};
 
 @Injectable()
 export class ReportCurrencyService {
@@ -68,6 +83,20 @@ export class ReportCurrencyService {
         Number(rate.rate),
       );
     }
+    const history = await this.exchangeRateService.getRateHistory();
+    rateMap.history = new Map();
+    for (const row of history) {
+      const pair = `${row.fromCurrency}->${row.toCurrency}`;
+      const observations = rateMap.history.get(pair) ?? [];
+      observations.push({
+        date:
+          row.rateDate instanceof Date
+            ? row.rateDate.toISOString().slice(0, 10)
+            : String(row.rateDate).slice(0, 10),
+        rate: Number(row.rate),
+      });
+      rateMap.history.set(pair, observations);
+    }
     return rateMap;
   }
 
@@ -84,7 +113,25 @@ export class ReportCurrencyService {
     fromCurrency: string,
     defaultCurrency: string,
     rateMap: RateMap,
+    context?: ReportingFxRow,
   ): number | null {
+    if (context?.conversion_date) {
+      if (amount === 0) return 0;
+      const enteredRate = Number(context.exchange_rate);
+      const rate =
+        fromCurrency !== defaultCurrency &&
+        context.original_currency_code === defaultCurrency &&
+        enteredRate > 0 &&
+        Number.isFinite(enteredRate)
+          ? 1 / enteredRate
+          : resolveFxRate(
+              fromCurrency,
+              defaultCurrency,
+              context.conversion_date,
+              (from, to) => rateMap.history?.get(`${from}->${to}`),
+            ).rate;
+      return rate === null ? null : roundMoney(amount * rate);
+    }
     // Flat latest-rate lookup; the direct/inverse decision is shared with
     // net worth via convertWithRateLookup so the two surfaces stay consistent.
     return convertWithRateLookup(

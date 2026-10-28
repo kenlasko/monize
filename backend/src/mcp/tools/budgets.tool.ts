@@ -23,18 +23,14 @@ export class McpBudgetsTools {
         title: "Budget status",
         annotations: READ_ONLY,
         description:
-          "Budgeted versus actual spending for one period, with per-category " +
-          "breakdowns, spending velocity, safe daily spend and a health score. " +
-          "`velocity.safeDailySpend` is null when an upcoming bill's amount " +
-          "cannot be priced; `upcomingBillsComplete` says so.",
+          "Period budget vs spending, category details, velocity and health. safeDailySpend is null for an unpriced upcoming bill (upcomingBillsComplete).",
         inputSchema: z.object({
+          basis: z.enum(["cash", "accrual"]).optional(),
           period: z
             .string()
             .max(20)
             .optional()
-            .describe(
-              "'CURRENT' (default), 'PREVIOUS', or a specific YYYY-MM month.",
-            ),
+            .describe("CURRENT (default), PREVIOUS, or YYYY-MM."),
           budgetName: z
             .string()
             .max(100)
@@ -54,6 +50,7 @@ export class McpBudgetsTools {
             user.userId,
             args.period ?? "CURRENT",
             args.budgetName,
+            args.basis,
           );
           return toolResult(data);
         } catch (err: unknown) {

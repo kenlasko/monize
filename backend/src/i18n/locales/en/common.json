@@ -39,5 +39,8 @@
       "loanRepayment": "Loan repayment",
       "creditCardRepayment": "Credit card repayment"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "Deleted {{ count }} transactions"
   }
 }

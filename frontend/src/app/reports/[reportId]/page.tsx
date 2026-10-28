@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportingBasisScope, ReportingBasisControl, CashReportingNotice, SELECTABLE_REPORT_IDS, CASH_REPORT_IDS } from '@/components/reports/ReportingBasis';
 import { Suspense, lazy, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -88,9 +89,11 @@ function ReportSkeleton() {
 }
 
 export default function ReportPage() {
+  const params = useParams();
+  const reportId = params.reportId as string;
   return (
     <ProtectedRoute>
-      <ReportContent />
+      {(SELECTABLE_REPORT_IDS.has(reportId) || CASH_REPORT_IDS.has(reportId)) ? <ReportingBasisScope surface={reportId} fixedBasis={CASH_REPORT_IDS.has(reportId) ? 'cash' : undefined}><ReportContent /></ReportingBasisScope> : <ReportContent />}
     </ProtectedRoute>
   );
 }
@@ -137,6 +140,8 @@ function ReportContent() {
           title={t(`page.names.${reportId}` as Parameters<typeof t>[0])}
           subtitle={t(`page.descriptions.${reportId}` as Parameters<typeof t>[0])}
         />
+        {SELECTABLE_REPORT_IDS.has(reportId) && <ReportingBasisControl />}
+        {CASH_REPORT_IDS.has(reportId) && <CashReportingNotice />}
         <Suspense fallback={<ReportSkeleton />}>
           <ReportComponent key={refreshKey} />
         </Suspense>

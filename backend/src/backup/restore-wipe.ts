@@ -12,6 +12,16 @@ export async function deleteAllUserData(
   manager: EntityManager,
 ): Promise<void> {
   // Delete in FK-safe order (reverse of insert order)
+  await manager.query("DELETE FROM accrual_allocations WHERE user_id = $1", [
+    userId,
+  ]);
+  await manager.query("DELETE FROM accrual_schedules WHERE user_id = $1", [
+    userId,
+  ]);
+  await manager.query(
+    "DELETE FROM accrual_system_accounts WHERE user_id = $1",
+    [userId],
+  );
 
   // Action history (undo/redo log) -- not included in backups, so wipe it
   // outright; restored data should not be undoable to the prior state.

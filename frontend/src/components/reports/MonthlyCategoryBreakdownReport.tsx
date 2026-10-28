@@ -1,5 +1,7 @@
-'use client';
+"use client";
 
+import { useReportExportMetadata } from "@/hooks/useReportExportMetadata";
+import { useReportingBasis, useReportingRouter } from "./ReportingBasis";
 import {
   Fragment,
   useMemo,
@@ -8,46 +10,45 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
-} from 'react';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { Skeleton } from '@/components/ui/LoadingSkeleton';
-import { builtInReportsApi } from '@/lib/built-in-reports';
+} from "react";
+
+import { useTranslations } from "next-intl";
+import { Skeleton } from "@/components/ui/LoadingSkeleton";
+import { builtInReportsApi } from "@/lib/built-in-reports";
 import {
   MonthlyBreakdownCategoryRow,
   MonthlyBreakdownTransferRow,
-} from '@/types/built-in-reports';
-import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { useDateFormat } from '@/hooks/useDateFormat';
-import { useDateRange } from '@/hooks/useDateRange';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { useReportData } from '@/hooks/useReportData';
-import { useIsMobile } from '@/hooks/useIsMobile';
-import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
-import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { SortableHeader } from '@/components/ui/SortableHeader';
-import { ReportError } from '@/components/reports/ReportError';
-import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
-import { exportToCsv } from '@/lib/csv-export';
-import { roundMoney, sumMoney } from '@/lib/format';
-import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
-import { FundingReportControls } from '@/components/reports/FundingReportControls';
-import { MonthlyTaggedBalanceSummary } from '@/components/reports/MonthlyTaggedBalanceSummary';
-import { useFundingReportControls } from '@/hooks/useFundingReportControls';
+} from "@/types/built-in-reports";
+import { useNumberFormat } from "@/hooks/useNumberFormat";
+import { useDateFormat } from "@/hooks/useDateFormat";
+import { useDateRange } from "@/hooks/useDateRange";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useReportData } from "@/hooks/useReportData";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { DateRangeSelector } from "@/components/ui/DateRangeSelector";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
+import { SortableHeader } from "@/components/ui/SortableHeader";
+import { ReportError } from "@/components/reports/ReportError";
+import { PartialDataNotice } from "@/components/reports/PartialDataNotice";
+import { roundMoney, sumMoney } from "@/lib/format";
+import { ReportToolbarActions } from "@/components/reports/ReportToolbarActions";
+import { FundingReportControls } from "@/components/reports/FundingReportControls";
+import { MonthlyTaggedBalanceSummary } from "@/components/reports/MonthlyTaggedBalanceSummary";
+import { useFundingReportControls } from "@/hooks/useFundingReportControls";
 
-const RANGE_STORAGE_KEY = 'monize-reports-monthly-category-breakdown-range';
+const RANGE_STORAGE_KEY = "monize-reports-monthly-category-breakdown-range";
 const PERCENTAGES_STORAGE_KEY =
-  'monize-reports-monthly-category-breakdown-percentages';
+  "monize-reports-monthly-category-breakdown-percentages";
 const DEVIATIONS_STORAGE_KEY =
-  'monize-reports-monthly-category-breakdown-deviations';
+  "monize-reports-monthly-category-breakdown-deviations";
 const SORT_COLUMN_STORAGE_KEY =
-  'monize-reports-monthly-category-breakdown-sort-column';
+  "monize-reports-monthly-category-breakdown-sort-column";
 const SORT_DIR_STORAGE_KEY =
-  'monize-reports-monthly-category-breakdown-sort-dir';
+  "monize-reports-monthly-category-breakdown-sort-dir";
 const INCLUDE_CURRENT_MONTH_STORAGE_KEY =
-  'monize-reports-monthly-category-breakdown-include-current-month';
+  "monize-reports-monthly-category-breakdown-include-current-month";
 const NAME_OFFSET_STORAGE_KEY =
-  'monize-reports-monthly-category-breakdown-name-offset';
+  "monize-reports-monthly-category-breakdown-name-offset";
 
 /**
  * Phone-only collapse of the category column.
@@ -79,14 +80,14 @@ const MOBILE_NAME_STUB = 28;
 const MAX_NAME_OFFSET = MOBILE_NAME_WIDTH - MOBILE_NAME_STUB;
 /** Horizontal travel before a press becomes a drag, so a tap still drills down. */
 const NAME_DRAG_THRESHOLD = 4;
-const NAME_CELL_CLASS = 'p-0 overflow-hidden touch-pan-y sm:touch-auto';
+const NAME_CELL_CLASS = "p-0 overflow-hidden touch-pan-y sm:touch-auto";
 const NAME_CLIP_CLASS =
-  'w-[var(--mcb-name-w)] overflow-hidden sm:w-auto sm:overflow-visible';
+  "w-[var(--mcb-name-w)] overflow-hidden sm:w-auto sm:overflow-visible";
 /** The header shares the column but also carries the sort indicator. */
 const NAME_HEAD_CLIP_CLASS =
-  'w-[calc(var(--mcb-name-w)_-_1.25rem)] overflow-hidden sm:w-auto sm:overflow-visible';
+  "w-[calc(var(--mcb-name-w)_-_1.25rem)] overflow-hidden sm:w-auto sm:overflow-visible";
 const NAME_INNER_CLASS =
-  'w-[var(--mcb-name-full)] ml-[calc(-1*var(--mcb-name-off))] break-words sm:w-auto sm:ml-0 sm:break-normal';
+  "w-[var(--mcb-name-full)] ml-[calc(-1*var(--mcb-name-off))] break-words sm:w-auto sm:ml-0 sm:break-normal";
 
 // Deviation thresholds (fraction of the non-zero average) mirroring yaffa.
 const DEVIATION_LEVEL_1 = 0.05;
@@ -103,41 +104,41 @@ const MIN_NON_ZERO_FOR_DEVIATION = 3;
  * s-section-N classes to Tailwind, dark-mode aware).
  */
 const SECTION_PALETTE = [
-  'bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
-  'bg-orange-50 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200',
-  'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-200',
-  'bg-teal-50 text-teal-800 dark:bg-teal-900/30 dark:text-teal-200',
-  'bg-purple-50 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
-  'bg-pink-50 text-pink-800 dark:bg-pink-900/30 dark:text-pink-200',
-  'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
-  'bg-cyan-50 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-200',
+  "bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200",
+  "bg-orange-50 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200",
+  "bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-200",
+  "bg-teal-50 text-teal-800 dark:bg-teal-900/30 dark:text-teal-200",
+  "bg-purple-50 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200",
+  "bg-pink-50 text-pink-800 dark:bg-pink-900/30 dark:text-pink-200",
+  "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200",
+  "bg-cyan-50 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-200",
 ];
 const OTHER_PALETTE =
-  'bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-200';
+  "bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-200";
 
 // Top-level group header bars. Income is rendered first (green), expenses
 // second (red), transfers last (blue) so the parts of the report are visually
 // unmistakable.
 const INCOME_GROUP_CLASS =
-  'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100';
+  "bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100";
 const EXPENSE_GROUP_CLASS =
-  'bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100';
+  "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100";
 const TRANSFER_GROUP_CLASS =
-  'bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100';
+  "bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100";
 
-const OTHER_INCOME_KEY = '__other_income__';
-const OTHER_EXPENSE_KEY = '__other_expense__';
+const OTHER_INCOME_KEY = "__other_income__";
+const OTHER_EXPENSE_KEY = "__other_expense__";
 const isOtherKey = (key: string): boolean =>
   key === OTHER_INCOME_KEY || key === OTHER_EXPENSE_KEY;
 
 // Deviation cell background classes. "high" = above average, "low" = below.
 const DEVIATION_CLASS: Record<string, string> = {
-  'high-1': 'bg-red-50 dark:bg-red-900/20',
-  'high-2': 'bg-red-100 dark:bg-red-900/40',
-  'high-3': 'bg-red-200 dark:bg-red-900/60',
-  'low-1': 'bg-green-50 dark:bg-green-900/20',
-  'low-2': 'bg-green-100 dark:bg-green-900/40',
-  'low-3': 'bg-green-200 dark:bg-green-900/60',
+  "high-1": "bg-red-50 dark:bg-red-900/20",
+  "high-2": "bg-red-100 dark:bg-red-900/40",
+  "high-3": "bg-red-200 dark:bg-red-900/60",
+  "low-1": "bg-green-50 dark:bg-green-900/20",
+  "low-2": "bg-green-100 dark:bg-green-900/40",
+  "low-3": "bg-green-200 dark:bg-green-900/60",
 };
 
 interface ProcessedRow {
@@ -165,7 +166,7 @@ interface Section {
 
 interface TransferRow {
   accountId: string;
-  direction: 'from' | 'to';
+  direction: "from" | "to";
   displayName: string;
   values: Record<string, number>;
   total: number;
@@ -174,10 +175,10 @@ interface TransferRow {
 
 // Sort state. A column is the category name, a YYYY-MM month, the total or the
 // average; rows and sections are ordered by the same key.
-type SortDir = 'asc' | 'desc';
-const CATEGORY_COLUMN = 'category';
-const TOTAL_COLUMN = 'total';
-const AVG_COLUMN = 'avg';
+type SortDir = "asc" | "desc";
+const CATEGORY_COLUMN = "category";
+const TOTAL_COLUMN = "total";
+const AVG_COLUMN = "avg";
 
 function rowSortKey(row: ProcessedRow, column: string): number | string {
   if (column === CATEGORY_COLUMN) return row.displayName;
@@ -199,10 +200,10 @@ function compareKeys(
   dir: SortDir,
 ): number {
   const cmp =
-    typeof a === 'string' && typeof b === 'string'
+    typeof a === "string" && typeof b === "string"
       ? a.localeCompare(b)
       : (a as number) - (b as number);
-  return dir === 'asc' ? cmp : -cmp;
+  return dir === "asc" ? cmp : -cmp;
 }
 
 function processGroup(
@@ -212,7 +213,7 @@ function processGroup(
   sectionIsIncome: boolean,
   sortColumn: string,
   sortDir: SortDir,
-): Omit<Section, 'title' | 'paletteClass' | 'isIncome' | 'isOther'> {
+): Omit<Section, "title" | "paletteClass" | "isIncome" | "isOther"> {
   const processed: ProcessedRow[] = rows
     .map((row) => {
       // Re-express every month value in the section's sign convention so the
@@ -249,7 +250,9 @@ function processGroup(
         sortDir,
       );
       // Tie-break alphabetically so equal values keep a stable order.
-      return primary !== 0 ? primary : a.displayName.localeCompare(b.displayName);
+      return primary !== 0
+        ? primary
+        : a.displayName.localeCompare(b.displayName);
     });
 
   const subtotals: Record<string, number> = {};
@@ -262,7 +265,13 @@ function processGroup(
     .map((r) => r.categoryId)
     .filter((id): id is string => id != null);
 
-  return { rows: processed, subtotals, subtotalSum, subtotalAvg, allCategoryIds };
+  return {
+    rows: processed,
+    subtotals,
+    subtotalSum,
+    subtotalAvg,
+    allCategoryIds,
+  };
 }
 
 function transferSortKey(row: TransferRow, column: string): number | string {
@@ -300,7 +309,7 @@ function processTransfers(
         accountId: tr.accountId,
         direction: tr.direction,
         displayName:
-          tr.direction === 'from'
+          tr.direction === "from"
             ? fromLabel(tr.accountName)
             : toLabel(tr.accountName),
         values,
@@ -314,11 +323,14 @@ function processTransfers(
         transferSortKey(b, sortColumn),
         sortDir,
       );
-      return primary !== 0 ? primary : a.displayName.localeCompare(b.displayName);
+      return primary !== 0
+        ? primary
+        : a.displayName.localeCompare(b.displayName);
     });
 
   const monthly: Record<string, number> = {};
-  for (const m of months) monthly[m] = sumMoney(rows.map((r) => r.values[m] || 0));
+  for (const m of months)
+    monthly[m] = sumMoney(rows.map((r) => r.values[m] || 0));
   const totalSum = sumMoney(rows.map((r) => r.total));
   const totalAvg = roundMoney(totalSum / monthCount);
   return { rows, monthly, totalSum, totalAvg };
@@ -331,12 +343,12 @@ function deviationClass(
   isIncome: boolean,
 ): string {
   if (nonZeroCount < MIN_NON_ZERO_FOR_DEVIATION || value === 0 || avg === 0) {
-    return '';
+    return "";
   }
   const deviation = (value - avg) / avg;
   // For expenses, above average is bad (red); for income, above is good (green).
-  const above = isIncome ? 'low' : 'high';
-  const below = isIncome ? 'high' : 'low';
+  const above = isIncome ? "low" : "high";
+  const below = isIncome ? "high" : "low";
 
   if (deviation > DEVIATION_LEVEL_3) return DEVIATION_CLASS[`${above}-3`];
   if (deviation > DEVIATION_LEVEL_2) return DEVIATION_CLASS[`${above}-2`];
@@ -344,16 +356,18 @@ function deviationClass(
   if (deviation < -DEVIATION_LEVEL_3) return DEVIATION_CLASS[`${below}-3`];
   if (deviation < -DEVIATION_LEVEL_2) return DEVIATION_CLASS[`${below}-2`];
   if (deviation < -DEVIATION_LEVEL_1) return DEVIATION_CLASS[`${below}-1`];
-  return '';
+  return "";
 }
 
 export function MonthlyCategoryBreakdownReport() {
-  const router = useRouter();
-  const t = useTranslations('reports');
+  const { exportCsvWithBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
+  const router = useReportingRouter();
+  const t = useTranslations("reports");
   const { formatCurrency, formatPercent } = useNumberFormat();
   const { formatMonth } = useDateFormat();
-  const otherExpensesLabel = t('monthlyCategoryBreakdown.otherExpenses');
-  const otherIncomeLabel = t('monthlyCategoryBreakdown.otherIncome');
+  const otherExpensesLabel = t("monthlyCategoryBreakdown.otherExpenses");
+  const otherIncomeLabel = t("monthlyCategoryBreakdown.otherIncome");
   const [showPercentages, setShowPercentages] = useLocalStorage<boolean>(
     PERCENTAGES_STORAGE_KEY,
     false,
@@ -370,7 +384,7 @@ export function MonthlyCategoryBreakdownReport() {
   );
   const [sortDir, setSortDir] = useLocalStorage<SortDir>(
     SORT_DIR_STORAGE_KEY,
-    'asc',
+    "asc",
   );
   const [includeCurrentMonth, setIncludeCurrentMonth] =
     useLocalStorage<boolean>(INCLUDE_CURRENT_MONTH_STORAGE_KEY, false);
@@ -402,8 +416,8 @@ export function MonthlyCategoryBreakdownReport() {
   const paintNameOffset = (offset: number) => {
     const el = scrollRef.current;
     if (!el) return;
-    el.style.setProperty('--mcb-name-off', `${offset}px`);
-    el.style.setProperty('--mcb-name-w', `${MOBILE_NAME_WIDTH - offset}px`);
+    el.style.setProperty("--mcb-name-off", `${offset}px`);
+    el.style.setProperty("--mcb-name-w", `${MOBILE_NAME_WIDTH - offset}px`);
   };
 
   const handleNamePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -411,7 +425,7 @@ export function MonthlyCategoryBreakdownReport() {
     // cell) must not leave the flag armed to swallow the next unrelated click.
     suppressClickRef.current = false;
     if (!isMobile) return;
-    if (!(e.target as HTMLElement).closest('[data-name-cell]')) return;
+    if (!(e.target as HTMLElement).closest("[data-name-cell]")) return;
     dragRef.current = {
       startX: e.clientX,
       startOffset: nameOffset,
@@ -462,16 +476,16 @@ export function MonthlyCategoryBreakdownReport() {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(
     now.getMonth() + 1,
-  ).padStart(2, '0')}`;
+  ).padStart(2, "0")}`;
 
   // Toggle the sort column/direction. Selecting a new column defaults to
   // ascending for the category name and descending for value columns.
   const handleSort = (column: string) => {
     if (sortColumn === column) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
       setSortColumn(column);
-      setSortDir(column === CATEGORY_COLUMN ? 'asc' : 'desc');
+      setSortDir(column === CATEGORY_COLUMN ? "asc" : "desc");
     }
   };
   const {
@@ -483,7 +497,7 @@ export function MonthlyCategoryBreakdownReport() {
     setEndDate,
     resolvedRange,
     isValid,
-  } = useDateRange({ defaultRange: '6m', storageKey: RANGE_STORAGE_KEY });
+  } = useDateRange({ defaultRange: "6m", storageKey: RANGE_STORAGE_KEY });
 
   const { start: rangeStart, end: rangeEnd } = resolvedRange;
 
@@ -494,11 +508,11 @@ export function MonthlyCategoryBreakdownReport() {
   // shows different figures depending on the preset. Snap the start down to the
   // first of its month so every visible month is fully covered and consistent
   // across presets. An empty start ("all") stays empty.
-  const reportStart = rangeStart ? `${rangeStart.slice(0, 7)}-01` : '';
+  const reportStart = rangeStart ? `${rangeStart.slice(0, 7)}-01` : "";
 
   // Account filter, tag controls and the funding fetch (spec section 11.5).
   const funds = useFundingReportControls({
-    reportKey: 'monthly-category-breakdown',
+    reportKey: "monthly-category-breakdown",
     startDate: reportStart || undefined,
     endDate: rangeEnd,
     enabled: isValid,
@@ -509,12 +523,23 @@ export function MonthlyCategoryBreakdownReport() {
     () =>
       isValid
         ? builtInReportsApi.getMonthlyCategoryBreakdown({
+            ...(basis ? { basis } : {}),
             startDate: reportStart || undefined,
             endDate: rangeEnd,
             ...(accountIds.length > 0 ? { accountIds } : {}),
           })
         : Promise.resolve(null),
-    [isValid, reportStart, rangeEnd, funds.scope.accountIdsKey],
+    [isValid, reportStart, rangeEnd, funds.scope.accountIdsKey, basis],
+    {
+      requestKey: JSON.stringify([
+        isValid,
+        reportStart,
+        rangeEnd,
+        funds.scope.accountIdsKey,
+        basis,
+      ]),
+      maskStaleData: true,
+    },
   );
 
   const currency = data?.currency;
@@ -583,7 +608,7 @@ export function MonthlyCategoryBreakdownReport() {
       );
       return {
         title: g.title,
-        paletteClass: '',
+        paletteClass: "",
         isIncome: g.isIncome,
         isOther: isOtherKey(g.key),
         ...group,
@@ -629,8 +654,8 @@ export function MonthlyCategoryBreakdownReport() {
       data.transfers || [],
       months,
       monthCount,
-      (name) => `${t('monthlyCategoryBreakdown.transferFrom')} ${name}`,
-      (name) => `${t('monthlyCategoryBreakdown.transferTo')} ${name}`,
+      (name) => `${t("monthlyCategoryBreakdown.transferFrom")} ${name}`,
+      (name) => `${t("monthlyCategoryBreakdown.transferTo")} ${name}`,
       sortColumn,
       sortDir,
     );
@@ -641,13 +666,17 @@ export function MonthlyCategoryBreakdownReport() {
     const monthlyExpenses: Record<string, number> = {};
     const monthlyIncome: Record<string, number> = {};
     for (const m of months) {
-      monthlyIncome[m] = sumMoney(incomeSections.map((s) => s.subtotals[m] || 0));
+      monthlyIncome[m] = sumMoney(
+        incomeSections.map((s) => s.subtotals[m] || 0),
+      );
       monthlyExpenses[m] = sumMoney(
         expenseSections.map((s) => s.subtotals[m] || 0),
       );
     }
     const totalIncomeSum = sumMoney(incomeSections.map((s) => s.subtotalSum));
-    const totalExpensesSum = sumMoney(expenseSections.map((s) => s.subtotalSum));
+    const totalExpensesSum = sumMoney(
+      expenseSections.map((s) => s.subtotalSum),
+    );
     const totalExpensesAvg = roundMoney(totalExpensesSum / monthCount);
     const totalIncomeAvg = roundMoney(totalIncomeSum / monthCount);
 
@@ -656,7 +685,9 @@ export function MonthlyCategoryBreakdownReport() {
     const monthlyBalance: Record<string, number> = {};
     const monthlyOverall: Record<string, number> = {};
     for (const m of months) {
-      const bal = roundMoney((monthlyIncome[m] || 0) - (monthlyExpenses[m] || 0));
+      const bal = roundMoney(
+        (monthlyIncome[m] || 0) - (monthlyExpenses[m] || 0),
+      );
       monthlyBalance[m] = bal;
       monthlyOverall[m] = roundMoney(bal + (transfers.monthly[m] || 0));
     }
@@ -707,9 +738,9 @@ export function MonthlyCategoryBreakdownReport() {
   ]);
 
   const lastDayOfMonth = (month: string): string => {
-    const [year, mon] = month.split('-').map(Number);
+    const [year, mon] = month.split("-").map(Number);
     const lastDay = new Date(year, mon, 0).getDate();
-    return `${year}-${String(mon).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    return `${year}-${String(mon).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
   };
 
   // Navigate to the transactions page with the given filters. Empty filter
@@ -724,10 +755,10 @@ export function MonthlyCategoryBreakdownReport() {
     const params = new URLSearchParams();
     const cats = opts.categoryIds ? Array.from(new Set(opts.categoryIds)) : [];
     const accs = opts.accountIds ? Array.from(new Set(opts.accountIds)) : [];
-    if (cats.length) params.set('categoryIds', cats.join(','));
-    if (accs.length) params.set('accountIds', accs.join(','));
-    if (opts.start) params.set('startDate', opts.start);
-    if (opts.end) params.set('endDate', opts.end);
+    if (cats.length) params.set("categoryIds", cats.join(","));
+    if (accs.length) params.set("accountIds", accs.join(","));
+    if (opts.start) params.set("startDate", opts.start);
+    if (opts.end) params.set("endDate", opts.end);
     if (Array.from(params.keys()).length === 0) return;
     router.push(`/transactions?${params.toString()}`);
   };
@@ -749,7 +780,11 @@ export function MonthlyCategoryBreakdownReport() {
   // Drill into the full report date range for the given categories (used when
   // clicking a category/subcategory name rather than a single month cell).
   const drillDownRange = (categoryIds: string[]) => {
-    navigateToTransactions(categoryIds, reportStart || undefined, rangeEnd || undefined);
+    navigateToTransactions(
+      categoryIds,
+      reportStart || undefined,
+      rangeEnd || undefined,
+    );
   };
 
   // Drill-down ids for a category row: its real category id, or the
@@ -757,13 +792,13 @@ export function MonthlyCategoryBreakdownReport() {
   // already understands -- mirroring the transfer-section drilldown. No extra
   // backend/DB work: the report already aggregates the uncategorized bucket.
   const rowDrillIds = (row: ProcessedRow): string[] =>
-    row.categoryId ? [row.categoryId] : ['uncategorized'];
+    row.categoryId ? [row.categoryId] : ["uncategorized"];
 
   // Drill into transfers (optionally for specific accounts) over the full
   // report range or a single month.
   const drillTransfersRange = (accountIds: string[]) => {
     pushTransactions({
-      categoryIds: ['transfer'],
+      categoryIds: ["transfer"],
       accountIds,
       start: reportStart || undefined,
       end: rangeEnd || undefined,
@@ -771,7 +806,7 @@ export function MonthlyCategoryBreakdownReport() {
   };
   const drillTransfersMonth = (month: string, accountIds: string[]) => {
     pushTransactions({
-      categoryIds: ['transfer'],
+      categoryIds: ["transfer"],
       accountIds,
       start: `${month}-01`,
       end: lastDayOfMonth(month),
@@ -786,11 +821,11 @@ export function MonthlyCategoryBreakdownReport() {
     const signed = (isIncome: boolean, value: number) =>
       roundMoney(isIncome ? value : -value);
     const headers = [
-      t('monthlyCategoryBreakdown.csvParentColumn'),
-      t('monthlyCategoryBreakdown.category'),
+      t("monthlyCategoryBreakdown.csvParentColumn"),
+      t("monthlyCategoryBreakdown.category"),
       ...model.months.map((m) => formatMonth(m)),
-      t('monthlyCategoryBreakdown.total'),
-      t('monthlyCategoryBreakdown.avgPerMonth'),
+      t("monthlyCategoryBreakdown.total"),
+      t("monthlyCategoryBreakdown.avgPerMonth"),
     ];
     const rows: (string | number)[][] = [];
     for (const section of model.sections) {
@@ -805,15 +840,15 @@ export function MonthlyCategoryBreakdownReport() {
       }
     }
     rows.push([
-      '',
-      t('monthlyCategoryBreakdown.totalExpenses'),
+      "",
+      t("monthlyCategoryBreakdown.totalExpenses"),
       ...model.months.map((m) => roundMoney(-(model.monthlyExpenses[m] || 0))),
       roundMoney(-model.totalExpensesSum),
       roundMoney(-model.totalExpensesAvg),
     ]);
     rows.push([
-      '',
-      t('monthlyCategoryBreakdown.totalIncome'),
+      "",
+      t("monthlyCategoryBreakdown.totalIncome"),
       ...model.months.map((m) => roundMoney(model.monthlyIncome[m] || 0)),
       roundMoney(model.totalIncomeSum),
       roundMoney(model.totalIncomeAvg),
@@ -822,7 +857,7 @@ export function MonthlyCategoryBreakdownReport() {
     // negative), so they are exported as-is.
     for (const transfer of model.transfers.rows) {
       rows.push([
-        t('monthlyCategoryBreakdown.transfers'),
+        t("monthlyCategoryBreakdown.transfers"),
         transfer.displayName,
         ...model.months.map((m) => transfer.values[m] || 0),
         transfer.total,
@@ -830,29 +865,29 @@ export function MonthlyCategoryBreakdownReport() {
       ]);
     }
     rows.push([
-      '',
-      t('monthlyCategoryBreakdown.balance'),
+      "",
+      t("monthlyCategoryBreakdown.balance"),
       ...model.months.map((m) => model.monthlyBalance[m] || 0),
       model.balanceSum,
       model.balanceAvg,
     ]);
     if (model.hasTransfers) {
       rows.push([
-        '',
-        t('monthlyCategoryBreakdown.totalTransfers'),
+        "",
+        t("monthlyCategoryBreakdown.totalTransfers"),
         ...model.months.map((m) => model.transfers.monthly[m] || 0),
         model.transfers.totalSum,
         model.transfers.totalAvg,
       ]);
       rows.push([
-        '',
-        t('monthlyCategoryBreakdown.overallTotal'),
+        "",
+        t("monthlyCategoryBreakdown.overallTotal"),
         ...model.months.map((m) => model.monthlyOverall[m] || 0),
         model.overallSum,
         model.overallAvg,
       ]);
     }
-    exportToCsv('monthly-category-breakdown', headers, rows);
+    exportCsvWithBasis("monthly-category-breakdown", headers, rows);
   };
 
   // Render a single signed amount cell value (or a percentage in percent mode).
@@ -861,9 +896,9 @@ export function MonthlyCategoryBreakdownReport() {
     monthTotal: number,
     isIncome: boolean | null,
   ): string => {
-    if (value === 0) return '—';
+    if (value === 0) return "—";
     const normalized = isIncome === null ? value : isIncome ? value : -value;
-    const sign = normalized > 0 ? '+' : '-';
+    const sign = normalized > 0 ? "+" : "-";
     if (showPercentages && monthTotal > 0) {
       const pct = (Math.abs(normalized) / monthTotal) * 100;
       return `${sign}${formatPercent(pct, 1)}`;
@@ -889,7 +924,9 @@ export function MonthlyCategoryBreakdownReport() {
       title={title}
     >
       <div className={NAME_CLIP_CLASS}>
-        <div className={`${NAME_INNER_CLASS} ${innerClassName}`}>{children}</div>
+        <div className={`${NAME_INNER_CLASS} ${innerClassName}`}>
+          {children}
+        </div>
       </div>
     </td>
   );
@@ -918,7 +955,10 @@ export function MonthlyCategoryBreakdownReport() {
             the label is pinned to the left so it stays visible when the table
             is scrolled horizontally. */}
         <tr>
-          <td colSpan={colSpan} className={`p-0 font-semibold ${section.paletteClass}`}>
+          <td
+            colSpan={colSpan}
+            className={`p-0 font-semibold ${section.paletteClass}`}
+          >
             <div className="sticky left-0 z-10 px-2 py-1.5 inline-block max-w-full">
               {section.allCategoryIds.length > 0 ? (
                 <button
@@ -936,10 +976,13 @@ export function MonthlyCategoryBreakdownReport() {
         </tr>
         {/* Subcategory rows (sorted alphabetically) */}
         {section.rows.map((row) => (
-          <tr key={row.categoryId || row.displayName} className="group hover:bg-gray-50 dark:hover:bg-gray-700">
+          <tr
+            key={row.categoryId || row.displayName}
+            className="group hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
             {renderNameCell(
-              'sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 text-gray-900 dark:text-gray-100',
-              'pl-5 pr-2 py-1 sm:max-w-[220px]',
+              "sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 text-gray-900 dark:text-gray-100",
+              "pl-5 pr-2 py-1 sm:max-w-[220px]",
               <button
                 type="button"
                 onClick={() => drillDownRange(rowDrillIds(row))}
@@ -952,8 +995,13 @@ export function MonthlyCategoryBreakdownReport() {
             {months.map((m) => {
               const value = row.values[m] || 0;
               const cls = showDeviations
-                ? deviationClass(value, row.nonZeroAvg, row.nonZeroCount, row.isIncome)
-                : '';
+                ? deviationClass(
+                    value,
+                    row.nonZeroAvg,
+                    row.nonZeroCount,
+                    row.isIncome,
+                  )
+                : "";
               return (
                 <td key={m} className={`px-2 py-1 text-right ${cls}`}>
                   {value !== 0 ? (
@@ -987,12 +1035,12 @@ export function MonthlyCategoryBreakdownReport() {
         {/* Section subtotal */}
         <tr className="font-bold bg-gray-50 dark:bg-gray-900 border-t-2 border-gray-300 dark:border-gray-600">
           {renderNameCell(
-            'sticky left-0 z-10 bg-gray-50 dark:bg-gray-900',
-            'px-2 py-1 sm:truncate',
+            "sticky left-0 z-10 bg-gray-50 dark:bg-gray-900",
+            "px-2 py-1 sm:truncate",
             <>
-              {t('monthlyCategoryBreakdown.subtotal')}: {section.title}
+              {t("monthlyCategoryBreakdown.subtotal")}: {section.title}
             </>,
-            `${t('monthlyCategoryBreakdown.subtotal')}: ${section.title}`,
+            `${t("monthlyCategoryBreakdown.subtotal")}: ${section.title}`,
           )}
           {months.map((m) => {
             const value = section.subtotals[m] || 0;
@@ -1037,19 +1085,19 @@ export function MonthlyCategoryBreakdownReport() {
   // bottom of that group.
   const renderGroupTotal = (isIncome: boolean) => {
     const label = isIncome
-      ? t('monthlyCategoryBreakdown.totalIncome')
-      : t('monthlyCategoryBreakdown.totalExpenses');
+      ? t("monthlyCategoryBreakdown.totalIncome")
+      : t("monthlyCategoryBreakdown.totalExpenses");
     const monthly = isIncome ? model!.monthlyIncome : model!.monthlyExpenses;
     const sum = isIncome ? model!.totalIncomeSum : model!.totalExpensesSum;
     const avg = isIncome ? model!.totalIncomeAvg : model!.totalExpensesAvg;
     const accent = isIncome
-      ? 'text-green-700 dark:text-green-300'
-      : 'text-red-700 dark:text-red-300';
+      ? "text-green-700 dark:text-green-300"
+      : "text-red-700 dark:text-red-300";
     return (
       <tr className="font-bold bg-gray-100 dark:bg-gray-900 border-t-2 border-gray-400 dark:border-gray-500">
         {renderNameCell(
           `sticky left-0 z-10 bg-gray-100 dark:bg-gray-900 ${accent}`,
-          'px-2 py-1',
+          "px-2 py-1",
           label,
         )}
         {months.map((m) => (
@@ -1062,9 +1110,7 @@ export function MonthlyCategoryBreakdownReport() {
             type="button"
             onClick={() =>
               drillDownRange(
-                isIncome
-                  ? model!.incomeCategoryIds
-                  : model!.expenseCategoryIds,
+                isIncome ? model!.incomeCategoryIds : model!.expenseCategoryIds,
               )
             }
             className="hover:underline"
@@ -1088,8 +1134,8 @@ export function MonthlyCategoryBreakdownReport() {
       >
         <div className="sticky left-0 z-10 inline-block">
           {isIncome
-            ? t('monthlyCategoryBreakdown.income')
-            : t('monthlyCategoryBreakdown.expenses')}
+            ? t("monthlyCategoryBreakdown.income")
+            : t("monthlyCategoryBreakdown.expenses")}
         </div>
       </td>
     </tr>
@@ -1099,21 +1145,27 @@ export function MonthlyCategoryBreakdownReport() {
   // ("from" positive, "to" negative), and the net total transfers row.
   const renderTransfers = () => {
     const tr = model!.transfers;
-    const accent = 'text-blue-700 dark:text-blue-300';
+    const accent = "text-blue-700 dark:text-blue-300";
     return (
       <Fragment>
         <tr>
-          <td colSpan={colSpan} className={`px-2 py-1.5 font-bold text-sm ${TRANSFER_GROUP_CLASS}`}>
+          <td
+            colSpan={colSpan}
+            className={`px-2 py-1.5 font-bold text-sm ${TRANSFER_GROUP_CLASS}`}
+          >
             <div className="sticky left-0 z-10 inline-block">
-              {t('monthlyCategoryBreakdown.transfers')}
+              {t("monthlyCategoryBreakdown.transfers")}
             </div>
           </td>
         </tr>
         {tr.rows.map((row) => (
-          <tr key={`${row.direction}-${row.accountId}`} className="group hover:bg-gray-50 dark:hover:bg-gray-700">
+          <tr
+            key={`${row.direction}-${row.accountId}`}
+            className="group hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
             {renderNameCell(
-              'sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 text-gray-900 dark:text-gray-100',
-              'pl-5 pr-2 py-1 sm:max-w-[220px]',
+              "sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 text-gray-900 dark:text-gray-100",
+              "pl-5 pr-2 py-1 sm:max-w-[220px]",
               <button
                 type="button"
                 onClick={() => drillTransfersRange([row.accountId])}
@@ -1158,13 +1210,13 @@ export function MonthlyCategoryBreakdownReport() {
         <tr className="font-bold bg-gray-100 dark:bg-gray-900 border-t-2 border-gray-400 dark:border-gray-500">
           {renderNameCell(
             `sticky left-0 z-10 bg-gray-100 dark:bg-gray-900 ${accent}`,
-            'px-2 py-1',
+            "px-2 py-1",
             <button
               type="button"
               onClick={() => drillTransfersRange(model!.allTransferAccountIds)}
               className="text-left hover:underline"
             >
-              {t('monthlyCategoryBreakdown.totalTransfers')}
+              {t("monthlyCategoryBreakdown.totalTransfers")}
             </button>,
           )}
           {months.map((m) => {
@@ -1174,7 +1226,9 @@ export function MonthlyCategoryBreakdownReport() {
                 {value !== 0 ? (
                   <button
                     type="button"
-                    onClick={() => drillTransfersMonth(m, model!.allTransferAccountIds)}
+                    onClick={() =>
+                      drillTransfersMonth(m, model!.allTransferAccountIds)
+                    }
                     className="hover:underline"
                   >
                     {formatGrand(value, null, formatCurrency, currency)}
@@ -1217,9 +1271,13 @@ export function MonthlyCategoryBreakdownReport() {
     <tr className="group font-bold bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800">
       {renderNameCell(
         `sticky left-0 z-10 bg-gray-100 dark:bg-gray-900 group-hover:bg-gray-200 dark:group-hover:bg-gray-800 ${accent}`,
-        'px-2 py-1',
+        "px-2 py-1",
         drill ? (
-          <button type="button" onClick={drill.range} className="text-left hover:underline">
+          <button
+            type="button"
+            onClick={drill.range}
+            className="text-left hover:underline"
+          >
             {label}
           </button>
         ) : (
@@ -1246,7 +1304,11 @@ export function MonthlyCategoryBreakdownReport() {
       })}
       <td className={`px-2 py-1 text-right ${accent}`}>
         {drill ? (
-          <button type="button" onClick={drill.range} className="hover:underline">
+          <button
+            type="button"
+            onClick={drill.range}
+            className="hover:underline"
+          >
             {formatGrand(sum, signMode, formatCurrency, currency)}
           </button>
         ) : (
@@ -1266,7 +1328,7 @@ export function MonthlyCategoryBreakdownReport() {
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <FundingReportControls controls={funds} />
           <DateRangeSelector
-            ranges={['3m', '6m', '1y', 'ytd']}
+            ranges={["3m", "6m", "1y", "ytd"]}
             value={dateRange}
             onChange={setDateRange}
             showCustom
@@ -1280,33 +1342,36 @@ export function MonthlyCategoryBreakdownReport() {
               <ToggleSwitch
                 checked={includeCurrentMonth}
                 onChange={setIncludeCurrentMonth}
-                label={t('monthlyCategoryBreakdown.includeCurrentMonth')}
+                label={t("monthlyCategoryBreakdown.includeCurrentMonth")}
                 size="sm"
               />
-              <span>{t('monthlyCategoryBreakdown.includeCurrentMonth')}</span>
+              <span>{t("monthlyCategoryBreakdown.includeCurrentMonth")}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <ToggleSwitch
                 checked={showPercentages}
                 onChange={setShowPercentages}
-                label={t('monthlyCategoryBreakdown.showPercentages')}
+                label={t("monthlyCategoryBreakdown.showPercentages")}
                 size="sm"
               />
-              <span>{t('monthlyCategoryBreakdown.showPercentages')}</span>
+              <span>{t("monthlyCategoryBreakdown.showPercentages")}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <ToggleSwitch
                 checked={showDeviations}
                 onChange={setShowDeviations}
-                label={t('monthlyCategoryBreakdown.showDeviations')}
+                label={t("monthlyCategoryBreakdown.showDeviations")}
                 size="sm"
               />
-              <span>{t('monthlyCategoryBreakdown.showDeviations')}</span>
+              <span>{t("monthlyCategoryBreakdown.showDeviations")}</span>
             </div>
           </div>
           {/* CSV only: this view is a matrix of figures, with nothing to render
               as a picture. */}
-          <ReportToolbarActions onExportCsv={handleExportCsv} disabled={isLoading || !!error || !hasData} />
+          <ReportToolbarActions
+            onExportCsv={handleExportCsv}
+            disabled={isLoading || !!error || !hasData}
+          />
         </div>
       </div>
 
@@ -1317,7 +1382,7 @@ export function MonthlyCategoryBreakdownReport() {
         <PartialDataNotice
           missingCurrencies={data.missingCurrencies ?? []}
           excludedCount={data.excludedCount ?? 0}
-          displayCurrency={currency ?? ''}
+          displayCurrency={currency ?? ""}
         />
       )}
 
@@ -1332,7 +1397,7 @@ export function MonthlyCategoryBreakdownReport() {
           </div>
         ) : !hasData ? (
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-            {t('monthlyCategoryBreakdown.noData')}
+            {t("monthlyCategoryBreakdown.noData")}
           </p>
         ) : (
           <div
@@ -1340,9 +1405,9 @@ export function MonthlyCategoryBreakdownReport() {
             className="overflow-x-auto"
             style={
               {
-                '--mcb-name-full': `${MOBILE_NAME_WIDTH}px`,
-                '--mcb-name-off': `${nameOffset}px`,
-                '--mcb-name-w': `${MOBILE_NAME_WIDTH - nameOffset}px`,
+                "--mcb-name-full": `${MOBILE_NAME_WIDTH}px`,
+                "--mcb-name-off": `${nameOffset}px`,
+                "--mcb-name-w": `${MOBILE_NAME_WIDTH - nameOffset}px`,
               } as CSSProperties
             }
             onPointerDown={handleNamePointerDown}
@@ -1363,8 +1428,10 @@ export function MonthlyCategoryBreakdownReport() {
                     className={`sticky left-0 z-10 bg-white dark:bg-gray-800 font-medium sm:px-2 sm:py-2 sm:min-w-[180px] ${NAME_CELL_CLASS}`}
                   >
                     <span className={`block ${NAME_HEAD_CLIP_CLASS}`}>
-                      <span className={`block px-2 py-2 sm:p-0 ${NAME_INNER_CLASS}`}>
-                        {t('monthlyCategoryBreakdown.category')}
+                      <span
+                        className={`block px-2 py-2 sm:p-0 ${NAME_INNER_CLASS}`}
+                      >
+                        {t("monthlyCategoryBreakdown.category")}
                       </span>
                     </span>
                   </SortableHeader>
@@ -1389,7 +1456,7 @@ export function MonthlyCategoryBreakdownReport() {
                     align="right"
                     className="px-2 py-2 font-medium"
                   >
-                    {t('monthlyCategoryBreakdown.total')}
+                    {t("monthlyCategoryBreakdown.total")}
                   </SortableHeader>
                   <SortableHeader
                     field={AVG_COLUMN}
@@ -1399,7 +1466,7 @@ export function MonthlyCategoryBreakdownReport() {
                     align="right"
                     className="px-2 py-2 font-medium"
                   >
-                    {t('monthlyCategoryBreakdown.avgPerMonth')}
+                    {t("monthlyCategoryBreakdown.avgPerMonth")}
                   </SortableHeader>
                 </tr>
               </thead>
@@ -1432,31 +1499,34 @@ export function MonthlyCategoryBreakdownReport() {
                 {/* Summary: totals, balance, optional transfers/overall, and a
                     recap of every category section. */}
                 <tr>
-                  <td colSpan={colSpan} className="px-3 py-2 font-bold text-sm uppercase tracking-wide border-t-4 border-gray-500 dark:border-gray-400 bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900">
+                  <td
+                    colSpan={colSpan}
+                    className="px-3 py-2 font-bold text-sm uppercase tracking-wide border-t-4 border-gray-500 dark:border-gray-400 bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900"
+                  >
                     <div className="sticky left-0 z-10 inline-block">
-                      {t('monthlyCategoryBreakdown.summary')}
+                      {t("monthlyCategoryBreakdown.summary")}
                     </div>
                   </td>
                 </tr>
                 {renderSummaryRow(
-                  t('monthlyCategoryBreakdown.totalIncome'),
+                  t("monthlyCategoryBreakdown.totalIncome"),
                   model!.monthlyIncome,
                   model!.totalIncomeSum,
                   model!.totalIncomeAvg,
                   true,
-                  'text-green-600 dark:text-green-400',
+                  "text-green-600 dark:text-green-400",
                   {
                     range: () => drillDownRange(model!.incomeCategoryIds),
                     month: (m) => drillDown(m, model!.incomeCategoryIds),
                   },
                 )}
                 {renderSummaryRow(
-                  t('monthlyCategoryBreakdown.totalExpenses'),
+                  t("monthlyCategoryBreakdown.totalExpenses"),
                   model!.monthlyExpenses,
                   model!.totalExpensesSum,
                   model!.totalExpensesAvg,
                   false,
-                  '',
+                  "",
                   {
                     range: () => drillDownRange(model!.expenseCategoryIds),
                     month: (m) => drillDown(m, model!.expenseCategoryIds),
@@ -1464,20 +1534,23 @@ export function MonthlyCategoryBreakdownReport() {
                 )}
                 <tr className="group font-bold bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 border-t-2 border-gray-400 dark:border-gray-500">
                   {renderNameCell(
-                    'sticky left-0 z-10 bg-gray-100 dark:bg-gray-900 group-hover:bg-gray-200 dark:group-hover:bg-gray-800',
-                    'px-2 py-1',
+                    "sticky left-0 z-10 bg-gray-100 dark:bg-gray-900 group-hover:bg-gray-200 dark:group-hover:bg-gray-800",
+                    "px-2 py-1",
                     <button
                       type="button"
                       onClick={() => drillDownRange(model!.allCategoryIds)}
                       className="text-left hover:underline"
                     >
-                      {t('monthlyCategoryBreakdown.balance')}
+                      {t("monthlyCategoryBreakdown.balance")}
                     </button>,
                   )}
                   {months.map((m) => {
                     const bal = model!.monthlyBalance[m] || 0;
                     return (
-                      <td key={m} className={`px-2 py-1 text-right ${bal >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <td
+                        key={m}
+                        className={`px-2 py-1 text-right ${bal >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      >
                         {bal !== 0 ? (
                           <button
                             type="button"
@@ -1492,52 +1565,85 @@ export function MonthlyCategoryBreakdownReport() {
                       </td>
                     );
                   })}
-                  <td className={`px-2 py-1 text-right ${model!.balanceSum >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <td
+                    className={`px-2 py-1 text-right ${model!.balanceSum >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                  >
                     <button
                       type="button"
                       onClick={() => drillDownRange(model!.allCategoryIds)}
                       className="hover:underline"
                     >
-                      {formatGrand(model!.balanceSum, null, formatCurrency, currency)}
+                      {formatGrand(
+                        model!.balanceSum,
+                        null,
+                        formatCurrency,
+                        currency,
+                      )}
                     </button>
                   </td>
-                  <td className={`px-2 py-1 text-right ${model!.balanceAvg >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {formatGrand(model!.balanceAvg, null, formatCurrency, currency)}
+                  <td
+                    className={`px-2 py-1 text-right ${model!.balanceAvg >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                  >
+                    {formatGrand(
+                      model!.balanceAvg,
+                      null,
+                      formatCurrency,
+                      currency,
+                    )}
                   </td>
                 </tr>
                 {model!.hasTransfers &&
                   renderSummaryRow(
-                    t('monthlyCategoryBreakdown.totalTransfers'),
+                    t("monthlyCategoryBreakdown.totalTransfers"),
                     model!.transfers.monthly,
                     model!.transfers.totalSum,
                     model!.transfers.totalAvg,
                     null,
-                    'text-blue-700 dark:text-blue-300',
+                    "text-blue-700 dark:text-blue-300",
                     {
-                      range: () => drillTransfersRange(model!.allTransferAccountIds),
-                      month: (m) => drillTransfersMonth(m, model!.allTransferAccountIds),
+                      range: () =>
+                        drillTransfersRange(model!.allTransferAccountIds),
+                      month: (m) =>
+                        drillTransfersMonth(m, model!.allTransferAccountIds),
                     },
                   )}
                 {model!.hasTransfers && (
                   <tr className="group font-bold bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 border-t-2 border-gray-400 dark:border-gray-500">
                     {renderNameCell(
-                      'sticky left-0 z-10 bg-gray-200 dark:bg-gray-800 group-hover:bg-gray-300 dark:group-hover:bg-gray-700',
-                      'px-2 py-1',
-                      t('monthlyCategoryBreakdown.overallTotal'),
+                      "sticky left-0 z-10 bg-gray-200 dark:bg-gray-800 group-hover:bg-gray-300 dark:group-hover:bg-gray-700",
+                      "px-2 py-1",
+                      t("monthlyCategoryBreakdown.overallTotal"),
                     )}
                     {months.map((m) => {
                       const ov = model!.monthlyOverall[m] || 0;
                       return (
-                        <td key={m} className={`px-2 py-1 text-right ${ov >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        <td
+                          key={m}
+                          className={`px-2 py-1 text-right ${ov >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                        >
                           {formatGrand(ov, null, formatCurrency, currency)}
                         </td>
                       );
                     })}
-                    <td className={`px-2 py-1 text-right ${model!.overallSum >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {formatGrand(model!.overallSum, null, formatCurrency, currency)}
+                    <td
+                      className={`px-2 py-1 text-right ${model!.overallSum >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                    >
+                      {formatGrand(
+                        model!.overallSum,
+                        null,
+                        formatCurrency,
+                        currency,
+                      )}
                     </td>
-                    <td className={`px-2 py-1 text-right ${model!.overallAvg >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {formatGrand(model!.overallAvg, null, formatCurrency, currency)}
+                    <td
+                      className={`px-2 py-1 text-right ${model!.overallAvg >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                    >
+                      {formatGrand(
+                        model!.overallAvg,
+                        null,
+                        formatCurrency,
+                        currency,
+                      )}
                     </td>
                   </tr>
                 )}
@@ -1560,14 +1666,19 @@ export function MonthlyCategoryBreakdownReport() {
                     ? model!.totalIncomeAvg
                     : model!.totalExpensesAvg;
                   return (
-                    <tr key={`recap-${si}`} className="group font-bold bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <tr
+                      key={`recap-${si}`}
+                      className="group font-bold bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
                       {renderNameCell(
-                        'sticky left-0 z-10 bg-gray-50 dark:bg-gray-900 group-hover:bg-gray-100 dark:group-hover:bg-gray-800',
-                        'px-2 py-1 sm:truncate',
+                        "sticky left-0 z-10 bg-gray-50 dark:bg-gray-900 group-hover:bg-gray-100 dark:group-hover:bg-gray-800",
+                        "px-2 py-1 sm:truncate",
                         section.allCategoryIds.length > 0 ? (
                           <button
                             type="button"
-                            onClick={() => drillDownRange(section.allCategoryIds)}
+                            onClick={() =>
+                              drillDownRange(section.allCategoryIds)
+                            }
                             className="block w-full text-left hover:underline sm:truncate"
                           >
                             {section.title}
@@ -1581,18 +1692,31 @@ export function MonthlyCategoryBreakdownReport() {
                         const value = section.subtotals[m] || 0;
                         return (
                           <td key={m} className="px-2 py-1 text-right">
-                            {value !== 0 && section.allCategoryIds.length > 0 ? (
+                            {value !== 0 &&
+                            section.allCategoryIds.length > 0 ? (
                               <button
                                 type="button"
-                                onClick={() => drillDown(m, section.allCategoryIds)}
+                                onClick={() =>
+                                  drillDown(m, section.allCategoryIds)
+                                }
                                 className="hover:underline"
                               >
-                                {formatCell(value, sectionMonthTotal(m), section.isIncome)}
+                                {formatCell(
+                                  value,
+                                  sectionMonthTotal(m),
+                                  section.isIncome,
+                                )}
                               </button>
                             ) : value !== 0 ? (
-                              formatCell(value, sectionMonthTotal(m), section.isIncome)
+                              formatCell(
+                                value,
+                                sectionMonthTotal(m),
+                                section.isIncome,
+                              )
                             ) : (
-                              <span className="text-gray-300 dark:text-gray-600">—</span>
+                              <span className="text-gray-300 dark:text-gray-600">
+                                —
+                              </span>
                             )}
                           </td>
                         );
@@ -1601,32 +1725,48 @@ export function MonthlyCategoryBreakdownReport() {
                         {section.allCategoryIds.length > 0 ? (
                           <button
                             type="button"
-                            onClick={() => drillDownRange(section.allCategoryIds)}
+                            onClick={() =>
+                              drillDownRange(section.allCategoryIds)
+                            }
                             className="hover:underline"
                           >
-                            {formatCell(section.subtotalSum, sectionSum, section.isIncome)}
+                            {formatCell(
+                              section.subtotalSum,
+                              sectionSum,
+                              section.isIncome,
+                            )}
                           </button>
                         ) : (
-                          formatCell(section.subtotalSum, sectionSum, section.isIncome)
+                          formatCell(
+                            section.subtotalSum,
+                            sectionSum,
+                            section.isIncome,
+                          )
                         )}
                       </td>
                       <td className="px-2 py-1 text-right">
-                        {formatCell(section.subtotalAvg, sectionAvg, section.isIncome)}
+                        {formatCell(
+                          section.subtotalAvg,
+                          sectionAvg,
+                          section.isIncome,
+                        )}
                       </td>
                     </tr>
                   );
                 })}
                 {model!.hasTransfers &&
                   renderSummaryRow(
-                    t('monthlyCategoryBreakdown.transfers'),
+                    t("monthlyCategoryBreakdown.transfers"),
                     model!.transfers.monthly,
                     model!.transfers.totalSum,
                     model!.transfers.totalAvg,
                     null,
-                    'text-blue-700 dark:text-blue-300',
+                    "text-blue-700 dark:text-blue-300",
                     {
-                      range: () => drillTransfersRange(model!.allTransferAccountIds),
-                      month: (m) => drillTransfersMonth(m, model!.allTransferAccountIds),
+                      range: () =>
+                        drillTransfersRange(model!.allTransferAccountIds),
+                      month: (m) =>
+                        drillTransfersMonth(m, model!.allTransferAccountIds),
                     },
                   )}
               </tbody>
@@ -1650,8 +1790,8 @@ function formatGrand(
   formatCurrency: (amount: number, currencyCode?: string) => string,
   currency: string | undefined,
 ): string {
-  if (value === 0) return '—';
+  if (value === 0) return "—";
   const normalized = isIncome === null ? value : isIncome ? value : -value;
-  const sign = normalized > 0 ? '+' : '-';
+  const sign = normalized > 0 ? "+" : "-";
   return `${sign} ${formatCurrency(Math.abs(normalized), currency)}`;
 }

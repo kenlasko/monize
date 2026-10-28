@@ -32,19 +32,19 @@ export const budgetsApi = {
     return response.data;
   },
 
-  getAll: async (): Promise<Budget[]> => {
+  getAll: async (basis?: 'cash' | 'accrual'): Promise<Budget[]> => {
     return dedupe(
-      'budgets:all',
+      basis ? `budgets:all:${basis}` : 'budgets:all',
       async () => {
-        const response = await apiClient.get<Budget[]>('/budgets');
+        const response = await apiClient.get<Budget[]>('/budgets', ...(basis ? [{params:{basis}}] as const : []));
         return response.data;
       },
       120_000, // 2 min
     );
   },
 
-  getById: async (id: string): Promise<Budget> => {
-    const response = await apiClient.get<Budget>(`/budgets/${id}`);
+  getById: async (id: string, basis?: 'cash' | 'accrual'): Promise<Budget> => {
+    const response = await apiClient.get<Budget>(`/budgets/${id}`, ...(basis ? [{params:{basis}}] as const : []));
     return response.data;
   },
 
@@ -126,16 +126,18 @@ export const budgetsApi = {
   },
 
   // Execution
-  getSummary: async (budgetId: string): Promise<BudgetSummary> => {
+  getSummary: async (budgetId: string, basis?: 'cash' | 'accrual'): Promise<BudgetSummary> => {
     const response = await apiClient.get<BudgetSummary>(
       `/budgets/${budgetId}/summary`,
+      ...(basis ? [{ params: { basis } }] as const : []),
     );
     return response.data;
   },
 
-  getVelocity: async (budgetId: string): Promise<BudgetVelocity> => {
+  getVelocity: async (budgetId: string, basis?: 'cash' | 'accrual'): Promise<BudgetVelocity> => {
     const response = await apiClient.get<BudgetVelocity>(
       `/budgets/${budgetId}/velocity`,
+      ...(basis ? [{ params: { basis } }] as const : []),
     );
     return response.data;
   },
@@ -144,6 +146,7 @@ export const budgetsApi = {
   getPeriods: async (budgetId: string): Promise<BudgetPeriod[]> => {
     const response = await apiClient.get<BudgetPeriod[]>(
       `/budgets/${budgetId}/periods`,
+      { params: { basis: 'cash' } },
     );
     return response.data;
   },
@@ -154,6 +157,7 @@ export const budgetsApi = {
   ): Promise<BudgetPeriod> => {
     const response = await apiClient.get<BudgetPeriod>(
       `/budgets/${budgetId}/periods/${periodId}`,
+      { params: { basis: 'cash' } },
     );
     return response.data;
   },
@@ -170,11 +174,10 @@ export const budgetsApi = {
   // Reports
   getTrend: async (
     budgetId: string,
-    months = 6,
-  ): Promise<BudgetTrendPoint[]> => {
+    months = 6, basis?: 'cash' | 'accrual'): Promise<BudgetTrendPoint[]> => {
     const response = await apiClient.get<BudgetTrendPoint[]>(
       `/budgets/${budgetId}/reports/trend`,
-      { params: { months } },
+      { params: { months, ...(basis ? { basis } : {}) } },
     );
     return response.data;
   },
@@ -182,78 +185,77 @@ export const budgetsApi = {
   getCategoryTrend: async (
     budgetId: string,
     months = 6,
-    categoryIds?: string[],
-  ): Promise<CategoryTrendSeries[]> => {
+    categoryIds?: string[], basis?: 'cash' | 'accrual'): Promise<CategoryTrendSeries[]> => {
     const response = await apiClient.get<CategoryTrendSeries[]>(
       `/budgets/${budgetId}/reports/category-trend`,
-      { params: { months, categoryIds } },
+      { params: { months, categoryIds, ...(basis ? { basis } : {}) } },
     );
     return response.data;
   },
 
-  getHealthScore: async (budgetId: string): Promise<HealthScoreResult> => {
+  getHealthScore: async (budgetId: string, basis?: 'cash' | 'accrual'): Promise<HealthScoreResult> => {
     const response = await apiClient.get<HealthScoreResult>(
       `/budgets/${budgetId}/reports/health-score`,
+      ...(basis ? [{ params: { basis } }] as const : []),
     );
     return response.data;
   },
 
   getSeasonalPatterns: async (
-    budgetId: string,
-  ): Promise<SeasonalPattern[]> => {
+    budgetId: string, basis?: 'cash' | 'accrual'): Promise<SeasonalPattern[]> => {
     const response = await apiClient.get<SeasonalPattern[]>(
       `/budgets/${budgetId}/reports/seasonal`,
+      ...(basis ? [{ params: { basis } }] as const : []),
     );
     return response.data;
   },
 
   getFlexGroupStatus: async (
-    budgetId: string,
-  ): Promise<FlexGroupStatus[]> => {
+    budgetId: string, basis?: 'cash' | 'accrual'): Promise<FlexGroupStatus[]> => {
     const response = await apiClient.get<FlexGroupStatus[]>(
       `/budgets/${budgetId}/reports/flex-groups`,
+      ...(basis ? [{ params: { basis } }] as const : []),
     );
     return response.data;
   },
 
   getDailySpending: async (
-    budgetId: string,
-  ): Promise<Array<{ date: string; amount: number }>> => {
+    budgetId: string, basis?: 'cash' | 'accrual'): Promise<Array<{ date: string; amount: number }>> => {
     const response = await apiClient.get<Array<{ date: string; amount: number }>>(
       `/budgets/${budgetId}/reports/daily-spending`,
+      ...(basis ? [{ params: { basis } }] as const : []),
     );
     return response.data;
   },
 
   getSavingsRate: async (
     budgetId: string,
-    months = 12,
-  ): Promise<SavingsRatePoint[]> => {
+    months = 12, basis?: 'cash' | 'accrual'): Promise<SavingsRatePoint[]> => {
     const response = await apiClient.get<SavingsRatePoint[]>(
       `/budgets/${budgetId}/reports/savings-rate`,
-      { params: { months } },
+      { params: { months, ...(basis ? { basis } : {}) } },
     );
     return response.data;
   },
 
   getHealthScoreHistory: async (
     budgetId: string,
-    months = 12,
-  ): Promise<HealthScoreHistoryPoint[]> => {
+    months = 12, basis?: 'cash' | 'accrual'): Promise<HealthScoreHistoryPoint[]> => {
     const response = await apiClient.get<HealthScoreHistoryPoint[]>(
       `/budgets/${budgetId}/reports/health-score-history`,
-      { params: { months } },
+      { params: { months, ...(basis ? { basis } : {}) } },
     );
     return response.data;
   },
 
   // Dashboard
-  getDashboardSummary: async (): Promise<DashboardBudgetSummary | null> => {
+  getDashboardSummary: async (basis?: 'cash' | 'accrual'): Promise<DashboardBudgetSummary | null> => {
     return dedupe<DashboardBudgetSummary | null>(
-      'budgets:dashboard',
+      basis ? `budgets:dashboard:${basis}` : 'budgets:dashboard',
       async () => {
         const response = await apiClient.get<DashboardBudgetSummary | null>(
           '/budgets/dashboard-summary',
+      ...(basis ? [{ params: { basis } }] as const : []),
         );
         return response.data;
       },
@@ -262,15 +264,16 @@ export const budgetsApi = {
 
   // Transaction context
   getCategoryBudgetStatus: async (
-    categoryIds: string[],
+    categoryIds: string[], basis?: 'cash'|'accrual',
   ): Promise<Record<string, CategoryBudgetStatus>> => {
     if (categoryIds.length === 0) return {};
     const sortedIds = [...categoryIds].sort();
-    const cacheKey = `budgets:cat-status:${sortedIds.join(',')}`;
+    const cacheKey = `budgets:cat-status:${sortedIds.join(',')}${basis ? ':' + basis : ''}`;
     return dedupe(cacheKey, async () => {
       const response = await apiClient.post<Record<string, CategoryBudgetStatus>>(
         '/budgets/category-budget-status',
         { categoryIds },
+        ...(basis ? [{ params: { basis } }] as const : []),
       );
       return response.data;
     }, 60_000);

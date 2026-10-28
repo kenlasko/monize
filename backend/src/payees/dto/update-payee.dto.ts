@@ -1,11 +1,19 @@
 import { PartialType } from "@nestjs/swagger";
-import { IsBoolean, IsIn, IsOptional } from "class-validator";
+import { IsBoolean, IsIn, IsOptional, Matches } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { CreatePayeeDto } from "./create-payee.dto";
 
 export type ApplyCategoryToTransactions = "none" | "uncategorized" | "all";
 
 export class UpdatePayeeDto extends PartialType(CreatePayeeDto) {
+  @ApiProperty({
+    required: false,
+    description: "Fingerprint from the payee category impact preview",
+  })
+  @IsOptional()
+  @Matches(/^[a-f0-9]{64}$/)
+  accrualImpactFingerprint?: string;
+
   @ApiProperty({
     example: true,
     required: false,

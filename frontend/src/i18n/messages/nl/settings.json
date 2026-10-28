@@ -242,7 +242,13 @@
       "applyHere": "Deze standaarden in deze browser gebruiken",
       "applyHereHelp": "Wist de weergave-instellingen die deze browser heeft opgeslagen, zodat de standaarden hierboven ook hier gelden.",
       "appliedHere": "Deze browser gebruikt nu je standaardweergaven"
-    }
+    },
+    "reportingBasisLabel": "Standaard rapportagebasis",
+    "reportingAccrual": "Toerekening",
+    "reportingCash": "Kasbasis",
+    "reportingBasisHelp": "Kies de standaard voor rapporten en trends per categorie en begunstigde. Kasweergaven behouden de betaaldatums.",
+    "accrualEnabledLabel": "Overlopende posten inschakelen",
+    "accrualEnabledTooltip": "Schakelt toerekeningsschema’s, saldi en rapportopties in. Wanneer uitgeschakeld, gebruiken rapporten de kasbasis. Opgeslagen schema’s blijven bewaard en worden bijgewerkt wanneer hun transacties veranderen."
   },
   "notifications": {
     "heading": "Meldingen",
@@ -836,7 +842,10 @@
       },
       "doneButton": "Gereed",
       "unlinkedBondSecuritiesList": "Betrokken effecten: {symbols}.",
-      "unlinkedBondSecuritiesMore": "en nog {count}"
+      "unlinkedBondSecuritiesMore": "en nog {count}",
+      "accrualSystemAccounts": "Systeemrekeningen voor overlopende posten",
+      "accrualSchedules": "Toerekeningsschema’s",
+      "accrualAllocations": "Periodetoerekeningen"
     },
     "storedBackups": {
       "heading": "Automatische back-ups",

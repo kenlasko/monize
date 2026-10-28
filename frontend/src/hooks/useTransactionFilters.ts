@@ -145,6 +145,7 @@ function getStoredValue<T>(key: string, defaultValue: T): T {
 }
 
 interface UseTransactionFiltersOptions {
+  resetPageOnMount?: boolean;
   accounts: Account[];
   categories: Category[];
   payees: Payee[];
@@ -152,13 +153,13 @@ interface UseTransactionFiltersOptions {
   weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6;
 }
 
-export function useTransactionFilters({ accounts, categories, payees, tags, weekStartsOn: _weekStartsOn }: UseTransactionFiltersOptions) {
+export function useTransactionFilters({ accounts, categories, payees, tags, weekStartsOn: _weekStartsOn, resetPageOnMount = false }: UseTransactionFiltersOptions) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Pagination state - initialize from URL
   const [currentPage, setCurrentPage] = useState(() => {
-    const pageParam = searchParams.get('page');
+    const pageParam = resetPageOnMount ? null : searchParams.get('page');
     return pageParam ? parseInt(pageParam, 10) : 1;
   });
 
@@ -239,6 +240,9 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     hasAttachments: HasAttachmentsFilter;
   }, push: boolean = false) => {
     const params = new URLSearchParams();
+    const currentQuery = new URLSearchParams(window.location.search);
+    const basis = currentQuery.has('targetTransactionId') || currentQuery.has('highlightTransactionId') ? 'cash' : currentQuery.get('basis');
+    if (basis === 'cash' || basis === 'accrual') params.set('basis', basis);
     if (page > 1) params.set('page', page.toString());
     if (filters.accountIds.length) params.set('accountIds', filters.accountIds.join(','));
     if (filters.categoryIds.length) params.set('categoryIds', filters.categoryIds.join(','));
@@ -830,7 +834,8 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     localStorage.removeItem(STORAGE_KEYS.tagKeyOp);
     localStorage.removeItem(STORAGE_KEYS.tagKeyValue);
     localStorage.removeItem(STORAGE_KEYS.hasAttachments);
-    router.replace('/transactions', { scroll: false });
+    const basis = new URLSearchParams(window.location.search).get('basis');
+    router.replace(basis === 'cash' || basis === 'accrual' ? `/transactions?basis=${basis}` : '/transactions', { scroll: false });
   }, [router]);
 
   const goToPage = useCallback((page: number) => {

@@ -80,6 +80,8 @@ export interface UseReportDataOptions<T = unknown> {
    * to a selection the user has already left.
    */
   requestKey?: string;
+  /** Hide data/errors belonging to another key without unmounting filter controls. */
+  maskStaleData?: boolean;
   /**
    * The key a *response* belongs to, read off the response itself.
    *
@@ -124,6 +126,7 @@ export function useReportData<T>(
   const [askedKey, setAskedKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
 
   // Read through a ref so a key changing does not itself retrigger a fetch --
   // `deps` remains the only trigger, exactly as before.
@@ -212,6 +215,7 @@ export function useReportData<T>(
         // with the key that failed would tell the caller the old report now
         // belongs to the new selection -- the precise claim this exists to
         // prevent.
+        setErrorKey(startedFor ?? null);
         setError(err instanceof Error ? err : new Error(String(err)));
       })
       .finally(() => {
@@ -263,11 +267,12 @@ export function useReportData<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
+  const mask = options.maskStaleData === true && options.requestKey !== undefined;
   return {
-    data,
+    data: mask && dataKey !== options.requestKey ? null : data,
     dataKey,
-    isLoading,
-    error,
+    isLoading: isLoading || (mask && dataKey !== options.requestKey && errorKey !== options.requestKey),
+    error: mask && errorKey !== options.requestKey ? null : error,
     reload: run,
     setData: replace,
     adoptAs,

@@ -1,11 +1,11 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { exportToCsv } from '@/lib/csv-export';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
@@ -13,6 +13,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { isComplete, reportTotal } from '@/lib/currency-total';
 
 export function TaxSummaryReport() {
+  const { exportCsvWithBasis, withPdfBasis } = useReportExportMetadata('cash');
   const t = useTranslations('reports');
   const tCommon = useTranslations('common');
   const { formatCurrency, defaultCurrency } = useNumberFormat();
@@ -91,19 +92,19 @@ export function TaxSummaryReport() {
     rows.push([t('taxSummary.csvSectionTotals'), exportLabel(t('taxSummary.csvTotalIncome'), income), income.value]);
     rows.push([t('taxSummary.csvSectionTotals'), exportLabel(t('taxSummary.csvTotalExpenses'), expenses), expenses.value]);
     rows.push([t('taxSummary.csvSectionTotals'), exportLabel(t('taxSummary.csvTotalDeductions'), deductible), deductible.value]);
-    exportToCsv(`tax-summary-${selectedYear}`, headers, rows);
+    exportCsvWithBasis(`tax-summary-${selectedYear}`, headers, rows);
   };
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
     const { headers, rows } = getExportData();
     const totalRow: (string | number)[] = [t('taxSummary.csvSectionTotals'), t('taxSummary.pdfTotalsLabel'), `${formatCurrency(income.value)}${marker(income)} / ${formatCurrency(expenses.value)}${marker(expenses)} / ${formatCurrency(deductible.value)}${marker(deductible)}`];
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('taxSummary.pdfTitlePrefix') + selectedYear,
       subtitle: t('taxSummary.pdfIncomeExpensesDeductions', { income: `${formatCurrency(income.value)}${marker(income)}`, expenses: `${formatCurrency(expenses.value)}${marker(expenses)}`, deductions: `${formatCurrency(deductible.value)}${marker(deductible)}` }),
       tableData: { headers, rows, totalRow },
       filename: `tax-summary-${selectedYear}`,
-    });
+    }));
   };
 
   return (

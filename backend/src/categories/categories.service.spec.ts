@@ -1,3 +1,11 @@
+jest.mock("../accruals/accrual-taxonomy-operation", () => ({
+  beginTaxonomyOperation: async () => undefined,
+  recordTaxonomyOperation: async () => undefined,
+}));
+jest.mock("../accruals/accrual-relationship-history", () => ({
+  beginRelationshipHistory: async () => undefined,
+  recordRelationshipHistory: async () => undefined,
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { DataSource } from "typeorm";
@@ -92,7 +100,63 @@ describe("CategoriesService", () => {
     ...overrides,
   });
 
+  let storedCategoryRows: Category[] | undefined;
+  let storedSourceRows: {
+    id: string;
+    categoryId: string;
+    isSplit: boolean;
+    status: string;
+    snapshot: string;
+  }[];
+  function sourceRows(count: number) {
+    return Array.from({ length: count }, (_, index) => ({
+      id: `tx-${index + 1}`,
+      categoryId: "cat-1",
+      isSplit: false,
+      status: "UNRECONCILED",
+      snapshot: JSON.stringify({ id: `tx-${index + 1}` }),
+    }));
+  }
+  async function categoryQuery(sql: string) {
+    if (sql.includes("FROM categories c")) {
+      let rows = storedCategoryRows;
+      if (!rows) {
+        const resolved = await Promise.all(
+          categoriesRepository.findOne.mock.results
+            .filter((result) => result.type === "return")
+            .map((result) => result.value),
+        );
+        const lists = await Promise.all(
+          categoriesRepository.find.mock.results
+            .filter((result) => result.type === "return")
+            .map((result) => result.value),
+        );
+        const byId = new Map<string, Category>();
+        for (const row of [
+          ...resolved,
+          ...lists.flatMap((value) => (Array.isArray(value) ? value : [])),
+        ])
+          if (row?.id)
+            byId.set(row.id, { ...mockCategory, ...byId.get(row.id), ...row });
+        rows = [...byId.values()];
+      }
+      return [...rows]
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .map((row) => ({
+          ...row,
+          snapshot: JSON.stringify(row),
+        }));
+    }
+    if (sql.includes("FROM transactions t WHERE")) return storedSourceRows;
+    if (sql.includes("FROM accrual_schedules")) return [];
+    if (sql.includes("SELECT id FROM payees")) return [];
+    return [];
+  }
+
   beforeEach(async () => {
+    storedCategoryRows = undefined;
+    storedSourceRows = [];
+
     categoriesRepository = {
       create: jest
         .fn()
@@ -146,6 +210,7 @@ describe("CategoriesService", () => {
       [ScheduledTransactionSplit, scheduledSplitsRepository],
       [UserPreference, preferencesRepository],
     ]));
+    txManager.query.mockImplementation(categoryQuery);
     txManager.update.mockResolvedValue({ affected: 0 });
     txManager.find.mockResolvedValue([]);
     // Mirror real TypeORM: save/remove require an explicit entity target
@@ -1124,7 +1189,7 @@ describe("CategoriesService", () => {
     });
 
     it("ignores isIncome in dto for existing child category", async () => {
-      const parentCat = { ...mockCategory, id: "parent-1", isIncome: false };
+      const parentCat = { ...mockCategory, id: "cat-1", isIncome: false };
       categoriesRepository.findOne
         .mockResolvedValueOnce({ ...mockChildCategory, isIncome: false }) // findOne: load child
         .mockResolvedValueOnce(parentCat) // findOne: parent chain color resolution
@@ -1206,14 +1271,13 @@ describe("CategoriesService", () => {
       });
       categoriesRepository.save.mockImplementation((data) => data);
 
-      // The cascade runs inside the update transaction via the transaction
-      // manager. First call: direct children of cat-1; subsequent calls:
-      // grandchildren (none).
+      // The locked hierarchy supplies all descendants before the first write.
+      storedCategoryRows = [
+        { ...mockCategory },
+        { ...mockChildCategory, id: "child-1" },
+        { ...mockChildCategory, id: "child-2" },
+      ];
       const manager = txManager;
-      manager.find
-        .mockResolvedValueOnce([{ id: "child-1" }, { id: "child-2" }])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
 
       await service.update("user-1", "cat-1", { isIncome: true });
 
@@ -1443,10 +1507,7 @@ describe("CategoriesService", () => {
       categoriesRepository.findOne
         .mockResolvedValueOnce(mockCategory)
         .mockResolvedValueOnce({ ...mockCategory, id: "cat-target" });
-
-      const txQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
-      });
+      storedSourceRows = sourceRows(5);
       const splitQb = createMockQueryBuilder({
         execute: jest.fn().mockResolvedValue({ affected: 2 }),
       });
@@ -1454,132 +1515,92 @@ describe("CategoriesService", () => {
         getMany: jest.fn().mockResolvedValue([{ id: "st-1" }]),
       });
       const ssQb = createMockQueryBuilder();
-
-      let createQbCallCount = 0;
-      const mockManager = {
-        // findOne() runs through the same re-mocked transaction, so route
-        // getRepository at the shared Category repo mock.
-        getRepository: jest.fn(() => categoriesRepository),
-        update: jest
-          .fn()
-          .mockResolvedValueOnce({ affected: 5 }) // Transaction update
-          .mockResolvedValueOnce({ affected: 1 }), // ScheduledTransaction update
-        createQueryBuilder: jest
-          .fn()
-          .mockImplementation((..._args: unknown[]) => {
-            createQbCallCount++;
-            // Call 1: get user transaction IDs (with entity arg)
-            if (createQbCallCount === 1) return txQb;
-            // Call 2: update splits (no entity arg)
-            if (createQbCallCount === 2) return splitQb;
-            // Call 3: get user scheduled transaction IDs (with entity arg)
-            if (createQbCallCount === 3) return stQb;
-            // Call 4: update scheduled splits (no entity arg)
-            return ssQb;
-          }),
-        save: jest.fn(),
-      };
-      mockDataSource.transaction.mockImplementation(
-        async (fn: (m: unknown) => unknown) => fn(mockManager),
+      txManager.createQueryBuilder.mockImplementation((entity: unknown) =>
+        entity === ScheduledTransaction
+          ? stQb
+          : entity === undefined
+            ? splitQb.execute.mock.calls.length
+              ? ssQb
+              : splitQb
+            : createMockQueryBuilder(),
       );
-
+      txManager.update
+        .mockResolvedValueOnce({ affected: 5 })
+        .mockResolvedValueOnce({ affected: 1 });
       const result = await service.reassignTransactions(
         "user-1",
         "cat-1",
         "cat-target",
       );
-
-      expect(result.transactionsUpdated).toBe(5);
-      expect(result.splitsUpdated).toBe(2);
-      expect(result.scheduledUpdated).toBe(1);
+      expect(result).toEqual({
+        transactionsUpdated: 5,
+        splitsUpdated: 2,
+        scheduledUpdated: 1,
+      });
+      expect(txManager.update).toHaveBeenCalledWith(
+        Transaction,
+        expect.objectContaining({ userId: "user-1", categoryId: "cat-1" }),
+        { categoryId: "cat-target" },
+      );
+      expect(splitQb.andWhere).toHaveBeenCalledWith(
+        "transactionId IN (:...transactionIds)",
+        {
+          transactionIds: storedSourceRows.map((row) => row.id),
+        },
+      );
     });
 
     it("reassigns to null category", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
-
-      const txQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      });
-      const stQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      });
-
-      let createQbCallCount = 0;
-      const mockManager = {
-        // findOne() runs through the same re-mocked transaction, so route
-        // getRepository at the shared Category repo mock.
-        getRepository: jest.fn(() => categoriesRepository),
-        update: jest
-          .fn()
-          .mockResolvedValueOnce({ affected: 3 }) // Transaction update
-          .mockResolvedValueOnce({ affected: 0 }), // ScheduledTransaction update
-        createQueryBuilder: jest
-          .fn()
-          .mockImplementation((..._args: unknown[]) => {
-            createQbCallCount++;
-            if (createQbCallCount === 1) return txQb;
-            return stQb;
-          }),
-        save: jest.fn(),
-      };
-      mockDataSource.transaction.mockImplementation(
-        async (fn: (m: unknown) => unknown) => fn(mockManager),
+      storedSourceRows = sourceRows(3);
+      const splitQb = createMockQueryBuilder(),
+        stQb = createMockQueryBuilder();
+      txManager.createQueryBuilder.mockImplementation((entity: unknown) =>
+        entity === ScheduledTransaction ? stQb : splitQb,
       );
-
+      txManager.update
+        .mockResolvedValueOnce({ affected: 3 })
+        .mockResolvedValueOnce({ affected: 0 });
       const result = await service.reassignTransactions(
         "user-1",
         "cat-1",
         null,
       );
-
-      expect(result.transactionsUpdated).toBe(3);
-      expect(result.splitsUpdated).toBe(0);
-      expect(result.scheduledUpdated).toBe(0);
+      expect(result).toEqual({
+        transactionsUpdated: 3,
+        splitsUpdated: 0,
+        scheduledUpdated: 0,
+      });
+      expect(txManager.update).toHaveBeenCalledWith(
+        Transaction,
+        expect.objectContaining({ userId: "user-1", categoryId: "cat-1" }),
+        { categoryId: null },
+      );
     });
 
     it("skips split update when user has no transactions", async () => {
       categoriesRepository.findOne
         .mockResolvedValueOnce(mockCategory)
         .mockResolvedValueOnce({ ...mockCategory, id: "cat-target" });
-
-      const txQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      });
-      const stQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      });
-
-      let createQbCallCount = 0;
-      const mockManager = {
-        // findOne() runs through the same re-mocked transaction, so route
-        // getRepository at the shared Category repo mock.
-        getRepository: jest.fn(() => categoriesRepository),
-        update: jest
-          .fn()
-          .mockResolvedValueOnce({ affected: 0 }) // Transaction update
-          .mockResolvedValueOnce({ affected: 0 }), // ScheduledTransaction update
-        createQueryBuilder: jest
-          .fn()
-          .mockImplementation((..._args: unknown[]) => {
-            createQbCallCount++;
-            if (createQbCallCount === 1) return txQb;
-            return stQb;
-          }),
-        save: jest.fn(),
-      };
-      mockDataSource.transaction.mockImplementation(
-        async (fn: (m: unknown) => unknown) => fn(mockManager),
-      );
-
+      storedSourceRows = [];
+      const stQb = createMockQueryBuilder();
+      txManager.createQueryBuilder.mockReturnValue(stQb);
       const result = await service.reassignTransactions(
         "user-1",
         "cat-1",
         "cat-target",
       );
-
       expect(result.splitsUpdated).toBe(0);
-      // createQueryBuilder is called twice (txIds + scheduledTxIds) but never for splits
-      expect(mockManager.createQueryBuilder).toHaveBeenCalledTimes(2);
+      expect(txManager.createQueryBuilder).toHaveBeenCalledTimes(1);
+      expect(txManager.createQueryBuilder).toHaveBeenCalledWith(
+        ScheduledTransaction,
+        "st",
+      );
+      expect(txManager.update).not.toHaveBeenCalledWith(
+        Transaction,
+        expect.anything(),
+        expect.anything(),
+      );
     });
 
     it("throws NotFoundException when source category does not exist", async () => {

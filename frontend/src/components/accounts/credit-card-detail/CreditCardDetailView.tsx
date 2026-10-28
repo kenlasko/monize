@@ -73,7 +73,7 @@ export function CreditCardDetailView({ account }: CreditCardDetailViewProps) {
 
       const [totalsData, interestData, balancesData, forecastData] = await Promise.all([
         transactionsApi
-          .getGroupedTotals({
+          .getGroupedTotals({ basis: 'cash',
             groupBy: 'category',
             accountIds: [account.id],
             startDate: spendStart,
@@ -140,7 +140,7 @@ export function CreditCardDetailView({ account }: CreditCardDetailViewProps) {
 
   const handleCategorySelect = (categoryId: string | null) => {
     router.push(
-      `/transactions?accountId=${account.id}&categoryId=${categoryId ?? 'uncategorized'}` +
+      `/transactions?basis=cash&accountId=${account.id}&categoryId=${categoryId ?? 'uncategorized'}` +
         `&startDate=${spendingRange.start}&endDate=${spendingRange.end}`,
     );
   };

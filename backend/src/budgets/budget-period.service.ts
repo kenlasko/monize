@@ -375,6 +375,8 @@ export class BudgetPeriodService {
       budgetCategories,
       periodStart,
       periodEnd,
+      undefined,
+      "cash",
     );
 
     const result = new Map<string, number>();

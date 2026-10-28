@@ -28,7 +28,7 @@ transactionDate: string;
 
 **Raw selects bypass both transformers.** `getRawOne`/`getRawMany` return driver values: a DATE comes back as a JS `Date` and a numeric as a string, regardless of the entity transformer. Select a DATE as text in SQL (`TO_CHAR(col, 'YYYY-MM-DD')`) and pass a numeric through `Number()` before it reaches a DTO that declares `string`/`number`. `main.ts` installs a global DATE string parser, which hides the DATE half in the running server but not in tests, jobs, or any other process -- so do not rely on it. `payee-detail.service.ts` is the worked example; `test/payee-detail.e2e-spec.ts` caught it, because a unit spec with mocked query builders cannot.
 
-**A hand-written column name is checked by nobody -- so a scan checks it.** A mocked `manager.query` records the string and resolves, making every raw statement's column names untested by construction (`AutoBackupService` wrote `RETURNING id` against a table whose primary key is `user_id`, the spec pinned the wrong string with `toContain`, and no user's automatic backup ran). `src/common/db/raw-sql-columns.spec.ts` checks every `RETURNING` list, `INSERT` column list and `UPDATE ... SET` target in `src/` against `database/schema.sql`. Assert the *column*, not the substring.
+**A hand-written column name is checked by nobody -- so a scan checks it.** A mocked `manager.query` records the string and resolves, making every raw statement's column names untested by construction (`AutoBackupService` wrote `RETURNING id` against a table whose primary key is `user_id`, the spec pinned the wrong string with `toContain`, and no user's automatic backup ran). `src/common/db/raw-sql-columns.spec.ts` checks every `RETURNING` list, `INSERT` column list and `UPDATE ... SET` target in `src/` against `database/schema.sql`. Assert the _column_, not the substring.
 
 **A per-user loop in a cron isolates each user, including the steps before the work starts.** Wrap the entire per-user body in the `try` -- an error while deciding whether to run (a pre-check, the claim's own `UPDATE`) must not leave the handler and skip every remaining user. Record the failure on the row so the last-run status tells the truth, and record it through a path that cannot itself throw.
 
@@ -36,7 +36,7 @@ transactionDate: string;
 
 ## An optional field with a format validator needs `@ValidateIf`, not just `@IsOptional`
 
-`@IsOptional()` waives validation for `undefined` and `null` only. A text input the user left alone arrives as `""` (react-hook-form sends it), so an `@IsUrl` / `@IsEmail` beside `@IsOptional()` still rejects it -- and because validation fails per *request*, one blank optional field breaks every save from that form. Add `@ValidateIf((_o, value) => value !== null && value !== "")` for a nullable column so a blank clears it. `src/common/optional-format-dto.spec.ts` sweeps every URL- and email-validated DTO property; a NOT NULL field belongs on its exemption list with a reason. This class of bug is invisible to unit tests (hand-built payloads); it surfaces in E2E or production.
+`@IsOptional()` waives validation for `undefined` and `null` only. A text input the user left alone arrives as `""` (react-hook-form sends it), so an `@IsUrl` / `@IsEmail` beside `@IsOptional()` still rejects it -- and because validation fails per _request_, one blank optional field breaks every save from that form. Add `@ValidateIf((_o, value) => value !== null && value !== "")` for a nullable column so a blank clears it. `src/common/optional-format-dto.spec.ts` sweeps every URL- and email-validated DTO property; a NOT NULL field belongs on its exemption list with a reason. This class of bug is invisible to unit tests (hand-built payloads); it surfaces in E2E or production.
 
 ## A phone number is normalized by the service, not by a decorator
 
@@ -51,7 +51,7 @@ The check is **not** a DTO decorator, because placing a number written without a
 country code needs the caller's region and class-validator cannot see it. The
 region comes from preferences the user has already set (`number_format`, then
 `language`), and `null` -- no region derivable -- makes a bare national number a
-*question* (`phoneNeedsCountryCode`) rather than a rejection: telling somebody
+_question_ (`phoneNeedsCountryCode`) rather than a rejection: telling somebody
 their perfectly correct number is invalid sends them to check digits that are
 right. Three writers exist and all three go through
 `PayeesService.previewContactFields`: the preview an AI or MCP card is built
@@ -60,7 +60,7 @@ one value on the card and store another.
 
 Two rules the tests hold. **A resent value is not an edit** -- the form sends
 every field on every save, and rows written before this existed are not
-backfilled, so validating a value merely *present* in the payload would make
+backfilled, so validating a value merely _present_ in the payload would make
 such a payee impossible to edit at all. Only a value that actually moved is
 normalized. And **the lookup normalizes before any caller sees a suggestion**
 (`PayeeContactLookupService.vetCandidate`), which is what makes the background
@@ -73,15 +73,15 @@ this layer and the frontend both assert, so the two can never disagree about
 which numbers are accepted.
 
 **A region is a fact about the reader, not evidence about a third party.**
-`number_format` says where *this user* dials from, which is exactly what places
-a number *they* typed -- and is unrelated to where a payee's office is. So the
+`number_format` says where _this user_ dials from, which is exactly what places
+a number _they_ typed -- and is unrelated to where a payee's office is. So the
 contact lookup normalizes a model's suggestion with **no** region
 (`vetCandidate` passes `null`) and drops one that carries no country code, which
 is what the prompt asks the model for. Read in the reader's region, a Mexico
 City `55 1234 5678` is a valid `+15512345678` in New Jersey -- a different
 number that dials, written into the column by the background enrichment with
 nobody in the loop, under a name the user trusts. An empty field they can fill
-beats a confident wrong number. The rule splits by *who supplied the value*, not
+beats a confident wrong number. The rule splits by _who supplied the value_, not
 by which function normalizes it: user-typed gets the region, model-supplied does
 not.
 
@@ -123,7 +123,7 @@ frontend's file and fails when the two disagree.
 
 ## A partial escape is indistinguishable from a correct one
 
-Interpolating a literal into a pattern goes through `escapeRegExp` (`src/common/escape-regexp.util.ts`) -- never a hand-written character class, and never a subset of one (`repo-paths.util.ts` escaped only dots and left `\` alone; CodeQL `js/incomplete-sanitization`, CWE-020). `escape-regexp.guard.spec.ts` scans `src/` for either shape. Where the pattern is built from a list, export the builder and test it against a prefix carrying a metacharacter (`buildPlainRootedPathPattern`) -- over real inputs the broken and correct escapes can agree exactly. Do not escape `-`: outside a class it is literal, and `\-` is a SyntaxError under the `u` flag -- so never interpolate the result *inside* a class.
+Interpolating a literal into a pattern goes through `escapeRegExp` (`src/common/escape-regexp.util.ts`) -- never a hand-written character class, and never a subset of one (`repo-paths.util.ts` escaped only dots and left `\` alone; CodeQL `js/incomplete-sanitization`, CWE-020). `escape-regexp.guard.spec.ts` scans `src/` for either shape. Where the pattern is built from a list, export the builder and test it against a prefix carrying a metacharacter (`buildPlainRootedPathPattern`) -- over real inputs the broken and correct escapes can agree exactly. Do not escape `-`: outside a class it is literal, and `\-` is a SyntaxError under the `u` flag -- so never interpolate the result _inside_ a class.
 
 ## A list of columns that means something is written once, in the place that can check it
 
@@ -137,4 +137,8 @@ The columns referencing `currencies(code)` were spelled out in four places and w
 
 `CURRENT_TIMESTAMP` is **transaction start time** in PostgreSQL and TypeORM leans on the column default, so every row a single transaction writes (a whole `.mny` import, a whole restore) carries the same `created_at`, and any tiebreak on it falls through to the next key -- in the register, a random UUID. The stored balance survives that; the running balance beside it does not (a same-day debit ordered before the credit that funded it shows the account overdrawn).
 
-When the clock cannot separate two rows, their signs do: **credits before debits, chronologically** -- for a newest-first list the tiebreak runs *opposite* to the list direction. `applyRegisterOrder` (`backend/src/transactions/register-order.ts`) is the only place that order is written -- with the sort field the reader chose as its primary key -- and `restrictToRowsNewerThanPage` is the only place the page window is written, because three of its call sites are the queries that sum the rows a page's starting running balance is seeded from; a tiebreak added to the register alone re-splits the pages under those sums. INV-REGISTER-001.
+When the clock cannot separate two rows, their signs do: **credits before debits, chronologically** -- for a newest-first list the tiebreak runs _opposite_ to the list direction. `applyRegisterOrder` (`backend/src/transactions/register-order.ts`) is the only place that order is written -- with the sort field the reader chose as its primary key -- and `restrictToRowsNewerThanPage` is the only place the page window is written, because three of its call sites are the queries that sum the rows a page's starting running balance is seeded from; a tiebreak added to the register alone re-splits the pages under those sums. INV-REGISTER-001.
+
+## Recognition detail query arrays
+
+A selection can contain one UUID or repeated UUID query keys. Normalize a string to a one-element array before `IsArray`, `ArrayMaxSize` and per-item UUID validation. Do not discard malformed selections, accept unknown bracketed properties, or change the global Express query parser to accommodate one endpoint. Verify real HTTP requests in `backend/src/accruals/reporting-details-http.spec.ts`.

@@ -6,6 +6,7 @@ import { GroupedTotal, TransactionSummary } from '@/types/transaction';
  * excludes the widget's own entity id -- each widget injects that itself.
  */
 export interface WidgetFilterParams {
+  basis?: 'cash' | 'accrual';
   accountIds?: string[];
   startDate?: string;
   endDate?: string;
@@ -38,6 +39,14 @@ export function buildDisplayCurrencyStrategy(
   defaultCurrency: string,
   convertToDefault: (amount: number, fromCurrency: string) => number | null,
 ): DisplayCurrencyStrategy {
+  if (summary?.currency && summary.fxComplete === true) {
+    return {
+      displayCurrency: summary.currency,
+      toDisplay: (amount, fromCurrency) => fromCurrency === summary.currency
+        ? amount
+        : summary.currency === defaultCurrency ? convertToDefault(amount, fromCurrency) : null,
+    };
+  }
   const currencies = Object.keys(summary?.byCurrency ?? {});
   if (currencies.length === 1) {
     return { displayCurrency: currencies[0], toDisplay: (amount) => amount };
@@ -70,6 +79,12 @@ export function summarizeInDisplayCurrency(
    */
   excludedTransactionCount: number;
 } {
+  if (summary.currency === strategy.displayCurrency && summary.fxComplete === true) {
+    return {
+      income: summary.totalIncome, expenses: summary.totalExpenses, net: summary.netCashFlow,
+      missingCurrencies: [], includedTransactionCount: summary.transactionCount, excludedTransactionCount: 0,
+    };
+  }
   const buckets = Object.entries(summary.byCurrency ?? {});
   if (buckets.length <= 1) {
     return {

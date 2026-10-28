@@ -148,12 +148,9 @@ export class McpTransactionsTools {
         title: "List transactions",
         annotations: READ_ONLY,
         description:
-          "Income, expense and net totals over cash transactions, with an " +
-          "optional grouped breakdown and transfer rollup per account. The " +
-          "totals answer most questions; includeTransactions adds the rows " +
-          "(costly). Transfers between own accounts are not in the " +
-          "totals; transfersOnly shows them.",
+          "Cash income/expense/net totals, grouped breakdown and per-account transfer rollup. Use includeTransactions for rows (costly). Own-account transfers stay outside income/expenses; transfersOnly shows them. Use generate_report for accrual.",
         inputSchema: z.object({
+          basis: z.literal("cash").optional(),
           searchText: z
             .string()
             .max(200)
@@ -164,7 +161,7 @@ export class McpTransactionsTools {
             .max(10)
             .optional()
             .describe("Defaults to 30 days ago."),
-          endDate: z.string().max(10).optional().describe("Defaults to today."),
+          endDate: z.string().max(10).optional(),
           accountNames: z
             .array(z.string().max(100))
             .max(50)
@@ -205,7 +202,7 @@ export class McpTransactionsTools {
             .optional()
             .default(false)
             .describe(
-              "A foreign-currency row carries read-only originalAmount, originalCurrencyCode and exchangeRate beside the account-currency amount.",
+              "Foreign rows include originalAmount, originalCurrencyCode and exchangeRate; amount is in account currency.",
             ),
           limit: numberArg(z.number().int().min(1).max(100))
             .optional()
@@ -299,10 +296,9 @@ export class McpTransactionsTools {
         title: "Compare periods",
         annotations: READ_ONLY,
         description:
-          "Compare spending or income across two periods, with the change per " +
-          "group. Omitted dates default to last full month against this month " +
-          "to date.",
+          "Compare spending/income by group between periods. Dates default to last full month vs this month to date; basis follows your preference.",
         inputSchema: z.object({
+          basis: z.enum(["cash", "accrual"]).optional(),
           period1Start: z.string().max(10).optional(),
           period1End: z.string().max(10).optional(),
           period2Start: z.string().max(10).optional(),
@@ -340,6 +336,7 @@ export class McpTransactionsTools {
               period2End: periods.period2End,
               groupBy: args.groupBy,
               direction: args.direction,
+              basis: args.basis,
             },
           );
           return toolResult(data);

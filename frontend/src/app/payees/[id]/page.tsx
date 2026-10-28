@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportingBasisScope, ReportingBasisControl, useReportingBasis, useReportingRouter, CashReportingNotice } from '@/components/reports/ReportingBasis';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -132,19 +133,24 @@ type CategoryRange = 'year' | 'all';
 const CATEGORY_RANGES: readonly CategoryRange[] = ['year', 'all'];
 
 export default function PayeeDetailPage() {
+  const viewQuery = useSearchParams();
+  const initialBasis = viewQuery.get('basis') === 'cash' ? 'cash' : viewQuery.get('basis') === 'accrual' ? 'accrual' : undefined;
+  const params = useParams();
   return (
     <ProtectedRoute>
-      <PayeeDetailContent />
+      <ReportingBasisScope initialBasis={initialBasis} resetOnBasis surface={`payees:${params.id}`}><PayeeDetailContent /></ReportingBasisScope>
     </ProtectedRoute>
   );
 }
 
 function PayeeDetailContent() {
+  const basis = useReportingBasis();
   const t = useTranslations('payeeDetail');
   // The edit modal reuses the payees list's form, heading and toasts.
   const tp = useTranslations('payees');
   const params = useParams();
   const router = useRouter();
+  const reportingRouter = useReportingRouter();
   const searchParams = useSearchParams();
   const payeeId = params.id as string;
 
@@ -213,47 +219,44 @@ function PayeeDetailContent() {
           categoryTotalsAllTime,
           recurringCharges,
         ] = await Promise.all([
-          transactionsApi.getSummary({ payeeIds: [payeeId] }).catch((err) => {
-            logger.error(err);
-            return null;
-          }),
+          transactionsApi.getSummary({ basis, payeeIds: [payeeId] }),
           transactionsApi
-            .getSummary({ payeeIds: [payeeId], startDate: thisYearStart, endDate: today })
-            .catch(() => null),
+            .getSummary({ basis, payeeIds: [payeeId], startDate: thisYearStart, endDate: today })
+            ,
           transactionsApi
-            .getSummary({
+            .getSummary({ basis,
               payeeIds: [payeeId],
               startDate: lastYearStart,
               endDate: lastYearSameDate,
             })
-            .catch(() => null),
+            ,
           // No date range: the chart covers the payee's whole history, and its
           // own granularity control buckets by quarter or year once that history
           // outgrows monthly bars. A window here would silently hide the years
           // before it, which is the opposite of what a detail page is for.
           transactionsApi
-            .getMonthlyTotals({ payeeIds: [payeeId] })
-            .catch(() => [] as MonthlyTotal[]),
+            .getMonthlyTotals({ basis, payeeIds: [payeeId] })
+            ,
           transactionsApi
-            .getGroupedTotals({
+            .getGroupedTotals({ basis,
               groupBy: 'category',
               payeeIds: [payeeId],
               startDate: yearAgo,
               endDate: today,
               limit: 25,
             })
-            .catch(() => [] as GroupedTotal[]),
+            ,
           // Both ranges are fetched up front so the Top Categories toggle is
           // instant. They are two cheap grouped queries, and switching range is a
           // comparison -- putting a spinner between the two halves of it would
           // make the comparison harder than the request is expensive.
           transactionsApi
-            .getGroupedTotals({
+            .getGroupedTotals({ basis,
               groupBy: 'category',
               payeeIds: [payeeId],
               limit: 25,
             })
-            .catch(() => [] as GroupedTotal[]),
+            ,
           transactionsApi
             .getRecurringCharges({ payeeIds: [payeeId], startDate: yearAgo, endDate: today })
             .catch(() => [] as RecurringChargeInfo[]),
@@ -278,7 +281,7 @@ function PayeeDetailContent() {
       }
     };
     return run();
-  }, [payeeId, t]);
+  }, [payeeId, t, basis]);
 
   const loadData = useCallback(() => {
     setIsLoading(true);
@@ -445,22 +448,23 @@ function PayeeDetailContent() {
   // account would link to an empty list. Same reasoning as the Institutions
   // page and `ai-entity-links.ts`, which pass it for the same reason.
   const goToRegister = useCallback(
-    (query: Record<string, string> = {}) => {
+    (query: Record<string, string> = {}, recognized = false) => {
       const search = new URLSearchParams({
         payeeId,
         accountStatus: 'all',
         ...query,
       });
-      router.push(`/transactions?${search.toString()}`);
+      if (!recognized && !search.has('basis') && basis) search.set('basis', basis);
+      (recognized ? reportingRouter : router).push(`/transactions?${search.toString()}`);
     },
-    [router, payeeId],
+    [basis, router, reportingRouter, payeeId],
   );
 
   // Stable, so the memoized chart is not re-rendered by unrelated page state
   // (the Top Categories range, say). A re-render replays the bars' entry
   // animation, and Recharts hides their value labels until it finishes.
   const handleMonthClick = useCallback(
-    (startDate: string, endDate: string) => goToRegister({ startDate, endDate }),
+    (startDate: string, endDate: string) => goToRegister({ startDate, endDate }, true),
     [goToRegister],
   );
 
@@ -558,6 +562,7 @@ function PayeeDetailContent() {
     return (
       <PageLayout>
         <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+          <ReportingBasisControl detail />
           <LoadingSpinner text={t('loading')} />
         </main>
       </PageLayout>
@@ -568,6 +573,7 @@ function PayeeDetailContent() {
     return (
       <PageLayout>
         <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+          <ReportingBasisControl detail />
           <div
             role="alert"
             className="rounded-lg bg-white p-12 text-center shadow dark:bg-gray-800"
@@ -610,6 +616,7 @@ function PayeeDetailContent() {
           onSelectPayee={(id) => router.push(`/payees/${id}`)}
         />
 
+        <ReportingBasisControl detail />
         <div className="space-y-6">
           <PayeeSummaryCards
             detail={detail}
@@ -651,19 +658,22 @@ function PayeeDetailContent() {
                       filterLabel={payee.name}
                     />
                   </div>
+                  <div>
+                  <CashReportingNotice />
                   <PayeeKeyInfoCard
                     detail={detail}
                     categoryLabelMap={categoryLabelMap}
                     // The largest transaction narrows the register to its own
                     // day, so the row it names is the one on screen.
                     onSelectDate={(date) =>
-                      goToRegister({ startDate: date, endDate: date })
+                      goToRegister({ startDate: date, endDate: date, basis: 'cash' })
                     }
                     onSelectAccount={(accountId) =>
                       router.push(`/accounts/${accountId}`)
                     }
                     onContactLookedUp={loadData}
                   />
+                  </div>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-2">
@@ -696,7 +706,7 @@ function PayeeDetailContent() {
                                 ? { startDate: isoDaysAgo(365), endDate: isoDaysAgo(0) }
                                 : {}),
                             }
-                          : {},
+                          : {}, true,
                       )
                     }
                     selectableWhenUnidentified
@@ -753,6 +763,8 @@ function PayeeDetailContent() {
                 className="mt-6"
               >
                 <PayeeTransactionsTab
+                  key={basis}
+                  basis={basis}
                   payeeId={payee.id}
                   refreshKey={refreshKey}
                   categoryLabelMap={categoryLabelMap}

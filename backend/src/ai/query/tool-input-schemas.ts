@@ -1,3 +1,4 @@
+import { REPORT_TOOL_TYPES } from "../../built-in-reports/report-tool.types";
 import { z } from "zod";
 import {
   directionSchema,
@@ -50,6 +51,7 @@ import {
  */
 
 export const listTransactionsSchema = z.object({
+  basis: z.literal("cash").optional(),
   searchText: z.string().max(200).optional(),
   startDate: isoDateSchema.optional(),
   endDate: isoDateSchema.optional(),
@@ -90,6 +92,7 @@ const accountTypeSchema = z.preprocess(
 );
 
 export const listAccountsSchema = z.object({
+  basis: z.literal("cash").optional(),
   accountNames: z.array(z.string().max(100)).optional(),
   accountIds: z.array(z.string().uuid()).optional(),
   nameQuery: z.string().max(100).optional(),
@@ -103,6 +106,7 @@ export const getCategoriesSchema = z.object({
 });
 
 export const comparePeriodsSchema = z.object({
+  basis: z.enum(["cash", "accrual"]).optional(),
   period1Start: isoDateSchema.optional(),
   period1End: isoDateSchema.optional(),
   period2Start: isoDateSchema.optional(),
@@ -161,6 +165,7 @@ export const getCapitalGainsSchema = z.object({
 });
 
 export const getBudgetStatusSchema = z.object({
+  basis: z.enum(["cash", "accrual"]).optional(),
   period: z.string().max(20).optional(),
   budgetName: z.string().max(100).optional(),
 });
@@ -316,16 +321,8 @@ export const manageTransactionRulesSchema =
 const reportMonthSchema = z.string().regex(/^\d{4}-\d{2}$/, "Expected YYYY-MM");
 
 export const generateReportSchema = z.object({
-  type: z.enum([
-    "spending_by_category",
-    "spending_by_payee",
-    "income_vs_expenses",
-    "monthly_trend",
-    "income_by_source",
-    "spending_anomalies",
-    "month_comparison",
-    "net_worth_history",
-  ]),
+  basis: z.enum(["cash", "accrual"]).optional(),
+  type: z.enum(REPORT_TOOL_TYPES),
   // Date-range types: the five aggregations (default last 30 days) and
   // net_worth_history (default last 12 months).
   startDate: isoDateSchema.optional(),

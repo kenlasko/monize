@@ -1,3 +1,8 @@
+jest.mock("../accruals/reporting-basis.interceptor", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingInterceptorMockModule(),
+);
 import { Test, TestingModule } from "@nestjs/testing";
 import { PayeesController } from "./payees.controller";
 import { PayeesService } from "./payees.service";
@@ -23,6 +28,7 @@ describe("PayeesController", () => {
     mockAutoMergeService = {
       previewAutoMerge: jest.fn(),
       applyAutoMerge: jest.fn(),
+      previewCategoryImpact: jest.fn(),
     };
     mockPayeeDetailService = {
       getDetail: jest.fn(),
@@ -43,13 +49,16 @@ describe("PayeesController", () => {
       mergePayees: jest.fn(),
       calculateCategorySuggestions: jest.fn(),
       applyCategorySuggestions: jest.fn(),
+      previewCategorySuggestionsImpact: jest.fn(),
       previewDeactivation: jest.fn(),
       deactivatePayees: jest.fn(),
       reactivatePayee: jest.fn(),
       findInactiveByName: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
+      previewCategoryImpact: jest.fn(),
       remove: jest.fn(),
+      previewRemoval: jest.fn(),
       getLogo: jest.fn(),
       refreshLogo: jest.fn(),
       lookupContactForPayee: jest.fn(),
@@ -83,6 +92,75 @@ describe("PayeesController", () => {
     }).compile();
 
     controller = module.get<PayeesController>(PayeesController);
+  });
+
+  it("previews category impact for the authenticated user and exact update payload", async () => {
+    const dto = {
+      defaultCategoryId: "category-1",
+      applyCategoryToTransactions: "all" as const,
+    };
+    const expected = {
+      fingerprint: null,
+      transactionIds: [],
+      impacts: [],
+      categoryId: "category-1",
+      mode: "all",
+      transactionsCategorized: 0,
+    };
+    mockPayeesService.previewCategoryImpact.mockResolvedValue(expected);
+    expect(
+      await controller.previewCategoryImpact(mockReq, "payee-1", dto),
+    ).toEqual(expected);
+    expect(mockPayeesService.previewCategoryImpact).toHaveBeenCalledWith(
+      "user-1",
+      "payee-1",
+      dto,
+    );
+  });
+
+  it("forwards both backfill previews and a suggestion confirmation with the authenticated identity", async () => {
+    const dto = {
+      assignments: [
+        { payeeId: "p1", categoryId: "c1", backfillTransactions: true },
+      ],
+      accrualImpactFingerprint: "a".repeat(64),
+    };
+    await controller.previewCategorySuggestionsImpact(mockReq, dto);
+    expect(
+      mockPayeesService.previewCategorySuggestionsImpact,
+    ).toHaveBeenCalledWith("user-1", dto.assignments);
+    await controller.applyCategorySuggestions(mockReq, dto);
+    expect(mockPayeesService.applyCategorySuggestions).toHaveBeenCalledWith(
+      "user-1",
+      dto.assignments,
+      dto.accrualImpactFingerprint,
+    );
+    const group = {
+      canonicalPayeeId: "p1",
+      sourcePayeeIds: ["p2"],
+      defaultCategoryId: "c1",
+      backfillTransactions: true,
+    };
+    await controller.previewAutoMergeCategoryImpact(mockReq, group);
+    expect(mockAutoMergeService.previewCategoryImpact).toHaveBeenCalledWith(
+      "user-1",
+      group,
+    );
+  });
+
+  it("forwards reviewed payee deletion using the authenticated owner", async () => {
+    await controller.previewRemoval(mockReq, "payee-1");
+    expect(mockPayeesService.previewRemoval).toHaveBeenCalledWith(
+      "user-1",
+      "payee-1",
+    );
+    const dto = { accrualImpactFingerprint: "a".repeat(64) };
+    await controller.remove(mockReq, "payee-1", dto);
+    expect(mockPayeesService.remove).toHaveBeenCalledWith(
+      "user-1",
+      "payee-1",
+      dto.accrualImpactFingerprint,
+    );
   });
 
   describe("create()", () => {

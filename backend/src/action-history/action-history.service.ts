@@ -1,3 +1,33 @@
+import { replayTaxonomyOperation } from "../accruals/accrual-taxonomy-operation";
+import {
+  guardAccruedTagDeletion,
+  guardLegacyTagRestore,
+} from "../accruals/accrual-tag-guard";
+import {
+  replayRelationshipHistory,
+  guardLegacyRelationshipHistory,
+} from "../accruals/accrual-relationship-history";
+import {
+  parseAccrualBulkDelete,
+  clearAccrualBulkDeleteChildren,
+  assertAccrualBulkDeleteStructure,
+  equalBulkDeleteSnapshots,
+  type BulkDeleteSnapshot,
+} from "../accruals/accrual-bulk-delete";
+import { MAX_JSONB_SIZE_BYTES } from "./history-limits";
+import { accrualErrors } from "../accruals/accrual-errors";
+import {
+  readAccrualHistoryState,
+  assertAccrualHistoryState,
+  captureAccrualHistorySnapshot,
+  assertAccrualStructureRestorable,
+  restoreAccrualHistoryState,
+  restoreAccrualSplitTags,
+} from "../accruals/accrual-history-snapshot";
+import {
+  lockAccrualReplaySources,
+  refreshAccrualReplaySources,
+} from "../accruals/accrual-history-replay";
 import {
   Injectable,
   NotFoundException,
@@ -287,7 +317,7 @@ interface UndoAfterCommit {
 const NOTHING_AFTER_COMMIT: UndoAfterCommit = { settledScheduleIds: [] };
 
 const MAX_HISTORY_PER_USER = 100;
-export const MAX_JSONB_SIZE_BYTES = 512 * 1024; // 500 KB
+export { MAX_JSONB_SIZE_BYTES } from "./history-limits";
 
 // Whitelist of allowed table names and column names for reinsertEntity()
 // to prevent SQL injection via crafted JSONB keys
@@ -728,6 +758,9 @@ export class ActionHistoryService {
     manager: EntityManager,
   ): Promise<UndoAfterCommit> {
     switch (action.entityType) {
+      case "accrual_relationship_operation":
+        await replayTaxonomyOperation(manager, action);
+        break;
       case "transaction":
         await this.undoTransaction(action, manager);
         break;
@@ -804,6 +837,14 @@ export class ActionHistoryService {
     action: ActionHistory,
     manager: EntityManager,
   ): Promise<UndoAfterCommit> {
+    if (
+      action.entityType === "bulk_transaction" &&
+      action.action === "bulk_delete" &&
+      action.beforeData?.accrualBulkDeleteVersion === 1
+    ) {
+      await this.redoAccrualBulkDelete(action, manager);
+      return NOTHING_AFTER_COMMIT;
+    }
     // A run that restructured rows cannot be replayed from its snapshot.
     if (action.entityType === RULE_RUN_ENTITY_TYPE) {
       assertRuleRunRedoable(action);
@@ -933,6 +974,32 @@ export class ActionHistoryService {
       ...legs.values(),
     ]);
 
+    if (action.isUndone) {
+      await assertAccrualHistoryState(
+        manager,
+        action.userId,
+        transaction.id,
+        action.afterData?.accrualState,
+      );
+    } else {
+      const current = await readAccrualHistoryState(
+        manager,
+        action.userId,
+        transaction.id,
+      );
+      if (current.schedules.length) {
+        const snapshot = { ...action.afterData };
+        await captureAccrualHistorySnapshot(
+          manager,
+          action.userId,
+          transaction.id,
+          snapshot,
+        );
+        assertAccrualStructureRestorable(snapshot);
+        await manager.update(ActionHistory, action.id, { afterData: snapshot });
+      }
+    }
+
     const balances = this.legBalances(manager, action);
     for (const leg of legs.values()) {
       // A leg linked elsewhere is not this create's to remove.
@@ -999,6 +1066,13 @@ export class ActionHistoryService {
     if (restoreSplits) {
       assertSplitLegsUndoable(before.splits, action.afterData?.splits);
     }
+    await assertAccrualHistoryState(
+      manager,
+      action.userId,
+      action.entityId,
+      action.afterData?.accrualState,
+    );
+    assertAccrualStructureRestorable(before);
 
     // Restore transaction fields
     const updateFields: Partial<Transaction> = {};
@@ -1008,6 +1082,8 @@ export class ActionHistoryService {
       "amount",
       "currencyCode",
       "exchangeRate",
+      "originalAmount",
+      "originalCurrencyCode",
       "payeeId",
       "payeeName",
       "categoryId",
@@ -1036,6 +1112,7 @@ export class ActionHistoryService {
         for (const splitData of before.splits) {
           const split = manager.create(TransactionSplit, {
             id: splitData.id,
+            ...(splitData.kind ? { kind: splitData.kind } : {}),
             transactionId: action.entityId,
             kind: splitKindOf(splitData),
             categoryId: splitData.categoryId,
@@ -1065,6 +1142,19 @@ export class ActionHistoryService {
       }
     }
 
+    await restoreAccrualSplitTags(
+      manager,
+      action.userId,
+      action.entityId,
+      before,
+    );
+    await restoreAccrualHistoryState(
+      manager,
+      action.userId,
+      action.entityId,
+      before.accrualState,
+    );
+
     // Recalculate balances for affected accounts
     const accountIds = new Set<string>();
     if (before.accountId) accountIds.add(before.accountId);
@@ -1073,15 +1163,31 @@ export class ActionHistoryService {
     for (const accountId of accountIds) {
       await this.recalculateBalance(action.userId, accountId, manager);
     }
+    if (before.accrualState) {
+      const accrualState = await readAccrualHistoryState(
+        manager,
+        action.userId,
+        action.entityId,
+      );
+      await manager.update(ActionHistory, action.id, {
+        [action.isUndone ? "afterData" : "beforeData"]: {
+          ...before,
+          accrualState,
+        },
+      });
+    }
   }
 
   private async undoTransactionDelete(
     action: ActionHistory,
     manager: EntityManager,
+    persistExpectation = true,
+    deferBalance = false,
   ): Promise<void> {
     if (!action.beforeData) return;
 
     const before = action.beforeData;
+    assertAccrualStructureRestorable(before);
 
     // Verify account still exists
     const account = await manager.findOne(Account, {
@@ -1094,6 +1200,13 @@ export class ActionHistoryService {
           "Cannot undo: the account no longer exists",
         ),
       );
+    }
+
+    if (
+      before.accrualState?.schedules?.length &&
+      account.currencyCode !== before.currencyCode
+    ) {
+      throw accrualErrors.conflict();
     }
 
     // Re-insert the transaction
@@ -1125,6 +1238,18 @@ export class ActionHistoryService {
       ],
     );
 
+    if (before.accrualState) {
+      await manager.query(
+        "UPDATE transactions SET original_amount=$1,original_currency_code=$2 WHERE id=$3 AND user_id=$4",
+        [
+          before.originalAmount ?? null,
+          before.originalCurrencyCode ?? null,
+          before.id,
+          action.userId,
+        ],
+      );
+    }
+
     // Re-insert splits
     if (Array.isArray(before.splits) && before.splits.length > 0) {
       for (const splitData of before.splits) {
@@ -1154,7 +1279,29 @@ export class ActionHistoryService {
       }
     }
 
-    await this.recalculateBalance(action.userId, before.accountId, manager);
+    await restoreAccrualSplitTags(manager, action.userId, before.id, before);
+    await restoreAccrualHistoryState(
+      manager,
+      action.userId,
+      before.id,
+      before.accrualState,
+    );
+
+    if (!deferBalance)
+      await this.recalculateBalance(action.userId, before.accountId, manager);
+    if (before.accrualState && persistExpectation) {
+      const accrualState = await readAccrualHistoryState(
+        manager,
+        action.userId,
+        before.id,
+      );
+      await manager.update(ActionHistory, action.id, {
+        [action.isUndone ? "afterData" : "beforeData"]: {
+          ...before,
+          accrualState,
+        },
+      });
+    }
   }
 
   // --- Transfer undo handlers ---
@@ -1629,6 +1776,10 @@ export class ActionHistoryService {
     action: ActionHistory,
     manager: EntityManager,
   ): Promise<void> {
+    if (action.beforeData?.accrualBulkDeleteVersion === 1) {
+      await this.undoAccrualBulkDelete(action, manager);
+      return;
+    }
     if (!action.beforeData || !Array.isArray(action.beforeData.transactions))
       return;
 
@@ -1669,6 +1820,155 @@ export class ActionHistoryService {
     }
   }
 
+  /** Versioned operations serialize before source/account rows; history rows are written last. */
+  private async currentAccrualBulkAction(
+    action: ActionHistory,
+    manager: EntityManager,
+    isUndone: boolean,
+  ): Promise<ActionHistory> {
+    await acquireAdvisoryLock(
+      manager,
+      LockScope.AccrualBulkHistory,
+      action.userId,
+    );
+    const current = await manager.findOne(ActionHistory, {
+      where: { id: action.id, userId: action.userId },
+    });
+    if (!current || current.isUndone !== isUndone)
+      throw accrualErrors.conflict();
+    return current;
+  }
+
+  private async undoAccrualBulkDelete(
+    action: ActionHistory,
+    manager: EntityManager,
+  ): Promise<void> {
+    const current = await this.currentAccrualBulkAction(action, manager, false);
+    const data = parseAccrualBulkDelete(current.beforeData);
+    const ids = data.transactions.map((row) => row.id);
+    const collisions: { id: string }[] = await manager.query(
+      "SELECT id FROM transactions WHERE user_id=$1 AND id=ANY($2)",
+      [action.userId, ids],
+    );
+    if (collisions.length) throw accrualErrors.conflict();
+    // Check every account before recreating the first row; a late failure still
+    // rolls the entire batch back, including restored schedules and balances.
+    for (const row of data.transactions) {
+      const account = await manager.findOne(Account, {
+        where: { id: row.accountId, userId: action.userId },
+      });
+      if (!account || account.currencyCode !== row.currencyCode)
+        throw accrualErrors.conflict();
+    }
+    const restored: BulkDeleteSnapshot[] = [];
+    for (const row of data.transactions) {
+      await this.undoTransactionDelete(
+        { ...current, beforeData: row, entityId: row.id },
+        manager,
+        false,
+        true,
+      );
+      const snapshot: Record<string, unknown> = {};
+      await captureAccrualHistorySnapshot(
+        manager,
+        action.userId,
+        row.id,
+        snapshot,
+        true,
+      );
+      restored.push(snapshot as BulkDeleteSnapshot);
+    }
+    // All source rows exist before accounts are locked, in sorted order.
+    // Recheck currencies under those balance locks to close a metadata race.
+    for (const accountId of [
+      ...new Set(data.transactions.map((row) => row.accountId)),
+    ].sort()) {
+      await this.recalculateBalance(action.userId, accountId, manager);
+      const account = await manager.findOne(Account, {
+        where: { id: accountId, userId: action.userId },
+      });
+      if (
+        !account ||
+        data.transactions.some(
+          (row) =>
+            row.accountId === accountId &&
+            row.currencyCode !== account.currencyCode,
+        )
+      )
+        throw accrualErrors.conflict();
+    }
+    // Conditional history write is last: a concurrent redo-stack clear must
+    // produce a conflict/rollback rather than an untracked source restoration.
+    const result = await manager
+      .createQueryBuilder()
+      .update(ActionHistory)
+      .set({ beforeData: { ...data, transactions: restored } })
+      .where("id=:id AND user_id=:userId AND is_undone=false", {
+        id: action.id,
+        userId: action.userId,
+      })
+      .execute();
+    if (result.affected !== 1) throw accrualErrors.conflict();
+  }
+
+  private async redoAccrualBulkDelete(
+    action: ActionHistory,
+    manager: EntityManager,
+  ): Promise<void> {
+    const current = await this.currentAccrualBulkAction(action, manager, true);
+    const data = parseAccrualBulkDelete(current.beforeData);
+    const ids = data.transactions.map((row) => row.id);
+    const locked = await lockTransactionRows(manager, ids, action.userId);
+    if (locked.size !== ids.length) throw accrualErrors.conflict();
+    await assertReconciledRowsMutable(manager, action.userId, [
+      ...locked.values(),
+    ]);
+    const actual: BulkDeleteSnapshot[] = [];
+    for (const row of data.transactions) {
+      await assertAccrualHistoryState(
+        manager,
+        action.userId,
+        row.id,
+        row.accrualState,
+      );
+      const snapshot: Record<string, unknown> = {};
+      await captureAccrualHistorySnapshot(
+        manager,
+        action.userId,
+        row.id,
+        snapshot,
+        true,
+      );
+      if (!equalBulkDeleteSnapshots(row, snapshot as BulkDeleteSnapshot))
+        throw accrualErrors.conflict();
+      actual.push(snapshot as BulkDeleteSnapshot);
+    }
+    await assertAccrualBulkDeleteStructure(manager, action.userId, actual);
+    await clearAccrualBulkDeleteChildren(manager, action.userId, ids);
+    await manager
+      .createQueryBuilder()
+      .delete()
+      .from(Transaction)
+      .where("id IN (:...ids)", { ids })
+      .andWhere("userId=:userId", { userId: action.userId })
+      .execute();
+    for (const accountId of [
+      ...new Set([...locked.values()].map((row) => row.accountId)),
+    ].sort()) {
+      await this.recalculateBalance(action.userId, accountId, manager);
+    }
+    const result = await manager
+      .createQueryBuilder()
+      .update(ActionHistory)
+      .set({ isUndone: false })
+      .where("id=:id AND user_id=:userId AND is_undone=true", {
+        id: action.id,
+        userId: action.userId,
+      })
+      .execute();
+    if (result.affected !== 1) throw accrualErrors.conflict();
+  }
+
   private async undoBulkUpdate(
     action: ActionHistory,
     manager: EntityManager,
@@ -1689,6 +1989,11 @@ export class ActionHistoryService {
       ...locked.values(),
     ]);
 
+    const accrualSourceIds = await lockAccrualReplaySources(
+      manager,
+      action.userId,
+      action.beforeData.transactions.map((row) => row.id),
+    );
     const accountIds = new Set<string>();
 
     for (const txData of action.beforeData.transactions) {
@@ -1747,6 +2052,8 @@ export class ActionHistoryService {
 
       accountIds.add(txData.accountId);
     }
+
+    await refreshAccrualReplaySources(manager, action.userId, accrualSourceIds);
 
     for (const accountId of accountIds) {
       await this.recalculateBalance(action.userId, accountId, manager);
@@ -1956,6 +2263,16 @@ export class ActionHistoryService {
     entityClass: any,
     tableName: string,
   ): Promise<void> {
+    if (action.entityType === "tag") {
+      if (action.action === "create" && action.entityId)
+        await guardAccruedTagDeletion(manager, action.userId, action.entityId);
+      if (action.action === "delete")
+        await guardLegacyTagRestore(manager, action.userId);
+    }
+    if (["category", "payee"].includes(action.entityType)) {
+      if (await replayRelationshipHistory(manager, action)) return;
+      await guardLegacyRelationshipHistory(manager, action);
+    }
     switch (action.action) {
       case "create":
         if (action.entityId) {

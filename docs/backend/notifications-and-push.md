@@ -119,3 +119,7 @@ Notification email bodies and dynamic subjects go through `notificationEmailCopy
 immediate dispatch, admin alerts and budget digests. Supply the snapshot's currency
 in `data`; missing facts on legacy rows retain the stored copy rather than inventing
 amounts or currency. HTML templates escape the composed strings once.
+
+## Notification lookups do not use recognition projections
+
+Bill reminder deduplication reads `Notification` entities normally inside `withScopedDb`, retaining its user and notification-type filters. `reportingEntities` checks the root entity's TypeORM metadata before adding recognition provenance: only a transaction root has those virtual columns. A notification or other non-transaction root keeps an ordinary entity read regardless of reporting preference. `accrual-bill-reminders.integration.spec.ts` executes the due-reminder/list sequence and repeated-read deduplication under enforced RLS in both cash and accrual mode; it also checks a non-transaction query passed to the helper.

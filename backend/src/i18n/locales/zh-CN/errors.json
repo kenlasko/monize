@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL 必须是 http 或 https 地址",
       "invalidField": "{{ field }} 无效"
     }
+  },
+  "accruals": {
+    "notFound": "未找到交易或权责发生制分摊计划。",
+    "ineligible": "请选择收入、支出或类别拆分明细。转账、投资记录和已作废交易不能分摊。",
+    "invalidPeriod": "请选择有效的起始月份和1至600个月的期限。",
+    "changed": "交易或计划已更改。保存前请查看新的预览。",
+    "ownerOnly": "只有所有者可以管理分摊计划。",
+    "familyRequired": "请为未分类交易选择支出或收入。",
+    "historyUnsupported": "无法从历史记录安全地恢复此批次。请拆分批次，或从选择中移除不受支持的转账或投资条目。",
+    "ruleUnsupported": "对于权责发生制条目，请在查看影响后手动运行规则。保留交易结构并选择现有收款人。"
   }
 }

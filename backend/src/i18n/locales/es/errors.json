@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL debe ser una dirección http o https",
       "invalidField": "{{ field }} no es válido"
     }
+  },
+  "accruals": {
+    "notFound": "No se encontró la transacción o el plan de devengo.",
+    "ineligible": "Elija un ingreso, un gasto o una división por categoría. No se pueden distribuir transferencias, operaciones de inversión ni transacciones anuladas.",
+    "invalidPeriod": "Elija un mes inicial válido y entre 1 y 600 meses.",
+    "changed": "La transacción o el plan cambió. Revise una nueva vista previa antes de guardar.",
+    "ownerOnly": "Solo el propietario puede gestionar planes de devengo.",
+    "familyRequired": "Elija gasto o ingreso para una transacción sin categoría.",
+    "historyUnsupported": "Este lote no se puede restaurar de forma segura desde el historial. Divídalo o quite las transferencias o inversiones no compatibles.",
+    "ruleUnsupported": "Para los asientos devengados, ejecute las reglas manualmente tras revisar el impacto. Mantenga la estructura de la transacción y elija un beneficiario existente."
   }
 }

@@ -1,12 +1,12 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
 import { useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
-import { exportCsvSections } from '@/lib/csv-export';
 import type { ConvertedTotal } from '@/lib/currency-total';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -83,6 +83,7 @@ const HEADER_CLASS =
   'px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase';
 
 export function CashFlowSankeyReport() {
+  const { exportSectionsWithBasis, withPdfBasis } = useReportExportMetadata('cash');
   const t = useTranslations('reports');
   const router = useRouter();
   const chartRef = useRef<HTMLDivElement>(null);
@@ -210,7 +211,7 @@ export function CashFlowSankeyReport() {
   const handleExportPdf = async () => {
     if (!data) return;
     const { exportToPdf } = await import('@/lib/pdf-export');
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('sankey.pdfTitle'),
       subtitle: rangeLabel,
       summaryCards: cards.map((card) => ({
@@ -223,7 +224,7 @@ export function CashFlowSankeyReport() {
         rows: tableRows.map((row) => [labelFor(row.node), sideLabel(row.side, row.parent), plain(row.node.total)]),
       },
       filename: 'cash-flow-sankey',
-    });
+    }));
   };
 
   const handleExportCsv = () => {
@@ -232,7 +233,7 @@ export function CashFlowSankeyReport() {
       const node = data.nodes.find((n) => n.id === id);
       return node ? labelFor(node) : id;
     };
-    exportCsvSections('cash-flow-sankey', [
+    exportSectionsWithBasis('cash-flow-sankey', [
       {
         title: t('sankey.csvNodes'),
         headers: [

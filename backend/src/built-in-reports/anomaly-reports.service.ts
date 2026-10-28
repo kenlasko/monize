@@ -1,3 +1,4 @@
+import { ReportingRead } from "../accruals/reporting-basis";
 import { Injectable } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -32,7 +33,9 @@ const INVESTMENT_EXCLUSION = investmentExclusionSql({
 
 interface RawExpense {
   id: string;
-  transaction_date: Date;
+  transaction_date: string | Date;
+  original_currency_code?: string | null;
+  exchange_rate?: number | string | null;
   payee_id: string | null;
   payee_name: string | null;
   currency_code: string;
@@ -64,6 +67,7 @@ export class AnomalyReportsService {
    *   different meaning in adjacent positions: the AI and MCP adapters once
    *   passed the months as the threshold (audit A26-M34).
    */
+  @ReportingRead("cash")
   async getSpendingAnomalies(
     userId: string,
     threshold: number = SPENDING_ANOMALY_DEFAULT_THRESHOLD,
@@ -88,7 +92,8 @@ export class AnomalyReportsService {
     const query = `
       SELECT
         t.id,
-        t.transaction_date,
+        TO_CHAR(t.transaction_date,'YYYY-MM-DD') AS transaction_date,
+        t.original_currency_code,t.exchange_rate,
         t.payee_id,
         t.payee_name,
         t.currency_code,
@@ -126,6 +131,14 @@ export class AnomalyReportsService {
         row.currency_code,
         defaultCurrency,
         rateMap,
+        {
+          conversion_date:
+            row.transaction_date instanceof Date
+              ? row.transaction_date.toISOString().slice(0, 10)
+              : row.transaction_date,
+          original_currency_code: row.original_currency_code,
+          exchange_rate: row.exchange_rate,
+        },
       );
       if (amount === null) {
         gaps.record(row.currency_code);
@@ -226,7 +239,7 @@ export class AnomalyReportsService {
 
   private detectCategorySpikes(
     rows: {
-      transaction_date: Date;
+      transaction_date: string | Date;
       category_id: string | null;
       converted: number;
     }[],
@@ -290,7 +303,7 @@ export class AnomalyReportsService {
   private detectNewPayees(
     rows: {
       id: string;
-      transaction_date: Date;
+      transaction_date: string | Date;
       payee_name: string | null;
       converted: number;
     }[],

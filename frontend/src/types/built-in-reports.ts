@@ -261,6 +261,7 @@ export interface IncomeVsExpensesParams extends ReportQueryParams {
 }
 
 export interface ReportQueryParams {
+  basis?: 'cash' | 'accrual';
   startDate?: string;
   endDate: string;
 }

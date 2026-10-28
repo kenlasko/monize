@@ -1,3 +1,8 @@
+import {
+  assertRuleAccrualWrite,
+  assertAutomaticRuleSources,
+} from "./rule-accrual";
+import { refreshSourceAccruals } from "../accruals/accrual-lifecycle";
 import { Inject, Injectable, forwardRef } from "@nestjs/common";
 import { ArrayContains, EntityManager, In } from "typeorm";
 import { Account } from "../accounts/entities/account.entity";
@@ -615,6 +620,7 @@ export class TransactionRulesApplierService {
         source === "import" ? "import" : "create",
       ));
     if (rules.length === 0) return [];
+    await assertAutomaticRuleSources(m, userId, ids);
 
     const rows = chronological(
       await m.find(Transaction, { where: { id: In(ids), userId } }),
@@ -1040,6 +1046,13 @@ export class TransactionRulesApplierService {
     affectedAccountIds?: Set<string>,
     settledScheduleIds?: Set<string>,
   ): Promise<RuleEffects> {
+    const refreshAccrual = await assertRuleAccrualWrite(
+      m,
+      userId,
+      transactionId,
+      planned,
+      source,
+    );
     const resolved = await this.resolveCreatedPayee(m, userId, planned);
     const { changes } = resolved;
     const patch: Partial<
@@ -1128,6 +1141,7 @@ export class TransactionRulesApplierService {
     if (traceRows.length > 0) {
       await m.insert(TransactionRuleApplication, traceRows);
     }
+    if (refreshAccrual) await refreshSourceAccruals(m, userId, transactionId);
     return effects;
   }
 

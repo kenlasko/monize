@@ -112,13 +112,13 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
             return null;
           }),
           transactionsApi
-            .getSummary({ accountId: account.id, startDate: monthStart, endDate: today })
+            .getSummary({ basis: 'cash', accountId: account.id, startDate: monthStart, endDate: today })
             .catch(() => null),
           transactionsApi
-            .getMonthlyTotals({ accountIds: [account.id], startDate: twelveMonthsAgo, endDate: today })
+            .getMonthlyTotals({ basis: 'cash', accountIds: [account.id], startDate: twelveMonthsAgo, endDate: today })
             .catch(() => [] as MonthlyTotal[]),
           transactionsApi
-            .getGroupedTotals({
+            .getGroupedTotals({ basis: 'cash',
               groupBy: 'category',
               accountIds: [account.id],
               startDate: monthStart,
@@ -126,7 +126,7 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
             })
             .catch(() => [] as GroupedTotal[]),
           transactionsApi
-            .getGroupedTotals({
+            .getGroupedTotals({ basis: 'cash',
               groupBy: 'payee',
               accountIds: [account.id],
               startDate: monthStart,
@@ -134,7 +134,7 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
             })
             .catch(() => [] as GroupedTotal[]),
           transactionsApi
-            .getGroupedTotals({
+            .getGroupedTotals({ basis: 'cash',
               groupBy: 'category',
               accountIds: [account.id],
               startDate: yearStart,
@@ -208,16 +208,16 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
         interestEarnedYtd={interestEarnedYtd}
         averageBalance={averageBalance}
         onMoneyInClick={() =>
-          router.push(`/transactions?accountId=${account.id}&amountFrom=0.01&${monthRangeQuery}`)
+          router.push(`/transactions?basis=cash&accountId=${account.id}&amountFrom=0.01&${monthRangeQuery}`)
         }
         onMoneyOutClick={() =>
-          router.push(`/transactions?accountId=${account.id}&amountTo=-0.01&${monthRangeQuery}`)
+          router.push(`/transactions?basis=cash&accountId=${account.id}&amountTo=-0.01&${monthRangeQuery}`)
         }
         onInterestClick={
           interestCategoryIds.length
             ? () =>
                 router.push(
-                  `/transactions?accountId=${account.id}&categoryIds=${interestCategoryIds.join(
+                  `/transactions?basis=cash&accountId=${account.id}&categoryIds=${interestCategoryIds.join(
                     ',',
                   )}&startDate=${yearStart}&endDate=${today}`,
                 )
@@ -269,7 +269,7 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
           selectableWhenUnidentified
           onSelect={(categoryId) =>
             router.push(
-              `/transactions?accountId=${account.id}&categoryId=${categoryId ?? 'uncategorized'}&${monthRangeQuery}`,
+              `/transactions?basis=cash&accountId=${account.id}&categoryId=${categoryId ?? 'uncategorized'}&${monthRangeQuery}`,
             )
           }
         />
@@ -290,7 +290,7 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
             if (!payeeId) return;
             router.push(
               account.isJoint
-                ? `/transactions?accountId=${account.id}&payeeId=${payeeId}&${monthRangeQuery}`
+                ? `/transactions?basis=cash&accountId=${account.id}&payeeId=${payeeId}&${monthRangeQuery}`
                 : `/payees/${payeeId}`,
             );
           }}

@@ -116,3 +116,42 @@ describe("NetCells", () => {
     expect(count.settle().get("g")!.count).toBe(1);
   });
 });
+
+describe("recognition event counts without FX", () => {
+  it("keeps separate recognition events from the same payment", () => {
+    const first = tx({
+      id: "payment",
+      amount: -100,
+      categoryId: "tax",
+      reportingProvenance: { reportId: "june" },
+    });
+    const second = tx({ ...first, reportingProvenance: { reportId: "july" } });
+    const cells = createNetCells(DirectionFilter.EXPENSES_ONLY, true);
+    for (const tx of [first, second])
+      for (const line of netLinesOf(tx, false)) cells.add("period", line, null);
+    expect(cells.settle().get("period")?.count).toBe(2);
+  });
+  it.each([
+    [DirectionFilter.EXPENSES_ONLY, 1],
+    [DirectionFilter.INCOME_ONLY, 1],
+    [DirectionFilter.BOTH, 3],
+  ])(
+    "counts native direction %s without inventing a conversion",
+    (direction, expected) => {
+      const cells = createNetCells(direction, true);
+      for (const [unit, amount] of [
+        ["expense", -100],
+        ["refund", 30],
+        ["zero", 0],
+      ] as const)
+        cells.add(
+          "period",
+          { cell: "category", category: "category", unit, amount },
+          null,
+        );
+      const result = cells.settle().get("period")!;
+      expect(result.count).toBe(expected);
+      expect(result.agg.knownSubtotal).toBe(0);
+    },
+  );
+});

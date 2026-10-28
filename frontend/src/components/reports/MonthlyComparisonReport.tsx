@@ -1,5 +1,7 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis } from './ReportingBasis';
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
@@ -115,14 +117,17 @@ function DeltaBadge({
 }
 
 export function MonthlyComparisonReport() {
+  const { withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
   const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatSignedPercent, formatPercent } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const [month, setMonth] = useState(getDefaultMonth);
   const { data, isLoading, error, reload } = useReportData(
-    () => builtInReportsApi.getMonthlyComparison(month),
-    [month],
+    () => builtInReportsApi.getMonthlyComparison(month, ...(basis ? [basis] as const : [])),
+    [month, basis],
+    { requestKey: JSON.stringify([month, basis]), maskStaleData: true },
   );
   const comparisonSort = useSortableTable<ComparisonSortField>(
     'reports.monthly-comparison.expenses.sort',
@@ -389,7 +394,7 @@ export function MonthlyComparisonReport() {
       });
     }
 
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('monthlyComparison.pdfTitle'),
       subtitle: t('monthlyComparison.pdfSubtitle', { current: currentMonthLabel, previous: previousMonthLabel }),
       description: descriptionParts.length > 0 ? descriptionParts.join('\n') : undefined,
@@ -404,7 +409,7 @@ export function MonthlyComparisonReport() {
       tableData: comparisonTable,
       additionalTables: additionalTables.length > 0 ? additionalTables : undefined,
       filename: 'monthly-comparison',
-    });
+    }));
   };
 
   // The comparison table's five sortable columns, keyed by field so the record is

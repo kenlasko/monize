@@ -1,3 +1,4 @@
+import { ReportingEndpoint } from "../accruals/reporting-endpoint";
 import {
   Controller,
   Get,
@@ -121,6 +122,17 @@ export class ReportsController {
     return this.reportsService.remove(req.user.id, id);
   }
 
+  @ReportingEndpoint()
+  @Post(":id/export")
+  export(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() options: ExecuteReportDto,
+  ) {
+    return this.reportsService.export(req.user.id, id, options);
+  }
+
+  @ReportingEndpoint()
   @Post(":id/execute")
   @ApiOperation({ summary: "Execute a custom report and get aggregated data" })
   @ApiParam({ name: "id", description: "Report ID" })

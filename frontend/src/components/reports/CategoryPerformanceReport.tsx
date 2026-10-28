@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis } from './ReportingBasis';
+import { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { budgetsApi } from '@/lib/budgets';
 import type { Budget, CategoryTrendSeries } from '@/types/budget';
@@ -15,10 +17,8 @@ import type {
   SortColumnsByField as TableSortColumnsByField,
 } from '@/components/ui/Table';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
 import { useTranslations } from 'next-intl';
 
-const logger = createLogger('CategoryPerformanceReport');
 
 type CategoryPerformanceSortField =
   | 'name'
@@ -215,6 +215,8 @@ const FIGURE_CELL = 'p-0 text-right text-xs whitespace-nowrap sm:table-cell sm:t
 const WORD_CELL = 'p-0 text-right text-xs sm:table-cell sm:text-sm';
 
 export function CategoryPerformanceReport() {
+  const { withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
   const { formatCurrencyCompact: formatCurrency, formatPercentTrimmed } = useNumberFormat();
 
@@ -240,38 +242,28 @@ export function CategoryPerformanceReport() {
     }
     return { label: t('categoryPerformance.statusOverBudget'), className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' };
   };
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
+  const {data: budgetRows, isLoading: budgetsLoading, error: budgetsError, reload: reloadBudgets} = useReportData(
+    () => budgetsApi.getAll(...(basis ? [basis] as const : [])), [basis],
+    {requestKey:JSON.stringify([basis]),maskStaleData:true},
+  );
+  const budgets = useMemo<Budget[]>(() => budgetRows ?? [], [budgetRows]);
+  const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>('');
+  const selectedBudgetId = budgets.some(b=>b.id===selectedBudgetIdState) ? selectedBudgetIdState : (budgets.find(b=>b.isActive)?.id ?? budgets[0]?.id ?? '');
   const [months, setMonths] = useState(6);
   const { sortField, sortDirection, handleSort } = useSortableTable<CategoryPerformanceSortField>(
     'reports.category-performance.sort',
     { field: 'avgPercent', direction: 'desc' },
   );
 
-  useEffect(() => {
-    const loadBudgets = async () => {
-      try {
-        const data = await budgetsApi.getAll();
-        setBudgets(data);
-        const active = data.find((b) => b.isActive);
-        if (active) {
-          setSelectedBudgetId(active.id);
-        } else if (data.length > 0) {
-          setSelectedBudgetId(data[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load budgets:', error);
-      }
-    };
-    loadBudgets();
-  }, []);
+
 
   const { data: response, isLoading, error, reload } = useReportData(
     () =>
       selectedBudgetId
-        ? budgetsApi.getCategoryTrend(selectedBudgetId, months)
+        ? (basis ? budgetsApi.getCategoryTrend(selectedBudgetId, months, undefined, basis) : budgetsApi.getCategoryTrend(selectedBudgetId, months))
         : Promise.resolve<CategoryTrendSeries[]>([]),
-    [selectedBudgetId, months],
+    [selectedBudgetId, months, basis],
+    { requestKey: JSON.stringify([selectedBudgetId, months, basis]), maskStaleData: true },
   );
 
   const categoryData = useMemo<CategoryTrendSeries[]>(() => response ?? [], [response]);
@@ -418,18 +410,20 @@ export function CategoryPerformanceReport() {
     // percent through formatPercentTrimmed), so the export matches the screen.
     const headers = sortColumns.map((col) => col.label);
     const rows = sortedData.map((row) => sortColumns.map((col) => col.value(row)));
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('page.names.category-performance' as Parameters<typeof t>[0]),
       tableData: { headers, rows },
       filename: 'category-performance',
-    });
+    }));
   };
+
+  if (budgetsError) return <ReportError onRetry={reloadBudgets} />;
 
   if (error) {
     return <ReportError onRetry={reload} />;
   }
 
-  if (isLoading) {
+  if (isLoading || budgetsLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="space-y-4">

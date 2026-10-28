@@ -125,7 +125,7 @@ describe('CategoryInfoWidget', () => {
     expect(screen.getByText('Total Spent')).toBeInTheDocument();
     expect(screen.getByText('CAD 800.00')).toBeInTheDocument();
     expect(mockedTransactions.getSummary).toHaveBeenCalledWith(
-      expect.objectContaining({ categoryIds: ['c-1'] }),
+      expect.objectContaining({ basis:'cash', categoryIds: ['c-1'] }),
     );
   });
 

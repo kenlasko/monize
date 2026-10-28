@@ -30,7 +30,12 @@ import {
  */
 
 const schema = readSchema();
-const foreignKeys = parseForeignKeys(schema);
+// Only referenced row IDs are remapped. Composite owner/natural-key columns
+// retain their values (user_id is forced to the restoring owner); schema FKs
+// still validate the complete tuple, and restore-plan checks every constituent.
+const foreignKeys = parseForeignKeys(schema).filter(
+  (fk) => fk.referencedColumn === "id",
+);
 const restored = new Set(RESTORE_PLAN.map((step) => step.table));
 
 // Ids as the exporter writes them: canonical, lower-case, hyphenated.
@@ -522,5 +527,96 @@ describe("remapRestoreRow", () => {
     expect(remapped.id).toBe(SCHEDULE);
     // The input row is not modified.
     expect(row.splits[0]).toEqual({ transferAccountId: ACCOUNT.toUpperCase() });
+  });
+});
+
+describe("accrual restore reference closure", () => {
+  const split = "88888888-8888-4888-8888-888888888888";
+  const accrual = "99999999-9999-4999-8999-999999999999";
+  const allocation = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const graph = () =>
+    backup({
+      accounts: [
+        {
+          id: ACCOUNT,
+          user_id: "u",
+          name: "Fixture",
+          account_type: "CHEQUING",
+          currency_code: "USD",
+        },
+      ],
+      transactions: [
+        {
+          id: TXN,
+          user_id: "u",
+          account_id: ACCOUNT,
+          amount: -100,
+          currency_code: "USD",
+          transaction_date: "2026-06-15",
+          is_split: true,
+        },
+      ],
+      transaction_splits: [
+        { id: split, transaction_id: TXN, kind: "category", amount: -100 },
+      ],
+      accrual_schedules: [
+        {
+          id: accrual,
+          user_id: "u",
+          source_transaction_id: TXN,
+          source_split_id: split,
+          family: "expense",
+          currency_code: "USD",
+          preset: "NTM",
+          start_month: "2026-06-01",
+          month_count: 12,
+          revision: 1,
+          source_fingerprint: "a".repeat(64),
+        },
+      ],
+      accrual_allocations: [
+        {
+          id: allocation,
+          user_id: "u",
+          schedule_id: accrual,
+          period_index: 0,
+          recognition_date: "2026-06-30",
+          amount: "-8.3300",
+        },
+      ],
+    });
+  it("canonicalizes and remaps every accrual graph edge to the restored rows", () => {
+    const { data } = resolveRestoreReferences(graph());
+    const remap = new Map<string, string>();
+    const rows = Object.values(data).filter(Array.isArray).flat() as Record<
+      string,
+      unknown
+    >[];
+    collectRowIdRemap(rows, remap, randomUUID);
+    const schedule = remapRestoreRow(
+      (data.accrual_schedules as Record<string, unknown>[])[0],
+      remap,
+      new Map(),
+      randomUUID,
+    ) as Record<string, unknown>;
+    const row = remapRestoreRow(
+      (data.accrual_allocations as Record<string, unknown>[])[0],
+      remap,
+      new Map(),
+      randomUUID,
+    ) as Record<string, unknown>;
+    expect(schedule.source_transaction_id).toBe(remap.get(TXN));
+    expect(schedule.source_split_id).toBe(remap.get(split));
+    expect(row.schedule_id).toBe(remap.get(accrual));
+  });
+  it.each([
+    ["accrual_schedules", "source_transaction_id"],
+    ["accrual_schedules", "source_split_id"],
+    ["accrual_allocations", "schedule_id"],
+  ])("refuses %s.%s outside the uploaded graph", (table, column) => {
+    const data = graph();
+    const rows = data[table] as Record<string, unknown>[];
+    rows[0][column] = VICTIM_TXN;
+    expect(() => resolveRestoreReferences(data)).toThrow(BadRequestException);
   });
 });

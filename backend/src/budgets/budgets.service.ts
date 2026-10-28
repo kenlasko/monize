@@ -1,3 +1,6 @@
+import { BudgetPeriod } from "./entities/budget-period.entity";
+import { reportingMoneyOne } from "../accruals/reporting-money";
+import { ReportingRead } from "../accruals/reporting-basis";
 import {
   Injectable,
   NotFoundException,
@@ -76,28 +79,6 @@ export interface UpcomingBill {
 
 @Injectable()
 export class BudgetsService {
-  // Short-lived cache to dedup concurrent computeCategoryActuals calls
-  // (e.g. getSummary + getVelocity fired in parallel from the frontend)
-  private categoryActualsCache = new Map<
-    string,
-    {
-      data: Promise<
-        Array<{
-          budgetCategoryId: string;
-          categoryId: string | null;
-          categoryName: string;
-          budgeted: number;
-          spent: number;
-          remaining: number;
-          percentUsed: number;
-          isIncome: boolean;
-          percentage: number | null;
-        }>
-      >;
-      timestamp: number;
-    }
-  >();
-
   constructor(
     private dataSource: DataSource,
     private actionHistoryService: ActionHistoryService,
@@ -399,9 +380,11 @@ export class BudgetsService {
     });
   }
 
+  @ReportingRead()
   async getSummary(
     userId: string,
     budgetId: string,
+    period?: PeriodDateRange,
   ): Promise<{
     budget: Budget;
     totalBudgeted: number;
@@ -425,11 +408,41 @@ export class BudgetsService {
   }> {
     const budget = await this.findOne(userId, budgetId);
 
-    const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
+    const { periodStart, periodEnd } =
+      period ?? this.getCurrentPeriodDates(budget);
 
+    let reportingBudget = budget;
+    if (
+      period &&
+      periodStart !== this.getCurrentPeriodDates(budget).periodStart
+    ) {
+      const snapshot = await withScopedDb(this.dataSource, (m) =>
+        m.getRepository(BudgetPeriod).findOne({
+          where: { budgetId, periodStart, periodEnd },
+          relations: [
+            "periodCategories",
+            "periodCategories.budgetCategory",
+            "periodCategories.category",
+          ],
+        }),
+      );
+      if (snapshot) {
+        reportingBudget = {
+          ...budget,
+          incomeLinked: false,
+          categories: snapshot.periodCategories.map((pc) => ({
+            ...pc.budgetCategory,
+            id: pc.budgetCategoryId,
+            categoryId: pc.categoryId,
+            category: pc.category,
+            amount: Number(pc.effectiveBudget),
+          })),
+        };
+      }
+    }
     const categoryBreakdown = await this.getCachedCategoryActuals(
       userId,
-      budget,
+      reportingBudget,
       periodStart,
       periodEnd,
     );
@@ -504,6 +517,7 @@ export class BudgetsService {
     }));
   }
 
+  @ReportingRead()
   async getVelocity(
     userId: string,
     budgetId: string,
@@ -834,6 +848,7 @@ export class BudgetsService {
     }
   }
 
+  @ReportingRead()
   async getDashboardSummary(userId: string): Promise<{
     budgetId: string;
     budgetName: string;
@@ -930,6 +945,7 @@ export class BudgetsService {
     };
   }
 
+  @ReportingRead()
   async getCategoryBudgetStatus(
     userId: string,
     categoryIds: string[],
@@ -1007,33 +1023,11 @@ export class BudgetsService {
     periodStart: string,
     periodEnd: string,
   ) {
-    const key = `${budget.id}:${periodStart}:${periodEnd}`;
-    const cached = this.categoryActualsCache.get(key);
-    const now = Date.now();
-
-    if (cached && now - cached.timestamp < 10_000) {
-      return cached.data;
-    }
-
-    // Store the promise itself so concurrent callers share the same in-flight request
-    const promise = this.computeCategoryActuals(
-      userId,
-      budget,
-      periodStart,
-      periodEnd,
-    );
-    this.categoryActualsCache.set(key, { data: promise, timestamp: now });
-
-    // Clean up stale entries
-    if (this.categoryActualsCache.size > 50) {
-      for (const [k, v] of this.categoryActualsCache) {
-        if (now - v.timestamp > 30_000) this.categoryActualsCache.delete(k);
-      }
-    }
-
-    return promise;
+    // Recognition is retroactive. Read current facts rather than a cross-request TTL cache.
+    return this.computeCategoryActuals(userId, budget, periodStart, periodEnd);
   }
 
+  @ReportingRead()
   async computeActualIncome(
     userId: string,
     budget: Budget,
@@ -1053,38 +1047,50 @@ export class BudgetsService {
     const excludedAccountIds = budgetExcludedAccountIds(budget.config);
     const [directResult, splitResult] = await Promise.all([
       withScopedDb(this.dataSource, (m) =>
-        excludeBudgetAccounts(
-          m
-            .getRepository(Transaction)
-            .createQueryBuilder("t")
-            .select("COALESCE(SUM(t.amount), 0)", "total")
-            .where("t.user_id = :userId", { userId })
-            .andWhere("t.category_id IN (:...incomeCategoryIds)", {
-              incomeCategoryIds,
-            })
-            .andWhere("t.transaction_date >= :periodStart", { periodStart })
-            .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-            .andWhere("t.status != :void", { void: "VOID" })
-            .andWhere("t.is_split = false"),
-          excludedAccountIds,
-        ).getRawOne(),
+        reportingMoneyOne(
+          m,
+          userId,
+          excludeBudgetAccounts(
+            m
+              .getRepository(Transaction)
+              .createQueryBuilder("t")
+              .select("COALESCE(SUM(t.amount), 0)", "total")
+              .where("t.user_id = :userId", { userId })
+              .andWhere("t.category_id IN (:...incomeCategoryIds)", {
+                incomeCategoryIds,
+              })
+              .andWhere("t.transaction_date >= :periodStart", { periodStart })
+              .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+              .andWhere("t.status != :void", { void: "VOID" })
+              .andWhere("t.is_split = false"),
+            excludedAccountIds,
+          ),
+          budget.currencyCode,
+          false,
+        ),
       ),
       withScopedDb(this.dataSource, (m) =>
-        excludeBudgetAccounts(
-          m
-            .getRepository(TransactionSplit)
-            .createQueryBuilder("s")
-            .innerJoin("s.transaction", "t")
-            .select("COALESCE(SUM(s.amount), 0)", "total")
-            .where("t.user_id = :userId", { userId })
-            .andWhere("s.category_id IN (:...incomeCategoryIds)", {
-              incomeCategoryIds,
-            })
-            .andWhere("t.transaction_date >= :periodStart", { periodStart })
-            .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
-            .andWhere("t.status != :void", { void: "VOID" }),
-          excludedAccountIds,
-        ).getRawOne(),
+        reportingMoneyOne(
+          m,
+          userId,
+          excludeBudgetAccounts(
+            m
+              .getRepository(TransactionSplit)
+              .createQueryBuilder("s")
+              .innerJoin("s.transaction", "t")
+              .select("COALESCE(SUM(s.amount), 0)", "total")
+              .where("t.user_id = :userId", { userId })
+              .andWhere("s.category_id IN (:...incomeCategoryIds)", {
+                incomeCategoryIds,
+              })
+              .andWhere("t.transaction_date >= :periodStart", { periodStart })
+              .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
+              .andWhere("t.status != :void", { void: "VOID" }),
+            excludedAccountIds,
+          ),
+          budget.currencyCode,
+          false,
+        ),
       ),
     ]);
 
@@ -1142,6 +1148,7 @@ export class BudgetsService {
           budgetCategories,
           periodStart,
           periodEnd,
+          budget.currencyCode,
         ),
     );
 

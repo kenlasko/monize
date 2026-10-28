@@ -1,4 +1,18 @@
 import {
+  resolveIncrementalAccrualEdit,
+  verifyIncrementalAccrualEdit,
+  recordIncrementalAccrualHistory,
+} from "../accruals/accrual-incremental-split";
+import { restoreAccrualSplitTags } from "../accruals/accrual-history-snapshot";
+import { requireAccrualOwner } from "../accruals/accrual-source";
+import type { IncrementalSplitPreviewDto } from "./dto/incremental-split.dto";
+import {
+  verifySourceAccrualEdit,
+  removeReviewedAccruals,
+  deleteReplacedSplits,
+} from "../accruals/accrual-source-edit";
+import { refreshSourceAccruals } from "../accruals/accrual-lifecycle";
+import {
   EmbeddedSeriesCarry,
   readEmbeddedSeriesCarry,
   takeCarriedSeries,
@@ -35,16 +49,16 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { tr } from "../i18n/translate";
 import { withScopedDb } from "../common/db/scoped-db";
-import { lockTransactionRow, lockTransactionRows } from "../common/db/locks";
+import {
+  lockTransactionRow,
+  lockTransactionRows,
+  acquireAdvisoryLock,
+  LockScope,
+} from "../common/db/locks";
 import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 import { removeLockedTransactionLeg } from "./remove-transaction-leg";
 
-function inferSplitKind(split: CreateTransactionSplitDto): SplitKind {
-  if (split.splitKind) return split.splitKind;
-  if (split.investment) return SplitKind.INVESTMENT;
-  if (split.transferAccountId) return SplitKind.TRANSFER;
-  return SplitKind.CATEGORY;
-}
+import { inferSplitKind } from "./split-kind.util";
 
 @Injectable()
 export class TransactionSplitService {
@@ -287,6 +301,7 @@ export class TransactionSplitService {
        * for the caller's bond price recompute after the commit (INV-BOND-005).
        */
       touchedSecurityIds?: Set<string>;
+      retainedCategoryIds?: ReadonlyMap<number, string>;
     },
     /**
      * Every account this touched besides the parent's, so the caller can
@@ -328,6 +343,7 @@ export class TransactionSplitService {
       parentStatus?: TransactionStatus;
       carriedSeries?: readonly EmbeddedSeriesCarry[];
       touchedSecurityIds?: Set<string>;
+      retainedCategoryIds?: ReadonlyMap<number, string>;
     },
     affectedAccountIds?: Set<string>,
   ): Promise<TransactionSplit[]> {
@@ -432,11 +448,12 @@ export class TransactionSplitService {
     });
 
     if (regularSplits.length > 0) {
-      const regularEntities = regularSplits.map(({ split }) => {
+      const regularEntities = regularSplits.map(({ split, index }) => {
         const kind = split.transferAccountId
           ? SplitKind.TRANSFER
           : SplitKind.CATEGORY;
         return m.create(TransactionSplit, {
+          id: options?.retainedCategoryIds?.get(index),
           transactionId,
           kind,
           categoryId: split.categoryId || null,
@@ -920,6 +937,7 @@ export class TransactionSplitService {
     transaction: Transaction,
     splits: CreateTransactionSplitDto[],
     userId: string,
+    accrualImpactFingerprint?: string,
   ): Promise<TransactionSplit[]> {
     // Provider rate lookups happen out here, never while holding the parent
     // lock below; see prewarmSplitTransferRates.
@@ -971,6 +989,14 @@ export class TransactionSplitService {
       // Strict reconciled lock: replacing a reconciled parent's split set
       // rewrites the row the statement was matched against.
       await assertReconciledRowsMutable(m, userId, [parent]);
+      const accrualEdit = await verifySourceAccrualEdit(
+        m,
+        userId,
+        transaction.id,
+        { splits },
+        accrualImpactFingerprint,
+      );
+      await removeReviewedAccruals(m, userId, accrualEdit);
 
       this.validateSplits(splits, parent.amount);
 
@@ -995,9 +1021,11 @@ export class TransactionSplitService {
         affectedAccountIds.add(acc);
       }
 
-      await m.delete(TransactionSplit, {
-        transactionId: transaction.id,
-      });
+      await deleteReplacedSplits(
+        m,
+        transaction.id,
+        accrualEdit.retainedCategoryIds,
+      );
 
       // Every field the new splits are built from comes off the locked parent,
       // not off the caller's copy of it. The counterpart rows and embedded
@@ -1028,6 +1056,9 @@ export class TransactionSplitService {
           parentStatus: parent.status as TransactionStatus,
           carriedSeries,
           touchedSecurityIds,
+          ...(accrualEdit.retainedCategoryIds.size
+            ? { retainedCategoryIds: accrualEdit.retainedCategoryIds }
+            : {}),
         },
         affectedAccountIds,
       );
@@ -1039,6 +1070,7 @@ export class TransactionSplitService {
         categoryId: null,
       });
 
+      await refreshSourceAccruals(m, userId, transaction.id);
       return created;
     });
 
@@ -1078,10 +1110,50 @@ export class TransactionSplitService {
     }
   }
 
+  async previewIncrementalSplit(
+    transaction: Transaction,
+    command: IncrementalSplitPreviewDto,
+    userId: string,
+  ) {
+    requireAccrualOwner(userId);
+    if (command.operation === "add" && command.split?.categoryId) {
+      await this.validateCategoryOwnership(userId, command.split.categoryId);
+    }
+    return withScopedDb(this.dataSource, async (m) => {
+      await acquireAdvisoryLock(m, LockScope.AccrualBulkHistory, userId);
+      await this.lockEmbeddedInvestmentScopes(m, userId, [transaction.id]);
+      const parent = await lockTransactionRow(m, transaction.id, userId);
+      if (!parent)
+        throw new NotFoundException(
+          tr(
+            "errors.transactions.notFoundById",
+            `Transaction with ID ${transaction.id} not found`,
+            { id: transaction.id },
+          ),
+        );
+      await assertReconciledRowsMutable(m, userId, [parent]);
+      const edit = await resolveIncrementalAccrualEdit(
+        m,
+        userId,
+        transaction.id,
+        command,
+        true,
+      );
+      return {
+        fingerprint: edit.fingerprint,
+        impacts: edit.resolution.impacts,
+        collapse: edit.collapse,
+        activatesSplit: edit.activatesSplit,
+        removedSourceSplitIds: edit.removedSourceSplitIds,
+      };
+    });
+  }
+
   async addSplit(
     transaction: Transaction,
     splitDto: CreateTransactionSplitDto,
     userId: string,
+    accrualImpactFingerprint?: string,
   ): Promise<TransactionSplit> {
     if (splitDto.investment) {
       throw new BadRequestException(
@@ -1109,6 +1181,8 @@ export class TransactionSplitService {
     // transaction's parent never named (recheck RR5-002).
     let addedTransferAccountId: string | null = null;
     const savedSplitId = await withScopedDb(this.dataSource, async (m) => {
+      await acquireAdvisoryLock(m, LockScope.AccrualBulkHistory, userId);
+      await this.lockEmbeddedInvestmentScopes(m, userId, [transaction.id]);
       // The aggregate check and the insert are one serialized unit.
       //
       // Reading the split set, validating in application code, and inserting in
@@ -1160,6 +1234,15 @@ export class TransactionSplitService {
         );
       }
 
+      const accrualEdit = await resolveIncrementalAccrualEdit(
+        m,
+        userId,
+        transaction.id,
+        { operation: "add", split: splitDto },
+      );
+      verifyIncrementalAccrualEdit(accrualEdit, accrualImpactFingerprint);
+      await removeReviewedAccruals(m, userId, accrualEdit.resolution);
+
       const splitKind = splitDto.transferAccountId
         ? SplitKind.TRANSFER
         : SplitKind.CATEGORY;
@@ -1173,6 +1256,14 @@ export class TransactionSplitService {
       });
 
       const savedSplit = await m.save(split);
+      if (splitDto.tagIds?.length)
+        await restoreAccrualSplitTags(
+          m,
+          userId,
+          transaction.id,
+          { splits: [{ id: savedSplit.id, tagIds: splitDto.tagIds }] },
+          false,
+        );
 
       if (splitDto.transferAccountId) {
         const targetAccount = await this.accountsService.findOne(
@@ -1247,6 +1338,15 @@ export class TransactionSplitService {
         });
       }
 
+      if (accrualEdit.before) {
+        await refreshSourceAccruals(m, userId, transaction.id);
+        await recordIncrementalAccrualHistory(
+          m,
+          userId,
+          transaction.id,
+          accrualEdit.before,
+        );
+      }
       return savedSplit.id;
     });
 
@@ -1300,12 +1400,15 @@ export class TransactionSplitService {
     transaction: Transaction,
     splitId: string,
     userId: string,
+    accrualImpactFingerprint?: string,
   ): Promise<void> {
     // Accounts this removal moved besides the parent's, invalidated after commit
     // (recheck RR5-002).
     const affectedAccountIds = new Set<string>();
     const touchedSecurityIds = new Set<string>();
     await withScopedDb(this.dataSource, async (m) => {
+      await acquireAdvisoryLock(m, LockScope.AccrualBulkHistory, userId);
+      await this.lockEmbeddedInvestmentScopes(m, userId, [transaction.id]);
       // The parent first, so a concurrent split mutation on the same parent
       // serializes behind this one, and so the split below is read from a state
       // that cannot change under us. The old code read the split in its own
@@ -1343,6 +1446,15 @@ export class TransactionSplitService {
           ),
         );
       }
+
+      const accrualEdit = await resolveIncrementalAccrualEdit(
+        m,
+        userId,
+        transaction.id,
+        { operation: "remove", splitId },
+      );
+      verifyIncrementalAccrualEdit(accrualEdit, accrualImpactFingerprint);
+      await removeReviewedAccruals(m, userId, accrualEdit.resolution);
 
       if (split.kind === SplitKind.INVESTMENT && split.investmentTransaction) {
         if (split.investmentTransaction.accountId) {
@@ -1404,6 +1516,15 @@ export class TransactionSplitService {
             isSplit: false,
           });
         }
+      }
+      if (accrualEdit.before) {
+        await refreshSourceAccruals(m, userId, transaction.id);
+        await recordIncrementalAccrualHistory(
+          m,
+          userId,
+          transaction.id,
+          accrualEdit.before,
+        );
       }
     });
 

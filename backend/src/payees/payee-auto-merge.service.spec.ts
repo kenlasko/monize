@@ -1,3 +1,7 @@
+jest.mock("../accruals/accrual-taxonomy-operation", () => ({
+  beginTaxonomyOperation: async () => undefined,
+  recordTaxonomyOperation: async () => undefined,
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { BadRequestException } from "@nestjs/common";
@@ -83,6 +87,67 @@ describe("PayeeAutoMergeService", () => {
       [Transaction, mockTransactionsRepository],
     ]);
     mockDataSource = dataSource;
+    // Stored cash-only source fixtures for the locked metadata writer.
+    txManager.query.mockImplementation((sql: string, args?: unknown[]) => {
+      if (sql.includes('payee_id AS "payeeId"')) {
+        return Promise.resolve(
+          (args?.[1] as string[]).flatMap((payeeId) =>
+            Array.from({ length: 3 }, (_, index) => ({
+              id: `${payeeId}-tx-${index}`,
+              payeeId,
+            })),
+          ),
+        );
+      }
+      if (sql.includes("FROM payees p") && sql.includes("id=ANY"))
+        return Promise.resolve(
+          (args?.[1] as string[]).map((id) => ({
+            id,
+            snapshot: JSON.stringify({ id }),
+          })),
+        );
+      if (sql.includes("FROM categories WHERE user_id=$1 AND id=ANY"))
+        return Promise.resolve((args?.[1] as string[]).map((id) => ({ id })));
+      if (sql.includes("SELECT id,to_jsonb(t)::text"))
+        return Promise.resolve(
+          (args?.[1] as string[]).map((id) => ({
+            id,
+            snapshot: JSON.stringify({ id }),
+          })),
+        );
+      if (
+        sql.includes(
+          "SELECT id FROM transactions WHERE user_id=$1 AND payee_id=ANY",
+        )
+      )
+        return Promise.resolve(
+          (args?.[1] as string[]).flatMap((payeeId) =>
+            Array.from({ length: 3 }, (_, index) => ({
+              id: `${payeeId}-tx-${index}`,
+            })),
+          ),
+        );
+      if (sql.includes("FROM payees p"))
+        return Promise.resolve([
+          { defaultCategoryId: null, snapshot: "stored payee fixture" },
+        ]);
+      if (sql.includes("SELECT id FROM categories"))
+        return Promise.resolve([{ id: args?.[0] }]);
+      if (sql.includes("to_jsonb(t)::text AS snapshot"))
+        return Promise.resolve(
+          (args?.[1] as string[]).map((id, index) => ({
+            id,
+            categoryId: index < 3 ? null : "existing-category",
+            isSplit: false,
+            isTransfer: false,
+            status: "UNRECONCILED",
+            snapshot: JSON.stringify({ id }),
+          })),
+        );
+      if (sql.includes("FROM accrual_schedules")) return Promise.resolve([]);
+      return Promise.resolve([]);
+    });
+
     txManager.findOne.mockResolvedValue(undefined);
     txManager.find.mockResolvedValue([]);
     txManager.update.mockResolvedValue({ affected: 3 });

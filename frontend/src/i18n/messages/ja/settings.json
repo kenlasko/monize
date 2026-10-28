@@ -242,7 +242,13 @@
       "applyHere": "このブラウザでこれらの既定を使用する",
       "applyHereHelp": "このブラウザに保存されている表示設定を消去し、上記の既定がここでも適用されるようにします。",
       "appliedHere": "このブラウザで既定の表示を使用するようになりました"
-    }
+    },
+    "reportingBasisLabel": "既定のレポート基準",
+    "reportingAccrual": "発生主義",
+    "reportingCash": "現金主義",
+    "reportingBasisHelp": "レポート、カテゴリと支払先の推移に使う既定の方式を選びます。現金主義専用の表示では支払日を使います。",
+    "accrualEnabledLabel": "発生主義会計を有効にする",
+    "accrualEnabledTooltip": "発生主義の配分予定、残高、レポート操作を有効にします。無効の場合、レポートは現金主義になります。保存済みの配分予定は保持され、元の取引が変更されると更新されます。"
   },
   "notifications": {
     "heading": "通知",
@@ -836,7 +842,10 @@
       },
       "doneButton": "完了",
       "unlinkedBondSecuritiesList": "対象の銘柄: {symbols}。",
-      "unlinkedBondSecuritiesMore": "ほか{count}件"
+      "unlinkedBondSecuritiesMore": "ほか{count}件",
+      "accrualSystemAccounts": "発生主義のシステム勘定",
+      "accrualSchedules": "発生主義の配分スケジュール",
+      "accrualAllocations": "発生主義の配分"
     },
     "storedBackups": {
       "heading": "自動バックアップ",

@@ -1,8 +1,10 @@
 "use client";
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis, useReportingRouter } from './ReportingBasis';
 import { useState, useMemo, useRef } from "react";
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
-import { useRouter } from "next/navigation";
+
 import {
   BarChart,
   Bar,
@@ -31,7 +33,6 @@ import { ChartViewToggle } from "@/components/ui/ChartViewToggle";
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { ChartTooltip } from "@/components/reports/ChartTooltip";
 import { ReportError } from "@/components/reports/ReportError";
-import { exportToCsv } from "@/lib/csv-export";
 import { chartColors } from "@/lib/chart-colors";
 import { useChartDateFormat } from "@/hooks/useChartDateFormat";
 import { useTranslations } from 'next-intl';
@@ -113,9 +114,11 @@ function IncomeVsExpensesTooltip({
 }
 
 export function IncomeVsExpensesReport() {
+  const { exportCsvWithBasis, withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
   const formatChartDate = useChartDateFormat();
-  const router = useRouter();
+  const router = useReportingRouter();
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, formatPercent, formatPercentTrimmed } =
     useNumberFormat();
@@ -178,6 +181,7 @@ export function IncomeVsExpensesReport() {
     () =>
       isValid
         ? builtInReportsApi.getIncomeVsExpenses({
+            ...(basis ? { basis } : {}),
             startDate: rangeStart || undefined,
             endDate: rangeEnd,
             ...(selectedAccountIds.length > 0 ? { accountIds: selectedAccountIds } : {}),
@@ -187,7 +191,8 @@ export function IncomeVsExpensesReport() {
               : {}),
           })
         : Promise.resolve(null),
-    [isValid, rangeStart, rangeEnd, breakdownKey, accountIdsKey, scopeKey],
+    [isValid, rangeStart, rangeEnd, breakdownKey, accountIdsKey, scopeKey, basis],
+    { requestKey: JSON.stringify([isValid, rangeStart, rangeEnd, breakdownKey, accountIdsKey, scopeKey, basis]), maskStaleData: true },
   );
 
   // The bucket the breakdown card shows, and so the one whose tagged flows the
@@ -350,7 +355,7 @@ export function IncomeVsExpensesReport() {
   const handleExportPdf = async () => {
     const { exportToPdf } = await import("@/lib/pdf-export");
     const partialNote = noteFor({ value: totals.totalIncome, ...completeness });
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('page.names.income-vs-expenses' as Parameters<typeof t>[0]),
       summaryCards: balanceWindow && flowBucket
         ? [
@@ -371,7 +376,7 @@ export function IncomeVsExpensesReport() {
           ],
       chartContainer: chartRef.current,
       filename: "income-vs-expenses",
-    });
+    }));
   };
 
   const handleExportCsv = () => {
@@ -397,7 +402,7 @@ export function IncomeVsExpensesReport() {
         d.Balance ?? null,
         d.BalancePercent == null ? null : formatPercentTrimmed(d.BalancePercent),
       ]);
-      exportToCsv('income-vs-expenses', headers, rows);
+      exportCsvWithBasis('income-vs-expenses', headers, rows);
       return;
     }
     const headers = [t('incomeVsExpenses.colMonth'), t('incomeVsExpenses.colIncome'), t('incomeVsExpenses.colExpenses'), t('incomeVsExpenses.colSavings'), t('incomeVsExpenses.colSavingsRate'), ...(showFlows ? [t('tagBreakdown.inflows'), t('tagBreakdown.outflows')] : [])];
@@ -409,7 +414,7 @@ export function IncomeVsExpensesReport() {
       `${formatPercentTrimmed(d.SavingsRate)}`,
       ...(showFlows ? [d.TaggedInflows ?? null, d.TaggedOutflows ?? null] : []),
     ]);
-    exportToCsv('income-vs-expenses', headers, rows);
+    exportCsvWithBasis('income-vs-expenses', headers, rows);
   };
 
   const barClickedRef = useRef(false);

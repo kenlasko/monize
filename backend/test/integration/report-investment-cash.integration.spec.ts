@@ -1,3 +1,4 @@
+import type { ExchangeRateService } from "@/currencies/exchange-rate.service";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 // Import order matters here and is load-bearing. `securities.module` sits in a
@@ -111,7 +112,11 @@ describe("built-in reports and investment cash accounts (integration)", () => {
     // rate is ever looked up and an empty rate list is the honest stub.
     const currency = new ReportCurrencyService(dataSource, {
       getLatestRates: async () => [],
-    } as never);
+      getRateHistory: async () => [],
+    } satisfies Pick<
+      ExchangeRateService,
+      "getLatestRates" | "getRateHistory"
+    > as unknown as ExchangeRateService);
     spending = new SpendingReportsService(dataSource, currency);
     income = new IncomeReportsService(dataSource, currency);
     comparison = new ComparisonReportsService(dataSource, currency);

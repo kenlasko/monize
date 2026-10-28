@@ -1379,3 +1379,25 @@ describe('TransactionRow warranties', () => {
     expect(screen.getByTitle('Duplicate transaction')).toBeInTheDocument();
   });
 });
+it('recognition rows open the parent without exposing independent mutation controls', () => {
+  const edit=vi.fn();
+  renderRow({onEdit:edit,onDuplicate:vi.fn(),onScheduleRecurring:vi.fn(),showRunningBalance:false}, {
+    id:'recognition',
+    reportingProvenance:{readOnly:true,reportId:'recognition',sourceTransactionId:'parent',cashDate:'2025-06-15',effectiveDate:'2025-06-30',sourceAmount:'-306',nativeAmount:'-25.5'},
+  });
+  expect(screen.queryByRole('button',{name:'Edit'})).not.toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:'Delete'})).not.toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:'Accrual'})).not.toBeInTheDocument();
+  expect(screen.getByText('Accrued')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'View'}));
+  expect(edit).toHaveBeenCalledWith(expect.objectContaining({reportingProvenance:expect.objectContaining({sourceTransactionId:'parent'})}));
+});
+it('marks a not-yet-reached recognition row Scheduled instead of Accrued', () => {
+  renderRow({showRunningBalance:false}, {
+    id:'recognition',
+    transactionDate:'2099-01-31',
+    reportingProvenance:{readOnly:true,reportId:'recognition',sourceTransactionId:'parent',cashDate:'2098-01-15',effectiveDate:'2099-01-31',sourceAmount:'-306',nativeAmount:'-25.5'},
+  });
+  expect(screen.getByText('Scheduled')).toBeInTheDocument();
+  expect(screen.queryByText('Accrued')).not.toBeInTheDocument();
+});

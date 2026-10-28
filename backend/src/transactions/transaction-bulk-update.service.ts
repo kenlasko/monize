@@ -1,4 +1,16 @@
 import {
+  captureAccrualBulkDelete,
+  clearAccrualBulkDeleteChildren,
+  recordRequiredAccrualBulkDelete,
+} from "../accruals/accrual-bulk-delete";
+import {
+  resolveBulkAccrualEdit,
+  verifyBulkAccrualEdit,
+  type BulkAccrualPreview,
+} from "../accruals/accrual-bulk-edit";
+import { refreshSourceAccruals } from "../accruals/accrual-lifecycle";
+import { requireAccrualOwner } from "../accruals/accrual-source";
+import {
   Injectable,
   BadRequestException,
   ConflictException,
@@ -37,7 +49,11 @@ import { formatDateYMDLocal } from "../common/date-utils";
 import { applyTransactionSearch } from "./apply-transaction-search";
 import { tr } from "../i18n/translate";
 import { withScopedDb } from "../common/db/scoped-db";
-import { lockTransactionRows } from "../common/db/locks";
+import {
+  lockTransactionRows,
+  acquireAdvisoryLock,
+  LockScope,
+} from "../common/db/locks";
 import { deletionBalanceEffect } from "../common/deletion-balance.util";
 import { roundMoney } from "../common/round.util";
 import {
@@ -103,10 +119,24 @@ export class TransactionBulkUpdateService {
     private dataSource: DataSource,
   ) {}
 
+  async previewBulkUpdate(
+    userId: string,
+    dto: BulkUpdateDto,
+  ): Promise<BulkAccrualPreview> {
+    requireAccrualOwner(userId);
+    const capture: { result?: BulkAccrualPreview } = {};
+    await this.bulkUpdate(userId, dto, capture);
+    return (
+      capture.result ?? { fingerprint: null, transactionIds: [], impacts: [] }
+    );
+  }
+
   async bulkUpdate(
     userId: string,
     dto: BulkUpdateDto,
+    previewCapture?: { result?: BulkAccrualPreview },
   ): Promise<BulkUpdateResult> {
+    const previewOnly = previewCapture !== undefined;
     const updateFields = this.extractUpdateFields(dto);
     const isUpdatingTags = "tagIds" in dto;
     if (Object.keys(updateFields).length === 0 && !isUpdatingTags) {
@@ -152,6 +182,10 @@ export class TransactionBulkUpdateService {
     // Step 1: Get eligible transaction IDs
     const allIds = await this.resolveTransactionIds(userId, dto);
     if (allIds.length === 0) {
+      verifyBulkAccrualEdit(
+        { fingerprint: null, transactionIds: [], impacts: [] },
+        dto.accrualImpactFingerprint,
+      );
       return { updated: 0, skipped: 0, skippedReasons: [] };
     }
 
@@ -170,6 +204,10 @@ export class TransactionBulkUpdateService {
     );
 
     if (eligibleIds.length === 0) {
+      verifyBulkAccrualEdit(
+        { fingerprint: null, transactionIds: [], impacts: [] },
+        dto.accrualImpactFingerprint,
+      );
       return {
         updated: 0,
         skipped: classifySkipped,
@@ -177,6 +215,7 @@ export class TransactionBulkUpdateService {
       };
     }
 
+    let accrualPreview: BulkAccrualPreview | undefined;
     const splitParentIdSet = new Set(splitParentIds);
     let changedLines: ChangedSplitLine[] = [];
     let snapshot: BulkUpdateSnapshot = { before: [], after: [] };
@@ -296,6 +335,21 @@ export class TransactionBulkUpdateService {
         ...statusIds,
         ...propagationTargetIds,
       ]);
+
+      const restriction = isUpdatingCategory
+        ? await this.resolveCategoryRestriction(m, userId, dto)
+        : undefined;
+      accrualPreview = await resolveBulkAccrualEdit(
+        m,
+        userId,
+        eligibleIds,
+        splitParentIdSet,
+        dto,
+        restriction,
+      );
+      if (accrualPreview.impacts.length) requireAccrualOwner(userId);
+      if (previewOnly) return;
+      verifyBulkAccrualEdit(accrualPreview, dto.accrualImpactFingerprint);
 
       // WP1b: read the pre-write values of exactly the fields this run changes,
       // before ANY update runs -- including the counterpart and propagated rows
@@ -418,17 +472,16 @@ export class TransactionBulkUpdateService {
       // to this transaction. The restriction set is computed with the same
       // expansion the selection uses, so update and selection cannot drift.
       if (isUpdatingCategory && splitParentIds.length > 0) {
-        const restriction = await this.resolveCategoryRestriction(
-          m,
-          userId,
-          dto,
-        );
         changedLines = await this.splitService.bulkRecategorizeCategorySplits(
           userId,
           splitParentIds,
           dto.categoryId ?? null,
           restriction,
         );
+      }
+
+      for (const impact of accrualPreview.impacts) {
+        await refreshSourceAccruals(m, userId, impact.transactionId);
       }
 
       snapshot = this.buildSnapshots(
@@ -443,6 +496,11 @@ export class TransactionBulkUpdateService {
         new Set(snapshotIds.filter((id) => !eligibleIds.includes(id))),
       );
     });
+
+    if (previewCapture) {
+      previewCapture.result = accrualPreview!;
+      return { updated: 0, skipped: 0, skippedReasons: [] };
+    }
 
     // Step 5: Trigger net worth recalc for affected accounts (after commit).
     // Uses the expanded set: a counterpart in another account had its status
@@ -576,6 +634,7 @@ export class TransactionBulkUpdateService {
     // Balance adjustments and both delete passes commit atomically.
     let deleted = 0;
     await withScopedDb(this.dataSource, async (m) => {
+      await acquireAdvisoryLock(m, LockScope.AccrualBulkHistory, userId);
       const transactionIdsSet = new Set(transactions.map((t) => t.id));
 
       // A split-transfer leg links to its split PARENT, not to a mirror leg.
@@ -658,6 +717,10 @@ export class TransactionBulkUpdateService {
 
       // What each locked row contributed, from the one deletion rule: a VOID
       // row moved nothing, a future-dated row is recomputed after it is gone.
+      const accrualHistory = await captureAccrualBulkDelete(m, userId, [
+        ...locked.keys(),
+      ]);
+
       const balanceAdjustments = new Map<string, number>();
       const recalcAccountIds = new Set<string>();
       for (const tx of locked.values()) {
@@ -675,6 +738,9 @@ export class TransactionBulkUpdateService {
           await this.accountsService.updateBalance(accountId, adjustment);
         }
       }
+
+      if (accrualHistory)
+        await clearAccrualBulkDeleteChildren(m, userId, [...locked.keys()]);
 
       // Delete linked transactions first (foreign key order)
       if (linkedIdsToDelete.size > 0) {
@@ -702,6 +768,8 @@ export class TransactionBulkUpdateService {
       for (const accountId of [...recalcAccountIds].sort()) {
         await this.accountsService.recalculateCurrentBalance(userId, accountId);
       }
+      if (accrualHistory)
+        await recordRequiredAccrualBulkDelete(m, userId, accrualHistory);
     });
 
     // Trigger net worth recalc for every affected account, deduplicated.

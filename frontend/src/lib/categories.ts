@@ -36,7 +36,7 @@ export const categoriesApi = {
 
   // Detail-page aggregate. Uncached: the page refetches on every mutation.
   getDetail: async (id: string): Promise<CategoryDetail> => {
-    const response = await apiClient.get<CategoryDetail>(`/categories/${id}/detail`);
+    const response = await apiClient.get<CategoryDetail>(`/categories/${id}/detail`, { params: { basis: 'cash' } });
     return response.data;
   },
 

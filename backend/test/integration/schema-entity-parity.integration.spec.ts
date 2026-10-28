@@ -111,22 +111,25 @@ describe("entity/schema FK delete-rule drift (integration)", () => {
   });
 
   /** `table.column -> ON DELETE rule`, as schema.sql declares it. */
-  function declaredDeleteRules(): Map<string, string> {
+  function declaredDeleteRules(): Map<
+    string,
+    { rule: string; target: string }
+  > {
     const sql = readFileSync(
       join(__dirname, "../../../database/schema.sql"),
       "utf8",
     );
-    const rules = new Map<string, string>();
+    const rules = new Map<string, { rule: string; target: string }>();
     let table: string | null = null;
     for (const line of sql.split("\n")) {
       const created = /^CREATE TABLE (?:IF NOT EXISTS )?(\w+)/.exec(line);
       if (created) table = created[1];
       const fk =
-        /^\s*(\w+)\s+[A-Za-z0-9_()[\], ]*REFERENCES\s+\w+\s*\(\s*\w+\s*\)([^,]*)/.exec(
+        /^\s*(\w+)\s+[A-Za-z0-9_()[\], ]*REFERENCES\s+(\w+)\s*\(\s*\w+\s*\)([^,]*)/.exec(
           line,
         );
       if (fk && table) {
-        const trailing = fk[2];
+        const trailing = fk[3];
         const rule = /ON DELETE CASCADE/i.test(trailing)
           ? "CASCADE"
           : /ON DELETE SET NULL/i.test(trailing)
@@ -134,7 +137,7 @@ describe("entity/schema FK delete-rule drift (integration)", () => {
             : /ON DELETE RESTRICT/i.test(trailing)
               ? "RESTRICT"
               : "NO ACTION";
-        rules.set(`${table}.${fk[1]}`, rule);
+        rules.set(`${table}.${fk[1]}`, { rule, target: fk[2] });
       }
     }
     return rules;
@@ -148,14 +151,19 @@ describe("entity/schema FK delete-rule drift (integration)", () => {
     const live: Array<{
       table_name: string;
       column_name: string;
+      target_table: string;
       delete_rule: string;
     }> = await dataSource.query(`
-      SELECT tc.table_name, kcu.column_name, rc.delete_rule
+      SELECT tc.table_name, kcu.column_name, rc.delete_rule, referenced.relname AS target_table
         FROM information_schema.table_constraints tc
         JOIN information_schema.key_column_usage kcu
           ON kcu.constraint_name = tc.constraint_name
         JOIN information_schema.referential_constraints rc
           ON rc.constraint_name = tc.constraint_name
+        JOIN pg_constraint constraint_row
+          ON constraint_row.conname = tc.constraint_name
+         AND constraint_row.connamespace = 'public'::regnamespace
+        JOIN pg_class referenced ON referenced.oid = constraint_row.confrelid
        WHERE tc.constraint_type = 'FOREIGN KEY'
          AND tc.table_schema = 'public'`);
     expect(live.length).toBeGreaterThan(80);
@@ -163,7 +171,11 @@ describe("entity/schema FK delete-rule drift (integration)", () => {
     const drifting = live
       .filter((fk) => {
         const want = declared.get(`${fk.table_name}.${fk.column_name}`);
-        return want !== undefined && want !== fk.delete_rule;
+        return (
+          want !== undefined &&
+          want.target === fk.target_table &&
+          want.rule !== fk.delete_rule
+        );
       })
       .map((fk) => `${fk.table_name}.${fk.column_name}`)
       .sort();
@@ -174,6 +186,21 @@ describe("entity/schema FK delete-rule drift (integration)", () => {
     expect(unexpected).toEqual([]);
     // A fixed one must leave the list, or the list stops meaning anything.
     expect(fixed).toEqual([]);
+  });
+
+  it("distinguishes the schedule's owner cascade from its composite system-account reference", async () => {
+    const keys = await dataSource.query(`
+      SELECT referenced.relname AS target_table, constraint_row.confdeltype AS delete_action
+      FROM pg_constraint constraint_row
+      JOIN pg_class referenced ON referenced.oid = constraint_row.confrelid
+      WHERE constraint_row.conrelid = 'accrual_schedules'::regclass
+        AND constraint_row.contype = 'f'`);
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        { target_table: "users", delete_action: "c" },
+        { target_table: "accrual_system_accounts", delete_action: "a" },
+      ]),
+    );
   });
 
   it("agrees with schema.sql on the FK P2-009 turns on", async () => {

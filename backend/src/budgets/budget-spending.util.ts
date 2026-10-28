@@ -1,3 +1,5 @@
+import type { ReportingBasis } from "../accruals/reporting-basis";
+import { reportingRawMany } from "../accruals/reporting-query";
 import { ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
@@ -178,6 +180,8 @@ export async function queryCategorySpending(
   budgetCategories: BudgetCategory[],
   periodStart: string,
   periodEnd: string,
+  _targetCurrency?: string,
+  basis?: ReportingBasis,
 ): Promise<CategorySpending> {
   const spendingMap = new Map<string, number>();
   const transferSpendingMap = new Map<string, number>();
@@ -232,11 +236,15 @@ export async function queryCategorySpending(
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" })
       .andWhere("t.is_split = false");
-    const directRows = await excludeBudgetAccounts(directQb, excludedAccountIds)
-      .groupBy("t.category_id")
-      .addGroupBy("t.currency_code")
-      .addGroupBy("t.transaction_date")
-      .getRawMany();
+    const directRows = await reportingRawMany(
+      manager,
+      userId,
+      excludeBudgetAccounts(directQb, excludedAccountIds)
+        .groupBy("t.category_id")
+        .addGroupBy("t.currency_code")
+        .addGroupBy("t.transaction_date"),
+      basis,
+    );
     categoryRows.push(...directRows);
 
     const splitQb = splitsRepository
@@ -251,11 +259,15 @@ export async function queryCategorySpending(
       .andWhere("t.transaction_date >= :periodStart", { periodStart })
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" });
-    const splitRows = await excludeBudgetAccounts(splitQb, excludedAccountIds)
-      .groupBy("s.category_id")
-      .addGroupBy("t.currency_code")
-      .addGroupBy("t.transaction_date")
-      .getRawMany();
+    const splitRows = await reportingRawMany(
+      manager,
+      userId,
+      excludeBudgetAccounts(splitQb, excludedAccountIds)
+        .groupBy("s.category_id")
+        .addGroupBy("t.currency_code")
+        .addGroupBy("t.transaction_date"),
+      basis,
+    );
     categoryRows.push(...splitRows);
   }
 

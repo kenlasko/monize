@@ -97,25 +97,25 @@ export function CategoryInfoWidget({
       setIsLoading(true);
       const [summaryResult, payeeRows, categoryRows, budgetMap] = await Promise.all([
         transactionsApi
-          .getSummary({ ...params, categoryIds: [category.id] })
+          .getSummary({ basis: 'cash', ...params, categoryIds: [category.id] })
           .catch((error) => {
             logger.error(error);
             return null;
           }),
         transactionsApi
-          .getGroupedTotals({ ...params, groupBy: 'payee', categoryIds: [category.id], limit: 25 })
+          .getGroupedTotals({ basis: 'cash', ...params, groupBy: 'payee', categoryIds: [category.id], limit: 25 })
           .catch((error) => {
             logger.error(error);
             return [] as GroupedTotal[];
           }),
         transactionsApi
-          .getGroupedTotals({ ...params, groupBy: 'category', categoryIds: [category.id], limit: 100 })
+          .getGroupedTotals({ basis: 'cash', ...params, groupBy: 'category', categoryIds: [category.id], limit: 100 })
           .catch((error) => {
             logger.error(error);
             return [] as GroupedTotal[];
           }),
         budgetsApi
-          .getCategoryBudgetStatus([category.id])
+          .getCategoryBudgetStatus([category.id], params.basis ?? 'cash')
           .catch(() => ({}) as Record<string, CategoryBudgetStatus>),
       ]);
       if (cancelled) return;
@@ -253,7 +253,7 @@ export function CategoryInfoWidget({
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <button
             type="button"
-            onClick={() => router.push(`/categories/${category.id}`)}
+            onClick={() => router.push(`/categories/${category.id}${filterParams?.basis ? `?basis=${filterParams.basis}` : ''}`)}
             aria-label={t('categoryWidget.detailsAria')}
             title={t('categoryWidget.detailsAria')}
             className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"

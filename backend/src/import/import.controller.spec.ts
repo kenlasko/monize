@@ -1,3 +1,10 @@
+jest.mock("./import-accrual-guard", () => ({
+  prepareImportAccrualSources: async () => new Set<string>(),
+  assertImportAccrualMatch: async () => undefined,
+  assertImportAccrualIds: async () => undefined,
+  assertImportAccrualEntry: async () => undefined,
+  rememberImportedAccrualSource: () => undefined,
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { ImportController } from "./import.controller";
 import { ImportService } from "./import.service";

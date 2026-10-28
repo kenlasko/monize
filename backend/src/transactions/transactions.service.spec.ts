@@ -3025,7 +3025,13 @@ describe("TransactionsService", () => {
         groupBy: jest.fn().mockReturnValue(mockQb),
         setParameter: jest.fn().mockReturnValue(mockQb),
         getMany: jest.fn().mockResolvedValue([]),
-        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+        setRegisterPage: jest.fn().mockImplementation(([rows, total]) => {
+          mockQb.getCount.mockResolvedValue(total);
+          mockQb.getRawMany.mockResolvedValue(
+            rows.map((row: { id: string }) => ({ id: row.id })),
+          );
+          mockQb.getMany.mockResolvedValue(rows);
+        }),
         getCount: jest.fn().mockResolvedValue(0),
         getRawMany: jest.fn().mockResolvedValue([]),
         getRawOne: jest.fn().mockResolvedValue(null),
@@ -3041,12 +3047,23 @@ describe("TransactionsService", () => {
         execute: jest.fn().mockResolvedValue({ affected: 0 }),
         ...overrides,
       });
+      Object.assign(mockQb, {
+        alias: "transaction",
+        expressionMap: {
+          joinAttributes: [],
+          wheres: [],
+          havings: [],
+          orderBys: {},
+        },
+        clone: jest.fn().mockReturnValue(mockQb),
+        distinct: jest.fn().mockReturnValue(mockQb),
+      });
       return mockQb;
     };
 
     it("returns empty paginated result with defaults", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3067,7 +3084,7 @@ describe("TransactionsService", () => {
 
     it("filters by originalCurrencyCodes when provided", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3101,7 +3118,7 @@ describe("TransactionsService", () => {
 
     it("filters by externalId on the listing and on the rows its balance is summed over", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([
+      mockQb.setRegisterPage([
         [
           {
             id: "tx-1",
@@ -3195,7 +3212,7 @@ describe("TransactionsService", () => {
 
     it("filters to transactions that have attachments (EXISTS)", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       await findAllWith({ hasAttachments: true }, mockQb);
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
@@ -3215,7 +3232,7 @@ describe("TransactionsService", () => {
       "reaches the linked warranties' documents when hasAttachments is %s",
       async (hasAttachments) => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+        mockQb.setRegisterPage([[], 0]);
         await findAllWith({ hasAttachments }, mockQb);
 
         expect(mockQb.andWhere).toHaveBeenCalledWith(
@@ -3228,7 +3245,7 @@ describe("TransactionsService", () => {
 
     it("filters to transactions without attachments (NOT EXISTS)", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       await findAllWith({ hasAttachments: false }, mockQb);
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
@@ -3248,7 +3265,7 @@ describe("TransactionsService", () => {
       "restricts the $label attachment filter to visible attachments",
       async ({ hasAttachments }) => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+        mockQb.setRegisterPage([[], 0]);
         await findAllWith({ hasAttachments }, mockQb);
 
         expect(mockQb.andWhere).toHaveBeenCalledWith(
@@ -3259,7 +3276,7 @@ describe("TransactionsService", () => {
 
     it("does not filter by attachments when unspecified", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       await findAllWith({}, mockQb);
 
       expect(mockQb.andWhere).not.toHaveBeenCalledWith(
@@ -3269,7 +3286,7 @@ describe("TransactionsService", () => {
 
     it("annotates each transaction with its attachment count", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([
+      mockQb.setRegisterPage([
         [
           { id: "tx-1", isCleared: false, isReconciled: false, isVoid: false },
           { id: "tx-2", isCleared: false, isReconciled: false, isVoid: false },
@@ -3320,7 +3337,7 @@ describe("TransactionsService", () => {
 
     it("annotates each transaction with its unarchived warranty count", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([
+      mockQb.setRegisterPage([
         [
           { id: "tx-1", isCleared: false, isReconciled: false, isVoid: false },
           { id: "tx-2", isCleared: false, isReconciled: false, isVoid: false },
@@ -3360,7 +3377,7 @@ describe("TransactionsService", () => {
 
     it("reports warrantyCount 0 on every row of a page without warranties", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([
+      mockQb.setRegisterPage([
         [{ id: "tx-1", isCleared: false, isReconciled: false, isVoid: false }],
         1,
       ]);
@@ -3374,7 +3391,7 @@ describe("TransactionsService", () => {
 
     it("reads no warranty counts for an empty page", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
 
       await service.findAll("user-1");
@@ -3385,7 +3402,7 @@ describe("TransactionsService", () => {
 
     it("applies pagination with page and limit", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3400,13 +3417,13 @@ describe("TransactionsService", () => {
         25,
       );
 
-      expect(mockQb.skip).toHaveBeenCalledWith(50); // (3-1) * 25
-      expect(mockQb.take).toHaveBeenCalledWith(25);
+      expect(mockQb.offset).toHaveBeenCalledWith(50); // (3-1) * 25
+      expect(mockQb.limit).toHaveBeenCalledWith(25);
     });
 
     it("clamps page to minimum 1 and limit to minimum 1", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3421,13 +3438,13 @@ describe("TransactionsService", () => {
         -10,
       );
 
-      expect(mockQb.skip).toHaveBeenCalledWith(0); // (max(1,-5) - 1) * max(1,-10) = 0
-      expect(mockQb.take).toHaveBeenCalledWith(1);
+      expect(mockQb.offset).toHaveBeenCalledWith(0); // (max(1,-5) - 1) * max(1,-10) = 0
+      expect(mockQb.limit).toHaveBeenCalledWith(1);
     });
 
     it("clamps limit to maximum 200", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3442,12 +3459,12 @@ describe("TransactionsService", () => {
         999999,
       );
 
-      expect(mockQb.take).toHaveBeenCalledWith(200);
+      expect(mockQb.limit).toHaveBeenCalledWith(200);
     });
 
     it("filters by accountIds", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3461,7 +3478,7 @@ describe("TransactionsService", () => {
 
     it("filters by startDate and endDate", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3479,7 +3496,7 @@ describe("TransactionsService", () => {
 
     it("filters by regular categoryIds including children", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([
@@ -3503,7 +3520,7 @@ describe("TransactionsService", () => {
 
     it("filters on main splits alias for category filtering so non-matching splits are excluded", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([
@@ -3530,7 +3547,7 @@ describe("TransactionsService", () => {
 
     it("handles 'uncategorized' special category filter", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3559,7 +3576,7 @@ describe("TransactionsService", () => {
 
     it("handles 'transfer' special category filter", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3576,7 +3593,7 @@ describe("TransactionsService", () => {
 
     it("handles combined uncategorized + transfer + regular category filters", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([
@@ -3601,7 +3618,7 @@ describe("TransactionsService", () => {
 
     it("filters by payeeIds", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3622,7 +3639,7 @@ describe("TransactionsService", () => {
 
     it("filters by search text", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3649,7 +3666,7 @@ describe("TransactionsService", () => {
 
     it("interprets an amount typed in the user's locale format", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
       // de-DE: "." thousands, "," decimal -> "1.234,56" means 1234.56.
@@ -3682,7 +3699,7 @@ describe("TransactionsService", () => {
 
     it("interprets a date typed in the user's display format", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
       userPreferenceRepository.findOne.mockResolvedValue({
@@ -3714,7 +3731,7 @@ describe("TransactionsService", () => {
 
     it("echoes how the search was read beside the rows", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3754,7 +3771,7 @@ describe("TransactionsService", () => {
 
     it("ignores empty/whitespace-only search", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3784,7 +3801,7 @@ describe("TransactionsService", () => {
 
     it("excludes investment brokerage accounts by default", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3797,7 +3814,7 @@ describe("TransactionsService", () => {
 
     it("filters by reconciliation statuses when provided", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3829,7 +3846,7 @@ describe("TransactionsService", () => {
 
     it("does not apply status filter when statuses is empty", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3860,7 +3877,7 @@ describe("TransactionsService", () => {
 
     it("includes investment brokerage accounts when requested", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3897,7 +3914,7 @@ describe("TransactionsService", () => {
         splits: [],
       };
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+      mockQb.setRegisterPage([[mockTx], 1]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([
         { id: "inv-tx-1", transactionId: "tx-1" },
@@ -3920,7 +3937,7 @@ describe("TransactionsService", () => {
         splits: [],
       };
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+      mockQb.setRegisterPage([[mockTx], 1]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -3942,7 +3959,7 @@ describe("TransactionsService", () => {
         splits: [],
       };
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+      mockQb.setRegisterPage([[mockTx], 1]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
       accountsService.findOne.mockResolvedValue({
@@ -3969,7 +3986,7 @@ describe("TransactionsService", () => {
         splits: [],
       };
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+      mockQb.setRegisterPage([[mockTx], 1]);
       // Future sum query — simulate a future -10000 transfer
       const futureQb = createMockQueryBuilder();
       futureQb.getRawOne.mockResolvedValue({ sum: -10000 });
@@ -4002,7 +4019,7 @@ describe("TransactionsService", () => {
         splits: [],
       };
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockTx], 51]);
+      mockQb.setRegisterPage([[mockTx], 51]);
       // For the sum of rows newer than the page queries:
       // 1st = main query, 2nd = previousPagesQuery, 3rd = sumResult query
       const sumQb = createMockQueryBuilder({
@@ -4056,7 +4073,7 @@ describe("TransactionsService", () => {
         splits: [],
       };
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockTx], 51]);
+      mockQb.setRegisterPage([[mockTx], 51]);
       const sumQb = createMockQueryBuilder({
         setParameters: jest.fn().mockReturnThis(),
       });
@@ -4106,7 +4123,7 @@ describe("TransactionsService", () => {
         splits: [],
       };
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+      mockQb.setRegisterPage([[mockTx], 1]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
       accountsService.findOne.mockResolvedValue({
@@ -4135,7 +4152,7 @@ describe("TransactionsService", () => {
 
     it("does not compute starting balance for multiple accounts without filters", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -4146,7 +4163,7 @@ describe("TransactionsService", () => {
 
     it("does not compute starting balance when no accounts specified without filters", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       investmentTxRepository.find.mockResolvedValue([]);
 
@@ -4157,7 +4174,7 @@ describe("TransactionsService", () => {
 
     it("calculates correct pagination metadata", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([
+      mockQb.setRegisterPage([
         [
           {
             id: "tx-1",
@@ -4201,7 +4218,7 @@ describe("TransactionsService", () => {
 
     it("sets hasMore to false on last page", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([
+      mockQb.setRegisterPage([
         [
           {
             id: "tx-1",
@@ -4233,7 +4250,7 @@ describe("TransactionsService", () => {
     it("calculates page from targetTransactionId", async () => {
       // The main query
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
 
       // The filtered-ids subquery the count is taken over, then the count.
       const filteredIdsQb = createMockQueryBuilder();
@@ -4280,7 +4297,7 @@ describe("TransactionsService", () => {
 
     it("falls back to requested page when targetTransactionId is not found", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
       transactionsRepository.findOne.mockResolvedValue(null);
       investmentTxRepository.find.mockResolvedValue([]);
@@ -4304,7 +4321,7 @@ describe("TransactionsService", () => {
 
     it("counts the target's page over the rows the register lists, filters and all", async () => {
       const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockQb.setRegisterPage([[], 0]);
 
       const filteredIdsQb = createMockQueryBuilder();
       const countQb = createMockQueryBuilder();
@@ -4399,7 +4416,7 @@ describe("TransactionsService", () => {
 
       it("returns total sum of matching transactions for page 1 with payee filter", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4428,7 +4445,7 @@ describe("TransactionsService", () => {
 
       it("returns total sum of matching transactions for page 1 with search filter", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4461,7 +4478,7 @@ describe("TransactionsService", () => {
 
       it("returns total sum of matching transactions for page 1 with amount filter", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4497,7 +4514,7 @@ describe("TransactionsService", () => {
 
       it("returns total sum of matching transactions for page 1 with tag filter", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4534,7 +4551,7 @@ describe("TransactionsService", () => {
 
       it("returns total sum of matching transactions for page 1 with category filter", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         // Category filter triggers getAllCategoryIdsWithChildren
         categoriesRepository.find.mockResolvedValue([
@@ -4567,7 +4584,7 @@ describe("TransactionsService", () => {
 
       it("subtracts rows newer than the page sum for page > 1 with content filter", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 100]);
+        mockQb.setRegisterPage([[mockTx], 100]);
 
         // buildFilteredIdsSubquery for totalSum
         const idsQb1 = createMockQueryBuilder();
@@ -4616,7 +4633,7 @@ describe("TransactionsService", () => {
 
       it("returns zero starting balance when no matching transactions", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4645,7 +4662,7 @@ describe("TransactionsService", () => {
 
       it("applies payee filter to balance subquery", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4678,7 +4695,7 @@ describe("TransactionsService", () => {
 
       it("applies amount filter to balance subquery", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4721,7 +4738,7 @@ describe("TransactionsService", () => {
 
       it("applies search filter to balance subquery with splits join", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4762,7 +4779,7 @@ describe("TransactionsService", () => {
 
       it("applies tag filter to balance subquery with tag joins", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4806,7 +4823,7 @@ describe("TransactionsService", () => {
 
       it("applies category filter with child categories to balance subquery", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         categoriesRepository.find.mockResolvedValue([
           { id: "cat-1", parentId: null },
@@ -4842,7 +4859,7 @@ describe("TransactionsService", () => {
 
       it("applies date filters alongside content filters in balance subquery", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4895,7 +4912,7 @@ describe("TransactionsService", () => {
 
       it("computes zero-based balance for multiple accounts with payee filter", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4929,7 +4946,7 @@ describe("TransactionsService", () => {
 
       it("computes zero-based balance when no accounts selected with payee filter", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const idsQb = createMockQueryBuilder();
         const totalSumQb = createMockQueryBuilder({
@@ -4967,7 +4984,7 @@ describe("TransactionsService", () => {
 
       it("does not compute balance for multiple accounts without content filters", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+        mockQb.setRegisterPage([[], 0]);
         transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
         investmentTxRepository.find.mockResolvedValue([]);
 
@@ -4978,7 +4995,7 @@ describe("TransactionsService", () => {
 
       it("does not compute balance for no accounts without content filters", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+        mockQb.setRegisterPage([[], 0]);
         transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
         investmentTxRepository.find.mockResolvedValue([]);
 
@@ -5003,7 +5020,7 @@ describe("TransactionsService", () => {
 
       it("returns balance at end of date range for page 1 with endDate", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         // sumAfterEndDate QB
         const sumAfterQb = createMockQueryBuilder();
@@ -5034,7 +5051,7 @@ describe("TransactionsService", () => {
 
       it("returns projected balance for page 1 with startDate only", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         transactionsRepository.createQueryBuilder.mockReturnValueOnce(mockQb);
 
@@ -5057,7 +5074,7 @@ describe("TransactionsService", () => {
 
       it("includes future transactions in projected balance for date-filtered view", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const sumAfterQb = createMockQueryBuilder();
         sumAfterQb.getRawOne.mockResolvedValue({ sum: 200 });
@@ -5087,7 +5104,7 @@ describe("TransactionsService", () => {
 
       it("subtracts date-filtered rows newer than the page sum for page > 1 with endDate", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 100]);
+        mockQb.setRegisterPage([[mockTx], 100]);
 
         const sumAfterQb = createMockQueryBuilder();
         sumAfterQb.getRawOne.mockResolvedValue({ sum: -300 });
@@ -5131,7 +5148,7 @@ describe("TransactionsService", () => {
 
       it("applies date constraints to rows newer than the page query", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 100]);
+        mockQb.setRegisterPage([[mockTx], 100]);
 
         const sumAfterQb = createMockQueryBuilder();
         sumAfterQb.getRawOne.mockResolvedValue({ sum: 0 });
@@ -5179,7 +5196,7 @@ describe("TransactionsService", () => {
 
       it("subtracts date-filtered rows newer than the page sum for page > 1 with startDate only", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 100]);
+        mockQb.setRegisterPage([[mockTx], 100]);
 
         const prevPagesQb = createMockQueryBuilder();
         const sumQb = createMockQueryBuilder({
@@ -5251,7 +5268,7 @@ describe("TransactionsService", () => {
 
       it("sums the pages BELOW an oldest-first page, by offset and no limit", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 5]);
+        mockQb.setRegisterPage([[mockTx], 5]);
         const newerRowsQb = createMockQueryBuilder();
         const sumQb = createMockQueryBuilder({
           setParameters: jest.fn().mockReturnThis(),
@@ -5298,7 +5315,7 @@ describe("TransactionsService", () => {
 
       it("sums nothing on the LAST page, which is the newest one running oldest-first", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 5]);
+        mockQb.setRegisterPage([[mockTx], 5]);
         const newerRowsQb = createMockQueryBuilder();
         transactionsRepository.createQueryBuilder
           .mockReturnValueOnce(mockQb)
@@ -5349,7 +5366,7 @@ describe("TransactionsService", () => {
 
       it("is withheld, and says so, where one would otherwise be returned", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 5]);
+        mockQb.setRegisterPage([[mockTx], 5]);
         transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
         investmentTxRepository.find.mockResolvedValue([]);
         accountsService.getProjectedBalance.mockResolvedValue(2000);
@@ -5385,7 +5402,7 @@ describe("TransactionsService", () => {
 
       it("says nothing where no balance was on offer anyway", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 5]);
+        mockQb.setRegisterPage([[mockTx], 5]);
         transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
         investmentTxRepository.find.mockResolvedValue([]);
 
@@ -5456,7 +5473,7 @@ describe("TransactionsService", () => {
 
       it("uses projected balance for page 1 with no filters", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const futureQb = createMockQueryBuilder();
         futureQb.getRawOne.mockResolvedValue({ sum: 0 });
@@ -5479,7 +5496,7 @@ describe("TransactionsService", () => {
 
       it("uses projected balance with future transactions for page 1 with no filters", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+        mockQb.setRegisterPage([[mockTx], 1]);
 
         const futureQb = createMockQueryBuilder();
         futureQb.getRawOne.mockResolvedValue({ sum: -5000 });
@@ -5503,7 +5520,7 @@ describe("TransactionsService", () => {
 
       it("subtracts unfiltered rows newer than the page sum for page > 1 with no filters", async () => {
         const mockQb = createMockQueryBuilder();
-        mockQb.getManyAndCount.mockResolvedValue([[mockTx], 100]);
+        mockQb.setRegisterPage([[mockTx], 100]);
 
         const prevPagesQb = createMockQueryBuilder();
         const sumQb = createMockQueryBuilder({
@@ -5850,6 +5867,12 @@ describe("TransactionsService", () => {
   });
 
   describe("getSummary", () => {
+    beforeEach(() => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+        reportingBasis: "cash",
+      });
+    });
     const createMockQueryBuilder = (overrides?: Record<string, jest.Mock>) => {
       const mockQb: Record<string, jest.Mock> = {} as Record<string, jest.Mock>;
       const executeBrackets = (condition: unknown) => {
@@ -5858,6 +5881,10 @@ describe("TransactionsService", () => {
         }
       };
       Object.assign(mockQb, {
+        alias: "transaction",
+        expressionMap: { joinAttributes: [], selects: [] },
+        clone: jest.fn().mockReturnValue(mockQb),
+        addGroupBy: jest.fn().mockReturnValue(mockQb),
         leftJoinAndSelect: jest.fn().mockReturnValue(mockQb),
         leftJoin: jest.fn().mockReturnValue(mockQb),
         where: jest.fn().mockImplementation((condition: unknown) => {
@@ -5901,12 +5928,17 @@ describe("TransactionsService", () => {
       mockQb.getRawMany.mockResolvedValue([
         {
           currencyCode: "USD",
+          __moneyDate: "2026-06-15",
           totalIncome: "500",
           totalExpenses: "200",
           transactionCount: "10",
         },
         {
           currencyCode: "CAD",
+          __moneyDate: "2026-06-15",
+          __moneyOriginal: "USD",
+          __moneyRate: "1", // explicit fixture entry rate; never a missing-rate fallback
+
           totalIncome: "300",
           totalExpenses: "100",
           transactionCount: "5",
@@ -6087,11 +6119,12 @@ describe("TransactionsService", () => {
       );
     });
 
-    it("skips null currencyCode rows", async () => {
+    it("refuses to value nonzero rows with an unknown currency", async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getRawMany.mockResolvedValue([
         {
           currencyCode: null,
+          __moneyDate: "2026-06-15",
           totalIncome: "100",
           totalExpenses: "50",
           transactionCount: "3",
@@ -6099,11 +6132,9 @@ describe("TransactionsService", () => {
       ]);
       transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
 
-      const result = await service.getSummary("user-1");
-
-      expect(result.totalIncome).toBe(100);
-      expect(result.totalExpenses).toBe(50);
-      expect(result.byCurrency).toEqual({});
+      await expect(service.getSummary("user-1")).rejects.toMatchObject({
+        response: expect.objectContaining({ code: "REPORTING_FX_INCOMPLETE" }),
+      });
     });
   });
 

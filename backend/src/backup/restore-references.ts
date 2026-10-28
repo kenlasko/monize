@@ -110,6 +110,11 @@ export const RESTORE_REFERENCE_COLUMNS: Readonly<
   },
   warranties: { payee_id: "payees", transaction_id: "transactions" },
   warranty_claims: { warranty_id: "warranties" },
+  accrual_schedules: {
+    source_transaction_id: "transactions",
+    source_split_id: "transaction_splits",
+  },
+  accrual_allocations: { schedule_id: "accrual_schedules" },
   transaction_attachments: {
     transaction_id: "transactions",
     warranty_id: "warranties",

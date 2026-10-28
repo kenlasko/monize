@@ -1,5 +1,7 @@
 'use client';
 
+import { CashReportingNotice } from '@/components/reports/ReportingBasis';
+
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import {
@@ -128,6 +130,7 @@ export function WeekendVsWeekdayWidget({ isLoading }: WeekendVsWeekdayWidgetProp
       configControls={configControls}
       configTitle={t('weekendVsWeekday.title')}
     >
+      <CashReportingNotice />
       {loading ? (
         <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : totalSpending === 0 ? (

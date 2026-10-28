@@ -39,5 +39,8 @@
       "loanRepayment": "Pelunasan pinjaman",
       "creditCardRepayment": "Pembayaran kartu kredit"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "{{ count }} transaksi dihapus"
   }
 }

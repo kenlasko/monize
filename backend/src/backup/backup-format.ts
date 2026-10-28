@@ -355,6 +355,10 @@ export interface BackupData {
   transaction_splits: Record<string, unknown>[];
   warranties: Record<string, unknown>[];
   warranty_claims: Record<string, unknown>[];
+  /** Added by accrual support; absent in older backup artifacts. */
+  accrual_system_accounts?: Record<string, unknown>[];
+  accrual_schedules?: Record<string, unknown>[];
+  accrual_allocations?: Record<string, unknown>[];
   transaction_attachments: Record<string, unknown>[];
   attachment_blobs: Record<string, unknown>[];
   transaction_tags: Record<string, unknown>[];

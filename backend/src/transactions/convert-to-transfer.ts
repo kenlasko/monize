@@ -81,6 +81,12 @@ export async function convertRowToTransfer(
   // the read below the version the conversion replaces.
   const locked = await lockTransactionRow(m, rowId, userId);
   if (!locked) throw refuse("the transaction no longer exists");
+  const accrued = await m.query(
+    "SELECT id FROM accrual_schedules WHERE user_id=$1 AND source_transaction_id=$2 LIMIT 1",
+    [userId, rowId],
+  );
+  if (accrued.length)
+    throw refuse("linked accruals require a reviewed conversion");
   const row = await m.findOne(Transaction, { where: { id: rowId, userId } });
   if (!row) throw refuse("the transaction no longer exists");
   if (row.isTransfer || row.linkedTransactionId) {

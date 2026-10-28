@@ -1,7 +1,8 @@
 'use client';
 
+import { useReportingBasis, useReportingRouter } from '@/components/reports/ReportingBasis';
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+
 import { useTranslations } from 'next-intl';
 import { chartColors } from '@/lib/chart-colors';
 import { Account } from '@/types/account';
@@ -72,8 +73,9 @@ function ExpensesPieTooltip({ slice, totalExpenses, formatCurrency, formatPercen
 }
 
 export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps) {
+  const basis = useReportingBasis();
   const t = useTranslations('dashboard');
-  const router = useRouter();
+  const router = useReportingRouter();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyTight, formatPercent } = useNumberFormat();
   const { config, updateConfig } = useWidgetConfig<ExpensesPieConfig>(
     WIDGET_ID,
@@ -103,12 +105,14 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
   const { data: response, isLoading: dataLoading } = useReportData(
     () =>
       builtInReportsApi.getSpendingByCategory({
+        ...(basis ? {basis} : {}),
         startDate: start || undefined,
         endDate: end,
         accountIds: config.accountIds.length > 0 ? config.accountIds : undefined,
         rollupToParent: config.topLevelOnly,
       }),
-    [start, end, accountIdsKey, config.topLevelOnly],
+    [start, end, accountIdsKey, config.topLevelOnly, basis],
+    { requestKey: JSON.stringify([start, end, accountIdsKey, config.topLevelOnly, basis]), maskStaleData: true },
   );
 
   const view = config.view === 'callouts' ? 'callouts' : 'legend';

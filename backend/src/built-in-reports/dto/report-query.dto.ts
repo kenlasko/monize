@@ -1,7 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsOptional, IsDateString } from "class-validator";
+import { IsOptional, IsDateString, IsIn } from "class-validator";
 
 export class ReportQueryDto {
+  @ApiProperty({ required: false, enum: ["cash", "accrual"] })
+  @IsOptional()
+  @IsIn(["cash", "accrual"])
+  basis?: "cash" | "accrual";
+
   @ApiProperty({
     required: false,
     description: "Start date for the report (YYYY-MM-DD)",

@@ -1,3 +1,8 @@
+jest.mock("../accruals/reporting-basis.interceptor", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingInterceptorMockModule(),
+);
 import { Test, TestingModule } from "@nestjs/testing";
 import { CategoriesController } from "./categories.controller";
 import { CategoriesService } from "./categories.service";
@@ -33,6 +38,8 @@ describe("CategoriesController", () => {
       remove: jest.fn(),
       getTransactionCount: jest.fn(),
       reassignTransactions: jest.fn(),
+      previewCategoryUpdate: jest.fn(),
+      previewCategoryReassignment: jest.fn(),
     };
     mockCategoryDetailService = {
       getDetail: jest.fn(),
@@ -62,6 +69,31 @@ describe("CategoriesController", () => {
     }).compile();
 
     controller = module.get<CategoriesController>(CategoriesController);
+  });
+
+  it("forwards category previews and confirmed reassignment using the authenticated owner", async () => {
+    const dto = { isIncome: true };
+    await controller.previewCategoryUpdate(mockReq, "cat-1", dto);
+    expect(mockCategoriesService.previewCategoryUpdate).toHaveBeenCalledWith(
+      "user-1",
+      "cat-1",
+      dto,
+    );
+    const reassign = {
+      toCategoryId: "cat-2",
+      accrualImpactFingerprint: "a".repeat(64),
+    };
+    await controller.previewCategoryReassignment(mockReq, "cat-1", reassign);
+    expect(
+      mockCategoriesService.previewCategoryReassignment,
+    ).toHaveBeenCalledWith("user-1", "cat-1", "cat-2");
+    await controller.reassignTransactions(mockReq, "cat-1", reassign);
+    expect(mockCategoriesService.reassignTransactions).toHaveBeenCalledWith(
+      "user-1",
+      "cat-1",
+      "cat-2",
+      reassign.accrualImpactFingerprint,
+    );
   });
 
   describe("getDetail()", () => {

@@ -1,3 +1,7 @@
+jest.mock("../accruals/accrual-tag-guard", () => ({
+  guardAccruedTagDeletion: async () => undefined,
+  guardLegacyTagRestore: async () => undefined,
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import {
   BadRequestException,

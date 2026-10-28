@@ -208,33 +208,9 @@
     "Nov",
     "Dez"
   ],
-  "weekdaysShort": [
-    "So",
-    "Mo",
-    "Di",
-    "Mi",
-    "Do",
-    "Fr",
-    "Sa"
-  ],
-  "weekdaysMin": [
-    "So",
-    "Mo",
-    "Di",
-    "Mi",
-    "Do",
-    "Fr",
-    "Sa"
-  ],
-  "weekdaysNarrow": [
-    "S",
-    "M",
-    "D",
-    "M",
-    "D",
-    "F",
-    "S"
-  ],
+  "weekdaysShort": ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+  "weekdaysMin": ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+  "weekdaysNarrow": ["S", "M", "D", "M", "D", "F", "S"],
   "dateFormat": {
     "browserAuto": "Browser-Gebietsschema verwenden (automatisch erkannt: {sample})",
     "custom": "Benutzerdefiniert..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "Enthält {count, plural, one {# überfällige terminierte Buchung} other {# überfällige terminierte Buchungen}}"
+  },
+  "reportingBasis": {
+    "label": "Erfassungsbasis",
+    "default": "{basis} (Benutzervorgabe)",
+    "help": "Periodensummen verwenden die gewählte Basis.",
+    "detailHelp": "Periodensummen verwenden die gewählte Basis.",
+    "cashOnly": "Diese Ansicht folgt tatsächlichen Zahlungen und verwendet die Zahlungsbasis.",
+    "exportCaption": "Rechnungslegungsbasis: {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Schreibgeschützte Abgrenzungsbestandteile. Zahlungslinks öffnen den ursprünglichen Eintrag. Bei Bedarf den Zeitraum eingrenzen.",
+    "fxHelp": "Einige Beträge können nicht bewertet werden. Historische Wechselkurse für diesen Zeitraum ergänzen und erneut versuchen.",
+    "unsupported": "Diese Filterkombination kann nicht sicher aufgeschlüsselt werden. Einen einfacheren Berichtsfilter wählen.",
+    "failed": "Einträge konnten nicht geladen werden. Bei zu vielen Zeilen den Zeitraum eingrenzen und erneut versuchen.",
+    "identity": "Quell- / Teilbuchungs- / Plan-IDs",
+    "native": "Originalbetrag",
+    "reporting": "Berichtsbetrag",
+    "payment": "Zahlungsdatum",
+    "title": "Abgegrenzt",
+    "effective": "Erfassungsdatum",
+    "source": "Zahlungsdatum",
+    "retry": "Erneut versuchen",
+    "unknown": "Betrag nicht verfügbar",
+    "start": "Startdatum",
+    "end": "Enddatum",
+    "partial": "(Teilsumme)",
+    "empty": "Keine Buchungsdaten verfügbar"
+  },
+  "systemAccruals": {
+    "title": "Abgrenzungskonten",
+    "help": "Systemverwaltete Salden in Originalwährung. Nur lesbar; Änderungen erfolgen am Ursprungsbeleg.",
+    "ownerOnly": "Nur der Eigentümer kann diese Konten ansehen.",
+    "empty": "Noch keine Abgrenzungskonten. Erstellen Sie eine Abgrenzung aus einer Einnahme oder Ausgabe.",
+    "position": "Position",
+    "closing": "Schlusssaldo",
+    "back": "Konten",
+    "asOf": "Saldo per",
+    "account": "Konto",
+    "currency": "Währung",
+    "balance": "Saldo",
+    "prepaid": "Vorausbezahlte Aufwendungen (netto)",
+    "unearned": "Noch nicht verdiente Erträge (netto)",
+    "signHelp": "Negative Salden stellen abgegrenzte Verbindlichkeiten oder Forderungen dar.",
+    "asset": "Aktiva",
+    "liability": "Verbindlichkeiten",
+    "opening": "Anfangsbestand",
+    "date": "Datum",
+    "movement": "Bestandteil",
+    "amount": "Betrag",
+    "payment": "Zahlungsdatum",
+    "recognition": "Erfassungsdatum",
+    "range": "{start} – {end}"
   }
 }

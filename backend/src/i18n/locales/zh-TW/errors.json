@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL 必須是 http 或 https 網址",
       "invalidField": "{{ field }} 無效"
     }
+  },
+  "accruals": {
+    "notFound": "找不到交易或權責發生制分攤計畫。",
+    "ineligible": "請選擇收入、支出或類別拆分明細。轉帳、投資紀錄及已作廢交易不能分攤。",
+    "invalidPeriod": "請選擇有效的起始月份及1至600個月的期間。",
+    "changed": "交易或計畫已變更。儲存前請檢視新的預覽。",
+    "ownerOnly": "只有擁有者可以管理分攤計畫。",
+    "familyRequired": "請為未分類交易選擇支出或收入。",
+    "historyUnsupported": "無法從歷史記錄安全地還原此批次。請拆分批次，或從選取範圍移除不支援的轉帳或投資項目。",
+    "ruleUnsupported": "對於應計項目，請在檢視影響後手動執行規則。保留交易結構並選擇現有收款人。"
   }
 }

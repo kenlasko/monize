@@ -242,7 +242,13 @@
       "applyHere": "Diese Standards in diesem Browser verwenden",
       "applyHereHelp": "Löscht die Ansichtseinstellungen, die dieser Browser gespeichert hat, damit die obigen Standards auch hier gelten.",
       "appliedHere": "Dieser Browser verwendet jetzt Ihre Standardansichten"
-    }
+    },
+    "reportingBasisLabel": "Standard-Erfassungsbasis",
+    "reportingAccrual": "Periodenabgrenzung",
+    "reportingCash": "Zahlungsbasis",
+    "reportingBasisHelp": "Wähle die Voreinstellung für Berichte sowie Kategorie- und Zahlungsempfängertrends. Reine Zahlungsansichten behalten die Zahlungsdaten.",
+    "accrualEnabledLabel": "Periodenabgrenzung aktivieren",
+    "accrualEnabledTooltip": "Aktiviert Abgrenzungspläne, Salden und Berichtsoptionen. Wenn deaktiviert, verwenden Berichte die Zahlungsbasis. Gespeicherte Pläne bleiben erhalten und werden bei Änderungen ihrer Transaktionen aktualisiert."
   },
   "notifications": {
     "heading": "Benachrichtigungen",
@@ -836,7 +842,10 @@
       },
       "doneButton": "Fertig",
       "unlinkedBondSecuritiesList": "Betroffene Wertpapiere: {symbols}.",
-      "unlinkedBondSecuritiesMore": "und {count} weitere"
+      "unlinkedBondSecuritiesMore": "und {count} weitere",
+      "accrualSystemAccounts": "Systemkonten für Periodenabgrenzungen",
+      "accrualSchedules": "Abgrenzungspläne",
+      "accrualAllocations": "Abgrenzungsbeträge"
     },
     "storedBackups": {
       "heading": "Automatische Sicherungen",

@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL deve ser um endereço http ou https",
       "invalidField": "{{ field }} não é válido"
     }
+  },
+  "accruals": {
+    "notFound": "A transação ou o plano de competência não foi encontrado.",
+    "ineligible": "Escolha uma receita, uma despesa ou uma divisão por categoria. Transferências, operações de investimento e transações anuladas estão excluídas.",
+    "invalidPeriod": "Escolha um mês inicial válido e entre 1 e 600 meses.",
+    "changed": "A transação ou o plano mudou. Revise uma nova prévia antes de salvar.",
+    "ownerOnly": "Somente o proprietário pode gerenciar os planos de competência.",
+    "familyRequired": "Escolha despesa ou receita para uma transação sem categoria.",
+    "historyUnsupported": "Este lote não pode ser restaurado com segurança pelo histórico. Divida-o ou remova da seleção as transferências ou investimentos não compatíveis.",
+    "ruleUnsupported": "Para lançamentos por competência, execute as regras manualmente após revisar o impacto. Mantenha a estrutura da transação e escolha um beneficiário existente."
   }
 }

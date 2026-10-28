@@ -1,3 +1,10 @@
+import { MAX_JSONB_SIZE_BYTES } from "./history-limits";
+import {
+  assertRuleAccrualHistory,
+  refreshRuleAccrualHistory,
+} from "../transaction-rules/rule-accrual";
+import type { RowSnapshot } from "../transaction-rules/rule-run-snapshot";
+import { accrualErrors } from "../accruals/accrual-errors";
 import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { LockedTransactionRow, lockTransactionRows } from "../common/db/locks";
@@ -154,6 +161,16 @@ export async function undoRuleRun(
   await assertNoLaterSettlement(manager, action.userId, snapshots);
   await assertStructureUnchanged(manager, action.userId, snapshots, locked);
 
+  const accrualTargets = snapshots as unknown as RowSnapshot[];
+  const expected = Array.isArray(action.afterData?.transactions)
+    ? (action.afterData.transactions as RowSnapshot[])
+    : [];
+  const accrualIds = await assertRuleAccrualHistory(
+    manager,
+    action.userId,
+    accrualTargets,
+    expected,
+  );
   const tagRows: { transactionId: string; tagId: string }[] = [];
   const tagOwners: string[] = [];
   for (const row of snapshots) {
@@ -215,7 +232,10 @@ export async function undoRuleRun(
     settledScheduleIds.add(scheduleId);
   }
 
-  if (tagOwners.length === 0) return result;
+  if (tagOwners.length === 0) {
+    await finishAccrualReplay();
+    return result;
+  }
   // Two statements for the whole run: replace the tag set of every row that
   // recorded one. A tag deleted since is skipped by the join.
   await manager.query(
@@ -241,7 +261,33 @@ export async function undoRuleRun(
       ],
     );
   }
+  await finishAccrualReplay();
   return result;
+
+  async function finishAccrualReplay(): Promise<void> {
+    if (!accrualIds.length) return;
+    await refreshRuleAccrualHistory(
+      manager,
+      action.userId,
+      accrualIds,
+      accrualTargets,
+    );
+    const data = { ...action.beforeData, transactions: accrualTargets };
+    if (Buffer.byteLength(JSON.stringify(data), "utf8") > MAX_JSONB_SIZE_BYTES)
+      throw accrualErrors.historyUnsupported();
+    const side = action.isUndone ? "afterData" : "beforeData";
+    const saved = await manager
+      .createQueryBuilder()
+      .update(ActionHistory)
+      .set({ [side]: data })
+      .where("id=:id AND user_id=:userId AND is_undone=:isUndone", {
+        id: action.id,
+        userId: action.userId,
+        isUndone: action.isUndone ?? false,
+      })
+      .execute();
+    if (saved.affected !== 1) throw accrualErrors.conflict();
+  }
 }
 
 /** The settled rows of a run, in run order: those whose structure records a claim. */

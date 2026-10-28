@@ -1,3 +1,4 @@
+import { ReportingEndpoint } from "../accruals/reporting-endpoint";
 import {
   Controller,
   Get,
@@ -196,6 +197,7 @@ export class CategoriesController {
     return this.categoriesService.findByType(req.user.id, false);
   }
 
+  @ReportingEndpoint("cash")
   @Get(":id/detail")
   @AllowDelegate()
   @ApiOperation({ summary: "Get the category detail page aggregate" })
@@ -235,6 +237,32 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: "Category not found" })
   findOne(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.categoriesService.findOne(req.user.id, id);
+  }
+
+  @Post(":id/impact-preview")
+  @AllowDelegate()
+  @DelegateRequiresCapability("categories", "edit")
+  @ApiOperation({ summary: "Preview accrual impacts of a category update" })
+  previewCategoryUpdate(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCategoryDto,
+  ) {
+    return this.categoriesService.previewCategoryUpdate(req.user.id, id, dto);
+  }
+
+  @Post(":id/reassign-preview")
+  @ApiOperation({ summary: "Preview accrual impacts of category reassignment" })
+  previewCategoryReassignment(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: ReassignTransactionsDto,
+  ) {
+    return this.categoriesService.previewCategoryReassignment(
+      req.user.id,
+      id,
+      dto.toCategoryId ?? null,
+    );
   }
 
   @Patch(":id")
@@ -311,10 +339,17 @@ export class CategoriesController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body() reassignDto: ReassignTransactionsDto,
   ) {
-    return this.categoriesService.reassignTransactions(
-      req.user.id,
-      id,
-      reassignDto.toCategoryId ?? null,
-    );
+    return reassignDto.accrualImpactFingerprint !== undefined
+      ? this.categoriesService.reassignTransactions(
+          req.user.id,
+          id,
+          reassignDto.toCategoryId ?? null,
+          reassignDto.accrualImpactFingerprint,
+        )
+      : this.categoriesService.reassignTransactions(
+          req.user.id,
+          id,
+          reassignDto.toCategoryId ?? null,
+        );
   }
 }

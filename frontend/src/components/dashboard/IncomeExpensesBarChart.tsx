@@ -1,8 +1,9 @@
 'use client';
 
+import { useReportingBasis, useReportingRouter } from '@/components/reports/ReportingBasis';
 import { useMemo, useRef } from 'react';
 import { gainLossColor } from '@/lib/format';
-import { useRouter } from 'next/navigation';
+
 import { useTranslations } from 'next-intl';
 import {
   BarChart,
@@ -88,8 +89,9 @@ export function IncomeExpensesBarChart({
   accounts,
   isLoading,
 }: IncomeExpensesBarChartProps) {
+  const basis = useReportingBasis();
   const t = useTranslations('dashboard');
-  const router = useRouter();
+  const router = useReportingRouter();
   const { formatDate } = useDateFormat();
   const formatChartDate = useChartDateFormat();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
@@ -125,13 +127,15 @@ export function IncomeExpensesBarChart({
   const { data: response, isLoading: dataLoading } = useReportData(
     () =>
       builtInReportsApi.getIncomeVsExpenses({
+        ...(basis ? {basis} : {}),
         startDate: start || undefined,
         endDate: end,
         accountIds: config.accountIds.length > 0 ? config.accountIds : undefined,
         bucket: isWeekly ? 'week' : 'month',
         weekStartsOn,
       }),
-    [start, end, accountIdsKey, isWeekly, weekStartsOn],
+    [start, end, accountIdsKey, isWeekly, weekStartsOn, basis],
+    { requestKey: JSON.stringify([start, end, accountIdsKey, isWeekly, weekStartsOn, basis]), maskStaleData: true },
   );
 
   const chartData = useMemo(

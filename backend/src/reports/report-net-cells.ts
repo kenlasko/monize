@@ -50,7 +50,8 @@ export interface NetLine {
  * `perLine` is the category grouping, which counts lines rather than rows.
  */
 export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
-  const unitOf = (index: number) => (perLine ? `${tx.id}:${index}` : tx.id);
+  const rowId = tx.reportingProvenance?.reportId ?? tx.id;
+  const unitOf = (index: number) => (perLine ? `${rowId}:${index}` : rowId);
 
   if (tx.isSplit && tx.splits) {
     return ordinarySplitLines(tx).map((split, index) => {
@@ -58,7 +59,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
       return {
         cell:
           split.transferAccountId != null
-            ? `transfer:${tx.id}:${index}`
+            ? `transfer:${rowId}:${index}`
             : category,
         category,
         amount: Number(split.amount),
@@ -70,7 +71,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
   const category = tx.categoryId || "uncategorized";
   return [
     {
-      cell: tx.isTransfer ? `transfer:${tx.id}:0` : category,
+      cell: tx.isTransfer ? `transfer:${rowId}:0` : category,
       category,
       amount: Number(tx.amount),
       unit: unitOf(0),
@@ -92,8 +93,8 @@ export interface NetCells {
 }
 
 /**
- * @param keepsUnconverted whether a line with no rate still counts (the count
- *   metric); every money figure leaves it out of the sum and the count alike.
+ * @param keepsUnconverted selects event counting: no money is summed and each
+ *   event uses its own sign. Monetary metrics instead net converted categories.
  */
 export function createNetCells(
   direction: DirectionFilter,
@@ -106,7 +107,14 @@ export function createNetCells(
     line: NetLine,
     converted: number | null,
   ): void => {
-    if (converted === null && !keepsUnconverted) return;
+    // COUNT counts events by their own signed direction, without pricing them.
+    // Monetary metrics continue to settle each category's converted net below.
+    if (keepsUnconverted) {
+      if (direction === DirectionFilter.EXPENSES_ONLY && !(line.amount < 0))
+        return;
+      if (direction === DirectionFilter.INCOME_ONLY && !(line.amount > 0))
+        return;
+    } else if (converted === null) return;
     let cells = groups.get(group);
     if (!cells) {
       cells = new Map();
@@ -117,7 +125,8 @@ export function createNetCells(
       cell = { agg: new FxAggregate(), units: new Set() };
       cells.set(line.cell, cell);
     }
-    if (converted !== null) cell.agg.addConverted(converted);
+    if (!keepsUnconverted && converted !== null)
+      cell.agg.addConverted(converted);
     cell.units.add(line.unit);
   };
 
@@ -128,6 +137,11 @@ export function createNetCells(
       const units = new Set<string>();
       let kept = false;
       for (const cell of cells.values()) {
+        if (keepsUnconverted) {
+          kept = true;
+          for (const unit of cell.units) units.add(unit);
+          continue;
+        }
         const net = cell.agg.knownSubtotal;
         let value: number;
         if (direction === DirectionFilter.EXPENSES_ONLY) {

@@ -1,7 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useMemo, useRef } from 'react';
-import { Skeleton } from '@/components/ui/LoadingSkeleton';
+import { useReportExportMetadata } from "@/hooks/useReportExportMetadata";
+import { useReportingBasis } from "./ReportingBasis";
+import { useState, useMemo, useRef } from "react";
+import { Skeleton } from "@/components/ui/LoadingSkeleton";
 import {
   BarChart,
   Bar,
@@ -13,46 +15,52 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-} from 'recharts';
-import { budgetsApi } from '@/lib/budgets';
-import type { BudgetTrendPoint, CategoryTrendSeries } from '@/types/budget';
-import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { useDateFormat } from '@/hooks/useDateFormat';
-import { useChartMonthFormat } from '@/hooks/useChartMonthFormat';
-import { useTranslations } from 'next-intl';
-import { useReportData } from '@/hooks/useReportData';
-import { BudgetCategoryTrend } from '@/components/budgets/BudgetCategoryTrend';
-import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
-import { ReportError } from '@/components/reports/ReportError';
-import { SortableHeader } from '@/components/ui/SortableHeader';
-import { CAPTION_CLASS, CellLabel, PHONE_HEADER_CLASS } from '@/components/ui/Table';
+} from "recharts";
+import { budgetsApi } from "@/lib/budgets";
+import type { BudgetTrendPoint, CategoryTrendSeries } from "@/types/budget";
+import { useNumberFormat } from "@/hooks/useNumberFormat";
+import { useDateFormat } from "@/hooks/useDateFormat";
+import { useChartMonthFormat } from "@/hooks/useChartMonthFormat";
+import { useTranslations } from "next-intl";
+import { useReportData } from "@/hooks/useReportData";
+import { BudgetCategoryTrend } from "@/components/budgets/BudgetCategoryTrend";
+import { ReportToolbarActions } from "@/components/reports/ReportToolbarActions";
+import { ReportError } from "@/components/reports/ReportError";
+import { SortableHeader } from "@/components/ui/SortableHeader";
+import {
+  CAPTION_CLASS,
+  CellLabel,
+  PHONE_HEADER_CLASS,
+} from "@/components/ui/Table";
 import type {
   SortColumn as TableSortColumn,
   SortColumnsByField as TableSortColumnsByField,
-} from '@/components/ui/Table';
-import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { chartColors } from '@/lib/chart-colors';
-import { TaggedFundsControls } from '@/components/reports/TaggedFundsControls';
-import { BudgetFundsNote } from '@/components/reports/BudgetFundsNote';
-import { BudgetFundsTooltip } from '@/components/reports/BudgetFundsTooltip';
-import { useTaggedFundsFilter } from '@/hooks/useTaggedFundsFilter';
-import { useTaggedFunding } from '@/hooks/useTaggedFunding';
-import { useDefaultTransferScope } from '@/hooks/useReportAccountScope';
-import { budgetFundsSeries, trendWindow } from '@/lib/budget-available-funds';
+} from "@/components/ui/Table";
+import { useSortableTable, compareValues } from "@/hooks/useSortableTable";
+import { chartColors } from "@/lib/chart-colors";
+import { TaggedFundsControls } from "@/components/reports/TaggedFundsControls";
+import { BudgetFundsNote } from "@/components/reports/BudgetFundsNote";
+import { BudgetFundsTooltip } from "@/components/reports/BudgetFundsTooltip";
+import { useTaggedFundsFilter } from "@/hooks/useTaggedFundsFilter";
+import { useTaggedFunding } from "@/hooks/useTaggedFunding";
+import { useDefaultTransferScope } from "@/hooks/useReportAccountScope";
+import { budgetFundsSeries, trendWindow } from "@/lib/budget-available-funds";
 
-const INCLUDE_TRANSFERS_STORAGE_KEY = 'monize-reports-budget-vs-actual-include-transfers';
+const INCLUDE_TRANSFERS_STORAGE_KEY =
+  "monize-reports-budget-vs-actual-include-transfers";
 // The budget's own actual is not account-scoped, so the funding fetch is not
 // either; its tagged flows are bounded like "All Accounts" (spec 10.8.1).
 const NO_ACCOUNTS: string[] = [];
 
-type BudgetTrendSortField = 'month' | 'budgeted' | 'actual' | 'variance' | 'percentUsed';
+type BudgetTrendSortField =
+  "month" | "budgeted" | "actual" | "variance" | "percentUsed";
 
 /**
  * One sortable column of the summary table. The five are declared once and
  * rendered by BOTH header rows -- the column header row (from `sm` up) and the
  * phone sort strip -- so the two can never list different fields.
  */
-interface SortColumn extends TableSortColumn<BudgetTrendSortField, 'right'> {
+interface SortColumn extends TableSortColumn<BudgetTrendSortField, "right"> {
   /**
    * This column's cell, as text. The PDF export builds its headings AND its
    * row cells from the same ordered record the table renders, so the export
@@ -82,21 +90,26 @@ interface SortColumn extends TableSortColumn<BudgetTrendSortField, 'right'> {
  * none of which a test comparing header LABELS can see, because the labels
  * stay right. Here it is a compile error instead.
  */
-type SortColumnsByField = TableSortColumnsByField<BudgetTrendSortField, SortColumn>;
+type SortColumnsByField = TableSortColumnsByField<
+  BudgetTrendSortField,
+  SortColumn
+>;
 
 // An over-budget variance is prefixed; nothing else is. Written once because
 // the wrapped cell, the desktop cell and the PDF export all state it.
-const varianceSign = (point: BudgetTrendPoint) => (point.variance > 0 ? '+' : '');
+const varianceSign = (point: BudgetTrendPoint) =>
+  point.variance > 0 ? "+" : "";
 
 // Today's header cell, unchanged.
 const headerClass = (col: SortColumn) =>
   col.last
-    ? 'py-2 font-medium text-gray-500 dark:text-gray-400'
-    : 'py-2 pr-4 font-medium text-gray-500 dark:text-gray-400';
+    ? "py-2 font-medium text-gray-500 dark:text-gray-400"
+    : "py-2 pr-4 font-medium text-gray-500 dark:text-gray-400";
 
 // Today's body cell padding, restored from `sm` up and absent below it (the
 // wrapped row supplies the vertical inset and the grid does the spacing).
-const cellPadding = (col: SortColumn) => (col.last ? 'sm:py-2' : 'sm:py-2 sm:pr-4');
+const cellPadding = (col: SortColumn) =>
+  col.last ? "sm:py-2" : "sm:py-2 sm:pr-4";
 
 // The same sort controls in the phone strip: a wrapped row of compact chips.
 // Column alignment means nothing there -- the column header row is hidden and
@@ -175,32 +188,43 @@ const cellPadding = (col: SortColumn) => (col.last ? 'sm:py-2' : 'sm:py-2 sm:pr-
 // `% wykorzystania` is longer at 102px but carries a space, so a 93px track
 // wraps it. Measured with Budgeted spanning: no sideways scroll at 320px or
 // 390px in pl, ru, id, de, en, the widest-per-key set or the pseudo-locale.
-const MONEY_CELL = 'p-0 text-right text-xs whitespace-nowrap sm:table-cell sm:text-sm';
+const MONEY_CELL =
+  "p-0 text-right text-xs whitespace-nowrap sm:table-cell sm:text-sm";
 
 export function BudgetVsActualReport() {
-  const t = useTranslations('reports');
-  const { formatCurrencyCompact: formatCurrency, formatPercentTrimmed } = useNumberFormat();
+  const { withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
+  const t = useTranslations("reports");
+  const { formatCurrencyCompact: formatCurrency, formatPercentTrimmed } =
+    useNumberFormat();
   // Two month formatters, for two different surfaces: the table's and the
   // PDF's month COLUMN follows the user's date-format preference like every
   // other date in a table, while the two charts' month AXES localize the month
   // name like every other chart. `useChartMonthFormat` explains the split.
   const { formatMonth } = useDateFormat();
   const formatChartMonth = useChartMonthFormat();
-  const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>('');
+  const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>("");
   const [months, setMonths] = useState(6);
-  const [viewMode, setViewMode] = useState<'overview' | 'categories'>('overview');
-  const chartRef = useRef<HTMLDivElement>(null);
-  const { sortField, sortDirection, handleSort } = useSortableTable<BudgetTrendSortField>(
-    'reports.budget-vs-actual.trend.sort',
-    { field: 'month', direction: 'asc' },
+  const [viewMode, setViewMode] = useState<"overview" | "categories">(
+    "overview",
   );
+  const chartRef = useRef<HTMLDivElement>(null);
+  const { sortField, sortDirection, handleSort } =
+    useSortableTable<BudgetTrendSortField>(
+      "reports.budget-vs-actual.trend.sort",
+      { field: "month", direction: "asc" },
+    );
 
   const {
     data: budgetsData,
     isLoading: budgetsLoading,
     error: budgetsError,
     reload: reloadBudgets,
-  } = useReportData(() => budgetsApi.getAll(), []);
+  } = useReportData(
+    () => budgetsApi.getAll(...(basis ? ([basis] as const) : [])),
+    [basis],
+    { requestKey: JSON.stringify([basis]), maskStaleData: true },
+  );
 
   const budgets = useMemo(() => budgetsData ?? [], [budgetsData]);
 
@@ -208,7 +232,7 @@ export function BudgetVsActualReport() {
   // during render rather than via setState-in-effect.
   const autoSelectedBudgetId = useMemo(() => {
     const active = budgets.find((b) => b.isActive);
-    return active?.id ?? budgets[0]?.id ?? '';
+    return active?.id ?? budgets[0]?.id ?? "";
   }, [budgets]);
   const selectedBudgetId = selectedBudgetIdState || autoSelectedBudgetId;
 
@@ -221,14 +245,32 @@ export function BudgetVsActualReport() {
     () =>
       selectedBudgetId
         ? Promise.all([
-            budgetsApi.getTrend(selectedBudgetId, months),
-            budgetsApi.getCategoryTrend(selectedBudgetId, months),
+            budgetsApi.getTrend(
+              selectedBudgetId,
+              months,
+              ...(basis ? ([basis] as const) : []),
+            ),
+            basis
+              ? budgetsApi.getCategoryTrend(
+                  selectedBudgetId,
+                  months,
+                  undefined,
+                  basis,
+                )
+              : budgetsApi.getCategoryTrend(selectedBudgetId, months),
           ]).then(([trend, catTrend]) => ({ trend, catTrend }))
         : Promise.resolve(null),
-    [selectedBudgetId, months],
+    [selectedBudgetId, months, basis],
+    {
+      requestKey: JSON.stringify([selectedBudgetId, months, basis]),
+      maskStaleData: true,
+    },
   );
 
-  const trendData = useMemo(() => reportResponse?.trend ?? [], [reportResponse]);
+  const trendData = useMemo(
+    () => reportResponse?.trend ?? [],
+    [reportResponse],
+  );
   const categoryData = useMemo<CategoryTrendSeries[]>(
     () => reportResponse?.catTrend ?? [],
     [reportResponse],
@@ -241,23 +283,30 @@ export function BudgetVsActualReport() {
     valueRequired: true,
   });
   const fundsWindow = useMemo(() => trendWindow(trendData), [trendData]);
-  const showFunds = fundsFilter.include && viewMode === 'overview' && fundsWindow !== null;
+  const showFunds =
+    fundsFilter.include && viewMode === "overview" && fundsWindow !== null;
   const transferScope = useDefaultTransferScope();
   const funding = useTaggedFunding({
     enabled: showFunds,
     tagKey: fundsFilter.tagKey,
     tagValue: fundsFilter.tagValue,
     startDate: fundsWindow?.startDate,
-    endDate: fundsWindow?.endDate ?? '',
+    endDate: fundsWindow?.endDate ?? "",
     accountIds: NO_ACCOUNTS,
     transferScope,
   });
   const fundsSeries = useMemo(
     () =>
-      showFunds && funding.status === 'ready' && funding.response
+      showFunds && funding.status === "ready" && funding.response
         ? budgetFundsSeries(trendData, funding.response, fundsFilter.tagValue)
         : null,
-    [showFunds, funding.status, funding.response, trendData, fundsFilter.tagValue],
+    [
+      showFunds,
+      funding.status,
+      funding.response,
+      trendData,
+      fundsFilter.tagValue,
+    ],
   );
   const chartData = fundsSeries ? fundsSeries.points : trendData;
   const isLoading = budgetsLoading || reportLoading;
@@ -272,23 +321,23 @@ export function BudgetVsActualReport() {
     sorted.sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
-        case 'month':
+        case "month":
           comparison = compareValues(a.monthKey, b.monthKey);
           break;
-        case 'budgeted':
+        case "budgeted":
           comparison = compareValues(a.budgeted, b.budgeted);
           break;
-        case 'actual':
+        case "actual":
           comparison = compareValues(a.actual, b.actual);
           break;
-        case 'variance':
+        case "variance":
           comparison = compareValues(a.variance, b.variance);
           break;
-        case 'percentUsed':
+        case "percentUsed":
           comparison = compareValues(a.percentUsed, b.percentUsed);
           break;
       }
-      return sortDirection === 'asc' ? comparison : -comparison;
+      return sortDirection === "asc" ? comparison : -comparison;
     });
     return sorted;
   }, [trendData, sortField, sortDirection]);
@@ -297,33 +346,34 @@ export function BudgetVsActualReport() {
   // each entry must name its own key (see `SortColumnsByField`).
   const columns: SortColumnsByField = {
     month: {
-      field: 'month',
-      label: t('budgetVsActual.colMonth'),
+      field: "month",
+      label: t("budgetVsActual.colMonth"),
       value: (point) => formatMonth(point.monthKey),
     },
     budgeted: {
-      field: 'budgeted',
-      label: t('budgetVsActual.colBudgeted'),
+      field: "budgeted",
+      label: t("budgetVsActual.colBudgeted"),
       value: (point) => formatCurrency(point.budgeted),
-      align: 'right',
+      align: "right",
     },
     actual: {
-      field: 'actual',
-      label: t('budgetVsActual.colActual'),
+      field: "actual",
+      label: t("budgetVsActual.colActual"),
       value: (point) => formatCurrency(point.actual),
-      align: 'right',
+      align: "right",
     },
     variance: {
-      field: 'variance',
-      label: t('budgetVsActual.colVariance'),
-      value: (point) => `${varianceSign(point)}${formatCurrency(point.variance)}`,
-      align: 'right',
+      field: "variance",
+      label: t("budgetVsActual.colVariance"),
+      value: (point) =>
+        `${varianceSign(point)}${formatCurrency(point.variance)}`,
+      align: "right",
     },
     percentUsed: {
-      field: 'percentUsed',
-      label: t('budgetVsActual.colPercentUsed'),
+      field: "percentUsed",
+      label: t("budgetVsActual.colPercentUsed"),
       value: (point) => formatPercentTrimmed(point.percentUsed),
-      align: 'right',
+      align: "right",
       last: true,
     },
   };
@@ -338,7 +388,7 @@ export function BudgetVsActualReport() {
   const sortColumns: readonly SortColumn[] = Object.values(columns);
 
   const handleExportPdf = async () => {
-    const { exportToPdf } = await import('@/lib/pdf-export');
+    const { exportToPdf } = await import("@/lib/pdf-export");
     // Headings and row cells both come from the ordered column record, so the
     // export cannot carry the screen's old column order (see `SortColumn`).
     // The ROWS stay in the order the server sent, not the order on screen --
@@ -347,13 +397,17 @@ export function BudgetVsActualReport() {
     // function is locale-aware (currency through formatCurrency, percent
     // through formatPercentTrimmed), so the export matches the screen.
     const headers = sortColumns.map((col) => col.label);
-    const rows = trendData.map((point) => sortColumns.map((col) => col.value(point)));
-    await exportToPdf({
-      title: t('budgetVsActual.pdfTitle'),
-      chartContainer: chartRef.current,
-      tableData: { headers, rows },
-      filename: 'budget-vs-actual',
-    });
+    const rows = trendData.map((point) =>
+      sortColumns.map((col) => col.value(point)),
+    );
+    await exportToPdf(
+      withPdfBasis({
+        title: t("budgetVsActual.pdfTitle"),
+        chartContainer: chartRef.current,
+        tableData: { headers, rows },
+        filename: "budget-vs-actual",
+      }),
+    );
   };
 
   if (error) {
@@ -375,19 +429,33 @@ export function BudgetVsActualReport() {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
         <p className="text-gray-500 dark:text-gray-400">
-          {t('budgetVsActual.noBudgets')}
+          {t("budgetVsActual.noBudgets")}
         </p>
       </div>
     );
   }
 
-  const defaultTooltip = ({ active, payload, label }: { active?: boolean; payload?: readonly any[]; label?: unknown }) => {
+  const defaultTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: readonly any[];
+    label?: unknown;
+  }) => {
     if (!active || !payload || payload.length === 0) return null;
     return (
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{formatChartMonth(String(label))}</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+          {formatChartMonth(String(label))}
+        </p>
         {payload.map((entry, idx) => (
-          <p key={(entry.dataKey as string) ?? entry.name ?? idx} className="text-sm" style={{ color: entry.color }}>
+          <p
+            key={(entry.dataKey as string) ?? entry.name ?? idx}
+            className="text-sm"
+            style={{ color: entry.color }}
+          >
             {entry.name}: {formatCurrency(entry.value as number)}
           </p>
         ))}
@@ -395,7 +463,11 @@ export function BudgetVsActualReport() {
     );
   };
   const tooltipContent = fundsSeries
-    ? (props: { active?: boolean; payload?: readonly any[]; label?: unknown }) => (
+    ? (props: {
+        active?: boolean;
+        payload?: readonly any[];
+        label?: unknown;
+      }) => (
         <BudgetFundsTooltip
           active={props.active}
           payload={props.payload as any}
@@ -428,34 +500,36 @@ export function BudgetVsActualReport() {
               onChange={(e) => setMonths(Number(e.target.value))}
               className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             >
-              <option value={3}>{t('budgetVsActual.months3')}</option>
-              <option value={6}>{t('budgetVsActual.months6')}</option>
-              <option value={12}>{t('budgetVsActual.months12')}</option>
-              <option value={24}>{t('budgetVsActual.months24')}</option>
+              <option value={3}>{t("budgetVsActual.months3")}</option>
+              <option value={6}>{t("budgetVsActual.months6")}</option>
+              <option value={12}>{t("budgetVsActual.months12")}</option>
+              <option value={24}>{t("budgetVsActual.months24")}</option>
             </select>
           </div>
-          {viewMode === 'overview' && <TaggedFundsControls filter={fundsFilter} />}
+          {viewMode === "overview" && (
+            <TaggedFundsControls filter={fundsFilter} />
+          )}
           <div className="flex items-center gap-2">
             <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-md p-0.5">
               <button
-                onClick={() => setViewMode('overview')}
+                onClick={() => setViewMode("overview")}
                 className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
-                  viewMode === 'overview'
-                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400'
+                  viewMode === "overview"
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                    : "text-gray-500 dark:text-gray-400"
                 }`}
               >
-                {t('budgetVsActual.viewOverview')}
+                {t("budgetVsActual.viewOverview")}
               </button>
               <button
-                onClick={() => setViewMode('categories')}
+                onClick={() => setViewMode("categories")}
                 className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
-                  viewMode === 'categories'
-                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400'
+                  viewMode === "categories"
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                    : "text-gray-500 dark:text-gray-400"
                 }`}
               >
-                {t('budgetVsActual.viewByCategory')}
+                {t("budgetVsActual.viewByCategory")}
               </button>
             </div>
           </div>
@@ -472,28 +546,51 @@ export function BudgetVsActualReport() {
       )}
 
       {/* Chart */}
-      {viewMode === 'overview' ? (
-        <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      {viewMode === "overview" ? (
+        <div
+          ref={chartRef}
+          className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6"
+        >
           {trendData.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              {t('budgetVsActual.noData')}
+              {t("budgetVsActual.noData")}
             </p>
           ) : (
             <>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis dataKey="monthKey" tick={{ fontSize: 12 }} tickFormatter={(value: string) => formatChartMonth(value)} />
-                    <YAxis tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 12 }} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="opacity-30"
+                    />
+                    <XAxis
+                      dataKey="monthKey"
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value: string) => formatChartMonth(value)}
+                    />
+                    <YAxis
+                      tickFormatter={(v) => formatCurrency(v)}
+                      tick={{ fontSize: 12 }}
+                    />
                     <Tooltip content={tooltipContent} />
                     <Legend />
-                    <Bar dataKey="budgeted" name={t('budgetVsActual.seriesBudgeted')} fill={chartColors.primary} radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="actual" name={t('budgetVsActual.seriesActual')} fill={chartColors.income} radius={[2, 2, 0, 0]} />
+                    <Bar
+                      dataKey="budgeted"
+                      name={t("budgetVsActual.seriesBudgeted")}
+                      fill={chartColors.primary}
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="actual"
+                      name={t("budgetVsActual.seriesActual")}
+                      fill={chartColors.income}
+                      radius={[2, 2, 0, 0]}
+                    />
                     {fundsSeries && (
                       <Bar
                         dataKey="availableFunds"
-                        name={`${t('tagBreakdown.fundsSeriesName', { value: fundsFilter.tagValue })}${fundsSeries.complete ? '' : '*'}`}
+                        name={`${t("tagBreakdown.fundsSeriesName", { value: fundsFilter.tagValue })}${fundsSeries.complete ? "" : "*"}`}
                         fill={chartColors.inflow}
                         radius={[2, 2, 0, 0]}
                       />
@@ -504,22 +601,42 @@ export function BudgetVsActualReport() {
 
               {/* Variance line */}
               <div className="mt-6">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('budgetVsActual.viewVarianceOverTime')}</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  {t("budgetVsActual.viewVarianceOverTime")}
+                </h3>
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <LineChart data={trendData}>
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis dataKey="monthKey" tick={{ fontSize: 12 }} tickFormatter={(value: string) => formatChartMonth(value)} />
-                      <YAxis tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 12 }} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        className="opacity-30"
+                      />
+                      <XAxis
+                        dataKey="monthKey"
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value: string) =>
+                          formatChartMonth(value)
+                        }
+                      />
+                      <YAxis
+                        tickFormatter={(v) => formatCurrency(v)}
+                        tick={{ fontSize: 12 }}
+                      />
                       <Tooltip
                         content={({ active, payload, label }) => {
                           if (!active || !payload) return null;
                           const variance = payload[0]?.value as number;
                           return (
                             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatChartMonth(String(label))}</p>
-                              <p className={`text-sm font-medium ${variance > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                                {t('budgetVsActual.tooltipVariance')} {variance > 0 ? '+' : ''}{formatCurrency(variance)}
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {formatChartMonth(String(label))}
+                              </p>
+                              <p
+                                className={`text-sm font-medium ${variance > 0 ? "text-red-500" : "text-green-500"}`}
+                              >
+                                {t("budgetVsActual.tooltipVariance")}{" "}
+                                {variance > 0 ? "+" : ""}
+                                {formatCurrency(variance)}
                               </p>
                             </div>
                           );
@@ -531,7 +648,7 @@ export function BudgetVsActualReport() {
                         stroke={chartColors.warning}
                         strokeWidth={2}
                         dot={{ r: 4 }}
-                        name={t('budgetVsActual.seriesVariance')}
+                        name={t("budgetVsActual.seriesVariance")}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -581,10 +698,19 @@ export function BudgetVsActualReport() {
                   overrides visually. Both are properties of the mechanism, not
                   of this table. */}
               <div className="mt-6 overflow-x-auto">
-                <table role="table" className="block min-w-full text-sm sm:table">
-                  <thead role="rowgroup" className="block sm:table-header-group">
+                <table
+                  role="table"
+                  className="block min-w-full text-sm sm:table"
+                >
+                  <thead
+                    role="rowgroup"
+                    className="block sm:table-header-group"
+                  >
                     {/* Phone sort strip: the same five controls, wrapped. */}
-                    <tr role="row" className="flex flex-wrap gap-x-2 gap-y-1 pb-2 border-b border-gray-200 dark:border-gray-700 sm:hidden">
+                    <tr
+                      role="row"
+                      className="flex flex-wrap gap-x-2 gap-y-1 pb-2 border-b border-gray-200 dark:border-gray-700 sm:hidden"
+                    >
                       {sortColumns.map((col) => (
                         <SortableHeader<BudgetTrendSortField>
                           key={col.field}
@@ -598,7 +724,10 @@ export function BudgetVsActualReport() {
                         </SortableHeader>
                       ))}
                     </tr>
-                    <tr role="row" className="hidden border-b border-gray-200 dark:border-gray-700 sm:table-row">
+                    <tr
+                      role="row"
+                      className="hidden border-b border-gray-200 dark:border-gray-700 sm:table-row"
+                    >
                       {sortColumns.map((col) => (
                         <SortableHeader<BudgetTrendSortField>
                           key={col.field}
@@ -621,26 +750,52 @@ export function BudgetVsActualReport() {
                         role="row"
                         className="grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-1.5 py-2 border-b border-gray-100 dark:border-gray-700/50 sm:table-row sm:py-0"
                       >
-                        <td role="cell" className={`col-start-1 row-start-1 p-0 text-gray-900 dark:text-gray-100 sm:table-cell ${cellPadding(columns.month)}`}>{formatMonth(point.monthKey)}</td>
-                        <td role="cell" className={`col-start-1 col-span-2 row-start-2 text-gray-600 dark:text-gray-400 ${cellPadding(columns.budgeted)} ${MONEY_CELL}`}>
-                          <CellLabel className={CAPTION_CLASS}>{columns.budgeted.label}</CellLabel>
+                        <td
+                          role="cell"
+                          className={`col-start-1 row-start-1 p-0 text-gray-900 dark:text-gray-100 sm:table-cell ${cellPadding(columns.month)}`}
+                        >
+                          {formatMonth(point.monthKey)}
+                        </td>
+                        <td
+                          role="cell"
+                          className={`col-start-1 col-span-2 row-start-2 text-gray-600 dark:text-gray-400 ${cellPadding(columns.budgeted)} ${MONEY_CELL}`}
+                        >
+                          <CellLabel className={CAPTION_CLASS}>
+                            {columns.budgeted.label}
+                          </CellLabel>
                           {formatCurrency(point.budgeted)}
                         </td>
-                        <td role="cell" className={`col-start-3 row-start-1 text-gray-600 dark:text-gray-400 ${cellPadding(columns.actual)} ${MONEY_CELL}`}>
-                          <CellLabel className={CAPTION_CLASS}>{columns.actual.label}</CellLabel>
+                        <td
+                          role="cell"
+                          className={`col-start-3 row-start-1 text-gray-600 dark:text-gray-400 ${cellPadding(columns.actual)} ${MONEY_CELL}`}
+                        >
+                          <CellLabel className={CAPTION_CLASS}>
+                            {columns.actual.label}
+                          </CellLabel>
                           {formatCurrency(point.actual)}
                         </td>
                         {/* The variance takes the middle of line 1 beside the
                             month: it is the figure the row is read for. */}
-                        <td role="cell" className={`col-start-2 row-start-1 font-medium ${point.variance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'} ${cellPadding(columns.variance)} ${MONEY_CELL}`}>
-                          <CellLabel className={CAPTION_CLASS}>{columns.variance.label}</CellLabel>
-                          {varianceSign(point)}{formatCurrency(point.variance)}
+                        <td
+                          role="cell"
+                          className={`col-start-2 row-start-1 font-medium ${point.variance > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"} ${cellPadding(columns.variance)} ${MONEY_CELL}`}
+                        >
+                          <CellLabel className={CAPTION_CLASS}>
+                            {columns.variance.label}
+                          </CellLabel>
+                          {varianceSign(point)}
+                          {formatCurrency(point.variance)}
                         </td>
                         {/* Percent used sits under the actual figure it is a
                             share of. Its caption wraps at its own space in
                             every locale, so a third-width track holds it. */}
-                        <td role="cell" className={`col-start-3 row-start-2 text-gray-600 dark:text-gray-400 ${cellPadding(columns.percentUsed)} ${MONEY_CELL}`}>
-                          <CellLabel className={CAPTION_CLASS}>{columns.percentUsed.label}</CellLabel>
+                        <td
+                          role="cell"
+                          className={`col-start-3 row-start-2 text-gray-600 dark:text-gray-400 ${cellPadding(columns.percentUsed)} ${MONEY_CELL}`}
+                        >
+                          <CellLabel className={CAPTION_CLASS}>
+                            {columns.percentUsed.label}
+                          </CellLabel>
                           {formatPercentTrimmed(point.percentUsed)}
                         </td>
                       </tr>
@@ -652,7 +807,10 @@ export function BudgetVsActualReport() {
           )}
         </div>
       ) : (
-        <BudgetCategoryTrend data={categoryData} formatCurrency={formatCurrency} />
+        <BudgetCategoryTrend
+          data={categoryData}
+          formatCurrency={formatCurrency}
+        />
       )}
     </div>
   );

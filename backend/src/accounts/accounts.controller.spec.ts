@@ -1,3 +1,8 @@
+jest.mock("../accruals/reporting-basis.interceptor", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingInterceptorMockModule(),
+);
 import "reflect-metadata";
 import { Test, TestingModule } from "@nestjs/testing";
 import {

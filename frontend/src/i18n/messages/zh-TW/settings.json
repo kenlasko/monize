@@ -242,7 +242,13 @@
       "applyHere": "在此瀏覽器中使用這些預設值",
       "applyHereHelp": "清除此瀏覽器已儲存的檢視設定，使上述預設值在此處也生效。",
       "appliedHere": "此瀏覽器現在使用您的預設檢視"
-    }
+    },
+    "reportingBasisLabel": "預設報表基礎",
+    "reportingAccrual": "權責發生制",
+    "reportingCash": "收付實現制",
+    "reportingBasisHelp": "選擇報表、類別和收款人趨勢的預設會計基礎。僅現金制檢視保留付款日期。",
+    "accrualEnabledLabel": "啟用權責發生制會計",
+    "accrualEnabledTooltip": "啟用應計分攤計畫、餘額和報表控制項。關閉後，報表使用現金制。已儲存的計畫會保留，並在原始交易變更時更新。"
   },
   "notifications": {
     "heading": "通知",
@@ -836,7 +842,10 @@
       },
       "doneButton": "完成",
       "unlinkedBondSecuritiesList": "受影響的證券:{symbols}。",
-      "unlinkedBondSecuritiesMore": "以及另外 {count} 個"
+      "unlinkedBondSecuritiesMore": "以及另外 {count} 個",
+      "accrualSystemAccounts": "系統權責發生制帳戶",
+      "accrualSchedules": "權責發生制分配排程",
+      "accrualAllocations": "權責發生制分配"
     },
     "storedBackups": {
       "heading": "自動備份",

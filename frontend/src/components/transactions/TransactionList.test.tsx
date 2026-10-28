@@ -1,3 +1,8 @@
+import { accrualsApi } from '@/lib/accruals';
+vi.mock('@/lib/accruals', async importOriginal => ({ ...(await importOriginal<typeof import('@/lib/accruals')>()), accrualsApi: { sources: vi.fn().mockResolvedValue([]) } }));
+import { useAuthStore } from '@/store/authStore';
+import { useDemoStore } from '@/store/demoStore';
+import type { User } from '@/types/auth';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, cleanup } from '@/test/render';
 import { TransactionList } from './TransactionList';
@@ -3584,7 +3589,7 @@ describe('TransactionList today divider', () => {
   });
 
   it('draws none on a page that does not cross today', async () => {
-    renderWith([past, past], { field: 'date', direction: 'asc' });
+    renderWith([past, { ...past, id: 'past-second' }], { field: 'date', direction: 'asc' });
     await waitFor(() => {
       expect(screen.getByText('Date')).toBeInTheDocument();
     });
@@ -3795,5 +3800,29 @@ describe('TransactionList warranties', () => {
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
     expect(screen.queryByText('Add warranty')).not.toBeInTheDocument();
     expect(screen.queryByText('View warranties')).not.toBeInTheDocument();
+  });
+});
+
+describe('TransactionList accrual owner actions', () => {
+  afterEach(() => {
+    cleanup();
+    useAuthStore.setState({ user: null, actingAsUserId: null });
+    useDemoStore.setState({ isDemoMode: false });
+  });
+  it('shows the accrued badge without a separate register action', async () => {
+    vi.mocked(accrualsApi.sources).mockResolvedValueOnce([{sourceTransactionId:createTransaction().id,scheduleCount:2}]);
+    useAuthStore.setState({ user: { id: 'user-1' } as User, actingAsUserId: null });
+    await act(async () => { render(<TransactionList transactions={[createTransaction()]} />); });
+    expect(screen.queryByRole('button', { name: 'Accrual' })).not.toBeInTheDocument();
+    expect(accrualsApi.sources).toHaveBeenCalled();
+    expect(screen.getAllByText('Accrued').length).toBeGreaterThan(0);
+  });
+  it.each(['delegate', 'foreign', 'demo', 'transfer', 'joint'] as const)('hides accrual for %s contexts', async context => {
+    useAuthStore.setState({ user: { id: 'user-1' } as User, actingAsUserId: context === 'delegate' ? 'owner' : null });
+    useDemoStore.setState({ isDemoMode: context === 'demo' });
+    const transaction = createTransaction({ userId: context === 'foreign' ? 'other-user' : 'user-1', isTransfer: context === 'transfer' });
+    const jointPermissionsByAccount = context === 'joint' ? new Map([[transaction.accountId, { canCreate: true, canEdit: true, canDelete: true }]]) : undefined;
+    await act(async () => { render(<TransactionList transactions={[transaction]} jointPermissionsByAccount={jointPermissionsByAccount} />); });
+    expect(screen.queryByRole('button', { name: 'Accrual' })).not.toBeInTheDocument();
   });
 });

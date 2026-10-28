@@ -1,5 +1,6 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
 import { useMemo, useRef } from 'react';
 import {
   PieChart,
@@ -20,7 +21,6 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 import { chartColors } from '@/lib/chart-colors';
-import { exportToCsv } from '@/lib/csv-export';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { LinkifiedText } from '@/components/ui/LinkifiedText';
 
@@ -87,6 +87,7 @@ function ReportChartTooltip({ active, payload, total, formatCurrency, formatPerc
 }
 
 export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle }: ReportChartProps) {
+  const { exportCsvWithBasis, withPdfBasis } = useReportExportMetadata();
   const { formatCurrency, formatNumber, formatPercent } = useNumberFormat();
   const { formatDate } = useDateFormat();
   const columns = tableColumns && tableColumns.length > 0 ? tableColumns : DEFAULT_TABLE_COLUMNS;
@@ -113,7 +114,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     const rows = chartData.map((item) =>
       columns.map((col) => columnMap[col]?.getValue(item) ?? '')
     );
-    exportToCsv(exportFilename || 'report', headers, rows);
+    exportCsvWithBasis(exportFilename || 'report', headers, rows);
   };
 
   const handleExportPdf = async () => {
@@ -131,13 +132,13 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
       if (col === TableColumn.COUNT) return totalCount || '';
       return '';
     });
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: reportTitle || exportFilename || 'Report',
       subtitle: reportSubtitle,
       chartContainer: viewType !== ReportViewType.TABLE ? chartContainerRef.current : null,
       tableData: { headers, rows, totalRow },
       filename: exportFilename || 'report',
-    });
+    }));
   };
 
   const isTimeBased = groupBy === GroupByType.MONTH || groupBy === GroupByType.WEEK || groupBy === GroupByType.DAY;

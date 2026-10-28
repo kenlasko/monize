@@ -114,10 +114,11 @@ export const builtInReportsApi = {
 
   getYearOverYear: async (
     yearsToCompare: number = 2,
+    basis?: 'cash' | 'accrual',
   ): Promise<YearOverYearResponse> => {
     const response = await apiClient.get<YearOverYearResponse>(
       '/built-in-reports/year-over-year',
-      { params: { yearsToCompare } },
+      { params: { yearsToCompare, ...(basis ? { basis } : {}) } },
     );
     return response.data;
   },
@@ -195,10 +196,11 @@ export const builtInReportsApi = {
 
   getMonthlyComparison: async (
     month: string,
+    basis?: 'cash' | 'accrual',
   ): Promise<MonthlyComparisonResponse> => {
     const response = await apiClient.get<MonthlyComparisonResponse>(
       '/built-in-reports/monthly-comparison',
-      { params: { month } },
+      { params: { month, ...(basis ? { basis } : {}) } },
     );
     return response.data;
   },

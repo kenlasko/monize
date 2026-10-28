@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL must be an http or https address",
       "invalidField": "{{ field }} is not valid"
     }
+  },
+  "accruals": {
+    "notFound": "The transaction or accrual schedule was not found.",
+    "ineligible": "Choose an income or expense transaction, or a category split. Transfers, investment entries and void transactions cannot be accrued.",
+    "invalidPeriod": "Choose a valid start month and between 1 and 600 months.",
+    "changed": "The transaction or schedule changed. Review a fresh preview before saving.",
+    "ownerOnly": "Only the owner can manage accrual schedules.",
+    "familyRequired": "Choose expense or income for an uncategorized transaction.",
+    "historyUnsupported": "This batch cannot be safely restored from history. Split the batch or remove unsupported transfer or investment entries.",
+    "ruleUnsupported": "For accrued entries, run rules manually after reviewing the impact. Keep the transaction structure and choose an existing payee."
   }
 }

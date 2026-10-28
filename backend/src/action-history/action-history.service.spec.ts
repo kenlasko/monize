@@ -1,3 +1,11 @@
+jest.mock("../accruals/accrual-tag-guard", () => ({
+  guardAccruedTagDeletion: async () => undefined,
+  guardLegacyTagRestore: async () => undefined,
+}));
+jest.mock("../accruals/accrual-relationship-history", () => ({
+  replayRelationshipHistory: async () => false,
+  guardLegacyRelationshipHistory: async () => undefined,
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { NotFoundException, ConflictException, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
@@ -101,6 +109,14 @@ describe("ActionHistoryService", () => {
       query: scoped.manager.query,
       manager: scoped.manager,
     };
+    // These legacy fixtures contain no accrual schedules. Route that new read
+    // explicitly instead of returning a balance aggregate as a schedule row.
+    // All original source-lock/write/balance stubs and assertions stay intact.
+    scoped.manager.query = jest.fn((sql: string, ...args: unknown[]) =>
+      sql.includes("FROM accrual_schedules")
+        ? Promise.resolve([])
+        : mockQueryRunner.query(sql, ...args),
+    );
     mockDataSource = scoped.dataSource;
 
     holdings = {
@@ -2086,9 +2102,28 @@ describe("ActionHistoryService", () => {
       };
       mockRepository.findOne.mockResolvedValue(bulkAction);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
-      mockQueryRunner.query.mockResolvedValue([
-        { opening_balance: "0", tx_sum: "0" },
-      ]);
+      // Model source row locks and the absence of accruals explicitly; balance
+      // rows are not a valid response to a source/schedule lookup.
+      mockQueryRunner.query.mockImplementation(
+        async (sql: string, params: unknown[]) => {
+          if (sql.includes("FROM transactions") && sql.includes("FOR UPDATE")) {
+            return (params[0] as string[]).map((id) => ({
+              id,
+              account_id: "acc-1",
+              amount: "50.0000",
+              transaction_date: "2020-01-15",
+              status: "UNRECONCILED",
+              is_split: false,
+              linked_transaction_id: null,
+              parent_transaction_id: null,
+              payee_id: null,
+              payee_name: null,
+            }));
+          }
+          if (sql.includes("FROM accrual_schedules")) return [];
+          return [{ opening_balance: "0", tx_sum: "0" }];
+        },
+      );
 
       const result = await service.undo(userId);
 
@@ -2179,9 +2214,28 @@ describe("ActionHistoryService", () => {
       };
       mockRepository.findOne.mockResolvedValue(bulkAction);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
-      mockQueryRunner.query.mockResolvedValue([
-        { opening_balance: "0", tx_sum: "0" },
-      ]);
+      // Model source row locks and the absence of accruals explicitly; balance
+      // rows are not a valid response to a source/schedule lookup.
+      mockQueryRunner.query.mockImplementation(
+        async (sql: string, params: unknown[]) => {
+          if (sql.includes("FROM transactions") && sql.includes("FOR UPDATE")) {
+            return (params[0] as string[]).map((id) => ({
+              id,
+              account_id: "acc-1",
+              amount: "50.0000",
+              transaction_date: "2020-01-15",
+              status: "UNRECONCILED",
+              is_split: false,
+              linked_transaction_id: null,
+              parent_transaction_id: null,
+              payee_id: null,
+              payee_name: null,
+            }));
+          }
+          if (sql.includes("FROM accrual_schedules")) return [];
+          return [{ opening_balance: "0", tx_sum: "0" }];
+        },
+      );
 
       const result = await service.undo(userId);
 
@@ -2229,9 +2283,28 @@ describe("ActionHistoryService", () => {
       };
       mockRepository.findOne.mockResolvedValue(bulkAction);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
-      mockQueryRunner.query.mockResolvedValue([
-        { opening_balance: "0", tx_sum: "0" },
-      ]);
+      // Model source row locks and the absence of accruals explicitly; balance
+      // rows are not a valid response to a source/schedule lookup.
+      mockQueryRunner.query.mockImplementation(
+        async (sql: string, params: unknown[]) => {
+          if (sql.includes("FROM transactions") && sql.includes("FOR UPDATE")) {
+            return (params[0] as string[]).map((id) => ({
+              id,
+              account_id: "acc-1",
+              amount: "50.0000",
+              transaction_date: "2020-01-15",
+              status: "UNRECONCILED",
+              is_split: false,
+              linked_transaction_id: null,
+              parent_transaction_id: null,
+              payee_id: null,
+              payee_name: null,
+            }));
+          }
+          if (sql.includes("FROM accrual_schedules")) return [];
+          return [{ opening_balance: "0", tx_sum: "0" }];
+        },
+      );
 
       const result = await service.redo(userId);
 

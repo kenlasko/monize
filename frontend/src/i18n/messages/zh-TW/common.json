@@ -208,33 +208,9 @@
     "11月",
     "12月"
   ],
-  "weekdaysShort": [
-    "週日",
-    "週一",
-    "週二",
-    "週三",
-    "週四",
-    "週五",
-    "週六"
-  ],
-  "weekdaysMin": [
-    "日",
-    "一",
-    "二",
-    "三",
-    "四",
-    "五",
-    "六"
-  ],
-  "weekdaysNarrow": [
-    "日",
-    "一",
-    "二",
-    "三",
-    "四",
-    "五",
-    "六"
-  ],
+  "weekdaysShort": ["週日", "週一", "週二", "週三", "週四", "週五", "週六"],
+  "weekdaysMin": ["日", "一", "二", "三", "四", "五", "六"],
+  "weekdaysNarrow": ["日", "一", "二", "三", "四", "五", "六"],
   "dateFormat": {
     "browserAuto": "使用瀏覽器語言設定（自動偵測為 {sample}）",
     "custom": "自訂..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "包含 {count, plural, one {# 筆} other {# 筆}}逾期排程交易"
+  },
+  "reportingBasis": {
+    "label": "報告基礎",
+    "default": "{basis}（使用者預設）",
+    "help": "期間合計使用所選基礎。",
+    "detailHelp": "期間合計使用所選基礎。",
+    "cashOnly": "此檢視追蹤實際付款，使用現金基礎。",
+    "exportCaption": "會計基礎：{basis}"
+  },
+  "recognitionDetails": {
+    "help": "唯讀的應計明細。付款連結開啟原始紀錄。必要時請縮小日期範圍。",
+    "fxHelp": "部分金額無法估值。請新增本期間的歷史匯率後重試。",
+    "unsupported": "無法安全展開此篩選組合。請選擇更簡單的篩選。",
+    "failed": "無法載入紀錄。若列數過多，請縮小日期範圍後重試。",
+    "identity": "來源／拆分／計畫 ID",
+    "native": "原幣金額",
+    "reporting": "報告金額",
+    "payment": "付款日期",
+    "title": "已按期分配",
+    "effective": "認列日期",
+    "source": "付款日期",
+    "retry": "重試",
+    "unknown": "金額不可用",
+    "start": "開始日期",
+    "end": "結束日期",
+    "partial": "（部分合計）",
+    "empty": "無可用的交易資料"
+  },
+  "systemAccruals": {
+    "title": "權責發生制帳戶",
+    "help": "以原幣顯示的系統管理餘額。僅供檢視；請編輯原始交易以進行變更。",
+    "ownerOnly": "僅擁有者可以檢視這些帳戶。",
+    "empty": "尚無權責發生制帳戶。請從收入或支出交易建立分攤。",
+    "position": "類別",
+    "closing": "期末餘額",
+    "back": "科目",
+    "asOf": "結餘截至",
+    "account": "科目",
+    "currency": "貨幣",
+    "balance": "結餘",
+    "prepaid": "預付費用（淨額）",
+    "unearned": "預收收入（淨額）",
+    "signHelp": "負餘額表示應計負債或應收款。",
+    "asset": "資產",
+    "liability": "負債",
+    "opening": "初始餘額",
+    "date": "日期",
+    "movement": "組成部分",
+    "amount": "金額",
+    "payment": "付款日期",
+    "recognition": "認列日期",
+    "range": "{start} – {end}"
   }
 }

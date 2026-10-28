@@ -1,3 +1,10 @@
+jest.mock("./rule-accrual", () => ({
+  planRuleAccruals: async () => [],
+  ruleAccrualFingerprint: (base: string) => base,
+  captureRuleAccrualHistory: async () => undefined,
+  assertRuleAccrualWrite: async () => false,
+  assertAutomaticRuleSources: async () => undefined,
+}));
 import { ConflictException } from "@nestjs/common";
 import { Account, AccountType } from "../accounts/entities/account.entity";
 import { AiReviewRequestsService } from "../ai-review/ai-review-requests.service";

@@ -1,3 +1,4 @@
+import type { ReportingProvenance } from "../../accruals/reporting-provenance";
 import {
   Entity,
   Column,
@@ -24,6 +25,7 @@ import { EXTERNAL_ID_INDEX } from "../transaction-external-id";
 export { TransactionStatus };
 
 @Entity("transactions")
+@Index("uq_accrual_transaction_owner", ["id", "userId"], { unique: true })
 // Declared here as well as in the migration, because the database-backed suites
 // build their schema from the entities: an idempotent create's race is a
 // property of this index, and a suite without it would prove nothing.
@@ -32,6 +34,8 @@ export { TransactionStatus };
   where: "external_id IS NOT NULL",
 })
 export class Transaction {
+  /** Reporting copies only; never persisted. */
+  reportingProvenance?: ReportingProvenance;
   @PrimaryGeneratedColumn("uuid")
   id: string;
 

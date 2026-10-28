@@ -1,3 +1,4 @@
+import type { RuleAccrualImpact } from "./rule-accrual";
 import type { LoanSettlementRefusalDetail } from "../loan-installments/loan-settlement.types";
 import type { StructuralRefusal } from "./rule-structure";
 import { RuleEffectsLabels } from "./transaction-rules-applier.service";
@@ -77,6 +78,7 @@ export interface RuleRunPreview {
   readonly scannedThrough: string | null;
   /** Hash of the planned changes and the rule revision; the commit must echo it. */
   readonly fingerprint: string;
+  readonly accrualImpacts?: RuleAccrualImpact[];
   readonly labels: RuleEffectsLabels;
   /** Rows whose run would queue an AI review request (queued on commit, never on preview). */
   readonly aiReviewRequests: number;

@@ -1242,6 +1242,7 @@ export class BudgetAlertService {
           budgetCategories,
           periodStart,
           periodEnd,
+          budget.currencyCode,
         ),
     );
 

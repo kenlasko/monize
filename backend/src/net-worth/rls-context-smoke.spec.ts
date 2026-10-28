@@ -1,3 +1,8 @@
+jest.mock("../accruals/reporting-basis", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingBasisMockModule(),
+);
 import { NetWorthService } from "./net-worth.service";
 import { Account } from "../accounts/entities/account.entity";
 import { MonthlyAccountBalance } from "./entities/monthly-account-balance.entity";

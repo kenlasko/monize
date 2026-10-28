@@ -1,3 +1,8 @@
+jest.mock("../accruals/reporting-basis", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingBasisMockModule(),
+);
 /**
  * The read-path FX fill, at the service seam.
  *

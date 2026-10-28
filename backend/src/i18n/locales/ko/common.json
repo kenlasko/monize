@@ -39,5 +39,8 @@
       "loanRepayment": "대출 상환",
       "creditCardRepayment": "신용카드 상환"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "거래 {{ count }}건을 삭제했습니다"
   }
 }

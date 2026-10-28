@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsOptional,
+  Matches,
   IsString,
   IsUUID,
   MaxLength,
@@ -14,6 +15,14 @@ import {
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class AutoMergeGroupDto {
+  @ApiProperty({
+    required: false,
+    description: "Fingerprint from the category impact preview",
+  })
+  @IsOptional()
+  @Matches(/^[a-f0-9]{64}$/)
+  accrualImpactFingerprint?: string;
+
   @ApiProperty({
     example: "canonical-payee-uuid",
     description: "ID of the payee to keep (all sources are merged into this)",

@@ -1,3 +1,7 @@
+jest.mock("../transaction-rules/rule-accrual", () => ({
+  assertRuleAccrualHistory: async () => [],
+  refreshRuleAccrualHistory: async () => undefined,
+}));
 import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { lockTransactionRows } from "../common/db/locks";

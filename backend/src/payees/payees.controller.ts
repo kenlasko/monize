@@ -1,3 +1,5 @@
+import { ReportingEndpoint } from "../accruals/reporting-endpoint";
+import { RemovePayeeDto } from "./dto/remove-payee.dto";
 import {
   Controller,
   Get,
@@ -38,7 +40,10 @@ import { CreatePayeeDto } from "./dto/create-payee.dto";
 import { UpdatePayeeDto } from "./dto/update-payee.dto";
 import { CreatePayeeAliasDto } from "./dto/create-payee-alias.dto";
 import { MergePayeeDto } from "./dto/merge-payee.dto";
-import { ApplyAutoMergeDto } from "./dto/apply-auto-merge.dto";
+import {
+  ApplyAutoMergeDto,
+  AutoMergeGroupDto,
+} from "./dto/apply-auto-merge.dto";
 import { ApplyCategorySuggestionsDto } from "./dto/apply-category-suggestions.dto";
 import { DeactivatePayeesDto } from "./dto/deactivate-payees.dto";
 import { LookupPayeeContactDto } from "./dto/lookup-payee-contact.dto";
@@ -369,6 +374,17 @@ export class PayeesController {
     });
   }
 
+  @Post("auto-merge/category-impact-preview")
+  @ApiOperation({
+    summary: "Preview category backfill impacts for one auto-merge group",
+  })
+  previewAutoMergeCategoryImpact(
+    @Request() req,
+    @Body() dto: AutoMergeGroupDto,
+  ) {
+    return this.payeeAutoMergeService.previewCategoryImpact(req.user.id, dto);
+  }
+
   @Post("auto-merge/apply")
   @ApiOperation({
     summary:
@@ -424,6 +440,20 @@ export class PayeesController {
     );
   }
 
+  @Post("category-suggestions/category-impact-preview")
+  @ApiOperation({
+    summary: "Preview accrual impacts of category suggestion backfills",
+  })
+  previewCategorySuggestionsImpact(
+    @Request() req,
+    @Body() dto: ApplyCategorySuggestionsDto,
+  ) {
+    return this.payeesService.previewCategorySuggestionsImpact(
+      req.user.id,
+      dto.assignments,
+    );
+  }
+
   @Post("category-suggestions/apply")
   @ApiOperation({ summary: "Apply category auto-assignments to payees" })
   @ApiResponse({ status: 200, description: "Assignments applied successfully" })
@@ -431,10 +461,16 @@ export class PayeesController {
     @Request() req,
     @Body() dto: ApplyCategorySuggestionsDto,
   ) {
-    return this.payeesService.applyCategorySuggestions(
-      req.user.id,
-      dto.assignments,
-    );
+    return dto.accrualImpactFingerprint !== undefined
+      ? this.payeesService.applyCategorySuggestions(
+          req.user.id,
+          dto.assignments,
+          dto.accrualImpactFingerprint,
+        )
+      : this.payeesService.applyCategorySuggestions(
+          req.user.id,
+          dto.assignments,
+        );
   }
 
   @Get("deactivation/preview")
@@ -515,6 +551,7 @@ export class PayeesController {
     return this.payeesService.getAliases(req.user.id, id);
   }
 
+  @ReportingEndpoint("cash")
   @Get(":id/detail")
   @AllowDelegate()
   @ApiOperation({ summary: "Get the payee detail page aggregate" })
@@ -638,6 +675,20 @@ export class PayeesController {
     return this.payeesService.findOne(req.user.id, id);
   }
 
+  @Post(":id/category-impact-preview")
+  @ApiOperation({
+    summary: "Preview accrual impacts of applying a payee category",
+  })
+  @AllowDelegate()
+  @DelegateRequiresCapability("payees", "edit")
+  previewCategoryImpact(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePayeeDto,
+  ) {
+    return this.payeesService.previewCategoryImpact(req.user.id, id, dto);
+  }
+
   @Patch(":id")
   @ApiOperation({ summary: "Update a payee" })
   @ApiResponse({
@@ -657,6 +708,14 @@ export class PayeesController {
     return this.payeesService.update(req.user.id, id, updatePayeeDto);
   }
 
+  @Post(":id/remove-preview")
+  @AllowDelegate()
+  @DelegateRequiresCapability("payees", "delete")
+  @ApiOperation({ summary: "Preview accrual impacts of deleting a payee" })
+  previewRemoval(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.payeesService.previewRemoval(req.user.id, id);
+  }
+
   @Delete(":id")
   @ApiOperation({ summary: "Delete a payee" })
   @ApiResponse({ status: 200, description: "Payee deleted successfully" })
@@ -666,7 +725,10 @@ export class PayeesController {
   remove(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: RemovePayeeDto = {},
   ): Promise<void> {
-    return this.payeesService.remove(req.user.id, id);
+    return dto.accrualImpactFingerprint !== undefined
+      ? this.payeesService.remove(req.user.id, id, dto.accrualImpactFingerprint)
+      : this.payeesService.remove(req.user.id, id);
   }
 }

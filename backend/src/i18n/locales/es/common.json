@@ -39,5 +39,8 @@
       "loanRepayment": "Amortización de préstamo",
       "creditCardRepayment": "Pago de tarjeta de crédito"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "Se eliminaron {{ count }} transacciones"
   }
 }

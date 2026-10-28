@@ -1,5 +1,6 @@
 'use client';
 
+import { useReportingBasis } from '@/components/reports/ReportingBasis';
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import {
@@ -48,6 +49,7 @@ interface IncomeSlice {
 }
 
 export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
+  const basis = useReportingBasis();
   const t = useTranslations('dashboard');
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, formatPercent, defaultCurrency } = useNumberFormat();
   const { config, updateConfig } = useWidgetConfig<IncomeBySourceConfig>(
@@ -63,10 +65,12 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
   const { data: response, isLoading: dataLoading } = useReportData(
     () =>
       builtInReportsApi.getIncomeBySource({
+        ...(basis ? {basis} : {}),
         startDate: start || undefined,
         endDate: end,
       }),
-    [start, end],
+    [start, end, basis],
+    { requestKey: JSON.stringify([start, end, basis]), maskStaleData: true },
   );
 
   const chartData = useMemo<IncomeSlice[]>(() => {

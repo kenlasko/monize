@@ -208,33 +208,9 @@
     "Th11",
     "Th12"
   ],
-  "weekdaysShort": [
-    "CN",
-    "T2",
-    "T3",
-    "T4",
-    "T5",
-    "T6",
-    "T7"
-  ],
-  "weekdaysMin": [
-    "CN",
-    "T2",
-    "T3",
-    "T4",
-    "T5",
-    "T6",
-    "T7"
-  ],
-  "weekdaysNarrow": [
-    "C",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7"
-  ],
+  "weekdaysShort": ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+  "weekdaysMin": ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+  "weekdaysNarrow": ["C", "2", "3", "4", "5", "6", "7"],
   "dateFormat": {
     "browserAuto": "Dùng ngôn ngữ trình duyệt (tự động nhận dạng: {sample})",
     "custom": "Tùy chỉnh..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "Bao gồm {count, plural, one {# giao dịch theo lịch quá hạn} other {# giao dịch theo lịch quá hạn}}"
+  },
+  "reportingBasis": {
+    "label": "Cơ sở báo cáo",
+    "default": "{basis} (mặc định người dùng)",
+    "help": "Tổng kỳ sử dụng cơ sở đã chọn.",
+    "detailHelp": "Tổng kỳ sử dụng cơ sở đã chọn.",
+    "cashOnly": "Chế độ xem này theo các khoản thanh toán thực tế và dùng cơ sở tiền mặt.",
+    "exportCaption": "Cơ sở kế toán: {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Các thành phần dồn tích chỉ đọc. Liên kết thanh toán mở bút toán gốc. Thu hẹp khoảng ngày nếu cần.",
+    "fxHelp": "Không thể định giá một số khoản. Thêm tỷ giá lịch sử cho kỳ này rồi thử lại.",
+    "unsupported": "Không thể mở rộng an toàn tổ hợp bộ lọc này. Chọn bộ lọc đơn giản hơn.",
+    "failed": "Không thể tải bút toán. Thu hẹp ngày nếu có quá nhiều hàng rồi thử lại.",
+    "identity": "ID nguồn / phần tách / lịch",
+    "native": "Số tiền gốc",
+    "reporting": "Số tiền báo cáo",
+    "payment": "Ngày thanh toán",
+    "title": "Đã phân bổ",
+    "effective": "Ngày ghi nhận",
+    "source": "Ngày thanh toán",
+    "retry": "Thử lại",
+    "unknown": "Không có số tiền",
+    "start": "Ngày bắt đầu",
+    "end": "Ngày kết thúc",
+    "partial": "(tổng một phần)",
+    "empty": "Không có dữ liệu giao tác"
+  },
+  "systemAccruals": {
+    "title": "Tài khoản dồn tích",
+    "help": "Số dư do hệ thống quản lý bằng nguyên tệ. Chỉ đọc; chỉnh sửa bút toán gốc để thay đổi.",
+    "ownerOnly": "Chỉ chủ sở hữu có thể xem các tài khoản này.",
+    "empty": "Chưa có tài khoản dồn tích. Tạo phân bổ từ một khoản thu nhập hoặc chi phí.",
+    "position": "Vị thế",
+    "closing": "Số dư cuối kỳ",
+    "back": "Tài khoản",
+    "asOf": "Số dư tính đến",
+    "account": "Tài khoản",
+    "currency": "Tiền tệ",
+    "balance": "Số dư",
+    "prepaid": "Chi phí trả trước (ròng)",
+    "unearned": "Doanh thu chưa thực hiện (ròng)",
+    "signHelp": "Số dư âm thể hiện nợ phải trả dồn tích hoặc khoản phải thu.",
+    "asset": "Tài sản",
+    "liability": "Nợ phải trả",
+    "opening": "Số dư đầu kỳ",
+    "date": "Ngày",
+    "movement": "Thành phần",
+    "amount": "Số tiền",
+    "payment": "Ngày thanh toán",
+    "recognition": "Ngày ghi nhận",
+    "range": "{start} – {end}"
   }
 }

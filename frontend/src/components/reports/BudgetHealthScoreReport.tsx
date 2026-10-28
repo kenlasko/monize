@@ -1,5 +1,7 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis } from './ReportingBasis';
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { budgetsApi } from '@/lib/budgets';
@@ -163,6 +165,8 @@ const FIGURE_CELL =
   'p-0 text-right text-xs font-medium whitespace-nowrap sm:table-cell sm:text-sm';
 
 export function BudgetHealthScoreReport() {
+  const { withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
   const { formatPercentTrimmed } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
@@ -184,7 +188,7 @@ export function BudgetHealthScoreReport() {
     isLoading: budgetsLoading,
     error: budgetsError,
     reload: reloadBudgets,
-  } = useReportData(() => budgetsApi.getAll(), []);
+  } = useReportData(() => budgetsApi.getAll(...(basis ? [basis] as const : [])), [basis], {requestKey:JSON.stringify([basis]),maskStaleData:true});
 
   const budgets = useMemo(() => budgetsData ?? [], [budgetsData]);
 
@@ -204,9 +208,10 @@ export function BudgetHealthScoreReport() {
   } = useReportData(
     () =>
       selectedBudgetId
-        ? budgetsApi.getHealthScore(selectedBudgetId)
+        ? budgetsApi.getHealthScore(selectedBudgetId, ...(basis ? [basis] as const : []))
         : Promise.resolve(null),
-    [selectedBudgetId],
+    [selectedBudgetId, basis],
+    { requestKey: JSON.stringify([selectedBudgetId, basis]), maskStaleData: true },
   );
 
   const isLoading = budgetsLoading || scoreLoading;
@@ -300,7 +305,7 @@ export function BudgetHealthScoreReport() {
     const scoreColor = healthScore
       ? healthScore.score >= 80 ? '#16a34a' : healthScore.score >= 60 ? '#ca8a04' : '#dc2626'
       : '#111827';
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('budgetHealthScore.pdfTitle'),
       summaryCards: healthScore ? [
         { label: t('budgetHealthScore.finalScore'), value: `${healthScore.score}/100`, color: scoreColor },
@@ -322,7 +327,7 @@ export function BudgetHealthScoreReport() {
         rows,
       }] : undefined,
       filename: 'budget-health-score',
-    });
+    }));
   };
 
   if (error) {

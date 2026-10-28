@@ -242,7 +242,13 @@
       "applyHere": "Dùng các mặc định này trong trình duyệt này",
       "applyHereHelp": "Xóa các cài đặt hiển thị mà trình duyệt này đã lưu, để các mặc định ở trên cũng áp dụng tại đây.",
       "appliedHere": "Trình duyệt này hiện dùng chế độ xem mặc định của bạn"
-    }
+    },
+    "reportingBasisLabel": "Cơ sở báo cáo mặc định",
+    "reportingAccrual": "Dồn tích",
+    "reportingCash": "Tiền mặt",
+    "reportingBasisHelp": "Chọn cơ sở mặc định cho báo cáo và xu hướng theo danh mục, người nhận. Các chế độ xem tiền mặt giữ nguyên ngày thanh toán.",
+    "accrualEnabledLabel": "Bật kế toán dồn tích",
+    "accrualEnabledTooltip": "Bật lịch phân bổ dồn tích, số dư và các tùy chọn báo cáo. Khi tắt, báo cáo dùng cơ sở tiền mặt. Lịch đã lưu được giữ lại và cập nhật khi giao dịch gốc thay đổi."
   },
   "notifications": {
     "heading": "Thông báo",
@@ -836,7 +842,10 @@
       },
       "doneButton": "Xong",
       "unlinkedBondSecuritiesList": "Chứng khoán bị ảnh hưởng: {symbols}.",
-      "unlinkedBondSecuritiesMore": "và {count} mã nữa"
+      "unlinkedBondSecuritiesMore": "và {count} mã nữa",
+      "accrualSystemAccounts": "Tài khoản dồn tích của hệ thống",
+      "accrualSchedules": "Lịch phân bổ dồn tích",
+      "accrualAllocations": "Khoản phân bổ dồn tích"
     },
     "storedBackups": {
       "heading": "Sao lưu tự động",

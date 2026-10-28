@@ -128,7 +128,7 @@ describe('PayeeInfoWidget', () => {
     // average = (50 + 1200.5) / 12
     expect(screen.getByText('CAD 104.21')).toBeInTheDocument();
     expect(mockedTransactions.getSummary).toHaveBeenCalledWith(
-      expect.objectContaining({ payeeIds: ['p-1'] }),
+      expect.objectContaining({ basis:'cash', payeeIds: ['p-1'] }),
     );
   });
 
@@ -138,6 +138,7 @@ describe('PayeeInfoWidget', () => {
     });
 
     expect(mockedTransactions.getSummary).toHaveBeenCalledWith({
+      basis:'cash',
       startDate: '2026-01-01',
       endDate: '2026-06-30',
       accountIds: ['a-1'],

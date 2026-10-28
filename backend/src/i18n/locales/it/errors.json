@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL deve essere un indirizzo http o https",
       "invalidField": "{{ field }} non è valido"
     }
+  },
+  "accruals": {
+    "notFound": "La transazione o il piano di competenza non è stato trovato.",
+    "ineligible": "Scegli un’entrata, un’uscita o una suddivisione per categoria. Trasferimenti, operazioni di investimento e transazioni annullate sono esclusi.",
+    "invalidPeriod": "Scegli un mese iniziale valido e da 1 a 600 mesi.",
+    "changed": "La transazione o il piano è cambiato. Controlla una nuova anteprima prima di salvare.",
+    "ownerOnly": "Solo il proprietario può gestire i piani di competenza.",
+    "familyRequired": "Scegli uscita o entrata per una transazione senza categoria.",
+    "historyUnsupported": "Questo gruppo non può essere ripristinato in sicurezza dalla cronologia. Dividilo o rimuovi i trasferimenti o gli investimenti non supportati.",
+    "ruleUnsupported": "Per le registrazioni per competenza, esegui le regole manualmente dopo averne verificato l’impatto. Mantieni la struttura della transazione e scegli un beneficiario esistente."
   }
 }

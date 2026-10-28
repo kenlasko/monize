@@ -403,6 +403,18 @@ export function buildExportTableQueries(
       sql: "SELECT * FROM warranty_claims WHERE user_id = $1 ORDER BY claim_date, created_at, id",
     },
     {
+      key: "accrual_system_accounts",
+      sql: "SELECT * FROM accrual_system_accounts WHERE user_id = $1 ORDER BY created_at, id",
+    },
+    {
+      key: "accrual_schedules",
+      sql: "SELECT * FROM accrual_schedules WHERE user_id = $1 ORDER BY created_at, id",
+    },
+    {
+      key: "accrual_allocations",
+      sql: "SELECT * FROM accrual_allocations WHERE user_id = $1 ORDER BY schedule_id, period_index",
+    },
+    {
       // Attachment metadata. Restored after transactions (FK) and before
       // attachment_blobs (which references transaction_attachments).
       key: "transaction_attachments",

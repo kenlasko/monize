@@ -952,5 +952,15 @@
       "invalidUrl": "ProductURL musi być adresem http lub https",
       "invalidField": "{{ field }} jest nieprawidłowe"
     }
+  },
+  "accruals": {
+    "notFound": "Nie znaleziono transakcji lub harmonogramu rozliczeń.",
+    "ineligible": "Wybierz przychód, wydatek lub część przypisaną do kategorii. Przelewy, operacje inwestycyjne i unieważnione transakcje są wykluczone.",
+    "invalidPeriod": "Wybierz prawidłowy miesiąc początkowy i od 1 do 600 miesięcy.",
+    "changed": "Transakcja lub harmonogram uległy zmianie. Sprawdź nowy podgląd przed zapisaniem.",
+    "ownerOnly": "Tylko właściciel może zarządzać harmonogramami rozliczeń.",
+    "familyRequired": "Wybierz wydatek lub przychód dla transakcji bez kategorii.",
+    "historyUnsupported": "Nie można bezpiecznie przywrócić tej partii z historii. Podziel ją lub usuń nieobsługiwane przelewy i wpisy inwestycyjne z wyboru.",
+    "ruleUnsupported": "Dla rozliczanych w czasie wpisów uruchamiaj reguły ręcznie po sprawdzeniu ich skutków. Zachowaj strukturę transakcji i wybierz istniejącego odbiorcę."
   }
 }

@@ -39,5 +39,8 @@
       "loanRepayment": "ローン返済",
       "creditCardRepayment": "クレジットカード返済"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "{{ count }} 件の取引を削除しました"
   }
 }

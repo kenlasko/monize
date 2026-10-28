@@ -242,7 +242,13 @@
       "applyHere": "Gunakan default ini di browser ini",
       "applyHereHelp": "Menghapus pengaturan tampilan yang disimpan browser ini, sehingga default di atas juga berlaku di sini.",
       "appliedHere": "Browser ini sekarang menggunakan tampilan default Anda"
-    }
+    },
+    "reportingBasisLabel": "Basis pelaporan bawaan",
+    "reportingAccrual": "Akrual",
+    "reportingCash": "Kas",
+    "reportingBasisHelp": "Pilih pengaturan bawaan untuk laporan serta tren kategori dan penerima. Tampilan khusus kas tetap menggunakan tanggal pembayaran.",
+    "accrualEnabledLabel": "Aktifkan akuntansi akrual",
+    "accrualEnabledTooltip": "Mengaktifkan jadwal akrual, saldo, dan kontrol laporan. Saat nonaktif, laporan menggunakan basis kas. Jadwal tersimpan dipertahankan dan diperbarui ketika transaksinya berubah."
   },
   "notifications": {
     "heading": "Notifikasi",
@@ -836,7 +842,10 @@
       },
       "doneButton": "Selesai",
       "unlinkedBondSecuritiesList": "Sekuritas terdampak: {symbols}.",
-      "unlinkedBondSecuritiesMore": "dan {count} lagi"
+      "unlinkedBondSecuritiesMore": "dan {count} lagi",
+      "accrualSystemAccounts": "Akun sistem akrual",
+      "accrualSchedules": "Jadwal akrual",
+      "accrualAllocations": "Alokasi akrual"
     },
     "storedBackups": {
       "heading": "Cadangan Otomatis",

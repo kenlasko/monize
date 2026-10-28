@@ -1,16 +1,26 @@
-import { IsArray, ArrayMaxSize, ValidateNested } from "class-validator";
+import {
+  IsArray,
+  ArrayMaxSize,
+  ValidateNested,
+  IsOptional,
+  Matches,
+} from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
-import { CreateTransactionSplitDto } from "./create-transaction-split.dto";
+import { UpdateTransactionSplitDto } from "./update-transaction-split.dto";
 
 export class UpdateSplitsDto {
   @ApiProperty({
     description: "Replacement splits for the transaction",
-    type: [CreateTransactionSplitDto],
+    type: [UpdateTransactionSplitDto],
   })
   @IsArray()
   @ArrayMaxSize(100)
   @ValidateNested({ each: true })
-  @Type(() => CreateTransactionSplitDto)
-  splits: CreateTransactionSplitDto[];
+  @Type(() => UpdateTransactionSplitDto)
+  splits: UpdateTransactionSplitDto[];
+
+  @IsOptional()
+  @Matches(/^[a-f0-9]{64}$/)
+  accrualImpactFingerprint?: string;
 }

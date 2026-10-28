@@ -1,5 +1,6 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
@@ -14,6 +15,7 @@ import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { quoteSearchValue } from '@/lib/search-query';
 
 export function SpendingAnomaliesReport() {
+  const { withPdfBasis } = useReportExportMetadata('cash');
   const t = useTranslations('reports');
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency, defaultCurrency } = useNumberFormat();
@@ -63,7 +65,7 @@ export function SpendingAnomaliesReport() {
       a.amount != null ? formatCurrency(a.amount) : '',
     ]);
     const c = anomaliesData?.counts ?? { high: 0, medium: 0, low: 0 };
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('spendingAnomalies.pdfTitle'),
       subtitle: t('spendingAnomalies.pdfSubtitle', { count: threshold }),
       summaryCards: [
@@ -73,7 +75,7 @@ export function SpendingAnomaliesReport() {
       ],
       tableData: { headers, rows },
       filename: 'spending-anomalies',
-    });
+    }));
   };
 
   const getSeverityStyles = (severity: SpendingAnomaly['severity']) => {

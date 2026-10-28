@@ -39,5 +39,8 @@
       "loanRepayment": "贷款还款",
       "creditCardRepayment": "信用卡还款"
     }
+  },
+  "accruals": {
+    "bulkDeleted": "已删除 {{ count }} 笔交易"
   }
 }

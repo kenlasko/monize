@@ -208,33 +208,9 @@
     "Nov",
     "Dic"
   ],
-  "weekdaysShort": [
-    "Dom",
-    "Lun",
-    "Mar",
-    "Mié",
-    "Jue",
-    "Vie",
-    "Sáb"
-  ],
-  "weekdaysMin": [
-    "Do",
-    "Lu",
-    "Ma",
-    "Mi",
-    "Ju",
-    "Vi",
-    "Sá"
-  ],
-  "weekdaysNarrow": [
-    "D",
-    "L",
-    "M",
-    "X",
-    "J",
-    "V",
-    "S"
-  ],
+  "weekdaysShort": ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+  "weekdaysMin": ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"],
+  "weekdaysNarrow": ["D", "L", "M", "X", "J", "V", "S"],
   "dateFormat": {
     "browserAuto": "Usar configuración regional del navegador (detectado automáticamente como {sample})",
     "custom": "Personalizado..."
@@ -273,5 +249,57 @@
   },
   "scheduledOverdue": {
     "included": "Incluye {count, plural, one {# transacción planificada vencida} other {# transacciones planificadas vencidas}}"
+  },
+  "reportingBasis": {
+    "label": "Base contable",
+    "default": "{basis} (predeterminada del usuario)",
+    "help": "Los totales usan la base seleccionada.",
+    "detailHelp": "Los totales usan la base seleccionada.",
+    "cashOnly": "Esta vista sigue los pagos reales y usa el criterio de caja.",
+    "exportCaption": "Base contable: {basis}"
+  },
+  "recognitionDetails": {
+    "help": "Componentes de devengo de solo lectura. Los enlaces de pago abren el apunte original. Reduce el periodo si es necesario.",
+    "fxHelp": "Algunos importes no pueden valorarse. Añade tipos de cambio históricos del periodo y reintenta.",
+    "unsupported": "Esta combinación de filtros no puede desglosarse con seguridad. Elige un filtro más sencillo.",
+    "failed": "No se pudieron cargar los apuntes. Reduce el periodo si hay demasiadas filas y reintenta.",
+    "identity": "ID de origen / parte / distribución",
+    "native": "Importe original",
+    "reporting": "Importe del informe",
+    "payment": "Fecha del pago",
+    "title": "Devengado",
+    "effective": "Fecha de reconocimiento",
+    "source": "Fecha del pago",
+    "retry": "Reintentar",
+    "unknown": "Importe no disponible",
+    "start": "Fecha de inicio",
+    "end": "Fecha de fin",
+    "partial": "(total parcial)",
+    "empty": "No hay datos de transacciones disponibles"
+  },
+  "systemAccruals": {
+    "title": "Cuentas de devengo",
+    "help": "Saldos gestionados por el sistema en moneda original. Solo lectura; edite el asiento original para cambiarlos.",
+    "ownerOnly": "Solo el propietario puede ver estas cuentas.",
+    "empty": "Aún no hay cuentas de devengo. Cree un devengo desde un ingreso o gasto.",
+    "position": "Posición",
+    "closing": "Saldo final",
+    "back": "Cuentas",
+    "asOf": "Saldo al",
+    "account": "Cuenta",
+    "currency": "Moneda",
+    "balance": "Saldo",
+    "prepaid": "Gastos anticipados (netos)",
+    "unearned": "Ingresos anticipados (netos)",
+    "signHelp": "Los saldos negativos representan pasivos devengados o cuentas por cobrar.",
+    "asset": "Activos",
+    "liability": "Pasivos",
+    "opening": "Saldo Inicial",
+    "date": "Fecha",
+    "movement": "Componente",
+    "amount": "Importe",
+    "payment": "Fecha del pago",
+    "recognition": "Fecha de reconocimiento",
+    "range": "{start} – {end}"
   }
 }

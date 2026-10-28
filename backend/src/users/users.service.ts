@@ -237,6 +237,10 @@ export class UsersService {
     // other endpoints on the same row, so saving a Settings form could quietly
     // undo a tour the user had just dismissed in another tab.
     const patch: UserPreferencePatch = {};
+    if (dto.reportingBasis !== undefined)
+      patch.reportingBasis = dto.reportingBasis;
+    if (dto.accrualEnabled !== undefined)
+      patch.accrualEnabled = dto.accrualEnabled;
 
     if (dto.defaultCurrency !== undefined) {
       patch.defaultCurrency = dto.defaultCurrency;
@@ -742,6 +746,16 @@ export class UsersService {
     const deleted: Record<string, number> = {};
 
     // Always deleted: financial transaction data, investments, summaries, budgets
+    await manager.query("DELETE FROM accrual_allocations WHERE user_id = $1", [
+      userId,
+    ]);
+    await manager.query("DELETE FROM accrual_schedules WHERE user_id = $1", [
+      userId,
+    ]);
+    await manager.query(
+      "DELETE FROM accrual_system_accounts WHERE user_id = $1",
+      [userId],
+    );
 
     // Investment data (FK-safe order)
     let result = await manager.query(

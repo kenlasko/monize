@@ -1,6 +1,8 @@
 import { cloneElement, type ReactElement } from "react";
+import { ReportingBasisScope, ReportingBasisControl } from './ReportingBasis';
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent, act } from "@/test/render";
+import { usePreferencesStore } from "@/store/preferencesStore";
 import { within } from "@testing-library/react";
 import { IncomeVsExpensesReport } from "./IncomeVsExpensesReport";
 
@@ -177,8 +179,16 @@ describe("IncomeVsExpensesReport", () => {
     mockRange.end = "2025-01-01";
     mockGetAllAccounts.mockResolvedValue([]);
     window.localStorage.clear();
+    usePreferencesStore.setState({ preferences: { accrualEnabled: true, reportingBasis: "accrual" } as never });
   });
 
+  it('sends the selected basis to the actual report request', async () => {
+    mockGetIncomeVsExpenses.mockResolvedValue({data:[],totals:{income:0,expenses:0,net:0,knownIncome:0,knownExpenses:0,knownNet:0}});
+    await act(async()=>render(<ReportingBasisScope surface="income"><ReportingBasisControl /><IncomeVsExpensesReport /></ReportingBasisScope>));
+    expect(mockGetIncomeVsExpenses).toHaveBeenLastCalledWith(expect.objectContaining({basis:'accrual'}));
+    await act(async()=>fireEvent.click(screen.getByRole('button', { name: /^Cash(?: \(user default\))?$/ })));
+    expect(mockGetIncomeVsExpenses).toHaveBeenLastCalledWith(expect.objectContaining({basis:'cash'}));
+  });
   it("shows loading state initially", async () => {
     mockGetIncomeVsExpenses.mockReturnValue(new Promise(() => {}));
     // The tag-key lookup resolves on mount alongside the report fetch; flush

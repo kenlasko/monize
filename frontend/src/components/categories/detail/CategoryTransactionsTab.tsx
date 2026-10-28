@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { showErrorToast } from '@/lib/errors';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -24,6 +26,7 @@ const TransactionForm = dynamic(
 );
 
 interface CategoryTransactionsTabProps {
+  basis?: 'cash' | 'accrual';
   categoryId: string;
   /** Bumped by the page on every reload so the list refetches in lockstep. */
   refreshKey?: number;
@@ -55,6 +58,7 @@ interface CategoryTransactionsTabProps {
  * a correction never costs the reader their place.
  */
 export function CategoryTransactionsTab({
+  basis = 'cash',
   categoryId,
   refreshKey,
   categoryLabelMap,
@@ -66,6 +70,7 @@ export function CategoryTransactionsTab({
 }: CategoryTransactionsTabProps) {
   const t = useTranslations('categoryDetail');
   const tt = useTranslations('transactions');
+  const router = useRouter();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
@@ -83,7 +88,7 @@ export function CategoryTransactionsTab({
     formSubmitRef,
   } = useFormModal<Transaction>();
 
-  const requestKey = `${categoryId}:${page}:${refreshKey ?? 0}`;
+  const requestKey = `${basis}:${categoryId}:${page}:${refreshKey ?? 0}`;
   const isLoading = loadedKey !== requestKey;
 
   // Bumped locally so an edit or delete refetches the page currently on screen
@@ -96,7 +101,7 @@ export function CategoryTransactionsTab({
     // category if the switcher moved on -- from landing in the list.
     const key = requestKey;
     transactionsApi
-      .getAll({ categoryIds: [categoryId], page, limit: PAGE_SIZE })
+      .getAll({ basis, categoryIds: [categoryId], page, limit: PAGE_SIZE })
       .then((result) => {
         if (cancelled) return;
         setTransactions(result.data);
@@ -115,7 +120,7 @@ export function CategoryTransactionsTab({
     return () => {
       cancelled = true;
     };
-  }, [categoryId, page, requestKey, reloadTick]);
+  }, [basis, categoryId, page, requestKey, reloadTick]);
 
   // A row edited or deleted in place: refetch this list and let the page
   // recompute its cards, which the change may well have moved.
@@ -178,7 +183,15 @@ export function CategoryTransactionsTab({
         <TransactionList
           densityView="categoryDetail"
           transactions={transactions}
-          onEdit={openEdit}
+          readOnly={basis === 'accrual'}
+          onEdit={async (row) => {
+            if (!row.reportingProvenance) { openEdit(row); return; }
+            try {
+              const source = await transactionsApi.getById(row.reportingProvenance.sourceTransactionId);
+              if (row.linkedInvestmentTransactionId) router.push(`/investments?edit=${row.linkedInvestmentTransactionId}`);
+              else openEdit({...source, accrualRecognitionDate: row.reportingProvenance?.isRecognition ? row.transactionDate : undefined});
+            } catch (error) { showErrorToast(error, tt('toasts.loadFailed')); }
+          }}
           onRefresh={handleChanged}
           onTransactionUpdate={handleTransactionUpdate}
           onDateFilterClick={onSelectDate}
@@ -207,6 +220,7 @@ export function CategoryTransactionsTab({
         </h2>
         {showForm && editingItem && (
           <TransactionForm
+            onAccrualChanged={handleChanged}
             transaction={editingItem}
             onSuccess={() => {
               close();

@@ -37,6 +37,7 @@ describe("ReportCurrencyService", () => {
     };
 
     exchangeRateService = {
+      getRateHistory: jest.fn().mockResolvedValue([]),
       getLatestRates: jest.fn().mockResolvedValue(mockExchangeRates),
     };
 

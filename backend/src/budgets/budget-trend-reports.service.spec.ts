@@ -1,3 +1,25 @@
+jest.mock("../accruals/reporting-money", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingMoneyMockModule(),
+);
+import { budgetReportFixtureRows } from "../test-helpers/budget-report-fixture-rows";
+jest.mock("../accruals/reporting-basis", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingBasisMockModule(),
+);
+jest.mock("../accruals/reporting-query", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingQueryMockModule(),
+);
+jest.mock("../accruals/reporting-basis.interceptor", () =>
+  jest
+    .requireActual("../test-helpers/reporting-read-testing")
+    .reportingInterceptorMockModule(),
+);
+
 import { DataSource } from "typeorm";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -213,18 +235,39 @@ describe("BudgetTrendReportsService", () => {
     updatedAt: new Date("2026-01-01"),
   };
 
-  const createMockQueryBuilder = (overrides = {}) => ({
-    select: jest.fn().mockReturnThis(),
-    addSelect: jest.fn().mockReturnThis(),
-    where: jest.fn().mockReturnThis(),
-    andWhere: jest.fn().mockReturnThis(),
-    innerJoin: jest.fn().mockReturnThis(),
-    groupBy: jest.fn().mockReturnThis(),
-    addGroupBy: jest.fn().mockReturnThis(),
-    getRawMany: jest.fn().mockResolvedValue([]),
-    getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
-    ...overrides,
-  });
+  const createMockQueryBuilder = (
+    overrides: Record<string, jest.Mock> = {},
+  ) => {
+    const where = jest.fn().mockReturnThis();
+    const andWhere = jest.fn().mockReturnThis();
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where,
+      andWhere,
+      innerJoin: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn(async () =>
+        budgetReportFixtureRows(
+          [...where.mock.calls, ...andWhere.mock.calls],
+          periodsRepository.find.mock.results.slice(-1)[0]?.value,
+          overrides.getRawOne ? await overrides.getRawOne() : undefined,
+        ),
+      ),
+      getRawOne: jest.fn(async () => {
+        const rows = await budgetReportFixtureRows(
+          [...where.mock.calls, ...andWhere.mock.calls],
+          periodsRepository.find.mock.results.slice(-1)[0]?.value,
+        );
+        return {
+          total: String(rows.reduce((sum, row) => sum + Number(row.total), 0)),
+        };
+      }),
+      ...overrides,
+    };
+    return qb;
+  };
 
   beforeEach(async () => {
     periodsRepository = {
@@ -241,7 +284,12 @@ describe("BudgetTrendReportsService", () => {
     };
 
     splitsRepository = {
-      createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+      createQueryBuilder: jest.fn(() =>
+        createMockQueryBuilder({
+          getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
+          getRawMany: jest.fn().mockResolvedValue([]),
+        }),
+      ),
     };
 
     budgetsService = {
@@ -313,6 +361,18 @@ describe("BudgetTrendReportsService", () => {
       periodsRepository.find.mockResolvedValueOnce(closedPeriods);
       periodsRepository.findOne.mockResolvedValueOnce(null);
 
+      // Closed actuals are current reads too, rather than the materialized snapshot.
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawOne: jest.fn().mockResolvedValue({ total: "-750" }),
+          }),
+        )
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawOne: jest.fn().mockResolvedValue({ total: "-820" }),
+          }),
+        );
       const result = await service.getTrend("user-1", "budget-1", 6);
 
       expect(result).toHaveLength(2);
@@ -358,8 +418,20 @@ describe("BudgetTrendReportsService", () => {
         getRawOne: jest.fn().mockResolvedValue({ total: "-50" }),
       });
 
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawOne: jest.fn().mockResolvedValue({ total: "-700" }),
+          }),
+        )
+        .mockReturnValueOnce(directQb);
+      splitsRepository.createQueryBuilder
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
+          }),
+        )
+        .mockReturnValueOnce(splitQb);
 
       const result = await service.getTrend("user-1", "budget-1", 6);
 
@@ -481,9 +553,29 @@ describe("BudgetTrendReportsService", () => {
       });
 
       transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawOne: jest.fn().mockResolvedValue({ total: "-600" }),
+          }),
+        )
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
+          }),
+        )
         .mockReturnValueOnce(directQb)
         .mockReturnValueOnce(transferQb);
       splitsRepository.createQueryBuilder
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
+          }),
+        )
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
+          }),
+        )
         .mockReturnValueOnce(splitQb)
         .mockReturnValueOnce(splitTransferQb);
 
@@ -535,8 +627,20 @@ describe("BudgetTrendReportsService", () => {
         getRawOne: jest.fn().mockResolvedValue({ total: "-25" }),
       });
 
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(transferQb);
-      splitsRepository.createQueryBuilder.mockReturnValueOnce(splitTransferQb);
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawOne: jest.fn().mockResolvedValue({ total: "-180" }),
+          }),
+        )
+        .mockReturnValueOnce(transferQb);
+      splitsRepository.createQueryBuilder
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
+          }),
+        )
+        .mockReturnValueOnce(splitTransferQb);
 
       const result = await service.getTrend("user-1", "budget-1", 6);
 
@@ -590,13 +694,13 @@ describe("BudgetTrendReportsService", () => {
       const directQb = createMockQueryBuilder({
         getRawMany: jest
           .fn()
-          .mockResolvedValue([{ month: monthKey, total: "250" }]),
+          .mockResolvedValue([{ month: monthKey, total: "-250" }]),
       });
       // Splits query builder
       const splitQb = createMockQueryBuilder({
         getRawMany: jest
           .fn()
-          .mockResolvedValue([{ month: monthKey, total: "100" }]),
+          .mockResolvedValue([{ month: monthKey, total: "-100" }]),
       });
 
       transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
@@ -633,7 +737,7 @@ describe("BudgetTrendReportsService", () => {
       const directQb = createMockQueryBuilder({
         getRawMany: jest
           .fn()
-          .mockResolvedValue([{ month: monthKey, total: "200" }]),
+          .mockResolvedValue([{ month: monthKey, total: "-200" }]),
       });
       // Splits query
       const splitQb = createMockQueryBuilder({
@@ -643,13 +747,13 @@ describe("BudgetTrendReportsService", () => {
       const transferQb = createMockQueryBuilder({
         getRawMany: jest
           .fn()
-          .mockResolvedValue([{ month: monthKey, total: "150" }]),
+          .mockResolvedValue([{ month: monthKey, total: "-150" }]),
       });
       // a transfer recorded as one line of a split parent (audit P5-007)
       const splitTransferQb = createMockQueryBuilder({
         getRawMany: jest
           .fn()
-          .mockResolvedValue([{ month: monthKey, total: "30" }]),
+          .mockResolvedValue([{ month: monthKey, total: "-30" }]),
       });
 
       transactionsRepository.createQueryBuilder
@@ -685,7 +789,7 @@ describe("BudgetTrendReportsService", () => {
       const transferQb = createMockQueryBuilder({
         getRawMany: jest
           .fn()
-          .mockResolvedValue([{ month: monthKey, total: "180" }]),
+          .mockResolvedValue([{ month: monthKey, total: "-180" }]),
       });
       const splitTransferQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([]),
@@ -981,15 +1085,15 @@ describe("BudgetTrendReportsService", () => {
 
       const directQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", month: monthKey, total: "350" },
-          { categoryId: "cat-2", month: monthKey, total: "180" },
+          { categoryId: "cat-1", month: monthKey, total: "-350" },
+          { categoryId: "cat-2", month: monthKey, total: "-180" },
         ]),
       });
       const splitQb = createMockQueryBuilder({
         getRawMany: jest
           .fn()
           .mockResolvedValue([
-            { categoryId: "cat-1", month: monthKey, total: "50" },
+            { categoryId: "cat-1", month: monthKey, total: "-50" },
           ]),
       });
 

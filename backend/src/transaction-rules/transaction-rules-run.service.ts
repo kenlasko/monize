@@ -1,4 +1,9 @@
 import {
+  planRuleAccruals,
+  ruleAccrualFingerprint,
+  captureRuleAccrualHistory,
+} from "./rule-accrual";
+import {
   BadRequestException,
   ConflictException,
   Inject,
@@ -296,7 +301,8 @@ export class TransactionRulesRunService {
           errorCode: "RUN_TOO_LARGE",
         });
       const fits = (snapshots: object): boolean =>
-        JSON.stringify(snapshots).length <= MAX_JSONB_SIZE_BYTES;
+        Buffer.byteLength(JSON.stringify(snapshots), "utf8") <=
+        MAX_JSONB_SIZE_BYTES;
       // The undo entry must hold every row this run touches; refuse a run it
       // could not hold, before the first write.
       if (
@@ -310,6 +316,13 @@ export class TransactionRulesRunService {
       ) {
         throw tooLarge();
       }
+      const accrualBefore = buildRunSnapshots(
+        plan.writable,
+        plan.tagsByRow,
+        plan.preview.labels.payees,
+      ).before;
+      await captureRuleAccrualHistory(m, userId, accrualBefore);
+      if (!fits(accrualBefore)) throw tooLarge();
       // Every account a structural write will credit is row-locked now, in
       // ascending id order and in one statement, after the transaction rows
       // the plan locked (the order the other transaction writers use) and
@@ -363,6 +376,11 @@ export class TransactionRulesRunService {
         plan.tagsByRow,
         plan.preview.labels.payees,
       );
+      for (const row of before) {
+        const prior = accrualBefore.find((value) => value.id === row.id);
+        if (prior?.ruleAccrual) row.ruleAccrual = prior.ruleAccrual;
+      }
+      await captureRuleAccrualHistory(m, userId, after);
       // The created payees' ids are longer than "will be created"; a run that
       // no longer fits rolls back with the transaction.
       if (!fits({ before, after })) throw tooLarge();
@@ -645,6 +663,12 @@ export class TransactionRulesRunService {
     );
     const adding = asking.filter(({ unit }) => !open.has(unit.primary.id));
 
+    const accrualImpacts = await planRuleAccruals(
+      m,
+      userId,
+      writable,
+      tagsByRow,
+    );
     const matched: RuleRunMatchedRow[] = writable.map(({ unit, effects }) => ({
       transactionId: unit.primary.id,
       date: unit.primary.transactionDate,
@@ -675,13 +699,17 @@ export class TransactionRulesRunService {
           units.length > 0
             ? units[units.length - 1].primary.transactionDate
             : null,
-        fingerprint: planFingerprint(
-          rule.revision,
-          writable.map(({ unit, effects }) => ({
-            transactionId: unit.primary.id,
-            changes: effects.trace[0].changes,
-          })),
-          adding.map(({ unit }) => unit.primary.id),
+        ...(accrualImpacts.length ? { accrualImpacts } : {}),
+        fingerprint: ruleAccrualFingerprint(
+          planFingerprint(
+            rule.revision,
+            writable.map(({ unit, effects }) => ({
+              transactionId: unit.primary.id,
+              changes: effects.trace[0].changes,
+            })),
+            adding.map(({ unit }) => unit.primary.id),
+          ),
+          accrualImpacts,
         ),
         labels,
         aiReviewRequests: adding.length,

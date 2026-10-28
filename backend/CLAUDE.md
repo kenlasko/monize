@@ -118,7 +118,7 @@ Each module holds `{feature}.module.ts`, controller, service, their specs, `enti
 | Prices, securities, outbound providers and the breaker | `docs/backend/securities-and-providers.md` |
 | Adding a country's bonds, a new bond product or engine primitive | `docs/backend/bond-adapters.md` |
 | AI assistant, tools, payee lookup and enrichment, search | `docs/backend/ai-and-payees.md` |
-| Notifications, push, recipient-locale copy | `docs/backend/notifications-and-push.md` |
+| Notifications/push: project only transaction roots | `docs/backend/notifications-and-push.md` |
 | Backup and restore, automatic backups, off-machine copies | `docs/backend/backup.md` and `docs/backup-restore-contract.md` |
 | Crons, reapers, background jobs | `docs/backend/cron-and-background-work.md` and `docs/cron-jobs.md` |
 | MCP server: transport, tools, confirmation | `docs/backend/mcp.md` (`src/mcp/CLAUDE.md` is its pointer) |

@@ -70,6 +70,7 @@ export function PayeeInfoWidget({
 }: PayeeInfoWidgetProps) {
   const t = useTranslations('transactions');
   const router = useRouter();
+  const ts = useTranslations('settings.preferences');
   const { formatCurrency } = useNumberFormat();
   const { formatDate } = useDateFormat();
   const { convertToDefault, defaultCurrency } = useExchangeRates();
@@ -99,13 +100,13 @@ export function PayeeInfoWidget({
       setIsLoading(true);
       const [summaryResult, groupedResult, recurringResult, aliasesResult] = await Promise.all([
         transactionsApi
-          .getSummary({ ...params, payeeIds: [payee.id] })
+          .getSummary({ basis: 'cash', ...params, payeeIds: [payee.id] })
           .catch((error) => {
             logger.error(error);
             return null;
           }),
         transactionsApi
-          .getGroupedTotals({ ...params, groupBy: 'category', payeeIds: [payee.id], limit: 25 })
+          .getGroupedTotals({ basis: 'cash', ...params, groupBy: 'category', payeeIds: [payee.id], limit: 25 })
           .catch((error) => {
             logger.error(error);
             return [] as GroupedTotal[];
@@ -204,7 +205,7 @@ export function PayeeInfoWidget({
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <button
             type="button"
-            onClick={() => router.push(`/payees/${payee.id}`)}
+            onClick={() => router.push(`/payees/${payee.id}${filterParams?.basis ? `?basis=${filterParams.basis}` : ''}`)}
             aria-label={t('payeeWidget.detailsAria')}
             title={t('payeeWidget.detailsAria')}
             className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
@@ -249,6 +250,7 @@ export function PayeeInfoWidget({
               cadence: t(`payeeWidget.cadence.${recurring.cadence}`),
               amount: formatCurrency(recurring.amount, currencyStrategy.displayCurrency),
             })}
+            <span className="ml-1">({ts('reportingCash')})</span>
             <InfoTooltip text={t('payeeWidget.recurringTooltip')} usePortal />
           </p>
         )}

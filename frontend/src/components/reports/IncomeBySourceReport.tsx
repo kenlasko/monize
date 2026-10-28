@@ -1,8 +1,10 @@
 'use client';
 
+import { useReportExportMetadata } from '@/hooks/useReportExportMetadata';
+import { useReportingBasis, useReportingRouter } from './ReportingBasis';
 import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
-import { useRouter } from 'next/navigation';
+
 import {
   PieChart,
   Pie,
@@ -46,7 +48,6 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { isComplete, reportTotal } from '@/lib/currency-total';
 import { CHART_COLOURS_INCOME } from '@/lib/chart-colours';
 import { chartColors } from '@/lib/chart-colors';
-import { exportToCsv } from '@/lib/csv-export';
 import type { ChartDatum } from '@/types/chart';
 import { useTranslations } from 'next-intl';
 
@@ -149,8 +150,10 @@ function IncomeSourceTooltip({
 }
 
 export function IncomeBySourceReport() {
+  const { exportCsvWithBasis, withPdfBasis } = useReportExportMetadata();
+  const basis = useReportingBasis();
   const t = useTranslations('reports');
-  const router = useRouter();
+  const router = useReportingRouter();
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency, formatPercent, defaultCurrency } = useNumberFormat();
   const tCommon = useTranslations('common');
@@ -173,12 +176,14 @@ export function IncomeBySourceReport() {
     () =>
       isValid
         ? builtInReportsApi.getIncomeBySource({
+            ...(basis ? { basis } : {}),
             startDate: rangeStart || undefined,
             endDate: rangeEnd,
             ...(selectedAccountIds.length > 0 ? { accountIds: selectedAccountIds } : {}),
           })
         : Promise.resolve(null),
-    [isValid, rangeStart, rangeEnd, accountIdsKey],
+    [isValid, rangeStart, rangeEnd, accountIdsKey, basis],
+    { requestKey: JSON.stringify([isValid, rangeStart, rangeEnd, accountIdsKey, basis]), maskStaleData: true },
   );
 
   // The funding fetch of the other reports: the same window and the same
@@ -307,7 +312,7 @@ export function IncomeBySourceReport() {
       };
     });
 
-    await exportToPdf({
+    await exportToPdf(withPdfBasis({
       title: t('page.names.income-by-source' as Parameters<typeof t>[0]),
       summaryCards: [
         {
@@ -325,7 +330,7 @@ export function IncomeBySourceReport() {
       chartContainer: chartRef.current,
       chartLegend: legendItems.length > 0 ? legendItems : undefined,
       filename: 'income-by-source',
-    });
+    }));
   };
 
   const handleExportCsv = () => {
@@ -341,7 +346,7 @@ export function IncomeBySourceReport() {
           [t('tagBreakdown.fundsAvailable'), fundsEntry.availableFunds, ''],
         ]
       : [];
-    exportToCsv('income-by-source', headers, [...rows, ...fundsRows]);
+    exportCsvWithBasis('income-by-source', headers, [...rows, ...fundsRows]);
   };
 
   const handleCategoryClick = (categoryId: string) => {

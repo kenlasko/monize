@@ -1,3 +1,4 @@
+import type { ExchangeRateService } from "@/currencies/exchange-rate.service";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 // Import order matters: see `report-tag-key-breakdown.integration.spec.ts`.
@@ -63,7 +64,11 @@ describe("Funding view report filters (integration)", () => {
     dataSource = module.get(DataSource);
     const currency = new ReportCurrencyService(dataSource, {
       getLatestRates: async () => [],
-    } as never);
+      getRateHistory: async () => [],
+    } satisfies Pick<
+      ExchangeRateService,
+      "getLatestRates" | "getRateHistory"
+    > as unknown as ExchangeRateService);
     spending = new SpendingReportsService(dataSource, currency);
     monthly = new MonthlyCategoryBreakdownService(dataSource, currency);
   });

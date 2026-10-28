@@ -242,7 +242,13 @@
       "applyHere": "Usar estos valores en este navegador",
       "applyHereHelp": "Borra la configuración de vistas que este navegador ha guardado, para que los valores anteriores también se apliquen aquí.",
       "appliedHere": "Este navegador ya usa tus vistas predeterminadas"
-    }
+    },
+    "reportingBasisLabel": "Base contable predeterminada",
+    "reportingAccrual": "Devengo",
+    "reportingCash": "Caja",
+    "reportingBasisHelp": "Elige el valor predeterminado para informes y tendencias por categoría y beneficiario. Las vistas de caja conservan las fechas de pago.",
+    "accrualEnabledLabel": "Activar la contabilidad de devengo",
+    "accrualEnabledTooltip": "Activa los planes de devengo, los saldos y los controles de informes. Al desactivarlo, los informes usan caja. Los planes guardados se conservan y se actualizan cuando cambian sus transacciones."
   },
   "notifications": {
     "heading": "Notificaciones",
@@ -836,7 +842,10 @@
       },
       "doneButton": "Listo",
       "unlinkedBondSecuritiesList": "Valores afectados: {symbols}.",
-      "unlinkedBondSecuritiesMore": "y {count} más"
+      "unlinkedBondSecuritiesMore": "y {count} más",
+      "accrualSystemAccounts": "Cuentas de devengo del sistema",
+      "accrualSchedules": "Calendarios de devengo",
+      "accrualAllocations": "Asignaciones de devengo"
     },
     "storedBackups": {
       "heading": "Copias de seguridad automáticas",
