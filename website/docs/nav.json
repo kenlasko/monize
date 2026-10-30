@@ -18,6 +18,7 @@
       { "slug": "investments", "summary": "Portfolio tracking, securities and investment transactions." },
       { "slug": "bills-and-deposits", "summary": "Scheduled and recurring bills, deposits and transfers." },
       { "slug": "email-receipts", "summary": "Turn order confirmations from your mailbox into itemized transactions." },
+      { "slug": "shared-expenses", "summary": "Split group purchases, track balances and record repayments." },
       { "slug": "warranties", "summary": "Track warranties with their receipts, manuals, photos and claims." }
     ]
   },

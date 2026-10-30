@@ -2,6 +2,10 @@
 
 The Dashboard is your financial command center -- a single-page overview of your accounts, spending, income, net worth, and upcoming bills.
 
+Use **Customize** beside the greeting to change the dashboard. Open features such as [Shared Expenses](shared-expenses.md) from **Tools**, or from the navigation menu on a phone.
+
+![The dashboard greeting and Customize button](images/dashboard-header.png)
+
 ---
 
 ## Overview

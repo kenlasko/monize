@@ -39,6 +39,7 @@ export const DOCS_LINKS = {
   securities: { page: 'investments', section: 'securities-management' },
   reports: { page: 'reports' },
   settings: { page: 'settings-and-security' },
+  sharedExpenses: { page: 'shared-expenses' },
   notifications: { page: 'settings-and-security', section: 'notifications' },
   adminUsers: { page: 'settings-and-security', section: 'user-management' },
   adminNotifications: { page: 'settings-and-security', section: 'instance-notification-settings' },

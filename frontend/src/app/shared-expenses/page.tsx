@@ -3,6 +3,8 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { TOUR_ANCHORS, tourAnchor } from "@/lib/tours/anchors";
+import { docsUrl } from "@/lib/docs-links";
 import {
   ArrowPathIcon,
   UsersIcon,
@@ -77,6 +79,7 @@ function GroupsContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8 space-y-5">
         <PageHeader
           title={t("title")}
+          helpUrl={docsUrl("sharedExpenses")}
           subtitle={t("subtitle")}
           actions={
             <div className="flex flex-wrap items-stretch gap-2">
@@ -88,7 +91,10 @@ function GroupsContent() {
               >
                 <ArrowPathIcon className="h-5 w-5" aria-hidden="true" />
               </Button>
-              <Button onClick={() => setForm(true)}>
+              <Button
+                {...tourAnchor(TOUR_ANCHORS.sharedNewGroup)}
+                onClick={() => setForm(true)}
+              >
                 <PlusIcon className="mr-2 h-5 w-5" aria-hidden="true" />
                 {t("newGroup")}
               </Button>
@@ -171,53 +177,60 @@ function GroupsContent() {
             />
           </div>
           <SharedError error={groups.error} retry={groups.reload} />
-          {groups.isLoading && !groups.data ? (
-            <LoadingSpinner />
-          ) : groups.data &&
-            !groups.error &&
-            !groups.isLoading &&
-            !visible?.length ? (
-            <Card>
-              <EmptyState
-                icon={<UsersIcon />}
-                title={t("emptyGroups")}
-                description={t("emptyGroupsHelp")}
-                action={
-                  <Button onClick={() => setForm(true)}>{t("newGroup")}</Button>
-                }
-              />
-            </Card>
-          ) : groups.data ? (
-            <>
-              <SharedGroupTable
-                toolbar={
-                  <ListTopToolbar
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={visible?.length ?? 0}
-                    pageSize={25}
-                    onPageChange={setPage}
-                    itemName={t("groups")}
-                  />
-                }
-                groups={(visible ?? []).slice(
-                  (currentPage - 1) * 25,
-                  currentPage * 25,
-                )}
-                fresh={!groups.isLoading && !groups.error}
-                onOpen={(id) => router.push(`/shared-expenses/${id}`)}
-              />
-              <ListBottomPager
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={visible?.length ?? 0}
-                pageSize={25}
-                onPageChange={setPage}
-                itemName={t("groups")}
-                totalLabel={t("groupCount", { count: visible?.length ?? 0 })}
-              />
-            </>
-          ) : null}
+          <div
+            {...(!groups.isLoading && tourAnchor(TOUR_ANCHORS.sharedGroupList))}
+            className="space-y-4"
+          >
+            {groups.isLoading && !groups.data ? (
+              <LoadingSpinner />
+            ) : groups.data &&
+              !groups.error &&
+              !groups.isLoading &&
+              !visible?.length ? (
+              <Card>
+                <EmptyState
+                  icon={<UsersIcon />}
+                  title={t("emptyGroups")}
+                  description={t("emptyGroupsHelp")}
+                  action={
+                    <Button onClick={() => setForm(true)}>
+                      {t("newGroup")}
+                    </Button>
+                  }
+                />
+              </Card>
+            ) : groups.data ? (
+              <>
+                <SharedGroupTable
+                  toolbar={
+                    <ListTopToolbar
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={visible?.length ?? 0}
+                      pageSize={25}
+                      onPageChange={setPage}
+                      itemName={t("groups")}
+                    />
+                  }
+                  groups={(visible ?? []).slice(
+                    (currentPage - 1) * 25,
+                    currentPage * 25,
+                  )}
+                  fresh={!groups.isLoading && !groups.error}
+                  onOpen={(id) => router.push(`/shared-expenses/${id}`)}
+                />
+                <ListBottomPager
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={visible?.length ?? 0}
+                  pageSize={25}
+                  onPageChange={setPage}
+                  itemName={t("groups")}
+                  totalLabel={t("groupCount", { count: visible?.length ?? 0 })}
+                />
+              </>
+            ) : null}
+          </div>
         </TabPanel>
         {form && (
           <SharedGroupForm

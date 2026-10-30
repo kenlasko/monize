@@ -77,6 +77,7 @@ const TOOLS_TOUR_ANCHORS: Record<string, { 'data-tour-id': string }> = {
   '/rules': tourAnchor(TOUR_ANCHORS.navRules),
   '/warranties': tourAnchor(TOUR_ANCHORS.navWarranties),
   '/taxes': tourAnchor(TOUR_ANCHORS.navTaxes),
+  '/shared-expenses': tourAnchor(TOUR_ANCHORS.navSharedExpenses),
 };
 
 export function AppHeader() {

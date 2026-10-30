@@ -110,3 +110,26 @@ history entry as such. Extract the support-backup table exclusions without
 changing their members to meet the existing 800-line module guard. The two
 calendar/expiry fixture failures are already fixed by the merged main. No scanner
 exception, test baseline, coverage threshold or workflow is changed.
+
+## Navigation and walkthrough follow-up
+
+Ken's 30 October follow-up places Shared expenses only in Tools, so remove the
+dashboard greeting shortcut and retain the registered desktop/mobile navigation.
+WMP also requests a guided tour. Register a 1.20 walkthrough in the existing
+tour engine: discover Tools and New Group, choose a group, and explain purchases,
+splits, balances and repayments. Its data-only definition uses the existing
+engine, which saves tour progress. Creating or changing a group or financial
+record remains the user's explicit form action.
+Offer it only in the reader's own view. On phones omit the desktop menu anchor.
+Anchor group selection to the loaded list. Reuse the existing tooltip placement
+resolver for the phone sheet: flip it above a low anchor so it does not cover a
+short page's last row, which scrolling alone cannot uncover.
+If the reader skips choosing a group, the existing dynamic-route reachability
+mechanism must skip those detail steps instead of waiting on an invented group.
+
+Test the dashboard regression against the original shortcut, desktop and phone
+tour completion, skipping an unavailable group, replay after reload and no new group
+or expense from the walkthrough. Translate the final copy into every locale.
+Use the current documentation capture tools for the changed screen and tour.
+The existing-transaction handoff remains the previously agreed separate phase;
+this walkthrough must not offer the deferred private-finance actions.

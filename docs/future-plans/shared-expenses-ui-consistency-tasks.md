@@ -56,8 +56,8 @@ PR/issue thread. Maintainer scope approval, CI and human acceptance remain open.
 - [x] Move review state out of the global banner; preserve explicit review safety.
 - [x] Verify focused regressions, lint/types/locales and native DB acceptance.
 - [x] Finish browser acceptance.
-- [ ] Confirm the frontend production build in CI.
-- [ ] Publish the normal branch update and new evidence replies.
+- [x] Confirm the frontend production build in CI.
+- [x] Publish the normal branch update and new evidence replies.
 
 ### 30 October verification ledger
 
@@ -108,3 +108,64 @@ All local work used bounded native processes, one heavy command at a time,
 with a host-memory reserve and no Docker or local coverage run. The frontend
 production build, updated-head CI and formal maintainer acceptance remain
 separate gates. No test, guard, baseline or coverage threshold was weakened.
+
+## 30 October navigation and walkthrough follow-up
+
+The published maintainer merge `794b3cb4` passed the full CI pipeline, including
+the default frontend production build and bundle check, all four E2E shards,
+backend integration tests, Lighthouse and the PR checklist. Discussion #1889
+now carries `approved-to-build`. This closes the earlier build/approval blockers;
+each subsequent head still needs its own CI result.
+
+Ken's additional review requests Tools-only navigation. WMP also requests a
+guided tour for 1.20. The dashboard shortcut is removed, with a regression that
+failed on the original component. The new tour reuses the registered tour
+engine, offers a phone path and an empty-group exit, and preserves progress for
+replay from Settings. It creates no group or financial record: the definition
+contains navigation and explanations, and the existing engine saves tour
+progress. Existing-transaction handoff remains a separate phase.
+
+Ken's published history is retained. A normal merge through main
+`3849eab26a59ac7f9c665b23c75ecf5647e601bb` resolved one adjacent-import conflict
+by retaining both shared-expense and reporting-currency imports. There was no
+rebase or forced update.
+
+Focused checks passed 639 cases in 22 files, including the merged transaction
+form. Browser review exposed the phone sheet covering a group row; anchoring the
+list alone was insufficient on a short page. Reusing `computeTooltipPosition`
+for the phone sheet lets it flip above a low anchor. Another 104 focused cases
+passed, including the sheet, anchor registry and group overview.
+
+All three new Chromium journeys pass with one worker, no retries and the
+repository's unchanged timeouts: desktop completion, phone completion and
+skipping selection with no group. Completion is checked after navigation reload;
+group entries, financial revision and personal accounts are checked through the
+API. The initial desktop failure included a 9.4-second development-route response;
+an authenticated browser warmup now compiles client routes before the checks.
+The local browser uses the development frontend and the existing synthetic
+fixture database with RLS off. The merged backend was rebuilt successfully.
+
+The user guide and its reproducible captures live in
+`website/docs/shared-expenses.md` and `e2e/docs-screenshots/shared-expenses.spec.ts`.
+All 18 full non-English catalogs translate the tour and its owner-view guidance;
+regional English catalogs inherit the base, and the pseudo-locale is generated.
+The final incremental frontend gate passed lint, types, locale validation and
+862 test files / 16,011 cases. `test:changed` used merged baseline `493e980a8`
+and included all 37 guard files. Its single broad run took 1,904 seconds under
+the retained resource limits, with at least 4,690 MiB of host memory available.
+Type checking first caught an unsupported Testing Library option in the new
+dashboard test; removing that option retained literal accessible-name matching,
+and the corrected type check and the full changed suite passed.
+
+Both backend instruction/documentation guard suites passed all 26 cases.
+Repository environment and documentation-manifest checks passed. All three
+documentation captures passed; the tour capture was retaken with the standard
+notification-prompt dismissal helper so unrelated browser-permission guidance
+does not obscure the illustration. Documentation generation completed; its
+pending-picture notices concern pre-existing pages outside this change.
+
+The default frontend production build remains an updated-head CI check rather
+than another local attempt at exceeding the memory cap. Task-owned app, browser
+and database processes were stopped. No Docker, coverage run, guard relaxation
+or threshold change was used. Publication and new-head CI are recorded in the
+PR and issue replies.

@@ -78,6 +78,8 @@ const SharedActivity = dynamic(() =>
   ),
 );
 import { SharedGroupSummary } from "@/components/shared-expenses/SharedGroupSummary";
+import { TOUR_ANCHORS, tourAnchor } from "@/lib/tours/anchors";
+import { docsUrl } from "@/lib/docs-links";
 import { SharedEntryTable } from "@/components/shared-expenses/SharedEntryTable";
 import { SharedFilters } from "@/components/shared-expenses/SharedFilters";
 import { Tabs, TabPanel } from "@/components/ui/Tabs";
@@ -276,6 +278,7 @@ function GroupContent({ groupId }: { groupId: string }) {
           <>
             <PageHeader
               title={group.name}
+              helpUrl={docsUrl("sharedExpenses")}
               subtitle={group.description ?? undefined}
               titleAdornment={
                 <EntitySwitcher
@@ -291,7 +294,10 @@ function GroupContent({ groupId }: { groupId: string }) {
                 />
               }
               actions={
-                <div className="flex flex-wrap items-stretch gap-2">
+                <div
+                  {...tourAnchor(TOUR_ANCHORS.sharedGroupActions)}
+                  className="flex flex-wrap items-stretch gap-2"
+                >
                   <Button
                     variant="outline"
                     onClick={changed}
@@ -348,6 +354,7 @@ function GroupContent({ groupId }: { groupId: string }) {
               </div>
             )}
             <Tabs
+              anchorProps={tourAnchor(TOUR_ANCHORS.sharedGroupTabs)}
               idPrefix="shared-group"
               value={tab}
               onChange={(value) => {

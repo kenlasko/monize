@@ -131,3 +131,5 @@ Run the focused test for what you changed while developing, then:
 Deleting or renaming a control an E2E spec drives means grepping `e2e/` for its accessible name in the same commit -- `npm run test` never loads that suite.
 
 Shared expense review stays on its explicit page; activity uses Notifications, as specified in `docs/frontend/screens-and-dialogs.md`.
+
+The dashboard greeting offers Customize; feature navigation belongs in the app menus, as specified in `docs/frontend/screens-and-dialogs.md`.
