@@ -169,3 +169,34 @@ than another local attempt at exceeding the memory cap. Task-owned app, browser
 and database processes were stopped. No Docker, coverage run, guard relaxation
 or threshold change was used. Publication and new-head CI are recorded in the
 PR and issue replies.
+
+### Documentation refresh on the latest main (31 October local time)
+
+Main advanced to `4e0b85fed` while the frontend gate was running. Its changes
+refresh the documentation, add three help links, and introduce paired dark/light
+captures. The normal merge preserves the shared-expenses help link and the new
+Rules/Taxes links; conflicted HTML is regenerated from the merged Markdown.
+No financial implementation changed in this synchronization.
+
+The four pictures now run through `openDocsSession` and `docShot`: dashboard
+header, balances, expense dialog and tour. The header capture moved to the
+dashboard page's spec, retaining its no-shortcut assertion. Each picture has
+a dark and light result. The initial capture command had an over-anchored grep
+and discovered no tests; correcting the command discovered the intended batch.
+The new dialog capture initially omitted choosing Expense from the Add Expense
+menu. After adding that real UI step, both dialog captures and both tour captures
+passed in the focused completion run, together with the showcase seed. Both
+themes of the header and balances had passed in the preceding run.
+
+The pictures were inspected visually. Lossless recompression was attempted with
+decoded-pixel equality checked; the original PNGs were already as small and
+were retained. Native browser capture retained the existing resource caps and
+more than 4,000 MiB of host memory; all task-owned services stopped afterwards.
+The functional desktop/phone/no-group journeys and 16,011-case gate above
+belong to `186959466`; this documentation-only synchronization uses focused
+verification rather than repeating that broad suite.
+
+Focused synchronization verification passed frontend lint and types, all 58
+cases in six documentation/link/E2E-convention/Rules/Taxes test files, the two
+backend instruction/documentation guard suites (26 cases), documentation
+generation, and both repository environment/documentation checks.

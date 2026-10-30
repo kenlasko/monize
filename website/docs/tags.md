@@ -16,15 +16,17 @@ Tags are user-defined labels with an optional colour and icon. They complement c
 | `Tax Deductible` | Flag deductible expenses across multiple categories |
 | `Reimbursable` | Mark work expenses to be submitted for reimbursement |
 | `Home Renovation` | Group project costs across hardware, labour, permits |
-| `Wedding` | Track all wedding-related expenses |
+| `trip:Lisbon` | A [key:value tag](#keyvalue-tags): one value of the `trip` key |
 
 Each tag has:
 
 | Property | Description |
 |----------|-------------|
 | **Name** | The tag label (unique per user, case-insensitive) |
-| **Colour** | Optional hex colour for visual identification in lists and filters |
-| **Icon** | Optional icon (from the Heroicons library) |
+| **Colour** | Optional colour for visual identification in lists and filters |
+| **Icon** | Optional icon shown beside the name |
+
+Tags can be put on transactions, on the lines of a split transaction, on scheduled transactions and on securities.
 
 ---
 
@@ -32,31 +34,32 @@ Each tag has:
 
 Navigate to **Tools > Tags** to access the tag management page.
 
-![Tags Page](images/tags-page.png)
-<!-- Screenshot: The tags management page showing the list of tags with colours, icons, and transaction counts -->
+![The Tags page: counts of tags with a colour and an icon above the list, each tag with its colour, icon and number of transactions](images/tags-page.png)
+
+Three cards at the top count your **Total Tags**, the **Tags with Colour** and the **Tags with Icon**. **Search tags...** narrows the list by name. The list shows each tag's **Name** with its colour, its **Icon** and the number of **Transactions** that carry it; click a column header to sort by it. Click a tag's name to see its transactions on the Transactions page; click anywhere else on the row to edit it. **Edit** and **Delete** are at the end of each row (on a phone, press and hold the row, or right-click it).
 
 ### Creating a Tag
 
-1. Click **Add Tag**
+1. Click **+ New Tag**
 2. Fill in the tag form:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| **Name** | Yes | Tag label (1-100 characters, must be unique) |
-| **Colour** | No | Pick from the colour palette or leave unset |
+| **Tag Name** | Yes | Tag label (1-100 characters, must be unique) |
+| **Colour** | No | **Red**, **Orange**, **Yellow**, **Green**, **Teal**, **Blue**, **Purple**, **Pink** or **Grey**, or **No colour** |
 | **Icon** | No | Choose an icon for visual identification |
 
-3. Click **Save**
+3. Click **Create Tag**
+
+![The New Tag dialog with a key:value name, a colour and an icon chosen](images/tags-form.png)
 
 ### Editing a Tag
 
-Click the edit button next to any tag to modify its name, colour, or icon. Renaming a tag updates it on all associated transactions.
+Click **Edit** on a tag's row (or the row itself) to modify its name, colour, or icon, then click **Update Tag**. Renaming a tag updates it on all associated transactions.
 
 ### Deleting a Tag
 
-Click the delete button on a tag to remove it. The tag is removed from all transactions that reference it. The transactions themselves are not affected -- only the tag association is removed.
-
-The tag list shows a **transaction count** next to each tag so you can see how many transactions use it before deciding to delete.
+Click **Delete** on a tag's row and confirm. When the tag is in use, the confirmation says on how many transactions; the tag is removed from them, and the transactions themselves are not otherwise affected.
 
 ---
 
@@ -65,10 +68,10 @@ The tag list shows a **transaction count** next to each tag so you can see how m
 ### Adding Tags to a Transaction
 
 1. Open the transaction form (create new or edit existing)
-2. In the **Tags** field, select one or more tags from the dropdown
+2. In the **Tags** field, select one or more tags from the dropdown. The tags you used most recently are listed first.
 3. Save the transaction
 
-Tags appear as coloured chips in the transaction form, showing the tag name and its colour.
+Tags appear as coloured chips in the transaction form, showing the tag name and its colour, and as chips on the transaction's row in the register.
 
 ### Tags on Split Transactions
 
@@ -82,9 +85,15 @@ When a transaction is split across multiple categories, each split row can have 
 
 If you need a new tag while entering a transaction, you can create one without leaving the form:
 
-1. In the Tags dropdown, click **Create Tag**
+1. In the Tags dropdown, click **Create new tag...**
 2. Enter the tag name, optional colour, and icon
 3. Save the tag -- it is immediately available and selected
+
+The same is possible in the scheduled transaction form and the security form.
+
+### Tagging Many Transactions at Once
+
+Select several transactions on the Transactions page and use the bulk update to give all of them the same tags in one step. The bulk update replaces the tags the transactions had; see [Transactions](transactions.md).
 
 ---
 
@@ -100,6 +109,21 @@ This is useful for tagging recurring transactions -- for example, tagging a mont
 
 ---
 
+## Tags and Rules
+
+[Rules](rules.md) (**Tools > Rules**) fill in tags, categories and payees automatically when a transaction is created or imported. A rule has three parts: **When** it runs (a transaction is created, imported, or both), **If** the transaction matches its conditions (payee, amount, account, day of the month, description, tags and more), and **Then** what it changes.
+
+Tags take part on both sides of a rule:
+
+- **Add tags** and **Remove tags** are actions: for example, a rule that adds `Coffee run` to every transaction with Tim Hortons or Starbucks.
+- **Tags** is a condition, with **has any of**, **has all of** and **has none of**: for example, a rule that sets a category on every transaction tagged `Reimbursable`.
+
+![A rule in the rule editor that tags coffee-shop purchases: when a transaction is created or imported, if its payee is Tim Hortons or Starbucks, set the category and add the Coffee run tag](images/tags-rule-editor.png)
+
+Other actions set the category, the payee or the description, or ask for an AI review; a rule never changes an amount or moves money. The editor's **Test rule** lists the existing transactions the conditions match before you save, and **Run on existing transactions** applies a saved rule to the transactions you already have, with an undo. Rules run in the order of the list, and **Stop processing other rules** keeps the later ones from touching a transaction this rule matched. A rule that uses a tag you later delete is marked invalid until you repair it.
+
+---
+
 ## KEY:VALUE Tags
 
 Tags understand a **`key:value`** naming convention. Name a tag `country:poland`, `strategy:dividend`, or `account-owner:sam` and Monize treats the part before the colon as a **key** and the part after as its **value**. There is no migration and no separate data model -- it is simply a convention parsed from the tag name, so any tag you name this way works immediately, and tags without a colon behave exactly as before.
@@ -112,22 +136,30 @@ On the [Investments](investments.md#asset-allocation) page, the **Asset Allocati
 
 ### Filtering Transactions by Tag Key
 
-The transactions filter panel can match on a tag **key** rather than a specific tag. For a chosen key you can filter to transactions where the key:
+The transactions filter panel can match on a tag **key** rather than a specific tag. Choose the **Tag key** (or **Any (no key filter)**), then a **Condition**:
 
 | Condition | Matches |
 |-----------|---------|
-| **Has value** | Any tag with that key, whatever its value |
-| **No value** | Transactions with no tag using that key |
-| **Contains** | The key's value contains the text you type |
-| **Doesn't contain** | The key's value does not contain the text you type |
+| **Has a value** | Any tag with that key, whatever its value |
+| **Has no value** | Transactions with no tag using that key |
+| **Value contains** | The key's value contains the text you type |
+| **Value does not contain** | The key's value does not contain the text you type |
 
 Key filters cover split rows too, so a split line tagged `project:reno` is found the same way a whole transaction would be.
+
+### Breaking Reports Down by Key
+
+**Income vs Expenses** and **Cash Flow** offer **Break down by tag key**: pick a key and the report shows a figure for each of its values, plus **Untagged**. With **Include tagged transfers**, transfers that carry the key (for example money drawn from a savings account for a trip) appear as their own figure, never counted as income or expenses. A row tagged with more than one value under the key counts toward each of them, so per-value shares can add up to more than 100%.
+
+On a category's [detail page](categories-and-payees.md#category-detail-page), the **Tag Breakdown** panel splits the category's spending by the values of a key you choose.
 
 ---
 
 ## Filtering by Tags
 
 Tags integrate with the transaction filter panel, letting you find all transactions with specific tags.
+
+![The Transactions page filtered to one tag, with the tag's chip above the list](images/tags-filtered-transactions.png)
 
 ### Filtering in the Transaction List
 
@@ -137,10 +169,12 @@ Tags integrate with the transaction filter panel, letting you find all transacti
 
 Tag filters work alongside other filters (accounts, categories, payees, date range, search). Active tag filters appear as coloured chips above the transaction list for easy visibility.
 
+The search box understands tags too: `tag:lisbon` finds transactions with a tag whose name contains "lisbon", and `has:tag` finds the transactions that carry any tag.
+
 ### Quick Tag Filtering
 
 On desktop, tags displayed on transaction rows are clickable. Click a tag directly in the transaction list to instantly filter the list to all transactions with that tag. On mobile, tap a transaction and select the tag from the action sheet to apply the same filter.
 
 ### Tags in Reports
 
-Tags can be used as a filter dimension in reports. When running a spending or income report, you can filter by tags to see totals for specific tag groups -- for example, total spending tagged "Vacation 2026" broken down by category.
+Tags can be used in [custom reports](reports.md#custom-report-builder): filter a report to transactions with chosen tags, group it by **Tag**, or show a **Tag** column -- for example, total spending tagged "Vacation 2026" broken down by category. Several built-in reports, among them Spending by Category, Income by Source and Budget vs Actual, can also count tagged transfers as available funds.

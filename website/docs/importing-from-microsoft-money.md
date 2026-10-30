@@ -5,7 +5,7 @@ This is the complete guide to migrating your financial data from Microsoft Money
 There are two ways to do it:
 
 1. **Import your `.mny` file directly** -- Monize reads the Microsoft Money file itself. This is the recommended method and the one you should use unless something prevents it.
-2. **Export QIF files from Microsoft Money and import those** -- the older, manual method. Use it only if the direct import cannot read your file.
+2. **Export QIF files from Microsoft Money and import those** -- the older, manual method. Use it only if the direct import refuses your file.
 
 For importing from other sources using CSV or OFX/QFX files, see [Importing Transactions](importing-transactions.md).
 
@@ -30,9 +30,9 @@ The older route is to export one QIF file per account from Microsoft Money and i
 | **Scheduled bills** | Imported (you choose which) | Not exported -- must be recreated by hand |
 | **Loan payments** | Principal leg wired to the loan account; funding account, payment amount and interest category filled in where unambiguous | Detected from category names, with confirmation |
 | **Verification** | Every account's balance is reconciled against the balance computed from the Money file | Manual comparison against Money |
-| **Merging into existing data** | Not supported in v1 -- import into an empty profile | Possible, but duplicates are your problem |
+| **Merging into existing data** | Not supported in v1 -- import into an empty profile. The same file is refused a second time | Possible, but duplicates are your problem |
 
-**Use the direct `.mny` import.** Fall back to QIF only if your file cannot be read -- in practice that means Money 97 and 98 files you cannot convert (see [Before You Start](#before-you-start)).
+**Use the direct `.mny` import.** It reads every Money version from Money 97 to Money Plus Sunset. Fall back to QIF only if the direct import cannot read your file -- for example a damaged file that Money itself can still open and export.
 
 ---
 
@@ -46,11 +46,18 @@ If you have been trying Monize out and want to start over from Money, the review
 
 **Work from a copy.** Monize never writes to the file, but a spare copy of three decades of finances costs nothing.
 
-**Money 97 and 98 files are not supported.** Those predate the format Monize reads. Open the file once in the free Money Plus Sunset edition and save it; that converts it, and the result imports normally. Monize detects these files and says so rather than failing obscurely.
+**Money 97, 98 and 99 files import directly**, with no conversion step, recurring bills included. A few things in them cannot come across exactly:
+
+- A scheduled payment Money recorded with no account to pay from (Money 99 can leave a scheduled loan payment that way) cannot become a bill and is listed as skipped.
+- An investment account's "Other income" and "Other expenses" arrive as ordinary categorized transactions in its cash account, and employee stock option grants, vesting and expiry are not imported.
+- A CD, which Money 99 buys by amount, arrives as units worth 1 each.
+- Money 99 keeps only the latest exchange rate for each currency, so a trade of a security quoted in another currency, made before that rate's date, is converted at the market exchange rate for its date instead, and listed so you can check it.
 
 **`.mbf` backup archives are not supported.** Restore the backup in Money first and import the resulting `.mny`.
 
 **Check the file size limit if you self-host.** The default ceiling is 300 MB, set by `MNY_IMPORT_LIMIT_MB`. See [Troubleshooting the .mny Import](#troubleshooting-the-mny-import) if a large upload fails.
+
+**Read the Money file once.** Monize refuses to import a file whose exact bytes it already imported into your account, so a second click cannot double your data. To import the same file again, use **Start fresh**.
 
 ### Step by Step
 
@@ -60,41 +67,53 @@ Navigate to **Tools > Import Transactions** to begin.
 
 Select or drag your `.mny` file onto the upload area. Import Microsoft Money files **one at a time** -- a `.mny` file holds a whole profile, so there is nothing to bulk-select. Monize reads the file on the server and shows a preview. Nothing is written yet.
 
-<!-- Screenshot: The import upload step with a .mny file selected, showing the accepted formats line "QIF, OFX, QFX, CSV, or Microsoft Money (.mny)" -->
+![Import wizard: upload your files](images/import-upload-step.png)
+
+If the file cannot be opened, the reason appears in red on the upload step (see [Troubleshooting the .mny Import](#troubleshooting-the-mny-import)).
 
 **Step 2: Enter the password, if asked**
 
-Every Money file is encrypted, but most are encrypted with a blank password and open without asking. The prompt -- *"This Money file needs a password"* -- appears only when a real password is set. The password is used once to read the file and is never stored. A wrong password says so specifically, so you can tell "this needs a password" apart from "that one was wrong". Money passwords are case sensitive.
+Every Money file is encrypted, but most are encrypted with a blank password and open without asking. The prompt -- *"This Money file needs a password"* -- appears only when a real password is set. Enter it under **Money file password** and click **Open file**. The password is used once to read the file and is never stored. A wrong password says so specifically, so you can tell "this needs a password" apart from "that one was wrong". Money passwords are case sensitive.
 
-<!-- Screenshot: The Money file password dialog -->
+![The Money file password prompt](images/import-mny-password.png)
 
 **Step 3: Review what will be imported**
 
 This step is worth the minute it takes.
 
-<!-- Screenshot: The Money review step showing the file summary line, the counts row, and the account table with balances -->
+![Review your Microsoft Money file: the file summary and the counts](images/import-mny-review.png)
 
-- The file summary names the detected Money format (Money 2001, Money 2002, or Money Plus / Sunset) and the base currency.
-- **Every account** is listed with its type, currency, transaction count, opening balance and the **final balance computed from the Money file itself**. Compare a few against Money -- that same number is what the verification report reconciles against afterwards.
-- **Untick any account you do not want.** Closed accounts are included by default and stay closed; they still hold history worth keeping.
-- **Override an account's currency** if Money had it wrong.
-- **Counts** for transactions, transfers, payees, categories, securities, investment transactions, prices, exchange rates and bills are each shown against the total in the file, so "40 of 500 payees" is visible before rather than after.
-- **Scheduled bills** appear as a checkbox list. Money keeps one row per occurrence, so a long history holds thousands of rows for a handful of real bills; Monize detects the live series and pre-ticks those. An unticked bill is simply not created. Bill series missing a template or a usable date are reported as skipped.
-- **Notes about this file** collects anything ambiguous -- securities sharing a symbol, an action code Money did not document, a repeat interval with no exact equivalent. Worth reading; none of it stops the import.
+- The file summary names the detected Money format (Money 97-99, Money 2001, Money 2002, or Money Plus / Sunset) and the base currency. If the Money version lacks a table Monize reads (Money 2001 has no scheduled bills, for example), a note says what is skipped because of it.
+- **Counts** for transactions (with the number of transfers linked), payees, categories, tags from classifications, accounts, securities, investment transactions (with share transfers), price history, exchange rates and scheduled bills are each shown against the total in the file, so "40 of 500 payees" is visible before rather than after.
+- **Every account** is listed with its type, currency, transaction count, opening balance and the **final balance computed from the Money file itself**. Compare a few against Money -- that same number is what the verification report reconciles against afterwards. A Money investment account appears as its two Monize halves, " - Cash" and " - Brokerage". An account Monize had to rename (two accounts sharing a name) shows its name in Money underneath, and closed, favourite and excluded-from-net-worth accounts are marked.
+- **Untick any account you do not want**, or use **Select all** / **Select none**. Closed accounts are included by default and stay closed; they still hold history worth keeping.
+- **Override an account's currency** with its dropdown if Money had it wrong.
+
+![The accounts in the Money file, with the balance computed from it](images/import-mny-accounts.png)
+
+- **Scheduled bills** appear as a checkbox list with each bill's account, frequency, next due date and amount, and whether it is a transfer or an investment. Money keeps one row per occurrence, so a long history holds thousands of rows for a handful of real bills; Monize detects the live series and pre-ticks those. An unticked bill is simply not created. A frequency Monize cannot express exactly is marked as the closest one, and bill series missing a template or a usable date are reported as skipped.
+
+![The scheduled bills found in the Money file](images/import-mny-bills.png)
+
+- **Notes about this file** collects anything ambiguous -- securities sharing a symbol, an action code Money did not document, a repeat interval with no exact equivalent. Where a note is about particular transactions, **Show the *n* transactions** lists them with their date, account, payee and amount, so you can find them in Money. Worth reading; none of it stops the import.
+
+![Notes about this file](images/import-mny-notes.png)
 
 **Step 4: Start the import**
 
-Click **Start import**. It runs on the server, so you can leave the page and come back. A large file takes a few minutes. The progress list shows which phase is running: preparing; accounts, categories and payees; transactions; investments; scheduled bills; prices and exchange rates; recalculating balances; verifying.
+Choose the [import options](#import-options) under the accounts, then click **Start import**. It runs on the server, so you can leave the page and come back. A large file takes a few minutes. The progress list shows which phase is running, with a row counter: preparing; accounts, categories and payees; transactions; investments; scheduled bills; prices and exchange rates; recalculating balances; verifying.
 
-<!-- Screenshot: The Money import progress panel showing the phase list and row counter -->
+![Importing your Money file: the progress of each phase](images/import-mny-progress.png)
+
+Only one import can run at a time for your account. If the server restarts mid-import, nothing is left half-written: **Try again** runs it again from the file you already uploaded, and **Start over** goes back to the upload step.
 
 **Step 5: Check the verification report**
 
-Every account is listed with the balance computed from your Money file, the balance it ended up with in Monize, and the difference. Investment accounts additionally compare share counts against Money's own open tax lots -- Money reconciles against those lots itself, so they are the number to trust.
+When the import finishes, the **Balance verification** table lists every account with the balance computed from your Money file, the balance it ended up with in Monize, and the difference. **Holdings verification** compares, for every investment account, the shares Monize now holds against Money's own open tax lots -- Money reconciles against those lots itself, so they are the number to trust. The counts above the tables say what was created.
 
-A green run says every account reconciles; anything that does not is listed with the delta so you can look at it directly. The report downloads as JSON with **Download report** if you want to keep it.
+A green run says every account reconciles; anything that does not is listed with the difference so you can look at it directly. **Notes about this import** repeats anything the import had to decide. The report downloads as JSON with **Download report** if you want to keep it; **Done** returns to the upload step.
 
-<!-- Screenshot: The Money import complete step showing the reconciliation table and the counts summary -->
+![Import finished: the balance verification report](images/import-mny-verification.png)
 
 ### Import Options
 
@@ -106,18 +125,25 @@ Set on the review step, before you start the import.
 | **Only import categories that are used** | On | Money seeds a full category tree whether you use it or not |
 | **Import closed accounts** | On | Closed accounts keep their history and are created closed |
 | **Import price history** | On | Money's own record of what each security was worth, day by day. Turn it off if you would rather start from live quotes |
-| **Import exchange rates** | On | Historical rates, so past foreign-currency transactions convert the way Money had them |
-| **Start fresh** | Off | Removes your existing Monize data before importing. Typed confirmation and password required |
+| **Import exchange rates** | On | Historical rates between the currencies in your file, used only for dates Monize has no rate for. Rates already stored are never replaced |
+| **Start fresh: remove my existing Monize data first** | Off | Removes your existing Monize data before importing. Typed confirmation and password required |
+
+![Import options](images/import-mny-options.png)
+
+With **Start fresh** ticked, **Start import** first opens **Remove Existing Data**. It lists what is removed -- every transaction and split; every scheduled transaction; every security, price, holding and investment transaction; every account, category and payee; every budget, custom report, tag and import mapping -- and warns that this cannot be undone, even if the import then fails. Type `DELETE` and your **Password** (an account that signs in through single sign-on confirms with its identity provider instead), then click **Delete my data and import**.
+
+![Remove Existing Data: the confirmation before Start fresh](images/import-mny-start-fresh.png)
 
 ### What Is Imported
 
-- **Accounts** of every type, with opening balances, currencies, and closed and favourite flags. A Money investment account becomes Monize's linked cash and brokerage pair, matching how Money itself stores them.
+- **Accounts** of every type, with opening balances, currencies, and closed and favourite flags. A Money investment account becomes Monize's linked cash and brokerage pair, matching how Money itself stores them. Money's watch accounts ("Investments to Watch") are created excluded from net worth, since they track quotes rather than money you hold.
 - **Transactions**, including splits, reference numbers, memos, and the cleared/reconciled status of each. Voided transactions are imported as voided rather than dropped.
 - **Transfers**, using Money's own record of which two rows are the two sides. Nothing is matched by guesswork.
-- **Loan and mortgage payments**, with the principal leg wired to the loan account as a transfer split. Where the payments make it unambiguous, the loan's funding account, payment amount and interest category are filled in too.
-- **Securities and investment transactions**: buys, sells, dividends, reinvestments, share transfers between accounts, and stock splits.
-- **Price history and exchange rates**, both additive -- importing twice, or importing on top of prices a quote provider already fetched, converges rather than duplicating.
+- **Loan and mortgage payments**, with the principal leg wired to the loan account as a transfer split. Where the payments make it unambiguous, the loan's funding account, payment amount and interest category are filled in too. Money's **Pmt Num** arrives in the loan register's reference number column.
+- **Securities and investment transactions**: buys, sells, dividends, reinvestments, share transfers between accounts, and stock splits. Each trade puts exactly one row in one cash register, wherever Money put it: the account's own cash side for a trade paid out of it, the paying account for one funded from elsewhere.
+- **Price history and exchange rates**, both additive -- importing on top of prices a quote provider already fetched converges rather than duplicating. Exchange rates are shared by everyone on your Monize server, so a rate from your file only fills a date Monize has no rate for; it never replaces one already stored.
 - **Scheduled bills** you ticked, created active and set **not** to post automatically, so nothing lands in your accounts without you.
+- **Classifications**, as tags. Money's two user-named classifications ("Classification 1" and "2", which you may have called *Properties* or *Projects*) become tags named `Classification:Item`, for example `Properties:20 Spring Apartment`. Every transaction, split and scheduled bill that carried the item in Money carries the tag in Monize. Only items a transaction actually uses are created.
 
 ### What Is Not Imported
 
@@ -125,13 +151,16 @@ Set on the review step, before you start the import.
 |---|---|
 | **Budgets** | Money's budget tables have no clean equivalent in Monize's. Recreate with [Budgets](budgets.md) -- Monize can auto-generate budgets from your imported spending history |
 | **Savings goals** | No equivalent entity |
-| **Classifications** | Anything beyond ordinary categories |
 | **Attachments** | Files embedded in the Money file |
 | **Categories deeper than two levels** | Flattened into `Parent:Child` names; Monize's category tree is two levels deep |
 
 ### Known Limitations
 
-**No merge, no de-duplication.** Version 1 targets a fresh profile. Importing the same file twice creates the transactions twice.
+**No merge, no de-duplication.** Version 1 targets a fresh profile. Monize refuses to import a file whose exact bytes it already imported into your account, and names the earlier import; to import it again, use **Start fresh**. A different save of the same Money file (whose bytes differ) is not recognised as the same file, and importing it creates the transactions a second time.
+
+**A failure after the data was saved says so.** If an import fails after its records were written (a final check, for example), the wizard tells you the records are in your account and does not offer to try again: importing the same file again would duplicate them. Check your accounts before importing anything else.
+
+**Securities quoted in another currency than their account.** Money records a trade in the account's currency. Monize stores the trade's price and total in the security's own currency, converted with the exchange rate your file holds for that date, and keeps the cash movement in the account's currency. If your file has no rate for that pair within 45 days before the trade, the market rate for the date is used, or failing that the trade is imported unconverted; either way the report lists it, so you can check the price.
 
 **Foreign-currency cost basis.** Money stores a foreign holding's cost basis converted to your base currency at the historical rate, not in the security's own currency. Monize imports what the file says, so a holding bought in a currency other than your base one can show a cost basis that differs from what you paid in the original currency. The verification report flags these, and the share counts themselves are unaffected.
 
@@ -144,7 +173,7 @@ Set on the review step, before you start the import.
 The verification report does most of the checking for you, so the post-import work is short:
 
 1. **Read the report.** Any account or holding that does not reconcile is named with the difference.
-2. **Review auto-created securities** in **Tools > Securities**. Securities with a generated placeholder symbol are excluded from price updates until you give them a real symbol and exchange.
+2. **Review auto-created securities** in **Tools > Securities**. A security that had no symbol in Money gets a generated placeholder symbol and is excluded from price updates until you give it a real symbol and exchange.
 3. **Recreate budgets and savings goals** -- see [Budgets](budgets.md).
 4. **Check your scheduled bills** in [Bills and Deposits](bills-and-deposits.md). Imported bills are active but set not to post automatically; switch on auto-posting for the ones you want it on.
 5. **Check net worth** on the Dashboard against your Money net worth report.
@@ -157,11 +186,13 @@ Nothing is written unless the whole import succeeds, so a failure leaves your da
 
 | What you see | What it means |
 |---|---|
-| "That file was written by Money 97 or 98" | Convert it through Money Plus Sunset first (see [Before You Start](#before-you-start)) |
+| "That file was written by a version of Microsoft Money that Monize cannot read" | Open it once in the free Money Plus Sunset edition, save it, and import the result |
 | "That file is not a Microsoft Money (.mny) file" | Wrong file, or the upload was corrupted |
 | "That Money file looks incomplete" | The upload was cut short -- try again |
 | "That Money file was decrypted but its contents could not be read" | The file decrypted but its internals are damaged. Open it in Money and save a fresh copy |
 | "That Money file is password protected" | Enter the file's password when prompted |
+| "This file was already imported into your account" | Importing it again would duplicate its records. To replace them, start over with **Start fresh** ticked |
+| "The import saved your data, but a step after that failed" or "...stopped responding after it had already saved your data" | The records are in your account. Check your accounts before importing anything else; importing the same file again would duplicate them |
 | "That password does not open the Money file" | Money passwords are case sensitive -- check and retry |
 | "The import stopped responding" | The server restarted mid-import. Your file is still here: press **Try again** |
 | "The uploaded Money file is no longer available" | Uploaded files are kept 24 hours. Upload it again |
@@ -171,8 +202,8 @@ Nothing is written unless the whole import succeeds, so a failure leaves your da
 
 Two failures look like the app is broken and are configuration:
 
-- **The upload dies immediately and the backend logs `Request aborted`.** The Next.js proxy in front of the API caps a forwarded request body at 10 MB by default and *truncates* rather than rejecting anything larger, so nothing reports a size problem. `MNY_IMPORT_LIMIT_MB` (default 300) sizes that ceiling and must be set on the **frontend** as well as the backend.
-- **The server is killed partway through every attempt.** It is running out of memory. A Money file is held in memory while it is read, so the backend needs roughly twice the file size available, and the frontend needs another copy because the proxy buffers the upload. See `helm/README.md` for the sizing rules.
+- **The upload is refused as too large.** The frontend passes a Money file to the backend through its own upload route, which refuses anything over `MNY_IMPORT_LIMIT_MB` (default 300). The variable must be set on the **frontend** as well as the backend.
+- **The server is killed partway through every attempt.** It is running out of memory. A Money file is held in memory while it is read, so the backend needs roughly twice the file size available. See `helm/README.md` for the sizing rules.
 
 ---
 
@@ -259,13 +290,11 @@ Follow these steps for each chequing, savings, credit card, cash, line of credit
 
 **Step 2:** Go to **File > Export**
 
-![MS Money File Menu](images/ms-money-file-export.png)
-<!-- Screenshot: Microsoft Money File menu with Export highlighted -->
+![Microsoft Money: File > Export](images/ms-money-file-export.png)
 
 **Step 3:** In the export dialog, select **Loose QIF** format
 
-![MS Money Export Format](images/ms-money-export-format.png)
-<!-- Screenshot: The Microsoft Money export format selection dialog showing "Loose QIF" selected -->
+![Microsoft Money: choose Loose QIF](images/ms-money-export-format.png)
 
 > **Always choose "Loose QIF"** -- it carries more information than "Strict QIF," including split transaction details and transfer references.
 
@@ -273,8 +302,7 @@ Follow these steps for each chequing, savings, credit card, cash, line of credit
 
 **Step 5:** Select **Regular** as the account type
 
-![MS Money Account Type](images/ms-money-account-type-regular.png)
-<!-- Screenshot: The Microsoft Money export dialog showing "Regular" account type selected -->
+![Microsoft Money: export as a Regular account](images/ms-money-account-type-regular.png)
 
 **Step 6:** Select the specific account to export from the account list
 
@@ -299,8 +327,7 @@ You must export each investment account **twice**.
 5. Select the specific investment account
 6. Click **Continue**
 
-![MS Money Investment Export](images/ms-money-export-investment.png)
-<!-- Screenshot: The Microsoft Money export dialog showing "Investment" account type selected and an investment account highlighted -->
+![Microsoft Money: export as an Investment account](images/ms-money-export-investment.png)
 
 #### Export 2: Cash Transactions
 
@@ -371,8 +398,7 @@ Navigate to **Tools > Import Transactions** to begin the import process.
 
 The upload step presents a drag-and-drop area where you can select your QIF files.
 
-![Upload Step](images/import-upload-step.png)
-<!-- Screenshot: The import upload step showing the drag-and-drop area with "Click to select QIF file(s)" text -->
+![Import wizard: upload your files](images/import-upload-step.png)
 
 1. Click the upload area or drag your QIF files onto it
 2. You can select **multiple files** at once for bulk import
@@ -386,14 +412,13 @@ The upload step presents a drag-and-drop area where you can select your QIF file
 
 After parsing, you advance to account selection.
 
-> **Pre-Selection:** If you navigate to the import page from a specific account, that account is pre-selected. A blue banner shows "Importing to: [Account Name]".
+> **Pre-Selection:** If you start the import from a specific account (**Accounts**, edit the account, **Import**), that account is pre-selected. A blue banner shows "Importing to: [Account Name]", and for a single file the account selection step is skipped.
 
 ### Step 2: Select Destination Account
 
 For each QIF file, you need to specify which Monize account the transactions should be imported into.
 
-![Select Account Step](images/import-select-account.png)
-<!-- Screenshot: The select account step showing the file info box (filename, transaction count, date range, detected type) and the account dropdown -->
+![Select Destination Account](images/import-select-account.png)
 
 #### File Information
 
@@ -401,7 +426,7 @@ A gray information box shows:
 - **File:** The filename being imported
 - **Transactions:** Number of transactions found
 - **Date Range:** Earliest to latest transaction dates
-- **Detected Type:** Account type identified from the QIF header (e.g., Bank, Investment, Credit Card)
+- **Detected Type:** Account type identified from the QIF header (e.g., Chequing, Investment, Credit Card)
 
 #### Selecting an Account
 
@@ -409,21 +434,22 @@ Choose from the **"Import into account"** dropdown. The dropdown shows all compa
 - For **investment QIF files** (detected type: Investment), only brokerage accounts are shown
 - For **regular QIF files**, all non-brokerage accounts are shown
 
-> **Auto-Matching:** Monize attempts to match QIF filenames to account names automatically. If a match is found, it is pre-selected in the dropdown.
+> **Auto-Matching:** Monize attempts to match QIF filenames to account names automatically. If a match is found, it is pre-selected in the dropdown. When you upload several files at once, every file gets its own dropdown; files matched by name are shown in green, and files Monize could only guess for (by account type) in amber.
+
+![Select Destination Accounts for a bulk import](images/import-select-account-bulk.png)
 
 #### Creating a New Account
 
 If the destination account does not exist yet:
 
-1. Click **"+ Create new account"**
+1. Click **+ Create new account** (**+ Create new** under a file in a bulk import)
 2. Fill in:
    - **Account name** (e.g., "My Chequing")
    - **Account type** (Chequing, Savings, Credit Card, etc.)
    - **Currency** (USD, CAD, etc.)
 3. Click **Create**
 
-![Create Account During Import](images/import-create-account.png)
-<!-- Screenshot: The inline account creation form during import showing name, type, and currency fields -->
+![Creating an account during import](images/import-create-account.png)
 
 The new account is created immediately and auto-selected as the destination.
 
@@ -431,32 +457,28 @@ The new account is created immediately and auto-selected as the destination.
 
 #### Date Format
 
-If the detected date format does not look correct (e.g., dates seem to be swapped between MM/DD and DD/MM), you can override the date format using the date format dropdown. Monize supports:
-- MM/DD/YYYY (US format)
-- DD/MM/YYYY (International format)
-- YYYY-MM-DD (ISO format)
+Monize detects the date format (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD or YYYY-DD-MM) from the dates in each file; the date range in the information box shows how they were read. There is no override on this step, so if the dates look swapped, check your Windows regional date setting and export again.
 
 ### Step 3: Map Categories
 
 If the QIF file contains category references, you need to map them to Monize categories.
 
-![Map Categories Step](images/import-map-categories.png)
-<!-- Screenshot: The map categories step showing unmatched categories (amber), auto-matched categories (green, collapsed), and loan categories (blue, collapsed) -->
+![Map Categories](images/import-map-categories.png)
 
 #### Understanding the Display
 
 Categories are displayed in three groups:
 
-1. **Needs Attention** (amber/yellow border) -- Categories that could not be auto-matched. These require your input.
-2. **Auto-Matched to Categories** (green, collapsed by default) -- Categories that Monize matched to existing categories. Click to expand and verify.
-3. **Auto-Matched to Loan Accounts** (blue, collapsed by default) -- Categories that match loan or mortgage account names, indicating loan payments.
+1. **Needs attention** (amber border) -- Categories that could not be auto-matched. These require your input.
+2. **Auto-matched to loan accounts** (shown expanded) -- Categories that match loan or mortgage account names, indicating loan payments.
+3. **Auto-matched to categories** (collapsed by default) -- Categories that Monize matched to existing categories. Click **Show *n* auto-matched to categories** to expand and verify.
 
-#### Summary Badges
+#### Summary Line
 
-At the top of the list, badges summarize the mapping status:
-- **Amber badge:** "[X] need attention" -- categories requiring manual mapping
-- **Green badge:** "[X] matched to categories" -- successfully auto-matched
-- **Blue badge:** "[X] matched to loans" -- matched to loan accounts
+At the top of the list, a line summarizes the mapping status:
+- **"[X] need attention"** (amber) -- categories requiring manual mapping
+- **"[X] matched to categories"** (green) -- successfully auto-matched
+- **"[X] matched to loans"** (blue) -- matched to loan accounts
 
 #### Mapping a Category
 
@@ -466,33 +488,32 @@ For each unmatched category, you can:
 - Select from the dropdown of existing Monize categories
 
 **Option B: Create a new category**
-- Enter a new category name
-- Optionally select a parent category
+- Enter a new category name under **Or create new**
+- Choose a **Parent category**, or **+ Create new parent...** to name a new one
 - The category is created during import
 
 **Option C: Skip the category**
-- Leave unmapped (select "Skip") to import transactions without a category
+- Leave the dropdown at **Skip (no category)** to import transactions without a category
 - You can categorize them later in the Transactions page
 
 #### Loan Category Detection
 
 If a QIF category name matches an existing loan or mortgage account name, Monize detects it as a loan payment. These transactions are imported as transfers to the loan account rather than regular categorized transactions.
 
-If the loan account does not exist yet, you can create it during this step.
+You can also tick **This is a loan payment** on any category yourself. Then pick the loan under **Select existing loan**, or create it with **Or create new loan**: its name, **Loan type** (Loan or Mortgage), **Institution** and **Initial loan amount** (the original principal).
 
 ### Step 4: Map Securities
 
 This step appears only when importing investment QIF files that contain security references.
 
-![Map Securities Step](images/import-map-securities.png)
-<!-- Screenshot: The map securities step showing security mapping rows with lookup buttons, existing security dropdowns, and new security creation fields -->
+![Map Securities](images/import-map-securities.png)
 
 #### Security Lookup
 
 Monize can look up securities automatically:
-- Click **"Lookup"** next to any security to search by name/symbol
-- A bulk lookup runs automatically for all securities when you first reach this step
-- Lookup results include the security name, symbol, type, and exchange
+- A lookup runs automatically for every unmatched security when you first reach this step ("Looking up securities...")
+- Click **Lookup** next to any security to search again by what is in its symbol or name field; when several securities fit, you choose one from a list
+- Lookup results fill in the security name, symbol, type, exchange and currency, trying your preferred exchanges (**Settings > Preferences**) first
 
 #### Mapping a Security
 
@@ -502,10 +523,10 @@ For each security, you can:
 - Select from the "Map to existing" dropdown
 
 **Option B: Create a new security**
-- Enter the **symbol** (e.g., "AAPL")
-- Enter the **name** (e.g., "Apple Inc.")
-- Select the **type** (Stock, ETF, Mutual Fund, Bond, GIC, Cash, Other)
-- Enter the **exchange** (e.g., "NYSE", "TSX")
+- Enter the symbol under **Or create new (symbol)** (e.g., "AAPL")
+- Enter the **Security name** (e.g., "Apple Inc.")
+- Select the **Security type** (Stock, ETF, Mutual Fund, Bond, Option, GIC, Cryptocurrency, Cash/Money Market, Other)
+- Choose the **Exchange** (e.g., "NYSE", "TSX") and the **Currency**; picking an exchange sets the currency it trades in
 
 #### Row Status Indicators
 
@@ -519,8 +540,7 @@ This step appears when the QIF file references transfers to other accounts (e.g.
 
 > **Note:** This step is skipped for investment QIF files. Investment transfers are handled automatically through the linked cash account.
 
-![Map Transfer Accounts Step](images/import-map-accounts.png)
-<!-- Screenshot: The map transfer accounts step showing account mapping rows with existing account dropdown and new account creation fields -->
+![Map Transfer Accounts](images/import-map-accounts.png)
 
 #### Mapping a Transfer Account
 
@@ -530,9 +550,9 @@ For each referenced transfer account:
 - Select from the "Map to existing" dropdown
 
 **Option B: Create a new account**
-- Enter the account name
-- Select the account type
-- Select the currency
+- Enter the account name under **Or create new**
+- Select the **Account type**
+- Select the **Currency**
 
 > **Tip:** If you are importing all files in bulk, transfers between imported accounts are linked automatically. You only need to map accounts that are not part of the current import batch.
 
@@ -540,8 +560,7 @@ For each referenced transfer account:
 
 The review step shows a summary of everything that will happen during import.
 
-![Review Step](images/import-review-step.png)
-<!-- Screenshot: The review step showing the summary of files, transaction counts, categories, accounts, and securities to be created -->
+![Review Import](images/import-review-step.png)
 
 #### Single File Import Summary
 
@@ -562,25 +581,24 @@ The review step shows a summary of everything that will happen during import.
 
 #### Executing the Import
 
-Click **"Import Transactions"** to begin. The button shows a loading spinner while processing.
+Click **Import Transactions** to begin. The button shows a loading spinner while processing.
 
 For bulk imports, files are processed sequentially. Entities created in earlier files (categories, accounts, payees, securities) are available for subsequent files.
 
-> **Important:** The import runs inside a database transaction. If an error occurs, changes are rolled back -- no partial imports.
+> **Important:** Each file is imported inside a database transaction. If the import of a file fails, none of its changes are kept. A single transaction that cannot be imported is counted as an error and the rest of the file still imports.
 
 ### Step 7: Import Complete
 
 After successful import, the complete step shows detailed results.
 
 ![Import Complete](images/import-complete-step.png)
-<!-- Screenshot: The import complete step showing the green checkmark, summary statistics, and per-file results -->
 
 #### Results Displayed
 
 | Metric | Description |
 |--------|-------------|
 | **Imported** | Number of transactions successfully imported |
-| **Skipped** | Number of duplicate transfers skipped (already existed) |
+| **Skipped** | Number of transfers skipped because the other account's import already recorded them; the skipped rows are listed |
 | **Errors** | Number of transactions that failed to import |
 | **Categories created** | New categories added |
 | **Accounts created** | New accounts added |
@@ -592,6 +610,8 @@ After successful import, the complete step shows detailed results.
 For bulk imports, each file shows its individual results with success/error indicators:
 - Green background for files with no errors
 - Red background for files with errors, including the first 3 error messages
+
+If the import created a loan or mortgage account without scheduled payments, a **Set Up Recurring Payments** box offers **Set Up Payments** for it.
 
 #### Next Steps
 
@@ -622,15 +642,15 @@ Cross-currency transfers from Microsoft Money may need manual adjustment because
 1. Navigate to **Investments**
 2. Check that each holding shows the correct quantity and cost basis
 3. Compare against your Microsoft Money portfolio summary
-4. If any securities were auto-created (marked with `*` suffix), update their symbols and names
+4. Check that the securities created during import have the right symbols and names
 
-### 7.4 Set Up Security Price Updates
+### 7.4 Check Security Price Updates
 
-Auto-created securities during import have price updates disabled by default. For each security:
+Securities created during import use the symbol, exchange and type entered on the Map Securities step, and get price updates like any other. If one was created with a guessed symbol:
 
 1. Navigate to **Tools > Securities**
-2. Edit each security to ensure the correct symbol, exchange, and type
-3. Price updates will start automatically once the security has a valid symbol
+2. Edit the security to correct its symbol, exchange, and type
+3. Prices are fetched for the corrected symbol from then on
 
 ### 7.5 Review Categories
 
@@ -692,17 +712,14 @@ For `.mny` import problems, see [Troubleshooting the .mny Import](#troubleshooti
 
 **Cause:** The date format was detected incorrectly (e.g., MM/DD was interpreted as DD/MM).
 
-**Solution:**
-1. Go back to the Select Account step
-2. Change the date format dropdown to the correct format
-3. The file will be re-parsed with the new format
+**Solution:** The date format of a QIF file is detected from its dates, and there is no override in the wizard. Check the short date format in Windows' regional settings, export the file again from Microsoft Money, and import the new file. Or use the direct `.mny` import, which does not depend on a date format at all.
 
 #### Duplicate Transactions After Import
 
 **Cause:** Importing the same file twice, or transfer transactions appearing in both accounts.
 
 **Solution:**
-- Monize skips duplicate transfers when importing the second account
+- Monize skips the second side of a transfer that is already recorded when importing the other account
 - If duplicates still appear, use the **Duplicate Transaction Finder** report to identify and remove them
 - For future imports, always import all related files in a single bulk operation
 
@@ -720,9 +737,9 @@ For `.mny` import problems, see [Troubleshooting the .mny Import](#troubleshooti
 **Cause:** Microsoft Money does not include a security master list in QIF exports.
 
 **Solution:**
-1. During the Map Securities step, use the "Lookup" button to search for each security
-2. If lookup fails, manually enter the symbol, name, type, and exchange
-3. After import, edit any auto-created securities (with `*` suffix) in **Tools > Securities**
+1. During the Map Securities step, use the **Lookup** button to search for each security
+2. If lookup fails, manually enter the symbol, name, type, exchange and currency
+3. After import, check the securities created in **Tools > Securities**
 
 #### Opening Balance Incorrect
 
@@ -796,7 +813,7 @@ The QIF format and Microsoft Money export have limitations. The following data m
 1. **File > Export > Loose QIF**
 2. One file per account
 3. Investment accounts need two exports (Investment + Regular)
-4. Name files with numeric prefix for sort order
+4. Name each file after its account
 
 ### Importing QIF into Monize
 

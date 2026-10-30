@@ -154,33 +154,56 @@ function prepare({ page, docsDir, slugs }) {
       }
 
       if (node.type === 'paragraph' && node.children.length === 1 && node.children[0].type === 'image') {
-        const figure = image(node.children[0]);
-        if (figure.type === 'image') {
-          const caption = figure.alt ? [element('figcaption', {}, [{ type: 'text', value: figure.alt }])] : [];
-          return element('figure', {}, [figure, ...caption]);
-        }
-        return figure;
+        const alt = node.children[0].alt;
+        const { found, nodes } = image(node.children[0]);
+        if (!found) return nodes[0];
+        const caption = alt ? [element('figcaption', {}, [{ type: 'text', value: alt }])] : [];
+        return element('figure', {}, [...nodes, ...caption]);
       }
-      if (node.type === 'image') return image(node);
+      if (node.type === 'image') {
+        const { nodes } = image(node);
+        return nodes.length === 1 ? nodes[0] : element('span', { className: ['shot-pair'] }, nodes);
+      }
 
       if (node.type === 'text' || node.type === 'inlineCode' || node.type === 'code') section.parts.push(node.value);
       if (node.children) walk(node);
       return node;
     };
 
+    // A picture is `images/<name>.png` (dark, the one the Markdown names) and,
+    // when it was captured in both themes, `images/<name>.light.png`: both are
+    // emitted and the stylesheet shows the one matching the reader's theme. A
+    // hidden lazy image is never fetched, so a reader downloads one of them.
     const image = (node) => {
-      const name = node.url.match(/^images\/([a-z0-9-]+\.png)$/)?.[1];
-      const file = name && join(docsDir, 'images', name);
+      const name = node.url.match(/^images\/([a-z0-9-]+)\.png$/)?.[1];
+      const file = name && join(docsDir, 'images', `${name}.png`);
       if (!file || !existsSync(file)) {
         page.missingImages.push(node.url);
-        return element('span', { className: ['shot-missing'], role: 'img', ariaLabel: node.alt || 'Screenshot' }, [
-          { type: 'text', value: `Screenshot pending: ${node.alt || node.url}` },
-        ]);
+        return {
+          found: false,
+          nodes: [
+            element('span', { className: ['shot-missing'], role: 'img', ariaLabel: node.alt || 'Screenshot' }, [
+              { type: 'text', value: `Screenshot pending: ${node.alt || node.url}` },
+            ]),
+          ],
+        };
       }
-      const size = pngSize(file) ?? {};
-      node.url = `/docs/images/${name}`;
-      node.data = { hProperties: { ...size, loading: 'lazy', decoding: 'async' } };
-      return node;
+      const variant = (png, className) => ({
+        type: 'image',
+        url: `/docs/images/${png}`,
+        alt: node.alt,
+        data: {
+          hProperties: {
+            ...(pngSize(join(docsDir, 'images', png)) ?? {}),
+            loading: 'lazy',
+            decoding: 'async',
+            ...(className ? { className: [className] } : {}),
+          },
+        },
+      });
+      const light = `${name}.light.png`;
+      if (!existsSync(join(docsDir, 'images', light))) return { found: true, nodes: [variant(`${name}.png`)] };
+      return { found: true, nodes: [variant(`${name}.png`, 'shot-dark'), variant(light, 'shot-light')] };
     };
 
     walk(tree);

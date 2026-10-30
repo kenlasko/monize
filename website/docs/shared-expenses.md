@@ -14,6 +14,8 @@ Open the group and choose **Add Expense**. Enter what was bought, the date, amou
 
 Under **Split Between**, choose equal shares, exact amounts or percentages. Exclude someone who did not take part, or give them a zero share. For example, a coffee bought for one friend belongs to that friend; groceries for the cabin can be shared by everyone. Review the split before saving. You can attach a receipt to keep it with the expense.
 
+![An expense form with its payer, beneficiaries and receipt attachment controls](images/shared-expenses-expense.png)
+
 ## Check balances and repayments
 
 The **Balances** tab shows the group's positions and suggested repayments. These help you settle several purchases together instead of transferring money after each one. Record a repayment after the money has changed hands.

@@ -228,19 +228,23 @@ The generator is `frontend/scripts/build-website-docs.mjs`. It renders with the 
 ### Screenshots
 
 Every documentation screenshot is taken by Playwright, never by hand, so a changed screen is one
-command away from a current picture. Each picture is a test in `e2e/docs-screenshots/` whose title
-is the PNG's file name; it seeds nothing of its own beyond what `e2e/readme/01-seed.spec.ts` adds to
-the built-in demo data, opens the screen, waits for it to settle and writes
-`docs/images/<name>.png`.
+command away from a current picture, and every picture exists twice: `images/<name>.png` in dark
+mode and `images/<name>.light.png` in light mode. The Markdown names only `images/<name>.png`;
+the build emits both and the stylesheet shows the one matching the reader's theme. A picture
+without a `.light.png` (an old one nobody has retaken) shows in both themes.
+
+Each picture is a test in `e2e/docs-screenshots/<page>.spec.ts` whose title is the file name. It
+opens the screen with `openDocsSession(browser)` (or `openDocsSession(browser, 'phone')`, or
+`openAdminSession(browser)` for the admin screens), waits for it to settle, and calls
+`docShot(page, name)`, or `docShot(page, name, element)` to crop to one card, widget or dialog.
+`playwright.docs.config.ts` runs every test once in a `dark` and once in a `light` project, after
+`e2e/readme/01-seed.spec.ts` has added the showcase data to the built-in demo data. State the
+demo data lacks is seeded through the API inside the test, the way `e2e/readme/` does it.
 
 **When to add or retake one:** a page section that walks through a screen, a dialog or a widget
-shows it; a change that alters how that screen looks retakes its picture in the same PR. A
-setting that is one switch, or text that the page already says, needs no picture.
-
-**Adding one:** reference `images/<name>.png` in the Markdown, add a test titled `<name>` to
-`e2e/docs-screenshots/`, run it, and commit the PNG with the page. Crop to the part the section is
-about with `shoot(page, name, { dir: DOCS_IMAGE_DIR, element })`; whole-screen pictures are the
-1600x1000 desktop viewport, dark theme.
+shows it, and a feature's page shows its main screen and its main dialog; a change that alters how
+a pictured screen looks retakes its pictures in the same PR. A setting that is one switch, or text
+the page already says, needs no picture. Whole-screen pictures are the 1600x1000 desktop viewport.
 
 **Running them** needs a Monize instance holding the demo data, with rate limits raised, demo
 mode off (it renames the sign-in button and adds a banner) and no plain-HTTP warning. The e2e
@@ -250,21 +254,27 @@ stack does all of that, built from the working tree so the pictures show the bra
 # repository root
 printf 'services:\n  backend:\n    environment:\n      DEMO_MODE: "false"\n  frontend:\n    environment:\n      DISABLE_HTTPS_HEADERS: "true"\n' > /tmp/monize-docs.yml
 docker compose -p monize-docs -f docker-compose.e2e.yml -f /tmp/monize-docs.yml up -d --build --wait
-# the e2e stack skips the demo seed the production entrypoint runs; run it once
-docker compose -p monize-docs -f docker-compose.e2e.yml exec -e DEMO_MODE=true backend node dist/database/seed.js
-
 cd e2e && npm ci
-BASE_URL=http://localhost:3001 npm run docs:screenshots                           # showcase seed, then every picture
-BASE_URL=http://localhost:3001 npm run docs:screenshots -- -g budget-dashboard   # one picture, by file name
+export BASE_URL=http://localhost:3001
+npm run docs:admin            # first: the first account registered becomes the instance admin
+# the e2e stack skips the demo seed the production entrypoint runs; run it once
+docker compose -p monize-docs -f ../docker-compose.e2e.yml exec -e DEMO_MODE=true backend node dist/database/seed.js
+npm run docs:screenshots                                          # showcase seed, then every picture, both themes
+npm run docs:screenshots -- docs-screenshots/warranties.spec.ts   # one page's pictures
+npm run docs:screenshots -- -g warranties-list                    # one picture, both themes
 docker compose -p monize-docs -f ../docker-compose.e2e.yml down -v
 ```
 
-A picture of a state the demo data does not reach (an AI insight, an admin dialog, an emergency
-access claim) needs that state seeded through the API in the test first; until then the page
-shows "Screenshot pending" and `npm run docs:build` lists it.
+After capturing, recompress the pictures without changing a pixel, which saves about a quarter
+of their size: `oxipng -o 3 --strip safe website/docs/images/*.png` (any lossless optimizer will
+do). A picture no page references fails `npm run docs:check`: retire it with the reference that
+used it.
 
-Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` where `npx playwright install chromium` is not an option.
-`e2e/readme/README.md` explains the session, the seed and the settling waits the captures share.
+`DOCS_RUN=<name>` gives a run its own output folder and session, so runs for different pages can
+go side by side. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` where `npx playwright install chromium` is
+not an option. `e2e/readme/README.md` explains the session, the seed and the settling waits the
+captures share. A picture of a state the stack cannot reach yet renders as "Screenshot pending"
+and `npm run docs:build` lists it.
 
 ### Cloudflare Pages free plan
 

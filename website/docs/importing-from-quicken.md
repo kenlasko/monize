@@ -17,12 +17,13 @@ Quicken uses QIF (Quicken Interchange Format) for data export. Monize includes a
 - Security creation and mapping
 - Multi-account full-file exports (all accounts in a single QIF file)
 
-Monize auto-detects whether a QIF file is a single-account export or a full-file export and adapts the import wizard accordingly.
+Monize auto-detects whether a QIF file is a single-account export or a full-file export and adapts the import wizard accordingly. Quicken for Mac's `.qmtf` transfer files are QIF under another extension, with section headers in capitals and Mac line endings; Monize reads them exactly like a `.qif` file.
 
 ---
 
 ## Important Limitations
 
+> [!WARNING]
 > **Future-Dated Transactions Are Not Supported**
 >
 > Monize does not support importing future-dated transactions. Quicken's QIF export defaults to a far-future end date that includes scheduled and future transactions. **When exporting, always set the "to" date to today's date** to exclude them. See [Removing Future-Dated Transactions](#removing-future-dated-transactions) if you need to clean up a file that was already exported with future transactions.
@@ -120,6 +121,8 @@ Monize matches pending transfers from previously imported files, so importing ac
 
 ### Step 1: Upload QIF Files
 
+![Import wizard: upload your files](images/import-upload-step.png)
+
 1. Click the upload area or drag your QIF files onto it
 2. You can select **multiple files** at once for bulk import
 3. Monize parses each file and extracts:
@@ -134,55 +137,59 @@ Monize matches pending transfers from previously imported files, so importing ac
 
 For each QIF file, specify which Monize account the transactions should be imported into.
 
+![Select Destination Account](images/import-select-account.png)
+
 #### File Information
 
 A gray information box shows:
 - **File:** The filename being imported
 - **Transactions:** Number of transactions found
 - **Date Range:** Earliest to latest transaction dates
-- **Detected Type:** Account type from the QIF header (e.g., Bank, Investment, Credit Card)
+- **Detected Type:** Account type from the QIF header (e.g., Chequing, Investment, Credit Card)
 
 #### Selecting an Account
 
-Choose from the **"Import into account"** dropdown:
-- For **investment QIF files** (detected type: Investment), only brokerage accounts are shown
+Choose from the **Import into account** dropdown:
+- For **investment QIF files** (detected type: Investment), only brokerage accounts are shown, and a blue note says so
 - For **regular QIF files**, all non-brokerage accounts are shown
 
-> **Auto-Matching:** Monize attempts to match QIF filenames to account names automatically.
+> **Auto-Matching:** Monize matches QIF file names to account names automatically, so `Visa.qif` lands on your "Visa" account. When several files are uploaded together, each gets its own dropdown; files matched by name are shown in green and guesses in amber.
+
+![Select Destination Accounts for several QIF files](images/import-select-account-bulk.png)
 
 #### Creating a New Account
 
 If the destination account does not exist:
 
-1. Click **"+ Create new account"**
-2. Fill in the account name, type, and currency
+1. Click **+ Create new account** (**+ Create new** for a file in a bulk import)
+2. Fill in the **Account name** (pre-filled from the file name), **Account type** and **Currency**
 3. Click **Create**
 
-The new account is auto-selected as the destination.
+The new account is auto-selected as the destination. Creating an **Investment** account creates its linked cash and brokerage pair; an investment file goes into the brokerage side.
 
 #### Date Format
 
-Quicken QIF files may use different date formats. Monize auto-detects the format, but you can override it if dates look wrong:
-- MM/DD/YYYY (US format -- most common for Quicken)
-- DD/MM/YYYY (International format)
-- YYYY-MM-DD (ISO format)
+Monize detects the date format from the dates in the file, including Quicken's space-padded dates. There is no override for a single-account file, so if the dates come out swapped (day and month), re-export from Quicken with your system's date format set to the format you expect. A full-file export has a **Date Format** dropdown on its review step (see [Part 4](#part-4-importing-a-full-file-qif-export)).
 
 > **Quicken Date Quirk:** Quicken may pad single-digit days with spaces (e.g., `2/ 4/19` instead of `2/4/19`). Monize handles this automatically.
 
 ### Step 3: Map Categories
 
-Quicken uses colon-separated category paths (e.g., `Food:Groceries`, `Auto:Fuel`, `Fees & Charges:Bank Fee`). Monize automatically parses this hierarchy.
+Quicken uses colon-separated category paths (e.g., `Food:Groceries`, `Auto:Fuel`, `Fees & Charges:Bank Fee`). Monize automatically parses this hierarchy and matches each path against your existing categories.
 
-Categories are displayed in three groups:
+![Map Categories for a Quicken file: a new category under an existing parent](images/import-quicken-map-categories.png)
 
-1. **Needs Attention** (amber) -- Categories that could not be auto-matched. Require your input.
-2. **Auto-Matched to Categories** (green, collapsed) -- Successfully matched to existing Monize categories.
-3. **Auto-Matched to Loan Accounts** (blue, collapsed) -- Matched to loan or mortgage account names (imported as transfers to the loan account).
+A summary line counts the categories that need attention and those matched, and they are displayed in three groups:
 
-For each unmatched category, you can:
+1. **Needs attention** (amber border) -- Categories that could not be auto-matched. Require your input.
+2. **Auto-matched to loan accounts** (shown expanded) -- Matched to loan or mortgage account names (imported as payments to the loan account).
+3. **Auto-matched to categories** (collapsed) -- Successfully matched to existing Monize categories. Click **Show *n* auto-matched to categories** to review or change them.
+
+For a colon path Monize cannot match, the row comes already filled in to create the last level under its parent: `Auto:Parking` suggests a new "Parking" under an existing "Auto", or under a new parent "Auto" if you have none. Accept the suggestion, or change it. For each unmatched category, you can:
 - **Map to existing** -- Select an existing Monize category
-- **Create new** -- Enter a new category name, optionally under a parent
-- **Skip** -- Leave unmapped; categorize later
+- **Or create new** -- Enter a new category name, then pick a **Parent category** (or **+ Create new parent...**)
+- **Skip** -- Leave the dropdown at **Skip (no category)**; categorize later
+- **This is a loan payment** -- Tick it to import the category's transactions as payments to an existing loan, or to a new loan you name with its type, institution and initial amount
 
 #### Automatic Category Hierarchy Creation
 
@@ -199,18 +206,26 @@ For example, importing categories `Food:Groceries`, `Food:Restaurants`, and `Foo
 
 This step appears only for investment QIF files containing security references.
 
+![Map Securities](images/import-map-securities.png)
+
+When you reach the step, Monize looks up every security it could not match to one of yours (the line "Looking up securities..." shows while it runs) and fills in what it finds. A row shows a green border once it is ready and an amber one while it needs attention.
+
 For each security, you can:
-- **Map to existing** -- Select from the dropdown of existing Monize securities
-- **Create new** -- Enter the symbol, name, type (Stock, ETF, Mutual Fund, etc.), and exchange
-- **Lookup** -- Click to search by name or symbol
+- **Map to existing** -- Select from the dropdown of existing Monize securities (it starts at **Skip (no security)**)
+- **Or create new (symbol)** -- Enter the symbol, the **Security name**, the **Security type** (Stock, ETF, Mutual Fund, Bond, Option, GIC, Cryptocurrency, Cash/Money Market or Other), the **Exchange** and the **Currency**. Picking an exchange sets the currency that exchange trades in
+- **Lookup** -- Search again by name or symbol. When several securities fit, you choose the right one from a list
+
+Your preferred exchanges (**Settings > Preferences**) are tried first.
 
 ### Step 5: Map Transfer Accounts
 
-This step appears when the QIF file references transfers to other accounts (using Quicken's `[Account Name]` notation).
+This step appears when the QIF file references transfers to other accounts (using Quicken's `[Account Name]` notation). It is skipped for investment files, whose transfers go through the linked cash account.
 
-For each referenced account:
+![Map Transfer Accounts](images/import-map-accounts.png)
+
+For each referenced account (names that match one of your accounts are filled in already):
 - **Map to existing** -- Select from the dropdown of existing Monize accounts
-- **Create new** -- Enter the account name, type, and currency
+- **Or create new** -- Enter the account name, then choose its **Account type** and **Currency**
 
 > **Bulk Import Tip:** If you are importing all files at once, transfers between accounts in the batch are linked automatically. You only need to map accounts that are not part of the current import.
 
@@ -220,9 +235,11 @@ The review step shows a summary of everything that will happen:
 
 - Files and transaction counts
 - Target accounts
-- Categories, accounts, securities, and payees to be created
+- Categories, transfer accounts and securities: how many are mapped and how many will be created
 
-Click **"Import Transactions"** to execute. The import runs inside a database transaction -- if an error occurs, all changes are rolled back.
+![Review Import](images/import-review-step.png)
+
+Click **Import Transactions** to execute. Each file is imported inside a database transaction -- if the import fails, none of its changes are kept. A single transaction that cannot be imported is counted as an error and the rest of the file still imports.
 
 ### Step 7: Import Complete
 
@@ -231,41 +248,51 @@ After import, Monize displays:
 | Metric | Description |
 |--------|-------------|
 | **Imported** | Transactions successfully imported |
-| **Skipped** | Duplicate transfers skipped |
+| **Skipped** | Transfers already recorded from the other account, listed row by row |
 | **Errors** | Transactions that failed (with details) |
 | **Categories created** | New categories added |
 | **Accounts created** | New accounts added |
 | **Payees created** | New payees added |
 | **Securities created** | New securities added |
 
+If a loan or mortgage account was created without scheduled payments, **Set Up Payments** lets you add them straight away. **View Transactions** (or **View Investments**) opens the accounts you just imported into; **Import More Files** starts again.
+
+![Import Complete](images/import-complete-step.png)
+
 ---
 
 ## Part 4: Importing a Full-File QIF Export
 
-When you upload a full-file QIF export, Monize detects it automatically (by the presence of multiple `!Account` sections or `!Type:Cat` / `!Type:Tag` definition blocks) and adapts the import wizard.
+When you upload a full-file QIF export, Monize detects it automatically (by the presence of several `!Account` sections or a `!Type:Cat` category list) and adapts the import wizard.
 
 ### How Full-File Import Differs
 
 | Aspect | Single-Account Import | Full-File Import |
 |--------|----------------------|------------------|
-| **Account selection** | Choose one account per file | Review all detected accounts; map, create, or skip each one |
-| **Category definitions** | Extracted from transaction data | Pre-loaded from `!Type:Cat` sections (with tax flags) |
-| **Tag definitions** | Extracted from transaction data | Pre-loaded from `!Type:Tag` sections |
+| **Account selection** | Choose one account per file | None: each account in the file is matched to your account of the same name, or created |
+| **Category mapping** | Map each category | None: the `!Type:Cat` definitions (and any other categories the transactions use) are matched to your categories of the same name, or created with their hierarchy |
+| **Tag definitions** | Extracted from transaction data | Created from `!Type:Tag` sections and the transactions |
 | **Transfer linking** | Across files in a bulk import | Automatic within the single file |
-| **Number of files** | One or more | Typically one file |
+| **Date format** | Detected | Detected, with a dropdown to change it |
+| **Number of files** | One or more | One file |
 
 ### Full-File Import Steps
 
-1. **Upload** -- Select your full-file `.qif` export
-2. **Review Accounts** -- Monize displays all account blocks found in the file. For each account:
-   - **Map** to an existing Monize account
-   - **Create** a new account (the account type is auto-detected from the QIF header)
-   - **Skip** to exclude that account's transactions from the import
-3. **Map Categories** -- Map all categories across all accounts at once. Category definitions from `!Type:Cat` sections are pre-loaded with their hierarchy.
-4. **Map Securities** -- Map any securities found across all investment account blocks
-5. **Map Transfer Accounts** -- Map transfer references. Transfers between accounts within the same file are automatically linked.
-6. **Review and Import** -- Summary shows per-account transaction counts and all entities to be created
-7. **Complete** -- View results with per-account import statistics
+1. **Upload** -- Select your full-file `.qif` export (one file on its own; several files are treated as single-account exports)
+2. **Review** -- The **Multi-Account QIF Import** step summarizes the file ("This file contains 3 accounts, 6 categories, 2 tags, and 6 transactions") and lists:
+   - **Currency for New Accounts** -- the currency every account the import creates is given
+   - **Date Format** -- detected from the file; the sample dates underneath show how it was read
+   - **Accounts** -- each account with its type, transaction count and date range
+   - **Categories** -- grouped into Expense and Income
+   - **Tags** -- the tags that will be created
+3. **Choose missing account types** -- if the file does not say what type an account is, a **Choose a type** dropdown appears beside it, and the import cannot start until each one has a type
+4. **Map Securities** -- if the file holds investment accounts, the notice says how many securities need mapping; click **Next: Map Securities** and map them as in [Step 4](#step-4-map-securities), then click **Import All** there
+5. **Import** -- otherwise click **Import All** on the review step
+6. **Complete** -- View results
+
+![Multi-Account QIF Import: the review of a full-file export](images/import-multi-account-review.png)
+
+An account in the file that has the same name as one of your accounts is imported into it rather than created again (for an investment account, the "*name* - Cash" account counts too). Every other account is created, an investment account as its linked cash and brokerage pair.
 
 > **Tip:** Full-file import is the easiest way to migrate from Quicken. All transfers between accounts are automatically linked, and your complete category and tag hierarchy is preserved.
 
@@ -290,13 +317,13 @@ Compare each account's current balance in Monize against Quicken. If balances do
 3. Compare against your Quicken portfolio summary
 4. If any securities were auto-created, update their symbols and exchange information
 
-### 5.3 Set Up Security Price Updates
+### 5.3 Check Security Price Updates
 
-Auto-created securities during import have price updates disabled by default:
+Securities created during import use the symbol, exchange and type entered on the Map Securities step, and get price updates like any other security. If one was created with a guessed symbol:
 
 1. Navigate to **Tools > Securities**
-2. Edit each security to ensure the correct symbol, exchange, and type
-3. Price updates start automatically once the security has a valid symbol
+2. Edit the security to correct its symbol, exchange, and type
+3. Prices are fetched for the corrected symbol from then on
 
 ### 5.4 Review Categories
 
@@ -349,7 +376,7 @@ Understanding the QIF format can help when troubleshooting or manually editing f
 | `P` | Payee | `Grocery Store` |
 | `M` | Memo | `Weekly groceries` |
 | `N` | Cheque number (regular) or Action (investment) | `1234` or `Buy` |
-| `C` | Cleared status (`*` = cleared, `X` = reconciled) | `*` |
+| `C` | Cleared status (`*` or `c` = cleared, `X` or `R` = reconciled) | `*` |
 | `L` | Category (or `[Account]` for transfers) | `Food:Groceries` or `[Savings]` |
 | `S` | Split category | `Food:Groceries` |
 | `E` | Split memo | `Groceries portion` |
@@ -373,6 +400,7 @@ Understanding the QIF format can help when troubleshooting or manually editing f
 
 ### Quicken-Specific Format Notes
 
+- **Quicken for Mac:** `.qmtf` files, `!TYPE:` and `!ACCOUNT` headers in capitals, and classic Mac line endings are all read
 - **Category hierarchy:** Uses colon separator (e.g., `Food:Groceries`) unlike Microsoft Money's `/` separator
 - **Date padding:** Quicken may pad single-digit days with spaces (e.g., `2/ 4/19`)
 - **Tags:** Appended after `/` in the category field (e.g., `Food:Groceries/Vacation`)
@@ -392,7 +420,7 @@ Understanding the QIF format can help when troubleshooting or manually editing f
 
 **Cause:** The date format was detected incorrectly (e.g., MM/DD was interpreted as DD/MM).
 
-**Solution:** Go back to the Select Account step and change the date format dropdown. Quicken typically uses MM/DD/YYYY format.
+**Solution:** For a full-file export, change the **Date Format** dropdown on the review step. A single-account file's format is detected from its dates; if they are all ambiguous (every day 12 or less), re-export from Quicken with an unambiguous date range or format. Quicken typically uses MM/DD/YYYY format.
 
 ### Category Hierarchy Not Created
 
@@ -405,7 +433,7 @@ Understanding the QIF format can help when troubleshooting or manually editing f
 **Cause:** Importing the same file twice, or transfer transactions appearing in both accounts.
 
 **Solution:**
-- Monize skips duplicate transfers when importing the second account
+- Monize skips the second side of a transfer that is already recorded when importing the other account
 - If duplicates still appear, use the **Duplicate Transaction Finder** report
 - For future imports, import all related files in a single bulk operation
 
@@ -423,7 +451,7 @@ Understanding the QIF format can help when troubleshooting or manually editing f
 **Cause:** The security name in Quicken does not match market data.
 
 **Solution:**
-1. During the Map Securities step, try searching by symbol instead of name
+1. During the Map Securities step, click **Lookup** after typing the symbol instead of the name
 2. If lookup fails, manually enter the symbol, name, type, and exchange
 3. After import, verify securities in **Tools > Securities**
 
@@ -455,6 +483,7 @@ The QIF format and Quicken export have limitations. The following data must be r
 | **Transactions** | Imported | All regular and investment transactions |
 | **Categories** | Imported | Created with hierarchy during import mapping |
 | **Tags** | Imported | Created from `!Type:Tag` sections (full-file export) or extracted from transactions |
+| **Cleared status** | Imported | `*` or `c` imports as cleared, `X` or `R` as reconciled |
 | **Payees** | Imported | Created automatically from QIF data |
 | **Securities** | Imported | Created during import mapping |
 | **Future transactions** | Not supported | Must be removed before import; recreate as scheduled transactions |
@@ -480,9 +509,9 @@ The QIF format and Quicken export have limitations. The following data must be r
 ### Import into Monize
 
 1. **Tools > Import Transactions**
-2. Upload your QIF file(s)
-3. Map accounts, categories, securities, and transfer accounts
-4. Review and click "Import Transactions"
+2. Upload your QIF file(s), or one full-file export
+3. Single-account files: map accounts, categories, securities, and transfer accounts, then review and click **Import Transactions**
+4. Full-file export: check the review, map any securities, and click **Import All**
 
 ### After Import Checklist
 
