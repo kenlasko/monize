@@ -3,6 +3,7 @@
 import { SharedLinkedTransactionNotice } from "@/components/shared-expenses/SharedLinkedTransactionNotice";
 import { isSharedPaymentAccount } from "@/lib/shared-bank-eligibility";
 
+import { FALLBACK_DEFAULT_CURRENCY } from '@/lib/default-currency';
 import { useState, useEffect, useMemo, useRef, useCallback, MutableRefObject, type BaseSyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm, useWatch, Resolver } from 'react-hook-form';
@@ -91,7 +92,7 @@ const buildTransactionSchema = (t: (key: string) => string) => z.object({
   payeeName: optionalString,
   categoryId: optionalUuid,
   amount: z.number({ error: 'Amount is required' }),
-  currencyCode: z.string().default('CAD'),
+  currencyCode: z.string().default(FALLBACK_DEFAULT_CURRENCY),
   description: optionalString,
   referenceNumber: optionalString,
   status: z.nativeEnum(TransactionStatus).default(TransactionStatus.UNRECONCILED),
@@ -996,17 +997,17 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   // fee itself, and the resulting total charged to the account.
   const convertedBase =
     isForeign && foreignAmount !== undefined && fxRate != null
-      ? roundToCents(foreignAmount * fxRate)
+      ? roundMoney(foreignAmount * fxRate)
       : undefined;
   const fxFeePercent = selectedAccount?.fxFeePercent ?? undefined;
   const fxFeeApplies =
     isForeign && convertedBase !== undefined && !!fxFeePercent && fxFeePercent > 0;
   const fxFeeAmount = fxFeeApplies
-    ? -roundToCents((Math.abs(convertedBase as number) * (fxFeePercent as number)) / 100)
+    ? -roundMoney((Math.abs(convertedBase as number) * (fxFeePercent as number)) / 100)
     : 0;
   const fxTotal =
     convertedBase !== undefined
-      ? roundToCents(convertedBase + fxFeeAmount)
+      ? roundMoney(convertedBase + fxFeeAmount)
       : undefined;
 
   // Recompute the account-currency `amount` from the foreign amount and rate.
@@ -1020,13 +1021,13 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   ) => {
     if (fAmount === undefined || rate == null) return;
     const base =
-      overrideBase !== undefined ? overrideBase : roundToCents(fAmount * rate);
+      overrideBase !== undefined ? overrideBase : roundMoney(fAmount * rate);
     const feePercent = selectedAccount?.fxFeePercent;
     const fee =
       feePercent && feePercent > 0
-        ? -roundToCents((Math.abs(base) * feePercent) / 100)
+        ? -roundMoney((Math.abs(base) * feePercent) / 100)
         : 0;
-    setValue('amount', roundToCents(base + fee), {
+    setValue('amount', roundMoney(base + fee), {
       shouldDirty: true,
       shouldValidate: true,
     });

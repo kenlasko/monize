@@ -572,16 +572,16 @@ export class GemStrategyService {
         ),
       );
     }
+    // Money is reported in the user's default currency: several accounts can be
+    // in the strategy, in different currencies, and the totals have to add up.
+    const currencyCode = await this.defaultCurrency(userId);
     const current = this.signalService.currentSignal(
       signals,
       strategy,
       assets,
+      currencyCode,
       asOf,
     );
-
-    // Money is reported in the user's default currency: several accounts can be
-    // in the strategy, in different currencies, and the totals have to add up.
-    const currencyCode = await this.defaultCurrency(userId);
     const { position, action, noPosition, tradingAccountCount } =
       await this.positionService.build({
         userId,
@@ -595,6 +595,7 @@ export class GemStrategyService {
 
     const heldForSimulation = position?.holdings ?? [];
     let performance = await this.performanceService.build({
+      userId,
       range,
       securityByRole,
       // Today's holdings, for the "what my current mix would have done" line.
@@ -641,6 +642,7 @@ export class GemStrategyService {
       );
       if (fetched.length > 0) {
         performance = await this.performanceService.build({
+          userId,
           range,
           securityByRole,
           holdings: heldForSimulation,

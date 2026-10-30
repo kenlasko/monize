@@ -12,12 +12,13 @@ import {
 import { useTranslations } from 'next-intl';
 import { SupportBackupModal } from '@/components/settings/SupportBackupModal';
 import { GITHUB_REPO_URL as REPO_URL } from '@/lib/github';
+import { docsUrl } from '@/lib/docs-links';
 
 const HELP_LINK_KEYS = [
   { key: 'github' as const, href: REPO_URL, Icon: CodeBracketIcon },
   { key: 'openIssue' as const, href: `${REPO_URL}/issues/new`, Icon: ExclamationTriangleIcon },
   { key: 'discussions' as const, href: `${REPO_URL}/discussions`, Icon: ChatBubbleLeftRightIcon },
-  { key: 'wiki' as const, href: `${REPO_URL}/wiki`, Icon: BookOpenIcon },
+  { key: 'docs' as const, href: docsUrl('home'), Icon: BookOpenIcon },
 ] as const;
 
 export function HelpSection() {

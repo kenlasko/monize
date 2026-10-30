@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Sparkline } from './Sparkline';
-import { getCurrencySymbol, formatAmount, getDecimalPlacesForCurrency, gainLossColor, roundToDecimals } from '@/lib/format';
+import { getCurrencySymbol, formatAmount, getDecimalPlacesForCurrency, gainLossColor, roundToDecimals, roundMoney, sumMoney } from '@/lib/format';
 import { parseLocaleNumber, formatNumberForEdit } from '@/lib/number-parse';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { WizardState } from './BudgetWizard';
@@ -133,27 +133,16 @@ export function BudgetWizardCategories({
   );
 
   const totals = useMemo(() => {
-    let totalIncome = 0;
-    let totalExpenses = 0;
-    let totalTransfers = 0;
-
-    for (const [, cat] of selectedCategories) {
-      if (cat.isIncome) {
-        totalIncome += cat.amount;
-      } else {
-        totalExpenses += cat.amount;
-      }
-    }
-
-    for (const [, t] of selectedTransfers) {
-      totalTransfers += t.amount;
-    }
+    const cats = Array.from(selectedCategories.values());
+    const totalIncome = sumMoney(cats.filter((c) => c.isIncome).map((c) => c.amount));
+    const totalExpenses = sumMoney(cats.filter((c) => !c.isIncome).map((c) => c.amount));
+    const totalTransfers = sumMoney(Array.from(selectedTransfers.values()).map((t) => t.amount));
 
     return {
       totalIncome,
       totalExpenses,
       totalTransfers,
-      net: totalIncome - totalExpenses - totalTransfers,
+      net: roundMoney(totalIncome - totalExpenses - totalTransfers),
     };
   }, [selectedCategories, selectedTransfers]);
 

@@ -28,7 +28,8 @@
     "transactions": "Транзакції",
     "sinceYear": "З {year}",
     "lastTransaction": "Остання транзакція",
-    "convertedNote": "Переведено в {currency}"
+    "convertedNote": "Переведено в {currency}",
+    "partialRatesNote": "Для деяких місяців немає обмінного курсу"
   },
   "topPayees": {
     "title": "Основні одержувачі",

@@ -30,6 +30,7 @@ import {
 import { useDensityPreference } from '@/store/densityStore';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Reports');
 
@@ -333,7 +334,7 @@ function ReportsContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/Reports"
+          helpUrl={docsUrl('reports')}
           actions={
             <NewReportButton
               onNewStandard={() => router.push('/reports/custom/new')}

@@ -395,7 +395,7 @@ describe("MonthlyCategoryBreakdownService", () => {
     expect(sql).toContain("parent_transaction_id IS NULL");
   });
 
-  it("includes the outflow leg of a categorized transfer in the category query", async () => {
+  it("keeps a categorized transfer out of the category query (INV-REPORT-003)", async () => {
     await service.getMonthlyCategoryBreakdown(
       mockUserId,
       "2025-01-01",
@@ -403,14 +403,11 @@ describe("MonthlyCategoryBreakdownService", () => {
     );
 
     const categorySql = scopedManager.query.mock.calls[0][0];
-    // A categorized transfer is counted once, as its outflow leg, under its
-    // category -- without ever being treated as income/expense elsewhere.
-    expect(categorySql).toContain("t.is_transfer = true");
-    expect(categorySql).toContain("t.category_id IS NOT NULL");
-    expect(categorySql).toContain("t.amount < 0");
+    expect(categorySql).toContain("AND t.is_transfer = false");
+    expect(categorySql).not.toContain("t.is_transfer = true");
   });
 
-  it("excludes categorized transfers from the transfer rollup to avoid double-counting", async () => {
+  it("reports a categorized transfer only in the transfer rollup", async () => {
     await service.getMonthlyCategoryBreakdown(
       mockUserId,
       "2025-01-01",
@@ -419,7 +416,7 @@ describe("MonthlyCategoryBreakdownService", () => {
 
     const transferSql = scopedManager.query.mock.calls[1][0];
     expect(transferSql).toContain("t.is_transfer = true");
-    expect(transferSql).toContain("t.category_id IS NULL");
+    expect(transferSql).not.toContain("t.category_id IS NULL");
   });
 
   // A missing exchange rate is unknown, never 1:1 (INV-FX-001).
@@ -562,7 +559,6 @@ describe("MonthlyCategoryBreakdownService", () => {
       expect(categorySql).toContain("status != 'VOID'");
       expect(categorySql).toContain("INVESTMENT_BROKERAGE");
       expect(transferSql).toContain("status != 'VOID'");
-      expect(transferSql).toContain("t.category_id IS NULL");
     });
   });
 });

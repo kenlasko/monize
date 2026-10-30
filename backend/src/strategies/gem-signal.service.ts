@@ -4,6 +4,11 @@ import { DataSource, EntityManager, In, LessThan } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { todayYMD } from "../common/date-utils";
 import {
+  FALLBACK_DEFAULT_CURRENCY,
+  preferredCurrency,
+} from "../common/default-currency.util";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import {
   GEM_ASSET_ROLES,
   GemAssetRole,
   GemStrategyAsset,
@@ -138,8 +143,13 @@ function windowStartFor(evaluatedOn: string, lookbackMonths: number): string {
  *   3 -- the roles are priced at one session: a role whose exit close trails
  *        the other roles' by more than `BOUNDARY_HOLIDAY_DAYS` is unpriced
  *        (a feed gap at the boundary, A26-M27).
+ *   4 -- closes are converted into the reporting currency at each close's own
+ *        date before momentum is compared across instruments.
+ *
+ * (The reporting currency itself is part of the configuration fingerprint, so
+ * a currency preference change recomputes in place instead of bumping this.)
  */
-export const GEM_SIGNAL_ALGORITHM_VERSION = 3;
+export const GEM_SIGNAL_ALGORITHM_VERSION = 4;
 
 /**
  * A hash of everything about a strategy that decides what its signals say.
@@ -157,6 +167,9 @@ export const GEM_SIGNAL_ALGORITHM_VERSION = 3;
  * the scenario's name, the accounts -- because rewriting the whole evaluation
  * history when someone corrects a commission would be worse than useless.
  *
+ * The reporting currency is: momentum is compared on closes converted into it,
+ * so a stored signal answers one currency's question only.
+ *
  * The algorithm version is deliberately *not* in here: it lives in its own
  * column, because a rules change and a settings change call for opposite
  * treatment (see `GEM_SIGNAL_ALGORITHM_VERSION`).
@@ -164,6 +177,7 @@ export const GEM_SIGNAL_ALGORITHM_VERSION = 3;
 export function gemConfigFingerprint(
   strategy: Pick<GemStrategy, "cadence" | "lookbackMonths">,
   assets: GemStrategyAsset[],
+  reportingCurrency: string = FALLBACK_DEFAULT_CURRENCY,
 ): string {
   const roles = [...GEM_ASSET_ROLES]
     .sort()
@@ -172,7 +186,7 @@ export function gemConfigFingerprint(
       return `${role}=${asset?.securityId ?? "-"}`;
     })
     .join(",");
-  const material = `${strategy.cadence}|${strategy.lookbackMonths}|${roles}`;
+  const material = `${strategy.cadence}|${strategy.lookbackMonths}|${roles}|${reportingCurrency}`;
   return createHash("sha256").update(material).digest("hex").slice(0, 64);
 }
 
@@ -222,6 +236,7 @@ export class GemSignalService {
     oldestEvaluatedOn: string,
     lookbackMonths: number,
     manager: EntityManager,
+    userId: string,
   ): Promise<PricesByRole> {
     const securityByRole = this.securityByRole(assets);
     const securityIds = [...securityByRole.values()];
@@ -238,6 +253,7 @@ export class GemSignalService {
       from,
       "day",
       manager,
+      userId,
     );
 
     const prices: PricesByRole = {};
@@ -391,12 +407,24 @@ export class GemSignalService {
       // recomputing that with today's code, over prices that may have been
       // revised since, would file a counterfactual as history. Those rows are
       // left exactly as they are and reported as legacy periods.
-      const fingerprint = gemConfigFingerprint(strategy, assets);
+      const preference = await manager
+        .getRepository(UserPreference)
+        .findOne({ where: { userId } });
+      const reportingCurrency = preferredCurrency(preference);
+      const fingerprint = gemConfigFingerprint(
+        strategy,
+        assets,
+        reportingCurrency,
+      );
       // What the caller was handed, against what the database turned out to
       // hold. Same settings is the ordinary case and costs one hash.
       const configChanged =
         fingerprint !==
-        gemConfigFingerprint(requestedStrategy, requestedAssets);
+        gemConfigFingerprint(
+          requestedStrategy,
+          requestedAssets,
+          reportingCurrency,
+        );
       const isCurrentVersion = (signal: GemStrategySignal) =>
         signal.algorithmVersion === GEM_SIGNAL_ALGORITHM_VERSION;
       /**
@@ -509,6 +537,7 @@ export class GemSignalService {
         missing[0].evaluatedOn,
         strategy.lookbackMonths,
         manager,
+        userId,
       );
       const evaluable = new Set(missing.map((period) => period.evaluatedOn));
       const eligibleRoles = [...this.securityByRole(assets).keys()];
@@ -748,6 +777,8 @@ export class GemSignalService {
     strategy: GemStrategy,
     /** The role assignments in force, which the fingerprint is checked against. */
     assets: GemStrategyAsset[],
+    /** The reporting currency the fingerprint is checked against. */
+    reportingCurrency: string,
     asOf: string = todayYMD(),
   ): GemStrategySignal | null {
     const period = periodFor(asOf, strategy.cadence);
@@ -755,7 +786,8 @@ export class GemSignalService {
       signals.find((entry) => entry.evaluatedOn === period.evaluatedOn) ?? null;
     if (!signal) return null;
     return signal.algorithmVersion === GEM_SIGNAL_ALGORITHM_VERSION &&
-      signal.configFingerprint === gemConfigFingerprint(strategy, assets)
+      signal.configFingerprint ===
+        gemConfigFingerprint(strategy, assets, reportingCurrency)
       ? signal
       : null;
   }

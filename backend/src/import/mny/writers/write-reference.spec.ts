@@ -87,7 +87,14 @@ describe("writeAccounts", () => {
   });
 
   it("reuses an account the user already has, matched case-insensitively", async () => {
-    const repo = repoDouble([{ id: "existing-1", name: "CHEQUING" }]);
+    const repo = repoDouble([
+      {
+        id: "existing-1",
+        name: "CHEQUING",
+        currencyCode: "CAD",
+        isClosed: false,
+      },
+    ]);
 
     const written = await writeAccounts(managerFor(repo), "user-1", [
       account(),
@@ -97,6 +104,61 @@ describe("writeAccounts", () => {
     expect(written.created).toBe(0);
     expect(repo.insert).not.toHaveBeenCalled();
     expect(written.idByKey.get("acct-1")).toBe("existing-1");
+  });
+
+  it("reports the reused account ids", async () => {
+    const repo = repoDouble([
+      {
+        id: "existing-1",
+        name: "Chequing",
+        currencyCode: "CAD",
+        isClosed: false,
+      },
+    ]);
+
+    const written = await writeAccounts(managerFor(repo), "user-1", [
+      account(),
+    ]);
+
+    expect([...written.reusedIds]).toEqual(["existing-1"]);
+  });
+
+  it("refuses before any insert when a name-matched account has another currency", async () => {
+    const repo = repoDouble([
+      {
+        id: "existing-1",
+        name: "Savings",
+        currencyCode: "EUR",
+        isClosed: false,
+      },
+    ]);
+
+    await expect(
+      writeAccounts(managerFor(repo), "user-1", [
+        account({ key: "acct-0", name: "Other" }),
+        account({ name: "Savings", currencyCode: "USD" }),
+      ]),
+    ).rejects.toThrow(/"Savings" uses EUR.*uses USD/);
+    expect(repo.insert).not.toHaveBeenCalled();
+  });
+
+  it("refuses before any insert when a name-matched account is closed", async () => {
+    const repo = repoDouble([
+      {
+        id: "existing-1",
+        name: "Savings",
+        currencyCode: "CAD",
+        isClosed: true,
+      },
+    ]);
+
+    await expect(
+      writeAccounts(managerFor(repo), "user-1", [
+        account({ key: "acct-0", name: "Other" }),
+        account({ name: "Savings" }),
+      ]),
+    ).rejects.toThrow(/"Savings" is closed/);
+    expect(repo.insert).not.toHaveBeenCalled();
   });
 
   it("seeds current_balance from the opening balance and leaves the account open", async () => {
@@ -186,7 +248,14 @@ describe("writeAccounts", () => {
   });
 
   it("does not re-link a reused account", async () => {
-    const repo = repoDouble([{ id: "existing-1", name: "Brokerage" }]);
+    const repo = repoDouble([
+      {
+        id: "existing-1",
+        name: "Brokerage",
+        currencyCode: "CAD",
+        isClosed: false,
+      },
+    ]);
 
     await writeAccounts(managerFor(repo), "user-1", [
       account({ key: "acct-5", name: "Brokerage", linkedKey: "acct-5-cash" }),

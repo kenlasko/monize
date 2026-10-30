@@ -931,18 +931,21 @@ describe("built-in reports and investment cash accounts (integration)", () => {
               userId: string,
               startDate: string,
               endDate: string,
-            ) => Promise<
-              Array<{
+              currency: string,
+            ) => Promise<{
+              entries: Array<{
                 month: string;
                 totalIncome: number;
                 totalExpenses: number;
-              }>
-            >;
+              }>;
+              missingPairs: string[];
+            }>;
           }
-        ).getMonthlyHistory(userId, START, END),
+        ).getMonthlyHistory(userId, START, END, "USD"),
       );
 
-      expect(history).toEqual([
+      expect(history.missingPairs).toEqual([]);
+      expect(history.entries).toEqual([
         expect.objectContaining({
           month: MONTH,
           totalIncome: 1000,

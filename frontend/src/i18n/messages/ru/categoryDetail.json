@@ -28,7 +28,8 @@
     "transactions": "Проводки",
     "sinceYear": "С {year}",
     "lastTransaction": "Последняя проводка",
-    "convertedNote": "Пересчитано в {currency}"
+    "convertedNote": "Пересчитано в {currency}",
+    "partialRatesNote": "Для некоторых месяцев нет обменного курса"
   },
   "topPayees": {
     "title": "Основные получатели",

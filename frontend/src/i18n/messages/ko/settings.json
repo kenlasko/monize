@@ -435,9 +435,9 @@
       "label": "토론",
       "description": "커뮤니티와 질문하고 아이디어를 공유하세요."
     },
-    "wiki": {
-      "label": "위키",
-      "description": "가이드와 문서를 탐색하세요."
+    "docs": {
+      "label": "문서",
+      "description": "사용자 가이드를 탐색하세요."
     },
     "supportBackup": {
       "label": "지원용 백업 만들기",

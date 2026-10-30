@@ -96,6 +96,7 @@ import { preferredCurrency } from '@/lib/default-currency';
 import { ViewModeToggle } from '@/components/ui/ViewModeToggle';
 import { useViewMode } from '@/store/viewModeStore';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
+import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Transactions');
 
@@ -1292,7 +1293,7 @@ function TransactionsContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/Transactions"
+          helpUrl={docsUrl('transactions')}
           actions={
             <Button
               {...tourAnchor(TOUR_ANCHORS.transactionsNewButton)}

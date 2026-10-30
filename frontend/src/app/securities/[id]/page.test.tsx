@@ -4,6 +4,10 @@ import SecurityDetailPage from './page';
 import type { Security, SecurityDetail } from '@/types/investment';
 
 const mockPush = vi.fn();
+const financialToday = { current: '2026-07-28' };
+vi.mock('@/hooks/useFinancialToday', () => ({
+  useFinancialToday: () => financialToday.current,
+}));
 /** Mutable so a test can arrive with `?tab=` the way a deep link does. */
 const searchParams = { current: new URLSearchParams() };
 /**
@@ -183,6 +187,7 @@ function detailFixture(overrides: Partial<SecurityDetail> = {}): SecurityDetail 
     },
     hasTransactions: true,
     isPositionClosed: false,
+    dailyChange: null,
     ...overrides,
   };
 }
@@ -319,6 +324,55 @@ describe('SecurityDetailPage', () => {
     // The quote is the largest figure on the page and the one a reader anchors
     // on, so a figure in another currency has to say which.
     expect(screen.getByText(/150\.00 EUR/)).toBeInTheDocument();
+  });
+
+  describe('header daily change renders the server answer', () => {
+    const serverMove = {
+      currentPrice: 150,
+      previousPrice: 145,
+      dailyChange: 5,
+      dailyChangePercent: 3.448,
+      priceDate: '2026-07-28',
+    };
+
+    it('shows the move the server resolved', async () => {
+      mockGetSecurityDetail.mockResolvedValue(
+        detailFixture({ dailyChange: serverMove }),
+      );
+      await renderPage();
+      expect(screen.getByText(/\+\$?5\.00.*today/)).toBeInTheDocument();
+    });
+
+    it('labels a move from an earlier session as the last move, not today', async () => {
+      financialToday.current = '2026-07-29';
+      try {
+        mockGetSecurityDetail.mockResolvedValue(
+          detailFixture({ dailyChange: serverMove }),
+        );
+        await renderPage();
+        expect(screen.getByText(/\+\$?5\.00.*last move/)).toBeInTheDocument();
+        expect(screen.queryByText(/today/)).not.toBeInTheDocument();
+      } finally {
+        financialToday.current = '2026-07-28';
+      }
+    });
+
+    it('shows the newest close and no move when the server refuses', async () => {
+      // The two default closes are a day apart, so a client rule would show a
+      // move here; the server said null.
+      mockGetSecurityDetail.mockResolvedValue(detailFixture({ dailyChange: null }));
+      await renderPage();
+      expect(screen.getAllByText(/150\.00/).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/today|last move/)).not.toBeInTheDocument();
+    });
+
+    it('does not show a move struck for another session than the newest close', async () => {
+      mockGetSecurityDetail.mockResolvedValue(
+        detailFixture({ dailyChange: { ...serverMove, priceDate: '2026-07-20' } }),
+      );
+      await renderPage();
+      expect(screen.queryByText(/today|last move/)).not.toBeInTheDocument();
+    });
   });
 
   it('refreshes only this security from the header, then re-reads the quote', async () => {

@@ -435,9 +435,9 @@
       "label": "Thảo luận",
       "description": "Đặt câu hỏi và chia sẻ ý tưởng với cộng đồng."
     },
-    "wiki": {
-      "label": "Wiki",
-      "description": "Duyệt các hướng dẫn và tài liệu."
+    "docs": {
+      "label": "Tài liệu",
+      "description": "Duyệt hướng dẫn sử dụng."
     },
     "supportBackup": {
       "label": "Tạo bản sao lưu hỗ trợ",

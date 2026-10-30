@@ -576,6 +576,7 @@
       "total": "Итого",
       "transactions": "Проводки",
       "tooltip": "{count, plural, one {# проводка} other {# проводок}}",
+      "partialNote": "Для некоторых сумм нет обменного курса, и они не включены в эти итоги.",
       "quarterLabel": "{quarter} кв. {year}",
       "quarterTick": "{quarter} кв. {year}",
       "granularityLabel": "Группировка",

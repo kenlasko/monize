@@ -53,9 +53,13 @@ describe("loan source account", () => {
 
   describe("assertLoanSourceAccount", () => {
     it("accepts an open account the caller owns", async () => {
-      manager.findOne.mockResolvedValue({ id: NEW, isClosed: false });
+      manager.findOne.mockResolvedValue({
+        id: NEW,
+        isClosed: false,
+        currencyCode: "CAD",
+      });
       await expect(
-        assertLoanSourceAccount(m(), USER, LOAN, NEW),
+        assertLoanSourceAccount(m(), USER, LOAN, NEW, "CAD"),
       ).resolves.toBeUndefined();
       expect(manager.findOne).toHaveBeenCalledWith(Account, {
         where: { id: NEW, userId: USER },
@@ -68,13 +72,24 @@ describe("loan source account", () => {
     ])("refuses an account that is %s", async (_label, row) => {
       manager.findOne.mockResolvedValue(row);
       await expect(
-        assertLoanSourceAccount(m(), USER, LOAN, NEW),
+        assertLoanSourceAccount(m(), USER, LOAN, NEW, "CAD"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("refuses an account in another currency than the loan", async () => {
+      manager.findOne.mockResolvedValue({
+        id: NEW,
+        isClosed: false,
+        currencyCode: "EUR",
+      });
+      await expect(
+        assertLoanSourceAccount(m(), USER, LOAN, NEW, "CAD"),
       ).rejects.toThrow(BadRequestException);
     });
 
     it("refuses the loan itself without reading it", async () => {
       await expect(
-        assertLoanSourceAccount(m(), USER, LOAN, LOAN),
+        assertLoanSourceAccount(m(), USER, LOAN, LOAN, "CAD"),
       ).rejects.toThrow(BadRequestException);
       expect(manager.findOne).not.toHaveBeenCalled();
     });

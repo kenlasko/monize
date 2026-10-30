@@ -288,7 +288,18 @@ export function replayPositionBasis(
           released = sellQty * avgCostPerShare;
           releasedAll = sellQty >= quantity - HOLDING_QUANTITY_EPSILON;
           position.costBasis -= released;
-          position.quantity -= sellQty;
+        }
+        // The quantity is the one replay every surface shares (INV-HOLDING-002):
+        // the whole sale comes off, as the holdings rebuild takes it. Units the
+        // position did not hold have no recorded cost, so the basis is unknown,
+        // not an invented zero.
+        position.quantity = applyActionToQuantity(
+          position.quantity,
+          tx.action,
+          quantity,
+        );
+        if (!releasedAll && quantity !== 0) {
+          position.basisGap ??= "quantity_only_action";
         }
         if (baseInvestmentAction(tx.action) === InvestmentAction.SELL) {
           // `totalAmount` is in the security's currency and net of commission;

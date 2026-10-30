@@ -560,8 +560,8 @@ export class ScheduledTransactionLoanService {
    * price through here, so the template and what actually posts cannot use
    * two different rules. The body is `resolveInstallmentCore`
    * (`backend/src/loan-installments/price-installment.ts`), which the
-   * settlement planner shares; a rate nothing records stays 0 % on this
-   * service's purposes, the posting path's historical default.
+   * settlement planner shares; a rate nothing records declines the
+   * installment for every purpose, never a 0 % fallback.
    */
   private resolveInstallment(
     m: EntityManager,

@@ -9,7 +9,8 @@
     "test:push": "playwright test --config playwright.push.config.ts",
     "readme:screenshots": "playwright test --config playwright.readme.config.ts",
     "readme:gifs": "node readme/make-gifs.mjs",
-    "readme:optimize": "node readme/optimize-pngs.mjs"
+    "readme:optimize": "node readme/optimize-pngs.mjs",
+    "docs:screenshots": "playwright test --config playwright.docs.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

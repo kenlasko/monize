@@ -138,8 +138,8 @@
     "redonePrefix": "Redone: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "Open the Monize wiki for help with this section",
-    "helpTooltip": "Open the Monize wiki for help with this section"
+    "helpAriaLabel": "Open the Monize documentation for help with this section",
+    "helpTooltip": "Open the Monize documentation for help with this section"
   },
   "bootSplash": {
     "loading": "Loading Monize",

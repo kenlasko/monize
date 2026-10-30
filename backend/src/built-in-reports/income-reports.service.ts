@@ -103,7 +103,6 @@ export class IncomeReportsService {
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
         AND c.is_income = true
-        AND COALESCE(ts.amount, t.amount) > 0
         AND t.is_transfer = false
         AND (t.status IS NULL OR t.status != 'VOID')
         AND t.parent_transaction_id IS NULL
@@ -197,6 +196,9 @@ export class IncomeReportsService {
         color: category.color || null,
         total: roundMoney(agg.knownSubtotal),
       }))
+      // Signed net within the category (INV-REPORT-004): a correction lowers
+      // the source, and a source whose debits meet its credits earned nothing.
+      .filter((item) => item.total > 0)
       .sort((a, b) => b.total - a.total)
       .slice(0, 15);
 

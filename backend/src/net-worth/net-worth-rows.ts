@@ -35,6 +35,8 @@ export interface FirstMonthTradeRow {
   action: string;
   quantity: NumericColumn | null;
   price: NumericColumn | null;
+  commission: NumericColumn | null;
+  total_amount: NumericColumn | null;
   transaction_date: DateColumn;
   security_currency: string | null;
 }

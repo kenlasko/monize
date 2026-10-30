@@ -3,6 +3,7 @@ import {
   CategorySpending,
   excludeBudgetAccounts,
   queryCategorySpending,
+  queryCategorySpendingBuckets,
   resolveCategoryName,
   resolveCategorySpent,
   resolveCategorySpentOrNull,
@@ -546,6 +547,67 @@ describe("queryCategorySpending", () => {
     expect(result.spendingMap.get("cat-1")).toBe(-200);
     expect([...result.incompleteCategoryIds]).toEqual(["cat-1"]);
     expect(result.missingRatePairs).toEqual(["JPY->CAD"]);
+  });
+
+  it("buckets one range's rows, netting and flagging each bucket on its own", async () => {
+    const txRepo: any = {
+      manager: makeManager(),
+      createQueryBuilder: jest.fn().mockImplementation(() =>
+        makeQbReturning([
+          {
+            key: "cat-1",
+            currencyCode: "CAD",
+            txDate: "2026-01-10",
+            total: "-100",
+          },
+          {
+            key: "cat-1",
+            currencyCode: "CAD",
+            txDate: "2026-01-20",
+            total: "30",
+          },
+          {
+            key: "cat-1",
+            currencyCode: "CAD",
+            txDate: "2026-02-03",
+            total: "-50",
+          },
+          {
+            key: "cat-1",
+            currencyCode: "JPY",
+            txDate: "2026-02-04",
+            total: "-9000",
+          },
+        ]),
+      ),
+    };
+    const splitRepo: any = {
+      createQueryBuilder: jest
+        .fn()
+        .mockImplementation(() => makeQbReturning([])),
+    };
+
+    const { buckets } = await queryCategorySpendingBuckets(
+      txRepo,
+      splitRepo,
+      "user-1",
+      [makeBudgetCategory({ categoryId: "cat-1" })],
+      "2026-01-01",
+      "2026-02-28",
+      (txDate) => txDate.slice(0, 7),
+    );
+
+    // One query pair for the whole range, not one per bucket.
+    expect(txRepo.createQueryBuilder).toHaveBeenCalledTimes(1);
+    expect([...buckets.keys()].sort()).toEqual(["2026-01", "2026-02"]);
+    expect(buckets.get("2026-01")!.spendingMap.get("cat-1")).toBe(-70);
+    expect(buckets.get("2026-01")!.incompleteCategoryIds.size).toBe(0);
+    expect(buckets.get("2026-01")!.missingRatePairs).toEqual([]);
+    expect(buckets.get("2026-02")!.spendingMap.get("cat-1")).toBe(-50);
+    expect([...buckets.get("2026-02")!.incompleteCategoryIds]).toEqual([
+      "cat-1",
+    ]);
+    expect(buckets.get("2026-02")!.missingRatePairs).toEqual(["JPY->CAD"]);
   });
 });
 

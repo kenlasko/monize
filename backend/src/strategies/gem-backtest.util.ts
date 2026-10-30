@@ -307,11 +307,6 @@ export function runBacktest(input: GemBacktestInput): GemBacktestResult | null {
   const truncated =
     lastGap >= 0 || hasEarlierSignals || run[0].previousRole !== null;
 
-  // An absolute commission only becomes a drag against a known capital.
-  const commissionFraction =
-    !truncated && commissionAmount !== null && notional !== null && notional > 0
-      ? commissionAmount / notional
-      : null;
   // One order per account per leg. Below one the simulation still charges the
   // single trade it always did: a strategy with no accounts has no notional
   // either, so this only matters for a caller that supplies one anyway.
@@ -319,95 +314,118 @@ export function runBacktest(input: GemBacktestInput): GemBacktestResult | null {
   const taxRate =
     !truncated && taxRatePercent !== null ? taxRatePercent / 100 : null;
 
-  let equity = 1;
-  let peak = 1;
-  let maxDrawdown = 0;
-  /** Equity when the current instrument was bought, for the realized gain. */
-  let legEntryEquity = 1;
-  let previousSecurityId: string | null = null;
-  let beatSafe = 0;
-  let comparedToSafe = 0;
-  let drawdownObserved = true;
+  const chargeCommission =
+    !truncated &&
+    commissionAmount !== null &&
+    notional !== null &&
+    notional > 0;
 
-  for (const period of run) {
-    const securityId = period.targetSecurityId as string;
-    const series = seriesBySecurity.get(securityId) as PricePoint[];
-    const periodGrowth = period.growth as number;
+  // Equity 1 is the starting capital C0 and the commission is an absolute sum
+  // per order, so one order costs commissionAmount / C0 equity units for the
+  // whole run, however far the portfolio has grown. C0 is only known from the
+  // result (notional is today's value = C0 * finalEquity), hence two passes: a
+  // gross one for finalEquity, then the real one with the fixed per-order cost.
+  // shortcut: the gross pass still applies tax, so C0 is approximate.
+  const simulate = (orderCost: number | null) => {
+    let equity = 1;
+    let peak = 1;
+    let maxDrawdown = 0;
+    /** Equity when the current instrument was bought, for the realized gain. */
+    let legEntryEquity = 1;
+    let previousSecurityId: string | null = null;
+    let beatSafe = 0;
+    let comparedToSafe = 0;
+    let drawdownObserved = true;
 
-    // Entering a different instrument: the old one is sold, which realizes a
-    // result and costs two legs. The very first buy costs one. Each leg is
-    // one order in every account the strategy runs in.
-    if (securityId !== previousSecurityId) {
-      const opening = previousSecurityId === null;
-      if (taxRate !== null && !opening) {
-        // On the gross value of the leg being closed. The live report taxes
-        // `marketValue - costBasis` and does not net the disposal commission
-        // off the proceeds, so neither does this: the two estimates have to
-        // answer the same question or the backtest is not a projection of the
-        // page it sits on.
-        const gain = equity - legEntryEquity;
-        if (gain > 0) equity -= gain * taxRate;
-      }
-      // Selling costs one order per account; opening the first position sells
-      // nothing.
-      if (commissionFraction !== null && !opening) {
-        equity -= commissionFraction * ordersPerLeg;
-      }
-      // The new leg's basis is the whole sum committed to it -- including the
-      // commission about to be paid to acquire it, exactly as
-      // `calculateCostBasisLotsInAccountCurrency` does for a real purchase.
-      //
-      // Set after the buy commission, this was the amount *invested* rather
-      // than the amount spent, so the fee dropped out of the basis and turned
-      // into taxable gain at the next switch. On 10,000 with a 100 fee that is
-      // a basis of 9,900, a gain overstated by 100, and 20 of tax at 20% that
-      // nobody owes -- compounding at every switch and with every account.
-      legEntryEquity = equity;
-      if (commissionFraction !== null) {
-        equity -= commissionFraction * ordersPerLeg;
-      }
-      previousSecurityId = securityId;
-    }
+    for (const period of run) {
+      const securityId = period.targetSecurityId as string;
+      const series = seriesBySecurity.get(securityId) as PricePoint[];
+      const periodGrowth = period.growth as number;
 
-    const entryPrice = closeAt(series, period.effectiveFrom) as number;
-    // The path is only worth walking where it was observed. One period with a
-    // hole in it makes the whole run's drawdown unknown, because the deepest
-    // point of the run may be inside that hole.
-    if (!pathObserved(series, period.effectiveFrom, period.endsOn)) {
-      drawdownObserved = false;
-    }
-    // Walk the daily closes inside the period so the drawdown reflects what
-    // the run actually went through, not only its period-end marks.
-    for (const point of series) {
-      if (point.date < period.effectiveFrom || point.date > period.endsOn) {
-        continue;
+      // Entering a different instrument: the old one is sold, which realizes a
+      // result and costs two legs. The very first buy costs one. Each leg is
+      // one order in every account the strategy runs in.
+      if (securityId !== previousSecurityId) {
+        const opening = previousSecurityId === null;
+        if (taxRate !== null && !opening) {
+          // On the gross value of the leg being closed. The live report taxes
+          // `marketValue - costBasis` and does not net the disposal commission
+          // off the proceeds, so neither does this: the two estimates have to
+          // answer the same question or the backtest is not a projection of the
+          // page it sits on.
+          const gain = equity - legEntryEquity;
+          if (gain > 0) equity -= gain * taxRate;
+        }
+        // Selling costs one order per account; opening the first position sells
+        // nothing.
+        if (orderCost !== null && !opening) {
+          equity -= orderCost * ordersPerLeg;
+        }
+        // The new leg's basis is the whole sum committed to it -- including the
+        // commission about to be paid to acquire it, exactly as
+        // `calculateCostBasisLotsInAccountCurrency` does for a real purchase.
+        //
+        // Set after the buy commission, this was the amount *invested* rather
+        // than the amount spent, so the fee dropped out of the basis and turned
+        // into taxable gain at the next switch. On 10,000 with a 100 fee that is
+        // a basis of 9,900, a gain overstated by 100, and 20 of tax at 20% that
+        // nobody owes -- compounding at every switch and with every account.
+        legEntryEquity = equity;
+        if (orderCost !== null) {
+          equity -= orderCost * ordersPerLeg;
+        }
+        previousSecurityId = securityId;
       }
-      const value = equity * (point.close / entryPrice);
-      if (value > peak) peak = value;
-      const drawdown = value / peak - 1;
-      if (drawdown < maxDrawdown) maxDrawdown = drawdown;
-    }
-    equity *= periodGrowth;
-    if (equity > peak) peak = equity;
 
-    // Did following the signal beat sitting in the safe asset this period?
-    const safeGrowth =
-      safeSecurityId && safeSecurityId !== securityId
-        ? growth(
-            seriesBySecurity.get(safeSecurityId),
-            period.effectiveFrom,
-            period.endsOn,
-            period.end,
-          )
-        : null;
-    if (safeGrowth !== null) {
-      comparedToSafe += 1;
-      if (periodGrowth > safeGrowth) beatSafe += 1;
-    } else if (safeSecurityId === securityId) {
-      // Holding the safe asset ties with itself; a tie is not a win.
-      comparedToSafe += 1;
+      const entryPrice = closeAt(series, period.effectiveFrom) as number;
+      // The path is only worth walking where it was observed. One period with a
+      // hole in it makes the whole run's drawdown unknown, because the deepest
+      // point of the run may be inside that hole.
+      if (!pathObserved(series, period.effectiveFrom, period.endsOn)) {
+        drawdownObserved = false;
+      }
+      // Walk the daily closes inside the period so the drawdown reflects what
+      // the run actually went through, not only its period-end marks.
+      for (const point of series) {
+        if (point.date < period.effectiveFrom || point.date > period.endsOn) {
+          continue;
+        }
+        const value = equity * (point.close / entryPrice);
+        if (value > peak) peak = value;
+        const drawdown = value / peak - 1;
+        if (drawdown < maxDrawdown) maxDrawdown = drawdown;
+      }
+      equity *= periodGrowth;
+      if (equity > peak) peak = equity;
+
+      // Did following the signal beat sitting in the safe asset this period?
+      const safeGrowth =
+        safeSecurityId && safeSecurityId !== securityId
+          ? growth(
+              seriesBySecurity.get(safeSecurityId),
+              period.effectiveFrom,
+              period.endsOn,
+              period.end,
+            )
+          : null;
+      if (safeGrowth !== null) {
+        comparedToSafe += 1;
+        if (periodGrowth > safeGrowth) beatSafe += 1;
+      } else if (safeSecurityId === securityId) {
+        // Holding the safe asset ties with itself; a tie is not a win.
+        comparedToSafe += 1;
+      }
     }
-  }
+    return { equity, maxDrawdown, beatSafe, comparedToSafe, drawdownObserved };
+  };
+
+  const gross = simulate(null);
+  const orderCost =
+    chargeCommission && gross.equity > 0
+      ? (commissionAmount as number) * (gross.equity / (notional as number))
+      : null;
+  const { equity, maxDrawdown, beatSafe, comparedToSafe, drawdownObserved } =
+    orderCost === null ? gross : simulate(orderCost);
 
   const years = daysBetween(from, to) / DAYS_PER_YEAR;
   const cagrPercent =
@@ -431,7 +449,7 @@ export function runBacktest(input: GemBacktestInput): GemBacktestResult | null {
         ? roundToDecimals((beatSafe / comparedToSafe) * 100, 2)
         : null,
     taxApplied: taxRate !== null,
-    commissionApplied: commissionFraction !== null,
+    commissionApplied: orderCost !== null,
     coveragePercent: roundToDecimals((run.length / elapsed.length) * 100, 2),
   };
 }

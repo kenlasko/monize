@@ -47,9 +47,9 @@
     "processing": "处理中...",
     "acceptedFormats": "QIF/QMTF、OFX、QFX、CSV 或 Microsoft Money (.mny)",
     "mnyFailedHeading": "无法打开该 Microsoft Money 文件",
-    "wikiNotice": {
+    "docsNotice": {
       "title": "导入之前",
-      "body": "在导入任何内容之前，请先阅读 wiki 中的 <money>Importing from Microsoft Money</money> 或 <quicken>Importing from Quicken</quicken> 一节。"
+      "body": "在导入任何内容之前，请先阅读文档中的 <money>Importing from Microsoft Money</money> 或 <quicken>Importing from Quicken</quicken> 一节。"
     }
   },
   "selectAccount": {

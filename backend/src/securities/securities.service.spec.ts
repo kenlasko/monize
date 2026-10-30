@@ -1591,6 +1591,38 @@ describe("SecuritiesService", () => {
     });
   });
 
+  describe("getDailyPriceChange", () => {
+    beforeEach(() => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-02-09T12:00:00.000Z"));
+    });
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("resolves the move of the two newest closes through the shared rule", async () => {
+      scopedManager.query.mockResolvedValue([
+        { close_price: "110", price_date: "2026-02-09" },
+        { close_price: "100", price_date: "2026-02-06" },
+      ]);
+
+      const change = await service.getDailyPriceChange("sec-1");
+
+      expect(change).toEqual(
+        expect.objectContaining({ dailyChange: 10, priceDate: "2026-02-09" }),
+      );
+      expect(change?.dailyChangePercent).toBeCloseTo(10);
+    });
+
+    it("refuses with null when the newest close is stale", async () => {
+      scopedManager.query.mockResolvedValue([
+        { close_price: "110", price_date: "2026-02-02" },
+        { close_price: "100", price_date: "2026-02-01" },
+      ]);
+
+      expect(await service.getDailyPriceChange("sec-1")).toBeNull();
+    });
+  });
+
   describe("getFavouriteSecurities", () => {
     // A daily change is only a daily change while its newer close is the
     // session the reader is in, so these cases have a today: the fixtures price

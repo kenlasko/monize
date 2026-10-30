@@ -1397,11 +1397,35 @@ export class PortfolioCalculationService {
               // capital gain by the same amount it understated the basis.
               addAcquired(step.acquired);
               break;
-            // The basis the paired OUT leg released, as the replay priced it
-            // (A26-M21); never a purchase.
+            // A transfer is not a realised event: the leg is a flow at the
+            // market value on its date, so the move changes neither account's
+            // capital gain. Booking carried basis on one leg only (or none)
+            // read the move as a loss in the source and a gain in the
+            // destination. An unpriced or unconvertible leg is an unknown flow.
             case InvestmentAction.TRANSFER_IN:
-              addAcquired(step.acquired);
+            case InvestmentAction.TRANSFER_OUT: {
+              const price = this.lookupPrice(
+                group.securityId,
+                tx.transactionDate,
+                allPrices,
+              );
+              const fx = await fxRate(
+                group.securityCurrencyCode,
+                group.accountCurrencyCode,
+                tx.transactionDate,
+              );
+              if (price === null || fx === null) {
+                flowsComplete = false;
+                break;
+              }
+              const value = Math.abs(Number(tx.quantity) || 0) * price * fx;
+              if (
+                baseInvestmentAction(tx.action) === InvestmentAction.TRANSFER_IN
+              )
+                buys += value;
+              else sells += value;
               break;
+            }
             case InvestmentAction.SELL:
             case InvestmentAction.RETURN_OF_CAPITAL: {
               // A return of capital is capital coming back out, so it nets
@@ -2246,7 +2270,7 @@ export class PortfolioCalculationService {
         name: "Cash",
         symbol: null,
         type: "cash",
-        value: totalCashValue,
+        value: roundMoney(totalCashValue),
         percentage: pct(totalCashValue),
         color: "#6b7280",
         currencyCode: defaultCurrency,
@@ -2259,7 +2283,7 @@ export class PortfolioCalculationService {
         name: item.name,
         symbol: item.symbol,
         type: "security",
-        value: item.value,
+        value: roundMoney(item.value),
         percentage: pct(item.value),
         color: colors[colorIndex % colors.length],
         currencyCode: item.currencyCode,

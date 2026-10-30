@@ -68,6 +68,8 @@ export interface SeasonalPattern {
   }>;
   highMonths: number[];
   typicalMonthlySpend: number;
+  /** `false` when a row had no rate to the budget currency: figures are subtotals. */
+  valuationComplete: boolean;
 }
 
 export interface FlexGroupStatusResult {
@@ -97,6 +99,8 @@ export interface SavingsRatePoint {
   expenses: number;
   savings: number;
   savingsRate: number;
+  /** `false` when a row of the month had no rate: the figures are subtotals. */
+  valuationComplete: boolean;
 }
 
 export interface HealthScoreHistoryPoint {

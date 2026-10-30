@@ -28,7 +28,8 @@
     "transactions": "Transações",
     "sinceYear": "Desde {year}",
     "lastTransaction": "Última transação",
-    "convertedNote": "Convertido para {currency}"
+    "convertedNote": "Convertido para {currency}",
+    "partialRatesNote": "Alguns meses não têm taxa de câmbio"
   },
   "topPayees": {
     "title": "Beneficiários principais",

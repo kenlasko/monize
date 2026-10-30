@@ -42,6 +42,7 @@
     "institutionNotFound": "Không tìm thấy tổ chức",
     "updateClosed": "Không thể cập nhật tài khoản đã đóng",
     "changeCurrencyWithTransactions": "Không thể thay đổi tiền tệ của tài khoản đã có giao tác.",
+    "changeCurrencyWithBalanceOrSchedules": "Không thể đổi tiền tệ của tài khoản có số dư đầu kỳ hoặc giao dịch định kỳ.",
     "alreadyClosed": "Tài khoản đã được đóng",
     "closeNonZeroBalance": "Không thể đóng tài khoản có số dư khác không. Số dư hiện tại: {{ currentBalance }}",
     "closeWithFutureTransactions": "Không thể đóng tài khoản có giao dịch mang ngày trong tương lai. Tài khoản có {{ count }} giao dịch mang ngày sau hôm nay; hãy xóa hoặc hủy bỏ chúng trước.",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "Tệp Money này đang được nhập. Hãy đợi quá trình nhập hoàn tất trước khi loại bỏ tệp.",
     "mnyImportAlreadyRunning": "Đã có một lần nhập đang chạy. Hãy đợi hoàn tất trước khi bắt đầu lần khác.",
     "mnyAlreadyImported": "Tệp này đã được nhập vào ngày {{ date }} (lần nhập {{ jobId }}) và các bản ghi vẫn còn trong tài khoản của bạn. Nhập lại sẽ tạo bản trùng. Để thay thế chúng, hãy bắt đầu lại và chọn thay thế dữ liệu hiện có.",
+    "mnyExistingAccountClosed": "Tài khoản hiện có \"{{ name }}\" đã đóng nên không thể gộp tệp Money vào đó. Hãy mở lại hoặc đổi tên tài khoản rồi nhập lại.",
+    "mnyExistingAccountCurrency": "Tài khoản hiện có \"{{ name }}\" dùng {{ existing }}, nhưng tài khoản trong tệp Money dùng {{ file }}. Hãy đổi tên một trong hai rồi nhập lại.",
     "mnyJobNotFound": "Không tìm thấy tác vụ nhập",
     "mnyFileTooLarge": "Tệp Money đó lớn hơn giới hạn nhập {{ limit }} MB.",
-    "noRateForSplitTransfer": "Không có tỷ giá cho {{ pair }} vào ngày {{ date }}: một dòng chia tách chuyển sang tài khoản bằng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại."
+    "noRateForSplitTransfer": "Không có tỷ giá cho {{ pair }} vào ngày {{ date }}: một dòng chia tách chuyển sang tài khoản bằng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại.",
+    "accountClosed": "Tài khoản đã đóng. Hãy mở lại hoặc chọn tài khoản khác."
   },
   "monteCarlo": {
     "scenarioNotFound": "Không tìm thấy kịch bản {{ id }}",
@@ -779,6 +783,7 @@
     "notATransfer": "Giao tác không phải là chuyển tiền",
     "splitTransferLegAccountLocked": "Chuyển khoản này là một phần của giao tác chia nhỏ. Hãy thay đổi tài khoản bằng cách chỉnh sửa phần chia trên giao tác nguồn.",
     "splitTransferLegStatusLocked": "Giao dịch chuyển tiền này là một phần của giao dịch được chia nhỏ. Hãy hủy hoặc phục hồi nó bằng cách chỉnh sửa giao dịch được chia nhỏ mà nó thuộc về, để cả hai bên thay đổi cùng nhau.",
+    "investmentCashLegLocked": "Giao dịch này là phần tiền mặt của một giao dịch đầu tư. Hãy sửa hoặc xóa giao dịch đầu tư để cả hai phần cùng thay đổi.",
     "investmentCashLegStatusLocked": "Giao dịch này là phần tiền mặt của một giao dịch đầu tư. Hãy hủy hoặc phục hồi nó bằng cách thay đổi trạng thái của giao dịch đầu tư, để cả hai bên thay đổi cùng nhau.",
     "notFoundById": "Không tìm thấy giao tác với ID {{ id }}",
     "bulkUpdateNoFields": "Phải cung cấp ít nhất một trường cập nhật",

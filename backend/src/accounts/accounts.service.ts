@@ -19,6 +19,7 @@ import {
   Transaction,
   TransactionStatus,
 } from "../transactions/entities/transaction.entity";
+import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { Holding } from "../securities/entities/holding.entity";
 import { Institution } from "../institutions/entities/institution.entity";
@@ -221,6 +222,45 @@ export async function applyAccountBalanceDelta(
   );
   return affectedRowCount(updated);
 }
+
+/**
+ * Recompute every account of `userId` from its opening balance and its ledger
+ * through `today`, under the shared account lock -- the derivation
+ * `AccountsService.recalculateCurrentBalance` uses for one account. The backup
+ * restore calls it: the file's balances are as of the backup day, so a row
+ * dated after it and on or before today is in no stored figure.
+ */
+export async function recalculateUserCurrentBalances(
+  manager: EntityManager,
+  userId: string,
+  today: string,
+): Promise<void> {
+  const accounts: { id: string }[] = await manager.query(
+    `SELECT id FROM accounts WHERE user_id = $1`,
+    [userId],
+  );
+  await lockAccountsForBalanceWrite(
+    manager,
+    accounts.map((a) => a.id),
+    userId,
+  );
+  await manager.query(
+    `UPDATE accounts a
+        SET current_balance = ROUND(CAST(COALESCE(a.opening_balance, 0) + COALESCE((
+              SELECT SUM(t.amount)
+                FROM transactions t
+               WHERE t.account_id = a.id
+                 AND ${LEDGER_MOVEMENT_PREDICATE}
+                 AND t.transaction_date <= $2
+            ), 0) AS numeric), 4)
+      WHERE a.user_id = $1`,
+    [userId, today],
+  );
+}
+
+// shortcut: rows older than this many days are missed after a longer outage,
+// upgrade to a per-timezone last-run marker if outages beyond a week matter.
+const DUE_BALANCE_CATCH_UP_DAYS = 7;
 
 @Injectable()
 export class AccountsService {
@@ -977,6 +1017,31 @@ export class AccountsService {
               ),
             );
           }
+
+          // A non-zero opening balance or an active schedule is denominated in
+          // the old currency too; changing it would relabel them as the new
+          // one. A balance sent with the new currency replaces the stored one
+          // and is denominated in the new currency; a finished schedule is
+          // never run again.
+          const scheduleCount = await m.count(ScheduledTransaction, {
+            where: { accountId: id, isActive: true },
+          });
+          // A form resends the stored balance unchanged; only a value
+          // difference is a balance chosen for the new currency.
+          const replacesOpeningBalance =
+            updateAccountDto.openingBalance !== undefined &&
+            roundMoney(Number(updateAccountDto.openingBalance)) !==
+              roundMoney(Number(account.openingBalance));
+          const keepsOldOpeningBalance =
+            !replacesOpeningBalance && Number(account.openingBalance) !== 0;
+          if (keepsOldOpeningBalance || scheduleCount > 0) {
+            throw new BadRequestException(
+              tr(
+                "errors.accounts.changeCurrencyWithBalanceOrSchedules",
+                "Cannot change the currency of an account that has an opening balance or scheduled transactions.",
+              ),
+            );
+          }
         }
 
         const before = { ...account };
@@ -1077,14 +1142,25 @@ export class AccountsService {
         const sourceAccountChanged =
           updateAccountDto.sourceAccountId !== undefined &&
           updateAccountDto.sourceAccountId !== account.sourceAccountId;
-        if (sourceAccountChanged) {
+        // The loan's own currency changing is checked against the unchanged
+        // source too: a currency change alone would strand its bill.
+        const loanCurrencyChanged =
+          account.currencyCode !== before.currencyCode;
+        if (
+          sourceAccountChanged ||
+          (loanCurrencyChanged && account.sourceAccountId)
+        ) {
+          const nextSourceId = sourceAccountChanged
+            ? updateAccountDto.sourceAccountId!
+            : account.sourceAccountId!;
           await assertLoanSourceAccount(
             m,
             userId,
             id,
-            updateAccountDto.sourceAccountId!,
+            nextSourceId,
+            account.currencyCode,
           );
-          account.sourceAccountId = updateAccountDto.sourceAccountId!;
+          account.sourceAccountId = nextSourceId;
         }
         if (updateAccountDto.principalCategoryId !== undefined)
           account.principalCategoryId = updateAccountDto.principalCategoryId;
@@ -2418,28 +2494,46 @@ export class AccountsService {
                FROM transactions t
                JOIN accounts a ON a.id = t.account_id
                WHERE a.user_id = ANY($1)
-                 AND t.transaction_date = $2
+                 AND t.transaction_date BETWEEN ($2::date - $3::int) AND $2::date
                  AND ${LEDGER_MOVEMENT_PREDICATE}`,
-            [userIds, today],
+            [userIds, today, DUE_BALANCE_CATCH_UP_DAYS],
           );
 
           if (accountRows.length === 0) return 0;
 
-          const accountIds = accountRows.map((r) => r.account_id);
-          await lockAccountsForBalanceWrite(m, accountIds);
-
-          const balances: { account_id: string; balance: string }[] =
-            await m.query(
-              `SELECT a.id as account_id,
+          const balancesSql = `SELECT a.id as account_id,
+                    a.current_balance,
                     COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
                FROM accounts a
                LEFT JOIN transactions t ON t.account_id = a.id
                  AND ${LEDGER_MOVEMENT_PREDICATE}
                  AND t.transaction_date <= $2
                WHERE a.id = ANY($1)
-               GROUP BY a.id, a.opening_balance`,
-              [accountIds, today],
-            );
+               GROUP BY a.id, a.opening_balance, a.current_balance`;
+          const differs = (r: { balance: string; current_balance: string }) =>
+            roundMoney(Number(r.balance)) !==
+            roundMoney(Number(r.current_balance));
+
+          // Read-only first: the catch-up window reaches every account with a
+          // ledger row in the last days, and almost all are already right.
+          // Only an account whose stored balance differs is locked and written.
+          const candidateIds = accountRows.map((r) => r.account_id);
+          const candidateBalances: {
+            account_id: string;
+            balance: string;
+            current_balance: string;
+          }[] = await m.query(balancesSql, [candidateIds, today]);
+          const accountIds = candidateBalances
+            .filter(differs)
+            .map((r) => r.account_id);
+          if (accountIds.length === 0) return 0;
+
+          await lockAccountsForBalanceWrite(m, accountIds);
+
+          // Re-read under the lock: the first read saw no lock, so a delta that
+          // committed since is in this figure, not in the one above.
+          const balances: { account_id: string; balance: string }[] =
+            await m.query(balancesSql, [accountIds, today]);
 
           if (balances.length > 0) {
             // Apply all recomputed balances in a single statement instead of

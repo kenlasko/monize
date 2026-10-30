@@ -42,6 +42,7 @@
     "institutionNotFound": "Institusi tidak ditemukan",
     "updateClosed": "Tidak dapat memperbarui akun yang sudah ditutup",
     "changeCurrencyWithTransactions": "Tidak dapat mengubah mata uang akun yang memiliki transaksi.",
+    "changeCurrencyWithBalanceOrSchedules": "Tidak dapat mengubah mata uang akun yang memiliki saldo awal atau transaksi terjadwal.",
     "alreadyClosed": "Akun sudah ditutup",
     "closeNonZeroBalance": "Tidak dapat menutup akun dengan saldo bukan nol. Saldo saat ini: {{ currentBalance }}",
     "closeWithFutureTransactions": "Akun dengan transaksi bertanggal masa depan tidak dapat ditutup. Akun ini memiliki {{ count }} transaksi bertanggal setelah hari ini; hapus atau batalkan transaksi tersebut terlebih dahulu.",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "File Money ini sedang diimpor. Tunggu hingga impor selesai sebelum membuangnya.",
     "mnyImportAlreadyRunning": "Impor sedang berjalan. Tunggu hingga selesai sebelum memulai yang lain.",
     "mnyAlreadyImported": "File ini sudah diimpor pada {{ date }} (impor {{ jobId }}), dan catatannya masih ada di akun Anda. Mengimpornya lagi akan menggandakannya. Untuk menggantinya, mulai ulang dan pilih untuk mengganti data Anda yang ada.",
+    "mnyExistingAccountClosed": "Akun \"{{ name }}\" yang sudah ada ditutup, sehingga file Money tidak dapat digabungkan ke dalamnya. Buka kembali atau ganti namanya, lalu impor lagi.",
+    "mnyExistingAccountCurrency": "Akun \"{{ name }}\" yang sudah ada memakai {{ existing }}, tetapi akun di file Money memakai {{ file }}. Ganti nama salah satunya, lalu impor lagi.",
     "mnyJobNotFound": "Tugas impor tidak ditemukan",
     "mnyFileTooLarge": "Berkas Money itu lebih besar dari batas impor {{ limit }} MB.",
-    "noRateForSplitTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: sebuah baris pecahan mentransfer ke akun dengan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi."
+    "noRateForSplitTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: sebuah baris pecahan mentransfer ke akun dengan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi.",
+    "accountClosed": "Akun ditutup. Buka kembali atau pilih akun lain."
   },
   "monteCarlo": {
     "scenarioNotFound": "Skenario {{ id }} tidak ditemukan",
@@ -779,6 +783,7 @@
     "notATransfer": "Transaksi bukan merupakan transfer",
     "splitTransferLegAccountLocked": "Transfer ini adalah bagian dari transaksi terbagi. Ubah akunnya dengan mengedit pembagian pada transaksi sumber.",
     "splitTransferLegStatusLocked": "Transfer ini merupakan bagian dari transaksi terpisah. Batalkan atau pulihkan dengan mengedit transaksi terpisah yang memuatnya, agar kedua sisi berubah bersama-sama.",
+    "investmentCashLegLocked": "Transaksi ini adalah sisi kas dari transaksi investasi. Ubah atau hapus transaksi investasinya, agar kedua sisi berubah bersama.",
     "investmentCashLegStatusLocked": "Transaksi ini adalah sisi kas dari sebuah transaksi investasi. Batalkan atau pulihkan dengan mengubah status transaksi investasi tersebut, agar kedua sisi berubah bersama-sama.",
     "notFoundById": "Transaksi dengan ID {{ id }} tidak ditemukan",
     "bulkUpdateNoFields": "Minimal satu kolom pembaruan harus diberikan",

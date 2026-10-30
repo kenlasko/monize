@@ -47,7 +47,11 @@ import {
   COUNTRY_OPTIONS,
 } from "./security-enums";
 import { todayYMD } from "../common/date-utils";
-import { PricePoint, resolveDailyPriceChange } from "./daily-change.util";
+import {
+  DailyPriceChange,
+  PricePoint,
+  resolveDailyPriceChange,
+} from "./daily-change.util";
 
 /**
  * A security decorated with what its most recent price row says.
@@ -1352,6 +1356,32 @@ export class SecuritiesService {
         priceDate: change?.priceDate ?? null,
       };
     });
+  }
+
+  /**
+   * One security's daily move for its detail header, through the same rule as
+   * the watchlist and the movers board. Null is a refusal (not adjacent
+   * sessions, or the newer close is not current), never a zero move.
+   * Ownership is the caller's (`findOne`).
+   */
+  async getDailyPriceChange(
+    securityId: string,
+  ): Promise<DailyPriceChange | null> {
+    const rows: Array<{ close_price: string; price_date: string }> =
+      await withScopedDb(this.dataSource, (m) =>
+        m.query(
+          `SELECT close_price, TO_CHAR(price_date, 'YYYY-MM-DD') AS price_date
+             FROM security_prices
+           WHERE security_id = $1
+           ORDER BY price_date DESC
+           LIMIT 2`,
+          [securityId],
+        ),
+      );
+    return resolveDailyPriceChange(
+      rows.map((r) => ({ price: Number(r.close_price), date: r.price_date })),
+      todayYMD(),
+    );
   }
 
   async getSecurityIdsWithTransactions(userId: string): Promise<string[]> {

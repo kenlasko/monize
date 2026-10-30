@@ -881,8 +881,12 @@ describe('effectiveAnnualRateOn', () => {
     expect(effectiveAnnualRateOn(rows, '2025-06-05', 9)).toBe(5.5);
   });
 
-  it('uses the earliest row for a date before the first change', () => {
-    expect(effectiveAnnualRateOn(rows, '2020-01-01', 9)).toBe(1.95);
+  it('uses the earliest row, not the account rate, for a date before the first row of a history that has begun', () => {
+    expect(effectiveAnnualRateOn(rows, '2020-01-01', 9, '2026-01-01')).toBe(1.95);
+  });
+
+  it('falls back to the account rate when the whole history starts in the future', () => {
+    expect(effectiveAnnualRateOn(rows, '2020-01-01', 9, '2019-01-01')).toBe(9);
   });
 
   it('falls back to the account rate when there are no rows', () => {
@@ -1027,6 +1031,34 @@ describe('generateBudgetSchedule (fixed monthly budget)', () => {
     const after = result.rows.filter((r) => r.date > '2025-12-31');
     expect(after.length).toBeGreaterThan(0);
     for (const r of after) expect(r.extraPrincipal).toBe(0);
+  });
+
+  it('outside the window pays the recorded payment a rate change set, as the ordinary generator does', () => {
+    const rateChanges = [{ effectiveDate: '2025-02-01', annualRate: 4, paymentAmount: 1500 }];
+    const result = generateLoanSchedule({
+      ...budgetInput(),
+      rateChanges,
+      overpayments: {
+        targetMonthlyPayment: 4000,
+        targetMonthlyPaymentMode: 'SHORTEN_TERM',
+        targetMonthlyPaymentStart: '2025-04-01',
+      },
+    });
+    const beforeWindow = result.rows.filter((r) => r.date >= '2025-02-01' && r.date < '2025-04-01');
+    expect(beforeWindow.length).toBeGreaterThan(0);
+    for (const r of beforeWindow) expect(r.payment).toBeCloseTo(1500, 1);
+
+    const lower = generateLoanSchedule({
+      ...budgetInput(),
+      rateChanges,
+      overpayments: {
+        targetMonthlyPayment: 4000,
+        targetMonthlyPaymentMode: 'LOWER_INSTALLMENT',
+        targetMonthlyPaymentStart: '2025-04-01',
+      },
+    });
+    const lowerBefore = lower.rows.filter((r) => r.date >= '2025-02-01' && r.date < '2025-04-01');
+    for (const r of lowerBefore) expect(r.payment).toBeCloseTo(1500, 1);
   });
 
   it('never counts unpaid interest as principal when the installment is below the interest', () => {

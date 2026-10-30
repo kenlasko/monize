@@ -47,9 +47,9 @@
     "processing": "Đang xử lý...",
     "acceptedFormats": "QIF/QMTF, OFX, QFX, CSV hoặc Microsoft Money (.mny)",
     "mnyFailedHeading": "Không thể mở tệp Microsoft Money đó",
-    "wikiNotice": {
+    "docsNotice": {
       "title": "Trước khi nhập khẩu",
-      "body": "Hãy đọc mục <money>Importing from Microsoft Money</money> hoặc <quicken>Importing from Quicken</quicken> trên wiki trước khi nhập khẩu bất cứ dữ liệu nào."
+      "body": "Hãy đọc mục <money>Importing from Microsoft Money</money> hoặc <quicken>Importing from Quicken</quicken> trong tài liệu trước khi nhập khẩu bất cứ dữ liệu nào."
     }
   },
   "selectAccount": {

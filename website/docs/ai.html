@@ -1,0 +1,233 @@
+<!doctype html>
+<!-- Generated from website/docs/ai.md by frontend/scripts/build-website-docs.mjs. Edit the Markdown, then run "npm run docs:build" in frontend/. -->
+<html lang="en" data-theme="dark" class="docs-root"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="preload" as="image" href="/assets/img/monize-logo.svg"/><title>AI - Monize documentation</title><meta name="description" content="The AI assistant, financial insights and MCP integration."/><meta name="theme-color" content="#4fa091"/><link rel="canonical" href="https://monize.net/docs/ai"/><link rel="icon" type="image/svg+xml" href="/assets/img/monize-logo.svg"/><meta property="og:type" content="article"/><meta property="og:site_name" content="Monize"/><meta property="og:title" content="AI - Monize documentation"/><meta property="og:description" content="The AI assistant, financial insights and MCP integration."/><meta property="og:url" content="https://monize.net/docs/ai"/><link rel="stylesheet" href="/assets/css/styles.css"/><link rel="stylesheet" href="/assets/css/docs.css"/><script src="/assets/js/theme-boot.js"></script></head><body class="docs"><a class="skip" href="#content">Skip to content</a><header id="hdr" class="dhdr"><button id="sideBtn" class="icobtn dside-btn" type="button" aria-label="Open the page list" aria-controls="side" aria-expanded="false">☰</button><a class="brand" href="/"><img class="logo" src="/assets/img/monize-logo.svg" alt="" width="30" height="30"/><span>Monize</span></a><a class="dlabel" href="/docs/">Docs</a><button class="dsearch" type="button" data-search-open="" aria-haspopup="dialog" aria-label="Search the documentation"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><span>Search docs</span><kbd>/</kbd></button><nav class="dnav" aria-label="Site"><a href="/">Home</a><a href="https://demo.monize.net" rel="noopener">Live demo</a><a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></nav><button id="theme" class="icobtn" type="button" title="Toggle light / dark" aria-label="Toggle colour theme">☾</button></header><div class="dshade" id="shade" hidden=""></div><div class="dlayout"><aside class="dside" id="side"><nav aria-label="Documentation"><a class="dhome" href="/docs/">Overview</a><div class="dgroup"><p class="dgroup-t">Getting started</p><ul><li><a href="/docs/getting-started">Getting Started</a></li><li><a href="/docs/importing-transactions">Importing Transactions</a></li><li><a href="/docs/importing-from-quicken">Importing from Quicken</a></li><li><a href="/docs/importing-from-microsoft-money">Importing from Microsoft Money</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Core features</p><ul><li><a href="/docs/dashboard">Dashboard</a></li><li><a href="/docs/accounts">Accounts</a></li><li><a href="/docs/transactions">Transactions</a></li><li><a href="/docs/budgets">Budgets</a></li><li><a href="/docs/investments">Investments</a></li><li><a href="/docs/bills-and-deposits">Bills and Deposits</a></li><li><a href="/docs/email-receipts">Email Receipts</a></li><li><a href="/docs/warranties">Warranties</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Organizing and reporting</p><ul><li><a href="/docs/categories-and-payees">Categories and Payees</a></li><li><a href="/docs/tags">Tags</a></li><li><a href="/docs/reports">Reports</a></li><li><a href="/docs/currency-management">Currency Management</a></li></ul></div><div class="dgroup"><p class="dgroup-t">AI</p><ul><li><a href="/docs/ai" aria-current="page">AI</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Administration</p><ul><li><a href="/docs/settings-and-security">Settings and Security</a></li><li><a href="/docs/shared-access">Shared Access (Delegated Users)</a></li><li><a href="/docs/emergency-access">Emergency Access</a></li><li><a href="/docs/backup-and-restore">Backup and Restore</a></li></ul></div></nav></aside><main id="content" class="dmain" tabindex="-1"><nav class="crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">/</span><span>AI</span></nav><article class="doc"><h1>AI</h1><details class="toc-m"><summary>On this page</summary><ul><li class="d2"><a href="#setting-up-ai">Setting Up AI</a></li><li class="d3"><a href="#central-ai-provider">Central AI Provider</a></li><li class="d3"><a href="#adding-a-provider">Adding a Provider</a></li><li class="d3"><a href="#supported-providers">Supported Providers</a></li><li class="d3"><a href="#testing-your-connection">Testing Your Connection</a></li><li class="d2"><a href="#ai-assistant">AI Assistant</a></li><li class="d3"><a href="#asking-questions">Asking Questions</a></li><li class="d3"><a href="#suggested-queries">Suggested Queries</a></li><li class="d3"><a href="#charts-and-visualizations">Charts and Visualizations</a></li><li class="d3"><a href="#entity-links">Entity Links</a></li><li class="d3"><a href="#making-changes">Making Changes</a></li><li class="d3"><a href="#attachments">Attachments</a></li><li class="d3"><a href="#moving-the-chat-panel">Moving the Chat Panel</a></li><li class="d2"><a href="#financial-insights">Financial Insights</a></li><li class="d3"><a href="#insight-types">Insight Types</a></li><li class="d3"><a href="#dismissing-insights">Dismissing Insights</a></li><li class="d2"><a href="#forecast">Forecast</a></li><li class="d2"><a href="#mcp-server">MCP Server</a></li><li class="d3"><a href="#what-is-mcp">What is MCP?</a></li><li class="d3"><a href="#choosing-an-authentication-method">Choosing an Authentication Method</a></li><li class="d3"><a href="#option-1-oauth-claude-desktop-add-connector">Option 1: OAuth (Claude Desktop &quot;Add Connector&quot;)</a></li><li class="d3"><a href="#option-2-personal-access-token--local-bridge">Option 2: Personal Access Token + Local Bridge</a></li><li class="d3"><a href="#available-mcp-tools">Available MCP Tools</a></li><li class="d3"><a href="#mcp-resources">MCP Resources</a></li><li class="d3"><a href="#mcp-prompts">MCP Prompts</a></li><li class="d2"><a href="#mcp-relay">MCP Relay</a></li><li class="d3"><a href="#what-is-mcp-relay">What is MCP Relay?</a></li><li class="d3"><a href="#how-it-works">How It Works</a></li><li class="d3"><a href="#connecting-your-assistant">Connecting Your Assistant</a></li><li class="d3"><a href="#using-the-chat">Using the Chat</a></li><li class="d3"><a href="#connection-indicator">Connection Indicator</a></li><li class="d3"><a href="#limitations">Limitations</a></li><li class="d2"><a href="#usage-tracking">Usage Tracking</a></li><li class="d2"><a href="#privacy-and-security">Privacy and Security</a></li></ul></details><p>Monize includes an AI assistant that can answer natural language questions about your finances, generate insights about your spending habits, and integrate with external AI clients via the Model Context Protocol (MCP). You bring your own API key -- Monize supports Anthropic Claude, OpenAI, Ollama (local), and any OpenAI-compatible provider.</p>
+<h2 id="setting-up-ai">Setting Up AI<a class="hlink" href="#setting-up-ai" aria-label="Link to this section">#</a></h2>
+<p>Before using AI features, you need at least one configured AI provider -- either a central provider set up by the administrator, or a personal provider you configure yourself.</p>
+<h3 id="central-ai-provider">Central AI Provider<a class="hlink" href="#central-ai-provider" aria-label="Link to this section">#</a></h3>
+<p>An administrator can configure a shared AI provider at the server level so that all users have access to AI features without needing their own API keys. This is done by setting environment variables on the server.</p>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Description</th></tr></thead><tbody><tr><td><code>AI_DEFAULT_PROVIDER</code></td><td>Provider type: <code>anthropic</code>, <code>openai</code>, <code>ollama</code>, or <code>openai-compatible</code></td></tr><tr><td><code>AI_DEFAULT_API_KEY</code></td><td>API key for the provider</td></tr><tr><td><code>AI_DEFAULT_MODEL</code></td><td>Optional -- specific model to use (falls back to the provider&#x27;s default)</td></tr><tr><td><code>AI_DEFAULT_BASE_URL</code></td><td>Optional -- custom base URL for OpenAI-compatible or Ollama providers</td></tr></tbody></table></div>
+<p>For example, in your <code>.env</code> file:</p>
+<pre><code>AI_DEFAULT_PROVIDER=anthropic
+AI_DEFAULT_API_KEY=sk-ant-...
+</code></pre>
+<p>When a central provider is configured, all users can use the AI assistant and financial insights immediately. Users who configure their own provider will use their personal provider instead of the central one.</p>
+<h3 id="adding-a-provider">Adding a Provider<a class="hlink" href="#adding-a-provider" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Navigate to <strong>Settings &gt; AI</strong></li>
+<li>Click <strong>Add Provider</strong></li>
+<li>Select a provider type</li>
+<li>Enter your API key</li>
+<li>Optionally choose a specific model (or use the default)</li>
+<li>Click <strong>Save</strong></li>
+</ol>
+<figure><img src="/docs/images/ai-settings.png" alt="AI Settings" width="811" height="850" loading="lazy" decoding="async"/><figcaption>AI Settings</figcaption></figure>
+<p>You can configure multiple providers and assign priority levels. Monize will fall back to the next provider if the primary one is unavailable.</p>
+<h3 id="supported-providers">Supported Providers<a class="hlink" href="#supported-providers" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Provider</th><th>Default Model</th><th>Description</th></tr></thead><tbody><tr><td><strong>Anthropic</strong></td><td>claude-sonnet-4-20250514</td><td>Claude models via the Anthropic API</td></tr><tr><td><strong>OpenAI</strong></td><td>gpt-4o</td><td>GPT models via the OpenAI API</td></tr><tr><td><strong>Ollama</strong></td><td>(user-configured)</td><td>Local, self-hosted models -- your data never leaves your machine. Supports private and local network URLs (e.g., <code>http://localhost:11434</code> or <code>http://192.168.1.100:11434</code>)</td></tr><tr><td><strong>OpenAI-Compatible</strong></td><td>(user-configured)</td><td>Any API that follows the OpenAI format (Groq, Together, LM Studio, etc.)</td></tr></tbody></table></div>
+<p>For OpenAI-compatible providers, you can set a custom <strong>Base URL</strong> to point at your preferred endpoint.</p>
+<h3 id="testing-your-connection">Testing Your Connection<a class="hlink" href="#testing-your-connection" aria-label="Link to this section">#</a></h3>
+<p>After adding a provider, click <strong>Test Connection</strong> to verify that your API key and configuration are working. The test sends a minimal request to the provider and reports success or failure.</p>
+<h2 id="ai-assistant">AI Assistant<a class="hlink" href="#ai-assistant" aria-label="Link to this section">#</a></h2>
+<p>The AI Assistant lets you ask questions about your finances in plain language. It uses tool calling to query your actual financial data and return accurate, sourced answers.</p>
+<h3 id="asking-questions">Asking Questions<a class="hlink" href="#asking-questions" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Navigate to <strong>AI - AI Assistant</strong></li>
+<li>Type a question in the chat input</li>
+<li>The assistant streams its response in real time</li>
+</ol>
+<figure><img src="/docs/images/ai-chat.png" alt="AI Chat" width="927" height="883" loading="lazy" decoding="async"/><figcaption>AI Chat</figcaption></figure>
+<p><strong>Example questions:</strong></p>
+<ul>
+<li>&quot;How much did I spend on groceries last month?&quot;</li>
+<li>&quot;What are my top 5 expense categories this year?&quot;</li>
+<li>&quot;Compare my spending this month vs last month&quot;</li>
+<li>&quot;What&#x27;s my net worth trend over the past 6 months?&quot;</li>
+<li>&quot;How much can I still spend this month within my budget?&quot;</li>
+<li>&quot;What&#x27;s my income breakdown by category?&quot;</li>
+</ul>
+<p>The assistant has access to the following financial tools:</p>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Description</th></tr></thead><tbody><tr><td><strong>Query Transactions</strong></td><td>Search and aggregate transaction data with filters</td></tr><tr><td><strong>Get Account Balances</strong></td><td>Retrieve account balances and net worth</td></tr><tr><td><strong>Get Spending by Category</strong></td><td>Break down spending by category for a date range</td></tr><tr><td><strong>Get Income Summary</strong></td><td>Income breakdown by source, category, or month</td></tr><tr><td><strong>Get Net Worth History</strong></td><td>Historical net worth trends over time</td></tr><tr><td><strong>Get Budget Status</strong></td><td>Current budget vs actual spending</td></tr><tr><td><strong>Compare Periods</strong></td><td>Side-by-side comparison of two time periods</td></tr></tbody></table></div>
+<h3 id="suggested-queries">Suggested Queries<a class="hlink" href="#suggested-queries" aria-label="Link to this section">#</a></h3>
+<p>The AI page displays suggested query buttons to help you get started quickly. These are common financial questions tailored to typical use cases.</p>
+<h3 id="charts-and-visualizations">Charts and Visualizations<a class="hlink" href="#charts-and-visualizations" aria-label="Link to this section">#</a></h3>
+<p>When the assistant returns data that lends itself to visualization, an inline chart is rendered directly in the chat. For example, a spending-by-category query may display a bar or pie chart alongside the text response.</p>
+<h3 id="entity-links">Entity Links<a class="hlink" href="#entity-links" aria-label="Link to this section">#</a></h3>
+<p>When the assistant mentions one of your accounts, categories, payees, or transactions by name, that name is rendered as a clickable in-app link. Clicking it takes you straight to that item -- or to a transaction list filtered to it -- so you can jump from an answer to the underlying records in one click. The same links appear on <a href="#financial-insights">insight cards</a>.</p>
+<h3 id="making-changes">Making Changes<a class="hlink" href="#making-changes" aria-label="Link to this section">#</a></h3>
+<p>Beyond answering questions, the assistant can make changes on your behalf -- creating, updating, and deleting transactions, payees, securities, and investment transactions.</p>
+<p>Nothing is saved until you approve it. Each proposed change is presented as an on-screen confirmation card that you accept or reject:</p>
+<ul>
+<li><strong>1-5 items</strong> -- each item gets its own confirmation card.</li>
+<li><strong>6 or more items</strong> -- the batch is grouped into a single bulk confirmation card that you approve or reject as a whole.</li>
+</ul>
+<h3 id="attachments">Attachments<a class="hlink" href="#attachments" aria-label="Link to this section">#</a></h3>
+<p>You can attach files to a chat message using the composer&#x27;s attachment button. Supported types are images (PNG, JPEG, GIF, WebP), PDF, CSV, and plain text -- up to <strong>5 files per message</strong>, each up to <strong>5 MB</strong>. PDFs are text-extracted so the assistant can read their contents.</p>
+<h3 id="moving-the-chat-panel">Moving the Chat Panel<a class="hlink" href="#moving-the-chat-panel" aria-label="Link to this section">#</a></h3>
+<p>On desktop, the floating chat panel can be dragged by its header to reposition it anywhere on screen. Its position is remembered per device.</p>
+<h2 id="financial-insights">Financial Insights<a class="hlink" href="#financial-insights" aria-label="Link to this section">#</a></h2>
+<p>Monize&#x27;s AI automatically analyzes your financial data daily and generates actionable insights. Insights appear on the AI page and highlight patterns, anomalies, and opportunities you might otherwise miss.</p>
+<h3 id="insight-types">Insight Types<a class="hlink" href="#insight-types" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Type</th><th>Description</th><th>Severity</th></tr></thead><tbody><tr><td><strong>Anomaly</strong></td><td>Unusual spending -- significantly higher than your historical average for a category</td><td>Warning / Alert</td></tr><tr><td><strong>Trend</strong></td><td>A sustained increase or decrease in spending over 3+ months</td><td>Info / Warning</td></tr><tr><td><strong>Subscription</strong></td><td>A recurring charge that has changed in price or a consolidation opportunity</td><td>Info</td></tr><tr><td><strong>Budget Pace</strong></td><td>You&#x27;re on track to exceed your budget for the current period</td><td>Warning</td></tr><tr><td><strong>Seasonal</strong></td><td>Seasonal spending patterns detected (e.g., holiday months, annual renewals)</td><td>Info</td></tr><tr><td><strong>New Recurring</strong></td><td>A newly detected recurring charge that wasn&#x27;t previously flagged</td><td>Info</td></tr></tbody></table></div>
+<span class="shot-missing" role="img" aria-label="AI Insights">Screenshot pending: AI Insights</span>
+<p>Insights are regenerated daily. A maximum of 50 insights are retained per user, and each insight expires after 7 days.</p>
+<aside class="callout callout-note">
+<p class="callout-title">Note</p>
+<p>In <a href="#mcp-relay">MCP Relay</a> mode, insights are generated by your connected agent rather than a server-side provider, so your agent must be online for generation to succeed. The daily background job skips relay-only users; you can instead generate insights on demand from the Insights page, which shows a live relay status bar indicating whether your agent is connected.</p>
+</aside>
+<h3 id="dismissing-insights">Dismissing Insights<a class="hlink" href="#dismissing-insights" aria-label="Link to this section">#</a></h3>
+<p>Click the dismiss button on any insight card to remove it. Dismissed insights will not reappear.</p>
+<h2 id="forecast">Forecast<a class="hlink" href="#forecast" aria-label="Link to this section">#</a></h2>
+<p>Monize can project your finances forward using AI. The forecast analyzes your historical income and spending -- at least 2 months of transaction history is required -- and produces a month-by-month projection for the months ahead.</p>
+<p>Like insights, forecast prose is written in your chosen language. In <a href="#mcp-relay">MCP Relay</a> mode the forecast is generated by your connected agent rather than a server-side provider, so your agent must be online to generate one.</p>
+<h2 id="mcp-server">MCP Server<a class="hlink" href="#mcp-server" aria-label="Link to this section">#</a></h2>
+<h3 id="what-is-mcp">What is MCP?<a class="hlink" href="#what-is-mcp" aria-label="Link to this section">#</a></h3>
+<p>The Model Context Protocol (MCP) allows external AI clients -- such as Claude Desktop -- to connect to Monize and access your financial data directly. This means you can ask Claude Desktop questions about your finances without opening Monize in a browser.</p>
+<h3 id="choosing-an-authentication-method">Choosing an Authentication Method<a class="hlink" href="#choosing-an-authentication-method" aria-label="Link to this section">#</a></h3>
+<p>Monize supports two ways to authenticate an MCP client. Pick based on whether your Monize instance is reachable from the public internet.</p>
+<div class="table-wrap"><table><thead><tr><th>Method</th><th>Best for</th><th>Requires public HTTPS URL?</th><th>Setup effort</th></tr></thead><tbody><tr><td><strong>OAuth (&quot;Add Connector&quot;)</strong></td><td>Public deployments</td><td><strong>Yes</strong></td><td>Click-through</td></tr><tr><td><strong>Personal Access Token + local bridge</strong></td><td>Self-hosted / LAN-only / VPN-only</td><td>No</td><td>Manual config file</td></tr></tbody></table></div>
+<aside class="callout callout-important">
+<p class="callout-title">Important</p>
+<p>Claude Desktop&#x27;s built-in <strong>Add Connector</strong> flow only works when your Monize instance is exposed on the public internet behind HTTPS. The connector handshake requires Claude Desktop to reach your Monize URL directly, and self-signed certificates or non-routable hostnames (e.g., <code>http://localhost:3001</code>, <code>http://192.168.x.x</code>, or <code>*.local</code> mDNS names) are rejected. If your instance is private, use the <a href="#option-2-personal-access-token--local-bridge">Personal Access Token + Local Bridge</a> method instead.</p>
+</aside>
+<h3 id="option-1-oauth-claude-desktop-add-connector">Option 1: OAuth (Claude Desktop &quot;Add Connector&quot;)<a class="hlink" href="#option-1-oauth-claude-desktop-add-connector" aria-label="Link to this section">#</a></h3>
+<p>This is the easiest method when your Monize instance is publicly reachable. Tokens are issued through a browser-based consent flow and managed automatically by Claude Desktop -- you never copy or paste a token, and revocation is per-app rather than per-token.</p>
+<p><strong>What you&#x27;ll need:</strong></p>
+<ul>
+<li>Monize running behind a public HTTPS URL (e.g., <code>https://monize.example.com</code>).</li>
+<li>The <code>PUBLIC_APP_URL</code> environment variable on the backend set to that same URL. The OAuth issuer, MCP resource URL, and consent redirects are all derived from <code>PUBLIC_APP_URL</code>, so it must match exactly what Claude Desktop will see in the browser.</li>
+<li>Claude Desktop signed in to your Monize account in a browser tab on the same machine. The consent flow piggybacks on your existing web session.</li>
+</ul>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>In Claude Desktop, open <strong>Settings &gt; Connectors</strong>.</li>
+<li>Click <strong>Add custom connector</strong> (or <strong>Add Connector</strong>).</li>
+<li>Enter your Monize URL: <code>https://monize.example.com</code> (no trailing path -- the connector resolves the MCP and OAuth metadata endpoints automatically via <code>/.well-known/oauth-protected-resource</code> and <code>/.well-known/oauth-authorization-server</code>).</li>
+<li>Claude Desktop opens your browser to Monize&#x27;s consent screen.</li>
+<li>Review the requested scopes (<code>monize:read</code>, <code>monize:write</code>) and click <strong>Allow</strong>.</li>
+<li>The browser redirects back to Claude Desktop, which stores the access + refresh tokens internally.</li>
+</ol>
+<p>After consent, Claude Desktop automatically refreshes tokens (default access-token lifetime is 1 hour, refresh-token lifetime is 14 days). You can revoke access from either side:</p>
+<ul>
+<li><strong>From Claude Desktop:</strong> remove the connector in <strong>Settings &gt; Connectors</strong>.</li>
+<li><strong>From Monize:</strong> an admin can deactivate the user account or trigger a password reset -- both flows now revoke every active OIDC token, refresh token, and authorization grant for that user immediately. Individual users can also use the <strong>Settings &gt; AI &gt; MCP / Connected Apps</strong> page (when available) to revoke per-client.</li>
+</ul>
+<p><strong>Security notes:</strong></p>
+<ul>
+<li>All grants are PKCE-protected (S256). The OAuth flow rejects the legacy implicit and password grant types entirely.</li>
+<li>Tokens are audience-bound to your Monize MCP URL. A token issued for <code>https://monize.example.com/api/v1/mcp</code> cannot be replayed against a different Monize instance.</li>
+<li>Deactivating a user in <strong>Settings &gt; Admin &gt; Users</strong> immediately invalidates every existing OAuth access token, refresh token, and grant for that user, in addition to refresh tokens and PATs.</li>
+</ul>
+<h3 id="option-2-personal-access-token--local-bridge">Option 2: Personal Access Token + Local Bridge<a class="hlink" href="#option-2-personal-access-token--local-bridge" aria-label="Link to this section">#</a></h3>
+<p>Use this method when your Monize instance is private (LAN-only, behind a VPN, accessed via Tailscale/Cloudflare Tunnel, etc.) and Claude Desktop&#x27;s connector flow can&#x27;t reach it.</p>
+<p>This method works because Claude Desktop spawns a local subprocess (the &quot;bridge&quot;) on your machine, and that subprocess connects to your private Monize URL using whatever network access your machine has. Nothing has to be publicly exposed.</p>
+<p><strong>Step 1: Generate a Personal Access Token</strong></p>
+<ol>
+<li>In Monize, navigate to <strong>Settings &gt; AI</strong>.</li>
+<li>Scroll to the <strong>MCP / Personal Access Tokens</strong> section.</li>
+<li>Click <strong>Generate Token</strong>.</li>
+<li>Give the token a name (e.g., <code>Claude Desktop</code>) and select scopes (<code>read</code>, <code>write</code>).</li>
+<li>Copy the token -- it begins with <code>pat_</code> and is shown only once.</li>
+</ol>
+<p>Tokens are stored as SHA-256 hashes in the database. You can revoke a token at any time from the settings page.</p>
+<p><strong>Step 2: Configure Claude Desktop</strong></p>
+<p>Edit your <code>claude_desktop_config.json</code> file. The location depends on your operating system:</p>
+<div class="table-wrap"><table><thead><tr><th>OS</th><th>Path</th></tr></thead><tbody><tr><td>macOS</td><td><code>~/Library/Application Support/Claude/claude_desktop_config.json</code></td></tr><tr><td>Windows</td><td><code>%APPDATA%\Claude\claude_desktop_config.json</code></td></tr><tr><td>Linux</td><td><code>~/.config/Claude/claude_desktop_config.json</code></td></tr></tbody></table></div>
+<p>Add the following entry under <code>mcpServers</code>. The <code>mcp-remote</code> package (from <code>@modelcontextprotocol</code>) acts as a stdio-to-HTTP bridge, accepting your PAT as an <code>Authorization: Bearer</code> header:</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;monize&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [
+        &quot;-y&quot;,
+        &quot;mcp-remote&quot;,
+        &quot;https://monize.lan/api/v1/mcp&quot;,
+        &quot;--header&quot;,
+        &quot;Authorization: Bearer pat_your_token_here&quot;
+      ]
+    }
+  }
+}
+</code></pre>
+<p>Replace <code>https://monize.lan/api/v1/mcp</code> with your Monize URL (LAN, VPN, tunnel -- whatever your machine can reach) and <code>pat_your_token_here</code> with the token you generated.</p>
+<p><strong>Step 3: Restart Claude Desktop</strong></p>
+<p>Fully quit and relaunch Claude Desktop. The Monize tools should appear in the tool picker once the bridge connects.</p>
+<p><strong>Notes for self-hosted users:</strong></p>
+<ul>
+<li>If you use a self-signed TLS certificate, you may need to add <code>NODE_EXTRA_CA_CERTS</code> to the entry&#x27;s <code>env</code> block pointing at your CA bundle.</li>
+<li>PATs do not auto-rotate. Set a reasonable expiry when you generate the token, or rotate manually on a schedule.</li>
+<li>You can revoke a PAT instantly from <strong>Settings &gt; AI</strong> without restarting Claude Desktop -- the next request from the bridge fails authentication and Claude Desktop surfaces the error.</li>
+</ul>
+<h3 id="available-mcp-tools">Available MCP Tools<a class="hlink" href="#available-mcp-tools" aria-label="Link to this section">#</a></h3>
+<p>External AI clients can use the following tools through MCP. Read tools require the <code>read</code> scope; write tools require the <code>write</code> scope and are additionally gated by an approval step and the <a href="#privacy-and-security">daily write limit</a>.</p>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Description</th><th>Scope</th></tr></thead><tbody><tr><td><code>list_transactions</code></td><td>Search and summarize transactions (opt in to include individual rows)</td><td>read</td></tr><tr><td><code>list_accounts</code></td><td>List accounts with balances and net worth</td><td>read</td></tr><tr><td><code>list_categories</code></td><td>Browse the category tree</td><td>read</td></tr><tr><td><code>list_payees</code></td><td>List payees</td><td>read</td></tr><tr><td><code>list_upcoming_bills</code></td><td>Upcoming scheduled bills and deposits</td><td>read</td></tr><tr><td><code>list_capital_gains</code></td><td>Realized capital gains</td><td>read</td></tr><tr><td><code>list_investment_transactions</code></td><td>Investment transactions (buys, sells, dividends, etc.)</td><td>read</td></tr><tr><td><code>get_portfolio_summary</code></td><td>Portfolio holdings and performance</td><td>read</td></tr><tr><td><code>get_budget_status</code></td><td>Budget vs. actual for the current period</td><td>read</td></tr><tr><td><code>compare_periods</code></td><td>Side-by-side comparison of two date ranges (absolute and percentage changes)</td><td>read</td></tr><tr><td><code>calculate</code></td><td>Arithmetic over supplied values (percentage, difference, ratio, sum, average)</td><td>read</td></tr><tr><td><code>generate_report</code></td><td>Run a built-in report (spending by category/payee, income vs. expenses, trends, anomalies, month comparison, net-worth history)</td><td>read</td></tr><tr><td><code>lookup_securities</code></td><td>Look up securities by name or symbol</td><td>read</td></tr><tr><td><code>manage_transactions</code></td><td>Create, update, or delete transactions</td><td><strong>write</strong></td></tr><tr><td><code>manage_payees</code></td><td>Create, update, or delete payees</td><td><strong>write</strong></td></tr><tr><td><code>manage_securities</code></td><td>Create, update, or delete securities</td><td><strong>write</strong></td></tr><tr><td><code>manage_investment_transactions</code></td><td>Create, update, or delete investment transactions</td><td><strong>write</strong></td></tr></tbody></table></div>
+<h3 id="mcp-resources">MCP Resources<a class="hlink" href="#mcp-resources" aria-label="Link to this section">#</a></h3>
+<p>MCP clients can also read these resources for context:</p>
+<div class="table-wrap"><table><thead><tr><th>Resource</th><th>Description</th></tr></thead><tbody><tr><td><strong>Account List</strong></td><td>All accounts with current balances</td></tr><tr><td><strong>Category Tree</strong></td><td>Full category hierarchy</td></tr><tr><td><strong>Recent Transactions</strong></td><td>Summarized transactions from the last 30 days</td></tr><tr><td><strong>Financial Summary</strong></td><td>High-level financial snapshot</td></tr></tbody></table></div>
+<h3 id="mcp-prompts">MCP Prompts<a class="hlink" href="#mcp-prompts" aria-label="Link to this section">#</a></h3>
+<p>Pre-built prompt templates are available for common analysis tasks:</p>
+<div class="table-wrap"><table><thead><tr><th>Prompt</th><th>Description</th></tr></thead><tbody><tr><td><strong>Financial Review</strong></td><td>Comprehensive financial health review</td></tr><tr><td><strong>Spending Analysis</strong></td><td>Detailed spending pattern analysis</td></tr><tr><td><strong>Transaction Lookup</strong></td><td>Guided transaction search</td></tr><tr><td><strong>Budget Check</strong></td><td>Budget status and recommendations</td></tr></tbody></table></div>
+<h2 id="mcp-relay">MCP Relay<a class="hlink" href="#mcp-relay" aria-label="Link to this section">#</a></h2>
+<h3 id="what-is-mcp-relay">What is MCP Relay?<a class="hlink" href="#what-is-mcp-relay" aria-label="Link to this section">#</a></h3>
+<p>MCP Relay -- &quot;bring your own assistant&quot; -- lets the in-app AI chat run on <strong>your own MCP agent and subscription</strong> instead of a server-side API key. The <a href="#mcp-server">MCP Server</a> lets an external client <em>pull</em> your Monize data; the relay flips that direction: the Monize web chat <em>pushes</em> each prompt out to your agent (Claude CLI, Codex, or any MCP client), the agent answers it using the Monize tools, and the answer streams back into the browser chat.</p>
+<p>Use it when:</p>
+<ul>
+<li>You already pay for a Claude or Codex subscription and don&#x27;t want to also configure a metered API key in <strong>Settings &gt; AI</strong>.</li>
+<li>No central AI provider is configured and you&#x27;d rather not paste an API key into the server at all.</li>
+<li>You want the answer computed on your own machine with your own model choice.</li>
+</ul>
+<aside class="callout callout-note">
+<p class="callout-title">Note</p>
+<p>In relay mode <strong>no LLM API key lives on the server</strong>. Monize only routes the prompt text and your agent&#x27;s answer; your subscription does the thinking. The agent reaches your data through the same authenticated MCP tools as any other MCP client.</p>
+</aside>
+<h3 id="how-it-works">How It Works<a class="hlink" href="#how-it-works" aria-label="Link to this section">#</a></h3>
+<p>The relay is a broker between two long-lived connections -- the browser waiting for an answer and your agent waiting for work:</p>
+<ol>
+<li>You type a prompt in the Monize web chat. The browser opens a streaming request and the prompt is queued for your user.</li>
+<li>Your agent, sitting in a poll loop, calls the <code>get_next_prompt</code> tool. It claims the queued prompt (with prior conversation history for context).</li>
+<li>The agent does the work using the normal Monize MCP tools (<code>get_net_worth</code>, <code>search_transactions</code>, etc.), calling <code>report_progress</code> with short status lines as it goes.</li>
+<li>Live tool activity and progress narration stream back into the web chat -- the same &quot;Looking up ...&quot; chips and running text the native AI Assistant shows.</li>
+<li>The agent calls <code>post_response</code> with the final answer, which is delivered to the waiting browser and persisted as the assistant&#x27;s chat message.</li>
+<li>The agent loops back to <code>get_next_prompt</code> and waits for the next one.</li>
+</ol>
+<p>Three relay control tools drive this loop:</p>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Direction</th><th>Purpose</th></tr></thead><tbody><tr><td><code>get_next_prompt</code></td><td>Monize -&gt; agent</td><td>Long-poll for the next chat prompt. Returns <code>{ hasPrompt: false }</code> if none arrives in the poll window -- call it again immediately to keep listening.</td></tr><tr><td><code>report_progress</code></td><td>agent -&gt; Monize</td><td>Stream a one-line status update shown live in the chat while you work. Optional but recommended.</td></tr><tr><td><code>post_response</code></td><td>agent -&gt; Monize</td><td>Deliver the final answer for a claimed prompt back to the browser.</td></tr></tbody></table></div>
+<p><strong>Timeouts:</strong> the browser waits up to <strong>5 minutes</strong> for an answer. Each <code>get_next_prompt</code> long-poll parks for ~25 seconds, then returns empty so the agent polls again. If your agent isn&#x27;t connected and listening when you send a prompt, the chat reports that your assistant did not respond.</p>
+<h3 id="connecting-your-assistant">Connecting Your Assistant<a class="hlink" href="#connecting-your-assistant" aria-label="Link to this section">#</a></h3>
+<p>The exact commands (with your instance URL pre-filled) appear in the chat&#x27;s <strong>How to connect</strong> panel and in the MCP Relay provider modal under <strong>Settings &gt; AI</strong>.</p>
+<p><strong>Step 1 -- Create an access token.</strong> In <strong>Settings &gt; AI &gt; API access</strong>, generate a Personal Access Token (starts with <code>pat_</code>, shown once). The relay authenticates with the same PAT as any MCP client.</p>
+<p><strong>Step 2 -- Connect the agent.</strong></p>
+<p>With Claude CLI:</p>
+<pre><code class="language-bash">claude mcp add --transport http monize https://monize.example.com/api/v1/mcp --header &quot;Authorization: Bearer &lt;your-token&gt;&quot;
+</code></pre>
+<p>Restart Claude with auto-approval so it doesn&#x27;t prompt for every Monize tool call:</p>
+<pre><code class="language-bash">claude --allowedTools &quot;mcp__monize__*&quot;
+</code></pre>
+<p>Or with Codex -- add this to <code>~/.codex/config.toml</code>, set <code>MONIZE_TOKEN</code> to your token, then run <code>codex</code>:</p>
+<pre><code class="language-toml">[mcp_servers.monize]
+url = &quot;https://monize.example.com/api/v1/mcp&quot;
+bearer_token_env_var = &quot;MONIZE_TOKEN&quot;
+default_tools_approval_mode = &quot;auto&quot;
+</code></pre>
+<p>Replace <code>https://monize.example.com/api/v1/mcp</code> with your own instance URL.</p>
+<p><strong>Step 3 -- Start the agent loop.</strong> Give the agent this instruction so it listens for prompts from Monize:</p>
+<pre><code>Loop forever: call `get_next_prompt`; if `hasPrompt` is false, call it again; otherwise handle the request with the Monize tools and call `post_response` with the answer; then repeat.
+</code></pre>
+<p>Once the loop is running, the chat&#x27;s connection indicator turns to <strong>listening</strong> and anything you type in the web chat is answered by your agent.</p>
+<h3 id="using-the-chat">Using the Chat<a class="hlink" href="#using-the-chat" aria-label="Link to this section">#</a></h3>
+<p>Once connected, use the AI chat exactly as you would with a server-side provider -- ask questions in natural language, get charts and visualizations, and approve any writes via the in-chat confirmation card. The difference is purely behind the scenes: your subscription answers, and progress narration reflects your agent&#x27;s real tool calls.</p>
+<h3 id="connection-indicator">Connection Indicator<a class="hlink" href="#connection-indicator" aria-label="Link to this section">#</a></h3>
+<p>The chat shows a tunnel status so you know whether your agent is reachable:</p>
+<div class="table-wrap"><table><thead><tr><th>State</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Assistant offline</strong></td><td>No agent has polled recently. Start your agent loop.</td></tr><tr><td><strong>Assistant listening</strong></td><td>An agent is connected and idle, ready for prompts (blinking green).</td></tr><tr><td><strong>Assistant working</strong></td><td>Your agent is currently handling a prompt.</td></tr></tbody></table></div>
+<p>If you send a prompt while offline, it queues briefly and then times out with a message to make sure your MCP agent is connected and listening.</p>
+<h3 id="limitations">Limitations<a class="hlink" href="#limitations" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Your agent must be running.</strong> The relay only works while your agent&#x27;s poll loop is active. Close the terminal and the chat goes offline.</li>
+<li><strong>Single backend instance.</strong> Relay state is held in memory per backend process. A multi-replica deployment needs a shared backplane (e.g. Redis) before the relay works across replicas.</li>
+<li><strong>One agent per user.</strong> Prompts are queued FIFO per user and handed to whichever agent polls first.</li>
+<li><strong>5-minute answer budget.</strong> Long, multi-tool agent runs must finish within the browser wait window or the prompt times out.</li>
+</ul>
+<h2 id="usage-tracking">Usage Tracking<a class="hlink" href="#usage-tracking" aria-label="Link to this section">#</a></h2>
+<p>Since this method of invoking AI generally uses a fixed-cost monthly subscription, token costs aren&#x27;t exposed and aren&#x27;t available.</p>
+<h2 id="privacy-and-security">Privacy and Security<a class="hlink" href="#privacy-and-security" aria-label="Link to this section">#</a></h2>
+<p>Monize takes several measures to protect your financial data when using AI features:</p>
+<div class="table-wrap"><table><thead><tr><th>Measure</th><th>Description</th></tr></thead><tbody><tr><td><strong>Aggregated Data Only</strong></td><td>The AI receives aggregated summaries, never individual transaction details</td></tr><tr><td><strong>Encrypted API Keys</strong></td><td>Provider API keys are encrypted at rest using AES-256-GCM with per-key random salts</td></tr><tr><td><strong>Local Provider Option</strong></td><td>Use Ollama to run models locally -- your data never leaves your machine</td></tr><tr><td><strong>Rate Limiting</strong></td><td>AI endpoints are rate-limited (10 queries/min, 5 test connections/min); MCP requests are limited to 30/min. AI and MCP write operations are additionally capped per user per day (default 50, configurable via <code>MCP_DAILY_WRITE_LIMIT</code>)</td></tr><tr><td><strong>SSRF Protection</strong></td><td>Custom base URLs are validated to prevent server-side request forgery</td></tr><tr><td><strong>Prompt Injection Prevention</strong></td><td>Financial data is delimited to prevent prompt injection attacks</td></tr><tr><td><strong>Scoped MCP Tokens</strong></td><td>Personal access tokens have configurable scopes (read, write, reports) and can be revoked at any time</td></tr><tr><td><strong>Masked Keys</strong></td><td>API keys are masked in all API responses, showing only the last 4 characters</td></tr></tbody></table></div></article><nav class="pager" aria-label="Previous and next page"><a class="pg pg-prev" href="/docs/currency-management"><span>Previous</span><b>Currency Management</b></a><a class="pg pg-next" href="/docs/settings-and-security"><span>Next</span><b>Settings and Security</b></a></nav><p class="dedit"><a href="https://github.com/kenlasko/monize/edit/main/website/docs/ai.md" rel="noopener">Edit this page on GitHub</a><a href="https://github.com/kenlasko/monize/issues/new" rel="noopener">Report a problem with the docs</a></p></main><aside class="dtoc" aria-label="On this page"><p>On this page</p><ul><li class="d2"><a href="#setting-up-ai">Setting Up AI</a></li><li class="d3"><a href="#central-ai-provider">Central AI Provider</a></li><li class="d3"><a href="#adding-a-provider">Adding a Provider</a></li><li class="d3"><a href="#supported-providers">Supported Providers</a></li><li class="d3"><a href="#testing-your-connection">Testing Your Connection</a></li><li class="d2"><a href="#ai-assistant">AI Assistant</a></li><li class="d3"><a href="#asking-questions">Asking Questions</a></li><li class="d3"><a href="#suggested-queries">Suggested Queries</a></li><li class="d3"><a href="#charts-and-visualizations">Charts and Visualizations</a></li><li class="d3"><a href="#entity-links">Entity Links</a></li><li class="d3"><a href="#making-changes">Making Changes</a></li><li class="d3"><a href="#attachments">Attachments</a></li><li class="d3"><a href="#moving-the-chat-panel">Moving the Chat Panel</a></li><li class="d2"><a href="#financial-insights">Financial Insights</a></li><li class="d3"><a href="#insight-types">Insight Types</a></li><li class="d3"><a href="#dismissing-insights">Dismissing Insights</a></li><li class="d2"><a href="#forecast">Forecast</a></li><li class="d2"><a href="#mcp-server">MCP Server</a></li><li class="d3"><a href="#what-is-mcp">What is MCP?</a></li><li class="d3"><a href="#choosing-an-authentication-method">Choosing an Authentication Method</a></li><li class="d3"><a href="#option-1-oauth-claude-desktop-add-connector">Option 1: OAuth (Claude Desktop &quot;Add Connector&quot;)</a></li><li class="d3"><a href="#option-2-personal-access-token--local-bridge">Option 2: Personal Access Token + Local Bridge</a></li><li class="d3"><a href="#available-mcp-tools">Available MCP Tools</a></li><li class="d3"><a href="#mcp-resources">MCP Resources</a></li><li class="d3"><a href="#mcp-prompts">MCP Prompts</a></li><li class="d2"><a href="#mcp-relay">MCP Relay</a></li><li class="d3"><a href="#what-is-mcp-relay">What is MCP Relay?</a></li><li class="d3"><a href="#how-it-works">How It Works</a></li><li class="d3"><a href="#connecting-your-assistant">Connecting Your Assistant</a></li><li class="d3"><a href="#using-the-chat">Using the Chat</a></li><li class="d3"><a href="#connection-indicator">Connection Indicator</a></li><li class="d3"><a href="#limitations">Limitations</a></li><li class="d2"><a href="#usage-tracking">Usage Tracking</a></li><li class="d2"><a href="#privacy-and-security">Privacy and Security</a></li></ul></aside></div><footer class="dfoot"><div class="wrap"><span>Monize is released under the AGPL-3.0 licence.</span><span><a href="/">monize.net</a> · <a href="https://demo.monize.net" rel="noopener">Live demo</a> · <a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></span></div></footer><div class="sdlg" id="search" role="dialog" aria-modal="true" aria-label="Search the documentation" hidden=""><div class="sbox"><label class="sfield"><span class="sr">Search the documentation</span><input id="q" type="search" placeholder="Search the docs, e.g. &quot;split transaction&quot;" autoComplete="off" spellCheck="false" aria-controls="sres"/></label><ul id="sres" class="sres" role="listbox" aria-label="Results"></ul><p class="shint" id="shint"><kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</p></div></div><script src="/assets/js/docs.js" defer=""></script></body></html>

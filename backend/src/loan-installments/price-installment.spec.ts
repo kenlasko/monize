@@ -625,9 +625,8 @@ describe("priceInstallment", () => {
 
   /**
    * The I/O half: the rate comes from the timeline dated at the boundary, and
-   * a rate nothing records is `null` -- which the template and posting
-   * purposes read as 0 % (the posting path's historical default, spec section
-   * 15 item 5) and the settlement refuses (decision 16).
+   * a rate nothing records is `null` -- which every purpose declines
+   * (decision 16), never pricing it as 0 %.
    */
   describe("datedAnnualRate and the core's missing-rate rule", () => {
     let manager: Record<string, jest.Mock>;
@@ -691,23 +690,23 @@ describe("priceInstallment", () => {
       },
     );
 
-    it("prices the template purpose at 0 % when no rate is recorded, the posting path's default", async () => {
-      const template = makeTemplate(833.3333, 393.0556, "2027-01-01");
-      const result = await resolveInstallmentCore(m(), {
-        scheduledTransaction: template,
-        splits: template.splits as ScheduledTransactionSplit[],
-        loanAccount: makeMortgage({ interestRate: null }),
-        asOfDate: "2027-01-01",
-        purpose: "template",
-      });
-      expect(result.kind).toBe("ok");
-      if (result.kind !== "ok") throw new Error("unreachable");
-      expect(result.annualRate).toBe(0);
-      expect(result.allocation).toMatchObject({
-        principal: 833.3333,
-        interest: 0,
-      });
-    });
+    it.each(["template", "posting", "reconfigure"] as const)(
+      "declines the %s purpose when no rate is recorded: unknown is not 0 %",
+      async (purpose) => {
+        const template = makeTemplate(833.3333, 393.0556, "2027-01-01");
+        const result = await resolveInstallmentCore(m(), {
+          scheduledTransaction: template,
+          splits: template.splits as ScheduledTransactionSplit[],
+          loanAccount: makeMortgage({ interestRate: null }),
+          asOfDate: "2027-01-01",
+          purpose,
+        });
+        expect(result).toEqual({
+          kind: "declined",
+          reason: `no interest rate is recorded for loan account ${loanAccountId} on 2027-01-01`,
+        });
+      },
+    );
 
     it("declines the sync purpose when no rate is recorded: an offer never prices 0 %", async () => {
       const template = makeTemplate(833.3333, 393.0556, "2027-01-01");
@@ -761,7 +760,7 @@ describe("priceInstallment", () => {
         return resolveInstallmentCore(m(), {
           scheduledTransaction: template,
           splits: template.splits as ScheduledTransactionSplit[],
-          loanAccount: makeMortgage({ interestRate: null }),
+          loanAccount: makeMortgage({ interestRate: 0 }),
           asOfDate: "2027-01-01",
           purpose: "posting",
         });

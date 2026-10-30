@@ -192,6 +192,27 @@ describe("payroll deduction cap", () => {
       expect(query).toHaveBeenCalledTimes(1);
     });
 
+    it("pools every rule on the category and the lowest room binds (INV-PAYROLL-003)", async () => {
+      // Bill A max 4000, bill B max 5000, 4000 paid: no room is left.
+      const own = { ...eiRule, yearlyMaximum: 5000 };
+      const peer = { ...eiRule, id: "r2", yearlyMaximum: 4000 };
+      const { m } = managerAnswering(() => ({
+        total: "-4000",
+        foreign_rows: "0",
+      }));
+      const result = await applyPayrollDeductionCaps(
+        m,
+        USER,
+        [own],
+        "CAD",
+        "2026-04-24",
+        [{ splitKind: "category", categoryId: EI, amount: -64 }],
+        [peer],
+      );
+      expect(result.splits[0].amount).toBe(0);
+      expect(result.changed).toBe(true);
+    });
+
     it("skips transfer and investment lines that happen to carry the category", async () => {
       const { m, query } = managerAnswering(() => ({
         total: "-1077.48",

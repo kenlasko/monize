@@ -42,6 +42,7 @@
     "institutionNotFound": "Instelling niet gevonden",
     "updateClosed": "Kan een gesloten rekening niet bijwerken",
     "changeCurrencyWithTransactions": "Kan de valuta van een rekening met transacties niet wijzigen.",
+    "changeCurrencyWithBalanceOrSchedules": "De valuta van een rekening met een beginsaldo of geplande transacties kan niet worden gewijzigd.",
     "alreadyClosed": "Rekening is al gesloten",
     "closeNonZeroBalance": "Kan rekening niet sluiten met een saldo dat niet nul is. Huidig saldo: {{ currentBalance }}",
     "closeWithFutureTransactions": "Een rekening met transacties in de toekomst kan niet worden gesloten. Er zijn {{ count }} transactie(s) gedateerd na vandaag; verwijder of annuleer ze eerst.",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "Dit Money-bestand wordt geïmporteerd. Wacht tot de import klaar is voordat u het verwijdert.",
     "mnyImportAlreadyRunning": "Er loopt al een import. Wacht tot deze klaar is voordat u een nieuwe start.",
     "mnyAlreadyImported": "Dit bestand is al geïmporteerd op {{ date }} (import {{ jobId }}) en de records staan nog in uw account. Opnieuw importeren zou ze dupliceren. Begin opnieuw en kies ervoor uw bestaande gegevens te vervangen om ze te vervangen.",
+    "mnyExistingAccountClosed": "De bestaande rekening \"{{ name }}\" is gesloten, dus het Money-bestand kan er niet mee worden samengevoegd. Heropen of hernoem de rekening en importeer opnieuw.",
+    "mnyExistingAccountCurrency": "De bestaande rekening \"{{ name }}\" gebruikt {{ existing }}, maar de rekening in het Money-bestand gebruikt {{ file }}. Hernoem een van beide en importeer opnieuw.",
     "mnyJobNotFound": "Importtaak niet gevonden",
     "mnyFileTooLarge": "Dit Money-bestand is groter dan de importlimiet van {{ limit }} MB.",
-    "noRateForSplitTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: een gesplitste regel boekt over naar een rekening in een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw."
+    "noRateForSplitTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: een gesplitste regel boekt over naar een rekening in een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw.",
+    "accountClosed": "De rekening is gesloten. Heropen deze of kies een andere rekening."
   },
   "monteCarlo": {
     "scenarioNotFound": "Scenario {{ id }} niet gevonden",
@@ -779,6 +783,7 @@
     "notATransfer": "Transactie is geen overboeking",
     "splitTransferLegAccountLocked": "Deze overboeking maakt deel uit van een gesplitste transactie. Wijzig de rekeningen door de splitsing op de brontransactie te bewerken.",
     "splitTransferLegStatusLocked": "Deze overboeking maakt deel uit van een gesplitste transactie. Maak deze ongeldig of herstel deze door de gesplitste transactie waartoe deze behoort te bewerken, zodat beide zijden samen wijzigen.",
+    "investmentCashLegLocked": "Deze transactie is de geldzijde van een beleggingstransactie. Wijzig of verwijder in plaats daarvan de beleggingstransactie, zodat beide zijden samen veranderen.",
     "investmentCashLegStatusLocked": "Deze transactie is de geldzijde van een beleggingstransactie. Maak deze ongeldig of herstel deze door de status van de beleggingstransactie te wijzigen, zodat beide zijden samen wijzigen.",
     "notFoundById": "Transactie met ID {{ id }} niet gevonden",
     "bulkUpdateNoFields": "Er moet minimaal één bijwerkveld worden opgegeven",

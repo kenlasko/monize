@@ -138,6 +138,17 @@ describe("MonthlySpendingTrendReport", () => {
     expect(screen.getByText("Avg Monthly Expenses")).toBeInTheDocument();
   });
 
+  it("tells the reader when rows without a rate were left out of the totals", async () => {
+    mockGetIncomeVsExpenses.mockResolvedValue({
+      data: [{ period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 5000, expenses: 3000, net: 2000 }],
+      currency: "USD",
+      missingCurrencies: ["JPY"],
+      excludedCount: 2,
+    });
+    render(<MonthlySpendingTrendReport />);
+    expect(await screen.findByText(/JPY/)).toBeInTheDocument();
+  });
+
   it("renders date range selector", async () => {
     mockGetIncomeVsExpenses.mockResolvedValue({ data: [] });
     render(<MonthlySpendingTrendReport />);

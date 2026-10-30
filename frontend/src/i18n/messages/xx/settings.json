@@ -435,9 +435,9 @@
       "label": "[XX-Discussions-XX]",
       "description": "[XX-Ask questions and share ideas with the community.-XX]"
     },
-    "wiki": {
-      "label": "[XX-Wiki-XX]",
-      "description": "[XX-Browse guides and documentation.-XX]"
+    "docs": {
+      "label": "[XX-Documentation-XX]",
+      "description": "[XX-Browse the user guide.-XX]"
     },
     "supportBackup": {
       "label": "[XX-Create a support backup-XX]",

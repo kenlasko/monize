@@ -47,9 +47,9 @@
     "processing": "Memproses...",
     "acceptedFormats": "QIF/QMTF, OFX, QFX, CSV, atau Microsoft Money (.mny)",
     "mnyFailedHeading": "Berkas Microsoft Money itu tidak dapat dibuka",
-    "wikiNotice": {
+    "docsNotice": {
       "title": "Sebelum Anda mengimpor",
-      "body": "Baca bagian <money>Importing from Microsoft Money</money> atau <quicken>Importing from Quicken</quicken> di wiki sebelum mengimpor apa pun."
+      "body": "Baca bagian <money>Importing from Microsoft Money</money> atau <quicken>Importing from Quicken</quicken> di dokumentasi sebelum mengimpor apa pun."
     }
   },
   "selectAccount": {

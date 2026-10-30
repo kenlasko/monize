@@ -2768,12 +2768,14 @@ export class ToolExecutorService {
     const money = (value: number | null) =>
       value === null ? "unknown" : value.toFixed(2);
 
+    const fxGap = data.totals.fxComplete === false;
+    const cur = data.totals.currency;
     const summaryParts = [
-      `capital gains ${money(data.totals.totalCapitalGain)}${filterDesc}`,
+      `capital gains ${money(data.totals.totalCapitalGain)} ${cur}${filterDesc}`,
       `realized ${money(data.totals.realizedGain)}${
         data.totals.realizedGain === null &&
         data.totals.realizedGainKnownSubtotal !== null
-          ? ` (known part ${money(data.totals.realizedGainKnownSubtotal)}, the rest has no cost basis on record)`
+          ? ` (known part ${money(data.totals.realizedGainKnownSubtotal)}, the rest has no cost basis or exchange rate on record)`
           : ""
       }`,
       `unrealized ${money(data.totals.unrealizedGain)}`,
@@ -2781,6 +2783,11 @@ export class ToolExecutorService {
         data.entryCount === 1 ? "entry" : "entries"
       })`,
     ];
+    if (fxGap) {
+      summaryParts.push(
+        `totals withheld where there is no exchange rate for ${data.totals.missingRatePairs.join(", ")}; add the rate on the Currencies page`,
+      );
+    }
 
     return {
       data,

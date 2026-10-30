@@ -28,7 +28,8 @@
     "transactions": "Giao tác",
     "sinceYear": "Từ {year}",
     "lastTransaction": "Giao tác gần nhất",
-    "convertedNote": "Đã chuyển sang {currency}"
+    "convertedNote": "Đã chuyển sang {currency}",
+    "partialRatesNote": "Một số tháng không có tỷ giá"
   },
   "topPayees": {
     "title": "Người nhận hàng đầu",

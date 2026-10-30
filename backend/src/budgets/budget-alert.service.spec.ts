@@ -29,6 +29,11 @@ import { UserPreference } from "../users/entities/user-preference.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { EmailService } from "../notifications/email.service";
 import {
+  CategorySpending,
+  queryCategorySpendingBuckets,
+} from "./budget-spending.util";
+import { monthBuckets } from "../test-helpers/budget-spending-buckets";
+import {
   createScopedDbMocks,
   DataSourceMock,
 } from "../test-helpers/scoped-db-testing";
@@ -42,6 +47,39 @@ import {
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
 );
+
+// The real implementation by default; the seasonal-profile tests script it.
+jest.mock("./budget-spending.util", () => {
+  const actual = jest.requireActual("./budget-spending.util");
+  return {
+    ...actual,
+    queryCategorySpending: jest.fn(actual.queryCategorySpending),
+    queryCategorySpendingBuckets: jest.fn(),
+  };
+});
+
+const mockedBuckets = queryCategorySpendingBuckets as jest.MockedFunction<
+  typeof queryCategorySpendingBuckets
+>;
+
+/** What `queryCategorySpending` returns for the given net sums (expenses negative). */
+function spending(
+  categories: Record<string, number>,
+  incomplete: string[] = [],
+): CategorySpending {
+  return {
+    spendingMap: new Map(Object.entries(categories)),
+    transferSpendingMap: new Map(),
+    currency: "USD",
+    incompleteCategoryIds: new Set(incomplete),
+    incompleteTransferAccountIds: new Set(),
+    missingRatePairs: incomplete.length > 0 ? ["JPY->USD"] : [],
+  };
+}
+
+/** Scripts the 12-month sweep by calendar month. */
+const scriptMonths = (perMonth: (month: number) => CategorySpending) =>
+  monthBuckets((key) => perMonth(Number(key.slice(5, 7))));
 
 function makeCategory(overrides: Partial<BudgetCategory> = {}): BudgetCategory {
   return {
@@ -1821,12 +1859,8 @@ describe("BudgetAlertService", () => {
   });
 
   describe("checkSeasonalSpikes", () => {
-    it("returns SEASONAL_SPIKE alert when next month is historically expensive", async () => {
-      const nextMonth = new Date();
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      const nextMonthNum = nextMonth.getMonth() + 1;
-
-      const budget = makeBudget({
+    const giftsBudget = () =>
+      makeBudget({
         categories: [
           makeCategory({
             id: "bc-1",
@@ -1841,40 +1875,25 @@ describe("BudgetAlertService", () => {
         ],
       });
 
-      // Build monthly spending data where the next month is 2.5x above average
-      const monthlyData: Array<{
-        categoryId: string;
-        month: number;
-        total: string;
-      }> = [];
-      for (let m = 1; m <= 12; m++) {
-        const amount = m === nextMonthNum ? "500" : "200";
-        monthlyData.push({ categoryId: "cat-1", month: m, total: amount });
-      }
+    beforeEach(() => {
+      mockedBuckets.mockReset();
+    });
 
-      const qb = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        addGroupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue(monthlyData),
-      };
-
-      transactionsRepository.createQueryBuilder.mockReturnValue(qb);
-      splitsRepository.createQueryBuilder.mockReturnValue({
-        ...qb,
-        getRawMany: jest.fn().mockResolvedValue([]),
-      });
+    it("returns SEASONAL_SPIKE alert when next month is historically expensive", async () => {
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      const nextMonthNum = nextMonth.getMonth() + 1;
+      mockedBuckets.mockImplementation(
+        scriptMonths((m) =>
+          spending({ "cat-1": m === nextMonthNum ? -500 : -200 }),
+        ),
+      );
 
       const alerts = await service.checkSeasonalSpikes(
         "11111111-1111-1111-1111-111111111111",
-        budget,
+        giftsBudget(),
       );
 
-      expect(alerts.length).toBeGreaterThanOrEqual(1);
       const spikeAlert = alerts.find(
         (a) => a.type === NotificationType.SEASONAL_SPIKE,
       );
@@ -1882,53 +1901,50 @@ describe("BudgetAlertService", () => {
       expect(spikeAlert!.severity).toBe(NotificationSeverity.INFO);
       expect(spikeAlert!.data.typicalIncrease).toBeGreaterThanOrEqual(1.5);
       expect(spikeAlert!.data.highMonth).toBe(nextMonthNum);
+      expect(spikeAlert!.data.suggestedBudget).toBeGreaterThan(0);
+      expect(spikeAlert!.data.categoryName).toBe("Gifts");
     });
 
-    it("returns no alerts when no categories have seasonal spikes", async () => {
-      const budget = makeBudget({
-        categories: [
-          makeCategory({
-            id: "bc-1",
-            categoryId: "cat-1",
-            category: {
-              id: "cat-1",
-              name: "Groceries",
-              isIncome: false,
-            } as any,
-          }),
-        ],
-      });
-
-      // Flat spending across all months
-      const monthlyData: Array<{
-        categoryId: string;
-        month: number;
-        total: string;
-      }> = [];
-      for (let m = 1; m <= 12; m++) {
-        monthlyData.push({ categoryId: "cat-1", month: m, total: "200" });
-      }
-
-      const qb = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        addGroupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue(monthlyData),
-      };
-
-      transactionsRepository.createQueryBuilder.mockReturnValue(qb);
-      splitsRepository.createQueryBuilder.mockReturnValue({
-        ...qb,
-        getRawMany: jest.fn().mockResolvedValue([]),
-      });
+    it("profiles the net month, so a refund cancels a spike the gross would show", async () => {
+      // 500 spent and 300 refunded in the next month nets to the usual 200.
+      mockedBuckets.mockImplementation(
+        scriptMonths(() => spending({ "cat-1": -200 })),
+      );
 
       const alerts = await service.checkSeasonalSpikes(
         "11111111-1111-1111-1111-111111111111",
-        budget,
+        giftsBudget(),
+      );
+
+      expect(alerts).toHaveLength(0);
+    });
+
+    it("makes no spike claim from a profile with an unconvertible row", async () => {
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      const nextMonthNum = nextMonth.getMonth() + 1;
+      mockedBuckets.mockImplementation(
+        scriptMonths((m) =>
+          spending({ "cat-1": m === nextMonthNum ? -500 : -200 }, ["cat-1"]),
+        ),
+      );
+
+      const alerts = await service.checkSeasonalSpikes(
+        "11111111-1111-1111-1111-111111111111",
+        giftsBudget(),
+      );
+
+      expect(alerts).toHaveLength(0);
+    });
+
+    it("returns no alerts when no categories have seasonal spikes", async () => {
+      mockedBuckets.mockImplementation(
+        scriptMonths(() => spending({ "cat-1": -200 })),
+      );
+
+      const alerts = await service.checkSeasonalSpikes(
+        "11111111-1111-1111-1111-111111111111",
+        giftsBudget(),
       );
 
       expect(alerts).toHaveLength(0);
@@ -1956,114 +1972,23 @@ describe("BudgetAlertService", () => {
       );
 
       expect(alerts).toHaveLength(0);
+      expect(mockedBuckets).not.toHaveBeenCalled();
     });
 
     it("returns no alerts when insufficient data for analysis", async () => {
-      const budget = makeBudget({
-        categories: [
-          makeCategory({
-            id: "bc-1",
-            categoryId: "cat-1",
-            category: {
-              id: "cat-1",
-              name: "Groceries",
-              isIncome: false,
-            } as any,
-          }),
-        ],
-      });
-
       // Only 2 months of data (below minimum of 3)
-      const monthlyData = [
-        { categoryId: "cat-1", month: 1, total: "200" },
-        { categoryId: "cat-1", month: 2, total: "300" },
-      ];
-
-      const qb = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        addGroupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue(monthlyData),
-      };
-
-      transactionsRepository.createQueryBuilder.mockReturnValue(qb);
-      splitsRepository.createQueryBuilder.mockReturnValue({
-        ...qb,
-        getRawMany: jest.fn().mockResolvedValue([]),
-      });
+      mockedBuckets.mockImplementation(
+        scriptMonths((m) =>
+          m === 1 || m === 2 ? spending({ "cat-1": -200 }) : spending({}),
+        ),
+      );
 
       const alerts = await service.checkSeasonalSpikes(
         "11111111-1111-1111-1111-111111111111",
-        budget,
+        giftsBudget(),
       );
 
       expect(alerts).toHaveLength(0);
-    });
-
-    it("includes suggested budget amount in alert data", async () => {
-      const nextMonth = new Date();
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      const nextMonthNum = nextMonth.getMonth() + 1;
-
-      const budget = makeBudget({
-        categories: [
-          makeCategory({
-            id: "bc-1",
-            categoryId: "cat-1",
-            category: {
-              id: "cat-1",
-              name: "Gifts",
-              isIncome: false,
-            } as any,
-            amount: 100,
-          }),
-        ],
-      });
-
-      const monthlyData: Array<{
-        categoryId: string;
-        month: number;
-        total: string;
-      }> = [];
-      for (let m = 1; m <= 12; m++) {
-        const amount = m === nextMonthNum ? "600" : "200";
-        monthlyData.push({ categoryId: "cat-1", month: m, total: amount });
-      }
-
-      const qb = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        addGroupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue(monthlyData),
-      };
-
-      transactionsRepository.createQueryBuilder.mockReturnValue(qb);
-      splitsRepository.createQueryBuilder.mockReturnValue({
-        ...qb,
-        getRawMany: jest.fn().mockResolvedValue([]),
-      });
-
-      const alerts = await service.checkSeasonalSpikes(
-        "11111111-1111-1111-1111-111111111111",
-        budget,
-      );
-
-      if (alerts.length > 0) {
-        const alert = alerts[0];
-        expect(alert.data.suggestedBudget).toBeDefined();
-        expect(alert.data.typicalMonthlySpend).toBeDefined();
-        expect(alert.data.categoryName).toBe("Gifts");
-        expect(typeof alert.data.suggestedBudget).toBe("number");
-        expect(alert.data.suggestedBudget).toBeGreaterThan(0);
-      }
     });
   });
 

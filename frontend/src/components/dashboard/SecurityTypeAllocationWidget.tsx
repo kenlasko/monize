@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { Account } from '@/types/account';
-import { HoldingWithMarketValue } from '@/types/investment';
+import { HoldingWithMarketValue, WeightingCompleteness } from '@/types/investment';
 import { investmentsApi } from '@/lib/investments';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
@@ -54,7 +54,7 @@ export function SecurityTypeAllocationWidget({
   const t = useTranslations('dashboard');
   const assetClassLabel = useAssetClassLabel();
   const { formatCurrency, formatPercent } = useNumberFormat();
-  const { convertToDefault } = useExchangeRates();
+  const { convertToDefault, defaultCurrency } = useExchangeRates();
   const { config, updateConfig } = useWidgetConfig<SecurityTypeAllocationConfig>(
     WIDGET_ID,
     SECURITY_TYPE_ALLOCATION_DEFAULT,
@@ -120,25 +120,35 @@ export function SecurityTypeAllocationWidget({
     }));
   }, [assetClasses, assetClassLabel, t]);
 
-  const typeData = useMemo<TypeAllocation[]>(() => {
+  const { typeData, typeCompleteness } = useMemo(() => {
     const aggregated = aggregateHoldingsBySecurity(holdings);
     const typeMap = new Map<string, number>();
+    const unpricedSymbols: string[] = [];
+    const missingRatePairs: string[] = [];
     aggregated.forEach((h) => {
       const type = h.securityType || 'OTHER';
       // An unpriced holding has no market value and a missing rate has no
       // conversion. Either way this holding cannot be placed on the chart --
       // `?? 0` used to fold it in as a zero-size slice of a smaller total, which
       // silently changed every other slice's percentage.
-      if (h.marketValue === null || h.marketValue === undefined) return;
+      // It is reported through `WeightingPartialNote` instead of dropped silently.
+      if (h.marketValue === null || h.marketValue === undefined) {
+        unpricedSymbols.push(h.symbol);
+        return;
+      }
       const converted = convertToDefault(h.marketValue, h.currencyCode);
-      if (converted === null) return;
+      if (converted === null) {
+        const pair = `${h.currencyCode}->${defaultCurrency}`;
+        if (!missingRatePairs.includes(pair)) missingRatePairs.push(pair);
+        return;
+      }
       typeMap.set(type, (typeMap.get(type) ?? 0) + converted);
     });
 
     const totalValue = Array.from(typeMap.values()).reduce((sum, v) => sum + v, 0);
     let colorIndex = 0;
 
-    return Array.from(typeMap.entries())
+    const typeData: TypeAllocation[] = Array.from(typeMap.entries())
       .map(([type, value]) => ({
         type,
         label: typeLabel(type),
@@ -147,8 +157,14 @@ export function SecurityTypeAllocationWidget({
         color: TYPE_COLOURS[type] || chartSeriesColor(colorIndex++),
       }))
       .sort((a, b) => b.totalValue - a.totalValue);
+    const typeCompleteness: WeightingCompleteness = {
+      valuationComplete: unpricedSymbols.length === 0 && missingRatePairs.length === 0,
+      unpricedSymbols,
+      missingRatePairs,
+    };
+    return { typeData, typeCompleteness };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [holdings, convertToDefault, t]);
+  }, [holdings, convertToDefault, defaultCurrency, t]);
 
   const allocationData = config.view === 'assetClass' ? assetClassData : typeData;
 
@@ -197,7 +213,7 @@ export function SecurityTypeAllocationWidget({
         </WidgetMessage>
       ) : (
         <>
-          {config.view === 'assetClass' && <WeightingPartialNote result={assetClasses} />}
+          <WeightingPartialNote result={config.view === 'assetClass' ? assetClasses : typeCompleteness} />
           <div className="flex-1 min-h-[240px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <PieChart>

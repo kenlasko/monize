@@ -1,0 +1,246 @@
+<!doctype html>
+<!-- Generated from website/docs/importing-transactions.md by frontend/scripts/build-website-docs.mjs. Edit the Markdown, then run "npm run docs:build" in frontend/. -->
+<html lang="en" data-theme="dark" class="docs-root"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="preload" as="image" href="/assets/img/monize-logo.svg"/><title>Importing Transactions - Monize documentation</title><meta name="description" content="Import CSV, OFX/QFX and QIF files from your bank."/><meta name="theme-color" content="#4fa091"/><link rel="canonical" href="https://monize.net/docs/importing-transactions"/><link rel="icon" type="image/svg+xml" href="/assets/img/monize-logo.svg"/><meta property="og:type" content="article"/><meta property="og:site_name" content="Monize"/><meta property="og:title" content="Importing Transactions - Monize documentation"/><meta property="og:description" content="Import CSV, OFX/QFX and QIF files from your bank."/><meta property="og:url" content="https://monize.net/docs/importing-transactions"/><link rel="stylesheet" href="/assets/css/styles.css"/><link rel="stylesheet" href="/assets/css/docs.css"/><script src="/assets/js/theme-boot.js"></script></head><body class="docs"><a class="skip" href="#content">Skip to content</a><header id="hdr" class="dhdr"><button id="sideBtn" class="icobtn dside-btn" type="button" aria-label="Open the page list" aria-controls="side" aria-expanded="false">☰</button><a class="brand" href="/"><img class="logo" src="/assets/img/monize-logo.svg" alt="" width="30" height="30"/><span>Monize</span></a><a class="dlabel" href="/docs/">Docs</a><button class="dsearch" type="button" data-search-open="" aria-haspopup="dialog" aria-label="Search the documentation"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><span>Search docs</span><kbd>/</kbd></button><nav class="dnav" aria-label="Site"><a href="/">Home</a><a href="https://demo.monize.net" rel="noopener">Live demo</a><a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></nav><button id="theme" class="icobtn" type="button" title="Toggle light / dark" aria-label="Toggle colour theme">☾</button></header><div class="dshade" id="shade" hidden=""></div><div class="dlayout"><aside class="dside" id="side"><nav aria-label="Documentation"><a class="dhome" href="/docs/">Overview</a><div class="dgroup"><p class="dgroup-t">Getting started</p><ul><li><a href="/docs/getting-started">Getting Started</a></li><li><a href="/docs/importing-transactions" aria-current="page">Importing Transactions</a></li><li><a href="/docs/importing-from-quicken">Importing from Quicken</a></li><li><a href="/docs/importing-from-microsoft-money">Importing from Microsoft Money</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Core features</p><ul><li><a href="/docs/dashboard">Dashboard</a></li><li><a href="/docs/accounts">Accounts</a></li><li><a href="/docs/transactions">Transactions</a></li><li><a href="/docs/budgets">Budgets</a></li><li><a href="/docs/investments">Investments</a></li><li><a href="/docs/bills-and-deposits">Bills and Deposits</a></li><li><a href="/docs/email-receipts">Email Receipts</a></li><li><a href="/docs/warranties">Warranties</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Organizing and reporting</p><ul><li><a href="/docs/categories-and-payees">Categories and Payees</a></li><li><a href="/docs/tags">Tags</a></li><li><a href="/docs/reports">Reports</a></li><li><a href="/docs/currency-management">Currency Management</a></li></ul></div><div class="dgroup"><p class="dgroup-t">AI</p><ul><li><a href="/docs/ai">AI</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Administration</p><ul><li><a href="/docs/settings-and-security">Settings and Security</a></li><li><a href="/docs/shared-access">Shared Access (Delegated Users)</a></li><li><a href="/docs/emergency-access">Emergency Access</a></li><li><a href="/docs/backup-and-restore">Backup and Restore</a></li></ul></div></nav></aside><main id="content" class="dmain" tabindex="-1"><nav class="crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">/</span><span>Getting started</span></nav><article class="doc"><h1>Importing Transactions</h1><details class="toc-m"><summary>On this page</summary><ul><li class="d2"><a href="#overview">Overview</a></li><li class="d2"><a href="#supported-formats">Supported Formats</a></li><li class="d2"><a href="#getting-started">Getting Started</a></li><li class="d2"><a href="#importing-csv-files">Importing CSV Files</a></li><li class="d3"><a href="#step-1-upload-csv-files">Step 1: Upload CSV Files</a></li><li class="d3"><a href="#step-2-csv-column-mapping">Step 2: CSV Column Mapping</a></li><li class="d3"><a href="#step-3-select-destination-account">Step 3: Select Destination Account</a></li><li class="d3"><a href="#step-4-map-categories">Step 4: Map Categories</a></li><li class="d3"><a href="#step-5-map-transfer-accounts">Step 5: Map Transfer Accounts</a></li><li class="d3"><a href="#step-6-review-and-import">Step 6: Review and Import</a></li><li class="d3"><a href="#step-7-import-complete">Step 7: Import Complete</a></li><li class="d2"><a href="#importing-ofxqfx-files">Importing OFX/QFX Files</a></li><li class="d3"><a href="#what-is-ofxqfx">What is OFX/QFX?</a></li><li class="d3"><a href="#how-ofxqfx-import-differs-from-csv">How OFX/QFX Import Differs from CSV</a></li><li class="d3"><a href="#ofx-import-steps">OFX Import Steps</a></li><li class="d2"><a href="#importing-quicken-qif-files">Importing Quicken QIF Files</a></li><li class="d2"><a href="#csv-vs-ofxqfx-comparison">CSV vs OFX/QFX Comparison</a></li><li class="d2"><a href="#transfer-detection">Transfer Detection</a></li><li class="d3"><a href="#csv-transfer-rules">CSV Transfer Rules</a></li><li class="d3"><a href="#ofx-transfer-detection">OFX Transfer Detection</a></li><li class="d2"><a href="#saved-column-mappings">Saved Column Mappings</a></li><li class="d2"><a href="#payee-matching-during-import">Payee Matching During Import</a></li><li class="d2"><a href="#tips-and-best-practices">Tips and Best Practices</a></li><li class="d3"><a href="#before-your-first-import">Before Your First Import</a></li><li class="d3"><a href="#for-regular-csv-imports">For Regular CSV Imports</a></li><li class="d3"><a href="#general-tips">General Tips</a></li><li class="d2"><a href="#troubleshooting">Troubleshooting</a></li><li class="d3"><a href="#dates-appear-wrong">Dates Appear Wrong</a></li><li class="d3"><a href="#amounts-have-wrong-sign">Amounts Have Wrong Sign</a></li><li class="d3"><a href="#columns-not-parsed-correctly">Columns Not Parsed Correctly</a></li><li class="d3"><a href="#duplicate-transactions-after-import">Duplicate Transactions After Import</a></li><li class="d3"><a href="#transfer-not-created">Transfer Not Created</a></li><li class="d3"><a href="#ofx-file-not-recognized">OFX File Not Recognized</a></li><li class="d3"><a href="#import-times-out">Import Times Out</a></li></ul></details><p>This guide covers importing transactions from bank-exported CSV files, OFX/QFX files, and Quicken QIF files. For complete migration guides, see <a href="/docs/importing-from-quicken">Importing from Quicken</a> and <a href="/docs/importing-from-microsoft-money">Importing from Microsoft Money</a>.</p>
+<h2 id="overview">Overview<a class="hlink" href="#overview" aria-label="Link to this section">#</a></h2>
+<p>Monize can import transactions from files downloaded from your bank or financial institution. This is useful for:</p>
+<ul>
+<li>Regularly importing new transactions from your bank</li>
+<li>Importing historical transactions from a bank statement download</li>
+<li>Consolidating accounts from multiple institutions</li>
+</ul>
+<p>The import process uses a step-by-step wizard that guides you through file upload, column mapping (for CSV), account selection, category mapping, and review before committing the import.</p>
+<h2 id="supported-formats">Supported Formats<a class="hlink" href="#supported-formats" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Format</th><th>Extension</th><th>Description</th></tr></thead><tbody><tr><td><strong>CSV</strong></td><td><code>.csv</code></td><td>Comma-separated values. Flexible format -- requires column mapping.</td></tr><tr><td><strong>OFX</strong></td><td><code>.ofx</code></td><td>Open Financial Exchange. Standardized format used by most banks.</td></tr><tr><td><strong>QFX</strong></td><td><code>.qfx</code></td><td>Quicken Financial Exchange. Identical to OFX with a Quicken-specific wrapper.</td></tr><tr><td><strong>QIF</strong></td><td><code>.qif</code></td><td>Quicken Interchange Format. Supports both Microsoft Money and Quicken exports. See <a href="#importing-quicken-qif-files">Importing Quicken QIF Files</a> and <a href="/docs/importing-from-microsoft-money">Importing from Microsoft Money</a>.</td></tr></tbody></table></div>
+<h2 id="getting-started">Getting Started<a class="hlink" href="#getting-started" aria-label="Link to this section">#</a></h2>
+<p>Navigate to <strong>Tools &gt; Import Transactions</strong> to open the import wizard.</p>
+<p>You can also start an import from a specific account page -- click the account&#x27;s menu and select <strong>Import Transactions</strong>. This pre-selects the account as the import destination.</p>
+<h2 id="importing-csv-files">Importing CSV Files<a class="hlink" href="#importing-csv-files" aria-label="Link to this section">#</a></h2>
+<p>CSV is the most flexible import format. Because CSV files have no standard column layout, you must tell Monize which columns contain the date, amount, payee, and other fields.</p>
+<h3 id="step-1-upload-csv-files">Step 1: Upload CSV Files<a class="hlink" href="#step-1-upload-csv-files" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Click the upload area or drag your CSV file(s) onto it</li>
+<li>Monize reads the file and extracts the column headers and sample rows</li>
+<li>You can select multiple CSV files for bulk import</li>
+</ol>
+<blockquote>
+<p><strong>File Format:</strong> Monize auto-detects the delimiter (comma, semicolon, or tab) and whether the first row is a header. You can override both settings in the next step.</p>
+</blockquote>
+<h3 id="step-2-csv-column-mapping">Step 2: CSV Column Mapping<a class="hlink" href="#step-2-csv-column-mapping" aria-label="Link to this section">#</a></h3>
+<p>This step is unique to CSV imports. You configure how Monize interprets your CSV columns.</p>
+<figure><img src="/docs/images/import-csv-column-mapping.png" alt="CSV Column Mapping Step" width="1008" height="1110" loading="lazy" decoding="async"/><figcaption>CSV Column Mapping Step</figcaption></figure>
+<h4 id="options-bar">Options Bar<a class="hlink" href="#options-bar" aria-label="Link to this section">#</a></h4>
+<p>At the top of the mapping step, an options bar lets you configure:</p>
+<div class="table-wrap"><table><thead><tr><th>Option</th><th>Description</th></tr></thead><tbody><tr><td><strong>First row is header</strong></td><td>Checkbox. When checked, the first row is treated as column headers and excluded from import.</td></tr><tr><td><strong>Delimiter</strong></td><td>Dropdown: Comma (,), Semicolon (;), or Tab. Changing the delimiter re-parses the file.</td></tr><tr><td><strong>Date format</strong></td><td>Dropdown with common formats plus a Custom option. Auto-detected from sample data.</td></tr></tbody></table></div>
+<h4 id="date-format-options">Date Format Options<a class="hlink" href="#date-format-options" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Format</th><th>Example</th><th>Notes</th></tr></thead><tbody><tr><td>MM/DD/YYYY</td><td>03/15/2026</td><td>US format (default if ambiguous)</td></tr><tr><td>DD/MM/YYYY</td><td>15/03/2026</td><td>International format</td></tr><tr><td>YYYY-MM-DD</td><td>2026-03-15</td><td>ISO format</td></tr><tr><td>YYYY-DD-MM</td><td>2026-15-03</td><td>Alternate ISO</td></tr><tr><td>Custom</td><td>DD.MM.YYYY</td><td>Enter any pattern using YYYY/YY, MM, DD tokens with any separator (-, /, .)</td></tr></tbody></table></div>
+<p>Monize auto-detects the date format from sample data. If dates appear wrong, select the correct format from the dropdown or enter a custom pattern.</p>
+<h4 id="data-preview">Data Preview<a class="hlink" href="#data-preview" aria-label="Link to this section">#</a></h4>
+<p>A table shows the first 5 rows of your CSV file with column headers. Use this to verify the delimiter and header settings are correct, and to identify which columns contain which data.</p>
+<h4 id="auto-column-matching">Auto-Column Matching<a class="hlink" href="#auto-column-matching" aria-label="Link to this section">#</a></h4>
+<p>Monize automatically detects and suggests column mappings based on your CSV headers. The system matches common header names like &quot;Date&quot;, &quot;Amount&quot;, &quot;Description&quot;, &quot;Payee&quot;, &quot;Category&quot;, &quot;Memo&quot;, and &quot;Reference&quot; to the appropriate fields. You can review and adjust the suggested mappings before proceeding.</p>
+<h4 id="column-mapping">Column Mapping<a class="hlink" href="#column-mapping" aria-label="Link to this section">#</a></h4>
+<p>Map your CSV columns to transaction fields using dropdowns. Each dropdown lists the columns found in your file.</p>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><strong>Date</strong></td><td>Yes</td><td>The transaction date column</td></tr><tr><td><strong>Amount</strong></td><td>Yes (if single)</td><td>A single column containing the transaction amount</td></tr><tr><td><strong>Debit</strong></td><td>Yes (if split)</td><td>The withdrawal/debit column</td></tr><tr><td><strong>Credit</strong></td><td>Yes (if split)</td><td>The deposit/credit column</td></tr><tr><td><strong>Payee</strong></td><td>No</td><td>The payee or description column</td></tr><tr><td><strong>Category</strong></td><td>No</td><td>A category column (if your bank provides one)</td></tr><tr><td><strong>Subcategory</strong></td><td>No</td><td>A subcategory column for two-level category hierarchy</td></tr><tr><td><strong>Memo</strong></td><td>No</td><td>Additional notes or description</td></tr><tr><td><strong>Reference Number</strong></td><td>No</td><td>Cheque number or reference ID</td></tr></tbody></table></div>
+<h4 id="amount-type-single-vs-split">Amount Type: Single vs Split<a class="hlink" href="#amount-type-single-vs-split" aria-label="Link to this section">#</a></h4>
+<p>Select the amount type based on how your CSV represents transaction amounts:</p>
+<p><strong>Single amount column</strong> -- One column with positive values for deposits and negative values for withdrawals (or vice versa). This is the most common format.</p>
+<ul>
+<li><strong>Sign</strong> option: Choose &quot;As-is (positive = deposit)&quot; or &quot;Reverse (positive = withdrawal)&quot;. Use Reverse for credit card statements where charges appear as positive numbers.</li>
+</ul>
+<p><strong>Separate debit/credit</strong> -- Two columns: one for withdrawals (debit) and one for deposits (credit). Common in some bank exports.</p>
+<p><strong>Transaction type column</strong> -- Use a dedicated column in the CSV to determine transaction direction instead of relying on amount sign. When selected:</p>
+<ul>
+<li>Choose which column contains the type indicator</li>
+<li>Define keywords for each type:
+<ul>
+<li><strong>Income keywords:</strong> e.g., &quot;Income&quot;, &quot;Deposit&quot;, &quot;Credit&quot; (treated as positive amounts)</li>
+<li><strong>Expense keywords:</strong> e.g., &quot;Expense&quot;, &quot;Debit&quot;, &quot;Payment&quot; (treated as negative amounts)</li>
+<li><strong>Transfer-out keywords:</strong> e.g., &quot;Transfer-Out&quot; (money leaving account)</li>
+<li><strong>Transfer-in keywords:</strong> e.g., &quot;Transfer-In&quot; (money entering account)</li>
+</ul>
+</li>
+<li>Optionally specify a <strong>Transfer account column</strong> to identify which account transfers go to/from</li>
+<li>Keyword matching is case-insensitive</li>
+</ul>
+<blockquote>
+<p><strong>Amount Parsing:</strong> Monize handles currency symbols ($, EUR, etc.), thousands separators (commas), and parenthesized negatives -- e.g., <code>($50.00)</code> is treated as <code>-$50.00</code>.</p>
+</blockquote>
+<h4 id="transfer-detection-rules">Transfer Detection Rules<a class="hlink" href="#transfer-detection-rules" aria-label="Link to this section">#</a></h4>
+<p>See <a href="#transfer-detection">Transfer Detection</a> below for details on configuring rules that automatically identify transfer transactions in your CSV data.</p>
+<h4 id="saved-mappings">Saved Mappings<a class="hlink" href="#saved-mappings" aria-label="Link to this section">#</a></h4>
+<p>See <a href="#saved-column-mappings">Saved Column Mappings</a> below for details on saving and reusing your column mapping configuration.</p>
+<h3 id="step-3-select-destination-account">Step 3: Select Destination Account<a class="hlink" href="#step-3-select-destination-account" aria-label="Link to this section">#</a></h3>
+<p>Choose which Monize account the transactions should be imported into.</p>
+<ul>
+<li>Select from the <strong>&quot;Import into account&quot;</strong> dropdown</li>
+<li>Or click <strong>&quot;+ Create new account&quot;</strong> to create a new account inline</li>
+</ul>
+<blockquote>
+<p><strong>Auto-Matching:</strong> If you navigated to the import page from a specific account, that account is pre-selected.</p>
+</blockquote>
+<h3 id="step-4-map-categories">Step 4: Map Categories<a class="hlink" href="#step-4-map-categories" aria-label="Link to this section">#</a></h3>
+<p>If your CSV file has a category column, Monize extracts the unique category values and asks you to map them to existing Monize categories or create new ones.</p>
+<p>Categories are displayed in groups:</p>
+<ol>
+<li><strong>Needs Attention</strong> (amber) -- Categories that could not be auto-matched</li>
+<li><strong>Auto-Matched</strong> (green, collapsed) -- Categories that matched existing Monize categories</li>
+</ol>
+<p>For each category, you can:</p>
+<ul>
+<li><strong>Map to existing</strong> -- Select an existing Monize category</li>
+<li><strong>Create new</strong> -- Enter a new category name, optionally under a parent category</li>
+<li><strong>Skip</strong> -- Leave unmapped; transactions import without a category</li>
+</ul>
+<blockquote>
+<p><strong>No Category Column?</strong> If you did not map a category column, this step is skipped. Payee default categories are still applied automatically during import (see <a href="#payee-matching-during-import">Payee Matching During Import</a>).</p>
+</blockquote>
+<h3 id="step-5-map-transfer-accounts">Step 5: Map Transfer Accounts<a class="hlink" href="#step-5-map-transfer-accounts" aria-label="Link to this section">#</a></h3>
+<p>If transfer detection rules matched any transactions (see <a href="#transfer-detection">Transfer Detection</a>), you need to map the target account names to existing Monize accounts or create new ones.</p>
+<h3 id="step-6-review-and-import">Step 6: Review and Import<a class="hlink" href="#step-6-review-and-import" aria-label="Link to this section">#</a></h3>
+<p>The review step shows a summary of the import:</p>
+<ul>
+<li>File name and transaction count</li>
+<li>Target account</li>
+<li>Categories, accounts, and payees to be created</li>
+</ul>
+<p>Click <strong>&quot;Import Transactions&quot;</strong> to execute the import. The operation runs inside a database transaction -- if an error occurs, all changes are rolled back.</p>
+<h3 id="step-7-import-complete">Step 7: Import Complete<a class="hlink" href="#step-7-import-complete" aria-label="Link to this section">#</a></h3>
+<p>After a successful import, you see:</p>
+<div class="table-wrap"><table><thead><tr><th>Metric</th><th>Description</th></tr></thead><tbody><tr><td><strong>Imported</strong></td><td>Transactions successfully imported</td></tr><tr><td><strong>Skipped</strong></td><td>Duplicate transactions skipped</td></tr><tr><td><strong>Errors</strong></td><td>Transactions that failed (with error details)</td></tr><tr><td><strong>Categories created</strong></td><td>New categories added</td></tr><tr><td><strong>Accounts created</strong></td><td>New accounts added</td></tr><tr><td><strong>Payees created</strong></td><td>New payees added</td></tr></tbody></table></div>
+<p>Click <strong>&quot;View Transactions&quot;</strong> to see your imported data, or <strong>&quot;Import More Files&quot;</strong> to continue importing.</p>
+<h2 id="importing-ofxqfx-files">Importing OFX/QFX Files<a class="hlink" href="#importing-ofxqfx-files" aria-label="Link to this section">#</a></h2>
+<h3 id="what-is-ofxqfx">What is OFX/QFX?<a class="hlink" href="#what-is-ofxqfx" aria-label="Link to this section">#</a></h3>
+<p>OFX (Open Financial Exchange) and QFX (Quicken Financial Exchange) are standardized file formats that banks use to provide transaction downloads. Unlike CSV, these formats have a defined structure -- no column mapping is needed.</p>
+<p>Most banks offer OFX or QFX downloads from their online banking portals, typically under a &quot;Download transactions&quot; or &quot;Export&quot; option.</p>
+<h3 id="how-ofxqfx-import-differs-from-csv">How OFX/QFX Import Differs from CSV<a class="hlink" href="#how-ofxqfx-import-differs-from-csv" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Aspect</th><th>CSV</th><th>OFX/QFX</th></tr></thead><tbody><tr><td>Column mapping</td><td>Required</td><td>Not needed (fixed format)</td></tr><tr><td>Date format</td><td>User-selected or auto-detected</td><td>Automatic (embedded in file)</td></tr><tr><td>Payee</td><td>From mapped column</td><td>From NAME field in file</td></tr><tr><td>Memo</td><td>From mapped column</td><td>From MEMO field (if different from NAME)</td></tr><tr><td>Category</td><td>From mapped column (optional)</td><td>Not provided -- mapped during import or via payee defaults</td></tr><tr><td>Cleared status</td><td>Not provided</td><td>All transactions marked as cleared (posted)</td></tr><tr><td>Transfer detection</td><td>Via user-defined rules</td><td>Automatic for XFER transaction types</td></tr><tr><td>Amount handling</td><td>User configures sign and column</td><td>Automatic (signed amounts in file)</td></tr><tr><td>Reference number</td><td>From mapped column (optional)</td><td>From CHECKNUM field</td></tr></tbody></table></div>
+<h3 id="ofx-import-steps">OFX Import Steps<a class="hlink" href="#ofx-import-steps" aria-label="Link to this section">#</a></h3>
+<p>The OFX/QFX import follows the same wizard but skips the column mapping step:</p>
+<ol>
+<li><strong>Upload</strong> -- Select your <code>.ofx</code> or <code>.qfx</code> file(s)</li>
+<li><strong>Select Account</strong> -- Choose the destination account</li>
+<li><strong>Map Categories</strong> -- Map any categories found (OFX files rarely include categories)</li>
+<li><strong>Map Transfer Accounts</strong> -- Map accounts for transfer transactions</li>
+<li><strong>Review and Import</strong> -- Confirm and execute</li>
+<li><strong>Complete</strong> -- View results</li>
+</ol>
+<h4 id="supported-ofx-statement-types">Supported OFX Statement Types<a class="hlink" href="#supported-ofx-statement-types" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Statement Type</th><th>Description</th></tr></thead><tbody><tr><td>BANKMSGSRSV1</td><td>Chequing and savings accounts</td></tr><tr><td>CREDITCARDMSGSRSV1</td><td>Credit card accounts</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Note:</strong> Investment statements (INVSTMTMSGSRSV1) are not supported in OFX format. Use QIF for investment account imports.</p>
+</blockquote>
+<h4 id="ofx-transaction-types">OFX Transaction Types<a class="hlink" href="#ofx-transaction-types" aria-label="Link to this section">#</a></h4>
+<p>Monize recognizes the following OFX transaction types:</p>
+<div class="table-wrap"><table><thead><tr><th>OFX Type</th><th>Handling</th></tr></thead><tbody><tr><td>DEBIT</td><td>Standard withdrawal</td></tr><tr><td>CREDIT</td><td>Standard deposit</td></tr><tr><td>CHECK</td><td>Cheque transaction</td></tr><tr><td>DEP</td><td>Deposit</td></tr><tr><td>ATM</td><td>ATM withdrawal/deposit</td></tr><tr><td>POS</td><td>Point-of-sale transaction</td></tr><tr><td>XFER</td><td>Transfer (see <a href="#ofx-transfer-detection">OFX Transfer Detection</a>)</td></tr><tr><td>INT</td><td>Interest</td></tr><tr><td>DIV</td><td>Dividend</td></tr><tr><td>FEE</td><td>Fee</td></tr><tr><td>SRVCHG</td><td>Service charge</td></tr><tr><td>PAYMENT</td><td>Payment</td></tr><tr><td>OTHER</td><td>Other transaction</td></tr></tbody></table></div>
+<h2 id="importing-quicken-qif-files">Importing Quicken QIF Files<a class="hlink" href="#importing-quicken-qif-files" aria-label="Link to this section">#</a></h2>
+<p>Monize supports QIF files exported from Quicken, including both individual account exports and Quicken&#x27;s full-file export (which contains all accounts, categories, and tags in a single QIF file). Both formats are auto-detected.</p>
+<blockquote>
+<p><strong>Important: Future-Dated Transactions</strong></p>
+<p>Monize does not currently support importing future-dated transactions. If your Quicken QIF file contains scheduled or future transactions, you must remove them from the QIF file before importing. See the full guide for details.</p>
+</blockquote>
+<p>Key Quicken QIF features supported:</p>
+<ul>
+<li><strong>Colon-separated category hierarchy</strong> (e.g., <code>Food:Groceries</code>) -- parent/child categories created automatically</li>
+<li><strong>Full-file export</strong> -- all accounts, category definitions (<code>!Type:Cat</code>), and tag definitions (<code>!Type:Tag</code>) in a single file</li>
+<li><strong>Single-account export</strong> -- one file per account, with bulk import support</li>
+<li><strong>Date padding</strong> -- Quicken&#x27;s space-padded dates (e.g., <code>2/ 4/19</code>) handled automatically</li>
+<li><strong>Tags</strong> -- extracted from the <code>/</code> separator in category fields</li>
+</ul>
+<p>For the complete step-by-step guide including exporting from Quicken, import order, and troubleshooting, see <strong><a href="/docs/importing-from-quicken">Importing from Quicken</a></strong>.</p>
+<h2 id="csv-vs-ofxqfx-comparison">CSV vs OFX/QFX Comparison<a class="hlink" href="#csv-vs-ofxqfx-comparison" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Feature</th><th>CSV</th><th>OFX/QFX</th></tr></thead><tbody><tr><td><strong>Ease of setup</strong></td><td>Requires column mapping</td><td>No mapping needed</td></tr><tr><td><strong>Flexibility</strong></td><td>Works with any CSV layout</td><td>Fixed format</td></tr><tr><td><strong>Date format</strong></td><td>Must be specified</td><td>Automatic</td></tr><tr><td><strong>Amount sign</strong></td><td>Configurable (normal or reverse)</td><td>Automatic</td></tr><tr><td><strong>Categories</strong></td><td>Can map from file column</td><td>Not in file -- use payee defaults</td></tr><tr><td><strong>Transfer detection</strong></td><td>Rule-based (user configures)</td><td>Automatic for XFER type</td></tr><tr><td><strong>Saved presets</strong></td><td>Yes (saved column mappings)</td><td>Not needed</td></tr><tr><td><strong>Cleared status</strong></td><td>Not set</td><td>Always cleared</td></tr><tr><td><strong>Best for</strong></td><td>Banks with non-standard exports, custom data</td><td>Standard bank downloads</td></tr></tbody></table></div>
+<h2 id="transfer-detection">Transfer Detection<a class="hlink" href="#transfer-detection" aria-label="Link to this section">#</a></h2>
+<h3 id="csv-transfer-rules">CSV Transfer Rules<a class="hlink" href="#csv-transfer-rules" aria-label="Link to this section">#</a></h3>
+<p>Since CSV files have no standard way to indicate transfers, Monize lets you define rules that identify transfer transactions based on patterns in the payee or category fields.</p>
+<figure><img src="/docs/images/import-csv-transfer-rules.png" alt="CSV Transfer Rules" width="1005" height="158" loading="lazy" decoding="async"/><figcaption>CSV Transfer Rules</figcaption></figure>
+<p>Each rule has three parts:</p>
+<div class="table-wrap"><table><thead><tr><th>Part</th><th>Description</th></tr></thead><tbody><tr><td><strong>Field</strong></td><td>Which column to match: Payee or Category</td></tr><tr><td><strong>Pattern</strong></td><td>Text to search for (case-insensitive, &quot;contains&quot; matching)</td></tr><tr><td><strong>Target Account</strong></td><td>The Monize account the transfer goes to</td></tr></tbody></table></div>
+<h4 id="example-rules">Example Rules<a class="hlink" href="#example-rules" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Pattern</th><th>Target Account</th><th>Matches</th></tr></thead><tbody><tr><td>Payee</td><td>Transfer to Savings</td><td>Savings</td><td>&quot;Transfer to Savings - Jan&quot;</td></tr><tr><td>Payee</td><td>INTERAC e-Transfer</td><td>Chequing</td><td>&quot;INTERAC e-Transfer JOHN DOE&quot;</td></tr><tr><td>Category</td><td>Transfer</td><td>Savings</td><td>Any transaction where category contains &quot;Transfer&quot;</td></tr></tbody></table></div>
+<p>When a rule matches, the transaction is:</p>
+<ol>
+<li>Marked as a transfer</li>
+<li>Linked to the target account</li>
+<li>Category is cleared (transfers do not have categories)</li>
+</ol>
+<p>Rules are evaluated in order. The first matching rule wins.</p>
+<blockquote>
+<p><strong>Tip:</strong> Transfer rules are saved along with your column mapping preset, so you only need to configure them once per bank format.</p>
+</blockquote>
+<h3 id="ofx-transfer-detection">OFX Transfer Detection<a class="hlink" href="#ofx-transfer-detection" aria-label="Link to this section">#</a></h3>
+<p>OFX files include a transaction type field. Transactions with type <code>XFER</code> are automatically treated as transfers. The payee name (NAME field) is used as the transfer account name, which you map during the import wizard.</p>
+<h2 id="saved-column-mappings">Saved Column Mappings<a class="hlink" href="#saved-column-mappings" aria-label="Link to this section">#</a></h2>
+<p>If you regularly import CSV files from the same bank, you can save your column mapping configuration as a named preset to avoid re-mapping each time.</p>
+<h4 id="saving-a-mapping">Saving a Mapping<a class="hlink" href="#saving-a-mapping" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Configure your column mapping, date format, delimiter, and transfer rules</li>
+<li>Click <strong>&quot;Save Current&quot;</strong> in the Saved Mappings section</li>
+<li>Enter a descriptive name (e.g., &quot;TD Chequing CSV&quot;, &quot;Visa Statement&quot;)</li>
+<li>Click <strong>Save</strong></li>
+</ol>
+<p>If a mapping with the same name already exists, it is overwritten (an &quot;Will overwrite&quot; warning appears).</p>
+<h4 id="loading-a-mapping">Loading a Mapping<a class="hlink" href="#loading-a-mapping" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Select a saved mapping from the <strong>&quot;Load a saved mapping...&quot;</strong> dropdown</li>
+<li>All settings are restored: column assignments, delimiter, date format, header toggle, and transfer rules</li>
+</ol>
+<h4 id="deleting-a-mapping">Deleting a Mapping<a class="hlink" href="#deleting-a-mapping" aria-label="Link to this section">#</a></h4>
+<p>Click the <strong>x</strong> button next to any saved mapping name to delete it.</p>
+<blockquote>
+<p><strong>Saved mappings include transfer rules.</strong> When you save a column mapping preset, the transfer detection rules are saved with it.</p>
+</blockquote>
+<h2 id="payee-matching-during-import">Payee Matching During Import<a class="hlink" href="#payee-matching-during-import" aria-label="Link to this section">#</a></h2>
+<p>During import, Monize automatically resolves payee names using the following process:</p>
+<ol>
+<li><strong>Exact match</strong> -- If a payee with the same name already exists, the transaction is assigned to it</li>
+<li><strong>Alias match</strong> -- If a payee alias pattern matches the imported name (see <a href="/docs/categories-and-payees#payee-aliases">Payee Aliases</a>), the transaction is assigned to the canonical payee</li>
+<li><strong>Create new</strong> -- If no match is found, a new payee is created</li>
+</ol>
+<p>When a payee is matched (by name or alias), its <strong>default category</strong> is applied to the transaction -- unless the transaction already has a category from the import file.</p>
+<blockquote>
+<p><strong>Payee name cleanup:</strong> All-caps payee names from bank files are automatically converted to Proper Case (e.g., &quot;STARBUCKS&quot; becomes &quot;Starbucks&quot;).</p>
+</blockquote>
+<p>This matching process is identical for CSV, OFX/QFX, and QIF imports. To make the most of it, set up payee aliases before your first import (see <a href="/docs/categories-and-payees#payee-aliases">Payee Aliases</a>).</p>
+<h2 id="tips-and-best-practices">Tips and Best Practices<a class="hlink" href="#tips-and-best-practices" aria-label="Link to this section">#</a></h2>
+<h3 id="before-your-first-import">Before Your First Import<a class="hlink" href="#before-your-first-import" aria-label="Link to this section">#</a></h3>
+<ol>
+<li><strong>Create your accounts</strong> in Monize first, so they are available as import destinations</li>
+<li><strong>Set up payee aliases</strong> for common payees that appear with varying names in bank files (e.g., &quot;STARBUCKS #1234&quot; vs &quot;STARBUCKS #5678&quot;)</li>
+<li><strong>Set default categories</strong> on payees to automate categorization during import</li>
+</ol>
+<h3 id="for-regular-csv-imports">For Regular CSV Imports<a class="hlink" href="#for-regular-csv-imports" aria-label="Link to this section">#</a></h3>
+<ol>
+<li><strong>Save a column mapping</strong> the first time you import from a bank -- it saves time on future imports</li>
+<li><strong>Set up transfer rules</strong> if your bank includes inter-account transfers in the CSV</li>
+<li><strong>Use the &quot;Reverse sign&quot; option</strong> for credit card statements where charges are positive numbers</li>
+</ol>
+<h3 id="general-tips">General Tips<a class="hlink" href="#general-tips" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Import all files for the same period at once for better transfer matching</li>
+<li>After import, review uncategorized transactions (<strong>Reports &gt; Uncategorized Transactions</strong>)</li>
+<li>Use the <strong>Recalculate</strong> button on the Net Worth report after large imports to update balance snapshots</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting<a class="hlink" href="#troubleshooting" aria-label="Link to this section">#</a></h2>
+<h3 id="dates-appear-wrong">Dates Appear Wrong<a class="hlink" href="#dates-appear-wrong" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause:</strong> The date format was auto-detected incorrectly.</p>
+<p><strong>Solution:</strong> Change the date format in the options bar (for CSV) or the date format dropdown (for OFX). Monize defaults to MM/DD/YYYY when dates are ambiguous (e.g., both parts are 12 or less).</p>
+<h3 id="amounts-have-wrong-sign">Amounts Have Wrong Sign<a class="hlink" href="#amounts-have-wrong-sign" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause:</strong> Your bank exports withdrawals as positive numbers (common for credit card statements).</p>
+<p><strong>Solution:</strong> In the CSV column mapping step, change the Sign option to &quot;Reverse (positive = withdrawal)&quot;.</p>
+<h3 id="columns-not-parsed-correctly">Columns Not Parsed Correctly<a class="hlink" href="#columns-not-parsed-correctly" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause:</strong> The delimiter was auto-detected incorrectly (e.g., a semicolon-delimited file detected as comma).</p>
+<p><strong>Solution:</strong> Change the delimiter in the options bar and the file will be re-parsed.</p>
+<h3 id="duplicate-transactions-after-import">Duplicate Transactions After Import<a class="hlink" href="#duplicate-transactions-after-import" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause:</strong> Importing the same file twice, or overlapping date ranges between imports.</p>
+<p><strong>Solution:</strong> Monize does not automatically detect duplicates in CSV/OFX imports (unlike QIF transfers). Use the <strong>Duplicate Transaction Finder</strong> report to identify and remove duplicates.</p>
+<h3 id="transfer-not-created">Transfer Not Created<a class="hlink" href="#transfer-not-created" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause (CSV):</strong> No transfer rule matched the transaction, or the rule pattern did not match.</p>
+<p><strong>Solution:</strong> Check your transfer rules. Matching is case-insensitive &quot;contains&quot; -- the pattern must appear somewhere in the payee or category text.</p>
+<p><strong>Cause (OFX):</strong> The transaction type was not XFER.</p>
+<p><strong>Solution:</strong> Manually edit the transaction and convert it to a transfer.</p>
+<h3 id="ofx-file-not-recognized">OFX File Not Recognized<a class="hlink" href="#ofx-file-not-recognized" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause:</strong> The file may use an unsupported OFX statement type (e.g., investment statements).</p>
+<p><strong>Solution:</strong> Try exporting as CSV from your bank instead, or use QIF format for investment accounts.</p>
+<h3 id="import-times-out">Import Times Out<a class="hlink" href="#import-times-out" aria-label="Link to this section">#</a></h3>
+<p><strong>Cause:</strong> Very large files or files with thousands of transactions.</p>
+<p><strong>Solution:</strong> The import has a 5-minute timeout. If the file is too large, try splitting it into smaller date ranges.</p></article><nav class="pager" aria-label="Previous and next page"><a class="pg pg-prev" href="/docs/getting-started"><span>Previous</span><b>Getting Started</b></a><a class="pg pg-next" href="/docs/importing-from-quicken"><span>Next</span><b>Importing from Quicken</b></a></nav><p class="dedit"><a href="https://github.com/kenlasko/monize/edit/main/website/docs/importing-transactions.md" rel="noopener">Edit this page on GitHub</a><a href="https://github.com/kenlasko/monize/issues/new" rel="noopener">Report a problem with the docs</a></p></main><aside class="dtoc" aria-label="On this page"><p>On this page</p><ul><li class="d2"><a href="#overview">Overview</a></li><li class="d2"><a href="#supported-formats">Supported Formats</a></li><li class="d2"><a href="#getting-started">Getting Started</a></li><li class="d2"><a href="#importing-csv-files">Importing CSV Files</a></li><li class="d3"><a href="#step-1-upload-csv-files">Step 1: Upload CSV Files</a></li><li class="d3"><a href="#step-2-csv-column-mapping">Step 2: CSV Column Mapping</a></li><li class="d3"><a href="#step-3-select-destination-account">Step 3: Select Destination Account</a></li><li class="d3"><a href="#step-4-map-categories">Step 4: Map Categories</a></li><li class="d3"><a href="#step-5-map-transfer-accounts">Step 5: Map Transfer Accounts</a></li><li class="d3"><a href="#step-6-review-and-import">Step 6: Review and Import</a></li><li class="d3"><a href="#step-7-import-complete">Step 7: Import Complete</a></li><li class="d2"><a href="#importing-ofxqfx-files">Importing OFX/QFX Files</a></li><li class="d3"><a href="#what-is-ofxqfx">What is OFX/QFX?</a></li><li class="d3"><a href="#how-ofxqfx-import-differs-from-csv">How OFX/QFX Import Differs from CSV</a></li><li class="d3"><a href="#ofx-import-steps">OFX Import Steps</a></li><li class="d2"><a href="#importing-quicken-qif-files">Importing Quicken QIF Files</a></li><li class="d2"><a href="#csv-vs-ofxqfx-comparison">CSV vs OFX/QFX Comparison</a></li><li class="d2"><a href="#transfer-detection">Transfer Detection</a></li><li class="d3"><a href="#csv-transfer-rules">CSV Transfer Rules</a></li><li class="d3"><a href="#ofx-transfer-detection">OFX Transfer Detection</a></li><li class="d2"><a href="#saved-column-mappings">Saved Column Mappings</a></li><li class="d2"><a href="#payee-matching-during-import">Payee Matching During Import</a></li><li class="d2"><a href="#tips-and-best-practices">Tips and Best Practices</a></li><li class="d3"><a href="#before-your-first-import">Before Your First Import</a></li><li class="d3"><a href="#for-regular-csv-imports">For Regular CSV Imports</a></li><li class="d3"><a href="#general-tips">General Tips</a></li><li class="d2"><a href="#troubleshooting">Troubleshooting</a></li><li class="d3"><a href="#dates-appear-wrong">Dates Appear Wrong</a></li><li class="d3"><a href="#amounts-have-wrong-sign">Amounts Have Wrong Sign</a></li><li class="d3"><a href="#columns-not-parsed-correctly">Columns Not Parsed Correctly</a></li><li class="d3"><a href="#duplicate-transactions-after-import">Duplicate Transactions After Import</a></li><li class="d3"><a href="#transfer-not-created">Transfer Not Created</a></li><li class="d3"><a href="#ofx-file-not-recognized">OFX File Not Recognized</a></li><li class="d3"><a href="#import-times-out">Import Times Out</a></li></ul></aside></div><footer class="dfoot"><div class="wrap"><span>Monize is released under the AGPL-3.0 licence.</span><span><a href="/">monize.net</a> · <a href="https://demo.monize.net" rel="noopener">Live demo</a> · <a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></span></div></footer><div class="sdlg" id="search" role="dialog" aria-modal="true" aria-label="Search the documentation" hidden=""><div class="sbox"><label class="sfield"><span class="sr">Search the documentation</span><input id="q" type="search" placeholder="Search the docs, e.g. &quot;split transaction&quot;" autoComplete="off" spellCheck="false" aria-controls="sres"/></label><ul id="sres" class="sres" role="listbox" aria-label="Results"></ul><p class="shint" id="shint"><kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</p></div></div><script src="/assets/js/docs.js" defer=""></script></body></html>

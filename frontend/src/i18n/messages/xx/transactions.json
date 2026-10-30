@@ -576,6 +576,7 @@
       "total": "[XX-Total-XX]",
       "transactions": "[XX-Transactions-XX]",
       "tooltip": "[XX-{count, plural, one {# transaction} other {# transactions}}-XX]",
+      "partialNote": "[XX-Some amounts have no exchange rate and are not included in these totals.-XX]",
       "quarterLabel": "[XX-Q{quarter} {year}-XX]",
       "quarterTick": "[XX-Q{quarter} {year}-XX]",
       "granularityLabel": "[XX-Bucket size-XX]",

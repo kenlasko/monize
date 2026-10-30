@@ -1122,8 +1122,9 @@ export class ActionHistoryService {
     await manager.query(
       `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
         payee_id, payee_name, category_id, description, reference_number, status, is_split,
-        parent_transaction_id, is_transfer, linked_transaction_id, reconciled_date, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
+        parent_transaction_id, is_transfer, linked_transaction_id, reconciled_date, created_at,
+        original_amount, original_currency_code)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
       [
         before.id,
         action.userId,
@@ -1144,6 +1145,8 @@ export class ActionHistoryService {
         before.linkedTransactionId ?? null,
         before.reconciledDate ?? null,
         before.createdAt ?? new Date(),
+        before.originalAmount ?? null,
+        before.originalCurrencyCode ?? null,
       ],
     );
 
@@ -1257,8 +1260,8 @@ export class ActionHistoryService {
       await manager.query(
         `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
           payee_id, payee_name, category_id, description, reference_number, status, is_split,
-          is_transfer, linked_transaction_id, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NULL, $16)`,
+          is_transfer, linked_transaction_id, created_at, original_amount, original_currency_code)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NULL, $16, $17, $18)`,
         [
           txData.id,
           action.userId,
@@ -1276,6 +1279,8 @@ export class ActionHistoryService {
           txData.isSplit ?? false,
           txData.isTransfer ?? true,
           txData.createdAt ?? new Date(),
+          txData.originalAmount ?? null,
+          txData.originalCurrencyCode ?? null,
         ],
       );
     }
@@ -1515,8 +1520,8 @@ export class ActionHistoryService {
       const cashTx = before.linkedCashTransaction;
       await manager.query(
         `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
-          description, status, is_transfer, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          description, status, is_transfer, created_at, original_amount, original_currency_code)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           cashTx.id,
           action.userId,
@@ -1529,6 +1534,8 @@ export class ActionHistoryService {
           cashTx.status ?? "UNRECONCILED",
           cashTx.isTransfer ?? false,
           cashTx.createdAt ?? new Date(),
+          cashTx.originalAmount ?? null,
+          cashTx.originalCurrencyCode ?? null,
         ],
       );
       await this.recalculateBalance(action.userId, cashTx.accountId, manager);
@@ -1660,8 +1667,8 @@ export class ActionHistoryService {
       await manager.query(
         `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
           payee_id, payee_name, category_id, description, reference_number, status, is_split,
-          is_transfer, linked_transaction_id, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          is_transfer, linked_transaction_id, created_at, original_amount, original_currency_code)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
          ON CONFLICT (id) DO NOTHING`,
         [
           txData.id,
@@ -1681,6 +1688,8 @@ export class ActionHistoryService {
           txData.isTransfer ?? false,
           txData.linkedTransactionId ?? null,
           txData.createdAt ?? new Date(),
+          txData.originalAmount ?? null,
+          txData.originalCurrencyCode ?? null,
         ],
       );
       accountIds.add(txData.accountId);

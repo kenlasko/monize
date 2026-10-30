@@ -42,6 +42,7 @@
     "institutionNotFound": "기관을 찾을 수 없습니다",
     "updateClosed": "폐쇄된 계정은 수정할 수 없습니다",
     "changeCurrencyWithTransactions": "거래가 있는 계정의 통화는 변경할 수 없습니다.",
+    "changeCurrencyWithBalanceOrSchedules": "기초 잔액이나 예약 거래가 있는 계좌의 통화는 변경할 수 없습니다.",
     "alreadyClosed": "계정이 이미 폐쇄되었습니다",
     "closeNonZeroBalance": "잔액이 0이 아닌 계정은 폐쇄할 수 없습니다. 현재 잔액: {{ currentBalance }}",
     "closeWithFutureTransactions": "미래 날짜의 거래가 있는 계좌는 해지할 수 없습니다. 오늘 이후 날짜의 거래가 {{ count }}건 있습니다. 먼저 삭제하거나 무효 처리하세요.",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "이 Money 파일을 가져오는 중입니다. 삭제하기 전에 가져오기가 끝날 때까지 기다리세요.",
     "mnyImportAlreadyRunning": "가져오기가 이미 실행 중입니다. 완료된 후에 다시 시작하세요.",
     "mnyAlreadyImported": "이 파일은 {{ date }}에 이미 가져왔으며(가져오기 {{ jobId }}) 그 기록이 아직 계정에 있습니다. 다시 가져오면 중복됩니다. 기록을 바꾸려면 처음부터 다시 시작하고 기존 데이터를 바꾸도록 선택하세요.",
+    "mnyExistingAccountClosed": "기존 계좌 \"{{ name }}\"이(가) 해지되어 Money 파일을 병합할 수 없습니다. 계좌를 다시 열거나 이름을 바꾼 후 다시 가져오세요.",
+    "mnyExistingAccountCurrency": "기존 계좌 \"{{ name }}\"은(는) {{ existing }}을(를) 사용하지만 Money 파일의 계좌는 {{ file }}을(를) 사용합니다. 둘 중 하나의 이름을 바꾼 후 다시 가져오세요.",
     "mnyJobNotFound": "가져오기 작업을 찾을 수 없습니다",
     "mnyFileTooLarge": "이 Money 파일은 가져오기 한도인 {{ limit }} MB를 초과합니다.",
-    "noRateForSplitTransfer": "{{ date }}의 {{ pair }} 환율이 없습니다. 분할 항목이 다른 통화의 계좌로 이체합니다. 해당 통화 쌍과 날짜의 환율을 추가한 다음 다시 가져오세요."
+    "noRateForSplitTransfer": "{{ date }}의 {{ pair }} 환율이 없습니다. 분할 항목이 다른 통화의 계좌로 이체합니다. 해당 통화 쌍과 날짜의 환율을 추가한 다음 다시 가져오세요.",
+    "accountClosed": "계좌가 해지되었습니다. 다시 열거나 다른 계좌를 선택하세요."
   },
   "monteCarlo": {
     "scenarioNotFound": "시나리오 {{ id }}을(를) 찾을 수 없습니다",
@@ -779,6 +783,7 @@
     "notATransfer": "거래가 이체가 아닙니다",
     "splitTransferLegAccountLocked": "이 이체는 분할 거래의 일부입니다. 계좌를 변경하려면 원본 거래의 분할을 편집하세요.",
     "splitTransferLegStatusLocked": "이 이체는 분할 거래의 일부입니다. 양쪽이 함께 변경되도록, 이 이체가 속한 분할 거래를 편집하여 무효화하거나 복원하세요.",
+    "investmentCashLegLocked": "이 거래는 투자 거래의 현금 측입니다. 양쪽이 함께 바뀌도록 투자 거래를 변경하거나 삭제하세요.",
     "investmentCashLegStatusLocked": "이 거래는 투자 거래의 현금 측면입니다. 양쪽이 함께 변경되도록, 투자 거래의 상태를 변경하여 무효화하거나 복원하세요.",
     "notFoundById": "ID가 {{ id }}인 거래를 찾을 수 없습니다",
     "bulkUpdateNoFields": "하나 이상의 업데이트 필드를 제공해야 합니다",

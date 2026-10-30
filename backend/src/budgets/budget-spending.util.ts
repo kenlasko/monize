@@ -179,22 +179,52 @@ export async function queryCategorySpending(
   periodStart: string,
   periodEnd: string,
 ): Promise<CategorySpending> {
-  const spendingMap = new Map<string, number>();
-  const transferSpendingMap = new Map<string, number>();
-  const incompleteCategoryIds = new Set<string>();
-  const incompleteTransferAccountIds = new Set<string>();
+  const { currency, buckets } = await queryCategorySpendingBuckets(
+    transactionsRepository,
+    splitsRepository,
+    userId,
+    budgetCategories,
+    periodStart,
+    periodEnd,
+    () => "",
+  );
+  return buckets.get("") ?? emptyCategorySpending(currency);
+}
+
+function emptyCategorySpending(currency: string): CategorySpending & {
+  incompleteCategoryIds: Set<string>;
+  incompleteTransferAccountIds: Set<string>;
+} {
+  return {
+    spendingMap: new Map(),
+    transferSpendingMap: new Map(),
+    currency,
+    incompleteCategoryIds: new Set(),
+    incompleteTransferAccountIds: new Set(),
+    missingRatePairs: [],
+  };
+}
+
+/**
+ * `queryCategorySpending` over one range, with the figures kept apart per
+ * bucket: `bucketOf(txDate)` names the bucket (a day, a month) of each
+ * date-grouped row. Netting, conversion at the row's own date, excluded
+ * accounts and missing-rate reporting are the single-range ones, applied inside
+ * each bucket. A bucket with no row is absent.
+ */
+export async function queryCategorySpendingBuckets(
+  transactionsRepository: Repository<Transaction>,
+  splitsRepository: Repository<TransactionSplit>,
+  userId: string,
+  budgetCategories: BudgetCategory[],
+  periodStart: string,
+  periodEnd: string,
+  bucketOf: (txDate: string) => string,
+): Promise<{ currency: string; buckets: Map<string, CategorySpending> }> {
+  const buckets = new Map<string, CategorySpending>();
 
   // No line, no amount to convert and no budget to name a currency from.
-  if (budgetCategories.length === 0) {
-    return {
-      spendingMap,
-      transferSpendingMap,
-      currency: "",
-      incompleteCategoryIds,
-      incompleteTransferAccountIds,
-      missingRatePairs: [],
-    };
-  }
+  if (budgetCategories.length === 0) return { currency: "", buckets };
 
   const manager = transactionsRepository.manager;
   const budgetRows: Array<{ currency_code: string; config: unknown }> =
@@ -339,27 +369,42 @@ export async function queryCategorySpending(
     return { totals, pairs };
   };
 
-  const categories = fold(categoryRows);
-  for (const [key, agg] of categories.totals) {
-    spendingMap.set(key, agg.knownSubtotal);
-    if (!agg.isComplete) incompleteCategoryIds.add(key);
-  }
-  const transfers = fold(transferRows);
-  for (const [key, agg] of transfers.totals) {
-    transferSpendingMap.set(key, agg.knownSubtotal);
-    if (!agg.isComplete) incompleteTransferAccountIds.add(key);
+  // One pass per row set, so the work is O(rows), not O(buckets x rows).
+  const groupByBucket = (rows: SpendingRow[]): Map<string, SpendingRow[]> => {
+    const grouped = new Map<string, SpendingRow[]>();
+    for (const row of rows) {
+      const key = bucketOf(row.txDate);
+      const list = grouped.get(key);
+      if (list) list.push(row);
+      else grouped.set(key, [row]);
+    }
+    return grouped;
+  };
+  const categoryByBucket = groupByBucket(categoryRows);
+  const transferByBucket = groupByBucket(transferRows);
+  const bucketKeys = new Set([
+    ...categoryByBucket.keys(),
+    ...transferByBucket.keys(),
+  ]);
+  for (const bucket of bucketKeys) {
+    const spending = emptyCategorySpending(currency);
+    const categories = fold(categoryByBucket.get(bucket) ?? []);
+    for (const [key, agg] of categories.totals) {
+      spending.spendingMap.set(key, agg.knownSubtotal);
+      if (!agg.isComplete) spending.incompleteCategoryIds.add(key);
+    }
+    const transfers = fold(transferByBucket.get(bucket) ?? []);
+    for (const [key, agg] of transfers.totals) {
+      spending.transferSpendingMap.set(key, agg.knownSubtotal);
+      if (!agg.isComplete) spending.incompleteTransferAccountIds.add(key);
+    }
+    spending.missingRatePairs = [
+      ...new Set([...categories.pairs, ...transfers.pairs]),
+    ].sort();
+    buckets.set(bucket, spending);
   }
 
-  return {
-    spendingMap,
-    transferSpendingMap,
-    currency,
-    incompleteCategoryIds,
-    incompleteTransferAccountIds,
-    missingRatePairs: [
-      ...new Set([...categories.pairs, ...transfers.pairs]),
-    ].sort(),
-  };
+  return { currency, buckets };
 }
 
 /** Resolves the display name for a budget category. */

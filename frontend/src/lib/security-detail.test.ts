@@ -562,7 +562,6 @@ describe('computePositionReturn', () => {
     marketValue: 13000,
     costBasis: 10000,
     dividends: 200,
-    fees: 50,
     realizedGain: null as number | null,
     realizedGainCurrency: null as string | null,
     realizedSaleCount: 0,
@@ -578,15 +577,29 @@ describe('computePositionReturn', () => {
         realizedGainCurrency: 'EUR',
         realizedSaleCount: 1,
       }),
-    ).toEqual({ profit: 3650, percent: 36.5 });
+    ).toEqual({ profit: 3700, percent: 37 });
   });
 
   it('treats a security never sold as having realized nothing', () => {
-    expect(computePositionReturn(base)).toEqual({ profit: 3150, percent: 31.5 });
+    expect(computePositionReturn(base)).toEqual({ profit: 3200, percent: 32 });
   });
 
-  it('subtracts commission, which is a cost of the position', () => {
-    expect(computePositionReturn({ ...base, fees: 1050 })?.profit).toBe(2150);
+  it('counts a commission once: it is already in the basis', () => {
+    // BUY 10 @ 100 with 10 commission: basis and invested are 1,010; at a price
+    // of 100 the true return is -10, not -20.
+    expect(
+      computePositionReturn({
+        ...base,
+        totalInvested: 1010,
+        costBasis: 1010,
+        marketValue: 1000,
+        dividends: 0,
+      }),
+    ).toEqual({ profit: -10, percent: -0.99 });
+  });
+
+  it('states nothing when the capital invested is unknown', () => {
+    expect(computePositionReturn({ ...base, totalInvested: null })).toBeNull();
   });
 
   it('needs no market value once the position is closed', () => {
@@ -601,7 +614,7 @@ describe('computePositionReturn', () => {
         realizedGainCurrency: 'EUR',
         realizedSaleCount: 1,
       }),
-    ).toEqual({ profit: 1050, percent: 10.5 });
+    ).toEqual({ profit: 1100, percent: 11 });
   });
 
   describe('refusals', () => {
@@ -646,7 +659,6 @@ describe('computePositionReturn', () => {
       ...base,
       marketValue: 8000,
       dividends: 0,
-      fees: 0,
     });
     expect(loss).toEqual({ profit: -2000, percent: -20 });
   });

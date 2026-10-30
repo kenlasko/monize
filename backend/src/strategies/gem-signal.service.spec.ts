@@ -8,6 +8,7 @@ import {
 } from "./gem-signal.service";
 import { GemStrategySignal } from "./entities/gem-strategy-signal.entity";
 import { GemStrategy } from "./entities/gem-strategy.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import {
   GemStrategyAsset,
   GEM_ASSET_ROLES,
@@ -87,6 +88,7 @@ describe("GemSignalService", () => {
   /** The configuration the database holds, which materialize reloads itself. */
   let strategyRepo: Record<string, jest.Mock>;
   let assetRepo: Record<string, jest.Mock>;
+  let prefRepo: Record<string, jest.Mock>;
   /** Rows the mocked insert reports back; null means "the insert won". */
   let insertedRows: Array<Record<string, unknown>> | null;
   /** Every row the loop managed to insert, in order. */
@@ -153,10 +155,14 @@ describe("GemSignalService", () => {
     // is how a test makes them disagree.
     strategyRepo = { findOne: jest.fn().mockResolvedValue(strategy()) };
     assetRepo = { find: jest.fn().mockResolvedValue(assets()) };
+    prefRepo = {
+      findOne: jest.fn().mockResolvedValue({ defaultCurrency: "USD" }),
+    };
     const mocks = createScopedDbMocks([
       [GemStrategySignal, signalRepo],
       [GemStrategy, strategyRepo],
       [GemStrategyAsset, assetRepo],
+      [UserPreference, prefRepo],
     ]);
     manager = mocks.manager;
     priceService = {
@@ -385,6 +391,23 @@ describe("GemSignalService", () => {
         expect(rewritten.id).toBe("sig-1");
         expect(rewritten.configFingerprint).toBe(
           gemConfigFingerprint(strategy({ lookbackMonths: 6 }), assets()),
+        );
+      });
+
+      it("recomputes a row stored under another reporting currency", async () => {
+        // Momentum is compared on closes converted into the reporting
+        // currency, so a row stamped under USD answers a different question
+        // once the user reports in PLN.
+        storedUnder12Months();
+        prefRepo.findOne.mockResolvedValue({ defaultCurrency: "PLN" });
+
+        await service.materialize(userId, strategy(), assets(), "2025-08-14");
+
+        const rewritten = signalRepo.save.mock.calls
+          .map(([row]) => row)
+          .find((row) => row.evaluatedOn === "2025-07-31");
+        expect(rewritten?.configFingerprint).toBe(
+          gemConfigFingerprint(strategy(), assets(), "PLN"),
         );
       });
 
@@ -687,7 +710,13 @@ describe("GemSignalService", () => {
         } as GemStrategySignal;
 
         expect(
-          service.currentSignal([stale], strategy(), assets(), "2025-08-14"),
+          service.currentSignal(
+            [stale],
+            strategy(),
+            assets(),
+            "USD",
+            "2025-08-14",
+          ),
         ).toBeNull();
         expect(
           service.currentSignal(
@@ -700,6 +729,7 @@ describe("GemSignalService", () => {
             ],
             strategy(),
             assets(),
+            "USD",
             "2025-08-14",
           ),
         ).not.toBeNull();
@@ -729,6 +759,11 @@ describe("GemSignalService", () => {
             { role: "RISK_FREE", securityId: "sec-bil" } as GemStrategyAsset,
           ]),
         ).not.toBe(base);
+        // Closes are compared in the reporting currency, so a preference
+        // change must retire the signals stored under the old one.
+        expect(gemConfigFingerprint(strategy(), assets(), "PLN")).not.toBe(
+          base,
+        );
       });
 
       it("leaves the algorithm version out: that is a column, not a hash", () => {
@@ -748,7 +783,8 @@ describe("GemSignalService", () => {
                     );
                     return `${role}=${asset?.securityId ?? "-"}`;
                   })
-                  .join(","),
+                  .join(",") +
+                `|USD`,
             )
             .digest("hex")
             .slice(0, 64),
@@ -1223,8 +1259,13 @@ describe("GemSignalService", () => {
         },
       ] as GemStrategySignal[];
       expect(
-        service.currentSignal(signals, strategy(), assets(), "2025-08-14")
-          ?.evaluatedOn,
+        service.currentSignal(
+          signals,
+          strategy(),
+          assets(),
+          "USD",
+          "2025-08-14",
+        )?.evaluatedOn,
       ).toBe("2025-07-31");
     });
 
@@ -1240,14 +1281,26 @@ describe("GemSignalService", () => {
         },
       ] as GemStrategySignal[];
       expect(
-        service.currentSignal(signals, strategy(), assets(), "2025-08-14"),
+        service.currentSignal(
+          signals,
+          strategy(),
+          assets(),
+          "USD",
+          "2025-08-14",
+        ),
       ).toBeNull();
     });
 
     it("is null when the current period was never evaluated", () => {
       const signals = [{ evaluatedOn: "2025-06-30" }] as GemStrategySignal[];
       expect(
-        service.currentSignal(signals, strategy(), assets(), "2025-08-14"),
+        service.currentSignal(
+          signals,
+          strategy(),
+          assets(),
+          "USD",
+          "2025-08-14",
+        ),
       ).toBeNull();
     });
   });

@@ -154,8 +154,8 @@ export function groupReconcileRows(
  * user unticks what the statement does not show rather than ticking all of what
  * it does.
  *
- * The server lists nothing after the statement date today; the date is still
- * checked here so the selection does not depend on that.
+ * The server lists every outstanding row, including those dated after the
+ * statement; they are shown so they can be ticked, but start unticked.
  */
 export function initialReconcileSelection(
   rows: readonly Transaction[],

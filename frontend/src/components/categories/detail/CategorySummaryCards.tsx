@@ -80,10 +80,14 @@ export function CategorySummaryCards({
   // the same figure the register's category widget shows.
   const monthlyAverage = useMemo(() => {
     if (monthlyTotals.length === 0) return null;
-    const sum = sumMoney(monthlyTotals.map((m) => Math.abs(m.total)));
+    // A month without a rate has no total: the average is unknown, not partial.
+    if (monthlyTotals.some((m) => m.total === null)) return null;
+    const sum = sumMoney(monthlyTotals.map((m) => Math.abs(m.total as number)));
     const elapsedMonths = countElapsedPeriods(monthlyTotals, 'month');
     return elapsedMonths > 0 ? sum / elapsedMonths : null;
   }, [monthlyTotals]);
+
+  const monthlyAverageUnknown = monthlyTotals.some((m) => m.total === null);
 
   const averageTransaction =
     lifetimeTotals !== null && stats.transactionCount > 0
@@ -108,8 +112,8 @@ export function CategorySummaryCards({
     {
       label: t('summary.monthlyAverage'),
       value:
-        monthlyAverage !== null ? formatCurrency(monthlyAverage, displayCurrency) : '—',
-      note: convertedNote,
+        monthlyAverage !== null ? formatCurrency(monthlyAverage, monthlyTotals.find((m) => m.currency)?.currency ?? displayCurrency) : '—',
+      note: monthlyAverageUnknown ? t('summary.partialRatesNote') : convertedNote,
     },
     {
       label: t('summary.averageTransaction'),

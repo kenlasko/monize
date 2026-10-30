@@ -533,7 +533,7 @@ describe("PortfolioCalculationService.calculateRealizedGains", () => {
     expect(result[0].realizedGain).toBe(725); // 2025 - 1300
   });
 
-  it("returns zero realized gain when a SELL has no prior position", async () => {
+  it("reports an unknown gain when a SELL has no prior position", async () => {
     txRepo.find.mockResolvedValue([
       makeTx({
         id: "orphan-sell",
@@ -547,9 +547,38 @@ describe("PortfolioCalculationService.calculateRealizedGains", () => {
 
     const result = await service.calculateRealizedGains(userId);
     expect(result).toHaveLength(1);
-    expect(result[0].costBasis).toBe(0);
+    // Shares that were never recorded as bought have no known cost: the
+    // whole 500 is not a gain, it is a gain that cannot be stated.
+    expect(result[0].costBasis).toBeNull();
     expect(result[0].proceeds).toBe(500);
-    expect(result[0].realizedGain).toBe(500);
+    expect(result[0].realizedGain).toBeNull();
+    expect(result[0].basisGap).toBe("quantity_only_action");
+  });
+
+  it("takes the whole sale off the quantity and marks the oversold part unknown", async () => {
+    txRepo.find.mockResolvedValue([
+      makeTx({
+        id: "buy",
+        action: InvestmentAction.BUY,
+        transactionDate: "2024-01-01",
+        quantity: 5,
+        price: 10,
+        totalAmount: 50,
+      }),
+      makeTx({
+        id: "oversell",
+        action: InvestmentAction.SELL,
+        transactionDate: "2024-06-01",
+        quantity: 8,
+        price: 20,
+        totalAmount: 160,
+      }),
+    ]);
+
+    const result = await service.calculateRealizedGains(userId);
+    expect(result).toHaveLength(1);
+    expect(result[0].realizedGain).toBeNull();
+    expect(result[0].basisGap).toBe("quantity_only_action");
   });
 
   describe("a transferred-in lot (A26-M21)", () => {
@@ -1568,7 +1597,60 @@ describe("PortfolioCalculationService.calculateCapitalGainsByMonth", () => {
       const february = result.find(
         (r) => r.accountId === destinationId && r.month === "2024-02",
       )!;
-      expect(february.buys).toBe(1370);
+      // The transfer leg is a flow at market value (unpriced here: unknown),
+      // never the carried basis booked as a purchase.
+      expect(february.buys).toBe(0);
+      expect(february.totalCapitalGain).toBeNull();
+    });
+
+    it("leaves both accounts' capital gain unchanged by a transfer", async () => {
+      // 10 shares, basis 80, price 100 throughout, moved A -> B.
+      txRepo.find.mockResolvedValue([
+        makeTx({
+          id: "buy",
+          action: InvestmentAction.BUY,
+          transactionDate: "2024-01-10",
+          quantity: 10,
+          price: 80,
+          totalAmount: 800,
+        }),
+        makeTx({
+          id: "out",
+          action: InvestmentAction.TRANSFER_OUT,
+          transactionDate: "2024-02-10",
+          createdAt: transferAt,
+          quantity: 10,
+          price: 80,
+          linkedTransactionId: "in",
+        }),
+        makeTx({
+          id: "in",
+          accountId: destinationId,
+          action: InvestmentAction.TRANSFER_IN,
+          transactionDate: "2024-02-10",
+          createdAt: transferAt,
+          quantity: 10,
+          price: 80,
+          linkedTransactionId: "out",
+          account: accountB as never,
+        }),
+      ]);
+      priceRepo.query.mockResolvedValue(
+        priceRows([
+          { date: "2024-01-31", price: 100 },
+          { date: "2024-02-29", price: 100 },
+        ]),
+      );
+
+      const result = await service.calculateCapitalGainsByMonth(userId, {
+        startDate: "2024-02-01",
+        endDate: "2024-02-29",
+      });
+
+      const a = result.find((r) => r.accountId === accountId)!;
+      const b = result.find((r) => r.accountId === destinationId)!;
+      expect(a.totalCapitalGain).toBe(0);
+      expect(b.totalCapitalGain).toBe(0);
     });
 
     it("keeps the carried basis when only the destination is requested", async () => {

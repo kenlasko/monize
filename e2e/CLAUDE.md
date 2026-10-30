@@ -10,6 +10,7 @@ docker compose -f docker-compose.e2e.yml up -d --wait   # from the repository ro
 npm test -- --workers=1                                  # the whole suite
 npm test -- tests/accounts.spec.ts                       # one file; safe without the flag
 npm run test:push                                        # push suite (push/*.spec.ts, playwright.push.config.ts); needs no stack
+npm run docs:screenshots                                 # website/docs/images from a demo-data instance; website/README.md "Screenshots"
 
 # the two-replica stack, for tests/cluster.spec.ts (skipped without it)
 COMPOSE_PROFILES=cluster E2E_CLUSTER_MODE=multi E2E_INTERNAL_API_URL=http://api-lb \
@@ -33,4 +34,5 @@ CI runs every Playwright command inside the official Playwright image, pinned by
 - **Custom comboboxes** (the transaction payee field) swallow `fill()`; identify a row by a distinctive seeded amount and click a cell that does not stop propagation.
 - **Push tests observe only through `push/fixture.ts`.** Never call `deliverPushMessage` or `registration.getNotifications()` from a spec; `frontend/src/test/e2e-conventions.test.ts` scans for both, and for the bare alert locator above.
 - **A control renamed or removed in the app has consumers here that no unit suite loads.** Grep this directory for the accessible name in the same commit.
+- **A documentation screenshot is a test in `docs-screenshots/` named after its PNG**, taken with `docShot(page, name, element?)` from `docs-screenshots/capture.ts`; never a hand-taken picture.
 - **`tests/cluster.spec.ts` runs only against the two-replica stack** and skips itself without `E2E_CLUSTER=multi`; `cluster/api-lb.conf` round-robins with no affinity and labels each answer with `X-E2E-Upstream`. One CI shard starts that stack; the other three are unchanged.

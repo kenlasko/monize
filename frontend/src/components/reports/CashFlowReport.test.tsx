@@ -807,6 +807,41 @@ describe("CashFlowReport", () => {
         return Array.from(document.querySelectorAll("p")).map((p) => p.textContent);
       };
 
+      it("PDF: marks the Balance-view inflows and outflows as partial and prints a dash for an unknown Balance", async () => {
+        mockGetCashFlow.mockResolvedValue({
+          ...augResponse(),
+          totals: { ...augTotals, income: null, net: null },
+          missingCurrencies: ["EUR"],
+          excludedCount: 1,
+        });
+        mockExportToPdf.mockResolvedValue(undefined);
+        render(<CashFlowReport />);
+        fireEvent.click(await screen.findByRole("switch", switchName));
+        await act(async () => {
+          fireEvent.click(screen.getByTestId("export-pdf"));
+        });
+
+        const cards = mockExportToPdf.mock.calls[0][0].summaryCards as Array<{ label: string; value: string; note?: string }>;
+        expect(cards.find((c) => c.label === "Total Inflows")?.note).toEqual(expect.stringContaining("EUR"));
+        expect(cards.find((c) => c.label === "Total Outflows")?.note).toEqual(expect.stringContaining("EUR"));
+        expect(cards.find((c) => c.label === "Balance")?.value).toMatch(/\*$/);
+      });
+
+      it("PDF: prints a dash, not 0, when the Balance is unknown", async () => {
+        mockGetCashFlow.mockResolvedValue(
+          augResponse(0, { taggedInflows: Number.NaN }),
+        );
+        mockExportToPdf.mockResolvedValue(undefined);
+        render(<CashFlowReport />);
+        fireEvent.click(await screen.findByRole("switch", switchName));
+        await act(async () => {
+          fireEvent.click(screen.getByTestId("export-pdf"));
+        });
+
+        const cards = mockExportToPdf.mock.calls[0][0].summaryCards as Array<{ label: string; value: string }>;
+        expect(cards.find((c) => c.label === "Balance")?.value).toBe("\u2014");
+      });
+
       it("off: Net Cash Flow, no Balance, no Balance bar", async () => {
         mockGetCashFlow.mockResolvedValue(augResponse());
         render(<CashFlowReport />);

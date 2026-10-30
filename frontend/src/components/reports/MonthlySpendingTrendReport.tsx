@@ -29,6 +29,7 @@ import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions'
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { ChartTooltip } from "@/components/reports/ChartTooltip";
 import { ReportError } from "@/components/reports/ReportError";
+import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { exportToCsv } from "@/lib/csv-export";
 import { chartColors } from "@/lib/chart-colors";
 import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
@@ -224,6 +225,12 @@ export function MonthlySpendingTrendReport() {
           />
         </div>
       </div>
+
+      <PartialDataNotice
+        missingCurrencies={response?.missingCurrencies ?? []}
+        excludedCount={response?.excludedCount ?? 0}
+        displayCurrency={response?.currency ?? ''}
+      />
 
       {/* Chart */}
       <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">

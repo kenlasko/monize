@@ -661,7 +661,8 @@ export interface SecurityDetailPosition {
 export interface SecurityDetailActivity {
   firstTransactionDate: string | null;
   lastTransactionDate: string | null;
-  totalInvested: number;
+  /** Null when an acquiring row has no price to state its cost. */
+  totalInvested: number | null;
   totalSold: number;
   dividends: number;
   fees: number;
@@ -768,6 +769,14 @@ export interface SecurityDetail {
   activity: SecurityDetailActivity;
   hasTransactions: boolean;
   isPositionClosed: boolean;
+  /** The server's daily move (`resolveDailyPriceChange`); null when it refuses one. */
+  dailyChange?: {
+    currentPrice: number;
+    previousPrice: number;
+    dailyChange: number;
+    dailyChangePercent: number;
+    priceDate: string;
+  } | null;
 }
 
 export interface CreateInvestmentTransactionData {

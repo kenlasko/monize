@@ -110,4 +110,13 @@ describe('computeSeasonality', () => {
 
     expect(result.months.map((m) => m.month)).toEqual([2, 7, 11]);
   });
+
+  it('skips a month with an unknown total instead of averaging it as zero', () => {
+    const result = computeSeasonality([
+      month('2025-05', -100),
+      { month: '2026-05', total: null, knownSubtotal: -10, count: 1 },
+    ]);
+
+    expect(result.months).toEqual([{ month: 5, average: -100, years: 1 }]);
+  });
 });

@@ -463,6 +463,7 @@
     "generating": "Membuat laporan...",
     "noData": "Tidak ada data ditemukan untuk kriteria yang dipilih",
     "transactionCount": "{count, plural, one {# transaksi} other {# transaksi}}",
+    "truncatedNotice": "Laporan ini mencapai batas baris dan hanya menampilkan baris terlama, sehingga angkanya parsial. Persempit periode atau filter untuk melihat semuanya.",
     "toasts": {
       "loadFailed": "Gagal memuat laporan",
       "executeFailed": "Gagal menjalankan laporan"
@@ -1474,6 +1475,8 @@
     "totalReturn": "Total Imbal Hasil",
     "annualizedReturn": "Imbal Hasil Disetahunkan",
     "needs1YearNote": "Membutuhkan data 1+ tahun",
+    "annualizedNeedsSingleBuyNote": "Hanya ditampilkan untuk satu pembelian tanpa aktivitas setelahnya",
+    "missingPrice": "Tidak ada harga untuk {symbol}",
     "priceHistory": "Riwayat Harga - {symbol}",
     "buyTransaction": "Transaksi beli",
     "sellTransaction": "Transaksi jual",

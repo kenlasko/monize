@@ -435,9 +435,9 @@
       "label": "Diskusi",
       "description": "Ajukan pertanyaan dan bagikan ide dengan komunitas."
     },
-    "wiki": {
-      "label": "Wiki",
-      "description": "Jelajahi panduan dan dokumentasi."
+    "docs": {
+      "label": "Dokumentasi",
+      "description": "Jelajahi panduan pengguna."
     },
     "supportBackup": {
       "label": "Buat cadangan dukungan",

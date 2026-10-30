@@ -17,6 +17,8 @@
     "test:cov": "vitest run --coverage",
     "i18n:pseudo": "node scripts/i18n-pseudo.mjs",
     "i18n:check": "node scripts/i18n-pseudo.mjs --check",
+    "docs:build": "node scripts/build-website-docs.mjs",
+    "docs:check": "node scripts/build-website-docs.mjs --check",
     "postinstall": "patch-package --error-on-fail"
   },
   "dependencies": {

@@ -82,13 +82,20 @@ import {
   NotificationSeverity,
   NotificationType,
 } from "../notification-center/entities/notification.entity";
-import { lockAccountsForBalanceWrite } from "../common/db/locks";
+import {
+  acquireAdvisoryLocks,
+  LockScope,
+  lockAccountsForBalanceWrite,
+} from "../common/db/locks";
 import { withScopedDb } from "../common/db/scoped-db";
 import { returnedRows } from "../common/db/query-result";
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { roundMoney, sumMoney } from "../common/round.util";
 import { PayrollDeductionRule } from "../payroll-deductions/entities/payroll-deduction-rule.entity";
-import { applyPayrollDeductionCaps } from "../payroll-deductions/payroll-deduction-cap";
+import {
+  applyPayrollDeductionCaps,
+  loadPooledPeerRules,
+} from "../payroll-deductions/payroll-deduction-cap";
 import {
   loadScheduledPayrollDeductions,
   ScheduledPayrollDeduction,
@@ -889,6 +896,33 @@ export class ScheduledTransactionsService {
     userId: string,
     createDto: CreateScheduledTransactionDto,
   ): Promise<ScheduledTransaction> {
+    const result = await this.createWithoutHistory(userId, createDto);
+    this.recordCreated(userId, result);
+    return result;
+  }
+
+  /**
+   * Record the "create" history entry of a schedule. A caller that creates one
+   * inside its own transaction uses `createWithoutHistory` and calls this after
+   * that transaction commits: an un-awaited record issued inside it would join
+   * the ambient transaction and race its callback.
+   */
+  recordCreated(userId: string, result: ScheduledTransaction): void {
+    this.actionHistoryService.record(userId, {
+      entityType: "scheduled_transaction",
+      entityId: result.id,
+      action: "create",
+      afterData: { ...result },
+      description: `Created scheduled transaction "${result.name}"`,
+      descriptionKey: "createdScheduledTransaction",
+      descriptionParams: { name: result.name },
+    });
+  }
+
+  async createWithoutHistory(
+    userId: string,
+    createDto: CreateScheduledTransactionDto,
+  ): Promise<ScheduledTransaction> {
     if (createDto.isInvestment && createDto.isTransfer) {
       throw new BadRequestException(
         tr(
@@ -1063,19 +1097,7 @@ export class ScheduledTransactionsService {
       return savedRow;
     });
 
-    const result = await this.findOne(userId, saved.id);
-
-    this.actionHistoryService.record(userId, {
-      entityType: "scheduled_transaction",
-      entityId: result.id,
-      action: "create",
-      afterData: { ...result },
-      description: `Created scheduled transaction "${result.name}"`,
-      descriptionKey: "createdScheduledTransaction",
-      descriptionParams: { name: result.name },
-    });
-
-    return result;
+    return this.findOne(userId, saved.id);
   }
 
   /**
@@ -1897,10 +1919,17 @@ export class ScheduledTransactionsService {
     userId: string,
     days: number = 30,
   ): Promise<ScheduledTransaction[]> {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + days);
+    // The window is over EFFECTIVE occurrence dates (INV-OCCURRENCE-003): a bill
+    // moved from Dec 15 to Nov 20 belongs to a 30-day window on Nov 1, and a
+    // slot moved out of the window does not.
+    const occurrences = await this.occurrences.findOccurrences(userId, {
+      through: addDaysYMD(todayYMD(), days),
+      maxOccurrences: 1,
+    });
+    const ids = occurrences.map((o) => o.scheduledTransactionId);
+    if (ids.length === 0) return [];
 
-    return withScopedDb(this.dataSource, (m) =>
+    const rows = await withScopedDb(this.dataSource, (m) =>
       m
         .getRepository(ScheduledTransaction)
         .createQueryBuilder("st")
@@ -1923,10 +1952,11 @@ export class ScheduledTransactionsService {
         )
         .where("st.userId = :userId", { userId })
         .andWhere("st.isActive = :isActive", { isActive: true })
-        .andWhere("st.nextDueDate <= :futureDate", { futureDate })
-        .orderBy("st.nextDueDate", "ASC")
+        .andWhere("st.id IN (:...ids)", { ids })
         .getMany(),
     );
+    const order = new Map(ids.map((id, i) => [id, i]));
+    return rows.sort((a, b) => order.get(a.id)! - order.get(b.id)!);
   }
 
   /**
@@ -2126,14 +2156,15 @@ export class ScheduledTransactionsService {
       );
     }
 
-    let accountCurrencyCode = scheduled.currencyCode;
-    if (updateDto.accountId && updateDto.accountId !== scheduled.accountId) {
-      const nextAccount = await this.accountsService.findOne(
+    // Always the account's own currency, never the schedule's stored one: a
+    // legacy schedule whose stored currency is stale is re-derived instead of
+    // refused.
+    const accountCurrencyCode = (
+      await this.accountsService.findOne(
         userId,
-        updateDto.accountId,
-      );
-      accountCurrencyCode = nextAccount.currencyCode;
-    }
+        updateDto.accountId || scheduled.accountId,
+      )
+    ).currencyCode;
 
     if (updateDto.isTransfer && updateDto.transferAccountId) {
       await this.accountsService.findOne(userId, updateDto.transferAccountId);
@@ -2237,8 +2268,22 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.categoryId = updateData.categoryId || null;
     if (updateData.amount !== undefined)
       fieldsToUpdate.amount = updateData.amount;
-    if (updateData.currencyCode !== undefined)
-      fieldsToUpdate.currencyCode = updateData.currencyCode;
+    // The currency is the (new) account's, never the request's: refuse a
+    // mismatch and re-derive it when the account changes.
+    // A code equal to the stored one is a form's echo, not a request.
+    const suppliedCurrencyCode =
+      updateData.currencyCode === scheduled.currencyCode
+        ? undefined
+        : updateData.currencyCode;
+    const derivedCurrencyCode = assertTransactionCurrencyMatchesAccount(
+      suppliedCurrencyCode,
+      accountCurrencyCode,
+    );
+    if (
+      suppliedCurrencyCode !== undefined ||
+      derivedCurrencyCode !== scheduled.currencyCode
+    )
+      fieldsToUpdate.currencyCode = derivedCurrencyCode;
 
     // Foreign-currency entry. Only a plain schedule can carry one, so switching
     // an existing foreign-currency schedule to split/transfer/investment clears
@@ -3760,6 +3805,23 @@ export class ScheduledTransactionsService {
         const rules = await m
           .getRepository(PayrollDeductionRule)
           .find({ where: { scheduledTransactionId: id, userId } });
+        // Two bills on one category draw down one maximum: queue behind
+        // the other poster before the paid figure is read. The schedule row
+        // is already locked; every payroll poster takes the two in that
+        // order, so they cannot cross (docs/concurrency-and-idempotency.md).
+        const categoryIds = [...new Set(rules.map((r) => r.categoryId))];
+        await acquireAdvisoryLocks(
+          m,
+          LockScope.PayrollCategory,
+          categoryIds.map((c) => `${userId}:${c}`),
+        );
+        const peers = await loadPooledPeerRules(
+          m,
+          userId,
+          id,
+          categoryIds,
+          current.currencyCode,
+        );
         const capped = await applyPayrollDeductionCaps(
           m,
           userId,
@@ -3767,6 +3829,7 @@ export class ScheduledTransactionsService {
           current.currencyCode,
           postDate,
           transactionPayload.splits as any[],
+          peers,
         );
         if (capped.changed) {
           transactionPayload.splits = capped.splits;

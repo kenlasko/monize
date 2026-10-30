@@ -5,6 +5,7 @@ import { MonteCarloScenario } from "./entities/monte-carlo-scenario.entity";
 import { Holding } from "../securities/entities/holding.entity";
 import { Security } from "../securities/entities/security.entity";
 import { Account } from "../accounts/entities/account.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { MonteCarloCashFlow } from "./entities/monte-carlo-cash-flow.entity";
 import { CreateScenarioDto } from "./dto/create-scenario.dto";
 import {
@@ -22,6 +23,19 @@ jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
 );
 
+// A `loadPriceSeries` row: the close struck on 31 December of `year`.
+const yearEnd = (
+  secId: string,
+  year: string,
+  close: string,
+  hasAdjusted = false,
+) => ({
+  series_id: secId,
+  price_date: `${year}-12-31`,
+  close_price: close,
+  has_adjusted: hasAdjusted,
+});
+
 describe("MonteCarloService", () => {
   let service: MonteCarloService;
   let scenariosRepository: Record<string, jest.Mock>;
@@ -30,6 +44,8 @@ describe("MonteCarloService", () => {
   let accountsRepository: Record<string, jest.Mock>;
   let securitiesRepository: Record<string, jest.Mock>;
   let securityPriceService: { backfillSecurityRange: jest.Mock };
+  let exchangeRateService: { ensureRatesForDate: jest.Mock };
+  let preferenceRepository: Record<string, jest.Mock>;
   let portfolioService: {
     getPortfolioSummary: jest.Mock;
     getLatestPrices: jest.Mock;
@@ -132,9 +148,13 @@ describe("MonteCarloService", () => {
     securityPriceService = {
       backfillSecurityRange: jest.fn().mockResolvedValue(0),
     };
+    exchangeRateService = {
+      ensureRatesForDate: jest.fn().mockResolvedValue(0),
+    };
     portfolioService = {
       getPortfolioSummary: jest.fn().mockResolvedValue({
         totalPortfolioValue: 250000,
+        totalCashValue: 0,
         fxComplete: true,
         missingRatePairs: [],
         pricesComplete: true,
@@ -168,12 +188,16 @@ describe("MonteCarloService", () => {
       getLatestPrices: jest.Mock;
       convertSecurityValuesToDefault: jest.Mock;
     };
+    preferenceRepository = {
+      findOne: jest.fn().mockResolvedValue({ defaultCurrency: "USD" }),
+    };
     ({ manager, dataSource } = createScopedDbMocks([
       [MonteCarloScenario, scenariosRepository],
       [MonteCarloCashFlow, cashFlowsRepository],
       [Holding, holdingsRepository],
       [Account, accountsRepository],
       [Security, securitiesRepository],
+      [UserPreference, preferenceRepository],
     ]));
     manager.update.mockResolvedValue({ affected: 1 });
     manager.query.mockResolvedValue([]);
@@ -182,6 +206,7 @@ describe("MonteCarloService", () => {
       new MonteCarloSimulationService(),
       portfolioService as never,
       securityPriceService as never,
+      exchangeRateService as never,
       dataSource as never,
     );
   });
@@ -441,12 +466,12 @@ describe("MonteCarloService", () => {
       // Both the initial query and the post-backfill re-query return the
       // same series — backfill is mocked to a no-op below.
       manager.query.mockResolvedValue([
-        { security_id: "sec-1", year: "2020", close_price: "100" },
-        { security_id: "sec-1", year: "2021", close_price: "110" },
-        { security_id: "sec-1", year: "2022", close_price: "121" },
-        { security_id: "sec-1", year: "2023", close_price: "133.1" },
-        { security_id: "sec-1", year: "2024", close_price: "146.41" },
-        { security_id: "sec-1", year: "2025", close_price: "161.051" },
+        yearEnd("sec-1", "2020", "100"),
+        yearEnd("sec-1", "2021", "110"),
+        yearEnd("sec-1", "2022", "121"),
+        yearEnd("sec-1", "2023", "133.1"),
+        yearEnd("sec-1", "2024", "146.41"),
+        yearEnd("sec-1", "2025", "161.051"),
       ]);
       portfolioService.getLatestPrices = jest
         .fn()
@@ -485,14 +510,24 @@ describe("MonteCarloService", () => {
         },
       ]);
       // +20% for the USD security, -20% for the JPY security, two years each.
-      manager.query.mockResolvedValue([
-        { security_id: "sec-usd", year: "2023", close_price: "100" },
-        { security_id: "sec-usd", year: "2024", close_price: "120" },
-        { security_id: "sec-usd", year: "2025", close_price: "144" },
-        { security_id: "sec-jpy", year: "2023", close_price: "100" },
-        { security_id: "sec-jpy", year: "2024", close_price: "80" },
-        { security_id: "sec-jpy", year: "2025", close_price: "64" },
-      ]);
+      const closes = [
+        yearEnd("sec-usd", "2023", "100"),
+        yearEnd("sec-usd", "2024", "120"),
+        yearEnd("sec-usd", "2025", "144"),
+        yearEnd("sec-jpy", "2023", "100"),
+        yearEnd("sec-jpy", "2024", "80"),
+        yearEnd("sec-jpy", "2025", "64"),
+      ];
+      // A flat rate keeps the JPY return native, so the weighting is the point.
+      const flatRates = ["2023", "2024", "2025"].map((y) => ({
+        from_currency: "JPY",
+        to_currency: "USD",
+        rate: 1,
+        rate_date: `${y}-12-31`,
+      }));
+      manager.query.mockImplementation(async (sql: string) =>
+        sql.includes("exchange_rates") ? flatRates : closes,
+      );
       portfolioService.getLatestPrices = jest.fn().mockResolvedValue(
         new Map([
           ["sec-usd", 100],
@@ -532,9 +567,9 @@ describe("MonteCarloService", () => {
         },
       ]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-jpy", year: "2023", close_price: "100" },
-        { security_id: "sec-jpy", year: "2024", close_price: "80" },
-        { security_id: "sec-jpy", year: "2025", close_price: "64" },
+        yearEnd("sec-jpy", "2023", "100"),
+        yearEnd("sec-jpy", "2024", "80"),
+        yearEnd("sec-jpy", "2025", "64"),
       ]);
       portfolioService.getLatestPrices = jest
         .fn()
@@ -576,9 +611,9 @@ describe("MonteCarloService", () => {
         },
       ]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-priced", year: "2023", close_price: "100" },
-        { security_id: "sec-priced", year: "2024", close_price: "110" },
-        { security_id: "sec-priced", year: "2025", close_price: "121" },
+        yearEnd("sec-priced", "2023", "100"),
+        yearEnd("sec-priced", "2024", "110"),
+        yearEnd("sec-priced", "2025", "121"),
       ]);
       // Only the priced security has a current price.
       portfolioService.getLatestPrices = jest
@@ -590,6 +625,276 @@ describe("MonteCarloService", () => {
       expect(stats.returnsComplete).toBe(false);
       expect(stats.meanReturn).toBeNull();
       expect(stats.unpricedSecurityIds).toEqual(["sec-unpriced"]);
+    });
+  });
+
+  describe("historical return inputs (time-series contract)", () => {
+    const holding = (securityId: string, currencyCode = "USD") => ({
+      id: `h-${securityId}`,
+      accountId: "acct-1",
+      securityId,
+      quantity: 1,
+      security: { symbol: securityId, name: securityId, currencyCode },
+    });
+    const prices = (entries: Array<[string, number]>) =>
+      portfolioService.getLatestPrices.mockResolvedValue(new Map(entries));
+
+    it("loads closes through the one-basis loader, not a per-row COALESCE", async () => {
+      holdingsRepository.find.mockResolvedValueOnce([holding("sec-1")]);
+      prices([["sec-1", 100]]);
+      await service.getHistoricalStats(userId, ["acct-1"]);
+      const sqls = manager.query.mock.calls.map((c) => String(c[0]));
+      expect(
+        sqls.some((q) => q.includes("bool_or(adjusted_close IS NOT NULL)")),
+      ).toBe(true);
+      expect(sqls.some((q) => q.includes("COALESCE(adjusted_close"))).toBe(
+        false,
+      );
+    });
+
+    it("does not file a two-year move under one year", async () => {
+      holdingsRepository.find.mockResolvedValueOnce([holding("sec-1")]);
+      prices([["sec-1", 165]]);
+      // 2022 has no close: 110 -> 150 spans two years and is not a return.
+      manager.query.mockResolvedValue([
+        yearEnd("sec-1", "2020", "100"),
+        yearEnd("sec-1", "2021", "110"),
+        yearEnd("sec-1", "2023", "150"),
+        yearEnd("sec-1", "2024", "165"),
+      ]);
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(stats.yearsObserved).toBe(2);
+      expect(stats.meanReturn).toBeCloseTo(0.1, 4);
+    });
+
+    it("drops a stale year-end close and the incomplete current year", async () => {
+      holdingsRepository.find.mockResolvedValueOnce([holding("sec-1")]);
+      prices([["sec-1", 165]]);
+      const currentYear = new Date().getUTCFullYear();
+      manager.query.mockResolvedValue([
+        yearEnd("sec-1", "2020", "100"),
+        yearEnd("sec-1", "2021", "110"),
+        // Last 2022 close is two months before year end: not the year end.
+        { ...yearEnd("sec-1", "2022", "500"), price_date: "2022-10-31" },
+        yearEnd("sec-1", "2023", "133.1"),
+        {
+          ...yearEnd("sec-1", String(currentYear), "999"),
+          price_date: `${currentYear}-02-01`,
+        },
+      ]);
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      // Only 2021 (110/100) is a clean consecutive pair.
+      expect(stats.yearsObserved).toBe(1);
+    });
+
+    it("names a missing cash pair when the summary is incomplete", async () => {
+      portfolioService.getPortfolioSummary.mockResolvedValue({
+        totalPortfolioValue: 200000,
+        totalCashValue: 100000,
+        fxComplete: false,
+        missingRatePairs: ["EUR->USD"],
+        pricesComplete: true,
+        unpricedSecurityIds: [],
+        valuationComplete: false,
+      });
+      holdingsRepository.find.mockResolvedValueOnce([holding("sec-1")]);
+      prices([["sec-1", 100000]]);
+      manager.query.mockResolvedValue([
+        yearEnd("sec-1", "2022", "100"),
+        yearEnd("sec-1", "2023", "120"),
+        yearEnd("sec-1", "2024", "120"),
+      ]);
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(stats.returnsComplete).toBe(false);
+      expect(stats.meanReturn).toBeNull();
+      expect(stats.missingRatePairs).toEqual(["EUR->USD"]);
+      expect(stats.portfolioValueUnknown).toBe(true);
+    });
+
+    it("flags an unknown portfolio value when the summary fails outright", async () => {
+      portfolioService.getPortfolioSummary.mockRejectedValue(
+        new Error("db down"),
+      );
+      holdingsRepository.find.mockResolvedValueOnce([holding("sec-1")]);
+      prices([["sec-1", 100000]]);
+      manager.query.mockResolvedValue([
+        yearEnd("sec-1", "2022", "100"),
+        yearEnd("sec-1", "2023", "120"),
+        yearEnd("sec-1", "2024", "120"),
+      ]);
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(stats.returnsComplete).toBe(false);
+      expect(stats.missingRatePairs).toEqual([]);
+      expect(stats.portfolioValueUnknown).toBe(true);
+    });
+
+    it("weights idle cash at zero return and zero volatility", async () => {
+      portfolioService.getPortfolioSummary.mockResolvedValue({
+        totalPortfolioValue: 200000,
+        totalCashValue: 100000,
+        fxComplete: true,
+        missingRatePairs: [],
+        pricesComplete: true,
+        unpricedSecurityIds: [],
+        valuationComplete: true,
+      });
+      holdingsRepository.find.mockResolvedValueOnce([holding("sec-1")]);
+      prices([["sec-1", 100000]]);
+      // +20% then 0%: mean 10%, stdev 14.14% on its own.
+      manager.query.mockResolvedValue([
+        yearEnd("sec-1", "2022", "100"),
+        yearEnd("sec-1", "2023", "120"),
+        yearEnd("sec-1", "2024", "120"),
+      ]);
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(stats.meanReturn).toBeCloseTo(0.05, 4);
+      expect(stats.volatility).toBeCloseTo(0.0707, 4);
+    });
+
+    // Year-end closes and the exchange_rates read share manager.query; route
+    // by statement so each gets its own rows.
+    const routeQueries = (closes: unknown[], rates: unknown[]) =>
+      manager.query.mockImplementation(async (sql: string) =>
+        sql.includes("exchange_rates") ? rates : closes,
+      );
+    const rateRow = (date: string, rate: number) => ({
+      from_currency: "JPY",
+      to_currency: "USD",
+      rate,
+      rate_date: date,
+    });
+    const jpyCloses = () => [
+      yearEnd("sec-jpy", "2022", "100"),
+      yearEnd("sec-jpy", "2023", "100"),
+      yearEnd("sec-jpy", "2024", "100"),
+    ];
+
+    it("converts each year-end close at the rate of its own date", async () => {
+      holdingsRepository.find.mockResolvedValueOnce([
+        holding("sec-jpy", "JPY"),
+      ]);
+      prices([["sec-jpy", 100]]);
+      // Flat in yen; the yen gains 10% a year against the dollar.
+      routeQueries(jpyCloses(), [
+        rateRow("2022-12-31", 0.01),
+        rateRow("2023-12-31", 0.011),
+        rateRow("2024-12-31", 0.0121),
+      ]);
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(stats.returnsComplete).toBe(true);
+      expect(stats.meanReturn).toBeCloseTo(0.1, 4);
+    });
+
+    it("loads each pair's rates once, not once per year-end close", async () => {
+      holdingsRepository.find.mockResolvedValueOnce([
+        holding("sec-jpy", "JPY"),
+      ]);
+      prices([["sec-jpy", 100]]);
+      routeQueries(jpyCloses(), [
+        rateRow("2022-12-31", 0.01),
+        rateRow("2023-12-31", 0.011),
+        rateRow("2024-12-31", 0.0121),
+      ]);
+      await service.getHistoricalStats(userId, ["acct-1"]);
+      const rateLoads = manager.query.mock.calls.filter(([sql]) =>
+        String(sql).includes("exchange_rates"),
+      );
+      expect(rateLoads).toHaveLength(1);
+    });
+
+    it("refuses, naming the pair, when a year-end rate is missing", async () => {
+      holdingsRepository.find.mockResolvedValueOnce([
+        holding("sec-jpy", "JPY"),
+      ]);
+      prices([["sec-jpy", 100]]);
+      routeQueries(jpyCloses(), [
+        rateRow("2022-12-31", 0.01),
+        rateRow("2024-12-31", 0.01),
+      ]);
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(stats.returnsComplete).toBe(false);
+      expect(stats.meanReturn).toBeNull();
+      expect(stats.missingRatePairs).toEqual(["JPY->USD"]);
+    });
+  });
+
+  describe("year-end FX gaps", () => {
+    const rateRow = (date: string, rate: number) => ({
+      from_currency: "JPY",
+      to_currency: "USD",
+      rate,
+      rate_date: date,
+    });
+    const jpyHolding = () =>
+      holdingsRepository.find.mockResolvedValueOnce([
+        {
+          id: "h-jpy",
+          accountId: "acct-1",
+          securityId: "sec-jpy",
+          quantity: 1,
+          security: { symbol: "JPY1", name: "Yen", currencyCode: "JPY" },
+        },
+      ]);
+    const closeRows = (years: number[]) =>
+      years.map((y) => yearEnd("sec-jpy", String(y), "100"));
+    const route = (years: number[], rates: () => unknown[]) =>
+      manager.query.mockImplementation(async (sql: string) =>
+        sql.includes("exchange_rates") ? rates() : closeRows(years),
+      );
+    const priceJpy = () =>
+      portfolioService.getLatestPrices.mockResolvedValue(
+        new Map([["sec-jpy", 100]]),
+      );
+
+    it("fetches the missing pair's history, then converts again", async () => {
+      jpyHolding();
+      priceJpy();
+      let fetched = false;
+      exchangeRateService.ensureRatesForDate.mockImplementation(async () => {
+        fetched = true;
+        return 12;
+      });
+      route([2021, 2022, 2023, 2024], () =>
+        fetched
+          ? [2021, 2022, 2023, 2024].map((y) => rateRow(`${y}-12-31`, 0.01))
+          : [],
+      );
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(exchangeRateService.ensureRatesForDate).toHaveBeenCalledWith(
+        [{ from: "JPY", to: "USD" }],
+        "2022-12-31",
+      );
+      expect(stats.returnsComplete).toBe(true);
+      expect(stats.yearsObserved).toBe(3);
+    });
+
+    it("drops the one year whose close cannot convert and keeps the stats", async () => {
+      jpyHolding();
+      priceJpy();
+      // 2020-2025 closes; no rate for 2022 and the provider has nothing.
+      const years = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
+      route(years, () =>
+        years.filter((y) => y !== 2022).map((y) => rateRow(`${y}-12-31`, 0.01)),
+      );
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(exchangeRateService.ensureRatesForDate).toHaveBeenCalled();
+      expect(stats.returnsComplete).toBe(true);
+      // 2019, 2020, 2021 and 2024, 2025 remain: 2022 and 2023 touch the gap.
+      expect(stats.yearsObserved).toBe(5);
+      expect(stats.meanReturn).not.toBeNull();
+    });
+
+    it("withholds the stats when the gap leaves too few yearly returns", async () => {
+      jpyHolding();
+      priceJpy();
+      route([2022, 2023, 2024], () => [
+        rateRow("2022-12-31", 0.01),
+        rateRow("2024-12-31", 0.01),
+      ]);
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(stats.returnsComplete).toBe(false);
+      expect(stats.meanReturn).toBeNull();
+      expect(stats.missingRatePairs).toEqual(["JPY->USD"]);
     });
   });
 
@@ -609,8 +914,8 @@ describe("MonteCarloService", () => {
       holdingsRepository.find.mockResolvedValueOnce([holding]);
       // Sparse: only 1 yearly return → triggers backfill check.
       manager.query.mockResolvedValue([
-        { security_id: "sec-new", year: "2024", close_price: "100" },
-        { security_id: "sec-new", year: "2025", close_price: "110" },
+        yearEnd("sec-new", "2024", "100"),
+        yearEnd("sec-new", "2025", "110"),
       ]);
       securitiesRepository.find.mockResolvedValueOnce([
         {
@@ -642,8 +947,8 @@ describe("MonteCarloService", () => {
       };
       holdingsRepository.find.mockResolvedValueOnce([holding]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-recent", year: "2024", close_price: "100" },
-        { security_id: "sec-recent", year: "2025", close_price: "110" },
+        yearEnd("sec-recent", "2024", "100"),
+        yearEnd("sec-recent", "2025", "110"),
       ]);
       securitiesRepository.find.mockResolvedValueOnce([
         {
@@ -672,8 +977,8 @@ describe("MonteCarloService", () => {
       };
       holdingsRepository.find.mockResolvedValueOnce([holding]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-stale", year: "2024", close_price: "100" },
-        { security_id: "sec-stale", year: "2025", close_price: "110" },
+        yearEnd("sec-stale", "2024", "100"),
+        yearEnd("sec-stale", "2025", "110"),
       ]);
       securitiesRepository.find.mockResolvedValueOnce([
         {
@@ -905,8 +1210,8 @@ describe("MonteCarloService", () => {
       };
       holdingsRepository.find.mockResolvedValueOnce([holding]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-1", year: "2023", close_price: "100" },
-        { security_id: "sec-1", year: "2024", close_price: "110" },
+        yearEnd("sec-1", "2023", "100"),
+        yearEnd("sec-1", "2024", "110"),
       ]);
       portfolioService.getLatestPrices = jest
         .fn()
@@ -917,7 +1222,7 @@ describe("MonteCarloService", () => {
         expect.objectContaining({
           symbol: "?",
           name: "Unknown",
-          currencyCode: "USD",
+          currencyCode: null,
           marketValue: 550,
         }),
       );
@@ -1149,9 +1454,9 @@ describe("MonteCarloService", () => {
       };
       holdingsRepository.find.mockResolvedValueOnce([holding]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-1", year: "2020", close_price: "100" },
-        { security_id: "sec-1", year: "2021", close_price: "110" },
-        { security_id: "sec-1", year: "2022", close_price: "121" },
+        yearEnd("sec-1", "2020", "100"),
+        yearEnd("sec-1", "2021", "110"),
+        yearEnd("sec-1", "2022", "121"),
       ]);
       portfolioService.getLatestPrices = jest
         .fn()
@@ -1240,13 +1545,13 @@ describe("MonteCarloService", () => {
         },
       ]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-a", year: "2022", close_price: "100" },
-        { security_id: "sec-a", year: "2023", close_price: "200" }, // +100% — the subset year
-        { security_id: "sec-a", year: "2024", close_price: "220" }, // +10%
-        { security_id: "sec-a", year: "2025", close_price: "242" }, // +10%
-        { security_id: "sec-b", year: "2023", close_price: "100" },
-        { security_id: "sec-b", year: "2024", close_price: "110" }, // +10%
-        { security_id: "sec-b", year: "2025", close_price: "121" }, // +10%
+        yearEnd("sec-a", "2022", "100"),
+        yearEnd("sec-a", "2023", "200"), // +100% — the subset year
+        yearEnd("sec-a", "2024", "220"), // +10%
+        yearEnd("sec-a", "2025", "242"), // +10%
+        yearEnd("sec-b", "2023", "100"),
+        yearEnd("sec-b", "2024", "110"), // +10%
+        yearEnd("sec-b", "2025", "121"), // +10%
       ]);
       portfolioService.getLatestPrices = jest.fn().mockResolvedValue(
         new Map([
@@ -1285,12 +1590,12 @@ describe("MonteCarloService", () => {
         },
       ]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-long", year: "2023", close_price: "100" },
-        { security_id: "sec-long", year: "2024", close_price: "110" },
-        { security_id: "sec-long", year: "2025", close_price: "121" },
-        { security_id: "sec-short", year: "2023", close_price: "50" },
-        { security_id: "sec-short", year: "2024", close_price: "55" },
-        { security_id: "sec-short", year: "2025", close_price: "60.5" },
+        yearEnd("sec-long", "2023", "100"),
+        yearEnd("sec-long", "2024", "110"),
+        yearEnd("sec-long", "2025", "121"),
+        yearEnd("sec-short", "2023", "50"),
+        yearEnd("sec-short", "2024", "55"),
+        yearEnd("sec-short", "2025", "60.5"),
       ]);
       portfolioService.getLatestPrices = jest.fn().mockResolvedValue(
         new Map([
@@ -1321,9 +1626,9 @@ describe("MonteCarloService", () => {
         },
       ]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-nocur", year: "2023", close_price: "100" },
-        { security_id: "sec-nocur", year: "2024", close_price: "110" },
-        { security_id: "sec-nocur", year: "2025", close_price: "121" },
+        yearEnd("sec-nocur", "2023", "100"),
+        yearEnd("sec-nocur", "2024", "110"),
+        yearEnd("sec-nocur", "2025", "121"),
       ]);
       portfolioService.getLatestPrices = jest
         .fn()
@@ -1348,8 +1653,8 @@ describe("MonteCarloService", () => {
       };
       holdingsRepository.find.mockResolvedValueOnce([holding]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-x", year: "2024", close_price: "100" },
-        { security_id: "sec-x", year: "2025", close_price: "110" },
+        yearEnd("sec-x", "2024", "100"),
+        yearEnd("sec-x", "2025", "110"),
       ]);
       securitiesRepository.find.mockResolvedValueOnce([
         {
@@ -1381,8 +1686,8 @@ describe("MonteCarloService", () => {
       };
       holdingsRepository.find.mockResolvedValueOnce([holding]);
       manager.query.mockResolvedValue([
-        { security_id: "sec-x", year: "2024", close_price: "100" },
-        { security_id: "sec-x", year: "2025", close_price: "110" },
+        yearEnd("sec-x", "2024", "100"),
+        yearEnd("sec-x", "2025", "110"),
       ]);
       securitiesRepository.find.mockResolvedValueOnce([
         {

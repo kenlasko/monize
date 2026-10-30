@@ -194,6 +194,20 @@ describe('ROW_GROUPS', () => {
     expect(startingValue.accessor(ctx)).toBe(75000);
   });
 
+  it('shows what the run used when it differs from the stored inputs', () => {
+    const inputs = ROW_GROUPS.find((g) => g.key === 'inputs')!;
+    const ctx = {
+      scenario: fakeScenario({ startingValue: 75000, expectedReturn: 0.07, volatility: 0.15 }),
+      result: fakeResult({
+        inputsSnapshot: { startingValue: 250000, expectedReturn: 0.05, volatility: 0.09 },
+      }),
+    };
+    const get = (key: string) => inputs.rows.find((r) => r.key === key)!.accessor(ctx);
+    expect(get('startingValue')).toBe(250000);
+    expect(get('expectedReturn')).toBe(0.05);
+    expect(get('volatility')).toBe(0.09);
+  });
+
   it('emits 30 performance rows (10 metrics × p10/p50/p90)', () => {
     const perf = ROW_GROUPS.find((g) => g.key === 'performance')!;
     expect(perf.rows.length).toBe(30);

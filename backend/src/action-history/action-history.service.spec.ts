@@ -642,6 +642,93 @@ describe("ActionHistoryService", () => {
     });
   });
 
+  describe("undo of a foreign-currency delete restores original_amount and original_currency_code", () => {
+    const fx = { originalAmount: 100, originalCurrencyCode: "EUR" };
+    const txBase = {
+      accountId: "acc-1",
+      transactionDate: "2024-01-15",
+      amount: -108,
+      currencyCode: "USD",
+      exchangeRate: 1.08,
+    };
+
+    const insertFor = (table: string) =>
+      mockQueryRunner.query.mock.calls.find(
+        (call: any[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes(`INSERT INTO ${table} `),
+      ) as [string, unknown[]] | undefined;
+
+    const run = async (
+      entityType: string,
+      action: string,
+      beforeData: Record<string, any>,
+    ) => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType,
+        action,
+        entityId: "tx-1",
+        beforeData,
+        afterData: null,
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+      });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockResolvedValue([
+        { opening_balance: "0", tx_sum: "0" },
+      ]);
+      await service.undo(userId);
+    };
+
+    it("single transaction", async () => {
+      await run("transaction", "delete", { id: "tx-1", ...txBase, ...fx });
+      const insert = insertFor("transactions")!;
+      expect(insert[0]).toContain("original_amount, original_currency_code");
+      expect(insert[1].slice(-2)).toEqual([100, "EUR"]);
+    });
+
+    it("single transaction from a snapshot recorded before the fields existed", async () => {
+      await run("transaction", "delete", { id: "tx-1", ...txBase });
+      expect(insertFor("transactions")![1].slice(-2)).toEqual([null, null]);
+    });
+
+    it("transfer legs", async () => {
+      await run("transfer", "delete", {
+        fromTransaction: { id: "tx-1", ...txBase, ...fx },
+        toTransaction: { id: "tx-2", ...txBase, amount: 108 },
+      });
+      const inserts = mockQueryRunner.query.mock.calls.filter(
+        (c: any[]) =>
+          typeof c[0] === "string" &&
+          c[0].includes("INSERT INTO transactions "),
+      );
+      expect(inserts[0][1].slice(-2)).toEqual([100, "EUR"]);
+      expect(inserts[1][1].slice(-2)).toEqual([null, null]);
+    });
+
+    it("investment linked cash transaction", async () => {
+      await run("investment_transaction", "delete", {
+        id: "inv-1",
+        accountId: "acc-1",
+        securityId: "sec-1",
+        action: "BUY",
+        transactionDate: "2024-01-15",
+        linkedCashTransaction: { id: "cash-1", ...txBase, ...fx },
+      });
+      expect(insertFor("transactions")![1].slice(-2)).toEqual([100, "EUR"]);
+    });
+
+    it("bulk delete", async () => {
+      await run("bulk_transaction", "bulk_delete", {
+        transactions: [{ id: "tx-1", ...txBase, ...fx }],
+      });
+      expect(insertFor("transactions")![1].slice(-2)).toEqual([100, "EUR"]);
+    });
+  });
+
   describe("undo transaction update", () => {
     it("should restore transaction fields from beforeData", async () => {
       const updateAction = {

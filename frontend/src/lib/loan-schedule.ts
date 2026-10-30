@@ -192,6 +192,9 @@ export function generateBudgetSchedule(
   );
   let rateChangeIndex = 0;
   let lastInstallment = 0;
+  // The recorded installment in force, stepped by a rate change's own payment
+  // exactly as `generateLoanSchedule` does.
+  let currentPayment = paymentAmount;
 
   const rows: ScheduleRow[] = [];
   let currentDate = new Date(firstPaymentDate);
@@ -209,6 +212,10 @@ export function generateBudgetSchedule(
         periodsPerYear,
         mortgageType,
       );
+      const change = rateChanges[rateChangeIndex];
+      if (change.paymentAmount != null && change.paymentAmount > 0) {
+        currentPayment = change.paymentAmount;
+      }
       rateChangeIndex++;
     }
 
@@ -217,21 +224,22 @@ export function generateBudgetSchedule(
     // The installment for the split: re-amortized over the remaining
     // contractual term (LOWER_INSTALLMENT) or the fixed contractual installment
     // (SHORTEN_TERM). The overpayment is whatever is left of the budget.
-    const installment = lowerInstallment
-      ? calculatePaymentForTerm(
-          balance,
-          currentAnnualRate,
-          Math.max(1, contractualPeriods - paymentNumber),
-          frequency,
-          mortgageType,
-        )
-      : paymentAmount;
-
     // The budget only tops up within its window; outside it (before the start
-    // or after the end) the loan pays just the regular installment.
+    // or after the end) the loan pays just the recorded installment.
     const budgetActive =
       (!window.startDate || window.startDate <= rowDate) &&
       (!window.endDate || rowDate <= window.endDate);
+    if (lowerInstallment && budgetActive) {
+      currentPayment = calculatePaymentForTerm(
+        balance,
+        currentAnnualRate,
+        Math.max(1, contractualPeriods - paymentNumber),
+        frequency,
+        mortgageType,
+      );
+    }
+    const installment = currentPayment;
+
     // Total cash this period: the budget while active, else the installment --
     // capped at the payoff amount on the final period.
     const totalDue = balance + interest;

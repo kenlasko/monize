@@ -324,10 +324,10 @@ export function declineReason(
  * dated for the same reason the balance is: a change recorded for next month
  * belongs to next month's installment, not this one.
  *
- * `null` is "no rate is recorded", not 0 %. The template and posting purposes
- * keep their historical `?? 0` fallback in `resolveInstallmentCore`
- * (`docs/specs/loan-installment-settlement.md` section 15 item 5); the
- * settlement refuses instead (decision 16).
+ * `null` is "no rate is recorded", not 0 %. `resolveInstallmentCore` declines
+ * the installment for every purpose (template, posting and settlement) rather
+ * than price it at a 0 % fallback (`docs/specs/loan-installment-settlement.md`
+ * decision 16).
  */
 export async function datedAnnualRate(
   m: EntityManager,
@@ -778,11 +778,8 @@ export interface ResolveInstallmentInput {
  * the same "paid off" as a plain principal+interest one, and a posting that
  * withholds money on it stops paying the escrow.
  *
- * A rate nothing records is 0 % for the template, posting and reconfigure
- * purposes, the posting path's historical default
- * (`docs/specs/loan-installment-settlement.md` section 15 item 5); a
- * settlement declines, naming the rate (decision 16), and so does the
- * rate-change sync, an offer that must not price a template at 0 %. A
+ * A rate nothing records declines for every purpose, naming the rate
+ * (decision 16): an unknown rate is not 0 %. A
  * settlement also declines an annuity nothing states a payment for, naming
  * the payment (spec 7.2); the sync keeps the template's amount there (7.5).
  * Both inputs come from one read of the timeline, taken only once the shape
@@ -828,10 +825,7 @@ export async function resolveInstallmentCore(
   // installment are read from the same rows at the same date.
   const timeline = await readRateTimeline(m, loanAccountId);
   const recordedRate = annualRateOn(timeline, loanAccount, asOfDate);
-  if (
-    recordedRate === null &&
-    (purpose === "settlement" || purpose === "sync")
-  ) {
+  if (recordedRate === null) {
     return {
       kind: "declined",
       reason: `no interest rate is recorded for loan account ${loanAccountId} on ${asOfDate}`,
@@ -868,7 +862,7 @@ export async function resolveInstallmentCore(
 
   return priceInstallment({
     debt,
-    annualRate: recordedRate ?? 0,
+    annualRate: recordedRate,
     loanAccount,
     template: {
       principalSplit: identified.principalSplit,

@@ -215,6 +215,16 @@ describe('autoMatchCsvColumns', () => {
     expect(result.payee).toBe(3);
   });
 
+  it('clears a default amount column when spread over it in split mode', () => {
+    // The wizard spreads the result over a default mapping with amount: 1;
+    // a leftover amount wins over debit/credit and imports every row as 0.
+    const result = autoMatchCsvColumns(['Date', 'Description', 'Debit', 'Credit', 'Balance']);
+    const merged = { date: 0, amount: 1, ...result };
+    expect(merged.amount).toBeUndefined();
+    expect(merged.debit).toBe(2);
+    expect(merged.credit).toBe(3);
+  });
+
   it('prefers amount over debit/credit when amount is present', () => {
     const result = autoMatchCsvColumns(['Date', 'Amount', 'Debit', 'Credit']);
     expect(result.amount).toBe(1);

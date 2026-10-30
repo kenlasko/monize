@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { AutoBackupSection } from '@/components/settings/AutoBackupSection';
 import { useAuthStore } from '@/store/authStore';
 import { useDemoMode } from '@/hooks/useDemoMode';
+import { docsUrl } from '@/lib/docs-links';
 
 export default function AdminBackupsPage() {
   return (
@@ -57,7 +58,7 @@ function AdminBackupsContent() {
         <PageHeader
           title={t('title')}
           subtitle={t('subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/Backup-and-Restore#automatic-backups"
+          helpUrl={docsUrl('adminBackups')}
         />
 
         {isDemoMode && (

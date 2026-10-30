@@ -138,8 +138,8 @@
     "redonePrefix": "Повторено: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "Открыть вики Monize для получения справки по этому разделу",
-    "helpTooltip": "Открыть вики Monize для получения справки по этому разделу"
+    "helpAriaLabel": "Открыть документацию Monize для получения справки по этому разделу",
+    "helpTooltip": "Открыть документацию Monize для получения справки по этому разделу"
   },
   "bootSplash": {
     "loading": "Загрузка Monize",

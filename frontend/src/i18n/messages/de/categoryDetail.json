@@ -28,7 +28,8 @@
     "transactions": "Buchungen",
     "sinceYear": "Seit {year}",
     "lastTransaction": "Letzte Buchung",
-    "convertedNote": "Umgerechnet in {currency}"
+    "convertedNote": "Umgerechnet in {currency}",
+    "partialRatesNote": "Für einige Monate fehlt ein Wechselkurs"
   },
   "topPayees": {
     "title": "Top-Zahlungsempfänger",

@@ -576,6 +576,7 @@
       "total": "Total",
       "transactions": "Transações",
       "tooltip": "{count, plural, one {# transação} other {# transações}}",
+      "partialNote": "Alguns montantes não têm taxa de câmbio e não estão incluídos nestes totais.",
       "quarterLabel": "T{quarter} {year}",
       "quarterTick": "T{quarter} {year}",
       "granularityLabel": "Agrupamento",

@@ -53,6 +53,10 @@ export function SeasonalityPanel({
   const formatChartDate = useChartDateFormat();
   const { formatCurrency } = useNumberFormat();
 
+  // The server names the currency its totals are in.
+  const displayCurrency =
+    monthly.find((r) => r.currency)?.currency ?? currencyStrategy.displayCurrency;
+
   const seasonality = useMemo(() => computeSeasonality(monthly), [monthly]);
   // The month whose figure the readout under the bars shows. A bar's figure
   // used to live in a hover-only `title`, which a phone and a keyboard never
@@ -187,7 +191,7 @@ export function SeasonalityPanel({
                   month: monthName(readoutEntry.month),
                   amount: formatCurrency(
                     Math.abs(readoutEntry.average),
-                    currencyStrategy.displayCurrency,
+                    displayCurrency,
                   ),
                   years: readoutEntry.years,
                 })}

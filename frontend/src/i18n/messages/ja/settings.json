@@ -435,9 +435,9 @@
       "label": "ディスカッション",
       "description": "コミュニティと質問したりアイデアを共有したりできます。"
     },
-    "wiki": {
-      "label": "Wiki",
-      "description": "ガイドとドキュメントを参照できます。"
+    "docs": {
+      "label": "ドキュメント",
+      "description": "ユーザーガイドを参照できます。"
     },
     "supportBackup": {
       "label": "サポート用バックアップを作成",

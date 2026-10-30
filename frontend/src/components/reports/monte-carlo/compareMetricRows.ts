@@ -12,6 +12,16 @@ export type ScenarioContext = {
   result: SimulationResult | null;
 };
 
+// A run may have used the current balance or historical returns, so what it
+// actually ran with (the snapshot) wins over the stored scenario field.
+function ranInput(
+  ctx: ScenarioContext,
+  key: 'startingValue' | 'expectedReturn' | 'volatility',
+): number {
+  const ran = ctx.result?.inputsSnapshot?.[key];
+  return typeof ran === 'number' ? ran : Number(ctx.scenario[key]);
+}
+
 export type MetricRow = {
   key: string;
   label: string;
@@ -195,7 +205,7 @@ export const ROW_GROUPS: RowGroup[] = [
         key: 'startingValue',
         label: 'Starting value',
         format: 'currency',
-        accessor: (ctx) => Number(ctx.scenario.startingValue),
+        accessor: (ctx) => ranInput(ctx, 'startingValue'),
       },
       {
         key: 'yearsToRetirement',
@@ -231,13 +241,13 @@ export const ROW_GROUPS: RowGroup[] = [
         key: 'expectedReturn',
         label: 'Expected return',
         format: 'percent',
-        accessor: (ctx) => Number(ctx.scenario.expectedReturn),
+        accessor: (ctx) => ranInput(ctx, 'expectedReturn'),
       },
       {
         key: 'volatility',
         label: 'Volatility',
         format: 'percent',
-        accessor: (ctx) => Number(ctx.scenario.volatility),
+        accessor: (ctx) => ranInput(ctx, 'volatility'),
       },
       {
         key: 'inflationRate',

@@ -1,0 +1,284 @@
+<!doctype html>
+<!-- Generated from website/docs/backup-and-restore.md by frontend/scripts/build-website-docs.mjs. Edit the Markdown, then run "npm run docs:build" in frontend/. -->
+<html lang="en" data-theme="dark" class="docs-root"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="preload" as="image" href="/assets/img/monize-logo.svg"/><title>Backup and Restore - Monize documentation</title><meta name="description" content="Manual and automatic backups, encryption, restore and retention."/><meta name="theme-color" content="#4fa091"/><link rel="canonical" href="https://monize.net/docs/backup-and-restore"/><link rel="icon" type="image/svg+xml" href="/assets/img/monize-logo.svg"/><meta property="og:type" content="article"/><meta property="og:site_name" content="Monize"/><meta property="og:title" content="Backup and Restore - Monize documentation"/><meta property="og:description" content="Manual and automatic backups, encryption, restore and retention."/><meta property="og:url" content="https://monize.net/docs/backup-and-restore"/><link rel="stylesheet" href="/assets/css/styles.css"/><link rel="stylesheet" href="/assets/css/docs.css"/><script src="/assets/js/theme-boot.js"></script></head><body class="docs"><a class="skip" href="#content">Skip to content</a><header id="hdr" class="dhdr"><button id="sideBtn" class="icobtn dside-btn" type="button" aria-label="Open the page list" aria-controls="side" aria-expanded="false">☰</button><a class="brand" href="/"><img class="logo" src="/assets/img/monize-logo.svg" alt="" width="30" height="30"/><span>Monize</span></a><a class="dlabel" href="/docs/">Docs</a><button class="dsearch" type="button" data-search-open="" aria-haspopup="dialog" aria-label="Search the documentation"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><span>Search docs</span><kbd>/</kbd></button><nav class="dnav" aria-label="Site"><a href="/">Home</a><a href="https://demo.monize.net" rel="noopener">Live demo</a><a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></nav><button id="theme" class="icobtn" type="button" title="Toggle light / dark" aria-label="Toggle colour theme">☾</button></header><div class="dshade" id="shade" hidden=""></div><div class="dlayout"><aside class="dside" id="side"><nav aria-label="Documentation"><a class="dhome" href="/docs/">Overview</a><div class="dgroup"><p class="dgroup-t">Getting started</p><ul><li><a href="/docs/getting-started">Getting Started</a></li><li><a href="/docs/importing-transactions">Importing Transactions</a></li><li><a href="/docs/importing-from-quicken">Importing from Quicken</a></li><li><a href="/docs/importing-from-microsoft-money">Importing from Microsoft Money</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Core features</p><ul><li><a href="/docs/dashboard">Dashboard</a></li><li><a href="/docs/accounts">Accounts</a></li><li><a href="/docs/transactions">Transactions</a></li><li><a href="/docs/budgets">Budgets</a></li><li><a href="/docs/investments">Investments</a></li><li><a href="/docs/bills-and-deposits">Bills and Deposits</a></li><li><a href="/docs/email-receipts">Email Receipts</a></li><li><a href="/docs/warranties">Warranties</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Organizing and reporting</p><ul><li><a href="/docs/categories-and-payees">Categories and Payees</a></li><li><a href="/docs/tags">Tags</a></li><li><a href="/docs/reports">Reports</a></li><li><a href="/docs/currency-management">Currency Management</a></li></ul></div><div class="dgroup"><p class="dgroup-t">AI</p><ul><li><a href="/docs/ai">AI</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Administration</p><ul><li><a href="/docs/settings-and-security">Settings and Security</a></li><li><a href="/docs/shared-access">Shared Access (Delegated Users)</a></li><li><a href="/docs/emergency-access">Emergency Access</a></li><li><a href="/docs/backup-and-restore" aria-current="page">Backup and Restore</a></li></ul></div></nav></aside><main id="content" class="dmain" tabindex="-1"><nav class="crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">/</span><span>Administration</span></nav><article class="doc"><h1>Backup and Restore</h1><details class="toc-m"><summary>On this page</summary><ul><li class="d2"><a href="#manual-backup">Manual Backup</a></li><li class="d2"><a href="#restoring-from-a-backup">Restoring from a Backup</a></li><li class="d3"><a href="#how-to-restore">How to Restore</a></li><li class="d3"><a href="#how-restore-works">How Restore Works</a></li><li class="d2"><a href="#passwords-keys-and-what-you-must-not-lose">Passwords, Keys, and What You Must Not Lose</a></li><li class="d3"><a href="#1-the-password-a-backup-was-written-with-you">1. The password a backup was written with (you)</a></li><li class="d3"><a href="#2-encryption_key-whoever-runs-the-server">2. ENCRYPTION_KEY (whoever runs the server)</a></li><li class="d2"><a href="#encrypted-backups">Encrypted Backups</a></li><li class="d3"><a href="#why-encrypt-backups">Why Encrypt Backups</a></li><li class="d3"><a href="#encryption-for-local-password-users">Encryption for Local-Password Users</a></li><li class="d3"><a href="#setting-a-backup-password-oidc--sso-users">Setting a Backup Password (OIDC / SSO Users)</a></li><li class="d3"><a href="#downloading-an-encrypted-backup">Downloading an Encrypted Backup</a></li><li class="d3"><a href="#restoring-an-encrypted-backup">Restoring an Encrypted Backup</a></li><li class="d3"><a href="#changing-or-disabling-the-backup-password">Changing or Disabling the Backup Password</a></li><li class="d3"><a href="#encrypted-backup-file-format">Encrypted Backup File Format</a></li><li class="d2"><a href="#automatic-backups">Automatic Backups</a></li><li class="d3"><a href="#enabling-auto-backup">Enabling Auto-Backup</a></li><li class="d3"><a href="#folder-configuration">Folder Configuration</a></li><li class="d3"><a href="#frequency-and-timing">Frequency and Timing</a></li><li class="d3"><a href="#retention-policy">Retention Policy</a></li><li class="d3"><a href="#run-backup-now">Run Backup Now</a></li><li class="d3"><a href="#status-monitoring">Status Monitoring</a></li><li class="d2"><a href="#what-is-backed-up">What Is Backed Up</a></li><li class="d2"><a href="#support-backup-share-a-bug-report-safely">Support Backup (Share a Bug Report Safely)</a></li><li class="d2"><a href="#backup-file-format">Backup File Format</a></li><li class="d2"><a href="#docker-volume-configuration">Docker Volume Configuration</a></li><li class="d2"><a href="#security">Security</a></li><li class="d2"><a href="#tips-and-best-practices">Tips and Best Practices</a></li></ul></details><p>Monize includes a full backup and restore system to protect your financial data. You can create manual backups on demand, schedule automatic backups with intelligent retention policies, and restore from any backup file.</p>
+<p><strong>Backups are encrypted by default.</strong> If you sign in with an email and password, every backup Monize writes is encrypted with that password -- there is nothing to switch on, and nothing extra to remember. That also means a backup file is only as recoverable as the password it was written under, so read <a href="#passwords-keys-and-what-you-must-not-lose">Passwords, Keys, and What You Must Not Lose</a> before you rely on these files.</p>
+<h2 id="manual-backup">Manual Backup<a class="hlink" href="#manual-backup" aria-label="Link to this section">#</a></h2>
+<p>You can download a full backup of your data at any time from the <strong>Settings</strong> page.</p>
+<ol>
+<li>Navigate to <strong>Settings</strong> (gear icon in the top-right corner)</li>
+<li>Scroll to the <strong>Backup &amp; Restore</strong> section</li>
+<li>Click <strong>Download Backup</strong></li>
+<li>Enter your password when prompted -- this is the password the file will be encrypted with</li>
+<li>Your browser will download a file named <code>monize-backup-YYYY-MM-DD.mzbe</code></li>
+</ol>
+<p>If your backups are not encrypted (an SSO account that has set no backup password), there is no prompt and the file is named <code>monize-backup-YYYY-MM-DD.json.gz</code> instead.</p>
+<figure><img src="/docs/images/backup-restore-section.png" alt="Backup &amp; Restore" width="784" height="370" loading="lazy" decoding="async"/><figcaption>Backup &amp; Restore</figcaption></figure>
+<p>The backup contains all of your financial data as gzip-compressed JSON, wrapped in an encrypted envelope when encryption is on. It is streamed from the server to avoid memory issues with large datasets.</p>
+<h2 id="restoring-from-a-backup">Restoring from a Backup<a class="hlink" href="#restoring-from-a-backup" aria-label="Link to this section">#</a></h2>
+<p>Restoring replaces <strong>all</strong> of your existing data with the contents of the backup file. This is useful for recovering from data loss, migrating to a new server, or reverting after an unwanted change.</p>
+<blockquote>
+<p><strong>Caution:</strong> Restoring a backup permanently replaces all of your current data. This operation cannot be undone. Consider exporting a backup of your current data first.</p>
+</blockquote>
+<h3 id="how-to-restore">How to Restore<a class="hlink" href="#how-to-restore" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Navigate to <strong>Settings</strong> (gear icon in the top-right corner)</li>
+<li>Scroll to the <strong>Backup &amp; Restore</strong> section</li>
+<li>Click <strong>Restore Backup</strong></li>
+<li>Select a backup file (<code>.json</code>, <code>.json.gz</code>, or <code>.gz</code>)</li>
+<li>Enter your password to confirm (or re-authenticate via SSO if using OIDC)</li>
+<li>Click <strong>Confirm Restore</strong></li>
+</ol>
+<p>After a successful restore, a summary is displayed showing the number of records restored for each data type.</p>
+<span class="shot-missing" role="img" aria-label="Restore Summary">Screenshot pending: Restore Summary</span>
+<h3 id="how-restore-works">How Restore Works<a class="hlink" href="#how-restore-works" aria-label="Link to this section">#</a></h3>
+<p>The restore process runs inside a database transaction with three phases:</p>
+<ol>
+<li><strong>Delete</strong> -- All existing user data is removed in foreign-key-safe order</li>
+<li><strong>Insert</strong> -- Backup data is inserted in dependency order to satisfy foreign key relationships</li>
+<li><strong>Link</strong> -- Deferred relationships (parent categories, linked accounts, linked transactions, etc.) are reconnected</li>
+</ol>
+<p>If any step fails, the entire operation is rolled back and no data is changed.</p>
+<h2 id="passwords-keys-and-what-you-must-not-lose">Passwords, Keys, and What You Must Not Lose<a class="hlink" href="#passwords-keys-and-what-you-must-not-lose" aria-label="Link to this section">#</a></h2>
+<p>Encrypted backups protect your data from anyone who gets hold of the file. The
+same property is what makes them unrecoverable if you lose what opens them, and
+<strong>Monize has no master override</strong> -- the server genuinely cannot read a backup
+without the password it was written under.</p>
+<p>There are two separate secrets, they do different jobs, and losing them has
+different consequences. Both are worth writing down somewhere durable.</p>
+<h3 id="1-the-password-a-backup-was-written-with-you">1. The password a backup was written with (you)<a class="hlink" href="#1-the-password-a-backup-was-written-with-you" aria-label="Link to this section">#</a></h3>
+<p>A backup file opens with <strong>the password that was in effect when that file was
+written</strong> -- not your current one.</p>
+<ul>
+<li><strong>If you sign in with an email and password</strong>, that is your login password on
+the day of the backup. Change your password, and every backup taken before the
+change still needs the <strong>old</strong> one. Monize keeps your current password ready so
+restoring a recent backup usually asks nothing, but a six-month-old file taken
+before a password change will ask -- and only the old password will do.</li>
+<li><strong>If you sign in with SSO</strong>, it is the backup password you set in Settings, as
+it was at the time of writing. Changing it later does not re-encrypt anything
+already on disk.</li>
+</ul>
+<blockquote>
+<p><strong>Before you change your password, ask what would open your oldest backup.</strong>
+The safest habit is to keep every backup password you have ever used in a
+password manager, dated. The second safest is to download a fresh backup
+immediately after changing your password, and treat the older files as needing
+the old one.</p>
+</blockquote>
+<h3 id="2-encryption_key-whoever-runs-the-server">2. <code>ENCRYPTION_KEY</code> (whoever runs the server)<a class="hlink" href="#2-encryption_key-whoever-runs-the-server" aria-label="Link to this section">#</a></h3>
+<p><code>ENCRYPTION_KEY</code> is a server setting, not something you type. It encrypts what
+the <em>database</em> holds: your AI provider API keys, your Google Places API key for
+<a href="/docs/settings-and-security#payee-lookup">payee lookup</a>, emergency-access
+credentials, the instance&#x27;s browser-push key pair, and the copy of your password
+that lets scheduled backups run without prompting you every night.</p>
+<p><strong>If it is not set, your automatic backups are not encrypted.</strong> Monize still
+starts -- and says so loudly in its startup log every time, including that a
+future release will refuse to start without it -- but until an administrator
+sets it, there is nowhere to keep the password those backups would be encrypted
+with. If your backup files are <code>.json.gz</code> rather than <code>.mzbe</code>, this is usually
+why.</p>
+<p><strong>Keep it safe, and keep it the same.</strong> Store it with your other deployment
+secrets -- the same place you keep <code>JWT_SECRET</code> and your database password.
+Changing it does not re-encrypt anything; it simply makes what is already stored
+unreadable.</p>
+<p>If <code>ENCRYPTION_KEY</code> is lost or changed:</p>
+<div class="table-wrap"><table><thead><tr><th>What happens</th><th>What it takes to recover</th></tr></thead><tbody><tr><td>Automatic backups <strong>stop</strong>, reporting an error rather than quietly writing unencrypted files (this is the <em>changed</em> case; a key that was never set at all just produces unencrypted backups)</td><td>Each user signs in again (or confirms their password in Settings), which stores a fresh copy</td></tr><tr><td>Stored AI provider API keys become unreadable</td><td>Re-enter them in <strong>Settings &gt; AI</strong></td></tr><tr><td>A stored Google Places API key becomes unreadable</td><td>Re-enter it in <strong>Settings &gt; Payee Lookup</strong></td></tr><tr><td>Emergency-access credentials and messages become unreadable</td><td>Re-configure emergency access</td></tr><tr><td>The instance&#x27;s browser-push key pair becomes unreadable, so no push notification can be delivered</td><td>An admin rotates the key pair in <strong>Admin &gt; Notifications</strong>; every device registers again</td></tr><tr><td><strong>Your existing backup files are unaffected</strong></td><td>Nothing -- they open with the password they were written under, exactly as before</td></tr></tbody></table></div>
+<p>That last row is the one people get wrong in both directions. <code>ENCRYPTION_KEY</code>
+does not unlock a backup file, so losing it does not strand your backups; and
+having it does not rescue a backup whose password you have forgotten.</p>
+<blockquote>
+<p><strong>Upgrading from an older version?</strong> This setting used to be called
+<code>AI_ENCRYPTION_KEY</code> and was documented as being for AI providers only. The old
+name still works and still takes precedence, so an existing deployment needs no
+changes. If you never set it, your automatic backups were -- and still are --
+being written <strong>unencrypted</strong>: set <code>ENCRYPTION_KEY</code> (<code>openssl rand -hex 32</code>),
+restart, and sign in once so Monize can capture your password. Backups written
+from then on will be <code>.mzbe</code>.</p>
+</blockquote>
+<h2 id="encrypted-backups">Encrypted Backups<a class="hlink" href="#encrypted-backups" aria-label="Link to this section">#</a></h2>
+<p>An unencrypted backup is a gzip-compressed JSON file -- anyone who obtains it (intercepted in transit, copied from a cloud-sync folder, recovered from an old drive) can read every transaction, payee, and account name. Encryption wraps the backup in a password-protected envelope so the contents stay confidential even if the file leaks.</p>
+<p>Both manual downloads and scheduled <a href="#automatic-backups">automatic backups</a> are encrypted whenever Monize has a usable password for your account, which for a password account is all the time.</p>
+<h3 id="why-encrypt-backups">Why Encrypt Backups<a class="hlink" href="#why-encrypt-backups" aria-label="Link to this section">#</a></h3>
+<p>Encryption is the default rather than an option because a backup is the one file that contains everything, and it is the file most likely to end up somewhere you did not plan:</p>
+<ul>
+<li>Backups folders get synced to cloud storage (Dropbox, OneDrive, Google Drive, Backblaze)</li>
+<li>Backups get emailed, copied to a NAS, or uploaded to remote storage</li>
+<li>Servers, volumes, and external drives get shared, sold, or stolen</li>
+</ul>
+<p>The cost of that default is the thing to be deliberate about: an encrypted backup is exactly as recoverable as the password it was written with. See <a href="#passwords-keys-and-what-you-must-not-lose">Passwords, Keys, and What You Must Not Lose</a>.</p>
+<h3 id="encryption-for-local-password-users">Encryption for Local-Password Users<a class="hlink" href="#encryption-for-local-password-users" aria-label="Link to this section">#</a></h3>
+<p>If you log in with an email and password (the default), your backups are
+encrypted with that password automatically. There is no separate password to
+invent, and nothing to switch on: Monize captures your password at the only
+moment it ever sees it -- when you register, sign in, or change it -- stores an
+encrypted copy under the server&#x27;s <code>ENCRYPTION_KEY</code>, and uses that copy so the
+nightly job can encrypt without prompting you. <strong>Your password is never stored
+in plaintext.</strong></p>
+<p><strong>Settings &gt; Backup &amp; Restore</strong> shows the state under <strong>Backup Encryption</strong>:</p>
+<div class="table-wrap"><table><thead><tr><th>What you see</th><th>What it means</th></tr></thead><tbody><tr><td><strong>Enabled</strong> -- &quot;Backups are encrypted with your login password.&quot;</td><td>Nothing to do.</td></tr><tr><td><strong>Not enabled</strong>, with an <strong>Enable with My Login Password</strong> button</td><td>Monize has no copy of your password yet -- usually because you have stayed signed in since before this feature existed. Click the button and confirm your login password; backups from then on are encrypted. Signing out and back in does the same thing.</td></tr><tr><td>&quot;This server is not configured to encrypt backups&quot;</td><td>The server has no <code>ENCRYPTION_KEY</code>, so <strong>your backups are being written unencrypted</strong>. That is a deployment setting an administrator has to fix -- see <a href="#2-encryption_key-whoever-runs-the-server">ENCRYPTION_KEY</a>.</td></tr></tbody></table></div>
+<figure><img src="/docs/images/backup-encryption-enable.png" alt="Backup Encryption Enable" width="370" height="266" loading="lazy" decoding="async"/><figcaption>Backup Encryption Enable</figcaption></figure>
+<p>There is no <strong>Disable</strong> button for a password account: your password is
+re-captured every time you sign in, so turning encryption off would last until
+your next login. When you change your login password, the stored copy is updated
+automatically -- but files already on disk keep needing the password they were
+written with.</p>
+<h3 id="setting-a-backup-password-oidc--sso-users">Setting a Backup Password (OIDC / SSO Users)<a class="hlink" href="#setting-a-backup-password-oidc--sso-users" aria-label="Link to this section">#</a></h3>
+<p>If your account uses <a href="/docs/settings-and-security#single-sign-on-oidc">Single Sign-On (OIDC)</a>, there is no login password to reuse. You set a dedicated backup password instead.</p>
+<ol>
+<li>Navigate to <strong>Settings &gt; Backup &amp; Restore</strong></li>
+<li>In the <strong>Backup Encryption</strong> section, click <strong>Set Backup Password</strong></li>
+<li>Enter a new backup password (must be at least 12 characters and not appear in the <a href="https://haveibeenpwned.com/" rel="noopener" class="ext">Have I Been Pwned</a> breach database)</li>
+<li>Click <strong>Confirm</strong></li>
+</ol>
+<p>The backup password is independent from your SSO credentials -- you choose and manage it yourself. Save it somewhere secure (a password manager is ideal); without it, encrypted backups cannot be restored.</p>
+<p>To change it later, click <strong>Change Backup Password</strong> and repeat the process. The new password takes effect for backups written from that point on; previously-written backups remain decryptable only with the password that was active when they were created.</p>
+<h3 id="downloading-an-encrypted-backup">Downloading an Encrypted Backup<a class="hlink" href="#downloading-an-encrypted-backup" aria-label="Link to this section">#</a></h3>
+<p>Once encryption is enabled, exporting a backup adds one extra step:</p>
+<ol>
+<li>Click <strong>Download Backup</strong></li>
+<li>A modal appears asking you to enter the encryption password (your login password for local users, your backup password for OIDC users)</li>
+<li>Click <strong>Download</strong></li>
+<li>The browser saves a file named <code>monize-backup-YYYY-MM-DD.mzbe</code></li>
+</ol>
+<p>The <code>.mzbe</code> extension (Monize Backup Encrypted) distinguishes encrypted backups from the unencrypted <code>.json.gz</code> format. The encryption password is sent over HTTPS in a request header and is never written to access logs.</p>
+<span class="shot-missing" role="img" aria-label="Encrypted Backup Download">Screenshot pending: Encrypted Backup Download</span>
+<h3 id="restoring-an-encrypted-backup">Restoring an Encrypted Backup<a class="hlink" href="#restoring-an-encrypted-backup" aria-label="Link to this section">#</a></h3>
+<p>The restore flow accepts both unencrypted (<code>.json</code>, <code>.json.gz</code>, <code>.gz</code>) and encrypted (<code>.mzbe</code>) files. For an encrypted backup:</p>
+<ol>
+<li>Navigate to <strong>Settings &gt; Backup &amp; Restore</strong> and click <strong>Restore from Backup</strong></li>
+<li>Select your <code>.mzbe</code> file</li>
+<li>Authenticate as usual (current login password or OIDC re-authentication)</li>
+<li>Click <strong>Confirm Restore</strong></li>
+</ol>
+<p>Monize first tries to decrypt the backup using your current password (or the password stored in your account for auto-backup use). If decryption succeeds, the restore proceeds normally.</p>
+<p>If decryption fails -- typically because the backup was created when you had a <em>different</em> password -- a second prompt appears:</p>
+<blockquote>
+<p><strong>Backup Password Required.</strong> This backup is encrypted, and your current password did not unlock it. Enter the password that was used when this backup was created.</p>
+</blockquote>
+<p>Enter the original password (the one in effect at the time the backup was written) and click <strong>Submit</strong>. This handles cases where you have changed your password after creating the backup, or where you are restoring a very old backup onto a fresh install.</p>
+<blockquote>
+<p><strong>If you have lost the password,</strong> an encrypted backup cannot be recovered. Monize has no master override -- by design, the server cannot decrypt the file without the password. Always keep a copy of your backup password in a password manager.</p>
+</blockquote>
+<h3 id="changing-or-disabling-the-backup-password">Changing or Disabling the Backup Password<a class="hlink" href="#changing-or-disabling-the-backup-password" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Local users:</strong> changing your login password automatically updates the stored copy used by auto-backups, so backups written from then on use the new password. Files already written still need the password that was active when they were created -- keep it. There is no way to turn encryption off for a password account, because the password is re-captured at every sign-in.</li>
+<li><strong>OIDC users:</strong> click <strong>Change Backup Password</strong> to set a new one, or <strong>Disable</strong> to turn encryption off entirely. As with local users, existing encrypted backups still require whichever password was active when they were written.</li>
+</ul>
+<h3 id="encrypted-backup-file-format">Encrypted Backup File Format<a class="hlink" href="#encrypted-backup-file-format" aria-label="Link to this section">#</a></h3>
+<p>An encrypted backup is a single binary file with a small header followed by the encrypted payload:</p>
+<div class="table-wrap"><table><thead><tr><th>Bytes</th><th>Length</th><th>Field</th></tr></thead><tbody><tr><td>0--3</td><td>4</td><td>Magic identifier: <code>MZBE</code> (ASCII)</td></tr><tr><td>4</td><td>1</td><td>Format version (<code>0x01</code>)</td></tr><tr><td>5</td><td>1</td><td>Key derivation function (<code>0x01</code> = scrypt)</td></tr><tr><td>6--21</td><td>16</td><td>Random salt</td></tr><tr><td>22--33</td><td>12</td><td>AES-GCM initialization vector</td></tr><tr><td>34--49</td><td>16</td><td>AES-GCM authentication tag</td></tr><tr><td>50+</td><td>--</td><td>Ciphertext (the gzipped JSON backup payload)</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Detail</th><th>Value</th></tr></thead><tbody><tr><td><strong>Cipher</strong></td><td>AES-256-GCM (authenticated encryption)</td></tr><tr><td><strong>Key derivation</strong></td><td>scrypt with N=32768, r=8, p=1, 64 MB memory cap</td></tr><tr><td><strong>Per-backup salt</strong></td><td>16 bytes random</td></tr><tr><td><strong>Per-backup IV</strong></td><td>12 bytes random</td></tr><tr><td><strong>Wrong-password detection</strong></td><td>GCM authentication tag mismatch</td></tr></tbody></table></div>
+<p>Any tampering with the file -- truncation, bit-flips, header swaps -- is detected by the GCM authentication tag and causes the restore to fail safely.</p>
+<h2 id="automatic-backups">Automatic Backups<a class="hlink" href="#automatic-backups" aria-label="Link to this section">#</a></h2>
+<p>Monize can automatically back up your data on a schedule, saving compressed backup files to a folder on the server.</p>
+<p>Automatic backup is a deployment concern, so it is configured by an administrator on <strong>Admin &gt; Backups</strong>. Everyone else is enrolled automatically on the deployment defaults and has nothing to set up; the manual export and restore on <strong>Settings &gt; Backup &amp; Restore</strong> are unaffected.</p>
+<h3 id="enabling-auto-backup">Enabling Auto-Backup<a class="hlink" href="#enabling-auto-backup" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Navigate to <strong>Admin &gt; Backups</strong> (admin role required)</li>
+<li>Toggle <strong>Enable Automatic Backups</strong> to on</li>
+<li>Configure the folder path, frequency, timing, and retention settings</li>
+<li>Click <strong>Save Settings</strong></li>
+</ol>
+<figure><img src="/docs/images/backup-auto-settings.png" alt="Automatic Backup Settings" width="785" height="818" loading="lazy" decoding="async"/><figcaption>Automatic Backup Settings</figcaption></figure>
+<h3 id="folder-configuration">Folder Configuration<a class="hlink" href="#folder-configuration" aria-label="Link to this section">#</a></h3>
+<p>Auto-backups are saved to a folder on the server filesystem. The folder path must be an absolute path (starting with <code>/</code>).</p>
+<ul>
+<li>Use the <strong>Browse</strong> button to navigate the server filesystem and select a folder</li>
+<li>Click <strong>Validate</strong> to confirm the folder exists and is writable</li>
+<li>A common choice is <code>/backups</code> (see <a href="#docker-volume-configuration">Docker Volume Configuration</a> below)</li>
+</ul>
+<figure><img src="/docs/images/backup-folder-browser.png" alt="Folder Browser" width="781" height="267" loading="lazy" decoding="async"/><figcaption>Folder Browser</figcaption></figure>
+<blockquote>
+<p><strong>Note:</strong> The folder must be writable by the backend process. In Docker deployments, you must map a host directory to the container path using a volume mount.</p>
+</blockquote>
+<h3 id="frequency-and-timing">Frequency and Timing<a class="hlink" href="#frequency-and-timing" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Frequency</th><th>Description</th></tr></thead><tbody><tr><td><strong>Every 6 hours</strong></td><td>Backs up 4 times per day, aligned to the configured backup time</td></tr><tr><td><strong>Every 12 hours</strong></td><td>Backs up twice per day, aligned to the configured backup time</td></tr><tr><td><strong>Daily</strong></td><td>Backs up once per day at the configured time</td></tr><tr><td><strong>Weekly</strong></td><td>Backs up once per week at the configured time</td></tr></tbody></table></div>
+<p>Set the <strong>Backup Time</strong> to control when backups run (24-hour format, e.g., <code>02:00</code> for 2 AM).</p>
+<p>The backup time is interpreted in your configured timezone. The timezone is automatically detected from your user preferences.</p>
+<h3 id="retention-policy">Retention Policy<a class="hlink" href="#retention-policy" aria-label="Link to this section">#</a></h3>
+<p>Monize uses a three-tier retention system to balance storage usage with backup history:</p>
+<div class="table-wrap"><table><thead><tr><th>Tier</th><th>Default</th><th>Range</th><th>Description</th></tr></thead><tbody><tr><td><strong>Daily</strong></td><td>7</td><td>0--365</td><td>Number of most recent backups to keep</td></tr><tr><td><strong>Weekly</strong></td><td>4</td><td>0--52</td><td>One backup per week, kept for this many weeks</td></tr><tr><td><strong>Monthly</strong></td><td>6</td><td>0--120</td><td>One backup per month, kept for this many months</td></tr></tbody></table></div>
+<h4 id="how-retention-works">How Retention Works<a class="hlink" href="#how-retention-works" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>The most recent backups (up to the daily retention count) are always kept</li>
+<li>Beyond the daily window, one backup per ISO week is promoted and renamed to a weekly backup</li>
+<li>Beyond the weekly window, one backup per calendar month is promoted and renamed to a monthly backup</li>
+<li>Files that do not fall into any retention tier are deleted</li>
+</ol>
+<h4 id="file-naming">File Naming<a class="hlink" href="#file-naming" aria-label="Link to this section">#</a></h4>
+<p>Backup files are automatically named based on their retention tier:</p>
+<div class="table-wrap"><table><thead><tr><th>Tier</th><th>File Name Pattern</th></tr></thead><tbody><tr><td>Daily</td><td><code>monize-backup-YYYY-MM-DDTHH-MM-SS.json.gz</code></td></tr><tr><td>Weekly</td><td><code>monize-backup-weekly-WW-YYYY-MM-DDTHH-MM-SS.json.gz</code></td></tr><tr><td>Monthly</td><td><code>monize-backup-monthly-MM-YYYY-MM-DDTHH-MM-SS.json.gz</code></td></tr></tbody></table></div>
+<p>When <a href="#encrypted-backups">encrypted backups</a> are enabled, the extension changes from <code>.json.gz</code> to <code>.mzbe</code> (Monize Backup Encrypted). Retention promotion and cleanup recognise both extensions so unencrypted backups from before you enabled the feature are still managed correctly.</p>
+<blockquote>
+<p><strong>Note:</strong> If the server cannot decrypt the stored backup password -- typically because <code>ENCRYPTION_KEY</code> changed -- the scheduled backup <strong>fails</strong> rather than silently writing an unencrypted file. Sign in again (or confirm your password in <strong>Settings &gt; Backup &amp; Restore</strong>) to store a fresh copy. A backup that goes out unencrypted for any other reason is recorded as a warning in the server log.</p>
+</blockquote>
+<h3 id="run-backup-now">Run Backup Now<a class="hlink" href="#run-backup-now" aria-label="Link to this section">#</a></h3>
+<p>Click <strong>Run Backup Now</strong> to trigger an immediate backup outside of the regular schedule. The backup is saved to the configured folder and follows the same retention rules.</p>
+<h3 id="status-monitoring">Status Monitoring<a class="hlink" href="#status-monitoring" aria-label="Link to this section">#</a></h3>
+<figure><img src="/docs/images/backup-auto-status.png" alt="Backup Status" width="749" height="84" loading="lazy" decoding="async"/><figcaption>Backup Status</figcaption></figure>
+<p>The auto-backup section displays the current status:</p>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody><tr><td><strong>Last Backup</strong></td><td>Date and time of the most recent backup</td></tr><tr><td><strong>Status</strong></td><td><code>success</code> or <code>failed</code></td></tr><tr><td><strong>Error</strong></td><td>Error message if the last backup failed</td></tr><tr><td><strong>Next Backup</strong></td><td>Scheduled time for the next automatic backup</td></tr></tbody></table></div>
+<h2 id="what-is-backed-up">What Is Backed Up<a class="hlink" href="#what-is-backed-up" aria-label="Link to this section">#</a></h2>
+<p>A backup includes all of your financial data:</p>
+<div class="table-wrap"><table><thead><tr><th>Category</th><th>Data Included</th></tr></thead><tbody><tr><td><strong>Preferences</strong></td><td>User preferences, currency preferences, auto-backup settings</td></tr><tr><td><strong>Accounts</strong></td><td>All account types and their settings</td></tr><tr><td><strong>Transactions</strong></td><td>Transactions, transaction splits, and associated tags</td></tr><tr><td><strong>Scheduled Transactions</strong></td><td>Recurring bills/deposits, splits, and overrides</td></tr><tr><td><strong>Categories &amp; Payees</strong></td><td>Category hierarchy, payees, and payee aliases</td></tr><tr><td><strong>Tags</strong></td><td>All tags and tag assignments</td></tr><tr><td><strong>Loans</strong></td><td>Loan/mortgage interest-rate change history and saved overpayment scenarios</td></tr><tr><td><strong>Investments</strong></td><td>Securities, security prices, security tags, holdings, and investment transactions</td></tr><tr><td><strong>Budgets</strong></td><td>Budgets, budget categories, budget periods, and budget alerts</td></tr><tr><td><strong>Reports</strong></td><td>Custom report definitions</td></tr><tr><td><strong>Import Settings</strong></td><td>Saved column mapping presets</td></tr><tr><td><strong>Currencies</strong></td><td>Currency definitions</td></tr><tr><td><strong>Net Worth History</strong></td><td>Monthly account balance snapshots</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Note:</strong> User credentials (password, 2FA secrets, trusted devices, refresh tokens) are <strong>not</strong> included in backups. After restoring on a new server, you will need to log in with your existing credentials.</p>
+</blockquote>
+<h2 id="support-backup-share-a-bug-report-safely">Support Backup (Share a Bug Report Safely)<a class="hlink" href="#support-backup-share-a-bug-report-safely" aria-label="Link to this section">#</a></h2>
+<p>When you hit a bug that is hard to describe, a <strong>Support Backup</strong> lets you attach real-looking data to a GitHub issue <strong>without sharing your actual finances</strong>. Find <strong>Create Support Backup</strong> under <strong>Settings -&gt; Help &amp; Support</strong>.</p>
+<p>A support backup is an ordinary backup file that restores through the normal flow into a throwaway instance -- there is nothing new to install to open it -- but it is <strong>de-identified</strong> first:</p>
+<ul>
+<li><strong>Names are masked</strong> and free text and secrets are dropped -- descriptions, notes, memos, account numbers, and API keys.</li>
+<li><strong>Your amounts are scaled</strong> by a single hidden multiplier, while public values that would give the multiplier away -- FX rates, security prices, interest rates -- are kept intact.</li>
+<li><strong>Every UUID is remapped</strong>, so the file cannot be correlated back to your account.</li>
+<li>The engine is a strict <strong>allowlist</strong>, so a future database column cannot silently start leaking.</li>
+</ul>
+<p>You can <strong>scope it to specific accounts</strong>, protect it with a password, and <strong>preview the before/after</strong> (a two-column diff) before generating.</p>
+<blockquote>
+<p><strong>Important:</strong> This is de-identification, not anonymity. Dates, frequencies, and structure survive <strong>on purpose</strong> so bugs still reproduce -- do not treat a support backup as fully anonymous, and do not share the multiplier.</p>
+</blockquote>
+<h2 id="backup-file-format">Backup File Format<a class="hlink" href="#backup-file-format" aria-label="Link to this section">#</a></h2>
+<p>Backups are gzip-compressed JSON files with the following structure:</p>
+<pre><code class="language-json">{
+  &quot;version&quot;: 1,
+  &quot;exportedAt&quot;: &quot;2026-04-03T02:00:00.000Z&quot;,
+  &quot;currencies&quot;: [...],
+  &quot;user_preferences&quot;: [...],
+  &quot;accounts&quot;: [...],
+  &quot;transactions&quot;: [...],
+  ...
+}
+</code></pre>
+<ul>
+<li><strong>version</strong> -- Backup format version (currently <code>1</code>)</li>
+<li><strong>exportedAt</strong> -- ISO 8601 timestamp of when the backup was created</li>
+<li>Each table is represented as an array of row objects</li>
+</ul>
+<h2 id="docker-volume-configuration">Docker Volume Configuration<a class="hlink" href="#docker-volume-configuration" aria-label="Link to this section">#</a></h2>
+<p>When running Monize in Docker, the backend container runs with a read-only filesystem for security. To enable auto-backups, you must map a host directory to a container path using a Docker volume.</p>
+<p>Add a volume mount to the backend service in your <code>docker-compose.yml</code>:</p>
+<pre><code class="language-yaml">services:
+  backend:
+    # ... existing configuration ...
+    volumes:
+      - /path/on/host/backups:/backups
+</code></pre>
+<p>Then configure <code>/backups</code> as your auto-backup folder path on the <strong>Admin &gt; Backups</strong> page.</p>
+<blockquote>
+<p><strong>Tip:</strong> Choose a host path that is included in your server&#x27;s own backup strategy (e.g., a path covered by your NAS snapshots or cloud sync) for an extra layer of protection.</p>
+</blockquote>
+<h2 id="security">Security<a class="hlink" href="#security" aria-label="Link to this section">#</a></h2>
+<p>Backup and restore operations include several security measures:</p>
+<div class="table-wrap"><table><thead><tr><th>Measure</th><th>Description</th></tr></thead><tbody><tr><td><strong>Authentication</strong></td><td>All backup operations require a valid login session</td></tr><tr><td><strong>Restore verification</strong></td><td>Restoring requires password re-entry or OIDC re-authentication</td></tr><tr><td><strong>File encryption by default</strong></td><td>Backups are wrapped in an AES-256-GCM envelope keyed by your own password whenever the server holds a usable copy of it -- automatic for password accounts (see <a href="#encrypted-backups">Encrypted Backups</a>)</td></tr><tr><td><strong>Server-side key</strong></td><td>The stored copy of that password, AI provider keys, the Google Places key, emergency-access credentials and the browser-push key pair are encrypted with <code>ENCRYPTION_KEY</code>. Without it nothing can be stored encrypted and backups go out in the clear; the server warns at every start and a future release will require it</td></tr><tr><td><strong>User isolation</strong></td><td>Backups only contain data belonging to the authenticated user</td></tr><tr><td><strong>SQL injection prevention</strong></td><td>Column names are validated against the database schema; all values use parameterized queries</td></tr><tr><td><strong>Table allowlist</strong></td><td>Only the 24 approved data tables can be restored</td></tr><tr><td><strong>File size limit</strong></td><td>Restore files are limited to 100 MB</td></tr><tr><td><strong>Path traversal prevention</strong></td><td>Auto-backup folder paths are validated to prevent directory traversal attacks</td></tr><tr><td><strong>Transaction safety</strong></td><td>Restore runs in a database transaction with full rollback on error</td></tr><tr><td><strong>Demo restrictions</strong></td><td>Restore and auto-backup configuration are disabled in demo mode, with a note on the page saying why</td></tr></tbody></table></div>
+<h2 id="tips-and-best-practices">Tips and Best Practices<a class="hlink" href="#tips-and-best-practices" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><strong>Export a backup before major changes</strong> -- Before bulk-deleting data, re-importing, or updating Monize, download a manual backup first</li>
+<li><strong>Test your backups</strong> -- Periodically verify that a backup can be restored successfully by restoring on a test instance</li>
+<li><strong>Use auto-backup with retention</strong> -- Administrators should enable automatic backups on <strong>Admin &gt; Backups</strong> with the default retention settings (7 daily, 4 weekly, 6 monthly) for comprehensive coverage without excessive storage use</li>
+<li><strong>Check that your backups actually are encrypted</strong> -- Look at <strong>Settings &gt; Backup &amp; Restore</strong>: it should say <strong>Enabled</strong>, and your backup files should end in <code>.mzbe</code>. A <code>.json.gz</code> file is readable by anyone who has it</li>
+<li><strong>Save every backup password you have used, dated</strong> -- A backup opens with the password in effect when it was written, not your current one. A lost password means a lost backup: there is no master override. See <a href="#passwords-keys-and-what-you-must-not-lose">Passwords, Keys, and What You Must Not Lose</a></li>
+<li><strong>Back up <code>ENCRYPTION_KEY</code> with your other deployment secrets</strong> -- If you run the server, store it wherever you keep <code>JWT_SECRET</code> and your database password. Losing it does not lock you out of your backup <em>files</em>, but it does make every stored API key and credential unreadable and stops automatic backups until each user signs in again</li>
+<li><strong>Map the backup volume to durable storage</strong> -- Point your Docker volume at a path that is covered by your server&#x27;s own backup or sync strategy</li>
+<li><strong>Keep off-site copies</strong> -- Periodically download a manual backup and store it separately from your server (e.g., cloud storage or external drive) for disaster recovery</li>
+<li><strong>Set a quiet backup time</strong> -- Schedule auto-backups during off-peak hours (e.g., 2:00 AM) to minimize any performance impact</li>
+</ul></article><nav class="pager" aria-label="Previous and next page"><a class="pg pg-prev" href="/docs/emergency-access"><span>Previous</span><b>Emergency Access</b></a><span></span></nav><p class="dedit"><a href="https://github.com/kenlasko/monize/edit/main/website/docs/backup-and-restore.md" rel="noopener">Edit this page on GitHub</a><a href="https://github.com/kenlasko/monize/issues/new" rel="noopener">Report a problem with the docs</a></p></main><aside class="dtoc" aria-label="On this page"><p>On this page</p><ul><li class="d2"><a href="#manual-backup">Manual Backup</a></li><li class="d2"><a href="#restoring-from-a-backup">Restoring from a Backup</a></li><li class="d3"><a href="#how-to-restore">How to Restore</a></li><li class="d3"><a href="#how-restore-works">How Restore Works</a></li><li class="d2"><a href="#passwords-keys-and-what-you-must-not-lose">Passwords, Keys, and What You Must Not Lose</a></li><li class="d3"><a href="#1-the-password-a-backup-was-written-with-you">1. The password a backup was written with (you)</a></li><li class="d3"><a href="#2-encryption_key-whoever-runs-the-server">2. ENCRYPTION_KEY (whoever runs the server)</a></li><li class="d2"><a href="#encrypted-backups">Encrypted Backups</a></li><li class="d3"><a href="#why-encrypt-backups">Why Encrypt Backups</a></li><li class="d3"><a href="#encryption-for-local-password-users">Encryption for Local-Password Users</a></li><li class="d3"><a href="#setting-a-backup-password-oidc--sso-users">Setting a Backup Password (OIDC / SSO Users)</a></li><li class="d3"><a href="#downloading-an-encrypted-backup">Downloading an Encrypted Backup</a></li><li class="d3"><a href="#restoring-an-encrypted-backup">Restoring an Encrypted Backup</a></li><li class="d3"><a href="#changing-or-disabling-the-backup-password">Changing or Disabling the Backup Password</a></li><li class="d3"><a href="#encrypted-backup-file-format">Encrypted Backup File Format</a></li><li class="d2"><a href="#automatic-backups">Automatic Backups</a></li><li class="d3"><a href="#enabling-auto-backup">Enabling Auto-Backup</a></li><li class="d3"><a href="#folder-configuration">Folder Configuration</a></li><li class="d3"><a href="#frequency-and-timing">Frequency and Timing</a></li><li class="d3"><a href="#retention-policy">Retention Policy</a></li><li class="d3"><a href="#run-backup-now">Run Backup Now</a></li><li class="d3"><a href="#status-monitoring">Status Monitoring</a></li><li class="d2"><a href="#what-is-backed-up">What Is Backed Up</a></li><li class="d2"><a href="#support-backup-share-a-bug-report-safely">Support Backup (Share a Bug Report Safely)</a></li><li class="d2"><a href="#backup-file-format">Backup File Format</a></li><li class="d2"><a href="#docker-volume-configuration">Docker Volume Configuration</a></li><li class="d2"><a href="#security">Security</a></li><li class="d2"><a href="#tips-and-best-practices">Tips and Best Practices</a></li></ul></aside></div><footer class="dfoot"><div class="wrap"><span>Monize is released under the AGPL-3.0 licence.</span><span><a href="/">monize.net</a> · <a href="https://demo.monize.net" rel="noopener">Live demo</a> · <a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></span></div></footer><div class="sdlg" id="search" role="dialog" aria-modal="true" aria-label="Search the documentation" hidden=""><div class="sbox"><label class="sfield"><span class="sr">Search the documentation</span><input id="q" type="search" placeholder="Search the docs, e.g. &quot;split transaction&quot;" autoComplete="off" spellCheck="false" aria-controls="sres"/></label><ul id="sres" class="sres" role="listbox" aria-label="Results"></ul><p class="shint" id="shint"><kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</p></div></div><script src="/assets/js/docs.js" defer=""></script></body></html>

@@ -412,6 +412,9 @@ describe("McpInvestmentsTools", () => {
           realizedGain: 50,
           unrealizedGain: 100,
           totalCapitalGain: 150,
+          currency: "CAD",
+          fxComplete: true,
+          missingRatePairs: [],
         },
         groupedBy: "security",
         entries: [

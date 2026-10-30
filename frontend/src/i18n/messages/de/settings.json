@@ -435,9 +435,9 @@
       "label": "Diskussionen",
       "description": "Fragen stellen und Ideen mit der Community teilen."
     },
-    "wiki": {
-      "label": "Wiki",
-      "description": "Anleitungen und Dokumentation durchsuchen."
+    "docs": {
+      "label": "Dokumentation",
+      "description": "Das Benutzerhandbuch durchsuchen."
     },
     "supportBackup": {
       "label": "Support-Backup erstellen",

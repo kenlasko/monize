@@ -138,8 +138,8 @@
     "redonePrefix": "Rehecho: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "Abrir la wiki de Monize para obtener ayuda con esta sección",
-    "helpTooltip": "Abrir la wiki de Monize para obtener ayuda con esta sección"
+    "helpAriaLabel": "Abrir la documentación de Monize para obtener ayuda con esta sección",
+    "helpTooltip": "Abrir la documentación de Monize para obtener ayuda con esta sección"
   },
   "bootSplash": {
     "loading": "Cargando Monize",

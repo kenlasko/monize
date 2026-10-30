@@ -250,10 +250,7 @@ export class McpInvestmentsTools {
         title: "Capital gains",
         annotations: READ_ONLY,
         description:
-          "Realized and unrealized capital gains per period. It replays the " +
-          "transaction history and marks positions to historical closes, so " +
-          "the result covers movement on holdings the user still owns as well " +
-          "as gains realized by a sale.",
+          "Realized and unrealized capital gains per period, at historical closes.",
         inputSchema: z.object({
           startDate: z
             .string()

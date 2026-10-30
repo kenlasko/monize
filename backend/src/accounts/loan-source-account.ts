@@ -10,17 +10,20 @@ import {
 } from "../transaction-rules/rule-condition.types";
 import { TransactionRule } from "../transaction-rules/transaction-rule.entity";
 import { Account } from "./entities/account.entity";
+import { assertLoanSourceCurrency } from "./loan-source-currency.util";
 
 /**
  * Refuse a "Payment from Account" the loan cannot be paid from: an account the
  * caller does not own, a closed one, or the loan itself. Runs inside the
- * update's transaction, before anything is written.
+ * update's transaction, before anything is written. A source in another
+ * currency than the loan is refused too: its bill could never post.
  */
 export async function assertLoanSourceAccount(
   m: EntityManager,
   userId: string,
   loanAccountId: string,
   sourceAccountId: string,
+  loanCurrencyCode: string,
 ): Promise<void> {
   const source =
     sourceAccountId === loanAccountId
@@ -34,6 +37,7 @@ export async function assertLoanSourceAccount(
       ),
     );
   }
+  assertLoanSourceCurrency(source.currencyCode, loanCurrencyCode);
 }
 
 /**

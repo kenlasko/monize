@@ -210,6 +210,39 @@ describe('InvestmentTransactionForm: redemption of a bond splits into principal 
     expect(num(/Price per Share/)).toBeCloseTo(99.5, 6);
   });
 
+  it('keeps the price the person typed as the cash per bond: the interest comes out of qty x price, and repeated quantity changes do not drift', async () => {
+    await redeem('4');
+    await waitFor(() => expect(num(/Accrued Interest/)).toBeCloseTo(9.8, 4));
+    await type(/Price per Share/, '100');
+    api.getBondRedemptionSplit.mockResolvedValue(
+      split({ quantity: 2, interest: '4.00', principalReturned: '200.00', payout: '204.00' }) as any,
+    );
+    await type('Quantity (Shares)', '2');
+    // (2 x 100 - 4) / 2
+    await waitFor(() => expect(num(/Accrued Interest/)).toBeCloseTo(4, 4));
+    expect(num(/Price per Share/)).toBeCloseTo(98, 6);
+    api.getBondRedemptionSplit.mockResolvedValue(
+      split({ quantity: 4, interest: '8.00', principalReturned: '400.00', payout: '408.00' }) as any,
+    );
+    await type('Quantity (Shares)', '4');
+    // Still from the typed 100, not from the 98 the first refill wrote: (4 x 100 - 8) / 4.
+    await waitFor(() => expect(num(/Accrued Interest/)).toBeCloseTo(8, 4));
+    expect(num(/Price per Share/)).toBeCloseTo(98, 6);
+  });
+
+  it('keeps the total the person fixed: the interest comes out of the typed total, each time from the typed figure', async () => {
+    await redeem('4');
+    await waitFor(() => expect(num(/Accrued Interest/)).toBeCloseTo(9.8, 4));
+    await type(/Total Amount/, '420');
+    api.getBondRedemptionSplit.mockResolvedValue(
+      split({ quantity: 2, interest: '4.90', principalReturned: '200.00', payout: '204.90' }) as any,
+    );
+    await type('Quantity (Shares)', '2');
+    await waitFor(() => expect(num(/Accrued Interest/)).toBeCloseTo(4.9, 4));
+    // (420 - 4.90) / 2
+    expect(num(/Price per Share/)).toBeCloseTo(207.55, 6);
+  });
+
   it('refills a field the person has not edited when the quantity changes', async () => {
     await redeem('4');
     await waitFor(() => expect(num(/Accrued Interest/)).toBeCloseTo(9.8, 4));

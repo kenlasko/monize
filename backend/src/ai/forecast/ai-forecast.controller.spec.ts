@@ -14,6 +14,9 @@ describe("AiForecastController", () => {
     generatedAt: "2026-02-18T00:00:00.000Z",
     currency: "USD",
     currentBalance: 15000,
+    currentBalanceKnownSubtotal: 15000,
+    missingRatePairs: [],
+    fxComplete: true,
     forecastMonths: 3,
     monthlyProjections: [
       {

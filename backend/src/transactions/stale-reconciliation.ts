@@ -15,10 +15,10 @@ import { TransactionStatus } from "./entities/transaction.entity";
  * distinct reasons because they call for different actions:
  *
  * - `missed` -- the row is dated on or before the account's most recent
- *   reconciled date. The statement covering it has already been reconciled and
- *   this row was left out of it, so the reconciled balance and the bank's
- *   disagree by its amount. This is the exact analogue of an overdue bill and
- *   needs no threshold to state.
+ *   reconciled date (`RECONCILED_THROUGH_SQL`). The statement covering it has
+ *   already been reconciled and this row was left out of it, so the reconciled
+ *   balance and the bank's disagree by its amount. This is the exact analogue
+ *   of an overdue bill and needs no threshold to state.
  * - `overdue` -- the row is newer than that, but older than
  *   `STALE_UNRECONCILED_DAYS`. Nothing is provably wrong yet; the user has
  *   simply not reconciled the period it belongs to. This is the case that
@@ -43,6 +43,24 @@ import { TransactionStatus } from "./entities/transaction.entity";
  * response carries the number so the client never restates it.
  */
 export const STALE_UNRECONCILED_DAYS = 45;
+
+/**
+ * The date one RECONCILED row says the account is reconciled through: its own
+ * transaction date, but never later than the statement it was reconciled on.
+ *
+ * The reconcile screen lists rows dated after the statement date, so a row
+ * dated the 20th can be reconciled on a statement dated the 15th. Its own date
+ * would claim the 16th to the 20th were covered and call every outstanding row
+ * in that span `missed`; the statement date is what was actually covered. A row
+ * with no `reconciled_date` (imported reconciled) falls back to its own date,
+ * and one marked RECONCILED from the register (stamped with that day) is
+ * dated by its transaction date as before.
+ *
+ * The MAX of this per account is the `lastReconciledDate` the classifier takes.
+ * Columns are unqualified: the callers select from `transactions` unaliased.
+ */
+export const RECONCILED_THROUGH_SQL =
+  "LEAST(transaction_date, COALESCE(reconciled_date, transaction_date))";
 
 /** Why one account's rows are being reported. */
 export type StaleUnreconciledReason = "missed" | "overdue";

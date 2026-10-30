@@ -233,6 +233,9 @@ function saleWindowRefusal(input: LotInput): BondValuationRefusal | null {
   const { purchaseDate } = input.lot;
   if (
     window === null ||
+    // An assumed purchase date (an unpaired transfer in) restarts the lot at
+    // the transfer by design (docs/specs/polish-retail-bonds.md 12.2); the
+    // window refuses only a stated purchase (2.6).
     input.lot.purchaseDateAssumed === true ||
     (compareYMD(purchaseDate, window.from) >= 0 &&
       compareYMD(purchaseDate, window.to) <= 0)
@@ -360,7 +363,14 @@ function figuresOn(p: PreparedLot, asOf: string): DayFigures {
       if (inputs) {
         const perBond = maturityValue(terms, inputs.prior, inputs.current);
         const nominal = principalAt(terms, { date: p.maturity });
-        principal = perBond.toFixed(places);
+        // The same principal as an open day: the base the last period accrued
+        // on, interest capitalised earlier included. `accrued` stays all the
+        // interest since the nominal, as on an open day (golden-pinned), so
+        // the two overlap by design and `gross` is the figure to total.
+        principal = roundMoney(
+          terms,
+          baseAt(terms, inputs.prior, { date: lastPeriod.start }),
+        ).toFixed(places);
         gross = lot(perBond);
         grossBond = perBond;
         accrued = lot(perBond.sub(nominal));

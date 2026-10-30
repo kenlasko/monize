@@ -25,7 +25,8 @@ interface BudgetHeatmapProps {
 }
 
 function getHeatColor(amount: number, maxAmount: number): string {
-  if (amount === 0 || maxAmount === 0) return 'bg-gray-100 dark:bg-gray-700';
+  // A refund day is negative: it is not heat.
+  if (amount <= 0 || maxAmount <= 0) return 'bg-gray-100 dark:bg-gray-700';
   const intensity = amount / maxAmount;
   if (intensity > 0.75) return 'bg-red-400 dark:bg-red-500';
   if (intensity > 0.5) return 'bg-orange-300 dark:bg-orange-400';

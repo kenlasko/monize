@@ -15,6 +15,9 @@ export const SHOTS_PASSWORD = process.env.README_SHOTS_PASSWORD ?? DEMO_USER_PAS
 /** Where the PNGs and GIFs land (the repository's `docs/images/readme`). */
 export const IMAGE_DIR = resolve(__dirname, '../../docs/images/readme');
 
+/** Where the user documentation's screenshots land (`npm run docs:screenshots`). */
+export const DOCS_IMAGE_DIR = resolve(__dirname, '../../website/docs/images');
+
 /**
  * Raw screen recordings, one deterministic `<name>.webm` per GIF. Kept out of
  * Playwright's own output folder, which it empties at the start of every run.

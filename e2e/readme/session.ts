@@ -139,10 +139,17 @@ const SETTLED_PIXELS = 64;
 export async function shoot(
   page: Page,
   name: string,
-  options: { fullPage?: boolean } = {},
+  options: {
+    fullPage?: boolean;
+    /** Crop to this element (a widget, a dialog) instead of the viewport. */
+    element?: Locator;
+    /** Where the PNG lands; the README's `docs/images/readme` by default. */
+    dir?: string;
+  } = {},
 ): Promise<void> {
-  mkdirSync(IMAGE_DIR, { recursive: true });
-  const file = join(IMAGE_DIR, `${name}.png`);
+  const dir = options.dir ?? IMAGE_DIR;
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, `${name}.png`);
   // Nothing hovered, nothing focused: a button under the pointer or a focus
   // ring left by the last click is a state a frame can flicker between.
   await page.mouse.move(0, 0);
@@ -152,11 +159,13 @@ export async function shoot(
   await expect
     .poll(
       async () => {
-        const frame = await page.screenshot({
-          animations: 'disabled',
-          caret: 'hide',
-          fullPage: options.fullPage ?? false,
-        });
+        const frame = options.element
+          ? await options.element.screenshot({ animations: 'disabled', caret: 'hide' })
+          : await page.screenshot({
+              animations: 'disabled',
+              caret: 'hide',
+              fullPage: options.fullPage ?? false,
+            });
         const settled =
           previous !== undefined && differingPixels(previous, frame) <= SETTLED_PIXELS;
         previous = frame;

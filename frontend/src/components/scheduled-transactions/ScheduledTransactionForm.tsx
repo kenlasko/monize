@@ -1,5 +1,6 @@
 'use client';
 
+import { FALLBACK_DEFAULT_CURRENCY } from '@/lib/default-currency';
 import { useState, useEffect, useMemo, useRef, MutableRefObject } from 'react';
 import { useForm, useWatch, Controller, Resolver } from 'react-hook-form';
 import '@/lib/zodConfig';
@@ -84,7 +85,7 @@ const buildScheduledTransactionSchema = (t: (key: string) => string) => z.object
   payeeName: optionalString,
   categoryId: optionalUuid,
   amount: z.number({ error: 'Amount is required' }),
-  currencyCode: z.string().default('CAD'),
+  currencyCode: z.string().default(FALLBACK_DEFAULT_CURRENCY),
   description: optionalString,
   referenceNumber: optionalString,
   frequency: z.enum(FREQUENCY_VALUES),

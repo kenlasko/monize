@@ -11,6 +11,7 @@ import { discardChatHandoff, peekChatHandoff } from '@/lib/ai-chat-handoff';
 import { discardSharedBundle, readSharedBundle } from '@/lib/share-inbox';
 import { isShareBundleId } from '@/lib/share-target';
 import { createLogger } from '@/lib/logger';
+import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('AiPage');
 
@@ -145,7 +146,7 @@ function AiChatPage({
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/AI"
+          helpUrl={docsUrl('aiAssistant')}
         />
         <div className="flex min-h-0 flex-1 flex-col w-full max-w-4xl mx-auto">
           <ChatInterface

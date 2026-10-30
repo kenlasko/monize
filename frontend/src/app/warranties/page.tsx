@@ -49,6 +49,7 @@ import type {
   WarrantyStatusFilter,
   WarrantySummary,
 } from '@/types/warranty';
+import { docsUrl } from '@/lib/docs-links';
 
 const WarrantyForm = dynamic(
   () => import('@/components/warranties/WarrantyForm').then((m) => m.WarrantyForm),
@@ -436,7 +437,7 @@ function WarrantiesContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/Warranties"
+          helpUrl={docsUrl('warranties')}
           actions={
             readOnly ? undefined : (
               // The screen's one primary action; adding is the owner's.

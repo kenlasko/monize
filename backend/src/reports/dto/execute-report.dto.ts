@@ -84,5 +84,10 @@ export interface ReportResult {
   missingCurrencies: string[];
   /** How many rows (or split lines) were left out for want of a rate. */
   excludedCount: number;
+  /**
+   * True when the row limit cut the read short (the newest rows are the ones
+   * dropped): every figure is then a subtotal and `summary.total` is `null`.
+   */
+  truncated: boolean;
   tableColumns?: TableColumn[];
 }

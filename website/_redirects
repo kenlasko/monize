@@ -1,6 +1,5 @@
 # Short links (handy for READMEs, talks and QR codes)
 /demo    https://demo.monize.net/    302
 /github  https://github.com/kenlasko/monize    302
-/docs    https://github.com/kenlasko/monize/wiki    302
-/wiki    https://github.com/kenlasko/monize/wiki    302
+/wiki    /docs/    302
 /issues  https://github.com/kenlasko/monize/issues    302

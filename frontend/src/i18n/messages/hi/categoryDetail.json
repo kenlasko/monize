@@ -28,7 +28,8 @@
     "transactions": "लेन-देन",
     "sinceYear": "{year} से",
     "lastTransaction": "अंतिम लेन-देन",
-    "convertedNote": "{currency} में परिवर्तित"
+    "convertedNote": "{currency} में परिवर्तित",
+    "partialRatesNote": "कुछ महीनों के लिए विनिमय दर नहीं है"
   },
   "topPayees": {
     "title": "शीर्ष भुगतानकर्ता",

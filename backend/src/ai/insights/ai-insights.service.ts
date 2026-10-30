@@ -512,6 +512,11 @@ export class AiInsightsService {
       `Days elapsed in current month: ${aggregates.daysElapsedInMonth}/${aggregates.daysInMonth} (${(monthProgress * 100).toFixed(0)}% through month)`,
       `Total spending current month (so far): ${aggregates.totalSpendingCurrentMonth.toFixed(2)}`,
     );
+    if (aggregates.fxComplete === false) {
+      sections.push(
+        `NOTE: spending in currencies with no exchange rate (${aggregates.missingRatePairs.join(", ")}) is left out of every figure below; do not treat the totals as complete.`,
+      );
+    }
 
     if (projectedMonthlySpending !== null && projectedVsAvgPct !== null) {
       sections.push(

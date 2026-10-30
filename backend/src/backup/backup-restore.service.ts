@@ -17,6 +17,10 @@ import { gunzip } from "zlib";
 import { promisify } from "util";
 import { withScopedDb } from "../common/db/scoped-db";
 import { withPreserveTimestamps } from "../common/db/with-context";
+import { recalculateUserCurrentBalances } from "../accounts/accounts.service";
+import { todayInTimezoneOrUtc } from "../common/date-utils";
+import { preferredCurrency } from "../common/default-currency.util";
+import { getEffectiveTimezoneOfUser } from "../common/users-by-timezone.util";
 import { UserMaintenanceService } from "../common/jobs/user-maintenance.service";
 import { EncryptionService } from "../common/encryption/encryption.service";
 import { OidcReauthService } from "../auth/oidc/oidc-reauth.service";
@@ -389,6 +393,14 @@ export class BackupRestoreService {
                 // INV-BOND-007: whatever the file said, a row keeps a series
                 // only of its own security's program.
                 await clearForeignSeriesOfUser(manager, userId);
+
+                // The file's current_balance is as of the backup day; a row
+                // dated after it and on or before today is in no stored figure.
+                // Same derivation as the recalculation cron, so it is idempotent.
+                const today = todayInTimezoneOrUtc(
+                  await getEffectiveTimezoneOfUser(manager, userId),
+                );
+                await recalculateUserCurrentBalances(manager, userId, today);
 
                 // The staged objects now have their metadata rows: drop their
                 // upload intents in the same transaction, so both commit or both
@@ -797,6 +809,13 @@ export class BackupRestoreService {
       else assetsByStrategy.set(key, [asset]);
     }
 
+    // The hash carries the reporting currency; the backup's own preference row
+    // is the one the signals were stamped under.
+    const reportingCurrency = preferredCurrency({
+      defaultCurrency: data.user_preferences?.[0]?.default_currency as
+        string | undefined,
+    });
+
     /** The backup's snake_case rows in the shape the hash function wants. */
     const fingerprintOf = (
       strategy: Record<string, unknown>,
@@ -815,6 +834,7 @@ export class BackupRestoreService {
               securityId: securityIdOf(asset),
             }) as GemStrategyAsset,
         ),
+        reportingCurrency,
       );
 
     for (const strategy of data.gem_strategies ?? []) {

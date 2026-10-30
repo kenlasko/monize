@@ -47,9 +47,9 @@
     "processing": "Processing...",
     "acceptedFormats": "QIF/QMTF, OFX, QFX, CSV, or Microsoft Money (.mny)",
     "mnyFailedHeading": "That Microsoft Money file could not be opened",
-    "wikiNotice": {
+    "docsNotice": {
       "title": "Before you import",
-      "body": "Read the <money>Importing from Microsoft Money</money> or <quicken>Importing from Quicken</quicken> section of the wiki before importing anything."
+      "body": "Read the <money>Importing from Microsoft Money</money> or <quicken>Importing from Quicken</quicken> section of the documentation before importing anything."
     }
   },
   "selectAccount": {

@@ -71,6 +71,20 @@ describe('bucketMonthlyTotals - month', () => {
     expect(buckets[11]).toMatchObject({ total: 1200, count: 1, periodStart: '2020-12-01', periodEnd: '2020-12-31' });
   });
 
+  it('flags a period partial when a month has no total, keeping the known part', () => {
+    const data = [
+      m('2020-01', 100),
+      { month: '2020-02', total: null, knownSubtotal: 40, count: 1 },
+    ];
+    const buckets = bucketMonthlyTotals(data, 'month');
+    expect(buckets[0].partial).toBeUndefined();
+    expect(buckets[1]).toMatchObject({ total: 40, partial: true });
+    expect(bucketMonthlyTotals(data, 'quarter')[0]).toMatchObject({
+      total: 140,
+      partial: true,
+    });
+  });
+
   it('sums same-month rows in integer cents (no float drift)', () => {
     const data = [m('2020-01', 0.1), m('2020-01', 0.2)];
     const buckets = bucketMonthlyTotals(data, 'month');

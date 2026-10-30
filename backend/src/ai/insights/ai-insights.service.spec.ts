@@ -92,6 +92,8 @@ describe("AiInsightsService", () => {
       daysElapsedInMonth: 18,
       daysInMonth: 28,
       currency: "USD",
+      fxComplete: true,
+      missingRatePairs: [],
       ...overrides,
     };
   }

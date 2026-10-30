@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { EmailReceiptsHub } from '@/components/email-receipts/EmailReceiptsHub';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { docsUrl } from '@/lib/docs-links';
 
 export default function EmailReceiptsPage() {
   return (
@@ -24,7 +25,7 @@ function EmailReceiptsContent() {
         <PageHeader
           title={t('title')}
           subtitle={t('subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/Email-Receipts"
+          helpUrl={docsUrl('emailReceipts')}
         />
         {/* The hub reads `?tab=` and `?domain=`, which needs a Suspense boundary above it. */}
         <Suspense fallback={null}>

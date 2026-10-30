@@ -463,6 +463,7 @@
     "generating": "Bericht wird erstellt...",
     "noData": "Keine Daten für die gewählten Kriterien gefunden",
     "transactionCount": "{count, plural, one {# Buchung} other {# Buchungen}}",
+    "truncatedNotice": "Dieser Bericht hat das Zeilenlimit erreicht und zeigt nur die ältesten Zeilen, daher sind seine Zahlen unvollständig. Grenzen Sie den Zeitraum oder die Filter ein, um alle zu sehen.",
     "toasts": {
       "loadFailed": "Bericht konnte nicht geladen werden",
       "executeFailed": "Bericht konnte nicht ausgeführt werden"
@@ -1474,6 +1475,8 @@
     "totalReturn": "Gesamtrendite",
     "annualizedReturn": "Annualisierte Rendite",
     "needs1YearNote": "Benötigt mindestens 1 Jahr Daten",
+    "annualizedNeedsSingleBuyNote": "Nur bei einem einzigen Kauf ohne spätere Aktivität angezeigt",
+    "missingPrice": "Kein Kurs für {symbol}",
     "priceHistory": "Kursverlauf – {symbol}",
     "buyTransaction": "Kaufbuchung",
     "sellTransaction": "Verkaufsbuchung",

@@ -435,9 +435,9 @@
       "label": "Discussies",
       "description": "Stel vragen en deel ideeën met de community."
     },
-    "wiki": {
-      "label": "Wiki",
-      "description": "Blader door handleidingen en documentatie."
+    "docs": {
+      "label": "Documentatie",
+      "description": "Blader door de gebruikershandleiding."
     },
     "supportBackup": {
       "label": "Supportback-up maken",

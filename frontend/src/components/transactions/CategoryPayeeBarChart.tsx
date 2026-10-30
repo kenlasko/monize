@@ -97,6 +97,7 @@ function MonthlyTotalTooltip({
           }`}
         >
           {formatCurrency(data.total)}
+          {data.partial && ' *'}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           {t('charts.monthlyTotals.tooltip', { count: data.count })}
@@ -125,6 +126,16 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
   const t = useTranslations('transactions');
   const chartTitle = t('charts.monthlyTotals.title');
   const { formatCurrency, formatCurrencyAxis, formatNumber } = useNumberFormat();
+  // The server names the currency its totals are in; the user default otherwise.
+  const currency = data.find((d) => d.currency)?.currency;
+  const formatMoney = useCallback(
+    (v: number) => formatCurrency(v, currency),
+    [formatCurrency, currency],
+  );
+  const formatMoneyAxis = useCallback(
+    (v: number) => formatCurrencyAxis(v, currency),
+    [formatCurrencyAxis, currency],
+  );
   const formatChartDate = useChartDateFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const downloadFilename = filterLabel ? `${chartTitle} - ${filterLabel}` : chartTitle;
@@ -204,7 +215,8 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
     const totalCount = chartData.reduce((sum, d) => sum + d.count, 0);
     const periodsElapsed = chartData.length;
     const periodAvg = periodsElapsed > 0 ? total / periodsElapsed : 0;
-    return { total, totalCount, periodAvg };
+    const partial = chartData.some((d) => d.partial);
+    return { total, totalCount, periodAvg, partial };
   }, [chartData]);
 
   // The three figures under the chart, repeated into the exported PNG. Without
@@ -215,9 +227,12 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
     ? [
         {
           label: t(`charts.monthlyTotals.${AVG_LABEL_KEY[granularity]}`),
-          value: formatCurrency(summary.periodAvg),
+          value: formatMoney(summary.periodAvg) + (summary.partial ? ' *' : ''),
         },
-        { label: t('charts.monthlyTotals.total'), value: formatCurrency(summary.total) },
+        {
+          label: t('charts.monthlyTotals.total'),
+          value: formatMoney(summary.total) + (summary.partial ? ' *' : ''),
+        },
         {
           label: t('charts.monthlyTotals.transactions'),
           value: formatNumber(summary.totalCount, 0),
@@ -345,10 +360,10 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
               tick={{ fill: chartColors.axis, fontSize: 11 }}
               tickLine={false}
               axisLine={false}
-              tickFormatter={formatCurrencyAxis}
+              tickFormatter={formatMoneyAxis}
               width="auto"
             />
-            <Tooltip content={<MonthlyTotalTooltip formatCurrency={formatCurrency} />} />
+            <Tooltip content={<MonthlyTotalTooltip formatCurrency={formatMoney} />} />
             <Bar
               dataKey="absTotal"
               radius={[4, 4, 0, 0]}
@@ -373,8 +388,8 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
                   textAnchor={verticalLabels ? 'start' : 'middle'}
                   formatter={(value: unknown) =>
                     isMobile
-                      ? formatCurrencyAxis(Number(value))
-                      : formatCurrency(Number(value))
+                      ? formatMoneyAxis(Number(value))
+                      : formatMoney(Number(value))
                   }
                   style={{
                     fill: chartColors.axis,
@@ -399,7 +414,8 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
                 gainLossColor(summary.periodAvg)
               }`}
             >
-              {formatCurrency(summary.periodAvg)}
+              {formatMoney(summary.periodAvg)}
+              {summary.partial && ' *'}
             </div>
           </div>
           <div>
@@ -409,7 +425,8 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
                 gainLossColor(summary.total)
               }`}
             >
-              {formatCurrency(summary.total)}
+              {formatMoney(summary.total)}
+              {summary.partial && ' *'}
             </div>
           </div>
           <div>
@@ -418,6 +435,11 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
               {formatNumber(summary.totalCount, 0)}
             </div>
           </div>
+          {summary.partial && (
+            <p className="col-span-3 text-xs text-gray-500 dark:text-gray-400">
+              * {t('charts.monthlyTotals.partialNote')}
+            </p>
+          )}
         </div>
       )}
     </div>

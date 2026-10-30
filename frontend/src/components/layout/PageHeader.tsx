@@ -11,7 +11,7 @@ interface PageHeaderProps {
   subtitle?: string;
   /** Action buttons to render on the right side */
   actions?: ReactNode;
-  /** URL to the wiki help page for this feature */
+  /** Documentation for this feature: `docsUrl(...)` from `@/lib/docs-links` */
   helpUrl?: string;
   /**
    * Keep the actions inline (on the same row as the title) on mobile instead

@@ -39,6 +39,11 @@ import {
   newPlannedRows,
   planFingerprint,
 } from "./bank-sync-plan-fingerprint";
+import {
+  loadPayeeDefaultCategories,
+  payeeGivingDefaultCategory,
+  type PayeeDefaultCategory,
+} from "./bank-sync-rule-payee-category";
 import type { NormalizedBankBalance } from "./bank-sync-writer.service";
 import type {
   BankSyncPreviewLabels,
@@ -92,6 +97,8 @@ interface RowContext {
   labels: BankSyncPreviewLabels;
   /** The user's aliases, read the first time a row resolves through one. */
   aliases: () => Promise<PayeeAlias[]>;
+  /** The default category of a payee a rule chose, by payee id; null when it has none. */
+  payeeDefaults: Map<string, PayeeDefaultCategory | null>;
 }
 
 /** Scaled integer of a money value at the column's four decimals. */
@@ -193,6 +200,7 @@ export class BankSyncPreviewService {
         tagIds: new Map(),
         labels,
         aliases: () => (aliases ??= this.payeesService.getAllAliases(userId)),
+        payeeDefaults: new Map(),
       };
 
       const rows: BankSyncPreviewRowView[] = [];
@@ -442,6 +450,17 @@ export class BankSyncPreviewService {
             ? null
             : (labels.categories[changes.categoryId] ?? null);
       }
+      // A payee the rules chose brings its default category, as the writer
+      // gives it after the rules (`payeeGivingDefaultCategory`).
+      const rulePayeeId = payeeGivingDefaultCategory(effects);
+      const payeeDefault =
+        rulePayeeId === null
+          ? null
+          : await this.payeeDefaultCategory(context, rulePayeeId);
+      if (payeeDefault !== null) {
+        categoryId = payeeDefault.categoryId;
+        categoryName = payeeDefault.categoryName;
+      }
       const removed = new Set(changes.removeTagIds);
       if (operationTagId !== null && removed.has(operationTagId)) {
         tagNames.length = 0;
@@ -501,6 +520,20 @@ export class BankSyncPreviewService {
       text,
     );
     context.payeeCache.set(text, found);
+    return found;
+  }
+
+  private async payeeDefaultCategory(
+    context: RowContext,
+    payeeId: string,
+  ): Promise<PayeeDefaultCategory | null> {
+    if (context.payeeDefaults.has(payeeId))
+      return context.payeeDefaults.get(payeeId) ?? null;
+    const found =
+      (
+        await loadPayeeDefaultCategories(context.m, context.userId, [payeeId])
+      ).get(payeeId) ?? null;
+    context.payeeDefaults.set(payeeId, found);
     return found;
   }
 }

@@ -463,6 +463,7 @@
     "generating": "रिपोर्ट उत्पन्न हो रही है...",
     "noData": "चयनित मानदंड के लिए कोई डेटा नहीं मिला",
     "transactionCount": "{count, plural, one {# लेनदेन} other {# लेनदेन}}",
+    "truncatedNotice": "यह रिपोर्ट पंक्ति सीमा तक पहुँच गई है और केवल सबसे पुरानी पंक्तियाँ दिखाती है, इसलिए इसके आँकड़े अधूरे हैं। सभी देखने के लिए समय-सीमा या फ़िल्टर सीमित करें।",
     "toasts": {
       "loadFailed": "रिपोर्ट लोड करने में विफल",
       "executeFailed": "रिपोर्ट निष्पादित करने में विफल"
@@ -1474,6 +1475,8 @@
     "totalReturn": "कुल रिटर्न",
     "annualizedReturn": "वार्षिकीकृत रिटर्न",
     "needs1YearNote": "1+ वर्ष का डेटा आवश्यक",
+    "annualizedNeedsSingleBuyNote": "केवल एक ही खरीद और बाद में कोई गतिविधि न होने पर दिखाया जाता है",
+    "missingPrice": "{symbol} के लिए कोई मूल्य नहीं",
     "priceHistory": "मूल्य इतिहास - {symbol}",
     "buyTransaction": "खरीद लेनदेन",
     "sellTransaction": "बिक्री लेनदेन",

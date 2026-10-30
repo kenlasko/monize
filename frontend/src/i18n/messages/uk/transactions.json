@@ -576,6 +576,7 @@
       "total": "Разом",
       "transactions": "Транзакції",
       "tooltip": "{count, plural, one {# транзакція} other {# транзакцій}}",
+      "partialNote": "Для деяких сум немає обмінного курсу, і їх не включено до цих підсумків.",
       "quarterLabel": "{quarter} кв. {year}",
       "quarterTick": "{quarter} кв. {year}",
       "granularityLabel": "Групування",

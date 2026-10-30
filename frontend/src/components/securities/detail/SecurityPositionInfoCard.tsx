@@ -32,7 +32,6 @@ export function SecurityPositionInfoCard({
     marketValue: position.marketValue,
     costBasis: position.costBasis,
     dividends: activity.dividends,
-    fees: activity.fees,
     realizedGain: activity.realizedGain,
     realizedGainCurrency: activity.realizedGainCurrency,
     realizedSaleCount: activity.realizedSaleCount,
@@ -52,8 +51,8 @@ export function SecurityPositionInfoCard({
   // already drops a row whose value is null (KeyValueList), so use that -- the
   // Status row saying "Never held" is the whole answer.
   const untraded = !detail.hasTransactions;
-  const lifetimeTotal = (amount: number): string | null =>
-    untraded ? null : formatCurrency(amount, currency);
+  const lifetimeTotal = (amount: number | null): string | null =>
+    untraded || amount === null ? null : formatCurrency(amount, currency);
 
   const rows: KeyValueRow[] = [
     {

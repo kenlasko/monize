@@ -576,6 +576,7 @@
       "total": "Toplam",
       "transactions": "İşlemler",
       "tooltip": "{count, plural, one {# işlem} other {# işlem}}",
+      "partialNote": "Bazı tutarların döviz kuru yok ve bu toplamlara dahil değil.",
       "quarterLabel": "Ç{quarter} {year}",
       "quarterTick": "Ç{quarter} {year}",
       "granularityLabel": "Gruplama",

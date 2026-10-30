@@ -1,0 +1,134 @@
+<!doctype html>
+<!-- Generated from website/docs/dashboard.md by frontend/scripts/build-website-docs.mjs. Edit the Markdown, then run "npm run docs:build" in frontend/. -->
+<html lang="en" data-theme="dark" class="docs-root"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="preload" as="image" href="/assets/img/monize-logo.svg"/><title>Dashboard - Monize documentation</title><meta name="description" content="Your financial overview at a glance."/><meta name="theme-color" content="#4fa091"/><link rel="canonical" href="https://monize.net/docs/dashboard"/><link rel="icon" type="image/svg+xml" href="/assets/img/monize-logo.svg"/><meta property="og:type" content="article"/><meta property="og:site_name" content="Monize"/><meta property="og:title" content="Dashboard - Monize documentation"/><meta property="og:description" content="Your financial overview at a glance."/><meta property="og:url" content="https://monize.net/docs/dashboard"/><link rel="stylesheet" href="/assets/css/styles.css"/><link rel="stylesheet" href="/assets/css/docs.css"/><script src="/assets/js/theme-boot.js"></script></head><body class="docs"><a class="skip" href="#content">Skip to content</a><header id="hdr" class="dhdr"><button id="sideBtn" class="icobtn dside-btn" type="button" aria-label="Open the page list" aria-controls="side" aria-expanded="false">☰</button><a class="brand" href="/"><img class="logo" src="/assets/img/monize-logo.svg" alt="" width="30" height="30"/><span>Monize</span></a><a class="dlabel" href="/docs/">Docs</a><button class="dsearch" type="button" data-search-open="" aria-haspopup="dialog" aria-label="Search the documentation"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><span>Search docs</span><kbd>/</kbd></button><nav class="dnav" aria-label="Site"><a href="/">Home</a><a href="https://demo.monize.net" rel="noopener">Live demo</a><a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></nav><button id="theme" class="icobtn" type="button" title="Toggle light / dark" aria-label="Toggle colour theme">☾</button></header><div class="dshade" id="shade" hidden=""></div><div class="dlayout"><aside class="dside" id="side"><nav aria-label="Documentation"><a class="dhome" href="/docs/">Overview</a><div class="dgroup"><p class="dgroup-t">Getting started</p><ul><li><a href="/docs/getting-started">Getting Started</a></li><li><a href="/docs/importing-transactions">Importing Transactions</a></li><li><a href="/docs/importing-from-quicken">Importing from Quicken</a></li><li><a href="/docs/importing-from-microsoft-money">Importing from Microsoft Money</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Core features</p><ul><li><a href="/docs/dashboard" aria-current="page">Dashboard</a></li><li><a href="/docs/accounts">Accounts</a></li><li><a href="/docs/transactions">Transactions</a></li><li><a href="/docs/budgets">Budgets</a></li><li><a href="/docs/investments">Investments</a></li><li><a href="/docs/bills-and-deposits">Bills and Deposits</a></li><li><a href="/docs/email-receipts">Email Receipts</a></li><li><a href="/docs/warranties">Warranties</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Organizing and reporting</p><ul><li><a href="/docs/categories-and-payees">Categories and Payees</a></li><li><a href="/docs/tags">Tags</a></li><li><a href="/docs/reports">Reports</a></li><li><a href="/docs/currency-management">Currency Management</a></li></ul></div><div class="dgroup"><p class="dgroup-t">AI</p><ul><li><a href="/docs/ai">AI</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Administration</p><ul><li><a href="/docs/settings-and-security">Settings and Security</a></li><li><a href="/docs/shared-access">Shared Access (Delegated Users)</a></li><li><a href="/docs/emergency-access">Emergency Access</a></li><li><a href="/docs/backup-and-restore">Backup and Restore</a></li></ul></div></nav></aside><main id="content" class="dmain" tabindex="-1"><nav class="crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">/</span><span>Core features</span></nav><article class="doc"><h1>Dashboard</h1><details class="toc-m"><summary>On this page</summary><ul><li class="d2"><a href="#overview">Overview</a></li><li class="d2"><a href="#customizing-your-dashboard">Customizing Your Dashboard</a></li><li class="d3"><a href="#per-widget-settings">Per-Widget Settings</a></li><li class="d3"><a href="#optional-widgets">Optional Widgets</a></li><li class="d2"><a href="#favourite-accounts">Favourite Accounts</a></li><li class="d3"><a href="#reordering-favourites">Reordering Favourites</a></li><li class="d3"><a href="#brokerage-accounts">Brokerage Accounts</a></li><li class="d2"><a href="#upcoming-bills">Upcoming Bills</a></li><li class="d2"><a href="#budget-status">Budget Status</a></li><li class="d2"><a href="#spending-insights">Spending Insights</a></li><li class="d2"><a href="#getting-started-widget">Getting Started Widget</a></li><li class="d2"><a href="#top-movers">Top Movers</a></li><li class="d2"><a href="#favourite-securities">Favourite Securities</a></li><li class="d2"><a href="#expenses-pie-chart">Expenses Pie Chart</a></li><li class="d2"><a href="#income-vs-expenses-bar-chart">Income vs Expenses Bar Chart</a></li><li class="d2"><a href="#net-worth-chart">Net Worth Chart</a></li><li class="d2"><a href="#assets-vs-liabilities">Assets vs Liabilities</a></li><li class="d2"><a href="#refreshing-data">Refreshing Data</a></li></ul></details><p>The Dashboard is your financial command center -- a single-page overview of your accounts, spending, income, net worth, and upcoming bills.</p>
+<h2 id="overview">Overview<a class="hlink" href="#overview" aria-label="Link to this section">#</a></h2>
+<p>When you log in, the Dashboard is the first page you see. It provides a comprehensive snapshot of your financial health using interactive charts and summary widgets.</p>
+<figure><img src="/docs/images/dashboard-overview.png" alt="Dashboard Overview" width="1677" height="1348" loading="lazy" decoding="async"/><figcaption>Dashboard Overview</figcaption></figure>
+<h2 id="customizing-your-dashboard">Customizing Your Dashboard<a class="hlink" href="#customizing-your-dashboard" aria-label="Link to this section">#</a></h2>
+<p>Click <strong>Customize</strong> in the top-right of the dashboard header to tailor which widgets appear and in what order:</p>
+<ul>
+<li><strong>Show or hide widgets</strong> -- remove any widget you don&#x27;t want, or add one back later</li>
+<li><strong>Reorder widgets</strong> -- drag a widget tile to a new position, or use the up/down arrow buttons (the arrow buttons also work on mobile, where widgets stack in a single column)</li>
+<li><strong>Add opt-in widgets</strong> -- hidden widgets appear in a <strong>Hidden widgets</strong> tray beneath the layout; click one to add it to your dashboard</li>
+<li><strong>Reset to default</strong> -- restore the standard layout at any time</li>
+</ul>
+<p>Your layout is saved to your account, so it <strong>syncs across all your devices</strong>.</p>
+<h3 id="per-widget-settings">Per-Widget Settings<a class="hlink" href="#per-widget-settings" aria-label="Link to this section">#</a></h3>
+<p>Configurable widgets show a <strong>gear icon</strong> in their header. Click it to open that widget&#x27;s settings, where (depending on the widget) you can:</p>
+<ul>
+<li>Choose a <strong>timeframe</strong> preset -- 1M, 3M, 6M, 1Y, 2Y, 5Y, YTD, or All</li>
+<li>Filter the widget to specific <strong>accounts</strong></li>
+<li>Toggle the <strong>chart type</strong> or <strong>view</strong> (for example, pie vs bar, or region vs country)</li>
+<li>Set a custom <strong>display name</strong> and <strong>description</strong> so the widget&#x27;s header reads however you like</li>
+</ul>
+<p>These per-widget settings also persist across your devices.</p>
+<h3 id="optional-widgets">Optional Widgets<a class="hlink" href="#optional-widgets" aria-label="Link to this section">#</a></h3>
+<p>The widgets below are hidden by default and can be added from the <strong>Customize</strong> dialog. Each is derived from a report, and most carry their own gear settings.</p>
+<div class="table-wrap"><table><thead><tr><th>Widget</th><th>Shows</th><th>Availability</th></tr></thead><tbody><tr><td>Favourite Reports</td><td>The reports you&#x27;ve starred; click one to open it</td><td>Always</td></tr><tr><td>Portfolio Value</td><td>Your total investment value over time</td><td>Investments only</td></tr><tr><td>Spending by Payee</td><td>Spending grouped by payee</td><td>Always</td></tr><tr><td>Monthly Spending Trend</td><td>Spending (and income) trended by month</td><td>Always</td></tr><tr><td>Income by Source</td><td>Income grouped by source, as a pie or bar chart</td><td>Always</td></tr><tr><td>Credit Utilization by Account</td><td>Utilization for each credit account</td><td>Always</td></tr><tr><td>Total Credit Utilization</td><td>Combined used vs available credit</td><td>Always</td></tr><tr><td>Sector Allocation</td><td>Portfolio breakdown by sector</td><td>Investments only</td></tr><tr><td>Security Type Allocation</td><td>Holdings by security type (stocks, ETFs, and so on)</td><td>Investments only</td></tr><tr><td>Geographic Allocation</td><td>Holdings by region, exchange, or country</td><td>Investments only</td></tr><tr><td>Top Recurring Expenses</td><td>Your most frequent recurring expenses</td><td>Always</td></tr><tr><td>Weekend vs Weekday Spending</td><td>Spending split between weekends and weekdays</td><td>Always</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Note:</strong> The investment-related widgets (Portfolio Value, Sector Allocation, Security Type Allocation, and Geographic Allocation) only appear as options when you have investment holdings.</p>
+</blockquote>
+<blockquote>
+<p><strong>Delegates:</strong> If you&#x27;re viewing an account you&#x27;ve been granted access to, the dashboard is limited to the Favourite Accounts widget (plus Upcoming Bills, if that access was granted). The <strong>Customize</strong> button is hidden for delegates.</p>
+</blockquote>
+<h2 id="favourite-accounts">Favourite Accounts<a class="hlink" href="#favourite-accounts" aria-label="Link to this section">#</a></h2>
+<p>The top section of the dashboard displays your favourite accounts as summary cards. Each card shows:</p>
+<ul>
+<li><strong>Account name</strong> and type</li>
+<li><strong>Current balance</strong> in the account&#x27;s currency</li>
+<li>Quick access to account transactions</li>
+</ul>
+<p>To mark an account as a favourite, go to <strong>Accounts</strong> and toggle the star icon on any account.</p>
+<h3 id="reordering-favourites">Reordering Favourites<a class="hlink" href="#reordering-favourites" aria-label="Link to this section">#</a></h3>
+<p>You can reorder your favourite account cards to arrange them in the order you prefer:</p>
+<ol>
+<li>On the Dashboard, click the <strong>Reorder</strong> button next to the favourite accounts section</li>
+<li>Drag and drop the account cards into your preferred order</li>
+<li>The new order is saved automatically</li>
+</ol>
+<h3 id="brokerage-accounts">Brokerage Accounts<a class="hlink" href="#brokerage-accounts" aria-label="Link to this section">#</a></h3>
+<p>When a brokerage (investment) account is marked as a favourite, the dashboard card displays the account&#x27;s <strong>market value</strong> rather than the cash balance. Clicking a brokerage favourite navigates to the Investments page filtered to that account.</p>
+<figure><img src="/docs/images/dashboard-favourite-account.png" alt="Favourite Accounts" width="574" height="222" loading="lazy" decoding="async"/><figcaption>Favourite Accounts</figcaption></figure>
+<h2 id="upcoming-bills">Upcoming Bills<a class="hlink" href="#upcoming-bills" aria-label="Link to this section">#</a></h2>
+<p>This widget shows your scheduled bills and deposits that are coming due, ordered by date. Each entry shows:</p>
+<ul>
+<li><strong>Payee name</strong> or transaction description</li>
+<li><strong>Due date</strong> and how many days until due</li>
+<li><strong>Amount</strong> of the scheduled transaction</li>
+<li><strong>Account</strong> the transaction will be posted to</li>
+</ul>
+<p>This helps you anticipate upcoming cash flow needs and ensure sufficient funds are available.</p>
+<figure><img src="/docs/images/dashboard-upcoming-bills.png" alt="Upcoming Bills" width="565" height="446" loading="lazy" decoding="async"/><figcaption>Upcoming Bills</figcaption></figure>
+<h2 id="budget-status">Budget Status<a class="hlink" href="#budget-status" aria-label="Link to this section">#</a></h2>
+<p>If you have an active budget, the Budget Status widget provides a quick summary of your current budget period:</p>
+<ul>
+<li><strong>Top 3 categories</strong> closest to their budget limits, with progress bars</li>
+<li><strong>Safe to spend today</strong> -- How much you can spend per day and stay on track</li>
+<li><strong>Days remaining</strong> in the current budget period</li>
+</ul>
+<p>Click the widget to navigate to the full <a href="/docs/budgets#budget-dashboard">Budget Dashboard</a>.</p>
+<figure><img src="/docs/images/dashboard-budget-status.png" alt="Budget Status Widget" width="740" height="500" loading="lazy" decoding="async"/><figcaption>Budget Status Widget</figcaption></figure>
+<blockquote>
+<p><strong>Note:</strong> This widget only appears if you have an active budget.</p>
+</blockquote>
+<h2 id="spending-insights">Spending Insights<a class="hlink" href="#spending-insights" aria-label="Link to this section">#</a></h2>
+<p>The Spending Insights widget surfaces automatically generated observations about your finances -- notable changes in spending, recurring patterns, and other things worth your attention. Each insight is a short, plain-language note derived from your recent activity.</p>
+<p>Click <strong>View all insights</strong> to open the full Insights page, where you can generate and review deeper analysis.</p>
+<span class="shot-missing" role="img" aria-label="Spending Insights">Screenshot pending: Spending Insights</span>
+<h2 id="getting-started-widget">Getting Started Widget<a class="hlink" href="#getting-started-widget" aria-label="Link to this section">#</a></h2>
+<p>For new users, a Getting Started widget provides guidance on initial setup tasks:</p>
+<ul>
+<li>Creating accounts</li>
+<li>Adding transactions</li>
+<li>Setting up scheduled bills</li>
+<li>Importing data</li>
+</ul>
+<p>This widget disappears once you have completed the basic setup steps.</p>
+<h2 id="top-movers">Top Movers<a class="hlink" href="#top-movers" aria-label="Link to this section">#</a></h2>
+<p>If you have investment accounts, the Top Movers widget shows the securities in your portfolio with the largest daily price changes (both gains and losses). This gives you a quick view of which investments are moving the most.</p>
+<figure><img src="/docs/images/dashboard-top-movers.png" alt="Top Movers" width="608" height="517" loading="lazy" decoding="async"/><figcaption>Top Movers</figcaption></figure>
+<blockquote>
+<p><strong>Note:</strong> This widget only appears if you have at least one investment account with holdings.</p>
+</blockquote>
+<h2 id="favourite-securities">Favourite Securities<a class="hlink" href="#favourite-securities" aria-label="Link to this section">#</a></h2>
+<p>The Favourite Securities widget lists the securities you&#x27;ve starred, each with its <strong>live quote</strong> and daily price change. It&#x27;s a watchlist for the tickers you care about, whether or not you currently hold them.</p>
+<p>To add a security here, visit the <strong>Securities</strong> page and star the securities you want to track. Prices can be refreshed with the widget&#x27;s refresh button.</p>
+<span class="shot-missing" role="img" aria-label="Favourite Securities">Screenshot pending: Favourite Securities</span>
+<blockquote>
+<p><strong>Note:</strong> This widget only appears once you have at least one security to track.</p>
+</blockquote>
+<h2 id="expenses-pie-chart">Expenses Pie Chart<a class="hlink" href="#expenses-pie-chart" aria-label="Link to this section">#</a></h2>
+<p>A pie chart breaks down your spending by category over a selectable timeframe (default: last month), optionally filtered to specific accounts. This provides an instant visual of where your money is going.</p>
+<ul>
+<li>Hover over a segment to see the category name and amount</li>
+<li>Categories are colour-coded for easy identification</li>
+<li>The chart includes expense categories only (income is excluded)</li>
+</ul>
+<figure><img src="/docs/images/dashboard-expenses-pie.png" alt="Expenses Pie Chart" width="601" height="549" loading="lazy" decoding="async"/><figcaption>Expenses Pie Chart</figcaption></figure>
+<h2 id="income-vs-expenses-bar-chart">Income vs Expenses Bar Chart<a class="hlink" href="#income-vs-expenses-bar-chart" aria-label="Link to this section">#</a></h2>
+<p>This bar chart compares your income and expenses over a selectable timeframe, optionally filtered by account. Each period shows:</p>
+<ul>
+<li>A <strong>green bar</strong> for total income</li>
+<li>A <strong>red bar</strong> for total expenses</li>
+<li>The visual difference helps you see periods where you spent more than you earned</li>
+</ul>
+<p>Income and expenses are classified by <strong>category type</strong> (income category vs expense category), not by the sign of the amount. Clicking on an income or expense bar navigates to the Transactions page filtered to the corresponding category type for that period.</p>
+<figure><img src="/docs/images/dashboard-income-expenses-bar.png" alt="Income vs Expenses Chart" width="598" height="544" loading="lazy" decoding="async"/><figcaption>Income vs Expenses Chart</figcaption></figure>
+<h2 id="net-worth-chart">Net Worth Chart<a class="hlink" href="#net-worth-chart" aria-label="Link to this section">#</a></h2>
+<p>The Net Worth chart tracks your total net worth over time, calculated monthly. It shows:</p>
+<ul>
+<li><strong>Total assets</strong> (all positive-balance accounts plus investment market values)</li>
+<li><strong>Total liabilities</strong> (credit cards, loans, mortgages, lines of credit)</li>
+<li><strong>Net worth</strong> (assets minus liabilities)</li>
+</ul>
+<p>The chart provides a clear trend line showing whether your financial position is improving over time.</p>
+<figure><img src="/docs/images/dashboard-net-worth.png" alt="Net Worth Chart" width="612" height="514" loading="lazy" decoding="async"/><figcaption>Net Worth Chart</figcaption></figure>
+<h2 id="assets-vs-liabilities">Assets vs Liabilities<a class="hlink" href="#assets-vs-liabilities" aria-label="Link to this section">#</a></h2>
+<p>The Assets vs Liabilities widget presents a bar chart comparing your <strong>total assets</strong> against your <strong>total liabilities</strong> over time. Where the Net Worth chart tracks the single net figure, this widget shows the two sides side by side so you can see how each is trending on its own.</p>
+<ul>
+<li>Each period shows a bar for assets and a bar for liabilities</li>
+<li>The gap between the two bars reflects your net worth for that period</li>
+</ul>
+<figure><img src="/docs/images/dashboard-assets-liabilities.png" alt="Assets vs Liabilities" width="740" height="500" loading="lazy" decoding="async"/><figcaption>Assets vs Liabilities</figcaption></figure>
+<h2 id="refreshing-data">Refreshing Data<a class="hlink" href="#refreshing-data" aria-label="Link to this section">#</a></h2>
+<p>Investment prices and exchange rates can be refreshed manually from the dashboard using the refresh button. Prices are also updated automatically on weekdays at 5 PM EST.</p></article><nav class="pager" aria-label="Previous and next page"><a class="pg pg-prev" href="/docs/importing-from-microsoft-money"><span>Previous</span><b>Importing from Microsoft Money</b></a><a class="pg pg-next" href="/docs/accounts"><span>Next</span><b>Accounts</b></a></nav><p class="dedit"><a href="https://github.com/kenlasko/monize/edit/main/website/docs/dashboard.md" rel="noopener">Edit this page on GitHub</a><a href="https://github.com/kenlasko/monize/issues/new" rel="noopener">Report a problem with the docs</a></p></main><aside class="dtoc" aria-label="On this page"><p>On this page</p><ul><li class="d2"><a href="#overview">Overview</a></li><li class="d2"><a href="#customizing-your-dashboard">Customizing Your Dashboard</a></li><li class="d3"><a href="#per-widget-settings">Per-Widget Settings</a></li><li class="d3"><a href="#optional-widgets">Optional Widgets</a></li><li class="d2"><a href="#favourite-accounts">Favourite Accounts</a></li><li class="d3"><a href="#reordering-favourites">Reordering Favourites</a></li><li class="d3"><a href="#brokerage-accounts">Brokerage Accounts</a></li><li class="d2"><a href="#upcoming-bills">Upcoming Bills</a></li><li class="d2"><a href="#budget-status">Budget Status</a></li><li class="d2"><a href="#spending-insights">Spending Insights</a></li><li class="d2"><a href="#getting-started-widget">Getting Started Widget</a></li><li class="d2"><a href="#top-movers">Top Movers</a></li><li class="d2"><a href="#favourite-securities">Favourite Securities</a></li><li class="d2"><a href="#expenses-pie-chart">Expenses Pie Chart</a></li><li class="d2"><a href="#income-vs-expenses-bar-chart">Income vs Expenses Bar Chart</a></li><li class="d2"><a href="#net-worth-chart">Net Worth Chart</a></li><li class="d2"><a href="#assets-vs-liabilities">Assets vs Liabilities</a></li><li class="d2"><a href="#refreshing-data">Refreshing Data</a></li></ul></aside></div><footer class="dfoot"><div class="wrap"><span>Monize is released under the AGPL-3.0 licence.</span><span><a href="/">monize.net</a> · <a href="https://demo.monize.net" rel="noopener">Live demo</a> · <a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></span></div></footer><div class="sdlg" id="search" role="dialog" aria-modal="true" aria-label="Search the documentation" hidden=""><div class="sbox"><label class="sfield"><span class="sr">Search the documentation</span><input id="q" type="search" placeholder="Search the docs, e.g. &quot;split transaction&quot;" autoComplete="off" spellCheck="false" aria-controls="sres"/></label><ul id="sres" class="sres" role="listbox" aria-label="Results"></ul><p class="shint" id="shint"><kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</p></div></div><script src="/assets/js/docs.js" defer=""></script></body></html>

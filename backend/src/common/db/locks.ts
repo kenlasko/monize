@@ -111,6 +111,12 @@ export enum LockScope {
    * (INV-BOND-001, INV-BOND-006).
    */
   BondSeriesFetch = 8,
+  /**
+   * One payroll deduction category of one user (id = `<userId>:<categoryId>`):
+   * every schedule posting a line of the category reads the year's paid figure
+   * and caps against it one after the other (INV-PAYROLL-002).
+   */
+  PayrollCategory = 9,
 }
 
 /**

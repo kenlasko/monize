@@ -435,9 +435,9 @@
       "label": "討論",
       "description": "與社群提問和分享想法。"
     },
-    "wiki": {
-      "label": "Wiki",
-      "description": "瀏覽指南和說明文件。"
+    "docs": {
+      "label": "說明文件",
+      "description": "瀏覽使用者指南。"
     },
     "supportBackup": {
       "label": "建立支援備份",

@@ -42,6 +42,7 @@
     "institutionNotFound": "Instituição não encontrada",
     "updateClosed": "Não é possível atualizar uma conta encerrada",
     "changeCurrencyWithTransactions": "Não é possível alterar a moeda de uma conta que tem transações.",
+    "changeCurrencyWithBalanceOrSchedules": "Não é possível alterar a moeda de uma conta com saldo inicial ou transações agendadas.",
     "alreadyClosed": "A conta já está encerrada",
     "closeNonZeroBalance": "Não é possível encerrar a conta com saldo diferente de zero. Saldo atual: {{ currentBalance }}",
     "closeWithFutureTransactions": "Não é possível fechar uma conta com transações com data futura. Tem {{ count }} transação(ões) com data posterior a hoje; elimine-as ou anule-as primeiro.",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "Este ficheiro do Money está a ser importado. Aguarde que a importação termine antes de o descartar.",
     "mnyImportAlreadyRunning": "Já está a decorrer uma importação. Aguarde que termine antes de iniciar outra.",
     "mnyAlreadyImported": "Este ficheiro já foi importado em {{ date }} (importação {{ jobId }}) e os seus registos continuam na sua conta. Importá-lo novamente iria duplicá-los. Para os substituir, recomece e escolha substituir os seus dados existentes.",
+    "mnyExistingAccountClosed": "A conta existente \"{{ name }}\" está encerrada, por isso o ficheiro do Money não pode ser fundido com ela. Reabra-a ou mude-lhe o nome e importe novamente.",
+    "mnyExistingAccountCurrency": "A conta existente \"{{ name }}\" usa {{ existing }}, mas a conta do ficheiro do Money usa {{ file }}. Mude o nome de uma delas e importe novamente.",
     "mnyJobNotFound": "Tarefa de importação não encontrada",
     "mnyFileTooLarge": "Este ficheiro do Money excede o limite de importação de {{ limit }} MB.",
-    "noRateForSplitTransfer": "Não há taxa de câmbio para {{ pair }} em {{ date }}: uma linha dividida transfere para uma conta noutra moeda. Adicione uma taxa de câmbio para esse par e essa data e importe novamente."
+    "noRateForSplitTransfer": "Não há taxa de câmbio para {{ pair }} em {{ date }}: uma linha dividida transfere para uma conta noutra moeda. Adicione uma taxa de câmbio para esse par e essa data e importe novamente.",
+    "accountClosed": "A conta está encerrada. Reabra-a ou escolha outra conta."
   },
   "monteCarlo": {
     "scenarioNotFound": "Cenário {{ id }} não encontrado",
@@ -779,6 +783,7 @@
     "notATransfer": "A transação não é uma transferência",
     "splitTransferLegAccountLocked": "Esta transferência faz parte de uma transação dividida. Para alterar as contas, edite a parcela na transação de origem.",
     "splitTransferLegStatusLocked": "Esta transferência faz parte de uma transação dividida. Anule-a ou restaure-a editando a transação dividida a que pertence, para que ambos os lados mudem em conjunto.",
+    "investmentCashLegLocked": "Esta transação é o lado em dinheiro de uma transação de investimento. Altere ou elimine antes a transação de investimento, para que ambos os lados mudem em conjunto.",
     "investmentCashLegStatusLocked": "Esta transação é o lado de numerário de uma transação de investimento. Anule-a ou restaure-a alterando o estado da transação de investimento, para que ambos os lados mudem em conjunto.",
     "notFoundById": "Transação com ID {{ id }} não encontrada",
     "bulkUpdateNoFields": "Deve ser fornecido pelo menos um campo de atualização",

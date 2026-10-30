@@ -435,9 +435,9 @@
       "label": "Tartışmalar",
       "description": "Toplulukla soru sorun ve fikir paylaşın."
     },
-    "wiki": {
-      "label": "Wiki",
-      "description": "Kılavuzlara ve belgelere göz atın."
+    "docs": {
+      "label": "Belgeler",
+      "description": "Kullanım kılavuzuna göz atın."
     },
     "supportBackup": {
       "label": "Destek yedeği oluştur",

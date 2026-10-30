@@ -336,6 +336,7 @@ describe("MnyImportService", () => {
       idByKey: new Map([["acct-1", "account-1"]]),
       created: 1,
       reused: 0,
+      reusedIds: new Set<string>(),
     });
     mockedWriteCategories.mockResolvedValue({
       idByFullName: new Map([["Groceries", "category-1"]]),
@@ -795,6 +796,37 @@ describe("MnyImportService", () => {
       expect([...balances]).toEqual([["account-1", 120.5]]);
     });
 
+    it("leaves a reused account's balance to the ledger and recomputes it", async () => {
+      mockedWriteAccounts.mockResolvedValue({
+        idByKey: new Map([
+          ["acct-1", "account-1"],
+          ["acct-2", "account-reused"],
+        ]),
+        created: 1,
+        reused: 1,
+        reusedIds: new Set(["account-reused"]),
+      });
+      parser.parse.mockReturnValue(
+        parsedFile({
+          expectedBalances: new Map([
+            ["acct-1", 120.5],
+            ["acct-2", 1000],
+          ]),
+        }),
+      );
+
+      await run();
+
+      const [, balances] = mockedWriteBalances.mock.calls[0];
+      expect([...balances]).toEqual([["account-1", 120.5]]);
+      expect(postProcessing.run).toHaveBeenCalledWith(
+        "user-1",
+        false,
+        new Set(["account-reused", "account-1"]),
+        new Set(),
+      );
+    });
+
     it("hands post-processing only the accounts that were touched", async () => {
       await run();
 
@@ -982,6 +1014,7 @@ describe("MnyImportService", () => {
         idByKey: new Map(),
         created: 0,
         reused: 0,
+        reusedIds: new Set<string>(),
       });
 
       const result = await run();

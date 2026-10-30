@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
+import { cachedLogoBacking, logoBackingFor, type LogoBacking } from '@/lib/logo-backing';
 
 export interface BrandLogoProps {
   /**
@@ -20,6 +21,17 @@ export interface BrandLogoProps {
 }
 
 /**
+ * The fill behind a transparent logo whose ink would vanish into the card,
+ * applied only in the mode where it would (see `LogoBacking`). The inset keeps
+ * a square logo inside the round chip once the chip is visible.
+ */
+const BACKING_CLASS: Record<LogoBacking, string> = {
+  none: '',
+  light: 'dark:bg-white dark:p-(--brand-logo-inset)',
+  dark: 'bg-gray-800 p-(--brand-logo-inset) dark:bg-transparent dark:p-0',
+};
+
+/**
  * A cached brand favicon with a neutral badge fallback -- the one component
  * behind `InstitutionLogo` and `PayeeLogo`.
  *
@@ -28,6 +40,10 @@ export interface BrandLogoProps {
  * cannot leak which institutions or payees a user has to anyone else. A 404
  * (no cached icon yet, or the fetch failed) lands on `onError` and shows the
  * badge, so the two "no image" paths look the same to the reader.
+ *
+ * A transparent logo whose dominant colour is too close to the card gets a
+ * plain contrasting fill, worked out from its pixels once it has loaded
+ * (`lib/logo-backing.ts`).
  */
 export function BrandLogo({
   src,
@@ -38,13 +54,15 @@ export function BrandLogo({
   fallbackIcon,
 }: BrandLogoProps) {
   const [errored, setErrored] = useState(false);
+  const [backing, setBacking] = useState<LogoBacking>(() => cachedLogoBacking(src) ?? 'none');
 
-  // Reset the error flag when the image changes, using the "info from previous
-  // render" pattern (no setState in an effect).
+  // Reset the error flag and the backing when the image changes, using the
+  // "info from previous render" pattern (no setState in an effect).
   const [prevSrc, setPrevSrc] = useState(src);
   if (src !== prevSrc) {
     setPrevSrc(src);
     setErrored(false);
+    setBacking(cachedLogoBacking(src) ?? 'none');
   }
 
   const dimension = { width: size, height: size };
@@ -60,11 +78,17 @@ export function BrandLogo({
         src={src}
         alt={name ?? ''}
         loading="lazy"
-        style={dimension}
+        style={
+          {
+            ...dimension,
+            '--brand-logo-inset': `${Math.max(1, Math.round(size / 10))}px`,
+          } as CSSProperties
+        }
+        onLoad={(event) => setBacking(logoBackingFor(src, event.currentTarget))}
         onError={() => setErrored(true)}
-        // Circular chip with no forced backing: transparent favicons keep their
-        // transparency, opaque ones fill the circle.
-        className={`shrink-0 rounded-full object-contain ${className}`}
+        // Circular chip: transparent favicons keep their transparency unless
+        // their ink would disappear into the card; opaque ones fill the circle.
+        className={`shrink-0 rounded-full object-contain ${BACKING_CLASS[backing]} ${className}`}
       />
     );
   }

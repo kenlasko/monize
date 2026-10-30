@@ -62,9 +62,9 @@ describe('EmailReceiptsPage', () => {
     });
     await act(async () => {});
     expect(screen.getByRole('heading', { level: 1, name: 'Email Receipts' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open the Monize wiki for help with this section' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Open the Monize documentation for help with this section' })).toHaveAttribute(
       'href',
-      'https://github.com/kenlasko/monize/wiki/Email-Receipts',
+      'https://www.monize.net/docs/email-receipts',
     );
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Overview', 'Mailbox', 'Profiles', 'Emails']);
     expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');

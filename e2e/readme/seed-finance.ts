@@ -164,6 +164,11 @@ type InstitutionRow = Named;
  * page shows equity, and a small line of credit.
  */
 export async function seedLoans(api: ApiClient): Promise<void> {
+  // The demo data books mortgage interest only; the car loan's payment schedule
+  // needs an expense category of its own to book interest to.
+  if (!has((await loadAccountsAndInstitutions(api)).categories, 'Loan Interest')) {
+    await api.post('/categories', { name: 'Loan Interest', isIncome: false });
+  }
   let lookups = await loadAccountsAndInstitutions(api);
   const { institutions } = lookups;
   const today = todayYmd();
@@ -207,12 +212,18 @@ export async function seedLoans(api: ApiClient): Promise<void> {
   }
 }
 
+// Categories too: a loan's payment schedule names the interest category it books to.
 async function loadAccountsAndInstitutions(api: ApiClient) {
-  const [accounts, institutions] = await Promise.all([
+  const [accounts, institutions, categories] = await Promise.all([
     api.get<AccountRow[]>('/accounts'),
     api.get<InstitutionRow[]>('/institutions'),
+    api.get<Named[]>('/categories'),
   ]);
-  return { accounts: indexByName(accounts), institutions: indexByName(institutions) };
+  return {
+    accounts: indexByName(accounts),
+    institutions: indexByName(institutions),
+    categories: indexByName(categories),
+  };
 }
 
 /**

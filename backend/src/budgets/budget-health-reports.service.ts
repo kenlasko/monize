@@ -15,10 +15,12 @@ import {
   HealthScoreHistoryPoint,
   SavingsRatePoint,
 } from "./budget-reports.service";
-import { roundMoney, roundToDecimals } from "../common/round.util";
+import { roundMoney, roundToDecimals, sumMoney } from "../common/round.util";
 import {
   budgetExcludedAccountIds,
   excludeBudgetAccounts,
+  queryCategorySpendingBuckets,
+  resolveCategorySpent,
 } from "./budget-spending.util";
 
 @Injectable()
@@ -224,221 +226,94 @@ export class BudgetHealthReportsService {
     const incomeCategoryIds = incomeCategories
       .filter((bc) => bc.categoryId !== null)
       .map((bc) => bc.categoryId as string);
-    const expenseCategoryIds = expenseCategories
-      .filter((bc) => bc.categoryId !== null && !bc.isTransfer)
-      .map((bc) => bc.categoryId as string);
+    const spendingLines = [
+      ...incomeCategories,
+      ...expenseCategories.filter(
+        (bc) => bc.categoryId !== null && !bc.isTransfer,
+      ),
+    ].filter((bc) => bc.categoryId !== null);
 
     const excludedAccountIds = budgetExcludedAccountIds(budget.config);
     const today = new Date();
 
-    // Compute full date range for all months at once
-    const startD = new Date(
-      today.getFullYear(),
-      today.getMonth() - (months - 1),
-      1,
-    );
-    const rangeStart = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, "0")}-01`;
-    const rangeEnd = getMonthEndYMD(today.getFullYear(), today.getMonth() + 1);
-
-    // Batch queries: group by month across entire range
+    // No income categories: the income side is every positive non-transfer
+    // transaction of the window. Only rows in the budget's currency are known;
+    // a month holding another currency is reported incomplete, never added 1:1.
     const incomeByMonth = new Map<string, number>();
-    const expenseByMonth = new Map<string, number>();
-
-    const queries: Promise<void>[] = [];
-
-    // Income query (batch)
-    if (incomeCategoryIds.length > 0) {
-      queries.push(
-        withScopedDb(this.dataSource, (m) =>
-          excludeBudgetAccounts(
-            m
-              .getRepository(Transaction)
-              .createQueryBuilder("t")
-              .select(
-                "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-                "month",
-              )
-              .addSelect("COALESCE(SUM(t.amount), 0)", "total")
-              .where("t.user_id = :userId", { userId })
-              .andWhere("t.category_id IN (:...incomeCategoryIds)", {
-                incomeCategoryIds,
-              })
-              .andWhere("t.transaction_date >= :start", { start: rangeStart })
-              .andWhere("t.transaction_date <= :end", { end: rangeEnd })
-              .andWhere("t.status != :void", { void: "VOID" })
-              .andWhere("t.is_split = false")
-              .groupBy(
-                "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-              ),
-            excludedAccountIds,
-          )
-            .getRawMany()
-            .then((rows) => {
-              for (const row of rows) {
-                incomeByMonth.set(
-                  row.month,
-                  (incomeByMonth.get(row.month) || 0) +
-                    Math.abs(parseFloat(row.total || "0")),
-                );
-              }
-            }),
-        ),
+    const foreignIncomeMonths = new Set<string>();
+    if (incomeCategoryIds.length === 0) {
+      const startD = new Date(
+        today.getFullYear(),
+        today.getMonth() - (months - 1),
+        1,
       );
-
-      // Income splits query (batch)
-      queries.push(
-        withScopedDb(this.dataSource, (m) =>
-          excludeBudgetAccounts(
-            m
-              .getRepository(TransactionSplit)
-              .createQueryBuilder("s")
-              .innerJoin("s.transaction", "t")
-              .select(
-                "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-                "month",
-              )
-              .addSelect("COALESCE(SUM(s.amount), 0)", "total")
-              .where("t.user_id = :userId", { userId })
-              .andWhere("s.category_id IN (:...incomeCategoryIds)", {
-                incomeCategoryIds,
-              })
-              .andWhere("t.transaction_date >= :start", { start: rangeStart })
-              .andWhere("t.transaction_date <= :end", { end: rangeEnd })
-              .andWhere("t.status != :void", { void: "VOID" })
-              .andWhere("s.amount > 0")
-              .groupBy(
-                "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-              ),
-            excludedAccountIds,
-          )
-            .getRawMany()
-            .then((rows) => {
-              for (const row of rows) {
-                incomeByMonth.set(
-                  row.month,
-                  (incomeByMonth.get(row.month) || 0) +
-                    Math.abs(parseFloat(row.total || "0")),
-                );
-              }
-            }),
-        ),
+      const rangeStart = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, "0")}-01`;
+      const rangeEnd = getMonthEndYMD(
+        today.getFullYear(),
+        today.getMonth() + 1,
       );
-    } else {
-      // No income categories: use all positive non-transfer transactions
-      queries.push(
-        withScopedDb(this.dataSource, (m) =>
-          excludeBudgetAccounts(
-            m
-              .getRepository(Transaction)
-              .createQueryBuilder("t")
-              .select(
-                "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-                "month",
-              )
-              .addSelect("COALESCE(SUM(t.amount), 0)", "total")
-              .where("t.user_id = :userId", { userId })
-              .andWhere("t.amount > 0")
-              .andWhere("t.is_transfer = false")
-              .andWhere("t.transaction_date >= :start", { start: rangeStart })
-              .andWhere("t.transaction_date <= :end", { end: rangeEnd })
-              .andWhere("t.status != :void", { void: "VOID" })
-              .groupBy(
-                "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-              ),
-            excludedAccountIds,
-          )
-            .getRawMany()
-            .then((rows) => {
-              for (const row of rows) {
-                incomeByMonth.set(row.month, parseFloat(row.total || "0"));
-              }
-            }),
-        ),
+      const rows = await withScopedDb(this.dataSource, (m) =>
+        excludeBudgetAccounts(
+          m
+            .getRepository(Transaction)
+            .createQueryBuilder("t")
+            .select(
+              "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+              "month",
+            )
+            .addSelect("t.currency_code", "currencyCode")
+            .addSelect("COALESCE(SUM(t.amount), 0)", "total")
+            .where("t.user_id = :userId", { userId })
+            .andWhere("t.amount > 0")
+            .andWhere("t.is_transfer = false")
+            .andWhere("t.transaction_date >= :start", { start: rangeStart })
+            .andWhere("t.transaction_date <= :end", { end: rangeEnd })
+            .andWhere("t.status != :void", { void: "VOID" })
+            .groupBy(
+              "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
+            )
+            .addGroupBy("t.currency_code"),
+          excludedAccountIds,
+        ).getRawMany(),
       );
+      for (const row of rows) {
+        if (row.currencyCode !== budget.currencyCode) {
+          foreignIncomeMonths.add(row.month);
+          continue;
+        }
+        incomeByMonth.set(
+          row.month,
+          (incomeByMonth.get(row.month) || 0) + parseFloat(row.total || "0"),
+        );
+      }
     }
 
-    // Expense queries (batch: direct + splits in parallel)
-    if (expenseCategoryIds.length > 0) {
-      queries.push(
-        withScopedDb(this.dataSource, (m) =>
-          excludeBudgetAccounts(
-            m
-              .getRepository(Transaction)
-              .createQueryBuilder("t")
-              .select(
-                "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-                "month",
-              )
-              .addSelect("COALESCE(ABS(SUM(t.amount)), 0)", "total")
-              .where("t.user_id = :userId", { userId })
-              .andWhere("t.category_id IN (:...expenseCategoryIds)", {
-                expenseCategoryIds,
-              })
-              .andWhere("t.transaction_date >= :start", { start: rangeStart })
-              .andWhere("t.transaction_date <= :end", { end: rangeEnd })
-              .andWhere("t.status != :void", { void: "VOID" })
-              .andWhere("t.is_split = false")
-              .andWhere("t.amount < 0")
-              .groupBy(
-                "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-              ),
-            excludedAccountIds,
-          )
-            .getRawMany()
-            .then((rows) => {
-              for (const row of rows) {
-                expenseByMonth.set(
-                  row.month,
-                  (expenseByMonth.get(row.month) || 0) +
-                    parseFloat(row.total || "0"),
-                );
-              }
-            }),
-        ),
-      );
+    // The budget page's own actuals in one query over the window, bucketed by
+    // month: net within the category, converted into the budget's currency, the
+    // budget's excluded accounts left out.
+    const spendingByMonth =
+      spendingLines.length > 0
+        ? (
+            await withScopedDb(this.dataSource, (m) => {
+              const first = new Date(
+                today.getFullYear(),
+                today.getMonth() - (months - 1),
+                1,
+              );
+              return queryCategorySpendingBuckets(
+                m.getRepository(Transaction),
+                m.getRepository(TransactionSplit),
+                userId,
+                spendingLines,
+                formatMonthKey(first.getFullYear(), first.getMonth() + 1) +
+                  "-01",
+                getMonthEndYMD(today.getFullYear(), today.getMonth() + 1),
+                (txDate) => txDate.slice(0, 7),
+              );
+            })
+          ).buckets
+        : null;
 
-      queries.push(
-        withScopedDb(this.dataSource, (m) =>
-          excludeBudgetAccounts(
-            m
-              .getRepository(TransactionSplit)
-              .createQueryBuilder("s")
-              .innerJoin("s.transaction", "t")
-              .select(
-                "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-                "month",
-              )
-              .addSelect("COALESCE(ABS(SUM(s.amount)), 0)", "total")
-              .where("t.user_id = :userId", { userId })
-              .andWhere("s.category_id IN (:...expenseCategoryIds)", {
-                expenseCategoryIds,
-              })
-              .andWhere("t.transaction_date >= :start", { start: rangeStart })
-              .andWhere("t.transaction_date <= :end", { end: rangeEnd })
-              .andWhere("t.status != :void", { void: "VOID" })
-              .andWhere("s.amount < 0")
-              .groupBy(
-                "TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM')",
-              ),
-            excludedAccountIds,
-          )
-            .getRawMany()
-            .then((rows) => {
-              for (const row of rows) {
-                expenseByMonth.set(
-                  row.month,
-                  (expenseByMonth.get(row.month) || 0) +
-                    parseFloat(row.total || "0"),
-                );
-              }
-            }),
-        ),
-      );
-    }
-
-    await Promise.all(queries);
-
-    // Build result from aggregated monthly data
     const result: SavingsRatePoint[] = [];
 
     for (let i = months - 1; i >= 0; i--) {
@@ -447,8 +322,27 @@ export class BudgetHealthReportsService {
       const month = d.getMonth();
       const monthKey = formatMonthKey(year, month + 1);
 
-      const income = incomeByMonth.get(monthKey) || 0;
-      const expenses = expenseByMonth.get(monthKey) || 0;
+      const spending = spendingByMonth?.get(monthKey) ?? null;
+      const sumSide = (isIncome: boolean): number =>
+        spending
+          ? sumMoney(
+              spendingLines
+                .filter((bc) => bc.isIncome === isIncome)
+                .map((bc) =>
+                  resolveCategorySpent(
+                    bc,
+                    spending.spendingMap,
+                    spending.transferSpendingMap,
+                  ),
+                ),
+            )
+          : 0;
+
+      const income =
+        incomeCategoryIds.length > 0
+          ? sumSide(true)
+          : incomeByMonth.get(monthKey) || 0;
+      const expenses = sumSide(false);
       const savings = income - expenses;
       const savingsRate =
         income > 0 ? roundToDecimals((savings / income) * 100, 2) : 0;
@@ -459,6 +353,9 @@ export class BudgetHealthReportsService {
         expenses: roundMoney(expenses),
         savings: roundMoney(savings),
         savingsRate,
+        valuationComplete:
+          !foreignIncomeMonths.has(monthKey) &&
+          (spending?.incompleteCategoryIds.size ?? 0) === 0,
       });
     }
 

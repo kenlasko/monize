@@ -160,6 +160,8 @@ export class GemBacktestService {
       securityIds,
       withLeadDays(periods[0].effectiveFrom, PRICE_WINDOW_LEAD_DAYS),
       "day",
+      undefined,
+      strategy.userId,
     );
 
     return runBacktest({

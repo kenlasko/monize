@@ -23,8 +23,12 @@ vi.mock('@/hooks/useNumberFormat', async () => {
   return {
     useNumberFormat: () => ({ ...numberFormatMockDefaults(), formatCurrency: (n: number) => `$${n}` }),
   };
-});vi.mock('@/hooks/useExchangeRates', () => ({
-  useExchangeRates: () => ({ convertToDefault: (n: number) => n }),
+});const { rateless } = vi.hoisted(() => ({ rateless: { currencies: [] as string[] } }));
+vi.mock('@/hooks/useExchangeRates', () => ({
+  useExchangeRates: () => ({
+    defaultCurrency: 'USD',
+    convertToDefault: (n: number, cur: string) => (rateless.currencies.includes(cur) ? null : n),
+  }),
 }));
 
 const getPortfolioSummary = vi.fn();
@@ -63,6 +67,32 @@ describe('SecurityTypeAllocationWidget', () => {
     getPortfolioSummary.mockReset();
     getAssetClassWeightings.mockReset();
     widgetCfg.config = { accountIds: [], view: 'type' };
+    rateless.currencies = [];
+  });
+
+  it('says which holdings the type view left out, as the asset class view does', async () => {
+    rateless.currencies = ['EUR'];
+    getPortfolioSummary.mockResolvedValue({
+      holdings: [
+        holding('s1', 'STOCK', 700),
+        { ...holding('s2', 'ETF', 300), symbol: 'NOPRICE', marketValue: null },
+        { ...holding('s3', 'ETF', 300), symbol: 'EURO', currencyCode: 'EUR' },
+      ],
+      holdingsByAccount: [],
+    });
+    await renderWidget();
+    const note = screen.getByTestId('weighting-partial-note');
+    expect(note).toHaveTextContent('NOPRICE');
+    expect(note).toHaveTextContent('EUR->USD');
+  });
+
+  it('shows no partial note when every holding is placed', async () => {
+    getPortfolioSummary.mockResolvedValue({
+      holdings: [holding('s1', 'STOCK', 700)],
+      holdingsByAccount: [],
+    });
+    await renderWidget();
+    expect(screen.queryByTestId('weighting-partial-note')).not.toBeInTheDocument();
   });
 
   it('groups holdings by security type', async () => {

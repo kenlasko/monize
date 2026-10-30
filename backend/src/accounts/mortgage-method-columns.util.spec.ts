@@ -110,7 +110,7 @@ describe("applyMortgageMethodColumns", () => {
     const result = await apply(account, "LINEAR");
     expect(result).toEqual({ repriceTemplate: true });
 
-    // The annuity of the debt through the next due date, over the 324 months
+    // The annuity of the debt through the next due date, over the 323 months
     // left of the amortization, at the 4% in force on that date.
     expect(manager.query).toHaveBeenCalledWith(ACCOUNT_BALANCE_AS_OF_SQL, [
       "mortgage-1",
@@ -118,7 +118,7 @@ describe("applyMortgageMethodColumns", () => {
       "2027-01-01",
     ]);
     expect(account.paymentAmount).toBe(
-      calculatePaymentAmount(235000.0012, 4 / 100 / 12, 324),
+      calculatePaymentAmount(235000.0012, 4 / 100 / 12, 323),
     );
     expect(account.prepaymentMode).toBeNull();
   });
@@ -144,7 +144,7 @@ describe("applyMortgageMethodColumns", () => {
     });
     await apply(account, "INTEREST_ONLY");
     expect(account.paymentAmount).toBe(
-      calculatePaymentAmount(235000.0012, 4 / 100 / 12, 324) + 100,
+      calculatePaymentAmount(235000.0012, 4 / 100 / 12, 323) + 100,
     );
   });
 

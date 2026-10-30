@@ -44,10 +44,10 @@ describe('HelpSection', () => {
     expect(link).toHaveAttribute('href', `${REPO_URL}/discussions`);
   });
 
-  it('renders a link to the wiki', () => {
+  it('renders a link to the documentation', () => {
     render(<HelpSection />);
-    const link = screen.getByText('Wiki').closest('a');
-    expect(link).toHaveAttribute('href', `${REPO_URL}/wiki`);
+    const link = screen.getByText('Documentation').closest('a');
+    expect(link).toHaveAttribute('href', 'https://www.monize.net/docs/');
   });
 
   it('opens all links in a new tab with safe rel attributes', () => {

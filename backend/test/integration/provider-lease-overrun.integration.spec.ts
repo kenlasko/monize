@@ -168,6 +168,8 @@ describe("provider calls outrunning their lease (integration)", () => {
       daysElapsedInMonth: 21,
       daysInMonth: 31,
       currency: "USD",
+      fxComplete: true,
+      missingRatePairs: [],
     };
     jest
       .spyOn(module.get(InsightsAggregatorService), "computeAggregates")

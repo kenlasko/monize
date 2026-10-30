@@ -637,6 +637,18 @@ describe("ImportService", () => {
         ).rejects.toThrow("Account not found");
       });
 
+      it("refuses an import into a closed account before writing", async () => {
+        accountsRepository.findOne.mockResolvedValue({
+          ...mockChequingAccount,
+          isClosed: true,
+        });
+
+        await expect(
+          service.importQifFile(userId, makeBaseDto()),
+        ).rejects.toThrow("The account is closed");
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      });
+
       it("throws BadRequestException when account belongs to different user", async () => {
         accountsRepository.findOne.mockResolvedValue(null); // findOne with userId filter returns null
 
@@ -4136,6 +4148,31 @@ describe("ImportService", () => {
       await expect(
         service.importQifMultiAccountFile(userId, baseDto),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it("refuses a block whose account is closed", async () => {
+      mockedValidateQifContent.mockReturnValue({ valid: true });
+      mockedParseQifFull.mockReturnValue(makeFullParseResult());
+      mockQueryRunner.manager.findOne.mockImplementation((entity, options) =>
+        Promise.resolve(
+          entity === Account && options?.where?.id
+            ? {
+                id: options.where.id,
+                userId,
+                accountType: AccountType.CHEQUING,
+                currencyCode: "CAD",
+                isClosed: true,
+              }
+            : null,
+        ),
+      );
+      mockQueryRunner.manager.save.mockImplementation((entity) =>
+        Promise.resolve({ ...entity, id: "saved-1" }),
+      );
+
+      await expect(
+        service.importQifMultiAccountFile(userId, baseDto),
+      ).rejects.toThrow("The account is closed");
     });
 
     it("throws BadRequestException when no account blocks found", async () => {

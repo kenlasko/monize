@@ -1,0 +1,48 @@
+[
+  {
+    "group": "Getting started",
+    "pages": [
+      { "slug": "getting-started", "summary": "Installation, first-time setup, and initial configuration." },
+      { "slug": "importing-transactions", "summary": "Import CSV, OFX/QFX and QIF files from your bank." },
+      { "slug": "importing-from-quicken", "summary": "A complete migration guide from Quicken." },
+      { "slug": "importing-from-microsoft-money", "summary": "Migrate from Microsoft Money, including direct .mny file import." }
+    ]
+  },
+  {
+    "group": "Core features",
+    "pages": [
+      { "slug": "dashboard", "summary": "Your financial overview at a glance." },
+      { "slug": "accounts", "summary": "Bank accounts, credit cards, loans, mortgages and assets." },
+      { "slug": "transactions", "summary": "Record, search, split and manage transactions." },
+      { "slug": "budgets", "summary": "Budgets generated from your history, with velocity tracking and alerts." },
+      { "slug": "investments", "summary": "Portfolio tracking, securities and investment transactions." },
+      { "slug": "bills-and-deposits", "summary": "Scheduled and recurring bills, deposits and transfers." },
+      { "slug": "email-receipts", "summary": "Turn order confirmations from your mailbox into itemized transactions." },
+      { "slug": "warranties", "summary": "Track warranties with their receipts, manuals, photos and claims." }
+    ]
+  },
+  {
+    "group": "Organizing and reporting",
+    "pages": [
+      { "slug": "categories-and-payees", "summary": "Organize your spending with categories and payees." },
+      { "slug": "tags", "summary": "Flexible cross-category labels for transactions." },
+      { "slug": "reports", "summary": "Built-in reports and the custom report builder." },
+      { "slug": "currency-management", "summary": "Multi-currency support and exchange rates." }
+    ]
+  },
+  {
+    "group": "AI",
+    "pages": [
+      { "slug": "ai", "summary": "The AI assistant, financial insights and MCP integration." }
+    ]
+  },
+  {
+    "group": "Administration",
+    "pages": [
+      { "slug": "settings-and-security", "summary": "Preferences, two-factor authentication, notifications and instance administration." },
+      { "slug": "shared-access", "summary": "Share accounts with family, accountants or bookkeepers, or jointly." },
+      { "slug": "emergency-access", "summary": "Trusted contacts who can take over your account if you cannot." },
+      { "slug": "backup-and-restore", "summary": "Manual and automatic backups, encryption, restore and retention." }
+    ]
+  }
+]

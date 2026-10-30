@@ -312,9 +312,9 @@ describe('WarrantiesPage', () => {
     const add = within(header).getByRole('button', { name: 'Add warranty' });
     expect(add).toHaveAttribute('data-tour-id', 'warranties-add-button');
     expect(add.className).toContain('bg-blue-600');
-    expect(within(header).getByRole('link', { name: 'Open the Monize wiki for help with this section' })).toHaveAttribute(
+    expect(within(header).getByRole('link', { name: 'Open the Monize documentation for help with this section' })).toHaveAttribute(
       'href',
-      'https://github.com/kenlasko/monize/wiki/Warranties',
+      'https://www.monize.net/docs/warranties',
     );
     // The toolbar keeps the CSV pair, spaced by the container's gap.
     const exportButton = screen.getByRole('button', { name: 'Export CSV' });

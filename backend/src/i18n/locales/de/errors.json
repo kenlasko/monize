@@ -42,6 +42,7 @@
     "institutionNotFound": "Institut nicht gefunden",
     "updateClosed": "Ein geschlossenes Konto kann nicht aktualisiert werden",
     "changeCurrencyWithTransactions": "Die Währung eines Kontos mit Buchungen kann nicht geändert werden.",
+    "changeCurrencyWithBalanceOrSchedules": "Die Währung eines Kontos mit Anfangssaldo oder geplanten Buchungen kann nicht geändert werden.",
     "alreadyClosed": "Konto ist bereits geschlossen",
     "closeNonZeroBalance": "Konto mit nicht-nullem Saldo kann nicht geschlossen werden. Aktueller Saldo: {{ currentBalance }}",
     "closeWithFutureTransactions": "Ein Konto mit Buchungen in der Zukunft kann nicht geschlossen werden. Es hat {{ count }} Buchung(en) nach dem heutigen Datum; löschen oder stornieren Sie diese zuerst.",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "Diese Money-Datei wird gerade importiert. Warten Sie, bis der Import abgeschlossen ist, bevor Sie sie verwerfen.",
     "mnyImportAlreadyRunning": "Ein Import läuft bereits. Warten Sie, bis er abgeschlossen ist, bevor Sie einen weiteren starten.",
     "mnyAlreadyImported": "Diese Datei wurde bereits am {{ date }} importiert (Import {{ jobId }}), und ihre Datensätze befinden sich noch in Ihrem Konto. Ein erneuter Import würde sie duplizieren. Um sie zu ersetzen, beginnen Sie von vorn und wählen Sie, Ihre vorhandenen Daten zu ersetzen.",
+    "mnyExistingAccountClosed": "Das bestehende Konto \"{{ name }}\" ist geschlossen, daher kann die Money-Datei nicht damit zusammengeführt werden. Öffnen Sie es wieder oder benennen Sie es um und importieren Sie erneut.",
+    "mnyExistingAccountCurrency": "Das bestehende Konto \"{{ name }}\" verwendet {{ existing }}, das Konto in der Money-Datei jedoch {{ file }}. Benennen Sie eines davon um und importieren Sie erneut.",
     "mnyJobNotFound": "Import-Auftrag nicht gefunden",
     "mnyFileTooLarge": "Diese Money-Datei ist größer als das Importlimit von {{ limit }} MB.",
-    "noRateForSplitTransfer": "Kein Wechselkurs für {{ pair }} am {{ date }}: Eine Splitzeile überweist auf ein Konto in einer anderen Währung. Fügen Sie einen Wechselkurs für dieses Paar und Datum hinzu und importieren Sie erneut."
+    "noRateForSplitTransfer": "Kein Wechselkurs für {{ pair }} am {{ date }}: Eine Splitzeile überweist auf ein Konto in einer anderen Währung. Fügen Sie einen Wechselkurs für dieses Paar und Datum hinzu und importieren Sie erneut.",
+    "accountClosed": "Das Konto ist geschlossen. Öffnen Sie es wieder oder wählen Sie ein anderes Konto."
   },
   "monteCarlo": {
     "scenarioNotFound": "Szenario {{ id }} nicht gefunden",
@@ -779,6 +783,7 @@
     "notATransfer": "Buchung ist keine Überweisung",
     "splitTransferLegAccountLocked": "Diese Überweisung ist Teil einer geteilten Buchung. Ändern Sie die Konten, indem Sie stattdessen den Buchungsteil in der Ursprungsbuchung bearbeiten.",
     "splitTransferLegStatusLocked": "Diese Übertragung ist Teil einer aufgeteilten Transaktion. Stornieren oder wiederherstellen Sie sie, indem Sie die zugehörige aufgeteilte Transaktion bearbeiten, damit sich beide Seiten gemeinsam ändern.",
+    "investmentCashLegLocked": "Diese Buchung ist die Geldseite einer Wertpapierbuchung. Ändern oder löschen Sie stattdessen die Wertpapierbuchung, damit sich beide Seiten gemeinsam ändern.",
     "investmentCashLegStatusLocked": "Diese Buchung ist die Geldseite einer Investmentbuchung. Stornieren oder wiederherstellen Sie sie, indem Sie den Status der Investmentbuchung ändern, damit sich beide Seiten gemeinsam ändern.",
     "notFoundById": "Buchung mit ID {{ id }} nicht gefunden",
     "bulkUpdateNoFields": "Mindestens ein Aktualisierungsfeld muss angegeben werden",

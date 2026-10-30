@@ -463,6 +463,7 @@
     "generating": "보고서 생성 중...",
     "noData": "선택한 조건에 대한 데이터가 없습니다",
     "transactionCount": "{count, plural, one {# 건의 거래} other {# 건의 거래}}",
+    "truncatedNotice": "이 보고서는 행 한도에 도달하여 가장 오래된 행만 표시하므로 수치가 일부입니다. 모두 보려면 기간이나 필터를 좁히세요.",
     "toasts": {
       "loadFailed": "보고서 불러오기에 실패했습니다",
       "executeFailed": "보고서 실행에 실패했습니다"
@@ -1474,6 +1475,8 @@
     "totalReturn": "총 수익률",
     "annualizedReturn": "연간화된 수익률",
     "needs1YearNote": "1년 이상의 데이터가 필요합니다",
+    "annualizedNeedsSingleBuyNote": "한 번의 매수 후 추가 활동이 없을 때만 표시됩니다",
+    "missingPrice": "{symbol}의 가격이 없습니다",
     "priceHistory": "가격 이력 - {symbol}",
     "buyTransaction": "매수 거래",
     "sellTransaction": "매도 거래",

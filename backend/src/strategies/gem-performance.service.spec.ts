@@ -17,6 +17,7 @@ describe("GemPerformanceService", () => {
 
   const build = (overrides: Record<string, unknown> = {}) =>
     service.build({
+      userId: "user-1",
       range: "1Y",
       securityByRole,
       asOf: "2025-08-14",
@@ -205,6 +206,8 @@ describe("GemPerformanceService", () => {
       ["sec-spy", "sec-emim"],
       "2025-05-14",
       "day",
+      undefined,
+      "user-1",
     );
 
     await build({ range: "5Y" });
@@ -212,6 +215,8 @@ describe("GemPerformanceService", () => {
       ["sec-spy", "sec-emim"],
       "2020-08-14",
       "month",
+      undefined,
+      "user-1",
     );
 
     await build({ range: "MAX" });
@@ -219,6 +224,8 @@ describe("GemPerformanceService", () => {
       ["sec-spy", "sec-emim"],
       "1900-01-01",
       "month",
+      undefined,
+      "user-1",
     );
   });
 

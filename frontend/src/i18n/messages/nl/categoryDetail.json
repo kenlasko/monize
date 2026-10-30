@@ -28,7 +28,8 @@
     "transactions": "Transacties",
     "sinceYear": "Sinds {year}",
     "lastTransaction": "Laatste transactie",
-    "convertedNote": "Omgerekend naar {currency}"
+    "convertedNote": "Omgerekend naar {currency}",
+    "partialRatesNote": "Voor sommige maanden ontbreekt een wisselkoers"
   },
   "topPayees": {
     "title": "Topbegunstigden",

@@ -463,6 +463,7 @@
     "generating": "正在生成报告...",
     "noData": "所选条件无数据",
     "transactionCount": "{count, plural, one {# 笔交易} other {# 笔交易}}",
+    "truncatedNotice": "此报表已达到行数上限，仅显示最早的行，因此数值不完整。请缩小时间范围或筛选条件以查看全部。",
     "toasts": {
       "loadFailed": "加载报告失败",
       "executeFailed": "执行报告失败"
@@ -1474,6 +1475,8 @@
     "totalReturn": "总回报率",
     "annualizedReturn": "年化回报率",
     "needs1YearNote": "需要 1 年以上数据",
+    "annualizedNeedsSingleBuyNote": "仅在只有一次买入且之后没有其他活动时显示",
+    "missingPrice": "{symbol} 没有价格",
     "priceHistory": "价格历史 - {symbol}",
     "buyTransaction": "买入交易",
     "sellTransaction": "卖出交易",

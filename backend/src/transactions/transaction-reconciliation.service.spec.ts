@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { TransactionReconciliationService } from "./transaction-reconciliation.service";
+import { RECONCILED_THROUGH_SQL } from "./stale-reconciliation";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
@@ -1403,6 +1404,21 @@ describe("TransactionReconciliationService", () => {
       );
     });
 
+    it("reads the last reconciled date through RECONCILED_THROUGH_SQL, capped at each row's statement", async () => {
+      managerQuery.mockResolvedValue([{ last_reconciled_date: "2026-02-15" }]);
+
+      const result = await service.getReconciliationData(
+        userId,
+        accountId,
+        "2026-02-28",
+        500,
+      );
+
+      expect(result.lastReconciledDate).toBe("2026-02-15");
+      const sql: string = managerQuery.mock.calls[0][0];
+      expect(sql).toContain(`MAX(${RECONCILED_THROUGH_SQL})`);
+    });
+
     it("delegates account lookup to accountsService.findOne", async () => {
       mockQueryBuilder.getRawOne.mockResolvedValue({ sum: "0" });
 
@@ -1434,6 +1450,39 @@ describe("TransactionReconciliationService", () => {
       expect(result.reconciledBalance).toBe(500);
       expect(result.clearedBalance).toBe(0);
       expect(result.difference).toBe(0);
+    });
+  });
+
+  describe("getStaleUnreconciled", () => {
+    it("measures missed rows from RECONCILED_THROUGH_SQL, not the newest reconciled row's own date", async () => {
+      managerQuery.mockResolvedValue([
+        {
+          account_id: accountId,
+          account_name: "Checking",
+          currency_code: "USD",
+          count: "3",
+          oldest_date: "2026-01-02",
+          last_reconciled_date: "2026-02-15",
+          missed_count: "1",
+        },
+      ]);
+
+      const result = await service.getStaleUnreconciled(userId);
+
+      const sql: string = managerQuery.mock.calls[0][0];
+      expect(sql).toContain(
+        `MAX(${RECONCILED_THROUGH_SQL}) AS last_reconciled_date`,
+      );
+      expect(sql).not.toContain("MAX(transaction_date)");
+      expect(result.accounts).toEqual([
+        expect.objectContaining({
+          lastReconciledDate: "2026-02-15",
+          count: 3,
+          missedCount: 1,
+          overdueCount: 2,
+        }),
+      ]);
+      expect(result.totalCount).toBe(3);
     });
   });
 

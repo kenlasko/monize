@@ -163,8 +163,11 @@ export class AiForecastService {
     );
 
     sections.push("\n--- CURRENT ACCOUNT BALANCES ---");
+    const { totalBalance, knownBalanceSubtotal } = aggregates.accountBalances;
     sections.push(
-      `Total balance: ${aggregates.accountBalances.totalBalance.toFixed(2)}`,
+      totalBalance === null
+        ? `Total balance: unknown (no exchange rate for ${aggregates.accountBalances.missingRatePairs.join(", ")}); converted part only: ${knownBalanceSubtotal.toFixed(2)} ${aggregates.currency}`
+        : `Total balance: ${totalBalance.toFixed(2)} ${aggregates.currency}`,
     );
     for (const acct of aggregates.accountBalances.accounts) {
       sections.push(
@@ -173,6 +176,11 @@ export class AiForecastService {
     }
 
     sections.push("\n--- MONTHLY TRANSACTION HISTORY (12 months) ---");
+    if (aggregates.fxComplete === false) {
+      sections.push(
+        `NOTE: amounts in currencies with no exchange rate (${aggregates.missingRatePairs.join(", ")}) are left out of the history and income figures; do not treat them as complete.`,
+      );
+    }
     for (const month of aggregates.monthlyHistory) {
       const topExpenses = month.categoryBreakdown
         .filter((c) => !c.isIncome)
@@ -260,6 +268,10 @@ export class AiForecastService {
         generatedAt: new Date().toISOString(),
         currency,
         currentBalance: aggregates.accountBalances.totalBalance,
+        currentBalanceKnownSubtotal:
+          aggregates.accountBalances.knownBalanceSubtotal,
+        missingRatePairs: aggregates.missingRatePairs,
+        fxComplete: aggregates.fxComplete,
         forecastMonths,
         monthlyProjections: this.validateProjections(parsed.monthlyProjections),
         riskFlags: this.validateRiskFlags(parsed.riskFlags || []),

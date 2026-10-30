@@ -173,7 +173,9 @@ describe("AccountsService", () => {
 
     scheduledTransactionsService = {
       create: jest.fn().mockResolvedValue({ id: "sched-tx-1" }),
+      createWithoutHistory: jest.fn().mockResolvedValue({ id: "sched-tx-1" }),
       update: jest.fn().mockResolvedValue({}),
+      recordCreated: jest.fn(),
       remove: jest.fn(),
       repriceLoanTemplate: jest.fn().mockResolvedValue(undefined),
     };
@@ -802,6 +804,103 @@ describe("AccountsService", () => {
       expect(mockDataSource.transaction).toHaveBeenCalled();
     });
 
+    it("refuses a currency change on an account with an opening balance", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+
+      await expect(
+        service.update("user-1", "account-1", { currencyCode: "EUR" }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("refuses a currency change on an account with a schedule", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        openingBalance: 0,
+      });
+      mockQueryRunner.manager.count.mockImplementation(
+        async (entity: unknown) => (entity === ScheduledTransaction ? 1 : 0),
+      );
+
+      await expect(
+        service.update("user-1", "account-1", { currencyCode: "EUR" }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("counts only active schedules when guarding a currency change", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        openingBalance: 0,
+      });
+      // The database holds only an inactive schedule: the filtered count is 0.
+      mockQueryRunner.manager.count.mockImplementation(
+        async (
+          entity: unknown,
+          options?: { where?: { isActive?: boolean } },
+        ) =>
+          entity === ScheduledTransaction && options?.where?.isActive !== true
+            ? 1
+            : 0,
+      );
+
+      const result = await service.update("user-1", "account-1", {
+        currencyCode: "EUR",
+      });
+
+      expect(result.currencyCode).toBe("EUR");
+    });
+
+    it("lets a new opening balance sent with the new currency replace the stored one", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+
+      const result = await service.update("user-1", "account-1", {
+        currencyCode: "EUR",
+        openingBalance: 0,
+      });
+
+      expect(result.currencyCode).toBe("EUR");
+    });
+
+    it("refuses a currency change when the form resends the unchanged opening balance", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        openingBalance: 1000,
+      });
+
+      await expect(
+        service.update("user-1", "account-1", {
+          currencyCode: "EUR",
+          openingBalance: 1000,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("allows a currency change when the opening balance sent differs from the stored one", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        openingBalance: 1000,
+      });
+
+      const result = await service.update("user-1", "account-1", {
+        currencyCode: "EUR",
+        openingBalance: 800,
+      });
+
+      expect(result.currencyCode).toBe("EUR");
+    });
+
+    it("allows a currency change on a fresh zero-balance account", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        openingBalance: 0,
+      });
+
+      const result = await service.update("user-1", "account-1", {
+        currencyCode: "EUR",
+      });
+
+      expect(result.currencyCode).toBe("EUR");
+    });
+
     it("assigns an owned institution on update", async () => {
       mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
 
@@ -856,7 +955,11 @@ describe("AccountsService", () => {
       it("moves the linked schedule to a changed source account", async () => {
         mockQueryRunner.manager.findOne
           .mockResolvedValueOnce({ ...mortgage })
-          .mockResolvedValueOnce({ id: "chequing-new", isClosed: false })
+          .mockResolvedValueOnce({
+            id: "chequing-new",
+            isClosed: false,
+            currencyCode: "USD",
+          })
           .mockResolvedValueOnce({ id: "sched-1", accountId: "chequing-old" });
         mockQueryRunner.manager.find.mockResolvedValue([]);
 
@@ -886,6 +989,40 @@ describe("AccountsService", () => {
         ).rejects.toThrow(BadRequestException);
         expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
         expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
+      it("refuses a source account in another currency than the loan before writing", async () => {
+        mockQueryRunner.manager.findOne
+          .mockResolvedValueOnce({ ...mortgage, currencyCode: "CAD" })
+          .mockResolvedValueOnce({
+            id: "chequing-eur",
+            isClosed: false,
+            currencyCode: "EUR",
+          });
+
+        await expect(
+          service.update("user-1", "mortgage-1", {
+            sourceAccountId: "chequing-eur",
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
+      it("refuses a currency change that strands the unchanged source before writing", async () => {
+        mockQueryRunner.manager.count.mockResolvedValue(0);
+        mockQueryRunner.manager.findOne
+          .mockResolvedValueOnce({ ...mortgage, currencyCode: "CAD" })
+          .mockResolvedValueOnce({
+            id: "chequing-old",
+            isClosed: false,
+            currencyCode: "CAD",
+          });
+
+        await expect(
+          service.update("user-1", "mortgage-1", { currencyCode: "EUR" }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
       });
 
       it("touches nothing when the form resends the stored source", async () => {
@@ -1513,7 +1650,10 @@ describe("AccountsService", () => {
 
     describe("currency lock", () => {
       it("allows currency change when account has no transactions", async () => {
-        mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          ...mockAccount,
+          openingBalance: 0,
+        });
         mockQueryRunner.manager.count.mockResolvedValue(0);
 
         await service.update("user-1", "account-1", { currencyCode: "CAD" });
@@ -2295,7 +2435,9 @@ describe("AccountsService", () => {
     it("creates a scheduled transaction for loan payments", async () => {
       await service.createLoanAccount("user-1", baseLoanDto as any);
 
-      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledWith(
         "user-1",
         expect.objectContaining({
           accountId: "source-1",
@@ -2498,7 +2640,9 @@ describe("AccountsService", () => {
     it("creates scheduled transaction for mortgage payments", async () => {
       await service.createMortgageAccount("user-1", baseMortgageDto as any);
 
-      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledWith(
         "user-1",
         expect.objectContaining({
           accountId: "source-1",
@@ -2525,7 +2669,9 @@ describe("AccountsService", () => {
         mortgagePaymentFrequency: "ACCELERATED_BIWEEKLY",
       } as any);
 
-      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledWith(
         "user-1",
         expect.objectContaining({
           frequency: "BIWEEKLY",
@@ -2539,7 +2685,9 @@ describe("AccountsService", () => {
         mortgagePaymentFrequency: "ACCELERATED_WEEKLY",
       } as any);
 
-      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledWith(
         "user-1",
         expect.objectContaining({
           frequency: "WEEKLY",
@@ -2931,6 +3079,7 @@ describe("AccountsService", () => {
       mockQueryRunner.manager.findOne
         .mockResolvedValueOnce({
           ...mockAccount,
+          openingBalance: 0,
           accountType: AccountType.INVESTMENT,
           linkedAccountId: "brokerage-1",
           currencyCode: "USD",
@@ -2958,6 +3107,7 @@ describe("AccountsService", () => {
     it("does not sync currency when account is not investment type", async () => {
       mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
+        openingBalance: 0,
         accountType: AccountType.CHEQUING,
         linkedAccountId: null,
       });
@@ -3895,6 +4045,7 @@ describe("AccountsService", () => {
       mockQueryRunner.manager.findOne
         .mockResolvedValueOnce({
           ...mockAccount,
+          openingBalance: 0,
           accountType: AccountType.INVESTMENT,
           linkedAccountId: "linked-1",
           currencyCode: "USD",
@@ -3916,6 +4067,7 @@ describe("AccountsService", () => {
       mockQueryRunner.manager.findOne
         .mockResolvedValueOnce({
           ...mockAccount,
+          openingBalance: 0,
           accountType: AccountType.INVESTMENT,
           linkedAccountId: "linked-1",
           currencyCode: "USD",
@@ -4933,8 +5085,12 @@ describe("AccountsService", () => {
         .mockResolvedValueOnce([{ user_id: "u1", timezone: "America/Toronto" }])
         // accountRows
         .mockResolvedValueOnce([{ account_id: "a1" }])
-        // ...locked FOR UPDATE before the ledger is read, so the absolute write
-        // cannot overwrite a delta that commits in between (audit P4-005)
+        // read-only ledger figure vs the stored balance: a1 differs
+        .mockResolvedValueOnce([
+          { account_id: "a1", balance: "150", current_balance: "100" },
+        ])
+        // ...locked FOR UPDATE before the ledger is re-read, so the absolute
+        // write cannot overwrite a delta that commits in between (audit P4-005)
         .mockResolvedValueOnce([{ id: "a1" }])
         // balances
         .mockResolvedValueOnce([{ account_id: "a1", balance: "150" }])
@@ -4949,14 +5105,42 @@ describe("AccountsService", () => {
       );
       expect(bulkUpdateCall).toBeDefined();
       expect(bulkUpdateCall?.[1]).toEqual(["a1", 150]);
+      // Catch-up window: a day the backend slept through is still selected.
+      const selectCall = ds.query.mock.calls.find((c) =>
+        String(c[0]).includes("SELECT DISTINCT t.account_id"),
+      );
+      expect(String(selectCall?.[0])).toContain("BETWEEN");
+      expect(selectCall?.[1][2]).toBe(7);
       expect(accountsRepository.update).not.toHaveBeenCalled();
       // And the lock came first.
       const statements = ds.query.mock.calls.map((c) => String(c[0]));
       expect(
         statements.findIndex((sql) => sql.includes("FOR UPDATE")),
       ).toBeLessThan(
-        statements.findIndex((sql) => sql.includes("COALESCE(SUM(t.amount)")),
+        statements.length -
+          1 -
+          [...statements]
+            .reverse()
+            .findIndex((sql) => sql.includes("COALESCE(SUM(t.amount)")),
       );
+    });
+
+    it("locks and writes nothing when every stored balance already matches the ledger", async () => {
+      const ds = mockQueryRunner.manager as unknown as { query: jest.Mock };
+      ds.query = mockDataSource.query = jest
+        .fn()
+        .mockResolvedValueOnce([{ user_id: "u1", timezone: "America/Toronto" }])
+        .mockResolvedValueOnce([{ account_id: "a1" }, { account_id: "a2" }])
+        .mockResolvedValueOnce([
+          { account_id: "a1", balance: "150.0000", current_balance: "150.00" },
+          { account_id: "a2", balance: "10", current_balance: "10" },
+        ]);
+      await service.applyDueTransactionBalances();
+      const statements = ds.query.mock.calls.map((c) => String(c[0]));
+      expect(statements.some((sql) => sql.includes("FOR UPDATE"))).toBe(false);
+      expect(
+        statements.some((sql) => sql.includes("UPDATE accounts SET")),
+      ).toBe(false);
     });
 
     it("logs error when query throws", async () => {

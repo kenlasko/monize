@@ -292,8 +292,54 @@ describe("TaxRecurringReportsService", () => {
 
       const result = await service.getTaxSummary(mockUserId, 2025);
 
-      expect(result.incomeBySource[0].name).toBe("Uncategorized");
-      expect(result.allExpenses[0].name).toBe("Uncategorized");
+      // Uncategorized has no direction: income and spending stay apart.
+      expect(result.incomeBySource).toEqual([
+        { name: "Uncategorized", total: 1000 },
+      ]);
+      expect(result.allExpenses).toEqual([
+        { name: "Uncategorized", total: 50 },
+      ]);
+    });
+
+    it("nets a refund against its category instead of reporting it as income (INV-REPORT-004)", async () => {
+      scopedManager.query.mockResolvedValue([
+        { category_id: "cat-medical", currency_code: "USD", amount: "-100.00" },
+        { category_id: "cat-medical", currency_code: "USD", amount: "30.00" },
+      ]);
+      categoriesRepository.find.mockResolvedValue([mockMedicalCategory]);
+
+      const result = await service.getTaxSummary(mockUserId, 2025);
+
+      expect(result.deductibleExpenses).toEqual([
+        { name: "Medical Expenses", total: 70 },
+      ]);
+      expect(result.allExpenses).toEqual([
+        { name: "Medical Expenses", total: 70 },
+      ]);
+      expect(result.incomeBySource).toEqual([]);
+      expect(result.totals.deductible).toBe(70);
+      expect(result.totals.expenses).toBe(70);
+      expect(result.totals.income).toBe(0);
+    });
+
+    it("nets many 0.1 and 0.2 rows against 0.3 rows to exactly zero", async () => {
+      const rows: Array<Record<string, string>> = [];
+      for (let i = 0; i < 500; i++) {
+        rows.push(
+          { category_id: "cat-medical", currency_code: "USD", amount: "0.10" },
+          { category_id: "cat-medical", currency_code: "USD", amount: "0.20" },
+          { category_id: "cat-medical", currency_code: "USD", amount: "-0.30" },
+        );
+      }
+      scopedManager.query.mockResolvedValue(rows);
+      categoriesRepository.find.mockResolvedValue([mockMedicalCategory]);
+
+      const result = await service.getTaxSummary(mockUserId, 2025);
+
+      expect(result.allExpenses).toEqual([]);
+      expect(result.incomeBySource).toEqual([]);
+      expect(result.totals.expenses).toBe(0);
+      expect(result.totals.income).toBe(0);
     });
 
     it("converts foreign currency amounts", async () => {

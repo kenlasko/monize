@@ -20,6 +20,7 @@ import {
   type RecurringExpenseFrequency,
   type RecurringExpenseRange,
 } from "./dto/recurring-expenses.dto";
+import { isNetSpending } from "./spending-reports.service";
 import { formatDateYMD } from "../common/date-utils";
 import { roundMoney, sumMoney, toMoneyNumber } from "../common/round.util";
 import {
@@ -206,6 +207,13 @@ export class TaxRecurringReportsService {
     // and its currency is named. A tax figure is withheld rather than shown
     // short.
     const gaps = new ConversionGaps();
+    // Netted per actual category (NULL kept apart by sign: it has no
+    // direction), so an income child and an expense child under one parent do
+    // not cancel; the display name only groups the classified results.
+    const netByCategory = new Map<
+      string,
+      { name: string; leafName: string; net: number }
+    >();
 
     rawResults.forEach((row) => {
       const amount = this.currencyService.tryConvertAmount(
@@ -226,26 +234,31 @@ export class TaxRecurringReportsService {
         : null;
       const catName = parentCategory?.name || category?.name || "Uncategorized";
 
-      if (amount > 0) {
-        totalIncome.addConverted(amount);
-        incomeBySource.set(
-          catName,
-          (incomeBySource.get(catName) || 0) + amount,
-        );
-      } else {
-        const expenseAmt = Math.abs(amount);
-        totalExpenses.addConverted(expenseAmt);
-        allExpensesByCategory.set(
-          catName,
-          (allExpensesByCategory.get(catName) || 0) + expenseAmt,
-        );
+      // Signed, so a refund lowers its category rather than reading as income
+      // (INV-REPORT-004).
+      const key =
+        row.category_id ?? (amount < 0 ? "null:spend" : "null:income");
+      netByCategory.set(key, {
+        name: catName,
+        leafName: category?.name ?? catName,
+        net: roundMoney((netByCategory.get(key)?.net ?? 0) + amount),
+      });
+    });
 
-        if (matchesKeywords(catName)) {
-          deductibleExpenses.set(
-            catName,
-            (deductibleExpenses.get(catName) || 0) + expenseAmt,
-          );
-        }
+    // A category is classified once, by its net: spending when its debits
+    // exceed its credits (`isNetSpending`), income when its credits do.
+    const addTo = (map: Map<string, number>, name: string, value: number) =>
+      map.set(name, roundMoney((map.get(name) ?? 0) + value));
+    netByCategory.forEach(({ name: catName, leafName, net: rawNet }) => {
+      const net = roundMoney(rawNet);
+      if (isNetSpending(-net)) {
+        totalExpenses.addConverted(-net);
+        addTo(allExpensesByCategory, catName, -net);
+        if (matchesKeywords(catName) || matchesKeywords(leafName))
+          addTo(deductibleExpenses, catName, -net);
+      } else if (net > 0) {
+        totalIncome.addConverted(net);
+        addTo(incomeBySource, catName, net);
       }
     });
 

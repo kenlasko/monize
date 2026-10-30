@@ -28,7 +28,8 @@
     "transactions": "取引",
     "sinceYear": "{year} 年から",
     "lastTransaction": "最終取引",
-    "convertedNote": "{currency} に換算"
+    "convertedNote": "{currency} に換算",
+    "partialRatesNote": "為替レートのない月があります"
   },
   "topPayees": {
     "title": "上位支払先",

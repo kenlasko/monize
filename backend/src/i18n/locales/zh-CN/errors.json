@@ -42,6 +42,7 @@
     "institutionNotFound": "未找到机构",
     "updateClosed": "无法更新已关闭的账户",
     "changeCurrencyWithTransactions": "无法更改有交易记录的账户货币。",
+    "changeCurrencyWithBalanceOrSchedules": "无法更改有期初余额或计划交易的账户的货币。",
     "alreadyClosed": "账户已关闭",
     "closeNonZeroBalance": "无法关闭余额非零的账户。当前余额：{{ currentBalance }}",
     "closeWithFutureTransactions": "无法关闭包含未来日期交易的账户。该账户有 {{ count }} 笔日期晚于今天的交易；请先删除或作废这些交易。",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "此 Money 文件正在导入。请等待导入完成后再丢弃它。",
     "mnyImportAlreadyRunning": "已有导入正在进行。请等待其完成后再开始新的导入。",
     "mnyAlreadyImported": "此文件已于 {{ date }} 导入(导入 {{ jobId }}),其记录仍在您的账户中。再次导入会造成重复。如需替换,请重新开始并选择替换现有数据。",
+    "mnyExistingAccountClosed": "现有账户“{{ name }}”已关闭，因此无法将 Money 文件合并到其中。请重新打开或重命名该账户，然后再次导入。",
+    "mnyExistingAccountCurrency": "现有账户“{{ name }}”使用 {{ existing }}，但 Money 文件中的账户使用 {{ file }}。请重命名其中一个，然后再次导入。",
     "mnyJobNotFound": "未找到导入任务",
     "mnyFileTooLarge": "该 Money 文件超过 {{ limit }} MB 的导入上限。",
-    "noRateForSplitTransfer": "{{ date }} 没有 {{ pair }} 的汇率：一条拆分行转账到另一种货币的账户。请为该货币对和日期添加汇率，然后重新导入。"
+    "noRateForSplitTransfer": "{{ date }} 没有 {{ pair }} 的汇率：一条拆分行转账到另一种货币的账户。请为该货币对和日期添加汇率，然后重新导入。",
+    "accountClosed": "该账户已关闭。请重新打开或选择其他账户。"
   },
   "monteCarlo": {
     "scenarioNotFound": "未找到情景 {{ id }}",
@@ -779,6 +783,7 @@
     "notATransfer": "交易不是转账",
     "splitTransferLegAccountLocked": "此转账属于拆分交易的一部分。请改为在源交易中编辑拆分项以更改其账户。",
     "splitTransferLegStatusLocked": "此转账属于拆分交易的一部分。请编辑其所属的拆分交易来作废或恢复它，使两侧一并变更。",
+    "investmentCashLegLocked": "此交易是投资交易的现金部分。请改为修改或删除投资交易，使双方一起更改。",
     "investmentCashLegStatusLocked": "此交易是某笔投资交易的现金侧。请通过更改该投资交易的状态来作废或恢复它，使两侧一并变更。",
     "notFoundById": "未找到 ID 为 {{ id }} 的交易",
     "bulkUpdateNoFields": "至少需要提供一个更新字段",

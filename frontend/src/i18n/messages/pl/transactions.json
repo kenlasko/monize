@@ -576,6 +576,7 @@
       "total": "Suma",
       "transactions": "Transakcje",
       "tooltip": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}",
+      "partialNote": "Dla niektórych kwot brak kursu wymiany. Te kwoty nie są w tych sumach.",
       "quarterLabel": "K{quarter} {year}",
       "quarterTick": "K{quarter} {year}",
       "granularityLabel": "Grupowanie",

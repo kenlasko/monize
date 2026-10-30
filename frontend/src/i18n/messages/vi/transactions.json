@@ -576,6 +576,7 @@
       "total": "Tổng",
       "transactions": "Giao tác",
       "tooltip": "{count, plural, one {# giao tác} other {# giao tác}}",
+      "partialNote": "Một số khoản không có tỷ giá và không được tính vào các tổng này.",
       "quarterLabel": "Q{quarter} {year}",
       "quarterTick": "Q{quarter} {year}",
       "granularityLabel": "Nhóm theo",

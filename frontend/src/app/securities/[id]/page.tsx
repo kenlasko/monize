@@ -23,6 +23,7 @@ import { SecurityAccountsTable } from '@/components/securities/detail/SecurityAc
 import { SecurityBondBreakdownCard } from '@/components/securities/detail/SecurityBondBreakdownCard';
 import { SecurityBreakdownCard } from '@/components/securities/detail/SecurityBreakdownCard';
 import { SecurityBondCard } from '@/components/securities/detail/SecurityBondCard';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
@@ -115,24 +116,6 @@ function tabKeysFor(isBond: boolean): readonly TabKey[] {
 /** `?tab=` if it names a real tab, so a link can point at one. */
 function tabFromQuery(value: string | null): TabKey {
   return TAB_KEYS.includes(value as TabKey) ? (value as TabKey) : 'overview';
-}
-
-/**
- * How old the newest close may be and still describe "today's" move. Covers a
- * long weekend plus a public holiday, which is the normal gap between sessions.
- */
-const STALE_QUOTE_DAYS = 4;
-
-/** Whole days between an ISO `yyyy-MM-dd` and today. */
-function daysSince(isoDate: string): number {
-  const then = new Date(`${isoDate}T00:00:00`).getTime();
-  const today = new Date();
-  const midnight = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  ).getTime();
-  return Math.round((midnight - then) / 86_400_000);
 }
 
 export default function SecurityDetailPage() {
@@ -304,14 +287,19 @@ function SecurityDetailContent() {
   const priceSeries = useMemo(() => toPriceSeries(prices), [prices]);
   const quantitySteps = useMemo(() => buildQuantitySteps(trades), [trades]);
 
-  // The newest close, plus how far it moved against the one before it. Derived
-  // here rather than fetched: the page already holds the whole series, and the
-  // quote endpoints answer for the portfolio rather than for one security.
+  // The newest close, plus the server's daily move (`detail.dailyChange`, from
+  // `resolveDailyPriceChange`). A refusal is null: the header then shows the
+  // newest session's date and no change figure. A move for another session
+  // than the newest close shown (a stale read) is not shown under it.
+  const serverChange = detail?.dailyChange ?? null;
+  const financialToday = useFinancialToday();
   const quote = useMemo(() => {
     const latest = priceSeries[priceSeries.length - 1];
     if (!latest) return null;
-    const previous = priceSeries[priceSeries.length - 2];
-    const change = previous ? roundToDecimals(latest.close - previous.close, 6) : null;
+    const move =
+      serverChange && serverChange.priceDate === latest.date
+        ? serverChange
+        : null;
     return {
       price: latest.close,
       priceDate: latest.date,
@@ -319,18 +307,13 @@ function SecurityDetailContent() {
       // predating the column, manual entries and transaction-derived prices
       // have none, and fall back to the date alone.
       quotedAt: latest.quotedAt ?? null,
-      change,
-      changePercent:
-        previous && previous.close !== 0 && change !== null
-          ? roundToDecimals((change / previous.close) * 100, 2)
-          : null,
-      // A move is only "today's" if the quote it came from is fresh. Prices are
-      // refreshed daily and there are no weekend closes, so anything within a
-      // few days still counts as the latest session; older than that and the
-      // header says "last move" instead of misdating it.
-      isCurrent: daysSince(latest.date) <= STALE_QUOTE_DAYS,
+      change: move ? roundToDecimals(move.dailyChange, 6) : null,
+      changePercent: move ? roundToDecimals(move.dailyChangePercent, 2) : null,
+      // The server accepts the last session's move too (Friday's close read on
+      // Saturday), so only today's own session is labelled "today".
+      isCurrent: move ? move.priceDate === financialToday : false,
     };
-  }, [priceSeries]);
+  }, [priceSeries, serverChange, financialToday]);
 
   const handleToggleFavourite = useCallback(async () => {
     if (!detail) return;

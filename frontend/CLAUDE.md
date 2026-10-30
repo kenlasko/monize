@@ -17,6 +17,7 @@ npm run test:watch         # Vitest (watch mode)
 npm run test:cov           # Coverage report (91% lines, 90% stmts, 87% funcs, 85% branches)
 npm run i18n:pseudo        # Regenerate the xx pseudo-locale from en
 npm run i18n:check         # Verify the pseudo-locale is up to date (CI gate)
+npm run docs:build         # Regenerate the user docs (website/docs/) from their Markdown
 ```
 
 ## Layout
@@ -56,6 +57,7 @@ npm run i18n:check         # Verify the pseudo-locale is up to date (CI gate)
 | A portfolio chart's window and opening point | `usePortfolioRangeWindow` (`start` for the series, `periodStart` for the period) and `openingSessionDate` for the first label | `resolveRangePreset`, a lookback of your own, a first point dated by a day the market was shut |
 | An investment row's money | the row's own `amountCurrencyCode` / `priceCurrencyCode` / `commissionCurrencyCode`, converted with `convertRowAmount`; a VOID row dropped with `investmentRowHasEffect` | the account's currency, the reader's, or a client-side sum across rows |
 | CSV | `exportToCsv` / `exportCsvSections` (`lib/csv-export.ts`) | a second `text/csv` Blob |
+| Link to the user documentation (`PageHeader` `helpUrl`, an inline guide link) | `docsUrl(key)` (`lib/docs-links.ts`) | a docs or wiki URL literal |
 | Random id | `crypto.randomUUID()` | `Math.random()` |
 | Chart colour | `chartColors` tokens (`lib/chart-colors.ts`) | a hex literal in a `fill`, `stroke` or `stopColor` |
 | Widget title that opens the fuller view | `titleHref` on `WidgetCard`, `href` on `WidgetHeading` | a button or link hand-rolled around the heading |
@@ -79,6 +81,8 @@ npm run i18n:check         # Verify the pseudo-locale is up to date (CI gate)
 **Asynchronous data belongs to the request that produced it.** Keep the payload with its request key, adopt a mutation's response only when its origin still matches the current selection, and never render a failed lookup as an empty result (`accounts = []`, `interest = []`, a total of zero). `docs/frontend/api-and-cache.md` has the rule and the regression matrix.
 
 **An unknown value is `null` and renders as unknown; a known zero renders as a number.** Never `?? 0`, `|| 0` or `?? 1` on an API value, never `connectNulls` by default, and never `> 0` or truthiness where `0` is a legitimate value. Decide which of the two states a branch is in before writing it.
+
+**A change to what a user sees or does updates its page in `website/docs/*.md`** in the same PR, regenerates the screenshots of the screens it changed (`npm run docs:screenshots` in `e2e/`), then `npm run docs:build`; `website/README.md` has the conventions.
 
 **Every user-facing string is translated.** `useTranslations('namespace')`; catalogs in `src/i18n/messages/{locale}/{namespace}.json`, new namespaces registered in `src/i18n/messages.ts`. Develop English-first and run `npm run i18n:pseudo`; translate every other locale as the final commit on the PR (`src/i18n/messages.parity.test.ts`). Compose punctuation in the catalog, not in JSX, and never write `--` in copy. Full flow: `src/i18n/messages/README.md`.
 

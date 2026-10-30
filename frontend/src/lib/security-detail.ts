@@ -315,14 +315,13 @@ export function computePeriodReturn(
  * figure rather than mix units.
  */
 export interface PositionReturnInput {
-  /** Gross cost of every acquiring leg, commission excluded. */
-  totalInvested: number;
+  /** Cost of every acquiring leg, commission included; null when unknown. */
+  totalInvested: number | null;
   /** Worth of what is still held; null when it cannot be known. */
   marketValue: number | null;
   /** Cost basis of what is still held; null when it cannot be known. */
   costBasis: number | null;
   dividends: number;
-  fees: number;
   realizedGain: number | null;
   realizedGainCurrency: string | null;
   /** Zero means never sold, which is a realised gain of nothing. */
@@ -333,7 +332,7 @@ export interface PositionReturnInput {
 }
 
 export interface PositionReturn {
-  /** Unrealised + realised + income - fees, in the security's currency. */
+  /** Unrealised + realised + income, in the security's currency. */
   profit: number;
   /** That profit over the capital ever put in, as a percentage. */
   percent: number;
@@ -359,7 +358,7 @@ export function computePositionReturn(
   input: PositionReturnInput,
 ): PositionReturn | null {
   // No capital in means no return to state -- and no denominator either.
-  if (!(input.totalInvested > 0)) return null;
+  if (input.totalInvested === null || !(input.totalInvested > 0)) return null;
 
   let realized = 0;
   if (input.realizedSaleCount > 0) {
@@ -380,10 +379,10 @@ export function computePositionReturn(
     unrealized = input.marketValue - input.costBasis;
   }
 
-  const profit = roundToDecimals(
-    unrealized + realized + input.dividends - input.fees,
-    4,
-  );
+  // Commissions are not subtracted again: the cost basis and the realized gain
+  // already carry them (buy commission in the basis, sell commission in the
+  // proceeds), so taking `fees` off here counted each one twice.
+  const profit = roundToDecimals(unrealized + realized + input.dividends, 4);
   return {
     profit,
     percent: roundToDecimals((profit / input.totalInvested) * 100, 2),

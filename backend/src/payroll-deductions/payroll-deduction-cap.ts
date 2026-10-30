@@ -146,6 +146,55 @@ export interface CapResult<T extends CappableSplit> {
 }
 
 /**
+ * The other active bills' rules on these categories that the projection
+ * pools with the posting bill's own: same currency, and a positive expected
+ * figure (an entered one, or a negative line on the bill). Mirrors
+ * `spendableRules` and `buildDeductionPools` in `frontend/src/lib/forecast.ts`
+ * so the posting and the forecast reduce a line by one definition
+ * (INV-PAYROLL-003).
+ */
+export async function loadPooledPeerRules(
+  m: EntityManager,
+  userId: string,
+  scheduledTransactionId: string,
+  categoryIds: readonly string[],
+  currencyCode: string,
+): Promise<DeductionRuleFacts[]> {
+  if (categoryIds.length === 0) return [];
+  const rows = returnedRows<{
+    id: string;
+    category_id: string;
+    yearly_maximum: string;
+    reset_date: string;
+  }>(
+    await m.query(
+      `SELECT r.id, r.category_id, r.yearly_maximum,
+              TO_CHAR(r.reset_date, 'YYYY-MM-DD') AS reset_date
+         FROM payroll_deduction_rules r
+         JOIN scheduled_transactions s ON s.id = r.scheduled_transaction_id
+        WHERE r.user_id = $1
+          AND r.category_id = ANY($2)
+          AND r.scheduled_transaction_id <> $3
+          AND s.is_active = true
+          AND s.currency_code = $4
+          AND (COALESCE(r.expected_per_paycheque, 0) > 0
+               OR EXISTS (SELECT 1 FROM scheduled_transaction_splits sp
+                           WHERE sp.scheduled_transaction_id = s.id
+                             AND sp.category_id = r.category_id
+                             AND sp.amount < 0))`,
+      [userId, [...categoryIds], scheduledTransactionId, currencyCode],
+    ),
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    categoryId: r.category_id,
+    yearlyMaximum: Number(r.yearly_maximum),
+    resetDate: r.reset_date,
+    expectedPerPaycheque: null,
+  }));
+}
+
+/**
  * Reduce every category line a rule names to the room left on `postDate`,
  * reading the ledger through the posting transaction's own manager
  * (INV-PAYROLL-002). Lines without a rule, positive lines, transfer and
@@ -158,10 +207,12 @@ export async function applyPayrollDeductionCaps<T extends CappableSplit>(
   currencyCode: string,
   postDate: string,
   splits: readonly T[],
+  peers: readonly DeductionRuleFacts[] = [],
 ): Promise<CapResult<T>> {
   if (rules.length === 0) return { splits: [...splits], changed: false };
   const byCategory = new Map(rules.map((r) => [r.categoryId, r]));
   const roomByCategory = new Map<string, number>();
+  const paidLookup = memoisedPaidLookup(m, userId);
   let changed = false;
   const result: T[] = [];
   for (const split of splits) {
@@ -175,14 +226,20 @@ export async function applyPayrollDeductionCaps<T extends CappableSplit>(
     }
     let room = roomByCategory.get(rule.categoryId);
     if (room === undefined) {
-      const paid = await queryCategoryPeriodPaid(
-        m,
-        userId,
-        rule.categoryId,
-        deductionPeriod(rule.resetDate, postDate),
-        currencyCode,
-      );
-      room = remainingRoom(rule.yearlyMaximum, paid.paidToDate);
+      // The lowest room among every rule on the category binds, each over
+      // its own period, as `buildDeductionPools` pools them.
+      room = Infinity;
+      for (const r of [
+        rule,
+        ...peers.filter((p) => p.categoryId === rule.categoryId),
+      ]) {
+        const paid = await paidLookup(
+          r.categoryId,
+          deductionPeriod(r.resetDate, postDate),
+          currencyCode,
+        );
+        room = Math.min(room, remainingRoom(r.yearlyMaximum, paid.paidToDate));
+      }
     }
     const capped = capDeductionLine(Number(split.amount), room);
     // Two lines of one category share the room, in order.

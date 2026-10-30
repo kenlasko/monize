@@ -1198,9 +1198,12 @@ describe("HoldingsService", () => {
         "acc-1",
       );
 
-      expect(result.totalCostBasis).toBe(0);
-      expect(result.holdings[0].averageCost).toBe(0);
-      expect(result.holdings[0].costBasis).toBe(0);
+      // Unknown is not zero: the total is withheld, not shown as 0.
+      expect(result.totalCostBasis).toBeNull();
+      expect(result.costBasisComplete).toBe(false);
+      expect(result.knownCostBasis).toBe(0);
+      expect(result.holdings[0].averageCost).toBeNull();
+      expect(result.holdings[0].costBasis).toBeNull();
     });
   });
 

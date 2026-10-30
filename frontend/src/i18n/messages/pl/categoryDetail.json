@@ -28,7 +28,8 @@
     "transactions": "Transakcje",
     "sinceYear": "Od {year}",
     "lastTransaction": "Ostatnia transakcja",
-    "convertedNote": "Przeliczono na {currency}"
+    "convertedNote": "Przeliczono na {currency}",
+    "partialRatesNote": "Dla niektórych miesięcy brak kursu wymiany"
   },
   "topPayees": {
     "title": "Najczęstsi odbiorcy",

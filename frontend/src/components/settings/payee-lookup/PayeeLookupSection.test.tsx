@@ -274,7 +274,7 @@ describe('PayeeLookupSection', () => {
     const link = screen.getByRole('link', { name: 'Setup instructions' });
     expect(link).toHaveAttribute(
       'href',
-      expect.stringContaining('Categories-and-Payees'),
+      'https://www.monize.net/docs/categories-and-payees#setting-up-google-places',
     );
 
     getSettings.mockResolvedValue(settings({ mode: 'user', configured: true }));

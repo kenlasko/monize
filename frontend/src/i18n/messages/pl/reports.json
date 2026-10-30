@@ -463,6 +463,7 @@
     "generating": "Generowanie raportu...",
     "noData": "Nie znaleziono danych dla wybranych kryteriów",
     "transactionCount": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}",
+    "truncatedNotice": "Ten raport osiągnął limit wierszy i pokazuje tylko najstarsze wiersze, więc jego wartości są niepełne. Zawęź okres lub filtry, aby zobaczyć wszystkie wiersze.",
     "toasts": {
       "loadFailed": "Nie udało się załadować raportu",
       "executeFailed": "Nie udało się wykonać raportu"
@@ -1474,6 +1475,8 @@
     "totalReturn": "Całkowity zwrot",
     "annualizedReturn": "Zwrot roczny",
     "needs1YearNote": "Wymaga co najmniej 1 roku danych",
+    "annualizedNeedsSingleBuyNote": "Wartość jest widoczna tylko dla jednego zakupu bez późniejszych operacji",
+    "missingPrice": "Brak ceny dla {symbol}",
     "priceHistory": "Historia cen - {symbol}",
     "buyTransaction": "Transakcja kupna",
     "sellTransaction": "Transakcja sprzedaży",

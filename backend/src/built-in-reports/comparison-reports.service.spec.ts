@@ -120,6 +120,22 @@ describe("ComparisonReportsService", () => {
   // getYearOverYear
   // ---------------------------------------------------------------------------
   describe("getYearOverYear", () => {
+    it("classifies income and expenses by category, like Income vs Expenses", async () => {
+      scopedManager.query.mockResolvedValue([]);
+      await service.getYearOverYear(mockUserId, 1);
+
+      const sql = scopedManager.query.mock.calls[0][0];
+      expect(sql).toContain(
+        "LEFT JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id)",
+      );
+      expect(sql).toContain(
+        "WHEN c.is_income = true THEN COALESCE(ts.amount, t.amount)",
+      );
+      expect(sql).toContain(
+        "WHEN c.is_income = false THEN -1 * COALESCE(ts.amount, t.amount)",
+      );
+    });
+
     it("returns empty year structures when no transactions exist", async () => {
       scopedManager.query.mockResolvedValue([]);
 
@@ -398,6 +414,41 @@ describe("ComparisonReportsService", () => {
         expect(d.total).toBe(0);
         expect(d.count).toBe(0);
       });
+    });
+
+    it("nets refunds within a category instead of dropping credit rows", async () => {
+      scopedManager.query.mockResolvedValue([
+        // Dining on Saturday: 100 spent, 30 refunded -> 70 net.
+        {
+          day_of_week: 6,
+          category_id: null,
+          currency_code: "USD",
+          tx_count: 2,
+          total: "70.00",
+        },
+        // A day whose credits exceed its debits was not spent in.
+        {
+          day_of_week: 2,
+          category_id: null,
+          currency_code: "USD",
+          tx_count: 1,
+          total: "-25.00",
+        },
+      ]);
+
+      const result = await service.getWeekendVsWeekday(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      const sql = scopedManager.query.mock.calls[0][0];
+      expect(sql).toContain("SUM(-COALESCE(ts.amount, t.amount))");
+      expect(sql).not.toContain("COALESCE(ts.amount, t.amount) < 0");
+      expect(sql).not.toContain("ABS(");
+      expect(result.summary.weekendTotal).toBe(70);
+      expect(result.summary.weekdayTotal).toBe(0);
+      expect(result.summary.weekdayCount).toBe(0);
     });
 
     it("separates weekend and weekday spending correctly", async () => {

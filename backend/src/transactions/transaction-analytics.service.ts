@@ -620,6 +620,12 @@ export class TransactionAnalyticsService {
 
     queryBuilder.andWhere(brokerageExclusionForEntity("summaryAccount"));
 
+    // A voided row moved no balance, so no amount aggregate counts it (the
+    // list endpoint still shows it). A NULL status predates the column.
+    queryBuilder.andWhere(
+      "(transaction.status IS NULL OR transaction.status != 'VOID')",
+    );
+
     // Always expand split transactions so mixed-sign splits are bucketed
     // into income/expense per split. A split parent carries `amount =
     // SUM(splits)`, so summing the parent row nets opposite-sign splits
@@ -995,7 +1001,15 @@ export class TransactionAnalyticsService {
     amountTo?: number,
     tagIds?: string[],
     jointAccountIds?: string[],
-  ): Promise<Array<{ month: string; total: number; count: number }>> {
+  ): Promise<
+    Array<{
+      month: string;
+      currency: string;
+      total: number | null;
+      knownSubtotal?: number;
+      count: number;
+    }>
+  > {
     return withScopedDb(this.dataSource, async (m) => {
       // Reuse the same filtered query builder as getSummary so the chart's
       // per-month totals and counts reconcile exactly with the category/payee
@@ -1024,20 +1038,49 @@ export class TransactionAnalyticsService {
       // non-split rows), keeping the per-month total signed for the bar chart.
       const amountExpr = "COALESCE(splits.amount, transaction.amount)";
 
+      // Split by currency and day so each part converts at its own date
+      // before it joins its month; a bare SUM would add currencies together.
       queryBuilder
         .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
+        .addSelect("transaction.currencyCode", "currencyCode")
+        .addSelect(DAY_TX_SQL, "txDate")
         .addSelect(`SUM(${amountExpr})`, "total")
         .addSelect("COUNT(DISTINCT transaction.id)", "count")
         .groupBy("month")
+        .addGroupBy("transaction.currencyCode")
+        .addGroupBy(DAY_TX_SQL)
         .orderBy("month", "ASC");
 
       const rows = await queryBuilder.getRawMany();
+      if (rows.length === 0) return [];
 
-      return rows.map((row) => ({
-        month: row.month,
-        total: roundMoney(Number(row.total) || 0),
-        count: Number(row.count) || 0,
-      }));
+      // One currency across every row needs no conversion, so the totals stay
+      // exact in that currency; otherwise they convert to the default.
+      const codes = new Set(rows.map((r) => r.currencyCode as string));
+      const reporting =
+        codes.size === 1
+          ? [...codes][0]
+          : await resolveUserDefaultCurrency(this.dataSource, userId);
+      const days = rows.map((r) => r.txDate as string).sort();
+      const rates = await this.loadRateIndex(
+        m,
+        rows,
+        reporting,
+        days[0],
+        days[days.length - 1],
+      );
+      const groups = this.foldGroups(rows, (r) => r.month, reporting, rates);
+
+      // `total` is null (with the converted part in `knownSubtotal`) while a
+      // part of the month has no admissible rate.
+      return groups
+        .map((g) => ({
+          month: g.first.month as string,
+          currency: reporting,
+          ...totalFields(g.agg),
+          count: g.count,
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month));
     });
   }
 
@@ -1061,7 +1104,7 @@ export class TransactionAnalyticsService {
     return withScopedDb(this.dataSource, async (m) => {
       const feeExpr =
         "CASE WHEN transaction.originalAmount IS NULL THEN 0 " +
-        "ELSE ROUND(transaction.originalAmount * transaction.exchangeRate, 2) - transaction.amount " +
+        "ELSE ROUND(transaction.originalAmount * transaction.exchangeRate, 4) - transaction.amount " +
         "END";
 
       const rows = await m
@@ -1543,10 +1586,18 @@ export class TransactionAnalyticsService {
       joinSplitsForAnalytics(qb);
       applyInvestmentTransactionFilters(qb, "breakdownAccount", "t");
 
+      // A category's cost is its signed sum over rows of both signs, so the
+      // category branch reads credits too and judges the direction on the net
+      // after folding (`isNetSpending`); the payee branch stays row-level.
+      const netByCategory = groupBy === "category";
       if (direction === "expenses") {
-        qb.andWhere(`${SPLIT_AMOUNT} < 0`);
+        qb.andWhere(
+          netByCategory ? `${SPLIT_AMOUNT} <> 0` : `${SPLIT_AMOUNT} < 0`,
+        );
       } else if (direction === "income") {
-        qb.andWhere(`${SPLIT_AMOUNT} > 0`);
+        qb.andWhere(
+          netByCategory ? `${SPLIT_AMOUNT} <> 0` : `${SPLIT_AMOUNT} > 0`,
+        );
       }
 
       if (accountIds && accountIds.length > 0) {
@@ -1605,7 +1656,10 @@ export class TransactionAnalyticsService {
           // and the label carries the parent so two rows named "Cell Phone" can
           // be told apart. The "Uncategorized" bucket groups on a NULL id.
           qb.select(`${SPLIT_CATEGORY_ID}::text`, "categoryId")
-            .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
+            .addSelect(
+              `SUM(${direction === "expenses" ? `-${SPLIT_AMOUNT}` : SPLIT_AMOUNT})`,
+              "total",
+            )
             .addSelect("COUNT(*)", "count")
             .groupBy(`${SPLIT_CATEGORY_ID}::text`);
           byCurrencyAndDay();
@@ -1619,13 +1673,36 @@ export class TransactionAnalyticsService {
             endDate,
           );
           const names = await loadQualifiedCategoryNames(m, userId);
-          const groups = this.foldGroups(
+          let groups = this.foldGroups(
             rows,
             (r) => r.categoryId ?? "",
             reporting,
             rates,
           );
+          if (direction === "expenses") {
+            // A group with a part still unconverted is kept: its net is
+            // unknown, not spent-in-nothing.
+            groups = groups.filter(
+              (g) => isNetSpending(g.agg.knownSubtotal) || !g.agg.isComplete,
+            );
+          } else if (direction === "income") {
+            // Salary +5000 / -200 correction is 4800 income, like the report.
+            groups = groups.filter(
+              (g) => g.agg.knownSubtotal > 0 || !g.agg.isComplete,
+            );
+          }
           finish(groups);
+          // Without a direction the figure is the magnitude of the net.
+          const shown = (g: FoldedGroup) => {
+            const f = totalFields(g.agg);
+            if (direction) return f;
+            return {
+              total: f.total === null ? null : Math.abs(f.total),
+              ...(f.knownSubtotal !== undefined && {
+                knownSubtotal: Math.abs(f.knownSubtotal),
+              }),
+            };
+          };
           return {
             fx,
             rows: byKnownSubtotal(
@@ -1634,7 +1711,7 @@ export class TransactionAnalyticsService {
                   ? (names.get(g.first.categoryId) ?? UNKNOWN_CATEGORY_LABEL)
                   : UNCATEGORIZED_LABEL,
                 categoryId: g.first.categoryId ?? null,
-                ...totalFields(g.agg),
+                ...shown(g),
                 count: g.count,
               })),
             ),
@@ -2091,6 +2168,7 @@ export class TransactionAnalyticsService {
 
 /** One day's SQL, for the `t` alias: the date a row is converted at. */
 const DAY_SQL = "TO_CHAR(t.transactionDate, 'YYYY-MM-DD')";
+const DAY_TX_SQL = "TO_CHAR(transaction.transactionDate, 'YYYY-MM-DD')";
 
 /** A grouped raw row: its label columns, its currency and its day. */
 type RawGroupRow = Record<string, any>;

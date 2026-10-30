@@ -28,7 +28,8 @@
     "transactions": "交易",
     "sinceYear": "自 {year} 年起",
     "lastTransaction": "最近交易",
-    "convertedNote": "已换算为 {currency}"
+    "convertedNote": "已换算为 {currency}",
+    "partialRatesNote": "部分月份没有汇率"
   },
   "topPayees": {
     "title": "主要收款人",

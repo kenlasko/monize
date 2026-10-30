@@ -1,3 +1,4 @@
+import { UserPreference } from "../users/entities/user-preference.entity";
 import {
   createScopedDbMocks,
   DataSourceMock,
@@ -40,6 +41,7 @@ describe("InvestmentTransactionsService", () => {
   let investmentTransactionsRepository: Record<string, jest.Mock>;
   let transactionRepository: Record<string, jest.Mock>;
   let transactionSplitRepository: Record<string, jest.Mock>;
+  let userPreferenceRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let portfolioCalculationService: Record<string, jest.Mock>;
   let transactionsService: Record<string, jest.Mock>;
@@ -362,11 +364,15 @@ describe("InvestmentTransactionsService", () => {
     // The embedded-row status pass reads the parent's splits; default "this
     // parent has none", which is what a non-investment split parent looks like.
     transactionSplitRepository = { find: jest.fn().mockResolvedValue([]) };
+    userPreferenceRepository = {
+      findOne: jest.fn().mockResolvedValue({ defaultCurrency: "CAD" }),
+    };
 
     const mocks = createScopedDbMocks([
       [InvestmentTransaction, investmentTransactionsRepository],
       [Transaction, transactionRepository],
       [TransactionSplit, transactionSplitRepository],
+      [UserPreference, userPreferenceRepository],
     ]);
     dataSource = mocks.dataSource;
     // Reuse the direct-manager behaviours the spec already defines.
@@ -4312,7 +4318,47 @@ describe("InvestmentTransactionsService", () => {
       expect(result.entries[1].totalCapitalGain).toBe(-50);
     });
 
-    it("flags mixed currencies with a null currency on the bucket", async () => {
+    const usdToCad = (rate: number) => [
+      {
+        from_currency: "USD",
+        to_currency: "CAD",
+        rate,
+        rate_date: "2024-06-28",
+      },
+    ];
+
+    it("converts a mixed-currency month into the default currency instead of adding CAD to USD", async () => {
+      (
+        portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock
+      ).mockResolvedValue([
+        makeEntry({
+          accountCurrencyCode: "CAD",
+          totalCapitalGain: 100,
+          unrealizedGain: 100,
+        }),
+        makeEntry({
+          accountCurrencyCode: "USD",
+          totalCapitalGain: 50,
+          unrealizedGain: 50,
+          symbol: "USS",
+          securityId: "sec-us",
+        }),
+      ]);
+      mockQueryRunner.manager.query.mockResolvedValue(usdToCad(1.5));
+
+      const result = await service.getLlmCapitalGains(userId, {
+        startDate: "2024-06-01",
+        endDate: "2024-06-30",
+      });
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].currency).toBe("CAD");
+      expect(result.totals.totalCapitalGain).toBe(175); // 100 + 50 * 1.5
+      expect(result.totals.fxComplete).toBe(true);
+      expect(result.totals.missingRatePairs).toEqual([]);
+    });
+
+    it("withholds the total and names the pair when a rate is missing", async () => {
       (
         portfolioCalculationService.calculateCapitalGainsByMonth as jest.Mock
       ).mockResolvedValue([
@@ -4324,14 +4370,18 @@ describe("InvestmentTransactionsService", () => {
           securityId: "sec-us",
         }),
       ]);
+      mockQueryRunner.manager.query.mockResolvedValue([]);
 
       const result = await service.getLlmCapitalGains(userId, {
         startDate: "2024-06-01",
         endDate: "2024-06-30",
       });
 
-      expect(result.entries).toHaveLength(1); // single month bucket
-      expect(result.entries[0].currency).toBeNull();
+      expect(result.totals.totalCapitalGain).toBeNull();
+      expect(result.totals.unrealizedGain).toBeNull();
+      expect(result.totals.fxComplete).toBe(false);
+      expect(result.totals.missingRatePairs).toEqual(["USD->CAD"]);
+      expect(result.entries[0].totalCapitalGain).toBeNull();
     });
 
     it("filters by symbol (case-insensitive) before aggregating", async () => {
@@ -9969,6 +10019,153 @@ describe("InvestmentTransactionsService", () => {
           accruedInterest: 0,
           redemptionSplit: { interest: 470.5, outcome: "differs" },
         });
+      });
+
+      it("splits a REST create that states no accrued interest instead of booking it as a gain", async () => {
+        await service.create(userId, {
+          accountId,
+          securityId,
+          action: InvestmentAction.REDEEM,
+          transactionDate: "2023-04-01",
+          quantity: 10,
+          price: 147.05,
+        });
+        expect(bondHoldingsService.redemptionSplit).toHaveBeenCalled();
+        expect(created()[0]).toMatchObject({
+          action: InvestmentAction.REDEEM,
+          price: 100,
+          totalAmount: 1000,
+        });
+        // The one cash row is the payout: principal plus the split's interest.
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          cashAccountId,
+          1470.5,
+        );
+      });
+
+      it("splits a REST edit that changes a redemption's price and states no accrued interest", async () => {
+        investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            ...mockBuyTransaction,
+            action: InvestmentAction.REDEEM,
+            quantity: 10,
+            price: 100,
+            totalAmount: 1000,
+            transactionDate: "2023-04-01",
+            bondInstrumentId: null,
+          }),
+        );
+        await service.update(userId, transactionId, { price: 147.05 });
+        expect(bondHoldingsService.redemptionSplit).toHaveBeenCalledWith(
+          userId,
+          securityId,
+          accountId,
+          EDO0423,
+          "2023-04-01",
+          10,
+          transactionId,
+        );
+        expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
+          expect.objectContaining({ price: 100, totalAmount: 990.01 }),
+        );
+      });
+
+      it("refuses a REST create whose split is refused, writing nothing", async () => {
+        bondHoldingsService.redemptionSplit.mockResolvedValue({
+          ...AT_MATURITY,
+          interest: null,
+          grossInterest: null,
+          principalReturned: null,
+          payout: null,
+          refusal: "RATE_UNKNOWN",
+        });
+        await expect(
+          service.create(userId, {
+            accountId,
+            securityId,
+            action: InvestmentAction.REDEEM,
+            transactionDate: "2023-04-01",
+            quantity: 10,
+            price: 147.05,
+          }),
+        ).rejects.toMatchObject({ response: { errorCode: "RATE_UNKNOWN" } });
+        expect(created()).toEqual([]);
+      });
+
+      it("keeps the stated figures of a REST create that names no series when the account holds several", async () => {
+        bondHoldingsService.seriesHoldings.mockResolvedValue({
+          holdings: [
+            { instrumentId: EDO0423, seriesCode: "EDO0423", quantity: 5 },
+            { instrumentId: OTHER_SERIES, seriesCode: "EDO0523", quantity: 5 },
+          ],
+        });
+        await service.create(userId, {
+          accountId,
+          securityId,
+          action: InvestmentAction.REDEEM,
+          transactionDate: "2023-04-01",
+          quantity: 10,
+          price: 147.05,
+        });
+        expect(bondHoldingsService.redemptionSplit).not.toHaveBeenCalled();
+        expect(created()[0]).toMatchObject({
+          action: InvestmentAction.REDEEM,
+          price: 147.05,
+        });
+      });
+
+      it("splits a REST edit of the quantity again instead of keeping the interest stored for the old quantity", async () => {
+        const companion = {
+          id: "inv-tx-interest",
+          userId,
+          action: InvestmentAction.INTEREST,
+          linkedTransactionId: transactionId,
+          totalAmount: 470.5,
+          price: 470.5,
+        };
+        investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            ...mockBuyTransaction,
+            action: InvestmentAction.REDEEM,
+            quantity: 10,
+            price: 100,
+            totalAmount: 1000,
+            transactionDate: "2023-04-01",
+            bondInstrumentId: EDO0423,
+            linkedTransactionId: companion.id,
+          }),
+        );
+        investmentTransactionsRepository.findOne.mockResolvedValue(companion);
+        bondHoldingsService.redemptionSplit.mockResolvedValue({
+          ...AT_MATURITY,
+          quantity: 5,
+          principal: "500.00",
+          grossInterest: "235.25",
+          interest: "235.25",
+          principalReturned: "500.00",
+          payout: "735.25",
+        });
+        await service.update(userId, transactionId, { quantity: 5 });
+        expect(bondHoldingsService.redemptionSplit).toHaveBeenCalledWith(
+          userId,
+          securityId,
+          accountId,
+          EDO0423,
+          "2023-04-01",
+          5,
+          transactionId,
+        );
+        expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: transactionId,
+            price: 100,
+            totalAmount: 490.01,
+          }),
+        );
+        // Proceeds plus the new interest, not the old 470.50.
+        expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: 725.26 }),
+        );
       });
     });
 

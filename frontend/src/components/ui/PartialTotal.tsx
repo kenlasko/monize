@@ -11,6 +11,8 @@ interface PartialTotalProps {
   total: ConvertedTotal;
   /** Display currency the conversion targeted, for the explanation. */
   displayCurrency: string;
+  /** Replaces the missing-rate wording when something else withheld the total. */
+  explanation?: string;
 }
 
 /**
@@ -24,7 +26,12 @@ interface PartialTotalProps {
  * The marker is a visible symbol and a tooltip, not colour alone -- and it names
  * the pairs, because "incomplete" the user cannot act on.
  */
-export function PartialTotal({ children, total, displayCurrency }: PartialTotalProps) {
+export function PartialTotal({
+  children,
+  total,
+  displayCurrency,
+  explanation: explanationOverride,
+}: PartialTotalProps) {
   const t = useTranslations('common');
 
   // A total is a subtotal whenever any component was left out, whether the
@@ -45,13 +52,14 @@ export function PartialTotal({ children, total, displayCurrency }: PartialTotalP
   // count would thread two extra numbers through every ConvertedTotal producer for
   // a wording nuance.
   const explanation =
-    total.missingCurrencies.length > 0
+    explanationOverride ??
+    (total.missingCurrencies.length > 0
       ? t('partialTotal.explanation', {
           currencies: total.missingCurrencies.join(', '),
           displayCurrency,
           count: total.excludedCount,
         })
-      : t('partialTotal.explanationExcluded', { count: total.excludedCount });
+      : t('partialTotal.explanationExcluded', { count: total.excludedCount }));
 
   return (
     <span className="inline-flex items-baseline gap-1" data-testid="partial-total">

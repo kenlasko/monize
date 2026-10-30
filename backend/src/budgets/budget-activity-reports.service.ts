@@ -10,15 +10,10 @@ import {
   SeasonalPattern,
   FlexGroupStatusResult,
 } from "./budget-reports.service";
-import { formatDateYMD, getMonthEndYMD } from "../common/date-utils";
-import {
-  budgetExcludedAccountIds,
-  excludeBudgetAccounts,
-  outgoingParentTransfers,
-  outgoingSplitTransfers,
-  PARENT_TRANSFER_AMOUNT,
-  SPLIT_TRANSFER_AMOUNT,
-} from "./budget-spending.util";
+import { formatDateYMD } from "../common/date-utils";
+import { queryCategorySpendingBuckets } from "./budget-spending.util";
+import { queryMonthlyCategorySpent } from "./budget-monthly-spending.util";
+import { enumerateDaysYMD } from "../net-worth/series-dates.util";
 import { roundMoney, roundToDecimals, sumMoney } from "../common/round.util";
 
 const MONTH_NAMES = [
@@ -60,79 +55,15 @@ export class BudgetActivityReportsService {
       return [];
     }
 
-    const excludedAccountIds = budgetExcludedAccountIds(budget.config);
-
-    // Get 12 months of transaction data
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 12);
-    const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-01`;
-    const endStr = getMonthEndYMD(
-      endDate.getFullYear(),
-      endDate.getMonth() + 1,
-    );
-
-    // Query monthly spending per category
-    const directSpending = await withScopedDb(this.dataSource, (m) =>
-      excludeBudgetAccounts(
-        m
-          .getRepository(Transaction)
-          .createQueryBuilder("t")
-          .select("t.category_id", "categoryId")
-          .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
-          .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
-          .addSelect("COALESCE(ABS(SUM(t.amount)), 0)", "total")
-          .where("t.user_id = :userId", { userId })
-          .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
-          .andWhere("t.transaction_date >= :startStr", { startStr })
-          .andWhere("t.transaction_date <= :endStr", { endStr })
-          .andWhere("t.status != :void", { void: "VOID" })
-          .andWhere("t.is_split = false")
-          .andWhere("t.amount < 0")
-          .groupBy("t.category_id")
-          .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
-          .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)"),
-        excludedAccountIds,
-      ).getRawMany(),
-    );
-
-    const splitSpending = await withScopedDb(this.dataSource, (m) =>
-      excludeBudgetAccounts(
-        m
-          .getRepository(TransactionSplit)
-          .createQueryBuilder("s")
-          .innerJoin("s.transaction", "t")
-          .select("s.category_id", "categoryId")
-          .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
-          .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
-          .addSelect("COALESCE(ABS(SUM(s.amount)), 0)", "total")
-          .where("t.user_id = :userId", { userId })
-          .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
-          .andWhere("t.transaction_date >= :startStr", { startStr })
-          .andWhere("t.transaction_date <= :endStr", { endStr })
-          .andWhere("t.status != :void", { void: "VOID" })
-          .andWhere("s.amount < 0")
-          .groupBy("s.category_id")
-          .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
-          .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)"),
-        excludedAccountIds,
-      ).getRawMany(),
-    );
-
-    // Merge direct + split spending into: Map<categoryId, Map<month, total>>
-    const spendingMap = new Map<string, Map<number, number>>();
-
-    for (const row of [...directSpending, ...splitSpending]) {
-      const catId = row.categoryId as string;
-      const month = Number(row.month);
-      const total = parseFloat(row.total || "0");
-
-      if (!spendingMap.has(catId)) {
-        spendingMap.set(catId, new Map());
-      }
-      const monthMap = spendingMap.get(catId)!;
-      monthMap.set(month, (monthMap.get(month) || 0) + total);
-    }
+    // Net, converted and account-filtered like the budget page, per month.
+    const { byCategory: spendingMap, incompleteCategoryIds } =
+      await withScopedDb(this.dataSource, (m) =>
+        queryMonthlyCategorySpent(
+          m,
+          userId,
+          categories.filter((bc) => !bc.isTransfer),
+        ),
+      );
 
     // Build category name lookup
     const categoryNameMap = new Map<string, string>();
@@ -180,6 +111,7 @@ export class BudgetActivityReportsService {
         monthlyAverages,
         highMonths,
         typicalMonthlySpend: roundMoney(mean),
+        valuationComplete: !incompleteCategoryIds.has(catId),
       });
     }
 
@@ -189,7 +121,9 @@ export class BudgetActivityReportsService {
   async getDailySpending(
     userId: string,
     budgetId: string,
-  ): Promise<Array<{ date: string; amount: number }>> {
+  ): Promise<
+    Array<{ date: string; amount: number; valuationComplete: boolean }>
+  > {
     const budget = await this.budgetsService.findOne(userId, budgetId);
 
     // Determine period range
@@ -213,114 +147,56 @@ export class BudgetActivityReportsService {
     }
 
     const categories = (budget.categories || []).filter((bc) => !bc.isIncome);
-    const categoryIds = categories
-      .filter((bc) => bc.categoryId !== null && !bc.isTransfer)
-      .map((bc) => bc.categoryId as string);
+    if (categories.length === 0) return [];
 
-    const transferAccountIds = categories
-      .filter((bc) => bc.isTransfer && bc.transferAccountId)
-      .map((bc) => bc.transferAccountId as string);
-
-    const spendingMap = new Map<string, number>();
-    const excludedAccountIds = budgetExcludedAccountIds(budget.config);
-
-    // Run all independent queries in parallel
-    const queries: Promise<Array<{ date: string; total: string }>>[] = [];
-
-    if (categoryIds.length > 0) {
-      queries.push(
-        withScopedDb(this.dataSource, (m) =>
-          excludeBudgetAccounts(
-            m
-              .getRepository(Transaction)
-              .createQueryBuilder("t")
-              .select("DATE(t.transaction_date)", "date")
-              .addSelect("COALESCE(ABS(SUM(t.amount)), 0)", "total")
-              .where("t.user_id = :userId", { userId })
-              .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
-              .andWhere("t.transaction_date >= :start", { start: periodStart })
-              .andWhere("t.transaction_date <= :end", { end: periodEnd })
-              .andWhere("t.status != :void", { void: "VOID" })
-              .andWhere("t.is_split = false")
-              .groupBy("DATE(t.transaction_date)"),
-            excludedAccountIds,
-          ).getRawMany(),
-        ),
-      );
-
-      queries.push(
-        withScopedDb(this.dataSource, (m) =>
-          excludeBudgetAccounts(
-            m
-              .getRepository(TransactionSplit)
-              .createQueryBuilder("s")
-              .innerJoin("s.transaction", "t")
-              .select("DATE(t.transaction_date)", "date")
-              .addSelect("COALESCE(ABS(SUM(s.amount)), 0)", "total")
-              .where("t.user_id = :userId", { userId })
-              .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
-              .andWhere("t.transaction_date >= :start", { start: periodStart })
-              .andWhere("t.transaction_date <= :end", { end: periodEnd })
-              .andWhere("t.status != :void", { void: "VOID" })
-              .groupBy("DATE(t.transaction_date)"),
-            excludedAccountIds,
-          ).getRawMany(),
-        ),
-      );
-    }
-
-    if (transferAccountIds.length > 0) {
-      const window = {
+    // One query over the period, bucketed by day: net within each category,
+    // converted at the row's own date, the budget's excluded accounts left out.
+    // A day with a row that had no rate carries what converted and says so.
+    const days = await withScopedDb(this.dataSource, async (m) => {
+      const { buckets } = await queryCategorySpendingBuckets(
+        m.getRepository(Transaction),
+        m.getRepository(TransactionSplit),
         userId,
+        categories,
         periodStart,
         periodEnd,
-        transferAccountIds,
-        excludedAccountIds,
-      };
-      // Both transfer shapes: whole-row transfers and split lines carrying a
-      // transfer_account_id (review #1131).
-      queries.push(
-        withScopedDb(this.dataSource, (m) =>
-          outgoingParentTransfers(m.getRepository(Transaction), window)
-            .select("DATE(t.transaction_date)", "date")
-            .addSelect(
-              `COALESCE(ABS(SUM(${PARENT_TRANSFER_AMOUNT})), 0)`,
-              "total",
-            )
-            .groupBy("DATE(t.transaction_date)")
-            .getRawMany(),
-        ),
+        (txDate) => txDate,
       );
-      queries.push(
-        withScopedDb(this.dataSource, (m) =>
-          outgoingSplitTransfers(m.getRepository(TransactionSplit), window)
-            .select("DATE(t.transaction_date)", "date")
-            .addSelect(
-              `COALESCE(ABS(SUM(${SPLIT_TRANSFER_AMOUNT})), 0)`,
-              "total",
-            )
-            .groupBy("DATE(t.transaction_date)")
-            .getRawMany(),
-        ),
-      );
-    }
-
-    const allResults = await Promise.all(queries);
-
-    for (const rows of allResults) {
-      for (const row of rows) {
-        const dateStr = String(row.date).substring(0, 10);
-        spendingMap.set(
-          dateStr,
-          (spendingMap.get(dateStr) || 0) + parseFloat(row.total || "0"),
-        );
+      const out: Array<{ date: string; amount: number; complete: boolean }> =
+        [];
+      for (const date of enumerateDaysYMD(periodStart, periodEnd)) {
+        const spending = buckets.get(date);
+        if (!spending) continue;
+        const complete =
+          spending.incompleteCategoryIds.size === 0 &&
+          spending.incompleteTransferAccountIds.size === 0;
+        out.push({
+          date,
+          amount: roundMoney(
+            sumMoney(
+              categories.map((bc) =>
+                // Signed net, not the clamped `resolveCategorySpent`: a refund
+                // day is negative so the days sum to the period net the budget
+                // page shows.
+                bc.isTransfer && bc.transferAccountId
+                  ? spending.transferSpendingMap.get(bc.transferAccountId) || 0
+                  : -(bc.categoryId
+                      ? spending.spendingMap.get(bc.categoryId) || 0
+                      : 0),
+              ),
+            ),
+          ),
+          complete,
+        });
       }
-    }
+      return out;
+    });
 
-    // Convert map to sorted array
-    return Array.from(spendingMap.entries())
-      .map(([date, amount]) => ({ date, amount: roundMoney(amount) }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+    return days.map(({ date, amount, complete }) => ({
+      date,
+      amount,
+      valuationComplete: complete,
+    }));
   }
 
   async getFlexGroupStatus(

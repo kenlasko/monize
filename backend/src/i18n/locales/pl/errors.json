@@ -42,6 +42,7 @@
     "institutionNotFound": "Nie znaleziono instytucji",
     "updateClosed": "Nie można zaktualizować zamkniętego konta",
     "changeCurrencyWithTransactions": "Nie można zmienić waluty konta, które ma transakcje.",
+    "changeCurrencyWithBalanceOrSchedules": "Nie można zmienić waluty konta, które ma saldo początkowe lub zaplanowane transakcje.",
     "alreadyClosed": "Konto jest już zamknięte",
     "closeNonZeroBalance": "Nie można zamknąć konta z niezerowym saldem. Bieżące saldo: {{ currentBalance }}",
     "closeWithFutureTransactions": "Nie można zamknąć konta z transakcjami z datą w przyszłości. Konto ma {{ count }} transakcji z datą po dzisiejszym dniu. Najpierw usuń je lub unieważnij.",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "Ten plik Money jest właśnie importowany. Poczekaj na zakończenie importu, zanim go odrzucisz.",
     "mnyImportAlreadyRunning": "Import już trwa. Poczekaj na jego zakończenie, zanim rozpoczniesz następny.",
     "mnyAlreadyImported": "Ten plik został już zaimportowany {{ date }} (import {{ jobId }}), a jego rekordy nadal są na Twoim koncie. Ponowny import je zduplikuje. Aby je zastąpić, zacznij od nowa i wybierz zastąpienie istniejących danych.",
+    "mnyExistingAccountClosed": "Istniejące konto „{{ name }}” jest zamknięte, więc nie można do niego dołączyć pliku Money. Otwórz je ponownie lub zmień jego nazwę, a potem zaimportuj plik jeszcze raz.",
+    "mnyExistingAccountCurrency": "Istniejące konto „{{ name }}” ma walutę {{ existing }}, a konto w pliku Money ma walutę {{ file }}. Zmień nazwę jednego z nich, a potem zaimportuj plik jeszcze raz.",
     "mnyJobNotFound": "Nie znaleziono zadania importu",
     "mnyFileTooLarge": "Ten plik Money jest większy niż limit importu wynoszący {{ limit }} MB.",
-    "noRateForSplitTransfer": "Brak kursu wymiany dla {{ pair }} na dzień {{ date }}: pozycja podziału przelewa na konto w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie."
+    "noRateForSplitTransfer": "Brak kursu wymiany dla {{ pair }} na dzień {{ date }}: pozycja podziału przelewa na konto w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie.",
+    "accountClosed": "Konto jest zamknięte. Otwórz je ponownie lub wybierz inne konto."
   },
   "monteCarlo": {
     "scenarioNotFound": "Nie znaleziono scenariusza {{ id }}",
@@ -779,6 +783,7 @@
     "notATransfer": "Transakcja nie jest przelewem",
     "splitTransferLegAccountLocked": "Ten przelew jest częścią transakcji podzielonej. Aby zmienić jego konta, edytuj podział w transakcji źródłowej.",
     "splitTransferLegStatusLocked": "Ten przelew jest częścią transakcji podzielonej. Anuluj go lub przywróć, edytując transakcję podzieloną, do której należy, aby obie strony zmieniły się razem.",
+    "investmentCashLegLocked": "Ta transakcja jest stroną gotówkową transakcji inwestycyjnej. Zmień lub usuń transakcję inwestycyjną, aby obie strony zmieniły się razem.",
     "investmentCashLegStatusLocked": "Ta transakcja jest gotówkową stroną transakcji inwestycyjnej. Unieważnij ją lub przywróć, zmieniając status transakcji inwestycyjnej, aby obie strony zmieniły się razem.",
     "notFoundById": "Nie znaleziono transakcji o ID {{ id }}",
     "bulkUpdateNoFields": "Należy podać co najmniej jedno pole do aktualizacji",

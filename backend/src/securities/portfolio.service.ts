@@ -4,6 +4,7 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { returnedRows } from "../common/db/query-result";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
+  FALLBACK_DEFAULT_CURRENCY,
   preferredCurrency,
   resolveUserDefaultCurrency,
 } from "../common/default-currency.util";
@@ -1404,7 +1405,7 @@ export class PortfolioService {
         securityId,
         symbol: security?.symbol || "Unknown",
         name: security?.name || "Unknown",
-        currencyCode: security?.currencyCode || "USD",
+        currencyCode: security?.currencyCode || FALLBACK_DEFAULT_CURRENCY,
         currentPrice,
         previousPrice,
         dailyChange,
@@ -1533,7 +1534,7 @@ export class PortfolioService {
         securityId,
         symbol: security?.symbol || "Unknown",
         name: security?.name || "Unknown",
-        currencyCode: security?.currencyCode || "USD",
+        currencyCode: security?.currencyCode || FALLBACK_DEFAULT_CURRENCY,
         currentPrice,
         previousPrice,
         dailyChange,

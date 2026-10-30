@@ -1,0 +1,239 @@
+<!doctype html>
+<!-- Generated from website/docs/categories-and-payees.md by frontend/scripts/build-website-docs.mjs. Edit the Markdown, then run "npm run docs:build" in frontend/. -->
+<html lang="en" data-theme="dark" class="docs-root"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="preload" as="image" href="/assets/img/monize-logo.svg"/><title>Categories and Payees - Monize documentation</title><meta name="description" content="Organize your spending with categories and payees."/><meta name="theme-color" content="#4fa091"/><link rel="canonical" href="https://monize.net/docs/categories-and-payees"/><link rel="icon" type="image/svg+xml" href="/assets/img/monize-logo.svg"/><meta property="og:type" content="article"/><meta property="og:site_name" content="Monize"/><meta property="og:title" content="Categories and Payees - Monize documentation"/><meta property="og:description" content="Organize your spending with categories and payees."/><meta property="og:url" content="https://monize.net/docs/categories-and-payees"/><link rel="stylesheet" href="/assets/css/styles.css"/><link rel="stylesheet" href="/assets/css/docs.css"/><script src="/assets/js/theme-boot.js"></script></head><body class="docs"><a class="skip" href="#content">Skip to content</a><header id="hdr" class="dhdr"><button id="sideBtn" class="icobtn dside-btn" type="button" aria-label="Open the page list" aria-controls="side" aria-expanded="false">☰</button><a class="brand" href="/"><img class="logo" src="/assets/img/monize-logo.svg" alt="" width="30" height="30"/><span>Monize</span></a><a class="dlabel" href="/docs/">Docs</a><button class="dsearch" type="button" data-search-open="" aria-haspopup="dialog" aria-label="Search the documentation"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><span>Search docs</span><kbd>/</kbd></button><nav class="dnav" aria-label="Site"><a href="/">Home</a><a href="https://demo.monize.net" rel="noopener">Live demo</a><a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></nav><button id="theme" class="icobtn" type="button" title="Toggle light / dark" aria-label="Toggle colour theme">☾</button></header><div class="dshade" id="shade" hidden=""></div><div class="dlayout"><aside class="dside" id="side"><nav aria-label="Documentation"><a class="dhome" href="/docs/">Overview</a><div class="dgroup"><p class="dgroup-t">Getting started</p><ul><li><a href="/docs/getting-started">Getting Started</a></li><li><a href="/docs/importing-transactions">Importing Transactions</a></li><li><a href="/docs/importing-from-quicken">Importing from Quicken</a></li><li><a href="/docs/importing-from-microsoft-money">Importing from Microsoft Money</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Core features</p><ul><li><a href="/docs/dashboard">Dashboard</a></li><li><a href="/docs/accounts">Accounts</a></li><li><a href="/docs/transactions">Transactions</a></li><li><a href="/docs/budgets">Budgets</a></li><li><a href="/docs/investments">Investments</a></li><li><a href="/docs/bills-and-deposits">Bills and Deposits</a></li><li><a href="/docs/email-receipts">Email Receipts</a></li><li><a href="/docs/warranties">Warranties</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Organizing and reporting</p><ul><li><a href="/docs/categories-and-payees" aria-current="page">Categories and Payees</a></li><li><a href="/docs/tags">Tags</a></li><li><a href="/docs/reports">Reports</a></li><li><a href="/docs/currency-management">Currency Management</a></li></ul></div><div class="dgroup"><p class="dgroup-t">AI</p><ul><li><a href="/docs/ai">AI</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Administration</p><ul><li><a href="/docs/settings-and-security">Settings and Security</a></li><li><a href="/docs/shared-access">Shared Access (Delegated Users)</a></li><li><a href="/docs/emergency-access">Emergency Access</a></li><li><a href="/docs/backup-and-restore">Backup and Restore</a></li></ul></div></nav></aside><main id="content" class="dmain" tabindex="-1"><nav class="crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">/</span><span>Organizing and reporting</span></nav><article class="doc"><h1>Categories and Payees</h1><details class="toc-m"><summary>On this page</summary><ul><li class="d2"><a href="#categories">Categories</a></li><li class="d3"><a href="#category-hierarchy">Category Hierarchy</a></li><li class="d3"><a href="#managing-categories">Managing Categories</a></li><li class="d3"><a href="#viewing-a-categorys-transactions">Viewing a Category&#x27;s Transactions</a></li><li class="d3"><a href="#income-vs-expense-categories">Income vs Expense Categories</a></li><li class="d3"><a href="#categories-on-transfers">Categories on Transfers</a></li><li class="d3"><a href="#system-categories">System Categories</a></li><li class="d2"><a href="#payees">Payees</a></li><li class="d3"><a href="#managing-payees">Managing Payees</a></li><li class="d3"><a href="#viewing-a-payees-transactions">Viewing a Payee&#x27;s Transactions</a></li><li class="d3"><a href="#default-categories">Default Categories</a></li><li class="d3"><a href="#payee-contact-details">Payee Contact Details</a></li><li class="d3"><a href="#payee-lookup">Payee Lookup</a></li><li class="d3"><a href="#payee-aliases">Payee Aliases</a></li><li class="d3"><a href="#merging-payees">Merging Payees</a></li><li class="d3"><a href="#auto-merge-payees">Auto-Merge Payees</a></li><li class="d3"><a href="#deactivating-unused-payees">Deactivating Unused Payees</a></li><li class="d3"><a href="#auto-assign-default-categories">Auto-Assign Default Categories</a></li><li class="d3"><a href="#payee-auto-complete">Payee Auto-Complete</a></li><li class="d3"><a href="#most-used-and-recently-used">Most Used and Recently Used</a></li><li class="d3"><a href="#sort-preferences">Sort Preferences</a></li></ul></details><p>Categories and payees are the organizational backbone of your financial data. Categories classify <em>what</em> the money was for, while payees track <em>who</em> the money went to or came from.</p>
+<h2 id="categories">Categories<a class="hlink" href="#categories" aria-label="Link to this section">#</a></h2>
+<p>Categories are used to classify transactions by purpose (e.g., &quot;Groceries,&quot; &quot;Rent,&quot; &quot;Salary&quot;). They form a hierarchical tree structure with parent and child categories.</p>
+<blockquote>
+<p><strong>Note:</strong> A fresh account starts with a set of default expense and income categories, now <strong>translated across all 21 supported locales</strong>, so your starting categories appear in your own language. You can rename, recolour, or delete any of them.</p>
+</blockquote>
+<h3 id="category-hierarchy">Category Hierarchy<a class="hlink" href="#category-hierarchy" aria-label="Link to this section">#</a></h3>
+<p>Categories support parent-child relationships for detailed tracking:</p>
+<pre><code>Food &amp; Dining (parent)
+  |- Groceries (child)
+  |- Restaurants (child)
+  |- Coffee Shops (child)
+
+Housing (parent)
+  |- Rent (child)
+  |- Utilities (child)
+  |- Maintenance (child)
+</code></pre>
+<p>When viewing reports, you can see totals at the parent level (all &quot;Food &amp; Dining&quot;) or drill down to individual children (just &quot;Groceries&quot;).</p>
+<h3 id="managing-categories">Managing Categories<a class="hlink" href="#managing-categories" aria-label="Link to this section">#</a></h3>
+<p>Navigate to <strong>Tools &gt; Categories</strong> to access the category management page.</p>
+<figure><img src="/docs/images/categories-page.png" alt="Categories Page" width="1188" height="1228" loading="lazy" decoding="async"/><figcaption>Categories Page</figcaption></figure>
+<h4 id="creating-a-category">Creating a Category<a class="hlink" href="#creating-a-category" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Click <strong>Add Category</strong></li>
+<li>Enter the category details:</li>
+</ol>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody><tr><td><strong>Name</strong></td><td>Category name (e.g., &quot;Groceries&quot;)</td></tr><tr><td><strong>Parent</strong></td><td>Optional parent category for nesting</td></tr><tr><td><strong>Type</strong></td><td>Income or Expense</td></tr><tr><td><strong>Colour</strong></td><td>Visual colour for reports and charts</td></tr></tbody></table></div>
+<ol start="3">
+<li>Click <strong>Save</strong></li>
+</ol>
+<h4 id="editing-a-category">Editing a Category<a class="hlink" href="#editing-a-category" aria-label="Link to this section">#</a></h4>
+<p>Click the edit button next to any category to modify its name, parent, type, or colour.</p>
+<h4 id="deleting-a-category">Deleting a Category<a class="hlink" href="#deleting-a-category" aria-label="Link to this section">#</a></h4>
+<p>Categories can only be deleted if no transactions reference them. If transactions use the category, you must reassign them first or choose to merge the category into another one.</p>
+<h3 id="viewing-a-categorys-transactions">Viewing a Category&#x27;s Transactions<a class="hlink" href="#viewing-a-categorys-transactions" aria-label="Link to this section">#</a></h3>
+<p>Each category row has a <strong>View transactions</strong> action. Clicking it opens the Transactions page pre-filtered to that category, so you can review every transaction assigned to it without setting up the filter by hand.</p>
+<h3 id="income-vs-expense-categories">Income vs Expense Categories<a class="hlink" href="#income-vs-expense-categories" aria-label="Link to this section">#</a></h3>
+<p>Each category is marked as either <strong>Income</strong> or <strong>Expense</strong>:</p>
+<ul>
+<li><strong>Income categories</strong> -- Salary, freelance income, investment returns, etc.</li>
+<li><strong>Expense categories</strong> -- Groceries, rent, utilities, entertainment, etc.</li>
+</ul>
+<p>This classification determines how transactions are counted in reports (income vs. expenses charts).</p>
+<h3 id="categories-on-transfers">Categories on Transfers<a class="hlink" href="#categories-on-transfers" aria-label="Link to this section">#</a></h3>
+<p>Transfers move money between your own accounts, so they are never counted as income or expense. You can still optionally assign a category to a transfer. When you do, the transfer appears under that category in the monthly category breakdown, giving you visibility into where transferred money goes, while remaining excluded from income and expense totals.</p>
+<h3 id="system-categories">System Categories<a class="hlink" href="#system-categories" aria-label="Link to this section">#</a></h3>
+<p>Monize includes a set of default system categories that cannot be deleted. These provide a starting point and cover common financial categories. You can rename them or add child categories to customize them for your needs.</p>
+<h2 id="payees">Payees<a class="hlink" href="#payees" aria-label="Link to this section">#</a></h2>
+<p>Payees represent the people, businesses, or entities you transact with. Every transaction can optionally be assigned a payee.</p>
+<h3 id="managing-payees">Managing Payees<a class="hlink" href="#managing-payees" aria-label="Link to this section">#</a></h3>
+<p>Navigate to <strong>Tools &gt; Payees</strong> to access the payee management page.</p>
+<figure><img src="/docs/images/payees-page.png" alt="Payees Page" width="1653" height="1181" loading="lazy" decoding="async"/><figcaption>Payees Page</figcaption></figure>
+<h4 id="creating-a-payee">Creating a Payee<a class="hlink" href="#creating-a-payee" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Click <strong>Add Payee</strong></li>
+<li>Enter the payee details:</li>
+</ol>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody><tr><td><strong>Name</strong></td><td>Payee name (e.g., &quot;Amazon&quot;, &quot;City Hydro&quot;)</td></tr><tr><td><strong>Default Category</strong></td><td>Auto-assigned category for new transactions with this payee</td></tr><tr><td><strong>Aliases</strong></td><td>Wildcard patterns for matching imported transaction names (can be added during creation)</td></tr><tr><td><strong>Website</strong></td><td>The payee&#x27;s website (see <a href="#payee-contact-details">Payee Contact Details</a>)</td></tr><tr><td><strong>Address</strong></td><td>The payee&#x27;s address</td></tr><tr><td><strong>Email</strong></td><td>The payee&#x27;s email address</td></tr><tr><td><strong>Phone</strong></td><td>The payee&#x27;s phone number</td></tr><tr><td><strong>Notes</strong></td><td>Optional notes about the payee</td></tr></tbody></table></div>
+<ol start="3">
+<li>Click <strong>Save</strong></li>
+</ol>
+<p>You can add aliases directly during payee creation -- there is no need to save the payee first and then edit it to add aliases.</p>
+<p>Payees can also be created inline when creating a transaction -- if you type a name that does not exist, you can create it on the fly.</p>
+<h4 id="editing-a-payee">Editing a Payee<a class="hlink" href="#editing-a-payee" aria-label="Link to this section">#</a></h4>
+<p>Click the edit button next to any payee to modify its name, default category, contact details, or notes.</p>
+<h4 id="deleting-a-payee">Deleting a Payee<a class="hlink" href="#deleting-a-payee" aria-label="Link to this section">#</a></h4>
+<p>Payees can be deleted. Transactions that referenced the deleted payee will have their payee field cleared.</p>
+<h3 id="viewing-a-payees-transactions">Viewing a Payee&#x27;s Transactions<a class="hlink" href="#viewing-a-payees-transactions" aria-label="Link to this section">#</a></h3>
+<p>Each payee row has a <strong>View transactions</strong> action. Clicking it opens the Transactions page pre-filtered to that payee, so you can quickly see every transaction with that payee without building the filter yourself.</p>
+<h3 id="default-categories">Default Categories<a class="hlink" href="#default-categories" aria-label="Link to this section">#</a></h3>
+<p>One of the most powerful features of payees is the <strong>default category</strong>. When you assign a default category to a payee:</p>
+<ol>
+<li>The next time you create a transaction for that payee, the category is automatically filled in</li>
+<li>This saves time and ensures consistent categorization</li>
+<li>You can always override the default for individual transactions</li>
+<li>During <a href="/docs/importing-transactions">import</a>, the default category is applied automatically when the payee is matched</li>
+</ol>
+<p>For example, if you set &quot;Loblaws&quot; with a default category of &quot;Groceries,&quot; every new transaction to Loblaws will automatically be categorized as Groceries.</p>
+<h3 id="payee-contact-details">Payee Contact Details<a class="hlink" href="#payee-contact-details" aria-label="Link to this section">#</a></h3>
+<p>A payee can carry a <strong>website</strong>, <strong>address</strong>, <strong>email</strong> and <strong>phone number</strong> alongside its name. They appear on the payee form and on the payee&#x27;s detail page, and an address is clickable -- it opens in the map service you chose under <strong>Settings &gt; Preferences &gt; Map provider for addresses</strong>.</p>
+<p>You can type them in yourself, or let Monize find them (see below).</p>
+<h3 id="payee-lookup">Payee Lookup<a class="hlink" href="#payee-lookup" aria-label="Link to this section">#</a></h3>
+<p>Rather than typing a payee&#x27;s contact details in, Monize can look them up for you.</p>
+<h4 id="looking-up-a-payee">Looking Up a Payee<a class="hlink" href="#looking-up-a-payee" aria-label="Link to this section">#</a></h4>
+<ul>
+<li>On the payee form (and on the transaction page when you create a new payee), click <strong>Look up details</strong></li>
+<li>On a payee&#x27;s detail page, click <strong>Look up contact details</strong></li>
+</ul>
+<p>Monize sends the payee&#x27;s name, together with any notes, website, address, email and phone it already has, so the lookup can tell the right business and the right branch apart. Nothing is saved until you confirm: a <strong>Confirm contact details</strong> dialog shows each proposed value marked <strong>Add</strong> or <strong>Replace</strong>, and where the name matches more than one business it asks you to choose the one you pay.</p>
+<p>A lookup can also run <strong>automatically</strong> when you create a new payee -- see <a href="/docs/settings-and-security#automatic-payee-contact-lookup">Automatic payee contact lookup</a>.</p>
+<h4 id="configuring-the-lookup">Configuring the Lookup<a class="hlink" href="#configuring-the-lookup" aria-label="Link to this section">#</a></h4>
+<p>The lookup is answered by one of two sources -- <strong>Google Places</strong> or an <strong>AI provider</strong> you have configured. You can reach the same settings panel from either place:</p>
+<ul>
+<li><strong>Tools &gt; Payees &gt; Maintenance &gt; Payee Lookup settings</strong></li>
+<li><strong>Settings &gt; Payee Lookup</strong></li>
+</ul>
+<p>They render the same controls, so it does not matter which you use. The full reference -- the two sources, their on/off switches, source ordering, pinning a particular AI provider, and the automatic-lookup toggle -- is on the settings page: <strong><a href="/docs/settings-and-security#payee-lookup">Payee Lookup</a></strong>.</p>
+<h4 id="setting-up-google-places">Setting up Google Places<a class="hlink" href="#setting-up-google-places" aria-label="Link to this section">#</a></h4>
+<p>Google Places answers a payee lookup from Google&#x27;s business directory. It needs an API key from a Google Cloud project with <strong>Places API (New)</strong> enabled, restricted <strong>by IP address</strong> rather than by HTTP referrer -- Monize calls Google from the server, not from your browser.</p>
+<p>The step-by-step setup, the monthly request limit and its 1,000-request default, the server-wide <code>GOOGLE_PLACES_API_KEY</code> alternative, and troubleshooting are documented on the settings page:</p>
+<blockquote>
+<p><strong><a href="/docs/settings-and-security#setting-up-google-places">Setting up Google Places</a></strong> -- on the <a href="/docs/settings-and-security">Settings and Security</a> page.</p>
+</blockquote>
+<p>Once a key is saved, the <strong>Payee Lookup settings</strong> panel shows how many of this month&#x27;s requests you have used. When the limit is spent, lookups fall back to your AI provider if you have one switched on; the payee form says so directly -- <em>&quot;This month&#x27;s Google Places lookups are used up. Raise the limit in Payee lookup settings, or wait until next month.&quot;</em></p>
+<h3 id="payee-aliases">Payee Aliases<a class="hlink" href="#payee-aliases" aria-label="Link to this section">#</a></h3>
+<p>Payee aliases let you map multiple variations of a payee name to a single canonical payee. This is especially useful for imported transactions, where banks often append location codes, reference numbers, or other suffixes to payee names.</p>
+<h4 id="how-aliases-work">How Aliases Work<a class="hlink" href="#how-aliases-work" aria-label="Link to this section">#</a></h4>
+<p>When a transaction is imported (via CSV, OFX/QFX, or QIF), Monize resolves the payee name in this order:</p>
+<ol>
+<li><strong>Exact name match</strong> -- If a payee with the same name exists, use it</li>
+<li><strong>Alias match</strong> -- If a payee alias pattern matches the imported name, use the canonical payee</li>
+<li><strong>Create new</strong> -- If no match is found, create a new payee</li>
+</ol>
+<p>When an alias matches, the transaction is assigned to the alias&#x27;s parent payee, and that payee&#x27;s default category is applied.</p>
+<h4 id="creating-aliases">Creating Aliases<a class="hlink" href="#creating-aliases" aria-label="Link to this section">#</a></h4>
+<p>Aliases are managed from the payee edit form:</p>
+<ol>
+<li>Navigate to <strong>Tools &gt; Payees</strong></li>
+<li>Click <strong>Edit</strong> on a payee</li>
+<li>In the <strong>Aliases</strong> section, type a pattern and click <strong>Add</strong> (or press Enter)</li>
+</ol>
+<h4 id="wildcard-patterns">Wildcard Patterns<a class="hlink" href="#wildcard-patterns" aria-label="Link to this section">#</a></h4>
+<p>Aliases support the <code>*</code> wildcard character, which matches zero or more characters. Matching is case-insensitive.</p>
+<div class="table-wrap"><table><thead><tr><th>Pattern</th><th>Matches</th><th>Does Not Match</th></tr></thead><tbody><tr><td><code>STARBUCKS*</code></td><td>&quot;STARBUCKS&quot;, &quot;STARBUCKS #1234&quot;, &quot;STARBUCKS MAIN ST&quot;</td><td>&quot;MY STARBUCKS&quot;</td></tr><tr><td><code>*Amazon*</code></td><td>&quot;Amazon&quot;, &quot;Amazon AWS&quot;, &quot;Pay Amazon&quot;</td><td>--</td></tr><tr><td><code>SHELL*STATION</code></td><td>&quot;Shell Fuel Station&quot;, &quot;SHELL GAS STATION #45&quot;</td><td>&quot;Shell&quot;</td></tr><tr><td><code>Tim Hortons</code></td><td>&quot;Tim Hortons&quot; (exact, case-insensitive)</td><td>&quot;Tim Hortons #1234&quot;</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Tip:</strong> Set up aliases for your most common payees before importing transactions. For example, create a &quot;Starbucks&quot; payee with alias <code>STARBUCKS*</code> to catch all Starbucks locations in your bank file.</p>
+</blockquote>
+<h4 id="managing-aliases">Managing Aliases<a class="hlink" href="#managing-aliases" aria-label="Link to this section">#</a></h4>
+<ul>
+<li>Aliases are displayed alphabetically below the alias input field</li>
+<li>Click <strong>Remove</strong> next to any alias to delete it</li>
+<li>Each payee can have multiple aliases</li>
+</ul>
+<h3 id="merging-payees">Merging Payees<a class="hlink" href="#merging-payees" aria-label="Link to this section">#</a></h3>
+<p>If you have duplicate payees (e.g., &quot;Amazon&quot; and &quot;Amazon.com&quot;), you can merge them to consolidate all transactions under a single payee.</p>
+<h4 id="how-to-merge">How to Merge<a class="hlink" href="#how-to-merge" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Navigate to <strong>Tools &gt; Payees</strong></li>
+<li>Click the <strong>Merge</strong> button (purple) on the payee you want to eliminate</li>
+<li>In the merge dialog:
+<ul>
+<li>The <strong>source payee</strong> (the one being merged away) is shown at the top with its transaction count</li>
+<li>Select the <strong>target payee</strong> (the one to keep) from the dropdown</li>
+<li>Optionally check <strong>&quot;Add as alias&quot;</strong> (checked by default) to create an alias on the target payee using the source payee&#x27;s name</li>
+</ul>
+</li>
+<li>Click <strong>Merge Payee</strong></li>
+</ol>
+<h4 id="what-happens-during-a-merge">What Happens During a Merge<a class="hlink" href="#what-happens-during-a-merge" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Action</th><th>Detail</th></tr></thead><tbody><tr><td><strong>Transactions reassigned</strong></td><td>All transactions from the source payee are moved to the target payee</td></tr><tr><td><strong>Scheduled transactions reassigned</strong></td><td>All scheduled transactions from the source are moved to the target</td></tr><tr><td><strong>Alias created</strong> (optional)</td><td>The source payee&#x27;s name is added as an alias on the target payee</td></tr><tr><td><strong>Source deleted</strong></td><td>The source payee and all its aliases are permanently deleted</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Example:</strong> You have &quot;Tim Hortons&quot; (50 transactions) and &quot;TIM HORTONS #1234&quot; (3 transactions). Merge &quot;TIM HORTONS #1234&quot; into &quot;Tim Hortons&quot; with &quot;Add as alias&quot; checked. Result: &quot;Tim Hortons&quot; now has 53 transactions and an alias <code>TIM HORTONS #1234</code> that will catch future imports with that name.</p>
+</blockquote>
+<h3 id="auto-merge-payees">Auto-Merge Payees<a class="hlink" href="#auto-merge-payees" aria-label="Link to this section">#</a></h3>
+<p>While <a href="#merging-payees">Merging Payees</a> handles duplicates one at a time, <strong>Auto-Merge</strong> is a bulk tool that scans your entire payee list and groups together near-duplicate name variants (for example &quot;Amazon&quot;, &quot;Amazon.com&quot;, and &quot;AMAZON MKTPLACE&quot;) so you can consolidate them all in a single pass.</p>
+<h4 id="running-the-scan">Running the Scan<a class="hlink" href="#running-the-scan" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Click the <strong>&quot;Auto-Merge Payees&quot;</strong> button on the Payees page</li>
+<li>Configure how the scan finds groups:</li>
+</ol>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Description</th></tr></thead><tbody><tr><td><strong>Minimum group size</strong></td><td>The smallest number of payees a group must contain to be suggested</td></tr><tr><td><strong>Similarity threshold</strong></td><td>How closely names must resemble each other to be grouped (higher = stricter matching)</td></tr><tr><td><strong>Minimum keyword length</strong></td><td>The shortest word length considered a meaningful keyword when comparing names, so short filler tokens are ignored</td></tr><tr><td><strong>Include inactive</strong></td><td>When on, deactivated payees are included in the scan; otherwise only active payees are considered</td></tr></tbody></table></div>
+<ol start="3">
+<li>Click <strong>&quot;Preview&quot;</strong> to see the suggested groups</li>
+</ol>
+<blockquote>
+<p><strong>Tip:</strong> Auto-Merge makes sweeping changes across many payees at once. Back up your data before applying, so you can roll back if a group merges more than you intended.</p>
+</blockquote>
+<h4 id="reviewing-and-applying-groups">Reviewing and Applying Groups<a class="hlink" href="#reviewing-and-applying-groups" aria-label="Link to this section">#</a></h4>
+<p>Groups start de-selected, so you opt in to each merge deliberately. For every group you want to apply:</p>
+<ul>
+<li>Toggle the group on to include it</li>
+<li>Choose which payee to <strong>keep</strong> (the canonical payee); the rest become <strong>aliases</strong> on it</li>
+<li>Optionally deselect individual members you do not want merged into the group</li>
+<li>Edit the canonical name and alias if you wish</li>
+<li>Pick a <strong>default category</strong> for the resulting payee</li>
+<li>Optionally enable <strong>back-fill</strong> to apply that default category onto the group&#x27;s existing uncategorized transactions</li>
+</ul>
+<p>When you apply, each selected group is merged into its chosen payee, the other members are added as aliases, and the default category (and optional back-fill) is applied. Groups are merged independently, so if one group fails (for example an alias name is already in use) the rest still succeed, and you are told exactly what conflicted.</p>
+<h3 id="deactivating-unused-payees">Deactivating Unused Payees<a class="hlink" href="#deactivating-unused-payees" aria-label="Link to this section">#</a></h3>
+<p>Over time, you may accumulate payees that are no longer relevant. Rather than deleting them (which clears the payee from historical transactions), you can deactivate them. Deactivated payees are hidden from dropdowns but remain on existing transactions.</p>
+<h4 id="bulk-deactivation">Bulk Deactivation<a class="hlink" href="#bulk-deactivation" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Click the <strong>&quot;Deactivate Unused&quot;</strong> button on the Payees page</li>
+<li>Configure the criteria:
+<ul>
+<li><strong>Maximum transactions</strong> -- Include payees with this many transactions or fewer (0-20)</li>
+<li><strong>Months unused</strong> -- Include payees not used for this long (6-120 months)</li>
+</ul>
+</li>
+<li>Click <strong>&quot;Preview Unused Payees&quot;</strong> to see candidates</li>
+<li>Review the list, which shows each payee&#x27;s name, transaction count, and last used date</li>
+<li>Use <strong>&quot;Select all&quot;</strong> / <strong>&quot;Select none&quot;</strong> or check individual payees</li>
+<li>Click <strong>&quot;Deactivate&quot;</strong> to deactivate the selected payees</li>
+</ol>
+<h4 id="reactivating-a-payee">Reactivating a Payee<a class="hlink" href="#reactivating-a-payee" aria-label="Link to this section">#</a></h4>
+<p>To reactivate a deactivated payee:</p>
+<ol>
+<li>Filter the payee list by <strong>Inactive</strong> status</li>
+<li>Click the <strong>Reactivate</strong> button on the payee row</li>
+<li>Confirm in the dialog</li>
+</ol>
+<h3 id="auto-assign-default-categories">Auto-Assign Default Categories<a class="hlink" href="#auto-assign-default-categories" aria-label="Link to this section">#</a></h3>
+<p>Monize can analyze your transaction history to suggest default categories for payees that do not have one set.</p>
+<ol>
+<li>Click the <strong>&quot;Auto-Assign Categories&quot;</strong> button on the Payees page</li>
+<li>Configure the criteria:
+<ul>
+<li><strong>Minimum transactions</strong> -- Only consider payees with at least this many transactions (1-50)</li>
+<li><strong>Category match percentage</strong> -- The category must be used in at least this percentage of transactions (50-100%)</li>
+<li><strong>Only without category</strong> -- Optionally limit to payees that do not already have a default category</li>
+</ul>
+</li>
+<li>Click <strong>&quot;Preview Suggestions&quot;</strong> to see candidates</li>
+<li>Each suggestion shows the payee name, suggested category, and match percentage (colour-coded: green for 90%+, blue for 75%+, yellow for below 75%)</li>
+<li>Select the suggestions you want to apply</li>
+<li>Optionally enable <strong>back-fill</strong> to also apply the chosen category onto the selected payees&#x27; existing uncategorized transactions (the toggle shows how many transactions would be updated); without it, the category only affects new transactions going forward</li>
+<li>Click <strong>&quot;Apply&quot;</strong> to set the default categories</li>
+</ol>
+<h3 id="payee-auto-complete">Payee Auto-Complete<a class="hlink" href="#payee-auto-complete" aria-label="Link to this section">#</a></h3>
+<p>When typing a payee name in the transaction form, Monize provides auto-complete suggestions based on:</p>
+<ol>
+<li><strong>Existing payees</strong> matching your typed text</li>
+<li><strong>Most frequently used</strong> payees appearing first</li>
+<li><strong>Recently used</strong> payees given priority</li>
+</ol>
+<p>This makes data entry faster and more consistent.</p>
+<h3 id="most-used-and-recently-used">Most Used and Recently Used<a class="hlink" href="#most-used-and-recently-used" aria-label="Link to this section">#</a></h3>
+<p>The payee system tracks usage statistics to improve the auto-complete experience:</p>
+<ul>
+<li><strong>Most Used</strong> -- Payees with the highest transaction count appear first in suggestions</li>
+<li><strong>Recently Used</strong> -- Payees from recent transactions are prioritized for quick access</li>
+</ul>
+<p>The payee list includes a <strong>Last Used</strong> column showing the date of each payee&#x27;s most recent transaction, making it easy to identify stale payees.</p>
+<h3 id="sort-preferences">Sort Preferences<a class="hlink" href="#sort-preferences" aria-label="Link to this section">#</a></h3>
+<p>Sort preferences on the Payees, Categories, Currencies, and Securities pages are saved to your browser&#x27;s local storage. Your chosen sort column and direction persist between sessions so you do not need to re-sort each time you visit the page.</p>
+<p>These statistics are computed efficiently using a single database query that includes the default category information.</p></article><nav class="pager" aria-label="Previous and next page"><a class="pg pg-prev" href="/docs/warranties"><span>Previous</span><b>Warranties</b></a><a class="pg pg-next" href="/docs/tags"><span>Next</span><b>Tags</b></a></nav><p class="dedit"><a href="https://github.com/kenlasko/monize/edit/main/website/docs/categories-and-payees.md" rel="noopener">Edit this page on GitHub</a><a href="https://github.com/kenlasko/monize/issues/new" rel="noopener">Report a problem with the docs</a></p></main><aside class="dtoc" aria-label="On this page"><p>On this page</p><ul><li class="d2"><a href="#categories">Categories</a></li><li class="d3"><a href="#category-hierarchy">Category Hierarchy</a></li><li class="d3"><a href="#managing-categories">Managing Categories</a></li><li class="d3"><a href="#viewing-a-categorys-transactions">Viewing a Category&#x27;s Transactions</a></li><li class="d3"><a href="#income-vs-expense-categories">Income vs Expense Categories</a></li><li class="d3"><a href="#categories-on-transfers">Categories on Transfers</a></li><li class="d3"><a href="#system-categories">System Categories</a></li><li class="d2"><a href="#payees">Payees</a></li><li class="d3"><a href="#managing-payees">Managing Payees</a></li><li class="d3"><a href="#viewing-a-payees-transactions">Viewing a Payee&#x27;s Transactions</a></li><li class="d3"><a href="#default-categories">Default Categories</a></li><li class="d3"><a href="#payee-contact-details">Payee Contact Details</a></li><li class="d3"><a href="#payee-lookup">Payee Lookup</a></li><li class="d3"><a href="#payee-aliases">Payee Aliases</a></li><li class="d3"><a href="#merging-payees">Merging Payees</a></li><li class="d3"><a href="#auto-merge-payees">Auto-Merge Payees</a></li><li class="d3"><a href="#deactivating-unused-payees">Deactivating Unused Payees</a></li><li class="d3"><a href="#auto-assign-default-categories">Auto-Assign Default Categories</a></li><li class="d3"><a href="#payee-auto-complete">Payee Auto-Complete</a></li><li class="d3"><a href="#most-used-and-recently-used">Most Used and Recently Used</a></li><li class="d3"><a href="#sort-preferences">Sort Preferences</a></li></ul></aside></div><footer class="dfoot"><div class="wrap"><span>Monize is released under the AGPL-3.0 licence.</span><span><a href="/">monize.net</a> · <a href="https://demo.monize.net" rel="noopener">Live demo</a> · <a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></span></div></footer><div class="sdlg" id="search" role="dialog" aria-modal="true" aria-label="Search the documentation" hidden=""><div class="sbox"><label class="sfield"><span class="sr">Search the documentation</span><input id="q" type="search" placeholder="Search the docs, e.g. &quot;split transaction&quot;" autoComplete="off" spellCheck="false" aria-controls="sres"/></label><ul id="sres" class="sres" role="listbox" aria-label="Results"></ul><p class="shint" id="shint"><kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</p></div></div><script src="/assets/js/docs.js" defer=""></script></body></html>

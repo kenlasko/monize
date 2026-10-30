@@ -285,19 +285,40 @@ export class HoldingsService {
   async getHoldingsSummary(userId: string, accountId: string) {
     const holdings = await this.findAll(userId, accountId);
 
+    // A held position with no stored average cost has an unknown basis, not a
+    // free one; an empty position holds zero cost.
+    const rows = holdings.map((h) => {
+      const quantity = Number(h.quantity);
+      const averageCost =
+        h.averageCost === null || h.averageCost === undefined
+          ? null
+          : Number(h.averageCost);
+      const costBasis =
+        averageCost !== null
+          ? quantity * averageCost
+          : quantity === 0
+            ? 0
+            : null;
+      return { h, quantity, averageCost, costBasis };
+    });
+    const costBasisComplete = rows.every((r) => r.costBasis !== null);
+    const knownCostBasis = sumMoney(rows.map((r) => r.costBasis ?? 0));
+
     const summary = {
       totalHoldings: holdings.length,
       totalQuantity: holdings.reduce((sum, h) => sum + Number(h.quantity), 0),
-      totalCostBasis: sumMoney(
-        holdings.map((h) => Number(h.quantity) * Number(h.averageCost || 0)),
-      ),
-      holdings: holdings.map((h) => ({
+      // Null while any holding's basis is unknown; the priced part is in
+      // `knownCostBasis`.
+      totalCostBasis: costBasisComplete ? knownCostBasis : null,
+      knownCostBasis,
+      costBasisComplete,
+      holdings: rows.map(({ h, quantity, averageCost, costBasis }) => ({
         id: h.id,
         symbol: h.security.symbol,
         name: h.security.name,
-        quantity: Number(h.quantity),
-        averageCost: Number(h.averageCost || 0),
-        costBasis: Number(h.quantity) * Number(h.averageCost || 0),
+        quantity,
+        averageCost,
+        costBasis,
       })),
     };
 

@@ -4,7 +4,7 @@ import { LoanProjectionAnchor } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { financialTodayYmd } from '@/lib/financial-today';
 import { isDebtOutstanding } from '@/lib/loan-frequency';
-import { roundToCents } from '@/lib/format';
+import { roundMoney, roundToCents } from '@/lib/format';
 import { transactionsApi } from '@/lib/transactions';
 import {
   LoanScheduleInput,
@@ -208,7 +208,7 @@ export function deriveLoanPaymentHistory(
         separateInterestByDate,
         usedInterestDates,
       );
-      runningBalance = Math.max(0, runningBalance - principal);
+      runningBalance = Math.max(0, roundMoney(runningBalance - principal));
       cumulativePrincipal += principal;
       cumulativeInterest += interest;
       events.push({
@@ -227,7 +227,7 @@ export function deriveLoanPaymentHistory(
     // magnitude at that point.
     let runningSigned = openingSigned;
     for (const transaction of sortedTransactions) {
-      runningSigned += Number(transaction.amount);
+      runningSigned = roundMoney(runningSigned + Number(transaction.amount));
       if (Number(transaction.amount) <= 0) continue; // draws move the balance, no row
       const principal = Math.abs(Number(transaction.amount));
       const { interest, type } = classifyPayment(

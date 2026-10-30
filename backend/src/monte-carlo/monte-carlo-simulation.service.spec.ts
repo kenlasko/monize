@@ -276,6 +276,24 @@ describe("MonteCarloSimulationService", () => {
       );
     });
 
+    it("inflates the withdrawal from today, not from retirement", () => {
+      // W=50000 in today's value, 30 years to retirement, 2.5% inflation:
+      // the first withdrawal is 50000 * 1.025^30 = ~104878.
+      const result = deterministic({
+        startingValue: 1000000,
+        annualContribution: 0,
+        yearsToRetirement: 30,
+        yearsInRetirement: 1,
+        annualWithdrawal: 50000,
+        expectedReturn: 0,
+        inflationRate: 0.025,
+      });
+      expect(1000000 - result.finalDistribution.median).toBeCloseTo(
+        50000 * Math.pow(1.025, 30),
+        0,
+      );
+    });
+
     it("massive withdrawals deplete most paths", () => {
       const result = service.run({
         ...baseParams,
@@ -695,38 +713,38 @@ describe("MonteCarloSimulationService", () => {
 
       expect(result.percentiles.p10).toEqual([
         234912.07, 235794.1476, 267049.397, 268403.1885, 276041.9422,
-        248223.9758, 145056.5835, 108908.3092, 78361.1044, 46617.7657,
+        244331.9306, 138359.8504, 95429.6008, 60359.1484, 25182.8208,
       ]);
       expect(result.percentiles.p50).toEqual([
         272123.2397, 291165.5587, 342292.3594, 358148.4682, 379490.3424,
-        373965.7835, 274582.7551, 252193.8083, 225532.8884, 196637.0482,
+        369783.248, 265905.2879, 237730.8675, 209826.7996, 176795.8622,
       ]);
       expect(result.percentiles.p90).toEqual([
         311877.5222, 350311.3485, 418464.1577, 473856.3085, 509719.7934,
-        534833.5114, 453521.916, 445334.7902, 446440.9695, 460381.0653,
+        530665.2697, 444827.6407, 432180.65, 424183.7959, 436337.5275,
       ]);
       expect(result.finalDistribution).toEqual({
         min: 0,
-        max: 882802.7745,
-        mean: 237340.0618,
-        median: 196637.0482,
-        stdev: 159306.6819,
-        depletionRate: 0.015,
+        max: 847584.8546,
+        mean: 213329.3672,
+        median: 176795.8622,
+        stdev: 156089.8877,
+        depletionRate: 0.05,
       });
-      expect(result.successRate).toBe(0.755);
+      expect(result.successRate).toBe(0.665);
       expect(result.performanceSummary.maxDrawdown).toEqual({
-        p10: -0.8412,
-        p25: -0.6494,
-        p50: -0.49,
-        p75: -0.3192,
-        p90: -0.2175,
+        p10: -0.9185,
+        p25: -0.7134,
+        p50: -0.5507,
+        p75: -0.3519,
+        p90: -0.2459,
       });
       expect(result.performanceSummary.endBalanceReal).toEqual({
-        p10: 36417.7241,
-        p25: 100383.5156,
-        p50: 153612.5478,
-        p75: 267827.709,
-        p90: 359648.9524,
+        p10: 19672.7793,
+        p25: 83068.3812,
+        p50: 138112.645,
+        p75: 246465.3144,
+        p90: 340866.1791,
       });
     });
   });

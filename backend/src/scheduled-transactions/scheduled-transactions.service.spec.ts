@@ -1288,28 +1288,55 @@ describe("ScheduledTransactionsService", () => {
 
   // ==================== findUpcoming ====================
   describe("findUpcoming", () => {
-    it("should query with default 30 days", async () => {
-      const qb = mockQueryBuilder([]);
+    const occurrenceFor = (id: string) =>
+      ({ scheduledTransactionId: id }) as any;
+
+    it("windows on effective occurrence dates and loads those schedules", async () => {
+      const findOccurrences = jest
+        .spyOn((service as any).occurrences, "findOccurrences")
+        .mockResolvedValue([occurrenceFor("s-b"), occurrenceFor("s-a")]);
+      const qb = mockQueryBuilder([
+        makeScheduled({ id: "s-a" }),
+        makeScheduled({ id: "s-b" }),
+      ]);
       scheduledRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findUpcoming(userId);
+      const result = await service.findUpcoming(userId, 7);
 
-      expect(qb.where).toHaveBeenCalledWith("st.userId = :userId", { userId });
-      expect(qb.andWhere).toHaveBeenCalledWith("st.isActive = :isActive", {
-        isActive: true,
+      expect(findOccurrences).toHaveBeenCalledWith(userId, {
+        through: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        maxOccurrences: 1,
       });
+      expect(qb.andWhere).toHaveBeenCalledWith("st.id IN (:...ids)", {
+        ids: ["s-b", "s-a"],
+      });
+      // Effective-date order, not the order the database returned.
+      expect(result.map((r) => r.id)).toEqual(["s-b", "s-a"]);
     });
 
-    it("should accept custom days parameter", async () => {
-      const qb = mockQueryBuilder([]);
-      scheduledRepo.createQueryBuilder.mockReturnValue(qb);
-
-      await service.findUpcoming(userId, 7);
-
-      expect(qb.andWhere).toHaveBeenCalledWith(
-        "st.nextDueDate <= :futureDate",
-        expect.objectContaining({ futureDate: expect.any(Date) }),
+    it("includes a bill whose slot is outside the window but whose override moved it in", async () => {
+      // nextDueDate Dec 15 moved to Nov 20: the old slot-date filter lost it.
+      scheduledRepo.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder([
+          makeScheduled({ id: "s-moved", nextDueDate: "2099-12-15" as any }),
+        ]),
       );
+      jest
+        .spyOn((service as any).occurrences, "findOccurrences")
+        .mockResolvedValue([occurrenceFor("s-moved")]);
+
+      const result = await service.findUpcoming(userId);
+
+      expect(result.map((r) => r.id)).toEqual(["s-moved"]);
+    });
+
+    it("returns nothing, and runs no schedule query, when no occurrence falls in the window", async () => {
+      jest
+        .spyOn((service as any).occurrences, "findOccurrences")
+        .mockResolvedValue([]);
+
+      expect(await service.findUpcoming(userId)).toEqual([]);
+      expect(scheduledRepo.createQueryBuilder).not.toHaveBeenCalled();
     });
   });
 
@@ -2039,6 +2066,80 @@ describe("ScheduledTransactionsService", () => {
       await service.update(userId, stId, { accountId: "acc-2" });
 
       expect(accountsService.findOne).toHaveBeenCalledWith(userId, "acc-2");
+    });
+
+    it("refuses a currencyCode other than the account's before writing", async () => {
+      stubFindOne(makeScheduled());
+
+      await expect(
+        service.update(userId, stId, { currencyCode: "EUR" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
+    it("re-derives the currency from the new account when accountId changes", async () => {
+      stubFindOne(makeScheduled());
+      accountsService.findOne.mockResolvedValue({
+        id: "acc-2",
+        userId,
+        currencyCode: "PLN",
+      });
+
+      await service.update(userId, stId, { accountId: "acc-2" });
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ScheduledTransaction,
+        stId,
+        expect.objectContaining({ accountId: "acc-2", currencyCode: "PLN" }),
+      );
+    });
+
+    it("re-derives a stale stored currency from the account when accountId is unchanged", async () => {
+      stubFindOne(makeScheduled({ currencyCode: "CAD" }));
+      accountsService.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+        currencyCode: "USD",
+      });
+
+      await service.update(userId, stId, { currencyCode: "USD" });
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ScheduledTransaction,
+        stId,
+        expect.objectContaining({ currencyCode: "USD" }),
+      );
+    });
+
+    it("treats a resent stale stored currencyCode as an echo and re-derives from the account", async () => {
+      stubFindOne(makeScheduled({ currencyCode: "CAD" }));
+      accountsService.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+        currencyCode: "USD",
+      });
+
+      await service.update(userId, stId, { currencyCode: "CAD" });
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ScheduledTransaction,
+        stId,
+        expect.objectContaining({ currencyCode: "USD" }),
+      );
+    });
+
+    it("still refuses a currencyCode that matches neither the stored value nor the account", async () => {
+      stubFindOne(makeScheduled({ currencyCode: "CAD" }));
+      accountsService.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+        currencyCode: "USD",
+      });
+
+      await expect(
+        service.update(userId, stId, { currencyCode: "EUR" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
     });
 
     it("should throw if transfer account same as source on update", async () => {
@@ -3751,6 +3852,7 @@ describe("ScheduledTransactionsService", () => {
             ]);
             return [{ total: "-1024", foreign_rows: "0" }];
           }
+          if (String(sql).includes("payroll_deduction_rules")) return [];
           return base(sql, params);
         },
       );
@@ -3763,6 +3865,83 @@ describe("ScheduledTransactionsService", () => {
       const payload = transactionsService.create.mock.calls[0][1];
       expect(payload.splits.map((s: any) => s.amount)).toEqual([2500, -53.48]);
       expect(payload.amount).toBe(2446.52);
+    });
+
+    it("takes the category lock before the paid read and pools a peer rule's lower cap (INV-PAYROLL-002, INV-PAYROLL-003)", async () => {
+      const scheduled = makeScheduled({
+        isSplit: true,
+        amount: 2436,
+        splits: [
+          {
+            id: "s1",
+            scheduledTransactionId: stId,
+            categoryId: "cat-gross",
+            transferAccountId: null,
+            amount: 2500,
+            memo: null,
+          } as any,
+          {
+            id: "s2",
+            scheduledTransactionId: stId,
+            categoryId: "cat-ei",
+            transferAccountId: null,
+            amount: -64,
+            memo: null,
+          } as any,
+        ],
+      });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+      // This bill allows 5000; another bill on the category allows 4000.
+      payrollRulesRepo.find.mockResolvedValue([
+        {
+          id: "rule-1",
+          categoryId: "cat-ei",
+          yearlyMaximum: 5000,
+          resetDate: "2025-01-01",
+          expectedPerPaycheque: null,
+        },
+      ]);
+      const base = mockDataSource.query.getMockImplementation()!;
+      mockDataSource.query.mockImplementation(
+        async (sql: string, params?: unknown[]) => {
+          if (String(sql).includes("payroll_deduction_rules")) {
+            return [
+              {
+                id: "rule-2",
+                category_id: "cat-ei",
+                yearly_maximum: "4000",
+                reset_date: "2025-01-01",
+              },
+            ];
+          }
+          if (String(sql).includes("foreign_rows")) {
+            return [{ total: "-4000", foreign_rows: "0" }];
+          }
+          return base(sql, params);
+        },
+      );
+
+      await service.post(userId, stId);
+
+      const sqls = mockDataSource.query.mock.calls.map((c: unknown[]) =>
+        String(c[0]),
+      );
+      const lock = sqls.findIndex((q: string) =>
+        q.includes("pg_advisory_xact_lock"),
+      );
+      const paid = sqls.findIndex((q: string) => q.includes("foreign_rows"));
+      expect(lock).toBeGreaterThanOrEqual(0);
+      expect(lock).toBeLessThan(paid);
+      expect(mockDataSource.query.mock.calls[lock][1]).toEqual([
+        9,
+        `${userId}:cat-ei`,
+      ]);
+      const payload = transactionsService.create.mock.calls[0][1];
+      expect(payload.splits.map((s: any) => s.amount)).toEqual([2500, 0]);
     });
 
     it("should use postDto.transactionDate when provided", async () => {
@@ -3905,6 +4084,7 @@ describe("ScheduledTransactionsService", () => {
 
     it("rejects when account is not a brokerage account", async () => {
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-inv",
         userId,
         accountType: "INVESTMENT",
@@ -4852,6 +5032,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-cash",
         userId,
         accountSubType: "INVESTMENT_CASH",
@@ -4873,6 +5054,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -4908,6 +5090,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -4940,6 +5123,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -4969,6 +5153,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -5007,6 +5192,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -5038,6 +5224,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -5071,6 +5258,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -5101,6 +5289,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -5125,6 +5314,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -5148,6 +5338,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -5180,6 +5371,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -5204,6 +5396,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -5260,6 +5453,7 @@ describe("ScheduledTransactionsService", () => {
         .mockResolvedValueOnce(preEdit)
         .mockResolvedValue(lockedDifferent);
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -5309,6 +5503,7 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -7771,6 +7966,7 @@ describe("ScheduledTransactionsService", () => {
         } as any),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -8098,6 +8294,7 @@ describe("ScheduledTransactionsService", () => {
         } as any),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -8142,6 +8339,7 @@ describe("ScheduledTransactionsService", () => {
         } as any),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -8186,6 +8384,7 @@ describe("ScheduledTransactionsService", () => {
         } as any),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -8231,6 +8430,7 @@ describe("ScheduledTransactionsService", () => {
         } as any),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",
@@ -8275,6 +8475,7 @@ describe("ScheduledTransactionsService", () => {
         } as any),
       );
       accountsService.findOne.mockResolvedValue({
+        currencyCode: "USD",
         id: "acc-1",
         userId,
         accountSubType: "INVESTMENT_BROKERAGE",

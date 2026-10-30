@@ -435,9 +435,9 @@
       "label": "讨论",
       "description": "与社区提问和分享想法。"
     },
-    "wiki": {
-      "label": "Wiki",
-      "description": "浏览指南和文档。"
+    "docs": {
+      "label": "文档",
+      "description": "浏览用户指南。"
     },
     "supportBackup": {
       "label": "创建支持备份",

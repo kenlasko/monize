@@ -734,6 +734,13 @@ export function CsvColumnMappingStep({
           </div>
         </div>
 
+        {/* Transfer Rules (inert in investment mode: rows classify by action) */}
+        {!investmentMode && (
+          <div className="mb-6">
+            <CsvTransferRules rules={transferRules} onChange={onTransferRulesChange} accounts={accounts} />
+          </div>
+        )}
+
         {/* Save/Load Mappings */}
         <div className="mb-6 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-3">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('csvMapping.savedMappingsTitle')}</h3>
@@ -800,13 +807,6 @@ export function CsvColumnMappingStep({
             </div>
           )}
         </div>
-
-        {/* Transfer Rules (inert in investment mode: rows classify by action) */}
-        {!investmentMode && (
-          <div className="mb-6">
-            <CsvTransferRules rules={transferRules} onChange={onTransferRulesChange} accounts={accounts} />
-          </div>
-        )}
 
         {/* Validation Error */}
         {validationError && (

@@ -138,8 +138,8 @@
     "redonePrefix": "已重做：{description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "打开 Monize 维基以获取此部分的帮助",
-    "helpTooltip": "打开 Monize 维基以获取此部分的帮助"
+    "helpAriaLabel": "打开 Monize 文档以获取此部分的帮助",
+    "helpTooltip": "打开 Monize 文档以获取此部分的帮助"
   },
   "bootSplash": {
     "loading": "正在加载 Monize",

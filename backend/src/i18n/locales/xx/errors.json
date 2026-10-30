@@ -42,6 +42,7 @@
     "institutionNotFound": "[XX-Institution not found-XX]",
     "updateClosed": "[XX-Cannot update a closed account-XX]",
     "changeCurrencyWithTransactions": "[XX-Cannot change the currency of an account that has transactions.-XX]",
+    "changeCurrencyWithBalanceOrSchedules": "[XX-Cannot change the currency of an account that has an opening balance or scheduled transactions.-XX]",
     "alreadyClosed": "[XX-Account is already closed-XX]",
     "closeNonZeroBalance": "[XX-Cannot close account with non-zero balance. Current balance: {{ currentBalance }}-XX]",
     "closeWithFutureTransactions": "[XX-Cannot close an account with future-dated transactions. It has {{ count }} transaction(s) dated after today; delete or void them first.-XX]",
@@ -479,6 +480,7 @@
     "internal": "[XX-Internal server error-XX]"
   },
   "import": {
+    "accountClosed": "[XX-The account is closed. Reopen it or choose another account.-XX]",
     "noAccountBlocks": "[XX-No account blocks found in QIF file. This file may not be a multi-account export.-XX]",
     "accountTypeRequired": "[XX-Choose an account type for these accounts before importing: {{ accounts }}-XX]",
     "importFailed": "[XX-Import failed after {{ imported }} transactions: {{ message }}-XX]",
@@ -501,6 +503,8 @@
     "mnyStagedFileInUse": "[XX-This Money file is being imported. Wait for the import to finish before discarding it.-XX]",
     "mnyImportAlreadyRunning": "[XX-An import is already running. Wait for it to finish before starting another.-XX]",
     "mnyAlreadyImported": "[XX-This file was already imported on {{ date }} (import {{ jobId }}), and its records are still in your account. Importing it again would duplicate them. To replace them, start over and choose to replace your existing data.-XX]",
+    "mnyExistingAccountClosed": "[XX-The existing account \"{{ name }}\" is closed, so the Money file cannot be merged into it. Reopen it or rename it, then import again.-XX]",
+    "mnyExistingAccountCurrency": "[XX-The existing account \"{{ name }}\" uses {{ existing }}, but the Money file account uses {{ file }}. Rename one of them, then import again.-XX]",
     "mnyJobNotFound": "[XX-Import job not found-XX]",
     "mnyFileTooLarge": "[XX-That Money file is larger than the {{ limit }} MB import limit.-XX]",
     "noRateForSplitTransfer": "[XX-No exchange rate for {{ pair }} on {{ date }}: a split line transfers into an account in another currency. Add an exchange rate for that pair and date, then import again.-XX]"
@@ -779,6 +783,7 @@
     "notATransfer": "[XX-Transaction is not a transfer-XX]",
     "splitTransferLegAccountLocked": "[XX-This transfer is part of a split transaction. Change its accounts by editing the split on the source transaction instead.-XX]",
     "splitTransferLegStatusLocked": "[XX-This transfer is part of a split transaction. Void or restore it by editing the split transaction it belongs to, so both sides change together.-XX]",
+    "investmentCashLegLocked": "[XX-This transaction is the cash side of an investment transaction. Change or delete the investment transaction instead, so both sides change together.-XX]",
     "investmentCashLegStatusLocked": "[XX-This transaction is the cash side of an investment transaction. Void or restore it by changing the investment transaction's status, so both sides change together.-XX]",
     "notFoundById": "[XX-Transaction with ID {{ id }} not found-XX]",
     "bulkUpdateNoFields": "[XX-At least one update field must be provided-XX]",

@@ -1,0 +1,582 @@
+<!doctype html>
+<!-- Generated from website/docs/importing-from-microsoft-money.md by frontend/scripts/build-website-docs.mjs. Edit the Markdown, then run "npm run docs:build" in frontend/. -->
+<html lang="en" data-theme="dark" class="docs-root"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="preload" as="image" href="/assets/img/monize-logo.svg"/><title>Importing from Microsoft Money - Monize documentation</title><meta name="description" content="Migrate from Microsoft Money, including direct .mny file import."/><meta name="theme-color" content="#4fa091"/><link rel="canonical" href="https://monize.net/docs/importing-from-microsoft-money"/><link rel="icon" type="image/svg+xml" href="/assets/img/monize-logo.svg"/><meta property="og:type" content="article"/><meta property="og:site_name" content="Monize"/><meta property="og:title" content="Importing from Microsoft Money - Monize documentation"/><meta property="og:description" content="Migrate from Microsoft Money, including direct .mny file import."/><meta property="og:url" content="https://monize.net/docs/importing-from-microsoft-money"/><link rel="stylesheet" href="/assets/css/styles.css"/><link rel="stylesheet" href="/assets/css/docs.css"/><script src="/assets/js/theme-boot.js"></script></head><body class="docs"><a class="skip" href="#content">Skip to content</a><header id="hdr" class="dhdr"><button id="sideBtn" class="icobtn dside-btn" type="button" aria-label="Open the page list" aria-controls="side" aria-expanded="false">☰</button><a class="brand" href="/"><img class="logo" src="/assets/img/monize-logo.svg" alt="" width="30" height="30"/><span>Monize</span></a><a class="dlabel" href="/docs/">Docs</a><button class="dsearch" type="button" data-search-open="" aria-haspopup="dialog" aria-label="Search the documentation"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><span>Search docs</span><kbd>/</kbd></button><nav class="dnav" aria-label="Site"><a href="/">Home</a><a href="https://demo.monize.net" rel="noopener">Live demo</a><a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></nav><button id="theme" class="icobtn" type="button" title="Toggle light / dark" aria-label="Toggle colour theme">☾</button></header><div class="dshade" id="shade" hidden=""></div><div class="dlayout"><aside class="dside" id="side"><nav aria-label="Documentation"><a class="dhome" href="/docs/">Overview</a><div class="dgroup"><p class="dgroup-t">Getting started</p><ul><li><a href="/docs/getting-started">Getting Started</a></li><li><a href="/docs/importing-transactions">Importing Transactions</a></li><li><a href="/docs/importing-from-quicken">Importing from Quicken</a></li><li><a href="/docs/importing-from-microsoft-money" aria-current="page">Importing from Microsoft Money</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Core features</p><ul><li><a href="/docs/dashboard">Dashboard</a></li><li><a href="/docs/accounts">Accounts</a></li><li><a href="/docs/transactions">Transactions</a></li><li><a href="/docs/budgets">Budgets</a></li><li><a href="/docs/investments">Investments</a></li><li><a href="/docs/bills-and-deposits">Bills and Deposits</a></li><li><a href="/docs/email-receipts">Email Receipts</a></li><li><a href="/docs/warranties">Warranties</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Organizing and reporting</p><ul><li><a href="/docs/categories-and-payees">Categories and Payees</a></li><li><a href="/docs/tags">Tags</a></li><li><a href="/docs/reports">Reports</a></li><li><a href="/docs/currency-management">Currency Management</a></li></ul></div><div class="dgroup"><p class="dgroup-t">AI</p><ul><li><a href="/docs/ai">AI</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Administration</p><ul><li><a href="/docs/settings-and-security">Settings and Security</a></li><li><a href="/docs/shared-access">Shared Access (Delegated Users)</a></li><li><a href="/docs/emergency-access">Emergency Access</a></li><li><a href="/docs/backup-and-restore">Backup and Restore</a></li></ul></div></nav></aside><main id="content" class="dmain" tabindex="-1"><nav class="crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">/</span><span>Getting started</span></nav><article class="doc"><h1>Importing from Microsoft Money</h1><details class="toc-m"><summary>On this page</summary><ul><li class="d2"><a href="#overview">Overview</a></li><li class="d3"><a href="#which-method-to-use">Which Method to Use</a></li><li class="d2"><a href="#part-1-direct-mny-import-recommended">Part 1: Direct .mny Import (Recommended)</a></li><li class="d3"><a href="#before-you-start">Before You Start</a></li><li class="d3"><a href="#step-by-step">Step by Step</a></li><li class="d3"><a href="#import-options">Import Options</a></li><li class="d3"><a href="#what-is-imported">What Is Imported</a></li><li class="d3"><a href="#what-is-not-imported">What Is Not Imported</a></li><li class="d3"><a href="#known-limitations">Known Limitations</a></li><li class="d3"><a href="#after-the-import">After the Import</a></li><li class="d3"><a href="#troubleshooting-the-mny-import">Troubleshooting the .mny Import</a></li><li class="d2"><a href="#part-2-the-qif-method-alternative">Part 2: The QIF Method (Alternative)</a></li><li class="d2"><a href="#part-3-preparing-microsoft-money-for-export">Part 3: Preparing Microsoft Money for Export</a></li><li class="d3"><a href="#31-note-your-account-details">3.1 Note Your Account Details</a></li><li class="d3"><a href="#32-open-closed-accounts-if-needed">3.2 Open Closed Accounts (if needed)</a></li><li class="d3"><a href="#33-make-a-list-of-all-accounts">3.3 Make a List of All Accounts</a></li><li class="d3"><a href="#34-create-export-folders">3.4 Create export folders</a></li><li class="d2"><a href="#part-4-exporting-from-microsoft-money">Part 4: Exporting from Microsoft Money</a></li><li class="d3"><a href="#exporting-regular-accounts">Exporting Regular Accounts</a></li><li class="d3"><a href="#exporting-investment-accounts">Exporting Investment Accounts</a></li><li class="d3"><a href="#file-naming-convention">File Naming Convention</a></li><li class="d2"><a href="#part-5-recommended-import-order">Part 5: Recommended Import Order</a></li><li class="d3"><a href="#recommended-order">Recommended Order</a></li><li class="d3"><a href="#why-this-order">Why This Order?</a></li><li class="d3"><a href="#bulk-import">Bulk Import</a></li><li class="d2"><a href="#part-6-importing-qif-files-into-monize-step-by-step">Part 6: Importing QIF Files into Monize Step by Step</a></li><li class="d3"><a href="#step-1-upload-qif-files">Step 1: Upload QIF Files</a></li><li class="d3"><a href="#step-2-select-destination-account">Step 2: Select Destination Account</a></li><li class="d3"><a href="#step-3-map-categories">Step 3: Map Categories</a></li><li class="d3"><a href="#step-4-map-securities">Step 4: Map Securities</a></li><li class="d3"><a href="#step-5-map-transfer-accounts">Step 5: Map Transfer Accounts</a></li><li class="d3"><a href="#step-6-review-and-import">Step 6: Review and Import</a></li><li class="d3"><a href="#step-7-import-complete">Step 7: Import Complete</a></li><li class="d2"><a href="#part-7-post-import-steps">Part 7: Post-Import Steps</a></li><li class="d3"><a href="#71-verify-account-balances">7.1 Verify Account Balances</a></li><li class="d3"><a href="#72-review-cross-currency-transfers">7.2 Review Cross-Currency Transfers</a></li><li class="d3"><a href="#73-verify-investment-holdings">7.3 Verify Investment Holdings</a></li><li class="d3"><a href="#74-set-up-security-price-updates">7.4 Set Up Security Price Updates</a></li><li class="d3"><a href="#75-review-categories">7.5 Review Categories</a></li><li class="d3"><a href="#76-set-up-scheduled-transactions">7.6 Set Up Scheduled Transactions</a></li><li class="d3"><a href="#77-check-for-uncategorized-transactions">7.7 Check for Uncategorized Transactions</a></li><li class="d3"><a href="#78-verify-net-worth">7.8 Verify Net Worth</a></li><li class="d2"><a href="#part-8-starting-over">Part 8: Starting Over</a></li><li class="d2"><a href="#part-9-troubleshooting-the-qif-import">Part 9: Troubleshooting the QIF Import</a></li><li class="d3"><a href="#common-issues">Common Issues</a></li><li class="d2"><a href="#part-10-what-cannot-be-imported-via-qif">Part 10: What Cannot Be Imported via QIF</a></li><li class="d2"><a href="#quick-reference-card">Quick Reference Card</a></li><li class="d3"><a href="#recommended-direct-mny-import">Recommended: Direct .mny Import</a></li><li class="d3"><a href="#alternative-export-from-microsoft-money-as-qif">Alternative: Export from Microsoft Money as QIF</a></li><li class="d3"><a href="#importing-qif-into-monize">Importing QIF into Monize</a></li><li class="d3"><a href="#recommended-qif-import-order">Recommended QIF Import Order</a></li><li class="d3"><a href="#after-a-mny-import-checklist">After a .mny Import Checklist</a></li><li class="d3"><a href="#after-a-qif-import-checklist">After a QIF Import Checklist</a></li></ul></details><p>This is the complete guide to migrating your financial data from Microsoft Money to Monize.</p>
+<p>There are two ways to do it:</p>
+<ol>
+<li><strong>Import your <code>.mny</code> file directly</strong> -- Monize reads the Microsoft Money file itself. This is the recommended method and the one you should use unless something prevents it.</li>
+<li><strong>Export QIF files from Microsoft Money and import those</strong> -- the older, manual method. Use it only if the direct import cannot read your file.</li>
+</ol>
+<p>For importing from other sources using CSV or OFX/QFX files, see <a href="/docs/importing-transactions">Importing Transactions</a>.</p>
+<h2 id="overview">Overview<a class="hlink" href="#overview" aria-label="Link to this section">#</a></h2>
+<p>Monize reads Microsoft Money <code>.mny</code> files directly -- not a QIF export of one, but the file itself, with its accounts, transactions, transfers, splits, securities, price history, exchange rates and scheduled bills intact. Nothing needs to be installed, Microsoft Money does not need to be on the machine, and the file never leaves your Monize server.</p>
+<p>The older route is to export one QIF file per account from Microsoft Money and import those. Monize still supports it in full, but it asks considerably more of you and carries less information across.</p>
+<h3 id="which-method-to-use">Which Method to Use<a class="hlink" href="#which-method-to-use" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th></th><th>Direct <code>.mny</code> import</th><th>QIF export</th></tr></thead><tbody><tr><td><strong>Effort</strong></td><td>One file, one upload</td><td>One export per account (two per investment account), then mapping each file</td></tr><tr><td><strong>Transfers</strong></td><td>Linked using Money&#x27;s own record of which two rows are the two sides</td><td>Matched by name and amount; import order matters</td></tr><tr><td><strong>Splits</strong></td><td>Imported</td><td>Imported (requires &quot;Loose QIF&quot;)</td></tr><tr><td><strong>Closed accounts</strong></td><td>Imported, and stay closed</td><td>Must be reopened in Money before they can be exported</td></tr><tr><td><strong>Price history</strong></td><td>Imported</td><td>Not available</td></tr><tr><td><strong>Exchange rates</strong></td><td>Imported</td><td>Not in QIF -- cross-currency transfers need manual fixing</td></tr><tr><td><strong>Scheduled bills</strong></td><td>Imported (you choose which)</td><td>Not exported -- must be recreated by hand</td></tr><tr><td><strong>Loan payments</strong></td><td>Principal leg wired to the loan account; funding account, payment amount and interest category filled in where unambiguous</td><td>Detected from category names, with confirmation</td></tr><tr><td><strong>Verification</strong></td><td>Every account&#x27;s balance is reconciled against the balance computed from the Money file</td><td>Manual comparison against Money</td></tr><tr><td><strong>Merging into existing data</strong></td><td>Not supported in v1 -- import into an empty profile</td><td>Possible, but duplicates are your problem</td></tr></tbody></table></div>
+<p><strong>Use the direct <code>.mny</code> import.</strong> Fall back to QIF only if your file cannot be read -- in practice that means Money 97 and 98 files you cannot convert (see <a href="#before-you-start">Before You Start</a>).</p>
+<h2 id="part-1-direct-mny-import-recommended">Part 1: Direct .mny Import (Recommended)<a class="hlink" href="#part-1-direct-mny-import-recommended" aria-label="Link to this section">#</a></h2>
+<h3 id="before-you-start">Before You Start<a class="hlink" href="#before-you-start" aria-label="Link to this section">#</a></h3>
+<p><strong>Import into an empty profile.</strong> Version 1 does not merge. It creates what the file describes, and if an account of the same name already exists it adds transactions to it rather than working out which ones you already have. On a profile that already has data you will get duplicates.</p>
+<p>If you have been trying Monize out and want to start over from Money, the review step offers <strong>Start fresh</strong>, which runs the same Delete My Data operation as <strong>Settings &gt; Danger Zone</strong> before the import begins. It asks you to type a confirmation word and re-enter your password, and it cannot be undone.</p>
+<p><strong>Work from a copy.</strong> Monize never writes to the file, but a spare copy of three decades of finances costs nothing.</p>
+<p><strong>Money 97 and 98 files are not supported.</strong> Those predate the format Monize reads. Open the file once in the free Money Plus Sunset edition and save it; that converts it, and the result imports normally. Monize detects these files and says so rather than failing obscurely.</p>
+<p><strong><code>.mbf</code> backup archives are not supported.</strong> Restore the backup in Money first and import the resulting <code>.mny</code>.</p>
+<p><strong>Check the file size limit if you self-host.</strong> The default ceiling is 300 MB, set by <code>MNY_IMPORT_LIMIT_MB</code>. See <a href="#troubleshooting-the-mny-import">Troubleshooting the .mny Import</a> if a large upload fails.</p>
+<h3 id="step-by-step">Step by Step<a class="hlink" href="#step-by-step" aria-label="Link to this section">#</a></h3>
+<p>Navigate to <strong>Tools &gt; Import Transactions</strong> to begin.</p>
+<p><strong>Step 1: Upload the file</strong></p>
+<p>Select or drag your <code>.mny</code> file onto the upload area. Import Microsoft Money files <strong>one at a time</strong> -- a <code>.mny</code> file holds a whole profile, so there is nothing to bulk-select. Monize reads the file on the server and shows a preview. Nothing is written yet.</p>
+<p><strong>Step 2: Enter the password, if asked</strong></p>
+<p>Every Money file is encrypted, but most are encrypted with a blank password and open without asking. The prompt -- <em>&quot;This Money file needs a password&quot;</em> -- appears only when a real password is set. The password is used once to read the file and is never stored. A wrong password says so specifically, so you can tell &quot;this needs a password&quot; apart from &quot;that one was wrong&quot;. Money passwords are case sensitive.</p>
+<p><strong>Step 3: Review what will be imported</strong></p>
+<p>This step is worth the minute it takes.</p>
+<ul>
+<li>The file summary names the detected Money format (Money 2001, Money 2002, or Money Plus / Sunset) and the base currency.</li>
+<li><strong>Every account</strong> is listed with its type, currency, transaction count, opening balance and the <strong>final balance computed from the Money file itself</strong>. Compare a few against Money -- that same number is what the verification report reconciles against afterwards.</li>
+<li><strong>Untick any account you do not want.</strong> Closed accounts are included by default and stay closed; they still hold history worth keeping.</li>
+<li><strong>Override an account&#x27;s currency</strong> if Money had it wrong.</li>
+<li><strong>Counts</strong> for transactions, transfers, payees, categories, securities, investment transactions, prices, exchange rates and bills are each shown against the total in the file, so &quot;40 of 500 payees&quot; is visible before rather than after.</li>
+<li><strong>Scheduled bills</strong> appear as a checkbox list. Money keeps one row per occurrence, so a long history holds thousands of rows for a handful of real bills; Monize detects the live series and pre-ticks those. An unticked bill is simply not created. Bill series missing a template or a usable date are reported as skipped.</li>
+<li><strong>Notes about this file</strong> collects anything ambiguous -- securities sharing a symbol, an action code Money did not document, a repeat interval with no exact equivalent. Worth reading; none of it stops the import.</li>
+</ul>
+<p><strong>Step 4: Start the import</strong></p>
+<p>Click <strong>Start import</strong>. It runs on the server, so you can leave the page and come back. A large file takes a few minutes. The progress list shows which phase is running: preparing; accounts, categories and payees; transactions; investments; scheduled bills; prices and exchange rates; recalculating balances; verifying.</p>
+<p><strong>Step 5: Check the verification report</strong></p>
+<p>Every account is listed with the balance computed from your Money file, the balance it ended up with in Monize, and the difference. Investment accounts additionally compare share counts against Money&#x27;s own open tax lots -- Money reconciles against those lots itself, so they are the number to trust.</p>
+<p>A green run says every account reconciles; anything that does not is listed with the delta so you can look at it directly. The report downloads as JSON with <strong>Download report</strong> if you want to keep it.</p>
+<h3 id="import-options">Import Options<a class="hlink" href="#import-options" aria-label="Link to this section">#</a></h3>
+<p>Set on the review step, before you start the import.</p>
+<div class="table-wrap"><table><thead><tr><th>Option</th><th>Default</th><th>What it does</th></tr></thead><tbody><tr><td><strong>Only import payees that are used</strong></td><td>On</td><td>Money keeps payees long after their last transaction. Leaving this on skips the unused ones</td></tr><tr><td><strong>Only import categories that are used</strong></td><td>On</td><td>Money seeds a full category tree whether you use it or not</td></tr><tr><td><strong>Import closed accounts</strong></td><td>On</td><td>Closed accounts keep their history and are created closed</td></tr><tr><td><strong>Import price history</strong></td><td>On</td><td>Money&#x27;s own record of what each security was worth, day by day. Turn it off if you would rather start from live quotes</td></tr><tr><td><strong>Import exchange rates</strong></td><td>On</td><td>Historical rates, so past foreign-currency transactions convert the way Money had them</td></tr><tr><td><strong>Start fresh</strong></td><td>Off</td><td>Removes your existing Monize data before importing. Typed confirmation and password required</td></tr></tbody></table></div>
+<h3 id="what-is-imported">What Is Imported<a class="hlink" href="#what-is-imported" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Accounts</strong> of every type, with opening balances, currencies, and closed and favourite flags. A Money investment account becomes Monize&#x27;s linked cash and brokerage pair, matching how Money itself stores them.</li>
+<li><strong>Transactions</strong>, including splits, reference numbers, memos, and the cleared/reconciled status of each. Voided transactions are imported as voided rather than dropped.</li>
+<li><strong>Transfers</strong>, using Money&#x27;s own record of which two rows are the two sides. Nothing is matched by guesswork.</li>
+<li><strong>Loan and mortgage payments</strong>, with the principal leg wired to the loan account as a transfer split. Where the payments make it unambiguous, the loan&#x27;s funding account, payment amount and interest category are filled in too.</li>
+<li><strong>Securities and investment transactions</strong>: buys, sells, dividends, reinvestments, share transfers between accounts, and stock splits.</li>
+<li><strong>Price history and exchange rates</strong>, both additive -- importing twice, or importing on top of prices a quote provider already fetched, converges rather than duplicating.</li>
+<li><strong>Scheduled bills</strong> you ticked, created active and set <strong>not</strong> to post automatically, so nothing lands in your accounts without you.</li>
+</ul>
+<h3 id="what-is-not-imported">What Is Not Imported<a class="hlink" href="#what-is-not-imported" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Data type</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Budgets</strong></td><td>Money&#x27;s budget tables have no clean equivalent in Monize&#x27;s. Recreate with <a href="/docs/budgets">Budgets</a> -- Monize can auto-generate budgets from your imported spending history</td></tr><tr><td><strong>Savings goals</strong></td><td>No equivalent entity</td></tr><tr><td><strong>Classifications</strong></td><td>Anything beyond ordinary categories</td></tr><tr><td><strong>Attachments</strong></td><td>Files embedded in the Money file</td></tr><tr><td><strong>Categories deeper than two levels</strong></td><td>Flattened into <code>Parent:Child</code> names; Monize&#x27;s category tree is two levels deep</td></tr></tbody></table></div>
+<h3 id="known-limitations">Known Limitations<a class="hlink" href="#known-limitations" aria-label="Link to this section">#</a></h3>
+<p><strong>No merge, no de-duplication.</strong> Version 1 targets a fresh profile. Importing the same file twice creates the transactions twice.</p>
+<p><strong>Foreign-currency cost basis.</strong> Money stores a foreign holding&#x27;s cost basis converted to your base currency at the historical rate, not in the security&#x27;s own currency. Monize imports what the file says, so a holding bought in a currency other than your base one can show a cost basis that differs from what you paid in the original currency. The verification report flags these, and the share counts themselves are unaffected.</p>
+<p><strong>Two Money codes are still unconfirmed.</strong> Money&#x27;s <code>act</code> 5 and 14 -- a reinvestment variant and a cash corporate action -- have never appeared in any file available to this project, so their handling is inferred. Any transaction mapped through one carries a note in the report rather than being silently accepted.</p>
+<p><strong>Securities sharing a symbol.</strong> Money allows two funds with the same ticker. Monize&#x27;s symbols are unique per user, so the second gets a suffix (<code>VOO-2</code>) and a note in the report -- never collapsed into the first. A security with no symbol gets a generated placeholder and is excluded from automatic price updates.</p>
+<h3 id="after-the-import">After the Import<a class="hlink" href="#after-the-import" aria-label="Link to this section">#</a></h3>
+<p>The verification report does most of the checking for you, so the post-import work is short:</p>
+<ol>
+<li><strong>Read the report.</strong> Any account or holding that does not reconcile is named with the difference.</li>
+<li><strong>Review auto-created securities</strong> in <strong>Tools &gt; Securities</strong>. Securities with a generated placeholder symbol are excluded from price updates until you give them a real symbol and exchange.</li>
+<li><strong>Recreate budgets and savings goals</strong> -- see <a href="/docs/budgets">Budgets</a>.</li>
+<li><strong>Check your scheduled bills</strong> in <a href="/docs/bills-and-deposits">Bills and Deposits</a>. Imported bills are active but set not to post automatically; switch on auto-posting for the ones you want it on.</li>
+<li><strong>Check net worth</strong> on the Dashboard against your Money net worth report.</li>
+</ol>
+<p>If the result is not what you wanted, see <a href="#part-8-starting-over">Starting Over</a> -- or simply re-run the import with <strong>Start fresh</strong> ticked.</p>
+<h3 id="troubleshooting-the-mny-import">Troubleshooting the .mny Import<a class="hlink" href="#troubleshooting-the-mny-import" aria-label="Link to this section">#</a></h3>
+<p>Nothing is written unless the whole import succeeds, so a failure leaves your data as it was, and the uploaded file is kept for one more attempt.</p>
+<div class="table-wrap"><table><thead><tr><th>What you see</th><th>What it means</th></tr></thead><tbody><tr><td>&quot;That file was written by Money 97 or 98&quot;</td><td>Convert it through Money Plus Sunset first (see <a href="#before-you-start">Before You Start</a>)</td></tr><tr><td>&quot;That file is not a Microsoft Money (.mny) file&quot;</td><td>Wrong file, or the upload was corrupted</td></tr><tr><td>&quot;That Money file looks incomplete&quot;</td><td>The upload was cut short -- try again</td></tr><tr><td>&quot;That Money file was decrypted but its contents could not be read&quot;</td><td>The file decrypted but its internals are damaged. Open it in Money and save a fresh copy</td></tr><tr><td>&quot;That Money file is password protected&quot;</td><td>Enter the file&#x27;s password when prompted</td></tr><tr><td>&quot;That password does not open the Money file&quot;</td><td>Money passwords are case sensitive -- check and retry</td></tr><tr><td>&quot;The import stopped responding&quot;</td><td>The server restarted mid-import. Your file is still here: press <strong>Try again</strong></td></tr><tr><td>&quot;The uploaded Money file is no longer available&quot;</td><td>Uploaded files are kept 24 hours. Upload it again</td></tr><tr><td>&quot;An import is already running&quot;</td><td>Wait for it to finish -- possibly in another tab</td></tr></tbody></table></div>
+<h4 id="self-hosting-failures">Self-Hosting Failures<a class="hlink" href="#self-hosting-failures" aria-label="Link to this section">#</a></h4>
+<p>Two failures look like the app is broken and are configuration:</p>
+<ul>
+<li><strong>The upload dies immediately and the backend logs <code>Request aborted</code>.</strong> The Next.js proxy in front of the API caps a forwarded request body at 10 MB by default and <em>truncates</em> rather than rejecting anything larger, so nothing reports a size problem. <code>MNY_IMPORT_LIMIT_MB</code> (default 300) sizes that ceiling and must be set on the <strong>frontend</strong> as well as the backend.</li>
+<li><strong>The server is killed partway through every attempt.</strong> It is running out of memory. A Money file is held in memory while it is read, so the backend needs roughly twice the file size available, and the frontend needs another copy because the proxy buffers the upload. See <code>helm/README.md</code> for the sizing rules.</li>
+</ul>
+<h2 id="part-2-the-qif-method-alternative">Part 2: The QIF Method (Alternative)<a class="hlink" href="#part-2-the-qif-method-alternative" aria-label="Link to this section">#</a></h2>
+<p>Everything from here on describes the older QIF route: exporting one file per account from Microsoft Money and importing those. It is still fully supported, and the QIF import wizard handles:</p>
+<ul>
+<li>Regular banking transactions (chequing, savings, credit cards)</li>
+<li>Investment transactions (buy, sell, dividends, splits, reinvestments)</li>
+<li>Split transactions (multiple categories per transaction)</li>
+<li>Account-to-account transfers</li>
+<li>Category creation and mapping</li>
+<li>Security creation and mapping</li>
+<li>Multi-currency accounts</li>
+</ul>
+<p>The process is designed for bulk operations -- you can import multiple QIF files at once, and the system coordinates between files to link transfers, reuse categories, and handle cross-references.</p>
+<blockquote>
+<p><strong>Prefer the direct <code>.mny</code> import.</strong> QIF carries no price history, no exchange rates and no scheduled bills, cannot export closed accounts without reopening them first, and matches transfers by inference rather than from Money&#x27;s own records. Use QIF only when the direct import cannot read your file.</p>
+</blockquote>
+<h2 id="part-3-preparing-microsoft-money-for-export">Part 3: Preparing Microsoft Money for Export<a class="hlink" href="#part-3-preparing-microsoft-money-for-export" aria-label="Link to this section">#</a></h2>
+<p>Before exporting, take these preparatory steps in Microsoft Money to ensure a clean migration.</p>
+<h3 id="31-note-your-account-details">3.1 Note Your Account Details<a class="hlink" href="#31-note-your-account-details" aria-label="Link to this section">#</a></h3>
+<p>Create a spreadsheet or list with the following for each account:</p>
+<div class="table-wrap"><table><thead><tr><th>Detail</th><th>Example</th></tr></thead><tbody><tr><td>Account Name</td><td>&quot;Main Chequing&quot;</td></tr><tr><td>Account Type</td><td>Chequing, Savings, Credit Card, Investment, etc.</td></tr><tr><td>Currency</td><td>USD, CAD, GBP, etc.</td></tr><tr><td>Opening Balance</td><td>$1,234.56</td></tr><tr><td>Opening Balance Date</td><td>January 1, 2005</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Why this matters:</strong> The opening balance and date are critical. For imported accounts to show the correct current balance, the opening balance must be set to the balance as of the first transaction date in the QIF file. Microsoft Money often includes an &quot;Opening Balance&quot; transaction in the QIF export, which Monize detects automatically. However, having this information written down gives you a fallback if the auto-detection does not match.</p>
+</blockquote>
+<h3 id="32-open-closed-accounts-if-needed">3.2 Open Closed Accounts (if needed)<a class="hlink" href="#32-open-closed-accounts-if-needed" aria-label="Link to this section">#</a></h3>
+<p>If you have closed accounts in Microsoft Money that you want to import, you may need to temporarily reopen them -- Microsoft Money does not allow exporting closed accounts. The easiest way to do this is to go to <strong>Tools - Settings - Account settings (global) - Close or Reopen Accounts</strong></p>
+<blockquote>
+<p>The direct <code>.mny</code> import has no such restriction: closed accounts come across with their history and stay closed.</p>
+</blockquote>
+<h3 id="33-make-a-list-of-all-accounts">3.3 Make a List of All Accounts<a class="hlink" href="#33-make-a-list-of-all-accounts" aria-label="Link to this section">#</a></h3>
+<p>Microsoft Money exports one account at a time, so make a checklist:</p>
+<pre><code>[ ] Main Chequing (Regular)
+[ ] Savings (Regular)
+[ ] Visa Credit Card (Regular)
+[ ] Emergency Fund (Regular)
+[ ] RRSP Brokerage (Investment)
+[ ] RRSP Brokerage (Regular - for cash transactions)
+[ ] TFSA Brokerage (Investment)
+[ ] TFSA Brokerage (Regular - for cash transactions)
+[ ] Home (Asset)
+</code></pre>
+<blockquote>
+<p><strong>Important for Investment Accounts:</strong> Each investment account requires TWO exports -- one as &quot;Investment&quot; type (for securities transactions) and one as &quot;Regular&quot; type (for cash transactions). Mark both on your checklist.</p>
+</blockquote>
+<h3 id="34-create-export-folders">3.4 Create export folders<a class="hlink" href="#34-create-export-folders" aria-label="Link to this section">#</a></h3>
+<p>Monize supports bulk-upload of .QIF files. We suggest you create the following folders to store your exported QIFs:</p>
+<ul>
+<li>1-Assets</li>
+<li>2-NativeAccounts</li>
+<li>3-ForeignAccounts</li>
+<li>4-Investments-Cash</li>
+<li>5-Investments-Brokerage</li>
+</ul>
+<p>This makes it easy to select all the files a certain type for bulk-import.</p>
+<h2 id="part-4-exporting-from-microsoft-money">Part 4: Exporting from Microsoft Money<a class="hlink" href="#part-4-exporting-from-microsoft-money" aria-label="Link to this section">#</a></h2>
+<h3 id="exporting-regular-accounts">Exporting Regular Accounts<a class="hlink" href="#exporting-regular-accounts" aria-label="Link to this section">#</a></h3>
+<p>Follow these steps for each chequing, savings, credit card, cash, line of credit, and asset account:</p>
+<p><strong>Step 1:</strong> Open Microsoft Money and load your <code>.mny</code> file</p>
+<p><strong>Step 2:</strong> Go to <strong>File &gt; Export</strong></p>
+<figure><img src="/docs/images/ms-money-file-export.png" alt="MS Money File Menu" width="212" height="292" loading="lazy" decoding="async"/><figcaption>MS Money File Menu</figcaption></figure>
+<p><strong>Step 3:</strong> In the export dialog, select <strong>Loose QIF</strong> format</p>
+<figure><img src="/docs/images/ms-money-export-format.png" alt="MS Money Export Format" width="283" height="270" loading="lazy" decoding="async"/><figcaption>MS Money Export Format</figcaption></figure>
+<blockquote>
+<p><strong>Always choose &quot;Loose QIF&quot;</strong> -- it carries more information than &quot;Strict QIF,&quot; including split transaction details and transfer references.</p>
+</blockquote>
+<p><strong>Step 4:</strong> Choose a save location (Desktop is easiest) and name the file after the account</p>
+<p><strong>Step 5:</strong> Select <strong>Regular</strong> as the account type</p>
+<figure><img src="/docs/images/ms-money-account-type-regular.png" alt="MS Money Account Type" width="274" height="171" loading="lazy" decoding="async"/><figcaption>MS Money Account Type</figcaption></figure>
+<p><strong>Step 6:</strong> Select the specific account to export from the account list</p>
+<p><strong>Step 7:</strong> Click <strong>Continue</strong> to export</p>
+<p><strong>Step 8:</strong> Check the account off your list and repeat for the next account</p>
+<h3 id="exporting-investment-accounts">Exporting Investment Accounts<a class="hlink" href="#exporting-investment-accounts" aria-label="Link to this section">#</a></h3>
+<p>Investment accounts in Microsoft Money contain two types of data:</p>
+<ul>
+<li><strong>Investment transactions</strong> (buy, sell, dividend, etc.)</li>
+<li><strong>Cash transactions</strong> (deposits, withdrawals, fees)</li>
+</ul>
+<p>You must export each investment account <strong>twice</strong>.</p>
+<h4 id="export-1-investment-transactions">Export 1: Investment Transactions<a class="hlink" href="#export-1-investment-transactions" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Go to <strong>File &gt; Export</strong></li>
+<li>Select <strong>Loose QIF</strong></li>
+<li>Name the file with the account name and &quot;-Investment&quot; suffix (e.g., <code>RRSP-Investment.qif</code>)</li>
+<li>Select <strong>Investment</strong> as the account type</li>
+<li>Select the specific investment account</li>
+<li>Click <strong>Continue</strong></li>
+</ol>
+<figure><img src="/docs/images/ms-money-export-investment.png" alt="MS Money Investment Export" width="277" height="172" loading="lazy" decoding="async"/><figcaption>MS Money Investment Export</figcaption></figure>
+<h4 id="export-2-cash-transactions">Export 2: Cash Transactions<a class="hlink" href="#export-2-cash-transactions" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Go to <strong>File &gt; Export</strong> again</li>
+<li>Select <strong>Loose QIF</strong></li>
+<li>Name the file with the account name and &quot;-Regular&quot; suffix (e.g., <code>RRSP-Regular.qif</code>)</li>
+<li>Select <strong>Regular</strong> as the account type</li>
+<li>Select the same investment account</li>
+<li>Click <strong>Continue</strong></li>
+</ol>
+<h3 id="file-naming-convention">File Naming Convention<a class="hlink" href="#file-naming-convention" aria-label="Link to this section">#</a></h3>
+<p>We recommend you give the files the same name as the source account. Monize attempts to auto-match QIF files to accounts by filename, so closer names mean less manual mapping during import.</p>
+<h2 id="part-5-recommended-import-order">Part 5: Recommended Import Order<a class="hlink" href="#part-5-recommended-import-order" aria-label="Link to this section">#</a></h2>
+<p>The order in which you import your QIF files matters. Monize handles transfers between accounts by matching pending transactions from previously imported files. Importing in the right order ensures transfers are linked correctly and reduces manual cleanup.</p>
+<blockquote>
+<p>This ordering applies to the QIF method only. A direct <code>.mny</code> import brings every account across in one pass and links transfers from Money&#x27;s own records, so there is no order to get right.</p>
+</blockquote>
+<h3 id="recommended-order">Recommended Order<a class="hlink" href="#recommended-order" aria-label="Link to this section">#</a></h3>
+<p>Import your accounts in this order:</p>
+<pre><code>1. Asset Accounts
+      |
+2. Bank, Credit Card and Line of Credit Accounts (Home Currency)
+      |
+3. Bank, Credit Card and Line of Credit Accounts (Foreign Currency)
+      |
+4. Investment Cash Accounts (-Regular exports)
+      |
+5. Investment Brokerage Accounts (-Investment exports)
+</code></pre>
+<p>Loan accounts can&#x27;t be exported from Microsoft Money, but the transactions will be built via the payments made from the source accounts. The import process will recognize this and ask for confirmation.</p>
+<h3 id="why-this-order">Why This Order?<a class="hlink" href="#why-this-order" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Order</th><th>Account Type</th><th>Reason</th></tr></thead><tbody><tr><td><strong>1</strong></td><td><strong>Asset Accounts</strong></td><td>Assets rarely have transfers to other accounts. Import them first to establish any asset-related categories.</td></tr><tr><td><strong>2</strong></td><td><strong>Bank Accounts (Home Currency)</strong></td><td>These are your primary accounts and typically the source/destination of most transfers. Importing them early means subsequent imports can link transfers to these accounts.</td></tr><tr><td><strong>3</strong></td><td><strong>Bank Accounts (Foreign Currency)</strong></td><td>Foreign currency accounts may have transfers to/from home currency accounts. Importing after home currency accounts ensures the other side of cross-currency transfers already exists.</td></tr><tr><td><strong>4</strong></td><td><strong>Investment Cash Accounts</strong></td><td>Import the &quot;-Regular&quot; (cash) QIF files for investment accounts next. These contain deposits/withdrawals to the investment account&#x27;s cash balance, often transferred from bank accounts (already imported).</td></tr><tr><td><strong>5</strong></td><td><strong>Investment Brokerage Accounts</strong></td><td>Import the &quot;-Investment&quot; QIF files last among the investment pair. These contain buy/sell/dividend transactions. Monize automatically creates the corresponding cash-side transactions in the linked cash account.</td></tr></tbody></table></div>
+<h3 id="bulk-import">Bulk Import<a class="hlink" href="#bulk-import" aria-label="Link to this section">#</a></h3>
+<p>Monize supports importing multiple QIF files in a single bulk operation. When you select multiple files:</p>
+<ol>
+<li>Files are processed sequentially in the order listed</li>
+<li>Categories, payees, and accounts created in file 1 are available for file 2, and so on</li>
+<li>Transfer matching happens across all files in the batch</li>
+</ol>
+<p><strong>The best approach is to select ALL your QIF files at once</strong> and let Monize process them in order.</p>
+<h2 id="part-6-importing-qif-files-into-monize-step-by-step">Part 6: Importing QIF Files into Monize Step by Step<a class="hlink" href="#part-6-importing-qif-files-into-monize-step-by-step" aria-label="Link to this section">#</a></h2>
+<p>Navigate to <strong>Tools &gt; Import Transactions</strong> to begin the import process.</p>
+<h3 id="step-1-upload-qif-files">Step 1: Upload QIF Files<a class="hlink" href="#step-1-upload-qif-files" aria-label="Link to this section">#</a></h3>
+<p>The upload step presents a drag-and-drop area where you can select your QIF files.</p>
+<figure><img src="/docs/images/import-upload-step.png" alt="Upload Step" width="1207" height="592" loading="lazy" decoding="async"/><figcaption>Upload Step</figcaption></figure>
+<ol>
+<li>Click the upload area or drag your QIF files onto it</li>
+<li>You can select <strong>multiple files</strong> at once for bulk import</li>
+<li>Monize parses each file and extracts metadata:
+<ul>
+<li>Account type detected from the QIF header</li>
+<li>Number of transactions</li>
+<li>Date range of transactions</li>
+<li>Categories found</li>
+<li>Transfer accounts referenced</li>
+<li>Securities found (for investment files)</li>
+</ul>
+</li>
+</ol>
+<p>After parsing, you advance to account selection.</p>
+<blockquote>
+<p><strong>Pre-Selection:</strong> If you navigate to the import page from a specific account, that account is pre-selected. A blue banner shows &quot;Importing to: [Account Name]&quot;.</p>
+</blockquote>
+<h3 id="step-2-select-destination-account">Step 2: Select Destination Account<a class="hlink" href="#step-2-select-destination-account" aria-label="Link to this section">#</a></h3>
+<p>For each QIF file, you need to specify which Monize account the transactions should be imported into.</p>
+<figure><img src="/docs/images/import-select-account.png" alt="Select Account Step" width="699" height="636" loading="lazy" decoding="async"/><figcaption>Select Account Step</figcaption></figure>
+<h4 id="file-information">File Information<a class="hlink" href="#file-information" aria-label="Link to this section">#</a></h4>
+<p>A gray information box shows:</p>
+<ul>
+<li><strong>File:</strong> The filename being imported</li>
+<li><strong>Transactions:</strong> Number of transactions found</li>
+<li><strong>Date Range:</strong> Earliest to latest transaction dates</li>
+<li><strong>Detected Type:</strong> Account type identified from the QIF header (e.g., Bank, Investment, Credit Card)</li>
+</ul>
+<h4 id="selecting-an-account">Selecting an Account<a class="hlink" href="#selecting-an-account" aria-label="Link to this section">#</a></h4>
+<p>Choose from the <strong>&quot;Import into account&quot;</strong> dropdown. The dropdown shows all compatible accounts:</p>
+<ul>
+<li>For <strong>investment QIF files</strong> (detected type: Investment), only brokerage accounts are shown</li>
+<li>For <strong>regular QIF files</strong>, all non-brokerage accounts are shown</li>
+</ul>
+<blockquote>
+<p><strong>Auto-Matching:</strong> Monize attempts to match QIF filenames to account names automatically. If a match is found, it is pre-selected in the dropdown.</p>
+</blockquote>
+<h4 id="creating-a-new-account">Creating a New Account<a class="hlink" href="#creating-a-new-account" aria-label="Link to this section">#</a></h4>
+<p>If the destination account does not exist yet:</p>
+<ol>
+<li>Click <strong>&quot;+ Create new account&quot;</strong></li>
+<li>Fill in:
+<ul>
+<li><strong>Account name</strong> (e.g., &quot;My Chequing&quot;)</li>
+<li><strong>Account type</strong> (Chequing, Savings, Credit Card, etc.)</li>
+<li><strong>Currency</strong> (USD, CAD, etc.)</li>
+</ul>
+</li>
+<li>Click <strong>Create</strong></li>
+</ol>
+<figure><img src="/docs/images/import-create-account.png" alt="Create Account During Import" width="698" height="901" loading="lazy" decoding="async"/><figcaption>Create Account During Import</figcaption></figure>
+<p>The new account is created immediately and auto-selected as the destination.</p>
+<blockquote>
+<p><strong>Investment accounts:</strong> When you create an Investment type account during import, both the brokerage and linked cash accounts are created automatically.</p>
+</blockquote>
+<h4 id="date-format">Date Format<a class="hlink" href="#date-format" aria-label="Link to this section">#</a></h4>
+<p>If the detected date format does not look correct (e.g., dates seem to be swapped between MM/DD and DD/MM), you can override the date format using the date format dropdown. Monize supports:</p>
+<ul>
+<li>MM/DD/YYYY (US format)</li>
+<li>DD/MM/YYYY (International format)</li>
+<li>YYYY-MM-DD (ISO format)</li>
+</ul>
+<h3 id="step-3-map-categories">Step 3: Map Categories<a class="hlink" href="#step-3-map-categories" aria-label="Link to this section">#</a></h3>
+<p>If the QIF file contains category references, you need to map them to Monize categories.</p>
+<figure><img src="/docs/images/import-map-categories.png" alt="Map Categories Step" width="695" height="924" loading="lazy" decoding="async"/><figcaption>Map Categories Step</figcaption></figure>
+<h4 id="understanding-the-display">Understanding the Display<a class="hlink" href="#understanding-the-display" aria-label="Link to this section">#</a></h4>
+<p>Categories are displayed in three groups:</p>
+<ol>
+<li><strong>Needs Attention</strong> (amber/yellow border) -- Categories that could not be auto-matched. These require your input.</li>
+<li><strong>Auto-Matched to Categories</strong> (green, collapsed by default) -- Categories that Monize matched to existing categories. Click to expand and verify.</li>
+<li><strong>Auto-Matched to Loan Accounts</strong> (blue, collapsed by default) -- Categories that match loan or mortgage account names, indicating loan payments.</li>
+</ol>
+<h4 id="summary-badges">Summary Badges<a class="hlink" href="#summary-badges" aria-label="Link to this section">#</a></h4>
+<p>At the top of the list, badges summarize the mapping status:</p>
+<ul>
+<li><strong>Amber badge:</strong> &quot;[X] need attention&quot; -- categories requiring manual mapping</li>
+<li><strong>Green badge:</strong> &quot;[X] matched to categories&quot; -- successfully auto-matched</li>
+<li><strong>Blue badge:</strong> &quot;[X] matched to loans&quot; -- matched to loan accounts</li>
+</ul>
+<h4 id="mapping-a-category">Mapping a Category<a class="hlink" href="#mapping-a-category" aria-label="Link to this section">#</a></h4>
+<p>For each unmatched category, you can:</p>
+<p><strong>Option A: Map to an existing category</strong></p>
+<ul>
+<li>Select from the dropdown of existing Monize categories</li>
+</ul>
+<p><strong>Option B: Create a new category</strong></p>
+<ul>
+<li>Enter a new category name</li>
+<li>Optionally select a parent category</li>
+<li>The category is created during import</li>
+</ul>
+<p><strong>Option C: Skip the category</strong></p>
+<ul>
+<li>Leave unmapped (select &quot;Skip&quot;) to import transactions without a category</li>
+<li>You can categorize them later in the Transactions page</li>
+</ul>
+<h4 id="loan-category-detection">Loan Category Detection<a class="hlink" href="#loan-category-detection" aria-label="Link to this section">#</a></h4>
+<p>If a QIF category name matches an existing loan or mortgage account name, Monize detects it as a loan payment. These transactions are imported as transfers to the loan account rather than regular categorized transactions.</p>
+<p>If the loan account does not exist yet, you can create it during this step.</p>
+<h3 id="step-4-map-securities">Step 4: Map Securities<a class="hlink" href="#step-4-map-securities" aria-label="Link to this section">#</a></h3>
+<p>This step appears only when importing investment QIF files that contain security references.</p>
+<figure><img src="/docs/images/import-map-securities.png" alt="Map Securities Step" width="872" height="723" loading="lazy" decoding="async"/><figcaption>Map Securities Step</figcaption></figure>
+<h4 id="security-lookup">Security Lookup<a class="hlink" href="#security-lookup" aria-label="Link to this section">#</a></h4>
+<p>Monize can look up securities automatically:</p>
+<ul>
+<li>Click <strong>&quot;Lookup&quot;</strong> next to any security to search by name/symbol</li>
+<li>A bulk lookup runs automatically for all securities when you first reach this step</li>
+<li>Lookup results include the security name, symbol, type, and exchange</li>
+</ul>
+<h4 id="mapping-a-security">Mapping a Security<a class="hlink" href="#mapping-a-security" aria-label="Link to this section">#</a></h4>
+<p>For each security, you can:</p>
+<p><strong>Option A: Map to an existing security</strong></p>
+<ul>
+<li>Select from the &quot;Map to existing&quot; dropdown</li>
+</ul>
+<p><strong>Option B: Create a new security</strong></p>
+<ul>
+<li>Enter the <strong>symbol</strong> (e.g., &quot;AAPL&quot;)</li>
+<li>Enter the <strong>name</strong> (e.g., &quot;Apple Inc.&quot;)</li>
+<li>Select the <strong>type</strong> (Stock, ETF, Mutual Fund, Bond, GIC, Cash, Other)</li>
+<li>Enter the <strong>exchange</strong> (e.g., &quot;NYSE&quot;, &quot;TSX&quot;)</li>
+</ul>
+<h4 id="row-status-indicators">Row Status Indicators<a class="hlink" href="#row-status-indicators" aria-label="Link to this section">#</a></h4>
+<p>Each security row is colour-coded:</p>
+<ul>
+<li><strong>Green border</strong> -- Ready to import (mapped to existing or new security details filled in)</li>
+<li><strong>Amber border</strong> -- Needs attention (no mapping selected)</li>
+</ul>
+<h3 id="step-5-map-transfer-accounts">Step 5: Map Transfer Accounts<a class="hlink" href="#step-5-map-transfer-accounts" aria-label="Link to this section">#</a></h3>
+<p>This step appears when the QIF file references transfers to other accounts (e.g., <code>[Savings Account]</code> notation in QIF).</p>
+<blockquote>
+<p><strong>Note:</strong> This step is skipped for investment QIF files. Investment transfers are handled automatically through the linked cash account.</p>
+</blockquote>
+<figure><img src="/docs/images/import-map-accounts.png" alt="Map Transfer Accounts Step" width="697" height="765" loading="lazy" decoding="async"/><figcaption>Map Transfer Accounts Step</figcaption></figure>
+<h4 id="mapping-a-transfer-account">Mapping a Transfer Account<a class="hlink" href="#mapping-a-transfer-account" aria-label="Link to this section">#</a></h4>
+<p>For each referenced transfer account:</p>
+<p><strong>Option A: Map to an existing account</strong></p>
+<ul>
+<li>Select from the &quot;Map to existing&quot; dropdown</li>
+</ul>
+<p><strong>Option B: Create a new account</strong></p>
+<ul>
+<li>Enter the account name</li>
+<li>Select the account type</li>
+<li>Select the currency</li>
+</ul>
+<blockquote>
+<p><strong>Tip:</strong> If you are importing all files in bulk, transfers between imported accounts are linked automatically. You only need to map accounts that are not part of the current import batch.</p>
+</blockquote>
+<h3 id="step-6-review-and-import">Step 6: Review and Import<a class="hlink" href="#step-6-review-and-import" aria-label="Link to this section">#</a></h3>
+<p>The review step shows a summary of everything that will happen during import.</p>
+<figure><img src="/docs/images/import-review-step.png" alt="Review Step" width="651" height="818" loading="lazy" decoding="async"/><figcaption>Review Step</figcaption></figure>
+<h4 id="single-file-import-summary">Single File Import Summary<a class="hlink" href="#single-file-import-summary" aria-label="Link to this section">#</a></h4>
+<ul>
+<li><strong>File:</strong> filename.qif</li>
+<li><strong>Transactions to import:</strong> [count]</li>
+<li><strong>Target account:</strong> [account name]</li>
+</ul>
+<h4 id="bulk-import-summary">Bulk Import Summary<a class="hlink" href="#bulk-import-summary" aria-label="Link to this section">#</a></h4>
+<ul>
+<li><strong>Files to Import:</strong> List of each file with transaction count and target account</li>
+<li><strong>Total:</strong> [X] files, [Y] transactions</li>
+</ul>
+<h4 id="entity-creation-summary">Entity Creation Summary<a class="hlink" href="#entity-creation-summary" aria-label="Link to this section">#</a></h4>
+<ul>
+<li><strong>Categories:</strong> Total, mapped, new to create, mapped to loans, new loans to create</li>
+<li><strong>Transfer Accounts:</strong> Total, mapped, new to create</li>
+<li><strong>Securities:</strong> Total, mapped, new to create</li>
+</ul>
+<h4 id="executing-the-import">Executing the Import<a class="hlink" href="#executing-the-import" aria-label="Link to this section">#</a></h4>
+<p>Click <strong>&quot;Import Transactions&quot;</strong> to begin. The button shows a loading spinner while processing.</p>
+<p>For bulk imports, files are processed sequentially. Entities created in earlier files (categories, accounts, payees, securities) are available for subsequent files.</p>
+<blockquote>
+<p><strong>Important:</strong> The import runs inside a database transaction. If an error occurs, changes are rolled back -- no partial imports.</p>
+</blockquote>
+<h3 id="step-7-import-complete">Step 7: Import Complete<a class="hlink" href="#step-7-import-complete" aria-label="Link to this section">#</a></h3>
+<p>After successful import, the complete step shows detailed results.</p>
+<figure><img src="/docs/images/import-complete-step.png" alt="Import Complete" width="700" height="836" loading="lazy" decoding="async"/><figcaption>Import Complete</figcaption></figure>
+<h4 id="results-displayed">Results Displayed<a class="hlink" href="#results-displayed" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Metric</th><th>Description</th></tr></thead><tbody><tr><td><strong>Imported</strong></td><td>Number of transactions successfully imported</td></tr><tr><td><strong>Skipped</strong></td><td>Number of duplicate transfers skipped (already existed)</td></tr><tr><td><strong>Errors</strong></td><td>Number of transactions that failed to import</td></tr><tr><td><strong>Categories created</strong></td><td>New categories added</td></tr><tr><td><strong>Accounts created</strong></td><td>New accounts added</td></tr><tr><td><strong>Payees created</strong></td><td>New payees added</td></tr><tr><td><strong>Securities created</strong></td><td>New securities added</td></tr></tbody></table></div>
+<h4 id="per-file-results-bulk-import">Per-File Results (Bulk Import)<a class="hlink" href="#per-file-results-bulk-import" aria-label="Link to this section">#</a></h4>
+<p>For bulk imports, each file shows its individual results with success/error indicators:</p>
+<ul>
+<li>Green background for files with no errors</li>
+<li>Red background for files with errors, including the first 3 error messages</li>
+</ul>
+<h4 id="next-steps">Next Steps<a class="hlink" href="#next-steps" aria-label="Link to this section">#</a></h4>
+<p>After import, you have two options:</p>
+<ul>
+<li><strong>&quot;View Investments&quot;</strong> / <strong>&quot;View Transactions&quot;</strong> -- Go directly to see your imported data. These take you to the account(s) you <em>just imported</em> -- single, bulk, or multi-account QIF -- not whichever account you last happened to view; imports into closed accounts stay visible too.</li>
+<li><strong>&quot;Import More Files&quot;</strong> -- Return to the upload step for additional imports</li>
+</ul>
+<h2 id="part-7-post-import-steps">Part 7: Post-Import Steps<a class="hlink" href="#part-7-post-import-steps" aria-label="Link to this section">#</a></h2>
+<p>These steps apply to the QIF method. After a direct <code>.mny</code> import, see <a href="#after-the-import">After the Import</a> instead -- the verification report covers most of this for you.</p>
+<h3 id="71-verify-account-balances">7.1 Verify Account Balances<a class="hlink" href="#71-verify-account-balances" aria-label="Link to this section">#</a></h3>
+<p>Compare each account&#x27;s current balance in Monize against your Microsoft Money records. If balances do not match:</p>
+<ol>
+<li>Check the opening balance -- it should match the balance as of the first transaction date</li>
+<li>Look for missing or duplicate transactions</li>
+<li>Check that transfers between accounts were matched correctly (not doubled)</li>
+</ol>
+<h3 id="72-review-cross-currency-transfers">7.2 Review Cross-Currency Transfers<a class="hlink" href="#72-review-cross-currency-transfers" aria-label="Link to this section">#</a></h3>
+<p>Cross-currency transfers from Microsoft Money may need manual adjustment because the QIF format does not include exchange rate information. Look for transactions with a memo containing <em>&quot;PENDING IMPORT&quot;</em> and update the amounts to reflect the actual exchange rates.</p>
+<h3 id="73-verify-investment-holdings">7.3 Verify Investment Holdings<a class="hlink" href="#73-verify-investment-holdings" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Navigate to <strong>Investments</strong></li>
+<li>Check that each holding shows the correct quantity and cost basis</li>
+<li>Compare against your Microsoft Money portfolio summary</li>
+<li>If any securities were auto-created (marked with <code>*</code> suffix), update their symbols and names</li>
+</ol>
+<h3 id="74-set-up-security-price-updates">7.4 Set Up Security Price Updates<a class="hlink" href="#74-set-up-security-price-updates" aria-label="Link to this section">#</a></h3>
+<p>Auto-created securities during import have price updates disabled by default. For each security:</p>
+<ol>
+<li>Navigate to <strong>Tools &gt; Securities</strong></li>
+<li>Edit each security to ensure the correct symbol, exchange, and type</li>
+<li>Price updates will start automatically once the security has a valid symbol</li>
+</ol>
+<h3 id="75-review-categories">7.5 Review Categories<a class="hlink" href="#75-review-categories" aria-label="Link to this section">#</a></h3>
+<p>Navigate to <strong>Tools &gt; Categories</strong> and review the category hierarchy. Categories imported from Microsoft Money use the QIF naming convention (with <code>/</code> separating parent and child). You may want to reorganize or rename them.</p>
+<h3 id="76-set-up-scheduled-transactions">7.6 Set Up Scheduled Transactions<a class="hlink" href="#76-set-up-scheduled-transactions" aria-label="Link to this section">#</a></h3>
+<p>QIF export from Microsoft Money does <strong>not</strong> include scheduled/recurring transactions. You must recreate these manually:</p>
+<ol>
+<li>Navigate to <strong>Bills &amp; Deposits</strong></li>
+<li>Create each recurring bill and deposit</li>
+<li>See <a href="/docs/bills-and-deposits">Bills and Deposits</a> for details</li>
+</ol>
+<blockquote>
+<p>The direct <code>.mny</code> import brings scheduled bills across, so this step is not needed there.</p>
+</blockquote>
+<h3 id="77-check-for-uncategorized-transactions">7.7 Check for Uncategorized Transactions<a class="hlink" href="#77-check-for-uncategorized-transactions" aria-label="Link to this section">#</a></h3>
+<p>Run the <strong>Uncategorized Transactions</strong> report (<strong>Reports &gt; Uncategorized Transactions</strong>) to find any transactions that were imported without a category. Assign categories as needed.</p>
+<h3 id="78-verify-net-worth">7.8 Verify Net Worth<a class="hlink" href="#78-verify-net-worth" aria-label="Link to this section">#</a></h3>
+<p>Navigate to the Dashboard and check the Net Worth chart. Monize automatically calculates monthly net worth snapshots after import. Compare the trend against your Microsoft Money net worth report.</p>
+<h2 id="part-8-starting-over">Part 8: Starting Over<a class="hlink" href="#part-8-starting-over" aria-label="Link to this section">#</a></h2>
+<p>If your import did not go as expected and you want to start fresh, you can delete all your financial data without losing your user account or settings.</p>
+<ol>
+<li>Navigate to <strong>Settings</strong></li>
+<li>Scroll to the <strong>Danger Zone</strong> section</li>
+<li>Click <strong>&quot;Delete Data...&quot;</strong></li>
+<li>Check all four optional boxes (Accounts, Categories, Payees, Currency preferences) for a completely clean slate</li>
+<li>Enter your password to confirm</li>
+</ol>
+<p>This removes all transactions, accounts, categories, securities, budgets, and other financial data. Your user account, preferences, and security settings (2FA, trusted devices) are preserved. You can then re-import your files.</p>
+<blockquote>
+<p>If you are re-running a direct <code>.mny</code> import, you do not need to do this first -- tick <strong>Start fresh</strong> on the review step and the same operation runs as part of the import.</p>
+</blockquote>
+<p>For more details, see <a href="/docs/settings-and-security#danger-zone">Settings and Security &gt; Danger Zone</a>.</p>
+<h2 id="part-9-troubleshooting-the-qif-import">Part 9: Troubleshooting the QIF Import<a class="hlink" href="#part-9-troubleshooting-the-qif-import" aria-label="Link to this section">#</a></h2>
+<p>For <code>.mny</code> import problems, see <a href="#troubleshooting-the-mny-import">Troubleshooting the .mny Import</a>.</p>
+<h3 id="common-issues">Common Issues<a class="hlink" href="#common-issues" aria-label="Link to this section">#</a></h3>
+<h4 id="account-type-mismatch-error">&quot;Account type mismatch&quot; Error<a class="hlink" href="#account-type-mismatch-error" aria-label="Link to this section">#</a></h4>
+<p><strong>Cause:</strong> Trying to import an Investment QIF file into a non-brokerage account, or a Regular QIF file into a brokerage account.</p>
+<p><strong>Solution:</strong> Make sure you select the correct account type:</p>
+<ul>
+<li>Investment QIF files (-Investment) go into brokerage accounts</li>
+<li>Regular QIF files (-Regular or standard banking) go into non-brokerage accounts</li>
+</ul>
+<h4 id="dates-appear-wrong">Dates Appear Wrong<a class="hlink" href="#dates-appear-wrong" aria-label="Link to this section">#</a></h4>
+<p><strong>Cause:</strong> The date format was detected incorrectly (e.g., MM/DD was interpreted as DD/MM).</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Go back to the Select Account step</li>
+<li>Change the date format dropdown to the correct format</li>
+<li>The file will be re-parsed with the new format</li>
+</ol>
+<h4 id="duplicate-transactions-after-import">Duplicate Transactions After Import<a class="hlink" href="#duplicate-transactions-after-import" aria-label="Link to this section">#</a></h4>
+<p><strong>Cause:</strong> Importing the same file twice, or transfer transactions appearing in both accounts.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Monize skips duplicate transfers when importing the second account</li>
+<li>If duplicates still appear, use the <strong>Duplicate Transaction Finder</strong> report to identify and remove them</li>
+<li>For future imports, always import all related files in a single bulk operation</li>
+</ul>
+<h4 id="transfer-not-linked-between-accounts">Transfer Not Linked Between Accounts<a class="hlink" href="#transfer-not-linked-between-accounts" aria-label="Link to this section">#</a></h4>
+<p><strong>Cause:</strong> The transfer accounts were not mapped correctly, or the files were imported in separate sessions.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>When possible, import all files at once using bulk import</li>
+<li>Check that account names in QIF match the Monize account names</li>
+<li>Manually link unmatched transfers by editing the transactions</li>
+</ul>
+<h4 id="investment-securities-not-found">Investment Securities Not Found<a class="hlink" href="#investment-securities-not-found" aria-label="Link to this section">#</a></h4>
+<p><strong>Cause:</strong> Microsoft Money does not include a security master list in QIF exports.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>During the Map Securities step, use the &quot;Lookup&quot; button to search for each security</li>
+<li>If lookup fails, manually enter the symbol, name, type, and exchange</li>
+<li>After import, edit any auto-created securities (with <code>*</code> suffix) in <strong>Tools &gt; Securities</strong></li>
+</ol>
+<h4 id="opening-balance-incorrect">Opening Balance Incorrect<a class="hlink" href="#opening-balance-incorrect" aria-label="Link to this section">#</a></h4>
+<p><strong>Cause:</strong> Microsoft Money&#x27;s opening balance transaction may not match the expected starting point.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Navigate to <strong>Accounts</strong></li>
+<li>Edit the account</li>
+<li>Adjust the opening balance and opening date to match your records</li>
+<li>The current balance will be recalculated</li>
+</ol>
+<h4 id="cross-currency-transfer-amounts-wrong">Cross-Currency Transfer Amounts Wrong<a class="hlink" href="#cross-currency-transfer-amounts-wrong" aria-label="Link to this section">#</a></h4>
+<p><strong>Cause:</strong> QIF files do not contain exchange rate information.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Search transactions for &quot;PENDING IMPORT&quot; in the memo field</li>
+<li>Edit each flagged transaction</li>
+<li>Adjust the amount in the destination account to match the actual transfer amount</li>
+<li>This correctly sets the effective exchange rate</li>
+</ol>
+<h4 id="import-times-out">Import Times Out<a class="hlink" href="#import-times-out" aria-label="Link to this section">#</a></h4>
+<p><strong>Cause:</strong> Very large QIF files (near the 10 MB limit or files with thousands of transactions).</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>The import has a 5-minute timeout</li>
+<li>If a single file is too large, try splitting it into smaller date ranges in Microsoft Money</li>
+</ul>
+<h2 id="part-10-what-cannot-be-imported-via-qif">Part 10: What Cannot Be Imported via QIF<a class="hlink" href="#part-10-what-cannot-be-imported-via-qif" aria-label="Link to this section">#</a></h2>
+<p>The QIF format and Microsoft Money export have limitations. The following data must be recreated manually in Monize. Several of these limits do not apply to the direct <code>.mny</code> import -- the right-hand column says which.</p>
+<div class="table-wrap"><table><thead><tr><th>Data Type</th><th>Status (QIF)</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Account balances</strong></td><td>Auto-detected</td><td>Extracted from QIF &quot;Opening Balance&quot; record. The <code>.mny</code> import computes and verifies every balance from the file</td></tr><tr><td><strong>Transactions</strong></td><td>Imported</td><td>All regular and investment transactions</td></tr><tr><td><strong>Voided transactions</strong></td><td>Imported (as void)</td><td>Money exports these as $0.00 rows with a <code>VOID </code> payee prefix and the amount dropped. Monize strips the prefix (so no separate &quot;VOID ...&quot; payees are created), marks the transaction <strong>void</strong>, and adds a note that the original amount was lost in the export. The <code>.mny</code> import keeps the original amount</td></tr><tr><td><strong>Categories</strong></td><td>Imported</td><td>Created during import mapping</td></tr><tr><td><strong>Payees</strong></td><td>Imported</td><td>Created automatically from QIF data</td></tr><tr><td><strong>Securities</strong></td><td>Imported</td><td>Created during import mapping</td></tr><tr><td><strong>Price history</strong></td><td>Not exported</td><td>Imported by the <code>.mny</code> import</td></tr><tr><td><strong>Exchange rates</strong></td><td>Not exported</td><td>Imported by the <code>.mny</code> import</td></tr><tr><td><strong>Scheduled transactions</strong></td><td>Not exported</td><td>Must be recreated in Bills &amp; Deposits. Imported by the <code>.mny</code> import</td></tr><tr><td><strong>Budgets</strong></td><td>Not exported</td><td>Must be recreated using <a href="/docs/budgets">Budgets</a> -- Monize can auto-generate budgets from your imported spending history. Not imported by the <code>.mny</code> import either</td></tr><tr><td><strong>Savings goals</strong></td><td>Not exported</td><td>No equivalent entity in Monize. Not imported by the <code>.mny</code> import either</td></tr><tr><td><strong>Reports</strong></td><td>Not applicable</td><td>Monize has its own reporting system</td></tr><tr><td><strong>Loan amortization</strong></td><td>Not exported</td><td>Loan payment transactions are imported, but amortization schedules must be set up manually</td></tr><tr><td><strong>Account numbers</strong></td><td>Not in QIF</td><td>QIF format does not include account numbers</td></tr><tr><td><strong>Cheque images</strong></td><td>Not in QIF</td><td>Physical cheque images cannot be exported. Attachments are not imported from <code>.mny</code> either</td></tr><tr><td><strong>Online banking links</strong></td><td>Not applicable</td><td>Monize does not use online banking connections</td></tr><tr><td><strong>Planner/forecast data</strong></td><td>Not exported</td><td>Financial plans must be recreated</td></tr><tr><td><strong>Invoices/customers</strong></td><td>Not exported</td><td>Business data is not supported</td></tr></tbody></table></div>
+<h2 id="quick-reference-card">Quick Reference Card<a class="hlink" href="#quick-reference-card" aria-label="Link to this section">#</a></h2>
+<h3 id="recommended-direct-mny-import">Recommended: Direct .mny Import<a class="hlink" href="#recommended-direct-mny-import" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Work from a copy of the <code>.mny</code> file, into an empty Monize profile</li>
+<li><strong>Tools &gt; Import Transactions</strong>, select the <code>.mny</code> file (one at a time)</li>
+<li>Enter the file password if prompted</li>
+<li>Review accounts, balances, options and scheduled bills -- untick what you do not want</li>
+<li><strong>Start import</strong>, then read the verification report</li>
+</ol>
+<h3 id="alternative-export-from-microsoft-money-as-qif">Alternative: Export from Microsoft Money as QIF<a class="hlink" href="#alternative-export-from-microsoft-money-as-qif" aria-label="Link to this section">#</a></h3>
+<ol>
+<li><strong>File &gt; Export &gt; Loose QIF</strong></li>
+<li>One file per account</li>
+<li>Investment accounts need two exports (Investment + Regular)</li>
+<li>Name files with numeric prefix for sort order</li>
+</ol>
+<h3 id="importing-qif-into-monize">Importing QIF into Monize<a class="hlink" href="#importing-qif-into-monize" aria-label="Link to this section">#</a></h3>
+<ol>
+<li><strong>Tools &gt; Import Transactions</strong></li>
+<li>Select all files at once for bulk import</li>
+<li>Map accounts, categories, securities, and transfer accounts</li>
+<li>Review and click &quot;Import Transactions&quot;</li>
+</ol>
+<h3 id="recommended-qif-import-order">Recommended QIF Import Order<a class="hlink" href="#recommended-qif-import-order" aria-label="Link to this section">#</a></h3>
+<pre><code>1. Asset accounts
+2. Home currency bank accounts
+3. Foreign currency bank accounts
+4. Credit card accounts
+5. Investment cash accounts (-Regular files)
+6. Investment brokerage accounts (-Investment files)
+7. Line of credit / loan accounts
+</code></pre>
+<h3 id="after-a-mny-import-checklist">After a .mny Import Checklist<a class="hlink" href="#after-a-mny-import-checklist" aria-label="Link to this section">#</a></h3>
+<pre><code>[ ] Read the verification report -- every account should reconcile
+[ ] Give auto-created securities a real symbol and exchange
+[ ] Recreate budgets and savings goals
+[ ] Check imported scheduled bills in Bills &amp; Deposits
+[ ] Check net worth trend on Dashboard
+</code></pre>
+<h3 id="after-a-qif-import-checklist">After a QIF Import Checklist<a class="hlink" href="#after-a-qif-import-checklist" aria-label="Link to this section">#</a></h3>
+<pre><code>[ ] Verify all account balances match Microsoft Money
+[ ] Fix cross-currency transfer amounts (&quot;PENDING IMPORT&quot; memos)
+[ ] Verify investment holdings and cost basis
+[ ] Update auto-created securities with correct symbols
+[ ] Recreate scheduled transactions (bills and deposits)
+[ ] Run &quot;Uncategorized Transactions&quot; report and fix gaps
+[ ] Review category hierarchy and reorganize if needed
+[ ] Check net worth trend on Dashboard
+</code></pre></article><nav class="pager" aria-label="Previous and next page"><a class="pg pg-prev" href="/docs/importing-from-quicken"><span>Previous</span><b>Importing from Quicken</b></a><a class="pg pg-next" href="/docs/dashboard"><span>Next</span><b>Dashboard</b></a></nav><p class="dedit"><a href="https://github.com/kenlasko/monize/edit/main/website/docs/importing-from-microsoft-money.md" rel="noopener">Edit this page on GitHub</a><a href="https://github.com/kenlasko/monize/issues/new" rel="noopener">Report a problem with the docs</a></p></main><aside class="dtoc" aria-label="On this page"><p>On this page</p><ul><li class="d2"><a href="#overview">Overview</a></li><li class="d3"><a href="#which-method-to-use">Which Method to Use</a></li><li class="d2"><a href="#part-1-direct-mny-import-recommended">Part 1: Direct .mny Import (Recommended)</a></li><li class="d3"><a href="#before-you-start">Before You Start</a></li><li class="d3"><a href="#step-by-step">Step by Step</a></li><li class="d3"><a href="#import-options">Import Options</a></li><li class="d3"><a href="#what-is-imported">What Is Imported</a></li><li class="d3"><a href="#what-is-not-imported">What Is Not Imported</a></li><li class="d3"><a href="#known-limitations">Known Limitations</a></li><li class="d3"><a href="#after-the-import">After the Import</a></li><li class="d3"><a href="#troubleshooting-the-mny-import">Troubleshooting the .mny Import</a></li><li class="d2"><a href="#part-2-the-qif-method-alternative">Part 2: The QIF Method (Alternative)</a></li><li class="d2"><a href="#part-3-preparing-microsoft-money-for-export">Part 3: Preparing Microsoft Money for Export</a></li><li class="d3"><a href="#31-note-your-account-details">3.1 Note Your Account Details</a></li><li class="d3"><a href="#32-open-closed-accounts-if-needed">3.2 Open Closed Accounts (if needed)</a></li><li class="d3"><a href="#33-make-a-list-of-all-accounts">3.3 Make a List of All Accounts</a></li><li class="d3"><a href="#34-create-export-folders">3.4 Create export folders</a></li><li class="d2"><a href="#part-4-exporting-from-microsoft-money">Part 4: Exporting from Microsoft Money</a></li><li class="d3"><a href="#exporting-regular-accounts">Exporting Regular Accounts</a></li><li class="d3"><a href="#exporting-investment-accounts">Exporting Investment Accounts</a></li><li class="d3"><a href="#file-naming-convention">File Naming Convention</a></li><li class="d2"><a href="#part-5-recommended-import-order">Part 5: Recommended Import Order</a></li><li class="d3"><a href="#recommended-order">Recommended Order</a></li><li class="d3"><a href="#why-this-order">Why This Order?</a></li><li class="d3"><a href="#bulk-import">Bulk Import</a></li><li class="d2"><a href="#part-6-importing-qif-files-into-monize-step-by-step">Part 6: Importing QIF Files into Monize Step by Step</a></li><li class="d3"><a href="#step-1-upload-qif-files">Step 1: Upload QIF Files</a></li><li class="d3"><a href="#step-2-select-destination-account">Step 2: Select Destination Account</a></li><li class="d3"><a href="#step-3-map-categories">Step 3: Map Categories</a></li><li class="d3"><a href="#step-4-map-securities">Step 4: Map Securities</a></li><li class="d3"><a href="#step-5-map-transfer-accounts">Step 5: Map Transfer Accounts</a></li><li class="d3"><a href="#step-6-review-and-import">Step 6: Review and Import</a></li><li class="d3"><a href="#step-7-import-complete">Step 7: Import Complete</a></li><li class="d2"><a href="#part-7-post-import-steps">Part 7: Post-Import Steps</a></li><li class="d3"><a href="#71-verify-account-balances">7.1 Verify Account Balances</a></li><li class="d3"><a href="#72-review-cross-currency-transfers">7.2 Review Cross-Currency Transfers</a></li><li class="d3"><a href="#73-verify-investment-holdings">7.3 Verify Investment Holdings</a></li><li class="d3"><a href="#74-set-up-security-price-updates">7.4 Set Up Security Price Updates</a></li><li class="d3"><a href="#75-review-categories">7.5 Review Categories</a></li><li class="d3"><a href="#76-set-up-scheduled-transactions">7.6 Set Up Scheduled Transactions</a></li><li class="d3"><a href="#77-check-for-uncategorized-transactions">7.7 Check for Uncategorized Transactions</a></li><li class="d3"><a href="#78-verify-net-worth">7.8 Verify Net Worth</a></li><li class="d2"><a href="#part-8-starting-over">Part 8: Starting Over</a></li><li class="d2"><a href="#part-9-troubleshooting-the-qif-import">Part 9: Troubleshooting the QIF Import</a></li><li class="d3"><a href="#common-issues">Common Issues</a></li><li class="d2"><a href="#part-10-what-cannot-be-imported-via-qif">Part 10: What Cannot Be Imported via QIF</a></li><li class="d2"><a href="#quick-reference-card">Quick Reference Card</a></li><li class="d3"><a href="#recommended-direct-mny-import">Recommended: Direct .mny Import</a></li><li class="d3"><a href="#alternative-export-from-microsoft-money-as-qif">Alternative: Export from Microsoft Money as QIF</a></li><li class="d3"><a href="#importing-qif-into-monize">Importing QIF into Monize</a></li><li class="d3"><a href="#recommended-qif-import-order">Recommended QIF Import Order</a></li><li class="d3"><a href="#after-a-mny-import-checklist">After a .mny Import Checklist</a></li><li class="d3"><a href="#after-a-qif-import-checklist">After a QIF Import Checklist</a></li></ul></aside></div><footer class="dfoot"><div class="wrap"><span>Monize is released under the AGPL-3.0 licence.</span><span><a href="/">monize.net</a> · <a href="https://demo.monize.net" rel="noopener">Live demo</a> · <a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></span></div></footer><div class="sdlg" id="search" role="dialog" aria-modal="true" aria-label="Search the documentation" hidden=""><div class="sbox"><label class="sfield"><span class="sr">Search the documentation</span><input id="q" type="search" placeholder="Search the docs, e.g. &quot;split transaction&quot;" autoComplete="off" spellCheck="false" aria-controls="sres"/></label><ul id="sres" class="sres" role="listbox" aria-label="Results"></ul><p class="shint" id="shint"><kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</p></div></div><script src="/assets/js/docs.js" defer=""></script></body></html>

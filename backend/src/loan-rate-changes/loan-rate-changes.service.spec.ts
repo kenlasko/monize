@@ -304,11 +304,11 @@ describe("LoanRateChangesService", () => {
         recalculatePayment: true,
       });
 
-      // 29 calendar months elapsed of 300; Canadian variable-rate is ANNUITY
+      // 30 payments (through the effective date) reflected of 300; Canadian variable-rate is ANNUITY
       const expected = recalculateMortgageAfterRateChange(
         400000,
         4.9,
-        300 - 29,
+        300 - 30,
         "MONTHLY",
         "ANNUITY",
       );
@@ -339,11 +339,11 @@ describe("LoanRateChangesService", () => {
         userId,
         "2026-11-01",
       ]);
-      // 10 calendar months elapsed of 300.
+      // 11 payments (through the effective date) reflected of 300.
       const expected = recalculateMortgageAfterRateChange(
         395000,
         4.9,
-        300 - 10,
+        300 - 11,
         "MONTHLY",
         "ANNUITY",
       );
@@ -352,7 +352,7 @@ describe("LoanRateChangesService", () => {
         recalculateMortgageAfterRateChange(
           400000,
           4.9,
-          300 - 10,
+          300 - 11,
           "MONTHLY",
           "ANNUITY",
         ).paymentAmount,
@@ -373,7 +373,7 @@ describe("LoanRateChangesService", () => {
         recalculateMortgageAfterRateChange(
           400000,
           4.9,
-          300 - 29,
+          300 - 30,
           "MONTHLY",
           "CANADIAN_FIXED",
         ).paymentAmount,

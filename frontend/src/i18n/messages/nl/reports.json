@@ -463,6 +463,7 @@
     "generating": "Rapport genereren...",
     "noData": "Geen gegevens gevonden voor de geselecteerde criteria",
     "transactionCount": "{count, plural, one {# transactie} other {# transacties}}",
+    "truncatedNotice": "Dit rapport heeft de rijlimiet bereikt en toont alleen de oudste rijen, dus de cijfers zijn onvolledig. Beperk de periode of de filters om alles te zien.",
     "toasts": {
       "loadFailed": "Rapport kon niet worden geladen",
       "executeFailed": "Rapport uitvoeren mislukt"
@@ -1474,6 +1475,8 @@
     "totalReturn": "Totaalrendement",
     "annualizedReturn": "Geannualiseerd rendement",
     "needs1YearNote": "Minimaal 1 jaar data nodig",
+    "annualizedNeedsSingleBuyNote": "Alleen getoond bij één aankoop zonder latere activiteit",
+    "missingPrice": "Geen koers voor {symbol}",
     "priceHistory": "Koersgeschiedenis - {symbol}",
     "buyTransaction": "Aankoop",
     "sellTransaction": "Verkoop",

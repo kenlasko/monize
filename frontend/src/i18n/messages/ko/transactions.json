@@ -576,6 +576,7 @@
       "total": "합계",
       "transactions": "거래",
       "tooltip": "{count, plural, one {# 건의 거래} other {# 건의 거래}}",
+      "partialNote": "일부 금액은 환율이 없어 이 합계에 포함되지 않았습니다.",
       "quarterLabel": "{year}년 Q{quarter}",
       "quarterTick": "{year}년 Q{quarter}",
       "granularityLabel": "그룹화",

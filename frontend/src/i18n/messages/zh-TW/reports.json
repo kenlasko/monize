@@ -463,6 +463,7 @@
     "generating": "產生報表中...",
     "noData": "未找到符合所選條件的資料",
     "transactionCount": "{count, plural, one {# 筆交易} other {# 筆交易}}",
+    "truncatedNotice": "此報表已達到列數上限，僅顯示最早的列，因此數值不完整。請縮小時間範圍或篩選條件以檢視全部。",
     "toasts": {
       "loadFailed": "載入報表失敗",
       "executeFailed": "執行報表失敗"
@@ -1474,6 +1475,8 @@
     "totalReturn": "總報酬率",
     "annualizedReturn": "年化報酬率",
     "needs1YearNote": "需要 1 年以上的資料",
+    "annualizedNeedsSingleBuyNote": "僅在只有一次買入且之後沒有其他活動時顯示",
+    "missingPrice": "{symbol} 沒有價格",
     "priceHistory": "價格歷史 - {symbol}",
     "buyTransaction": "買入交易",
     "sellTransaction": "賣出交易",

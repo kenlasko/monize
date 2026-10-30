@@ -330,6 +330,10 @@ export const getCapitalGainsOutput = toolOutput({
     realizedGain: num,
     unrealizedGain: num,
     totalCapitalGain: num,
+    // Read `fxComplete === false`: a figure is null while a pair has no rate.
+    currency: str,
+    fxComplete: bool,
+    missingRatePairs: z.array(str),
   }),
   groupedBy: str,
   entries: rows(),

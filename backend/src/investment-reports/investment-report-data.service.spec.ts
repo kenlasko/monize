@@ -658,6 +658,61 @@ describe("InvestmentReportDataService", () => {
     expect(rows[0].values.marketValue).toBe(1200);
   });
 
+  it("marks the basis unknown when a sale exceeds what was held", async () => {
+    securitiesRepository.find.mockResolvedValue([
+      {
+        id: "sec1",
+        symbol: "AAA",
+        name: "Alpha",
+        securityType: "STOCK",
+        currencyCode: "USD",
+      },
+    ]);
+    holdingsRepository.find.mockResolvedValue([
+      holding({ quantity: 7, averageCost: 10 }),
+    ]);
+    txRepository.find.mockResolvedValue([
+      makeTx({
+        action: InvestmentAction.BUY,
+        transactionDate: "2024-01-04",
+        quantity: 5,
+        price: 10,
+        totalAmount: 50,
+      }),
+      makeTx({
+        action: InvestmentAction.SELL,
+        transactionDate: "2024-02-04",
+        quantity: 8,
+        price: 10,
+        totalAmount: 80,
+      }),
+      makeTx({
+        action: InvestmentAction.BUY,
+        transactionDate: "2024-03-04",
+        quantity: 10,
+        price: 10,
+        totalAmount: 100,
+      }),
+    ]);
+    manager.query.mockResolvedValue([
+      priceRow({ price_date: "2024-01-04", close_price: "10", volume: "10" }),
+      priceRow({ price_date: "2024-06-10", close_price: "12", volume: "10" }),
+    ]);
+
+    const { rows } = await service.computeHoldings(
+      "u1",
+      ["acc1"],
+      "2024-06-10",
+      "USD",
+    );
+    const v = rows[0].values;
+    // 5 - 8 + 10: the full sale comes off the quantity.
+    expect(v.quantity).toBe(7);
+    expect(v.costBasis).toBeNull();
+    expect(v.gain).toBeNull();
+    expect(v.realizedGains).toBeNull();
+  });
+
   it("handles reinvest/interest/capital-gain/split/add actions and annualized return", async () => {
     securitiesRepository.find.mockResolvedValue([
       {
@@ -733,8 +788,15 @@ describe("InvestmentReportDataService", () => {
     expect(v.reinvestments).toBe(110);
     // The reinvested dividend 110 + interest 5 + capital gain 7.
     expect(v.income).toBe(122);
-    // Held > 0.5 years -> annualized return is computed (not null)
-    expect(v.totalAnnualizedReturn).not.toBeNull();
+    // ADD_SHARES joined shares of unknown cost: nothing measured against the
+    // basis is stated, but the window return needs no basis.
+    expect(v.costBasis).toBeNull();
+    expect(v.averageCost).toBeNull();
+    expect(v.gain).toBeNull();
+    expect(v.gainPercent).toBeNull();
+    expect(v.priceAppreciation).toBeNull();
+    expect(v.totalReturnAllDates).toBeNull();
+    expect(v.totalAnnualizedReturn).toBeNull();
     expect(v.totalReturn3Year).not.toBeNull();
   });
 

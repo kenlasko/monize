@@ -318,13 +318,13 @@ export function CashFlowReport() {
       title: t('cashFlow.monthlyCashFlow'),
       summaryCards: balance
         ? [
-            { label: t('cashFlow.totalInflows'), value: formatCurrency(balance.knownIncome), color: "#16a34a" },
+            { label: t('cashFlow.totalInflows'), value: formatCurrency(balance.knownIncome), color: "#16a34a", note: noteFor({ value: balance.knownIncome, ...balance.completeness }) },
             { label: t('tagBreakdown.inflows'), value: formatCurrency(balance.bucket.taggedInflows), color: "#4f46e5" },
-            { label: t('cashFlow.totalOutflows'), value: formatCurrency(balance.knownExpenses), color: "#dc2626" },
+            { label: t('cashFlow.totalOutflows'), value: formatCurrency(balance.knownExpenses), color: "#dc2626", note: noteFor({ value: balance.knownExpenses, ...balance.completeness }) },
             ...(balance.bucket.taggedOutflows !== 0
               ? [{ label: t('tagBreakdown.outflows'), value: formatCurrency(balance.bucket.taggedOutflows), color: "#4f46e5" }]
               : []),
-            { label: t('tagBreakdown.balance'), value: `${formatCurrency(balance.window.balance ?? 0)}${balance.window.complete ? "" : "*"}`, color: (balance.window.balance ?? 0) >= 0 ? "#2563eb" : "#ea580c" },
+            { label: t('tagBreakdown.balance'), value: balance.window.balance === null ? "\u2014" : `${formatCurrency(balance.window.balance)}${balance.window.complete ? "" : "*"}`, color: (balance.window.balance ?? 0) >= 0 ? "#2563eb" : "#ea580c" },
             { label: t('tagBreakdown.balancePercent'), value: balance.window.balancePercent === null ? "\u2014" : formatPercent(balance.window.balancePercent, 2), color: (balance.window.balancePercent ?? 0) >= 0 ? "#9333ea" : "#ea580c" },
           ]
         : [

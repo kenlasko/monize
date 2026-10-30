@@ -6,7 +6,9 @@ import type { WizardState } from './BudgetWizard';
 import type { GenerateBudgetResponse, ApplyBudgetCategoryData } from '@/types/budget';
 
 // Mock format
-vi.mock('@/lib/format', () => ({
+vi.mock('@/lib/format', async (importOriginal) => ({
+  roundMoney: (await importOriginal<typeof import('@/lib/format')>()).roundMoney,
+  sumMoney: (await importOriginal<typeof import('@/lib/format')>()).sumMoney,
   formatCurrency: vi.fn((amount: number) => `$${amount.toFixed(2)}`),
   getCurrencySymbol: vi.fn(() => '$'),
   getDecimalPlacesForCurrency: vi.fn(() => 2),
@@ -174,6 +176,27 @@ describe('BudgetWizardCategories', () => {
     expect(screen.getByText('Total Income')).toBeInTheDocument();
     expect(screen.getByText('Total Expenses')).toBeInTheDocument();
     expect(screen.getByText('Remaining')).toBeInTheDocument();
+  });
+
+  it('treats income equal to expenses as zero remaining, not a float-noise deficit', () => {
+    const categories = new Map<string, ApplyBudgetCategoryData>();
+    categories.set('cat-salary', { categoryId: 'cat-salary', amount: 0.3, isIncome: true });
+    categories.set('cat-groceries', { categoryId: 'cat-groceries', amount: 0.1, isIncome: false });
+    categories.set('cat-dining', { categoryId: 'cat-dining', amount: 0.2, isIncome: false });
+
+    render(
+      <BudgetWizardCategories
+        state={{ ...defaultState, selectedCategories: categories }}
+        updateState={mockUpdateState}
+        onNext={mockOnNext}
+        onBack={mockOnBack}
+      />,
+    );
+
+    const remaining = screen.getByText('Remaining').nextElementSibling;
+    expect(remaining).toHaveTextContent('$0.00');
+    expect(remaining?.className).toContain('text-green');
+    expect(remaining?.className).not.toContain('text-red');
   });
 
   it('calls onNext when Next button is clicked', () => {

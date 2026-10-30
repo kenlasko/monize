@@ -280,6 +280,24 @@ describe('CategoryPayeeBarChart', () => {
     expect(screen.getByText('15')).toBeInTheDocument();
   });
 
+  it('marks the figures partial when a month has no exchange rate', () => {
+    render(
+      <CategoryPayeeBarChart
+        data={[
+          { month: '2025-01', total: -600, count: 10 },
+          { month: '2025-02', total: null, knownSubtotal: -400, count: 5 },
+        ]}
+        isLoading={false}
+      />
+    );
+
+    // The converted part still counts; the footer says it is not the whole.
+    expect(screen.getByText('$-1000.00 *')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Some amounts have no exchange rate/),
+    ).toBeInTheDocument();
+  });
+
   it('shows correct summary for positive totals', () => {
     render(
       <CategoryPayeeBarChart

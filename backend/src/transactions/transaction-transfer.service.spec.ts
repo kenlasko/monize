@@ -362,6 +362,28 @@ describe("TransactionTransferService", () => {
   });
 
   describe("createTransfer", () => {
+    it("refuses a future-dated transfer into a closed account before writing", async () => {
+      crossOwnerAccess.accountAccessFor.mockImplementation(
+        (_u: string, id: string) =>
+          Promise.resolve({
+            account:
+              id === "to-account"
+                ? { ...mockToAccount, isClosed: true }
+                : mockFromAccount,
+          }),
+      );
+
+      await expect(
+        service.createTransfer(
+          "user-1",
+          { ...baseTransferDto, transactionDate: "2999-01-15" },
+          mockFindOne,
+        ),
+      ).rejects.toThrow(/closed account/);
+
+      expect(transactionsRepository.save).not.toHaveBeenCalled();
+    });
+
     it("creates from and to transactions with correct amounts and links them", async () => {
       mockFindOne
         .mockResolvedValueOnce({ id: "from-tx-id", amount: -500 })
@@ -2657,6 +2679,95 @@ describe("TransactionTransferService", () => {
         );
       });
 
+      it("does not reuse the stored 1 of a zero-amount transfer as the rate", async () => {
+        accountsService.findOne.mockImplementation((_u: string, id: string) =>
+          Promise.resolve(id === "to-account" ? eurTo : mockFromAccount),
+        );
+        exchangeRateService.getRateForDate.mockResolvedValue(0.9);
+        const zeroFrom = { ...usdFromTx, amount: -0 } as unknown as Transaction;
+        const zeroTo = {
+          ...eurToTx,
+          amount: 0,
+          exchangeRate: 1,
+        } as unknown as Transaction;
+        mockFindOne
+          .mockResolvedValueOnce(zeroTo)
+          .mockResolvedValueOnce(zeroFrom)
+          .mockResolvedValueOnce(zeroTo)
+          .mockResolvedValueOnce(zeroFrom);
+
+        // A form resends the stored rate with the new amount.
+        // By the destination leg's id: a zero amount carries no sign to tell
+        // the legs apart.
+        await service.updateTransfer(
+          "user-1",
+          "to-tx",
+          { amount: 500, exchangeRate: 1 },
+          mockFindOne,
+        );
+
+        expect(transactionsRepository.update).toHaveBeenCalledWith(
+          "to-tx",
+          expect.objectContaining({ exchangeRate: 0.9, amount: 450 }),
+        );
+      });
+
+      it("resolves a rate for a full form resend of a zero-amount transfer (echoed rate and toAmount)", async () => {
+        accountsService.findOne.mockImplementation((_u: string, id: string) =>
+          Promise.resolve(id === "to-account" ? eurTo : mockFromAccount),
+        );
+        exchangeRateService.getRateForDate.mockResolvedValue(0.9);
+        const zeroFrom = { ...usdFromTx, amount: -0 } as unknown as Transaction;
+        const zeroTo = {
+          ...eurToTx,
+          amount: 0,
+          exchangeRate: 1,
+        } as unknown as Transaction;
+        mockFindOne
+          .mockResolvedValueOnce(zeroTo)
+          .mockResolvedValueOnce(zeroFrom)
+          .mockResolvedValueOnce(zeroTo)
+          .mockResolvedValueOnce(zeroFrom);
+
+        await service.updateTransfer(
+          "user-1",
+          "to-tx",
+          { amount: 500, exchangeRate: 1, toAmount: 0 },
+          mockFindOne,
+        );
+
+        expect(transactionsRepository.update).toHaveBeenCalledWith(
+          "to-tx",
+          expect.objectContaining({ exchangeRate: 0.9, amount: 450 }),
+        );
+      });
+
+      it("refuses moving a leg into a closed account", async () => {
+        accountsService.findOne.mockImplementation((_u: string, id: string) =>
+          Promise.resolve(
+            id === "closed-account"
+              ? { id, currencyCode: "USD", isClosed: true }
+              : id === "to-account"
+                ? eurTo
+                : mockFromAccount,
+          ),
+        );
+        mockFindOne
+          .mockResolvedValueOnce(usdFromTx)
+          .mockResolvedValueOnce(eurToTx);
+
+        await expect(
+          service.updateTransfer(
+            "user-1",
+            "from-tx",
+            { fromAccountId: "closed-account" },
+            mockFindOne,
+          ),
+        ).rejects.toThrow(/closed account/);
+
+        expect(transactionsRepository.update).not.toHaveBeenCalled();
+      });
+
       it("leaves the settlement alone on a description-only edit (RR2-004)", async () => {
         // FX was resolved on every edit, and the FR-007 fix then wrote a resolved
         // rate whenever it differed from the row's. So changing a description
@@ -4132,6 +4243,36 @@ describe("TransactionTransferService", () => {
         toAccountName: "Savings",
         amount: 200,
         toAmount: 200,
+      });
+    });
+
+    it("resolves the rate for a zero-amount cross-currency transfer instead of scaling by its stored 1", async () => {
+      // Stored at rate 1 because zero needs no rate; 500 USD must not become
+      // 500 EUR in the preview the AI action signs.
+      accountsService.findOne.mockImplementation((_u: string, id: string) =>
+        Promise.resolve({
+          id,
+          currencyCode: id === "to-account" ? "EUR" : "USD",
+        }),
+      );
+      exchangeRateService.getRateForDate.mockResolvedValue(0.9);
+      const findOne = jest.fn(async (_uid: string, id: string) =>
+        id === "from-tx"
+          ? { ...fromLeg, amount: -0 }
+          : { ...toLeg, amount: 0, currencyCode: "EUR", exchangeRate: 1 },
+      );
+
+      const preview = await service.previewUpdateTransfer(
+        "user-1",
+        "to-tx",
+        { amount: 500 },
+        findOne as any,
+      );
+
+      expect(preview).toMatchObject({
+        amount: 500,
+        toAmount: 450,
+        exchangeRate: 0.9,
       });
     });
 

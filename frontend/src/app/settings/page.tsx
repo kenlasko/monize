@@ -28,6 +28,7 @@ import { useAuthStore } from '@/store/authStore';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import Link from 'next/link';
+import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Settings');
 
@@ -257,7 +258,7 @@ function OwnerSettingsView() {
   return (
     <PageLayout>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-        <PageHeader title={t('title')} helpUrl="https://github.com/kenlasko/monize/wiki/Settings-and-Security" />
+        <PageHeader title={t('title')} helpUrl={docsUrl('settings')} />
 
         {isDemoMode && (
           <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-6 mb-6">

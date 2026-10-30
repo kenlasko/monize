@@ -1302,6 +1302,43 @@ describe("BuiltInReportsService", () => {
       expect(result.totals.deductible).toBe(500);
     });
 
+    it("does not cancel an income child against an expense child under one parent", async () => {
+      const parent = { ...mockParentCategory, id: "p", name: "Employment" };
+      scopedManager.query.mockResolvedValue([
+        { category_id: "c-sal", currency_code: "USD", amount: "50000.00" },
+        { category_id: "c-union", currency_code: "USD", amount: "-500.00" },
+      ]);
+      categoriesRepository.find.mockResolvedValue([
+        parent,
+        { ...mockIncomeCategory, id: "c-sal", name: "Salary", parentId: "p" },
+        {
+          ...mockParentCategory,
+          id: "c-union",
+          name: "Union dues",
+          parentId: "p",
+        },
+      ]);
+
+      const result = await service.getTaxSummary(mockUserId, 2025);
+
+      expect(result.totals.income).toBe(50000);
+      expect(result.totals.expenses).toBe(500);
+      expect(result.totals.deductible).toBe(500);
+    });
+
+    it("does not cancel uncategorized income against uncategorized spending", async () => {
+      scopedManager.query.mockResolvedValue([
+        { category_id: null, currency_code: "USD", amount: "1000.00" },
+        { category_id: null, currency_code: "USD", amount: "-400.00" },
+      ]);
+      categoriesRepository.find.mockResolvedValue([]);
+
+      const result = await service.getTaxSummary(mockUserId, 2025);
+
+      expect(result.totals.income).toBe(1000);
+      expect(result.totals.expenses).toBe(400);
+    });
+
     it("passes correct year date range to the query", async () => {
       scopedManager.query.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([]);

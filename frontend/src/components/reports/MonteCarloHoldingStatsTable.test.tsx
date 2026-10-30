@@ -53,6 +53,35 @@ describe('HoldingStatsTable', () => {
     expect(screen.getByText(/No active holdings/)).toBeInTheDocument();
   });
 
+  it('shows a dash, not a guessed currency, when the security has none', () => {
+    render(
+      <HoldingStatsTable
+        data={[
+          {
+            accountId: 'a',
+            accountName: 'Brokerage',
+            currencyCode: 'USD',
+            holdings: [
+              {
+                symbol: 'XYZ',
+                name: 'No currency',
+                currencyCode: null,
+                quantity: 5,
+                marketValue: 777,
+                yearsObserved: 0,
+                meanReturn: null,
+                volatility: null,
+              },
+            ],
+          },
+        ]}
+        loading={false}
+        formatters={fmts}
+      />,
+    );
+    expect(screen.queryByText(/777/)).not.toBeInTheDocument();
+  });
+
   it('renders holdings rows including null mean/volatility', () => {
     render(
       <HoldingStatsTable

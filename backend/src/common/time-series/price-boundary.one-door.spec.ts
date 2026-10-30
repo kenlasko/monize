@@ -66,14 +66,6 @@ const BASELINE: ReadonlyArray<{ file: string; reason: string }> = [
       "the securities list's latest-close column. The source is metadata " +
       "about the row, not a value-for-a-date.",
   },
-  {
-    file: "monte-carlo/monte-carlo.service.ts",
-    reason:
-      "Year-end closes for the historical return sample. Bounded by the " +
-      "bucket rather than by a lag window; it also carries a per-row " +
-      "COALESCE(adjusted_close, close_price), which rule 1 forbids and which " +
-      "is recorded here so it is not mistaken for an endorsed pattern.",
-  },
 ];
 
 const DATE_ORDER_DESC =

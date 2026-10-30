@@ -288,7 +288,7 @@ describe('TagsPage', () => {
 
   it('links the page header to the Tags wiki page', async () => {
     await renderPage();
-    expect(screen.getByTestId('help-link')).toHaveAttribute('href', 'https://github.com/kenlasko/monize/wiki/Tags');
+    expect(screen.getByTestId('help-link')).toHaveAttribute('href', 'https://www.monize.net/docs/tags');
   });
 
   it('shows loading spinner while data is loading', async () => {

@@ -1,11 +1,18 @@
-import { Injectable } from "@nestjs/common";
-import { DataSource, EntityManager } from "typeorm";
+import { Injectable, Logger } from "@nestjs/common";
+import { DataSource, EntityManager, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { todayYMD } from "../common/date-utils";
 import { GemAssetRole } from "./entities/gem-strategy-asset.entity";
 import { BOUNDARY_LAG_DAYS, PricePoint } from "./gem-momentum.util";
 import { loadPriceSeries } from "../common/time-series/price-series.util";
 import { GemRange } from "./gem-report.types";
+import { Security } from "../securities/entities/security.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import { preferredCurrency } from "../common/default-currency.util";
+import {
+  buildRateIndex,
+  convertAtDate,
+} from "../common/time-series/rate-index.util";
 
 /** How far back each chart range reaches, in months. `null` means "all history". */
 const RANGE_MONTHS: Record<GemRange, number | null> = {
@@ -65,6 +72,8 @@ export function rangeSampling(range: GemRange): "day" | "week" | "month" {
  */
 @Injectable()
 export class GemPriceService {
+  private readonly logger = new Logger(GemPriceService.name);
+
   constructor(private dataSource: DataSource) {}
 
   /**
@@ -111,26 +120,92 @@ export class GemPriceService {
     fromDate: string,
     sampling: "day" | "week" | "month" = "day",
     manager?: EntityManager,
+    convertForUserId?: string,
   ): Promise<Map<string, PriceSeries>> {
     const series = new Map<string, PriceSeries>();
     if (securityIds.length === 0) return series;
 
-    const load = (m: EntityManager) =>
-      loadPriceSeries(m, {
+    const load = async (m: EntityManager) => {
+      const loaded = await loadPriceSeries(m, {
         table: "security_prices",
         ids: securityIds,
         fromDate,
         sampling,
       });
+      const result = new Map<string, PriceSeries>();
+      for (const [securityId, { points }] of loaded) {
+        result.set(securityId, points);
+      }
+      return convertForUserId
+        ? this.convertToReportCurrency(m, result, fromDate, convertForUserId)
+        : result;
+    };
 
-    const loaded = manager
-      ? await load(manager)
-      : await withScopedDb(this.dataSource, load);
+    return manager ? load(manager) : withScopedDb(this.dataSource, load);
+  }
 
-    for (const [securityId, { points }] of loaded) {
-      series.set(securityId, points);
+  /**
+   * Re-express each series in the user's reporting currency, close by close, at
+   * the rate for that close's own date (`convertAtDate`, the one resolver).
+   *
+   * A return compared across instruments has to be a return in one currency:
+   * a USD fund +8% against a PLN bill +5% with USD/PLN down 10% is -2.8% for
+   * the PLN reader. A close with no admissible rate is dropped, never carried
+   * at 1:1, so a span ending on it is unpriced and the period defers or
+   * becomes a gap; the pair is named in the log.
+   */
+  private async convertToReportCurrency(
+    manager: EntityManager,
+    series: Map<string, PriceSeries>,
+    fromDate: string,
+    userId: string,
+  ): Promise<Map<string, PriceSeries>> {
+    const preference = await manager
+      .getRepository(UserPreference)
+      .findOne({ where: { userId } });
+    const securities = await manager.getRepository(Security).find({
+      where: { id: In([...series.keys()]) },
+      select: { id: true, currencyCode: true },
+    });
+    const reportCurrency = preferredCurrency(preference);
+    const currencyById = new Map(
+      securities.map((security) => [security.id, security.currencyCode]),
+    );
+    const foreign = new Set(
+      [...currencyById.values()].filter((code) => code !== reportCurrency),
+    );
+    if (foreign.size === 0) return series;
+
+    const rateIndex = await buildRateIndex(
+      (sql, params) => manager.query(sql, params),
+      foreign,
+      reportCurrency,
+      fromDate,
+      todayYMD(),
+    );
+    const converted = new Map<string, PriceSeries>();
+    for (const [securityId, points] of series) {
+      const currency = currencyById.get(securityId);
+      if (!currency || currency === reportCurrency) {
+        converted.set(securityId, points);
+        continue;
+      }
+      converted.set(
+        securityId,
+        points.flatMap((point) => {
+          const close = convertAtDate(
+            point.close,
+            currency,
+            reportCurrency,
+            point.date,
+            rateIndex,
+            this.logger,
+          );
+          return close === null ? [] : [{ ...point, close }];
+        }),
+      );
     }
-    return series;
+    return converted;
   }
 
   /**

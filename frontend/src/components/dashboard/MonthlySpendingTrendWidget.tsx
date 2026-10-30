@@ -22,6 +22,7 @@ import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
 import { chartColors } from '@/lib/chart-colors';
 import { ChartTooltip } from '@/components/reports/ChartTooltip';
+import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
 import {
@@ -101,6 +102,12 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
       ) : chartData.length === 0 ? (
         <WidgetMessage>{t('monthlySpendingTrend.empty')}</WidgetMessage>
       ) : (
+        <>
+        <PartialDataNotice
+          missingCurrencies={response?.missingCurrencies ?? []}
+          excludedCount={response?.excludedCount ?? 0}
+          displayCurrency={response?.currency ?? ''}
+        />
         <div className="flex-1 min-h-[260px]">
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <LineChart data={chartData} margin={{ left: 4, right: 8, top: 4 }}>
@@ -143,6 +150,7 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
             </LineChart>
           </ResponsiveContainer>
         </div>
+        </>
       )}
     </WidgetCard>
   );

@@ -3,6 +3,9 @@ import {
   rangeMonths,
   rangeSampling,
 } from "./gem-price.service";
+import { evaluate, momentumSnapshot } from "./gem-momentum.util";
+import { Security } from "../securities/entities/security.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import {
   createScopedDbMocks,
   ManagerMock,
@@ -142,6 +145,93 @@ describe("GemPriceService", () => {
       const [sql, params] = manager.query.mock.calls[0];
       expect(sql).toContain("DISTINCT ON");
       expect(params[2]).toBe("month");
+    });
+
+    describe("conversion into the reporting currency", () => {
+      const priceRows = [
+        ["sec-usd", "2024-01-31", "100"],
+        ["sec-usd", "2025-01-31", "108"],
+        ["sec-pln", "2024-01-31", "100"],
+        ["sec-pln", "2025-01-31", "105"],
+      ].map(([series_id, price_date, close_price]) => ({
+        series_id,
+        price_date,
+        close_price,
+        has_adjusted: false,
+      }));
+
+      const load = async (rateRows: unknown[]) => {
+        const mocks = createScopedDbMocks([
+          [
+            UserPreference,
+            {
+              findOne: jest.fn().mockResolvedValue({ defaultCurrency: "PLN" }),
+            },
+          ],
+          [
+            Security,
+            {
+              find: jest.fn().mockResolvedValue([
+                { id: "sec-usd", currencyCode: "USD" },
+                { id: "sec-pln", currencyCode: "PLN" },
+              ]),
+            },
+          ],
+        ]);
+        mocks.manager.query
+          .mockResolvedValueOnce(priceRows)
+          .mockResolvedValueOnce(rateRows);
+        return new GemPriceService(mocks.dataSource as never).loadSeries(
+          ["sec-usd", "sec-pln"],
+          "2024-01-01",
+          "day",
+          mocks.manager as never,
+          "user-1",
+        );
+      };
+      const decide = (series: Map<string, { date: string; close: number }[]>) =>
+        evaluate(
+          momentumSnapshot(
+            {
+              US_EQUITY: series.get("sec-usd"),
+              SAFE: series.get("sec-pln"),
+            },
+            "2025-01-31",
+            12,
+          ),
+          ["US_EQUITY", "SAFE"],
+        );
+
+      it("compares returns in the reporting currency, not in native ones", async () => {
+        const series = await load([
+          {
+            from_currency: "USD",
+            to_currency: "PLN",
+            rate: "4",
+            rate_date: "2024-01-31",
+          },
+          {
+            from_currency: "USD",
+            to_currency: "PLN",
+            rate: "3.6",
+            rate_date: "2025-01-31",
+          },
+        ]);
+
+        // +8% in USD is -2.8% in PLN once USD/PLN has fallen 10%.
+        expect(series.get("sec-usd")?.map((p) => p.close)).toEqual([
+          400, 388.8,
+        ]);
+        expect(series.get("sec-pln")?.[1].close).toBe(105);
+        expect(decide(series)?.state).toBe("RISK_OFF");
+      });
+
+      it("leaves a close with no rate unknown instead of converting it 1:1", async () => {
+        const series = await load([]);
+
+        expect(series.get("sec-usd")).toEqual([]);
+        expect(decide(series)).toBeNull();
+      });
     });
 
     it("does not query for an empty security list", async () => {

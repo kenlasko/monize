@@ -5,6 +5,7 @@ import { useNumberFormat } from "@/hooks/useNumberFormat";
 import { GemPosition } from "@/types/gem-strategy";
 import { compliancePercent, isKnown } from "@/lib/gem-strategy-view";
 import { Th } from "@/components/ui/Table";
+import { sumMoney } from "@/lib/format";
 import {
   GemAccountLinks,
   GemBadge,
@@ -55,7 +56,7 @@ export function GemPortfolioPanel({
     (holding) => !isKnown(holding.marketValue),
   )
     ? null
-    : securities.reduce((sum, holding) => sum + (holding.marketValue ?? 0), 0);
+    : sumMoney(securities.map((holding) => holding.marketValue ?? 0));
   /**
    * What is actually in the target, summed from the same rows the table marks
    * "Yes — kept".
@@ -67,9 +68,11 @@ export function GemPortfolioPanel({
   const inTargetValue =
     securitiesValue === null
       ? null
-      : securities
-          .filter((holding) => holding.isTargetInstrument)
-          .reduce((sum, holding) => sum + (holding.marketValue ?? 0), 0);
+      : sumMoney(
+          securities
+            .filter((holding) => holding.isTargetInstrument)
+            .map((holding) => holding.marketValue ?? 0),
+        );
 
   /**
    * An exposure figure, marked as a lower bound when it is one.

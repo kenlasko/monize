@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://monize.net/sitemap.xml
+Sitemap: https://monize.net/docs/sitemap.xml

@@ -7,6 +7,7 @@ import {
   calculatePaymentForTerm,
   PaymentFrequency,
 } from "./loan-amortization.util";
+import { roundMoney } from "../common/round.util";
 
 describe("Loan Amortization Utility", () => {
   describe("getPeriodsPerYear", () => {
@@ -42,6 +43,12 @@ describe("Loan Amortization Utility", () => {
       // Monthly interest: 100000 * (5/100/12) = 416.67
       expect(result.interest).toBeCloseTo(416.67, 2);
       expect(result.principal).toBeCloseTo(583.33, 2);
+    });
+
+    it("splits sum to the payment exactly, not payment + 0.0001", () => {
+      // interest is 1000.00005 exactly: rounding each line apart drifts
+      const result = calculatePaymentSplit(200000.01, 6, 1500, "MONTHLY");
+      expect(roundMoney(result.principal + result.interest)).toBe(1500);
     });
 
     it("returns zero principal when payment is less than interest", () => {

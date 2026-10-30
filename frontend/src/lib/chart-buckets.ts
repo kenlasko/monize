@@ -21,6 +21,8 @@ export interface BucketedPoint {
   total: number;
   /** Transaction count for the period (0 for gap-filled empty periods). */
   count: number;
+  /** True when a month in the period is missing a rate, so total is partial. */
+  partial?: boolean;
 }
 
 const GRANULARITY_MONTHS: Record<Granularity, number> = {
@@ -135,18 +137,32 @@ export function bucketMonthlyTotals(
 
   const accumulator = new Map<
     string,
-    { startDate: Date; periodStart: string; cents: number; count: number }
+    {
+      startDate: Date;
+      periodStart: string;
+      cents: number;
+      count: number;
+      partial: boolean;
+    }
   >();
 
   for (const datum of data) {
     const { key, startDate, periodStart } = periodInfoForMonth(datum.month, granularity);
-    const cents = Math.round(datum.total * SCALE);
+    const partial = datum.total === null;
+    const cents = Math.round((datum.total ?? datum.knownSubtotal ?? 0) * SCALE);
     const existing = accumulator.get(key);
     if (existing) {
       existing.cents += cents;
       existing.count += datum.count;
+      existing.partial ||= partial;
     } else {
-      accumulator.set(key, { startDate, periodStart, cents, count: datum.count });
+      accumulator.set(key, {
+        startDate,
+        periodStart,
+        cents,
+        count: datum.count,
+        partial,
+      });
     }
   }
 
@@ -173,6 +189,7 @@ export function bucketMonthlyTotals(
       periodEnd: periodEndFor(startDate, granularity),
       total: bucket ? bucket.cents / SCALE : 0,
       count: bucket ? bucket.count : 0,
+      ...(bucket?.partial && { partial: true }),
     });
   }
 

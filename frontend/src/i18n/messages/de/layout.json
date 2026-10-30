@@ -138,8 +138,8 @@
     "redonePrefix": "Wiederholt: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "Monize-Wiki für Hilfe zu diesem Bereich öffnen",
-    "helpTooltip": "Monize-Wiki für Hilfe zu diesem Bereich öffnen"
+    "helpAriaLabel": "Monize-Dokumentation für Hilfe zu diesem Bereich öffnen",
+    "helpTooltip": "Monize-Dokumentation für Hilfe zu diesem Bereich öffnen"
   },
   "bootSplash": {
     "loading": "Monize wird geladen",

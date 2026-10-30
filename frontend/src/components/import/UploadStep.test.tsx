@@ -115,7 +115,7 @@ describe('UploadStep', () => {
     expect(onFileSelect).toHaveBeenCalledTimes(1);
   });
 
-  it('renders the wiki notice banner with links to both import guides', () => {
+  it('renders the documentation notice banner with links to both import guides', () => {
     render(<UploadStep preselectedAccount={undefined} isLoading={false} onFileSelect={onFileSelect} onFilesDrop={onFilesDrop} />);
 
     expect(screen.getByText('Before you import')).toBeInTheDocument();
@@ -123,7 +123,7 @@ describe('UploadStep', () => {
     const moneyLink = screen.getByRole('link', { name: 'Importing from Microsoft Money' });
     expect(moneyLink).toHaveAttribute(
       'href',
-      'https://github.com/kenlasko/monize/wiki/Importing-from-Microsoft-Money'
+      'https://www.monize.net/docs/importing-from-microsoft-money'
     );
     expect(moneyLink).toHaveAttribute('target', '_blank');
     expect(moneyLink).toHaveAttribute('rel', 'noopener noreferrer');
@@ -131,7 +131,7 @@ describe('UploadStep', () => {
     const quickenLink = screen.getByRole('link', { name: 'Importing from Quicken' });
     expect(quickenLink).toHaveAttribute(
       'href',
-      'https://github.com/kenlasko/monize/wiki/Importing-from-Quicken'
+      'https://www.monize.net/docs/importing-from-quicken'
     );
     expect(quickenLink).toHaveAttribute('target', '_blank');
     expect(quickenLink).toHaveAttribute('rel', 'noopener noreferrer');

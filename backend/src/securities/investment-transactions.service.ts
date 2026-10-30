@@ -71,6 +71,11 @@ import { SecuritiesService } from "./securities.service";
 import { SecurityPriceService } from "./security-price.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import {
+  buildRateIndex,
+  convertAtDate,
+} from "../common/time-series/rate-index.util";
+import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { CurrenciesService } from "../currencies/currencies.service";
 import { roundToDecimals, roundMoney, sumMoney } from "../common/round.util";
 import { stripHtml } from "../common/sanitization.util";
@@ -120,12 +125,8 @@ export interface LlmCapitalGainsEntry {
   accountName: string | null;
   symbol: string | null;
   securityName: string | null;
-  /**
-   * Currency the monetary fields are denominated in. `null` when the entry
-   * aggregates rows from multiple accounts with different currencies (the LLM
-   * should then treat the sums as mixed and avoid currency-specific claims).
-   */
-  currency: string | null;
+  /** The reader's default currency: every figure is converted into it. */
+  currency: string;
   /**
    * `null` when any row folded into this entry had an unknown boundary value --
    * a security whose currency could not be converted into its account's. An
@@ -155,6 +156,12 @@ export interface LlmCapitalGainsResult {
     realizedGainComplete: boolean;
     /** The gains that are known, when `realizedGainComplete` is false; otherwise null. */
     realizedGainKnownSubtotal: number | null;
+    /** The currency every total is in (the reader's default). */
+    currency: string;
+    /** False when a pair had no rate; the affected figures are null. Read as `=== false`. */
+    fxComplete: boolean;
+    /** `"USD->CAD"` for each pair with no rate; empty when `fxComplete`. */
+    missingRatePairs: string[];
     /**
      * `null` when any row in the window had an unconvertible boundary value.
      * A total that silently omitted those rows would read as complete.
@@ -270,6 +277,8 @@ export interface SecurityHistoryTransaction {
   commission: number;
   totalAmount: number;
   description: string | null;
+  /** The other leg of a security transfer; null when this row has none. */
+  linkedTransactionId: string | null;
   /** A VOID row is listed but moved no shares; the running balances skip it. */
   status: TransactionStatus;
   /** Running share balance within this transaction's own account. */
@@ -1228,9 +1237,12 @@ export class InvestmentTransactionsService {
       await this.securitiesService.findOne(userId, createDto.securityId);
     }
 
-    const totalAmount = amounts.totalAmount;
-    const accruedInterest = roundMoney(Number(createDto.accruedInterest ?? 0));
-    this.assertAccruedInterestAllowed(createDto.action, accruedInterest, false);
+    const suppliedInterest = roundMoney(Number(createDto.accruedInterest ?? 0));
+    this.assertAccruedInterestAllowed(
+      createDto.action,
+      suppliedInterest,
+      false,
+    );
 
     // Resolve the rate that will convert totalAmount (security currency)
     // into the cash account's currency when we post the linked cash transaction.
@@ -1271,6 +1283,50 @@ export class InvestmentTransactionsService {
         requested: true,
       });
 
+      // A program-linked redemption that states no accrued interest is split
+      // by the server, as the preview does (INV-BOND-009); a refused split
+      // refuses the write, so interest is never booked as a capital gain.
+      let { price, totalAmount } = amounts;
+      let accruedInterest = suppliedInterest;
+      if (
+        createDto.action === InvestmentAction.REDEEM &&
+        createDto.securityId &&
+        !(suppliedInterest > 0)
+      ) {
+        const redemption = await this.fillBondRedemption(userId, {
+          accountId: createDto.accountId,
+          securityId: createDto.securityId,
+          transactionDate: createDto.transactionDate,
+          quantity: Number(createDto.quantity ?? 0),
+          price:
+            createDto.price !== undefined && createDto.price !== null
+              ? roundToDecimals(
+                  Number(createDto.price),
+                  INVESTMENT_PRICE_DECIMALS,
+                )
+              : null,
+          totalAmount: createDto.totalAmount,
+          commission: Number(createDto.commission ?? 0),
+          accruedInterest: 0,
+          series: {
+            id: bondInstrumentId,
+            code: await seriesCodeOf(manager, bondInstrumentId),
+          },
+          pinSeries: false,
+          skipWhenSeriesUnresolved: true,
+        });
+        if (redemption) {
+          ({ price, totalAmount } = resolveInvestmentAmounts({
+            action: createDto.action,
+            quantity: createDto.quantity ?? 0,
+            price: redemption.filled.price,
+            commission: Number(createDto.commission ?? 0),
+            totalAmount: redemption.filled.totalAmount,
+          }));
+          accruedInterest = redemption.filled.accruedInterest;
+        }
+      }
+
       const investmentTransaction = manager.create(InvestmentTransaction, {
         userId,
         accountId: createDto.accountId,
@@ -1283,7 +1339,7 @@ export class InvestmentTransactionsService {
         // Null, not zero. The column is nullable so "no price was given" and
         // "it cost nothing" stay two different rows; `?? 0` made every
         // unpriced action indistinguishable from a free one downstream.
-        price: amounts.price,
+        price,
         commission: createDto.commission || 0,
         totalAmount,
         exchangeRate,
@@ -1480,6 +1536,9 @@ export class InvestmentTransactionsService {
       series: { id: string | null; code: string | null };
       excludeTransactionId?: string;
       pinSeries: boolean;
+      // A write that names no series and holds none or several keeps the
+      // stated figures; the preview refuses instead, so the person is told.
+      skipWhenSeriesUnresolved?: boolean;
     },
   ): Promise<{
     series: { id: string | null; code: string | null };
@@ -1509,7 +1568,7 @@ export class InvestmentTransactionsService {
         row.excludeTransactionId,
       );
       if (holdings.length !== 1) {
-        if (bothStated) return null;
+        if (bothStated || row.skipWhenSeriesUnresolved) return null;
         throw new BadRequestException({
           message: tr(
             "errors.bonds.REDEEM_SERIES_REQUIRED",
@@ -3503,6 +3562,7 @@ export class InvestmentTransactionsService {
         commission: Number(tx.commission) || 0,
         totalAmount: Number(tx.totalAmount) || 0,
         description: tx.description,
+        linkedTransactionId: tx.linkedTransactionId ?? null,
         status: tx.status,
         runningQuantityAccount: newBalance,
         runningQuantityAll: runningAll,
@@ -3631,9 +3691,9 @@ export class InvestmentTransactionsService {
    * narrows by symbol, and aggregates into buckets ('month', 'security', or
    * 'account') so the assistant gets a compact shape with period totals.
    *
-   * All monetary values are in the holding account's currency. When a bucket
-   * spans accounts with differing currencies, its `currency` is set to `null`
-   * so callers can tell the sum is mixed.
+   * Every figure is converted into the user's default currency at the rate for
+   * its month; a pair with no rate makes the figure null and is named in
+   * `totals.missingRatePairs` (never rate 1).
    */
   async getLlmCapitalGains(
     userId: string,
@@ -3680,7 +3740,6 @@ export class InvestmentTransactionsService {
       accountName: string | null;
       symbol: string | null;
       securityName: string | null;
-      currency: string | null | undefined; // undefined = not seen yet
       startValueScaled: number;
       endValueScaled: number;
       realizedScaled: number;
@@ -3705,14 +3764,79 @@ export class InvestmentTransactionsService {
     let totalsIncomplete = false;
     let totalsRealizedIncomplete = false;
 
+    // Every figure is converted into the reader's currency at the rate for the
+    // month it belongs to, so a bucket never adds CAD to USD. A pair with no
+    // rate leaves the figure unknown and is named, never read as rate 1.
+    const defaultCurrency = await resolveUserDefaultCurrency(
+      this.dataSource,
+      userId,
+    );
+    const monthEndOf = (month: string): string => {
+      const [y, m] = month.split("-").map(Number);
+      return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+    };
+    const foreign = new Set<string>();
     for (const e of filtered) {
+      if (e.accountCurrencyCode && e.accountCurrencyCode !== defaultCurrency) {
+        foreign.add(e.accountCurrencyCode);
+      }
+    }
+    const monthsInWindow = filtered.map((e) => e.month).sort();
+    const rateIndex =
+      foreign.size > 0
+        ? await withScopedDb(this.dataSource, (m) =>
+            buildRateIndex(
+              (sql, params) => m.query(sql, params),
+              foreign,
+              defaultCurrency,
+              `${monthsInWindow[0]}-01`,
+              monthEndOf(monthsInWindow[monthsInWindow.length - 1]),
+            ),
+          )
+        : new Map();
+    const missingRatePairs = new Set<string>();
+    const toDefault = (
+      value: number | null,
+      e: CapitalGainEntry,
+    ): number | null => {
+      if (value === null) return null;
+      const from = e.accountCurrencyCode;
+      if (from === defaultCurrency || value === 0) return value;
+      const converted = from
+        ? convertAtDate(
+            value,
+            from,
+            defaultCurrency,
+            monthEndOf(e.month),
+            rateIndex,
+          )
+        : null;
+      if (converted === null) {
+        missingRatePairs.add(`${from ?? "?"}->${defaultCurrency}`);
+      }
+      return converted;
+    };
+
+    for (const raw of filtered) {
+      const e = {
+        ...raw,
+        startValue: toDefault(raw.startValue, raw),
+        endValue: toDefault(raw.endValue, raw),
+        realizedGain: toDefault(raw.realizedGain, raw),
+        realizedGainKnownSubtotal: toDefault(
+          raw.realizedGain ?? raw.realizedGainKnownSubtotal ?? 0,
+          raw,
+        ),
+        unrealizedGain: toDefault(raw.unrealizedGain, raw),
+        totalCapitalGain: toDefault(raw.totalCapitalGain, raw),
+      };
       if (e.realizedGain === null) {
         totalsRealizedIncomplete = true;
       } else {
         totalsRealizedScaled += Math.round(e.realizedGain * 10000);
       }
       totalsRealizedKnownScaled += Math.round(
-        (e.realizedGain ?? e.realizedGainKnownSubtotal ?? 0) * 10000,
+        (e.realizedGainKnownSubtotal ?? 0) * 10000,
       );
       if (e.unrealizedGain === null || e.totalCapitalGain === null) {
         totalsIncomplete = true;
@@ -3756,7 +3880,6 @@ export class InvestmentTransactionsService {
       if (!b) {
         b = {
           ...seed,
-          currency: undefined,
           startValueScaled: 0,
           endValueScaled: 0,
           realizedScaled: 0,
@@ -3769,20 +3892,13 @@ export class InvestmentTransactionsService {
         buckets.set(key, b);
       }
 
-      // Track currency: consistent → keep it; mixed → null.
-      if (b.currency === undefined) {
-        b.currency = e.accountCurrencyCode;
-      } else if (b.currency !== e.accountCurrencyCode) {
-        b.currency = null;
-      }
-
       if (e.realizedGain === null) {
         b.realizedIncomplete = true;
       } else {
         b.realizedScaled += Math.round(e.realizedGain * 10000);
       }
       b.realizedKnownScaled += Math.round(
-        (e.realizedGain ?? e.realizedGainKnownSubtotal ?? 0) * 10000,
+        (e.realizedGainKnownSubtotal ?? 0) * 10000,
       );
       if (
         e.startValue === null ||
@@ -3806,7 +3922,7 @@ export class InvestmentTransactionsService {
         accountName: b.accountName,
         symbol: b.symbol,
         securityName: b.securityName,
-        currency: b.currency ?? null,
+        currency: defaultCurrency,
         startValue: b.incomplete
           ? null
           : roundMoney(b.startValueScaled / 10000),
@@ -3846,6 +3962,9 @@ export class InvestmentTransactionsService {
         realizedGainKnownSubtotal: totalsRealizedIncomplete
           ? roundMoney(totalsRealizedKnownScaled / 10000)
           : null,
+        currency: defaultCurrency,
+        fxComplete: missingRatePairs.size === 0,
+        missingRatePairs: [...missingRatePairs].sort(),
         unrealizedGain: totalsIncomplete
           ? null
           : roundMoney(totalsUnrealizedScaled / 10000),
@@ -4516,6 +4635,7 @@ export class InvestmentTransactionsService {
     const accountId = transaction.accountId;
     const oldSecurityId = transaction.securityId;
     const oldTransactionDate = transaction.transactionDate;
+    const oldBondInstrumentId = transaction.bondInstrumentId;
     const oldAction = transaction.action;
     const isEmbedded = transaction.transactionSplitId != null;
 
@@ -4655,7 +4775,7 @@ export class InvestmentTransactionsService {
       // Keyed on the value, not on the field being present: the form resends
       // the whole row on every save, so an omitted field means "unchanged"
       // rather than "cleared".
-      const accruedInterest = roundMoney(
+      let accruedInterest = roundMoney(
         updateDto.accruedInterest !== undefined
           ? Number(updateDto.accruedInterest)
           : Number(existingCompanion?.totalAmount ?? 0),
@@ -4788,6 +4908,73 @@ export class InvestmentTransactionsService {
           price: transaction.price,
           commission: transaction.commission,
         });
+      }
+
+      // A program-linked redemption left without accrued interest is split by
+      // the server as the create is (INV-BOND-009); a refused split refuses
+      // the edit. Only an edit that changes what the redemption pays, so a
+      // description-only save of an older row stays possible. Interest the
+      // request did not itself change is the stored companion's, which belongs
+      // to the old quantity, date and series: a change of any of those splits
+      // again instead of keeping it.
+      const interestSupplied =
+        updateDto.accruedInterest !== undefined &&
+        accruedInterest !==
+          roundMoney(Number(existingCompanion?.totalAmount ?? 0));
+      const redemptionShapeChanged =
+        quantityChanged ||
+        transaction.action !== priorAction ||
+        transaction.securityId !== oldSecurityId ||
+        transaction.transactionDate !== oldTransactionDate ||
+        bondInstrumentId !== oldBondInstrumentId;
+      const keptInterestStale =
+        accruedInterest > 0 && !interestSupplied && redemptionShapeChanged;
+      if (
+        transaction.action === InvestmentAction.REDEEM &&
+        transaction.securityId &&
+        (keptInterestStale ||
+          (!(accruedInterest > 0) &&
+            (redemptionShapeChanged ||
+              priceChanged ||
+              commissionChanged ||
+              totalChanged)))
+      ) {
+        const redemption = await this.fillBondRedemption(userId, {
+          accountId: transaction.accountId,
+          securityId: transaction.securityId,
+          transactionDate: transaction.transactionDate,
+          quantity: Number(transaction.quantity ?? 0),
+          // The stored price is the old split's; only a price or total the
+          // request stated is a figure to compare against the new split.
+          price:
+            transaction.price !== null &&
+            transaction.price !== undefined &&
+            !(keptInterestStale && !priceChanged && !totalChanged)
+              ? Number(transaction.price)
+              : null,
+          totalAmount: totalChanged ? Number(updateDto.totalAmount) : undefined,
+          commission: Number(transaction.commission ?? 0),
+          accruedInterest: 0,
+          series: {
+            id: bondInstrumentId,
+            code: await seriesCodeOf(manager, bondInstrumentId),
+          },
+          excludeTransactionId: transaction.id,
+          pinSeries: false,
+          skipWhenSeriesUnresolved: true,
+        });
+        if (redemption) {
+          const amounts = resolveInvestmentAmounts({
+            action: transaction.action,
+            quantity: transaction.quantity,
+            price: redemption.filled.price,
+            commission: transaction.commission,
+            totalAmount: redemption.filled.totalAmount,
+          });
+          transaction.price = amounts.price;
+          transaction.totalAmount = amounts.totalAmount;
+          accruedInterest = redemption.filled.accruedInterest;
+        }
       }
 
       if (

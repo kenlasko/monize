@@ -28,7 +28,8 @@
     "transactions": "[XX-Transactions-XX]",
     "sinceYear": "[XX-Since {year}-XX]",
     "lastTransaction": "[XX-Last Transaction-XX]",
-    "convertedNote": "[XX-Converted to {currency}-XX]"
+    "convertedNote": "[XX-Converted to {currency}-XX]",
+    "partialRatesNote": "[XX-Some months have no exchange rate-XX]"
   },
   "topPayees": {
     "title": "[XX-Top Payees-XX]",

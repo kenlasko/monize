@@ -228,6 +228,31 @@ describe("IncomeReportsService", () => {
       expect(result.totalIncome).toBe(5000);
     });
 
+    it("nets a negative correction within the category instead of dropping it", async () => {
+      // The query returns the signed net (5000 - 400); a positive-only
+      // predicate would have reported 5000.
+      scopedManager.query.mockResolvedValue([
+        { category_id: "cat-income", currency_code: "USD", total: "4600.00" },
+        { category_id: "cat-parent", currency_code: "USD", total: "-100.00" },
+      ]);
+      categoriesRepository.find.mockResolvedValue([
+        mockIncomeCategory,
+        mockParentCategory,
+      ]);
+
+      const result = await service.getIncomeBySource(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      const sql = scopedManager.query.mock.calls[0][0];
+      expect(sql).not.toContain("COALESCE(ts.amount, t.amount) > 0");
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].total).toBe(4600);
+      expect(result.totalIncome).toBe(4600);
+    });
+
     it("skips uncategorized rows in JS (SQL already filters them out)", async () => {
       scopedManager.query.mockResolvedValue([
         { category_id: null, currency_code: "USD", total: "200.00" },

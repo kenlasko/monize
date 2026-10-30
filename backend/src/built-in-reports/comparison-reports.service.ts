@@ -16,6 +16,7 @@ import {
   CategoryWeekendWeekday,
 } from "./dto";
 import { investmentExclusionSql } from "../common/investment-filter.util";
+import { isNetSpending, NET_SPEND_AMOUNT } from "./spending-reports.service";
 
 /**
  * Investment scope is LINKAGE, never account type (INV-REPORT-001, issue #1257):
@@ -53,10 +54,21 @@ export class ComparisonReportsService {
         EXTRACT(YEAR FROM t.transaction_date)::int as year,
         EXTRACT(MONTH FROM t.transaction_date)::int as month,
         t.currency_code,
-        SUM(CASE WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount) ELSE 0 END) as income,
-        SUM(CASE WHEN COALESCE(ts.amount, t.amount) < 0 THEN ABS(COALESCE(ts.amount, t.amount)) ELSE 0 END) as expenses
+        SUM(CASE
+          WHEN c.is_income = true THEN COALESCE(ts.amount, t.amount)
+          WHEN c.is_income = false THEN 0
+          WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount)
+          ELSE 0
+        END) as income,
+        SUM(CASE
+          WHEN c.is_income = false THEN -1 * COALESCE(ts.amount, t.amount)
+          WHEN c.is_income = true THEN 0
+          WHEN COALESCE(ts.amount, t.amount) < 0 THEN ABS(COALESCE(ts.amount, t.amount))
+          ELSE 0
+        END) as expenses
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
+      LEFT JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id)
       LEFT JOIN accounts a ON a.id = t.account_id
       WHERE t.user_id = $1
         AND EXTRACT(YEAR FROM t.transaction_date) >= $2
@@ -192,13 +204,13 @@ export class ComparisonReportsService {
         COALESCE(ts.category_id, t.category_id) as category_id,
         t.currency_code,
         COUNT(*)::int as tx_count,
-        SUM(ABS(COALESCE(ts.amount, t.amount))) as total
+        SUM(${NET_SPEND_AMOUNT}) as total
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
       LEFT JOIN accounts a ON a.id = t.account_id
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
-        AND COALESCE(ts.amount, t.amount) < 0
+        AND COALESCE(ts.amount, t.amount) <> 0
         AND t.is_transfer = false
         AND (t.status IS NULL OR t.status != 'VOID')
         AND t.parent_transaction_id IS NULL
@@ -263,6 +275,9 @@ export class ComparisonReportsService {
         gaps.record(row.currency_code);
         return;
       }
+      // A refund nets against the debits of its own (day, category); a group
+      // whose credits meet its debits was not spent in (INV-REPORT-004).
+      if (!isNetSpending(total)) return;
       const count = row.tx_count;
       const isWeekend = row.day_of_week === 0 || row.day_of_week === 6;
 

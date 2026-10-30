@@ -7,6 +7,7 @@ import {
   buildConsentExpiredNotification,
   buildSyncFailedNotification,
   buildSyncImportedNotification,
+  importedAccountIds,
   shouldNotifyImported,
 } from "./bank-sync-notifications";
 import type { BankSyncFailureFact } from "./bank-sync-notifications";
@@ -17,8 +18,8 @@ export interface BankSyncConnectionOutcome {
   institutionName: string;
   notifySuccess: BankSyncNotifySuccessMode;
   validUntil: Date | null;
-  /** The bank accounts that synced. */
-  synced: { imported: number; skipped: number }[];
+  /** The bank accounts that synced, with the Monize account each is linked to. */
+  synced: { accountId: string; imported: number; skipped: number }[];
   /** The bank accounts that did not, with the machine code of each failure. */
   failures: BankSyncFailureFact[];
 }
@@ -98,6 +99,7 @@ export class BankSyncOutcomeNotifier {
                 0,
               ),
               accounts: outcome.synced.length,
+              accountIds: importedAccountIds(outcome.synced),
             },
             day,
           ),

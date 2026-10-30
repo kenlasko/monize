@@ -34,6 +34,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { showErrorToast } from '@/lib/errors';
+import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Accounts');
 
@@ -229,7 +230,7 @@ function AccountsContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/Accounts"
+          helpUrl={docsUrl('accounts')}
           actions={
             <Button
               {...tourAnchor(TOUR_ANCHORS.accountsAddButton)}

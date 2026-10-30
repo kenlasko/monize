@@ -10,6 +10,7 @@ import { MonteCarloController } from "./monte-carlo.controller";
 import { MonteCarloService } from "./monte-carlo.service";
 import { MonteCarloSimulationService } from "./monte-carlo-simulation.service";
 import { SecuritiesModule } from "../securities/securities.module";
+import { CurrenciesModule } from "../currencies/currencies.module";
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SecuritiesModule } from "../securities/securities.module";
       Account,
     ]),
     SecuritiesModule,
+    CurrenciesModule,
   ],
   controllers: [MonteCarloController],
   providers: [MonteCarloService, MonteCarloSimulationService],

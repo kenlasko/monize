@@ -27,7 +27,10 @@ export function CashFlowMiniReport({ monthly, currencyCode, isLoading }: CashFlo
 
   const { rows, max } = useMemo(() => {
     const ranked = [...monthly].sort((a, b) => a.month.localeCompare(b.month));
-    const m = ranked.reduce((acc, r) => Math.max(acc, Math.abs(Number(r.total) || 0)), 0);
+    const m = ranked.reduce(
+      (acc, r) => Math.max(acc, r.total === null ? 0 : Math.abs(Number(r.total))),
+      0,
+    );
     return { rows: ranked, max: m };
   }, [monthly]);
 
@@ -47,7 +50,8 @@ export function CashFlowMiniReport({ monthly, currencyCode, isLoading }: CashFlo
         ) : (
           <ul className="space-y-2">
             {rows.map((r) => {
-              const total = Number(r.total) || 0;
+              const known = r.total !== null;
+              const total = known ? Number(r.total) : 0;
               const width = (Math.abs(total) / max) * 50; // half-width from centre
               return (
                 <li key={r.month} className="flex items-center gap-2 text-xs">
@@ -56,16 +60,20 @@ export function CashFlowMiniReport({ monthly, currencyCode, isLoading }: CashFlo
                   </span>
                   <div className="relative flex-1 h-4">
                     <div className="absolute inset-y-0 left-1/2 w-px bg-gray-300 dark:bg-gray-600" />
-                    <div
-                      className={`absolute inset-y-0.5 rounded ${
-                        total < 0 ? 'bg-red-400 dark:bg-red-500' : 'bg-green-400 dark:bg-green-500'
-                      }`}
-                      style={
-                        total < 0
-                          ? { right: '50%', width: `${width}%` }
-                          : { left: '50%', width: `${width}%` }
-                      }
-                    />
+                    {known && (
+                      <div
+                        className={`absolute inset-y-0.5 rounded ${
+                          total < 0
+                            ? 'bg-red-400 dark:bg-red-500'
+                            : 'bg-green-400 dark:bg-green-500'
+                        }`}
+                        style={
+                          total < 0
+                            ? { right: '50%', width: `${width}%` }
+                            : { left: '50%', width: `${width}%` }
+                        }
+                      />
+                    )}
                   </div>
                   <span
                     className={`w-24 shrink-0 text-right tabular-nums ${
@@ -74,7 +82,7 @@ export function CashFlowMiniReport({ monthly, currencyCode, isLoading }: CashFlo
                         : 'text-green-600 dark:text-green-400'
                     }`}
                   >
-                    {formatCurrency(total, currencyCode)}
+                    {known ? formatCurrency(total, r.currency ?? currencyCode) : '-'}
                   </span>
                 </li>
               );

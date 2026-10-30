@@ -24,6 +24,7 @@ import { userSettingsApi } from '@/lib/user-settings';
 import { AdminUser } from '@/types/auth';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('AdminUsers');
 
@@ -342,7 +343,7 @@ export default function AdminUsersPage() {
           <PageHeader
             title={t('usersPage.title')}
             subtitle={t('usersPage.userCount', { count: users.length })}
-            helpUrl="https://github.com/kenlasko/monize/wiki/Settings-and-Security#user-management"
+            helpUrl={docsUrl('adminUsers')}
             actions={
               <Button onClick={() => setCreateModalOpen(true)}>{t('usersPage.newUser')}</Button>
             }

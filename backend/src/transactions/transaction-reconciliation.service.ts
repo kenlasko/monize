@@ -19,6 +19,7 @@ import {
   todayYMD,
 } from "../common/date-utils";
 import {
+  RECONCILED_THROUGH_SQL,
   STALE_UNRECONCILED_DAYS,
   staleCutoffDate,
   type StaleUnreconciledSummary,
@@ -378,7 +379,8 @@ export class TransactionReconciliationService {
     }[] = await withScopedDb(this.dataSource, (m) =>
       m.query(
         `WITH reconciled AS (
-           SELECT account_id, MAX(transaction_date) AS last_reconciled_date
+           SELECT account_id,
+                  MAX(${RECONCILED_THROUGH_SQL}) AS last_reconciled_date
              FROM transactions
             WHERE user_id = $1
               AND status = $2
@@ -453,8 +455,8 @@ export class TransactionReconciliationService {
     clearedBalance: number;
     difference: number;
     /**
-     * The account's most recent reconciled date, or null when it has never
-     * been reconciled. The client classifies each listed row against it with
+     * The account's most recent reconciled date (`RECONCILED_THROUGH_SQL`),
+     * or null when it has never been reconciled. The client classifies each listed row against it with
      * the same `classifyStaleRow` rule the reminder count uses, so the row
      * highlight and the badge cannot disagree about what "overdue" means.
      */
@@ -466,6 +468,10 @@ export class TransactionReconciliationService {
     const [account, transactions, reconciledResult, clearedResult, lastRow] =
       await withScopedDb(this.dataSource, async (m) => {
         const owned = await this.accountsService.findOne(userId, accountId);
+        // Every outstanding row is listed, including those dated after the
+        // statement date: a row the register dates later than the bank posted
+        // it still has to be reachable to be ticked. Which rows start ticked
+        // is the client's call (`initialReconcileSelection`).
         const listed = await m
           .getRepository(Transaction)
           .createQueryBuilder("transaction")
@@ -479,9 +485,6 @@ export class TransactionReconciliationService {
               TransactionStatus.UNRECONCILED,
               TransactionStatus.CLEARED,
             ],
-          })
-          .andWhere("transaction.transactionDate <= :statementDate", {
-            statementDate,
           })
           .orderBy("transaction.transactionDate", "ASC")
           .addOrderBy("transaction.createdAt", "ASC")
@@ -514,7 +517,7 @@ export class TransactionReconciliationService {
         // TO_CHAR rather than the entity's DATE transformer: a raw select
         // hands back a driver `Date`, which would serialize as an instant.
         const last: { last_reconciled_date: string | null }[] = await m.query(
-          `SELECT TO_CHAR(MAX(transaction_date), 'YYYY-MM-DD') AS last_reconciled_date
+          `SELECT TO_CHAR(MAX(${RECONCILED_THROUGH_SQL}), 'YYYY-MM-DD') AS last_reconciled_date
                FROM transactions
               WHERE user_id = $1
                 AND account_id = $2

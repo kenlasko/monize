@@ -2083,4 +2083,16 @@ describe("LoanPaymentDetectorService", () => {
       expect(transactionRepository.find).not.toHaveBeenCalled();
     });
   });
+
+  describe("buildRunningBalanceMap", () => {
+    it("rounds every step so float drift does not reach the balance", () => {
+      const tx = (d: string) =>
+        ({ transactionDate: d, amount: 0.1 }) as unknown as Transaction;
+      const map = service.buildRunningBalanceMap(
+        { currentBalance: 0 } as unknown as Account,
+        [tx("2025-01-01"), tx("2025-02-01"), tx("2025-03-01")],
+      );
+      expect(map.get("2025-01-01")).toBe(0.3);
+    });
+  });
 });

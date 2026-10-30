@@ -1,7 +1,10 @@
+import { BadRequestException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { Account } from "../accounts/entities/account.entity";
 import { applyAccountBalanceDelta } from "../accounts/accounts.service";
 import { roundMoney } from "../common/round.util";
+import { returnedRows } from "../common/db/query-result";
+import { tr } from "../i18n/translate";
 import { TransactionRule } from "../transaction-rules/transaction-rule.entity";
 import {
   ImportResultDto,
@@ -214,7 +217,25 @@ export async function updateAccountBalance(
   amount: number,
 ): Promise<void> {
   const delta = roundMoney(Number(amount) || 0);
-  await applyAccountBalanceDelta(manager, accountId, delta, {
-    openOnly: false,
+  const updated = await applyAccountBalanceDelta(manager, accountId, delta, {
+    openOnly: true,
   });
+  if (updated > 0) return;
+  // Zero rows is a missing account (a no-op, as before) or a closed one,
+  // which an import must refuse as bank sync does.
+  const closed = await manager.query(
+    `SELECT 1 FROM accounts WHERE id = $1 AND is_closed = true`,
+    [accountId],
+  );
+  if (returnedRows(closed).length > 0) throw closedAccountError();
+}
+
+/** The refusal for an import row that would move a closed account's balance. */
+export function closedAccountError(): BadRequestException {
+  return new BadRequestException(
+    tr(
+      "errors.import.accountClosed",
+      "The account is closed. Reopen it or choose another account.",
+    ),
+  );
 }

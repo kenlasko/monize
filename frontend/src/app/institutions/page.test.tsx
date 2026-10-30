@@ -153,12 +153,12 @@ describe('InstitutionsPage', () => {
     expect(screen.getByTestId('summary-Linked Accounts')).toHaveTextContent('2');
   });
 
-  it('links the page header to the financial institutions section of the wiki', async () => {
+  it('links the page header to the financial institutions section of the documentation', async () => {
     render(<InstitutionsPage />);
     await waitFor(() => expect(screen.getByText('TD')).toBeInTheDocument());
     expect(screen.getByTestId('help-link')).toHaveAttribute(
       'href',
-      'https://github.com/kenlasko/monize/wiki/Accounts#financial-institutions',
+      'https://www.monize.net/docs/accounts#financial-institutions',
     );
   });
 

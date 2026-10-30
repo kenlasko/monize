@@ -42,6 +42,7 @@
     "institutionNotFound": "金融機関が見つかりません",
     "updateClosed": "閉鎖された口座は更新できません",
     "changeCurrencyWithTransactions": "取引のある口座の通貨は変更できません。",
+    "changeCurrencyWithBalanceOrSchedules": "開始残高または予定取引がある口座の通貨は変更できません。",
     "alreadyClosed": "口座はすでに閉鎖されています",
     "closeNonZeroBalance": "残高がゼロでない口座は閉鎖できません。現在の残高：{{ currentBalance }}",
     "closeWithFutureTransactions": "将来の日付の取引がある口座は閉鎖できません。今日より後の日付の取引が {{ count }} 件あります。先に削除または無効化してください。",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "この Money ファイルはインポート中です。破棄する前にインポートの完了をお待ちください。",
     "mnyImportAlreadyRunning": "インポートが既に実行中です。完了してから次を開始してください。",
     "mnyAlreadyImported": "このファイルは {{ date }} にすでにインポートされており(インポート {{ jobId }})、そのレコードはまだアカウントにあります。もう一度インポートすると重複します。置き換えるには、最初からやり直して既存のデータを置き換える設定を選んでください。",
+    "mnyExistingAccountClosed": "既存の口座「{{ name }}」は閉鎖されているため、Money ファイルを統合できません。口座を再開するか名前を変更してから、もう一度インポートしてください。",
+    "mnyExistingAccountCurrency": "既存の口座「{{ name }}」は {{ existing }} を使用していますが、Money ファイルの口座は {{ file }} を使用しています。どちらかの名前を変更してから、もう一度インポートしてください。",
     "mnyJobNotFound": "インポートジョブが見つかりません",
     "mnyFileTooLarge": "この Money ファイルはインポート上限の {{ limit }} MB を超えています。",
-    "noRateForSplitTransfer": "{{ date }} の {{ pair }} の為替レートがありません。分割行が別の通貨の口座へ振り替えています。その通貨ペアと日付の為替レートを追加してから、もう一度インポートしてください。"
+    "noRateForSplitTransfer": "{{ date }} の {{ pair }} の為替レートがありません。分割行が別の通貨の口座へ振り替えています。その通貨ペアと日付の為替レートを追加してから、もう一度インポートしてください。",
+    "accountClosed": "この口座は閉鎖されています。再開するか、別の口座を選択してください。"
   },
   "monteCarlo": {
     "scenarioNotFound": "シナリオ {{ id }} が見つかりません",
@@ -779,6 +783,7 @@
     "notATransfer": "取引は振替ではありません",
     "splitTransferLegAccountLocked": "この振替は分割取引の一部です。口座を変更するには、元の取引の分割を編集してください。",
     "splitTransferLegStatusLocked": "この送金は分割取引の一部です。両側が一緒に変更されるよう、所属する分割取引を編集して無効化または復元してください。",
+    "investmentCashLegLocked": "この取引は投資取引の現金側です。両方が一緒に変わるように、投資取引を変更または削除してください。",
     "investmentCashLegStatusLocked": "この取引は投資取引の現金側です。両側が一緒に変更されるよう、投資取引のステータスを変更して無効化または復元してください。",
     "notFoundById": "ID {{ id }} の取引が見つかりません",
     "bulkUpdateNoFields": "少なくとも1つの更新フィールドが必要です",

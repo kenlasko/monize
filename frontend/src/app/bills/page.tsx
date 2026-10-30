@@ -42,7 +42,7 @@ import {
 import { parseLocalDate } from '@/lib/utils';
 import { buildScheduledCalendarDays } from '@/lib/scheduled-calendar';
 import { occurrenceKind } from '@/lib/scheduled-kind';
-import { scheduleEffectiveAmount } from '@/lib/scheduled-effective-amount';
+import { scheduleEffectiveAmount, nextOccurrenceDueDate } from '@/lib/scheduled-effective-amount';
 import { monthlyEquivalent } from '@/lib/frequency';
 import { projectPayrollOccurrence, type FutureTransaction } from '@/lib/forecast';
 import { loadFutureTransactions } from '@/lib/future-transactions';
@@ -60,6 +60,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
+import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Bills');
 
@@ -608,7 +609,7 @@ function BillsContent() {
 
       if (t.isActive && t.nextDueDate) {
         try {
-          const dueDate = parseLocalDate(t.nextDueDate);
+          const dueDate = parseLocalDate(nextOccurrenceDueDate(t));
           if (dueDate && !isNaN(dueDate.getTime()) && dueDate <= today) {
             dueCount++;
           }
@@ -695,7 +696,7 @@ function BillsContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/Bills-and-Deposits"
+          helpUrl={docsUrl('bills')}
           actions={
             <Button onClick={handleCreateNew} {...tourAnchor(TOUR_ANCHORS.billsNewButton)}>
               {t('page.newButton')}

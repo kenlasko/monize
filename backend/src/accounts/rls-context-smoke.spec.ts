@@ -45,9 +45,10 @@ describe("accounts module RLS context smoke (real withScopedDb)", () => {
     const { manager, dataSource } = createScopedDbMocks([
       [Account, accountsRepo],
     ]);
-    // The per-user body issues five queries in order: the timezone fan-out (its
+    // The per-user body issues six queries in order: the timezone fan-out (its
     // own withScopedDb) finds one UTC user; then, inside the system-context
-    // withScopedDb, the due-account scan, the FOR UPDATE lock
+    // withScopedDb, the due-account scan, the read-only balance comparison, the
+    // FOR UPDATE lock
     // (lockAccountsForBalanceWrite -- it holds the rows before the ledger read,
     // audit P4-005), the balance recompute, and the bulk UPDATE. The lock query
     // sits between the scan and the recompute, so the mock chain has to account
@@ -55,6 +56,9 @@ describe("accounts module RLS context smoke (real withScopedDb)", () => {
     manager.query
       .mockResolvedValueOnce([{ user_id: OWNER_ID, timezone: "UTC" }])
       .mockResolvedValueOnce([{ account_id: "a1" }])
+      .mockResolvedValueOnce([
+        { account_id: "a1", balance: "150", current_balance: "100" },
+      ])
       .mockResolvedValueOnce([{ id: "a1" }])
       .mockResolvedValueOnce([{ account_id: "a1", balance: "150" }])
       .mockResolvedValueOnce(undefined);
@@ -95,10 +99,15 @@ describe("accounts module RLS context smoke (real withScopedDb)", () => {
     const lockIndex = manager.query.mock.calls.findIndex(
       (c) => typeof c[0] === "string" && c[0].includes("FOR UPDATE"),
     );
-    const sumIndex = manager.query.mock.calls.findIndex(
-      (c) =>
-        typeof c[0] === "string" && c[0].includes("COALESCE(SUM(t.amount)"),
-    );
+    const sumIndex =
+      manager.query.mock.calls.length -
+      1 -
+      [...manager.query.mock.calls]
+        .reverse()
+        .findIndex(
+          (c) =>
+            typeof c[0] === "string" && c[0].includes("COALESCE(SUM(t.amount)"),
+        );
     expect(lockIndex).toBeGreaterThanOrEqual(0);
     expect(lockIndex).toBeLessThan(sumIndex);
   });

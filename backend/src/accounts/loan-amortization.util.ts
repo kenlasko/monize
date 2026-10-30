@@ -81,10 +81,11 @@ export function calculatePaymentSplit(
   const periodicRate = annualRate / 100 / periodsPerYear;
 
   // Calculate interest for this period
-  const interest = remainingBalance * periodicRate;
+  const interest = roundMoney(remainingBalance * periodicRate);
 
-  // Principal is the remainder after interest
-  let principal = paymentAmount - interest;
+  // Principal is the remainder after the ROUNDED interest, so the two lines
+  // sum to the payment exactly (rounding each apart drifts by 0.0001).
+  let principal = roundMoney(paymentAmount - interest);
 
   // Handle case where payment is less than interest (shouldn't happen with valid inputs)
   if (principal < 0) {
@@ -99,7 +100,7 @@ export function calculatePaymentSplit(
   // Round to storage precision for currency
   return {
     principal: roundMoney(principal),
-    interest: roundMoney(interest),
+    interest,
   };
 }
 

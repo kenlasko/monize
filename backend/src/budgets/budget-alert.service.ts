@@ -6,13 +6,14 @@ import { ConfigService } from "@nestjs/config";
 import { I18nService } from "nestjs-i18n";
 import { emailTranslator } from "../i18n/email-translator";
 import { DEFAULT_LOCALE } from "../i18n/config";
-import { getMonthEndYMD } from "../common/date-utils";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 import {
   JobClaimService,
   JobClaimType,
 } from "../common/jobs/job-claim.service";
 import { Budget } from "./entities/budget.entity";
+import { BudgetCategory } from "./entities/budget-category.entity";
+import { queryMonthlyCategorySpent } from "./budget-monthly-spending.util";
 import {
   Notification,
   NotificationType,
@@ -1017,13 +1018,7 @@ export class BudgetAlertService {
 
     if (categories.length === 0) return [];
 
-    const categoryIds = categories.map((bc) => bc.categoryId as string);
-
-    const profiles = await this.buildSeasonalProfiles(
-      userId,
-      categories,
-      categoryIds,
-    );
+    const profiles = await this.buildSeasonalProfiles(userId, categories);
 
     if (profiles.length === 0) return [];
 
@@ -1065,71 +1060,13 @@ export class BudgetAlertService {
 
   private async buildSeasonalProfiles(
     userId: string,
-    categories: Array<{
-      id: string;
-      categoryId: string | null;
-      category: any;
-    }>,
-    categoryIds: string[],
+    categories: BudgetCategory[],
   ): Promise<SeasonalProfile[]> {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 12);
-    const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-01`;
-    const endStr = getMonthEndYMD(
-      endDate.getFullYear(),
-      endDate.getMonth() + 1,
-    );
-
-    const directSpending = await withScopedDb(this.dataSource, (m) =>
-      m
-        .getRepository(Transaction)
-        .createQueryBuilder("t")
-        .select("t.category_id", "categoryId")
-        .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
-        .addSelect("COALESCE(ABS(SUM(t.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
-        .andWhere("t.transaction_date >= :startStr", { startStr })
-        .andWhere("t.transaction_date <= :endStr", { endStr })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .andWhere("t.is_split = false")
-        .groupBy("t.category_id")
-        .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
-        .getRawMany(),
-    );
-
-    const splitSpending = await withScopedDb(this.dataSource, (m) =>
-      m
-        .getRepository(TransactionSplit)
-        .createQueryBuilder("s")
-        .innerJoin("s.transaction", "t")
-        .select("s.category_id", "categoryId")
-        .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
-        .addSelect("COALESCE(ABS(SUM(s.amount)), 0)", "total")
-        .where("t.user_id = :userId", { userId })
-        .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
-        .andWhere("t.transaction_date >= :startStr", { startStr })
-        .andWhere("t.transaction_date <= :endStr", { endStr })
-        .andWhere("t.status != :void", { void: "VOID" })
-        .groupBy("s.category_id")
-        .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
-        .getRawMany(),
-    );
-
-    const spendingMap = new Map<string, Map<number, number>>();
-
-    for (const row of [...directSpending, ...splitSpending]) {
-      const catId = row.categoryId as string;
-      const month = Number(row.month);
-      const total = parseFloat(row.total || "0");
-
-      if (!spendingMap.has(catId)) {
-        spendingMap.set(catId, new Map());
-      }
-      const monthMap = spendingMap.get(catId)!;
-      monthMap.set(month, (monthMap.get(month) || 0) + total);
-    }
+    // Net, converted and account-filtered like the budget page (not gross ABS).
+    const { byCategory: spendingMap, incompleteCategoryIds } =
+      await withScopedDb(this.dataSource, (m) =>
+        queryMonthlyCategorySpent(m, userId, categories),
+      );
 
     const categoryNameMap = new Map<string, { name: string; bcId: string }>();
     for (const bc of categories) {
@@ -1147,6 +1084,9 @@ export class BudgetAlertService {
     const profiles: SeasonalProfile[] = [];
 
     for (const [catId, monthMap] of spendingMap.entries()) {
+      // A month with an unconvertible row is unknown, not a quiet month: no
+      // spike claim is made from a partial profile.
+      if (incompleteCategoryIds.has(catId)) continue;
       const amounts: number[] = [];
       for (let m = 1; m <= 12; m++) {
         amounts.push(monthMap.get(m) || 0);

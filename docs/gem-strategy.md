@@ -557,7 +557,9 @@ while the US leg used the 30th, and the ranking compared two sessions.
 boundary as the boundary's session and leaves a role whose own exit trails it by
 more than `BOUNDARY_HOLIDAY_DAYS` (four days, `price-boundary.util.ts`) unpriced,
 so the period defers through `evaluate` as it does for any unpriced mapped role.
-Algorithm version 3. The backtest's per-role spans and the configuration save's
+Algorithm version 3. Version 4 converts every close into the user's reporting
+currency at that close's own date before returns are compared (`GemPriceService.loadSeries`);
+a close with no admissible rate is dropped, so a span ending on it is unpriced. The backtest's per-role spans and the configuration save's
 backfill check (`coversBoundaries`) still use the fortnight window alone; a gap
 already materialized under version 2 is history-of-record.
 

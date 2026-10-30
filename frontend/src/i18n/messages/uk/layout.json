@@ -138,8 +138,8 @@
     "redonePrefix": "Повторено: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "Відкрити вікі Monize для допомоги з цим розділом",
-    "helpTooltip": "Відкрити вікі Monize для допомоги з цим розділом"
+    "helpAriaLabel": "Відкрити документацію Monize для допомоги з цим розділом",
+    "helpTooltip": "Відкрити документацію Monize для допомоги з цим розділом"
   },
   "bootSplash": {
     "loading": "Завантаження Monize",

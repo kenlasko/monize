@@ -73,6 +73,10 @@ describe("LoanMortgageAccountService", () => {
     };
 
     scheduledTransactionsService = {
+      createWithoutHistory: jest.fn().mockResolvedValue({
+        id: "sched-tx-1",
+      }),
+      recordCreated: jest.fn(),
       create: jest.fn().mockResolvedValue({
         id: "sched-tx-1",
       }),
@@ -167,7 +171,9 @@ describe("LoanMortgageAccountService", () => {
       const dto = makeValidLoanDto();
       await service.createLoanAccount(userId, dto);
 
-      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({
           accountId: "acc-chequing",
@@ -312,7 +318,9 @@ describe("LoanMortgageAccountService", () => {
       expect(institutionsRepository.findOne).toHaveBeenCalledWith({
         where: { id: "inst-1", userId },
       });
-      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ payeeName: "PKO BP" }),
       );
@@ -341,7 +349,8 @@ describe("LoanMortgageAccountService", () => {
       expect(accountsRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({ interestCategoryId: "custom-cat-id" }),
       );
-      const scheduleDto = scheduledTransactionsService.create.mock.calls[0][1];
+      const scheduleDto =
+        scheduledTransactionsService.createWithoutHistory.mock.calls[0][1];
       expect(scheduleDto.splits).toContainEqual(
         expect.objectContaining({
           memo: "Interest",
@@ -359,7 +368,9 @@ describe("LoanMortgageAccountService", () => {
       );
       expect(accountsRepository.create).not.toHaveBeenCalled();
       expect(accountsRepository.save).not.toHaveBeenCalled();
-      expect(scheduledTransactionsService.create).not.toHaveBeenCalled();
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).not.toHaveBeenCalled();
     });
 
     it("refuses an interest category the caller does not own before writing anything", async () => {
@@ -370,7 +381,9 @@ describe("LoanMortgageAccountService", () => {
       ).rejects.toThrow(BadRequestException);
       expect(accountsRepository.create).not.toHaveBeenCalled();
       expect(accountsRepository.save).not.toHaveBeenCalled();
-      expect(scheduledTransactionsService.create).not.toHaveBeenCalled();
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).not.toHaveBeenCalled();
     });
 
     it("refuses a payment account in another currency before saving the loan (A26-S15-10)", async () => {
@@ -390,7 +403,96 @@ describe("LoanMortgageAccountService", () => {
       });
       expect(accountsRepository.create).not.toHaveBeenCalled();
       expect(accountsRepository.save).not.toHaveBeenCalled();
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("saves the account, creates the schedule and relinks in ONE transaction", async () => {
+      const ds = (service as any).dataSource as { transaction: jest.Mock };
+      const original = ds.transaction.getMockImplementation()!;
+      let txId = 0;
+      let current = 0;
+      ds.transaction.mockImplementation(async (...args: unknown[]) => {
+        const mine = ++txId;
+        current = mine;
+        return (original as any)(...args);
+      });
+      const saveTxIds: number[] = [];
+      accountsRepository.save.mockImplementation(async (a: any) => {
+        saveTxIds.push(current);
+        return { id: "loan-1", ...a };
+      });
+      let scheduleTxId = -1;
+      scheduledTransactionsService.createWithoutHistory.mockImplementation(
+        async () => {
+          scheduleTxId = current;
+          return { id: "sched-tx-1" };
+        },
+      );
+
+      await service.createLoanAccount(userId, makeValidLoanDto());
+
+      expect(saveTxIds).toHaveLength(2);
+      expect(new Set(saveTxIds)).toEqual(new Set([scheduleTxId]));
+    });
+
+    it("rolls the account back when the schedule create is refused", async () => {
+      const ds = (service as any).dataSource as { transaction: jest.Mock };
+      const results: Promise<unknown>[] = [];
+      const original = ds.transaction.getMockImplementation()!;
+      ds.transaction.mockImplementation((...args: unknown[]) => {
+        const p = (original as any)(...args);
+        results.push(p);
+        return p;
+      });
+      scheduledTransactionsService.createWithoutHistory.mockRejectedValue(
+        new BadRequestException("splits"),
+      );
+
+      await expect(
+        service.createLoanAccount(userId, makeValidLoanDto()),
+      ).rejects.toThrow(BadRequestException);
+
+      // The transaction that saved the account is the one that failed.
+      expect(accountsRepository.save).toHaveBeenCalledTimes(1);
+      const settled = await Promise.allSettled(results);
+      expect(settled.some((s) => s.status === "rejected")).toBe(true);
+    });
+
+    it("records the schedule history only after the loan transaction commits", async () => {
+      const ds = (service as any).dataSource as { transaction: jest.Mock };
+      const original = ds.transaction.getMockImplementation()!;
+      let committed = false;
+      ds.transaction.mockImplementation(async (...args: unknown[]) => {
+        const out = await (original as any)(...args);
+        committed = true;
+        return out;
+      });
+      let committedAtRecord: boolean | undefined;
+      scheduledTransactionsService.recordCreated.mockImplementation(() => {
+        committedAtRecord = committed;
+      });
+
+      await service.createLoanAccount(userId, makeValidLoanDto());
+
+      expect(committedAtRecord).toBe(true);
       expect(scheduledTransactionsService.create).not.toHaveBeenCalled();
+    });
+
+    it("records no schedule history when the loan transaction rolls back", async () => {
+      scheduledTransactionsService.createWithoutHistory.mockResolvedValue({
+        id: "sched-tx-1",
+      });
+      // The first save is the account, the second the schedule link.
+      accountsRepository.save
+        .mockImplementationOnce(async (a: any) => ({ id: "loan-1", ...a }))
+        .mockRejectedValueOnce(new Error("boom"));
+
+      await expect(
+        service.createLoanAccount(userId, makeValidLoanDto()),
+      ).rejects.toThrow("boom");
+      expect(scheduledTransactionsService.recordCreated).not.toHaveBeenCalled();
     });
 
     it("creates the loan when the payment account is in its currency", async () => {
@@ -402,7 +504,9 @@ describe("LoanMortgageAccountService", () => {
 
       await service.createLoanAccount(userId, makeValidLoanDto());
 
-      expect(scheduledTransactionsService.create).toHaveBeenCalledTimes(1);
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -446,7 +550,9 @@ describe("LoanMortgageAccountService", () => {
       const dto = makeValidMortgageDto();
       await service.createMortgageAccount(userId, dto);
 
-      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({
           accountId: "acc-chequing",
@@ -554,7 +660,9 @@ describe("LoanMortgageAccountService", () => {
       expect(institutionsRepository.findOne).toHaveBeenCalledWith({
         where: { id: "inst-2", userId },
       });
-      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ payeeName: "PKO BP" }),
       );
@@ -595,7 +703,9 @@ describe("LoanMortgageAccountService", () => {
 
       await service.createMortgageAccount(userId, dto);
 
-      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({
           frequency: "BIWEEKLY",
@@ -609,7 +719,9 @@ describe("LoanMortgageAccountService", () => {
 
       await service.createMortgageAccount(userId, dto);
 
-      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({
           frequency: "WEEKLY",
@@ -639,7 +751,8 @@ describe("LoanMortgageAccountService", () => {
       expect(accountsRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({ interestCategoryId: "cat-interest" }),
       );
-      const scheduleDto = scheduledTransactionsService.create.mock.calls[0][1];
+      const scheduleDto =
+        scheduledTransactionsService.createWithoutHistory.mock.calls[0][1];
       expect(scheduleDto.splits).toContainEqual(
         expect.objectContaining({
           memo: "Interest",
@@ -656,7 +769,9 @@ describe("LoanMortgageAccountService", () => {
         "Mortgage accounts require an interest category",
       );
       expect(accountsRepository.create).not.toHaveBeenCalled();
-      expect(scheduledTransactionsService.create).not.toHaveBeenCalled();
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).not.toHaveBeenCalled();
     });
 
     it("refuses a payment account in another currency before saving the mortgage (A26-S15-10)", async () => {
@@ -676,7 +791,67 @@ describe("LoanMortgageAccountService", () => {
       });
       expect(accountsRepository.create).not.toHaveBeenCalled();
       expect(accountsRepository.save).not.toHaveBeenCalled();
-      expect(scheduledTransactionsService.create).not.toHaveBeenCalled();
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("saves the mortgage, its schedule and the link in one transaction and records history after the commit", async () => {
+      const ds = (service as any).dataSource as { transaction: jest.Mock };
+      const original = ds.transaction.getMockImplementation()!;
+      let current = 0;
+      let committed = false;
+      ds.transaction.mockImplementation(async (...args: unknown[]) => {
+        current += 1;
+        const out = await (original as any)(...args);
+        committed = true;
+        return out;
+      });
+      const saveTxIds: number[] = [];
+      accountsRepository.save.mockImplementation(async (a: any) => {
+        saveTxIds.push(current);
+        return { id: "mortgage-1", ...a };
+      });
+      let scheduleTxId = -1;
+      scheduledTransactionsService.createWithoutHistory.mockImplementation(
+        async () => {
+          scheduleTxId = current;
+          return { id: "sched-tx-1" };
+        },
+      );
+      let committedAtRecord: boolean | undefined;
+      scheduledTransactionsService.recordCreated.mockImplementation(() => {
+        committedAtRecord = committed;
+      });
+
+      await service.createMortgageAccount(userId, makeValidMortgageDto());
+
+      expect(saveTxIds).toHaveLength(2);
+      expect(new Set(saveTxIds)).toEqual(new Set([scheduleTxId]));
+      expect(committedAtRecord).toBe(true);
+    });
+
+    it("rolls the mortgage back when the schedule create is refused", async () => {
+      const ds = (service as any).dataSource as { transaction: jest.Mock };
+      const results: Promise<unknown>[] = [];
+      const original = ds.transaction.getMockImplementation()!;
+      ds.transaction.mockImplementation((...args: unknown[]) => {
+        const p = (original as any)(...args);
+        results.push(p);
+        return p;
+      });
+      scheduledTransactionsService.createWithoutHistory.mockRejectedValue(
+        new BadRequestException("splits"),
+      );
+
+      await expect(
+        service.createMortgageAccount(userId, makeValidMortgageDto()),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(accountsRepository.save).toHaveBeenCalledTimes(1);
+      const settled = await Promise.allSettled(results);
+      expect(settled.some((s) => s.status === "rejected")).toBe(true);
+      expect(scheduledTransactionsService.recordCreated).not.toHaveBeenCalled();
     });
 
     it("creates the mortgage when the payment account is in its currency", async () => {
@@ -688,7 +863,9 @@ describe("LoanMortgageAccountService", () => {
 
       await service.createMortgageAccount(userId, makeValidMortgageDto());
 
-      expect(scheduledTransactionsService.create).toHaveBeenCalledTimes(1);
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).toHaveBeenCalledTimes(1);
     });
 
     it("refuses a mortgage interest category the caller does not own before writing anything", async () => {
@@ -698,7 +875,9 @@ describe("LoanMortgageAccountService", () => {
         service.createMortgageAccount(userId, makeValidMortgageDto()),
       ).rejects.toThrow(BadRequestException);
       expect(accountsRepository.create).not.toHaveBeenCalled();
-      expect(scheduledTransactionsService.create).not.toHaveBeenCalled();
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).not.toHaveBeenCalled();
     });
 
     describe("payment matching", () => {
@@ -750,7 +929,9 @@ describe("LoanMortgageAccountService", () => {
           }),
         ).rejects.toThrow(BadRequestException);
         expect(accountsRepository.save).not.toHaveBeenCalled();
-        expect(scheduledTransactionsService.create).not.toHaveBeenCalled();
+        expect(
+          scheduledTransactionsService.createWithoutHistory,
+        ).not.toHaveBeenCalled();
       });
 
       it("reports a rule it could not create on the saved mortgage, which stays", async () => {

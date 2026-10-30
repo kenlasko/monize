@@ -20,17 +20,17 @@ import type { AiProviderConfig } from '@/types/ai';
 import { GooglePlacesConfigModal } from './GooglePlacesConfigModal';
 import { LookupSourceOrder } from './LookupSourceOrder';
 import { PayeeContactLookupToggle } from './PayeeContactLookupToggle';
+import { docsUrl } from '@/lib/docs-links';
 
 /**
- * Where the wiki explains getting a Google Places key.
+ * Where the documentation explains getting a Google Places key.
  *
  * Worth a link rather than more copy on the card: the setup is a Google Cloud
  * errand (create a project, enable Places API (New), restrict the key BY IP
  * because Monize calls Google from the server, not by HTTP referrer) and none
  * of it fits beside a switch.
  */
-const GOOGLE_PLACES_SETUP_URL =
-  'https://github.com/kenlasko/monize/wiki/Categories-and-Payees#setting-up-google-places';
+const GOOGLE_PLACES_SETUP_URL = docsUrl('googlePlacesSetup');
 
 /**
  * How a provider is named in the picker.

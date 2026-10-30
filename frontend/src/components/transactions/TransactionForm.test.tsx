@@ -5510,6 +5510,38 @@ describe('TransactionForm', () => {
       expect(payload.amount).toBe(-150);
     });
 
+    it('converts a foreign amount at the stored four decimals, not cents', async () => {
+      render(
+        <TransactionForm
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+          defaultAccountId="acc-1"
+        />,
+      );
+      await waitFor(() => expect(screen.getByTestId('combobox-Category')).toBeInTheDocument());
+      fireEvent.change(screen.getByTestId('combobox-input-Category'), { target: { value: 'Groceries' } });
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Change entry currency'));
+      });
+      await waitFor(() => expect(screen.getByText(/Euro \(EUR\)/)).toBeInTheDocument());
+      await act(async () => {
+        fireEvent.click(screen.getByText(/Euro \(EUR\)/));
+      });
+      await waitFor(() => expect(mockGetRateForDate).toHaveBeenCalled());
+
+      const amountInput = screen.getAllByPlaceholderText('0.00')[0];
+      await act(async () => {
+        fireEvent.change(amountInput, { target: { value: '33.33' } });
+        fireEvent.blur(amountInput);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
+      });
+      await waitFor(() => expect(mockCreate).toHaveBeenCalled());
+      // 33.33 EUR x 1.5 = 49.995, which the server stores; cents would send 50.
+      expect(mockCreate.mock.calls[0][0].amount).toBe(-49.995);
+    });
+
     it('re-signs the foreign amount when an expense category is chosen after entry', async () => {
       render(
         <TransactionForm

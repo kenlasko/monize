@@ -1,0 +1,192 @@
+<!doctype html>
+<!-- Generated from website/docs/budgets.md by frontend/scripts/build-website-docs.mjs. Edit the Markdown, then run "npm run docs:build" in frontend/. -->
+<html lang="en" data-theme="dark" class="docs-root"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="preload" as="image" href="/assets/img/monize-logo.svg"/><title>Budgets - Monize documentation</title><meta name="description" content="Budgets generated from your history, with velocity tracking and alerts."/><meta name="theme-color" content="#4fa091"/><link rel="canonical" href="https://monize.net/docs/budgets"/><link rel="icon" type="image/svg+xml" href="/assets/img/monize-logo.svg"/><meta property="og:type" content="article"/><meta property="og:site_name" content="Monize"/><meta property="og:title" content="Budgets - Monize documentation"/><meta property="og:description" content="Budgets generated from your history, with velocity tracking and alerts."/><meta property="og:url" content="https://monize.net/docs/budgets"/><link rel="stylesheet" href="/assets/css/styles.css"/><link rel="stylesheet" href="/assets/css/docs.css"/><script src="/assets/js/theme-boot.js"></script></head><body class="docs"><a class="skip" href="#content">Skip to content</a><header id="hdr" class="dhdr"><button id="sideBtn" class="icobtn dside-btn" type="button" aria-label="Open the page list" aria-controls="side" aria-expanded="false">☰</button><a class="brand" href="/"><img class="logo" src="/assets/img/monize-logo.svg" alt="" width="30" height="30"/><span>Monize</span></a><a class="dlabel" href="/docs/">Docs</a><button class="dsearch" type="button" data-search-open="" aria-haspopup="dialog" aria-label="Search the documentation"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><span>Search docs</span><kbd>/</kbd></button><nav class="dnav" aria-label="Site"><a href="/">Home</a><a href="https://demo.monize.net" rel="noopener">Live demo</a><a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></nav><button id="theme" class="icobtn" type="button" title="Toggle light / dark" aria-label="Toggle colour theme">☾</button></header><div class="dshade" id="shade" hidden=""></div><div class="dlayout"><aside class="dside" id="side"><nav aria-label="Documentation"><a class="dhome" href="/docs/">Overview</a><div class="dgroup"><p class="dgroup-t">Getting started</p><ul><li><a href="/docs/getting-started">Getting Started</a></li><li><a href="/docs/importing-transactions">Importing Transactions</a></li><li><a href="/docs/importing-from-quicken">Importing from Quicken</a></li><li><a href="/docs/importing-from-microsoft-money">Importing from Microsoft Money</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Core features</p><ul><li><a href="/docs/dashboard">Dashboard</a></li><li><a href="/docs/accounts">Accounts</a></li><li><a href="/docs/transactions">Transactions</a></li><li><a href="/docs/budgets" aria-current="page">Budgets</a></li><li><a href="/docs/investments">Investments</a></li><li><a href="/docs/bills-and-deposits">Bills and Deposits</a></li><li><a href="/docs/email-receipts">Email Receipts</a></li><li><a href="/docs/warranties">Warranties</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Organizing and reporting</p><ul><li><a href="/docs/categories-and-payees">Categories and Payees</a></li><li><a href="/docs/tags">Tags</a></li><li><a href="/docs/reports">Reports</a></li><li><a href="/docs/currency-management">Currency Management</a></li></ul></div><div class="dgroup"><p class="dgroup-t">AI</p><ul><li><a href="/docs/ai">AI</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Administration</p><ul><li><a href="/docs/settings-and-security">Settings and Security</a></li><li><a href="/docs/shared-access">Shared Access (Delegated Users)</a></li><li><a href="/docs/emergency-access">Emergency Access</a></li><li><a href="/docs/backup-and-restore">Backup and Restore</a></li></ul></div></nav></aside><main id="content" class="dmain" tabindex="-1"><nav class="crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">/</span><span>Core features</span></nav><article class="doc"><h1>Budgets</h1><details class="toc-m"><summary>On this page</summary><ul><li class="d2"><a href="#overview">Overview</a></li><li class="d2"><a href="#creating-a-budget">Creating a Budget</a></li><li class="d3"><a href="#step-1-analyze-spending">Step 1: Analyze Spending</a></li><li class="d3"><a href="#step-2-review-categories">Step 2: Review Categories</a></li><li class="d3"><a href="#step-3-configure-options">Step 3: Configure Options</a></li><li class="d3"><a href="#step-4-review-and-create">Step 4: Review and Create</a></li><li class="d2"><a href="#budget-dashboard">Budget Dashboard</a></li><li class="d3"><a href="#summary-cards">Summary Cards</a></li><li class="d3"><a href="#health-score">Health Score</a></li><li class="d3"><a href="#spending-velocity">Spending Velocity</a></li><li class="d3"><a href="#category-list">Category List</a></li><li class="d3"><a href="#flex-groups">Flex Groups</a></li><li class="d3"><a href="#upcoming-bills">Upcoming Bills</a></li><li class="d3"><a href="#spending-heatmap">Spending Heatmap</a></li><li class="d3"><a href="#budget-vs-actual-trend">Budget vs Actual Trend</a></li><li class="d2"><a href="#budget-strategies">Budget Strategies</a></li><li class="d2"><a href="#rollover-rules">Rollover Rules</a></li><li class="d2"><a href="#income-linked-budgets">Income-Linked Budgets</a></li><li class="d2"><a href="#alerts">Alerts</a></li><li class="d3"><a href="#alert-types">Alert Types</a></li><li class="d3"><a href="#in-app-alerts">In-App Alerts</a></li><li class="d3"><a href="#dismissing-alerts">Dismissing Alerts</a></li><li class="d3"><a href="#email-notifications">Email Notifications</a></li><li class="d2"><a href="#period-management">Period Management</a></li><li class="d3"><a href="#viewing-historical-periods">Viewing Historical Periods</a></li><li class="d2"><a href="#budget-reports">Budget Reports</a></li><li class="d2"><a href="#scenario-planner">Scenario Planner</a></li><li class="d2"><a href="#editing-a-budget">Editing a Budget</a></li></ul></details><p>Monize includes a full-featured budget planner that analyzes your spending history to auto-generate realistic budgets, tracks spending in real-time with velocity projections, supports flexible rollover strategies per category, and proactively alerts you before you overspend.</p>
+<h2 id="overview">Overview<a class="hlink" href="#overview" aria-label="Link to this section">#</a></h2>
+<p>Navigate to <strong>Budgets</strong> from the top navigation bar to view your active budget or create a new one. The budget system integrates with your transactions, scheduled bills, and categories to provide a complete picture of your financial plan.</p>
+<figure><img src="/docs/images/budgets-page.png" alt="Budgets Page" width="1600" height="1000" loading="lazy" decoding="async"/><figcaption>Budgets Page</figcaption></figure>
+<h2 id="creating-a-budget">Creating a Budget<a class="hlink" href="#creating-a-budget" aria-label="Link to this section">#</a></h2>
+<p>Monize includes a <strong>Budget Wizard</strong> that analyzes your historical spending to suggest realistic targets -- no manual data entry required. The wizard walks you through four steps.</p>
+<h3 id="step-1-analyze-spending">Step 1: Analyze Spending<a class="hlink" href="#step-1-analyze-spending" aria-label="Link to this section">#</a></h3>
+<figure><img src="/docs/images/budget-wizard-step1.png" alt="Budget Wizard Step 1" width="1600" height="1000" loading="lazy" decoding="async"/><figcaption>Budget Wizard Step 1</figcaption></figure>
+<ol>
+<li><strong>Choose a strategy</strong> -- Select one of four budget strategies (see <a href="#budget-strategies">Budget Strategies</a> below). Each strategy is displayed as a card with a description.</li>
+<li><strong>Select an analysis period</strong> -- Choose 3, 6, or 12 months of spending history to analyze. Longer periods smooth out anomalies; shorter periods reflect recent habits.</li>
+<li><strong>Choose a profile</strong> -- Pick how aggressive your targets should be:</li>
+</ol>
+<div class="table-wrap"><table><thead><tr><th>Profile</th><th>Description</th></tr></thead><tbody><tr><td><strong>Comfortable</strong></td><td>Based on the 75th percentile of your spending -- allows headroom</td></tr><tr><td><strong>On Track</strong></td><td>Based on median spending -- a realistic, sustainable target</td></tr><tr><td><strong>Aggressive</strong></td><td>Based on the 25th percentile -- a stretch goal for maximum savings</td></tr></tbody></table></div>
+<ol start="4">
+<li>Click <strong>Analyze My Spending</strong> to generate suggestions.</li>
+</ol>
+<p>The analysis calculates statistical distributions per category, identifies fixed expenses (rent, subscriptions) vs variable spending (dining, groceries), and estimates your monthly income.</p>
+<h3 id="step-2-review-categories">Step 2: Review Categories<a class="hlink" href="#step-2-review-categories" aria-label="Link to this section">#</a></h3>
+<figure><img src="/docs/images/budget-wizard-step2.png" alt="Budget Wizard Step 2" width="1600" height="1000" loading="lazy" decoding="async"/><figcaption>Budget Wizard Step 2</figcaption></figure>
+<p>This step displays every spending category found in your history, grouped into:</p>
+<ul>
+<li><strong>Income categories</strong> at the top</li>
+<li><strong>Expense categories</strong> sorted by suggested amount (largest first)</li>
+<li><strong>Transfer accounts</strong> (savings contributions, loan payments)</li>
+</ul>
+<p>For each category, you can see:</p>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Description</th></tr></thead><tbody><tr><td><strong>Category</strong></td><td>The spending category name</td></tr><tr><td><strong>Avg/mo</strong></td><td>Your average monthly spending</td></tr><tr><td><strong>Suggested</strong></td><td>The wizard&#x27;s recommended budget amount</td></tr><tr><td><strong>Amount</strong></td><td>Editable -- adjust to your preference</td></tr></tbody></table></div>
+<p>Use the <strong>profile toggle buttons</strong> (Comfortable / On Track / Aggressive) at the top to quickly switch between suggested amounts for all categories at once.</p>
+<p>For <strong>50/30/20 strategy</strong> budgets, categories are grouped into Needs, Wants, and Savings with percentage targets shown.</p>
+<p>You can also add categories that weren&#x27;t found in your history, or remove categories you don&#x27;t want to track.</p>
+<h3 id="step-3-configure-options">Step 3: Configure Options<a class="hlink" href="#step-3-configure-options" aria-label="Link to this section">#</a></h3>
+<figure><img src="/docs/images/budget-wizard-step3.png" alt="Budget Wizard Step 3" width="1600" height="1000" loading="lazy" decoding="async"/><figcaption>Budget Wizard Step 3</figcaption></figure>
+<p>Configure your budget settings:</p>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Description</th></tr></thead><tbody><tr><td><strong>Budget Name</strong></td><td>A descriptive name (defaults to current month + year)</td></tr><tr><td><strong>Budget Type</strong></td><td>Monthly, Annual, or Pay Period</td></tr><tr><td><strong>Start Date</strong></td><td>When the budget takes effect</td></tr><tr><td><strong>Rollover</strong></td><td>Default rollover strategy for all categories (None, Monthly, Quarterly, Annual)</td></tr><tr><td><strong>Alert Thresholds</strong></td><td>Warning percentage (default 80%) and critical percentage (default 95%)</td></tr><tr><td><strong>Income Linked</strong></td><td>Enable percentage-based budgeting tied to actual income</td></tr><tr><td><strong>Base Monthly Income</strong></td><td>Your expected monthly income (uses the standard currency input with symbol and formatting)</td></tr><tr><td><strong>Excluded Accounts</strong></td><td>Accounts to exclude from budget tracking (e.g., investment accounts)</td></tr></tbody></table></div>
+<h3 id="step-4-review-and-create">Step 4: Review and Create<a class="hlink" href="#step-4-review-and-create" aria-label="Link to this section">#</a></h3>
+<figure><img src="/docs/images/budget-wizard-step4.png" alt="Budget Wizard Step 4" width="1600" height="1000" loading="lazy" decoding="async"/><figcaption>Budget Wizard Step 4</figcaption></figure>
+<p>The review step shows a complete summary of your budget before creation:</p>
+<ul>
+<li><strong>Budget details</strong> -- Name, type, strategy, start date, rollover setting, alert thresholds</li>
+<li><strong>Summary cards</strong> -- Estimated income, total expenses, transfers, and remaining balance</li>
+<li><strong>Category table</strong> -- All categories with amounts and types (income, expense, transfer)</li>
+</ul>
+<p>On mobile, the Type column is hidden to provide more room for category names and amounts.</p>
+<p>Click <strong>Create Budget</strong> to finalize.</p>
+<h2 id="budget-dashboard">Budget Dashboard<a class="hlink" href="#budget-dashboard" aria-label="Link to this section">#</a></h2>
+<p>The budget dashboard (<code>/budgets/[id]</code>) is your primary view for tracking budget progress in real time.</p>
+<figure><img src="/docs/images/budget-dashboard.png" alt="Budget Dashboard" width="1600" height="1000" loading="lazy" decoding="async"/><figcaption>Budget Dashboard</figcaption></figure>
+<h3 id="summary-cards">Summary Cards<a class="hlink" href="#summary-cards" aria-label="Link to this section">#</a></h3>
+<p>Four cards at the top provide an at-a-glance overview:</p>
+<div class="table-wrap"><table><thead><tr><th>Card</th><th>Description</th></tr></thead><tbody><tr><td><strong>Total Budget</strong></td><td>Your total budgeted amount for the period, with category count</td></tr><tr><td><strong>Spent</strong></td><td>Total spending so far, with percentage of budget used</td></tr><tr><td><strong>Remaining</strong></td><td>Budget remaining, with days left in the period</td></tr><tr><td><strong>Savings</strong></td><td>Projected savings (income minus expenses)</td></tr></tbody></table></div>
+<h3 id="health-score">Health Score<a class="hlink" href="#health-score" aria-label="Link to this section">#</a></h3>
+<p>A circular gauge (0--100) summarizing how well you&#x27;re sticking to your budget.</p>
+<div class="table-wrap"><table><thead><tr><th>Score Range</th><th>Label</th></tr></thead><tbody><tr><td>90--100</td><td>Excellent</td></tr><tr><td>70--89</td><td>Good</td></tr><tr><td>50--69</td><td>Needs Attention</td></tr><tr><td>Below 50</td><td>Off Track</td></tr></tbody></table></div>
+<p>The score factors in:</p>
+<ul>
+<li>Categories over budget (deductions proportional to overage)</li>
+<li>Categories consistently under budget (bonus points)</li>
+<li>Essential categories weighted higher than discretionary</li>
+<li>Month-over-month improvement trends</li>
+</ul>
+<h3 id="spending-velocity">Spending Velocity<a class="hlink" href="#spending-velocity" aria-label="Link to this section">#</a></h3>
+<p>Shows your spending pace and whether you&#x27;ll finish the month within budget:</p>
+<ul>
+<li><strong>Daily burn rate</strong> -- How much you&#x27;re spending per day</li>
+<li><strong>Safe to spend</strong> -- How much you can spend per day and stay on track</li>
+<li><strong>Projected month-end</strong> -- Where you&#x27;ll land at the current pace</li>
+<li><strong>Pace indicator</strong> -- Green (under pace), yellow (near pace), red (over pace)</li>
+</ul>
+<p>The velocity widget also factors in upcoming bills from your scheduled transactions, so &quot;safe to spend&quot; reflects your truly available discretionary budget.</p>
+<h3 id="category-list">Category List<a class="hlink" href="#category-list" aria-label="Link to this section">#</a></h3>
+<p>A sortable list of all budget categories with progress bars and real-time tracking.</p>
+<figure><img src="/docs/images/budget-category-list.png" alt="Budget Category List" width="1504" height="2906" loading="lazy" decoding="async"/><figcaption>Budget Category List</figcaption></figure>
+<p>Each category row shows:</p>
+<ul>
+<li><strong>Category name</strong> and group (if using 50/30/20)</li>
+<li><strong>Progress bar</strong> -- Colour-coded by percentage used (green, yellow, red) with a pace marker showing where you should be today</li>
+<li><strong>Amount spent</strong> vs <strong>budgeted amount</strong> and percentage</li>
+<li><strong>Pace status</strong> -- Whether you&#x27;re ahead of or behind the safe spending pace</li>
+</ul>
+<p>Use the <strong>Sort</strong> dropdown to sort by name, percentage used, amount spent, remaining amount, or pace status. On mobile, the sort controls stack below the heading for better readability.</p>
+<h3 id="flex-groups">Flex Groups<a class="hlink" href="#flex-groups" aria-label="Link to this section">#</a></h3>
+<p>If you&#x27;ve assigned categories to flex groups, the Flex Groups widget shows aggregate spending. Individual categories within a group can be over budget, but as long as the group total is within limits, no alert fires.</p>
+<h3 id="upcoming-bills">Upcoming Bills<a class="hlink" href="#upcoming-bills" aria-label="Link to this section">#</a></h3>
+<p>Integrates with your scheduled transactions to show:</p>
+<ul>
+<li><strong>Bills coming due</strong> this period with dates and amounts</li>
+<li><strong>Truly available</strong> budget -- remaining budget minus upcoming bills</li>
+<li>This prevents a false sense of security when you have budget left but bills pending</li>
+</ul>
+<h3 id="spending-heatmap">Spending Heatmap<a class="hlink" href="#spending-heatmap" aria-label="Link to this section">#</a></h3>
+<p>A calendar-style heatmap showing daily spending intensity. Darker cells indicate higher spending days, helping you identify patterns.</p>
+<h3 id="budget-vs-actual-trend">Budget vs Actual Trend<a class="hlink" href="#budget-vs-actual-trend" aria-label="Link to this section">#</a></h3>
+<p>A line chart showing your budgeted amount vs actual spending over the past several months. Helps identify whether you&#x27;re improving over time.</p>
+<h2 id="budget-strategies">Budget Strategies<a class="hlink" href="#budget-strategies" aria-label="Link to this section">#</a></h2>
+<p>Monize supports four budget strategies, each suited to different financial styles:</p>
+<div class="table-wrap"><table><thead><tr><th>Strategy</th><th>Description</th></tr></thead><tbody><tr><td><strong>Fixed</strong></td><td>Set fixed amounts per category. Simple and predictable. Unused budget disappears at the end of each period.</td></tr><tr><td><strong>Rollover</strong></td><td>Unused budget carries forward to the next period based on per-category rollover rules. Good for saving toward irregular expenses.</td></tr><tr><td><strong>Zero-Based</strong></td><td>Every dollar of income must be assigned to a category. Income minus expenses equals zero. Forces intentional allocation of every dollar.</td></tr><tr><td><strong>50/30/20</strong></td><td>Categories are tagged as Needs (50%), Wants (30%), or Savings (20%). The wizard auto-calculates targets based on your income.</td></tr></tbody></table></div>
+<h2 id="rollover-rules">Rollover Rules<a class="hlink" href="#rollover-rules" aria-label="Link to this section">#</a></h2>
+<p>Each category can have its own rollover strategy:</p>
+<div class="table-wrap"><table><thead><tr><th>Rollover Type</th><th>Description</th></tr></thead><tbody><tr><td><strong>None</strong></td><td>Budget resets each period -- no carry-forward</td></tr><tr><td><strong>Monthly</strong></td><td>Unused budget rolls to the next month</td></tr><tr><td><strong>Quarterly</strong></td><td>Budget accumulates for 3 months then resets</td></tr><tr><td><strong>Annual</strong></td><td>Budget accumulates all year</td></tr></tbody></table></div>
+<p>You can also set a <strong>rollover cap</strong> to limit how much accumulates. For example, a clothing category might roll over monthly with a $500 cap.</p>
+<p><strong>Common patterns:</strong></p>
+<ul>
+<li><strong>Groceries</strong> -- None (no point accumulating)</li>
+<li><strong>Clothing</strong> -- Monthly with a cap (save for seasonal shopping)</li>
+<li><strong>Travel</strong> -- Annual (vacation fund)</li>
+<li><strong>Car Maintenance</strong> -- Annual with no cap (save for repairs)</li>
+</ul>
+<h2 id="income-linked-budgets">Income-Linked Budgets<a class="hlink" href="#income-linked-budgets" aria-label="Link to this section">#</a></h2>
+<p>For freelancers, gig workers, or anyone with variable income, you can enable income-linked budgeting. When enabled, category budget amounts are treated as percentages of your actual income rather than fixed dollar amounts.</p>
+<ul>
+<li>If your income drops, your budget automatically tightens</li>
+<li>If your income rises, your budget grows proportionally</li>
+<li>The dashboard shows both the percentage and the resulting dollar amount</li>
+</ul>
+<p>Set a <strong>Base Monthly Income</strong> to establish the baseline. The budget wizard will suggest this based on your historical income data.</p>
+<h2 id="alerts">Alerts<a class="hlink" href="#alerts" aria-label="Link to this section">#</a></h2>
+<p>Monize proactively monitors your budget and sends alerts before you overspend.</p>
+<h3 id="alert-types">Alert Types<a class="hlink" href="#alert-types" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Alert Type</th><th>Trigger</th><th>Severity</th></tr></thead><tbody><tr><td><strong>Pace Warning</strong></td><td>Daily burn rate projects &gt;110% of budget by period end</td><td>Warning</td></tr><tr><td><strong>Threshold Warning</strong></td><td>Category spending reaches the warning threshold (default 80%)</td><td>Warning</td></tr><tr><td><strong>Threshold Critical</strong></td><td>Category spending reaches the critical threshold (default 95%)</td><td>Critical</td></tr><tr><td><strong>Over Budget</strong></td><td>Category spending exceeds 100%</td><td>Critical</td></tr><tr><td><strong>Flex Group Warning</strong></td><td>Flex group total reaching 90%</td><td>Warning</td></tr><tr><td><strong>Projected Overspend</strong></td><td>Current velocity projects &gt;15% over budget</td><td>Warning</td></tr><tr><td><strong>Income Shortfall</strong></td><td>Actual income below 80% of expected (income-linked budgets)</td><td>Critical</td></tr><tr><td><strong>Positive Milestone</strong></td><td>50%+ through the period and under 60% of budget</td><td>Success</td></tr><tr><td><strong>Bill Due</strong></td><td>A manually-tracked bill is coming due soon</td><td>Info</td></tr></tbody></table></div>
+<h3 id="in-app-alerts">In-App Alerts<a class="hlink" href="#in-app-alerts" aria-label="Link to this section">#</a></h3>
+<p>A bell icon in the top navigation bar shows the count of unread alerts. Click the bell to open the alert dropdown.</p>
+<span class="shot-missing" role="img" aria-label="Alert Badge">Screenshot pending: Alert Badge</span>
+<p>The alert dropdown displays:</p>
+<ul>
+<li><strong>Severity badges</strong> -- Colour-coded (red for critical, yellow for warning, green for good news, blue for info)</li>
+<li><strong>Alert title and message</strong> -- What happened and the details</li>
+<li><strong>Unread indicator</strong> -- A dot on unread alerts</li>
+<li><strong>Mark All Read</strong> button -- Clears all unread indicators at once</li>
+<li><strong>Dismiss button</strong> -- An X button on each alert to remove it (see below)</li>
+</ul>
+<p>Clicking an alert navigates to the relevant budget page. Bill due alerts navigate to the Bills &amp; Deposits page instead.</p>
+<h3 id="dismissing-alerts">Dismissing Alerts<a class="hlink" href="#dismissing-alerts" aria-label="Link to this section">#</a></h3>
+<p>Each alert in the dropdown has an X button that appears on hover. Clicking it:</p>
+<ol>
+<li>Immediately removes the alert from the list</li>
+<li>Shows a toast notification with an <strong>Undo</strong> button for 5 seconds</li>
+<li>If you don&#x27;t undo, the alert is permanently deleted after 5 seconds</li>
+<li>If you click <strong>Undo</strong>, the alert is restored to the list</li>
+</ol>
+<p>Virtual bill due alerts (which are generated on-the-fly, not stored in the database) are removed from the list immediately but don&#x27;t trigger a backend delete.</p>
+<h3 id="email-notifications">Email Notifications<a class="hlink" href="#email-notifications" aria-label="Link to this section">#</a></h3>
+<p>Budget alert emails can be enabled in <strong>Settings</strong>:</p>
+<div class="table-wrap"><table><thead><tr><th>Email Type</th><th>Description</th></tr></thead><tbody><tr><td><strong>Immediate alerts</strong></td><td>Sent for critical threshold, over-budget, and income shortfall alerts</td></tr><tr><td><strong>Weekly digest</strong></td><td>Summary of all alerts, health score, and safe daily spend (configurable for Monday or Friday)</td></tr><tr><td><strong>Monthly summary</strong></td><td>End-of-period report with total budget vs actual, savings achieved, and health score</td></tr></tbody></table></div>
+<p>Configure email preferences in <strong>Settings &gt; Notifications</strong>.</p>
+<h2 id="period-management">Period Management<a class="hlink" href="#period-management" aria-label="Link to this section">#</a></h2>
+<p>Budgets are divided into periods (typically monthly). At the end of each period:</p>
+<ol>
+<li>The current period is <strong>closed</strong> automatically (via a daily cron job on the 1st of each month)</li>
+<li>Actual spending is finalized</li>
+<li>Rollover amounts are calculated per category</li>
+<li>A new period is opened with rollover balances carried forward</li>
+</ol>
+<p>You can also manually close a period from the budget settings.</p>
+<h3 id="viewing-historical-periods">Viewing Historical Periods<a class="hlink" href="#viewing-historical-periods" aria-label="Link to this section">#</a></h3>
+<p>Use the <strong>Period Selector</strong> dropdown on the budget dashboard to switch between the current period and historical periods. Historical periods show:</p>
+<ul>
+<li>Final actual amounts per category</li>
+<li>Rollover in/out amounts</li>
+<li>Budget vs actual comparison</li>
+</ul>
+<h2 id="budget-reports">Budget Reports<a class="hlink" href="#budget-reports" aria-label="Link to this section">#</a></h2>
+<p>Nine budget-specific reports are available in the <strong>Reports</strong> section:</p>
+<div class="table-wrap"><table><thead><tr><th>Report</th><th>Description</th></tr></thead><tbody><tr><td><strong>Budget vs Actual</strong></td><td>Compare your budgeted amounts to actual spending over time across all categories</td></tr><tr><td><strong>Budget Health Score</strong></td><td>Get a 0--100 health score for your budget with detailed per-category impact analysis</td></tr><tr><td><strong>Seasonal Spending Patterns</strong></td><td>Discover seasonal trends and high-spending months across your budget categories</td></tr><tr><td><strong>Budget Trend</strong></td><td>Line chart showing total budgeted vs total actual spending over 6--12 months to track improvement</td></tr><tr><td><strong>Category Performance</strong></td><td>Table showing each category&#x27;s budget performance over multiple months with trend indicators</td></tr><tr><td><strong>Savings Rate</strong></td><td>Track your savings rate (income minus expenses divided by income) over time vs your target</td></tr><tr><td><strong>Health Score History</strong></td><td>Line chart of monthly budget health scores showing your financial trajectory over time</td></tr><tr><td><strong>Flex Group Analysis</strong></td><td>Stacked bar chart for each flex group showing component categories with group limit reference</td></tr><tr><td><strong>Seasonal Spending Map</strong></td><td>Heatmap grid showing 12 months across all categories to identify seasonal spending patterns</td></tr></tbody></table></div>
+<p>Additionally, a <strong>Budget Variance</strong> metric is available in the custom report builder, so you can create your own budget-related reports with flexible filters and groupings.</p>
+<h2 id="scenario-planner">Scenario Planner<a class="hlink" href="#scenario-planner" aria-label="Link to this section">#</a></h2>
+<p>The Scenario Planner is a &quot;what-if&quot; tool for trying budget changes without committing them.</p>
+<ol>
+<li>Navigate to your budget dashboard</li>
+<li>Open the <strong>Scenario Planner</strong></li>
+<li>Adjust category amounts using sliders</li>
+<li>See live projections: savings impact, flex group effects, zero-based balance changes</li>
+<li>Click <strong>Apply Changes</strong> to save your adjustments, or discard them</li>
+</ol>
+<p>This is entirely a frontend calculation -- no data is saved until you explicitly apply changes.</p>
+<h2 id="editing-a-budget">Editing a Budget<a class="hlink" href="#editing-a-budget" aria-label="Link to this section">#</a></h2>
+<p>To edit an existing budget:</p>
+<ol>
+<li>Navigate to the budget dashboard</li>
+<li>Click <strong>Edit</strong> in the top right</li>
+<li>Modify budget settings (name, type, strategy, categories, amounts, rollover rules, alert thresholds)</li>
+<li>Click <strong>Save</strong></li>
+</ol>
+<p>You can also:</p>
+<ul>
+<li><strong>Add categories</strong> that weren&#x27;t included in the original budget</li>
+<li><strong>Remove categories</strong> you no longer want to track</li>
+<li><strong>Bulk update</strong> all category amounts at once</li>
+<li><strong>Change rollover rules</strong> per category</li>
+</ul></article><nav class="pager" aria-label="Previous and next page"><a class="pg pg-prev" href="/docs/transactions"><span>Previous</span><b>Transactions</b></a><a class="pg pg-next" href="/docs/investments"><span>Next</span><b>Investments</b></a></nav><p class="dedit"><a href="https://github.com/kenlasko/monize/edit/main/website/docs/budgets.md" rel="noopener">Edit this page on GitHub</a><a href="https://github.com/kenlasko/monize/issues/new" rel="noopener">Report a problem with the docs</a></p></main><aside class="dtoc" aria-label="On this page"><p>On this page</p><ul><li class="d2"><a href="#overview">Overview</a></li><li class="d2"><a href="#creating-a-budget">Creating a Budget</a></li><li class="d3"><a href="#step-1-analyze-spending">Step 1: Analyze Spending</a></li><li class="d3"><a href="#step-2-review-categories">Step 2: Review Categories</a></li><li class="d3"><a href="#step-3-configure-options">Step 3: Configure Options</a></li><li class="d3"><a href="#step-4-review-and-create">Step 4: Review and Create</a></li><li class="d2"><a href="#budget-dashboard">Budget Dashboard</a></li><li class="d3"><a href="#summary-cards">Summary Cards</a></li><li class="d3"><a href="#health-score">Health Score</a></li><li class="d3"><a href="#spending-velocity">Spending Velocity</a></li><li class="d3"><a href="#category-list">Category List</a></li><li class="d3"><a href="#flex-groups">Flex Groups</a></li><li class="d3"><a href="#upcoming-bills">Upcoming Bills</a></li><li class="d3"><a href="#spending-heatmap">Spending Heatmap</a></li><li class="d3"><a href="#budget-vs-actual-trend">Budget vs Actual Trend</a></li><li class="d2"><a href="#budget-strategies">Budget Strategies</a></li><li class="d2"><a href="#rollover-rules">Rollover Rules</a></li><li class="d2"><a href="#income-linked-budgets">Income-Linked Budgets</a></li><li class="d2"><a href="#alerts">Alerts</a></li><li class="d3"><a href="#alert-types">Alert Types</a></li><li class="d3"><a href="#in-app-alerts">In-App Alerts</a></li><li class="d3"><a href="#dismissing-alerts">Dismissing Alerts</a></li><li class="d3"><a href="#email-notifications">Email Notifications</a></li><li class="d2"><a href="#period-management">Period Management</a></li><li class="d3"><a href="#viewing-historical-periods">Viewing Historical Periods</a></li><li class="d2"><a href="#budget-reports">Budget Reports</a></li><li class="d2"><a href="#scenario-planner">Scenario Planner</a></li><li class="d2"><a href="#editing-a-budget">Editing a Budget</a></li></ul></aside></div><footer class="dfoot"><div class="wrap"><span>Monize is released under the AGPL-3.0 licence.</span><span><a href="/">monize.net</a> · <a href="https://demo.monize.net" rel="noopener">Live demo</a> · <a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></span></div></footer><div class="sdlg" id="search" role="dialog" aria-modal="true" aria-label="Search the documentation" hidden=""><div class="sbox"><label class="sfield"><span class="sr">Search the documentation</span><input id="q" type="search" placeholder="Search the docs, e.g. &quot;split transaction&quot;" autoComplete="off" spellCheck="false" aria-controls="sres"/></label><ul id="sres" class="sres" role="listbox" aria-label="Results"></ul><p class="shint" id="shint"><kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</p></div></div><script src="/assets/js/docs.js" defer=""></script></body></html>

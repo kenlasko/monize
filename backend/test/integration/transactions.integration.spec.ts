@@ -343,4 +343,87 @@ describe("TransactionsService (integration)", () => {
       expect(byId.get(never.id)).toBeNull();
     });
   });
+  describe("stale reconciliation after a row dated past its statement", () => {
+    /**
+     * The reconcile screen lists rows dated after the statement date, so one
+     * can be reconciled on an earlier statement. The account counts as
+     * reconciled through that statement date, not through the row's own
+     * later date: an outstanding row between the two belongs to the next
+     * statement and is not "missed". Dated in 2020 so the outstanding row is
+     * past the overdue window whatever day the suite runs.
+     */
+    it("measures missed rows from the statement date, not the late row's own date", async () => {
+      await withUserContext(userId, async () => {
+        const onStatement = await service.create(userId, {
+          accountId,
+          transactionDate: "2020-09-10",
+          amount: -25,
+          currencyCode: "USD",
+        });
+        const pastStatement = await service.create(userId, {
+          accountId,
+          transactionDate: "2020-09-20",
+          amount: -15,
+          currencyCode: "USD",
+        });
+        await service.bulkReconcile(
+          userId,
+          accountId,
+          [onStatement.id, pastStatement.id],
+          "2020-09-15",
+        );
+        // Outstanding, dated between the statement and the late row.
+        await service.create(userId, {
+          accountId,
+          transactionDate: "2020-09-17",
+          amount: -5,
+          currencyCode: "USD",
+        });
+      });
+
+      const data = await withUserContext(userId, () =>
+        service.getReconciliationData(userId, accountId, "2020-10-15", 0),
+      );
+      expect(data.lastReconciledDate).toBe("2020-09-15");
+
+      const summary = await withUserContext(userId, () =>
+        service.getStaleUnreconciled(userId),
+      );
+      const account = summary.accounts.find((a) => a.accountId === accountId);
+      expect(account).toMatchObject({
+        lastReconciledDate: "2020-09-15",
+        count: 1,
+        missedCount: 0,
+        overdueCount: 1,
+      });
+    });
+
+    it("keeps a row reconciled without a statement at its own date", async () => {
+      await withUserContext(userId, async () => {
+        // Imported already reconciled: no reconciled_date.
+        await service.create(userId, {
+          accountId,
+          transactionDate: "2020-08-01",
+          amount: -10,
+          currencyCode: "USD",
+          status: TransactionStatus.RECONCILED,
+        });
+        await service.create(userId, {
+          accountId,
+          transactionDate: "2020-07-20",
+          amount: -5,
+          currencyCode: "USD",
+        });
+      });
+
+      const summary = await withUserContext(userId, () =>
+        service.getStaleUnreconciled(userId),
+      );
+      const account = summary.accounts.find((a) => a.accountId === accountId);
+      expect(account).toMatchObject({
+        lastReconciledDate: "2020-08-01",
+        missedCount: 1,
+      });
+    });
+  });
 });

@@ -36,6 +36,33 @@ export interface VoidTransitionBalanceWriter {
 }
 
 /**
+ * Whether an investment transaction owns this row as its cash leg. Raw EXISTS
+ * rather than the InvestmentTransaction repository: this util belongs to the
+ * transactions module and only asks whether an owner exists.
+ */
+export async function isInvestmentCashLeg(
+  m: EntityManager,
+  transactionId: string,
+): Promise<boolean> {
+  const rows: { id: string }[] = await m.query(
+    // includes VOID rows: records read -- ownership, not effect.
+    `SELECT id FROM investment_transactions WHERE transaction_id = $1 LIMIT 1`,
+    [transactionId],
+  );
+  return rows.length > 0;
+}
+
+/** Refuse an edit or delete of an investment cash leg; the trade owns it. */
+export function investmentCashLegLockedError(): BadRequestException {
+  return new BadRequestException(
+    tr(
+      "errors.transactions.investmentCashLegLocked",
+      "This transaction is the cash side of an investment transaction. Change or delete the investment transaction instead, so both sides change together.",
+    ),
+  );
+}
+
+/**
  * Refuse a VOID-boundary transition applied to a row that is one half of an
  * event another row owns, on its own. Call inside the write transaction, after
  * establishing the transition actually crosses the boundary. Two cases:
@@ -66,14 +93,7 @@ export async function assertVoidTransitionAllowedOnRow(
     );
   }
 
-  // Raw EXISTS rather than the InvestmentTransaction repository: this util
-  // belongs to the transactions module and only asks whether an owner exists.
-  const owningInvestmentRows: { id: string }[] = await m.query(
-    // includes VOID rows: records read -- ownership, not effect.
-    `SELECT id FROM investment_transactions WHERE transaction_id = $1 LIMIT 1`,
-    [transactionId],
-  );
-  if (owningInvestmentRows.length > 0) {
+  if (await isInvestmentCashLeg(m, transactionId)) {
     throw new BadRequestException(
       tr(
         "errors.transactions.investmentCashLegStatusLocked",

@@ -389,7 +389,10 @@ describe("valueBondLot: matured lots", () => {
     const v = tos("2029-10-15");
     expect(v).toMatchObject({
       currentPeriod: null,
-      principal: "113.79",
+      // The base the last period accrued on (100 plus the interest capitalised
+      // before it), as the open state reports; accruedInterest is all interest
+      // since the nominal, so the gross, not their sum, is the lot's value.
+      principal: "108.99",
       grossValue: "113.79",
       accruedInterest: "13.79",
       earlyRedemptionValue: null,
@@ -398,6 +401,10 @@ describe("valueBondLot: matured lots", () => {
       maturityValueKnown: "113.79",
       valuationComplete: true,
     });
+  });
+
+  it("the principal does not drop on the maturity day", () => {
+    expect(tos("2029-10-15").principal).toBe(tos("2029-10-14").principal);
   });
 
   it("a coupon lot is worth its nominal, the last coupon being paid", () => {

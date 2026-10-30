@@ -1076,6 +1076,24 @@ describe("TransactionsService", () => {
       );
     });
 
+    it("refuses a future-dated transaction on a closed account", async () => {
+      accountsService.findOne.mockResolvedValue({
+        ...mockAccount,
+        isClosed: true,
+      });
+
+      await expect(
+        service.create("user-1", {
+          accountId: "account-1",
+          transactionDate: "2999-01-15",
+          amount: -50,
+          currencyCode: "USD",
+        } as any),
+      ).rejects.toThrow(/closed account/);
+
+      expect(transactionsRepository.save).not.toHaveBeenCalled();
+    });
+
     describe("primary currency must match the account (P5-003)", () => {
       it("rejects a transaction whose currencyCode differs from the account's", async () => {
         // The account is USD. A request declaring EUR used to be stored
@@ -1826,6 +1844,63 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
+    describe("the cash leg of an investment transaction", () => {
+      const cashLeg = { ...mockTx, amount: -500, isTransfer: false };
+      const asCashLeg = () => {
+        transactionsRepository.findOne.mockResolvedValue(cashLeg);
+        lockedRow = { ...cashLeg };
+        mockQueryRunner.manager.query.mockResolvedValue([{ id: "inv-1" }]);
+      };
+
+      it.each([
+        ["a VOID transition", { status: TransactionStatus.VOID }],
+        ["an amount change", { amount: -400 }],
+        ["an account change", { accountId: "account-2" }],
+        ["a date change", { transactionDate: "2001-02-03" }],
+      ])("refuses %s before writing", async (_label, dto) => {
+        asCashLeg();
+
+        await expect(
+          service.update("user-1", "tx-1", dto as any),
+        ).rejects.toThrow(/cash side of an investment transaction/);
+
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
+      it("accepts an edit that re-sends the unchanged amount and account", async () => {
+        asCashLeg();
+        mockQueryRunner.manager.findOne.mockResolvedValueOnce({ ...cashLeg });
+
+        await service.update("user-1", "tx-1", {
+          amount: -500,
+          accountId: "account-1",
+          description: "x",
+        } as any);
+
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+    });
+
+    it("refuses moving a transaction to a closed account", async () => {
+      transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
+      lockedRow = { ...mockTx };
+      accountsService.findOne.mockResolvedValue({
+        ...mockAccount,
+        id: "account-2",
+        isClosed: true,
+      });
+
+      await expect(
+        service.update("user-1", "tx-1", {
+          accountId: "account-2",
+          transactionDate: "2999-01-01",
+        } as any),
+      ).rejects.toThrow(/closed account/);
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
     it("accepts a transfer leg edit that re-sends its unchanged amount", async () => {
       const leg = {
         ...mockTx,
@@ -2362,6 +2437,27 @@ describe("TransactionsService", () => {
   });
 
   describe("remove", () => {
+    it("refuses to delete the cash leg of an investment transaction", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        splits: [],
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+      mockQueryRunner.manager.query.mockResolvedValue([{ id: "inv-1" }]);
+
+      await expect(service.remove("user-1", "tx-1")).rejects.toThrow(
+        /cash side of an investment transaction/,
+      );
+
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
     it("reverts balance and removes transaction", async () => {
       transactionsRepository.findOne.mockResolvedValue({
         id: "tx-1",
@@ -5731,7 +5827,7 @@ describe("TransactionsService", () => {
       );
     });
 
-    it("filters transactions up to statement date", async () => {
+    it("lists rows dated after the statement date, but sums cleared rows only up to it", async () => {
       accountsService.findOne.mockResolvedValue(mockAccount);
 
       const txQb = createMockQueryBuilder();
@@ -5752,7 +5848,16 @@ describe("TransactionsService", () => {
         0,
       );
 
-      expect(txQb.andWhere).toHaveBeenCalledWith(
+      // The statement date decides which rows start ticked (client side),
+      // never which rows are listed.
+      const listingClauses: string[] = txQb.andWhere.mock.calls.map(
+        ([clause]) => clause,
+      );
+      expect(listingClauses).toContain("transaction.status IN (:...statuses)");
+      expect(
+        listingClauses.filter((clause) => clause.includes("transactionDate")),
+      ).toEqual([]);
+      expect(clearedQb.andWhere).toHaveBeenCalledWith(
         "transaction.transactionDate <= :statementDate",
         { statementDate: "2026-02-15" },
       );

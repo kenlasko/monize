@@ -85,77 +85,122 @@ describe("InsightsAggregatorService", () => {
       expect(result.daysElapsedInMonth).toBeGreaterThan(0);
     });
 
-    it("computes category spending from raw data", async () => {
+    const row = (
+      overrides: Partial<Record<string, string>> & { month: string },
+    ) => ({
+      categoryId: "cat-1",
+      categoryName: "Dining",
+      currencyCode: "USD",
+      net: "100",
+      txnCount: "2",
+      ...overrides,
+    });
+
+    const withRows = (rows: unknown[]) => {
       const qb = mockQueryBuilder();
-      let callCount = 0;
-
-      qb.getRawMany.mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // Category spending query
-          return Promise.resolve([
-            {
-              categoryName: "Dining",
-              categoryId: "cat-1",
-              total: "600",
-              txnCount: "12",
-              currentMonthTotal: "120",
-              previousMonthTotal: "100",
-              monthCount: "6",
-            },
-            {
-              categoryName: "Groceries",
-              categoryId: "cat-2",
-              total: "1200",
-              txnCount: "24",
-              currentMonthTotal: "200",
-              previousMonthTotal: "190",
-              monthCount: "6",
-            },
-          ]);
-        }
-        return Promise.resolve([]);
-      });
-
+      qb.getRawMany.mockResolvedValue(rows);
       mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+      return qb;
+    };
+
+    it("derives category spending from the monthly rows", async () => {
+      const now = new Date();
+      const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevKey = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
+      withRows([
+        row({ month: prevKey, net: "100", txnCount: "4" }),
+        row({ month: cur, net: "140", txnCount: "6" }),
+        row({
+          month: cur,
+          categoryId: "cat-2",
+          categoryName: "Groceries",
+          net: "400",
+        }),
+      ]);
 
       const result = await service.computeAggregates(userId, "USD");
 
-      expect(result.categorySpending).toHaveLength(2);
-      expect(result.categorySpending[0].categoryName).toBe("Dining");
-      expect(result.categorySpending[0].currentMonthTotal).toBe(120);
-      expect(result.categorySpending[0].previousMonthTotal).toBe(100);
-      expect(result.categorySpending[0].averageMonthlyTotal).toBe(100); // 600/6
-      expect(result.categorySpending[0].monthCount).toBe(6);
+      expect(result.categorySpending.map((c) => c.categoryName)).toEqual([
+        "Groceries",
+        "Dining",
+      ]);
+      const dining = result.categorySpending[1];
+      expect(dining.currentMonthTotal).toBe(140);
+      expect(dining.previousMonthTotal).toBe(100);
+      expect(dining.monthCount).toBe(2);
+      expect(dining.averageMonthlyTotal).toBe(120); // 240 / 2
+      expect(dining.transactionCount).toBe(10);
     });
 
-    it("computes monthly spending with category breakdown", async () => {
-      const qb = mockQueryBuilder();
-      let callCount = 0;
+    it("nets refunds within a category and drops a category that nets to a credit", async () => {
+      withRows([
+        row({ month: "2026-01", net: "500" }),
+        row({ month: "2026-02", net: "-100" }), // refund month
+        // Income category: negated credits are negative, so it is not spending.
+        row({
+          month: "2026-01",
+          categoryId: "cat-inc",
+          categoryName: "Salary",
+          net: "-4000",
+        }),
+      ]);
 
-      qb.getRawMany.mockImplementation(() => {
-        callCount++;
-        if (callCount === 2) {
-          // Monthly spending query (second call)
-          return Promise.resolve([
-            { month: "2026-01", categoryName: "Dining", total: "100" },
-            { month: "2026-01", categoryName: "Groceries", total: "200" },
-            { month: "2026-02", categoryName: "Dining", total: "150" },
-          ]);
-        }
-        return Promise.resolve([]);
-      });
+      const result = await service.computeAggregates(userId, "USD");
 
-      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+      expect(result.categorySpending).toHaveLength(1);
+      expect(result.categorySpending[0].averageMonthlyTotal).toBe(200); // 400 / 2
+      const [jan, feb] = result.monthlySpending;
+      expect(jan.total).toBe(500);
+      expect(feb.total).toBe(-100);
+      expect(
+        result.monthlySpending.flatMap((m) => m.categoryBreakdown),
+      ).not.toContainEqual(expect.objectContaining({ categoryName: "Salary" }));
+    });
 
-      const result = await service.computeAggregates(userId, "CAD");
+    it("reads the split line's category and amount, not only the parent's", async () => {
+      const qb = withRows([]);
 
-      expect(result.monthlySpending).toHaveLength(2);
-      expect(result.monthlySpending[0].month).toBe("2026-01");
-      expect(result.monthlySpending[0].total).toBe(300);
-      expect(result.monthlySpending[0].categoryBreakdown).toHaveLength(2);
-      expect(result.monthlySpending[1].month).toBe("2026-02");
-      expect(result.monthlySpending[1].total).toBe(150);
+      await service.computeAggregates(userId, "USD");
+
+      expect(qb.leftJoin).toHaveBeenCalledWith("t.splits", "ts");
+      expect(qb.addSelect).toHaveBeenCalledWith(
+        "SUM(-COALESCE(ts.amount, t.amount))",
+        "net",
+      );
+      expect(qb.innerJoin).toHaveBeenCalledWith(
+        expect.anything(),
+        "cat",
+        expect.stringContaining("COALESCE(ts.categoryId, t.categoryId)"),
+      );
+    });
+
+    it("converts each currency into the reporting currency and names a missing pair", async () => {
+      withRows([
+        row({ month: "2026-01", net: "100" }),
+        row({ month: "2026-01", net: "50", currencyCode: "EUR" }),
+        row({ month: "2026-01", net: "70", currencyCode: "GBP" }),
+      ]);
+      managerQuery.mockImplementation(async (sql: string) =>
+        /exchange_rates/.test(sql)
+          ? [
+              {
+                from_currency: "EUR",
+                to_currency: "USD",
+                rate: "2",
+                rate_date: "2026-01-20",
+              },
+            ]
+          : [],
+      );
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      // 100 USD + 50 EUR * 2; the GBP row has no rate and is left out, not
+      // added as 70 USD.
+      expect(result.monthlySpending[0].total).toBe(200);
+      expect(result.fxComplete).toBe(false);
+      expect(result.missingRatePairs).toEqual(["GBP->USD"]);
     });
 
     it("includes recurring charges from the shared analytics service", async () => {
@@ -185,26 +230,14 @@ describe("InsightsAggregatorService", () => {
     });
 
     it("computes average monthly spending from completed months only", async () => {
-      const qb = mockQueryBuilder();
-      let callCount = 0;
       const now = new Date();
       const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-      qb.getRawMany.mockImplementation(() => {
-        callCount++;
-        if (callCount === 2) {
-          // Monthly spending query
-          return Promise.resolve([
-            { month: "2025-10", categoryName: "Food", total: "1000" },
-            { month: "2025-11", categoryName: "Food", total: "1200" },
-            { month: "2025-12", categoryName: "Food", total: "800" },
-            { month: currentMonthKey, categoryName: "Food", total: "500" },
-          ]);
-        }
-        return Promise.resolve([]);
-      });
-
-      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+      withRows([
+        row({ month: "2025-10", net: "1000" }),
+        row({ month: "2025-11", net: "1200" }),
+        row({ month: "2025-12", net: "800" }),
+        row({ month: currentMonthKey, net: "500" }),
+      ]);
 
       const result = await service.computeAggregates(userId, "USD");
 
@@ -213,37 +246,7 @@ describe("InsightsAggregatorService", () => {
       expect(result.totalSpendingCurrentMonth).toBe(500);
     });
 
-    it("handles category with null categoryId", async () => {
-      const qb = mockQueryBuilder();
-      let callCount = 0;
-
-      qb.getRawMany.mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          return Promise.resolve([
-            {
-              categoryName: "Food",
-              categoryId: null,
-              total: "300",
-              txnCount: "6",
-              currentMonthTotal: "50",
-              previousMonthTotal: "50",
-              monthCount: "3",
-            },
-          ]);
-        }
-        return Promise.resolve([]);
-      });
-
-      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
-
-      const result = await service.computeAggregates(userId, "USD");
-
-      expect(result.categorySpending).toHaveLength(1);
-      expect(result.categorySpending[0].categoryId).toBeNull();
-    });
-
-    it("uses innerJoin for category spending query", async () => {
+    it("joins the category with an inner join", async () => {
       const qb = mockQueryBuilder();
       mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
 
@@ -268,12 +271,6 @@ describe("InsightsAggregatorService", () => {
     ] as const;
     afterEach(() => jest.useRealTimers());
 
-    function params(qb: Record<string, jest.Mock>): Record<string, unknown> {
-      return Object.fromEntries(
-        qb.setParameter.mock.calls.map(([k, v]: [string, unknown]) => [k, v]),
-      );
-    }
-
     it("takes the month from the user's day when UTC is still the day before", async () => {
       jest.useFakeTimers({
         now: new Date("2026-10-21T00:30:00+02:00"),
@@ -283,14 +280,31 @@ describe("InsightsAggregatorService", () => {
         { timezone: "Europe/Warsaw", last_client_timezone: null },
       ]);
       const qb = mockQueryBuilder();
+      qb.getRawMany.mockResolvedValue([
+        {
+          month: "2026-10",
+          categoryId: "c",
+          categoryName: "Dining",
+          currencyCode: "PLN",
+          net: "40",
+          txnCount: "1",
+        },
+        {
+          month: "2026-09",
+          categoryId: "c",
+          categoryName: "Dining",
+          currencyCode: "PLN",
+          net: "10",
+          txnCount: "1",
+        },
+      ]);
       mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.computeAggregates(userId, "PLN");
 
-      expect(params(qb)).toMatchObject({
-        currentMonthStart: "2026-10-01",
-        previousMonthStart: "2026-09-01",
-        previousMonthEnd: "2026-09-30",
+      expect(result.categorySpending[0]).toMatchObject({
+        currentMonthTotal: 40,
+        previousMonthTotal: 10,
       });
       expect(qb.andWhere).toHaveBeenCalledWith(
         "t.transactionDate >= :startDate",
@@ -315,14 +329,30 @@ describe("InsightsAggregatorService", () => {
       ]);
       const qb = mockQueryBuilder();
       mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
-      qb.getRawMany.mockResolvedValue([]);
+      qb.getRawMany.mockResolvedValue([
+        {
+          month: "2026-11",
+          categoryId: "c",
+          categoryName: "Dining",
+          currencyCode: "JPY",
+          net: "40",
+          txnCount: "1",
+        },
+        {
+          month: "2026-10",
+          categoryId: "c",
+          categoryName: "Dining",
+          currencyCode: "JPY",
+          net: "10",
+          txnCount: "1",
+        },
+      ]);
 
       const result = await service.computeAggregates(userId, "JPY");
 
-      expect(params(qb)).toMatchObject({
-        currentMonthStart: "2026-11-01",
-        previousMonthStart: "2026-10-01",
-        previousMonthEnd: "2026-10-31",
+      expect(result.categorySpending[0]).toMatchObject({
+        currentMonthTotal: 40,
+        previousMonthTotal: 10,
       });
       expect(mockTransactionAnalytics.getRecurringCharges).toHaveBeenCalledWith(
         userId,
@@ -339,14 +369,23 @@ describe("InsightsAggregatorService", () => {
         doNotFake: [...ALL_BUT_DATE],
       });
       const qb = mockQueryBuilder();
+      qb.getRawMany.mockResolvedValue([
+        {
+          month: "2028-02",
+          categoryId: "c",
+          categoryName: "Dining",
+          currencyCode: "USD",
+          net: "10",
+          txnCount: "1",
+        },
+      ]);
       mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.computeAggregates(userId, "USD");
 
-      expect(params(qb)).toMatchObject({
-        currentMonthStart: "2028-03-01",
-        previousMonthStart: "2028-02-01",
-        previousMonthEnd: "2028-02-29",
+      expect(result.categorySpending[0]).toMatchObject({
+        currentMonthTotal: 0,
+        previousMonthTotal: 10,
       });
       expect(mockTransactionAnalytics.getRecurringCharges).toHaveBeenCalledWith(
         userId,

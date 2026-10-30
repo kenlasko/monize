@@ -138,8 +138,8 @@
     "redonePrefix": "다시 실행됨: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "이 섹션의 도움말을 위해 Monize 위키 열기",
-    "helpTooltip": "이 섹션의 도움말을 위해 Monize 위키 열기"
+    "helpAriaLabel": "이 섹션의 도움말을 위해 Monize 문서 열기",
+    "helpTooltip": "이 섹션의 도움말을 위해 Monize 문서 열기"
   },
   "bootSplash": {
     "loading": "Monize 로드 중",

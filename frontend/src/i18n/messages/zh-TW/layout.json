@@ -138,8 +138,8 @@
     "redonePrefix": "已重做：{description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "開啟 Monize Wiki 以取得此區段的說明",
-    "helpTooltip": "開啟 Monize Wiki 以取得此區段的說明"
+    "helpAriaLabel": "開啟 Monize 說明文件以取得此區段的說明",
+    "helpTooltip": "開啟 Monize 說明文件以取得此區段的說明"
   },
   "bootSplash": {
     "loading": "正在載入 Monize",

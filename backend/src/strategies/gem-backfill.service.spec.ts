@@ -1,9 +1,7 @@
 import { Security } from "../securities/entities/security.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { GemBackfillService } from "./gem-backfill.service";
-import {
-  createScopedDbMocks,
-  ManagerMock,
-} from "../test-helpers/scoped-db-testing";
+import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -24,10 +22,10 @@ const userId = "user-1";
 
 describe("GemBackfillService", () => {
   let service: GemBackfillService;
-  let manager: ManagerMock;
   let securityRepo: Record<string, jest.Mock>;
   let priceService: { loadSeries: jest.Mock };
   let securityPrices: { backfillSecurityRange: jest.Mock };
+  let exchangeRates: { ensureRatesForDate: jest.Mock };
 
   const security = (id: string, overrides: Partial<Security> = {}) =>
     ({
@@ -74,17 +72,21 @@ describe("GemBackfillService", () => {
       find: jest.fn().mockResolvedValue([security("spy")]),
       update: jest.fn().mockResolvedValue(undefined),
     };
-    const mocks = createScopedDbMocks([[Security, securityRepo]]);
-    manager = mocks.manager;
+    const mocks = createScopedDbMocks([
+      [Security, securityRepo],
+      [UserPreference, { findOne: jest.fn().mockResolvedValue(null) }],
+    ]);
     // No prices at all unless a test supplies them.
     priceService = { loadSeries: jest.fn().mockResolvedValue(new Map()) };
     securityPrices = {
       backfillSecurityRange: jest.fn().mockResolvedValue(500),
     };
+    exchangeRates = { ensureRatesForDate: jest.fn().mockResolvedValue(10) };
     service = new GemBackfillService(
       mocks.dataSource as never,
       priceService as never,
       securityPrices as never,
+      exchangeRates as never,
     );
   });
 
@@ -143,6 +145,15 @@ describe("GemBackfillService", () => {
     );
   });
 
+  it("checks coverage on the native series, so a missing FX rate cannot look like missing prices", async () => {
+    // A converted series drops a close with no rate, which made a security
+    // with every price stored read as short and re-fetched on each run.
+    await service.ensureHistory(userId, ["spy"], 12, "MONTHLY");
+    for (const call of priceService.loadSeries.mock.calls) {
+      expect(call[4]).toBeUndefined();
+    }
+  });
+
   it("counts a monthly strategy's history in single months", async () => {
     await service.ensureHistory(userId, ["spy"], 12, "MONTHLY");
     expect(securityPrices.backfillSecurityRange).toHaveBeenCalledWith(
@@ -157,7 +168,9 @@ describe("GemBackfillService", () => {
 
     expect(fetched).toEqual([]);
     expect(securityPrices.backfillSecurityRange).not.toHaveBeenCalled();
-    expect(manager.getRepository).not.toHaveBeenCalled();
+    // The rate check reads the security's currency; nothing is stamped or fetched.
+    expect(securityRepo.update).not.toHaveBeenCalled();
+    expect(exchangeRates.ensureRatesForDate).not.toHaveBeenCalled();
   });
 
   it("fetches for a security priced only since last month", async () => {
@@ -265,5 +278,51 @@ describe("GemBackfillService", () => {
     expect(securityRepo.find).toHaveBeenCalledWith({
       where: { id: expect.anything(), userId },
     });
+  });
+
+  it("fetches the exchange-rate history, not prices, when only the rate is missing", async () => {
+    // Prices cover every boundary in EUR; the USD series (no rates) is empty.
+    securityRepo.find.mockResolvedValue([
+      security("eur-fund", { currencyCode: "EUR" }),
+    ]);
+    priceService.loadSeries.mockImplementation(
+      async (
+        _ids: string[],
+        _from: string,
+        _s: string,
+        _m: unknown,
+        user?: string,
+      ) =>
+        user
+          ? new Map()
+          : new Map([["eur-fund", weekly("2018-01-01", "2025-08-14")]]),
+    );
+
+    const fetched = await service.ensureHistory(
+      userId,
+      ["eur-fund"],
+      12,
+      "MONTHLY",
+    );
+
+    expect(fetched).toEqual([]);
+    expect(securityPrices.backfillSecurityRange).not.toHaveBeenCalled();
+    expect(exchangeRates.ensureRatesForDate).toHaveBeenCalledWith(
+      [{ from: "EUR", to: "USD" }],
+      "2025-08-14",
+    );
+  });
+
+  it("asks for no rates when the converted series covers every boundary", async () => {
+    securityRepo.find.mockResolvedValue([
+      security("eur-fund", { currencyCode: "EUR" }),
+    ]);
+    priceService.loadSeries.mockResolvedValue(
+      new Map([["eur-fund", weekly("2018-01-01", "2025-08-14")]]),
+    );
+
+    await service.ensureHistory(userId, ["eur-fund"], 12, "MONTHLY");
+
+    expect(exchangeRates.ensureRatesForDate).not.toHaveBeenCalled();
   });
 });

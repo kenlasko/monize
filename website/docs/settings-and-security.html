@@ -1,0 +1,499 @@
+<!doctype html>
+<!-- Generated from website/docs/settings-and-security.md by frontend/scripts/build-website-docs.mjs. Edit the Markdown, then run "npm run docs:build" in frontend/. -->
+<html lang="en" data-theme="dark" class="docs-root"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="preload" as="image" href="/assets/img/monize-logo.svg"/><title>Settings and Security - Monize documentation</title><meta name="description" content="Preferences, two-factor authentication, notifications and instance administration."/><meta name="theme-color" content="#4fa091"/><link rel="canonical" href="https://monize.net/docs/settings-and-security"/><link rel="icon" type="image/svg+xml" href="/assets/img/monize-logo.svg"/><meta property="og:type" content="article"/><meta property="og:site_name" content="Monize"/><meta property="og:title" content="Settings and Security - Monize documentation"/><meta property="og:description" content="Preferences, two-factor authentication, notifications and instance administration."/><meta property="og:url" content="https://monize.net/docs/settings-and-security"/><link rel="stylesheet" href="/assets/css/styles.css"/><link rel="stylesheet" href="/assets/css/docs.css"/><script src="/assets/js/theme-boot.js"></script></head><body class="docs"><a class="skip" href="#content">Skip to content</a><header id="hdr" class="dhdr"><button id="sideBtn" class="icobtn dside-btn" type="button" aria-label="Open the page list" aria-controls="side" aria-expanded="false">☰</button><a class="brand" href="/"><img class="logo" src="/assets/img/monize-logo.svg" alt="" width="30" height="30"/><span>Monize</span></a><a class="dlabel" href="/docs/">Docs</a><button class="dsearch" type="button" data-search-open="" aria-haspopup="dialog" aria-label="Search the documentation"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><span>Search docs</span><kbd>/</kbd></button><nav class="dnav" aria-label="Site"><a href="/">Home</a><a href="https://demo.monize.net" rel="noopener">Live demo</a><a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></nav><button id="theme" class="icobtn" type="button" title="Toggle light / dark" aria-label="Toggle colour theme">☾</button></header><div class="dshade" id="shade" hidden=""></div><div class="dlayout"><aside class="dside" id="side"><nav aria-label="Documentation"><a class="dhome" href="/docs/">Overview</a><div class="dgroup"><p class="dgroup-t">Getting started</p><ul><li><a href="/docs/getting-started">Getting Started</a></li><li><a href="/docs/importing-transactions">Importing Transactions</a></li><li><a href="/docs/importing-from-quicken">Importing from Quicken</a></li><li><a href="/docs/importing-from-microsoft-money">Importing from Microsoft Money</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Core features</p><ul><li><a href="/docs/dashboard">Dashboard</a></li><li><a href="/docs/accounts">Accounts</a></li><li><a href="/docs/transactions">Transactions</a></li><li><a href="/docs/budgets">Budgets</a></li><li><a href="/docs/investments">Investments</a></li><li><a href="/docs/bills-and-deposits">Bills and Deposits</a></li><li><a href="/docs/email-receipts">Email Receipts</a></li><li><a href="/docs/warranties">Warranties</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Organizing and reporting</p><ul><li><a href="/docs/categories-and-payees">Categories and Payees</a></li><li><a href="/docs/tags">Tags</a></li><li><a href="/docs/reports">Reports</a></li><li><a href="/docs/currency-management">Currency Management</a></li></ul></div><div class="dgroup"><p class="dgroup-t">AI</p><ul><li><a href="/docs/ai">AI</a></li></ul></div><div class="dgroup"><p class="dgroup-t">Administration</p><ul><li><a href="/docs/settings-and-security" aria-current="page">Settings and Security</a></li><li><a href="/docs/shared-access">Shared Access (Delegated Users)</a></li><li><a href="/docs/emergency-access">Emergency Access</a></li><li><a href="/docs/backup-and-restore">Backup and Restore</a></li></ul></div></nav></aside><main id="content" class="dmain" tabindex="-1"><nav class="crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">/</span><span>Administration</span></nav><article class="doc"><h1>Settings and Security</h1><details class="toc-m"><summary>On this page</summary><ul><li class="d2"><a href="#user-settings">User Settings</a></li><li class="d3"><a href="#settings-sections">Settings Sections</a></li><li class="d3"><a href="#preferences">Preferences</a></li><li class="d3"><a href="#language">Language</a></li><li class="d3"><a href="#theme-and-colour-theme">Theme and Colour Theme</a></li><li class="d3"><a href="#preferred-exchanges">Preferred Exchanges</a></li><li class="d2"><a href="#notifications">Notifications</a></li><li class="d3"><a href="#email-notifications">Email Notifications</a></li><li class="d3"><a href="#browser-push">Browser Push</a></li><li class="d3"><a href="#unifiedpush">UnifiedPush</a></li><li class="d3"><a href="#notification-diagnostics">Notification Diagnostics</a></li><li class="d3"><a href="#how-to-notify-me">How to Notify Me</a></li><li class="d3"><a href="#investment-value-movement">Investment Value Movement</a></li><li class="d2"><a href="#payee-lookup">Payee Lookup</a></li><li class="d3"><a href="#automatic-payee-contact-lookup">Automatic Payee Contact Lookup</a></li><li class="d3"><a href="#setting-up-google-places">Setting up Google Places</a></li><li class="d3"><a href="#server-wide-google-places-key">Server-Wide Google Places Key</a></li><li class="d2"><a href="#remember-me">Remember Me</a></li><li class="d3"><a href="#how-it-works-2">How It Works</a></li><li class="d3"><a href="#configuration">Configuration</a></li><li class="d3"><a href="#2fa-integration">2FA Integration</a></li><li class="d2"><a href="#two-factor-authentication-2fa">Two-Factor Authentication (2FA)</a></li><li class="d3"><a href="#setting-up-2fa">Setting Up 2FA</a></li><li class="d3"><a href="#logging-in-with-2fa">Logging in with 2FA</a></li><li class="d3"><a href="#backup-codes">Backup Codes</a></li><li class="d3"><a href="#disabling-2fa">Disabling 2FA</a></li><li class="d3"><a href="#required-2fa">Required 2FA</a></li><li class="d2"><a href="#trusted-devices">Trusted Devices</a></li><li class="d3"><a href="#managing-trusted-devices">Managing Trusted Devices</a></li><li class="d2"><a href="#password-management">Password Management</a></li><li class="d3"><a href="#changing-your-password">Changing Your Password</a></li><li class="d3"><a href="#password-breach-checking">Password Breach Checking</a></li><li class="d3"><a href="#forgot-password">Forgot Password</a></li><li class="d2"><a href="#account-lockout">Account Lockout</a></li><li class="d3"><a href="#how-it-works-3">How It Works</a></li><li class="d2"><a href="#single-sign-on-oidc">Single Sign-On (OIDC)</a></li><li class="d3"><a href="#supported-providers">Supported Providers</a></li><li class="d3"><a href="#configuration-1">Configuration</a></li><li class="d2"><a href="#personal-access-tokens-pats">Personal Access Tokens (PATs)</a></li><li class="d3"><a href="#token-scopes">Token Scopes</a></li><li class="d3"><a href="#creating-a-token">Creating a Token</a></li><li class="d3"><a href="#token-lifecycle">Token Lifecycle</a></li><li class="d2"><a href="#guided-tours">Guided Tours</a></li><li class="d2"><a href="#help-and-support">Help and Support</a></li><li class="d3"><a href="#support-backup">Support Backup</a></li><li class="d2"><a href="#about">About</a></li><li class="d2"><a href="#backend-connectivity">Backend Connectivity</a></li><li class="d3"><a href="#how-it-works-4">How It Works</a></li><li class="d2"><a href="#security-architecture">Security Architecture</a></li><li class="d3"><a href="#authentication">Authentication</a></li><li class="d3"><a href="#data-protection">Data Protection</a></li><li class="d3"><a href="#http-security-headers">HTTP Security Headers</a></li><li class="d3"><a href="#encryption-key">Encryption Key</a></li><li class="d2"><a href="#shared-access-delegated-users">Shared Access (Delegated Users)</a></li><li class="d2"><a href="#emergency-access">Emergency Access</a></li><li class="d2"><a href="#backup-and-restore">Backup and Restore</a></li><li class="d2"><a href="#danger-zone">Danger Zone</a></li><li class="d3"><a href="#delete-data">Delete Data</a></li><li class="d3"><a href="#delete-account">Delete Account</a></li><li class="d2"><a href="#admin-features">Admin Features</a></li><li class="d3"><a href="#user-management">User Management</a></li><li class="d3"><a href="#adding-users">Adding Users</a></li><li class="d3"><a href="#instance-notification-settings">Instance Notification Settings</a></li><li class="d3"><a href="#automatic-backups">Automatic Backups</a></li></ul></details><p>Monize provides comprehensive security features and configurable user preferences.</p>
+<h2 id="user-settings">User Settings<a class="hlink" href="#user-settings" aria-label="Link to this section">#</a></h2>
+<p>Navigate to <strong>Settings</strong> (gear icon in the top-right corner) to configure your preferences. The Settings page uses a sidebar navigation on desktop (or tabs on mobile) to organize sections, making it easy to jump directly to the area you need.</p>
+<figure><img src="/docs/images/settings-overview.png" alt="Settings Page" width="1600" height="1000" loading="lazy" decoding="async"/><figcaption>Settings Page</figcaption></figure>
+<h3 id="settings-sections">Settings Sections<a class="hlink" href="#settings-sections" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Section</th><th>What it covers</th></tr></thead><tbody><tr><td><strong>Profile</strong></td><td>Your name and email address</td></tr><tr><td><strong>Preferences</strong></td><td>Language, appearance, dates and numbers, investments, transactions, application behaviour (see below)</td></tr><tr><td><strong>Notifications</strong></td><td>Email, browser push, per-notification delivery and cooldown (see <a href="#notifications">Notifications</a>)</td></tr><tr><td><strong>Security</strong></td><td>Password, two-factor authentication, backup codes, trusted devices</td></tr><tr><td><strong>Shared Access</strong></td><td>Delegated users (see <a href="/docs/shared-access">Shared Access</a>)</td></tr><tr><td><strong>Emergency Access</strong></td><td>Dead-man&#x27;s switch for trusted contacts (see <a href="/docs/emergency-access">Emergency Access</a>)</td></tr><tr><td><strong>API Access</strong></td><td>Personal access tokens and the MCP server URL (see <a href="#personal-access-tokens-pats">Personal Access Tokens</a>)</td></tr><tr><td><strong>AI Settings</strong></td><td>AI providers, budgets and usage (see <a href="/docs/ai">AI</a>)</td></tr><tr><td><strong>Payee Lookup</strong></td><td>Where a payee&#x27;s contact details come from (see <a href="#payee-lookup">Payee Lookup</a>)</td></tr><tr><td><strong>Email Receipts</strong></td><td>A mailbox for order confirmations and the profiles that read them (see <a href="/docs/email-receipts">Email Receipts</a>)</td></tr><tr><td><strong>Backup &amp; Restore</strong></td><td>Your own manual export and restore (see <a href="/docs/backup-and-restore">Backup and Restore</a>). Scheduled backups are configured by an administrator on <a href="#automatic-backups-admin">Admin &gt; Backups</a></td></tr><tr><td><strong>Help &amp; Support</strong></td><td>Documentation links and the support backup (see <a href="#help-and-support">Help and Support</a>)</td></tr><tr><td><strong>Guided Tours</strong></td><td>Every walkthrough Monize offers (see <a href="#guided-tours">Guided Tours</a>)</td></tr><tr><td><strong>About</strong></td><td>Version, update status, release notes, licence (see <a href="#about">About</a>)</td></tr><tr><td><strong>Danger Zone</strong></td><td>Delete data or delete your account</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Delegates:</strong> While you are acting as a delegate for someone else, the Settings page shows only the <strong>Security</strong> section, which manages <em>your own</em> password and 2FA. Every other section would reflect or alter the account owner&#x27;s settings, so it is hidden. See <a href="/docs/shared-access">Shared Access</a>.</p>
+</blockquote>
+<h3 id="preferences">Preferences<a class="hlink" href="#preferences" aria-label="Link to this section">#</a></h3>
+<p>Preferences are grouped into six blocks. <strong>They save as you change them</strong> -- there is no Save button; each change is written immediately and confirmed with a toast.</p>
+<h4 id="language--region">Language &amp; Region<a class="hlink" href="#language--region" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Description</th></tr></thead><tbody><tr><td><strong>Language</strong></td><td>The display language for the Monize interface (see <a href="#language">Language</a>)</td></tr><tr><td><strong>Default Currency</strong></td><td>Primary currency for reporting and dashboard totals</td></tr></tbody></table></div>
+<h4 id="appearance">Appearance<a class="hlink" href="#appearance" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Description</th></tr></thead><tbody><tr><td><strong>Theme</strong></td><td>System (follow device setting), Light, or Dark</td></tr><tr><td><strong>Colour theme</strong></td><td>The palette used within your light/dark mode (see <a href="#theme-and-colour-theme">Theme and Colour Theme</a>)</td></tr></tbody></table></div>
+<h4 id="dates--numbers">Dates &amp; Numbers<a class="hlink" href="#dates--numbers" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Description</th></tr></thead><tbody><tr><td><strong>Date Format</strong></td><td>How dates are displayed throughout the application</td></tr><tr><td><strong>Number Format</strong></td><td>Decimal and thousands separator preferences, or auto-detect from the browser locale</td></tr><tr><td><strong>Timezone</strong></td><td>Preferred timezone, used for backups and for dating downloaded files</td></tr><tr><td><strong>Week starts on</strong></td><td>First day of the week for calendars and weekly views</td></tr><tr><td><strong>Show Create Date in transaction forms</strong></td><td>Displays the date and time a transaction was originally created. This is separate from the transaction date and helps you tell when an entry was actually added to Monize.</td></tr><tr><td><strong>Time Format</strong></td><td>24-hour (14:30) or 12-hour (2:30 PM)</td></tr></tbody></table></div>
+<h4 id="investments">Investments<a class="hlink" href="#investments" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Description</th></tr></thead><tbody><tr><td><strong>Default Stock Quote Provider</strong></td><td>Yahoo Finance or MSN Money, used when a security has no provider override. If the chosen provider fails, Monize automatically tries the other. MSN does not provide intraday data, so the 1D / 1W / 1M ranges on the Portfolio Value Over Time chart are unavailable for MSN-tracked holdings, and MSN requires <code>MSN_API_KEY</code> to be configured on the server.</td></tr><tr><td><strong>Preferred Exchanges</strong></td><td>Up to 3 stock exchanges in priority order for security lookups (see <a href="#preferred-exchanges">below</a>)</td></tr></tbody></table></div>
+<h4 id="transactions">Transactions<a class="hlink" href="#transactions" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Description</th></tr></thead><tbody><tr><td><strong>Recent transactions in quick-fill</strong></td><td>Number of entries shown in the history button popover next to the Payee field on transaction forms (3, 5, 10, 15, or 20; default 5). See <a href="/docs/transactions#quick-fill-from-recent-transactions">Quick Fill from Recent Transactions</a>.</td></tr><tr><td><strong>Lock reconciled transactions</strong></td><td>While off, Monize warns you before an edit that would change a reconciled transaction&#x27;s date or amount, then lets it through. While on, reconciled transactions cannot be edited, deleted or unreconciled at all -- turn it off again to make a correction.</td></tr></tbody></table></div>
+<h4 id="application">Application<a class="hlink" href="#application" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Description</th></tr></thead><tbody><tr><td><strong>Map provider for addresses</strong></td><td>Which map service opens when you click an address in a desktop browser: Automatic (OpenStreetMap), Apple Maps, Bing Maps, Google Maps, OpenStreetMap, or Waze. Phones and tablets always open their own map app whatever you choose here.</td></tr><tr><td><strong>Show What&#x27;s New after an upgrade</strong></td><td>Shows a summary of the release notes the first time you sign in after Monize updates to a new version. You can always reopen it from the version number at the bottom of the Settings page or on the login screen.</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Email notifications moved.</strong> The email on/off switch, the weekly budget digest and the per-notification delivery matrix now live in their own <a href="#notifications">Notifications</a> section rather than under Preferences.</p>
+</blockquote>
+<h3 id="language">Language<a class="hlink" href="#language" aria-label="Link to this section">#</a></h3>
+<p>Monize is built for multiple languages. Choose your preferred display language from the <strong>Language</strong> picker under <strong>Language &amp; Region</strong>, and the interface -- menus, labels, buttons, messages, and email notifications -- is shown in that language.</p>
+<h4 id="how-it-works">How It Works<a class="hlink" href="#how-it-works" aria-label="Link to this section">#</a></h4>
+<ul>
+<li><strong>Pick once, applied everywhere</strong> -- Your language is saved to your account preferences, so it follows you across devices and browser sessions when you sign in.</li>
+<li><strong>Automatic detection</strong> -- Before you set a preference, Monize detects a suitable language from your browser&#x27;s settings. If your browser&#x27;s language is not available, it falls back to the default language.</li>
+<li><strong>Locale-aware formatting</strong> -- Your language drives how dates, numbers, currency amounts, and percentages are formatted throughout the app, so they read naturally for your region. (Date and number formats can also be overridden independently -- see <strong>Date Format</strong> and <strong>Number Format</strong> above.)</li>
+<li><strong>Right-to-left support</strong> -- The layout adapts automatically for right-to-left languages.</li>
+<li><strong>Email notifications</strong> -- All transactional emails -- password reset, email verification, delegation invites, admin notifications, and bill reminders -- are sent in the recipient&#x27;s stored language.</li>
+</ul>
+<h4 id="notes">Notes<a class="hlink" href="#notes" aria-label="Link to this section">#</a></h4>
+<ul>
+<li>AI assistant responses, insights, and forecasts are written in your chosen language; data values (account/category/payee names, currencies, numbers) are left as-is.</li>
+<li>The set of available languages grows over time. Whichever languages are installed appear in the <strong>Language</strong> picker; if a particular language is not yet listed, the interface falls back to the default language.</li>
+</ul>
+<h3 id="theme-and-colour-theme">Theme and Colour Theme<a class="hlink" href="#theme-and-colour-theme" aria-label="Link to this section">#</a></h3>
+<p>Appearance is two independent settings.</p>
+<p><strong>Theme</strong> decides light or dark: <strong>System</strong> follows your device setting and switches with it, or you can pin <strong>Light</strong> or <strong>Dark</strong>.</p>
+<p><strong>Colour theme</strong> decides the palette used <em>within</em> that light or dark mode. The picker shows a swatch preview of each palette rendered in your current mode rather than only naming it.</p>
+<div class="table-wrap"><table><thead><tr><th>Palette</th><th></th></tr></thead><tbody><tr><td><strong>Default</strong></td><td>Monize&#x27;s standard palette</td></tr><tr><td><strong>Latte</strong>, <strong>Burgundy</strong>, <strong>Forest</strong>, <strong>Nord</strong>, <strong>Midnight</strong></td><td>Warm and cool alternatives</td></tr><tr><td><strong>MS Money</strong>, <strong>Newspaper</strong></td><td>Familiar looks for people arriving from Microsoft Money, and a high-legibility print-like palette</td></tr><tr><td><strong>Solarized</strong>, <strong>Gruvbox</strong>, <strong>Dracula</strong>, <strong>Tokyo Night</strong>, <strong>Rose Pine</strong></td><td>Well-known developer palettes</td></tr><tr><td><strong>High contrast</strong></td><td>Maximum separation between foreground and background for low-vision use</td></tr><tr><td><strong>Colour-blind safe</strong></td><td>Tinted so that the red/green pairs Monize uses for gains and losses remain distinguishable</td></tr></tbody></table></div>
+<h3 id="preferred-exchanges">Preferred Exchanges<a class="hlink" href="#preferred-exchanges" aria-label="Link to this section">#</a></h3>
+<p>When you look up a security by name or symbol, Yahoo Finance may return results from multiple exchanges around the world. The <strong>Preferred Exchanges</strong> setting lets you specify up to 3 exchanges in priority order so that results from your preferred exchanges are ranked first.</p>
+<p>For example, if you primarily invest on the London Stock Exchange and the Toronto Stock Exchange, setting your preferred exchanges to <strong>LSE</strong> and <strong>TSX</strong> ensures that when you search for a security, matches from those exchanges appear before results from NYSE or other exchanges.</p>
+<h4 id="how-it-works-1">How It Works<a class="hlink" href="#how-it-works-1" aria-label="Link to this section">#</a></h4>
+<ul>
+<li>Select up to 3 exchanges using the <strong>Priority 1</strong>, <strong>Priority 2</strong>, and <strong>Priority 3</strong> dropdowns</li>
+<li>Priority 1 has the highest preference, followed by Priority 2 and Priority 3</li>
+<li>Results from preferred exchanges are boosted above all other results</li>
+<li>An exact symbol match on a preferred exchange always wins</li>
+<li>If no preferred exchanges are set, Monize uses its default exchange ranking (major US exchanges first)</li>
+</ul>
+<h4 id="where-it-applies">Where It Applies<a class="hlink" href="#where-it-applies" aria-label="Link to this section">#</a></h4>
+<p>Preferred exchanges are used whenever Monize looks up a security from Yahoo Finance:</p>
+<ul>
+<li><strong>Securities page</strong> -- When adding or editing a security and using the Lookup button</li>
+<li><strong>Import wizard</strong> -- When mapping securities during a QIF, OFX, or CSV import (both individual lookups and the &quot;Lookup All&quot; bulk operation)</li>
+<li><strong>Security creation</strong> -- When creating a new security from the import mapping screen</li>
+</ul>
+<h4 id="example">Example<a class="hlink" href="#example" aria-label="Link to this section">#</a></h4>
+<p>Without preferred exchanges, searching for &quot;Barclays&quot; might return <code>BCS</code> (NYSE) as the top result. With <strong>LSE</strong> set as Priority 1, the search returns <code>BARC.L</code> (London Stock Exchange) instead.</p>
+<h2 id="notifications">Notifications<a class="hlink" href="#notifications" aria-label="Link to this section">#</a></h2>
+<p>The <strong>Notifications</strong> section decides what Monize tells you about and how it reaches you. It has five parts: email, browser push devices, the per-notification delivery matrix, the investment movement alert, and a diagnostics report for when push is not working.</p>
+<h3 id="email-notifications">Email Notifications<a class="hlink" href="#email-notifications" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Description</th></tr></thead><tbody><tr><td><strong>Email Notifications</strong></td><td>The master switch for email. With it off, nothing is sent by email regardless of the matrix below.</td></tr><tr><td><strong>Weekly Budget Digest</strong></td><td>A weekly summary of budget alerts and status</td></tr><tr><td><strong>Digest day</strong></td><td>Monday or Friday</td></tr><tr><td><strong>Send Test Email</strong></td><td>Sends a test message to your account&#x27;s email address so you can confirm delivery works</td></tr></tbody></table></div>
+<p>Critical budget alerts (over budget, income shortfall) are sent immediately regardless of the digest settings.</p>
+<blockquote>
+<p>Email is only available when an administrator has configured SMTP on the server. Without it the section reads <em>&quot;Email notifications are not available. SMTP has not been configured by the administrator.&quot;</em></p>
+</blockquote>
+<h3 id="browser-push">Browser Push<a class="hlink" href="#browser-push" aria-label="Link to this section">#</a></h3>
+<p>Monize can deliver notifications to a phone or desktop even when the app is closed, using Web Push. No Firebase, Google Play or Apple Developer account is involved -- the instance generates and holds its own key pair.</p>
+<h4 id="registering-a-device">Registering a Device<a class="hlink" href="#registering-a-device" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Navigate to <strong>Settings &gt; Notifications &gt; Browser push</strong></li>
+<li>Click <strong>Enable on this device</strong>. Your browser asks for permission to show notifications; nothing is sent until you allow it.</li>
+<li>Click <strong>Send test notification</strong> to confirm delivery</li>
+</ol>
+<p>Each registered device is listed with the transport that delivers it (Web push or UnifiedPush), the address it registered from, when it was registered, when it was last active, its browser, and its last delivery. <strong>Remove</strong> revokes a device immediately.</p>
+<h4 id="platform-notes">Platform Notes<a class="hlink" href="#platform-notes" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Platform</th><th>What to know</th></tr></thead><tbody><tr><td><strong>iPhone / iPad</strong></td><td>Push works only once Monize is installed to the Home Screen. Use <strong>Share &gt; Add to Home Screen</strong> and open Monize from there. If no permission prompt appears, allow notifications in iOS <strong>Settings &gt; Notifications &gt; Monize</strong>.</td></tr><tr><td><strong>Android</strong></td><td>A granted browser permission is not always enough -- the system can still hide notifications. Press and hold the Monize icon on your home screen, tap <strong>App info</strong>, then <strong>Notifications</strong>, and make sure they are turned on.</td></tr><tr><td><strong>Brave</strong></td><td>Brave blocks the push service by default. Open Brave <strong>Settings &gt; Privacy and security</strong>, turn on <em>&quot;Use Google services for push messaging&quot;</em>, restart the browser and try again.</td></tr><tr><td><strong>Blocked in the browser</strong></td><td>If notifications are blocked for Monize, allow them in the browser&#x27;s site settings and reload the page.</td></tr></tbody></table></div>
+<h4 id="retired-devices">Retired Devices<a class="hlink" href="#retired-devices" aria-label="Link to this section">#</a></h4>
+<p>A device can stop being reachable on its own. Monize says which of the three happened, and the repair is the same in each case -- turn push on again in that browser:</p>
+<div class="table-wrap"><table><thead><tr><th>Reason</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>No longer reachable</strong></td><td>The browser&#x27;s push service dropped the subscription</td></tr><tr><td><strong>Retired when this instance rotated its push key pair</strong></td><td>An administrator rotated the instance key pair (see <a href="#instance-notification-settings">Instance Notification Settings</a>)</td></tr><tr><td><strong>Retired after repeated delivery failures</strong></td><td>Deliveries kept failing, so the registration was retired</td></tr></tbody></table></div>
+<blockquote>
+<p>Browser push has to be switched on for the whole instance by an administrator before any of this is available, and the server needs <code>ENCRYPTION_KEY</code> set so it can store its push key pair.</p>
+</blockquote>
+<h3 id="unifiedpush">UnifiedPush<a class="hlink" href="#unifiedpush" aria-label="Link to this section">#</a></h3>
+<p>The same encrypted push can be delivered to a self-hosted UnifiedPush distributor -- <strong>ntfy</strong>, <strong>NextPush</strong> and similar -- instead of Google&#x27;s or Apple&#x27;s infrastructure. It shares the instance&#x27;s push key pair and its on/off switch.</p>
+<p>To use it, register an endpoint in your UnifiedPush distributor app, then turn on the <strong>UnifiedPush</strong> column for the notification categories you want in the matrix below. Devices delivered this way are labelled <strong>UnifiedPush</strong> in the device list.</p>
+<h3 id="notification-diagnostics">Notification Diagnostics<a class="hlink" href="#notification-diagnostics" aria-label="Link to this section">#</a></h3>
+<p>Under <strong>Notification diagnostics</strong> Monize shows what your browser and device report about notification support -- permission state, service worker registration, transport, and platform quirks. <strong>Refresh</strong> re-reads it after you change a setting, and <strong>Copy report</strong> puts the whole thing on the clipboard to paste into a bug report.</p>
+<h3 id="how-to-notify-me">How to Notify Me<a class="hlink" href="#how-to-notify-me" aria-label="Link to this section">#</a></h3>
+<p>The preference matrix chooses which channel carries each kind of notification, and how often it may interrupt you.</p>
+<p><strong>Categories (rows)</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Category</th><th>What it covers</th></tr></thead><tbody><tr><td><strong>Bills and scheduled</strong></td><td>Upcoming and overdue bills, scheduled transactions</td></tr><tr><td><strong>Budgets</strong></td><td>Budget alerts and digests</td></tr><tr><td><strong>System alerts</strong></td><td>Infrastructure problems (backup failures, provider outages, SMTP). <strong>Push channels only</strong> -- its email side is a severity-driven administrator fan-out, not a personal setting.</td></tr><tr><td><strong>Account balances</strong></td><td>Balance thresholds and watched accounts</td></tr><tr><td><strong>Investment value</strong></td><td>Portfolio movement (see below)</td></tr><tr><td><strong>Strategy signals</strong></td><td>Signals from investment strategies</td></tr></tbody></table></div>
+<p><strong>Channels (columns)</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Channel</th><th>Behaviour</th></tr></thead><tbody><tr><td><strong>Email (report)</strong></td><td>The batched/digest email. Live and never suppressed by the cooldown.</td></tr><tr><td><strong>Email (alert)</strong></td><td>An immediate email, one per event</td></tr><tr><td><strong>Push</strong></td><td>Browser push to your registered devices</td></tr><tr><td><strong>UnifiedPush</strong></td><td>Push to your own UnifiedPush distributor</td></tr></tbody></table></div>
+<p>A cell whose channel does not apply to that category renders as <em>not applicable</em> rather than as a dead toggle. A channel that cannot deliver says why: <em>&quot;Turn on email notifications above to send these by email&quot;</em>, or <em>&quot;No device is registered for push, so this channel cannot deliver.&quot;</em></p>
+<p><strong>Cooldown</strong></p>
+<p>Each category carries its own cooldown: <strong>Off</strong>, 5 minutes, 15 minutes, 30 minutes, 1 hour, 6 hours, or 24 hours. Within the window, a second alert or push from the same group is skipped. It gates the two interrupting channels (alert email and push) and never the report email.</p>
+<p>Every cell and cooldown saves as you change it.</p>
+<h3 id="investment-value-movement">Investment Value Movement<a class="hlink" href="#investment-value-movement" aria-label="Link to this section">#</a></h3>
+<p><strong>Investment value movement</strong> sends one notification a day when your investment accounts move beyond a threshold you set. The movement is measured from market changes and dividends only -- deposits and withdrawals are excluded, so moving money in does not read as a gain. Set the threshold under <strong>Notify when the daily move is at least</strong>; it saves as you change it.</p>
+<h2 id="payee-lookup">Payee Lookup<a class="hlink" href="#payee-lookup" aria-label="Link to this section">#</a></h2>
+<p>Monize can fill in a payee&#x27;s <strong>website, address, email and phone number</strong> for you. The <strong>Payee Lookup</strong> section decides where those details come from and whether the lookup runs by itself.</p>
+<p>Two sources can answer:</p>
+<div class="table-wrap"><table><thead><tr><th>Source</th><th>What it gives you</th></tr></thead><tbody><tr><td><strong>Google Places</strong></td><td>Directory facts, cheaper per lookup. Google holds no email address.</td></tr><tr><td><strong>Existing AI Provider</strong></td><td>Can find an email address, and costs a model call for every lookup. Uses a provider you configured under <a href="/docs/ai">AI Settings</a>.</td></tr></tbody></table></div>
+<p>Each source has its own on/off switch on its title line, so you can leave a provider configured for the assistant while switching it off for payee lookups. When both sources can answer, use the arrows (or drag) to choose <strong>which source answers first</strong>; if the first source cannot answer -- its monthly limit is spent, or it found nothing -- the next one is tried. With more than one active AI provider you can also pin <strong>which</strong> provider answers a lookup, or leave it on <em>&quot;Any provider, in priority order.&quot;</em></p>
+<h3 id="automatic-payee-contact-lookup">Automatic Payee Contact Lookup<a class="hlink" href="#automatic-payee-contact-lookup" aria-label="Link to this section">#</a></h3>
+<p>Below the sources, <strong>Enable automatic payee contact lookup</strong> looks a new payee up as you create it, instead of waiting for you to ask. The payee&#x27;s name is sent, along with any notes, website, address, email and phone it already has, so the lookup can tell the right business and the right location apart -- &quot;Starbucks 483 Bay St Toronto&quot; resolves a branch where &quot;Starbucks&quot; alone resolves whichever one ranks first.</p>
+<p>With every source switched off the toggle is shown off and disabled: nothing could answer, so it does not claim a behaviour that cannot happen.</p>
+<h3 id="setting-up-google-places">Setting up Google Places<a class="hlink" href="#setting-up-google-places" aria-label="Link to this section">#</a></h3>
+<p>Google Places answers a payee lookup from Google&#x27;s business directory. You supply an API key from your own Google Cloud project; Monize sends the payee&#x27;s name (and the address you already have) and stores nothing with Google.</p>
+<h4 id="1-create-the-key-in-google-cloud">1. Create the key in Google Cloud<a class="hlink" href="#1-create-the-key-in-google-cloud" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Sign in to the <a href="https://console.cloud.google.com/" rel="noopener" class="ext">Google Cloud console</a> and create or select a project. Google requires a <strong>billing account</strong> on the project even to use the free monthly allowance.</li>
+<li>Enable <strong>Places API (New)</strong> for the project. This is <em>not</em> the legacy &quot;Places API&quot; -- Monize calls the new <code>places:searchText</code> endpoint, and a project with only the legacy API enabled returns no results.</li>
+<li>Go to <strong>APIs &amp; Services &gt; Credentials &gt; Create credentials &gt; API key</strong> and copy the key.</li>
+</ol>
+<h4 id="2-restrict-the-key----by-ip-not-by-referrer">2. Restrict the key -- by IP, not by referrer<a class="hlink" href="#2-restrict-the-key----by-ip-not-by-referrer" aria-label="Link to this section">#</a></h4>
+<p>This is the step that is easiest to get wrong. <strong>Monize calls Google from the server, not from your browser.</strong></p>
+<ul>
+<li><strong>Application restriction: IP addresses.</strong> List your deployment&#x27;s outbound (egress) IP addresses. This is the restriction that actually constrains a server-side key.</li>
+<li><strong>API restriction:</strong> limit the key to <strong>Places API (New)</strong>.</li>
+</ul>
+<p>An <strong>HTTP referrer restriction is the wrong choice here.</strong> A referrer restriction only protects a key that is <em>public</em> -- shipped inside browser JavaScript, where the browser sets the <code>Referer</code> header and page script cannot forge it. This key lives encrypted in Monize&#x27;s database and never reaches a browser, so anything holding it can send any referrer it likes; the restriction filters nobody.</p>
+<p>If your deployment has <strong>no stable egress IP</strong> (a home server on a dynamic address, a cluster with variable egress), a referrer restriction is still workable as a weak filter: Monize sends the origin of <code>PUBLIC_APP_URL</code> as the <code>Referer</code> header, so add exactly that origin to the allowed referrers. Note that a pattern like <code>*.example.com/*</code> does <strong>not</strong> match a bare <code>example.com</code>.</p>
+<blockquote>
+<p>Google reports a referrer mismatch as <code>Requests from referer &lt;empty&gt; are blocked</code>. If the Test button returns that, the allowed referrer does not match the origin Monize sends.</p>
+</blockquote>
+<h4 id="3-enter-the-key-in-monize">3. Enter the key in Monize<a class="hlink" href="#3-enter-the-key-in-monize" aria-label="Link to this section">#</a></h4>
+<ol>
+<li>Navigate to <strong>Settings &gt; Payee Lookup</strong></li>
+<li>On the <strong>Google Places</strong> row, click <strong>Set up</strong></li>
+<li>Paste the key into <strong>API key</strong></li>
+<li>Click <strong>Test</strong>. Monize runs a real search (for &quot;coffee shop&quot;) against Google with that key and reports <em>&quot;Google accepted the key&quot;</em> or the error Google returned. A refused test costs nothing against your monthly limit.</li>
+<li>Click <strong>Save</strong>, then turn on <strong>Use Google Places for payee lookups</strong></li>
+</ol>
+<p>Once saved, the key is never shown again -- the field displays a mask, and leaving it blank when you edit keeps the stored key. <strong>Remove key</strong> deletes it.</p>
+<h4 id="4-set-the-monthly-limit">4. Set the monthly limit<a class="hlink" href="#4-set-the-monthly-limit" aria-label="Link to this section">#</a></h4>
+<p><strong>Limit requests each month</strong> is on by default with a limit of <strong>1,000</strong>.</p>
+<p>That number is deliberate. A payee lookup asks Google for <code>websiteUri</code> and <code>internationalPhoneNumber</code>, which puts every call in Google&#x27;s <strong>Text Search Enterprise SKU</strong>, whose free allowance is <strong>1,000 requests per calendar month</strong>. The widely quoted 10,000 belongs to the Essentials SKU, which returns neither a website nor a phone number and so cannot answer this lookup at all.</p>
+<ul>
+<li>The count resets on Google&#x27;s calendar month -- the first of the month, midnight <strong>US Pacific</strong> time -- so Monize&#x27;s counter and Google&#x27;s allowance roll over together</li>
+<li>Your usage is shown on the Google Places row as <em>&quot;Used this month: N of 1000&quot;</em></li>
+<li>Once the limit is spent, lookups <strong>fall back to your AI provider</strong> if you have one switched on; with no fallback, lookups are unavailable until the month rolls over</li>
+<li>You can raise the limit (1 to 1,000,000) or switch it off entirely, but past the free allowance Google bills you</li>
+</ul>
+<h4 id="troubleshooting">Troubleshooting<a class="hlink" href="#troubleshooting" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Message</th><th>What it means</th></tr></thead><tbody><tr><td><em>&quot;The stored API key cannot be read by this server.&quot;</em></td><td>The key is stored but cannot be decrypted -- typically after a backup is restored onto a different instance, or after <code>ENCRYPTION_KEY</code> changed. Enter the key again to fix it.</td></tr><tr><td><em>&quot;This server has no encryption key configured, so an API key cannot be stored securely.&quot;</em></td><td>The deployment has no <code>ENCRYPTION_KEY</code>. Ask your administrator to set one; a key cannot be saved until then.</td></tr><tr><td>Test fails with a referrer or IP error</td><td>See <a href="#2-restrict-the-key----by-ip-not-by-referrer">step 2</a> -- the key&#x27;s application restriction does not match how Monize calls Google.</td></tr><tr><td>Test succeeds but no results</td><td>The project likely has the legacy <strong>Places API</strong> enabled instead of <strong>Places API (New)</strong>.</td></tr></tbody></table></div>
+<h3 id="server-wide-google-places-key">Server-Wide Google Places Key<a class="hlink" href="#server-wide-google-places-key" aria-label="Link to this section">#</a></h3>
+<p>An administrator can supply one key for the whole deployment instead, through environment variables:</p>
+<pre><code class="language-bash">GOOGLE_PLACES_API_KEY=your-google-places-key
+GOOGLE_PLACES_MONTHLY_CAP=1000   # optional, default 1000
+</code></pre>
+<p>When this is set, Google Places is available to every user on the instance and the operator&#x27;s limit is the only one that applies. Users then see only <em>&quot;Configured by this server&#x27;s administrator&quot;</em> and an on/off switch -- they cannot enter or see a key, and cannot change the limit. Every user&#x27;s lookups spend the operator&#x27;s allowance.</p>
+<p>Leave <code>GOOGLE_PLACES_API_KEY</code> unset and each user configures their own key and their own limit, as described above.</p>
+<h2 id="remember-me">Remember Me<a class="hlink" href="#remember-me" aria-label="Link to this section">#</a></h2>
+<p>The login page includes a &quot;Remember Me&quot; checkbox that extends your session duration from the default 1 day to a configurable period (default 30 days).</p>
+<h3 id="how-it-works-2">How It Works<a class="hlink" href="#how-it-works-2" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Without Remember Me</th><th>With Remember Me</th></tr></thead><tbody><tr><td><strong>Access token</strong></td><td>15 minutes</td><td>15 minutes</td></tr><tr><td><strong>Refresh token</strong></td><td>1 day</td><td>30 days (configurable)</td></tr></tbody></table></div>
+<ul>
+<li>When &quot;Remember Me&quot; is checked, the refresh token cookie is set with a longer expiry</li>
+<li>The access token still expires every 15 minutes and is silently refreshed using the refresh token</li>
+<li>Both tokens rotate on refresh (old tokens are revoked)</li>
+<li>Tokens are stored as httpOnly cookies and are never accessible to JavaScript</li>
+</ul>
+<h3 id="configuration">Configuration<a class="hlink" href="#configuration" aria-label="Link to this section">#</a></h3>
+<p>The duration can be configured via the <code>REMEMBER_ME_DAYS</code> environment variable:</p>
+<pre><code class="language-bash">REMEMBER_ME_DAYS=14  # 14-day sessions instead of the default 30
+</code></pre>
+<p>If not set or set to an invalid value, the default is 30 days.</p>
+<h3 id="2fa-integration">2FA Integration<a class="hlink" href="#2fa-integration" aria-label="Link to this section">#</a></h3>
+<p>When two-factor authentication is enabled, the &quot;Remember Me&quot; preference is preserved through the 2FA verification step. After entering your TOTP code, the extended session duration is applied as expected.</p>
+<h2 id="two-factor-authentication-2fa">Two-Factor Authentication (2FA)<a class="hlink" href="#two-factor-authentication-2fa" aria-label="Link to this section">#</a></h2>
+<p>Monize supports Time-based One-Time Password (TOTP) authentication for an additional layer of security. It lives in <strong>Settings &gt; Security</strong>.</p>
+<blockquote>
+<p><strong>SSO accounts:</strong> Two-factor authentication is not available for accounts that sign in through an identity provider -- authentication security is managed by that provider. See <a href="#single-sign-on-oidc">Single Sign-On</a>.</p>
+</blockquote>
+<h3 id="setting-up-2fa">Setting Up 2FA<a class="hlink" href="#setting-up-2fa" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Navigate to <strong>Settings &gt; Security</strong></li>
+<li>Click <strong>Enable 2FA</strong></li>
+<li>Scan the QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.)</li>
+<li>Enter the 6-digit verification code to confirm setup</li>
+<li><strong>Save your backup codes</strong> in a secure location (see <a href="#backup-codes">Backup Codes</a> below)</li>
+</ol>
+<figure><img src="/docs/images/2fa-setup.png" alt="2FA Setup" width="565" height="811" loading="lazy" decoding="async"/><figcaption>2FA Setup</figcaption></figure>
+<h3 id="logging-in-with-2fa">Logging in with 2FA<a class="hlink" href="#logging-in-with-2fa" aria-label="Link to this section">#</a></h3>
+<p>After enabling 2FA:</p>
+<ol>
+<li>Enter your email and password as normal</li>
+<li>You will be prompted for a 6-digit TOTP code</li>
+<li>Enter the code from your authenticator app</li>
+<li>Optionally check &quot;Trust this device&quot; to skip 2FA on this device for future logins</li>
+</ol>
+<h3 id="backup-codes">Backup Codes<a class="hlink" href="#backup-codes" aria-label="Link to this section">#</a></h3>
+<p>When you enable 2FA, Monize generates <strong>12 single-use backup codes</strong>. These are your fallback if you lose access to your authenticator app.</p>
+<ul>
+<li>Each code is an 8-character hexadecimal string (e.g., <code>a1b2c3d4</code>)</li>
+<li>Codes are displayed <strong>only once</strong> at generation time -- save them in a secure location</li>
+<li>Each code can only be used once; after use, it is permanently removed</li>
+<li>During 2FA verification, you can enter a backup code instead of a TOTP code</li>
+<li>To regenerate backup codes, navigate to <strong>Settings &gt; Security &gt; Backup Codes</strong> and click <strong>Regenerate codes</strong>. You must enter a current 6-digit code to confirm, and regenerating invalidates every existing code.</li>
+</ul>
+<blockquote>
+<p><strong>Security Note:</strong> Backup codes are hashed with bcrypt before being stored in the database. The plain-text codes are never stored on the server.</p>
+</blockquote>
+<h3 id="disabling-2fa">Disabling 2FA<a class="hlink" href="#disabling-2fa" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Navigate to <strong>Settings &gt; Security</strong></li>
+<li>Click <strong>Disable 2FA</strong></li>
+<li>Enter your current 6-digit code to confirm</li>
+</ol>
+<h3 id="required-2fa">Required 2FA<a class="hlink" href="#required-2fa" aria-label="Link to this section">#</a></h3>
+<p>An administrator can make two-factor authentication mandatory for the whole deployment:</p>
+<pre><code class="language-bash">FORCE_2FA=true
+</code></pre>
+<p>With this set, the Security section shows <strong>Required by administrator</strong> and 2FA cannot be disabled. For OIDC logins the requirement is pushed up to the identity provider: a sign-in is rejected unless the provider actually asserts that multi-factor authentication happened (via the <code>amr</code>/<code>acr</code> claims), because app-level 2FA does not apply to an SSO account.</p>
+<h2 id="trusted-devices">Trusted Devices<a class="hlink" href="#trusted-devices" aria-label="Link to this section">#</a></h2>
+<p>When logging in with 2FA, you can mark a device as &quot;trusted&quot; to skip the TOTP prompt on future logins from that device.</p>
+<p>A device is trusted by checking <strong>&quot;Don&#x27;t ask again on this browser&quot;</strong> during a 2FA login.</p>
+<h3 id="managing-trusted-devices">Managing Trusted Devices<a class="hlink" href="#managing-trusted-devices" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Navigate to <strong>Settings &gt; Security</strong></li>
+<li>Scroll to the <strong>Trusted Devices</strong> section</li>
+<li>View all currently trusted devices -- the one you are using is marked <strong>Current</strong></li>
+<li>Click <strong>Revoke</strong> to remove trust for a single device, or <strong>Revoke All</strong> to clear every one</li>
+</ol>
+<p>Revoking all devices means you will be asked for your 2FA code on your next login from any device.</p>
+<figure><img src="/docs/images/trusted-devices.png" alt="Trusted Devices" width="817" height="190" loading="lazy" decoding="async"/><figcaption>Trusted Devices</figcaption></figure>
+<blockquote>
+<p><strong>Security Note:</strong> Trusted device tokens are stored as SHA-256 hashes in the database. The actual token is stored only in the browser cookie.</p>
+</blockquote>
+<h2 id="password-management">Password Management<a class="hlink" href="#password-management" aria-label="Link to this section">#</a></h2>
+<h3 id="changing-your-password">Changing Your Password<a class="hlink" href="#changing-your-password" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Navigate to <strong>Settings</strong> or <strong>Change Password</strong></li>
+<li>Enter your current password</li>
+<li>Enter and confirm your new password</li>
+<li>Click <strong>Save</strong></li>
+</ol>
+<p>Password changes immediately revoke all existing refresh tokens, logging you out of all other sessions.</p>
+<h3 id="password-breach-checking">Password Breach Checking<a class="hlink" href="#password-breach-checking" aria-label="Link to this section">#</a></h3>
+<p>Monize checks new passwords against the <a href="https://haveibeenpwned.com/" rel="noopener" class="ext">Have I Been Pwned</a> database to prevent you from using passwords that have appeared in known data breaches.</p>
+<ul>
+<li>Checked during <strong>registration</strong> and <strong>password reset</strong></li>
+<li>Uses the HIBP k-anonymity API -- only the first 5 characters of the password hash are sent, so your full password is never transmitted</li>
+<li>If the password has been found in a breach, you will see: <em>&quot;This password has been found in a data breach. Please choose a different password.&quot;</em></li>
+<li>If the HIBP service is unavailable, the password is allowed (availability over security)</li>
+</ul>
+<h3 id="forgot-password">Forgot Password<a class="hlink" href="#forgot-password" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>On the login page, click <strong>Forgot Password</strong></li>
+<li>Enter your email address</li>
+<li>Check your email for a reset link</li>
+<li>Click the link and set a new password</li>
+</ol>
+<blockquote>
+<p><strong>Security Note:</strong> Password reset tokens are hashed with SHA-256 before being stored in the database. The token expires after a set time period.</p>
+</blockquote>
+<h2 id="account-lockout">Account Lockout<a class="hlink" href="#account-lockout" aria-label="Link to this section">#</a></h2>
+<p>Monize protects against brute-force login attacks with automatic account lockout.</p>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td><strong>Max failed attempts</strong></td><td>5 consecutive failures</td></tr><tr><td><strong>Base lockout duration</strong></td><td>30 minutes</td></tr><tr><td><strong>Escalation</strong></td><td>Exponential backoff (30 min, 60 min, 120 min, etc.)</td></tr></tbody></table></div>
+<h3 id="how-it-works-3">How It Works<a class="hlink" href="#how-it-works-3" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>After <strong>5 consecutive failed login attempts</strong>, the account is locked</li>
+<li>The lockout duration doubles with each subsequent lockout cycle:
+<ul>
+<li>1st lockout (5 failures): 30 minutes</li>
+<li>2nd lockout (10 failures): 60 minutes</li>
+<li>3rd lockout (15 failures): 120 minutes</li>
+</ul>
+</li>
+<li>If email is configured, a lockout notification is sent to the account owner</li>
+<li>A successful login resets the failure counter and clears any lockout</li>
+</ol>
+<blockquote>
+<p><strong>Note:</strong> Login attempts for non-existent accounts return a generic &quot;Invalid credentials&quot; message and do not reveal whether the account exists.</p>
+</blockquote>
+<h2 id="single-sign-on-oidc">Single Sign-On (OIDC)<a class="hlink" href="#single-sign-on-oidc" aria-label="Link to this section">#</a></h2>
+<p>Monize supports OpenID Connect (OIDC) for single sign-on integration with identity providers.</p>
+<h3 id="supported-providers">Supported Providers<a class="hlink" href="#supported-providers" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Authentik</li>
+<li>Authelia</li>
+<li>Pocket-ID</li>
+<li>Any OpenID Connect-compatible provider</li>
+</ul>
+<h3 id="configuration-1">Configuration<a class="hlink" href="#configuration-1" aria-label="Link to this section">#</a></h3>
+<p>OIDC is configured via environment variables:</p>
+<pre><code class="language-bash">OIDC_ISSUER=https://your-identity-provider.com
+OIDC_CLIENT_ID=monize
+OIDC_CLIENT_SECRET=your-client-secret
+OIDC_REDIRECT_URI=http://localhost:3001/auth/callback
+</code></pre>
+<p>When OIDC is configured, a &quot;Sign in with SSO&quot; button appears on the login page.</p>
+<figure><img src="/docs/images/oidc-login.png" alt="OIDC Login" width="903" height="688" loading="lazy" decoding="async"/><figcaption>OIDC Login</figcaption></figure>
+<h2 id="personal-access-tokens-pats">Personal Access Tokens (PATs)<a class="hlink" href="#personal-access-tokens-pats" aria-label="Link to this section">#</a></h2>
+<p>Personal Access Tokens provide API access for external integrations such as MCP clients. Tokens are managed in <strong>Settings &gt; AI</strong> under the <strong>MCP / Personal Access Tokens</strong> section.</p>
+<h3 id="token-scopes">Token Scopes<a class="hlink" href="#token-scopes" aria-label="Link to this section">#</a></h3>
+<p>Each token is created with one or more scopes that control what operations it can perform:</p>
+<div class="table-wrap"><table><thead><tr><th>Scope</th><th>Description</th></tr></thead><tbody><tr><td><strong>read</strong></td><td>View accounts, transactions, categories, payees and financial reports</td></tr><tr><td><strong>write</strong></td><td>Create transactions, payees and categories, and update or delete resources</td></tr></tbody></table></div>
+<p>Scopes are enforced server-side via a scope guard. Endpoints decorated with required scopes will reject tokens that lack the necessary permissions. The same vocabulary is used for OAuth/MCP scopes, so a token cannot be granted a scope the server does not define.</p>
+<h3 id="creating-a-token">Creating a Token<a class="hlink" href="#creating-a-token" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>Navigate to <strong>Settings &gt; API Access</strong></li>
+<li>Click <strong>Create Token</strong></li>
+<li>Give it a name (for example, <em>Claude Desktop</em>), choose at least one scope, and pick an expiration: <strong>30 days</strong>, <strong>90 days</strong>, <strong>1 year</strong>, or <strong>No expiration</strong></li>
+<li>Copy the token from the confirmation dialog -- it is not shown again</li>
+</ol>
+<p>The section also displays the <strong>MCP Server URL</strong> for this instance, with a copy button, for configuring MCP clients such as Claude Code or Claude Desktop. Each token in the list shows when it was created, when it expires, and when it was last used.</p>
+<h3 id="token-lifecycle">Token Lifecycle<a class="hlink" href="#token-lifecycle" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Tokens are prefixed with <code>pat_</code> for easy identification</li>
+<li>The full token is displayed <strong>only once</strong> at creation time</li>
+<li>Tokens are stored as SHA-256 hashes in the database</li>
+<li>Tokens can have an optional expiration date</li>
+<li>Revoke a token at any time from the settings page</li>
+<li>Tokens are rejected if the owning user account is locked or disabled</li>
+</ul>
+<p>For MCP integration details, see <a href="/docs/ai#mcp-server">AI &gt; MCP Server</a>.</p>
+<h2 id="guided-tours">Guided Tours<a class="hlink" href="#guided-tours" aria-label="Link to this section">#</a></h2>
+<p>Monize ships short in-app walkthroughs of its features. <strong>Settings &gt; Guided Tours</strong> lists every tour in one place: how many steps it has, which release added it, and whether you have taken it, left it early, or not seen it yet.</p>
+<ul>
+<li><strong>Start</strong> runs a tour; <strong>Retake</strong> runs one you have already finished</li>
+<li>Press <strong>Escape</strong> to leave a tour at any point, and pick it up again from this page</li>
+<li>A tour that needs data you do not have yet says so instead of failing -- for example, <em>&quot;Add an account first -- this tour walks through recording a transaction.&quot;</em></li>
+<li><strong>Reset tour progress</strong> clears every recorded tour so they are offered again from the dashboard and after an update</li>
+</ul>
+<p>Tours are also offered from the dashboard, from the Getting Started flow, and from the What&#x27;s New notes after an upgrade.</p>
+<h2 id="help-and-support">Help and Support<a class="hlink" href="#help-and-support" aria-label="Link to this section">#</a></h2>
+<p><strong>Settings &gt; Help &amp; Support</strong> collects the places to get help:</p>
+<div class="table-wrap"><table><thead><tr><th>Link</th><th>What it is</th></tr></thead><tbody><tr><td><strong>GitHub</strong></td><td>The source code</td></tr><tr><td><strong>Open an Issue</strong></td><td>Report a bug or request a feature</td></tr><tr><td><strong>Discussions</strong></td><td>Ask questions and share ideas with the community</td></tr><tr><td><strong>Wiki</strong></td><td>These guides</td></tr><tr><td><strong>Create a support backup</strong></td><td>A de-identified, encrypted copy of your data for a maintainer (see below)</td></tr></tbody></table></div>
+<h3 id="support-backup">Support Backup<a class="hlink" href="#support-backup" aria-label="Link to this section">#</a></h3>
+<p>A <strong>support backup</strong> lets you hand a maintainer a file that reproduces your bug without handing over your finances. It is a normal backup with the identifying content removed:</p>
+<ul>
+<li><strong>Names are masked</strong> -- the first and last two characters are kept</li>
+<li><strong>Notes, descriptions and account numbers are removed</strong></li>
+<li><strong>Every private amount is multiplied by a single hidden factor</strong>, while public values (exchange rates, security prices, interest rates) are left intact so the data still behaves correctly</li>
+<li><strong>Dates, frequencies and structure are preserved</strong>, which is what makes bugs still reproduce</li>
+<li>The file is <strong>always encrypted</strong> with the password shown in the dialog, and restores like any other backup</li>
+</ul>
+<p>Options before generating:</p>
+<div class="table-wrap"><table><thead><tr><th>Option</th><th>Description</th></tr></thead><tbody><tr><td><strong>What to include</strong></td><td>Investments, scheduled transactions, budgets, reports and projections, import column mappings, auto-backup settings</td></tr><tr><td><strong>Include security price history</strong></td><td>Off by default -- a full price series matches public market data and can identify a masked ticker. Turn it on only when the bug concerns prices or valuations.</td></tr><tr><td><strong>Limit to specific accounts</strong></td><td>Leave everything unchecked to include every account. Picking a subset also pulls in the accounts and payees they reference.</td></tr><tr><td><strong>Date range</strong></td><td>Optional. Opening balances are adjusted so the trimmed file still reconciles.</td></tr><tr><td><strong>Amount multiplier</strong></td><td>Any non-integer greater than 1. <strong>Regenerate</strong> picks a new one.</td></tr><tr><td><strong>Encryption password</strong></td><td>At least 8 characters. Monize asks you to confirm you saved it before generating -- it is stored nowhere and cannot be recovered.</td></tr></tbody></table></div>
+<p><strong>Preview</strong> shows a before/after sample of the masking so you can see exactly what a maintainer would receive.</p>
+<blockquote>
+<p><strong>Do not share the multiplier.</strong> It is the key that reverses the hidden amounts. Send the encryption password through a separate channel from the file itself.</p>
+<p>This protects against casual exposure, not against someone who already knows you -- dates, frequencies and structure are preserved.</p>
+</blockquote>
+<h2 id="about">About<a class="hlink" href="#about" aria-label="Link to this section">#</a></h2>
+<p><strong>Settings &gt; About</strong> reports what this instance is running:</p>
+<div class="table-wrap"><table><thead><tr><th>Item</th><th>Description</th></tr></thead><tbody><tr><td><strong>Version</strong> and <strong>API version</strong></td><td>The web app&#x27;s and the backend&#x27;s versions. If they differ, Monize warns you -- it usually means an upgrade only partly rolled out and the lagging service needs a restart or redeploy.</td></tr><tr><td><strong>Updates</strong></td><td>Whether a newer release exists, with a link to it. Controlled by <code>UPDATE_CHECK_ENABLED</code> on the server.</td></tr><tr><td><strong>What&#x27;s new</strong></td><td>This version&#x27;s release notes, read without leaving the app</td></tr><tr><td><strong>All releases</strong></td><td>Every release and its notes on GitHub</td></tr><tr><td><strong>Licence</strong></td><td>Monize is free software under the GNU AGPL v3</td></tr><tr><td><strong>Security policy</strong></td><td>How to report a vulnerability privately</td></tr><tr><td><strong>Copy diagnostics</strong></td><td>Copies version, browser and locale details to paste into a bug report</td></tr></tbody></table></div>
+<h2 id="backend-connectivity">Backend Connectivity<a class="hlink" href="#backend-connectivity" aria-label="Link to this section">#</a></h2>
+<p>If the Monize backend becomes unavailable (e.g., during a server restart or network issue), the frontend automatically detects the outage and displays a notification banner.</p>
+<h3 id="how-it-works-4">How It Works<a class="hlink" href="#how-it-works-4" aria-label="Link to this section">#</a></h3>
+<ol>
+<li>When any API call receives a <strong>502 status</strong> or <strong>no response</strong> (network error), the frontend enters &quot;backend down&quot; mode</li>
+<li>A red banner appears at the top of the page: <em>&quot;Connection Lost -- Unable to reach the server. Retrying automatically...&quot;</em></li>
+<li>The frontend polls the backend health endpoint (<code>/health/live</code>) every <strong>5 seconds</strong></li>
+<li>When the backend responds successfully, the page reloads automatically to restore normal operation</li>
+</ol>
+<p>This prevents false logouts during temporary backend outages -- instead of being redirected to the login page, you see a clear status message and automatic recovery.</p>
+<h2 id="security-architecture">Security Architecture<a class="hlink" href="#security-architecture" aria-label="Link to this section">#</a></h2>
+<p>Monize implements comprehensive security measures:</p>
+<h3 id="authentication">Authentication<a class="hlink" href="#authentication" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Feature</th><th>Implementation</th></tr></thead><tbody><tr><td><strong>Password Hashing</strong></td><td>bcrypt with salt rounds</td></tr><tr><td><strong>Password Breach Check</strong></td><td>HaveIBeenPwned k-anonymity API on registration and password reset</td></tr><tr><td><strong>Account Lockout</strong></td><td>5 failed attempts triggers lockout with exponential backoff</td></tr><tr><td><strong>Access Tokens</strong></td><td>JWT with 15-minute expiry</td></tr><tr><td><strong>Refresh Tokens</strong></td><td>Rotating tokens with family-based replay detection. 1 day by default, or <code>REMEMBER_ME_DAYS</code> (default 30) with Remember Me.</td></tr><tr><td><strong>TOTP Encryption</strong></td><td>Per-user unique salt (not shared secret)</td></tr><tr><td><strong>2FA Backup Codes</strong></td><td>12 single-use codes, bcrypt-hashed, generated on 2FA setup</td></tr><tr><td><strong>Personal Access Tokens</strong></td><td>Scoped (read/write/reports), SHA-256 hashed, revocable</td></tr><tr><td><strong>Rate Limiting</strong></td><td>100 req/min global, 3-5 per 15 min on auth endpoints</td></tr><tr><td><strong>Forced 2FA</strong></td><td><code>FORCE_2FA=true</code> makes 2FA mandatory; OIDC logins must assert MFA at the provider</td></tr><tr><td><strong>Step-Up Re-Authentication</strong></td><td>High-sensitivity surfaces re-prompt for your strongest factor (password, TOTP, or a fresh OIDC sign-in) and issue a short-lived token scoped to that surface alone</td></tr><tr><td><strong>Secrets at Rest</strong></td><td><code>ENCRYPTION_KEY</code> encrypts AI provider keys, Google Places keys, emergency-access credentials, the push key pair, and the password automatic backups are encrypted with</td></tr></tbody></table></div>
+<h3 id="data-protection">Data Protection<a class="hlink" href="#data-protection" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Feature</th><th>Implementation</th></tr></thead><tbody><tr><td><strong>User Isolation</strong></td><td>All database queries filter by userId</td></tr><tr><td><strong>Input Validation</strong></td><td>DTO validation with whitelist mode (rejects unknown fields)</td></tr><tr><td><strong>SQL Injection</strong></td><td>Parameterized queries via TypeORM</td></tr><tr><td><strong>Row-Level Security</strong></td><td>Optional database-enforced per-user isolation beneath the app-level filtering (<code>RLS_MODE=off|shadow|enforce</code>)</td></tr><tr><td><strong>XSS Protection</strong></td><td>No dangerouslySetInnerHTML, HTML escaping in emails</td></tr><tr><td><strong>CSRF</strong></td><td>Token validation with httpOnly cookies</td></tr></tbody></table></div>
+<h3 id="http-security-headers">HTTP Security Headers<a class="hlink" href="#http-security-headers" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Header</th><th>Value</th></tr></thead><tbody><tr><td><strong>Content-Security-Policy</strong></td><td>Restrictive CSP with style-src and script-src whitelist</td></tr><tr><td><strong>Strict-Transport-Security</strong></td><td>max-age=31536000; includeSubDomains</td></tr><tr><td><strong>X-Content-Type-Options</strong></td><td>nosniff</td></tr><tr><td><strong>X-Frame-Options</strong></td><td>DENY</td></tr><tr><td><strong>Referrer-Policy</strong></td><td>strict-origin-when-cross-origin</td></tr><tr><td><strong>Cross-Origin-Opener-Policy</strong></td><td>same-origin</td></tr><tr><td><strong>Cross-Origin-Resource-Policy</strong></td><td>same-origin</td></tr><tr><td><strong>Permissions-Policy</strong></td><td>Restrictive policy</td></tr></tbody></table></div>
+<h4 id="plain-http-deployments">Plain HTTP Deployments<a class="hlink" href="#plain-http-deployments" aria-label="Link to this section">#</a></h4>
+<p>If you are running Monize over plain HTTP without a reverse proxy such as Traefik, set the <code>DISABLE_HTTPS_HEADERS</code> environment variable to <code>true</code>:</p>
+<pre><code class="language-bash">DISABLE_HTTPS_HEADERS=true
+</code></pre>
+<p>This disables two headers that require HTTPS to function correctly:</p>
+<ul>
+<li><strong>Strict-Transport-Security (HSTS)</strong> -- Forces browsers to use HTTPS; invalid over HTTP</li>
+<li><strong>Cross-Origin-Opener-Policy (COOP)</strong> -- Can cause issues with HTTP-only deployments</li>
+</ul>
+<p>It also disables the <code>Secure</code> flag on authentication cookies so they work over plain HTTP.</p>
+<blockquote>
+<p><strong>Do not use in production with HTTPS.</strong> Only set this when HTTPS is not available at the application level.</p>
+</blockquote>
+<h3 id="encryption-key">Encryption Key<a class="hlink" href="#encryption-key" aria-label="Link to this section">#</a></h3>
+<p>Everything Monize stores encrypted at rest -- AI provider API keys, Google Places API keys, emergency-access credentials, the instance push key pair, and the copy of your password that automatic backups are encrypted with -- is protected by a single deployment secret:</p>
+<pre><code class="language-bash">ENCRYPTION_KEY=  # minimum 32 characters; generate with: openssl rand -hex 32
+</code></pre>
+<p>This is <strong>strongly recommended and will be required in a future release</strong>. Today the backend starts without it and warns on every boot; while it is unset, automatic backups are written <strong>unencrypted</strong>, AI and Google Places keys cannot be stored, emergency access cannot be enabled, and browser push cannot be configured.</p>
+<blockquote>
+<p><strong>Keep this value safe, and keep it the same.</strong> Changing or losing it does not re-encrypt anything -- every secret already stored becomes unreadable, and automatic backups stop until each user signs in again. Back it up wherever you keep your other deployment secrets.</p>
+</blockquote>
+<p><code>ENCRYPTION_KEY</code> was formerly called <code>AI_ENCRYPTION_KEY</code>. The old name is still read (and still wins if both are set), so an existing deployment upgrades without re-keying anything; set <code>ENCRYPTION_KEY</code> to the <em>same</em> value to move over.</p>
+<h2 id="shared-access-delegated-users">Shared Access (Delegated Users)<a class="hlink" href="#shared-access-delegated-users" aria-label="Link to this section">#</a></h2>
+<p>Monize lets you grant another person scoped access to your accounts without sharing your password. Delegates have their own login and see only the accounts, sections, and shared data you have explicitly granted. While viewing your data, a delegate sees an always-visible &quot;Viewing: [Your Name]&quot; banner with a context switcher.</p>
+<p>Navigate to <strong>Settings &gt; Shared Access</strong> to invite a delegate, configure per-account and section permissions, reset a delegate&#x27;s password, or remove access.</p>
+<p>For complete documentation -- including the invitation flow, permission tabs, the delegate&#x27;s view, and how Shared Access interacts with two-factor authentication -- see the dedicated <a href="/docs/shared-access">Shared Access</a> page.</p>
+<h2 id="emergency-access">Emergency Access<a class="hlink" href="#emergency-access" aria-label="Link to this section">#</a></h2>
+<p>Emergency Access is a &quot;dead-man&#x27;s switch&quot; that automatically grants designated trusted contacts the ability to take over your account if you do not sign in for an extended period (default: 14 days). It is intended for incapacitation or worst-case scenarios where a partner, family member, or executor needs access to your financial records on your behalf. You receive daily reminder emails before access is granted, and contacts receive single-use magic links by email when the grant fires.</p>
+<p>Navigate to <strong>Settings &gt; Emergency Access</strong> to enable the feature, add contacts, set the inactivity thresholds, and write an optional encrypted message that contacts will see when they claim access.</p>
+<p>For complete documentation -- including how grants work, the claim flow for contacts, the encrypted message and step-up authentication, and how to clear an accidental grant -- see the dedicated <a href="/docs/emergency-access">Emergency Access</a> page.</p>
+<h2 id="backup-and-restore">Backup and Restore<a class="hlink" href="#backup-and-restore" aria-label="Link to this section">#</a></h2>
+<p><strong>Settings &gt; Backup &amp; Restore</strong> covers your own manual export and restore, with optional password-based encryption (AES-256-GCM). Scheduled automatic backups and their three-tier retention policy are an administrator setting on <a href="#automatic-backups-admin">Admin &gt; Backups</a>. For complete documentation, see the dedicated <a href="/docs/backup-and-restore">Backup and Restore</a> page.</p>
+<h2 id="danger-zone">Danger Zone<a class="hlink" href="#danger-zone" aria-label="Link to this section">#</a></h2>
+<p>The Danger Zone section at the bottom of <strong>Settings</strong> provides options to delete your financial data or your entire user account. These actions are irreversible.</p>
+<h3 id="delete-data">Delete Data<a class="hlink" href="#delete-data" aria-label="Link to this section">#</a></h3>
+<p><strong>Delete Data</strong> removes your financial data while keeping your user account intact. This is particularly useful when migrating from <a href="/docs/importing-from-quicken">Quicken</a> or <a href="/docs/importing-from-microsoft-money">Microsoft Money</a> -- if an import did not go as expected, you can wipe the data and start over without recreating your user account or reconfiguring your settings.</p>
+<p>Navigate to <strong>Settings</strong>, scroll to <strong>Danger Zone</strong>, and click <strong>&quot;Delete Data...&quot;</strong>.</p>
+<h4 id="what-is-always-deleted">What Is Always Deleted<a class="hlink" href="#what-is-always-deleted" aria-label="Link to this section">#</a></h4>
+<p>The following data is always removed when you delete data:</p>
+<ul>
+<li>All transactions and transaction splits</li>
+<li>All scheduled/recurring transactions</li>
+<li>All securities, security prices, holdings, and investment transactions</li>
+<li>All budgets, budget periods, budget categories, and budget alerts</li>
+<li>Monthly account balance summaries (net worth snapshots)</li>
+<li>Custom reports</li>
+<li>Tags</li>
+<li>Import column mapping presets</li>
+<li>AI insights and usage logs</li>
+</ul>
+<h4 id="optional-deletions">Optional Deletions<a class="hlink" href="#optional-deletions" aria-label="Link to this section">#</a></h4>
+<p>You can optionally choose to also delete:</p>
+<div class="table-wrap"><table><thead><tr><th>Option</th><th>What It Does</th></tr></thead><tbody><tr><td><strong>Accounts</strong></td><td>Deletes all financial accounts. If unchecked, accounts are kept but their balances are reset to the opening balance.</td></tr><tr><td><strong>Categories</strong></td><td>Deletes all categories. References to categories on payees and accounts are cleared first.</td></tr><tr><td><strong>Payees</strong></td><td>Deletes all payees and payee aliases.</td></tr><tr><td><strong>Currency preferences</strong></td><td>Deletes saved exchange rate preferences.</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Migration Tip:</strong> If you are re-doing an import from Quicken or Microsoft Money, check all four optional boxes to get a completely clean slate. If you only want to re-import transactions but keep your account structure, leave &quot;Accounts&quot; unchecked -- account balances will be reset to their opening balance automatically.</p>
+</blockquote>
+<h4 id="confirmation">Confirmation<a class="hlink" href="#confirmation" aria-label="Link to this section">#</a></h4>
+<ul>
+<li><strong>Password users:</strong> You must enter your password to confirm the deletion</li>
+<li><strong>SSO (OIDC) users:</strong> You must re-authenticate with your identity provider</li>
+</ul>
+<p>The operation runs inside a database transaction -- if an error occurs, no data is deleted.</p>
+<h3 id="delete-account">Delete Account<a class="hlink" href="#delete-account" aria-label="Link to this section">#</a></h3>
+<p><strong>Delete Account</strong> permanently deletes your entire user account and all associated data. After deletion, you are logged out and redirected to the login page.</p>
+<p>Navigate to <strong>Settings</strong>, scroll to <strong>Danger Zone</strong>, and click <strong>&quot;Delete Account&quot;</strong>.</p>
+<p>To confirm:</p>
+<ol>
+<li>Type <strong>DELETE</strong> in the confirmation field</li>
+<li>Enter your password (or re-authenticate via SSO)</li>
+<li>Click <strong>&quot;Confirm Delete&quot;</strong></li>
+</ol>
+<blockquote>
+<p><strong>Note:</strong> You cannot delete your account if you are the last admin user. Assign the admin role to another user first.</p>
+</blockquote>
+<blockquote>
+<p><strong>If you are a delegate of another account:</strong> deleting removes your own data, but your login and the shared access others granted you are kept so the delegation keeps working -- you become a delegate-only user. To end that access, ask the owner to remove you from their <a href="/docs/shared-access">Shared Access</a> list first.</p>
+</blockquote>
+<h2 id="admin-features">Admin Features<a class="hlink" href="#admin-features" aria-label="Link to this section">#</a></h2>
+<p>Users with the <strong>admin</strong> role have access to additional features.</p>
+<h3 id="user-management">User Management<a class="hlink" href="#user-management" aria-label="Link to this section">#</a></h3>
+<p>Navigate to <strong>Admin &gt; User Management</strong> to manage application users.</p>
+<figure><img src="/docs/images/admin-user-management.png" alt="User Management" width="1196" height="277" loading="lazy" decoding="async"/><figcaption>User Management</figcaption></figure>
+<p>Admin capabilities:</p>
+<ul>
+<li>View all registered users</li>
+<li>Add new user accounts</li>
+<li>Change user roles (user/admin)</li>
+<li>Disable or enable user accounts</li>
+<li>Reset user passwords</li>
+</ul>
+<h3 id="adding-users">Adding Users<a class="hlink" href="#adding-users" aria-label="Link to this section">#</a></h3>
+<p>Admins can create new user accounts directly from the User Management page. Click the <strong>&quot;Add User&quot;</strong> button to open the creation form.</p>
+<span class="shot-missing" role="img" aria-label="Add User Modal">Screenshot pending: Add User Modal</span>
+<h4 id="required-fields">Required Fields<a class="hlink" href="#required-fields" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody><tr><td><strong>Email</strong></td><td>The new user&#x27;s email address (must be unique)</td></tr></tbody></table></div>
+<h4 id="optional-fields">Optional Fields<a class="hlink" href="#optional-fields" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody><tr><td><strong>First name</strong></td><td>The user&#x27;s first name</td></tr><tr><td><strong>Last name</strong></td><td>The user&#x27;s last name</td></tr><tr><td><strong>Role</strong></td><td><strong>User</strong> (default) or <strong>Admin</strong></td></tr></tbody></table></div>
+<h4 id="credential-methods">Credential Methods<a class="hlink" href="#credential-methods" aria-label="Link to this section">#</a></h4>
+<p>Choose one of three methods for setting the new user&#x27;s initial credentials:</p>
+<div class="table-wrap"><table><thead><tr><th>Method</th><th>Description</th></tr></thead><tbody><tr><td><strong>Send an email invite</strong></td><td>Sends the user an invite link to set their own password. The link expires after 24 hours and can only be used once. Requires SMTP to be configured.</td></tr><tr><td><strong>Set a password now</strong></td><td>You provide a password at creation time. The password must be at least 12 characters and include an uppercase letter, a lowercase letter, a number, and a special character.</td></tr><tr><td><strong>Generate a temporary password</strong></td><td>A temporary password is generated and displayed to you once after creation. Share it with the user out-of-band (e.g., in person or via a secure message). The user will be required to change it on first login.</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Note:</strong> The email invite option is only available when SMTP is configured on the server. If SMTP is not configured, it will be greyed out and the default will be &quot;Set a password now&quot;.</p>
+</blockquote>
+<h4 id="upgrading-delegate-only-users">Upgrading Delegate-Only Users<a class="hlink" href="#upgrading-delegate-only-users" aria-label="Link to this section">#</a></h4>
+<p>If a user already exists as a <a href="/docs/shared-access">delegate</a> (someone who was granted shared access but never created a full account), creating an account with the same email address will upgrade them to a full user while preserving all existing delegations.</p>
+<h3 id="instance-notification-settings">Instance Notification Settings<a class="hlink" href="#instance-notification-settings" aria-label="Link to this section">#</a></h3>
+<p>Navigate to <strong>Admin &gt; Notifications</strong> to configure the delivery channels this Monize instance offers and the push identity behind them. Devices, test notifications and per-notification preferences belong to each account and are managed in Settings -- an administrator configures the instance and never sends to, or sees, another person&#x27;s notifications.</p>
+<h4 id="delivery-channels">Delivery Channels<a class="hlink" href="#delivery-channels" aria-label="Link to this section">#</a></h4>
+<div class="table-wrap"><table><thead><tr><th>Channel</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Browser push</strong></td><td>Notifications delivered to a phone or desktop even when Monize is closed. Needs no Firebase, Google Play or Apple Developer account. Toggle it on or off for the whole instance here.</td></tr><tr><td><strong>Email</strong></td><td>Bill reminders, budget digests and system alerts. Unavailable until the SMTP environment variables are set.</td></tr><tr><td><strong>ntfy and UnifiedPush</strong></td><td>The same encrypted push, delivered to a self-hosted UnifiedPush distributor instead of a browser vendor&#x27;s service. It shares the instance&#x27;s push key pair and switch, so it is unavailable while browser push is off.</td></tr></tbody></table></div>
+<h4 id="web-push-identity">Web Push Identity<a class="hlink" href="#web-push-identity" aria-label="Link to this section">#</a></h4>
+<p>The page shows the instance&#x27;s push key fingerprint, when it was generated, and how many devices are registered (active and retired).</p>
+<p><strong>Rotate key pair</strong> replaces the instance&#x27;s key pair. Every registered device stops being reachable and has to turn push on again, so rotate only if the key may have been exposed -- or to recover from a key pair the server can no longer decrypt.</p>
+<div class="table-wrap"><table><thead><tr><th>Message</th><th>What to do</th></tr></thead><tbody><tr><td><em>&quot;This instance has no push key pair. Set <code>ENCRYPTION_KEY</code> and restart.&quot;</em></td><td>Monize generates the pair itself on the next start once the key is present</td></tr><tr><td><em>&quot;This instance cannot decrypt its stored push key pair.&quot;</em></td><td>Usually <code>ENCRYPTION_KEY</code> changed under a live database, or a backup was restored onto a different instance. Rotate the key pair to recover; every device registers again.</td></tr><tr><td><em>&quot;This instance has no <code>ENCRYPTION_KEY</code>, so it cannot open the push key pair it stored.&quot;</em></td><td>Rotating will not help. Set <code>ENCRYPTION_KEY</code> in the deployment and restart, and push works again with the existing devices.</td></tr></tbody></table></div>
+<span id="automatic-backups-admin" class="anchor-target"></span>
+<h3 id="automatic-backups">Automatic Backups<a class="hlink" href="#automatic-backups" aria-label="Link to this section">#</a></h3>
+<p>Navigate to <strong>Admin &gt; Backups</strong> to configure scheduled backups for this Monize instance: the destination folder on the server, the frequency and time of day, and the three-tier retention policy. The page also offers <strong>Validate</strong> for the folder, <strong>Run Backup Now</strong>, and the status of the last run. Full documentation of every field is on the <a href="/docs/backup-and-restore">Backup and Restore</a> page.</p>
+<p>What the scheduler writes is a compressed per-user server backup, one file per account. It is <strong>not</strong> a full PostgreSQL dump, and it is not byte-identical to the <code>.mzbe</code> file a person downloads from <strong>Settings &gt; Backup &amp; Restore</strong>.</p>
+<div class="table-wrap"><table><thead><tr><th>Point</th><th>Detail</th></tr></thead><tbody><tr><td><strong>Who it covers</strong></td><td>Every account on the deployment is backed up</td></tr><tr><td><strong>Whose schedule applies</strong></td><td>The schedule, folder and retention you set here are stored against your own administrator account; every other user is reconciled to the deployment defaults</td></tr><tr><td><strong>Encryption</strong></td><td>Each user&#x27;s file is encrypted with the stored copy of their own password, so <code>ENCRYPTION_KEY</code> must be set (see <a href="#encryption-key">Encryption Key</a>)</td></tr><tr><td><strong>Demo mode</strong></td><td>Save, Validate, Run and Browse are disabled, with a note saying why</td></tr></tbody></table></div>
+<blockquote>
+<p><strong>Note:</strong> The admin section only appears in the navigation if your user account has the admin role.</p>
+</blockquote></article><nav class="pager" aria-label="Previous and next page"><a class="pg pg-prev" href="/docs/ai"><span>Previous</span><b>AI</b></a><a class="pg pg-next" href="/docs/shared-access"><span>Next</span><b>Shared Access (Delegated Users)</b></a></nav><p class="dedit"><a href="https://github.com/kenlasko/monize/edit/main/website/docs/settings-and-security.md" rel="noopener">Edit this page on GitHub</a><a href="https://github.com/kenlasko/monize/issues/new" rel="noopener">Report a problem with the docs</a></p></main><aside class="dtoc" aria-label="On this page"><p>On this page</p><ul><li class="d2"><a href="#user-settings">User Settings</a></li><li class="d3"><a href="#settings-sections">Settings Sections</a></li><li class="d3"><a href="#preferences">Preferences</a></li><li class="d3"><a href="#language">Language</a></li><li class="d3"><a href="#theme-and-colour-theme">Theme and Colour Theme</a></li><li class="d3"><a href="#preferred-exchanges">Preferred Exchanges</a></li><li class="d2"><a href="#notifications">Notifications</a></li><li class="d3"><a href="#email-notifications">Email Notifications</a></li><li class="d3"><a href="#browser-push">Browser Push</a></li><li class="d3"><a href="#unifiedpush">UnifiedPush</a></li><li class="d3"><a href="#notification-diagnostics">Notification Diagnostics</a></li><li class="d3"><a href="#how-to-notify-me">How to Notify Me</a></li><li class="d3"><a href="#investment-value-movement">Investment Value Movement</a></li><li class="d2"><a href="#payee-lookup">Payee Lookup</a></li><li class="d3"><a href="#automatic-payee-contact-lookup">Automatic Payee Contact Lookup</a></li><li class="d3"><a href="#setting-up-google-places">Setting up Google Places</a></li><li class="d3"><a href="#server-wide-google-places-key">Server-Wide Google Places Key</a></li><li class="d2"><a href="#remember-me">Remember Me</a></li><li class="d3"><a href="#how-it-works-2">How It Works</a></li><li class="d3"><a href="#configuration">Configuration</a></li><li class="d3"><a href="#2fa-integration">2FA Integration</a></li><li class="d2"><a href="#two-factor-authentication-2fa">Two-Factor Authentication (2FA)</a></li><li class="d3"><a href="#setting-up-2fa">Setting Up 2FA</a></li><li class="d3"><a href="#logging-in-with-2fa">Logging in with 2FA</a></li><li class="d3"><a href="#backup-codes">Backup Codes</a></li><li class="d3"><a href="#disabling-2fa">Disabling 2FA</a></li><li class="d3"><a href="#required-2fa">Required 2FA</a></li><li class="d2"><a href="#trusted-devices">Trusted Devices</a></li><li class="d3"><a href="#managing-trusted-devices">Managing Trusted Devices</a></li><li class="d2"><a href="#password-management">Password Management</a></li><li class="d3"><a href="#changing-your-password">Changing Your Password</a></li><li class="d3"><a href="#password-breach-checking">Password Breach Checking</a></li><li class="d3"><a href="#forgot-password">Forgot Password</a></li><li class="d2"><a href="#account-lockout">Account Lockout</a></li><li class="d3"><a href="#how-it-works-3">How It Works</a></li><li class="d2"><a href="#single-sign-on-oidc">Single Sign-On (OIDC)</a></li><li class="d3"><a href="#supported-providers">Supported Providers</a></li><li class="d3"><a href="#configuration-1">Configuration</a></li><li class="d2"><a href="#personal-access-tokens-pats">Personal Access Tokens (PATs)</a></li><li class="d3"><a href="#token-scopes">Token Scopes</a></li><li class="d3"><a href="#creating-a-token">Creating a Token</a></li><li class="d3"><a href="#token-lifecycle">Token Lifecycle</a></li><li class="d2"><a href="#guided-tours">Guided Tours</a></li><li class="d2"><a href="#help-and-support">Help and Support</a></li><li class="d3"><a href="#support-backup">Support Backup</a></li><li class="d2"><a href="#about">About</a></li><li class="d2"><a href="#backend-connectivity">Backend Connectivity</a></li><li class="d3"><a href="#how-it-works-4">How It Works</a></li><li class="d2"><a href="#security-architecture">Security Architecture</a></li><li class="d3"><a href="#authentication">Authentication</a></li><li class="d3"><a href="#data-protection">Data Protection</a></li><li class="d3"><a href="#http-security-headers">HTTP Security Headers</a></li><li class="d3"><a href="#encryption-key">Encryption Key</a></li><li class="d2"><a href="#shared-access-delegated-users">Shared Access (Delegated Users)</a></li><li class="d2"><a href="#emergency-access">Emergency Access</a></li><li class="d2"><a href="#backup-and-restore">Backup and Restore</a></li><li class="d2"><a href="#danger-zone">Danger Zone</a></li><li class="d3"><a href="#delete-data">Delete Data</a></li><li class="d3"><a href="#delete-account">Delete Account</a></li><li class="d2"><a href="#admin-features">Admin Features</a></li><li class="d3"><a href="#user-management">User Management</a></li><li class="d3"><a href="#adding-users">Adding Users</a></li><li class="d3"><a href="#instance-notification-settings">Instance Notification Settings</a></li><li class="d3"><a href="#automatic-backups">Automatic Backups</a></li></ul></aside></div><footer class="dfoot"><div class="wrap"><span>Monize is released under the AGPL-3.0 licence.</span><span><a href="/">monize.net</a> · <a href="https://demo.monize.net" rel="noopener">Live demo</a> · <a href="https://github.com/kenlasko/monize" rel="noopener">GitHub</a></span></div></footer><div class="sdlg" id="search" role="dialog" aria-modal="true" aria-label="Search the documentation" hidden=""><div class="sbox"><label class="sfield"><span class="sr">Search the documentation</span><input id="q" type="search" placeholder="Search the docs, e.g. &quot;split transaction&quot;" autoComplete="off" spellCheck="false" aria-controls="sres"/></label><ul id="sres" class="sres" role="listbox" aria-label="Results"></ul><p class="shint" id="shint"><kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</p></div></div><script src="/assets/js/docs.js" defer=""></script></body></html>

@@ -53,8 +53,8 @@ export function HoldingStatsTable({
   // A missing current price is unknown, not zero. Formatting `null` as currency
   // would print the locale's zero and claim the position is worthless. A present
   // value is formatted in the holding's OWN currency (recheck RR5-004).
-  const fmtValue = (v: number | null, currencyCode: string) =>
-    v == null ? '—' : formatCurrency(v, currencyCode);
+  const fmtValue = (v: number | null, currencyCode: string | null) =>
+    v == null || !currencyCode ? '—' : formatCurrency(v, currencyCode);
 
   return (
     <div className="space-y-3 mb-3">

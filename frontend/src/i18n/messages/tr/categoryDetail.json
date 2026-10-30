@@ -28,7 +28,8 @@
     "transactions": "İşlemler",
     "sinceYear": "{year} yılından beri",
     "lastTransaction": "Son İşlem",
-    "convertedNote": "{currency} birimine çevrildi"
+    "convertedNote": "{currency} birimine çevrildi",
+    "partialRatesNote": "Bazı aylar için döviz kuru yok"
   },
   "topPayees": {
     "title": "En Çok Kullanılan Alacaklılar",

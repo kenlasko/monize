@@ -576,6 +576,7 @@
       "total": "合计",
       "transactions": "交易",
       "tooltip": "{count, plural, one {# 笔交易} other {# 笔交易}}",
+      "partialNote": "部分金额没有汇率，未计入这些合计。",
       "quarterLabel": "{year}年Q{quarter}",
       "quarterTick": "{year}年Q{quarter}",
       "granularityLabel": "分组方式",

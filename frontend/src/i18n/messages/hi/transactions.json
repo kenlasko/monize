@@ -576,6 +576,7 @@
       "total": "कुल",
       "transactions": "लेन-देन",
       "tooltip": "{count, plural, one {# लेन-देन} other {# लेन-देन}}",
+      "partialNote": "कुछ राशियों के लिए विनिमय दर नहीं है और वे इन योगों में शामिल नहीं हैं।",
       "quarterLabel": "Q{quarter} {year}",
       "quarterTick": "Q{quarter} {year}",
       "granularityLabel": "समूहन",

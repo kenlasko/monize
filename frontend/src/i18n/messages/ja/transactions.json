@@ -576,6 +576,7 @@
       "total": "合計",
       "transactions": "取引",
       "tooltip": "{count, plural, one {# 件の取引} other {# 件の取引}}",
+      "partialNote": "為替レートのない金額があり、これらの合計には含まれていません。",
       "quarterLabel": "{year}年Q{quarter}",
       "quarterTick": "{year}年Q{quarter}",
       "granularityLabel": "グループ化",

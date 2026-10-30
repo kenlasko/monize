@@ -138,8 +138,8 @@
     "redonePrefix": "Opnieuw gedaan: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "Open de Monize-wiki voor hulp bij dit gedeelte",
-    "helpTooltip": "Open de Monize-wiki voor hulp bij dit gedeelte"
+    "helpAriaLabel": "Open de Monize-documentatie voor hulp bij dit gedeelte",
+    "helpTooltip": "Open de Monize-documentatie voor hulp bij dit gedeelte"
   },
   "bootSplash": {
     "loading": "Monize wordt geladen",

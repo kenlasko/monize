@@ -47,9 +47,9 @@
     "processing": "İşleniyor...",
     "acceptedFormats": "QIF/QMTF, OFX, QFX, CSV veya Microsoft Money (.mny)",
     "mnyFailedHeading": "Bu Microsoft Money dosyası açılamadı",
-    "wikiNotice": {
+    "docsNotice": {
       "title": "İçe aktarmadan önce",
-      "body": "Herhangi bir şeyi içe aktarmadan önce wiki'deki <money>Importing from Microsoft Money</money> veya <quicken>Importing from Quicken</quicken> bölümünü okuyun."
+      "body": "Herhangi bir şeyi içe aktarmadan önce belgelerdeki <money>Importing from Microsoft Money</money> veya <quicken>Importing from Quicken</quicken> bölümünü okuyun."
     }
   },
   "selectAccount": {

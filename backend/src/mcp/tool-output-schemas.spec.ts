@@ -706,7 +706,14 @@ const cases: Array<{ name: string; schema: OutputSchema; raw: unknown }> = [
     raw: {
       startDate: "2026-01-01",
       endDate: "2026-12-31",
-      totals: { realizedGain: 0, unrealizedGain: 20, totalCapitalGain: 20 },
+      totals: {
+        realizedGain: 0,
+        unrealizedGain: 20,
+        totalCapitalGain: 20,
+        currency: "CAD",
+        fxComplete: true,
+        missingRatePairs: [],
+      },
       groupedBy: "month",
       entries: [
         {

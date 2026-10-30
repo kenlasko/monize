@@ -1968,6 +1968,29 @@ describe("BackupService", () => {
         expect(clear).toBeGreaterThan(lastInsert);
       });
 
+      it("recomputes current_balance of the restored accounts from the ledger after the inserts", async () => {
+        mockUserRepo.findOne.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        await service.restoreData(userId, makeInput({ password: "test" }));
+        const calls = mockQueryRunner.query.mock.calls.map(([sql]: [string]) =>
+          String(sql),
+        );
+        const recompute = calls.findIndex(
+          (sql) =>
+            /UPDATE accounts a\s+SET current_balance/.test(sql) &&
+            sql.includes("transaction_date <= $2"),
+        );
+        expect(recompute).toBeGreaterThan(-1);
+        const params = mockQueryRunner.query.mock.calls[recompute][1];
+        expect(params[0]).toBe(userId);
+        expect(params[1]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        const lastInsert = calls.reduce(
+          (last, sql, i) => (/^\s*INSERT INTO/.test(sql) ? i : last),
+          -1,
+        );
+        expect(recompute).toBeGreaterThan(lastInsert);
+      });
+
       describe("bond series recovery", () => {
         const recovery = () =>
           (

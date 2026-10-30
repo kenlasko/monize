@@ -345,6 +345,19 @@ Steps:
      the same new counterparty converge), create the transaction, point the
      ledger row at it;
    - apply the `import` rules to the created ids, with the raw payee text;
+   - give a row whose payee the rules changed, and whose category no rule
+     decided, the new payee's default category when it has one
+     (`payeeGivingDefaultCategory` in
+     `backend/src/bank-sync/bank-sync-rule-payee-category.ts`): a rule that
+     cleans the bank's text into an existing payee categorises the row as
+     that payee would have. A rule decided the category when a matched
+     rule's `set_category` applied, or was skipped as `no_change` or
+     `already_set` (read from the trace, since a `set_category` that
+     confirms the row's category leaves no net change); that category
+     always wins. A row a structural action split or made a transfer gets
+     none. The category comes from the payee's default, not from a rule, so
+     no rule application records it: the row's rule history and explain view
+     show the payee change alone;
    - recompute the balance from the ledger with
      `AccountsService.recalculateCurrentBalance`, which joins this
      transaction under the lock already held (INV-BALANCE-001; the writer never
@@ -380,7 +393,7 @@ answers one row per provider row:
 |---|---|
 | `outcome` | `new`, `duplicate` (the ledger already has its key), `refused` (with the reason), `pending`, `before_cutoff` |
 | `transactionDate`, `amount`, `currencyCode`, `payeeText`, `description`, `referenceNumber` | as the planner produced them |
-| `payeeName`, `categoryName`, `tagNames` | what the payee lookup and the `import` rules would give (`previewForRow`) |
+| `payeeName`, `categoryName`, `tagNames` | what the payee lookup and the `import` rules would give (`previewForRow`), with the default category of a payee the rules chose, as the write gives it |
 
 and a summary: the counts per outcome, the Monize account's current balance,
 the balance after the import (current balance plus the sum of the `new` rows,

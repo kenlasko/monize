@@ -3,6 +3,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { I18nService } from "nestjs-i18n";
 import { DataSource } from "typeorm";
 import { Account } from "../accounts/entities/account.entity";
+import { Payee } from "../payees/entities/payee.entity";
 import { PayeesService } from "../payees/payees.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import type {
@@ -55,10 +56,12 @@ describe("BankSyncPreviewService", () => {
   const linkRepo = { findOne: jest.fn() };
   const accountRepo = { findOne: jest.fn() };
   const preferenceRepo = { findOne: jest.fn() };
+  const payeeRepo = { find: jest.fn() };
   const { manager, dataSource } = createScopedDbMocks([
     [BankSyncAccount, linkRepo],
     [Account, accountRepo],
     [UserPreference, preferenceRepo],
+    [Payee, payeeRepo],
   ]);
   const rulesApplier: jest.Mocked<
     Pick<
@@ -187,6 +190,7 @@ describe("BankSyncPreviewService", () => {
     payees.findPayeeByAlias.mockResolvedValue(null);
     payees.getAllAliases.mockResolvedValue([]);
     preferenceRepo.findOne.mockResolvedValue({ language: "pl" });
+    payeeRepo.find.mockResolvedValue([]);
     ledgerHolding();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -621,6 +625,109 @@ describe("BankSyncPreviewService", () => {
           categoryName: "Groceries",
           tagNames: ["Tag"],
         });
+      });
+
+      it("shows the default category of a payee a rule chose, as the write gives it", async () => {
+        payees.findByName.mockResolvedValue({
+          id: "payee-raw",
+          name: "Biedronka",
+          defaultCategoryId: "cat-1",
+          defaultCategory: { name: "Groceries" },
+        } as never);
+        rulesApplier.planForRow.mockResolvedValue(
+          effects({ payeeId: "payee-9" }, [
+            matchedTrace({
+              applied: [{ type: "set_payee" }],
+              changes: { payeeId: { before: "payee-raw", after: "payee-9" } },
+            }),
+          ]),
+        );
+        rulesApplier.labelsFor.mockResolvedValue(
+          labels({ payees: { "payee-9": "Biedronka S.A." } }),
+        );
+        payeeRepo.find.mockResolvedValue([
+          {
+            id: "payee-9",
+            name: "Biedronka S.A.",
+            defaultCategoryId: "cat-food",
+            defaultCategory: { id: "cat-food", name: "Food" },
+          },
+        ]);
+        const [first, second] = (await service.build(input())).rows;
+        expect(first).toMatchObject({
+          payeeName: "Biedronka S.A.",
+          categoryName: "Food",
+        });
+        expect(second).toMatchObject({
+          payeeName: "Biedronka S.A.",
+          categoryName: "Food",
+        });
+        // Read once for the preview, in the caller's own rows, never written.
+        expect(payeeRepo.find).toHaveBeenCalledTimes(1);
+        expect(payeeRepo.find).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({ userId: USER_ID }),
+          }),
+        );
+        expect(writes()).toEqual([]);
+      });
+
+      it("keeps a category a rule confirmed beside the payee it chose, though the net effects show no category change", async () => {
+        payees.findByName.mockResolvedValue({
+          id: "payee-raw",
+          name: "Biedronka",
+          defaultCategoryId: "cat-1",
+          defaultCategory: { name: "Groceries" },
+        } as never);
+        rulesApplier.planForRow.mockResolvedValue(
+          effects({ payeeId: "payee-9" }, [
+            matchedTrace({
+              applied: [{ type: "set_payee" }],
+              skipped: [{ type: "set_category", reason: "no_change" }],
+              changes: { payeeId: { before: "payee-raw", after: "payee-9" } },
+            }),
+          ]),
+        );
+        rulesApplier.labelsFor.mockResolvedValue(
+          labels({ payees: { "payee-9": "Biedronka S.A." } }),
+        );
+        payeeRepo.find.mockResolvedValue([
+          {
+            id: "payee-9",
+            name: "Biedronka S.A.",
+            defaultCategoryId: "cat-food",
+            defaultCategory: { id: "cat-food", name: "Food" },
+          },
+        ]);
+        const [first] = (await service.build(input())).rows;
+        expect(first).toMatchObject({
+          payeeName: "Biedronka S.A.",
+          categoryName: "Groceries",
+        });
+        expect(payeeRepo.find).not.toHaveBeenCalled();
+      });
+
+      it("keeps what the rules left when the chosen payee has no default category, or a rule set one", async () => {
+        payees.findByName.mockResolvedValue({
+          id: "payee-raw",
+          name: "Biedronka",
+          defaultCategoryId: "cat-1",
+          defaultCategory: { name: "Groceries" },
+        } as never);
+        rulesApplier.planForRow
+          .mockResolvedValueOnce(effects({ payeeId: "payee-9" }))
+          .mockResolvedValueOnce(
+            effects({ payeeId: "payee-9", categoryId: "cat-9" }),
+          );
+        rulesApplier.labelsFor.mockResolvedValue(
+          labels({ categories: { "cat-9": "Rule category" } }),
+        );
+        payeeRepo.find.mockResolvedValue([
+          { id: "payee-9", name: "Shop", defaultCategoryId: null },
+        ]);
+        const [first, second] = (await service.build(input())).rows;
+        expect(first.categoryName).toBe("Groceries");
+        expect(second.categoryName).toBe("Rule category");
       });
 
       describe("the trace of each rule that matched (spec section 7b)", () => {

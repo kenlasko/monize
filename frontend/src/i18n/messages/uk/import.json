@@ -47,9 +47,9 @@
     "processing": "Обробка...",
     "acceptedFormats": "QIF/QMTF, OFX, QFX, CSV або Microsoft Money (.mny)",
     "mnyFailedHeading": "Не вдалося відкрити цей файл Microsoft Money",
-    "wikiNotice": {
+    "docsNotice": {
       "title": "Перед імпортом",
-      "body": "Перш ніж щось імпортувати, прочитайте розділ вікі <money>Importing from Microsoft Money</money> або <quicken>Importing from Quicken</quicken>."
+      "body": "Перш ніж щось імпортувати, прочитайте розділ документації <money>Importing from Microsoft Money</money> або <quicken>Importing from Quicken</quicken>."
     }
   },
   "selectAccount": {

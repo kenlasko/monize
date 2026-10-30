@@ -4,6 +4,8 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { todayYMD } from "../common/date-utils";
 import { Security } from "../securities/entities/security.entity";
 import { SecurityPriceService } from "../securities/security-price.service";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { GemPriceService } from "./gem-price.service";
 import { GemCadence } from "./entities/gem-strategy.entity";
 import {
@@ -120,6 +122,7 @@ export class GemBackfillService {
     private dataSource: DataSource,
     private priceService: GemPriceService,
     private securityPriceService: SecurityPriceService,
+    private exchangeRateService: ExchangeRateService,
   ) {}
 
   /**
@@ -155,6 +158,15 @@ export class GemBackfillService {
     );
     const short = wanted.filter(
       (id) => !coversBoundaries(series.get(id), boundaries),
+    );
+    // Prices alone do not make a role priced: a foreign close with no rate is
+    // dropped from the report-currency series, so the rates are ensured too.
+    await this.ensureRateHistory(
+      userId,
+      wanted.filter((id) => !short.includes(id)),
+      series,
+      boundaries,
+      seriesFrom.toISOString().slice(0, 10),
     );
     if (short.length === 0) return [];
 
@@ -201,5 +213,61 @@ export class GemBackfillService {
     );
 
     return due.map((security) => security.id);
+  }
+
+  /**
+   * Fetch the exchange-rate history behind boundaries that a price covers in
+   * its own currency but the report-currency series cannot. Best effort, and
+   * gated by the rate service's own provider chain; the price backfill is not
+   * asked, since the prices are there.
+   */
+  private async ensureRateHistory(
+    userId: string,
+    pricedIds: string[],
+    rawSeries: Map<string, PricePoint[]>,
+    boundaries: string[],
+    seriesFrom: string,
+  ): Promise<void> {
+    if (pricedIds.length === 0) return;
+    const securities = await withScopedDb(this.dataSource, (manager) =>
+      manager
+        .getRepository(Security)
+        .find({ where: { id: In(pricedIds), userId } }),
+    );
+    const reportCurrency = await resolveUserDefaultCurrency(
+      this.dataSource,
+      userId,
+    );
+    const foreign = securities.filter(
+      (security) =>
+        !!security.currencyCode && security.currencyCode !== reportCurrency,
+    );
+    if (foreign.length === 0) return;
+
+    const converted = await this.priceService.loadSeries(
+      foreign.map((security) => security.id),
+      seriesFrom,
+      "day",
+      undefined,
+      userId,
+    );
+    for (const security of foreign) {
+      const raw = rawSeries.get(security.id);
+      const priced = converted.get(security.id);
+      const pair = { from: security.currencyCode, to: reportCurrency };
+      for (const boundary of boundaries) {
+        if (closeAt(raw ?? [], boundary) === null) continue;
+        if (priced && closeAt(priced, boundary) !== null) continue;
+        try {
+          await this.exchangeRateService.ensureRatesForDate([pair], boundary);
+        } catch (error) {
+          this.logger.warn(
+            `GEM rate history fetch ${pair.from}->${pair.to} for ${boundary} failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      }
+    }
   }
 }

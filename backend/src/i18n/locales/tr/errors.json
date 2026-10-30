@@ -42,6 +42,7 @@
     "institutionNotFound": "Kurum bulunamadı",
     "updateClosed": "Kapalı bir hesap güncellenemiyor",
     "changeCurrencyWithTransactions": "İşlem içeren bir hesabın para birimi değiştirilemez.",
+    "changeCurrencyWithBalanceOrSchedules": "Açılış bakiyesi veya planlanmış işlemleri olan bir hesabın para birimi değiştirilemez.",
     "alreadyClosed": "Hesap zaten kapalı",
     "closeNonZeroBalance": "Sıfır olmayan bakiyeli hesap kapatılamaz. Mevcut bakiye: {{ currentBalance }}",
     "closeWithFutureTransactions": "Gelecek tarihli işlemleri olan bir hesap kapatılamaz. Hesapta bugünden sonraki bir tarihe ait {{ count }} işlem var; önce bunları silin veya geçersiz kılın.",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "Bu Money dosyası içe aktarılıyor. Silmeden önce içe aktarmanın bitmesini bekleyin.",
     "mnyImportAlreadyRunning": "Zaten bir içe aktarma çalışıyor. Yenisini başlatmadan önce bitmesini bekleyin.",
     "mnyAlreadyImported": "Bu dosya {{ date }} tarihinde zaten içe aktarıldı (içe aktarma {{ jobId }}) ve kayıtları hâlâ hesabınızda. Yeniden içe aktarmak onları çoğaltır. Bunları değiştirmek için baştan başlayın ve mevcut verilerinizi değiştirmeyi seçin.",
+    "mnyExistingAccountClosed": "Mevcut \"{{ name }}\" hesabı kapalı olduğundan Money dosyası bununla birleştirilemez. Hesabı yeniden açın veya adını değiştirin, ardından yeniden içe aktarın.",
+    "mnyExistingAccountCurrency": "Mevcut \"{{ name }}\" hesabı {{ existing }} kullanıyor, ancak Money dosyasındaki hesap {{ file }} kullanıyor. Birinin adını değiştirin, ardından yeniden içe aktarın.",
     "mnyJobNotFound": "İçe aktarma görevi bulunamadı",
     "mnyFileTooLarge": "Bu Money dosyası {{ limit }} MB içe aktarma sınırından büyük.",
-    "noRateForSplitTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: bir bölünmüş satır başka para birimindeki bir hesaba transfer ediyor. Bu çift ve tarih için bir döviz kuru ekleyin, ardından yeniden içe aktarın."
+    "noRateForSplitTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: bir bölünmüş satır başka para birimindeki bir hesaba transfer ediyor. Bu çift ve tarih için bir döviz kuru ekleyin, ardından yeniden içe aktarın.",
+    "accountClosed": "Hesap kapalı. Yeniden açın veya başka bir hesap seçin."
   },
   "monteCarlo": {
     "scenarioNotFound": "{{ id }} senaryosu bulunamadı",
@@ -779,6 +783,7 @@
     "notATransfer": "İşlem bir transfer değil",
     "splitTransferLegAccountLocked": "Bu transfer, bölünmüş bir işlemin parçasıdır. Hesaplarını değiştirmek için kaynak işlemdeki bölümü düzenleyin.",
     "splitTransferLegStatusLocked": "Bu transfer, bölünmüş bir işlemin parçasıdır. İki tarafın birlikte değişmesi için, ait olduğu bölünmüş işlemi düzenleyerek iptal edin veya geri yükleyin.",
+    "investmentCashLegLocked": "Bu işlem bir yatırım işleminin nakit tarafıdır. İki tarafın birlikte değişmesi için bunun yerine yatırım işlemini değiştirin veya silin.",
     "investmentCashLegStatusLocked": "Bu işlem, bir yatırım işleminin nakit tarafıdır. İki tarafın birlikte değişmesi için, yatırım işleminin durumunu değiştirerek iptal edin veya geri yükleyin.",
     "notFoundById": "{{ id }} kimliğine sahip işlem bulunamadı",
     "bulkUpdateNoFields": "En az bir güncelleme alanı sağlanmalıdır",

@@ -139,8 +139,10 @@ export class GemPerformanceService {
     /** What the strategy accounts hold now, for the composition simulation. */
     holdings?: GemSimulationHolding[];
     asOf?: string;
+    /** Whose reporting currency the closes are converted into. */
+    userId: string;
   }): Promise<GemPerformanceView | null> {
-    const { range, securityByRole } = params;
+    const { range, securityByRole, userId } = params;
     const asOf = params.asOf ?? todayYMD();
     const securityIds = [...securityByRole.values()];
     if (securityIds.length === 0) return null;
@@ -161,6 +163,8 @@ export class GemPerformanceService {
       ],
       from,
       sampling,
+      undefined,
+      userId,
     );
 
     const readers = new Map<GemAssetRole, (date: string) => number | null>();

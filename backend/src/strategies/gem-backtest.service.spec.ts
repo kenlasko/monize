@@ -5,6 +5,7 @@ import { GemBacktestService } from "./gem-backtest.service";
 const strategy = (overrides: Partial<GemStrategy> = {}): GemStrategy =>
   ({
     id: "strategy-1",
+    userId: "user-1",
     // Quarterly, so the signals below sit on consecutive periods: a monthly
     // calendar with signals six months apart is five missing periods, and the
     // simulation is required to treat those as holes rather than hold the
@@ -81,6 +82,9 @@ describe("GemBacktestService", () => {
       ["sec-spy"],
       "2023-12-18",
       "day",
+      undefined,
+      // Closes are converted into this user's reporting currency.
+      "user-1",
     );
     // Every boundary falls on a day the market was shut -- 1 January, 1 July --
     // and is priced by the close before it, which is what the lead window

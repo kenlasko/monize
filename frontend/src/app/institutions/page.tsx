@@ -27,6 +27,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { PAGE_SIZE } from '@/lib/constants';
+import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Institutions');
 
@@ -198,7 +199,7 @@ function InstitutionsContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/Accounts#financial-institutions"
+          helpUrl={docsUrl('institutions')}
           actions={<Button onClick={openCreate}>{t('page.newInstitution')}</Button>}
         />
 

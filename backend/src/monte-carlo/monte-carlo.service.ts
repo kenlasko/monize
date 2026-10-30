@@ -20,10 +20,22 @@ import {
 import { SimulationResult } from "./dto/simulation-result.dto";
 import { PortfolioService } from "../securities/portfolio.service";
 import { SecurityPriceService } from "../securities/security-price.service";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { Holding } from "../securities/entities/holding.entity";
 import { Security } from "../securities/entities/security.entity";
 import { Account } from "../accounts/entities/account.entity";
+import { todayYMD } from "../common/date-utils";
 import { roundMoney } from "../common/round.util";
+import { resolveUserDefaultCurrency } from "../common/default-currency.util";
+import { loadPriceSeries } from "../common/time-series/price-series.util";
+import {
+  buildRateIndex,
+  convertAtDate,
+} from "../common/time-series/rate-index.util";
+import {
+  BOUNDARY_LAG_DAYS,
+  daysBetween,
+} from "../common/time-series/price-boundary.util";
 
 export interface HistoricalStats {
   /** Number of full calendar years of data used to compute the stats. */
@@ -55,6 +67,13 @@ export interface HistoricalStats {
    */
   unweightableSecurityIds: string[];
   /**
+   * True when the current portfolio value itself could not be determined (the
+   * summary failed or was incomplete), so the idle-cash weight is unknown and
+   * the statistics are withheld for that reason. Any missing currency pair the
+   * summary named is in `missingRatePairs`.
+   */
+  portfolioValueUnknown: boolean;
+  /**
    * Aggregate current market value of the selected accounts in the user's
    * default currency, or `null` when it could not be determined.
    *
@@ -70,7 +89,8 @@ export interface HistoricalStats {
 export interface HoldingStat {
   symbol: string;
   name: string;
-  currencyCode: string;
+  /** `null` when the security carries no currency: unknown, not a default. */
+  currencyCode: string | null;
   quantity: number;
   /**
    * Current market value, or `null` when the security has no current price.
@@ -101,6 +121,7 @@ export class MonteCarloService {
     private simulationService: MonteCarloSimulationService,
     private portfolioService: PortfolioService,
     private securityPriceService: SecurityPriceService,
+    private exchangeRateService: ExchangeRateService,
     private dataSource: DataSource,
   ) {}
 
@@ -467,11 +488,13 @@ export class MonteCarloService {
         missingRatePairs: [],
         unpricedSecurityIds: [],
         unweightableSecurityIds: [],
+        portfolioValueUnknown: false,
         currentBalance: 0,
       };
     }
 
-    const currentBalance = await this.computeCurrentValue(userId, ownedIds);
+    const current = await this.computeCurrentSummary(userId, ownedIds);
+    const currentBalance = current.value;
 
     // Build a value-weighted series of yearly returns from the price history
     // of currently held securities. This answers "what would my current mix
@@ -495,12 +518,14 @@ export class MonteCarloService {
         missingRatePairs: [],
         unpricedSecurityIds: [],
         unweightableSecurityIds: [],
+        portfolioValueUnknown: false,
         currentBalance,
       };
     }
 
     const securityIds = [...new Set(active.map((h) => h.securityId))];
-    const yearlyReturns = await this.fetchYearlyReturnsBySecurity(securityIds);
+    const closesBySecurity =
+      await this.fetchYearEndClosesBySecurity(securityIds);
 
     // Weight each security by its current market value in ONE common currency.
     // Weighting by raw native price summed USD, JPY and EUR amounts as though the
@@ -517,6 +542,7 @@ export class MonteCarloService {
     }> = [];
     const unpricedSecurityIds = new Set<string>();
     const unweightableSecurityIds = new Set<string>();
+    const currencyBySecurity = new Map<string, string>();
     for (const h of active) {
       const price = currentPrices.get(h.securityId);
       if (price == null) {
@@ -533,6 +559,7 @@ export class MonteCarloService {
         unweightableSecurityIds.add(h.securityId);
         continue;
       }
+      currencyBySecurity.set(h.securityId, currencyCode);
       nativeValues.push({
         securityId: h.securityId,
         currencyCode,
@@ -558,17 +585,158 @@ export class MonteCarloService {
       }
     }
 
+    const weightedSecIds = [...weightBySec.entries()]
+      .filter(([, w]) => w > 0)
+      .map(([id]) => id);
+
+    // Each year-end close is converted at the rate of its own date, so a
+    // return is the one a holder in the default currency earned; a native
+    // return weighted by default-currency values is neither.
+    const defaultCurrency = await resolveUserDefaultCurrency(
+      this.dataSource,
+      userId,
+    );
+    const missingFxPairs = new Set<string>();
+    // Every pair's rates load once, then each close resolves in memory.
+    const foreignCurrencies = new Set<string>();
+    let earliestClose: string | null = null;
+    for (const secId of weightedSecIds) {
+      const currency = currencyBySecurity.get(secId);
+      if (!currency || currency === defaultCurrency) continue;
+      for (const c of closesBySecurity.get(secId) ?? []) {
+        foreignCurrencies.add(currency);
+        if (earliestClose === null || c.date < earliestClose) {
+          earliestClose = c.date;
+        }
+      }
+    }
+    const loadRateIndex = () =>
+      withScopedDb(this.dataSource, (m) =>
+        buildRateIndex(
+          (sql, params) => m.query(sql, params),
+          foreignCurrencies,
+          defaultCurrency,
+          earliestClose ?? todayYMD(),
+          todayYMD(),
+        ),
+      );
+    // A close that cannot convert is a gap for that security alone: it is
+    // dropped, and `toYearlyReturns` skips the two returns that touch it.
+    const convertAll = (
+      rateIndex: Awaited<ReturnType<typeof loadRateIndex>>,
+    ) => {
+      const returns = new Map<string, Map<number, number>>();
+      const gaps: Array<{ secId: string; pair: string; date: string }> = [];
+      for (const secId of weightedSecIds) {
+        const currency = currencyBySecurity.get(secId);
+        if (!currency) continue;
+        const closes: YearEndClose[] = [];
+        for (const c of closesBySecurity.get(secId) ?? []) {
+          const price =
+            currency === defaultCurrency
+              ? c.price
+              : convertAtDate(
+                  c.price,
+                  currency,
+                  defaultCurrency,
+                  c.date,
+                  rateIndex,
+                  this.logger,
+                );
+          if (price === null) {
+            gaps.push({
+              secId,
+              pair: `${currency}->${defaultCurrency}`,
+              date: c.date,
+            });
+            continue;
+          }
+          closes.push({ ...c, price });
+        }
+        returns.set(secId, toYearlyReturns(closes));
+      }
+      return { returns, gaps };
+    };
+    let { returns: yearlyReturns, gaps } = convertAll(await loadRateIndex());
+    if (gaps.length > 0) {
+      // Fetch first, as the other read paths do: ask the history backfill for
+      // each missing pair's month, then convert again from what is stored.
+      const datesByPair = new Map<string, Set<string>>();
+      for (const g of gaps) {
+        const dates = datesByPair.get(g.pair) ?? new Set<string>();
+        dates.add(g.date);
+        datesByPair.set(g.pair, dates);
+      }
+      let loaded = 0;
+      for (const [pair, dates] of datesByPair) {
+        const [from, to] = pair.split("->");
+        for (const date of dates) {
+          try {
+            loaded += await this.exchangeRateService.ensureRatesForDate(
+              [{ from, to }],
+              date,
+            );
+          } catch (error) {
+            this.logger.warn(
+              `Historical rate fetch ${pair} for ${date} failed: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
+        }
+      }
+      if (loaded > 0) {
+        ({ returns: yearlyReturns, gaps } = convertAll(await loadRateIndex()));
+      }
+    }
+    // The stats are withheld only when a gap leaves a security with fewer
+    // yearly returns than the statistic needs; a smaller gap is a warning.
+    const gapPairsBySecurity = new Map<string, Set<string>>();
+    for (const g of gaps) {
+      const pairs = gapPairsBySecurity.get(g.secId) ?? new Set<string>();
+      pairs.add(g.pair);
+      gapPairsBySecurity.set(g.secId, pairs);
+    }
+    for (const [secId, pairs] of gapPairsBySecurity) {
+      if ((yearlyReturns.get(secId)?.size ?? 0) < MIN_YEARLY_RETURNS) {
+        for (const pair of pairs) missingFxPairs.add(pair);
+      } else {
+        this.logger.warn(
+          `Historical stats skip year-end closes of ${secId} with no ${[...pairs].join(", ")} rate`,
+        );
+      }
+    }
+    // A failed or incomplete summary leaves the cash weight unknown; name the
+    // pairs it could not convert (a cash balance in a currency with no rate)
+    // and flag the failure itself, so the withheld statistics have a reason.
+    const portfolioValueUnknown = current.value === null;
+    const missingRatePairs = [
+      ...new Set([
+        ...converted.missingRatePairs,
+        ...missingFxPairs,
+        ...current.missingRatePairs,
+      ]),
+    ].sort();
+
+    // Idle cash is part of the starting value and earns nothing: it joins the
+    // weights at a 0% return. An unknown cash balance is not zero cash.
+    const cashWeight =
+      current.cash !== null && Number.isFinite(current.cash)
+        ? Math.max(0, current.cash)
+        : null;
+
     // A return over the priced, convertible subset is not the selected
     // portfolio's return. If any active holding could not be weighted, the
     // mean/volatility are unknown, not the subset's.
     if (
       unpricedSecurityIds.size > 0 ||
-      converted.missingRatePairs.length > 0 ||
-      unweightableSecurityIds.size > 0
+      missingRatePairs.length > 0 ||
+      unweightableSecurityIds.size > 0 ||
+      cashWeight === null
     ) {
       this.logger.warn(
         `Historical stats for accounts ${ownedIds.join(",")} omit holdings that could not be weighted (${[
-          ...converted.missingRatePairs,
+          ...missingRatePairs,
           ...[...unpricedSecurityIds].map((id) => `unpriced:${id}`),
           ...[...unweightableSecurityIds].map(
             (id) => `unweightable:${id} (short or unknown currency)`,
@@ -580,9 +748,10 @@ export class MonteCarloService {
         meanReturn: null,
         volatility: null,
         returnsComplete: false,
-        missingRatePairs: converted.missingRatePairs,
+        missingRatePairs,
         unpricedSecurityIds: [...unpricedSecurityIds].sort(),
         unweightableSecurityIds: [...unweightableSecurityIds].sort(),
+        portfolioValueUnknown,
         currentBalance,
       };
     }
@@ -597,10 +766,6 @@ export class MonteCarloService {
     // A year with partial coverage is not the portfolio's year; skipping it
     // shrinks `yearsObserved` honestly, and the provider backfill above keeps
     // the window from shrinking for securities that merely lacked local rows.
-    const weightedSecIds = [...weightBySec.entries()]
-      .filter(([, w]) => w > 0)
-      .map(([id]) => id);
-
     const allYears = new Set<number>();
     for (const id of weightedSecIds) {
       for (const y of yearlyReturns.get(id)?.keys() ?? []) allYears.add(y);
@@ -609,7 +774,7 @@ export class MonteCarloService {
     const portfolioReturns: number[] = [];
     for (const year of [...allYears].sort()) {
       let weightedReturn = 0;
-      let totalWeight = 0;
+      let totalWeight = cashWeight;
       let complete = true;
       for (const secId of weightedSecIds) {
         const r = yearlyReturns.get(secId)?.get(year);
@@ -626,7 +791,7 @@ export class MonteCarloService {
       }
     }
 
-    if (portfolioReturns.length < 2) {
+    if (portfolioReturns.length < MIN_YEARLY_RETURNS) {
       return {
         yearsObserved: portfolioReturns.length,
         meanReturn: null,
@@ -636,6 +801,7 @@ export class MonteCarloService {
         missingRatePairs: [],
         unpricedSecurityIds: [],
         unweightableSecurityIds: [],
+        portfolioValueUnknown: false,
         currentBalance,
       };
     }
@@ -655,6 +821,7 @@ export class MonteCarloService {
       missingRatePairs: [],
       unpricedSecurityIds: [],
       unweightableSecurityIds: [],
+      portfolioValueUnknown: false,
       currentBalance,
     };
   }
@@ -704,7 +871,8 @@ export class MonteCarloService {
     }
 
     const securityIds = [...new Set(active.map((h) => h.securityId))];
-    const yearlyReturns = await this.fetchYearlyReturnsBySecurity(securityIds);
+    const closesBySecurity =
+      await this.fetchYearEndClosesBySecurity(securityIds);
     const currentPrices =
       await this.portfolioService.getLatestPrices(securityIds);
 
@@ -713,14 +881,15 @@ export class MonteCarloService {
 
     for (const h of active) {
       if (!grouped.has(h.accountId)) continue;
-      const returns = yearlyReturns.get(h.securityId);
-      const series = returns ? [...returns.values()] : [];
+      const series = [
+        ...toYearlyReturns(closesBySecurity.get(h.securityId) ?? []).values(),
+      ];
       const stats = computeMeanStdev(series);
       const price = currentPrices.get(h.securityId);
       grouped.get(h.accountId)!.push({
         symbol: h.security?.symbol ?? "?",
         name: h.security?.name ?? "Unknown",
-        currencyCode: h.security?.currencyCode ?? "USD",
+        currencyCode: h.security?.currencyCode || null,
         quantity: Number(h.quantity),
         marketValue:
           price == null ? null : roundMoney(Number(h.quantity) * price),
@@ -753,20 +922,20 @@ export class MonteCarloService {
    * span the full 10-year window. */
   private static BACKFILL_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 
-  private async fetchYearlyReturnsBySecurity(
+  private async fetchYearEndClosesBySecurity(
     securityIds: string[],
-  ): Promise<Map<string, Map<number, number>>> {
+  ): Promise<Map<string, YearEndClose[]>> {
     if (securityIds.length === 0) return new Map();
 
-    let yearlyReturns = await this.queryYearlyReturns(securityIds);
+    let closes = await this.queryYearEndCloses(securityIds);
 
     // For securities with fewer than 10 yearly returns we backfill from the
     // provider — typically newer holdings whose local price history doesn't
     // yet span the full window we want for stable mean/volatility estimates.
     const sparseIds = securityIds.filter(
-      (id) => (yearlyReturns.get(id)?.size ?? 0) < 10,
+      (id) => toYearlyReturns(closes.get(id) ?? []).size < 10,
     );
-    if (sparseIds.length === 0) return yearlyReturns;
+    if (sparseIds.length === 0) return closes;
 
     const securities = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(Security).find({
@@ -785,7 +954,7 @@ export class MonteCarloService {
       );
     });
 
-    if (dueForBackfill.length === 0) return yearlyReturns;
+    if (dueForBackfill.length === 0) return closes;
 
     await Promise.all(
       dueForBackfill.map((s) =>
@@ -812,56 +981,51 @@ export class MonteCarloService {
         ),
     );
 
-    yearlyReturns = await this.queryYearlyReturns(securityIds);
-    return yearlyReturns;
+    closes = await this.queryYearEndCloses(securityIds);
+    return closes;
   }
 
-  private async queryYearlyReturns(
+  /**
+   * Each security's year-end closes, native currency, oldest first. One price
+   * basis per series (`loadPriceSeries`); a year counts only when it is
+   * complete (not the current one) and its last close is within
+   * `BOUNDARY_LAG_DAYS` of 31 December, so a stale close never stands for the
+   * year end.
+   */
+  private async queryYearEndCloses(
     securityIds: string[],
-  ): Promise<Map<string, Map<number, number>>> {
-    // Prefer adjusted_close so dividends are reflected in the return; fall
-    // back to raw close_price for providers / older rows that don't have it
-    // populated. Net effect: total return when we have it, price-only when
-    // we don't.
-    const yearEndRows: Array<{
-      security_id: string;
-      year: string;
-      close_price: string;
-    }> = await withScopedDb(this.dataSource, (m) =>
-      m.query(
-        `SELECT DISTINCT ON (security_id, EXTRACT(YEAR FROM price_date))
-         security_id,
-         EXTRACT(YEAR FROM price_date)::text AS year,
-         COALESCE(adjusted_close, close_price)::text AS close_price
-       FROM security_prices
-       WHERE security_id = ANY($1)
-       ORDER BY security_id, EXTRACT(YEAR FROM price_date), price_date DESC`,
-        [securityIds],
-      ),
+  ): Promise<Map<string, YearEndClose[]>> {
+    const series = await withScopedDb(this.dataSource, (m) =>
+      loadPriceSeries(m, {
+        table: "security_prices",
+        ids: securityIds,
+        fromDate: "1900-01-01",
+        sampling: "month",
+      }),
     );
 
-    const pricesBySecurity = new Map<
-      string,
-      Array<{ year: number; price: number }>
-    >();
-    for (const row of yearEndRows) {
-      const arr = pricesBySecurity.get(row.security_id) ?? [];
-      arr.push({ year: Number(row.year), price: Number(row.close_price) });
-      pricesBySecurity.set(row.security_id, arr);
-    }
-
-    const yearlyReturns = new Map<string, Map<number, number>>();
-    for (const [secId, prices] of pricesBySecurity) {
-      prices.sort((a, b) => a.year - b.year);
-      const returns = new Map<number, number>();
-      for (let i = 1; i < prices.length; i++) {
-        const prev = prices[i - 1].price;
-        const curr = prices[i].price;
-        if (prev > 0) returns.set(prices[i].year, (curr - prev) / prev);
+    const currentYear = new Date().getUTCFullYear();
+    const result = new Map<string, YearEndClose[]>();
+    for (const [secId, { points }] of series) {
+      const lastOfYear = new Map<number, { date: string; price: number }>();
+      for (const p of points) {
+        lastOfYear.set(Number(p.date.slice(0, 4)), {
+          date: p.date,
+          price: p.close,
+        });
       }
-      yearlyReturns.set(secId, returns);
+      const closes: YearEndClose[] = [];
+      for (const [year, last] of [...lastOfYear].sort((a, b) => a[0] - b[0])) {
+        if (
+          year < currentYear &&
+          daysBetween(last.date, `${year}-12-31`) <= BOUNDARY_LAG_DAYS
+        ) {
+          closes.push({ year, ...last });
+        }
+      }
+      result.set(secId, closes);
     }
-    return yearlyReturns;
+    return result;
   }
 
   /**
@@ -882,6 +1046,24 @@ export class MonteCarloService {
     userId: string,
     accountIds: string[],
   ): Promise<number | null> {
+    return (await this.computeCurrentSummary(userId, accountIds)).value;
+  }
+
+  /** `computeCurrentValue`, with the idle-cash part of it alongside. */
+  private async computeCurrentSummary(
+    userId: string,
+    accountIds: string[],
+  ): Promise<{
+    value: number | null;
+    cash: number | null;
+    /** Pairs the summary could not convert; empty when it failed outright. */
+    missingRatePairs: string[];
+  }> {
+    const unknown = (missingRatePairs: string[] = []) => ({
+      value: null,
+      cash: null,
+      missingRatePairs,
+    });
     try {
       const summary = await this.portfolioService.getPortfolioSummary(
         userId,
@@ -896,7 +1078,7 @@ export class MonteCarloService {
         this.logger.warn(
           `Current portfolio value for accounts ${accountIds.join(",")} is incomplete (${[...summary.missingRatePairs, ...summary.unpricedSecurityIds.map((id) => `unpriced:${id}`)].join(", ")}); reporting it as unavailable`,
         );
-        return null;
+        return unknown(summary.missingRatePairs);
       }
 
       const value = summary.totalPortfolioValue;
@@ -906,16 +1088,20 @@ export class MonteCarloService {
         this.logger.warn(
           `Current portfolio value for accounts ${accountIds.join(",")} is not finite; reporting it as unavailable`,
         );
-        return null;
+        return unknown();
       }
-      return roundMoney(value);
+      return {
+        value: roundMoney(value),
+        cash: summary.totalCashValue,
+        missingRatePairs: [],
+      };
     } catch (err) {
       this.logger.warn(
         `Failed to compute current portfolio value for accounts ${accountIds.join(",")}: ${
           err instanceof Error ? err.message : String(err)
         }`,
       );
-      return null;
+      return unknown();
     }
   }
 
@@ -934,6 +1120,31 @@ export class MonteCarloService {
     }
     return value;
   }
+}
+
+/** Fewest yearly returns a mean and a sample deviation can be read from. */
+const MIN_YEARLY_RETURNS = 2;
+
+interface YearEndClose {
+  year: number;
+  date: string;
+  price: number;
+}
+
+/**
+ * One-year returns between closes of consecutive calendar years. A missing
+ * year is a gap, not a two-year return filed under one year.
+ */
+function toYearlyReturns(closes: YearEndClose[]): Map<number, number> {
+  const returns = new Map<number, number>();
+  for (let i = 1; i < closes.length; i++) {
+    const prev = closes[i - 1];
+    const curr = closes[i];
+    if (curr.year === prev.year + 1 && prev.price > 0) {
+      returns.set(curr.year, (curr.price - prev.price) / prev.price);
+    }
+  }
+  return returns;
 }
 
 function computeMeanStdev(series: number[]): {

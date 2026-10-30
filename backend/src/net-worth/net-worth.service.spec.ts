@@ -2880,6 +2880,90 @@ describe("NetWorthService", () => {
       expect(result[0].missingRatePairs).toContain("EUR->USD");
     });
 
+    it("seeds the first month from the stored total, commission included", async () => {
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+
+      reportQuery
+        .mockResolvedValueOnce([
+          {
+            month: "2024-03-01",
+            balance: 0,
+            market_value: 11000,
+            account_id: "brokerage-new",
+            account_type: AccountType.INVESTMENT,
+            account_sub_type: "INVESTMENT_BROKERAGE",
+            currency_code: "USD",
+          },
+        ])
+        .mockResolvedValueOnce([
+          { account_id: "brokerage-new", first_month: "2024-03-01" },
+        ])
+        .mockResolvedValueOnce([
+          {
+            account_id: "brokerage-new",
+            action: "BUY",
+            quantity: 10,
+            price: 100,
+            commission: 10,
+            total_amount: 1010,
+            transaction_date: "2024-03-05",
+            security_currency: "USD",
+          },
+        ]);
+
+      const result = await service.getMonthlyInvestments(
+        "user-1",
+        "2024-03-01",
+        "2024-03-31",
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({ value: 1010 });
+    });
+
+    it("marks the first month incomplete when a trade cannot state its cost", async () => {
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+
+      reportQuery
+        .mockResolvedValueOnce([
+          {
+            month: "2024-03-01",
+            balance: 0,
+            market_value: 11000,
+            account_id: "brokerage-new",
+            account_type: AccountType.INVESTMENT,
+            account_sub_type: "INVESTMENT_BROKERAGE",
+            currency_code: "USD",
+          },
+        ])
+        .mockResolvedValueOnce([
+          { account_id: "brokerage-new", first_month: "2024-03-01" },
+        ])
+        .mockResolvedValueOnce([
+          {
+            account_id: "brokerage-new",
+            action: "BUY",
+            quantity: 10,
+            price: null,
+            commission: 0,
+            total_amount: 0,
+            transaction_date: "2024-03-05",
+            security_currency: "USD",
+          },
+        ]);
+
+      const result = await service.getMonthlyInvestments(
+        "user-1",
+        "2024-03-01",
+        "2024-03-31",
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].fxComplete).toBe(false);
+    });
+
     it("does not adjust when snapshot month is after the account's first active month", async () => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });

@@ -28,7 +28,8 @@
     "transactions": "Transaksi",
     "sinceYear": "Sejak {year}",
     "lastTransaction": "Transaksi Terakhir",
-    "convertedNote": "Dikonversi ke {currency}"
+    "convertedNote": "Dikonversi ke {currency}",
+    "partialRatesNote": "Beberapa bulan tidak memiliki kurs"
   },
   "topPayees": {
     "title": "Penerima Teratas",

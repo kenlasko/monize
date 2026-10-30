@@ -1363,6 +1363,19 @@ describe('BillsPage', () => {
       });
     });
 
+    it('reads the moved date of the next occurrence, not the recurrence slot', async () => {
+      mockGetAll.mockResolvedValue([
+        // Slot is past due, but the next occurrence was moved to the future.
+        { id: 'st-a', currencyCode: 'USD', name: 'Moved out', amount: -100, frequency: 'MONTHLY', nextDueDate: '2026-02-10', nextOverride: { id: 'o1', overrideDate: '2026-02-25', amount: null }, isActive: true, isTransfer: false },
+        // Slot is in the future, but the next occurrence was moved to the past.
+        { id: 'st-b', currencyCode: 'USD', name: 'Moved in', amount: -200, frequency: 'MONTHLY', nextDueDate: '2026-02-20', nextOverride: { id: 'o2', overrideDate: '2026-02-12', amount: null }, isActive: true, isTransfer: false },
+      ]);
+      render(<BillsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('summary-Due Now')).toHaveTextContent('1');
+      });
+    });
+
     it('shows zero when no items are due', async () => {
       mockGetAll.mockResolvedValue([
         { id: 'st-a', currencyCode: 'USD', name: 'Future', amount: -100, frequency: 'MONTHLY', nextDueDate: '2026-02-20', isActive: true, isTransfer: false },

@@ -75,6 +75,8 @@ export function computeSeasonality(monthly: MonthlyTotal[]): Seasonality {
     if (!yearPart || !Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) {
       continue;
     }
+    // Unknown (no rate) is not zero: it must not drag the month's average.
+    if (row.total === null) continue;
     years.add(yearPart);
     const bucket = byCalendarMonth.get(monthNumber) ?? [];
     bucket.push(Number(row.total) || 0);

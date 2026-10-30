@@ -82,7 +82,8 @@ describe("LoanMortgageAccountService: LINEAR and INTEREST_ONLY", () => {
       findOne: jest.fn().mockResolvedValue(null),
     };
     scheduledTransactionsService = {
-      create: jest.fn().mockResolvedValue({ id: "sched-tx-1" }),
+      createWithoutHistory: jest.fn().mockResolvedValue({ id: "sched-tx-1" }),
+      recordCreated: jest.fn(),
     };
     loanRateChangesService = {
       create: jest.fn().mockImplementation((_userId, _accountId, dto) =>
@@ -146,7 +147,8 @@ describe("LoanMortgageAccountService: LINEAR and INTEREST_ONLY", () => {
           amortizationMonths: 360,
         }),
       );
-      const template = scheduledTransactionsService.create.mock.calls[0][1];
+      const template =
+        scheduledTransactionsService.createWithoutHistory.mock.calls[0][1];
       expect(template.amount).toBe(-1333.3333);
       expect(template.endDate).toBe("2053-12-01");
       expect(template.splits).toEqual([
@@ -176,7 +178,8 @@ describe("LoanMortgageAccountService: LINEAR and INTEREST_ONLY", () => {
           prepaymentMode: null,
         }),
       );
-      const template = scheduledTransactionsService.create.mock.calls[0][1];
+      const template =
+        scheduledTransactionsService.createWithoutHistory.mock.calls[0][1];
       expect(template.amount).toBe(-500);
       expect(template.splits[0]).toEqual({
         transferAccountId: "new-acc-id",
@@ -214,7 +217,8 @@ describe("LoanMortgageAccountService: LINEAR and INTEREST_ONLY", () => {
       });
       const c = constantLinearPrincipal(stored);
       expect(c).toBe(833.3333);
-      const template = scheduledTransactionsService.create.mock.calls[0][1];
+      const template =
+        scheduledTransactionsService.createWithoutHistory.mock.calls[0][1];
       expect(template.splits).toEqual([
         { transferAccountId: "new-acc-id", amount: -c!, memo: "Principal" },
         {
@@ -239,7 +243,8 @@ describe("LoanMortgageAccountService: LINEAR and INTEREST_ONLY", () => {
       const stored = accountsRepository.create.mock.calls[0][0];
       expect(stored.originalPrincipal).toBe(260000);
       expect(
-        scheduledTransactionsService.create.mock.calls[0][1].splits[0].amount,
+        scheduledTransactionsService.createWithoutHistory.mock.calls[0][1]
+          .splits[0].amount,
       ).toBe(-constantLinearPrincipal(stored)!);
       expect(constantLinearPrincipal(stored)).toBe(722.2222);
     });
@@ -252,7 +257,9 @@ describe("LoanMortgageAccountService: LINEAR and INTEREST_ONLY", () => {
         ),
       ).rejects.toThrow(BadRequestException);
       expect(accountsRepository.save).not.toHaveBeenCalled();
-      expect(scheduledTransactionsService.create).not.toHaveBeenCalled();
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).not.toHaveBeenCalled();
     });
   });
 

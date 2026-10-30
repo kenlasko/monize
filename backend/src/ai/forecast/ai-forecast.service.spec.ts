@@ -66,6 +66,8 @@ describe("AiForecastService", () => {
       ],
       accountBalances: {
         totalBalance: 15000,
+        knownBalanceSubtotal: 15000,
+        missingRatePairs: [],
         accounts: [
           {
             name: "Chequing",
@@ -102,6 +104,8 @@ describe("AiForecastService", () => {
         incomeVariability: 0.05,
       },
       recurringCharges: [],
+      fxComplete: true,
+      missingRatePairs: [],
       ...overrides,
     };
   }
@@ -423,6 +427,34 @@ describe("AiForecastService", () => {
       const result = await service.generateForecast(userId);
 
       expect(result.narrativeSummary.length).toBe(5000);
+    });
+
+    it("reports an unknown balance and names the missing pair instead of a mixed-currency sum", async () => {
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          fxComplete: false,
+          missingRatePairs: ["EUR->USD"],
+          accountBalances: {
+            totalBalance: null,
+            knownBalanceSubtotal: 5000,
+            missingRatePairs: ["EUR->USD"],
+            accounts: [],
+          },
+        }),
+      );
+
+      const result = await service.generateForecast(userId);
+
+      expect(result.currentBalance).toBeNull();
+      expect(result.currentBalanceKnownSubtotal).toBe(5000);
+      expect(result.fxComplete).toBe(false);
+      expect(result.missingRatePairs).toEqual(["EUR->USD"]);
+      const prompt =
+        mockAiService.complete!.mock.calls[0][1].messages[0].content;
+      expect(prompt).toContain(
+        "Total balance: unknown (no exchange rate for EUR->USD)",
+      );
+      expect(prompt).toContain("EUR->USD) are left out");
     });
 
     it("calls aiService.complete with correct feature name", async () => {

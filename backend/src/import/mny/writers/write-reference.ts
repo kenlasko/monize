@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
+import { BadRequestException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { Account } from "../../../accounts/entities/account.entity";
 import { Category } from "../../../categories/entities/category.entity";
 import { Payee } from "../../../payees/entities/payee.entity";
+import { tr } from "../../../i18n/translate";
 import { insertCategoryIfAbsent } from "../../insert-category-if-absent";
 import {
   MappedAccount,
@@ -30,6 +32,8 @@ export interface WrittenAccounts {
   readonly created: number;
   /** Accounts matched to a row that already existed. */
   readonly reused: number;
+  /** Ids of the reused accounts: their balance stays the ledger's, not the file's. */
+  readonly reusedIds: ReadonlySet<string>;
 }
 
 /**
@@ -48,14 +52,48 @@ export async function writeAccounts(
   const idByKey = new Map<string, string>();
   let created = 0;
   let reused = 0;
+  const reusedIds = new Set<string>();
 
   const existing = await repo.find({
     where: { userId },
-    select: ["id", "name"],
+    select: ["id", "name", "currencyCode", "isClosed"],
   });
   const existingIdByName = new Map(
     existing.map((account) => [account.name.toLowerCase(), account.id]),
   );
+
+  // Refuse before the first insert: rows in the file account's currency would
+  // otherwise be booked into an account of another currency, or into a closed one.
+  for (const account of accounts) {
+    const match = existing.find(
+      (row) => row.name.toLowerCase() === account.name.toLowerCase(),
+    );
+    if (!match) {
+      continue;
+    }
+    if (match.isClosed) {
+      throw new BadRequestException(
+        tr(
+          "errors.import.mnyExistingAccountClosed",
+          `The existing account "${match.name}" is closed, so the Money file cannot be merged into it. Reopen it or rename it, then import again.`,
+          { name: match.name },
+        ),
+      );
+    }
+    if (match.currencyCode !== account.currencyCode) {
+      throw new BadRequestException(
+        tr(
+          "errors.import.mnyExistingAccountCurrency",
+          `The existing account "${match.name}" uses ${match.currencyCode}, but the Money file account uses ${account.currencyCode}. Rename one of them, then import again.`,
+          {
+            name: match.name,
+            existing: match.currencyCode,
+            file: account.currencyCode,
+          },
+        ),
+      );
+    }
+  }
 
   // Pass 1: decide every account's id, so a pair can reference its other half.
   for (const account of accounts) {
@@ -68,6 +106,7 @@ export async function writeAccounts(
   for (const account of accounts) {
     if (existingIdByName.has(account.name.toLowerCase())) {
       reused += 1;
+      reusedIds.add(idByKey.get(account.key) as string);
       continue;
     }
     inserted.push(account);
@@ -106,7 +145,7 @@ export async function writeAccounts(
     }
   }
 
-  return { idByKey, created, reused };
+  return { idByKey, created, reused, reusedIds };
 }
 
 /**

@@ -62,6 +62,8 @@ import {
 import { transferPayeeLabel } from "./transfer-payee-label.util";
 import {
   assertVoidTransitionAllowedOnRow,
+  investmentCashLegLockedError,
+  isInvestmentCashLeg,
   applyVoidTransitionToMirrorLeg,
 } from "./void-status-transition.util";
 import {
@@ -599,6 +601,7 @@ export class TransactionsService {
     try {
       savedTransactionId = await withScopedDb(this.dataSource, async (m) => {
         if (options?.beforeWrite) await options.beforeWrite(m);
+        this.assertAccountOpen(account);
         const transaction = m.create(Transaction, {
           ...transactionData,
           // Derived from the account, not taken from the request: `amount` is in
@@ -2815,6 +2818,30 @@ export class TransactionsService {
         transaction.isTransfer,
         updateData,
       );
+      // The cash leg of an investment transaction is owned by the trade: a
+      // VOID crossing, a real amount or account change is refused before any
+      // write. Value compare against the locked row; forms resend every field.
+      const crossesVoid =
+        updateData.status !== undefined &&
+        (updateData.status === TransactionStatus.VOID) !==
+          (locked.status === TransactionStatus.VOID);
+      const changesAmount =
+        updateData.amount !== undefined &&
+        roundMoney(Number(updateData.amount)) !==
+          roundMoney(Number(locked.amount));
+      const changesAccount =
+        updateData.accountId !== undefined &&
+        updateData.accountId !== locked.accountId;
+      const changesDate =
+        updateData.transactionDate !== undefined &&
+        String(updateData.transactionDate).slice(0, 10) !==
+          String(locked.transactionDate).slice(0, 10);
+      if (
+        (crossesVoid || changesAmount || changesAccount || changesDate) &&
+        (await isInvestmentCashLeg(m, id))
+      ) {
+        throw investmentCashLegLockedError();
+      }
       // Same refusal as previewUpdate: a new parent amount with the old split
       // lines would leave the lines not summing to it. Value compare, because
       // forms resend an unchanged amount.
@@ -2833,6 +2860,7 @@ export class TransactionsService {
         );
       }
       if (options?.beforeWrite) await options.beforeWrite(m);
+      if (changesAccount) this.assertAccountOpen(effectiveAccount);
 
       const oldAmount = locked.amount;
       const oldLockedAccountId = locked.accountId;
@@ -3204,6 +3232,21 @@ export class TransactionsService {
     return finalTransaction;
   }
 
+  /**
+   * A future-dated row skips `updateBalance` (and its `openOnly` refusal), so
+   * a closed account would take the row and move on the day it falls due.
+   */
+  private assertAccountOpen(account: Pick<Account, "isClosed">): void {
+    if (account.isClosed) {
+      throw new BadRequestException(
+        tr(
+          "errors.accounts.modifyBalanceClosed",
+          "Cannot modify balance of a closed account",
+        ),
+      );
+    }
+  }
+
   async remove(
     userId: string,
     id: string,
@@ -3265,6 +3308,9 @@ export class TransactionsService {
       }
       // Strict reconciled lock, before the delete and any split cleanup.
       await assertReconciledRowsMutable(m, userId, [locked]);
+      if (await isInvestmentCashLeg(m, id)) {
+        throw investmentCashLegLockedError();
+      }
       if (options?.beforeWrite) await options.beforeWrite(m);
 
       // The locked row's account joins the fan-out set: a concurrent edit could
@@ -3970,6 +4016,8 @@ export class TransactionsService {
       amount: tx.amount,
       currencyCode: tx.currencyCode,
       exchangeRate: tx.exchangeRate,
+      originalAmount: tx.originalAmount,
+      originalCurrencyCode: tx.originalCurrencyCode,
       payeeId: tx.payeeId,
       payeeName: tx.payeeName,
       categoryId: tx.categoryId,

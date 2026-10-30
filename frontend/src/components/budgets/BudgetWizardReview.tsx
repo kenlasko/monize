@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { gainLossColor } from '@/lib/format';
+import { gainLossColor, roundMoney, sumMoney } from '@/lib/format';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { budgetsApi } from '@/lib/budgets';
@@ -36,10 +36,10 @@ export function BudgetWizardReview({
 
   const transferEntries = Array.from(state.selectedTransfers.values());
 
-  const totalIncome = incomeCategories.reduce((sum, c) => sum + c.amount, 0);
-  const totalExpenses = expenseCategories.reduce((sum, c) => sum + c.amount, 0);
-  const totalTransfers = transferEntries.reduce((sum, t) => sum + t.amount, 0);
-  const net = totalIncome - totalExpenses - totalTransfers;
+  const totalIncome = sumMoney(incomeCategories.map((c) => c.amount));
+  const totalExpenses = sumMoney(expenseCategories.map((c) => c.amount));
+  const totalTransfers = sumMoney(transferEntries.map((t) => t.amount));
+  const net = roundMoney(totalIncome - totalExpenses - totalTransfers);
 
   const unknownLabel = 'Unknown';
 

@@ -61,6 +61,7 @@ import {
   restoreRowCounters,
   snapshotRowCounters,
   updateAccountBalance,
+  closedAccountError,
 } from "./import-context";
 import { loadHeldExternalIds } from "./ofx-external-id";
 import { isExternalIdConflict } from "../transactions/transaction-external-id";
@@ -442,6 +443,7 @@ export class ImportService {
             );
             continue;
           }
+          if (account.isClosed) throw closedAccountError();
 
           const isInvestment = block.accountType === "INVESTMENT";
           if (isInvestment) hasInvestment = true;
@@ -1242,6 +1244,7 @@ export class ImportService {
         tr("errors.import.accountNotFound", "Account not found"),
       );
     }
+    if (account.isClosed) throw closedAccountError();
 
     // Validate file type matches destination account type
     const isInvestment = result.accountType === "INVESTMENT";

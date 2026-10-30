@@ -36,6 +36,7 @@ import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { PAGE_SIZE } from '@/lib/constants';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
+import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Payees');
 
@@ -316,7 +317,7 @@ function PayeesContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/Categories-and-Payees"
+          helpUrl={docsUrl('payees')}
           actions={
             <>
               {/* The four bulk operations live behind one trigger: they are

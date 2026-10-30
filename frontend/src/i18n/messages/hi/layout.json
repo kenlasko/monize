@@ -138,8 +138,8 @@
     "redonePrefix": "फिर से किया: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "इस अनुभाग की सहायता के लिए Monize विकी खोलें",
-    "helpTooltip": "इस अनुभाग की सहायता के लिए Monize विकी खोलें"
+    "helpAriaLabel": "इस अनुभाग की सहायता के लिए Monize दस्तावेज़ खोलें",
+    "helpTooltip": "इस अनुभाग की सहायता के लिए Monize दस्तावेज़ खोलें"
   },
   "bootSplash": {
     "loading": "Monize लोड हो रहा है",

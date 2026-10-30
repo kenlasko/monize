@@ -576,6 +576,7 @@
       "total": "Total",
       "transactions": "Transaksi",
       "tooltip": "{count, plural, one {# transaksi} other {# transaksi}}",
+      "partialNote": "Beberapa jumlah tidak memiliki kurs dan tidak termasuk dalam total ini.",
       "quarterLabel": "K{quarter} {year}",
       "quarterTick": "K{quarter} {year}",
       "granularityLabel": "Pengelompokan",

@@ -109,6 +109,17 @@ describe('deriveLoanPaymentHistory', () => {
     expect(result.currentBalance).toBe(8000);
   });
 
+  it('rounds the running balance at each step, so no float noise reaches a row', () => {
+    // -0.3 + 0.1 is -0.19999999999999998 in floating point.
+    const account = makeAccount({ openingBalance: -0.3, currentBalance: 0 } as Partial<Account>);
+    const result = derive(account, [
+      makeTransaction({ transactionDate: '2026-01-15', amount: 0.1 }),
+      makeTransaction({ transactionDate: '2026-02-15', amount: 0.2 }),
+    ]);
+    expect(result.events[0].balance).toBe(0.2);
+    expect(result.events[1].balance).toBe(0);
+  });
+
   it('counts draws in the running balance but emits no row for them', () => {
     // A draw between two repayments raises the debt magnitude, so the second
     // repayment's balance reflects it (10000 - 450 - 100(draw) - 460).

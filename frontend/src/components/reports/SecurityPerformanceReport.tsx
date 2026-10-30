@@ -354,9 +354,11 @@ export function SecurityPerformanceReport() {
     if (!selectedHolding) return null;
 
     const costBasis = selectedHolding.costBasis;
-    const currentValue = selectedHolding.marketValue ?? 0;
-    const totalReturn = currentValue - costBasis;
-    const totalReturnPercent = costBasis > 0 ? (totalReturn / costBasis) * 100 : 0;
+    // An unpriced holding has an unknown value, not a value of 0 and a -100% return.
+    const currentValue = selectedHolding.marketValue ?? null;
+    const totalReturn = currentValue === null ? null : currentValue - costBasis;
+    const totalReturnPercent =
+      totalReturn === null ? null : costBasis > 0 ? (totalReturn / costBasis) * 100 : 0;
 
     // Find first buy date for annualized return
     const buyTx = transactions
@@ -364,7 +366,10 @@ export function SecurityPerformanceReport() {
       .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate));
 
     let annualizedReturn: number | null = null;
-    if (buyTx.length > 0 && costBasis > 0) {
+    // (value / cost)^(1/years) is only the holding's return for ONE acquisition and no
+    // later buy, sale or income; without a money-weighted helper any other history omits it.
+    const singleAcquisition = buyTx.length === 1 && transactions.length === 1;
+    if (singleAcquisition && currentValue !== null && costBasis > 0) {
       const firstBuyDate = parseLocalDate(buyTx[0].transactionDate);
       const daysDiff = differenceInDays(new Date(), firstBuyDate);
       if (daysDiff > 365) {
@@ -383,6 +388,8 @@ export function SecurityPerformanceReport() {
       averageCost: selectedHolding.averageCost,
       currentPrice: selectedHolding.currentPrice,
       accountCount: selectedHolding.accountBreakdowns.length,
+      symbol: selectedHolding.symbol,
+      singleAcquisition,
     };
   }, [selectedHolding, transactions]);
 
@@ -556,9 +563,9 @@ export function SecurityPerformanceReport() {
       : undefined;
 
     const summaryCards = stats ? [
-      { label: t('securityPerformance.pdfCurrentValue'), value: formatCurrencyFull(stats.currentValue, displayCurrency), color: '#111827' },
+      { label: t('securityPerformance.pdfCurrentValue'), value: stats.currentValue !== null ? formatCurrencyFull(stats.currentValue, displayCurrency) : '-', color: '#111827' },
       { label: t('securityPerformance.pdfCostBasis'), value: formatCurrencyFull(stats.costBasis, displayCurrency), color: '#111827' },
-      { label: t('securityPerformance.pdfTotalReturn'), value: `${stats.totalReturn >= 0 ? '+' : ''}${formatCurrencyFull(stats.totalReturn, displayCurrency)} (${formatSignedPercent(stats.totalReturnPercent)})`, color: stats.totalReturn >= 0 ? '#16a34a' : '#dc2626' },
+      { label: t('securityPerformance.pdfTotalReturn'), value: stats.totalReturn !== null && stats.totalReturnPercent !== null ? `${stats.totalReturn >= 0 ? '+' : ''}${formatCurrencyFull(stats.totalReturn, displayCurrency)} (${formatSignedPercent(stats.totalReturnPercent)})` : '-', color: stats.totalReturn === null ? '#9ca3af' : stats.totalReturn >= 0 ? '#16a34a' : '#dc2626' },
       { label: t('securityPerformance.pdfAnnualizedReturn'), value: stats.annualizedReturn !== null ? formatSignedPercent(stats.annualizedReturn) : '-', color: stats.annualizedReturn !== null ? (stats.annualizedReturn >= 0 ? '#16a34a' : '#dc2626') : '#9ca3af' },
     ] : undefined;
 
@@ -790,10 +797,12 @@ export function SecurityPerformanceReport() {
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
                 <div className="text-sm text-gray-500 dark:text-gray-400">{t('securityPerformance.currentValue')}</div>
                 <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  {formatCurrencyFull(stats.currentValue, displayCurrency)}
+                  {stats.currentValue !== null ? formatCurrencyFull(stats.currentValue, displayCurrency) : '-'}
                 </div>
                 <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  {t('securityPerformance.sharesAtPrice', { shares: stats.quantity, price: formatCurrencyFull(stats.currentPrice ?? 0, displayCurrency) })}
+                  {stats.currentValue === null || stats.currentPrice === null || stats.currentPrice === undefined
+                    ? t('securityPerformance.missingPrice', { symbol: stats.symbol })
+                    : t('securityPerformance.sharesAtPrice', { shares: stats.quantity, price: formatCurrencyFull(stats.currentPrice, displayCurrency) })}
                   {stats.accountCount > 1 && (
                     <span className="ml-1">{t('securityPerformance.acrossAccounts', { count: stats.accountCount })}</span>
                   )}
@@ -808,16 +817,22 @@ export function SecurityPerformanceReport() {
                   {t('securityPerformance.avgCostLabel', { amount: formatCurrencyFull(stats.averageCost, displayCurrency) })}
                 </div>
               </div>
-              <div className={`rounded-lg shadow p-4 ${stats.totalReturn >= 0 ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
-                <div className={`text-sm ${gainLossColor(stats.totalReturn)}`}>
+              <div className={`rounded-lg shadow p-4 ${stats.totalReturn === null ? 'bg-gray-50 dark:bg-gray-800' : stats.totalReturn >= 0 ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
+                <div className={`text-sm ${stats.totalReturn === null ? 'text-gray-500 dark:text-gray-400' : gainLossColor(stats.totalReturn)}`}>
                   {t('securityPerformance.totalReturn')}
                 </div>
-                <div className={`text-xl font-bold ${gainLossColor(stats.totalReturn)}`}>
-                  {stats.totalReturn >= 0 ? '+' : ''}{formatCurrencyFull(stats.totalReturn, displayCurrency)}
-                </div>
-                <div className={`text-xs mt-1 ${gainLossColor(stats.totalReturn)}`}>
-                  {formatSignedPercent(stats.totalReturnPercent)}
-                </div>
+                {stats.totalReturn === null || stats.totalReturnPercent === null ? (
+                  <div className="text-xl font-bold text-gray-400">-</div>
+                ) : (
+                  <>
+                    <div className={`text-xl font-bold ${gainLossColor(stats.totalReturn)}`}>
+                      {stats.totalReturn >= 0 ? '+' : ''}{formatCurrencyFull(stats.totalReturn, displayCurrency)}
+                    </div>
+                    <div className={`text-xs mt-1 ${gainLossColor(stats.totalReturn)}`}>
+                      {formatSignedPercent(stats.totalReturnPercent)}
+                    </div>
+                  </>
+                )}
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
                 <div className="text-sm text-gray-500 dark:text-gray-400">{t('securityPerformance.annualizedReturn')}</div>
@@ -827,7 +842,7 @@ export function SecurityPerformanceReport() {
                     : '-'}
                 </div>
                 {stats.annualizedReturn === null && (
-                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('securityPerformance.needs1YearNote')}</div>
+                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">{stats.currentValue === null ? t('securityPerformance.missingPrice', { symbol: stats.symbol }) : stats.singleAcquisition ? t('securityPerformance.needs1YearNote') : t('securityPerformance.annualizedNeedsSingleBuyNote')}</div>
                 )}
               </div>
             </div>

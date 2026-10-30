@@ -42,6 +42,7 @@
     "institutionNotFound": "Établissement introuvable",
     "updateClosed": "Impossible de modifier un compte fermé",
     "changeCurrencyWithTransactions": "Impossible de changer la devise d'un compte qui a des transactions.",
+    "changeCurrencyWithBalanceOrSchedules": "Impossible de changer la devise d'un compte qui a un solde d'ouverture ou des opérations planifiées.",
     "alreadyClosed": "Le compte est déjà fermé",
     "closeNonZeroBalance": "Impossible de fermer un compte avec un solde non nul. Solde actuel : {{ currentBalance }}",
     "closeWithFutureTransactions": "Impossible de clôturer un compte comportant des transactions à date future. Il a {{ count }} transaction(s) datée(s) après aujourd'hui ; supprimez-les ou annulez-les d'abord.",
@@ -501,9 +502,12 @@
     "mnyStagedFileInUse": "Ce fichier Money est en cours d'importation. Attendez la fin de l'importation avant de le supprimer.",
     "mnyImportAlreadyRunning": "Un import est déjà en cours. Attendez qu'il se termine avant d'en lancer un autre.",
     "mnyAlreadyImported": "Ce fichier a déjà été importé le {{ date }} (importation {{ jobId }}) et ses enregistrements sont toujours dans votre compte. L'importer à nouveau les dupliquerait. Pour les remplacer, recommencez et choisissez de remplacer vos données existantes.",
+    "mnyExistingAccountClosed": "Le compte existant « {{ name }} » est clôturé, le fichier Money ne peut donc pas y être fusionné. Rouvrez-le ou renommez-le, puis importez à nouveau.",
+    "mnyExistingAccountCurrency": "Le compte existant « {{ name }} » utilise {{ existing }}, mais le compte du fichier Money utilise {{ file }}. Renommez l'un des deux, puis importez à nouveau.",
     "mnyJobNotFound": "Tâche d'import introuvable",
     "mnyFileTooLarge": "Ce fichier Money dépasse la limite d'import de {{ limit }} Mo.",
-    "noRateForSplitTransfer": "Aucun taux de change pour {{ pair }} au {{ date }} : une ligne ventilée transfère vers un compte dans une autre devise. Ajoutez un taux de change pour cette paire et cette date, puis importez à nouveau."
+    "noRateForSplitTransfer": "Aucun taux de change pour {{ pair }} au {{ date }} : une ligne ventilée transfère vers un compte dans une autre devise. Ajoutez un taux de change pour cette paire et cette date, puis importez à nouveau.",
+    "accountClosed": "Le compte est clôturé. Rouvrez-le ou choisissez un autre compte."
   },
   "monteCarlo": {
     "scenarioNotFound": "Scénario {{ id }} introuvable",
@@ -779,6 +783,7 @@
     "notATransfer": "La transaction n'est pas un virement",
     "splitTransferLegAccountLocked": "Ce virement fait partie d'une transaction fractionnée. Pour changer ses comptes, modifiez la fraction sur la transaction d'origine.",
     "splitTransferLegStatusLocked": "Ce transfert fait partie d'une transaction ventilée. Annulez-le ou rétablissez-le en modifiant la transaction ventilée à laquelle il appartient, afin que les deux côtés changent ensemble.",
+    "investmentCashLegLocked": "Cette opération est la partie espèces d'une opération d'investissement. Modifiez ou supprimez plutôt l'opération d'investissement, afin que les deux parties changent ensemble.",
     "investmentCashLegStatusLocked": "Cette transaction est le volet espèces d'une transaction d'investissement. Annulez-la ou rétablissez-la en modifiant le statut de la transaction d'investissement, afin que les deux côtés changent ensemble.",
     "notFoundById": "Transaction avec l'ID {{ id }} introuvable",
     "bulkUpdateNoFields": "Au moins un champ de mise à jour doit être fourni",

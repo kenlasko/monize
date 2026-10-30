@@ -47,9 +47,9 @@
     "processing": "प्रसंस्करण हो रहा है...",
     "acceptedFormats": "QIF/QMTF, OFX, QFX, CSV, या Microsoft Money (.mny)",
     "mnyFailedHeading": "यह Microsoft Money फ़ाइल खोली नहीं जा सकी",
-    "wikiNotice": {
+    "docsNotice": {
       "title": "आयात करने से पहले",
-      "body": "कुछ भी आयात करने से पहले विकी का <money>Importing from Microsoft Money</money> या <quicken>Importing from Quicken</quicken> अनुभाग पढ़ें।"
+      "body": "कुछ भी आयात करने से पहले दस्तावेज़ का <money>Importing from Microsoft Money</money> या <quicken>Importing from Quicken</quicken> अनुभाग पढ़ें।"
     }
   },
   "selectAccount": {

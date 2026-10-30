@@ -463,6 +463,7 @@
     "generating": "A gerar relatório...",
     "noData": "Nenhum dado encontrado para os critérios selecionados",
     "transactionCount": "{count, plural, one {# transação} other {# transações}}",
+    "truncatedNotice": "Este relatório atingiu o limite de linhas e mostra apenas as mais antigas, por isso os valores são parciais. Restrinja o período ou os filtros para ver todas.",
     "toasts": {
       "loadFailed": "Falha ao carregar relatório",
       "executeFailed": "Falha ao executar relatório"
@@ -1474,6 +1475,8 @@
     "totalReturn": "Rentabilidade Total",
     "annualizedReturn": "Rentabilidade Anualizada",
     "needs1YearNote": "Necessita de 1+ ano de dados",
+    "annualizedNeedsSingleBuyNote": "Mostrado apenas para uma única compra sem atividade posterior",
+    "missingPrice": "Sem preço para {symbol}",
     "priceHistory": "Histórico de Preços - {symbol}",
     "buyTransaction": "Transação de compra",
     "sellTransaction": "Transação de venda",

@@ -379,22 +379,27 @@ export class InvestmentReportDataService {
         continue;
       }
 
+      // Shares of unknown cost are in this position: the basis, and everything
+      // measured against it, is unknown rather than the priced part alone.
+      const knownBasis = group.state.basisKnown ? costBasis : null;
       const averageCost =
-        quantity !== 0 ? roundToDecimals(costBasis / quantity, 6) : null;
+        knownBasis !== null && quantity !== 0
+          ? roundToDecimals(knownBasis / quantity, 6)
+          : null;
       const marketValue =
         lastPrice !== null ? roundToDecimals(quantity * lastPrice, 4) : null;
       const income = roundToDecimals(group.state.income, 4);
       const gain =
-        marketValue !== null
-          ? roundToDecimals(marketValue + income - costBasis, 4)
+        marketValue !== null && knownBasis !== null
+          ? roundToDecimals(marketValue + income - knownBasis, 4)
           : null;
       const priceAppreciation =
-        marketValue !== null
-          ? roundToDecimals(marketValue - costBasis, 4)
+        marketValue !== null && knownBasis !== null
+          ? roundToDecimals(marketValue - knownBasis, 4)
           : null;
       const gainPercent =
-        gain !== null && costBasis > 0
-          ? roundToDecimals((gain / costBasis) * 100, 4)
+        gain !== null && knownBasis !== null && knownBasis > 0
+          ? roundToDecimals((gain / knownBasis) * 100, 4)
           : null;
       const change = daily ? roundToDecimals(daily.dailyChange, 6) : null;
       const changePercent = daily
@@ -432,7 +437,7 @@ export class InvestmentReportDataService {
         account: accountName,
         quantity,
         averageCost,
-        costBasis,
+        costBasis: knownBasis,
         lastPrice,
         marketValue,
         gain,
@@ -468,7 +473,7 @@ export class InvestmentReportDataService {
           asOfDate,
           periodStarts,
           marketValue,
-          costBasis,
+          knownBasis,
         ),
       };
 
@@ -718,12 +723,19 @@ export class InvestmentReportDataService {
       }
       case InvestmentAction.SELL:
       case InvestmentAction.TRANSFER_OUT: {
-        const sellQty = Math.min(quantity, state.quantity);
+        const sellQty = Math.min(quantity, Math.max(state.quantity, 0));
         const avgCost =
           state.quantity > 0 ? state.costBasis / state.quantity : 0;
         const costSold = sellQty * avgCost;
         state.costBasis -= costSold;
-        state.quantity -= sellQty;
+        // The whole sale comes off, as in the holdings rebuild (INV-HOLDING-002);
+        // the part the position did not hold has no known cost.
+        if (sellQty < quantity - 0.0001) state.basisKnown = false;
+        state.quantity = applyActionToQuantity(
+          state.quantity,
+          tx.action,
+          quantity,
+        );
         // Base-normalized: a REDEEM realizes its proceeds like the sale it is.
         if (baseInvestmentAction(tx.action) === InvestmentAction.SELL) {
           state.sales += totalAmount;
@@ -957,7 +969,7 @@ export class InvestmentReportDataService {
     asOfDate: string,
     periodStarts: Record<string, string>,
     marketValue: number | null,
-    costBasis: number,
+    costBasis: number | null,
   ): Record<string, number | null> {
     const result: Record<string, number | null> = {
       totalReturn1Week: null,
@@ -992,7 +1004,7 @@ export class InvestmentReportDataService {
     }
 
     // All-dates total return is measured against invested cost.
-    if (marketValue !== null && costBasis > 0) {
+    if (marketValue !== null && costBasis !== null && costBasis > 0) {
       const allIncome = group.state.income;
       const allDates =
         ((marketValue + allIncome - costBasis) / costBasis) * 100;

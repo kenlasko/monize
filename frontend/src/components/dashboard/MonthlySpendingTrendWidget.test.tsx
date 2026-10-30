@@ -47,6 +47,18 @@ describe('MonthlySpendingTrendWidget', () => {
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
   });
 
+  it('tells the reader when rows without a rate were left out', async () => {
+    getIncomeVsExpenses.mockResolvedValue({
+      data: [{ period: '2026-01', periodStart: '2026-01-01', periodEnd: '2026-01-31', income: 5000, expenses: 3000, net: 2000 }],
+      totals: { income: null, expenses: null, net: null, knownIncome: 5000, knownExpenses: 3000, knownNet: 2000 },
+      currency: 'USD',
+      missingCurrencies: ['JPY'],
+      excludedCount: 1,
+    });
+    await renderWidget();
+    expect(screen.getByText(/JPY/)).toBeInTheDocument();
+  });
+
   it('shows the empty state with no data', async () => {
     getIncomeVsExpenses.mockResolvedValue({ data: [], totals: { income: 0, expenses: 0, net: 0, knownIncome: 0, knownExpenses: 0, knownNet: 0 } });
     await renderWidget();

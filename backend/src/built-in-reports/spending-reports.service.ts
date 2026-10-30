@@ -62,7 +62,7 @@ const REPORTABLE_TX_AMOUNT = reportableTransactionAmountSql("t");
  * keeps a zero-amount row from creating a category bucket, which is what the
  * old `< 0` predicate did.
  */
-const NET_SPEND_AMOUNT = "-COALESCE(ts.amount, t.amount)";
+export const NET_SPEND_AMOUNT = "-COALESCE(ts.amount, t.amount)";
 const NONZERO_AMOUNT = "COALESCE(ts.amount, t.amount) <> 0";
 
 /**

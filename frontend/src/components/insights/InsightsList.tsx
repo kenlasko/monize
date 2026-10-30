@@ -17,10 +17,9 @@ import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { summaryGridClass } from '@/components/accounts/shared/SummaryCardGrid';
 import { SEGMENTED_TOOLBAR_GROUP_CLASS, toolbarSegmentClass } from '@/components/ui/segmented-control';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('InsightsList');
-
-const HELP_URL = 'https://github.com/kenlasko/monize/wiki/AI#financial-insights';
 
 /** The severity segments, most urgent first. */
 const SEVERITY_FILTERS = ['', 'alert', 'warning', 'info'] as const;
@@ -177,7 +176,7 @@ export function InsightsList() {
     <PageHeader
       title={t('page.title')}
       subtitle={t('page.subtitle')}
-      helpUrl={HELP_URL}
+      helpUrl={docsUrl('aiInsights')}
       actions={
         <Button
           variant="outline"

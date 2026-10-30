@@ -463,6 +463,7 @@
     "generating": "Đang tạo báo cáo...",
     "noData": "Không tìm thấy dữ liệu cho tiêu chí đã chọn",
     "transactionCount": "{count, plural, one {# giao tác} other {# giao tác}}",
+    "truncatedNotice": "Báo cáo này đã chạm giới hạn số dòng và chỉ hiển thị các dòng cũ nhất, nên số liệu chưa đầy đủ. Hãy thu hẹp khoảng thời gian hoặc bộ lọc để xem tất cả.",
     "toasts": {
       "loadFailed": "Không thể tải báo cáo",
       "executeFailed": "Không thể thực thi báo cáo"
@@ -1474,6 +1475,8 @@
     "totalReturn": "Tổng lợi nhuận",
     "annualizedReturn": "Lợi nhuận hàng năm",
     "needs1YearNote": "Cần hơn 1 năm dữ liệu",
+    "annualizedNeedsSingleBuyNote": "Chỉ hiển thị cho một lần mua duy nhất không có hoạt động sau đó",
+    "missingPrice": "Không có giá cho {symbol}",
     "priceHistory": "Lịch sử giá - {symbol}",
     "buyTransaction": "Giao tác mua",
     "sellTransaction": "Giao tác bán",

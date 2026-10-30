@@ -463,6 +463,7 @@
     "generating": "Génération du rapport...",
     "noData": "Aucune donnée trouvée pour les critères sélectionnés",
     "transactionCount": "{count, plural, one {# transaction} other {# transactions}}",
+    "truncatedNotice": "Ce rapport a atteint la limite de lignes et n'affiche que les plus anciennes, ses chiffres sont donc partiels. Réduisez la période ou les filtres pour tout voir.",
     "toasts": {
       "loadFailed": "Impossible de charger le rapport",
       "executeFailed": "Impossible d'exécuter le rapport"
@@ -1474,6 +1475,8 @@
     "totalReturn": "Rendement total",
     "annualizedReturn": "Rendement annualisé",
     "needs1YearNote": "Nécessite 1+ an de données",
+    "annualizedNeedsSingleBuyNote": "Affiché uniquement pour un achat unique sans activité ultérieure",
+    "missingPrice": "Aucun cours pour {symbol}",
     "priceHistory": "Historique des cours - {symbol}",
     "buyTransaction": "Transaction d'achat",
     "sellTransaction": "Transaction de vente",

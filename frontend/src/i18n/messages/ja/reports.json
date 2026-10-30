@@ -463,6 +463,7 @@
     "generating": "レポートを生成中...",
     "noData": "選択した条件に一致するデータがありません",
     "transactionCount": "{count, plural, one {# 件の取引} other {# 件の取引}}",
+    "truncatedNotice": "このレポートは行数の上限に達したため、最も古い行のみを表示しています。数値は一部のみです。すべて表示するには期間またはフィルターを絞り込んでください。",
     "toasts": {
       "loadFailed": "レポートの読み込みに失敗しました",
       "executeFailed": "レポートの実行に失敗しました"
@@ -1474,6 +1475,8 @@
     "totalReturn": "総リターン",
     "annualizedReturn": "年率リターン",
     "needs1YearNote": "1年以上のデータが必要",
+    "annualizedNeedsSingleBuyNote": "購入が1回のみで、その後の取引がない場合にのみ表示されます",
+    "missingPrice": "{symbol} の価格がありません",
     "priceHistory": "価格履歴 - {symbol}",
     "buyTransaction": "購入取引",
     "sellTransaction": "売却取引",

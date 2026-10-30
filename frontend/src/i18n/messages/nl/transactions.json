@@ -576,6 +576,7 @@
       "total": "Totaal",
       "transactions": "Transacties",
       "tooltip": "{count, plural, one {# transactie} other {# transacties}}",
+      "partialNote": "Voor sommige bedragen ontbreekt een wisselkoers; ze zijn niet in deze totalen opgenomen.",
       "quarterLabel": "K{quarter} {year}",
       "quarterTick": "K{quarter} {year}",
       "granularityLabel": "Groepering",

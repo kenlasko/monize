@@ -20,6 +20,7 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { getErrorMessage } from '@/lib/errors';
 import type { Budget } from '@/types/budget';
 import type { Account } from '@/types/account';
+import { docsUrl } from '@/lib/docs-links';
 
 export default function BudgetsPage() {
   return (
@@ -109,7 +110,7 @@ function BudgetsContent() {
         <PageHeader
           title={t('pages.list.title')}
           subtitle={t('pages.list.subtitle')}
-          helpUrl="https://github.com/kenlasko/monize/wiki/Budgets"
+          helpUrl={docsUrl('budgets')}
           actions={
             <Button onClick={() => setShowWizard(true)}>
               {t('pages.list.newBudget')}

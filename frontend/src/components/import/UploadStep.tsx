@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Account } from '@/types/account';
 import { formatAccountType } from '@/lib/account-utils';
+import { docsUrl } from '@/lib/docs-links';
 
 interface UploadStepProps {
   preselectedAccount: Account | undefined;
@@ -21,11 +22,8 @@ interface UploadStepProps {
   mnyError?: { code?: string; message: string } | null;
 }
 
-const MS_MONEY_WIKI_URL = 'https://github.com/kenlasko/monize/wiki/Importing-from-Microsoft-Money';
-const QUICKEN_WIKI_URL = 'https://github.com/kenlasko/monize/wiki/Importing-from-Quicken';
-
-function wikiLink(href: string) {
-  return function WikiLink(chunks: React.ReactNode) {
+function docsLink(href: string) {
+  return function DocsLink(chunks: React.ReactNode) {
     return (
       <a
         href={href}
@@ -132,11 +130,11 @@ export function UploadStep({
             />
           </svg>
           <div className="text-sm text-amber-800 dark:text-amber-200">
-            <p className="font-semibold">{t('upload.wikiNotice.title')}</p>
+            <p className="font-semibold">{t('upload.docsNotice.title')}</p>
             <p className="mt-1">
-              {t.rich('upload.wikiNotice.body', {
-                money: wikiLink(MS_MONEY_WIKI_URL),
-                quicken: wikiLink(QUICKEN_WIKI_URL),
+              {t.rich('upload.docsNotice.body', {
+                money: docsLink(docsUrl('importMicrosoftMoney')),
+                quicken: docsLink(docsUrl('importQuicken')),
               })}
             </p>
           </div>

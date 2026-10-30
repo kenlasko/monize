@@ -916,7 +916,7 @@ export class LoanPaymentDetectorService {
 
       // Undo the transaction: payments (positive) had reduced the balance,
       // so add them back; charges/fees (negative) had increased it, so subtract.
-      absBalance += Number(tx.amount);
+      absBalance = roundMoney(absBalance + Number(tx.amount));
 
       // Record the pre-transaction balance for this date.
       // Since we're going backwards, overwrite to get the earliest (pre-first-tx) balance.

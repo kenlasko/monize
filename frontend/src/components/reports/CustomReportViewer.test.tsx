@@ -46,7 +46,9 @@ vi.mock("@/components/ui/Select", () => ({
 }));
 
 vi.mock("@/components/reports/ReportChart", () => ({
-  ReportChart: () => <div data-testid="report-chart" />,
+  ReportChart: ({ partialTotal }: { partialTotal?: { excludedCount: number } | null }) => (
+    <div data-testid="report-chart" data-partial={partialTotal ? String(partialTotal.excludedCount) : ""} />
+  ),
 }));
 
 vi.mock("@/components/ui/IconPicker", () => ({
@@ -507,6 +509,41 @@ describe("CustomReportViewer", () => {
       await screen.findByText("$200.00");
       expect(screen.queryByTestId("partial-total")).not.toBeInTheDocument();
       expect(screen.queryByTestId("partial-data-notice")).not.toBeInTheDocument();
+    });
+
+    it("formats the count metric's headline as a number, not money", async () => {
+      mockGetById.mockResolvedValue({
+        ...savedReport,
+        config: { ...savedReport.config, metric: "COUNT" },
+      });
+      mockExecute.mockResolvedValue({
+        ...executed,
+        summary: { total: 42, knownTotal: 42, count: 42, average: 1 },
+        missingCurrencies: [],
+        excludedCount: 0,
+      });
+      render(<CustomReportViewer reportId="rpt-1" />);
+
+      await screen.findByText("42");
+      expect(screen.queryByText("$42.00")).not.toBeInTheDocument();
+    });
+
+    it("marks a total withheld by truncation as truncated, not as an excluded transaction", async () => {
+      mockGetById.mockResolvedValue(savedReport);
+      mockExecute.mockResolvedValue({
+        ...executed,
+        summary: { total: null, knownTotal: 200, count: 1, average: null },
+        missingCurrencies: [],
+        excludedCount: 0,
+        truncated: true,
+      });
+      render(<CustomReportViewer reportId="rpt-1" />);
+
+      expect(await screen.findByTestId("truncated-notice")).toBeInTheDocument();
+      // The shared marker, explained by the row limit, not by a missing rate.
+      expect(screen.getByTestId("partial-total")).toHaveTextContent("$200.00");
+      // The chart's Total row (table and PDF) is still marked partial.
+      expect(screen.getByTestId("report-chart")).toHaveAttribute("data-partial", "1");
     });
   });
 });
