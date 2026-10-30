@@ -50,6 +50,17 @@ function build() {
       }
     }
   }
+  // A picture no page shows is dead weight in the repository and in every
+  // deployment: retire it with the reference that used it.
+  const shown = new Set(
+    order.flatMap(({ slug }) =>
+      [...readFileSync(join(DOCS, `${slug}.md`), 'utf8').matchAll(/images\/([a-z0-9-]+)\.png/g)].map((m) => m[1]),
+    ),
+  );
+  for (const png of readdirSync(join(DOCS, 'images'))) {
+    const base = png.replace(/(\.light)?\.png$/, '');
+    if (!shown.has(base)) errors.push(`images/${png}: no page shows it; delete it or reference images/${base}.png`);
+  }
   if (errors.length) return { errors };
 
   const landing = pages.get('index');

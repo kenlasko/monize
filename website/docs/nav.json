@@ -17,6 +17,7 @@
       { "slug": "budgets", "summary": "Budgets generated from your history, with velocity tracking and alerts." },
       { "slug": "investments", "summary": "Portfolio tracking, securities and investment transactions." },
       { "slug": "bills-and-deposits", "summary": "Scheduled and recurring bills, deposits and transfers." },
+      { "slug": "taxes", "summary": "Payroll deduction rules with yearly maximums that stop a deduction once the year's limit is reached." },
       { "slug": "email-receipts", "summary": "Turn order confirmations from your mailbox into itemized transactions." },
       { "slug": "warranties", "summary": "Track warranties with their receipts, manuals, photos and claims." }
     ]
@@ -26,6 +27,7 @@
     "pages": [
       { "slug": "categories-and-payees", "summary": "Organize your spending with categories and payees." },
       { "slug": "tags", "summary": "Flexible cross-category labels for transactions." },
+      { "slug": "rules", "summary": "Fill in categories, payees, descriptions and tags automatically, test rules and run them on existing transactions." },
       { "slug": "reports", "summary": "Built-in reports and the custom report builder." },
       { "slug": "currency-management", "summary": "Multi-currency support and exchange rates." }
     ]

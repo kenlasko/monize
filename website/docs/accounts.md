@@ -13,34 +13,35 @@ Monize supports 10 account types:
 | **Chequing** | Checking or current account | Day-to-day banking |
 | **Savings** | Savings account | Emergency fund, short-term savings |
 | **Credit Card** | Credit card account | Credit card spending and payments |
+| **Investment** | Brokerage account | Stocks, ETFs, mutual funds, bonds |
 | **Loan** | Installment loan | Personal loans, auto loans |
-| **Mortgage** | Mortgage account | Home mortgage tracking |
-| **Investment** | Brokerage account | Stocks, ETFs, mutual funds |
-| **Cash** | Cash wallet or petty cash | Physical cash tracking |
 | **Line of Credit** | Line of credit | Revolving credit facilities |
+| **Mortgage** | Mortgage account | Home mortgage tracking |
 | **Asset** | Asset tracking | Property, vehicles, collectibles |
+| **Cash** | Cash wallet or petty cash | Physical cash tracking |
 | **Other** | Miscellaneous | Any account that does not fit other types |
 
 ### Account Type Details
 
-**Credit Card** accounts include a credit limit field. The available credit is calculated as `credit limit - current balance`.
+**Credit Card** accounts include a credit limit and optional statement dates (the payment due day and the settlement day of the billing cycle). The available credit is the credit limit minus the current balance.
 
-**Loan, Mortgage, and Line of Credit** accounts are debt accounts. They support interest rate tracking and a dedicated payment setup, and clicking them opens a per-account [detail page](#loan-and-mortgage-detail-page) rather than the transaction register. Loans and mortgages show an amortization schedule and payoff projection; lines of credit show a revolving-balance view. Mortgage accounts add Canadian-specific amortization settings. See [Loan and Mortgage Setup](#loan-and-mortgage-setup).
+**Loan and Mortgage** accounts are debt accounts with a dedicated payment setup, so Monize can split each payment into principal and interest, show an amortization schedule, and project your payoff. Mortgages add a mortgage type, a rate-fixed term, and an amortization period. See [Loan and Mortgage Setup](#loan-and-mortgage-setup).
 
-**Investment** accounts are always created as a linked pair -- a brokerage account (for holding securities) and a cash account (for the cash balance within the brokerage). See [Investment Account Pairs](#investment-account-pairs) for details.
+**Line of Credit** accounts are revolving debt accounts with an optional credit limit and interest rate; their [detail page](#line-of-credit) shows a revolving-balance view.
 
-**Asset** accounts are used to track the value of physical assets like property or vehicles. Transactions on asset accounts represent changes in value.
+**Investment** accounts are normally created as a linked pair -- a brokerage ledger for your securities and a cash ledger for the money -- shown as one account. See [Investment Account Pairs](#investment-account-pairs) for details.
+
+**Asset** accounts track the value of physical assets like property or vehicles. Transactions on asset accounts represent changes in value, booked to a value-change category you choose.
 
 ---
 
 ## Creating an Account
 
 1. Navigate to **Accounts** from the top navigation bar
-2. Click the **Create Account** button
-3. Fill in the account form:
+2. Click **+ New Account**
+3. Fill in the **New Account** form:
 
-![Create Account Form](images/create-account-form.png)
-<!-- Screenshot: The account creation form showing all fields -->
+![The New Account form](images/create-account-form.png)
 
 ### Required Fields
 
@@ -48,93 +49,108 @@ Monize supports 10 account types:
 |-------|-------------|
 | **Account Name** | A descriptive name for the account |
 | **Account Type** | Select from the available types |
-| **Currency** | The currency this account operates in |
+| **Currency** | The currency this account operates in. It is locked once the account has transactions |
 
 ### Optional Fields
 
 | Field | Description |
 |-------|-------------|
-| **Opening Balance** | The starting balance (defaults to 0) |
-| **Opening Date** | The date of the opening balance |
-| **Institution** | The financial institution that holds the account (see [Financial Institutions](#financial-institutions)). Optional for most account types, but **required** for loans and mortgages |
+| **Opening Balance** | The starting balance (defaults to 0). For loans and mortgages this is the **Loan Amount** or **Mortgage Amount** |
 | **Account Number** | The institution's account number for your reference |
-| **Credit Limit** | For credit cards only |
-| **Interest Rate** | For savings, loans, and mortgages |
-| **Notes** | Any additional notes about the account |
+| **Institution** | The financial institution that holds the account (see [Financial Institutions](#financial-institutions)). **Required** for loans and mortgages, where it is labelled **Lender/Institution** |
+| **Credit Limit** | For every type except assets, loans, and mortgages |
+| **Interest Rate %** | For every type except assets; **required** for loans and mortgages |
+| **Foreign Currency Conversion Fee** | The percentage your bank adds to purchases in another currency, so Monize can show what foreign transactions really cost you |
+| **Statement Dates** | Credit cards only: the **Due Date** and **Settlement Date** (day of the month) |
+| **Description** | Any additional notes about the account |
+| **Favourite** | Show the account on the Dashboard (the star button) |
+| **Exclude from Net Worth** | Leave the account out of net worth figures and reports |
 
-4. Click **Save** to create the account
+4. Click **Create Account**
 
-> **Tip:** When importing from Microsoft Money, you do not need to create accounts manually if you plan to create them during the import process. However, creating accounts first gives you more control over the exact names, types, and opening balances.
+When you edit an existing account, the form also offers **Balance alerts**: **Notify below** and **Notify above** amounts that send you a notification when the balance crosses them. The edit form's **Import** and **Export** buttons import a QIF file into the account or export its transactions.
 
-> **Note:** When you choose a **Loan** or **Mortgage** account type, the form reveals extra payment fields. See [Loan and Mortgage Setup](#loan-and-mortgage-setup) below.
+> [!TIP]
+> When importing from Microsoft Money, you do not need to create accounts manually if you plan to create them during the import process. However, creating accounts first gives you more control over the exact names, types, and opening balances.
+
+> [!NOTE]
+> When you choose a **Loan** or **Mortgage** account type, the form reveals extra payment fields, and an **Asset** shows a **Value Change Category** and a **Date Acquired** (the asset is left out of net worth before that date). See [Loan and Mortgage Setup](#loan-and-mortgage-setup) below.
 
 ---
 
 ## Loan and Mortgage Setup
 
-Selecting the **Loan** or **Mortgage** account type on the [account form](#creating-an-account) reveals a dedicated payment setup panel so Monize can track your amortization, split each payment into principal and interest, and project your payoff.
+Selecting the **Loan** or **Mortgage** account type on the [account form](#creating-an-account) reveals a dedicated payment setup panel so Monize can track your amortization, split each payment into principal and interest, and project your payoff. Saving it creates the scheduled payment in [Bills & Deposits](bills-and-deposits.md).
 
 ### Loan Payment Setup
 
-For a **Loan** (or line of credit), the following fields become available in addition to the standard fields:
+When you create a **Loan**, the **Loan Payment Details** panel asks for:
 
 | Field | Description |
 |-------|-------------|
 | **Payment Amount** | The regular payment made against the loan |
-| **Payment Frequency** | Weekly, bi-weekly, monthly, quarterly, or yearly |
+| **Payment Frequency** | Weekly, Every 2 Weeks, Semi-Monthly, Monthly, Quarterly, or Yearly |
 | **First Payment Date** | The date the first scheduled payment is due |
-| **Payment-From Account** | The account the payment is drawn from (e.g. your chequing account) |
+| **Payment From Account** | The account the payment is drawn from (e.g. your chequing account) |
 | **Interest Category** | The expense category the interest portion of each payment is booked to |
 
-As you fill in the loan amount, interest rate, payment, frequency, and first payment date, a live **amortization preview** appears showing the principal and interest portions of the first payment, the total number of payments, and the estimated payoff date.
+As you fill in the loan amount, interest rate, payment, frequency, and first payment date, a **Payment Preview** appears showing the principal and interest portions of the first payment, the total number of payments, and the estimated payoff date.
 
 ### Mortgage Setup
 
-**Mortgage** accounts offer everything a loan does, plus mortgage-specific settings:
+**Mortgage** accounts offer everything a loan does, plus mortgage-specific settings in the **Mortgage Details** panel:
 
 | Field | Description |
 |-------|-------------|
-| **Canadian mortgage** | Toggle for Canadian semi-annual interest compounding |
-| **Variable rate** | Toggle to mark the mortgage as variable-rate |
-| **Term Length** | The mortgage term, entered as years plus months |
+| **Mortgage Type** | **Annuity (Level Payment)** -- the total payment is the same every period, including most variable-rate mortgages; **Canadian Fixed Rate** -- interest compounds twice a year; **Linear (Constant Principal)** -- the principal part is the same every period and the total falls; **Interest Only** -- you pay only interest and the balance is repaid at the end |
+| **Rate-Fixed Term** | How long the interest rate or contract term runs, entered as years plus months; Monize can remind you before it ends |
 | **Amortization Period** | The full amortization, entered as years plus months |
-| **Payment Frequency** | Monthly, semi-monthly, bi-weekly, accelerated bi-weekly, weekly, or accelerated weekly |
-| **First Payment Date**, **Payment-From Account**, **Interest Category** | Same as for loans |
+| **Payment Frequency** | Monthly, Semi-Monthly (15th and month end), Bi-Weekly, Accelerated Bi-Weekly, Weekly, or Accelerated Weekly. The accelerated frequencies are for annuity mortgages only |
+| **First Payment Date**, **Payment From Account**, **Interest Category** | Same as for loans |
+| **What an Extra Repayment Does** | Linear mortgages only: whether an extra repayment shortens the term or lowers the installment |
 
-The mortgage amortization preview shows the calculated payment amount, the **effective annual rate**, the first payment's principal and interest split, the total number of payments, total interest, and the estimated payoff date.
+![The New Account form for a mortgage, with its Mortgage Details](images/account-form-mortgage.png)
+
+Not sure which type you have? Click **Not sure? Enter a few installments**, copy two or three consecutive installments from a statement, and click **Suggest a Type**; Monize explains its suggestion, and **Use This Type** applies it.
+
+The **Amortization Preview** shows the calculated payment amount, the **effective rate**, the first payment's principal and interest split, the total number of payments, total interest, and the estimated payoff date. A linear or interest-only mortgage has no fixed payment, so each installment is worked out on its due date from the balance and the rate.
+
+### Payment Matching
+
+If your bank posts one undivided debit for each mortgage or loan installment, turn on **Match imported bank payments** and enter a **Payee pattern** (with a `*` wildcard, for example `*MY BANK*`) and an optional **Description pattern**. When an imported or synced bank row matches, Monize splits it into principal and interest, books it as the installment, and marks the scheduled payment as paid, instead of you ending up with a duplicate. Turning this on turns off auto-posting on the linked bill, because the bank's own row is what gets matched.
 
 ### Guided Payment Setup
 
-If you have already imported transaction history for a loan or mortgage, Monize can set up the payment for you. The **guided payment setup** analyses your existing transactions and detects:
+If you have already imported transaction history for a loan or mortgage that has no scheduled payment, its edit form offers **Set Up Recurring Payments**. The **Set Up Loan Payments** (or **Set Up Mortgage Payments**) dialog analyses your existing transactions and detects:
 
-- The **payment cadence** (frequency) and regular payment amount
+- The **payment frequency** and regular payment amount
 - The **principal / interest split** from your most recent payment
 - Any recurring **extra principal** payments
 - An estimated interest rate, interest category, and source account
 
-Each detected value is presented with a confidence indicator (High, Medium, or Low) for you to review, adjust, and confirm before the payment schedule is created. You can also opt to auto-post future payments.
+Each detected value is presented with a confidence indicator for you to review and adjust before clicking **Set Up Payments**. You can also choose to **Automatically post transactions when due**.
 
-If you are not sure how to record loan payments in the first place, a collapsible **"How to record loan payments"** guide is built into the form.
+If you are not sure how to record loan payments in the first place, a collapsible **How to record loan payments** guide is built into the form: principal is a transfer to the loan account, interest is an expense.
 
 ### Overpayment Recognition
 
-So that extra principal payments are scored correctly in the schedule, simulator, and Past Impact analysis, the account edit form lets you tell Monize how you record them. An overpayment is recognized as **100% principal** when it matches any one of:
+So that extra principal payments are scored correctly in the schedule, simulator, and Past Impact analysis, the mortgage form's **Overpayment recognition** settings tell Monize how you record them. An overpayment is recognized as **100% principal** when it matches any one of:
 
-- A designated **category**
-- A designated **payee**
-- **Memo text** you specify
+- An **Overpayment category**
+- An **Overpayment payee**
+- **Overpayment memo text** (a case-insensitive match against the payment's memo)
 
-Any single match is enough -- you do not have to use all three. The settings live in a gear menu on the account's edit form.
+Any single match is enough -- you do not have to use all three. A loan's detail page offers the same settings under **Payment recognition**.
 
 ### Interest Booking Mode
 
-Banks book interest in different ways, and Monize reads all of them. An **Interest booking mode** setting (Auto / Split / Separate) tells Monize how to find the interest portion of each payment:
+Banks book interest in different ways, and Monize reads all of them. The **Interest Recording** setting tells Monize how to find the interest portion of each payment:
 
 | Mode | Use when |
 |------|----------|
-| **Auto** | Let Monize detect the style automatically (the default) |
-| **Split** | Each payment is a split transaction with a principal line and an interest line |
-| **Separate** | Interest is booked as its own standalone expense transaction, apart from the principal transfer |
+| **Automatic (recommended)** | Let Monize detect the style (the default) |
+| **Split leg of the payment** | Each payment is a split transaction with a principal line and an interest line |
+| **Separate expense (principal is a transfer)** | Interest is booked as its own standalone expense transaction, apart from the principal transfer |
 
 Interest-only grace periods appear as their own rows in the schedule. Interest is counted by its category across your full history regardless of the loan's configured start date, so a migrated loan's earlier activity is not hidden. If you refinance sequentially, give **each refinance its own interest category** so the periods stay cleanly separated. See the [loan detail page tools](reports.md#loan-detail-page-tools) for how recognized overpayments and interest flow into the simulator and rate detection.
 
@@ -142,100 +158,125 @@ Interest-only grace periods appear as their own rows in the schedule. Interest i
 
 ## Financial Institutions
 
-Each account can record the **financial institution** that holds it -- the bank, brokerage, credit union, or lender behind the account. This is a free-text field on the account form, so you can enter the institution's name exactly as you want it to appear (for example, the name of your bank or your loan provider).
+Each account can record the **financial institution** that holds it -- the bank, brokerage, credit union, or lender behind the account. Institutions are records of their own, kept on **Tools -> Institutions**, so several accounts can share one and each institution carries its brand logo.
+
+![The Financial Institutions page](images/accounts-institutions.png)
 
 ### Why Set an Institution
 
-- **Identify accounts at a glance** -- When you have several accounts of the same type, the institution name makes it clear which is which.
-- **Group related accounts** -- Knowing the institution behind each account helps you see your overall exposure to any one bank or lender.
+- **Identify accounts at a glance** -- The institution's logo and name appear beside the account in the account list and on the dashboard.
+- **Group related accounts** -- The Institutions page counts the accounts at each institution, so you can see your exposure to any one bank or lender.
 - **Required for debt accounts** -- The institution is **mandatory** for loan and mortgage accounts, since it identifies your lender. For all other account types it is optional.
 
 ### Setting or Changing an Institution
 
-1. Open the account form when [creating](#creating-an-account) a new account, or click the edit button on an existing account.
-2. Enter the institution name in the **Institution** field (up to 100 characters).
-3. Click **Save**.
+1. Open the account form when [creating](#creating-an-account) a new account, or click **Edit** on an existing account.
+2. In the **Institution** field, select an existing institution, or type a new name to create one.
+3. Click **Create Account** or **Update Account**.
 
-You can change an account's institution at any time by editing the account. The field is purely descriptive -- Monize does not connect to the institution, fetch logos, or detect the institution automatically; it is the name you type for your own reference.
+On the **Financial Institutions** page, **New Institution** adds one with its **Name**, **Website**, and an optional two-letter **Country**. The logo is fetched automatically from the website. Each institution's **Accounts** action lists the accounts assigned to it, where you can add or remove accounts. Deleting an institution unassigns its accounts without deleting them.
 
 ---
 
 ## Account List
 
-The Accounts page displays all your accounts organized by type.
+The Accounts page lists all your accounts grouped by type, each group with its own subtotal.
 
-![Accounts List](images/accounts-list.png)
-<!-- Screenshot: The accounts list page showing accounts grouped by type with balances -->
+![The Accounts page](images/accounts-list.png)
 
-Each account entry shows:
+The table has these columns:
 
-- **Account name**
-- **Account type** indicator
-- **Current balance** in the account's currency
-- **Currency code** (if different from your home currency)
-- **Actions** -- View transactions, Loan Details, Edit, Reconcile, Close (or Reopen), and Delete
+- **Account Name** -- with the institution's logo, the favourite star, and the account's description
+- **Type**
+- **Status** -- Active or Closed
+- **Last Reconciled** -- the date of the account's last reconciliation, or Never
+- **Balance** -- in the account's currency; an investment account shows its combined value with the investments and cash beneath it
+- **Actions** -- **Details**, **Edit**, **Reconcile**, **Close** (or **Reopen**), and **Delete**
 
-The available actions depend on the account: **Loan Details** appears only for loan, mortgage, and line-of-credit accounts and opens the account's [detail page](#loan-and-mortgage-detail-page). **Delete** is only available for accounts with no transactions (see [Deleting Accounts](#deleting-accounts)), and closed accounts show **Reopen** in place of **Close**.
+Click an account to open its transactions. Investment accounts open their [detail page](#account-detail-pages), and so does every account if you choose **Show its dashboard** under **Default Account View** in [Settings -> Preferences](settings-and-security.md#preferences). **Details** always opens the detail page.
+
+**Close** is only available when the account's balance is zero, and **Delete** only for accounts with no transactions (see [Deleting Accounts](#deleting-accounts)).
 
 ### Summary Card
 
-At the top of the accounts page, a summary card shows:
+At the top of the accounts page, the summary shows:
 
-- **Total assets** -- Sum of all positive-balance accounts
-- **Total liabilities** -- Sum of all debt accounts
-- **Net worth** -- Assets minus liabilities
+- **Total Active Accounts**
+- **Net Worth** -- assets minus liabilities
+- **Total Assets** -- the accounts with a positive balance, plus investment market values
+- **Total Liabilities** -- the money you owe
+
+The three money figures leave out accounts you excluded from net worth.
 
 ### Filtering
 
 The filter bar above the list lets you narrow down which accounts are shown:
 
-- **Status** -- A segmented control to switch between **All**, **Active** (currently in use), and **Closed** (closed/archived) accounts.
-- **Account type** -- A dropdown to show only selected account types (e.g. only chequing and savings). It lists just the types you actually have; leaving it empty shows all types.
 - **Search** -- A text box that filters accounts by name as you type. Click the **X** inside the box to clear the search.
+- **Status** -- Switch between **All**, **Active**, and **Closed** accounts.
+- **Account Type** -- Show only selected account types (e.g. only chequing and savings). It lists just the types you actually have; leaving it empty shows all types.
+- **Net Worth** -- Show the accounts included in or excluded from net worth (shown when you have excluded an account).
+- **Shared with me** -- Show only the [joint accounts](shared-access.md#joint-accounts) other people share with you (shown when you have any).
 
-A counter beside the filters shows how many accounts match, in the form **"X of Y accounts"**. When the filters match nothing, a **Clear Filters** action resets the status, type, and search filters at once.
+A counter beside the filters shows how many accounts match, in the form **"X of Y accounts"**. When the filters match nothing, a **Clear Filters** action resets them all at once.
 
-> **Note:** Your filter, sort, and density choices are remembered between visits.
+> [!NOTE]
+> Your filter and row density choices are remembered between visits.
 
 ---
 
 ## Account Detail Pages
 
-Clicking into an account opens a **detail page** tailored to that account's type, rather than a plain transaction list. Each type surfaces the views that matter for it; a **View Transactions** button on every detail page takes you to the underlying register.
+An account's **detail page** is tailored to its type, rather than a plain transaction list. The header has **View Transactions** (the account's register) and **Edit Account**, plus **Reconcile** on banking accounts and credit cards (an investment account has its own buttons, below), and a caret beside the account name that switches to another account, with your favourites first.
 
 ### Banking (Chequing / Savings / Cash)
 
-- **Balance history** chart, with a **90-day balance forecast** projected from your scheduled bills and deposits
-- **Recurring charges** the account detects, each with one-click conversion to a scheduled bill
-- A **cash-flow mini-report** for the account
-- **Top spending categories and payees**, defaulting to a "This month" timeframe
+- Summary cards: **Current Balance**, **Projected Balance** in 90 days, **Money In** and **Money Out** this month, and the **Average Balance** over the trailing 12 months; with an interest rate set, also the **Interest Rate** and the **Interest Earned** this year
+- **Balance History** chart, with a **90-day balance forecast** projected from your scheduled bills and deposits
+- A **Cash Flow** chart of the net flow over the last 12 months
+- **Top Categories** and **Top Payees** this month
+- **Recurring Charges**: the scheduled bills on the account, plus **Possible recurring charges** found in its transactions, each with a **Create bill** button that turns it into a scheduled bill
+
+![The detail page of a chequing account](images/account-banking-detail.png)
 
 ### Credit Cards
 
-- **Statement-cycle** information and the current amount owed
-- **Spending breakdown by category** for the cycle, including **late-posting, unreconciled charges carried over from the previous cycle**, so the amount owed is right
-- **Interest and fees** tracking
-- A **payoff calculator** and a 90-day projection
-- A payment dialog for recording a card payment
+- Summary cards: **Current Balance**, **Credit Limit**, **Available Credit**, **Utilization**, and **Interest Rate**
+- **Current Statement Cycle**: the statement balance, expenses and payments since the statement, the payment due date, and when the statement closes (needs the card's statement dates)
+- **Balance History**
+- **Spending This Cycle** by category, including **late-posting, unreconciled charges carried over from the previous cycle**, so the amount owed is right
+- **Interest & Fees** charged this year
+- A **Payoff Calculator** that estimates how long the balance takes to clear at a fixed monthly payment
+- **Make a Payment**, which records a payment (the statement balance, the full balance, or a custom amount) from a chequing, savings, or cash account now, or schedules it monthly
+
+![The detail page of a credit card](images/account-credit-card-detail.png)
 
 ### Assets
 
-- **Current value** and **purchase value**, with appreciation metrics
-- A quick **value-update dialog** to record a new valuation
-- An **equity panel** when the asset is linked to its financing loan (for example, a house linked to its mortgage), showing value minus outstanding debt
+- **Current Value**, **Purchase Value**, **Total Appreciation**, and the **Annualized** rate
+- A **Value History** chart
+- **Update Value**, to record a new valuation as of a date
+- An **Equity** panel when the asset is linked to its financing loan (for example, a house linked to its mortgage), showing value minus outstanding debt and equity over time. Use **Link Loan** to link one
+
+![The detail page of an asset linked to its loan](images/account-asset-detail.png)
+
+### Foreign Currency Fees
+
+Accounts with transactions in another currency gain a **Foreign Currency Transaction Fees** section: the fees paid per currency, charted over time, and a list of the foreign-currency transactions. Both export to CSV, and the chart to PNG.
 
 ### Investments (Brokerage)
 
-Brokerage accounts open the [Investments](investments.md) view for that account -- portfolio summary, asset allocation, value chart, holdings, and income tracking.
+An investment account's detail page is the [Investments](investments.md) view for that one account: its **Portfolio Summary**, **Asset Allocation**, **Portfolio Value Over Time**, holdings, its **Investment Income** this year (dividends and interest, and realized gains), and the brokerage and cash registers of the pair behind a toggle. The header has **Refresh** to fetch the latest prices, **Open in Investments**, and **Edit Account**.
+
+![The detail page of an investment account](images/account-investment-detail.png)
 
 ---
 
 ## Loan and Mortgage Detail Page
 
-Loan, mortgage, and line-of-credit accounts open a per-account **detail page** at `/accounts/[id]` instead of the transaction register. You reach it by clicking a debt account in the list, or via the **Loan Details** [row action](#account-list). A **View Transactions** button on the page takes you to the underlying register.
+Loan, mortgage, and line-of-credit accounts have a **detail page** with their payment schedule and payoff tools. Open it with the **Details** [row action](#account-list), or from the account panel beside its register.
 
-![Loan Detail Page](images/loan-detail-page.png)
-<!-- Screenshot: The loan detail page showing summary cards and the amortization schedule -->
+![The detail page of a car loan](images/loan-detail-page.png)
 
 ### Summary Cards
 
@@ -245,12 +286,14 @@ For loans and mortgages, the top of the page shows a row of summary cards:
 |------|---------|
 | **Current Balance** | The amount still owed |
 | **Original Amount** | The opening balance (or the amount derived from history) |
-| **Interest Rate** | The annual rate; Canadian fixed mortgages also show the effective rate |
-| **Payment** | The regular payment amount and its frequency |
-| **Estimated Payoff Date** | When the loan is projected to be fully repaid |
-| **Estimated Remaining Interest** | The interest still to be paid over the remaining schedule |
+| **Interest Rate** | The annual rate; Canadian fixed-rate mortgages also show the effective rate |
+| **Payment** | The regular payment amount and its frequency (for a linear mortgage, the **Next Installment** and its due date) |
+| **Est. Payoff** | When the loan is projected to be fully repaid |
+| **Est. Remaining Interest** | The interest still to be paid over the remaining schedule |
 
-Below the cards, the page includes a month-grouped **Loan Schedule** with real per-row interest, an interactive **Overpayment Simulator** with saved what-if scenarios, an **Impact of Overpayments Made** (Past Impact) analysis, and an editable **Rate History** timeline. The schedule, rate history, and scenario comparison **export to CSV**, and the payoff comparison chart exports to **PNG**. See [Loan Detail Page Tools](reports.md#loan-detail-page-tools) for the full breakdown of each tool.
+Below the cards, the page includes a month-grouped **Loan Schedule** with real per-row interest, a **Payoff Timeline** chart, an interactive **Overpayment Simulator** with **Saved Scenarios** and a scenario comparison chart, an **Impact of Overpayments Made** (Past Impact) analysis, and an editable **Rate History** timeline with **Detect Mortgage Type**. A **Payment matching** panel shows the [payment matching](#payment-matching) rule linked to the loan (or offers **Create one**), lists the installments it settled, and offers **Process history** to run the rule over what you already imported. **Export PDF** saves the whole page as a PDF. The schedule, rate history, and scenario comparison **export to CSV**, and the payoff comparison chart exports to **PNG**. See [Loan Detail Page Tools](reports.md#loan-detail-page-tools) for the full breakdown of each tool.
+
+![The overpayment simulator on a mortgage, with saved scenarios compared](images/account-mortgage-simulator.png)
 
 ### Line of Credit
 
@@ -262,27 +305,29 @@ Because a line of credit revolves rather than amortizing to a fixed payoff, its 
 - **Peak Balance** -- The highest balance reached (shown when no limit is set)
 - **Balance History** -- A chart of the balance over time, counting both draws and repayments
 
+![The detail page of a line of credit](images/account-line-of-credit-detail.png)
+
 ---
 
 ## Editing and Closing Accounts
 
 ### Editing
 
-Click the edit button on any account to modify its details. All fields from account creation can be updated.
+Click **Edit** on any account in the list, or **Edit Account** on its detail page, to open the **Edit Account** form. All fields from account creation can be updated, except the currency once the account has transactions. For loans and mortgages, changing the **Payment From Account** moves the upcoming scheduled payments and the payment-matching rule to the new account.
 
 ### Closing Accounts
 
 When an account is no longer active (e.g., you closed a bank account), you can close it in Monize:
 
-1. Click the edit button on the account
-2. Toggle the **Closed** switch
-3. Click **Save**
+1. Make sure its balance is zero
+2. Click **Close** on the account in the list
+3. Confirm in the **Close Account** dialog
 
-Closed accounts are hidden from the active accounts view and from transaction dropdowns, but their historical data is preserved for reporting.
+Closed accounts are hidden from transaction dropdowns and appear under the **Closed** filter, but their historical data is preserved for reporting. Click **Reopen** to make an account active again. Closing or reopening an investment account acts on both of its ledgers.
 
 ### Deleting Accounts
 
-Accounts can only be deleted if they have no transactions. If an account has transactions, you must either delete the transactions first or close the account instead.
+Accounts can only be deleted if they have no transactions. If an account has transactions, you must either delete the transactions first or close the account instead. Deleting an investment account deletes both of its ledgers.
 
 ---
 
@@ -290,19 +335,24 @@ Accounts can only be deleted if they have no transactions. If an account has tra
 
 Reconciliation helps you verify that your Monize records match your bank statement.
 
-![Reconciliation](images/account-reconciliation.png)
-<!-- Screenshot: The reconciliation screen showing cleared and unreconciled transactions -->
+![Reconciling an account against a statement](images/account-reconciliation.png)
 
 ### How to Reconcile
 
-1. Navigate to the account you want to reconcile
-2. Click **Reconcile**
-3. Enter the **statement ending balance** and **statement date** from your bank
-4. Review each transaction:
-   - **Cleared** transactions match your bank statement
-   - **Unreconciled** transactions have not yet appeared on a statement
-5. Mark transactions as cleared by clicking on them
-6. When the difference is zero, click **Finish Reconciling**
+1. Click **Reconcile** on the account in the list (or on its detail page)
+2. In **Start Reconciliation**, enter the **Statement Date** and **Statement Ending Balance** from your bank, then click **Start Reconciliation**
+3. The **Unreconciled Transactions** up to the statement date are listed. Tick each one that appears on your statement (**Select All** and **Select None** help); transactions already cleared start ticked
+4. Watch the summary: **Statement Balance**, **Reconciled Balance**, the **Selected** total, and the **Difference**
+5. When the difference is zero, click **Finish Reconciliation**. The ticked transactions become **Reconciled**
+
+While reconciling you can sort by any column, **Group by money in and out** with a subtotal for each, edit or delete a row, and **Add Transaction** for one that is missing. Rows flagged **Missed** are dated on or before a statement you already reconciled; rows flagged **Overdue** have waited longer than a statement cycle.
+
+When you finish reconciling a credit card or line of credit, Monize offers to update the next instance of its scheduled payment to the reconciled balance (**Update Next Payment**), or to create one (**Create Scheduled Payment**).
+
+Accounts with transactions waiting too long to be reconciled show a reconciliation badge in the header, linking straight to that account's reconciliation.
+
+> [!TIP]
+> To protect reconciled statements from accidental changes, turn on **Lock reconciled transactions** in [Settings -> Preferences](settings-and-security.md#preferences). Without it, Monize warns before an edit that would change a reconciled transaction's date or amount.
 
 ### Transaction Status
 
@@ -310,8 +360,8 @@ Reconciliation helps you verify that your Monize records match your bank stateme
 |--------|---------|
 | **Unreconciled** | New transaction, not yet on a statement |
 | **Cleared** | Matches a bank statement entry |
-| **Reconciled** | Previously cleared and locked |
-| **Void** | Cancelled transaction |
+| **Reconciled** | Confirmed by a completed reconciliation |
+| **Void** | Cancelled transaction; it no longer moves the balance |
 
 ---
 
@@ -319,23 +369,24 @@ Reconciliation helps you verify that your Monize records match your bank stateme
 
 Mark accounts as favourites to have them displayed on the Dashboard:
 
-1. In the account list, click the star icon next to an account
-2. The account will appear in the Favourite Accounts widget on the Dashboard
+1. In the account list, click the star icon next to an account (or turn on **Favourite** in the account form)
+2. The account will appear in the [Favourite Accounts](dashboard.md#favourite-accounts) widget on the Dashboard, and as a quick filter on the Transactions page
 
 ---
 
 ## Investment Account Pairs
 
-When you create an **Investment** type account, Monize automatically creates two linked accounts:
+When you create an **Investment** account with **Create as Cash + Brokerage pair (recommended)** turned on, Monize creates two linked ledgers:
 
-1. **Brokerage Account** -- Holds your securities (stocks, ETFs, mutual funds, etc.)
-2. **Cash Account** -- Tracks the cash balance within the brokerage
+1. **Brokerage** -- Holds your securities (stocks, ETFs, mutual funds, bonds, etc.)
+2. **Cash** -- Tracks the cash balance within the brokerage, and is where transfers in and out land
 
-These are linked internally. When you buy securities, the cash balance decreases. When you sell or receive dividends, the cash balance increases.
+The pair appears as **one account** in the account list, pickers, reports, and on the dashboard, under the name you gave it, with its combined value and the investments and cash shown beneath. When you buy securities, the cash balance decreases. When you sell or receive dividends, the cash balance increases. Reconciling an investment account reconciles its cash ledger. The edit form reaches the cash ledger's opening balance, account number, and description in its **Cash account** section.
 
-The cash account is hidden from the main account list but is accessible through the investment interface. Clicking on a brokerage account in the account list navigates to the [Investments](investments.md) page filtered to that account's holdings. For more details, see [Investments](investments.md).
+Clicking an investment account in the list opens its [detail page](#investments-brokerage); its **View Transactions** opens the [Investments](investments.md) page filtered to that account.
 
-> **Important for Microsoft Money users:** In Microsoft Money, investment accounts contain both securities and cash in a single account. In Monize, these are split into two linked accounts. When importing, the QIF parser handles this automatically -- the "Investment" export maps to the brokerage account and the "Regular" export maps to the cash account.
+> [!IMPORTANT]
+> **For Microsoft Money users:** In Microsoft Money, investment accounts contain both securities and cash in a single account. In Monize, these are split into two linked ledgers. When importing, the QIF parser handles this automatically -- the "Investment" export maps to the brokerage ledger and the "Regular" export maps to the cash ledger.
 
 ---
 
@@ -343,7 +394,7 @@ The cash account is hidden from the main account list but is accessible through 
 
 Each account has a designated currency. If you have accounts in different currencies:
 
-- Transactions in that account are recorded in the account's currency
+- Transactions in that account are recorded in the account's currency (a transaction can be entered in another currency and converted; see [Transactions](transactions.md#foreign-currency-transactions))
 - The Dashboard and reports convert balances to your home currency using the latest exchange rates
 - Cross-currency transfers record both amounts and the effective exchange rate
 

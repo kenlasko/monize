@@ -1,6 +1,12 @@
 import { test, type Browser, type BrowserContext, type Locator, type Page } from '@playwright/test';
-import { apiFor, openSession, shoot } from '../readme/session';
-import { DESKTOP_CONTEXT, DOCS_IMAGE_DIR, MOBILE_CONTEXT } from '../readme/settings';
+import { apiFor, dismissNotificationPrompt, shoot } from '../readme/session';
+import {
+  DESKTOP_CONTEXT,
+  DOCS_IMAGE_DIR,
+  MOBILE_CONTEXT,
+  SHOTS_EMAIL,
+  SHOTS_PASSWORD,
+} from '../readme/settings';
 import { loginUser } from '../helpers/auth';
 import { E2E_DEFAULT_PASSWORD } from '../helpers/credentials';
 
@@ -19,17 +25,23 @@ export function theme(): 'dark' | 'light' {
  * A signed-in context in the current project's theme: the desktop viewport
  * (1600x1000), or the phone (390x844 at 2x, with touch). The app follows the
  * browser's colour scheme until a user picks a theme, so this is all it takes.
+ *
+ * Each context signs in on its own rather than sharing a stored session: the
+ * API rotates the refresh token, so two contexts holding one session sign each
+ * other out mid-run. The capture stack raises the login rate limit
+ * (website/README.md, "Screenshots"), so a sign-in per context is cheap.
  */
 export async function openDocsSession(
   browser: Browser,
   device: 'desktop' | 'phone' = 'desktop',
 ): Promise<BrowserContext> {
   const base = device === 'phone' ? MOBILE_CONTEXT : DESKTOP_CONTEXT;
-  const context = await openSession(browser, { ...base, colorScheme: theme() });
+  const context = await browser.newContext({ ...base, colorScheme: theme() });
+  const page = await context.newPage();
+  await loginUser(page, SHOTS_EMAIL, SHOTS_PASSWORD);
+  await dismissNotificationPrompt(page);
   // The demo data saves the demo user's theme as dark; "system" hands the
   // choice back to the browser, where each project sets it.
-  const page = await context.newPage();
-  await page.goto('/dashboard');
   await apiFor(page).patch('/users/preferences', { theme: 'system' });
   await page.evaluate(() => window.localStorage.removeItem('monize-theme'));
   await page.close();
