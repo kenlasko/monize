@@ -645,7 +645,8 @@ describe("Bank sync notifications (integration)", () => {
           user_id: aliceId,
           severity: "success",
           dedupe_key: `bsc:imp:${connectionId}:${utcDay()}`,
-          target: "/settings/bank-sync",
+          // Opens the register on the one account the rows went into.
+          target: `/transactions?accountId=${monizeAccountId}`,
         });
         expect(rows[0].data).toMatchObject({
           connectionId,

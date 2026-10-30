@@ -1143,7 +1143,11 @@ describe("Bank sync (integration)", () => {
           newRule({
             name: "Kiosk",
             condition: { field: "payeeText", op: "contains", value: "kiosk" },
-            actions: [{ type: "set_payee", payeeId: kiosk.id }],
+            // `onlyIfEmpty` defaults to true, and a synced row already holds
+            // the bank's payee.
+            actions: [
+              { type: "set_payee", payeeId: kiosk.id, onlyIfEmpty: false },
+            ],
           } as never),
         ),
       );
@@ -1198,8 +1202,12 @@ describe("Bank sync (integration)", () => {
           aliceId,
           newRule({
             actions: [
-              { type: "set_payee", payeeId: chain.id },
-              { type: "set_category", categoryId: groceriesId },
+              { type: "set_payee", payeeId: chain.id, onlyIfEmpty: false },
+              {
+                type: "set_category",
+                categoryId: groceriesId,
+                onlyIfEmpty: false,
+              },
             ],
           } as never),
         ),
