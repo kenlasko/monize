@@ -1,7 +1,6 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
-import { open, openSession } from '../readme/session';
-import { DESKTOP_CONTEXT } from '../readme/settings';
-import { cardOf, docShot } from './capture';
+import { open } from '../readme/session';
+import { cardOf, docShot, openDocsSession } from './capture';
 
 // website/docs/dashboard.md: one widget per picture, cropped to its card.
 
@@ -9,7 +8,7 @@ let context: BrowserContext;
 let page: Page;
 
 test.beforeAll(async ({ browser }) => {
-  context = await openSession(browser, DESKTOP_CONTEXT);
+  context = await openDocsSession(browser);
   page = await context.newPage();
 });
 

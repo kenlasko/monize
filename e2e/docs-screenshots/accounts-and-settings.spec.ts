@@ -1,8 +1,7 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
-import { apiFor, open, openSession } from '../readme/session';
+import { apiFor, open } from '../readme/session';
 import { loadIds, type Ids } from '../readme/ids';
-import { DESKTOP_CONTEXT } from '../readme/settings';
-import { docShot } from './capture';
+import { docShot, openDocsSession } from './capture';
 
 // website/docs/accounts.md and website/docs/settings-and-security.md.
 
@@ -11,7 +10,7 @@ let page: Page;
 let ids: Ids;
 
 test.beforeAll(async ({ browser }) => {
-  context = await openSession(browser, DESKTOP_CONTEXT);
+  context = await openDocsSession(browser);
   page = await context.newPage();
   await page.goto('/dashboard');
   ids = await loadIds(apiFor(page));

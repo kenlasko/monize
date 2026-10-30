@@ -186,3 +186,6 @@ html[data-theme=light] body.docs{--code-bg:#f1f5fc;--code-txt:#17253d;--mark:rgb
   .dmain{padding-top:18px}
 }
 @media (prefers-reduced-motion:reduce){.dside{transition:none}}
+
+/* A screenshot captured in both themes: the one matching the reader's theme */
+html[data-theme=light] .doc .shot-dark,html:not([data-theme=light]) .doc .shot-light{display:none}

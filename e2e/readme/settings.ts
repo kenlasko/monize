@@ -28,10 +28,8 @@ export const RECORDING_DIR = resolve(__dirname, '../readme-recordings');
 export const RAW_DIR = resolve(RECORDING_DIR, 'raw');
 
 /** The logged-in browser state shared by the specs of one run (git-ignored). */
-export const STATE_FILE = resolve(
-  __dirname,
-  '../test-results-readme/session/state.json',
-);
+export const STATE_FILE =
+  process.env.SHOTS_STATE_FILE ?? resolve(__dirname, '../test-results-readme/session/state.json');
 
 // 1600 wide: the Accounts table cuts its Balance column at 1440.
 export const DESKTOP_VIEWPORT = { width: 1600, height: 1000 } as const;
