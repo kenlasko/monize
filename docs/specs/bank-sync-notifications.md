@@ -136,8 +136,10 @@ Written by the daily cron after each user's run, once per connection:
 
 `BANK_SYNC_IMPORTED` opens the Transactions page on the Monize accounts the
 sync imported into (every account it synced when it imported nothing):
-`target = /transactions?accountIds=<ids>`, the filter left empty (every
-account) when the ids would not fit the 255-character `target` column. Every
+`target = /transactions?accountId=<id>` for one account (the deep link an
+open Transactions page also applies), `/transactions?accountIds=<ids>` for
+several, and `/transactions?` (every account) when the ids would not fit the
+255-character `target` column. Every
 other row: `target = /settings/bank-sync`, where its repair is. `data`
 holds facts (dates, counts, codes), never "in 3 days" text, so the client
 renders it in the reader's language and on the reader's clock.

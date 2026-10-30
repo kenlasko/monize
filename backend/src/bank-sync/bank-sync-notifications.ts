@@ -228,20 +228,26 @@ export function importedAccountIds(
   ];
 }
 
-/** The import notice's target up to its account filter. */
-const TRANSACTIONS_TARGET_PREFIX = "/transactions?accountIds=";
+/** The import notice's target up to its query. */
+const TRANSACTIONS_TARGET_PREFIX = "/transactions?";
 
 /**
- * The `accountIds` filter of the import notice's target: the ids joined, or
- * empty (the Transactions page on every account) when they would not fit in a
- * stored target, which `boundedTarget` would otherwise drop whole.
+ * The query of the import notice's target. One account is the singular
+ * `accountId` deep link, which the Transactions page also applies when it is
+ * already open; several are its `accountIds` filter, read when the page loads.
+ * Empty (the page on every account) when the ids would not fit in a stored
+ * target, which `boundedTarget` would otherwise drop whole.
  */
-export function transactionsAccountFilter(
+export function transactionsAccountQuery(
   accountIds: readonly string[],
 ): string {
-  const joined = accountIds.join(",");
-  return TRANSACTIONS_TARGET_PREFIX.length + joined.length <= TARGET_MAX_LENGTH
-    ? joined
+  if (accountIds.length === 0) return "";
+  const query =
+    accountIds.length === 1
+      ? `accountId=${accountIds[0]}`
+      : `accountIds=${accountIds.join(",")}`;
+  return TRANSACTIONS_TARGET_PREFIX.length + query.length <= TARGET_MAX_LENGTH
+    ? query
     : "";
 }
 
@@ -250,7 +256,7 @@ export function buildSyncImportedNotification(
   day: string,
 ): CreateNotificationInput {
   const { institutionName, imported } = facts;
-  const accountFilter = transactionsAccountFilter(facts.accountIds);
+  const accountQuery = transactionsAccountQuery(facts.accountIds);
   return {
     type: NotificationType.BANK_SYNC_IMPORTED,
     severity: NotificationSeverity.SUCCESS,
@@ -269,7 +275,7 @@ export function buildSyncImportedNotification(
       skipped: facts.skipped,
       accounts: facts.accounts,
     },
-    target: `/transactions?accountIds=${accountFilter}`,
+    target: `/transactions?${accountQuery}`,
     periodStart: day,
     dedupeKey: `bsc:imp:${facts.connectionId}:${day}`,
   };

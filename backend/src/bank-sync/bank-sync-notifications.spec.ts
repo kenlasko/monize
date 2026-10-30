@@ -24,7 +24,7 @@ import {
   notificationAccountLabel,
   notificationFailureCode,
   shouldNotifyImported,
-  transactionsAccountFilter,
+  transactionsAccountQuery,
 } from "./bank-sync-notifications";
 import { BANK_SYNC_NOTIFY_SUCCESS_MODES } from "./bank-sync.constants";
 
@@ -352,6 +352,22 @@ describe("the notifications", () => {
     ).toBe("/transactions?accountIds=acc-1,acc-2");
   });
 
+  it("opens one account through the singular deep link, which an open Transactions page also applies", () => {
+    expect(
+      buildSyncImportedNotification(
+        {
+          ...facts,
+          imported: 3,
+          skipped: 0,
+          accounts: 1,
+          accountIds: ["acc-1"],
+        },
+        "2027-03-31",
+      ).target,
+    ).toBe("/transactions?accountId=acc-1");
+    expect(transactionsAccountQuery([])).toBe("");
+  });
+
   it("an imported notice whose accounts would overflow the stored target opens every account", () => {
     const uuid = (i: number) =>
       `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`;
@@ -365,8 +381,8 @@ describe("the notifications", () => {
 
     expect(build(six)).toBe(`/transactions?accountIds=${six.join(",")}`);
     expect(build(six).length).toBeLessThanOrEqual(TARGET_MAX_LENGTH);
-    expect(build(seven)).toBe("/transactions?accountIds=");
-    expect(transactionsAccountFilter(seven)).toBe("");
+    expect(build(seven)).toBe("/transactions?");
+    expect(transactionsAccountQuery(seven)).toBe("");
   });
 
   it("names the accounts the sync imported into, else every account it synced, each once", () => {
