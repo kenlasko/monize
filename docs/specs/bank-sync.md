@@ -345,6 +345,13 @@ Steps:
      the same new counterparty converge), create the transaction, point the
      ledger row at it;
    - apply the `import` rules to the created ids, with the raw payee text;
+   - give a row whose payee the rules changed, and whose category no rule
+     set, the new payee's default category when it has one
+     (`payeeGivingDefaultCategory` in
+     `backend/src/bank-sync/bank-sync-rule-payee-category.ts`): a rule that
+     cleans the bank's text into an existing payee categorises the row as
+     that payee would have, while a category a rule set always wins and a
+     row a structural action split or made a transfer gets none;
    - recompute the balance from the ledger with
      `AccountsService.recalculateCurrentBalance`, which joins this
      transaction under the lock already held (INV-BALANCE-001; the writer never
@@ -380,7 +387,7 @@ answers one row per provider row:
 |---|---|
 | `outcome` | `new`, `duplicate` (the ledger already has its key), `refused` (with the reason), `pending`, `before_cutoff` |
 | `transactionDate`, `amount`, `currencyCode`, `payeeText`, `description`, `referenceNumber` | as the planner produced them |
-| `payeeName`, `categoryName`, `tagNames` | what the payee lookup and the `import` rules would give (`previewForRow`) |
+| `payeeName`, `categoryName`, `tagNames` | what the payee lookup and the `import` rules would give (`previewForRow`), with the default category of a payee the rules chose, as the write gives it |
 
 and a summary: the counts per outcome, the Monize account's current balance,
 the balance after the import (current balance plus the sum of the `new` rows,

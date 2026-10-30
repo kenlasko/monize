@@ -33,6 +33,10 @@ import { RULES_BATCH_SIZE } from "./bank-sync.constants";
 import { findOrCreateTagId } from "./bank-sync-operation-tags";
 import type { BankSyncProfile } from "./bank-sync-profiles";
 import {
+  loadPayeeDefaultCategories,
+  payeeGivingDefaultCategory,
+} from "./bank-sync-rule-payee-category";
+import {
   findExistingPayee,
   NO_PAYEE,
   type ResolvedPayee,
@@ -442,6 +446,7 @@ export class BankSyncWriterService {
         created,
         (id) => createdDateById.get(id) ?? "",
       ).map(({ row }) => row);
+      const payeeByRow = new Map<string, string>();
       for (let start = 0; start < forRules.length; start += RULES_BATCH_SIZE) {
         const applied = await this.rulesApplier.applyToNew(
           m,
@@ -457,8 +462,14 @@ export class BankSyncWriterService {
           for (const scheduleId of row.settledScheduleIds) {
             settledScheduleIds.add(scheduleId);
           }
+          const payeeId = payeeGivingDefaultCategory(row.effects.changes);
+          if (payeeId !== null) payeeByRow.set(row.transactionId, payeeId);
         }
       }
+
+      // 6b. A row whose payee the rules changed, and whose category they did
+      //     not set, takes the new payee's default category.
+      await this.applyRulePayeeCategories(m, userId, payeeByRow);
 
       // 7. The balance, from the ledger, in this transaction.
       if (created.length > 0) {
@@ -535,6 +546,31 @@ export class BankSyncWriterService {
     }
     cache.set(text, resolved);
     return resolved;
+  }
+
+  /**
+   * Give each row in `payeeByRow` the default category of the payee the rules
+   * chose for it (`payeeGivingDefaultCategory`), in this transaction. A payee
+   * with no default category leaves the row as the rules left it.
+   */
+  private async applyRulePayeeCategories(
+    m: EntityManager,
+    userId: string,
+    payeeByRow: ReadonlyMap<string, string>,
+  ): Promise<void> {
+    if (payeeByRow.size === 0) return;
+    const defaults = await loadPayeeDefaultCategories(m, userId, [
+      ...payeeByRow.values(),
+    ]);
+    for (const [transactionId, payeeId] of payeeByRow) {
+      const category = defaults.get(payeeId);
+      if (category === undefined) continue;
+      await m.update(
+        Transaction,
+        { id: transactionId, userId, isSplit: false, isTransfer: false },
+        { categoryId: category.categoryId },
+      );
+    }
   }
 
   /**
