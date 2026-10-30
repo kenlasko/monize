@@ -346,12 +346,18 @@ Steps:
      ledger row at it;
    - apply the `import` rules to the created ids, with the raw payee text;
    - give a row whose payee the rules changed, and whose category no rule
-     set, the new payee's default category when it has one
+     decided, the new payee's default category when it has one
      (`payeeGivingDefaultCategory` in
      `backend/src/bank-sync/bank-sync-rule-payee-category.ts`): a rule that
      cleans the bank's text into an existing payee categorises the row as
-     that payee would have, while a category a rule set always wins and a
-     row a structural action split or made a transfer gets none;
+     that payee would have. A rule decided the category when a matched
+     rule's `set_category` applied, or was skipped as `no_change` or
+     `already_set` (read from the trace, since a `set_category` that
+     confirms the row's category leaves no net change); that category
+     always wins. A row a structural action split or made a transfer gets
+     none. The category comes from the payee's default, not from a rule, so
+     no rule application records it: the row's rule history and explain view
+     show the payee change alone;
    - recompute the balance from the ledger with
      `AccountsService.recalculateCurrentBalance`, which joins this
      transaction under the lock already held (INV-BALANCE-001; the writer never

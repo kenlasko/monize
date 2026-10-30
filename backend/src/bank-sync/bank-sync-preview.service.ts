@@ -452,7 +452,7 @@ export class BankSyncPreviewService {
       }
       // A payee the rules chose brings its default category, as the writer
       // gives it after the rules (`payeeGivingDefaultCategory`).
-      const rulePayeeId = payeeGivingDefaultCategory(changes);
+      const rulePayeeId = payeeGivingDefaultCategory(effects);
       const payeeDefault =
         rulePayeeId === null
           ? null

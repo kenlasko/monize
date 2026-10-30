@@ -462,7 +462,7 @@ export class BankSyncWriterService {
           for (const scheduleId of row.settledScheduleIds) {
             settledScheduleIds.add(scheduleId);
           }
-          const payeeId = payeeGivingDefaultCategory(row.effects.changes);
+          const payeeId = payeeGivingDefaultCategory(row.effects);
           if (payeeId !== null) payeeByRow.set(row.transactionId, payeeId);
         }
       }

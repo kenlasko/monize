@@ -635,7 +635,12 @@ describe("BankSyncPreviewService", () => {
           defaultCategory: { name: "Groceries" },
         } as never);
         rulesApplier.planForRow.mockResolvedValue(
-          effects({ payeeId: "payee-9" }),
+          effects({ payeeId: "payee-9" }, [
+            matchedTrace({
+              applied: [{ type: "set_payee" }],
+              changes: { payeeId: { before: "payee-raw", after: "payee-9" } },
+            }),
+          ]),
         );
         rulesApplier.labelsFor.mockResolvedValue(
           labels({ payees: { "payee-9": "Biedronka S.A." } }),
@@ -665,6 +670,41 @@ describe("BankSyncPreviewService", () => {
           }),
         );
         expect(writes()).toEqual([]);
+      });
+
+      it("keeps a category a rule confirmed beside the payee it chose, though the net effects show no category change", async () => {
+        payees.findByName.mockResolvedValue({
+          id: "payee-raw",
+          name: "Biedronka",
+          defaultCategoryId: "cat-1",
+          defaultCategory: { name: "Groceries" },
+        } as never);
+        rulesApplier.planForRow.mockResolvedValue(
+          effects({ payeeId: "payee-9" }, [
+            matchedTrace({
+              applied: [{ type: "set_payee" }],
+              skipped: [{ type: "set_category", reason: "no_change" }],
+              changes: { payeeId: { before: "payee-raw", after: "payee-9" } },
+            }),
+          ]),
+        );
+        rulesApplier.labelsFor.mockResolvedValue(
+          labels({ payees: { "payee-9": "Biedronka S.A." } }),
+        );
+        payeeRepo.find.mockResolvedValue([
+          {
+            id: "payee-9",
+            name: "Biedronka S.A.",
+            defaultCategoryId: "cat-food",
+            defaultCategory: { id: "cat-food", name: "Food" },
+          },
+        ]);
+        const [first] = (await service.build(input())).rows;
+        expect(first).toMatchObject({
+          payeeName: "Biedronka S.A.",
+          categoryName: "Groceries",
+        });
+        expect(payeeRepo.find).not.toHaveBeenCalled();
       });
 
       it("keeps what the rules left when the chosen payee has no default category, or a rule set one", async () => {

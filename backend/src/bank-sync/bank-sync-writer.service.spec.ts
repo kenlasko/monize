@@ -957,6 +957,42 @@ describe("BankSyncWriterService", () => {
       expect(payeeRepo.find).not.toHaveBeenCalled();
     });
 
+    it("keeps the category a rule confirmed, though it left no change in the net effects", async () => {
+      // Rule: set payee Starbucks, set category Coffee; the bank payee's
+      // default was already Coffee, so set_category was a no-op.
+      rulesApplier.applyToNew.mockResolvedValue([
+        {
+          ...applied("tx-1", { payeeId: "payee-starbucks" }),
+          effects: {
+            changes: {
+              addTagIds: [],
+              removeTagIds: [],
+              payeeId: "payee-starbucks",
+            },
+            trace: [
+              {
+                ruleId: "rule-1",
+                matched: true,
+                applied: [{ type: "set_payee" }],
+                skipped: [{ type: "set_category", reason: "no_change" }],
+                changes: {
+                  payeeId: { before: "payee-raw", after: "payee-starbucks" },
+                },
+                stopped: false,
+              },
+            ],
+            aiReviewRequests: [],
+          },
+        },
+      ]);
+      payeeRepo.find.mockResolvedValue([starbucks("cat-dining")]);
+
+      await service.write(input([row()]));
+
+      expect(categoryUpdates()).toEqual([]);
+      expect(payeeRepo.find).not.toHaveBeenCalled();
+    });
+
     it("leaves the row as the rules left it when the new payee has no default category", async () => {
       rulesApplier.applyToNew.mockResolvedValue([
         applied("tx-1", { payeeId: "payee-starbucks" }),

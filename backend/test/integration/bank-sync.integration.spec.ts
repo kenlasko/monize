@@ -1116,6 +1116,105 @@ describe("Bank sync (integration)", () => {
       expect(await count("transaction_rule_applications")).toBe(0);
     });
 
+    /** The stored rows, oldest first, as `[payee_name, category_id]`. */
+    const storedPayeesAndCategories = async () =>
+      (
+        await query<{ payee_name: string; category_id: string | null }>(
+          `SELECT payee_name, category_id FROM transactions ORDER BY transaction_date, amount`,
+        )
+      ).map((t) => [t.payee_name, t.category_id]);
+
+    it("gives a row a rule moved to an existing payee that payee's default category, through set_payee and set_payee_from_text", async () => {
+      const coffee = (await createTestCategory(db, aliceId, { name: "Coffee" }))
+        .id;
+      const salary = (await createTestCategory(db, aliceId, { name: "Salary" }))
+        .id;
+      const [kiosk] = await query<{ id: string }>(
+        `INSERT INTO payees (user_id, name, default_category_id) VALUES ($1, 'Kiosk Ruch', $2) RETURNING id`,
+        [aliceId, coffee],
+      );
+      await query(
+        `INSERT INTO payees (user_id, name, default_category_id) VALUES ($1, 'Employer Ltd', $2)`,
+        [aliceId, salary],
+      );
+      await asAlice(() =>
+        rules.create(
+          aliceId,
+          newRule({
+            name: "Kiosk",
+            condition: { field: "payeeText", op: "contains", value: "kiosk" },
+            actions: [{ type: "set_payee", payeeId: kiosk.id }],
+          } as never),
+        ),
+      );
+      await asAlice(() =>
+        rules.create(
+          aliceId,
+          newRule({
+            name: "Employer",
+            condition: {
+              field: "payeeText",
+              op: "contains",
+              value: "employer",
+            },
+            actions: [
+              {
+                type: "set_payee_from_text",
+                template: "Employer Ltd",
+                createIfMissing: false,
+                onlyIfEmpty: false,
+              },
+            ],
+          } as never),
+        ),
+      );
+
+      await sync();
+
+      expect(await storedPayeesAndCategories()).toEqual([
+        ["Biedronka", null],
+        ["Employer Ltd", salary],
+        ["Kiosk Ruch", coffee],
+        ["Biedronka", null],
+      ]);
+    });
+
+    it("keeps a category a rule confirmed beside the payee it chose, over that payee's default", async () => {
+      // The bank's payee already gives Groceries; the rule moves the row to a
+      // payee whose default is Dining and sets Groceries, a no-op the net
+      // effects do not show. The rule's category wins.
+      const dining = (await createTestCategory(db, aliceId, { name: "Dining" }))
+        .id;
+      await query(
+        `INSERT INTO payees (user_id, name, default_category_id) VALUES ($1, 'Biedronka', $2)`,
+        [aliceId, groceriesId],
+      );
+      const [chain] = await query<{ id: string }>(
+        `INSERT INTO payees (user_id, name, default_category_id) VALUES ($1, 'Biedronka S.A.', $2) RETURNING id`,
+        [aliceId, dining],
+      );
+      await asAlice(() =>
+        rules.create(
+          aliceId,
+          newRule({
+            actions: [
+              { type: "set_payee", payeeId: chain.id },
+              { type: "set_category", categoryId: groceriesId },
+            ],
+          } as never),
+        ),
+      );
+
+      await sync();
+
+      expect(await storedPayeesAndCategories()).toEqual([
+        ["Biedronka S.A.", groceriesId],
+        ["Employer", null],
+        ["Kiosk", null],
+        ["Biedronka S.A.", groceriesId],
+      ]);
+    });
+
     it("leaves no rule effect behind when the write fails after the rules ran", async () => {
       await asAlice(() => rules.create(aliceId, newRule()));
       const accounts = module.get(AccountsService, { strict: false });
