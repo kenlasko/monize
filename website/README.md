@@ -265,6 +265,11 @@ npm run docs:screenshots -- -g warranties-list                    # one picture,
 docker compose -p monize-docs -f ../docker-compose.e2e.yml down -v
 ```
 
+After capturing, recompress the pictures without changing a pixel, which saves about a quarter
+of their size: `oxipng -o 3 --strip safe website/docs/images/*.png` (any lossless optimizer will
+do). A picture no page references fails `npm run docs:check`: retire it with the reference that
+used it.
+
 `DOCS_RUN=<name>` gives a run its own output folder and session, so runs for different pages can
 go side by side. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` where `npx playwright install chromium` is
 not an option. `e2e/readme/README.md` explains the session, the seed and the settling waits the
