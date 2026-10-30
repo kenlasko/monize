@@ -23,7 +23,9 @@ import {
   importedAccountIds,
   notificationAccountLabel,
   notificationFailureCode,
+  EVERY_ACCOUNT_QUERY,
   shouldNotifyImported,
+  TRANSACTIONS_TARGET_PREFIX,
   transactionsAccountQuery,
 } from "./bank-sync-notifications";
 import { BANK_SYNC_NOTIFY_SUCCESS_MODES } from "./bank-sync.constants";
@@ -365,7 +367,18 @@ describe("the notifications", () => {
         "2027-03-31",
       ).target,
     ).toBe("/transactions?accountId=acc-1");
-    expect(transactionsAccountQuery([])).toBe("");
+    expect(transactionsAccountQuery([])).toBe(EVERY_ACCOUNT_QUERY);
+  });
+
+  it("builds the target the length check measured: the prefix, then the query", () => {
+    for (const accountIds of [[], ["acc-1"], ["acc-1", "acc-2"]]) {
+      expect(
+        buildSyncImportedNotification(
+          { ...facts, imported: 1, skipped: 0, accounts: 1, accountIds },
+          "d",
+        ).target,
+      ).toBe(TRANSACTIONS_TARGET_PREFIX + transactionsAccountQuery(accountIds));
+    }
   });
 
   it("an imported notice whose accounts would overflow the stored target opens every account", () => {
@@ -381,8 +394,10 @@ describe("the notifications", () => {
 
     expect(build(six)).toBe(`/transactions?accountIds=${six.join(",")}`);
     expect(build(six).length).toBeLessThanOrEqual(TARGET_MAX_LENGTH);
-    expect(build(seven)).toBe("/transactions?");
-    expect(transactionsAccountQuery(seven)).toBe("");
+    // Not a bare `/transactions?`: a target with no query restores the
+    // reader's saved filters, which can hide the imported rows.
+    expect(build(seven)).toBe("/transactions?accountStatus=all");
+    expect(transactionsAccountQuery(seven)).toBe(EVERY_ACCOUNT_QUERY);
   });
 
   it("names the accounts the sync imported into, else every account it synced, each once", () => {

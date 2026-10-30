@@ -228,27 +228,40 @@ export function importedAccountIds(
   ];
 }
 
-/** The import notice's target up to its query. */
-const TRANSACTIONS_TARGET_PREFIX = "/transactions?";
+/**
+ * The import notice's target up to its query. The builder writes the target as
+ * a literal for the frontend's route contract test, so the spec checks that
+ * the built target starts with this.
+ */
+export const TRANSACTIONS_TARGET_PREFIX = "/transactions?";
+
+/**
+ * The query that opens the Transactions page on every account. A target with
+ * no query would restore the reader's saved filters, which can hide the rows
+ * just imported; any query makes the page read its filters from the URL, and
+ * `accountStatus=all` is the one that shows closed accounts too.
+ */
+export const EVERY_ACCOUNT_QUERY = "accountStatus=all";
 
 /**
  * The query of the import notice's target. One account is the singular
  * `accountId` deep link, which the Transactions page also applies when it is
- * already open; several are its `accountIds` filter, read when the page loads.
- * Empty (the page on every account) when the ids would not fit in a stored
- * target, which `boundedTarget` would otherwise drop whole.
+ * already open; several are its `accountIds` filter, which the page reads only
+ * when it loads (a page already open keeps its filters). Every account
+ * (`EVERY_ACCOUNT_QUERY`) when there is none, or when the ids would not fit in
+ * a stored target, which `boundedTarget` would otherwise drop whole.
  */
 export function transactionsAccountQuery(
   accountIds: readonly string[],
 ): string {
-  if (accountIds.length === 0) return "";
+  if (accountIds.length === 0) return EVERY_ACCOUNT_QUERY;
   const query =
     accountIds.length === 1
       ? `accountId=${accountIds[0]}`
       : `accountIds=${accountIds.join(",")}`;
   return TRANSACTIONS_TARGET_PREFIX.length + query.length <= TARGET_MAX_LENGTH
     ? query
-    : "";
+    : EVERY_ACCOUNT_QUERY;
 }
 
 export function buildSyncImportedNotification(
