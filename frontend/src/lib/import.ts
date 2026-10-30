@@ -306,8 +306,10 @@ export function autoMatchCsvColumns(headers: string[]): Partial<CsvColumnMapping
     delete result.debit;
     delete result.credit;
   } else if (result.debit !== undefined && result.credit !== undefined) {
-    // Both debit and credit matched without amount -- keep split mode
-    delete result.amount;
+    // Both debit and credit matched without amount -- keep split mode. The
+    // key is set, not deleted, so it overrides the wizard's default amount
+    // column when spread over it; the backend reads amount before debit/credit.
+    result.amount = undefined;
   }
 
   return result;
