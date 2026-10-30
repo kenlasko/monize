@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
+import { docsUrl } from '@/lib/docs-links';
 
 /**
  * The tax tools, one card each (docs/specs/payroll-deductions.md section 1).
@@ -36,7 +37,7 @@ function TaxesContent() {
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-        <PageHeader title={t('title')} subtitle={t('subtitle')} />
+        <PageHeader title={t('title')} subtitle={t('subtitle')} helpUrl={docsUrl('taxes')} />
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {TAX_TOOLS.map(({ key, href, Icon, anchor }) => (
             <li key={key}>

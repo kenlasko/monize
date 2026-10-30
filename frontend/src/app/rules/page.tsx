@@ -6,6 +6,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { CreateRuleLink, RulesManager } from '@/components/rules/RulesManager';
+import { docsUrl } from '@/lib/docs-links';
 
 export default function RulesPage() {
   return (
@@ -24,6 +25,7 @@ function RulesContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
+          helpUrl={docsUrl('rules')}
           actions={<CreateRuleLink label={t('page.createButton')} anchor={tourAnchor(TOUR_ANCHORS.rulesCreateButton)} />}
         />
         <RulesManager />
