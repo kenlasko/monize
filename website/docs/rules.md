@@ -22,7 +22,7 @@ Some examples:
 | Costco receipts | Payee text as received matches the pattern `*costco*` | Set the payee to Costco, set the category to Groceries |
 | Dinners out over $100 | Category is Restaurants and Amount (ignoring sign) is at least 100 | Add the `Date night` tag |
 
-A rule fills in; by default it does not overwrite. **Set the category** and **Set the payee** start with **Only if empty** switched on, so a category you typed yourself, or one that came from the payee's default category, is kept.
+A rule fills in; by default it does not overwrite. **Set the category**, **Set the payee** and **Set the payee from text** start with **Only if empty** switched on, so a category you typed yourself, or one that came from the payee's default category, is kept.
 
 ---
 
