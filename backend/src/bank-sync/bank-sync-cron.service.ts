@@ -216,6 +216,7 @@ export class BankSyncCronService {
             });
           } else {
             outcome.synced.push({
+              accountId: account.accountId,
               imported: entry.imported,
               skipped: entry.skipped,
             });

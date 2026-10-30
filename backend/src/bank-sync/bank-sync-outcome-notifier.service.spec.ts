@@ -20,7 +20,7 @@ const outcome = (
   institutionName: "Test Bank",
   notifySuccess: "when_imported",
   validUntil: new Date("2027-01-01T00:00:00.000Z"),
-  synced: [{ imported: 2, skipped: 1 }],
+  synced: [{ accountId: "acc-1", imported: 2, skipped: 1 }],
   failures: [],
   ...over,
 });
@@ -60,7 +60,10 @@ describe("BankSyncOutcomeNotifier", () => {
       async (mode, imported, expected) => {
         await notifier.report(
           USER_ID,
-          outcome({ notifySuccess: mode, synced: [{ imported, skipped: 0 }] }),
+          outcome({
+            notifySuccess: mode,
+            synced: [{ accountId: "acc-1", imported, skipped: 0 }],
+          }),
           DAY,
         );
         expect(types()).toEqual(expected);
@@ -72,8 +75,9 @@ describe("BankSyncOutcomeNotifier", () => {
         USER_ID,
         outcome({
           synced: [
-            { imported: 2, skipped: 1 },
-            { imported: 5, skipped: 0 },
+            { accountId: "acc-1", imported: 2, skipped: 1 },
+            { accountId: "acc-2", imported: 5, skipped: 0 },
+            { accountId: "acc-3", imported: 0, skipped: 0 },
           ],
         }),
         DAY,
@@ -89,8 +93,10 @@ describe("BankSyncOutcomeNotifier", () => {
           institutionName: "Test Bank",
           imported: 7,
           skipped: 1,
-          accounts: 2,
+          accounts: 3,
         },
+        // Opens the register on the accounts the rows went into.
+        target: "/transactions?accountIds=acc-1,acc-2",
         dedupeKey: `bsc:imp:${CONNECTION_ID}:${DAY}`,
       });
     });

@@ -350,9 +350,11 @@ describe("BankSyncCronService", () => {
         institutionName: "Test Bank",
         notifySuccess: "always",
         validUntil: new Date("2027-01-01T00:00:00.000Z"),
+        // Each with the Monize account it is linked to, which the import
+        // notice opens the register on.
         synced: [
-          { imported: 2, skipped: 0 },
-          { imported: 3, skipped: 0 },
+          { accountId: `m-${ID_A}`, imported: 2, skipped: 0 },
+          { accountId: `m-${ID_B}`, imported: 3, skipped: 0 },
         ],
         failures: [],
       });

@@ -4,7 +4,10 @@ import {
   NotificationType,
   notificationCategoryOf,
 } from "../notification-center/entities/notification.entity";
-import { DEDUPE_KEY_MAX_LENGTH } from "../notification-center/notification-bounds";
+import {
+  DEDUPE_KEY_MAX_LENGTH,
+  TARGET_MAX_LENGTH,
+} from "../notification-center/notification-bounds";
 import {
   CONSENT_REMINDER_THRESHOLDS,
   buildConsentExpiredNotification,
@@ -17,9 +20,13 @@ import {
   consentReminderSeverity,
   consentReminderThreshold,
   daysBetweenYMD,
+  importedAccountIds,
   notificationAccountLabel,
   notificationFailureCode,
+  EVERY_ACCOUNT_QUERY,
   shouldNotifyImported,
+  TRANSACTIONS_TARGET_PREFIX,
+  transactionsAccountQuery,
 } from "./bank-sync-notifications";
 import { BANK_SYNC_NOTIFY_SUCCESS_MODES } from "./bank-sync.constants";
 
@@ -193,6 +200,7 @@ describe("dedupe keys", () => {
           imported: 1,
           skipped: 0,
           accounts: 1,
+          accountIds: ["acc-1"],
         },
         "2027-03-31",
       ),
@@ -301,28 +309,135 @@ describe("the notifications", () => {
 
   it("an imported notice is a success on the UTC day's key and says none when none", () => {
     const some = buildSyncImportedNotification(
-      { ...facts, imported: 3, skipped: 1, accounts: 2 },
+      {
+        ...facts,
+        imported: 3,
+        skipped: 1,
+        accounts: 2,
+        accountIds: ["acc-1", "acc-2"],
+      },
       "2027-03-31",
     );
     expect(some).toMatchObject({
       type: NotificationType.BANK_SYNC_IMPORTED,
       severity: NotificationSeverity.SUCCESS,
-      target: "/settings/bank-sync",
       dedupeKey: `bsc:imp:${CONNECTION}:2027-03-31`,
       data: { imported: 3, skipped: 1, accounts: 2 },
     });
+    expect(Object.keys(some.data ?? {})).not.toContain("accountIds");
     expect(some.title).toContain("new transactions imported");
     const none = buildSyncImportedNotification(
-      { ...facts, imported: 0, skipped: 4, accounts: 1 },
+      { ...facts, imported: 0, skipped: 4, accounts: 1, accountIds: ["a"] },
       "2027-03-31",
     );
     expect(none.title).toContain("no new transactions");
     expect(
       buildSyncImportedNotification(
-        { ...facts, imported: 1, skipped: 0, accounts: 1 },
+        { ...facts, imported: 1, skipped: 0, accounts: 1, accountIds: ["a"] },
         "d",
       ).message,
     ).toContain("1 transaction from");
+  });
+
+  it("an imported notice opens the Transactions page on the accounts it is about", () => {
+    expect(
+      buildSyncImportedNotification(
+        {
+          ...facts,
+          imported: 3,
+          skipped: 0,
+          accounts: 2,
+          accountIds: ["acc-1", "acc-2"],
+        },
+        "2027-03-31",
+      ).target,
+    ).toBe("/transactions?accountIds=acc-1,acc-2");
+  });
+
+  it("opens one account through the singular deep link, which an open Transactions page also applies", () => {
+    expect(
+      buildSyncImportedNotification(
+        {
+          ...facts,
+          imported: 3,
+          skipped: 0,
+          accounts: 1,
+          accountIds: ["acc-1"],
+        },
+        "2027-03-31",
+      ).target,
+    ).toBe("/transactions?accountId=acc-1");
+    expect(transactionsAccountQuery([])).toBe(EVERY_ACCOUNT_QUERY);
+  });
+
+  it("builds the target the length check measured: the prefix, then the query", () => {
+    for (const accountIds of [[], ["acc-1"], ["acc-1", "acc-2"]]) {
+      expect(
+        buildSyncImportedNotification(
+          { ...facts, imported: 1, skipped: 0, accounts: 1, accountIds },
+          "d",
+        ).target,
+      ).toBe(TRANSACTIONS_TARGET_PREFIX + transactionsAccountQuery(accountIds));
+    }
+  });
+
+  it("an imported notice whose accounts would overflow the stored target opens every account", () => {
+    const uuid = (i: number) =>
+      `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`;
+    const six = Array.from({ length: 6 }, (_, i) => uuid(i));
+    const seven = Array.from({ length: 7 }, (_, i) => uuid(i));
+    const build = (accountIds: string[]) =>
+      buildSyncImportedNotification(
+        { ...facts, imported: 1, skipped: 0, accounts: 1, accountIds },
+        "d",
+      ).target ?? "";
+
+    expect(build(six)).toBe(`/transactions?accountIds=${six.join(",")}`);
+    expect(build(six).length).toBeLessThanOrEqual(TARGET_MAX_LENGTH);
+    // Not a bare `/transactions?`: a target with no query restores the
+    // reader's saved filters, which can hide the imported rows.
+    expect(build(seven)).toBe("/transactions?accountStatus=all");
+    expect(transactionsAccountQuery(seven)).toBe(EVERY_ACCOUNT_QUERY);
+  });
+
+  it("names the accounts the sync imported into, else every account it synced, each once", () => {
+    expect(
+      importedAccountIds([
+        { accountId: "a", imported: 0 },
+        { accountId: "b", imported: 2 },
+        { accountId: "c", imported: 1 },
+        { accountId: "b", imported: 1 },
+      ]),
+    ).toEqual(["b", "c"]);
+    expect(
+      importedAccountIds([
+        { accountId: "a", imported: 0 },
+        { accountId: "b", imported: 0 },
+        { accountId: "a", imported: 0 },
+      ]),
+    ).toEqual(["a", "b"]);
+  });
+
+  it("keeps every other bank sync notice on the bank sync settings, where its repair is", () => {
+    expect(
+      [
+        buildConsentExpiringNotification(
+          { ...facts, validUntil: VALID_UNTIL },
+          7,
+          "2027-03-31",
+          "2027-03-24",
+        ),
+        buildConsentExpiredNotification(
+          { ...facts, validUntil: VALID_UNTIL },
+          "2027-03-31",
+        ),
+        buildSyncFailedNotification(facts, [], "2027-03-31"),
+      ].map((input) => input.target),
+    ).toEqual([
+      "/settings/bank-sync",
+      "/settings/bank-sync",
+      "/settings/bank-sync",
+    ]);
   });
 
   it("files every type under the category the spec names", () => {

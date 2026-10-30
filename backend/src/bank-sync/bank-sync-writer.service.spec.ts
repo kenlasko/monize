@@ -12,7 +12,11 @@ import { Payee } from "../payees/entities/payee.entity";
 import { PayeesService } from "../payees/payees.service";
 import { TagsService } from "../tags/tags.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
-import { TransactionRulesApplierService } from "../transaction-rules/transaction-rules-applier.service";
+import type { RuleNetChanges } from "../transaction-rules/rule-effects";
+import {
+  TransactionRulesApplierService,
+  type AppliedRuleRow,
+} from "../transaction-rules/transaction-rules-applier.service";
 import {
   Transaction,
   TransactionStatus,
@@ -87,10 +91,12 @@ describe("BankSyncWriterService", () => {
   const linkRepo = { findOne: jest.fn() };
   const accountRepo = { findOne: jest.fn() };
   const preferenceRepo = { findOne: jest.fn() };
+  const payeeRepo = { find: jest.fn() };
   const { manager, dataSource } = createScopedDbMocks([
     [BankSyncAccount, linkRepo],
     [Account, accountRepo],
     [UserPreference, preferenceRepo],
+    [Payee, payeeRepo],
   ]);
   const accountsService: jest.Mocked<
     Pick<AccountsService, "recalculateCurrentBalance">
@@ -182,6 +188,7 @@ describe("BankSyncWriterService", () => {
     payees.findByName.mockResolvedValue(null);
     payees.findPayeeByAlias.mockResolvedValue(null);
     preferenceRepo.findOne.mockResolvedValue({ language: "pl" });
+    payeeRepo.find.mockResolvedValue([]);
     tagsService.addTransactionTags.mockResolvedValue(undefined);
     manager.create.mockImplementation((_entity: unknown, props: object) => ({
       ...props,
@@ -846,6 +853,196 @@ describe("BankSyncWriterService", () => {
       await expect(
         service.write(input(rows(), { expectedFingerprint: "0".repeat(64) })),
       ).rejects.not.toBeInstanceOf(BankSyncPlanChangedException);
+    });
+  });
+
+  describe("a payee the import rules chose brings its default category", () => {
+    const applied = (
+      transactionId: string,
+      changes: Partial<RuleNetChanges>,
+    ): AppliedRuleRow => ({
+      transactionId,
+      effects: {
+        changes: { addTagIds: [], removeTagIds: [], ...changes },
+        trace: [],
+        aiReviewRequests: [],
+      },
+      affectedAccountIds: [],
+      settledScheduleIds: [],
+    });
+    const starbucks = (defaultCategoryId: string | null) =>
+      ({
+        id: "payee-starbucks",
+        name: "Starbucks",
+        defaultCategoryId,
+        defaultCategory:
+          defaultCategoryId === null
+            ? null
+            : { id: defaultCategoryId, name: "Coffee" },
+      }) as Payee;
+    const categoryUpdates = () =>
+      manager.update.mock.calls.filter((call) => call[0] === Transaction);
+
+    beforeEach(() => {
+      rulesApplier.loadRulesFor.mockResolvedValue([{ id: "rule-1" }] as never);
+    });
+
+    it("gives a row whose payee a rule changed the new payee's default category, after the rules and before the balance", async () => {
+      const order: string[] = [];
+      rulesApplier.applyToNew.mockImplementation(async () => {
+        order.push("rules");
+        return [applied("tx-1", { payeeId: "payee-starbucks" })];
+      });
+      payeeRepo.find.mockResolvedValue([starbucks("cat-coffee")]);
+      manager.update.mockImplementation(async () => {
+        order.push("category");
+        return { affected: 1 };
+      });
+      accountsService.recalculateCurrentBalance.mockImplementation(async () => {
+        order.push("balance");
+        return account();
+      });
+
+      await service.write(
+        input([row({ payeeText: "CARD 1234 STARBUCKS #55" })]),
+      );
+
+      expect(order).toEqual(["rules", "category", "balance"]);
+      expect(payeeRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ userId: USER_ID }),
+        }),
+      );
+      expect(categoryUpdates()).toEqual([
+        [
+          Transaction,
+          {
+            id: "tx-1",
+            userId: USER_ID,
+            isSplit: false,
+            isTransfer: false,
+          },
+          { categoryId: "cat-coffee" },
+        ],
+      ]);
+    });
+
+    it("replaces the bank payee's default category, which only that payee gave the row", async () => {
+      payees.findByName.mockResolvedValue({
+        id: "payee-raw",
+        name: "CARD 1234 STARBUCKS #55",
+        defaultCategoryId: "cat-other",
+      } as Payee);
+      rulesApplier.applyToNew.mockResolvedValue([
+        applied("tx-1", { payeeId: "payee-starbucks" }),
+      ]);
+      payeeRepo.find.mockResolvedValue([starbucks("cat-coffee")]);
+
+      await service.write(
+        input([row({ payeeText: "CARD 1234 STARBUCKS #55" })]),
+      );
+
+      expect(categoryUpdates()[0][2]).toEqual({ categoryId: "cat-coffee" });
+    });
+
+    it("leaves a category a rule set, even beside a payee change", async () => {
+      rulesApplier.applyToNew.mockResolvedValue([
+        applied("tx-1", { payeeId: "payee-starbucks", categoryId: "cat-x" }),
+      ]);
+      payeeRepo.find.mockResolvedValue([starbucks("cat-coffee")]);
+
+      await service.write(input([row()]));
+
+      expect(categoryUpdates()).toEqual([]);
+      expect(payeeRepo.find).not.toHaveBeenCalled();
+    });
+
+    it("keeps the category a rule confirmed, though it left no change in the net effects", async () => {
+      // Rule: set payee Starbucks, set category Coffee; the bank payee's
+      // default was already Coffee, so set_category was a no-op.
+      rulesApplier.applyToNew.mockResolvedValue([
+        {
+          ...applied("tx-1", { payeeId: "payee-starbucks" }),
+          effects: {
+            changes: {
+              addTagIds: [],
+              removeTagIds: [],
+              payeeId: "payee-starbucks",
+            },
+            trace: [
+              {
+                ruleId: "rule-1",
+                matched: true,
+                applied: [{ type: "set_payee" }],
+                skipped: [{ type: "set_category", reason: "no_change" }],
+                changes: {
+                  payeeId: { before: "payee-raw", after: "payee-starbucks" },
+                },
+                stopped: false,
+              },
+            ],
+            aiReviewRequests: [],
+          },
+        },
+      ]);
+      payeeRepo.find.mockResolvedValue([starbucks("cat-dining")]);
+
+      await service.write(input([row()]));
+
+      expect(categoryUpdates()).toEqual([]);
+      expect(payeeRepo.find).not.toHaveBeenCalled();
+    });
+
+    it("leaves the row as the rules left it when the new payee has no default category", async () => {
+      rulesApplier.applyToNew.mockResolvedValue([
+        applied("tx-1", { payeeId: "payee-starbucks" }),
+      ]);
+      payeeRepo.find.mockResolvedValue([starbucks(null)]);
+
+      await service.write(input([row()]));
+
+      expect(categoryUpdates()).toEqual([]);
+    });
+
+    it("gives no category to a row the rules split or made a transfer, or whose payee they cleared", async () => {
+      rulesApplier.applyToNew.mockResolvedValue([
+        applied("tx-1", {
+          payeeId: "payee-starbucks",
+          structure: {} as RuleNetChanges["structure"],
+        }),
+        applied("tx-2", { payeeId: null }),
+        applied("tx-3", {}),
+      ]);
+      payeeRepo.find.mockResolvedValue([starbucks("cat-coffee")]);
+
+      await service.write(
+        input([
+          row({ externalKey: "ref:1" }),
+          row({ externalKey: "ref:2" }),
+          row({ externalKey: "ref:3" }),
+        ]),
+      );
+
+      expect(categoryUpdates()).toEqual([]);
+      expect(payeeRepo.find).not.toHaveBeenCalled();
+    });
+
+    it("reads each chosen payee once for the whole batch", async () => {
+      rulesApplier.applyToNew.mockResolvedValue([
+        applied("tx-1", { payeeId: "payee-starbucks" }),
+        applied("tx-2", { payeeId: "payee-starbucks" }),
+      ]);
+      payeeRepo.find.mockResolvedValue([starbucks("cat-coffee")]);
+
+      await service.write(
+        input([row({ externalKey: "ref:1" }), row({ externalKey: "ref:2" })]),
+      );
+
+      expect(payeeRepo.find).toHaveBeenCalledTimes(1);
+      expect(categoryUpdates().map((call) => call[1].id)).toEqual([
+        "tx-1",
+        "tx-2",
+      ]);
     });
   });
 

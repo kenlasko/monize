@@ -134,9 +134,19 @@ Written by the daily cron after each user's run, once per connection:
   (unreadable or refused credentials; `unauthorized` is reported as this),
   `refused` and `unexpected`.
 
-Every row: `target = /settings/bank-sync`. `data` holds facts (dates,
-counts, codes), never "in 3 days" text, so the client renders it in the
-reader's language and on the reader's clock.
+`BANK_SYNC_IMPORTED` opens the Transactions page on the Monize accounts the
+sync imported into (every account it synced when it imported nothing):
+`target = /transactions?accountId=<id>` for one account (the deep link an
+open Transactions page also applies), `/transactions?accountIds=<ids>` for
+several, and `/transactions?accountStatus=all` (every account) when the ids
+would not fit the 255-character `target` column. A target with no query is
+never used: the page would restore the reader's saved filters, which can
+hide the imported rows. Known limit: the page reads `accountIds` and
+`accountStatus` only when it loads, so a click on a several-account notice
+while the Transactions page is already open leaves its filters as they were.
+Every other row: `target = /settings/bank-sync`, where its repair is.
+`data` holds facts (dates, counts, codes), never "in 3 days" text, so the
+client renders it in the reader's language and on the reader's clock.
 
 ## 6. Copy
 
