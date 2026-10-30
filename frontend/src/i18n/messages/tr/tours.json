@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "Önce bir hesap ekleyin — bu tur bir işlemin nasıl kaydedildiğini anlatır.",
       "securitiesExist": "Önce bir menkul kıymet ekleyin — bu tur menkul kıymet listenizden birini açar.",
-      "ownerView": "Önce kendi verilerinize dönün. Bu tur, başkası adına işlem yaparken kullanılamayan Kurallar’ı ve yapay zekâ inceleme kutusunu kapsar."
+      "ownerView": "Önce kendi verilerinize dönün. Bu tur, başka biri adına işlem yaparken kullanılamayan özellikleri anlatır."
     },
     "start": "Başlat",
     "restart": "Tekrar al",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "Her sıfırlamadan önce bir hatırlatma",
             "body": "Bir kural sıfırlanmadan iki ay önce Monize burada sizden gelecek yılın üst sınırını onaylamanızı ister. Hiçbir şey yapmazsanız kural üst sınırını korur ve kendi tarihinde sıfırlanır. Hatırlatmaların size nasıl ulaşacağını **Ayarlar** içinde, **Bildirimler** bölümünde, **Faturalar ve planlananlar** altında seçin."
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "Paylaşılan giderler",
+        "steps": {
+          "welcome": {
+            "title": "Birlikte gezin, hesabı açık tutun",
+            "body": "Grup alışverişlerini ve geri ödemeleri kaydetmeyi öğrenin. Bu tur sizin yerinize kayıt oluşturmaz."
+          },
+          "tools": {
+            "title": "Paylaşılan giderleri açın",
+            "body": "**Paylaşılan giderler**, **Araçlar** menüsündedir. Telefonda gezinme menüsünü kullanın."
+          },
+          "newGroup": {
+            "title": "Grubunuzla başlayın",
+            "body": "**Yeni grup** bölümünde gezi adını, kişileri ve hesaplaşma para birimini belirleyin. Kişilerin Monize hesabı olması gerekmez. Her alışveriş farklı üyeleri kapsayabilir."
+          },
+          "chooseGroup": {
+            "title": "Bir grubu keşfedin",
+            "body": "Devam etmek için bir grup açın. Henüz grubunuz yoksa **Bu adımı atla** seçeneğini kullanın ve turdan sonra bir grup oluşturun."
+          },
+          "expenses": {
+            "title": "Kim ödedi, kimler yararlandı?",
+            "body": "Düzenleme yetkiniz varsa **Gider ekle** ile ödeyen kişiyi ve yararlananları seçin. **Şu kişiler arasında paylaş** eşit payları, kesin tutarları, yüzdeleri ve sıfır payları destekler."
+          },
+          "balances": {
+            "title": "Bakiyeleri kontrol edin ve hesaplaşın",
+            "body": "**Bakiyeler** kimin kime borçlu olduğunu ve önerilen geri ödemeleri gösterir. Geri ödemeyi para el değiştirdikten sonra kaydedin. **Dosyalar** ve **Etkinlik** belgeleri ve geçmişi saklar."
+          },
+          "done": {
+            "title": "Sonraki geziniz için hazırsınız",
+            "body": "Paylaşılan kayıtlar kişisel işlemlerden ayrı tutulur. Bu turu istediğiniz zaman **Ayarlar** içindeki **Rehberli turlar** bölümünden yeniden başlatabilirsiniz."
           }
         }
       }

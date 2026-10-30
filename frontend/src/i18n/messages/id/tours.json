@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "Tambahkan akun terlebih dahulu — tur ini memandu pencatatan transaksi.",
       "securitiesExist": "Tambahkan sekuritas terlebih dahulu — tur ini membuka salah satunya dari daftar sekuritas Anda.",
-      "ownerView": "Kembalilah dulu ke data Anda sendiri. Panduan ini membahas Aturan dan kotak masuk peninjauan AI, yang tidak tersedia saat Anda bertindak atas nama orang lain."
+      "ownerView": "Kembali ke data Anda sendiri terlebih dahulu. Tur ini membahas fitur yang tidak tersedia saat Anda bertindak untuk orang lain."
     },
     "start": "Mulai",
     "restart": "Ulangi",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "Pengingat sebelum setiap reset",
             "body": "Dua bulan sebelum aturan direset, Monize meminta Anda di sini untuk mengonfirmasi batas maksimum tahun berikutnya. Jika Anda tidak melakukan apa pun, aturan mempertahankan batas maksimumnya dan direset pada tanggalnya. Pilih cara pengingat sampai kepada Anda di **Pengaturan**, di bagian **Notifikasi**, sebagai **Tagihan dan terjadwal**."
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "Pengeluaran bersama",
+        "steps": {
+          "welcome": {
+            "title": "Berlibur bersama, catatan tetap jelas",
+            "body": "Pelajari cara mencatat pembelian grup dan pembayaran kembali. Tur ini tidak membuat catatan untuk Anda."
+          },
+          "tools": {
+            "title": "Buka pengeluaran bersama",
+            "body": "Temukan **Pengeluaran bersama** di **Alat**. Di ponsel, gunakan menu navigasi."
+          },
+          "newGroup": {
+            "title": "Mulai dengan grup Anda",
+            "body": "**Grup baru** mengumpulkan nama perjalanan, peserta, dan mata uang penyelesaian. Peserta tidak memerlukan akun Monize. Setiap pembelian dapat melibatkan anggota yang berbeda."
+          },
+          "chooseGroup": {
+            "title": "Jelajahi sebuah grup",
+            "body": "Buka grup untuk melanjutkan. Jika belum punya, pilih **Lewati langkah ini** dan buat grup setelah tur."
+          },
+          "expenses": {
+            "title": "Siapa yang membayar, dan untuk siapa?",
+            "body": "Dengan akses edit, gunakan **Tambahkan pengeluaran** untuk memilih pembayar dan penerima manfaat. **Dibagi antara** mendukung bagian sama rata, jumlah pasti, persentase, dan bagian nol."
+          },
+          "balances": {
+            "title": "Periksa saldo dan selesaikan pembayaran",
+            "body": "**Saldo** menunjukkan siapa berutang kepada siapa dan saran pembayaran kembali. Catat pembayaran setelah uang diserahkan. **Berkas** dan **Aktivitas** menyimpan bukti dan riwayat."
+          },
+          "done": {
+            "title": "Siap untuk perjalanan berikutnya",
+            "body": "Catatan bersama tetap terpisah dari transaksi pribadi. Ulangi tur ini kapan saja dari **Pengaturan**, di **Tur berpandu**."
           }
         }
       }

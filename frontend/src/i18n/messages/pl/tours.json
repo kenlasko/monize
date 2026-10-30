@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "Najpierw dodaj konto — ten przewodnik pokazuje, jak zapisać transakcję.",
       "securitiesExist": "Najpierw dodaj papier wartościowy — ten przewodnik otwiera jeden z Twojej listy.",
-      "ownerView": "Najpierw wróć do własnych danych. Ten przewodnik omawia Reguły i skrzynkę przeglądów AI, które nie są dostępne, gdy działasz w imieniu kogoś innego."
+      "ownerView": "Najpierw wróć do własnych danych. Ten przewodnik opisuje funkcje niedostępne podczas działania w imieniu innej osoby."
     },
     "start": "Rozpocznij",
     "restart": "Powtórz",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "Przypomnienie przed każdym resetem",
             "body": "Dwa miesiące przed resetem reguły Monize prosi tutaj o potwierdzenie limitu na kolejny rok. Jeśli nic nie zrobisz, reguła zachowa limit i zresetuje się w swoim terminie. Sposób dostarczania przypomnień wybierzesz w **Ustawienia**, w sekcji **Powiadomienia**, jako **Rachunki i zaplanowane**."
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "Rozliczenia",
+        "steps": {
+          "welcome": {
+            "title": "Wspólny wyjazd, przejrzyste rozliczenia",
+            "body": "Zobacz, jak zapisywać zakupy dla grupy i zwroty pieniędzy. Ten przewodnik nie tworzy za Ciebie żadnych wpisów."
+          },
+          "tools": {
+            "title": "Otwórz rozliczenia",
+            "body": "**Rozliczenia** znajdziesz w menu **Narzędzia**. Na telefonie skorzystaj z menu nawigacji."
+          },
+          "newGroup": {
+            "title": "Zacznij od swojej grupy",
+            "body": "W oknie **Nowa grupa** podajesz nazwę wyjazdu, uczestników i walutę rozliczenia. Uczestnicy nie muszą mieć kont w Monize. Każdy zakup może dotyczyć innych osób z grupy."
+          },
+          "chooseGroup": {
+            "title": "Zajrzyj do grupy",
+            "body": "Otwórz grupę, aby kontynuować. Jeśli jeszcze jej nie masz, wybierz **Pomiń ten krok** i utwórz ją po zakończeniu przewodnika."
+          },
+          "expenses": {
+            "title": "Kto zapłacił i dla kogo?",
+            "body": "Jeśli masz uprawnienia do edycji, wybierz **Dodaj wydatek** i wskaż płacącego oraz osoby, których dotyczy zakup. W **Podziel między** możesz podzielić koszt po równo, podać dokładne kwoty, procenty lub udział zerowy."
+          },
+          "balances": {
+            "title": "Sprawdź bilans i rozlicz się",
+            "body": "Karta **Kto komu** pokazuje, kto jest komu winien pieniądze, i proponuje spłaty. Zapisz spłatę dopiero po przekazaniu pieniędzy. W **Pliki** i **Historia zmian** znajdziesz dokumenty i historię grupy."
+          },
+          "done": {
+            "title": "Gotowe na kolejny wyjazd",
+            "body": "Wpisy grupy pozostają oddzielone od prywatnych transakcji. Ten przewodnik możesz powtórzyć w dowolnej chwili: **Ustawienia**, następnie **Przewodniki po aplikacji**."
           }
         }
       }

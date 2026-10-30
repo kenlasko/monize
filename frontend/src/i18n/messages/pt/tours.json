@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "Adicione primeiro uma conta — esta visita mostra como registar uma transação.",
       "securitiesExist": "Adicione primeiro um título — esta visita abre um a partir da sua lista de títulos.",
-      "ownerView": "Volte primeiro aos seus próprios dados. Esta visita aborda as Regras e a caixa de revisão de IA, que não estão disponíveis enquanto atua em nome de outra pessoa."
+      "ownerView": "Volte primeiro aos seus próprios dados. Esta visita apresenta funcionalidades indisponíveis quando atua em nome de outra pessoa."
     },
     "start": "Iniciar",
     "restart": "Repetir",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "Um lembrete antes de cada reinício",
             "body": "Dois meses antes de uma regra reiniciar, o Monize pede-lhe aqui que confirme o máximo do ano seguinte. Se não fizer nada, a regra mantém o máximo e reinicia na sua data. Escolha como os lembretes lhe chegam em **Definições**, em **Notificações**, como **Contas e agendados**."
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "Despesas partilhadas",
+        "steps": {
+          "welcome": {
+            "title": "Viajem juntos, mantenham as contas claras",
+            "body": "Saiba como registar compras do grupo e reembolsos. Esta visita não cria registos por si."
+          },
+          "tools": {
+            "title": "Abrir as despesas partilhadas",
+            "body": "Encontra **Despesas partilhadas** em **Ferramentas**. No telemóvel, utilize o menu de navegação."
+          },
+          "newGroup": {
+            "title": "Comece pelo seu grupo",
+            "body": "Em **Novo grupo**, indique o nome da viagem, as pessoas e a moeda de acerto de contas. As pessoas não precisam de contas Monize. Cada compra pode envolver membros diferentes."
+          },
+          "chooseGroup": {
+            "title": "Explore um grupo",
+            "body": "Abra um grupo para continuar. Se ainda não tiver nenhum, escolha **Ignorar este passo** e crie um depois da visita."
+          },
+          "expenses": {
+            "title": "Quem pagou e para quem?",
+            "body": "Com permissão de edição, utilize **Adicionar despesa** para escolher quem pagou e os beneficiários. **Dividir entre** permite partes iguais, montantes exatos, percentagens e partes de valor zero."
+          },
+          "balances": {
+            "title": "Verifique os saldos e acerte contas",
+            "body": "**Saldos** mostra quem deve a quem e sugere reembolsos. Registe um reembolso depois de entregar o dinheiro. **Ficheiros** e **Atividade** guardam os comprovativos e o histórico."
+          },
+          "done": {
+            "title": "Tudo pronto para a próxima viagem",
+            "body": "Os registos partilhados ficam separados das transações pessoais. Repita esta visita a qualquer momento em **Definições**, na secção **Visitas guiadas**."
           }
         }
       }
