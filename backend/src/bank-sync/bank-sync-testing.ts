@@ -36,9 +36,10 @@ export function testRsaPem(): string {
 
 /**
  * A SimpleFIN access URL for a fixture, its userinfo set through `URL` so no
- * spec spells a credential-bearing URL literally (secret scanners flag one),
- * and no spec derives one with `replace` (CodeQL reads that as a password;
- * `codeql-password-source.guard.spec.ts`).
+ * spec spells a credential-bearing URL literally (secret scanners flag one).
+ * Pass an opaque `secret` such as `"demo-opaque"`: a call with a password-like
+ * argument returns a password to CodeQL, and this URL reaches `hashToken`
+ * (`codeql-password-source.guard.spec.ts`).
  */
 export function simplefinAccessUrl(
   base: string,
