@@ -200,3 +200,11 @@ Focused synchronization verification passed frontend lint and types, all 58
 cases in six documentation/link/E2E-convention/Rules/Taxes test files, the two
 backend instruction/documentation guard suites (26 cases), documentation
 generation, and both repository environment/documentation checks.
+
+Main then advanced to `1ef42519e`, changing six CSV-import screenshots and a
+Rules description only. A second normal merge retained those changes. Its
+generated search index conflicted; the initial docs check identified the stale
+index, regeneration resolved it, and the final `docs:check` passed. The normal
+commit hooks passed, and the frontend/backend/E2E source bytes after the first
+merge commit matched the verified native copy. No further source changes were
+introduced by the second documentation merge.
