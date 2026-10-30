@@ -2,6 +2,7 @@ import {
   NotificationSeverity,
   NotificationType,
 } from "../notification-center/entities/notification.entity";
+import { TARGET_MAX_LENGTH } from "../notification-center/notification-bounds";
 import type { CreateNotificationInput } from "../notification-center/notification.service";
 import type { BankSyncNotifySuccessMode } from "./bank-sync.constants";
 
@@ -17,10 +18,12 @@ import type { BankSyncNotifySuccessMode } from "./bank-sync.constants";
  * renders it in the reader's language and the email composes it at delivery.
  * `title` and `message` are the English fallbacks for a reader with no client.
  *
- * Every row's `target` is the literal `/settings/bank-sync`, written inline in
- * each builder: the frontend's `notification-target.contract.test.ts` reads a
- * producer's target out of the source and checks that it is a real page, and a
- * target held in a constant is one it cannot verify.
+ * A row's `target` is written inline in its builder: the import notice opens
+ * the Transactions page on the accounts it is about, every other row opens
+ * `/settings/bank-sync`, where its repair is. The frontend's
+ * `notification-target.contract.test.ts` reads a producer's target out of the
+ * source and checks that it is a real page, and a target held in a constant is
+ * one it cannot verify.
  */
 
 /**
@@ -204,6 +207,42 @@ export interface BankSyncImportedFacts extends BankConnectionFacts {
   skipped: number;
   /** How many bank accounts of the connection synced. */
   accounts: number;
+  /**
+   * The Monize accounts the notice opens the Transactions page on: the ones the
+   * sync imported into, else every one it synced (`importedAccountIds`).
+   */
+  accountIds: readonly string[];
+}
+
+/**
+ * The Monize accounts an import notice is about: those a synced bank account
+ * imported into, else, when nothing was imported, every one that synced. Each
+ * once, in the order the sync reached them.
+ */
+export function importedAccountIds(
+  synced: readonly { accountId: string; imported: number }[],
+): string[] {
+  const into = synced.filter((result) => result.imported > 0);
+  return [
+    ...new Set((into.length > 0 ? into : synced).map((r) => r.accountId)),
+  ];
+}
+
+/** The import notice's target up to its account filter. */
+const TRANSACTIONS_TARGET_PREFIX = "/transactions?accountIds=";
+
+/**
+ * The `accountIds` filter of the import notice's target: the ids joined, or
+ * empty (the Transactions page on every account) when they would not fit in a
+ * stored target, which `boundedTarget` would otherwise drop whole.
+ */
+export function transactionsAccountFilter(
+  accountIds: readonly string[],
+): string {
+  const joined = accountIds.join(",");
+  return TRANSACTIONS_TARGET_PREFIX.length + joined.length <= TARGET_MAX_LENGTH
+    ? joined
+    : "";
 }
 
 export function buildSyncImportedNotification(
@@ -211,6 +250,7 @@ export function buildSyncImportedNotification(
   day: string,
 ): CreateNotificationInput {
   const { institutionName, imported } = facts;
+  const accountFilter = transactionsAccountFilter(facts.accountIds);
   return {
     type: NotificationType.BANK_SYNC_IMPORTED,
     severity: NotificationSeverity.SUCCESS,
@@ -229,7 +269,7 @@ export function buildSyncImportedNotification(
       skipped: facts.skipped,
       accounts: facts.accounts,
     },
-    target: "/settings/bank-sync",
+    target: `/transactions?accountIds=${accountFilter}`,
     periodStart: day,
     dedupeKey: `bsc:imp:${facts.connectionId}:${day}`,
   };
