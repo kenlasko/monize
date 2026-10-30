@@ -30,7 +30,11 @@ html[data-theme=light] body.docs{--code-bg:#f1f5fc;--code-txt:#17253d;--mark:rgb
 .docs .dside-btn{display:none}
 
 /* ---------- three-column layout ---------- */
-.dlayout{position:relative;z-index:1;display:grid;grid-template-columns:var(--side) minmax(0,1fr) var(--toc);max-width:1440px;margin:0 auto;align-items:start}
+/* No position+z-index here: that would give .dlayout its own stacking context,
+   which traps the mobile drawer's z-index:70 inside it and lets .dshade's
+   z-index:65 (a sibling, outside .dlayout) paint and hit-test above the whole
+   thing -- the drawer looks open but every tap lands on the shade instead. */
+.dlayout{display:grid;grid-template-columns:var(--side) minmax(0,1fr) var(--toc);max-width:1440px;margin:0 auto;align-items:start}
 .dlayout>*{min-width:0}
 .dside,.dtoc{position:sticky;top:var(--hh);max-height:calc(100vh - var(--hh));overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .dside{padding:22px 14px 40px 18px;border-right:1px solid var(--line)}
