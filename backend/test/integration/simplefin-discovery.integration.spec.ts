@@ -9,7 +9,10 @@ import { SimplefinRequestBudgetService } from "@/bank-sync/simplefin-request-bud
 import { SimplefinDiscoveryService } from "@/bank-sync/simplefin-discovery.service";
 import { SimplefinClient } from "@/bank-sync/providers/simplefin/simplefin.client";
 import { SimplefinTransportError } from "@/bank-sync/providers/simplefin/simplefin.transport";
-import { testEncryption } from "@/bank-sync/bank-sync-testing";
+import {
+  simplefinAccessUrl,
+  testEncryption,
+} from "@/bank-sync/bank-sync-testing";
 import { withUserContext } from "@/common/db/with-context";
 import { getActiveScopedManager } from "@/common/db/scoped-db";
 import {
@@ -45,8 +48,15 @@ describe("SimpleFIN discovery on PostgreSQL with enforced RLS", () => {
   const client: jest.Mocked<Pick<SimplefinClient, "accounts">> = {
     accounts: jest.fn(),
   };
-  const access =
-    "https://discovery-user:discovery-password@bridge.simplefin.org/simplefin/test";
+  const accessWith = (secret: string) =>
+    simplefinAccessUrl(
+      "https://bridge.simplefin.org/simplefin/test",
+      "discovery-user",
+      secret,
+    );
+  const access = accessWith("discovery-password");
+  const rotatedAccess = accessWith("rotated-password");
+  const replacementAccess = accessWith("new-password");
   const scoped = <T>(id: string, fn: () => Promise<T>) =>
     withUserContext(id, fn);
   const discover = () => scoped(alice, () => service.discover(alice));
@@ -156,11 +166,7 @@ describe("SimpleFIN discovery on PostgreSQL with enforced RLS", () => {
       [local.id, bankId],
     );
     await scoped(alice, () =>
-      storage.storeClaimedAccessUrl(
-        alice,
-        access.replace("discovery-password", "rotated-password"),
-        true,
-      ),
+      storage.storeClaimedAccessUrl(alice, rotatedAccess, true),
     );
     const result = await discover();
     expect(result.connections[0].accounts[0].id).toBe(bankId);
@@ -323,11 +329,7 @@ describe("SimpleFIN discovery on PostgreSQL with enforced RLS", () => {
 
   it("does not apply an old response after credential replacement", async () => {
     client.accounts.mockImplementation(async () => {
-      await storage.storeClaimedAccessUrl(
-        alice,
-        access.replace("discovery-password", "new-password"),
-        true,
-      );
+      await storage.storeClaimedAccessUrl(alice, replacementAccess, true);
       return demo();
     });
     expect(await discover()).toMatchObject({
@@ -405,11 +407,7 @@ describe("SimpleFIN discovery on PostgreSQL with enforced RLS", () => {
     );
     await discover();
     await scoped(alice, () =>
-      storage.storeClaimedAccessUrl(
-        alice,
-        access.replace("discovery-password", "new-password"),
-        true,
-      ),
+      storage.storeClaimedAccessUrl(alice, replacementAccess, true),
     );
     await discover();
     client.accounts.mockResolvedValue({

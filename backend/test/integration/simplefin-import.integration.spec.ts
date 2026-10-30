@@ -14,6 +14,7 @@ import { SimplefinTransportError } from "@/bank-sync/providers/simplefin/simplef
 import { AccountType } from "@/accounts/entities/account.entity";
 import { withUserContext } from "@/common/db/with-context";
 import { addDaysYMD, todayYMD } from "@/common/date-utils";
+import { simplefinAccessUrl } from "@/bank-sync/bank-sync-testing";
 import { createTestAccount } from "../helpers/test-factories";
 import {
   cleanTables,
@@ -37,8 +38,14 @@ describe("SimpleFIN through the real preview, planner, writer and scheduler", ()
   const today = todayYMD();
   const date = addDaysYMD(today, -1);
   const scope = <T>(run: () => Promise<T>) => withUserContext(userId, run);
-  const access =
-    "https://writer-user:writer-password@bridge.simplefin.org/simplefin/test";
+  const accessWith = (secret: string) =>
+    simplefinAccessUrl(
+      "https://bridge.simplefin.org/simplefin/test",
+      "writer-user",
+      secret,
+    );
+  const access = accessWith("writer-password");
+  const rotatedAccess = accessWith("rotated");
   const payload = () => ({
     connections: [{ conn_id: "bank", org_id: "org", name: "US Bank" }],
     accounts: ["checking", "card"].map((id) => ({
@@ -269,11 +276,7 @@ describe("SimpleFIN through the real preview, planner, writer and scheduler", ()
   it("keeps ledger identity across token rotation and changed transaction descriptions", async () => {
     await confirm();
     await scope(() =>
-      storage.storeClaimedAccessUrl(
-        userId,
-        access.replace("writer-password", "rotated"),
-        true,
-      ),
+      storage.storeClaimedAccessUrl(userId, rotatedAccess, true),
     );
     jest.mocked(client.accounts).mockImplementation(async () => {
       const data = payload();
