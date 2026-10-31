@@ -4,7 +4,6 @@
     "subtitle": "계정 및 유가증권 전반에서 사용되는 통화를 관리하세요",
     "refreshRates": "환율 갱신",
     "refreshing": "갱신 중...",
-    "ratesAge": "({time})",
     "statusFilterLabel": "상태",
     "newCurrency": "+ 새 통화",
     "searchPlaceholder": "코드 또는 이름으로 검색...",

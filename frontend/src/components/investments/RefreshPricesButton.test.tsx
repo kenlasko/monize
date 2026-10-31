@@ -42,7 +42,10 @@ describe('RefreshPricesButton', () => {
         lastPriceUpdate="2026-07-30T10:00:00.000Z"
       />,
     );
-    expect(screen.getByText('(2 hours ago)')).toBeInTheDocument();
+    const age = screen.getByText('(2 hours ago)');
+    // On its own line under the label, the way Refresh Rates draws it.
+    expect(age.parentElement).toBe(screen.getByText('Refresh').parentElement);
+    expect(age.parentElement!.className).toContain('flex-col');
     expect(screen.getByRole('button', { name: 'Refresh' })).toHaveAttribute(
       'title',
       'Last updated: 2 hours ago',

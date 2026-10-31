@@ -4,7 +4,6 @@
     "subtitle": "Gérez les devises utilisées dans vos comptes et titres",
     "refreshRates": "Actualiser les taux",
     "refreshing": "Actualisation...",
-    "ratesAge": "({time})",
     "statusFilterLabel": "Statut",
     "newCurrency": "+ Nouvelle devise",
     "searchPlaceholder": "Rechercher par code ou nom...",

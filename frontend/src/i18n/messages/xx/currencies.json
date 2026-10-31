@@ -4,7 +4,6 @@
     "subtitle": "[XX-Manage currencies used across your accounts and securities-XX]",
     "refreshRates": "[XX-Refresh Rates-XX]",
     "refreshing": "[XX-Refreshing...-XX]",
-    "ratesAge": "[XX-({time})-XX]",
     "statusFilterLabel": "[XX-Status-XX]",
     "newCurrency": "[XX-+ New Currency-XX]",
     "searchPlaceholder": "[XX-Search by code or name...-XX]",

@@ -2,7 +2,9 @@
 
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
+import { RefreshButtonLabel } from '@/components/ui/RefreshButtonLabel';
 import { useRelativeTime } from '@/hooks/useRelativeTime';
+import { cn } from '@/lib/utils';
 
 interface RefreshPricesButtonProps {
   onClick: () => void;
@@ -23,7 +25,7 @@ interface RefreshPricesButtonProps {
  * and the security detail header all trigger the same `usePriceRefresh` work,
  * so they show the same button rather than three lookalikes that drift apart:
  * the arrow-path icon, a spinner and "Updating..." while in flight, and the
- * age of the last refresh both inline and in the tooltip.
+ * age of the last refresh on its own line under the label and in the tooltip.
  *
  * The label and the relative time collapse below `sm` so the icon alone stands
  * in on a phone, where the button sits beside other controls in a header row.
@@ -44,7 +46,9 @@ export function RefreshPricesButton({
       size={size}
       onClick={onClick}
       isLoading={isRefreshing}
-      className={`whitespace-nowrap ${className ?? ''}`}
+      // The age is a second line under the label from `sm` up; the tighter
+      // padding keeps the two-line button near the height of its neighbours.
+      className={cn('whitespace-nowrap', lastPriceUpdate && 'sm:py-1', className)}
       // The label is hidden below `sm`, so name the button for assistive tech
       // rather than leaving the icon to speak for itself.
       aria-label={t('page.refresh')}
@@ -74,12 +78,11 @@ export function RefreshPricesButton({
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
             />
           </svg>
-          <span className="hidden sm:inline">{t('page.refresh')}</span>
-          {lastPriceUpdate && (
-            <span className="ml-1.5 hidden text-xs text-gray-500 sm:inline dark:text-gray-400">
-              ({formatRelativeTime(lastPriceUpdate)})
-            </span>
-          )}
+          <RefreshButtonLabel
+            label={t('page.refresh')}
+            updatedAt={lastPriceUpdate}
+            className="hidden sm:flex"
+          />
         </>
       )}
     </Button>

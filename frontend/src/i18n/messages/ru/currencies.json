@@ -4,7 +4,6 @@
     "subtitle": "Управление валютами, используемыми в счетах и ценных бумагах",
     "refreshRates": "Обновить курсы",
     "refreshing": "Обновление...",
-    "ratesAge": "({time})",
     "statusFilterLabel": "Статус",
     "newCurrency": "+ Новая валюта",
     "searchPlaceholder": "Поиск по коду или названию...",

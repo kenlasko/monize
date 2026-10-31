@@ -416,6 +416,11 @@ describe('CurrenciesPage', () => {
     const button = await screen.findByRole('button', { name: /Refresh Rates/ });
     await waitFor(() => expect(button).toHaveTextContent(/\(3 hours ago\)/));
     expect(button.querySelector('svg')).not.toBeNull();
+    // The age is a line of its own under the label, so it does not widen the
+    // button until the subtitle and New Currency wrap.
+    const age = within(button).getByText('(3 hours ago)');
+    expect(age.parentElement).toBe(within(button).getByText('Refresh Rates').parentElement);
+    expect(age.parentElement!.className).toContain('flex-col');
   });
 
   it('draws the status filter as the shared segmented control in a wrapping toolbar', async () => {
