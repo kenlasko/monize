@@ -44,7 +44,7 @@ describe("SimpleFIN through the real preview, planner, writer and scheduler", ()
       "writer-user",
       secret,
     );
-  const access = accessWith("writer-password");
+  const access = accessWith("writer-opaque");
   const rotatedAccess = accessWith("rotated");
   const payload = () => ({
     connections: [{ conn_id: "bank", org_id: "org", name: "US Bank" }],

@@ -38,9 +38,9 @@ describe("SimpleFIN storage and quota under real PostgreSQL/RLS", () => {
       "demo-user",
       secret,
     );
-  const access = accessWith("demo-password");
-  const rotatedAccess = accessWith("new-password");
-  const otherAccess = accessWith("other-password");
+  const access = accessWith("demo-opaque");
+  const rotatedAccess = accessWith("new-opaque");
+  const otherAccess = accessWith("other-opaque");
   const scoped = <T>(userId: string, fn: () => Promise<T>) =>
     withUserContext(userId, fn);
 
@@ -105,7 +105,7 @@ describe("SimpleFIN storage and quota under real PostgreSQL/RLS", () => {
       "SELECT access_url_enc, private_key_enc, application_id FROM bank_sync_credentials WHERE id=$1",
       [credentialId],
     );
-    expect(rows[0].access_url_enc).not.toContain("demo-password");
+    expect(rows[0].access_url_enc).not.toContain("demo-opaque");
     expect(rows[0].private_key_enc).toBeNull();
     expect(rows[0].application_id).toBeNull();
     await expect(scoped(bob, () => resolve(alice))).rejects.toThrow();
