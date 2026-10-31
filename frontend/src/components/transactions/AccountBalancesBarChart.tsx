@@ -260,7 +260,10 @@ export function AccountBalancesBarChart({
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <BarChart
             data={chartData}
-            margin={{ top: 20, right: isMobile ? 16 : 5, left: -10, bottom: 0 }}
+            // No negative left margin: the Y axis sizes itself to its widest
+            // label (`width="auto"`), and pulling the plot left of that clips
+            // the start of every tick label against the card.
+            margin={{ top: 20, right: isMobile ? 16 : 5, left: 0, bottom: 0 }}
             // Fire on clicks anywhere in the tooltip-highlighted column (not
             // just the bar rect). Prefer state.activeLabel -- which Recharts
             // sets to the active category whenever the cursor is in an

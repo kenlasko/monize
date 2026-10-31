@@ -4,7 +4,6 @@
     "subtitle": "管理您的科目和有價證券所使用的貨幣",
     "refreshRates": "更新匯率",
     "refreshing": "更新中...",
-    "ratesAge": "({time})",
     "statusFilterLabel": "狀態",
     "newCurrency": "+ 新增貨幣",
     "searchPlaceholder": "依代碼或名稱搜尋...",

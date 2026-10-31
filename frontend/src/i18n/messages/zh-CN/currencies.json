@@ -4,7 +4,6 @@
     "subtitle": "管理您账户和证券中使用的货币",
     "refreshRates": "刷新汇率",
     "refreshing": "刷新中...",
-    "ratesAge": "({time})",
     "statusFilterLabel": "状态",
     "newCurrency": "+ 新增货币",
     "searchPlaceholder": "按代码或名称搜索...",

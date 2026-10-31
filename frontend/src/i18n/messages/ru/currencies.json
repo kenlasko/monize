@@ -4,7 +4,6 @@
     "subtitle": "Управление валютами, используемыми в счетах и ценных бумагах",
     "refreshRates": "Обновить курсы",
     "refreshing": "Обновление...",
-    "ratesAge": "({time})",
     "statusFilterLabel": "Статус",
     "newCurrency": "+ Новая валюта",
     "searchPlaceholder": "Поиск по коду или названию...",
@@ -73,7 +72,7 @@
       "deleteCurrency": "Удалить валюту"
     },
     "usageAccounts": "{count, plural, one {# счёт} few {# счёта} many {# счетов} other {# счёта}}",
-    "usageSecurities": "{count, plural, one {# бумага} few {# бумаги} many {# бумаг} other {# бумаги}}",
+    "usageSecurities": "{count, plural, other {# бум.}}",
     "rateHelp": "Сколько стоит одна единица каждой валюты в {currency}.",
     "empty": {
       "title": "Нет валют",

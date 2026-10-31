@@ -125,7 +125,7 @@ describe('the currencies list on a phone', () => {
     expect(text).toContain('USD');
     expect(text).toContain('US Dollar');
     expect(text).toContain('$');
-    expect(text).toContain('2 accounts, 3 securities');
+    expect(text).toContain('2 accts, 3 secs');
     expect(text).toContain('0.732100');
     expect(text).toContain('Active');
 
@@ -173,7 +173,7 @@ describe('the currencies list on a phone', () => {
     }
     expect(within(row).getByText('0.732100').textContent).toBe('0.732100');
     expect(within(row).getByText('4').textContent).toBe('4');
-    expect(within(row).getByText('1 account').textContent).toBe('1 account');
+    expect(within(row).getByText('1 acct').textContent).toBe('1 acct');
 
     // The code, the "Default" marker and the status pill carry no caption: the
     // code is the row's identity and the other two are self-describing pills.
@@ -322,8 +322,8 @@ describe('the currencies list on a phone', () => {
       expect(grid.className).toContain('minmax(0,1fr)');
     }
     expect(row.querySelectorAll('.truncate').length).toBe(1);
-    // The usage is spelled out in words, so it wraps instead of being cut.
-    expect(within(row).getByText('128 accounts, 256 securities').parentElement!.className).toContain(
+    // The usage wraps on the card instead of being cut.
+    expect(within(row).getByText('128 accts, 256 secs').parentElement!.className).toContain(
       'break-words',
     );
   });

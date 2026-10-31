@@ -235,8 +235,23 @@ describe('TransactionFilterPanel', () => {
 
     expect(screen.getByText('Start Date')).toBeInTheDocument();
     expect(screen.getByText('End Date')).toBeInTheDocument();
-    // The search field has no label above it; it is named for assistive tech.
     expect(screen.getByRole('textbox', { name: 'Search' })).toBeInTheDocument();
+  });
+
+  it('places Search right of the Attachments filter, last on the second row', () => {
+    render(<TransactionFilterPanel {...defaultProps} filtersExpanded={true} />);
+
+    const attachments = screen.getByLabelText('Attachments');
+    const search = screen.getByRole('textbox', { name: 'Search' });
+    // Same grid row, and Search comes after Attachments in it.
+    const row = attachments.closest('.grid');
+    expect(row).not.toBeNull();
+    expect(row).toContainElement(search);
+    expect(
+      attachments.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Nothing on the account-status line above the grids holds it.
+    expect(screen.getByRole('group', { name: 'Show Accounts' }).parentElement).not.toContainElement(search);
   });
 
   // ----------------------------------------------------------------

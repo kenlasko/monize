@@ -4,7 +4,6 @@
     "subtitle": "Hesaplarınızda ve menkul kıymetlerinizde kullanılan para birimlerini yönetin",
     "refreshRates": "Kurları Yenile",
     "refreshing": "Yenileniyor...",
-    "ratesAge": "({time})",
     "statusFilterLabel": "Durum",
     "newCurrency": "+ Yeni Para Birimi",
     "searchPlaceholder": "Kod veya ada göre ara...",
@@ -73,7 +72,7 @@
       "deleteCurrency": "Para Birimini Sil"
     },
     "usageAccounts": "{count, plural, one {# hesap} other {# hesap}}",
-    "usageSecurities": "{count, plural, one {# menkul kıymet} other {# menkul kıymet}}",
+    "usageSecurities": "{count, plural, other {# menk.}}",
     "rateHelp": "Her para biriminin bir biriminin {currency} cinsinden değeri.",
     "empty": {
       "title": "Para birimi yok",

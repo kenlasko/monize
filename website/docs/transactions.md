@@ -193,7 +193,6 @@ The filter panel provides powerful options for finding specific transactions. **
 
 | Filter | Description |
 |--------|-------------|
-| **Search** | Free text, or the [search syntax](#search-syntax) |
 | **Show Accounts** | Offer **All**, **Active**, or **Closed** accounts in the account filter |
 | **Accounts** | Filter by one or more accounts |
 | **Payees** | Filter by one or more payees |
@@ -206,6 +205,7 @@ The filter panel provides powerful options for finding specific transactions. **
 | **Amount From** and **Amount To** | Set a minimum and/or maximum amount |
 | **Currency** | Transactions entered in a particular foreign currency |
 | **Attachments** | **Yes** or **No** to find transactions with or without attachments |
+| **Search** | Free text, or the [search syntax](#search-syntax) |
 
 > [!NOTE]
 > When the filter panel is collapsed, each active filter appears as a removable chip -- click the **x** on a chip to clear just that filter. If any of your accounts are marked as favourites, a **Favourites** row of quick-select buttons appears above the panel so you can limit the list to a favourite account in one tap.

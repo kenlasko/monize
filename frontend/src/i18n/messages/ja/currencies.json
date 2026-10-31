@@ -4,7 +4,6 @@
     "subtitle": "勘定科目と有価証券で使用される通貨を管理する",
     "refreshRates": "レートを更新",
     "refreshing": "更新中...",
-    "ratesAge": "({time})",
     "statusFilterLabel": "ステータス",
     "newCurrency": "+ 新規通貨",
     "searchPlaceholder": "コードまたは名前で検索...",

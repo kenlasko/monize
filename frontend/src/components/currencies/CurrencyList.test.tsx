@@ -241,7 +241,7 @@ describe('CurrencyList', () => {
     const usage = { USD: { accounts: 2, securities: 3 } };
 
     render(<CurrencyList currencies={currencies} {...defaultProps} usage={usage} />);
-    expect(screen.getByText('2 accounts, 3 securities')).toBeInTheDocument();
+    expect(screen.getByText('2 accts, 3 secs')).toBeInTheDocument();
   });
 
   it('cycles the shared density preference', () => {
@@ -802,7 +802,7 @@ describe('CurrencyList', () => {
       const usage = { USD: { accounts: 3, securities: 0 } };
 
       render(<CurrencyList currencies={currencies} {...defaultProps} usage={usage} />);
-      expect(screen.getByText('3 accounts')).toBeInTheDocument();
+      expect(screen.getByText('3 accts')).toBeInTheDocument();
     });
 
     it('shows only securities usage when accounts is zero', () => {
@@ -810,7 +810,7 @@ describe('CurrencyList', () => {
       const usage = { USD: { accounts: 0, securities: 2 } };
 
       render(<CurrencyList currencies={currencies} {...defaultProps} usage={usage} />);
-      expect(screen.getByText('2 securities')).toBeInTheDocument();
+      expect(screen.getByText('2 secs')).toBeInTheDocument();
     });
 
     it('shows singular account label for one account', () => {
@@ -818,7 +818,7 @@ describe('CurrencyList', () => {
       const usage = { USD: { accounts: 1, securities: 0 } };
 
       render(<CurrencyList currencies={currencies} {...defaultProps} usage={usage} />);
-      expect(screen.getByText('1 account')).toBeInTheDocument();
+      expect(screen.getByText('1 acct')).toBeInTheDocument();
     });
 
     it('shows singular security label for one security', () => {
@@ -826,7 +826,7 @@ describe('CurrencyList', () => {
       const usage = { USD: { accounts: 0, securities: 1 } };
 
       render(<CurrencyList currencies={currencies} {...defaultProps} usage={usage} />);
-      expect(screen.getByText('1 security')).toBeInTheDocument();
+      expect(screen.getByText('1 sec')).toBeInTheDocument();
     });
 
     it('shows dash when no usage exists for currency', () => {

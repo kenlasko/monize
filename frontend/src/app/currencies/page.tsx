@@ -28,7 +28,7 @@ import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { PAGE_SIZE } from '@/lib/constants';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { SEGMENTED_TOOLBAR_GROUP_CLASS, toolbarSegmentClass } from '@/components/ui/segmented-control';
-import { useRelativeTime } from '@/hooks/useRelativeTime';
+import { RefreshButtonLabel } from '@/components/ui/RefreshButtonLabel';
 import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Currencies');
@@ -64,7 +64,6 @@ function CurrenciesContent() {
   // When the stored rates were last fetched, shown on Refresh Rates; null when
   // the server has none, undefined until the status answers.
   const [ratesLastUpdated, setRatesLastUpdated] = useState<string | null | undefined>(undefined);
-  const formatRelativeTime = useRelativeTime();
 
   const { defaultCurrency, getRate, refresh: refreshRates } = useExchangeRates();
 
@@ -302,19 +301,16 @@ function CurrenciesContent() {
                 variant="outline"
                 onClick={handleRefreshRates}
                 isLoading={isRefreshingRates}
-                className="gap-1.5 whitespace-nowrap"
+                // The age is a second line under the label; the tighter
+                // padding keeps the button near the height of New Currency.
+                className={`gap-1.5 whitespace-nowrap${ratesLastUpdated && !isRefreshingRates ? ' py-1' : ''}`}
               >
                 {isRefreshingRates ? (
                   t('page.refreshing')
                 ) : (
                   <>
                     <ArrowPathIcon className="h-4 w-4" aria-hidden="true" />
-                    {t('page.refreshRates')}
-                    {ratesLastUpdated && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('page.ratesAge', { time: formatRelativeTime(ratesLastUpdated) })}
-                      </span>
-                    )}
+                    <RefreshButtonLabel label={t('page.refreshRates')} updatedAt={ratesLastUpdated} />
                   </>
                 )}
               </Button>
