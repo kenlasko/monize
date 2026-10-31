@@ -1,3 +1,25 @@
+# In-cluster build (home cluster)
+The `monize-build` CronJob in the `monize` namespace builds and deploys without
+Docker on this machine. It clones a branch (`main` by default), builds both
+`production` images with Kaniko, pushes them to
+`registry.laskonet.com/monize/{backend,frontend}:latest` and runs
+`kubectl rollout restart` on both deployments. It is suspended, so it runs only
+when triggered by hand:
+
+```
+kubectl create job -n monize --from=cronjob/monize-build monize-build-$(date +%s)   # main
+scripts/monize-build.sh my-branch    # from a k8s repo checkout: any branch, follows the logs
+```
+
+Both builds cache their `RUN` layers in the registry, so `npm ci` re-runs only
+when a `package*.json` changes. The registry's `registry-prune-cache` CronJob
+deletes cache layers older than 14 days every Sunday. The manifests and details
+are in the k8s repo:
+[cronjob-build.yaml](https://github.com/kenlasko/k8s/blob/main/manifests/apps/monize/overlays/home/cronjob-build.yaml),
+[monize-build.sh](https://github.com/kenlasko/k8s/blob/main/scripts/monize-build.sh)
+and the [Monize README](https://github.com/kenlasko/k8s/blob/main/manifests/apps/monize/README.md).
+
+# Local build
 The workloads are Deployments, so the pods have generated names
 (`monize-backend-<replicaset>-<random>`) rather than the ordinal
 `monize-backend-0` a StatefulSet gave them. `kubectl rollout restart` names the
