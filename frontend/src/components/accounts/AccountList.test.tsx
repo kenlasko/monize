@@ -1061,9 +1061,8 @@ describe('AccountList', () => {
     expect(screen.getAllByText('$12345.67').length).toBeGreaterThanOrEqual(1);
     // The row now states what the total is made of rather than labelling it
     // "Market value": an investment account's worth is holdings plus cash.
-    expect(
-      screen.getByText('Investments $12345.67 · Cash $0.00'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Investments $12345.67')).toBeInTheDocument();
+    expect(screen.getByText('Cash $0.00')).toBeInTheDocument();
   });
 
   it('combines a pair market value and cash balance into one row total', () => {
@@ -1097,9 +1096,8 @@ describe('AccountList', () => {
     );
 
     expect(screen.getAllByText('$15500.00').length).toBeGreaterThanOrEqual(1);
-    expect(
-      screen.getByText('Investments $12000.00 · Cash $3500.00'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Investments $12000.00')).toBeInTheDocument();
+    expect(screen.getByText('Cash $3500.00')).toBeInTheDocument();
   });
 
   // The defect the combined value exists to prevent: an account whose holdings

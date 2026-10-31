@@ -62,6 +62,8 @@
     "statusClosed": "Zamknięte",
     "marketValue": "Wartość rynkowa",
     "combinedBreakdown": "Inwestycje {investments} · Gotówka {cash}",
+    "combinedInvestments": "Inwestycje {amount}",
+    "combinedCash": "Gotówka {amount}",
     "combinedUnknown": "Suma niedostępna",
     "combinedUnknownTooltip": "{count, plural, one {# pozycja nie ma ceny, więc nie można obliczyć sumy tego konta} few {# pozycje nie mają ceny, więc nie można obliczyć sumy tego konta} many {# pozycji nie ma ceny, więc nie można obliczyć sumy tego konta} other {# pozycji nie ma ceny, więc nie można obliczyć sumy tego konta}}",
     "combinedUnknownValuation": "Części pozycji na tym koncie nie udało się przeliczyć na walutę raportowania, więc nie można obliczyć sumy. Dodaj brakujący kurs wymiany na stronie Waluty.",

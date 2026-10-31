@@ -21,6 +21,7 @@ import {
   unreconciledCountOf,
   type AccountActionLabels,
 } from './AccountRow';
+import { ACCOUNT_COLUMN_TIER, ACCOUNT_TABLE_CONTAINER } from './account-list-columns';
 import { useLongPress } from '@/hooks/useLongPress';
 import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
 import { useTableDensity } from '@/hooks/useTableDensity';
@@ -940,7 +941,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
               them would misdescribe the column to a screen reader. Each button
               names itself with the label of the field it sorts by. */}
         <DensityToggleBar view="accounts" />
-        <div className="overflow-x-auto">
+        <div className={`overflow-x-auto ${ACCOUNT_TABLE_CONTAINER}`}>
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           {/* The one column is always sorted by something, and `aria-sort`
                   is the only place that direction is announced -- the arrow in
@@ -988,7 +989,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                 />
               </th>
               <th
-                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none hidden sm:table-cell`}
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none ${ACCOUNT_COLUMN_TIER.type}`}
                 onClick={() => handleSort('type')}
               >
                 <ColumnSortLabel
@@ -999,7 +1000,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                 />
               </th>
               <th
-                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none hidden md:table-cell w-1 whitespace-nowrap`}
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none ${ACCOUNT_COLUMN_TIER.status} w-1 whitespace-nowrap`}
                 onClick={() => handleSort('status')}
               >
                 <ColumnSortLabel
@@ -1010,7 +1011,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                 />
               </th>
               <th
-                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none hidden lg:table-cell w-1 whitespace-nowrap`}
+                className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none ${ACCOUNT_COLUMN_TIER.lastReconciled} w-1 whitespace-nowrap`}
                 onClick={() => handleSort('lastReconciled')}
               >
                 <ColumnSortLabel
@@ -1021,7 +1022,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                 />
               </th>
               <th
-                className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none hidden lg:table-cell w-1 whitespace-nowrap`}
+                className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none ${ACCOUNT_COLUMN_TIER.unreconciled} w-1 whitespace-nowrap`}
                 onClick={() => handleSort('unreconciled')}
               >
                 <ColumnSortLabel
@@ -1106,10 +1107,10 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                       />
                     </div>
                   </td>
-                  <td className="hidden sm:table-cell" aria-hidden="true" />
-                  <td className="hidden md:table-cell" aria-hidden="true" />
-                  <td className="hidden lg:table-cell" aria-hidden="true" />
-                  <td className="hidden lg:table-cell" aria-hidden="true" />
+                  <td className={ACCOUNT_COLUMN_TIER.type} aria-hidden="true" />
+                  <td className={ACCOUNT_COLUMN_TIER.status} aria-hidden="true" />
+                  <td className={ACCOUNT_COLUMN_TIER.lastReconciled} aria-hidden="true" />
+                  <td className={ACCOUNT_COLUMN_TIER.unreconciled} aria-hidden="true" />
                   <td className={`${cellPadding} text-right whitespace-nowrap`}>
                     <GroupHeaderTotal
                       total={item.total}

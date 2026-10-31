@@ -62,6 +62,8 @@
     "statusClosed": "Geschlossen",
     "marketValue": "Marktwert",
     "combinedBreakdown": "Anlagen {investments} · Bargeld {cash}",
+    "combinedInvestments": "Anlagen {amount}",
+    "combinedCash": "Bargeld {amount}",
     "combinedUnknown": "Gesamtwert nicht verfügbar",
     "combinedUnknownTooltip": "{count, plural, one {# Position hat keinen Kurs, daher lässt sich der Gesamtwert dieses Kontos nicht ermitteln} other {# Positionen haben keinen Kurs, daher lässt sich der Gesamtwert dieses Kontos nicht ermitteln}}",
     "combinedUnknownValuation": "Einige Positionen in diesem Konto konnten nicht in Ihre Berichtswährung umgerechnet werden, daher lässt sich die Summe nicht ermitteln. Fügen Sie den fehlenden Wechselkurs auf der Seite Währungen hinzu.",

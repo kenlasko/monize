@@ -62,6 +62,8 @@
     "statusClosed": "Đã đóng",
     "marketValue": "Giá trị thị trường",
     "combinedBreakdown": "Đầu tư {investments} · Tiền mặt {cash}",
+    "combinedInvestments": "Đầu tư {amount}",
+    "combinedCash": "Tiền mặt {amount}",
     "combinedUnknown": "Không có tổng",
     "combinedUnknownTooltip": "{count, plural, other {# khoản nắm giữ không có giá, nên không thể tính tổng của tài khoản này}}",
     "combinedUnknownValuation": "Một số khoản nắm giữ trong tài khoản này không thể quy đổi sang tiền tệ báo cáo của bạn, nên không thể tính tổng. Hãy thêm tỷ giá còn thiếu trên trang Tiền tệ.",

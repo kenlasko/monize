@@ -62,6 +62,8 @@
     "statusClosed": "Closed",
     "marketValue": "Market value",
     "combinedBreakdown": "Investments {investments} · Cash {cash}",
+    "combinedInvestments": "Investments {amount}",
+    "combinedCash": "Cash {amount}",
     "combinedUnknown": "Total unavailable",
     "combinedUnknownTooltip": "{count, plural, one {# holding has no price, so this account's total cannot be worked out} other {# holdings have no price, so this account's total cannot be worked out}}",
     "combinedUnknownValuation": "Some holdings in this account could not be converted into your reporting currency, so its total cannot be worked out. Add the missing exchange rate on the Currencies page.",

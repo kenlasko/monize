@@ -7,6 +7,7 @@ import {
   reconcileLedgerOf,
   unreconciledCountOf,
 } from './AccountRow';
+import { ACCOUNT_COLUMN_TIER, ACCOUNT_NAME_CELL_FLEX } from './account-list-columns';
 import type { LogicalAccount } from '@/lib/logical-accounts';
 import { Account } from '@/types/account';
 
@@ -1187,9 +1188,8 @@ describe('AccountRow', () => {
       );
 
       expect(screen.getByText('$15500.00')).toBeInTheDocument();
-      expect(
-        screen.getByText('Investments $12000.00 · Cash $3500.00'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Investments $12000.00')).toBeInTheDocument();
+      expect(screen.getByText('Cash $3500.00')).toBeInTheDocument();
     });
 
     it('drops the pairing chrome that existed to explain two rows', () => {
@@ -1414,6 +1414,22 @@ describe('AccountRow', () => {
       expect(screen.getByText('Never reconciled')).toBeInTheDocument();
     });
   });
+  // Balance outranks every column to its left: on a narrow table those drop
+  // out (or, for the name, give up width) and Balance is always drawn.
+  describe('column priority', () => {
+    it('drops Type, Status and both reconciliation columns before Balance', () => {
+      const { container } = renderAccountRow(createDefaultProps());
+      const cells = Array.from(container.querySelectorAll('tr > td')) as HTMLElement[];
+      const [name, type, status, lastReconciled, unreconciled, balance] = cells;
+      expect(name.className).toContain(ACCOUNT_NAME_CELL_FLEX);
+      expect(type.className).toContain(ACCOUNT_COLUMN_TIER.type);
+      expect(status.className).toContain(ACCOUNT_COLUMN_TIER.status);
+      expect(lastReconciled.className).toContain(ACCOUNT_COLUMN_TIER.lastReconciled);
+      expect(unreconciled.className).toContain(ACCOUNT_COLUMN_TIER.unreconciled);
+      expect(balance.className.split(/\s+/)).not.toContain('hidden');
+    });
+  });
+
   describe('Unreconciled column', () => {
     // The tier row's fifth cell, after Name, Type, Status and Last Reconciled.
     const unreconciledCell = (container: HTMLElement) =>

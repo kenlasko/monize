@@ -62,6 +62,8 @@
     "statusClosed": "已关闭",
     "marketValue": "市值",
     "combinedBreakdown": "投资 {investments} · 现金 {cash}",
+    "combinedInvestments": "投资 {amount}",
+    "combinedCash": "现金 {amount}",
     "combinedUnknown": "无法显示总额",
     "combinedUnknownTooltip": "{count, plural, other {有 # 项持仓没有价格，因此无法计算该账户的总额}}",
     "combinedUnknownValuation": "此账户中的部分持仓无法换算为您的报告货币，因此无法计算其总额。请在货币页面添加缺少的汇率。",

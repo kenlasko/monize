@@ -62,6 +62,8 @@
     "statusClosed": "Kapalı",
     "marketValue": "Piyasa değeri",
     "combinedBreakdown": "Yatırımlar {investments} · Nakit {cash}",
+    "combinedInvestments": "Yatırımlar {amount}",
+    "combinedCash": "Nakit {amount}",
     "combinedUnknown": "Toplam kullanılamıyor",
     "combinedUnknownTooltip": "{count, plural, one {# varlığın fiyatı yok, bu nedenle bu hesabın toplamı hesaplanamıyor} other {# varlığın fiyatı yok, bu nedenle bu hesabın toplamı hesaplanamıyor}}",
     "combinedUnknownValuation": "Bu hesaptaki bazı varlıklar raporlama para biriminize çevrilemedi, bu yüzden toplam hesaplanamıyor. Eksik döviz kurunu Para Birimleri sayfasından ekleyin.",

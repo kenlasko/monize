@@ -62,6 +62,8 @@
     "statusClosed": "已關閉",
     "marketValue": "市場價值",
     "combinedBreakdown": "投資 {investments} · 現金 {cash}",
+    "combinedInvestments": "投資 {amount}",
+    "combinedCash": "現金 {amount}",
     "combinedUnknown": "無法顯示總額",
     "combinedUnknownTooltip": "{count, plural, other {有 # 項持股沒有價格，因此無法計算此帳戶的總額}}",
     "combinedUnknownValuation": "此帳戶中的部分持倉無法換算為您的報告貨幣，因此無法計算其總額。請在貨幣頁面新增缺少的匯率。",

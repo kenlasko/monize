@@ -62,6 +62,8 @@
     "statusClosed": "Gesloten",
     "marketValue": "Marktwaarde",
     "combinedBreakdown": "Beleggingen {investments} · Contanten {cash}",
+    "combinedInvestments": "Beleggingen {amount}",
+    "combinedCash": "Contanten {amount}",
     "combinedUnknown": "Totaal niet beschikbaar",
     "combinedUnknownTooltip": "{count, plural, one {# positie heeft geen koers, dus het totaal van deze rekening kan niet worden bepaald} other {# posities hebben geen koers, dus het totaal van deze rekening kan niet worden bepaald}}",
     "combinedUnknownValuation": "Sommige posities in deze rekening konden niet naar je rapportagevaluta worden omgerekend, dus het totaal kan niet worden berekend. Voeg de ontbrekende wisselkoers toe op de pagina Valuta's.",

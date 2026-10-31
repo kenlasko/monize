@@ -191,8 +191,10 @@ The table has these columns:
 - **Status** -- Active or Closed
 - **Last Reconciled** -- the date of the account's last reconciliation, or Never
 - **Unreconciled** -- how many of the account's transactions are not yet reconciled (unreconciled or cleared, whatever their date): the transactions the [Reconcile](#account-reconciliation) screen lists. It refreshes when you return to the page, so a reconcile done in another tab or on another device shows here too
-- **Balance** -- in the account's currency; an investment account shows its combined value with the investments and cash beneath it
+- **Balance** -- in the account's currency; an investment account shows its combined value with the investments and the cash each on its own line beneath it (at Normal density)
 - **Actions** -- **Details**, **Edit**, **Reconcile**, **Close** (or **Reopen**), and **Delete**
+
+The Balance always stays in view. On a narrower window the columns to its left make room for it: long account names are shortened, and **Last Reconciled** and **Unreconciled** are left out first, then **Status**, then **Type**.
 
 Click an account to open its transactions. Investment accounts open their [detail page](#account-detail-pages), and so does every account if you choose **Show its dashboard** under **Default Account View** in [Settings -> Preferences](settings-and-security.md#preferences). **Details** always opens the detail page.
 

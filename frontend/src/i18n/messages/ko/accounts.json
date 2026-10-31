@@ -62,6 +62,8 @@
     "statusClosed": "종료",
     "marketValue": "시장 가치",
     "combinedBreakdown": "투자 {investments} · 현금 {cash}",
+    "combinedInvestments": "투자 {amount}",
+    "combinedCash": "현금 {amount}",
     "combinedUnknown": "합계를 표시할 수 없음",
     "combinedUnknownTooltip": "{count, plural, other {보유 종목 # 개에 가격이 없어 이 계좌의 합계를 계산할 수 없습니다}}",
     "combinedUnknownValuation": "이 계좌의 일부 보유 종목을 보고 통화로 환산할 수 없어 합계를 계산할 수 없습니다. 통화 페이지에서 누락된 환율을 추가하세요.",

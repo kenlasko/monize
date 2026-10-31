@@ -62,6 +62,8 @@
     "statusClosed": "बंद",
     "marketValue": "बाज़ार मूल्य",
     "combinedBreakdown": "निवेश {investments} · नकद {cash}",
+    "combinedInvestments": "निवेश {amount}",
+    "combinedCash": "नकद {amount}",
     "combinedUnknown": "कुल उपलब्ध नहीं",
     "combinedUnknownTooltip": "{count, plural, one {# होल्डिंग का कोई मूल्य नहीं है, इसलिए इस खाते का कुल निकाला नहीं जा सकता} other {# होल्डिंग्स का कोई मूल्य नहीं है, इसलिए इस खाते का कुल निकाला नहीं जा सकता}}",
     "combinedUnknownValuation": "इस खाते की कुछ होल्डिंग्स को आपकी रिपोर्टिंग मुद्रा में नहीं बदला जा सका, इसलिए इसका कुल योग नहीं निकाला जा सकता। मुद्राएँ पृष्ठ पर छूटी हुई विनिमय दर जोड़ें।",
