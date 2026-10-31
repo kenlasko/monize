@@ -53,6 +53,7 @@
     "dompurify": "^3.4.17",
     "brace-expansion@<2": "1.1.21",
     "brace-expansion@>=3": "5.0.12",
+    "minimatch@>=10": "^11.0.1",
     "picomatch": "4.0.4",
     "postcss": "^8.5.23",
     "@babel/core": "^7.29.6",

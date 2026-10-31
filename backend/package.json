@@ -136,18 +136,8 @@
     "nestjs-i18n": {
       "chokidar": "^4.0.3"
     },
-    "typeorm": {
-      "glob": "13.0.0"
-    },
-    "jest-config": {
-      "glob": "13.0.0"
-    },
-    "jest-runtime": {
-      "glob": "13.0.0"
-    },
-    "@jest/reporters": {
-      "glob": "13.0.0"
-    }
+    "glob": "^14.0.2",
+    "minimatch": "^11.0.1"
   },
   "jest": {
     "workerIdleMemoryLimit": "1GB",
