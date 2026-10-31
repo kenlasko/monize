@@ -234,6 +234,36 @@ describe('AccountList', () => {
     expect(densityButton).toHaveTextContent('Normal');
   });
 
+  it('draws Normal row actions as icons on a table too narrow for their labels', () => {
+    const observers: ResizeObserverCallback[] = [];
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: ResizeObserverCallback) { observers.push(callback); }
+      observe() {}
+      disconnect() {}
+    });
+    const resizeTable = (width: number) =>
+      act(() => observers.forEach((notify) =>
+        notify([{ contentRect: { width } } as ResizeObserverEntry], {} as ResizeObserver)));
+    try {
+      render(
+        <AccountList
+          accounts={[createAccount()]}
+          onEdit={mockOnEdit}
+          defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh}
+        />
+      );
+      expect(screen.getByRole('button', { name: 'Edit' })).toHaveTextContent('Edit');
+
+      resizeTable(1000);
+      expect(screen.getByRole('button', { name: 'Edit' })).toHaveTextContent('');
+
+      resizeTable(1400);
+      expect(screen.getByRole('button', { name: 'Edit' })).toHaveTextContent('Edit');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('shows Active and Closed status badges', () => {
     const accounts = [
       createAccount({ name: 'Active Account', isClosed: false }),

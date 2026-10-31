@@ -21,7 +21,7 @@ import {
   unreconciledCountOf,
   type AccountActionLabels,
 } from './AccountRow';
-import { ACCOUNT_COLUMN_TIER, ACCOUNT_TABLE_CONTAINER } from './account-list-columns';
+import { ACCOUNT_COLUMN_TIER, ACCOUNT_TABLE_CONTAINER, accountActionDensity } from './account-list-columns';
 import { useLongPress } from '@/hooks/useLongPress';
 import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
 import { useTableDensity } from '@/hooks/useTableDensity';
@@ -395,6 +395,17 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   // renders per row, chosen here.
   const isMobile = useIsMobile();
   const wrapped = isMobile && density === 'normal';
+  // The scroll wrapper's width, for the one width rule CSS cannot express:
+  // whether Normal's text action buttons fit or give way to icons.
+  const [tableWrapper, setTableWrapper] = useState<HTMLDivElement | null>(null);
+  const [tableWidth, setTableWidth] = useState<number | null>(null);
+  useEffect(() => {
+    if (!tableWrapper || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => setTableWidth(entry.contentRect.width));
+    observer.observe(tableWrapper);
+    return () => observer.disconnect();
+  }, [tableWrapper]);
+  const actionDensity = accountActionDensity(density, tableWidth);
 
   // Every account as the user thinks of it: a linked brokerage/cash pair is one
   // entry, so it filters, sorts, counts and renders as a single account.
@@ -941,7 +952,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
               them would misdescribe the column to a screen reader. Each button
               names itself with the label of the field it sorts by. */}
         <DensityToggleBar view="accounts" />
-        <div className={`overflow-x-auto ${ACCOUNT_TABLE_CONTAINER}`}>
+        <div ref={setTableWrapper} className={`overflow-x-auto ${ACCOUNT_TABLE_CONTAINER}`}>
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           {/* The one column is always sorted by something, and `aria-sort`
                   is the only place that direction is announced -- the arrow in
@@ -1132,6 +1143,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                   logical={item.logical}
                   index={item.index}
                   density={density}
+                  actionDensity={actionDensity}
                   wrapped={wrapped}
                   cellPadding={cellPadding}
                   isDeletable={deletableAccounts.has(item.logical.id)}

@@ -1428,6 +1428,18 @@ describe('AccountRow', () => {
       expect(unreconciled.className).toContain(ACCOUNT_COLUMN_TIER.unreconciled);
       expect(balance.className.split(/\s+/)).not.toContain('hidden');
     });
+
+    it('keeps text action labels at Normal when nothing narrows them', () => {
+      renderAccountRow(createDefaultProps());
+      expect(screen.getByRole('button', { name: 'Edit' })).toHaveTextContent('Edit');
+    });
+
+    it('draws the actions as icons when actionDensity says the labels do not fit', () => {
+      renderAccountRow(createDefaultProps({ actionDensity: 'compact' }));
+      const edit = screen.getByRole('button', { name: 'Edit' });
+      expect(edit).toHaveAttribute('aria-label', 'Edit');
+      expect(edit).toHaveTextContent('');
+    });
   });
 
   describe('Unreconciled column', () => {

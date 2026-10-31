@@ -350,6 +350,12 @@ export interface AccountRowProps {
   account: Account;
   index: number;
   density: 'normal' | 'compact' | 'dense';
+  /**
+   * The density the Actions cell's buttons render at, when it differs from
+   * the row's: Normal's text buttons give way to icons on a table too narrow
+   * to hold them (`accountActionDensity`). Defaults to `density`.
+   */
+  actionDensity?: 'normal' | 'compact' | 'dense';
   cellPadding: string;
   isDeletable: boolean;
   accountNameMap: Map<string, string>;
@@ -422,6 +428,7 @@ export const AccountRow = memo(function AccountRow({
   account,
   index,
   density,
+  actionDensity = density,
   cellPadding,
   isDeletable,
   accountNameMap,
@@ -800,7 +807,7 @@ export const AccountRow = memo(function AccountRow({
         {balance.details}
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`} onClick={(e) => e.stopPropagation()}>
-        <RowActions actions={actions} density={density} />
+        <RowActions actions={actions} density={actionDensity} />
       </td>
     </tr>
   );
