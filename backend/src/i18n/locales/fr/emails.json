@@ -393,6 +393,10 @@
     "payrollDeduction": {
       "resetTitle": "{{ category }} : confirmez le maximum de l'an prochain",
       "resetMessage": "La retenue {{ category }} sur {{ bill }} se réinitialise le {{ date }}. Mettez à jour le maximum annuel s'il change ; sinon {{ amount }} s'applique de nouveau."
+    },
+    "shared": {
+      "title": "Dépenses partagées",
+      "message": "Un groupe partagé a été mis à jour. Ouvrez Monize pour le consulter."
     }
   },
   "backupOffsite": {

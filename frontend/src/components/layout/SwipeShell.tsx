@@ -1,5 +1,6 @@
 'use client';
 
+
 import { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppHeader } from './AppHeader';

@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "Aggiungi prima un conto: questo tour mostra come registrare una transazione.",
       "securitiesExist": "Aggiungi prima un titolo: questo tour ne apre uno dal tuo elenco titoli.",
-      "ownerView": "Torna prima ai tuoi dati. Questo percorso tratta le Regole e la posta di revisione IA, che non sono disponibili mentre agisci per conto di qualcun altro."
+      "ownerView": "Torna prima ai tuoi dati. Questo tour presenta funzioni non disponibili quando agisci per un'altra persona."
     },
     "start": "Avvia",
     "restart": "Rivedi",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "Un promemoria prima di ogni azzeramento",
             "body": "Due mesi prima che una regola si azzeri, Monize ti chiede qui di confermare il massimo dell’anno successivo. Se non fai nulla, la regola mantiene il suo massimo e si azzera alla sua data. Scegli come ti raggiungono i promemoria nelle **Impostazioni**, in **Notifiche**, alla voce **Bollette e programmati**."
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "Spese condivise",
+        "steps": {
+          "welcome": {
+            "title": "Viaggiare insieme con i conti in ordine",
+            "body": "Scopri come registrare acquisti di gruppo e rimborsi. Questo tour non crea registrazioni al posto tuo."
+          },
+          "tools": {
+            "title": "Apri le spese condivise",
+            "body": "Trovi **Spese condivise** in **Strumenti**. Sul telefono usa il menu di navigazione."
+          },
+          "newGroup": {
+            "title": "Inizia dal tuo gruppo",
+            "body": "In **Nuovo gruppo** inserisci il nome del viaggio, le persone e la valuta di regolamento. Le persone non devono avere un account Monize. Ogni acquisto può coinvolgere membri diversi."
+          },
+          "chooseGroup": {
+            "title": "Esplora un gruppo",
+            "body": "Apri un gruppo per continuare. Se non ne hai ancora uno, scegli **Salta questo passaggio** e crealo dopo il tour."
+          },
+          "expenses": {
+            "title": "Chi ha pagato, e per chi?",
+            "body": "Con accesso in modifica, usa **Aggiungi spesa** per scegliere chi ha pagato e i beneficiari. **Dividi tra** supporta quote uguali, importi esatti, percentuali e quote pari a zero."
+          },
+          "balances": {
+            "title": "Controlla i saldi e regola i conti",
+            "body": "**Saldi** mostra chi deve denaro a chi e suggerisce i rimborsi. Registra un rimborso dopo il passaggio di denaro. **File** e **Attività** conservano ricevute e cronologia."
+          },
+          "done": {
+            "title": "Pronto per il prossimo viaggio",
+            "body": "Le registrazioni condivise restano separate dalle transazioni personali. Ripeti questo tour in qualsiasi momento da **Impostazioni**, in **Tour guidati**."
           }
         }
       }

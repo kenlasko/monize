@@ -393,6 +393,10 @@
     "payrollDeduction": {
       "resetTitle": "{{ category }}: potwierdź maksimum na przyszły rok",
       "resetMessage": "Potrącenie {{ category }} w {{ bill }} resetuje się {{ date }}. Zaktualizuj roczne maksimum, jeśli się zmienia; w przeciwnym razie ponownie obowiązuje {{ amount }}."
+    },
+    "shared": {
+      "title": "Rozliczenia",
+      "message": "W grupie rozliczeń są zmiany. Otwórz Monize, aby je sprawdzić."
     }
   },
   "backupOffsite": {

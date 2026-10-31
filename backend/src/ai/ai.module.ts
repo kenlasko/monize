@@ -1,3 +1,4 @@
+import { SharedReviewModule } from "../shared-expenses/shared-review.module";
 import { Module, forwardRef } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AiService } from "./ai.service";
@@ -45,6 +46,7 @@ import { WarrantiesModule } from "../warranties/warranties.module";
 
 @Module({
   imports: [
+    SharedReviewModule,
     ConfigModule,
     EncryptionModule,
     forwardRef(() => AccountsModule),

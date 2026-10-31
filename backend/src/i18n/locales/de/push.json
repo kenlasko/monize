@@ -51,6 +51,10 @@
     "warranties": {
       "title": "Garantie-Erinnerung",
       "body": "Eine Ihrer Garantien läuft bald ab. Öffnen Sie Monize für die Details."
+    },
+    "shared_expenses": {
+      "title": "Gemeinsame Ausgaben",
+      "body": "Eine gemeinsame Gruppe wurde aktualisiert. Öffne Monize, um die Änderungen anzusehen."
     }
   },
   "actions": {

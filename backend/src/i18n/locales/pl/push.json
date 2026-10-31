@@ -51,6 +51,10 @@
     "warranties": {
       "title": "Przypomnienie o gwarancji",
       "body": "Jedna z Twoich gwarancji wkrótce wygaśnie. Otwórz Monize, aby zobaczyć szczegóły."
+    },
+    "shared_expenses": {
+      "title": "Rozliczenia",
+      "body": "W grupie rozliczeń są zmiany. Otwórz Monize, aby je sprawdzić."
     }
   },
   "actions": {

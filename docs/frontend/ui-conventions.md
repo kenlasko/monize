@@ -9,6 +9,7 @@ Paths beginning with `src/` or `scripts/`, and layer configuration filenames, ar
 - All interactive components use `'use client'`. Server components are the default for pages/layouts.
 - Use dynamic imports for heavy components: `dynamic(() => import('./Chart'), { ssr: false })`.
 - `ProtectedRoute` (`components/auth/ProtectedRoute.tsx`) wraps authenticated pages.
+- `PageLayout` (`components/layout/PageLayout.tsx`) supplies the background; each page supplies its `main` landmark and responsive content padding. The shared-expense review journey scopes its navigation to that landmark.
 - **No `setState` in `useEffect`** — ESLint rule `react-hooks/set-state-in-effect` is enforced. To reset child state when a prop changes, use the "info from previous render" pattern (track the prop in `useState` and update during render).
 - **Dialogs use `Modal`** (`components/ui/Modal.tsx`) — handles Escape, focus trap, body scroll lock, focus restore, and stacked-modal popstate. Opt into `pushHistory` so the browser back button also closes. `ConfirmDialog` forwards `pushHistory` for stacked confirm flows.
 - **Leaving the page from inside a `pushHistory` modal** closes the modal first, then navigates through `afterModalHistoryPop` (`lib/after-modal-history-pop.ts`), never a bare link and never a fixed `setTimeout`. The closing modal pops its entry with an asynchronous `history.back()`, which undoes any push that lands before it; a guessed delay loses that race on a slow render, so the helper waits for the pop itself.
@@ -180,6 +181,10 @@ server will refuse is worse than an absent one.
 
 Clicking an attachment previews it; Download is a footer action of the preview.
 A warranty's documents are `AttachmentsSection` with a warranty parent (`{ warrantyId }`, wrapped by `WarrantyDocumentsSection`), never a second uploader; a new warranty's are its staged mode with `stagedFor="warranty"`, which `WarrantyForm` uploads once the warranty exists.
+When a staged uploader sits beside an existing shared-document list, its
+`pendingHint` describes the upload step even with no pending files; an empty
+selection does not mean the group has no saved attachments. The shared-expense
+file journey checks that distinction after saving and reloading a document.
 Four rules the viewer holds, each with a test:
 
 - **Bytes come through `attachmentsApi.fetchBytes`**, never a bare `<img src>`
@@ -585,3 +590,53 @@ Format a date with `useDateFormat()` (`useChartDateFormat` on a chart axis) and 
 ## Bank Sync provider default
 
 The Bank Sync settings page defaults to SimpleFIN when at least one active connection has an account linked to an open Monize account and every such connection uses SimpleFIN. Pending, expired, revoked, failed, unlinked and closed-account-only connections do not decide the default. Automatic sync selects the cadence and is not an enablement test. Empty, loading and failed reads retain Enable Banking; a manual provider selection wins over subsequent reads for the current visit. Regression coverage is in `frontend/src/app/settings/bank-sync/page.test.tsx`.
+
+## Shared-expense forms and stacked dialogs
+
+`components/shared-expenses/useSharedEntryPreview.ts` requests a server preview
+after a typing pause. Save reads only the response whose group, entry and draft
+key match the current inputs; preview failures retain the same key and expose
+retry. Keep the accepted fingerprint on a failed save so a lost response can be
+retried with the original command. The entry-editor tests exercise both response
+orders and the save retry. The split editor offers remainder helpers only for
+a positive remainder and keeps extras behind an explicit disclosure.
+
+The entry, split and private-booking forms use `Modal` with `fixedHeight` and
+`fullScreenOnPhone` so the title and footer stay visible while their body scrolls.
+The browser journeys assert that the title and acceptance action remain in the
+viewport after scrolling to the proposal on desktop and a 360px phone.
+
+A repeated money field uses a `useId()` identity, not its translated label:
+`components/shared-expenses/SharedPrimitives.tsx` supplies one to `CurrencyInput`.
+Several payments can have the same caption while their labels still target their
+own fields. `components/shared-expenses/SharedBooking.test.tsx` exercises the
+separate payment parts.
+
+`Modal` owns its history entry through effect replay. Its unmount cleanup waits
+for a microtask and checks the mounted lifetime token before calling
+`history.back()`, so React Strict Mode does not consume the page behind a new
+modal. Nested review leaves the parent modal open until the review finishes.
+`components/ui/Modal.test.tsx` covers the replay; the shared-expense Playwright
+journeys cover cancelling a document-created entry and retrying staged uploads.
+
+A portalled `Combobox` follows its anchor with `placePopover` before paint and on
+scroll/resize. A delayed scroll event from focusing a low field must not close
+its options before selection. Its resize handler checks that an event target is
+a `Node` before asking whether the list contains it; a window resize targets the
+window. `components/ui/Combobox.test.tsx` covers both events and option selection.
+
+Shared entry attachments stay in the expense form through `useSharedEntrySave`.
+Save closes after the entry and selected uploads succeed. A partial failure keeps
+the saved entry and failed file operation IDs, so Retry does not write a second
+expense. `components/shared-expenses/useSharedEntrySave.test.tsx` covers lost
+responses and partial uploads.
+The group-only delivery offers no personal booking controls; compatibility reads
+and unlink remain in `SharedPrivateFinances`.
+
+Shared overview and entry rows use `SharedGroupTable` and `SharedEntryTable`,
+with `Th`/`Td`, `CellLabel` with `CAPTION_CLASS`, CSS-wrapped phone rows and
+`useLongPress` plus `activateOnKey` and `INTERACTIVE_ROW_FOCUS_CLASS` from
+`components/ui/interactive-row.ts`. `FilterPanelHeader` is shared with Transactions; filter state and
+request keys stay in each page. `components/shared-expenses/SharedTables.test.tsx` holds stale-row refusal
+and collapsed-filter state. Money uses the square `CurrencyPickerButton` beside
+`CurrencyInput` through `SharedMoneyInput`; dependent portions have a bound currency.

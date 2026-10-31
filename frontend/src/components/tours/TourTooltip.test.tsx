@@ -67,6 +67,35 @@ afterEach(() => {
 });
 
 describe('TourTooltip', () => {
+  it('flips the phone sheet away from a low anchor, then returns below a high one', async () => {
+    window.innerWidth = 390;
+    window.innerHeight = 844;
+    vi.mocked(window.matchMedia).mockReturnValue({
+      ...window.matchMedia('(max-width: 639px)'),
+      matches: true,
+    });
+    const height = vi
+      .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+      .mockReturnValue(200);
+    try {
+      const { rerender } = setup({
+        rect: { top: 530, left: 16, width: 358, height: 280 },
+        interactive: true,
+      });
+      await waitFor(() => expect(screen.getByRole('dialog')).toHaveClass('top-0'));
+      expect(screen.getByRole('dialog')).not.toHaveClass('bottom-0');
+
+      rerender({ rect: RECT, stepLabel: '3 of 5' });
+      await waitFor(() => expect(screen.getByRole('dialog')).toHaveClass('bottom-0'));
+      expect(screen.getByRole('dialog')).not.toHaveClass('top-0');
+
+      rerender({ rect: null, stepLabel: '4 of 5' });
+      expect(screen.getByRole('dialog')).toHaveClass('bottom-0');
+    } finally {
+      height.mockRestore();
+    }
+  });
+
   it('renders title, body, and step counter', () => {
     setup();
     expect(screen.getByText('Step title')).toBeInTheDocument();

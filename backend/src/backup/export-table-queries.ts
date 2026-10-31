@@ -1,3 +1,4 @@
+import { SHARED_EXPORT_GROUPS, exportedAttachment } from "./shared-backup";
 /**
  * What a backup reads, in the order it is read, plus the tables it deliberately
  * does not read.
@@ -93,6 +94,10 @@ export function keyBearingExportTables(): readonly string[] {
  * forces an explicit decision instead of silently dropping data on restore.
  */
 export const INTENTIONALLY_EXCLUDED_TABLES: ReadonlySet<string> = new Set([
+  "shared_memberships", // Live grants; restored snapshots get one new owner on a new group.
+  "shared_invitations", // Bearer capabilities never travel.
+  "shared_delivery_receipts", // Delivery acknowledgements for this live installation, not journal content.
+  "shared_commands", // Deployment-local command receipts are not replayed.
   "users", // the account row itself; a restore targets an existing user
   "action_history", // undo/redo log, wiped on restore (not undoable to prior state)
   "ai_insights", // regenerable AI cache
@@ -282,6 +287,57 @@ export function buildExportTableQueries(
 ): ExportTableQuery[] {
   return [
     {
+      key: "shared_groups",
+      sql: `SELECT g.*, (SELECT m.participant_id FROM shared_memberships m
+        WHERE m.group_id = g.id AND m.user_id = $1 AND m.revoked_at IS NULL) AS _snapshot_participant_id
+        FROM shared_groups g WHERE g.id IN (${SHARED_EXPORT_GROUPS})`,
+      transformRow: (row) => ({
+        ...row,
+        owner_user_id: null,
+        ownership_request_id: null,
+        ownership_candidate_id: null,
+      }),
+    },
+    {
+      key: "shared_participants",
+      sql: `SELECT * FROM shared_participants WHERE group_id IN (${SHARED_EXPORT_GROUPS})`,
+    },
+    {
+      key: "shared_entries",
+      sql: `SELECT * FROM shared_entries WHERE group_id IN (${SHARED_EXPORT_GROUPS})`,
+      transformRow: (row) => ({ ...row, created_by_user_id: null }),
+    },
+    {
+      key: "shared_allocations",
+      sql: `SELECT * FROM shared_allocations WHERE group_id IN (${SHARED_EXPORT_GROUPS})`,
+    },
+    {
+      key: "shared_activity",
+      sql: `SELECT * FROM shared_activity WHERE group_id IN (${SHARED_EXPORT_GROUPS})`,
+      transformRow: (row) => ({ ...row, actor_user_id: null }),
+    },
+    {
+      key: "shared_people",
+      sql: "SELECT * FROM shared_people WHERE user_id = $1",
+    },
+    {
+      key: "shared_person_links",
+      sql: `SELECT * FROM shared_person_links WHERE user_id = $1 AND group_id IN (${SHARED_EXPORT_GROUPS})`,
+    },
+    {
+      key: "shared_integrations",
+      sql: `SELECT * FROM shared_integrations WHERE user_id = $1 AND group_id IN (${SHARED_EXPORT_GROUPS})`,
+    },
+    {
+      key: "shared_postings",
+      sql: `SELECT * FROM shared_postings WHERE user_id = $1 AND group_id IN (${SHARED_EXPORT_GROUPS})`,
+    },
+    {
+      key: "shared_ledger_links",
+      sql: `SELECT * FROM shared_ledger_links WHERE user_id = $1 AND posting_id IN
+        (SELECT id FROM shared_postings WHERE user_id = $1 AND group_id IN (${SHARED_EXPORT_GROUPS}))`,
+    },
+    {
       // Every currency this user's data depends on, not just the ones they
       // created. Currencies are shared: any user may activate a code another
       // user defined, so `created_by_user_id = $1` exported the references
@@ -357,7 +413,11 @@ export function buildExportTableQueries(
     },
     {
       key: "accounts",
-      sql: "SELECT * FROM accounts WHERE user_id = $1 ORDER BY name",
+      sql: `SELECT a.*, a.shared_expense_group_id IN (${SHARED_EXPORT_GROUPS}) AS _shared_visible FROM accounts a WHERE a.user_id = $1 ORDER BY a.name`,
+      transformRow: ({ _shared_visible, ...row }) =>
+        _shared_visible
+          ? row
+          : { ...row, managed_purpose: null, shared_expense_group_id: null },
     },
     {
       key: "tags",
@@ -383,7 +443,9 @@ export function buildExportTableQueries(
     },
     {
       key: "transactions",
-      sql: "SELECT * FROM transactions WHERE user_id = $1 ORDER BY transaction_date, created_at",
+      sql: `SELECT t.*, t.shared_expense_posting_id IN (SELECT id FROM shared_postings WHERE user_id = $1 AND group_id IN (${SHARED_EXPORT_GROUPS})) AS _shared_visible FROM transactions t WHERE t.user_id = $1 ORDER BY t.transaction_date, t.created_at`,
+      transformRow: ({ _shared_visible, ...row }) =>
+        _shared_visible ? row : { ...row, shared_expense_posting_id: null },
     },
     {
       key: "transaction_splits",
@@ -406,7 +468,7 @@ export function buildExportTableQueries(
       // Attachment metadata. Restored after transactions (FK) and before
       // attachment_blobs (which references transaction_attachments).
       key: "transaction_attachments",
-      sql: "SELECT * FROM transaction_attachments WHERE user_id = $1",
+      sql: `SELECT * FROM transaction_attachments WHERE ${exportedAttachment()}`,
     },
     {
       // Attachment bytes, base64-encoded so they survive JSON; insertRows
@@ -424,7 +486,7 @@ export function buildExportTableQueries(
       sql: `SELECT ab.attachment_id, encode(ab.data, 'base64') AS data
             FROM attachment_blobs ab
             JOIN transaction_attachments ta ON ab.attachment_id = ta.id
-            WHERE ta.user_id = $1`,
+            WHERE ${exportedAttachment("ta")}`,
       batchRows: BLOB_EXPORT_BATCH_ROWS,
       trailingRows: externalAttachmentRows,
     },

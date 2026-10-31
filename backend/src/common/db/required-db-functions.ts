@@ -104,6 +104,54 @@ export const REQUIRED_DB_FUNCTIONS: readonly RequiredDbFunction[] = [
     usedBy:
       "the backup export, which must ship every currency definition the backup references",
   },
+  {
+    name: "shared_group_role",
+    identity: "public.shared_group_role(uuid)",
+    migration: "20261025184834_shared_expenses.sql",
+    usedBy: "group membership policies",
+  },
+  {
+    name: "shared_group_writable",
+    identity: "public.shared_group_writable(uuid)",
+    migration: "20261025184834_shared_expenses.sql",
+    usedBy: "journal write policies",
+  },
+  {
+    name: "shared_entry_writable",
+    identity: "public.shared_entry_writable(uuid)",
+    migration: "20261025184834_shared_expenses.sql",
+    usedBy: "entry and document write policies",
+  },
+  {
+    name: "shared_invitation_allows",
+    identity: "public.shared_invitation_allows(uuid,uuid,text)",
+    migration: "20261025184834_shared_expenses.sql",
+    usedBy: "single-use invitation claims",
+  },
+  {
+    name: "shared_validate_entry_allocations",
+    identity: "public.shared_validate_entry_allocations()",
+    migration: "20261025184834_shared_expenses.sql",
+    usedBy: "deferred allocation conservation",
+  },
+  {
+    name: "shared_document_group",
+    identity: "public.shared_document_group(uuid,uuid)",
+    migration: "20261025192210_shared_expense_documents.sql",
+    usedBy: "shared document access and user erasure",
+  },
+  {
+    name: "check_attachment_pair_parent",
+    identity: "public.check_attachment_pair_parent()",
+    migration: "20261025192210_shared_expense_documents.sql",
+    usedBy: "receipt and original parent conservation",
+  },
+  {
+    name: "shared_pending_notifications",
+    identity: "public.shared_pending_notifications(uuid)",
+    migration: "20261025202235_shared_expense_notifications.sql",
+    usedBy: "bounded shared notification delivery",
+  },
 ] as const;
 
 /**

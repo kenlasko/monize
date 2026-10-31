@@ -207,5 +207,9 @@
   "payrollDeduction": {
     "resetTitle": "{category}: Höchstbetrag für das nächste Jahr bestätigen",
     "resetMessage": "Der Abzug {category} auf {bill} wird am {date} zurückgesetzt. Aktualisieren Sie den Jahreshöchstbetrag, falls er sich ändert; andernfalls gilt wieder {amount}."
+  },
+  "shared": {
+    "title": "Gemeinsame Ausgaben",
+    "message": "Eine gemeinsame Gruppe wurde aktualisiert. Öffne Monize, um die Änderungen anzusehen."
   }
 }

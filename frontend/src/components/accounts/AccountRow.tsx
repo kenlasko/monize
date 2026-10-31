@@ -250,6 +250,7 @@ export function buildAccountActions(
   // itself (edit/close/reopen/delete) and reconciliation stay owner-only. The
   // grantee instead gets their personal net-worth inclusion toggle.
   const isJoint = !!account.isJoint;
+  const managed = account.managedPurpose === "SHARED_SETTLEMENT";
   return [
     {
       key: 'view',
@@ -301,7 +302,7 @@ export function buildAccountActions(
       icon: 'close',
       tone: 'warning',
       onClick: () => handlers.onCloseClick(account),
-      hidden: account.isClosed || isJoint,
+      hidden: account.isClosed || isJoint || managed,
       disabled: balanceNonZero,
       title: valueUnknown
         ? (labels.closeTitleUnknownValue ?? labels.closeTitleDisabled)
@@ -315,7 +316,7 @@ export function buildAccountActions(
       icon: 'reopen',
       tone: 'primary',
       onClick: () => handlers.onReopen(account),
-      hidden: !account.isClosed || isJoint,
+      hidden: !account.isClosed || isJoint || managed,
     },
     {
       key: 'delete',
@@ -324,7 +325,7 @@ export function buildAccountActions(
       tone: 'delete',
       destructive: true,
       onClick: () => handlers.onDeleteClick(account),
-      hidden: !isDeletable || isJoint,
+      hidden: !isDeletable || isJoint || managed,
     },
   ];
 }

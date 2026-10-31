@@ -1,3 +1,4 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/server";
@@ -14,7 +15,10 @@ import { READ_ONLY } from "../mcp-annotations";
 
 @Injectable()
 export class McpBudgetsTools {
-  constructor(private readonly budgetReportsService: BudgetReportsService) {}
+  constructor(
+    private readonly budgetReportsService: BudgetReportsService,
+    private readonly sharedReview: SharedReviewService,
+  ) {}
 
   register(server: McpServer) {
     server.registerTool(
@@ -23,10 +27,9 @@ export class McpBudgetsTools {
         title: "Budget status",
         annotations: READ_ONLY,
         description:
-          "Budgeted versus actual spending for one period, with per-category " +
-          "breakdowns, spending velocity, safe daily spend and a health score. " +
-          "`velocity.safeDailySpend` is null when an upcoming bill's amount " +
-          "cannot be priced; `upcomingBillsComplete` says so.",
+          "Period budget versus actuals by category, velocity, safe daily spend " +
+          "and health score. Unpriced upcoming bills make " +
+          "`velocity.safeDailySpend` null and `upcomingBillsComplete` false.",
         inputSchema: z.object({
           period: z
             .string()
@@ -55,7 +58,9 @@ export class McpBudgetsTools {
             args.period ?? "CURRENT",
             args.budgetName,
           );
-          return toolResult(data);
+          return toolResult(
+            await this.sharedReview.annotate(user.userId, data),
+          );
         } catch (err: unknown) {
           return safeToolError(err);
         }

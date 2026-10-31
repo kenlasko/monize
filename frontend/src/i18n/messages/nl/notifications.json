@@ -207,5 +207,9 @@
   "payrollDeduction": {
     "resetTitle": "{category}: bevestig het maximum voor volgend jaar",
     "resetMessage": "De inhouding {category} op {bill} wordt op {date} opnieuw ingesteld. Werk het jaarmaximum bij als het verandert; anders geldt {amount} opnieuw."
+  },
+  "shared": {
+    "title": "Gedeelde uitgaven",
+    "message": "Een gedeelde groep is bijgewerkt. Open Monize om de wijziging te bekijken."
   }
 }

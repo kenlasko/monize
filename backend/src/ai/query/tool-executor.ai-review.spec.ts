@@ -1,3 +1,4 @@
+import { sharedReviewProvider } from "../../shared-expenses/__fixtures__/shared-review";
 import { Test } from "@nestjs/testing";
 import { ConflictException } from "@nestjs/common";
 import { ToolExecutorService } from "./tool-executor.service";
@@ -82,6 +83,7 @@ describe("ToolExecutorService ai_review_requests", () => {
     ].map((provide) => ({ provide, useValue: {} }));
     const module = await Test.createTestingModule({
       providers: [
+        sharedReviewProvider(),
         ToolExecutorService,
         { provide: AiReviewWorkService, useValue: work },
         { provide: EmailReceiptParserToolsService, useValue: parserTools },

@@ -1,3 +1,4 @@
+import { sharedLedgerRefusal } from "../db/shared-ledger-refusal";
 import { HttpException, HttpStatus, Logger } from "@nestjs/common";
 import { QueryFailedError } from "typeorm";
 import { tr } from "../../i18n/translate";
@@ -103,6 +104,14 @@ export function httpErrorBody(
       code?: string;
       message?: string;
     };
+    const sharedRefusal = sharedLedgerRefusal(exception);
+    if (sharedRefusal) {
+      return {
+        statusCode: HttpStatus.CONFLICT,
+        errorCode: "SHARED_EXPENSE_MANAGED",
+        message: sharedRefusal,
+      };
+    }
     logger.error("Database error", exception.stack);
     if (driverError?.code === "23505") {
       return {

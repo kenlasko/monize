@@ -1,8 +1,11 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
+import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { McpReportsTools } from "./reports.tool";
 import { mcpTestCtx, McpTestContext } from "../testing/mcp-test-context";
 
 describe("McpReportsTools", () => {
   let tool: McpReportsTools;
+  let sharedReview: ReturnType<typeof sharedReviewMock>;
   let reportsService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
   let server: { registerTool: jest.Mock };
@@ -23,7 +26,12 @@ describe("McpReportsTools", () => {
       getLlmHistory: jest.fn(),
     };
 
-    tool = new McpReportsTools(reportsService as any, netWorthService as any);
+    sharedReview = sharedReviewMock();
+    tool = new McpReportsTools(
+      sharedReview as unknown as SharedReviewService,
+      reportsService as any,
+      netWorthService as any,
+    );
 
     server = {
       registerTool: jest.fn((name, _opts, handler) => {
@@ -34,6 +42,37 @@ describe("McpReportsTools", () => {
     ctx = mcpTestCtx();
     tool.register(server as any);
   });
+
+  it.each([
+    "spending_by_category",
+    "spending_by_payee",
+    "income_vs_expenses",
+    "monthly_trend",
+    "income_by_source",
+    "spending_anomalies",
+    "month_comparison",
+    "net_worth_history",
+  ])(
+    "discloses shared review for %s, including array results",
+    async (type) => {
+      ctx.setUser({ userId: "u1", scopes: "read" });
+      for (const method of Object.values(reportsService))
+        method.mockResolvedValue([{ amount: 100 }]);
+      netWorthService.getLlmHistory.mockResolvedValue([{ amount: 100 }]);
+      sharedReview.annotate.mockImplementation(async (_user, data) => ({
+        items: data,
+        sharedExpenses: { pendingCount: 2 },
+      }));
+      const result = await handlers.generate_report({ type }, ctx);
+      expect(sharedReview.annotate).toHaveBeenCalledWith("u1", [
+        { amount: 100 },
+      ]);
+      expect(result.structuredContent).toEqual({
+        items: [{ amount: 100 }],
+        sharedExpenses: { pendingCount: 2 },
+      });
+    },
+  );
 
   it("should register 1 tool", () => {
     expect(server.registerTool).toHaveBeenCalledTimes(1);

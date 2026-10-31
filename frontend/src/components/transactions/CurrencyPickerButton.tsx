@@ -32,6 +32,8 @@ interface CurrencyPickerButtonProps {
   /** Called with the chosen code ('' when the account currency row is picked). */
   onChange: (code: string) => void;
   disabled?: boolean;
+  /** Label for a non-account context, such as a shared group. */
+  baseCurrencyLabel?: string;
   /** Optional attributes (e.g. a guided-tour data-tour-id) spread onto the button. */
   anchorProps?: { 'data-tour-id'?: string };
 }
@@ -50,6 +52,7 @@ export function CurrencyPickerButton({
   onChange,
   disabled,
   anchorProps,
+  baseCurrencyLabel,
 }: CurrencyPickerButtonProps) {
   const t = useTranslations('transactions');
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -88,6 +91,7 @@ export function CurrencyPickerButton({
           anchorRef={buttonRef}
           value={value}
           accountCurrencyCode={accountCurrencyCode}
+          baseCurrencyLabel={baseCurrencyLabel}
           onSelect={(code) => {
             onChange(code);
             setOpen(false);
@@ -140,6 +144,7 @@ export function CurrencyPickerButton({
 }
 
 interface CurrencyPickerPopoverProps {
+  baseCurrencyLabel?: string;
   anchorRef: React.RefObject<HTMLElement | null>;
   value: string;
   accountCurrencyCode: string;
@@ -153,6 +158,7 @@ function CurrencyPickerPopover({
   value,
   accountCurrencyCode,
   onSelect,
+  baseCurrencyLabel,
   onAddCurrency,
   onClose,
 }: CurrencyPickerPopoverProps) {
@@ -228,7 +234,7 @@ function CurrencyPickerPopover({
           className={`${rowClass} ${!value ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
         >
           <span className="font-medium text-gray-900 dark:text-gray-100">
-            {t('form.currencyPicker.accountCurrency', { code: accountCurrencyCode })}
+            {baseCurrencyLabel ?? t('form.currencyPicker.accountCurrency', { code: accountCurrencyCode })}
           </span>
         </button>
         {isLoading && (

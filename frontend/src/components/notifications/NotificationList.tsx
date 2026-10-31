@@ -32,6 +32,8 @@ function notificationRoute(notification: Notification): string | null {
   if (target) return target;
 
   switch (notification.type) {
+    case "SHARED_EXPENSE_UPDATED":
+      return "/shared-expenses";
     case 'BILL_DUE':
     case 'SCHEDULED_POST_FAILED':
       return '/bills';

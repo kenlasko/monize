@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@/test/render';
 import { Modal, __resetModalStateForTesting } from './Modal';
@@ -224,6 +225,16 @@ describe('Modal', () => {
     afterEach(() => {
       pushStateSpy.mockRestore();
       backSpy.mockRestore();
+    });
+
+    it('does not navigate during Strict Mode effect replay and removes one entry on real unmount', async () => {
+      const view = render(<StrictMode><Modal isOpen pushHistory>Shared entry</Modal></StrictMode>);
+      await act(async () => {});
+      expect(pushStateSpy).toHaveBeenCalledTimes(1);
+      expect(backSpy).not.toHaveBeenCalled();
+      view.unmount();
+      await act(async () => {});
+      expect(backSpy).toHaveBeenCalledTimes(1);
     });
 
     it('pushes history entry when modal opens with pushHistory', () => {

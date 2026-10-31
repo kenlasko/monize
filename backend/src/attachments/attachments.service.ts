@@ -1,10 +1,21 @@
+import { tokenHashesEqual } from "../auth/crypto.util";
+import {
+  validateAttachmentUpload,
+  UploadedAttachmentFile,
+  ValidatedUpload,
+} from "./attachment-upload";
+export {
+  MAX_ATTACHMENT_BYTES,
+  sanitizeFilename,
+  UploadedAttachmentFile,
+} from "./attachment-upload";
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
-  PayloadTooLargeException,
   UnsupportedMediaTypeException,
 } from "@nestjs/common";
 import { createHash, randomUUID } from "crypto";
@@ -16,10 +27,6 @@ import { returnedRows } from "../common/db/query-result";
 import { AttachmentOrphanSweeper } from "./attachment-orphan-sweeper.service";
 import { tr } from "../i18n/translate";
 import { TransactionAttachment } from "./entities/transaction-attachment.entity";
-import {
-  ALLOWED_ATTACHMENT_MIME_TYPES,
-  sniffAttachmentMime,
-} from "./attachment-mime.util";
 import { AttachmentStorageProvider } from "./storage/attachment-storage.interface";
 import { AttachmentStorageRegistry } from "./storage/attachment-storage.registry";
 import {
@@ -43,14 +50,19 @@ import {
 } from "./attachment-parent";
 import { Warranty } from "../warranties/entities/warranty.entity";
 import { AttachmentListItemDto } from "./dto/attachment-list-item.dto";
+import {
+  authorizedAttachment,
+  authorizeSharedAttachmentParent,
+  isSharedAttachmentParent,
+  recordSharedDocumentActivity,
+} from "./shared-attachment-access";
 
-/** Largest single attachment we accept (also enforced by the upload interceptor). */
-export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10 MB
 /**
  * Maximum visible attachments per parent. Named for the transaction it was
  * written for; a warranty takes the same cap under the same lock doctrine.
  */
 export const MAX_ATTACHMENTS_PER_TRANSACTION = 10;
+export const MAX_SHARED_GROUP_ATTACHMENTS = 50;
 
 /**
  * Who is downloading, beyond the user id. `isDelegate` is the request's
@@ -67,24 +79,6 @@ export interface AttachmentDownload {
   contentType: string;
   filename: string;
   byteSize: number;
-}
-
-/**
- * Uploaded file shape we depend on -- a subset of Express.Multer.File so callers
- * (and tests) need not construct the full multer object.
- */
-export interface UploadedAttachmentFile {
-  originalname: string;
-  buffer: Buffer;
-  size: number;
-}
-
-/** An uploaded part that has passed every admission check, with what they derived. */
-interface ValidatedUpload {
-  filename: string;
-  contentType: string;
-  buffer: Buffer;
-  sha256: string;
 }
 
 /**
@@ -184,6 +178,7 @@ export class AttachmentsService {
     file: UploadedAttachmentFile | undefined,
     original?: UploadedAttachmentFile | undefined,
     documentKind: DocumentKind = DEFAULT_DOCUMENT_KIND,
+    operationId?: string,
   ): Promise<TransactionAttachment> {
     // A kind names a warranty's document; a transaction's attachment has none
     // to name, so anything but the default is a malformed request.
@@ -198,12 +193,26 @@ export class AttachmentsService {
         ),
       );
     }
-    const primary = this.validateUpload(file);
+    const primary = validateAttachmentUpload(file);
 
     // A scan pair: the enhanced image the user sees, plus the photo it came
     // from. Both halves are images by construction, so an `original` beside a
     // PDF is a malformed request rather than a shape to store.
-    const originalUpload = original ? this.validateUpload(original) : null;
+    const originalUpload = original ? validateAttachmentUpload(original) : null;
+    const uploadFingerprint = operationId
+      ? createHash("sha256")
+          .update(
+            JSON.stringify({
+              primary: primary.sha256,
+              filename: primary.filename,
+              original: originalUpload?.sha256 ?? null,
+              originalFilename: originalUpload?.filename ?? null,
+              documentKind,
+              parent,
+            }),
+          )
+          .digest("hex")
+      : null;
     if (
       originalUpload &&
       (!primary.contentType.startsWith("image/") ||
@@ -242,17 +251,40 @@ export class AttachmentsService {
         // as absent whatever the RLS mode.
         await this.lockParent(m, parent, userId);
 
+        if (operationId) {
+          const prior = await m
+            .getRepository(TransactionAttachment)
+            .findOne({ where: { userId, uploadRequestId: operationId } });
+          if (prior) {
+            if (!tokenHashesEqual(prior.uploadFingerprint, uploadFingerprint))
+              throw new ConflictException(
+                tr(
+                  "errors.attachments.uploadRequestChanged",
+                  "This upload request was already used for another file. Start a new upload.",
+                ),
+              );
+            await this.clearUploadIntent(m, id);
+            if (originalId) await this.clearUploadIntent(m, originalId);
+            return prior;
+          }
+        }
+
         // Primaries only: a scan pair is one attachment as far as the cap is
         // concerned, so its hidden original must not consume a slot the user
         // cannot see or free.
         const existing = await m.getRepository(TransactionAttachment).count({
           where: {
             ...attachmentParentWhere(parent),
-            userId,
+            ...(isSharedAttachmentParent(parent) ? {} : { userId }),
             ...primaryAttachmentWhere,
           },
         });
-        if (existing >= MAX_ATTACHMENTS_PER_TRANSACTION) {
+        if (
+          existing >=
+          (parent.kind === "shared-group"
+            ? MAX_SHARED_GROUP_ATTACHMENTS
+            : MAX_ATTACHMENTS_PER_TRANSACTION)
+        ) {
           throw new BadRequestException(this.tooManyMessage(parent));
         }
 
@@ -276,6 +308,9 @@ export class AttachmentsService {
             storageProvider: this.storage.name,
             storageKey: rowId,
             originalOfAttachmentId,
+            ...(operationId && originalOfAttachmentId === null
+              ? { uploadRequestId: operationId, uploadFingerprint }
+              : {}),
           });
           const saved = await repo.save(row);
 
@@ -298,6 +333,13 @@ export class AttachmentsService {
         if (originalId && originalUpload) {
           await saveOne(originalId, originalUpload, id);
         }
+        await recordSharedDocumentActivity(
+          m,
+          userId,
+          parent,
+          "DOCUMENT_ADDED",
+          saved,
+        );
         return saved;
       });
     } catch (error) {
@@ -342,6 +384,10 @@ export class AttachmentsService {
     parent: AttachmentParent,
     userId: string,
   ): Promise<void> {
+    if (isSharedAttachmentParent(parent)) {
+      await authorizeSharedAttachmentParent(m, userId, parent, true);
+      return;
+    }
     if (parent.kind === "transaction") {
       const locked = await lockTransactionRow(m, parent.id, userId);
       if (locked) return;
@@ -358,6 +404,17 @@ export class AttachmentsService {
 
   /** The cap refusal, worded for the parent it is about. */
   private tooManyMessage(parent: AttachmentParent): string {
+    if (isSharedAttachmentParent(parent)) {
+      const max =
+        parent.kind === "shared-group"
+          ? MAX_SHARED_GROUP_ATTACHMENTS
+          : MAX_ATTACHMENTS_PER_TRANSACTION;
+      return tr(
+        "errors.attachments.tooManyShared",
+        "This shared item already has the maximum of {max} documents",
+        { max },
+      );
+    }
     const max = MAX_ATTACHMENTS_PER_TRANSACTION;
     return parent.kind === "transaction"
       ? tr(
@@ -370,52 +427,6 @@ export class AttachmentsService {
           `This warranty already has the maximum of ${max} attachments`,
           { max },
         );
-  }
-
-  /**
-   * The checks every uploaded part passes, whichever half of a pair it is.
-   *
-   * Extracted so the original cannot be admitted on weaker terms than the
-   * visible file: it is stored, downloaded and restored by the same code, so a
-   * size or type rule applied to one and not the other is a hole with a
-   * different door.
-   */
-  private validateUpload(
-    file: UploadedAttachmentFile | undefined,
-  ): ValidatedUpload {
-    if (!file || !file.buffer || file.buffer.length === 0) {
-      throw new BadRequestException(
-        tr("errors.attachments.empty", "Uploaded file is empty"),
-      );
-    }
-    if (file.buffer.length > MAX_ATTACHMENT_BYTES) {
-      throw new PayloadTooLargeException(
-        tr(
-          "errors.attachments.fileTooLarge",
-          `File exceeds the maximum size of ${MAX_ATTACHMENT_BYTES} bytes`,
-          { max: MAX_ATTACHMENT_BYTES },
-        ),
-      );
-    }
-
-    const contentType = sniffAttachmentMime(file.buffer);
-    if (!contentType) {
-      const types = ALLOWED_ATTACHMENT_MIME_TYPES.join(", ");
-      throw new UnsupportedMediaTypeException(
-        tr(
-          "errors.attachments.unsupportedType",
-          `Unsupported file type. Allowed types: ${types}`,
-          { types },
-        ),
-      );
-    }
-
-    return {
-      filename: sanitizeFilename(file.originalname),
-      contentType,
-      buffer: file.buffer,
-      sha256: createHash("sha256").update(file.buffer).digest("hex"),
-    };
   }
 
   /**
@@ -480,6 +491,9 @@ export class AttachmentsService {
     parent: AttachmentParent,
   ): Promise<AttachmentListItem[]> {
     return withScopedDb(this.dataSource, async (m) => {
+      const shared = isSharedAttachmentParent(parent);
+      if (shared)
+        await authorizeSharedAttachmentParent(m, userId, parent, false);
       const rows = await this.listQuery(m)
         .where(
           parent.kind === "transaction"
@@ -487,7 +501,7 @@ export class AttachmentsService {
             : `ta.${parentColumn(parent)} = :parentId`,
           { parentId: parent.id },
         )
-        .andWhere("ta.user_id = :userId", { userId })
+        .andWhere(shared ? "TRUE" : "ta.user_id = :userId", { userId })
         .andWhere(primaryAttachmentSql("ta"))
         // Own rows first (their warranty_id is NULL, and FALSE sorts before
         // TRUE), then the warranties' documents; upload order within each.
@@ -642,7 +656,7 @@ export class AttachmentsService {
     reader: AttachmentReader = {},
   ): Promise<AttachmentDownload> {
     const attachment = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(TransactionAttachment).findOne({ where: { id, userId } }),
+      authorizedAttachment(m, userId, id),
     );
     if (!attachment) {
       throw new NotFoundException(
@@ -689,6 +703,18 @@ export class AttachmentsService {
    */
   async remove(userId: string, id: string): Promise<void> {
     const storageKeys = await withScopedDb(this.dataSource, async (m) => {
+      const attachment = await authorizedAttachment(m, userId, id, true);
+      if (attachment.sharedGroupId || attachment.sharedEntryId) {
+        await recordSharedDocumentActivity(
+          m,
+          userId,
+          attachment.sharedGroupId
+            ? { kind: "shared-group", id: attachment.sharedGroupId }
+            : { kind: "shared-entry", id: attachment.sharedEntryId! },
+          "DOCUMENT_REMOVED",
+          attachment,
+        );
+      }
       // A scan pair is one attachment, so deleting the visible row takes its
       // original with it. The cascade would do that anyway; naming the original
       // here is what RETURNS its storage key, so its bytes go now rather than
@@ -697,7 +723,7 @@ export class AttachmentsService {
         `DELETE FROM transaction_attachments
           WHERE (id = $1 OR original_of_attachment_id = $1) AND user_id = $2
           RETURNING storage_provider, storage_key`,
-        [id, userId],
+        [id, attachment.userId],
       );
       const rows = returnedRows<{
         storage_provider: string;
@@ -737,18 +763,4 @@ function toListItem(
     originalAttachmentId: raw?.orig_id ?? null,
     warrantyName: raw?.warranty_name ?? null,
   };
-}
-
-/**
- * Reduce a client-supplied filename to a safe display name: strip any path
- * components and control characters, collapse to a fallback when empty, and cap
- * at the column length.
- */
-export function sanitizeFilename(raw: string | undefined): string {
-  const base = (raw ?? "").split(/[\\/]/).pop() ?? "";
-  // Remove control chars (including CR/LF) that could break Content-Disposition.
-  // eslint-disable-next-line no-control-regex
-  const cleaned = base.replace(/[\x00-\x1f\x7f]/g, "").trim();
-  const safe = cleaned.length > 0 ? cleaned : "attachment";
-  return safe.slice(0, 255);
 }

@@ -82,12 +82,21 @@ function AttachmentBadge({ count }: { count: number }) {
   );
 }
 
-function CopyDropdown({ density, onDuplicate, onScheduleRecurring }: {
+/** Keep the portalled share action from opening the row's editor or action sheet. */
+const STOP_ROW_PRESS = {
+  onMouseDown: (e: React.MouseEvent) => e.stopPropagation(),
+  onTouchStart: (e: React.TouchEvent) => e.stopPropagation(),
+  onContextMenu: (e: React.MouseEvent) => e.stopPropagation(),
+};
+
+function CopyDropdown({ density, onDuplicate, onScheduleRecurring, onShareExpense }: {
   density: DensityLevel;
   onDuplicate?: () => void;
   onScheduleRecurring?: () => void;
+  onShareExpense?: () => void;
 }) {
   const t = useTranslations('transactions');
+  const ts = useTranslations('sharedExpenses');
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -111,7 +120,7 @@ function CopyDropdown({ density, onDuplicate, onScheduleRecurring }: {
   }, [isOpen, updatePosition]);
 
   // If only one action is available, render a simple button
-  if (onDuplicate && !onScheduleRecurring) {
+  if (onDuplicate && !onScheduleRecurring && !onShareExpense) {
     return (
       <button
         onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
@@ -160,6 +169,15 @@ function CopyDropdown({ density, onDuplicate, onScheduleRecurring }: {
             >
               <CalendarIcon className="w-4 h-4 shrink-0 text-gray-400" aria-hidden="true" />
               {t('row.copyOptions.scheduleRecurring')}
+            </button>
+          )}
+          {onShareExpense && (
+            <button
+              onClick={(event) => { event.stopPropagation(); setIsOpen(false); onShareExpense(); }}
+              {...STOP_ROW_PRESS}
+              className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
+            >
+              {ts('splitWithPeople')}
             </button>
           )}
         </div>,
@@ -216,6 +234,7 @@ export interface TransactionRowProps {
   onEdit?: (transaction: Transaction) => void;
   onDuplicate?: (transaction: Transaction) => void;
   onScheduleRecurring?: (transaction: Transaction) => void;
+  onShareExpense?: (transaction: Transaction) => void;
   onDeleteClick: (transaction: Transaction) => void;
   isSelected?: boolean;
   selectionMode?: boolean;
@@ -272,6 +291,7 @@ export const TransactionRow = memo(function TransactionRow({
   onEdit,
   onDuplicate,
   onScheduleRecurring,
+  onShareExpense,
   onDeleteClick,
   isSelected,
   selectionMode,
@@ -996,9 +1016,10 @@ export const TransactionRow = memo(function TransactionRow({
               : (density === 'dense' ? '\u270E' : tc('edit'))}
           </button>
         )}
-        {!transaction.linkedInvestmentTransactionId && (onDuplicate || onScheduleRecurring) && (
+        {!transaction.linkedInvestmentTransactionId && (onDuplicate || onScheduleRecurring || onShareExpense) && (
           <CopyDropdown
             density={density}
+            onShareExpense={onShareExpense ? () => onShareExpense(transaction) : undefined}
             onDuplicate={onDuplicate ? () => onDuplicate(transaction) : undefined}
             onScheduleRecurring={onScheduleRecurring ? () => onScheduleRecurring(transaction) : undefined}
           />

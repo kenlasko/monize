@@ -1,3 +1,5 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
+import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { McpRecentTransactionsResource } from "./recent-transactions.resource";
 import { mcpTestCtx, McpTestContext } from "../testing/mcp-test-context";
 
@@ -29,6 +31,7 @@ describe("McpRecentTransactionsResource", () => {
     };
 
     resource = new McpRecentTransactionsResource(
+      sharedReviewMock() as unknown as SharedReviewService,
       transactionsService as any,
       analyticsService as any,
     );

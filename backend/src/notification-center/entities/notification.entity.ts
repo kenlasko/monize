@@ -15,6 +15,7 @@ import { User } from "../../users/entities/user.entity";
  * column -- a guard test in `notification-category.spec.ts` holds the bound.
  */
 export enum NotificationType {
+  SHARED_EXPENSE_UPDATED = "SHARED_EXPENSE_UPDATED",
   PACE_WARNING = "PACE_WARNING",
   THRESHOLD_WARNING = "THRESHOLD_WARNING",
   THRESHOLD_CRITICAL = "THRESHOLD_CRITICAL",
@@ -145,6 +146,7 @@ export enum NotificationSeverity {
  * producers that need it, not before.
  */
 export enum NotificationCategory {
+  SHARED_EXPENSES = "SHARED_EXPENSES",
   PAYMENTS = "PAYMENTS",
   BUDGETS = "BUDGETS",
   SYSTEM = "SYSTEM",
@@ -236,6 +238,8 @@ export function notificationCategoryOf(
   ) {
     return NotificationCategory.PAYMENTS;
   }
+  if (type === NotificationType.SHARED_EXPENSE_UPDATED)
+    return NotificationCategory.SHARED_EXPENSES;
   if (SYSTEM_NOTIFICATION_TYPES.includes(type)) {
     return NotificationCategory.SYSTEM;
   }

@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "미분류 지출",
       "residualUnspent": "미사용",
       "residualDeficit": "잔액에서 인출",
-      "unlinkedAccount": "(연결되지 않은 계좌)"
+      "unlinkedAccount": "(연결되지 않은 계좌)",
+      "classSharedSettlements": "공유 비용 정산",
+      "inflowSharedSettlements": "공동 정산에서"
     }
   },
   "pdfExport": {

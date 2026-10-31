@@ -1,3 +1,8 @@
+import {
+  SharedReviewService,
+  SHARED_LEDGER_TOOLS,
+} from "../../shared-expenses/shared-review.service";
+import { sharedReviewProvider } from "../../shared-expenses/__fixtures__/shared-review";
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException, HttpException } from "@nestjs/common";
 import { ToolExecutorService } from "./tool-executor.service";
@@ -34,6 +39,7 @@ import { TransactionRuleToolPrepService } from "../../transaction-rules/rule-too
 
 describe("ToolExecutorService", () => {
   let service: ToolExecutorService;
+  let sharedReview: jest.Mocked<Pick<SharedReviewService, "annotate">>;
   let analytics: Record<string, jest.Mock>;
   let accounts: Record<string, jest.Mock>;
   let netWorth: Record<string, jest.Mock>;
@@ -722,6 +728,7 @@ describe("ToolExecutorService", () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        sharedReviewProvider(),
         ToolExecutorService,
         { provide: AttachmentToolPrepService, useValue: attachmentPrep },
         { provide: RelayAttachmentStore, useValue: attachmentStore },
@@ -764,7 +771,32 @@ describe("ToolExecutorService", () => {
     }).compile();
 
     service = module.get<ToolExecutorService>(ToolExecutorService);
+    sharedReview = module.get(SharedReviewService);
   });
+
+  it.each(SHARED_LEDGER_TOOLS)(
+    "%s carries the common personal-review context",
+    async (name) => {
+      const context = {
+        pendingCount: 2,
+        unavailableGroupCount: 0,
+        status: "REVIEW_REQUIRED",
+      };
+      sharedReview.annotate.mockImplementation(async (_user, data) => ({
+        ...(Array.isArray(data) ? { items: data } : (data as object)),
+        sharedExpenses: context,
+      }));
+      const input =
+        name === "generate_report" ? { type: "income_vs_expenses" } : {};
+      const result = await service.execute(userId, name, input);
+      expect(result.isError).toBeUndefined();
+      expect(sharedReview.annotate).toHaveBeenCalledWith(
+        userId,
+        expect.anything(),
+      );
+      expect(result.data).toMatchObject({ sharedExpenses: context });
+    },
+  );
 
   describe("tool routing", () => {
     it("list_transactions delegates to analytics.getLlmListTransactions", async () => {

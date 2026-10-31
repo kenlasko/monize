@@ -51,6 +51,10 @@
     "warranties": {
       "title": "Garanti hatırlatıcısı",
       "body": "Garantilerinizden birinin süresi yakında doluyor. Ayrıntılar için Monize'i açın."
+    },
+    "shared_expenses": {
+      "title": "Paylaşılan giderler",
+      "body": "Ortak bir grupta güncelleme var. İncelemek için Monize'ı açın."
     }
   },
   "actions": {

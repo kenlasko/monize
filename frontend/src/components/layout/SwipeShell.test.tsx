@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@/test/render';
+import { act, render, screen } from '@/test/render';
 import { SwipeShell } from './SwipeShell';
+import { sharedExpensesApi } from '@/lib/shared-expenses';
+
+vi.mock('@/lib/shared-expenses', () => ({ sharedExpensesApi: { review: vi.fn() } }));
 
 // Mock next/navigation
 let mockPathname = '/dashboard';
@@ -51,15 +54,27 @@ vi.mock('./WeakJwtSecretBanner', () => ({
 }));
 
 describe('SwipeShell', () => {
+  it.each(['/dashboard', '/accounts', '/transactions', '/budgets', '/reports', '/net-worth'])(
+    'does not fetch private review data or add a review notice on %s', async (pathname) => {
+      vi.mocked(sharedExpensesApi.review).mockClear();
+      mockPathname = pathname;
+      await act(async () => render(<SwipeShell><p>Content</p></SwipeShell>));
+      expect(sharedExpensesApi.review).not.toHaveBeenCalled();
+      expect(screen.queryByText('No changes to accepted entries need review.')).not.toBeInTheDocument();
+    },
+  );
+
   it('mounts the weak JWT_SECRET banner on app pages but not on auth routes', () => {
     mockPathname = '/dashboard';
     const { unmount } = render(<SwipeShell><p>Content</p></SwipeShell>);
     expect(screen.getByTestId('weak-jwt-secret-banner')).toBeInTheDocument();
+    expect(screen.queryByText('No changes to accepted entries need review.')).not.toBeInTheDocument();
     unmount();
 
     mockPathname = '/login';
     render(<SwipeShell><p>Content</p></SwipeShell>);
     expect(screen.queryByTestId('weak-jwt-secret-banner')).not.toBeInTheDocument();
+    expect(screen.queryByText('No changes to accepted entries need review.')).not.toBeInTheDocument();
   });
 
   it('renders AppHeader and children on app pages', () => {

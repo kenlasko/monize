@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, within } from '@/test/render';
 import DashboardPage from './page';
 
 // Mock next/image
@@ -447,6 +447,20 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Customize')).toBeInTheDocument();
     });
+  });
+
+  it('keeps shared-expense navigation out of the dashboard greeting actions', async () => {
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toBeInTheDocument();
+    });
+    const dashboard = within(screen.getByRole('main'));
+    expect(
+      dashboard.getByRole('button', { name: 'Customize' }),
+    ).toBeInTheDocument();
+    expect(
+      dashboard.queryByRole('link', { name: 'Shared Expenses' }),
+    ).not.toBeInTheDocument();
   });
 
   it('hides the Customize button in the delegate view', async () => {

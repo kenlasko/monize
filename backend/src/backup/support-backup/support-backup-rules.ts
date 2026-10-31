@@ -1,3 +1,4 @@
+import { SHARED_RULES } from "./support-backup-rules.shared";
 import {
   drop,
   jsonb,
@@ -25,26 +26,10 @@ export type { ColumnRule, TableRules } from "./support-backup-rule-kinds";
 
 import type { TableRules } from "./support-backup-rule-kinds";
 
-/**
- * Tables never written to a support backup regardless of section selection.
- * `ai_provider_configs` holds encrypted API keys and endpoint URLs with zero
- * diagnostic value for a finance bug, so it is dropped wholesale, and
- * `payee_lookup_settings` holds a Google Places key for the same reason. The two
- * attachment tables carry user-uploaded receipts/documents: `attachment_blobs`
- * is raw file bytes (a NOT NULL BYTEA with no useful de-identified form) and
- * `transaction_attachments` is their metadata (filenames can embed PII), so
- * both are omitted from the de-identified support backup. Their columns are
- * intentionally absent from RULES below; the golden test skips them.
- */
-export const ALWAYS_EXCLUDED_TABLES: ReadonlySet<string> = new Set([
-  "ai_provider_configs",
-  "payee_lookup_settings",
-  "transaction_attachments",
-  "attachment_blobs",
-  "push_chart_artifacts",
-]);
+export { ALWAYS_EXCLUDED_TABLES } from "./support-backup-exclusions";
 
 export const RULES: Record<string, TableRules> = {
+  ...SHARED_RULES,
   // How many Google Places requests a month cost, and nothing else: a user id
   // (kept as an FK everywhere here), a YYYY-MM, and a counter. Nothing about
   // it names a payee, so nothing needs masking -- and the count is exactly
@@ -183,6 +168,8 @@ export const RULES: Record<string, TableRules> = {
     updated_at: keep,
   },
   accounts: {
+    managed_purpose: drop,
+    shared_expense_group_id: drop,
     id: keep,
     user_id: keep,
     account_type: keep,
@@ -289,6 +276,7 @@ export const RULES: Record<string, TableRules> = {
     updated_at: keep,
   },
   transactions: {
+    shared_expense_posting_id: drop,
     id: keep,
     user_id: keep,
     account_id: keep,

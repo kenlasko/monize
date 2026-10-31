@@ -155,6 +155,7 @@ export function Modal({
   const modalIdRef = useRef(-1);
   // Focus trap refs
   const modalRef = useRef<HTMLDivElement>(null);
+  const lifetimeRef = useRef<symbol | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Attempt to close — checks onBeforeClose before proceeding
@@ -245,16 +246,20 @@ export function Modal({
     return () => window.removeEventListener('popstate', handlePopstate);
   }, [isOpen, pushHistory, attemptClose]);
 
-  // Cleanup: if component unmounts while modal is open and history was pushed
+  // Strict Mode replays effects on mount. Only a real unmount removes history;
+  // otherwise its queued back() can consume the next modal's history entry.
   useEffect(() => {
+    const lifetime = Symbol();
+    lifetimeRef.current = lifetime;
     return () => {
-      if (historyPushedRef.current) {
+      queueMicrotask(() => {
+        if (lifetimeRef.current !== lifetime || !historyPushedRef.current) return;
         historyPushedRef.current = false;
         const idx = openModalStack.indexOf(modalIdRef.current);
         if (idx !== -1) openModalStack.splice(idx, 1);
         pendingProgrammaticPops++;
         window.history.back();
-      }
+      });
     };
   }, []);
 

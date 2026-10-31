@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Витрати без категорії",
       "residualUnspent": "Не витрачено",
       "residualDeficit": "Взято із залишків",
-      "unlinkedAccount": "(непов’язаний рахунок)"
+      "unlinkedAccount": "(непов’язаний рахунок)",
+      "classSharedSettlements": "Розрахунки за спільними витратами",
+      "inflowSharedSettlements": "Зі спільних розрахунків"
     }
   },
   "pdfExport": {

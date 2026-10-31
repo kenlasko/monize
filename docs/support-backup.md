@@ -85,8 +85,10 @@ Starting from the same rows the normal export produces, the support backup:
   so the trimmed file still reconciles to the true balance.
 - Runs a **referential-integrity scrub** after any trimming (account scope,
   date range, disabled sections): a declarative map of every FK between
-  exported tables nulls or drops each dangling reference, so a trimmed file
-  always restores. Id arrays outside FK constraints (Monte Carlo account lists,
+  exported tables nulls or drops each dangling reference. Shared journals remain
+  whole under personal account/date scoping: their reference checks include the
+  group/owner components of composite foreign keys and refuse a missing
+  participant, allocation target or refund source. Id arrays outside FK constraints (Monte Carlo account lists,
   report filters) are filtered to accounts present in the file, and the
   free-form dashboard widget config is reset under account scoping, so no
   excluded account's identifier survives un-remapped.
@@ -106,7 +108,7 @@ Backend, under `backend/src/backup/support-backup/`:
 - `support-backup-rules.ts` — the per-column rule registry. It is an
   **allowlist**: a column with no rule is dropped, and the golden test
   (`test/integration/support-backup.integration.spec.ts`) fails when the live
-  schema gains a column the registry does not classify, so a future migration
+  schema or actual export gains a column the registry does not classify, so a future migration
   cannot silently start leaking a field. JSONB blobs are classified per-key by
   handlers in `support-backup-jsonb.ts`, which are themselves allowlists.
 - `support-backup.service.ts` — the engine: section filtering, rule application,
@@ -119,10 +121,12 @@ Backend, under `backend/src/backup/support-backup/`:
   account's opening balance by the removed transactions so the file still
   reconciles.
 - `support-backup-integrity.ts` — the referential-integrity scrub run after any
-  trimming: a declarative FK map (`REFS`) nulls or drops every reference whose
-  target was removed, so a scoped/date-ranged/section-trimmed file always
-  restores. An integration test asserts `REFS` covers every foreign key between
-  exported tables (`information_schema`), the same completeness guard the golden
+  trimming: a declarative FK map (`REFS`) nulls or drops references whose
+  targets were removed; shared journal references use the refusal policy above.
+  `support-backup-shared-refs.ts` derives the shared targets from the restore
+  registry and adds the composite-key scope. An integration test compares each
+  complete FK tuple and its target with `pg_constraint` in both directions,
+  the same completeness guard the golden
   test gives the column rules — so a future migration can't add an FK the scrub
   silently ignores. The scrub is skipped for a full untrimmed export (nothing
   can dangle). The same file also holds `dedupeMaskedText`, which restores

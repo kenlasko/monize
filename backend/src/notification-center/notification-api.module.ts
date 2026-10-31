@@ -1,3 +1,4 @@
+import { SharedExpensesModule } from "../shared-expenses/shared-expenses.module";
 import { Module } from "@nestjs/common";
 
 import { NotificationCenterModule } from "./notification-center.module";
@@ -17,7 +18,7 @@ import { BudgetsModule } from "../budgets/budgets.module";
  * this was one module.
  */
 @Module({
-  imports: [NotificationCenterModule, BudgetsModule],
+  imports: [NotificationCenterModule, BudgetsModule, SharedExpensesModule],
   controllers: [NotificationController],
 })
 export class NotificationApiModule {}

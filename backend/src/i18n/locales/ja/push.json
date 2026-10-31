@@ -51,6 +51,10 @@
     "warranties": {
       "title": "保証のリマインダー",
       "body": "保証の 1 つがまもなく期限切れになります。詳細は Monize を開いてください。"
+    },
+    "shared_expenses": {
+      "title": "共同支出",
+      "body": "共有グループが更新されました。Monizeを開いて確認してください。"
     }
   },
   "actions": {

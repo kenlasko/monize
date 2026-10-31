@@ -16,7 +16,7 @@ Paths beginning with `src/` or `scripts/`, and layer configuration filenames, ar
 
 ## Currency entry -- `CurrencyInput`, never a raw number input
 
-`components/ui/CurrencyInput.tsx` is the only way to take a money amount: a `type="text"` field with `inputMode="decimal"` that filters as you type, formats with separators on blur, clears a `0.00` on focus, parses through `parseLocaleNumber` and rounds what the user TYPED to cents (`roundToCents`, so a typed value never carries sub-cent precision the 2dp display hides), re-syncs on external value changes, and accepts inline calculator expressions (`100*1.13` + Enter/blur) plus a calculator modal. Props: `prefix`, `allowNegative` (default true), `allowCalculator` (default true), `allowSignToggle`. For non-money numbers (share counts, rates, percentages, day-of-month) use `NumericInput`: same filtering, with `decimalPlaces`, `suffix`, `min`/`max`, `allowNegative` defaulting false, no calculator.
+`components/ui/CurrencyInput.tsx` is the only way to take a money amount: a `type="text"` field with `inputMode="decimal"` that filters as you type, formats with separators on blur, clears zero on focus, parses through `parseLocaleNumber` and rounds typed amounts to the selected precision (`roundToDecimals`, with two decimals by default, so a typed value does not carry fractional units hidden by the display), re-syncs on external value changes, and accepts inline calculator expressions (`100*1.13` + Enter/blur) plus a calculator modal. Props: `prefix`, `decimalPlaces` (default two), `allowNegative` (default true), `allowCalculator` (default true), `allowSignToggle`. For non-money numbers (share counts, rates, percentages, day-of-month) use `NumericInput`: same filtering, with `decimalPlaces`, `suffix`, `min`/`max`, `allowNegative` defaulting false, no calculator.
 
 `ui-conventions.test.ts` fails the build on any `<input type="number">` or `<Input type="number">` -- resolving the tag each `type="number"` belongs to, because recharts' `<XAxis type="number">` is not an input and is left alone.
 
@@ -25,6 +25,29 @@ Paths beginning with `src/` or `scripts/`, and layer configuration filenames, ar
 **A single `.`/`,` separator is grouping only when its digit runs are valid thousands groups (1-3 digits, then exactly 3 per group); otherwise it is the decimal point.** This is symmetric and is what makes the DOT-GROUP locales (de/es/it/nl/pt-BR/tr) safe: `parseLocaleNumber` reads a typed or pasted `1200.99` / `5.5` as a decimal there, not as `120099` / `55` (the old "a `.` matching the locale group is always grouping" rule was a ~100x/10x silent money error), while `1.234` still reads as `1234`. `filterNumberTyping` therefore does **not** strip a `.`/`,` group separator while typing -- doing so destroyed the dot-decimal before `parseLocaleNumber` could disambiguate it -- and the read-only display of a plain amount goes through `useLocalizedAmount()` (the one bound `formatAmountLocalized` closure), never a hand-copied `seps ?? default` wrapper.
 
 **An editable field works in the locale's Latin-digit form, and every entry point normalizes what the user pastes.** `Intl` renders `ar-EG` as `١٬٢٠٠٫٩٩` (Arabic-Indic digits, U+066B/U+066C separators), and the "Browser" number-format setting reaches such a locale through `getEffectiveLocale` returning `undefined`, so an ASCII-only filter turned an edit of that text into the one digit just typed and the calculator into `1200995`. `getNumberSeparators` therefore returns the `numberingSystem: 'latn'` separators (plus `nativeDecimal`/`nativeGroup` where they differ), `CurrencyInput.formatDisplay` passes `{ latnDigits: true }` so the field shows `1,200.99`, and `parseLocaleNumber` / `filterNumberTyping` / `normalizeExpression` / `stripGroupSeparator` all start with `normalizeNumeralText` (any Unicode `Nd` digit to ASCII, native symbols to latn, bidi marks dropped, U+2212 to `-`). Read-only surfaces stay native like `formatCurrency`; the round-trip test in `lib/number-parse.test.ts` holds "what the pipeline formats, it parses back" for en/pl/de/hi/ar-EG/fa-IR, negatives included.
+
+`CurrencyInput.decimalPlaces` applies to typing, focus, the inline calculator and
+the calculator dialog. `evaluateExpression` accepts that precision and defaults
+to two decimals for existing callers. Shared expense money fields go through
+`components/shared-expenses/SharedPrimitives.tsx` (`SharedMoneyInput`), including
+exact shares, multiple payers and legacy private bank portions; percentages, weights
+and ten-decimal rates remain `NumericInput`. The selected precision is retained
+when opening a bank amount in the calculator. `SharedMoneyInput.test.tsx` exercises
+the real currency control through blur, Enter and calculator Apply at zero, two,
+three and four decimals.
+
+For a foreign-currency shared expense, `SharedEntryConversion` reads the server's
+`groupAmount`, `fxRate`, `fxSource` and `fxRateDate` in both preview and detail.
+It never fetches today's rate or recomputes the accepted amount in the browser.
+An unavailable conversion stays unknown, a known zero stays zero, and the group
+summary names the currency used for balances and totals. Original amounts pass
+the group's currency to `SharedAmount.relativeTo`, so `withCurrencyCode` labels
+a USD receipt inside a CAD trip even when both currencies use the `$` symbol.
+This extra group context does not remove the usual label for a currency that
+differs from the reader's preference. Include it in the scrolled form header and
+bank-payment figures as well as the expense list and saved detail.
+Rates use `FX_RATE_DISPLAY_DECIMALS` for display while the server's stored
+ten-decimal rate and already-converted amount remain unchanged.
 
 Both components take a *number* (`value: number | undefined`, `onChange: (value: number | undefined) => void`):
 
@@ -257,3 +280,22 @@ The date case is also the worked example of the `DateInput` `setValue` trap abov
 ## A number is localized too, and by its own preference
 
 `user_preferences.numberFormat` decides separators, grouping and currency placement, and it is independent of `language` -- an explicit `numberFormat` wins, `"browser"` falls back to the UI language. Every figure addressed to a person goes through that resolution: `useNumberFormat()` on the client (`docs/frontend/forms-and-formatting.md` has the four banned fingerprints and the guard), `backend/src/common/number-locale.util.ts` on the server, where `"browser"` cannot be resolved and lands on `DEFAULT_LOCALE`. `backend/src/common/format-currency.util.ts`'s `en-US` helpers stay for output read by a MACHINE -- an LLM prompt, and the English `description`/`message` fallback stored on a row whose UI composes its own copy from the structured `data` -- and `number-locale.guard.spec.ts` holds that classification, caller by caller, with the reason each is exempt. A pre-formatted money string in a notification's params is neither: send `amountValue` + `amountCurrency` beside the English `amount` so the reader's client formats it.
+
+Restore summaries use `translationKey` entries in `lib/restore-labels.ts` for new
+count labels. `components/settings/BackupRestoreSection.tsx` translates these in
+the settings namespace; the restore-label contract checks every backend count
+key, and the component regression checks a shared-group label and its count.
+
+### Shared split editor
+
+`SharedSplitEditor` presents amount, percentage and relative shares together.
+`shared-split-editor.ts` keeps explicit values pinned and delegates blank amounts
+to `splitRemainderEqually`; it never replaces an unchanged equal split with locally
+rounded amounts. Money readouts come from `useSharedEntryPreview`, bound to the
+current operation/entry identity, while the parent expense previews its real
+payers again before saving. Templates edit proportions without fictitious money.
+An unedited money field waits for its pending automatic preview before accepting
+input; a focused edit stays editable when cleared, so the preview cannot replace
+text between selecting the old value and typing its replacement.
+The numerical cases and missing-data policy are in
+`docs/specs/shared-expenses-ui-consistency.md`.

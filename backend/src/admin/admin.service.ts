@@ -1,4 +1,8 @@
 import {
+  assertSharedOwnershipTransferred,
+  eraseSharedUser,
+} from "../shared-expenses/shared-erasure";
+import {
   Injectable,
   Logger,
   BadRequestException,
@@ -509,6 +513,7 @@ export class AdminService {
           ),
         );
       }
+      await assertSharedOwnershipTransferred(manager, targetUserId);
       return found;
     });
 
@@ -548,6 +553,7 @@ export class AdminService {
         );
       }
 
+      await eraseSharedUser(manager, targetUserId);
       const refreshTokens = manager.getRepository(RefreshToken);
       await refreshTokens.delete({ userId: targetUserId });
       await refreshTokens.delete({ actingAsUserId: targetUserId });

@@ -7,6 +7,7 @@ import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useEffect, useMemo, useCallback, MutableRefObject } from 'react';
+import { ButtonLink } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Combobox } from '@/components/ui/Combobox';
 import { Modal } from '@/components/ui/Modal';
@@ -350,6 +351,7 @@ export function AccountForm({
   preselectedMortgageType,
 }: AccountFormProps) {
   const t = useTranslations('accounts');
+  const ts = useTranslations('sharedExpenses');
   const stripAccountName = useMainAccountName();
   const router = useRouter();
 
@@ -497,6 +499,10 @@ export function AccountForm({
   // form happened to load.
   const handleValidatedSubmit = useCallback(
     (data: AccountFormData) => {
+      if (account?.managedPurpose === 'SHARED_SETTLEMENT') {
+        return onSubmit({ name: data.name, description: data.description, accountType: account.accountType,
+          currencyCode: account.currencyCode, excludeFromNetWorth: data.excludeFromNetWorth, isFavourite: data.isFavourite });
+      }
       // A mortgage sends its type; any other account type sends none. The
       // prepayment mode belongs to a LINEAR mortgage alone: every other type
       // sends null, which is what the server stores for it whatever it is
@@ -770,7 +776,9 @@ export function AccountForm({
         setCategories(categoriesData);
         if (accountsData) {
           // Filter out loan and mortgage accounts from source account options
-          setAccounts(accountsData.filter(a => a.accountType !== 'LOAN' && a.accountType !== 'MORTGAGE'));
+          setAccounts(accountsData.filter(
+              (a) =>
+                !a.managedPurpose && a.accountType !== 'LOAN' && a.accountType !== 'MORTGAGE',),);
         }
         // No default interest category: a name lookup cannot find the user's
         // own (translated or mortgage-specific) category, so the form requires
@@ -884,6 +892,56 @@ export function AccountForm({
     }
   };
 
+  if (account?.managedPurpose === "SHARED_SETTLEMENT") {
+    return (
+      <form
+        onSubmit={handleSubmit(handleValidatedSubmit)}
+        className="space-y-4"
+      >
+        <p className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3 text-sm">
+          {ts("managedHelp")}
+        </p>
+        <Input
+          label={t("form.accountName")}
+          error={errors.name?.message}
+          {...register("name")}
+        />
+        <Input label={t("form.description")} {...register("description")} />
+        <Controller
+          name="excludeFromNetWorth"
+          control={control}
+          render={({ field }) => (
+            <label className="flex items-center gap-3">
+              <ToggleSwitch
+                checked={!!field.value}
+                onChange={field.onChange}
+                label={t("form.excludeFromNetWorth")}
+              />
+              <span className="text-sm font-medium">
+                {t("form.excludeFromNetWorth")}
+              </span>
+            </label>
+          )}
+        />
+        {account.sharedExpenseGroupId && (
+          <div>
+            <ButtonLink
+              variant="outline"
+              href={`/shared-expenses/private-finances/${account.sharedExpenseGroupId}`}
+            >
+              {ts("myFinances")}
+            </ButtonLink>
+          </div>
+        )}
+        <FormActions
+          onCancel={onCancel}
+          submitLabel={ts("saveChanges")}
+          isSubmitting={isSubmitting}
+        />
+      </form>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit(handleValidatedSubmit)} className="space-y-4">
       <Input
@@ -975,11 +1033,7 @@ export function AccountForm({
         />
       </div>
 
-      {/* Credit Limit (not loans/mortgages/assets), Interest Rate (not assets)
-          and the Foreign Currency Conversion Fee: the bank's FX fee (a
-          percentage), folded into the converted amount on foreign-entered
-          transactions. The fee renders for every type (the release tour
-          anchors on it). */}
+      {/* Balance-threshold alerts (edit only; docs/specs/balance-threshold-notifications.md) */}
       <div className="grid grid-cols-2 gap-4">
         {!isAssetAccount && !isLoanAccount && !isMortgageAccount && (
           <CurrencyInput
@@ -1037,7 +1091,7 @@ export function AccountForm({
         </div>
       </div>
 
-      {/* Balance-threshold alerts (edit only; docs/specs/balance-threshold-notifications.md) */}
+      {/* Credit card statement date fields */}
       {account && (
         <div>
           <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1075,7 +1129,9 @@ export function AccountForm({
       {/* Credit card statement date fields */}
       {isCreditCardAccount && (
         <div className="space-y-4">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('form.statementDates')}</h4>
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {t('form.statementDates')}
+          </h4>
           <div className="grid grid-cols-2 gap-4">
             <Controller
               name="statementDueDay"
@@ -1192,7 +1248,9 @@ export function AccountForm({
         />
       )}
 
-      {/* Set Up Payments button for existing loan/mortgage accounts without scheduled payments */}
+      {/* The cash ledger of a linked pair. Its own fields live here because
+          the pair is one account: without this there is no route to the cash
+          half's opening balance at all once the list shows a single row. */}
       {account && !hasScheduledPayment &&
         (isLoanAccount || isMortgageAccount) && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
@@ -1255,9 +1313,7 @@ export function AccountForm({
         {...register('description')}
       />
 
-      {/* The cash ledger of a linked pair. Its own fields live here because
-          the pair is one account: without this there is no route to the cash
-          half's opening balance at all once the list shows a single row. */}
+      {/* Favourite star toggle */}
       {cashHalf && (
         <div className="rounded-lg border border-gray-200 dark:border-gray-700">
           <button
@@ -1304,7 +1360,7 @@ export function AccountForm({
         </div>
       )}
 
-      {/* Favourite star toggle */}
+      {/* Hidden input for form registration */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         {!isDelegateView && (
         <button
@@ -1335,7 +1391,7 @@ export function AccountForm({
           </span>
         </button>
         )}
-        {/* Hidden input for form registration */}
+        {/* Import/Export buttons - only shown when editing */}
         <input type="hidden" {...register('isFavourite')} />
 
         <div className="flex items-center gap-3 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600">
@@ -1355,7 +1411,7 @@ export function AccountForm({
           </span>
         </div>
 
-        {/* Import/Export buttons - only shown when editing */}
+        {/* Joint sharing summary - only when editing an account already shared */}
         {account && (
           <div className="flex items-center gap-2">
             <button
@@ -1377,7 +1433,9 @@ export function AccountForm({
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
                 />
               </svg>
-              <span className="hidden sm:inline text-sm text-gray-700 dark:text-gray-300">{t('form.importLabel')}</span>
+              <span className="hidden sm:inline text-sm text-gray-700 dark:text-gray-300">
+                {t('form.importLabel')}
+              </span>
             </button>
             <button
               type="button"
@@ -1392,7 +1450,7 @@ export function AccountForm({
         )}
       </div>
 
-      {/* Joint sharing summary - only when editing an account already shared */}
+      {/* Inline create-institution modal (stacked on top of the account form) */}
       {account && account.jointGranteeCount !== undefined && (
         <div className="flex items-center justify-between gap-3 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2">
           <span className="text-sm text-amber-800 dark:text-amber-200">
@@ -1407,8 +1465,7 @@ export function AccountForm({
         </div>
       )}
 
-      {/* anchorProps, not a wrapper: it rings the Cancel/Save pair itself, so a
-          guided tour highlights the buttons rather than the full-width row. */}
+      {/* Inline create-institution modal (stacked on top of the account form) */}
       <FormActions
         anchorProps={tourAnchor(TOUR_ANCHORS.accountFormActions)}
         onCancel={onCancel}

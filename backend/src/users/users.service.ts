@@ -1,4 +1,8 @@
 import {
+  detachSharedLedgerForErasure,
+  eraseSharedUser,
+} from "../shared-expenses/shared-erasure";
+import {
   Injectable,
   BadRequestException,
   Logger,
@@ -753,6 +757,7 @@ export class UsersService {
     },
     manager: EntityManager,
   ): Promise<Record<string, number>> {
+    await detachSharedLedgerForErasure(manager, userId);
     const deleted: Record<string, number> = {};
 
     // Always deleted: financial transaction data, investments, summaries, budgets
@@ -1032,6 +1037,7 @@ export class UsersService {
    */
   async purgeForDowngrade(userId: string): Promise<void> {
     await withScopedDb(this.dataSource, async (manager) => {
+      await eraseSharedUser(manager, userId);
       await this.runOwnedDataDeletes(
         userId,
         {

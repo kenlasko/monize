@@ -56,6 +56,16 @@ describe('PayeeDetailHeader', () => {
     expect(screen.getByRole('heading', { name: 'Starbucks' })).toBeInTheDocument();
   });
 
+  it('opens shared people linked to this payee', () => {
+    renderHeader();
+    expect(
+      screen.getByRole('link', { name: 'People linked to this payee' }),
+    ).toHaveAttribute(
+      'href',
+      '/shared-expenses/people/payee-1',
+    );
+  });
+
   it('fires the action callbacks', () => {
     const handlers = renderHeader();
     fireEvent.click(screen.getByRole('button', { name: 'Back to Payees' }));
@@ -104,19 +114,28 @@ describe('PayeeDetailHeader', () => {
 
     it('shows no icon when the payee has no website', () => {
       renderHeader();
-      expect(screen.queryByRole('link')).toBeNull();
+      expect(
+        screen.queryByRole('link', { name: "Open Starbucks's website in a new tab" }),
+      ).toBeNull();
     });
 
     it('refuses to link a stored address that is not http(s)', () => {
       // A javascript: href runs on click, so an unchecked stored string must
       // never reach one -- rows predate the normaliser and imports bypass it.
       renderHeader({ website: 'javascript:alert(1)' });
-      expect(screen.queryByRole('link')).toBeNull();
+      expect(
+        screen.queryByRole('link', { name: "Open Starbucks's website in a new tab" }),
+      ).toBeNull();
+      expect(
+        screen.getAllByRole('link').map((link) => link.getAttribute('href')),
+      ).toEqual(['/shared-expenses/people/payee-1']);
     });
 
     it('keeps an explicit http address rather than showing nothing', () => {
       renderHeader({ website: 'http://corner.example' });
-      expect(screen.getByRole('link')).toHaveAttribute(
+      expect(
+        screen.getByRole('link', { name: "Open Starbucks's website in a new tab" }),
+      ).toHaveAttribute(
         'href',
         'http://corner.example',
       );

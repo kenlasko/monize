@@ -1,5 +1,8 @@
 'use client';
 
+import { SharedLinkedTransactionNotice } from "@/components/shared-expenses/SharedLinkedTransactionNotice";
+import { isSharedPaymentAccount } from "@/lib/shared-bank-eligibility";
+
 import { FALLBACK_DEFAULT_CURRENCY } from '@/lib/default-currency';
 import { useState, useEffect, useMemo, useRef, useCallback, MutableRefObject, type BaseSyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
@@ -217,6 +220,8 @@ interface TransactionFormProps {
    * transaction shows no Warranties line.
    */
   onAddWarrantyAfterCreate?: (created: Transaction) => void;
+  /** Continue with the saved bank row; the host closes its modal before navigating. */
+  onShareAfterCreate?: (created: Transaction) => void;
   /**
    * Opens one linked warranty's page from the Warranties line, through the
    * same close-then-navigate as `onAddWarranty`. A plain link cannot do it:
@@ -238,8 +243,11 @@ type AfterCreate = 'addWarranty';
 // Transaction mode type
 type TransactionMode = 'normal' | 'split' | 'transfer';
 
-function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, defaultDate, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles, onAddWarranty, onAddWarrantyAfterCreate, onOpenWarranty }: TransactionFormFieldsProps) {
+function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, defaultDate, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles, onAddWarranty, onAddWarrantyAfterCreate, onShareAfterCreate, onOpenWarranty }: TransactionFormFieldsProps) {
   const t = useTranslations('transactions');
+  const sharedT = useTranslations('sharedExpenses');
+  const userId = useAuthStore((s) => s.user?.id);
+  const [shareAfterCreate, setShareAfterCreate] = useState(false);
   // An acting delegate never sees the Warranties line: a warranty is the
   // owner's to add, and the same rule makes the Warranties page read-only.
   const actingAsDelegate = useAuthStore((s) => s.actingAsUserId) !== null;
@@ -448,6 +456,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
 
   const watchedAccountId = useWatch({ control, name: 'accountId' });
   const watchedAmount = useWatch({ control, name: 'amount' });
+  const watchedStatus = useWatch({ control, name: 'status' });
   const watchedCurrencyCode = useWatch({ control, name: 'currencyCode' });
   const watchedPayeeName = useWatch({ control, name: 'payeeName' });
   // Read live so the links under the field track what is being typed. The
@@ -705,7 +714,11 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       accountsApi.getTransferCandidates().catch(() => []),
     ])
       .then(async ([accountsData, categoriesData, payeesData, tagsData, aliasesData, candidatesData]) => {
-        setAccounts(accountsData);
+        setAccounts(accountsData.filter(
+              (account) =>
+                !account.managedPurpose ||
+                account.id === transaction?.accountId,
+            ),);
         setTransferCandidates(candidatesData);
         setCategories(categoriesData);
         setTags(tagsData);
@@ -732,12 +745,12 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         } else {
           setPayees(payeesData);
         }
-      })
+      },)
       .catch((error) => {
         toast.error(getErrorMessage(error, t('form.toasts.loadFailed')));
         logger.error(error);
       });
-  }, [transaction?.payeeId, t]);
+  }, [transaction?.accountId, transaction?.payeeId, t]);
 
   // Quick-fill the form from a previously entered transaction (chosen from
   // the history popover next to the Payee field). Resets status to
@@ -1323,6 +1336,12 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   };
 
   const modeLabel = t(mode === 'transfer' ? 'form.modeLabel.transfer' : 'form.modeLabel.transaction');
+  const canCreateShared = !transaction && !!onShareAfterCreate && !actingAsDelegate &&
+    !!userId && selectedAccount?.userId === userId && !selectedIsJoint &&
+    isSharedPaymentAccount(selectedAccount) && mode !== 'transfer' &&
+    watchedStatus !== TransactionStatus.VOID && watchedStatus !== TransactionStatus.RECONCILED &&
+    watchedAmount !== undefined && watchedAmount !== 0 &&
+    (mode !== 'split' || splits.every((split) => split.splitType === 'category'));
   // Saving an existing row in the other family of modes converts it in place
   // (issue #1937): the button says so, and the submit takes the conversion route.
   const isConversion = !!transaction && (mode === 'transfer') !== !!transaction.isTransfer;
@@ -1334,11 +1353,12 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       label: t('form.submitCreate', { mode: modeLabel }),
       description: t('form.submitCreateDescription'),
     },
-    {
+    ...(canCreateAnother ? [{
       id: 'new',
       label: t('form.submitCreateAndNew', { mode: modeLabel }),
       description: t('form.submitCreateAndNewDescription'),
-    },
+    }] : []),
+    ...(canCreateShared ? [{ id: 'shared', label: sharedT('saveAndShare'), description: sharedT('saveAndShareHelp') }] : []),
   ];
 
   /**
@@ -1350,6 +1370,10 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   const finishAfterCreate = (accountId: string, created: Transaction, then?: AfterCreate) => {
     if (then === 'addWarranty' && onAddWarrantyAfterCreate) {
       onAddWarrantyAfterCreate(created);
+      return;
+    }
+    if (canCreateShared && shareAfterCreate) {
+      onShareAfterCreate?.(created);
       return;
     }
     if (canCreateAnother && submitMode === 'new') {
@@ -1716,6 +1740,8 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     </p>
   ) : undefined;
 
+  if (transaction?.sharedExpensePostingId) return <SharedLinkedTransactionNotice postingId={transaction.sharedExpensePostingId} transactionId={transaction.id} onClose={onCancel} />;
+
   return (
     <form
       {...tourAnchor(TOUR_ANCHORS.transactionForm)}
@@ -1889,7 +1915,9 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       {isSplitMode && (
         <div className="border-t dark:border-gray-700 pt-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('form.splitSection.title')}</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+              {t('form.splitSection.title')}
+            </h3>
             <button
               type="button"
               onClick={() => handleSplitModeToggle(false)}
@@ -1922,7 +1950,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         </div>
       )}
 
-      {/* Tags (per-user, so hidden on a joint account's owner-owned rows) */}
+      {/* Tag Creation Modal */}
       {!selectedIsJoint && (
         <MultiSelect
           label={t('form.fields.tags')}
@@ -1935,7 +1963,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         />
       )}
 
-      {/* Tag Creation Modal */}
+      {/* Description - only shown when not in split mode (split mode has it inline with Reference Number) */}
       <Modal isOpen={showTagForm} onClose={() => setShowTagForm(false)} maxWidth="lg" allowOverflow pushHistory className="p-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
           {t('form.newTagTitle')}
@@ -1946,7 +1974,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         />
       </Modal>
 
-      {/* Description - only shown when not in split mode (split mode has it inline with Reference Number) */}
+      {/* Status selector */}
       {!isSplitMode && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1960,12 +1988,17 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           />
           <NoteLinks text={watchedDescription ?? ''} />
           {errors.description && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description.message}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              {errors.description.message}
+            </p>
           )}
         </div>
       )}
 
-      {/* Status selector */}
+      {/* Attachments. When editing, they are managed directly against the
+          saved transaction; when creating, files are staged client-side and
+          uploaded once the transaction has been created. Attachments are
+          per-user, so they are not offered on a joint account's rows. */}
       <Select
         label={t('form.fields.status')}
         options={[
@@ -1977,10 +2010,10 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         {...register('status')}
       />
 
-      {/* Attachments. When editing, they are managed directly against the
-          saved transaction; when creating, files are staged client-side and
-          uploaded once the transaction has been created. Attachments are
-          per-user, so they are not offered on a joint account's rows. */}
+      {/* Warranties linked to this purchase, and Add warranty: shown where
+          there is one to list or the host can Add, never as a dead end. Not on
+          a joint account's row (a warranty is the reader's own, as
+          attachments are), and not for an acting delegate. */}
       {selectedIsJoint ? null : transaction ? (
         <AttachmentsSection transactionId={transaction.id} />
       ) : (
@@ -1990,10 +2023,8 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         />
       )}
 
-      {/* Warranties linked to this purchase, and Add warranty: shown where
-          there is one to list or the host can Add, never as a dead end. Not on
-          a joint account's row (a warranty is the reader's own, as
-          attachments are), and not for an acting delegate. */}
+      {/* Actions. anchorProps, not a wrapper, so a guided tour rings the
+          Cancel/Save pair rather than the full-width row around it. */}
       {showWarrantiesLine && (
         <TransactionWarrantiesLine
           transaction={transaction}
@@ -2003,8 +2034,8 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         />
       )}
 
-      {/* Actions. anchorProps, not a wrapper, so a guided tour rings the
-          Cancel/Save pair rather than the full-width row around it. */}
+      {/* What the lookup found for the payee just created -- an offer, saved
+          only for the fields the user ticks. */}
       <FormActions
         anchorProps={tourAnchor(TOUR_ANCHORS.transactionFormActions)}
         onCancel={onCancel}
@@ -2013,14 +2044,16 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           { mode: modeLabel },
         )}
         isSubmitting={isLoading}
-        submitOptions={canCreateAnother ? submitOptions : undefined}
-        selectedSubmitOptionId={submitMode}
-        onSubmitOptionChange={(id) => setSubmitMode(id === 'new' ? 'new' : 'close')}
+        submitOptions={canCreateAnother || canCreateShared ? submitOptions : undefined}
+        selectedSubmitOptionId={canCreateShared && shareAfterCreate ? 'shared' : submitMode}
+        onSubmitOptionChange={(id) => {
+          setShareAfterCreate(id === 'shared');
+          if (id !== 'shared') setSubmitMode(id === 'new' ? 'new' : 'close');
+        }}
         submitOptionsLabel={t('form.submitOptions')}
       />
 
-      {/* What the lookup found for the payee just created -- an offer, saved
-          only for the fields the user ticks. */}
+      {/* Warn before saving edits to a reconciled transaction */}
       {contactLookup.target && (
         <ContactLookupDialog
           isOpen
@@ -2032,7 +2065,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         />
       )}
 
-      {/* Reactivate Payee Dialog */}
+      {/* Warn before saving edits to a reconciled transaction */}
       <ReactivatePayeeDialog
         isOpen={showReactivateDialog}
         payee={inactivePayeeMatch}

@@ -1,19 +1,14 @@
 import fs from 'fs';
 import path from 'path';
+import { createHash } from 'node:crypto';
+import { tmpdir } from 'node:os';
 import { describe, it, expect } from 'vitest';
 
 /**
- * The ZAP baseline scan flags keywords ("user", "from", "where", "query") in
- * the comments of any script it fetches (rule 10027, INFO risk), and
- * `.github/zap/rules.tsv` silences that rule on a single claim: the only
- * script served with its comments intact is `public/sw.js`, the hand-written
- * service worker of an open-source app, whose comments document behaviour
- * that is already public. Everything the Next build emits is minified, so it
- * carries no comments for the rule to read.
- *
- * That claim is about the source, so it is checked here rather than left in a
- * comment. A new verbatim-served script, or a work-in-progress note left in
- * the worker, would otherwise ship under a rule silenced for something else.
+ * ZAP 10027 matches ordinary words in comments. The reviewed public scripts
+ * are the hand-written service worker and exact copies of these two installed
+ * dependency assets. Unknown scripts and modified vendor copies fail this
+ * guard; work-in-progress comments remain forbidden in our service worker.
  */
 
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
@@ -24,6 +19,14 @@ const PUBLIC_DIR = path.join(process.cwd(), 'public');
 const VERBATIM_SCRIPTS: Record<string, string> = {
   'sw.js':
     'the service worker: must be served at the origin root under a stable URL, so it is not a build artifact. Its comments describe behaviour, never a credential, host or unfinished work.',
+};
+
+// Separately reviewed from copy-vendor.mjs: adding a copied asset there must
+// not authorize it here. Paths name exact files, never a directory exemption.
+const REVIEWED_VENDOR_SCRIPTS: Readonly<Record<string, string>> = {
+  'vendor/opencv/opencv.js': 'node_modules/@techstark/opencv-js/dist/opencv.js',
+  'vendor/pdfjs/pdf.worker.min.mjs':
+    'node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
 };
 
 const SCRIPT_OR_MARKUP_RE = /\.(?:m?js|cjs|html?)$/i;
@@ -39,15 +42,89 @@ function listFiles(dir: string): string[] {
   });
 }
 
+function assertReviewedScripts(publicDir: string, projectDir: string) {
+  const served = listFiles(publicDir)
+    .map((file) => path.relative(publicDir, file).split(path.sep).join('/'))
+    .filter((file) => SCRIPT_OR_MARKUP_RE.test(file))
+    .sort();
+  // Fresh checkouts may not have run predev/prebuild/pretest yet.
+  const vendorFiles = Object.keys(REVIEWED_VENDOR_SCRIPTS).filter((file) =>
+    fs.existsSync(path.join(publicDir, file)),
+  );
+  expect(served).toEqual(
+    [...Object.keys(VERBATIM_SCRIPTS), ...vendorFiles].sort(),
+  );
+  const digest = (file: string) =>
+    createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+  for (const file of vendorFiles) {
+    expect(digest(path.join(publicDir, file)), file).toBe(
+      digest(path.join(projectDir, REVIEWED_VENDOR_SCRIPTS[file])),
+    );
+  }
+}
+
+function withBuiltFixture(
+  check: (publicDir: string, projectDir: string) => void,
+) {
+  const projectDir = fs.mkdtempSync(
+    path.join(tmpdir(), 'monize-public-scripts-'),
+  );
+  const publicDir = path.join(projectDir, 'public');
+  try {
+    fs.mkdirSync(publicDir);
+    fs.writeFileSync(
+      path.join(publicDir, 'sw.js'),
+      'self.addEventListener("fetch", () => {});',
+    );
+    for (const [file, source] of Object.entries(REVIEWED_VENDOR_SCRIPTS)) {
+      for (const target of [
+        path.join(publicDir, file),
+        path.join(projectDir, source),
+      ]) {
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(
+          target,
+          '/* dependency license */ self.vendor = true;',
+        );
+      }
+    }
+    check(publicDir, projectDir);
+  } finally {
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  }
+}
+
 describe('scripts served verbatim from public/ (ZAP 10027)', () => {
   it('ships no unminified script or page beyond the reviewed list', () => {
-    const served = listFiles(PUBLIC_DIR)
-      .map((file) => path.relative(PUBLIC_DIR, file).split(path.sep).join('/'))
-      .filter((file) => SCRIPT_OR_MARKUP_RE.test(file))
-      .sort();
-
-    expect(served).toEqual(Object.keys(VERBATIM_SCRIPTS).sort());
+    assertReviewedScripts(PUBLIC_DIR, process.cwd());
   });
+
+  it('accepts exact installed copies after the vendor preparation step', () => {
+    withBuiltFixture(assertReviewedScripts);
+  });
+
+  it('refuses an extra public script even beside reviewed vendor assets', () => {
+    withBuiltFixture((publicDir, projectDir) => {
+      fs.writeFileSync(
+        path.join(publicDir, 'unexpected.js'),
+        'self.unreviewed = true;',
+      );
+      expect(() => assertReviewedScripts(publicDir, projectDir)).toThrow();
+    });
+  });
+
+  it.each(Object.keys(REVIEWED_VENDOR_SCRIPTS))(
+    'refuses a modified copy of %s',
+    (file) => {
+      withBuiltFixture((publicDir, projectDir) => {
+        fs.appendFileSync(
+          path.join(publicDir, file),
+          '\nself.modified = true;',
+        );
+        expect(() => assertReviewedScripts(publicDir, projectDir)).toThrow();
+      });
+    },
+  );
 
   it.each(Object.keys(VERBATIM_SCRIPTS))(
     '%s carries no work-in-progress marker',

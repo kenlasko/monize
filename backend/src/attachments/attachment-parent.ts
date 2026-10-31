@@ -17,7 +17,9 @@
  */
 export type AttachmentParent =
   | { readonly kind: "transaction"; readonly id: string }
-  | { readonly kind: "warranty"; readonly id: string };
+  | { readonly kind: "warranty"; readonly id: string }
+  | { readonly kind: "shared-group"; readonly id: string }
+  | { readonly kind: "shared-entry"; readonly id: string };
 
 export type AttachmentParentKind = AttachmentParent["kind"];
 
@@ -38,12 +40,16 @@ export const DEFAULT_DOCUMENT_KIND: DocumentKind = "other";
 /** The SQL column that holds a parent of this kind. */
 export function parentColumn(
   parent: AttachmentParent,
-): "transaction_id" | "warranty_id" {
+): "transaction_id" | "warranty_id" | "shared_group_id" | "shared_entry_id" {
   switch (parent.kind) {
     case "transaction":
       return "transaction_id";
     case "warranty":
       return "warranty_id";
+    case "shared-group":
+      return "shared_group_id";
+    case "shared-entry":
+      return "shared_entry_id";
     default:
       return unreachableParent(parent);
   }
@@ -57,12 +63,20 @@ export function parentColumn(
  */
 export function attachmentParentWhere(
   parent: AttachmentParent,
-): { transactionId: string } | { warrantyId: string } {
+):
+  | { transactionId: string }
+  | { warrantyId: string }
+  | { sharedGroupId: string }
+  | { sharedEntryId: string } {
   switch (parent.kind) {
     case "transaction":
       return { transactionId: parent.id };
     case "warranty":
       return { warrantyId: parent.id };
+    case "shared-group":
+      return { sharedGroupId: parent.id };
+    case "shared-entry":
+      return { sharedEntryId: parent.id };
     default:
       return unreachableParent(parent);
   }
@@ -75,12 +89,28 @@ export function attachmentParentWhere(
 export function attachmentParentColumns(parent: AttachmentParent): {
   transactionId: string | null;
   warrantyId: string | null;
+  sharedGroupId?: string | null;
+  sharedEntryId?: string | null;
 } {
   switch (parent.kind) {
     case "transaction":
       return { transactionId: parent.id, warrantyId: null };
     case "warranty":
       return { transactionId: null, warrantyId: parent.id };
+    case "shared-group":
+      return {
+        transactionId: null,
+        warrantyId: null,
+        sharedGroupId: parent.id,
+        sharedEntryId: null,
+      };
+    case "shared-entry":
+      return {
+        transactionId: null,
+        warrantyId: null,
+        sharedGroupId: null,
+        sharedEntryId: parent.id,
+      };
     default:
       return unreachableParent(parent);
   }

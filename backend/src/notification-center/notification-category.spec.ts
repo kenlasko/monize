@@ -169,6 +169,9 @@ describe("notification type partition", () => {
     expect(byCategory[NotificationCategory.AI_REVIEW].sort()).toEqual(
       [...AI_REVIEW_NOTIFICATION_TYPES].sort(),
     );
+    expect(byCategory[NotificationCategory.SHARED_EXPENSES]).toEqual([
+      NotificationType.SHARED_EXPENSE_UPDATED,
+    ]);
     // Warranty reminders: the 30- and 7-day marks, and the day of expiry.
     expect(byCategory[NotificationCategory.WARRANTIES].sort()).toEqual(
       [
@@ -187,6 +190,7 @@ describe("notification type partition", () => {
           t !== NotificationType.BILL_DUE &&
           t !== NotificationType.SCHEDULED_POST_FAILED &&
           t !== NotificationType.PAYROLL_DEDUCTION_RESET_DUE &&
+          t !== NotificationType.SHARED_EXPENSE_UPDATED &&
           !SYSTEM_NOTIFICATION_TYPES.includes(t) &&
           !BALANCE_NOTIFICATION_TYPES.includes(t) &&
           !INVESTMENT_NOTIFICATION_TYPES.includes(t) &&

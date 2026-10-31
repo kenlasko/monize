@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "Voeg eerst een rekening toe — deze rondleiding laat zien hoe je een transactie vastlegt.",
       "securitiesExist": "Voeg eerst een waardepapier toe — deze rondleiding opent er een uit je lijst met waardepapieren.",
-      "ownerView": "Ga eerst terug naar je eigen gegevens. Deze rondleiding behandelt Regels en het AI-controlepostvak, die niet beschikbaar zijn zolang je namens iemand anders handelt."
+      "ownerView": "Schakel eerst terug naar je eigen gegevens. Deze rondleiding behandelt functies die niet beschikbaar zijn wanneer je namens iemand anders werkt."
     },
     "start": "Starten",
     "restart": "Opnieuw doen",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "Een herinnering voor elke reset",
             "body": "Twee maanden voordat een regel wordt gereset, vraagt Monize je hier het maximum voor volgend jaar te bevestigen. Doe je niets, dan houdt de regel zijn maximum en wordt hij op zijn datum gereset. Kies onder **Instellingen**, in **Meldingen**, bij **Rekeningen en gepland** hoe de herinneringen je bereiken."
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "Gedeelde uitgaven",
+        "steps": {
+          "welcome": {
+            "title": "Samen op reis, met een helder overzicht",
+            "body": "Ontdek hoe je groepsaankopen en terugbetalingen bijhoudt. Deze rondleiding maakt geen boekingen voor je aan."
+          },
+          "tools": {
+            "title": "Gedeelde uitgaven openen",
+            "body": "Je vindt **Gedeelde uitgaven** onder **Hulpmiddelen**. Gebruik op je telefoon het navigatiemenu."
+          },
+          "newGroup": {
+            "title": "Begin met je groep",
+            "body": "Bij **Nieuwe groep** stel je de reisnaam, deelnemers en afrekenvaluta in. Deelnemers hebben geen Monize-account nodig. Bij elke aankoop kunnen andere groepsleden betrokken zijn."
+          },
+          "chooseGroup": {
+            "title": "Verken een groep",
+            "body": "Open een groep om verder te gaan. Heb je er nog geen, kies dan **Deze stap overslaan** en maak er na de rondleiding een aan."
+          },
+          "expenses": {
+            "title": "Wie betaalde, en voor wie?",
+            "body": "Met bewerkingsrechten kies je bij **Uitgave toevoegen** wie betaalde en wie ervan profiteerde. **Verdelen tussen** ondersteunt gelijke delen, exacte bedragen, percentages en een aandeel van nul."
+          },
+          "balances": {
+            "title": "Controleer de saldi en reken af",
+            "body": "**Saldi** laat zien wie aan wie moet betalen en stelt terugbetalingen voor. Leg een terugbetaling vast nadat het geld is overgemaakt of gegeven. **Bestanden** en **Activiteit** bewaren bonnetjes en de geschiedenis."
+          },
+          "done": {
+            "title": "Klaar voor je volgende reis",
+            "body": "Gedeelde boekingen blijven gescheiden van persoonlijke transacties. Herhaal deze rondleiding wanneer je wilt via **Instellingen**, onder **Begeleide rondleidingen**."
           }
         }
       }

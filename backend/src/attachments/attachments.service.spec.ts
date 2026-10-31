@@ -1175,6 +1175,16 @@ describe("AttachmentsService", () => {
   });
 
   describe("remove", () => {
+    beforeEach(() => {
+      attRepo.findOne.mockResolvedValue({
+        id: "a1",
+        userId: "user-1",
+        transactionId: TXN.id,
+        warrantyId: null,
+        sharedGroupId: null,
+        sharedEntryId: null,
+      });
+    });
     it("deletes metadata, then hands the object to the sweeper", async () => {
       managerQuery.mockResolvedValue([
         { storage_provider: "s3", storage_key: "a1" },
@@ -1219,6 +1229,7 @@ describe("AttachmentsService", () => {
     });
 
     it("throws when the attachment is not found for the user", async () => {
+      attRepo.findOne.mockResolvedValue(null);
       managerQuery.mockResolvedValue([]);
       await expect(service.remove("user-1", "a1")).rejects.toBeInstanceOf(
         NotFoundException,

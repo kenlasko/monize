@@ -56,6 +56,9 @@ type AttachmentsSectionProps =
        * transaction's attachments.
        */
       stagedFor?: SavedParentKind;
+      pendingHint?: string;
+      headerActions?: React.ReactNode;
+      hasSavedAttachments?: boolean;
     };
 
 type SavedParentKind = 'transaction' | 'warranty';
@@ -661,7 +664,13 @@ function StagedAttachments({
   files,
   onChange,
   stagedFor,
+  pendingHint,
+  headerActions,
+  hasSavedAttachments = false,
 }: {
+  pendingHint?: string;
+  headerActions?: React.ReactNode;
+  hasSavedAttachments?: boolean;
   files: StagedAttachment[];
   onChange: (files: StagedAttachment[]) => void;
   stagedFor: SavedParentKind;
@@ -756,10 +765,11 @@ function StagedAttachments({
           onFileSelected={handleFileSelected}
           disabled={atLimit}
         />
+        {headerActions}
       </AttachmentsHeader>
 
       {files.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        !hasSavedAttachments && <p className="text-sm text-gray-500 dark:text-gray-400">
           {isWarranty ? tw('documents.empty') : t('empty')}
         </p>
       ) : (
@@ -819,7 +829,7 @@ function StagedAttachments({
             })}
           </ul>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {isWarranty ? tw('documents.pendingHint') : t('pendingHint')}
+            {pendingHint ?? (isWarranty ? tw('documents.pendingHint') : t('pendingHint'))}
           </p>
         </>
       )}
@@ -874,6 +884,9 @@ export function AttachmentsSection(props: AttachmentsSectionProps) {
       files={props.stagedFiles}
       onChange={props.onStagedFilesChange}
       stagedFor={props.stagedFor ?? 'transaction'}
+      pendingHint={props.pendingHint}
+      headerActions={props.headerActions}
+      hasSavedAttachments={props.hasSavedAttachments}
     />
   );
 }

@@ -1,5 +1,7 @@
 /** English fallbacks for notification email copy; kept in parity with the catalog by tests. */
 export const NOTIFICATION_EMAIL_MESSAGES = {
+  "shared.title": "Shared expenses",
+  "shared.message": "A shared group has an update. Open Monize to review it.",
   "priceMovement.title": "Price change alert: {{ symbol }} ({{ percent }}%)",
   "priceMovement.message":
     "{{ symbol }}: {{ percent }}% compared with the previous available session.",

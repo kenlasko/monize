@@ -24,6 +24,7 @@ const bondFacts = {
 // Producer-shaped facts, including zero and negative money. PACE_WARNING has
 // no producer or payload contract; its explicit legacy fallback is tested below.
 const examples = {
+  SHARED_EXPENSE_UPDATED: { groupId: "group-1", accessChanged: false },
   OVER_BUDGET: {
     categoryName: "Food",
     amount: 120,

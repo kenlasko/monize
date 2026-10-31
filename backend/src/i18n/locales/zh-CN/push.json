@@ -51,6 +51,10 @@
     "warranties": {
       "title": "保修提醒",
       "body": "您有一项保修即将到期。打开 Monize 查看详情。"
+    },
+    "shared_expenses": {
+      "title": "共同支出",
+      "body": "共享群组有更新。打开 Monize 查看。"
     }
   },
   "actions": {

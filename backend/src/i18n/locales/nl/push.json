@@ -51,6 +51,10 @@
     "warranties": {
       "title": "Garantieherinnering",
       "body": "Een van je garanties verloopt binnenkort. Open Monize voor de details."
+    },
+    "shared_expenses": {
+      "title": "Gedeelde uitgaven",
+      "body": "Een gedeelde groep is bijgewerkt. Open Monize om de wijziging te bekijken."
     }
   },
   "actions": {

@@ -813,6 +813,9 @@ export function useNotificationCopy() {
       bankSyncCopy(notification, 'title') ??
       emailReceiptsAttentionTitle(notification) ??
       aiReviewCopy(notification, 'title') ??
+      (notification.type === "SHARED_EXPENSE_UPDATED"
+        ? t("shared.title")
+        : null) ??
       warrantyCopy(notification, 'title') ??
       payrollDeductionCopy(notification, 'title') ??
       bondCopy(notification, 'title') ??
@@ -827,6 +830,9 @@ export function useNotificationCopy() {
       bankSyncCopy(notification, 'message') ??
       emailReceiptsAttentionMessage(notification) ??
       aiReviewCopy(notification, 'message') ??
+      (notification.type === "SHARED_EXPENSE_UPDATED"
+        ? t("shared.message")
+        : null) ??
       warrantyCopy(notification, 'message') ??
       payrollDeductionCopy(notification, 'message') ??
       bondCopy(notification, 'message') ??

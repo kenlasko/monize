@@ -19,6 +19,7 @@
       { "slug": "bills-and-deposits", "summary": "Scheduled and recurring bills, deposits and transfers." },
       { "slug": "taxes", "summary": "Payroll deduction rules with yearly maximums that stop a deduction once the year's limit is reached." },
       { "slug": "email-receipts", "summary": "Turn order confirmations from your mailbox into itemized transactions." },
+      { "slug": "shared-expenses", "summary": "Split group purchases, track balances and record repayments." },
       { "slug": "warranties", "summary": "Track warranties with their receipts, manuals, photos and claims." }
     ]
   },

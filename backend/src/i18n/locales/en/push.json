@@ -51,6 +51,10 @@
     "warranties": {
       "title": "Warranty reminder",
       "body": "One of your warranties expires soon. Open Monize for the details."
+    },
+    "shared_expenses": {
+      "title": "Shared expenses",
+      "body": "A shared group has an update. Open Monize to review it."
     }
   },
   "actions": {

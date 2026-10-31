@@ -51,6 +51,10 @@
     "warranties": {
       "title": "Recordatorio de garantía",
       "body": "Una de sus garantías vence pronto. Abra Monize para ver los detalles."
+    },
+    "shared_expenses": {
+      "title": "Gastos compartidos",
+      "body": "Hay novedades en un grupo compartido. Abre Monize para revisarlas."
     }
   },
   "actions": {

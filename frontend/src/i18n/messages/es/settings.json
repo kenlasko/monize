@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "Recibos de correo",
         "BONDS": "Bonos",
         "AI_REVIEW": "Propuestas de revisión de IA",
-        "WARRANTIES": "Recordatorios de garantía"
+        "WARRANTIES": "Recordatorios de garantía",
+        "SHARED_EXPENSES": "Gastos compartidos"
       },
       "channelNotApplicable": "No aplicable a este tipo de notificación",
       "emailToggleLabel": "Correo (informe) para {category}",
@@ -835,7 +836,19 @@
       },
       "doneButton": "Listo",
       "unlinkedBondSecuritiesList": "Valores afectados: {symbols}.",
-      "unlinkedBondSecuritiesMore": "y {count} más"
+      "unlinkedBondSecuritiesMore": "y {count} más",
+      "counts": {
+        "sharedGroups": "Grupos de gastos compartidos",
+        "sharedParticipants": "Participantes de grupos",
+        "sharedEntries": "Entradas de grupos",
+        "sharedAllocations": "Repartos de gastos",
+        "sharedActivity": "Actividad de grupos",
+        "sharedPeople": "Contactos de gastos compartidos",
+        "sharedPersonLinks": "Contactos vinculados",
+        "sharedIntegrations": "Conexiones con finanzas personales",
+        "sharedPostings": "Registros personales de gastos compartidos",
+        "sharedLedgerLinks": "Transacciones personales vinculadas"
+      }
     },
     "storedBackups": {
       "heading": "Copias de seguridad automáticas",

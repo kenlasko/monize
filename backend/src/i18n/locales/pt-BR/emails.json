@@ -393,6 +393,10 @@
     "payrollDeduction": {
       "resetTitle": "{{ category }}: confirme o máximo do próximo ano",
       "resetMessage": "A dedução {{ category }} em {{ bill }} é reiniciada em {{ date }}. Atualize o máximo anual se mudar; caso contrário, {{ amount }} aplica-se de novo."
+    },
+    "shared": {
+      "title": "Despesas compartilhadas",
+      "message": "Há novidades em um grupo compartilhado. Abra o Monize para conferir."
     }
   },
   "backupOffsite": {

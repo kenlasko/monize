@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "Письма-квитанции",
         "BONDS": "Облигации",
         "AI_REVIEW": "Предложения проверки ИИ",
-        "WARRANTIES": "Напоминания о гарантиях"
+        "WARRANTIES": "Напоминания о гарантиях",
+        "SHARED_EXPENSES": "Общие расходы"
       },
       "channelNotApplicable": "Неприменимо для этого типа уведомлений",
       "emailToggleLabel": "Эл. почта (отчёт) для «{category}»",
@@ -835,7 +836,19 @@
       },
       "doneButton": "Готово",
       "unlinkedBondSecuritiesList": "Затронутые бумаги: {symbols}.",
-      "unlinkedBondSecuritiesMore": "и ещё {count}"
+      "unlinkedBondSecuritiesMore": "и ещё {count}",
+      "counts": {
+        "sharedGroups": "Группы совместных расходов",
+        "sharedParticipants": "Участники групп",
+        "sharedEntries": "Записи групп",
+        "sharedAllocations": "Распределения расходов",
+        "sharedActivity": "Действия в группах",
+        "sharedPeople": "Контакты совместных расходов",
+        "sharedPersonLinks": "Связанные контакты",
+        "sharedIntegrations": "Связи с личными финансами",
+        "sharedPostings": "Личные проводки совместных расходов",
+        "sharedLedgerLinks": "Связанные личные операции"
+      }
     },
     "storedBackups": {
       "heading": "Автоматические резервные копии",

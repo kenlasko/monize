@@ -19,10 +19,11 @@ import {
 } from "../attachment-parent";
 
 /**
- * Metadata for a file attached to a transaction (receipt, invoice, document)
- * or to a warranty (receipt, manual, photo).
+ * Metadata for a file attached to a transaction, warranty, shared group or
+ * shared entry. Shared publication creates an independent attachment.
  *
- * Exactly one of `transactionId` and `warrantyId` is set (WTY-003,
+ * Exactly one of `transactionId`, `warrantyId`, `sharedGroupId` and
+ * `sharedEntryId` is set (WTY-003, SE-011,
  * `chk_attachment_one_parent` in database/schema.sql). That CHECK is declared
  * in SQL only, as the warranty entity's cross-column rules are: the RLS spec's
  * generic row seeder leaves every nullable, non-ownership foreign key NULL and
@@ -65,7 +66,7 @@ export class TransactionAttachment {
   @JoinColumn({ name: "user_id" })
   user?: User;
 
-  /** The parent transaction; null when the parent is a warranty. */
+  /** The private parent transaction, when this is a transaction document. */
   @ApiProperty({ example: "transaction-uuid", nullable: true })
   @Column({ type: "uuid", name: "transaction_id", nullable: true })
   transactionId: string | null;
@@ -74,7 +75,7 @@ export class TransactionAttachment {
   @JoinColumn({ name: "transaction_id" })
   transaction?: Transaction | null;
 
-  /** The parent warranty; null when the parent is a transaction. */
+  /** The private parent warranty, when this is a warranty document. */
   @ApiProperty({ example: "warranty-uuid", nullable: true })
   @Column({ type: "uuid", name: "warranty_id", nullable: true })
   warrantyId: string | null;
@@ -82,6 +83,31 @@ export class TransactionAttachment {
   @ManyToOne(() => Warranty, { onDelete: "CASCADE", nullable: true })
   @JoinColumn({ name: "warranty_id" })
   warranty?: Warranty | null;
+
+  @Column({ type: "uuid", name: "shared_group_id", nullable: true })
+  sharedGroupId: string | null;
+
+  @Column({ type: "uuid", name: "shared_entry_id", nullable: true })
+  sharedEntryId: string | null;
+
+  @Column({
+    type: "varchar",
+    length: 36,
+    name: "upload_request_id",
+    nullable: true,
+  })
+  uploadRequestId: string | null;
+
+  @Column({
+    type: "varchar",
+    length: 64,
+    name: "upload_fingerprint",
+    nullable: true,
+  })
+  uploadFingerprint: string | null;
+
+  @Column({ type: "integer", name: "document_revision", default: 1 })
+  documentRevision: number;
 
   /**
    * What a warranty's document is. A transaction's attachments always carry

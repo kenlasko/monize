@@ -161,4 +161,9 @@ describe('ListTopToolbar', () => {
     expect(screen.queryByRole('button', { name: 'Switch view' })).not.toBeInTheDocument();
     expect(screen.getByTitle('Toggle row density')).toBeInTheDocument();
   });
+  it("supports list actions without inventing a density preference", () => {
+    renderToolbar(<ListTopToolbar actions={<button>Export</button>} />);
+    expect(screen.getByRole("button", { name: "Export" })).toBeInTheDocument();
+    expect(screen.queryByTitle("Toggle row density")).not.toBeInTheDocument();
+  });
 });

@@ -1487,7 +1487,12 @@ describe("UsersService", () => {
         passwordHash: hashedPassword,
       });
       // isActingDelegate -> account_delegates lookup returns a row.
-      mockDataSource.query.mockResolvedValue([{ "?column?": 1 }]);
+      mockDataSource.query.mockImplementation(async (sql: string) =>
+        sql.includes("FROM account_delegates") &&
+        sql.trimStart().startsWith("SELECT")
+          ? [{ "?column?": 1 }]
+          : [],
+      );
 
       const result = await service.deleteAccount("user-1", {
         password: "CorrectPass123!",
@@ -2130,9 +2135,11 @@ describe("UsersService", () => {
         ...mockUser,
         passwordHash: hashedPassword,
       });
-      // Make every query return [null, undefined] so the ?? 0 right-hand side
-      // is exercised across all the deleted.<x> = result[1] ?? 0 lines.
-      mockQueryRunner.query.mockResolvedValue([null, undefined]);
+      // DELETEs omit their count so every deleted.<x> = result[1] ?? 0
+      // fallback is exercised; SELECTs still return ordinary empty row sets.
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        sql.trimStart().startsWith("DELETE") ? [null, undefined] : [],
+      );
 
       const r = await service.deleteData("user-1", {
         password: "CorrectPass123!",

@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Gastos sin categoría",
       "residualUnspent": "Sin gastar",
       "residualDeficit": "Tomado de los saldos",
-      "unlinkedAccount": "(cuenta no vinculada)"
+      "unlinkedAccount": "(cuenta no vinculada)",
+      "classSharedSettlements": "Liquidaciones compartidas",
+      "inflowSharedSettlements": "De liquidaciones compartidas"
     }
   },
   "pdfExport": {

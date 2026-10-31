@@ -90,7 +90,32 @@ export const RESTORE_PLAN: ReadonlyArray<RestoreStep> = [
   { table: "payees", countKey: "payees", scopeToUser: true },
   { table: "payee_aliases", countKey: "payeeAliases", scopeToUser: true },
   { table: "institutions", countKey: "institutions", scopeToUser: true },
+  { table: "shared_groups", countKey: "sharedGroups", scopeToUser: false },
+  {
+    table: "shared_participants",
+    countKey: "sharedParticipants",
+    scopeToUser: false,
+  },
+  { table: "shared_entries", countKey: "sharedEntries", scopeToUser: false },
+  {
+    table: "shared_allocations",
+    countKey: "sharedAllocations",
+    scopeToUser: false,
+  },
+  { table: "shared_activity", countKey: "sharedActivity", scopeToUser: false },
+  { table: "shared_people", countKey: "sharedPeople", scopeToUser: true },
+  {
+    table: "shared_person_links",
+    countKey: "sharedPersonLinks",
+    scopeToUser: true,
+  },
   { table: "accounts", countKey: "accounts", scopeToUser: true },
+  {
+    table: "shared_integrations",
+    countKey: "sharedIntegrations",
+    scopeToUser: true,
+  },
+  { table: "shared_postings", countKey: "sharedPostings", scopeToUser: true },
   { table: "tags", countKey: "tags", scopeToUser: true },
   {
     // Only references users(id): the account, payee, category and tag ids a
@@ -137,6 +162,11 @@ export const RESTORE_PLAN: ReadonlyArray<RestoreStep> = [
   { table: "holdings", countKey: "holdings", scopeToUser: false },
   { table: "security_tags", countKey: "securityTags", scopeToUser: false },
   { table: "transactions", countKey: "transactions", scopeToUser: true },
+  {
+    table: "shared_ledger_links",
+    countKey: "sharedLedgerLinks",
+    scopeToUser: true,
+  },
   {
     // After `transactions`, the latest of the three tables it references
     // (`scheduled_transactions`, `transaction_rules`, and the transaction that
@@ -331,6 +361,7 @@ export const CONFLICT_ARBITER_COLUMNS: Readonly<
   // uq_transaction_rules_user_position is DEFERRABLE INITIALLY DEFERRED so a
   // reorder can swap positions inside one transaction.
   transaction_rules: ["id"],
+  shared_entries: ["id"],
 };
 
 /**

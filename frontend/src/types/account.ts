@@ -120,6 +120,8 @@ export function toMortgagePaymentFrequency(
 }
 
 export interface Account {
+  managedPurpose?: "SHARED_SETTLEMENT" | null;
+  sharedExpenseGroupId?: string | null;
   id: string;
   userId: string;
   accountType: AccountType;

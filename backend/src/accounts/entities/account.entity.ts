@@ -177,6 +177,17 @@ export class Account {
 
   @Column({
     type: "varchar",
+    length: 30,
+    name: "managed_purpose",
+    nullable: true,
+  })
+  managedPurpose: "SHARED_SETTLEMENT" | null;
+
+  @Column({ type: "uuid", name: "shared_expense_group_id", nullable: true })
+  sharedExpenseGroupId: string | null;
+
+  @Column({
+    type: "varchar",
     length: 50,
     name: "account_sub_type",
     nullable: true,

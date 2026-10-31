@@ -11,6 +11,26 @@ export async function deleteAllUserData(
   userId: string,
   manager: EntityManager,
 ): Promise<void> {
+  // Live groups, grants and shared documents belong to their collaborators too.
+  // Clear only this user's private projections, with the authenticated restore
+  // timestamp scope permitting removal of their bridge-managed ledger below.
+  await manager.query("DELETE FROM shared_ledger_links WHERE user_id = $1", [
+    userId,
+  ]);
+  await manager.query(
+    "UPDATE transactions SET shared_expense_posting_id = NULL WHERE user_id = $1 AND shared_expense_posting_id IS NOT NULL",
+    [userId],
+  );
+  await manager.query("DELETE FROM shared_postings WHERE user_id = $1", [
+    userId,
+  ]);
+  await manager.query("DELETE FROM shared_integrations WHERE user_id = $1", [
+    userId,
+  ]);
+  await manager.query("DELETE FROM shared_person_links WHERE user_id = $1", [
+    userId,
+  ]);
+  await manager.query("DELETE FROM shared_people WHERE user_id = $1", [userId]);
   // Delete in FK-safe order (reverse of insert order)
 
   // Action history (undo/redo log) -- not included in backups, so wipe it
@@ -186,11 +206,11 @@ export async function deleteAllUserData(
   // the rest of this FK-ordered teardown.
   await manager.query(
     `DELETE FROM attachment_blobs WHERE attachment_id IN
-     (SELECT id FROM transaction_attachments WHERE user_id = $1)`,
+     (SELECT id FROM transaction_attachments WHERE user_id = $1 AND shared_group_id IS NULL AND shared_entry_id IS NULL)`,
     [userId],
   );
   await manager.query(
-    "DELETE FROM transaction_attachments WHERE user_id = $1",
+    "DELETE FROM transaction_attachments WHERE user_id = $1 AND shared_group_id IS NULL AND shared_entry_id IS NULL",
     [userId],
   );
 

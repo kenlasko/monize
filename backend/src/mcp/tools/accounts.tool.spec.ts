@@ -1,8 +1,11 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
+import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { McpAccountsTools } from "./accounts.tool";
 import { mcpTestCtx, McpTestContext } from "../testing/mcp-test-context";
 
 describe("McpAccountsTools", () => {
   let tool: McpAccountsTools;
+  let sharedReview: ReturnType<typeof sharedReviewMock>;
   let accountsService: Record<string, jest.Mock>;
   let server: { registerTool: jest.Mock };
   let ctx: McpTestContext;
@@ -13,7 +16,11 @@ describe("McpAccountsTools", () => {
       getLlmAccounts: jest.fn(),
     };
 
-    tool = new McpAccountsTools(accountsService as any);
+    sharedReview = sharedReviewMock();
+    tool = new McpAccountsTools(
+      accountsService as any,
+      sharedReview as unknown as SharedReviewService,
+    );
 
     server = {
       registerTool: jest.fn((name, _opts, handler) => {
@@ -23,6 +30,27 @@ describe("McpAccountsTools", () => {
 
     ctx = mcpTestCtx();
     tool.register(server as any);
+  });
+
+  it("returns the shared-review disclosure beside accepted account totals", async () => {
+    ctx.setUser({ userId: "u1", scopes: "read" });
+    accountsService.getLlmAccounts.mockResolvedValue({
+      accounts: [],
+      netWorth: 100,
+    });
+    sharedReview.annotate.mockImplementation(async (_user, data) => ({
+      ...(data as object),
+      sharedExpenses: { pendingCount: 2, status: "REVIEW_REQUIRED" },
+    }));
+    const result = await handlers.list_accounts({}, ctx);
+    expect(sharedReview.annotate).toHaveBeenCalledWith("u1", {
+      accounts: [],
+      netWorth: 100,
+    });
+    expect(result.structuredContent).toMatchObject({
+      netWorth: 100,
+      sharedExpenses: { pendingCount: 2 },
+    });
   });
 
   it("should register 1 tool", () => {

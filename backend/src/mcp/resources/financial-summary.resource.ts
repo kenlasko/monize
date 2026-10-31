@@ -1,3 +1,4 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { Injectable } from "@nestjs/common";
 import { McpServer } from "@modelcontextprotocol/server";
 import { AccountsService } from "../../accounts/accounts.service";
@@ -8,6 +9,7 @@ import { formatDateYMD, todayYMD } from "../../common/date-utils";
 @Injectable()
 export class McpFinancialSummaryResource {
   constructor(
+    private readonly sharedReview: SharedReviewService,
     private readonly accountsService: AccountsService,
     private readonly analyticsService: TransactionAnalyticsService,
   ) {}
@@ -89,14 +91,14 @@ export class McpFinancialSummaryResource {
                 uri: "monize://financial-summary",
                 mimeType: "application/json",
                 text: JSON.stringify(
-                  {
+                  await this.sharedReview.annotate(user.userId, {
                     netWorth: accountSummary,
                     currentMonth: {
                       period: { startDate: startOfMonth, endDate },
                       ...monthSummary,
                       ...monthTotals,
                     },
-                  },
+                  }),
                   null,
                   2,
                 ),

@@ -1,5 +1,6 @@
 import { TOUR_ANCHORS } from '../anchors';
 import type { TourDefinition } from '../types';
+import { SHARED_EXPENSES_TOUR } from './release-1.20.0.shared-expenses';
 
 /** Minor line these tours belong to; matched against the running major.minor. */
 export const RELEASE_1_20_MINOR = '1.20';
@@ -238,4 +239,5 @@ export const RELEASE_1_20_PAYROLL_DEDUCTIONS_TOUR: TourDefinition = {
 export const RELEASE_1_20_TOURS: readonly TourDefinition[] = [
   RELEASE_1_20_WARRANTIES_TOUR,
   RELEASE_1_20_PAYROLL_DEDUCTIONS_TOUR,
+  SHARED_EXPENSES_TOUR,
 ];

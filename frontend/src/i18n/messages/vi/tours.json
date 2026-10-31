@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "Hãy thêm một tài khoản trước — hướng dẫn này chỉ cách ghi lại một giao dịch.",
       "securitiesExist": "Hãy thêm một chứng khoán trước — hướng dẫn này mở một mục từ danh sách chứng khoán của bạn.",
-      "ownerView": "Hãy quay lại dữ liệu của chính bạn trước. Phần hướng dẫn này nói về Quy tắc và hộp thư xem xét của AI, những mục không khả dụng khi bạn đang thao tác thay cho người khác."
+      "ownerView": "Trước tiên hãy quay lại dữ liệu của bạn. Hướng dẫn này giới thiệu các tính năng không khả dụng khi bạn thao tác thay người khác."
     },
     "start": "Bắt đầu",
     "restart": "Xem lại",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "Lời nhắc trước mỗi lần đặt lại",
             "body": "Hai tháng trước khi một quy tắc được đặt lại, Monize sẽ nhờ bạn xác nhận tại đây mức tối đa của năm sau. Nếu bạn không làm gì, quy tắc giữ nguyên mức tối đa và đặt lại vào ngày của nó. Chọn cách lời nhắc đến với bạn trong **Cài đặt**, mục **Thông báo**, tại **Hóa đơn và đã lên lịch**."
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "Chi phí chung",
+        "steps": {
+          "welcome": {
+            "title": "Đi cùng nhau, tính toán rõ ràng",
+            "body": "Tìm hiểu cách ghi lại khoản mua chung và khoản hoàn trả. Hướng dẫn này không tự tạo bản ghi thay bạn."
+          },
+          "tools": {
+            "title": "Mở chi phí chung",
+            "body": "Tìm **Chi phí chung** trong **Công cụ**. Trên điện thoại, hãy dùng menu điều hướng."
+          },
+          "newGroup": {
+            "title": "Bắt đầu với nhóm của bạn",
+            "body": "Trong **Nhóm mới**, đặt tên chuyến đi, thêm người tham gia và chọn loại tiền quyết toán. Người tham gia không cần tài khoản Monize. Mỗi lần mua có thể liên quan đến những thành viên khác nhau."
+          },
+          "chooseGroup": {
+            "title": "Khám phá một nhóm",
+            "body": "Mở một nhóm để tiếp tục. Nếu chưa có nhóm, chọn **Bỏ qua bước này** rồi tạo nhóm sau khi xem hướng dẫn."
+          },
+          "expenses": {
+            "title": "Ai đã trả và trả cho ai?",
+            "body": "Khi có quyền chỉnh sửa, dùng **Cộng chi phí** để chọn người trả tiền và người hưởng lợi. **Chia cho** hỗ trợ chia đều, số tiền cụ thể, tỷ lệ phần trăm và phần bằng không."
+          },
+          "balances": {
+            "title": "Kiểm tra số dư và thanh toán",
+            "body": "**Số dư** cho biết ai nợ ai và đề xuất khoản hoàn trả. Ghi lại khoản hoàn trả sau khi tiền đã được trao. **Hồ sơ** và **Hoạt động** lưu chứng từ và lịch sử."
+          },
+          "done": {
+            "title": "Sẵn sàng cho chuyến đi tiếp theo",
+            "body": "Bản ghi chung được tách khỏi giao dịch cá nhân. Xem lại hướng dẫn bất cứ lúc nào từ **Cài đặt**, trong **Hướng dẫn sử dụng**."
           }
         }
       }

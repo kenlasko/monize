@@ -851,4 +851,21 @@ describe('AttachmentsSection', () => {
       expect(screen.getByRole('button', { name: 'Add attachment' })).toBeDisabled();
     });
   });
+  it("places a shared-document action in the existing header and names the actual empty state", () => {
+    const props = {
+      stagedFiles: [],
+      onStagedFilesChange: vi.fn(),
+      pendingHint: "Shared after saving",
+      headerActions: <button>Share private document</button>,
+    };
+    const view = render(<AttachmentsSection {...props} />);
+    expect(
+      within(screen.getByTestId("attachments-actions")).getByRole("button", {
+        name: "Share private document",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("No attachments yet")).toBeInTheDocument();
+    view.rerender(<AttachmentsSection {...props} hasSavedAttachments />);
+    expect(screen.queryByText("No attachments yet")).not.toBeInTheDocument();
+  });
 });

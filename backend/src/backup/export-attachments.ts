@@ -1,3 +1,4 @@
+import { exportedAttachment } from "./shared-backup";
 import { BackupCompletenessReport } from "./backup-format";
 import { attachmentDigestConsistent } from "./attachment-integrity.util";
 import { DEFAULT_EXPORT_BATCH_ROWS, ExportReader } from "./export-cursor";
@@ -73,7 +74,7 @@ export interface AttachmentAudit {
 /** Every attachment metadata row for the user, in id order. */
 const ATTACHMENT_METADATA_SQL = `SELECT id, storage_provider, byte_size, sha256
          FROM transaction_attachments
-        WHERE user_id = $1
+        WHERE ${exportedAttachment()}
         ORDER BY id`;
 
 /**
@@ -94,7 +95,7 @@ const ATTACHMENT_BLOB_DIGEST_SQL = `SELECT ab.attachment_id,
                 encode(sha256(ab.data), 'hex') AS sha256
            FROM attachment_blobs ab
            JOIN transaction_attachments ta ON ab.attachment_id = ta.id
-          WHERE ta.user_id = $1`;
+          WHERE ${exportedAttachment("ta")}`;
 
 interface BlobDigest {
   byteSize: number;

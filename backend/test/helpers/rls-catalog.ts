@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { DataSource } from "typeorm";
+import { DataSource, EntityManager } from "typeorm";
 
 /**
  * Catalog + generic row seeder for the RLS enforcement spec (task T2).
@@ -218,6 +218,18 @@ const REQUIRED_NULLABLE_PARENTS = new Set([
  * other kind needs one (`ck_ai_review_requests_transaction_required`).
  */
 const PRODUCTION_SHAPED_VALUES: Record<string, Record<string, unknown>> = {
+  // A journal entry has both a contribution and a beneficiary allocation.
+  // seedAll inserts their cohort in one transaction; the real deferred sum
+  // constraints remain enabled, including for these authorization fixtures.
+  shared_entries: {
+    type: "EXPENSE",
+    original_amount: 1,
+    group_amount: 1,
+    fx_rate: 1,
+  },
+  shared_allocations: { kind: "SHARE", original_amount: 1, group_amount: 1 },
+  shared_invitations: { role: "VIEWER" },
+  shared_ledger_links: { kind: "BANK" },
   ai_review_requests: { kind: "email_trade" },
   backup_offsite_uploads: {
     destination: "s3",
@@ -264,6 +276,7 @@ export class RlsRowSeeder {
 
   /** Inserted rows: table -> ownerId -> full row (RETURNING *). */
   readonly seededRows = new Map<string, Map<string, Record<string, unknown>>>();
+  private readonly extraRows = new Map<string, Record<string, unknown>[]>();
 
   constructor(
     private readonly dataSource: DataSource,
@@ -334,7 +347,9 @@ export class RlsRowSeeder {
             private_key_enc: null,
             access_url_enc: "rls-fixture-ciphertext",
           }
-        : {};
+        : table === "shared_invitations"
+          ? { token_hash: randomUUID().replace(/-/g, "").repeat(2) }
+          : {};
     const entry = this.entry(table);
     const overrides = { ...PRODUCTION_SHAPED_VALUES[table], ...explicit };
     const rowValues = { ...rowDefaults, ...overrides };
@@ -409,9 +424,10 @@ export class RlsRowSeeder {
   async seedRowFor(
     table: string,
     ownerId: string,
+    manager: DataSource | EntityManager = this.dataSource,
   ): Promise<Record<string, unknown>> {
     const { sql, values } = this.buildInsert(table, ownerId);
-    const [row] = await this.dataSource.query(sql, values);
+    const [row] = await manager.query(sql, values);
     if (!this.seededRows.has(table)) {
       this.seededRows.set(table, new Map());
     }
@@ -429,10 +445,27 @@ export class RlsRowSeeder {
     }
     const order = this.topoOrder(tables);
     for (const ownerId of ownerIds) {
-      for (const table of order) {
-        await this.seedRowFor(table, ownerId);
-      }
+      await this.dataSource.transaction(async (manager) => {
+        for (const table of order) {
+          await this.seedRowFor(table, ownerId, manager);
+          if (table === "shared_allocations") {
+            const { sql, values } = this.buildInsert(table, ownerId, {
+              kind: "CONTRIBUTION",
+            });
+            const [row] = await manager.query(sql, values);
+            this.extraRows.set(`${table}:${ownerId}`, [row]);
+          }
+        }
+      });
     }
+  }
+
+  /** Exact expected rows, including the conservation partner of an allocation. */
+  seededRowsFor(table: string, ownerId: string): Record<string, unknown>[] {
+    return [
+      this.seededRowFor(table, ownerId),
+      ...(this.extraRows.get(`${table}:${ownerId}`) ?? []),
+    ];
   }
 
   seededRowFor(table: string, ownerId: string): Record<string, unknown> {

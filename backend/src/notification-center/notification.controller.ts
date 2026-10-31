@@ -1,3 +1,4 @@
+import { SharedNotificationsService } from "../shared-expenses/shared-notifications.service";
 import {
   Controller,
   Delete,
@@ -47,10 +48,11 @@ import {
 export class NotificationController {
   constructor(
     private readonly notifications: NotificationService,
+    private readonly shared: SharedNotificationsService,
     // Bill reminders are materialized on read rather than by a cron, so the
-    // list endpoint asks their producer to catch up first. This is the only
-    // dependency the notification centre has on a producer, and it is why the
-    // controller lives in its own module -- see `notification-api.module.ts`.
+    // list endpoint asks their producer and shared-expense delivery to catch up.
+    // Those producer edges belong to this controller's own module -- see
+    // `notification-api.module.ts`.
     private readonly budgets: BudgetsService,
   ) {}
 
@@ -77,6 +79,7 @@ export class NotificationController {
     // a comment claiming a caller it does not have.
     if (!unreadOnly && !req.user.isActing) {
       await this.budgets.ensureBillDueNotifications(req.user.id);
+      await this.shared.deliver();
     }
     return this.notifications.list(req.user.id, {
       unreadOnly: unreadOnly || false,

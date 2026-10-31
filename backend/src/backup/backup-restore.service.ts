@@ -1,4 +1,9 @@
 import {
+  validateSharedSnapshot,
+  prepareSharedRestore,
+  claimRestoredSharedGroups,
+} from "./shared-backup";
+import {
   BadRequestException,
   Injectable,
   Logger,
@@ -196,7 +201,9 @@ export class BackupRestoreService {
         // A reference outside the file is how a crafted backup reached another
         // user's rows (restore-references.ts); the remap below can only close
         // the graph over ids it recognises, so recognition comes first.
-        const references = resolveRestoreReferences(rawData);
+        const references = resolveRestoreReferences(
+          validateSharedSnapshot(rawData),
+        );
         for (const { table, column, rows } of references.severed) {
           this.logger.warn(
             `Backup for user ${userId}: ${rows} ${table}.${column} value(s) ` +
@@ -238,7 +245,10 @@ export class BackupRestoreService {
         // untouched. `resolveRestoreReferences` above is what closes both, and
         // the Phase-3 UPDATEs are additionally scoped to this user's rows.
         const idRemap = this.buildBackupIdRemap(recovery.data);
-        const data = this.remapBackupIds(recovery.data, idRemap);
+        const data = prepareSharedRestore(
+          this.remapBackupIds(recovery.data, idRemap),
+          userId,
+        );
         this.rehashGemSignalFingerprints(data, idRemap);
 
         this.logger.log(`Starting backup restore for user ${userId}`);
@@ -368,6 +378,8 @@ export class BackupRestoreService {
                     scopeToUser ? userId : null,
                   );
                 }
+
+                await claimRestoredSharedGroups(manager, data, userId);
 
                 // Phase 2c: rows from an artifact older than a migration that
                 // changed what a value means get that migration's backfill; the

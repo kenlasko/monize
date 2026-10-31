@@ -17,8 +17,8 @@ export const LIST_TOOLBAR_BUTTON_CLASS =
   'disabled:opacity-50 disabled:cursor-not-allowed';
 
 interface ListTopToolbarProps {
-  /** Which surface's remembered row density the toggle in this bar reads. */
-  densityView: DensityView;
+  /** The remembered density, when this surface offers a density setting. */
+  densityView?: DensityView;
   /**
    * Paging state. Supply all five or none: with them the bar carries the
    * pager and the buttons ride at the right-hand end of it, in front of the
@@ -80,7 +80,7 @@ export function ListTopToolbar({
   const buttons = (
     <div className="flex items-center gap-1 flex-shrink-0">
       {actions}
-      <DensityToggle view={densityView} hideLabelOnMobile className="flex-shrink-0" />
+      {densityView && <DensityToggle view={densityView} hideLabelOnMobile className="flex-shrink-0" />}
     </div>
   );
 

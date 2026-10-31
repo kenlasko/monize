@@ -38,6 +38,10 @@ const rows = () => z.array(looseObject({}));
 const str = z.string();
 const strNull = z.string().nullable();
 const bool = z.boolean();
+// Review context carries its status, counts and interpretation in the response.
+// Like row-level diagnostics, its fields stay out of the repeated tools/list
+// payload; the loose object still validates the full returned context.
+const sharedReview = looseObject({}).optional();
 
 // ---------------------------------------------------------------------------
 // accounts.tool.ts
@@ -50,6 +54,7 @@ const bool = z.boolean();
  * extra entity fields and the optional/nullable columns all validate.
  */
 export const listAccountsOutput = toolOutput({
+  sharedExpenses: sharedReview,
   // Each row carries `balance`/`currentBalance` in its own `currency` AND in
   // `defaultCurrency` (`balanceInDefaultCurrency`, `currentBalanceInDefaultCurrency`,
   // at `exchangeRate`); the description names them, and per the note above
@@ -76,6 +81,7 @@ export const listAccountsOutput = toolOutput({
 // ---------------------------------------------------------------------------
 
 export const comparePeriodsOutput = toolOutput({
+  sharedExpenses: sharedReview,
   // Every figure is in `totalsCurrency`, each row converted at its own date. A
   // period `total` (and so `totalChange` / `totalChangePercent`) is null while
   // a pair has no rate; `knownSubtotal` (per period, undeclared like the
@@ -132,6 +138,7 @@ const manageToolOutput = (entityFields: z.ZodRawShape) =>
  * requested. Tolerant so every branch validates.
  */
 export const listTransactionsOutput = toolOutput({
+  sharedExpenses: sharedReview,
   // The three totals are in `totalsCurrency` (each row converted at its own
   // date) and null while a pair has no rate; `knownIncomeSubtotal` and
   // `knownExpensesSubtotal` carry what did convert (undeclared: the tool is at
@@ -216,6 +223,7 @@ export const managePayeesOutput = manageToolOutput({
  * monthly snapshots, wrapped under `items` by `toolResult`.
  */
 export const generateReportOutput = toolOutput({
+  sharedExpenses: sharedReview,
   // Eight report types with different payloads. Loose, so each branch's own
   // fields travel without eight shapes being spelled out here.
   data: z.array(z.unknown()).optional(),
@@ -428,6 +436,7 @@ export const calculateOutput = toolOutput({
 // ---------------------------------------------------------------------------
 
 export const getBudgetStatusOutput = toolOutput({
+  sharedExpenses: sharedReview,
   budgetName: str.optional(),
   strategy: str.optional(),
   period: looseObject({ start: str, end: str }).optional(),

@@ -61,15 +61,17 @@ the other two.
 Three providers behind one interface (`save`/`load`/`delete`), selected by
 deployment.
 
-**An attachment's parent is a transaction or a warranty, never both and never
-neither** (INV-WTY-003): `transaction_attachments` carries `transaction_id` and
-`warranty_id` under `chk_attachment_one_parent`, and `AttachmentsService.create`
+**An attachment has one transaction, warranty, shared-group or shared-entry
+parent** (INV-WTY-003, SE-011): `chk_attachment_one_parent` requires exactly one
+non-null `transaction_id`, `warranty_id`, `shared_group_id` or `shared_entry_id`, and `AttachmentsService.create`
 and `findAllFor` take an `AttachmentParent` (`backend/src/attachments/attachment-parent.ts`)
-rather than an id. Ownership is the row's own `user_id` whichever parent it has,
-so everything below -- the upload intent, the tombstone trigger, the orphan
+rather than an id. Private parents use the owner's `user_id`; shared parents
+require current group access, including when the reader uploaded the file.
+Everything below -- the upload intent, the tombstone trigger, the orphan
 sweep, the provider relocation -- is keyed by attachment id and knows nothing
 about the parent. The per-parent cap is counted under the parent's row lock
-(`lockTransactionRow` or `lockWarrantyRow`, one doctrine), and both halves of a
+(`lockTransactionRow` or `lockWarrantyRow`), or the shared group's advisory
+transaction lock (`lockSharedGroup`), and both halves of a
 scan pair carry the same parent and `document_kind` (a kind change,
 `AttachmentsService.updateDocumentKind`, writes both in one statement). One
 parent is not one reader: a transaction's attachments are its own rows plus the

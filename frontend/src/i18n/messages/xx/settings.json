@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "[XX-Email receipts-XX]",
         "BONDS": "[XX-Bonds-XX]",
         "AI_REVIEW": "[XX-AI review proposals-XX]",
-        "WARRANTIES": "[XX-Warranty reminders-XX]"
+        "WARRANTIES": "[XX-Warranty reminders-XX]",
+        "SHARED_EXPENSES": "[XX-Shared expenses-XX]"
       },
       "channelNotApplicable": "[XX-Not applicable for this notification type-XX]",
       "emailToggleLabel": "[XX-Report email for {category}-XX]",
@@ -835,7 +836,19 @@
       },
       "doneButton": "[XX-Done-XX]",
       "unlinkedBondSecuritiesList": "[XX-Affected securities: {symbols}.-XX]",
-      "unlinkedBondSecuritiesMore": "[XX-and {count} more-XX]"
+      "unlinkedBondSecuritiesMore": "[XX-and {count} more-XX]",
+      "counts": {
+        "sharedGroups": "[XX-Shared groups-XX]",
+        "sharedParticipants": "[XX-Group participants-XX]",
+        "sharedEntries": "[XX-Group entries-XX]",
+        "sharedAllocations": "[XX-Expense allocations-XX]",
+        "sharedActivity": "[XX-Group activity-XX]",
+        "sharedPeople": "[XX-Shared-expense contacts-XX]",
+        "sharedPersonLinks": "[XX-Linked contacts-XX]",
+        "sharedIntegrations": "[XX-Personal finance connections-XX]",
+        "sharedPostings": "[XX-Personal shared-expense bookings-XX]",
+        "sharedLedgerLinks": "[XX-Linked personal transactions-XX]"
+      }
     },
     "storedBackups": {
       "heading": "[XX-Automatic Backups-XX]",

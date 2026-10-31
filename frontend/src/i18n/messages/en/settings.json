@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "Email receipts",
         "BONDS": "Bonds",
         "AI_REVIEW": "AI review proposals",
-        "WARRANTIES": "Warranty reminders"
+        "WARRANTIES": "Warranty reminders",
+        "SHARED_EXPENSES": "Shared expenses"
       },
       "channelNotApplicable": "Not applicable for this notification type",
       "emailToggleLabel": "Report email for {category}",
@@ -835,7 +836,19 @@
       },
       "doneButton": "Done",
       "unlinkedBondSecuritiesList": "Affected securities: {symbols}.",
-      "unlinkedBondSecuritiesMore": "and {count} more"
+      "unlinkedBondSecuritiesMore": "and {count} more",
+      "counts": {
+        "sharedGroups": "Shared groups",
+        "sharedParticipants": "Group participants",
+        "sharedEntries": "Group entries",
+        "sharedAllocations": "Expense allocations",
+        "sharedActivity": "Group activity",
+        "sharedPeople": "Shared-expense contacts",
+        "sharedPersonLinks": "Linked contacts",
+        "sharedIntegrations": "Personal finance connections",
+        "sharedPostings": "Personal shared-expense bookings",
+        "sharedLedgerLinks": "Linked personal transactions"
+      }
     },
     "storedBackups": {
       "heading": "Automatic Backups",

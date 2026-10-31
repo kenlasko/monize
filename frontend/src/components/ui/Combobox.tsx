@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
+import { placePopover } from './InfoTooltip';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 
 interface ComboboxOption {
@@ -100,24 +101,24 @@ export function Combobox({
   const updateDropdownPos = useCallback(() => {
     if (!usePortal || !inputRef.current) return;
     const rect = inputRef.current.getBoundingClientRect();
-    setDropdownPos({
-      top: rect.bottom + 4,
-      left: rect.left,
-      width: rect.width,
-    });
+    const position = placePopover(rect,
+      { width: rect.width, height: listRef.current?.offsetHeight || 240 },
+      'bottom', { width: window.innerWidth, height: window.innerHeight });
+    setDropdownPos({ ...position, width: rect.width });
   }, [usePortal]);
 
-  // Update position when opening
-  useEffect(() => {
+  // Measure before paint so a low input opens upward without scrolling the page.
+  useLayoutEffect(() => {
     if (isOpen && usePortal) updateDropdownPos();
   }, [isOpen, usePortal, updateDropdownPos]);
 
-  // Close on parent scroll or window resize when using portal (dropdown would be misaligned)
+  // Keep the portal anchored while its modal scrolls, including a delayed scroll
+  // event from focusing the input. Closing here makes the first click disappear.
   useEffect(() => {
     if (!isOpen || !usePortal) return;
     const handleScrollOrResize = (event: Event) => {
-      if (listRef.current?.contains(event.target as Node)) return;
-      setIsOpen(false);
+      if (event.target instanceof Node && listRef.current?.contains(event.target)) return;
+      updateDropdownPos();
     };
     window.addEventListener('scroll', handleScrollOrResize, true);
     window.addEventListener('resize', handleScrollOrResize);
@@ -125,7 +126,7 @@ export function Combobox({
       window.removeEventListener('scroll', handleScrollOrResize, true);
       window.removeEventListener('resize', handleScrollOrResize);
     };
-  }, [isOpen, usePortal]);
+  }, [isOpen, usePortal, updateDropdownPos]);
 
   // Read selectedLabel via ref so the value-sync effect can inspect it without
   // depending on it (and re-firing in feedback loops with state it sets itself).

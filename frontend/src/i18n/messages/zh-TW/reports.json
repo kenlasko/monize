@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "未分類支出",
       "residualUnspent": "未花費",
       "residualDeficit": "動用餘額",
-      "unlinkedAccount": "（未關聯帳戶）"
+      "unlinkedAccount": "（未關聯帳戶）",
+      "classSharedSettlements": "共同費用的結算",
+      "inflowSharedSettlements": "來自共同結算"
     }
   },
   "pdfExport": {

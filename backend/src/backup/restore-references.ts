@@ -43,11 +43,48 @@ import { RESTORE_PLAN } from "./restore-plan";
 export const RESTORE_REFERENCE_COLUMNS: Readonly<
   Record<string, Readonly<Record<string, string>>>
 > = {
+  shared_groups: { ownership_candidate_id: "shared_participants" },
+  shared_participants: { group_id: "shared_groups" },
+  shared_entries: {
+    group_id: "shared_groups",
+    source_entry_id: "shared_entries",
+    from_participant_id: "shared_participants",
+    to_participant_id: "shared_participants",
+  },
+  shared_allocations: {
+    group_id: "shared_groups",
+    entry_id: "shared_entries",
+    participant_id: "shared_participants",
+  },
+  shared_activity: { group_id: "shared_groups", entry_id: "shared_entries" },
+  shared_people: { payee_id: "payees" },
+  shared_person_links: {
+    person_id: "shared_people",
+    group_id: "shared_groups",
+    participant_id: "shared_participants",
+  },
+  shared_integrations: {
+    group_id: "shared_groups",
+    participant_id: "shared_participants",
+    account_id: "accounts",
+  },
+  shared_postings: {
+    group_id: "shared_groups",
+    entry_id: "shared_entries",
+    integration_id: "shared_integrations",
+    category_id: "categories",
+    payee_id: "payees",
+  },
+  shared_ledger_links: {
+    posting_id: "shared_postings",
+    transaction_id: "transactions",
+  },
   categories: { parent_id: "categories" },
   payees: { default_category_id: "categories" },
   payee_aliases: { payee_id: "payees" },
   email_receipt_parsers: { payee_id: "payees" },
   accounts: {
+    shared_expense_group_id: "shared_groups",
     linked_account_id: "accounts",
     source_account_id: "accounts",
     institution_id: "institutions",
@@ -96,6 +133,7 @@ export const RESTORE_REFERENCE_COLUMNS: Readonly<
   holdings: { account_id: "accounts", security_id: "securities" },
   security_tags: { security_id: "securities", tag_id: "tags" },
   transactions: {
+    shared_expense_posting_id: "shared_postings",
     account_id: "accounts",
     payee_id: "payees",
     category_id: "categories",
@@ -111,6 +149,8 @@ export const RESTORE_REFERENCE_COLUMNS: Readonly<
   warranties: { payee_id: "payees", transaction_id: "transactions" },
   warranty_claims: { warranty_id: "warranties" },
   transaction_attachments: {
+    shared_group_id: "shared_groups",
+    shared_entry_id: "shared_entries",
     transaction_id: "transactions",
     warranty_id: "warranties",
     original_of_attachment_id: "transaction_attachments",

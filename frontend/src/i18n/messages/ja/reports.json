@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "未分類の支出",
       "residualUnspent": "未使用",
       "residualDeficit": "残高から充当",
-      "unlinkedAccount": "（リンクされていない口座）"
+      "unlinkedAccount": "（リンクされていない口座）",
+      "classSharedSettlements": "共用経費の精算",
+      "inflowSharedSettlements": "共有精算から"
     }
   },
   "pdfExport": {

@@ -137,3 +137,9 @@ Three things this costs, each of which has bitten a draft of it:
 - **A drag must not also fire the name's drill-down**, and the suppression is armed on release and spent on the next click -- so it is also cleared when the next gesture starts, or a drag whose click never arrived swallows an unrelated one later.
 
 Above `sm` every rule reverts and the column is the plain sticky column it has always been, so this never changes the desktop table. `useIsMobile` selects it, which is legitimate here for the same reason the register's card layout may use it: both layouts show the same figures, and nothing is reachable in one and not the other.
+
+Shared expenses use `Tabs`/`TabPanel` for navigation and segmented controls only
+for Active/Archived filters. Their small filter set stays visible and searches
+while typing; stale request keys disable row actions and export. A list without
+a density setting omits `ListTopToolbar.densityView` rather than persisting another
+surface's preference. Shared overview/detail summaries use `SummaryCardGrid`.

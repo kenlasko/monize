@@ -24,6 +24,7 @@ export const NOTIFICATION_PREFERENCE_CATEGORIES: readonly NotificationCategory[]
     'BONDS',
     'AI_REVIEW',
     'WARRANTIES',
+    "SHARED_EXPENSES",
   ];
 
 /**
@@ -66,6 +67,7 @@ export const NOTIFICATION_CATEGORY_CHANNELS: Record<
   EMAIL_RECEIPTS: { email: true, emailNotification: true, push: true, unifiedpush: true },
   BONDS: { email: true, emailNotification: true, push: true, unifiedpush: true },
   AI_REVIEW: { email: true, emailNotification: true, push: true, unifiedpush: true },
+  SHARED_EXPENSES: { email: true, emailNotification: true, push: true, unifiedpush: true },
   WARRANTIES: { email: true, emailNotification: true, push: true, unifiedpush: true },
 };
 

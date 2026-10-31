@@ -207,5 +207,9 @@
   "payrollDeduction": {
     "resetTitle": "{category}: gelecek yılın üst sınırını onaylayın",
     "resetMessage": "{bill} üzerindeki {category} kesintisi {date} tarihinde sıfırlanır. Yıllık üst sınır değişiyorsa güncelleyin; aksi halde {amount} yeniden uygulanır."
+  },
+  "shared": {
+    "title": "Paylaşılan giderler",
+    "message": "Ortak bir grupta güncelleme var. İncelemek için Monize'ı açın."
   }
 }

@@ -385,7 +385,7 @@ describe('BackupRestoreSection', () => {
   it('restores backup successfully and shows summary modal', async () => {
     (backupApi.restoreBackup as ReturnType<typeof vi.fn>).mockResolvedValue({
       message: 'Backup restored successfully',
-      restored: { categories: 5, accounts: 3 },
+      restored: { categories: 5, accounts: 3, sharedGroups: 2 },
     });
 
     await renderSection(localUser);
@@ -421,7 +421,10 @@ describe('BackupRestoreSection', () => {
     expect(screen.getByText('5')).toBeInTheDocument();
     expect(screen.getByText('Accounts')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('8')).toBeInTheDocument(); // Total
+    expect(screen.getByText('Shared groups')).toBeInTheDocument();
+    expect(screen.queryByText('sharedGroups')).not.toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('10')).toBeInTheDocument(); // Total, including shared groups
     expect(screen.getByText('Done')).toBeInTheDocument();
 
     // Clicking Done closes the modal

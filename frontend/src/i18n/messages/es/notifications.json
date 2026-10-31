@@ -207,5 +207,9 @@
   "payrollDeduction": {
     "resetTitle": "{category}: confirme el máximo del próximo año",
     "resetMessage": "La deducción {category} en {bill} se reinicia el {date}. Actualice el máximo anual si cambia; de lo contrario vuelve a aplicarse {amount}."
+  },
+  "shared": {
+    "title": "Gastos compartidos",
+    "message": "Hay novedades en un grupo compartido. Abre Monize para revisarlas."
   }
 }

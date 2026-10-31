@@ -30,6 +30,8 @@ const TRANSFER: SpecialCategoryFilterId = 'transfer';
 /** The catalog key of each node that is neither a category nor an account. */
 const FIXED_NODE_KEYS: Record<string, string> = {
   hub: 'hub',
+  "class:shared_settlements": "classSharedSettlements",
+  "inflow:shared_settlements": "inflowSharedSettlements",
   'class:savings': 'classSavings',
   'class:debt': 'classDebt',
   'class:other_accounts': 'classOtherAccounts',
@@ -383,8 +385,14 @@ export function CashFlowSankeyDiagram({
           // A sliver drawn for a link nothing of which converted is not a figure.
           formatValue={(value) => (item.placeholder ? t('sankey.unknown') : formatCurrency(value))}
         >
-          {item.netRefund && <p className="text-xs text-gray-600 dark:text-gray-400">{t('sankey.netRefund')}</p>}
-          {item.incomplete && <p className="text-xs text-amber-600 dark:text-amber-400">{t('sankey.knownPartOnly')}</p>}
+          {item.netRefund && ( <p className="text-xs text-gray-600 dark:text-gray-400">
+              {t('sankey.netRefund')}
+            </p>
+          )}
+          {item.incomplete && ( <p className="text-xs text-amber-600 dark:text-amber-400">
+              {t('sankey.knownPartOnly')}
+            </p>
+          )}
         </ChartTooltip>
       );
     }
@@ -396,7 +404,10 @@ export function CashFlowSankeyDiagram({
         payload={[{ name: t('sankey.colAmount'), value: drawn.value, color: colorOfDrawn(drawn) }]}
         formatValue={(value) => formatCurrency(value)}
       >
-        {drawn.unknown && <p className="text-xs text-amber-600 dark:text-amber-400">{t('sankey.knownPartOnly')}</p>}
+        {drawn.unknown && ( <p className="text-xs text-amber-600 dark:text-amber-400">
+            {t('sankey.knownPartOnly')}
+          </p>
+        )}
         {drawn.members.length > 0 && (
           <ul className="mt-1 text-xs text-gray-600 dark:text-gray-400">
             {drawn.members.map((member) => (

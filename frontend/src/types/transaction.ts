@@ -57,6 +57,7 @@ export interface TransactionSplit {
 }
 
 export interface Transaction {
+  sharedExpensePostingId?: string | null;
   id: string;
   userId: string;
   accountId: string;

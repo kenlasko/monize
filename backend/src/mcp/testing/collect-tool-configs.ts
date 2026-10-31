@@ -40,8 +40,9 @@ interface ToolProvider {
 
 export function collectToolConfigs(): CapturedToolConfig[] {
   const providers: ToolProvider[] = [
-    new McpAccountsTools({} as any) as unknown as ToolProvider,
+    new McpAccountsTools({} as any, {} as any) as unknown as ToolProvider,
     new McpTransactionsTools(
+      {} as any,
       {} as any,
       {} as any,
       {} as any,
@@ -62,7 +63,11 @@ export function collectToolConfigs(): CapturedToolConfig[] {
       {} as any,
       {} as any,
     ) as unknown as ToolProvider,
-    new McpReportsTools({} as any, {} as any) as unknown as ToolProvider,
+    new McpReportsTools(
+      {} as any,
+      {} as any,
+      {} as any,
+    ) as unknown as ToolProvider,
     new McpInvestmentsTools(
       {} as any,
       {} as any,
@@ -75,7 +80,7 @@ export function collectToolConfigs(): CapturedToolConfig[] {
     ) as unknown as ToolProvider,
     new McpScheduledTools({} as any) as unknown as ToolProvider,
     new McpCalculateTools({} as any) as unknown as ToolProvider,
-    new McpBudgetsTools({} as any) as unknown as ToolProvider,
+    new McpBudgetsTools({} as any, {} as any) as unknown as ToolProvider,
     new McpRulesTools(
       {} as any,
       {} as any,

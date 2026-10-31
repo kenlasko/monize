@@ -37,6 +37,7 @@ export const NOTIFICATION_PREFERENCE_CATEGORIES: readonly NotificationCategory[]
     NotificationCategory.BONDS,
     NotificationCategory.AI_REVIEW,
     NotificationCategory.WARRANTIES,
+    NotificationCategory.SHARED_EXPENSES,
   ];
 
 /**
@@ -169,6 +170,12 @@ export const NOTIFICATION_CATEGORY_CHANNELS: Record<
   },
   // Warranty expiry reminders: user-facing, so every channel is a live control
   // (the producer goes through the dispatch seam).
+  [NotificationCategory.SHARED_EXPENSES]: {
+    email: true,
+    emailNotification: true,
+    push: true,
+    unifiedpush: true,
+  },
   [NotificationCategory.WARRANTIES]: {
     email: true,
     emailNotification: true,
@@ -231,6 +238,7 @@ export const NOTIFICATION_CATEGORY_DEFAULTS: Readonly<
   // Warranty reminders keep the global rule: the bell and the report email,
   // push off until the user turns it on.
   [NotificationCategory.WARRANTIES]: GLOBAL_DEFAULTS,
+  [NotificationCategory.SHARED_EXPENSES]: GLOBAL_DEFAULTS,
 };
 
 /**

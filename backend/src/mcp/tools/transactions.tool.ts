@@ -1,3 +1,4 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { Injectable } from "@nestjs/common";
 import { describeSkippedRows } from "../../common/bulk-create.types";
 import { z } from "zod";
@@ -128,6 +129,7 @@ interface ManageItem {
 @Injectable()
 export class McpTransactionsTools {
   constructor(
+    private readonly sharedReview: SharedReviewService,
     private readonly transactionsService: TransactionsService,
     private readonly payeesService: PayeesService,
     private readonly analyticsService: TransactionAnalyticsService,
@@ -148,11 +150,9 @@ export class McpTransactionsTools {
         title: "List transactions",
         annotations: READ_ONLY,
         description:
-          "Income, expense and net totals over cash transactions, with an " +
-          "optional grouped breakdown and transfer rollup per account. The " +
-          "totals answer most questions; includeTransactions adds the rows " +
-          "(costly). Transfers between own accounts are not in the " +
-          "totals; transfersOnly shows them.",
+          "Cash income, expenses and net totals with optional grouping. " +
+          "Own-account transfers are excluded; transfersOnly adds their " +
+          "per-account rollup. Prefer totals; includeTransactions adds costly raw rows.",
         inputSchema: z.object({
           searchText: z
             .string()
@@ -260,7 +260,9 @@ export class McpTransactionsTools {
           );
 
           if (!args.includeTransactions) {
-            return toolResult(data);
+            return toolResult(
+              await this.sharedReview.annotate(user.userId, data),
+            );
           }
 
           const rows = await this.transactionsService.getLlmTransactionRows(
@@ -280,13 +282,15 @@ export class McpTransactionsTools {
             },
           );
 
-          return toolResult({
-            ...data,
-            transactions: rows.transactions,
-            total: rows.total,
-            hasMore: rows.hasMore,
-            truncatedTransactionList: rows.hasMore,
-          });
+          return toolResult(
+            await this.sharedReview.annotate(user.userId, {
+              ...data,
+              transactions: rows.transactions,
+              total: rows.total,
+              hasMore: rows.hasMore,
+              truncatedTransactionList: rows.hasMore,
+            }),
+          );
         } catch (err: unknown) {
           return safeToolError(err);
         }
@@ -299,9 +303,8 @@ export class McpTransactionsTools {
         title: "Compare periods",
         annotations: READ_ONLY,
         description:
-          "Compare spending or income across two periods, with the change per " +
-          "group. Omitted dates default to last full month against this month " +
-          "to date.",
+          "Spending/income change per group across two periods. Dates default " +
+          "to last full month versus this month to date.",
         inputSchema: z.object({
           period1Start: z.string().max(10).optional(),
           period1End: z.string().max(10).optional(),
@@ -342,7 +345,9 @@ export class McpTransactionsTools {
               direction: args.direction,
             },
           );
-          return toolResult(data);
+          return toolResult(
+            await this.sharedReview.annotate(user.userId, data),
+          );
         } catch (err: unknown) {
           return safeToolError(err);
         }

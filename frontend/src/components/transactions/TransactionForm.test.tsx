@@ -572,6 +572,54 @@ describe('TransactionForm', () => {
   // Joint accounts: a joint row belongs to the sharing owner, so every category
   // picker on the form offers the OWNER's list -- the split lines included.
   // =========================================================================
+  describe('continuing a saved payment into shared expenses', () => {
+    let priorIdentity: Pick<ReturnType<typeof useAuthStore.getState>, 'user' | 'actingAsUserId'>;
+    beforeEach(() => {
+      const { user, actingAsUserId } = useAuthStore.getState();
+      priorIdentity = { user, actingAsUserId };
+    });
+    afterEach(() => {
+      cleanup();
+      act(() => useAuthStore.setState(priorIdentity));
+    });
+    async function openSharedCreate(onShareAfterCreate = vi.fn()) {
+      useAuthStore.setState({ user: { id: 'user-1' } as never, actingAsUserId: null });
+      await act(async () => render(<TransactionForm defaultAccountId="acc-1" onSuccess={mockOnSuccess} onCancel={mockOnCancel} onShareAfterCreate={onShareAfterCreate} />));
+      fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '-150' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Choose what happens after creating' }));
+      fireEvent.click(screen.getByRole('menuitemradio', { name: /Save & Share/ }));
+      return onShareAfterCreate;
+    }
+    it('saves once before handing the same transaction to the sharing flow', async () => {
+      const created = createExistingTransaction();
+      mockCreate.mockResolvedValueOnce(created);
+      const savedPreference = localStorage.getItem(TRANSACTION_SUBMIT_MODE_KEY);
+      const onShare = await openSharedCreate();
+      expect(mockCreate).not.toHaveBeenCalled();
+      expect(onShare).not.toHaveBeenCalled();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Save & Share' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save & Share' }));
+      });
+      expect(mockCreate).toHaveBeenCalledOnce();
+      expect(onShare).toHaveBeenCalledExactlyOnceWith(created);
+      expect(mockOnSuccess).not.toHaveBeenCalled();
+      expect(localStorage.getItem(TRANSACTION_SUBMIT_MODE_KEY)).toBe(savedPreference);
+    });
+    it('keeps the form on a failed save and does not begin sharing', async () => {
+      mockCreate.mockRejectedValueOnce(new Error('Offline'));
+      const onShare = await openSharedCreate();
+      await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Save & Share' })));
+      expect(onShare).not.toHaveBeenCalled();
+      expect(mockOnSuccess).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Save & Share' })).toBeEnabled();
+    });
+    it('does not offer sharing in an acting profile', async () => {
+      useAuthStore.setState({ user: { id: 'user-1' } as never, actingAsUserId: 'owner' });
+      await act(async () => render(<TransactionForm defaultAccountId="acc-1" onSuccess={mockOnSuccess} onShareAfterCreate={vi.fn()} />));
+      expect(screen.queryByRole('button', { name: 'Choose what happens after creating' })).not.toBeInTheDocument();
+    });
+  });
   describe('the Warranties line', () => {
     it('renders for a saved transaction', async () => {
       render(

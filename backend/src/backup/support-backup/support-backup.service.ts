@@ -1,3 +1,4 @@
+import { reconcileSharedSupport } from "./support-backup-rules.shared";
 import {
   BadRequestException,
   Injectable,
@@ -369,7 +370,7 @@ export class SupportBackupService {
     }
     // Masking can collapse distinct values to the same string; restore uniqueness
     // on UNIQUE columns before reconciling so no row is later dropped on insert.
-    return this.reconcile(dedupeMaskedText(result));
+    return this.reconcile(dedupeMaskedText(reconcileSharedSupport(result)));
   }
 
   private applyRules(

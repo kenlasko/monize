@@ -1,3 +1,4 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/server";
@@ -25,6 +26,7 @@ import { READ_ONLY } from "../mcp-annotations";
 @Injectable()
 export class McpReportsTools {
   constructor(
+    private readonly sharedReview: SharedReviewService,
     private readonly reportsService: BuiltInReportsService,
     private readonly netWorthService: NetWorthService,
   ) {}
@@ -36,11 +38,9 @@ export class McpReportsTools {
         title: "Generate report",
         annotations: READ_ONLY,
         description:
-          "Run a built-in financial report, which returns a ready aggregate. " +
-          "Prefer it over list_transactions for any breakdown, anomaly or " +
-          "month-comparison question. The `type` field says what each report " +
-          "answers and which of the date parameters it reads. For an arbitrary " +
-          "pair of ranges use compare_periods instead.",
+          "Financial aggregates: prefer over list_transactions for breakdowns, " +
+          "anomalies and month comparisons. See `type` for date parameters; " +
+          "use compare_periods for arbitrary date ranges.",
         inputSchema: z.object({
           type: z
             .enum([
@@ -54,7 +54,7 @@ export class McpReportsTools {
               "net_worth_history",
             ])
             .describe(
-              "Which report to run, exactly one of the listed values. The five totals reports (by category, by payee, income vs expenses, monthly trend, income by source) read startDate/endDate, default the last 30 days. net_worth_history reads them too, defaulting to 12 months. spending_anomalies reads months and finds transactions statistically large for their category -- an empty list means nothing was unusual, not a problem. month_comparison reads month and covers income, category changes, net worth and investments.",
+              "The five totals reports use startDate/endDate (default last 30 days); net_worth_history uses them too (default 12 months). spending_anomalies uses months to find transactions statistically large for their category; an empty list means no anomalies. month_comparison uses month and covers income, category changes, net worth and investments.",
             ),
           startDate: z
             .string()
@@ -93,14 +93,18 @@ export class McpReportsTools {
               SPENDING_ANOMALY_DEFAULT_THRESHOLD,
               args.months ?? SPENDING_ANOMALY_DEFAULT_MONTHS,
             );
-            return toolResult(data);
+            return toolResult(
+              await this.sharedReview.annotate(user.userId, data),
+            );
           }
           if (args.type === "month_comparison") {
             const data = await this.reportsService.getMonthlyComparison(
               user.userId,
               args.month ?? getDefaultPreviousMonth(),
             );
-            return toolResult(data);
+            return toolResult(
+              await this.sharedReview.annotate(user.userId, data),
+            );
           }
           if (args.type === "net_worth_history") {
             // Dates omitted -> getLlmHistory defaults to the last 12 months.
@@ -109,7 +113,9 @@ export class McpReportsTools {
               args.startDate,
               args.endDate,
             );
-            return toolResult(data);
+            return toolResult(
+              await this.sharedReview.annotate(user.userId, data),
+            );
           }
 
           const defaults = getDefaultDateRange();
@@ -153,7 +159,9 @@ export class McpReportsTools {
               );
               break;
           }
-          return toolResult(data);
+          return toolResult(
+            await this.sharedReview.annotate(user.userId, data),
+          );
         } catch (err: unknown) {
           return safeToolError(err);
         }

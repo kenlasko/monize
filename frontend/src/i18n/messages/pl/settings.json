@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "Potwierdzenia e-maili",
         "BONDS": "Obligacje",
         "AI_REVIEW": "Propozycje przeglądu AI",
-        "WARRANTIES": "Przypomnienia o gwarancjach"
+        "WARRANTIES": "Przypomnienia o gwarancjach",
+        "SHARED_EXPENSES": "Rozliczenia"
       },
       "channelNotApplicable": "Nie dotyczy tego typu powiadomienia",
       "emailToggleLabel": "E-mail (raport) dla: {category}",
@@ -835,7 +836,19 @@
       },
       "doneButton": "Gotowe",
       "unlinkedBondSecuritiesList": "Dotyczy papierów wartościowych: {symbols}.",
-      "unlinkedBondSecuritiesMore": "i jeszcze {count}"
+      "unlinkedBondSecuritiesMore": "i jeszcze {count}",
+      "counts": {
+        "sharedGroups": "Wspólne grupy",
+        "sharedParticipants": "Uczestnicy grup",
+        "sharedEntries": "Wpisy grup",
+        "sharedAllocations": "Podziały wydatków",
+        "sharedActivity": "Aktywność grup",
+        "sharedPeople": "Kontakty wspólnych wydatków",
+        "sharedPersonLinks": "Powiązane kontakty",
+        "sharedIntegrations": "Powiązania z finansami osobistymi",
+        "sharedPostings": "Prywatne księgowania wspólnych wydatków",
+        "sharedLedgerLinks": "Powiązane transakcje osobiste"
+      }
     },
     "storedBackups": {
       "heading": "Kopie automatyczne",

@@ -68,6 +68,11 @@ export interface LargeUploadRoute {
  * asserts both directions).
  */
 export const LARGE_UPLOAD_ROUTES: readonly LargeUploadRoute[] = [
+  {
+    pattern:
+      /^\/api\/v1\/shared-expenses\/groups\/[^/]+\/(?:entries\/[^/]+\/)?attachments\/?$/,
+    limitBytes: () => 2 * 10 * MIB + MULTIPART_FRAMING_BYTES,
+  },
   // `MnyImportController.parse` (multer, MNY_IMPORT_LIMIT_MB).
   {
     pattern: /^\/api\/v1\/import\/mny\/parse\/?$/,

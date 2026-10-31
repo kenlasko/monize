@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "ईमेल रसीदें",
         "BONDS": "बॉन्ड",
         "AI_REVIEW": "एआई समीक्षा प्रस्ताव",
-        "WARRANTIES": "वारंटी रिमाइंडर"
+        "WARRANTIES": "वारंटी रिमाइंडर",
+        "SHARED_EXPENSES": "साझा खर्च"
       },
       "channelNotApplicable": "इस सूचना प्रकार के लिए लागू नहीं",
       "emailToggleLabel": "{category} के लिए रिपोर्ट ईमेल",
@@ -835,7 +836,19 @@
       },
       "doneButton": "हो गया",
       "unlinkedBondSecuritiesList": "प्रभावित प्रतिभूतियाँ: {symbols}।",
-      "unlinkedBondSecuritiesMore": "और {count} अन्य"
+      "unlinkedBondSecuritiesMore": "और {count} अन्य",
+      "counts": {
+        "sharedGroups": "साझा खर्च समूह",
+        "sharedParticipants": "समूह के प्रतिभागी",
+        "sharedEntries": "समूह की प्रविष्टियाँ",
+        "sharedAllocations": "खर्च के बँटवारे",
+        "sharedActivity": "समूह की गतिविधि",
+        "sharedPeople": "साझा खर्च के संपर्क",
+        "sharedPersonLinks": "जुड़े हुए संपर्क",
+        "sharedIntegrations": "व्यक्तिगत वित्त से जुड़ाव",
+        "sharedPostings": "साझा खर्च की व्यक्तिगत प्रविष्टियाँ",
+        "sharedLedgerLinks": "जुड़े हुए व्यक्तिगत लेनदेन"
+      }
     },
     "storedBackups": {
       "heading": "स्वचालित बैकअप",

@@ -219,3 +219,26 @@ Put the new screen next to its reference screen at the same width and check:
 - [ ] no two buttons with the same label and different behaviour
 - [ ] nothing in [Known debt](#known-debt) copied into the new screen
 - [ ] at 375 px nothing leaves the screen
+
+## Shared expense review and list chrome
+
+The dashboard greeting keeps its Customize action. Feature entry points belong
+in the existing app navigation, not permanent shortcuts beside that greeting.
+Shared expenses is under Tools on desktop and in the navigation drawer on a
+phone. The dashboard regression checks that removing the duplicate shortcut
+does not remove Customize; the navigation registry tests retain the Tools entry.
+
+The shared-expenses walkthrough anchors group selection to the loaded list.
+The phone sheet uses the existing tooltip placement resolver to flip above a low
+anchor: scrolling alone cannot uncover a short page's last row. An anchorless
+selection step cannot supply that geometry. The desktop, phone and
+empty-group journeys in `e2e/tests/shared-expenses-tour.spec.ts` exercise this
+interaction and completion persistence.
+
+Shared activity uses Notifications; render private review state only on its explicit
+page, and a known-zero result as a plain empty state, never an app-wide notice.
+`SharedReviewContent.test.tsx` covers actionable, revoked, failed and stale-identity
+responses. Tab panels and expense attachments own their top spacing; browser
+geometry tests cover the rendered gap, since component fragments cannot carry it.
+Shared group and expense cards use ListTopToolbar with the complete paging state
+and ListBottomPager outside the card, including a filtered one-page result.

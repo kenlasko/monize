@@ -393,6 +393,10 @@
         "TRANSFER_OUT": "outgoing transfer",
         "other": "transaction"
       }
+    },
+    "shared": {
+      "title": "Shared expenses",
+      "message": "A shared group has an update. Open Monize to review it."
     }
   },
   "backupOffsite": {

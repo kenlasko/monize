@@ -1,3 +1,4 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { Injectable } from "@nestjs/common";
 import { McpServer } from "@modelcontextprotocol/server";
 import { TransactionsService } from "../../transactions/transactions.service";
@@ -8,6 +9,7 @@ import { formatDateYMD, todayYMD } from "../../common/date-utils";
 @Injectable()
 export class McpRecentTransactionsResource {
   constructor(
+    private readonly sharedReview: SharedReviewService,
     private readonly transactionsService: TransactionsService,
     private readonly analyticsService: TransactionAnalyticsService,
   ) {}
@@ -93,7 +95,7 @@ export class McpRecentTransactionsResource {
                 uri: "monize://recent-transactions",
                 mimeType: "application/json",
                 text: JSON.stringify(
-                  {
+                  await this.sharedReview.annotate(user.userId, {
                     period: { startDate: startDateStr, endDate },
                     summary: { ...summary, ...totals },
                     // Expand split transactions so each split appears as its
@@ -125,7 +127,7 @@ export class McpRecentTransactionsResource {
                             ],
                       ),
                     total: result.pagination.total,
-                  },
+                  }),
                   null,
                   2,
                 ),

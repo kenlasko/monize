@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Kategorisiz giderler",
       "residualUnspent": "Harcanmayan",
       "residualDeficit": "Bakiyelerden çekilen",
-      "unlinkedAccount": "(bağlantısız hesap)"
+      "unlinkedAccount": "(bağlantısız hesap)",
+      "classSharedSettlements": "Paylaşılan giderlerin ödenmesi",
+      "inflowSharedSettlements": "Ortak hesaplaşmalardan"
     }
   },
   "pdfExport": {

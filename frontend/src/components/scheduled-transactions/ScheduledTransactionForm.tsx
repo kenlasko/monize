@@ -798,7 +798,7 @@ export function ScheduledTransactionForm({
       tagsApi.getAll(),
     ])
       .then(async ([accountsData, categoriesData, payeesData, tagsData]) => {
-        setAccounts(accountsData);
+        setAccounts(accountsData.filter((account) => !account.managedPurpose));
         setCategories(categoriesData);
         setTags(tagsData);
 
@@ -1264,7 +1264,9 @@ export function ScheduledTransactionForm({
     if (watchedFrequency === 'ONCE') return null;
     return (
       <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('form.endConditionTitle')}</h3>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('form.endConditionTitle')}
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="flex items-center gap-2 mb-2 cursor-pointer w-fit">
@@ -1395,7 +1397,9 @@ export function ScheduledTransactionForm({
   // Shared Description textarea section
   const renderDescription = () => (
     <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('form.descriptionLabel')}</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        {t('form.descriptionLabel')}
+      </label>
       <textarea
         rows={2}
         maxLength={TRANSACTION_NOTE_MAX_LENGTH}
@@ -1403,7 +1407,9 @@ export function ScheduledTransactionForm({
         {...register('description')}
       />
       {errors.description && (
-        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description.message}</p>
+        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+          {errors.description.message}
+        </p>
       )}
     </div>
   );
@@ -1428,7 +1434,7 @@ export function ScheduledTransactionForm({
         ))}
       </div>
 
-      {/* ==================== Transaction Tab ==================== */}
+      {/* Row 1: Name */}
       {mode === 'transaction' && (
         <div className="space-y-4">
           {/* Row 1: Name */}
@@ -1595,10 +1601,10 @@ export function ScheduledTransactionForm({
         </div>
       )}
 
-      {/* ==================== Split Tab ==================== */}
+      {/* Row 1: Name */}
       {mode === 'split' && (
         <div className="space-y-4">
-          {/* Row 1: Name */}
+          {/* Row 2: Account, Next Due Date */}
           <Input
             label={t('form.nameLabel')}
             type="text"
@@ -1673,7 +1679,9 @@ export function ScheduledTransactionForm({
           {/* Row 5: Split Editor */}
           <div className="border-t dark:border-gray-700 pt-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('form.splitTransactionTitle')}</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                {t('form.splitTransactionTitle')}
+              </h3>
               <button
                 type="button"
                 onClick={() => handleModeChange('transaction')}
@@ -1734,15 +1742,15 @@ export function ScheduledTransactionForm({
             />
           </div>
 
-          {/* Row 7: End Condition */}
+          {/* ==================== Transfer Tab ==================== */}
           {renderEndCondition('Split')}
 
-          {/* Row 8: Active/Auto-post and actions */}
+          {/* Row 1: Name */}
           {renderFooter('Split')}
         </div>
       )}
 
-      {/* ==================== Transfer Tab ==================== */}
+      {/* Row 1: Name */}
       {mode === 'transfer' && (
         <div className="space-y-4">
           {/* Row 1: Name */}
@@ -1885,7 +1893,7 @@ export function ScheduledTransactionForm({
         </div>
       )}
 
-      {/* ==================== Investment Tab ==================== */}
+      {/* Row 1: Name */}
       {mode === 'investment' && (
         <div className="space-y-4">
           {/* Row 1: Name */}

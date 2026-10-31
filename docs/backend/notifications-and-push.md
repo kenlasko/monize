@@ -97,8 +97,9 @@ reminder id of a re-emitted nag (`rem:<id>` -- its per-fire dedupe key differs
 every fire), then the row's dedupe key, then its id.
 
 The HTTP surface lives in its own module (`notification-api.module.ts`) because
-it is the one part that needs a producer: bill reminders are materialized when
-the list is read. Put that edge on `NotificationCenterModule` and every producer
+it needs producers: bill reminders and shared-expense delivery backlogs are
+materialized on the owner's full-list read, never on a delegate or unread-only
+read. Put those edges on `NotificationCenterModule` and every producer
 of a notification lands on a require cycle with budgets.
 
 ## A push's chart token lives as long as the push, and a movement alert is written before its baseline

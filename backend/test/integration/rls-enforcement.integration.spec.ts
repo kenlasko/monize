@@ -58,6 +58,7 @@ describe("RLS enforcement (T2, catalog-driven)", () => {
     delegate_net_worth_exclusions: ["delegate_user_id"],
     emergency_access_settings: ["owner_user_id"],
     emergency_access_contacts: ["owner_user_id"],
+    shared_groups: ["owner_user_id"],
   };
 
   /** Tables owned through a parent row (migration 113), child -> owning path. */
@@ -80,6 +81,11 @@ describe("RLS enforcement (T2, catalog-driven)", () => {
     budget_period_categories: "budget_periods -> budgets",
     monte_carlo_cash_flows: "monte_carlo_scenarios",
     account_delegate_grants: "account_delegates",
+    shared_participants: "shared_groups",
+    shared_entries: "shared_groups",
+    shared_allocations: "shared_entries -> shared_groups",
+    shared_activity: "shared_groups",
+    shared_invitations: "shared_groups",
   };
 
   const USER_A = "aaaaaaaa-1111-4111-8111-111111111111";
@@ -269,11 +275,14 @@ describe("RLS enforcement (T2, catalog-driven)", () => {
           const got = visible
             .map((r: Record<string, unknown>) => pkKey(table, r))
             .sort();
-          const want = [pkKey(table, seeder.seededRowFor(table, user))];
+          const want = seeder
+            .seededRowsFor(table, user)
+            .map((row) => pkKey(table, row))
+            .sort();
           if (JSON.stringify(got) !== JSON.stringify(want)) {
             violations.push(
               `${table} (user ${user === USER_A ? "A" : "B"}): saw ${got.length} ` +
-                `row(s), expected exactly the 1 seeded row`,
+                `row(s), expected exactly the ${want.length} seeded rows`,
             );
           }
         }

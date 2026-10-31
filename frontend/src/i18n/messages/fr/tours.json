@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "Ajoutez d'abord un compte : cette visite explique comment enregistrer une transaction.",
       "securitiesExist": "Ajoutez d'abord un titre : cette visite en ouvre un depuis votre liste de titres.",
-      "ownerView": "Revenez d’abord à vos propres données. Cette visite couvre les Règles et la boîte de révision par l’IA, qui ne sont pas disponibles lorsque vous agissez pour le compte de quelqu’un d’autre."
+      "ownerView": "Revenez d'abord à vos propres données. Cette visite présente des fonctions indisponibles lorsque vous agissez pour une autre personne."
     },
     "start": "Démarrer",
     "restart": "Refaire",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "Un rappel avant chaque réinitialisation",
             "body": "Deux mois avant la réinitialisation d’une règle, Monize vous demande ici de confirmer le maximum de l’année suivante. Si vous ne faites rien, la règle garde son maximum et se réinitialise à sa date. Choisissez comment les rappels vous parviennent dans les **Paramètres**, section **Notifications**, sous **Factures et planifiés**."
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "Dépenses partagées",
+        "steps": {
+          "welcome": {
+            "title": "Voyagez ensemble, gardez des comptes clairs",
+            "body": "Découvrez comment suivre les achats du groupe et les remboursements. Cette visite ne crée aucune entrée à votre place."
+          },
+          "tools": {
+            "title": "Ouvrir les dépenses partagées",
+            "body": "Retrouvez **Dépenses partagées** dans **Outils**. Sur téléphone, utilisez le menu de navigation."
+          },
+          "newGroup": {
+            "title": "Commencer par votre groupe",
+            "body": "**Nouveau groupe** réunit le nom du voyage, les personnes et la devise de règlement. Les personnes n'ont pas besoin de compte Monize. Chaque achat peut concerner des membres différents."
+          },
+          "chooseGroup": {
+            "title": "Explorer un groupe",
+            "body": "Ouvrez un groupe pour continuer. Si vous n'en avez pas encore, choisissez **Passer cette étape** et créez-en un après la visite."
+          },
+          "expenses": {
+            "title": "Qui a payé, et pour qui ?",
+            "body": "Avec un accès en modification, utilisez **Ajouter une dépense** pour choisir la personne qui a payé et les bénéficiaires. **Répartir entre** permet des parts égales, des montants exacts, des pourcentages et des parts nulles."
+          },
+          "balances": {
+            "title": "Vérifier les soldes et régler les comptes",
+            "body": "**Soldes** indique qui doit à qui et propose des remboursements. Enregistrez un remboursement après le transfert d'argent. **Fichiers** et **Activité** conservent les justificatifs et l'historique."
+          },
+          "done": {
+            "title": "Prêt pour votre prochain voyage",
+            "body": "Les entrées partagées restent séparées des transactions personnelles. Relancez cette visite à tout moment depuis **Paramètres**, dans **Visites guidées**."
           }
         }
       }

@@ -30,6 +30,8 @@ import {
   INTEGRATION_TYPEORM_OPTIONS,
 } from "../helpers/integration-setup";
 import { withUserContext } from "@/common/db/with-context";
+import { withScopedDb } from "@/common/db/scoped-db";
+import { applyRlsPolicies } from "../helpers/rls-setup";
 
 /**
  * Support (de-identified) backup against a real database. Covers the two
@@ -99,6 +101,9 @@ describe("Support backup (integration)", () => {
     backupService = module.get(BackupService);
     supportService = module.get(SupportBackupService);
     dataSource = module.get(DataSource);
+    // Shared journal tables and attachment constraints are SQL-owned, just as
+    // the restore suite's runtime functions are; entity sync cannot build them.
+    await applyRlsPolicies(dataSource);
   });
 
   afterAll(async () => {
@@ -107,6 +112,45 @@ describe("Support backup (integration)", () => {
 
   it("classifies every exported column (golden allowlist)", async () => {
     const exported = backupService.getBackedUpTableNames();
+    // A real shared export adds its participant claim to the physical columns.
+    // Seed a group so the guard observes the exporter, not an exception list.
+    const owner = await createTestUserDirect(dataSource);
+    const groupId = randomUUID();
+    const participantId = randomUUID();
+    await withUserContext(owner.id, () =>
+      withScopedDb(dataSource, async (m) => {
+        await m.query(
+          `INSERT INTO currencies (code, name, symbol) VALUES ($1, $2, $3)
+           ON CONFLICT (code) DO NOTHING`,
+          ["USD", "US Dollar", "$"],
+        );
+        await m.query(
+          `INSERT INTO shared_groups (id, owner_user_id, name, currency_code)
+           VALUES ($1, $2, $3, $4)`,
+          [groupId, owner.id, "Export fixture", "USD"],
+        );
+        await m.query(
+          `INSERT INTO shared_participants (id, group_id, name) VALUES ($1, $2, $3)`,
+          [participantId, groupId, "Export participant"],
+        );
+        await m.query(
+          `INSERT INTO shared_memberships (id, group_id, participant_id, user_id, role)
+           VALUES ($1, $2, $3, $4, 'OWNER')`,
+          [randomUUID(), groupId, participantId, owner.id],
+        );
+      }),
+    );
+    const raw = await withUserContext(owner.id, () =>
+      backupService.collectRawExport(owner.id, {
+        skipTables: ALWAYS_EXCLUDED_TABLES,
+      }),
+    );
+    expect(raw.tables.shared_groups).toEqual([
+      expect.objectContaining({
+        id: groupId,
+        _snapshot_participant_id: participantId,
+      }),
+    ]);
     // Collected across every table and asserted once at the end, rather than
     // expect()-ing inside the loop. A throw on the first offender hides the
     // rest, and one migration usually adds columns to several tables -- so a
@@ -124,7 +168,12 @@ describe("Support backup (integration)", () => {
          WHERE table_schema = 'public' AND table_name = $1`,
         [table],
       );
-      const schemaColumns = rows.map((r) => r.column_name).sort();
+      const schemaColumns = [
+        ...new Set([
+          ...rows.map((r) => r.column_name),
+          ...(raw.tables[table] ?? []).flatMap((row) => Object.keys(row)),
+        ]),
+      ].sort();
       const ruleColumns = Object.keys(RULES[table] ?? {}).sort();
 
       const unclassified = schemaColumns.filter(
@@ -151,25 +200,53 @@ describe("Support backup (integration)", () => {
 
     const fks: Array<{
       table: string;
-      column: string;
+      columns: string[];
       refTable: string;
+      refColumns: string[];
     }> = await dataSource.query(
-      `SELECT tc.table_name AS table, kcu.column_name AS column,
-              ccu.table_name AS "refTable"
-       FROM information_schema.table_constraints tc
-       JOIN information_schema.key_column_usage kcu
-         ON tc.constraint_name = kcu.constraint_name
-        AND tc.table_schema = kcu.table_schema
-       JOIN information_schema.constraint_column_usage ccu
-         ON tc.constraint_name = ccu.constraint_name
-        AND tc.table_schema = ccu.table_schema
-       WHERE tc.constraint_type = 'FOREIGN KEY'
-         AND tc.table_schema = 'public'`,
+      `SELECT src.relname AS table, dst.relname AS "refTable",
+              array_agg(local_col.attname::text ORDER BY pair.position) AS columns,
+              array_agg(target_col.attname::text ORDER BY pair.position) AS "refColumns"
+       FROM pg_constraint fk
+       JOIN pg_class src ON src.oid = fk.conrelid
+       JOIN pg_class dst ON dst.oid = fk.confrelid
+       JOIN pg_namespace ns ON ns.oid = src.relnamespace
+       CROSS JOIN LATERAL unnest(fk.conkey, fk.confkey) WITH ORDINALITY
+         AS pair(local_number, target_number, position)
+       JOIN pg_attribute local_col ON local_col.attrelid = src.oid
+         AND local_col.attnum = pair.local_number
+       JOIN pg_attribute target_col ON target_col.attrelid = dst.oid
+         AND target_col.attnum = pair.target_number
+       WHERE fk.contype = 'f' AND ns.nspname = 'public'
+       GROUP BY fk.oid, src.relname, dst.relname`,
     );
 
-    const covered = (table: string, column: string): boolean =>
-      (REFS_FOR_TEST.get(table) ?? []).some((r) => r.column === column);
-
+    const key = (
+      table: string,
+      columns: string[],
+      refTable: string,
+      refColumns: string[],
+    ) =>
+      `${table}.(${columns
+        .map((column, i) => `${column}->${refColumns[i]}`)
+        .sort()
+        .join(",")})->${refTable}`;
+    const ruleKey = (
+      table: string,
+      rule: { column: string; refTable: string; scope?: readonly string[] },
+    ) =>
+      key(table, [rule.column, ...(rule.scope ?? [])], rule.refTable, [
+        "id",
+        ...(rule.scope ?? []),
+      ]);
+    const realFkKeys = new Set(
+      fks.map((fk) => key(fk.table, fk.columns, fk.refTable, fk.refColumns)),
+    );
+    const scalarFkKeys = new Set(
+      fks
+        .filter((fk) => fk.columns.length === 1 && fk.refColumns[0] === "id")
+        .map((fk) => `${fk.table}.${fk.columns[0]}->${fk.refTable}`),
+    );
     const uncoveredFks = fks
       .filter(
         (fk) =>
@@ -177,8 +254,15 @@ describe("Support backup (integration)", () => {
           exported.has(fk.refTable) &&
           !IGNORED_REF_TABLES.has(fk.refTable),
       )
-      .filter((fk) => !covered(fk.table, fk.column))
-      .map((fk) => `${fk.table}.${fk.column} -> ${fk.refTable}`);
+      .filter(
+        (fk) =>
+          !(REFS_FOR_TEST.get(fk.table) ?? []).some(
+            (rule) =>
+              ruleKey(fk.table, rule) ===
+              key(fk.table, fk.columns, fk.refTable, fk.refColumns),
+          ),
+      )
+      .map((fk) => key(fk.table, fk.columns, fk.refTable, fk.refColumns));
 
     // FKs declared in database/schema.sql (production truth) that the TypeORM
     // entities do NOT model as relations, so `synchronize` never creates the
@@ -192,14 +276,14 @@ describe("Support backup (integration)", () => {
 
     // Reverse guard: a REFS entry that matches neither a real FK nor a known
     // schema-only FK is stale.
-    const realFkKeys = new Set(
-      fks.map((fk) => `${fk.table}.${fk.column}->${fk.refTable}`),
-    );
     const staleRefs: string[] = [];
     for (const [table, rules] of REFS_FOR_TEST) {
       for (const r of rules) {
         const key = `${table}.${r.column}->${r.refTable}`;
-        if (!realFkKeys.has(key) && !SCHEMA_ONLY_FKS.has(key)) {
+        if (
+          !realFkKeys.has(ruleKey(table, r)) &&
+          !(!r.scope?.length && SCHEMA_ONLY_FKS.has(key))
+        ) {
           staleRefs.push(`${table}.${r.column} -> ${r.refTable}`);
         }
       }
@@ -207,7 +291,7 @@ describe("Support backup (integration)", () => {
     // Keep the exception list honest: if an entity gains the relation back, the
     // constraint appears in the test DB and the exception becomes obsolete.
     const obsoleteExceptions = [...SCHEMA_ONLY_FKS].filter((key) =>
-      realFkKeys.has(key),
+      scalarFkKeys.has(key),
     );
 
     expect({ uncoveredFks }).toEqual({ uncoveredFks: [] });

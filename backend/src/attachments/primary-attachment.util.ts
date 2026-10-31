@@ -31,6 +31,21 @@ export function primaryAttachmentSql(alias: string): string {
   return `${alias}.${PRIMARY_ATTACHMENT_SQL}`;
 }
 
+/** The original side of a scan pair; arguments are internal SQL expressions. */
+export function attachmentOriginalSql(
+  primaryReference: string,
+  alias?: string,
+): string {
+  return `${alias ? `${alias}.` : ""}original_of_attachment_id = ${primaryReference}`;
+}
+
+/** The same visibility decision for an already-authorized metadata row. */
+export function isPrimaryAttachment(row: {
+  originalOfAttachmentId: string | null;
+}): boolean {
+  return row.originalOfAttachmentId === null;
+}
+
 /** TypeORM `where` fragment, to spread into a `find`/`count` condition. */
 export const primaryAttachmentWhere = {
   originalOfAttachmentId: IsNull(),

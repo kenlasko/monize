@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "Квитанції електронної пошти",
         "BONDS": "Облігації",
         "AI_REVIEW": "Пропозиції перевірки ШІ",
-        "WARRANTIES": "Нагадування про гарантії"
+        "WARRANTIES": "Нагадування про гарантії",
+        "SHARED_EXPENSES": "Спільні витрати"
       },
       "channelNotApplicable": "Не застосовно для цього типу сповіщень",
       "emailToggleLabel": "Ел. пошта (звіт) для «{category}»",
@@ -835,7 +836,19 @@
       },
       "doneButton": "Готово",
       "unlinkedBondSecuritiesList": "Зачеплені цінні папери: {symbols}.",
-      "unlinkedBondSecuritiesMore": "і ще {count}"
+      "unlinkedBondSecuritiesMore": "і ще {count}",
+      "counts": {
+        "sharedGroups": "Групи спільних витрат",
+        "sharedParticipants": "Учасники груп",
+        "sharedEntries": "Записи груп",
+        "sharedAllocations": "Розподіли витрат",
+        "sharedActivity": "Дії в групах",
+        "sharedPeople": "Контакти спільних витрат",
+        "sharedPersonLinks": "Пов’язані контакти",
+        "sharedIntegrations": "Зв’язки з особистими фінансами",
+        "sharedPostings": "Особисті проведення спільних витрат",
+        "sharedLedgerLinks": "Пов’язані особисті операції"
+      }
     },
     "storedBackups": {
       "heading": "Автоматичні резервні копії",

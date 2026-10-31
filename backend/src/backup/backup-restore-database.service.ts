@@ -109,6 +109,11 @@ export class BackupRestoreDatabaseService {
       { rows: data.scheduled_transactions, column: "currency_code" },
       { rows: data.securities, column: "currency_code" },
       { rows: data.budgets, column: "currency_code" },
+      { rows: backupTables(data).shared_groups, column: "currency_code" },
+      {
+        rows: backupTables(data).shared_entries,
+        column: "original_currency_code",
+      },
     ];
 
     for (const { rows, column } of tablesWithCurrency) {

@@ -25,6 +25,13 @@ export const TOUR_ANCHORS = {
   navRules: 'nav-rules',
   navWarranties: 'nav-warranties',
   navTaxes: 'nav-taxes',
+  navSharedExpenses: 'nav-shared-expenses',
+
+  // Shared expenses: stable page/form containers, never one id per group row.
+  sharedNewGroup: 'shared-new-group',
+  sharedGroupList: 'shared-group-list',
+  sharedGroupActions: 'shared-group-actions',
+  sharedGroupTabs: 'shared-group-tabs',
 
   // Dashboard
   dashboardWidgets: 'dashboard-widgets',

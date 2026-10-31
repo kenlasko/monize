@@ -207,5 +207,9 @@
   "payrollDeduction": {
     "resetTitle": "[XX-{category}: confirm next year's maximum-XX]",
     "resetMessage": "[XX-The {category} deduction on {bill} resets on {date}. Update the yearly maximum if it changes; otherwise {amount} applies again.-XX]"
+  },
+  "shared": {
+    "title": "[XX-Shared expenses-XX]",
+    "message": "[XX-A shared group has an update. Open Monize to review it.-XX]"
   }
 }

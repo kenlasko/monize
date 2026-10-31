@@ -83,6 +83,10 @@ export const PUSH_CATEGORY_COPY: Readonly<
     title: "AI review proposals",
     body: "Some AI review proposals wait for your decision. Open Monize for the details.",
   },
+  [NotificationCategory.SHARED_EXPENSES]: {
+    title: "Shared expenses",
+    body: "A shared group has an update. Open Monize to review it.",
+  },
   [NotificationCategory.WARRANTIES]: {
     title: "Warranty reminder",
     body: "One of your warranties expires soon. Open Monize for the details.",

@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { NotificationController } from "./notification.controller";
 import { NotificationService } from "./notification.service";
 import { BudgetsService } from "../budgets/budgets.service";
+import { SharedNotificationsService } from "../shared-expenses/shared-notifications.service";
 
 describe("NotificationController", () => {
   const notifications = {
@@ -13,6 +14,7 @@ describe("NotificationController", () => {
     dismissAll: jest.fn(),
   };
   const budgets = { ensureBillDueNotifications: jest.fn() };
+  const shared = { deliver: jest.fn() };
   const req = { user: { id: "user-1" } };
   let controller: NotificationController;
 
@@ -20,11 +22,13 @@ describe("NotificationController", () => {
     jest.clearAllMocks();
     notifications.list.mockResolvedValue([]);
     budgets.ensureBillDueNotifications.mockResolvedValue(undefined);
+    shared.deliver.mockResolvedValue(undefined);
     const module = await Test.createTestingModule({
       controllers: [NotificationController],
       providers: [
         { provide: NotificationService, useValue: notifications },
         { provide: BudgetsService, useValue: budgets },
+        { provide: SharedNotificationsService, useValue: shared },
       ],
     }).compile();
     controller = module.get(NotificationController);
@@ -34,6 +38,7 @@ describe("NotificationController", () => {
     it("does not materialize notifications while a delegate reads the feed", async () => {
       await controller.list({ user: { id: "owner-1", isActing: true } });
       expect(budgets.ensureBillDueNotifications).not.toHaveBeenCalled();
+      expect(shared.deliver).not.toHaveBeenCalled();
       expect(notifications.list).toHaveBeenCalledWith("owner-1", {
         unreadOnly: false,
       });
@@ -43,6 +48,7 @@ describe("NotificationController", () => {
       await controller.list(req);
 
       expect(budgets.ensureBillDueNotifications).toHaveBeenCalledWith("user-1");
+      expect(shared.deliver).toHaveBeenCalledTimes(1);
       expect(notifications.list).toHaveBeenCalledWith("user-1", {
         unreadOnly: false,
       });
@@ -54,6 +60,7 @@ describe("NotificationController", () => {
       await controller.list(req, true);
 
       expect(budgets.ensureBillDueNotifications).not.toHaveBeenCalled();
+      expect(shared.deliver).not.toHaveBeenCalled();
       expect(notifications.list).toHaveBeenCalledWith("user-1", {
         unreadOnly: true,
       });

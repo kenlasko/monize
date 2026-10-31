@@ -282,7 +282,7 @@ export const config = {
     // in this list is a path whose body the frontend buffers. Must stay in
     // step with LARGE_UPLOAD_ROUTES (`src/lib/proxy-body-limit.ts`); the
     // catch-all below repeats the exclusion. `proxy-matcher.test.ts` checks both.
-    "/api/((?!v1/(?:import/mny/parse|backup/restore|ai/query(?:/stream)?|transactions/[^/]+/attachments|email-receipts/mailbox/import)/?$).*)",
+    "/api/((?!v1/(?:import/mny/parse|backup/restore|ai/query(?:/stream)?|transactions/[^/]+/attachments|shared-expenses/groups/[^/]+/(?:entries/[^/]+/)?attachments|email-receipts/mailbox/import)/?$).*)",
     // Match OAuth endpoints for proxying. These have to be enumerated
     // explicitly because the catch-all matcher below excludes any path
     // containing a dot (intended for static files), which would otherwise
@@ -294,6 +294,6 @@ export const config = {
     "/.well-known/oauth-authorization-server/:path*",
     "/.well-known/openid-configuration",
     // Match all other paths except static files
-    "/((?!_next/static|_next/image|favicon.ico|.*\\..*|public|api/v1/(?:import/mny/parse|backup/restore|ai/query(?:/stream)?|transactions/[^/]+/attachments|email-receipts/mailbox/import)/?$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\..*|public|api/v1/(?:import/mny/parse|backup/restore|ai/query(?:/stream)?|transactions/[^/]+/attachments|shared-expenses/groups/[^/]+/(?:entries/[^/]+/)?attachments|email-receipts/mailbox/import)/?$).*)",
   ],
 };

@@ -1,8 +1,14 @@
-import { test, expect, type BrowserContext, type Locator, type Page } from '@playwright/test';
-import { apiFor, scrollUnderHeader, waitForReady } from '../readme/session';
-import { loadIds, type Ids } from '../readme/ids';
-import { showcaseMonth } from '../readme/settings';
-import { docShot, openDocsSession } from './capture';
+import {
+  test,
+  expect,
+  type BrowserContext,
+  type Locator,
+  type Page,
+} from "@playwright/test";
+import { apiFor, scrollUnderHeader, waitForReady } from "../readme/session";
+import { loadIds, type Ids } from "../readme/ids";
+import { showcaseMonth } from "../readme/settings";
+import { docShot, openDocsSession } from "./capture";
 
 // website/docs/transactions.md: the register in its views, the filter panel, a
 // search, and the transaction form in each mode. Every form is left with
@@ -21,11 +27,11 @@ test.beforeAll(async ({ browser }) => {
   // browser; every picture starts from none of them.
   await context.addInitScript(() => {
     for (const key of Object.keys(window.localStorage)) {
-      if (key.startsWith('transactions.')) window.localStorage.removeItem(key);
+      if (key.startsWith("transactions.")) window.localStorage.removeItem(key);
     }
   });
   page = await context.newPage();
-  await page.goto('/dashboard');
+  await page.goto("/dashboard");
   ids = await loadIds(apiFor(page));
 });
 
@@ -48,31 +54,41 @@ test.afterAll(async () => {
  * for longer than the usual wait, so this one is generous.
  */
 async function settled(): Promise<void> {
-  await expect(page.locator('.animate-spin, .animate-pulse')).toHaveCount(0, { timeout: 90_000 });
+  await expect(page.locator(".animate-spin, .animate-pulse")).toHaveCount(0, {
+    timeout: 90_000,
+  });
   await waitForReady(page);
 }
 
 async function openPage(path: string): Promise<void> {
   await expect(async () => {
     await page.goto(path);
-    await expect(page.getByRole('main').first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("main").first()).toBeVisible({
+      timeout: 30_000,
+    });
   }).toPass({ timeout: 120_000 });
   await settled();
 }
 
 const chartDrawn = () =>
-  expect(page.locator('.recharts-surface').first()).toBeVisible({ timeout: 30_000 });
+  expect(page.locator(".recharts-surface").first()).toBeVisible({
+    timeout: 30_000,
+  });
 
-const scrollTo = (locator: Locator, gap = 16) => scrollUnderHeader(page, locator, gap);
+const scrollTo = (locator: Locator, gap = 16) =>
+  scrollUnderHeader(page, locator, gap);
 
-async function openRegister(query = ''): Promise<void> {
+async function openRegister(query = ""): Promise<void> {
   await openPage(`/transactions${query}`);
   // The table, not the calendar the calendar picture leaves behind: the view
   // is remembered outside the register's own filter keys.
-  const table = page.getByRole('button', { name: 'Table', exact: true });
+  const table = page.getByRole("button", { name: "Table", exact: true });
   await expect(table).toBeVisible({ timeout: 90_000 });
-  if ((await table.getAttribute('aria-pressed')) !== 'true') await table.click();
-  await expect(page.getByText(/Showing 1 - \d+ of/).first()).toBeVisible({ timeout: 90_000 });
+  if ((await table.getAttribute("aria-pressed")) !== "true")
+    await table.click();
+  await expect(page.getByText(/Showing 1 - \d+ of/).first()).toBeVisible({
+    timeout: 90_000,
+  });
   await settled();
 }
 
@@ -82,12 +98,14 @@ async function openRegister(query = ''): Promise<void> {
  */
 async function openNewTransaction(): Promise<Locator> {
   await openRegister();
-  const dialog = page.getByRole('dialog', { name: 'New Transaction' });
+  const dialog = page.getByRole("dialog", { name: "New Transaction" });
   await expect(async () => {
     if ((await dialog.count()) === 0) {
-      await page.getByRole('button', { name: '+ New Transaction' }).click();
+      await page.getByRole("button", { name: "+ New Transaction" }).click();
     }
-    await expect(dialog.getByRole('button', { name: 'Create Transaction' })).toBeVisible({
+    await expect(
+      dialog.getByRole("button", { name: "Create Transaction" }),
+    ).toBeVisible({
       timeout: 5_000,
     });
   }).toPass({ timeout: 60_000 });
@@ -97,13 +115,13 @@ async function openNewTransaction(): Promise<Locator> {
 
 /** Leave a form unsaved: Cancel, and Discard if it asks. */
 async function cancel(dialog: Locator): Promise<void> {
-  const discard = page.getByRole('button', { name: 'Discard', exact: true });
+  const discard = page.getByRole("button", { name: "Discard", exact: true });
   await expect(async () => {
     if ((await discard.count()) > 0) {
       await discard.click({ timeout: 5_000 });
     } else if ((await dialog.count()) > 0) {
       await dialog
-        .getByRole('button', { name: 'Cancel', exact: true })
+        .getByRole("button", { name: "Cancel", exact: true })
         .last()
         .click({ timeout: 5_000 });
     }
@@ -111,157 +129,181 @@ async function cancel(dialog: Locator): Promise<void> {
   }).toPass({ timeout: 30_000 });
 }
 
-test('transactions-page', async () => {
+test("transactions-page", async () => {
   await openRegister();
-  await expect(page.getByText('Coffee run').first()).toBeVisible();
+  await expect(page.getByText("Coffee run").first()).toBeVisible();
   await chartDrawn();
   await page.evaluate(() => window.scrollTo(0, 0));
-  await docShot(page, 'transactions-page');
+  await docShot(page, "transactions-page");
 });
 
-test('transactions-list', async () => {
+test("transactions-list", async () => {
   await openRegister();
-  await expect(page.getByText('Coffee run').first()).toBeVisible();
+  await expect(page.getByText("Coffee run").first()).toBeVisible();
   await chartDrawn();
   await scrollTo(page.getByText(/Showing 1 - \d+ of/).first());
-  await docShot(page, 'transactions-list');
+  await docShot(page, "transactions-list");
 });
 
-test('transaction-filters', async () => {
+test("transaction-filters", async () => {
   await openRegister();
   const panel = page
-    .getByRole('textbox', { name: 'Search' })
+    .getByRole("textbox", { name: "Search" })
     .locator(
       'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rounded-lg ")][1]',
     );
-  await expect(panel.getByText('Time Period')).toBeVisible();
+  await expect(panel.getByText("Time Period")).toBeVisible();
   await panel.scrollIntoViewIfNeeded();
-  await docShot(page, 'transaction-filters', panel);
+  await docShot(page, "transaction-filters", panel);
 });
 
-test('transactions-search', async () => {
+test("transactions-search", async () => {
   await openRegister();
-  await page.getByRole('textbox', { name: 'Search' }).fill('payee:tim amount:<10');
-  await expect(page.getByText('Searching:')).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByRole('row', { name: /Tim Hortons/ }).first()).toBeVisible({
+  await page
+    .getByRole("textbox", { name: "Search" })
+    .fill("payee:tim amount:<10");
+  await expect(page.getByText("Searching:")).toBeVisible({ timeout: 30_000 });
+  await expect(
+    page.getByRole("row", { name: /Tim Hortons/ }).first(),
+  ).toBeVisible({
     timeout: 30_000,
   });
-  await page.getByRole('button', { name: 'Search syntax' }).click();
-  await expect(page.getByText('Payee contains costco')).toBeVisible();
+  await page.getByRole("button", { name: "Search syntax" }).click();
+  await expect(page.getByText("Payee contains costco")).toBeVisible();
   await settled();
-  await scrollTo(page.getByRole('textbox', { name: 'Search' }), 80);
-  await docShot(page, 'transactions-search');
-  await page.keyboard.press('Escape');
+  await scrollTo(page.getByRole("textbox", { name: "Search" }), 80);
+  await docShot(page, "transactions-search");
+  await page.keyboard.press("Escape");
 });
 
-test('transactions-columns-menu', async () => {
+test("transactions-columns-menu", async () => {
   await openRegister();
-  await page.getByRole('button', { name: 'Columns', exact: true }).click();
-  const menu = page.getByRole('menu');
+  await page.getByRole("button", { name: "Columns", exact: true }).click();
+  const menu = page.getByRole("menu");
   await expect(menu.first()).toBeVisible();
   await scrollTo(page.getByText(/Showing 1 - \d+ of/).first());
-  await docShot(page, 'transactions-columns-menu');
-  await page.keyboard.press('Escape');
+  await docShot(page, "transactions-columns-menu");
+  await page.keyboard.press("Escape");
 });
 
-test('transactions-calendar', async () => {
+test("transactions-calendar", async () => {
   await openRegister();
-  const grid = page.getByRole('grid');
+  const grid = page.getByRole("grid");
   await expect(async () => {
-    const calendar = page.getByRole('button', { name: 'Calendar', exact: true });
-    if ((await calendar.getAttribute('aria-pressed')) !== 'true') await calendar.click();
+    const calendar = page.getByRole("button", {
+      name: "Calendar",
+      exact: true,
+    });
+    if ((await calendar.getAttribute("aria-pressed")) !== "true")
+      await calendar.click();
     await expect(grid).toBeVisible({ timeout: 5_000 });
   }).toPass({ timeout: 30_000 });
   for (let i = 0; i < showcaseMonth().monthsBack; i++) {
-    await page.getByRole('button', { name: 'Previous month' }).click();
+    await page.getByRole("button", { name: "Previous month" }).click();
   }
-  await expect(grid.getByText('Parents visiting').first()).toBeVisible({ timeout: 30_000 });
+  await expect(grid.getByText("Parents visiting").first()).toBeVisible({
+    timeout: 30_000,
+  });
   await settled();
-  await scrollTo(page.getByRole('group', { name: 'Layers' }));
-  await docShot(page, 'transactions-calendar');
+  await scrollTo(page.getByRole("group", { name: "Layers" }));
+  await docShot(page, "transactions-calendar");
 });
 
-test('transactions-account-view', async () => {
+test("transactions-account-view", async () => {
   await openRegister(`?accountId=${ids.chequing}`);
-  await expect(page.getByText('Current Balance').first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Current Balance").first()).toBeVisible({
+    timeout: 30_000,
+  });
   await chartDrawn();
   await settled();
-  await docShot(page, 'transactions-account-view');
+  await docShot(page, "transactions-account-view");
 });
 
-test('transactions-payee-view', async () => {
+test("transactions-payee-view", async () => {
   await openRegister(`?payeeId=${ids.tim}`);
-  await expect(page.getByText('Total Spent').first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Total Spent").first()).toBeVisible({
+    timeout: 30_000,
+  });
   await chartDrawn();
   await settled();
-  await docShot(page, 'transactions-payee-view');
+  await docShot(page, "transactions-payee-view");
 });
 
-test('transactions-bulk-update', async () => {
+test("transactions-bulk-update", async () => {
   await openRegister();
-  await page.getByRole('button', { name: 'Bulk Update', exact: true }).first().click();
-  const rows = page.getByRole('row').filter({ has: page.getByRole('checkbox') });
+  await page
+    .getByRole("button", { name: "Bulk Update", exact: true })
+    .first()
+    .click();
+  const rows = page
+    .getByRole("row")
+    .filter({ has: page.getByRole("checkbox") });
   await expect(rows.nth(3)).toBeVisible();
-  for (const index of [1, 2, 3]) await rows.nth(index).getByRole('checkbox').check();
-  await expect(page.getByText('3 transactions selected')).toBeVisible();
+  for (const index of [1, 2, 3])
+    await rows.nth(index).getByRole("checkbox").check();
+  await expect(page.getByText("3 transactions selected")).toBeVisible();
   // In bulk mode the filter panel's button reads Cancel Bulk, so this is the
   // selection banner's.
-  await page.getByRole('button', { name: 'Bulk Update', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Bulk Update Transactions' });
+  await page.getByRole("button", { name: "Bulk Update", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Bulk Update Transactions" });
   await expect(dialog).toBeVisible();
   await settled();
-  await docShot(page, 'transactions-bulk-update', dialog);
+  await docShot(page, "transactions-bulk-update", dialog);
   await cancel(dialog);
-  await page.getByRole('button', { name: 'Cancel Bulk' }).click();
+  await page.getByRole("button", { name: "Cancel Bulk" }).click();
 });
 
-test('transaction-form', async () => {
+test("transaction-form", async () => {
   const dialog = await openNewTransaction();
-  await docShot(page, 'transaction-form', dialog);
+  await docShot(page, "transaction-form", dialog);
   await cancel(dialog);
 });
 
-test('transaction-quick-fill', async () => {
+test("transaction-quick-fill", async () => {
   const dialog = await openNewTransaction();
-  await dialog.getByRole('button', { name: 'Show recent transactions' }).click();
-  await expect(page.getByText('Recent transactions', { exact: true })).toBeVisible();
-  await settled();
-  await docShot(page, 'transaction-quick-fill', dialog);
-  await cancel(dialog);
-});
-
-test('split-transaction', async () => {
-  const dialog = await openNewTransaction();
-  await dialog.getByRole('button', { name: 'Split', exact: true }).click();
-  await expect(dialog.getByText('Split Details')).toBeVisible();
-  await settled();
-  await docShot(page, 'split-transaction', dialog);
-  await cancel(dialog);
-});
-
-test('transaction-transfer-form', async () => {
-  const dialog = await openNewTransaction();
-  await dialog.getByRole('button', { name: 'Transfer', exact: true }).click();
-  await expect(dialog.getByText('To Account')).toBeVisible();
-  await settled();
-  await docShot(page, 'transaction-transfer-form', dialog);
-  await cancel(dialog);
-});
-
-test('transaction-attachments', async () => {
-  await openRegister('?search=Avenida');
-  const row = page.getByRole('row', { name: /Hotel Avenida Palace/ });
-  await expect(row).toBeVisible({ timeout: 30_000 });
-  await row.getByRole('cell').nth(2).click();
-  const dialog = page.getByRole('dialog');
+  await dialog
+    .getByRole("button", { name: "Show recent transactions" })
+    .click();
   await expect(
-    dialog.getByRole('button', { name: 'Preview avenida-palace-invoice.png' }),
+    page.getByText("Recent transactions", { exact: true }),
+  ).toBeVisible();
+  await settled();
+  await docShot(page, "transaction-quick-fill", dialog);
+  await cancel(dialog);
+});
+
+test("split-transaction", async () => {
+  const dialog = await openNewTransaction();
+  await dialog.getByRole("button", { name: "Split", exact: true }).click();
+  await expect(dialog.getByText("Split Details")).toBeVisible();
+  await settled();
+  await docShot(page, "split-transaction", dialog);
+  await cancel(dialog);
+});
+
+test("transaction-transfer-form", async () => {
+  const dialog = await openNewTransaction();
+  await dialog.getByRole("button", { name: "Transfer", exact: true }).click();
+  await expect(dialog.getByText("To Account")).toBeVisible();
+  await settled();
+  await docShot(page, "transaction-transfer-form", dialog);
+  await cancel(dialog);
+});
+
+test("transaction-attachments", async () => {
+  await openRegister("?search=Avenida");
+  const row = page.getByRole("row", { name: /Hotel Avenida Palace/ });
+  await expect(row).toBeVisible({ timeout: 30_000 });
+  await row.getByRole("cell").nth(2).click();
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByRole("button", { name: "Preview avenida-palace-invoice.png" }),
   ).toBeVisible({
     timeout: 30_000,
   });
   await settled();
-  const attachments = dialog.getByText('Attachments', { exact: true });
+  const attachments = dialog.getByText("Attachments", { exact: true });
   await attachments.scrollIntoViewIfNeeded();
-  await docShot(page, 'transaction-attachments', dialog);
+  await docShot(page, "transaction-attachments", dialog);
   await cancel(dialog);
 });

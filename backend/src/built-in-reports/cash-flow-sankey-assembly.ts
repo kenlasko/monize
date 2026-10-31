@@ -48,6 +48,7 @@ export interface SankeyCategorizedRow {
 export interface SankeyTransferRow {
   counterpartAccountId: string | null;
   counterpartType: string | null;
+  counterpartManagedPurpose?: string | null;
   counterpartName: string | null;
   currency: string;
   date: string;
@@ -90,7 +91,8 @@ export interface SankeyAssemblyInput {
 }
 
 /** Destination classes, by the counterpart account's type (decision 3). */
-export type SankeyFlowClass = "savings" | "debt" | "other_accounts";
+export type SankeyFlowClass =
+  "savings" | "debt" | "other_accounts" | "shared_settlements";
 
 const SAVINGS_TYPES = new Set(["SAVINGS", "INVESTMENT", "ASSET", "OTHER"]);
 const DEBT_TYPES = new Set(["LOAN", "MORTGAGE", "LINE_OF_CREDIT"]);
@@ -101,13 +103,18 @@ const DEBT_TYPES = new Set(["LOAN", "MORTGAGE", "LINE_OF_CREDIT"]);
  * date (decision 5). A counterpart this reader cannot see is "other accounts"
  * so the identity still closes (section 9).
  */
-export function classifyCounterpart(type: string | null): SankeyFlowClass {
+export function classifyCounterpart(
+  type: string | null,
+  managedPurpose?: string | null,
+): SankeyFlowClass {
+  if (managedPurpose === "SHARED_SETTLEMENT") return "shared_settlements";
   if (type && SAVINGS_TYPES.has(type)) return "savings";
   if (type && DEBT_TYPES.has(type)) return "debt";
   return "other_accounts";
 }
 
 const INFLOW_ID: Record<SankeyFlowClass, string> = {
+  shared_settlements: "inflow:shared_settlements",
   savings: "inflow:savings",
   debt: "inflow:borrowed",
   other_accounts: "inflow:other_accounts",
@@ -119,6 +126,8 @@ const INFLOW_ID: Record<SankeyFlowClass, string> = {
  */
 export const SANKEY_FIXED_LABELS: Record<string, string> = {
   hub: "Income",
+  "class:shared_settlements": "Shared settlements",
+  "inflow:shared_settlements": "From shared settlements",
   "class:savings": "Savings & investments",
   "class:debt": "Debt payments",
   "class:other_accounts": "Other accounts",
@@ -278,7 +287,10 @@ export function assembleCashFlowSankey(
   }
 
   for (const row of input.transfers) {
-    const flowClass = classifyCounterpart(row.counterpartType);
+    const flowClass = classifyCounterpart(
+      row.counterpartType,
+      row.counterpartManagedPurpose,
+    );
     const inflow = convertHalf(row.inflow, row);
     const outflow = convertHalf(row.outflow, row);
     if (

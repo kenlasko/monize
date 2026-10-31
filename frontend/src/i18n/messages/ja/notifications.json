@@ -207,5 +207,9 @@
   "payrollDeduction": {
     "resetTitle": "{category}：来年の上限額を確認してください",
     "resetMessage": "{bill} の {category} 控除は {date} にリセットされます。年間上限額が変わる場合は更新してください。変わらなければ {amount} が再び適用されます。"
+  },
+  "shared": {
+    "title": "共同支出",
+    "message": "共有グループが更新されました。Monizeを開いて確認してください。"
   }
 }

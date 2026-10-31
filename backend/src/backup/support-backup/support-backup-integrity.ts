@@ -1,4 +1,5 @@
 import { TableMap } from "./support-backup-scope";
+import { withSharedSupportRefs } from "./support-backup-shared-refs";
 
 /**
  * Referential-integrity scrub for trimmed exports. Account scoping and date
@@ -13,6 +14,8 @@ import { TableMap } from "./support-backup-scope";
  *   meaningless without their target, e.g. a transfer split whose target
  *   account is gone -- keeping it with a null would violate a CHECK
  *   constraint).
+ * - `error`: refuse a broken shared-journal reference; removing allocations or
+ *   refund sources would alter financial facts or violate journal constraints.
  *
  * The map lists physical FKs from database/schema.sql between tables that the
  * support backup exports. FKs to `users` and `currencies` are excluded: users
@@ -22,10 +25,12 @@ import { TableMap } from "./support-backup-scope";
 export interface RefRule {
   column: string;
   refTable: string;
-  onMissing: "null" | "dropRow";
+  onMissing: "null" | "dropRow" | "error";
+  /** Same-named owner/group columns that complete a composite foreign key. */
+  scope?: readonly string[];
 }
 
-const REFS: Record<string, RefRule[]> = {
+const REFS: Record<string, RefRule[]> = withSharedSupportRefs({
   categories: [
     { column: "parent_id", refTable: "categories", onMissing: "null" },
   ],
@@ -372,7 +377,7 @@ const REFS: Record<string, RefRule[]> = {
       onMissing: "null",
     },
   ],
-};
+});
 
 /**
  * Exposed for the integration completeness guard, which asserts REFS covers
@@ -416,22 +421,22 @@ export function scrubToFixedPoint(
 ): TableMap {
   const out: TableMap = { ...tables };
 
-  // Present-id sets are cached across passes and only the tables that actually
+  // Target rows are cached across passes and only the tables that actually
   // lost rows in a pass are invalidated -- a late pass typically drops a few
   // junction rows and shouldn't rebuild the (large, unchanged) transactions
   // set. `changedTables` also drives convergence: an empty set means fixpoint.
-  const idSets = new Map<string, Set<string>>();
-  const idsOf = (table: string): Set<string> => {
-    let ids = idSets.get(table);
-    if (!ids) {
-      ids = new Set(
-        (out[table] ?? [])
-          .map((row) => str(row.id))
-          .filter((id): id is string => id !== null),
-      );
-      idSets.set(table, ids);
+  const indexed = new Map<string, Map<string, Record<string, unknown>>>();
+  const rowsOf = (table: string): Map<string, Record<string, unknown>> => {
+    let rows = indexed.get(table);
+    if (!rows) {
+      rows = new Map();
+      for (const row of out[table] ?? []) {
+        const id = str(row.id);
+        if (id !== null) rows.set(id, row);
+      }
+      indexed.set(table, rows);
     }
-    return ids;
+    return rows;
   };
 
   let converged = false;
@@ -447,8 +452,22 @@ export function scrubToFixedPoint(
       for (const row of rows) {
         const toNull = rules.filter((rule) => {
           const ref = str(row[rule.column]);
-          return ref !== null && !idsOf(rule.refTable).has(ref);
+          if (ref === null) return false;
+          const target = rowsOf(rule.refTable).get(ref);
+          return (
+            !target ||
+            (rule.scope ?? []).some(
+              (column) =>
+                str(row[column]) === null || row[column] !== target[column],
+            )
+          );
         });
+        const refused = toNull.find((rule) => rule.onMissing === "error");
+        if (refused) {
+          throw new Error(
+            `Support backup has an incomplete shared journal at ${table}.${refused.column}`,
+          );
+        }
         if (toNull.some((rule) => rule.onMissing === "dropRow")) {
           tableChanged = true;
           continue;
@@ -466,7 +485,7 @@ export function scrubToFixedPoint(
       if (tableChanged) {
         out[table] = next;
         // This table's id set shrank, so any reference to it must re-check.
-        idSets.delete(table);
+        indexed.delete(table);
         changedTables.add(table);
       }
     }

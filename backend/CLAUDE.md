@@ -81,7 +81,7 @@ Each module holds `{feature}.module.ts`, controller, service, their specs, `enti
 | A literal inside a regular expression | `escapeRegExp` | a hand-written character class |
 | A text filter offered to a person or a model | `ILike` or a case-insensitive comparison | `Like` |
 | A transaction search string | `applyTransactionSearch` (`src/transactions/apply-transaction-search.ts`), raw | escaping it or wrapping it in `%...%` yourself |
-| A predicate that decides which row counts | one named helper called from every site | the clauses spelled out per site |
+| Row predicates and replay hashes | a shared predicate / `tokenHashesEqual` | duplicated clauses / string comparison |
 | A folded investment action | `applyActionToQuantity` / `acquisitionCost` | a hand-rolled replay |
 | A calendar date stepped over a range | `enumerateDaysYMD` / `addDaysYMD` | a local-midnight `Date` read back with `toISOString()` |
 | Writing `holdings.quantity` / `average_cost` | `rebuildScopesFromTransactions` in the ledger write's own transaction, ordered by `INVESTMENT_REPLAY_ORDER` | an incremental delta or blended average |
@@ -102,7 +102,9 @@ Each module holds `{feature}.module.ts`, controller, service, their specs, `enti
 
 **A read about somebody else needs somebody else's identity.** Under RLS a query keyed on another person returns zero rows from the caller's scope with no error. Decide whose row it is before writing the query; `docs/backend/database-access-and-tenancy.md` has the three answers.
 
-**A mock returns what the real collaborator returns**, typed so `tsc` rejects a shape the real method cannot produce; a fixture is evidence only if the producer could have written it; and a suite that stays green through a behaviour change is a finding, not a pass. `docs/backend/testing.md`.
+**Type mocks as their real collaborators; fixtures must be producible.** Investigate unchanged green tests after behavior changes (`docs/backend/testing.md`).
+
+Shared finance review uses `sharedReviewState`; unbooked entries remain optional (`docs/specs/shared-expenses-consumers.md`).
 
 **Every user-facing string is translated** (`nestjs-i18n`). Exception messages go through `tr(...)` (`src/i18n/translate.ts`); anything composed outside a request goes through `emailTranslator` (`src/i18n/email-translator.ts`). Catalogs in `src/i18n/locales/{locale}/*.json`; the locale list is `SUPPORTED_LOCALE_CODES` in `src/i18n/config.ts`, kept in sync with the frontend's. Develop English-first and run `npm run i18n:pseudo`; translate every other locale as the final commit on the PR (`src/i18n/locales.parity.spec.ts`). Full flow: `src/i18n/README.md`.
 

@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Pengeluaran tanpa kategori",
       "residualUnspent": "Tidak terpakai",
       "residualDeficit": "Diambil dari saldo",
-      "unlinkedAccount": "(rekening tidak tertaut)"
+      "unlinkedAccount": "(rekening tidak tertaut)",
+      "classSharedSettlements": "Penyelesaian bersama",
+      "inflowSharedSettlements": "Dari penyelesaian bersama"
     }
   },
   "pdfExport": {

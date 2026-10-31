@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "Biên lai email",
         "BONDS": "Trái phiếu",
         "AI_REVIEW": "Đề xuất xem xét AI",
-        "WARRANTIES": "Nhắc nhở bảo hành"
+        "WARRANTIES": "Nhắc nhở bảo hành",
+        "SHARED_EXPENSES": "Chi phí chung"
       },
       "channelNotApplicable": "Không áp dụng cho loại thông báo này",
       "emailToggleLabel": "Email báo cáo cho {category}",
@@ -835,7 +836,19 @@
       },
       "doneButton": "Xong",
       "unlinkedBondSecuritiesList": "Chứng khoán bị ảnh hưởng: {symbols}.",
-      "unlinkedBondSecuritiesMore": "và {count} mã nữa"
+      "unlinkedBondSecuritiesMore": "và {count} mã nữa",
+      "counts": {
+        "sharedGroups": "Nhóm chi tiêu chung",
+        "sharedParticipants": "Thành viên nhóm",
+        "sharedEntries": "Mục ghi của nhóm",
+        "sharedAllocations": "Phân chia chi phí",
+        "sharedActivity": "Hoạt động nhóm",
+        "sharedPeople": "Liên hệ chi tiêu chung",
+        "sharedPersonLinks": "Liên hệ được liên kết",
+        "sharedIntegrations": "Kết nối với tài chính cá nhân",
+        "sharedPostings": "Bút toán cá nhân cho chi tiêu chung",
+        "sharedLedgerLinks": "Giao dịch cá nhân được liên kết"
+      }
     },
     "storedBackups": {
       "heading": "Sao lưu tự động",

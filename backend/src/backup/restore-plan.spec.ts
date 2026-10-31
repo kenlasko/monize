@@ -92,6 +92,7 @@ describe("restore plan", () => {
           const pointsForwardOrAtItself = to >= from;
           return (
             pointsForwardOrAtItself &&
+            !fk.initiallyDeferred &&
             !deferred.has(deferredKey(fk.table, fk.column))
           );
         })

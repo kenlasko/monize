@@ -1,3 +1,4 @@
+import { sharedLedgerRefusal } from "./db/shared-ledger-refusal";
 import { HttpException } from "@nestjs/common";
 
 /**
@@ -26,6 +27,8 @@ export interface BulkCreateResult<T> {
  * details never leak into the confirmation card.
  */
 export function bulkSkipReason(error: unknown): string {
+  const sharedRefusal = sharedLedgerRefusal(error);
+  if (sharedRefusal) return sharedRefusal;
   if (error instanceof HttpException) {
     const status = error.getStatus();
     if (status >= 400 && status < 500) {

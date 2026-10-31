@@ -1,8 +1,11 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
+import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { McpBudgetsTools } from "./budgets.tool";
 import { mcpTestCtx, McpTestContext } from "../testing/mcp-test-context";
 
 describe("McpBudgetsTools", () => {
   let tool: McpBudgetsTools;
+  let sharedReview: ReturnType<typeof sharedReviewMock>;
   let budgetReportsService: Record<string, jest.Mock>;
   let server: { registerTool: jest.Mock };
   let ctx: McpTestContext;
@@ -13,7 +16,11 @@ describe("McpBudgetsTools", () => {
       getLlmBudgetStatus: jest.fn(),
     };
 
-    tool = new McpBudgetsTools(budgetReportsService as any);
+    sharedReview = sharedReviewMock();
+    tool = new McpBudgetsTools(
+      budgetReportsService as any,
+      sharedReview as unknown as SharedReviewService,
+    );
 
     server = {
       registerTool: jest.fn((name, _opts, handler) => {
@@ -23,6 +30,21 @@ describe("McpBudgetsTools", () => {
 
     ctx = mcpTestCtx();
     tool.register(server as any);
+  });
+
+  it("returns pending shared changes without adjusting accepted budget actuals", async () => {
+    ctx.setUser({ userId: "u1", scopes: "read" });
+    budgetReportsService.getLlmBudgetStatus.mockResolvedValue({ actual: 100 });
+    sharedReview.annotate.mockImplementation(async (_user, data) => ({
+      ...(data as object),
+      sharedExpenses: { pendingCount: 2 },
+    }));
+    const result = await handlers.get_budget_status({}, ctx);
+    expect(sharedReview.annotate).toHaveBeenCalledWith("u1", { actual: 100 });
+    expect(result.structuredContent).toMatchObject({
+      actual: 100,
+      sharedExpenses: { pendingCount: 2 },
+    });
   });
 
   it("registers exactly one tool", () => {

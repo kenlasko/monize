@@ -172,7 +172,7 @@ describe("currency global liveness", () => {
       ).toEqual([]);
     });
 
-    it("excludes exactly the ownerless referencing tables", () => {
+    it("classifies direct ownership, group membership and global reference tables", () => {
       // Not an exception list: a referencing table with no `user_id` cannot
       // contribute to a per-user answer. Asserted so the rule stays visible if a
       // future table joins exchange_rates in that category.
@@ -185,6 +185,8 @@ describe("currency global liveness", () => {
         "bond_programs",
         "exchange_rate_coverage",
         "exchange_rates",
+        "shared_entries",
+        "shared_groups",
       ]);
       for (const table of [
         "exchange_rates",
@@ -208,7 +210,13 @@ describe("currency global liveness", () => {
       // A branch without the predicate would return every user's codes, so a
       // backup would carry currency rows the exporter has nothing to do with.
       for (const branch of branches) {
-        expect(branch).toMatch(/WHERE user_id = p_user_id/);
+        if (/FROM shared_(groups|entries) WHERE/.test(branch)) {
+          expect(branch).toMatch(/WHERE id IN|WHERE group_id IN/);
+          expect(branch).toContain("g.owner_user_id = p_user_id");
+          expect(branch).toContain(
+            "m.group_id = g.id AND m.user_id = p_user_id AND m.revoked_at IS NULL",
+          );
+        } else expect(branch).toMatch(/WHERE user_id = p_user_id/);
       }
     });
 
@@ -304,6 +312,8 @@ describe("currency global liveness", () => {
     const definers = definitions.filter((d) => /SECURITY DEFINER/.test(d));
     const names = definers.map((d) => /FUNCTION\s+(\w+)/.exec(d)?.[1]).sort();
     expect(names).toEqual([
+      // Shared access helpers reviewed in docs/specs/shared-expenses-security.md.
+      "check_attachment_pair_parent",
       // The global currency-liveness answer, evaluated across every tenant.
       "currency_code_in_use_globally",
       // Whether a grant's account belongs to the delegation's owner, for the
@@ -315,6 +325,13 @@ describe("currency global liveness", () => {
       // is captured under RLS whichever tenant's DELETE fired the trigger
       // (migration 140).
       "record_attachment_blob_tombstone",
+      "shared_document_group",
+      "shared_entry_writable",
+      "shared_group_role",
+      "shared_group_writable",
+      "shared_invitation_allows",
+      "shared_pending_notifications",
+      "shared_validate_entry_allocations",
     ]);
     // Every definer function pins its search_path: without it, a definer can be
     // redirected at objects the caller controls -- the escalation this allowlist

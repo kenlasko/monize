@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "बिना श्रेणी के खर्च",
       "residualUnspent": "खर्च नहीं हुआ",
       "residualDeficit": "शेष राशि से लिया",
-      "unlinkedAccount": "(असंबद्ध खाता)"
+      "unlinkedAccount": "(असंबद्ध खाता)",
+      "classSharedSettlements": "साझा खर्चों का निपटान",
+      "inflowSharedSettlements": "साझा निपटानों से"
     }
   },
   "pdfExport": {

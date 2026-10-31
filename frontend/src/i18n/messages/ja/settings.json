@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "メール領収書",
         "BONDS": "債券",
         "AI_REVIEW": "AIレビュー提案",
-        "WARRANTIES": "保証のリマインダー"
+        "WARRANTIES": "保証のリマインダー",
+        "SHARED_EXPENSES": "共同支出"
       },
       "channelNotApplicable": "この通知タイプには適用されません",
       "emailToggleLabel": "{category} のレポートメール",
@@ -835,7 +836,19 @@
       },
       "doneButton": "完了",
       "unlinkedBondSecuritiesList": "対象の銘柄: {symbols}。",
-      "unlinkedBondSecuritiesMore": "ほか{count}件"
+      "unlinkedBondSecuritiesMore": "ほか{count}件",
+      "counts": {
+        "sharedGroups": "共有支出グループ",
+        "sharedParticipants": "グループの参加者",
+        "sharedEntries": "グループの記録",
+        "sharedAllocations": "支出の配分",
+        "sharedActivity": "グループのアクティビティ",
+        "sharedPeople": "共有支出の連絡先",
+        "sharedPersonLinks": "リンクされた連絡先",
+        "sharedIntegrations": "個人の家計との連携",
+        "sharedPostings": "共有支出の個人記帳",
+        "sharedLedgerLinks": "リンクされた個人取引"
+      }
     },
     "storedBackups": {
       "heading": "自動バックアップ",

@@ -77,6 +77,7 @@ import { DelegationModule } from "./delegation/delegation.module";
 import { EmergencyAccessModule } from "./emergency-access/emergency-access.module";
 import { BondsModule } from "./bonds/bonds.module";
 import { I18nModule } from "./i18n/i18n.module";
+import { SharedExpensesModule } from "./shared-expenses/shared-expenses.module";
 
 @Module({
   imports: [
@@ -85,6 +86,7 @@ import { I18nModule } from "./i18n/i18n.module";
       isGlobal: true,
       envFilePath: "../.env",
     }),
+    SharedExpensesModule,
 
     // Database
     TypeOrmModule.forRootAsync({

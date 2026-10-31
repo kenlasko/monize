@@ -2419,4 +2419,34 @@ describe('AccountForm', () => {
       expect(screen.getByDisplayValue('Self-directed')).toBeInTheDocument();
     });
   });
+  it("labels the retained shared-account toggle visibly and keeps finance navigation secondary", async () => {
+    const account = createExistingAccount({
+      managedPurpose: "SHARED_SETTLEMENT",
+      sharedExpenseGroupId: "group",
+    });
+    await act(async () =>
+      render(
+        <AccountForm
+          account={account}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />,
+      ),
+    );
+    const toggle = screen.getByRole("switch", {
+      name: "Exclude from Net Worth",
+    });
+    expect(toggle.closest("label")).toHaveTextContent("Exclude from Net Worth");
+    expect(screen.getByRole("link", { name: "My Finances" })).toHaveAttribute(
+      "href",
+      "/shared-expenses/private-finances/group",
+    );
+    expect(screen.getByRole("link", { name: "My Finances" })).not.toHaveClass(
+      "bg-blue-600",
+    );
+    expect(
+      screen.getByRole("button", { name: "Save Changes" }),
+    ).toHaveAttribute("type", "submit");
+    expect(screen.queryByLabelText("Account Type")).not.toBeInTheDocument();
+  });
 });

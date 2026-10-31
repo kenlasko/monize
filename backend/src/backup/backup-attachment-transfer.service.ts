@@ -91,7 +91,7 @@ export class BackupAttachmentTransferService {
       (manager) =>
         manager.query(
           `SELECT storage_key FROM transaction_attachments
-            WHERE user_id = $1 AND storage_provider = $2`,
+            WHERE user_id = $1 AND shared_group_id IS NULL AND shared_entry_id IS NULL AND storage_provider = $2`,
           [userId, this.attachmentStorage.name],
         ),
     );

@@ -19,6 +19,16 @@ describe('Combobox', () => {
     vi.clearAllMocks();
   });
 
+  it('keeps a portalled option list inside the viewport when the input is near the bottom', () => {
+    render(<Combobox options={options} onChange={onChange} usePortal />);
+    const input = screen.getByRole('textbox');
+    vi.spyOn(input, 'getBoundingClientRect').mockReturnValue({ top: 700, bottom: 732, left: 20, right: 220, width: 200, height: 32, x: 20, y: 700, toJSON: () => ({}) });
+    fireEvent.focus(input);
+    const list = screen.getByText('Apple').closest('[data-option-index]')!.parentElement!;
+    expect(Number.parseFloat(list.style.top)).toBeLessThan(700);
+    expect(Number.parseFloat(list.style.top) + 240).toBeLessThanOrEqual(window.innerHeight);
+  });
+
   it('renders with label and placeholder', () => {
     render(
       <Combobox label="Fruit" placeholder="Pick a fruit" options={options} onChange={onChange} />,
@@ -1248,6 +1258,23 @@ describe('Combobox', () => {
   });
 
   describe('usePortal', () => {
+    it('keeps options selectable after a delayed focus scroll and follows the input on resize', () => {
+      render(<Combobox options={options} onChange={onChange} usePortal />);
+      const input = screen.getByRole('textbox');
+      const rect = vi.spyOn(input, 'getBoundingClientRect');
+      rect.mockReturnValue({ top: 200, bottom: 240, left: 20, width: 300 } as DOMRect);
+      fireEvent.focus(input);
+      fireEvent.scroll(document.body);
+      expect(screen.getByText('Apple')).toBeVisible();
+      rect.mockReturnValue({ top: 100, bottom: 140, left: 40, width: 280 } as DOMRect);
+      fireEvent(window, new Event('resize'));
+      const list = screen.getByText('Apple').closest('[class*="fixed"]') as HTMLElement;
+      expect(list.style.left).toBe('40px');
+      expect(list.style.width).toBe('280px');
+      fireEvent.click(screen.getByText('Apple'));
+      expect(onChange).toHaveBeenCalledWith('1', 'Apple');
+    });
+
     it('renders dropdown content in a portal', () => {
       render(
         <Combobox options={options} onChange={onChange} usePortal />,

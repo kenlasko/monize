@@ -1,0 +1,57 @@
+import type { SharedJournalEntry } from "../shared-journal";
+
+/** A 300 payment, of which the current person's cost is 100. */
+export const sharedEntryFixture = (
+  patch: Partial<SharedJournalEntry> = {},
+): SharedJournalEntry => ({
+  id: "entry",
+  groupId: "group",
+  createdByUserId: "owner",
+  type: "EXPENSE",
+  state: "POSTED",
+  draftReason: null,
+  title: "Dinner",
+  note: null,
+  categoryLabel: null,
+  date: "2026-01-01",
+  originalAmount: "300.0000",
+  currencyCode: "PLN",
+  groupAmount: "300.0000",
+  fxRate: "1.0000000000",
+  fxRateDate: null,
+  fxSource: "IDENTITY",
+  splitMode: "EXACT",
+  roundingSeed: "seed",
+  revision: 1,
+  financialRevision: 1,
+  sourceEntryId: null,
+  fromParticipantId: null,
+  toParticipantId: null,
+  allocations: [
+    {
+      entryId: "entry",
+      participantId: "me",
+      kind: "CONTRIBUTION",
+      originalAmount: "300.0000",
+      groupAmount: "300.0000",
+      instructionValue: "300",
+    },
+    {
+      entryId: "entry",
+      participantId: "me",
+      kind: "SHARE",
+      originalAmount: "100.0000",
+      groupAmount: "100.0000",
+      instructionValue: "100",
+    },
+    {
+      entryId: "entry",
+      participantId: "anna",
+      kind: "SHARE",
+      originalAmount: "200.0000",
+      groupAmount: "200.0000",
+      instructionValue: "200",
+    },
+  ],
+  ...patch,
+});

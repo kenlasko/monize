@@ -13,7 +13,9 @@ function Controlled({
   label,
   initial,
   onChange,
+  decimalPlaces,
 }: {
+  decimalPlaces?: number;
   label: string;
   initial: number | undefined;
   onChange: (value: number | undefined) => void;
@@ -22,6 +24,7 @@ function Controlled({
   return (
     <CurrencyInput
       label={label}
+      decimalPlaces={decimalPlaces}
       value={value}
       onChange={(next) => {
         onChange(next);
@@ -32,6 +35,45 @@ function Controlled({
 }
 
 describe('CurrencyInput', () => {
+  it.each([
+    [0, "1234.6", 1235, "1,235"],
+    [3, "1.2346", 1.235, "1.235"],
+    [4, "1.23456", 1.2346, "1.2346"],
+  ] as const)(
+    "uses the selected currency precision (%i) for edited values",
+    (places, typed, expected, displayed) => {
+      const onChange = vi.fn();
+      render(
+        <Controlled
+          label="Currency amount"
+          initial={undefined}
+          decimalPlaces={places}
+          onChange={onChange}
+        />,
+      );
+      const input = screen.getByLabelText("Currency amount");
+      fireEvent.change(input, { target: { value: typed } });
+      fireEvent.blur(input);
+      expect(onChange).toHaveBeenLastCalledWith(expected);
+      expect(input).toHaveValue(displayed);
+    },
+  );
+
+  it("preserves an untouched stored four-decimal amount in a three-decimal currency", () => {
+    const onChange = vi.fn();
+    render(
+      <Controlled
+        label="Stored amount"
+        initial={1.2345}
+        decimalPlaces={3}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText("Stored amount");
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(onChange.mock.calls.every(([value]) => value === 1.2345)).toBe(true);
+  });
   it('renders with label', () => {
     render(<CurrencyInput label="Amount" value={100} onChange={vi.fn()} />);
     expect(screen.getByLabelText('Amount')).toBeInTheDocument();

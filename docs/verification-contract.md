@@ -232,6 +232,18 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-PAYROLL-002 a post caps a ruled line and re-sums | **required** | -- | required (not yet met) | -- | -- | -- | -- | -- |
 | INV-PAYROLL-003 posting and projection cap alike | **required** | -- | required (not yet met) | -- | -- | -- | -- | optional |
 | INV-PAYROLL-004 one reset reminder per rule and date | required | -- | required (not yet met) | **required (not yet met)** | -- | -- | -- | -- |
+| SE-001 allocation conservation | **required** | -- | **required** | supporting | -- | -- | -- | required |
+| SE-002 participant history and one invitation claimant | required | -- | required | **required** | -- | -- | -- | optional |
+| SE-003 membership is not private access | required | required | **required** | optional | -- | -- | -- | optional |
+| SE-004 one lasting bank effect | required | -- | **required** | **required** | -- | supporting | -- | required |
+| SE-005 consumption differs from repayment | **required** | -- | **required** | -- | -- | -- | -- | required |
+| SE-006 peer edits await private review | **required** | -- | **required** | -- | -- | -- | -- | required |
+| SE-007 unknown inputs withhold settlement | **required** | -- | required | -- | -- | -- | -- | optional |
+| SE-008 refusal leaves no partial writes | required | required | **required** | required | -- | **required** | -- | optional |
+| SE-009 financial edit explanations | required | -- | **required** | supporting | -- | -- | -- | optional |
+| SE-010 detached restore | required | **required** | **required** | -- | -- | supporting | -- | optional |
+| SE-011 published documents and current access | required | required | **required** | supporting | -- | supporting | -- | required |
+| SE-012 preserved accepted pennies | **required** | -- | required | -- | -- | -- | -- | supporting |
 
 Bold marks the kind that is load-bearing -- the one whose absence means the
 invariant is unverified no matter how many others pass. `INV-PROFILE-001`'s is a

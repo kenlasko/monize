@@ -23,6 +23,7 @@ export const PUBLIC_CLIENT_NAMESPACES = [
   'notifications',
   'rules',
   'settings',
+  'sharedExpenses',
   'tours',
   'transactions',
 ] as const;

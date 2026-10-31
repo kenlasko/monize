@@ -51,6 +51,10 @@
     "warranties": {
       "title": "Promemoria garanzia",
       "body": "Una delle tue garanzie scade a breve. Apri Monize per i dettagli."
+    },
+    "shared_expenses": {
+      "title": "Spese condivise",
+      "body": "Ci sono novità in un gruppo condiviso. Apri Monize per consultarle."
     }
   },
   "actions": {

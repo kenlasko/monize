@@ -1,3 +1,5 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
+import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { BadRequestException } from "@nestjs/common";
 import { McpTransactionsTools } from "./transactions.tool";
 import { McpWriteLimiter } from "../mcp-write-limiter";
@@ -49,6 +51,7 @@ function buildActionBuilderMock(): Record<string, jest.Mock> {
 
 describe("McpTransactionsTools", () => {
   let tool: McpTransactionsTools;
+  let sharedReview: ReturnType<typeof sharedReviewMock>;
   let transactionsService: Record<string, jest.Mock>;
   let payeesService: Record<string, jest.Mock>;
   let analyticsService: Record<string, jest.Mock>;
@@ -150,7 +153,9 @@ describe("McpTransactionsTools", () => {
       releaseForPrompt: jest.fn(),
     };
 
+    sharedReview = sharedReviewMock();
     tool = new McpTransactionsTools(
+      sharedReview as unknown as SharedReviewService,
       transactionsService as any,
       payeesService as any,
       analyticsService as any,
@@ -183,6 +188,50 @@ describe("McpTransactionsTools", () => {
 
     ctx = mcpTestCtx(undefined, { elicitInput });
     tool.register(server as any);
+  });
+
+  it.each([false, true])(
+    "carries shared review with transaction aggregates (include rows %s)",
+    async (includeTransactions) => {
+      ctx.setUser({ userId: "u1", scopes: "read" });
+      analyticsService.getLlmListTransactions.mockResolvedValue({
+        totalExpenses: 100,
+      });
+      transactionsService.getLlmTransactionRows.mockResolvedValue({
+        transactions: [],
+        total: 0,
+        hasMore: false,
+      });
+      sharedReview.annotate.mockImplementation(async (_user, data) => ({
+        ...(data as object),
+        sharedExpenses: { pendingCount: 2 },
+      }));
+      const result = await handlers.list_transactions(
+        { includeTransactions },
+        ctx,
+      );
+      expect(sharedReview.annotate).toHaveBeenCalledWith(
+        "u1",
+        expect.objectContaining({ totalExpenses: 100 }),
+      );
+      expect(result.structuredContent).toMatchObject({
+        totalExpenses: 100,
+        sharedExpenses: { pendingCount: 2 },
+      });
+    },
+  );
+  it("carries the same context for period comparisons", async () => {
+    ctx.setUser({ userId: "u1", scopes: "read" });
+    analyticsService.getLlmPeriodComparison.mockResolvedValue({ change: 100 });
+    sharedReview.annotate.mockImplementation(async (_user, data) => ({
+      ...(data as object),
+      sharedExpenses: { pendingCount: 2 },
+    }));
+    const result = await handlers.compare_periods({}, ctx);
+    expect(result.structuredContent).toMatchObject({
+      change: 100,
+      sharedExpenses: { pendingCount: 2 },
+    });
   });
 
   it("should register 3 tools", () => {

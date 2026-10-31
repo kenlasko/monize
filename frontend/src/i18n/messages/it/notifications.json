@@ -207,5 +207,9 @@
   "payrollDeduction": {
     "resetTitle": "{category}: conferma il massimo del prossimo anno",
     "resetMessage": "La trattenuta {category} su {bill} si azzera il {date}. Aggiorna il massimo annuo se cambia; altrimenti si applica di nuovo {amount}."
+  },
+  "shared": {
+    "title": "Spese condivise",
+    "message": "Ci sono novità in un gruppo condiviso. Apri Monize per consultarle."
   }
 }

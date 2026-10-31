@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "[XX-Uncategorized expenses-XX]",
       "residualUnspent": "[XX-Unspent-XX]",
       "residualDeficit": "[XX-Drawn from balances-XX]",
-      "unlinkedAccount": "[XX-(unlinked account)-XX]"
+      "unlinkedAccount": "[XX-(unlinked account)-XX]",
+      "classSharedSettlements": "[XX-Shared settlements-XX]",
+      "inflowSharedSettlements": "[XX-From shared settlements-XX]"
     }
   },
   "pdfExport": {

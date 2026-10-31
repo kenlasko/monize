@@ -211,6 +211,9 @@ export class Transaction {
   @Column({ type: "varchar", name: "external_id", length: 255, nullable: true })
   externalId: string | null;
 
+  @Column({ type: "uuid", name: "shared_expense_posting_id", nullable: true })
+  sharedExpensePostingId: string | null;
+
   @OneToMany(() => TransactionSplit, (split) => split.transaction)
   splits: TransactionSplit[];
 

@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "未分类支出",
       "residualUnspent": "未花费",
       "residualDeficit": "动用余额",
-      "unlinkedAccount": "（未关联账户）"
+      "unlinkedAccount": "（未关联账户）",
+      "classSharedSettlements": "共同费用的结算",
+      "inflowSharedSettlements": "来自共同结算"
     }
   },
   "pdfExport": {

@@ -56,6 +56,7 @@ const PINNED_DEFAULTS: Record<
   [NotificationCategory.AI_REVIEW]: GLOBAL_DEFAULT,
   // Warranty reminders: the global rule (report email on, push off).
   [NotificationCategory.WARRANTIES]: GLOBAL_DEFAULT,
+  [NotificationCategory.SHARED_EXPENSES]: GLOBAL_DEFAULT,
 };
 
 describe("NotificationPreferenceService", () => {

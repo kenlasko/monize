@@ -4,7 +4,7 @@
  * label here falls back to the raw camelCase key in the dialog, which
  * `restore-labels.contract.test.ts` fails on.
  */
-export const RESTORE_LABELS: Record<string, string> = {
+export const RESTORE_LABELS: Record<string, string | { translationKey: string }> = {
   userPreferences: 'User Preferences',
   userCurrencyPreferences: 'Currency Preferences',
   calendarDayNotes: 'Calendar Day Notes',
@@ -60,4 +60,14 @@ export const RESTORE_LABELS: Record<string, string> = {
   gemStrategyAccounts: 'GEM Strategy Accounts',
   gemStrategyAssets: 'GEM Strategy Assets',
   gemStrategySignals: 'GEM Strategy Signals',
+  sharedGroups: { translationKey: 'restoreResult.counts.sharedGroups' },
+  sharedParticipants: { translationKey: 'restoreResult.counts.sharedParticipants' },
+  sharedEntries: { translationKey: 'restoreResult.counts.sharedEntries' },
+  sharedAllocations: { translationKey: 'restoreResult.counts.sharedAllocations' },
+  sharedActivity: { translationKey: 'restoreResult.counts.sharedActivity' },
+  sharedPeople: { translationKey: 'restoreResult.counts.sharedPeople' },
+  sharedPersonLinks: { translationKey: 'restoreResult.counts.sharedPersonLinks' },
+  sharedIntegrations: { translationKey: 'restoreResult.counts.sharedIntegrations' },
+  sharedPostings: { translationKey: 'restoreResult.counts.sharedPostings' },
+  sharedLedgerLinks: { translationKey: 'restoreResult.counts.sharedLedgerLinks' },
 };

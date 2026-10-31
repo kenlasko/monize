@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "이메일 영수증",
         "BONDS": "채권",
         "AI_REVIEW": "AI 검토 제안",
-        "WARRANTIES": "보증 알림"
+        "WARRANTIES": "보증 알림",
+        "SHARED_EXPENSES": "공동 지출"
       },
       "channelNotApplicable": "이 알림 유형에는 해당되지 않습니다",
       "emailToggleLabel": "{category} 보고서 이메일",
@@ -835,7 +836,19 @@
       },
       "doneButton": "완료",
       "unlinkedBondSecuritiesList": "영향받은 종목: {symbols}.",
-      "unlinkedBondSecuritiesMore": "외 {count}개"
+      "unlinkedBondSecuritiesMore": "외 {count}개",
+      "counts": {
+        "sharedGroups": "공동 지출 그룹",
+        "sharedParticipants": "그룹 참가자",
+        "sharedEntries": "그룹 항목",
+        "sharedAllocations": "지출 분담 내역",
+        "sharedActivity": "그룹 활동",
+        "sharedPeople": "공동 지출 연락처",
+        "sharedPersonLinks": "연결된 연락처",
+        "sharedIntegrations": "개인 재정 연결",
+        "sharedPostings": "공동 지출의 개인 기록",
+        "sharedLedgerLinks": "연결된 개인 거래"
+      }
     },
     "storedBackups": {
       "heading": "자동 백업",

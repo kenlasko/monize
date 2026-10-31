@@ -74,6 +74,8 @@ export const APPLYING_SITES: Readonly<Record<string, string>> = {
  * applying the rules; never add one to make a new path pass.
  */
 export const EXEMPT_INSERT_SITES: Readonly<Record<string, string>> = {
+  "shared-expenses/shared-finance-write.ts":
+    "shared posting rows are derived from the owner's accepted preview; rules must not rewrite its chosen categories, cash movements or transfer legs (shared-expenses spec section 7)",
   "backup/backup-restore-database.service.ts":
     "backup restore replays the rows of a backup file verbatim; a rule must not re-edit restored data",
   "action-history/action-history.service.ts":

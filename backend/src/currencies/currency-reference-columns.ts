@@ -14,6 +14,8 @@
 export const CURRENCY_REFERENCE_COLUMNS: Readonly<
   Record<string, readonly string[]>
 > = {
+  shared_groups: ["currency_code"],
+  shared_entries: ["original_currency_code"],
   user_currency_preferences: ["currency_code"],
   // Global reference data with no owner. Present for completeness (the guard
   // test compares against every FK in the schema) but never in a user's export.

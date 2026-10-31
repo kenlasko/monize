@@ -57,7 +57,7 @@ interface TourTooltipProps {
   /** Park an anchorless card in a bottom corner instead of centering it, so the
    *  page behind stays readable and usable. The corner is the right one unless
    *  `placement` is 'left'. Ignored when `rect` is set (anchored cards position
-   *  against the anchor) and on mobile (where the card is a bottom sheet
+   *  against the anchor) and on mobile (where the card is an edge sheet
    *  already). */
   corner?: boolean;
   /** Last step (or the skipped outro): the primary button is Done, not Next. */
@@ -121,7 +121,8 @@ function useIsMobile(): boolean {
  * a walkthrough): on desktop it moves focus to itself on each passive step so
  * the controls are keyboard-reachable and `Modal` yields Esc/Tab to it; the
  * only exception is in-form steps, where focus stays with the form. On mobile
- * it renders as a fixed bottom sheet.
+ * it renders as a fixed sheet, flipped above a low anchor by the same placement
+ * resolver so a short page's last control does not sit behind it.
  */
 export function TourTooltip({
   rect,
@@ -244,22 +245,27 @@ export function TourTooltip({
     </>
   );
 
+  const tooltipSize = size ?? { width: 320, height: 160 };
+
   if (isMobile) {
+    const atTop =
+      rect !== null &&
+      computeTooltipPosition(rect, tooltipSize, viewport).placement === 'top';
     return createPortal(
       <div
         ref={cardRef}
         role="dialog"
         aria-live="polite"
         tabIndex={-1}
-        className="fixed inset-x-0 bottom-0 z-[70] rounded-t-2xl border-t border-gray-200 bg-white p-4 shadow-xl outline-none dark:border-gray-700 dark:bg-gray-800"
+        className={`fixed inset-x-0 z-[70] border-gray-200 bg-white p-4 shadow-xl outline-none dark:border-gray-700 dark:bg-gray-800 ${
+          atTop ? 'top-0 rounded-b-2xl border-b' : 'bottom-0 rounded-t-2xl border-t'
+        }`}
       >
         {cardBody}
       </div>,
       document.body,
     );
   }
-
-  const tooltipSize = size ?? { width: 320, height: 160 };
 
   let top: number;
   let left: number;

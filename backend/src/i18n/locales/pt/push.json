@@ -51,6 +51,10 @@
     "warranties": {
       "title": "Lembrete de garantia",
       "body": "Uma das suas garantias expira em breve. Abra o Monize para ver os detalhes."
+    },
+    "shared_expenses": {
+      "title": "Despesas partilhadas",
+      "body": "Há novidades num grupo partilhado. Abra o Monize para as consultar."
     }
   },
   "actions": {

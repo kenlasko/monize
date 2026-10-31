@@ -393,6 +393,10 @@
     "payrollDeduction": {
       "resetTitle": "{{ category }}: 내년 상한액을 확인하세요",
       "resetMessage": "{{ bill }}의 {{ category }} 공제가 {{ date }}에 초기화됩니다. 연간 상한액이 바뀌면 업데이트하세요. 그렇지 않으면 {{ amount }}이(가) 다시 적용됩니다."
+    },
+    "shared": {
+      "title": "공동 지출",
+      "message": "공유 그룹에 변경 사항이 있습니다. Monize를 열어 확인하세요."
     }
   },
   "backupOffsite": {

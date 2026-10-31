@@ -207,5 +207,9 @@
   "payrollDeduction": {
     "resetTitle": "{category}：請確認明年的上限",
     "resetMessage": "{bill} 上的 {category} 扣款將於 {date} 重設。若年度上限有變請更新；否則 {amount} 將再次適用。"
+  },
+  "shared": {
+    "title": "共同支出",
+    "message": "共享群組有更新。開啟 Monize 查看。"
   }
 }

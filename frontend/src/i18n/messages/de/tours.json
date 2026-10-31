@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "Legen Sie zuerst ein Konto an — diese Tour führt durch das Erfassen einer Transaktion.",
       "securitiesExist": "Legen Sie zuerst ein Wertpapier an — diese Tour öffnet eines aus Ihrer Wertpapierliste.",
-      "ownerView": "Wechseln Sie zuerst zu Ihren eigenen Daten zurück. Diese Führung behandelt Regeln und den KI-Prüfungseingang, die nicht verfügbar sind, solange Sie für jemand anderen handeln."
+      "ownerView": "Wechsle zuerst zurück zu deinen eigenen Daten. Diese Tour zeigt Funktionen, die beim Handeln für eine andere Person nicht verfügbar sind."
     },
     "start": "Starten",
     "restart": "Wiederholen",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "Eine Erinnerung vor jeder Rücksetzung",
             "body": "Zwei Monate bevor eine Regel zurückgesetzt wird, bittet Monize Sie hier, den Höchstbetrag für das nächste Jahr zu bestätigen. Tun Sie nichts, behält die Regel ihren Höchstbetrag und wird an ihrem Datum zurückgesetzt. Wie die Erinnerungen Sie erreichen, legen Sie in den **Einstellungen** unter **Benachrichtigungen** bei **Rechnungen und Geplantes** fest."
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "Gemeinsame Ausgaben",
+        "steps": {
+          "welcome": {
+            "title": "Gemeinsam reisen, den Überblick behalten",
+            "body": "Erfahre, wie du Gruppenausgaben und Rückzahlungen erfasst. Diese Tour legt keine Einträge für dich an."
+          },
+          "tools": {
+            "title": "Gemeinsame Ausgaben öffnen",
+            "body": "Du findest **Gemeinsame Ausgaben** unter **Tools**. Auf dem Smartphone nutzt du das Navigationsmenü."
+          },
+          "newGroup": {
+            "title": "Mit der Gruppe beginnen",
+            "body": "Unter **Neue Gruppe** legst du den Reisenamen, die Personen und die Abrechnungswährung fest. Die Personen brauchen kein Monize-Konto. An jedem Einkauf können andere Mitglieder beteiligt sein."
+          },
+          "chooseGroup": {
+            "title": "Eine Gruppe erkunden",
+            "body": "Öffne eine Gruppe, um fortzufahren. Wenn du noch keine hast, wähle **Diesen Schritt überspringen** und erstelle sie nach der Tour."
+          },
+          "expenses": {
+            "title": "Wer hat bezahlt, für wen war es?",
+            "body": "Mit Bearbeitungsrechten wählst du unter **Ausgabe hinzufügen** die zahlende Person und die Begünstigten. **Aufteilen auf** unterstützt gleiche Anteile, genaue Beträge, Prozentsätze und Nullanteile."
+          },
+          "balances": {
+            "title": "Salden prüfen und abrechnen",
+            "body": "**Salden** zeigt, wer wem Geld schuldet, und schlägt Rückzahlungen vor. Erfasse eine Rückzahlung, nachdem das Geld übergeben wurde. **Dateien** und **Aktivität** enthalten Belege und den Verlauf."
+          },
+          "done": {
+            "title": "Bereit für die nächste Reise",
+            "body": "Gemeinsame Einträge bleiben von privaten Transaktionen getrennt. Du kannst diese Tour unter **Einstellungen**, **Geführte Touren** jederzeit wiederholen."
           }
         }
       }

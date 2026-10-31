@@ -1,6 +1,6 @@
-import { resolve } from 'node:path';
-import { defineConfig } from '@playwright/test';
-import readme from './playwright.readme.config';
+import { resolve } from "node:path";
+import { defineConfig } from "@playwright/test";
+import readme from "./playwright.readme.config";
 
 // Documentation capture: the screenshots in website/docs/images/, taken from a
 // running Monize instance that holds the built-in demo data, once per theme.
@@ -18,30 +18,39 @@ import readme from './playwright.readme.config';
 // pages can go side by side without signing each other out.
 //
 // Not part of the test suite: `playwright.config.ts` only looks in ./tests.
-const run = process.env.DOCS_RUN ?? 'all';
+const run = process.env.DOCS_RUN ?? "all";
 const outputDir = `test-results-docs-${run}`;
-process.env.SHOTS_STATE_FILE ??= resolve(__dirname, outputDir, 'session', 'state.json');
+process.env.SHOTS_STATE_FILE ??= resolve(
+  __dirname,
+  outputDir,
+  "session",
+  "state.json",
+);
 
 export default defineConfig({
   ...readme,
-  testDir: '.',
+  testDir: ".",
   outputDir,
-  reporter: [['list']],
+  reporter: [["list"]],
   projects: [
     // Run on its own (`npm run docs:admin`), before the demo seed: not a dependency.
-    { name: 'admin', testMatch: ['docs-screenshots/register-admin.setup.ts'] },
-    { name: 'seed', testMatch: ['readme/01-seed.spec.ts'], use: { browserName: 'chromium' } },
+    { name: "admin", testMatch: ["docs-screenshots/register-admin.setup.ts"] },
     {
-      name: 'dark',
-      testMatch: ['docs-screenshots/*.spec.ts'],
-      use: { browserName: 'chromium', colorScheme: 'dark' },
-      dependencies: ['seed'],
+      name: "seed",
+      testMatch: ["readme/01-seed.spec.ts"],
+      use: { browserName: "chromium" },
     },
     {
-      name: 'light',
-      testMatch: ['docs-screenshots/*.spec.ts'],
-      use: { browserName: 'chromium', colorScheme: 'light' },
-      dependencies: ['seed'],
+      name: "dark",
+      testMatch: ["docs-screenshots/*.spec.ts"],
+      use: { browserName: "chromium", colorScheme: "dark" },
+      dependencies: ["seed"],
+    },
+    {
+      name: "light",
+      testMatch: ["docs-screenshots/*.spec.ts"],
+      use: { browserName: "chromium", colorScheme: "light" },
+      dependencies: ["seed"],
     },
   ],
 });

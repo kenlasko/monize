@@ -408,6 +408,8 @@ export function composeLocalizedNotificationCopy(
         date: dateLabel(earliest),
       });
     }
+    case NotificationType.SHARED_EXPENSE_UPDATED:
+      return pair("shared.title", "shared.message", {});
     case NotificationType.WARRANTY_EXPIRING:
     case NotificationType.WARRANTY_EXPIRES_TODAY: {
       // The name and the stored expiry date only: nothing counts days from

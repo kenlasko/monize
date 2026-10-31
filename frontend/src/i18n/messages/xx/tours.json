@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "[XX-Add an account first — this tour walks through recording a transaction.-XX]",
       "securitiesExist": "[XX-Add a security first — this tour opens one from your securities list.-XX]",
-      "ownerView": "[XX-Switch back to your own data first. This tour covers Rules and the AI review inbox, which are not available while you act for someone else.-XX]"
+      "ownerView": "[XX-Switch back to your own data first. This tour covers features that are not available while you act for someone else.-XX]"
     },
     "start": "[XX-Start-XX]",
     "restart": "[XX-Retake-XX]",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "[XX-A reminder before each reset-XX]",
             "body": "[XX-Two months before a rule resets, Monize asks you here to confirm next year's maximum. If you do nothing, the rule keeps its maximum and resets on its date. Choose how the reminders reach you under **Settings**, in **Notifications**, as **Bills and scheduled**.-XX]"
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "[XX-Shared expenses-XX]",
+        "steps": {
+          "welcome": {
+            "title": "[XX-Share a trip, keep clear balances-XX]",
+            "body": "[XX-See how to track group purchases and repayments. This walkthrough does not create records for you.-XX]"
+          },
+          "tools": {
+            "title": "[XX-Open Shared expenses-XX]",
+            "body": "[XX-Find **Shared expenses** in **Tools**. On a phone, use the navigation menu.-XX]"
+          },
+          "newGroup": {
+            "title": "[XX-Start with your group-XX]",
+            "body": "[XX-**New Group** brings together the trip name, people and settlement currency. People do not need Monize accounts. Each purchase can involve different members.-XX]"
+          },
+          "chooseGroup": {
+            "title": "[XX-Explore a group-XX]",
+            "body": "[XX-Open a group to continue. If you have none yet, use **Skip this step** and create one after the tour.-XX]"
+          },
+          "expenses": {
+            "title": "[XX-Who paid, and who benefited?-XX]",
+            "body": "[XX-With edit access, use **Add Expense** to choose the payer and beneficiaries. **Split Between** supports equal shares, exact amounts, percentages and zero shares.-XX]"
+          },
+          "balances": {
+            "title": "[XX-Check balances and settle up-XX]",
+            "body": "[XX-**Balances** shows who owes whom and suggested repayments. Record a repayment after money changes hands. **Files** and **Activity** keep receipts and history.-XX]"
+          },
+          "done": {
+            "title": "[XX-Ready for your next trip-XX]",
+            "body": "[XX-Shared entries stay separate from personal transactions. Replay this walkthrough anytime from **Settings**, under **Guided tours**.-XX]"
           }
         }
       }

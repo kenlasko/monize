@@ -65,7 +65,8 @@ export type NotificationType =
   | 'WARRANTY_EXPIRES_TODAY'
   // A payroll deduction rule resets in two months (PAYMENTS): confirm next
   // period's maximum. The data carries the names, the reset date and the maximum.
-  | 'PAYROLL_DEDUCTION_RESET_DUE';
+  | 'PAYROLL_DEDUCTION_RESET_DUE'
+  | 'SHARED_EXPENSE_UPDATED';
 
 /** How urgent, and how it is drawn. */
 export type NotificationSeverity = 'info' | 'warning' | 'critical' | 'success';
@@ -109,7 +110,8 @@ export type NotificationCategory =
   | 'EMAIL_RECEIPTS'
   | 'BONDS'
   | 'AI_REVIEW'
-  | 'WARRANTIES';
+  | 'WARRANTIES'
+  | "SHARED_EXPENSES";
 
 export interface Notification {
   id: string;

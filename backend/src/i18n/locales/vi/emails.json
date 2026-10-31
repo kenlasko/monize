@@ -393,6 +393,10 @@
     "payrollDeduction": {
       "resetTitle": "{{ category }}: xác nhận mức tối đa cho năm tới",
       "resetMessage": "Khoản khấu trừ {{ category }} trên {{ bill }} sẽ đặt lại vào {{ date }}. Hãy cập nhật mức tối đa hằng năm nếu thay đổi; nếu không, {{ amount }} sẽ áp dụng lại."
+    },
+    "shared": {
+      "title": "Chi phí chung",
+      "message": "Một nhóm chung có cập nhật. Mở Monize để xem lại."
     }
   },
   "backupOffsite": {

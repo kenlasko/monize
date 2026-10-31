@@ -77,6 +77,8 @@ describe("NetWorthService", () => {
     name: "Checking",
     accountType: AccountType.CHEQUING,
     accountSubType: null,
+    managedPurpose: null,
+    sharedExpenseGroupId: null,
     currencyCode: "USD",
     openingBalance: 1000,
     currentBalance: 1500,

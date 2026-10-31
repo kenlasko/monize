@@ -46,11 +46,9 @@
 # pre-login footprint and fails when a store widens it or a new one appears --
 # this line cannot outlive what it was written for.
 120000	IGNORE	(Information in Browser localStorage - non-identifying zustand persist envelopes, pinned by persisted-storage.guard.test.ts)
-# Keyword match on prose: public/sw.js is the hand-written service worker and
-# is served unminified at the origin root, so ZAP reads words like "user",
-# "from" and "where" in its documentation comments. The repository is public,
-# so those comments disclose nothing; every build-emitted chunk is minified and
-# carries none. frontend/src/test/public-scripts.guard.test.ts pins sw.js as
-# the only verbatim-served script and fails on a TODO/FIXME/XXX/HACK/BUG note
-# in it, so this line cannot outlive what it was written for.
-10027	IGNORE	(Information Disclosure - Suspicious Comments - documentation comments in the hand-written sw.js, pinned by public-scripts.guard.test.ts)
+# Keyword match on public documentation and dependency comments. The hand-written
+# sw.js remains checked for TODO/FIXME/XXX/HACK/BUG notes. OpenCV.js and the pdf.js
+# worker are the two reviewed vendor assets: public-scripts.guard.test.ts checks
+# their SHA-256 digests against the installed dependency files and rejects any
+# other executable/markup asset. The rule level remains unchanged.
+10027	IGNORE	(Information Disclosure - Suspicious Comments - reviewed service-worker and exact vendor-copy comments, pinned by public-scripts.guard.test.ts)

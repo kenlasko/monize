@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "E-posta makbuzları",
         "BONDS": "Tahviller",
         "AI_REVIEW": "Yapay zeka inceleme önerileri",
-        "WARRANTIES": "Garanti hatırlatıcıları"
+        "WARRANTIES": "Garanti hatırlatıcıları",
+        "SHARED_EXPENSES": "Paylaşılan giderler"
       },
       "channelNotApplicable": "Bu bildirim türü için geçerli değil",
       "emailToggleLabel": "{category} için rapor e-postası",
@@ -835,7 +836,19 @@
       },
       "doneButton": "Tamam",
       "unlinkedBondSecuritiesList": "Etkilenen menkul kıymetler: {symbols}.",
-      "unlinkedBondSecuritiesMore": "ve {count} tane daha"
+      "unlinkedBondSecuritiesMore": "ve {count} tane daha",
+      "counts": {
+        "sharedGroups": "Ortak gider grupları",
+        "sharedParticipants": "Grup katılımcıları",
+        "sharedEntries": "Grup kayıtları",
+        "sharedAllocations": "Gider paylaşımları",
+        "sharedActivity": "Grup etkinliği",
+        "sharedPeople": "Ortak gider kişileri",
+        "sharedPersonLinks": "Bağlı kişiler",
+        "sharedIntegrations": "Kişisel finans bağlantıları",
+        "sharedPostings": "Ortak giderlerin kişisel kayıtları",
+        "sharedLedgerLinks": "Bağlı kişisel işlemler"
+      }
     },
     "storedBackups": {
       "heading": "Otomatik Yedekler",

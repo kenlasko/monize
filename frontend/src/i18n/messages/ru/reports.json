@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Расходы без категории",
       "residualUnspent": "Не потрачено",
       "residualDeficit": "Взято из остатков",
-      "unlinkedAccount": "(несвязанный счёт)"
+      "unlinkedAccount": "(несвязанный счёт)",
+      "classSharedSettlements": "Расчеты совместных расходов",
+      "inflowSharedSettlements": "Из совместных расчётов"
     }
   },
   "pdfExport": {

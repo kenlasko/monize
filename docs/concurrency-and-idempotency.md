@@ -642,3 +642,12 @@ SimpleFIN first credential writes serialize on the existing users row, then lock
 ### SimpleFIN setup and discovery
 
 Setup/removal take JobClaimType.SimplefinSetup with key setup and a two-minute lease. Setup additionally records token:<SHA-256 claim URL> before HTTP. Persistence locks the live, matching lease row first, then the user, then the credential; a stale holder is refused. Cleanup uses the lease token and cannot release a successor. Discovery HTTP runs outside a scoped transaction after its committed budget reservation. Reconciliation locks the owner row, then the owned credential, verifies the current Access URL, and only then updates institution/account metadata. The owner lock serializes first-discovery inserts across replicas; no in-process lock or guessed matching participates. Missing IDs retain their historical rows and mappings and disable automatic sync for review.
+
+### Comparing shared command and upload fingerprints
+
+Shared command replay and attachment upload replay compare stored SHA-256 digests
+with `tokenHashesEqual` (`backend/src/auth/crypto.util.ts`). This uses
+`crypto.timingSafeEqual` after checking byte lengths, including for a changed
+payload sharing a long prefix with the original digest. Preserve the existing
+lock, receipt lookup and conflict response; the comparison does not authorize
+access or replace the transaction.

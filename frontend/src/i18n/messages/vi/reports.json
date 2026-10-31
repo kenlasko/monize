@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Chi tiêu chưa phân loại",
       "residualUnspent": "Chưa chi tiêu",
       "residualDeficit": "Rút từ số dư",
-      "unlinkedAccount": "(tài khoản chưa liên kết)"
+      "unlinkedAccount": "(tài khoản chưa liên kết)",
+      "classSharedSettlements": "Thanh toán chi phí chung",
+      "inflowSharedSettlements": "Từ quyết toán chung"
     }
   },
   "pdfExport": {

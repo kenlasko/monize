@@ -46,7 +46,7 @@
     "requires": {
       "transactionEntry": "Añade primero una cuenta: este recorrido explica cómo registrar una transacción.",
       "securitiesExist": "Añade primero un valor: este recorrido abre uno desde tu lista de valores.",
-      "ownerView": "Vuelve primero a tus propios datos. Este recorrido trata las Reglas y la bandeja de revisión de IA, que no están disponibles mientras actúas en nombre de otra persona."
+      "ownerView": "Vuelve primero a tus propios datos. Este recorrido muestra funciones que no están disponibles cuando actúas en nombre de otra persona."
     },
     "start": "Iniciar",
     "restart": "Repetir",
@@ -516,6 +516,39 @@
           "reminders": {
             "title": "Un recordatorio antes de cada reinicio",
             "body": "Dos meses antes de que una regla se reinicie, Monize te pide aquí que confirmes el máximo del año siguiente. Si no haces nada, la regla conserva su máximo y se reinicia en su fecha. Elige cómo te llegan los recordatorios en **Ajustes**, en **Notificaciones**, como **Facturas y programados**."
+          }
+        }
+      },
+      "sharedExpenses": {
+        "title": "Gastos compartidos",
+        "steps": {
+          "welcome": {
+            "title": "Comparte el viaje con las cuentas claras",
+            "body": "Descubre cómo registrar compras del grupo y reembolsos. Este recorrido no crea registros por ti."
+          },
+          "tools": {
+            "title": "Abrir los gastos compartidos",
+            "body": "Encontrarás **Gastos compartidos** en **Herramientas**. En el móvil, usa el menú de navegación."
+          },
+          "newGroup": {
+            "title": "Empieza por tu grupo",
+            "body": "En **Nuevo grupo** indicas el nombre del viaje, las personas y la moneda de liquidación. No necesitan cuentas de Monize. Cada compra puede incluir a distintos miembros."
+          },
+          "chooseGroup": {
+            "title": "Explora un grupo",
+            "body": "Abre un grupo para continuar. Si aún no tienes ninguno, elige **Omitir este paso** y créalo después del recorrido."
+          },
+          "expenses": {
+            "title": "¿Quién pagó y para quién?",
+            "body": "Con permiso de edición, usa **Añadir gasto** para elegir quién pagó y quiénes se beneficiaron. **Repartir entre** permite partes iguales, importes exactos, porcentajes y partes de cero."
+          },
+          "balances": {
+            "title": "Revisa los saldos y liquida las cuentas",
+            "body": "**Saldos** muestra quién debe a quién y sugiere reembolsos. Registra un reembolso después de entregar el dinero. **Archivos** y **Actividad** guardan los recibos y el historial."
+          },
+          "done": {
+            "title": "Todo listo para tu próximo viaje",
+            "body": "Los registros compartidos permanecen separados de las transacciones personales. Repite este recorrido cuando quieras desde **Ajustes**, en **Recorridos guiados**."
           }
         }
       }

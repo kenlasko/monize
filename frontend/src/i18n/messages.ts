@@ -52,6 +52,7 @@ const NAMESPACES = [
   "securities",
   "securityDetail",
   "share",
+  "sharedExpenses",
   "strategies",
   "tags",
   "taxes",

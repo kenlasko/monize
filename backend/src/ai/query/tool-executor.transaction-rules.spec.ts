@@ -1,3 +1,4 @@
+import { sharedReviewProvider } from "../../shared-expenses/__fixtures__/shared-review";
 import { Test } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
 import { ToolExecutorService } from "./tool-executor.service";
@@ -137,6 +138,7 @@ describe("ToolExecutorService transaction rule tools", () => {
     ].map((provide) => ({ provide, useValue: {} }));
     const module = await Test.createTestingModule({
       providers: [
+        sharedReviewProvider(),
         ToolExecutorService,
         AiActionBuilderService,
         { provide: AiActionSigningService, useValue: signing },

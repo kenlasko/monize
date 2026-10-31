@@ -1,3 +1,8 @@
+import { sharedLedgerRefusal } from "../../common/db/shared-ledger-refusal";
+import {
+  SharedReviewService,
+  SHARED_LEDGER_TOOLS,
+} from "../../shared-expenses/shared-review.service";
 import {
   Injectable,
   Inject,
@@ -228,6 +233,7 @@ export class ToolExecutorService {
     private readonly bondSeries: BondSeriesService,
     // `list_warranties` (design decision 11).
     private readonly warrantiesService: WarrantiesService,
+    private readonly sharedReview: SharedReviewService,
   ) {}
 
   async execute(
@@ -352,6 +358,15 @@ export class ToolExecutorService {
       this.logger.log(
         `execute done tool=${toolName} user=${userId} ms=${Date.now() - start} sources=${result.sources.length}`,
       );
+      if (
+        !result.isError &&
+        SHARED_LEDGER_TOOLS.some((name) => name === toolName)
+      ) {
+        return {
+          ...result,
+          data: await this.sharedReview.annotate(userId, result.data),
+        };
+      }
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -398,6 +413,8 @@ export class ToolExecutorService {
    * model can relay them; anything else becomes a generic error.
    */
   private toolErrorFromException(err: unknown, fallback: string): ToolResult {
+    const sharedRefusal = sharedLedgerRefusal(err);
+    if (sharedRefusal) return this.toolError(sharedRefusal);
     if (err instanceof HttpException) {
       const status = err.getStatus();
       if (status >= 400 && status < 500) {

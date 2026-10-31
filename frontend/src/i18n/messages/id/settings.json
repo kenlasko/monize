@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "Tanda terima email",
         "BONDS": "Obligasi",
         "AI_REVIEW": "Usulan tinjauan AI",
-        "WARRANTIES": "Pengingat garansi"
+        "WARRANTIES": "Pengingat garansi",
+        "SHARED_EXPENSES": "Pengeluaran bersama"
       },
       "channelNotApplicable": "Tidak berlaku untuk jenis notifikasi ini",
       "emailToggleLabel": "Email laporan untuk {category}",
@@ -835,7 +836,19 @@
       },
       "doneButton": "Selesai",
       "unlinkedBondSecuritiesList": "Sekuritas terdampak: {symbols}.",
-      "unlinkedBondSecuritiesMore": "dan {count} lagi"
+      "unlinkedBondSecuritiesMore": "dan {count} lagi",
+      "counts": {
+        "sharedGroups": "Grup pengeluaran bersama",
+        "sharedParticipants": "Peserta grup",
+        "sharedEntries": "Entri grup",
+        "sharedAllocations": "Pembagian pengeluaran",
+        "sharedActivity": "Aktivitas grup",
+        "sharedPeople": "Kontak pengeluaran bersama",
+        "sharedPersonLinks": "Kontak tertaut",
+        "sharedIntegrations": "Koneksi ke keuangan pribadi",
+        "sharedPostings": "Pencatatan pribadi pengeluaran bersama",
+        "sharedLedgerLinks": "Transaksi pribadi tertaut"
+      }
     },
     "storedBackups": {
       "heading": "Cadangan Otomatis",

@@ -40,6 +40,7 @@ export const DOCS_LINKS = {
   reports: { page: 'reports' },
   rules: { page: 'rules' },
   settings: { page: 'settings-and-security' },
+  sharedExpenses: { page: 'shared-expenses' },
   taxes: { page: 'taxes' },
   payrollDeductions: { page: 'taxes', section: 'payroll-deductions' },
   notifications: { page: 'settings-and-security', section: 'notifications' },

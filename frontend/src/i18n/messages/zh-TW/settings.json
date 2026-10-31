@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "電子郵件收據",
         "BONDS": "債券",
         "AI_REVIEW": "AI 審核提案",
-        "WARRANTIES": "保固提醒"
+        "WARRANTIES": "保固提醒",
+        "SHARED_EXPENSES": "共同支出"
       },
       "channelNotApplicable": "不適用於此通知類型",
       "emailToggleLabel": "{category} 的報告郵件",
@@ -835,7 +836,19 @@
       },
       "doneButton": "完成",
       "unlinkedBondSecuritiesList": "受影響的證券:{symbols}。",
-      "unlinkedBondSecuritiesMore": "以及另外 {count} 個"
+      "unlinkedBondSecuritiesMore": "以及另外 {count} 個",
+      "counts": {
+        "sharedGroups": "共同支出群組",
+        "sharedParticipants": "群組參與者",
+        "sharedEntries": "群組記錄",
+        "sharedAllocations": "費用分攤",
+        "sharedActivity": "群組活動",
+        "sharedPeople": "共同支出聯絡人",
+        "sharedPersonLinks": "已連結的聯絡人",
+        "sharedIntegrations": "個人財務連結",
+        "sharedPostings": "共同支出的個人記帳",
+        "sharedLedgerLinks": "已連結的個人交易"
+      }
     },
     "storedBackups": {
       "heading": "自動備份",

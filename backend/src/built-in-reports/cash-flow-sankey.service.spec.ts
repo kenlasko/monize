@@ -67,6 +67,7 @@ interface CategorizedFixture {
 }
 
 interface TransferFixture {
+  counterpart_managed_purpose?: string | null;
   counterpart_account_id: string | null;
   counterpart_type: string | null;
   counterpart_name?: string | null;
@@ -190,6 +191,51 @@ describe("CashFlowSankeyService", () => {
    * a USD chequing account inside the scope, since a row's currency is its
    * account's.
    */
+  it("keeps settlement advances and repayments outside savings", async () => {
+    useLedger({
+      whole: [
+        {
+          counterpart_account_id: SAVINGS,
+          counterpart_type: "OTHER",
+          counterpart_managed_purpose: "SHARED_SETTLEMENT",
+          counterpart_name: "Trip settlement",
+          inflow: "100",
+          outflow: "-300",
+        },
+      ],
+    });
+    const result = await service.getCashFlowSankey(
+      USER,
+      "2026-09-01",
+      "2026-09-30",
+    );
+    expect(result.nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "class:shared_settlements", total: 300 }),
+        expect.objectContaining({
+          id: "inflow:shared_settlements",
+          total: 100,
+        }),
+      ]),
+    );
+    expect(
+      result.nodes.some(
+        (node) => node.id === "class:savings" || node.id === "inflow:savings",
+      ),
+    ).toBe(false);
+    expect(result.totals).toMatchObject({
+      income: 0,
+      expenses: 0,
+      inflows: 100,
+      outflows: 300,
+      deficit: 200,
+    });
+    expect(classifyCounterpart("OTHER", "SHARED_SETTLEMENT")).toBe(
+      "shared_settlements",
+    );
+    expect(classifyCounterpart("OTHER")).toBe("savings");
+  });
+
   const EXAMPLE: Ledger = {
     scope: [CHEQUING, US_CHEQUING],
     categorized: [

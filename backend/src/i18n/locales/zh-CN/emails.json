@@ -393,6 +393,10 @@
     "payrollDeduction": {
       "resetTitle": "{{ category }}：请确认明年的上限",
       "resetMessage": "{{ bill }} 上的 {{ category }} 扣款将于 {{ date }} 重置。如果年度上限有变化请更新；否则 {{ amount }} 将再次适用。"
+    },
+    "shared": {
+      "title": "共同支出",
+      "message": "共享群组有更新。打开 Monize 查看。"
     }
   },
   "backupOffsite": {

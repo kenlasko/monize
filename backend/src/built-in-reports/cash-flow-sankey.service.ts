@@ -159,6 +159,7 @@ export function wholeTransferLegsQuery(scope: SankeyQueryScope): BuiltQuery {
         t.currency_code,
         TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
         ${OWN_RATE_SQL("$4")} AS own_rate,
+        cp.managed_purpose AS counterpart_managed_purpose,
         SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) AS inflow,
         SUM(CASE WHEN t.amount < 0 THEN t.amount ELSE 0 END) AS outflow
       FROM transactions t
@@ -175,7 +176,7 @@ export function wholeTransferLegsQuery(scope: SankeyQueryScope): BuiltQuery {
         AND ${INVESTMENT_EXCLUSION_NO_SPLITS}
         AND t.amount <> 0
         AND (cp.id IS NULL OR NOT (cp.id = ANY($2::uuid[])))
-      GROUP BY 1, 2, 3, 4, 5, 6
+      GROUP BY 1, 2, 3, 4, 5, 6, 7
     `,
   };
 }
@@ -198,6 +199,7 @@ export function splitTransferLegsQuery(scope: SankeyQueryScope): BuiltQuery {
         t.currency_code,
         TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
         ${OWN_RATE_SQL("$4")} AS own_rate,
+        cp.managed_purpose AS counterpart_managed_purpose,
         SUM(CASE WHEN ts.amount > 0 THEN ts.amount ELSE 0 END) AS inflow,
         SUM(CASE WHEN ts.amount < 0 THEN ts.amount ELSE 0 END) AS outflow
       FROM transactions t
@@ -214,7 +216,7 @@ export function splitTransferLegsQuery(scope: SankeyQueryScope): BuiltQuery {
         AND ${INVESTMENT_EXCLUSION}
         AND ts.amount <> 0
         AND NOT (ts.transfer_account_id = ANY($2::uuid[]))
-      GROUP BY 1, 2, 3, 4, 5, 6
+      GROUP BY 1, 2, 3, 4, 5, 6, 7
     `,
   };
 }
@@ -231,6 +233,7 @@ interface RawCategorizedRow {
 interface RawTransferRow {
   counterpart_account_id: string | null;
   counterpart_type: string | null;
+  counterpart_managed_purpose: string | null;
   counterpart_name: string | null;
   currency_code: string;
   tx_date: string;
@@ -313,6 +316,7 @@ export class CashFlowSankeyService {
       (row) => ({
         counterpartAccountId: row.counterpart_account_id,
         counterpartType: row.counterpart_type,
+        counterpartManagedPurpose: row.counterpart_managed_purpose,
         counterpartName: row.counterpart_name,
         currency: row.currency_code,
         date: row.tx_date,

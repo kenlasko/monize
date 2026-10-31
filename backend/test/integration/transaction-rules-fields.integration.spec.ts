@@ -261,7 +261,7 @@ describe("Transaction rules: condition fields (integration)", () => {
     expect(await tagged()).toEqual([receipt.id, scanned.id].sort());
   });
 
-  it("a transaction holding only a hidden original is not an attachment", async () => {
+  it("refuses an original on another transaction without making that transaction match attachment rules", async () => {
     const a = await create({});
     const b = await create({});
     const [visible] = (await db.query(
@@ -270,13 +270,22 @@ describe("Transaction rules: condition fields (integration)", () => {
        VALUES ($1, $2, 'v.png', 'image/png', 10, $3, 'v') RETURNING id`,
       [aliceId, a.id, "b".repeat(64)],
     )) as Array<{ id: string }>;
-    // The original hangs off another row: b's only attachment is hidden.
-    await db.query(
-      `INSERT INTO transaction_attachments
+    // Scan pairs now share a parent at the database boundary. A rejected
+    // cross-parent original must neither persist nor make b match the rule.
+    await expect(
+      db.query(
+        `INSERT INTO transaction_attachments
          (user_id, transaction_id, filename, content_type, byte_size, sha256, storage_key, original_of_attachment_id)
        VALUES ($1, $2, 'o.png', 'image/png', 10, $3, 'o', $4)`,
-      [aliceId, b.id, "c".repeat(64), visible.id],
-    );
+        [aliceId, b.id, "c".repeat(64), visible.id],
+      ),
+    ).rejects.toMatchObject({ code: "23514" });
+    expect(
+      await db.query(
+        "SELECT id FROM transaction_attachments WHERE transaction_id = $1",
+        [b.id],
+      ),
+    ).toEqual([]);
     const rule = await asAlice(() =>
       rules.create(
         aliceId,

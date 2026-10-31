@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Nicht kategorisierte Ausgaben",
       "residualUnspent": "Nicht ausgegeben",
       "residualDeficit": "Aus Guthaben entnommen",
-      "unlinkedAccount": "(nicht verknüpftes Konto)"
+      "unlinkedAccount": "(nicht verknüpftes Konto)",
+      "classSharedSettlements": "Gemeinsame Abrechnungen",
+      "inflowSharedSettlements": "Aus gemeinsamen Abrechnungen"
     }
   },
   "pdfExport": {

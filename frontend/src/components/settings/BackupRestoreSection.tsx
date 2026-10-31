@@ -705,16 +705,19 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
               <dl className="space-y-1">
                 {Object.entries(restoreResult.restored)
                   .filter(([, count]) => count > 0)
-                  .map(([key, count]) => (
+                  .map(([key, count]) => {
+                    const label = RESTORE_LABELS[key] ?? key;
+                    return (
                     <div key={key} className="flex justify-between text-sm">
                       <dt className="text-gray-600 dark:text-gray-400">
-                        {RESTORE_LABELS[key] ?? key}
+                        {typeof label === 'string' ? label : t(label.translationKey)}
                       </dt>
                       <dd className="font-medium text-gray-900 dark:text-gray-100">
                         {formatNumber(count, 0)}
                       </dd>
                     </div>
-                  ))}
+                    );
+                  })}
               </dl>
             </div>
 

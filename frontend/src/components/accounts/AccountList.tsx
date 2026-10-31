@@ -70,8 +70,14 @@ const STORAGE_KEYS = {
   collapsedGroups: 'accounts.filter.collapsedGroups',
 };
 
+type AccountGroupType = AccountType | "SHARED_SETTLEMENT";
+const accountGroup = (account: Account): AccountGroupType =>
+  account.managedPurpose === "SHARED_SETTLEMENT"
+    ? "SHARED_SETTLEMENT"
+    : account.accountType;
+
 // Display order for account-type groups: assets first, then liabilities.
-const ACCOUNT_TYPE_ORDER: AccountType[] = [
+const ACCOUNT_TYPE_ORDER: AccountGroupType[] = [
   'CHEQUING',
   'SAVINGS',
   'CASH',
@@ -82,6 +88,7 @@ const ACCOUNT_TYPE_ORDER: AccountType[] = [
   'LOAN',
   'MORTGAGE',
   'OTHER',
+  "SHARED_SETTLEMENT",
 ];
 
 // Helper to get stored value
@@ -212,7 +219,14 @@ const EMPTY_CONVERTED_TOTAL: ConvertedTotal = {
 
 export function AccountList({ accounts, institutions, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, portfolioFailed, defaultCurrency, convertToDefault, onEdit, onRefresh }: AccountListProps) {
   const t = useTranslations('accounts');
+  const ts = useTranslations("sharedExpenses");
   const tc = useTranslations('common');
+  const groupLabel = useCallback(
+    (type: AccountGroupType) =>
+      type === "SHARED_SETTLEMENT"
+        ? ts("settlements")
+        : formatAccountType(type, tc),
+    [ts, tc],);
   const stripAccountName = useMainAccountName();
   const router = useRouter();
   const isDelegateView = useAuthStore((s) => !!s.actingAsUserId);
@@ -257,8 +271,8 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   );
   // Account-type filter: an empty list means "all types". Persisted so the
   // chosen types survive navigating away and back to the page.
-  const [filterTypes, setFilterTypes] = useState<AccountType[]>(() =>
-    getStoredValue<AccountType[]>(STORAGE_KEYS.types, [])
+  const [filterTypes, setFilterTypes] = useState<AccountGroupType[]>(() =>
+    getStoredValue<AccountGroupType[]>(STORAGE_KEYS.types, []),
   );
   // Free-text filter on account name.
   const [filterSearch, setFilterSearch] = useState<string>(() =>
@@ -266,12 +280,12 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   );
 
   // Collapsed account-type groups - initialize from localStorage
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<AccountType>>(() => {
-    const stored = getStoredValue<AccountType[]>(STORAGE_KEYS.collapsedGroups, []);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<AccountGroupType>>(() => {
+    const stored = getStoredValue<AccountGroupType[]>(STORAGE_KEYS.collapsedGroups, [],);
     return new Set(stored);
-  });
+  },);
 
-  const toggleGroup = useCallback((type: AccountType) => {
+  const toggleGroup = useCallback((type: AccountGroupType) => {
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(type)) {
@@ -428,7 +442,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
     }
     if (filterTypes.length > 0) {
       const typeSet = new Set(filterTypes);
-      result = result.filter((l) => typeSet.has(l.primary.accountType));
+      result = result.filter((l) => typeSet.has(accountGroup(l.primary)));
     }
     const search = filterSearch.trim().toLowerCase();
     if (search) {
@@ -475,13 +489,13 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   // Account-type options for the type filter, limited to the types actually
   // present and ordered to match the grouped list below (unknown types last).
   const typeOptions = useMemo<MultiSelectOption[]>(() => {
-    const present = new Set(accounts.map((a) => a.accountType));
+    const present = new Set(accounts.map(accountGroup));
     const ordered = ACCOUNT_TYPE_ORDER.filter((type) => present.has(type));
     for (const type of present) {
       if (!ordered.includes(type)) ordered.push(type);
     }
-    return ordered.map((type) => ({ value: type, label: formatAccountType(type, tc) }));
-  }, [accounts, tc]);
+    return ordered.map((type) => ({ value: type, label: groupLabel(type) }));
+  }, [accounts, groupLabel]);
 
   // Build a map of account IDs to names for showing linked account pairs
   const accountNameMap = useMemo(() => {
@@ -500,17 +514,17 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   // Group logical accounts by account type. A pair no longer needs adjacency
   // ordering -- it is one entry.
   const groupedAccounts = useMemo(() => {
-    const groups = new Map<AccountType, LogicalAccount[]>();
+    const groups = new Map<AccountGroupType, LogicalAccount[]>();
     for (const logical of filteredAndSortedAccounts) {
-      const existing = groups.get(logical.primary.accountType);
+      const existing = groups.get(accountGroup(logical.primary));
       if (existing) {
         existing.push(logical);
       } else {
-        groups.set(logical.primary.accountType, [logical]);
+        groups.set(accountGroup(logical.primary), [logical]);
       }
     }
 
-    const result: { type: AccountType; accounts: LogicalAccount[] }[] = [];
+    const result: { type: AccountGroupType; accounts: LogicalAccount[] }[] = [];
     for (const type of ACCOUNT_TYPE_ORDER) {
       const list = groups.get(type);
       if (list && list.length > 0) {
@@ -538,7 +552,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
     // A group total is partial when one of its accounts has no rate to the
     // display currency; `sumConverted` keeps the subtotal and the missing pairs
     // together so the header can mark it instead of quietly under-reporting.
-    const totals = new Map<AccountType, ConvertedTotal>();
+    const totals = new Map<AccountGroupType, ConvertedTotal>();
     for (const { type, accounts: groupAccounts } of groupedAccounts) {
       // Sum over each entity's underlying ledgers (a brokerage pair is primary
       // plus its cash sub-account) so the arithmetic is exactly what it was
@@ -583,7 +597,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   // indices so AccountRow alternation continues to look right across groups.
   const renderItems = useMemo(() => {
     type Item =
-      | { kind: 'header'; type: AccountType; count: number; total: ConvertedTotal; isCollapsed: boolean }
+      | { kind: 'header'; type: AccountGroupType; count: number; total: ConvertedTotal; isCollapsed: boolean }
       | { kind: 'row'; logical: LogicalAccount; index: number };
     const items: Item[] = [];
     let rowIndex = 0;
@@ -792,7 +806,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
 
   return (
     <div>
-      {/* Filter Bar */}
+      {/* Status segmented control */}
       <div className="px-3 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
@@ -848,7 +862,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                   ariaLabel={t('list.filter.typeAriaLabel')}
                   options={typeOptions}
                   value={filterTypes}
-                  onChange={(vals) => setFilterTypes(vals as AccountType[])}
+                  onChange={(vals) => setFilterTypes(vals as AccountGroupType[])}
                   placeholder={t('list.filter.typePlaceholder')}
                 />
               </div>
@@ -861,8 +875,12 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                   className="text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-w-[16rem]"
                 >
                   <option value="">{t('list.filter.netWorthAll')}</option>
-                  <option value="included">{t('list.filter.inNetWorth')}</option>
-                  <option value="excluded">{t('list.filter.excludedFromNetWorth')}</option>
+                  <option value="included">
+                    {t('list.filter.inNetWorth')}
+                  </option>
+                  <option value="excluded">
+                    {t('list.filter.excludedFromNetWorth')}
+                  </option>
                 </select>
               )}
 
@@ -902,11 +920,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
         />
       ) : (
       <div>
-        {/* Density toggle */}
-        <DensityToggleBar view="accounts" />
-        <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          {/* On a phone the wrapped card labels its own values, so the column
+        {/* On a phone the wrapped card labels its own values, so the column
               header is dropped -- but the controls in that header row must not
               go with it: these `<th>`s are how the list is sorted, and the
               chosen field is persisted, so a header showing fewer fields than
@@ -917,6 +931,12 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
               type, status and last reconciled at once, so naming this header after any one of
               them would misdescribe the column to a screen reader. Each button
               names itself with the label of the field it sorts by. */}
+        <DensityToggleBar view="accounts" />
+        <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          {/* The one column is always sorted by something, and `aria-sort`
+                  is the only place that direction is announced -- the arrow in
+                  each button's label is a glyph, not a state. */}
           <thead className="bg-gray-50 dark:bg-gray-800">
             {wrapped ? (
             <tr>
@@ -1019,9 +1039,14 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                   onClick={() => toggleGroup(item.type)}
                   aria-expanded={!item.isCollapsed}
                 >
-                  {/* Every row of the wrapped layout is one cell, so the group
-                      header is too: its label and its total share that cell
-                      and the row stays as tappable as the tier version. */}
+                  {/* A grid, not a flex row, and for the reason the card
+                          rows are: `minmax(0,1fr)` is a track that may be
+                          zero, so the label truncates instead of setting the
+                          table's minimum width. `min-w-0` on a flex item does
+                          not do that -- the item still contributes the full
+                          width of its nowrap text -- and a group header wider
+                          than the phone displaces every fixed-position panel
+                          on the page. */}
                   {wrapped ? (
                     <td className={cellPadding}>
                       {/* A grid, not a flex row, and for the reason the card
@@ -1035,7 +1060,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-sm">
                         <div className="flex items-center gap-2 min-w-0">
                           <GroupHeaderLabel
-                            label={formatAccountType(item.type, tc)}
+                            label={groupLabel(item.type)}
                             count={t('list.groupCount', { count: item.count })}
                             isCollapsed={item.isCollapsed}
                             labelClassName="truncate"
@@ -1055,7 +1080,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                   <td className={cellPadding}>
                     <div className="flex items-center gap-2 min-w-0 text-sm">
                       <GroupHeaderLabel
-                        label={formatAccountType(item.type, tc)}
+                        label={groupLabel(item.type)}
                         count={t('list.groupCount', { count: item.count })}
                         isCollapsed={item.isCollapsed}
                       />
@@ -1146,7 +1171,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
         onClose={() => setContextAccount(null)}
       />
 
-      {/* Close Account Confirmation Dialog */}
+      {/* Delete Account Confirmation Dialog */}
       <ConfirmDialog
         isOpen={closeDialogOpen}
         title={t('confirmDialog.closeTitle')}

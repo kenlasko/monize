@@ -448,7 +448,7 @@ class ExpressionParser {
  * Only allows basic arithmetic: +, -, *, /, and parentheses.
  * Returns undefined if the expression is invalid.
  */
-export function evaluateExpression(input: string): number | undefined {
+export function evaluateExpression(input: string, decimalPlaces = 2): number | undefined {
   const cleaned = input
     .replace(/,/g, '')
     .replace(/[x×]/gi, '*')
@@ -467,5 +467,5 @@ export function evaluateExpression(input: string): number | undefined {
   const result = parser.parse();
   if (result === undefined) return undefined;
 
-  return roundToCents(result);
+  return roundToDecimals(result, decimalPlaces);
 }

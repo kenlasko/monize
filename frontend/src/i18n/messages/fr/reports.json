@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Dépenses non catégorisées",
       "residualUnspent": "Non dépensé",
       "residualDeficit": "Puisé dans les soldes",
-      "unlinkedAccount": "(compte non lié)"
+      "unlinkedAccount": "(compte non lié)",
+      "classSharedSettlements": "Règlements partagés",
+      "inflowSharedSettlements": "Depuis les règlements partagés"
     }
   },
   "pdfExport": {

@@ -393,6 +393,10 @@
     "payrollDeduction": {
       "resetTitle": "{{ category }}: konfirmasi batas maksimum tahun depan",
       "resetMessage": "Potongan {{ category }} pada {{ bill }} diatur ulang pada {{ date }}. Perbarui batas maksimum tahunan jika berubah; jika tidak, {{ amount }} berlaku lagi."
+    },
+    "shared": {
+      "title": "Pengeluaran bersama",
+      "message": "Ada pembaruan di grup bersama. Buka Monize untuk meninjaunya."
     }
   },
   "backupOffsite": {

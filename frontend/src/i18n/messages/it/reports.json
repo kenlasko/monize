@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Spese senza categoria",
       "residualUnspent": "Non speso",
       "residualDeficit": "Prelevato dai saldi",
-      "unlinkedAccount": "(conto non collegato)"
+      "unlinkedAccount": "(conto non collegato)",
+      "classSharedSettlements": "Regolamenti condivisi",
+      "inflowSharedSettlements": "Dai saldi condivisi"
     }
   },
   "pdfExport": {

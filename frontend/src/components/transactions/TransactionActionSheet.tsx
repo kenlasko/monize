@@ -15,6 +15,7 @@ interface TransactionActionSheetProps {
   onEdit?: (transaction: Transaction) => void;
   onDuplicate?: (transaction: Transaction) => void;
   onScheduleRecurring?: (transaction: Transaction) => void;
+  onShareExpense?: (transaction: Transaction) => void;
   onDeleteClick: (transaction: Transaction) => void;
   onDateFilterClick?: (date: string) => void;
   onAccountFilterClick?: (accountId: string) => void;
@@ -33,6 +34,7 @@ export function TransactionActionSheet({
   onEdit,
   onDuplicate,
   onScheduleRecurring,
+  onShareExpense,
   onDeleteClick,
   onDateFilterClick,
   onAccountFilterClick,
@@ -42,6 +44,7 @@ export function TransactionActionSheet({
   categoryLabelMap,
 }: TransactionActionSheetProps) {
   const t = useTranslations('transactions');
+  const ts = useTranslations('sharedExpenses');
   const payeeDisplay = usePayeeDisplay();
   // The list query joins a category's own row but not its parent, so fall back
   // to the bare name when the full-path label isn't available.
@@ -231,6 +234,14 @@ export function TransactionActionSheet({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             {t('actionSheet.scheduleRecurring')}
+          </button>
+        )}
+        {onShareExpense && transaction && (
+          <button
+            onClick={() => { onClose(); onShareExpense(transaction); }}
+            className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            {ts('splitWithPeople')}
           </button>
         )}
         {!transaction?.linkedInvestmentTransactionId && (

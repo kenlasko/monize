@@ -25,7 +25,10 @@ import {
   DEDUPE_KEY_MAX_LENGTH,
   NotificationService,
 } from "../notification-center/notification.service";
-import { NotificationDispatchService } from "../notifications/notification-dispatch.service";
+import {
+  NotificationDispatchService,
+  NotifyOptions,
+} from "../notifications/notification-dispatch.service";
 
 // The column bounds live with the writer that enforces them; re-exported here
 // because the email-dedupe claim key is bounded by the same column width and
@@ -171,18 +174,23 @@ export class SystemAlertService {
   async raiseUserAlert(
     userId: string,
     input: Omit<SystemAlertInput, "email">,
+    options: NotifyOptions = {},
   ): Promise<{ created: boolean }> {
     try {
       const row = await withUserContext(userId, () =>
-        this.dispatch.notify(userId, {
-          type: input.type,
-          severity: input.severity,
-          title: input.title,
-          message: input.message,
-          data: input.data,
-          target: input.target,
-          dedupeKey: input.dedupeKey,
-        }),
+        this.dispatch.notify(
+          userId,
+          {
+            type: input.type,
+            severity: input.severity,
+            title: input.title,
+            message: input.message,
+            data: input.data,
+            target: input.target,
+            dedupeKey: input.dedupeKey,
+          },
+          options,
+        ),
       );
       return { created: row !== null };
     } catch (error) {

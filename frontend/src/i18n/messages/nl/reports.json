@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Niet-gecategoriseerde uitgaven",
       "residualUnspent": "Niet uitgegeven",
       "residualDeficit": "Uit saldi opgenomen",
-      "unlinkedAccount": "(niet-gekoppelde rekening)"
+      "unlinkedAccount": "(niet-gekoppelde rekening)",
+      "classSharedSettlements": "Gedeelde verrekeningen",
+      "inflowSharedSettlements": "Uit gedeelde verrekeningen"
     }
   },
   "pdfExport": {

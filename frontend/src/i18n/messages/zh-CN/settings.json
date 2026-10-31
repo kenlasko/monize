@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "电子邮件收据",
         "BONDS": "债券",
         "AI_REVIEW": "AI 审核提案",
-        "WARRANTIES": "保修提醒"
+        "WARRANTIES": "保修提醒",
+        "SHARED_EXPENSES": "共同支出"
       },
       "channelNotApplicable": "不适用于此通知类型",
       "emailToggleLabel": "{category} 的报告邮件",
@@ -835,7 +836,19 @@
       },
       "doneButton": "完成",
       "unlinkedBondSecuritiesList": "受影响的证券:{symbols}。",
-      "unlinkedBondSecuritiesMore": "以及另外 {count} 个"
+      "unlinkedBondSecuritiesMore": "以及另外 {count} 个",
+      "counts": {
+        "sharedGroups": "共同支出群组",
+        "sharedParticipants": "群组参与者",
+        "sharedEntries": "群组记录",
+        "sharedAllocations": "费用分摊",
+        "sharedActivity": "群组活动",
+        "sharedPeople": "共同支出联系人",
+        "sharedPersonLinks": "已关联的联系人",
+        "sharedIntegrations": "个人财务关联",
+        "sharedPostings": "共同支出的个人记账",
+        "sharedLedgerLinks": "已关联的个人交易"
+      }
     },
     "storedBackups": {
       "heading": "自动备份",

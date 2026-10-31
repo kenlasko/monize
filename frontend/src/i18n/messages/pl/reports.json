@@ -1990,7 +1990,9 @@
       "uncategorizedExpense": "Wydatki bez kategorii",
       "residualUnspent": "Niewydane",
       "residualDeficit": "Pobrane z sald",
-      "unlinkedAccount": "(niepowiązane konto)"
+      "unlinkedAccount": "(niepowiązane konto)",
+      "classSharedSettlements": "Wspólne rozliczenia",
+      "inflowSharedSettlements": "Ze wspólnych rozliczeń"
     }
   },
   "pdfExport": {

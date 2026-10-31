@@ -51,6 +51,10 @@
     "warranties": {
       "title": "Pengingat garansi",
       "body": "Salah satu garansi Anda segera berakhir. Buka Monize untuk melihat detailnya."
+    },
+    "shared_expenses": {
+      "title": "Pengeluaran bersama",
+      "body": "Ada pembaruan di grup bersama. Buka Monize untuk meninjaunya."
     }
   },
   "actions": {

@@ -1,7 +1,12 @@
+import {
+  prepareSharedRestore,
+  RESTORE_CLEARED_COLUMNS,
+  RESTORE_PRINCIPAL_COLUMNS,
+} from "./shared-backup";
 import { BadRequestException } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { canonicalUuid, collectRowIdRemap } from "./backup-id-remap.util";
-import { BackupData } from "./backup-format";
+import { BackupData, backupTables } from "./backup-format";
 import { DEFERRED_FK_COLUMNS, RESTORE_PLAN } from "./restore-plan";
 import {
   CATALOG_ON_SEVERED,
@@ -249,13 +254,61 @@ describe("RESTORE_REFERENCE_COLUMNS against database/schema.sql", () => {
         if (name === "id" || name === "user_id") continue;
         if (
           RESTORE_REFERENCE_COLUMNS[table]?.[name] === undefined &&
-          CATALOG_REFERENCE_COLUMNS[table]?.[name] === undefined
+          CATALOG_REFERENCE_COLUMNS[table]?.[name] === undefined &&
+          RESTORE_PRINCIPAL_COLUMNS[table]?.[name] === undefined &&
+          !RESTORE_CLEARED_COLUMNS[table]?.includes(name)
         ) {
           unclassified.push(`${table}.${name}`);
         }
       }
     }
     expect(unclassified).toEqual([]);
+  });
+
+  it("classifies cleared fields only when restore writes NULL to nullable schema columns", () => {
+    for (const [table, columns] of Object.entries(RESTORE_CLEARED_COLUMNS)) {
+      expect(restored.has(table)).toBe(true);
+      const source: Record<string, unknown> = {
+        id: randomUUID(),
+        ...Object.fromEntries(columns.map((column) => [column, randomUUID()])),
+      };
+      const result = backupTables(
+        prepareSharedRestore(backup({ [table]: [source] }), randomUUID()),
+      )[table]![0];
+      const definition = new RegExp(
+        `CREATE TABLE(?: IF NOT EXISTS)?\\s+${table}\\s*\\(([\\s\\S]*?)\\n\\);`,
+      ).exec(schema)![1];
+      for (const column of columns) {
+        expect(
+          parseTableColumns(schema, table)?.some(
+            (field) => field.name === column,
+          ),
+        ).toBe(true);
+        const line = new RegExp(`^\\s*${column}\\s+[^\\n]*$`, "m").exec(
+          definition,
+        )![0];
+        expect(line).not.toMatch(/NOT NULL/);
+        expect(result[column]).toBeNull();
+        expect(source[column]).not.toBeNull();
+      }
+    }
+  });
+
+  it("forces only schema-backed user references through the principal policy", () => {
+    for (const [table, columns] of Object.entries(RESTORE_PRINCIPAL_COLUMNS)) {
+      expect(restored.has(table)).toBe(true);
+      for (const [column, policy] of Object.entries(columns)) {
+        expect(
+          foreignKeys.some(
+            (fk) =>
+              fk.table === table &&
+              fk.column === column &&
+              fk.referencedTable === "users",
+          ),
+        ).toBe(true);
+        expect(["owner", "anonymous"]).toContain(policy);
+      }
+    }
   });
 
   it("knows which restored tables have a non-UUID id", () => {

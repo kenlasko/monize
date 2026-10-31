@@ -1,3 +1,4 @@
+import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/server";
@@ -16,7 +17,10 @@ import { uuidString } from "./schema-fragments";
 
 @Injectable()
 export class McpAccountsTools {
-  constructor(private readonly accountsService: AccountsService) {}
+  constructor(
+    private readonly accountsService: AccountsService,
+    private readonly sharedReview: SharedReviewService,
+  ) {}
 
   register(server: McpServer) {
     server.registerTool(
@@ -25,16 +29,14 @@ export class McpAccountsTools {
         title: "List accounts",
         annotations: READ_ONLY,
         description:
-          "The user's accounts and an assets / liabilities / net-worth summary " +
-          "matching the dashboard. A brokerage account's `balance` is its " +
-          "market value; others include future transactions (`currentBalance` " +
-          "is through today). Both are also in `defaultCurrency` (the totals' " +
-          "currency) as `balanceInDefaultCurrency` / " +
-          "`currentBalanceInDefaultCurrency` at today's `exchangeRate`: quote " +
-          "a foreign account in both, never convert yourself. A null balance " +
-          "or total is withheld, not zero: say so, naming `missingRatePairs` " +
-          "or `unpricedSymbols`. Loan and mortgage rows carry their schedule. " +
-          "`totalAccounts` counts AFTER filtering.",
+          "Accounts and dashboard assets/liabilities/net worth. Brokerage `balance` " +
+          "is market value; other balances include future transactions, while " +
+          "`currentBalance` ends today. `balanceInDefaultCurrency` and " +
+          "`currentBalanceInDefaultCurrency` use today's `exchangeRate` and the " +
+          "totals' `defaultCurrency`: quote foreign accounts in both currencies, " +
+          "never convert yourself. Null means withheld, not zero: name " +
+          "`missingRatePairs` or `unpricedSymbols`. Loans/mortgages include their " +
+          "schedule. `totalAccounts` counts filtered accounts.",
         inputSchema: z.object({
           accountNames: z
             .array(z.string().max(100))
@@ -74,7 +76,9 @@ export class McpAccountsTools {
             status: args.status,
             accountTypes: args.accountTypes,
           });
-          return toolResult(data);
+          return toolResult(
+            await this.sharedReview.annotate(user.userId, data),
+          );
         } catch (err: unknown) {
           return safeToolError(err);
         }

@@ -94,6 +94,20 @@ describe('NotificationList', () => {
     expect(screen.queryByRole('link', { name: 'Active reminders' })).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['/shared-expenses/group-1', false],
+    ['/shared-expenses', true],
+  ] as const)('opens a shared activity notice at its safe target %s', (target, accessChanged) => {
+    render(<NotificationList {...defaultProps} notifications={[makeNotification({
+      type: 'SHARED_EXPENSE_UPDATED', severity: 'info', target,
+      data: { groupId: 'group-1', accessChanged }, budgetId: null,
+    })]} />);
+    fireEvent.click(screen.getByTestId('notification-item-notification-1'));
+    expect(defaultProps.onMarkRead).toHaveBeenCalledWith('notification-1');
+    expect(defaultProps.onClose).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith(target);
+  });
+
   it('lets a delegate open a row without changing read state or exposing write controls', () => {
     render(<NotificationList {...defaultProps} canManageNotifications={false}
       notifications={[makeNotification(), makeNotification({ id: 'nag', data: { reminderId: 'rem-1' } })]} />);

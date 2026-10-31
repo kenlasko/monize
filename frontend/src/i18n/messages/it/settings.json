@@ -392,7 +392,8 @@
         "EMAIL_RECEIPTS": "Ricevute email",
         "BONDS": "Obbligazioni",
         "AI_REVIEW": "Proposte di revisione IA",
-        "WARRANTIES": "Promemoria delle garanzie"
+        "WARRANTIES": "Promemoria delle garanzie",
+        "SHARED_EXPENSES": "Spese condivise"
       },
       "channelNotApplicable": "Non applicabile a questo tipo di notifica",
       "emailToggleLabel": "Email (report) per {category}",
@@ -835,7 +836,19 @@
       },
       "doneButton": "Fatto",
       "unlinkedBondSecuritiesList": "Titoli interessati: {symbols}.",
-      "unlinkedBondSecuritiesMore": "e altri {count}"
+      "unlinkedBondSecuritiesMore": "e altri {count}",
+      "counts": {
+        "sharedGroups": "Gruppi di spese condivise",
+        "sharedParticipants": "Partecipanti ai gruppi",
+        "sharedEntries": "Voci dei gruppi",
+        "sharedAllocations": "Ripartizioni delle spese",
+        "sharedActivity": "Attività dei gruppi",
+        "sharedPeople": "Contatti delle spese condivise",
+        "sharedPersonLinks": "Contatti collegati",
+        "sharedIntegrations": "Collegamenti alle finanze personali",
+        "sharedPostings": "Registrazioni personali delle spese condivise",
+        "sharedLedgerLinks": "Transazioni personali collegate"
+      }
     },
     "storedBackups": {
       "heading": "Backup automatici",

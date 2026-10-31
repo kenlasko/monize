@@ -218,7 +218,7 @@ describe("A warranty's documents under RLS enforcement (WTY-003)", () => {
           AND conrelid = 'transaction_attachments'::regclass`,
     );
     expect(check?.def).toMatch(
-      /transaction_id IS NOT NULL.*warranty_id IS NOT NULL/,
+      /num_nonnulls\(transaction_id, warranty_id, shared_group_id, shared_entry_id\) = 1/,
     );
     expect(
       await harness.app.query(`SELECT id FROM transaction_attachments`),

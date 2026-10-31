@@ -11,6 +11,7 @@ export interface ForeignKey {
   table: string;
   column: string;
   referencedTable: string;
+  initiallyDeferred?: boolean;
 }
 
 export const SCHEMA_PATH = join(
@@ -62,18 +63,52 @@ export function parseForeignKeys(sql: string): ForeignKey[] {
       });
     }
     for (const match of body.matchAll(
-      /FOREIGN KEY\s*\((\w+)\)\s*REFERENCES\s+(\w+)\s*\(\w+\)/g,
+      /FOREIGN KEY\s*\(([\w\s,]+)\)\s*REFERENCES\s+(\w+)\s*\(([\w\s,]+)\)([^\n]*)/g,
     )) {
-      foreignKeys.push({
-        table,
-        column: match[1],
-        referencedTable: match[2],
-      });
+      const targets = match[3].split(",").map((s) => s.trim());
+      match[1]
+        .split(",")
+        .map((s) => s.trim())
+        .forEach((column, index) => {
+          // A composite identity adds tenant/group equality. Its ID member
+          // names the restored row; the scope members have their own FKs.
+          if (targets.length > 1 && targets[index] !== "id") return;
+          foreignKeys.push({
+            table,
+            column,
+            referencedTable: match[2],
+            initiallyDeferred: /DEFERRABLE\s+INITIALLY\s+DEFERRED/i.test(
+              match[4],
+            ),
+          });
+        });
     }
   }
 
   for (const match of clean.matchAll(
-    /ALTER TABLE\s+(?:IF EXISTS\s+)?(\w+)\s+ADD CONSTRAINT\s+\w+\s+FOREIGN KEY\s*\((\w+)\)\s*REFERENCES\s+(\w+)\s*\(\w+\)/g,
+    /ALTER TABLE\s+(?:IF EXISTS\s+)?(\w+)\s+ADD CONSTRAINT\s+\w+\s+FOREIGN KEY\s*\(([\w\s,]+)\)\s*REFERENCES\s+(\w+)\s*\(([\w\s,]+)\)([^;]*)/g,
+  )) {
+    const targets = match[4].split(",").map((s) => s.trim());
+    match[2]
+      .split(",")
+      .map((s) => s.trim())
+      .forEach((column, index) => {
+        if (targets.length > 1 && targets[index] !== "id") return;
+        foreignKeys.push({
+          table: match[1],
+          column,
+          referencedTable: match[3],
+          initiallyDeferred: /DEFERRABLE\s+INITIALLY\s+DEFERRED/i.test(
+            match[5],
+          ),
+        });
+      });
+  }
+
+  // ADD COLUMN may carry its REFERENCES inline (e.g. a newly supported
+  // document parent). It is the same reference as an ADD CONSTRAINT.
+  for (const match of clean.matchAll(
+    /ALTER TABLE\s+(\w+)\s+ADD COLUMN(?: IF NOT EXISTS)?\s+(\w+)\s+[^;\n]*?REFERENCES\s+(\w+)\s*\(\w+\)/g,
   )) {
     foreignKeys.push({
       table: match[1],
@@ -81,7 +116,6 @@ export function parseForeignKeys(sql: string): ForeignKey[] {
       referencedTable: match[3],
     });
   }
-
   return foreignKeys;
 }
 

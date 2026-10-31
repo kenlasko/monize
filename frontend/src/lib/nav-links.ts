@@ -62,6 +62,7 @@ export const TOOLS_LINKS: NavLinkDef[] = [
   { href: '/institutions', labelKey: 'institutions' },
   { href: '/tags', labelKey: 'tags' },
   { href: '/warranties', labelKey: 'warranties' },
+  { href: '/shared-expenses', labelKey: 'sharedExpenses', ownerOnly: true },
   // Owner-only: every /payroll-deductions route refuses a delegate session.
   { href: '/taxes', labelKey: 'taxes', ownerOnly: true },
   { href: '/rules', labelKey: 'rules' },
@@ -104,6 +105,7 @@ export const NAV_ICONS: Record<string, NavIcon> = {
   '/tags': HashtagIcon,
   '/rules': BoltIcon,
   '/warranties': ShieldCheckIcon,
+  "/shared-expenses": UsersIcon,
   '/email-receipts': EnvelopeIcon,
   '/taxes': ReceiptPercentIcon,
   '/securities': BanknotesIcon,
