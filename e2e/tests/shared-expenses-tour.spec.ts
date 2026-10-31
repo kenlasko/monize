@@ -35,9 +35,9 @@ for (const viewport of [
     const group = await createSharedGroup(api, "Mountain trip");
     await startTour(page);
     if (viewport.name === "desktop") {
-      await nextTo(page, "Open Shared expenses");
+      await nextTo(page, "Open Shared Expenses");
       await expect(
-        page.getByRole("button", { name: "Shared expenses", exact: true }),
+        page.getByRole("button", { name: "Shared Expenses", exact: true }),
       ).toBeVisible();
       // The dashboard keeps Customize, with feature navigation in Tools.
       await expect(
