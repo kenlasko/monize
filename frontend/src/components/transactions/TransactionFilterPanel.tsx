@@ -455,25 +455,6 @@ export function TransactionFilterPanel({
             <div className="px-4 pb-4 sm:px-6 border-t border-gray-200 dark:border-gray-700">
               {/* Account status segmented control + Bulk Update button */}
               <div className="flex flex-wrap items-center gap-3 pt-4 pb-2">
-                {/* Search first, with no label above it: the placeholder says
-                    what is searched. */}
-                <div className="w-full sm:w-auto sm:min-w-[16rem] sm:flex-1 sm:max-w-md">
-                  <div className="flex items-center gap-1">
-                    <div className="min-w-0 flex-1">
-                      <Input
-                        aria-label={t('filter.fields.search')}
-                        type="text"
-                        value={searchInput}
-                        onChange={(e) => handleSearchChange(e.target.value)}
-                        placeholder={t('filter.placeholders.search')}
-                      />
-                    </div>
-                    <SearchSyntaxHelp onExample={handleSearchChange} />
-                  </div>
-                  {filterSearch && (
-                    <SearchInterpretationLine interpretation={searchInterpretation} />
-                  )}
-                </div>
                 <span id="filter-account-status-label" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   {t('filter.accounts.label')}
                 </span>
@@ -713,6 +694,25 @@ export function TransactionFilterPanel({
                   }
                 />
 
+                {/* Search sits last on this row, right of Attachments, where
+                    the 60fr column gives it the room a typed query needs. */}
+                <div>
+                  <div className="flex items-end gap-1">
+                    <div className="min-w-0 flex-1">
+                      <Input
+                        label={t('filter.fields.search')}
+                        type="text"
+                        value={searchInput}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        placeholder={t('filter.placeholders.search')}
+                      />
+                    </div>
+                    <SearchSyntaxHelp onExample={handleSearchChange} />
+                  </div>
+                  {filterSearch && (
+                    <SearchInterpretationLine interpretation={searchInterpretation} />
+                  )}
+                </div>
               </div>
 
               {/* Bulk Update button - mobile only (full width at bottom) */}
