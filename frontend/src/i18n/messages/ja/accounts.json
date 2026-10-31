@@ -51,6 +51,7 @@
       "type": "種類",
       "status": "ステータス",
       "lastReconciled": "最終照合日",
+      "unreconciled": "未照合",
       "balance": "残高",
       "actions": "操作"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "自分の純資産から除外する",
     "neverReconciled": "未照合",
     "lastReconciledOn": "{date} に照合済み",
-    "neverReconciledCard": "未照合"
+    "neverReconciledCard": "未照合",
+    "unreconciledCard": "{count, plural, other {未照合 {formatted} 件}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "証券口座",

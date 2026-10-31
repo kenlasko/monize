@@ -51,6 +51,7 @@
       "type": "Тип",
       "status": "Статус",
       "lastReconciled": "Последняя сверка",
+      "unreconciled": "Не согласовано",
       "balance": "Остаток",
       "actions": "Действия"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Исключить из моих чистых активов",
     "neverReconciled": "Никогда",
     "lastReconciledOn": "Согласовано {date}",
-    "neverReconciledCard": "Ни разу не согласовано"
+    "neverReconciledCard": "Ни разу не согласовано",
+    "unreconciledCard": "{count, plural, one {{formatted} не согласована} few {{formatted} не согласованы} many {{formatted} не согласовано} other {{formatted} не согласовано}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Брокерский",

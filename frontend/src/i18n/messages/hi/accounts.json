@@ -51,6 +51,7 @@
       "type": "प्रकार",
       "status": "स्थिति",
       "lastReconciled": "अंतिम मिलान",
+      "unreconciled": "असमाधानित",
       "balance": "शेष राशि",
       "actions": "क्रियाएं"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "मेरी कुल संपत्ति से बाहर रखें",
     "neverReconciled": "कभी नहीं",
     "lastReconciledOn": "{date} को मिलान किया गया",
-    "neverReconciledCard": "कभी मिलान नहीं किया गया"
+    "neverReconciledCard": "कभी मिलान नहीं किया गया",
+    "unreconciledCard": "{count, plural, one {{formatted} असमाधानित} other {{formatted} असमाधानित}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "ब्रोकरेज",

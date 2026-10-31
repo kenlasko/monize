@@ -51,6 +51,7 @@
       "type": "类型",
       "status": "状态",
       "lastReconciled": "上次对账",
+      "unreconciled": "未对账",
       "balance": "余额",
       "actions": "操作"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "从我的净资产中排除",
     "neverReconciled": "从未",
     "lastReconciledOn": "已对账至 {date}",
-    "neverReconciledCard": "从未对账"
+    "neverReconciledCard": "从未对账",
+    "unreconciledCard": "{count, plural, other {{formatted} 笔未对账}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "券商账户",

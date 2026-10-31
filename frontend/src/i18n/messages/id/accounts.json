@@ -51,6 +51,7 @@
       "type": "Jenis",
       "status": "Status",
       "lastReconciled": "Terakhir Direkonsiliasi",
+      "unreconciled": "Belum Direkonsiliasi",
       "balance": "Saldo",
       "actions": "Tindakan"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Kecualikan dari kekayaan bersih saya",
     "neverReconciled": "Belum pernah",
     "lastReconciledOn": "Direkonsiliasi {date}",
-    "neverReconciledCard": "Belum pernah direkonsiliasi"
+    "neverReconciledCard": "Belum pernah direkonsiliasi",
+    "unreconciledCard": "{count, plural, other {{formatted} belum direkonsiliasi}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Perantara",

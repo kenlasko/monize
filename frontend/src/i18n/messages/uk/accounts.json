@@ -51,6 +51,7 @@
       "type": "Тип",
       "status": "Статус",
       "lastReconciled": "Остання звірка",
+      "unreconciled": "Не звірено",
       "balance": "Баланс",
       "actions": "Дії"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Виключити з моїх чистих активів",
     "neverReconciled": "Ніколи",
     "lastReconciledOn": "Звірено {date}",
-    "neverReconciledCard": "Жодного разу не звірено"
+    "neverReconciledCard": "Жодного разу не звірено",
+    "unreconciledCard": "{count, plural, one {{formatted} не звірено} few {{formatted} не звірено} many {{formatted} не звірено} other {{formatted} не звірено}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Брокерський",

@@ -51,6 +51,7 @@
       "type": "Typ",
       "status": "Status",
       "lastReconciled": "Zuletzt abgeglichen",
+      "unreconciled": "Nicht abgeglichen",
       "balance": "Saldo",
       "actions": "Aktionen"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Aus meinem Nettovermögen ausschließen",
     "neverReconciled": "Nie",
     "lastReconciledOn": "Abgeglichen am {date}",
-    "neverReconciledCard": "Nie abgeglichen"
+    "neverReconciledCard": "Nie abgeglichen",
+    "unreconciledCard": "{count, plural, one {{formatted} nicht abgeglichen} other {{formatted} nicht abgeglichen}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Brokerage",

@@ -51,6 +51,7 @@
       "type": "Tipo",
       "status": "Status",
       "lastReconciled": "Última reconciliação",
+      "unreconciled": "Não reconciliadas",
       "balance": "Saldo",
       "actions": "Ações"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Excluir do meu patrimônio líquido",
     "neverReconciled": "Nunca",
     "lastReconciledOn": "Reconciliada em {date}",
-    "neverReconciledCard": "Nunca reconciliada"
+    "neverReconciledCard": "Nunca reconciliada",
+    "unreconciledCard": "{count, plural, one {{formatted} não reconciliada} other {{formatted} não reconciliadas}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Corretagem",

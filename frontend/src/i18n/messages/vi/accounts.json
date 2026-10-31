@@ -51,6 +51,7 @@
       "type": "Loại",
       "status": "Trạng thái",
       "lastReconciled": "Lần đối soát gần nhất",
+      "unreconciled": "Chưa đối soát",
       "balance": "Số dư",
       "actions": "Thao tác"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Loại khỏi giá trị tài sản ròng của tôi",
     "neverReconciled": "Chưa bao giờ",
     "lastReconciledOn": "Đã đối soát ngày {date}",
-    "neverReconciledCard": "Chưa từng đối soát"
+    "neverReconciledCard": "Chưa từng đối soát",
+    "unreconciledCard": "{count, plural, other {{formatted} chưa đối soát}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Môi giới",

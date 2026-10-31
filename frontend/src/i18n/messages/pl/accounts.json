@@ -51,6 +51,7 @@
       "type": "Typ",
       "status": "Status",
       "lastReconciled": "Ostatnio uzgodnione",
+      "unreconciled": "Nieuzgodnione",
       "balance": "Saldo",
       "actions": "Akcje"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Wyklucz z mojej wartości netto",
     "neverReconciled": "Nigdy",
     "lastReconciledOn": "Uzgodnione {date}",
-    "neverReconciledCard": "Nigdy nie uzgodniono"
+    "neverReconciledCard": "Nigdy nie uzgodniono",
+    "unreconciledCard": "{count, plural, one {{formatted} nieuzgodniona} few {{formatted} nieuzgodnione} many {{formatted} nieuzgodnionych} other {{formatted} nieuzgodnionej}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Maklerskie",

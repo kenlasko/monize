@@ -51,6 +51,7 @@
       "type": "Type",
       "status": "Statut",
       "lastReconciled": "Dernier rapprochement",
+      "unreconciled": "Non rapprochées",
       "balance": "Solde",
       "actions": "Actions"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Exclure de ma valeur nette",
     "neverReconciled": "Jamais",
     "lastReconciledOn": "Rapproché le {date}",
-    "neverReconciledCard": "Jamais rapproché"
+    "neverReconciledCard": "Jamais rapproché",
+    "unreconciledCard": "{count, plural, one {{formatted} non rapprochée} other {{formatted} non rapprochées}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Courtage",
