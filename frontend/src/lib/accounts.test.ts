@@ -50,6 +50,21 @@ describe('accountsApi', () => {
     expect(apiClient.get).toHaveBeenCalledWith('/accounts', { params: { includeInactive: false } });
   });
 
+  it('getAllFresh re-reads the list a cached getAll would have served', async () => {
+    invalidateCache('accounts:');
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 'stale' }] });
+    await accountsApi.getAll(true);
+    expect(await accountsApi.getAll(true)).toEqual([{ id: 'stale' }]);
+    expect(apiClient.get).toHaveBeenCalledTimes(1);
+
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 'fresh' }] });
+    expect(await accountsApi.getAllFresh(true)).toEqual([{ id: 'fresh' }]);
+    expect(apiClient.get).toHaveBeenCalledTimes(2);
+    // And the fresh answer is what later readers are served.
+    expect(await accountsApi.getAll(true)).toEqual([{ id: 'fresh' }]);
+    expect(apiClient.get).toHaveBeenCalledTimes(2);
+  });
+
   it('getById fetches /accounts/:id', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: { id: 'acc-1' } });
     const result = await accountsApi.getById('acc-1');

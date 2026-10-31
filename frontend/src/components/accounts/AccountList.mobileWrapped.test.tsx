@@ -27,11 +27,15 @@ vi.mock('@/lib/accounts', () => ({
   },
 }));
 
-vi.mock('@/hooks/useNumberFormat', () => ({
-  useNumberFormat: () => ({
-    formatCurrency: (n: number, _currency?: string) => `$${n.toFixed(2)}`,
-  }),
-}));
+vi.mock('@/hooks/useNumberFormat', async () => {
+  const { numberFormatMockDefaults } = await import('@/test/number-format-mock');
+  return {
+    useNumberFormat: () => ({
+      ...numberFormatMockDefaults(),
+      formatCurrency: (n: number, _currency?: string) => `$${n.toFixed(2)}`,
+    }),
+  };
+});
 
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({
@@ -208,8 +212,8 @@ describe('the accounts list on a phone', () => {
     const labels = Array.from(head!.querySelectorAll('button')).map(
       (button) => button.textContent?.replace(/[^A-Za-z ]/g, '').trim(),
     );
-    expect(labels).toEqual(['Account Name', 'Type', 'Status', 'Last Reconciled', 'Balance']);
-    // No column label of its own: the one card cell below carries all five.
+    expect(labels).toEqual(['Account Name', 'Type', 'Status', 'Last Reconciled', 'Unreconciled', 'Balance']);
+    // No column label of its own: the one card cell below carries all six.
     expect(head!.textContent).not.toContain('Actions');
   });
 

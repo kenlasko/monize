@@ -51,6 +51,7 @@
       "type": "[XX-Type-XX]",
       "status": "[XX-Status-XX]",
       "lastReconciled": "[XX-Last Reconciled-XX]",
+      "unreconciled": "[XX-Unreconciled-XX]",
       "balance": "[XX-Balance-XX]",
       "actions": "[XX-Actions-XX]"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "[XX-Exclude from my net worth-XX]",
     "neverReconciled": "[XX-Never-XX]",
     "lastReconciledOn": "[XX-Reconciled {date}-XX]",
-    "neverReconciledCard": "[XX-Never reconciled-XX]"
+    "neverReconciledCard": "[XX-Never reconciled-XX]",
+    "unreconciledCard": "[XX-{count, plural, one {{formatted} unreconciled} other {{formatted} unreconciled}}-XX]"
   },
   "contextMenu": {
     "subtypeBrokerage": "[XX-Brokerage-XX]",

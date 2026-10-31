@@ -522,6 +522,7 @@ export class AccountsService {
       canDelete?: boolean;
       futureTransactionsSum?: number;
       lastReconciledDate?: string | null;
+      unreconciledCount?: number;
     })[]
   > {
     return withScopedDb(this.dataSource, async (m) => {
@@ -612,6 +613,26 @@ export class AccountsService {
         [accountIds, TransactionStatus.RECONCILED],
       );
 
+      // How many rows the reconcile screen would list for the account: every
+      // top-level UNRECONCILED or CLEARED row, whatever its date. VOID rows
+      // are neither, so the status filter already leaves them out.
+      const unreconciledCounts: Array<{
+        accountId: string;
+        unreconciledCount: string;
+      }> = await m.query(
+        `SELECT t.account_id as "accountId",
+                COUNT(t.id) as "unreconciledCount"
+         FROM transactions t
+         WHERE t.account_id = ANY($1)
+           AND t.status = ANY($2)
+           AND ${LEDGER_MOVEMENT_PREDICATE}
+         GROUP BY t.account_id`,
+        [
+          accountIds,
+          [TransactionStatus.UNRECONCILED, TransactionStatus.CLEARED],
+        ],
+      );
+
       const txCountMap = new Map<string, number>();
       for (const row of txCounts)
         txCountMap.set(row.accountId, parseInt(row.cnt, 10));
@@ -624,6 +645,12 @@ export class AccountsService {
       const lastReconciledMap = new Map<string, string>();
       for (const row of lastReconciled)
         lastReconciledMap.set(row.accountId, row.lastReconciledDate);
+      const unreconciledCountMap = new Map<string, number>();
+      for (const row of unreconciledCounts)
+        unreconciledCountMap.set(
+          row.accountId,
+          parseInt(row.unreconciledCount, 10),
+        );
       const currentBalanceMap = new Map<string, number>();
       for (const row of currentSums)
         currentBalanceMap.set(
@@ -640,6 +667,7 @@ export class AccountsService {
           !(invTxCountMap.get(account.id) || 0),
         futureTransactionsSum: futureSumMap.get(account.id) ?? 0,
         lastReconciledDate: lastReconciledMap.get(account.id) ?? null,
+        unreconciledCount: unreconciledCountMap.get(account.id) ?? 0,
       }));
     });
   }

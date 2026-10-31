@@ -18,6 +18,7 @@ import {
   AccountRow,
   buildAccountActions,
   reconcileLedgerOf,
+  unreconciledCountOf,
   type AccountActionLabels,
 } from './AccountRow';
 import { useLongPress } from '@/hooks/useLongPress';
@@ -39,7 +40,7 @@ import { BUILT_IN_VIEW_DEFAULTS } from '@/lib/view-defaults';
 import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 
-type SortField = 'name' | 'type' | 'balance' | 'status' | 'lastReconciled';
+type SortField = 'name' | 'type' | 'balance' | 'status' | 'lastReconciled' | 'unreconciled';
 type SortDirection = 'asc' | 'desc';
 
 /**
@@ -54,6 +55,7 @@ const SORT_FIELD_LABEL_KEYS = [
   { field: 'type', labelKey: 'list.columns.type' },
   { field: 'status', labelKey: 'list.columns.status' },
   { field: 'lastReconciled', labelKey: 'list.columns.lastReconciled' },
+  { field: 'unreconciled', labelKey: 'list.columns.unreconciled' },
   { field: 'balance', labelKey: 'list.columns.balance' },
 ] as const satisfies ReadonlyArray<{ field: SortField; labelKey: string }>;
 
@@ -480,6 +482,12 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
           comparison = (reconcileLedgerOf(a.primary, a)?.lastReconciledDate ?? '').localeCompare(
             reconcileLedgerOf(b.primary, b)?.lastReconciledDate ?? '',
           );
+          break;
+        case 'unreconciled':
+          // A row with no count to show (no ledger to reconcile, or a joint
+          // row) sorts below an account with nothing outstanding.
+          comparison =
+            (unreconciledCountOf(a.primary, a) ?? -1) - (unreconciledCountOf(b.primary, b) ?? -1);
           break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
@@ -926,9 +934,9 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
               chosen field is persisted, so a header showing fewer fields than
               the sort can be in would leave the list ordered by something the
               phone can neither see nor undo. A slim control header carries all
-              five as buttons -- the card shows all five values -- and no column
+              six as buttons -- the card shows all six values -- and no column
               label of its own: the single card cell below holds name, balance,
-              type, status and last reconciled at once, so naming this header after any one of
+              type, status, last reconciled and the unreconciled count at once, so naming this header after any one of
               them would misdescribe the column to a screen reader. Each button
               names itself with the label of the field it sorts by. */}
         <DensityToggleBar view="accounts" />
@@ -1013,6 +1021,18 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                 />
               </th>
               <th
+                className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none hidden lg:table-cell w-1 whitespace-nowrap`}
+                onClick={() => handleSort('unreconciled')}
+              >
+                <ColumnSortLabel
+                  label={t('list.columns.unreconciled')}
+                  field="unreconciled"
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  align="end"
+                />
+              </th>
+              <th
                 className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none`}
                 onClick={() => handleSort('balance')}
               >
@@ -1088,6 +1108,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                   </td>
                   <td className="hidden sm:table-cell" aria-hidden="true" />
                   <td className="hidden md:table-cell" aria-hidden="true" />
+                  <td className="hidden lg:table-cell" aria-hidden="true" />
                   <td className="hidden lg:table-cell" aria-hidden="true" />
                   <td className={`${cellPadding} text-right whitespace-nowrap`}>
                     <GroupHeaderTotal

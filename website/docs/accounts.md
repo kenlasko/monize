@@ -190,6 +190,7 @@ The table has these columns:
 - **Type**
 - **Status** -- Active or Closed
 - **Last Reconciled** -- the date of the account's last reconciliation, or Never
+- **Unreconciled** -- how many of the account's transactions are not yet reconciled (unreconciled or cleared, whatever their date): the transactions the [Reconcile](#account-reconciliation) screen lists. It refreshes when you return to the page, so a reconcile done in another tab or on another device shows here too
 - **Balance** -- in the account's currency; an investment account shows its combined value with the investments and cash beneath it
 - **Actions** -- **Details**, **Edit**, **Reconcile**, **Close** (or **Reopen**), and **Delete**
 
