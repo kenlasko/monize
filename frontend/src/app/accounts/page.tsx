@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useRereadOnVisible } from '@/hooks/useRereadOnVisible';
-import { subscribeReconciliation } from '@/lib/reconciliationSignal';
 import { Button } from '@/components/ui/Button';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
@@ -107,9 +106,9 @@ function AccountsContent() {
   // The list's balances and reconcile figures (Last Reconciled, Unreconciled)
   // also move on writes this tab never saw: a reconcile or a status change in
   // another tab or on another device. Re-read the list, past its cache, when
-  // the page is shown again and after a reconcile signal; quietly, keeping what
-  // is on screen if the request fails. `visibilitychange` and `focus` both fire
-  // on one return, so a re-read already running absorbs the second.
+  // the page is shown again; quietly, keeping what is on screen if the request
+  // fails. `visibilitychange` and `focus` both fire on one return, so a
+  // re-read already running absorbs the second.
   const refreshInFlight = useRef(false);
   const refreshAccountList = useCallback(() => {
     if (refreshInFlight.current) return;
@@ -123,7 +122,6 @@ function AccountsContent() {
       });
   }, []);
   useRereadOnVisible(refreshAccountList);
-  useEffect(() => subscribeReconciliation(refreshAccountList), [refreshAccountList]);
 
   // Build a map of brokerage account ID -> market value of holdings only.
   // Cash balance is tracked separately via the linked INVESTMENT_CASH account

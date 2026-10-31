@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@/test/render';
 import AccountsPage from './page';
-import { notifyReconciliationChanged } from '@/lib/reconciliationSignal';
 
 // Module-level state for controlling form modal in tests
 const formModalState = {
@@ -295,7 +294,7 @@ describe('AccountsPage', () => {
 
   describe('live refresh', () => {
     // Reconcile figures and balances move on writes this tab never saw, so the
-    // list is re-read past its cache on return and on a reconcile signal.
+    // list is re-read past its cache when the page is shown again.
     const withCount = (count: number) => [{ ...mockAccounts[0], unreconciledCount: count }];
 
     it('re-reads the list, past its cache, when the page regains focus', async () => {
@@ -311,19 +310,6 @@ describe('AccountsPage', () => {
       await waitFor(() => expect(screen.getByText('Checking (fresh)')).toBeInTheDocument());
       expect(mockGetAllFresh).toHaveBeenCalledWith(true);
       expect(mockGetAllFresh).toHaveBeenCalledTimes(1);
-    });
-
-    it('re-reads the list after a reconcile signal', async () => {
-      mockGetAll.mockResolvedValue(withCount(5));
-      render(<AccountsPage />);
-      await waitFor(() => expect(screen.getByText('Checking')).toBeInTheDocument());
-
-      mockGetAllFresh.mockResolvedValue([{ ...mockAccounts[0], name: 'Reconciled' }]);
-      await act(async () => {
-        notifyReconciliationChanged();
-      });
-
-      await waitFor(() => expect(screen.getByText('Reconciled')).toBeInTheDocument());
     });
 
     it('collapses the focus and visibility events of one return into one re-read', async () => {
