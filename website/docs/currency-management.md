@@ -22,7 +22,7 @@ The page shows the number of **Total Currencies**, **Active**, and **Inactive**,
 | **Name** | The currency's name |
 | **Symbol** | The symbol shown with amounts, such as $, €, or £ |
 | **Decimals** | How many decimal places amounts in this currency have (2 for most, 0 for the yen) |
-| **Usage** | How many of your accounts and securities use the currency |
+| **Usage** | How many of your accounts and securities use the currency, abbreviated: "15 accts, 5 secs" |
 | **Rate** | What one unit of the currency is worth in your home currency, from the latest stored rate (N/A when none is stored yet) |
 | **Status** | Active or Inactive |
 | **Actions** | **Rate history**, **Edit** (for currencies you created), **Deactivate** / **Activate**, and **Delete** |
@@ -60,7 +60,7 @@ You choose it when you first sign in, and can change it at any time in **Setting
 
 ### Automatic Updates
 
-Monize fetches the latest exchange rates for the currencies you use every weekday at 5:05 PM New York time, after the markets close, and stores them so that every past date keeps its own rate. Click **Refresh Rates** on the Currencies page to fetch them immediately; the button shows how long ago the rates were last updated.
+Monize fetches the latest exchange rates for the currencies you use every weekday at 5:05 PM New York time, after the markets close, and stores them so that every past date keeps its own rate. Click **Refresh Rates** on the Currencies page to fetch them immediately; the line under its label shows how long ago the rates were last updated.
 
 Rates come from **Frankfurter** (the European Central Bank's reference rates) first, then **Yahoo Finance** for any currency Frankfurter does not cover. An administrator can change the providers and their order for the whole instance.
 
