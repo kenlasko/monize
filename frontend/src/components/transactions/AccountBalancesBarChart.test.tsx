@@ -13,11 +13,14 @@ let capturedBarChartOnClick: ((state: any) => void) | undefined;
 let capturedYAxisProps: any;
 // Capture the XAxis props so we can assert label rotation behaviour.
 let capturedXAxisProps: any;
+// Capture the BarChart margin so we can assert the Y axis labels have room.
+let capturedBarChartMargin: any;
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
-  BarChart: ({ children, onClick }: any) => {
+  BarChart: ({ children, onClick, margin }: any) => {
     capturedBarChartOnClick = onClick;
+    capturedBarChartMargin = margin;
     return <div data-testid="bar-chart">{children}</div>;
   },
   Bar: ({ children, onClick }: any) => {
@@ -163,6 +166,14 @@ describe('AccountBalancesBarChart', () => {
       expect(auto).toHaveAttribute('aria-pressed', 'true');
       expect(linear).toHaveAttribute('aria-pressed', 'false');
       expect(log).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('sizes the Y axis to its labels without pulling the plot past the card edge', () => {
+      render(<AccountBalancesBarChart data={skewedData} isLoading={false} />);
+      expect(capturedYAxisProps.width).toBe('auto');
+      // A negative left margin shifts the auto-sized axis out of the clipped
+      // chart box and cuts off the start of every tick label.
+      expect(capturedBarChartMargin.left).toBeGreaterThanOrEqual(0);
     });
 
     it('Auto mode uses linear scale when balances are similar in magnitude', () => {
