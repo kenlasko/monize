@@ -14,6 +14,7 @@ import type { LogicalAccount } from '@/lib/logical-accounts';
 import { LinkIcon } from '@heroicons/react/24/outline';
 import { Badge } from '@/components/ui/Badge';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 export interface AccountActionLabels {
   viewTransactions: string;
@@ -51,8 +52,8 @@ export interface AccountActionHandlers {
  * The ledger a row reconciles, or null when it has none. Reconciling means
  * comparing a cash ledger against a statement: a pair reconciles its cash half,
  * and a brokerage with no cash half has no such ledger. The Reconcile action
- * and the Last Reconciled column both read it, so the date shown is always the
- * one for the ledger that action opens.
+ * and the Last Reconciled and Unreconciled columns all read it, so the date and
+ * count shown are always the ones for the ledger that action opens.
  */
 export function reconcileLedgerOf(
   account: Account,
@@ -80,6 +81,20 @@ function lastReconciledOf(
   const date = ledger.lastReconciledDate;
   if (date === undefined) return null;
   return date === null ? { kind: 'never' } : { kind: 'date', date };
+}
+
+/**
+ * What the Unreconciled column says about a row: how many rows the reconcile
+ * screen would list for its ledger, or null when it has no ledger to reconcile
+ * or the count is not known (a joint row, which only its owner reconciles).
+ */
+export function unreconciledCountOf(
+  account: Account,
+  logical?: LogicalAccount,
+): number | null {
+  const ledger = reconcileLedgerOf(account, logical);
+  if (!ledger || account.isJoint) return null;
+  return ledger.unreconciledCount ?? null;
 }
 
 /**
@@ -432,7 +447,9 @@ export const AccountRow = memo(function AccountRow({
 }: AccountRowProps) {
   const t = useTranslations('accounts');
   const { formatDate } = useDateFormat();
+  const { formatNumber } = useNumberFormat();
   const lastReconciled = lastReconciledOf(account, logical);
+  const unreconciledCount = unreconciledCountOf(account, logical);
   // Every figure in the row is in the account's own currency, named when that
   // is not the reader's. `Number` because a decimal column can arrive as text.
   const formatInAccountCurrency = (amount: number) =>
@@ -673,6 +690,14 @@ export const AccountRow = memo(function AccountRow({
                     : t('row.neverReconciledCard')}
                 </span>
               )}
+              {unreconciledCount !== null && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {t('row.unreconciledCard', {
+                    count: unreconciledCount,
+                    formatted: formatNumber(unreconciledCount, 0),
+                  })}
+                </span>
+              )}
             </div>
           </div>
         </td>
@@ -755,6 +780,9 @@ export const AccountRow = memo(function AccountRow({
           : lastReconciled.kind === 'date'
             ? formatDate(lastReconciled.date)
             : t('row.neverReconciled')}
+      </td>
+      <td className={`${cellPadding} whitespace-nowrap hidden lg:table-cell text-right text-sm text-gray-500 dark:text-gray-400`}>
+        {unreconciledCount === null ? null : formatNumber(unreconciledCount, 0)}
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-right ${account.isClosed ? 'opacity-50' : ''}`}>
         {balance.figure}

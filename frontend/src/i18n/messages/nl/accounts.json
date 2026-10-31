@@ -51,6 +51,7 @@
       "type": "Type",
       "status": "Status",
       "lastReconciled": "Laatst afgestemd",
+      "unreconciled": "Niet afgestemd",
       "balance": "Saldo",
       "actions": "Acties"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Uitsluiten van mijn nettovermogen",
     "neverReconciled": "Nooit",
     "lastReconciledOn": "Afgestemd op {date}",
-    "neverReconciledCard": "Nooit afgestemd"
+    "neverReconciledCard": "Nooit afgestemd",
+    "unreconciledCard": "{count, plural, one {{formatted} niet afgestemd} other {{formatted} niet afgestemd}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Effectenrekening",

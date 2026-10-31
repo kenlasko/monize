@@ -77,6 +77,13 @@ export const accountsApi = {
     );
   },
 
+  // Get all accounts, skipping the cache. For a re-read after a write this tab
+  // did not make (another tab or device), which no invalidation here saw.
+  getAllFresh: async (includeInactive: boolean = false): Promise<Account[]> => {
+    invalidateCache(`accounts:all:${includeInactive}`);
+    return accountsApi.getAll(includeInactive);
+  },
+
   // Accounts the real user can use as the other side of a cross-owner
   // transfer (own context: shared to them; acting: their own accounts).
   getTransferCandidates: async (): Promise<TransferCandidate[]> => {

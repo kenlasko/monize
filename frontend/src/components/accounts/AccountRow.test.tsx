@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
-import { AccountRow, AccountRowProps, buildAccountActions, reconcileLedgerOf } from './AccountRow';
+import {
+  AccountRow,
+  AccountRowProps,
+  buildAccountActions,
+  reconcileLedgerOf,
+  unreconciledCountOf,
+} from './AccountRow';
 import type { LogicalAccount } from '@/lib/logical-accounts';
 import { Account } from '@/types/account';
 
@@ -1406,6 +1412,84 @@ describe('AccountRow', () => {
         createDefaultProps({ wrapped: true, account: createAccount({ lastReconciledDate: null }) }),
       );
       expect(screen.getByText('Never reconciled')).toBeInTheDocument();
+    });
+  });
+  describe('Unreconciled column', () => {
+    // The tier row's fifth cell, after Name, Type, Status and Last Reconciled.
+    const unreconciledCell = (container: HTMLElement) =>
+      container.querySelectorAll('tr > td')[4] as HTMLElement;
+
+    it('shows how many rows the account has left to reconcile', () => {
+      const { container } = renderAccountRow(
+        createDefaultProps({ account: createAccount({ unreconciledCount: 1234 }) }),
+      );
+      expect(unreconciledCell(container).textContent).toBe('1,234');
+    });
+
+    it('shows zero for an account with nothing outstanding', () => {
+      const { container } = renderAccountRow(
+        createDefaultProps({ account: createAccount({ unreconciledCount: 0 }) }),
+      );
+      expect(unreconciledCell(container).textContent).toBe('0');
+    });
+
+    it('stays blank when the count is not known, rather than claiming zero', () => {
+      // A joint row is reconciled by its owner only; an older backend sends no field.
+      for (const account of [
+        createAccount({ isJoint: true, unreconciledCount: 4 }),
+        createAccount({ unreconciledCount: undefined }),
+      ]) {
+        const { container, unmount } = renderAccountRow(createDefaultProps({ account }));
+        expect(unreconciledCell(container).textContent).toBe('');
+        unmount();
+      }
+    });
+
+    it('shows a folded pair the count of the cash half its Reconcile action opens', () => {
+      const brokerage = createAccount({
+        id: 'brok',
+        accountType: 'INVESTMENT',
+        accountSubType: 'INVESTMENT_BROKERAGE',
+        unreconciledCount: 0,
+      });
+      const cash = createAccount({
+        id: 'cash',
+        accountType: 'INVESTMENT',
+        accountSubType: 'INVESTMENT_CASH',
+        unreconciledCount: 6,
+      });
+      const logical: LogicalAccount = {
+        id: 'brok',
+        primary: brokerage,
+        cash,
+        memberIds: ['brok', 'cash'],
+        displayName: 'TFSA',
+        isInvestment: true,
+        cashRegisterId: 'cash',
+        holdingsAccountId: 'brok',
+        combinedValue: 100,
+      };
+      expect(unreconciledCountOf(brokerage, logical)).toBe(6);
+      const { container } = renderAccountRow(createDefaultProps({ account: brokerage, logical }));
+      expect(unreconciledCell(container).textContent).toBe('6');
+    });
+
+    it('stays blank for a brokerage with no cash ledger to reconcile', () => {
+      const logical = brokerageLogical(100);
+      const { container } = renderAccountRow(
+        createDefaultProps({
+          account: { ...logical.primary, unreconciledCount: 3 },
+          logical: { ...logical, primary: { ...logical.primary, unreconciledCount: 3 } },
+        }),
+      );
+      expect(unreconciledCell(container).textContent).toBe('');
+    });
+
+    it('carries the count on the phone card too', () => {
+      renderAccountRow(
+        createDefaultProps({ wrapped: true, account: createAccount({ unreconciledCount: 5 }) }),
+      );
+      expect(screen.getByText('5 unreconciled')).toBeInTheDocument();
     });
   });
 });

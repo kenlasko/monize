@@ -51,6 +51,7 @@
       "type": "유형",
       "status": "상태",
       "lastReconciled": "마지막 조정",
+      "unreconciled": "미조정",
       "balance": "잔액",
       "actions": "작업"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "내 순자산에서 제외",
     "neverReconciled": "없음",
     "lastReconciledOn": "{date} 조정됨",
-    "neverReconciledCard": "조정한 적 없음"
+    "neverReconciledCard": "조정한 적 없음",
+    "unreconciledCard": "{count, plural, other {미조정 {formatted}건}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "증권사",

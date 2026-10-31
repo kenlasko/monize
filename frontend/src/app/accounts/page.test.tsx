@@ -104,12 +104,14 @@ vi.mock('@/lib/auth', () => ({
 
 // Mock accounts API
 const mockGetAll = vi.fn().mockResolvedValue([]);
+const mockGetAllFresh = vi.fn().mockResolvedValue([]);
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
     getAll: (...args: any[]) => mockGetAll(...args),
+    getAllFresh: (...args: any[]) => mockGetAllFresh(...args),
     create: (...args: any[]) => mockCreate(...args),
     update: (...args: any[]) => mockUpdate(...args),
   },
@@ -287,6 +289,56 @@ describe('AccountsPage', () => {
       expect(screen.getByText('Checking')).toBeInTheDocument();
       expect(screen.getByText('Savings')).toBeInTheDocument();
       expect(screen.getByText('Credit Card')).toBeInTheDocument();
+    });
+  });
+
+  describe('live refresh', () => {
+    // Reconcile figures and balances move on writes this tab never saw, so the
+    // list is re-read past its cache when the page is shown again.
+    const withCount = (count: number) => [{ ...mockAccounts[0], unreconciledCount: count }];
+
+    it('re-reads the list, past its cache, when the page regains focus', async () => {
+      mockGetAll.mockResolvedValue(withCount(5));
+      render(<AccountsPage />);
+      await waitFor(() => expect(screen.getByText('Checking')).toBeInTheDocument());
+
+      mockGetAllFresh.mockResolvedValue([{ ...mockAccounts[0], name: 'Checking (fresh)' }]);
+      await act(async () => {
+        window.dispatchEvent(new Event('focus'));
+      });
+
+      await waitFor(() => expect(screen.getByText('Checking (fresh)')).toBeInTheDocument());
+      expect(mockGetAllFresh).toHaveBeenCalledWith(true);
+      expect(mockGetAllFresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('collapses the focus and visibility events of one return into one re-read', async () => {
+      render(<AccountsPage />);
+      await waitFor(() => expect(mockGetAll).toHaveBeenCalled());
+
+      let resolve: (value: unknown[]) => void = () => {};
+      mockGetAllFresh.mockReturnValue(new Promise((r) => { resolve = r; }));
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+        window.dispatchEvent(new Event('focus'));
+      });
+      expect(mockGetAllFresh).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        resolve([]);
+      });
+    });
+
+    it('keeps the list on screen when a re-read fails', async () => {
+      mockGetAll.mockResolvedValue(mockAccounts);
+      render(<AccountsPage />);
+      await waitFor(() => expect(screen.getByText('Checking')).toBeInTheDocument());
+
+      mockGetAllFresh.mockRejectedValue(new Error('offline'));
+      await act(async () => {
+        window.dispatchEvent(new Event('focus'));
+      });
+
+      expect(screen.getByText('Checking')).toBeInTheDocument();
     });
   });
 

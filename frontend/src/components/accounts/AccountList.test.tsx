@@ -770,6 +770,33 @@ describe('AccountList', () => {
     expect(rows[4]).toHaveTextContent('Alpha');
   });
 
+  it('sorts by Unreconciled, fewest outstanding first', () => {
+    const accounts = [
+      createAccount({ id: 'a1', name: 'Alpha', unreconciledCount: 12 }),
+      createAccount({ id: 'a2', name: 'Bravo', unreconciledCount: 0 }),
+      createAccount({ id: 'a3', name: 'Charlie', unreconciledCount: 3 }),
+    ];
+
+    render(
+      <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    fireEvent.click(screen.getByText('Unreconciled'));
+
+    // rows[0] = table header, rows[1] = the CHEQUING group header.
+    let rows = screen.getAllByRole('row');
+    expect(rows[2]).toHaveTextContent('Bravo');
+    expect(rows[3]).toHaveTextContent('Charlie');
+    expect(rows[4]).toHaveTextContent('Alpha');
+
+    fireEvent.click(screen.getByText('Unreconciled'));
+
+    rows = screen.getAllByRole('row');
+    expect(rows[2]).toHaveTextContent('Alpha');
+    expect(rows[3]).toHaveTextContent('Charlie');
+    expect(rows[4]).toHaveTextContent('Bravo');
+  });
+
   it('enables Close button when account balance is zero', () => {
     const account = createAccount({ currentBalance: 0 });
 

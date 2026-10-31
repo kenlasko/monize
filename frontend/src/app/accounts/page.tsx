@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
+import { useRereadOnVisible } from '@/hooks/useRereadOnVisible';
 import { Button } from '@/components/ui/Button';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
@@ -101,6 +102,26 @@ function AccountsContent() {
   // An AI write can change account balances (e.g. a transaction created from
   // the chat bubble), so refresh the same way as an undo/redo.
   useOnAiAction(loadAccounts);
+
+  // The list's balances and reconcile figures (Last Reconciled, Unreconciled)
+  // also move on writes this tab never saw: a reconcile or a status change in
+  // another tab or on another device. Re-read the list, past its cache, when
+  // the page is shown again; quietly, keeping what is on screen if the request
+  // fails. `visibilitychange` and `focus` both fire on one return, so a
+  // re-read already running absorbs the second.
+  const refreshInFlight = useRef(false);
+  const refreshAccountList = useCallback(() => {
+    if (refreshInFlight.current) return;
+    refreshInFlight.current = true;
+    accountsApi
+      .getAllFresh(true)
+      .then(setAccounts)
+      .catch((error) => logger.error(error))
+      .finally(() => {
+        refreshInFlight.current = false;
+      });
+  }, []);
+  useRereadOnVisible(refreshAccountList);
 
   // Build a map of brokerage account ID -> market value of holdings only.
   // Cash balance is tracked separately via the linked INVESTMENT_CASH account

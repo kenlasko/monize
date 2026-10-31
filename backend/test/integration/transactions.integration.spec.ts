@@ -343,6 +343,77 @@ describe("TransactionsService (integration)", () => {
       expect(byId.get(never.id)).toBeNull();
     });
   });
+  describe("AccountsService.findAll() unreconciledCount", () => {
+    /**
+     * The accounts list's Unreconciled column: the rows the reconcile screen
+     * lists (UNRECONCILED or CLEARED, any date), never a RECONCILED or VOID
+     * one, and zero for an account with nothing outstanding.
+     */
+    it("counts unreconciled and cleared rows of any date, and zero when none", async () => {
+      const accounts = module.get(AccountsService);
+      const settled = await createTestAccount(dataSource, userId, {
+        name: "Settled",
+        openingBalance: 0,
+        currentBalance: 0,
+      });
+
+      await withUserContext(userId, async () => {
+        await service.create(userId, {
+          accountId,
+          transactionDate: "2026-09-01",
+          amount: -10,
+          currencyCode: "USD",
+        });
+        await service.create(userId, {
+          accountId,
+          transactionDate: "2026-09-02",
+          amount: -20,
+          currencyCode: "USD",
+          status: TransactionStatus.CLEARED,
+        });
+        // Future-dated: still listed on the reconcile screen.
+        await service.create(userId, {
+          accountId,
+          transactionDate: "2099-01-01",
+          amount: -30,
+          currencyCode: "USD",
+        });
+        await service.create(userId, {
+          accountId,
+          transactionDate: "2026-09-03",
+          amount: -40,
+          currencyCode: "USD",
+          status: TransactionStatus.RECONCILED,
+        });
+        await service.create(userId, {
+          accountId,
+          transactionDate: "2026-09-04",
+          amount: -50,
+          currencyCode: "USD",
+          status: TransactionStatus.VOID,
+        });
+        const reconciled = await service.create(userId, {
+          accountId: settled.id,
+          transactionDate: "2026-09-05",
+          amount: -60,
+          currencyCode: "USD",
+        });
+        await service.bulkReconcile(
+          userId,
+          settled.id,
+          [reconciled.id],
+          "2026-09-30",
+        );
+      });
+
+      const list = await withUserContext(userId, () =>
+        accounts.findAll(userId),
+      );
+      const byId = new Map(list.map((a) => [a.id, a.unreconciledCount]));
+      expect(byId.get(accountId)).toBe(3);
+      expect(byId.get(settled.id)).toBe(0);
+    });
+  });
   describe("stale reconciliation after a row dated past its statement", () => {
     /**
      * The reconcile screen lists rows dated after the statement date, so one

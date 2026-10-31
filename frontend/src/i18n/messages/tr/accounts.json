@@ -51,6 +51,7 @@
       "type": "Tür",
       "status": "Durum",
       "lastReconciled": "Son Mutabakat",
+      "unreconciled": "Mutabakatsız",
       "balance": "Bakiye",
       "actions": "İşlemler"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Net değerimden hariç tut",
     "neverReconciled": "Hiç",
     "lastReconciledOn": "{date} tarihinde mutabakat yapıldı",
-    "neverReconciledCard": "Hiç mutabakat yapılmadı"
+    "neverReconciledCard": "Hiç mutabakat yapılmadı",
+    "unreconciledCard": "{count, plural, other {{formatted} mutabakatsız}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Aracılık",

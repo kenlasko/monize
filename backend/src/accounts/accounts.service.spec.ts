@@ -2011,6 +2011,38 @@ describe("AccountsService", () => {
       ]);
     });
 
+    it("counts each account's unreconciled and cleared rows, zero when none", async () => {
+      const getMany = jest
+        .fn()
+        .mockResolvedValue([mockAccount, { ...mockAccount, id: "account-2" }]);
+      accountsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany,
+      });
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        sql.includes('as "unreconciledCount"')
+          ? [{ accountId: mockAccount.id, unreconciledCount: "7" }]
+          : [],
+      );
+
+      const result = await service.findAll("user-1");
+
+      expect(result.map((a) => a.unreconciledCount)).toEqual([7, 0]);
+      const [sql, params] = (
+        mockQueryRunner.query.mock.calls as unknown[][]
+      ).find(([q]) => String(q).includes('as "unreconciledCount"'))!;
+      // The rows the reconcile screen lists: top-level only, any date.
+      expect(sql).toContain("COUNT(t.id)");
+      expect(sql).toContain(ledgerMovementPredicate());
+      expect(sql).not.toContain("transaction_date");
+      expect(params).toEqual([
+        [mockAccount.id, "account-2"],
+        [TransactionStatus.UNRECONCILED, TransactionStatus.CLEARED],
+      ]);
+    });
+
     it("returns empty array when no accounts", async () => {
       const getMany = jest.fn().mockResolvedValue([]);
       accountsRepository.createQueryBuilder.mockReturnValue({

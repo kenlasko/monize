@@ -51,6 +51,7 @@
       "type": "Type",
       "status": "Status",
       "lastReconciled": "Last Reconciled",
+      "unreconciled": "Unreconciled",
       "balance": "Balance",
       "actions": "Actions"
     },
@@ -96,7 +97,8 @@
     "excludeFromNetWorth": "Exclude from my net worth",
     "neverReconciled": "Never",
     "lastReconciledOn": "Reconciled {date}",
-    "neverReconciledCard": "Never reconciled"
+    "neverReconciledCard": "Never reconciled",
+    "unreconciledCard": "{count, plural, one {{formatted} unreconciled} other {{formatted} unreconciled}}"
   },
   "contextMenu": {
     "subtypeBrokerage": "Brokerage",
