@@ -48,7 +48,7 @@ export function RefreshPricesButton({
       isLoading={isRefreshing}
       // The age is a second line under the label from `sm` up; the tighter
       // padding keeps the two-line button near the height of its neighbours.
-      className={cn('whitespace-nowrap', lastPriceUpdate && 'sm:py-1', className)}
+      className={cn('whitespace-nowrap', lastPriceUpdate && !isRefreshing && 'sm:py-1', className)}
       // The label is hidden below `sm`, so name the button for assistive tech
       // rather than leaving the icon to speak for itself.
       aria-label={t('page.refresh')}
