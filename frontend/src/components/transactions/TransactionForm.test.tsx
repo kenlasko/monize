@@ -4697,6 +4697,26 @@ describe('TransactionForm', () => {
       fireEvent.click(screen.getByText('Transfer'));
       await waitFor(() => expect(screen.getByText('From Account')).toBeInTheDocument());
     });
+
+    it('restores the negative sign when switching back from transfer to transaction', async () => {
+      render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} defaultAccountId="acc-1" />);
+
+      const amountInput = await screen.findByLabelText('Amount') as HTMLInputElement;
+      fireEvent.change(amountInput, { target: { value: '-50' } });
+      fireEvent.blur(amountInput);
+      await waitFor(() => expect(Number(amountInput.value)).toBe(-50));
+
+      // Switch to Transfer: amount is forced positive for display.
+      fireEvent.click(screen.getByText('Transfer'));
+      const transferAmountInput = await screen.findByLabelText('Transfer Amount') as HTMLInputElement;
+      await waitFor(() => expect(Number(transferAmountInput.value)).toBe(50));
+
+      // Switch back to Transaction: the original negative sign must come back,
+      // not the positive value Transfer displayed.
+      fireEvent.click(screen.getByText('Transaction'));
+      const amountInputAgain = await screen.findByLabelText('Amount') as HTMLInputElement;
+      await waitFor(() => expect(Number(amountInputAgain.value)).toBe(-50));
+    });
   });
 
   // =========================================================================
