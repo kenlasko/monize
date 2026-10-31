@@ -72,8 +72,8 @@
       "activate": "Aktivieren",
       "deleteCurrency": "Währung löschen"
     },
-    "usageAccounts": "{count, plural, one {# Konto} other {# Konten}}",
-    "usageSecurities": "{count, plural, one {# Wertpapier} other {# Wertpapiere}}",
+    "usageAccounts": "{count, plural, one {# Kto.} other {# Kten.}}",
+    "usageSecurities": "{count, plural, one {# WP} other {# WP}}",
     "rateHelp": "Was eine Einheit jeder Währung in {currency} wert ist.",
     "empty": {
       "title": "Keine Währungen",

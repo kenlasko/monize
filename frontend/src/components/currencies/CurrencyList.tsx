@@ -102,9 +102,10 @@ function CurrencyStatusPill({
 
 /**
  * What the Usage column shows: the account and security counts it is used by,
- * spelled out in words rather than abbreviated under a hover-only `title`, or
- * the "-" placeholder when nothing references the currency. Both layouts render it from here so neither can
- * disagree about what "unused" looks like.
+ * in the short form ("16 accts, 3 secs") so the column stays narrow enough
+ * for the table to keep its Actions column in view, or the "-" placeholder
+ * when nothing references the currency. Both layouts render it from here so
+ * neither can disagree about what "unused" looks like.
  */
 function CurrencyUsageText({
   usage,

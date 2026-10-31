@@ -72,8 +72,8 @@
       "activate": "[XX-Activate-XX]",
       "deleteCurrency": "[XX-Delete Currency-XX]"
     },
-    "usageAccounts": "[XX-{count, plural, one {# account} other {# accounts}}-XX]",
-    "usageSecurities": "[XX-{count, plural, one {# security} other {# securities}}-XX]",
+    "usageAccounts": "[XX-{count, plural, one {# acct} other {# accts}}-XX]",
+    "usageSecurities": "[XX-{count, plural, one {# sec} other {# secs}}-XX]",
     "rateHelp": "[XX-What one unit of each currency is worth in {currency}.-XX]",
     "empty": {
       "title": "[XX-No currencies-XX]",

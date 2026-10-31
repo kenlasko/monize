@@ -73,7 +73,7 @@
       "deleteCurrency": "Usuń walutę"
     },
     "usageAccounts": "{count, plural, one {# konto} few {# konta} many {# kont} other {# konta}}",
-    "usageSecurities": "{count, plural, one {# papier wartościowy} few {# papiery wartościowe} many {# papierów wartościowych} other {# papieru wartościowego}}",
+    "usageSecurities": "{count, plural, one {# papier} few {# papiery} many {# papierów} other {# papieru}}",
     "rateHelp": "Ile jest warta jedna jednostka każdej waluty w {currency}.",
     "empty": {
       "title": "Brak walut",

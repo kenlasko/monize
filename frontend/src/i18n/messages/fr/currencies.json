@@ -72,7 +72,7 @@
       "activate": "Activer",
       "deleteCurrency": "Supprimer la devise"
     },
-    "usageAccounts": "{count, plural, one {# compte} other {# comptes}}",
+    "usageAccounts": "{count, plural, one {# cpt} other {# cpts}}",
     "usageSecurities": "{count, plural, one {# titre} other {# titres}}",
     "rateHelp": "Ce que vaut une unité de chaque devise en {currency}.",
     "empty": {

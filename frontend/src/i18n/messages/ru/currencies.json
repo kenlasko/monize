@@ -73,7 +73,7 @@
       "deleteCurrency": "Удалить валюту"
     },
     "usageAccounts": "{count, plural, one {# счёт} few {# счёта} many {# счетов} other {# счёта}}",
-    "usageSecurities": "{count, plural, one {# бумага} few {# бумаги} many {# бумаг} other {# бумаги}}",
+    "usageSecurities": "{count, plural, other {# бум.}}",
     "rateHelp": "Сколько стоит одна единица каждой валюты в {currency}.",
     "empty": {
       "title": "Нет валют",

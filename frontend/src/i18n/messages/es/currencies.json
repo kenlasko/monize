@@ -72,8 +72,8 @@
       "activate": "Activar",
       "deleteCurrency": "Eliminar divisa"
     },
-    "usageAccounts": "{count, plural, one {# cuenta} other {# cuentas}}",
-    "usageSecurities": "{count, plural, one {# valor} other {# valores}}",
+    "usageAccounts": "{count, plural, one {# cta} other {# ctas}}",
+    "usageSecurities": "{count, plural, one {# val} other {# vals}}",
     "rateHelp": "Lo que vale una unidad de cada moneda en {currency}.",
     "empty": {
       "title": "Sin divisas",
