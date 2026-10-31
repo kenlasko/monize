@@ -62,6 +62,8 @@
     "statusClosed": "閉鎖済み",
     "marketValue": "時価",
     "combinedBreakdown": "投資 {investments} · 現金 {cash}",
+    "combinedInvestments": "投資 {amount}",
+    "combinedCash": "現金 {amount}",
     "combinedUnknown": "合計を表示できません",
     "combinedUnknownTooltip": "{count, plural, other {# 件の保有銘柄に価格がないため、この口座の合計を算出できません}}",
     "combinedUnknownValuation": "この口座の一部の保有銘柄をレポート通貨に換算できなかったため、合計を算出できません。通貨ページで不足している為替レートを追加してください。",

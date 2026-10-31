@@ -15,6 +15,7 @@ import { LinkIcon } from '@heroicons/react/24/outline';
 import { Badge } from '@/components/ui/Badge';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { ACCOUNT_COLUMN_TIER, ACCOUNT_NAME_CELL_FLEX } from './account-list-columns';
 
 export interface AccountActionLabels {
   viewTransactions: string;
@@ -381,7 +382,7 @@ export interface AccountRowProps {
    * 480px and 639px at Normal density the actions move from inline buttons to
    * that sheet -- which also means they stop being tab-reachable there, since
    * the sheet opens on long-press or right-click. It is the price of the card,
-   * paid for the Type and Status this table hides below `sm`/`md`, and the
+   * paid for the Type and Status this table drops when it is narrow, and the
    * register's wrapped card makes the same trade at the same two widths
    * (`exceptPhones` is 480 in `register-columns.ts`, its card is `< 640`), so
    * the two tables behave alike. Compact density, one tap away, is the way
@@ -532,13 +533,23 @@ export const AccountRow = memo(function AccountRow({
           ),
           details: (
             <>
+              {/* One line each rather than one "Investments X · Cash Y" line:
+                  the Balance cell does not wrap, so its widest line sets the
+                  column's width, and a combined line was the widest thing on
+                  the row. */}
               {density === 'normal' && brokerageMarketValue !== undefined && (
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {t('row.combinedBreakdown', {
-                    investments: formatInAccountCurrency(brokerageMarketValue),
-                    cash: formatInAccountCurrency(cashComponent),
-                  })}
-                </div>
+                <>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {t('row.combinedInvestments', {
+                      amount: formatInAccountCurrency(brokerageMarketValue),
+                    })}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {t('row.combinedCash', {
+                      amount: formatInAccountCurrency(cashComponent),
+                    })}
+                  </div>
+                </>
               )}
               {density !== 'dense' && account.currencyCode !== defaultCurrency && (
                 // Nothing rather than the unconverted amount under the display
@@ -710,7 +721,7 @@ export const AccountRow = memo(function AccountRow({
       className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
       {...getRowHandlers(account)}
     >
-      <td className={`${cellPadding} ${account.isClosed ? 'opacity-50' : ''} max-w-[50vw] sm:max-w-[180px] md:max-w-none`}>
+      <td className={`${cellPadding} ${account.isClosed ? 'opacity-50' : ''} ${ACCOUNT_NAME_CELL_FLEX}`}>
         <div
           className="text-left w-full"
           title={showPairingChrome && account.linkedAccountId
@@ -760,7 +771,7 @@ export const AccountRow = memo(function AccountRow({
           )}
         </div>
       </td>
-      <td className={`${cellPadding} whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''} hidden sm:table-cell`}>
+      <td className={`${cellPadding} whitespace-nowrap ${account.isClosed ? 'opacity-50' : ''} ${ACCOUNT_COLUMN_TIER.type}`}>
         <AccountTypePill type={account.accountType}>
           <AccountTypeLabel
             account={account}
@@ -769,10 +780,10 @@ export const AccountRow = memo(function AccountRow({
           />
         </AccountTypePill>
       </td>
-      <td className={`${cellPadding} whitespace-nowrap hidden md:table-cell w-1`}>
+      <td className={`${cellPadding} whitespace-nowrap ${ACCOUNT_COLUMN_TIER.status} w-1`}>
         <AccountStatusPill account={account} />
       </td>
-      <td className={`${cellPadding} whitespace-nowrap hidden lg:table-cell text-sm text-gray-500 dark:text-gray-400`}>
+      <td className={`${cellPadding} whitespace-nowrap ${ACCOUNT_COLUMN_TIER.lastReconciled} text-sm text-gray-500 dark:text-gray-400`}>
         {/* Blank rather than a dash when there is nothing to say: a dash on
             this list means a total that cannot be worked out. */}
         {lastReconciled === null
@@ -781,7 +792,7 @@ export const AccountRow = memo(function AccountRow({
             ? formatDate(lastReconciled.date)
             : t('row.neverReconciled')}
       </td>
-      <td className={`${cellPadding} whitespace-nowrap hidden lg:table-cell text-right text-sm text-gray-500 dark:text-gray-400`}>
+      <td className={`${cellPadding} whitespace-nowrap ${ACCOUNT_COLUMN_TIER.unreconciled} text-right text-sm text-gray-500 dark:text-gray-400`}>
         {unreconciledCount === null ? null : formatNumber(unreconciledCount, 0)}
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-right ${account.isClosed ? 'opacity-50' : ''}`}>

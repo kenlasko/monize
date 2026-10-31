@@ -62,6 +62,8 @@
     "statusClosed": "Ditutup",
     "marketValue": "Nilai pasar",
     "combinedBreakdown": "Investasi {investments} · Kas {cash}",
+    "combinedInvestments": "Investasi {amount}",
+    "combinedCash": "Kas {amount}",
     "combinedUnknown": "Total tidak tersedia",
     "combinedUnknownTooltip": "{count, plural, other {# kepemilikan tidak memiliki harga, sehingga total akun ini tidak dapat dihitung}}",
     "combinedUnknownValuation": "Sebagian kepemilikan di akun ini tidak dapat dikonversi ke mata uang pelaporan Anda, sehingga totalnya tidak dapat dihitung. Tambahkan kurs yang belum ada di halaman Mata Uang.",

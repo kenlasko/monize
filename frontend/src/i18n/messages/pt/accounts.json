@@ -62,6 +62,8 @@
     "statusClosed": "Fechada",
     "marketValue": "Valor de mercado",
     "combinedBreakdown": "Investimentos {investments} · Numerário {cash}",
+    "combinedInvestments": "Investimentos {amount}",
+    "combinedCash": "Numerário {amount}",
     "combinedUnknown": "Total indisponível",
     "combinedUnknownTooltip": "{count, plural, one {# posição não tem preço, pelo que o total desta conta não pode ser apurado} other {# posições não têm preço, pelo que o total desta conta não pode ser apurado}}",
     "combinedUnknownValuation": "Algumas posições desta conta não puderam ser convertidas para a sua moeda de relatório, por isso o total não pode ser calculado. Adicione a taxa de câmbio em falta na página Moedas.",
