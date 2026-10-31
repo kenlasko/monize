@@ -54,6 +54,8 @@ interface DonutCalloutChartProps<T extends DonutCalloutSlice> {
   legendRadii?: { inner: PieRadius; outer: PieRadius };
   /** Height classes of the legend view's chart area. */
   legendAreaClassName?: string;
+  /** Forwarded to `ChartLegend`'s `compact` -- a couple of short names rather than a category list. */
+  legendCompact?: boolean;
 }
 
 /**
@@ -138,6 +140,7 @@ export function DonutCalloutChart<T extends DonutCalloutSlice>({
   legendColumnsClassName = 'sm:grid-cols-2',
   legendRadii = { inner: '55%', outer: '85%' },
   legendAreaClassName = 'flex-1 min-h-[240px]',
+  legendCompact = false,
 }: DonutCalloutChartProps<T>) {
   const [areaRef, size] = useElementSize<HTMLDivElement>();
   const hasCenter = !!center;
@@ -314,6 +317,7 @@ export function DonutCalloutChart<T extends DonutCalloutSlice>({
         <ChartLegend
           className="mt-3 flex-shrink-0"
           columnsClassName={legendColumnsClassName}
+          compact={legendCompact}
           items={slices.map((slice) => ({
             key: slice.key,
             name: slice.name,

@@ -135,6 +135,11 @@ export function AssetsVsLiabilities({ data, isLoading, error = false }: AssetsVs
           label={t('assetsVsLiabilities.title')}
           formatValue={(value) => formatCurrency(value)}
           legendAreaClassName="flex-1 min-h-[16rem]"
+          // Only ever Assets and Liabilities: the names and their values sit
+          // together as a group, the way the pair of pills looked before this
+          // widget moved onto the shared donut, rather than the category
+          // legend's columns of aligned trailing figures.
+          legendCompact
           // Net worth is what the two slices come to, so it belongs in the
           // donut's hole rather than in a row under the chart.
           center={{

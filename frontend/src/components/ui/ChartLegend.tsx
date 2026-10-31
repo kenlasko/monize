@@ -38,6 +38,15 @@ interface ChartLegendProps {
    * name.
    */
   phoneColumns?: 1 | 2;
+  /**
+   * Hugs each row to its content and centers the rows as a group, instead of
+   * stretching every row to the grid column's full width. A long category
+   * list wants its trailing figures aligned in a column (the default); a
+   * couple of short items (Assets vs Liabilities) want the name and its
+   * value sitting together, the way a `justify-center` row of pills used to
+   * before this component replaced it.
+   */
+  compact?: boolean;
   className?: string;
 }
 
@@ -71,21 +80,27 @@ export function ChartLegend({
   items,
   columnsClassName = DEFAULT_COLUMNS,
   phoneColumns = 1,
+  compact = false,
   className,
 }: ChartLegendProps) {
+  const alignClass = compact ? 'items-center' : 'items-start';
   return (
     <ul
-      className={`grid ${PHONE_COLUMNS[phoneColumns]} gap-x-3 gap-y-1 ${columnsClassName} ${className ?? ''}`}
+      className={
+        compact
+          ? `flex flex-wrap justify-center gap-x-4 gap-y-1 ${className ?? ''}`
+          : `grid ${PHONE_COLUMNS[phoneColumns]} gap-x-3 gap-y-1 ${columnsClassName} ${className ?? ''}`
+      }
     >
       {items.map((item) => {
         const inner = (
           <>
             <span
-              className="mt-1 h-3 w-3 flex-shrink-0 rounded-full"
+              className={`${compact ? '' : 'mt-1'} h-3 w-3 flex-shrink-0 rounded-full`}
               style={{ backgroundColor: item.color }}
               aria-hidden="true"
             />
-            <span className="min-w-0 flex-1">
+            <span className={compact ? '' : 'min-w-0 flex-1'}>
               <span className="block truncate text-gray-700 dark:text-gray-300">
                 {item.name}
               </span>
@@ -96,7 +111,9 @@ export function ChartLegend({
               )}
             </span>
             {item.trailing != null && (
-              <span className="ml-auto flex-shrink-0 tabular-nums text-gray-900 dark:text-gray-100">
+              <span
+                className={`${compact ? '' : 'ml-auto'} flex-shrink-0 tabular-nums text-gray-900 dark:text-gray-100`}
+              >
                 {item.trailing}
               </span>
             )}
@@ -110,12 +127,12 @@ export function ChartLegend({
                 type="button"
                 onClick={item.onClick}
                 disabled={item.disabled}
-                className={`flex w-full items-start gap-2 rounded-md p-2 text-left text-sm ${HOVER_ROW_ON_CARD} disabled:hover:bg-transparent dark:disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 enabled:cursor-pointer disabled:cursor-default`}
+                className={`flex ${compact ? '' : 'w-full'} ${alignClass} gap-2 rounded-md p-2 text-left text-sm ${HOVER_ROW_ON_CARD} disabled:hover:bg-transparent dark:disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 enabled:cursor-pointer disabled:cursor-default`}
               >
                 {inner}
               </button>
             ) : (
-              <div className="flex items-start gap-2 p-2 text-sm">{inner}</div>
+              <div className={`flex ${alignClass} gap-2 p-2 text-sm`}>{inner}</div>
             )}
           </li>
         );
