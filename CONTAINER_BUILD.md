@@ -1,9 +1,10 @@
 # In-cluster build (home cluster)
 The `monize-build` CronJob in the `monize` namespace builds and deploys without
-Docker on this machine. It clones a branch (`main` by default), builds both
-`production` images with Kaniko, pushes them to
-`registry.laskonet.com/monize/{backend,frontend}:latest` and runs
-`kubectl rollout restart` on both deployments. It is suspended, so it runs only
+Docker on this machine. It pins a branch (`main` by default) to its current
+commit, builds both `production` images with Kaniko in parallel, preferably on
+different nodes, pushes them to
+`registry.laskonet.com/monize/{backend,frontend}:latest` and, once both
+have pushed, runs `kubectl rollout restart` on both deployments. It is suspended, so it runs only
 when triggered by hand:
 
 ```
