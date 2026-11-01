@@ -22,7 +22,10 @@
     "filterDeposits": "Tiền gửi ({count})",
     "todayButton": "Hôm nay",
     "previousMonth": "Tháng trước",
-    "nextMonth": "Tháng sau"
+    "nextMonth": "Tháng sau",
+    "chipBills": "Hóa đơn",
+    "chipDeposits": "Tiền gửi",
+    "clearType": "Hiển thị tất cả loại lịch"
   },
   "form": {
     "titleNew": "Giao dịch theo lịch mới",
@@ -74,5 +77,11 @@
     "notFound": "Không tìm thấy thanh toán theo lịch",
     "loadFailed": "Không thể tải giao dịch theo lịch",
     "overridesDeleteFailed": "Không thể xóa các ghi đè"
+  },
+  "toolbar": {
+    "showing": "Đang hiển thị <b>{shown}</b> trên <b>{total}</b> hóa đơn và tiền gửi",
+    "exportButton": "Xuất",
+    "exportTitle": "Xuất hóa đơn và tiền gửi sang CSV",
+    "exported": "{count, plural, one {Đã xuất # lịch} other {Đã xuất # lịch}}"
   }
 }

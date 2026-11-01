@@ -22,7 +22,10 @@
     "filterDeposits": "存款 ({count})",
     "todayButton": "今天",
     "previousMonth": "上個月",
-    "nextMonth": "下個月"
+    "nextMonth": "下個月",
+    "chipBills": "帳單",
+    "chipDeposits": "存款",
+    "clearType": "顯示所有排程類型"
   },
   "form": {
     "titleNew": "新增排程交易",
@@ -74,5 +77,11 @@
     "notFound": "找不到排程付款",
     "loadFailed": "載入排程交易失敗",
     "overridesDeleteFailed": "刪除覆寫失敗"
+  },
+  "toolbar": {
+    "showing": "顯示 <b>{total}</b> 項帳單與存款中的 <b>{shown}</b> 項",
+    "exportButton": "匯出",
+    "exportTitle": "將帳單與存款匯出為 CSV",
+    "exported": "{count, plural, one {已匯出 # 個排程} other {已匯出 # 個排程}}"
   }
 }

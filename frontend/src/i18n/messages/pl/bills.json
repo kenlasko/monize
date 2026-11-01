@@ -22,7 +22,10 @@
     "filterDeposits": "Wpłaty ({count})",
     "todayButton": "Dzisiaj",
     "previousMonth": "Poprzedni miesiąc",
-    "nextMonth": "Następny miesiąc"
+    "nextMonth": "Następny miesiąc",
+    "chipBills": "Rachunki",
+    "chipDeposits": "Wpłaty",
+    "clearType": "Pokaż wszystkie typy harmonogramów"
   },
   "form": {
     "titleNew": "Nowa zaplanowana transakcja",
@@ -74,5 +77,11 @@
     "notFound": "Nie znaleziono zaplanowanej płatności",
     "loadFailed": "Nie udało się wczytać zaplanowanych transakcji",
     "overridesDeleteFailed": "Nie udało się usunąć wyjątków"
+  },
+  "toolbar": {
+    "showing": "Wyświetlanie <b>{shown}</b> z <b>{total}</b> rachunków i wpłat",
+    "exportButton": "Eksportuj",
+    "exportTitle": "Eksportuj rachunki i wpłaty do CSV",
+    "exported": "{count, plural, one {Wyeksportowano # harmonogram} few {Wyeksportowano # harmonogramy} many {Wyeksportowano # harmonogramów} other {Wyeksportowano # harmonogramu}}"
   }
 }

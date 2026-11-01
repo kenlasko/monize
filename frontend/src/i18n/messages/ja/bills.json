@@ -22,7 +22,10 @@
     "filterDeposits": "入金 ({count})",
     "todayButton": "今日",
     "previousMonth": "前の月",
-    "nextMonth": "次の月"
+    "nextMonth": "次の月",
+    "chipBills": "請求",
+    "chipDeposits": "入金",
+    "clearType": "すべてのスケジュールの種類を表示"
   },
   "form": {
     "titleNew": "新規スケジュール済み取引",
@@ -74,5 +77,11 @@
     "notFound": "スケジュール済み支払いが見つかりません",
     "loadFailed": "スケジュール済み取引の読み込みに失敗しました",
     "overridesDeleteFailed": "上書きの削除に失敗しました"
+  },
+  "toolbar": {
+    "showing": "請求・入金 <b>{total}</b> 件中 <b>{shown}</b> 件を表示",
+    "exportButton": "エクスポート",
+    "exportTitle": "請求・入金をCSVにエクスポート",
+    "exported": "{count, plural, one {# 件のスケジュールをエクスポートしました} other {# 件のスケジュールをエクスポートしました}}"
   }
 }

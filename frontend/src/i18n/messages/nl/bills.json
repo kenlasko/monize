@@ -22,7 +22,10 @@
     "filterDeposits": "Stortingen ({count})",
     "todayButton": "Vandaag",
     "previousMonth": "Vorige maand",
-    "nextMonth": "Volgende maand"
+    "nextMonth": "Volgende maand",
+    "chipBills": "Facturen",
+    "chipDeposits": "Stortingen",
+    "clearType": "Alle schematypen tonen"
   },
   "form": {
     "titleNew": "Nieuwe geplande transactie",
@@ -74,5 +77,11 @@
     "notFound": "Geplande betaling niet gevonden",
     "loadFailed": "Geplande transacties laden mislukt",
     "overridesDeleteFailed": "Overschrijvingen verwijderen mislukt"
+  },
+  "toolbar": {
+    "showing": "<b>{shown}</b> van <b>{total}</b> facturen en stortingen weergegeven",
+    "exportButton": "Exporteren",
+    "exportTitle": "Facturen en stortingen exporteren naar CSV",
+    "exported": "{count, plural, one {# schema geëxporteerd} other {# schema's geëxporteerd}}"
   }
 }

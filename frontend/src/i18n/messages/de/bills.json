@@ -22,7 +22,10 @@
     "filterDeposits": "Einzahlungen ({count})",
     "todayButton": "Heute",
     "previousMonth": "Vorheriger Monat",
-    "nextMonth": "Nächster Monat"
+    "nextMonth": "Nächster Monat",
+    "chipBills": "Rechnungen",
+    "chipDeposits": "Einzahlungen",
+    "clearType": "Alle Zeitplantypen anzeigen"
   },
   "form": {
     "titleNew": "Neue terminierte Buchung",
@@ -74,5 +77,11 @@
     "notFound": "Terminierte Zahlung nicht gefunden",
     "loadFailed": "Terminierte Buchungen konnten nicht geladen werden",
     "overridesDeleteFailed": "Überschreibungen konnten nicht gelöscht werden"
+  },
+  "toolbar": {
+    "showing": "<b>{shown}</b> von <b>{total}</b> Rechnungen und Einzahlungen",
+    "exportButton": "Exportieren",
+    "exportTitle": "Rechnungen und Einzahlungen als CSV exportieren",
+    "exported": "{count, plural, one {# Zeitplan exportiert} other {# Zeitpläne exportiert}}"
   }
 }

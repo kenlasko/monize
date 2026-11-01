@@ -22,7 +22,10 @@
     "filterDeposits": "Versamenti ({count})",
     "todayButton": "Oggi",
     "previousMonth": "Mese precedente",
-    "nextMonth": "Mese successivo"
+    "nextMonth": "Mese successivo",
+    "chipBills": "Fatture",
+    "chipDeposits": "Versamenti",
+    "clearType": "Mostra tutti i tipi di pianificazione"
   },
   "form": {
     "titleNew": "Nuova transazione pianificata",
@@ -74,5 +77,11 @@
     "notFound": "Pagamento pianificato non trovato",
     "loadFailed": "Caricamento delle transazioni pianificate non riuscito",
     "overridesDeleteFailed": "Eliminazione delle sostituzioni non riuscita"
+  },
+  "toolbar": {
+    "showing": "Visualizzazione di <b>{shown}</b> su <b>{total}</b> fatture e versamenti",
+    "exportButton": "Esporta",
+    "exportTitle": "Esporta fatture e versamenti in CSV",
+    "exported": "{count, plural, one {Esportata # pianificazione} other {Esportate # pianificazioni}}"
   }
 }
