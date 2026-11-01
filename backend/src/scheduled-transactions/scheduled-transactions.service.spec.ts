@@ -2203,6 +2203,32 @@ describe("ScheduledTransactionsService", () => {
       expect(updateArg.payeeName).toBeNull();
     });
 
+    // Issue #1979: the form sends null for a cleared field, and the reference
+    // number is a stored field like the description.
+    it("clears description and referenceNumber sent as null", async () => {
+      const scheduled = makeScheduled({ referenceNumber: "ACCT-42" });
+      stubFindOne(scheduled);
+
+      await service.update(userId, stId, {
+        description: null as any,
+        referenceNumber: null,
+      });
+
+      const updateArg = mockQueryRunner.manager.update.mock.calls[0][2];
+      expect(updateArg.description).toBeNull();
+      expect(updateArg.referenceNumber).toBeNull();
+    });
+
+    it("stores a referenceNumber sent on update", async () => {
+      const scheduled = makeScheduled();
+      stubFindOne(scheduled);
+
+      await service.update(userId, stId, { referenceNumber: "ACCT-42" });
+
+      const updateArg = mockQueryRunner.manager.update.mock.calls[0][2];
+      expect(updateArg.referenceNumber).toBe("ACCT-42");
+    });
+
     it("clears splits when switching to transfer but does not force category null (#743)", async () => {
       const scheduled = makeScheduled({ isSplit: true });
       stubFindOne(scheduled);
@@ -4061,6 +4087,62 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.prepareTransfer).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ referenceNumber: "REF-5678" }),
+      );
+    });
+
+    // Issue #1979: the schedule's stored reference is the default for a post
+    // that does not send one, and a post that sends an empty one clears it.
+    it("falls back to the schedule's stored referenceNumber when the post omits it", async () => {
+      const scheduled = makeScheduled({ referenceNumber: "ACCT-42" });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId);
+
+      expect(transactionsService.create).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ referenceNumber: "ACCT-42" }),
+        { fromScheduledPosting: true },
+      );
+    });
+
+    it("posts no referenceNumber when the post sends an empty one", async () => {
+      const scheduled = makeScheduled({ referenceNumber: "ACCT-42" });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId, { referenceNumber: "" });
+
+      expect(transactionsService.create).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ referenceNumber: undefined }),
+        { fromScheduledPosting: true },
+      );
+    });
+
+    it("passes the schedule's stored referenceNumber to a transfer post", async () => {
+      const scheduled = makeScheduled({
+        isTransfer: true,
+        transferAccountId: "acc-2",
+        referenceNumber: "ACCT-42",
+      });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId);
+
+      expect(transactionsService.prepareTransfer).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ referenceNumber: "ACCT-42" }),
       );
     });
   });

@@ -129,6 +129,14 @@ export class ScheduledTransaction {
 
   @Column({
     type: "varchar",
+    name: "reference_number",
+    length: 100,
+    nullable: true,
+  })
+  referenceNumber: string | null;
+
+  @Column({
+    type: "varchar",
     length: 20,
     default: "MONTHLY",
   })

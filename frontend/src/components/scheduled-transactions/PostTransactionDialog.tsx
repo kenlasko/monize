@@ -465,7 +465,7 @@ export function PostTransactionDialog({
       setDescription(nextOverride?.description ?? scheduledTransaction.description ?? '');
       setIsSplit(nextOverride?.isSplit ?? scheduledTransaction.isSplit);
 
-      setReferenceNumber('');
+      setReferenceNumber(scheduledTransaction.referenceNumber ?? '');
 
       // Set transaction date: use override date if modified, otherwise next due date
       const nextDueDate = (nextOverride?.overrideDate ?? scheduledTransaction.nextDueDate).split('T')[0];
@@ -898,7 +898,10 @@ export function PostTransactionDialog({
               : { amount: postAmount }),
             categoryId: isSplit ? null : (categoryId || null),
             description: description || null,
-            referenceNumber: referenceNumber || undefined,
+            // Always sent, even empty: an omitted key makes the backend fall
+            // back to the schedule's stored reference, so clearing it here
+            // would not stick.
+            referenceNumber,
             isSplit,
             splits: isSplit ? toOverrideSplits(postSplits) : undefined,
           };

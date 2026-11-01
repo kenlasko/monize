@@ -1095,6 +1095,7 @@ CREATE TABLE scheduled_transactions (
     original_currency_code VARCHAR(3) REFERENCES currencies(code),
     exchange_rate NUMERIC(20, 10) NOT NULL DEFAULT 1,
     description TEXT,
+    reference_number VARCHAR(100), -- copied to each posted occurrence unless the post supplies one
     -- 'ONCE', 'DAILY', 'WEEKLY', 'BIWEEKLY', 'EVERY4WEEKS', 'SEMIMONTHLY',
     -- 'MONTHLY', 'EVERY2MONTHS', 'QUARTERLY', 'EVERY4MONTHS', 'SEMIANNUAL',
     -- 'YEARLY', 'EVERY2YEARS'

@@ -744,7 +744,9 @@ describe('PostTransactionDialog', () => {
     });
   });
 
-  it('omits referenceNumber from payload when empty', async () => {
+  it('sends an empty referenceNumber when none is entered', async () => {
+    // An omitted key makes the backend fall back to the schedule's stored
+    // reference, so an empty field is sent as an empty string (issue #1979).
     const onPosted = vi.fn();
     render(<PostTransactionDialog {...defaultProps} onPosted={onPosted} />);
 
@@ -755,7 +757,36 @@ describe('PostTransactionDialog', () => {
     await waitFor(() => {
       expect(mockPostApi).toHaveBeenCalled();
       const payload = mockPostApi.mock.calls[0][1];
-      expect(payload.referenceNumber).toBeUndefined();
+      expect(payload.referenceNumber).toBe('');
+    });
+  });
+
+  it('prefills the reference number stored on the schedule (issue #1979)', () => {
+    render(
+      <PostTransactionDialog
+        {...defaultProps}
+        scheduledTransaction={{ ...defaultProps.scheduledTransaction, referenceNumber: 'ACCT-42' }}
+      />,
+    );
+    const refInput = screen.getByPlaceholderText('Cheque #, confirmation #...') as HTMLInputElement;
+    expect(refInput.value).toBe('ACCT-42');
+  });
+
+  it('sends an empty referenceNumber when the stored one is cleared', async () => {
+    render(
+      <PostTransactionDialog
+        {...defaultProps}
+        scheduledTransaction={{ ...defaultProps.scheduledTransaction, referenceNumber: 'ACCT-42' }}
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText('Cheque #, confirmation #...'), { target: { value: '' } });
+
+    const buttons = screen.getAllByText('Post Transaction');
+    fireEvent.click(buttons[buttons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockPostApi).toHaveBeenCalled();
+      expect(mockPostApi.mock.calls[0][1].referenceNumber).toBe('');
     });
   });
 

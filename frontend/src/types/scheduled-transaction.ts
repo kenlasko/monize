@@ -79,6 +79,7 @@ export interface ScheduledTransaction {
   originalCurrencyCode: string | null;
   exchangeRate: number;
   description: string | null;
+  referenceNumber: string | null;
   frequency: FrequencyType;
   nextDueDate: string;
   startDate: string;
@@ -194,7 +195,8 @@ export interface CreateScheduledTransactionData {
   originalAmount?: number | null;
   originalCurrencyCode?: string | null;
   exchangeRate?: number;
-  description?: string;
+  description?: string | null;
+  referenceNumber?: string | null;
   frequency: FrequencyType;
   nextDueDate: string;
   startDate?: string;

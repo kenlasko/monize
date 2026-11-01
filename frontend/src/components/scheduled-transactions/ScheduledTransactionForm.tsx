@@ -276,7 +276,7 @@ export function ScheduledTransactionForm({
             : (bookedTemplate?.parentAmount ?? Math.round(Number(scheduledTransaction.amount) * 100) / 100),
           currencyCode: scheduledTransaction.currencyCode,
           description: scheduledTransaction.description || '',
-          referenceNumber: '',
+          referenceNumber: scheduledTransaction.referenceNumber || '',
           frequency: scheduledTransaction.frequency,
           nextDueDate: scheduledTransaction.nextDueDate.split('T')[0],
           endDate: scheduledTransaction.endDate?.split('T')[0] || '',
@@ -1095,20 +1095,22 @@ export function ScheduledTransactionForm({
 
     setIsLoading(true);
     try {
-      // Strip referenceNumber (backend doesn't support it for scheduled transactions)
-      const { referenceNumber: _ref, ...formData } = data;
-
       // Build the payload based on mode
       let payload: any = {
-        ...formData,
-        endDate: useEndDate ? formData.endDate : undefined,
-        occurrencesRemaining: useOccurrences ? formData.occurrencesRemaining : undefined,
+        ...data,
+        // A cleared field is an empty string that the schema turns into
+        // undefined, and an omitted key leaves the stored value in place on
+        // update; send an explicit null so clearing it sticks.
+        description: data.description || null,
+        referenceNumber: data.referenceNumber || null,
+        endDate: useEndDate ? data.endDate : undefined,
+        occurrencesRemaining: useOccurrences ? data.occurrencesRemaining : undefined,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : [],
       };
 
       if (mode === 'transfer') {
         // Amount should be negative (money leaving source account)
-        const transferAmount = -Math.abs(Number(formData.amount));
+        const transferAmount = -Math.abs(Number(data.amount));
         payload = {
           ...payload,
           amount: transferAmount,
@@ -1135,7 +1137,7 @@ export function ScheduledTransactionForm({
         const estPrice = investmentPrice === '' ? 0 : Number(investmentPrice);
         const estTotal = investmentTotalAmount === '' ? 0 : Number(investmentTotalAmount);
         const estCommission = investmentCommission === '' ? 0 : Number(investmentCommission);
-        let displayAmount = formData.amount;
+        let displayAmount = data.amount;
         if (QUANTITY_PRICE_ACTIONS.includes(baseInvestmentAction(investmentAction))) {
           const sign = baseInvestmentAction(investmentAction) === 'SELL' ? 1 : -1;
           displayAmount = sign * (estQty * estPrice + (sign === -1 ? estCommission : -estCommission));
