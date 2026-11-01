@@ -1444,8 +1444,12 @@ describe('InvestmentTransactionForm', () => {
         />,
       );
 
+      // The select draws before the securities load; choosing 'sec-usd'
+      // before its option exists silently keeps the empty value.
       await waitFor(() => {
-        expect(screen.getByLabelText('Security')).toBeInTheDocument();
+        expect(
+          screen.getByLabelText('Security').querySelector('option[value="sec-usd"]'),
+        ).not.toBeNull();
       });
 
       const securitySelect = screen.getByLabelText('Security');
@@ -1470,8 +1474,12 @@ describe('InvestmentTransactionForm', () => {
             defaultAccountId="cad-brokerage"
           />,
         );
+        // The select draws before the securities load; choosing 'sec-usd'
+        // before its option exists silently keeps the empty value.
         await waitFor(() => {
-          expect(screen.getByLabelText('Security')).toBeInTheDocument();
+          expect(
+            screen.getByLabelText('Security').querySelector('option[value="sec-usd"]'),
+          ).not.toBeNull();
         });
         fireEvent.change(screen.getByLabelText('Security'), {
           target: { value: 'sec-usd' },
@@ -1633,8 +1641,12 @@ describe('InvestmentTransactionForm', () => {
           />,
         );
 
+        // The select draws before the securities load; choosing 'sec-usd'
+        // before its option exists silently keeps the empty value.
         await waitFor(() => {
-          expect(screen.getByLabelText('Security')).toBeInTheDocument();
+          expect(
+            screen.getByLabelText('Security').querySelector('option[value="sec-usd"]'),
+          ).not.toBeNull();
         });
         fireEvent.change(screen.getByLabelText('Security'), {
           target: { value: 'sec-usd' },
@@ -1707,8 +1719,12 @@ describe('InvestmentTransactionForm', () => {
         />,
       );
 
+      // The select draws before the securities load; choosing 'sec-usd'
+      // before its option exists silently keeps the empty value.
       await waitFor(() => {
-        expect(screen.getByLabelText('Security')).toBeInTheDocument();
+        expect(
+          screen.getByLabelText('Security').querySelector('option[value="sec-usd"]'),
+        ).not.toBeNull();
       });
 
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -2595,6 +2611,11 @@ describe('InvestmentTransactionForm - extra coverage', () => {
     await waitFor(() => expect(screen.getByText('Brokerage Account')).toBeInTheDocument());
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Brokerage Account'), { target: { value: 'a-cad' } });
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText('Security').querySelector('option[value="sec-usd"]'),
+      ).not.toBeNull();
     });
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Security'), { target: { value: 'sec-usd' } });
