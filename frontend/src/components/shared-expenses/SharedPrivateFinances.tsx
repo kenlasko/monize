@@ -91,7 +91,7 @@ export function SharedPrivateFinances({
       {data && !data.accessRevoked && id && (
         <Link
           className="ml-4 inline-block text-blue-600 dark:text-blue-400 hover:underline"
-          href={`/shared-expenses/${id}`}
+          href={`/shared-expenses/${encodeURIComponent(id)}`}
         >
           {t("openGroup")}
         </Link>
