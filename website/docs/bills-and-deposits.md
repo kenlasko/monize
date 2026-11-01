@@ -104,11 +104,11 @@ A **modified** badge counts the upcoming occurrences you have changed (see [Over
 
 ### The Bar Above the List
 
-The bar directly above the column headers says how many schedules the filters leave (**Showing 5 of 12 bills and deposits**) and holds the **Table** and **Calendar** buttons. At its right-hand end, **Export** downloads the list as it is filtered to a CSV file, with each schedule's next occurrence amount and due date, and the density button sets how much fits on screen.
+The bar directly above the column headers says how many schedules the filters leave (**Showing 5 of 12 bills and deposits**, not shown on a phone) and holds the **Table** and **Calendar** buttons. At its right-hand end, **Export** downloads the list as it is filtered to a CSV file, with each schedule's next occurrence amount and due date, and the density button sets how much fits on screen.
 
 ### Calendar View
 
-The **Table** and **Calendar** buttons switch between the list and a month calendar of every occurrence. Move between months with the arrows, or return to the current one with **Today**. Click an occurrence to edit its schedule.
+The **Table** and **Calendar** buttons switch between the list and a month calendar of every occurrence; in calendar view they sit at the left of the toolbar, with the month in the middle. Move between months with the arrows, or return to the current one with **Today**. Click an occurrence to edit its schedule.
 
 ![Bills & Deposits in calendar view](images/bills-calendar.png)
 

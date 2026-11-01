@@ -858,10 +858,14 @@ function BillsContent() {
           </>
         ) : (
           <>
-            {/* Calendar toolbar: the month navigation, and the Table /
-                Calendar switch at the right-hand end, as on Transactions. */}
+            {/* Calendar toolbar: the Table / Calendar switch at the
+                left-hand end, where the table's bar has it, and the month
+                navigation centred in the row from `sm` up. */}
             <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">
-              <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2 px-4 py-3 sm:grid sm:grid-cols-[1fr_auto_1fr]">
+                <div className="flex items-center gap-2 sm:justify-self-start">
+                  <ViewModeToggle value={viewMode} onChange={setViewMode} />
+                </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -889,9 +893,6 @@ function BillsContent() {
                   >
                     {t('viewTabs.todayButton')}
                   </button>
-                </div>
-                <div className="flex items-center gap-2 sm:ml-auto">
-                  <ViewModeToggle value={viewMode} onChange={setViewMode} />
                 </div>
               </div>
             </div>

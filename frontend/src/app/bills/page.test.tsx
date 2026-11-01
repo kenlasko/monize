@@ -557,6 +557,20 @@ describe('BillsPage', () => {
       expect(screen.getByRole('button', { name: 'Next month' })).toBeInTheDocument();
     });
 
+    it('puts the toggle first in the calendar toolbar and centres the month on desktop', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
+      const view = screen.getByRole('group', { name: 'View' });
+      const previous = screen.getByRole('button', { name: 'Previous month' });
+      expect(view.compareDocumentPosition(previous)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      // Three columns from `sm` up: the switch's, the month's, and an empty
+      // one as wide as the first, so the month sits in the middle of the row.
+      const toolbar = screen.getByText('February 2026').parentElement!.parentElement!;
+      expect(toolbar.className).toContain('sm:grid-cols-[1fr_auto_1fr]');
+      expect(toolbar.children).toHaveLength(2);
+    });
+
     it('switches to calendar view', async () => {
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
