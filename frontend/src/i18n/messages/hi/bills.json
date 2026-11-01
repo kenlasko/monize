@@ -22,7 +22,10 @@
     "filterDeposits": "जमा ({count})",
     "todayButton": "आज",
     "previousMonth": "पिछला महीना",
-    "nextMonth": "अगला महीना"
+    "nextMonth": "अगला महीना",
+    "chipBills": "बिल",
+    "chipDeposits": "जमा",
+    "clearType": "सभी शेड्यूल प्रकार दिखाएँ"
   },
   "form": {
     "titleNew": "नया निर्धारित लेनदेन",
@@ -74,5 +77,11 @@
     "notFound": "निर्धारित भुगतान नहीं मिला",
     "loadFailed": "निर्धारित लेनदेन लोड करने में विफल",
     "overridesDeleteFailed": "ओवरराइड हटाने में विफल"
+  },
+  "toolbar": {
+    "showing": "<b>{total}</b> में से <b>{shown}</b> बिल और जमा दिखाए जा रहे हैं",
+    "exportButton": "निर्यात",
+    "exportTitle": "बिल और जमा को CSV में निर्यात करें",
+    "exported": "{count, plural, one {# शेड्यूल निर्यात किया गया} other {# शेड्यूल निर्यात किए गए}}"
   }
 }

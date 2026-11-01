@@ -22,7 +22,10 @@
     "filterDeposits": "Mevduatlar ({count})",
     "todayButton": "Bugün",
     "previousMonth": "Önceki ay",
-    "nextMonth": "Sonraki ay"
+    "nextMonth": "Sonraki ay",
+    "chipBills": "Faturalar",
+    "chipDeposits": "Mevduatlar",
+    "clearType": "Tüm program türlerini göster"
   },
   "form": {
     "titleNew": "Yeni Zamanlanmış İşlem",
@@ -74,5 +77,11 @@
     "notFound": "Zamanlanmış ödeme bulunamadı",
     "loadFailed": "Zamanlanmış işlemler yüklenemedi",
     "overridesDeleteFailed": "Geçersiz kılmalar silinemedi"
+  },
+  "toolbar": {
+    "showing": "<b>{total}</b> fatura ve mevduattan <b>{shown}</b> tanesi gösteriliyor",
+    "exportButton": "Dışa Aktar",
+    "exportTitle": "Faturaları ve mevduatları CSV'ye aktar",
+    "exported": "{count, plural, one {# program dışa aktarıldı} other {# program dışa aktarıldı}}"
   }
 }

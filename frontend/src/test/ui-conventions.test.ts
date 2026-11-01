@@ -2580,7 +2580,6 @@ describe("a status pill is Badge, not a hand-rolled rounded-full", () => {
     "/src/components/reports/FilterBuilder.tsx",
     "/src/components/reports/RecurringExpensesReport.tsx",
     "/src/components/reports/SpendingAnomaliesReport.tsx",
-    "/src/components/scheduled-transactions/BillsFilterPanel.tsx",
     "/src/components/scheduled-transactions/ScheduledTransactionList.tsx",
     "/src/components/securities/detail/SecurityDetailHeader.tsx",
     "/src/components/securities/detail/SecurityPositionInfoCard.tsx",

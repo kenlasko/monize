@@ -22,7 +22,10 @@
     "filterDeposits": "Deposits ({count})",
     "todayButton": "Today",
     "previousMonth": "Previous month",
-    "nextMonth": "Next month"
+    "nextMonth": "Next month",
+    "chipBills": "Bills",
+    "chipDeposits": "Deposits",
+    "clearType": "Show all schedule types"
   },
   "form": {
     "titleNew": "New Scheduled Transaction",
@@ -74,5 +77,11 @@
     "notFound": "Scheduled payment not found",
     "loadFailed": "Failed to load scheduled transactions",
     "overridesDeleteFailed": "Failed to delete overrides"
+  },
+  "toolbar": {
+    "showing": "Showing <b>{shown}</b> of <b>{total}</b> bills and deposits",
+    "exportButton": "Export",
+    "exportTitle": "Export bills and deposits to CSV",
+    "exported": "{count, plural, one {Exported # schedule} other {Exported # schedules}}"
   }
 }

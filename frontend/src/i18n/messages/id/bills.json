@@ -22,7 +22,10 @@
     "filterDeposits": "Setoran ({count})",
     "todayButton": "Hari Ini",
     "previousMonth": "Bulan sebelumnya",
-    "nextMonth": "Bulan berikutnya"
+    "nextMonth": "Bulan berikutnya",
+    "chipBills": "Tagihan",
+    "chipDeposits": "Setoran",
+    "clearType": "Tampilkan semua jenis jadwal"
   },
   "form": {
     "titleNew": "Transaksi Terjadwal Baru",
@@ -74,5 +77,11 @@
     "notFound": "Pembayaran terjadwal tidak ditemukan",
     "loadFailed": "Gagal memuat transaksi terjadwal",
     "overridesDeleteFailed": "Gagal menghapus penimpaan"
+  },
+  "toolbar": {
+    "showing": "Menampilkan <b>{shown}</b> dari <b>{total}</b> tagihan dan setoran",
+    "exportButton": "Ekspor",
+    "exportTitle": "Ekspor tagihan dan setoran ke CSV",
+    "exported": "{count, plural, one {Diekspor # jadwal} other {Diekspor # jadwal}}"
   }
 }

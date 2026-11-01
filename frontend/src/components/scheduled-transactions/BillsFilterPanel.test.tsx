@@ -22,6 +22,9 @@ const payees: BillsPayeeOption[] = [
 
 function makeProps(overrides: Partial<React.ComponentProps<typeof BillsFilterPanel>> = {}) {
   return {
+    filterType: 'all' as const,
+    setFilterType: vi.fn(),
+    typeCounts: { all: 6, bills: 3, deposits: 1 },
     filtersExpanded: true,
     setFiltersExpanded: vi.fn(),
     nameSearch: '',
@@ -87,9 +90,44 @@ describe('BillsFilterPanel', () => {
     expect(screen.getAllByRole('button').filter((b) => b.hasAttribute('aria-expanded'))).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Expand filters' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument();
+    // The register's own toggle: the words say what a click does.
+    expect(toggle).toHaveTextContent('Show filters');
     // Heroicons from the outline set, not inline copies of their paths.
     expect(document.querySelector('path[d="M19 9l-7 7-7-7"]')).toBeNull();
     expect(document.querySelector('path[d="M6 18L18 6M6 6l12 12"]')).toBeNull();
+  });
+
+  it('says Hide on the toggle while the panel is open', () => {
+    render(<BillsFilterPanel {...makeProps({ filtersExpanded: true })} />);
+    const toggle = screen.getByRole('button', { name: /Filters/ });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toggle).toHaveTextContent('Hide');
+    expect(toggle).not.toHaveTextContent('Show filters');
+  });
+
+  it('leads the open panel with the schedule type, full width on a phone', () => {
+    const props = makeProps();
+    render(<BillsFilterPanel {...props} />);
+
+    const group = screen.getByRole('group', { name: 'Schedule type' });
+    expect(group.compareDocumentPosition(screen.getByPlaceholderText('Search by name...'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(group.className.split(/\s+/)).toEqual(expect.arrayContaining(['w-full', 'sm:w-auto']));
+    expect(screen.getByRole('button', { name: 'All (6)' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deposits (1)' }));
+    expect(props.setFilterType).toHaveBeenCalledWith('deposits');
+  });
+
+  it('chips a folded type filter and removes it from the chip', () => {
+    const props = makeProps({ filtersExpanded: false, filterType: 'bills', activeFilterCount: 1 });
+    render(<BillsFilterPanel {...props} />);
+
+    expect(screen.queryByRole('group', { name: 'Schedule type' })).not.toBeInTheDocument();
+    expect(screen.getByText('Bills')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show all schedule types' }));
+    expect(props.setFilterType).toHaveBeenCalledWith('all');
   });
 
   it('toggles expansion when the header is clicked', () => {

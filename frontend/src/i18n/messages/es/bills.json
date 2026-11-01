@@ -22,7 +22,10 @@
     "filterDeposits": "Depósitos ({count})",
     "todayButton": "Hoy",
     "previousMonth": "Mes anterior",
-    "nextMonth": "Mes siguiente"
+    "nextMonth": "Mes siguiente",
+    "chipBills": "Facturas",
+    "chipDeposits": "Depósitos",
+    "clearType": "Mostrar todos los tipos de programación"
   },
   "form": {
     "titleNew": "Nueva transacción planificada",
@@ -74,5 +77,11 @@
     "notFound": "Transacción planificada no encontrada",
     "loadFailed": "Error al cargar las transacciones planificadas",
     "overridesDeleteFailed": "Error al eliminar las modificaciones"
+  },
+  "toolbar": {
+    "showing": "Mostrando <b>{shown}</b> de <b>{total}</b> facturas y depósitos",
+    "exportButton": "Exportar",
+    "exportTitle": "Exportar facturas y depósitos a CSV",
+    "exported": "{count, plural, one {Se exportó # programación} other {Se exportaron # programaciones}}"
   }
 }

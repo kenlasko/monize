@@ -92,6 +92,12 @@ vi.mock('@/lib/utils', async (importOriginal) => ({
   parseLocalDate: (dateStr: string) => new Date(dateStr + 'T00:00:00'),
 }));
 
+const mockExportToCsv = vi.fn();
+vi.mock('@/lib/csv-export', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/csv-export')>()),
+  exportToCsv: (...args: any[]) => mockExportToCsv(...args),
+}));
+
 const mockGetAll = vi.fn();
 const mockGetAllCategories = vi.fn();
 const mockCreateCategory = vi.fn();
@@ -343,6 +349,10 @@ describe('BillsPage', () => {
     // Filters (type tab + panel selections) now persist to localStorage;
     // reset it so each case starts from the default unfiltered view.
     localStorage.clear();
+    // The All / Bills / Deposits choice lives inside the folding filter panel;
+    // start with the panel open so the type cases can reach it. The folded
+    // panel has its own cases below.
+    localStorage.setItem('monize-bills-filters-expanded', 'true');
     // The Table / Calendar choice lives in the shared view-mode store, which
     // outlives a render: start every case on the list.
     useViewModeStore.getState().setView('bills', 'table');
@@ -586,27 +596,33 @@ describe('BillsPage', () => {
 
   /**
    * Issue #1203: the Bills list had no density control at all. It sits at the
-   * far right of the bar the List/Calendar tabs and the All/Bills/Deposits
-   * chips already share, so every control that shapes the list is on one line.
+   * far right of the bar above the table, the register's `ListTopToolbar`.
    */
   describe('Density toggle', () => {
     beforeEach(() => {
       useDensityStore.setState({ densities: {} });
     });
 
-    it('shares the toolbar with the type filter, beside the Table / Calendar switch', async () => {
+    it('rides the bar above the table, right of Export, with the count and switch on the left', async () => {
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
 
-      const filter = screen.getByRole('group', { name: 'Schedule type' });
-      const bar = filter.parentElement!;
-      const toggle = screen.getByTitle('Toggle row density');
+      const density = screen.getByTitle('Toggle row density');
+      const exportButton = screen.getByTitle('Export bills and deposits to CSV');
+      const view = screen.getByRole('group', { name: 'View' });
+      const summary = screen.getByText(/^Showing/);
 
-      expect(bar).toContainElement(toggle);
-      // The right-hand group: density, then the view switch last of all.
-      const rightGroup = bar.lastElementChild!;
-      expect(rightGroup).toContainElement(toggle);
-      expect(rightGroup.lastElementChild).toBe(screen.getByRole('group', { name: 'View' }));
+      // Reading order: count, switch, Export, density.
+      expect(summary.compareDocumentPosition(view)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(view.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(exportButton.compareDocumentPosition(density)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      // One bar, directly above the list: the next element after the bar is
+      // the list itself, so the bar meets the column headers.
+      const bar = screen.getByTestId('scheduled-transaction-list').previousElementSibling!;
+      expect(bar).toContainElement(density);
+      expect(bar).toContainElement(view);
+      // The type filter is no longer in it: it moved into the filter panel.
+      expect(bar).not.toContainElement(screen.getByRole('group', { name: 'Schedule type' }));
     });
 
     it('is the plain toggle every other table draws, not a filled chip', async () => {
@@ -622,13 +638,12 @@ describe('BillsPage', () => {
       expect(classes).toContain('hover:bg-gray-100');
     });
 
-    it('stays visible below sm, and so do the type segments', async () => {
+    it('stays visible below sm, and the type segments take the whole phone line', async () => {
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
 
-      // Nothing on the toolbar is hidden at a breakpoint: a filter the reader
-      // cannot see on a phone is a filter they forget is applied. The type
-      // segments wrap instead.
+      // Nothing that filters the list is hidden at a breakpoint: a filter the
+      // reader cannot see on a phone is a filter they forget is applied.
       const hiddenAncestor = (el: HTMLElement | null) => {
         for (let node = el; node; node = node.parentElement) {
           if (node.className.split(/\s+/).includes('hidden')) return node;
@@ -637,7 +652,10 @@ describe('BillsPage', () => {
       };
       expect(hiddenAncestor(screen.getByRole('button', { name: 'All (6)' }))).toBeNull();
       expect(hiddenAncestor(screen.getByTitle('Toggle row density'))).toBeNull();
-      expect(screen.getByRole('group', { name: 'Schedule type' }).className).toContain('flex-wrap');
+      const group = screen.getByRole('group', { name: 'Schedule type' }).className.split(/\s+/);
+      expect(group).toContain('w-full');
+      expect(group).toContain('sm:w-auto');
+      expect(screen.getByRole('button', { name: 'Bills (3)' }).className.split(/\s+/)).toContain('grow');
     });
 
     it('is absent in calendar view, which has no rows to tighten', async () => {
@@ -1590,6 +1608,91 @@ describe('BillsPage', () => {
       await waitFor(() => {
         expect(screen.getByText(/5 individual occurrences/)).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Filter panel', () => {
+    it('leads the panel with the type filter', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      const type = screen.getByRole('group', { name: 'Schedule type' });
+      const name = screen.getByPlaceholderText('Search by name...');
+      expect(type.compareDocumentPosition(name)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+
+    it('folds with the register\'s "Show filters" / "Hide" toggle', async () => {
+      localStorage.setItem('monize-bills-filters-expanded', 'false');
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      const toggle = screen.getByRole('button', { name: /Show filters/ });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('group', { name: 'Schedule type' })).not.toBeInTheDocument();
+
+      fireEvent.click(toggle);
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      expect(toggle).toHaveTextContent('Hide');
+      expect(screen.getByRole('group', { name: 'Schedule type' })).toBeInTheDocument();
+    });
+
+    it('counts and chips a type filter folded out of sight, and Clear resets it', async () => {
+      localStorage.setItem('monize-bills-filter-type', '"deposits"');
+      localStorage.setItem('monize-bills-filters-expanded', 'false');
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      expect(screen.queryByText('Rent')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Show filters/ })).toHaveTextContent('1');
+      expect(screen.getByText('Deposits')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      expect(screen.getByText('Rent')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
+    });
+
+    it('removes the type filter from its chip', async () => {
+      localStorage.setItem('monize-bills-filter-type', '"bills"');
+      localStorage.setItem('monize-bills-filters-expanded', 'false');
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      expect(screen.queryByText('Salary')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Show all schedule types' }));
+      expect(screen.getByText('Salary')).toBeInTheDocument();
+    });
+  });
+
+  describe('List toolbar', () => {
+    it('says how many of the schedules the filters left', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      expect(screen.getByText(/^Showing/)).toHaveTextContent('Showing 6 of 6 bills and deposits');
+      fireEvent.click(screen.getByRole('button', { name: 'Bills (3)' }));
+      expect(screen.getByText(/^Showing/)).toHaveTextContent('Showing 3 of 6 bills and deposits');
+    });
+
+    it('exports the list as drawn to CSV', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Deposits (1)' }));
+      fireEvent.click(screen.getByTitle('Export bills and deposits to CSV'));
+
+      expect(mockExportToCsv).toHaveBeenCalledTimes(1);
+      const [filename, headers, rows] = mockExportToCsv.mock.calls[0];
+      expect(filename).toMatch(/^Monize_Bills_\d{4}-\d{2}-\d{2}_\d{6}\.csv$/);
+      expect(headers[0]).toBe('Name');
+      expect(rows.map((r: unknown[]) => r[0])).toEqual(['Salary']);
+    });
+
+    it('cannot export an empty list', async () => {
+      mockGetAll.mockResolvedValue([]);
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+
+      expect(screen.getByTitle('Export bills and deposits to CSV')).toBeDisabled();
     });
   });
 

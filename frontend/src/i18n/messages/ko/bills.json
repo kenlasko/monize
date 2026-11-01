@@ -22,7 +22,10 @@
     "filterDeposits": "입금 ({count})",
     "todayButton": "오늘",
     "previousMonth": "이전 달",
-    "nextMonth": "다음 달"
+    "nextMonth": "다음 달",
+    "chipBills": "청구서",
+    "chipDeposits": "입금",
+    "clearType": "모든 일정 유형 표시"
   },
   "form": {
     "titleNew": "새 예정 거래",
@@ -74,5 +77,11 @@
     "notFound": "예정된 결제를 찾을 수 없습니다",
     "loadFailed": "예정된 거래를 불러오지 못했습니다",
     "overridesDeleteFailed": "재정의를 삭제하지 못했습니다"
+  },
+  "toolbar": {
+    "showing": "청구서 및 입금 <b>{total}</b>건 중 <b>{shown}</b>건 표시",
+    "exportButton": "내보내기",
+    "exportTitle": "청구서 및 입금을 CSV로 내보내기",
+    "exported": "{count, plural, one {# 건의 일정 내보냄} other {# 건의 일정 내보냄}}"
   }
 }

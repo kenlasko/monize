@@ -22,7 +22,10 @@
     "filterDeposits": "存款（{count}）",
     "todayButton": "今天",
     "previousMonth": "上个月",
-    "nextMonth": "下个月"
+    "nextMonth": "下个月",
+    "chipBills": "账单",
+    "chipDeposits": "存款",
+    "clearType": "显示所有计划类型"
   },
   "form": {
     "titleNew": "新建定期交易",
@@ -74,5 +77,11 @@
     "notFound": "未找到定期付款",
     "loadFailed": "加载定期交易失败",
     "overridesDeleteFailed": "删除覆盖设置失败"
+  },
+  "toolbar": {
+    "showing": "显示 <b>{total}</b> 项账单与存款中的 <b>{shown}</b> 项",
+    "exportButton": "导出",
+    "exportTitle": "将账单与存款导出为 CSV",
+    "exported": "{count, plural, one {已导出 # 个计划} other {已导出 # 个计划}}"
   }
 }

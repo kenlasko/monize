@@ -22,7 +22,10 @@
     "filterDeposits": "Dépôts ({count})",
     "todayButton": "Aujourd'hui",
     "previousMonth": "Mois précédent",
-    "nextMonth": "Mois suivant"
+    "nextMonth": "Mois suivant",
+    "chipBills": "Factures",
+    "chipDeposits": "Dépôts",
+    "clearType": "Afficher tous les types de planification"
   },
   "form": {
     "titleNew": "Nouvelle transaction récurrente",
@@ -74,5 +77,11 @@
     "notFound": "Paiement récurrent introuvable",
     "loadFailed": "Échec du chargement des transactions récurrentes",
     "overridesDeleteFailed": "Échec de la suppression des remplacements"
+  },
+  "toolbar": {
+    "showing": "Affichage de <b>{shown}</b> sur <b>{total}</b> factures et dépôts",
+    "exportButton": "Exporter",
+    "exportTitle": "Exporter les factures et dépôts vers CSV",
+    "exported": "{count, plural, one {# planification exportée} other {# planifications exportées}}"
   }
 }

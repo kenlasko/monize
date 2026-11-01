@@ -1,11 +1,13 @@
 import { useMemo, useCallback } from 'react';
 import {
   BillsFilterState,
+  BillsTypeFilter,
   countActiveBillsFilters,
 } from '@/lib/bills-filters';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const STORAGE_KEYS = {
+  filterType: 'monize-bills-filter-type',
   nameSearch: 'monize-bills-name-search',
   payeeIds: 'monize-bills-payee-ids',
   accountIds: 'monize-bills-account-ids',
@@ -19,6 +21,14 @@ const STORAGE_KEYS = {
  * Filter selections persist to localStorage so they survive page reloads.
  */
 export function useBillsFilters() {
+  // The All / Bills / Deposits choice sits inside the folding panel with the
+  // other filters, so it is counted, chipped and cleared with them: a filter
+  // folded out of sight that still narrowed the list would be one the reader
+  // forgets is applied.
+  const [filterType, setFilterType] = useLocalStorage<BillsTypeFilter>(
+    STORAGE_KEYS.filterType,
+    'all',
+  );
   const [nameSearch, setNameSearch] = useLocalStorage(
     STORAGE_KEYS.nameSearch,
     '',
@@ -50,16 +60,18 @@ export function useBillsFilters() {
   );
 
   const activeFilterCount = useMemo(
-    () => countActiveBillsFilters(filterState),
-    [filterState],
+    () => countActiveBillsFilters(filterState) + (filterType === 'all' ? 0 : 1),
+    [filterState, filterType],
   );
 
   const clearFilters = useCallback(() => {
+    setFilterType('all');
     setNameSearch('');
     setSelectedPayeeIds([]);
     setSelectedAccountIds([]);
     setSelectedCategoryIds([]);
   }, [
+    setFilterType,
     setNameSearch,
     setSelectedPayeeIds,
     setSelectedAccountIds,
@@ -67,6 +79,8 @@ export function useBillsFilters() {
   ]);
 
   return {
+    filterType,
+    setFilterType,
     nameSearch,
     setNameSearch,
     selectedPayeeIds,

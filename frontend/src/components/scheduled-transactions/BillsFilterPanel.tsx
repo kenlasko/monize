@@ -2,15 +2,26 @@
 
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronDownIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
+import { FilterPanelHeader } from '@/components/ui/FilterPanelHeader';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
+import {
+  SEGMENTED_TOOLBAR_GROUP_CLASS,
+  toolbarSegmentClass,
+} from '@/components/ui/segmented-control';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
-import { BillsPayeeOption } from '@/lib/bills-filters';
+import { BillsPayeeOption, BillsTypeFilter } from '@/lib/bills-filters';
 import { buildCategoryFilterOptions, resolveSelectedCategories } from '@/lib/categoryUtils';
 import { useCategoryFilterLabels } from '@/hooks/useCategoryFilterLabels';
 
+const TYPE_FILTERS: readonly BillsTypeFilter[] = ['all', 'bills', 'deposits'];
+
 interface BillsFilterPanelProps {
+  filterType: BillsTypeFilter;
+  setFilterType: (type: BillsTypeFilter) => void;
+  /** How many schedules each type segment would show. */
+  typeCounts: Record<BillsTypeFilter, number>;
   filtersExpanded: boolean;
   setFiltersExpanded: (expanded: boolean) => void;
   nameSearch: string;
@@ -30,7 +41,11 @@ interface BillsFilterPanelProps {
 
 export function BillsFilterPanel(props: BillsFilterPanelProps) {
   const t = useTranslations('scheduledTransactions');
+  const tBills = useTranslations('bills');
   const {
+    filterType,
+    setFilterType,
+    typeCounts,
     filtersExpanded,
     setFiltersExpanded,
     nameSearch,
@@ -71,45 +86,36 @@ export function BillsFilterPanel(props: BillsFilterPanelProps) {
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg">
-      {/* Filter header. The panel holds four many-valued fields, so it may
-          fold the way the register's filter panel does -- but only because
-          the folded header still says how many filters apply, offers Clear,
-          and lists each active filter as a removable chip below. The fold
-          toggle is ONE `<button aria-expanded>` (chevron included) and Clear
-          is its sibling, never nested, so both are keyboard-operable. */}
-      <div className="w-full flex items-center justify-between gap-2 p-4">
-        <button
-          type="button"
-          onClick={() => setFiltersExpanded(!filtersExpanded)}
-          aria-expanded={filtersExpanded}
-          className="flex flex-1 min-w-0 items-center gap-2 text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          <FunnelIcon className="w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden="true" />
-          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('filters.label')}</span>
-          {activeFilterCount > 0 && (
-            <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
-              {activeFilterCount}
-            </span>
-          )}
-          <ChevronDownIcon
-            className={`ml-auto w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400 transition-transform motion-reduce:transition-none ${filtersExpanded ? 'rotate-180' : ''}`}
-            aria-hidden="true"
-          />
-        </button>
-        {activeFilterCount > 0 && (
-          <button
-            type="button"
-            onClick={onClearFilters}
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          >
-            {t('filters.clear')}
-          </button>
-        )}
+      {/* Filter header: the same fold toggle ("Show filters" / "Hide" with
+          its chevron), count badge and Clear as the Transactions register's
+          panel. The panel may fold only because the folded header still says
+          how many filters apply, offers Clear, and lists each active filter
+          as a removable chip below. */}
+      <div className="px-4 py-3 sm:px-6">
+        <FilterPanelHeader
+          expanded={filtersExpanded}
+          count={activeFilterCount}
+          onToggle={() => setFiltersExpanded(!filtersExpanded)}
+          onClear={onClearFilters}
+        />
       </div>
 
       {/* Active filter chips (collapsed view) */}
       {!filtersExpanded && activeFilterCount > 0 && (
-        <div className="px-4 pb-4 flex flex-wrap gap-2">
+        <div className="px-4 pb-4 sm:px-6 flex flex-wrap gap-2">
+          {filterType !== 'all' && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
+              {filterType === 'bills' ? tBills('viewTabs.chipBills') : tBills('viewTabs.chipDeposits')}
+              <button
+                type="button"
+                onClick={() => setFilterType('all')}
+                aria-label={tBills('viewTabs.clearType')}
+                className="hover:text-gray-900 dark:hover:text-gray-100"
+              >
+                <XMarkIcon className="w-3 h-3" aria-hidden="true" />
+              </button>
+            </span>
+          )}
           {nameSearch.trim() && (
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
               &quot;{nameSearch}&quot;
@@ -163,7 +169,36 @@ export function BillsFilterPanel(props: BillsFilterPanelProps) {
 
       {/* Expanded filter controls */}
       {filtersExpanded && (
-        <div className="px-4 pb-4 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div className="px-4 pb-4 sm:px-6 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+          {/* The schedule type leads the panel, as the account status leads
+              the register's. On a phone it takes the whole line and its
+              segments share it. */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span id="bills-filter-type-label" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {tBills('viewTabs.filterLabel')}
+            </span>
+            <div
+              role="group"
+              aria-labelledby="bills-filter-type-label"
+              className={SEGMENTED_TOOLBAR_GROUP_CLASS}
+            >
+              {TYPE_FILTERS.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setFilterType(type)}
+                  aria-pressed={filterType === type}
+                  className={toolbarSegmentClass(filterType === type)}
+                >
+                  {type === 'all'
+                    ? tBills('viewTabs.filterAll', { count: typeCounts.all })
+                    : type === 'bills'
+                      ? tBills('viewTabs.filterBills', { count: typeCounts.bills })
+                      : tBills('viewTabs.filterDeposits', { count: typeCounts.deposits })}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('filters.nameLabel')}</label>

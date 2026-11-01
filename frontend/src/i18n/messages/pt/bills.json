@@ -22,7 +22,10 @@
     "filterDeposits": "Depósitos ({count})",
     "todayButton": "Hoje",
     "previousMonth": "Mês anterior",
-    "nextMonth": "Mês seguinte"
+    "nextMonth": "Mês seguinte",
+    "chipBills": "Faturas",
+    "chipDeposits": "Depósitos",
+    "clearType": "Mostrar todos os tipos de agendamento"
   },
   "form": {
     "titleNew": "Nova transação agendada",
@@ -74,5 +77,11 @@
     "notFound": "Pagamento agendado não encontrado",
     "loadFailed": "Falha ao carregar transações agendadas",
     "overridesDeleteFailed": "Falha ao eliminar substituições"
+  },
+  "toolbar": {
+    "showing": "A mostrar <b>{shown}</b> de <b>{total}</b> faturas e depósitos",
+    "exportButton": "Exportar",
+    "exportTitle": "Exportar faturas e depósitos para CSV",
+    "exported": "{count, plural, one {# agendamento exportado} other {# agendamentos exportados}}"
   }
 }
