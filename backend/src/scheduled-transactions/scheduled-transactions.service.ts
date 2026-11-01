@@ -2336,6 +2336,8 @@ export class ScheduledTransactionsService {
     }
     if (updateData.description !== undefined)
       fieldsToUpdate.description = updateData.description || null;
+    if (updateData.referenceNumber !== undefined)
+      fieldsToUpdate.referenceNumber = updateData.referenceNumber || null;
     if (updateData.frequency !== undefined)
       fieldsToUpdate.frequency = updateData.frequency;
     if (updateData.nextDueDate !== undefined)
@@ -3119,6 +3121,14 @@ export class ScheduledTransactionsService {
         ? storedOverride.description
         : scheduled.description || undefined;
 
+    // The schedule's stored reference is the default; a post that sends the
+    // key (even empty) decides for itself, so a reference cleared in the post
+    // dialog is not refilled from the schedule.
+    const finalReferenceNumber =
+      postDto?.referenceNumber !== undefined
+        ? postDto.referenceNumber || undefined
+        : scheduled.referenceNumber || undefined;
+
     const transactionPayload: any = {
       accountId: scheduled.accountId,
       transactionDate: postDate,
@@ -3127,7 +3137,7 @@ export class ScheduledTransactionsService {
       amount: finalAmount,
       currencyCode: scheduled.currencyCode,
       description: finalDescription,
-      referenceNumber: postDto?.referenceNumber || undefined,
+      referenceNumber: finalReferenceNumber,
       isCleared: false,
       tagIds:
         scheduled.tagIds && scheduled.tagIds.length > 0
@@ -3428,7 +3438,7 @@ export class ScheduledTransactionsService {
             // that has since gone stale would now fail the posting instead,
             // which is no better.
             description: finalDescription || undefined,
-            referenceNumber: postDto?.referenceNumber || undefined,
+            referenceNumber: finalReferenceNumber,
             payeeId: scheduled.payeeId || undefined,
             payeeName: scheduled.payeeName || undefined,
             // Carry the schedule's category onto the posted transfer (both

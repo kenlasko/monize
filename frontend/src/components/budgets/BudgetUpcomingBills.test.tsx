@@ -23,6 +23,7 @@ function createBill(overrides: Partial<ScheduledTransaction> = {}): ScheduledTra
     originalCurrencyCode: null,
     exchangeRate: 1,
     description: null,
+    referenceNumber: null,
     frequency: 'MONTHLY',
     nextDueDate: '2026-02-25',
     startDate: '2026-01-01',

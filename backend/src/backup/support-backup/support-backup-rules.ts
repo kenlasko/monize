@@ -328,6 +328,7 @@ export const RULES: Record<string, TableRules> = {
     original_currency_code: keep, // public reference value
     exchange_rate: keep, // public FX rate
     description: drop,
+    reference_number: drop,
     frequency: keep,
     next_due_date: keep,
     start_date: keep,

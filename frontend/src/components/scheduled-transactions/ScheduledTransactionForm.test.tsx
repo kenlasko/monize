@@ -2114,6 +2114,52 @@ describe('ScheduledTransactionForm', () => {
     expect(onSuccess).toHaveBeenCalled();
   });
 
+  // Issue #1979: a cleared description used to be dropped from the payload, so
+  // the stored one survived the save; the reference number was stripped.
+  it('sends null for a cleared description and reference number on update', async () => {
+    const existingSt = {
+      id: 's1', accountId: 'acc-1', name: 'Monthly Rent', amount: -1500,
+      currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: false,
+      description: 'Old note', referenceNumber: 'ACCT-42',
+    } as any;
+
+    const { container } = render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
+    await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByDisplayValue('Old note'), { target: { value: '' } });
+    fireEvent.change(screen.getByDisplayValue('ACCT-42'), { target: { value: '' } });
+
+    await act(async () => { fireEvent.click(container.querySelector('button[type="submit"]')!); });
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
+    const [, payload] = mockUpdate.mock.calls[0];
+    expect(payload.description).toBeNull();
+    expect(payload.referenceNumber).toBeNull();
+  });
+
+  it('sends an edited reference number on update', async () => {
+    const existingSt = {
+      id: 's1', accountId: 'acc-1', name: 'Monthly Rent', amount: -1500,
+      currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: false,
+      referenceNumber: null,
+    } as any;
+
+    const { container } = render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
+    await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText('Cheque #, confirmation #...'), { target: { value: 'ACCT-42' } });
+
+    await act(async () => { fireEvent.click(container.querySelector('button[type="submit"]')!); });
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
+    const [, payload] = mockUpdate.mock.calls[0];
+    expect(payload.referenceNumber).toBe('ACCT-42');
+  });
+
   it('shows the optional category field in transfer mode (#743)', async () => {
     render(<ScheduledTransactionForm />);
     await waitFor(() => expect(screen.getByText('Transfer')).toBeInTheDocument());

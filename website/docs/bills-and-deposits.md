@@ -35,7 +35,7 @@ The summary at the top counts your **Active Bills** and **Active Deposits**, the
 | **Payee** | No | Who the transaction is with |
 | **Category** | No | Expense or income category |
 | **Amount** | Yes | Transaction amount (negative for a bill, positive for a deposit). Leave it at zero for a reminder of a bill whose amount varies. The currency button beside it lets you enter the amount in the currency the biller charges |
-| **Reference Number** | No | Cheque number, confirmation number, or another reference |
+| **Reference Number** | No | Cheque number, confirmation number, or another reference; each posted transaction carries it unless you change it when posting |
 | **Frequency** | Yes | How often the transaction recurs (default Monthly; see [Frequency Options](#frequency-options)) |
 | **Remind Days Before** | No | How many days before the due date the schedule counts as coming up, for reminders and the dashboard's Due soon list (default 3) |
 | **Description** | No | Additional notes |

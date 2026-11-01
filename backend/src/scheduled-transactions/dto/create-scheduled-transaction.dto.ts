@@ -97,6 +97,12 @@ export class CreateScheduledTransactionDto {
   @SanitizeHtml()
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  @SanitizeHtml()
+  referenceNumber?: string | null;
+
   @IsEnum(FrequencyType)
   frequency: FrequencyType;
 
