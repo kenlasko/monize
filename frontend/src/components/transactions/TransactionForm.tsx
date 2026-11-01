@@ -327,6 +327,10 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
 
   // Transaction mode state (normal, split, or transfer)
   const [mode, setMode] = useState<TransactionMode>(getInitialMode());
+  // Transfer forces the amount positive for display; this remembers that the
+  // flip happened (for a row that is not itself a stored transfer) so leaving
+  // Transfer can restore the negative sign rather than keeping the forced one.
+  const wasNegativeBeforeTransferRef = useRef(false);
   const isConversionLocked = conversionLocked(transaction, accounts);
   // A tour can grey out Split; false whenever no such tour is running.
   const splitDisabled = useDisableTransactionSplit();
@@ -627,6 +631,18 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       amountForSplits = roundMoney(Number(transaction.amount));
       setValue('accountId', transaction.accountId, { shouldDirty: true });
       setValue('amount', amountForSplits, { shouldDirty: true, shouldValidate: true });
+    } else if (
+      mode === 'transfer' &&
+      newMode !== 'transfer' &&
+      !transaction?.isTransfer &&
+      wasNegativeBeforeTransferRef.current &&
+      watchedAmount &&
+      watchedAmount > 0
+    ) {
+      // Leaving a Transfer tab that only previewed this row (it is not a
+      // stored transfer): restore the negative sign Transfer forced away.
+      amountForSplits = roundMoney(-Math.abs(watchedAmount));
+      setValue('amount', amountForSplits, { shouldDirty: true, shouldValidate: true });
     }
 
     if (newMode === 'split') {
@@ -649,7 +665,10 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         setTransferToAccountId(initialTransferAccounts.toAccountId);
       } else if (watchedAmount && watchedAmount < 0) {
         // Make amount positive for transfers
+        wasNegativeBeforeTransferRef.current = true;
         setValue('amount', Math.abs(watchedAmount), { shouldDirty: true, shouldValidate: true });
+      } else {
+        wasNegativeBeforeTransferRef.current = false;
       }
     } else {
       setIsSplitMode(false);
