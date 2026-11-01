@@ -2,6 +2,9 @@ import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { Payee } from '@/types/payee';
 import { Account } from '@/types/account';
 
+/** Which kind of schedule the list shows: every one, bills only, or deposits only. */
+export type BillsTypeFilter = 'all' | 'bills' | 'deposits';
+
 export interface BillsFilterState {
   nameSearch: string;
   selectedPayeeIds: string[];

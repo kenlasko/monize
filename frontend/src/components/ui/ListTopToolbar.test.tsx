@@ -161,6 +161,34 @@ describe('ListTopToolbar', () => {
     expect(screen.queryByRole('button', { name: 'Switch view' })).not.toBeInTheDocument();
     expect(screen.getByTitle('Toggle row density')).toBeInTheDocument();
   });
+  it('reads summary, switch, then the list buttons on an unpaged list', () => {
+    // A list drawn whole still says how much of it the filters left, and the
+    // switch reads with that line as it does with the pager's count; export and
+    // density keep the right-hand end.
+    render(
+      <ListTopToolbar
+        densityView="transactions"
+        summary="Showing 5 of 12 bills and deposits"
+        actions={<button type="button">Export</button>}
+        viewToggle={<button type="button">Switch view</button>}
+      />,
+    );
+
+    const summary = screen.getByText('Showing 5 of 12 bills and deposits');
+    const toggle = screen.getByRole('button', { name: 'Switch view' });
+    const exportButton = screen.getByRole('button', { name: 'Export' });
+    const density = screen.getByTitle('Toggle row density');
+
+    expect(summary.compareDocumentPosition(toggle)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(toggle.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(exportButton.compareDocumentPosition(density)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(screen.queryByTitle('Next page')).not.toBeInTheDocument();
+    // Left group and buttons are pushed to opposite ends of one wrapping row.
+    const row = toggle.parentElement!.parentElement!;
+    expect(row.className).toContain('justify-between');
+    expect(row.className).toContain('flex-wrap');
+  });
+
   it("supports list actions without inventing a density preference", () => {
     renderToolbar(<ListTopToolbar actions={<button>Export</button>} />);
     expect(screen.getByRole("button", { name: "Export" })).toBeInTheDocument();

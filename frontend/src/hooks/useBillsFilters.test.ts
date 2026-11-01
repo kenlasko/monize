@@ -43,6 +43,21 @@ describe('useBillsFilters', () => {
     expect(result.current.activeFilterCount).toBe(4);
   });
 
+  it('counts a type filter and clears it back to all', () => {
+    const { result } = renderHook(() => useBillsFilters());
+    expect(result.current.filterType).toBe('all');
+    act(() => {
+      result.current.setFilterType('deposits');
+    });
+    expect(result.current.activeFilterCount).toBe(1);
+    expect(localStorage.getItem('monize-bills-filter-type')).toBe('"deposits"');
+    act(() => {
+      result.current.clearFilters();
+    });
+    expect(result.current.filterType).toBe('all');
+    expect(result.current.activeFilterCount).toBe(0);
+  });
+
   it('ignores whitespace-only name searches in the active count', () => {
     const { result } = renderHook(() => useBillsFilters());
     act(() => {

@@ -89,7 +89,9 @@ test('the mortgage, with its overpayment scenarios', async () => {
 test('bills and deposits', async () => {
   await open(page, '/bills');
   await expect(page.getByText('Massage therapy').first()).toBeVisible();
-  await scrollTo(page.getByRole('group', { name: 'Schedule type' }), 40);
+  // The schedule type sits inside the folded filter panel, so the picture
+  // starts at the panel's header, just above the list.
+  await scrollTo(page.getByRole('button', { name: /Show filters|Hide/ }), 40);
   await shoot(page, 'mobile-bills');
 });
 

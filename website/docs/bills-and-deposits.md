@@ -100,7 +100,11 @@ A **modified** badge counts the upcoming occurrences you have changed (see [Over
 
 ### Filtering
 
-The **All**, **Bills**, and **Deposits** buttons narrow the list to one kind of schedule. **Filters** opens a panel to search by **Name** and narrow by **Payees**, **Accounts**, and **Categories**. The density button sets how much fits on screen.
+**Show filters** opens the filter panel and **Hide** folds it away again. At the top of the panel, the **All**, **Bills**, and **Deposits** buttons narrow the list to one kind of schedule; below them you can search by **Name** and narrow by **Payees**, **Accounts**, and **Categories**. While the panel is folded, its header counts the filters in use and lists each one as a chip you can remove, and **Clear** removes them all.
+
+### The Bar Above the List
+
+The bar directly above the column headers says how many schedules the filters leave (**Showing 5 of 12 bills and deposits**) and holds the **Table** and **Calendar** buttons. At its right-hand end, **Export** downloads the list as it is filtered to a CSV file, with each schedule's next occurrence amount and due date, and the density button sets how much fits on screen.
 
 ### Calendar View
 

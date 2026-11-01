@@ -3,10 +3,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import toast from 'react-hot-toast';
-import { addMonths, subMonths } from 'date-fns';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { addMonths, format, subMonths } from 'date-fns';
+import { ChevronLeftIcon, ChevronRightIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { ScheduledTransactionForm } from '@/components/scheduled-transactions/ScheduledTransactionForm';
 import { CashFlowForecastChart } from '@/components/bills/CashFlowForecastChart';
@@ -16,9 +15,8 @@ import { BillsFilterPanel } from '@/components/scheduled-transactions/BillsFilte
 import { OverrideEditorDialog } from '@/components/scheduled-transactions/OverrideEditorDialog';
 import { OccurrenceDatePicker } from '@/components/scheduled-transactions/OccurrenceDatePicker';
 import { PostTransactionDialog } from '@/components/scheduled-transactions/PostTransactionDialog';
-import { DensityToggle } from '@/components/ui/DensityToggle';
 import { ViewModeToggle } from '@/components/ui/ViewModeToggle';
-import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import { ListTopToolbar, LIST_TOOLBAR_BUTTON_CLASS } from '@/components/ui/ListTopToolbar';
 import { useViewMode } from '@/store/viewModeStore';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -39,6 +37,8 @@ import {
   derivePayeesFromScheduledTransactions,
   deriveAccountsFromScheduledTransactions,
 } from '@/lib/bills-filters';
+import { BILLS_CSV_HEADERS, buildBillsCsvRows } from '@/lib/bills-export';
+import { exportToCsv } from '@/lib/csv-export';
 import { parseLocalDate } from '@/lib/utils';
 import { buildScheduledCalendarDays } from '@/lib/scheduled-calendar';
 import { occurrenceKind } from '@/lib/scheduled-kind';
@@ -119,7 +119,7 @@ function BillsContent() {
   // Passive deep-link target (e.g. the AI chat "view this bill" link): flash and
   // scroll to the row without opening the post flow that ?postBillId triggers.
   const highlightId = useHighlightParam();
-  const { formatCurrency } = useNumberFormat();
+  const { formatCurrency, formatNumber } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
   // The reader's reporting currency and the converter into it. The monthly net
   // spans one currency or none (issue #1247).
@@ -131,7 +131,6 @@ function BillsContent() {
   const [futureTransactions, setFutureTransactions] = useState<FutureTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { showForm, editingItem: editingTransaction, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<ScheduledTransaction>();
-  const [filterType, setFilterType] = useLocalStorage<'all' | 'bills' | 'deposits'>('monize-bills-filter-type', 'all');
   // The list ("table") or the month calendar: remembered per screen in the
   // shared view-mode store, as Transactions and Investments remember theirs.
   const { view: viewMode, setView: setViewMode } = useViewMode('bills');
@@ -142,6 +141,7 @@ function BillsContent() {
     if (highlightId) setViewMode('table');
   }, [highlightId, setViewMode]);
   const filters = useBillsFilters();
+  const { filterType } = filters;
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [overrideEditor, setOverrideEditor] = useState<OverrideEditorState>({
     isOpen: false,
@@ -545,6 +545,18 @@ function BillsContent() {
     [scheduledTransactions],
   );
 
+  // The list as drawn -- its filters and its order -- written to CSV. The rows
+  // are already loaded, so there is no request to wait on.
+  const handleExport = useCallback(() => {
+    const stamp = format(new Date(), 'yyyy-MM-dd_HHmmss');
+    exportToCsv(
+      `Monize_Bills_${stamp}.csv`,
+      BILLS_CSV_HEADERS,
+      buildBillsCsvRows(filteredTransactions),
+    );
+    toast.success(t('toolbar.exported', { count: filteredTransactions.length }));
+  }, [filteredTransactions, t]);
+
   const categoryColorMap = useMemo(() => buildCategoryColorMap(categories), [categories]);
 
   // Calculate summary stats in a single pass (exclude transfers from bills/deposits)
@@ -773,120 +785,122 @@ function BillsContent() {
         </Modal>
         <UnsavedChangesDialog {...unsavedChangesDialog} />
 
-        {viewMode === 'table' && (
-          <div className="mb-6">
-            <BillsFilterPanel
-              filtersExpanded={filters.filtersExpanded}
-              setFiltersExpanded={filters.setFiltersExpanded}
-              nameSearch={filters.nameSearch}
-              setNameSearch={filters.setNameSearch}
-              selectedPayeeIds={filters.selectedPayeeIds}
-              setSelectedPayeeIds={filters.setSelectedPayeeIds}
-              selectedAccountIds={filters.selectedAccountIds}
-              setSelectedAccountIds={filters.setSelectedAccountIds}
-              selectedCategoryIds={filters.selectedCategoryIds}
-              setSelectedCategoryIds={filters.setSelectedCategoryIds}
-              accounts={billsAccounts}
-              categories={categories}
-              payees={payees}
-              activeFilterCount={filters.activeFilterCount}
-              onClearFilters={filters.clearFilters}
-            />
-          </div>
-        )}
-
-        {/* Toolbar. In the list: the type filter (a segmented control with
-            counts, visible at every width and wrapping on a phone) and the
-            row density. In the calendar: the month navigation. The Table /
-            Calendar switch is `ViewModeToggle` at the right-hand end in both,
-            as on Transactions and Investments. */}
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">
-          <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-            {viewMode === 'table' ? (
-              <div
-                role="group"
-                aria-label={t('viewTabs.filterLabel')}
-                className={`${SEGMENTED_GROUP_CLASS} flex-wrap`}
-              >
-                {(['all', 'bills', 'deposits'] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setFilterType(type)}
-                    aria-pressed={filterType === type}
-                    className={segmentClass(filterType === type)}
-                  >
-                    {type === 'all'
-                      ? t('viewTabs.filterAll', { count: typeCounts.all })
-                      : type === 'bills'
-                        ? t('viewTabs.filterBills', { count: typeCounts.bills })
-                        : t('viewTabs.filterDeposits', { count: typeCounts.deposits })}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}
-                  aria-label={t('viewTabs.previousMonth')}
-                  className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <ChevronLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" aria-hidden="true" />
-                </button>
-                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 min-w-[130px] text-center">
-                  {formatChartDate(calendarMonth, 'MMMM yyyy')}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}
-                  aria-label={t('viewTabs.nextMonth')}
-                  className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <ChevronRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCalendarMonth(new Date())}
-                  className="ml-1 px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"
-                >
-                  {t('viewTabs.todayButton')}
-                </button>
-              </div>
-            )}
-            {/* Density belongs to the list, so it is absent from the calendar.
-                `sm` -- the plain borderless button every other table's toggle
-                is, not a filled segment: it is not a fourth filter beside
-                All/Bills/Deposits and must not read as one. */}
-            <div className="flex items-center gap-2 sm:ml-auto">
-              {viewMode === 'table' && <DensityToggle view="bills" />}
-              <ViewModeToggle value={viewMode} onChange={setViewMode} />
-            </div>
-          </div>
-        </div>
-
         {viewMode === 'table' ? (
-          /* Scheduled Transactions List */
-          <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
-            {isLoading ? (
-              <LoadingSpinner text={t('page.loadingText')} />
-            ) : (
-              <ScheduledTransactionList
-                transactions={filteredTransactions}
-                onEdit={handleEdit}
-                onEditOccurrence={handleEditOccurrence}
-                onPost={handlePost}
-                onRefresh={loadData}
-                categoryColorMap={categoryColorMap}
-                highlightId={highlightId}
+          <>
+            <div className="mb-6">
+              <BillsFilterPanel
+                filterType={filters.filterType}
+                setFilterType={filters.setFilterType}
+                typeCounts={typeCounts}
+                filtersExpanded={filters.filtersExpanded}
+                setFiltersExpanded={filters.setFiltersExpanded}
+                nameSearch={filters.nameSearch}
+                setNameSearch={filters.setNameSearch}
+                selectedPayeeIds={filters.selectedPayeeIds}
+                setSelectedPayeeIds={filters.setSelectedPayeeIds}
+                selectedAccountIds={filters.selectedAccountIds}
+                setSelectedAccountIds={filters.setSelectedAccountIds}
+                selectedCategoryIds={filters.selectedCategoryIds}
+                setSelectedCategoryIds={filters.setSelectedCategoryIds}
+                accounts={billsAccounts}
+                categories={categories}
+                payees={payees}
+                activeFilterCount={filters.activeFilterCount}
+                onClearFilters={filters.clearFilters}
               />
-            )}
-          </div>
+            </div>
+
+            {/* Scheduled Transactions List. The bar above the rows is the
+                register's: the count and the Table / Calendar switch on the
+                left, Export and the density toggle on the right, directly
+                over the column headers. The list is drawn whole, so the bar
+                carries no pager. */}
+            <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
+              <ListTopToolbar
+                densityView="bills"
+                viewToggle={<ViewModeToggle value={viewMode} onChange={setViewMode} />}
+                summary={
+                  isLoading
+                    ? null
+                    : t.rich('toolbar.showing', {
+                        shown: formatNumber(filteredTransactions.length, 0),
+                        total: formatNumber(scheduledTransactions.length, 0),
+                        b: (chunks) => <span className="font-medium">{chunks}</span>,
+                      })
+                }
+                actions={
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    disabled={isLoading || filteredTransactions.length === 0}
+                    className={`${LIST_TOOLBAR_BUTTON_CLASS} gap-1`}
+                    title={t('toolbar.exportTitle')}
+                  >
+                    <DocumentArrowDownIcon className="w-4 h-4" aria-hidden="true" />
+                    <span className="hidden sm:inline">{t('toolbar.exportButton')}</span>
+                  </button>
+                }
+              />
+              {isLoading ? (
+                <LoadingSpinner text={t('page.loadingText')} />
+              ) : (
+                <ScheduledTransactionList
+                  transactions={filteredTransactions}
+                  onEdit={handleEdit}
+                  onEditOccurrence={handleEditOccurrence}
+                  onPost={handlePost}
+                  onRefresh={loadData}
+                  categoryColorMap={categoryColorMap}
+                  highlightId={highlightId}
+                />
+              )}
+            </div>
+          </>
         ) : (
-          /* Calendar View */
-          <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
-            <ScheduledCalendarGrid days={calendarDays} onSelect={handleEdit} />
-          </div>
+          <>
+            {/* Calendar toolbar: the month navigation, and the Table /
+                Calendar switch at the right-hand end, as on Transactions. */}
+            <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">
+              <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}
+                    aria-label={t('viewTabs.previousMonth')}
+                    className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <ChevronLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" aria-hidden="true" />
+                  </button>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 min-w-[130px] text-center">
+                    {formatChartDate(calendarMonth, 'MMMM yyyy')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}
+                    aria-label={t('viewTabs.nextMonth')}
+                    className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <ChevronRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarMonth(new Date())}
+                    className="ml-1 px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"
+                  >
+                    {t('viewTabs.todayButton')}
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 sm:ml-auto">
+                  <ViewModeToggle value={viewMode} onChange={setViewMode} />
+                </div>
+              </div>
+            </div>
+
+            {/* Calendar View */}
+            <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
+              <ScheduledCalendarGrid days={calendarDays} onSelect={handleEdit} />
+            </div>
+          </>
         )}
       </main>
 

@@ -51,6 +51,13 @@ interface ListTopToolbarProps {
    * calendar.
    */
   viewToggle?: React.ReactNode;
+  /**
+   * The count line for a list that is not paged ("Showing 5 of 12 bills and
+   * deposits"), already translated. Read only when no paging props are given:
+   * it then holds the left-hand end the pager's own count line would, with the
+   * switch beside it, and the buttons move to the right-hand end.
+   */
+  summary?: React.ReactNode;
 }
 
 /**
@@ -76,6 +83,7 @@ export function ListTopToolbar({
   itemName,
   actions,
   viewToggle,
+  summary,
 }: ListTopToolbarProps) {
   const buttons = (
     <div className="flex items-center gap-1 flex-shrink-0">
@@ -106,6 +114,14 @@ export function ListTopToolbar({
             infoRight={buttons}
             infoAfter={viewToggle}
           />
+        </div>
+      ) : summary !== undefined ? (
+        <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-gray-700 dark:text-gray-300">{summary}</div>
+            {viewToggle}
+          </div>
+          {buttons}
         </div>
       ) : (
         <div className="flex items-center gap-1 flex-shrink-0">
