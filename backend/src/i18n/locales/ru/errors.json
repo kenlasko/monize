@@ -711,7 +711,14 @@
     "selectionNotFound": "Одна или несколько выбранных бумаг не найдены",
     "comparisonSelectionEmpty": "Выберите хотя бы одну бумагу или рыночный индекс для сравнения",
     "exchangeRateNotPositive": "Курс обмена должен быть больше нуля",
-    "embeddedSplitAmountMismatch": "Это разделение записывает {{ amount }}, но {{ action }} {{ quantity }} @ {{ price }} по курсу {{ rate }} даёт {{ expected }}. Используйте эту сумму или укажите курс обмена, который вы имели в виду."
+    "embeddedSplitAmountMismatch": "Это разделение записывает {{ amount }}, но {{ action }} {{ quantity }} @ {{ price }} по курсу {{ rate }} даёт {{ expected }}. Используйте эту сумму или укажите курс обмена, который вы имели в виду.",
+    "quoteTableInvalidUrl": "Введите полный адрес http или https без имени пользователя и пароля.",
+    "quoteTablePrivateAddress": "Адрес указывает на частную или локальную сеть, что запрещено.",
+    "quoteTableTooManyRedirects": "Страница перенаправляла слишком много раз.",
+    "quoteTableHttpStatus": "Сайт ответил с HTTP-статусом {{ status }}.",
+    "quoteTableTooLarge": "Страница слишком велика для чтения.",
+    "quoteTableNotFound": "На странице не найдена таблица котировок: нужна строка заголовка со столбцом даты и столбцом цены закрытия.",
+    "quoteTableUnreachable": "Не удалось открыть страницу. Проверьте адрес или повторите попытку позже."
   },
   "tags": {
     "notFound": "Тег с ID {{ id }} не найден",

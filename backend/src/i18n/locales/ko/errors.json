@@ -711,7 +711,14 @@
     "selectionNotFound": "선택한 증권 중 하나 이상을 찾을 수 없습니다",
     "comparisonSelectionEmpty": "비교할 증권 또는 시장 지수를 하나 이상 선택하세요",
     "exchangeRateNotPositive": "환율은 0보다 커야 합니다",
-    "embeddedSplitAmountMismatch": "이 분할은 {{ amount }}을(를) 기록하지만 {{ action }} {{ quantity }} @ {{ price }}은(는) 환율 {{ rate }}로 {{ expected }}이(가) 됩니다. 그 금액을 사용하거나 의도한 환율을 지정하세요."
+    "embeddedSplitAmountMismatch": "이 분할은 {{ amount }}을(를) 기록하지만 {{ action }} {{ quantity }} @ {{ price }}은(는) 환율 {{ rate }}로 {{ expected }}이(가) 됩니다. 그 금액을 사용하거나 의도한 환율을 지정하세요.",
+    "quoteTableInvalidUrl": "사용자 이름이나 비밀번호 없이 전체 http 또는 https 주소를 입력하세요.",
+    "quoteTablePrivateAddress": "이 주소는 사설 또는 로컬 네트워크를 가리키므로 허용되지 않습니다.",
+    "quoteTableTooManyRedirects": "페이지가 너무 많이 리디렉션되었습니다.",
+    "quoteTableHttpStatus": "사이트가 HTTP 상태 {{ status }}(으)로 응답했습니다.",
+    "quoteTableTooLarge": "페이지가 너무 커서 읽을 수 없습니다.",
+    "quoteTableNotFound": "페이지에서 가격 표를 찾을 수 없습니다. 날짜 열과 종가 열이 있는 머리글 행이 필요합니다.",
+    "quoteTableUnreachable": "페이지에 접속할 수 없습니다. 주소를 확인하거나 나중에 다시 시도하세요."
   },
   "tags": {
     "notFound": "ID가 {{ id }}인 태그를 찾을 수 없습니다",

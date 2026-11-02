@@ -711,7 +711,14 @@
     "selectionNotFound": "Nie znaleziono jednego lub więcej wybranych papierów wartościowych",
     "comparisonSelectionEmpty": "Wybierz co najmniej jeden papier wartościowy lub indeks giełdowy do porównania",
     "exchangeRateNotPositive": "Kurs wymiany musi być większy od zera",
-    "embeddedSplitAmountMismatch": "Ten podział zapisuje {{ amount }}, ale {{ action }} {{ quantity }} @ {{ price }} po kursie {{ rate }} daje {{ expected }}. Użyj tej kwoty lub podaj właściwy kurs wymiany."
+    "embeddedSplitAmountMismatch": "Ten podział zapisuje {{ amount }}, ale {{ action }} {{ quantity }} @ {{ price }} po kursie {{ rate }} daje {{ expected }}. Użyj tej kwoty lub podaj właściwy kurs wymiany.",
+    "quoteTableInvalidUrl": "Podaj pełny adres http lub https bez nazwy użytkownika i hasła.",
+    "quoteTablePrivateAddress": "Adres wskazuje na sieć prywatną lub lokalną, co jest niedozwolone.",
+    "quoteTableTooManyRedirects": "Strona przekierowała zbyt wiele razy.",
+    "quoteTableHttpStatus": "Witryna odpowiedziała statusem HTTP {{ status }}.",
+    "quoteTableTooLarge": "Strona jest zbyt duża, aby ją odczytać.",
+    "quoteTableNotFound": "Na stronie nie znaleziono tabeli kursów: potrzebny jest wiersz nagłówka z kolumną daty i kolumną kursu zamknięcia.",
+    "quoteTableUnreachable": "Nie udało się połączyć ze stroną. Sprawdź adres lub spróbuj później."
   },
   "tags": {
     "notFound": "Nie znaleziono tagu o ID {{ id }}",

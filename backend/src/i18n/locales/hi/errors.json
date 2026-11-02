@@ -711,7 +711,14 @@
     "selectionNotFound": "चयनित प्रतिभूतियों में से एक या अधिक नहीं मिलीं",
     "comparisonSelectionEmpty": "तुलना के लिए कम से कम एक प्रतिभूति या बाज़ार सूचकांक चुनें",
     "exchangeRateNotPositive": "विनिमय दर शून्य से अधिक होनी चाहिए",
-    "embeddedSplitAmountMismatch": "यह विभाजन {{ amount }} दर्ज करता है, लेकिन {{ action }} {{ quantity }} @ {{ price }} {{ rate }} की दर से {{ expected }} बनता है। वह राशि उपयोग करें, या वह विनिमय दर बताएँ जो आपका इरादा थी।"
+    "embeddedSplitAmountMismatch": "यह विभाजन {{ amount }} दर्ज करता है, लेकिन {{ action }} {{ quantity }} @ {{ price }} {{ rate }} की दर से {{ expected }} बनता है। वह राशि उपयोग करें, या वह विनिमय दर बताएँ जो आपका इरादा थी।",
+    "quoteTableInvalidUrl": "उपयोगकर्ता नाम या पासवर्ड के बिना पूरा http या https पता दर्ज करें।",
+    "quoteTablePrivateAddress": "यह पता किसी निजी या स्थानीय नेटवर्क की ओर इशारा करता है, जिसकी अनुमति नहीं है।",
+    "quoteTableTooManyRedirects": "पेज ने बहुत अधिक बार रीडायरेक्ट किया।",
+    "quoteTableHttpStatus": "साइट ने HTTP स्थिति {{ status }} के साथ उत्तर दिया।",
+    "quoteTableTooLarge": "पेज पढ़ने के लिए बहुत बड़ा है।",
+    "quoteTableNotFound": "पेज पर कोई मूल्य तालिका नहीं मिली: इसमें तारीख कॉलम और समापन मूल्य कॉलम वाली हेडर पंक्ति होनी चाहिए।",
+    "quoteTableUnreachable": "पेज तक नहीं पहुँचा जा सका। पता जाँचें या बाद में फिर से प्रयास करें।"
   },
   "tags": {
     "notFound": "ID {{ id }} वाला टैग नहीं मिला",

@@ -267,6 +267,11 @@ const ALLOWED = new Map<string, string>([
     "short-TTL Deutsche Börse ISIN currency; a miss costs one lookup",
   ],
   [
+    "securities/html-table-finance.service.ts#cache",
+    "short-TTL parsed quote page, so one refresh's quote and series share a " +
+      "download; a miss costs one page fetch",
+  ],
+  [
     "securities/portfolio-summary-memo.ts#entries",
     "a request-coalescing memo keyed by user, scope, currency and the acting " +
       "identity, held for seconds; its invalidation is announced on the " +

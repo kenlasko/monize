@@ -741,6 +741,9 @@ export class SecuritiesService {
     if ("irWebsite" in securityData) {
       securityData.irWebsite = this.normalizeWebsite(securityData.irWebsite);
     }
+    if ("quoteUrl" in securityData) {
+      securityData.quoteUrl = securityData.quoteUrl?.trim() || null;
+    }
 
     const saved = await withScopedDb(this.dataSource, async (m) => {
       // Check if symbol already exists for this user
@@ -987,6 +990,8 @@ export class SecuritiesService {
       security.quoteProvider = updateSecurityDto.quoteProvider ?? null;
     if (updateSecurityDto.msnInstrumentId !== undefined)
       security.msnInstrumentId = updateSecurityDto.msnInstrumentId ?? null;
+    if (updateSecurityDto.quoteUrl !== undefined)
+      security.quoteUrl = updateSecurityDto.quoteUrl?.trim() || null;
     // One canonical spelling: the same instrument in capitals is not a change.
     if (updateSecurityDto.bondProgramId !== undefined)
       security.bondProgramId =
@@ -1014,7 +1019,8 @@ export class SecuritiesService {
       (security.quoteProvider &&
         security.quoteProvider !== beforeData.quoteProvider) ||
       (security.msnInstrumentId &&
-        security.msnInstrumentId !== beforeData.msnInstrumentId)
+        security.msnInstrumentId !== beforeData.msnInstrumentId) ||
+      (security.quoteUrl && security.quoteUrl !== beforeData.quoteUrl)
     ) {
       security.skipPriceUpdates = false;
     }

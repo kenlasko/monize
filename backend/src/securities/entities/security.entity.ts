@@ -173,7 +173,7 @@ export class Security {
   @ApiProperty({
     example: "yahoo",
     description:
-      "Per-security quote provider override ('yahoo' | 'msn' | 'lse' | 'deutsche_boerse'); NULL = use user default",
+      "Per-security quote provider override ('yahoo' | 'msn' | 'lse' | 'deutsche_boerse' | 'html_table'); NULL = use user default",
     nullable: true,
   })
   @Column({
@@ -184,7 +184,21 @@ export class Security {
   })
   // Written-out literals, not the QuoteProviderName alias: entity-varchar-capacity.spec.ts
   // reads this annotation to check the longest value against the column width.
-  quoteProvider: "yahoo" | "msn" | "lse" | "deutsche_boerse" | null;
+  quoteProvider:
+    "yahoo" | "msn" | "lse" | "deutsche_boerse" | "html_table" | null;
+
+  /**
+   * The web page whose price table the `html_table` provider reads for this
+   * security. Ignored by every other provider.
+   */
+  @ApiProperty({
+    example:
+      "https://www.ariva.de/1-unze-kruegerrand-gold-kurs/kurse/historische-kurse",
+    nullable: true,
+    required: false,
+  })
+  @Column({ type: "varchar", length: 2048, nullable: true, name: "quote_url" })
+  quoteUrl: string | null;
 
   @ApiProperty({
     example: "a1u3p2",

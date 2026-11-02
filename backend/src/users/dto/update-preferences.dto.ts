@@ -21,8 +21,8 @@ import { IsHiddenTableColumns } from "../validators/is-hidden-table-columns.vali
 import { IsViewDefaults } from "../validators/is-view-defaults.validator";
 import { IsNumberLocale } from "../../common/validators/is-number-locale.validator";
 import {
-  QUOTE_PROVIDER_NAMES,
-  QuoteProviderName,
+  DEFAULT_QUOTE_PROVIDER_NAMES,
+  DefaultQuoteProviderName,
 } from "../../securities/providers/quote-provider.interface";
 
 /**
@@ -316,11 +316,11 @@ export class UpdatePreferencesDto {
     description:
       "Default provider for stock quotes. Per-security overrides fall back to this value.",
     example: "yahoo",
-    enum: QUOTE_PROVIDER_NAMES,
+    enum: DEFAULT_QUOTE_PROVIDER_NAMES,
   })
   @IsOptional()
-  @IsIn([...QUOTE_PROVIDER_NAMES])
-  defaultQuoteProvider?: QuoteProviderName;
+  @IsIn([...DEFAULT_QUOTE_PROVIDER_NAMES])
+  defaultQuoteProvider?: DefaultQuoteProviderName;
 
   @ApiPropertyOptional({
     description:

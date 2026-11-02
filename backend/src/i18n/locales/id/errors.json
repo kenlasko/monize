@@ -711,7 +711,14 @@
     "selectionNotFound": "Satu atau beberapa efek yang dipilih tidak ditemukan",
     "comparisonSelectionEmpty": "Pilih setidaknya satu efek atau indeks pasar untuk dibandingkan",
     "exchangeRateNotPositive": "Nilai tukar harus lebih besar dari nol",
-    "embeddedSplitAmountMismatch": "Pembagian ini mencatat {{ amount }}, tetapi {{ action }} {{ quantity }} @ {{ price }} dikonversi menjadi {{ expected }} dengan kurs {{ rate }}. Gunakan jumlah itu, atau nyatakan nilai tukar yang Anda maksud."
+    "embeddedSplitAmountMismatch": "Pembagian ini mencatat {{ amount }}, tetapi {{ action }} {{ quantity }} @ {{ price }} dikonversi menjadi {{ expected }} dengan kurs {{ rate }}. Gunakan jumlah itu, atau nyatakan nilai tukar yang Anda maksud.",
+    "quoteTableInvalidUrl": "Masukkan alamat http atau https lengkap tanpa nama pengguna atau kata sandi.",
+    "quoteTablePrivateAddress": "Alamat mengarah ke jaringan pribadi atau lokal, yang tidak diizinkan.",
+    "quoteTableTooManyRedirects": "Halaman dialihkan terlalu banyak kali.",
+    "quoteTableHttpStatus": "Situs menjawab dengan status HTTP {{ status }}.",
+    "quoteTableTooLarge": "Halaman terlalu besar untuk dibaca.",
+    "quoteTableNotFound": "Tidak ada tabel harga di halaman: diperlukan baris judul dengan kolom tanggal dan kolom harga penutupan.",
+    "quoteTableUnreachable": "Halaman tidak dapat dijangkau. Periksa alamat atau coba lagi nanti."
   },
   "tags": {
     "notFound": "Tag dengan ID {{ id }} tidak ditemukan",

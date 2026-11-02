@@ -711,7 +711,14 @@
     "selectionNotFound": "Un ou plusieurs des titres sélectionnés sont introuvables",
     "comparisonSelectionEmpty": "Sélectionnez au moins un titre ou un indice de marché à comparer",
     "exchangeRateNotPositive": "Le taux de change doit être supérieur à zéro",
-    "embeddedSplitAmountMismatch": "Cette répartition enregistre {{ amount }}, mais {{ action }} {{ quantity }} @ {{ price }} se convertit en {{ expected }} au taux de {{ rate }}. Utilisez ce montant, ou indiquez le taux de change voulu."
+    "embeddedSplitAmountMismatch": "Cette répartition enregistre {{ amount }}, mais {{ action }} {{ quantity }} @ {{ price }} se convertit en {{ expected }} au taux de {{ rate }}. Utilisez ce montant, ou indiquez le taux de change voulu.",
+    "quoteTableInvalidUrl": "Saisissez une adresse http ou https complète, sans nom d'utilisateur ni mot de passe.",
+    "quoteTablePrivateAddress": "L'adresse pointe vers un réseau privé ou local, ce qui n'est pas autorisé.",
+    "quoteTableTooManyRedirects": "La page a effectué trop de redirections.",
+    "quoteTableHttpStatus": "Le site a répondu avec le statut HTTP {{ status }}.",
+    "quoteTableTooLarge": "La page est trop volumineuse pour être lue.",
+    "quoteTableNotFound": "Aucun tableau de cours n'a été trouvé sur la page : il faut une ligne d'en-tête avec une colonne de date et une colonne de cours de clôture.",
+    "quoteTableUnreachable": "La page est inaccessible. Vérifiez l'adresse ou réessayez plus tard."
   },
   "tags": {
     "notFound": "Étiquette avec l'ID {{ id }} introuvable",

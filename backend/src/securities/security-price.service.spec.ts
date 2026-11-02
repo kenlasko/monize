@@ -402,6 +402,7 @@ describe("SecurityPriceService", () => {
       msnFinanceService as never,
       inertProvider("lse"),
       inertProvider("deutsche_boerse"),
+      inertProvider("html_table"),
     );
 
     fetchSync = createFetchSyncMock();

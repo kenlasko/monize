@@ -13,9 +13,24 @@ export const QUOTE_PROVIDER_NAMES = [
   "msn",
   "lse",
   "deutsche_boerse",
+  "html_table",
 ] as const;
 
 export type QuoteProviderName = (typeof QUOTE_PROVIDER_NAMES)[number];
+
+/**
+ * Providers that read a page the security itself names, so they cannot be a
+ * user's default: a security without that address would have nothing to read.
+ */
+export const PER_SECURITY_ONLY_PROVIDERS = ["html_table"] as const;
+
+/** The providers a user may choose as the default for every security. */
+export const DEFAULT_QUOTE_PROVIDER_NAMES = QUOTE_PROVIDER_NAMES.filter(
+  (name) => !(PER_SECURITY_ONLY_PROVIDERS as readonly string[]).includes(name),
+) as Exclude<QuoteProviderName, (typeof PER_SECURITY_ONLY_PROVIDERS)[number]>[];
+
+export type DefaultQuoteProviderName =
+  (typeof DEFAULT_QUOTE_PROVIDER_NAMES)[number];
 
 export interface QuoteResult {
   symbol: string;
@@ -119,8 +134,8 @@ export interface SecurityLookupResult {
   exchange: string | null;
   securityType: string | null;
   currencyCode: string | null;
-  /** Provider that produced this result, if known. */
-  provider?: QuoteProviderName;
+  /** Provider that produced this result, if known. Never a page-reading provider: those do not search. */
+  provider?: DefaultQuoteProviderName;
   /** MSN Financial Instrument ID, when the result came from MSN. */
   msnInstrumentId?: string | null;
 }
@@ -140,6 +155,8 @@ export interface QuoteProviderOptions {
   currencyCode?: string | null;
   /** User's top-N preferred exchanges, in priority order. Used for ambiguous lookups. */
   preferredExchanges?: string[];
+  /** The page whose price table `html_table` reads (`securities.quote_url`). */
+  quoteUrl?: string;
 }
 
 export interface QuoteProvider {

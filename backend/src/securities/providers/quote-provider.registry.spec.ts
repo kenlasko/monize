@@ -4,6 +4,7 @@ import { YahooFinanceService } from "../yahoo-finance.service";
 import { MsnFinanceService } from "../msn-finance.service";
 import { LseFinanceService } from "../lse-finance.service";
 import { DeutscheBoerseFinanceService } from "../deutsche-boerse-finance.service";
+import { HtmlTableFinanceService } from "../html-table-finance.service";
 import { Security } from "../entities/security.entity";
 
 describe("QuoteProviderRegistry", () => {
@@ -15,6 +16,9 @@ describe("QuoteProviderRegistry", () => {
   const dbgMock = {
     name: "deutsche_boerse",
   } as unknown as DeutscheBoerseFinanceService;
+  const htmlTableMock = {
+    name: "html_table",
+  } as unknown as HtmlTableFinanceService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -24,6 +28,7 @@ describe("QuoteProviderRegistry", () => {
         { provide: MsnFinanceService, useValue: msnMock },
         { provide: LseFinanceService, useValue: lseMock },
         { provide: DeutscheBoerseFinanceService, useValue: dbgMock },
+        { provide: HtmlTableFinanceService, useValue: htmlTableMock },
       ],
     }).compile();
     registry = module.get(QuoteProviderRegistry);
@@ -34,6 +39,7 @@ describe("QuoteProviderRegistry", () => {
     expect(registry.getByName("msn").name).toBe("msn");
     expect(registry.getByName("lse").name).toBe("lse");
     expect(registry.getByName("deutsche_boerse").name).toBe("deutsche_boerse");
+    expect(registry.getByName("html_table").name).toBe("html_table");
   });
 
   it("resolveForSecurity honors the override and falls back to general providers only", () => {
@@ -59,6 +65,19 @@ describe("QuoteProviderRegistry", () => {
     ]);
   });
 
+  it("resolveForSecurity gives a web-page security no fallback at all", () => {
+    // Its symbol is usually invented; Yahoo or MSN could match another listing.
+    const security = { quoteProvider: "html_table" } as Security;
+    const ordered = registry.resolveForSecurity(security, "yahoo");
+    expect(ordered.map((p) => p.name)).toEqual(["html_table"]);
+  });
+
+  it("resolveForSecurity never falls back to html_table", () => {
+    const security = { quoteProvider: null } as Security;
+    const ordered = registry.resolveForSecurity(security, "lse");
+    expect(ordered.map((p) => p.name)).toEqual(["lse", "yahoo", "msn"]);
+  });
+
   it("resolveForSecurity falls back to user default when security has no override", () => {
     const security = { quoteProvider: null } as Security;
     const ordered = registry.resolveForSecurity(security, "msn");
@@ -77,6 +96,6 @@ describe("QuoteProviderRegistry", () => {
         .listAll()
         .map((p) => p.name)
         .sort(),
-    ).toEqual(["deutsche_boerse", "lse", "msn", "yahoo"]);
+    ).toEqual(["deutsche_boerse", "html_table", "lse", "msn", "yahoo"]);
   });
 });

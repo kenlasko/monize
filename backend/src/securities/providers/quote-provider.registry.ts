@@ -3,6 +3,7 @@ import { MsnFinanceService } from "../msn-finance.service";
 import { YahooFinanceService } from "../yahoo-finance.service";
 import { LseFinanceService } from "../lse-finance.service";
 import { DeutscheBoerseFinanceService } from "../deutsche-boerse-finance.service";
+import { HtmlTableFinanceService } from "../html-table-finance.service";
 import { Security } from "../entities/security.entity";
 import { QuoteProvider, QuoteProviderName } from "./quote-provider.interface";
 
@@ -15,7 +16,8 @@ export const DEFAULT_QUOTE_PROVIDER: QuoteProviderName = "yahoo";
  * Börse Frankfurt ISIN), not a generic ticker, so a symbol that merely collides
  * with a listing on those venues must never be repriced from them: they take
  * part only when a security explicitly names one as its provider, never as a
- * blanket fallback (which would let a US ticker be priced from a same-symbol
+ * blanket fallback. `html_table` is the same: it reads the page the security
+ * names, so it is never anybody's fallback (which would let a US ticker be priced from a same-symbol
  * London line in the same currency).
  */
 const GENERAL_FALLBACK_PROVIDERS: ReadonlySet<QuoteProviderName> = new Set([
@@ -30,6 +32,7 @@ export class QuoteProviderRegistry {
     private readonly msn: MsnFinanceService,
     private readonly lse: LseFinanceService,
     private readonly deutscheBoerse: DeutscheBoerseFinanceService,
+    private readonly htmlTable: HtmlTableFinanceService,
   ) {}
 
   getByName(name: QuoteProviderName): QuoteProvider {
@@ -40,13 +43,21 @@ export class QuoteProviderRegistry {
         return this.lse;
       case "deutsche_boerse":
         return this.deutscheBoerse;
+      case "html_table":
+        return this.htmlTable;
       default:
         return this.yahoo;
     }
   }
 
   listAll(): QuoteProvider[] {
-    return [this.yahoo, this.msn, this.lse, this.deutscheBoerse];
+    return [
+      this.yahoo,
+      this.msn,
+      this.lse,
+      this.deutscheBoerse,
+      this.htmlTable,
+    ];
   }
 
   /**
@@ -69,6 +80,9 @@ export class QuoteProviderRegistry {
       DEFAULT_QUOTE_PROVIDER;
 
     const providers: QuoteProvider[] = [this.getByName(primary)];
+    // A security priced from a web page usually carries a symbol the user made
+    // up; asking Yahoo or MSN for it could price it from an unrelated listing.
+    if (primary === "html_table") return providers;
     for (const p of this.listAll()) {
       if (p.name === primary) continue;
       if (!GENERAL_FALLBACK_PROVIDERS.has(p.name)) continue;

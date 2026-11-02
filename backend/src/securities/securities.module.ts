@@ -19,6 +19,8 @@ import { YahooFinanceService } from "./yahoo-finance.service";
 import { MsnFinanceService } from "./msn-finance.service";
 import { LseFinanceService } from "./lse-finance.service";
 import { DeutscheBoerseFinanceService } from "./deutsche-boerse-finance.service";
+import { HtmlTableFinanceService } from "./html-table-finance.service";
+import { QuoteTablePreviewController } from "./quote-table-preview.controller";
 import { QuoteProviderRegistry } from "./providers/quote-provider.registry";
 import { HoldingsService } from "./holdings.service";
 import { HoldingsDriftReportService } from "./holdings-drift-report.service";
@@ -85,6 +87,7 @@ import { BondsModule } from "../bonds/bonds.module";
     MsnFinanceService,
     LseFinanceService,
     DeutscheBoerseFinanceService,
+    HtmlTableFinanceService,
     QuoteProviderRegistry,
     HoldingsService,
     HoldingsDriftReportService,
@@ -108,6 +111,7 @@ import { BondsModule } from "../bonds/bonds.module";
     InvestmentTransactionsController,
     PortfolioController,
     PerformanceComparisonController,
+    QuoteTablePreviewController,
   ],
   exports: [
     SecuritiesService,
@@ -117,6 +121,7 @@ import { BondsModule } from "../bonds/bonds.module";
     MsnFinanceService,
     LseFinanceService,
     DeutscheBoerseFinanceService,
+    HtmlTableFinanceService,
     QuoteProviderRegistry,
     HoldingsService,
     InvestmentTransactionsService,

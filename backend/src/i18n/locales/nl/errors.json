@@ -711,7 +711,14 @@
     "selectionNotFound": "Een of meer van de geselecteerde effecten zijn niet gevonden",
     "comparisonSelectionEmpty": "Selecteer minstens één effect of marktindex om te vergelijken",
     "exchangeRateNotPositive": "De wisselkoers moet groter zijn dan nul",
-    "embeddedSplitAmountMismatch": "Deze splitsing registreert {{ amount }}, maar {{ action }} {{ quantity }} @ {{ price }} komt tegen een koers van {{ rate }} uit op {{ expected }}. Gebruik dat bedrag, of geef de bedoelde wisselkoers op."
+    "embeddedSplitAmountMismatch": "Deze splitsing registreert {{ amount }}, maar {{ action }} {{ quantity }} @ {{ price }} komt tegen een koers van {{ rate }} uit op {{ expected }}. Gebruik dat bedrag, of geef de bedoelde wisselkoers op.",
+    "quoteTableInvalidUrl": "Voer een volledig http- of https-adres in zonder gebruikersnaam of wachtwoord.",
+    "quoteTablePrivateAddress": "Het adres verwijst naar een privé- of lokaal netwerk, wat niet is toegestaan.",
+    "quoteTableTooManyRedirects": "De pagina is te vaak omgeleid.",
+    "quoteTableHttpStatus": "De site antwoordde met HTTP-status {{ status }}.",
+    "quoteTableTooLarge": "De pagina is te groot om te lezen.",
+    "quoteTableNotFound": "Er is geen koerstabel op de pagina gevonden: er is een kopregel nodig met een datumkolom en een slotkoerskolom.",
+    "quoteTableUnreachable": "De pagina was niet bereikbaar. Controleer het adres of probeer het later opnieuw."
   },
   "tags": {
     "notFound": "Label met ID {{ id }} niet gevonden",

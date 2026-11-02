@@ -228,6 +228,25 @@ export class CreateSecurityDto {
   msnInstrumentId?: string;
 
   @ApiProperty({
+    example:
+      "https://www.ariva.de/1-unze-kruegerrand-gold-kurs/kurse/historische-kurse",
+    description:
+      "Web page whose price table the 'html_table' provider reads; empty or null clears it",
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateIf((_o, value) => value !== null && value !== "")
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl({
+    protocols: ["http", "https"],
+    require_protocol: true,
+    require_tld: true,
+  })
+  quoteUrl?: string | null;
+
+  @ApiProperty({
     description:
       "The bond program (GET /bonds/programs) to link this security to; " +
       "null unlinks. A linked security is priced by the bond engine only, and " +

@@ -457,6 +457,7 @@ export const RULES: Record<string, TableRules> = {
     website: drop, // a public URL names the instrument the masked symbol hides
     ir_website: drop,
     msn_instrument_id: drop, // would identify a masked ticker
+    quote_url: drop, // the quote page names the instrument the masked symbol hides
     historical_backfill_attempted_at: keep,
     // The id is derived from the program, so keeping it would name the bond the
     // masked symbol hides, and the copy's quantities are scaled by a fractional

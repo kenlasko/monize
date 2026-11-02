@@ -1044,8 +1044,9 @@ CREATE TABLE securities (
     sector_data_updated_at TIMESTAMP, -- cache staleness check
     website VARCHAR(2048),           -- issuer/product page; auto-filled from Yahoo for shares
     ir_website VARCHAR(2048),        -- investor-relations page; manual, no provider supplies it
-    quote_provider VARCHAR(20),      -- per-security provider override: 'yahoo' | 'msn' | 'lse' | 'deutsche_boerse' | NULL = user default
+    quote_provider VARCHAR(20),      -- per-security provider override: 'yahoo' | 'msn' | 'lse' | 'deutsche_boerse' | 'html_table' | NULL = user default
     msn_instrument_id VARCHAR(50),   -- cached MSN Financial Instrument ID (SecId)
+    quote_url VARCHAR(2048),         -- web page whose price table the 'html_table' provider reads
     historical_backfill_attempted_at TIMESTAMP, -- last time we asked the provider for a multi-year backfill
     market_timezone VARCHAR(64),     -- IANA zone the instrument trades in, from the provider (e.g. America/New_York)
     market_open_time TIME,           -- start of the regular session, in market_timezone local time
@@ -1056,7 +1057,7 @@ CREATE TABLE securities (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, symbol),
     CONSTRAINT securities_quote_provider_check
-      CHECK (quote_provider IS NULL OR quote_provider IN ('yahoo','msn','lse','deutsche_boerse'))
+      CHECK (quote_provider IS NULL OR quote_provider IN ('yahoo','msn','lse','deutsche_boerse','html_table'))
 );
 
 CREATE INDEX idx_securities_user_id ON securities(user_id);
@@ -1645,7 +1646,7 @@ CREATE TABLE user_preferences (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT user_preferences_default_quote_provider_check
-      CHECK (default_quote_provider IN ('yahoo','msn','lse','deutsche_boerse')),
+      CHECK (default_quote_provider IN ('yahoo','msn','lse','deutsche_boerse','html_table')),
     CONSTRAINT user_preferences_recent_transactions_limit_check
       CHECK (recent_transactions_limit BETWEEN 1 AND 20),
     CONSTRAINT user_preferences_default_map_provider_check

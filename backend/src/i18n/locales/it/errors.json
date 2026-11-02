@@ -711,7 +711,14 @@
     "selectionNotFound": "Uno o più titoli selezionati non sono stati trovati",
     "comparisonSelectionEmpty": "Seleziona almeno un titolo o un indice di mercato da confrontare",
     "exchangeRateNotPositive": "Il tasso di cambio deve essere maggiore di zero",
-    "embeddedSplitAmountMismatch": "Questa suddivisione registra {{ amount }}, ma {{ action }} {{ quantity }} @ {{ price }} convertito al tasso {{ rate }} dà {{ expected }}. Usa quell'importo, oppure indica il tasso di cambio che intendevi."
+    "embeddedSplitAmountMismatch": "Questa suddivisione registra {{ amount }}, ma {{ action }} {{ quantity }} @ {{ price }} convertito al tasso {{ rate }} dà {{ expected }}. Usa quell'importo, oppure indica il tasso di cambio che intendevi.",
+    "quoteTableInvalidUrl": "Inserisci un indirizzo http o https completo, senza nome utente né password.",
+    "quoteTablePrivateAddress": "L'indirizzo punta a una rete privata o locale, il che non è consentito.",
+    "quoteTableTooManyRedirects": "La pagina ha effettuato troppi reindirizzamenti.",
+    "quoteTableHttpStatus": "Il sito ha risposto con lo stato HTTP {{ status }}.",
+    "quoteTableTooLarge": "La pagina è troppo grande per essere letta.",
+    "quoteTableNotFound": "Nessuna tabella dei prezzi trovata nella pagina: serve una riga di intestazione con una colonna data e una colonna prezzo di chiusura.",
+    "quoteTableUnreachable": "Impossibile raggiungere la pagina. Controlla l'indirizzo o riprova più tardi."
   },
   "tags": {
     "notFound": "Etichetta con ID {{ id }} non trovata",

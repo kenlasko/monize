@@ -185,6 +185,8 @@ function sourceFor(provider: QuoteProviderName | undefined): string {
       return "lse";
     case "deutsche_boerse":
       return "deutsche_boerse";
+    case "html_table":
+      return "html_table";
     default:
       return "yahoo_finance";
   }
@@ -577,6 +579,10 @@ export class SecurityPriceService {
           : undefined,
       currencyCode: security.currencyCode,
       preferredExchanges: ctx.preferredExchanges,
+      quoteUrl:
+        provider.name === "html_table"
+          ? (security.quoteUrl ?? undefined)
+          : undefined,
     };
   }
 

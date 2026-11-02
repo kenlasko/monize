@@ -711,7 +711,14 @@
     "selectionNotFound": "Eine oder mehrere der ausgewählten Wertpapiere wurden nicht gefunden",
     "comparisonSelectionEmpty": "Wählen Sie mindestens ein Wertpapier oder einen Marktindex zum Vergleich aus",
     "exchangeRateNotPositive": "Der Wechselkurs muss größer als null sein",
-    "embeddedSplitAmountMismatch": "Dieser Buchungsteil verzeichnet {{ amount }}, aber {{ action }} {{ quantity }} @ {{ price }} ergibt umgerechnet {{ expected }} bei einem Kurs von {{ rate }}. Verwenden Sie diesen Betrag, oder geben Sie den gemeinten Wechselkurs an."
+    "embeddedSplitAmountMismatch": "Dieser Buchungsteil verzeichnet {{ amount }}, aber {{ action }} {{ quantity }} @ {{ price }} ergibt umgerechnet {{ expected }} bei einem Kurs von {{ rate }}. Verwenden Sie diesen Betrag, oder geben Sie den gemeinten Wechselkurs an.",
+    "quoteTableInvalidUrl": "Gib eine vollständige http- oder https-Adresse ohne Benutzername oder Passwort ein.",
+    "quoteTablePrivateAddress": "Die Adresse verweist auf ein privates oder lokales Netzwerk, was nicht erlaubt ist.",
+    "quoteTableTooManyRedirects": "Die Seite wurde zu oft weitergeleitet.",
+    "quoteTableHttpStatus": "Die Website antwortete mit HTTP-Status {{ status }}.",
+    "quoteTableTooLarge": "Die Seite ist zu groß zum Einlesen.",
+    "quoteTableNotFound": "Auf der Seite wurde keine Kurstabelle gefunden: Sie braucht eine Kopfzeile mit einer Datumsspalte und einer Schlusskursspalte.",
+    "quoteTableUnreachable": "Die Seite war nicht erreichbar. Prüfe die Adresse oder versuche es später erneut."
   },
   "tags": {
     "notFound": "Etikett mit ID {{ id }} nicht gefunden",

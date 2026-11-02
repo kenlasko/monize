@@ -711,7 +711,14 @@
     "selectionNotFound": "Seçilen menkul kıymetlerden biri veya birkaçı bulunamadı",
     "comparisonSelectionEmpty": "Karşılaştırmak için en az bir menkul kıymet veya piyasa endeksi seçin",
     "exchangeRateNotPositive": "Döviz kuru sıfırdan büyük olmalıdır",
-    "embeddedSplitAmountMismatch": "Bu bölünme {{ amount }} kaydediyor, ancak {{ action }} {{ quantity }} @ {{ price }} işlemi {{ rate }} kuruyla {{ expected }} eder. Bu tutarı kullanın veya kastettiğiniz döviz kurunu belirtin."
+    "embeddedSplitAmountMismatch": "Bu bölünme {{ amount }} kaydediyor, ancak {{ action }} {{ quantity }} @ {{ price }} işlemi {{ rate }} kuruyla {{ expected }} eder. Bu tutarı kullanın veya kastettiğiniz döviz kurunu belirtin.",
+    "quoteTableInvalidUrl": "Kullanıcı adı veya parola içermeyen tam bir http veya https adresi girin.",
+    "quoteTablePrivateAddress": "Adres özel veya yerel bir ağı gösteriyor; buna izin verilmez.",
+    "quoteTableTooManyRedirects": "Sayfa çok fazla yönlendirme yaptı.",
+    "quoteTableHttpStatus": "Site {{ status }} HTTP durumuyla yanıt verdi.",
+    "quoteTableTooLarge": "Sayfa okunamayacak kadar büyük.",
+    "quoteTableNotFound": "Sayfada fiyat tablosu bulunamadı: tarih sütunu ve kapanış fiyatı sütunu içeren bir başlık satırı gerekir.",
+    "quoteTableUnreachable": "Sayfaya ulaşılamadı. Adresi kontrol edin veya daha sonra yeniden deneyin."
   },
   "tags": {
     "notFound": "{{ id }} kimliğine sahip etiket bulunamadı",
