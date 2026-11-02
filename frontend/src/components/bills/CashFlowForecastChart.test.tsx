@@ -1087,4 +1087,53 @@ describe('CashFlowForecastChart', () => {
       );
     });
   });
+
+  describe('hiding the chart', () => {
+    const renderChart = (isLoading = false) =>
+      render(
+        <CashFlowForecastChart scheduledTransactions={[]} accounts={[]} isLoading={isLoading} />
+      );
+
+    it('folds into the strip and remembers the choice in localStorage', () => {
+      renderChart();
+      fireEvent.click(screen.getByRole('button', { name: 'Hide chart' }));
+
+      expect(screen.getByTestId('chart-collapsed-strip')).toBeInTheDocument();
+      expect(screen.queryByText('Cash Flow Forecast')).not.toBeInTheDocument();
+      expect(localStorage.getItem('cashFlowForecast.collapsed')).toBe('true');
+    });
+
+    it('starts folded when this browser saved that choice', () => {
+      localStorage.setItem('cashFlowForecast.collapsed', 'true');
+      renderChart();
+
+      expect(screen.getByTestId('chart-collapsed-strip')).toBeInTheDocument();
+      expect(screen.queryByText('1M')).not.toBeInTheDocument();
+    });
+
+    it('restores the chart from the strip and remembers that too', () => {
+      localStorage.setItem('cashFlowForecast.collapsed', 'true');
+      renderChart();
+      fireEvent.click(screen.getByTestId('chart-collapsed-strip'));
+
+      expect(screen.getByText('Cash Flow Forecast')).toBeInTheDocument();
+      expect(screen.queryByTestId('chart-collapsed-strip')).not.toBeInTheDocument();
+      expect(localStorage.getItem('cashFlowForecast.collapsed')).toBe('false');
+    });
+
+    it('reads a stored value that is not a boolean as open', () => {
+      localStorage.setItem('cashFlowForecast.collapsed', '"yes"');
+      renderChart();
+
+      expect(screen.getByText('Cash Flow Forecast')).toBeInTheDocument();
+      expect(screen.queryByTestId('chart-collapsed-strip')).not.toBeInTheDocument();
+    });
+
+    it('offers the hide button while the forecast is loading', () => {
+      renderChart(true);
+      fireEvent.click(screen.getByRole('button', { name: 'Hide chart' }));
+
+      expect(screen.getByTestId('chart-collapsed-strip')).toBeInTheDocument();
+    });
+  });
 });

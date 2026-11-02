@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
@@ -9,6 +9,8 @@ import { MultiSelect } from '@/components/ui/MultiSelect';
 import { ForecastPeriod, FutureTransaction, FORECAST_PERIOD_LABELS } from '@/lib/forecast';
 import { useCashFlowForecast, FORECAST_PERIODS, asForecastPeriod } from './useCashFlowForecast';
 import { CashFlowForecastPlot } from './CashFlowForecastPlot';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { ChartCollapseButton, CollapsedChartStrip } from '@/components/transactions/ChartCollapseControls';
 
 interface CashFlowForecastChartProps {
   scheduledTransactions: ScheduledTransaction[];
@@ -21,6 +23,8 @@ const STORAGE_KEY_PERIOD = 'cashFlowForecast.period';
 const STORAGE_KEY_ACCOUNTS = 'cashFlowForecast.accountIds';
 /** Pre-multi-select key, holding a single account id or the string 'all'. */
 const STORAGE_KEY_ACCOUNT_LEGACY = 'cashFlowForecast.accountId';
+/** Whether this browser has folded the chart away; absent means open. */
+const STORAGE_KEY_COLLAPSED = 'cashFlowForecast.collapsed';
 
 function getStoredPeriod(): ForecastPeriod {
   if (typeof window === 'undefined') return 'month';
@@ -64,6 +68,12 @@ export function CashFlowForecastChart({
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() =>
     getStoredAccountIds(),
   );
+  const [storedCollapsed, setCollapsed] = useLocalStorage<unknown>(STORAGE_KEY_COLLAPSED, false);
+  // A hand-edited entry that is not a boolean reads as open rather than as a
+  // truthy string folding the chart.
+  const collapsed = storedCollapsed === true;
+  const collapse = useCallback(() => setCollapsed(true), [setCollapsed]);
+  const expand = useCallback(() => setCollapsed(false), [setCollapsed]);
 
   // Persist period changes
   useEffect(() => {
@@ -84,6 +94,10 @@ export function CashFlowForecastChart({
   });
   const { accountOptions, orderedAccountIds, totalForecastedTransactions } = forecast;
 
+  if (collapsed) {
+    return <CollapsedChartStrip onExpand={expand} />;
+  }
+
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
@@ -91,6 +105,7 @@ export function CashFlowForecastChart({
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {t('forecast.title')}
           </h3>
+          <ChartCollapseButton onCollapse={collapse} />
         </div>
         <div className="h-72 flex items-center justify-center">
           <Skeleton className="w-full h-full" />
@@ -102,9 +117,12 @@ export function CashFlowForecastChart({
   if (forecast.missingCurrencies.length > 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {t('forecast.title')}
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {t('forecast.title')}
+          </h3>
+          <ChartCollapseButton onCollapse={collapse} />
+        </div>
         <CashFlowForecastPlot
           forecast={forecast}
           accounts={accounts}
@@ -116,46 +134,49 @@ export function CashFlowForecastChart({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
-      {/* Header with controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {t('forecast.title')}
-          </h3>
-          {totalForecastedTransactions > 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {t('forecast.scheduledCount', { count: totalForecastedTransactions })}
-            </p>
-          )}
-        </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          {/* Period selector */}
-          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-            {FORECAST_PERIODS.map((period) => (
-              <button
-                key={period}
-                onClick={() => setSelectedPeriod(period)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  selectedPeriod === period
-                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
-              >
-                {FORECAST_PERIOD_LABELS[period]}
-              </button>
-            ))}
+      {/* Header with controls; the fold button stays top-right at every width */}
+      <div className="flex items-start sm:items-center justify-between gap-2 mb-4">
+        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {t('forecast.title')}
+            </h3>
+            {totalForecastedTransactions > 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('forecast.scheduledCount', { count: totalForecastedTransactions })}
+              </p>
+            )}
           </div>
-          {/* Account selector: no selection means every account, as one line */}
-          <div className="w-48">
-            <MultiSelect
-              ariaLabel={t('forecast.accountsAriaLabel')}
-              placeholder={t('forecast.allAccounts')}
-              options={accountOptions}
-              value={orderedAccountIds}
-              onChange={setSelectedAccountIds}
-            />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            {/* Period selector */}
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              {FORECAST_PERIODS.map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setSelectedPeriod(period)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    selectedPeriod === period
+                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+                >
+                  {FORECAST_PERIOD_LABELS[period]}
+                </button>
+              ))}
+            </div>
+            {/* Account selector: no selection means every account, as one line */}
+            <div className="w-48">
+              <MultiSelect
+                ariaLabel={t('forecast.accountsAriaLabel')}
+                placeholder={t('forecast.allAccounts')}
+                options={accountOptions}
+                value={orderedAccountIds}
+                onChange={setSelectedAccountIds}
+              />
+            </div>
           </div>
         </div>
+        <ChartCollapseButton onCollapse={collapse} />
       </div>
 
       <CashFlowForecastPlot
