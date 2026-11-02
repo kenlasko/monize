@@ -2352,6 +2352,14 @@ destination classes. The half that matters -- a transfer is never income -- is
 unchanged: the Sankey reports a savings transfer as an outflow beside the
 expenses, never as one of them.
 
+A custom report's list of transactions (metric NONE) with **Include transfers**
+is not an income or expense figure, so this invariant does not reach it: it
+lists each matching leg by its own account and its own sign, and under BOTH its
+total is the signed sum of the listed rows, captioned "Net cash movement"
+rather than net (`customReportMeasure`, discussion #1978). Both legs of a
+transfer inside the report's scope cancel; a leg whose counterpart does not
+match the filters counts alone, and no counterpart is added.
+
 ### INV-SANKEY-001 -- the Cash Flow Sankey closes
 
 The design (`docs/specs/sankey-cash-flow.md`) names these five SANKEY-001
@@ -2438,7 +2446,13 @@ Enforcement         Built-in reports: NET_SPEND_AMOUNT / isNetSpending
                     isNetSpending of the negated net; INCOME_ONLY: a positive
                     net; BOTH: the magnitude of the net), and a group is the sum
                     of its kept cells (audit A26-M33). The metric NONE list keeps
-                    its row-level direction filter.
+                    its row-level direction filter; under BOTH it lists each row
+                    with its own sign, so its total is the signed net of the
+                    listed rows (discussion #1978). The client names a BOTH
+                    headline (`customReportMeasure`,
+                    frontend/src/lib/custom-report-measure.ts): a signed list's
+                    "Net amount", an aggregate's "Total of unsigned category
+                    amounts".
                     The loan history's Interest Paid
                     (frontend/src/lib/loan-history.ts) sums each interest row
                     signed, so a lender's refund nets (A26-S15-05).
@@ -2447,7 +2461,8 @@ Failure response    --
 Required tests      Integration:
                     backend/test/integration/report-custom-net-and-search.integration.spec.ts
                     (Groceries -100 and +30: 70 under EXPENSES_ONLY and BOTH, by
-                    category and by month) and the reports.service.spec.ts cases;
+                    category and by month; and the BOTH list's signed rows in
+                    date order) and the reports.service.spec.ts cases;
                     frontend/src/lib/loan-history.test.ts "nets an interest
                     refund".
 Known gap           No source scan holds the rule: a new aggregator summing

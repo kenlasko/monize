@@ -118,6 +118,7 @@ describe("custom report: signed category sums and escaped search (integration)",
   async function run(overrides: {
     groupBy?: GroupByType;
     direction?: DirectionFilter;
+    metric?: MetricType;
     filters?: CustomReport["filters"];
   }) {
     const report = await dataSource.manager.save(
@@ -129,7 +130,7 @@ describe("custom report: signed category sums and escaped search (integration)",
         groupBy: overrides.groupBy ?? GroupByType.CATEGORY,
         filters: overrides.filters ?? {},
         config: {
-          metric: MetricType.TOTAL_AMOUNT,
+          metric: overrides.metric ?? MetricType.TOTAL_AMOUNT,
           includeTransfers: false,
           direction: overrides.direction ?? DirectionFilter.EXPENSES_ONLY,
           customStartDate: START,
@@ -170,6 +171,31 @@ describe("custom report: signed category sums and escaped search (integration)",
     expect(groceries?.value).toBe(70);
     const salary = result.data.find((d) => d.id === salaryId);
     expect(salary?.value).toBe(5000);
+  });
+
+  // Discussion #1978: one chronological list of both directions, each row
+  // with its own sign, totalling the signed net of the rows.
+  it("lists rows of both signs in date order, signed, for a BOTH list", async () => {
+    await insertTransaction({
+      categoryId: salaryId,
+      amount: 5000,
+      transactionDate: "2026-03-15",
+    });
+    await insertTransaction({ categoryId: groceriesId, amount: -100 });
+    await insertTransaction({
+      categoryId: groceriesId,
+      amount: 30,
+      transactionDate: "2026-03-12",
+    });
+
+    const result = await run({
+      groupBy: GroupByType.NONE,
+      metric: MetricType.NONE,
+      direction: DirectionFilter.BOTH,
+    });
+
+    expect(result.data.map((d) => d.value)).toEqual([-100, 30, 5000]);
+    expect(result.summary.total).toBe(4930);
   });
 
   it("nets within each category, never across two, when grouped by month", async () => {

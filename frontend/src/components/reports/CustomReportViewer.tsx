@@ -28,6 +28,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { isComplete, reportTotal, type ConvertedTotal } from '@/lib/currency-total';
+import { customReportMeasure, isSignedTransactionList } from '@/lib/custom-report-measure';
 
 const logger = createLogger('CustomReportViewer');
 
@@ -180,6 +181,10 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
   const metric = report?.config.metric;
   const formatValue = (value: number) =>
     metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
+  // A plain "Total" does not say whether a both-direction figure is a signed
+  // net or a sum of unsigned category amounts, so the headline names it.
+  const measure = report ? customReportMeasure(report.config) : null;
+  const measureLabel = measure ? t(`customReportViewer.measure.${measure}`) : null;
   const summaryTotal: ConvertedTotal | null = result
     ? (() => {
         const withheld = result.summary.total === null;
@@ -307,6 +312,11 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
               </span>
             </div>
             <div className="text-right">
+              {measureLabel && (
+                <div className="text-sm text-gray-500 dark:text-gray-400" data-testid="report-measure">
+                  {measureLabel}
+                </div>
+              )}
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {/* A null total is withheld, not zero: show the part that converted
                     and mark it. The count metric's total is never null. */}
@@ -351,6 +361,8 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
               metric={metric}
               totalRowValue={summaryTotal?.value}
               partialTotal={partialTotal}
+              totalLabel={measureLabel ?? undefined}
+              signed={isSignedTransactionList(report.config)}
               reportTitle={report.name}
               exportFilename={report.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}
             />

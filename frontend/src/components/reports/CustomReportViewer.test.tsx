@@ -46,8 +46,21 @@ vi.mock("@/components/ui/Select", () => ({
 }));
 
 vi.mock("@/components/reports/ReportChart", () => ({
-  ReportChart: ({ partialTotal }: { partialTotal?: { excludedCount: number } | null }) => (
-    <div data-testid="report-chart" data-partial={partialTotal ? String(partialTotal.excludedCount) : ""} />
+  ReportChart: ({
+    partialTotal,
+    totalLabel,
+    signed,
+  }: {
+    partialTotal?: { excludedCount: number } | null;
+    totalLabel?: string;
+    signed?: boolean;
+  }) => (
+    <div
+      data-testid="report-chart"
+      data-partial={partialTotal ? String(partialTotal.excludedCount) : ""}
+      data-total-label={totalLabel ?? ""}
+      data-signed={signed ? "true" : "false"}
+    />
   ),
 }));
 
@@ -544,6 +557,71 @@ describe("CustomReportViewer", () => {
       expect(screen.getByTestId("partial-total")).toHaveTextContent("$200.00");
       // The chart's Total row (table and PDF) is still marked partial.
       expect(screen.getByTestId("report-chart")).toHaveAttribute("data-partial", "1");
+    });
+  });
+
+  // Discussion #1978: a both-direction figure says what it measures.
+  describe("measure caption", () => {
+    const report = (config: Record<string, unknown>) => ({
+      id: "rpt-1",
+      name: "Both Ways",
+      viewType: "TABLE",
+      timeframeType: "LAST_3_MONTHS",
+      groupBy: "NONE",
+      config: { metric: "NONE", direction: "BOTH", includeTransfers: false, ...config },
+      filters: {},
+    });
+    const executed = {
+      viewType: "TABLE",
+      groupBy: "NONE",
+      data: [
+        { label: "Salary", value: 1000, count: 1, id: "tx-1" },
+        { label: "Rent", value: -300, count: 1, id: "tx-2" },
+      ],
+      summary: { total: 700, knownTotal: 700, count: 2, average: 350 },
+      timeframe: { label: "Last 3 months" },
+      currency: "CAD",
+    };
+
+    it("names a both-direction list's headline a net amount and signs its rows", async () => {
+      mockGetById.mockResolvedValue(report({}));
+      mockExecute.mockResolvedValue(executed);
+      render(<CustomReportViewer reportId="rpt-1" />);
+
+      expect(await screen.findByTestId("report-measure")).toHaveTextContent("Net amount");
+      expect(screen.getByText("$700.00")).toBeInTheDocument();
+      const chart = screen.getByTestId("report-chart");
+      expect(chart).toHaveAttribute("data-total-label", "Net amount");
+      expect(chart).toHaveAttribute("data-signed", "true");
+    });
+
+    it("names it net cash movement when transfers are included", async () => {
+      mockGetById.mockResolvedValue(report({ includeTransfers: true }));
+      mockExecute.mockResolvedValue(executed);
+      render(<CustomReportViewer reportId="rpt-1" />);
+
+      expect(await screen.findByTestId("report-measure")).toHaveTextContent("Net cash movement");
+    });
+
+    it("names a both-direction aggregate as unsigned category amounts, unsigned rows", async () => {
+      mockGetById.mockResolvedValue({ ...report({ metric: "TOTAL_AMOUNT" }), groupBy: "CATEGORY" });
+      mockExecute.mockResolvedValue({ ...executed, groupBy: "CATEGORY" });
+      render(<CustomReportViewer reportId="rpt-1" />);
+
+      expect(await screen.findByTestId("report-measure")).toHaveTextContent(
+        "Total of unsigned category amounts",
+      );
+      expect(screen.getByTestId("report-chart")).toHaveAttribute("data-signed", "false");
+    });
+
+    it("adds no caption to a one-direction report", async () => {
+      mockGetById.mockResolvedValue(report({ direction: "EXPENSES_ONLY" }));
+      mockExecute.mockResolvedValue(executed);
+      render(<CustomReportViewer reportId="rpt-1" />);
+
+      await screen.findByText("$700.00");
+      expect(screen.queryByTestId("report-measure")).not.toBeInTheDocument();
+      expect(screen.getByTestId("report-chart")).toHaveAttribute("data-total-label", "");
     });
   });
 });
