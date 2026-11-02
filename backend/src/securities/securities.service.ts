@@ -1046,8 +1046,16 @@ export class SecuritiesService {
     ) {
       security.skipPriceUpdates = false;
     }
-    // The row as it will be written, before anything is: a refusal writes nothing.
-    this.assertQuotePageNamed(security.quoteProvider, security.quoteUrl);
+    // The row as it will be written, before anything is: a refusal writes
+    // nothing. Only a request that touches the provider or the address is held
+    // to it, so a security saved before this check existed can still be renamed
+    // or starred while it waits for its address.
+    if (
+      updateSecurityDto.quoteProvider !== undefined ||
+      updateSecurityDto.quoteUrl !== undefined
+    ) {
+      this.assertQuotePageNamed(security.quoteProvider, security.quoteUrl);
+    }
 
     // Accounts whose derived state must be refreshed after the commit because the
     // engine's price rows were deleted by an unlink (INV-CACHE-001).

@@ -1458,6 +1458,19 @@ describe("SecuritiesService", () => {
         expect(saved.skipPriceUpdates).toBe(false);
       });
 
+      it("still lets a request that does not touch the provider edit a web page security saved without its address", async () => {
+        securitiesRepository.findOne.mockResolvedValue({
+          ...mockSecurity,
+          quoteProvider: "html_table",
+          quoteUrl: null,
+        });
+
+        await service.update("user-1", "sec-1", { isFavourite: true });
+
+        expect(queryRunnerManager.save).toHaveBeenCalled();
+        expect(queryRunnerManager.save.mock.calls[0][1].isFavourite).toBe(true);
+      });
+
       it("refuses a web page table without a page address, writing nothing", async () => {
         securitiesRepository.findOne.mockResolvedValue({
           ...mockSecurity,
