@@ -130,6 +130,10 @@ describe("PerformanceComparisonService", () => {
     Pick<SecurityPriceService, "backfillSecurityRange">
   >;
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     securityRepo = {
@@ -810,6 +814,10 @@ describe("PerformanceComparisonService", () => {
   });
 
   it("backfills toward a named window's own start", async () => {
+    // The range is measured from the wanted start to today, so the clock is
+    // pinned: unpinned, 2022-01-01 crossed the five-year tier's 58-month
+    // ceiling in November 2026 and the request became "10y".
+    jest.useFakeTimers().setSystemTime(new Date("2026-01-15T12:00:00.000Z"));
     const stale = {
       ...security(SEC_A, "VTI"),
       historicalBackfillAttemptedAt: null,
