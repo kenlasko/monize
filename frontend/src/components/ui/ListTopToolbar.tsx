@@ -55,7 +55,9 @@ interface ListTopToolbarProps {
    * The count line for a list that is not paged ("Showing 5 of 12 bills and
    * deposits"), already translated. Read only when no paging props are given:
    * it then holds the left-hand end the pager's own count line would, with the
-   * switch beside it, and the buttons move to the right-hand end.
+   * switch beside it, and the buttons move to the right-hand end. Below
+   * `sm` the line is hidden, so the switch and the buttons share one row:
+   * the switch at the left-hand end, the buttons flush right.
    */
   summary?: React.ReactNode;
 }
@@ -116,9 +118,9 @@ export function ListTopToolbar({
           />
         </div>
       ) : summary !== undefined ? (
-        <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-1 items-center justify-between gap-2 sm:flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="text-sm text-gray-700 dark:text-gray-300">{summary}</div>
+            <div className="hidden sm:block text-sm text-gray-700 dark:text-gray-300">{summary}</div>
             {viewToggle}
           </div>
           {buttons}

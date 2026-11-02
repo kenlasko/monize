@@ -183,10 +183,25 @@ describe('ListTopToolbar', () => {
     expect(toggle.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(exportButton.compareDocumentPosition(density)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(screen.queryByTitle('Next page')).not.toBeInTheDocument();
-    // Left group and buttons are pushed to opposite ends of one wrapping row.
+    // Left group and buttons are pushed to opposite ends of one row, which
+    // wraps only from `sm` up.
     const row = toggle.parentElement!.parentElement!;
     expect(row.className).toContain('justify-between');
-    expect(row.className).toContain('flex-wrap');
+    expect(row.className.split(' ')).toContain('sm:flex-wrap');
+    expect(row.className.split(' ')).not.toContain('flex-wrap');
+  });
+
+  it('hides the count line on a phone, so the switch and the buttons share one row', () => {
+    render(
+      <ListTopToolbar
+        densityView="transactions"
+        summary="Showing 5 of 12 bills and deposits"
+        viewToggle={<button type="button">Switch view</button>}
+      />,
+    );
+
+    const line = screen.getByText('Showing 5 of 12 bills and deposits');
+    expect(line.className.split(' ')).toEqual(expect.arrayContaining(['hidden', 'sm:block']));
   });
 
   it("supports list actions without inventing a density preference", () => {
