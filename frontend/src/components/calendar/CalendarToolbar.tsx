@@ -102,16 +102,18 @@ export function CalendarToolbar<L extends CalendarLayer>({
         monthLabelId={monthLabelId}
       />
 
-      {/* The layer buttons hold the right-hand end of the row. */}
-      <div className="flex items-center sm:justify-self-end">
-        <div className="flex items-center gap-1" role="group" aria-label={t('toolbar.layers')}>
+      {/* The layer buttons hold the right-hand end of the row. Below `sm`
+          they take a line of their own and share its width, as a list
+          page's segmented filter does. */}
+      <div className="flex w-full items-center sm:w-auto sm:justify-self-end">
+        <div className="flex w-full items-center gap-1 sm:w-auto" role="group" aria-label={t('toolbar.layers')}>
           {availableLayers.map((layer) => (
             <button
               key={layer}
               type="button"
               aria-pressed={activeLayers.includes(layer)}
               onClick={() => onToggleLayer(layer)}
-              className={`${LAYER_BUTTON} ${activeLayers.includes(layer) ? LAYER_ON : LAYER_OFF}`}
+              className={`${LAYER_BUTTON} grow sm:grow-0 ${activeLayers.includes(layer) ? LAYER_ON : LAYER_OFF}`}
             >
               {t(layerLabelKey(layer))}
             </button>

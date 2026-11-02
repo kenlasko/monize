@@ -81,7 +81,10 @@ export function Pagination({
     <div className={`flex flex-col min-[820px]:flex-row items-center justify-between gap-3 ${minimal ? 'bg-transparent' : 'bg-white dark:bg-gray-800 px-4 py-3 shadow dark:shadow-gray-700/50 rounded-lg'}`}>
       {/* Showing X-Y of Z, and whatever the caller wants read as part of that
           line rather than as part of the paging controls. */}
-      <div className="flex items-center gap-2">
+      {/* Once the row stacks, a leading control (the Table / Calendar
+          switch) holds the left-hand edge, as it does on the calendar's own
+          toolbar, rather than being centred with the line beside it. */}
+      <div className={`flex items-center gap-2 ${infoBefore ? 'self-start min-[820px]:self-auto' : ''}`}>
         {infoBefore}
         <div className="text-sm text-gray-700 dark:text-gray-300">
           {t('pagination.showing')}{' '}
