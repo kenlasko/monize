@@ -172,7 +172,7 @@ Transactions are paginated at 50 per page. Use the controls above and below the 
 
 ## Calendar View
 
-The **Table** and **Calendar** buttons above the list switch the register to a month calendar. Each day shows its transactions, and your filters still apply.
+The **Table** and **Calendar** buttons at the left of the bar above the list switch the register to a month calendar; in table view the count of transactions shown sits just right of them. Each day shows its transactions, and your filters still apply. In calendar view the month sits in the middle of the toolbar and the **Layers** buttons at its right.
 
 ![The Transactions page in calendar view](images/transactions-calendar.png)
 
