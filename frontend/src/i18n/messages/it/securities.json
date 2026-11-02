@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "Motore obbligazionario"
+      "bond_engine": "Motore obbligazionario",
+      "html_table": "Tabella su pagina web"
     },
     "types": {
       "select": "Seleziona tipo...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "Se attivo, Monize legge ogni giorno dalla fonte ufficiale le nuove serie di questo tipo di obbligazione, così puoi registrare un acquisto senza recuperare prima la serie.",
     "bondCountryLabel": "Paese",
     "bondCountryOther": "Altro",
-    "bondCountryOtherInfo": "Il supporto per le obbligazioni di altri Paesi può essere richiesto sul <link>GitHub del progetto</link>."
+    "bondCountryOtherInfo": "Il supporto per le obbligazioni di altri Paesi può essere richiesto sul <link>GitHub del progetto</link>.",
+    "quoteTable": {
+      "urlLabel": "Pagina con la tabella dei prezzi",
+      "urlHelp": "La pagina deve contenere una tabella la cui intestazione abbia una colonna data e una colonna prezzo di chiusura, in inglese, tedesco o spagnolo (ad esempio Date/Close, Datum/Schluss, Fecha/Cierre). La riga più recente è il prezzo; tutte le righe riempiono lo storico.",
+      "test": "Prova",
+      "previewFailed": "Impossibile leggere la pagina.",
+      "summary": "{count, plural, one {# giorno} other {# giorni}} dal {first} al {last}",
+      "columns": "Colonne usate: {columns}",
+      "currency": "Valuta indicata nella pagina: {currency}",
+      "noCurrency": "La pagina non indica alcuna valuta; i prezzi sono salvati nella valuta del titolo.",
+      "skipped": "{count, plural, one {# riga illeggibile ignorata} other {# righe illeggibili ignorate}}",
+      "headers": {
+        "date": "Data",
+        "open": "Apertura",
+        "high": "Massimo",
+        "low": "Minimo",
+        "close": "Chiusura",
+        "volume": "Volume"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "Data",
@@ -358,7 +378,9 @@
     "nameMax": "Il nome deve avere al massimo 255 caratteri",
     "currencyRequired": "La valuta è obbligatoria",
     "bondProgramRequired": "Il tipo di obbligazione è obbligatorio",
-    "descriptionMax": "La descrizione non può superare i 5000 caratteri"
+    "descriptionMax": "La descrizione non può superare i 5000 caratteri",
+    "quoteUrlRequired": "Inserisci la pagina con la tabella dei prezzi.",
+    "quoteUrlInvalid": "Inserisci un indirizzo completo che inizi con http:// o https://."
   },
   "priceValidation": {
     "dateRequired": "La data è obbligatoria",

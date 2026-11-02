@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "채권 엔진"
+      "bond_engine": "채권 엔진",
+      "html_table": "웹 페이지 표"
     },
     "types": {
       "select": "유형 선택...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "켜면 Monize가 매일 공식 출처에서 이 채권 종류의 새 시리즈를 읽어 오므로, 시리즈를 먼저 가져오지 않고도 매수를 기록할 수 있습니다.",
     "bondCountryLabel": "국가",
     "bondCountryOther": "기타",
-    "bondCountryOtherInfo": "다른 국가 채권 지원은 프로젝트의 <link>GitHub</link>에서 요청할 수 있습니다."
+    "bondCountryOtherInfo": "다른 국가 채권 지원은 프로젝트의 <link>GitHub</link>에서 요청할 수 있습니다.",
+    "quoteTable": {
+      "urlLabel": "가격 표가 있는 페이지",
+      "urlHelp": "페이지에는 머리글 행에 날짜 열과 종가 열이 있는 표가 있어야 합니다(영어, 독일어 또는 스페인어, 예: Date/Close, Datum/Schluss, Fecha/Cierre). 가장 최근 행이 가격이며 모든 행이 기록을 채웁니다.",
+      "test": "테스트",
+      "previewFailed": "페이지를 읽을 수 없습니다.",
+      "summary": "{first}부터 {last}까지 {count, plural, other {#일}}",
+      "columns": "사용한 열: {columns}",
+      "currency": "페이지에 표시된 통화: {currency}",
+      "noCurrency": "페이지에 통화 표시가 없습니다. 가격은 종목의 통화로 저장됩니다.",
+      "skipped": "{count, plural, other {읽을 수 없는 #개 행을 건너뛰었습니다}}",
+      "headers": {
+        "date": "날짜",
+        "open": "시가",
+        "high": "고가",
+        "low": "저가",
+        "close": "종가",
+        "volume": "거래량"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "날짜",
@@ -358,7 +378,9 @@
     "nameMax": "이름은 255자 이하여야 합니다",
     "currencyRequired": "통화는 필수입니다",
     "bondProgramRequired": "채권 종류는 필수입니다",
-    "descriptionMax": "설명은 5000자 이하여야 합니다"
+    "descriptionMax": "설명은 5000자 이하여야 합니다",
+    "quoteUrlRequired": "가격 표가 있는 페이지를 입력하세요.",
+    "quoteUrlInvalid": "http:// 또는 https://로 시작하는 전체 주소를 입력하세요."
   },
   "priceValidation": {
     "dateRequired": "날짜는 필수입니다",

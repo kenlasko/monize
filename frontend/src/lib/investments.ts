@@ -36,6 +36,7 @@ import {
   SecurityDetail,
   InvestmentRegisterFilterOptions,
   PortfolioTagSummary,
+  QuoteTablePreview,
 } from '@/types/investment';
 import { IntradayBreakdown } from '@/types/net-worth';
 import type {
@@ -705,6 +706,14 @@ export const investmentsApi = {
   searchSecurities: async (query: string): Promise<Security[]> => {
     const response = await apiClient.get<Security[]>('/securities/search', {
       params: { q: query },
+    });
+    return response.data;
+  },
+
+  /** Read a web page's price table the way the html_table provider will; stores nothing. */
+  previewQuoteTable: async (url: string): Promise<QuoteTablePreview> => {
+    const response = await apiClient.post<QuoteTablePreview>('/quote-tables/preview', {
+      url,
     });
     return response.data;
   },

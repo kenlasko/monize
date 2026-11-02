@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import type { UseFormRegisterReturn } from 'react-hook-form';
 
-export type QuoteProviderValue = 'yahoo' | 'msn' | 'lse' | 'deutsche_boerse';
-export type LookupProviderValue = 'auto' | QuoteProviderValue;
+export type QuoteProviderValue = 'yahoo' | 'msn' | 'lse' | 'deutsche_boerse' | 'html_table';
+/** `html_table` reads a page the security names, so it cannot search. */
+export type LookupProviderValue = 'auto' | Exclude<QuoteProviderValue, 'html_table'>;
 
 const PROVIDER_OPTIONS = [
   { value: 'yahoo', labelKey: 'form.providers.yahoo' },
@@ -14,6 +15,9 @@ const PROVIDER_OPTIONS = [
   { value: 'lse', labelKey: 'form.providers.lse' },
   { value: 'deutsche_boerse', labelKey: 'form.providers.deutsche_boerse' },
 ];
+
+/** Providers a security can be priced by but that never search for one. */
+const PRICE_ONLY_OPTIONS = [{ value: 'html_table', labelKey: 'form.providers.html_table' }];
 
 /** The provider the symbol lookup asks; `auto` tries them in turn. */
 export function LookupProviderSelect({
@@ -63,7 +67,10 @@ export function QuoteProviderSelect({
               provider: t(`form.providers.${userDefaultProvider}`),
             }),
           },
-          ...PROVIDER_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) })),
+          ...[...PROVIDER_OPTIONS, ...PRICE_ONLY_OPTIONS].map((o) => ({
+            value: o.value,
+            label: t(o.labelKey),
+          })),
         ]}
         value={value}
         onChange={(e) => onChange(e.target.value as QuoteProviderValue | '')}

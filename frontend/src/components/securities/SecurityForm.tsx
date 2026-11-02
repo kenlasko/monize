@@ -26,6 +26,7 @@ import {
   QuoteProviderSelect,
   type LookupProviderValue,
 } from './QuoteProviderControls';
+import { QuoteTableUrlField } from './QuoteTableUrlField';
 import { TagForm } from '@/components/tags/TagForm';
 import { Security, CreateSecurityData } from '@/types/investment';
 import { Tag } from '@/types/tag';
@@ -220,6 +221,7 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
       irWebsite: security?.irWebsite || '',
       quoteProvider: security?.quoteProvider || '',
       msnInstrumentId: security?.msnInstrumentId || '',
+      quoteUrl: security?.quoteUrl || '',
       bondProgramId: security?.bondProgramId || defaults?.bondProgramId || '',
       bondAutoFetch: security?.bondAutoFetch ?? defaults?.bondAutoFetch ?? false,
       isFavourite: security?.isFavourite || false,
@@ -273,6 +275,7 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
   const [skipSwitchTouched, setSkipSwitchTouched] = useState(false);
   const watchedQuoteProvider = useWatch({ control, name: 'quoteProvider' }) || '';
   const watchedMsnInstrumentId = useWatch({ control, name: 'msnInstrumentId' })?.trim() || '';
+  const watchedQuoteUrl = useWatch({ control, name: 'quoteUrl' })?.trim() || '';
 
   // Show what the save will store: the same rule as `SecuritiesService.update`,
   // a provider or MSN id that differs from the stored one clears the flag.
@@ -284,12 +287,15 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
     const newMsnId =
       watchedMsnInstrumentId !== '' &&
       watchedMsnInstrumentId !== (defaultValues?.msnInstrumentId?.trim() || '');
-    if (newProvider || newMsnId) {
+    const newQuoteUrl =
+      watchedQuoteUrl !== '' && watchedQuoteUrl !== (defaultValues?.quoteUrl?.trim() || '');
+    if (newProvider || newMsnId || newQuoteUrl) {
       setValue('skipPriceUpdates', false);
     }
   }, [
     watchedQuoteProvider,
     watchedMsnInstrumentId,
+    watchedQuoteUrl,
     skipSwitchTouched,
     defaultValues,
     getValues,
@@ -593,6 +599,8 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
       website: data.website?.trim() ?? '',
       irWebsite: data.irWebsite?.trim() ?? '',
       msnInstrumentId: data.msnInstrumentId?.trim() || undefined,
+      // Empty string clears a stored page, like the two addresses above.
+      quoteUrl: data.quoteUrl?.trim() ?? '',
       // The link is sent only when it changed (null unlinks), so a save that
       // leaves it alone is accepted by a server that predates the field. A type
       // moved away from BOND unlinks a security that was linked.
@@ -883,6 +891,14 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
         />
         {t('priceAlert.chartLabel')}
       </label>
+
+      {!hideExchange && watchedQuoteProvider === 'html_table' && (
+        <QuoteTableUrlField
+          registration={register('quoteUrl')}
+          url={watchedQuoteUrl}
+          error={errors.quoteUrl?.message}
+        />
+      )}
 
       {!hideExchange && watchedQuoteProvider === 'msn' && (
         <MsnInstrumentIdInput

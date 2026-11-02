@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "Silnik obligacji"
+      "bond_engine": "Silnik obligacji",
+      "html_table": "Tabela na stronie WWW"
     },
     "types": {
       "select": "Wybierz typ...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "Gdy opcja jest włączona, Monize codziennie odczytuje nowe serie tego rodzaju obligacji z oficjalnego źródła, dzięki czemu możesz zapisać zakup bez wcześniejszego pobierania serii.",
     "bondCountryLabel": "Kraj",
     "bondCountryOther": "Inny",
-    "bondCountryOtherInfo": "Wsparcie dla obligacji innych krajów można zgłosić na <link>GitHubie projektu</link>."
+    "bondCountryOtherInfo": "Wsparcie dla obligacji innych krajów można zgłosić na <link>GitHubie projektu</link>.",
+    "quoteTable": {
+      "urlLabel": "Strona z tabelą kursów",
+      "urlHelp": "Strona musi zawierać tabelę, której nagłówek ma kolumnę daty i kolumnę kursu zamknięcia, po angielsku, niemiecku lub hiszpańsku (na przykład Date/Close, Datum/Schluss, Fecha/Cierre). Najnowszy wiersz to kurs; wszystkie wiersze uzupełniają historię.",
+      "test": "Testuj",
+      "previewFailed": "Nie udało się odczytać strony.",
+      "summary": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}} od {first} do {last}",
+      "columns": "Użyte kolumny: {columns}",
+      "currency": "Waluta podana na stronie: {currency}",
+      "noCurrency": "Strona nie podaje waluty; kursy są zapisywane w walucie papieru.",
+      "skipped": "{count, plural, one {Pominięto # nieczytelny wiersz} few {Pominięto # nieczytelne wiersze} many {Pominięto # nieczytelnych wierszy} other {Pominięto # nieczytelnego wiersza}}",
+      "headers": {
+        "date": "Data",
+        "open": "Otwarcie",
+        "high": "Maks.",
+        "low": "Min.",
+        "close": "Zamknięcie",
+        "volume": "Wolumen"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "Data",
@@ -358,7 +378,9 @@
     "nameMax": "Nazwa może mieć maksymalnie 255 znaków",
     "currencyRequired": "Waluta jest wymagana",
     "bondProgramRequired": "Rodzaj obligacji jest wymagany",
-    "descriptionMax": "Opis może mieć maksymalnie 5000 znaków"
+    "descriptionMax": "Opis może mieć maksymalnie 5000 znaków",
+    "quoteUrlRequired": "Podaj stronę z tabelą kursów.",
+    "quoteUrlInvalid": "Podaj pełny adres zaczynający się od http:// lub https://."
   },
   "priceValidation": {
     "dateRequired": "Data jest wymagana",

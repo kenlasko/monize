@@ -145,7 +145,8 @@
       "msn": "[XX-MSN-XX]",
       "lse": "[XX-LSE-XX]",
       "deutsche_boerse": "[XX-Deutsche Börse-XX]",
-      "bond_engine": "[XX-Bond engine-XX]"
+      "bond_engine": "[XX-Bond engine-XX]",
+      "html_table": "[XX-Web page table-XX]"
     },
     "types": {
       "select": "[XX-Select type...-XX]",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "[XX-When on, Monize reads each new series of this bond kind from the official source every day, so you can record a purchase without fetching the series first.-XX]",
     "bondCountryLabel": "[XX-Country-XX]",
     "bondCountryOther": "[XX-Other-XX]",
-    "bondCountryOtherInfo": "[XX-Support for bonds of other countries can be requested on the project's <link>GitHub</link>.-XX]"
+    "bondCountryOtherInfo": "[XX-Support for bonds of other countries can be requested on the project's <link>GitHub</link>.-XX]",
+    "quoteTable": {
+      "urlLabel": "[XX-Page with the price table-XX]",
+      "urlHelp": "[XX-The page needs a table whose header has a date column and a closing price column, in English, German or Spanish (for example Date/Close, Datum/Schluss, Fecha/Cierre). The newest row is the price; every row fills the history.-XX]",
+      "test": "[XX-Test-XX]",
+      "previewFailed": "[XX-The page could not be read.-XX]",
+      "summary": "[XX-{count, plural, one {# day} other {# days}} from {first} to {last}-XX]",
+      "columns": "[XX-Columns used: {columns}-XX]",
+      "currency": "[XX-Currency shown on the page: {currency}-XX]",
+      "noCurrency": "[XX-The page shows no currency; prices are stored in the security's currency.-XX]",
+      "skipped": "[XX-{count, plural, one {# row could not be read and was skipped} other {# rows could not be read and were skipped}}-XX]",
+      "headers": {
+        "date": "[XX-Date-XX]",
+        "open": "[XX-Open-XX]",
+        "high": "[XX-High-XX]",
+        "low": "[XX-Low-XX]",
+        "close": "[XX-Close-XX]",
+        "volume": "[XX-Volume-XX]"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "[XX-Date-XX]",
@@ -358,7 +378,9 @@
     "nameMax": "[XX-Name must be 255 characters or less-XX]",
     "currencyRequired": "[XX-Currency is required-XX]",
     "bondProgramRequired": "[XX-Bond kind is required-XX]",
-    "descriptionMax": "[XX-Description must be 5000 characters or fewer-XX]"
+    "descriptionMax": "[XX-Description must be 5000 characters or fewer-XX]",
+    "quoteUrlRequired": "[XX-Enter the page that has the price table.-XX]",
+    "quoteUrlInvalid": "[XX-Enter a full address starting with http:// or https://.-XX]"
   },
   "priceValidation": {
     "dateRequired": "[XX-Date is required-XX]",

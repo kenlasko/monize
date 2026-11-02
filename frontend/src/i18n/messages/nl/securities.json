@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "Obligatie-engine"
+      "bond_engine": "Obligatie-engine",
+      "html_table": "Tabel op webpagina"
     },
     "types": {
       "select": "Selecteer type...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "Indien ingeschakeld leest Monize elke dag nieuwe series van deze obligatiesoort uit de officiële bron, zodat u een aankoop kunt vastleggen zonder de serie eerst op te halen.",
     "bondCountryLabel": "Land",
     "bondCountryOther": "Overig",
-    "bondCountryOtherInfo": "Ondersteuning voor obligaties van andere landen kan worden aangevraagd op de <link>GitHub van het project</link>."
+    "bondCountryOtherInfo": "Ondersteuning voor obligaties van andere landen kan worden aangevraagd op de <link>GitHub van het project</link>.",
+    "quoteTable": {
+      "urlLabel": "Pagina met de koerstabel",
+      "urlHelp": "De pagina heeft een tabel nodig waarvan de kop een datumkolom en een slotkoerskolom heeft, in het Engels, Duits of Spaans (bijvoorbeeld Date/Close, Datum/Schluss, Fecha/Cierre). De nieuwste rij is de koers; alle rijen vullen de historie.",
+      "test": "Testen",
+      "previewFailed": "De pagina kon niet worden gelezen.",
+      "summary": "{count, plural, one {# dag} other {# dagen}} van {first} tot {last}",
+      "columns": "Gebruikte kolommen: {columns}",
+      "currency": "Valuta op de pagina: {currency}",
+      "noCurrency": "De pagina noemt geen valuta; koersen worden opgeslagen in de valuta van het effect.",
+      "skipped": "{count, plural, one {# onleesbare rij overgeslagen} other {# onleesbare rijen overgeslagen}}",
+      "headers": {
+        "date": "Datum",
+        "open": "Open",
+        "high": "Hoog",
+        "low": "Laag",
+        "close": "Slot",
+        "volume": "Volume"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "Datum",
@@ -358,7 +378,9 @@
     "nameMax": "Naam mag maximaal 255 tekens bevatten",
     "currencyRequired": "Valuta is verplicht",
     "bondProgramRequired": "Obligatiesoort is verplicht",
-    "descriptionMax": "De omschrijving mag maximaal 5000 tekens bevatten"
+    "descriptionMax": "De omschrijving mag maximaal 5000 tekens bevatten",
+    "quoteUrlRequired": "Voer de pagina met de koerstabel in.",
+    "quoteUrlInvalid": "Voer een volledig adres in dat begint met http:// of https://."
   },
   "priceValidation": {
     "dateRequired": "Datum is verplicht",

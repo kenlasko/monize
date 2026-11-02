@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "Bộ máy trái phiếu"
+      "bond_engine": "Bộ máy trái phiếu",
+      "html_table": "Bảng trên trang web"
     },
     "types": {
       "select": "Chọn loại...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "Khi bật, Monize đọc các đợt phát hành mới của loại trái phiếu này từ nguồn chính thức mỗi ngày, nên bạn có thể ghi nhận giao dịch mua mà không cần lấy đợt phát hành trước.",
     "bondCountryLabel": "Quốc gia",
     "bondCountryOther": "Khác",
-    "bondCountryOtherInfo": "Có thể yêu cầu hỗ trợ trái phiếu của các quốc gia khác trên <link>GitHub của dự án</link>."
+    "bondCountryOtherInfo": "Có thể yêu cầu hỗ trợ trái phiếu của các quốc gia khác trên <link>GitHub của dự án</link>.",
+    "quoteTable": {
+      "urlLabel": "Trang có bảng giá",
+      "urlHelp": "Trang cần có một bảng với hàng tiêu đề gồm cột ngày và cột giá đóng cửa, bằng tiếng Anh, Đức hoặc Tây Ban Nha (ví dụ Date/Close, Datum/Schluss, Fecha/Cierre). Hàng mới nhất là giá; mọi hàng bổ sung lịch sử.",
+      "test": "Thử",
+      "previewFailed": "Không thể đọc trang.",
+      "summary": "{count, plural, other {# ngày}} từ {first} đến {last}",
+      "columns": "Cột được dùng: {columns}",
+      "currency": "Tiền tệ trên trang: {currency}",
+      "noCurrency": "Trang không ghi tiền tệ; giá được lưu theo tiền tệ của chứng khoán.",
+      "skipped": "{count, plural, other {Đã bỏ qua # hàng không đọc được}}",
+      "headers": {
+        "date": "Ngày",
+        "open": "Mở cửa",
+        "high": "Cao",
+        "low": "Thấp",
+        "close": "Đóng cửa",
+        "volume": "Khối lượng"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "Ngày",
@@ -358,7 +378,9 @@
     "nameMax": "Tên phải có tối đa 255 ký tự",
     "currencyRequired": "Tiền tệ là bắt buộc",
     "bondProgramRequired": "Loại trái phiếu là bắt buộc",
-    "descriptionMax": "Mô tả không được vượt quá 5000 ký tự"
+    "descriptionMax": "Mô tả không được vượt quá 5000 ký tự",
+    "quoteUrlRequired": "Nhập trang có bảng giá.",
+    "quoteUrlInvalid": "Nhập địa chỉ đầy đủ bắt đầu bằng http:// hoặc https://."
   },
   "priceValidation": {
     "dateRequired": "Ngày là bắt buộc",
