@@ -20,9 +20,6 @@
     "filterAll": "Tất cả ({count})",
     "filterBills": "Hóa đơn ({count})",
     "filterDeposits": "Tiền gửi ({count})",
-    "todayButton": "Hôm nay",
-    "previousMonth": "Tháng trước",
-    "nextMonth": "Tháng sau",
     "chipBills": "Hóa đơn",
     "chipDeposits": "Tiền gửi",
     "clearType": "Hiển thị tất cả loại lịch"

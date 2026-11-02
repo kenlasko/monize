@@ -20,9 +20,6 @@
     "filterAll": "全部 ({count})",
     "filterBills": "帳單 ({count})",
     "filterDeposits": "存款 ({count})",
-    "todayButton": "今天",
-    "previousMonth": "上個月",
-    "nextMonth": "下個月",
     "chipBills": "帳單",
     "chipDeposits": "存款",
     "clearType": "顯示所有排程類型"

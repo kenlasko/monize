@@ -2268,7 +2268,6 @@ describe("row hover comes from the shared pair, not a hand-picked grey", () => {
   const HOVER_FINGERPRINT = /hover:bg-gray-(50|100)[^"'`]*dark:hover:bg-gray-/;
 
   const BASELINE: ReadonlyArray<string> = [
-    "/src/app/bills/page.tsx",
     "/src/app/budgets/[id]/edit/page.tsx",
     "/src/app/error.tsx",
     "/src/app/not-found.tsx",

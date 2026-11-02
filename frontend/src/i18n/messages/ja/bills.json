@@ -20,9 +20,6 @@
     "filterAll": "すべて ({count})",
     "filterBills": "請求 ({count})",
     "filterDeposits": "入金 ({count})",
-    "todayButton": "今日",
-    "previousMonth": "前の月",
-    "nextMonth": "次の月",
     "chipBills": "請求",
     "chipDeposits": "入金",
     "clearType": "すべてのスケジュールの種類を表示"

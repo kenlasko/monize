@@ -20,9 +20,6 @@
     "filterAll": "Tous ({count})",
     "filterBills": "Factures ({count})",
     "filterDeposits": "Dépôts ({count})",
-    "todayButton": "Aujourd'hui",
-    "previousMonth": "Mois précédent",
-    "nextMonth": "Mois suivant",
     "chipBills": "Factures",
     "chipDeposits": "Dépôts",
     "clearType": "Afficher tous les types de planification"

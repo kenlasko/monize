@@ -20,9 +20,6 @@
     "filterAll": "Tutte ({count})",
     "filterBills": "Fatture ({count})",
     "filterDeposits": "Versamenti ({count})",
-    "todayButton": "Oggi",
-    "previousMonth": "Mese precedente",
-    "nextMonth": "Mese successivo",
     "chipBills": "Fatture",
     "chipDeposits": "Versamenti",
     "clearType": "Mostra tutti i tipi di pianificazione"

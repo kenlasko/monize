@@ -20,9 +20,6 @@
     "filterAll": "全部（{count}）",
     "filterBills": "账单（{count}）",
     "filterDeposits": "存款（{count}）",
-    "todayButton": "今天",
-    "previousMonth": "上个月",
-    "nextMonth": "下个月",
     "chipBills": "账单",
     "chipDeposits": "存款",
     "clearType": "显示所有计划类型"

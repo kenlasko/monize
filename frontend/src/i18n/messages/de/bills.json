@@ -20,9 +20,6 @@
     "filterAll": "Alle ({count})",
     "filterBills": "Rechnungen ({count})",
     "filterDeposits": "Einzahlungen ({count})",
-    "todayButton": "Heute",
-    "previousMonth": "Vorheriger Monat",
-    "nextMonth": "Nächster Monat",
     "chipBills": "Rechnungen",
     "chipDeposits": "Einzahlungen",
     "clearType": "Alle Zeitplantypen anzeigen"

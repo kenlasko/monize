@@ -93,10 +93,11 @@ describe('ListTopToolbar', () => {
     expect(screen.getByText('Export')).toBeInTheDocument();
   });
 
-  it('reads count, switch, then the list buttons and the pager', () => {
+  it('reads switch, count, then the list buttons and the pager', () => {
     // Order is the assertion, not merely "somewhere in the bar": the switch
-    // reads with the line saying what the reader is looking at, and export and
-    // density sit at the right-hand end in front of the page stepper.
+    // leads, the line saying what the reader is looking at sits just right of
+    // it, and export and density sit at the right-hand end in front of the
+    // page stepper.
     render(
       <ListTopToolbar
         densityView="transactions"
@@ -113,8 +114,8 @@ describe('ListTopToolbar', () => {
     const density = screen.getByTitle('Toggle row density');
     const firstPage = screen.getByTitle('First page');
 
-    expect(count.compareDocumentPosition(toggle)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(toggle.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(toggle.compareDocumentPosition(count)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(count.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(exportButton.compareDocumentPosition(density)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(density.compareDocumentPosition(firstPage)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
@@ -138,10 +139,10 @@ describe('ListTopToolbar', () => {
     expect(row).toContainElement(screen.getByRole('button', { name: 'Export' }));
   });
 
-  it('keeps the switch with the buttons when there is no pager to sit beside', () => {
+  it('keeps the switch at the left-hand end when there is no pager to sit beside', () => {
     // The empty register draws the bar without paging props, so there is no
-    // count line for the switch to ride: it stays in the button group rather
-    // than disappearing.
+    // count line beside the switch: it still leads the bar, where it stands
+    // when there are rows, rather than disappearing or moving.
     render(
       <ListTopToolbar
         densityView="transactions"
@@ -152,7 +153,8 @@ describe('ListTopToolbar', () => {
     const density = screen.getByTitle('Toggle row density');
     const toggle = screen.getByRole('button', { name: 'Switch view' });
 
-    expect(density.compareDocumentPosition(toggle)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(toggle.compareDocumentPosition(density)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(toggle.parentElement!.className).toContain('justify-between');
   });
 
   it('leaves the bar as it was on a list whose screen offers no calendar', () => {
@@ -161,10 +163,10 @@ describe('ListTopToolbar', () => {
     expect(screen.queryByRole('button', { name: 'Switch view' })).not.toBeInTheDocument();
     expect(screen.getByTitle('Toggle row density')).toBeInTheDocument();
   });
-  it('reads summary, switch, then the list buttons on an unpaged list', () => {
-    // A list drawn whole still says how much of it the filters left, and the
-    // switch reads with that line as it does with the pager's count; export and
-    // density keep the right-hand end.
+  it('reads switch, summary, then the list buttons on an unpaged list', () => {
+    // A list drawn whole still says how much of it the filters left, just
+    // right of the switch as the pager's count is; export and density keep the
+    // right-hand end.
     render(
       <ListTopToolbar
         densityView="transactions"
@@ -179,8 +181,8 @@ describe('ListTopToolbar', () => {
     const exportButton = screen.getByRole('button', { name: 'Export' });
     const density = screen.getByTitle('Toggle row density');
 
-    expect(summary.compareDocumentPosition(toggle)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(toggle.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(toggle.compareDocumentPosition(summary)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(summary.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(exportButton.compareDocumentPosition(density)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(screen.queryByTitle('Next page')).not.toBeInTheDocument();
     // Left group and buttons are pushed to opposite ends of one row, which

@@ -20,9 +20,6 @@
     "filterAll": "Wszystkie ({count})",
     "filterBills": "Rachunki ({count})",
     "filterDeposits": "Wpłaty ({count})",
-    "todayButton": "Dzisiaj",
-    "previousMonth": "Poprzedni miesiąc",
-    "nextMonth": "Następny miesiąc",
     "chipBills": "Rachunki",
     "chipDeposits": "Wpłaty",
     "clearType": "Pokaż wszystkie typy harmonogramów"

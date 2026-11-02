@@ -20,9 +20,6 @@
     "filterAll": "Все ({count})",
     "filterBills": "Счета ({count})",
     "filterDeposits": "Поступления ({count})",
-    "todayButton": "Сегодня",
-    "previousMonth": "Предыдущий месяц",
-    "nextMonth": "Следующий месяц",
     "chipBills": "Счета",
     "chipDeposits": "Поступления",
     "clearType": "Показать все типы расписаний"

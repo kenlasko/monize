@@ -20,9 +20,6 @@
     "filterAll": "Todas ({count})",
     "filterBills": "Faturas ({count})",
     "filterDeposits": "Depósitos ({count})",
-    "todayButton": "Hoje",
-    "previousMonth": "Mês anterior",
-    "nextMonth": "Mês seguinte",
     "chipBills": "Faturas",
     "chipDeposits": "Depósitos",
     "clearType": "Mostrar todos os tipos de agendamento"

@@ -20,9 +20,6 @@
     "filterAll": "सभी ({count})",
     "filterBills": "बिल ({count})",
     "filterDeposits": "जमा ({count})",
-    "todayButton": "आज",
-    "previousMonth": "पिछला महीना",
-    "nextMonth": "अगला महीना",
     "chipBills": "बिल",
     "chipDeposits": "जमा",
     "clearType": "सभी शेड्यूल प्रकार दिखाएँ"

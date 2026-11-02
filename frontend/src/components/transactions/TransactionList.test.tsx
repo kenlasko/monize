@@ -3281,8 +3281,9 @@ describe('the payee column floor', () => {
 });
 
 describe('the Table / Calendar switch in the register toolbar', () => {
-  it('sits beside the count, with export and density before the pager', () => {
-    // The switch reads with the line saying what the reader is looking at; the
+  it('leads the bar, just left of the count, with export and density before the pager', () => {
+    // The switch stands at the left-hand end, where the calendar's toolbar has
+    // it, with the line saying what the reader is looking at beside it; the
     // buttons that act on the list as drawn keep the right-hand end, in front
     // of the page stepper.
     render(
@@ -3304,8 +3305,8 @@ describe('the Table / Calendar switch in the register toolbar', () => {
     const density = screen.getByTitle('Toggle row density');
     const firstPage = screen.getByTitle('First page');
 
-    expect(count.compareDocumentPosition(toggle)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(toggle.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(toggle.compareDocumentPosition(count)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(count.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(exportButton.compareDocumentPosition(density)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(density.compareDocumentPosition(firstPage)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });

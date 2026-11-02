@@ -20,9 +20,6 @@
     "filterAll": "Semua ({count})",
     "filterBills": "Tagihan ({count})",
     "filterDeposits": "Setoran ({count})",
-    "todayButton": "Hari Ini",
-    "previousMonth": "Bulan sebelumnya",
-    "nextMonth": "Bulan berikutnya",
     "chipBills": "Tagihan",
     "chipDeposits": "Setoran",
     "clearType": "Tampilkan semua jenis jadwal"
