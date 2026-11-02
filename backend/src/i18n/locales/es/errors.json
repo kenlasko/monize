@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "El sitio respondió con el estado HTTP {{ status }}.",
     "quoteTableTooLarge": "La página es demasiado grande para leerla.",
     "quoteTableNotFound": "No se encontró ninguna tabla de precios en la página: necesita una fila de encabezado con una columna de fecha y otra de precio de cierre.",
+    "quoteUrlRequired": "Un valor cuyas cotizaciones salen de una tabla de una página web necesita la dirección de la página.",
     "quoteTableUnreachable": "No se pudo acceder a la página. Comprueba la dirección o inténtalo más tarde."
   },
   "tags": {

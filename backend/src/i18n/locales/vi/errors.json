@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "Trang web trả về trạng thái HTTP {{ status }}.",
     "quoteTableTooLarge": "Trang quá lớn để đọc.",
     "quoteTableNotFound": "Không tìm thấy bảng giá trên trang: cần một hàng tiêu đề có cột ngày và cột giá đóng cửa.",
+    "quoteUrlRequired": "Chứng khoán lấy giá từ bảng trên trang web cần có địa chỉ của trang.",
     "quoteTableUnreachable": "Không thể truy cập trang. Hãy kiểm tra địa chỉ hoặc thử lại sau."
   },
   "tags": {

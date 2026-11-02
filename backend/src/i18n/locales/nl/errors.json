@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "De site antwoordde met HTTP-status {{ status }}.",
     "quoteTableTooLarge": "De pagina is te groot om te lezen.",
     "quoteTableNotFound": "Er is geen koerstabel op de pagina gevonden: er is een kopregel nodig met een datumkolom en een slotkoerskolom.",
+    "quoteUrlRequired": "Een effect waarvan de koersen uit een tabel op een webpagina komen, heeft het adres van de pagina nodig.",
     "quoteTableUnreachable": "De pagina was niet bereikbaar. Controleer het adres of probeer het later opnieuw."
   },
   "tags": {

@@ -725,6 +725,24 @@ export class SecuritiesService {
     return normalizeWebsite(value);
   }
 
+  /**
+   * A security priced from a web page table needs the page: without it every
+   * refresh answers nothing. The form asks for it; this holds the API to it.
+   */
+  private assertQuotePageNamed(
+    quoteProvider: string | null,
+    quoteUrl: string | null,
+  ): void {
+    if (quoteProvider === "html_table" && !quoteUrl) {
+      throw new BadRequestException(
+        tr(
+          "errors.securities.quoteUrlRequired",
+          "A security priced from a web page table needs the page address.",
+        ),
+      );
+    }
+  }
+
   async create(
     userId: string,
     createSecurityDto: CreateSecurityDto,
@@ -744,6 +762,10 @@ export class SecuritiesService {
     if ("quoteUrl" in securityData) {
       securityData.quoteUrl = securityData.quoteUrl?.trim() || null;
     }
+    this.assertQuotePageNamed(
+      securityData.quoteProvider ?? null,
+      securityData.quoteUrl ?? null,
+    );
 
     const saved = await withScopedDb(this.dataSource, async (m) => {
       // Check if symbol already exists for this user
@@ -1024,6 +1046,8 @@ export class SecuritiesService {
     ) {
       security.skipPriceUpdates = false;
     }
+    // The row as it will be written, before anything is: a refusal writes nothing.
+    this.assertQuotePageNamed(security.quoteProvider, security.quoteUrl);
 
     // Accounts whose derived state must be refreshed after the commit because the
     // engine's price rows were deleted by an unlink (INV-CACHE-001).

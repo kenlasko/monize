@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "Witryna odpowiedziała statusem HTTP {{ status }}.",
     "quoteTableTooLarge": "Strona jest zbyt duża, aby ją odczytać.",
     "quoteTableNotFound": "Na stronie nie znaleziono tabeli kursów: potrzebny jest wiersz nagłówka z kolumną daty i kolumną kursu zamknięcia.",
+    "quoteUrlRequired": "Papier wartościowy wyceniany z tabeli na stronie internetowej wymaga adresu tej strony.",
     "quoteTableUnreachable": "Nie udało się połączyć ze stroną. Sprawdź adres lub spróbuj później."
   },
   "tags": {

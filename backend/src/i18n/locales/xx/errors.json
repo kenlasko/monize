@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "[XX-The site answered with HTTP status {{ status }}.-XX]",
     "quoteTableTooLarge": "[XX-The page is too large to read.-XX]",
     "quoteTableNotFound": "[XX-No price table was found on the page: it needs a header row with a date column and a closing price column.-XX]",
+    "quoteUrlRequired": "[XX-A security priced from a web page table needs the page address.-XX]",
     "quoteTableUnreachable": "[XX-The page could not be reached. Check the address or try again later.-XX]"
   },
   "tags": {

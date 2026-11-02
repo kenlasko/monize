@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "Die Website antwortete mit HTTP-Status {{ status }}.",
     "quoteTableTooLarge": "Die Seite ist zu groß zum Einlesen.",
     "quoteTableNotFound": "Auf der Seite wurde keine Kurstabelle gefunden: Sie braucht eine Kopfzeile mit einer Datumsspalte und einer Schlusskursspalte.",
+    "quoteUrlRequired": "Ein Wertpapier, dessen Kurse aus einer Tabelle auf einer Webseite stammen, braucht die Adresse der Seite.",
     "quoteTableUnreachable": "Die Seite war nicht erreichbar. Prüfe die Adresse oder versuche es später erneut."
   },
   "tags": {

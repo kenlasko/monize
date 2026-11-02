@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "サイトは HTTP ステータス {{ status }} を返しました。",
     "quoteTableTooLarge": "ページが大きすぎて読み込めません。",
     "quoteTableNotFound": "ページに価格表が見つかりません。日付列と終値列を含むヘッダー行が必要です。",
+    "quoteUrlRequired": "Webページの表から価格を取得する銘柄には、ページのアドレスが必要です。",
     "quoteTableUnreachable": "ページにアクセスできませんでした。アドレスを確認するか、後でもう一度お試しください。"
   },
   "tags": {

@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "O site respondeu com o status HTTP {{ status }}.",
     "quoteTableTooLarge": "A página é grande demais para ser lida.",
     "quoteTableNotFound": "Nenhuma tabela de preços foi encontrada na página: é preciso uma linha de cabeçalho com uma coluna de data e uma de preço de fechamento.",
+    "quoteUrlRequired": "Um ativo cujas cotações vêm de uma tabela em uma página da web precisa do endereço da página.",
     "quoteTableUnreachable": "Não foi possível acessar a página. Verifique o endereço ou tente mais tarde."
   },
   "tags": {

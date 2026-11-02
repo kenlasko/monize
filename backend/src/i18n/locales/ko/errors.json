@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "사이트가 HTTP 상태 {{ status }}(으)로 응답했습니다.",
     "quoteTableTooLarge": "페이지가 너무 커서 읽을 수 없습니다.",
     "quoteTableNotFound": "페이지에서 가격 표를 찾을 수 없습니다. 날짜 열과 종가 열이 있는 머리글 행이 필요합니다.",
+    "quoteUrlRequired": "웹 페이지의 표에서 가격을 가져오는 증권에는 페이지 주소가 필요합니다.",
     "quoteTableUnreachable": "페이지에 접속할 수 없습니다. 주소를 확인하거나 나중에 다시 시도하세요."
   },
   "tags": {

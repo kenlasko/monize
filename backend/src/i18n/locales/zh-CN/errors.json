@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "该网站返回了 HTTP 状态 {{ status }}。",
     "quoteTableTooLarge": "该页面过大，无法读取。",
     "quoteTableNotFound": "页面上未找到价格表：需要一个包含日期列和收盘价列的标题行。",
+    "quoteUrlRequired": "从网页表格获取价格的证券需要填写该网页地址。",
     "quoteTableUnreachable": "无法访问该页面。请检查地址或稍后重试。"
   },
   "tags": {

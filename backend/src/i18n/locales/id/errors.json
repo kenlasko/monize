@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "Situs menjawab dengan status HTTP {{ status }}.",
     "quoteTableTooLarge": "Halaman terlalu besar untuk dibaca.",
     "quoteTableNotFound": "Tidak ada tabel harga di halaman: diperlukan baris judul dengan kolom tanggal dan kolom harga penutupan.",
+    "quoteUrlRequired": "Efek yang harganya diambil dari tabel di halaman web memerlukan alamat halaman tersebut.",
     "quoteTableUnreachable": "Halaman tidak dapat dijangkau. Periksa alamat atau coba lagi nanti."
   },
   "tags": {

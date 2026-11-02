@@ -718,6 +718,7 @@
     "quoteTableHttpStatus": "Site {{ status }} HTTP durumuyla yanıt verdi.",
     "quoteTableTooLarge": "Sayfa okunamayacak kadar büyük.",
     "quoteTableNotFound": "Sayfada fiyat tablosu bulunamadı: tarih sütunu ve kapanış fiyatı sütunu içeren bir başlık satırı gerekir.",
+    "quoteUrlRequired": "Fiyatları bir web sayfasındaki tablodan alınan bir menkul kıymet için sayfa adresi gereklidir.",
     "quoteTableUnreachable": "Sayfaya ulaşılamadı. Adresi kontrol edin veya daha sonra yeniden deneyin."
   },
   "tags": {
