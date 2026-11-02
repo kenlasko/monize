@@ -19,10 +19,10 @@ interface CalendarMonthNavProps {
 }
 
 const NAV_BUTTON =
-  `p-1.5 rounded-md text-gray-600 dark:text-gray-300 ${HOVER_ROW_ON_PAGE} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`;
+  `p-1 sm:p-1.5 rounded-md text-gray-600 dark:text-gray-300 ${HOVER_ROW_ON_PAGE} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`;
 
 const TODAY_BUTTON =
-  'ml-1 px-3 py-1 text-sm font-medium rounded-md border transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ' +
+  'ml-0.5 sm:ml-1 px-2 sm:px-3 py-1 text-sm font-medium rounded-md border transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ' +
   `border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-400 ${HOVER_ROW_ON_PAGE}`;
 
 /**
@@ -49,7 +49,7 @@ export function CalendarMonthNav({ month, onMonthChange, today, monthLabelId }: 
   );
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5 sm:gap-1">
       <button
         type="button"
         className={NAV_BUTTON}
@@ -63,7 +63,9 @@ export function CalendarMonthNav({ month, onMonthChange, today, monthLabelId }: 
       {/* The month is a control, not a caption: stepping from June 2026 to
           March 1998 is 339 clicks on the arrows beside it. The heading stays
           the grid's accessible name, so the button lives inside it rather
-          than replacing it. */}
+          than replacing it. Below `sm` it takes only its text's width and
+          the arrows and Today close up on it, so the view switch, the month
+          and Today share one line on a phone. */}
       <h2
         id={monthLabelId}
         className="text-base font-semibold text-gray-900 dark:text-gray-100"
@@ -75,7 +77,7 @@ export function CalendarMonthNav({ month, onMonthChange, today, monthLabelId }: 
           aria-expanded={pickerOpen}
           onClick={() => setPickerOpen((open) => !open)}
           title={t('monthPicker.title')}
-          className={`min-w-[9rem] rounded-md px-2 py-1 text-center ${HOVER_ROW_ON_PAGE} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+          className={`sm:min-w-[9rem] rounded-md px-1 sm:px-2 py-1 text-center ${HOVER_ROW_ON_PAGE} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
         >
           {formatMonth(month)}
         </button>
