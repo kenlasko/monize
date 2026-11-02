@@ -66,7 +66,7 @@ vi.mock('@/store/authStore', () => ({
 vi.mock('@/store/preferencesStore', () => ({
   usePreferencesStore: (selector?: any) => {
     const state = {
-      preferences: { twoFactorEnabled: true, theme: 'system', defaultCurrency: 'USD' },
+      preferences: { twoFactorEnabled: true, theme: 'system', defaultCurrency: 'USD', dateFormat: 'YYYY-MM-DD' },
       isLoaded: true,
       _hasHydrated: true,
     };
@@ -532,7 +532,7 @@ describe('BillsPage', () => {
     it('opens on the calendar when that is the stored choice', async () => {
       useViewModeStore.getState().setView('bills', 'calendar');
       render(<BillsPage />);
-      await waitFor(() => expect(screen.getByText('February 2026')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('2026-02')).toBeInTheDocument());
       expect(screen.queryByTestId('scheduled-transaction-list')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Calendar' })).toHaveAttribute('aria-pressed', 'true');
     });
@@ -551,7 +551,7 @@ describe('BillsPage', () => {
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
       fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
-      const toolbar = screen.getByText('February 2026').parentElement!.parentElement!;
+      const toolbar = screen.getByRole('button', { name: 'Previous month' }).parentElement!.parentElement!;
       expect(toolbar).toContainElement(screen.getByRole('group', { name: 'View' }));
       expect(screen.getByRole('button', { name: 'Previous month' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Next month' })).toBeInTheDocument();
@@ -566,9 +566,32 @@ describe('BillsPage', () => {
       expect(view.compareDocumentPosition(previous)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
       // Three columns from `sm` up: the switch's, the month's, and an empty
       // one as wide as the first, so the month sits in the middle of the row.
-      const toolbar = screen.getByText('February 2026').parentElement!.parentElement!;
+      const toolbar = screen.getByRole('button', { name: 'Previous month' }).parentElement!.parentElement!;
       expect(toolbar.className).toContain('sm:grid-cols-[1fr_auto_1fr]');
       expect(toolbar.children).toHaveLength(2);
+    });
+
+    it('draws the calendar grid on the page, so its weekday row has no fill', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
+      // header cell -> weekday row -> grid -> whatever holds the grid
+      const holder = screen.getByText('Sun').parentElement!.parentElement!.parentElement!;
+      const classes = holder.className.split(/\s+/);
+      expect(classes).not.toContain('bg-white');
+      expect(classes).not.toContain('shadow');
+    });
+
+    it('draws the calendar toolbar on the page, not in a card, as Transactions does', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
+      const toolbar = screen.getByRole('button', { name: 'Previous month' }).parentElement!.parentElement!;
+      for (const el of [toolbar, toolbar.parentElement!]) {
+        const classes = el.className.split(/\s+/);
+        expect(classes).not.toContain('bg-white');
+        expect(classes).not.toContain('shadow');
+      }
     });
 
     it('switches to calendar view', async () => {
@@ -584,7 +607,7 @@ describe('BillsPage', () => {
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
       fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
-      expect(screen.getByText('February 2026')).toBeInTheDocument();
+      expect(screen.getByText('2026-02')).toBeInTheDocument();
       expect(screen.getByText('Today')).toBeInTheDocument();
     });
 
@@ -617,7 +640,7 @@ describe('BillsPage', () => {
       useDensityStore.setState({ densities: {} });
     });
 
-    it('rides the bar above the table, right of Export, with the count and switch on the left', async () => {
+    it('rides the bar above the table, right of Export, with the switch and count on the left', async () => {
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
 
@@ -626,9 +649,9 @@ describe('BillsPage', () => {
       const view = screen.getByRole('group', { name: 'View' });
       const summary = screen.getByText(/^Showing/);
 
-      // Reading order: count, switch, Export, density.
-      expect(summary.compareDocumentPosition(view)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-      expect(view.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      // Reading order: switch, count, Export, density.
+      expect(view.compareDocumentPosition(summary)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(summary.compareDocumentPosition(exportButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
       expect(exportButton.compareDocumentPosition(density)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
       // One bar, directly above the list: the next element after the bar is
       // the list itself, so the bar meets the column headers.
@@ -763,30 +786,22 @@ describe('BillsPage', () => {
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
       fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
-      expect(screen.getByText('February 2026')).toBeInTheDocument();
+      expect(screen.getByText('2026-02')).toBeInTheDocument();
 
-      // Find and click the previous month button (left arrow SVG button)
-      const monthNav = screen.getByText('February 2026').parentElement;
-      const buttons = monthNav!.querySelectorAll('button');
-      // First button is previous month
-      fireEvent.click(buttons[0]);
+      fireEvent.click(screen.getByRole('button', { name: 'Previous month' }));
 
-      expect(screen.getByText('January 2026')).toBeInTheDocument();
+      expect(screen.getByText('2026-01')).toBeInTheDocument();
     });
 
     it('navigates to next month', async () => {
       render(<BillsPage />);
       await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
       fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
-      expect(screen.getByText('February 2026')).toBeInTheDocument();
+      expect(screen.getByText('2026-02')).toBeInTheDocument();
 
-      // Find and click the next month button
-      const monthNav = screen.getByText('February 2026').parentElement;
-      const buttons = monthNav!.querySelectorAll('button');
-      // Second button is next month
-      fireEvent.click(buttons[1]);
+      fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
 
-      expect(screen.getByText('March 2026')).toBeInTheDocument();
+      expect(screen.getByText('2026-03')).toBeInTheDocument();
     });
 
     it('navigates to today when Today button clicked', async () => {
@@ -795,14 +810,25 @@ describe('BillsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
 
       // Navigate away first
-      const monthNav = screen.getByText('February 2026').parentElement;
-      const buttons = monthNav!.querySelectorAll('button');
-      fireEvent.click(buttons[1]); // Next month
-      expect(screen.getByText('March 2026')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
+      expect(screen.getByText('2026-03')).toBeInTheDocument();
 
       // Click Today
       fireEvent.click(screen.getByText('Today'));
-      expect(screen.getByText('February 2026')).toBeInTheDocument();
+      expect(screen.getByText('2026-02')).toBeInTheDocument();
+    });
+
+    it('jumps to a typed month, as the Transactions calendar does', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
+
+      fireEvent.click(screen.getByRole('button', { name: '2026-02' }));
+      const field = screen.getByLabelText('Type a month or a year');
+      fireEvent.change(field, { target: { value: '1998-03' } });
+      fireEvent.keyDown(field, { key: 'Enter' });
+
+      expect(screen.getByText('1998-03')).toBeInTheDocument();
     });
   });
 

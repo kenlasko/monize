@@ -20,9 +20,6 @@
     "filterAll": "[XX-All ({count})-XX]",
     "filterBills": "[XX-Bills ({count})-XX]",
     "filterDeposits": "[XX-Deposits ({count})-XX]",
-    "todayButton": "[XX-Today-XX]",
-    "previousMonth": "[XX-Previous month-XX]",
-    "nextMonth": "[XX-Next month-XX]",
     "chipBills": "[XX-Bills-XX]",
     "chipDeposits": "[XX-Deposits-XX]",
     "clearType": "[XX-Show all schedule types-XX]"

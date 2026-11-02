@@ -12,7 +12,7 @@ interface PaginationProps {
   itemName?: string; // e.g., "transactions", "securities"
   minimal?: boolean; // Remove shadow and rounded styling for inline use
   infoRight?: React.ReactNode; // Optional content to render left of the page stepper
-  infoAfter?: React.ReactNode; // Optional content to render immediately right of "Showing X-Y of Z"
+  infoBefore?: React.ReactNode; // Optional content to render immediately left of "Showing X-Y of Z"
 }
 
 export function Pagination({
@@ -24,7 +24,7 @@ export function Pagination({
   itemName = 'items',
   minimal = false,
   infoRight,
-  infoAfter,
+  infoBefore,
 }: PaginationProps) {
   const t = useTranslations('common');
   const [inputPage, setInputPage] = useState(currentPage.toString());
@@ -82,6 +82,7 @@ export function Pagination({
       {/* Showing X-Y of Z, and whatever the caller wants read as part of that
           line rather than as part of the paging controls. */}
       <div className="flex items-center gap-2">
+        {infoBefore}
         <div className="text-sm text-gray-700 dark:text-gray-300">
           {t('pagination.showing')}{' '}
           <span className="font-medium">{startItem}</span>
@@ -91,7 +92,6 @@ export function Pagination({
           <span className="font-medium">{totalItems}</span>
           {' '}{itemName}
         </div>
-        {infoAfter}
       </div>
 
       {/* Whatever the caller puts beside the paging controls, then the

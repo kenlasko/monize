@@ -20,9 +20,6 @@
     "filterAll": "Tümü ({count})",
     "filterBills": "Faturalar ({count})",
     "filterDeposits": "Mevduatlar ({count})",
-    "todayButton": "Bugün",
-    "previousMonth": "Önceki ay",
-    "nextMonth": "Sonraki ay",
     "chipBills": "Faturalar",
     "chipDeposits": "Mevduatlar",
     "clearType": "Tüm program türlerini göster"

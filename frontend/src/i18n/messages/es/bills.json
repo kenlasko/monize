@@ -20,9 +20,6 @@
     "filterAll": "Todas ({count})",
     "filterBills": "Facturas ({count})",
     "filterDeposits": "Depósitos ({count})",
-    "todayButton": "Hoy",
-    "previousMonth": "Mes anterior",
-    "nextMonth": "Mes siguiente",
     "chipBills": "Facturas",
     "chipDeposits": "Depósitos",
     "clearType": "Mostrar todos los tipos de programación"

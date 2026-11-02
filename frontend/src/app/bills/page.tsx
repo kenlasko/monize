@@ -4,12 +4,13 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { addMonths, format, subMonths } from 'date-fns';
-import { ChevronLeftIcon, ChevronRightIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import { format } from 'date-fns';
+import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { ScheduledTransactionForm } from '@/components/scheduled-transactions/ScheduledTransactionForm';
 import { CashFlowForecastChart } from '@/components/bills/CashFlowForecastChart';
 import { ScheduledCalendarGrid } from '@/components/bills/ScheduledCalendarGrid';
+import { CalendarMonthNav } from '@/components/calendar/CalendarMonthNav';
 import { ScheduledTransactionList } from '@/components/scheduled-transactions/ScheduledTransactionList';
 import { BillsFilterPanel } from '@/components/scheduled-transactions/BillsFilterPanel';
 import { OverrideEditorDialog } from '@/components/scheduled-transactions/OverrideEditorDialog';
@@ -18,7 +19,7 @@ import { PostTransactionDialog } from '@/components/scheduled-transactions/PostT
 import { ViewModeToggle } from '@/components/ui/ViewModeToggle';
 import { ListTopToolbar, LIST_TOOLBAR_BUTTON_CLASS } from '@/components/ui/ListTopToolbar';
 import { useViewMode } from '@/store/viewModeStore';
-import { useChartDateFormat } from '@/hooks/useChartDateFormat';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -120,7 +121,7 @@ function BillsContent() {
   // scroll to the row without opening the post flow that ?postBillId triggers.
   const highlightId = useHighlightParam();
   const { formatCurrency, formatNumber } = useNumberFormat();
-  const formatChartDate = useChartDateFormat();
+  const financialToday = useFinancialToday();
   // The reader's reporting currency and the converter into it. The monthly net
   // spans one currency or none (issue #1247).
   const { convertToDefault, defaultCurrency, ratesUnavailable } =
@@ -811,7 +812,7 @@ function BillsContent() {
             </div>
 
             {/* Scheduled Transactions List. The bar above the rows is the
-                register's: the count and the Table / Calendar switch on the
+                register's: the Table / Calendar switch and the count on the
                 left, Export and the density toggle on the right, directly
                 over the column headers. The list is drawn whole, so the bar
                 carries no pager. */}
@@ -860,47 +861,24 @@ function BillsContent() {
           <>
             {/* Calendar toolbar: the Table / Calendar switch at the
                 left-hand end, where the table's bar has it, and the month
-                navigation centred in the row from `sm` up. */}
-            <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg mb-6">
-              <div className="flex flex-wrap items-center gap-2 px-4 py-3 sm:grid sm:grid-cols-[1fr_auto_1fr]">
-                <div className="flex items-center gap-2 sm:justify-self-start">
-                  <ViewModeToggle value={viewMode} onChange={setViewMode} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}
-                    aria-label={t('viewTabs.previousMonth')}
-                    className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <ChevronLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" aria-hidden="true" />
-                  </button>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 min-w-[130px] text-center">
-                    {formatChartDate(calendarMonth, 'MMMM yyyy')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}
-                    aria-label={t('viewTabs.nextMonth')}
-                    className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <ChevronRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCalendarMonth(new Date())}
-                    className="ml-1 px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"
-                  >
-                    {t('viewTabs.todayButton')}
-                  </button>
-                </div>
+                navigation centred in the row from `sm` up. It sits on the
+                page rather than in a card, as the Transactions calendar's
+                toolbar does. */}
+            <div className="mb-3 flex flex-wrap items-center gap-2 sm:grid sm:grid-cols-[1fr_auto_1fr]">
+              <div className="flex items-center gap-2 sm:justify-self-start">
+                <ViewModeToggle value={viewMode} onChange={setViewMode} />
               </div>
+              <CalendarMonthNav
+                month={format(calendarMonth, 'yyyy-MM')}
+                onMonthChange={(next) => setCalendarMonth(parseLocalDate(`${next}-01`))}
+                today={financialToday}
+              />
             </div>
 
-            {/* Calendar View */}
-            <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
-              <ScheduledCalendarGrid days={calendarDays} onSelect={handleEdit} />
-            </div>
+            {/* Calendar View: the grid sits on the page, not in a card, so
+                its weekday row carries no fill, as the Transactions calendar's
+                does. */}
+            <ScheduledCalendarGrid days={calendarDays} onSelect={handleEdit} />
           </>
         )}
       </main>

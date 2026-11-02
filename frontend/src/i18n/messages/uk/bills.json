@@ -20,9 +20,6 @@
     "filterAll": "Усі ({count})",
     "filterBills": "Рахунки ({count})",
     "filterDeposits": "Надходження ({count})",
-    "todayButton": "Сьогодні",
-    "previousMonth": "Попередній місяць",
-    "nextMonth": "Наступний місяць",
     "chipBills": "Рахунки",
     "chipDeposits": "Надходження",
     "clearType": "Показати всі типи розкладів"

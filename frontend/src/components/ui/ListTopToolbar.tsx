@@ -41,21 +41,22 @@ interface ListTopToolbarProps {
   /**
    * The Table / Calendar switch for the screen this list is the table half of.
    *
-   * It rides beside the "Showing 1-25 of 90" line at the left-hand end of the
-   * bar rather than with the buttons on the right: what the reader is looking
-   * at -- these rows, this many of them -- and the control that changes which
-   * shape they are looking at read as one statement, and it leaves the
-   * right-hand end to the controls that act on the list as drawn (export,
-   * density) and the pager. With no pager to sit beside it stays with the
-   * buttons, which is the only place left. Absent on a list whose screen offers no
+   * It leads the bar, at the left-hand end in front of the "Showing 1-25 of
+   * 90" line, rather than riding with the buttons on the right: the control
+   * that changes which shape the reader is looking at and what they are
+   * looking at -- these rows, this many of them -- read as one statement, the
+   * switch stands where the calendar's own toolbar has it, and the right-hand
+   * end is left to the controls that act on the list as drawn (export,
+   * density) and the pager. With no count beside it (an empty register) it
+   * still holds the left-hand end. Absent on a list whose screen offers no
    * calendar.
    */
   viewToggle?: React.ReactNode;
   /**
    * The count line for a list that is not paged ("Showing 5 of 12 bills and
    * deposits"), already translated. Read only when no paging props are given:
-   * it then holds the left-hand end the pager's own count line would, with the
-   * switch beside it, and the buttons move to the right-hand end. Below
+   * it then sits where the pager's own count line would, just right of the
+   * switch, and the buttons move to the right-hand end. Below
    * `sm` the line is hidden, so the switch and the buttons share one row:
    * the switch at the left-hand end, the buttons flush right.
    */
@@ -114,22 +115,24 @@ export function ListTopToolbar({
             itemName={itemName}
             minimal
             infoRight={buttons}
-            infoAfter={viewToggle}
+            infoBefore={viewToggle}
           />
         </div>
       ) : summary !== undefined ? (
         <div className="flex flex-1 items-center justify-between gap-2 sm:flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="hidden sm:block text-sm text-gray-700 dark:text-gray-300">{summary}</div>
             {viewToggle}
+            <div className="hidden sm:block text-sm text-gray-700 dark:text-gray-300">{summary}</div>
           </div>
           {buttons}
         </div>
-      ) : (
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {buttons}
+      ) : viewToggle ? (
+        <div className="flex flex-1 items-center justify-between gap-2">
           {viewToggle}
+          {buttons}
         </div>
+      ) : (
+        buttons
       )}
     </div>
   );

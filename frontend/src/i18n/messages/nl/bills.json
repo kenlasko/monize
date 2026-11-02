@@ -20,9 +20,6 @@
     "filterAll": "Alle ({count})",
     "filterBills": "Facturen ({count})",
     "filterDeposits": "Stortingen ({count})",
-    "todayButton": "Vandaag",
-    "previousMonth": "Vorige maand",
-    "nextMonth": "Volgende maand",
     "chipBills": "Facturen",
     "chipDeposits": "Stortingen",
     "clearType": "Alle schematypen tonen"

@@ -20,9 +20,6 @@
     "filterAll": "전체 ({count})",
     "filterBills": "청구서 ({count})",
     "filterDeposits": "입금 ({count})",
-    "todayButton": "오늘",
-    "previousMonth": "이전 달",
-    "nextMonth": "다음 달",
     "chipBills": "청구서",
     "chipDeposits": "입금",
     "clearType": "모든 일정 유형 표시"
