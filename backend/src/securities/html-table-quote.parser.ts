@@ -62,13 +62,68 @@ export interface ParsedQuoteTable {
   skippedRows: number;
 }
 
+/** Tables examined per page; a page of thousands of nested tables is hostile, not a quote page. */
+const MAX_TABLES_SCANNED = 200;
+
+/** Deeper than any real quote page; htmlparser2 is quadratic in depth. */
+const MAX_NESTING_DEPTH = 500;
+
+/** Tags a browser closes by itself, so an unclosed one does not add depth. */
+const IMPLIED_CLOSE_TAGS = new Set([
+  "br",
+  "hr",
+  "img",
+  "input",
+  "meta",
+  "link",
+  "col",
+  "wbr",
+  "source",
+  "td",
+  "th",
+  "tr",
+  "thead",
+  "tbody",
+  "tfoot",
+  "p",
+  "li",
+  "dt",
+  "dd",
+  "option",
+]);
+
+/**
+ * Whether the page nests elements deeper than `MAX_NESTING_DEPTH`, found by one
+ * linear scan of its tags before the quadratic-in-depth parse is paid for. An
+ * approximation (it ignores comments and script text): a miss costs nothing a
+ * 5 MB page of shallow tags would not, and a false positive needs 500 open
+ * elements, which no price page has.
+ */
+function exceedsNestingLimit(html: string): boolean {
+  const tag = /<(\/?)([a-zA-Z][a-zA-Z0-9:-]*)[^>]*?(\/?)>/g;
+  let depth = 0;
+  for (let m = tag.exec(html); m !== null; m = tag.exec(html)) {
+    const name = m[2].toLowerCase();
+    if (IMPLIED_CLOSE_TAGS.has(name) || m[3] === "/") continue;
+    if (m[1] === "/") depth = Math.max(0, depth - 1);
+    else if (++depth > MAX_NESTING_DEPTH) return true;
+  }
+  return false;
+}
+
 /** Read the best price table on the page, or `null` when there is none. */
 export function parseQuoteTable(
   html: string,
   now: Date = new Date(),
 ): ParsedQuoteTable | null {
+  if (exceedsNestingLimit(html)) return null;
   const document = parseDocument(html, { decodeEntities: true });
-  const tables = DomUtils.getElementsByTagName("table", document, true);
+  const tables = DomUtils.getElementsByTagName(
+    "table",
+    document,
+    true,
+    MAX_TABLES_SCANNED,
+  );
 
   let best: ParsedQuoteTable | null = null;
   tables.forEach((table, index) => {
@@ -170,15 +225,23 @@ function parseTable(
   };
 }
 
-/** The `<tr>`s of this table, not of a table nested inside one of its cells. */
+/**
+ * The `<tr>`s of this table, not of a table nested inside one of its cells.
+ * One downward walk that does not enter a nested table, so the total cost over
+ * every table on a page is linear in the page, however deeply they nest.
+ */
 function ownRows(table: Element): Element[] {
-  return DomUtils.getElementsByTagName("tr", table, true).filter((row) => {
-    let parent = row.parent;
-    while (parent && !(isElement(parent) && parent.name === "table")) {
-      parent = parent.parent;
+  const rows: Element[] = [];
+  const stack: unknown[] = [...table.children].reverse();
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!isElement(node) || node.name === "table") continue;
+    if (node.name === "tr") rows.push(node);
+    for (let i = node.children.length - 1; i >= 0; i--) {
+      stack.push(node.children[i]);
     }
-    return parent === table;
-  });
+  }
+  return rows;
 }
 
 function isElement(node: unknown): node is Element {

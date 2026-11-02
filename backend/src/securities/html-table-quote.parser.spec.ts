@@ -253,3 +253,42 @@ describe("dates", () => {
     },
   );
 });
+
+describe("hostile pages", () => {
+  const timed = (html: string) => {
+    const start = Date.now();
+    const result = parseQuoteTable(html, NOW);
+    return { result, ms: Date.now() - start };
+  };
+
+  it("does not spend cubic time on tables nested inside tables", () => {
+    const html =
+      "<table><tr><td>".repeat(3000) + "</td></tr></table>".repeat(3000);
+    const { result, ms } = timed(html);
+    expect(result).toBeNull();
+    expect(ms).toBeLessThan(1000);
+  });
+
+  it("refuses a page nested deeper than any real quote page", () => {
+    const html =
+      "<table><tr><th>Date</th><th>Close</th></tr><tr><td><div>" +
+      "<div>".repeat(900_000) +
+      "2026-01-02</td><td>5</td></tr></table>";
+    const { result, ms } = timed(html);
+    expect(result).toBeNull();
+    expect(ms).toBeLessThan(1000);
+  });
+
+  it("still reads a long table of unclosed cells and rows", () => {
+    const rows = Array.from(
+      { length: 3000 },
+      (_, i) =>
+        `<tr><td>2026-01-${String((i % 28) + 1).padStart(2, "0")}<td>${i + 1}.5`,
+    ).join("");
+    const result = parseQuoteTable(
+      `<table><tr><th>Date<th>Close${rows}</table>`,
+      NOW,
+    );
+    expect(result?.prices.length).toBeGreaterThan(0);
+  });
+});
