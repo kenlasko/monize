@@ -232,6 +232,30 @@ describe("HtmlTableFinanceService", () => {
     ).resolves.toBeDefined();
   });
 
+  it("blames a dead redirect target, never the site the address started on", async () => {
+    // https://example.com/a redirects to a host that does not answer.
+    fetchMock
+      .mockResolvedValueOnce(redirect("https://dead.example.net/a"))
+      .mockRejectedValueOnce(refused());
+    await expect(
+      service.loadTable("https://example.com/a"),
+    ).rejects.toBeInstanceOf(TypeError);
+
+    // Another page on the starting site is still read.
+    fetchMock.mockResolvedValueOnce(htmlResponse(page));
+    await expect(
+      service.loadTable("https://example.com/b"),
+    ).resolves.toBeDefined();
+
+    // A second address redirecting to the dead host is refused at that hop,
+    // without waiting for it again.
+    fetchMock.mockResolvedValueOnce(redirect("https://dead.example.net/c"));
+    await expect(
+      service.loadTable("https://example.com/c"),
+    ).rejects.toMatchObject({ reason: "unreachable" });
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
   it("asks a backed-off site again once the back-off has passed", async () => {
     jest.useFakeTimers({ now: new Date(Date.UTC(2026, 10, 2, 12)) });
     try {

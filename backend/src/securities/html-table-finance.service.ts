@@ -194,11 +194,9 @@ export class HtmlTableFinanceService implements QuoteProvider {
   }
 
   private async download(target: string): Promise<string> {
+    // `url` is the hop being asked: a redirect to another site is checked,
+    // and blamed, as that site, never as the one the address started on.
     let url = checkQuoteTableUrl(target);
-    const origin = originOf(url);
-    if ((this.failedOrigins.get(origin) ?? 0) > Date.now()) {
-      throw new QuoteTableError("unreachable", "failed recently");
-    }
     let html: string;
     try {
       let response = await this.get(url);
@@ -238,16 +236,25 @@ export class HtmlTableFinanceService implements QuoteProvider {
         if (this.failedOrigins.size >= PAGE_CACHE_MAX_ENTRIES) {
           this.failedOrigins.clear();
         }
-        this.failedOrigins.set(origin, Date.now() + FAILED_ORIGIN_BACKOFF_MS);
+        this.failedOrigins.set(
+          originOf(url),
+          Date.now() + FAILED_ORIGIN_BACKOFF_MS,
+        );
       }
       throw error;
     }
-    this.failedOrigins.delete(origin);
+    this.failedOrigins.delete(originOf(url));
     return html;
   }
 
-  /** One request, never following a redirect itself, to a public address only. */
+  /**
+   * One request, never following a redirect itself, to a public address only,
+   * and never to a site that failed to answer within the back-off.
+   */
   private get(url: URL) {
+    if ((this.failedOrigins.get(originOf(url)) ?? 0) > Date.now()) {
+      throw new QuoteTableError("unreachable", "failed recently");
+    }
     return undiciFetch(url, {
       redirect: "manual",
       headers: REQUEST_HEADERS,
