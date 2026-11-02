@@ -308,6 +308,22 @@ describe('SecurityPriceHistory', () => {
     expect(screen.getByText('Unknown')).toBeInTheDocument();
   });
 
+  it('names every provider source as the securities list does, never by its raw id', async () => {
+    // This pane once kept its own label table, which knew Yahoo and MSN only, so
+    // LSE, Deutsche Börse and web-page-table prices showed as "lse",
+    // "deutsche_boerse" and "html_table".
+    (investmentsApi.getSecurityPrices as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { id: 20, securityId: 'sec-1', priceDate: '2025-06-10', openPrice: null, highPrice: null, lowPrice: null, closePrice: 1, volume: null, source: 'lse', createdAt: 'x' },
+      { id: 21, securityId: 'sec-1', priceDate: '2025-06-11', openPrice: null, highPrice: null, lowPrice: null, closePrice: 1, volume: null, source: 'deutsche_boerse', createdAt: 'x' },
+      { id: 22, securityId: 'sec-1', priceDate: '2025-06-12', openPrice: null, highPrice: null, lowPrice: null, closePrice: 1, volume: null, source: 'html_table', createdAt: 'x' },
+    ]);
+    await renderExpanded();
+    expect(screen.getByText('LSE')).toBeInTheDocument();
+    expect(screen.getByText('Deutsche Börse')).toBeInTheDocument();
+    expect(screen.getByText('Web')).toBeInTheDocument();
+    expect(screen.queryByText('html_table')).not.toBeInTheDocument();
+  });
+
   it('hides the Add Price button while the add form is open and reopens it on cancel', async () => {
     await renderComponent();
 
