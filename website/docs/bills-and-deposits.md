@@ -185,6 +185,7 @@ The **Cash Flow Forecast** at the top of the page projects your account balances
 - **Accounts to forecast** picks the accounts. With none picked, all your accounts are drawn as one line; with two or more, each account gets its own line beside a **Total of Accounts** line
 - Hover over the chart to see the balance on a day and the transactions that move it
 - Below the chart: the **Starting** and **Ending** balances and the lowest point of the period (**Min Balance** for liability accounts)
+- **Hide chart** (the arrow at the top right) folds the forecast to a thin strip; click the strip to bring it back. This browser remembers the choice
 
 An occurrence that fell due and was neither posted nor skipped counts on the first day of the forecast. If an exchange rate is missing for one of the currencies involved, the forecast says so rather than showing a total that leaves it out.
 
