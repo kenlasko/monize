@@ -272,6 +272,11 @@ const ALLOWED = new Map<string, string>([
       "download; a miss costs one page fetch",
   ],
   [
+    "securities/html-table-finance.service.ts#failedOrigins",
+    "short back-off for a user-entered site that failed to answer; a replica " +
+      "that has not seen the failure asks the site once itself",
+  ],
+  [
     "securities/portfolio-summary-memo.ts#entries",
     "a request-coalescing memo keyed by user, scope, currency and the acting " +
       "identity, held for seconds; its invalidation is announced on the " +

@@ -16,9 +16,9 @@ export const DEFAULT_QUOTE_PROVIDER: QuoteProviderName = "yahoo";
  * Börse Frankfurt ISIN), not a generic ticker, so a symbol that merely collides
  * with a listing on those venues must never be repriced from them: they take
  * part only when a security explicitly names one as its provider, never as a
- * blanket fallback. `html_table` is the same: it reads the page the security
- * names, so it is never anybody's fallback (which would let a US ticker be priced from a same-symbol
- * London line in the same currency).
+ * blanket fallback (which would let a US ticker be priced from a same-symbol
+ * London line in the same currency). `html_table` is never a fallback either:
+ * it reads the page one security names, and no other security has that page.
  */
 const GENERAL_FALLBACK_PROVIDERS: ReadonlySet<QuoteProviderName> = new Set([
   "yahoo",

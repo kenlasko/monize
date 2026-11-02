@@ -7,8 +7,6 @@ import {
   QuoteTableError,
   rangeStart,
 } from "./html-table-finance.service";
-import { ProviderHealthService } from "../provider-health/provider-health.service";
-import { createTestProviderHealth } from "../test-helpers/provider-health-testing";
 
 jest.mock("undici", () => {
   const actual = jest.requireActual("undici");
@@ -38,18 +36,24 @@ function htmlResponse(
   });
 }
 
+function refused() {
+  return Object.assign(new TypeError("fetch failed"), {
+    cause: Object.assign(new Error("connect ECONNREFUSED"), {
+      code: "ECONNREFUSED",
+    }),
+  });
+}
+
 function redirect(location: string) {
   return new Response(null, { status: 302, headers: { location } });
 }
 
 describe("HtmlTableFinanceService", () => {
-  let health: ProviderHealthService;
   let service: HtmlTableFinanceService;
 
   beforeEach(() => {
     fetchMock.mockReset();
-    health = createTestProviderHealth();
-    service = new HtmlTableFinanceService(health);
+    service = new HtmlTableFinanceService();
   });
 
   it("answers nothing, without a request, for a security with no page", async () => {
@@ -167,9 +171,8 @@ describe("HtmlTableFinanceService", () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
-  it("reports the site's status, which proves the site is up", async () => {
-    fetchMock.mockResolvedValueOnce(htmlResponse("gone", 404));
-    const recordSuccess = jest.spyOn(health, "recordSuccess");
+  it("reports the site's status, and asks again next time: the site is up", async () => {
+    fetchMock.mockResolvedValue(htmlResponse("gone", 404));
 
     await expect(
       service.loadTable("https://example.com/x"),
@@ -177,7 +180,10 @@ describe("HtmlTableFinanceService", () => {
       reason: "http-status",
       detail: "404",
     });
-    expect(recordSuccess).toHaveBeenCalledWith("html_table:example.com");
+    await expect(
+      service.loadTable("https://example.com/x"),
+    ).rejects.toMatchObject({ reason: "http-status" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("reports a page without a price table", async () => {
@@ -189,24 +195,89 @@ describe("HtmlTableFinanceService", () => {
     });
   });
 
-  it("counts a transport failure against that site only and answers null", async () => {
-    const failure = Object.assign(new TypeError("fetch failed"), {
-      cause: Object.assign(new Error("getaddrinfo ENOTFOUND"), {
-        code: "ENOTFOUND",
-      }),
-    });
-    fetchMock.mockRejectedValueOnce(failure);
-    const recordFailure = jest.spyOn(health, "recordFailure");
+  it("answers null for a site that cannot be reached, then backs off it", async () => {
+    fetchMock.mockRejectedValueOnce(refused());
 
     await expect(
       service.fetchQuote("KRUG", null, {
         quoteUrl: "https://down.example.com/q",
       }),
     ).resolves.toBeNull();
-    expect(recordFailure).toHaveBeenCalledWith(
-      "html_table:down.example.com",
-      failure,
+    // The series asked right after it is answered without a second timeout.
+    await expect(
+      service.fetchHistoricalSeries("KRUG", null, "1y", {
+        quoteUrl: "https://down.example.com/other",
+      }),
+    ).resolves.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("backs off only the origin that failed, never another port of the same host", async () => {
+    // One user's address on a closed port must not stop another user's
+    // working page on that host from being read.
+    fetchMock.mockRejectedValueOnce(refused());
+    await expect(
+      service.loadTable("https://example.com:81/x"),
+    ).rejects.toBeInstanceOf(TypeError);
+    await expect(
+      service.loadTable("https://example.com:81/x"),
+    ).rejects.toMatchObject({ reason: "unreachable" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    fetchMock.mockResolvedValueOnce(htmlResponse(page));
+    await expect(service.loadTable(ARIVA)).resolves.toBeDefined();
+    fetchMock.mockResolvedValueOnce(htmlResponse(page));
+    await expect(
+      service.loadTable("https://example.com/x"),
+    ).resolves.toBeDefined();
+  });
+
+  it("asks a backed-off site again once the back-off has passed", async () => {
+    jest.useFakeTimers({ now: new Date(Date.UTC(2026, 10, 2, 12)) });
+    try {
+      fetchMock.mockRejectedValueOnce(refused());
+      await expect(
+        service.loadTable("https://example.com/x"),
+      ).rejects.toBeInstanceOf(TypeError);
+      jest.setSystemTime(new Date(Date.UTC(2026, 10, 2, 12, 11)));
+      fetchMock.mockResolvedValueOnce(htmlResponse(page));
+      await expect(
+        service.loadTable("https://example.com/x"),
+      ).resolves.toBeDefined();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("answers a gap-fill window with only that window's rows, and [] before the page", async () => {
+    fetchMock.mockResolvedValueOnce(htmlResponse(page));
+    const opts = { quoteUrl: ARIVA };
+
+    const old = await service.fetchHistoricalWindowSeries(
+      "KRUG",
+      null,
+      new Date(Date.UTC(2020, 2, 1)),
+      new Date(Date.UTC(2020, 2, 31, 23, 59, 59, 999)),
+      opts,
     );
+    // An answer, not a failure: the fill may remember the month as empty.
+    expect(old).not.toBeNull();
+    expect(old!.prices).toEqual([]);
+
+    const late = await service.fetchHistoricalWindowSeries(
+      "KRUG",
+      null,
+      new Date(Date.UTC(2026, 9, 29)),
+      new Date(Date.UTC(2026, 9, 30, 23, 59, 59, 999)),
+      opts,
+    );
+    expect(late!.prices.map((p) => p.date.toISOString().slice(0, 10))).toEqual([
+      "2026-10-29",
+      "2026-10-30",
+    ]);
+    expect(late!.currencyCode).toBe("EUR");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("logs and answers null when the page has no table", async () => {

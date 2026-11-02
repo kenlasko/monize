@@ -12,7 +12,10 @@ import {
   StockSectorInfo,
 } from "./providers/quote-provider.interface";
 import { getTradingDateFromQuote } from "./providers/trading-date.util";
-import { ProviderHealthService } from "../provider-health/provider-health.service";
+import {
+  describeFetchFailure,
+  isTransportFailure,
+} from "../common/http/fetch-failure.util";
 import { readCapped } from "../bonds/series-http";
 import { publicOnlyLookup } from "../ai/providers/provider-egress";
 import {
@@ -28,6 +31,13 @@ const MAX_REDIRECTS = 3;
 /** One refresh asks for the quote and then the series: one download serves both. */
 const PAGE_CACHE_TTL_MS = 5 * 60_000;
 const PAGE_CACHE_MAX_ENTRIES = 200;
+/**
+ * How long a site that failed at the transport level (refused, unresolvable,
+ * timed out) is not asked again. A refresh asks for the quote and then the
+ * series, and several securities can share one site: one failure answers them
+ * all for this long instead of one timeout each.
+ */
+const FAILED_ORIGIN_BACKOFF_MS = 10 * 60_000;
 
 /**
  * Sent as a browser would: several of these sites answer a non-browser agent
@@ -97,9 +107,13 @@ export function checkQuoteTableUrl(target: string, base?: string): URL {
   return url;
 }
 
-/** The breaker key: one per site, so a dead site never blocks another. */
-function healthId(url: URL): string {
-  return `html_table:${url.hostname.toLowerCase()}`.slice(0, 64);
+/**
+ * What a transport failure is remembered against: scheme, host and port. A
+ * closed port says nothing about the site's other ports, so one user's address
+ * on a refused port never backs off another user's working page on that host.
+ */
+function originOf(url: URL): string {
+  return url.origin.toLowerCase();
 }
 
 function decode(body: Uint8Array, contentType: string | null): string {
@@ -135,8 +149,14 @@ export function rangeStart(range: string | undefined, now: Date): Date | null {
  * The page is downloaded once per refresh and parsed by
  * `html-table-quote.parser.ts`; the newest row is the quote and every row is
  * the series. It never searches, never backs up another provider, and returns
- * `null` for a security without an address. Each site has its own breaker
- * (`html_table:<host>`).
+ * `null` for a security without an address.
+ *
+ * The addresses are the users', so this provider deliberately stays out of
+ * `ProviderHealthService`: that breaker is keyed by a fixed provider id,
+ * persisted to `provider_health` and alerts the administrators, none of which
+ * fits an unbounded set of hosts a user chose. A transport failure is
+ * remembered here instead, per origin, in process and bounded
+ * (`failedOrigins`), and is never persisted or alerted.
  */
 @Injectable()
 export class HtmlTableFinanceService implements QuoteProvider {
@@ -147,7 +167,8 @@ export class HtmlTableFinanceService implements QuoteProvider {
     { table: ParsedQuoteTable; expiresAt: number }
   >();
 
-  constructor(private readonly health: ProviderHealthService) {}
+  /** Origins that failed at the transport level, and until when to skip them. */
+  private readonly failedOrigins = new Map<string, number>();
 
   /**
    * Download and parse a page, throwing `QuoteTableError` (or the transport
@@ -174,8 +195,10 @@ export class HtmlTableFinanceService implements QuoteProvider {
 
   private async download(target: string): Promise<string> {
     let url = checkQuoteTableUrl(target);
-    const id = healthId(url);
-    const admission = this.health.assertAvailable(id);
+    const origin = originOf(url);
+    if ((this.failedOrigins.get(origin) ?? 0) > Date.now()) {
+      throw new QuoteTableError("unreachable", "failed recently");
+    }
     let html: string;
     try {
       let response = await this.get(url);
@@ -209,20 +232,17 @@ export class HtmlTableFinanceService implements QuoteProvider {
       }
       html = decode(body, response.headers.get("content-type"));
     } catch (error) {
-      if (error instanceof QuoteTableError) {
-        // A refused address or a status the host chose: the host is not down.
-        if (error.reason === "http-status" || error.reason === "too-large") {
-          this.health.recordSuccess(id);
-        } else if (admission === "probe") {
-          this.health.releaseProbe(id);
+      // A refused address or a status the site chose says the site is up; only
+      // a failure to reach it is remembered.
+      if (!(error instanceof QuoteTableError) && isTransportFailure(error)) {
+        if (this.failedOrigins.size >= PAGE_CACHE_MAX_ENTRIES) {
+          this.failedOrigins.clear();
         }
-        throw error;
+        this.failedOrigins.set(origin, Date.now() + FAILED_ORIGIN_BACKOFF_MS);
       }
-      const counted = this.health.recordFailure(id, error);
-      if (!counted && admission === "probe") this.health.releaseProbe(id);
       throw error;
     }
-    this.health.recordSuccess(id);
+    this.failedOrigins.delete(origin);
     return html;
   }
 
@@ -236,7 +256,7 @@ export class HtmlTableFinanceService implements QuoteProvider {
     });
   }
 
-  /** The table for a security, or `null` (logged once by the breaker) when it cannot be read. */
+  /** The table for a security, or `null` (logged) when it cannot be read. */
   private async tableFor(
     symbol: string,
     opts: QuoteProviderOptions | undefined,
@@ -246,16 +266,13 @@ export class HtmlTableFinanceService implements QuoteProvider {
     try {
       return await this.loadTable(target);
     } catch (error) {
-      if (error instanceof QuoteTableError) {
-        this.logger.warn(`No price table for ${symbol}: ${error.message}`);
-      } else {
-        this.health.logFailure(
-          this.logger,
-          healthId(new URL(target)),
-          `html table page for ${symbol}`,
-          error,
-        );
-      }
+      this.logger.warn(
+        `No price table for ${symbol}: ${
+          error instanceof QuoteTableError
+            ? error.message
+            : describeFetchFailure(error)
+        }`,
+      );
       return null;
     }
   }
@@ -296,6 +313,32 @@ export class HtmlTableFinanceService implements QuoteProvider {
       prices: start
         ? table.prices.filter((p) => p.date.getTime() >= start.getTime())
         : table.prices,
+      currencyCode: table.currencyCode,
+      symbol,
+      exchange: null,
+    };
+  }
+
+  /**
+   * The rows of one window, for the month-by-month gap fill. A page covers only
+   * its own few weeks, so a window before them answers `[]`: an answer, which
+   * lets the fill remember the month as empty instead of re-reading the page.
+   */
+  async fetchHistoricalWindowSeries(
+    symbol: string,
+    _exchange: string | null,
+    fromDate: Date,
+    toDate: Date,
+    opts?: QuoteProviderOptions,
+  ): Promise<HistoricalSeries | null> {
+    const table = await this.tableFor(symbol, opts);
+    if (!table) return null;
+    const from = fromDate.getTime();
+    const to = toDate.getTime();
+    return {
+      prices: table.prices.filter(
+        (p) => p.date.getTime() >= from && p.date.getTime() <= to,
+      ),
       currencyCode: table.currencyCode,
       symbol,
       exchange: null,
