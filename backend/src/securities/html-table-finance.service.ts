@@ -139,16 +139,16 @@ function refusedAsPrivate(error: unknown): boolean {
 }
 
 /**
- * The page's text in the charset it declares: the `Content-Type` header, else
- * a byte-order mark, else a `<meta charset>` (or `http-equiv` Content-Type) in
- * the first kilobyte -- the order of the WHATWG prescan -- else UTF-8. A German
- * page served as bare `text/html` and declaring ISO-8859-1 in its markup keeps
- * its "Schluß", "März" and "€".
+ * The page's text in the charset it declares, in the order the WHATWG
+ * encoding sniffing uses: a byte-order mark, else the `Content-Type` header,
+ * else a `<meta charset>` (or `http-equiv` Content-Type) in the first kilobyte,
+ * else UTF-8. A German page served as bare `text/html` and declaring
+ * ISO-8859-1 in its markup keeps its "Schluß", "März" and "€".
  */
 function decode(body: Uint8Array, contentType: string | null): string {
   const declared =
-    /charset=["']?([\w-]+)/i.exec(contentType ?? "")?.[1] ??
     bomCharset(body) ??
+    /charset=["']?([\w-]+)/i.exec(contentType ?? "")?.[1] ??
     metaCharset(body);
   try {
     return new TextDecoder(declared ?? "utf-8").decode(body);
@@ -168,10 +168,12 @@ function metaCharset(body: Uint8Array): string | null {
   const head = new TextDecoder("latin1").decode(
     body.subarray(0, CHARSET_PRESCAN_BYTES),
   );
-  return (
+  const label =
     /<meta[^>]{0,200}?charset\s*=\s*["']?\s*([\w-]{1,40})/i.exec(head)?.[1] ??
-    null
-  );
+    null;
+  // Markup read as bytes cannot be UTF-16, so the standard reads that label as
+  // UTF-8.
+  return label && /^utf-16/i.test(label) ? "utf-8" : label;
 }
 
 /**

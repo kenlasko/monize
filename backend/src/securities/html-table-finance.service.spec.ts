@@ -401,6 +401,24 @@ describe("HtmlTableFinanceService", () => {
     }
   });
 
+  it("lets a byte-order mark win over the header, as browsers do", async () => {
+    const utf8 = Buffer.concat([
+      Buffer.from([0xef, 0xbb, 0xbf]),
+      Buffer.from(
+        "<table><tr><th>Datum</th><th>Schluß</th></tr>" +
+          "<tr><td>02.11.26</td><td>1,50</td></tr></table>",
+        "utf8",
+      ),
+    ]);
+    fetchMock.mockResolvedValueOnce(
+      htmlResponse(utf8, 200, {
+        "content-type": "text/html; charset=iso-8859-1",
+      }),
+    );
+    const read = await service.loadTable("https://example.com/bom");
+    expect(read.columns.close).toBe("Schluß");
+  });
+
   it("drops expired pages from the cache and keeps it within a row budget", async () => {
     const rows = (n: number) =>
       "<table><tr><th>Date</th><th>Close</th></tr>" +
@@ -423,13 +441,14 @@ describe("HtmlTableFinanceService", () => {
     await service.loadTable("https://example.com/new", t1);
     expect(cache.has("https://example.com/old")).toBe(false);
 
-    // Two pages that together pass the row budget cannot both be held.
-    fetchMock.mockResolvedValueOnce(htmlResponse(rows(130_000)));
-    await service.loadTable("https://example.com/big1", t1);
-    fetchMock.mockResolvedValueOnce(htmlResponse(rows(130_000)));
-    await service.loadTable("https://example.com/big2", t1);
+    // Pages that together pass the row budget cannot all be held: the oldest
+    // goes. (90,000 rows is within what one page's reader keeps.)
+    for (const name of ["big1", "big2", "big3"]) {
+      fetchMock.mockResolvedValueOnce(htmlResponse(rows(90_000)));
+      await service.loadTable(`https://example.com/${name}`, t1);
+    }
     expect(cache.has("https://example.com/big1")).toBe(false);
-    expect(cache.has("https://example.com/big2")).toBe(true);
+    expect(cache.has("https://example.com/big3")).toBe(true);
   });
 
   it("answers a gap-fill window with only that window's rows, and [] before the page", async () => {
