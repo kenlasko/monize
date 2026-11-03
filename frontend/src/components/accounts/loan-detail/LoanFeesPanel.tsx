@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Modal } from '@/components/ui/Modal';
+import { TABLE_BODY_CLASS } from '@/components/ui/Table';
 import { LoanFeesEditor } from '@/components/accounts/LoanFeesEditor';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { categoriesApi } from '@/lib/categories';
@@ -145,7 +146,7 @@ export function LoanFeesPanel({ account, onChanged }: LoanFeesPanelProps) {
         {loaded.fees.length === 0 ? (
           <p className="text-sm text-gray-600 dark:text-gray-300">{t('loanFees.none')}</p>
         ) : (
-          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+          <ul className={TABLE_BODY_CLASS}>
             {loaded.fees.map((fee) => (
               <li key={fee.id} className="py-2 text-sm">
                 <div className="font-medium text-gray-900 dark:text-gray-100">{fee.name}</div>
