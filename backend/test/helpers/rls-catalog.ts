@@ -246,6 +246,14 @@ const PRODUCTION_SHAPED_VALUES: Record<string, Record<string, unknown>> = {
   monte_carlo_scenarios: { years_to_retirement: 30 },
   // chk_warranty_expiry: a warranty is lifetime or has an expiry date.
   warranties: { is_lifetime: true },
+  // chk_loan_fees_calculation / chk_loan_fees_value: a fixed fee carries an
+  // amount and no rate.
+  loan_fees: {
+    calculation: "FIXED",
+    basis: "PER_PAYMENT",
+    amount: 1,
+    rate: null,
+  },
 };
 
 /**
