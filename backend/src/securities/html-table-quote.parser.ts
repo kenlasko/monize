@@ -509,7 +509,7 @@ export function parseDate(
 
   // Textual: "Monday, November 02, 2026", "02 Nov 2026", "2. November 2026",
   // "2 de noviembre de 2026".
-  const tokens = text
+  const words = text
     .toLowerCase()
     .replace(WEEKDAYS, " ")
     .replace(/\bde\b/g, " ")
@@ -517,14 +517,14 @@ export function parseDate(
     .filter(Boolean);
   let month: number | undefined;
   const numbers: string[] = [];
-  for (const token of tokens) {
-    if (/^\d+$/.test(token)) numbers.push(token);
-    else if (MONTHS[token] !== undefined && month === undefined)
-      month = MONTHS[token];
+  for (const word of words) {
+    if (/^\d+$/.test(word)) numbers.push(word);
+    else if (MONTHS[word] !== undefined && month === undefined)
+      month = MONTHS[word];
     else return null;
   }
   if (month === undefined || numbers.length !== 2) return null;
-  const yearToken = numbers.find((n) => n.length === 4) ?? numbers[1];
-  const dayToken = numbers.find((n) => n !== yearToken) ?? numbers[0];
-  return utcDate(fullYear(Number(yearToken), now), month, Number(dayToken));
+  const yearDigits = numbers.find((n) => n.length === 4) ?? numbers[1];
+  const dayDigits = numbers.find((n) => n !== yearDigits) ?? numbers[0];
+  return utcDate(fullYear(Number(yearDigits), now), month, Number(dayDigits));
 }
