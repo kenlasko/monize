@@ -463,6 +463,12 @@
     "generating": "正在生成报告...",
     "noData": "所选条件无数据",
     "transactionCount": "{count, plural, one {# 笔交易} other {# 笔交易}}",
+    "measure": {
+      "netAmount": "净额",
+      "netCashMovement": "净现金变动",
+      "unsignedTotal": "分类金额（不计正负）合计",
+      "unsignedAverage": "分类金额（不计正负）平均值"
+    },
     "truncatedNotice": "此报表已达到行数上限，仅显示最早的行，因此数值不完整。请缩小时间范围或筛选条件以查看全部。",
     "toasts": {
       "loadFailed": "加载报告失败",

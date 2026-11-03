@@ -463,6 +463,12 @@
     "generating": "Generazione report...",
     "noData": "Nessun dato trovato per i criteri selezionati",
     "transactionCount": "{count, plural, one {# transazione} other {# transazioni}}",
+    "measure": {
+      "netAmount": "Importo netto",
+      "netCashMovement": "Movimento di cassa netto",
+      "unsignedTotal": "Totale degli importi di categoria senza segno",
+      "unsignedAverage": "Media degli importi di categoria senza segno"
+    },
     "truncatedNotice": "Questo report ha raggiunto il limite di righe e mostra solo le più vecchie, quindi i suoi valori sono parziali. Restringi il periodo o i filtri per vederle tutte.",
     "toasts": {
       "loadFailed": "Caricamento report non riuscito",

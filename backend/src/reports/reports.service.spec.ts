@@ -184,6 +184,7 @@ describe("ReportsService", () => {
     });
     qb.orWhere = jest.fn().mockReturnValue(qb);
     qb.orderBy = jest.fn().mockReturnValue(qb);
+    qb.addOrderBy = jest.fn().mockReturnValue(qb);
     qb.take = jest.fn().mockReturnValue(qb);
     qb.getMany = jest.fn().mockResolvedValue([]);
     // Apply overrides last
@@ -960,6 +961,106 @@ describe("ReportsService", () => {
         expect(result.data[0].category).toBe("Groceries");
         expect(result.data[1].value).toBe(40);
         expect(result.data[1].memo).toBe("Cleaning supplies");
+      });
+
+      // Discussion #1978: a BOTH list keeps each row's own sign, and its
+      // headline is the signed net of the listed rows.
+      it("keeps each row's sign in a BOTH list and nets the headline", async () => {
+        const transactions = [
+          createMockTransaction({ id: "tx-1", amount: 1000 }),
+          createMockTransaction({ id: "tx-2", amount: -300 }),
+          // A refund in an expense category stays positive.
+          createMockTransaction({ id: "tx-3", amount: 30 }),
+          createMockTransaction({
+            id: "tx-4",
+            amount: 440,
+            isSplit: true,
+            splits: [
+              { id: "split-1", amount: -60, memo: "Fee" } as any,
+              { id: "split-2", amount: 500, memo: "Rebate" } as any,
+            ],
+          }),
+        ];
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.NONE,
+            config: {
+              ...defaultConfig,
+              metric: MetricType.NONE,
+              direction: DirectionFilter.BOTH,
+            },
+          },
+          transactions,
+        );
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.data.map((d) => d.value)).toEqual([
+          1000, -300, 30, -60, 500,
+        ]);
+        expect(result.summary.total).toBe(1170);
+      });
+
+      it("nets both legs of an in-scope transfer to zero in a BOTH list", async () => {
+        const transactions = [
+          createMockTransaction({
+            id: "tx-out",
+            amount: -500,
+            isTransfer: true,
+            categoryId: null,
+            category: null,
+          }),
+          createMockTransaction({
+            id: "tx-in",
+            amount: 500,
+            isTransfer: true,
+            accountId: "acc-2",
+            account: { id: "acc-2", name: "Savings" } as any,
+            categoryId: null,
+            category: null,
+          }),
+        ];
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.NONE,
+            config: {
+              ...defaultConfig,
+              metric: MetricType.NONE,
+              direction: DirectionFilter.BOTH,
+              includeTransfers: true,
+            },
+          },
+          transactions,
+        );
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.data.map((d) => d.value)).toEqual([-500, 500]);
+        expect(result.summary.total).toBe(0);
+      });
+
+      it("still lists magnitudes when the list has one direction", async () => {
+        const transactions = [
+          createMockTransaction({ id: "tx-1", amount: -300 }),
+          createMockTransaction({
+            id: "tx-2",
+            amount: -100,
+            isSplit: true,
+            splits: [{ id: "split-1", amount: -100, memo: "Food" } as any],
+          }),
+        ];
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.NONE,
+            config: { ...defaultConfig, metric: MetricType.NONE },
+          },
+          transactions,
+        );
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.data.map((d) => d.value)).toEqual([300, 100]);
+        expect(result.summary.total).toBe(400);
       });
 
       it("renders category as 'Parent: Child' for subcategories on individual transactions", async () => {
@@ -1776,6 +1877,36 @@ describe("ReportsService", () => {
         expect(result.summary.total).toBeNull();
         expect(result.summary.average).toBeNull();
         expect(result.summary.knownTotal).toBe(50000);
+      });
+
+      // A both-direction list reads in date order (discussion #1978); within
+      // one date it follows the register, never the arbitrary order of a bare
+      // date sort (applyRegisterOrder).
+      it("reads the rows in the register's order", async () => {
+        const { qb } = setupExecuteMocks(
+          {
+            groupBy: GroupByType.NONE,
+            config: {
+              ...defaultConfig,
+              metric: MetricType.NONE,
+              direction: DirectionFilter.BOTH,
+            },
+          },
+          [],
+        );
+
+        await service.execute("user-1", "report-1");
+
+        expect(qb.orderBy).toHaveBeenCalledWith(
+          "transaction.transactionDate",
+          "ASC",
+          undefined,
+        );
+        expect(qb.addOrderBy.mock.calls).toEqual([
+          ["transaction.createdAt", "ASC"],
+          ["transaction.amount", "DESC"],
+          ["transaction.id", "ASC"],
+        ]);
       });
 
       it("is not truncated when the rows fit the limit", async () => {

@@ -463,6 +463,12 @@
     "generating": "產生報表中...",
     "noData": "未找到符合所選條件的資料",
     "transactionCount": "{count, plural, one {# 筆交易} other {# 筆交易}}",
+    "measure": {
+      "netAmount": "淨額",
+      "netCashMovement": "淨現金變動",
+      "unsignedTotal": "類別金額（不計正負）合計",
+      "unsignedAverage": "類別金額（不計正負）平均值"
+    },
     "truncatedNotice": "此報表已達到列數上限，僅顯示最早的列，因此數值不完整。請縮小時間範圍或篩選條件以檢視全部。",
     "toasts": {
       "loadFailed": "載入報表失敗",

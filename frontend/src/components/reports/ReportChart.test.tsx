@@ -549,4 +549,89 @@ describe('ReportChart', () => {
     const dashes = screen.getAllByText('-');
     expect(dashes.length).toBeGreaterThanOrEqual(1);
   });
+
+  // Discussion #1978: a both-direction list keeps its signs, so a share of the
+  // net total means nothing and the Total row names what it sums.
+  describe('signed rows', () => {
+    const signedData = [
+      { label: 'Salary', value: 1000, count: 1, id: 'tx-1' },
+      { label: 'Rent', value: -300, count: 1, id: 'tx-2' },
+    ];
+    const columns = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.PERCENTAGE, TableColumn.COUNT];
+
+    it('prints signed amounts, no shares and the named total in the table', () => {
+      render(
+        <ReportChart
+          viewType={ReportViewType.TABLE}
+          data={signedData}
+          groupBy={GroupByType.NONE}
+          tableColumns={columns}
+          totalRowValue={700}
+          totalLabel="Net amount"
+          signed
+        />
+      );
+      expect(screen.getByText('$-300.00')).toBeInTheDocument();
+      expect(screen.getByText('$700.00')).toBeInTheDocument();
+      expect(screen.getByText('Net amount')).toBeInTheDocument();
+      expect(screen.queryByText('Total')).not.toBeInTheDocument();
+      expect(screen.queryByText('100%')).not.toBeInTheDocument();
+      expect(screen.getAllByText('-')).toHaveLength(2);
+    });
+
+    it('exports csv with blank shares and the named Total row', async () => {
+      const { exportToCsv } = await import('@/lib/csv-export');
+      (exportToCsv as any).mockClear();
+      render(
+        <ReportChart
+          viewType={ReportViewType.TABLE}
+          data={signedData}
+          groupBy={GroupByType.NONE}
+          tableColumns={columns}
+          totalRowValue={700}
+          totalLabel="Net amount"
+          signed
+        />
+      );
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
+
+      const rows = (exportToCsv as any).mock.calls[0][2];
+      expect(rows).toEqual([
+        ['Salary', 1000, '', 1],
+        ['Rent', -300, '', 1],
+        ['Net amount', 700, '', 2],
+      ]);
+    });
+
+    it('exports pdf with blank shares and the named Total row', async () => {
+      const { exportToPdf } = await import('@/lib/pdf-export');
+      (exportToPdf as any).mockClear();
+      render(
+        <ReportChart
+          viewType={ReportViewType.TABLE}
+          data={signedData}
+          groupBy={GroupByType.NONE}
+          tableColumns={columns}
+          totalRowValue={700}
+          totalLabel="Net amount"
+          signed
+        />
+      );
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
+
+      const { tableData } = (exportToPdf as any).mock.calls[0][0];
+      expect(tableData.rows[1]).toEqual(['Rent', '$-300.00', '', '1']);
+      expect(tableData.totalRow).toEqual(['Net amount', '$700.00', '', '2']);
+    });
+
+    it('leaves the share out of the chart tooltip', () => {
+      render(
+        <ReportChart viewType={ReportViewType.BAR_CHART} data={signedData} groupBy={GroupByType.NONE} signed />
+      );
+      expect(screen.getByText('$500.00')).toBeInTheDocument();
+      expect(screen.queryByText(/%\)/)).not.toBeInTheDocument();
+    });
+  });
 });

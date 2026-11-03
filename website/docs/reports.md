@@ -266,6 +266,14 @@ Create your own reports with flexible filtering, grouping, and visualization opt
 
 Click **Create Report** to save it. It then appears on the Reports page under **Custom**.
 
+#### How Direction Affects Amounts
+
+- **Income Only** and **Expenses Only** show positive amounts: what came in, or what was spent. A refund lowers its category's spending.
+- **Both** with **No Grouping** and **No Aggregation** lists every matching transaction with its own sign: money coming into an account is positive, money leaving it is negative, and a refund stays positive even in an expense category. The headline is the **Net amount** of the listed rows. With **Include transfers** ticked it is the **Net cash movement**: a transfer between two accounts you both included shows as a negative and a positive row that cancel out, and a transfer with only one side in the report counts only that side. A transfer between accounts in two different currencies is the exception: each side is converted to your default currency at the latest exchange rate, not at the rate the transfer used, so the two sides can leave a small difference.
+- **Both** with **Total Amount** or **Average Amount**, or with **No Aggregation** and any grouping, adds up each category's net as a positive amount, so income and spending add together rather than cancel. The headline says so (*Total of unsigned category amounts*) so it is not mistaken for a net figure.
+
+To see one report of everything that came in and went out for a set of categories, in date order, choose **No Grouping**, **No Aggregation** and **Both**, and filter by those categories.
+
 ### Report Filters
 
 The **Filters (optional)** section narrows the report to the transactions you care about. With no filters, every transaction is included.
