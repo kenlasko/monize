@@ -137,7 +137,7 @@ test("account-form-mortgage-fees", async () => {
   const category = dialog.getByLabel("Category", { exact: true });
   await category.click();
   await category.pressSequentially("Property Tax");
-  await page.getByRole("button", { name: /Housing: Property Tax/ }).first().click();
+  await page.getByText("Housing: Property Tax", { exact: true }).first().click();
   await dialog.getByLabel("Value applies").selectOption("ANNUAL");
   await dialog.getByLabel("Amount", { exact: true }).fill("3600");
   await dialog.getByLabel("Fee name").click();
@@ -145,7 +145,8 @@ test("account-form-mortgage-fees", async () => {
     .locator("div.border-t")
     .filter({ has: dialog.getByRole("heading", { name: "Mortgage fees" }) })
     .last();
-  await scrollTo(section);
+  // Inside the dialog's own scroll area, not under the page header.
+  await section.scrollIntoViewIfNeeded();
   await settled();
   await docShot(page, "account-form-mortgage-fees", section);
   await dialog.getByRole("button", { name: "Cancel" }).click();
