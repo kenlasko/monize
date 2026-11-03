@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@/test/render';
 import { QuoteTableUrlField } from './QuoteTableUrlField';
-import { buildSecuritySchema } from './securityFormModel';
+import { buildSecuritySchema, valuesToValidate, type SecurityFormData } from './securityFormModel';
 
 vi.mock('@/lib/investments', () => ({
   investmentsApi: { previewQuoteTable: vi.fn() },
@@ -141,5 +141,76 @@ describe('security form schema: web page table', () => {
     expect(schema.safeParse({ ...base, quoteProvider: 'yahoo', quoteUrl: '' }).success).toBe(
       true,
     );
+  });
+});
+
+describe('a preview belongs to the address it was asked for', () => {
+  beforeEach(() => previewMock.mockReset());
+
+  const answer = (totalRows: number) => ({
+    columns: { date: 'Date', close: 'Close' },
+    currencyCode: null,
+    totalRows,
+    skippedRows: 0,
+    firstDate: '2026-10-01',
+    lastDate: '2026-11-02',
+    rows: [],
+  });
+
+  it('hides the answer once the address is edited', async () => {
+    previewMock.mockResolvedValueOnce(answer(120));
+    const { rerender } = render(
+      <QuoteTableUrlField registration={registration} url="https://a.example/p" />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+    });
+    expect(screen.getByTestId('quote-table-preview')).toBeInTheDocument();
+
+    rerender(<QuoteTableUrlField registration={registration} url="https://b.example/p" />);
+    expect(screen.queryByTestId('quote-table-preview')).not.toBeInTheDocument();
+  });
+
+  it('never shows an answer that arrives after the address changed', async () => {
+    let release!: (value: ReturnType<typeof answer>) => void;
+    previewMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+    );
+    const { rerender } = render(
+      <QuoteTableUrlField registration={registration} url="https://a.example/p" />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+    });
+    rerender(<QuoteTableUrlField registration={registration} url="https://b.example/p" />);
+    await act(async () => {
+      release(answer(120));
+    });
+
+    expect(screen.queryByTestId('quote-table-preview')).not.toBeInTheDocument();
+    // The new address can be tested at once: the old request does not hold it.
+    expect(screen.getByRole('button', { name: 'Test' })).not.toBeDisabled();
+  });
+});
+
+describe('valuesToValidate', () => {
+  const schema = buildSecuritySchema((key) => key);
+  const listedBond = {
+    symbol: 'EDO',
+    name: 'EDO',
+    currencyCode: 'PLN',
+    securityType: 'BOND',
+    quoteProvider: 'html_table',
+    quoteUrl: '',
+  } as SecurityFormData;
+
+  it('does not require a page address the form does not show', () => {
+    expect(schema.safeParse(valuesToValidate(listedBond, false)).success).toBe(true);
+  });
+
+  it('still requires it while the field is shown', () => {
+    expect(schema.safeParse(valuesToValidate(listedBond, true)).success).toBe(false);
   });
 });

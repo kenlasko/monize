@@ -1238,6 +1238,23 @@ describe('SecurityForm', () => {
       expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('bondAutoFetch');
     });
 
+    it('clears a web-page provider the listed bond no longer shows', async () => {
+      // Chosen before the type became a listed bond: the provider and its page
+      // field are hidden now, so the save must neither need nor keep them.
+      await renderBond({ quoteProvider: 'html_table' });
+      await pickPoland();
+      const select = await programSelect();
+      await waitFor(() => expect(within(select).getAllByRole('option')).toHaveLength(3));
+      fireEvent.change(select, { target: { value: 'p-edo' } });
+      expect(screen.queryByTestId('quote-table-url-field')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText('Update Security'));
+      await waitFor(() =>
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({ bondProgramId: 'p-edo', quoteProvider: null }),
+        ),
+      );
+    });
+
     it('refills every field of an existing security when the person picks another kind', async () => {
       await renderBond({ symbol: 'MYBOND', name: 'My bonds', currencyCode: 'USD', exchange: 'NYSE', website: 'https://old.test' });
       await pickPoland();

@@ -56,3 +56,19 @@ export const buildSecuritySchema = (t: (key: string) => string) => z.object({
 
 export type SecurityFormData = z.infer<ReturnType<typeof buildSecuritySchema>>;
 
+/**
+ * The values to validate, given whether the quote provider control is shown.
+ * A listed bond hides it (the engine prices the bond), so a web-page provider
+ * chosen before the type changed is not validated: its page address field is
+ * hidden too, and a rule on a field nobody can see blocks the save with no
+ * reason on screen.
+ */
+export function valuesToValidate(
+  values: SecurityFormData,
+  providerShown: boolean,
+): SecurityFormData {
+  return !providerShown && values.quoteProvider === 'html_table'
+    ? { ...values, quoteProvider: '' }
+    : values;
+}
+

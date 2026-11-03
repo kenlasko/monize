@@ -30,20 +30,35 @@ export function QuoteTableUrlField({
   const t = useTranslations('securities');
   const { formatNumber } = useNumberFormat();
   const { formatDate } = useDateFormat();
-  const [preview, setPreview] = useState<QuoteTablePreview | null>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Each answer is kept with the address it was asked for and shown only while
+  // the field still holds that address: an edit hides it, and an answer that
+  // arrives after the edit is never shown as if it were about the new one.
+  const [checked, setChecked] = useState<{
+    url: string;
+    preview: QuoteTablePreview | null;
+    error: string | null;
+  } | null>(null);
+  const [loadingUrl, setLoadingUrl] = useState<string | null>(null);
+  const current = url.trim();
+  const shown = checked !== null && checked.url === current ? checked : null;
+  const preview = shown?.preview ?? null;
+  const previewError = shown?.error ?? null;
+  const loading = loadingUrl !== null && loadingUrl === current;
 
   const runPreview = async () => {
-    setLoading(true);
-    setPreview(null);
-    setPreviewError(null);
+    const asked = current;
+    setLoadingUrl(asked);
     try {
-      setPreview(await investmentsApi.previewQuoteTable(url.trim()));
+      const result = await investmentsApi.previewQuoteTable(asked);
+      setChecked({ url: asked, preview: result, error: null });
     } catch (err) {
-      setPreviewError(getErrorMessage(err, t('form.quoteTable.previewFailed')));
+      setChecked({
+        url: asked,
+        preview: null,
+        error: getErrorMessage(err, t('form.quoteTable.previewFailed')),
+      });
     } finally {
-      setLoading(false);
+      setLoadingUrl((now) => (now === asked ? null : now));
     }
   };
 
@@ -72,7 +87,7 @@ export function QuoteTableUrlField({
           className="mb-[1px]"
           onClick={runPreview}
           isLoading={loading}
-          disabled={!url.trim() || loading}
+          disabled={!current || loading}
         >
           {t('form.quoteTable.test')}
         </Button>
