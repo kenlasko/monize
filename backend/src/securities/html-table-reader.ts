@@ -21,7 +21,7 @@ import { Tokenizer } from "htmlparser2";
  *   how a responsive table writes one value twice;
  * - `script`, `style`, `title` and `textarea` bodies are text the tokenizer
  *   already reads as raw, and their text is dropped;
- * - every collection is capped (`MAX_TABLES`, `MAX_CELLS_PER_PAGE`,
+ * - every collection is capped (`MAX_TABLES`, `MAX_ITEMS_PER_PAGE`,
  *   `MAX_CELL_TEXT`, `MAX_CELL_PARTS`), so the output is bounded by constants
  *   as well as by the (capped) page.
  *
@@ -45,8 +45,12 @@ export interface PageTable {
 export const MAX_TABLES = 200;
 /** Tables open inside one another at once; deeper ones are skipped whole. */
 const MAX_OPEN_TABLES = 32;
-/** Cells kept per page: a 40-year daily history with ten columns is ~100,000. */
-const MAX_CELLS_PER_PAGE = 300_000;
+/**
+ * Rows and cells kept per page, counted together: a 40-year daily history with
+ * ten columns is ~110,000. Past it, further rows and cells are dropped, so a
+ * page of nothing but `<tr>` cannot build a million empty rows.
+ */
+const MAX_ITEMS_PER_PAGE = 300_000;
 /** Characters kept per cell; a price or a date is a few dozen. */
 const MAX_CELL_TEXT = 512;
 /** Child texts kept per cell. */
@@ -105,7 +109,7 @@ interface OpenTable {
 export function readPageTables(html: string): PageTable[] {
   const tables: PageTable[] = [];
   const open: OpenTable[] = [];
-  let cellsKept = 0;
+  let itemsKept = 0;
   /** `<table>`s opened past a cap, whose whole content is skipped. */
   let skippedTables = 0;
   let droppedText: string | null = null;
@@ -166,23 +170,25 @@ export function readPageTables(html: string): PageTable[] {
     if (name === "tr" || SECTION_TAGS.has(name)) {
       closeCell(current);
       current.row = null;
-      if (name === "tr") {
+      if (name === "tr" && itemsKept < MAX_ITEMS_PER_PAGE) {
         current.row = [];
         current.table.rows.push(current.row);
+        itemsKept++;
       }
       return;
     }
     if (name === "td" || name === "th") {
       closeCell(current);
-      if (cellsKept >= MAX_CELLS_PER_PAGE) return;
+      if (itemsKept >= MAX_ITEMS_PER_PAGE) return;
       if (!current.row) {
         current.row = [];
         current.table.rows.push(current.row);
+        itemsKept++;
       }
       const cell: PageCell = { text: "", parts: [], span: colspan };
       current.row.push(cell);
       current.cell = { cell, depth: 0, part: "" };
-      cellsKept++;
+      itemsKept++;
       return;
     }
     if (current.cell && !VOID_TAGS.has(name)) {
