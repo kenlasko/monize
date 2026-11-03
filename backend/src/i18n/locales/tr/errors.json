@@ -720,6 +720,7 @@
     "quoteTableNotFound": "Sayfada fiyat tablosu bulunamadı: tarih sütunu ve kapanış fiyatı sütunu içeren bir başlık satırı gerekir.",
     "quoteUrlRequired": "Fiyatları bir web sayfasındaki tablodan alınan bir menkul kıymet için sayfa adresi gereklidir.",
     "quoteTableAmbiguous": "Sayfadaki sayılar veya tarihler birden fazla şekilde okunabiliyor (örneğin 102,345 veya 01/02/2026), bu yüzden sayfa kullanılmadı. Ondalık ayırıcıyı ve tarihleri belirsizliğe yer bırakmadan yazan bir sayfa seçin.",
+    "quoteTableFailed": "Beklenmeyen bir hata nedeniyle sayfa okunamadı. Daha sonra tekrar deneyin ve sorun devam ederse bir yöneticiye bildirin.",
     "quoteTableUnreachable": "Sayfaya ulaşılamadı. Adresi kontrol edin veya daha sonra yeniden deneyin."
   },
   "tags": {

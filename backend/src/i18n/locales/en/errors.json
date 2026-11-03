@@ -720,6 +720,7 @@
     "quoteTableNotFound": "No price table was found on the page: it needs a header row with a date column and a closing price column.",
     "quoteUrlRequired": "A security priced from a web page table needs the page address.",
     "quoteTableAmbiguous": "The page's numbers or dates can be read in more than one way (for example 102,345 or 01/02/2026), so it was not used. Choose a page that writes its decimal separator and dates unambiguously.",
+    "quoteTableFailed": "The page could not be read because of an unexpected error. Try again later, and tell an administrator if it keeps happening.",
     "quoteTableUnreachable": "The page could not be reached. Check the address or try again later."
   },
   "tags": {

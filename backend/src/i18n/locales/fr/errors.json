@@ -720,6 +720,7 @@
     "quoteTableNotFound": "Aucun tableau de cours n'a été trouvé sur la page : il faut une ligne d'en-tête avec une colonne de date et une colonne de cours de clôture.",
     "quoteUrlRequired": "Un titre dont les cours proviennent d'un tableau sur une page web a besoin de l'adresse de la page.",
     "quoteTableAmbiguous": "Les nombres ou les dates de la page peuvent se lire de plusieurs façons (par exemple 102,345 ou 01/02/2026) ; elle n'a donc pas été utilisée. Choisissez une page dont le séparateur décimal et les dates sont sans ambiguïté.",
+    "quoteTableFailed": "La page n'a pas pu être lue à cause d'une erreur inattendue. Réessayez plus tard et prévenez un administrateur si le problème persiste.",
     "quoteTableUnreachable": "La page est inaccessible. Vérifiez l'adresse ou réessayez plus tard."
   },
   "tags": {

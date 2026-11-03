@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import {
   BadGatewayException,
   BadRequestException,
@@ -79,10 +80,19 @@ describe("QuoteTablePreviewController", () => {
     ).rejects.toBeInstanceOf(type);
   });
 
-  it("answers a transport failure as a bad gateway", async () => {
+  it("answers an unexpected failure as a bad gateway and logs its cause", async () => {
+    const logged = jest
+      .spyOn(Logger.prototype, "error")
+      .mockImplementation(() => undefined);
     loadTable.mockRejectedValueOnce(new TypeError("fetch failed"));
     await expect(
       controller.preview({ url: "https://example.com/x" }),
-    ).rejects.toBeInstanceOf(BadGatewayException);
+    ).rejects.toMatchObject({
+      message: expect.stringContaining("unexpected error"),
+    });
+    expect(logged).toHaveBeenCalledWith(
+      expect.stringContaining("Quote table preview failed unexpectedly"),
+    );
+    logged.mockRestore();
   });
 });

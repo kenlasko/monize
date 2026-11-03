@@ -4,6 +4,7 @@ import {
   Body,
   Controller,
   HttpCode,
+  Logger,
   Post,
   UnprocessableEntityException,
   UseGuards,
@@ -12,6 +13,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import { tr } from "../i18n/translate";
+import { describeFetchFailure } from "../common/http/fetch-failure.util";
 import {
   HtmlTableFinanceService,
   QuoteTableError,
@@ -55,6 +57,8 @@ function ymd(date: Date): string {
 @UseGuards(AuthGuard("jwt"))
 @Controller("quote-tables")
 export class QuoteTablePreviewController {
+  private readonly logger = new Logger(QuoteTablePreviewController.name);
+
   constructor(private readonly htmlTable: HtmlTableFinanceService) {}
 
   @Post("preview")
@@ -92,13 +96,20 @@ export class QuoteTablePreviewController {
 
   private toHttpError(error: unknown): Error {
     if (!(error instanceof QuoteTableError)) {
+      // Everything the provider expects arrives as a QuoteTableError, so this
+      // is a defect, not an unreachable site: say so, and leave the cause in
+      // the log where an administrator will look for it.
+      this.logger.error(
+        `Quote table preview failed unexpectedly: ${describeFetchFailure(error)}`,
+      );
       return new BadGatewayException(
         tr(
-          "errors.securities.quoteTableUnreachable",
-          "The page could not be reached. Check the address or try again later.",
+          "errors.securities.quoteTableFailed",
+          "The page could not be read because of an unexpected error. Try again later, and tell an administrator if it keeps happening.",
         ),
       );
     }
+    this.logger.warn(`Quote table preview refused: ${error.message}`);
     switch (error.reason) {
       case "invalid-url":
         return new BadRequestException(

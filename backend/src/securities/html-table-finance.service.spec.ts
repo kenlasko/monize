@@ -208,6 +208,37 @@ describe("HtmlTableFinanceService", () => {
     ).rejects.toMatchObject({ reason: "ambiguous", detail: "numbers" });
   });
 
+  it("gives one download to callers who ask for the same page at once", async () => {
+    let release!: (response: Response) => void;
+    fetchMock.mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        release = resolve;
+      }),
+    );
+    fetchMock.mockResolvedValueOnce(htmlResponse(page));
+    const first = service.loadTable("https://example.com/shared");
+    const second = service.loadTable("https://example.com/shared");
+    const other = service.loadTable("https://example.com/other");
+    release(htmlResponse(page));
+
+    const [a, b] = await Promise.all([first, second]);
+    await other;
+    expect(a).toBe(b);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not keep a failed load for the next caller", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("nope", { status: 500 }));
+    await expect(
+      service.loadTable("https://example.com/flaky"),
+    ).rejects.toMatchObject({ reason: "http-status" });
+
+    fetchMock.mockResolvedValueOnce(htmlResponse(page));
+    await expect(
+      service.loadTable("https://example.com/flaky"),
+    ).resolves.toBeDefined();
+  });
+
   it("answers null for a site that cannot be reached, then backs off it", async () => {
     fetchMock.mockRejectedValueOnce(refused());
 
@@ -231,7 +262,7 @@ describe("HtmlTableFinanceService", () => {
     fetchMock.mockRejectedValueOnce(refused());
     await expect(
       service.loadTable("https://example.com:81/x"),
-    ).rejects.toBeInstanceOf(TypeError);
+    ).rejects.toMatchObject({ reason: "unreachable" });
     await expect(
       service.loadTable("https://example.com:81/x"),
     ).rejects.toMatchObject({ reason: "unreachable" });
@@ -252,7 +283,7 @@ describe("HtmlTableFinanceService", () => {
       .mockRejectedValueOnce(refused());
     await expect(
       service.loadTable("https://example.com/a"),
-    ).rejects.toBeInstanceOf(TypeError);
+    ).rejects.toMatchObject({ reason: "unreachable" });
 
     // Another page on the starting site is still read.
     fetchMock.mockResolvedValueOnce(htmlResponse(page));
@@ -275,7 +306,7 @@ describe("HtmlTableFinanceService", () => {
       fetchMock.mockRejectedValueOnce(refused());
       await expect(
         service.loadTable("https://example.com/x"),
-      ).rejects.toBeInstanceOf(TypeError);
+      ).rejects.toMatchObject({ reason: "unreachable" });
       jest.setSystemTime(new Date(Date.UTC(2026, 10, 2, 12, 11)));
       fetchMock.mockResolvedValueOnce(htmlResponse(page));
       await expect(

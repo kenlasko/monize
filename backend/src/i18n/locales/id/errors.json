@@ -720,6 +720,7 @@
     "quoteTableNotFound": "Tidak ada tabel harga di halaman: diperlukan baris judul dengan kolom tanggal dan kolom harga penutupan.",
     "quoteUrlRequired": "Efek yang harganya diambil dari tabel di halaman web memerlukan alamat halaman tersebut.",
     "quoteTableAmbiguous": "Angka atau tanggal di halaman ini dapat dibaca dengan lebih dari satu cara (misalnya 102,345 atau 01/02/2026), sehingga halaman tidak digunakan. Pilih halaman yang menulis pemisah desimal dan tanggal dengan jelas.",
+    "quoteTableFailed": "Halaman tidak dapat dibaca karena kesalahan tak terduga. Coba lagi nanti, dan beri tahu administrator jika terus terjadi.",
     "quoteTableUnreachable": "Halaman tidak dapat dijangkau. Periksa alamat atau coba lagi nanti."
   },
   "tags": {

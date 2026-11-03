@@ -720,6 +720,7 @@
     "quoteTableNotFound": "No se encontró ninguna tabla de precios en la página: necesita una fila de encabezado con una columna de fecha y otra de precio de cierre.",
     "quoteUrlRequired": "Un valor cuyas cotizaciones salen de una tabla de una página web necesita la dirección de la página.",
     "quoteTableAmbiguous": "Los números o las fechas de la página se pueden leer de más de una forma (por ejemplo, 102,345 o 01/02/2026), así que no se ha usado. Elige una página que escriba sin ambigüedad el separador decimal y las fechas.",
+    "quoteTableFailed": "No se pudo leer la página por un error inesperado. Inténtalo de nuevo más tarde y avisa a un administrador si sigue ocurriendo.",
     "quoteTableUnreachable": "No se pudo acceder a la página. Comprueba la dirección o inténtalo más tarde."
   },
   "tags": {

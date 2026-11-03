@@ -172,6 +172,14 @@ export class HtmlTableFinanceService implements QuoteProvider {
     { table: ParsedQuoteTable; expiresAt: number }
   >();
 
+  /**
+   * Loads in progress, so concurrent callers of one address (a refresh and a
+   * preview, or two securities on the same page) await one download and parse
+   * instead of each making their own. Entries leave when the load settles, a
+   * rejection is never kept, and the map holds at most the loads running now.
+   */
+  private readonly pending = new Map<string, Promise<ParsedQuoteTable>>();
+
   /** Origins that failed at the transport level, and until when to skip them. */
   private readonly failedOrigins = new Map<string, number>();
 
@@ -186,6 +194,19 @@ export class HtmlTableFinanceService implements QuoteProvider {
     const cached = this.cache.get(target);
     if (cached && cached.expiresAt > now.getTime()) return cached.table;
 
+    const running = this.pending.get(target);
+    if (running) return running;
+    const load = this.readTable(target, now).finally(() => {
+      this.pending.delete(target);
+    });
+    this.pending.set(target, load);
+    return load;
+  }
+
+  private async readTable(
+    target: string,
+    now: Date,
+  ): Promise<ParsedQuoteTable> {
     const html = await this.download(target);
     let table: ParsedQuoteTable | null;
     try {
@@ -253,6 +274,7 @@ export class HtmlTableFinanceService implements QuoteProvider {
           originOf(url),
           Date.now() + FAILED_ORIGIN_BACKOFF_MS,
         );
+        throw new QuoteTableError("unreachable", describeFetchFailure(error));
       }
       throw error;
     }

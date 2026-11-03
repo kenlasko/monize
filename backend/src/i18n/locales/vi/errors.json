@@ -720,6 +720,7 @@
     "quoteTableNotFound": "Không tìm thấy bảng giá trên trang: cần một hàng tiêu đề có cột ngày và cột giá đóng cửa.",
     "quoteUrlRequired": "Chứng khoán lấy giá từ bảng trên trang web cần có địa chỉ của trang.",
     "quoteTableAmbiguous": "Số hoặc ngày trên trang có thể đọc theo nhiều cách (ví dụ 102,345 hoặc 01/02/2026) nên trang không được dùng. Hãy chọn trang ghi dấu phân cách thập phân và ngày tháng rõ ràng.",
+    "quoteTableFailed": "Không thể đọc trang do một lỗi không mong muốn. Hãy thử lại sau và báo cho quản trị viên nếu lỗi tiếp diễn.",
     "quoteTableUnreachable": "Không thể truy cập trang. Hãy kiểm tra địa chỉ hoặc thử lại sau."
   },
   "tags": {

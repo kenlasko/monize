@@ -720,6 +720,7 @@
     "quoteTableNotFound": "Na stronie nie znaleziono tabeli kursów: potrzebny jest wiersz nagłówka z kolumną daty i kolumną kursu zamknięcia.",
     "quoteUrlRequired": "Papier wartościowy wyceniany z tabeli na stronie internetowej wymaga adresu tej strony.",
     "quoteTableAmbiguous": "Liczby lub daty na stronie można odczytać na więcej niż jeden sposób (na przykład 102,345 lub 01/02/2026), więc nie została użyta. Wybierz stronę, która jednoznacznie zapisuje separator dziesiętny i daty.",
+    "quoteTableFailed": "Nie udało się odczytać strony z powodu nieoczekiwanego błędu. Spróbuj ponownie później i powiadom administratora, jeśli problem się powtarza.",
     "quoteTableUnreachable": "Nie udało się połączyć ze stroną. Sprawdź adres lub spróbuj później."
   },
   "tags": {

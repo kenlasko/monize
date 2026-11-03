@@ -720,6 +720,7 @@
     "quoteTableNotFound": "Auf der Seite wurde keine Kurstabelle gefunden: Sie braucht eine Kopfzeile mit einer Datumsspalte und einer Schlusskursspalte.",
     "quoteUrlRequired": "Ein Wertpapier, dessen Kurse aus einer Tabelle auf einer Webseite stammen, braucht die Adresse der Seite.",
     "quoteTableAmbiguous": "Die Zahlen oder Datumsangaben der Seite lassen sich auf mehr als eine Weise lesen (z. B. 102,345 oder 01/02/2026), daher wurde sie nicht verwendet. Wählen Sie eine Seite mit eindeutigem Dezimaltrennzeichen und Datumsformat.",
+    "quoteTableFailed": "Die Seite konnte wegen eines unerwarteten Fehlers nicht gelesen werden. Versuchen Sie es später erneut und informieren Sie einen Administrator, falls es weiterhin auftritt.",
     "quoteTableUnreachable": "Die Seite war nicht erreichbar. Prüfe die Adresse oder versuche es später erneut."
   },
   "tags": {

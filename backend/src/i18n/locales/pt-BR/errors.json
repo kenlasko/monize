@@ -720,6 +720,7 @@
     "quoteTableNotFound": "Nenhuma tabela de preços foi encontrada na página: é preciso uma linha de cabeçalho com uma coluna de data e uma de preço de fechamento.",
     "quoteUrlRequired": "Um ativo cujas cotações vêm de uma tabela em uma página da web precisa do endereço da página.",
     "quoteTableAmbiguous": "Os números ou as datas da página podem ser lidos de mais de uma forma (por exemplo, 102,345 ou 01/02/2026), então ela não foi usada. Escolha uma página que escreva sem ambiguidade o separador decimal e as datas.",
+    "quoteTableFailed": "Não foi possível ler a página devido a um erro inesperado. Tente novamente mais tarde e avise um administrador se continuar acontecendo.",
     "quoteTableUnreachable": "Não foi possível acessar a página. Verifique o endereço ou tente mais tarde."
   },
   "tags": {
