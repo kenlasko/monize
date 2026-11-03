@@ -195,6 +195,19 @@ describe("HtmlTableFinanceService", () => {
     });
   });
 
+  it("refuses a page whose numbers it cannot place, rather than guess", async () => {
+    fetchMock.mockResolvedValueOnce(
+      htmlResponse(
+        "<table><tr><th>Date</th><th>Close</th></tr>" +
+          "<tr><td>2026-11-02</td><td>102,345</td></tr>" +
+          "<tr><td>2026-11-01</td><td>101,998</td></tr></table>",
+      ),
+    );
+    await expect(
+      service.loadTable("https://example.com/x"),
+    ).rejects.toMatchObject({ reason: "ambiguous", detail: "numbers" });
+  });
+
   it("answers null for a site that cannot be reached, then backs off it", async () => {
     fetchMock.mockRejectedValueOnce(refused());
 

@@ -22,7 +22,11 @@ import {
   isPrivateIp,
   unbracketHost,
 } from "../ai/validators/safe-url.validator";
-import { ParsedQuoteTable, parseQuoteTable } from "./html-table-quote.parser";
+import {
+  AmbiguousQuoteTableError,
+  ParsedQuoteTable,
+  parseQuoteTable,
+} from "./html-table-quote.parser";
 
 const FETCH_TIMEOUT_MS = 20_000;
 /** A quote page is a few hundred kilobytes; ariva.de's is about 0.5 MB. */
@@ -58,7 +62,8 @@ export type QuoteTableFailure =
   | "http-status"
   | "too-large"
   | "unreachable"
-  | "no-table";
+  | "no-table"
+  | "ambiguous";
 
 export class QuoteTableError extends Error {
   constructor(
@@ -182,7 +187,15 @@ export class HtmlTableFinanceService implements QuoteProvider {
     if (cached && cached.expiresAt > now.getTime()) return cached.table;
 
     const html = await this.download(target);
-    const table = parseQuoteTable(html, now);
+    let table: ParsedQuoteTable | null;
+    try {
+      table = parseQuoteTable(html, now);
+    } catch (error) {
+      if (error instanceof AmbiguousQuoteTableError) {
+        throw new QuoteTableError("ambiguous", error.what);
+      }
+      throw error;
+    }
     if (!table) throw new QuoteTableError("no-table");
 
     if (this.cache.size >= PAGE_CACHE_MAX_ENTRIES) this.cache.clear();

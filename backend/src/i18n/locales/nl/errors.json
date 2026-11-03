@@ -719,6 +719,7 @@
     "quoteTableTooLarge": "De pagina is te groot om te lezen.",
     "quoteTableNotFound": "Er is geen koerstabel op de pagina gevonden: er is een kopregel nodig met een datumkolom en een slotkoerskolom.",
     "quoteUrlRequired": "Een effect waarvan de koersen uit een tabel op een webpagina komen, heeft het adres van de pagina nodig.",
+    "quoteTableAmbiguous": "De getallen of datums op de pagina zijn op meer dan één manier te lezen (bijvoorbeeld 102,345 of 01/02/2026), dus de pagina is niet gebruikt. Kies een pagina met een ondubbelzinnig decimaalteken en ondubbelzinnige datums.",
     "quoteTableUnreachable": "De pagina was niet bereikbaar. Controleer het adres of probeer het later opnieuw."
   },
   "tags": {

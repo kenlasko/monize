@@ -719,6 +719,7 @@
     "quoteTableTooLarge": "A página é demasiado grande para ser lida.",
     "quoteTableNotFound": "Não foi encontrada nenhuma tabela de preços na página: é necessária uma linha de cabeçalho com uma coluna de data e uma de preço de fecho.",
     "quoteUrlRequired": "Um título cujas cotações vêm de uma tabela numa página web precisa do endereço da página.",
+    "quoteTableAmbiguous": "Os números ou as datas da página podem ser lidos de mais do que uma forma (por exemplo, 102,345 ou 01/02/2026), por isso não foi usada. Escolha uma página que escreva sem ambiguidade o separador decimal e as datas.",
     "quoteTableUnreachable": "Não foi possível aceder à página. Verifique o endereço ou tente mais tarde."
   },
   "tags": {

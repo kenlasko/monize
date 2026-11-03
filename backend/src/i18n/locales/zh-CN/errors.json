@@ -719,6 +719,7 @@
     "quoteTableTooLarge": "该页面过大，无法读取。",
     "quoteTableNotFound": "页面上未找到价格表：需要一个包含日期列和收盘价列的标题行。",
     "quoteUrlRequired": "从网页表格获取价格的证券需要填写该网页地址。",
+    "quoteTableAmbiguous": "页面中的数字或日期有多种读法（例如 102,345 或 01/02/2026），因此未使用该页面。请选择小数分隔符和日期写法明确的页面。",
     "quoteTableUnreachable": "无法访问该页面。请检查地址或稍后重试。"
   },
   "tags": {

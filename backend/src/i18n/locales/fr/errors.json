@@ -719,6 +719,7 @@
     "quoteTableTooLarge": "La page est trop volumineuse pour être lue.",
     "quoteTableNotFound": "Aucun tableau de cours n'a été trouvé sur la page : il faut une ligne d'en-tête avec une colonne de date et une colonne de cours de clôture.",
     "quoteUrlRequired": "Un titre dont les cours proviennent d'un tableau sur une page web a besoin de l'adresse de la page.",
+    "quoteTableAmbiguous": "Les nombres ou les dates de la page peuvent se lire de plusieurs façons (par exemple 102,345 ou 01/02/2026) ; elle n'a donc pas été utilisée. Choisissez une page dont le séparateur décimal et les dates sont sans ambiguïté.",
     "quoteTableUnreachable": "La page est inaccessible. Vérifiez l'adresse ou réessayez plus tard."
   },
   "tags": {

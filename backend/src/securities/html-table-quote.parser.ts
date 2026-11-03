@@ -1,4 +1,5 @@
 import { DomUtils, parseDocument } from "htmlparser2";
+import { isKnownIsoCurrency } from "../currencies/currency-metadata";
 import { HistoricalPrice } from "./providers/quote-provider.interface";
 
 /**
@@ -94,21 +95,48 @@ const IMPLIED_CLOSE_TAGS = new Set([
 
 /**
  * Whether the page nests elements deeper than `MAX_NESTING_DEPTH`, found by one
- * linear scan of its tags before the quadratic-in-depth parse is paid for. An
- * approximation (it ignores comments and script text): a miss costs nothing a
- * 5 MB page of shallow tags would not, and a false positive needs 500 open
- * elements, which no price page has.
+ * linear scan of its tags before the quadratic-in-depth parse is paid for. The
+ * bodies of comments, `<script>` and `<style>` are text, not elements, and are
+ * jumped over: a script holding a string of markup is not nesting. An
+ * approximation otherwise: a miss costs nothing a 5 MB page of shallow tags
+ * would not, and a false positive needs 500 open elements, which no price page
+ * has.
  */
 function exceedsNestingLimit(html: string): boolean {
-  const tag = /<(\/?)([a-zA-Z][a-zA-Z0-9:-]*)[^>]*?(\/?)>/g;
+  const tag = /<!--|<(\/?)([a-zA-Z][a-zA-Z0-9:-]*)[^>]*?(\/?)>/g;
   let depth = 0;
   for (let m = tag.exec(html); m !== null; m = tag.exec(html)) {
+    if (m[0] === "<!--") {
+      const close = html.indexOf("-->", tag.lastIndex);
+      tag.lastIndex = close < 0 ? html.length : close + 3;
+      continue;
+    }
     const name = m[2].toLowerCase();
+    if ((name === "script" || name === "style") && m[1] !== "/") {
+      // Raw text up to the matching close tag, or to the end of the page.
+      const close = new RegExp(`</${name}\\b`, "gi");
+      close.lastIndex = tag.lastIndex;
+      const end = close.exec(html);
+      tag.lastIndex = end ? end.index : html.length;
+      continue;
+    }
     if (IMPLIED_CLOSE_TAGS.has(name) || m[3] === "/") continue;
     if (m[1] === "/") depth = Math.max(0, depth - 1);
     else if (++depth > MAX_NESTING_DEPTH) return true;
   }
   return false;
+}
+
+/**
+ * A table whose numbers or dates can be read in more than one way, with nothing
+ * on the page to say which. Guessing stores a price a thousand times too large
+ * or a date in the wrong month, so the page is refused instead.
+ */
+export class AmbiguousQuoteTableError extends Error {
+  constructor(readonly what: "numbers" | "dates") {
+    super(`The table's ${what} can be read in more than one way`);
+    this.name = "AmbiguousQuoteTableError";
+  }
 }
 
 /** Read the best price table on the page, or `null` when there is none. */
@@ -126,12 +154,20 @@ export function parseQuoteTable(
   );
 
   let best: ParsedQuoteTable | null = null;
+  let ambiguous: AmbiguousQuoteTableError | null = null;
   tables.forEach((table, index) => {
-    const parsed = parseTable(table, index, now);
-    if (parsed && (!best || parsed.prices.length > best.prices.length)) {
-      best = parsed;
+    try {
+      const parsed = parseTable(table, index, now);
+      if (parsed && (!best || parsed.prices.length > best.prices.length)) {
+        best = parsed;
+      }
+    } catch (error) {
+      // One table that cannot be read safely does not hide another that can.
+      if (!(error instanceof AmbiguousQuoteTableError)) throw error;
+      ambiguous ??= error;
     }
   });
+  if (!best && ambiguous) throw ambiguous;
   return best;
 }
 
@@ -171,10 +207,16 @@ function parseTable(
       (f) => pick(row, f)[0] ?? "",
     ),
   );
-  const decimal = inferDecimalSeparator(priceSamples);
-  const dayFirst = inferDayFirst(
-    dataRows.map((row) => pick(row, "date")[0] ?? ""),
+  const dateSamples = dataRows.map((row) => pick(row, "date")[0] ?? "");
+  // A dotted date (02.11.2026) is the continental way of writing it, and the
+  // same pages write 102,345 for a price with three decimals.
+  const continental = dateSamples.some((d) =>
+    /^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(d.trim()),
   );
+  const decimal = inferDecimalSeparator(priceSamples, continental ? "," : null);
+  const dayFirst = inferDayFirst(dateSamples);
+  if (decimal === null) throw new AmbiguousQuoteTableError("numbers");
+  if (dayFirst === null) throw new AmbiguousQuoteTableError("dates");
 
   const byDate = new Map<number, HistoricalPrice>();
   let skippedRows = 0;
@@ -354,9 +396,13 @@ function numericCore(raw: string): string {
  * decimal point; repeated separators are thousands. Ties and an empty vote
  * fall back to ".".
  */
-export function inferDecimalSeparator(samples: string[]): "." | "," {
+export function inferDecimalSeparator(
+  samples: string[],
+  hint: "." | "," | null = null,
+): "." | "," | null {
   let comma = 0;
   let dot = 0;
+  let ambiguousComma = 0;
   for (const sample of samples) {
     const core = numericCore(sample);
     const lastDot = core.lastIndexOf(".");
@@ -378,9 +424,16 @@ export function inferDecimalSeparator(samples: string[]): "." | "," {
     } else if (isThousands) {
       if (sep === ",") dot++;
       else comma++;
+    } else if (sep === ",") {
+      // One comma and three digits after it: 102,345 is 102.345 on a page
+      // that writes decimals with a comma and 102345 on one that groups
+      // thousands with it.
+      ambiguousComma++;
     }
   }
-  return comma > dot ? "," : ".";
+  if (comma !== dot) return comma > dot ? "," : ".";
+  if (hint) return hint;
+  return ambiguousComma > 0 ? null : ".";
 }
 
 const MAGNITUDE: Record<string, number> = { k: 1e3, m: 1e6, b: 1e9, bn: 1e9 };
@@ -406,8 +459,12 @@ export function parseNumber(raw: string, decimal: "." | ","): number | null {
 export function detectCurrency(raw: string): string | null {
   if (raw.includes("€")) return "EUR";
   if (raw.includes("£")) return "GBP";
-  const iso = /(?:^|[^A-Za-z])([A-Z]{3})(?:$|[^A-Za-z])/.exec(raw);
-  return iso ? iso[1] : null;
+  // Any three capitals look like a code ("NAV", "EST", "TTM"); only a real ISO
+  // 4217 code is a currency, or every refresh would be refused over a label.
+  for (const m of raw.matchAll(/(?:^|[^A-Za-z])([A-Z]{3})(?=$|[^A-Za-z])/g)) {
+    if (isKnownIsoCurrency(m[1])) return m[1];
+  }
+  return null;
 }
 
 // ------------------------------------------------------------------ dates
@@ -436,18 +493,57 @@ const WEEKDAYS =
 
 /**
  * Whether numeric `a/b/yyyy` dates in this table put the day first. A first
- * part above 12 proves it does, a second part above 12 proves it does not;
- * with no evidence either way the European order is assumed. Dotted dates
- * are always day first and do not vote.
+ * part above 12 proves it does, a second part above 12 proves it does not.
+ * With no such date the table's own order decides (see below), and `null`
+ * means the page does not say. Dotted dates are always day first and do not
+ * vote.
  */
-export function inferDayFirst(samples: string[]): boolean {
+export function inferDayFirst(samples: string[]): boolean | null {
+  const slashed: Array<[number, number, number]> = [];
   for (const sample of samples) {
-    const match = /^(\d{1,2})[/-](\d{1,2})[/-]\d{2,4}$/.exec(sample.trim());
+    const match = /^(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})$/.exec(
+      sample.trim(),
+    );
     if (!match) continue;
-    if (Number(match[1]) > 12) return true;
-    if (Number(match[2]) > 12) return false;
+    const [first, second] = [Number(match[1]), Number(match[2])];
+    if (first > 12) return true;
+    if (second > 12) return false;
+    slashed.push([first, second, Number(match[3])]);
   }
-  return true;
+  if (slashed.length === 0) return true;
+
+  // Every date reads either way. A price history is in date order, so the
+  // reading that puts the rows in order is the right one. When both do, the
+  // reading that keeps them close together is: rows are consecutive sessions,
+  // not a year apart. Anything the page does not settle (01/02/2026 alone,
+  // or two readings equally plausible) is refused rather than guessed.
+  const read = (dayFirst: boolean): { ordered: boolean; span: number } => {
+    const days = slashed.map(([a, b, y]) =>
+      Date.UTC(
+        fullYear(y, new Date()),
+        (dayFirst ? b : a) - 1,
+        dayFirst ? a : b,
+      ),
+    );
+    let sign = 0;
+    let span = 0;
+    let ordered = true;
+    for (let i = 1; i < days.length; i++) {
+      const step = Math.sign(days[i] - days[i - 1]);
+      span += Math.abs(days[i] - days[i - 1]);
+      if (step === 0) continue;
+      if (sign !== 0 && step !== sign) ordered = false;
+      sign = step;
+    }
+    return { ordered, span };
+  };
+  const dayFirst = read(true);
+  const monthFirst = read(false);
+  if (dayFirst.ordered !== monthFirst.ordered) return dayFirst.ordered;
+  if (!dayFirst.ordered || slashed.length < 3) return null;
+  if (dayFirst.span * 2 <= monthFirst.span) return true;
+  if (monthFirst.span * 2 <= dayFirst.span) return false;
+  return null;
 }
 
 function fullYear(year: number, now: Date): number {

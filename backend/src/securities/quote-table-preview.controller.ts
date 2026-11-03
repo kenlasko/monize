@@ -143,6 +143,13 @@ export class QuoteTablePreviewController {
             "No price table was found on the page: it needs a header row with a date column and a closing price column.",
           ),
         );
+      case "ambiguous":
+        return new UnprocessableEntityException(
+          tr(
+            "errors.securities.quoteTableAmbiguous",
+            "The page's numbers or dates can be read in more than one way (for example 102,345 or 01/02/2026), so it was not used. Choose a page that writes its decimal separator and dates unambiguously.",
+          ),
+        );
       default:
         return new BadGatewayException(
           tr(

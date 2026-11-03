@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import {
+  AmbiguousQuoteTableError,
   detectCurrency,
   inferDayFirst,
   inferDecimalSeparator,
@@ -186,7 +187,7 @@ describe("numbers", () => {
     [["1.234.567"], ","],
     [["1,234,567"], "."],
     [["12,5"], ","],
-    [["1.234", "1,234"], "."],
+    [["1.234", "1,234"], null],
     [[], "."],
   ])("infers the decimal separator of %j as %s", (samples, expected) => {
     expect(inferDecimalSeparator(samples)).toBe(expected);
@@ -241,7 +242,7 @@ describe("dates", () => {
   it("reads slashed dates in the table's own order", () => {
     expect(inferDayFirst(["05/11/2026", "13/10/2026"])).toBe(true);
     expect(inferDayFirst(["11/05/2026", "10/13/2026"])).toBe(false);
-    expect(inferDayFirst(["01/02/2026"])).toBe(true);
+    expect(inferDayFirst(["01/02/2026"])).toBeNull();
     expect(ymd(parseDate("10/13/2026", false, NOW)!)).toBe("2026-10-13");
     expect(ymd(parseDate("13/10/2026", true, NOW)!)).toBe("2026-10-13");
   });
@@ -290,5 +291,107 @@ describe("hostile pages", () => {
       NOW,
     );
     expect(result?.prices.length).toBeGreaterThan(0);
+  });
+});
+
+describe("readings the page does not settle", () => {
+  it("does not take 102,345 for 102345 unless the page groups thousands", () => {
+    expect(inferDecimalSeparator(["102,345", "101,998", "103,120"])).toBeNull();
+    expect(inferDecimalSeparator(["102,345", "101,998"], ",")).toBe(",");
+    expect(inferDecimalSeparator(["102,345", "101,5"])).toBe(",");
+    expect(inferDecimalSeparator(["1,102,345", "98"])).toBe(".");
+  });
+
+  it("refuses a table whose prices all read both ways, and reads it with a dotted date", () => {
+    const page = (date: string) =>
+      `<table><tr><th>Date</th><th>Close</th></tr>` +
+      `<tr><td>${date}</td><td>102,345</td></tr>` +
+      `<tr><td>${date}</td><td>101,998</td></tr></table>`;
+    expect(() => parseQuoteTable(page("2026-11-02"), NOW)).toThrow(
+      AmbiguousQuoteTableError,
+    );
+    const rows = (d1: string, d2: string) =>
+      `<table><tr><th>Datum</th><th>Schluss</th></tr>` +
+      `<tr><td>${d1}</td><td>102,345</td></tr>` +
+      `<tr><td>${d2}</td><td>101,998</td></tr></table>`;
+    const table = parseQuoteTable(rows("02.11.2026", "30.10.2026"), NOW);
+    expect(table!.prices.map((p) => p.close)).toEqual([101.998, 102.345]);
+  });
+
+  it("reads US short dates by the order of the rows, not by default", () => {
+    expect(inferDayFirst(["11/02/2026", "11/03/2026", "11/04/2026"])).toBe(
+      false,
+    );
+    expect(inferDayFirst(["02/11/2026", "03/11/2026", "04/11/2026"])).toBe(
+      true,
+    );
+    expect(inferDayFirst(["01/11/2026", "01/12/2026", "01/01/2027"])).toBe(
+      true,
+    );
+    expect(inferDayFirst(["01/02/2026", "03/04/2026"])).toBeNull();
+    expect(
+      inferDayFirst(["03/04/2026", "01/02/2026", "05/06/2026"]),
+    ).toBeNull();
+  });
+
+  it("refuses a table of dates it cannot place", () => {
+    const html =
+      "<table><tr><th>Date</th><th>Close</th></tr>" +
+      "<tr><td>01/02/2026</td><td>5.10</td></tr></table>";
+    expect(() => parseQuoteTable(html, NOW)).toThrow(AmbiguousQuoteTableError);
+  });
+
+  it("reads the US table that was once read as February", () => {
+    const html =
+      "<table><tr><th>Date</th><th>Close</th></tr>" +
+      "<tr><td>11/04/2026</td><td>5.30</td></tr>" +
+      "<tr><td>11/03/2026</td><td>5.20</td></tr>" +
+      "<tr><td>11/02/2026</td><td>5.10</td></tr></table>";
+    expect(parseQuoteTable(html, NOW)!.prices.map((p) => ymd(p.date))).toEqual([
+      "2026-11-02",
+      "2026-11-03",
+      "2026-11-04",
+    ]);
+  });
+});
+
+describe("currency labels", () => {
+  it.each(["NAV 12.34", "EST 12.34", "TTM 4", "N/A", "$12.34"])(
+    "does not take %j for a currency",
+    (raw) => {
+      expect(detectCurrency(raw)).toBeNull();
+    },
+  );
+
+  it.each([
+    ["USD 12.34", "USD"],
+    ["12.34 CHF", "CHF"],
+    ["NAV 12.34 EUR", "EUR"],
+  ])("reads %j as %s", (raw, code) => {
+    expect(detectCurrency(raw)).toBe(code);
+  });
+});
+
+describe("script, style and comment bodies are text, not nesting", () => {
+  const price =
+    "<table><tr><th>Date</th><th>Close</th></tr>" +
+    "<tr><td>2026-11-02</td><td>5.10</td></tr></table>";
+
+  it.each([
+    ["script", `<script>var t='${"<div>".repeat(600)}';</script>`],
+    ["style", `<style>/* ${"<div>".repeat(600)} */</style>`],
+    ["comment", `<!-- ${"<div>".repeat(600)} -->`],
+  ])("a %s holding 600 open tags does not refuse the page", (_n, body) => {
+    expect(parseQuoteTable(`<html>${body}${price}</html>`, NOW)).not.toBeNull();
+  });
+
+  it("still refuses 600 real nested elements", () => {
+    expect(parseQuoteTable(`${"<div>".repeat(600)}${price}`, NOW)).toBeNull();
+  });
+
+  it("scans unclosed scripts in linear time", () => {
+    const start = Date.now();
+    parseQuoteTable("<script>".repeat(200_000), NOW);
+    expect(Date.now() - start).toBeLessThan(1000);
   });
 });

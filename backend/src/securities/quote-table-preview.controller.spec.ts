@@ -71,6 +71,7 @@ describe("QuoteTablePreviewController", () => {
     ["too-large", BadGatewayException],
     ["unreachable", BadGatewayException],
     ["no-table", UnprocessableEntityException],
+    ["ambiguous", UnprocessableEntityException],
   ] as const)("answers %s with %p", async (reason, type) => {
     loadTable.mockRejectedValueOnce(new QuoteTableError(reason, "503"));
     await expect(

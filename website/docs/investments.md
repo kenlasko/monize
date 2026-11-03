@@ -255,9 +255,9 @@ Bonds also have a **Bond kind** and **Country**, which link the security to a su
 For a security no provider covers (a gold coin, a fund sold only by its issuer), choose **Web page table** as the **Quote Provider** and enter the address of a page that lists its daily prices in a table, such as a "historical prices" page.
 
 - The table is found by its header row, which needs a date column and a closing-price column, in English, German or Spanish: for example **Date** / **Close**, **Datum** / **Schluss**, or **Fecha** / **Cierre**. **Open**, **High**, **Low** and **Volume** columns are read when present.
-- Date and number formats are recognised from the cells, so `02.11.26` and `3.609,23 €` read as well as `November 02, 2026` and `95.69`.
+- Date and number formats are recognised from the cells, so `02.11.26` and `3.609,23 €` read as well as `November 02, 2026` and `95.69`. When a page can be read in more than one way and nothing on it says which, it is refused rather than guessed: a price such as `102,345` could be 102.345 or 102,345, and `01/02/2026` could be 1 February or 2 January. Short dates are placed by the order of the rows, so a page whose dates are all unambiguous in order reads fine.
 - The newest row is the current price and every row is added to the price history; the page is read again at every update. A page that shows only recent days builds up history over time.
-- When the cells name a currency (`€`, `£`, or a code such as `CHF`) that differs from the security's, the prices are refused rather than stored in the wrong currency.
+- When the cells name a currency (`€`, `£`, or an ISO code such as `CHF`) that differs from the security's, the prices are refused rather than stored in the wrong currency.
 - The security is never priced from Yahoo or MSN as a fallback, and the address must be a public website: local and private network addresses are refused.
 
 ### Adding Securities

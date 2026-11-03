@@ -719,6 +719,7 @@
     "quoteTableTooLarge": "此頁面過大，無法讀取。",
     "quoteTableNotFound": "頁面上找不到價格表：需要一個包含日期欄和收盤價欄的標題列。",
     "quoteUrlRequired": "從網頁表格取得價格的證券需要填寫該網頁位址。",
+    "quoteTableAmbiguous": "頁面中的數字或日期有多種讀法（例如 102,345 或 01/02/2026），因此未使用該頁面。請選擇小數分隔符號與日期寫法明確的頁面。",
     "quoteTableUnreachable": "無法存取此頁面。請檢查網址或稍後再試。"
   },
   "tags": {
