@@ -14,6 +14,7 @@ import {
 import { getTradingDateFromQuote } from "./providers/trading-date.util";
 import { ProviderHealthService } from "../provider-health/provider-health.service";
 import { TrackedProviderId } from "../provider-health/providers";
+import { rangeToStartDate } from "./providers/range-start.util";
 
 /**
  * This client's id in `provider_health` and in the circuit breaker. It names the
@@ -815,24 +816,4 @@ function decodeJwtExpiryMs(token: string): number | null {
   } catch {
     return null;
   }
-}
-
-/** A named range ("max", "5y", "1y", "6mo", "1mo", "5d") to the window start. */
-function rangeToStartDate(range: string, to: Date): Date {
-  const start = new Date(to);
-  const normalized = range.trim().toLowerCase();
-  if (normalized === "max") {
-    start.setUTCFullYear(start.getUTCFullYear() - 30);
-    return start;
-  }
-  const m = /^(\d+)(d|mo|y)$/.exec(normalized);
-  if (!m) {
-    start.setUTCFullYear(start.getUTCFullYear() - 1);
-    return start;
-  }
-  const n = Number(m[1]);
-  if (m[2] === "d") start.setUTCDate(start.getUTCDate() - n);
-  else if (m[2] === "mo") start.setUTCMonth(start.getUTCMonth() - n);
-  else start.setUTCFullYear(start.getUTCFullYear() - n);
-  return start;
 }

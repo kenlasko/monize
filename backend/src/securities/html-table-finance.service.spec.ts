@@ -5,20 +5,8 @@ import {
   checkQuoteTableUrl,
   HtmlTableFinanceService,
   QuoteTableError,
-  rangeStart,
 } from "./html-table-finance.service";
-
-// The shared address check resolves names; the specs answer with a public
-// address instead of asking a real resolver.
-jest.mock("dns", () => ({
-  ...jest.requireActual("dns"),
-  resolve4: jest.fn((_h: string, cb: (e: null, a: string[]) => void) =>
-    cb(null, ["93.184.216.34"]),
-  ),
-  resolve6: jest.fn((_h: string, cb: (e: null, a: string[]) => void) =>
-    cb(null, []),
-  ),
-}));
+import { AiEgressRefusedError } from "../ai/providers/provider-egress";
 
 jest.mock("undici", () => {
   const actual = jest.requireActual("undici");
@@ -53,6 +41,22 @@ function refused() {
     cause: Object.assign(new Error("connect ECONNREFUSED"), {
       code: "ECONNREFUSED",
     }),
+  });
+}
+
+/** What undici rejects with when the resolver does not answer in time. */
+function dnsTimeout() {
+  return Object.assign(new TypeError("fetch failed"), {
+    cause: Object.assign(new Error("getaddrinfo EAI_AGAIN slow.example.org"), {
+      code: "EAI_AGAIN",
+    }),
+  });
+}
+
+/** What undici rejects with when `publicOnlyLookup` refuses the answer. */
+function privateAtConnect() {
+  return Object.assign(new TypeError("fetch failed"), {
+    cause: new AiEgressRefusedError("rebind.example.net"),
   });
 }
 
@@ -251,45 +255,64 @@ describe("HtmlTableFinanceService", () => {
     ).resolves.toBeDefined();
   });
 
-  it("answers null for a site that cannot be reached, then backs off it", async () => {
+  it("answers null for a page that cannot be reached, then backs off it", async () => {
     fetchMock.mockRejectedValueOnce(refused());
+    const opts = { quoteUrl: "https://down.example.com/q" };
 
+    await expect(service.fetchQuote("KRUG", null, opts)).resolves.toBeNull();
+    // The series of the same page, asked right after, waits for no second
+    // timeout.
     await expect(
-      service.fetchQuote("KRUG", null, {
-        quoteUrl: "https://down.example.com/q",
-      }),
-    ).resolves.toBeNull();
-    // The series asked right after it is answered without a second timeout.
-    await expect(
-      service.fetchHistoricalSeries("KRUG", null, "1y", {
-        quoteUrl: "https://down.example.com/other",
-      }),
+      service.fetchHistoricalSeries("KRUG", null, "1y", opts),
     ).resolves.toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("backs off only the origin that failed, never another port of the same host", async () => {
-    // One user's address on a closed port must not stop another user's
-    // working page on that host from being read.
+  it("backs off only the page that failed, never another page of the same site", async () => {
+    // One user's slow or dead page must not stop every other user's page on
+    // a shared site such as www.ariva.de for the rest of the run.
     fetchMock.mockRejectedValueOnce(refused());
-    await expect(
-      service.loadTable("https://example.com:81/x"),
-    ).rejects.toMatchObject({ reason: "unreachable" });
-    await expect(
-      service.loadTable("https://example.com:81/x"),
-    ).rejects.toMatchObject({ reason: "unreachable" });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-
-    fetchMock.mockResolvedValueOnce(htmlResponse(page));
-    await expect(service.loadTable(ARIVA)).resolves.toBeDefined();
-    fetchMock.mockResolvedValueOnce(htmlResponse(page));
     await expect(
       service.loadTable("https://example.com/x"),
+    ).rejects.toMatchObject({ reason: "unreachable" });
+    await expect(
+      service.loadTable("https://example.com/x"),
+    ).rejects.toMatchObject({ reason: "unreachable" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    fetchMock.mockResolvedValueOnce(htmlResponse(page));
+    await expect(
+      service.loadTable("https://example.com/y"),
     ).resolves.toBeDefined();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("blames a dead redirect target, never the site the address started on", async () => {
-    // https://example.com/a redirects to a host that does not answer.
+  it("lets a preview neither start nor wait out a back-off", async () => {
+    fetchMock.mockRejectedValueOnce(refused());
+    await expect(
+      service.loadTable("https://example.com/p", new Date(), { preview: true }),
+    ).rejects.toMatchObject({ reason: "unreachable" });
+
+    // The preview's failure did not back the page off for refreshes.
+    fetchMock.mockResolvedValueOnce(htmlResponse(page));
+    await expect(
+      service.loadTable("https://example.com/p"),
+    ).resolves.toBeDefined();
+
+    // And a page a refresh backed off is still asked when previewed.
+    fetchMock.mockRejectedValueOnce(refused());
+    await expect(
+      service.loadTable("https://example.com/q"),
+    ).rejects.toMatchObject({ reason: "unreachable" });
+    fetchMock.mockResolvedValueOnce(htmlResponse(page));
+    await expect(
+      service.loadTable("https://example.com/q", new Date(), { preview: true }),
+    ).resolves.toBeDefined();
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it("blames a dead redirect target, never the page the address started on", async () => {
+    // https://example.com/a redirects to a page that does not answer.
     fetchMock
       .mockResolvedValueOnce(redirect("https://dead.example.net/a"))
       .mockRejectedValueOnce(refused());
@@ -297,22 +320,25 @@ describe("HtmlTableFinanceService", () => {
       service.loadTable("https://example.com/a"),
     ).rejects.toMatchObject({ reason: "unreachable" });
 
-    // Another page on the starting site is still read.
+    // The starting site's other pages are still read.
     fetchMock.mockResolvedValueOnce(htmlResponse(page));
     await expect(
       service.loadTable("https://example.com/b"),
     ).resolves.toBeDefined();
 
-    // A second address redirecting to the dead host is refused at that hop,
-    // without waiting for it again.
-    fetchMock.mockResolvedValueOnce(redirect("https://dead.example.net/c"));
+    // Asked again, the redirect is followed to the dead page, which is refused
+    // without being waited for a second time.
+    fetchMock.mockResolvedValueOnce(redirect("https://dead.example.net/a"));
     await expect(
-      service.loadTable("https://example.com/c"),
-    ).rejects.toMatchObject({ reason: "unreachable" });
+      service.loadTable("https://example.com/a"),
+    ).rejects.toMatchObject({
+      reason: "unreachable",
+      detail: "failed recently",
+    });
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
-  it("asks a backed-off site again once the back-off has passed", async () => {
+  it("asks a backed-off page again once the back-off has passed", async () => {
     jest.useFakeTimers({ now: new Date(Date.UTC(2026, 10, 2, 12)) });
     try {
       fetchMock.mockRejectedValueOnce(refused());
@@ -328,6 +354,82 @@ describe("HtmlTableFinanceService", () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it("reports a resolver that did not answer as unreachable, not as a private address", async () => {
+    fetchMock.mockRejectedValueOnce(dnsTimeout());
+    await expect(
+      service.loadTable("https://slow.example.org/x"),
+    ).rejects.toMatchObject({ reason: "unreachable" });
+  });
+
+  it("reports a name that resolved to a private address as one, and does not back it off", async () => {
+    fetchMock.mockRejectedValueOnce(privateAtConnect());
+    await expect(
+      service.loadTable("https://rebind.example.net/x"),
+    ).rejects.toMatchObject({ reason: "private-address" });
+
+    fetchMock.mockRejectedValueOnce(privateAtConnect());
+    await expect(
+      service.loadTable("https://rebind.example.net/x"),
+    ).rejects.toMatchObject({ reason: "private-address" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("reads the charset a page declares in a <meta> tag when the header names none", async () => {
+    // windows-1252 writes the euro sign as byte 0x80, which UTF-8 cannot read.
+    const latin1 = (html: string) =>
+      Buffer.from(html.replace("€", "\x80"), "latin1");
+    const table =
+      "<table><tr><th>Datum</th><th>Schluß</th></tr>" +
+      "<tr><td>2. März 2026</td><td>1,50 €</td></tr></table>";
+    for (const meta of [
+      '<meta charset="iso-8859-1">',
+      '<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">',
+    ]) {
+      fetchMock.mockResolvedValueOnce(
+        htmlResponse(latin1(`<html><head>${meta}</head><body>${table}`), 200, {
+          "content-type": "text/html",
+        }),
+      );
+      const read = await service.loadTable(
+        `https://example.com/${meta.length}`,
+      );
+      expect(read.columns.close).toBe("Schluß");
+      expect(read.prices[0].date.toISOString().slice(0, 10)).toBe("2026-03-02");
+      expect(read.currencyCode).toBe("EUR");
+    }
+  });
+
+  it("drops expired pages from the cache and keeps it within a row budget", async () => {
+    const rows = (n: number) =>
+      "<table><tr><th>Date</th><th>Close</th></tr>" +
+      Array.from({ length: n }, (_, i) => {
+        const d = new Date(Date.UTC(1990, 0, 1) + i * 86_400_000);
+        // Unclosed cells, so 130,000 rows fit in the 5 MB a download allows.
+        return `<tr><td>${d.toISOString().slice(0, 10)}<td>${i + 1}.5`;
+      }).join("") +
+      "</table>";
+    const cache = (service as unknown as { cache: Map<string, unknown> }).cache;
+
+    const t0 = new Date(Date.UTC(2026, 10, 2, 12));
+    fetchMock.mockResolvedValueOnce(htmlResponse(rows(3)));
+    await service.loadTable("https://example.com/old", t0);
+    expect(cache.has("https://example.com/old")).toBe(true);
+
+    // Six minutes later the first page has expired and is dropped on insert.
+    const t1 = new Date(t0.getTime() + 6 * 60_000);
+    fetchMock.mockResolvedValueOnce(htmlResponse(rows(3)));
+    await service.loadTable("https://example.com/new", t1);
+    expect(cache.has("https://example.com/old")).toBe(false);
+
+    // Two pages that together pass the row budget cannot both be held.
+    fetchMock.mockResolvedValueOnce(htmlResponse(rows(130_000)));
+    await service.loadTable("https://example.com/big1", t1);
+    fetchMock.mockResolvedValueOnce(htmlResponse(rows(130_000)));
+    await service.loadTable("https://example.com/big2", t1);
+    expect(cache.has("https://example.com/big1")).toBe(false);
+    expect(cache.has("https://example.com/big2")).toBe(true);
   });
 
   it("answers a gap-fill window with only that window's rows, and [] before the page", async () => {
@@ -389,21 +491,10 @@ describe("checkQuoteTableUrl", () => {
     "http://printer.local/prices",
     "http://[::ffff:7f00:1]/prices",
     "http://2130706433/prices",
-  ])("refuses the private address %s", async (url) => {
-    await expect(checkQuoteTableUrl(url)).rejects.toMatchObject({
-      reason: "private-address",
-    });
-  });
-
-  it("refuses a name that resolves to a private address", async () => {
-    const dns = jest.requireMock("dns") as { resolve4: jest.Mock };
-    dns.resolve4.mockImplementationOnce(
-      (_h: string, cb: (e: null, a: string[]) => void) =>
-        cb(null, ["10.1.2.3"]),
+  ])("refuses the private address %s", (url) => {
+    expect(() => checkQuoteTableUrl(url)).toThrow(
+      expect.objectContaining({ reason: "private-address" }),
     );
-    await expect(
-      checkQuoteTableUrl("https://rebind.example.net/x"),
-    ).rejects.toMatchObject({ reason: "private-address" });
   });
 
   it.each([
@@ -411,38 +502,16 @@ describe("checkQuoteTableUrl", () => {
     "https://user:pw@example.com/x",
     "not a url",
     "file:///etc/passwd",
-  ])("refuses %s", async (url) => {
-    await expect(checkQuoteTableUrl(url)).rejects.toBeInstanceOf(
-      QuoteTableError,
-    );
+  ])("refuses %s", (url) => {
+    expect(() => checkQuoteTableUrl(url)).toThrow(QuoteTableError);
   });
 
-  it("accepts a public http or https page and resolves a relative redirect", async () => {
-    expect((await checkQuoteTableUrl("http://example.com/a")).toString()).toBe(
+  it("accepts a public http or https page and resolves a relative redirect", () => {
+    expect(checkQuoteTableUrl("http://example.com/a").toString()).toBe(
       "http://example.com/a",
     );
     expect(
-      (await checkQuoteTableUrl("/b?x=1", "https://example.com/a")).toString(),
+      checkQuoteTableUrl("/b?x=1", "https://example.com/a").toString(),
     ).toBe("https://example.com/b?x=1");
   });
-});
-
-describe("rangeStart", () => {
-  const now = new Date(Date.UTC(2026, 10, 2, 15));
-  it.each([
-    ["5d", "2026-10-28"],
-    ["1wk", "2026-10-26"],
-    ["1mo", "2026-10-02"],
-    ["1y", "2025-11-02"],
-    ["ytd", "2026-01-01"],
-  ])("starts %s on %s", (range, expected) => {
-    expect(rangeStart(range, now)?.toISOString().slice(0, 10)).toBe(expected);
-  });
-
-  it.each(["max", undefined, "nonsense"])(
-    "reaches back without limit for %p",
-    (range) => {
-      expect(rangeStart(range, now)).toBeNull();
-    },
-  );
 });

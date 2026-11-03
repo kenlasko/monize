@@ -277,9 +277,9 @@ const ALLOWED = new Map<string, string>([
       "downloads the page once itself",
   ],
   [
-    "securities/html-table-finance.service.ts#failedOrigins",
-    "short back-off for a user-entered site that failed to answer; a replica " +
-      "that has not seen the failure asks the site once itself",
+    "securities/html-table-finance.service.ts#failedPages",
+    "short back-off for a page address a refresh could not reach; a replica " +
+      "that has not seen the failure asks the page once itself",
   ],
   [
     "securities/portfolio-summary-memo.ts#entries",

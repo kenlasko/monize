@@ -111,11 +111,11 @@ describe("outbound provider calls are answerable to the breaker", () => {
       // provider: `html_table` reads a page a user typed, so there is no fixed
       // provider id to persist a breaker state or an admin alert against, and
       // one user's dead site must not open a breaker for another's. It is held
-      // instead by a per-origin back-off (`failedOrigins`) and by its own
+      // instead by a per-page back-off (`failedPages`) and by its own
       // public-only connection policy, both asserted here so the exemption
       // cannot outlive them.
       if (path === "securities/html-table-finance.service.ts") {
-        expect(source).toContain("failedOrigins");
+        expect(source).toContain("failedPages");
         expect(source).toContain("publicOnlyLookup");
         expect(source).not.toMatch(/from "(?:\.\.\/)+provider-health\//);
         return;

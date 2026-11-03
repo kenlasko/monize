@@ -15,9 +15,17 @@ import {
   describeFetchFailure,
   isTransportFailure,
 } from "../common/http/fetch-failure.util";
-import { followRedirects, readCapped } from "../bonds/series-http";
-import { publicOnlyLookup } from "../ai/providers/provider-egress";
-import { validateUrlIsSafe } from "../ai/validators/safe-url.validator";
+import {
+  followRedirects,
+  readCapped,
+  SeriesBodyTooLargeError,
+} from "../bonds/series-http";
+import {
+  AiEgressRefusedError,
+  publicOnlyLookup,
+} from "../ai/providers/provider-egress";
+import { isRefusedHostName } from "../ai/validators/safe-url.validator";
+import { rangeToStartDate } from "./providers/range-start.util";
 import {
   AmbiguousQuoteTableError,
   ParsedQuoteTable,
@@ -31,12 +39,22 @@ const MAX_BODY_BYTES = 5 * 1024 * 1024;
 const PAGE_CACHE_TTL_MS = 5 * 60_000;
 const PAGE_CACHE_MAX_ENTRIES = 200;
 /**
- * How long a site that failed at the transport level (refused, unresolvable,
- * timed out) is not asked again. A refresh asks for the quote and then the
- * series, and several securities can share one site: one failure answers them
- * all for this long instead of one timeout each.
+ * Price rows held across every cached page. A 5 MB page can carry a few
+ * hundred thousand rows, so the entry count alone does not bound the memory:
+ * the oldest pages are dropped until the rows fit.
  */
-const FAILED_ORIGIN_BACKOFF_MS = 10 * 60_000;
+const PAGE_CACHE_MAX_ROWS = 250_000;
+/**
+ * How long a page address that failed at the transport level (refused,
+ * unresolvable, timed out) is not asked again by a refresh. A refresh asks for
+ * the quote and then the series of the same page: one failure answers both
+ * instead of one timeout each. Keyed by the address, never by the site, so one
+ * user's slow page never stops another user's page on the same site, and never
+ * set by a preview, which a person can send at will.
+ */
+const FAILED_PAGE_BACKOFF_MS = 10 * 60_000;
+/** The bytes searched for a `<meta charset>` when the header names none. */
+const CHARSET_PRESCAN_BYTES = 1024;
 
 /**
  * Sent as a browser would: several of these sites answer a non-browser agent
@@ -73,8 +91,9 @@ export class QuoteTableError extends Error {
 /**
  * Every connection this provider opens is to a public address: the URL is the
  * user's, so the resolver refuses a private, loopback, link-local or metadata
- * answer at the moment the socket is opened (DNS rebinding included), and an
- * IP literal, which never reaches the resolver, is checked by `checkTarget`.
+ * answer at the moment the socket is opened (DNS rebinding included), and a
+ * name or IP literal that is refused on its face is stopped earlier, by
+ * `checkQuoteTableUrl`.
  */
 const publicOnlyAgent = new Agent({
   connect: { lookup: publicOnlyLookup },
@@ -83,15 +102,14 @@ const publicOnlyAgent = new Agent({
 });
 
 /**
- * The URL as it will be requested, or a refusal. The address policy is the
- * shared one (`validateUrlIsSafe`: blocked names and suffixes, every spelling
- * of a private IPv4 or IPv6 literal, and what the name resolves to); the
- * connection is held to it again where the socket opens (`publicOnlyLookup`).
+ * The URL as it will be requested, or a refusal. The names and literals the
+ * shared policy refuses on their face (`isRefusedHostName`: blocked names and
+ * suffixes, every spelling of a private IPv4 or IPv6 address) are refused
+ * here; what a name resolves to is judged where the socket opens
+ * (`publicOnlyLookup`), once, so a slow resolver reads as an unreachable site
+ * and never as a private address.
  */
-export async function checkQuoteTableUrl(
-  target: string,
-  base?: string,
-): Promise<URL> {
+export function checkQuoteTableUrl(target: string, base?: string): URL {
   let url: URL;
   try {
     url = new URL(target, base);
@@ -105,44 +123,55 @@ export async function checkQuoteTableUrl(
   ) {
     throw new QuoteTableError("invalid-url");
   }
-  if (!(await validateUrlIsSafe(url.toString()))) {
+  if (isRefusedHostName(url.hostname)) {
     throw new QuoteTableError("private-address");
   }
   return url;
 }
 
-/**
- * What a transport failure is remembered against: scheme, host and port. A
- * closed port says nothing about the site's other ports, so one user's address
- * on a refused port never backs off another user's working page on that host.
- */
-function originOf(url: URL): string {
-  return url.origin.toLowerCase();
+/** Whether a failed request was refused for connecting to a private address. */
+function refusedAsPrivate(error: unknown): boolean {
+  for (let e = error, i = 0; e && i < 8; i++) {
+    if (e instanceof AiEgressRefusedError) return true;
+    e = (e as { cause?: unknown }).cause;
+  }
+  return false;
 }
 
+/**
+ * The page's text in the charset it declares: the `Content-Type` header, else
+ * a byte-order mark, else a `<meta charset>` (or `http-equiv` Content-Type) in
+ * the first kilobyte -- the order of the WHATWG prescan -- else UTF-8. A German
+ * page served as bare `text/html` and declaring ISO-8859-1 in its markup keeps
+ * its "Schluß", "März" and "€".
+ */
 function decode(body: Uint8Array, contentType: string | null): string {
-  const charset = /charset=["']?([\w-]+)/i.exec(contentType ?? "")?.[1];
+  const declared =
+    /charset=["']?([\w-]+)/i.exec(contentType ?? "")?.[1] ??
+    bomCharset(body) ??
+    metaCharset(body);
   try {
-    return new TextDecoder(charset ?? "utf-8").decode(body);
+    return new TextDecoder(declared ?? "utf-8").decode(body);
   } catch {
     return new TextDecoder("utf-8").decode(body);
   }
 }
 
-/** The first day a named range reaches back to, or `null` for everything. */
-export function rangeStart(range: string | undefined, now: Date): Date | null {
-  const match = /^(\d+)(d|wk|mo|y)$/.exec((range ?? "").trim().toLowerCase());
-  const start = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+function bomCharset(body: Uint8Array): string | null {
+  if (body[0] === 0xef && body[1] === 0xbb && body[2] === 0xbf) return "utf-8";
+  if (body[0] === 0xfe && body[1] === 0xff) return "utf-16be";
+  if (body[0] === 0xff && body[1] === 0xfe) return "utf-16le";
+  return null;
+}
+
+function metaCharset(body: Uint8Array): string | null {
+  const head = new TextDecoder("latin1").decode(
+    body.subarray(0, CHARSET_PRESCAN_BYTES),
   );
-  if (range === "ytd") return new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
-  if (!match) return null;
-  const n = Number(match[1]);
-  if (match[2] === "d") start.setUTCDate(start.getUTCDate() - n);
-  else if (match[2] === "wk") start.setUTCDate(start.getUTCDate() - 7 * n);
-  else if (match[2] === "mo") start.setUTCMonth(start.getUTCMonth() - n);
-  else start.setUTCFullYear(start.getUTCFullYear() - n);
-  return start;
+  return (
+    /<meta[^>]{0,200}?charset\s*=\s*["']?\s*([\w-]{1,40})/i.exec(head)?.[1] ??
+    null
+  );
 }
 
 /**
@@ -159,8 +188,9 @@ export function rangeStart(range: string | undefined, now: Date): Date | null {
  * `ProviderHealthService`: that breaker is keyed by a fixed provider id,
  * persisted to `provider_health` and alerts the administrators, none of which
  * fits an unbounded set of hosts a user chose. A transport failure is
- * remembered here instead, per origin, in process and bounded
- * (`failedOrigins`), and is never persisted or alerted.
+ * remembered here instead, per page address, in process and bounded
+ * (`failedPages`), set and read by refreshes only, and never persisted or
+ * alerted.
  */
 @Injectable()
 export class HtmlTableFinanceService implements QuoteProvider {
@@ -170,6 +200,8 @@ export class HtmlTableFinanceService implements QuoteProvider {
     string,
     { table: ParsedQuoteTable; expiresAt: number }
   >();
+  /** Price rows held in `cache`, bounded by `PAGE_CACHE_MAX_ROWS`. */
+  private cachedRows = 0;
 
   /**
    * Loads in progress, so concurrent callers of one address (a refresh and a
@@ -179,25 +211,29 @@ export class HtmlTableFinanceService implements QuoteProvider {
    */
   private readonly pending = new Map<string, Promise<ParsedQuoteTable>>();
 
-  /** Origins that failed at the transport level, and until when to skip them. */
-  private readonly failedOrigins = new Map<string, number>();
+  /** Page addresses that failed at the transport level, and until when. */
+  private readonly failedPages = new Map<string, number>();
 
   /**
-   * Download and parse a page, throwing `QuoteTableError` (or the transport
-   * error) with the reason. The preview calls this so the user sees why.
+   * Download and parse a page, throwing `QuoteTableError` with the reason.
+   * The preview calls this with `preview: true`, so the user sees why, and so
+   * a person testing an address neither waits out nor starts a back-off.
    */
   async loadTable(
     target: string,
     now: Date = new Date(),
+    options: { preview?: boolean } = {},
   ): Promise<ParsedQuoteTable> {
     const cached = this.cache.get(target);
     if (cached && cached.expiresAt > now.getTime()) return cached.table;
 
     const running = this.pending.get(target);
     if (running) return running;
-    const load = this.readTable(target, now).finally(() => {
-      this.pending.delete(target);
-    });
+    const load = this.readTable(target, now, options.preview === true).finally(
+      () => {
+        this.pending.delete(target);
+      },
+    );
     this.pending.set(target, load);
     return load;
   }
@@ -205,8 +241,9 @@ export class HtmlTableFinanceService implements QuoteProvider {
   private async readTable(
     target: string,
     now: Date,
+    preview: boolean,
   ): Promise<ParsedQuoteTable> {
-    const html = await this.download(target);
+    const html = await this.download(target, preview);
     let table: ParsedQuoteTable | null;
     try {
       table = parseQuoteTable(html, now);
@@ -218,27 +255,58 @@ export class HtmlTableFinanceService implements QuoteProvider {
     }
     if (!table) throw new QuoteTableError("no-table");
 
-    if (this.cache.size >= PAGE_CACHE_MAX_ENTRIES) this.cache.clear();
+    this.remember(target, table, now);
+    return table;
+  }
+
+  /**
+   * Cache a parsed page: expired entries go first, then the oldest, until the
+   * entry count and the row budget both fit. A table larger than the whole
+   * budget is returned to its caller but not kept.
+   */
+  private remember(target: string, table: ParsedQuoteTable, now: Date): void {
+    const rows = table.prices.length;
+    this.forget(target);
+    if (rows > PAGE_CACHE_MAX_ROWS) return;
+    for (const [key, entry] of this.cache) {
+      if (entry.expiresAt <= now.getTime()) this.forget(key);
+    }
+    for (const key of this.cache.keys()) {
+      if (
+        this.cache.size < PAGE_CACHE_MAX_ENTRIES &&
+        this.cachedRows + rows <= PAGE_CACHE_MAX_ROWS
+      ) {
+        break;
+      }
+      this.forget(key);
+    }
     this.cache.set(target, {
       table,
       expiresAt: now.getTime() + PAGE_CACHE_TTL_MS,
     });
-    return table;
+    this.cachedRows += rows;
   }
 
-  private async download(target: string): Promise<string> {
-    // `url` is the hop being asked: a redirect to another site is checked,
-    // and blamed, as that site, never as the one the address started on.
-    let url = await checkQuoteTableUrl(target);
+  private forget(key: string): void {
+    const entry = this.cache.get(key);
+    if (!entry) return;
+    this.cachedRows -= entry.table.prices.length;
+    this.cache.delete(key);
+  }
+
+  private async download(target: string, preview: boolean): Promise<string> {
+    // `url` is the hop being asked: a redirect to another page is checked, and
+    // blamed, as that page, never as the address the security names.
+    let url = checkQuoteTableUrl(target);
     let html: string;
     try {
       const response = await followRedirects({
-        first: await this.get(url),
+        first: await this.get(url, preview),
         from: url.toString(),
         follow: true,
-        call: () => this.get(url),
-        next: async (location, from) => {
-          url = await checkQuoteTableUrl(location, from);
+        call: () => this.get(url, preview),
+        next: (location, from) => {
+          url = checkQuoteTableUrl(location, from);
           return url.toString();
         },
         tooMany: () => new QuoteTableError("too-many-redirects"),
@@ -254,40 +322,51 @@ export class HtmlTableFinanceService implements QuoteProvider {
           MAX_BODY_BYTES,
         );
       } catch (error) {
-        if (
-          error instanceof Error &&
-          error.name === "SeriesBodyTooLargeError"
-        ) {
+        if (error instanceof SeriesBodyTooLargeError) {
           throw new QuoteTableError("too-large");
         }
         throw error;
       }
       html = decode(body, response.headers.get("content-type"));
     } catch (error) {
-      // A refused address or a status the site chose says the site is up; only
-      // a failure to reach it is remembered.
-      if (!(error instanceof QuoteTableError) && isTransportFailure(error)) {
-        if (this.failedOrigins.size >= PAGE_CACHE_MAX_ENTRIES) {
-          this.failedOrigins.clear();
-        }
-        this.failedOrigins.set(
-          originOf(url),
-          Date.now() + FAILED_ORIGIN_BACKOFF_MS,
-        );
+      if (error instanceof QuoteTableError) throw error;
+      // A name that resolved to a private address is a refusal, not an outage:
+      // said as one, and never backed off.
+      if (refusedAsPrivate(error)) {
+        throw new QuoteTableError("private-address");
+      }
+      if (isTransportFailure(error)) {
+        // Only a failure to reach the page is remembered, and only by a
+        // refresh: a status the site chose says the site is up.
+        if (!preview) this.backOff(url);
         throw new QuoteTableError("unreachable", describeFetchFailure(error));
       }
       throw error;
     }
-    this.failedOrigins.delete(originOf(url));
+    this.failedPages.delete(url.href);
     return html;
+  }
+
+  private backOff(url: URL): void {
+    if (this.failedPages.size >= PAGE_CACHE_MAX_ENTRIES) {
+      const now = Date.now();
+      for (const [key, until] of this.failedPages) {
+        if (until <= now) this.failedPages.delete(key);
+      }
+      if (this.failedPages.size >= PAGE_CACHE_MAX_ENTRIES) {
+        const oldest = this.failedPages.keys().next().value;
+        if (oldest !== undefined) this.failedPages.delete(oldest);
+      }
+    }
+    this.failedPages.set(url.href, Date.now() + FAILED_PAGE_BACKOFF_MS);
   }
 
   /**
    * One request, never following a redirect itself, to a public address only,
-   * and never to a site that failed to answer within the back-off.
+   * and, for a refresh, never to a page that failed within the back-off.
    */
-  private get(url: URL) {
-    if ((this.failedOrigins.get(originOf(url)) ?? 0) > Date.now()) {
+  private get(url: URL, preview: boolean) {
+    if (!preview && (this.failedPages.get(url.href) ?? 0) > Date.now()) {
       throw new QuoteTableError("unreachable", "failed recently");
     }
     return undiciFetch(url, {
@@ -350,11 +429,14 @@ export class HtmlTableFinanceService implements QuoteProvider {
   ): Promise<HistoricalSeries | null> {
     const table = await this.tableFor(symbol, opts);
     if (!table) return null;
-    const start = rangeStart(range, new Date());
+    // From the start of today, so "5d" keeps five whole calendar days.
+    const now = new Date();
+    const today = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+    const start = rangeToStartDate(range ?? "max", today).getTime();
     return {
-      prices: start
-        ? table.prices.filter((p) => p.date.getTime() >= start.getTime())
-        : table.prices,
+      prices: table.prices.filter((p) => p.date.getTime() >= start),
       currencyCode: table.currencyCode,
       symbol,
       exchange: null,

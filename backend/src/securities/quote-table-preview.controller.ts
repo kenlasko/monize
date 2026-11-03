@@ -13,6 +13,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import { tr } from "../i18n/translate";
+import { DemoRestricted } from "../common/decorators/demo-restricted.decorator";
 import { describeFetchFailure } from "../common/http/fetch-failure.util";
 import {
   HtmlTableFinanceService,
@@ -62,13 +63,19 @@ export class QuoteTablePreviewController {
   constructor(private readonly htmlTable: HtmlTableFinanceService) {}
 
   @Post("preview")
+  // It fetches any public address a person types, like the payee-lookup and
+  // bank-sync connection tests, so a demo instance's shared login cannot use
+  // it as a fetcher.
+  @DemoRestricted()
   @HttpCode(200)
   @Throttle({ default: { ttl: 60000, limit: 20 } })
   @ApiOperation({ summary: "Preview the price table read from a web page" })
   async preview(@Body() dto: QuoteTablePreviewDto): Promise<QuoteTablePreview> {
     let table;
     try {
-      table = await this.htmlTable.loadTable(dto.url);
+      table = await this.htmlTable.loadTable(dto.url, new Date(), {
+        preview: true,
+      });
     } catch (error) {
       throw this.toHttpError(error);
     }

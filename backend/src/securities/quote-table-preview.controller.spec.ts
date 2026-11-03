@@ -10,6 +10,7 @@ import {
   QuoteTableError,
 } from "./html-table-finance.service";
 import { ParsedQuoteTable } from "./html-table-quote.parser";
+import { DEMO_RESTRICTED_KEY } from "../common/guards/demo-mode.guard";
 
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
 
@@ -38,6 +39,25 @@ describe("QuoteTablePreviewController", () => {
   } as unknown as HtmlTableFinanceService);
 
   beforeEach(() => loadTable.mockReset());
+
+  it("is closed on a demo instance, whose shared login could use it as a fetcher", () => {
+    expect(
+      Reflect.getMetadata(
+        DEMO_RESTRICTED_KEY,
+        QuoteTablePreviewController.prototype.preview,
+      ),
+    ).toBe(true);
+  });
+
+  it("reads the page as a preview, which neither starts nor waits out a back-off", async () => {
+    loadTable.mockResolvedValueOnce(table(3));
+    await controller.preview({ url: "https://example.com/x" });
+    expect(loadTable).toHaveBeenCalledWith(
+      "https://example.com/x",
+      expect.any(Date),
+      { preview: true },
+    );
+  });
 
   it("returns the newest rows first with the table's span", async () => {
     loadTable.mockResolvedValueOnce(table(20));
