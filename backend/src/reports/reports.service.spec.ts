@@ -184,6 +184,7 @@ describe("ReportsService", () => {
     });
     qb.orWhere = jest.fn().mockReturnValue(qb);
     qb.orderBy = jest.fn().mockReturnValue(qb);
+    qb.addOrderBy = jest.fn().mockReturnValue(qb);
     qb.take = jest.fn().mockReturnValue(qb);
     qb.getMany = jest.fn().mockResolvedValue([]);
     // Apply overrides last
@@ -1876,6 +1877,36 @@ describe("ReportsService", () => {
         expect(result.summary.total).toBeNull();
         expect(result.summary.average).toBeNull();
         expect(result.summary.knownTotal).toBe(50000);
+      });
+
+      // A both-direction list reads in date order (discussion #1978); within
+      // one date it follows the register, never the arbitrary order of a bare
+      // date sort (applyRegisterOrder).
+      it("reads the rows in the register's order", async () => {
+        const { qb } = setupExecuteMocks(
+          {
+            groupBy: GroupByType.NONE,
+            config: {
+              ...defaultConfig,
+              metric: MetricType.NONE,
+              direction: DirectionFilter.BOTH,
+            },
+          },
+          [],
+        );
+
+        await service.execute("user-1", "report-1");
+
+        expect(qb.orderBy).toHaveBeenCalledWith(
+          "transaction.transactionDate",
+          "ASC",
+          undefined,
+        );
+        expect(qb.addOrderBy.mock.calls).toEqual([
+          ["transaction.createdAt", "ASC"],
+          ["transaction.amount", "DESC"],
+          ["transaction.id", "ASC"],
+        ]);
       });
 
       it("is not truncated when the rows fit the limit", async () => {
