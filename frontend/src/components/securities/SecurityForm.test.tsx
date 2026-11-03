@@ -1701,3 +1701,33 @@ describe('SecurityForm', () => {
     });
   });
 });
+
+describe('SecurityForm page address on save', () => {
+  const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('leaves quoteUrl out of a save that did not touch it, so an older server accepts it', async () => {
+    render(
+      <SecurityForm
+        security={createSecurity({ quoteProvider: 'html_table', quoteUrl: 'https://example.com/prices' })}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
+    await act(async () => {});
+    fireEvent.click(screen.getByText('Update Security'));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('quoteUrl');
+  });
+
+  it('leaves quoteUrl out of a save for a security that never had one', async () => {
+    render(<SecurityForm security={createSecurity()} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    await act(async () => {});
+    fireEvent.click(screen.getByText('Update Security'));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('quoteUrl');
+  });
+});

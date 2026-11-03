@@ -599,8 +599,12 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
       website: data.website?.trim() ?? '',
       irWebsite: data.irWebsite?.trim() ?? '',
       msnInstrumentId: data.msnInstrumentId?.trim() || undefined,
-      // Empty string clears a stored page, like the two addresses above.
-      quoteUrl: data.quoteUrl?.trim() ?? '',
+      // Sent only when it changed (an empty string clears a stored page), so a
+      // save that leaves it alone is accepted by a server that predates the
+      // field: during a rolling deploy the old pod rejects an unknown key.
+      ...((data.quoteUrl?.trim() ?? '') !== (security?.quoteUrl?.trim() ?? '')
+        ? { quoteUrl: data.quoteUrl?.trim() ?? '' }
+        : {}),
       // The link is sent only when it changed (null unlinks), so a save that
       // leaves it alone is accepted by a server that predates the field. A type
       // moved away from BOND unlinks a security that was linked.
