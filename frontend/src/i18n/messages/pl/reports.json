@@ -463,6 +463,12 @@
     "generating": "Generowanie raportu...",
     "noData": "Nie znaleziono danych dla wybranych kryteriów",
     "transactionCount": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}",
+    "measure": {
+      "netAmount": "Kwota netto",
+      "netCashMovement": "Ruch środków netto",
+      "unsignedTotal": "Suma kwot kategorii bez znaku",
+      "unsignedAverage": "Średnia kwot kategorii bez znaku"
+    },
     "truncatedNotice": "Ten raport osiągnął limit wierszy i pokazuje tylko najstarsze wiersze, więc jego wartości są niepełne. Zawęź okres lub filtry, aby zobaczyć wszystkie wiersze.",
     "toasts": {
       "loadFailed": "Nie udało się załadować raportu",

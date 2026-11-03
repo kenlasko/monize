@@ -463,6 +463,12 @@
     "generating": "Generando informe...",
     "noData": "No se encontraron datos para los criterios seleccionados",
     "transactionCount": "{count, plural, one {# transacción} other {# transacciones}}",
+    "measure": {
+      "netAmount": "Monto neto",
+      "netCashMovement": "Movimiento neto de efectivo",
+      "unsignedTotal": "Total de montos de categoría sin signo",
+      "unsignedAverage": "Promedio de montos de categoría sin signo"
+    },
     "truncatedNotice": "Este informe alcanzó el límite de filas y solo muestra las más antiguas, por lo que sus cifras son parciales. Acote el período o los filtros para verlas todas.",
     "toasts": {
       "loadFailed": "Error al cargar el informe",

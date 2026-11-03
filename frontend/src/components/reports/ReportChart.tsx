@@ -45,11 +45,20 @@ interface ReportChartProps {
   totalRowValue?: number;
   /** Set when the headline is a subtotal, so the Total row is marked as one. */
   partialTotal?: ConvertedTotal | null;
+  /** The Total row's caption when "Total" alone would not say what it sums. */
+  totalLabel?: string;
+  /**
+   * The rows keep their signs (a list of transactions in both directions), so
+   * a share of the net total means nothing: no % column, and a pie slice is
+   * sized by the row's magnitude.
+   */
+  signed?: boolean;
 }
 
 function getColumnMap(
   labelHeader: string,
   total: number,
+  signed: boolean,
 ): Record<TableColumn, { header: string; getValue: (item: AggregatedDataPoint) => string | number }> {
   return {
     [TableColumn.DATE]: { header: 'Date', getValue: (item) => item.date || '' },
@@ -60,7 +69,11 @@ function getColumnMap(
     [TableColumn.CATEGORY]: { header: 'Category', getValue: (item) => item.category || '' },
     [TableColumn.ACCOUNT]: { header: 'Account', getValue: (item) => item.account || '' },
     [TableColumn.VALUE]: { header: 'Amount', getValue: (item) => item.value },
-    [TableColumn.PERCENTAGE]: { header: '%', getValue: (item) => item.percentage ?? (total > 0 ? Number(((item.value / total) * 100).toFixed(1)) : 0) },
+    [TableColumn.PERCENTAGE]: {
+      header: '%',
+      getValue: (item) =>
+        signed ? '' : (item.percentage ?? (total > 0 ? Number(((item.value / total) * 100).toFixed(1)) : 0)),
+    },
     [TableColumn.COUNT]: { header: 'Count', getValue: (item) => item.count || 0 },
     [TableColumn.TAG]: { header: 'Tag', getValue: (item) => item.label || '' },
   };
@@ -72,9 +85,11 @@ interface ReportChartTooltipProps {
   total: number;
   formatCurrency: (value: number) => string;
   formatPercent: (value: number, decimals?: number) => string;
+  /** Leaves the share out: a signed row is no share of a net total. */
+  signed?: boolean;
 }
 
-function ReportChartTooltip({ active, payload, total, formatCurrency, formatPercent }: ReportChartTooltipProps) {
+function ReportChartTooltip({ active, payload, total, formatCurrency, formatPercent, signed }: ReportChartTooltipProps) {
   if (active && payload && payload.length) {
     const item = payload[0].payload;
     const percentage = total > 0 ? (item.value / total) * 100 : 0;
@@ -82,7 +97,8 @@ function ReportChartTooltip({ active, payload, total, formatCurrency, formatPerc
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
         <p className="font-medium text-gray-900 dark:text-gray-100">{item.label}</p>
         <p className="text-gray-600 dark:text-gray-400">
-          {formatCurrency(item.value)} ({formatPercent(percentage, 1)})
+          {formatCurrency(item.value)}
+          {!signed && <> ({formatPercent(percentage, 1)})</>}
         </p>
         {item.count !== undefined && (
           <p className="text-sm text-gray-500 dark:text-gray-500">
@@ -95,7 +111,7 @@ function ReportChartTooltip({ active, payload, total, formatCurrency, formatPerc
   return null;
 }
 
-export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle, metric, totalRowValue, partialTotal }: ReportChartProps) {
+export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle, metric, totalRowValue, partialTotal, totalLabel = 'Total', signed = false }: ReportChartProps) {
   const { formatCurrency, formatNumber, formatPercent } = useNumberFormat();
   const { cellFor } = usePartialTotalNote();
   const { formatDate } = useDateFormat();
@@ -108,6 +124,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     return data.map((item) => ({
       ...item,
       color: item.color || CHART_COLOURS[colourIndex++ % CHART_COLOURS.length],
+      magnitude: Math.abs(item.value),
     }));
   }, [data]);
 
@@ -126,7 +143,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                       groupBy === GroupByType.NONE ? 'Item' : 'Period';
 
   const handleExportCsv = () => {
-    const columnMap = getColumnMap(labelHeader, total);
+    const columnMap = getColumnMap(labelHeader, total, signed);
     const headers = columns.map((col) => columnMap[col]?.header || col);
     const rows = chartData.map((item) =>
       columns.map((col) => columnMap[col]?.getValue(item) ?? '')
@@ -135,12 +152,12 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     // when it is a subtotal), 100% and the summed count.
     const totalCount = chartData.reduce((sum, item) => sum + (item.count || 0), 0);
     const totalRow = columns.map((col) => {
-      if (col === TableColumn.LABEL || (col === TableColumn.DATE && !columns.includes(TableColumn.LABEL))) return 'Total';
+      if (col === TableColumn.LABEL || (col === TableColumn.DATE && !columns.includes(TableColumn.LABEL))) return totalLabel;
       if (col === TableColumn.VALUE) {
         const value = totalRowValue ?? total;
         return partialTotal ? cellFor(String(value), partialTotal) : value;
       }
-      if (col === TableColumn.PERCENTAGE) return 100;
+      if (col === TableColumn.PERCENTAGE) return signed ? '' : 100;
       if (col === TableColumn.COUNT) return totalCount || '';
       return '';
     });
@@ -149,7 +166,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
-    const columnMap = getColumnMap(labelHeader, total);
+    const columnMap = getColumnMap(labelHeader, total, signed);
     const headers = columns.map((col) => columnMap[col]?.header || col);
     // The PDF prints what the screen prints: formatted figures, never raw numbers.
     const pdfCell = (col: TableColumn, item: AggregatedDataPoint) => {
@@ -163,9 +180,9 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     const rows = chartData.map((item) => columns.map((col) => pdfCell(col, item)));
     const totalCount = chartData.reduce((sum, item) => sum + (item.count || 0), 0);
     const totalRow = columns.map((col) => {
-      if (col === TableColumn.LABEL || (col === TableColumn.DATE && !columns.includes(TableColumn.LABEL))) return 'Total';
+      if (col === TableColumn.LABEL || (col === TableColumn.DATE && !columns.includes(TableColumn.LABEL))) return totalLabel;
       if (col === TableColumn.VALUE) return totalCell();
-      if (col === TableColumn.PERCENTAGE) return formatPercent(100, 1);
+      if (col === TableColumn.PERCENTAGE) return signed ? '' : formatPercent(100, 1);
       if (col === TableColumn.COUNT) return totalCount ? formatNumber(totalCount, 0) : '';
       return '';
     });
@@ -201,7 +218,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   innerRadius={60}
                   outerRadius={100}
                   paddingAngle={2}
-                  dataKey="value"
+                  dataKey={signed ? 'magnitude' : 'value'}
                   cursor={onDataPointClick ? 'pointer' : 'default'}
                   onClick={(entry) => {
                     const { id } = entry as typeof entry & { id?: string };
@@ -212,7 +229,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip content={<ReportChartTooltip total={total} formatCurrency={formatValue} formatPercent={formatPercent} />} />
+                <Tooltip content={<ReportChartTooltip total={total} formatCurrency={formatValue} formatPercent={formatPercent} signed={signed} />} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -241,7 +258,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   tickFormatter={(value) => formatNumber(value, 0)}
                   className="text-gray-600 dark:text-gray-400"
                 />
-                <Tooltip content={<ReportChartTooltip total={total} formatCurrency={formatValue} formatPercent={formatPercent} />} />
+                <Tooltip content={<ReportChartTooltip total={total} formatCurrency={formatValue} formatPercent={formatPercent} signed={signed} />} />
                 <Bar
                   dataKey="value"
                   cursor={onDataPointClick ? 'pointer' : 'default'}
@@ -279,7 +296,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   tickFormatter={(value) => formatNumber(value, 0)}
                   className="text-gray-600 dark:text-gray-400"
                 />
-                <Tooltip content={<ReportChartTooltip total={total} formatCurrency={formatValue} formatPercent={formatPercent} />} />
+                <Tooltip content={<ReportChartTooltip total={total} formatCurrency={formatValue} formatPercent={formatPercent} signed={signed} />} />
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -417,11 +434,13 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   )}
                   {columns.includes(TableColumn.PERCENTAGE) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                      {formatPercent(
-                        item.percentage ??
-                          (total > 0 ? (item.value / total) * 100 : 0),
-                        1,
-                      )}
+                      {signed
+                        ? '-'
+                        : formatPercent(
+                            item.percentage ??
+                              (total > 0 ? (item.value / total) * 100 : 0),
+                            1,
+                          )}
                     </td>
                   )}
                   {columns.includes(TableColumn.COUNT) && (
@@ -436,12 +455,12 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
               <tr className="bg-gray-50 dark:bg-gray-800">
                 {columns.includes(TableColumn.DATE) && (
                   <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">
-                    Total
+                    {totalLabel}
                   </td>
                 )}
                 {columns.includes(TableColumn.LABEL) && !columns.includes(TableColumn.DATE) && (
                   <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">
-                    Total
+                    {totalLabel}
                   </td>
                 )}
                 {columns.includes(TableColumn.LABEL) && columns.includes(TableColumn.DATE) && (
@@ -469,7 +488,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                 )}
                 {columns.includes(TableColumn.PERCENTAGE) && (
                   <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                    100%
+                    {signed ? '' : '100%'}
                   </td>
                 )}
                 {columns.includes(TableColumn.COUNT) && (

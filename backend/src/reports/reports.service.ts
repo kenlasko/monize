@@ -954,6 +954,15 @@ export class ReportsService {
     // For NONE metric, return individual transactions as data points
     if (metric === MetricType.NONE) {
       const result: AggregatedDataPoint[] = [];
+      // A one-direction list holds rows of one sign and shows their magnitude.
+      // BOTH lists rows of either sign, so each keeps its own: money in is
+      // positive, money out negative, and the headline is the signed net of
+      // the listed rows (discussion #1978). A transfer leg keeps its sign too,
+      // so both legs of an in-scope transfer net to zero.
+      const lineAmount = (amount: string | number): number =>
+        config.direction === DirectionFilter.BOTH
+          ? Number(amount)
+          : Math.abs(Number(amount));
 
       for (const tx of transactions) {
         // A blank-payee transfer leg reads "Transfer to/from <account>"
@@ -972,7 +981,7 @@ export class ReportsService {
           // is the trade's own cash side, not a row of this report.
           for (const split of ordinarySplitLines(tx)) {
             const value = conv.convert(
-              Math.abs(Number(split.amount)),
+              lineAmount(split.amount),
               tx.currencyCode,
             );
             if (value === null) continue;
@@ -996,10 +1005,7 @@ export class ReportsService {
             });
           }
         } else {
-          const value = conv.convert(
-            Math.abs(Number(tx.amount)),
-            tx.currencyCode,
-          );
+          const value = conv.convert(lineAmount(tx.amount), tx.currencyCode);
           if (value === null) continue;
           result.push({
             id: tx.id,

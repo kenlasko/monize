@@ -463,6 +463,12 @@
     "generating": "Génération du rapport...",
     "noData": "Aucune donnée trouvée pour les critères sélectionnés",
     "transactionCount": "{count, plural, one {# transaction} other {# transactions}}",
+    "measure": {
+      "netAmount": "Montant net",
+      "netCashMovement": "Mouvement de trésorerie net",
+      "unsignedTotal": "Total des montants de catégorie sans signe",
+      "unsignedAverage": "Moyenne des montants de catégorie sans signe"
+    },
     "truncatedNotice": "Ce rapport a atteint la limite de lignes et n'affiche que les plus anciennes, ses chiffres sont donc partiels. Réduisez la période ou les filtres pour tout voir.",
     "toasts": {
       "loadFailed": "Impossible de charger le rapport",

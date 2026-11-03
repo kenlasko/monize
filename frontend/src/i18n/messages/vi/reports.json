@@ -463,6 +463,12 @@
     "generating": "Đang tạo báo cáo...",
     "noData": "Không tìm thấy dữ liệu cho tiêu chí đã chọn",
     "transactionCount": "{count, plural, one {# giao tác} other {# giao tác}}",
+    "measure": {
+      "netAmount": "Số tiền thuần",
+      "netCashMovement": "Biến động tiền thuần",
+      "unsignedTotal": "Tổng số tiền danh mục không tính dấu",
+      "unsignedAverage": "Trung bình số tiền danh mục không tính dấu"
+    },
     "truncatedNotice": "Báo cáo này đã chạm giới hạn số dòng và chỉ hiển thị các dòng cũ nhất, nên số liệu chưa đầy đủ. Hãy thu hẹp khoảng thời gian hoặc bộ lọc để xem tất cả.",
     "toasts": {
       "loadFailed": "Không thể tải báo cáo",

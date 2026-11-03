@@ -463,6 +463,12 @@
     "generating": "Rapor oluşturuluyor...",
     "noData": "Seçilen ölçütler için veri bulunamadı",
     "transactionCount": "{count, plural, one {# işlem} other {# işlem}}",
+    "measure": {
+      "netAmount": "Net tutar",
+      "netCashMovement": "Net nakit hareketi",
+      "unsignedTotal": "İşaretsiz kategori tutarlarının toplamı",
+      "unsignedAverage": "İşaretsiz kategori tutarlarının ortalaması"
+    },
     "truncatedNotice": "Bu rapor satır sınırına ulaştı ve yalnızca en eski satırları gösteriyor, bu yüzden rakamları kısmidir. Tümünü görmek için dönemi veya filtreleri daraltın.",
     "toasts": {
       "loadFailed": "Rapor yüklenemedi",

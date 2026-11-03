@@ -463,6 +463,12 @@
     "generating": "보고서 생성 중...",
     "noData": "선택한 조건에 대한 데이터가 없습니다",
     "transactionCount": "{count, plural, one {# 건의 거래} other {# 건의 거래}}",
+    "measure": {
+      "netAmount": "순액",
+      "netCashMovement": "순 현금 이동",
+      "unsignedTotal": "부호 없는 카테고리 금액 합계",
+      "unsignedAverage": "부호 없는 카테고리 금액 평균"
+    },
     "truncatedNotice": "이 보고서는 행 한도에 도달하여 가장 오래된 행만 표시하므로 수치가 일부입니다. 모두 보려면 기간이나 필터를 좁히세요.",
     "toasts": {
       "loadFailed": "보고서 불러오기에 실패했습니다",

@@ -463,6 +463,12 @@
     "generating": "Bericht wird erstellt...",
     "noData": "Keine Daten für die gewählten Kriterien gefunden",
     "transactionCount": "{count, plural, one {# Buchung} other {# Buchungen}}",
+    "measure": {
+      "netAmount": "Nettobetrag",
+      "netCashMovement": "Netto-Geldbewegung",
+      "unsignedTotal": "Summe der vorzeichenlosen Kategoriebeträge",
+      "unsignedAverage": "Durchschnitt der vorzeichenlosen Kategoriebeträge"
+    },
     "truncatedNotice": "Dieser Bericht hat das Zeilenlimit erreicht und zeigt nur die ältesten Zeilen, daher sind seine Zahlen unvollständig. Grenzen Sie den Zeitraum oder die Filter ein, um alle zu sehen.",
     "toasts": {
       "loadFailed": "Bericht konnte nicht geladen werden",

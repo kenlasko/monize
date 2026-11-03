@@ -463,6 +463,12 @@
     "generating": "[XX-Generating report...-XX]",
     "noData": "[XX-No data found for the selected criteria-XX]",
     "transactionCount": "[XX-{count, plural, one {# transaction} other {# transactions}}-XX]",
+    "measure": {
+      "netAmount": "[XX-Net amount-XX]",
+      "netCashMovement": "[XX-Net cash movement-XX]",
+      "unsignedTotal": "[XX-Total of unsigned category amounts-XX]",
+      "unsignedAverage": "[XX-Average of unsigned category amounts-XX]"
+    },
     "truncatedNotice": "[XX-This report reached the row limit and shows only the oldest rows, so its figures are partial. Narrow the timeframe or the filters to see all of them.-XX]",
     "toasts": {
       "loadFailed": "[XX-Failed to load report-XX]",

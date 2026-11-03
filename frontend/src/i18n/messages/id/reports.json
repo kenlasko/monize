@@ -463,6 +463,12 @@
     "generating": "Membuat laporan...",
     "noData": "Tidak ada data ditemukan untuk kriteria yang dipilih",
     "transactionCount": "{count, plural, one {# transaksi} other {# transaksi}}",
+    "measure": {
+      "netAmount": "Jumlah bersih",
+      "netCashMovement": "Pergerakan kas bersih",
+      "unsignedTotal": "Total jumlah kategori tanpa tanda",
+      "unsignedAverage": "Rata-rata jumlah kategori tanpa tanda"
+    },
     "truncatedNotice": "Laporan ini mencapai batas baris dan hanya menampilkan baris terlama, sehingga angkanya parsial. Persempit periode atau filter untuk melihat semuanya.",
     "toasts": {
       "loadFailed": "Gagal memuat laporan",

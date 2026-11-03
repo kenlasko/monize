@@ -463,6 +463,12 @@
     "generating": "レポートを生成中...",
     "noData": "選択した条件に一致するデータがありません",
     "transactionCount": "{count, plural, one {# 件の取引} other {# 件の取引}}",
+    "measure": {
+      "netAmount": "純額",
+      "netCashMovement": "純資金移動額",
+      "unsignedTotal": "カテゴリ金額（符号なし）の合計",
+      "unsignedAverage": "カテゴリ金額（符号なし）の平均"
+    },
     "truncatedNotice": "このレポートは行数の上限に達したため、最も古い行のみを表示しています。数値は一部のみです。すべて表示するには期間またはフィルターを絞り込んでください。",
     "toasts": {
       "loadFailed": "レポートの読み込みに失敗しました",
