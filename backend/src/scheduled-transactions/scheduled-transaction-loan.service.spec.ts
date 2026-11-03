@@ -1,3 +1,4 @@
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import { Test, TestingModule } from "@nestjs/testing";
 import { NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { DataSource } from "typeorm";
@@ -20,6 +21,7 @@ describe("ScheduledTransactionLoanService", () => {
   let accountsRepository: Record<string, jest.Mock>;
   let rateChangesRepository: Record<string, jest.Mock>;
   let overridesRepository: Record<string, jest.Mock>;
+  let loanFeesRepository: Record<string, jest.Mock>;
   let manager: Record<string, jest.Mock>;
 
   const loanAccountId = "acc-loan";
@@ -105,7 +107,10 @@ describe("ScheduledTransactionLoanService", () => {
       find: jest.fn().mockResolvedValue([]),
     };
 
+    loanFeesRepository = { find: jest.fn().mockResolvedValue([]) };
+
     const scopedDb = createScopedDbMocks([
+      [LoanFee, loanFeesRepository],
       [ScheduledTransaction, scheduledTransactionsRepository],
       [ScheduledTransactionSplit, splitsRepository],
       [Account, accountsRepository],
@@ -1718,6 +1723,56 @@ describe("ScheduledTransactionLoanService", () => {
           memo: "Interest",
         },
       ] as unknown as ScheduledTransactionSplit[];
+
+    it("posts a mortgage's fee lines as the bill showed them and re-divides only the loan portion (INV-LOAN-011)", async () => {
+      accountsRepository.findOne.mockResolvedValue(
+        makeLoanAccount({
+          accountType: "MORTGAGE",
+          currentBalance: -200000,
+          interestRate: 6,
+          paymentFrequency: "MONTHLY",
+          paymentAmount: 1500,
+          currencyCode: "CAD",
+          interestCategoryId: "cat-interest",
+        } as Partial<Account>),
+      );
+      loanFeesRepository.find.mockResolvedValue([
+        {
+          categoryId: "cat-tax",
+          name: "Property tax",
+          calculation: "FIXED",
+          basis: "ANNUAL",
+          amount: 3600,
+          rate: null,
+        },
+      ]);
+      manager.query.mockResolvedValue([{ balance: "-198500" }]);
+
+      const result = await service.resolvePostingAllocation(
+        makeScheduledTransaction({ amount: -1800 }),
+        [
+          ...templateSplits(),
+          {
+            id: "split-tax",
+            transferAccountId: null,
+            categoryId: "cat-tax",
+            amount: -300,
+            memo: "Property tax",
+          } as unknown as ScheduledTransactionSplit,
+        ],
+        "2026-06-01",
+      );
+
+      expect(loanFeesRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { accountId: loanAccountId } }),
+      );
+      if (result.kind !== "allocation") throw new Error("unreachable");
+      // 1,800 - 300 of tax = 1,500 of loan: 992.50 interest, 507.50 principal.
+      expect(result.amountsBySplitId.get("split-interest")).toBe(-992.5);
+      expect(result.amountsBySplitId.get("split-principal")).toBe(-507.5);
+      expect(result.amountsBySplitId.get("split-tax")).toBe(-300);
+      expect(result.parentAmount).toBe(-1800);
+    });
 
     it("re-resolves the split amounts from the ledger at the posting boundary", async () => {
       // The stored template was computed when the previous occurrence posted

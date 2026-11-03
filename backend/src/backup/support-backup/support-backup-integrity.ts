@@ -308,6 +308,11 @@ const REFS: Record<string, RefRule[]> = withSharedSupportRefs({
   loan_scenarios: [
     { column: "account_id", refTable: "accounts", onMissing: "dropRow" },
   ],
+  // A fee cannot outlive its mortgage or its category (both NOT NULL, CASCADE).
+  loan_fees: [
+    { column: "account_id", refTable: "accounts", onMissing: "dropRow" },
+    { column: "category_id", refTable: "categories", onMissing: "dropRow" },
+  ],
   budget_categories: [
     { column: "budget_id", refTable: "budgets", onMissing: "dropRow" },
     { column: "category_id", refTable: "categories", onMissing: "null" },

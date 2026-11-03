@@ -1,3 +1,4 @@
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import {
@@ -106,6 +107,7 @@ describe("LoanRateChangesService", () => {
     };
 
     ({ manager, dataSource } = createScopedDbMocks([
+      [LoanFee, { find: jest.fn().mockResolvedValue([]) }],
       [LoanRateChange, rateChangesRepository],
       [Account, accountsRepository],
       [ScheduledTransaction, scheduledTransactionsRepository],

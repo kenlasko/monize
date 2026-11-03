@@ -28,7 +28,9 @@ import {
   priceInstallment,
   RateTimelineRow,
   isDebtRetired,
+  LoanFeeLine,
 } from "./price-installment";
+import { LoanFeeTerms } from "./loan-fees";
 
 /**
  * The projection of a loan bill's next occurrences, each priced at its own
@@ -92,6 +94,13 @@ export interface LoanOccurrence {
   interest: number | null;
   extraPrincipal: number | null;
   /**
+   * The bill's fee lines (`docs/specs/mortgage-fees.md` section 6), one per
+   * configured fee the template carries, each `{ categoryId, amount }`;
+   * empty without fees and null when unknown. `amount` includes them;
+   * `principal`, `interest` and `extraPrincipal` describe the loan portion.
+   */
+  fees: LoanOccurrenceFee[] | null;
+  /**
    * The accrued interest the bill does not cover, capitalized into the debt
    * through a negative `principal`; 0 when the interest is covered.
    */
@@ -104,6 +113,12 @@ export interface LoanOccurrence {
   complete: boolean;
   /** Why a figure above is null; null exactly when `complete`. */
   missing: LoanOccurrenceMissing | null;
+}
+
+/** One fee line of a projected occurrence: unsigned, in the minor unit. */
+export interface LoanOccurrenceFee {
+  categoryId: string;
+  amount: number;
 }
 
 /** The columns of an override the fold reads; the rest decide nothing here. */
@@ -134,6 +149,8 @@ export interface ProjectLoanOccurrencesInput {
   readonly count: number;
   /** `datedLoanDebt` at every `originalDate` and `dueDate` among `occurrences`. */
   readonly debtLedger: ReadonlyMap<string, number>;
+  /** The mortgage's configured fees (`readLoanFees`); absent or empty without. */
+  readonly fees?: readonly LoanFeeTerms[];
 }
 
 export type LoanOccurrenceProjection =
@@ -165,6 +182,7 @@ function unknownOccurrence(
     principal: null,
     interest: null,
     extraPrincipal: null,
+    fees: null,
     unpaidInterest: null,
     annualRate,
     debtBefore,
@@ -190,6 +208,16 @@ function overrideLinesAsSplits(
         memo: line.memo ?? null,
       }) as unknown as ScheduledTransactionSplit,
   );
+}
+
+/** A bill's fee lines as an occurrence reports them. */
+function occurrenceFees(
+  lines: readonly { split: ScheduledTransactionSplit; amount?: number }[],
+): LoanOccurrenceFee[] {
+  return lines.map((line) => ({
+    categoryId: line.split.categoryId as string,
+    amount: line.amount ?? lineAmount(line.split),
+  }));
 }
 
 /** The unsigned amount of a line, 0 for a line the template does not carry. */
@@ -253,7 +281,8 @@ export function projectLoanOccurrences(
 ): LoanOccurrenceProjection {
   const { schedule, loanAccount, rateChanges, occurrences, debtLedger } = input;
 
-  const identified = identifyLoanTemplate(input.splits, loanAccount);
+  const fees = input.fees ?? [];
+  const identified = identifyLoanTemplate(input.splits, loanAccount, fees);
   if (!identified.managed) {
     return {
       status: "declined",
@@ -287,7 +316,15 @@ export function projectLoanOccurrences(
   // when the installment's extra differs from what the template holds).
   let chainAmount = Math.abs(Number(schedule.amount));
   let chainExtra = lineAmount(identified.extraPrincipalSplit);
-  const templateOf = (extra: number): LoanTemplateSplits => ({
+  // The fee lines as the chain carries them (INV-LOAN-011): stored at the
+  // cursor, repriced at every later slot as the advancement writes them.
+  let chainFees: number[] = identified.feeLines.map((line) =>
+    lineAmount(line.split),
+  );
+  const templateOf = (
+    extra: number,
+    feeAmounts: readonly number[],
+  ): LoanTemplateSplits => ({
     principalSplit: identified.principalSplit,
     interestSplit: identified.interestSplit,
     extraPrincipalSplit: identified.extraPrincipalSplit
@@ -296,6 +333,13 @@ export function projectLoanOccurrences(
           amount: -extra,
         } as ScheduledTransactionSplit)
       : undefined,
+    feeLines: identified.feeLines.map((line, index): LoanFeeLine => ({
+      fee: line.fee,
+      split: {
+        ...line.split,
+        amount: -feeAmounts[index],
+      } as ScheduledTransactionSplit,
+    })),
   });
 
   // The fold: what the earlier slots book, dated, so the debt at a date
@@ -387,7 +431,7 @@ export function projectLoanOccurrences(
           debt: debtSlot,
           annualRate: rateAtSlot,
           loanAccount,
-          template: templateOf(chainExtra),
+          template: templateOf(chainExtra, chainFees),
           templateAmount: chainAmount,
           datedPayment,
           // The slots are contiguous from the cursor, so the one before this
@@ -407,7 +451,8 @@ export function projectLoanOccurrences(
         // `rewriteLoanTemplate` writes the parent only when the installment
         // is positive; the extra line whenever it differs.
         if (advanced.allocation.total > 0) {
-          chainAmount = advanced.allocation.total;
+          chainAmount = advanced.billTotal;
+          chainFees = advanced.fees.map((line) => line.amount);
         }
         chainExtra = advanced.allocation.extraPrincipal;
       }
@@ -437,6 +482,7 @@ export function projectLoanOccurrences(
         principal: 0,
         interest: 0,
         extraPrincipal: 0,
+        fees: [],
         unpaidInterest: 0,
         annualRate: rateAtDue,
         debtBefore: debtDue,
@@ -464,6 +510,7 @@ export function projectLoanOccurrences(
       const lines = identifyLoanTemplate(
         overrideLinesAsSplits(overrideLines),
         loanAccount,
+        fees,
       );
       if (!lines.managed) {
         firstUnknownSlot = originalDate;
@@ -497,6 +544,7 @@ export function projectLoanOccurrences(
         principal,
         interest,
         extraPrincipal,
+        fees: occurrenceFees(lines.feeLines),
         unpaidInterest: principal < 0 ? roundMoney(-principal) : 0,
         annualRate: rateAtDue,
         debtBefore: debtDue,
@@ -527,7 +575,7 @@ export function projectLoanOccurrences(
       debt: debtDue,
       annualRate: rateAtDue,
       loanAccount,
-      template: templateOf(chainExtra),
+      template: templateOf(chainExtra, chainFees),
       templateAmount: statedAmount ?? chainAmount,
       datedPayment: null,
       paymentNewlyApplies: false,
@@ -547,10 +595,11 @@ export function projectLoanOccurrences(
       originalDate,
       dueDate,
       overrideId: override?.id ?? null,
-      amount: allocation.total,
+      amount: roundMoney(allocation.total + priced.feeTotal),
       principal: allocation.principal,
       interest: allocation.interest,
       extraPrincipal: allocation.extraPrincipal,
+      fees: occurrenceFees(priced.fees),
       unpaidInterest: allocation.unpaidInterest,
       annualRate: rateAtDue,
       debtBefore: debtDue,

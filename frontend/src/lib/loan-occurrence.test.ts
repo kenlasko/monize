@@ -104,3 +104,34 @@ describe('loanOccurrenceLines', () => {
     expect(lines?.map((l) => Math.abs(l.amount))).toEqual([0, 0]);
   });
 });
+
+describe('loanOccurrenceLines with mortgage fees (docs/specs/mortgage-fees.md section 6)', () => {
+  const tax = { id: 't', categoryId: 'cat-tax', transferAccountId: null, memo: 'Property tax', amount: -300 };
+  const withFees = occurrence({
+    amount: 851.6,
+    fees: [{ categoryId: 'cat-tax', amount: 291.6 }],
+  });
+
+  it('fills each fee line from the occurrence, by category, wherever it sits', () => {
+    const lines = loanOccurrenceLines([principal, tax, interest], withFees, 'loan-1', -1);
+    expect(lines?.map((l) => [l.id, l.amount])).toEqual([
+      ['p', -186.9],
+      ['t', -291.6],
+      ['i', -373.1],
+    ]);
+  });
+
+  it('presents nothing when the fees are unknown', () => {
+    expect(
+      loanOccurrenceLines([principal, tax, interest], occurrence({ fees: null }), 'loan-1', -1),
+    ).toBeNull();
+  });
+
+  it('presents nothing when a priced fee has no line on the template', () => {
+    expect(loanOccurrenceLines([principal, interest], withFees, 'loan-1', -1)).toBeNull();
+  });
+
+  it('reads a template without fee lines as before when the server sends no fees', () => {
+    expect(loanOccurrenceLines([principal, interest], occurrence(), 'loan-1', -1)).not.toBeNull();
+  });
+});

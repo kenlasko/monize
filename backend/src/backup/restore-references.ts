@@ -170,6 +170,7 @@ export const RESTORE_REFERENCE_COLUMNS: Readonly<
     funding_account_id: "accounts",
   },
   loan_rate_changes: { account_id: "accounts" },
+  loan_fees: { account_id: "accounts", category_id: "categories" },
   loan_scenarios: { account_id: "accounts" },
   budget_categories: {
     budget_id: "budgets",

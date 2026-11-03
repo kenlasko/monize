@@ -390,7 +390,9 @@ export class LoanRateChangesService {
       currencyCode: scheduled.currencyCode ?? account.currencyCode ?? "",
       dueDate,
       currentPaymentAmount: installment.templateAmount,
-      proposedPaymentAmount: allocation.total,
+      // The bill, its fee lines included (INV-LOAN-011), as the current
+      // payment beside it is.
+      proposedPaymentAmount: installment.billTotal,
       currentPrincipal: template.principalSplit
         ? Math.abs(Number(template.principalSplit.amount))
         : null,

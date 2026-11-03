@@ -115,6 +115,19 @@ Not sure which type you have? Click **Not sure? Enter a few installments**, copy
 
 The **Amortization Preview** shows the calculated payment amount, the **effective rate**, the first payment's principal and interest split, the total number of payments, total interest, and the estimated payoff date. A linear or interest-only mortgage has no fixed payment, so each installment is worked out on its due date from the balance and the rate.
 
+### Mortgage Fees
+
+A mortgage payment often collects more than principal and interest: mortgage insurance, property tax held by the lender, or an administration fee. Under **Mortgage fees**, click **Add a fee** for each one and enter:
+
+| Field | Description |
+|-------|-------------|
+| **Fee name** | Shown as the memo of the fee's line, for example *Property tax* |
+| **Category** | The category the fee is booked to. Each fee needs its own category, and it cannot be the interest category |
+| **Calculated as** | **Fixed amount**; **Percentage of current balance**, recalculated at every payment so it falls as the mortgage is paid down; or **Percentage of original balance**, based on the amount originally borrowed |
+| **Value applies** | **Per payment**, or **Per year**, which divides the value over the payments in a year (a yearly property tax of 3,600 paid monthly is 300.00 a payment) |
+
+Each fee becomes its own line of the scheduled mortgage payment, and the payment amount is the principal and interest plus every fee. Fees are optional. To change them later, open the mortgage's detail page and use **Edit fees** in the **Mortgage fees** panel; saving updates the lines of the next payment. Payment matching cannot yet settle a payment that includes fees, so the two cannot be turned on together when you create a mortgage.
+
 ### Payment Matching
 
 If your bank posts one undivided debit for each mortgage or loan installment, turn on **Match imported bank payments** and enter a **Payee pattern** (with a `*` wildcard, for example `*MY BANK*`) and an optional **Description pattern**. When an imported or synced bank row matches, Monize splits it into principal and interest, books it as the installment, and marks the scheduled payment as paid, instead of you ending up with a duplicate. Turning this on turns off auto-posting on the linked bill, because the bank's own row is what gets matched.
@@ -294,7 +307,7 @@ For loans and mortgages, the top of the page shows a row of summary cards:
 | **Est. Payoff** | When the loan is projected to be fully repaid |
 | **Est. Remaining Interest** | The interest still to be paid over the remaining schedule |
 
-Below the cards, the page includes a month-grouped **Loan Schedule** with real per-row interest, a **Payoff Timeline** chart, an interactive **Overpayment Simulator** with **Saved Scenarios** and a scenario comparison chart, an **Impact of Overpayments Made** (Past Impact) analysis, and an editable **Rate History** timeline with **Detect Mortgage Type**. A **Payment matching** panel shows the [payment matching](#payment-matching) rule linked to the loan (or offers **Create one**), lists the installments it settled, and offers **Process history** to run the rule over what you already imported. **Export PDF** saves the whole page as a PDF. The schedule, rate history, and scenario comparison **export to CSV**, and the payoff comparison chart exports to **PNG**. See [Loan Detail Page Tools](reports.md#loan-detail-page-tools) for the full breakdown of each tool.
+Below the cards, the page includes a month-grouped **Loan Schedule** with real per-row interest, a **Payoff Timeline** chart, an interactive **Overpayment Simulator** with **Saved Scenarios** and a scenario comparison chart, an **Impact of Overpayments Made** (Past Impact) analysis, and an editable **Rate History** timeline with **Detect Mortgage Type**. A **Payment matching** panel shows the [payment matching](#payment-matching) rule linked to the loan (or offers **Create one**), lists the installments it settled, and offers **Process history** to run the rule over what you already imported. On a mortgage, a **Mortgage fees** panel lists the [fees](#mortgage-fees) its payment collects and offers **Edit fees**. **Export PDF** saves the whole page as a PDF. The schedule, rate history, and scenario comparison **export to CSV**, and the payoff comparison chart exports to **PNG**. See [Loan Detail Page Tools](reports.md#loan-detail-page-tools) for the full breakdown of each tool.
 
 ![The overpayment simulator on a mortgage, with saved scenarios compared](images/account-mortgage-simulator.png)
 

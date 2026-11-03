@@ -6,6 +6,7 @@ import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/sc
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import {
   applyLoanInterestRelink,
   assertLoanInterestCategory,
@@ -47,6 +48,7 @@ describe("loan interest category", () => {
   let categories: Record<string, jest.Mock>;
   let schedules: Record<string, jest.Mock>;
   let splitsRepo: Record<string, jest.Mock>;
+  let loanFees: Record<string, jest.Mock>;
   let m: EntityManager;
   const loan = { id: LOAN, scheduledTransactionId: SCHEDULE };
 
@@ -63,7 +65,9 @@ describe("loan interest category", () => {
       find: jest.fn().mockResolvedValue([]),
       save: jest.fn().mockImplementation((s) => Promise.resolve(s)),
     };
+    loanFees = { find: jest.fn().mockResolvedValue([]) };
     const mocks = createScopedDbMocks([
+      [LoanFee, loanFees],
       [Category, categories],
       [ScheduledTransaction, schedules],
       [ScheduledTransactionSplit, splitsRepo],
@@ -91,6 +95,35 @@ describe("loan interest category", () => {
   });
 
   describe("planLoanInterestRelink", () => {
+    it("refuses a category one of the mortgage's fees holds, before reading the schedule", async () => {
+      loanFees.find.mockResolvedValue([{ categoryId: B }]);
+
+      await expect(planLoanInterestRelink(m, USER, loan, A, B)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(schedules.findOne).not.toHaveBeenCalled();
+    });
+
+    it("keeps a template with a fee line managed across the change (INV-LOAN-011)", async () => {
+      const interest = categoryLine("s-interest", A, "Interest");
+      const tax = categoryLine("s-tax", ESCROW, "Property tax");
+      loanFees.find.mockResolvedValue([
+        {
+          categoryId: ESCROW,
+          name: "Property tax",
+          calculation: "FIXED",
+          basis: "ANNUAL",
+          amount: 2400,
+          rate: null,
+        },
+      ]);
+      withSplits([principal(), interest, tax]);
+
+      const plan = await planLoanInterestRelink(m, USER, loan, A, B);
+
+      expect(plan).toEqual({ kind: "relink", split: interest, next: B });
+    });
+
     it("relinks an uncategorised interest line once a category is set", async () => {
       const interest = categoryLine("s-interest", null, "Interest");
       withSplits([principal(), interest]);

@@ -357,6 +357,12 @@ export type LoanOccurrenceMissing =
  * (spec 8.1). Money is unsigned and booked in the minor unit; `null` is
  * unknown, never zero, and `missing` says why.
  */
+/** One mortgage fee line of a projected occurrence: unsigned, in the minor unit. */
+export interface LoanOccurrenceFee {
+  categoryId: string;
+  amount: number;
+}
+
 export interface LoanOccurrence {
   /** The recurrence slot: the occurrence's identity. */
   originalDate: string;
@@ -367,6 +373,12 @@ export interface LoanOccurrence {
   principal: number | null;
   interest: number | null;
   extraPrincipal: number | null;
+  /**
+   * The bill's mortgage fee lines (docs/specs/mortgage-fees.md section 6),
+   * one per fee by category; `amount` includes them. Null when unknown;
+   * absent from an older server's answer.
+   */
+  fees?: LoanOccurrenceFee[] | null;
   /**
    * The accrued interest the bill does not cover: capitalized into the debt
    * through a negative `principal`. 0 when covered, null when unknown; absent

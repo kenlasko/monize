@@ -49,6 +49,13 @@ import {
   refuseStatedPayment,
 } from "../loan-rate-changes/loan-rate-changes.service";
 import { withScopedDb } from "../common/db/scoped-db";
+import { currencyMinorUnitDecimals } from "../common/currency-minor-unit.util";
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
+import {
+  assertLoanFeeCategories,
+  normalizeLoanFees,
+  priceFeeTemplateLines,
+} from "../loan-fees/loan-fee-terms";
 import { datedLoanDebt } from "./dated-loan-debt.util";
 import {
   MortgageType,
@@ -375,8 +382,12 @@ export class LoanMortgageAccountService {
       prepaymentMode,
       termMonths,
       amortizationMonths,
+      loanFees: requestedFees,
       ...accountData
     } = createAccountDto;
+    // Normalized before anything else is read: a malformed fee is the
+    // request's, and refused before any write (mortgage-fees spec section 7).
+    const loanFees = normalizeLoanFees(requestedFees ?? []);
 
     if (
       !mortgagePaymentFrequency ||
@@ -412,6 +423,17 @@ export class LoanMortgageAccountService {
         ),
       );
     }
+    // The settlement does not price fee lines yet (mortgage-fees spec section
+    // 8), so a rule that could never settle a fee-carrying bill is refused
+    // rather than written.
+    if (paymentMatching && loanFees.length > 0) {
+      throw new BadRequestException(
+        tr(
+          "errors.loanFees.paymentMatchingUnsupported",
+          "Payment matching cannot settle a mortgage payment that includes fees yet. Turn off payment matching or remove the fees.",
+        ),
+      );
+    }
     // Refused before anything is written, as the rule create would refuse it.
     if (paymentMatching) {
       this.loanPaymentMatchingService.assertDefinable(
@@ -431,9 +453,10 @@ export class LoanMortgageAccountService {
         ),
       );
     }
-    await withScopedDb(this.dataSource, (m) =>
-      assertLoanInterestCategory(m, userId, interestCategoryId),
-    );
+    await withScopedDb(this.dataSource, async (m) => {
+      await assertLoanInterestCategory(m, userId, interestCategoryId);
+      await assertLoanFeeCategories(m, userId, loanFees, interestCategoryId);
+    });
     const interestCatId = interestCategoryId;
 
     await this.assertSourceCurrency(
@@ -504,6 +527,17 @@ export class LoanMortgageAccountService {
           total: amortization.paymentAmount,
         };
 
+    // Each fee's first line, priced on the opening debt (mortgage-fees spec
+    // section 7): the bill is the installment plus every fee line.
+    const feeLines = priceFeeTemplateLines(loanFees, {
+      debt: mortgageAmount,
+      originalPrincipal:
+        storedOriginalPrincipal > 0 ? storedOriginalPrincipal : null,
+      periodsPerYear: getMortgagePeriodsPerYear(mortgagePaymentFrequency),
+      decimals: currencyMinorUnitDecimals(accountData.currencyCode),
+    });
+    const firstBill = roundMoney(firstInstallment.total + feeLines.total);
+
     const termEndDate = termMonths
       ? mortgageTermEndDate(new Date(paymentStartDate), termMonths)
       : null;
@@ -560,7 +594,7 @@ export class LoanMortgageAccountService {
           accountId: sourceAccountId,
           name: `Mortgage Payment - ${saved.name}`,
           payeeName: institutionName,
-          amount: -firstInstallment.total,
+          amount: -firstBill,
           currencyCode: accountData.currencyCode,
           frequency: FrequencyTypeDto[scheduledFrequency],
           nextDueDate: paymentStartDate,
@@ -579,8 +613,29 @@ export class LoanMortgageAccountService {
               amount: -firstInstallment.interest,
               memo: "Interest",
             },
+            ...feeLines.lines.map((line) => ({
+              categoryId: line.categoryId,
+              amount: -line.amount,
+              memo: line.memo,
+            })),
           ],
         });
+
+      if (loanFees.length > 0) {
+        const feeRepo = m.getRepository(LoanFee);
+        await feeRepo.save(
+          loanFees.map((fee, index) =>
+            feeRepo.create({
+              ...fee,
+              amount: fee.amount === null ? null : Number(fee.amount),
+              rate: fee.rate === null ? null : Number(fee.rate),
+              userId,
+              accountId: saved.id,
+              sortOrder: index,
+            }),
+          ),
+        );
+      }
 
       saved.scheduledTransactionId = scheduledTransaction.id;
       return { savedAccount: await repo.save(saved), scheduledTransaction };

@@ -1,3 +1,4 @@
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import { EntityManager } from "typeorm";
 import {
   datedAnnualRate,
@@ -638,6 +639,7 @@ describe("priceInstallment", () => {
     beforeEach(() => {
       rateChangesRepository = { find: jest.fn().mockResolvedValue([]) };
       manager = createScopedDbMocks([
+        [LoanFee, { find: jest.fn().mockResolvedValue([]) }],
         [LoanRateChange, rateChangesRepository],
       ]).manager;
       ledgerDebt = 235000.0012;
@@ -1056,6 +1058,7 @@ describe("priceInstallment", () => {
     beforeEach(() => {
       rateChangesRepository = { find: jest.fn().mockResolvedValue([]) };
       manager = createScopedDbMocks([
+        [LoanFee, { find: jest.fn().mockResolvedValue([]) }],
         [LoanRateChange, rateChangesRepository],
       ]).manager;
       manager.query.mockImplementation(async (sql: unknown) =>

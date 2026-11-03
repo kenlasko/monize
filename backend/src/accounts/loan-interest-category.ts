@@ -8,6 +8,7 @@ import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/sc
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { Account } from "./entities/account.entity";
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 
 const logger = new Logger("LoanInterestCategory");
 
@@ -67,6 +68,20 @@ export async function planLoanInterestRelink(
   if (next === null) {
     return noop(loan, previous, next, "category cleared");
   }
+  // A fee's line is identified by its category (docs/specs/mortgage-fees.md
+  // section 2), so the interest category cannot be one a fee holds: the two
+  // lines would be one category, and which is interest a guess.
+  const fees = await m.getRepository(LoanFee).find({
+    where: { accountId: loan.id },
+  });
+  if (fees.some((fee) => fee.categoryId === next)) {
+    throw new BadRequestException(
+      tr(
+        "errors.accounts.interestCategoryIsLoanFee",
+        "This category is already used by one of the mortgage's fees. Choose another category for the interest, or change the fee first.",
+      ),
+    );
+  }
   if (!loan.scheduledTransactionId) {
     return noop(loan, previous, next, "no linked schedule");
   }
@@ -81,10 +96,11 @@ export async function planLoanInterestRelink(
     where: { scheduledTransactionId: schedule.id },
   });
 
-  const before = identifyLoanTemplate(splits, {
-    id: loan.id,
-    interestCategoryId: previous,
-  });
+  const before = identifyLoanTemplate(
+    splits,
+    { id: loan.id, interestCategoryId: previous },
+    fees,
+  );
   const candidates = splits.filter(
     (s) =>
       s.kind === SplitKind.CATEGORY &&
@@ -102,8 +118,11 @@ export async function planLoanInterestRelink(
       s === candidate ? { ...s, categoryId: next } : s,
     );
     if (
-      identifyLoanTemplate(after, { id: loan.id, interestCategoryId: next })
-        .managed
+      identifyLoanTemplate(
+        after,
+        { id: loan.id, interestCategoryId: next },
+        fees,
+      ).managed
     ) {
       relinked = candidate;
       reason = "single candidate line";

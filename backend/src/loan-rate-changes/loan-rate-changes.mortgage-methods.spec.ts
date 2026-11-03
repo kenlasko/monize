@@ -1,3 +1,4 @@
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import { BadRequestException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { LoanRateChangesService } from "./loan-rate-changes.service";
@@ -132,6 +133,7 @@ describe("LoanRateChangesService: LINEAR and INTEREST_ONLY", () => {
     template(833.3333, 393.0556);
 
     ({ manager, dataSource } = createScopedDbMocks([
+      [LoanFee, { find: jest.fn().mockResolvedValue([]) }],
       [LoanRateChange, rateChangesRepository],
       [Account, accountsRepository],
       [ScheduledTransaction, scheduledTransactionsRepository],

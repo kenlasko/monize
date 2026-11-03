@@ -1,3 +1,4 @@
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
@@ -174,6 +175,7 @@ describe("ScheduledTransactionLoanService: LINEAR and INTEREST_ONLY", () => {
     };
 
     const scopedDb = createScopedDbMocks([
+      [LoanFee, { find: jest.fn().mockResolvedValue([]) }],
       [ScheduledTransaction, scheduledTransactionsRepository],
       [ScheduledTransactionSplit, splitsRepository],
       [Account, accountsRepository],

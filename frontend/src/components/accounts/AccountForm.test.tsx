@@ -83,6 +83,7 @@ vi.mock('@/lib/format', () => ({
 
 vi.mock('@/lib/categoryUtils', () => ({
   buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, children: [] })),
+  buildCategoryLabelMap: (cats: any[]) => new Map((cats || []).map((c: any) => [c.id, c.name])),
   getCategorySelectOptions: (cats: any[]) => (cats || []).map((c: any) => ({ value: c.id, label: c.name })),
   buildCategoryColorMap: () => new Map(),
 }));

@@ -52,6 +52,13 @@ import { getErrorMessage } from '@/lib/errors';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { LoanFields } from './LoanFields';
 import { MortgageFields } from './MortgageFields';
+import {
+  LoanFeeDraft,
+  LoanFeeDraftErrors,
+  loanFeeDraftErrors,
+  loanFeeDraftsToInputs,
+} from '@/lib/loan-fees';
+import type { LoanFeeInput } from '@/types/loan-fee';
 import { AssetFields } from './AssetFields';
 import { AccountExportModal } from './AccountExportModal';
 import { LoanPaymentSetupDialog } from './LoanPaymentSetupDialog';
@@ -295,6 +302,7 @@ type AccountSubmitData = Omit<
 > & {
   prepaymentMode?: PrepaymentMode | null;
   paymentMatching?: PaymentMatching;
+  loanFees?: LoanFeeInput[];
 };
 
 /** The cash ledger's own fields as the form loads them from the stored row. */
@@ -375,6 +383,10 @@ export function AccountForm({
   const [selectedAssetCategoryId, setSelectedAssetCategoryId] = useState<string>(account?.assetCategoryId || '');
   const [assetCategoryName, setAssetCategoryName] = useState<string>('');
   const [selectedInterestCategoryId, setSelectedInterestCategoryId] = useState<string>(account?.interestCategoryId || '');
+  // A new mortgage's fees (docs/specs/mortgage-fees.md); the errors appear
+  // once a save was attempted.
+  const [loanFees, setLoanFees] = useState<LoanFeeDraft[]>([]);
+  const [loanFeeErrors, setLoanFeeErrors] = useState<LoanFeeDraftErrors[] | undefined>(undefined);
   const [interestBookingMode, setInterestBookingMode] = useState<InterestBookingMode>(account?.interestBookingMode || 'AUTO');
   const [selectedOverpaymentCategoryId, setSelectedOverpaymentCategoryId] = useState<string>(account?.overpaymentCategoryId || '');
   const [selectedOverpaymentPayeeId, setSelectedOverpaymentPayeeId] = useState<string>(account?.overpaymentPayeeId || '');
@@ -538,6 +550,17 @@ export function AccountForm({
           descriptionPattern: paymentMatchingDescriptionPattern?.trim() || undefined,
         };
       }
+      // A new mortgage's fees, checked here as the server checks them. The
+      // server refuses fees with payment matching, so neither is sent while
+      // both are set; the form says why beside the fees.
+      if (!account && data.accountType === 'MORTGAGE' && loanFees.length > 0) {
+        const feeErrors = loanFeeDraftErrors(loanFees, selectedInterestCategoryId);
+        setLoanFeeErrors(feeErrors);
+        if (feeErrors.some((e) => Object.keys(e).length > 0) || paymentMatchingEnabled) {
+          return;
+        }
+        payload.loanFees = loanFeeDraftsToInputs(loanFees);
+      }
       // Editing: an emptied threshold means "clear it", so send null rather than
       // omitting the field (which would leave the stored value untouched). Only
       // on edit -- CreateAccountDto does not carry these fields.
@@ -571,7 +594,7 @@ export function AccountForm({
       }
       return onSubmit(payload);
     },
-    [account, cashHalf, dirtyFields.institutionId, onSubmit],
+    [account, cashHalf, dirtyFields.institutionId, onSubmit, loanFees, selectedInterestCategoryId],
   );
 
   useFormSubmitRef(submitRef, handleSubmit, handleValidatedSubmit);
@@ -1245,6 +1268,9 @@ export function AccountForm({
           handleOverpaymentCategoryChange={handleOverpaymentCategoryChange}
           selectedOverpaymentPayeeId={selectedOverpaymentPayeeId}
           handleOverpaymentPayeeChange={handleOverpaymentPayeeChange}
+          loanFees={account ? undefined : loanFees}
+          onLoanFeesChange={account ? undefined : setLoanFees}
+          loanFeeErrors={loanFeeErrors}
         />
       )}
 

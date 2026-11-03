@@ -22,6 +22,8 @@ import { accountsApi } from '@/lib/accounts';
 import { PREPAYMENT_MODES, storesConstantPayment } from '@/lib/mortgage-type';
 import { OverpaymentRecognitionFields } from './OverpaymentRecognitionFields';
 import { MortgageTypeDetector } from './MortgageTypeDetector';
+import { LoanFeesEditor } from './LoanFeesEditor';
+import type { LoanFeeDraft, LoanFeeDraftErrors } from '@/lib/loan-fees';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { createLogger } from '@/lib/logger';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -69,6 +71,10 @@ interface MortgageFieldsProps {
   handleOverpaymentCategoryChange: (categoryId: string) => void;
   selectedOverpaymentPayeeId: string;
   handleOverpaymentPayeeChange: (payeeId: string) => void;
+  /** The fees a new mortgage's payment collects (create only). */
+  loanFees?: LoanFeeDraft[];
+  onLoanFeesChange?: (fees: LoanFeeDraft[]) => void;
+  loanFeeErrors?: LoanFeeDraftErrors[];
 }
 
 export function MortgageFields({
@@ -102,6 +108,9 @@ export function MortgageFields({
   handleOverpaymentCategoryChange,
   selectedOverpaymentPayeeId,
   handleOverpaymentPayeeChange,
+  loanFees,
+  onLoanFeesChange,
+  loanFeeErrors,
 }: MortgageFieldsProps) {
   const t = useTranslations('accounts');
   const { formatDate } = useDateFormat();
@@ -523,6 +532,26 @@ export function MortgageFields({
             sourceAccountName={sourceAccountName}
             kind="mortgage"
           />
+
+          {/* Fees collected with each payment (docs/specs/mortgage-fees.md):
+              each becomes its own line of the scheduled payment. Create
+              here; an existing mortgage edits them from its Loan Details. */}
+          {loanFees && onLoanFeesChange && (
+            <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+              <LoanFeesEditor
+                fees={loanFees}
+                onChange={onLoanFeesChange}
+                categories={categories}
+                currencyCode={watchedCurrency}
+                errors={loanFeeErrors}
+              />
+              {paymentMatchingEnabled && loanFees.length > 0 && (
+                <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
+                  {t('loanFees.paymentMatchingConflict')}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Mortgage Amortization Preview */}
           {mortgagePreview && (

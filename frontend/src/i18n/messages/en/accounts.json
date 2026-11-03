@@ -818,5 +818,48 @@
         }
       }
     }
+  },
+  "loanFees": {
+    "title": "Mortgage fees",
+    "help": "Insurance, taxes or other fees collected with each mortgage payment. Each fee becomes its own line of the scheduled payment, booked to the category you choose. A fee can be a fixed amount, a percentage of the current balance (recalculated at every payment) or a percentage of the original balance, charged per payment or per year.",
+    "panelDescription": "Fees collected with each scheduled mortgage payment. Saving updates the lines of the next payment.",
+    "none": "No fees are collected with this mortgage's payment.",
+    "name": "Fee name",
+    "category": "Category",
+    "calculation": "Calculated as",
+    "basis": "Value applies",
+    "amount": "Amount",
+    "rate": "Rate",
+    "add": "Add a fee",
+    "remove": "Remove fee",
+    "edit": "Edit fees",
+    "editTitle": "Mortgage fees",
+    "save": "Save fees",
+    "cancel": "Cancel",
+    "saved": "The mortgage fees were saved.",
+    "saveFailed": "The mortgage fees could not be saved.",
+    "loading": "Loading fees...",
+    "loadFailed": "The mortgage fees could not be loaded.",
+    "retry": "Retry",
+    "unknownCategory": "Unknown category",
+    "unknownValue": "unknown",
+    "summaryPerPayment": "{value} per payment, {calculation}",
+    "summaryAnnual": "{value} per year, {calculation}",
+    "paymentMatchingConflict": "Payment matching cannot settle a payment that includes fees yet. Turn off payment matching or remove the fees.",
+    "paymentMatchingNote": "Payment matching does not settle a payment that includes fees yet: its bank debits are left for you to record.",
+    "calculations": {
+      "fixed": "Fixed amount",
+      "percentCurrentBalance": "Percentage of current balance",
+      "percentOriginalBalance": "Percentage of original balance"
+    },
+    "bases": {
+      "perPayment": "Per payment",
+      "annual": "Per year"
+    },
+    "errors": {
+      "required": "Required",
+      "duplicate": "Each fee needs its own category, other than the interest category",
+      "range": "Enter a rate of at most 100%"
+    }
   }
 }
