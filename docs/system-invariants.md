@@ -2452,13 +2452,14 @@ Enforcement         Built-in reports: NET_SPEND_AMOUNT / isNetSpending
                     isNetSpending of the negated net; INCOME_ONLY: a positive
                     net; BOTH: the magnitude of the net), and a group is the sum
                     of its kept cells (audit A26-M33). The metric NONE list keeps
-                    its row-level direction filter; under BOTH it lists each row
-                    with its own sign, so its total is the signed net of the
-                    listed rows (discussion #1978). The client names a BOTH
-                    headline (`customReportMeasure`,
+                    its row-level direction filter; ungrouped and under BOTH it
+                    lists each row with its own sign, so its total is the signed
+                    net of the listed rows (discussion #1978). The client names a
+                    BOTH headline (`customReportMeasure`,
                     frontend/src/lib/custom-report-measure.ts): a signed list's
-                    "Net amount", an aggregate's "Total of unsigned category
-                    amounts".
+                    "Net amount" ("Net cash movement" with transfers included),
+                    an aggregate's or a grouped metric NONE report's "Total of
+                    unsigned category amounts".
                     The loan history's Interest Paid
                     (frontend/src/lib/loan-history.ts) sums each interest row
                     signed, so a lender's refund nets (A26-S15-05).
