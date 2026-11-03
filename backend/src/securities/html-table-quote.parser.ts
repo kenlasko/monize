@@ -1,6 +1,6 @@
-import { DomUtils, parseDocument } from "htmlparser2";
 import { isKnownIsoCurrency } from "../currencies/currency-metadata";
 import { HistoricalPrice } from "./providers/quote-provider.interface";
+import { PageCell, PageTable, readPageTables } from "./html-table-reader";
 
 /**
  * Reads daily prices out of an ordinary HTML table on a web page: the
@@ -15,8 +15,6 @@ import { HistoricalPrice } from "./providers/quote-provider.interface";
  * Pure: no network, no clock except the `now` it is handed (two-digit years
  * are resolved against it).
  */
-
-type Element = ReturnType<typeof DomUtils.getElementsByTagName>[number];
 
 export type QuoteTableField =
   "date" | "close" | "open" | "high" | "low" | "volume";
@@ -63,70 +61,6 @@ export interface ParsedQuoteTable {
   skippedRows: number;
 }
 
-/** Tables examined per page; a page of thousands of nested tables is hostile, not a quote page. */
-const MAX_TABLES_SCANNED = 200;
-
-/** Deeper than any real quote page; htmlparser2 is quadratic in depth. */
-const MAX_NESTING_DEPTH = 500;
-
-/** Tags a browser closes by itself, so an unclosed one does not add depth. */
-const IMPLIED_CLOSE_TAGS = new Set([
-  "br",
-  "hr",
-  "img",
-  "input",
-  "meta",
-  "link",
-  "col",
-  "wbr",
-  "source",
-  "td",
-  "th",
-  "tr",
-  "thead",
-  "tbody",
-  "tfoot",
-  "p",
-  "li",
-  "dt",
-  "dd",
-  "option",
-]);
-
-/**
- * Whether the page nests elements deeper than `MAX_NESTING_DEPTH`, found by one
- * linear scan of its tags before the quadratic-in-depth parse is paid for. The
- * bodies of comments, `<script>` and `<style>` are text, not elements, and are
- * jumped over: a script holding a string of markup is not nesting. An
- * approximation otherwise: a miss costs nothing a 5 MB page of shallow tags
- * would not, and a false positive needs 500 open elements, which no price page
- * has.
- */
-function exceedsNestingLimit(html: string): boolean {
-  const tag = /<!--|<(\/?)([a-zA-Z][a-zA-Z0-9:-]*)[^>]*?(\/?)>/g;
-  let depth = 0;
-  for (let m = tag.exec(html); m !== null; m = tag.exec(html)) {
-    if (m[0] === "<!--") {
-      const close = html.indexOf("-->", tag.lastIndex);
-      tag.lastIndex = close < 0 ? html.length : close + 3;
-      continue;
-    }
-    const name = m[2].toLowerCase();
-    if ((name === "script" || name === "style") && m[1] !== "/") {
-      // Raw text up to the matching close tag, or to the end of the page.
-      const close = new RegExp(`</${name}\\b`, "gi");
-      close.lastIndex = tag.lastIndex;
-      const end = close.exec(html);
-      tag.lastIndex = end ? end.index : html.length;
-      continue;
-    }
-    if (IMPLIED_CLOSE_TAGS.has(name) || m[3] === "/") continue;
-    if (m[1] === "/") depth = Math.max(0, depth - 1);
-    else if (++depth > MAX_NESTING_DEPTH) return true;
-  }
-  return false;
-}
-
 /**
  * A table whose numbers or dates can be read in more than one way, with nothing
  * on the page to say which. Guessing stores a price a thousand times too large
@@ -144,14 +78,7 @@ export function parseQuoteTable(
   html: string,
   now: Date = new Date(),
 ): ParsedQuoteTable | null {
-  if (exceedsNestingLimit(html)) return null;
-  const document = parseDocument(html, { decodeEntities: true });
-  const tables = DomUtils.getElementsByTagName(
-    "table",
-    document,
-    true,
-    MAX_TABLES_SCANNED,
-  );
+  const tables = readPageTables(html);
 
   let best: ParsedQuoteTable | null = null;
   let ambiguous: AmbiguousQuoteTableError | null = null;
@@ -172,11 +99,11 @@ export function parseQuoteTable(
 }
 
 function parseTable(
-  table: Element,
+  table: PageTable,
   tableIndex: number,
   now: Date,
 ): ParsedQuoteTable | null {
-  const rows = ownRows(table);
+  const rows = table.rows;
   let headerRow = -1;
   let columns: Partial<Record<QuoteTableField, number>> = {};
   let headerTexts: string[] = [];
@@ -267,42 +194,11 @@ function parseTable(
   };
 }
 
-/**
- * The `<tr>`s of this table, not of a table nested inside one of its cells.
- * One downward walk that does not enter a nested table, so the total cost over
- * every table on a page is linear in the page, however deeply they nest.
- */
-function ownRows(table: Element): Element[] {
-  const rows: Element[] = [];
-  const stack: unknown[] = [...table.children].reverse();
-  while (stack.length > 0) {
-    const node = stack.pop();
-    if (!isElement(node) || node.name === "table") continue;
-    if (node.name === "tr") rows.push(node);
-    for (let i = node.children.length - 1; i >= 0; i--) {
-      stack.push(node.children[i]);
-    }
-  }
-  return rows;
-}
-
-function isElement(node: unknown): node is Element {
-  return (
-    typeof node === "object" &&
-    node !== null &&
-    "name" in node &&
-    "children" in node
-  );
-}
-
-/** A row's `<td>`/`<th>` cells, each repeated `colspan` times so indexes line up. */
-function expandedCells(row: Element): Element[] {
-  const out: Element[] = [];
-  for (const child of row.children) {
-    if (!isElement(child) || (child.name !== "td" && child.name !== "th"))
-      continue;
-    const span = Math.min(Math.max(Number(child.attribs?.colspan) || 1, 1), 20);
-    for (let i = 0; i < span; i++) out.push(child);
+/** A row's cells, each repeated `colspan` times so indexes line up. */
+function expandedCells(row: PageCell[]): PageCell[] {
+  const out: PageCell[] = [];
+  for (const cell of row) {
+    for (let i = 0; i < cell.span; i++) out.push(cell);
   }
   return out;
 }
@@ -311,18 +207,8 @@ function normalizeText(text: string): string {
   return text.replace(/[\s\u00a0\u202f]+/g, " ").trim();
 }
 
-/** A node's text without that of any table nested inside it. */
-function ownText(node: Element): string {
-  return node.children
-    .map((child) => {
-      if (isElement(child)) return child.name === "table" ? "" : ownText(child);
-      return DomUtils.textContent(child);
-    })
-    .join("");
-}
-
-function cellText(cell: Element): string {
-  return normalizeText(ownText(cell));
+function cellText(cell: PageCell): string {
+  return normalizeText(cell.text);
 }
 
 /**
@@ -331,11 +217,9 @@ function cellText(cell: Element): string {
  * (FT: "Monday, November 02, 2026" and "Mon, Nov 02, 2026" in one cell), so
  * each child element's text is tried before the concatenated whole.
  */
-function cellCandidates(cell: Element): string[] {
-  const parts = cell.children
-    .filter(isElement)
-    .filter((child) => child.name !== "table")
-    .map((child) => normalizeText(ownText(child)))
+function cellCandidates(cell: PageCell): string[] {
+  const parts = cell.parts
+    .map((part) => normalizeText(part))
     .filter((text) => text.length > 0);
   const whole = cellText(cell);
   return parts.length > 1 ? [...parts, whole] : [whole];

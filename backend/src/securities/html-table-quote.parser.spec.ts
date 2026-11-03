@@ -270,14 +270,42 @@ describe("hostile pages", () => {
     expect(ms).toBeLessThan(1000);
   });
 
-  it("refuses a page nested deeper than any real quote page", () => {
-    const html =
-      "<table><tr><th>Date</th><th>Close</th></tr><tr><td><div>" +
-      "<div>".repeat(900_000) +
-      "2026-01-02</td><td>5</td></tr></table>";
-    const { result, ms } = timed(html);
-    expect(result).toBeNull();
-    expect(ms).toBeLessThan(1000);
+  // The pages of PR #1995's second review, at the 5 MB the download allows:
+  // each held the event loop for seconds to minutes through the DOM builder,
+  // the streaming Parser or the regex pre-scan, so each is timed here.
+  const PRICE_TABLE =
+    "<table><tr><th>Date</th><th>Close</th></tr>" +
+    "<tr><td>2026-11-02</td><td>5.10</td></tr></table>";
+  const fill = (unit: string) =>
+    unit.repeat(Math.floor((5 * 1024 * 1024) / unit.length));
+
+  it.each([
+    ["repeated <thead>", "<thead>"],
+    ["repeated <tfoot>", "<tfoot>"],
+    ["stray closing tags", "<div></span>"],
+    ["unclosed divs", "<div>"],
+    ["nested tables", "<table><tr><td>"],
+    ["unclosed cells", "<td><b>"],
+  ])("reads the table after 5 MB of %s in linear time", (_name, unit) => {
+    const { result, ms } = timed(fill(unit) + PRICE_TABLE);
+    expect(ms).toBeLessThan(2000);
+    // Inside unclosed nested tables the price table is a nested one; outside
+    // them it is read as the page's table either way.
+    if (unit !== "<table><tr><td>") {
+      expect(result?.prices.map((p) => p.close)).toEqual([5.1]);
+    }
+  });
+
+  it.each([
+    ["an unterminated tag", "<a "],
+    ["an unterminated comment", "<!--"],
+    ["an unterminated script", "<script>"],
+    ["bare angle brackets", "<"],
+    ["unterminated entities", "&amp"],
+    ["an unterminated colspan", '<td colspan="'],
+  ])("is linear on 5 MB of %s", (_name, unit) => {
+    const { ms } = timed(fill(unit) + PRICE_TABLE);
+    expect(ms).toBeLessThan(2000);
   });
 
   it("still reads a long table of unclosed cells and rows", () => {
@@ -385,8 +413,21 @@ describe("script, style and comment bodies are text, not nesting", () => {
     expect(parseQuoteTable(`<html>${body}${price}</html>`, NOW)).not.toBeNull();
   });
 
-  it("still refuses 600 real nested elements", () => {
-    expect(parseQuoteTable(`${"<div>".repeat(600)}${price}`, NOW)).toBeNull();
+  it("reads a table after 600 real nested elements", () => {
+    expect(
+      parseQuoteTable(`${"<div>".repeat(600)}${price}`, NOW),
+    ).not.toBeNull();
+  });
+
+  it("does not read a script's markup as a table", () => {
+    const fake =
+      "<script>var t='<table><tr><th>Date</th><th>Close</th></tr>" +
+      "<tr><td>2026-11-01</td><td>99</td></tr></table>';</script>";
+    expect(
+      parseQuoteTable(`<html>${fake}${price}</html>`, NOW)!.prices.map(
+        (p) => p.close,
+      ),
+    ).toEqual([5.1]);
   });
 
   it("scans unclosed scripts in linear time", () => {
