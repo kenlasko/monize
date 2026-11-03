@@ -463,6 +463,12 @@
     "generating": "Rapport genereren...",
     "noData": "Geen gegevens gevonden voor de geselecteerde criteria",
     "transactionCount": "{count, plural, one {# transactie} other {# transacties}}",
+    "measure": {
+      "netAmount": "Nettobedrag",
+      "netCashMovement": "Netto kasbeweging",
+      "unsignedTotal": "Totaal van categoriebedragen zonder teken",
+      "unsignedAverage": "Gemiddelde van categoriebedragen zonder teken"
+    },
     "truncatedNotice": "Dit rapport heeft de rijlimiet bereikt en toont alleen de oudste rijen, dus de cijfers zijn onvolledig. Beperk de periode of de filters om alles te zien.",
     "toasts": {
       "loadFailed": "Rapport kon niet worden geladen",

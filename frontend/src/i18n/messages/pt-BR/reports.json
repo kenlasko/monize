@@ -463,6 +463,12 @@
     "generating": "Gerando relatório...",
     "noData": "Nenhum dado encontrado para os critérios selecionados",
     "transactionCount": "{count, plural, one {# transação} other {# transações}}",
+    "measure": {
+      "netAmount": "Valor líquido",
+      "netCashMovement": "Movimentação de caixa líquida",
+      "unsignedTotal": "Total dos valores de categoria sem sinal",
+      "unsignedAverage": "Média dos valores de categoria sem sinal"
+    },
     "truncatedNotice": "Este relatório atingiu o limite de linhas e mostra apenas as mais antigas, então os valores são parciais. Restrinja o período ou os filtros para ver todas.",
     "toasts": {
       "loadFailed": "Falha ao carregar relatório",
