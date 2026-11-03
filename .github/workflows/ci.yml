@@ -727,13 +727,14 @@ jobs:
           # package.json value matched against a strict semver regex that forbids path separators,
           # and the directory is a fixed candidate allowlist (the notes are bundled into the image)
           # -- no user input reaches these fs calls, so the CWE-22/CWE-73 findings are false positives.
-          # b6c4552155ecc9b65a9205911f502bf1_0 - Non-literal fs path in release-notes reader [CWE-73] - review-by: 2026-10-23
-          # b6c4552155ecc9b65a9205911f502bf1_1 - Non-literal fs path in release-notes reader [CWE-73] - review-by: 2026-10-23
-          # b6c4552155ecc9b65a9205911f502bf1_2 - Non-literal fs path scanning the release-notes dir allowlist [CWE-73] - review-by: 2026-10-23
-          # b6c4552155ecc9b65a9205911f502bf1_3 - Non-literal fs path scanning the release-notes dir allowlist [CWE-73] - review-by: 2026-10-23
-          # c055716bae113b20589f9ea5c5963e65_0 - path.join of the validated running version [CWE-22] - review-by: 2026-10-23
+          # b6c4552155ecc9b65a9205911f502bf1_0 - Non-literal fs path in release-notes reader [CWE-73] - review-by: 2027-02-02
+          # b6c4552155ecc9b65a9205911f502bf1_1 - Non-literal fs path in release-notes reader [CWE-73] - review-by: 2027-02-02
+          # b6c4552155ecc9b65a9205911f502bf1_2 - Non-literal fs path scanning the release-notes dir allowlist [CWE-73] - review-by: 2027-02-02
+          # b6c4552155ecc9b65a9205911f502bf1_3 - Non-literal fs path scanning the release-notes dir allowlist [CWE-73] - review-by: 2027-02-02
+          # c055716bae113b20589f9ea5c5963e65_0 - path.join of the validated running version [CWE-22] - review-by: 2027-02-02
           # The two below are in backend/src/attachments/storage/local-storage.provider.ts.
-          # The storage key is a server-generated UUID that is passed through basename()
+          # The storage key is a server-generated UUID that assertSafeStorageKey
+          # (attachments/storage/storage-key.util.ts) passes through basename()
           # and then required to match ^[A-Za-z0-9_-]+$ -- an allowlist that cannot express
           # a path separator, a dot, or a NUL, so "..", "." and "a/../b" are all rejected
           # before any fs call. The resolved path is additionally asserted to be contained
@@ -741,22 +742,22 @@ jobs:
           # constrains the value, so it reports the resolve() and the containment check
           # itself; both are false positives. Covered by the traversal cases in
           # local-storage.provider.spec.ts.
-          # f9b26e7d59d0f577ff9a0e93ea4f7b7c_0 - resolve() of the allowlisted attachment key [CWE-22] - review-by: 2026-10-23
-          # f9b26e7d59d0f577ff9a0e93ea4f7b7c_1 - containment check on the resolved path [CWE-22] - review-by: 2026-10-23
+          # f9b26e7d59d0f577ff9a0e93ea4f7b7c_0 - resolve() of the allowlisted attachment key [CWE-22] - review-by: 2027-02-02
+          # f9b26e7d59d0f577ff9a0e93ea4f7b7c_1 - containment check on the resolved path [CWE-22] - review-by: 2027-02-02
           # The one below is in backend/src/import/mny/__fixtures__/mny-fixtures.ts. It is the
           # publicly documented test password for money2008-pwd.mny, a tiny sample file committed
           # from the jackcess-encrypt project (Apache-2.0, see the __fixtures__ README) and used
           # only by unit specs to exercise the MSISAM decryptor. It opens nothing but that file.
-          # f6196720ad017b3d11d24487792c1479_0 - Test fixture password for a sample .mny file [CWE-798] - review-by: 2026-10-23
+          # f6196720ad017b3d11d24487792c1479_0 - Test fixture password for a sample .mny file [CWE-798] - review-by: 2027-02-02
           # The three below are in frontend/src/hooks/useMnyImport.ts. The compared
           # value is an API error code string ("mnyPasswordRequired" /
           # "mnyPasswordIncorrect"), not a password or any part of one -- the
           # identifier names are what Bearer's dataflow keys on. Distinguishing the
           # two codes is the point: one asks for a password, the other says the
           # password was wrong. Same false positive as the payee-token comparison above.
-          # 45093073db7d96d61cd30bceb943f63f_0 - Observable timing discrepancy [CWE-208] comparing .mny error codes - review-by: 2026-10-30
-          # 45093073db7d96d61cd30bceb943f63f_1 - Observable timing discrepancy [CWE-208] comparing .mny error codes - review-by: 2026-10-30
-          # 45093073db7d96d61cd30bceb943f63f_2 - Observable timing discrepancy [CWE-208] comparing .mny error codes - review-by: 2026-10-30
+          # 45093073db7d96d61cd30bceb943f63f_0 - Observable timing discrepancy [CWE-208] comparing .mny error codes - review-by: 2027-02-02
+          # 45093073db7d96d61cd30bceb943f63f_1 - Observable timing discrepancy [CWE-208] comparing .mny error codes - review-by: 2027-02-02
+          # 45093073db7d96d61cd30bceb943f63f_2 - Observable timing discrepancy [CWE-208] comparing .mny error codes - review-by: 2027-02-02
           # The one below is in backend/src/auth/auth.controller.ts, the OIDC callback's
           # re-authentication branch. The redirect TARGET is `FRONTEND_URL` from config, not
           # request input -- the four sibling redirects in the same handler build the same
@@ -767,7 +768,7 @@ jobs:
           # just signed, and both go through encodeURIComponent. An open redirect needs a
           # controllable destination, which this is not. Covered by oidc-reauth.service.spec.ts
           # and the callback cases in auth.controller.spec.ts.
-          # b7502b6ea7c0a272ab08099b55d0392c_0 - Unsanitized user input in redirect [CWE-601], config-supplied target - review-by: 2026-11-06
+          # b7502b6ea7c0a272ab08099b55d0392c_0 - Unsanitized user input in redirect [CWE-601], config-supplied target - review-by: 2027-02-02
           # The two below are the backup module's attachment-integrity checks. The
           # compared value is a SHA-256 digest already stored in transaction_attachments,
           # recomputed from bytes the caller already has in the artifact they uploaded --
@@ -780,13 +781,13 @@ jobs:
           # a finding, so moving accepted code re-reports it under a new id. The
           # acceptance decision has not changed, so the review-by date does not move
           # either -- a refactor must not quietly reset somebody else's review clock.
-          # 4beb484f871a7489b5f5ff2df93f72f1_0 - Observable timing discrepancy [CWE-208] in the shared bytes-vs-metadata check, backend/src/backup/attachment-integrity.util.ts - review-by: 2026-11-05
-          # 0ff64c8083ce01b1e8c867832c0dff85_0 - Observable timing discrepancy [CWE-208] comparing a legacy-staged attachment against its stored checksum, backend/src/backup/backup-attachment-transfer.service.ts - review-by: 2026-11-05
+          # 4beb484f871a7489b5f5ff2df93f72f1_0 - Observable timing discrepancy [CWE-208] in the shared bytes-vs-metadata check, backend/src/backup/attachment-integrity.util.ts - review-by: 2027-02-02
+          # 0ff64c8083ce01b1e8c867832c0dff85_0 - Observable timing discrepancy [CWE-208] comparing a legacy-staged attachment against its stored checksum, backend/src/backup/backup-attachment-transfer.service.ts - review-by: 2027-02-02
           # The one below is in backend/src/backup/support-backup/support-backup.service.ts,
           # the support-backup password gate. It is a typeof/length guard confirming a
           # password was supplied at all, not a comparison against any known value --
           # there is nothing secret on either side for a timing attack to reveal.
-          # 1f87dd3b3950178c2eac383cfcead816_0 - Observable timing discrepancy [CWE-208] on a password-presence guard, no value compared - review-by: 2026-11-05
+          # 1f87dd3b3950178c2eac383cfcead816_0 - Observable timing discrepancy [CWE-208] on a password-presence guard, no value compared - review-by: 2027-02-02
           # The one below is escapeHtml in frontend/public/sw.js, the service worker's
           # offline-fallback page builder. Bearer flags any hand-rolled sanitizer; a DOM
           # or DOMPurify does not exist inside a service worker, so escaping is the only
