@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "Le rapprochement des paiements s'applique uniquement aux prêts hypothécaires et aux prêts",
     "paymentMatchingRequiresSchedule": "Le rapprochement des paiements nécessite le paiement planifié du prêt. Configurez d'abord ses paiements.",
     "paymentMatchingRuleExists": "Ce prêt a déjà une règle de rapprochement des paiements",
-    "paymentMatchingFailed": "Le prêt a été enregistré, mais sa règle de rapprochement des paiements n'a pas pu être créée. Créez-la depuis les détails du prêt."
+    "paymentMatchingFailed": "Le prêt a été enregistré, mais sa règle de rapprochement des paiements n'a pas pu être créée. Créez-la depuis les détails du prêt.",
+    "interestCategoryIsLoanFee": "Cette catégorie est déjà utilisée par l'un des frais du prêt hypothécaire. Choisissez une autre catégorie pour les intérêts, ou modifiez d'abord ces frais."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Cette modification a changé des lignes de ventilation qui déplacent de l'argent vers d'autres comptes, elle ne peut donc pas être annulée automatiquement. Modifiez la transaction pour la rétablir.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL doit être une adresse http ou https",
       "invalidField": "{{ field }} n'est pas valide"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Chaque ligne de frais du prêt hypothécaire doit avoir sa propre catégorie.",
+    "valueMismatch": "Des frais fixes prennent un montant et des frais en pourcentage prennent un taux.",
+    "interestCategory": "Les frais d'un prêt hypothécaire ne peuvent pas utiliser la catégorie d'intérêts de ce prêt.",
+    "invalidCategory": "Choisissez l'une de vos propres catégories pour chaque ligne de frais du prêt hypothécaire.",
+    "unpriceable": "Les frais \"{{ name }}\" ne peuvent pas être calculés : le prêt hypothécaire n'a pas de capital initial. Saisissez d'abord le montant emprunté à l'origine.",
+    "ambiguousLine": "Le paiement planifié comporte déjà plusieurs lignes dans la catégorie des frais \"{{ name }}\". Supprimez d'abord les lignes en trop du paiement planifié.",
+    "mortgageOnly": "Seuls les comptes hypothécaires peuvent avoir des frais.",
+    "mortgageScheduleOnly": "Des frais ne peuvent être ajoutés qu'à un prêt hypothécaire doté de son paiement planifié.",
+    "paymentMatchingUnsupported": "Le rapprochement des paiements ne peut pas encore solder un paiement hypothécaire qui comprend des frais. Désactivez le rapprochement des paiements ou supprimez les frais."
   }
 }

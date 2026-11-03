@@ -818,5 +818,48 @@
       "paymentBelowInterest": "Taksit ({payment}), {rate}% oranında aylık faizin (yaklaşık {interest}) altında, bu yüzden bakiye hiç düşmüyor. Faizi karşılaması için gerçek taksiti kaydedin (faiz geçmişi kaydı veya hesabın ödeme tutarı).",
       "beyondHorizon": "Taksit faizi karşılıyor ancak vade projeksiyon ufkunu aşıyor, bu yüzden kapanış tarihi ve kalan faiz gösterilmiyor."
     }
+  },
+  "loanFees": {
+    "title": "İpotek ücretleri",
+    "help": "Her ipotek ödemesiyle birlikte tahsil edilen sigorta, vergi veya diğer ücretler. Her ücret, zamanlanmış ödemenin ayrı bir satırı olur ve seçtiğiniz kategoriye kaydedilir. Bir ücret sabit bir tutar, güncel bakiyenin yüzdesi (her ödemede yeniden hesaplanır) veya orijinal bakiyenin yüzdesi olabilir ve ödeme başına ya da yıllık olarak alınır.",
+    "panelDescription": "Her zamanlanmış ipotek ödemesiyle birlikte tahsil edilen ücretler. Kaydetmek bir sonraki ödemenin satırlarını günceller.",
+    "none": "Bu ipoteğin ödemesiyle hiçbir ücret tahsil edilmiyor.",
+    "name": "Ücret adı",
+    "category": "Kategori",
+    "calculation": "Hesaplama şekli",
+    "basis": "Değerin uygulanışı",
+    "amount": "Tutar",
+    "rate": "Oran",
+    "add": "Ücret ekle",
+    "remove": "Ücreti kaldır",
+    "edit": "Ücretleri düzenle",
+    "editTitle": "İpotek ücretleri",
+    "save": "Ücretleri kaydet",
+    "cancel": "İptal",
+    "saved": "İpotek ücretleri kaydedildi.",
+    "saveFailed": "İpotek ücretleri kaydedilemedi.",
+    "loading": "Ücretler yükleniyor...",
+    "loadFailed": "İpotek ücretleri yüklenemedi.",
+    "retry": "Tekrar dene",
+    "unknownCategory": "Bilinmeyen kategori",
+    "unknownValue": "bilinmiyor",
+    "summaryPerPayment": "Ödeme başına {value}, {calculation}",
+    "summaryAnnual": "Yıllık {value}, {calculation}",
+    "paymentMatchingConflict": "Ödeme eşleştirme, ücret içeren bir ödemeyi henüz kapatamaz. Ödeme eşleştirmeyi kapatın veya ücretleri kaldırın.",
+    "paymentMatchingNote": "Ödeme eşleştirme, ücret içeren bir ödemeyi henüz kapatmaz: bankanın çekimlerini sizin kaydetmeniz gerekir.",
+    "calculations": {
+      "fixed": "Sabit tutar",
+      "percentCurrentBalance": "Güncel bakiyenin yüzdesi",
+      "percentOriginalBalance": "Orijinal bakiyenin yüzdesi"
+    },
+    "bases": {
+      "perPayment": "Ödeme başına",
+      "annual": "Yıllık"
+    },
+    "errors": {
+      "required": "Zorunlu",
+      "duplicate": "Her ücretin faiz kategorisinden farklı, kendine ait bir kategorisi olmalıdır",
+      "range": "En fazla %100 olan bir oran girin"
+    }
   }
 }

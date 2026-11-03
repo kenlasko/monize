@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "Betalingskoppeling geldt alleen voor hypotheken en leningen",
     "paymentMatchingRequiresSchedule": "Betalingskoppeling heeft de geplande betaling van de lening nodig. Stel eerst de betalingen in.",
     "paymentMatchingRuleExists": "Deze lening heeft al een regel voor betalingskoppeling",
-    "paymentMatchingFailed": "De lening is opgeslagen, maar de regel voor betalingskoppeling kon niet worden aangemaakt. Maak deze aan via de details van de lening."
+    "paymentMatchingFailed": "De lening is opgeslagen, maar de regel voor betalingskoppeling kon niet worden aangemaakt. Maak deze aan via de details van de lening.",
+    "interestCategoryIsLoanFee": "Deze categorie wordt al gebruikt door een van de kostenposten van de hypotheek. Kies een andere categorie voor de rente, of wijzig eerst de kostenpost."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Deze bewerking heeft splitsregels gewijzigd die geld naar andere rekeningen verplaatsen, dus ze kan niet automatisch ongedaan worden gemaakt. Bewerk de transactie om haar terug te zetten.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL moet een http- of https-adres zijn",
       "invalidField": "{{ field }} is ongeldig"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Elke kostenpost van de hypotheek heeft een eigen categorie nodig.",
+    "valueMismatch": "Een vaste kostenpost vraagt om een bedrag en een procentuele kostenpost om een tarief.",
+    "interestCategory": "Een kostenpost van de hypotheek kan de rentecategorie van de hypotheek niet gebruiken.",
+    "invalidCategory": "Kies voor elke kostenpost van de hypotheek een van je eigen categorieën.",
+    "unpriceable": "De kostenpost \"{{ name }}\" kan niet worden berekend: de hypotheek heeft geen oorspronkelijke hoofdsom. Voer eerst het oorspronkelijk geleende bedrag in.",
+    "ambiguousLine": "De geplande betaling heeft al meerdere regels in de categorie van de kostenpost \"{{ name }}\". Verwijder eerst de extra regels uit de geplande betaling.",
+    "mortgageOnly": "Alleen hypotheekrekeningen kunnen kosten hebben.",
+    "mortgageScheduleOnly": "Kosten kunnen alleen worden toegevoegd aan een hypotheek met een geplande betaling.",
+    "paymentMatchingUnsupported": "Betalingskoppeling kan een hypotheekbetaling met kosten nog niet verrekenen. Zet betalingskoppeling uit of verwijder de kosten."
   }
 }

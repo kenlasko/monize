@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "Dopasowywanie płatności dotyczy tylko kredytów hipotecznych i pożyczek",
     "paymentMatchingRequiresSchedule": "Dopasowywanie płatności wymaga zaplanowanej płatności kredytu. Najpierw skonfiguruj jego płatności.",
     "paymentMatchingRuleExists": "Ten kredyt ma już regułę dopasowywania płatności",
-    "paymentMatchingFailed": "Kredyt został zapisany, ale nie udało się utworzyć jego reguły dopasowywania płatności. Utwórz ją w szczegółach kredytu."
+    "paymentMatchingFailed": "Kredyt został zapisany, ale nie udało się utworzyć jego reguły dopasowywania płatności. Utwórz ją w szczegółach kredytu.",
+    "interestCategoryIsLoanFee": "Ta kategoria jest już używana przez jedną z opłat kredytu hipotecznego. Wybierz inną kategorię dla odsetek albo najpierw zmień opłatę."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Ta edycja zmieniła wiersze podziału, które przenoszą pieniądze na inne konta, więc nie można jej cofnąć automatycznie. Aby ją wycofać, edytuj transakcję.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL musi być adresem http lub https",
       "invalidField": "{{ field }} jest nieprawidłowe"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Każda opłata kredytu hipotecznego wymaga własnej kategorii.",
+    "valueMismatch": "Opłata stała wymaga kwoty, a opłata procentowa wymaga stawki.",
+    "interestCategory": "Opłata kredytu hipotecznego nie może używać kategorii odsetek tego kredytu.",
+    "invalidCategory": "Wybierz jedną z własnych kategorii dla każdej opłaty kredytu hipotecznego.",
+    "unpriceable": "Nie można obliczyć opłaty \"{{ name }}\": kredyt hipoteczny nie ma pierwotnego kapitału. Najpierw wpisz pierwotnie pożyczoną kwotę.",
+    "ambiguousLine": "Zaplanowana płatność ma już kilka wierszy w kategorii opłaty \"{{ name }}\". Najpierw usuń dodatkowe wiersze z zaplanowanej płatności.",
+    "mortgageOnly": "Opłaty mogą mieć tylko konta kredytów hipotecznych.",
+    "mortgageScheduleOnly": "Opłaty można dodać tylko do kredytu hipotecznego z zaplanowaną płatnością.",
+    "paymentMatchingUnsupported": "Dopasowywanie płatności nie może jeszcze rozliczyć płatności kredytu hipotecznego zawierającej opłaty. Wyłącz dopasowywanie płatności lub usuń opłaty."
   }
 }

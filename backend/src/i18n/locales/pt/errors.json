@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "A correspondência de pagamentos aplica-se apenas a hipotecas e empréstimos",
     "paymentMatchingRequiresSchedule": "A correspondência de pagamentos precisa do pagamento agendado do empréstimo. Configure primeiro os seus pagamentos.",
     "paymentMatchingRuleExists": "Este empréstimo já tem uma regra de correspondência de pagamentos",
-    "paymentMatchingFailed": "O empréstimo foi guardado, mas não foi possível criar a sua regra de correspondência de pagamentos. Crie-a a partir dos detalhes do empréstimo."
+    "paymentMatchingFailed": "O empréstimo foi guardado, mas não foi possível criar a sua regra de correspondência de pagamentos. Crie-a a partir dos detalhes do empréstimo.",
+    "interestCategoryIsLoanFee": "Esta categoria já é usada por um dos encargos do crédito habitação. Escolha outra categoria para os juros ou altere primeiro o encargo."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Esta edição alterou linhas de divisão que movem dinheiro para outras contas, pelo que não pode ser anulada automaticamente. Edite a transação para a reverter.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL tem de ser um endereço http ou https",
       "invalidField": "{{ field }} não é válido"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Cada encargo do crédito habitação precisa da sua própria categoria.",
+    "valueMismatch": "Um encargo fixo leva um montante e um encargo percentual leva uma taxa.",
+    "interestCategory": "Um encargo do crédito habitação não pode usar a categoria de juros do crédito habitação.",
+    "invalidCategory": "Escolha uma das suas próprias categorias para cada encargo do crédito habitação.",
+    "unpriceable": "Não é possível calcular o encargo \"{{ name }}\": o crédito habitação não tem capital original. Introduza primeiro o montante originalmente pedido emprestado.",
+    "ambiguousLine": "O pagamento agendado já tem várias linhas na categoria do encargo \"{{ name }}\". Remova primeiro as linhas a mais do pagamento agendado.",
+    "mortgageOnly": "Só as contas de crédito habitação podem ter encargos.",
+    "mortgageScheduleOnly": "Só é possível adicionar encargos a um crédito habitação com o respetivo pagamento agendado.",
+    "paymentMatchingUnsupported": "A correspondência de pagamentos ainda não consegue liquidar um pagamento do crédito habitação que inclui encargos. Desative a correspondência de pagamentos ou remova os encargos."
   }
 }

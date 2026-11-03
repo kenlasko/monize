@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "付款匹配仅适用于抵押贷款和贷款",
     "paymentMatchingRequiresSchedule": "付款匹配需要贷款的计划付款。请先设置其付款。",
     "paymentMatchingRuleExists": "此贷款已有付款匹配规则",
-    "paymentMatchingFailed": "贷款已保存，但无法创建其付款匹配规则。请在贷款详情中创建。"
+    "paymentMatchingFailed": "贷款已保存，但无法创建其付款匹配规则。请在贷款详情中创建。",
+    "interestCategoryIsLoanFee": "此科目已被该抵押贷款的某项费用使用。请为利息选择其他科目，或先修改该费用。"
   },
   "actionHistory": {
     "undoSplitLegsChanged": "此次编辑更改了将资金转入其他账户的拆分行，因此无法自动撤销。请编辑交易以改回。",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL 必须是 http 或 https 地址",
       "invalidField": "{{ field }} 无效"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "每项抵押贷款费用都需要单独的科目。",
+    "valueMismatch": "固定费用需要金额，百分比费用需要费率。",
+    "interestCategory": "抵押贷款费用不能使用该抵押贷款的利息科目。",
+    "invalidCategory": "请为每项抵押贷款费用选择您自己的科目。",
+    "unpriceable": "无法计算费用\"{{ name }}\"：该抵押贷款没有原始本金。请先输入最初借入的金额。",
+    "ambiguousLine": "计划付款中已有多行属于费用\"{{ name }}\"的科目。请先从计划付款中删除多余的行。",
+    "mortgageOnly": "只有抵押贷款账户可以设置费用。",
+    "mortgageScheduleOnly": "只能为已设置计划付款的抵押贷款添加费用。",
+    "paymentMatchingUnsupported": "付款匹配目前还无法结算包含费用的抵押贷款付款。请关闭付款匹配或移除这些费用。"
   }
 }

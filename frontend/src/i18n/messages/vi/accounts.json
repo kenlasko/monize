@@ -818,5 +818,48 @@
       "paymentBelowInterest": "Kỳ trả góp ({payment}) thấp hơn tiền lãi hằng tháng (khoảng {interest}) ở mức {rate}%, nên số dư không bao giờ giảm. Hãy ghi kỳ trả góp thực tế (mục trong lịch sử lãi suất hoặc số tiền thanh toán của tài khoản) để nó bù đắp tiền lãi.",
       "beyondHorizon": "Kỳ trả góp bù đắp tiền lãi, nhưng thời hạn vượt quá tầm dự báo, nên ngày trả hết và tiền lãi còn lại không được hiển thị."
     }
+  },
+  "loanFees": {
+    "title": "Phí khoản vay thế chấp",
+    "help": "Bảo hiểm, thuế hoặc các khoản phí khác được thu cùng mỗi lần thanh toán khoản vay thế chấp. Mỗi khoản phí trở thành một dòng riêng của khoản thanh toán định kỳ, được ghi vào danh mục bạn chọn. Một khoản phí có thể là số tiền cố định, phần trăm số dư hiện tại (được tính lại ở mỗi lần thanh toán) hoặc phần trăm số dư ban đầu, được tính theo mỗi lần thanh toán hoặc theo năm.",
+    "panelDescription": "Các khoản phí được thu cùng mỗi khoản thanh toán định kỳ của khoản vay thế chấp. Khi lưu, các dòng của khoản thanh toán tiếp theo sẽ được cập nhật.",
+    "none": "Không có khoản phí nào được thu cùng khoản thanh toán của khoản vay thế chấp này.",
+    "name": "Tên khoản phí",
+    "category": "Danh mục",
+    "calculation": "Cách tính",
+    "basis": "Giá trị áp dụng",
+    "amount": "Số tiền",
+    "rate": "Tỷ lệ",
+    "add": "Thêm khoản phí",
+    "remove": "Xóa khoản phí",
+    "edit": "Sửa các khoản phí",
+    "editTitle": "Phí khoản vay thế chấp",
+    "save": "Lưu các khoản phí",
+    "cancel": "Hủy",
+    "saved": "Đã lưu các khoản phí của khoản vay thế chấp.",
+    "saveFailed": "Không thể lưu các khoản phí của khoản vay thế chấp.",
+    "loading": "Đang tải các khoản phí...",
+    "loadFailed": "Không thể tải các khoản phí của khoản vay thế chấp.",
+    "retry": "Thử lại",
+    "unknownCategory": "Danh mục không rõ",
+    "unknownValue": "không rõ",
+    "summaryPerPayment": "{value} mỗi lần thanh toán, {calculation}",
+    "summaryAnnual": "{value} mỗi năm, {calculation}",
+    "paymentMatchingConflict": "Khớp thanh toán chưa thể tất toán một khoản thanh toán có bao gồm phí. Hãy tắt khớp thanh toán hoặc xóa các khoản phí.",
+    "paymentMatchingNote": "Khớp thanh toán chưa tất toán khoản thanh toán có bao gồm phí: bạn cần tự ghi nhận các khoản ghi nợ ngân hàng của nó.",
+    "calculations": {
+      "fixed": "Số tiền cố định",
+      "percentCurrentBalance": "Phần trăm số dư hiện tại",
+      "percentOriginalBalance": "Phần trăm số dư ban đầu"
+    },
+    "bases": {
+      "perPayment": "Mỗi lần thanh toán",
+      "annual": "Mỗi năm"
+    },
+    "errors": {
+      "required": "Bắt buộc",
+      "duplicate": "Mỗi khoản phí cần một danh mục riêng, khác với danh mục lãi",
+      "range": "Nhập tỷ lệ tối đa 100%"
+    }
   }
 }

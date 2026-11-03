@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "L'abbinamento dei pagamenti si applica solo a mutui e prestiti",
     "paymentMatchingRequiresSchedule": "L'abbinamento dei pagamenti richiede il pagamento pianificato del prestito. Configura prima i suoi pagamenti.",
     "paymentMatchingRuleExists": "Questo prestito ha già una regola di abbinamento dei pagamenti",
-    "paymentMatchingFailed": "Il prestito è stato salvato, ma non è stato possibile creare la sua regola di abbinamento dei pagamenti. Creala dai dettagli del prestito."
+    "paymentMatchingFailed": "Il prestito è stato salvato, ma non è stato possibile creare la sua regola di abbinamento dei pagamenti. Creala dai dettagli del prestito.",
+    "interestCategoryIsLoanFee": "Questa categoria è già usata da una delle spese del mutuo. Scegli un'altra categoria per gli interessi oppure modifica prima la spesa."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Questa modifica ha cambiato righe di suddivisione che spostano denaro su altri conti, quindi non può essere annullata automaticamente. Modifica la transazione per ripristinarla.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL deve essere un indirizzo http o https",
       "invalidField": "{{ field }} non è valido"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Ogni spesa del mutuo richiede una propria categoria.",
+    "valueMismatch": "Una spesa fissa richiede un importo e una spesa percentuale richiede un tasso.",
+    "interestCategory": "Una spesa del mutuo non può usare la categoria interessi del mutuo.",
+    "invalidCategory": "Scegli una delle tue categorie per ogni spesa del mutuo.",
+    "unpriceable": "Impossibile calcolare la spesa \"{{ name }}\": il mutuo non ha un capitale originario. Inserisci prima l'importo preso in prestito in origine.",
+    "ambiguousLine": "Il pagamento pianificato ha già più righe nella categoria della spesa \"{{ name }}\". Rimuovi prima le righe in eccesso dal pagamento pianificato.",
+    "mortgageOnly": "Solo i conti mutuo possono avere spese.",
+    "mortgageScheduleOnly": "Le spese possono essere aggiunte solo a un mutuo con il relativo pagamento pianificato.",
+    "paymentMatchingUnsupported": "L'abbinamento dei pagamenti non può ancora saldare un pagamento del mutuo che include spese. Disattiva l'abbinamento dei pagamenti o rimuovi le spese."
   }
 }

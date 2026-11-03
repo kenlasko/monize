@@ -818,5 +818,48 @@
       "paymentBelowInterest": "할부금({payment})이 {rate}%에서의 월 이자(약 {interest})보다 적어 잔액이 줄지 않습니다. 이자를 충당하도록 실제 할부금(이자율 기록 항목 또는 계좌의 결제 금액)을 기록하세요.",
       "beyondHorizon": "할부금이 이자를 충당하지만 기간이 예측 범위를 넘어서므로 상환일과 남은 이자가 표시되지 않습니다."
     }
+  },
+  "loanFees": {
+    "title": "담보대출 비용",
+    "help": "담보대출을 납부할 때마다 함께 징수되는 보험료, 세금 또는 기타 비용입니다. 각 비용은 예약 결제의 별도 항목이 되며 선택한 카테고리로 기록됩니다. 비용은 고정 금액, 현재 잔액의 비율(결제할 때마다 다시 계산) 또는 원래 잔액의 비율로 지정할 수 있으며, 결제당 또는 연간으로 부과됩니다.",
+    "panelDescription": "각 담보대출 예약 결제와 함께 징수되는 비용입니다. 저장하면 다음 결제의 항목이 업데이트됩니다.",
+    "none": "이 담보대출의 결제에는 징수되는 비용이 없습니다.",
+    "name": "비용 이름",
+    "category": "카테고리",
+    "calculation": "계산 방식",
+    "basis": "적용 기준",
+    "amount": "금액",
+    "rate": "비율",
+    "add": "비용 추가",
+    "remove": "비용 삭제",
+    "edit": "비용 편집",
+    "editTitle": "담보대출 비용",
+    "save": "비용 저장",
+    "cancel": "취소",
+    "saved": "담보대출 비용을 저장했습니다.",
+    "saveFailed": "담보대출 비용을 저장하지 못했습니다.",
+    "loading": "비용 불러오는 중...",
+    "loadFailed": "담보대출 비용을 불러오지 못했습니다.",
+    "retry": "다시 시도",
+    "unknownCategory": "알 수 없는 카테고리",
+    "unknownValue": "알 수 없음",
+    "summaryPerPayment": "결제당 {value}, {calculation}",
+    "summaryAnnual": "연간 {value}, {calculation}",
+    "paymentMatchingConflict": "결제 일치는 아직 비용이 포함된 결제를 정산할 수 없습니다. 결제 일치를 끄거나 비용을 삭제하세요.",
+    "paymentMatchingNote": "결제 일치는 아직 비용이 포함된 결제를 정산하지 않습니다. 해당 은행 출금은 직접 기록해야 합니다.",
+    "calculations": {
+      "fixed": "고정 금액",
+      "percentCurrentBalance": "현재 잔액의 비율",
+      "percentOriginalBalance": "원래 잔액의 비율"
+    },
+    "bases": {
+      "perPayment": "결제당",
+      "annual": "연간"
+    },
+    "errors": {
+      "required": "필수",
+      "duplicate": "각 비용에는 이자 카테고리가 아닌 별도의 카테고리가 필요합니다",
+      "range": "100% 이하의 비율을 입력하세요"
+    }
   }
 }

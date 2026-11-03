@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "A correspondência de pagamentos se aplica apenas a hipotecas e empréstimos",
     "paymentMatchingRequiresSchedule": "A correspondência de pagamentos precisa do pagamento agendado do empréstimo. Configure os pagamentos primeiro.",
     "paymentMatchingRuleExists": "Este empréstimo já tem uma regra de correspondência de pagamentos",
-    "paymentMatchingFailed": "O empréstimo foi salvo, mas não foi possível criar sua regra de correspondência de pagamentos. Crie-a nos detalhes do empréstimo."
+    "paymentMatchingFailed": "O empréstimo foi salvo, mas não foi possível criar sua regra de correspondência de pagamentos. Crie-a nos detalhes do empréstimo.",
+    "interestCategoryIsLoanFee": "Esta categoria já é usada por um dos encargos da hipoteca. Escolha outra categoria para os juros ou altere primeiro o encargo."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Esta edição alterou linhas de divisão que movem dinheiro para outras contas, então não pode ser desfeita automaticamente. Edite a transação para revertê-la.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL deve ser um endereço http ou https",
       "invalidField": "{{ field }} não é válido"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Cada encargo da hipoteca precisa de sua própria categoria.",
+    "valueMismatch": "Um encargo fixo recebe um valor e um encargo percentual recebe uma taxa.",
+    "interestCategory": "Um encargo da hipoteca não pode usar a categoria de juros da hipoteca.",
+    "invalidCategory": "Escolha uma de suas próprias categorias para cada encargo da hipoteca.",
+    "unpriceable": "Não é possível calcular o encargo \"{{ name }}\": a hipoteca não tem principal original. Informe primeiro o valor originalmente emprestado.",
+    "ambiguousLine": "O pagamento agendado já tem várias linhas na categoria do encargo \"{{ name }}\". Remova primeiro as linhas extras do pagamento agendado.",
+    "mortgageOnly": "Somente contas de hipoteca podem ter encargos.",
+    "mortgageScheduleOnly": "Só é possível adicionar encargos a uma hipoteca com seu pagamento agendado.",
+    "paymentMatchingUnsupported": "A correspondência de pagamentos ainda não consegue liquidar um pagamento de hipoteca que inclui encargos. Desative a correspondência de pagamentos ou remova os encargos."
   }
 }

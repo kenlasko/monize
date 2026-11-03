@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "支払い照合は住宅ローンとローンにのみ適用されます",
     "paymentMatchingRequiresSchedule": "支払い照合にはローンの予定支払いが必要です。先に支払いを設定してください。",
     "paymentMatchingRuleExists": "このローンには既に支払い照合ルールがあります",
-    "paymentMatchingFailed": "ローンは保存されましたが、支払い照合ルールを作成できませんでした。ローンの詳細から作成してください。"
+    "paymentMatchingFailed": "ローンは保存されましたが、支払い照合ルールを作成できませんでした。ローンの詳細から作成してください。",
+    "interestCategoryIsLoanFee": "このカテゴリは住宅ローンの費用のいずれかですでに使用されています。利息に別のカテゴリを選択するか、先に費用を変更してください。"
   },
   "actionHistory": {
     "undoSplitLegsChanged": "この編集により、他の口座へ資金を移動する分割行が変更されたため、自動的に元に戻せません。元に戻すには取引を編集してください。",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL は http または https のアドレスにしてください",
       "invalidField": "{{ field }} が無効です"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "住宅ローンの各費用には個別のカテゴリが必要です。",
+    "valueMismatch": "固定の費用には金額を、割合による費用には料率を指定します。",
+    "interestCategory": "住宅ローンの費用に、その住宅ローンの利息カテゴリは使用できません。",
+    "invalidCategory": "住宅ローンの各費用には、ご自身のカテゴリを選択してください。",
+    "unpriceable": "費用「{{ name }}」を計算できません。住宅ローンに当初借入金額がありません。先に当初の借入額を入力してください。",
+    "ambiguousLine": "予定支払いには、費用「{{ name }}」のカテゴリの行がすでに複数あります。先に予定支払いから余分な行を削除してください。",
+    "mortgageOnly": "費用を設定できるのは住宅ローン口座のみです。",
+    "mortgageScheduleOnly": "費用は、予定支払いが設定された住宅ローンにのみ追加できます。",
+    "paymentMatchingUnsupported": "支払い照合は、費用を含む住宅ローンの支払いをまだ決済できません。支払い照合をオフにするか、費用を削除してください。"
   }
 }

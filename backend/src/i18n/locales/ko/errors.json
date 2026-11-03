@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "결제 매칭은 모기지와 대출에만 적용됩니다",
     "paymentMatchingRequiresSchedule": "결제 매칭에는 대출의 예약 결제가 필요합니다. 먼저 결제를 설정하세요.",
     "paymentMatchingRuleExists": "이 대출에는 이미 결제 매칭 규칙이 있습니다",
-    "paymentMatchingFailed": "대출은 저장되었지만 결제 매칭 규칙을 만들 수 없습니다. 대출 세부 정보에서 만드세요."
+    "paymentMatchingFailed": "대출은 저장되었지만 결제 매칭 규칙을 만들 수 없습니다. 대출 세부 정보에서 만드세요.",
+    "interestCategoryIsLoanFee": "이 카테고리는 이미 모기지 비용 중 하나에 사용되고 있습니다. 이자에 다른 카테고리를 선택하거나 먼저 비용을 변경하세요."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "이 편집으로 다른 계좌로 돈을 이동하는 분할 줄이 변경되어 자동으로 실행 취소할 수 없습니다. 되돌리려면 거래를 편집하세요.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL은 http 또는 https 주소여야 합니다",
       "invalidField": "{{ field }}이(가) 유효하지 않습니다"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "각 모기지 비용에는 별도의 카테고리가 필요합니다.",
+    "valueMismatch": "고정 비용에는 금액을, 비율 비용에는 비율을 지정합니다.",
+    "interestCategory": "모기지 비용에는 해당 모기지의 이자 카테고리를 사용할 수 없습니다.",
+    "invalidCategory": "각 모기지 비용에 본인의 카테고리 중 하나를 선택하세요.",
+    "unpriceable": "비용 \"{{ name }}\"을(를) 계산할 수 없습니다. 모기지에 원래 대출 원금이 없습니다. 먼저 원래 빌린 금액을 입력하세요.",
+    "ambiguousLine": "예약 납부에 이미 비용 \"{{ name }}\"의 카테고리로 된 항목이 여러 개 있습니다. 먼저 예약 납부에서 추가 항목을 삭제하세요.",
+    "mortgageOnly": "모기지 계정만 비용을 가질 수 있습니다.",
+    "mortgageScheduleOnly": "비용은 예약 납부가 설정된 모기지에만 추가할 수 있습니다.",
+    "paymentMatchingUnsupported": "결제 매칭은 아직 비용이 포함된 모기지 납부를 정산할 수 없습니다. 결제 매칭을 끄거나 비용을 삭제하세요."
   }
 }

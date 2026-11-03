@@ -818,5 +818,48 @@
       "paymentBelowInterest": "L'échéance ({payment}) est inférieure aux intérêts mensuels (environ {interest}) à {rate}%, donc le solde ne baisse jamais. Enregistrez l'échéance réelle (l'entrée de l'historique des taux ou le montant de paiement du compte) pour qu'elle couvre les intérêts.",
       "beyondHorizon": "L'échéance couvre les intérêts, mais la durée dépasse l'horizon de projection, donc la date de remboursement et les intérêts restants ne sont pas affichés."
     }
+  },
+  "loanFees": {
+    "title": "Frais du prêt hypothécaire",
+    "help": "Assurances, taxes ou autres frais prélevés avec chaque paiement du prêt hypothécaire. Chaque ligne de frais devient une ligne distincte du paiement programmé, imputée à la catégorie de votre choix. Des frais peuvent être un montant fixe, un pourcentage du solde actuel (recalculé à chaque paiement) ou un pourcentage du solde initial, facturés par paiement ou par an.",
+    "panelDescription": "Frais prélevés avec chaque paiement programmé du prêt hypothécaire. L'enregistrement met à jour les lignes du prochain paiement.",
+    "none": "Aucuns frais ne sont prélevés avec le paiement de ce prêt hypothécaire.",
+    "name": "Nom des frais",
+    "category": "Catégorie",
+    "calculation": "Mode de calcul",
+    "basis": "La valeur s'applique",
+    "amount": "Montant",
+    "rate": "Taux",
+    "add": "Ajouter des frais",
+    "remove": "Supprimer ces frais",
+    "edit": "Modifier les frais",
+    "editTitle": "Frais du prêt hypothécaire",
+    "save": "Enregistrer les frais",
+    "cancel": "Annuler",
+    "saved": "Les frais du prêt hypothécaire ont été enregistrés.",
+    "saveFailed": "Les frais du prêt hypothécaire n'ont pas pu être enregistrés.",
+    "loading": "Chargement des frais…",
+    "loadFailed": "Les frais du prêt hypothécaire n'ont pas pu être chargés.",
+    "retry": "Réessayer",
+    "unknownCategory": "Catégorie inconnue",
+    "unknownValue": "inconnu",
+    "summaryPerPayment": "{value} par paiement, {calculation}",
+    "summaryAnnual": "{value} par an, {calculation}",
+    "paymentMatchingConflict": "Le rapprochement des paiements ne peut pas encore solder un paiement qui comprend des frais. Désactivez le rapprochement des paiements ou supprimez les frais.",
+    "paymentMatchingNote": "Le rapprochement des paiements ne solde pas encore un paiement qui comprend des frais : ses prélèvements bancaires restent à enregistrer par vos soins.",
+    "calculations": {
+      "fixed": "Montant fixe",
+      "percentCurrentBalance": "Pourcentage du solde actuel",
+      "percentOriginalBalance": "Pourcentage du solde initial"
+    },
+    "bases": {
+      "perPayment": "Par paiement",
+      "annual": "Par an"
+    },
+    "errors": {
+      "required": "Obligatoire",
+      "duplicate": "Chaque ligne de frais doit avoir sa propre catégorie, autre que la catégorie d'intérêts",
+      "range": "Saisissez un taux de 100 % au maximum"
+    }
   }
 }

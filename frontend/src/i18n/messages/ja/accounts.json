@@ -818,5 +818,48 @@
       "paymentBelowInterest": "返済額（{payment}）は{rate}%での月利（約{interest}）を下回っているため、残高は減りません。利息を賄えるよう、実際の返済額（金利履歴の項目または口座の支払額）を記録してください。",
       "beyondHorizon": "返済額は利息を賄っていますが、期間が予測範囲を超えているため、完済日と残りの利息は表示されません。"
     }
+  },
+  "loanFees": {
+    "title": "住宅ローンの費用",
+    "help": "住宅ローンの各支払いとあわせて徴収される保険料、税金、その他の費用です。各費用は定期支払いの個別の行になり、選択したカテゴリに記帳されます。費用は固定額、現在残高に対する割合（支払いごとに再計算）、当初残高に対する割合のいずれかで、支払いごとまたは年単位で課されます。",
+    "panelDescription": "住宅ローンの各定期支払いとあわせて徴収される費用です。保存すると次回の支払いの行が更新されます。",
+    "none": "この住宅ローンの支払いでは費用は徴収されません。",
+    "name": "費用名",
+    "category": "カテゴリ",
+    "calculation": "計算方法",
+    "basis": "適用単位",
+    "amount": "金額",
+    "rate": "料率",
+    "add": "費用を追加",
+    "remove": "費用を削除",
+    "edit": "費用を編集",
+    "editTitle": "住宅ローンの費用",
+    "save": "費用を保存",
+    "cancel": "キャンセル",
+    "saved": "住宅ローンの費用を保存しました。",
+    "saveFailed": "住宅ローンの費用を保存できませんでした。",
+    "loading": "費用を読み込み中...",
+    "loadFailed": "住宅ローンの費用を読み込めませんでした。",
+    "retry": "再試行",
+    "unknownCategory": "不明なカテゴリ",
+    "unknownValue": "不明",
+    "summaryPerPayment": "支払いごとに{value}、{calculation}",
+    "summaryAnnual": "年間{value}、{calculation}",
+    "paymentMatchingConflict": "支払いマッチングは、費用を含む支払いをまだ決済できません。支払いマッチングをオフにするか、費用を削除してください。",
+    "paymentMatchingNote": "支払いマッチングは、費用を含む支払いをまだ決済しません。その銀行引き落としはご自身で記録してください。",
+    "calculations": {
+      "fixed": "固定額",
+      "percentCurrentBalance": "現在残高に対する割合",
+      "percentOriginalBalance": "当初残高に対する割合"
+    },
+    "bases": {
+      "perPayment": "支払いごと",
+      "annual": "年単位"
+    },
+    "errors": {
+      "required": "必須",
+      "duplicate": "各費用には、利息カテゴリ以外の個別のカテゴリが必要です",
+      "range": "100%以下の料率を入力してください"
+    }
   }
 }

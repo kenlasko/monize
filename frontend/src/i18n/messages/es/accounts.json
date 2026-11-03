@@ -818,5 +818,48 @@
       "paymentBelowInterest": "La cuota ({payment}) es inferior al interés mensual (unos {interest}) al {rate}%, por lo que el saldo nunca baja. Registra la cuota real (la entrada del historial de tipos de interés o el importe de pago de la cuenta) para que cubra el interés.",
       "beyondHorizon": "La cuota cubre el interés, pero el plazo se extiende más allá del horizonte de proyección, por lo que no se muestran la fecha de liquidación ni el interés restante."
     }
+  },
+  "loanFees": {
+    "title": "Gastos de la hipoteca",
+    "help": "Seguros, impuestos u otros gastos que se cobran con cada pago de la hipoteca. Cada gasto se convierte en su propia línea del pago programado y se registra en la categoría que elijas. Un gasto puede ser un importe fijo, un porcentaje del saldo actual (recalculado en cada pago) o un porcentaje del saldo original, cobrado por pago o por año.",
+    "panelDescription": "Gastos que se cobran con cada pago programado de la hipoteca. Al guardar se actualizan las líneas del próximo pago.",
+    "none": "No se cobran gastos con el pago de esta hipoteca.",
+    "name": "Nombre del gasto",
+    "category": "Categoría",
+    "calculation": "Se calcula como",
+    "basis": "El valor se aplica",
+    "amount": "Importe",
+    "rate": "Tasa",
+    "add": "Añadir un gasto",
+    "remove": "Eliminar gasto",
+    "edit": "Editar gastos",
+    "editTitle": "Gastos de la hipoteca",
+    "save": "Guardar gastos",
+    "cancel": "Cancelar",
+    "saved": "Se guardaron los gastos de la hipoteca.",
+    "saveFailed": "No se pudieron guardar los gastos de la hipoteca.",
+    "loading": "Cargando gastos...",
+    "loadFailed": "No se pudieron cargar los gastos de la hipoteca.",
+    "retry": "Reintentar",
+    "unknownCategory": "Categoría desconocida",
+    "unknownValue": "desconocido",
+    "summaryPerPayment": "{value} por pago, {calculation}",
+    "summaryAnnual": "{value} por año, {calculation}",
+    "paymentMatchingConflict": "La conciliación de pagos todavía no puede liquidar un pago que incluye gastos. Desactiva la conciliación de pagos o elimina los gastos.",
+    "paymentMatchingNote": "La conciliación de pagos todavía no liquida un pago que incluye gastos: sus adeudos del banco quedan para que los registres tú.",
+    "calculations": {
+      "fixed": "Importe fijo",
+      "percentCurrentBalance": "Porcentaje del saldo actual",
+      "percentOriginalBalance": "Porcentaje del saldo original"
+    },
+    "bases": {
+      "perPayment": "Por pago",
+      "annual": "Por año"
+    },
+    "errors": {
+      "required": "Obligatorio",
+      "duplicate": "Cada gasto necesita su propia categoría, distinta de la categoría de intereses",
+      "range": "Introduce una tasa de como máximo el 100 %"
+    }
   }
 }

@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "付款比對僅適用於房貸和貸款",
     "paymentMatchingRequiresSchedule": "付款比對需要貸款的排程付款。請先設定其付款。",
     "paymentMatchingRuleExists": "此貸款已有付款比對規則",
-    "paymentMatchingFailed": "貸款已儲存，但無法建立其付款比對規則。請在貸款詳細資料中建立。"
+    "paymentMatchingFailed": "貸款已儲存，但無法建立其付款比對規則。請在貸款詳細資料中建立。",
+    "interestCategoryIsLoanFee": "此類別已被該抵押貸款的某項費用使用。請為利息選擇其他類別，或先修改該費用。"
   },
   "actionHistory": {
     "undoSplitLegsChanged": "此次編輯變更了將資金轉入其他帳戶的拆分列，因此無法自動復原。請編輯交易以改回。",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL 必須是 http 或 https 網址",
       "invalidField": "{{ field }} 無效"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "每項抵押貸款費用都需要獨立的類別。",
+    "valueMismatch": "固定費用需要金額，百分比費用需要費率。",
+    "interestCategory": "抵押貸款費用不能使用該抵押貸款的利息類別。",
+    "invalidCategory": "請為每項抵押貸款費用選擇您自己的類別。",
+    "unpriceable": "無法計算費用\"{{ name }}\"：該抵押貸款沒有原始本金。請先輸入最初借入的金額。",
+    "ambiguousLine": "排程付款中已有多行屬於費用\"{{ name }}\"的類別。請先從排程付款中刪除多餘的行。",
+    "mortgageOnly": "只有抵押貸款科目可以設定費用。",
+    "mortgageScheduleOnly": "只能為已設定排程付款的抵押貸款新增費用。",
+    "paymentMatchingUnsupported": "付款比對目前還無法結算包含費用的抵押貸款付款。請關閉付款比對或移除這些費用。"
   }
 }

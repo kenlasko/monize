@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "Pencocokan pembayaran hanya berlaku untuk hipotek dan pinjaman",
     "paymentMatchingRequiresSchedule": "Pencocokan pembayaran memerlukan pembayaran terjadwal pinjaman. Atur pembayarannya terlebih dahulu.",
     "paymentMatchingRuleExists": "Pinjaman ini sudah memiliki aturan pencocokan pembayaran",
-    "paymentMatchingFailed": "Pinjaman telah disimpan, tetapi aturan pencocokan pembayarannya tidak dapat dibuat. Buat dari detail pinjaman."
+    "paymentMatchingFailed": "Pinjaman telah disimpan, tetapi aturan pencocokan pembayarannya tidak dapat dibuat. Buat dari detail pinjaman.",
+    "interestCategoryIsLoanFee": "Kategori ini sudah dipakai oleh salah satu biaya hipotek. Pilih kategori lain untuk bunga, atau ubah dulu biayanya."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Pengeditan ini mengubah baris pecahan yang memindahkan uang ke akun lain, sehingga tidak dapat dibatalkan secara otomatis. Edit transaksi untuk mengembalikannya.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL harus berupa alamat http atau https",
       "invalidField": "{{ field }} tidak valid"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Setiap biaya hipotek memerlukan kategorinya sendiri.",
+    "valueMismatch": "Biaya tetap memakai jumlah dan biaya persentase memakai tarif.",
+    "interestCategory": "Biaya hipotek tidak dapat memakai kategori bunga hipotek.",
+    "invalidCategory": "Pilih salah satu kategori milik Anda untuk setiap biaya hipotek.",
+    "unpriceable": "Biaya \"{{ name }}\" tidak dapat dihitung: hipotek tidak memiliki pokok pinjaman awal. Masukkan dulu jumlah yang awalnya dipinjam.",
+    "ambiguousLine": "Pembayaran terjadwal sudah memiliki beberapa baris dalam kategori biaya \"{{ name }}\". Hapus dulu baris tambahan dari pembayaran terjadwal.",
+    "mortgageOnly": "Hanya akun hipotek yang dapat memiliki biaya.",
+    "mortgageScheduleOnly": "Biaya hanya dapat ditambahkan ke hipotek yang memiliki pembayaran terjadwal.",
+    "paymentMatchingUnsupported": "Pencocokan pembayaran belum dapat melunasi pembayaran hipotek yang mencakup biaya. Matikan pencocokan pembayaran atau hapus biayanya."
   }
 }
