@@ -140,7 +140,15 @@ function parseTable(
   const continental = dateSamples.some((d) =>
     /^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(d.trim()),
   );
-  const decimal = inferDecimalSeparator(priceSamples, continental ? "," : null);
+  const decimal = inferDecimalSeparator(
+    priceSamples,
+    continental
+      ? ","
+      : headerSeparatorHint([
+          headerTexts[columns.date ?? -1] ?? "",
+          headerTexts[columns.close ?? -1] ?? "",
+        ]),
+  );
   const dayFirst = inferDayFirst(dateSamples);
   if (decimal === null) throw new AmbiguousQuoteTableError("numbers");
   if (dayFirst === null) throw new AmbiguousQuoteTableError("dates");
@@ -287,6 +295,7 @@ export function inferDecimalSeparator(
   let comma = 0;
   let dot = 0;
   let ambiguousComma = 0;
+  let ambiguousDot = 0;
   for (const sample of samples) {
     const core = numericCore(sample);
     const lastDot = core.lastIndexOf(".");
@@ -313,14 +322,47 @@ export function inferDecimalSeparator(
       // that writes decimals with a comma and 102345 on one that groups
       // thousands with it.
       ambiguousComma++;
+    } else {
+      // The mirror case: 12.345 is a three-decimal price on a US page and
+      // 12345 on a continental one that groups thousands with a dot.
+      ambiguousDot++;
     }
   }
   if (comma !== dot) return comma > dot ? "," : ".";
   if (hint) return hint;
-  return ambiguousComma > 0 ? null : ".";
+  return ambiguousComma > 0 || ambiguousDot > 0 ? null : ".";
 }
 
 const MAGNITUDE: Record<string, number> = { k: 1e3, m: 1e6, b: 1e9, bn: 1e9 };
+
+/**
+ * The decimal separator a table's own header language implies, or `null` when
+ * the words do not settle it. English headers ("Date", "Close") mean a dot;
+ * German, Italian and Portuguese ones ("Datum", "Schluss", "Chiusura",
+ * "Fechamento") a comma. Spanish says nothing: "Fecha" / "Cierre" is written by
+ * Spain with a decimal comma and by Mexico with a decimal point. Headers that
+ * disagree say nothing either.
+ */
+export function headerSeparatorHint(headers: string[]): "." | "," | null {
+  let hint: "." | "," | null = null;
+  for (const raw of headers) {
+    const text = raw.trim().toLowerCase();
+    const said = DOT_HEADERS.test(text)
+      ? "."
+      : COMMA_HEADERS.test(text)
+        ? ","
+        : null;
+    if (!said) continue;
+    if (hint && hint !== said) return null;
+    hint = said;
+  }
+  return hint;
+}
+
+const DOT_HEADERS =
+  /^(date|trading day|close|closing|last|price|quote|nav\b|net asset value)\b/;
+const COMMA_HEADERS =
+  /^(datum|handelstag|schluss|schluß|schlusskurs|zuletzt|letzter|kurs|rücknahmepreis|ruecknahmepreis|chiusura|prezzo|fechamento|preço|data)/;
 
 /** Parse a cell as a number, or `null` for an empty, dashed or non-numeric cell. */
 export function parseNumber(raw: string, decimal: "." | ","): number | null {

@@ -214,7 +214,7 @@ describe("HtmlTableFinanceService", () => {
   it("refuses a page whose numbers it cannot place, rather than guess", async () => {
     fetchMock.mockResolvedValueOnce(
       htmlResponse(
-        "<table><tr><th>Date</th><th>Close</th></tr>" +
+        "<table><tr><th>Fecha</th><th>Cierre</th></tr>" +
           "<tr><td>2026-11-02</td><td>102,345</td></tr>" +
           "<tr><td>2026-11-01</td><td>101,998</td></tr></table>",
       ),

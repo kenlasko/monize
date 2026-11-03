@@ -2,6 +2,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import {
   AmbiguousQuoteTableError,
+  headerSeparatorHint,
   detectCurrency,
   inferDayFirst,
   inferDecimalSeparator,
@@ -331,13 +332,21 @@ describe("readings the page does not settle", () => {
   });
 
   it("refuses a table whose prices all read both ways, and reads it with a dotted date", () => {
-    const page = (date: string) =>
-      `<table><tr><th>Date</th><th>Close</th></tr>` +
+    const page = (date: string, headers = "<th>Fecha</th><th>Cierre</th>") =>
+      `<table><tr>${headers}</tr>` +
       `<tr><td>${date}</td><td>102,345</td></tr>` +
       `<tr><td>${date}</td><td>101,998</td></tr></table>`;
+    // Spanish headers do not say which separator (Spain and Mexico differ).
     expect(() => parseQuoteTable(page("2026-11-02"), NOW)).toThrow(
       AmbiguousQuoteTableError,
     );
+    // An English page groups thousands with the comma.
+    expect(
+      parseQuoteTable(
+        page("2026-11-02", "<th>Date</th><th>Close</th>"),
+        NOW,
+      )!.prices.map((p) => p.close),
+    ).toEqual([102345]);
     const rows = (d1: string, d2: string) =>
       `<table><tr><th>Datum</th><th>Schluss</th></tr>` +
       `<tr><td>${d1}</td><td>102,345</td></tr>` +
@@ -434,5 +443,45 @@ describe("script, style and comment bodies are text, not nesting", () => {
     const start = Date.now();
     parseQuoteTable("<script>".repeat(200_000), NOW);
     expect(Date.now() - start).toBeLessThan(1000);
+  });
+});
+
+describe("a lone dot before three digits", () => {
+  const page = (date: string, close: string) =>
+    `<table><tr><th>${date}</th><th>${close}</th></tr>` +
+    `<tr><td>2026-11-02</td><td>12.345</td></tr>` +
+    `<tr><td>2026-10-30</td><td>1.234</td></tr></table>`;
+
+  it("is read as thousands on a German page with ISO dates", () => {
+    expect(
+      parseQuoteTable(page("Datum", "Schluss"), NOW)!.prices.map(
+        (p) => p.close,
+      ),
+    ).toEqual([1234, 12345]);
+  });
+
+  it("is read as a decimal on an English page", () => {
+    expect(
+      parseQuoteTable(page("Date", "Close"), NOW)!.prices.map((p) => p.close),
+    ).toEqual([1.234, 12.345]);
+  });
+
+  it("is refused on a page whose headers do not say (Spanish is written both ways)", () => {
+    expect(() => parseQuoteTable(page("Fecha", "Cierre"), NOW)).toThrow(
+      AmbiguousQuoteTableError,
+    );
+  });
+
+  it("is settled by the other prices when they show the separator", () => {
+    expect(inferDecimalSeparator(["12.345", "12.5"])).toBe(".");
+    expect(inferDecimalSeparator(["12.345", "12,5"])).toBe(",");
+    expect(inferDecimalSeparator(["12.345"])).toBeNull();
+  });
+
+  it("takes the header language only when the headers agree", () => {
+    expect(headerSeparatorHint(["Date", "Close"])).toBe(".");
+    expect(headerSeparatorHint(["Datum", "Schlusskurs"])).toBe(",");
+    expect(headerSeparatorHint(["Fecha", "Cierre"])).toBeNull();
+    expect(headerSeparatorHint(["Datum", "Close"])).toBeNull();
   });
 });
