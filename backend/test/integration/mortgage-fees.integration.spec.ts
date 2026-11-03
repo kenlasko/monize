@@ -190,7 +190,7 @@ describe("Mortgage fees (integration)", () => {
       interestRate: 6,
       paymentFrequency: "MONTHLY",
       paymentAmount: 1000,
-      paymentStartDate: FIRST,
+      paymentStartDate: new Date(`${FIRST}T00:00:00`),
       amortizationMonths: 300,
       originalPrincipal: 100000,
       interestCategoryId,
