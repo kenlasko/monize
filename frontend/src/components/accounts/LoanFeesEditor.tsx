@@ -99,6 +99,7 @@ export function LoanFeesEditor({
               />
               <Combobox
                 label={t('loanFees.category')}
+                aria-label={t('loanFees.category')}
                 placeholder={t('mortgageFields.selectCategory')}
                 options={categoryOptions}
                 value={fee.categoryId}

@@ -137,7 +137,7 @@ test("account-form-mortgage-fees", async () => {
   const category = dialog.getByLabel("Category", { exact: true });
   await category.click();
   await category.pressSequentially("Property Tax");
-  await page.getByRole("option", { name: /Property Tax/ }).first().click();
+  await page.getByRole("button", { name: /Housing: Property Tax/ }).first().click();
   await dialog.getByLabel("Value applies").selectOption("ANNUAL");
   await dialog.getByLabel("Amount", { exact: true }).fill("3600");
   await dialog.getByLabel("Fee name").click();
@@ -156,19 +156,30 @@ test("loan-fees-panel", async () => {
   // Seeded for the picture and removed after it, so the mortgage's bill is
   // what every other picture shows.
   const api = apiFor(page);
-  const category = (name: string) =>
-    need(lookups.categories, name, "category").id;
+  // By parent and name: the demo tree repeats a name under several parents.
+  const categories =
+    await api.get<{ id: string; name: string; parentId: string | null }[]>(
+      "/categories",
+    );
+  const category = (parent: string, name: string): string => {
+    const top = categories.find((c) => c.name === parent && !c.parentId);
+    const child = categories.find(
+      (c) => c.name === name && c.parentId === top?.id,
+    );
+    if (!child) throw new Error(`No category ${parent} > ${name}`);
+    return child.id;
+  };
   await api.put(`/accounts/${ids.mortgage}/loan-fees`, {
     fees: [
       {
-        categoryId: category("Property Tax"),
+        categoryId: category("Housing", "Property Tax"),
         name: "Property tax",
         calculation: "FIXED",
         basis: "ANNUAL",
         amount: 3600,
       },
       {
-        categoryId: category("Insurance"),
+        categoryId: category("Bills & Utilities", "Insurance"),
         name: "Mortgage default insurance",
         calculation: "PERCENT_CURRENT_BALANCE",
         basis: "ANNUAL",

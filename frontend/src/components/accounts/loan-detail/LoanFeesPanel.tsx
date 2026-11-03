@@ -49,7 +49,7 @@ const CALCULATION_KEYS = {
  */
 export function LoanFeesPanel({ account, onChanged }: LoanFeesPanelProps) {
   const t = useTranslations('accounts');
-  const { formatCurrency, formatPercent } = useNumberFormat();
+  const { formatCurrency, formatPercentTrimmed } = useNumberFormat();
   const [attempt, setAttempt] = useState(0);
   const [answer, setAnswer] = useState<{ key: string; loaded: Loaded } | null>(null);
   const [drafts, setDrafts] = useState<LoanFeeDraft[] | null>(null);
@@ -119,7 +119,7 @@ export function LoanFeesPanel({ account, onChanged }: LoanFeesPanelProps) {
         ? t('loanFees.unknownValue')
         : fee.calculation === 'FIXED'
           ? formatCurrency(stored, account.currencyCode)
-          : formatPercent(stored, 4);
+          : formatPercentTrimmed(stored, 6);
     return t(fee.basis === 'ANNUAL' ? 'loanFees.summaryAnnual' : 'loanFees.summaryPerPayment', {
       value,
       calculation: t(`loanFees.calculations.${CALCULATION_KEYS[fee.calculation]}`),
