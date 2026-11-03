@@ -185,6 +185,8 @@ function sourceFor(provider: QuoteProviderName | undefined): string {
       return "lse";
     case "deutsche_boerse":
       return "deutsche_boerse";
+    case "html_table":
+      return "html_table";
     default:
       return "yahoo_finance";
   }
@@ -577,6 +579,10 @@ export class SecurityPriceService {
           : undefined,
       currencyCode: security.currencyCode,
       preferredExchanges: ctx.preferredExchanges,
+      quoteUrl:
+        provider.name === "html_table"
+          ? (security.quoteUrl ?? undefined)
+          : undefined,
     };
   }
 
@@ -681,12 +687,20 @@ export class SecurityPriceService {
 
   // ─── Grouping ────────────────────────────────────────────────────────────
 
+  /**
+   * One fetch is made per group and its answer is written to every member, so
+   * two securities may share a group only when they would ask the provider the
+   * same question. A web page's address is part of that question: the symbol of
+   * an `html_table` security is whatever its owner typed, so two users' "ACME"
+   * on different pages must never be priced from one of the pages.
+   */
   private groupKey(security: Security): string {
     return [
       security.symbol,
       security.exchange || "",
       security.quoteProvider || "",
       security.msnInstrumentId || "",
+      security.quoteProvider === "html_table" ? (security.quoteUrl ?? "") : "",
     ].join("|");
   }
 

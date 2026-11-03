@@ -119,9 +119,13 @@ describe("the third-party mail libraries are confined to one file each", () => {
     ]);
   });
 
-  it("imports htmlparser2 only in html-lines.util.ts", () => {
+  it("imports htmlparser2 only in the two HTML readers", () => {
+    // html-lines.util.ts reads mail bodies; securities/html-table-reader.ts
+    // reads the tables of a quote page with the Tokenizer alone, because the
+    // parser and the DOM builder are quadratic in nesting depth.
     expect(importing("htmlparser2")).toEqual([
       "email-receipts/imap/html-lines.util.ts",
+      "securities/html-table-reader.ts",
     ]);
   });
 });

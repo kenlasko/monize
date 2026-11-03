@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "债券引擎"
+      "bond_engine": "债券引擎",
+      "html_table": "网页表格"
     },
     "types": {
       "select": "选择类型...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "开启后,Monize 每天都会从官方来源读取此债券种类的新系列,这样您无需先获取系列即可记录买入。",
     "bondCountryLabel": "国家",
     "bondCountryOther": "其他",
-    "bondCountryOtherInfo": "如需支持其他国家的债券，可在项目的 <link>GitHub</link> 上提出请求。"
+    "bondCountryOtherInfo": "如需支持其他国家的债券，可在项目的 <link>GitHub</link> 上提出请求。",
+    "quoteTable": {
+      "urlLabel": "包含价格表的页面",
+      "urlHelp": "页面需要一个表格，其标题行包含日期列和收盘价列，可用英语、德语或西班牙语（例如 Date/Close、Datum/Schluss、Fecha/Cierre）。最新一行为价格；所有行用于填充历史。",
+      "test": "测试",
+      "previewFailed": "无法读取该页面。",
+      "summary": "{first} 至 {last}，共 {count, plural, other {# 天}}",
+      "columns": "使用的列：{columns}",
+      "currency": "页面上的货币：{currency}",
+      "noCurrency": "页面未注明货币；价格按该证券的货币保存。",
+      "skipped": "{count, plural, other {已跳过 # 行无法读取的数据}}",
+      "headers": {
+        "date": "日期",
+        "open": "开盘",
+        "high": "最高",
+        "low": "最低",
+        "close": "收盘",
+        "volume": "成交量"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "日期",
@@ -358,7 +378,9 @@
     "nameMax": "名称不能超过 255 个字符",
     "currencyRequired": "货币为必填项",
     "bondProgramRequired": "债券种类为必填项",
-    "descriptionMax": "描述不能超过5000个字符"
+    "descriptionMax": "描述不能超过5000个字符",
+    "quoteUrlRequired": "请输入包含价格表的页面。",
+    "quoteUrlInvalid": "请输入以 http:// 或 https:// 开头的完整地址。"
   },
   "priceValidation": {
     "dateRequired": "日期为必填项",

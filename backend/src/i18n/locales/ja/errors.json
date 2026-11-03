@@ -711,7 +711,17 @@
     "selectionNotFound": "選択された銘柄のうち1つ以上が見つかりませんでした",
     "comparisonSelectionEmpty": "比較する銘柄または市場指数を1つ以上選択してください",
     "exchangeRateNotPositive": "為替レートはゼロより大きい値である必要があります",
-    "embeddedSplitAmountMismatch": "この分割は {{ amount }} を記録していますが、{{ action }} {{ quantity }} @ {{ price }} はレート {{ rate }} で {{ expected }} になります。その金額を使うか、意図した為替レートを指定してください。"
+    "embeddedSplitAmountMismatch": "この分割は {{ amount }} を記録していますが、{{ action }} {{ quantity }} @ {{ price }} はレート {{ rate }} で {{ expected }} になります。その金額を使うか、意図した為替レートを指定してください。",
+    "quoteTableInvalidUrl": "ユーザー名やパスワードを含まない完全な http または https のアドレスを入力してください。",
+    "quoteTablePrivateAddress": "このアドレスはプライベートまたはローカルネットワークを指しているため、使用できません。",
+    "quoteTableTooManyRedirects": "ページのリダイレクト回数が多すぎます。",
+    "quoteTableHttpStatus": "サイトは HTTP ステータス {{ status }} を返しました。",
+    "quoteTableTooLarge": "ページが大きすぎて読み込めません。",
+    "quoteTableNotFound": "ページに価格表が見つかりません。日付列と終値列を含むヘッダー行が必要です。",
+    "quoteUrlRequired": "Webページの表から価格を取得する銘柄には、ページのアドレスが必要です。",
+    "quoteTableAmbiguous": "このページの数値または日付は複数の読み方ができるため（例: 102,345 や 01/02/2026）、使用しませんでした。小数点の区切りと日付の書式が明確なページを選んでください。",
+    "quoteTableFailed": "予期しないエラーのためページを読み取れませんでした。しばらくしてからもう一度お試しください。繰り返し発生する場合は管理者に連絡してください。",
+    "quoteTableUnreachable": "ページにアクセスできませんでした。アドレスを確認するか、後でもう一度お試しください。"
   },
   "tags": {
     "notFound": "ID {{ id }} のタグが見つかりません",

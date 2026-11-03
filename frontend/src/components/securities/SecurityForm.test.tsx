@@ -1238,6 +1238,23 @@ describe('SecurityForm', () => {
       expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('bondAutoFetch');
     });
 
+    it('clears a web-page provider the listed bond no longer shows', async () => {
+      // Chosen before the type became a listed bond: the provider and its page
+      // field are hidden now, so the save must neither need nor keep them.
+      await renderBond({ quoteProvider: 'html_table' });
+      await pickPoland();
+      const select = await programSelect();
+      await waitFor(() => expect(within(select).getAllByRole('option')).toHaveLength(3));
+      fireEvent.change(select, { target: { value: 'p-edo' } });
+      expect(screen.queryByTestId('quote-table-url-field')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText('Update Security'));
+      await waitFor(() =>
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({ bondProgramId: 'p-edo', quoteProvider: null }),
+        ),
+      );
+    });
+
     it('refills every field of an existing security when the person picks another kind', async () => {
       await renderBond({ symbol: 'MYBOND', name: 'My bonds', currencyCode: 'USD', exchange: 'NYSE', website: 'https://old.test' });
       await pickPoland();
@@ -1699,5 +1716,35 @@ describe('SecurityForm', () => {
       expect((await screen.findByLabelText('Bond kind') as HTMLSelectElement).value).toBe('');
       expect(screen.queryByRole('switch', { name: 'Fetch new series of this bond kind automatically' })).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('SecurityForm page address on save', () => {
+  const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('leaves quoteUrl out of a save that did not touch it, so an older server accepts it', async () => {
+    render(
+      <SecurityForm
+        security={createSecurity({ quoteProvider: 'html_table', quoteUrl: 'https://example.com/prices' })}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
+    await act(async () => {});
+    fireEvent.click(screen.getByText('Update Security'));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('quoteUrl');
+  });
+
+  it('leaves quoteUrl out of a save for a security that never had one', async () => {
+    render(<SecurityForm security={createSecurity()} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    await act(async () => {});
+    fireEvent.click(screen.getByText('Update Security'));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('quoteUrl');
   });
 });

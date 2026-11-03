@@ -477,6 +477,19 @@ describe("SecuritiesService", () => {
   });
 
   describe("create", () => {
+    it("refuses a web page table without a page address, writing nothing", async () => {
+      await expect(
+        service.create("user-1", {
+          symbol: "KRUG",
+          name: "Krugerrand",
+          currencyCode: "EUR",
+          quoteProvider: "html_table",
+          quoteUrl: " ",
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(queryRunnerManager.save).not.toHaveBeenCalled();
+    });
+
     describe("bond link (spec 12.1)", () => {
       const PROGRAM = "11111111-1111-5111-8111-111111111111";
       const bond = {
@@ -1416,6 +1429,68 @@ describe("SecuritiesService", () => {
 
         const saved = queryRunnerManager.save.mock.calls[0][1];
         expect(saved.skipPriceUpdates).toBe(false);
+      });
+
+      it("turns updates back on when a new page address is entered, not when it is resent", async () => {
+        const url = "https://www.ariva.de/k";
+        securitiesRepository.findOne.mockResolvedValue({
+          ...mockSecurity,
+          skipPriceUpdates: true,
+          quoteProvider: "html_table",
+          quoteUrl: url,
+        });
+        await service.update("user-1", "sec-1", {
+          name: "Renamed",
+          quoteProvider: "html_table",
+          quoteUrl: ` ${url} `,
+        });
+        expect(queryRunnerManager.save.mock.calls[0][1].skipPriceUpdates).toBe(
+          true,
+        );
+
+        queryRunnerManager.save.mockClear();
+        await service.update("user-1", "sec-1", {
+          quoteProvider: "html_table",
+          quoteUrl: "https://markets.ft.com/x",
+        });
+        const saved = queryRunnerManager.save.mock.calls[0][1];
+        expect(saved.quoteUrl).toBe("https://markets.ft.com/x");
+        expect(saved.skipPriceUpdates).toBe(false);
+      });
+
+      it("still lets a request that does not touch the provider edit a web page security saved without its address", async () => {
+        securitiesRepository.findOne.mockResolvedValue({
+          ...mockSecurity,
+          quoteProvider: "html_table",
+          quoteUrl: null,
+        });
+
+        await service.update("user-1", "sec-1", { isFavourite: true });
+
+        expect(queryRunnerManager.save).toHaveBeenCalled();
+        expect(queryRunnerManager.save.mock.calls[0][1].isFavourite).toBe(true);
+      });
+
+      it("refuses a web page table without a page address, writing nothing", async () => {
+        securitiesRepository.findOne.mockResolvedValue({
+          ...mockSecurity,
+          quoteProvider: null,
+          quoteUrl: null,
+        });
+
+        await expect(
+          service.update("user-1", "sec-1", { quoteProvider: "html_table" }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        // Clearing the address of a security that still reads a page, too.
+        securitiesRepository.findOne.mockResolvedValue({
+          ...mockSecurity,
+          quoteProvider: "html_table",
+          quoteUrl: "https://www.ariva.de/k",
+        });
+        await expect(
+          service.update("user-1", "sec-1", { quoteUrl: "  " }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(queryRunnerManager.save).not.toHaveBeenCalled();
       });
 
       // The form resends every field; an override the row already had is not

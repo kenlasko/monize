@@ -351,6 +351,30 @@ async function resolveBothFamilies(
   }
 }
 
+/**
+ * The half of the address check that needs no resolver: a blocked name or
+ * suffix, or a private, loopback, link-local or metadata address in any
+ * spelling (hex, decimal, octal, IPv6-mapped). Exported so a client that holds
+ * the resolved address to the same rule at connect time (`publicOnlyLookup`)
+ * can refuse the name up front without a second lookup, and can tell "this
+ * address is not allowed" from "the resolver did not answer".
+ */
+export function isRefusedHostName(host: string): boolean {
+  const hostname = unbracketHost(host.toLowerCase());
+  if (BLOCKED_HOSTNAMES.has(hostname)) return true;
+  for (const suffix of BLOCKED_SUFFIXES) {
+    if (hostname.endsWith(suffix) || hostname === suffix.slice(1)) return true;
+  }
+  // Check for alternative IP encodings (hex, decimal, octal, IPv6-mapped)
+  const normalizedIp = normalizeIp(hostname);
+  if (normalizedIp && isPrivateIp(normalizedIp)) return true;
+  // The hostname as written, through the same decision. Two loops over the
+  // same list is how the IPv6 half came to be missing from one of them: the
+  // ranges were text prefixes here and nothing structural anywhere, so
+  // `fc01::1` passed both.
+  return isPrivateIp(hostname);
+}
+
 @ValidatorConstraint({ async: true })
 export class IsSafeUrlConstraint implements ValidatorConstraintInterface {
   async validate(value: unknown): Promise<boolean> {
@@ -369,29 +393,10 @@ export class IsSafeUrlConstraint implements ValidatorConstraintInterface {
 
     const hostname = unbracketHost(parsed.hostname.toLowerCase());
 
-    if (BLOCKED_HOSTNAMES.has(hostname)) {
+    if (isRefusedHostName(hostname)) {
       return false;
     }
-
-    for (const suffix of BLOCKED_SUFFIXES) {
-      if (hostname.endsWith(suffix) || hostname === suffix.slice(1)) {
-        return false;
-      }
-    }
-
-    // Check for alternative IP encodings (hex, decimal, octal, IPv6-mapped)
     const normalizedIp = normalizeIp(hostname);
-    if (normalizedIp && isPrivateIp(normalizedIp)) {
-      return false;
-    }
-
-    // The hostname as written, through the same decision. Two loops over the
-    // same list is how the IPv6 half came to be missing from one of them: the
-    // ranges were text prefixes here and nothing structural anywhere, so
-    // `fc01::1` passed both.
-    if (isPrivateIp(hostname)) {
-      return false;
-    }
 
     if (parsed.username || parsed.password) {
       return false;

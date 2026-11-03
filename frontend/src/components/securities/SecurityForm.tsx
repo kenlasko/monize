@@ -26,6 +26,7 @@ import {
   QuoteProviderSelect,
   type LookupProviderValue,
 } from './QuoteProviderControls';
+import { QuoteTableUrlField } from './QuoteTableUrlField';
 import { TagForm } from '@/components/tags/TagForm';
 import { Security, CreateSecurityData } from '@/types/investment';
 import { Tag } from '@/types/tag';
@@ -41,6 +42,7 @@ import { FormActions } from '@/components/ui/FormActions';
 import { EXCHANGE_OPTIONS, COUNTRY_OPTIONS } from '@/lib/constants';
 import {
   buildSecuritySchema,
+  valuesToValidate,
   toAllocationRows,
   toAllocationSlices,
   type SecurityFormData,
@@ -196,10 +198,17 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
     clearErrors,
     formState: { errors, isSubmitting, isDirty, defaultValues },
   } = useForm<SecurityFormData>({
-    // The schema plus one rule it cannot hold: the country is not a form value,
-    // so a listed country without a bond kind is refused here, as a required field.
+    // The schema plus what it cannot see: the country is not a form value, so a
+    // listed country without a bond kind is refused here, as a required field,
+    // and a listed bond's hidden provider (and so its hidden page address) is
+    // not validated: the engine prices it, and a rule on a field nobody can see
+    // would block the save with no reason on screen.
     resolver: async (values, context, options) => {
-      const result = await zodResolver(buildSecuritySchema(t))(values, context, options);
+      const result = await zodResolver(buildSecuritySchema(t))(
+        valuesToValidate(values, !hideExchange),
+        context,
+        options,
+      );
       if (!bondKindMissing) return result;
       return {
         values: {},
@@ -220,6 +229,7 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
       irWebsite: security?.irWebsite || '',
       quoteProvider: security?.quoteProvider || '',
       msnInstrumentId: security?.msnInstrumentId || '',
+      quoteUrl: security?.quoteUrl || '',
       bondProgramId: security?.bondProgramId || defaults?.bondProgramId || '',
       bondAutoFetch: security?.bondAutoFetch ?? defaults?.bondAutoFetch ?? false,
       isFavourite: security?.isFavourite || false,
@@ -273,6 +283,7 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
   const [skipSwitchTouched, setSkipSwitchTouched] = useState(false);
   const watchedQuoteProvider = useWatch({ control, name: 'quoteProvider' }) || '';
   const watchedMsnInstrumentId = useWatch({ control, name: 'msnInstrumentId' })?.trim() || '';
+  const watchedQuoteUrl = useWatch({ control, name: 'quoteUrl' })?.trim() || '';
 
   // Show what the save will store: the same rule as `SecuritiesService.update`,
   // a provider or MSN id that differs from the stored one clears the flag.
@@ -284,12 +295,15 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
     const newMsnId =
       watchedMsnInstrumentId !== '' &&
       watchedMsnInstrumentId !== (defaultValues?.msnInstrumentId?.trim() || '');
-    if (newProvider || newMsnId) {
+    const newQuoteUrl =
+      watchedQuoteUrl !== '' && watchedQuoteUrl !== (defaultValues?.quoteUrl?.trim() || '');
+    if (newProvider || newMsnId || newQuoteUrl) {
       setValue('skipPriceUpdates', false);
     }
   }, [
     watchedQuoteProvider,
     watchedMsnInstrumentId,
+    watchedQuoteUrl,
     skipSwitchTouched,
     defaultValues,
     getValues,
@@ -586,13 +600,24 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
       // Send null (not undefined) when the user picks "Use Default" so the
       // backend clears any existing override. Undefined would be stripped by
       // axios and treated as "no change", leaving the previous override in place.
-      quoteProvider: data.quoteProvider === '' ? null : data.quoteProvider,
+      // A listed bond hides the provider; a web-page provider left behind from
+      // before the type changed has no page to read, so it is cleared.
+      quoteProvider:
+        data.quoteProvider === '' || (hideExchange && data.quoteProvider === 'html_table')
+          ? null
+          : data.quoteProvider,
       // Empty string rather than undefined, so clearing an address actually
       // clears it: the backend normalises "" to null, where an omitted field
       // would leave the previous value in place.
       website: data.website?.trim() ?? '',
       irWebsite: data.irWebsite?.trim() ?? '',
       msnInstrumentId: data.msnInstrumentId?.trim() || undefined,
+      // Sent only when it changed (an empty string clears a stored page), so a
+      // save that leaves it alone is accepted by a server that predates the
+      // field: during a rolling deploy the old pod rejects an unknown key.
+      ...((data.quoteUrl?.trim() ?? '') !== (security?.quoteUrl?.trim() ?? '')
+        ? { quoteUrl: data.quoteUrl?.trim() ?? '' }
+        : {}),
       // The link is sent only when it changed (null unlinks), so a save that
       // leaves it alone is accepted by a server that predates the field. A type
       // moved away from BOND unlinks a security that was linked.
@@ -883,6 +908,14 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
         />
         {t('priceAlert.chartLabel')}
       </label>
+
+      {!hideExchange && watchedQuoteProvider === 'html_table' && (
+        <QuoteTableUrlField
+          registration={register('quoteUrl')}
+          url={watchedQuoteUrl}
+          error={errors.quoteUrl?.message}
+        />
+      )}
 
       {!hideExchange && watchedQuoteProvider === 'msn' && (
         <MsnInstrumentIdInput

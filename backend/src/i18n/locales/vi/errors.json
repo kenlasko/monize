@@ -711,7 +711,17 @@
     "selectionNotFound": "Không tìm thấy một hoặc nhiều chứng khoán đã chọn",
     "comparisonSelectionEmpty": "Chọn ít nhất một chứng khoán hoặc chỉ số thị trường để so sánh",
     "exchangeRateNotPositive": "Tỷ giá phải lớn hơn không",
-    "embeddedSplitAmountMismatch": "Phần chia này ghi {{ amount }}, nhưng {{ action }} {{ quantity }} @ {{ price }} quy đổi theo tỷ giá {{ rate }} ra {{ expected }}. Hãy dùng số tiền đó, hoặc cho biết tỷ giá bạn muốn dùng."
+    "embeddedSplitAmountMismatch": "Phần chia này ghi {{ amount }}, nhưng {{ action }} {{ quantity }} @ {{ price }} quy đổi theo tỷ giá {{ rate }} ra {{ expected }}. Hãy dùng số tiền đó, hoặc cho biết tỷ giá bạn muốn dùng.",
+    "quoteTableInvalidUrl": "Nhập địa chỉ http hoặc https đầy đủ, không có tên người dùng hoặc mật khẩu.",
+    "quoteTablePrivateAddress": "Địa chỉ trỏ tới mạng riêng hoặc mạng cục bộ, điều này không được phép.",
+    "quoteTableTooManyRedirects": "Trang đã chuyển hướng quá nhiều lần.",
+    "quoteTableHttpStatus": "Trang web trả về trạng thái HTTP {{ status }}.",
+    "quoteTableTooLarge": "Trang quá lớn để đọc.",
+    "quoteTableNotFound": "Không tìm thấy bảng giá trên trang: cần một hàng tiêu đề có cột ngày và cột giá đóng cửa.",
+    "quoteUrlRequired": "Chứng khoán lấy giá từ bảng trên trang web cần có địa chỉ của trang.",
+    "quoteTableAmbiguous": "Số hoặc ngày trên trang có thể đọc theo nhiều cách (ví dụ 102,345 hoặc 01/02/2026) nên trang không được dùng. Hãy chọn trang ghi dấu phân cách thập phân và ngày tháng rõ ràng.",
+    "quoteTableFailed": "Không thể đọc trang do một lỗi không mong muốn. Hãy thử lại sau và báo cho quản trị viên nếu lỗi tiếp diễn.",
+    "quoteTableUnreachable": "Không thể truy cập trang. Hãy kiểm tra địa chỉ hoặc thử lại sau."
   },
   "tags": {
     "notFound": "Không tìm thấy thẻ với ID {{ id }}",

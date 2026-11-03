@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "Tahvil motoru"
+      "bond_engine": "Tahvil motoru",
+      "html_table": "Web sayfasındaki tablo"
     },
     "types": {
       "select": "Tür seçin...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "Açıkken Monize her gün bu tahvil türünün yeni serilerini resmi kaynaktan okur; böylece seriyi önceden getirmeden bir alımı kaydedebilirsiniz.",
     "bondCountryLabel": "Ülke",
     "bondCountryOther": "Diğer",
-    "bondCountryOtherInfo": "Diğer ülkelerin tahvilleri için destek, projenin <link>GitHub</link> sayfasından talep edilebilir."
+    "bondCountryOtherInfo": "Diğer ülkelerin tahvilleri için destek, projenin <link>GitHub</link> sayfasından talep edilebilir.",
+    "quoteTable": {
+      "urlLabel": "Fiyat tablosunun bulunduğu sayfa",
+      "urlHelp": "Sayfada, başlığında bir tarih sütunu ve bir kapanış fiyatı sütunu bulunan bir tablo olmalı; İngilizce, Almanca veya İspanyolca (örneğin Date/Close, Datum/Schluss, Fecha/Cierre). En yeni satır fiyattır; tüm satırlar geçmişi doldurur.",
+      "test": "Test et",
+      "previewFailed": "Sayfa okunamadı.",
+      "summary": "{first} ile {last} arasında {count, plural, one {# gün} other {# gün}}",
+      "columns": "Kullanılan sütunlar: {columns}",
+      "currency": "Sayfada belirtilen para birimi: {currency}",
+      "noCurrency": "Sayfada para birimi yok; fiyatlar menkul kıymetin para biriminde saklanır.",
+      "skipped": "{count, plural, one {Okunamayan # satır atlandı} other {Okunamayan # satır atlandı}}",
+      "headers": {
+        "date": "Tarih",
+        "open": "Açılış",
+        "high": "Yüksek",
+        "low": "Düşük",
+        "close": "Kapanış",
+        "volume": "Hacim"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "Tarih",
@@ -358,7 +378,9 @@
     "nameMax": "Ad 255 karakter veya daha az olmalıdır",
     "currencyRequired": "Para birimi zorunludur",
     "bondProgramRequired": "Tahvil türü zorunludur",
-    "descriptionMax": "Açıklama en fazla 5000 karakter olabilir"
+    "descriptionMax": "Açıklama en fazla 5000 karakter olabilir",
+    "quoteUrlRequired": "Fiyat tablosunun bulunduğu sayfayı girin.",
+    "quoteUrlInvalid": "http:// veya https:// ile başlayan tam bir adres girin."
   },
   "priceValidation": {
     "dateRequired": "Tarih zorunludur",

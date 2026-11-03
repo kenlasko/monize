@@ -43,8 +43,13 @@ const GUARDED_DIRS = [
   "bonds",
 ];
 
-/** A bare global `fetch(` or a raw `https.get(` -- an outbound request. */
-const OUTBOUND_CALL = /(?<![.\w])fetch\(|https\.(get|request)\(/;
+/**
+ * An outbound request: a bare global `fetch(`, a camel-cased alias of it
+ * (`undiciFetch(`, the spelling that once let a client past this scan), an
+ * import renamed from `fetch` (`fetch as get`), or a raw `https.get(`.
+ */
+const OUTBOUND_CALL =
+  /(?<![.])(?<!function )\b(?:fetch|\w+Fetch)\(|\bfetch as \w+|https\.(get|request)\(/;
 
 function sourceFiles(dir: string): string[] {
   const out: string[] = [];
@@ -83,6 +88,7 @@ describe("outbound provider calls are answerable to the breaker", () => {
       "currencies/providers/frankfurter-fx.provider.ts",
       "payees/lookup/google-places/google-places.client.ts",
       "securities/deutsche-boerse-finance.service.ts",
+      "securities/html-table-finance.service.ts",
       "securities/lse-finance.service.ts",
       "securities/msn-finance.service.ts",
       "securities/security-news.service.ts",
@@ -99,6 +105,19 @@ describe("outbound provider calls are answerable to the breaker", () => {
       // there is no symbol loop behind it and no provider host it owns.
       if (path === "securities/security-news.service.ts") {
         expect(source).toContain("private async fetchImage(");
+        return;
+      }
+      // The second exemption is for the one client whose host is not a
+      // provider: `html_table` reads a page a user typed, so there is no fixed
+      // provider id to persist a breaker state or an admin alert against, and
+      // one user's dead site must not open a breaker for another's. It is held
+      // instead by a per-page back-off (`failedPages`) and by its own
+      // public-only connection policy, both asserted here so the exemption
+      // cannot outlive them.
+      if (path === "securities/html-table-finance.service.ts") {
+        expect(source).toContain("failedPages");
+        expect(source).toContain("publicOnlyLookup");
+        expect(source).not.toMatch(/from "(?:\.\.\/)+provider-health\//);
         return;
       }
       // The relative depth differs by where the client lives, so the assertion

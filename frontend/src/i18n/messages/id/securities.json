@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "Mesin obligasi"
+      "bond_engine": "Mesin obligasi",
+      "html_table": "Tabel di halaman web"
     },
     "types": {
       "select": "Pilih jenis...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "Jika aktif, Monize membaca setiap seri baru jenis obligasi ini dari sumber resmi setiap hari, sehingga Anda dapat mencatat pembelian tanpa mengambil seri terlebih dahulu.",
     "bondCountryLabel": "Negara",
     "bondCountryOther": "Lainnya",
-    "bondCountryOtherInfo": "Dukungan untuk obligasi negara lain dapat diminta di <link>GitHub proyek</link>."
+    "bondCountryOtherInfo": "Dukungan untuk obligasi negara lain dapat diminta di <link>GitHub proyek</link>.",
+    "quoteTable": {
+      "urlLabel": "Halaman dengan tabel harga",
+      "urlHelp": "Halaman harus memiliki tabel yang judulnya berisi kolom tanggal dan kolom harga penutupan, dalam bahasa Inggris, Jerman, atau Spanyol (misalnya Date/Close, Datum/Schluss, Fecha/Cierre). Baris terbaru adalah harganya; semua baris mengisi riwayat.",
+      "test": "Uji",
+      "previewFailed": "Halaman tidak dapat dibaca.",
+      "summary": "{count, plural, other {# hari}} dari {first} sampai {last}",
+      "columns": "Kolom yang dipakai: {columns}",
+      "currency": "Mata uang di halaman: {currency}",
+      "noCurrency": "Halaman tidak mencantumkan mata uang; harga disimpan dalam mata uang efek.",
+      "skipped": "{count, plural, other {# baris tak terbaca dilewati}}",
+      "headers": {
+        "date": "Tanggal",
+        "open": "Buka",
+        "high": "Tertinggi",
+        "low": "Terendah",
+        "close": "Tutup",
+        "volume": "Volume"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "Tanggal",
@@ -358,7 +378,9 @@
     "nameMax": "Nama harus 255 karakter atau kurang",
     "currencyRequired": "Mata uang wajib diisi",
     "bondProgramRequired": "Jenis obligasi wajib diisi",
-    "descriptionMax": "Keterangan tidak boleh lebih dari 5000 karakter"
+    "descriptionMax": "Keterangan tidak boleh lebih dari 5000 karakter",
+    "quoteUrlRequired": "Masukkan halaman yang berisi tabel harga.",
+    "quoteUrlInvalid": "Masukkan alamat lengkap yang diawali http:// atau https://."
   },
   "priceValidation": {
     "dateRequired": "Tanggal wajib diisi",

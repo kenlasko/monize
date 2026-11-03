@@ -711,7 +711,17 @@
     "selectionNotFound": "未找到所选证券中的一个或多个",
     "comparisonSelectionEmpty": "请至少选择一只证券或一个市场指数进行比较",
     "exchangeRateNotPositive": "汇率必须大于零",
-    "embeddedSplitAmountMismatch": "此拆分记录了 {{ amount }}，但 {{ action }} {{ quantity }} @ {{ price }} 按 {{ rate }} 的汇率换算应为 {{ expected }}。请使用该金额，或说明您想使用的汇率。"
+    "embeddedSplitAmountMismatch": "此拆分记录了 {{ amount }}，但 {{ action }} {{ quantity }} @ {{ price }} 按 {{ rate }} 的汇率换算应为 {{ expected }}。请使用该金额，或说明您想使用的汇率。",
+    "quoteTableInvalidUrl": "请输入完整的 http 或 https 地址，不要包含用户名或密码。",
+    "quoteTablePrivateAddress": "该地址指向私有或本地网络，这是不允许的。",
+    "quoteTableTooManyRedirects": "该页面重定向次数过多。",
+    "quoteTableHttpStatus": "该网站返回了 HTTP 状态 {{ status }}。",
+    "quoteTableTooLarge": "该页面过大，无法读取。",
+    "quoteTableNotFound": "页面上未找到价格表：需要一个包含日期列和收盘价列的标题行。",
+    "quoteUrlRequired": "从网页表格获取价格的证券需要填写该网页地址。",
+    "quoteTableAmbiguous": "页面中的数字或日期有多种读法（例如 102,345 或 01/02/2026），因此未使用该页面。请选择小数分隔符和日期写法明确的页面。",
+    "quoteTableFailed": "由于意外错误，无法读取该页面。请稍后重试；如果问题持续出现，请告知管理员。",
+    "quoteTableUnreachable": "无法访问该页面。请检查地址或稍后重试。"
   },
   "tags": {
     "notFound": "未找到 ID 为 {{ id }} 的标签",

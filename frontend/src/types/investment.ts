@@ -30,7 +30,25 @@ export type InvestmentAction =
   // part of the cost, so the server takes it off the position's cost basis.
   | 'RETURN_OF_CAPITAL';
 
-export type QuoteProviderName = 'yahoo' | 'msn' | 'lse' | 'deutsche_boerse';
+export type QuoteProviderName = 'yahoo' | 'msn' | 'lse' | 'deutsche_boerse' | 'html_table';
+
+/** What `POST /quote-tables/preview` read from a page: the newest rows first. */
+export interface QuoteTablePreview {
+  columns: Partial<Record<'date' | 'close' | 'open' | 'high' | 'low' | 'volume', string>>;
+  currencyCode: string | null;
+  totalRows: number;
+  skippedRows: number;
+  firstDate: string;
+  lastDate: string;
+  rows: Array<{
+    date: string;
+    open: number | null;
+    high: number | null;
+    low: number | null;
+    close: number;
+    volume: number | null;
+  }>;
+}
 
 
 export interface Security {
@@ -60,6 +78,8 @@ export interface Security {
   irWebsite: string | null;
   quoteProvider: QuoteProviderName | null;
   msnInstrumentId: string | null;
+  /** The page whose price table the `html_table` provider reads. */
+  quoteUrl?: string | null;
   /**
    * The bond program (`GET /bonds/programs`) this security is linked to, or
    * null. A linked security is priced by the bond engine only; its currency
@@ -897,6 +917,8 @@ export interface CreateSecurityData {
   tagIds?: string[];
   quoteProvider?: QuoteProviderName | null;
   msnInstrumentId?: string;
+  /** Empty string clears the stored page address. */
+  quoteUrl?: string | null;
   /** A bond program id, or null to unlink; the currency must match the program's. */
   bondProgramId?: string | null;
   /** Fetch every new series of the linked program automatically. */

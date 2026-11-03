@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "बॉन्ड इंजन"
+      "bond_engine": "बॉन्ड इंजन",
+      "html_table": "वेब पेज तालिका"
     },
     "types": {
       "select": "प्रकार चुनें...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "चालू होने पर Monize हर दिन आधिकारिक स्रोत से इस बॉन्ड प्रकार की नई सीरीज़ पढ़ता है, ताकि आप सीरीज़ पहले प्राप्त किए बिना खरीद दर्ज कर सकें।",
     "bondCountryLabel": "देश",
     "bondCountryOther": "अन्य",
-    "bondCountryOtherInfo": "अन्य देशों के बॉन्ड के लिए सहायता का अनुरोध प्रोजेक्ट के <link>GitHub</link> पर किया जा सकता है।"
+    "bondCountryOtherInfo": "अन्य देशों के बॉन्ड के लिए सहायता का अनुरोध प्रोजेक्ट के <link>GitHub</link> पर किया जा सकता है।",
+    "quoteTable": {
+      "urlLabel": "मूल्य तालिका वाला पेज",
+      "urlHelp": "पेज पर ऐसी तालिका होनी चाहिए जिसकी हेडर पंक्ति में तारीख कॉलम और समापन मूल्य कॉलम हो, अंग्रेज़ी, जर्मन या स्पेनिश में (उदाहरण Date/Close, Datum/Schluss, Fecha/Cierre)। सबसे नई पंक्ति मूल्य है; सभी पंक्तियाँ इतिहास भरती हैं।",
+      "test": "जाँचें",
+      "previewFailed": "पेज पढ़ा नहीं जा सका।",
+      "summary": "{first} से {last} तक {count, plural, one {# दिन} other {# दिन}}",
+      "columns": "उपयोग किए गए कॉलम: {columns}",
+      "currency": "पेज पर दिखाई गई मुद्रा: {currency}",
+      "noCurrency": "पेज पर कोई मुद्रा नहीं दी गई है; मूल्य प्रतिभूति की मुद्रा में सहेजे जाते हैं।",
+      "skipped": "{count, plural, one {न पढ़ी जा सकने वाली # पंक्ति छोड़ी गई} other {न पढ़ी जा सकने वाली # पंक्तियाँ छोड़ी गईं}}",
+      "headers": {
+        "date": "तारीख",
+        "open": "खुलना",
+        "high": "उच्च",
+        "low": "निम्न",
+        "close": "समापन",
+        "volume": "वॉल्यूम"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "तिथि",
@@ -358,7 +378,9 @@
     "nameMax": "नाम 255 अक्षरों या उससे कम होना चाहिए",
     "currencyRequired": "मुद्रा आवश्यक है",
     "bondProgramRequired": "बॉन्ड प्रकार आवश्यक है",
-    "descriptionMax": "विवरण 5000 अक्षरों से अधिक नहीं होना चाहिए"
+    "descriptionMax": "विवरण 5000 अक्षरों से अधिक नहीं होना चाहिए",
+    "quoteUrlRequired": "मूल्य तालिका वाला पेज दर्ज करें।",
+    "quoteUrlInvalid": "http:// या https:// से शुरू होने वाला पूरा पता दर्ज करें।"
   },
   "priceValidation": {
     "dateRequired": "तिथि आवश्यक है",

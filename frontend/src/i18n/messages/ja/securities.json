@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "債券エンジン"
+      "bond_engine": "債券エンジン",
+      "html_table": "Webページの表"
     },
     "types": {
       "select": "種類を選択...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "オンにすると、Monize は毎日、この債券の種類の新しいシリーズを公式ソースから読み取ります。シリーズを先に取得しなくても購入を記録できます。",
     "bondCountryLabel": "国",
     "bondCountryOther": "その他",
-    "bondCountryOtherInfo": "他の国の債券への対応は、プロジェクトの<link>GitHub</link>でリクエストできます。"
+    "bondCountryOtherInfo": "他の国の債券への対応は、プロジェクトの<link>GitHub</link>でリクエストできます。",
+    "quoteTable": {
+      "urlLabel": "価格表のあるページ",
+      "urlHelp": "ページには、見出し行に日付列と終値列がある表が必要です（英語、ドイツ語、スペイン語。例: Date/Close、Datum/Schluss、Fecha/Cierre）。最新の行が価格となり、すべての行が履歴に使われます。",
+      "test": "テスト",
+      "previewFailed": "ページを読み込めませんでした。",
+      "summary": "{first}から{last}までの{count, plural, other {#日分}}",
+      "columns": "使用した列: {columns}",
+      "currency": "ページに表示された通貨: {currency}",
+      "noCurrency": "ページに通貨の表示がありません。価格は銘柄の通貨で保存されます。",
+      "skipped": "{count, plural, other {読み取れない#行をスキップしました}}",
+      "headers": {
+        "date": "日付",
+        "open": "始値",
+        "high": "高値",
+        "low": "安値",
+        "close": "終値",
+        "volume": "出来高"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "日付",
@@ -358,7 +378,9 @@
     "nameMax": "名前は 255 文字以内にしてください",
     "currencyRequired": "通貨は必須です",
     "bondProgramRequired": "債券の種類は必須です",
-    "descriptionMax": "説明は5000文字以内である必要があります"
+    "descriptionMax": "説明は5000文字以内である必要があります",
+    "quoteUrlRequired": "価格表のあるページを入力してください。",
+    "quoteUrlInvalid": "http:// または https:// で始まる完全なアドレスを入力してください。"
   },
   "priceValidation": {
     "dateRequired": "日付は必須です",

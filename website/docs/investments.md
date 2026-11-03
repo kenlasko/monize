@@ -238,7 +238,8 @@ Click **+ New Security**, or **Edit** on a security's row, to open the security 
 | **Type** | Stock, ETF, Mutual Fund, Bond, Option, Cryptocurrency, or Other |
 | **Exchange** | Stock exchange (NYSE, NASDAQ, TSX, etc.), filled in from the ticker |
 | **Currency** | The currency the security trades in |
-| **Quote Provider** | Where prices come from: Auto, Yahoo, MSN, LSE, Deutsche Börse, or the bond engine. Leave it on the default to use the instance's default provider |
+| **Quote Provider** | Where prices come from: Auto, Yahoo, MSN, LSE, Deutsche Börse, Web page table, or the bond engine. Leave it on the default to use the instance's default provider |
+| **Page with the price table** | Shown for **Web page table**: the address of a page with a table of daily prices. **Test** reads it and shows the columns it found and the newest rows |
 | **Disable automatic price updates** | Stop fetching prices for a security no provider can price; you then enter its prices yourself |
 | **Description** | Free-text notes, filled in from the provider's profile during lookup |
 | **Website** / **Investor relations website** | Links shown on the detail page |
@@ -248,6 +249,16 @@ Click **+ New Security**, or **Edit** on a security's row, to open the security 
 | **Favourite** | Show the security first in lists |
 
 Bonds also have a **Bond kind** and **Country**, which link the security to a supported government bond programme so Monize can work out its value.
+
+### Prices from a table on a web page
+
+For a security no provider covers (a gold coin, a fund sold only by its issuer), choose **Web page table** as the **Quote Provider** and enter the address of a page that lists its daily prices in a table, such as a "historical prices" page.
+
+- The table is found by its header row, which needs a date column and a closing-price column, in English, German or Spanish: for example **Date** / **Close**, **Datum** / **Schluss**, or **Fecha** / **Cierre**. **Open**, **High**, **Low** and **Volume** columns are read when present.
+- Date and number formats are recognised from the cells, so `02.11.26` and `3.609,23 €` read as well as `November 02, 2026` and `95.69`. When a page can be read in more than one way and nothing on it says which, it is refused rather than guessed: a price such as `102,345` or `12.345` could have three decimals or none, and `01/02/2026` could be 1 February or 2 January. The other prices on the page, a dotted date (`02.11.2026`) or English, German, Italian or Portuguese column headers settle the separator (Spanish headers do not, because Spain and Mexico write it differently), and short dates are placed by the order of the rows.
+- The newest row is the current price and every row is added to the price history; the page is read again at every update. A page that shows only recent days builds up history over time.
+- When the cells name a currency (`€`, `£`, or an ISO code such as `CHF`) that differs from the security's, the prices are refused rather than stored in the wrong currency.
+- The security is never priced from Yahoo or MSN as a fallback, and the address must be a public website: local and private network addresses are refused.
 
 ### Adding Securities
 
@@ -298,7 +309,7 @@ Security prices are updated automatically and can also be refreshed manually.
 ### Automatic Updates
 
 - **Schedule:** Weekdays (Monday-Friday) at 5:00 PM New York time
-- **Source:** Each security's quote provider -- Yahoo Finance by default, or MSN, the London Stock Exchange, Deutsche Börse, or the bond engine
+- **Source:** Each security's quote provider -- Yahoo Finance by default, or MSN, the London Stock Exchange, Deutsche Börse, a table on a web page, or the bond engine
 - **Data:** Daily prices (close, plus open, high, low and volume where the provider supplies them)
 
 ### Manual Refresh

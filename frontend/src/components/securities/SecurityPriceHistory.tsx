@@ -30,7 +30,7 @@ import {
 } from '@/lib/security-detail';
 import { GroupToggleButton } from '@/components/ui/GroupToggleButton';
 import { SecurityPriceForm } from './SecurityPriceForm';
-import { formatPriceSource } from './SecurityListParts';
+import { formatPriceSource, priceSourceBadgeClass } from './SecurityListParts';
 
 interface SecurityPriceHistoryProps {
   security: Security;
@@ -47,32 +47,21 @@ interface SecurityPriceHistoryProps {
 
 function getSourceLabel(source: string | null, t: Parameters<typeof formatPriceSource>[1]): string {
   if (!source) return 'Unknown';
+  // Transaction-derived prices are named by their action here; every provider
+  // source is named once, by formatPriceSource, so a new provider cannot show
+  // up here as its raw id.
   switch (source) {
-    case 'bond_engine': return formatPriceSource(source, t);
-    case 'yahoo_finance': return 'Yahoo';
-    case 'msn_finance': return 'MSN';
-    case 'manual': return 'Manual';
     case 'buy': return 'Buy';
     case 'sell': return 'Sell';
     case 'reinvest': return 'Reinvest';
     case 'transfer_in': return 'Transfer In';
     case 'transfer_out': return 'Transfer Out';
-    default: return source;
+    default: return formatPriceSource(source, t);
   }
 }
 
 function getSourceColor(source: string | null): string {
-  if (!source) return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
-  switch (source) {
-    case 'yahoo_finance':
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
-    case 'msn_finance':
-      return 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300';
-    case 'manual':
-      return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
-    default:
-      return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
-  }
+  return priceSourceBadgeClass(source);
 }
 
 /**

@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "Motor de bonos"
+      "bond_engine": "Motor de bonos",
+      "html_table": "Tabla en sitio web"
     },
     "types": {
       "select": "Seleccionar tipo...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "Si está activado, Monize lee cada día las nuevas series de este tipo de bono desde la fuente oficial, de modo que pueda registrar una compra sin obtener antes la serie.",
     "bondCountryLabel": "País",
     "bondCountryOther": "Otro",
-    "bondCountryOtherInfo": "Puede solicitar la compatibilidad con bonos de otros países en el <link>GitHub del proyecto</link>."
+    "bondCountryOtherInfo": "Puede solicitar la compatibilidad con bonos de otros países en el <link>GitHub del proyecto</link>.",
+    "quoteTable": {
+      "urlLabel": "Página con la tabla de precios",
+      "urlHelp": "La página necesita una tabla cuyo encabezado tenga una columna de fecha y otra de precio de cierre, en inglés, alemán o español (por ejemplo Date/Close, Datum/Schluss, Fecha/Cierre). La fila más reciente es el precio; todas las filas completan el histórico.",
+      "test": "Probar",
+      "previewFailed": "No se pudo leer la página.",
+      "summary": "{count, plural, one {# día} other {# días}} del {first} al {last}",
+      "columns": "Columnas usadas: {columns}",
+      "currency": "Moneda indicada en la página: {currency}",
+      "noCurrency": "La página no indica moneda; los precios se guardan en la moneda del valor.",
+      "skipped": "{count, plural, one {# fila no se pudo leer y se omitió} other {# filas no se pudieron leer y se omitieron}}",
+      "headers": {
+        "date": "Fecha",
+        "open": "Apertura",
+        "high": "Máximo",
+        "low": "Mínimo",
+        "close": "Cierre",
+        "volume": "Volumen"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "Fecha",
@@ -358,7 +378,9 @@
     "nameMax": "El nombre debe tener 255 caracteres o menos",
     "currencyRequired": "La divisa es obligatoria",
     "bondProgramRequired": "El tipo de bono es obligatorio",
-    "descriptionMax": "La descripción no puede superar los 5000 caracteres"
+    "descriptionMax": "La descripción no puede superar los 5000 caracteres",
+    "quoteUrlRequired": "Introduce la página que contiene la tabla de precios.",
+    "quoteUrlInvalid": "Introduce una dirección completa que empiece por http:// o https://."
   },
   "priceValidation": {
     "dateRequired": "La fecha es obligatoria",

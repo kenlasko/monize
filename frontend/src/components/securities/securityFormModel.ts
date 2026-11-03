@@ -32,7 +32,8 @@ export const buildSecuritySchema = (t: (key: string) => string) => z.object({
   description: z.string().max(5000, t('validation.descriptionMax')).optional(),
   website: z.string().max(2048).optional(),
   irWebsite: z.string().max(2048).optional(),
-  quoteProvider: z.enum(['', 'yahoo', 'msn', 'lse', 'deutsche_boerse']).optional(),
+  quoteProvider: z.enum(['', 'yahoo', 'msn', 'lse', 'deutsche_boerse', 'html_table']).optional(),
+  quoteUrl: z.string().max(2048).optional(),
   msnInstrumentId: z.string().max(50).optional(),
   // A bond catalog program id, or '' for "not linked".
   bondProgramId: z.string().optional(),
@@ -42,7 +43,32 @@ export const buildSecuritySchema = (t: (key: string) => string) => z.object({
   skipPriceUpdates: z.boolean().optional(),
   priceAlertPercent: z.string().optional().refine((v) => !v?.trim() || (Number.isFinite(Number(v)) && Number(v) >= 0.1 && Number(v) <= 1000), t('priceAlert.range')),
   isFavourite: z.boolean().optional(),
+}).superRefine((data, ctx) => {
+  // The page is what this provider reads: without one it has nothing to price from.
+  if (data.quoteProvider !== 'html_table') return;
+  const url = data.quoteUrl?.trim() ?? '';
+  if (!url) {
+    ctx.addIssue({ code: 'custom', path: ['quoteUrl'], message: t('validation.quoteUrlRequired') });
+  } else if (!/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(url)) {
+    ctx.addIssue({ code: 'custom', path: ['quoteUrl'], message: t('validation.quoteUrlInvalid') });
+  }
 });
 
 export type SecurityFormData = z.infer<ReturnType<typeof buildSecuritySchema>>;
+
+/**
+ * The values to validate, given whether the quote provider control is shown.
+ * A listed bond hides it (the engine prices the bond), so a web-page provider
+ * chosen before the type changed is not validated: its page address field is
+ * hidden too, and a rule on a field nobody can see blocks the save with no
+ * reason on screen.
+ */
+export function valuesToValidate(
+  values: SecurityFormData,
+  providerShown: boolean,
+): SecurityFormData {
+  return !providerShown && values.quoteProvider === 'html_table'
+    ? { ...values, quoteProvider: '' }
+    : values;
+}
 

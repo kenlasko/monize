@@ -711,7 +711,17 @@
     "selectionNotFound": "Um ou mais dos títulos selecionados não foram encontrados",
     "comparisonSelectionEmpty": "Selecione pelo menos um título ou índice de mercado para comparar",
     "exchangeRateNotPositive": "A taxa de câmbio deve ser maior do que zero",
-    "embeddedSplitAmountMismatch": "Esta parcela regista {{ amount }}, mas {{ action }} {{ quantity }} @ {{ price }} converte-se em {{ expected }} à taxa de {{ rate }}. Use esse montante, ou indique a taxa de câmbio que pretendia."
+    "embeddedSplitAmountMismatch": "Esta parcela regista {{ amount }}, mas {{ action }} {{ quantity }} @ {{ price }} converte-se em {{ expected }} à taxa de {{ rate }}. Use esse montante, ou indique a taxa de câmbio que pretendia.",
+    "quoteTableInvalidUrl": "Introduza um endereço http ou https completo, sem nome de utilizador nem palavra-passe.",
+    "quoteTablePrivateAddress": "O endereço aponta para uma rede privada ou local, o que não é permitido.",
+    "quoteTableTooManyRedirects": "A página redirecionou demasiadas vezes.",
+    "quoteTableHttpStatus": "O site respondeu com o estado HTTP {{ status }}.",
+    "quoteTableTooLarge": "A página é demasiado grande para ser lida.",
+    "quoteTableNotFound": "Não foi encontrada nenhuma tabela de preços na página: é necessária uma linha de cabeçalho com uma coluna de data e uma de preço de fecho.",
+    "quoteUrlRequired": "Um título cujas cotações vêm de uma tabela numa página web precisa do endereço da página.",
+    "quoteTableAmbiguous": "Os números ou as datas da página podem ser lidos de mais do que uma forma (por exemplo, 102,345 ou 01/02/2026), por isso não foi usada. Escolha uma página que escreva sem ambiguidade o separador decimal e as datas.",
+    "quoteTableFailed": "Não foi possível ler a página devido a um erro inesperado. Tente novamente mais tarde e avise um administrador se continuar a acontecer.",
+    "quoteTableUnreachable": "Não foi possível aceder à página. Verifique o endereço ou tente mais tarde."
   },
   "tags": {
     "notFound": "Etiqueta com ID {{ id }} não encontrada",

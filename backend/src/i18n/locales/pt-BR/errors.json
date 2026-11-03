@@ -711,7 +711,17 @@
     "selectionNotFound": "Um ou mais dos ativos selecionados não foram encontrados",
     "comparisonSelectionEmpty": "Selecione pelo menos um ativo ou índice de mercado para comparar",
     "exchangeRateNotPositive": "A taxa de câmbio deve ser maior que zero",
-    "embeddedSplitAmountMismatch": "Esta divisão registra {{ amount }}, mas {{ action }} {{ quantity }} @ {{ price }} convertido à taxa de {{ rate }} dá {{ expected }}. Use esse valor, ou informe a taxa de câmbio que você quis dizer."
+    "embeddedSplitAmountMismatch": "Esta divisão registra {{ amount }}, mas {{ action }} {{ quantity }} @ {{ price }} convertido à taxa de {{ rate }} dá {{ expected }}. Use esse valor, ou informe a taxa de câmbio que você quis dizer.",
+    "quoteTableInvalidUrl": "Digite um endereço http ou https completo, sem nome de usuário nem senha.",
+    "quoteTablePrivateAddress": "O endereço aponta para uma rede privada ou local, o que não é permitido.",
+    "quoteTableTooManyRedirects": "A página redirecionou vezes demais.",
+    "quoteTableHttpStatus": "O site respondeu com o status HTTP {{ status }}.",
+    "quoteTableTooLarge": "A página é grande demais para ser lida.",
+    "quoteTableNotFound": "Nenhuma tabela de preços foi encontrada na página: é preciso uma linha de cabeçalho com uma coluna de data e uma de preço de fechamento.",
+    "quoteUrlRequired": "Um ativo cujas cotações vêm de uma tabela em uma página da web precisa do endereço da página.",
+    "quoteTableAmbiguous": "Os números ou as datas da página podem ser lidos de mais de uma forma (por exemplo, 102,345 ou 01/02/2026), então ela não foi usada. Escolha uma página que escreva sem ambiguidade o separador decimal e as datas.",
+    "quoteTableFailed": "Não foi possível ler a página devido a um erro inesperado. Tente novamente mais tarde e avise um administrador se continuar acontecendo.",
+    "quoteTableUnreachable": "Não foi possível acessar a página. Verifique o endereço ou tente mais tarde."
   },
   "tags": {
     "notFound": "Etiqueta com ID {{ id }} não encontrada",

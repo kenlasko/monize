@@ -150,6 +150,7 @@ export function formatPriceSource(
     case 'msn_finance': return 'MSN';
     case 'lse': return 'LSE';
     case 'deutsche_boerse': return 'Deutsche Börse';
+    case 'html_table': return 'Web';
     case 'manual': return 'Manual';
     case 'buy':
     case 'sell':
@@ -170,6 +171,8 @@ export function priceSourceBadgeClass(source: string | null | undefined): string
       return 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300';
     case 'deutsche_boerse':
       return 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300';
+    case 'html_table':
+      return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300';
     case 'manual':
       return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
     case 'buy':
@@ -301,6 +304,7 @@ const PROVIDER_BADGE_CLASS: Record<string, string> = {
   lse: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300',
   deutsche_boerse:
     'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  html_table: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
 };
 
 /**

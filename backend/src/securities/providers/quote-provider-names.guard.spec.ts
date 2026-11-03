@@ -1,6 +1,9 @@
 import { readFileSync } from "fs";
 import { join } from "path";
-import { QUOTE_PROVIDER_NAMES } from "./quote-provider.interface";
+import {
+  DEFAULT_QUOTE_PROVIDER_NAMES,
+  QUOTE_PROVIDER_NAMES,
+} from "./quote-provider.interface";
 
 /**
  * `quote-provider.interface.ts` documents `QUOTE_PROVIDER_NAMES` as the single
@@ -28,13 +31,19 @@ function checkInList(column: string): string[] {
     .filter((entry) => entry.length > 0);
 }
 
-describe("QUOTE_PROVIDER_NAMES matches the database CHECK constraints", () => {
-  const expected = [...QUOTE_PROVIDER_NAMES].sort();
+describe("the provider lists match the database CHECK constraints", () => {
+  it("the quote_provider CHECK lists exactly QUOTE_PROVIDER_NAMES", () => {
+    expect(checkInList("quote_provider").sort()).toEqual(
+      [...QUOTE_PROVIDER_NAMES].sort(),
+    );
+  });
 
-  it.each(["quote_provider", "default_quote_provider"])(
-    "the %s CHECK lists exactly QUOTE_PROVIDER_NAMES",
-    (column) => {
-      expect(checkInList(column).sort()).toEqual(expected);
-    },
-  );
+  // A user's default applies to every security without an override, so it
+  // can never be a provider that needs a page the security names: the column
+  // holds exactly the providers a person may choose as the default.
+  it("the default_quote_provider CHECK lists exactly DEFAULT_QUOTE_PROVIDER_NAMES", () => {
+    expect(checkInList("default_quote_provider").sort()).toEqual(
+      [...DEFAULT_QUOTE_PROVIDER_NAMES].sort(),
+    );
+  });
 });

@@ -711,7 +711,17 @@
     "selectionNotFound": "One or more of the selected securities could not be found",
     "comparisonSelectionEmpty": "Select at least one security or market index to compare",
     "exchangeRateNotPositive": "Exchange rate must be greater than zero",
-    "embeddedSplitAmountMismatch": "This split records {{ amount }}, but {{ action }} {{ quantity }} @ {{ price }} converts to {{ expected }} at a rate of {{ rate }}. Use that amount, or state the exchange rate you meant."
+    "embeddedSplitAmountMismatch": "This split records {{ amount }}, but {{ action }} {{ quantity }} @ {{ price }} converts to {{ expected }} at a rate of {{ rate }}. Use that amount, or state the exchange rate you meant.",
+    "quoteTableInvalidUrl": "Enter a full http or https address without a user name or password.",
+    "quoteTablePrivateAddress": "The address points to a private or local network, which is not allowed.",
+    "quoteTableTooManyRedirects": "The page redirected too many times.",
+    "quoteTableHttpStatus": "The site answered with HTTP status {{ status }}.",
+    "quoteTableTooLarge": "The page is too large to read.",
+    "quoteTableNotFound": "No price table was found on the page: it needs a header row with a date column and a closing price column.",
+    "quoteUrlRequired": "A security priced from a web page table needs the page address.",
+    "quoteTableAmbiguous": "The page's numbers or dates can be read in more than one way (for example 102,345 or 01/02/2026), so it was not used. Choose a page that writes its decimal separator and dates unambiguously.",
+    "quoteTableFailed": "The page could not be read because of an unexpected error. Try again later, and tell an administrator if it keeps happening.",
+    "quoteTableUnreachable": "The page could not be reached. Check the address or try again later."
   },
   "tags": {
     "notFound": "Tag with ID {{ id }} not found",

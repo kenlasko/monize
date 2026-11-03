@@ -711,7 +711,17 @@
     "selectionNotFound": "找不到所選證券中的一檔或多檔",
     "comparisonSelectionEmpty": "請至少選擇一檔證券或一個市場指數進行比較",
     "exchangeRateNotPositive": "匯率必須大於零",
-    "embeddedSplitAmountMismatch": "此分割記錄了 {{ amount }}，但 {{ action }} {{ quantity }} @ {{ price }} 按 {{ rate }} 的匯率換算應為 {{ expected }}。請使用該金額，或說明您想使用的匯率。"
+    "embeddedSplitAmountMismatch": "此分割記錄了 {{ amount }}，但 {{ action }} {{ quantity }} @ {{ price }} 按 {{ rate }} 的匯率換算應為 {{ expected }}。請使用該金額，或說明您想使用的匯率。",
+    "quoteTableInvalidUrl": "請輸入完整的 http 或 https 網址，不要包含使用者名稱或密碼。",
+    "quoteTablePrivateAddress": "此網址指向私人或本機網路，這是不允許的。",
+    "quoteTableTooManyRedirects": "此頁面重新導向次數過多。",
+    "quoteTableHttpStatus": "該網站回應了 HTTP 狀態 {{ status }}。",
+    "quoteTableTooLarge": "此頁面過大，無法讀取。",
+    "quoteTableNotFound": "頁面上找不到價格表：需要一個包含日期欄和收盤價欄的標題列。",
+    "quoteUrlRequired": "從網頁表格取得價格的證券需要填寫該網頁位址。",
+    "quoteTableAmbiguous": "頁面中的數字或日期有多種讀法（例如 102,345 或 01/02/2026），因此未使用該頁面。請選擇小數分隔符號與日期寫法明確的頁面。",
+    "quoteTableFailed": "由於發生非預期的錯誤，無法讀取該頁面。請稍後再試；若問題持續發生，請告知管理員。",
+    "quoteTableUnreachable": "無法存取此頁面。請檢查網址或稍後再試。"
   },
   "tags": {
     "notFound": "找不到 ID 為 {{ id }} 的標籤",

@@ -145,7 +145,8 @@
       "msn": "MSN",
       "lse": "LSE",
       "deutsche_boerse": "Deutsche Börse",
-      "bond_engine": "Anleihen-Engine"
+      "bond_engine": "Anleihen-Engine",
+      "html_table": "Tabelle auf Webseite"
     },
     "types": {
       "select": "Typ auswählen...",
@@ -211,7 +212,26 @@
     "bondAutoFetchHelp": "Wenn aktiviert, liest Monize jeden Tag neue Serien dieser Anleiheart aus der offiziellen Quelle, sodass Sie einen Kauf erfassen können, ohne die Serie zuvor abzurufen.",
     "bondCountryLabel": "Land",
     "bondCountryOther": "Andere",
-    "bondCountryOtherInfo": "Die Unterstützung für Anleihen anderer Länder kann auf dem <link>GitHub des Projekts</link> angefragt werden."
+    "bondCountryOtherInfo": "Die Unterstützung für Anleihen anderer Länder kann auf dem <link>GitHub des Projekts</link> angefragt werden.",
+    "quoteTable": {
+      "urlLabel": "Seite mit der Kurstabelle",
+      "urlHelp": "Die Seite braucht eine Tabelle, deren Kopfzeile eine Datums- und eine Schlusskursspalte hat, auf Englisch, Deutsch oder Spanisch (zum Beispiel Date/Close, Datum/Schluss, Fecha/Cierre). Die neueste Zeile ist der Kurs; alle Zeilen füllen die Historie.",
+      "test": "Testen",
+      "previewFailed": "Die Seite konnte nicht gelesen werden.",
+      "summary": "{count, plural, one {# Tag} other {# Tage}} vom {first} bis {last}",
+      "columns": "Verwendete Spalten: {columns}",
+      "currency": "Auf der Seite angegebene Währung: {currency}",
+      "noCurrency": "Die Seite nennt keine Währung; Kurse werden in der Währung des Wertpapiers gespeichert.",
+      "skipped": "{count, plural, one {# Zeile konnte nicht gelesen werden und wurde übersprungen} other {# Zeilen konnten nicht gelesen werden und wurden übersprungen}}",
+      "headers": {
+        "date": "Datum",
+        "open": "Eröffnung",
+        "high": "Hoch",
+        "low": "Tief",
+        "close": "Schluss",
+        "volume": "Volumen"
+      }
+    }
   },
   "priceForm": {
     "dateLabel": "Datum",
@@ -358,7 +378,9 @@
     "nameMax": "Name darf maximal 255 Zeichen lang sein",
     "currencyRequired": "Währung ist erforderlich",
     "bondProgramRequired": "Anleiheart ist erforderlich",
-    "descriptionMax": "Die Beschreibung darf höchstens 5000 Zeichen lang sein"
+    "descriptionMax": "Die Beschreibung darf höchstens 5000 Zeichen lang sein",
+    "quoteUrlRequired": "Gib die Seite mit der Kurstabelle ein.",
+    "quoteUrlInvalid": "Gib eine vollständige Adresse ein, die mit http:// oder https:// beginnt."
   },
   "priceValidation": {
     "dateRequired": "Datum ist erforderlich",

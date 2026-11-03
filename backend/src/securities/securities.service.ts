@@ -725,6 +725,24 @@ export class SecuritiesService {
     return normalizeWebsite(value);
   }
 
+  /**
+   * A security priced from a web page table needs the page: without it every
+   * refresh answers nothing. The form asks for it; this holds the API to it.
+   */
+  private assertQuotePageNamed(
+    quoteProvider: string | null,
+    quoteUrl: string | null,
+  ): void {
+    if (quoteProvider === "html_table" && !quoteUrl) {
+      throw new BadRequestException(
+        tr(
+          "errors.securities.quoteUrlRequired",
+          "A security priced from a web page table needs the page address.",
+        ),
+      );
+    }
+  }
+
   async create(
     userId: string,
     createSecurityDto: CreateSecurityDto,
@@ -741,6 +759,13 @@ export class SecuritiesService {
     if ("irWebsite" in securityData) {
       securityData.irWebsite = this.normalizeWebsite(securityData.irWebsite);
     }
+    if ("quoteUrl" in securityData) {
+      securityData.quoteUrl = securityData.quoteUrl?.trim() || null;
+    }
+    this.assertQuotePageNamed(
+      securityData.quoteProvider ?? null,
+      securityData.quoteUrl ?? null,
+    );
 
     const saved = await withScopedDb(this.dataSource, async (m) => {
       // Check if symbol already exists for this user
@@ -987,6 +1012,8 @@ export class SecuritiesService {
       security.quoteProvider = updateSecurityDto.quoteProvider ?? null;
     if (updateSecurityDto.msnInstrumentId !== undefined)
       security.msnInstrumentId = updateSecurityDto.msnInstrumentId ?? null;
+    if (updateSecurityDto.quoteUrl !== undefined)
+      security.quoteUrl = updateSecurityDto.quoteUrl?.trim() || null;
     // One canonical spelling: the same instrument in capitals is not a change.
     if (updateSecurityDto.bondProgramId !== undefined)
       security.bondProgramId =
@@ -1014,9 +1041,20 @@ export class SecuritiesService {
       (security.quoteProvider &&
         security.quoteProvider !== beforeData.quoteProvider) ||
       (security.msnInstrumentId &&
-        security.msnInstrumentId !== beforeData.msnInstrumentId)
+        security.msnInstrumentId !== beforeData.msnInstrumentId) ||
+      (security.quoteUrl && security.quoteUrl !== beforeData.quoteUrl)
     ) {
       security.skipPriceUpdates = false;
+    }
+    // The row as it will be written, before anything is: a refusal writes
+    // nothing. Only a request that touches the provider or the address is held
+    // to it, so a security saved before this check existed can still be renamed
+    // or starred while it waits for its address.
+    if (
+      updateSecurityDto.quoteProvider !== undefined ||
+      updateSecurityDto.quoteUrl !== undefined
+    ) {
+      this.assertQuotePageNamed(security.quoteProvider, security.quoteUrl);
     }
 
     // Accounts whose derived state must be refreshed after the commit because the
