@@ -614,6 +614,19 @@ describe("CustomReportViewer", () => {
       expect(screen.getByTestId("report-chart")).toHaveAttribute("data-signed", "false");
     });
 
+    // Grouped, No Aggregation sums each group's unsigned cells on the server,
+    // so it is not a signed list and its headline is no net.
+    it("names a grouped both-direction No Aggregation report an unsigned total, unsigned rows", async () => {
+      mockGetById.mockResolvedValue({ ...report({}), groupBy: "CATEGORY" });
+      mockExecute.mockResolvedValue({ ...executed, groupBy: "CATEGORY" });
+      render(<CustomReportViewer reportId="rpt-1" />);
+
+      expect(await screen.findByTestId("report-measure")).toHaveTextContent(
+        "Total of unsigned category amounts",
+      );
+      expect(screen.getByTestId("report-chart")).toHaveAttribute("data-signed", "false");
+    });
+
     it("adds no caption to a one-direction report", async () => {
       mockGetById.mockResolvedValue(report({ direction: "EXPENSES_ONLY" }));
       mockExecute.mockResolvedValue(executed);

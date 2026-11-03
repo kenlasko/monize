@@ -183,7 +183,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
     metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
   // A plain "Total" does not say whether a both-direction figure is a signed
   // net or a sum of unsigned category amounts, so the headline names it.
-  const measure = report ? customReportMeasure(report.config) : null;
+  const measure = report ? customReportMeasure(report) : null;
   const measureLabel = measure ? t(`customReportViewer.measure.${measure}`) : null;
   const summaryTotal: ConvertedTotal | null = result
     ? (() => {
@@ -362,7 +362,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
               totalRowValue={summaryTotal?.value}
               partialTotal={partialTotal}
               totalLabel={measureLabel ?? undefined}
-              signed={isSignedTransactionList(report.config)}
+              signed={isSignedTransactionList(report)}
               reportTitle={report.name}
               exportFilename={report.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}
             />
