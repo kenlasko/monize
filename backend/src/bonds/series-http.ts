@@ -102,6 +102,41 @@ function allowedTarget(
   return url.toString();
 }
 
+/** What `followRedirects` needs of a response: its status, location and body. */
+interface RedirectResponse {
+  status: number;
+  headers: { get(name: string): string | null };
+  body?: { cancel(): Promise<unknown> } | null;
+}
+
+/**
+ * Follow a response's redirects by hand, never more than `FETCH_MAX_REDIRECTS`,
+ * and return the final response. The one loop behind every outbound client that
+ * will not let `fetch` follow a redirect itself: `next` judges each target
+ * (and may refuse it, throwing) before `call` opens a socket to it, so a
+ * redirect is checked as a request of its own. With `follow` off, the first
+ * response is returned as it came, 3xx and all.
+ */
+export async function followRedirects<R extends RedirectResponse>(options: {
+  first: R;
+  from: string;
+  follow: boolean;
+  call: (to: string) => Promise<R>;
+  next: (location: string, from: string) => string | Promise<string>;
+  tooMany: () => Error;
+}): Promise<R> {
+  let { first: response, from } = options;
+  for (let hops = 0; options.follow; hops += 1) {
+    const location = response.headers.get("location");
+    if (response.status < 300 || response.status >= 400 || !location) break;
+    await response.body?.cancel();
+    if (hops >= FETCH_MAX_REDIRECTS) throw options.tooMany();
+    from = await options.next(location, from);
+    response = await options.call(from);
+  }
+  return response;
+}
+
 /**
  * The network door of every bond fetch (series and benchmarks): the one place
  * that calls `fetch`. An adapter is a pure function of what this returns, so the
@@ -145,19 +180,17 @@ export class SeriesHttp {
           };
           return http ? http(to, init) : fetch(to, init);
         };
-        let response = await call(target);
-        for (let hops = 0; policy; hops += 1) {
-          const location = response.headers.get("location");
-          if (response.status < 300 || response.status >= 400 || !location) {
-            break;
-          }
-          await response.body?.cancel();
-          if (hops >= FETCH_MAX_REDIRECTS) {
-            throw new FetchRefusedError("redirects");
-          }
-          target = allowedTarget(location, policy, target);
-          response = await call(target);
-        }
+        const response = await followRedirects({
+          first: await call(target),
+          from: target,
+          follow: Boolean(policy),
+          call,
+          next: (location, from) => {
+            target = allowedTarget(location, policy as FetchPolicy, from);
+            return target;
+          },
+          tooMany: () => new FetchRefusedError("redirects"),
+        });
         status = response.status;
         finalUrl = response.url || target;
         body = await readCapped(response, SERIES_MAX_BODY_BYTES);

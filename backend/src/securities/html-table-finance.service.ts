@@ -1,5 +1,4 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { isIP } from "node:net";
 import { Agent, fetch as undiciFetch } from "undici";
 import {
   EtfSectorWeighting,
@@ -16,12 +15,9 @@ import {
   describeFetchFailure,
   isTransportFailure,
 } from "../common/http/fetch-failure.util";
-import { readCapped } from "../bonds/series-http";
+import { followRedirects, readCapped } from "../bonds/series-http";
 import { publicOnlyLookup } from "../ai/providers/provider-egress";
-import {
-  isPrivateIp,
-  unbracketHost,
-} from "../ai/validators/safe-url.validator";
+import { validateUrlIsSafe } from "../ai/validators/safe-url.validator";
 import {
   AmbiguousQuoteTableError,
   ParsedQuoteTable,
@@ -31,7 +27,6 @@ import {
 const FETCH_TIMEOUT_MS = 20_000;
 /** A quote page is a few hundred kilobytes; ariva.de's is about 0.5 MB. */
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
-const MAX_REDIRECTS = 3;
 /** One refresh asks for the quote and then the series: one download serves both. */
 const PAGE_CACHE_TTL_MS = 5 * 60_000;
 const PAGE_CACHE_MAX_ENTRIES = 200;
@@ -87,8 +82,16 @@ const publicOnlyAgent = new Agent({
   bodyTimeout: FETCH_TIMEOUT_MS,
 });
 
-/** The URL as it will be requested, or a refusal. */
-export function checkQuoteTableUrl(target: string, base?: string): URL {
+/**
+ * The URL as it will be requested, or a refusal. The address policy is the
+ * shared one (`validateUrlIsSafe`: blocked names and suffixes, every spelling
+ * of a private IPv4 or IPv6 literal, and what the name resolves to); the
+ * connection is held to it again where the socket opens (`publicOnlyLookup`).
+ */
+export async function checkQuoteTableUrl(
+  target: string,
+  base?: string,
+): Promise<URL> {
   let url: URL;
   try {
     url = new URL(target, base);
@@ -102,11 +105,7 @@ export function checkQuoteTableUrl(target: string, base?: string): URL {
   ) {
     throw new QuoteTableError("invalid-url");
   }
-  const host = unbracketHost(url.hostname.toLowerCase());
-  if (host === "localhost" || host.endsWith(".localhost")) {
-    throw new QuoteTableError("private-address");
-  }
-  if (isIP(host) && isPrivateIp(host)) {
+  if (!(await validateUrlIsSafe(url.toString()))) {
     throw new QuoteTableError("private-address");
   }
   return url;
@@ -230,19 +229,20 @@ export class HtmlTableFinanceService implements QuoteProvider {
   private async download(target: string): Promise<string> {
     // `url` is the hop being asked: a redirect to another site is checked,
     // and blamed, as that site, never as the one the address started on.
-    let url = checkQuoteTableUrl(target);
+    let url = await checkQuoteTableUrl(target);
     let html: string;
     try {
-      let response = await this.get(url);
-      for (let hops = 0; ; hops += 1) {
-        const location = response.headers.get("location");
-        if (response.status < 300 || response.status >= 400 || !location) break;
-        await response.body?.cancel();
-        if (hops >= MAX_REDIRECTS)
-          throw new QuoteTableError("too-many-redirects");
-        url = checkQuoteTableUrl(location, url.toString());
-        response = await this.get(url);
-      }
+      const response = await followRedirects({
+        first: await this.get(url),
+        from: url.toString(),
+        follow: true,
+        call: () => this.get(url),
+        next: async (location, from) => {
+          url = await checkQuoteTableUrl(location, from);
+          return url.toString();
+        },
+        tooMany: () => new QuoteTableError("too-many-redirects"),
+      });
       if (!response.ok) {
         await response.body?.cancel();
         throw new QuoteTableError("http-status", String(response.status));

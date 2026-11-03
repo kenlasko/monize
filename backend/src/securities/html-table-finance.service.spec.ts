@@ -8,6 +8,18 @@ import {
   rangeStart,
 } from "./html-table-finance.service";
 
+// The shared address check resolves names; the specs answer with a public
+// address instead of asking a real resolver.
+jest.mock("dns", () => ({
+  ...jest.requireActual("dns"),
+  resolve4: jest.fn((_h: string, cb: (e: null, a: string[]) => void) =>
+    cb(null, ["93.184.216.34"]),
+  ),
+  resolve6: jest.fn((_h: string, cb: (e: null, a: string[]) => void) =>
+    cb(null, []),
+  ),
+}));
+
 jest.mock("undici", () => {
   const actual = jest.requireActual("undici");
   return { ...actual, fetch: jest.fn() };
@@ -373,10 +385,25 @@ describe("checkQuoteTableUrl", () => {
     "http://192.168.1.10/prices",
     "http://[::1]/prices",
     "http://169.254.169.254/latest",
-  ])("refuses the private address %s", (url) => {
-    expect(() => checkQuoteTableUrl(url)).toThrow(
-      expect.objectContaining({ reason: "private-address" }),
+    "http://metadata.google.internal/computeMetadata",
+    "http://printer.local/prices",
+    "http://[::ffff:7f00:1]/prices",
+    "http://2130706433/prices",
+  ])("refuses the private address %s", async (url) => {
+    await expect(checkQuoteTableUrl(url)).rejects.toMatchObject({
+      reason: "private-address",
+    });
+  });
+
+  it("refuses a name that resolves to a private address", async () => {
+    const dns = jest.requireMock("dns") as { resolve4: jest.Mock };
+    dns.resolve4.mockImplementationOnce(
+      (_h: string, cb: (e: null, a: string[]) => void) =>
+        cb(null, ["10.1.2.3"]),
     );
+    await expect(
+      checkQuoteTableUrl("https://rebind.example.net/x"),
+    ).rejects.toMatchObject({ reason: "private-address" });
   });
 
   it.each([
@@ -384,16 +411,18 @@ describe("checkQuoteTableUrl", () => {
     "https://user:pw@example.com/x",
     "not a url",
     "file:///etc/passwd",
-  ])("refuses %s", (url) => {
-    expect(() => checkQuoteTableUrl(url)).toThrow(QuoteTableError);
+  ])("refuses %s", async (url) => {
+    await expect(checkQuoteTableUrl(url)).rejects.toBeInstanceOf(
+      QuoteTableError,
+    );
   });
 
-  it("accepts a public http or https page and resolves a relative redirect", () => {
-    expect(checkQuoteTableUrl("http://example.com/a").toString()).toBe(
+  it("accepts a public http or https page and resolves a relative redirect", async () => {
+    expect((await checkQuoteTableUrl("http://example.com/a")).toString()).toBe(
       "http://example.com/a",
     );
     expect(
-      checkQuoteTableUrl("/b?x=1", "https://example.com/a").toString(),
+      (await checkQuoteTableUrl("/b?x=1", "https://example.com/a")).toString(),
     ).toBe("https://example.com/b?x=1");
   });
 });
