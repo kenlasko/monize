@@ -126,7 +126,11 @@ A mortgage payment often collects more than principal and interest: mortgage ins
 | **Calculated as** | **Fixed amount**; **Percentage of current balance**, recalculated at every payment so it falls as the mortgage is paid down; or **Percentage of original balance**, based on the amount originally borrowed |
 | **Value applies** | **Per payment**, or **Per year**, which divides the value over the payments in a year (a yearly property tax of 3,600 paid monthly is 300.00 a payment) |
 
+![The Mortgage fees section of the New Account form](images/account-form-mortgage-fees.png)
+
 Each fee becomes its own line of the scheduled mortgage payment, and the payment amount is the principal and interest plus every fee. Fees are optional. To change them later, open the mortgage's detail page and use **Edit fees** in the **Mortgage fees** panel; saving updates the lines of the next payment. Payment matching cannot yet settle a payment that includes fees, so the two cannot be turned on together when you create a mortgage.
+
+![The Mortgage fees panel on a mortgage's detail page](images/loan-fees-panel.png)
 
 ### Payment Matching
 

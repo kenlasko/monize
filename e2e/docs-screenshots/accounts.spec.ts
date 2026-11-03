@@ -8,7 +8,7 @@ import {
 import { apiFor, scrollUnderHeader, waitForReady } from "../readme/session";
 import { loadIds, type Ids } from "../readme/ids";
 import { loadLookups, need, type Lookups } from "../readme/seed-lookup";
-import { docShot, openDocsSession } from "./capture";
+import { cardOf, docShot, openDocsSession } from "./capture";
 
 // website/docs/accounts.md: the account list, the account form (left with
 // Cancel, never saved), a detail page per account type, and a reconciliation
@@ -125,6 +125,67 @@ test("account-form-mortgage", async () => {
   await docShot(page, "account-form-mortgage", dialog);
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(dialog).toHaveCount(0);
+});
+
+test("account-form-mortgage-fees", async () => {
+  await openPage("/accounts");
+  const dialog = await openNewAccount();
+  await dialog.getByLabel("Account Type").selectOption("MORTGAGE");
+  await expect(dialog.getByText("Mortgage Details").first()).toBeVisible();
+  await dialog.getByRole("button", { name: "Add a fee" }).click();
+  await dialog.getByLabel("Fee name").fill("Property tax");
+  const category = dialog.getByLabel("Category", { exact: true });
+  await category.click();
+  await category.pressSequentially("Property Tax");
+  await page.getByRole("option", { name: /Property Tax/ }).first().click();
+  await dialog.getByLabel("Value applies").selectOption("ANNUAL");
+  await dialog.getByLabel("Amount", { exact: true }).fill("3600");
+  await dialog.getByLabel("Fee name").click();
+  const section = dialog
+    .locator("div.border-t")
+    .filter({ has: dialog.getByRole("heading", { name: "Mortgage fees" }) })
+    .last();
+  await scrollTo(section);
+  await settled();
+  await docShot(page, "account-form-mortgage-fees", section);
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toHaveCount(0);
+});
+
+test("loan-fees-panel", async () => {
+  // Seeded for the picture and removed after it, so the mortgage's bill is
+  // what every other picture shows.
+  const api = apiFor(page);
+  const category = (name: string) =>
+    need(lookups.categories, name, "category").id;
+  await api.put(`/accounts/${ids.mortgage}/loan-fees`, {
+    fees: [
+      {
+        categoryId: category("Property Tax"),
+        name: "Property tax",
+        calculation: "FIXED",
+        basis: "ANNUAL",
+        amount: 3600,
+      },
+      {
+        categoryId: category("Insurance"),
+        name: "Mortgage default insurance",
+        calculation: "PERCENT_CURRENT_BALANCE",
+        basis: "ANNUAL",
+        rate: 0.25,
+      },
+    ],
+  });
+  try {
+    await openPage(`/accounts/${ids.mortgage}`);
+    const heading = page.getByRole("heading", { name: "Mortgage fees" });
+    await expect(page.getByText("Mortgage default insurance")).toBeVisible();
+    await scrollTo(heading, 40);
+    await settled();
+    await docShot(page, "loan-fees-panel", cardOf(heading));
+  } finally {
+    await api.put(`/accounts/${ids.mortgage}/loan-fees`, { fees: [] });
+  }
 });
 
 test("account-banking-detail", async () => {
