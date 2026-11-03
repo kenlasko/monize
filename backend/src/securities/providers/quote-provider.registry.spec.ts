@@ -90,6 +90,16 @@ describe("QuoteProviderRegistry", () => {
     expect(ordered.map((p) => p.name)).toEqual(["yahoo", "msn"]);
   });
 
+  it("resolveForSecurity ignores a stored html_table default, which no page backs", () => {
+    // The DTO and the CHECK refuse it; a restored or hand-edited row must still
+    // not leave every security without an override priced by nothing.
+    const ordered = registry.resolveForSecurity(
+      { quoteProvider: null },
+      "html_table",
+    );
+    expect(ordered.map((p) => p.name)).toEqual(["yahoo", "msn"]);
+  });
+
   it("listAll returns every provider", () => {
     expect(
       registry

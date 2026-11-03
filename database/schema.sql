@@ -1646,7 +1646,7 @@ CREATE TABLE user_preferences (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT user_preferences_default_quote_provider_check
-      CHECK (default_quote_provider IN ('yahoo','msn','lse','deutsche_boerse','html_table')),
+      CHECK (default_quote_provider IN ('yahoo','msn','lse','deutsche_boerse')),
     CONSTRAINT user_preferences_recent_transactions_limit_check
       CHECK (recent_transactions_limit BETWEEN 1 AND 20),
     CONSTRAINT user_preferences_default_map_provider_check

@@ -5,7 +5,11 @@ import { LseFinanceService } from "../lse-finance.service";
 import { DeutscheBoerseFinanceService } from "../deutsche-boerse-finance.service";
 import { HtmlTableFinanceService } from "../html-table-finance.service";
 import { Security } from "../entities/security.entity";
-import { QuoteProvider, QuoteProviderName } from "./quote-provider.interface";
+import {
+  PER_SECURITY_ONLY_PROVIDERS,
+  QuoteProvider,
+  QuoteProviderName,
+} from "./quote-provider.interface";
 
 export const DEFAULT_QUOTE_PROVIDER: QuoteProviderName = "yahoo";
 
@@ -74,9 +78,18 @@ export class QuoteProviderRegistry {
     security: Pick<Security, "quoteProvider">,
     userDefault: QuoteProviderName | null | undefined,
   ): QuoteProvider[] {
+    // A default that needs a page the security names (html_table) cannot
+    // serve a security that names none; the DTO and the CHECK refuse it, and a
+    // value that arrived some other way falls back to the instance default
+    // rather than silently pricing nothing.
+    const usableDefault =
+      userDefault &&
+      !(PER_SECURITY_ONLY_PROVIDERS as readonly string[]).includes(userDefault)
+        ? userDefault
+        : null;
     const primary: QuoteProviderName =
       (security.quoteProvider as QuoteProviderName | null) ??
-      userDefault ??
+      usableDefault ??
       DEFAULT_QUOTE_PROVIDER;
 
     const providers: QuoteProvider[] = [this.getByName(primary)];
