@@ -15,6 +15,6 @@ Plan: [`mortgage-fees.md`](./mortgage-fees.md). Spec:
 - [x] Frontend: fee lines in `loanOccurrenceLines`.
 - [x] User documentation (`website/docs/accounts.md`, "Mortgage Fees").
 - [x] Translate the new catalog entries into every locale.
-- [ ] Screenshots of the fee editor and the Mortgage fees panel (`npm run docs:screenshots` in `e2e/`, needs the stack).
+- [x] Screenshots of the fee editor and the Mortgage fees panel (`account-form-mortgage-fees`, `loan-fees-panel`).
+- [x] A PG integration case for the replace and the posting of a fee-carrying template (`backend/test/integration/mortgage-fees.integration.spec.ts`).
 - [ ] Settlement of fee-carrying templates by payment matching.
-- [ ] A PG integration case for the replace and the posting of a fee-carrying template.

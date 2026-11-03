@@ -68,9 +68,6 @@ task list is [`mortgage-fees-tasks.md`](./mortgage-fees-tasks.md).
 ## Phase 4 (follow-up, not in this PR)
 
 - Settlement of a fee-carrying template by payment matching (spec section 8).
-- Screenshots of the fee editor and the panel (`npm run docs:screenshots`).
-- A PG integration case for the replace and for posting a fee-carrying
-  template (INV-LOAN-011, "Required tests").
 
 ## What should be observed
 

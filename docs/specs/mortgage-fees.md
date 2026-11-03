@@ -195,4 +195,4 @@ installment's date, and the bill is the loan portion plus its fee lines. Held by
 | Client line roles with fees | `frontend/src/lib/loan-occurrence.test.ts` |
 | Drafts, inputs and client-side refusals | `frontend/src/lib/loan-fees.test.ts` |
 | Fee editor in the mortgage form and the loan detail panel | `frontend/src/components/accounts/MortgageFields.test.tsx`, `frontend/src/components/accounts/loan-detail/LoanFeesPanel.test.tsx` |
-| Owed: the replace and a fee-carrying posting against PostgreSQL | integration suite (plan phase 4) |
+| The replace (add, remove, refusal before writes), a fee-carrying posting and its advancement, and the one-fee-per-category index, against PostgreSQL | `backend/test/integration/mortgage-fees.integration.spec.ts` |

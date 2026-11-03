@@ -3510,9 +3510,10 @@ Required tests      Met: loan-installments/loan-fees.spec.ts (pricing,
                     scheduled-transaction-loan.service.spec.ts (posting),
                     loan-fees/loan-fees.service.spec.ts (replace),
                     loan-mortgage-account.service.spec.ts (create),
-                    loan-interest-category.spec.ts. Owed: a PG integration
-                    case for the replace and the posting of a fee-carrying
-                    template.
+                    loan-interest-category.spec.ts, and against PostgreSQL
+                    test/integration/mortgage-fees.integration.spec.ts (the
+                    replace, a fee-carrying posting and its advancement, the
+                    one-fee-per-category index).
 Known gaps          The settlement planner (payment matching) does not price
                     fee lines and refuses such a template as managedTemplate
                     missing; creation refuses fees with payment matching, but

@@ -143,7 +143,7 @@ test("account-form-mortgage-fees", async () => {
   await dialog.getByLabel("Fee name").click();
   const section = dialog
     .locator("div.border-t")
-    .filter({ has: dialog.getByRole("heading", { name: "Mortgage fees" }) })
+    .filter({ has: page.getByRole("heading", { name: "Mortgage fees" }) })
     .last();
   // Inside the dialog's own scroll area, not under the page header.
   await section.scrollIntoViewIfNeeded();
