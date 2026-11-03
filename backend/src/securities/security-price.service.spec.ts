@@ -39,6 +39,8 @@ describe("SecurityPriceService", () => {
   let securitiesRepository: Record<string, jest.Mock>;
   let userPreferenceRepository: Record<string, jest.Mock>;
   let dataSourceMock: Record<string, jest.Mock>;
+  /** The `html_table` provider double, so a spec can see what it was asked. */
+  let htmlTableProvider: { fetchQuote: jest.Mock };
   /** The SQL of the last single-price upsert the service issued. */
   function priceUpsertSql(): string {
     const call = scopedManagerQuery.mock.calls
@@ -397,12 +399,15 @@ describe("SecurityPriceService", () => {
         fetchEtfSectorWeightings: jest.fn().mockResolvedValue(null),
         getTradingDate: jest.fn(() => new Date()),
       }) as never;
+    htmlTableProvider = inertProvider("html_table") as unknown as {
+      fetchQuote: jest.Mock;
+    };
     const providers = new QuoteProviderRegistry(
       yahoo,
       msnFinanceService as never,
       inertProvider("lse"),
       inertProvider("deutsche_boerse"),
-      inertProvider("html_table"),
+      htmlTableProvider as never,
     );
 
     fetchSync = createFetchSyncMock();
@@ -983,6 +988,53 @@ describe("SecurityPriceService", () => {
 
       expect(result.failed).toBe(1);
       expect(result.results[0].error).toBe("Constraint violation");
+    });
+  });
+
+  describe("securities priced from a web page are grouped by the page", () => {
+    const onPage = (id: string, quoteUrl: string): Security =>
+      ({
+        ...mockSecurity,
+        id,
+        symbol: "ACME",
+        exchange: null,
+        quoteProvider: "html_table",
+        quoteUrl,
+      }) as Security;
+
+    it("asks each page, not one page for two owners' look-alike symbols", async () => {
+      securitiesRepository.find.mockResolvedValue([
+        onPage("sec-a", "https://one.example/prices"),
+        onPage("sec-b", "https://two.example/prices"),
+      ]);
+
+      await service.refreshAllPrices();
+
+      const asked = htmlTableProvider.fetchQuote.mock.calls
+        .map((call) => call[2]?.quoteUrl)
+        .sort();
+      expect(asked).toEqual([
+        "https://one.example/prices",
+        "https://two.example/prices",
+      ]);
+    });
+
+    it("still shares one fetch between securities naming the same page", async () => {
+      securitiesRepository.find.mockResolvedValue([
+        onPage("sec-a", "https://one.example/prices"),
+      ]);
+      await service.refreshAllPrices();
+      const forOne = htmlTableProvider.fetchQuote.mock.calls.length;
+      htmlTableProvider.fetchQuote.mockClear();
+
+      securitiesRepository.find.mockResolvedValue([
+        onPage("sec-a", "https://one.example/prices"),
+        onPage("sec-b", "https://one.example/prices"),
+      ]);
+      await service.refreshAllPrices();
+
+      expect(forOne).toBeGreaterThan(0);
+      expect(htmlTableProvider.fetchQuote).toHaveBeenCalledTimes(forOne);
     });
   });
 
