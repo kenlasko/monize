@@ -2357,8 +2357,14 @@ is not an income or expense figure, so this invariant does not reach it: it
 lists each matching leg by its own account and its own sign, and under BOTH its
 total is the signed sum of the listed rows, captioned "Net cash movement"
 rather than net (`customReportMeasure`, discussion #1978). Both legs of a
-transfer inside the report's scope cancel; a leg whose counterpart does not
-match the filters counts alone, and no counterpart is added.
+same-currency transfer inside the report's scope cancel, because each is
+converted at the one rate map of the report execution (`createConverter` in
+reports.service.ts, the latest rates); a cross-currency transfer's legs are
+each converted at that latest rate, not at the rate the two amounts imply, so
+they can leave a residual. A leg whose counterpart does not match the filters
+counts alone, and no counterpart is added. Only the ungrouped list signs its
+rows: grouped, metric NONE sums each group's unsigned cells like
+TOTAL_AMOUNT, and the client names it so (`isSignedTransactionList`).
 
 ### INV-SANKEY-001 -- the Cash Flow Sankey closes
 
@@ -2446,13 +2452,14 @@ Enforcement         Built-in reports: NET_SPEND_AMOUNT / isNetSpending
                     isNetSpending of the negated net; INCOME_ONLY: a positive
                     net; BOTH: the magnitude of the net), and a group is the sum
                     of its kept cells (audit A26-M33). The metric NONE list keeps
-                    its row-level direction filter; under BOTH it lists each row
-                    with its own sign, so its total is the signed net of the
-                    listed rows (discussion #1978). The client names a BOTH
-                    headline (`customReportMeasure`,
+                    its row-level direction filter; ungrouped and under BOTH it
+                    lists each row with its own sign, so its total is the signed
+                    net of the listed rows (discussion #1978). The client names a
+                    BOTH headline (`customReportMeasure`,
                     frontend/src/lib/custom-report-measure.ts): a signed list's
-                    "Net amount", an aggregate's "Total of unsigned category
-                    amounts".
+                    "Net amount" ("Net cash movement" with transfers included),
+                    an aggregate's or a grouped metric NONE report's "Total of
+                    unsigned category amounts".
                     The loan history's Interest Paid
                     (frontend/src/lib/loan-history.ts) sums each interest row
                     signed, so a lender's refund nets (A26-S15-05).

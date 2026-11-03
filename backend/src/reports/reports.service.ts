@@ -48,6 +48,7 @@ import {
   ReportCurrencyService,
 } from "../built-in-reports/report-currency.service";
 import { transferPayeeLabel } from "../transactions/transfer-payee-label.util";
+import { applyRegisterOrder } from "../transactions/register-order";
 import { BudgetsService } from "../budgets/budgets.service";
 import { BudgetType } from "../budgets/entities/budget.entity";
 import { LOAN_PERIODS_PER_YEAR } from "../accounts/payment-frequency.util";
@@ -741,8 +742,9 @@ export class ReportsService {
       // M29: Limit result set to prevent unbounded memory consumption. One row
       // past the limit proves rows were dropped (the newest, by the order), so
       // the report says it is truncated instead of presenting a short total.
-      const rows = await queryBuilder
-        .orderBy("transaction.transactionDate", "ASC")
+      // The register's order, so same-day rows of a list read as they do in
+      // the register and the cut at the limit is the same on every run.
+      const rows = await applyRegisterOrder(queryBuilder, "transaction", "ASC")
         .take(REPORT_ROW_LIMIT + 1)
         .getMany();
       return {
@@ -958,7 +960,9 @@ export class ReportsService {
       // BOTH lists rows of either sign, so each keeps its own: money in is
       // positive, money out negative, and the headline is the signed net of
       // the listed rows (discussion #1978). A transfer leg keeps its sign too,
-      // so both legs of an in-scope transfer net to zero.
+      // so both legs of an in-scope same-currency transfer net to zero; a
+      // cross-currency pair converts each leg at the latest rate, not the one
+      // its two amounts imply, and can leave a residual.
       const lineAmount = (amount: string | number): number =>
         config.direction === DirectionFilter.BOTH
           ? Number(amount)

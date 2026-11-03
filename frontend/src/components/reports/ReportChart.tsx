@@ -49,8 +49,9 @@ interface ReportChartProps {
   totalLabel?: string;
   /**
    * The rows keep their signs (a list of transactions in both directions), so
-   * a share of the net total means nothing: no % column, and a pie slice is
-   * sized by the row's magnitude.
+   * a share of the net total means nothing: the % column, if chosen, is left
+   * blank, the tooltip shows no share, and a pie slice is sized by the row's
+   * magnitude.
    */
   signed?: boolean;
 }
