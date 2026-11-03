@@ -14,6 +14,7 @@ import { categoriesApi } from '@/lib/categories';
 import { buildCategoryLabelMap } from '@/lib/categoryUtils';
 import { getErrorMessage } from '@/lib/errors';
 import {
+  LOAN_FEE_CALCULATION_KEYS,
   loanFeeDraftErrors,
   loanFeeDraftsToInputs,
   loanFeeToDraft,
@@ -35,12 +36,6 @@ type Loaded =
   | { status: 'loading' }
   | { status: 'error' }
   | { status: 'ready'; fees: LoanFee[]; categories: Category[] };
-
-const CALCULATION_KEYS = {
-  FIXED: 'fixed',
-  PERCENT_CURRENT_BALANCE: 'percentCurrentBalance',
-  PERCENT_ORIGINAL_BALANCE: 'percentOriginalBalance',
-} as const;
 
 /**
  * Loan Details' "Fees" panel for a mortgage (docs/specs/mortgage-fees.md
@@ -122,7 +117,7 @@ export function LoanFeesPanel({ account, onChanged }: LoanFeesPanelProps) {
           : formatPercentTrimmed(stored, 6);
     return t(fee.basis === 'ANNUAL' ? 'loanFees.summaryAnnual' : 'loanFees.summaryPerPayment', {
       value,
-      calculation: t(`loanFees.calculations.${CALCULATION_KEYS[fee.calculation]}`),
+      calculation: t(`loanFees.calculations.${LOAN_FEE_CALCULATION_KEYS[fee.calculation]}`),
     });
   };
 

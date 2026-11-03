@@ -846,7 +846,7 @@
     "summaryPerPayment": "Ödeme başına {value}, {calculation}",
     "summaryAnnual": "Yıllık {value}, {calculation}",
     "paymentMatchingConflict": "Ödeme eşleştirme, ücret içeren bir ödemeyi henüz kapatamaz. Ödeme eşleştirmeyi kapatın veya ücretleri kaldırın.",
-    "paymentMatchingNote": "Ödeme eşleştirme, ücret içeren bir ödemeyi henüz kapatmaz: bankanın çekimlerini sizin kaydetmeniz gerekir.",
+    "paymentMatchingNote": "Bu ipoteğin bir ödeme eşleştirme kuralı var. Ödeme eşleştirme, ücret içeren bir ödemeyi henüz kapatamaz; bu yüzden kural varken ücret eklenemez.",
     "calculations": {
       "fixed": "Sabit tutar",
       "percentCurrentBalance": "Güncel bakiyenin yüzdesi",

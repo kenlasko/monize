@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} per payment, {calculation}",
     "summaryAnnual": "{value} per year, {calculation}",
     "paymentMatchingConflict": "Payment matching cannot settle a payment that includes fees yet. Turn off payment matching or remove the fees.",
-    "paymentMatchingNote": "Payment matching does not settle a payment that includes fees yet: its bank debits are left for you to record.",
+    "paymentMatchingNote": "This mortgage has a payment matching rule. Payment matching cannot settle a payment that includes fees yet, so fees cannot be added while the rule exists.",
     "calculations": {
       "fixed": "Fixed amount",
       "percentCurrentBalance": "Percentage of current balance",

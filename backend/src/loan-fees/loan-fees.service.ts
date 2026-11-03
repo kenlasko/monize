@@ -8,19 +8,11 @@ import {
 import { DataSource, EntityManager } from "typeorm";
 import { Account, AccountType } from "../accounts/entities/account.entity";
 import { datedLoanDebt } from "../accounts/dated-loan-debt.util";
-import {
-  DEFAULT_PERIODS_PER_YEAR,
-  periodsPerYearForStoredFrequency,
-} from "../accounts/payment-frequency.util";
-import { currencyMinorUnitDecimals } from "../common/currency-minor-unit.util";
 import { withScopedDb } from "../common/db/scoped-db";
 import { ensureYMD } from "../common/recurrence";
 import { roundMoney } from "../common/round.util";
 import { tr } from "../i18n/translate";
-import {
-  LoanFeeTerms,
-  originalPrincipalOf,
-} from "../loan-installments/loan-fees";
+import { LoanFeeTerms, loanFeeFactsFor } from "../loan-installments/loan-fees";
 import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
@@ -100,28 +92,66 @@ export class LoanFeesService {
         fees,
         account.interestCategoryId,
       );
-      const previous = await this.readFees(m, accountId);
-
-      await this.syncTemplate(m, userId, account, previous, fees);
-
-      const repo = m.getRepository(LoanFee);
-      await repo.delete({ accountId });
-      if (fees.length > 0) {
-        await repo.save(
-          fees.map((fee, index) =>
-            repo.create({
-              ...fee,
-              amount: fee.amount === null ? null : Number(fee.amount),
-              rate: fee.rate === null ? null : Number(fee.rate),
-              userId,
-              accountId,
-              sortOrder: index,
-            }),
+      // The settlement does not price fee lines yet (spec section 8): a
+      // mortgage whose bank debits a matching rule settles cannot also
+      // carry fees, which would leave every one of them unsettled.
+      if (fees.length > 0 && account.paymentMatchingRuleId) {
+        throw new BadRequestException(
+          tr(
+            "errors.loanFees.paymentMatchingUnsupported",
+            "Payment matching cannot settle a mortgage payment that includes fees yet. Turn off payment matching or remove the fees.",
           ),
         );
       }
+      const previous = await this.readFees(m, accountId);
+
+      await this.syncTemplate(m, userId, account, previous, fees);
+      await this.writeFees(m, userId, accountId, previous, fees);
       return (await this.readFees(m, accountId)).map(toView);
     });
+  }
+
+  /**
+   * Write the new set over the stored one by category: a fee whose category
+   * stays keeps its row (and id), one that leaves is deleted, a new one is
+   * inserted. An unchanged save writes the same values back.
+   */
+  private async writeFees(
+    m: EntityManager,
+    userId: string,
+    accountId: string,
+    previous: readonly LoanFee[],
+    next: readonly LoanFeeTerms[],
+  ): Promise<void> {
+    const repo = m.getRepository(LoanFee);
+    const nextCategories = new Set(next.map((fee) => fee.categoryId));
+    const gone = previous.filter((fee) => !nextCategories.has(fee.categoryId));
+    for (const fee of gone) {
+      await repo.delete({ id: fee.id });
+    }
+    for (const [index, fee] of next.entries()) {
+      const values = {
+        name: fee.name,
+        calculation: fee.calculation,
+        basis: fee.basis,
+        amount: fee.amount === null ? null : Number(fee.amount),
+        rate: fee.rate === null ? null : Number(fee.rate),
+        sortOrder: index,
+      };
+      const kept = previous.find((p) => p.categoryId === fee.categoryId);
+      if (kept) {
+        await repo.update({ id: kept.id }, values);
+      } else {
+        await repo.save(
+          repo.create({
+            ...values,
+            categoryId: fee.categoryId,
+            userId,
+            accountId,
+          }),
+        );
+      }
+    }
   }
 
   private readFees(m: EntityManager, accountId: string): Promise<LoanFee[]> {
@@ -191,15 +221,14 @@ export class LoanFeesService {
         ),
       );
     }
-    const priced = priceFeeTemplateLines(next, {
-      debt,
-      originalPrincipal: originalPrincipalOf(account),
-      periodsPerYear:
-        periodsPerYearForStoredFrequency(
-          account.paymentFrequency || schedule.frequency,
-        ) ?? DEFAULT_PERIODS_PER_YEAR,
-      decimals: currencyMinorUnitDecimals(account.currencyCode),
-    });
+    const priced = priceFeeTemplateLines(
+      next,
+      loanFeeFactsFor(
+        account,
+        debt,
+        account.paymentFrequency || schedule.frequency,
+      ),
+    );
 
     // The parent moves by what the fee lines move: every line this write
     // replaces or removes leaves, every priced line arrives.

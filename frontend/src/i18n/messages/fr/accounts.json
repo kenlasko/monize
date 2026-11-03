@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} par paiement, {calculation}",
     "summaryAnnual": "{value} par an, {calculation}",
     "paymentMatchingConflict": "Le rapprochement des paiements ne peut pas encore solder un paiement qui comprend des frais. Désactivez le rapprochement des paiements ou supprimez les frais.",
-    "paymentMatchingNote": "Le rapprochement des paiements ne solde pas encore un paiement qui comprend des frais : ses prélèvements bancaires restent à enregistrer par vos soins.",
+    "paymentMatchingNote": "Ce prêt hypothécaire a une règle de rapprochement des paiements. Le rapprochement ne peut pas encore régler un paiement qui comprend des frais : aucun frais ne peut donc être ajouté tant que la règle existe.",
     "calculations": {
       "fixed": "Montant fixe",
       "percentCurrentBalance": "Pourcentage du solde actuel",

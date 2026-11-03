@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} per pembayaran, {calculation}",
     "summaryAnnual": "{value} per tahun, {calculation}",
     "paymentMatchingConflict": "Pencocokan pembayaran belum dapat melunasi pembayaran yang mencakup biaya. Matikan pencocokan pembayaran atau hapus biayanya.",
-    "paymentMatchingNote": "Pencocokan pembayaran belum melunasi pembayaran yang mencakup biaya: debit banknya perlu Anda catat sendiri.",
+    "paymentMatchingNote": "Hipotek ini memiliki aturan pencocokan pembayaran. Pencocokan pembayaran belum dapat menyelesaikan pembayaran yang mencakup biaya, jadi biaya tidak dapat ditambahkan selama aturan itu ada.",
     "calculations": {
       "fixed": "Jumlah tetap",
       "percentCurrentBalance": "Persentase dari saldo saat ini",

@@ -372,7 +372,7 @@ export class SetupLoanPaymentsResponseDto {
 
   @ApiProperty({
     description:
-      "Amount of the first scheduled installment after clamping against the outstanding balance -- equals paymentAmount except on a nearly-paid loan",
+      "Amount of the first scheduled bill: the installment after clamping against the outstanding balance, plus any mortgage fee lines (docs/specs/mortgage-fees.md). Equals paymentAmount except on a nearly-paid loan or a mortgage with fees",
   })
   firstInstallmentAmount: number;
 

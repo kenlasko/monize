@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} za płatność, {calculation}",
     "summaryAnnual": "{value} rocznie, {calculation}",
     "paymentMatchingConflict": "Dopasowywanie płatności nie może jeszcze rozliczyć płatności zawierającej opłaty. Wyłącz dopasowywanie płatności lub usuń opłaty.",
-    "paymentMatchingNote": "Dopasowywanie płatności nie rozlicza jeszcze płatności zawierającej opłaty: jej obciążenia z banku musisz zarejestrować samodzielnie.",
+    "paymentMatchingNote": "Ten kredyt hipoteczny ma regułę dopasowywania płatności. Dopasowywanie nie może jeszcze rozliczyć płatności zawierającej opłaty, więc nie można dodać opłat, dopóki reguła istnieje.",
     "calculations": {
       "fixed": "Stała kwota",
       "percentCurrentBalance": "Procent bieżącego salda",

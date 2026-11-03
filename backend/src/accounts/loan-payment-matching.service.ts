@@ -24,6 +24,7 @@ import {
 } from "../transaction-rules/rule-action.types";
 import { RuleConditionLeaf } from "../transaction-rules/rule-condition.types";
 import { Account, AccountType } from "./entities/account.entity";
+import { readLoanFees } from "../loan-installments/loan-fee-lines";
 import {
   LoanSettlementResponseDto,
   PaymentMatchingDto,
@@ -149,6 +150,17 @@ export class LoanPaymentMatchingService {
           tr(
             "errors.accounts.paymentMatchingRequiresSchedule",
             "Payment matching needs the loan's scheduled payment. Set up its payments first.",
+          ),
+        );
+      }
+      // The settlement does not price mortgage fee lines yet
+      // (docs/specs/mortgage-fees.md section 8): a rule on a fee-carrying
+      // bill would refuse every bank debit while turning auto-post off.
+      if ((await readLoanFees(m, account)).length > 0) {
+        throw new BadRequestException(
+          tr(
+            "errors.loanFees.paymentMatchingUnsupported",
+            "Payment matching cannot settle a mortgage payment that includes fees yet. Turn off payment matching or remove the fees.",
           ),
         );
       }

@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} por pagamento, {calculation}",
     "summaryAnnual": "{value} por ano, {calculation}",
     "paymentMatchingConflict": "A correspondência de pagamentos ainda não consegue liquidar um pagamento que inclui encargos. Desative a correspondência de pagamentos ou remova os encargos.",
-    "paymentMatchingNote": "A correspondência de pagamentos ainda não liquida um pagamento que inclui encargos: os débitos do banco ficam para você registrar.",
+    "paymentMatchingNote": "Este financiamento tem uma regra de associação de pagamentos. A associação ainda não consegue liquidar um pagamento que inclui encargos, então não é possível adicionar encargos enquanto a regra existir.",
     "calculations": {
       "fixed": "Valor fixo",
       "percentCurrentBalance": "Porcentagem do saldo atual",

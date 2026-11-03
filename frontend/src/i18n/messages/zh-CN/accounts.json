@@ -846,7 +846,7 @@
     "summaryPerPayment": "每期还款 {value}，{calculation}",
     "summaryAnnual": "每年 {value}，{calculation}",
     "paymentMatchingConflict": "付款匹配目前还无法结算包含费用的还款。请关闭付款匹配或移除这些费用。",
-    "paymentMatchingNote": "付款匹配目前不会结算包含费用的还款：其银行扣款需要您自行记录。",
+    "paymentMatchingNote": "此按揭有一条付款匹配规则。付款匹配尚不能结算包含费用的付款，因此在该规则存在期间无法添加费用。",
     "calculations": {
       "fixed": "固定金额",
       "percentCurrentBalance": "当前余额的百分比",

@@ -846,7 +846,7 @@
     "summaryPerPayment": "결제당 {value}, {calculation}",
     "summaryAnnual": "연간 {value}, {calculation}",
     "paymentMatchingConflict": "결제 일치는 아직 비용이 포함된 결제를 정산할 수 없습니다. 결제 일치를 끄거나 비용을 삭제하세요.",
-    "paymentMatchingNote": "결제 일치는 아직 비용이 포함된 결제를 정산하지 않습니다. 해당 은행 출금은 직접 기록해야 합니다.",
+    "paymentMatchingNote": "이 담보대출에는 결제 일치 규칙이 있습니다. 결제 일치는 아직 비용이 포함된 결제를 정산할 수 없으므로 규칙이 있는 동안에는 비용을 추가할 수 없습니다.",
     "calculations": {
       "fixed": "고정 금액",
       "percentCurrentBalance": "현재 잔액의 비율",

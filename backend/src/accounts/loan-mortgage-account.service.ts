@@ -49,7 +49,7 @@ import {
   refuseStatedPayment,
 } from "../loan-rate-changes/loan-rate-changes.service";
 import { withScopedDb } from "../common/db/scoped-db";
-import { currencyMinorUnitDecimals } from "../common/currency-minor-unit.util";
+import { loanFeeFactsFor } from "../loan-installments/loan-fees";
 import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import {
   assertLoanFeeCategories,
@@ -529,13 +529,18 @@ export class LoanMortgageAccountService {
 
     // Each fee's first line, priced on the opening debt (mortgage-fees spec
     // section 7): the bill is the installment plus every fee line.
-    const feeLines = priceFeeTemplateLines(loanFees, {
-      debt: mortgageAmount,
-      originalPrincipal:
-        storedOriginalPrincipal > 0 ? storedOriginalPrincipal : null,
-      periodsPerYear: getMortgagePeriodsPerYear(mortgagePaymentFrequency),
-      decimals: currencyMinorUnitDecimals(accountData.currencyCode),
-    });
+    const feeLines = priceFeeTemplateLines(
+      loanFees,
+      loanFeeFactsFor(
+        {
+          currencyCode: accountData.currencyCode,
+          originalPrincipal: storedOriginalPrincipal,
+          openingBalance: -mortgageAmount,
+        },
+        mortgageAmount,
+        mortgagePaymentFrequency,
+      ),
+    );
     const firstBill = roundMoney(firstInstallment.total + feeLines.total);
 
     const termEndDate = termMonths

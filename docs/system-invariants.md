@@ -3516,9 +3516,10 @@ Required tests      Met: loan-installments/loan-fees.spec.ts (pricing,
                     one-fee-per-category index).
 Known gaps          The settlement planner (payment matching) does not price
                     fee lines and refuses such a template as managedTemplate
-                    missing; creation refuses fees with payment matching, but
-                    adding fees to a mortgage that already has a matching rule
-                    is allowed and its bank rows are then left unsettled.
+                    missing. Fees and a matching rule are therefore refused
+                    together on the create, the payment setup, the rule create
+                    and the fee replace, so payment matching is not available
+                    to a fee-carrying mortgage until that phase lands.
 Status              partial
 ```
 

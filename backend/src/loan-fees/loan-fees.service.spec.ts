@@ -98,15 +98,27 @@ describe("LoanFeesService", () => {
         (where.id._value as string[]).map((id) => ({ id, userId })),
       ),
     };
+    // A small in-memory table: rows by id, ordered as the service reads.
+    let nextId = 0;
     fees = {
-      find: jest.fn(async () => stored),
-      delete: jest.fn(async () => {
-        stored = [];
+      find: jest.fn(async () =>
+        [...stored].sort((a, b) => a.sortOrder - b.sortOrder),
+      ),
+      delete: jest.fn(async ({ id }: { id: string }) => {
+        stored = stored.filter((row) => row.id !== id);
       }),
+      update: jest.fn(
+        async ({ id }: { id: string }, values: Partial<LoanFee>) => {
+          stored = stored.map((row) =>
+            row.id === id ? ({ ...row, ...values } as LoanFee) : row,
+          );
+        },
+      ),
       create: jest.fn((row) => row),
-      save: jest.fn(async (rows: LoanFee[]) => {
-        stored = rows;
-        return rows;
+      save: jest.fn(async (row: LoanFee) => {
+        const saved = { ...row, id: `fee-${++nextId}` } as LoanFee;
+        stored = [...stored, saved];
+        return saved;
       }),
     };
     schedules = {
@@ -139,6 +151,7 @@ describe("LoanFeesService", () => {
 
   const writes = () =>
     fees.delete.mock.calls.length +
+    fees.update.mock.calls.length +
     fees.save.mock.calls.length +
     splits.delete.mock.calls.length +
     splits.update.mock.calls.length +
@@ -181,7 +194,9 @@ describe("LoanFeesService", () => {
   });
 
   it("removes a dropped fee's line and lowers the parent by exactly that line", async () => {
-    stored = [{ ...tax, rate: null, sortOrder: 0 } as unknown as LoanFee];
+    stored = [
+      { ...tax, id: "fee-tax", rate: null, sortOrder: 0 } as unknown as LoanFee,
+    ];
     lines = [
       ...baseLines(),
       line("split-tax", 300, { categoryId: "cat-tax", memo: "Property tax" }),
@@ -197,6 +212,7 @@ describe("LoanFeesService", () => {
     await service.replace(userId, accountId, []);
 
     expect(splits.delete).toHaveBeenCalledWith({ id: "split-tax" });
+    expect(fees.delete).toHaveBeenCalledWith({ id: "fee-tax" });
     expect(schedules.update).toHaveBeenCalledWith(
       { id: scheduleId },
       { amount: -584.59 },
@@ -241,7 +257,58 @@ describe("LoanFeesService", () => {
     expect(stored).toHaveLength(1);
   });
 
+  it("keeps a fee's row, and its id, when its category stays in the set", async () => {
+    stored = [
+      {
+        ...tax,
+        id: "fee-tax",
+        rate: null,
+        sortOrder: 0,
+      } as unknown as LoanFee,
+    ];
+    lines = [
+      ...baseLines(),
+      line("split-tax", 300, { categoryId: "cat-tax", memo: "Property tax" }),
+    ];
+
+    const result = await service.replace(userId, accountId, [
+      { ...tax, name: "School tax", amount: 2400 },
+      insurance,
+    ]);
+
+    expect(fees.delete).not.toHaveBeenCalled();
+    expect(fees.update).toHaveBeenCalledWith(
+      { id: "fee-tax" },
+      expect.objectContaining({
+        name: "School tax",
+        amount: 2400,
+        sortOrder: 0,
+      }),
+    );
+    expect(result.map((f) => [f.id, f.categoryId, f.sortOrder])).toEqual([
+      ["fee-tax", "cat-tax", 0],
+      [expect.stringMatching(/^fee-/), "cat-insurance", 1],
+    ]);
+  });
+
   describe("refuses before any write", () => {
+    it("a fee on a mortgage whose bank debits a payment matching rule settles", async () => {
+      accounts.findOne.mockResolvedValue(
+        mortgage({ paymentMatchingRuleId: "rule-1" } as Partial<Account>),
+      );
+      await expect(service.replace(userId, accountId, [tax])).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(writes()).toBe(0);
+    });
+
+    it("but removes the fees of such a mortgage", async () => {
+      accounts.findOne.mockResolvedValue(
+        mortgage({ paymentMatchingRuleId: "rule-1" } as Partial<Account>),
+      );
+      await expect(service.replace(userId, accountId, [])).resolves.toEqual([]);
+    });
+
     it("an account that is not the caller's", async () => {
       accounts.findOne.mockResolvedValue(null);
       await expect(service.replace(userId, accountId, [tax])).rejects.toThrow(

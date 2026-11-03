@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} por pago, {calculation}",
     "summaryAnnual": "{value} por año, {calculation}",
     "paymentMatchingConflict": "La conciliación de pagos todavía no puede liquidar un pago que incluye gastos. Desactiva la conciliación de pagos o elimina los gastos.",
-    "paymentMatchingNote": "La conciliación de pagos todavía no liquida un pago que incluye gastos: sus adeudos del banco quedan para que los registres tú.",
+    "paymentMatchingNote": "Esta hipoteca tiene una regla de conciliación de pagos. La conciliación de pagos todavía no puede liquidar un pago que incluye gastos, así que no se pueden añadir gastos mientras exista la regla.",
     "calculations": {
       "fixed": "Importe fijo",
       "percentCurrentBalance": "Porcentaje del saldo actual",

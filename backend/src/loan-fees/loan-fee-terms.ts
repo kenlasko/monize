@@ -6,8 +6,8 @@ import {
   LoanFeeFacts,
   LoanFeeTerms,
   priceLoanFee,
+  priceLoanFees,
 } from "../loan-installments/loan-fees";
-import { roundMoney } from "../common/round.util";
 import { LoanFeeDto } from "./dto/loan-fee.dto";
 
 /**
@@ -97,32 +97,33 @@ export interface FeeTemplateLine {
 }
 
 /**
- * The fee lines of a template's installment, priced at `facts`, and their
- * total. A fee that cannot be priced is refused (400): a write never stores
- * a guessed line.
+ * The fee lines of a template's installment, priced at `facts`
+ * (`priceLoanFees`, the loop the template rewrite prices through), and
+ * their total. A fee that cannot be priced is refused (400): a write never
+ * stores a guessed line.
  */
 export function priceFeeTemplateLines(
   fees: readonly LoanFeeTerms[],
   facts: LoanFeeFacts,
 ): { lines: FeeTemplateLine[]; total: number } {
-  let units = 0;
-  const lines = fees.map((fee) => {
-    const priced = priceLoanFee(fee, facts);
-    if (priced.kind === "unknown") {
-      throw new BadRequestException(
-        tr(
-          "errors.loanFees.unpriceable",
-          `The fee "${fee.name}" cannot be worked out: the mortgage has no original principal. Enter the amount originally borrowed first.`,
-          { name: fee.name },
-        ),
-      );
-    }
-    units += Math.round(priced.amount * 10000);
-    return {
+  const priced = priceLoanFees(fees, facts);
+  if (priced.kind === "unknown") {
+    const fee = fees.find((f) => priceLoanFee(f, facts).kind === "unknown");
+    const name = fee?.name ?? "";
+    throw new BadRequestException(
+      tr(
+        "errors.loanFees.unpriceable",
+        `The fee "${name}" cannot be worked out: the mortgage has no original principal. Enter the amount originally borrowed first.`,
+        { name },
+      ),
+    );
+  }
+  return {
+    lines: fees.map((fee, i) => ({
       categoryId: fee.categoryId,
       memo: fee.name,
-      amount: priced.amount,
-    };
-  });
-  return { lines, total: roundMoney(units / 10000) };
+      amount: priced.amounts[i],
+    })),
+    total: priced.total,
+  };
 }

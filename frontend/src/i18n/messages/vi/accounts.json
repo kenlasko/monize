@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} mỗi lần thanh toán, {calculation}",
     "summaryAnnual": "{value} mỗi năm, {calculation}",
     "paymentMatchingConflict": "Khớp thanh toán chưa thể tất toán một khoản thanh toán có bao gồm phí. Hãy tắt khớp thanh toán hoặc xóa các khoản phí.",
-    "paymentMatchingNote": "Khớp thanh toán chưa tất toán khoản thanh toán có bao gồm phí: bạn cần tự ghi nhận các khoản ghi nợ ngân hàng của nó.",
+    "paymentMatchingNote": "Khoản thế chấp này có quy tắc khớp thanh toán. Khớp thanh toán chưa thể tất toán một khoản thanh toán có phí, nên không thể thêm phí khi quy tắc còn tồn tại.",
     "calculations": {
       "fixed": "Số tiền cố định",
       "percentCurrentBalance": "Phần trăm số dư hiện tại",

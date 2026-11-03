@@ -128,7 +128,7 @@ A mortgage payment often collects more than principal and interest: mortgage ins
 
 ![The Mortgage fees section of the New Account form](images/account-form-mortgage-fees.png)
 
-Each fee becomes its own line of the scheduled mortgage payment, and the payment amount is the principal and interest plus every fee. Fees are optional. To change them later, open the mortgage's detail page and use **Edit fees** in the **Mortgage fees** panel; saving updates the lines of the next payment. Payment matching cannot yet settle a payment that includes fees, so the two cannot be turned on together when you create a mortgage.
+Each fee becomes its own line of the scheduled mortgage payment, and the payment amount is the principal and interest plus every fee. Fees are optional. To change them later, open the mortgage's detail page and use **Edit fees** in the **Mortgage fees** panel; saving updates the lines of the next payment. Fees you add before setting up the mortgage's payments are added to the scheduled payment when you set it up. Payment matching cannot yet settle a payment that includes fees, so a mortgage cannot have both fees and a payment matching rule.
 
 ![The Mortgage fees panel on a mortgage's detail page](images/loan-fees-panel.png)
 

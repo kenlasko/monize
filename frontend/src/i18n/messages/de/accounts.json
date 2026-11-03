@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} pro Zahlung, {calculation}",
     "summaryAnnual": "{value} pro Jahr, {calculation}",
     "paymentMatchingConflict": "Der Zahlungsabgleich kann eine Zahlung mit Gebühren noch nicht verrechnen. Schalte den Zahlungsabgleich aus oder entferne die Gebühren.",
-    "paymentMatchingNote": "Der Zahlungsabgleich verrechnet eine Zahlung mit Gebühren noch nicht: Die zugehörigen Abbuchungen der Bank musst du selbst erfassen.",
+    "paymentMatchingNote": "Diese Hypothek hat eine Regel für den Zahlungsabgleich. Der Zahlungsabgleich kann eine Zahlung mit Gebühren noch nicht verrechnen, daher können keine Gebühren hinzugefügt werden, solange die Regel besteht.",
     "calculations": {
       "fixed": "Fester Betrag",
       "percentCurrentBalance": "Prozentsatz des aktuellen Saldos",

@@ -846,7 +846,7 @@
     "summaryPerPayment": "[XX-{value} per payment, {calculation}-XX]",
     "summaryAnnual": "[XX-{value} per year, {calculation}-XX]",
     "paymentMatchingConflict": "[XX-Payment matching cannot settle a payment that includes fees yet. Turn off payment matching or remove the fees.-XX]",
-    "paymentMatchingNote": "[XX-Payment matching does not settle a payment that includes fees yet: its bank debits are left for you to record.-XX]",
+    "paymentMatchingNote": "[XX-This mortgage has a payment matching rule. Payment matching cannot settle a payment that includes fees yet, so fees cannot be added while the rule exists.-XX]",
     "calculations": {
       "fixed": "[XX-Fixed amount-XX]",
       "percentCurrentBalance": "[XX-Percentage of current balance-XX]",

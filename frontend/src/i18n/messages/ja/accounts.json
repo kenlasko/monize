@@ -846,7 +846,7 @@
     "summaryPerPayment": "支払いごとに{value}、{calculation}",
     "summaryAnnual": "年間{value}、{calculation}",
     "paymentMatchingConflict": "支払いマッチングは、費用を含む支払いをまだ決済できません。支払いマッチングをオフにするか、費用を削除してください。",
-    "paymentMatchingNote": "支払いマッチングは、費用を含む支払いをまだ決済しません。その銀行引き落としはご自身で記録してください。",
+    "paymentMatchingNote": "この住宅ローンには支払いマッチングのルールがあります。支払いマッチングは費用を含む支払いをまだ精算できないため、ルールがある間は費用を追加できません。",
     "calculations": {
       "fixed": "固定額",
       "percentCurrentBalance": "現在残高に対する割合",

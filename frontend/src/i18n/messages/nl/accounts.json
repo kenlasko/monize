@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} per betaling, {calculation}",
     "summaryAnnual": "{value} per jaar, {calculation}",
     "paymentMatchingConflict": "Betalingen matchen kan een betaling met kosten nog niet verrekenen. Zet betalingen matchen uit of verwijder de kosten.",
-    "paymentMatchingNote": "Betalingen matchen verrekent een betaling met kosten nog niet: de afschrijvingen van de bank moet je zelf vastleggen.",
+    "paymentMatchingNote": "Deze hypotheek heeft een regel voor betalingskoppeling. Betalingskoppeling kan een betaling met kosten nog niet verrekenen, dus er kunnen geen kosten worden toegevoegd zolang de regel bestaat.",
     "calculations": {
       "fixed": "Vast bedrag",
       "percentCurrentBalance": "Percentage van het huidige saldo",

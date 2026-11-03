@@ -14,6 +14,7 @@ import { LOAN_FEE_BASES, LOAN_FEE_CALCULATIONS, MAX_LOAN_FEES } from '@/types/lo
 import { buildCategoryLabelMap, buildCategoryTree } from '@/lib/categoryUtils';
 import { getCurrencySymbol, getDecimalPlacesForCurrency } from '@/lib/format';
 import {
+  LOAN_FEE_CALCULATION_KEYS,
   LoanFeeDraft,
   LoanFeeDraftErrors,
   newLoanFeeDraft,
@@ -29,12 +30,6 @@ interface LoanFeesEditorProps {
   /** Render the category list in a portal (inside a modal). */
   usePortal?: boolean;
 }
-
-const CALCULATION_KEYS = {
-  FIXED: 'fixed',
-  PERCENT_CURRENT_BALANCE: 'percentCurrentBalance',
-  PERCENT_ORIGINAL_BALANCE: 'percentOriginalBalance',
-} as const;
 
 const BASIS_KEYS = {
   PER_PAYMENT: 'perPayment',
@@ -116,7 +111,7 @@ export function LoanFeesEditor({
                 value={fee.calculation}
                 options={LOAN_FEE_CALCULATIONS.map((value) => ({
                   value,
-                  label: t(`loanFees.calculations.${CALCULATION_KEYS[value]}`),
+                  label: t(`loanFees.calculations.${LOAN_FEE_CALCULATION_KEYS[value]}`),
                 }))}
                 onChange={(e) =>
                   update(fee.key, {

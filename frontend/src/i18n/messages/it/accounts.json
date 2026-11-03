@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} per pagamento, {calculation}",
     "summaryAnnual": "{value} all'anno, {calculation}",
     "paymentMatchingConflict": "L'abbinamento dei pagamenti non può ancora saldare un pagamento che include spese. Disattiva l'abbinamento dei pagamenti o rimuovi le spese.",
-    "paymentMatchingNote": "L'abbinamento dei pagamenti non salda ancora un pagamento che include spese: i relativi addebiti bancari restano da registrare a te.",
+    "paymentMatchingNote": "Questo mutuo ha una regola di abbinamento dei pagamenti. L'abbinamento non può ancora saldare un pagamento che include spese, quindi non si possono aggiungere spese finché la regola esiste.",
     "calculations": {
       "fixed": "Importo fisso",
       "percentCurrentBalance": "Percentuale del saldo attuale",

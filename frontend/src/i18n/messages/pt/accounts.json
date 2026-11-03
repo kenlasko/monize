@@ -846,7 +846,7 @@
     "summaryPerPayment": "{value} por pagamento, {calculation}",
     "summaryAnnual": "{value} por ano, {calculation}",
     "paymentMatchingConflict": "A associação de pagamentos ainda não consegue liquidar um pagamento que inclui encargos. Desative a associação de pagamentos ou remova os encargos.",
-    "paymentMatchingNote": "A associação de pagamentos ainda não liquida um pagamento que inclui encargos: os respetivos débitos do banco ficam por registar por si.",
+    "paymentMatchingNote": "Este crédito à habitação tem uma regra de associação de pagamentos. A associação ainda não consegue liquidar um pagamento que inclui encargos, por isso não é possível adicionar encargos enquanto a regra existir.",
     "calculations": {
       "fixed": "Montante fixo",
       "percentCurrentBalance": "Percentagem do saldo atual",

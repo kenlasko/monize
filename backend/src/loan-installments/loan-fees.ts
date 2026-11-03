@@ -1,4 +1,9 @@
 import { roundToDecimals } from "../common/round.util";
+import { currencyMinorUnitDecimals } from "../common/currency-minor-unit.util";
+import {
+  DEFAULT_PERIODS_PER_YEAR,
+  periodsPerYearForStoredFrequency,
+} from "../accounts/payment-frequency.util";
 
 /**
  * The fees a mortgage payment collects beside principal and interest
@@ -116,4 +121,56 @@ export function originalPrincipalOf(account: {
     opening > 0
     ? opening
     : null;
+}
+
+/** The fees of one installment, each priced, or the first one that cannot be. */
+export type PricedLoanFees =
+  | { readonly kind: "ok"; readonly amounts: number[]; readonly total: number }
+  | { readonly kind: "unknown"; readonly reason: string };
+
+/**
+ * Price every fee for one installment and total them on scaled integers
+ * (never by accumulating floats). The one loop the template rewrite, the
+ * projection, the mortgage create and the fee replace all price through.
+ */
+export function priceLoanFees(
+  fees: readonly LoanFeeTerms[],
+  facts: LoanFeeFacts,
+): PricedLoanFees {
+  const amounts: number[] = [];
+  let units = 0;
+  for (const fee of fees) {
+    const priced = priceLoanFee(fee, facts);
+    if (priced.kind === "unknown") return priced;
+    amounts.push(priced.amount);
+    units += Math.round(priced.amount * MONEY_SCALE);
+  }
+  return { kind: "ok", amounts, total: units / MONEY_SCALE };
+}
+
+/** 10^4: money's storage precision, the scale fee totals are summed at. */
+const MONEY_SCALE = 10_000;
+
+/**
+ * The facts a mortgage's fees are priced from at one installment: the debt
+ * through its date, the account's original principal, the periods a year of
+ * the stored cadence (defaulting as `periodicRateFor` does) and the
+ * currency's minor unit.
+ */
+export function loanFeeFactsFor(
+  account: {
+    currencyCode: string;
+    originalPrincipal?: number | string | null;
+    openingBalance?: number | string | null;
+  },
+  debt: number,
+  frequency: string | null | undefined,
+): LoanFeeFacts {
+  return {
+    debt,
+    originalPrincipal: originalPrincipalOf(account),
+    periodsPerYear:
+      periodsPerYearForStoredFrequency(frequency) ?? DEFAULT_PERIODS_PER_YEAR,
+    decimals: currencyMinorUnitDecimals(account.currencyCode),
+  };
 }

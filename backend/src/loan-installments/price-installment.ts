@@ -28,9 +28,16 @@ import {
   periodsPerYearForStoredFrequency,
 } from "../accounts/payment-frequency.util";
 import { precedingSlotDate, SlotCalendarSchedule } from "./occurrence-slots";
-import { currencyMinorUnitDecimals } from "../common/currency-minor-unit.util";
-import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
-import { LoanFeeTerms, originalPrincipalOf, priceLoanFee } from "./loan-fees";
+import { LoanFeeTerms } from "./loan-fees";
+import {
+  LoanFeeLine,
+  PricedFeeLine,
+  priceFeeLines,
+  readLoanFees,
+} from "./loan-fee-lines";
+
+export type { LoanFeeLine, PricedFeeLine } from "./loan-fee-lines";
+export { readLoanFees } from "./loan-fee-lines";
 
 /**
  * The one pricing path for a scheduled loan installment (INV-LOAN-006,
@@ -69,19 +76,6 @@ const DEBT_BOUNDARY_NOISE = 1e-9;
 /** True when `debt` is less than one minor unit: nothing left to pay. */
 export function isDebtRetired(debt: number): boolean {
   return debt < LOAN_MINOR_UNIT - DEBT_BOUNDARY_NOISE;
-}
-
-/** A template line that is a configured mortgage fee's (`docs/specs/mortgage-fees.md` section 4). */
-export interface LoanFeeLine {
-  readonly split: ScheduledTransactionSplit;
-  readonly fee: LoanFeeTerms;
-}
-
-/** A fee line priced for one installment: the unsigned amount it carries. */
-export interface PricedFeeLine {
-  readonly split: ScheduledTransactionSplit;
-  readonly fee: LoanFeeTerms;
-  readonly amount: number;
 }
 
 /** The template's managed lines: a principal transfer, one interest line,
@@ -985,80 +979,5 @@ function slotCalendarOf(
     frequency: scheduledTransaction.frequency,
     endDate: scheduledTransaction.endDate ?? null,
     occurrencesRemaining: scheduledTransaction.occurrencesRemaining ?? null,
-  };
-}
-
-/**
- * A mortgage's configured fees, in display order (mortgage-fees spec section
- * 2). Only a mortgage carries fees, so no other account type reads the table.
- */
-export async function readLoanFees(
-  m: EntityManager,
-  loanAccount: Pick<Account, "id" | "accountType">,
-): Promise<LoanFeeTerms[]> {
-  if (loanAccount.accountType !== AccountType.MORTGAGE) return [];
-  return m.getRepository(LoanFee).find({
-    where: { accountId: loanAccount.id },
-    order: { sortOrder: "ASC", createdAt: "ASC" },
-  });
-}
-
-type PricedFeeLines =
-  | {
-      kind: "ok";
-      lines: PricedFeeLine[];
-      /** The sum of the priced lines. */
-      total: number;
-      /** The sum of the lines as the template stores them. */
-      templateTotal: number;
-    }
-  | { kind: "unknown"; reason: string };
-
-/**
- * Price a template's fee lines for one installment: from each fee's terms at
- * `debt` when `reprice`, else at the amounts the template stores. Sums on
- * scaled integers, never by accumulating floats.
- */
-export function priceFeeLines(
-  feeLines: readonly LoanFeeLine[],
-  input: {
-    debt: number;
-    loanAccount: Pick<
-      Account,
-      "currencyCode" | "originalPrincipal" | "openingBalance"
-    >;
-    frequency: string;
-    reprice: boolean;
-  },
-): PricedFeeLines {
-  const scale = 10 ** 4;
-  const facts = {
-    debt: input.debt,
-    originalPrincipal: originalPrincipalOf(input.loanAccount),
-    periodsPerYear:
-      periodsPerYearForStoredFrequency(input.frequency) ??
-      DEFAULT_PERIODS_PER_YEAR,
-    decimals: currencyMinorUnitDecimals(input.loanAccount.currencyCode),
-  };
-  const lines: PricedFeeLine[] = [];
-  let totalUnits = 0;
-  let templateUnits = 0;
-  for (const line of feeLines) {
-    const stored = roundMoney(Math.abs(Number(line.split.amount)));
-    templateUnits += Math.round(stored * scale);
-    let amount = stored;
-    if (input.reprice) {
-      const priced = priceLoanFee(line.fee, facts);
-      if (priced.kind === "unknown") return priced;
-      amount = priced.amount;
-    }
-    totalUnits += Math.round(amount * scale);
-    lines.push({ split: line.split, fee: line.fee, amount });
-  }
-  return {
-    kind: "ok",
-    lines,
-    total: totalUnits / scale,
-    templateTotal: templateUnits / scale,
   };
 }

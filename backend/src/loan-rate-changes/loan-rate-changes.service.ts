@@ -25,6 +25,7 @@ import {
   LoanTemplateRewritePlan,
   planLoanTemplateRewrite,
 } from "../loan-installments/reprice-template";
+import type { LoanTemplateSplits } from "../loan-installments/price-installment";
 import {
   UpcomingPaymentChange,
   upcomingPaymentChangesAfter,
@@ -389,10 +390,14 @@ export class LoanRateChangesService {
       scheduledTransactionName: scheduled.name ?? null,
       currencyCode: scheduled.currencyCode ?? account.currencyCode ?? "",
       dueDate,
-      currentPaymentAmount: installment.templateAmount,
-      // The bill, its fee lines included (INV-LOAN-011), as the current
-      // payment beside it is.
-      proposedPaymentAmount: installment.billTotal,
+      // The loan's installment on both sides, a mortgage's fee lines left
+      // out (INV-LOAN-011): the upcoming stated payments below are loan-only
+      // figures, and a rate change moves only the loan part of the bill.
+      currentPaymentAmount:
+        Math.round(
+          (installment.templateAmount - templateFeeTotal(installment)) * 10_000,
+        ) / 10_000,
+      proposedPaymentAmount: installment.allocation.total,
       currentPrincipal: template.principalSplit
         ? Math.abs(Number(template.principalSplit.amount))
         : null,
@@ -542,4 +547,17 @@ export class LoanRateChangesService {
     if (derivedInstallmentType(account) !== null) return null;
     return datedAnnuityInstallment(m, account, annualRate, effectiveDate);
   }
+}
+
+/** The fee lines a priced template stores, summed on scaled integers. */
+function templateFeeTotal(installment: {
+  template: LoanTemplateSplits;
+}): number {
+  return (
+    (installment.template.feeLines ?? []).reduce(
+      (units, line) =>
+        units + Math.round(Math.abs(Number(line.split.amount)) * 10_000),
+      0,
+    ) / 10_000
+  );
 }

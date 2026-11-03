@@ -54,6 +54,9 @@ import {
 } from "./mortgage-installment.util";
 import { datedLoanDebt } from "./dated-loan-debt.util";
 import { LoanPaymentMatchingService } from "./loan-payment-matching.service";
+import { readLoanFees } from "../loan-installments/loan-fee-lines";
+import { loanFeeFactsFor } from "../loan-installments/loan-fees";
+import { priceFeeTemplateLines } from "../loan-fees/loan-fee-terms";
 
 @Injectable()
 export class LoanPaymentSetupService {
@@ -256,6 +259,22 @@ export class LoanPaymentSetupService {
       );
     }
 
+    // Fees configured on the mortgage before its payments existed become
+    // lines of the template this setup writes (docs/specs/mortgage-fees.md
+    // section 7). Payment matching cannot settle a fee-carrying bill yet, so
+    // the two are refused together before any write.
+    const loanFees = await withScopedDb(this.dataSource, (m) =>
+      readLoanFees(m, account),
+    );
+    if (dto.paymentMatching && loanFees.length > 0) {
+      throw new BadRequestException(
+        tr(
+          "errors.loanFees.paymentMatchingUnsupported",
+          "Payment matching cannot settle a mortgage payment that includes fees yet. Turn off payment matching or remove the fees.",
+        ),
+      );
+    }
+
     // Required by the DTO and checked again here: an undefined id in a
     // TypeORM `where` matches any row. Owned by the caller, before any write.
     const interestCategoryId = dto.interestCategoryId;
@@ -425,7 +444,21 @@ export class LoanPaymentSetupService {
     principalPayment = allocation.principal;
     interestPayment = allocation.interest;
     const scheduledExtraPrincipal = allocation.extraPrincipal;
-    const parentAmount = allocation.total;
+    // Each fee priced on the debt the first installment is priced from, the
+    // bill being the installment plus every fee line.
+    const feeLines = priceFeeTemplateLines(
+      loanFees,
+      loanFeeFactsFor(
+        {
+          currencyCode: account.currencyCode,
+          originalPrincipal: dto.originalPrincipal ?? account.originalPrincipal,
+          openingBalance: account.openingBalance,
+        },
+        installmentDebt ?? currentBalance,
+        dto.paymentFrequency,
+      ),
+    );
+    const parentAmount = roundMoney(allocation.total + feeLines.total);
 
     // The DTO accepts loan spellings; mortgage callers may also carry the
     // mortgage ones, so both tables are merged rather than a third copy written.
@@ -480,6 +513,13 @@ export class LoanPaymentSetupService {
         transferAccountId: accountId,
         amount: -scheduledExtraPrincipal,
         memo: "Extra Principal",
+      });
+    }
+    for (const line of feeLines.lines) {
+      splits.push({
+        categoryId: line.categoryId,
+        amount: -line.amount,
+        memo: line.memo,
       });
     }
 
@@ -566,8 +606,11 @@ export class LoanPaymentSetupService {
     this.logger.log(
       `Set up ${accountLabel.toLowerCase()} payments for account ${account.name}: ` +
         `$${dto.paymentAmount} ${dto.paymentFrequency}, next due ${dto.nextDueDate}` +
-        (parentAmount !== roundMoney(dto.paymentAmount)
-          ? `, first installment clamped to $${parentAmount} against the outstanding balance`
+        (allocation.total !== roundMoney(dto.paymentAmount)
+          ? `, first installment clamped to $${allocation.total} against the outstanding balance`
+          : "") +
+        (feeLines.lines.length > 0
+          ? `, plus ${feeLines.lines.length} fee line(s) of $${feeLines.total}`
           : ""),
     );
 

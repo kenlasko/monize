@@ -12,6 +12,13 @@ function afterWrite(accountId: string): void {
   invalidateCache('scheduled:');
 }
 
+/** The `accounts.loanFees.calculations.*` catalog key of each calculation. */
+export const LOAN_FEE_CALCULATION_KEYS: Record<LoanFeeCalculation, string> = {
+  FIXED: 'fixed',
+  PERCENT_CURRENT_BALANCE: 'percentCurrentBalance',
+  PERCENT_ORIGINAL_BALANCE: 'percentOriginalBalance',
+};
+
 export const loanFeesApi = {
   list: async (accountId: string): Promise<LoanFee[]> =>
     dedupe(`loan-fees:${accountId}`, async () => {

@@ -846,7 +846,7 @@
     "summaryPerPayment": "每期還款 {value}，{calculation}",
     "summaryAnnual": "每年 {value}，{calculation}",
     "paymentMatchingConflict": "付款比對目前還無法結算包含費用的還款。請關閉付款比對或移除這些費用。",
-    "paymentMatchingNote": "付款比對目前不會結算包含費用的還款：其銀行扣款需要您自行記錄。",
+    "paymentMatchingNote": "此房貸有一條付款比對規則。付款比對尚無法結算包含費用的付款，因此在該規則存在期間無法新增費用。",
     "calculations": {
       "fixed": "固定金額",
       "percentCurrentBalance": "目前餘額的百分比",

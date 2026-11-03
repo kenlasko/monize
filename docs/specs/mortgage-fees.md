@@ -152,22 +152,33 @@ there, so the Post and override dialogs show each occurrence's fees.
   moves by exactly the change in fee lines, so the loan lines and the parent
   stay equal to the sum of the children even when the rest of the template is
   one the loan pricing declines. Overrides already written for later
-  occurrences are the person's statement and are not touched.
+  occurrences are the person's statement and are not touched. A fee whose
+  category stays in the set keeps its row and id; only a fee that leaves is
+  deleted.
+- **Payment setup.** A mortgage can hold fees before its payments exist (an
+  account created without them). `setupLoanPayments` reads them and writes one
+  line per fee into the template it creates, priced on the debt the first
+  installment is priced from; `firstInstallmentAmount` is then the bill.
 - **Read.** `GET /accounts/:id/loan-fees` answers the set in `sort_order`.
 - Only a `MORTGAGE` account takes fees; every other type is refused (400).
 
 Refusals, all before any write: a category that is not the caller's; a category
 twice in one request; the interest category; a value outside its bounds or on the
-wrong calculation; more than 10 fees; a mortgage that is not the caller's (404).
+wrong calculation; more than 10 fees; a mortgage that is not the caller's (404);
+a fee on a mortgage that has a payment matching rule (section 8).
 
 ## 8. Out of scope, and what it does today
 
 - **Payment matching.** The settlement planner does not identify fee lines; a
   fee-carrying template reads as `managedTemplate` missing, the refusal an
-  escrow line already gets, and the bank row is left for the person. Creating a
-  mortgage with both fees and payment matching is refused (400) rather than
-  writing a rule that cannot settle. A later phase prices the fees at the slot
+  escrow line already gets, and the bank row is left for the person. So fees
+  and a matching rule are refused together (400) on every path that writes
+  either: the mortgage create, the payment setup, the rule create from Loan
+  Details (`createMatchingRule`) and the fee replace. Removing fees from a
+  mortgage with a rule is allowed. A later phase prices the fees at the slot
   and books them as their own lines of the settled row.
+- **The rate-change sync preview** reports the loan's installment on both
+  sides, fee lines left out, as the upcoming stated payments beside it are.
 - Fees on `LOAN` and `LINE_OF_CREDIT` accounts.
 - Fees in the amortization report and the payoff projections: they are not
   principal or interest and do not change the debt.
