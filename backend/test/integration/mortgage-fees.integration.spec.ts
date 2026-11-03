@@ -132,13 +132,17 @@ describe("Mortgage fees (integration)", () => {
       })
     ).id;
     interestCategoryId = (
-      await createTestCategory(dataSource, userId, { name: "Mortgage Interest" })
+      await createTestCategory(dataSource, userId, {
+        name: "Mortgage Interest",
+      })
     ).id;
     taxCategoryId = (
       await createTestCategory(dataSource, userId, { name: "Property Tax" })
     ).id;
     insuranceCategoryId = (
-      await createTestCategory(dataSource, userId, { name: "Mortgage Insurance" })
+      await createTestCategory(dataSource, userId, {
+        name: "Mortgage Insurance",
+      })
     ).id;
 
     mortgageId = (
@@ -215,8 +219,9 @@ describe("Mortgage fees (integration)", () => {
     );
     const byKey: Record<string, number> = {};
     for (const line of lines) {
-      byKey[line.transfer_account_id ? "principal" : (line.category_id as string)] =
-        Number(line.amount);
+      byKey[
+        line.transfer_account_id ? "principal" : (line.category_id as string)
+      ] = Number(line.amount);
     }
     return {
       parent: Number(parent.amount),
@@ -246,8 +251,9 @@ describe("Mortgage fees (integration)", () => {
     );
     const byKey: Record<string, number> = {};
     for (const line of lines) {
-      byKey[line.transfer_account_id ? "principal" : (line.category_id as string)] =
-        Number(line.amount);
+      byKey[
+        line.transfer_account_id ? "principal" : (line.category_id as string)
+      ] = Number(line.amount);
     }
     return { parent: Number(parent.amount), lines: byKey };
   }
