@@ -2357,8 +2357,14 @@ is not an income or expense figure, so this invariant does not reach it: it
 lists each matching leg by its own account and its own sign, and under BOTH its
 total is the signed sum of the listed rows, captioned "Net cash movement"
 rather than net (`customReportMeasure`, discussion #1978). Both legs of a
-transfer inside the report's scope cancel; a leg whose counterpart does not
-match the filters counts alone, and no counterpart is added.
+same-currency transfer inside the report's scope cancel, because each is
+converted at the one rate map of the report execution (`createConverter` in
+reports.service.ts, the latest rates); a cross-currency transfer's legs are
+each converted at that latest rate, not at the rate the two amounts imply, so
+they can leave a residual. A leg whose counterpart does not match the filters
+counts alone, and no counterpart is added. Only the ungrouped list signs its
+rows: grouped, metric NONE sums each group's unsigned cells like
+TOTAL_AMOUNT, and the client names it so (`isSignedTransactionList`).
 
 ### INV-SANKEY-001 -- the Cash Flow Sankey closes
 
