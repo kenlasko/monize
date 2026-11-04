@@ -333,6 +333,14 @@ A circular chart showing proportional breakdown. Best for understanding the comp
 
 A saved custom report opens with its saved timeframe. Change the **Timeframe** on the report to look at another period without editing it, and choose **Use saved timeframe** to go back. A report that reaches the row limit says so and asks you to narrow the timeframe or filters.
 
+Click a row, bar, slice or legend entry to open the Transactions page over the report's date range with the report's own account, category, payee, tag and search filters applied:
+
+- A transaction in an ungrouped list opens on the page that holds it, briefly highlighted
+- A category, payee or tag narrows the list to the one you clicked
+- A year, month, week or day narrows the dates to that period
+
+The Transactions page combines its filters with AND and allows several values per filter, so a filter group that mixes two kinds of condition (for example *account OR category*), or two groups on the same kind, is left off and the page lists more than the report rather than fewer. The report's direction (income or expenses only) and its transfer setting are not carried over either.
+
 ---
 
 ## Exporting Reports
