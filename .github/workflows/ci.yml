@@ -318,7 +318,9 @@ jobs:
           merge-multiple: true
       # The same gate `npm run test:cov` applies, over all three shards: the
       # thresholds come from vitest.config.ts.
-      - run: npx vitest run --merge-reports --coverage
+      # The directory is named: vitest's default is .vitest/blob, not where
+      # the shards wrote their reports.
+      - run: npx vitest run --merge-reports=.vitest-reports --coverage
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
