@@ -172,6 +172,111 @@ describe("mapHeader", () => {
     });
   });
 
+  it.each([
+    [
+      "French",
+      ["Date", "Ouverture", "Plus haut", "Plus bas", "Clôture", "Volume"],
+    ],
+    [
+      "Italian",
+      ["Data", "Apertura", "Massimo", "Minimo", "Chiusura", "Volume"],
+    ],
+    ["Portuguese", ["Data", "Abertura", "Máxima", "Mínima", "Fecho", "Volume"]],
+    ["Dutch", ["Datum", "Open", "Hoog", "Laag", "Slot", "Volume"]],
+    [
+      "Polish",
+      ["Data", "Otwarcie", "Najwyższy", "Najniższy", "Zamknięcie", "Wolumen"],
+    ],
+    [
+      "Russian",
+      ["Дата", "Открытие", "Максимум", "Минимум", "Закрытие", "Объём"],
+    ],
+    [
+      "Ukrainian",
+      ["Дата", "Відкриття", "Максимум", "Мінімум", "Закриття", "Обсяг"],
+    ],
+    [
+      "Turkish",
+      ["TARİH", "AÇILIŞ", "EN YÜKSEK", "EN DÜŞÜK", "KAPANIŞ", "HACİM"],
+    ],
+    [
+      "Vietnamese",
+      ["Ngày", "Mở cửa", "Cao nhất", "Thấp nhất", "Đóng cửa", "Khối lượng"],
+    ],
+    [
+      "Indonesian",
+      ["Tanggal", "Pembukaan", "Tertinggi", "Terendah", "Penutupan", "Volume"],
+    ],
+    ["Hindi", ["तारीख", "खुला", "उच्च", "निम्न", "बंद", "वॉल्यूम"]],
+    ["Japanese", ["日付", "始値", "高値", "安値", "終値", "出来高"]],
+    ["Korean", ["날짜", "시가", "고가", "저가", "종가", "거래량"]],
+    [
+      "Simplified Chinese",
+      ["日期", "开盘价", "最高价", "最低价", "收盘价", "成交量"],
+    ],
+    [
+      "Traditional Chinese",
+      ["日期", "開盤價", "最高價", "最低價", "收盤價", "成交量"],
+    ],
+  ])("reads %s names", (_language, headers) => {
+    expect(mapHeader(headers)).toEqual({
+      date: 0,
+      open: 1,
+      high: 2,
+      low: 3,
+      close: 4,
+      volume: 5,
+    });
+  });
+
+  it("reads a price noun followed by which price it is", () => {
+    expect(
+      mapHeader([
+        "Date",
+        "Cours d'ouverture",
+        "Cours le plus haut",
+        "Cours de clôture",
+      ]),
+    ).toMatchObject({ date: 0, open: 1, close: 3 });
+    expect(mapHeader(["Дата", "Цена открытия", "Цена закрытия"])).toEqual({
+      date: 0,
+      open: 1,
+      close: 2,
+    });
+    expect(
+      mapHeader(["Ngày", "Giá mở cửa", "Giá cao nhất", "Giá đóng cửa"]),
+    ).toEqual({ date: 0, open: 1, high: 2, close: 3 });
+  });
+
+  it("does not take another price's column as a generic close", () => {
+    expect(mapHeader(["Data", "Kurs otwarcia", "Kurs max"])).toEqual({
+      date: 0,
+      open: 1,
+      high: 2,
+    });
+    expect(mapHeader(["Data", "Kurs otwarcia", "Kurs"])).toEqual({
+      date: 0,
+      open: 1,
+      close: 2,
+    });
+  });
+
+  it("ends a word at a non-ASCII letter", () => {
+    expect(mapHeader(["Data", "Preço"])).toEqual({ date: 0, close: 1 });
+    expect(mapHeader(["Дата", "Цена"])).toEqual({ date: 0, close: 1 });
+  });
+
+  it("leaves adjusted closes and market value alone", () => {
+    expect(mapHeader(["日付", "調整後終値", "終値"])).toEqual({
+      date: 0,
+      close: 2,
+    });
+    expect(mapHeader(["날짜", "시가총액", "종가"])).toEqual({
+      date: 0,
+      close: 2,
+    });
+  });
+
   it("never gives one column to two fields", () => {
     expect(mapHeader(["Date", "Close", "Close"])).toEqual({
       date: 0,
@@ -483,5 +588,20 @@ describe("a lone dot before three digits", () => {
     expect(headerSeparatorHint(["Datum", "Schlusskurs"])).toBe(",");
     expect(headerSeparatorHint(["Fecha", "Cierre"])).toBeNull();
     expect(headerSeparatorHint(["Datum", "Close"])).toBeNull();
+  });
+
+  it("takes the separator from every translated language but Spanish", () => {
+    expect(headerSeparatorHint(["Date", "Clôture"])).toBe(",");
+    expect(headerSeparatorHint(["Datum", "Slot"])).toBe(",");
+    expect(headerSeparatorHint(["Data", "Zamknięcie"])).toBe(",");
+    expect(headerSeparatorHint(["Дата", "Закрытие"])).toBe(",");
+    expect(headerSeparatorHint(["TARİH", "KAPANIŞ"])).toBe(",");
+    expect(headerSeparatorHint(["Ngày", "Đóng cửa"])).toBe(",");
+    expect(headerSeparatorHint(["Tanggal", "Penutupan"])).toBe(",");
+    expect(headerSeparatorHint(["日付", "終値"])).toBe(".");
+    expect(headerSeparatorHint(["날짜", "종가"])).toBe(".");
+    expect(headerSeparatorHint(["日期", "收盘价"])).toBe(".");
+    expect(headerSeparatorHint(["तारीख", "बंद"])).toBe(".");
+    expect(headerSeparatorHint(["Date"])).toBeNull();
   });
 });

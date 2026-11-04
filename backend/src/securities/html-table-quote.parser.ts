@@ -1,45 +1,29 @@
 import { isKnownIsoCurrency } from "../currencies/currency-metadata";
 import { HistoricalPrice } from "./providers/quote-provider.interface";
 import { PageCell, PageTable, readPageTables } from "./html-table-reader";
+import {
+  FIELDS,
+  QuoteTableField,
+  headerSeparatorHint,
+  mapHeader,
+} from "./html-table-quote.headers";
+
+export { headerSeparatorHint, mapHeader };
+export type { QuoteTableField };
 
 /**
  * Reads daily prices out of an ordinary HTML table on a web page: the
  * "table on a website" quote source Portfolio Performance users know.
  *
  * Nothing here is configured per site. The table is found by its header row
- * (a date column and a closing-price column, named in English, German or
- * Spanish), and the date and number formats are inferred from the cells
- * themselves, so the same parser reads `02.11.26` / `3.609,23 €` (ariva.de)
+ * (a date column and a closing-price column, named in any language Monize
+ * is translated into; `html-table-quote.headers.ts`), and the date and number
+ * formats are inferred from the cells themselves, so the same parser reads `02.11.26` / `3.609,23 €` (ariva.de)
  * and `Monday, November 02, 2026` / `95.69` (markets.ft.com).
  *
  * Pure: no network, no clock except the `now` it is handed (two-digit years
  * are resolved against it).
  */
-
-export type QuoteTableField =
-  "date" | "close" | "open" | "high" | "low" | "volume";
-
-/**
- * Header patterns per field, best first. A header is trimmed, lower-cased and
- * matched from its start, so "Schluss (EUR)" and "Close*" both match. Where
- * two columns match the same field, the one matching the earlier pattern wins
- * (a "Schluss" column over a "Kurs" column).
- */
-const HEADER_PATTERNS: Record<QuoteTableField, RegExp[]> = {
-  date: [/^(datum|date|fecha)\b/, /^(handelstag|trading day|día|dia|data)\b/],
-  close: [
-    /^(schluss|schluß|schlusskurs|close|closing|cierre|chiusura|fechamento)/,
-    /^(rücknahmepreis|ruecknahmepreis|valor liquidativo|nav\b|net asset value)/,
-    /^(zuletzt|letzter|last|último|ultimo|akt\.? ?kurs)/,
-    /^(kurs|price|precio|prezzo|preço|quote)\b/,
-  ],
-  open: [/^(erster|eröffnung|eroeffnung|open|apertura|abertura)/],
-  high: [/^(hoch|tageshoch|high|máx|max|alto|massimo)/],
-  low: [/^(tief|tagestief|low|mín|min|bajo|minimo)/],
-  volume: [/^(stücke|stueck|volume|volumen|umsatz|vol\b|vol\.)/],
-};
-
-const FIELDS = Object.keys(HEADER_PATTERNS) as QuoteTableField[];
 
 /** Rows scanned for the header before a table is given up on. */
 const MAX_HEADER_SCAN_ROWS = 3;
@@ -244,33 +228,6 @@ function firstParsed<T>(
   return null;
 }
 
-/** Map header texts to the column index of each field, best pattern first. */
-export function mapHeader(
-  texts: string[],
-): Partial<Record<QuoteTableField, number>> {
-  const result: Partial<Record<QuoteTableField, number>> = {};
-  const taken = new Set<number>();
-  for (const field of FIELDS) {
-    let bestIndex: number | undefined;
-    let bestRank = Infinity;
-    texts.forEach((raw, index) => {
-      if (taken.has(index)) return;
-      const text = raw.toLowerCase();
-      if (!text) return;
-      const rank = HEADER_PATTERNS[field].findIndex((re) => re.test(text));
-      if (rank >= 0 && rank < bestRank) {
-        bestRank = rank;
-        bestIndex = index;
-      }
-    });
-    if (bestIndex !== undefined) {
-      result[field] = bestIndex;
-      taken.add(bestIndex);
-    }
-  }
-  return result;
-}
-
 // ---------------------------------------------------------------- numbers
 
 /** The numeric part of a cell: digits, separators and a sign. */
@@ -334,35 +291,6 @@ export function inferDecimalSeparator(
 }
 
 const MAGNITUDE: Record<string, number> = { k: 1e3, m: 1e6, b: 1e9, bn: 1e9 };
-
-/**
- * The decimal separator a table's own header language implies, or `null` when
- * the words do not settle it. English headers ("Date", "Close") mean a dot;
- * German, Italian and Portuguese ones ("Datum", "Schluss", "Chiusura",
- * "Fechamento") a comma. Spanish says nothing: "Fecha" / "Cierre" is written by
- * Spain with a decimal comma and by Mexico with a decimal point. Headers that
- * disagree say nothing either.
- */
-export function headerSeparatorHint(headers: string[]): "." | "," | null {
-  let hint: "." | "," | null = null;
-  for (const raw of headers) {
-    const text = raw.trim().toLowerCase();
-    const said = DOT_HEADERS.test(text)
-      ? "."
-      : COMMA_HEADERS.test(text)
-        ? ","
-        : null;
-    if (!said) continue;
-    if (hint && hint !== said) return null;
-    hint = said;
-  }
-  return hint;
-}
-
-const DOT_HEADERS =
-  /^(date|trading day|close|closing|last|price|quote|nav\b|net asset value)\b/;
-const COMMA_HEADERS =
-  /^(datum|handelstag|schluss|schluß|schlusskurs|zuletzt|letzter|kurs|rücknahmepreis|ruecknahmepreis|chiusura|prezzo|fechamento|preço|data)/;
 
 /** Parse a cell as a number, or `null` for an empty, dashed or non-numeric cell. */
 export function parseNumber(raw: string, decimal: "." | ","): number | null {
