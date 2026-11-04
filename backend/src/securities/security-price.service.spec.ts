@@ -2632,6 +2632,153 @@ describe("SecurityPriceService", () => {
     });
   });
 
+  /**
+   * A coin trades every day and its Yahoo session is the UTC day, so with the
+   * weekday closing job alone Friday's, Saturday's and Sunday's bars all waited
+   * for Monday's run to settle. The weekend tick runs the same body over CRYPTO
+   * securities only, settling the previous UTC day each run; every other
+   * security is closed.
+   */
+  describe("scheduledWeekendCryptoRefresh", () => {
+    const coin: Security = {
+      ...mockSecurity,
+      id: "sec-coin",
+      symbol: "BTC-EUR",
+      name: "Bitcoin EUR",
+      securityType: "CRYPTO",
+      // Created before the lookup named CRYPTO: the type, not the exchange, is
+      // what selects it.
+      exchange: "CCC",
+      currencyCode: "EUR",
+    } as Security;
+
+    /** A repository that honours the `where` it is given, as the real one does. */
+    const seedFilteringRepository = () => {
+      securitiesRepository.find.mockImplementation(
+        async ({ where }: { where: Partial<Security> }) =>
+          [mockSecurity, coin].filter((s) =>
+            Object.entries(where).every(
+              ([key, value]) => s[key as keyof Security] === value,
+            ),
+          ),
+      );
+    };
+
+    const quotedSymbols = () =>
+      (global.fetch as jest.Mock).mock.calls
+        .map(([url]) => String(url))
+        .filter((url) => url.includes("range=1d"))
+        .map((url) =>
+          decodeURIComponent(url.split("/chart/")[1].split("?")[0]),
+        );
+
+    it("refreshes and settles only CRYPTO securities", async () => {
+      seedFilteringRepository();
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
+
+      await service.scheduledWeekendCryptoRefresh();
+
+      // Both passes select through the scope, so the settlement covers exactly
+      // what the refresh did.
+      expect(securitiesRepository.find).toHaveBeenCalledTimes(2);
+      for (const [options] of securitiesRepository.find.mock.calls) {
+        expect(options).toEqual({
+          where: { isActive: true, securityType: "CRYPTO" },
+        });
+      }
+      expect(quotedSymbols()).toEqual(["BTC-EUR"]);
+    });
+
+    it("runs the quote refresh, then settlement, then the snapshot recalc, scoped to CRYPTO", async () => {
+      const order: string[] = [];
+      const refresh = jest
+        .spyOn(service, "refreshAllPrices")
+        .mockImplementation(async () => {
+          order.push("refresh");
+          return {
+            totalSecurities: 1,
+            updated: 1,
+            failed: 0,
+            skipped: 0,
+            results: [],
+            lastUpdated: new Date(),
+          };
+        });
+      const settle = jest
+        .spyOn(service, "settleDailyBars")
+        .mockImplementation(async () => {
+          order.push("settle");
+          return {
+            totalSecurities: 1,
+            securitiesSettled: 1,
+            barsSettled: 1,
+            failed: 0,
+          };
+        });
+      netWorthService.recalculateAllInvestmentSnapshots.mockImplementation(
+        async () => {
+          order.push("recalc");
+        },
+      );
+
+      await service.scheduledWeekendCryptoRefresh();
+
+      expect(refresh).toHaveBeenCalledWith({ securityType: "CRYPTO" });
+      expect(settle).toHaveBeenCalledWith({ securityType: "CRYPTO" });
+      expect(order).toEqual(["refresh", "settle", "recalc"]);
+    });
+
+    it("takes the same deployment-wide lease as the weekday run", async () => {
+      seedFilteringRepository();
+
+      await service.scheduledWeekendCryptoRefresh();
+
+      expect(fetchSync.withLease).toHaveBeenCalledWith(
+        FetchSyncJob.SecurityPrices,
+        expect.any(Number),
+        expect.any(Function),
+      );
+    });
+
+    it("does nothing when another replica holds the lease", async () => {
+      fetchSync.withLease.mockImplementation(async () => false);
+
+      await service.scheduledWeekendCryptoRefresh();
+
+      expect(securitiesRepository.find).not.toHaveBeenCalled();
+    });
+
+    it("does not throw when the refresh fails", async () => {
+      securitiesRepository.find.mockRejectedValue(new Error("DB down"));
+
+      await expect(
+        service.scheduledWeekendCryptoRefresh(),
+      ).resolves.not.toThrow();
+    });
+
+    // The weekday job is unchanged: every active security, crypto included,
+    // selected by `isActive` alone.
+    it("leaves the weekday run unscoped", async () => {
+      seedFilteringRepository();
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
+
+      await service.scheduledPriceRefresh();
+
+      for (const [options] of securitiesRepository.find.mock.calls) {
+        expect(options).toEqual({ where: { isActive: true } });
+      }
+      expect(quotedSymbols().sort()).toEqual(["AAPL", "BTC-EUR"]);
+    });
+  });
+
   describe("getYahooSymbol (via refreshAllPrices)", () => {
     // We test the private getYahooSymbol indirectly through public methods
 
