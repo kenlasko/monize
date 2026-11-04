@@ -338,6 +338,19 @@ the valuation (a preview is the commit's code). Booking it is unchanged: the
 existing `accruedInterest` field of a BUY row (`docs/specs/redemption-accrued-interest.md`).
 Netting it against the first coupon is a tax question and out of scope.
 
+Decisions taken in the implementation: `accruedInterestOn(terms, date, quantity)`
+(`engine/bond-engine.ts`) is the `accruedInterest` of the valuation of a lot of
+`quantity` units bought on `date` and valued on it (`valueBondLot`, the same
+code), so the two are one figure on every day. It is the lot's figure in the
+terms' money decimals, rounded as the basis says. It is null when the terms alone
+do not give it: a rate that reads a benchmark (no observations are passed), or a
+lot the terms refuse (a marketable one bought on or after its maturity). It is
+`"0.00"` before the dated date and on a coupon date (the new period has just
+begun). A quantity that is not a positive integer throws the engine's
+`QUANTITY_INVALID`. A discount instrument answers its accreted discount since
+issue, which is not a purchased accrued interest: a surface asks for it only for a
+coupon series.
+
 ## 7. P6 and P7: indexed principal and floating rate
 
 ### 7.1 Principal rule `INDEX_RATIO`

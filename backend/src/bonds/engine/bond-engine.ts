@@ -1,5 +1,9 @@
 import { assertNever } from "../domain/assert-never";
-import { BenchmarkRule, benchmarkFieldsOf } from "../domain/bond-terms";
+import {
+  BenchmarkRule,
+  BondTerms,
+  benchmarkFieldsOf,
+} from "../domain/bond-terms";
 import { compareYMD } from "../domain/calendar-date";
 import { ExactDecimal } from "../domain/exact-decimal";
 import { SchedulePeriod } from "../domain/period-schedule";
@@ -293,6 +297,32 @@ export function valueBondLot(input: BondEngineInput): BondValuation {
   validateLot(input, String(input.asOf));
   validateDay(input.lot.purchaseDate, input.asOf);
   return valueOn(prepare(input), input.asOf);
+}
+
+/**
+ * The interest accrued on `date` that a buyer of `quantity` units on that day
+ * pays the seller (`docs/specs/bond-marketable-primitives.md` 6.2): the
+ * valuation's own `accruedInterest` of a lot bought on `date` and valued on it,
+ * so a purchase form's suggestion and the valuation are one figure. It is the
+ * lot's figure, rounded as the terms' basis says, in the terms' money decimals;
+ * null when the terms alone do not give it (a rate that reads a benchmark, a
+ * lot refused by the terms, such as a marketable one bought on or after its
+ * maturity). Before the dated date nothing has accrued: "0.00".
+ */
+export function accruedInterestOn(
+  terms: BondTerms,
+  date: string,
+  quantity: number,
+): string | null {
+  return valueBondLot({
+    terms,
+    termsVersion: 1,
+    announcedRates: new Map(),
+    benchmarks: new Map(),
+    calendars: new Map(),
+    lot: { purchaseDate: date, quantity },
+    asOf: date,
+  }).accruedInterest;
 }
 
 /**
