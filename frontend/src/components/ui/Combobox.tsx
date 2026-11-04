@@ -480,6 +480,14 @@ export function Combobox({
     setIsOpen(false);
   };
 
+  // A mouse pick must leave focus in the input. The rows are not focusable, so
+  // a mousedown on one would blur the input, and once the list closes the row
+  // it landed on is gone: the next Tab then starts again from the top of the
+  // page (the app menu) instead of moving to the field after this one.
+  const keepInputFocus = (e: React.MouseEvent) => {
+    e.preventDefault();
+  };
+
   const dropdownContent = (
     <div
       ref={listRef}
@@ -492,6 +500,7 @@ export function Combobox({
       {showCreateOption && (
         <div
           data-option-index="0"
+          onMouseDown={keepInputFocus}
           onClick={handleCreateNew}
           className={cn(
             'cursor-pointer select-none relative py-2 pl-3 pr-9 border-b border-gray-100 dark:border-gray-700',
@@ -518,6 +527,7 @@ export function Combobox({
           <div
             key={option.value}
             data-option-index={optionIndex}
+            onMouseDown={keepInputFocus}
             onClick={() => handleSelectOption(option)}
             className={cn(
               'cursor-pointer select-none relative py-2 pl-3',
