@@ -60,6 +60,19 @@ describe("usePortfolioPeriodResult", () => {
     );
   });
 
+  it("asks nothing while skipped, and asks once it is not", async () => {
+    const { result: hook, rerender } = renderHook(
+      ({ skip }) => usePortfolioPeriodResult({ ...base, range: "1y", skip }),
+      { initialProps: { skip: true } },
+    );
+    expect(hook.current.periodResult).toBeNull();
+    expect(netWorthApi.getInvestmentsPeriodResult).not.toHaveBeenCalled();
+
+    rerender({ skip: false });
+    await waitFor(() => expect(hook.current.periodResult).not.toBeNull());
+    expect(netWorthApi.getInvestmentsPeriodResult).toHaveBeenCalledTimes(1);
+  });
+
   it("names the window rather than dating it, so the drawn window cannot widen it", async () => {
     // The chart DRAWS 1Y from a day before the anniversary so the first
     // plotted close precedes the year. Measuring over that window reports a

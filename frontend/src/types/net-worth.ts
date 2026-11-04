@@ -363,6 +363,65 @@ export interface PortfolioPeriodResults {
   periods: Partial<Record<PortfolioPeriodPreset, PortfolioPeriodResult>>;
 }
 
+/** Why a security's price change over a window is withheld. */
+export type SecurityPriceChangeReason =
+  | 'noStartClose'
+  | 'noEndClose'
+  /** Two quoted closes either side of a split are two different units. */
+  | 'splitInWindow';
+
+/**
+ * One security's share of the invested period result: the same P&L and
+ * time-weighted return `PortfolioPeriodResult` reports for the scope, over the
+ * same window, measured over this security's own positions and rows
+ * (`docs/specs/investment-performance-report-period.md`).
+ */
+export interface SecurityPeriodResult {
+  securityId: string;
+  /** Null only when the server could not read the security's own row. */
+  symbol: string | null;
+  name: string | null;
+  /** The currency `startClose` and `endClose` are quoted in. */
+  securityCurrency: string | null;
+  /** Shares held at the opening and closing close; 0 is not held. */
+  startQuantity: number;
+  endQuantity: number;
+  startClose: number | null;
+  endClose: number | null;
+  /** The quoted close's move over the window, in its own currency; not a return. */
+  priceChangePercent: number | null;
+  priceChangeReason: SecurityPriceChangeReason | null;
+  investedValueStart: number | null;
+  investedValueEnd: number | null;
+  investedValueChange: number | null;
+  investmentCapitalFlows: number | null;
+  investmentIncome: number | null;
+  /** IV(e) - IV(b) - capital + income, in the response's `currency`. */
+  investmentPnl: number | null;
+  /** The time-weighted return over the same days. */
+  investmentReturnPercent: number | null;
+  investmentReturnMethod: 'twr';
+  investedComplete: boolean;
+  investedReasons: PeriodResultReason[];
+}
+
+/** What GET /net-worth/investments-period-result/securities answers. */
+export interface SecurityPeriodResults {
+  /** The currency every money figure is in. */
+  currency: string;
+  startDate: string;
+  endDate: string;
+  /** `noValueSeries` when the window had no valued day. */
+  reasons: PeriodResultReason[];
+  securities: SecurityPeriodResult[];
+  /**
+   * What the investment rows naming no security earned over the window, so the
+   * rows still add up to the period's `investmentPnl`. Null when one of them
+   * did not convert.
+   */
+  unattributedPnl: number | null;
+}
+
 /**
  * Per-security intraday breakdown (1D / 1W / 1M ranges). Same band shape as
  * the daily/monthly breakdown, but points are keyed by timestamp and the

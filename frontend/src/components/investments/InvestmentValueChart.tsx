@@ -21,6 +21,7 @@ import { gainLossColor } from '@/lib/format';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
 import { usePortfolioRangeWindow } from '@/hooks/usePortfolioRangeWindow';
+import { PORTFOLIO_CHART_RANGES } from '@/components/investments/portfolio-range-window';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { usePortfolioPeriodResult } from '@/hooks/usePortfolioPeriodResult';
@@ -767,7 +768,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
         )}
         </div>
         <DateRangeSelector
-          ranges={['1d', '1w', 'mtd', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']}
+          ranges={PORTFOLIO_CHART_RANGES}
           value={dateRange}
           onChange={handleRangeChange}
           activeColour="bg-emerald-600"

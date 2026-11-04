@@ -6,6 +6,7 @@ import { createLogger } from '@/lib/logger';
 import { isPortfolioPeriodPreset } from '@/types/net-worth';
 import type { PortfolioPeriodResult } from '@/types/net-worth';
 import type { UsePortfolioPeriodResultsValue } from '@/hooks/usePortfolioPeriodResults';
+import { periodBaselineDate } from '@/components/investments/portfolio-period-result';
 
 const logger = createLogger('usePortfolioPeriodResult');
 
@@ -42,6 +43,12 @@ interface UsePortfolioPeriodResultOptions {
    * failed batch, or a window the batch does not report, is asked for here.
    */
   shared?: UsePortfolioPeriodResultsValue;
+  /**
+   * Ask nothing yet: the surface does not know the request's scope or currency
+   * (its accounts have not loaded), and a request for the wrong currency is a
+   * full valuation thrown away.
+   */
+  skip?: boolean;
 }
 
 interface UsePortfolioPeriodResultValue {
@@ -88,6 +95,7 @@ export function usePortfolioPeriodResult({
   displayCurrency,
   reloadKey = 0,
   shared,
+  skip = false,
 }: UsePortfolioPeriodResultOptions): UsePortfolioPeriodResultValue {
   const period = isPortfolioPeriodPreset(range) ? range : undefined;
   // The batch's answer for this window, when it has one in the currency this
@@ -101,15 +109,12 @@ export function usePortfolioPeriodResult({
       ? (sharedResults.periods?.[period] ?? null)
       : null;
   const awaitingShared = !!period && shared?.status === 'loading';
-  const ownRequest = sharedResult === null && !awaitingShared;
+  const ownRequest = sharedResult === null && !awaitingShared && !skip;
   // The close before the period, where the series opens on one: sent as the
   // baseline so flows are counted strictly after it. The server takes the
   // earlier of the two anyway; this only avoids sending a second copy of the
   // same day.
-  const baselineDate =
-    startDate && periodStartDate && startDate < periodStartDate
-      ? startDate
-      : undefined;
+  const baselineDate = periodBaselineDate(startDate, periodStartDate);
   // Everything the answer depends on. An answer is shown only under the key it
   // was asked for; anything else describes a different window.
   const key = JSON.stringify([
@@ -171,6 +176,6 @@ export function usePortfolioPeriodResult({
   ]);
 
   if (sharedResult !== null) return { periodResult: sharedResult };
-  if (awaitingShared) return { periodResult: null };
+  if (awaitingShared || skip) return { periodResult: null };
   return { periodResult: state?.key === key ? state.result : null };
 }

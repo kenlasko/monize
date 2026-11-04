@@ -57,6 +57,64 @@ vi.mock('@/lib/investments', () => ({
   },
 }));
 
+// The window's figures: the portfolio's for the cards, split by security for
+// the rows (docs/specs/investment-performance-report-period.md).
+const mockPeriodResult = vi.fn();
+const mockSecurityPeriodResults = vi.fn();
+vi.mock('@/lib/net-worth', () => ({
+  netWorthApi: {
+    getInvestmentsPeriodResult: (...args: any[]) => mockPeriodResult(...args),
+    getInvestmentsSecurityPeriodResults: (...args: any[]) => mockSecurityPeriodResults(...args),
+  },
+}));
+
+const PERIOD = {
+  currency: 'CAD',
+  startDate: '2025-11-04',
+  startPriceDate: '2025-11-03',
+  endDate: '2026-11-04',
+  investmentPnl: 640,
+  investmentReturnPercent: 4.2,
+  investedReasons: [],
+};
+
+function periodRow(securityId: string, overrides: Record<string, unknown> = {}) {
+  return {
+    securityId,
+    symbol: securityId.replace('sec-', '').toUpperCase(),
+    name: `Name ${securityId}`,
+    securityCurrency: 'CAD',
+    startQuantity: 10,
+    endQuantity: 10,
+    startClose: 100,
+    endClose: 110,
+    priceChangePercent: 10,
+    priceChangeReason: null,
+    investedValueStart: 1000,
+    investedValueEnd: 1100,
+    investedValueChange: 100,
+    investmentCapitalFlows: 0,
+    investmentIncome: 0,
+    investmentPnl: 100,
+    investmentReturnPercent: 10,
+    investmentReturnMethod: 'twr',
+    investedComplete: true,
+    investedReasons: [],
+    ...overrides,
+  };
+}
+
+function securityResults(rows: ReturnType<typeof periodRow>[], unattributedPnl: number | null = 0) {
+  return {
+    currency: 'CAD',
+    startDate: PERIOD.startDate,
+    endDate: PERIOD.endDate,
+    reasons: [],
+    unattributedPnl,
+    securities: rows,
+  };
+}
+
 // The Performance view now draws the historical percent-return comparison chart
 // (one line per held security) instead of a holdings donut. It owns its own
 // fetch, so it is stubbed here; the report's job is only to feed it the held
@@ -173,6 +231,13 @@ const fullPortfolio = {
 describe('InvestmentPerformanceReport', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPeriodResult.mockResolvedValue(PERIOD);
+    mockSecurityPeriodResults.mockResolvedValue(
+      securityResults([
+        periodRow('sec-vfv', { investmentPnl: 600, investmentReturnPercent: 4.1 }),
+        periodRow('sec-aapl', { investmentPnl: 40, priceChangePercent: -2.5 }),
+      ]),
+    );
   });
 
   it('shows loading state initially', () => {
@@ -363,7 +428,133 @@ describe('InvestmentPerformanceReport', () => {
       ).toBe(JSON.stringify(['acc-1']));
     });
   });
-  describe('gain over the priced holdings (A26-M38)', () => {
+  describe('the window figures', () => {
+    it('shows each security\'s gain, return and % Change for the window', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      render(<InvestmentPerformanceReport />);
+      await screen.findByText('+$600.00');
+      const vfv = screen.getAllByText('VFV')[0].closest('tr')!;
+      expect(vfv).toHaveTextContent('+$600.00');
+      expect(vfv).toHaveTextContent('+4.10%');
+      expect(vfv).toHaveTextContent('+10.00%');
+      // The all-time gain is not under the period caption.
+      expect(vfv).not.toHaveTextContent('$1250.00');
+      const aapl = screen.getByText('AAPL').closest('tr')!;
+      expect(aapl).toHaveTextContent('-2.50%');
+    });
+
+    it('lists a position sold inside the window as a row with no shares', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      mockSecurityPeriodResults.mockResolvedValue(
+        securityResults([
+          periodRow('sec-vfv'),
+          periodRow('sec-gone', { endQuantity: 0, investmentPnl: 75, endClose: 42 }),
+        ]),
+      );
+      render(<InvestmentPerformanceReport />);
+      const sold = (await screen.findByText('GONE')).closest('tr')!;
+      expect(sold).toHaveTextContent('(sold in this period)');
+      expect(sold).toHaveTextContent('+$75.00');
+      expect(sold).toHaveTextContent('$42.00');
+    });
+
+    it('prints income not tied to a security on its own line', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      mockSecurityPeriodResults.mockResolvedValue(securityResults([periodRow('sec-vfv')], 12.5));
+      render(<InvestmentPerformanceReport />);
+      const row = await screen.findByTestId('unattributed-row');
+      expect(row).toHaveTextContent('Income not tied to a security');
+      expect(row).toHaveTextContent('+$12.50');
+    });
+
+    it('names the securities whose figures are withheld, and why', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      mockSecurityPeriodResults.mockResolvedValue(
+        securityResults([
+          periodRow('sec-vfv', {
+            investmentPnl: null,
+            investmentReturnPercent: null,
+            investedReasons: ['incompletePrices'],
+          }),
+          periodRow('sec-aapl', {
+            investmentPnl: null,
+            investmentReturnPercent: null,
+            investedReasons: ['missingRatePairs'],
+          }),
+          periodRow('sec-xic', { priceChangePercent: null, priceChangeReason: 'splitInWindow' }),
+        ]),
+      );
+      render(<InvestmentPerformanceReport />);
+      const notices = await screen.findByTestId('period-notices');
+      expect(notices).toHaveTextContent('Gain/Loss and Return are N/A for VFV');
+      expect(notices).toHaveTextContent('N/A for AAPL: this period needs an exchange rate');
+      expect(notices).toHaveTextContent('% Change is N/A for XIC: the security split');
+    });
+
+    it('says the period failed to load rather than showing zeros', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      mockSecurityPeriodResults.mockRejectedValue(new Error('timeout'));
+      render(<InvestmentPerformanceReport />);
+      const notices = await screen.findByTestId('period-notices');
+      expect(notices).toHaveTextContent('could not be loaded');
+      expect(screen.queryByText('+$0.00')).not.toBeInTheDocument();
+    });
+
+    it('leaves the per-account rows without a period figure', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      render(<InvestmentPerformanceReport />);
+      await screen.findByText('+$600.00');
+      const row = screen.getAllByText('VFV')[0].closest('tr')!;
+      await act(async () => {
+        fireEvent.click(row);
+      });
+      const child = row.nextElementSibling!;
+      const cells = child.querySelectorAll('td');
+      expect([...cells].slice(-3).map((cell) => cell.textContent)).toEqual(['', '', '']);
+    });
+
+    it('sorts by % Change with an unknown last', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      mockSecurityPeriodResults.mockResolvedValue(
+        securityResults([
+          periodRow('sec-vfv', { priceChangePercent: 1 }),
+          periodRow('sec-xic', { priceChangePercent: null, priceChangeReason: 'noStartClose' }),
+          periodRow('sec-aapl', { priceChangePercent: 5 }),
+        ]),
+      );
+      let container!: HTMLElement;
+      await act(async () => {
+        ({ container } = render(<InvestmentPerformanceReport />));
+      });
+      await screen.findByText('+5.00%');
+      const header = [...container.querySelectorAll('thead tr:last-child th')].find((th) =>
+        th.textContent?.includes('% Change'),
+      )!;
+      await act(async () => {
+        fireEvent.click(header);
+      });
+      const order = () =>
+        [...container.querySelectorAll('tbody tr')].map(
+          (tr) => tr.querySelector('td .font-medium')?.textContent,
+        );
+      const first = order();
+      expect(first.at(-1)).toBe('XIC');
+      await act(async () => {
+        fireEvent.click(header);
+      });
+      expect(order().at(-1)).toBe('XIC');
+      expect(order()[0]).not.toBe(first[0]);
+    });
+  });
+
+  describe('value and cost over the priced holdings (A26-M38)', () => {
     // Priced A: value 100,000, cost 80,000. Unpriced B: cost 50,000. The server's
     // gain is +20,000 / +25% over A. Value less every cost is -30,000.
     const incompleteAccount = {
@@ -400,42 +591,56 @@ describe('InvestmentPerformanceReport', () => {
       valuationComplete: false,
     };
 
-    it('marks the all-accounts gain and return as partial and never prints -30,000', async () => {
+    it('prints the window figure on the cards, never the all-time gain or -30,000', async () => {
       mockGetPortfolioSummary.mockResolvedValue(incompletePortfolio);
       mockGetInvestmentAccounts.mockResolvedValue([]);
       render(<InvestmentPerformanceReport />);
-      await waitFor(() => {
-        expect(screen.getByText('Total Gain/Loss')).toBeInTheDocument();
-      });
+      const gainCard = await screen.findByTestId('period-gain-card');
+      await waitFor(() => expect(gainCard).toHaveTextContent('+$640.00'));
 
       expect(screen.queryByText('-$30000.00')).not.toBeInTheDocument();
-      expect(screen.queryByText('$-30000.00')).not.toBeInTheDocument();
-      const gain = screen.getByText('+$20000.00');
-      expect(gain.closest('[data-testid="partial-total"]')).not.toBeNull();
-      const ret = screen.getByText('+25.00%');
-      expect(ret.closest('[data-testid="partial-total"]')).not.toBeNull();
+      expect(screen.queryByText('+$20000.00')).not.toBeInTheDocument();
+      expect(screen.getByTestId('period-return-card')).toHaveTextContent('+4.20%');
+      // Dated by the session its opening close came from.
+      expect(gainCard).toHaveTextContent('Since the close of trading on');
     });
 
-    it('reads the server per-account gain when a single account is selected', async () => {
+    it('asks for one account in its own currency, and only once the accounts are known', async () => {
       window.localStorage.setItem(
         'monize-reports-investment-performance-accounts',
         JSON.stringify(['acc-1']),
       );
       mockGetPortfolioSummary.mockResolvedValue(incompletePortfolio);
       mockGetInvestmentAccounts.mockResolvedValue([
-        { id: 'acc-1', name: 'TFSA', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+        { id: 'acc-1', name: 'TFSA', currencyCode: 'USD', accountSubType: 'INVESTMENT_CASH' },
       ]);
       render(<InvestmentPerformanceReport />);
-      await waitFor(() => {
-        expect(screen.getByText('Total Gain/Loss')).toBeInTheDocument();
-      });
+      await screen.findByTestId('period-gain-card');
+      await waitFor(() => expect(mockPeriodResult).toHaveBeenCalled());
 
-      expect(screen.queryByText('-$30000.00')).not.toBeInTheDocument();
-      expect(screen.queryByText('$-30000.00')).not.toBeInTheDocument();
-      const gain = screen.getByText('+$20000.00');
-      expect(gain.closest('[data-testid="partial-total"]')).not.toBeNull();
-      expect(screen.getByText('+25.00%')).toBeInTheDocument();
+      for (const mock of [mockPeriodResult, mockSecurityPeriodResults]) {
+        expect(mock).toHaveBeenCalledTimes(1);
+        expect(mock).toHaveBeenCalledWith(
+          expect.objectContaining({ period: '1y', accountIds: 'acc-1', displayCurrency: 'USD' }),
+        );
+      }
       window.localStorage.removeItem('monize-reports-investment-performance-accounts');
+    });
+
+    it('reads a withheld window as N/A and names the repair', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(incompletePortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      mockPeriodResult.mockResolvedValue({
+        ...PERIOD,
+        investmentPnl: null,
+        investmentReturnPercent: null,
+        investedReasons: ['incompletePrices'],
+      });
+      render(<InvestmentPerformanceReport />);
+      const gainCard = await screen.findByTestId('period-gain-card');
+      await waitFor(() => expect(gainCard).toHaveTextContent('N/A'));
+      expect(gainCard).toHaveTextContent(/Refresh prices/);
+      expect(screen.getByTestId('period-return-card')).toHaveTextContent('N/A');
     });
 
     it('marks the Total Value card partial, and the Cost Basis card only when a cost had no rate', async () => {
@@ -476,9 +681,7 @@ describe('InvestmentPerformanceReport', () => {
       });
       mockGetInvestmentAccounts.mockResolvedValue([]);
       render(<InvestmentPerformanceReport />);
-      await waitFor(() => {
-        expect(screen.getByText('Total Gain/Loss')).toBeInTheDocument();
-      });
+      await screen.findByTestId('period-gain-card');
 
       expect(screen.queryByTestId('partial-total')).not.toBeInTheDocument();
     });

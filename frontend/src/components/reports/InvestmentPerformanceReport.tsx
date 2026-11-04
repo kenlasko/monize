@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   Tooltip,
@@ -21,21 +21,19 @@ import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMult
 import { SecurityComparisonChart, SecurityComparisonChartHandle } from '@/components/reports/SecurityComparisonChart';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { useDateRange } from '@/hooks/useDateRange';
-import { CHART_RANGES } from '@/lib/security-detail';
-import { SortableHeader } from '@/components/ui/SortableHeader';
-import { INTERACTIVE_ROW_FOCUS_CLASS, activateOnKey } from '@/components/ui/interactive-row';
-import {
-  CAPTION_CLASS,
-  CellLabel,
-  PHONE_HEADER_CLASS,
-  type SortColumn,
-  type SortColumnsByField,
-} from '@/components/ui/Table';
-import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
+import { usePortfolioRangeWindow } from '@/hooks/usePortfolioRangeWindow';
+import { PORTFOLIO_CHART_RANGES } from '@/components/investments/portfolio-range-window';
+import { previousCalendarDay } from '@/components/investments/portfolio-change-baseline';
+import { withheldPeriodCause } from '@/components/investments/portfolio-period-result';
+import { usePortfolioPeriodResult } from '@/hooks/usePortfolioPeriodResult';
+import { useSecurityPeriodResults } from '@/hooks/useSecurityPeriodResults';
+import { useDateFormat } from '@/hooks/useDateFormat';
+import { type SortColumn, type SortColumnsByField } from '@/components/ui/Table';
+import { useSortableTable } from '@/hooks/useSortableTable';
 import { useReportData } from '@/hooks/useReportData';
 import { usePersistedAccountFilter } from '@/hooks/usePersistedAccountFilter';
 import { ReportError } from '@/components/reports/ReportError';
-import { aggregateHoldingsBySecurity, AggregatedHolding } from '@/lib/aggregate-holdings';
+import { aggregateHoldingsBySecurity } from '@/lib/aggregate-holdings';
 import { useTranslations } from 'next-intl';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
 import { PartialTotal } from '@/components/ui/PartialTotal';
@@ -47,26 +45,12 @@ import {
 } from '@/lib/net-worth-completeness';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
-import { ChevronDownIcon } from '@heroicons/react/24/outline';
-
-type HoldingsSortField = 'symbol' | 'quantity' | 'averageCost' | 'currentPrice' | 'marketValue' | 'gainLoss' | 'gainLossPercent';
-
-const HEADER_CLASS =
-  'px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase';
-const FIGURE_CELL =
-  'p-0 text-right text-xs whitespace-nowrap sm:table-cell sm:px-4 sm:py-3 sm:text-sm';
-const CHILD_FIGURE_CELL =
-  'p-0 text-right text-xs whitespace-nowrap sm:table-cell sm:px-4 sm:py-2 sm:text-sm';
-
-const CELL_PLACEMENT: Record<HoldingsSortField, string> = {
-  symbol: 'col-start-1 row-start-1',
-  quantity: 'col-start-1 row-start-2',
-  averageCost: 'col-start-2 row-start-2',
-  currentPrice: 'col-start-1 row-start-3',
-  marketValue: 'col-start-2 row-start-1',
-  gainLoss: 'col-start-2 row-start-3',
-  gainLossPercent: 'col-start-1 col-span-2 row-start-4',
-};
+import { InvestmentPerformanceHoldingsTable } from '@/components/reports/InvestmentPerformanceHoldingsTable';
+import {
+  buildPerformanceRows,
+  sortPerformanceRows,
+  type HoldingsSortField,
+} from '@/components/reports/investment-performance-rows';
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-investment-performance-accounts';
 
@@ -100,6 +84,8 @@ function AllocationTooltip({ active, payload, formatCurrencyFull, formatPlainPer
 
 export function InvestmentPerformanceReport() {
   const t = useTranslations('reports');
+  const ti = useTranslations('investments');
+  const { formatDate } = useDateFormat();
   const mainAccountName = useMainAccountName();
   const {
     formatCurrency: formatCurrencyFull,
@@ -119,17 +105,24 @@ export function InvestmentPerformanceReport() {
   const [selectedAccountIds, setSelectedAccountIds, pruneAccountFilter] =
     usePersistedAccountFilter(ACCOUNTS_STORAGE_KEY);
   const [reloadKey, setReloadKey] = useState(0);
-  const [expandedSecurityId, setExpandedSecurityId] = useState<string | null>(null);
   const [viewType, setViewType] = useState<'performance' | 'allocation'>('performance');
-  // The historical performance chart's window, persisted like the other report
-  // ranges. A price chart is measured over a period the user picks, so the
-  // Performance view carries its own range selector; the Allocation view is a
-  // point-in-time snapshot and has none.
+  // The report's window, persisted like the other report ranges. It governs
+  // the chart, the Gain/Loss and Return cards and the table's period columns,
+  // so it is shown in both views. The ranges and the days each one opens on
+  // are the Investments page's (`usePortfolioRangeWindow`), so the same
+  // caption names the same window on both screens
+  // (`docs/specs/investment-performance-report-period.md`).
   const { dateRange: perfRange, setDateRange: setPerfRange, resolvedRange: perfResolvedRange } =
     useDateRange({
       defaultRange: '1y',
       storageKey: 'reports.investment-performance.range',
     });
+  const perfWindow = usePortfolioRangeWindow({ range: perfRange, base: perfResolvedRange });
+  // The window's figures are a day's move for 1D, from the prior close; the
+  // series a value chart falls back to is widened to a week, which a return
+  // line would rebase a week earlier than the column beside it. The chart is
+  // drawn over the same two closes instead.
+  const chartStart = perfRange === '1d' ? previousCalendarDay(perfWindow.end) : perfWindow.start;
   const isSingleAccount = selectedAccountIds.length === 1;
   const { sortField, sortDirection, handleSort } = useSortableTable<HoldingsSortField>(
     'reports.investment-performance.holdings.sort',
@@ -147,8 +140,8 @@ export function InvestmentPerformanceReport() {
     marketValue: { field: 'marketValue', label: t('investmentPerformance.colMarketValue'), align: 'right' },
     gainLoss: { field: 'gainLoss', label: t('investmentPerformance.colGainLoss'), align: 'right' },
     gainLossPercent: { field: 'gainLossPercent', label: t('investmentPerformance.colReturn'), align: 'right' },
+    priceChangePercent: { field: 'priceChangePercent', label: t('investmentPerformance.colPriceChange'), align: 'right' },
   };
-  const sortColumns = Object.values(columns);
 
   const { data: response, isLoading, error, reload } = useReportData(
     async () => {
@@ -180,6 +173,25 @@ export function InvestmentPerformanceReport() {
   const summaryCurrency = selectedAccount?.currencyCode || defaultCurrency;
   const isForeignSummary = summaryCurrency !== defaultCurrency;
 
+  // The window's figures, asked exactly as the Investments page asks: the same
+  // accounts, and one account's own currency when one is selected. Nothing is
+  // asked until the accounts are known, or a single account's request would
+  // first go out in the wrong currency.
+  const periodRequest = {
+    range: perfRange,
+    startDate: perfWindow.start,
+    periodStartDate: perfWindow.periodStart,
+    endDate: perfWindow.end,
+    accountIds: selectedAccountIds.length > 0 ? selectedAccountIds.join(',') : undefined,
+    displayCurrency: selectedAccount?.currencyCode,
+    reloadKey,
+    skip: response === null,
+  };
+  // The cards: the Investments page's own figure for the window.
+  const { periodResult } = usePortfolioPeriodResult({ ...periodRequest, hasSeries: true });
+  // The rows: the same figure split by security.
+  const securityPeriod = useSecurityPeriodResults(periodRequest);
+
   // Derive native-currency summary from holdingsByAccount when a single account is selected
   const summaryValues = useMemo(() => {
     if (!portfolio) return null;
@@ -188,24 +200,14 @@ export function InvestmentPerformanceReport() {
       let totalMarketValue = 0;
       let totalCashBalance = 0;
       let totalCostBasis = 0;
-      let totalGainLoss = 0;
-      let gainCostBasis = 0;
       let unpricedHoldingsCount = 0;
       for (const acct of portfolio.holdingsByAccount) {
         totalMarketValue += acct.totalMarketValue;
         totalCashBalance += acct.cashBalance;
         totalCostBasis += acct.totalCostBasis;
-        // The server's gain is over the holdings that have a value; value less
-        // every cost (the old client-side difference) charged an unpriced
-        // holding's cost against a value that never included it. An older
-        // backend sends no `gainCostBasis`, and its gain was value less the
-        // whole cost, so the whole cost is the base it measured against.
-        totalGainLoss += acct.totalGainLoss;
-        gainCostBasis += acct.gainCostBasis ?? acct.totalCostBasis;
         unpricedHoldingsCount += acct.unpricedHoldingsCount ?? 0;
       }
       const totalPortfolioValue = totalMarketValue + totalCashBalance;
-      const totalGainLossPercent = gainCostBasis > 0 ? (totalGainLoss / gainCostBasis) * 100 : 0;
       // Completeness from the SAME accounts that supplied the figures: their
       // totals are in the account's own currency, a different conversion from
       // the summary's.
@@ -216,25 +218,17 @@ export function InvestmentPerformanceReport() {
         missingRatePairs: [...new Set(portfolio.holdingsByAccount.flatMap((a) => a.missingRatePairs ?? []))],
         unpricedHoldingsCount,
       };
-      return { totalPortfolioValue, totalCostBasis, totalGainLoss, totalGainLossPercent, completeness };
+      return { totalPortfolioValue, totalCostBasis, completeness };
     }
     // All accounts: use the backend-converted totals (already in default currency)
     return {
       totalPortfolioValue: portfolio.totalPortfolioValue,
       totalCostBasis: portfolio.totalCostBasis,
-      totalGainLoss: portfolio.totalGainLoss,
-      totalGainLossPercent: portfolio.totalGainLossPercent,
       completeness: portfolio as PortfolioCompleteness,
     };
   }, [portfolio, isSingleAccount]);
 
-  // The gain and the return are over the holdings that have a value: a partial
-  // figure whenever the valuation is incomplete, marked as one (A26-M38).
   const { noteFor } = usePartialTotalNote();
-  const gainPartial = summaryValues
-    ? portfolioPartialTotal(summaryValues.totalGainLoss, summaryValues.completeness)
-    : null;
-  const gainIsPartial = gainPartial !== null && gainPartial.excludedCount > 0;
   // The value leaves out what could not be priced or converted; the cost basis
   // counts every holding and is short only of a cost with no rate.
   const valuePartial = summaryValues
@@ -255,6 +249,27 @@ export function InvestmentPerformanceReport() {
     return formatCurrencyFull(value);
   };
 
+  // The window's gain and return, as the Investments page's "Portfolio
+  // performance" card prints them. Withheld is "N/A" with its cause, never a
+  // zero and never the all-time figure in its place.
+  const periodPnl = periodResult?.investmentPnl ?? null;
+  const periodReturn = periodResult?.investmentReturnPercent ?? null;
+  const periodCause =
+    periodResult && periodPnl === null
+      ? withheldPeriodCause([periodResult.investedReasons ?? []])
+      : null;
+  const periodNote = periodCause
+    ? ti(`portfolioPerformance.reasons.${periodCause}` as Parameters<typeof ti>[0])
+    : undefined;
+  const measuredFrom = periodResult?.startPriceDate
+    ? t('investmentPerformance.measuredFromClose', { date: formatDate(periodResult.startPriceDate) })
+    : undefined;
+  const fmtPeriod = (value: number) => {
+    const currency = periodResult?.currency ?? summaryCurrency;
+    const amount = `${value >= 0 ? '+' : ''}${formatCurrencyFull(value, currency)}`;
+    return currency !== defaultCurrency ? `${amount} ${currency}` : amount;
+  };
+
   const fmtHolding = (value: number | null, currencyCode: string) => {
     if (value === null) return t('investmentPerformance.na');
     if (currencyCode && currencyCode !== defaultCurrency) {
@@ -269,38 +284,19 @@ export function InvestmentPerformanceReport() {
     return map;
   }, [accounts, mainAccountName]);
 
-  const aggregatedHoldings = useMemo((): AggregatedHolding[] => {
-    if (!portfolio) return [];
-    const aggregated = aggregateHoldingsBySecurity(portfolio.holdings);
-    aggregated.sort((a, b) => {
-      let comparison = 0;
-      switch (sortField) {
-        case 'symbol':
-          comparison = compareValues(a.symbol, b.symbol);
-          break;
-        case 'quantity':
-          comparison = compareValues(a.quantity, b.quantity);
-          break;
-        case 'averageCost':
-          comparison = compareValues(a.averageCost, b.averageCost);
-          break;
-        case 'currentPrice':
-          comparison = compareValues(a.currentPrice, b.currentPrice);
-          break;
-        case 'marketValue':
-          comparison = compareValues(a.marketValue, b.marketValue);
-          break;
-        case 'gainLoss':
-          comparison = compareValues(a.gainLoss, b.gainLoss);
-          break;
-        case 'gainLossPercent':
-          comparison = compareValues(a.gainLossPercent, b.gainLossPercent);
-          break;
-      }
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-    return aggregated;
-  }, [portfolio, sortField, sortDirection]);
+  // Today's holdings beside the window's figures, plus every position the
+  // window measured that has since been sold.
+  const holdingRows = useMemo(
+    () =>
+      portfolio
+        ? sortPerformanceRows(
+            buildPerformanceRows(portfolio.holdings, securityPeriod.results),
+            sortField,
+            sortDirection,
+          )
+        : [],
+    [portfolio, securityPeriod.results, sortField, sortDirection],
+  );
 
   const allocationData = useMemo(() => {
     if (!portfolio) return [];
@@ -344,6 +340,12 @@ export function InvestmentPerformanceReport() {
   const isPerformanceChartCapped =
     heldSecurityIds.length > performanceSecurityIds.length;
 
+  const fmtSecurityPeriod = (value: number) => {
+    const currency = securityPeriod.results?.currency ?? defaultCurrency;
+    const amount = `${value >= 0 ? '+' : ''}${formatCurrencyFull(value, currency)}`;
+    return currency !== defaultCurrency ? `${amount} ${currency}` : amount;
+  };
+
   const handleExportPdf = async () => {
     // The Performance view plots percent return with the chart's own colours and
     // series legend; only the chart handle can draw that legend correctly, so it
@@ -358,19 +360,26 @@ export function InvestmentPerformanceReport() {
     const cards = summaryValues ? [
       { label: t('investmentPerformance.totalValue'), value: fmtSummary(summaryValues.totalPortfolioValue), color: '#111827', note: valuePartial ? noteFor(valuePartial) : undefined },
       { label: t('investmentPerformance.costBasis'), value: fmtSummary(summaryValues.totalCostBasis), color: '#111827', note: costPartial ? noteFor(costPartial) : undefined },
-      { label: t('investmentPerformance.totalGainLoss'), value: `${summaryValues.totalGainLoss >= 0 ? '+' : ''}${fmtSummary(summaryValues.totalGainLoss)}`, color: summaryValues.totalGainLoss >= 0 ? '#16a34a' : '#dc2626', note: gainPartial ? noteFor(gainPartial) : undefined },
-      { label: t('investmentPerformance.return'), value: formatPercent(summaryValues.totalGainLossPercent), color: summaryValues.totalGainLossPercent >= 0 ? '#16a34a' : '#dc2626', note: gainPartial ? noteFor(gainPartial) : undefined },
+      { label: t('investmentPerformance.periodGainLoss'), value: periodPnl === null ? t('investmentPerformance.na') : fmtPeriod(periodPnl), color: periodPnl === null ? '#6b7280' : periodPnl >= 0 ? '#16a34a' : '#dc2626', note: periodNote ?? measuredFrom },
+      { label: t('investmentPerformance.return'), value: periodReturn === null ? t('investmentPerformance.na') : formatPercent(periodReturn), color: periodReturn === null ? '#6b7280' : periodReturn >= 0 ? '#16a34a' : '#dc2626', note: periodNote ?? measuredFrom },
     ] : undefined;
 
-    const headers = [t('investmentPerformance.colSecurity'), t('investmentPerformance.colShares'), t('investmentPerformance.colAvgCost'), t('investmentPerformance.colCurrentPrice'), t('investmentPerformance.colMarketValue'), t('investmentPerformance.colGainLoss'), t('investmentPerformance.colReturn')];
-    const rows = aggregatedHoldings.map((h) => [
-      `${h.symbol} - ${h.name}`,
+    const headers = Object.values(columns).map((column) => column.label);
+    const na = t('investmentPerformance.na');
+    const periodPercent = (value: number | null | undefined) =>
+      value == null ? na : formatPercent(value);
+    const rows = holdingRows.map((h) => [
+      t('investmentPerformance.pdfSecurity', {
+        symbol: h.symbol ?? t('investmentPerformance.unknownSecurity'),
+        name: h.name ?? '',
+      }),
       formatShareQuantity(h.quantity),
       fmtHolding(h.averageCost, h.currencyCode),
       fmtHolding(h.currentPrice, h.currencyCode),
       fmtHolding(h.marketValue, h.currencyCode),
-      fmtHolding(h.gainLoss, h.currencyCode),
-      h.gainLossPercent !== null ? formatPercent(h.gainLossPercent) : 'N/A',
+      h.period?.investmentPnl == null ? na : fmtSecurityPeriod(h.period.investmentPnl),
+      periodPercent(h.period?.investmentReturnPercent),
+      periodPercent(h.period?.priceChangePercent),
     ]);
 
     // The Allocation donut's legend, from the same data the donut draws.
@@ -432,29 +441,37 @@ export function InvestmentPerformanceReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.totalGainLoss')}</div>
-          <div className={`text-xl font-bold ${gainLossColor(summaryValues.totalGainLoss)}`}>
-            <PartialTotal total={gainPartial!} displayCurrency={summaryCurrency}>
-              {summaryValues.totalGainLoss >= 0 ? '+' : ''}{fmtSummary(summaryValues.totalGainLoss)}
-            </PartialTotal>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4" data-testid="period-gain-card">
+          <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.periodGainLoss')}</div>
+          <div className={`text-xl font-bold ${periodPnl === null ? 'text-gray-500 dark:text-gray-400' : gainLossColor(periodPnl)}`}>
+            {periodResult === null ? (
+              <Skeleton className="h-7 w-24" />
+            ) : periodPnl === null ? (
+              t('investmentPerformance.na')
+            ) : (
+              fmtPeriod(periodPnl)
+            )}
           </div>
-          {gainIsPartial && (
-            <div className="text-xs text-amber-700 dark:text-amber-300">
-              {t('investmentPerformance.gainPartialCaption')}
+          {(periodNote ?? measuredFrom) && (
+            <div className={`text-xs ${periodNote ? 'text-amber-700 dark:text-amber-300' : 'text-gray-500 dark:text-gray-400'}`}>
+              {periodNote ?? measuredFrom}
             </div>
           )}
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4" data-testid="period-return-card">
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.return')}</div>
-          <div className={`text-xl font-bold ${gainLossColor(summaryValues.totalGainLossPercent)}`}>
-            <PartialTotal total={gainPartial!} displayCurrency={summaryCurrency}>
-              {formatPercent(summaryValues.totalGainLossPercent)}
-            </PartialTotal>
+          <div className={`text-xl font-bold ${periodReturn === null ? 'text-gray-500 dark:text-gray-400' : gainLossColor(periodReturn)}`}>
+            {periodResult === null ? (
+              <Skeleton className="h-7 w-20" />
+            ) : periodReturn === null ? (
+              t('investmentPerformance.na')
+            ) : (
+              formatPercent(periodReturn)
+            )}
           </div>
-          {gainIsPartial && (
-            <div className="text-xs text-amber-700 dark:text-amber-300">
-              {t('investmentPerformance.gainPartialCaption')}
+          {(periodNote ?? measuredFrom) && (
+            <div className={`text-xs ${periodNote ? 'text-amber-700 dark:text-amber-300' : 'text-gray-500 dark:text-gray-400'}`}>
+              {periodNote ?? measuredFrom}
             </div>
           )}
         </div>
@@ -497,18 +514,16 @@ export function InvestmentPerformanceReport() {
             from `sm` up, export at the trailing edge whether or not the
             allocation view has hidden the window. */}
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {viewType === 'performance' && (
-            <DateRangeSelector
-              ranges={CHART_RANGES}
-              // Only `all` needs translating; 1M/3M/YTD/1Y/5Y are
-              // locale-neutral abbreviations `formatLabel` handles.
-              labels={{ all: t('investmentPerformance.rangeAll') }}
-              value={perfRange}
-              onChange={setPerfRange}
-              activeColour="bg-blue-600"
-              size="sm"
-            />
-          )}
+          <DateRangeSelector
+            ranges={PORTFOLIO_CHART_RANGES}
+            // Only `all` needs translating; the rest are locale-neutral
+            // abbreviations `formatLabel` handles.
+            labels={{ all: t('investmentPerformance.rangeAll') }}
+            value={perfRange}
+            onChange={setPerfRange}
+            activeColour="bg-blue-600"
+            size="sm"
+          />
           <ReportToolbarActions
             onRefreshComplete={() => setReloadKey((k) => k + 1)}
             onExportPdf={handleExportPdf}
@@ -531,8 +546,8 @@ export function InvestmentPerformanceReport() {
           <SecurityComparisonChart
             securityIds={performanceSecurityIds}
             indexCodes={[]}
-            startDate={perfResolvedRange.start}
-            endDate={perfResolvedRange.end}
+            startDate={chartStart}
+            endDate={perfWindow.end}
             subtitle={t('investmentPerformance.chartSubtitle')}
             reloadKey={reloadKey}
             exportRef={comparisonExportRef}
@@ -547,147 +562,15 @@ export function InvestmentPerformanceReport() {
             </p>
           )}
 
-          {/* Holdings Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {t('investmentPerformance.holdingsDetail')}
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table role="table" className="block min-w-full divide-y divide-gray-200 dark:divide-gray-700 sm:table">
-                <thead role="rowgroup" className="block bg-gray-50 dark:bg-gray-900/50 sm:table-header-group">
-                  <tr role="row" className="flex flex-wrap gap-x-2 gap-y-1 px-2 py-2 sm:hidden">
-                    {sortColumns.map((column) => (
-                      <SortableHeader<HoldingsSortField>
-                        key={column.field}
-                        field={column.field}
-                        sortField={sortField}
-                        sortDirection={sortDirection}
-                        onSort={handleSort}
-                        className={PHONE_HEADER_CLASS}
-                      >
-                        {column.label}
-                      </SortableHeader>
-                    ))}
-                  </tr>
-                  <tr role="row" className="hidden sm:table-row">
-                    {sortColumns.map((column) => (
-                      <SortableHeader<HoldingsSortField>
-                        key={column.field}
-                        field={column.field}
-                        sortField={sortField}
-                        sortDirection={sortDirection}
-                        onSort={handleSort}
-                        align={column.align}
-                        className={HEADER_CLASS}
-                      >
-                        {column.label}
-                      </SortableHeader>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody role="rowgroup" className="block divide-y divide-gray-200 dark:divide-gray-700 sm:table-row-group">
-                  {aggregatedHoldings.map((holding) => {
-                    const isExpandable = holding.accountBreakdowns.length > 1;
-                    const isExpanded = expandedSecurityId === holding.securityId;
-                    return (
-                      <React.Fragment key={holding.securityId}>
-                        <tr
-                          role="row"
-                          tabIndex={isExpandable ? 0 : undefined}
-                          aria-expanded={isExpandable ? isExpanded : undefined}
-                          className={`grid grid-cols-2 items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:table-row sm:p-0 ${isExpandable ? `cursor-pointer ${INTERACTIVE_ROW_FOCUS_CLASS}` : ''}`}
-                          onClick={isExpandable ? () => setExpandedSecurityId(isExpanded ? null : holding.securityId) : undefined}
-                          onKeyDown={isExpandable ? activateOnKey(() => setExpandedSecurityId(isExpanded ? null : holding.securityId)) : undefined}
-                        >
-                          <td role="cell" className={`${CELL_PLACEMENT.symbol} min-w-0 p-0 sm:table-cell sm:px-4 sm:py-3`}>
-                            <div className="flex items-center gap-2">
-                              <div className="min-w-0">
-                                <div className="font-medium text-gray-900 dark:text-gray-100">
-                                  {holding.symbol}
-                                </div>
-                                <div className="break-words text-sm text-gray-500 dark:text-gray-400 sm:break-normal">
-                                  {holding.name}
-                                  {isExpandable && (
-                                    <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                                      {t('investmentPerformance.accountCount', { count: holding.accountBreakdowns.length })}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {isExpandable && (
-                                <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
-                              )}
-                            </div>
-                          </td>
-                          <td role="cell" className={`${CELL_PLACEMENT.quantity} text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
-                            <CellLabel className={CAPTION_CLASS}>{columns.quantity.label}</CellLabel>
-                            {formatShareQuantity(holding.quantity)}
-                          </td>
-                          <td role="cell" className={`${CELL_PLACEMENT.averageCost} text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
-                            <CellLabel className={CAPTION_CLASS}>{columns.averageCost.label}</CellLabel>
-                            {fmtHolding(holding.averageCost, holding.currencyCode)}
-                          </td>
-                          <td role="cell" className={`${CELL_PLACEMENT.currentPrice} text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
-                            <CellLabel className={CAPTION_CLASS}>{columns.currentPrice.label}</CellLabel>
-                            {fmtHolding(holding.currentPrice, holding.currencyCode)}
-                          </td>
-                          <td role="cell" className={`${CELL_PLACEMENT.marketValue} font-medium text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
-                            <CellLabel className={CAPTION_CLASS}>{columns.marketValue.label}</CellLabel>
-                            {fmtHolding(holding.marketValue, holding.currencyCode)}
-                          </td>
-                          <td role="cell" className={`${CELL_PLACEMENT.gainLoss} ${gainLossColor(holding.gainLoss || 0)} ${FIGURE_CELL}`}>
-                            <CellLabel className={CAPTION_CLASS}>{columns.gainLoss.label}</CellLabel>
-                            {fmtHolding(holding.gainLoss, holding.currencyCode)}
-                          </td>
-                          <td role="cell" className={`${CELL_PLACEMENT.gainLossPercent} font-medium ${gainLossColor(holding.gainLossPercent || 0)} ${FIGURE_CELL}`}>
-                            <CellLabel className={CAPTION_CLASS}>{columns.gainLossPercent.label}</CellLabel>
-                            {holding.gainLossPercent !== null ? formatPercent(holding.gainLossPercent) : t('investmentPerformance.na')}
-                          </td>
-                        </tr>
-                        {isExpanded && holding.accountBreakdowns.map((sub) => (
-                          <tr
-                            key={sub.id}
-                            role="row"
-                            className="grid grid-cols-2 items-start gap-x-3 gap-y-1.5 bg-gray-50/70 px-4 py-2 dark:bg-gray-900/20 sm:table-row sm:p-0"
-                          >
-                            <td role="cell" className={`${CELL_PLACEMENT.symbol} min-w-0 p-0 text-sm text-gray-600 dark:text-gray-400 sm:table-cell sm:px-4 sm:py-2 sm:pl-10`}>
-                              {accountNameById.get(sub.accountId) || t('investmentPerformance.unknownAccount')}
-                            </td>
-                            <td role="cell" className={`${CELL_PLACEMENT.quantity} text-gray-600 dark:text-gray-400 ${CHILD_FIGURE_CELL}`}>
-                              <CellLabel className={CAPTION_CLASS}>{columns.quantity.label}</CellLabel>
-                              {formatShareQuantity(sub.quantity)}
-                            </td>
-                            <td role="cell" className={`${CELL_PLACEMENT.averageCost} text-gray-600 dark:text-gray-400 ${CHILD_FIGURE_CELL}`}>
-                              <CellLabel className={CAPTION_CLASS}>{columns.averageCost.label}</CellLabel>
-                              {fmtHolding(sub.averageCost, sub.currencyCode)}
-                            </td>
-                            <td role="cell" className={`${CELL_PLACEMENT.currentPrice} text-gray-600 dark:text-gray-400 ${CHILD_FIGURE_CELL}`}>
-                              <CellLabel className={CAPTION_CLASS}>{columns.currentPrice.label}</CellLabel>
-                              {fmtHolding(sub.currentPrice, sub.currencyCode)}
-                            </td>
-                            <td role="cell" className={`${CELL_PLACEMENT.marketValue} text-gray-600 dark:text-gray-400 ${CHILD_FIGURE_CELL}`}>
-                              <CellLabel className={CAPTION_CLASS}>{columns.marketValue.label}</CellLabel>
-                              {fmtHolding(sub.marketValue, sub.currencyCode)}
-                            </td>
-                            <td role="cell" className={`${CELL_PLACEMENT.gainLoss} ${gainLossColor(sub.gainLoss || 0)} ${CHILD_FIGURE_CELL}`}>
-                              <CellLabel className={CAPTION_CLASS}>{columns.gainLoss.label}</CellLabel>
-                              {fmtHolding(sub.gainLoss, sub.currencyCode)}
-                            </td>
-                            <td role="cell" className={`${CELL_PLACEMENT.gainLossPercent} ${gainLossColor(sub.gainLossPercent || 0)} ${CHILD_FIGURE_CELL}`}>
-                              <CellLabel className={CAPTION_CLASS}>{columns.gainLossPercent.label}</CellLabel>
-                              {sub.gainLossPercent !== null ? formatPercent(sub.gainLossPercent) : t('investmentPerformance.na')}
-                            </td>
-                          </tr>
-                        ))}
-                      </React.Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <InvestmentPerformanceHoldingsTable
+            rows={holdingRows}
+            columns={columns}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            accountNameById={accountNameById}
+            period={securityPeriod}
+          />
         </>
       ) : (
         /* Asset Allocation View */
