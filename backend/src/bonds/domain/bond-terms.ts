@@ -1,6 +1,25 @@
-import { daysBetween, isValidYMD, parseYMD } from "./calendar-date";
+import { daysBetween, parseYMD } from "./calendar-date";
 import { assertNever } from "./assert-never";
-import { ExactDecimal, RoundingMode } from "./exact-decimal";
+import { BondRounding, parseRounding } from "./bond-rounding";
+import { ExactDecimal } from "./exact-decimal";
+import {
+  BondTermsError,
+  code,
+  date,
+  decimal,
+  exact,
+  integer,
+  list,
+  nullable,
+  object,
+  oneOf,
+  primitive,
+  text,
+} from "./terms-readers";
+
+export { BondTermsError } from "./terms-readers";
+export type { BondTermsErrorCode } from "./terms-readers";
+export type { BondRounding } from "./bond-rounding";
 
 export type StepObservation = {
   readonly type: "STEP_VALUE_ON_NTH_BUSINESS_DAY_BEFORE_START_MONTH";
@@ -194,159 +213,12 @@ export interface BondTerms {
   readonly rateRule: RateRule;
   readonly capitalization: Capitalization;
   readonly redemption: Redemption;
-  readonly rounding: {
-    readonly moneyDecimals: 0 | 1 | 2 | 3 | 4;
-    readonly mode: RoundingMode;
-  };
+  readonly rounding: BondRounding;
   readonly source: {
     readonly provider: string;
     readonly url: string;
     readonly document: string;
   };
-}
-
-export type BondTermsErrorCode = "INVALID" | "UNSUPPORTED_PRIMITIVE";
-
-export class BondTermsError extends Error {
-  constructor(
-    readonly field: string,
-    detail: string,
-    readonly code: BondTermsErrorCode = "INVALID",
-  ) {
-    super(`Invalid bond terms: ${field}: ${detail}`);
-    this.name = "BondTermsError";
-  }
-}
-
-type Json = Record<string, unknown>;
-
-function object(
-  value: unknown,
-  path: string,
-  allowed: readonly string[],
-  optional: readonly string[] = [],
-): Json {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new BondTermsError(path, "must be an object");
-  }
-  const record = value as Json;
-  for (const key of Object.keys(record)) {
-    if (!allowed.includes(key) && !optional.includes(key))
-      throw new BondTermsError(`${path}.${key}`, "unknown field");
-  }
-  for (const key of allowed) {
-    if (!(key in record)) throw new BondTermsError(`${path}.${key}`, "missing");
-  }
-  return record;
-}
-
-/** Reads the `type` discriminant; an unknown one is an unsupported primitive. */
-function primitive<T extends string>(
-  value: unknown,
-  path: string,
-  known: readonly T[],
-): T {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new BondTermsError(path, "must be an object");
-  }
-  const type = (value as Json).type;
-  if (typeof type !== "string")
-    throw new BondTermsError(`${path}.type`, "must be a string");
-  if (!known.includes(type as T)) {
-    throw new BondTermsError(
-      `${path}.type`,
-      `unsupported primitive ${JSON.stringify(type)}; supported: ${known.join(", ")}`,
-      "UNSUPPORTED_PRIMITIVE",
-    );
-  }
-  return type as T;
-}
-
-function oneOf<T extends string>(
-  value: unknown,
-  path: string,
-  options: readonly T[],
-): T {
-  if (typeof value !== "string" || !options.includes(value as T)) {
-    throw new BondTermsError(path, `must be one of ${options.join(", ")}`);
-  }
-  return value as T;
-}
-
-function exact<T>(value: unknown, path: string, expected: T): T {
-  if (value !== expected)
-    throw new BondTermsError(path, `must be ${JSON.stringify(expected)}`);
-  return expected;
-}
-
-function text(value: unknown, path: string): string {
-  if (typeof value !== "string" || value.trim() === "") {
-    throw new BondTermsError(path, "must be a non-empty string");
-  }
-  return value;
-}
-
-function code(value: unknown, path: string, pattern: RegExp): string {
-  if (typeof value !== "string" || !pattern.test(value)) {
-    throw new BondTermsError(path, `must match ${pattern}`);
-  }
-  return value;
-}
-
-function integer(value: unknown, path: string, min: number): number {
-  if (!Number.isSafeInteger(value) || (value as number) < min) {
-    throw new BondTermsError(path, `must be an integer >= ${min}`);
-  }
-  return value as number;
-}
-
-function moneyDecimals(value: unknown, path: string): 0 | 1 | 2 | 3 | 4 {
-  if (value !== 0 && value !== 1 && value !== 2 && value !== 3 && value !== 4) {
-    throw new BondTermsError(path, "must be an integer from 0 to 4");
-  }
-  return value;
-}
-
-/** An unknown mode is an unsupported primitive, like an unknown `type`. */
-function roundingMode(value: unknown, path: string): RoundingMode {
-  if (typeof value !== "string") {
-    throw new BondTermsError(path, "must be a string");
-  }
-  const known: readonly RoundingMode[] = ["HALF_UP", "HALF_EVEN", "DOWN"];
-  if (!known.includes(value as RoundingMode)) {
-    throw new BondTermsError(
-      path,
-      `unsupported rounding mode ${JSON.stringify(value)}; supported: ${known.join(", ")}`,
-      "UNSUPPORTED_PRIMITIVE",
-    );
-  }
-  return value as RoundingMode;
-}
-
-/** A non-negative decimal string; a JSON number is refused (INV-BOND-003). */
-function decimal(value: unknown, path: string): string {
-  if (typeof value !== "string") {
-    throw new BondTermsError(path, "must be a decimal string, not a number");
-  }
-  let parsed: ExactDecimal;
-  try {
-    parsed = ExactDecimal.parse(value);
-  } catch {
-    throw new BondTermsError(path, `not a decimal string: ${value}`);
-  }
-  if (parsed.isNegative())
-    throw new BondTermsError(path, "must not be negative");
-  return value;
-}
-
-function nullable<T>(value: unknown, read: (v: unknown) => T): T | null {
-  return value === null ? null : read(value);
-}
-
-function date(value: unknown, path: string): string {
-  if (!isValidYMD(value))
-    throw new BondTermsError(path, "must be a YYYY-MM-DD date");
-  return value;
 }
 
 function parseObservation(value: unknown, path: string): ObservationRule {
@@ -422,15 +294,6 @@ function parseCapitalization(value: unknown, path: string): Capitalization {
       "NONE",
     ] as const),
   };
-}
-
-function list<T>(
-  value: unknown,
-  path: string,
-  read: (item: unknown, at: string) => T,
-): T[] {
-  if (!Array.isArray(value)) throw new BondTermsError(path, "must be an array");
-  return value.map((item, i) => read(item, `${path}[${i}]`));
 }
 
 function parseRedemption(value: unknown, path: string): Redemption {
@@ -587,10 +450,6 @@ export function parseBondTerms(json: unknown): BondTerms {
     throw new BondTermsError("terms.instrument.faceValue", "must be positive");
   }
 
-  const rounding = object(t.rounding, "terms.rounding", [
-    "moneyDecimals",
-    "mode",
-  ]);
   const source = object(t.source, "terms.source", [
     "provider",
     "url",
@@ -642,13 +501,7 @@ export function parseBondTerms(json: unknown): BondTerms {
       "terms.capitalization",
     ),
     redemption: parseRedemption(t.redemption, "terms.redemption"),
-    rounding: {
-      moneyDecimals: moneyDecimals(
-        rounding.moneyDecimals,
-        "terms.rounding.moneyDecimals",
-      ),
-      mode: roundingMode(rounding.mode, "terms.rounding.mode"),
-    },
+    rounding: parseRounding(t.rounding, "terms.rounding"),
     source: {
       provider: text(source.provider, "terms.source.provider"),
       url: text(source.url, "terms.source.url"),
