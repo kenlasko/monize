@@ -41,6 +41,8 @@ If the code is already in your list but inactive, the form offers **Reactivate**
 
 You can also add a currency without leaving a transaction: the transaction form's currency picker has **Add currency...**.
 
+Cryptocurrencies such as Bitcoin are not currencies in Monize: track them as securities in an investment account instead (see [Cryptocurrency](investments.md#cryptocurrency)).
+
 ---
 
 ## Home Currency

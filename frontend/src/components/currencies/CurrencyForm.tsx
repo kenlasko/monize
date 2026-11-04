@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, MutableRefObject } from 'react';
-import { useForm, Controller, Resolver } from 'react-hook-form';
+import { useForm, useWatch, Controller, Resolver } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,6 +17,8 @@ import { useTranslations } from 'next-intl';
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
 import { FormActions } from '@/components/ui/FormActions';
+import { docsUrl } from '@/lib/docs-links';
+import { isKnownIsoCurrency } from '@/lib/iso-currency';
 import { RateHistoryCoverage } from './RateHistoryCoverage';
 
 const logger = createLogger('CurrencyForm');
@@ -71,6 +73,13 @@ export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, subm
       decimalPlaces: currency?.decimalPlaces ?? 2,
     },
   });
+
+  // A complete three-letter code that is no ISO currency is most likely a coin;
+  // tell the user where coins go, without blocking the save.
+  const watchedCode = useWatch({ control, name: 'code' });
+  const typedCode = (watchedCode ?? '').trim().toUpperCase();
+  const showCryptoNotice =
+    !currency && /^[A-Z]{3}$/.test(typedCode) && !isKnownIsoCurrency(typedCode);
 
   const handleLookup = useCallback(async () => {
     const { code, name } = getValues();
@@ -238,6 +247,29 @@ export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, subm
           />
         )}
       />
+
+      {showCryptoNotice && (
+        <div
+          role="note"
+          className="rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3"
+        >
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            {t.rich('form.cryptoNotice', {
+              code: typedCode,
+              guide: (chunks) => (
+                <a
+                  href={docsUrl('cryptocurrency')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline hover:text-blue-900 dark:hover:text-blue-100"
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
+          </p>
+        </div>
+      )}
 
       {inactiveCode && (
         <div className="rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-2">
