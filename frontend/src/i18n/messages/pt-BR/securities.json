@@ -116,6 +116,8 @@
     "exchangeLabel": "Bolsa",
     "currencyLabel": "Moeda",
     "currencyNotConfigured": "{code} — não está nas suas moedas",
+    "currencyPlaceholder": "Selecionar moeda...",
+    "currencyNotReported": "O provedor não informou a moeda desta criptomoeda. Escolha a moeda fiduciária em que ela é cotada.",
     "quoteProviderLabel": "Fornecedor de Cotações",
     "skipPriceUpdatesLabel": "Desativar atualizações automáticas de preços",
     "skipPriceUpdatesHelp": "O Monize não vai buscar preços para este ativo. Use isso para um ativo que nenhum provedor consiga cotar; os preços que você inserir continuam valendo. Escolher outro provedor de cotações ou outro ID de instrumento MSN reativa as atualizações.",

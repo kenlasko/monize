@@ -112,6 +112,7 @@
       "reactivateFailed": "重新启用货币失败"
     },
     "inactiveNotice": "{code} 已在您的列表中，但处于未启用状态。",
+    "cryptoNotice": "{code} 不是标准的货币代码。比特币等加密货币应作为证券在投资账户中记录，而不是作为货币。<guide>请在用户指南中查看具体方法</guide>。",
     "reactivateButton": "重新启用 {code}",
     "reactivating": "正在重新启用..."
   },

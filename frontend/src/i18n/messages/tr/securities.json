@@ -116,6 +116,8 @@
     "exchangeLabel": "Borsa",
     "currencyLabel": "Para Birimi",
     "currencyNotConfigured": "{code} — para birimlerinizde yok",
+    "currencyPlaceholder": "Para birimi seçin...",
+    "currencyNotReported": "Sağlayıcı bu kripto paranın para birimini bildirmedi. Kotasyonunun yapıldığı fiat para birimini seçin.",
     "quoteProviderLabel": "Fiyat Teklifi Sağlayıcısı",
     "skipPriceUpdatesLabel": "Otomatik fiyat güncellemelerini devre dışı bırak",
     "skipPriceUpdatesHelp": "Monize bu menkul kıymet için fiyat almayacak. Hiçbir sağlayıcının fiyatlayamadığı bir menkul kıymet için bunu kullanın; kendi girdiğiniz fiyatlar yine de sayılır. Farklı bir fiyat sağlayıcısı veya MSN Enstrüman Kimliği seçmek güncellemeleri yeniden açar.",

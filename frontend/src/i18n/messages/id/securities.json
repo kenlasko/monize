@@ -116,6 +116,8 @@
     "exchangeLabel": "Bursa",
     "currencyLabel": "Mata Uang",
     "currencyNotConfigured": "{code} — tidak ada di mata uang Anda",
+    "currencyPlaceholder": "Pilih mata uang...",
+    "currencyNotReported": "Penyedia tidak melaporkan mata uang koin ini. Pilih mata uang fiat tempat koin ini dikutip.",
     "quoteProviderLabel": "Penyedia Kutipan",
     "skipPriceUpdatesLabel": "Nonaktifkan pembaruan harga otomatis",
     "skipPriceUpdatesHelp": "Monize tidak akan mengambil harga untuk sekuritas ini. Gunakan ini untuk sekuritas yang tidak dapat diberi harga oleh penyedia mana pun; harga yang Anda masukkan sendiri tetap dihitung. Memilih penyedia kuotasi atau ID Instrumen MSN yang berbeda akan mengaktifkan kembali pembaruan.",

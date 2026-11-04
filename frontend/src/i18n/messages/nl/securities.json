@@ -116,6 +116,8 @@
     "exchangeLabel": "Beurs",
     "currencyLabel": "Valuta",
     "currencyNotConfigured": "{code} — niet in uw valuta's",
+    "currencyPlaceholder": "Selecteer valuta...",
+    "currencyNotReported": "De aanbieder heeft de valuta van deze coin niet doorgegeven. Kies de fiatvaluta waarin deze wordt genoteerd.",
     "quoteProviderLabel": "Koersprovider",
     "skipPriceUpdatesLabel": "Automatische koersupdates uitschakelen",
     "skipPriceUpdatesHelp": "Monize haalt geen koersen op voor dit effect. Gebruik dit voor een effect dat geen enkele aanbieder kan noteren; koersen die u zelf invoert tellen nog steeds mee. Een andere koersaanbieder of MSN-instrument-ID kiezen zet de updates weer aan.",

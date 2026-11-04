@@ -116,6 +116,8 @@
     "exchangeLabel": "Borsa",
     "currencyLabel": "Valuta",
     "currencyNotConfigured": "{code} — non è tra le tue valute",
+    "currencyPlaceholder": "Seleziona valuta...",
+    "currencyNotReported": "Il fornitore non ha indicato la valuta di questa criptovaluta. Scegli la valuta fiat in cui è quotata.",
     "quoteProviderLabel": "Fornitore quotazioni",
     "skipPriceUpdatesLabel": "Disattiva gli aggiornamenti automatici dei prezzi",
     "skipPriceUpdatesHelp": "Monize non recupererà i prezzi per questo titolo. Usalo per un titolo che nessun fornitore può quotare; i prezzi inseriti da te continuano a contare. Scegliere un altro fornitore di quotazioni o un altro ID strumento MSN riattiva gli aggiornamenti.",

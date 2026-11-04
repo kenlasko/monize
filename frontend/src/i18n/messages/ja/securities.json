@@ -116,6 +116,8 @@
     "exchangeLabel": "取引所",
     "currencyLabel": "通貨",
     "currencyNotConfigured": "{code} — 登録した通貨にありません",
+    "currencyPlaceholder": "通貨を選択...",
+    "currencyNotReported": "プロバイダーがこの暗号資産の通貨を報告しませんでした。この銘柄が建値されている法定通貨を選択してください。",
     "quoteProviderLabel": "株価プロバイダー",
     "skipPriceUpdatesLabel": "価格の自動更新を無効にする",
     "skipPriceUpdatesHelp": "Monize はこの銘柄の価格を取得しません。どのプロバイダーも価格を提供できない銘柄に使用してください。自分で入力した価格は引き続き反映されます。別の相場プロバイダーまたは MSN 銘柄 ID を選択すると、更新が再び有効になります。",

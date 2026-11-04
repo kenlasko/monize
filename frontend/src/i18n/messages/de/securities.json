@@ -116,6 +116,8 @@
     "exchangeLabel": "Börse",
     "currencyLabel": "Währung",
     "currencyNotConfigured": "{code} — nicht in Ihren Währungen",
+    "currencyPlaceholder": "Währung auswählen...",
+    "currencyNotReported": "Der Anbieter hat die Währung dieser Kryptowährung nicht gemeldet. Wählen Sie die Fiat-Währung, in der sie notiert wird.",
     "quoteProviderLabel": "Kursanbieter",
     "skipPriceUpdatesLabel": "Automatische Kursaktualisierungen deaktivieren",
     "skipPriceUpdatesHelp": "Monize ruft für dieses Wertpapier keine Kurse ab. Verwenden Sie dies für ein Wertpapier, für das kein Anbieter Kurse liefert; selbst eingegebene Kurse zählen weiterhin. Die Wahl eines anderen Kursanbieters oder einer MSN-Instrument-ID schaltet die Aktualisierungen wieder ein.",
