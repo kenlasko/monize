@@ -57,10 +57,12 @@ export function useSecurityPeriodResults({
   const period = isPortfolioPeriodPreset(range) ? range : undefined;
   const baselineDate = periodBaselineDate(startDate, periodStartDate);
   const key = JSON.stringify([
+    // The same key `usePortfolioPeriodResult` builds, so the rows and the
+    // card beside them are re-asked on the same changes, the day included.
     period ?? null,
-    period ? null : periodStartDate,
-    period ? null : endDate,
-    period ? null : (baselineDate ?? null),
+    periodStartDate,
+    endDate,
+    baselineDate ?? null,
     accountIds ?? null,
     displayCurrency ?? null,
     reloadKey,

@@ -188,7 +188,10 @@ export function InvestmentPerformanceReport() {
     skip: response === null,
   };
   // The cards: the Investments page's own figure for the window.
-  const { periodResult } = usePortfolioPeriodResult({ ...periodRequest, hasSeries: true });
+  const { periodResult, failed: periodFailed } = usePortfolioPeriodResult({
+    ...periodRequest,
+    hasSeries: true,
+  });
   // The rows: the same figure split by security.
   const securityPeriod = useSecurityPeriodResults(periodRequest);
 
@@ -258,9 +261,11 @@ export function InvestmentPerformanceReport() {
     periodResult && periodPnl === null
       ? withheldPeriodCause([periodResult.investedReasons ?? []])
       : null;
-  const periodNote = periodCause
-    ? ti(`portfolioPerformance.reasons.${periodCause}` as Parameters<typeof ti>[0])
-    : undefined;
+  const periodNote = periodFailed
+    ? t('investmentPerformance.periodLoadFailed')
+    : periodCause
+      ? ti(`portfolioPerformance.reasons.${periodCause}` as Parameters<typeof ti>[0])
+      : undefined;
   const measuredFrom = periodResult?.startPriceDate
     ? t('investmentPerformance.measuredFromClose', { date: formatDate(periodResult.startPriceDate) })
     : undefined;
@@ -444,7 +449,7 @@ export function InvestmentPerformanceReport() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4" data-testid="period-gain-card">
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.periodGainLoss')}</div>
           <div className={`text-xl font-bold ${periodPnl === null ? 'text-gray-500 dark:text-gray-400' : gainLossColor(periodPnl)}`}>
-            {periodResult === null ? (
+            {periodResult === null && !periodFailed ? (
               <Skeleton className="h-7 w-24" />
             ) : periodPnl === null ? (
               t('investmentPerformance.na')
@@ -461,7 +466,7 @@ export function InvestmentPerformanceReport() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4" data-testid="period-return-card">
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.return')}</div>
           <div className={`text-xl font-bold ${periodReturn === null ? 'text-gray-500 dark:text-gray-400' : gainLossColor(periodReturn)}`}>
-            {periodResult === null ? (
+            {periodResult === null && !periodFailed ? (
               <Skeleton className="h-7 w-20" />
             ) : periodReturn === null ? (
               t('investmentPerformance.na')

@@ -495,6 +495,16 @@ describe('InvestmentPerformanceReport', () => {
       expect(notices).toHaveTextContent('% Change is N/A for XIC: the security split');
     });
 
+    it('says the cards failed to load rather than waiting forever', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      mockPeriodResult.mockRejectedValue(new Error('timeout'));
+      render(<InvestmentPerformanceReport />);
+      const gainCard = await screen.findByTestId('period-gain-card');
+      await waitFor(() => expect(gainCard).toHaveTextContent('could not be loaded'));
+      expect(gainCard).toHaveTextContent('N/A');
+    });
+
     it('says the period failed to load rather than showing zeros', async () => {
       mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
       mockGetInvestmentAccounts.mockResolvedValue([]);

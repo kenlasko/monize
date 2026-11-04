@@ -59,6 +59,11 @@ interface UsePortfolioPeriodResultValue {
    * nothing: nothing here subtracts, divides or falls back to the series.
    */
   periodResult: PortfolioPeriodResult | null;
+  /**
+   * True when THIS request failed, so a surface can say so rather than wait:
+   * a failed request is not a load still in flight, and not missing data.
+   */
+  failed: boolean;
 }
 
 /**
@@ -128,7 +133,8 @@ export function usePortfolioPeriodResult({
   ]);
   const [state, setState] = useState<{
     key: string;
-    result: PortfolioPeriodResult;
+    /** Null when the request failed. */
+    result: PortfolioPeriodResult | null;
   } | null>(null);
 
   useEffect(() => {
@@ -156,9 +162,7 @@ export function usePortfolioPeriodResult({
         logger.error('Failed to load the period result:', error);
         // A failed request is not a period that did nothing: every figure stays
         // unknown until the server answers.
-        if (!cancelled) {
-          setState((prev) => (prev?.key === key ? null : prev));
-        }
+        if (!cancelled) setState({ key, result: null });
       });
     return () => {
       cancelled = true;
@@ -175,7 +179,8 @@ export function usePortfolioPeriodResult({
     ownRequest,
   ]);
 
-  if (sharedResult !== null) return { periodResult: sharedResult };
-  if (awaitingShared || skip) return { periodResult: null };
-  return { periodResult: state?.key === key ? state.result : null };
+  if (sharedResult !== null) return { periodResult: sharedResult, failed: false };
+  if (awaitingShared || skip) return { periodResult: null, failed: false };
+  if (state?.key !== key) return { periodResult: null, failed: false };
+  return { periodResult: state.result, failed: state.result === null };
 }

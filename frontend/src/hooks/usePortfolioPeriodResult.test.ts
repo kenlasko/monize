@@ -202,9 +202,8 @@ describe("usePortfolioPeriodResult", () => {
         range: "1y",
       }),
     );
-    await waitFor(() =>
-      expect(netWorthApi.getInvestmentsPeriodResult).toHaveBeenCalled(),
-    );
+    expect(hook.current.failed).toBe(false);
+    await waitFor(() => expect(hook.current.failed).toBe(true));
     expect(hook.current.periodResult).toBeNull();
   });
 
