@@ -57,7 +57,8 @@ A terms document (`schemaVersion` 1, `backend/src/bonds/domain/bond-terms.ts`) i
 
 | Primitive | Meaning | Parser |
 |---|---|---|
-| `instrument` | `issuerCountryCode`, `issuerCode`, `programCode`, `seriesCode`, `currency`, `marketability` (`RETAIL_REDEEMABLE` only), `faceValue` (positive), optional `issuePrice`. | `parseBondTerms` |
+| `instrument` | `issuerCountryCode`, `issuerCode`, `programCode`, `seriesCode`, `currency`, `marketability` (`RETAIL_REDEEMABLE` or `MARKETABLE`), `faceValue` (positive), optional `issuePrice`. | `parseBondTerms` |
+| `marketability: MARKETABLE` | The security trades: its market price is not a function of its terms. Needs `saleWindow: null` and redemption `MATURITY_ONLY` (`assertMarketableConsistent`). A lot bought on or after the maturity is REFUSED (`PURCHASE_AFTER_MATURITY`, not for an assumed purchase date). The engine writes the price of a linked security only when every series it holds is `RETAIL_REDEEMABLE` or a discount instrument; otherwise it writes none and the valuation says `marketPriceRequired` (INV-BOND-005, `price-policy.ts`). | `parseBondTerms`, `assertMarketableConsistent` |
 | `saleWindow` | `{ from, to }` the series is sold in, or null: a lot bought outside it is REFUSED (`PURCHASE_OUTSIDE_SALE_WINDOW`), a lot whose purchase date is assumed is not checked. | `parseBondTerms` |
 | `FIXED` | The same `annualRate` in every period. | `parseRateRule` |
 | `BENCHMARK_PLUS_SPREAD` | Period 1 is `firstPeriodRate` (derived like the rest when null); later periods are `max(benchmarkFloor, observation) + spread` (no floor: the observation). | `parseRateRule` |

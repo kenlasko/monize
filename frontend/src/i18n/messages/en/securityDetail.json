@@ -434,8 +434,10 @@
       "PL_NBP_REFERENCE": "NBP reference rate"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "This series can only be bought from {from} to {to}. This lot was bought on {purchaseDate}, so it is not valued."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "This series can only be bought from {from} to {to}. This lot was bought on {purchaseDate}, so it is not valued.",
+      "PURCHASE_AFTER_MATURITY": "This series matured on {maturityDate}. This lot was bought on {purchaseDate}, on or after that day, so it is not valued."
     },
+    "marketPriceRequired": "This security holds a series that trades on a market, so its price is not a function of its terms. Monize writes no price for it: enter the price yourself. The values of the lots below are worked out from the terms and are not market values.",
     "partial": {
       "title": "This valuation is incomplete, so read the figures as partial.",
       "terms": "The terms of the bond are incomplete (for example a calendar is not installed).",

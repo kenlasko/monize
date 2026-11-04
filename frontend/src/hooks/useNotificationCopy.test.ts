@@ -201,6 +201,21 @@ describe('useNotificationCopy: bond notifications', () => {
     expect(copy.message).toContain('(NEGATIVE_QUANTITY). Correct the ledger.');
   });
 
+  it('BOND_DATA_MISSING names a marketable lot bought on or after its maturity', () => {
+    const copy = copyOf(
+      row('BOND_DATA_MISSING', {
+        ...base,
+        seriesCode: null,
+        causes: [
+          { code: 'PURCHASE_AFTER_MATURITY', instrumentId: 'i1', seriesCode: 'S-1', purchaseDate: '2027-04-02', maturityDate: '2027-04-01' },
+        ],
+      }),
+    );
+    expect(copy.message).toContain('A purchase of S-1 on');
+    expect(copy.message).toContain('is on or after its maturity');
+    expect(copy.message).toContain('Correct the purchase date.');
+  });
+
   describe('BOND_DATA_MISSING names the refused row of underivable lots', () => {
     const lots = (refusalCode: string, extra: Record<string, unknown> = {}) =>
       copyOf(

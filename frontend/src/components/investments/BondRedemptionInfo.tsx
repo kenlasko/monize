@@ -27,7 +27,9 @@ export function BondRedemptionInfo({ result, currencyCode }: BondRedemptionInfoP
     text =
       split.refusal === 'PURCHASE_OUTSIDE_SALE_WINDOW'
         ? t('transactionForm.bondRedemption.outsideSaleWindow')
-        : tDetail(`bond.earlyRefusal.${split.refusal}`);
+        : split.refusal === 'PURCHASE_AFTER_MATURITY'
+          ? t('transactionForm.bondRedemption.afterMaturity')
+          : tDetail(`bond.earlyRefusal.${split.refusal}`);
   } else if (split !== null && split.interest !== null && split.deduction !== null && split.payout !== null) {
     text = t('transactionForm.bondRedemption.summary', {
       interest: formatCurrency(Number(split.interest), currencyCode),

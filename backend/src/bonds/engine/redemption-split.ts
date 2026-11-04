@@ -1,9 +1,12 @@
 import { ExactDecimal } from "../domain/exact-decimal";
-import { EarlyRedemptionRefusal } from "./bond-engine-types";
+import {
+  BondValuationRefusal,
+  EarlyRedemptionRefusal,
+} from "./bond-engine-types";
 
-/** Why no split is given: a window rule (never "MATURED", which pays the maturity split), an unknown rate, or the sale window. */
+/** Why no split is given: a window rule (never "MATURED", which pays the maturity split), an unknown rate, or the purchase date (the sale window, or a marketable lot bought at or after maturity). */
 export type RedemptionSplitRefusal =
-  Exclude<EarlyRedemptionRefusal, "MATURED"> | "PURCHASE_OUTSIDE_SALE_WINDOW";
+  Exclude<EarlyRedemptionRefusal, "MATURED"> | BondValuationRefusal["code"];
 
 /**
  * The cash of a redemption as returned principal and interest, exact decimal

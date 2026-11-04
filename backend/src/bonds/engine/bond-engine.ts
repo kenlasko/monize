@@ -228,9 +228,29 @@ interface PreparedLot {
   readonly byStarted: Map<number, Resolved>;
 }
 
-function saleWindowRefusal(input: LotInput): BondValuationRefusal | null {
+/**
+ * Why the lot's purchase date makes it unvaluable, or null: a stated purchase
+ * outside the sale window, or a lot of a marketable series bought on or after
+ * its maturity (`maturity` is the end of the lot's last period). An assumed
+ * purchase date (an unpaired transfer in) is never refused: the real purchase
+ * is unknown and the lot restarts at the transfer by design.
+ */
+function purchaseRefusal(
+  input: LotInput,
+  maturity: string,
+): BondValuationRefusal | null {
   const window = input.terms.saleWindow;
   const { purchaseDate } = input.lot;
+  if (
+    input.terms.instrument.marketability === "MARKETABLE" &&
+    input.lot.purchaseDateAssumed !== true &&
+    compareYMD(purchaseDate, maturity) >= 0
+  ) {
+    return {
+      code: "PURCHASE_AFTER_MATURITY",
+      params: { maturityDate: maturity, purchaseDate },
+    };
+  }
   if (
     window === null ||
     // An assumed purchase date (an unpaired transfer in) restarts the lot at
@@ -278,7 +298,7 @@ function prepare(input: LotInput): PreparedLot {
     places: terms.rounding.moneyDecimals,
     quantity: ExactDecimal.fromInt(input.lot.quantity),
     plan: planPeriodRates(input, schedule),
-    saleRefusal: saleWindowRefusal(input),
+    saleRefusal: purchaseRefusal(input, lastPeriod.end),
     byStarted: new Map(),
   };
 }
@@ -629,7 +649,7 @@ export function redemptionSplit(
       refusal,
       principal === undefined ? null : roundMoney(terms, principal),
     );
-  if (p.saleRefusal) return refused("PURCHASE_OUTSIDE_SALE_WINDOW");
+  if (p.saleRefusal) return refused(p.saleRefusal.code);
 
   const matured = compareYMD(date, p.maturity) >= 0;
   const day = matured ? p.maturity : date;

@@ -153,10 +153,16 @@ export interface BondRateScheduleEntry {
 export type BondLotStatus = 'OPEN' | 'MATURED' | 'REFUSED';
 
 /** Why a lot has no valuation; rendered from `code` and `params`. */
-export interface BondValuationRefusal {
-  code: 'PURCHASE_OUTSIDE_SALE_WINDOW';
-  params: { from: string; to: string; purchaseDate: string };
-}
+export type BondValuationRefusal =
+  | {
+      code: 'PURCHASE_OUTSIDE_SALE_WINDOW';
+      params: { from: string; to: string; purchaseDate: string };
+    }
+  /** A lot of a marketable series bought on or after its maturity. */
+  | {
+      code: 'PURCHASE_AFTER_MATURITY';
+      params: { maturityDate: string; purchaseDate: string };
+    };
 
 /** A benchmark with neither an observation nor an assumption to project from. */
 export interface BondProjectionMissing {
@@ -318,6 +324,12 @@ export interface SecurityBondValuation {
   totals: BondValuationTotals;
   refusal: BondLotsRefusal | null;
   benchmarkCoverage?: BondBenchmarkCoverage[];
+  /**
+   * True when a series the security holds trades on a market: Monize writes no
+   * price for the security, so its price is the person's own. Absent means no
+   * information; read it as `=== true`.
+   */
+  marketPriceRequired?: boolean;
 }
 
 /** `GET /bonds/securities/:securityId/expected-series`: the code a purchase on the date would carry, by the program's country's grammar. */
@@ -346,10 +358,10 @@ export interface BondSeriesHoldings {
   holdings: BondSeriesHolding[];
 }
 
-/** Why no redemption split is given (the engine's early-redemption refusals, and a lot bought outside its series' sale window). */
+/** Why no redemption split is given (the engine's early-redemption refusals, and a lot bought outside its series' sale window or, for a marketable series, on or after its maturity). */
 export type BondRedemptionSplitRefusal =
   | Exclude<BondEarlyRedemptionRefusal, 'MATURED'>
-  | 'PURCHASE_OUTSIDE_SALE_WINDOW';
+  | BondValuationRefusal['code'];
 
 /**
  * `GET /bonds/securities/:securityId/redemption-split`: what redeeming

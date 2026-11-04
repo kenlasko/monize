@@ -115,7 +115,7 @@ implied.
 | INV-BOND-002 | A missing bond rate is unknown, never substituted | enforced |
 | INV-BOND-003 | Bond money is exact until the issue document rounds it | enforced |
 | INV-BOND-004 | Known and projected bond values never mix | enforced |
-| INV-BOND-005 | A linked security's automatic price comes only from the bond engine; the engine replaces every non-manual row and never a manual one | enforced |
+| INV-BOND-005 | A linked security's automatic price comes only from the bond engine, and only for series priced by their terms; the engine replaces every non-manual row and never a manual one | enforced |
 | INV-BOND-006 | Bond terms enter the catalog only from an adapter's fetch of its official source or an administrator's manual entry on the adapter's template; a person who is not an administrator supplies only a country and a series code | enforced |
 | INV-BOND-007 | A program-linked security's acquisitions with a date of their own are inferred, TRANSFER_IN and ADD_SHARES name their series, a removal the account cannot cover is refused at write time, and an import may store NULL which the lots name | enforced |
 | INV-BOND-008 | No country's bond data (series, terms version, benchmark observation) is fetched or stored without a person's action | enforced |
@@ -4266,7 +4266,7 @@ Required tests      bond-engine.spec.ts known/projected cases.
 Status              enforced
 ```
 
-### INV-BOND-005 -- a linked security's automatic price is the bond engine's; it replaces every non-manual row and never a manual one
+### INV-BOND-005 -- a linked security's automatic price is the bond engine's, for series priced by their terms; it replaces every non-manual row and never a manual one
 
 ```text
 Statement           A security linked to a bond program
@@ -4285,7 +4285,16 @@ Statement           A security linked to a bond program
                     (coupons are recorded as INTEREST income, the close is the
                     value), and a manual price written over an engine row does
                     not inherit the engine's adjusted_close. An unchanged day
-                    is not rewritten.
+                    is not rewritten. Per marketability
+                    (docs/specs/bond-marketable-primitives.md section 3): the
+                    engine writes the price only when every series the
+                    security's ledger names is RETAIL_REDEEMABLE or a discount
+                    instrument (ZERO_COUPON_DISCOUNT); for a MARKETABLE coupon
+                    series it writes none, deletes any bond_engine row of the
+                    security, and the valuation reports marketPriceRequired
+                    true so the surface tells the person to enter the price
+                    (a manual price always wins). A quote provider is still
+                    never asked about a linked security.
 Source of truth     securities.bond_program_id; security_prices.source
 Enforcement         Three mechanisms.
                     1. One predicate, isPricedByQuoteProvider
@@ -4414,7 +4423,10 @@ Lots                Lots are derived per account and per series (spec section
                     date is outside terms.saleWindow gets no valuation:
                     status REFUSED, refusal PURCHASE_OUTSIDE_SALE_WINDOW, every
                     figure null, valuationComplete false (a null saleWindow is
-                    no restriction), and its day gets no price row.
+                    no restriction), and its day gets no price row; a lot of a
+                    MARKETABLE series bought on or after its maturity is
+                    REFUSED the same way (PURCHASE_AFTER_MATURITY), unless its
+                    purchase date is an assumed stand-in.
 Retry semantics     A retried recompute writes nothing it already wrote
                     (written = 0, deleted = 0).
 Crash semantics     Reads, the upsert, the delete and the account updated_at

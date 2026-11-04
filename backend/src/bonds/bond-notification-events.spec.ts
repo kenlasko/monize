@@ -705,6 +705,30 @@ describe("item 6, missing data", () => {
         to: "2025-01-31",
       },
     ]);
+    const afterMaturity = security([
+      lot({
+        valuation: {
+          status: "REFUSED",
+          currentPeriod: null,
+          refusal: {
+            code: "PURCHASE_AFTER_MATURITY",
+            params: { maturityDate: "2025-04-01", purchaseDate: "2025-04-02" },
+          },
+        },
+      }),
+    ]);
+    expect(missingCausesOf(afterMaturity).causes).toEqual([
+      {
+        code: "PURCHASE_AFTER_MATURITY",
+        instrumentId: SERIES_1,
+        seriesCode: "SER0001",
+        purchaseDate: "2025-04-02",
+        maturityDate: "2025-04-01",
+      },
+    ]);
+    expect(missingDataNotification(afterMaturity)?.message).toContain(
+      "is on or after its maturity 2025-04-01; correct the purchase date",
+    );
     const underivable = security([], {
       refusal: {
         code: "OVER_REMOVAL",

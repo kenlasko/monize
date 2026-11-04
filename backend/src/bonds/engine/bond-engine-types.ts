@@ -18,14 +18,23 @@ export type EarlyRedemptionRefusal =
 export type BondLotStatus = "OPEN" | "MATURED" | "REFUSED";
 
 /** A lot the terms do not allow to value at all; every figure of the valuation is then null. */
-export interface BondValuationRefusal {
-  readonly code: "PURCHASE_OUTSIDE_SALE_WINDOW";
-  readonly params: {
-    readonly from: string;
-    readonly to: string;
-    readonly purchaseDate: string;
-  };
-}
+export type BondValuationRefusal =
+  | {
+      readonly code: "PURCHASE_OUTSIDE_SALE_WINDOW";
+      readonly params: {
+        readonly from: string;
+        readonly to: string;
+        readonly purchaseDate: string;
+      };
+    }
+  /** A lot of a MARKETABLE series whose purchase date is on or after its maturity. */
+  | {
+      readonly code: "PURCHASE_AFTER_MATURITY";
+      readonly params: {
+        readonly maturityDate: string;
+        readonly purchaseDate: string;
+      };
+    };
 
 export interface BondEngineInput {
   readonly terms: BondTerms;

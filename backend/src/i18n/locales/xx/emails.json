@@ -361,6 +361,7 @@
         "RATE_UNKNOWN": "[XX-a rate it depends on is not published yet-XX]",
         "TERMS_INCOMPLETE": "[XX-the terms of the series are incomplete-XX]",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "[XX-a purchase date is outside the sale window of the series-XX]",
+        "PURCHASE_AFTER_MATURITY": "[XX-a purchase date is on or after the maturity of the series-XX]",
         "other": "[XX-it cannot be worked out from the data stored-XX]"
       },
       "benchmarkTitle": "[XX-{{ benchmark }}: new observation {{ observation }}-XX]",
@@ -377,6 +378,7 @@
         "observationNoPublisher": "[XX-the {{ observation }} observation of {{ benchmark }} is not stored: it is not published yet, or the feed has not been fetched since; refresh on the bond page-XX]",
         "terms": "[XX-the terms of {{ series }} are incomplete; refresh the series on the bond page-XX]",
         "purchase": "[XX-a purchase of {{ series }} on {{ date }} is outside its sale window ({{ from }} to {{ to }}); correct the purchase date-XX]",
+        "purchaseAfterMaturity": "[XX-a purchase of {{ series }} on {{ date }} is on or after its maturity ({{ maturity }}); correct the purchase date-XX]",
         "lots": "[XX-the lots cannot be derived from the ledger ({{ code }}); correct the ledger-XX]",
         "lotsRow": "[XX-the {{ action }} dated {{ date }} makes the lots impossible to derive ({{ code }}); correct the transaction-XX]",
         "lotsRowSeries": "[XX-the {{ action }} dated {{ date }} is not placed in a series ({{ code }}); choose the series on that transaction-XX]",

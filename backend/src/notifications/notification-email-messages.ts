@@ -149,6 +149,8 @@ export const NOTIFICATION_EMAIL_MESSAGES = {
   "bond.reason.TERMS_INCOMPLETE": "the terms of the series are incomplete",
   "bond.reason.PURCHASE_OUTSIDE_SALE_WINDOW":
     "a purchase date is outside the sale window of the series",
+  "bond.reason.PURCHASE_AFTER_MATURITY":
+    "a purchase date is on or after the maturity of the series",
   "bond.reason.other": "it cannot be worked out from the data stored",
   "bond.benchmarkTitle": "{{ benchmark }}: new observation {{ observation }}",
   "bond.benchmarkMessage":
@@ -168,6 +170,8 @@ export const NOTIFICATION_EMAIL_MESSAGES = {
     "the terms of {{ series }} are incomplete; refresh the series on the bond page",
   "bond.cause.purchase":
     "a purchase of {{ series }} on {{ date }} is outside its sale window ({{ from }} to {{ to }}); correct the purchase date",
+  "bond.cause.purchaseAfterMaturity":
+    "a purchase of {{ series }} on {{ date }} is on or after its maturity ({{ maturity }}); correct the purchase date",
   "bond.cause.lots":
     "the lots cannot be derived from the ledger ({{ code }}); correct the ledger",
   "bond.cause.lotsRow":

@@ -9,6 +9,7 @@ import {
   decimal,
   exact,
   integer,
+  Json,
   list,
   nullable,
   object,
@@ -190,6 +191,8 @@ export function scheduleDaysOf(schedule: BondSchedule): number | null {
   }
 }
 
+export type Marketability = "RETAIL_REDEEMABLE" | "MARKETABLE";
+
 export interface BondTerms {
   readonly schemaVersion: 1;
   readonly instrument: {
@@ -198,7 +201,12 @@ export interface BondTerms {
     readonly programCode: string;
     readonly seriesCode: string;
     readonly currency: string;
-    readonly marketability: "RETAIL_REDEEMABLE";
+    /**
+     * `RETAIL_REDEEMABLE`: the issuer redeems it. `MARKETABLE`: it trades, so its
+     * market price is not a function of its terms; it has no sale window and is
+     * paid at maturity only.
+     */
+    readonly marketability: Marketability;
     readonly faceValue: string;
     /**
      * The price of one face value at issue, exact decimal, above zero and below
@@ -470,6 +478,7 @@ export function parseBondTerms(json: unknown): BondTerms {
       currency: code(i.currency, "terms.instrument.currency", /^[A-Z]{3}$/),
       marketability: oneOf(i.marketability, "terms.instrument.marketability", [
         "RETAIL_REDEEMABLE",
+        "MARKETABLE",
       ] as const),
       faceValue,
       ...(i.issuePrice === undefined
@@ -517,6 +526,7 @@ export function parseBondTerms(json: unknown): BondTerms {
 /** Generic consistency between primitives, never a per-product rule. */
 function assertConsistent(terms: BondTerms): void {
   const { redemption, capitalization } = terms;
+  assertMarketableConsistent(terms);
   assertDiscountConsistent(terms);
   if (
     redemption.type === "ON_DEMAND" &&
@@ -526,6 +536,23 @@ function assertConsistent(terms: BondTerms): void {
     throw new BondTermsError(
       "terms.redemption.blackouts",
       "a record day exists only for a bond that pays a coupon (capitalization NONE)",
+    );
+  }
+}
+
+/** A marketable series is bought on any day before maturity and sold, not redeemed early. */
+function assertMarketableConsistent(terms: BondTerms): void {
+  if (terms.instrument.marketability !== "MARKETABLE") return;
+  if (terms.saleWindow !== null) {
+    throw new BondTermsError(
+      "terms.saleWindow",
+      "a MARKETABLE instrument has no sale window (null)",
+    );
+  }
+  if (terms.redemption.type !== "MATURITY_ONLY") {
+    throw new BondTermsError(
+      "terms.redemption",
+      "a MARKETABLE instrument is paid at maturity only (MATURITY_ONLY)",
     );
   }
 }

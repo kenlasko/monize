@@ -1301,6 +1301,47 @@ describe('SecurityBondCard: indexation, scenarios and the interest chart (spec 1
       expect(cell).toHaveTextContent('bought on 12/05/2026');
     });
 
+    it('shows the refusal reason of a marketable lot bought on or after its maturity', async () => {
+      get.mockResolvedValue(
+        response({
+          lots: [
+            {
+              instrumentId: 'bond-1', purchaseDate: '2027-04-02',
+              quantity: 10,
+              purchaseDateAssumed: false,
+              valuation: lotValuation({
+                status: 'REFUSED',
+                currentPeriod: null,
+                refusal: {
+                  code: 'PURCHASE_AFTER_MATURITY',
+                  params: { maturityDate: '2027-04-01', purchaseDate: '2027-04-02' },
+                },
+                grossValue: null,
+                valuationComplete: false,
+              }),
+            },
+          ],
+        }),
+      );
+      await mount();
+      const cell = within(lotRows()[1]).getAllByRole('cell')[3];
+      expect(cell).toHaveTextContent('Not valued');
+      expect(cell).toHaveTextContent('matured on 04/01/2027');
+      expect(cell).toHaveTextContent('bought on 04/02/2027');
+    });
+
+    it('says the price is the person\'s own when a held series trades, and says nothing otherwise', async () => {
+      get.mockResolvedValue(response({ marketPriceRequired: true }));
+      await mount();
+      expect(screen.getByText('Monize writes no price for it', { exact: false })).toBeInTheDocument();
+    });
+
+    it('does not ask for a price when the flag is false or absent', async () => {
+      get.mockResolvedValue(response({ marketPriceRequired: false }));
+      await mount();
+      expect(screen.queryByText('Monize writes no price for it', { exact: false })).not.toBeInTheDocument();
+    });
+
     it('shows a partial-data notice naming the cause when valuationComplete is false', async () => {
       withLots({
         valuationComplete: false,

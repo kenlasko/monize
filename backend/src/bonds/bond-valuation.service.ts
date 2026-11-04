@@ -24,6 +24,7 @@ import {
   redemptionSplit,
   valueBondLot,
 } from "./engine/bond-engine";
+import { marketPriceRequired } from "./engine/price-policy";
 import { RedemptionSplit } from "./engine/redemption-split";
 import { BondScenarios, scenarioOf, unknownScenario } from "./bond-scenarios";
 
@@ -162,6 +163,14 @@ export interface SecurityValuation {
   readonly benchmarkCoverage: readonly BenchmarkCoverage[];
   readonly totals: SecurityValuationTotals;
   readonly refusal: BondLotsRefusal | null;
+  /**
+   * True when a series the security holds trades (a MARKETABLE series other than
+   * a discount instrument): the engine writes no price for the security, so its
+   * price is the person's own, and the surface says so (INV-BOND-005,
+   * `docs/financial-calculation-contract.md` 1.3). False when every series is
+   * priced by its terms, or none is held.
+   */
+  readonly marketPriceRequired: boolean;
 }
 
 /** One account's lots of a linked security: their bond count and exact gross value. */
@@ -388,6 +397,7 @@ export class BondValuationService {
       }
       // Per series, a refusal included: where a series' terms came from and
       // what it redeems at belong to the series, not to the derived lots.
+      const needsMarketPrice = marketPriceRequired(held.map((r) => r.terms));
       const series = held.map((reference) => ({
         instrumentId: reference.instrument.id,
         seriesCode: reference.instrument.seriesCode,
@@ -411,6 +421,7 @@ export class BondValuationService {
             accruedInterest: null,
           },
           refusal: folded.refusal,
+          marketPriceRequired: needsMarketPrice,
         };
       }
 
@@ -441,6 +452,7 @@ export class BondValuationService {
           accruedInterest: sum((v) => v.accruedInterest),
         },
         refusal: null,
+        marketPriceRequired: needsMarketPrice,
       };
     });
   }

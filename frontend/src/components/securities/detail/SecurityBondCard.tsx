@@ -268,6 +268,15 @@ export function SecurityBondCard({
           </div>
         )}
 
+        {valuation.marketPriceRequired === true && (
+          <div
+            role="note"
+            className="rounded-md bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-900/20 dark:text-amber-200"
+          >
+            {t('bond.marketPriceRequired')}
+          </div>
+        )}
+
         {refusal && (
           <div
             role="alert"

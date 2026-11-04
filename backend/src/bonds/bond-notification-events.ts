@@ -488,6 +488,13 @@ export type BondMissingCause =
       readonly to: string;
     }
   | {
+      readonly code: "PURCHASE_AFTER_MATURITY";
+      readonly instrumentId: string;
+      readonly seriesCode: string;
+      readonly purchaseDate: string;
+      readonly maturityDate: string;
+    }
+  | {
       readonly code: "LOTS_UNDERIVABLE";
       readonly refusalCode: string;
       /** The base action of the row that refused (`SELL`). */
@@ -541,15 +548,24 @@ export function missingCausesOf(valuation: SecurityValuation): {
   for (const lot of valuation.lots) {
     const v = lot.valuation;
     if (v.status === "REFUSED" && v.refusal !== null) {
+      const refusal = v.refusal;
       add(
-        {
-          code: "PURCHASE_OUTSIDE_SALE_WINDOW",
-          instrumentId: lot.instrumentId ?? "",
-          seriesCode: v.seriesCode,
-          purchaseDate: v.refusal.params.purchaseDate,
-          from: v.refusal.params.from,
-          to: v.refusal.params.to,
-        },
+        refusal.code === "PURCHASE_OUTSIDE_SALE_WINDOW"
+          ? {
+              code: "PURCHASE_OUTSIDE_SALE_WINDOW",
+              instrumentId: lot.instrumentId ?? "",
+              seriesCode: v.seriesCode,
+              purchaseDate: refusal.params.purchaseDate,
+              from: refusal.params.from,
+              to: refusal.params.to,
+            }
+          : {
+              code: "PURCHASE_AFTER_MATURITY",
+              instrumentId: lot.instrumentId ?? "",
+              seriesCode: v.seriesCode,
+              purchaseDate: refusal.params.purchaseDate,
+              maturityDate: refusal.params.maturityDate,
+            },
         lot,
       );
       continue;
@@ -625,6 +641,8 @@ export function missingDataNotification(
           return `the terms of ${cause.seriesCode} are incomplete; refresh the series on the bond page`;
         case "PURCHASE_OUTSIDE_SALE_WINDOW":
           return `a purchase of ${cause.seriesCode} on ${cause.purchaseDate} is outside its sale window ${cause.from} to ${cause.to}; correct the purchase date`;
+        case "PURCHASE_AFTER_MATURITY":
+          return `a purchase of ${cause.seriesCode} on ${cause.purchaseDate} is on or after its maturity ${cause.maturityDate}; correct the purchase date`;
         case "LOTS_UNDERIVABLE":
           return `the ${cause.action} of ${cause.date} makes the lots impossible to derive (${cause.refusalCode}); ${lotsRemedy(cause.refusalCode)}`;
       }

@@ -145,6 +145,7 @@ Per security, the causes the valuation reports for its OPEN and REFUSED lots:
 | `OBSERVATION_MISSING` | `valuation.missing[]` (`benchmarkId`, `observation`, `publisher`) with the security's `benchmarkCoverage` (`coveredThrough`, `lastFetchedAt`) | not published yet by the publisher, or the feed has not been fetched since `lastFetchedAt`: refresh on the bond page |
 | `TERMS_INCOMPLETE` | `dataCompleteness.termsComplete === false` | refresh the series on the bond page |
 | `PURCHASE_OUTSIDE_SALE_WINDOW` | `status === "REFUSED"`, `refusal.params` (`from`, `to`, `purchaseDate`) | correct the purchase date of the transaction |
+| `PURCHASE_AFTER_MATURITY` | `status === "REFUSED"`, `refusal.params` (`maturityDate`, `purchaseDate`) | correct the purchase date of the transaction |
 | `LOTS_UNDERIVABLE` | `v.refusal` (`code`, `params.action`, `params.date`, `params.quantity`, `rowId`) | names the row (its action and date) and by code: `SERIES_NOT_DETERMINED` / `SERIES_REQUIRED` choose the series on that transaction; `REMOVAL_EXCEEDS_SERIES` the removal exceeds what the account holds of that series; any other code correct the transaction |
 
 `data.causes` is the sorted, de-duplicated list. Dedupe:

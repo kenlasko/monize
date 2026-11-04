@@ -67,11 +67,16 @@ export function SecurityBondLotsTable({
             const period = v.currentPeriod;
             const refusalText =
               v.status === 'REFUSED' && v.refusal !== null
-                ? t(`bond.valuationRefusal.${v.refusal.code}`, {
-                    from: formatDate(v.refusal.params.from),
-                    to: formatDate(v.refusal.params.to),
-                    purchaseDate: formatDate(v.refusal.params.purchaseDate),
-                  })
+                ? v.refusal.code === 'PURCHASE_AFTER_MATURITY'
+                  ? t('bond.valuationRefusal.PURCHASE_AFTER_MATURITY', {
+                      maturityDate: formatDate(v.refusal.params.maturityDate),
+                      purchaseDate: formatDate(v.refusal.params.purchaseDate),
+                    })
+                  : t('bond.valuationRefusal.PURCHASE_OUTSIDE_SALE_WINDOW', {
+                      from: formatDate(v.refusal.params.from),
+                      to: formatDate(v.refusal.params.to),
+                      purchaseDate: formatDate(v.refusal.params.purchaseDate),
+                    })
                 : null;
             // A matured or refused lot has no current period; an open lot with a
             // period whose rate is not known still shows the period.

@@ -110,6 +110,7 @@ export function security(
       accruedInterest: null,
     },
     refusal: null,
+    marketPriceRequired: false,
     ...over,
   };
 }
