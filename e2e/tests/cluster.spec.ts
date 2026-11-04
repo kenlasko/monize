@@ -20,15 +20,12 @@ import { E2E_DEFAULT_PASSWORD } from '../helpers/credentials';
  * user-visible outcome rather than as an integration test about a table.
  *
  * Run only against the two-replica stack (`docker-compose.e2e.yml`, profile
- * `cluster`), which the CI shard starts and sets `E2E_CLUSTER=multi` for.
- * Skipped everywhere else, including the other three shards: against one
- * backend every assertion below is true for the wrong reason.
+ * `cluster`), through the `cluster` project, which `playwright.config.ts`
+ * defines only when `E2E_CLUSTER=multi`. The chromium and firefox projects
+ * ignore this file: against one backend every assertion below is true for the
+ * wrong reason.
  */
 test.describe('CLUSTER_MODE=multi', () => {
-  test.skip(
-    process.env.E2E_CLUSTER !== 'multi',
-    'needs the two-backend stack: docker compose --profile cluster',
-  );
 
   /** The LB's own address, for the checks that read nginx directly. */
   const LB_URL = process.env.E2E_LB_URL || 'http://localhost:3002';

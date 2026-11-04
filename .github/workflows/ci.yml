@@ -1571,8 +1571,9 @@ jobs:
           # One shard runs the SAME suite against two backend replicas behind a
           # round-robin load balancer with no affinity (docker-compose.e2e.yml,
           # profile `cluster`). It is the only place the product is exercised as
-          # a cluster, and it also runs tests/cluster.spec.ts, which is skipped
-          # everywhere else because one backend makes it true for the wrong
+          # a cluster, and it also runs tests/cluster.spec.ts (the `cluster`
+          # Playwright project, defined only under E2E_CLUSTER=multi), which no
+          # other run includes because one backend makes it true for the wrong
           # reason. The other three shards are byte-for-byte what they were.
           - shard: 4
             cluster: 'true'
@@ -1639,9 +1640,9 @@ jobs:
       # account, and a cluster check that ran after it would be asserting
       # against a stack the suite had already torn down half of.
       #
-      # --project=chromium because every test in the file drives the API
-      # directly and never opens a page; a second browser would double the run
-      # and prove nothing.
+      # The `cluster` project is Chromium only: every test in the file drives
+      # the API directly and never opens a page, so a second browser would
+      # double the run and prove nothing.
       - name: Run cluster tests (CLUSTER_MODE=multi)
         if: matrix.cluster == 'true'
         timeout-minutes: 10
@@ -1650,7 +1651,7 @@ jobs:
           E2E_CLUSTER: multi
           E2E_LB_URL: http://localhost:3002
           CI: 'true'
-        run: scripts/e2e-playwright.sh npx playwright test tests/cluster.spec.ts --project=chromium
+        run: scripts/e2e-playwright.sh npx playwright test --project=cluster
 
       - name: Run E2E tests
         timeout-minutes: 30

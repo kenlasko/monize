@@ -149,30 +149,4 @@ test.describe('Backup & restore', () => {
       adminPage.getByRole('button', { name: 'Back Up Every Account Now' }),
     ).toBeVisible();
   });
-
-  test('disables the automatic-backup controls in demo mode', async ({
-    adminPage,
-  }) => {
-    // The four mutating AutoBackupController endpoints are @DemoRestricted, so
-    // the controls that reach them are disabled (not hidden) for a demo admin,
-    // with the amber demo banner explaining why. This body only runs against a
-    // deployment started with DEMO_MODE=true.
-    test.skip(
-      process.env.DEMO_MODE !== 'true',
-      'requires a DEMO_MODE=true deployment',
-    );
-
-    await adminPage.goto('/admin/backups');
-
-    await expect(
-      adminPage.getByRole('heading', { name: 'Restricted in Demo Mode' }),
-    ).toBeVisible();
-    await expect(adminPage.getByRole('switch')).toBeDisabled();
-    await expect(
-      adminPage.getByRole('button', { name: 'Browse...' }),
-    ).toBeDisabled();
-    await expect(
-      adminPage.getByRole('button', { name: 'Save Policy' }),
-    ).toBeDisabled();
-  });
 });

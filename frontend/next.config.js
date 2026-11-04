@@ -23,6 +23,13 @@ const nextConfig = {
   reactStrictMode: true,
   experimental: {
     proxyClientMaxBodySize: `${PROXY_BODY_LIMIT_MB}mb`,
+    // Turbopack's on-disk dev cache makes a restarted dev server fast, but it
+    // writes and compacts in the background, and while it does a request for
+    // an already-compiled page can stall for tens of seconds. A throwaway
+    // container (the e2e stack) never restarts into that cache, so it sets
+    // NEXT_DEV_FILESYSTEM_CACHE=false and pays none of the cost.
+    turbopackFileSystemCacheForDev:
+      process.env.NEXT_DEV_FILESYSTEM_CACHE !== 'false',
   },
   // Pin the dev (Turbopack) workspace root to this app so it doesn't scan the
   // whole monorepo (the backend tree) on every compile. The repo has multiple
