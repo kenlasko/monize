@@ -214,8 +214,8 @@
     "bondCountryOther": "その他",
     "bondCountryOtherInfo": "他の国の債券への対応は、プロジェクトの<link>GitHub</link>でリクエストできます。",
     "quoteTable": {
-      "urlLabel": "価格表のあるページ",
-      "urlHelp": "ページには、見出し行に日付列と終値列がある表が必要です（英語、ドイツ語、スペイン語。例: Date/Close、Datum/Schluss、Fecha/Cierre）。最新の行が価格となり、すべての行が履歴に使われます。",
+      "urlLabel": "価格表のウェブページ",
+      "urlHelp": "ページには、見出し行に日付列と終値列がある表が必要です。",
       "test": "テスト",
       "previewFailed": "ページを読み込めませんでした。",
       "summary": "{first}から{last}までの{count, plural, other {#日分}}",

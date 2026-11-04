@@ -214,8 +214,8 @@
     "bondCountryOther": "기타",
     "bondCountryOtherInfo": "다른 국가 채권 지원은 프로젝트의 <link>GitHub</link>에서 요청할 수 있습니다.",
     "quoteTable": {
-      "urlLabel": "가격 표가 있는 페이지",
-      "urlHelp": "페이지에는 머리글 행에 날짜 열과 종가 열이 있는 표가 있어야 합니다(영어, 독일어 또는 스페인어, 예: Date/Close, Datum/Schluss, Fecha/Cierre). 가장 최근 행이 가격이며 모든 행이 기록을 채웁니다.",
+      "urlLabel": "가격 표 웹페이지",
+      "urlHelp": "페이지에는 머리글 행에 날짜 열과 종가 열이 있는 표가 있어야 합니다.",
       "test": "테스트",
       "previewFailed": "페이지를 읽을 수 없습니다.",
       "summary": "{first}부터 {last}까지 {count, plural, other {#일}}",

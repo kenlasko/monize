@@ -214,8 +214,8 @@
     "bondCountryOther": "Inny",
     "bondCountryOtherInfo": "Wsparcie dla obligacji innych krajów można zgłosić na <link>GitHubie projektu</link>.",
     "quoteTable": {
-      "urlLabel": "Strona z tabelą kursów",
-      "urlHelp": "Strona musi zawierać tabelę, której nagłówek ma kolumnę daty i kolumnę kursu zamknięcia, po angielsku, niemiecku lub hiszpańsku (na przykład Date/Close, Datum/Schluss, Fecha/Cierre). Najnowszy wiersz to kurs; wszystkie wiersze uzupełniają historię.",
+      "urlLabel": "Strona internetowa z tabelą kursów",
+      "urlHelp": "Strona musi zawierać tabelę, której nagłówek ma kolumnę daty i kolumnę kursu zamknięcia.",
       "test": "Testuj",
       "previewFailed": "Nie udało się odczytać strony.",
       "summary": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}} od {first} do {last}",

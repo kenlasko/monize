@@ -214,8 +214,8 @@
     "bondCountryOther": "Outro",
     "bondCountryOtherInfo": "O suporte a títulos de outros países pode ser solicitado no <link>GitHub do projeto</link>.",
     "quoteTable": {
-      "urlLabel": "Página com a tabela de preços",
-      "urlHelp": "A página precisa de uma tabela cujo cabeçalho tenha uma coluna de data e outra de preço de fechamento, em inglês, alemão ou espanhol (por exemplo Date/Close, Datum/Schluss, Fecha/Cierre). A linha mais recente é o preço; todas as linhas preenchem o histórico.",
+      "urlLabel": "Página da web da tabela de preços",
+      "urlHelp": "A página precisa de uma tabela cujo cabeçalho tenha uma coluna de data e outra de preço de fechamento.",
       "test": "Testar",
       "previewFailed": "Não foi possível ler a página.",
       "summary": "{count, plural, one {# dia} other {# dias}} de {first} a {last}",
