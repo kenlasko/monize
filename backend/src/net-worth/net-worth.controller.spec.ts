@@ -4,6 +4,7 @@ import { NetWorthController } from "./net-worth.controller";
 import { NetWorthService } from "./net-worth.service";
 import { PortfolioPeriodResultService } from "./portfolio-period-result.service";
 import { PortfolioPeriodResultsBatchService } from "./portfolio-period-results-batch.service";
+import { SecurityPeriodResultsService } from "./security-period-results.service";
 import { DelegationService } from "../delegation/delegation.service";
 import { JointAccountsService } from "../delegation/joint-accounts.service";
 
@@ -15,6 +16,9 @@ describe("NetWorthController", () => {
   >;
   let mockPeriodResults: Partial<
     Record<keyof PortfolioPeriodResultsBatchService, jest.Mock>
+  >;
+  let mockSecurityPeriodResults: Partial<
+    Record<keyof SecurityPeriodResultsService, jest.Mock>
   >;
   let delegationService: Record<string, jest.Mock>;
   let jointAccounts: Record<string, jest.Mock>;
@@ -34,6 +38,7 @@ describe("NetWorthController", () => {
     };
     mockPeriodResult = { getPeriodResult: jest.fn() };
     mockPeriodResults = { getPeriodResults: jest.fn() };
+    mockSecurityPeriodResults = { getSecurityPeriodResults: jest.fn() };
     delegationService = {
       readableAccountIds: jest.fn().mockResolvedValue([]),
     };
@@ -56,6 +61,10 @@ describe("NetWorthController", () => {
         {
           provide: PortfolioPeriodResultsBatchService,
           useValue: mockPeriodResults,
+        },
+        {
+          provide: SecurityPeriodResultsService,
+          useValue: mockSecurityPeriodResults,
         },
         { provide: DelegationService, useValue: delegationService },
         { provide: JointAccountsService, useValue: jointAccounts },
@@ -289,6 +298,74 @@ describe("NetWorthController", () => {
         ),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(mockPeriodResult.getPeriodResult).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getSecurityPeriodResults()", () => {
+    it("names the window the way the portfolio route does", async () => {
+      mockSecurityPeriodResults.getSecurityPeriodResults!.mockReturnValue(
+        "rows",
+      );
+
+      const result = await controller.getSecurityPeriodResults(
+        mockReq,
+        "2026-01-02",
+        undefined,
+        "2026-01-01",
+        UUID_A,
+        "cad",
+        "ytd",
+      );
+
+      expect(result).toBe("rows");
+      expect(
+        mockSecurityPeriodResults.getSecurityPeriodResults,
+      ).toHaveBeenCalledWith("user-1", {
+        period: "ytd",
+        endDate: undefined,
+        accountIds: [UUID_A],
+        displayCurrency: "CAD",
+      });
+    });
+
+    it("passes a dated window, baseline included, for a range with no preset", async () => {
+      // MTD: the period opens on the 1st, measured from the month before.
+      await controller.getSecurityPeriodResults(
+        mockReq,
+        "2026-09-01",
+        "2026-09-17",
+        "2026-08-31",
+      );
+
+      expect(
+        mockSecurityPeriodResults.getSecurityPeriodResults,
+      ).toHaveBeenCalledWith("user-1", {
+        startDate: "2026-09-01",
+        endDate: "2026-09-17",
+        baselineDate: "2026-08-31",
+        accountIds: undefined,
+        displayCurrency: undefined,
+      });
+    });
+
+    it.each([
+      ["no window", [undefined]],
+      [
+        "an unknown preset",
+        [undefined, undefined, undefined, undefined, undefined, "6m"],
+      ],
+      ["a malformed baseline", ["2026-09-01", undefined, "31/08/2026"]],
+      ["a malformed account id", ["2026-09-01", undefined, undefined, "nope"]],
+    ])("refuses %s, as its sibling does", async (_label, args) => {
+      await expect(
+        controller.getSecurityPeriodResults(
+          mockReq,
+          ...(args as Array<string | undefined>),
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(
+        mockSecurityPeriodResults.getSecurityPeriodResults,
+      ).not.toHaveBeenCalled();
     });
   });
 

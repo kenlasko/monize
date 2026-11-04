@@ -8,6 +8,7 @@ import {
   InvestmentBreakdownGranularity,
   PortfolioPeriodResult,
   PortfolioPeriodResults,
+  SecurityPeriodResults,
 } from '@/types/net-worth';
 
 export const netWorthApi = {
@@ -82,6 +83,25 @@ export const netWorthApi = {
   }): Promise<PortfolioPeriodResult> => {
     const response = await apiClient.get<PortfolioPeriodResult>(
       '/net-worth/investments-period-result',
+      { params, timeout: PORTFOLIO_VALUATION_TIMEOUT_MS },
+    );
+    return response.data;
+  },
+
+  /**
+   * The invested part of `getInvestmentsPeriodResult` split by security, for
+   * the same window named the same way, so the rows add up to that figure.
+   */
+  getInvestmentsSecurityPeriodResults: async (params: {
+    period?: string;
+    startDate?: string;
+    endDate?: string;
+    baselineDate?: string;
+    accountIds?: string;
+    displayCurrency?: string;
+  }): Promise<SecurityPeriodResults> => {
+    const response = await apiClient.get<SecurityPeriodResults>(
+      '/net-worth/investments-period-result/securities',
       { params, timeout: PORTFOLIO_VALUATION_TIMEOUT_MS },
     );
     return response.data;

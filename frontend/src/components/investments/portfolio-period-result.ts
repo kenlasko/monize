@@ -80,3 +80,21 @@ export function withheldPeriodCause(
   if (reasons.has('missingRatePairs')) return 'missingRatePairs';
   return null;
 }
+
+/**
+ * The close a dated window is measured from, sent as `baselineDate` beside its
+ * `startDate`: the day its series was requested from (`usePortfolioRangeWindow`'s
+ * `start`) where that precedes the period itself (`periodStart`), as it does
+ * for MTD. Undefined where the two are one day, so no second copy of the same
+ * date goes out. Every request for a period result names a dated window this
+ * way, so the portfolio's figure and its split by security are asked the same
+ * question.
+ */
+export function periodBaselineDate(
+  startDate: string | undefined,
+  periodStartDate: string | undefined,
+): string | undefined {
+  return startDate && periodStartDate && startDate < periodStartDate
+    ? startDate
+    : undefined;
+}

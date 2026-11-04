@@ -59,6 +59,45 @@ vi.mock('@/lib/investments', () => ({
   },
 }));
 
+// The window's figures: one row for the held security, nothing withheld.
+vi.mock('@/lib/net-worth', () => ({
+  netWorthApi: {
+    getInvestmentsPeriodResult: vi.fn(async () => ({
+      currency: 'CAD',
+      startDate: '2025-11-04',
+      startPriceDate: '2025-11-04',
+      endDate: '2026-11-04',
+      investmentPnl: 50,
+      investmentReturnPercent: 5,
+      investedReasons: [],
+    })),
+    getInvestmentsSecurityPeriodResults: vi.fn(async () => ({
+      currency: 'CAD',
+      startDate: '2025-11-04',
+      endDate: '2026-11-04',
+      reasons: [],
+      unattributedPnl: 0,
+      securities: [
+        {
+          securityId: 'security-1',
+          symbol: 'LONG',
+          name: 'A deliberately long holding name that wraps without a clamp',
+          securityCurrency: 'CAD',
+          startQuantity: 14.3456789,
+          endQuantity: 14.3456789,
+          startClose: 95,
+          endClose: 100,
+          priceChangePercent: 5.26,
+          priceChangeReason: null,
+          investmentPnl: 50,
+          investmentReturnPercent: 5,
+          investedReasons: [],
+        },
+      ],
+    })),
+  },
+}));
+
 // The Performance view's historical chart owns its own fetch and recharts tree;
 // stub it so this suite stays about the wrapped holdings table.
 vi.mock('@/components/reports/SecurityComparisonChart', () => ({
@@ -116,6 +155,7 @@ const EXPECTED_PLACEMENT = [
   'col-start-2/row-start-1',
   'col-start-2/row-start-3',
   'col-start-1/row-start-4',
+  'col-start-2/row-start-4',
 ];
 
 function placement(cell: Element): string {
@@ -162,7 +202,6 @@ describe('InvestmentPerformanceReport mobile wrapped table', () => {
     expect(row?.className).toContain('sm:table-row');
     const cells = Array.from(row?.querySelectorAll('td') ?? []);
     expect(cells.map(placement)).toEqual(EXPECTED_PLACEMENT);
-    expect(cells[6].className).toContain('col-span-2');
     expect(cells.every((cell) => cell.getAttribute('role') === 'cell')).toBe(true);
     expect(cells[0].querySelector('span.sm\\:hidden')).toBeNull();
     expect(cells.slice(1).map((cell) => cell.querySelector('span')?.textContent)).toEqual([
@@ -172,6 +211,7 @@ describe('InvestmentPerformanceReport mobile wrapped table', () => {
       'Market Value',
       'Gain/Loss',
       'Return',
+      '% Change',
     ]);
     expect(cells[0].querySelector('.break-words')).toHaveTextContent(
       'A deliberately long holding name that wraps without a clamp',
@@ -200,7 +240,6 @@ describe('InvestmentPerformanceReport mobile wrapped table', () => {
     expect(rows[1].className).toContain('grid-cols-2');
     expect(rows[1].className).toContain('sm:table-row');
     expect(childCells.map(placement)).toEqual(EXPECTED_PLACEMENT);
-    expect(childCells[6].className).toContain('col-span-2');
     expect(childCells.every((cell) => cell.getAttribute('role') === 'cell')).toBe(true);
     expect(childCells.map((cell) => cell.querySelector('span')?.textContent ?? null)).toEqual([
       null,
@@ -208,22 +247,25 @@ describe('InvestmentPerformanceReport mobile wrapped table', () => {
       'Avg Cost',
       'Current Price',
       'Market Value',
-      'Gain/Loss',
-      'Return',
+      // The period is measured per security: an account row has no figure
+      // for it, rather than an all-time one under a period caption.
+      null,
+      null,
+      null,
     ]);
     expect(childCells[0]).toHaveTextContent('First account');
     expect(childCells[1]).toHaveTextContent('SHARES<12.3456789>');
   });
 
-  it('keeps all seven accessible sort controls on phone and desktop', async () => {
+  it('keeps all eight accessible sort controls on phone and desktop', async () => {
     const { table } = await renderReport();
     const headerRows = table.querySelectorAll('thead tr');
     expect(headerRows).toHaveLength(2);
     expect(headerRows[0].className).toContain('sm:hidden');
     expect(headerRows[1].className).toContain('hidden');
     expect(headerRows[1].className).toContain('sm:table-row');
-    expect(headerRows[0].querySelectorAll('th')).toHaveLength(7);
-    expect(headerRows[1].querySelectorAll('th')).toHaveLength(7);
+    expect(headerRows[0].querySelectorAll('th')).toHaveLength(8);
+    expect(headerRows[1].querySelectorAll('th')).toHaveLength(8);
     const activePhoneSort = headerRows[0].querySelector('th[aria-sort="descending"]');
     expect(activePhoneSort).toHaveTextContent('Market Value');
 
@@ -238,6 +280,7 @@ describe('InvestmentPerformanceReport mobile wrapped table', () => {
       'Market Value',
       'Gain/Loss',
       'Return',
+      '% Change',
     ]);
   });
 });

@@ -71,6 +71,24 @@ describe('netWorthApi', () => {
     expect(PORTFOLIO_VALUATION_TIMEOUT_MS).toBeGreaterThan(10_000);
   });
 
+  it('getInvestmentsSecurityPeriodResults fetches the per-security split of the same window', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { currency: 'CAD', securities: [] } });
+
+    await netWorthApi.getInvestmentsSecurityPeriodResults({
+      startDate: '2026-09-01',
+      baselineDate: '2026-08-31',
+      endDate: '2026-09-17',
+    });
+
+    expect(apiClient.get).toHaveBeenCalledWith(
+      '/net-worth/investments-period-result/securities',
+      {
+        params: { startDate: '2026-09-01', baselineDate: '2026-08-31', endDate: '2026-09-17' },
+        timeout: PORTFOLIO_VALUATION_TIMEOUT_MS,
+      },
+    );
+  });
+
   it('recalculate posts to /net-worth/recalculate', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: { success: true } });
     const result = await netWorthApi.recalculate();
