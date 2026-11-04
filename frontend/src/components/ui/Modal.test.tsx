@@ -773,6 +773,23 @@ describe('Modal header, footer and body', () => {
     expect(wrapper.className).toContain('p-4');
   });
 
+  describe('height cap', () => {
+    it('lets a default panel grow to the viewport less the backdrop inset before it scrolls', () => {
+      render(<Modal isOpen={true}>Content</Modal>);
+      const dialog = screen.getByRole('dialog');
+      const backdrop = dialog.parentElement!;
+      // 2rem is the backdrop's p-4 on both edges; the two move together.
+      expect(backdrop.className).toMatch(/(^|\s)p-4(\s|$)/);
+      expect(dialog.className).toContain('max-h-[calc(100dvh-2rem)]');
+      expect(dialog.className).toContain('overflow-y-auto');
+      // A fraction of the viewport scrolled a long form while the window
+      // still had room for it.
+      expect(dialog.className).not.toMatch(/max-h-\[\d+d?vh\]/);
+      // Content-sized: the cap is a ceiling, never a height.
+      expect(dialog.className).not.toMatch(/(^|\s)h-\[/);
+    });
+  });
+
   describe('fixedHeight', () => {
     const open = (props: Partial<React.ComponentProps<typeof Modal>> = {}) =>
       render(
@@ -787,7 +804,7 @@ describe('Modal header, footer and body', () => {
       for (const cls of ['h-[min(90vh,56rem)]', 'flex', 'flex-col', 'overflow-hidden']) {
         expect(dialog.className).toContain(cls);
       }
-      expect(dialog.className).not.toContain('max-h-[90vh]');
+      expect(dialog.className).not.toContain('max-h-[calc(100dvh-2rem)]');
       expect(dialog.className).not.toContain('overflow-y-auto');
     });
 
@@ -823,7 +840,7 @@ describe('Modal header, footer and body', () => {
     it('changes nothing by default', () => {
       open({ padding: 'md' });
       const dialog = screen.getByRole('dialog');
-      expect(dialog.className).toContain('max-h-[90vh]');
+      expect(dialog.className).toContain('max-h-[calc(100dvh-2rem)]');
       expect(dialog.className).toContain('overflow-y-auto');
       expect(dialog.className).not.toContain('h-[min(90vh,56rem)]');
       expect(dialog.className).not.toContain('flex-col');
@@ -863,7 +880,7 @@ describe('Modal header, footer and body', () => {
       ]) {
         expect(dialog.className).toContain(cls);
       }
-      expect(dialog.className).toContain('max-h-[90vh]');
+      expect(dialog.className).toContain('max-h-[calc(100dvh-2rem)]');
       expect(dialog.className).toContain('rounded-lg');
       // Never the bare utility: it would sort before `rounded-lg` and lose.
       expect(dialog.className).not.toMatch(/(^|\s)h-dvh(\s|$)/);

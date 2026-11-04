@@ -30,7 +30,7 @@ Rules that describe the majority of today's code bind new and changed code. Wher
 **Layout of a form dialog** (the New Transaction dialog in `app/transactions/page.tsx` and `TransactionForm.tsx`):
 
 - **Panel.** `Modal` keeps `padding="none"`; the panel's `p-6` comes through `className`. The title is `mb-4` above the form, and the form body is `space-y-4`. A host of `TransactionForm` passes `maxWidth="6xl" className="p-6 !max-w-[69rem]"`, as Transactions, Reconcile, Bills and the foreign-currency fees surfaces do, so the dialog has one size wherever it opens. Not every host does yet (see [Known debt](#known-debt)).
-- **Fields.** One column on a phone, two or three from `md:` (`grid grid-cols-1 md:grid-cols-2 gap-4`). The whole panel scrolls (`max-h-[90vh]`); no inner scroll box.
+- **Fields.** One column on a phone, two or three from `md:` (`grid grid-cols-1 md:grid-cols-2 gap-4`). The panel grows with its content up to the viewport less the backdrop's inset (`max-h-[calc(100dvh-2rem)]`, set by `Modal`; never a smaller `vh` fraction) and only then scrolls as a whole; no inner scroll box.
 - **Button row.** `FormActions`: right-aligned, `pt-4` above it, not sticky. Cancel (`outline`, disabled while submitting) first, the primary last. A secondary save mode uses `SplitSubmitButton`, as New Transaction does, with the plain create first and "... & New" second; do not add a separate button or flow for it.
 - **Open and close.** A form dialog uses `useFormModal` (`pushHistory` + `onBeforeClose`) and renders `UnsavedChangesDialog` beside the `Modal`; the form takes `onDirtyChange` and `submitRef`.
 - **A warning before a save** is `ConfirmDialog variant="warning"`, as `TransactionForm.tsx` does before saving a change to a reconciled transaction.
