@@ -1409,6 +1409,111 @@ describe("YahooFinanceService", () => {
     });
   });
 
+  /**
+   * Discussion #2005 / issue #379: a coin was looked up as USD on Yahoo's `CCC`
+   * venue whatever its quote fiat, because the exchange guess reads every
+   * dotless symbol as USD. Saved that way, every EUR price for `BTC-EUR` is
+   * refused by `verifyProviderCurrency` and the holding never gets a value.
+   */
+  describe("lookupSecurityMany for a cryptocurrency", () => {
+    const coin = (symbol: string, extra: Record<string, string> = {}) => ({
+      symbol,
+      shortname: `${symbol} coin`,
+      quoteType: "CRYPTOCURRENCY",
+      exchange: "CCC",
+      exchDisp: "CCC",
+      typeDisp: "Cryptocurrency",
+      ...extra,
+    });
+
+    it("takes the currency from the fiat leg and names the canonical exchange", async () => {
+      mockFetchResponse({ quotes: [coin("BTC-EUR")] });
+
+      const [result] = await service.lookupSecurityMany("BTC-EUR");
+
+      expect(result).toMatchObject({
+        symbol: "BTC-EUR",
+        exchange: "CRYPTO",
+        securityType: "CRYPTO",
+        currencyCode: "EUR",
+      });
+    });
+
+    it("reads a USD pair as USD and a CAD pair as CAD", async () => {
+      mockFetchResponse({ quotes: [coin("BTC-USD"), coin("DOT-CAD")] });
+
+      const results = await service.lookupSecurityMany("BTC");
+
+      expect(
+        results.map((r) => [r.symbol, r.exchange, r.currencyCode]),
+      ).toEqual([
+        ["BTC-USD", "CRYPTO", "USD"],
+        ["DOT-CAD", "CRYPTO", "CAD"],
+      ]);
+    });
+
+    it("recognises a coin by quoteType alone", async () => {
+      mockFetchResponse({
+        quotes: [{ symbol: "ETH-GBP", quoteType: "CRYPTOCURRENCY" }],
+      });
+
+      const [result] = await service.lookupSecurityMany("ETH-GBP");
+
+      expect(result).toMatchObject({
+        exchange: "CRYPTO",
+        securityType: "CRYPTO",
+        currencyCode: "GBP",
+      });
+    });
+
+    // Unknown is null, never USD: the form then asks the person for the
+    // currency instead of saving one every price will be refused against.
+    it("reports no currency for a coin symbol without a fiat leg", async () => {
+      mockFetchResponse({ quotes: [coin("BTC"), coin("BTC-USDT")] });
+
+      const results = await service.lookupSecurityMany("BTC");
+
+      expect(results.map((r) => [r.symbol, r.currencyCode])).toEqual([
+        ["BTC", null],
+        ["BTC-USDT", null],
+      ]);
+      expect(results.every((r) => r.exchange === "CRYPTO")).toBe(true);
+    });
+
+    it("still reads a dotless US equity as USD", async () => {
+      mockFetchResponse({
+        quotes: [
+          {
+            symbol: "BRK-B",
+            quoteType: "EQUITY",
+            exchDisp: "NYSE",
+            typeDisp: "Equity",
+          },
+        ],
+      });
+
+      const [result] = await service.lookupSecurityMany("BRK-B");
+
+      expect(result).toMatchObject({
+        symbol: "BRK-B",
+        exchange: "NYSE",
+        securityType: "STOCK",
+        currencyCode: "USD",
+      });
+    });
+
+    it("applies the same rule to the single-result lookup", async () => {
+      mockFetchResponse({ quotes: [coin("BTC-EUR")] });
+
+      const result = await service.lookupSecurity("BTC-EUR");
+
+      expect(result).toMatchObject({
+        exchange: "CRYPTO",
+        currencyCode: "EUR",
+      });
+    });
+  });
+
   describe("getYahooSymbol", () => {
     it("should return symbol with .TO suffix for TSX exchange", () => {
       expect(service.getYahooSymbol("RY", "TSX")).toBe("RY.TO");
@@ -1448,6 +1553,13 @@ describe("YahooFinanceService", () => {
 
     it("should return symbol unchanged for unknown exchange", () => {
       expect(service.getYahooSymbol("TEST", "UNKNOWN_EXCHANGE")).toBe("TEST");
+    });
+
+    // A coin is quoted under its full Yahoo symbol; an exchange suffix would
+    // name a listing that does not exist.
+    it("returns a crypto pair unchanged on the CRYPTO exchange", () => {
+      expect(service.getYahooSymbol("BTC-EUR", "CRYPTO")).toBe("BTC-EUR");
+      expect(service.getYahooSymbol("BTC-EUR", "CCC")).toBe("BTC-EUR");
     });
 
     it("should handle case-insensitive exchange matching", () => {
@@ -1517,6 +1629,45 @@ describe("YahooFinanceService", () => {
     it("returns no alternates for a currency pair", () => {
       expect(service.getAlternateSymbols("USDCAD=X")).toEqual([]);
       expect(service.getAlternateSymbols("CADUSD=X")).toEqual([]);
+    });
+
+    // A coin trades on no exchange either, so `BTC-EUR.TO` is three more
+    // guaranteed misses on every refresh Yahoo did not answer. The exchange
+    // says so, whatever the symbol's last leg: `USDT` is no ISO code.
+    it("returns no alternates for a security on the crypto exchange", () => {
+      expect(service.getAlternateSymbols("BTC-EUR", "CRYPTO")).toEqual([]);
+      expect(service.getAlternateSymbols("BTC-USDT", "CRYPTO")).toEqual([]);
+      expect(service.getAlternateSymbols("BTC", "CRYPTO")).toEqual([]);
+    });
+
+    // A coin created before the lookup named `CRYPTO` still carries `CCC`.
+    it("returns no alternates for a coin still on Yahoo's CCC venue", () => {
+      expect(service.getAlternateSymbols("DOT-CAD", "CCC")).toEqual([]);
+    });
+
+    // The symbol's shape decides nothing: a hyphenated listing keeps its
+    // Canadian suffixes, as does a dotless symbol with no exchange.
+    it("keeps the alternates of a hyphenated listing", () => {
+      expect(service.getAlternateSymbols("ENB-PFU", "TSX")).toEqual([
+        "ENB-PFU.TO",
+        "ENB-PFU.V",
+        "ENB-PFU.CN",
+      ]);
+      expect(service.getAlternateSymbols("RY", null)).toEqual([
+        "RY.TO",
+        "RY.V",
+        "RY.CN",
+      ]);
+    });
+
+    // Each fetch path hands the security's exchange through, so a coin that
+    // misses costs one request, not four.
+    it("tries no alternates when a crypto quote misses", async () => {
+      mockFetchResponse({ chart: { result: [] } });
+
+      await service.fetchQuote("BTC-USDT", "CRYPTO");
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
     });
   });
 

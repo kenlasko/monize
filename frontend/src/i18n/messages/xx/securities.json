@@ -116,6 +116,8 @@
     "exchangeLabel": "[XX-Exchange-XX]",
     "currencyLabel": "[XX-Currency-XX]",
     "currencyNotConfigured": "[XX-{code} — not in your currencies-XX]",
+    "currencyPlaceholder": "[XX-Select currency...-XX]",
+    "currencyNotReported": "[XX-The provider did not report this coin's currency. Choose the fiat currency it is quoted in.-XX]",
     "quoteProviderLabel": "[XX-Quote Provider-XX]",
     "skipPriceUpdatesLabel": "[XX-Disable automatic price updates-XX]",
     "skipPriceUpdatesHelp": "[XX-Monize will not fetch prices for this security. Use this for a security no provider can price; prices you enter yourself still count. Choosing a different quote provider or MSN Instrument ID turns updates back on.-XX]",

@@ -1,5 +1,23 @@
 import { describe, it, expect } from 'vitest';
-import { getDateFormatOptions, getExportDateFormatOptions } from './constants';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  EXCHANGE_OPTIONS,
+  getDateFormatOptions,
+  getExportDateFormatOptions,
+} from './constants';
+
+const REPO_ROOT = join(__dirname, '..', '..', '..');
+
+/** Blank out comment bodies, so a `]` or a quoted word in one cannot be read as data. */
+function withoutComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (match) => match.replace(/[^\n]/g, ' '))
+    .replace(
+      /(^|[^:])\/\/[^\n]*/g,
+      (match, before: string) => before + ' '.repeat(match.length - before.length),
+    );
+}
 
 // Minimal translator stub: echoes the key, appending {sample} when supplied so
 // we can assert the injected sample without loading the real catalog.
@@ -41,6 +59,32 @@ describe('getExportDateFormatOptions', () => {
     expect(opts[opts.length - 1]).toEqual({
       value: 'custom',
       label: 'dateFormat.custom',
+    });
+  });
+});
+
+/**
+ * The backend constrains the AI assistant's and MCP's `exchange` argument to
+ * `SECURITY_EXCHANGES`; an exchange the picker offers and the server does not
+ * know (or the reverse) is a value one surface can store and the other refuses.
+ */
+describe('EXCHANGE_OPTIONS', () => {
+  it('matches the backend SECURITY_EXCHANGES list', () => {
+    const source = withoutComments(
+      readFileSync(join(REPO_ROOT, 'backend/src/securities/security-enums.ts'), 'utf8'),
+    );
+    const match = /SECURITY_EXCHANGES\s*=\s*\[([\s\S]*?)\]\s*as const/.exec(source);
+    expect(match, 'SECURITY_EXCHANGES declaration not found').toBeTruthy();
+    const backend = [...match![1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    expect(backend.length).toBeGreaterThan(0);
+    expect(EXCHANGE_OPTIONS.map((option) => option.value)).toEqual(backend);
+  });
+
+  it('offers the canonical crypto exchange', () => {
+    expect(EXCHANGE_OPTIONS).toContainEqual({
+      value: 'CRYPTO',
+      label: 'Crypto',
+      subtitle: 'Cryptocurrency (Yahoo)',
     });
   });
 });

@@ -15,6 +15,7 @@ import {
 } from "./providers/quote-provider.interface";
 import { getTradingDateFromQuote } from "./providers/trading-date.util";
 import { normalizeQuoteCurrency } from "./providers/quote-currency.util";
+import { cryptoLookupFields } from "./providers/crypto-pair.util";
 import { ProviderHealthService } from "../provider-health/provider-health.service";
 import { TrackedProviderId } from "../provider-health/providers";
 
@@ -712,23 +713,40 @@ export class MsnFinanceService implements QuoteProvider {
       "os0IT",
     );
 
+    const reportedCurrency = getField(
+      item,
+      "Currency",
+      "currency",
+      "CurrencyCode",
+      "currencyCode",
+      "IsoCurrency",
+      "isoCurrency",
+      "TradingCurrency",
+      "tradingCurrency",
+      "BaseCurrency",
+      "baseCurrency",
+      "CUR",
+      "cur",
+      "OS0AP",
+    );
+    const securityType = this.mapMsnSecurityType(securityTypeRaw);
+
+    // A coin trades on no exchange and in no country: its currency is the one
+    // MSN reported, else the fiat leg of its symbol, else unknown, never the
+    // country or exchange guess below (issue #379).
+    if (securityType === "CRYPTO") {
+      return {
+        symbol,
+        name,
+        securityType,
+        ...cryptoLookupFields(symbol, reportedCurrency),
+        provider: "msn",
+        msnInstrumentId: extractedSecId || null,
+      };
+    }
+
     const currency =
-      getField(
-        item,
-        "Currency",
-        "currency",
-        "CurrencyCode",
-        "currencyCode",
-        "IsoCurrency",
-        "isoCurrency",
-        "TradingCurrency",
-        "tradingCurrency",
-        "BaseCurrency",
-        "baseCurrency",
-        "CUR",
-        "cur",
-        "OS0AP",
-      ) ||
+      reportedCurrency ||
       // Fund entries often lack an explicit currency field but mark the
       // country with RT0EC / LS01Z / ExMicCode / locale. Infer from there.
       this.currencyFromCountryCode(item);
@@ -737,7 +755,7 @@ export class MsnFinanceService implements QuoteProvider {
       symbol,
       name,
       exchange,
-      securityType: this.mapMsnSecurityType(securityTypeRaw),
+      securityType,
       currencyCode: currency || this.currencyFromExchange(exchange),
       provider: "msn",
       msnInstrumentId: extractedSecId || null,

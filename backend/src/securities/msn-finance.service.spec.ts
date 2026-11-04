@@ -689,6 +689,87 @@ describe("MsnFinanceService", () => {
     });
   });
 
+  /**
+   * Issue #379, the MSN half: a coin MSN types as a cryptocurrency fell back to
+   * the exchange guess, which reads anything off a known exchange as USD, so a
+   * EUR pair was looked up as USD and every one of its prices was refused. The
+   * rule is Yahoo's, from the same `cryptoLookupFields`.
+   */
+  describe("lookupSecurity for a cryptocurrency", () => {
+    const answer = (item: Record<string, string>) => {
+      global.fetch = jest
+        .fn()
+        .mockReturnValueOnce(createResponse({ data: { stocks: [item] } }));
+    };
+
+    it("takes the fiat leg of the symbol when MSN reports no currency", async () => {
+      answer({
+        Symbol: "BTC-EUR",
+        SecId: "btc-eur",
+        Name: "Bitcoin Euro",
+        Exchange: "XNAS",
+        SecurityType: "CRYPTOCURRENCY",
+        locale: "en-us",
+      });
+
+      const r = await service.lookupSecurity("BTC-EUR");
+
+      expect(r).toMatchObject({
+        symbol: "BTC-EUR",
+        exchange: "CRYPTO",
+        securityType: "CRYPTO",
+        currencyCode: "EUR",
+      });
+    });
+
+    it("keeps a currency MSN reported", async () => {
+      answer({
+        Symbol: "BTC-EUR",
+        SecId: "btc-eur",
+        Name: "Bitcoin Euro",
+        SecurityType: "DIGITAL CURRENCY",
+        Currency: "USD",
+      });
+
+      const r = await service.lookupSecurity("BTC-EUR");
+
+      expect(r).toMatchObject({ exchange: "CRYPTO", currencyCode: "USD" });
+    });
+
+    // Unknown is null, never USD.
+    it("reports no currency when neither MSN nor the symbol names one", async () => {
+      answer({
+        Symbol: "BTC",
+        SecId: "btc",
+        Name: "Bitcoin",
+        SecurityType: "CRYPTOCURRENCY",
+      });
+
+      const r = await service.lookupSecurity("BTC");
+
+      expect(r).toMatchObject({ exchange: "CRYPTO", currencyCode: null });
+    });
+
+    it("leaves a result of another type to the exchange guess", async () => {
+      answer({
+        Symbol: "ENB-PFU",
+        SecId: "enb-pfu",
+        Name: "Enbridge Pref",
+        Exchange: "XTSE",
+        SecurityType: "PS",
+      });
+
+      const r = await service.lookupSecurity("ENB-PFU");
+
+      expect(r).toMatchObject({
+        symbol: "ENB-PFU",
+        exchange: "TSX",
+        securityType: "STOCK",
+        currencyCode: "CAD",
+      });
+    });
+  });
+
   describe("fetchEtfSectorWeightings", () => {
     it("returns null (v1 does not support MSN ETF weightings)", async () => {
       const result = await service.fetchEtfSectorWeightings();

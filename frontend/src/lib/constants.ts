@@ -63,6 +63,11 @@ export function getExportDateFormatOptions(
   ];
 }
 
+/**
+ * The exchanges the security pickers offer. Mirrors the backend
+ * `SECURITY_EXCHANGES` in `securities/security-enums.ts`, value for value and in
+ * order; `constants.test.ts` fails when the two drift.
+ */
 export const EXCHANGE_OPTIONS = [
   // North America
   { value: 'NYSE', label: 'NYSE', subtitle: 'New York Stock Exchange (US)' },
@@ -93,6 +98,8 @@ export const EXCHANGE_OPTIONS = [
   { value: 'SGX', label: 'SGX', subtitle: 'Singapore Exchange (Singapore)' },
   { value: 'BSE', label: 'BSE', subtitle: 'Bombay Stock Exchange (India)' },
   { value: 'NSE', label: 'NSE', subtitle: 'National Stock Exchange (India)' },
+  // Cryptocurrency
+  { value: 'CRYPTO', label: 'Crypto', subtitle: 'Cryptocurrency (Yahoo)' },
 ];
 
 /**

@@ -6,7 +6,8 @@
  * `SECURITY_TYPE_OPTIONS` in `app/import/import-utils.ts`). The AI Assistant and
  * MCP `create_security` tools constrain their `exchange`/`securityType`
  * arguments to these same lists so the model picks from known values instead of
- * inventing one. Keep these in sync with the frontend lists.
+ * inventing one. Keep these in sync with the frontend lists
+ * (`frontend/src/lib/constants.test.ts` holds the exchange list to it).
  */
 
 export const SECURITY_EXCHANGES = [
@@ -39,6 +40,9 @@ export const SECURITY_EXCHANGES = [
   "SGX",
   "BSE",
   "NSE",
+  // Cryptocurrency: a Yahoo `<COIN>-<FIAT>` pair, which trades on no exchange
+  // and has no country (so it is absent from `EXCHANGE_TO_COUNTRY`).
+  "CRYPTO",
 ] as const;
 
 export type SecurityExchange = (typeof SECURITY_EXCHANGES)[number];

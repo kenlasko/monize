@@ -16,6 +16,10 @@ import {
   EtfSectorWeighting,
 } from "./providers/quote-provider.interface";
 import { getTradingDateFromQuote } from "./providers/trading-date.util";
+import {
+  cryptoLookupFields,
+  isCryptoExchange,
+} from "./providers/crypto-pair.util";
 import { barDate } from "./providers/market-session.util";
 import { describeFetchFailure } from "../common/http/fetch-failure.util";
 import { ProviderHealthService } from "../provider-health/provider-health.service";
@@ -543,7 +547,7 @@ export class YahooFinanceService implements QuoteProvider {
     if (quote) return quote;
 
     if (primary === symbol) {
-      for (const altSymbol of this.getAlternateSymbols(symbol)) {
+      for (const altSymbol of this.getAlternateSymbols(symbol, exchange)) {
         const alt = await this.fetchQuoteRaw(altSymbol);
         if (alt) return alt;
       }
@@ -737,7 +741,7 @@ export class YahooFinanceService implements QuoteProvider {
     // fallback for every windowed fetch (a `.TO` listing asked for a window
     // before it listed on the primary exchange, say).
     if (primary === symbol) {
-      for (const altSymbol of this.getAlternateSymbols(symbol)) {
+      for (const altSymbol of this.getAlternateSymbols(symbol, exchange)) {
         const alt = await this.fetchHistoricalRaw(altSymbol, query);
         if (alt?.prices.length) return alt;
       }
@@ -920,7 +924,7 @@ export class YahooFinanceService implements QuoteProvider {
     if (points) return points;
 
     if (primary === symbol) {
-      for (const altSymbol of this.getAlternateSymbols(symbol)) {
+      for (const altSymbol of this.getAlternateSymbols(symbol, exchange)) {
         const alt = await this.fetchIntradayRaw(altSymbol, opts);
         if (alt) return alt;
       }
@@ -1119,21 +1123,7 @@ export class YahooFinanceService implements QuoteProvider {
         sortedQuotes.unshift(exact);
       }
 
-      return sortedQuotes.map((q) => {
-        const baseSymbol = this.extractBaseSymbol(q.symbol);
-        const exchange =
-          this.extractExchangeFromSymbol(q.symbol) || q.exchDisp || null;
-        const securityType = this.mapYahooTypeToSecurityType(q.typeDisp);
-        const currencyCode = this.getCurrencyFromExchange(exchange, q.symbol);
-        return {
-          symbol: baseSymbol,
-          name: q.longname || q.shortname || baseSymbol,
-          exchange,
-          securityType,
-          currencyCode,
-          provider: "yahoo" as const,
-        };
-      });
+      return sortedQuotes.map((q) => this.toLookupResult(q));
     } catch (error) {
       this.health.logFailure(
         this.logger,
@@ -1143,6 +1133,39 @@ export class YahooFinanceService implements QuoteProvider {
       );
       return [];
     }
+  }
+
+  /**
+   * One search result as a lookup candidate. A coin (`BTC-EUR`) is not a
+   * listing: it keeps its whole symbol, and its exchange and currency are what
+   * `cryptoLookupFields` says for every provider (the canonical `CRYPTO`, not
+   * Yahoo's `CCC`, and the fiat leg of the symbol, never the exchange guess,
+   * which reads every dotless symbol as USD; issue #379).
+   */
+  private toLookupResult(q: YahooSearchResult): SecurityLookupResult {
+    const securityType =
+      this.mapYahooTypeToSecurityType(q.typeDisp) ??
+      (q.quoteType?.toUpperCase() === "CRYPTOCURRENCY" ? "CRYPTO" : null);
+    if (securityType === "CRYPTO") {
+      return {
+        symbol: q.symbol,
+        name: q.longname || q.shortname || q.symbol,
+        securityType,
+        ...cryptoLookupFields(q.symbol),
+        provider: "yahoo",
+      };
+    }
+    const baseSymbol = this.extractBaseSymbol(q.symbol);
+    const exchange =
+      this.extractExchangeFromSymbol(q.symbol) || q.exchDisp || null;
+    return {
+      symbol: baseSymbol,
+      name: q.longname || q.shortname || baseSymbol,
+      exchange,
+      securityType,
+      currencyCode: this.getCurrencyFromExchange(exchange, q.symbol),
+      provider: "yahoo",
+    };
   }
 
   getYahooSymbol(symbol: string, exchange: string | null): string {
@@ -1187,8 +1210,21 @@ export class YahooFinanceService implements QuoteProvider {
     return symbol;
   }
 
-  getAlternateSymbols(symbol: string): string[] {
+  /**
+   * The Canadian listings to try when the primary symbol misses. `exchange` is
+   * the security's own: a coin (`CRYPTO`, or Yahoo's `CCC` on a security created
+   * before the lookup named `CRYPTO`) trades on no exchange, so `BTC-EUR.TO` is
+   * three guaranteed misses on every refresh of a pair Yahoo did not answer.
+   * Keyed on the exchange, never on the symbol's shape: `BTC-USDT` has no ISO
+   * last leg, and a hyphenated listing can have one.
+   */
+  getAlternateSymbols(
+    symbol: string,
+    exchange: string | null = null,
+  ): string[] {
     const alternates: string[] = [];
+
+    if (isCryptoExchange(exchange)) return alternates;
 
     // A caret ticker is an index (^GSPC, ^FTSE), not a listing. Yahoo's exchange
     // suffixes are meaningless on one, so trying `^GSPC.TO` costs three extra

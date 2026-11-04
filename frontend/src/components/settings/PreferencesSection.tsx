@@ -24,6 +24,10 @@ import { ColorTheme } from '@/lib/color-themes';
 import { DefaultViewsGroup } from '@/components/settings/DefaultViewsGroup';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
+// CRYPTO is a listing label, not a Yahoo exchange: lookup ranking compares Yahoo
+// suffixes and `exchDisp`, so a preference for it could never match a result.
+const PREFERRED_EXCHANGE_OPTIONS = EXCHANGE_OPTIONS.filter((opt) => opt.value !== 'CRYPTO');
+
 const NUMBER_FORMAT_OPTIONS = [
   { value: 'browser', labelKey: 'numberFormatOptions.browser' },
   { value: 'en-US', labelKey: 'numberFormatOptions.enUS' },
@@ -385,7 +389,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
                 {[0, 1, 2].map((i) => (
                   <Combobox
                     key={i}
-                    options={EXCHANGE_OPTIONS
+                    options={PREFERRED_EXCHANGE_OPTIONS
                       .filter(
                         (opt) =>
                           !preferredExchanges.value.includes(opt.value) ||
