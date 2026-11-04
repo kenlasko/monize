@@ -371,10 +371,11 @@ Every required test must be reachable by a named job. The jobs that exist in
 
 | Job | Runs | Owns |
 | --- | --- | --- |
-| `Backend Lint & Type Check` | eslint, tsc | the RLS lint bans, ban lists |
+| `Backend Lint & Type Check` | eslint, tsc, `npm run build` | the RLS lint bans, ban lists, the production build |
 | `Backend Unit Tests` | `npm run test:unit -- --coverage` | unit, source scans in `backend/src` |
-| `Backend Integration Tests` | `npm run test:integration` | PG integration, two-connection, two-instance, failpoint, provider round trip |
-| `Frontend Unit Tests` | `npm run test:cov` | unit, source scans in `frontend/src` |
+| `Backend Integration Tests (shard N/3)` | `npm run test:integration -- --shard=N/3`, 3 shards, each with its own postgres | PG integration, two-connection, two-instance, failpoint, provider round trip |
+| `Frontend Unit Tests (shard N/3)` | `vitest run --coverage --shard=N/3`, thresholds off | unit, source scans in `frontend/src` |
+| `Frontend Unit Tests` | `vitest run --merge-reports --coverage` over the three shards | the frontend coverage thresholds |
 | `Frontend Lint & Type Check` | eslint, tsc | frontend conventions |
 | `Schema vs Migrations Drift` | `scripts/verify-schema.sh` | migration replay is a no-op on `schema.sql` |
 | `E2E Tests (shard N/4)` | Playwright, 4 shards | user-visible outcomes, browser cache state |
@@ -382,7 +383,7 @@ Every required test must be reachable by a named job. The jobs that exist in
 
 Two structural points about this table:
 
-**One job owns six test kinds.** `Backend Integration Tests` is where
+**One job owns six test kinds.** `Backend Integration Tests` (all three shards) is where
 two-connection, two-instance, failpoint and provider round-trip tests all live,
 because they all need a real database. That makes it the single most important
 job in the pipeline and the one whose silent failure is most costly -- which
