@@ -177,6 +177,12 @@ services:
       # healthy, which covers it.
       INTERNAL_API_URL: ${E2E_INTERNAL_API_URL:-http://backend:3000}
       PUBLIC_APP_URL: http://localhost:3001
+      # Turbopack's on-disk dev cache (frontend/next.config.js) stalls requests
+      # for 10-50s while it writes and compacts, and a throwaway container
+      # never restarts into it. Off, a cold run of the specs that used to fail
+      # their first attempt went from 6 of 18 failing in 8.9 min to all 18
+      # passing in 4.5 min.
+      NEXT_DEV_FILESYSTEM_CACHE: "false"
     ports:
       - "3001:3000"
     networks:

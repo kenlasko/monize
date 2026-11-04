@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const CLUSTER_SPEC = '**/cluster.spec.ts';
+
 export default defineConfig({
   testDir: './tests',
   // Registers a known admin as the very first user (first user => admin role)
@@ -25,19 +27,46 @@ export default defineConfig({
     // label-based selectors. `devices` presets don't set a locale, so this
     // applies to every project.
     locale: 'en',
+    // The app's service worker answers a navigation that hangs for 10s with
+    // its "Unable to connect" offline page (frontend/public/sw.js,
+    // NAVIGATION_TIMEOUT_MS). Against `next dev`, a page the compiler is busy
+    // with routinely takes that long, so the fallback replaced the page under
+    // test. Only the share-target spec exercises the worker; it opts back in.
+    serviceWorkers: 'block',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
+  // A test that cannot run in a project is left out of it rather than skipped
+  // inside it, so a report's skipped count means something.
   projects: [
     {
       name: 'chromium',
+      testIgnore: CLUSTER_SPEC,
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
+      testIgnore: CLUSTER_SPEC,
+      // Features Firefox does not offer: share_target's service worker path
+      // and mobile viewport emulation (isMobile).
+      grepInvert: /@chromium-only/,
       use: { ...devices['Desktop Firefox'] },
     },
+    // tests/cluster.spec.ts proves two replicas behind a load balancer, which
+    // only the `cluster` compose profile starts. Against one backend every
+    // assertion in it is true for the wrong reason, so the project exists only
+    // when the run says it has that stack. Chromium alone: the file drives the
+    // API directly and never opens a page.
+    ...(process.env.E2E_CLUSTER === 'multi'
+      ? [
+          {
+            name: 'cluster',
+            testMatch: CLUSTER_SPEC,
+            use: { ...devices['Desktop Chrome'] },
+          },
+        ]
+      : []),
   ],
   webServer: process.env.CI
     ? undefined

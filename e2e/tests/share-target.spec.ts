@@ -19,15 +19,16 @@ import { syntheticDocumentPng } from '../helpers/document-fixture';
  * multipart POST *navigation* to the manifest's action, and that is exactly what
  * a submitted form produces, so the test builds one and submits it.
  */
-test.describe('Web Share Target', () => {
-  // A share target needs a controlling service worker, which Firefox does not
-  // offer this feature through at all. Skipping is the honest outcome: the
-  // feature is progressive enhancement, and the picker flows other specs cover
-  // are what a browser without it keeps.
-  test.skip(
-    ({ browserName }) => browserName !== 'chromium',
-    'share_target and its service worker path are Chromium-only',
-  );
+// A share target needs a controlling service worker, which Firefox does not
+// offer this feature through at all, so the firefox project leaves this out
+// (`@chromium-only`, playwright.config.ts): the feature is progressive
+// enhancement, and the picker flows other specs cover are what a browser
+// without it keeps.
+test.describe('Web Share Target', { tag: '@chromium-only' }, () => {
+  // Every other spec blocks service workers (playwright.config.ts); this one
+  // is about the worker.
+  test.use({ serviceWorkers: 'allow' });
+
 
   /** Wait until sw.js is not merely registered but actually controlling. */
   async function waitForServiceWorker(page: Page) {

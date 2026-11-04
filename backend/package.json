@@ -152,7 +152,8 @@
     ],
     "testRegex": ".*\\.spec\\.ts$",
     "setupFiles": [
-      "<rootDir>/src/test-helpers/silence-nest-logger.setup.ts"
+      "<rootDir>/src/test-helpers/silence-nest-logger.setup.ts",
+      "<rootDir>/src/test-helpers/fast-password-hashing.setup.ts"
     ],
     "transform": {
       "^.+\\.(t|j|mj)s$": [

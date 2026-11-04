@@ -40,12 +40,9 @@ test.describe('Mobile viewport', () => {
 // content -- a table inside overflow-x-auto still counts -- so the Modal
 // opened at the table's width, cut off past the right edge. The plain-viewport
 // tests above cannot catch this: only mobile emulation (isMobile) applies that
-// viewport behaviour, which is also why this block is Chromium-only.
-test.describe('Mobile reconcile', () => {
-  test.skip(
-    ({ browserName }) => browserName !== 'chromium',
-    'mobile viewport emulation (isMobile) is Chromium-only',
-  );
+// viewport behaviour, which Firefox does not support, so the firefox project
+// leaves this block out (`@chromium-only`, playwright.config.ts).
+test.describe('Mobile reconcile', { tag: '@chromium-only' }, () => {
   test.use({ isMobile: true, hasTouch: true });
 
   test('keeps the page at device width and the edit modal on screen', async ({

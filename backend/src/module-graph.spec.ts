@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync, statSync } from "fs";
+import { builtinModules } from "module";
 import { join } from "path";
 
 /**
@@ -435,10 +436,60 @@ describe("module graph", () => {
       file.endsWith(".module.ts"),
     );
 
+    /**
+     * Every package the source tree requires, loaded once for the whole file.
+     *
+     * Each case needs a fresh registry for `src/`, where the cycles are; it
+     * does not need a fresh copy of Nest, TypeORM and the rest, which no `src/`
+     * cycle runs through and which were most of each case's cost. So each case
+     * hands the same instances back through `jest.doMock` after its reset, and
+     * only the source tree is evaluated again. A package can never be part of
+     * a cycle in `src/` (it does not import back into it), so which load order
+     * a case measures is unchanged.
+     */
+    const packageInstances = new Map<string, unknown>();
+    const builtins = new Set(builtinModules);
+    const requiredPackages = (): string[] => {
+      const found = new Set<string>();
+      const specifier = /(?:\bfrom|\brequire\(|\bimport\()\s*["']([^"']+)["']/g;
+      for (const source of sources.values()) {
+        for (const match of stripComments(source).matchAll(specifier)) {
+          const name = match[1];
+          if (name.startsWith(".") || name.startsWith("@/")) continue;
+          if (name.startsWith("node:") || builtins.has(name.split("/")[0])) {
+            continue;
+          }
+          found.add(name);
+        }
+      }
+      return [...found].sort();
+    };
+
+    beforeAll(() => {
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      for (const name of requiredPackages()) {
+        try {
+          packageInstances.set(name, require(name));
+        } catch {
+          // A type-only import of a package with no runtime entry: nothing to
+          // reuse, and the case loads whatever it really requires itself.
+        }
+      }
+      /* eslint-enable @typescript-eslint/no-require-imports */
+    });
+
+    it("reuses a real set of packages across the cases", () => {
+      expect(packageInstances.has("@nestjs/common")).toBe(true);
+      expect(packageInstances.has("typeorm")).toBe(true);
+    });
+
     it.each(entryPoints.map((file) => [file.slice(srcRoot.length + 1), file]))(
       "builds a resolvable graph when %s loads first",
       async (_label, file) => {
         jest.resetModules();
+        for (const [name, instance] of packageInstances) {
+          jest.doMock(name, () => instance);
+        }
         // `require`, not `import`: the load ORDER is the subject of the case, so
         // each one needs a fresh registry and a load it controls. A top-level
         // `import` is hoisted and cached once for the whole file, which would

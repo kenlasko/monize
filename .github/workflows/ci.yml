@@ -62,9 +62,18 @@ jobs:
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
+          # Test and lint jobs only: nothing they restore reaches an image or a
+          # release, which is what zizmor's cache-poisoning audit is about.
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npx tsc --noEmit
+      # The production build (`nest build`: tsconfig.build.json and the
+      # nest-cli.json asset copies, which `tsc --noEmit` does not exercise).
+      # It used to run in the integration job, where nothing reads `dist/` and
+      # it sat on the pipeline's slowest path.
+      - run: npm run build
       # tsconfig.json excludes test/ (it drives the build and pins rootDir to
       # src/), so `tsc --noEmit` above never type-checked the test tree. Four
       # `test/*.e2e-spec.ts` suites sat uncompilable for over a week as a result
@@ -93,8 +102,27 @@ jobs:
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
+          # Test and lint jobs only: nothing they restore reaches an image or a
+          # release, which is what zizmor's cache-poisoning audit is about.
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      - run: npm run test:unit -- --coverage
+      # ts-jest's transform cache. Restored on every run; written only by a
+      # push to main, so a pull request can read it but never write what main
+      # runs. A stale entry is harmless: ts-jest keys each file by its content.
+      - name: Restore the Jest transform cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/jest-cache
+          key: jest-unit-${{ hashFiles('backend/package-lock.json', 'backend/scripts/esm-interop-transformer.cjs') }}-${{ github.run_id }}
+          restore-keys: jest-unit-${{ hashFiles('backend/package-lock.json', 'backend/scripts/esm-interop-transformer.cjs') }}-
+      - run: npm run test:unit -- --coverage --cacheDirectory="$RUNNER_TEMP/jest-cache"
+      - name: Save the Jest transform cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/jest-cache
+          key: jest-unit-${{ hashFiles('backend/package-lock.json', 'backend/scripts/esm-interop-transformer.cjs') }}-${{ github.run_id }}
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -103,8 +131,17 @@ jobs:
           path: backend/coverage/
 
   backend-integration-tests:
-    name: Backend Integration Tests
+    name: Backend Integration Tests (shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
+    # The pipeline's slowest job when it ran alone (19-27 min). Each shard has
+    # its own runner and its own postgres service, so the one-database,
+    # one-worker rule (jest-config.guard.spec.ts) holds within every shard.
+    # Jest splits the spec files by path; a shard that discovered nothing would
+    # fail (REL-001), never pass.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     services:
       postgres:
         # Pinned by digest to satisfy zizmor's unpinned-images audit. Refresh
@@ -120,7 +157,12 @@ jobs:
           POSTGRES_PASSWORD: test_password
         ports:
           - 5432:5432
+        # The data directory in memory: the database is thrown away with the
+        # job, so durability buys nothing here. With fsync off as well (the
+        # step below), a local run of the email-receipts pipeline spec went
+        # from 149s to 112s.
         options: >-
+          --tmpfs /var/lib/postgresql/data
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
@@ -149,9 +191,39 @@ jobs:
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
+          # Test and lint jobs only: nothing they restore reaches an image or a
+          # release, which is what zizmor's cache-poisoning audit is about.
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      - run: npm run build
-      - run: npm run test:integration
+      # Throwaway database: skip the flushes. All three are reloadable without a
+      # restart; the service has no `command:` to pass them as flags.
+      - name: Tune postgres for a throwaway database
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$PG_CONTAINER" psql -U monize_test -d monize_test -v ON_ERROR_STOP=1 \
+            -c "ALTER SYSTEM SET fsync = off" \
+            -c "ALTER SYSTEM SET synchronous_commit = off" \
+            -c "ALTER SYSTEM SET full_page_writes = off" \
+            -c "SELECT pg_reload_conf()"
+          docker exec "$PG_CONTAINER" psql -U monize_test -d monize_test -tAc "SHOW fsync" | grep -qx off
+      - name: Restore the Jest transform cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/jest-cache
+          key: jest-integration-${{ matrix.shard }}-${{ hashFiles('backend/package-lock.json', 'backend/scripts/esm-interop-transformer.cjs') }}-${{ github.run_id }}
+          restore-keys: jest-integration-${{ matrix.shard }}-${{ hashFiles('backend/package-lock.json', 'backend/scripts/esm-interop-transformer.cjs') }}-
+      - name: Run integration tests
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: npm run test:integration -- --shard="$SHARD/3" --cacheDirectory="$RUNNER_TEMP/jest-cache"
+      - name: Save the Jest transform cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/jest-cache
+          key: jest-integration-${{ matrix.shard }}-${{ hashFiles('backend/package-lock.json', 'backend/scripts/esm-interop-transformer.cjs') }}-${{ github.run_id }}
 
   frontend-lint:
     name: Frontend Lint & Type Check
@@ -166,6 +238,10 @@ jobs:
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
+          # Test and lint jobs only: nothing they restore reaches an image or a
+          # release, which is what zizmor's cache-poisoning audit is about.
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm run type-check
@@ -174,8 +250,15 @@ jobs:
       - run: npm run i18n:check
 
   frontend-unit-tests:
-    name: Frontend Unit Tests
+    name: Frontend Unit Tests (shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
+    # Split three ways; the coverage gate runs once, over the merged result,
+    # in frontend-coverage below. A shard's own thresholds are switched off
+    # because a third of the suite covers a third of the code.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     defaults:
       run:
         working-directory: frontend
@@ -186,8 +269,58 @@ jobs:
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
+          # Test and lint jobs only: nothing they restore reaches an image or a
+          # release, which is what zizmor's cache-poisoning audit is about.
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      - run: npm run test:cov
+      - name: Run unit tests
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: >-
+          npx vitest run --coverage --shard="$SHARD/3"
+          --coverage.thresholds.lines=0 --coverage.thresholds.functions=0
+          --coverage.thresholds.branches=0 --coverage.thresholds.statements=0
+          --reporter=default --reporter=blob
+          --outputFile.blob=".vitest-reports/blob-$SHARD-3.json"
+      - name: Upload shard report
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: frontend-vitest-blob-${{ matrix.shard }}
+          path: frontend/.vitest-reports/
+          include-hidden-files: true
+          retention-days: 1
+
+  frontend-coverage:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+    needs: frontend-unit-tests
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: 24
+          # Test and lint jobs only: nothing they restore reaches an image or a
+          # release, which is what zizmor's cache-poisoning audit is about.
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Download shard reports
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: frontend-vitest-blob-*
+          path: frontend/.vitest-reports
+          merge-multiple: true
+      # The same gate `npm run test:cov` applies, over all three shards: the
+      # thresholds come from vitest.config.ts.
+      # The directory is named: vitest's default is .vitest/blob, not where
+      # the shards wrote their reports.
+      - run: npx vitest run --merge-reports=.vitest-reports --coverage
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -861,6 +994,7 @@ jobs:
         backend-integration-tests,
         frontend-lint,
         frontend-unit-tests,
+        frontend-coverage,
         npm-audit,
         bearer-scan,
         dockerfile-lint,
@@ -1251,6 +1385,7 @@ jobs:
         backend-integration-tests,
         frontend-lint,
         frontend-unit-tests,
+        frontend-coverage,
         npm-audit,
         bearer-scan,
         dockerfile-lint,
@@ -1422,7 +1557,7 @@ jobs:
     # The backend/frontend unit-test gate. The browsers come from the pinned
     # Playwright image (scripts/e2e-playwright.sh), so no job has to warm a
     # browser cache first.
-    needs: [backend-unit-tests, frontend-unit-tests]
+    needs: [backend-unit-tests, frontend-unit-tests, frontend-coverage]
     # Shard across 4 runners. Each shard brings up its OWN isolated stack
     # (postgres + backend + frontend, plus a second backend and a load balancer
     # on the cluster shard) below, so there is no shared database state between
@@ -1438,8 +1573,9 @@ jobs:
           # One shard runs the SAME suite against two backend replicas behind a
           # round-robin load balancer with no affinity (docker-compose.e2e.yml,
           # profile `cluster`). It is the only place the product is exercised as
-          # a cluster, and it also runs tests/cluster.spec.ts, which is skipped
-          # everywhere else because one backend makes it true for the wrong
+          # a cluster, and it also runs tests/cluster.spec.ts (the `cluster`
+          # Playwright project, defined only under E2E_CLUSTER=multi), which no
+          # other run includes because one backend makes it true for the wrong
           # reason. The other three shards are byte-for-byte what they were.
           - shard: 4
             cluster: 'true'
@@ -1506,9 +1642,9 @@ jobs:
       # account, and a cluster check that ran after it would be asserting
       # against a stack the suite had already torn down half of.
       #
-      # --project=chromium because every test in the file drives the API
-      # directly and never opens a page; a second browser would double the run
-      # and prove nothing.
+      # The `cluster` project is Chromium only: every test in the file drives
+      # the API directly and never opens a page, so a second browser would
+      # double the run and prove nothing.
       - name: Run cluster tests (CLUSTER_MODE=multi)
         if: matrix.cluster == 'true'
         timeout-minutes: 10
@@ -1517,7 +1653,7 @@ jobs:
           E2E_CLUSTER: multi
           E2E_LB_URL: http://localhost:3002
           CI: 'true'
-        run: scripts/e2e-playwright.sh npx playwright test tests/cluster.spec.ts --project=chromium
+        run: scripts/e2e-playwright.sh npx playwright test --project=cluster
 
       - name: Run E2E tests
         timeout-minutes: 30
