@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import {
@@ -49,6 +50,13 @@ const INCLUDE_CURRENT_MONTH_STORAGE_KEY =
   'monize-reports-monthly-category-breakdown-include-current-month';
 const NAME_OFFSET_STORAGE_KEY =
   'monize-reports-monthly-category-breakdown-name-offset';
+const SUMMARY_ONLY_STORAGE_KEY =
+  'monize-reports-monthly-category-breakdown-summary-only';
+const COLLAPSED_GROUPS_STORAGE_KEY =
+  'monize-reports-monthly-category-breakdown-collapsed-groups';
+
+/** The three top-level groups a reader can fold down to their total row. */
+type GroupId = 'income' | 'expense' | 'transfer';
 
 /**
  * Phone-only collapse of the category column.
@@ -162,6 +170,12 @@ interface Section {
   allCategoryIds: string[];
   isIncome: boolean;
   isOther: boolean;
+  /**
+   * A top-level category with no subcategories in the report: drawn as one
+   * line beside the parent sections rather than as a header, a row and a
+   * subtotal that would all repeat the same name and figures.
+   */
+  isStandalone: boolean;
 }
 
 interface TransferRow {
@@ -213,7 +227,10 @@ function processGroup(
   sectionIsIncome: boolean,
   sortColumn: string,
   sortDir: SortDir,
-): Omit<Section, 'title' | 'paletteClass' | 'isIncome' | 'isOther'> {
+): Omit<
+  Section,
+  'title' | 'paletteClass' | 'isIncome' | 'isOther' | 'isStandalone'
+> {
   const processed: ProcessedRow[] = rows
     .map((row) => {
       // Re-express every month value in the section's sign convention so the
@@ -375,6 +392,28 @@ export function MonthlyCategoryBreakdownReport() {
   );
   const [includeCurrentMonth, setIncludeCurrentMonth] =
     useLocalStorage<boolean>(INCLUDE_CURRENT_MONTH_STORAGE_KEY, false);
+  // Summary only hides the income, expense and transfer detail and keeps the
+  // Summary block and the tagged balance below it.
+  const [summaryOnly, setSummaryOnly] = useLocalStorage<boolean>(
+    SUMMARY_ONLY_STORAGE_KEY,
+    false,
+  );
+  // Groups folded down to their total row. A stored value that is not a list
+  // (a corrupted entry) folds nothing rather than hiding a group.
+  const [storedCollapsedGroups, setCollapsedGroups] = useLocalStorage<
+    GroupId[]
+  >(COLLAPSED_GROUPS_STORAGE_KEY, []);
+  const collapsedGroups = Array.isArray(storedCollapsedGroups)
+    ? storedCollapsedGroups
+    : [];
+  const isCollapsed = (group: GroupId) => collapsedGroups.includes(group);
+  const toggleGroup = (group: GroupId) =>
+    setCollapsedGroups((prev) => {
+      const current = Array.isArray(prev) ? prev : [];
+      return current.includes(group)
+        ? current.filter((g) => g !== group)
+        : [...current, group];
+    });
 
   // How far the category column is dragged out of view. Only a phone collapses
   // it; every width above `sm` reverts the rules and ignores the number.
@@ -531,10 +570,12 @@ export function MonthlyCategoryBreakdownReport() {
     const rows = data.data;
 
     // Group categories by parent. A category with a parent forms (or joins) a
-    // section keyed by that parent; parentless categories collect into the
-    // "Other income" / "Other expenses" buckets according to their own type.
-    // The whole section is classified income or expense from the parent's flag
-    // (falling back to the row's own flag when the parent is unknown).
+    // section keyed by that parent, and a top-level category keys its own
+    // section, so a parent's direct spending sits beside its subcategories and
+    // a category with none stands as a line of its own. Only the uncategorized
+    // row collects into the "Other income" / "Other expenses" bucket by its
+    // type. The whole section is classified income or expense from the parent's
+    // flag (falling back to the row's own flag when the parent is unknown).
     interface RawGroup {
       key: string;
       title: string;
@@ -564,6 +605,8 @@ export function MonthlyCategoryBreakdownReport() {
           row.parentIsIncome ?? row.isIncome,
           row,
         );
+      } else if (row.categoryId) {
+        addRow(row.categoryId, row.categoryName, row.isIncome, row);
       } else if (row.isIncome) {
         addRow(OTHER_INCOME_KEY, otherIncomeLabel, true, row);
       } else {
@@ -587,6 +630,9 @@ export function MonthlyCategoryBreakdownReport() {
         paletteClass: '',
         isIncome: g.isIncome,
         isOther: isOtherKey(g.key),
+        // Its only row is the category the section is keyed by: no
+        // subcategory of it has activity in the report.
+        isStandalone: g.list.length === 1 && g.list[0].categoryId === g.key,
         ...group,
       };
     };
@@ -612,9 +658,11 @@ export function MonthlyCategoryBreakdownReport() {
     );
 
     // Assign the rotating palette across the combined display order (income
-    // first, then expenses); "Other" buckets keep the neutral palette.
+    // first, then expenses); "Other" buckets keep the neutral palette and a
+    // standalone line has no header to colour, so neither takes a slot.
     let paletteCount = 0;
     const assignPalette = (s: Section): Section => {
+      if (s.isStandalone) return s;
       const paletteClass = s.isOther
         ? OTHER_PALETTE
         : SECTION_PALETTE[paletteCount % SECTION_PALETTE.length];
@@ -797,7 +845,8 @@ export function MonthlyCategoryBreakdownReport() {
     for (const section of model.sections) {
       for (const row of section.rows) {
         rows.push([
-          section.title,
+          // A standalone category has no parent to name.
+          section.isStandalone ? '' : section.title,
           row.displayName,
           ...model.months.map((m) => signed(row.isIncome, row.values[m] || 0)),
           signed(row.isIncome, row.total),
@@ -902,9 +951,88 @@ export function MonthlyCategoryBreakdownReport() {
     (model.sections.length > 0 || model.hasTransfers);
   const colSpan = months.length + 3;
 
+  // One category's row: the name, a drillable cell per month, its total and
+  // its average. A subcategory is indented under its section header; a
+  // standalone category is a line of its own at the level of the headers.
+  const renderCategoryRow = (
+    row: ProcessedRow,
+    section: Section,
+    standalone: boolean,
+  ) => {
+    const sectionMonthTotal = (m: string) =>
+      section.isIncome ? model!.monthlyIncome[m] : model!.monthlyExpenses[m];
+    const sectionSum = section.isIncome
+      ? model!.totalIncomeSum
+      : model!.totalExpensesSum;
+    const sectionAvg = section.isIncome
+      ? model!.totalIncomeAvg
+      : model!.totalExpensesAvg;
+    return (
+      <tr
+        key={row.categoryId || row.displayName}
+        data-standalone={standalone ? '' : undefined}
+        className="group hover:bg-gray-50 dark:hover:bg-gray-700"
+      >
+        {renderNameCell(
+          `sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 text-gray-900 dark:text-gray-100${standalone ? ' font-semibold' : ''}`,
+          `${standalone ? 'px-2' : 'pl-5 pr-2'} py-1 sm:max-w-[220px]`,
+          <button
+            type="button"
+            onClick={() => drillDownRange(rowDrillIds(row))}
+            className="block w-full text-left hover:underline sm:truncate"
+          >
+            {row.displayName}
+          </button>,
+          row.displayName,
+        )}
+        {months.map((m) => {
+          const value = row.values[m] || 0;
+          const cls = showDeviations
+            ? deviationClass(value, row.nonZeroAvg, row.nonZeroCount, row.isIncome)
+            : '';
+          return (
+            <td key={m} className={`px-2 py-1 text-right ${cls}`}>
+              {value !== 0 ? (
+                <button
+                  type="button"
+                  onClick={() => drillDown(m, rowDrillIds(row))}
+                  className="hover:underline"
+                >
+                  {formatCell(value, sectionMonthTotal(m), row.isIncome)}
+                </button>
+              ) : (
+                <span className="text-gray-300 dark:text-gray-600">—</span>
+              )}
+            </td>
+          );
+        })}
+        <td className="px-2 py-1 text-right font-semibold text-gray-900 dark:text-gray-100">
+          <button
+            type="button"
+            onClick={() => drillDownRange(rowDrillIds(row))}
+            className="hover:underline"
+          >
+            {formatCell(row.total, sectionSum, row.isIncome)}
+          </button>
+        </td>
+        <td className="px-2 py-1 text-right text-gray-700 dark:text-gray-300">
+          {formatCell(row.avg, sectionAvg, row.isIncome)}
+        </td>
+      </tr>
+    );
+  };
+
   // Render one parent section: its colored header, the alphabetically sorted
-  // subcategory rows, and the section subtotal.
+  // subcategory rows, and the section subtotal. A standalone category is its
+  // single row alone.
   const renderSection = (section: Section, si: number) => {
+    if (section.isStandalone) {
+      return (
+        <Fragment key={`section-${si}`}>
+          {renderCategoryRow(section.rows[0], section, true)}
+        </Fragment>
+      );
+    }
     const sectionMonthTotal = (m: string) =>
       section.isIncome ? model!.monthlyIncome[m] : model!.monthlyExpenses[m];
     const sectionSum = section.isIncome
@@ -936,55 +1064,7 @@ export function MonthlyCategoryBreakdownReport() {
           </td>
         </tr>
         {/* Subcategory rows (sorted alphabetically) */}
-        {section.rows.map((row) => (
-          <tr key={row.categoryId || row.displayName} className="group hover:bg-gray-50 dark:hover:bg-gray-700">
-            {renderNameCell(
-              'sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 text-gray-900 dark:text-gray-100',
-              'pl-5 pr-2 py-1 sm:max-w-[220px]',
-              <button
-                type="button"
-                onClick={() => drillDownRange(rowDrillIds(row))}
-                className="block w-full text-left hover:underline sm:truncate"
-              >
-                {row.displayName}
-              </button>,
-              row.displayName,
-            )}
-            {months.map((m) => {
-              const value = row.values[m] || 0;
-              const cls = showDeviations
-                ? deviationClass(value, row.nonZeroAvg, row.nonZeroCount, row.isIncome)
-                : '';
-              return (
-                <td key={m} className={`px-2 py-1 text-right ${cls}`}>
-                  {value !== 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => drillDown(m, rowDrillIds(row))}
-                      className="hover:underline"
-                    >
-                      {formatCell(value, sectionMonthTotal(m), row.isIncome)}
-                    </button>
-                  ) : (
-                    <span className="text-gray-300 dark:text-gray-600">—</span>
-                  )}
-                </td>
-              );
-            })}
-            <td className="px-2 py-1 text-right font-semibold text-gray-900 dark:text-gray-100">
-              <button
-                type="button"
-                onClick={() => drillDownRange(rowDrillIds(row))}
-                className="hover:underline"
-              >
-                {formatCell(row.total, sectionSum, row.isIncome)}
-              </button>
-            </td>
-            <td className="px-2 py-1 text-right text-gray-700 dark:text-gray-300">
-              {formatCell(row.avg, sectionAvg, row.isIncome)}
-            </td>
-          </tr>
-        ))}
+        {section.rows.map((row) => renderCategoryRow(row, section, false))}
         {/* Section subtotal */}
         <tr className="font-bold bg-gray-50 dark:bg-gray-900 border-t-2 border-gray-300 dark:border-gray-600">
           {renderNameCell(
@@ -1080,21 +1160,31 @@ export function MonthlyCategoryBreakdownReport() {
     );
   };
 
-  // Full-width group header bar ("Income" / "Expenses").
-  const renderGroupHeader = (isIncome: boolean) => (
-    <tr>
-      <td
-        colSpan={colSpan}
-        className={`px-2 py-1.5 font-bold text-sm ${isIncome ? INCOME_GROUP_CLASS : EXPENSE_GROUP_CLASS}`}
-      >
-        <div className="sticky left-0 z-10 inline-block">
-          {isIncome
-            ? t('monthlyCategoryBreakdown.income')
-            : t('monthlyCategoryBreakdown.expenses')}
-        </div>
-      </td>
-    </tr>
-  );
+  // Full-width group header bar ("Income" / "Expenses" / "Transfers"). The
+  // label folds the group down to its total row and back.
+  const renderGroupHeader = (group: GroupId, label: string, barClass: string) => {
+    const collapsed = isCollapsed(group);
+    return (
+      <tr>
+        <td colSpan={colSpan} className={`px-2 py-1.5 font-bold text-sm ${barClass}`}>
+          <div className="sticky left-0 z-10 inline-block">
+            <button
+              type="button"
+              onClick={() => toggleGroup(group)}
+              aria-expanded={!collapsed}
+              className="inline-flex items-center gap-1 rounded text-left hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <ChevronDownIcon
+                aria-hidden="true"
+                className={`h-4 w-4 transition-transform motion-reduce:transition-none ${collapsed ? '-rotate-90' : ''}`}
+              />
+              {label}
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  };
 
   // The transfers group: a header bar, one signed row per account/direction
   // ("from" positive, "to" negative), and the net total transfers row.
@@ -1103,14 +1193,12 @@ export function MonthlyCategoryBreakdownReport() {
     const accent = 'text-blue-700 dark:text-blue-300';
     return (
       <Fragment>
-        <tr>
-          <td colSpan={colSpan} className={`px-2 py-1.5 font-bold text-sm ${TRANSFER_GROUP_CLASS}`}>
-            <div className="sticky left-0 z-10 inline-block">
-              {t('monthlyCategoryBreakdown.transfers')}
-            </div>
-          </td>
-        </tr>
-        {tr.rows.map((row) => (
+        {renderGroupHeader(
+          'transfer',
+          t('monthlyCategoryBreakdown.transfers'),
+          TRANSFER_GROUP_CLASS,
+        )}
+        {!isCollapsed('transfer') && tr.rows.map((row) => (
           <tr key={`${row.direction}-${row.accountId}`} className="group hover:bg-gray-50 dark:hover:bg-gray-700">
             {renderNameCell(
               'sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 text-gray-900 dark:text-gray-100',
@@ -1279,6 +1367,15 @@ export function MonthlyCategoryBreakdownReport() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <ToggleSwitch
+                checked={summaryOnly}
+                onChange={setSummaryOnly}
+                label={t('monthlyCategoryBreakdown.summaryOnly')}
+                size="sm"
+              />
+              <span>{t('monthlyCategoryBreakdown.summaryOnly')}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <ToggleSwitch
                 checked={includeCurrentMonth}
                 onChange={setIncludeCurrentMonth}
                 label={t('monthlyCategoryBreakdown.includeCurrentMonth')}
@@ -1403,30 +1500,42 @@ export function MonthlyCategoryBreakdownReport() {
                 </tr>
               </thead>
               <tbody>
-                {/* Income group: sections (alphabetical) then the income total */}
-                {model!.incomeSections.length > 0 && (
+                {/* Income group: sections (alphabetical) then the income
+                    total; folded, only the total. */}
+                {!summaryOnly && model!.incomeSections.length > 0 && (
                   <Fragment>
-                    {renderGroupHeader(true)}
-                    {model!.incomeSections.map((section, si) =>
-                      renderSection(section, si),
+                    {renderGroupHeader(
+                      'income',
+                      t('monthlyCategoryBreakdown.income'),
+                      INCOME_GROUP_CLASS,
                     )}
+                    {!isCollapsed('income') &&
+                      model!.incomeSections.map((section, si) =>
+                        renderSection(section, si),
+                      )}
                     {renderGroupTotal(true)}
                   </Fragment>
                 )}
 
-                {/* Expense group: sections (alphabetical) then the expense total */}
-                {model!.expenseSections.length > 0 && (
+                {/* Expense group: sections (alphabetical) then the expense
+                    total; folded, only the total. */}
+                {!summaryOnly && model!.expenseSections.length > 0 && (
                   <Fragment>
-                    {renderGroupHeader(false)}
-                    {model!.expenseSections.map((section, si) =>
-                      renderSection(section, model!.incomeSections.length + si),
+                    {renderGroupHeader(
+                      'expense',
+                      t('monthlyCategoryBreakdown.expenses'),
+                      EXPENSE_GROUP_CLASS,
                     )}
+                    {!isCollapsed('expense') &&
+                      model!.expenseSections.map((section, si) =>
+                        renderSection(section, model!.incomeSections.length + si),
+                      )}
                     {renderGroupTotal(false)}
                   </Fragment>
                 )}
 
                 {/* Transfers group: FROM (positive) / TO (negative) per account */}
-                {model!.hasTransfers && renderTransfers()}
+                {!summaryOnly && model!.hasTransfers && renderTransfers()}
 
                 {/* Summary: totals, balance, optional transfers/overall, and a
                     recap of every category section. */}

@@ -72,7 +72,7 @@ When a figure cannot be worked out completely -- for example an amount in a curr
 | **Spending by Category** | See where your money goes with a breakdown of expenses by category over time |
 | **Spending by Payee** | Track how much you spend with each merchant or vendor over time |
 | **Monthly Spending Trend** | View your spending patterns month over month to identify trends |
-| **Monthly Breakdown** | Expense and income by category, month by month, with subtotals, a total, and an average per month. Switches turn on **Include current month**, **Show percentages**, and **Highlight deviations** (months well above or below the category's average). Transfers are listed separately, and a cell opens its transactions |
+| **Monthly Breakdown** | Expense and income by category, month by month, with subtotals, a total, and an average per month. A category with no parent and no subcategories is a line of its own, in alphabetical order among the parent categories. Spending recorded directly on a parent category is a row inside that parent's section, counted in its subtotal; only uncategorized transactions are left under **Other expenses** or **Other income**. Switches turn on **Summary only** (just the Summary at the bottom), **Include current month**, **Show percentages**, and **Highlight deviations** (months well above or below the category's average). Transfers are listed separately, click **Income**, **Expenses**, or **Transfers** to fold that group down to its total, and a cell opens its transactions |
 | **Year Over Year Comparison** | Compare this year's income, expenses, and savings with up to four previous years |
 
 ![The Spending by Category report](images/report-spending-category.png)
