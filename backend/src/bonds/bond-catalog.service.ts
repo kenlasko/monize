@@ -16,7 +16,7 @@ import {
   CatalogEntry,
 } from "./bond-adapter";
 import { bondInstrumentId, bondProgramId } from "./bond-instrument-id";
-import { INSTALLED_BOND_ADAPTERS } from "./bond-adapters";
+import { INSTALLED_BOND_ADAPTERS, templateFaceValueOf } from "./bond-adapters";
 import { BondInstrumentSummary } from "./bond-valuation.service";
 import { contentHash } from "./canonical-json";
 import { BondTerms, parseBondTerms } from "./domain/bond-terms";
@@ -33,6 +33,12 @@ export interface BondProgramSummary {
   readonly newestSeriesCode: string | null;
   /** The issuer's page describing the product (the adapter's `infoUrl`); null when none. */
   readonly infoUrl: string | null;
+  /**
+   * The nominal of one bond of the program (the adapter's `faceValue`, an exact
+   * decimal string), so a form can say what one unit is; null when no installed
+   * adapter declares the program.
+   */
+  readonly faceValue: string | null;
 }
 
 /**
@@ -196,6 +202,11 @@ export class BondCatalogService implements OnApplicationBootstrap {
         r.issuer_code,
         r.program_code,
       ),
+      faceValue: templateFaceValueOf({
+        issuerCountryCode: r.issuer_country_code,
+        issuerCode: r.issuer_code,
+        programCode: r.program_code,
+      }),
     }));
   }
 
