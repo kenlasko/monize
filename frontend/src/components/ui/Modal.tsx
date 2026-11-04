@@ -92,7 +92,7 @@ interface ModalProps {
   /** Fill the phone's viewport, and stay the centred card everywhere else.
    *
    *  For a surface whose content wants every pixel a phone has -- an
-   *  attachment preview -- the 16px backdrop inset and the 90vh cap are
+   *  attachment preview -- the 16px backdrop inset and the height cap are
    *  wasted space, and the backdrop's padding is not reachable from
    *  `className` (it sits on the outer element). Spelled with `max-sm:`
    *  variants only: Tailwind emits those after every base utility, so they
@@ -386,12 +386,18 @@ export function Modal({
   // is no exit animation: the panel unmounts on close, and holding it mounted
   // to animate out would mean tracking closing state through the stacked-modal
   // and popstate machinery for a few hundred milliseconds of polish.
+  //
+  // A panel that is not `fixedHeight` sizes to its content and is capped at
+  // the viewport less the backdrop's `p-4` inset, never at a fraction of it:
+  // a 90vh cap scrolled a long form inside the panel on a short desktop
+  // window while the backdrop still had room to spare (#2019). `dvh` follows
+  // a phone browser's collapsing toolbar, which `vh` does not.
   const panelClassName = isDrawer
     ? `bg-white dark:bg-gray-800 shadow-xl dark:shadow-gray-700/50 h-full w-[85%] max-w-sm ${overflowClass} outline-none transition-transform duration-200 ease-out translate-x-0 starting:-translate-x-full motion-reduce:transition-none ${className}`
     : `bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 ${maxWidthClasses[maxWidth]} w-full ${
         fixed
           ? `h-[min(90vh,56rem)] flex flex-col ${allowOverflow ? 'overflow-visible' : 'overflow-hidden'}`
-          : `max-h-[90vh] ${overflowClass}`
+          : `max-h-[calc(100dvh-2rem)] ${overflowClass}`
       } outline-none transition duration-200 ease-out opacity-100 scale-100 starting:opacity-0 starting:scale-95 motion-reduce:transition-none${fillPhone ? ' max-sm:h-dvh max-sm:max-h-none max-sm:max-w-none max-sm:rounded-none' : ''} ${className}`;
 
   // The title and the button row follow the New Transaction dialog: a large

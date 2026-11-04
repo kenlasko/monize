@@ -449,7 +449,7 @@ describe('BankSyncPreviewModal', () => {
       expect(dialog.className).toContain('flex-col');
       expect(dialog.className).toContain('overflow-hidden');
       expect(dialog.className).not.toContain('overflow-y-auto');
-      expect(dialog.className).not.toContain('max-h-[90vh]');
+      expect(dialog.className).not.toContain('max-h-[calc(100dvh-2rem)]');
       expect(dialog.outerHTML).not.toContain('calc(');
 
       // Header on top, footer at the bottom, neither one squeezed by the rows.
