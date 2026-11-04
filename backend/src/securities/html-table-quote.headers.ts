@@ -46,8 +46,12 @@ const PRICE_NOUNS = [
   "gia",
   "harga",
 ];
-/** What may join a price noun to its qualifier: "de", "di", "of", "d'". */
-const PRICE_JOINERS = "(?:(?:de|di|do|da|du|des|of)\\s+|d['\u2019]\\s*)?";
+/**
+ * What may join a price noun to its qualifier: "de", "di", "of", "d'", or a
+ * French article ("Cours le plus haut", "Cours de la séance").
+ */
+const PRICE_JOINERS =
+  "(?:(?:de|di|do|da|du|des|of)\\s+|d['\u2019]\\s*)?(?:(?:le|la|les)\\s+|l['\u2019]\\s*)?";
 
 function alternation(words: string[]): string {
   return words.map(escapeRegExp).join("|");
@@ -349,11 +353,13 @@ const HEADER_PATTERNS: Record<QuoteTableField, RegExp[]> = Object.fromEntries(
 const FIRST_GENERIC_CLOSE_RANK = 2;
 
 /**
- * A header as the patterns see it: lower-cased, without the combining dot that
+ * A header as the patterns see it: composed (a page may write "ô" as "o" plus
+ * a combining circumflex), lower-cased, and without the combining dot that
  * lower-casing Turkish "İ" leaves behind ("İŞLEM" becomes "işlem").
  */
 function headerKey(raw: string): string {
   return raw
+    .normalize("NFC")
     .trim()
     .toLowerCase()
     .replace(/\u0307/g, "");

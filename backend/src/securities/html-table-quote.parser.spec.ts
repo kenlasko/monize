@@ -235,9 +235,13 @@ describe("mapHeader", () => {
         "Date",
         "Cours d'ouverture",
         "Cours le plus haut",
+        "Cours le plus bas",
         "Cours de clôture",
       ]),
-    ).toMatchObject({ date: 0, open: 1, close: 3 });
+    ).toEqual({ date: 0, open: 1, high: 2, low: 3, close: 4 });
+    expect(
+      mapHeader(["Date", "Cours le plus haut", "Cours le plus bas", "Cours"]),
+    ).toEqual({ date: 0, high: 1, low: 2, close: 3 });
     expect(mapHeader(["Дата", "Цена открытия", "Цена закрытия"])).toEqual({
       date: 0,
       open: 1,
@@ -259,6 +263,12 @@ describe("mapHeader", () => {
       open: 1,
       close: 2,
     });
+  });
+
+  it("reads a header whose accents are written as combining marks", () => {
+    const decomposed = "Clôture".normalize("NFD");
+    expect(mapHeader(["Date", decomposed])).toEqual({ date: 0, close: 1 });
+    expect(headerSeparatorHint(["Date", decomposed])).toBe(",");
   });
 
   it("ends a word at a non-ASCII letter", () => {
