@@ -34,7 +34,7 @@ Please don't open a large or shared-area PR cold. Unsolicited large PRs may be a
 
 ## Project conventions
 
-The conventions are written once. `AGENTS.md` is the canonical instruction file for any coding agent (repo-wide rules, commands, the pre-push gate, the workflow, the no-go areas); `CLAUDE.md` imports it and adds only Claude Code specifics; `backend/CLAUDE.md`, `frontend/CLAUDE.md`, `database/CLAUDE.md` and `e2e/CLAUDE.md` the per-layer ones, written out under `docs/backend/` and `docs/frontend/`. Cross-layer invariants are indexed by [`docs/system-invariants.md`](docs/system-invariants.md): before changing anything that moves money, writes a file, sends an email, runs on a schedule or touches authorization, find the relevant invariant and name its ID in your PR.
+The conventions are written once. `AGENTS.md` is the canonical instruction file for any coding agent (repo-wide rules, commands, the pre-push gate, the workflow, the no-go areas); `CLAUDE.md` imports it and adds only Claude Code specifics; `backend/CLAUDE.md`, `frontend/CLAUDE.md`, `database/CLAUDE.md` and `e2e/CLAUDE.md` the per-layer ones, written out under `docs/backend/` and `docs/frontend/`. [`docs/agent-instructions.md`](docs/agent-instructions.md) explains how those files are tiered and guarded. Cross-layer invariants are indexed by [`docs/system-invariants.md`](docs/system-invariants.md): before changing anything that moves money, writes a file, sends an email, runs on a schedule or touches authorization, find the relevant invariant and name its ID in your PR.
 
 Two of them are worth restating because they shape every PR:
 

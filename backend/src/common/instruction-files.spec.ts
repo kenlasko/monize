@@ -1,5 +1,5 @@
-import { readFileSync, statSync } from "fs";
-import { basename, join } from "path";
+import { lstatSync, readFileSync, readlinkSync, statSync } from "fs";
+import { basename, dirname, join, resolve } from "path";
 
 import { findRepoRoot, gitListFiles, requireRepoRoot } from "./repo-tree.util";
 
@@ -20,8 +20,12 @@ import { findRepoRoot, gitListFiles, requireRepoRoot } from "./repo-tree.util";
  *    for the root and layer `CLAUDE.md` files, `AGENTS_FILE_MAX_BYTES` for
  *    `AGENTS.md`, which also carries the commands and the gate. Lower a ceiling
  *    as a file shrinks; never raise one to admit a paragraph;
- *  - every document under `docs/frontend/` and `docs/backend/` is named in its
- *    layer index, so a rule cannot be filed where no reader is sent;
+ *  - every document under `docs/frontend/` and `docs/backend/` is named in both
+ *    of its indexes, the layer `CLAUDE.md` an agent arrives from and the
+ *    `docs/<layer>/README.md` a person browses, so a rule cannot be filed
+ *    where no reader is sent and the two hand-written indexes cannot drift;
+ *  - the adversarial review protocol exists once: Claude Code's copy is a
+ *    symlink to the Codex skill, never a second file that can drift;
  *  - no instruction file carries an issue or PR number: that is the marker of a
  *    defect history, which belongs in the `docs/` entry beside the rule.
  *
@@ -51,6 +55,16 @@ const INSTRUCTION_FILES: ReadonlyArray<readonly [string, number]> = [
 /** The layers whose CLAUDE.md is an index over `docs/<layer>/`. */
 const INDEXED_LAYERS = ["frontend", "backend"];
 
+/**
+ * One document loaded from two paths because each tool has its own skill
+ * directory: Claude Code reads `.claude/commands/`, Codex reads
+ * `.agents/skills/`. The first is a symlink to the second, so there is one
+ * file to edit; replacing the link with a copy is how two versions would start.
+ */
+const SYMLINKED_FILES: ReadonlyArray<readonly [string, string]> = [
+  [".claude/commands/audit.md", ".agents/skills/audit/SKILL.md"],
+];
+
 const ISSUE_NUMBER = /(?:^|[^\w`/])#\d{3,}\b/;
 
 const REPO_ROOT = findRepoRoot(__dirname);
@@ -78,10 +92,28 @@ describeTree("instruction files keep the shape `AGENTS.md` describes", () => {
       // A guard over an empty directory would prove nothing.
       expect(docs.length).toBeGreaterThan(3);
       const index = read(`${layer}/CLAUDE.md`);
+      const readme = read(`docs/${layer}/README.md`);
       const unreachable = docs.filter((doc) => !index.includes(`\`${doc}\``));
-      expect(unreachable).toEqual([]);
+      const unlisted = docs.filter(
+        (doc) => !readme.includes(`\`${basename(doc)}\``),
+      );
+      expect({
+        [`not named in ${layer}/CLAUDE.md`]: unreachable,
+        [`not named in docs/${layer}/README.md`]: unlisted,
+      }).toEqual({
+        [`not named in ${layer}/CLAUDE.md`]: [],
+        [`not named in docs/${layer}/README.md`]: [],
+      });
     },
   );
+
+  it.each(SYMLINKED_FILES)("%s is a symlink to %s", (link, target) => {
+    const linkPath = join(root(), link);
+    expect(lstatSync(linkPath).isSymbolicLink()).toBe(true);
+    expect(resolve(dirname(linkPath), readlinkSync(linkPath))).toBe(
+      join(root(), target),
+    );
+  });
 
   it.each(INSTRUCTION_FILES.map(([relative]) => relative))(
     "%s carries no issue or PR number",

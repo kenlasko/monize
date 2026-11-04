@@ -42,6 +42,7 @@ const DOCS = [
   'e2e/CLAUDE.md',
   'backend/src/mcp/CLAUDE.md',
   'docs/guard-tests.md',
+  'docs/agent-instructions.md',
   'docs/backend/mcp.md',
   'helm/README.md',
   'database/CLAUDE.md',

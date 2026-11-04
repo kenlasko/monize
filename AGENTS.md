@@ -6,12 +6,11 @@ This is the canonical instruction file for every coding agent; `CLAUDE.md` impor
 
 ## How the instruction files are organised
 
-This file and the layer files are read on every task, so they hold only what nearly every task needs, each rule in one or two sentences naming the thing to use and the thing not to.
+This file and the layer files are read on every task, so they hold only what nearly every task needs, one or two sentences per rule naming the thing to use and the thing not to. `docs/agent-instructions.md` describes the tiers, the guards and where a rule goes.
 
 - **Reading.** Before working in a layer, read its `CLAUDE.md`, then only the rows of its "Read when the work touches it" table that match the task.
-- **Writing a rule.** A new rule is one line in the layer index (or one sentence in this file) plus the full entry in the matching `docs/<layer>/*.md` or contract document. If it does not fit in a sentence, it belongs in `docs/`.
-- **Never in an instruction file:** the history of the defect, issue and PR numbers, the mechanism of the guard that holds the rule, edge cases, worked examples. Those go in the `docs/` entry, the regression test's comment, or an ADR.
-- **A rule the machine enforces needs no essay.** Where a type, a lint rule or a source-scanning test holds a rule, name the abstraction to use and stop; the guard's failure message says what to use instead. `docs/guard-tests.md` says how to write one. `backend/src/common/instruction-files.spec.ts` holds every instruction file under its size ceiling and every `docs/<layer>/*.md` reachable from its index.
+- **Writing a rule.** One line in the layer index (or one sentence here) plus the full entry in the matching `docs/<layer>/*.md` or contract document; the defect's history, issue numbers, the guard's mechanism, edge cases and examples go only in that entry. If it does not fit in a sentence, it belongs in `docs/`.
+- **A rule the machine enforces needs no essay.** Name the abstraction to use and stop; the guard's failure message says the rest. `docs/guard-tests.md` says how to write one; `backend/src/common/instruction-files.spec.ts` holds every instruction file under its ceiling and every `docs/<layer>/*.md` reachable from its index.
 
 ## Commands
 
