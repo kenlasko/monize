@@ -4,7 +4,7 @@ import { SharedLinkedTransactionNotice } from "@/components/shared-expenses/Shar
 import { isSharedPaymentAccount } from "@/lib/shared-bank-eligibility";
 
 import { FALLBACK_DEFAULT_CURRENCY } from '@/lib/default-currency';
-import { useState, useEffect, useMemo, useRef, useCallback, MutableRefObject, type BaseSyntheticEvent } from 'react';
+import { useState, useEffect, useId, useMemo, useRef, useCallback, MutableRefObject, type BaseSyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm, useWatch, Resolver } from 'react-hook-form';
 import '@/lib/zodConfig';
@@ -68,6 +68,7 @@ import { useAuthStore } from '@/store/authStore';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { AttachmentsSection } from './AttachmentsSection';
+import { useAutoGrowTextarea } from '@/hooks/useAutoGrowTextarea';
 import { TransactionWarrantiesLine } from './TransactionWarrantiesLine';
 import { rowHasWarranties } from './WarrantyBadge';
 import { attachmentsApi } from '@/lib/attachments';
@@ -467,6 +468,9 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   // textarea itself cannot hold an anchor, so this is the only way the address
   // in a draft is reachable without saving first.
   const watchedDescription = useWatch({ control, name: 'description' });
+  const autoGrowDescription = useAutoGrowTextarea(watchedDescription);
+  const descriptionId = useId();
+  const { ref: descriptionRegisterRef, ...descriptionField } = register('description');
   const watchedDate = useWatch({ control, name: 'transactionDate' });
 
   // Foreign-currency entry is active only for non-transfer transactions whose
@@ -1969,41 +1973,27 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         </div>
       )}
 
-      {/* Tag Creation Modal */}
-      {!selectedIsJoint && (
-        <MultiSelect
-          label={t('form.fields.tags')}
-          options={tagOptions}
-          value={selectedTagIds}
-          onChange={setSelectedTagIds}
-          placeholder={t('form.placeholders.selectTags')}
-          onCreateNew={() => setShowTagForm(true)}
-          createNewLabel={t('form.placeholders.createNewTag')}
-        />
-      )}
-
-      {/* Description - only shown when not in split mode (split mode has it inline with Reference Number) */}
-      <Modal isOpen={showTagForm} onClose={() => setShowTagForm(false)} maxWidth="lg" allowOverflow pushHistory className="p-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-          {t('form.newTagTitle')}
-        </h2>
-        <TagForm
-          onSubmit={handleTagCreate}
-          onCancel={() => setShowTagForm(false)}
-        />
-      </Modal>
-
-      {/* Status selector */}
+      {/* Description - only shown when not in split mode (split mode has it
+          inline with Reference Number). One line until the text has more: a
+          multi-line note, typed or saved, opens it to show every line. */}
       {!isSplitMode && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label
+            htmlFor={descriptionId}
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
             {t('form.fields.description')}
           </label>
           <textarea
-            rows={3}
+            id={descriptionId}
+            rows={1}
             maxLength={TRANSACTION_NOTE_MAX_LENGTH}
-            className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
-            {...register('description')}
+            className="block w-full resize-y rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+            {...descriptionField}
+            ref={(el) => {
+              descriptionRegisterRef(el);
+              autoGrowDescription(el);
+            }}
           />
           <NoteLinks text={watchedDescription ?? ''} />
           {errors.description && (
@@ -2014,43 +2004,72 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         </div>
       )}
 
-      {/* Attachments. When editing, they are managed directly against the
-          saved transaction; when creating, files are staged client-side and
-          uploaded once the transaction has been created. Attachments are
-          per-user, so they are not offered on a joint account's rows. */}
-      <Select
-        label={t('form.fields.status')}
-        options={[
-          { value: TransactionStatus.UNRECONCILED, label: t('form.statusOptions.unreconciled') },
-          { value: TransactionStatus.CLEARED, label: t('form.statusOptions.cleared') },
-          { value: TransactionStatus.RECONCILED, label: t('form.statusOptions.reconciled') },
-          { value: TransactionStatus.VOID, label: t('form.statusOptions.void') },
-        ]}
-        {...register('status')}
-      />
+      {/* Tags on the left, Status on the right. Tags are per-user, so a joint
+          account's row shows Status alone. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {!selectedIsJoint && (
+          <MultiSelect
+            label={t('form.fields.tags')}
+            options={tagOptions}
+            value={selectedTagIds}
+            onChange={setSelectedTagIds}
+            placeholder={t('form.placeholders.selectTags')}
+            onCreateNew={() => setShowTagForm(true)}
+            createNewLabel={t('form.placeholders.createNewTag')}
+          />
+        )}
+        <div className={selectedIsJoint ? 'md:col-start-2' : undefined}>
+          <Select
+            label={t('form.fields.status')}
+            options={[
+              { value: TransactionStatus.UNRECONCILED, label: t('form.statusOptions.unreconciled') },
+              { value: TransactionStatus.CLEARED, label: t('form.statusOptions.cleared') },
+              { value: TransactionStatus.RECONCILED, label: t('form.statusOptions.reconciled') },
+              { value: TransactionStatus.VOID, label: t('form.statusOptions.void') },
+            ]}
+            {...register('status')}
+          />
+        </div>
+      </div>
 
-      {/* Warranties linked to this purchase, and Add warranty: shown where
-          there is one to list or the host can Add, never as a dead end. Not on
-          a joint account's row (a warranty is the reader's own, as
-          attachments are), and not for an acting delegate. */}
-      {selectedIsJoint ? null : transaction ? (
-        <AttachmentsSection transactionId={transaction.id} />
-      ) : (
-        <AttachmentsSection
-          stagedFiles={stagedAttachments}
-          onStagedFilesChange={setStagedAttachments}
+      {/* Tag Creation Modal */}
+      <Modal isOpen={showTagForm} onClose={() => setShowTagForm(false)} maxWidth="lg" allowOverflow pushHistory className="p-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+          {t('form.newTagTitle')}
+        </h2>
+        <TagForm
+          onSubmit={handleTagCreate}
+          onCancel={() => setShowTagForm(false)}
         />
-      )}
+      </Modal>
 
-      {/* Actions. anchorProps, not a wrapper, so a guided tour rings the
-          Cancel/Save pair rather than the full-width row around it. */}
-      {showWarrantiesLine && (
-        <TransactionWarrantiesLine
-          transaction={transaction}
-          onAddWarranty={addWarranty}
-          isAdding={isSavingForWarranty}
-          onOpenWarranty={onOpenWarranty}
-        />
+      {/* Attachments and Warranties side by side. Attachments: when editing,
+          they are managed directly against the saved transaction; when
+          creating, files are staged client-side and uploaded once the
+          transaction has been created. Warranties linked to this purchase,
+          and Add warranty: shown where there is one to list or the host can
+          Add, never as a dead end. Neither is offered on a joint account's
+          row (both are the reader's own), and an acting delegate sees no
+          Warranties line. */}
+      {!selectedIsJoint && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {transaction ? (
+            <AttachmentsSection transactionId={transaction.id} />
+          ) : (
+            <AttachmentsSection
+              stagedFiles={stagedAttachments}
+              onStagedFilesChange={setStagedAttachments}
+            />
+          )}
+          {showWarrantiesLine && (
+            <TransactionWarrantiesLine
+              transaction={transaction}
+              onAddWarranty={addWarranty}
+              isAdding={isSavingForWarranty}
+              onOpenWarranty={onOpenWarranty}
+            />
+          )}
+        </div>
       )}
 
       {/* What the lookup found for the payee just created -- an offer, saved

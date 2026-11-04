@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act, cleanup } from '@/test/render';
+import { render, screen, fireEvent, waitFor, act, cleanup, within } from '@/test/render';
 import { TransactionForm } from './TransactionForm';
 import { TransactionStatus } from '@/types/transaction';
 import { getLocalDateString } from '@/lib/utils';
@@ -3344,6 +3344,78 @@ describe('TransactionForm', () => {
           })
         );
       });
+    });
+  });
+
+  describe('layout of the lower fields', () => {
+    const precedes = (a: Element, b: Element) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    it('puts a one-line Description above Tags', async () => {
+      render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+      const description = await screen.findByLabelText('Description');
+      expect(description.tagName).toBe('TEXTAREA');
+      expect(description).toHaveAttribute('rows', '1');
+      expect(precedes(description, screen.getByText('Tags'))).toBe(true);
+    });
+
+    describe('auto-expanding Description', () => {
+      // jsdom has no layout: a line is 20px of content here, a browser's own.
+      let scrollHeight: ReturnType<typeof vi.spyOn>;
+      beforeEach(() => {
+        scrollHeight = vi
+          .spyOn(HTMLTextAreaElement.prototype, 'scrollHeight', 'get')
+          .mockImplementation(function (this: HTMLTextAreaElement) {
+            return this.value.split('\n').length * 20;
+          });
+      });
+      afterEach(() => scrollHeight.mockRestore());
+
+      it('opens a saved multi-line description expanded to show every line', async () => {
+        render(
+          <TransactionForm
+            transaction={createExistingTransaction({ description: 'first\nsecond\nthird' }) as any}
+            onSuccess={mockOnSuccess}
+            onCancel={mockOnCancel}
+          />,
+        );
+        const description = (await screen.findByLabelText('Description')) as HTMLTextAreaElement;
+        await waitFor(() => expect(description.value).toBe('first\nsecond\nthird'));
+        expect(description.style.height).toBe('60px');
+      });
+
+      it('grows when a second line is typed', async () => {
+        render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+        const description = (await screen.findByLabelText('Description')) as HTMLTextAreaElement;
+        expect(description.style.height).toBe('20px');
+        await act(async () => {
+          fireEvent.change(description, { target: { value: 'one\ntwo' } });
+        });
+        expect(description.style.height).toBe('40px');
+      });
+    });
+
+    it('puts Tags and Status on one line, Tags on the left', async () => {
+      render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+      const status = await screen.findByLabelText('Status');
+      const row = status.closest('.grid') as HTMLElement;
+      expect(row).toHaveClass('md:grid-cols-2');
+      const tags = within(row).getByText('Tags');
+      expect(precedes(tags, status)).toBe(true);
+    });
+
+    it('puts Attachments and Warranties on one line', async () => {
+      render(
+        <TransactionForm
+          transaction={createExistingTransaction({ warrantyCount: 1 }) as any}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      const warranties = await screen.findByTestId('warranties-line');
+      const row = warranties.closest('.grid') as HTMLElement;
+      expect(row).toHaveClass('md:grid-cols-2');
+      expect(within(row).getByTestId('attachments-header')).toBeInTheDocument();
     });
   });
 
