@@ -35,6 +35,8 @@ export interface BondProgramSummary {
   newestSeriesCode: string | null;
   /** The issuer's page describing the bond kind; null when the adapter has none. */
   infoUrl?: string | null;
+  /** The nominal of one bond of the program, an exact decimal string; null when no adapter states it. */
+  faceValue?: string | null;
 }
 
 /** `POST /bonds/instruments/fetch` body. */

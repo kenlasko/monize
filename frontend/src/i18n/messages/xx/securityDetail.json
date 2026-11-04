@@ -455,7 +455,8 @@
       "none": "[XX-No {benchmark} data is stored yet-XX]"
     },
     "issuers": {
-      "PL_MF": "[XX-Ministry of Finance (PL)-XX]"
+      "PL_MF": "[XX-Ministry of Finance (PL)-XX]",
+      "US_TREASURY": "[XX-U.S. Department of the Treasury (US)-XX]"
     },
     "redemption": {
       "title": "[XX-Early redemption terms-XX]",
@@ -472,7 +473,10 @@
       "COI": "[XX-COI: 4-year inflation-indexed savings bonds-XX]",
       "EDO": "[XX-EDO: 10-year inflation-indexed savings bonds-XX]",
       "ROS": "[XX-ROS: 6-year inflation-indexed family savings bonds-XX]",
-      "ROD": "[XX-ROD: 12-year inflation-indexed family savings bonds-XX]"
+      "ROD": "[XX-ROD: 12-year inflation-indexed family savings bonds-XX]",
+      "BILL": "[XX-BILL: Treasury bills, 4 to 52 weeks, sold at a discount-XX]",
+      "NOTE": "[XX-NOTE: Treasury notes, 2 to 10 years, fixed semiannual coupon-XX]",
+      "BOND": "[XX-BOND: Treasury bonds, 20 and 30 years, fixed semiannual coupon-XX]"
     },
     "series": {
       "title": "[XX-Your series-XX]",

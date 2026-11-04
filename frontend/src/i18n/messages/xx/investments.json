@@ -338,6 +338,7 @@
     "exchangeRateUnresolved": "[XX-No {from} to {to} rate is available. Enter one, or the converted total, before saving.-XX]",
     "toastExchangeRateRequired": "[XX-Enter an exchange rate before saving a cross-currency trade.-XX]",
     "notAvailable": "[XX-Not available-XX]",
+    "bondUnit": "[XX-One unit = {faceValue} {currency} face value-XX]",
     "bondSeries": {
       "label": "[XX-Bond series-XX]",
       "fromDate": "[XX-Determined from the date-XX]",

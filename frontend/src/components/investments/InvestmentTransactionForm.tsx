@@ -22,6 +22,7 @@ import {
   useBondSeriesOptions,
 } from './BondSeriesSelect';
 import { BondRedemptionInfo } from './BondRedemptionInfo';
+import { BondUnitHint } from './BondUnitHint';
 import {
   redemptionRequestKey,
   useBondRedemptionSplit,
@@ -532,6 +533,7 @@ function InvestmentTransactionFormFields({
       storedInstrumentId: storedBondInstrumentId,
     },
   );
+  const bondProgramIdNow = securities.find((s) => s.id === watchedSecurityId)?.bondProgramId;
   // The reader's pick; '' is the default of the kind: the series the server
   // infers from the date (an acquisition) or the oldest lots (a removal).
   const bondSeriesValue = watchedBondInstrumentId ?? '';
@@ -1549,6 +1551,11 @@ function InvestmentTransactionFormFields({
           min={0}
           error={errors.quantity?.message}
         />
+      )}
+
+      {/* What one unit of a program-linked bond is, under the quantity */}
+      {bondSeries && !transferMode && (needsQuantityPrice || isQuantityOnly) && (
+        <BondUnitHint programId={bondProgramIdNow} />
       )}
 
       {/* Stock split - new shares vs old shares + optional new price */}

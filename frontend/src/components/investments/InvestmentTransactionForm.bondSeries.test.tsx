@@ -194,6 +194,24 @@ describe('InvestmentTransactionForm: the sale period in the series labels', () =
   });
 });
 
+describe('InvestmentTransactionForm: the unit of a program-linked security', () => {
+  it("says what one unit is, from the program's face value, only for a linked security", async () => {
+    api.listBondPrograms.mockResolvedValue(
+      programs.map((p) => ({ ...p, faceValue: '100.00' })),
+    );
+    await openForm();
+    expect(screen.queryByTestId('bond-unit-hint')).toBeNull();
+    await pickSecurity('sec-edo');
+    await waitFor(() =>
+      expect(screen.getByTestId('bond-unit-hint')).toHaveTextContent(
+        'One unit = 100.00 PLN face value',
+      ),
+    );
+    await pickSecurity('sec-stock');
+    await waitFor(() => expect(screen.queryByTestId('bond-unit-hint')).toBeNull());
+  });
+});
+
 describe('InvestmentTransactionForm: the series of a bond program', () => {
   describe('an acquisition', () => {
     it('defaults to the series the server infers for the date, labelled with it, and sends null', async () => {
