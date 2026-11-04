@@ -214,8 +214,8 @@
     "bondCountryOther": "Khác",
     "bondCountryOtherInfo": "Có thể yêu cầu hỗ trợ trái phiếu của các quốc gia khác trên <link>GitHub của dự án</link>.",
     "quoteTable": {
-      "urlLabel": "Trang có bảng giá",
-      "urlHelp": "Trang cần có một bảng với hàng tiêu đề gồm cột ngày và cột giá đóng cửa, bằng tiếng Anh, Đức hoặc Tây Ban Nha (ví dụ Date/Close, Datum/Schluss, Fecha/Cierre). Hàng mới nhất là giá; mọi hàng bổ sung lịch sử.",
+      "urlLabel": "Trang web bảng giá",
+      "urlHelp": "Trang cần có một bảng với hàng tiêu đề gồm cột ngày và cột giá đóng cửa.",
       "test": "Thử",
       "previewFailed": "Không thể đọc trang.",
       "summary": "{count, plural, other {# ngày}} từ {first} đến {last}",

@@ -214,8 +214,8 @@
     "bondCountryOther": "Other",
     "bondCountryOtherInfo": "Support for bonds of other countries can be requested on the project's <link>GitHub</link>.",
     "quoteTable": {
-      "urlLabel": "Page with the price table",
-      "urlHelp": "The page needs a table whose header has a date column and a closing price column, in English, German or Spanish (for example Date/Close, Datum/Schluss, Fecha/Cierre). The newest row is the price; every row fills the history.",
+      "urlLabel": "Price table webpage",
+      "urlHelp": "The page needs a table whose header has a date column and a closing price column.",
       "test": "Test",
       "previewFailed": "The page could not be read.",
       "summary": "{count, plural, one {# day} other {# days}} from {first} to {last}",

@@ -214,8 +214,8 @@
     "bondCountryOther": "Lainnya",
     "bondCountryOtherInfo": "Dukungan untuk obligasi negara lain dapat diminta di <link>GitHub proyek</link>.",
     "quoteTable": {
-      "urlLabel": "Halaman dengan tabel harga",
-      "urlHelp": "Halaman harus memiliki tabel yang judulnya berisi kolom tanggal dan kolom harga penutupan, dalam bahasa Inggris, Jerman, atau Spanyol (misalnya Date/Close, Datum/Schluss, Fecha/Cierre). Baris terbaru adalah harganya; semua baris mengisi riwayat.",
+      "urlLabel": "Halaman web tabel harga",
+      "urlHelp": "Halaman harus memiliki tabel yang judulnya berisi kolom tanggal dan kolom harga penutupan.",
       "test": "Uji",
       "previewFailed": "Halaman tidak dapat dibaca.",
       "summary": "{count, plural, other {# hari}} dari {first} sampai {last}",

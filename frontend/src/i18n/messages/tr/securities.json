@@ -214,8 +214,8 @@
     "bondCountryOther": "Diğer",
     "bondCountryOtherInfo": "Diğer ülkelerin tahvilleri için destek, projenin <link>GitHub</link> sayfasından talep edilebilir.",
     "quoteTable": {
-      "urlLabel": "Fiyat tablosunun bulunduğu sayfa",
-      "urlHelp": "Sayfada, başlığında bir tarih sütunu ve bir kapanış fiyatı sütunu bulunan bir tablo olmalı; İngilizce, Almanca veya İspanyolca (örneğin Date/Close, Datum/Schluss, Fecha/Cierre). En yeni satır fiyattır; tüm satırlar geçmişi doldurur.",
+      "urlLabel": "Fiyat tablosu web sayfası",
+      "urlHelp": "Sayfada, başlığında bir tarih sütunu ve bir kapanış fiyatı sütunu bulunan bir tablo olmalı.",
       "test": "Test et",
       "previewFailed": "Sayfa okunamadı.",
       "summary": "{first} ile {last} arasında {count, plural, one {# gün} other {# gün}}",

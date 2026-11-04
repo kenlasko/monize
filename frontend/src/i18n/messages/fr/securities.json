@@ -214,8 +214,8 @@
     "bondCountryOther": "Autre",
     "bondCountryOtherInfo": "La prise en charge des obligations d'autres pays peut être demandée sur le <link>GitHub du projet</link>.",
     "quoteTable": {
-      "urlLabel": "Page contenant le tableau des cours",
-      "urlHelp": "La page doit contenir un tableau dont l'en-tête a une colonne de date et une colonne de cours de clôture, en anglais, allemand ou espagnol (par exemple Date/Close, Datum/Schluss, Fecha/Cierre). La ligne la plus récente donne le cours ; toutes les lignes remplissent l'historique.",
+      "urlLabel": "Page web du tableau des cours",
+      "urlHelp": "La page doit contenir un tableau dont l'en-tête a une colonne de date et une colonne de cours de clôture.",
       "test": "Tester",
       "previewFailed": "La page n'a pas pu être lue.",
       "summary": "{count, plural, one {# jour} other {# jours}} du {first} au {last}",

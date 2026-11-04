@@ -214,8 +214,8 @@
     "bondCountryOther": "其他",
     "bondCountryOtherInfo": "如需支持其他国家的债券，可在项目的 <link>GitHub</link> 上提出请求。",
     "quoteTable": {
-      "urlLabel": "包含价格表的页面",
-      "urlHelp": "页面需要一个表格，其标题行包含日期列和收盘价列，可用英语、德语或西班牙语（例如 Date/Close、Datum/Schluss、Fecha/Cierre）。最新一行为价格；所有行用于填充历史。",
+      "urlLabel": "价格表网页",
+      "urlHelp": "页面需要一个表格，其标题行包含日期列和收盘价列。",
       "test": "测试",
       "previewFailed": "无法读取该页面。",
       "summary": "{first} 至 {last}，共 {count, plural, other {# 天}}",

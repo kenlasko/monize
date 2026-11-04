@@ -838,6 +838,21 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
         />
       )}
 
+      {!hideExchange && watchedQuoteProvider === 'html_table' && (
+        <QuoteTableUrlField
+          registration={register('quoteUrl')}
+          url={watchedQuoteUrl}
+          error={errors.quoteUrl?.message}
+        />
+      )}
+
+      {!hideExchange && watchedQuoteProvider === 'msn' && (
+        <MsnInstrumentIdInput
+          registration={register('msnInstrumentId')}
+          error={errors.msnInstrumentId?.message}
+        />
+      )}
+
       {/* A bond of a listed country is priced by the engine, never by a quote
           refresh, so the switch that stops quote refreshes has nothing to stop. */}
       {!hideExchange && (
@@ -908,21 +923,6 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
         />
         {t('priceAlert.chartLabel')}
       </label>
-
-      {!hideExchange && watchedQuoteProvider === 'html_table' && (
-        <QuoteTableUrlField
-          registration={register('quoteUrl')}
-          url={watchedQuoteUrl}
-          error={errors.quoteUrl?.message}
-        />
-      )}
-
-      {!hideExchange && watchedQuoteProvider === 'msn' && (
-        <MsnInstrumentIdInput
-          registration={register('msnInstrumentId')}
-          error={errors.msnInstrumentId?.message}
-        />
-      )}
 
       {/* Favourite star toggle */}
       <button

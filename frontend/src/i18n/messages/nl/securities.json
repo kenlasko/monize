@@ -214,8 +214,8 @@
     "bondCountryOther": "Overig",
     "bondCountryOtherInfo": "Ondersteuning voor obligaties van andere landen kan worden aangevraagd op de <link>GitHub van het project</link>.",
     "quoteTable": {
-      "urlLabel": "Pagina met de koerstabel",
-      "urlHelp": "De pagina heeft een tabel nodig waarvan de kop een datumkolom en een slotkoerskolom heeft, in het Engels, Duits of Spaans (bijvoorbeeld Date/Close, Datum/Schluss, Fecha/Cierre). De nieuwste rij is de koers; alle rijen vullen de historie.",
+      "urlLabel": "Webpagina met koerstabel",
+      "urlHelp": "De pagina heeft een tabel nodig waarvan de kop een datumkolom en een slotkoerskolom heeft.",
       "test": "Testen",
       "previewFailed": "De pagina kon niet worden gelezen.",
       "summary": "{count, plural, one {# dag} other {# dagen}} van {first} tot {last}",
