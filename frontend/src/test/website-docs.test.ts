@@ -58,6 +58,16 @@ describe('website documentation', () => {
     }
     expect(output).toMatch(/up to date/);
   });
+
+  it('writes the search index one entry per line, so pull requests touching different pages merge', () => {
+    const lines = readFileSync(join(SITE, 'docs', 'search-index.json'), 'utf8').split('\n');
+    const entries = JSON.parse(lines.join('\n')) as unknown[];
+    expect(entries.length).toBeGreaterThan(1);
+    expect(lines[0]).toBe('[');
+    expect(lines.at(-2)).toBe(']');
+    expect(lines.at(-1)).toBe('');
+    expect(lines.length).toBe(entries.length + 3);
+  });
 });
 
 describe('website fits the Cloudflare Pages free plan', () => {
