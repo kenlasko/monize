@@ -256,19 +256,10 @@ export class PortfolioPeriodResultService {
     const currency = await this.reportingCurrency(userId, opts.displayCurrency);
     const end = opts.endDate || todayYMD();
 
-    const window = opts.period
-      ? await this.presetWindow(userId, opts.period, end, opts.accountIds)
-      : { startDate: opts.startDate, baselineDate: opts.baselineDate };
+    const from = await this.measuredFrom(userId, opts, end);
     // A preset whose window this scope has no history for is a period that
     // cannot be measured, not one that did nothing.
-    if (window === null) return this.emptyResult(currency, end, end);
-
-    // The baseline is the earlier of the two when both are given, so a client
-    // that sends a prior close cannot narrow the window it asked to chart.
-    const from =
-      window.baselineDate && window.baselineDate < window.startDate
-        ? window.baselineDate
-        : window.startDate;
+    if (from === null) return this.emptyResult(currency, end, end);
 
     const empty = this.emptyResult(currency, from, end);
 
@@ -441,6 +432,31 @@ export class PortfolioPeriodResultService {
       ),
       fetchMissing: opts.fetchMissing,
     });
+  }
+
+  /**
+   * The close a window is measured FROM: `b`, the series' first point.
+   *
+   * Public because the per-security split of the same measure
+   * (`security-period-results.service.ts`) must open on the very day this
+   * route opens on for the same request, and one resolver is how the two
+   * cannot drift (`docs/specs/investment-performance-report-period.md`
+   * section 3). `null` is a preset this scope has no history for.
+   */
+  async measuredFrom(
+    userId: string,
+    opts: PeriodResultWindow & { accountIds?: string[] },
+    end: string,
+  ): Promise<string | null> {
+    const window = opts.period
+      ? await this.presetWindow(userId, opts.period, end, opts.accountIds)
+      : { startDate: opts.startDate, baselineDate: opts.baselineDate };
+    if (window === null) return null;
+    // The baseline is the earlier of the two when both are given, so a client
+    // that sends a prior close cannot narrow the window it asked to chart.
+    return window.baselineDate && window.baselineDate < window.startDate
+      ? window.baselineDate
+      : window.startDate;
   }
 
   /**

@@ -47,10 +47,14 @@ vi.mock("@/components/ui/Select", () => ({
 
 vi.mock("@/components/reports/ReportChart", () => ({
   ReportChart: ({
+    data,
+    onDataPointClick,
     partialTotal,
     totalLabel,
     signed,
   }: {
+    data?: Array<{ id?: string }>;
+    onDataPointClick?: (id: string) => void;
     partialTotal?: { excludedCount: number } | null;
     totalLabel?: string;
     signed?: boolean;
@@ -60,7 +64,16 @@ vi.mock("@/components/reports/ReportChart", () => ({
       data-partial={partialTotal ? String(partialTotal.excludedCount) : ""}
       data-total-label={totalLabel ?? ""}
       data-signed={signed ? "true" : "false"}
-    />
+    >
+      {(data ?? []).map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          data-testid={`chart-point-${item.id}`}
+          onClick={() => item.id && onDataPointClick?.(item.id)}
+        />
+      ))}
+    </div>
   ),
 }));
 
@@ -281,7 +294,7 @@ describe("CustomReportViewer", () => {
       viewType: "BAR_CHART",
       groupBy: "PAYEE",
       data: [
-        { label: "Amazon", value: 300, count: 5, id: "p-1", color: "#3b82f6" },
+        { label: "Amazon", value: 300, count: 5, id: "22222222-2222-4222-8222-222222222222", color: "#3b82f6" },
       ],
       summary: { total: 300, count: 5 },
       timeframe: {
@@ -348,7 +361,7 @@ describe("CustomReportViewer", () => {
           label: "Groceries",
           value: 500,
           count: 20,
-          id: "cat-1",
+          id: "11111111-1111-4111-8111-111111111111",
           color: "#ff0000",
         },
       ],
@@ -365,7 +378,7 @@ describe("CustomReportViewer", () => {
     });
     fireEvent.click(screen.getByText("Groceries"));
     expect(mockPush).toHaveBeenCalledWith(
-      "/transactions?startDate=2024-10-01&endDate=2025-01-01&categoryId=cat-1",
+      "/transactions?categoryIds=11111111-1111-4111-8111-111111111111&startDate=2024-10-01&endDate=2025-01-01",
     );
   });
 
@@ -387,7 +400,7 @@ describe("CustomReportViewer", () => {
       viewType: "BAR_CHART",
       groupBy: "PAYEE",
       data: [
-        { label: "Amazon", value: 300, count: 5, id: "p-1", color: "#3b82f6" },
+        { label: "Amazon", value: 300, count: 5, id: "22222222-2222-4222-8222-222222222222", color: "#3b82f6" },
       ],
       summary: { total: 300, count: 5 },
       timeframe: {
@@ -402,7 +415,49 @@ describe("CustomReportViewer", () => {
     });
     fireEvent.click(screen.getByText("Amazon"));
     expect(mockPush).toHaveBeenCalledWith(
-      "/transactions?startDate=2024-10-01&endDate=2025-01-01&payeeId=p-1",
+      "/transactions?payeeIds=22222222-2222-4222-8222-222222222222&startDate=2024-10-01&endDate=2025-01-01",
+    );
+  });
+
+  it("opens a listed transaction under the report's own filters and flashes it", async () => {
+    const account = "33333333-3333-4333-8333-333333333333";
+    const category = "44444444-4444-4444-8444-444444444444";
+    const tx = "55555555-5555-4555-8555-555555555555";
+    mockGetById.mockResolvedValue({
+      id: "rpt-1",
+      name: "Christmas",
+      viewType: "TABLE",
+      timeframeType: "YEAR_TO_DATE",
+      groupBy: "NONE",
+      config: {
+        metric: "NONE",
+        direction: "EXPENSES_ONLY",
+        includeTransfers: false,
+      },
+      filters: {
+        filterGroups: [
+          { conditions: [{ field: "account", value: [account] }] },
+          { conditions: [{ field: "category", value: [category] }] },
+        ],
+      },
+    });
+    mockExecute.mockResolvedValue({
+      viewType: "TABLE",
+      groupBy: "NONE",
+      data: [
+        { label: "Toy Store", value: 80, count: 1, id: tx, date: "2025-12-10", payee: "Toy Store" },
+      ],
+      summary: { total: 80, knownTotal: 80, count: 1, average: 80 },
+      timeframe: { label: "Year to date", startDate: "2025-01-01", endDate: "2025-12-31" },
+    });
+    render(<CustomReportViewer reportId="rpt-1" />);
+    await waitFor(() => {
+      expect(screen.getByTestId(`chart-point-${tx}`)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId(`chart-point-${tx}`));
+    expect(mockPush).toHaveBeenCalledWith(
+      `/transactions?categoryIds=${category}&accountIds=${account}&accountStatus=all` +
+        `&startDate=2025-01-01&endDate=2025-12-31&targetTransactionId=${tx}`,
     );
   });
 

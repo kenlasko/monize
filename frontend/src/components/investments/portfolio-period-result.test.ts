@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  periodBaselineDate,
   periodResultUnknownReason,
   withheldPeriodCause,
 } from './portfolio-period-result';
@@ -72,5 +73,14 @@ describe('withheldPeriodCause', () => {
     expect(
       withheldPeriodCause([['mixedSplit'], ['missingRatePairs']]),
     ).toBe('missingRatePairs');
+  });
+});
+
+describe('periodBaselineDate', () => {
+  it('sends the prior close only where it precedes the period', () => {
+    expect(periodBaselineDate('2026-08-31', '2026-09-01')).toBe('2026-08-31');
+    expect(periodBaselineDate('2026-09-01', '2026-09-01')).toBeUndefined();
+    expect(periodBaselineDate('', '2026-09-01')).toBeUndefined();
+    expect(periodBaselineDate('2026-08-31', '')).toBeUndefined();
   });
 });
