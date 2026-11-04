@@ -136,7 +136,8 @@ redemption      { type: MATURITY_ONLY }
                   proceedsFloor: { type: FACE_VALUE,
                                    appliesTo: ALL_PERIODS | FIRST_PERIOD } | null }
 rounding        { moneyDecimals: 0..4, mode: HALF_UP | HALF_EVEN | DOWN }
-                -- every Polish manifest uses 2 and HALF_UP
+                -- every Polish manifest uses 2 and HALF_UP, and names no
+                -- basis (PER_UNIT: bond-marketable-primitives.md section 4)
 source          { provider, url, document }
 ```
 

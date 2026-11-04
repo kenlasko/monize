@@ -118,6 +118,31 @@ rounding: {
   refused with `PER_UNIT`; `referenceAmount` is required with
   `REFERENCE_AMOUNT` and must be a positive multiple of `faceValue`.
 
+Decisions taken in the implementation, where this section left a choice open:
+
+- A document without `basis` parses to the two-field object it always did;
+  `basis` is not added to it (`roundingBasisOf(terms)` answers `PER_UNIT`), so a
+  terms document stored before the change is unchanged (INV-BOND-001). An
+  explicit `"basis": "PER_UNIT"` is accepted and kept as written.
+- `roundLot(terms, perUnit, quantity, figure)` takes the kind of figure: only an
+  `ACCRUED` interest is rounded per unit to `unitDecimals` (table 5.3); a
+  principal, a regular coupon, a value and a maturity value are exact until the
+  lot is rounded. `PER_UNIT` rounds every kind per unit to `moneyDecimals`.
+  `unitDecimals` under `REFERENCE_AMOUNT` is applied to the same figure kind,
+  before the reference value is formed.
+- On `PER_HOLDING` and `REFERENCE_AMOUNT` the value of an open coupon lot is the
+  principal on the holding plus the accrued interest on the holding
+  (`grossLotOf`); a compounding or discount lot's value is rounded once as a
+  whole. `accruedInterest` of a lot is its value less its principal on the
+  holding (`principalLot`), so every lot figure is on the money grid and
+  `payout = principalReturned + interest` holds exactly.
+- `RedemptionSplit.perBond` keeps its meaning only under `PER_UNIT` (the lot's
+  figures are these times the quantity). Under another basis it holds one unit's
+  figures by the same rule, for information; the lot's figures are not their
+  multiples. The valuation's per-bond `principal` is printed at the money
+  decimals, or at the finer of `unitDecimals` and the money decimals under
+  another basis (`unitText`).
+
 ## 5. P3 and P4: coupon dates and actual/actual
 
 ### 5.1 Schedule `COUPON_DATES`

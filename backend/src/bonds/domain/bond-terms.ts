@@ -20,7 +20,8 @@ import {
 
 export { BondTermsError } from "./terms-readers";
 export type { BondTermsErrorCode } from "./terms-readers";
-export type { BondRounding } from "./bond-rounding";
+export type { BondRounding, RoundingBasis } from "./bond-rounding";
+export { roundingBasisOf } from "./bond-rounding";
 
 export type StepObservation = {
   readonly type: "STEP_VALUE_ON_NTH_BUSINESS_DAY_BEFORE_START_MONTH";
@@ -510,7 +511,7 @@ export function parseBondTerms(json: unknown): BondTerms {
       "terms.capitalization",
     ),
     redemption: parseRedemption(t.redemption, "terms.redemption"),
-    rounding: parseRounding(t.rounding, "terms.rounding"),
+    rounding: parseRounding(t.rounding, "terms.rounding", faceValue),
     source: {
       provider: text(source.provider, "terms.source.provider"),
       url: text(source.url, "terms.source.url"),

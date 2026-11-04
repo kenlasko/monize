@@ -4,10 +4,10 @@ Plan: `docs/future-plans/us-treasury-bonds.md`.
 
 ## Phase 1: marketability, rounding basis, lot cost
 
-- [ ] `instrument.marketability` accepts `MARKETABLE`; `PURCHASE_AFTER_MATURITY` refusal (primitives 3)
-- [ ] `rounding.basis`, `unitDecimals`, `referenceAmount`; one `roundLot` (primitives 4)
+- [x] `instrument.marketability` accepts `MARKETABLE`; `PURCHASE_AFTER_MATURITY` refusal (primitives 3)
+- [x] `rounding.basis`, `unitDecimals`, `referenceAmount`; one `roundLot` (primitives 4)
 - [ ] `lot.cost` for a discount lot, `principalBasis` in the valuation and the split; the lot fold carries cost (primitives 6.1)
-- [ ] Price policy per marketability, `marketPriceRequired` (primitives 3); `docs/system-invariants.md` INV-BOND-005 text
+- [x] Price policy per marketability, `marketPriceRequired` (primitives 3); `docs/system-invariants.md` INV-BOND-005 text
 
 ## Phase 2: coupon dates and actual/actual
 

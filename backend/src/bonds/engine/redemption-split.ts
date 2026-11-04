@@ -32,7 +32,12 @@ export interface RedemptionSplit extends RedemptionSplitFigures {
   /** The date asked about; after maturity the split is the maturity split. */
   readonly date: string;
   readonly quantity: number;
-  /** One bond's figures; the lot's are these, each times `quantity`. */
+  /**
+   * One unit's figures by the same rule. Under `PER_UNIT` the lot's are these,
+   * each times `quantity`; under another basis the lot is rounded on the
+   * holding, so these are informational and the lot's figures are not their
+   * multiples.
+   */
   readonly perBond: RedemptionSplitFigures;
   /** Set when no split can be given; the figures are then null (`principal` stays known for RATE_UNKNOWN). */
   readonly refusal: RedemptionSplitRefusal | null;
@@ -47,62 +52,48 @@ const NONE: RedemptionSplitFigures = {
   payout: null,
 };
 
-/** The lot's figures from one bond's, each rounded per bond first and then multiplied by the quantity. */
-function lotOf(
-  perBond: RedemptionSplitFigures,
-  quantity: number,
-  places: number,
-): RedemptionSplitFigures {
-  const q = ExactDecimal.fromInt(quantity);
-  const times = (v: string | null) =>
-    v === null ? null : ExactDecimal.parse(v).mul(q).toFixed(places);
-  return {
-    principal: times(perBond.principal),
-    grossInterest: times(perBond.grossInterest),
-    deduction: times(perBond.deduction),
-    interest: times(perBond.interest),
-    principalReturned: times(perBond.principalReturned),
-    payout: times(perBond.payout),
-  };
+/** What a lot (or one unit) is worth in the three figures the split is built from, exact and rounded as the terms say. */
+export interface SplitBasis {
+  /** The principal base on the date. */
+  readonly principal: ExactDecimal;
+  /** The value before any deduction. */
+  readonly gross: ExactDecimal;
+  /** The cash paid. */
+  readonly payout: ExactDecimal;
 }
 
-/** No split: the refusal, and the principal when it is still known. */
+/**
+ * No split: the refusal, and the principal when it is still known (the lot's and
+ * one unit's).
+ */
 export function refusedSplit(
   date: string,
   quantity: number,
   places: number,
   refusal: RedemptionSplitRefusal,
-  principalBond: ExactDecimal | null,
+  principal: { readonly lot: ExactDecimal; readonly unit: ExactDecimal } | null,
 ): RedemptionSplit {
-  const perBond: RedemptionSplitFigures = {
+  const known = (value: ExactDecimal | undefined): RedemptionSplitFigures => ({
     ...NONE,
-    principal: principalBond === null ? null : principalBond.toFixed(places),
-  };
+    principal: value === undefined ? null : value.toFixed(places),
+  });
   return {
     date,
     quantity,
-    ...lotOf(perBond, quantity, places),
-    perBond,
+    ...known(principal?.lot),
+    perBond: known(principal?.unit),
     refusal,
   };
 }
 
 /**
- * The split of one bond's rounded `principal`, `gross` (value before any
- * deduction) and `payout`, then of the lot. The deduction is what the issuer
- * keeps; it comes out of the interest first.
+ * The figures of a split from the three of its basis. The deduction is what the
+ * issuer keeps; it comes out of the interest first.
+ * `payout = principalReturned + interest` exactly, whatever the basis: all three
+ * inputs are on the money grid, so every difference is, and the text is exact.
  */
-export function splitOf(
-  date: string,
-  quantity: number,
-  places: number,
-  bond: {
-    readonly principal: ExactDecimal;
-    readonly gross: ExactDecimal;
-    readonly payout: ExactDecimal;
-  },
-): RedemptionSplit {
-  const { principal, gross, payout } = bond;
+function figuresOf(places: number, basis: SplitBasis): RedemptionSplitFigures {
+  const { principal, gross, payout } = basis;
   const grossInterest = gross.sub(principal);
   const deduction = gross.sub(payout);
   const interest = ExactDecimal.max(
@@ -110,7 +101,7 @@ export function splitOf(
     grossInterest.sub(deduction),
   );
   const text = (v: ExactDecimal) => v.toFixed(places);
-  const perBond: RedemptionSplitFigures = {
+  return {
     principal: text(principal),
     grossInterest: text(grossInterest),
     deduction: text(deduction),
@@ -118,11 +109,21 @@ export function splitOf(
     principalReturned: text(payout.sub(interest)),
     payout: text(payout),
   };
+}
+
+/** The split of the lot (`lot`) and of one unit (`unit`) from their three figures. */
+export function splitOf(
+  date: string,
+  quantity: number,
+  places: number,
+  lot: SplitBasis,
+  unit: SplitBasis,
+): RedemptionSplit {
   return {
     date,
     quantity,
-    ...lotOf(perBond, quantity, places),
-    perBond,
+    ...figuresOf(places, lot),
+    perBond: figuresOf(places, unit),
     refusal: null,
   };
 }

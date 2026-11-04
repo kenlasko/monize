@@ -2,6 +2,8 @@ import { assertNever } from "../domain/assert-never";
 import { BondTerms } from "../domain/bond-terms";
 import { daysBetween } from "../domain/calendar-date";
 import { ExactDecimal } from "../domain/exact-decimal";
+import { roundingBasisOf } from "../domain/bond-rounding";
+import { roundLot, unitRound } from "./rounding";
 
 /**
  * Per-bond amounts from the primitives of the terms. Every amount is for ONE
@@ -209,9 +211,11 @@ export function valueAt(
 }
 
 /**
- * The coupon paid at a period end, rounded; null when interest is capitalised
- * instead. A discount instrument's "coupon" is its whole discount, paid inside
- * the face value at maturity.
+ * The coupon paid at a period end per unit, rounded as a unit's figure is (to
+ * the money decimals under `PER_UNIT`, exact under another basis, where the lot
+ * is rounded instead: `couponLot`); null when interest is capitalised instead. A
+ * discount instrument's "coupon" is its whole discount, paid inside the face
+ * value at maturity.
  */
 export function couponOf(
   terms: BondTerms,
@@ -220,13 +224,13 @@ export function couponOf(
   switch (terms.capitalization.type) {
     case "NONE": {
       if (isDiscount(terms)) {
-        return roundMoney(
+        return unitRound(
           terms,
           ExactDecimal.parse(terms.instrument.faceValue),
-        ).sub(roundMoney(terms, issuePriceOf(terms)));
+        ).sub(unitRound(terms, issuePriceOf(terms)));
       }
       const base = principalAt(terms, { date: period.period.end });
-      return roundMoney(
+      return unitRound(
         terms,
         periodInterest(terms, base, period.period, period.rate),
       );
@@ -238,18 +242,102 @@ export function couponOf(
   }
 }
 
-/** Cash received at maturity per bond, rounded; `last` is the final period. */
-export function maturityValue(
+/**
+ * The coupon of `quantity` units paid at a period end, the lot's figure rounded
+ * as the terms' basis says (`roundLot`); null when interest is capitalised. A
+ * discount instrument's is its whole discount: the face value less the issue
+ * price, each as a lot figure.
+ */
+export function couponLot(
+  terms: BondTerms,
+  period: PricedPeriod,
+  quantity: ExactDecimal,
+): ExactDecimal | null {
+  switch (terms.capitalization.type) {
+    case "NONE": {
+      if (isDiscount(terms)) {
+        return roundLot(
+          terms,
+          ExactDecimal.parse(terms.instrument.faceValue),
+          quantity,
+        ).sub(roundLot(terms, issuePriceOf(terms), quantity));
+      }
+      const base = principalAt(terms, { date: period.period.end });
+      return roundLot(
+        terms,
+        periodInterest(terms, base, period.period, period.rate),
+        quantity,
+      );
+    }
+    case "COMPOUND_AT_PERIOD_END":
+      return null;
+    default:
+      return assertNever(terms.capitalization);
+  }
+}
+
+/** Cash received at maturity for `quantity` units, the lot's figure; `last` is the final period. */
+export function maturityLot(
   terms: BondTerms,
   prior: readonly PricedPeriod[],
   last: PricedPeriod,
+  quantity: ExactDecimal,
 ): ExactDecimal {
   const date = last.period.end;
   if (isDiscount(terms)) {
-    return roundMoney(terms, ExactDecimal.parse(terms.instrument.faceValue));
+    return roundLot(
+      terms,
+      ExactDecimal.parse(terms.instrument.faceValue),
+      quantity,
+    );
   }
-  const coupon = couponOf(terms, last);
+  const coupon = couponLot(terms, last, quantity);
   return coupon === null
-    ? roundMoney(terms, compoundedNominal(terms, [...prior, last], { date }))
-    : principalAt(terms, { date }).add(coupon);
+    ? roundLot(
+        terms,
+        compoundedNominal(terms, [...prior, last], { date }),
+        quantity,
+      )
+    : principalAt(terms, { date }).mul(quantity).add(coupon);
+}
+
+/**
+ * The lot's principal on `ctx.date`: the nominal (the issue price of a discount
+ * instrument) of `quantity` units. Unrounded under `PER_UNIT`, where the nominal
+ * is the issuer's own figure; rounded on the holding under another basis.
+ */
+export function principalLot(
+  terms: BondTerms,
+  ctx: PrincipalContext,
+  quantity: ExactDecimal,
+): ExactDecimal {
+  const nominal = principalAt(terms, ctx);
+  return roundingBasisOf(terms) === "PER_UNIT"
+    ? nominal.mul(quantity)
+    : roundLot(terms, nominal, quantity);
+}
+
+/**
+ * The lot's figure for a unit's `value` on the day `asOf` (`valueAt`, before any
+ * penalty), rounded as the basis says. A coupon bond's is its principal plus its
+ * accrued interest, the accrued interest being the figure the issuer rounds per
+ * unit (`unitDecimals`); every other value is rounded once as a whole.
+ */
+export function grossLotOf(
+  terms: BondTerms,
+  value: ExactDecimal,
+  asOf: string,
+  quantity: ExactDecimal,
+): ExactDecimal {
+  if (
+    roundingBasisOf(terms) === "PER_UNIT" ||
+    isDiscount(terms) ||
+    compounds(terms)
+  ) {
+    return roundLot(terms, value, quantity);
+  }
+  const nominal = principalAt(terms, { date: asOf });
+  return roundLot(terms, nominal, quantity).add(
+    roundLot(terms, value.sub(nominal), quantity, "ACCRUED"),
+  );
 }

@@ -10,14 +10,16 @@ import {
 import {
   baseAt,
   compounds,
-  couponOf,
+  couponLot,
+  grossLotOf,
   isDiscount,
-  maturityValue,
+  maturityLot,
   principalAt,
+  principalLot,
   PricedPeriod,
-  roundMoney,
   valueAt,
 } from "./accrual";
+import { roundLot, unitText } from "./rounding";
 import {
   BondEngineError,
   BondEngineInput,
@@ -35,6 +37,7 @@ import {
   RedemptionSplit,
   RedemptionSplitRefusal,
   refusedSplit,
+  SplitBasis,
   splitOf,
 } from "./redemption-split";
 import {
@@ -46,7 +49,7 @@ import {
   startedPeriods,
 } from "./rate-resolution";
 import {
-  proceedsPerBond,
+  proceedsLot,
   referencedCalendarIds,
   windowRefusal,
 } from "./redemption";
@@ -205,7 +208,8 @@ function describeSchedule(
 /** What a lot's rates give once `started` periods have begun; shared by every such day. */
 interface Resolved extends RateResolution {
   readonly rateSchedule: readonly RateScheduleEntry[];
-  readonly maturityPerBond: ExactDecimal | null;
+  /** The lot's cash at maturity, rounded as the terms' basis says. */
+  readonly maturityCash: ExactDecimal | null;
   readonly maturityProjected: boolean;
   readonly missingFor: readonly MissingObservation[];
 }
@@ -313,8 +317,13 @@ function resolvedFor(p: PreparedLot, started: number): Resolved {
   const resolved: Resolved = {
     ...resolution,
     rateSchedule: describeSchedule(terms, rates),
-    maturityPerBond: maturityInputs
-      ? maturityValue(terms, maturityInputs.prior, maturityInputs.current)
+    maturityCash: maturityInputs
+      ? maturityLot(
+          terms,
+          maturityInputs.prior,
+          maturityInputs.current,
+          p.quantity,
+        )
       : null,
     maturityProjected: p.compounding
       ? rates.some((r) => r.source === "PROJECTED")
@@ -334,20 +343,27 @@ interface DayFigures {
   readonly accrued: string | null;
   readonly gross: string | null;
   readonly early: string | null;
-  /** Per bond, rounded: the exact figures `gross` and `early` are the lot's multiples of. */
-  readonly grossBond: ExactDecimal | null;
-  readonly earlyBond: ExactDecimal | null;
+  /** The lot's gross value and early-redemption proceeds, exact, rounded as the basis says: what `gross` and `early` print. */
+  readonly grossLot: ExactDecimal | null;
+  readonly earlyLot: ExactDecimal | null;
   readonly refusal: EarlyRedemptionRefusal | null;
 }
 
-/** The value figures of one day (spec 2.4 to 2.6) from the rates of its started count. */
-function figuresOn(p: PreparedLot, asOf: string): DayFigures {
+/**
+ * The value figures of one day (spec 2.4 to 2.6) from the rates of its started
+ * count, for `quantity` units (the lot's by default; `redemptionSplit` also asks
+ * for one unit).
+ */
+function figuresOn(
+  p: PreparedLot,
+  asOf: string,
+  quantity: ExactDecimal = p.quantity,
+): DayFigures {
   const { terms, calendars } = p.input;
   const started = startedPeriods(p.schedule, asOf);
   const { rates } = resolvedFor(p, started);
   const { compounding, places, lastPeriod } = p;
-  const lot = (perBond: ExactDecimal) =>
-    perBond.mul(p.quantity).toFixed(places);
+  const text = (figure: ExactDecimal) => figure.toFixed(places);
 
   const matured = compareYMD(asOf, p.maturity) >= 0;
   const candidate = matured ? null : p.schedule[started - 1];
@@ -358,8 +374,8 @@ function figuresOn(p: PreparedLot, asOf: string): DayFigures {
   let accrued: string | null = null;
   let gross: string | null = null;
   let early: string | null = null;
-  let grossBond: ExactDecimal | null = null;
-  let earlyBond: ExactDecimal | null = null;
+  let grossLot: ExactDecimal | null = null;
+  let earlyLot: ExactDecimal | null = null;
   let refusal: EarlyRedemptionRefusal | null = windowRefusal(
     terms,
     calendars,
@@ -374,26 +390,26 @@ function figuresOn(p: PreparedLot, asOf: string): DayFigures {
       // A coupon bond redeems at its nominal whatever the rates were; its last
       // coupon is a past cash flow, so no rate is needed for the value.
       const nominal = principalAt(terms, { date: p.maturity });
-      principal = nominal.toFixed(places);
-      gross = lot(nominal);
-      grossBond = nominal;
-      accrued = lot(nominal.sub(nominal));
+      principal = text(nominal);
+      grossLot = nominal.mul(quantity);
+      gross = text(grossLot);
+      accrued = text(ExactDecimal.ZERO);
     } else {
       const inputs = inputsFor(compounding, rates, lastPeriod.index);
       if (inputs) {
-        const perBond = maturityValue(terms, inputs.prior, inputs.current);
-        const nominal = principalAt(terms, { date: p.maturity });
+        grossLot = maturityLot(terms, inputs.prior, inputs.current, quantity);
         // The same principal as an open day: the base the last period accrued
         // on, interest capitalised earlier included. `accrued` stays all the
         // interest since the nominal, as on an open day (golden-pinned), so
         // the two overlap by design and `gross` is the figure to total.
-        principal = roundMoney(
+        principal = unitText(
           terms,
           baseAt(terms, inputs.prior, { date: lastPeriod.start }),
-        ).toFixed(places);
-        gross = lot(perBond);
-        grossBond = perBond;
-        accrued = lot(perBond.sub(nominal));
+        );
+        gross = text(grossLot);
+        accrued = text(
+          grossLot.sub(principalLot(terms, { date: p.maturity }, quantity)),
+        );
       }
     }
   } else if (current) {
@@ -401,14 +417,22 @@ function figuresOn(p: PreparedLot, asOf: string): DayFigures {
     if (inputs) {
       const value = valueAt(terms, inputs.prior, inputs.current, asOf);
       const base = baseAt(terms, inputs.prior, { date: current.start });
-      const nominal = principalAt(terms, { date: asOf });
-      grossBond = roundMoney(terms, value);
-      principal = roundMoney(terms, base).toFixed(places);
-      gross = lot(grossBond);
-      accrued = lot(grossBond.sub(nominal));
+      grossLot = grossLotOf(terms, value, asOf, quantity);
+      principal = unitText(terms, base);
+      gross = text(grossLot);
+      accrued = text(
+        grossLot.sub(principalLot(terms, { date: asOf }, quantity)),
+      );
       if (refusal === null) {
-        earlyBond = proceedsPerBond(terms, value, base, current.index, asOf);
-        early = lot(earlyBond);
+        earlyLot = proceedsLot(
+          terms,
+          value,
+          base,
+          current.index,
+          asOf,
+          quantity,
+        );
+        early = text(earlyLot);
       }
     } else if (refusal === null) {
       refusal = "RATE_UNKNOWN";
@@ -424,8 +448,8 @@ function figuresOn(p: PreparedLot, asOf: string): DayFigures {
     accrued,
     gross,
     early,
-    grossBond,
-    earlyBond,
+    grossLot,
+    earlyLot,
     refusal,
   };
 }
@@ -501,10 +525,9 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
   const figures = figuresOn(p, asOf);
   const { matured, current, started } = figures;
   const resolved = resolvedFor(p, started);
-  const { rates, maturityPerBond, maturityProjected } = resolved;
+  const { rates, maturityCash, maturityProjected } = resolved;
   const { compounding, lastPeriod } = p;
-  const lot = (perBond: ExactDecimal) =>
-    perBond.mul(p.quantity).toFixed(p.places);
+  const lot = (figure: ExactDecimal) => figure.toFixed(p.places);
   const currentRate =
     current && !isDiscount(terms) ? rates[current.index - 1] : null;
 
@@ -512,13 +535,13 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
   const flow = (
     period: SchedulePeriod,
     type: CashFlow["type"],
-    perBond: ExactDecimal | null,
+    amount: ExactDecimal | null,
     projected: boolean,
   ): CashFlow => ({
     date: period.end,
     type,
-    amount: perBond === null ? null : lot(perBond),
-    status: perBond === null ? "UNKNOWN" : projected ? "PROJECTED" : "KNOWN",
+    amount: amount === null ? null : lot(amount),
+    status: amount === null ? "UNKNOWN" : projected ? "PROJECTED" : "KNOWN",
     period: period.index,
   });
   if (!compounding) {
@@ -528,7 +551,7 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
       const coupon =
         rate.rate === null
           ? null
-          : couponOf(terms, { period, rate: rate.rate });
+          : couponLot(terms, { period, rate: rate.rate }, p.quantity);
       cashflows.push(
         flow(period, "INTEREST", coupon, rate.source === "PROJECTED"),
       );
@@ -538,13 +561,13 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
         flow(
           lastPeriod,
           "PRINCIPAL",
-          principalAt(terms, { date: lastPeriod.end }),
+          principalLot(terms, { date: lastPeriod.end }, p.quantity),
           false,
         ),
       );
   } else if (!matured) {
     cashflows.push(
-      flow(lastPeriod, "PRINCIPAL", maturityPerBond, maturityProjected),
+      flow(lastPeriod, "PRINCIPAL", maturityCash, maturityProjected),
     );
   }
 
@@ -596,9 +619,9 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
     knownCashflows: cashflows.filter((c) => c.status === "KNOWN"),
     projectedCashflows: cashflows.filter((c) => c.status !== "KNOWN"),
     maturityValueKnown:
-      maturityPerBond && !maturityProjected ? lot(maturityPerBond) : null,
+      maturityCash && !maturityProjected ? lot(maturityCash) : null,
     maturityValueProjected:
-      maturityPerBond && maturityProjected ? lot(maturityPerBond) : null,
+      maturityCash && maturityProjected ? lot(maturityCash) : null,
     projectionAssumptions: resolved.assumptions,
     projectionMissing: resolved.projectionMissing,
     dataCompleteness,
@@ -609,8 +632,8 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
 
 /**
  * Value one holding lot (spec 2.4 to 2.6). All arithmetic is exact; rounding is
- * applied only where the terms round, per bond, and the lot is that amount times
- * the quantity. A lot bought outside the terms' sale window is REFUSED: no
+ * applied only where the terms round, as the terms' rounding basis says
+ * (`roundLot`: per bond and multiplied by the quantity by default). A lot bought outside the terms' sale window is REFUSED: no
  * figure, `valuationComplete` false.
  */
 export function valueBondLot(input: BondEngineInput): BondValuation {
@@ -622,13 +645,13 @@ export function valueBondLot(input: BondEngineInput): BondValuation {
 /**
  * What a redemption on `date` pays, as returned principal and interest (spec
  * `bond-redemption-interest.md` section 2), through the same schedule, rates,
- * penalties, floor and rounding as `valueBondLot`: one bond's figures are
- * rounded by the terms, the lot's are those times the quantity.
+ * penalties, floor and rounding as `valueBondLot`: the lot's figures are rounded
+ * as the terms' basis says (`roundLot`), and one unit's are given beside them.
  *
  * Before maturity the day must be allowed (`windowRefusal`): the value before
  * deduction is the gross value, the payout the early-redemption proceeds. On or
  * after maturity the payout is the principal plus the last period's interest
- * (`maturityValue`) and the deduction is 0. A refused day, a purchase outside
+ * (`maturityLot`) and the deduction is 0. A refused day, a purchase outside
  * the sale window and an unknown rate give the refusal and null figures (the
  * principal stays known for an unknown rate).
  */
@@ -641,48 +664,76 @@ export function redemptionSplit(
   const p = prepare(input);
   const { terms } = input;
   const { quantity } = input.lot;
-  const refused = (refusal: RedemptionSplitRefusal, principal?: ExactDecimal) =>
+  const matured = compareYMD(date, p.maturity) >= 0;
+  const day = matured ? p.maturity : date;
+  const principal = principalAt(terms, { date: day });
+  // The principal of the lot and of one unit, rounded as the basis says.
+  const principalOf = (units: ExactDecimal) =>
+    roundLot(terms, principal, units);
+  const refused = (refusal: RedemptionSplitRefusal, principalKnown = false) =>
     refusedSplit(
       date,
       quantity,
       p.places,
       refusal,
-      principal === undefined ? null : roundMoney(terms, principal),
+      principalKnown
+        ? {
+            lot: principalOf(p.quantity),
+            unit: principalOf(ExactDecimal.ONE),
+          }
+        : null,
     );
   if (p.saleRefusal) return refused(p.saleRefusal.code);
 
-  const matured = compareYMD(date, p.maturity) >= 0;
-  const day = matured ? p.maturity : date;
-  const principal = principalAt(terms, { date: day });
   if (matured) {
     const { rates } = resolvedFor(p, startedPeriods(p.schedule, day));
     const inputs = inputsFor(p.compounding, rates, p.lastPeriod.index);
-    if (!inputs) return refused("RATE_UNKNOWN", principal);
-    const paid = maturityValue(terms, inputs.prior, inputs.current);
-    return splitOf(date, quantity, p.places, {
-      principal: roundMoney(terms, principal),
-      gross: paid,
-      payout: paid,
-    });
+    if (!inputs) return refused("RATE_UNKNOWN", true);
+    const basisOf = (units: ExactDecimal): SplitBasis => {
+      const paid = maturityLot(terms, inputs.prior, inputs.current, units);
+      return { principal: principalOf(units), gross: paid, payout: paid };
+    };
+    return splitOf(
+      date,
+      quantity,
+      p.places,
+      basisOf(p.quantity),
+      basisOf(ExactDecimal.ONE),
+    );
   }
 
   const figures = figuresOn(p, day);
-  if (figures.refusal === "RATE_UNKNOWN")
-    return refused("RATE_UNKNOWN", principal);
+  if (figures.refusal === "RATE_UNKNOWN") return refused("RATE_UNKNOWN", true);
   if (figures.refusal !== null) {
     // No open period (before the first one starts) is not a day to redeem on.
     return refused(
       figures.refusal === "MATURED" ? "NOT_REDEEMABLE" : figures.refusal,
     );
   }
-  if (figures.grossBond === null || figures.earlyBond === null) {
-    return refused("RATE_UNKNOWN", principal);
+  const unit = figuresOn(p, day, ExactDecimal.ONE);
+  if (
+    figures.grossLot === null ||
+    figures.earlyLot === null ||
+    unit.grossLot === null ||
+    unit.earlyLot === null
+  ) {
+    return refused("RATE_UNKNOWN", true);
   }
-  return splitOf(date, quantity, p.places, {
-    principal: roundMoney(terms, principal),
-    gross: figures.grossBond,
-    payout: figures.earlyBond,
-  });
+  return splitOf(
+    date,
+    quantity,
+    p.places,
+    {
+      principal: principalOf(p.quantity),
+      gross: figures.grossLot,
+      payout: figures.earlyLot,
+    },
+    {
+      principal: principalOf(ExactDecimal.ONE),
+      gross: unit.grossLot,
+      payout: unit.earlyLot,
+    },
+  );
 }
 
 export type BondLotSeriesInput = Omit<BondEngineInput, "asOf"> & {
