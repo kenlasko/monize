@@ -10,6 +10,7 @@ import { UserPreference } from "../users/entities/user-preference.entity";
 import { NetWorthService } from "./net-worth.service";
 import { PortfolioPeriodResultService } from "./portfolio-period-result.service";
 import { PortfolioPeriodResultsBatchService } from "./portfolio-period-results-batch.service";
+import { SecurityPeriodResultsService } from "./security-period-results.service";
 import { NetWorthController } from "./net-worth.controller";
 import { DelegationModule } from "../delegation/delegation.module";
 import { NotificationsModule } from "../notifications/notifications.module";
@@ -42,6 +43,7 @@ import { CurrenciesModule } from "../currencies/currencies.module";
     NetWorthService,
     PortfolioPeriodResultService,
     PortfolioPeriodResultsBatchService,
+    SecurityPeriodResultsService,
   ],
   controllers: [NetWorthController],
   exports: [
