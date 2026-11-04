@@ -12,6 +12,7 @@ import { LoanFeesEditor } from '@/components/accounts/LoanFeesEditor';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { categoriesApi } from '@/lib/categories';
 import { buildCategoryLabelMap } from '@/lib/categoryUtils';
+import { createCategoryFromInput } from '@/lib/category-create';
 import { getErrorMessage } from '@/lib/errors';
 import {
   LOAN_FEE_CALCULATION_KEYS,
@@ -76,6 +77,34 @@ export function LoanFeesPanel({ account, onChanged }: LoanFeesPanelProps) {
         : new Map<string, string>(),
     [answer],
   );
+
+  // A category typed into a fee's picker, through the one helper every
+  // picker creates with; added to this panel's list so the editor can show
+  // and select it.
+  const createCategory = async (name: string): Promise<Category | null> => {
+    if (answer?.loaded.status !== 'ready') return null;
+    try {
+      const result = await createCategoryFromInput(name, answer.loaded.categories, { isIncome: false });
+      if (!result) return null;
+      setAnswer((prev) =>
+        prev && prev.loaded.status === 'ready'
+          ? {
+              ...prev,
+              loaded: { ...prev.loaded, categories: [...prev.loaded.categories, ...result.created] },
+            }
+          : prev,
+      );
+      toast.success(
+        result.parentName
+          ? t('toasts.categoryCreatedNested', { parent: result.parentName, name: result.category.name })
+          : t('toasts.categoryCreated', { name: result.category.name }),
+      );
+      return result.category;
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('toasts.categoryCreateFailed')));
+      return null;
+    }
+  };
 
   const open = () => {
     if (loaded.status !== 'ready') return;
@@ -179,6 +208,7 @@ export function LoanFeesPanel({ account, onChanged }: LoanFeesPanelProps) {
               currencyCode={account.currencyCode}
               errors={errors}
               usePortal
+              onCreateCategory={createCategory}
             />
             {failure && (
               <p role="alert" className="text-sm text-red-600 dark:text-red-400">

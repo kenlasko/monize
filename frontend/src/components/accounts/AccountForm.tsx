@@ -887,6 +887,27 @@ export function AccountForm({
     }
   };
 
+  // A category typed into a mortgage fee's picker, through the one helper
+  // every picker creates with ("Parent: Child" included). Answers the new
+  // category for the fee editor to select; null when nothing was created.
+  const handleLoanFeeCategoryCreate = async (name: string): Promise<Category | null> => {
+    try {
+      const result = await createCategoryFromInput(name, categories, { isIncome: false });
+      if (!result) return null;
+      setCategories(prev => [...prev, ...result.created]);
+      toast.success(
+        result.parentName
+          ? t('toasts.categoryCreatedNested', { parent: result.parentName, name: result.category.name })
+          : t('toasts.categoryCreated', { name: result.category.name }),
+      );
+      return result.category;
+    } catch (error) {
+      logger.error('Failed to create category:', error);
+      toast.error(getErrorMessage(error, t('toasts.categoryCreateFailed')));
+      return null;
+    }
+  };
+
   // Handle asset category creation - supports "Parent: Child" format
   const handleAssetCategoryCreate = async (name: string) => {
     try {
@@ -1271,6 +1292,7 @@ export function AccountForm({
           loanFees={account ? undefined : loanFees}
           onLoanFeesChange={account ? undefined : setLoanFees}
           loanFeeErrors={loanFeeErrors}
+          onCreateLoanFeeCategory={handleLoanFeeCategoryCreate}
         />
       )}
 

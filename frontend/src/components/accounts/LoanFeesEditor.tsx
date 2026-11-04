@@ -29,6 +29,13 @@ interface LoanFeesEditorProps {
   errors?: LoanFeeDraftErrors[];
   /** Render the category list in a portal (inside a modal). */
   usePortal?: boolean;
+  /**
+   * Create a category from a name typed into a fee's picker (the "+ Create"
+   * option every category picker offers, through `createCategoryFromInput`)
+   * and answer it, or null when nothing was created. The parent adds it to
+   * `categories`; the editor selects it on that fee. Absent, no create option.
+   */
+  onCreateCategory?: (name: string) => Promise<Category | null>;
 }
 
 const BASIS_KEYS = {
@@ -48,6 +55,7 @@ export function LoanFeesEditor({
   currencyCode,
   errors,
   usePortal,
+  onCreateCategory,
 }: LoanFeesEditorProps) {
   const t = useTranslations('accounts');
   const categoryOptions = useMemo(() => {
@@ -62,6 +70,13 @@ export function LoanFeesEditor({
   const update = (key: string, patch: Partial<LoanFeeDraft>) =>
     onChange(fees.map((fee) => (fee.key === key ? { ...fee, ...patch } : fee)));
   const remove = (key: string) => onChange(fees.filter((fee) => fee.key !== key));
+  const createCategoryFor = (key: string) =>
+    onCreateCategory
+      ? async (name: string) => {
+          const category = await onCreateCategory(name);
+          if (category) update(key, { categoryId: category.id });
+        }
+      : undefined;
   const errorText = (code: string | undefined) =>
     code ? t(`loanFees.errors.${code}`) : undefined;
 
@@ -95,11 +110,18 @@ export function LoanFeesEditor({
               <Combobox
                 label={t('loanFees.category')}
                 aria-label={t('loanFees.category')}
-                placeholder={t('mortgageFields.selectCategory')}
+                placeholder={
+                  onCreateCategory
+                    ? t('assetFields.selectOrCreateCategory')
+                    : t('mortgageFields.selectCategory')
+                }
                 options={categoryOptions}
                 value={fee.categoryId}
                 initialDisplayValue={labels.get(fee.categoryId) ?? ''}
                 onChange={(categoryId) => update(fee.key, { categoryId })}
+                onCreateNew={createCategoryFor(fee.key)}
+                allowCustomValue={!!onCreateCategory}
+                valueIsId
                 error={errorText(rowErrors.categoryId)}
                 usePortal={usePortal}
               />

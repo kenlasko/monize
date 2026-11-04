@@ -117,12 +117,12 @@ The **Amortization Preview** shows the calculated payment amount, the **effectiv
 
 ### Mortgage Fees
 
-A mortgage payment often collects more than principal and interest: mortgage insurance, property tax held by the lender, or an administration fee. Under **Mortgage fees**, click **Add a fee** for each one and enter:
+A mortgage payment often collects more than principal and interest: mortgage insurance, property tax held by the lender, or an administration fee. Under **Mortgage fees**, the last section of the mortgage's details (after the interest and overpayment settings), click **Add a fee** for each one and enter:
 
 | Field | Description |
 |-------|-------------|
 | **Fee name** | Shown as the memo of the fee's line, for example *Property tax* |
-| **Category** | The category the fee is booked to. Each fee needs its own category, and it cannot be the interest category |
+| **Category** | The category the fee is booked to. Each fee needs its own category, and it cannot be the interest category. Type a new name and choose **Create** to add one, as in any category picker (`Parent: Child` creates it under a parent) |
 | **Calculated as** | **Fixed amount**; **Percentage of current balance**, recalculated at every payment so it falls as the mortgage is paid down; or **Percentage of original balance**, based on the amount originally borrowed |
 | **Value applies** | **Per payment**, or **Per year**, which divides the value over the payments in a year (a yearly property tax of 3,600 paid monthly is 300.00 a payment) |
 

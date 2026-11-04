@@ -15,8 +15,12 @@ vi.mock('@/lib/loan-fees', async (importOriginal) => ({
 }));
 
 const mockCategories = vi.fn();
+const mockCreateCategory = vi.fn();
 vi.mock('@/lib/categories', () => ({
-  categoriesApi: { getAll: () => mockCategories() },
+  categoriesApi: {
+    getAll: () => mockCategories(),
+    create: (...args: unknown[]) => mockCreateCategory(...args),
+  },
 }));
 
 vi.mock('react-hot-toast', () => ({ default: { success: vi.fn(), error: vi.fn() } }));
@@ -47,6 +51,7 @@ describe('LoanFeesPanel', () => {
     mockList.mockReset();
     mockReplace.mockReset();
     mockCategories.mockReset();
+    mockCreateCategory.mockReset();
     mockCategories.mockResolvedValue([
       { id: 'cat-tax', name: 'Taxes', parentId: null },
       { id: 'cat-interest', name: 'Interest', parentId: null },
@@ -128,6 +133,39 @@ describe('LoanFeesPanel', () => {
     expect(screen.getAllByText('Required').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: 'Remove fee' }));
     expect(screen.queryAllByTestId('loan-fee-row')).toHaveLength(0);
+  });
+
+  it('creates a category typed into a fee picker and saves the fee with it', async () => {
+    mockList.mockResolvedValue([]);
+    mockReplace.mockResolvedValue([]);
+    mockCreateCategory.mockResolvedValue({ id: 'cat-new', name: 'Mortgage Insurance', parentId: null });
+    await act(async () => {
+      render(<LoanFeesPanel account={MORTGAGE} />);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Edit fees' }));
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add a fee' }));
+    fireEvent.change(screen.getByLabelText('Fee name'), { target: { value: 'Insurance' } });
+    const category = screen.getByLabelText('Category');
+    fireEvent.focus(category);
+    // The picker opens on focus after a short delay, as its own tests wait.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 150));
+    });
+    fireEvent.change(category, { target: { value: 'mortgage insurance' } });
+    const create = await screen.findByText('Create "mortgage insurance"');
+    await act(async () => {
+      fireEvent.click(create);
+    });
+    expect(mockCreateCategory).toHaveBeenCalledWith({ name: 'Mortgage Insurance', isIncome: false });
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '25' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save fees' }));
+    });
+    expect(mockReplace).toHaveBeenCalledWith('mtg-1', [
+      expect.objectContaining({ categoryId: 'cat-new', name: 'Insurance', amount: 25 }),
+    ]);
   });
 
   it('shows the server refusal in the dialog', async () => {

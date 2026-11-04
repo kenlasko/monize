@@ -205,6 +205,18 @@ describe('MortgageFields', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('Payment matching cannot settle');
     });
 
+    it('places the fees last, after the payment recognition fields', () => {
+      render(<MortgageFields {...defaultProps} loanFees={[]} onLoanFeesChange={vi.fn()} />);
+      const interest = screen.getByText('Interest Category');
+      const fees = screen.getByText('Mortgage fees');
+      expect(interest.compareDocumentPosition(fees) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('offers no fee editor on edit', () => {
+      render(<MortgageFields {...defaultProps} isEditing loanFees={[]} onLoanFeesChange={vi.fn()} />);
+      expect(screen.queryByText('Mortgage fees')).not.toBeInTheDocument();
+    });
+
     it('offers no fee editor without the fee props', () => {
       render(<MortgageFields {...defaultProps} />);
       expect(screen.queryByText('Mortgage fees')).not.toBeInTheDocument();
