@@ -8,7 +8,7 @@ import { exchangeRatesApi } from '@/lib/exchange-rates';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
-import { FX_RATE_DISPLAY_DECIMALS } from '@/lib/format';
+import { FX_RATE_DISPLAY_DECIMALS, resolveCurrencySymbol } from '@/lib/format';
 
 import { DensityLevel, useTableDensity } from '@/hooks/useTableDensity';
 import { useDensityPreference } from '@/store/densityStore';
@@ -383,7 +383,9 @@ const CurrencyRow = memo(function CurrencyRow({
               <div className="col-span-3 grid grid-cols-[auto_auto_minmax(0,1fr)] items-start gap-x-4">
                 <div>
                   <CellLabel>{t('list.columns.symbol')}</CellLabel>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">{currency.symbol}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {resolveCurrencySymbol(currency.symbol, currency.code)}
+                  </div>
                 </div>
                 <div>
                   <CellLabel>{t('list.columns.decimals')}</CellLabel>
@@ -423,7 +425,7 @@ const CurrencyRow = memo(function CurrencyRow({
       </td>
       {/* Symbol */}
       <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 text-center`}>
-        {currency.symbol}
+        {resolveCurrencySymbol(currency.symbol, currency.code)}
       </td>
       {/* Decimals - hidden in compact/dense */}
       {density === 'normal' && (

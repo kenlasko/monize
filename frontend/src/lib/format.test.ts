@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getCurrencySymbol,
+  resolveCurrencySymbol,
   formatCurrency,
   getDecimalPlacesForCurrency,
   roundToDecimals,
@@ -42,6 +43,32 @@ describe('getCurrencySymbol', () => {
 
   it('returns $ for invalid currency code', () => {
     expect(getCurrencySymbol('INVALID')).toBe('$');
+  });
+});
+
+describe('resolveCurrencySymbol', () => {
+  it('uses an explicit stored symbol when present', () => {
+    expect(resolveCurrencySymbol('CA$', 'CAD')).toBe('CA$');
+  });
+
+  it('falls back to the derived symbol when stored value is empty', () => {
+    expect(resolveCurrencySymbol('', 'USD')).toBe('$');
+  });
+
+  it('falls back to the derived symbol when stored value is whitespace only', () => {
+    expect(resolveCurrencySymbol('   ', 'USD')).toBe('$');
+  });
+
+  it('falls back to the derived symbol when stored value is null', () => {
+    expect(resolveCurrencySymbol(null, 'USD')).toBe('$');
+  });
+
+  it('falls back to the derived symbol when stored value is undefined', () => {
+    expect(resolveCurrencySymbol(undefined, 'USD')).toBe('$');
+  });
+
+  it('trims surrounding whitespace from a real stored symbol', () => {
+    expect(resolveCurrencySymbol('  €  ', 'EUR')).toBe('€');
   });
 });
 

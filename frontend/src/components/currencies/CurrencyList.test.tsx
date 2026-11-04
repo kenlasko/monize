@@ -68,6 +68,27 @@ describe('CurrencyList', () => {
     expect(screen.getByText('Inactive')).toBeInTheDocument();
   });
 
+  it('shows the stored currency symbol in the Symbol column', () => {
+    const currencies = [
+      makeCurrency({ code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$' }),
+      makeCurrency({ code: 'EUR', name: 'Euro', symbol: '€' }),
+    ];
+
+    render(<CurrencyList currencies={currencies} {...defaultProps} />);
+    expect(screen.getByText('CA$')).toBeInTheDocument();
+    expect(screen.getByText('€')).toBeInTheDocument();
+  });
+
+  it('falls back to a derived symbol when the stored symbol is blank', () => {
+    // A blank stored symbol must not leave the Symbol column empty: it falls
+    // back to the Intl-derived symbol for the code (USD -> $).
+    const currencies = [makeCurrency({ code: 'USD', name: 'US Dollar', symbol: '' })];
+
+    const { container } = render(<CurrencyList currencies={currencies} {...defaultProps} />);
+    const symbolCell = container.querySelectorAll('tbody tr td')[2];
+    expect(symbolCell?.textContent).toBe('$');
+  });
+
   it('calls onEdit when edit button is clicked', () => {
     const currencies = [makeCurrency({ code: 'CAD', name: 'Canadian Dollar' })];
 

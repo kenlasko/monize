@@ -21,6 +21,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { resolveCurrencySymbol } from '@/lib/format';
 import { useTranslations } from 'next-intl';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
@@ -238,7 +239,11 @@ function CurrenciesContent() {
       } else if (sortField === 'name') {
         comparison = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
       } else if (sortField === 'symbol') {
-        comparison = a.symbol.localeCompare(b.symbol, undefined, { sensitivity: 'base' });
+        comparison = resolveCurrencySymbol(a.symbol, a.code).localeCompare(
+          resolveCurrencySymbol(b.symbol, b.code),
+          undefined,
+          { sensitivity: 'base' },
+        );
       } else if (sortField === 'decimals') {
         comparison = a.decimalPlaces - b.decimalPlaces;
       } else if (sortField === 'rate') {
