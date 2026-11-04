@@ -29,6 +29,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { isComplete, reportTotal, type ConvertedTotal } from '@/lib/currency-total';
 import { customReportMeasure, isSignedTransactionList } from '@/lib/custom-report-measure';
+import { customReportDrillDownHref } from '@/lib/custom-report-links';
 
 const logger = createLogger('CustomReportViewer');
 
@@ -140,25 +141,11 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
     executeReport();
   }, [report, executeReport, overrideTimeframe, customStartDate, customEndDate]);
 
+  // Into the register over the report's own filters and dates, narrowed to
+  // what was clicked; a listed transaction is flashed on its page.
   const handleDataPointClick = (id: string) => {
     if (!result) return;
-
-    // Navigate to transactions filtered by the clicked item
-    const params = new URLSearchParams();
-    if (result.timeframe.startDate) {
-      params.set('startDate', result.timeframe.startDate);
-    }
-    if (result.timeframe.endDate) {
-      params.set('endDate', result.timeframe.endDate);
-    }
-
-    if (result.groupBy === GroupByType.CATEGORY) {
-      params.set('categoryId', id);
-    } else if (result.groupBy === GroupByType.PAYEE) {
-      params.set('payeeId', id);
-    }
-
-    router.push(`/transactions?${params.toString()}`);
+    router.push(customReportDrillDownHref(report?.filters, result, id));
   };
 
   const timeframeOptions = [

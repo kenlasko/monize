@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@/test/render';
+import { format, startOfMonth, subDays } from 'date-fns';
 import { InvestmentPerformanceReport } from './InvestmentPerformanceReport';
 
 vi.mock('@/hooks/useNumberFormat', async () => {
@@ -45,6 +46,8 @@ vi.mock('@/components/reports/SecurityComparisonChart', () => ({
   SecurityComparisonChart: (props: {
     securityIds?: string[];
     subtitle?: string;
+    startDate?: string;
+    endDate?: string;
     exportRef?: { current: { exportPdf: () => Promise<void> } | null };
   }) => {
     mockChartProps(props);
@@ -56,6 +59,8 @@ vi.mock('@/components/reports/SecurityComparisonChart', () => ({
         data-testid="performance-chart"
         data-security-ids={(props.securityIds ?? []).join(',')}
         data-subtitle={props.subtitle}
+        data-start={props.startDate}
+        data-end={props.endDate}
       />
     );
   },
@@ -84,6 +89,46 @@ const mockExportToPdf = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/lib/pdf-export', () => ({
   exportToPdf: (...args: unknown[]) => mockExportToPdf(...args),
 }));
+
+// The window's figures: the portfolio's (the cards) and its split by security
+// (the rows), each answered once per request.
+const mockPeriodResult = vi.fn();
+const mockSecurityPeriodResults = vi.fn();
+vi.mock('@/lib/net-worth', () => ({
+  netWorthApi: {
+    getInvestmentsPeriodResult: (...args: unknown[]) => mockPeriodResult(...args),
+    getInvestmentsSecurityPeriodResults: (...args: unknown[]) =>
+      mockSecurityPeriodResults(...args),
+  },
+}));
+
+const PERIOD = {
+  currency: 'CAD',
+  startDate: '2025-11-04',
+  startPriceDate: '2025-11-04',
+  endDate: '2026-11-04',
+  investmentPnl: 250,
+  investmentReturnPercent: 12.5,
+  investedReasons: [],
+};
+
+function securityPeriod(securityId: string, pnl: number | null) {
+  return {
+    securityId,
+    symbol: securityId.toUpperCase(),
+    name: `Name ${securityId}`,
+    securityCurrency: 'CAD',
+    startQuantity: 10,
+    endQuantity: 10,
+    startClose: 8,
+    endClose: 10,
+    priceChangePercent: 25,
+    priceChangeReason: null,
+    investmentPnl: pnl,
+    investmentReturnPercent: pnl === null ? null : 20,
+    investedReasons: pnl === null ? ['incompletePrices'] : [],
+  };
+}
 
 interface HoldingSeed {
   securityId: string;
@@ -131,6 +176,15 @@ describe('InvestmentPerformanceReport chart UX', () => {
     vi.clearAllMocks();
     window.localStorage.clear();
     mockGetInvestmentAccounts.mockResolvedValue([]);
+    mockPeriodResult.mockResolvedValue(PERIOD);
+    mockSecurityPeriodResults.mockResolvedValue({
+      currency: 'CAD',
+      startDate: PERIOD.startDate,
+      endDate: PERIOD.endDate,
+      reasons: [],
+      unattributedPnl: 0,
+      securities: [securityPeriod('sec-a', 250)],
+    });
   });
 
   it('caps the chart at the 20 largest holdings by market value and shows a note', async () => {
@@ -259,5 +313,94 @@ describe('InvestmentPerformanceReport chart UX', () => {
     const props = mockRangeSelectorProps.mock.calls.at(-1)![0];
     expect(props.labels).toBeDefined();
     expect(props.labels.all).toBe('All Time');
+  });
+
+  it("offers the Investments page's ten ranges, in both views", async () => {
+    mockGetPortfolioSummary.mockResolvedValue(
+      portfolioOf([holding({ securityId: 'sec-a', marketValue: 100 })]),
+    );
+    render(<InvestmentPerformanceReport />);
+    await screen.findByTestId('range-selector');
+    const ranges = () => mockRangeSelectorProps.mock.calls.at(-1)![0].ranges;
+    expect(ranges()).toEqual(['1d', '1w', 'mtd', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']);
+
+    // The window governs the cards above both views, so it stays on screen.
+    await act(async () => {
+      fireEvent.click(screen.getByText('Allocation'));
+    });
+    expect(screen.getByTestId('range-selector')).toBeInTheDocument();
+  });
+
+  it.each([
+    // The Investments page's 1M is thirty days back, not a calendar month.
+    ['1m', () => format(subDays(new Date(), 30), 'yyyy-MM-dd')],
+    // 1D is the day's move: the chart is drawn from the prior close.
+    ['1d', () => format(subDays(new Date(), 1), 'yyyy-MM-dd')],
+  ])('opens the %s chart on the day its figures are measured from', async (range, expected) => {
+    window.localStorage.setItem(
+      'reports.investment-performance.range',
+      JSON.stringify({ dateRange: range, startDate: '', endDate: '' }),
+    );
+    mockGetPortfolioSummary.mockResolvedValue(
+      portfolioOf([holding({ securityId: 'sec-a', marketValue: 100 })]),
+    );
+    render(<InvestmentPerformanceReport />);
+    const chart = await screen.findByTestId('performance-chart');
+    expect(chart.getAttribute('data-start')).toBe(expected());
+    expect(chart.getAttribute('data-end')).toBe(format(new Date(), 'yyyy-MM-dd'));
+    // Both figures name the range as the Investments page does.
+    await waitFor(() =>
+      expect(mockSecurityPeriodResults).toHaveBeenCalledWith(
+        expect.objectContaining({ period: range }),
+      ),
+    );
+    expect(mockPeriodResult).toHaveBeenCalledWith(expect.objectContaining({ period: range }));
+  });
+
+  it('names a month-to-date window by its dates, measured from the prior month-end', async () => {
+    window.localStorage.setItem(
+      'reports.investment-performance.range',
+      JSON.stringify({ dateRange: 'mtd', startDate: '', endDate: '' }),
+    );
+    mockGetPortfolioSummary.mockResolvedValue(
+      portfolioOf([holding({ securityId: 'sec-a', marketValue: 100 })]),
+    );
+    render(<InvestmentPerformanceReport />);
+    const firstOfMonth = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+    const monthEnd = format(subDays(startOfMonth(new Date()), 1), 'yyyy-MM-dd');
+    await waitFor(() =>
+      expect(mockSecurityPeriodResults).toHaveBeenCalledWith(
+        expect.objectContaining({ startDate: firstOfMonth, baselineDate: monthEnd }),
+      ),
+    );
+    expect(mockPeriodResult).toHaveBeenCalledWith(
+      expect.objectContaining({ startDate: firstOfMonth, baselineDate: monthEnd }),
+    );
+  });
+
+  it('exports the period figures and the % Change column from the Allocation view', async () => {
+    mockGetPortfolioSummary.mockResolvedValue(
+      portfolioOf([holding({ securityId: 'sec-a', marketValue: 100 })]),
+    );
+    render(<InvestmentPerformanceReport />);
+    await waitFor(() => expect(screen.getByTestId('period-gain-card')).toHaveTextContent('+$250.00'));
+    await screen.findByText('+25.00%');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Allocation'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /export/i }));
+    });
+
+    const call = mockExportToPdf.mock.calls[0][0];
+    expect(call.summaryCards.map((card: { label: string; value: string }) => [card.label, card.value])).toEqual([
+      ['Total Value', '$16400.00'],
+      ['Cost Basis', '$15250.00'],
+      ['Gain/Loss', '+$250.00'],
+      ['Return', '+12.50%'],
+    ]);
+    expect(call.tableData.headers.at(-1)).toBe('% Change');
+    expect(call.tableData.rows[0].slice(-3)).toEqual(['+$250.00', '+20.00%', '+25.00%']);
   });
 });

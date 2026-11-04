@@ -18,8 +18,12 @@ import {
 } from "@nestjs/swagger";
 import { assertStringParam } from "../common/query-param-utils";
 import { NetWorthService, JointNetWorthScope } from "./net-worth.service";
-import { PortfolioPeriodResultService } from "./portfolio-period-result.service";
+import {
+  PeriodResultWindow,
+  PortfolioPeriodResultService,
+} from "./portfolio-period-result.service";
 import { PortfolioPeriodResultsBatchService } from "./portfolio-period-results-batch.service";
+import { SecurityPeriodResultsService } from "./security-period-results.service";
 import {
   PORTFOLIO_PERIOD_PRESETS,
   PortfolioPeriodPreset,
@@ -46,6 +50,7 @@ export class NetWorthController {
     private readonly netWorthService: NetWorthService,
     private readonly periodResult: PortfolioPeriodResultService,
     private readonly periodResults: PortfolioPeriodResultsBatchService,
+    private readonly securityPeriodResults: SecurityPeriodResultsService,
     private readonly delegationService: DelegationService,
     private readonly jointAccounts: JointAccountsService,
   ) {}
@@ -372,6 +377,110 @@ export class NetWorthController {
     @Query("displayCurrency") displayCurrency?: string,
     @Query("period") period?: string,
   ) {
+    return this.periodResult.getPeriodResult(
+      req.user.id,
+      await this.periodWindowQuery(req, {
+        startDate,
+        endDate,
+        baselineDate,
+        accountIds,
+        displayCurrency,
+        period,
+      }),
+    );
+  }
+
+  @Get("investments-period-result/securities")
+  @AllowDelegate()
+  @DelegateRequiresSection("investments")
+  @ApiOperation({
+    summary: "What each security earned over a period",
+    description:
+      "The invested part of investments-period-result split by security, over the same window, series, flows and rates: per security investedValueStart, investedValueEnd, investmentCapitalFlows, investmentIncome, investmentPnl and the time-weighted investmentReturnPercent, plus priceChangePercent (the quoted close's move, in the security's currency; null with priceChangeReason over a split). Securities held on any day of the window or moved inside it are listed, so a position sold inside the window is a row. unattributedPnl is the capital and income of rows naming no security. Where every figure is known, the rows plus unattributedPnl add up to the period's investmentPnl; see docs/specs/investment-performance-report-period.md.",
+  })
+  @ApiQuery({
+    name: "period",
+    required: false,
+    description: `A preset the server resolves the window for (${PORTFOLIO_PERIOD_PRESETS.join(", ")}). Supplying it replaces startDate and baselineDate, which are then ignored.`,
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: false,
+    description: "Required unless period is given.",
+    example: "2026-01-02",
+  })
+  @ApiQuery({ name: "endDate", required: false, example: "2026-09-17" })
+  @ApiQuery({
+    name: "baselineDate",
+    required: false,
+    description:
+      "The close the period is measured from, when that is earlier than startDate. Flows are counted strictly after it.",
+  })
+  @ApiQuery({
+    name: "accountIds",
+    required: false,
+    description:
+      "Comma-separated account IDs to filter by (will include linked pairs)",
+  })
+  @ApiQuery({
+    name: "displayCurrency",
+    required: false,
+    description:
+      "Currency code to display values in (defaults to user preference)",
+  })
+  @ApiResponse({ status: 200, description: "One result per security" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async getSecurityPeriodResults(
+    @Request() req,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("baselineDate") baselineDate?: string,
+    @Query("accountIds") accountIds?: string,
+    @Query("displayCurrency") displayCurrency?: string,
+    @Query("period") period?: string,
+  ) {
+    return this.securityPeriodResults.getSecurityPeriodResults(
+      req.user.id,
+      await this.periodWindowQuery(req, {
+        startDate,
+        endDate,
+        baselineDate,
+        accountIds,
+        displayCurrency,
+        period,
+      }),
+    );
+  }
+
+  /**
+   * The window, scope and currency of a period route's query, validated once
+   * for both routes that measure a window: the portfolio's result and its
+   * split by security must refuse and accept the same requests.
+   */
+  private async periodWindowQuery(
+    req: { user: { isActing?: boolean; delegationId?: string } },
+    {
+      startDate,
+      endDate,
+      baselineDate,
+      accountIds,
+      displayCurrency,
+      period,
+    }: {
+      startDate?: string;
+      endDate?: string;
+      baselineDate?: string;
+      accountIds?: string;
+      displayCurrency?: string;
+      period?: string;
+    },
+  ): Promise<
+    PeriodResultWindow & {
+      endDate?: string;
+      accountIds?: string[];
+      displayCurrency?: string;
+    }
+  > {
     const sd = assertStringParam(startDate, "startDate");
     const ed = assertStringParam(endDate, "endDate");
     const bd = assertStringParam(baselineDate, "baselineDate");
@@ -430,23 +539,20 @@ export class NetWorthController {
     const scopeIds = await this.scopeIds(req, ids);
     // A preset names the whole window, so the dates beside it are not a second
     // opinion to reconcile: the server draws it from the preset alone.
-    return this.periodResult.getPeriodResult(
-      req.user.id,
-      isPortfolioPeriodPreset(preset ?? "")
-        ? {
-            period: preset as PortfolioPeriodPreset,
-            endDate: ed,
-            accountIds: scopeIds,
-            displayCurrency: safeCurrency,
-          }
-        : {
-            startDate: sd as string,
-            endDate: ed,
-            baselineDate: bd,
-            accountIds: scopeIds,
-            displayCurrency: safeCurrency,
-          },
-    );
+    return isPortfolioPeriodPreset(preset ?? "")
+      ? {
+          period: preset as PortfolioPeriodPreset,
+          endDate: ed,
+          accountIds: scopeIds,
+          displayCurrency: safeCurrency,
+        }
+      : {
+          startDate: sd as string,
+          endDate: ed,
+          baselineDate: bd,
+          accountIds: scopeIds,
+          displayCurrency: safeCurrency,
+        };
   }
 
   @Get("investments-period-results")
