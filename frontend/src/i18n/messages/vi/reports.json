@@ -1155,6 +1155,7 @@
     "transferTo": "Đến",
     "overallTotal": "Tổng tổng cộng",
     "includeCurrentMonth": "Bao gồm tháng hiện tại",
+    "summaryOnly": "Chỉ tóm tắt",
     "csvParentColumn": "Danh mục cha"
   },
   "monthlyComparison": {

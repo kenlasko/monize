@@ -1155,6 +1155,7 @@
     "transferTo": "至",
     "overallTotal": "整體總計",
     "includeCurrentMonth": "包含當月",
+    "summaryOnly": "僅顯示摘要",
     "csvParentColumn": "上層類別"
   },
   "monthlyComparison": {

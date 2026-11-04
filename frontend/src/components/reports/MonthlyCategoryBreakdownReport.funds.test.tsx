@@ -79,9 +79,9 @@ const MONTHLY = {
     {
       categoryId: 'cat-groceries',
       categoryName: 'Groceries',
-      parentId: null,
-      parentName: null,
-      parentIsIncome: null,
+      parentId: 'cat-food',
+      parentName: 'Food',
+      parentIsIncome: false,
       isIncome: false,
       valuesByMonth: { '2025-01': 100, '2025-02': 200 },
       depositTotal: 0,

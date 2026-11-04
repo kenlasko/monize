@@ -1155,6 +1155,7 @@
     "transferTo": "[XX-To-XX]",
     "overallTotal": "[XX-Overall total-XX]",
     "includeCurrentMonth": "[XX-Include current month-XX]",
+    "summaryOnly": "[XX-Summary only-XX]",
     "csvParentColumn": "[XX-Parent category-XX]"
   },
   "monthlyComparison": {

@@ -1155,6 +1155,7 @@
     "transferTo": "입금",
     "overallTotal": "전체 합계",
     "includeCurrentMonth": "현재 월 포함",
+    "summaryOnly": "요약만",
     "csvParentColumn": "상위 카테고리"
   },
   "monthlyComparison": {

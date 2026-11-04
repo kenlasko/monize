@@ -1155,6 +1155,7 @@
     "transferTo": "तक",
     "overallTotal": "समग्र कुल",
     "includeCurrentMonth": "वर्तमान महीना शामिल करें",
+    "summaryOnly": "केवल सारांश",
     "csvParentColumn": "मूल श्रेणी"
   },
   "monthlyComparison": {

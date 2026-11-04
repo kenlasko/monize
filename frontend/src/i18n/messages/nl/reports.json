@@ -1155,6 +1155,7 @@
     "transferTo": "Naar",
     "overallTotal": "Totaal-generaal",
     "includeCurrentMonth": "Huidige maand opnemen",
+    "summaryOnly": "Alleen samenvatting",
     "csvParentColumn": "Hoofdcategorie"
   },
   "monthlyComparison": {
