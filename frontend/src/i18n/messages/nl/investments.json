@@ -233,7 +233,7 @@
     "transactionType": "Transactietype",
     "fundsFrom": "Middelen van",
     "fundsTo": "Middelen naar",
-    "depositTo": "Storten naar (optioneel)",
+    "depositTo": "Storten naar",
     "linkedCashDefault": "Gekoppelde kasrekening (standaard)",
     "selectAccount": "Selecteer rekening...",
     "security": "Waardepapier",

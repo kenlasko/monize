@@ -233,7 +233,7 @@
     "transactionType": "거래 유형",
     "fundsFrom": "자금 출처",
     "fundsTo": "자금 목적지",
-    "depositTo": "입금처 (선택사항)",
+    "depositTo": "입금처",
     "linkedCashDefault": "연결된 현금 계정 (기본값)",
     "selectAccount": "계정 선택...",
     "security": "유가증권",

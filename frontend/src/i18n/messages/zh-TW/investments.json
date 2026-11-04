@@ -233,7 +233,7 @@
     "transactionType": "交易類型",
     "fundsFrom": "資金來源",
     "fundsTo": "資金去向",
-    "depositTo": "存入至（選填）",
+    "depositTo": "存入至",
     "linkedCashDefault": "連結現金科目（預設）",
     "selectAccount": "選擇科目...",
     "security": "證券",

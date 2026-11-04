@@ -233,7 +233,7 @@
     "transactionType": "交易类型",
     "fundsFrom": "资金来源",
     "fundsTo": "资金去向",
-    "depositTo": "存入（可选）",
+    "depositTo": "存入",
     "linkedCashDefault": "关联现金账户（默认）",
     "selectAccount": "选择账户...",
     "security": "证券",

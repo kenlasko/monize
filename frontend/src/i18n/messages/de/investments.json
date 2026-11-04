@@ -233,7 +233,7 @@
     "transactionType": "Buchungstyp",
     "fundsFrom": "Mittel von",
     "fundsTo": "Mittel nach",
-    "depositTo": "Einzahlung auf (optional)",
+    "depositTo": "Einzahlung auf",
     "linkedCashDefault": "Verknüpftes Barmittelkonto (Standard)",
     "selectAccount": "Konto auswählen...",
     "security": "Wertpapier",

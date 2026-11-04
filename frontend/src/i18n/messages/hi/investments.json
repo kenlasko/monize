@@ -233,7 +233,7 @@
     "transactionType": "लेनदेन प्रकार",
     "fundsFrom": "निधि स्रोत",
     "fundsTo": "निधि गंतव्य",
-    "depositTo": "जमा करें (वैकल्पिक)",
+    "depositTo": "जमा करें",
     "linkedCashDefault": "लिंक किया गया नकद खाता (डिफ़ॉल्ट)",
     "selectAccount": "खाता चुनें...",
     "security": "प्रतिभूति",

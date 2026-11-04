@@ -233,7 +233,7 @@
     "transactionType": "Jenis Transaksi",
     "fundsFrom": "Dana Dari",
     "fundsTo": "Dana Ke",
-    "depositTo": "Setor Ke (opsional)",
+    "depositTo": "Setor Ke",
     "linkedCashDefault": "Akun tunai tertaut (default)",
     "selectAccount": "Pilih akun...",
     "security": "Sekuritas",

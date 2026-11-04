@@ -3417,6 +3417,20 @@ describe('TransactionForm', () => {
       expect(row).toHaveClass('md:grid-cols-2');
       expect(within(row).getByTestId('attachments-header')).toBeInTheDocument();
     });
+
+    it('draws a dividing line between Attachments and Warranties', async () => {
+      render(
+        <TransactionForm
+          transaction={createExistingTransaction({ warrantyCount: 1 }) as any}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      const divider = (await screen.findByTestId('warranties-line')).parentElement as HTMLElement;
+      expect(divider).toHaveAttribute('data-testid', 'warranties-divider');
+      // A rule above Warranties when stacked, beside it when side by side.
+      expect(divider).toHaveClass('border-t', 'md:border-t-0', 'md:border-l');
+    });
   });
 
   // =========================================================================

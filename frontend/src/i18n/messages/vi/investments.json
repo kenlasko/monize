@@ -233,7 +233,7 @@
     "transactionType": "Loại giao dịch",
     "fundsFrom": "Nguồn tiền",
     "fundsTo": "Đích tiền",
-    "depositTo": "Gửi vào (tùy chọn)",
+    "depositTo": "Gửi vào",
     "linkedCashDefault": "Tài khoản tiền mặt liên kết (mặc định)",
     "selectAccount": "Chọn tài khoản...",
     "security": "Chứng khoán",

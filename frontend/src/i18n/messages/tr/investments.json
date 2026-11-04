@@ -233,7 +233,7 @@
     "transactionType": "İşlem Türü",
     "fundsFrom": "Kaynak Fonlar",
     "fundsTo": "Hedef Fonlar",
-    "depositTo": "Yatırılacak Hesap (isteğe bağlı)",
+    "depositTo": "Yatırılacak Hesap",
     "linkedCashDefault": "Bağlı nakit hesabı (varsayılan)",
     "selectAccount": "Hesap seçin...",
     "security": "Menkul Kıymet",

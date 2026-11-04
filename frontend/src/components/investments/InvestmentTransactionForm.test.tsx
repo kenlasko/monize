@@ -397,6 +397,13 @@ describe('InvestmentTransactionForm', () => {
     expect(row).toContainElement(screen.getByLabelText('Commission / Fees'));
   });
 
+  it('keeps the Total Amount summary short: less padding above and below than beside', async () => {
+    render(<InvestmentTransactionForm accounts={accounts} />);
+    const summary = await screen.findByTestId('total-amount-summary');
+    expect(summary).toHaveClass('px-4', 'py-2.5');
+    expect(summary).not.toHaveClass('p-4');
+  });
+
   it('shows description field', async () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
     await waitFor(() => {
@@ -478,7 +485,7 @@ describe('InvestmentTransactionForm', () => {
       });
     });
     await waitFor(() => {
-      expect(screen.getByLabelText('Deposit to (optional)')).toBeInTheDocument();
+      expect(screen.getByLabelText('Deposit to')).toBeInTheDocument();
     });
     expect(screen.queryByText('Funds From')).not.toBeInTheDocument();
   });
@@ -522,7 +529,7 @@ describe('InvestmentTransactionForm', () => {
       });
     });
     await waitFor(() => {
-      expect(screen.getByLabelText('Deposit to (optional)')).toBeInTheDocument();
+      expect(screen.getByLabelText('Deposit to')).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -531,7 +538,7 @@ describe('InvestmentTransactionForm', () => {
       });
     });
     await waitFor(() => {
-      expect(screen.getByLabelText('Deposit to (optional)')).toBeInTheDocument();
+      expect(screen.getByLabelText('Deposit to')).toBeInTheDocument();
     });
   });
 
@@ -564,10 +571,10 @@ describe('InvestmentTransactionForm', () => {
       });
     });
     await waitFor(() => {
-      expect(screen.getByLabelText('Deposit to (optional)')).toBeInTheDocument();
+      expect(screen.getByLabelText('Deposit to')).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText('Deposit to (optional)');
+    const select = screen.getByLabelText('Deposit to');
     const optionTexts = Array.from(select.querySelectorAll('option')).map(
       (o) => o.textContent,
     );
@@ -603,7 +610,7 @@ describe('InvestmentTransactionForm', () => {
     });
     await chooseSecurity('sec-1');
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Deposit to (optional)'), {
+      fireEvent.change(screen.getByLabelText('Deposit to'), {
         target: { value: 'a2' },
       });
     });
@@ -640,7 +647,7 @@ describe('InvestmentTransactionForm', () => {
       await waitFor(() => {
         expect(screen.getByLabelText('Security')).toBeInTheDocument();
       });
-      expect(screen.getByLabelText('Deposit to (optional)')).toBeInTheDocument();
+      expect(screen.getByLabelText('Deposit to')).toBeInTheDocument();
       expect(screen.getByLabelText(/Amount/)).toBeInTheDocument();
       expect(screen.getByText(/lowers the cost basis of your holding/)).toBeInTheDocument();
       // Not a trade: no shares, no per-share price, no commission.
@@ -687,7 +694,7 @@ describe('InvestmentTransactionForm', () => {
       });
       await chooseSecurity('sec-1');
       await act(async () => {
-        fireEvent.change(screen.getByLabelText('Deposit to (optional)'), {
+        fireEvent.change(screen.getByLabelText('Deposit to'), {
           target: { value: 'a2' },
         });
       });
@@ -1341,7 +1348,7 @@ describe('InvestmentTransactionForm', () => {
 
     await waitFor(() => {
       expect(screen.queryByLabelText('Funds From')).not.toBeInTheDocument();
-      expect(screen.queryByLabelText('Deposit to (optional)')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Deposit to')).not.toBeInTheDocument();
     });
 
     // Now switch back to BUY: funding should be empty (default), not stale 'a2'

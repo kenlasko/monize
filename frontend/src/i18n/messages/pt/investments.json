@@ -233,7 +233,7 @@
     "transactionType": "Tipo de Transação",
     "fundsFrom": "Fundos Provenientes de",
     "fundsTo": "Fundos Destinados a",
-    "depositTo": "Depositar em (opcional)",
+    "depositTo": "Depositar em",
     "linkedCashDefault": "Conta de numerário associada (predefinição)",
     "selectAccount": "Selecionar conta...",
     "security": "Título",

@@ -233,7 +233,7 @@
     "transactionType": "Tipo de Transacción",
     "fundsFrom": "Fondos Desde",
     "fundsTo": "Fondos Hacia",
-    "depositTo": "Depositar En (opcional)",
+    "depositTo": "Depositar En",
     "linkedCashDefault": "Cuenta de efectivo vinculada (por defecto)",
     "selectAccount": "Seleccionar cuenta...",
     "security": "Valor",

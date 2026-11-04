@@ -233,7 +233,7 @@
     "transactionType": "取引タイプ",
     "fundsFrom": "資金元",
     "fundsTo": "資金先",
-    "depositTo": "入金先（任意）",
+    "depositTo": "入金先",
     "linkedCashDefault": "リンクされた現金口座（デフォルト）",
     "selectAccount": "口座を選択...",
     "security": "有価証券",

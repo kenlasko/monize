@@ -2061,13 +2061,21 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
               onStagedFilesChange={setStagedAttachments}
             />
           )}
+          {/* A dividing line sets Warranties apart from Attachments: a rule
+              above it when the two stack, and beside it when they share the
+              line. */}
           {showWarrantiesLine && (
-            <TransactionWarrantiesLine
-              transaction={transaction}
-              onAddWarranty={addWarranty}
-              isAdding={isSavingForWarranty}
-              onOpenWarranty={onOpenWarranty}
-            />
+            <div
+              data-testid="warranties-divider"
+              className="border-t border-gray-200 pt-4 dark:border-gray-700 md:border-t-0 md:border-l md:pt-0 md:pl-4"
+            >
+              <TransactionWarrantiesLine
+                transaction={transaction}
+                onAddWarranty={addWarranty}
+                isAdding={isSavingForWarranty}
+                onOpenWarranty={onOpenWarranty}
+              />
+            </div>
           )}
         </div>
       )}

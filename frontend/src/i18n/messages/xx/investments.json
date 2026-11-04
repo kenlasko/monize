@@ -266,7 +266,7 @@
     "transactionType": "[XX-Transaction Type-XX]",
     "fundsFrom": "[XX-Funds From-XX]",
     "fundsTo": "[XX-Funds To-XX]",
-    "depositTo": "[XX-Deposit to (optional)-XX]",
+    "depositTo": "[XX-Deposit to-XX]",
     "linkedCashDefault": "[XX-Linked cash account (default)-XX]",
     "selectAccount": "[XX-Select account...-XX]",
     "security": "[XX-Security-XX]",

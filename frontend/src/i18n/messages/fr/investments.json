@@ -233,7 +233,7 @@
     "transactionType": "Type de transaction",
     "fundsFrom": "Fonds depuis",
     "fundsTo": "Fonds vers",
-    "depositTo": "Déposer vers (facultatif)",
+    "depositTo": "Déposer vers",
     "linkedCashDefault": "Compte de trésorerie lié (par défaut)",
     "selectAccount": "Sélectionner un compte…",
     "security": "Titre",

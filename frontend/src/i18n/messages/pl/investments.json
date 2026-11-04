@@ -233,7 +233,7 @@
     "transactionType": "Typ transakcji",
     "fundsFrom": "Środki z",
     "fundsTo": "Środki do",
-    "depositTo": "Wpłata na (opcjonalnie)",
+    "depositTo": "Wpłata na",
     "linkedCashDefault": "Powiązane konto gotówkowe (domyślne)",
     "selectAccount": "Wybierz konto...",
     "security": "Papier wartościowy",

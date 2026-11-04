@@ -1823,9 +1823,11 @@ function InvestmentTransactionFormFields({
         </div>
       )}
 
-      {/* Total Amount Display - meaningless for a transfer (no cash moves) */}
+      {/* Total Amount Display - meaningless for a transfer (no cash moves).
+          Less vertical padding than horizontal: the summary is a footer to
+          the fields above, not a section of its own. */}
       {(needsQuantityPrice || isAmountOnly) && !isTransferLeg && (
-        <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+        <div data-testid="total-amount-summary" className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2.5">
           {needsQuantityPrice ? (
             // Editable, and authoritative when it is the field being edited:
             // a statement states what a sale came to, and typing a price
