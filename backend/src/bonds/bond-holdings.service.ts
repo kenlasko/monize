@@ -81,20 +81,65 @@ const lotKey = (lot: BondLot): string =>
  * series and purchase date, oldest first. Both folds are the lot derivation the
  * write guard runs, so the first-in first-out choice is made in one place.
  */
-function removedLots(
+export function removedLots(
   before: readonly BondLot[],
   after: readonly BondLot[],
 ): BondLot[] {
-  const left = new Map<string, number>();
+  // What stays, per lot key: its bonds and the cost they carry (null when any
+  // of them has none).
+  const left = new Map<
+    string,
+    { quantity: number; cost: ExactDecimal | null }
+  >();
   for (const lot of after) {
-    left.set(lotKey(lot), (left.get(lotKey(lot)) ?? 0) + lot.quantity);
+    const held = left.get(lotKey(lot));
+    const cost = lot.cost === null ? null : ExactDecimal.parse(lot.cost);
+    left.set(lotKey(lot), {
+      quantity: (held?.quantity ?? 0) + lot.quantity,
+      cost:
+        held === undefined
+          ? cost
+          : held.cost === null || cost === null
+            ? null
+            : held.cost.add(cost),
+    });
   }
   const removed: BondLot[] = [];
   for (const lot of before) {
-    const kept = Math.min(left.get(lotKey(lot)) ?? 0, lot.quantity);
-    left.set(lotKey(lot), (left.get(lotKey(lot)) ?? 0) - kept);
-    if (lot.quantity > kept)
-      removed.push({ ...lot, quantity: lot.quantity - kept });
+    const held = left.get(lotKey(lot)) ?? {
+      quantity: 0,
+      cost: ExactDecimal.ZERO,
+    };
+    const kept = Math.min(held.quantity, lot.quantity);
+    // The cost the kept bonds take with them: all of it when they are all that
+    // stays under the key, else their share.
+    const keptCost =
+      kept === 0
+        ? ExactDecimal.ZERO
+        : held.cost === null
+          ? null
+          : kept === held.quantity
+            ? held.cost
+            : held.cost.mul(ExactDecimal.ratio(kept, held.quantity));
+    left.set(lotKey(lot), {
+      quantity: held.quantity - kept,
+      cost:
+        held.cost === null || keptCost === null
+          ? null
+          : held.cost.sub(keptCost),
+    });
+    if (lot.quantity > kept) {
+      removed.push({
+        ...lot,
+        quantity: lot.quantity - kept,
+        cost:
+          lot.cost === null || keptCost === null
+            ? null
+            : kept === 0
+              ? lot.cost
+              : ExactDecimal.parse(lot.cost).sub(keptCost).toFixed(4),
+      });
+    }
   }
   return removed;
 }

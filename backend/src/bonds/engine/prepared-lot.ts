@@ -12,6 +12,7 @@ import {
   grossLotOf,
   isDiscount,
   maturityLot,
+  discountLotValueAt,
   principalAt,
   principalLot,
   PricedPeriod,
@@ -83,6 +84,26 @@ export function validateLot(input: LotInput, asOf = ""): void {
       "purchaseDate must be a YYYY-MM-DD date",
     );
   }
+  parseCost(input.lot.cost);
+}
+
+/** The lot's cost as a decimal, null when unknown; a text that is not a non-negative decimal is refused. */
+function parseCost(cost: string | null | undefined): ExactDecimal | null {
+  if (cost === null || cost === undefined) return null;
+  let parsed: ExactDecimal;
+  try {
+    parsed = ExactDecimal.parse(cost);
+  } catch {
+    parsed = ExactDecimal.of(-1n);
+  }
+  if (parsed.isNegative()) {
+    throw new BondEngineError(
+      "DECIMAL_INVALID",
+      { field: "lot.cost", value: String(cost) },
+      `lot.cost is not a non-negative decimal string: ${String(cost)}`,
+    );
+  }
+  return parsed;
 }
 
 /**
@@ -163,6 +184,10 @@ export interface PreparedLot {
   readonly maturity: string;
   readonly places: number;
   readonly quantity: ExactDecimal;
+  /** What a discount lot cost, replacing the issue price; null otherwise. */
+  readonly cost: ExactDecimal | null;
+  /** One unit's cost; null with `cost`. */
+  readonly unitBase: ExactDecimal | null;
   readonly plan: RatePlan;
   readonly saleRefusal: BondValuationRefusal | null;
   readonly byStarted: Map<number, Resolved>;
@@ -208,6 +233,19 @@ function purchaseRefusal(
   };
 }
 
+/** The lot's cost when it replaces the issue price: a discount instrument with a known cost. */
+export function lotCostOf(input: LotInput): ExactDecimal | null {
+  return isDiscount(input.terms) ? parseCost(input.lot.cost) : null;
+}
+
+/** The cost of `units` of the lot's units, pro rata; null when the cost is unknown. */
+export function costOf(
+  p: PreparedLot,
+  units: ExactDecimal,
+): ExactDecimal | null {
+  return p.cost === null ? null : p.cost.mul(units).div(p.quantity);
+}
+
 /** The periods of the lot from the terms' schedule anchor. */
 function scheduleOf(input: LotInput): readonly SchedulePeriod[] {
   const { schedule } = input.terms;
@@ -218,8 +256,17 @@ function scheduleOf(input: LotInput): readonly SchedulePeriod[] {
         schedule.periodCount,
         schedule.periodMonths,
       );
-    case "ISSUE_DATE":
-      return singlePeriodSchedule(schedule.issueDate, schedule.maturityDate);
+    case "ISSUE_DATE": {
+      // A discount lot of known cost accrues from the later of its purchase and
+      // issue dates; a purchase on or after maturity leaves the schedule as it is.
+      const start =
+        lotCostOf(input) !== null &&
+        compareYMD(input.lot.purchaseDate, schedule.issueDate) > 0 &&
+        compareYMD(input.lot.purchaseDate, schedule.maturityDate) < 0
+          ? input.lot.purchaseDate
+          : schedule.issueDate;
+      return singlePeriodSchedule(start, schedule.maturityDate);
+    }
     default:
       return assertNever(schedule);
   }
@@ -229,14 +276,18 @@ export function prepare(input: LotInput): PreparedLot {
   const { terms } = input;
   const schedule = scheduleOf(input);
   const lastPeriod = schedule[schedule.length - 1];
+  const quantity = ExactDecimal.fromInt(input.lot.quantity);
+  const cost = lotCostOf(input);
   return {
     input,
+    cost,
+    unitBase: cost === null ? null : cost.div(quantity),
     compounding: compounds(terms),
     schedule,
     lastPeriod,
     maturity: lastPeriod.end,
     places: terms.rounding.moneyDecimals,
-    quantity: ExactDecimal.fromInt(input.lot.quantity),
+    quantity,
     plan: planPeriodRates(input, schedule),
     saleRefusal: purchaseRefusal(input, lastPeriod.end),
     byStarted: new Map(),
@@ -340,34 +391,62 @@ export function figuresOn(
         // the two overlap by design and `gross` is the figure to total.
         principal = unitText(
           terms,
-          baseAt(terms, inputs.prior, { date: lastPeriod.start }),
+          baseAt(terms, inputs.prior, {
+            date: lastPeriod.start,
+            unitBase: p.unitBase,
+          }),
         );
         gross = text(grossLot);
         accrued = text(
-          grossLot.sub(principalLot(terms, { date: p.maturity }, quantity)),
+          grossLot.sub(
+            principalLot(
+              terms,
+              { date: p.maturity, unitBase: p.unitBase },
+              quantity,
+              costOf(p, quantity),
+            ),
+          ),
         );
       }
     }
   } else if (current) {
     const inputs = inputsFor(compounding, rates, current.index);
     if (inputs) {
-      const value = valueAt(terms, inputs.prior, inputs.current, asOf);
-      const base = baseAt(terms, inputs.prior, { date: current.start });
-      grossLot = grossLotOf(terms, value, asOf, quantity);
+      const lotCost = costOf(p, quantity);
+      const value = valueAt(
+        terms,
+        inputs.prior,
+        inputs.current,
+        asOf,
+        p.unitBase,
+      );
+      const base = baseAt(terms, inputs.prior, {
+        date: current.start,
+        unitBase: p.unitBase,
+      });
+      grossLot =
+        lotCost === null
+          ? grossLotOf(terms, value, asOf, quantity)
+          : discountLotValueAt(terms, current, asOf, quantity, lotCost);
       principal = unitText(terms, base);
       gross = text(grossLot);
       accrued = text(
-        grossLot.sub(principalLot(terms, { date: asOf }, quantity)),
+        grossLot.sub(
+          principalLot(
+            terms,
+            { date: asOf, unitBase: p.unitBase },
+            quantity,
+            lotCost,
+          ),
+        ),
       );
       if (refusal === null) {
-        earlyLot = proceedsLot(
-          terms,
-          value,
-          base,
-          current.index,
-          asOf,
-          quantity,
-        );
+        // A lot of known cost is worth its own figure: no per-unit value is
+        // behind it to round again.
+        earlyLot =
+          lotCost !== null && terms.redemption.type !== "ON_DEMAND"
+            ? grossLot
+            : proceedsLot(terms, value, base, current.index, asOf, quantity);
         early = text(earlyLot);
       }
     } else if (refusal === null) {

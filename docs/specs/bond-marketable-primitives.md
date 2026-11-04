@@ -248,6 +248,33 @@ It is read only for a `ZERO_COUPON_DISCOUNT` instrument:
   lot leaves; the remainder keeps `cost - taken` so the parts always add up to
   the whole (the last part takes the remainder, never a rounded share).
 
+Decisions taken in the implementation, where this section left a choice open:
+
+- `principalBasis` is `null` for an instrument that is not a discount (it has no
+  issue-price/cost question), `"LOT_COST"` for a discount lot with a known cost
+  and `"ISSUE_PRICE"` otherwise; a REFUSED valuation reports it too. A cost that
+  is not a non-negative decimal is refused with `DECIMAL_INVALID` (field
+  `lot.cost`), as every other supplied decimal is.
+- The lot's cost is a lot figure, so it is rounded once to `moneyDecimals` on
+  the holding under every basis (`holdingRound`): no per-unit figure is behind
+  it. The value on day `k` is that sum rounded once, and the early-redemption
+  value of a lot of known cost is its gross value (a discount instrument is
+  redeemable at maturity only; an `ON_DEMAND` discount instrument still takes the
+  per-unit path for penalties and floor).
+- The accrual period of a discount lot of known cost starts on the later of the
+  purchase and issue dates (the schedule's one period is shortened); a purchase
+  on or after maturity keeps the issue schedule.
+- A pro rata split of a cost rounds the part that leaves to four places (the
+  `total_amount` scale), half up; the part that stays is the whole less that, so
+  nothing is lost. The cost of an acquisition is read only from a `BUY` or
+  `REINVEST` row (an `ADD_SHARES` and a transfer record no price of their own, so
+  their cost is unknown) as `total_amount` less the linked INTEREST row, if any;
+  a result that is not above zero is unknown. An unpaired transfer in has no
+  cost. The commission of a purchase is part of `total_amount` and so of the
+  cost.
+- A lot's cost is in the valuation of a linked security (`lots[].cost`) and in
+  the key of the price series' per-lot cache.
+
 ### 6.2 Purchased accrued interest
 
 A lot of a coupon security bought between coupon dates paid the seller the

@@ -10,7 +10,7 @@ import {
   principalAt,
   principalLot,
 } from "./accrual";
-import { roundLot } from "./rounding";
+import { toMoney, roundLot } from "./rounding";
 import {
   BondEngineInput,
   BondLotStatus,
@@ -30,6 +30,7 @@ import { startedPeriods } from "./rate-resolution";
 import { referencedCalendarIds } from "./redemption";
 
 import {
+  costOf,
   figuresOn,
   inputsFor,
   PreparedLot,
@@ -87,6 +88,11 @@ function describeRule(
   }
 }
 
+function principalBasisOf(p: PreparedLot): BondValuation["principalBasis"] {
+  if (!isDiscount(p.input.terms)) return null;
+  return p.cost === null ? "ISSUE_PRICE" : "LOT_COST";
+}
+
 function refusedValuation(
   p: PreparedLot,
   asOf: string,
@@ -105,6 +111,7 @@ function refusedValuation(
     rateRule: describeRule(terms.rateRule),
     rateSchedule: [],
     principal: null,
+    principalBasis: principalBasisOf(p),
     accruedInterest: null,
     grossValue: null,
     earlyRedemptionValue: null,
@@ -184,7 +191,7 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
       const coupon =
         rate.rate === null
           ? null
-          : couponLot(terms, { period, rate: rate.rate }, p.quantity);
+          : couponLot(terms, { period, rate: rate.rate }, p.quantity, p.cost);
       cashflows.push(
         flow(period, "INTEREST", coupon, rate.source === "PROJECTED"),
       );
@@ -194,7 +201,12 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
         flow(
           lastPeriod,
           "PRINCIPAL",
-          principalLot(terms, { date: lastPeriod.end }, p.quantity),
+          principalLot(
+            terms,
+            { date: lastPeriod.end, unitBase: p.unitBase },
+            p.quantity,
+            p.cost,
+          ),
           false,
         ),
       );
@@ -239,6 +251,7 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
     rateRule: describeRule(terms.rateRule),
     rateSchedule: resolved.rateSchedule,
     principal: figures.principal,
+    principalBasis: principalBasisOf(p),
     accruedInterest: figures.accrued,
     grossValue: figures.gross,
     earlyRedemptionValue: figures.early,
@@ -299,10 +312,15 @@ export function redemptionSplit(
   const { quantity } = input.lot;
   const matured = compareYMD(date, p.maturity) >= 0;
   const day = matured ? p.maturity : date;
-  const principal = principalAt(terms, { date: day });
-  // The principal of the lot and of one unit, rounded as the basis says.
-  const principalOf = (units: ExactDecimal) =>
-    roundLot(terms, principal, units);
+  const principal = principalAt(terms, { date: day, unitBase: p.unitBase });
+  // The principal of the lot and of one unit, rounded as the basis says; a lot
+  // of known cost has the cost (pro rata for one unit) as its principal.
+  const principalOf = (units: ExactDecimal) => {
+    const cost = costOf(p, units);
+    return cost === null
+      ? roundLot(terms, principal, units)
+      : toMoney(terms, cost);
+  };
   const refused = (refusal: RedemptionSplitRefusal, principalKnown = false) =>
     refusedSplit(
       date,

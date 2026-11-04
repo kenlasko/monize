@@ -37,6 +37,7 @@ describe("bondLotsFromTransactions (spec 12.2 truth table)", () => {
             quantity: 25,
             instrumentId: null,
             purchaseDateAssumed: false,
+            cost: null,
           },
         ]);
       },
@@ -57,6 +58,7 @@ describe("bondLotsFromTransactions (spec 12.2 truth table)", () => {
           quantity: 10,
           instrumentId: null,
           purchaseDateAssumed: false,
+          cost: null,
         },
       ]);
     });
@@ -68,6 +70,7 @@ describe("bondLotsFromTransactions (spec 12.2 truth table)", () => {
           quantity: 7,
           instrumentId: null,
           purchaseDateAssumed: true,
+          cost: null,
         },
       ]);
     });
@@ -84,6 +87,7 @@ describe("bondLotsFromTransactions (spec 12.2 truth table)", () => {
           quantity: 6,
           instrumentId: null,
           purchaseDateAssumed: false,
+          cost: null,
         },
       ]);
     });
@@ -224,6 +228,7 @@ describe("bondLotsFromTransactions (spec 12.2 truth table)", () => {
             quantity: 3,
             instrumentId: null,
             purchaseDateAssumed: false,
+            cost: null,
           },
         ]);
       },
@@ -236,6 +241,7 @@ describe("bondLotsFromTransactions (spec 12.2 truth table)", () => {
           quantity: 5,
           instrumentId: null,
           purchaseDateAssumed: false,
+          cost: null,
         },
       ]);
     });
@@ -258,6 +264,7 @@ describe("bondLotsFromTransactions (spec 12.2 truth table)", () => {
         quantity: 5,
         instrumentId: null,
         purchaseDateAssumed: false,
+        cost: null,
       },
     ]);
   });
@@ -383,6 +390,7 @@ describe("bondLotsFromTransactions (spec 12.2 truth table)", () => {
           quantity: 10,
           instrumentId: null,
           purchaseDateAssumed: false,
+          cost: null,
         },
       ]);
       expect(bondLotsAsOf(rows, "2026-02-10").lots).toHaveLength(2);
@@ -392,6 +400,7 @@ describe("bondLotsFromTransactions (spec 12.2 truth table)", () => {
           quantity: 3,
           instrumentId: null,
           purchaseDateAssumed: false,
+          cost: null,
         },
       ]);
     });
@@ -592,5 +601,83 @@ describe("a refusal names the row that caused it (the write guard compares it wi
       },
     ]);
     expect(withoutIds.refusal).not.toHaveProperty("rowId");
+  });
+});
+
+describe("the cost of a lot", () => {
+  const costs = (rows: BondLotTransaction[]) =>
+    lots(rows).map((l) => [l.purchaseDate, l.quantity, l.cost]);
+
+  it("is the acquisition's cost as given", () => {
+    expect(
+      costs([tx("BUY", "2026-10-01", "100", { cost: "9783.3700" })]),
+    ).toEqual([["2026-10-01", 100, "9783.3700"]]);
+  });
+
+  it("stays unknown when the row has none, and for an unpaired transfer in", () => {
+    expect(
+      costs([
+        tx("BUY", "2026-10-01", "10"),
+        tx("TRANSFER_IN", "2026-10-02", "5", { cost: "500.0000" }),
+        tx("BUY", "2026-10-03", "5", { cost: "not a number" }),
+      ]),
+    ).toEqual([
+      ["2026-10-01", 10, null],
+      ["2026-10-02", 5, null],
+      ["2026-10-03", 5, null],
+    ]);
+  });
+
+  it("is split pro rata when part of a lot leaves, the parts adding up exactly", () => {
+    const rest = lots([
+      tx("BUY", "2026-10-01", "3", { cost: "100.0000" }),
+      tx("SELL", "2026-10-05", "1"),
+    ]);
+    expect(rest.map((l) => [l.quantity, l.cost])).toEqual([[2, "66.6667"]]);
+    const moved = lots([
+      tx("BUY", "2026-10-01", "3", { cost: "100.0000", accountId: "A" }),
+      tx("TRANSFER_OUT", "2026-10-05", "1", {
+        pairedTransfer: true,
+        accountId: "A",
+        counterpartAccountId: "B",
+      }),
+    ]);
+    // 100.0000 x 1/3 = 33.3333 leaves; the 66.6667 that stays is the rest.
+    expect(moved.map((l) => [l.accountId, l.quantity, l.cost])).toEqual([
+      ["A", 2, "66.6667"],
+      ["B", 1, "33.3333"],
+    ]);
+  });
+
+  it("takes the whole cost when the whole lot leaves, and carries it through a transfer", () => {
+    const moved = lots([
+      tx("BUY", "2026-10-01", "4", { cost: "400.0000", accountId: "A" }),
+      tx("TRANSFER_OUT", "2026-10-05", "1", {
+        pairedTransfer: true,
+        accountId: "A",
+        counterpartAccountId: "B",
+      }),
+    ]);
+    const byAccount = Object.fromEntries(
+      moved.map((l) => [l.accountId, [l.quantity, l.cost]]),
+    );
+    expect(byAccount).toEqual({ A: [3, "300.0000"], B: [1, "100.0000"] });
+  });
+
+  it("splits first in first out: the older lot's cost goes first, the remainder keeps cost less taken", () => {
+    const rest = lots([
+      tx("BUY", "2026-10-01", "2", { cost: "200.0000" }),
+      tx("BUY", "2026-10-02", "2", { cost: "260.0000" }),
+      tx("SELL", "2026-10-05", "3"),
+    ]);
+    expect(rest.map((l) => [l.purchaseDate, l.quantity, l.cost])).toEqual([
+      ["2026-10-02", 1, "130.0000"],
+    ]);
+  });
+
+  it("keeps an unknown cost unknown through a partial removal", () => {
+    expect(
+      costs([tx("BUY", "2026-10-01", "4"), tx("SELL", "2026-10-05", "1")]),
+    ).toEqual([["2026-10-01", 3, null]]);
   });
 });

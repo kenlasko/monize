@@ -8,8 +8,12 @@ import { ExactDecimal } from "../domain/exact-decimal";
  * per-unit figure by the quantity itself: it asks for the lot's figure here.
  */
 
-/** A figure rounded to the terms' money decimals by the terms' mode. */
-function toMoney(terms: BondTerms, value: ExactDecimal): ExactDecimal {
+/**
+ * A figure rounded to the terms' money decimals by the terms' mode. Also what a
+ * figure that is already the lot's (a known cost and what is worked out from
+ * it) takes whatever the basis: no per-unit figure is behind it to round.
+ */
+export function toMoney(terms: BondTerms, value: ExactDecimal): ExactDecimal {
   return value.round(terms.rounding.moneyDecimals, terms.rounding.mode);
 }
 

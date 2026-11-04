@@ -184,6 +184,8 @@ export interface BondValuation {
   rateSchedule: BondRateScheduleEntry[];
   /** Per bond: the base of the current period. */
   principal: string | null;
+  /** Where a discount instrument's principal comes from; null for any other instrument. */
+  principalBasis?: "LOT_COST" | "ISSUE_PRICE" | null;
   /** Lot. */
   accruedInterest: string | null;
   /** Lot, before any early redemption penalty. */
@@ -222,6 +224,8 @@ export interface BondLotValuation {
   quantity: number;
   /** A transfer in with no linked leg: the real purchase date is unknown. */
   purchaseDateAssumed: boolean;
+  /** What the lot cost, net of accrued interest, as exact text; null when unknown. */
+  cost?: string | null;
   valuation: BondValuation;
 }
 

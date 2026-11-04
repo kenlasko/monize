@@ -392,7 +392,7 @@ export class BondPriceService {
 
     // Each distinct lot and the days it is open on.
     const lotKey = (lot: BondLot) =>
-      `${lot.instrumentId ?? ""}|${lot.purchaseDate}|${lot.quantity}`;
+      `${lot.instrumentId ?? ""}|${lot.purchaseDate}|${lot.quantity}|${lot.cost ?? ""}`;
     const daysOf = new Map<string, { lot: BondLot; days: string[] }>();
     for (const { day, lots: open } of openOn) {
       for (const lot of new Set(open.map(lotKey))) {
@@ -429,6 +429,7 @@ export class BondPriceService {
           purchaseDate: lot.purchaseDate,
           quantity: lot.quantity,
           purchaseDateAssumed: lot.purchaseDateAssumed,
+          cost: lot.cost,
         },
         days,
       });

@@ -93,6 +93,8 @@ export interface SecurityLotValuation {
   readonly purchaseDate: string;
   readonly quantity: number;
   readonly purchaseDateAssumed: boolean;
+  /** What the lot cost, net of accrued interest, as exact text; null when unknown. */
+  readonly cost: string | null;
   readonly valuation: BondValuation;
 }
 
@@ -642,6 +644,7 @@ export class BondValuationService {
       readonly purchaseDate: string;
       readonly quantity: number;
       readonly purchaseDateAssumed?: boolean;
+      readonly cost?: string | null;
     },
     asOf: string,
     projection?: ReadonlyMap<string, string>,
@@ -656,6 +659,7 @@ export class BondValuationService {
         purchaseDate: lot.purchaseDate,
         quantity: lot.quantity,
         purchaseDateAssumed: lot.purchaseDateAssumed,
+        cost: lot.cost,
       },
       asOf,
       projection,
@@ -673,6 +677,7 @@ export class BondValuationService {
       readonly purchaseDate: string;
       readonly quantity: number;
       readonly purchaseDateAssumed?: boolean;
+      readonly cost?: string | null;
     },
     date: string,
   ): RedemptionSplit {
@@ -687,6 +692,7 @@ export class BondValuationService {
           purchaseDate: lot.purchaseDate,
           quantity: lot.quantity,
           purchaseDateAssumed: lot.purchaseDateAssumed,
+          cost: lot.cost,
         },
       },
       date,

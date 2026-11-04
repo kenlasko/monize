@@ -6,7 +6,7 @@ Plan: `docs/future-plans/us-treasury-bonds.md`.
 
 - [x] `instrument.marketability` accepts `MARKETABLE`; `PURCHASE_AFTER_MATURITY` refusal (primitives 3)
 - [x] `rounding.basis`, `unitDecimals`, `referenceAmount`; one `roundLot` (primitives 4)
-- [ ] `lot.cost` for a discount lot, `principalBasis` in the valuation and the split; the lot fold carries cost (primitives 6.1)
+- [x] `lot.cost` for a discount lot, `principalBasis` in the valuation and the split; the lot fold carries cost (primitives 6.1)
 - [x] Price policy per marketability, `marketPriceRequired` (primitives 3); `docs/system-invariants.md` INV-BOND-005 text
 
 ## Phase 2: coupon dates and actual/actual

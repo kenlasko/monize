@@ -53,6 +53,13 @@ export interface BondEngineInput {
      * real purchase was inside the sale window, so the window is not checked.
      */
     readonly purchaseDateAssumed?: boolean;
+    /**
+     * What the lot cost, net of accrued interest, as exact text; null or absent
+     * when unknown. A discount instrument's principal is then this cost and its
+     * discount accrues from the later of the purchase date and the issue date;
+     * every other instrument ignores it.
+     */
+    readonly cost?: string | null;
   };
   readonly asOf: string;
   /** Benchmark value assumed for periods that have not started and have no data. */
@@ -152,6 +159,11 @@ export interface BondValuation {
   readonly rateSchedule: readonly RateScheduleEntry[];
   /** Per bond: the base of the current period (the nominal for a coupon bond). */
   readonly principal: string | null;
+  /**
+   * Where a discount instrument's principal comes from: LOT_COST when the lot's
+   * cost is known, ISSUE_PRICE otherwise. Null for any other instrument.
+   */
+  readonly principalBasis: "LOT_COST" | "ISSUE_PRICE" | null;
   /** Lot: gross value less nominal (capitalised plus current accrual when compounding). */
   readonly accruedInterest: string | null;
   /** Lot, before any early redemption penalty. */

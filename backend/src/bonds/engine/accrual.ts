@@ -3,7 +3,7 @@ import { BondTerms } from "../domain/bond-terms";
 import { daysBetween } from "../domain/calendar-date";
 import { ExactDecimal } from "../domain/exact-decimal";
 import { roundingBasisOf } from "../domain/bond-rounding";
-import { roundLot, unitRound } from "./rounding";
+import { roundLot, toMoney, unitRound } from "./rounding";
 
 /**
  * Per-bond amounts from the primitives of the terms. Every amount is for ONE
@@ -18,6 +18,8 @@ import { roundLot, unitRound } from "./rounding";
  */
 export interface PrincipalContext {
   readonly date: string;
+  /** One unit's cost, for a discount lot of known cost: it replaces the issue price. */
+  readonly unitBase?: ExactDecimal | null;
 }
 
 /** The days a rate accrues over: a period's start and end. */
@@ -55,21 +57,15 @@ export function principalAt(
 ): ExactDecimal {
   switch (terms.principalRule.type) {
     case "FIXED_NOMINAL":
-      void ctx;
       return isDiscount(terms)
-        ? issuePriceOf(terms)
+        ? (ctx.unitBase ?? issuePriceOf(terms))
         : ExactDecimal.parse(terms.instrument.faceValue);
     default:
       return assertNever(terms.principalRule.type);
   }
 }
 
-export function roundMoney(
-  terms: BondTerms,
-  value: ExactDecimal,
-): ExactDecimal {
-  return value.round(terms.rounding.moneyDecimals, terms.rounding.mode);
-}
+export const roundMoney = toMoney;
 
 /** True when the value of period k depends on the rates of the periods before it. */
 export function compounds(terms: BondTerms): boolean {
@@ -179,8 +175,9 @@ function discountValueAt(
   terms: BondTerms,
   period: AccrualPeriod,
   asOf: string,
+  unitBase: ExactDecimal | null,
 ): ExactDecimal {
-  const issuePrice = issuePriceOf(terms);
+  const issuePrice = unitBase ?? issuePriceOf(terms);
   const discount = ExactDecimal.parse(terms.instrument.faceValue).sub(
     issuePrice,
   );
@@ -194,14 +191,46 @@ function discountValueAt(
   );
 }
 
+/**
+ * A discount lot of known cost on the day `asOf` of its period: the cost plus
+ * the share of the lot's discount (its face value less the cost) that the days
+ * gone make of the period's days, rounded once on the holding. The period
+ * starts on the later of the purchase and issue dates.
+ */
+export function discountLotValueAt(
+  terms: BondTerms,
+  period: AccrualPeriod,
+  asOf: string,
+  quantity: ExactDecimal,
+  cost: ExactDecimal,
+): ExactDecimal {
+  const face = ExactDecimal.parse(terms.instrument.faceValue).mul(quantity);
+  return toMoney(
+    terms,
+    cost.add(
+      face
+        .sub(cost)
+        .mul(
+          ExactDecimal.ratio(
+            daysBetween(period.start, asOf),
+            daysBetween(period.start, period.end),
+          ),
+        ),
+    ),
+  );
+}
+
 /** Value on the day `asOf` inside `current` before any penalty, unrounded. */
 export function valueAt(
   terms: BondTerms,
   prior: readonly PricedPeriod[],
   current: PricedPeriod,
   asOf: string,
+  unitBase: ExactDecimal | null = null,
 ): ExactDecimal {
-  if (isDiscount(terms)) return discountValueAt(terms, current.period, asOf);
+  if (isDiscount(terms)) {
+    return discountValueAt(terms, current.period, asOf, unitBase);
+  }
   const accrual = current.rate.mul(
     yearFraction(terms, current.period, current.period.start, asOf),
   );
@@ -252,10 +281,18 @@ export function couponLot(
   terms: BondTerms,
   period: PricedPeriod,
   quantity: ExactDecimal,
+  cost: ExactDecimal | null = null,
 ): ExactDecimal | null {
   switch (terms.capitalization.type) {
     case "NONE": {
       if (isDiscount(terms)) {
+        if (cost !== null) {
+          return roundLot(
+            terms,
+            ExactDecimal.parse(terms.instrument.faceValue),
+            quantity,
+          ).sub(toMoney(terms, cost));
+        }
         return roundLot(
           terms,
           ExactDecimal.parse(terms.instrument.faceValue),
@@ -310,7 +347,9 @@ export function principalLot(
   terms: BondTerms,
   ctx: PrincipalContext,
   quantity: ExactDecimal,
+  cost: ExactDecimal | null = null,
 ): ExactDecimal {
+  if (cost !== null && isDiscount(terms)) return toMoney(terms, cost);
   const nominal = principalAt(terms, ctx);
   return roundingBasisOf(terms) === "PER_UNIT"
     ? nominal.mul(quantity)

@@ -44,6 +44,7 @@ export function valuation(over: Partial<BondValuation> = {}): BondValuation {
     },
     rateSchedule: [],
     principal: "100.00",
+    principalBasis: null,
     accruedInterest: "0.00",
     grossValue: "1000.00",
     earlyRedemptionValue: null,
@@ -80,6 +81,7 @@ export function lot(
     purchaseDate: "2025-10-13",
     quantity: 10,
     purchaseDateAssumed: false,
+    cost: null,
     valuation: valuation({ quantity: rest.quantity ?? 10, ...v }),
     ...rest,
   };
