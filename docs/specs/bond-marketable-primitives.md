@@ -218,6 +218,45 @@ For a period with annual rate `c` and `F = 12 / couponMonths` payments a year:
 | Floating daily accrual | nine decimals per 100 par in percent (section 7), not `unitDecimals` |
 | Principal and maturity value | none |
 
+Decisions taken in the implementation, where this section left a choice open:
+
+- The schedule type, its parser and `scheduleMonthsOf` / `scheduleDaysOf` live in
+  `domain/bond-schedule.ts` (`bond-terms.ts` re-exports them); the period builder
+  is `buildCouponSchedule` in `domain/period-schedule.ts`. `periodCount` of
+  `scheduleMonthsOf` is the number of periods of the whole schedule, the first
+  one counted as one whatever its length.
+- The parser checks, as `INVALID` with the field's path: `datedDate <
+  firstCouponDate <= maturityDate`; `firstCouponDate` a regular date (a
+  `CouponScheduleError` of the builder); `endOfMonth: true` only when
+  `maturityDate` is the last day of its month (the other dates are month ends, so
+  a maturity in mid-month would contradict it); at most 1,200 periods (a bound
+  against a hostile document). `couponMonths` is a JSON number, `endOfMonth` a
+  boolean, the dates strings; nothing is coerced.
+- Beside the other primitives (`assertScheduleConsistent`): `COUPON_DATES` is
+  refused for `ZERO_COUPON_DISCOUNT` and with capitalization other than `NONE`;
+  every other rate rule is allowed with it. `ACTUAL_ACTUAL_ICMA` is refused on
+  `LOT_PURCHASE_DATE` and `ISSUE_DATE`. `ACTUAL_DAYS_IN_PERIOD` on `COUPON_DATES`
+  is accepted only when the first period is regular: it has no rule for a short
+  or long first coupon, so a document that asks for one is refused instead of
+  paying a whole coupon for a part period.
+- A lot holds the periods whose end is after its purchase date, **renumbered from
+  1** (the engine indexes rates and cash flows by the lot's own period number, as
+  for `LOT_PURCHASE_DATE`): an announced rate and a `firstPeriodRate` refer to the
+  lot's periods. A lot bought on or after the maturity keeps the last period, so
+  it has a maturity to be refused or valued against (`PURCHASE_AFTER_MATURITY`
+  for a marketable series).
+- Before the dated date (a security bought when issued) nothing has accrued: the
+  lot's first period is the current one, its accrued interest is zero and its
+  value the principal. This applies to `COUPON_DATES` only; an `ISSUE_DATE`
+  lot bought before its issue still has no current period.
+- A figure is an `ACCRUED` interest (rounded per unit to `unitDecimals` under
+  `PER_HOLDING`) when it is the coupon of a short or long first period or an
+  accrued interest; the coupon of a regular period is `AMOUNT` (exact). Under
+  `PER_UNIT` both are rounded per unit to `moneyDecimals`, as every figure is.
+  The accrued interest on a day in a long first period is the sum of the elapsed
+  fractions of the quasi-periods it has entered, each from its own start (the
+  part of an earlier quasi-period before the dated date is not counted).
+
 ## 6. P5 a lot's cost and purchased accrued interest
 
 ### 6.1 Cost as the principal base of a discount lot

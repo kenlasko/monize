@@ -3,6 +3,7 @@ import { compareYMD, isValidYMD } from "../domain/calendar-date";
 import { ExactDecimal } from "../domain/exact-decimal";
 import {
   buildSchedule,
+  couponLotPeriods,
   SchedulePeriod,
   singlePeriodSchedule,
 } from "../domain/period-schedule";
@@ -267,6 +268,10 @@ function scheduleOf(input: LotInput): readonly SchedulePeriod[] {
           : schedule.issueDate;
       return singlePeriodSchedule(start, schedule.maturityDate);
     }
+    case "COUPON_DATES":
+      // The series' own periods that end after the purchase: the coupon of the
+      // period the lot was bought in is paid in full (spec 5.1).
+      return couponLotPeriods(schedule, input.lot.purchaseDate);
     default:
       return assertNever(schedule);
   }
@@ -353,7 +358,10 @@ export function figuresOn(
   const text = (figure: ExactDecimal) => figure.toFixed(places);
 
   const matured = compareYMD(asOf, p.maturity) >= 0;
-  const candidate = matured ? null : p.schedule[started - 1];
+  // A coupon series is bought before its dated date (when issued): the lot
+  // is worth its principal then, no interest has accrued.
+  const beforeDated = started === 0 && terms.schedule.anchor === "COUPON_DATES";
+  const candidate = matured ? null : p.schedule[beforeDated ? 0 : started - 1];
   const current =
     candidate && compareYMD(asOf, candidate.end) < 0 ? candidate : null;
 

@@ -1,7 +1,11 @@
-import { daysBetween, parseYMD } from "./calendar-date";
 import { assertNever } from "./assert-never";
 import { BondRounding, parseRounding } from "./bond-rounding";
 import { ExactDecimal } from "./exact-decimal";
+import {
+  assertScheduleConsistent,
+  BondSchedule,
+  parseSchedule,
+} from "./bond-schedule";
 import {
   BondTermsError,
   code,
@@ -9,7 +13,6 @@ import {
   decimal,
   exact,
   integer,
-  Json,
   list,
   nullable,
   object,
@@ -22,6 +25,13 @@ export { BondTermsError } from "./terms-readers";
 export type { BondTermsErrorCode } from "./terms-readers";
 export type { BondRounding, RoundingBasis } from "./bond-rounding";
 export { roundingBasisOf } from "./bond-rounding";
+export { scheduleDaysOf, scheduleMonthsOf } from "./bond-schedule";
+export type {
+  BondSchedule,
+  CouponDatesSchedule,
+  IssueDateSchedule,
+  LotAnchoredSchedule,
+} from "./bond-schedule";
 
 export type StepObservation = {
   readonly type: "STEP_VALUE_ON_NTH_BUSINESS_DAY_BEFORE_START_MONTH";
@@ -128,69 +138,7 @@ export type Redemption =
       readonly proceedsFloor: ProceedsFloor | null;
     };
 
-/** Periods counted from each lot's purchase date. */
-export interface LotAnchoredSchedule {
-  readonly anchor: "LOT_PURCHASE_DATE";
-  readonly periodMonths: number;
-  readonly periodCount: number;
-  readonly rollDay: "ANCHOR_DAY_CLAMPED";
-  readonly calendarId: string;
-}
-
-/** One period from the series' issue date to its maturity date, whatever the lot's purchase date. */
-export interface IssueDateSchedule {
-  readonly anchor: "ISSUE_DATE";
-  readonly issueDate: string;
-  readonly maturityDate: string;
-  readonly periodCount: 1;
-  readonly calendarId: string;
-}
-
-export type BondSchedule = LotAnchoredSchedule | IssueDateSchedule;
-
-/**
- * The length of the schedule in whole months of `periodMonths` and a period
- * count; a single issue-to-maturity period is its whole months, at least one.
- */
-export function scheduleMonthsOf(schedule: BondSchedule): {
-  readonly periodMonths: number;
-  readonly periodCount: number;
-} {
-  switch (schedule.anchor) {
-    case "LOT_PURCHASE_DATE":
-      return {
-        periodMonths: schedule.periodMonths,
-        periodCount: schedule.periodCount,
-      };
-    case "ISSUE_DATE": {
-      const from = parseYMD(schedule.issueDate);
-      const to = parseYMD(schedule.maturityDate);
-      const whole =
-        (to.year - from.year) * 12 +
-        (to.month - from.month) -
-        (to.day < from.day ? 1 : 0);
-      return { periodMonths: whole < 1 ? 1 : whole, periodCount: 1 };
-    }
-    default:
-      return assertNever(schedule);
-  }
-}
-
-/**
- * The exact length in days of a single issue-to-maturity period (`ISSUE_DATE`),
- * or null for a schedule counted in months (`LOT_PURCHASE_DATE`): a discount
- * bill of 4 weeks is 28 days, not "1 month".
- */
-export function scheduleDaysOf(schedule: BondSchedule): number | null {
-  switch (schedule.anchor) {
-    case "LOT_PURCHASE_DATE":
-      return null;
-    case "ISSUE_DATE":
-      return daysBetween(schedule.issueDate, schedule.maturityDate);
-    default:
-      return assertNever(schedule);
-  }
-}
+export type AccrualType = "ACTUAL_DAYS_IN_PERIOD" | "ACTUAL_ACTUAL_ICMA";
 
 export type Marketability = "RETAIL_REDEEMABLE" | "MARKETABLE";
 
@@ -217,7 +165,7 @@ export interface BondTerms {
   };
   readonly saleWindow: { readonly from: string; readonly to: string } | null;
   readonly schedule: BondSchedule;
-  readonly accrual: { readonly type: "ACTUAL_DAYS_IN_PERIOD" };
+  readonly accrual: { readonly type: AccrualType };
   readonly principalRule: { readonly type: "FIXED_NOMINAL" };
   readonly rateRule: RateRule;
   readonly capitalization: Capitalization;
@@ -367,60 +315,6 @@ function parseRedemption(value: unknown, path: string): Redemption {
   };
 }
 
-function parseSchedule(value: unknown, path: string): BondSchedule {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new BondTermsError(path, "must be an object");
-  }
-  const anchor = oneOf((value as Json).anchor, `${path}.anchor`, [
-    "LOT_PURCHASE_DATE",
-    "ISSUE_DATE",
-  ] as const);
-  if (anchor === "ISSUE_DATE") {
-    const s = object(value, path, [
-      "anchor",
-      "issueDate",
-      "maturityDate",
-      "periodCount",
-      "calendarId",
-    ]);
-    const issueDate = date(s.issueDate, `${path}.issueDate`);
-    const maturityDate = date(s.maturityDate, `${path}.maturityDate`);
-    if (issueDate >= maturityDate) {
-      throw new BondTermsError(
-        `${path}.maturityDate`,
-        "must be after the issue date",
-      );
-    }
-    return {
-      anchor,
-      issueDate,
-      maturityDate,
-      periodCount: exact(s.periodCount, `${path}.periodCount`, 1),
-      calendarId: text(s.calendarId, `${path}.calendarId`),
-    };
-  }
-  const s = object(value, path, [
-    "anchor",
-    "periodMonths",
-    "periodCount",
-    "rollDay",
-    "calendarId",
-  ]);
-  const periodMonths = integer(s.periodMonths, `${path}.periodMonths`, 1);
-  if (periodMonths > 12 || 12 % periodMonths !== 0) {
-    throw new BondTermsError(`${path}.periodMonths`, "must divide 12");
-  }
-  return {
-    anchor,
-    periodMonths,
-    periodCount: integer(s.periodCount, `${path}.periodCount`, 1),
-    rollDay: oneOf(s.rollDay, `${path}.rollDay`, [
-      "ANCHOR_DAY_CLAMPED",
-    ] as const),
-    calendarId: text(s.calendarId, `${path}.calendarId`),
-  };
-}
-
 const FIELDS = [
   "schemaVersion",
   "instrument",
@@ -498,6 +392,7 @@ export function parseBondTerms(json: unknown): BondTerms {
     accrual: {
       type: primitive(t.accrual, "terms.accrual", [
         "ACTUAL_DAYS_IN_PERIOD",
+        "ACTUAL_ACTUAL_ICMA",
       ] as const),
     },
     principalRule: {
@@ -528,6 +423,7 @@ export function parseBondTerms(json: unknown): BondTerms {
 function assertConsistent(terms: BondTerms): void {
   const { redemption, capitalization } = terms;
   assertMarketableConsistent(terms);
+  assertScheduleConsistent(terms);
   assertDiscountConsistent(terms);
   if (
     redemption.type === "ON_DEMAND" &&

@@ -443,7 +443,11 @@ describe("INV-BOND-009: payout = principalReturned + interest", () => {
             ),
           ).not.toBe(1);
         }
-        if (day >= "2028-01-01" && terms.schedule.periodCount === 2) {
+        if (
+          day >= "2028-01-01" &&
+          terms.schedule.anchor !== "COUPON_DATES" &&
+          terms.schedule.periodCount === 2
+        ) {
           expect(ExactDecimal.parse(split.deduction!).isZero()).toBe(true);
         }
       }
@@ -455,9 +459,9 @@ describe("INV-BOND-009: payout = principalReturned + interest", () => {
     for (const [, terms, purchase, quantity] of cases) {
       const input = lot(terms, purchase, quantity);
       const maturity =
-        terms.schedule.anchor === "ISSUE_DATE"
-          ? terms.schedule.maturityDate
-          : `${2026 + terms.schedule.periodCount}-01-01`;
+        terms.schedule.anchor === "LOT_PURCHASE_DATE"
+          ? `${2026 + terms.schedule.periodCount}-01-01`
+          : terms.schedule.maturityDate;
       expect(
         ExactDecimal.parse(
           redemptionSplit(input, maturity).deduction!,

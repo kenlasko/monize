@@ -96,6 +96,13 @@ export function integer(value: unknown, path: string, min: number): number {
   return value as number;
 }
 
+export function flag(value: unknown, path: string): boolean {
+  if (typeof value !== "boolean") {
+    throw new BondTermsError(path, "must be true or false");
+  }
+  return value;
+}
+
 /** A non-negative decimal string; a JSON number is refused (INV-BOND-003). */
 export function decimal(value: unknown, path: string): string {
   if (typeof value !== "string") {

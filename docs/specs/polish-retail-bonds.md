@@ -120,7 +120,10 @@ schedule        { anchor: LOT_PURCHASE_DATE, periodMonths, periodCount,
                   rollDay: ANCHOR_DAY_CLAMPED, calendarId }
               | { anchor: ISSUE_DATE, issueDate, maturityDate,
                   periodCount: 1, calendarId }   -- ZERO_COUPON_DISCOUNT only
+                -- no Polish manifest uses another anchor (COUPON_DATES:
+                -- bond-marketable-primitives.md section 5.1)
 accrual         { type: ACTUAL_DAYS_IN_PERIOD }
+                -- ACTUAL_ACTUAL_ICMA: bond-marketable-primitives.md section 5.2
 principalRule   { type: FIXED_NOMINAL }
 rateRule        FIXED | BENCHMARK_PLUS_SPREAD | INFLATION_PLUS_MARGIN_AS_RATE
                 | ZERO_COUPON_DISCOUNT   (see 2.2)

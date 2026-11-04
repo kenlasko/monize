@@ -3,6 +3,8 @@ import { BondTerms } from "../domain/bond-terms";
 import { daysBetween } from "../domain/calendar-date";
 import { ExactDecimal } from "../domain/exact-decimal";
 import { roundingBasisOf } from "../domain/bond-rounding";
+import { CouponPeriodInfo } from "../domain/period-schedule";
+import { couponFigure, quasiFractions } from "./coupon-accrual";
 import { roundLot, toMoney, unitRound } from "./rounding";
 
 /**
@@ -26,6 +28,8 @@ export interface PrincipalContext {
 export interface AccrualPeriod {
   readonly start: string;
   readonly end: string;
+  /** The regular periods a `COUPON_DATES` period is made of; `ACTUAL_ACTUAL_ICMA` reads them. */
+  readonly coupon?: CouponPeriodInfo;
 }
 
 /** A period with the annual rate that applies to it. */
@@ -87,6 +91,8 @@ function periodsPerYear(terms: BondTerms): ExactDecimal {
       return ExactDecimal.fromInt(12 / schedule.periodMonths);
     case "ISSUE_DATE":
       throw new RangeError("A single-period schedule has no periods per year");
+    case "COUPON_DATES":
+      return ExactDecimal.fromInt(12 / schedule.couponMonths);
     default:
       return assertNever(schedule);
   }
@@ -115,6 +121,12 @@ export function yearFraction(
         ),
       );
     }
+    case "ACTUAL_ACTUAL_ICMA":
+      // A regular period is exactly 1 / F whatever its days; an irregular one
+      // is the sum of its quasi-period fractions (`quasiFractions`).
+      return ExactDecimal.ONE.div(periodsPerYear(terms)).mul(
+        quasiFractions(period, from, to),
+      );
     default:
       return assertNever(terms.accrual.type);
   }
@@ -262,6 +274,7 @@ export function couponOf(
       return unitRound(
         terms,
         periodInterest(terms, base, period.period, period.rate),
+        couponFigure(period.period),
       );
     }
     case "COMPOUND_AT_PERIOD_END":
@@ -304,6 +317,7 @@ export function couponLot(
         terms,
         periodInterest(terms, base, period.period, period.rate),
         quantity,
+        couponFigure(period.period),
       );
     }
     case "COMPOUND_AT_PERIOD_END":

@@ -11,8 +11,8 @@ Plan: `docs/future-plans/us-treasury-bonds.md`.
 
 ## Phase 2: coupon dates and actual/actual
 
-- [ ] Schedule `COUPON_DATES` with regular, short and long first periods, end of month, payment adjustment (primitives 5.1)
-- [ ] Accrual `ACTUAL_ACTUAL_ICMA` (primitives 5.2, 5.3)
+- [x] Schedule `COUPON_DATES` with regular, short and long first periods, end of month, payment adjustment (primitives 5.1)
+- [x] Accrual `ACTUAL_ACTUAL_ICMA` (primitives 5.2, 5.3)
 - [ ] `accruedInterestOn` (primitives 6.2)
 
 ## Phase 3: the US adapter, bills, notes, bonds
