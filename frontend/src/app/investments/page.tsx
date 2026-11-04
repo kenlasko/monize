@@ -19,6 +19,7 @@ import { ListBottomPager } from '@/components/ui/ListBottomPager';
 import { NewTransactionButton } from '@/components/investments/NewTransactionButton';
 import { RefreshPricesButton } from '@/components/investments/RefreshPricesButton';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
+import { investmentTransactionModalClass } from '@/components/investments/investment-transaction-modal';
 import {
   CashFilterBar,
   CashFilterToggleButton,
@@ -501,7 +502,7 @@ function InvestmentsContent() {
         isOpen={data.showTransactionForm}
         onClose={closeInvestmentTransactionModal}
         maxWidth={investmentFormNeedsConversion ? '3xl' : 'xl'}
-        className="p-6"
+        className={investmentTransactionModalClass(investmentFormNeedsConversion)}
         {...data.modalProps} title={data.editingTransaction ? t('page.editTransaction') : t('page.newInvestmentTransaction')}>
         <InvestmentTransactionForm
           key={`${data.editingTransaction?.id ?? 'new'}-${createOnDate ?? ''}`}

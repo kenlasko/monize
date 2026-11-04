@@ -34,8 +34,8 @@ The three buttons at the top of the form choose what you are entering: a **Trans
 | **Category** | No | The expense or income category |
 | **Amount** | Yes | The transaction amount (negative for expenses, positive for income). The **+/-** button flips the sign, the calculator button works out a figure for you, and the currency button beside it lets you enter the amount [in another currency](#foreign-currency-transactions) |
 | **Reference Number** | No | Cheque number, confirmation number, or another reference |
-| **Tags** | No | One or more [tags](tags.md) for flexible labelling; the tags you used most recently are listed first |
-| **Description** | No | Additional notes; links in it become clickable |
+| **Description** | No | Additional notes; links in it become clickable. One line to start; it grows to show every line of a longer note |
+| **Tags** | No | One or more [tags](tags.md) for flexible labelling; the tags you used most recently are listed first. **Status** sits beside it |
 | **Status** | No | Unreconciled, Cleared, Reconciled, or Void |
 | **Attachments** | No | Receipts, invoices, and other files (see [Attachments](#attachments)) |
 
@@ -115,7 +115,7 @@ Click an attachment to preview it inside Monize: images at **Fit to screen** or 
 
 ![A hotel bill paid in euros, with its invoice attached](images/transaction-attachments.png)
 
-The register has an **Attachments** column with the count, and the **Attachments** filter (**Any**, **Yes**, **No**) finds the transactions still missing a receipt. Below the attachments, **Add warranty** records a [warranty](warranties.md) for the purchase.
+The register has an **Attachments** column with the count, and the **Attachments** filter (**Any**, **Yes**, **No**) finds the transactions still missing a receipt. Beside the attachments, **Add warranty** records a [warranty](warranties.md) for the purchase.
 
 ---
 

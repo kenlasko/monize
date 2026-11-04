@@ -198,18 +198,18 @@ For the biggest daily moves across your holdings at a glance, add the [Top Mover
 | **Brokerage Account** | The investment account (for a transfer, **From Account** and **To Account**) |
 | **Date** | Transaction date |
 | **Transaction Type** | Buy, Sell, Dividend, and so on (see above) |
-| **Funds From (optional)** / **Funds To (optional)** | For a buy or sell, the account the money comes from or goes to. The linked cash account is the default |
-| **Security** | The security involved. **+ Add new security** creates one without leaving the form |
+| **Funds From** / **Funds To** | For a buy or sell, the account the money comes from or goes to. The linked cash account is the default |
+| **Security** | The security involved. Type to filter the list; when what you type matches no security, **Create** opens the new-security form with it filled in, without leaving the transaction |
 | **Quantity (Shares)** | Number of shares or units |
 | **Price per Share** | Price per share or unit |
-| **Commission / Fees** | Any trading commission or fee |
+| **Commission / Fees** | Any trading commission or fee. Quantity, price and commission share one line |
 | **Description (optional)** | Optional notes |
 | **Status** | Unreconciled, Cleared, Reconciled, or Void. A void transaction stays in the register but moves no shares and no cash |
 | **Total Amount** | The total, calculated from quantity, price and commission; you can also type the total and Monize works out the price |
 
 Some types ask for different fields: a dividend, interest or distribution asks for an **Amount**; a stock split asks for **New shares** and **Old shares**; a transfer asks for the **Cost per Share**; a bond redemption asks for **Accrued Interest**. When the security trades in a different currency from the account, the form adds an **Exchange rate** and a **Converted Total**.
 
-Use the arrow beside **Create Transaction** to choose **Create Transaction & New**, which saves and clears the form for the next entry. To change a transaction, click **Edit** on its row (the form then has **Update Transaction**).
+Use the arrow beside **Create Transaction** to choose **Create Transaction & New**, which saves and clears the form for the next entry, keeping the account, the date and the transaction type. To change a transaction, click **Edit** on its row (the form then has **Update Transaction**).
 
 ---
 
@@ -264,7 +264,7 @@ For a security no provider covers (a gold coin, a fund sold only by its issuer),
 
 Securities can be added:
 - Manually from the Securities page
-- From the investment transaction form (**+ Add new security**)
+- From the investment transaction form (type it into **Security** and choose **Create**)
 - During import (mapped or auto-created from your Microsoft Money or QIF data)
 
 ### Deactivating and Deleting Securities

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@/test/render';
+import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { Combobox } from '@/components/ui/Combobox';
 
 // jsdom does not implement scrollIntoView
@@ -977,6 +977,46 @@ describe('Combobox', () => {
       fireEvent.keyDown(input, { key: 'Tab' });
 
       expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('a mouse pick keeps focus in the input', () => {
+    // The rows are not focusable: a mousedown that moved focus would leave it
+    // on the page body once the list closes, and the next Tab would start
+    // from the top of the page instead of the field after this one (#2009).
+    it('does not let a mousedown on an option take focus, and still selects it', () => {
+      render(<Combobox options={options} onChange={onChange} />);
+      const input = screen.getByRole('textbox');
+      act(() => input.focus());
+
+      const row = screen.getByText('Banana');
+      // fireEvent returns false when the handler called preventDefault().
+      expect(fireEvent.mouseDown(row)).toBe(false);
+      fireEvent.click(row);
+
+      expect(onChange).toHaveBeenCalledWith('2', 'Banana');
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('does the same for the Create row', async () => {
+      const onCreateNew = vi.fn();
+      render(
+        <Combobox options={options} onChange={onChange} onCreateNew={onCreateNew} allowCustomValue />,
+      );
+      const input = screen.getByRole('textbox');
+      act(() => input.focus());
+      // Typing straight after the focus opened the list is ignored for 100ms.
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 150));
+      });
+      fireEvent.change(input, { target: { value: 'Kiwi' } });
+
+      const row = screen.getByText('Create "Kiwi"');
+      expect(fireEvent.mouseDown(row)).toBe(false);
+      fireEvent.click(row);
+
+      expect(onCreateNew).toHaveBeenCalledWith('Kiwi');
+      expect(document.activeElement).toBe(input);
     });
   });
 

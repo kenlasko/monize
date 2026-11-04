@@ -86,8 +86,9 @@ test.describe('Investments', () => {
     api,
   }) => {
     // The account pair and security are seeded; the trade itself is entered in
-    // the UI. The transaction form uses native selects (not comboboxes), so the
-    // dropdowns are driven with selectOption by id.
+    // the UI. The account and type are native selects, driven with selectOption
+    // by id; Security is a combobox, picked by clicking its listed option (the
+    // list renders in a portal at the page root, outside the dialog).
     const name = `Invest ${uniqueId()}`;
     const pair = await createInvestmentAccountPair(api, { name });
     const security = await createSecurity(api, {
@@ -105,7 +106,8 @@ test.describe('Investments', () => {
     ).toBeVisible();
     await dialog.getByLabel('Brokerage Account').selectOption(pair.brokerageAccount.id);
     await dialog.getByLabel('Transaction Type').selectOption('BUY');
-    await dialog.getByLabel('Security').selectOption(security.id);
+    await dialog.getByRole('textbox', { name: 'Security', exact: true }).click();
+    await page.getByText(`${security.symbol} - `, { exact: false }).first().click();
     await dialog.getByLabel('Quantity (Shares)').fill('10');
     await dialog.getByLabel(/Price per Share/).fill('100');
     await dialog.getByRole('button', { name: 'Create Transaction' }).click();

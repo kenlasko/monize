@@ -122,9 +122,10 @@ test("investment-transaction-form", async () => {
   await dialog
     .getByLabel("Brokerage Account")
     .selectOption({ label: "TFSA - Tax Free - Brokerage (CAD)" });
-  await dialog
-    .getByLabel("Security", { exact: true })
-    .selectOption({ index: 4 });
+  // Security is a combobox; its list renders at the page root. The fourth
+  // listed security, as the native select's index 4 (after its placeholder).
+  await dialog.getByRole("textbox", { name: "Security", exact: true }).click();
+  await page.locator("[data-option-index]").nth(3).click();
   await dialog.getByLabel("Quantity (Shares)").fill("10");
   await dialog.getByLabel("Price per Share").fill("186.72");
   await dialog.getByLabel("Commission / Fees").fill("9.99");
