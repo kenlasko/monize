@@ -105,6 +105,7 @@
     "submitCreate": "[XX-Create Currency-XX]",
     "submitUpdate": "[XX-Update Currency-XX]",
     "inactiveNotice": "[XX-{code} is already in your list but inactive.-XX]",
+    "cryptoNotice": "[XX-{code} is not a standard currency code. Cryptocurrencies such as Bitcoin are tracked as securities in an investment account, not as currencies. <guide>See how in the user guide</guide>.-XX]",
     "reactivateButton": "[XX-Reactivate {code}-XX]",
     "reactivating": "[XX-Reactivating...-XX]",
     "toasts": {

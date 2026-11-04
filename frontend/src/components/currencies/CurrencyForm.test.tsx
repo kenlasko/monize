@@ -220,6 +220,46 @@ describe('CurrencyForm', () => {
     });
   });
 
+  describe('cryptocurrency note', () => {
+    const typeCode = (value: string) =>
+      fireEvent.change(screen.getByPlaceholderText(/USD, EUR, GBP/), { target: { value } });
+
+    it('points a non-ISO code at the user guide', () => {
+      render(<CurrencyForm onSubmit={onSubmit} onCancel={onCancel} />);
+      typeCode('BTC');
+      expect(screen.getByText(/BTC is not a standard currency code/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'See how in the user guide' })).toHaveAttribute(
+        'href',
+        'https://www.monize.net/docs/investments#cryptocurrency',
+      );
+    });
+
+    it('stays quiet for an ISO code', () => {
+      render(<CurrencyForm onSubmit={onSubmit} onCancel={onCancel} />);
+      typeCode('EUR');
+      expect(screen.queryByText(/not a standard currency code/)).not.toBeInTheDocument();
+    });
+
+    it('waits for a complete code', () => {
+      render(<CurrencyForm onSubmit={onSubmit} onCancel={onCancel} />);
+      typeCode('BT');
+      expect(screen.queryByText(/not a standard currency code/)).not.toBeInTheDocument();
+      typeCode('BTCX');
+      expect(screen.queryByText(/not a standard currency code/)).not.toBeInTheDocument();
+    });
+
+    it('still lets the user create the currency', async () => {
+      render(<CurrencyForm onSubmit={onSubmit} onCancel={onCancel} />);
+      typeCode('BTC');
+      fireEvent.change(screen.getByPlaceholderText(/Canadian Dollar, Malaysia/), { target: { value: 'Bitcoin' } });
+      fireEvent.change(screen.getByLabelText('Symbol'), { target: { value: 'B' } });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Create Currency'));
+      });
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ code: 'BTC' }));
+    });
+  });
+
   describe('inactive-currency reactivation', () => {
     const inactiveError = { response: { data: { errorCode: 'CURRENCY_INACTIVE' } } };
 

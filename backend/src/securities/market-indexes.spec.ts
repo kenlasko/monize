@@ -70,11 +70,13 @@ describe("market index catalog", () => {
       MARKET_INDEXES.flatMap((index) => [...index.exchanges]),
     );
     // The exchanges deliberately left without one, so adding an exchange is a
-    // decision about its benchmark rather than a silent omission.
+    // decision about its benchmark rather than a silent omission. CRYPTO has
+    // none: the catalog is equity indexes, and a coin is benchmarked against
+    // whichever of them the reader picks, as any other holding can be.
     const withoutBenchmark = SECURITY_EXCHANGES.filter(
       (exchange) => !covered.has(exchange),
     );
-    expect(withoutBenchmark).toEqual([]);
+    expect(withoutBenchmark).toEqual(["CRYPTO"]);
   });
 
   it("resolves a code and refuses one it does not know", () => {

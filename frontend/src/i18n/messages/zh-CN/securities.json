@@ -116,6 +116,8 @@
     "exchangeLabel": "交易所",
     "currencyLabel": "货币",
     "currencyNotConfigured": "{code} — 不在你的货币列表中",
+    "currencyPlaceholder": "选择货币...",
+    "currencyNotReported": "数据提供方没有给出该加密货币的计价货币。请选择它所用的法定货币。",
     "quoteProviderLabel": "行情提供商",
     "skipPriceUpdatesLabel": "停用自动价格更新",
     "skipPriceUpdatesHelp": "Monize 将不会为此证券获取价格。适用于没有提供商能够报价的证券；您自行输入的价格仍然有效。选择其他报价提供商或 MSN 金融工具 ID 会重新启用更新。",

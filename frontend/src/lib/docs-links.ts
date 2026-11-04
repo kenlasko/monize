@@ -37,6 +37,7 @@ export const DOCS_LINKS = {
   importQuicken: { page: 'importing-from-quicken' },
   investments: { page: 'investments' },
   securities: { page: 'investments', section: 'securities-management' },
+  cryptocurrency: { page: 'investments', section: 'cryptocurrency' },
   reports: { page: 'reports' },
   rules: { page: 'rules' },
   settings: { page: 'settings-and-security' },

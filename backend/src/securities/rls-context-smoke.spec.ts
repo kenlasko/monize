@@ -91,6 +91,31 @@ describe("securities module RLS context smoke (real withScopedDb)", () => {
     });
   });
 
+  it("scheduledWeekendCryptoRefresh reads its securities under the system context", async () => {
+    const securitiesRepo = { find: jest.fn().mockResolvedValue([]) };
+    const { dataSource } = createScopedDbMocks([
+      [Security, securitiesRepo],
+      [UserPreference, { find: jest.fn().mockResolvedValue([]) }],
+    ]);
+
+    const service = new SecurityPriceService(
+      dataSource as never,
+      { recalculateAllInvestmentSnapshots: jest.fn() } as never,
+      {} as never,
+      createFetchSyncMock() as never,
+    );
+    const errorSpy = jest
+      .spyOn(service["logger"], "error")
+      .mockImplementation(() => undefined);
+
+    await service.scheduledWeekendCryptoRefresh();
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(securitiesRepo.find).toHaveBeenCalledWith({
+      where: { isActive: true, securityType: "CRYPTO" },
+    });
+  });
+
   it("refreshAllPrices supplies its own system context", async () => {
     // It used to depend on the caller's wrapper, which meant the admin
     // maintenance endpoint read `securities` in the admin's own scope: global at

@@ -295,6 +295,100 @@ describe('SecurityForm', () => {
     ).toBeInTheDocument();
   });
 
+  describe('lookup candidate without a currency', () => {
+    async function lookUp(candidate: Record<string, unknown>) {
+      (investmentsApi.lookupSecurityCandidates as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce([candidate]);
+      render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
+      await waitFor(() => {
+        expect(exchangeRatesApi.getCurrencies).toHaveBeenCalled();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Symbol'), {
+          target: { value: String(candidate.symbol) },
+        });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Lookup'));
+      });
+    }
+
+    const notReported =
+      "The provider did not report this coin's currency. Choose the fiat currency it is quoted in.";
+
+    it('clears the currency for a crypto candidate with none, asks for it, and blocks submit', async () => {
+      await lookUp({
+        symbol: 'BTC-USDT',
+        name: 'Bitcoin USDT',
+        exchange: 'CRYPTO',
+        currencyCode: null,
+        securityType: 'CRYPTO',
+      });
+
+      await waitFor(() => {
+        expect((screen.getByLabelText('Currency') as HTMLSelectElement).value).toBe('');
+      });
+      expect(screen.getByText(notReported)).toBeInTheDocument();
+      expect(screen.getByText('Currency is required')).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Select currency...' })).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Create Security'));
+      });
+      await waitFor(() => {
+        expect(screen.getAllByText('Currency is required').length).toBeGreaterThan(0);
+      });
+      expect(onSubmit).not.toHaveBeenCalled();
+
+      // Choosing the fiat the coin is quoted in satisfies the rule and lifts the note.
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Currency'), { target: { value: 'USD' } });
+      });
+      expect(screen.queryByText(notReported)).not.toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: 'Select currency...' })).not.toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Create Security'));
+      });
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({ symbol: 'BTC-USDT', currencyCode: 'USD' }),
+        );
+      });
+    });
+
+    it('still applies the currency of a crypto candidate that has one', async () => {
+      await lookUp({
+        symbol: 'BTC-USD',
+        name: 'Bitcoin USD',
+        exchange: 'CRYPTO',
+        currencyCode: 'USD',
+        securityType: 'CRYPTO',
+      });
+
+      await waitFor(() => {
+        expect((screen.getByLabelText('Currency') as HTMLSelectElement).value).toBe('USD');
+      });
+      expect(screen.queryByText(notReported)).not.toBeInTheDocument();
+    });
+
+    it('keeps the default currency for a non-crypto candidate with none', async () => {
+      await lookUp({
+        symbol: 'XYZ',
+        name: 'Some Security',
+        exchange: null,
+        currencyCode: null,
+        securityType: 'STOCK',
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Clear')).toBeInTheDocument();
+      });
+      expect((screen.getByLabelText('Currency') as HTMLSelectElement).value).toBe('CAD');
+      expect(screen.queryByText(notReported)).not.toBeInTheDocument();
+    });
+  });
+
   it('shows Lookup button for new security form', async () => {
     render(<SecurityForm onSubmit={onSubmit} onCancel={onCancel} />);
     await waitFor(() => {

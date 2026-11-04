@@ -116,6 +116,8 @@
     "exchangeLabel": "Giełda",
     "currencyLabel": "Waluta",
     "currencyNotConfigured": "{code} — brak w Twoich walutach",
+    "currencyPlaceholder": "Wybierz walutę...",
+    "currencyNotReported": "Dostawca nie podał waluty tej kryptowaluty. Wybierz walutę fiducjarną, w której jest notowana.",
     "quoteProviderLabel": "Dostawca notowań",
     "skipPriceUpdatesLabel": "Wyłącz automatyczne aktualizacje cen",
     "skipPriceUpdatesHelp": "Monize nie będzie pobierać cen dla tego papieru wartościowego. Użyj tej opcji dla papieru, którego żaden dostawca nie wycenia; ceny wprowadzone samodzielnie nadal się liczą. Wybranie innego dostawcy notowań lub identyfikatora instrumentu MSN ponownie włącza aktualizacje.",

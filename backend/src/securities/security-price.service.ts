@@ -55,6 +55,7 @@ import {
 } from "../common/time-series/history-fill";
 import { daysBetween } from "../common/time-series/price-boundary.util";
 import { BOND_ENGINE_PRICE_SOURCE } from "../bonds/bond-price-source";
+import { SecurityType } from "./security-enums";
 
 export { SecurityLookupResult } from "./providers/quote-provider.interface";
 
@@ -251,6 +252,24 @@ export interface DailySettlementSummary {
   /** Rows written, counting a security once per settled session. */
   barsSettled: number;
   failed: number;
+}
+
+/**
+ * Narrows the active securities a deployment-wide pass (refresh, settlement)
+ * selects. Omitted, the pass covers every active security.
+ */
+export interface SecurityPassScope {
+  /**
+   * Only securities of this type. Keyed on `securityType`, the discriminator a
+   * person picks and the lookup maps, never on `exchange`: a coin created
+   * before the lookup named `CRYPTO` still carries Yahoo's `CCC`.
+   */
+  readonly securityType?: SecurityType;
+}
+
+/** How a log line names the securities a pass covers. */
+function describePassScope(scope: SecurityPassScope): string {
+  return scope.securityType ?? "all";
 }
 
 export interface HistoricalBackfillResult {
@@ -704,6 +723,21 @@ export class SecurityPriceService {
     ].join("|");
   }
 
+  /**
+   * The active securities a deployment-wide pass reads, narrowed by `scope`.
+   * The refresh and the settlement both select through here, so a scoped run
+   * settles exactly the securities it refreshed. Callers apply
+   * `isRefreshEligible` themselves.
+   */
+  private loadActiveSecurities(scope: SecurityPassScope): Promise<Security[]> {
+    const where = scope.securityType
+      ? { isActive: true, securityType: scope.securityType }
+      : { isActive: true };
+    return withScopedDb(this.dataSource, (m) =>
+      m.getRepository(Security).find({ where }),
+    );
+  }
+
   // ─── Refresh (current price) ─────────────────────────────────────────────
 
   /**
@@ -734,19 +768,21 @@ export class SecurityPriceService {
    * for as long as that row existed. A duplicate fetch costs one request; the
    * skip cost a wrong closing price on every day the user watched the market.
    */
-  async refreshAllPrices(): Promise<PriceRefreshSummary> {
-    return withSystemContext(() => this.refreshAllPricesGlobally());
+  async refreshAllPrices(
+    scope: SecurityPassScope = {},
+  ): Promise<PriceRefreshSummary> {
+    return withSystemContext(() => this.refreshAllPricesGlobally(scope));
   }
 
-  private async refreshAllPricesGlobally(): Promise<PriceRefreshSummary> {
+  private async refreshAllPricesGlobally(
+    scope: SecurityPassScope,
+  ): Promise<PriceRefreshSummary> {
     const startTime = Date.now();
-    this.logger.log("Starting price refresh for all securities");
-
-    const allActive = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Security).find({
-        where: { isActive: true },
-      }),
+    this.logger.log(
+      `Starting price refresh for ${describePassScope(scope)} securities`,
     );
+
+    const allActive = await this.loadActiveSecurities(scope);
     const securities = allActive.filter((s) => isRefreshEligible(s));
 
     if (securities.length === 0) {
@@ -1677,17 +1713,19 @@ export class SecurityPriceService {
    * having to notice and ask. A bar whose session is still open is left alone,
    * because settling it would store the same half-day the quote already did.
    */
-  async settleDailyBars(): Promise<DailySettlementSummary> {
-    return withSystemContext(() => this.settleDailyBarsGlobally());
+  async settleDailyBars(
+    scope: SecurityPassScope = {},
+  ): Promise<DailySettlementSummary> {
+    return withSystemContext(() => this.settleDailyBarsGlobally(scope));
   }
 
-  private async settleDailyBarsGlobally(): Promise<DailySettlementSummary> {
+  private async settleDailyBarsGlobally(
+    scope: SecurityPassScope,
+  ): Promise<DailySettlementSummary> {
     const startTime = Date.now();
     const now = new Date();
 
-    const allActive = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Security).find({ where: { isActive: true } }),
-    );
+    const allActive = await this.loadActiveSecurities(scope);
     const securities = allActive.filter((s) => isRefreshEligible(s));
     if (securities.length === 0) {
       return {
@@ -1790,9 +1828,36 @@ export class SecurityPriceService {
     };
   }
 
+  /**
+   * The closing job: every active security, after the US close on a weekday.
+   */
   @Cron("0 17 * * 1-5", { timeZone: "America/New_York" })
   async scheduledPriceRefresh(): Promise<void> {
-    this.logger.log("Running scheduled price refresh");
+    await this.runScheduledPriceRefresh({});
+  }
+
+  /**
+   * The weekend tick, for cryptocurrency only. A coin trades every day and its
+   * Yahoo session is the UTC day, still open at 17:00 New York, so each run
+   * settles the previous UTC day's bar and stores the current day's quote as
+   * provisional: Saturday's run settles Friday, Sunday's settles Saturday, and
+   * Monday's weekday run settles Sunday. Without it all three waited for
+   * Monday, and no cron stored a weekend quote. Every other security is closed
+   * and is left alone: asking for it would only spend quota on a bar that
+   * cannot have changed.
+   */
+  @Cron("0 17 * * 0,6", { timeZone: "America/New_York" })
+  async scheduledWeekendCryptoRefresh(): Promise<void> {
+    await this.runScheduledPriceRefresh({ securityType: "CRYPTO" });
+  }
+
+  /** The body both closing crons share, over the securities `scope` selects. */
+  private async runScheduledPriceRefresh(
+    scope: SecurityPassScope,
+  ): Promise<void> {
+    this.logger.log(
+      `Running scheduled price refresh for ${describePassScope(scope)} securities`,
+    );
     try {
       // RLS (task C2): the price refresh groups securities across users by
       // symbol (irreducibly cross-user), and the snapshot recalc fans out over
@@ -1807,13 +1872,13 @@ export class SecurityPriceService {
           FetchSyncJob.SecurityPrices,
           this.FETCH_LEASE_MS,
           async () => {
-            const result = await this.refreshAllPrices();
+            const result = await this.refreshAllPrices(scope);
             // Settlement runs *after* the quote refresh, and its writes are the
             // ones that survive: the quote is what the security is worth right now
             // (and is all a still-open market can offer), the bar is what the
             // finished session actually did. Ordering them the other way round
             // would leave the day holding a 17:00 quote again.
-            const settlement = await this.settleDailyBars();
+            const settlement = await this.settleDailyBars(scope);
             if (result.updated > 0 || settlement.barsSettled > 0) {
               this.logger.log(
                 "Recalculating investment snapshots after price refresh",

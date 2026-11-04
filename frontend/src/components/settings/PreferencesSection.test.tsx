@@ -572,6 +572,23 @@ describe('PreferencesSection', () => {
     });
   });
 
+  it('does not offer Crypto as a preferred exchange', async () => {
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    const first = screen.getAllByPlaceholderText(/Priority/)[0];
+    await act(async () => {
+      fireEvent.focus(first);
+      fireEvent.change(first, { target: { value: 'Crypto' } });
+    });
+    expect(screen.queryByText(/Cryptocurrency \(Yahoo\)/)).not.toBeInTheDocument();
+
+    // Control: the same input does offer a real exchange when it matches.
+    await act(async () => {
+      fireEvent.change(first, { target: { value: 'London' } });
+    });
+    expect(await screen.findByText(/London Stock Exchange/i)).toBeInTheDocument();
+  });
+
   describe('MSN provider configuration warning', () => {
     it('does not show the warning when default provider is yahoo, even if MSN is unconfigured', async () => {
       (investmentsApi.getProviderStatus as ReturnType<typeof vi.fn>).mockResolvedValue({

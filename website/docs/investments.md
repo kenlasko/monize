@@ -277,6 +277,25 @@ When looking up securities, Monize searches its price providers and ranks result
 
 ---
 
+## Cryptocurrency
+
+Monize tracks Bitcoin, Ethereum and other coins as securities, held in an investment account in your own currency, and not as currencies.
+
+1. Use an [investment account](#investment-account-structure) in your own currency, such as a EUR, USD or CAD brokerage account. Create one for your crypto if you do not have one
+2. Open **Tools > Securities**, click **+ New Security**, type the coin and the currency you buy it in as `<COIN>-<CURRENCY>`, and click **Lookup**. For example `BTC-EUR`, `ETH-USD` or `BTC-CAD`
+3. Check that the **Type** is **Cryptocurrency**, the **Exchange** is **Crypto**, and the **Currency** is the second half of the symbol (`EUR` for `BTC-EUR`), then save
+
+Then record buys and sells in the account like any other security, with quantities of up to eight decimal places (`0.00512340` BTC).
+
+- **Prices** are refreshed daily, weekends included, because crypto markets do not close. The last year of prices is fetched when you add the security; to value a past date further back, use **Add Another Year of History** on its Price history tab (see [Historical Prices](#historical-prices)). Bitcoin's history reaches back to 2014 at most, and most other coins have less
+- **Value in your reporting currency** is converted through your normal [exchange rates](currency-management.md), like any other holding. A `BTC-EUR` holding in a EUR account shows in your reporting currency, say CAD, at the EUR rate
+- **A coin per currency**: if you buy the same coin in two currencies, add a security for each (`BTC-EUR` and `BTC-USD`) and keep each in an account in that currency
+
+> [!NOTE]
+> Do not add `BTC` as a currency on the Currencies page. Monize stores money to four decimal places and currencies allow at most four, which is too coarse for a coin, and the exchange rate providers carry no crypto rates, so a BTC currency would never get a rate and could not be valued. Track the coin as a security instead.
+
+---
+
 ## Security Detail Page
 
 Click a security on the Securities page, or its symbol in the holdings list, to open its detail page. The header shows the latest price with the day's change ("today", or "last move" when the market has not traded today), whether the market is open, and the buttons **Favourites**, **Edit**, and **Refresh**. The arrow beside the name switches to another security.

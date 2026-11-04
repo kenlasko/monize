@@ -240,6 +240,8 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
   });
 
   const selectedCurrency = useWatch({ control, name: 'currencyCode' });
+  // Set when a crypto lookup came back without a currency; see applyLookupResult.
+  const [currencyNotReported, setCurrencyNotReported] = useState(false);
 
   /**
    * The user's currencies, plus whatever the form currently holds.
@@ -270,7 +272,9 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
         label: t('form.currencyNotConfigured', { code: selectedCurrency }),
       });
     }
-    return options;
+    // An emptied field needs an option of its own: with none matching, a
+    // <select> shows its first currency while the form holds nothing.
+    return selectedCurrency ? options : [{ value: '', label: t('form.currencyPlaceholder') }, ...options];
   }, [currencies, defaultCurrency, selectedCurrency, t]);
 
   /**
@@ -400,7 +404,19 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
       setValue('name', result.name, setOpts);
       if (result.exchange) setValue('exchange', result.exchange, setOpts);
       if (result.securityType) setValue('securityType', result.securityType, setOpts);
-      if (result.currencyCode) setValue('currencyCode', result.currencyCode, setOpts);
+      if (result.currencyCode) {
+        setValue('currencyCode', result.currencyCode, setOpts);
+        setCurrencyNotReported(false);
+      } else if (result.securityType === 'CRYPTO') {
+        // A coin priced in a stablecoin pair has no fiat leg, so the provider
+        // cannot say what it is quoted in. Keeping the form's default would
+        // save the coin in the wrong currency without a word; empty the field
+        // so the required-currency rule asks for it, and say why.
+        setValue('currencyCode', '', setOpts);
+        setCurrencyNotReported(true);
+      } else {
+        setCurrencyNotReported(false);
+      }
 
       if (result.provider) {
         const explicit = lookupProvider !== 'auto';
@@ -441,7 +457,7 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
       if (result.provider) details.push(`Provider: ${t(`form.providers.${result.provider}`)}`);
       toast.success(t('form.toasts.found', { details: details.join(', ') }));
     },
-    [setValue, lookupProvider, userDefaultProvider, t],
+    [setValue, lookupProvider, userDefaultProvider, t, setCurrencyNotReported],
   );
 
   const handleLookup = useCallback(async () => {
@@ -514,6 +530,7 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
     }
     setBondCountryChoice(null);
     setHasLookupResult(false);
+    setCurrencyNotReported(false);
     setResetNonce((n) => n + 1);
   };
 
@@ -732,6 +749,12 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
           />
         )}
       </div>
+
+      {currencyNotReported && !selectedCurrency && (
+        <p className="-mt-2 text-sm text-gray-500 dark:text-gray-400">
+          {t('form.currencyNotReported')}
+        </p>
+      )}
 
       {isOtherBondCountry && (
         <p className="-mt-2 text-sm text-gray-500 dark:text-gray-400">

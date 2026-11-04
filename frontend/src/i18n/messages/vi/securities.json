@@ -116,6 +116,8 @@
     "exchangeLabel": "Sàn giao dịch",
     "currencyLabel": "Tiền tệ",
     "currencyNotConfigured": "{code} — không có trong tiền tệ của bạn",
+    "currencyPlaceholder": "Chọn tiền tệ...",
+    "currencyNotReported": "Nhà cung cấp không báo cáo tiền tệ của đồng coin này. Hãy chọn loại tiền pháp định mà nó được niêm yết.",
     "quoteProviderLabel": "Nhà cung cấp báo giá",
     "skipPriceUpdatesLabel": "Tắt cập nhật giá tự động",
     "skipPriceUpdatesHelp": "Monize sẽ không lấy giá cho chứng khoán này. Dùng tùy chọn này cho chứng khoán mà không nhà cung cấp nào định giá được; giá bạn tự nhập vẫn được tính. Chọn một nhà cung cấp báo giá hoặc ID công cụ MSN khác sẽ bật lại cập nhật.",

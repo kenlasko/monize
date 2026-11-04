@@ -112,6 +112,7 @@
       "reactivateFailed": "Währung konnte nicht reaktiviert werden"
     },
     "inactiveNotice": "{code} ist bereits in Ihrer Liste, aber inaktiv.",
+    "cryptoNotice": "{code} ist kein Standard-Währungscode. Kryptowährungen wie Bitcoin werden als Wertpapiere in einem Investitionskonto erfasst, nicht als Währungen. <guide>Im Benutzerhandbuch nachlesen, wie das geht</guide>.",
     "reactivateButton": "{code} reaktivieren",
     "reactivating": "Wird reaktiviert..."
   },
