@@ -206,6 +206,10 @@ The generator is `frontend/scripts/build-website-docs.mjs`. It renders with the 
 
 - **Edit the `.md` file, then run `npm run docs:build`** and commit both. A generated page that
   does not match its Markdown fails `website-docs.test.ts`.
+- **A merge conflict in a generated file** (`search-index.json`, `sitemap.xml`, a `docs/*.html`)
+  is resolved by keeping either side and running `npm run docs:build` again; never merge the
+  hunks by hand. The search index is written one entry per line so that pull requests editing
+  different pages merge without one.
 - **A new page** is a new `docs/<slug>.md` (lower-case, hyphenated) starting with one `# Title`,
   plus an entry in `docs/nav.json` with a one-sentence `summary` (used on the landing page and as
   the page's description). A page missing from `nav.json`, or listed there without a file, fails

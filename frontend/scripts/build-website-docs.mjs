@@ -94,7 +94,10 @@ function build() {
       x: s.text,
     })),
   );
-  files.set('search-index.json', `${JSON.stringify(index)}\n`);
+  // One entry per line: git merges line by line, so on a single line every two
+  // pull requests that touch any page conflict here; one line per heading
+  // conflicts only when both edit the same section.
+  files.set('search-index.json', `[\n${index.map((entry) => JSON.stringify(entry)).join(',\n')}\n]\n`);
 
   files.set(
     'sitemap.xml',
