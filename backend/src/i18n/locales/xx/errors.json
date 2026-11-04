@@ -632,6 +632,7 @@
     "SOURCE_FORMAT_CHANGED": "[XX-The terms of series {{ series }} have no usable {{ field }}: the official source may have changed its format, or the value is not acceptable-XX]",
     "SOURCE_INCONSISTENT": "[XX-The values of series {{ series }} are inconsistent or out of bounds on {{ field }} ({{ detail }})-XX]",
     "TEMPLATE_NOT_VALIDATED": "[XX-Series {{ series }} was sold before the {{ product }} template was validated ({{ validFrom }}); it needs a curated entry-XX]",
+    "PRODUCT_NOT_SUPPORTED": "[XX-Series {{ series }} is a {{ product }}, a product that is not supported yet-XX]",
     "SERIES_TERMS_CONFLICT": "[XX-Series {{ series }} is already stored with different terms; stored terms are never replaced-XX]",
     "countryCodeInvalid": "[XX-countryCode must be a two-letter country code-XX]",
     "programCodeInvalid": "[XX-programCode must be 1 to 12 capital letters or digits-XX]",

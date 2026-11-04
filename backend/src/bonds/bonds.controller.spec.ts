@@ -782,7 +782,7 @@ describe("BondsController", () => {
       const codes = Object.keys(
         SERIES_ERROR_FALLBACKS,
       ) as SeriesFetchErrorCode[];
-      expect(codes).toHaveLength(10);
+      expect(codes).toHaveLength(11);
       for (const code of codes) {
         const catalogue = (enErrors.bonds as Record<string, string>)[code];
         const interpolated = catalogue.replace(

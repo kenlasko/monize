@@ -1,4 +1,5 @@
 import { POLISH_BOND_ADAPTER } from "./adapters/pl";
+import { UNITED_STATES_BOND_ADAPTER } from "./adapters/us";
 import { BondAdapter } from "./bond-adapter";
 import {
   CalendarRegistry,
@@ -11,6 +12,7 @@ import {
  */
 export const INSTALLED_BOND_ADAPTERS: readonly BondAdapter[] = [
   POLISH_BOND_ADAPTER,
+  UNITED_STATES_BOND_ADAPTER,
 ];
 
 export const BOND_CALENDARS: CalendarRegistry = INSTALLED_BOND_ADAPTERS.reduce(

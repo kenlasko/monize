@@ -19,10 +19,12 @@ const SHARED_SCANNED_FOR_LITERALS = true;
  * Country, currency, publisher and product literals. `_` and digits count as
  * separators (`PL_CPI_GUS_YOY`, `"EDO1036"`, `TOS1029`), so a token is bounded
  * by non-letters; a lowercase token is only a literal when a digit or `_` follows
- * (`edo1036`, `pl_cpi`), which keeps ordinary words out.
+ * (`edo1036`, `pl_cpi`), which keeps ordinary words out. `BOND` is not listed:
+ * it is the domain's own word (`BOND_ERROR_FALLBACKS`); the US product `BOND` is
+ * one of the program codes the adapter's spec names.
  */
 const FORBIDDEN =
-  /(?<![A-Za-z])(?:(?:PLN|PL|TOS|ROR|COI|EDO|OTS|DOR|ROS|ROD|NBP|GUS)(?![A-Za-z])|(?:pln|pl|tos|ror|coi|edo|ots|dor|ros|rod|nbp|gus)(?=[0-9_]))/;
+  /(?<![A-Za-z])(?:(?:PLN|PL|TOS|ROR|COI|EDO|OTS|DOR|ROS|ROD|NBP|GUS|USD|US|BILL|NOTE|TIPS|FRN)(?![A-Za-z])|(?:pln|pl|tos|ror|coi|edo|ots|dor|ros|rod|nbp|gus|usd|us|bill|note|tips|frn)(?=[0-9_])|treasurydirect)/;
 const ADAPTER_IMPORT =
   /from\s+["'][^"']*adapters[^"']*["']|require\(\s*["'][^"']*adapters/;
 

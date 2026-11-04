@@ -135,6 +135,9 @@ export type SeriesFetchErrorCode =
   | "SOURCE_FORMAT_CHANGED"
   | "SOURCE_INCONSISTENT"
   | "TEMPLATE_NOT_VALIDATED"
+  // The series is a product of the country this version cannot value yet (a
+  // security the official source describes but no template covers).
+  | "PRODUCT_NOT_SUPPORTED"
   // Raised by the service, never an adapter: the country has no fetch, or the
   // stored version 1 of the series differs from what was read.
   | "SERIES_FETCH_UNSUPPORTED"

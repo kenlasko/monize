@@ -15,9 +15,7 @@ const PRICE_PLACES = 9;
 
 /** A percent as the fraction the terms store: "4.285000" -> "0.04285". */
 function fractionOf(percent: ExactDecimal): string {
-  return percent
-    .div(ExactDecimal.fromInt(100))
-    .toTrimmedString(RATE_PLACES, 1);
+  return percent.div(ExactDecimal.fromInt(100)).toTrimmedString(RATE_PLACES, 1);
 }
 
 /**

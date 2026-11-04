@@ -75,7 +75,11 @@ export function crossCheckResults(
   );
   const xmlRate = resulted(xml, "InterestRate");
   if (xmlRate === "") throw formatChanged("InterestRate");
-  sameDecimal("interestRate", auction.interestRate.toTrimmedString(9, 0), xmlRate);
+  sameDecimal(
+    "interestRate",
+    auction.interestRate.toTrimmedString(9, 0),
+    xmlRate,
+  );
   if (auction.highPrice !== "" && xmlPrice) {
     sameDecimal("highPrice", auction.highPrice, xmlPrice);
   }

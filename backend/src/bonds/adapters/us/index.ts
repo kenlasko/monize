@@ -1,0 +1,53 @@
+import {
+  BenchmarkFetchError,
+  BondAdapter,
+  BondFetch,
+  BondProgramDefinition,
+} from "../../bond-adapter";
+import { registerCalendar } from "../../domain/calendar-registry";
+import type { CalendarRegistry } from "../../domain/calendar-registry";
+import { programOf } from "./cusip";
+import { fetchSeries } from "./series/fetch-series";
+import { SERIES_PROVIDER } from "./series/series-source";
+import { SERIES_TEMPLATES } from "./series/templates";
+import { usCalendar } from "./us-calendar";
+
+export { usCalendar } from "./us-calendar";
+
+const US_TIMEZONE = "America/New_York";
+
+/** The registry plus the US calendar, for the caller to pass to the engine. */
+export function registerUsCalendars(
+  registry: CalendarRegistry,
+): CalendarRegistry {
+  return registerCalendar(registry, usCalendar);
+}
+
+/** One program per product template: the structure is the template's, the series are a person's. */
+const programs: readonly BondProgramDefinition[] = Object.values(
+  SERIES_TEMPLATES,
+).map(({ structure: { instrument }, infoUrl }) => ({
+  issuerCountryCode: instrument.issuerCountryCode as string,
+  issuerCode: instrument.issuerCode as string,
+  programCode: instrument.programCode as string,
+  currency: instrument.currency as string,
+  faceValue: instrument.faceValue as string,
+  infoUrl,
+}));
+
+export const UNITED_STATES_BOND_ADAPTER: BondAdapter = {
+  countryCode: "US",
+  specDoc: "docs/specs/us-treasury-securities.md",
+  timezone: US_TIMEZONE,
+  registerCalendars: registerUsCalendars,
+  // The CPI-U and 13-week bill benchmarks arrive with TIPS and FRN (phase 4).
+  benchmarks: [],
+  programs,
+  fetchSeries: (seriesCode: string, fetch: BondFetch) =>
+    fetchSeries(seriesCode, fetch),
+  seriesProviderId: SERIES_PROVIDER,
+  programOf,
+  async fetchBenchmark(code: string) {
+    throw new BenchmarkFetchError(`The US adapter has no benchmark ${code}`);
+  },
+};

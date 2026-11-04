@@ -219,7 +219,11 @@ export function readCoupon(
     });
   } catch (error) {
     if (error instanceof CouponScheduleError) {
-      throw inconsistent("firstInterestPaymentDate", firstCouponDate, "regular");
+      throw inconsistent(
+        "firstInterestPaymentDate",
+        firstCouponDate,
+        "regular",
+      );
     }
     throw error;
   }

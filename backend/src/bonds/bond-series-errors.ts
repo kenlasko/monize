@@ -37,6 +37,8 @@ export const SERIES_ERROR_FALLBACKS: Readonly<
     `The values of series ${p.series} are inconsistent or out of bounds on ${p.field} (${p.detail})`,
   TEMPLATE_NOT_VALIDATED: (p) =>
     `Series ${p.series} was sold before the ${p.product} template was validated (${p.validFrom}); it needs a curated entry`,
+  PRODUCT_NOT_SUPPORTED: (p) =>
+    `Series ${p.series} is a ${p.product}, a product that is not supported yet`,
   SERIES_TERMS_CONFLICT: (p) =>
     `Series ${p.series} is already stored with different terms; stored terms are never replaced`,
 };
@@ -90,6 +92,7 @@ export function seriesHttpException(
     case "MANUAL_ENTRY_INVALID":
     case "SOURCE_INCONSISTENT":
     case "TEMPLATE_NOT_VALIDATED":
+    case "PRODUCT_NOT_SUPPORTED":
       return new UnprocessableEntityException(message);
     case "SERIES_TERMS_CONFLICT":
       return new ConflictException(message);
