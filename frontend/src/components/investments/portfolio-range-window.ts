@@ -71,6 +71,24 @@ export const PORTFOLIO_WINDOW_STARTS: Readonly<
   '5y': { kind: 'yearsBefore', years: 5 },
 };
 
+/**
+ * The ranges a portfolio's value and performance are offered over: the
+ * Investments page's value chart and the Investment Performance report show
+ * the same buttons, so the same caption names the same window on both.
+ */
+export const PORTFOLIO_CHART_RANGES = [
+  '1d',
+  '1w',
+  'mtd',
+  '1m',
+  '3m',
+  'ytd',
+  '1y',
+  '2y',
+  '5y',
+  'all',
+] as const;
+
 export interface PortfolioRangeWindow {
   /**
    * The day the series is requested from: the close the figures are measured

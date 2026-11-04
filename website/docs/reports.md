@@ -146,7 +146,7 @@ Monize includes 13 investment reports for comprehensive portfolio analysis.
 
 | Report | Description |
 |--------|-------------|
-| **Investment Performance** | Track portfolio returns, gains/losses, and asset allocation over time. Shows current portfolio value, cost basis, total gain/loss, and return percentage with holdings and allocation views. |
+| **Investment Performance** | Track portfolio returns, gains/losses, and asset allocation over time. Shows current portfolio value and cost basis, and the **Gain/Loss** and **Return** over the period you pick (1D, 1W, MTD, 1M, 3M, YTD, 1Y, 2Y, 5Y or All Time). These are the same windows and the same figures as the Investments page's Portfolio performance card. The holdings table gives each security's Gain/Loss and Return for the same period, including its dividends and the buys and sells in it, plus its **% Change** (the price move alone). A position sold during the period still gets its own row, so the rows add up to the period's total. |
 | **Gains, Dividends & Interest** | Track capital gains and losses (realized and unrealized) alongside dividend and interest income, by month, by day, or by security |
 | **Sector Weightings** | Analyze portfolio sector exposure from individual stocks and ETFs, with drill-down showing direct stock vs ETF exposure per sector |
 | **Realized Gains & Losses** | Track realized gains and losses from sold securities for tax planning and performance review, with proceeds, cost basis, and transaction counts |
@@ -332,6 +332,14 @@ A circular chart showing proportional breakdown. Best for understanding the comp
 ### Viewing a Custom Report
 
 A saved custom report opens with its saved timeframe. Change the **Timeframe** on the report to look at another period without editing it, and choose **Use saved timeframe** to go back. A report that reaches the row limit says so and asks you to narrow the timeframe or filters.
+
+Click a row, bar, slice or legend entry to open the Transactions page over the report's date range with the report's own account, category, payee, tag and search filters applied:
+
+- A transaction in an ungrouped list opens on the page that holds it, briefly highlighted
+- A category, payee or tag narrows the list to the one you clicked
+- A year, month, week or day narrows the dates to that period
+
+The Transactions page combines its filters with AND and allows several values per filter, so a filter group that mixes two kinds of condition (for example *account OR category*), or two groups on the same kind, is left off and the page lists more than the report rather than fewer. The report's direction (income or expenses only) and its transfer setting are not carried over either.
 
 ---
 

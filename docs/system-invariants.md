@@ -1836,6 +1836,16 @@ Enforcement         investedPeriodResult
                     definitions, the truth table, the twelve numerical cases
                     and the test matrix; section 11 does the same for the
                     money-weighted figure.
+                    The Investment Performance report's cards read the same
+                    route for its window, and its holdings rows read
+                    GET /net-worth/investments-period-result/securities: the
+                    same investedPeriodResult run over each security's own
+                    component of IV and its own capital and income rows
+                    (securityPeriodResults,
+                    backend/src/net-worth/security-period-result.util.ts),
+                    over the window PortfolioPeriodResultService.measuredFrom
+                    draws, so the rows plus unattributedPnl add up to the
+                    card; docs/specs/investment-performance-report-period.md.
                     foldDailyInvestments and foldMonthlyInvestments carry value
                     and securitiesValue at the money pipeline's 4dp precision
                     (roundMoney), never Math.round to whole units, and
