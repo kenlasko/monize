@@ -918,6 +918,41 @@ describe("AiRelayService", () => {
     });
   });
 
+  describe("the park length", () => {
+    it("parks for the injected length instead of POLL_PARK_MS when one is given", async () => {
+      const short = new AiRelayService(
+        harness.dataSource as unknown as DataSource,
+        attachmentStore,
+        streams,
+        bus,
+        1000,
+      );
+      let result: unknown = "still parked";
+      const poll = short.waitForPrompt(USER, "session-a").then((r) => {
+        result = r;
+      });
+
+      await jest.advanceTimersByTimeAsync(500);
+      expect(result).toBe("still parked");
+      await jest.advanceTimersByTimeAsync(600);
+      await poll;
+      expect(result).toBeNull();
+    });
+
+    it("parks for POLL_PARK_MS when nothing is injected", async () => {
+      let result: unknown = "still parked";
+      const poll = service.waitForPrompt(USER, "session-a").then((r) => {
+        result = r;
+      });
+
+      await jest.advanceTimersByTimeAsync(POLL_PARK_MS - 1000);
+      expect(result).toBe("still parked");
+      await jest.advanceTimersByTimeAsync(2000);
+      await poll;
+      expect(result).toBeNull();
+    });
+  });
+
   describe("the agent row", () => {
     it("keeps one liveness row per user however often the agent polls", async () => {
       const first = service.waitForPrompt(USER, "session-a");

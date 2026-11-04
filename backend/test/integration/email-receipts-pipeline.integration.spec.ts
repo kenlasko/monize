@@ -214,6 +214,12 @@ describe("email receipts pipeline (integration)", () => {
 
   beforeEach(async () => {
     jest.restoreAllMocks();
+    // A poll a test does not feed fails at once, as it would against a closed
+    // port. Unstubbed, it dials the fixture host 8.8.8.8:993 for real and
+    // waits out IMAP_CONNECTION_TIMEOUT_MS (30s) before failing the same way.
+    jest
+      .spyOn(imap, "fetchSince")
+      .mockRejectedValue(new Error("no IMAP fetch was stubbed for this poll"));
     await settlePendingHistoryWrites();
     await cleanTables(db, [
       "single_use_tokens",

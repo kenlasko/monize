@@ -44,11 +44,15 @@ describe("AI relay claim (real PostgreSQL)", () => {
       await createTestUserDirect(db, { email: "relay-claim@test.local" })
     ).id;
     attachments = new RelayAttachmentStore(db);
+    // A short park: an empty poll here proves only that nothing was claimed,
+    // and the real 25 seconds made this file one of the slowest in the suite.
+    // The park itself is the unit spec's subject.
     relay = new AiRelayService(
       db,
       attachments,
       new RelayStreamRegistry(),
       new MemoryEventBus(),
+      250,
     );
     sweeper = new RelaySweeperService(db, attachments);
   });

@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
 
 import {
@@ -73,6 +73,13 @@ export const BUFFER_TTL_MS = 10 * 60 * 1000; // 10 minutes
  * again, so this just bounds one HTTP round-trip.
  */
 const POLL_PARK_MS = 25 * 1000; // 25 seconds
+
+/**
+ * Overrides POLL_PARK_MS. Nothing in the application provides it; a test that
+ * needs an empty poll to come back sooner passes a shorter park, because the
+ * real one keeps a database-backed spec waiting 25 seconds per empty poll.
+ */
+export const RELAY_POLL_PARK_MS = Symbol("RELAY_POLL_PARK_MS");
 
 /**
  * How long a parked waiter goes without re-reading its row when no wake-up
@@ -200,6 +207,9 @@ export class AiRelayService {
     private readonly attachmentStore: RelayAttachmentStore,
     private readonly streams: RelayStreamRegistry,
     @Inject(EVENT_BUS) private readonly bus: EventBus,
+    @Optional()
+    @Inject(RELAY_POLL_PARK_MS)
+    private readonly pollParkMs: number = POLL_PARK_MS,
   ) {}
 
   /**
@@ -276,7 +286,7 @@ export class AiRelayService {
       signal.signal(),
     );
     try {
-      const parkUntil = Date.now() + POLL_PARK_MS;
+      const parkUntil = Date.now() + this.pollParkMs;
       for (;;) {
         const remaining = parkUntil - Date.now();
         if (remaining <= 0) return null;
