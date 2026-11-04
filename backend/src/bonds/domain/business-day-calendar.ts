@@ -23,3 +23,21 @@ export function nthBusinessDayBefore(
   }
   return cursor;
 }
+
+/** A calendar with no business day in this many days is not a calendar. */
+const MAX_SEARCH_DAYS = 366;
+
+/** `date` when it is a business day, else the next business day after it. */
+export function nextBusinessDayOnOrAfter(
+  calendar: BusinessDayCalendar,
+  date: string,
+): string {
+  let cursor = date;
+  for (let i = 0; i <= MAX_SEARCH_DAYS; i += 1) {
+    if (calendar.isBusinessDay(cursor)) return cursor;
+    cursor = addDays(cursor, 1);
+  }
+  throw new RangeError(
+    `Calendar ${calendar.id} has no business day within ${MAX_SEARCH_DAYS} days of ${date}`,
+  );
+}

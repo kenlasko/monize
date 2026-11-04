@@ -67,7 +67,10 @@ export type BondEarlyRedemptionRefusal =
   | 'TERMS_INCOMPLETE';
 
 export interface BondCashFlow {
+  /** The day the money is paid: the period end, or the next business day when the schedule adjusts payments. */
   date: string;
+  /** The unadjusted period end interest accrued to; absent when the payment is not adjusted (it is then `date`). */
+  accrualEndDate?: string;
   type: 'INTEREST' | 'PRINCIPAL';
   /** The whole lot; null only when `status` is UNKNOWN (the rate is not known yet). */
   amount: string | null;

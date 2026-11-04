@@ -10,6 +10,7 @@ import {
   principalAt,
   principalLot,
 } from "./accrual";
+import { paymentDateOf } from "./coupon-accrual";
 import { toMoney, roundLot } from "./rounding";
 import {
   BondEngineInput,
@@ -177,16 +178,22 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
     type: CashFlow["type"],
     amount: ExactDecimal | null,
     projected: boolean,
-  ): CashFlow => ({
-    date: period.end,
-    type,
-    amount: amount === null ? null : lot(amount),
-    status: amount === null ? "UNKNOWN" : projected ? "PROJECTED" : "KNOWN",
-    period: period.index,
-  });
+  ): CashFlow => {
+    const date = paymentDateOf(terms, calendars, period);
+    return {
+      date,
+      ...(date === period.end ? {} : { accrualEndDate: period.end }),
+      type,
+      amount: amount === null ? null : lot(amount),
+      status: amount === null ? "UNKNOWN" : projected ? "PROJECTED" : "KNOWN",
+      period: period.index,
+    };
+  };
   if (!compounding) {
     for (const period of p.schedule) {
-      if (compareYMD(period.end, asOf) <= 0) continue;
+      // Paid on its payment date, which an adjustment moves after the period end.
+      if (compareYMD(paymentDateOf(terms, calendars, period), asOf) <= 0)
+        continue;
       const rate = rates[period.index - 1];
       const coupon =
         rate.rate === null
@@ -196,7 +203,7 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
         flow(period, "INTEREST", coupon, rate.source === "PROJECTED"),
       );
     }
-    if (!matured)
+    if (compareYMD(paymentDateOf(terms, calendars, lastPeriod), asOf) > 0)
       cashflows.push(
         flow(
           lastPeriod,

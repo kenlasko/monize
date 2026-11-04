@@ -256,6 +256,20 @@ Decisions taken in the implementation, where this section left a choice open:
   The accrued interest on a day in a long first period is the sum of the elapsed
   fractions of the quasi-periods it has entered, each from its own start (the
   part of an earlier quasi-period before the dated date is not counted).
+- Payment adjustment: a cash flow is listed while its **payment date** is after
+  `asOf` (a coupon whose unadjusted end has passed but whose payment day has not
+  is still a known cash flow; the principal likewise), `nextPayment` is by
+  payment date, and the lot's `status` is still `MATURED` from the unadjusted
+  maturity. An unknown `calendarId` leaves the unadjusted date and makes the
+  terms incomplete (`termsComplete` and `valuationComplete` false), as it does for
+  every schedule. `CashFlow.accrualEndDate` is **present only when the payment is
+  adjusted** (`date` is then after it); absent, the accrual ended on `date`. It is
+  not written as a copy of `date` because every stored golden case and consumer
+  compares a flow as it is today; `accrualEndOf(flow)` reads it either way.
+  Notifications act on `date`, the day the money arrives.
+- No calendar of any country is added by this change: the adjustment reads the
+  calendar the terms name (`nextBusinessDayOnOrAfter` in
+  `domain/business-day-calendar.ts`), which an adapter registers.
 
 ## 6. P5 a lot's cost and purchased accrued interest
 

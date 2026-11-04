@@ -1,3 +1,9 @@
+import { assertNever } from "../domain/assert-never";
+import {
+  BusinessDayCalendar,
+  nextBusinessDayOnOrAfter,
+} from "../domain/business-day-calendar";
+import { BondTerms } from "../domain/bond-terms";
 import { compareYMD, daysBetween } from "../domain/calendar-date";
 import { ExactDecimal } from "../domain/exact-decimal";
 import { CouponPeriodInfo } from "../domain/period-schedule";
@@ -56,4 +62,39 @@ export function couponFigure(period: CouponAccrualPeriod): UnitFigure {
   return period.coupon !== undefined && period.coupon.kind !== "REGULAR"
     ? "ACCRUED"
     : "AMOUNT";
+}
+
+/**
+ * The day a period's cash flow is paid: its end, or the next business day of the
+ * schedule's calendar when the schedule says so and the end is not one (31 CFR
+ * 356.30, no additional interest). An unknown calendar leaves the end (the
+ * valuation then reports the terms as incomplete).
+ */
+export function paymentDateOf(
+  terms: BondTerms,
+  calendars: ReadonlyMap<string, BusinessDayCalendar>,
+  period: { readonly end: string },
+): string {
+  const { schedule } = terms;
+  switch (schedule.anchor) {
+    case "LOT_PURCHASE_DATE":
+    case "ISSUE_DATE":
+      return period.end;
+    case "COUPON_DATES": {
+      switch (schedule.paymentAdjustment) {
+        case "NONE":
+          return period.end;
+        case "NEXT_BUSINESS_DAY": {
+          const calendar = calendars.get(schedule.calendarId);
+          return calendar === undefined
+            ? period.end
+            : nextBusinessDayOnOrAfter(calendar, period.end);
+        }
+        default:
+          return assertNever(schedule.paymentAdjustment);
+      }
+    }
+    default:
+      return assertNever(schedule);
+  }
 }

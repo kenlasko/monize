@@ -75,7 +75,15 @@ export interface MissingObservation {
 }
 
 export interface CashFlow {
+  /** The day the money is paid: the period end, or the next business day when the schedule adjusts payments. */
   readonly date: string;
+  /**
+   * The end of the period the flow pays for, unadjusted: interest accrues to it
+   * whatever the payment day. Set only when the payment is adjusted (`date` is
+   * then after it); absent means the accrual ended on `date`: read it through
+   * `accrualEndOf`.
+   */
+  readonly accrualEndDate?: string;
   readonly type: "INTEREST" | "PRINCIPAL";
   /** The whole lot, in the terms' money decimals; null only when `status` is UNKNOWN. */
   readonly amount: string | null;
@@ -85,6 +93,11 @@ export interface CashFlow {
    */
   readonly status: "KNOWN" | "PROJECTED" | "UNKNOWN";
   readonly period: number;
+}
+
+/** The day the interest of a flow accrued to: `accrualEndDate`, else its payment `date`. */
+export function accrualEndOf(flow: CashFlow): string {
+  return flow.accrualEndDate ?? flow.date;
 }
 
 /** The terms' rate rule as stated, in plain fields; fractions are strings. */
