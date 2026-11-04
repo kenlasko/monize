@@ -457,7 +457,7 @@ export function SecurityForm({ security, defaults, onSubmit, onCancel, onDirtyCh
       if (result.provider) details.push(`Provider: ${t(`form.providers.${result.provider}`)}`);
       toast.success(t('form.toasts.found', { details: details.join(', ') }));
     },
-    [setValue, lookupProvider, userDefaultProvider, t],
+    [setValue, lookupProvider, userDefaultProvider, t, setCurrencyNotReported],
   );
 
   const handleLookup = useCallback(async () => {
