@@ -109,6 +109,12 @@ export function InvestmentPerformanceHoldingsTable({
     value == null ? 'text-gray-500 dark:text-gray-400' : gainLossColor(value);
 
   const unattributed = period.results?.unattributedPnl ?? null;
+  // A measured window whose rows naming no security did not convert: the
+  // line stays, as unknown, so the rows are not read as the whole gain.
+  const unattributedUnknown =
+    period.status === 'ready' &&
+    (period.results?.reasons.length ?? 0) === 0 &&
+    period.results?.unattributedPnl === null;
 
   // The causes, said once under the table and naming the securities: a
   // withheld figure is only honest if the reader learns which and why.
@@ -132,6 +138,16 @@ export function InvestmentPerformanceHoldingsTable({
     );
     if (unconverted.length > 0) {
       notices.push(t('investmentPerformance.periodNoRate', { symbols: unconverted.join(', ') }));
+    }
+    const noBase = symbolsWhere(
+      rows,
+      (p) => p.investmentPnl !== null && p.investmentReturnPercent === null,
+    );
+    if (noBase.length > 0) {
+      notices.push(t('investmentPerformance.returnNoBase', { symbols: noBase.join(', ') }));
+    }
+    if (unattributedUnknown) {
+      notices.push(t('investmentPerformance.unattributedNoRate'));
     }
     const split = symbolsWhere(rows, (p) => p.priceChangeReason === 'splitInWindow');
     if (split.length > 0) {
@@ -294,7 +310,7 @@ export function InvestmentPerformanceHoldingsTable({
                 </React.Fragment>
               );
             })}
-            {unattributed !== null && unattributed !== 0 && (
+            {((unattributed !== null && unattributed !== 0) || unattributedUnknown) && (
               <tr
                 role="row"
                 data-testid="unattributed-row"
@@ -309,7 +325,7 @@ export function InvestmentPerformanceHoldingsTable({
                 <td role="cell" className={`${CELL_PLACEMENT.marketValue} ${FIGURE_CELL}`} />
                 <td role="cell" className={`${CELL_PLACEMENT.gainLoss} ${colourOf(unattributed)} ${FIGURE_CELL}`}>
                   <CellLabel className={CAPTION_CLASS}>{columns.gainLoss.label}</CellLabel>
-                  {periodMoney(unattributed)}
+                  {periodMoney(unattributed) ?? t('investmentPerformance.na')}
                 </td>
                 <td role="cell" className={`${CELL_PLACEMENT.gainLossPercent} ${FIGURE_CELL}`} />
                 <td role="cell" className={`${CELL_PLACEMENT.priceChangePercent} ${FIGURE_CELL}`} />

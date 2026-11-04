@@ -828,7 +828,9 @@
     "periodUnpriced": "[XX-Gain/Loss and Return are N/A for {symbols}: a day in this period has no price for them. Refresh prices, or add one on the security's price history.-XX]",
     "periodNoRate": "[XX-Gain/Loss and Return are N/A for {symbols}: this period needs an exchange rate the stored history does not have. Add rate history for the currency on the Currencies page.-XX]",
     "priceChangeSplit": "[XX-% Change is N/A for {symbols}: the security split during this period, so its prices before and after the split are not comparable.-XX]",
-    "priceChangeNoClose": "[XX-% Change is N/A for {symbols}: there is no price on or before the start or the end of this period.-XX]"
+    "priceChangeNoClose": "[XX-% Change is N/A for {symbols}: there is no price on or before the start or the end of this period.-XX]",
+    "returnNoBase": "[XX-Return is N/A for {symbols}: nothing was invested in them during this period, so there is no amount to measure a return against.-XX]",
+    "unattributedNoRate": "[XX-Income not tied to a security is N/A: this period needs an exchange rate the stored history does not have. Add rate history for the currency on the Currencies page.-XX]"
   },
   "investmentTransactions": {
     "totalTransactions": "[XX-Total Transactions-XX]",

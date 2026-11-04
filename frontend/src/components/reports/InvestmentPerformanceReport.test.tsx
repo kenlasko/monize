@@ -495,6 +495,31 @@ describe('InvestmentPerformanceReport', () => {
       expect(notices).toHaveTextContent('% Change is N/A for XIC: the security split');
     });
 
+    it('explains a return with no base and income that did not convert', async () => {
+      mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      mockSecurityPeriodResults.mockResolvedValue(
+        securityResults(
+          [
+            periodRow('sec-vfv'),
+            // Sold before the window, a dividend inside it: an amount, no ratio.
+            periodRow('sec-gone', {
+              endQuantity: 0,
+              investmentPnl: 30,
+              investmentReturnPercent: null,
+              investedReasons: ['zeroStart'],
+            }),
+          ],
+          null,
+        ),
+      );
+      render(<InvestmentPerformanceReport />);
+      const notices = await screen.findByTestId('period-notices');
+      expect(notices).toHaveTextContent('Return is N/A for GONE');
+      expect(notices).toHaveTextContent('Income not tied to a security is N/A');
+      expect(screen.getByTestId('unattributed-row')).toHaveTextContent('N/A');
+    });
+
     it('says the cards failed to load rather than waiting forever', async () => {
       mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
       mockGetInvestmentAccounts.mockResolvedValue([]);
