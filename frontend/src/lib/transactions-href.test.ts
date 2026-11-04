@@ -38,3 +38,33 @@ describe('buildTransactionsHref', () => {
     expect(new URLSearchParams(href.split('?')[1]).get('categoryId')).toBe('a&b=c');
   });
 });
+
+describe('buildTransactionsHref with a report drill-down', () => {
+  it('carries every list, the search, the account status and the target row', () => {
+    const href = buildTransactionsHref({
+      categoryIds: ['c-1', 'c-2'],
+      accountIds: ['a-1'],
+      accountStatus: 'all',
+      payeeIds: ['p-1'],
+      tagIds: ['t-1'],
+      search: 'gift, wrap',
+      startDate: '2025-01-01',
+      endDate: '2025-12-31',
+      targetTransactionId: 'tx-1',
+    });
+    const params = new URLSearchParams(href.split('?')[1]);
+    expect(params.get('categoryIds')).toBe('c-1,c-2');
+    expect(params.get('accountIds')).toBe('a-1');
+    expect(params.get('accountStatus')).toBe('all');
+    expect(params.get('payeeIds')).toBe('p-1');
+    expect(params.get('tagIds')).toBe('t-1');
+    expect(params.get('search')).toBe('gift, wrap');
+    expect(params.get('targetTransactionId')).toBe('tx-1');
+  });
+
+  it('leaves out empty lists and a blank search', () => {
+    expect(buildTransactionsHref({ categoryIds: [], payeeIds: [], tagIds: [], search: '' })).toBe(
+      '/transactions',
+    );
+  });
+});
