@@ -28,6 +28,7 @@ import {
   type CashFilterValues,
 } from '@/components/investments/CashRegisterFilters';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
+import { investmentTransactionModalClass } from '@/components/investments/investment-transaction-modal';
 import { TransactionList } from '@/components/transactions/TransactionList';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import {
@@ -419,7 +420,7 @@ export function InvestmentRegisterPanel({
         onClose={closeBrokerageForm}
         {...brokerageForm.modalProps}
         maxWidth={brokerageFormNeedsConversion ? '3xl' : 'xl'}
-        className="p-6"
+        className={investmentTransactionModalClass(brokerageFormNeedsConversion)}
         // The same title the Investments page's copy of this modal carries,
         // from the same keys: one register drawn on two pages should not
         // announce itself differently on each.

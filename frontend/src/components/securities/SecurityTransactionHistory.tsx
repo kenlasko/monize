@@ -9,6 +9,7 @@ import { CAPTION_CLASS, CellLabel } from '@/components/ui/Table';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SecurityShareAdjustmentForm } from './SecurityShareAdjustmentForm';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
+import { investmentTransactionModalClass } from '@/components/investments/investment-transaction-modal';
 import { investmentsApi } from '@/lib/investments';
 import { accountsApi } from '@/lib/accounts';
 import { getErrorMessage } from '@/lib/errors';
@@ -287,8 +288,8 @@ export function SecurityTransactionHistory({
       <Modal
         isOpen={!!editTransaction}
         onClose={() => setEditTransaction(null)}
-        maxWidth="lg"
-        className="p-6"
+        maxWidth="xl"
+        className={investmentTransactionModalClass(false)}
         pushHistory
       >
         {editTransaction && (

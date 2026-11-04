@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, within } from '@/test/render';
 import toast from 'react-hot-toast';
+import { chooseComboboxOption } from '@/test/combobox';
 import { InvestmentTransactionForm } from './InvestmentTransactionForm';
 import { investmentsApi } from '@/lib/investments';
 
@@ -109,16 +110,16 @@ async function openForm(props: Record<string, unknown> = {}) {
   });
 }
 
+/** The Security field lists each fixture by its symbol. */
+const SECURITY_SYMBOLS: Record<string, string> = { 'sec-edo': 'EDO', 'sec-tos': 'TOS', 'sec-stock': 'CDR' };
+
 async function pickSecurity(id: string, action?: string) {
   if (action) {
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Transaction Type'), { target: { value: action } });
     });
   }
-  await waitFor(() => expect(within(screen.getByLabelText('Security')).getAllByRole('option').length).toBeGreaterThan(1));
-  await act(async () => {
-    fireEvent.change(screen.getByLabelText('Security'), { target: { value: id } });
-  });
+  await chooseComboboxOption('Security', `${SECURITY_SYMBOLS[id]} - `);
 }
 
 const seriesSelect = () => screen.findByLabelText('Bond series') as Promise<HTMLSelectElement>;

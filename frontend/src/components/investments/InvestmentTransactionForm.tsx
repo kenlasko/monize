@@ -12,6 +12,7 @@ import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { NumericInput } from '@/components/ui/NumericInput';
 import { Select } from '@/components/ui/Select';
+import { Combobox } from '@/components/ui/Combobox';
 import { Modal } from '@/components/ui/Modal';
 import { SecurityForm } from '@/components/securities/SecurityForm';
 import {
@@ -152,10 +153,32 @@ interface InvestmentTransactionFormProps {
   onCreateAndNew?: () => void;
 }
 
+/** What the Transaction Type select holds: a stored action, or the create-only 'TRANSFER'. */
+type InvestmentFormAction = InvestmentTransactionFormData['action'];
+
 interface InvestmentTransactionFormFieldsProps
   extends InvestmentTransactionFormProps {
-  /** Set by the wrapper below; carries the account the entry was filed against. */
-  onCreateAnother?: (accountId: string) => void;
+  /**
+   * Set by the wrapper below; carries the account the entry was filed against
+   * and the transaction type it was saved as.
+   */
+  onCreateAnother?: (accountId: string, action: InvestmentFormAction) => void;
+  /** The type a new entry starts as: the one just saved, after "Create & New". */
+  defaultAction?: InvestmentFormAction;
+}
+
+/** How a security reads in the Security field and its list. */
+const securityOptionLabel = (s: Pick<Security, 'symbol' | 'name' | 'currencyCode'>): string =>
+  `${s.symbol} - ${s.name} (${s.currencyCode})`;
+
+/**
+ * What a "+ Create" typed into the Security field prefills the new security
+ * with: a single word reads as a ticker, anything with a space as its name.
+ */
+export function securityDefaultsFromTypedText(text: string): Partial<CreateSecurityData> {
+  const trimmed = text.trim();
+  if (!trimmed) return {};
+  return /\s/.test(trimmed) ? { name: trimmed } : { symbol: trimmed.toUpperCase() };
 }
 
 // Actions that require a security selection. Transfers (the combined create
@@ -236,6 +259,7 @@ function InvestmentTransactionFormFields({
   onConversionStateChange,
   submitRef,
   onCreateAnother,
+  defaultAction,
 }: InvestmentTransactionFormFieldsProps) {
   const t = useTranslations('investments');
   // Status strings are shared with the cash register's form.
@@ -275,7 +299,10 @@ function InvestmentTransactionFormFields({
   const canCreateAnother = !transaction && !!onCreateAnother;
   const [securities, setSecurities] = useState<Security[]>([]);
   const [securitiesLoaded, setSecuritiesLoaded] = useState(false);
-  const [showSecurityModal, setShowSecurityModal] = useState(false);
+  // The new-security dialog, opened from the Security field's "+ Create";
+  // `null` is closed, otherwise the values the typed text prefills.
+  const [newSecurityDefaults, setNewSecurityDefaults] =
+    useState<Partial<CreateSecurityData> | null>(null);
   // The server's refusal about the bond series, said under the series select.
   const [bondSeriesError, setBondSeriesError] = useState<string | null>(null);
   // Holding state replayed up to the SPLIT's transaction date, used for the
@@ -381,7 +408,7 @@ function InvestmentTransactionFormFields({
         }
       : {
           accountId: defaultAccountId || '',
-          action: 'BUY',
+          action: defaultAction ?? 'BUY',
           transactionDate:
             defaultDate ||
             getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY),
@@ -969,7 +996,7 @@ function InvestmentTransactionFormFields({
         .filter((h) => Number(h.quantity) >= 0.0001 && h.security)
         .map((h) => ({
           value: h.securityId,
-          label: `${h.security.symbol} - ${h.security.name} (${h.security.currencyCode})`,
+          label: securityOptionLabel(h.security),
         })),
     [transferSourceHoldings],
   );
@@ -988,8 +1015,8 @@ function InvestmentTransactionFormFields({
     try {
       const created = await investmentsApi.createSecurity(data);
       setSecurities((prev) => [...prev, created]);
-      setValue('securityId', created.id);
-      setShowSecurityModal(false);
+      setValue('securityId', created.id, { shouldDirty: true, shouldValidate: true });
+      setNewSecurityDefaults(null);
       toast.success(t('transactionForm.toastSecurityCreated'));
     } catch (error) {
       toast.error(getErrorMessage(error, t('transactionForm.toastSecurityCreateFailed')));
@@ -1019,12 +1046,13 @@ function InvestmentTransactionFormFields({
   /**
    * Hand back to the host after a successful *create*. With "Create & New"
    * selected the form restarts in place (the wrapper remounts it, pre-filled
-   * with this account and the date just used) and the modal stays open;
+   * with this account, the transaction type and the date just used) and the
+   * modal stays open;
    * otherwise this is the ordinary `onSuccess` that closes it.
    */
-  const finishAfterCreate = (accountId: string) => {
+  const finishAfterCreate = (accountId: string, action: InvestmentFormAction) => {
     if (canCreateAnother && submitMode === 'new') {
-      onCreateAnother?.(accountId);
+      onCreateAnother?.(accountId, action);
       return;
     }
     onSuccess?.();
@@ -1080,7 +1108,7 @@ function InvestmentTransactionFormFields({
           LAST_INVESTMENT_TRANSACTION_DATE_KEY,
           data.transactionDate,
         );
-        finishAfterCreate(data.accountId);
+        finishAfterCreate(data.accountId, data.action);
         return;
       }
 
@@ -1255,7 +1283,7 @@ function InvestmentTransactionFormFields({
           LAST_INVESTMENT_TRANSACTION_DATE_KEY,
           data.transactionDate,
         );
-        finishAfterCreate(data.accountId);
+        finishAfterCreate(data.accountId, data.action);
       }
     } catch (error) {
       const message = getErrorMessage(error, t('transactionForm.toastSaveFailed'));
@@ -1416,44 +1444,48 @@ function InvestmentTransactionFormFields({
         />
       )}
 
-      {/* Security Selection - only for actions that need it */}
+      {/* Security Selection - only for actions that need it. The same picker
+          as the cash form's Payee and Category: type to filter, or "+ Create"
+          a security that does not exist yet. A transfer can only move a
+          security the source account holds, so it offers no Create. */}
       {(needsSecurity || transferMode || isUnpairedTransferIn) && (
-        <div className="space-y-2">
-          <Select
-            label={t('transactionForm.security')}
-            error={errors.securityId?.message}
-            options={[
-              {
-                value: '',
-                label: isTransfer
-                  ? watchedAccountId
-                    ? transferSecurityOptions.length > 0
-                      ? t('transactionForm.selectSecurity')
-                      : t('transactionForm.noSecuritiesHeld')
-                    : t('transactionForm.selectFromAccountFirst')
-                  : t('transactionForm.selectSecurity'),
-              },
-              ...(isTransfer
-                ? transferSecurityOptions
-                : securities.map((s) => ({
-                    value: s.id,
-                    label: `${s.symbol} - ${s.name} (${s.currencyCode})`,
-                  }))),
-            ]}
-            {...register('securityId')}
-          />
-          {/* Transfers can only move securities already held, so adding a new
-              one here makes no sense. */}
-          {!transferMode && (
-            <button
-              type="button"
-              onClick={() => setShowSecurityModal(true)}
-              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-            >
-              {t('transactionForm.addNewSecurity')}
-            </button>
-          )}
-        </div>
+        <Combobox
+          label={t('transactionForm.security')}
+          aria-label={t('transactionForm.security')}
+          placeholder={
+            isTransfer
+              ? watchedAccountId
+                ? transferSecurityOptions.length > 0
+                  ? t('transactionForm.selectSecurity')
+                  : t('transactionForm.noSecuritiesHeld')
+                : t('transactionForm.selectFromAccountFirst')
+              : transferMode
+                ? t('transactionForm.selectSecurity')
+                : t('transactionForm.selectOrCreateSecurity')
+          }
+          options={
+            isTransfer
+              ? transferSecurityOptions
+              : securities.map((s) => ({
+                  value: s.id,
+                  label: securityOptionLabel(s),
+                }))
+          }
+          value={watchedSecurityId || ''}
+          initialDisplayValue={transaction?.security ? securityOptionLabel(transaction.security) : ''}
+          onChange={(securityId) =>
+            setValue('securityId', securityId, { shouldDirty: true, shouldValidate: true })
+          }
+          onCreateNew={
+            transferMode
+              ? undefined
+              : (text) => setNewSecurityDefaults(securityDefaultsFromTypedText(text))
+          }
+          allowCustomValue={!transferMode}
+          valueIsId
+          usePortal
+          error={errors.securityId?.message}
+        />
       )}
 
       {/* The series a share-moving row of a bond program acts on */}
@@ -1469,9 +1501,10 @@ function InvestmentTransactionFormFields({
         />
       )}
 
-      {/* Quantity and Price - for buy/sell/reinvest */}
+      {/* Quantity, Price and Commission on one line - for buy/sell/reinvest
+          and every refinement of them (a redemption is a SELL) */}
       {needsQuantityPrice && (
-        <div className={`grid gap-4 ${needsConversion ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <NumericInput
             label={t('transactionForm.quantityShares')}
             value={watchedQuantity || undefined}
@@ -1493,16 +1526,14 @@ function InvestmentTransactionFormFields({
             min={0}
             error={errors.price?.message}
           />
-          {needsConversion && (
-            <CurrencyInput
-              label={t('transactionForm.commissionFees')}
-              prefix={currencySymbol}
-              value={watchedCommission || undefined}
-              onChange={(value) => setValue('commission', value, { shouldValidate: true })}
-              error={errors.commission?.message}
-              allowNegative={false}
-            />
-          )}
+          <CurrencyInput
+            label={t('transactionForm.commissionFees')}
+            prefix={currencySymbol}
+            value={watchedCommission || undefined}
+            onChange={(value) => setValue('commission', value, { shouldValidate: true })}
+            error={errors.commission?.message}
+            allowNegative={false}
+          />
         </div>
       )}
 
@@ -1670,18 +1701,6 @@ function InvestmentTransactionFormFields({
             {t('transactionForm.transferCostNote')}
           </div>
         </div>
-      )}
-
-      {/* Commission - rendered inline with qty/price when conversion is shown */}
-      {needsQuantityPrice && !needsConversion && (
-        <CurrencyInput
-          label={t('transactionForm.commissionFees')}
-          prefix={currencySymbol}
-          value={watchedCommission || undefined}
-          onChange={(value) => setValue('commission', value, { shouldValidate: true })}
-          error={errors.commission?.message}
-          allowNegative={false}
-        />
       )}
 
       {/* Accrued interest -- a redemption alone pays it, and it rides on the
@@ -1872,13 +1891,14 @@ function InvestmentTransactionFormFields({
       />
     </form>
 
-    <Modal isOpen={showSecurityModal} onClose={() => setShowSecurityModal(false)} maxWidth="lg" className="p-6">
+    <Modal isOpen={newSecurityDefaults !== null} onClose={() => setNewSecurityDefaults(null)} maxWidth="lg" className="p-6">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
         {t('transactionForm.newSecurity')}
       </h2>
       <SecurityForm
+        defaults={newSecurityDefaults ?? undefined}
         onSubmit={handleSecurityCreated}
-        onCancel={() => setShowSecurityModal(false)}
+        onCancel={() => setNewSecurityDefaults(null)}
       />
     </Modal>
     </>
@@ -1894,17 +1914,21 @@ function InvestmentTransactionFormFields({
  * derived state -- the action, the security, the split-ratio pair, the holding
  * preview, the transfer's linked leg -- so it is restarted by remounting it
  * under a new key rather than by a field-by-field reset that would quietly miss
- * one of them. The account just used is passed back in as the default (the date
- * comes from the same remembered value a fresh open reads), so the next entry
- * starts where the last one left off.
+ * one of them. The account and the transaction type just used are passed back
+ * in as the defaults (the date comes from the same remembered value a fresh
+ * open reads), so the next entry starts where the last one left off.
  */
 export function InvestmentTransactionForm(props: InvestmentTransactionFormProps) {
   const { onCreateAndNew, defaultAccountId } = props;
-  const [restart, setRestart] = useState<{ n: number; accountId: string } | null>(null);
+  const [restart, setRestart] = useState<{
+    n: number;
+    accountId: string;
+    action: InvestmentFormAction;
+  } | null>(null);
 
   const handleCreateAnother = useCallback(
-    (accountId: string) => {
-      setRestart((prev) => ({ n: (prev?.n ?? 0) + 1, accountId }));
+    (accountId: string, action: InvestmentFormAction) => {
+      setRestart((prev) => ({ n: (prev?.n ?? 0) + 1, accountId, action }));
       onCreateAndNew?.();
     },
     [onCreateAndNew],
@@ -1915,6 +1939,7 @@ export function InvestmentTransactionForm(props: InvestmentTransactionFormProps)
       {...props}
       key={restart?.n ?? 0}
       defaultAccountId={restart?.accountId ?? defaultAccountId}
+      defaultAction={restart?.action}
       onCreateAnother={onCreateAndNew ? handleCreateAnother : undefined}
     />
   );
