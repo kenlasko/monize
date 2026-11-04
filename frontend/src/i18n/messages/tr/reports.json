@@ -1168,6 +1168,7 @@
     "transferTo": "Alıcı",
     "overallTotal": "Genel toplam",
     "includeCurrentMonth": "Mevcut ayı dahil et",
+    "summaryOnly": "Yalnızca özet",
     "csvParentColumn": "Ana kategori"
   },
   "monthlyComparison": {

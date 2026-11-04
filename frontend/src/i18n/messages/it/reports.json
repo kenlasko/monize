@@ -1168,6 +1168,7 @@
     "transferTo": "A",
     "overallTotal": "Totale complessivo",
     "includeCurrentMonth": "Includi mese corrente",
+    "summaryOnly": "Solo riepilogo",
     "csvParentColumn": "Categoria principale"
   },
   "monthlyComparison": {

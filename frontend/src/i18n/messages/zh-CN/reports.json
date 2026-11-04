@@ -1168,6 +1168,7 @@
     "transferTo": "转入至",
     "overallTotal": "总计",
     "includeCurrentMonth": "包含当月",
+    "summaryOnly": "仅显示摘要",
     "csvParentColumn": "父分类"
   },
   "monthlyComparison": {
