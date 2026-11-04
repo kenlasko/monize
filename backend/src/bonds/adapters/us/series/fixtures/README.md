@@ -1,0 +1,17 @@
+# Fixtures of the US series fetch
+
+Read by `../fetch-series.spec.ts`, `../results-xml.spec.ts` and the golden specs.
+No test touches the network. Country spec: `docs/specs/us-treasury-securities.md`
+(section 10 lists what is still to verify against live responses).
+
+| File | Status | What it is |
+| --- | --- | --- |
+| `R_20260428_1.xml` | RECORDED | The official results file of the 2-year FRN `91282CQM6` (auction 2026-04-28), saved verbatim from https://www.treasurydirect.gov/xml/R_20260428_1.xml on 2026-11-04. The only recorded file. |
+| `ta-ws-912797WM5.json` | CONSTRUCTED | The `TA_WS` `search?cusip=912797WM5` answer for the 26-week bill of discussion kenlasko/monize#1908 (issue 2026-10-01, maturity 2027-04-01, 4.285 %, price 97.833694), built from the values reported there. Field names and value formats are inferred. |
+| `R_20260929_1.xml` | CONSTRUCTED | The results file of that bill, the element structure of `R_20260428_1.xml` with the bill's values. |
+| `ta-ws-91282CZK0.json` | CONSTRUCTED | A 2-year note with a semiannual coupon (3.75 %, dated and issued 2026-09-30, maturing 2028-09-30, first coupon 2027-03-31) and a reopening of it in the same array. The CUSIP is built to have a valid check digit; it names no real security. |
+| `R_20260928_1.xml` | CONSTRUCTED | The results file of that note's original auction, the element structure of `R_20260428_1.xml` with the note's values. |
+| `ta-ws-91282CQM6.json` | CONSTRUCTED | The `TA_WS` record of the recorded FRN, built from `R_20260428_1.xml` (no recorded JSON exists); the fetch refuses it in this phase (`PRODUCT_NOT_SUPPORTED`). |
+
+A constructed file proves the code path, not the live format. When a live
+response is recorded, replace the constructed file and delete its line above.

@@ -1,0 +1,42 @@
+[
+  {
+    "cusip": "91282CZK0",
+    "securityType": "Note",
+    "securityTerm": "2-Year",
+    "datedDate": "2026-09-30T00:00:00",
+    "firstInterestPaymentDate": "2027-03-31T00:00:00",
+    "maturityDate": "2028-09-30T00:00:00",
+    "interestPaymentFrequency": "Semi-Annual",
+    "interestRate": "3.750000",
+    "spread": "",
+    "refCpiOnDatedDate": "",
+    "highDiscountRate": "",
+    "floatingRate": "No",
+    "inflationIndexSecurity": "No",
+    "auctionDate": "2026-09-28T00:00:00",
+    "issueDate": "2026-09-30T00:00:00",
+    "highPrice": "99.987654",
+    "reopening": "No",
+    "xmlFilenameCompetitiveResults": "R_20260928_1.xml"
+  },
+  {
+    "cusip": "91282CZK0",
+    "securityType": "Note",
+    "securityTerm": "2-Year",
+    "datedDate": "2026-09-30T00:00:00",
+    "firstInterestPaymentDate": "2027-03-31T00:00:00",
+    "maturityDate": "2028-09-30T00:00:00",
+    "interestPaymentFrequency": "Semi-Annual",
+    "interestRate": "3.750000",
+    "spread": "",
+    "refCpiOnDatedDate": "",
+    "highDiscountRate": "",
+    "floatingRate": "No",
+    "inflationIndexSecurity": "No",
+    "auctionDate": "2026-10-27T00:00:00",
+    "issueDate": "2026-10-30T00:00:00",
+    "highPrice": "100.254321",
+    "reopening": "Yes",
+    "xmlFilenameCompetitiveResults": "R_20261027_1.xml"
+  }
+]
