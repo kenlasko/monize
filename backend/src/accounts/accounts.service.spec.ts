@@ -1,3 +1,4 @@
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import { Test, TestingModule } from "@nestjs/testing";
 import { I18nContext } from "nestjs-i18n";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -236,6 +237,7 @@ describe("AccountsService", () => {
     };
     rateChangeRepository = { find: jest.fn().mockResolvedValue([]) };
     const { manager: txManager, dataSource } = createScopedDbMocks([
+      [LoanFee, { find: jest.fn().mockResolvedValue([]) }],
       [Account, accountsRepository],
       [Transaction, transactionRepository],
       [InvestmentTransaction, investmentTxRepository],
@@ -340,6 +342,36 @@ describe("AccountsService", () => {
   });
 
   describe("create", () => {
+    it.each([
+      ["a loan", { accountType: AccountType.LOAN }],
+      [
+        "a mortgage without its scheduled payment",
+        { accountType: AccountType.MORTGAGE },
+      ],
+    ])(
+      "refuses fees on %s before anything is written",
+      async (_label, shape) => {
+        await expect(
+          service.create("user-1", {
+            name: "Debt",
+            currencyCode: "CAD",
+            openingBalance: 1000,
+            ...shape,
+            loanFees: [
+              {
+                categoryId: "cat-tax",
+                name: "Tax",
+                calculation: "FIXED",
+                basis: "PER_PAYMENT",
+                amount: 10,
+              },
+            ],
+          } as any),
+        ).rejects.toThrow(BadRequestException);
+        expect(accountsRepository.save).not.toHaveBeenCalled();
+      },
+    );
+
     it("creates a basic account with opening balance", async () => {
       await service.create("user-1", {
         name: "New Account",

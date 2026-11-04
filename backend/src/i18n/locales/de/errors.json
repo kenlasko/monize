@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "Zahlungsabgleich gilt nur für Hypotheken und Kredite",
     "paymentMatchingRequiresSchedule": "Der Zahlungsabgleich benötigt die geplante Zahlung des Kredits. Richten Sie zuerst seine Zahlungen ein.",
     "paymentMatchingRuleExists": "Dieser Kredit hat bereits eine Regel für den Zahlungsabgleich",
-    "paymentMatchingFailed": "Der Kredit wurde gespeichert, aber seine Regel für den Zahlungsabgleich konnte nicht erstellt werden. Erstellen Sie sie in den Kreditdetails."
+    "paymentMatchingFailed": "Der Kredit wurde gespeichert, aber seine Regel für den Zahlungsabgleich konnte nicht erstellt werden. Erstellen Sie sie in den Kreditdetails.",
+    "interestCategoryIsLoanFee": "Diese Kategorie wird bereits von einer der Gebühren der Hypothek verwendet. Wählen Sie eine andere Kategorie für die Zinsen oder ändern Sie zuerst die Gebühr."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Diese Bearbeitung hat Aufteilungszeilen geändert, die Geld auf andere Konten verschieben, daher kann sie nicht automatisch rückgängig gemacht werden. Bearbeiten Sie die Transaktion, um sie zurückzusetzen.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL muss eine http- oder https-Adresse sein",
       "invalidField": "{{ field }} ist ungültig"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Jede Hypothekengebühr benötigt eine eigene Kategorie.",
+    "valueMismatch": "Eine feste Gebühr erfordert einen Betrag und eine prozentuale Gebühr einen Satz.",
+    "interestCategory": "Eine Hypothekengebühr kann nicht die Zinskategorie der Hypothek verwenden.",
+    "invalidCategory": "Wählen Sie für jede Hypothekengebühr eine Ihrer eigenen Kategorien.",
+    "unpriceable": "Die Gebühr \"{{ name }}\" kann nicht berechnet werden: Die Hypothek hat keine ursprüngliche Darlehenssumme. Geben Sie zuerst den ursprünglich geliehenen Betrag ein.",
+    "ambiguousLine": "Die geplante Zahlung hat bereits mehrere Zeilen in der Kategorie der Gebühr \"{{ name }}\". Entfernen Sie zuerst die überzähligen Zeilen aus der geplanten Zahlung.",
+    "mortgageOnly": "Nur Hypothekenkonten können Gebühren haben.",
+    "mortgageScheduleOnly": "Gebühren können nur einer Hypothek mit ihrer geplanten Zahlung hinzugefügt werden.",
+    "paymentMatchingUnsupported": "Der Zahlungsabgleich kann eine Hypothekenzahlung mit Gebühren noch nicht verrechnen. Schalten Sie den Zahlungsabgleich aus oder entfernen Sie die Gebühren."
   }
 }

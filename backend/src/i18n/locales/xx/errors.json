@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "[XX-Payment matching applies to mortgages and loans only-XX]",
     "paymentMatchingRequiresSchedule": "[XX-Payment matching needs the loan's scheduled payment. Set up its payments first.-XX]",
     "paymentMatchingRuleExists": "[XX-This loan already has a payment matching rule-XX]",
-    "paymentMatchingFailed": "[XX-The loan was saved, but its payment matching rule could not be created. Create it from the loan's details.-XX]"
+    "paymentMatchingFailed": "[XX-The loan was saved, but its payment matching rule could not be created. Create it from the loan's details.-XX]",
+    "interestCategoryIsLoanFee": "[XX-This category is already used by one of the mortgage's fees. Choose another category for the interest, or change the fee first.-XX]"
   },
   "actionHistory": {
     "undoSplitLegsChanged": "[XX-This edit changed split lines that move money to other accounts, so it cannot be undone automatically. Edit the transaction to change it back.-XX]",
@@ -977,5 +978,16 @@
       "invalidUrl": "[XX-ProductURL must be an http or https address-XX]",
       "invalidField": "[XX-{{ field }} is not valid-XX]"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "[XX-Each mortgage fee needs its own category.-XX]",
+    "valueMismatch": "[XX-A fixed fee takes an amount and a percentage fee takes a rate.-XX]",
+    "interestCategory": "[XX-A mortgage fee cannot use the mortgage's interest category.-XX]",
+    "invalidCategory": "[XX-Choose one of your own categories for each mortgage fee.-XX]",
+    "unpriceable": "[XX-The fee \"{{ name }}\" cannot be worked out: the mortgage has no original principal. Enter the amount originally borrowed first.-XX]",
+    "ambiguousLine": "[XX-The scheduled payment already has several lines in the category of the fee \"{{ name }}\". Remove the extra lines from the scheduled payment first.-XX]",
+    "mortgageOnly": "[XX-Only mortgage accounts can have fees.-XX]",
+    "mortgageScheduleOnly": "[XX-Fees can only be added to a mortgage with its scheduled payment.-XX]",
+    "paymentMatchingUnsupported": "[XX-Payment matching cannot settle a mortgage payment that includes fees yet. Turn off payment matching or remove the fees.-XX]"
   }
 }

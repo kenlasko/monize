@@ -818,5 +818,48 @@
       "paymentBelowInterest": "De termijn ({payment}) is lager dan de maandelijkse rente (ongeveer {interest}) bij {rate}%, dus het saldo daalt nooit. Leg de werkelijke termijn vast (de invoer in de rentegeschiedenis of het betaalbedrag van de rekening) zodat deze de rente dekt.",
       "beyondHorizon": "De termijn dekt de rente, maar de looptijd reikt voorbij de prognosehorizon, dus de aflosdatum en de resterende rente worden niet getoond."
     }
+  },
+  "loanFees": {
+    "title": "Hypotheekkosten",
+    "help": "Verzekeringen, belastingen of andere kosten die met elke hypotheekbetaling worden geïnd. Elke kostenpost wordt een eigen regel van de geplande betaling, geboekt op de categorie die je kiest. Een kostenpost kan een vast bedrag zijn, een percentage van het huidige saldo (bij elke betaling opnieuw berekend) of een percentage van het oorspronkelijke saldo, in rekening gebracht per betaling of per jaar.",
+    "panelDescription": "Kosten die met elke geplande hypotheekbetaling worden geïnd. Opslaan werkt de regels van de volgende betaling bij.",
+    "none": "Met de betaling van deze hypotheek worden geen kosten geïnd.",
+    "name": "Naam van de kostenpost",
+    "category": "Categorie",
+    "calculation": "Berekend als",
+    "basis": "Waarde geldt",
+    "amount": "Bedrag",
+    "rate": "Tarief",
+    "add": "Kostenpost toevoegen",
+    "remove": "Kostenpost verwijderen",
+    "edit": "Kosten bewerken",
+    "editTitle": "Hypotheekkosten",
+    "save": "Kosten opslaan",
+    "cancel": "Annuleren",
+    "saved": "De hypotheekkosten zijn opgeslagen.",
+    "saveFailed": "De hypotheekkosten konden niet worden opgeslagen.",
+    "loading": "Kosten laden...",
+    "loadFailed": "De hypotheekkosten konden niet worden geladen.",
+    "retry": "Opnieuw proberen",
+    "unknownCategory": "Onbekende categorie",
+    "unknownValue": "onbekend",
+    "summaryPerPayment": "{value} per betaling, {calculation}",
+    "summaryAnnual": "{value} per jaar, {calculation}",
+    "paymentMatchingConflict": "Betalingen matchen kan een betaling met kosten nog niet verrekenen. Zet betalingen matchen uit of verwijder de kosten.",
+    "paymentMatchingNote": "Deze hypotheek heeft een regel voor betalingskoppeling. Betalingskoppeling kan een betaling met kosten nog niet verrekenen, dus er kunnen geen kosten worden toegevoegd zolang de regel bestaat.",
+    "calculations": {
+      "fixed": "Vast bedrag",
+      "percentCurrentBalance": "Percentage van het huidige saldo",
+      "percentOriginalBalance": "Percentage van het oorspronkelijke saldo"
+    },
+    "bases": {
+      "perPayment": "Per betaling",
+      "annual": "Per jaar"
+    },
+    "errors": {
+      "required": "Verplicht",
+      "duplicate": "Elke kostenpost heeft een eigen categorie nodig, anders dan de rentecategorie",
+      "range": "Voer een tarief van maximaal 100% in"
+    }
   }
 }

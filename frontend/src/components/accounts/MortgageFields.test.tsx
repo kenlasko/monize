@@ -6,6 +6,7 @@ import { Category } from '@/types/category';
 
 vi.mock('@/lib/categoryUtils', () => ({
   buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, depth: 0 })),
+  buildCategoryLabelMap: (cats: any[]) => new Map(cats.map((c: any) => [c.id, c.name])),
 }));
 
 vi.mock('@/components/ui/Combobox', () => ({
@@ -159,6 +160,67 @@ describe('MortgageFields', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  describe('fees (docs/specs/mortgage-fees.md)', () => {
+    const fee = {
+      key: 'k-1',
+      categoryId: 'cat-2',
+      name: 'Property tax',
+      calculation: 'FIXED' as const,
+      basis: 'ANNUAL' as const,
+      value: 3600,
+    };
+
+    it('offers the fee editor on create and adds a row', () => {
+      const onLoanFeesChange = vi.fn();
+      render(<MortgageFields {...defaultProps} loanFees={[]} onLoanFeesChange={onLoanFeesChange} />);
+      expect(screen.getByText('Mortgage fees')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Add a fee' }));
+      expect(onLoanFeesChange).toHaveBeenCalledWith([
+        expect.objectContaining({ calculation: 'FIXED', basis: 'PER_PAYMENT', value: undefined }),
+      ]);
+    });
+
+    it('switches a fee to a percentage and clears its value', () => {
+      const onLoanFeesChange = vi.fn();
+      render(<MortgageFields {...defaultProps} loanFees={[fee]} onLoanFeesChange={onLoanFeesChange} />);
+      fireEvent.change(screen.getByLabelText('Calculated as'), {
+        target: { value: 'PERCENT_CURRENT_BALANCE' },
+      });
+      expect(onLoanFeesChange).toHaveBeenCalledWith([
+        { ...fee, calculation: 'PERCENT_CURRENT_BALANCE', value: undefined },
+      ]);
+    });
+
+    it('says fees and payment matching cannot be combined', () => {
+      render(
+        <MortgageFields
+          {...defaultProps}
+          paymentMatchingEnabled
+          loanFees={[fee]}
+          onLoanFeesChange={vi.fn()}
+        />,
+      );
+      expect(screen.getByRole('alert')).toHaveTextContent('Payment matching cannot settle');
+    });
+
+    it('places the fees last, after the payment recognition fields', () => {
+      render(<MortgageFields {...defaultProps} loanFees={[]} onLoanFeesChange={vi.fn()} />);
+      const interest = screen.getByText('Interest Category');
+      const fees = screen.getByText('Mortgage fees');
+      expect(interest.compareDocumentPosition(fees) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('offers no fee editor on edit', () => {
+      render(<MortgageFields {...defaultProps} isEditing loanFees={[]} onLoanFeesChange={vi.fn()} />);
+      expect(screen.queryByText('Mortgage fees')).not.toBeInTheDocument();
+    });
+
+    it('offers no fee editor without the fee props', () => {
+      render(<MortgageFields {...defaultProps} />);
+      expect(screen.queryByText('Mortgage fees')).not.toBeInTheDocument();
+    });
   });
 
   it('renders the heading and all form fields', () => {

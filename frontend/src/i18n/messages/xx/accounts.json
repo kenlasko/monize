@@ -818,5 +818,48 @@
         }
       }
     }
+  },
+  "loanFees": {
+    "title": "[XX-Mortgage fees-XX]",
+    "help": "[XX-Insurance, taxes or other fees collected with each mortgage payment. Each fee becomes its own line of the scheduled payment, booked to the category you choose. A fee can be a fixed amount, a percentage of the current balance (recalculated at every payment) or a percentage of the original balance, charged per payment or per year.-XX]",
+    "panelDescription": "[XX-Fees collected with each scheduled mortgage payment. Saving updates the lines of the next payment.-XX]",
+    "none": "[XX-No fees are collected with this mortgage's payment.-XX]",
+    "name": "[XX-Fee name-XX]",
+    "category": "[XX-Category-XX]",
+    "calculation": "[XX-Calculated as-XX]",
+    "basis": "[XX-Value applies-XX]",
+    "amount": "[XX-Amount-XX]",
+    "rate": "[XX-Rate-XX]",
+    "add": "[XX-Add a fee-XX]",
+    "remove": "[XX-Remove fee-XX]",
+    "edit": "[XX-Edit fees-XX]",
+    "editTitle": "[XX-Mortgage fees-XX]",
+    "save": "[XX-Save fees-XX]",
+    "cancel": "[XX-Cancel-XX]",
+    "saved": "[XX-The mortgage fees were saved.-XX]",
+    "saveFailed": "[XX-The mortgage fees could not be saved.-XX]",
+    "loading": "[XX-Loading fees...-XX]",
+    "loadFailed": "[XX-The mortgage fees could not be loaded.-XX]",
+    "retry": "[XX-Retry-XX]",
+    "unknownCategory": "[XX-Unknown category-XX]",
+    "unknownValue": "[XX-unknown-XX]",
+    "summaryPerPayment": "[XX-{value} per payment, {calculation}-XX]",
+    "summaryAnnual": "[XX-{value} per year, {calculation}-XX]",
+    "paymentMatchingConflict": "[XX-Payment matching cannot settle a payment that includes fees yet. Turn off payment matching or remove the fees.-XX]",
+    "paymentMatchingNote": "[XX-This mortgage has a payment matching rule. Payment matching cannot settle a payment that includes fees yet, so fees cannot be added while the rule exists.-XX]",
+    "calculations": {
+      "fixed": "[XX-Fixed amount-XX]",
+      "percentCurrentBalance": "[XX-Percentage of current balance-XX]",
+      "percentOriginalBalance": "[XX-Percentage of original balance-XX]"
+    },
+    "bases": {
+      "perPayment": "[XX-Per payment-XX]",
+      "annual": "[XX-Per year-XX]"
+    },
+    "errors": {
+      "required": "[XX-Required-XX]",
+      "duplicate": "[XX-Each fee needs its own category, other than the interest category-XX]",
+      "range": "[XX-Enter a rate of at most 100%-XX]"
+    }
   }
 }

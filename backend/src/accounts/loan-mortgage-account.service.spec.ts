@@ -1,3 +1,4 @@
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import {
@@ -28,6 +29,7 @@ describe("LoanMortgageAccountService", () => {
   let accountsRepository: Record<string, jest.Mock>;
   let institutionsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
+  let loanFeesRepository: Record<string, jest.Mock>;
   let scheduledTransactionsService: Record<string, jest.Mock>;
   let loanRateChangesService: Record<string, jest.Mock>;
   let paymentMatching: jest.Mocked<
@@ -99,10 +101,24 @@ describe("LoanMortgageAccountService", () => {
       applyScheduledPaymentSync: jest.fn().mockResolvedValue(null),
     };
 
+    // A fee's category is the caller's unless a case says otherwise.
+    categoriesRepository.find = jest
+      .fn()
+      .mockImplementation(({ where }: any) =>
+        Promise.resolve(
+          (where.id._value as string[]).map((id) => ({ id, userId })),
+        ),
+      );
+    loanFeesRepository = {
+      create: jest.fn((row: any) => row),
+      save: jest.fn(async (rows: any) => rows),
+    };
+
     const mocks = createScopedDbMocks([
       [Account, accountsRepository],
       [Institution, institutionsRepository],
       [Category, categoriesRepository],
+      [LoanFee, loanFeesRepository],
     ]);
     const { dataSource } = mocks;
     manager = mocks.manager;
@@ -878,6 +894,105 @@ describe("LoanMortgageAccountService", () => {
       expect(
         scheduledTransactionsService.createWithoutHistory,
       ).not.toHaveBeenCalled();
+    });
+
+    describe("fees (docs/specs/mortgage-fees.md section 7)", () => {
+      const fees = [
+        {
+          categoryId: "cat-tax",
+          name: "Property tax",
+          calculation: "FIXED",
+          basis: "ANNUAL",
+          amount: 3600,
+        },
+        {
+          categoryId: "cat-insurance",
+          name: "Default insurance",
+          calculation: "PERCENT_CURRENT_BALANCE",
+          basis: "ANNUAL",
+          rate: 0.5,
+        },
+      ] as any;
+
+      it("writes a line per fee after principal and interest, the bill being their sum, and stores the fees", async () => {
+        const withoutFees = makeValidMortgageDto();
+        await service.createMortgageAccount(userId, withoutFees);
+        const plain =
+          scheduledTransactionsService.createWithoutHistory.mock.calls[0][1];
+        scheduledTransactionsService.createWithoutHistory.mockClear();
+
+        await service.createMortgageAccount(userId, {
+          ...makeValidMortgageDto(),
+          loanFees: fees,
+        });
+
+        const payload =
+          scheduledTransactionsService.createWithoutHistory.mock.calls[0][1];
+        // 3,600 / 12 = 300.00; 500,000 x 0.5 % / 12 = 208.33.
+        expect(payload.splits.slice(2)).toEqual([
+          { categoryId: "cat-tax", amount: -300, memo: "Property tax" },
+          {
+            categoryId: "cat-insurance",
+            amount: -208.33,
+            memo: "Default insurance",
+          },
+        ]);
+        expect(payload.splits.slice(0, 2)).toEqual(plain.splits);
+        expect(payload.amount).toBe(
+          Math.round((plain.amount - 508.33) * 10000) / 10000,
+        );
+        expect(loanFeesRepository.save).toHaveBeenCalledWith([
+          expect.objectContaining({
+            categoryId: "cat-tax",
+            accountId: "new-acc-id",
+            userId,
+            amount: 3600,
+            rate: null,
+            sortOrder: 0,
+          }),
+          expect.objectContaining({
+            categoryId: "cat-insurance",
+            amount: null,
+            rate: 0.5,
+            sortOrder: 1,
+          }),
+        ]);
+        expect(accountsRepository.create.mock.calls[0][0]).not.toHaveProperty(
+          "loanFees",
+        );
+      });
+
+      it("refuses fees together with payment matching before anything is written", async () => {
+        await expect(
+          service.createMortgageAccount(userId, {
+            ...makeValidMortgageDto(),
+            loanFees: fees,
+            paymentMatching: { payeePattern: "RBC MORTGAGE*" },
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(accountsRepository.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses a fee on the interest category before anything is written", async () => {
+        await expect(
+          service.createMortgageAccount(userId, {
+            ...makeValidMortgageDto(),
+            loanFees: [{ ...fees[0], categoryId: "cat-interest" }],
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(accountsRepository.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses a fee category the caller does not own before anything is written", async () => {
+        categoriesRepository.find.mockResolvedValue([]);
+        await expect(
+          service.createMortgageAccount(userId, {
+            ...makeValidMortgageDto(),
+            loanFees: fees,
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(accountsRepository.save).not.toHaveBeenCalled();
+      });
     });
 
     describe("payment matching", () => {

@@ -291,6 +291,9 @@ export async function deleteAllUserData(
   await manager.query("DELETE FROM loan_rate_changes WHERE user_id = $1", [
     userId,
   ]);
+  // Mortgage fees cascade from accounts and categories; a backup that
+  // carries none must not leave the destination's fees behind.
+  await manager.query("DELETE FROM loan_fees WHERE user_id = $1", [userId]);
   await manager.query("DELETE FROM loan_scenarios WHERE user_id = $1", [
     userId,
   ]);

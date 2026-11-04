@@ -1,3 +1,5 @@
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
+
 import { DataSource } from "typeorm";
 import {
   BadRequestException,
@@ -5,6 +7,10 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+
+/** The mortgage fees a case configures; none unless it says otherwise. */
+const loanFeesMock = { find: jest.fn() };
+beforeEach(() => loanFeesMock.find.mockReset().mockResolvedValue([]));
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -111,6 +117,7 @@ describe("LoanPaymentMatchingService", () => {
       assertDefinitionShape: jest.fn(),
     };
     const mocks = createScopedDbMocks([
+      [LoanFee, loanFeesMock],
       [Account, accounts],
       [ScheduledTransaction, schedules],
     ]);
@@ -331,6 +338,18 @@ describe("LoanPaymentMatchingService", () => {
             loan({ paymentMatchingRuleId: "rule-1" }),
           ),
         ConflictException,
+      ],
+      [
+        // docs/specs/mortgage-fees.md section 8: the settlement does not
+        // price fee lines, so a rule would refuse every bank debit.
+        "a mortgage whose payment carries fees",
+        () => {
+          accounts.findOne.mockResolvedValue(
+            loan({ accountType: AccountType.MORTGAGE }),
+          );
+          loanFeesMock.find.mockResolvedValue([{ categoryId: "cat-tax" }]);
+        },
+        BadRequestException,
       ],
     ];
 

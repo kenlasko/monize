@@ -102,6 +102,7 @@ implied.
 | INV-LOAN-008 | One settlement per scheduled occurrence, and the claim commits with the split | enforced |
 | INV-LOAN-009 | An annuity installment's payment is the one stated for its own due date | enforced |
 | INV-LOAN-010 | A loan's interest category and its managed payment template's interest line change together | enforced |
+| INV-LOAN-011 | A mortgage fee line is priced from its own terms at the installment's date, and the bill is the loan portion plus its fee lines | partial |
 | INV-LOAN-HISTORY-001 | Historical loan interest counted as paid is ledger-backed | partial |
 | INV-BOND-001 | A bond's published terms, period rates, instruments and programs are immutable | enforced |
 | INV-BOND-002 | A missing bond rate is unknown, never substituted | enforced |
@@ -3467,6 +3468,59 @@ Known gaps          Templates that drifted before this invariant are repaired
                     a 0% loan set up through setupLoanPayments has no interest
                     line, so its template is unmanaged regardless.
 Status              enforced
+```
+
+### INV-LOAN-011 -- a mortgage fee line is priced from its own terms, and the bill is the loan portion plus its fee lines
+
+```text
+Statement           A mortgage's configured fees (loan_fees) are lines of its
+                    payment template identified by category. Each is priced by
+                    priceLoanFee from its calculation (fixed, a percentage of
+                    the ledger debt through the installment's date, or a
+                    percentage of the original principal) and its basis (per
+                    payment, or annual over the periods per year), in whole
+                    minor units. The loan pricing divides only the loan
+                    portion (the bill minus its fee lines), and every template
+                    rewrite, posting and projection answers the bill as the
+                    loan portion plus its fee lines.
+Source of truth     loan_fees; the template's scheduled_transaction_splits,
+                    read under the schedule row lock.
+Enforcement         priceLoanFee (backend/src/loan-installments/loan-fees.ts);
+                    identifyLoanTemplate's fee lines and priceInstallment's
+                    loan portion (price-installment.ts); applyLoanTemplateRewrite
+                    writes fee lines and parent together; the posting keeps the
+                    stored fee lines (the bill shown is never resized);
+                    projectLoanOccurrences reprices them per slot.
+                    UNIQUE (account_id, category_id) on loan_fees; the fee
+                    service refuses the interest category, and
+                    planLoanInterestRelink refuses a fee's category.
+                    LoanFeesService.replace locks the account then the schedule
+                    and moves the parent by exactly the change in fee lines.
+Concurrency scope   per loan: account row lock, then schedule row lock.
+Retry semantics     Safe: a replace is idempotent on its set; a repeated
+                    rewrite of an unchanged template writes nothing.
+Crash semantics     One withScopedDb transaction per write: the fees, the
+                    lines and the parent commit together or not at all.
+Failure response    400 for a category that is not the caller's, is the
+                    interest category or appears twice, for bounds, and for a
+                    non-mortgage; 404 for an account that is not the caller's;
+                    an unknown original principal declines the installment.
+Required tests      Met: loan-installments/loan-fees.spec.ts (pricing,
+                    identification, purposes, projection, rewrite),
+                    scheduled-transaction-loan.service.spec.ts (posting),
+                    loan-fees/loan-fees.service.spec.ts (replace),
+                    loan-mortgage-account.service.spec.ts (create),
+                    loan-interest-category.spec.ts, and against PostgreSQL
+                    test/integration/mortgage-fees.integration.spec.ts (the
+                    replace, a fee-carrying posting and its advancement, the
+                    one-fee-per-category index).
+Known gaps          The settlement planner (payment matching) does not price
+                    fee lines and refuses such a template as managedTemplate
+                    missing. Fees and a matching rule are therefore refused
+                    together on the create, the payment setup, the rule create
+                    and the fee replace, so payment matching is not available
+                    to a fee-carrying mortgage until that phase lands.
+Status              partial
 ```
 
 ### INV-LOAN-HISTORY-001 -- historical loan interest counted as paid is ledger-backed

@@ -234,6 +234,7 @@ export function scopeToAccounts(
   out.loan_rate_changes = (tables.loan_rate_changes ?? []).filter((r) =>
     inScope(r.account_id),
   );
+  out.loan_fees = (tables.loan_fees ?? []).filter((f) => inScope(f.account_id));
   out.monthly_account_balances = (tables.monthly_account_balances ?? []).filter(
     (m) => inScope(m.account_id),
   );

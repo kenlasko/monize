@@ -19,6 +19,7 @@ import {
   type LoanSettlementsState,
 } from '@/components/accounts/loan-detail/PaymentMatchingPanel';
 import { ComparisonSummaryCards } from '@/components/accounts/loan-detail/ComparisonSummaryCards';
+import { LoanFeesPanel } from '@/components/accounts/loan-detail/LoanFeesPanel';
 import { SavedScenariosPanel } from '@/components/accounts/loan-detail/SavedScenariosPanel';
 import {
   hasKnownInterestSaved,
@@ -400,6 +401,12 @@ export function LoanDetailView({
       onChanged={paymentMatching.onChanged}
     />
   ) : null;
+  // A mortgage's fees (docs/specs/mortgage-fees.md), beside the payment
+  // matching panel: both describe what the scheduled payment collects.
+  const loanFeesPanel =
+    account.accountType === 'MORTGAGE' ? (
+      <LoanFeesPanel key={`fees-${account.id}`} account={account} onChanged={paymentMatching?.onChanged} />
+    ) : null;
 
   return (
     <div className="space-y-6" ref={viewRef}>
@@ -438,6 +445,7 @@ export function LoanDetailView({
             onUseMortgageType={onUseMortgageType}
           />
           {paymentMatchingPanel}
+          {loanFeesPanel}
           <div className="w-full">
             <OverpaymentSimulator
               accountId={account.id}
@@ -526,6 +534,7 @@ export function LoanDetailView({
             onUseMortgageType={onUseMortgageType}
           />
           {paymentMatchingPanel}
+          {loanFeesPanel}
         </>
       )}
     </div>

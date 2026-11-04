@@ -319,10 +319,28 @@ export class AccountsService {
       openingBalance = 0,
       createInvestmentPair,
       paymentMatching,
+      loanFees,
       ...accountData
     } = createAccountDto;
 
     await this.assertInstitutionOwned(userId, accountData.institutionId);
+
+    // Fees ride on a mortgage's scheduled payment (docs/specs/mortgage-fees.md
+    // section 7); refused before any write on every other path.
+    const isMortgageWithSchedule =
+      accountData.accountType === AccountType.MORTGAGE &&
+      !!createAccountDto.mortgagePaymentFrequency &&
+      !!createAccountDto.paymentStartDate &&
+      !!createAccountDto.sourceAccountId &&
+      !!createAccountDto.amortizationMonths;
+    if (loanFees && loanFees.length > 0 && !isMortgageWithSchedule) {
+      throw new BadRequestException(
+        tr(
+          "errors.loanFees.mortgageScheduleOnly",
+          "Fees can only be added to a mortgage with its scheduled payment.",
+        ),
+      );
+    }
 
     // Payment matching settles mortgages and loans only (docs/specs/
     // loan-installment-settlement.md decision 4); refused before any write.

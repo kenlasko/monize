@@ -818,5 +818,48 @@
       "paymentBelowInterest": "Die Rate ({payment}) liegt unter den monatlichen Zinsen (etwa {interest}) bei {rate}%, sodass der Saldo nie sinkt. Erfassen Sie die tatsächliche Rate (den Eintrag in der Zinsverlauf-Historie oder den Zahlungsbetrag des Kontos), damit sie die Zinsen deckt.",
       "beyondHorizon": "Die Rate deckt die Zinsen, aber die Laufzeit reicht über den Prognosehorizont hinaus, daher werden Tilgungsdatum und restliche Zinsen nicht angezeigt."
     }
+  },
+  "loanFees": {
+    "title": "Hypothekengebühren",
+    "help": "Versicherungen, Steuern oder andere Gebühren, die mit jeder Hypothekenzahlung eingezogen werden. Jede Gebühr wird zu einer eigenen Zeile der geplanten Zahlung und auf die von dir gewählte Kategorie gebucht. Eine Gebühr kann ein fester Betrag, ein Prozentsatz des aktuellen Saldos (bei jeder Zahlung neu berechnet) oder ein Prozentsatz des ursprünglichen Saldos sein und pro Zahlung oder pro Jahr erhoben werden.",
+    "panelDescription": "Gebühren, die mit jeder geplanten Hypothekenzahlung eingezogen werden. Beim Speichern werden die Zeilen der nächsten Zahlung aktualisiert.",
+    "none": "Mit der Zahlung dieser Hypothek werden keine Gebühren eingezogen.",
+    "name": "Name der Gebühr",
+    "category": "Kategorie",
+    "calculation": "Berechnet als",
+    "basis": "Wert gilt",
+    "amount": "Betrag",
+    "rate": "Satz",
+    "add": "Gebühr hinzufügen",
+    "remove": "Gebühr entfernen",
+    "edit": "Gebühren bearbeiten",
+    "editTitle": "Hypothekengebühren",
+    "save": "Gebühren speichern",
+    "cancel": "Abbrechen",
+    "saved": "Die Hypothekengebühren wurden gespeichert.",
+    "saveFailed": "Die Hypothekengebühren konnten nicht gespeichert werden.",
+    "loading": "Gebühren werden geladen...",
+    "loadFailed": "Die Hypothekengebühren konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "unknownCategory": "Unbekannte Kategorie",
+    "unknownValue": "unbekannt",
+    "summaryPerPayment": "{value} pro Zahlung, {calculation}",
+    "summaryAnnual": "{value} pro Jahr, {calculation}",
+    "paymentMatchingConflict": "Der Zahlungsabgleich kann eine Zahlung mit Gebühren noch nicht verrechnen. Schalte den Zahlungsabgleich aus oder entferne die Gebühren.",
+    "paymentMatchingNote": "Diese Hypothek hat eine Regel für den Zahlungsabgleich. Der Zahlungsabgleich kann eine Zahlung mit Gebühren noch nicht verrechnen, daher können keine Gebühren hinzugefügt werden, solange die Regel besteht.",
+    "calculations": {
+      "fixed": "Fester Betrag",
+      "percentCurrentBalance": "Prozentsatz des aktuellen Saldos",
+      "percentOriginalBalance": "Prozentsatz des ursprünglichen Saldos"
+    },
+    "bases": {
+      "perPayment": "Pro Zahlung",
+      "annual": "Pro Jahr"
+    },
+    "errors": {
+      "required": "Erforderlich",
+      "duplicate": "Jede Gebühr braucht eine eigene Kategorie, die nicht die Zinskategorie ist",
+      "range": "Gib einen Satz von höchstens 100 % ein"
+    }
   }
 }

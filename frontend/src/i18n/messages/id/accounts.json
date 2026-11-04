@@ -818,5 +818,48 @@
       "paymentBelowInterest": "Angsuran ({payment}) lebih kecil dari bunga bulanan (sekitar {interest}) pada {rate}%, sehingga saldo tidak pernah turun. Catat angsuran yang sebenarnya (entri riwayat suku bunga atau jumlah pembayaran akun) agar menutupi bunga.",
       "beyondHorizon": "Angsuran menutupi bunga, tetapi jangka waktunya melampaui horizon proyeksi, sehingga tanggal pelunasan dan sisa bunga tidak ditampilkan."
     }
+  },
+  "loanFees": {
+    "title": "Biaya hipotek",
+    "help": "Asuransi, pajak, atau biaya lain yang ditagih bersama setiap pembayaran hipotek. Setiap biaya menjadi baris tersendiri pada pembayaran terjadwal dan dicatat ke kategori yang Anda pilih. Biaya dapat berupa jumlah tetap, persentase dari saldo saat ini (dihitung ulang pada setiap pembayaran), atau persentase dari saldo awal, dikenakan per pembayaran atau per tahun.",
+    "panelDescription": "Biaya yang ditagih bersama setiap pembayaran hipotek terjadwal. Menyimpan akan memperbarui baris pembayaran berikutnya.",
+    "none": "Tidak ada biaya yang ditagih bersama pembayaran hipotek ini.",
+    "name": "Nama biaya",
+    "category": "Kategori",
+    "calculation": "Dihitung sebagai",
+    "basis": "Nilai berlaku",
+    "amount": "Jumlah",
+    "rate": "Tarif",
+    "add": "Tambah biaya",
+    "remove": "Hapus biaya",
+    "edit": "Edit biaya",
+    "editTitle": "Biaya hipotek",
+    "save": "Simpan biaya",
+    "cancel": "Batal",
+    "saved": "Biaya hipotek telah disimpan.",
+    "saveFailed": "Biaya hipotek tidak dapat disimpan.",
+    "loading": "Memuat biaya...",
+    "loadFailed": "Biaya hipotek tidak dapat dimuat.",
+    "retry": "Coba lagi",
+    "unknownCategory": "Kategori tidak diketahui",
+    "unknownValue": "tidak diketahui",
+    "summaryPerPayment": "{value} per pembayaran, {calculation}",
+    "summaryAnnual": "{value} per tahun, {calculation}",
+    "paymentMatchingConflict": "Pencocokan pembayaran belum dapat melunasi pembayaran yang mencakup biaya. Matikan pencocokan pembayaran atau hapus biayanya.",
+    "paymentMatchingNote": "Hipotek ini memiliki aturan pencocokan pembayaran. Pencocokan pembayaran belum dapat menyelesaikan pembayaran yang mencakup biaya, jadi biaya tidak dapat ditambahkan selama aturan itu ada.",
+    "calculations": {
+      "fixed": "Jumlah tetap",
+      "percentCurrentBalance": "Persentase dari saldo saat ini",
+      "percentOriginalBalance": "Persentase dari saldo awal"
+    },
+    "bases": {
+      "perPayment": "Per pembayaran",
+      "annual": "Per tahun"
+    },
+    "errors": {
+      "required": "Wajib diisi",
+      "duplicate": "Setiap biaya memerlukan kategorinya sendiri, selain kategori bunga",
+      "range": "Masukkan tarif paling tinggi 100%"
+    }
   }
 }

@@ -119,6 +119,7 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-LOAN-008 one settlement per occurrence | **required** | -- | **required** | required | -- | -- | -- | optional |
 | INV-LOAN-009 dated annuity payment | **required** | required | **required** | -- | -- | -- | -- | optional |
 | INV-LOAN-010 interest category and template line move together | **required** | -- | **required** | -- | -- | -- | -- | optional |
+| INV-LOAN-011 a mortgage fee line is priced from its own terms | **required** | -- | required | -- | -- | -- | -- | optional |
 | INV-LOAN-HISTORY-001 ledger-backed loan interest | **required** | required | -- | -- | -- | -- | -- | optional |
 | INV-BOND-001 immutable bond terms | -- | -- | **required** | -- | -- | -- | -- | -- |
 | INV-BOND-002 missing rate is unknown | **required** | -- | supporting | -- | -- | -- | -- | -- |

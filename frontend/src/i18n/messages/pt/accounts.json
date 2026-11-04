@@ -818,5 +818,48 @@
       "paymentBelowInterest": "A prestação ({payment}) é inferior aos juros mensais (cerca de {interest}) a {rate}%, por isso o saldo nunca diminui. Registe a prestação real (a entrada no histórico de taxas ou o valor de pagamento da conta) para que cubra os juros.",
       "beyondHorizon": "A prestação cobre os juros, mas o prazo ultrapassa o horizonte da projeção, por isso a data de liquidação e os juros restantes não são mostrados."
     }
+  },
+  "loanFees": {
+    "title": "Encargos do crédito habitação",
+    "help": "Seguros, impostos ou outros encargos cobrados com cada pagamento do crédito habitação. Cada encargo passa a ser uma linha própria do pagamento agendado, lançada na categoria que escolher. Um encargo pode ser um montante fixo, uma percentagem do saldo atual (recalculada em cada pagamento) ou uma percentagem do saldo original, cobrado por pagamento ou por ano.",
+    "panelDescription": "Encargos cobrados com cada pagamento agendado do crédito habitação. Guardar atualiza as linhas do próximo pagamento.",
+    "none": "Não são cobrados encargos com o pagamento deste crédito habitação.",
+    "name": "Nome do encargo",
+    "category": "Categoria",
+    "calculation": "Calculado como",
+    "basis": "O valor aplica-se",
+    "amount": "Montante",
+    "rate": "Taxa",
+    "add": "Adicionar um encargo",
+    "remove": "Remover encargo",
+    "edit": "Editar encargos",
+    "editTitle": "Encargos do crédito habitação",
+    "save": "Guardar encargos",
+    "cancel": "Cancelar",
+    "saved": "Os encargos do crédito habitação foram guardados.",
+    "saveFailed": "Não foi possível guardar os encargos do crédito habitação.",
+    "loading": "A carregar encargos...",
+    "loadFailed": "Não foi possível carregar os encargos do crédito habitação.",
+    "retry": "Tentar novamente",
+    "unknownCategory": "Categoria desconhecida",
+    "unknownValue": "desconhecido",
+    "summaryPerPayment": "{value} por pagamento, {calculation}",
+    "summaryAnnual": "{value} por ano, {calculation}",
+    "paymentMatchingConflict": "A associação de pagamentos ainda não consegue liquidar um pagamento que inclui encargos. Desative a associação de pagamentos ou remova os encargos.",
+    "paymentMatchingNote": "Este crédito à habitação tem uma regra de associação de pagamentos. A associação ainda não consegue liquidar um pagamento que inclui encargos, por isso não é possível adicionar encargos enquanto a regra existir.",
+    "calculations": {
+      "fixed": "Montante fixo",
+      "percentCurrentBalance": "Percentagem do saldo atual",
+      "percentOriginalBalance": "Percentagem do saldo original"
+    },
+    "bases": {
+      "perPayment": "Por pagamento",
+      "annual": "Por ano"
+    },
+    "errors": {
+      "required": "Obrigatório",
+      "duplicate": "Cada encargo precisa da sua própria categoria, diferente da categoria de juros",
+      "range": "Introduza uma taxa de no máximo 100%"
+    }
   }
 }

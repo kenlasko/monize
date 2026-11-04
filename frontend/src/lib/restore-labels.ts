@@ -31,6 +31,7 @@ export const RESTORE_LABELS: Record<string, string | { translationKey: string }>
   transactionSplitTags: 'Transaction Split Tags',
   investmentTransactions: 'Investment Transactions',
   loanRateChanges: 'Loan Rate Changes',
+  loanFees: 'Mortgage Fees',
   loanScenarios: 'Loan Scenarios',
   budgets: 'Budgets',
   budgetCategories: 'Budget Categories',

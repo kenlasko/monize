@@ -230,6 +230,13 @@ export const RESTORE_PLAN: ReadonlyArray<RestoreStep> = [
     countKey: "loanRateChanges",
     scopeToUser: true,
   },
+  {
+    // After `accounts` and `categories`, both of which it references
+    // (NOT NULL, ON DELETE CASCADE).
+    table: "loan_fees",
+    countKey: "loanFees",
+    scopeToUser: true,
+  },
   { table: "loan_scenarios", countKey: "loanScenarios", scopeToUser: true },
   { table: "budgets", countKey: "budgets", scopeToUser: true },
   {

@@ -12,6 +12,8 @@ import {
   IsDateString,
   IsIn,
   ValidateNested,
+  IsArray,
+  ArrayMaxSize,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -29,6 +31,8 @@ import {
   PrepaymentMode,
 } from "../mortgage-type.util";
 import { PaymentMatchingDto } from "./payment-matching.dto";
+import { LoanFeeDto } from "../../loan-fees/dto/loan-fee.dto";
+import { MAX_LOAN_FEES } from "../../loan-installments/loan-fees";
 
 /**
  * Payment frequencies a loan account can carry.
@@ -384,4 +388,16 @@ export class CreateAccountDto {
   @ValidateNested()
   @Type(() => PaymentMatchingDto)
   paymentMatching?: PaymentMatchingDto;
+
+  @ApiPropertyOptional({
+    type: () => [LoanFeeDto],
+    description:
+      "Mortgages only: fees collected with each payment (insurance, taxes, other), each written as its own line of the scheduled payment and priced per installment (docs/specs/mortgage-fees.md). Not accepted together with paymentMatching",
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_LOAN_FEES)
+  @ValidateNested({ each: true })
+  @Type(() => LoanFeeDto)
+  loanFees?: LoanFeeDto[];
 }

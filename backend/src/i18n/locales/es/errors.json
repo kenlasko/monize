@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "La conciliación de pagos solo se aplica a hipotecas y préstamos",
     "paymentMatchingRequiresSchedule": "La conciliación de pagos necesita el pago programado del préstamo. Configura primero sus pagos.",
     "paymentMatchingRuleExists": "Este préstamo ya tiene una regla de conciliación de pagos",
-    "paymentMatchingFailed": "El préstamo se guardó, pero no se pudo crear su regla de conciliación de pagos. Créala desde los detalles del préstamo."
+    "paymentMatchingFailed": "El préstamo se guardó, pero no se pudo crear su regla de conciliación de pagos. Créala desde los detalles del préstamo.",
+    "interestCategoryIsLoanFee": "Esta categoría ya la usa uno de los gastos de la hipoteca. Elige otra categoría para los intereses o cambia primero el gasto."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Esta edición cambió líneas de división que mueven dinero a otras cuentas, por lo que no se puede deshacer automáticamente. Edita la transacción para revertirla.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL debe ser una dirección http o https",
       "invalidField": "{{ field }} no es válido"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Cada gasto de la hipoteca necesita su propia categoría.",
+    "valueMismatch": "Un gasto fijo lleva un importe y un gasto porcentual lleva una tasa.",
+    "interestCategory": "Un gasto de la hipoteca no puede usar la categoría de interés de la hipoteca.",
+    "invalidCategory": "Elige una de tus propias categorías para cada gasto de la hipoteca.",
+    "unpriceable": "No se puede calcular el gasto \"{{ name }}\": la hipoteca no tiene capital original. Introduce primero el importe que se pidió prestado originalmente.",
+    "ambiguousLine": "El pago programado ya tiene varias líneas en la categoría del gasto \"{{ name }}\". Elimina primero las líneas sobrantes del pago programado.",
+    "mortgageOnly": "Solo las cuentas de hipoteca pueden tener gastos.",
+    "mortgageScheduleOnly": "Solo se pueden añadir gastos a una hipoteca con su pago programado.",
+    "paymentMatchingUnsupported": "La conciliación de pagos todavía no puede liquidar un pago de hipoteca que incluye gastos. Desactiva la conciliación de pagos o elimina los gastos."
   }
 }

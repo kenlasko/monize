@@ -61,6 +61,7 @@ import { BudgetsModule } from "./budgets/budgets.module";
 import { CalendarModule } from "./calendar/calendar.module";
 import { WarrantiesModule } from "./warranties/warranties.module";
 import { PayrollDeductionsModule } from "./payroll-deductions/payroll-deductions.module";
+import { LoanFeesModule } from "./loan-fees/loan-fees.module";
 import { TagsModule } from "./tags/tags.module";
 import { TransactionRulesModule } from "./transaction-rules/transaction-rules.module";
 import { AiReviewModule } from "./ai-review/ai-review.module";
@@ -213,6 +214,7 @@ import { SharedExpensesModule } from "./shared-expenses/shared-expenses.module";
     CalendarModule,
     WarrantiesModule,
     PayrollDeductionsModule,
+    LoanFeesModule,
     TagsModule,
     TransactionRulesModule,
     AiReviewModule,

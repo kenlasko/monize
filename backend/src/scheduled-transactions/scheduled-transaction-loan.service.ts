@@ -24,6 +24,7 @@ import {
   minorUnitAbsorbIndex,
 } from "../common/currency-minor-unit.util";
 import { withScopedDb } from "../common/db/scoped-db";
+import { roundMoney } from "../common/round.util";
 import { tr } from "../i18n/translate";
 import {
   datedLoanDebt,
@@ -32,6 +33,7 @@ import {
 import {
   findLoanAccount,
   InstallmentPurpose,
+  readLoanFees,
   resolveInstallmentCore,
   ResolvedInstallment,
 } from "../loan-installments/price-installment";
@@ -252,10 +254,16 @@ export class ScheduledTransactionLoanService {
           -allocation.extraPrincipal,
         );
       }
+      // A fee line posts as the bill showed it (INV-LOAN-011): the posting
+      // re-divides only the loan portion, and the fee lines are already in
+      // whole minor units.
+      for (const line of installment.fees) {
+        if (line.split.id) amountsBySplitId.set(line.split.id, -line.amount);
+      }
       return {
         kind: "allocation" as const,
         amountsBySplitId,
-        parentAmount: -allocation.total,
+        parentAmount: -roundMoney(allocation.total + installment.feeTotal),
       };
     });
   }
@@ -541,6 +549,7 @@ export class ScheduledTransactionLoanService {
       occurrences,
       count,
       debtLedger,
+      fees: await readLoanFees(m, loanAccount),
     });
     return {
       scheduledTransactionId,

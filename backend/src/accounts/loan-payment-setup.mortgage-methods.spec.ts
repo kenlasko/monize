@@ -1,9 +1,15 @@
+import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
+
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import {
   createScopedDbMocks,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+
+/** The mortgage fees a case configures; none unless it says otherwise. */
+const loanFeesMock = { find: jest.fn() };
+beforeEach(() => loanFeesMock.find.mockReset().mockResolvedValue([]));
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -100,6 +106,7 @@ describe("LoanPaymentSetupService: LINEAR and INTEREST_ONLY", () => {
       create: jest.fn().mockResolvedValue({ id: "sched-1" }),
     };
     const mocks = createScopedDbMocks([
+      [LoanFee, loanFeesMock],
       [Account, accountsRepository],
       [
         Category,

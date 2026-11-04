@@ -58,6 +58,10 @@ const REFERENCE_DATA: ReadonlyArray<[string, string]> = [
   ['institutions:', 'institution records'],
   ['tags:', 'tag records'],
   [
+    'loan-fees:',
+    "a mortgage's fee terms (docs/specs/mortgage-fees.md); the priced fee lines live on the scheduled read model, and a transaction write cannot change a fee's terms",
+  ],
+  [
     'reports:',
     'custom report DEFINITIONS, not their results -- the list of saved reports',
   ],

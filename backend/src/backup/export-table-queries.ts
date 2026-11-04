@@ -578,6 +578,11 @@ export function buildExportTableQueries(
       sql: "SELECT * FROM loan_rate_changes WHERE user_id = $1",
     },
     {
+      // After the accounts and categories it references.
+      key: "loan_fees",
+      sql: "SELECT * FROM loan_fees WHERE user_id = $1 ORDER BY created_at, id",
+    },
+    {
       key: "loan_scenarios",
       sql: "SELECT * FROM loan_scenarios WHERE user_id = $1",
     },

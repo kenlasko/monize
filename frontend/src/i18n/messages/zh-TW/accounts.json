@@ -818,5 +818,48 @@
       "paymentBelowInterest": "分期（{payment}）低於 {rate}% 的每月利息（約 {interest}），因此餘額永遠不會減少。請記錄真實的分期（利率歷史項目或帳戶的還款金額），使其能涵蓋利息。",
       "beyondHorizon": "分期可涵蓋利息，但期限超出預測範圍，因此不顯示還清日期與剩餘利息。"
     }
+  },
+  "loanFees": {
+    "title": "抵押貸款費用",
+    "help": "隨每期抵押貸款還款一併收取的保險、稅金或其他費用。每項費用都會成為排程還款中獨立的一行，記入您選擇的類別。費用可以是固定金額、目前餘額的百分比（每次還款時重新計算）或原始餘額的百分比，按每期還款或按年收取。",
+    "panelDescription": "隨每期排程抵押貸款還款一併收取的費用。儲存後會更新下一期還款的各行。",
+    "none": "此抵押貸款的還款不收取任何費用。",
+    "name": "費用名稱",
+    "category": "類別",
+    "calculation": "計算方式",
+    "basis": "數值適用於",
+    "amount": "金額",
+    "rate": "費率",
+    "add": "新增費用",
+    "remove": "移除費用",
+    "edit": "編輯費用",
+    "editTitle": "抵押貸款費用",
+    "save": "儲存費用",
+    "cancel": "取消",
+    "saved": "抵押貸款費用已儲存。",
+    "saveFailed": "無法儲存抵押貸款費用。",
+    "loading": "載入費用中...",
+    "loadFailed": "無法載入抵押貸款費用。",
+    "retry": "重試",
+    "unknownCategory": "未知類別",
+    "unknownValue": "未知",
+    "summaryPerPayment": "每期還款 {value}，{calculation}",
+    "summaryAnnual": "每年 {value}，{calculation}",
+    "paymentMatchingConflict": "付款比對目前還無法結算包含費用的還款。請關閉付款比對或移除這些費用。",
+    "paymentMatchingNote": "此房貸有一條付款比對規則。付款比對尚無法結算包含費用的付款，因此在該規則存在期間無法新增費用。",
+    "calculations": {
+      "fixed": "固定金額",
+      "percentCurrentBalance": "目前餘額的百分比",
+      "percentOriginalBalance": "原始餘額的百分比"
+    },
+    "bases": {
+      "perPayment": "每期還款",
+      "annual": "每年"
+    },
+    "errors": {
+      "required": "必填",
+      "duplicate": "每項費用都需要獨立的類別，且不能是利息類別",
+      "range": "請輸入不超過 100% 的費率"
+    }
   }
 }

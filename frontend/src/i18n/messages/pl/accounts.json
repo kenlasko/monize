@@ -818,5 +818,48 @@
       "memoPlaceholder": "np. Dodatkowy kapitał",
       "memoHelp": "Płatności, których notatka zawiera ten tekst, są liczone jako nadpłaty (bez rozróżniania wielkości liter)."
     }
+  },
+  "loanFees": {
+    "title": "Opłaty kredytu hipotecznego",
+    "help": "Ubezpieczenia, podatki lub inne opłaty pobierane z każdą płatnością kredytu hipotecznego. Każda opłata staje się osobnym wierszem zaplanowanej płatności, księgowanym w wybranej kategorii. Opłata może być stałą kwotą, procentem bieżącego salda (przeliczanym przy każdej płatności) lub procentem pierwotnego salda, naliczanym od każdej płatności lub rocznie.",
+    "panelDescription": "Opłaty pobierane z każdą zaplanowaną płatnością kredytu hipotecznego. Zapisanie aktualizuje wiersze następnej płatności.",
+    "none": "Z płatnością tego kredytu hipotecznego nie są pobierane żadne opłaty.",
+    "name": "Nazwa opłaty",
+    "category": "Kategoria",
+    "calculation": "Sposób obliczania",
+    "basis": "Wartość dotyczy",
+    "amount": "Kwota",
+    "rate": "Stawka",
+    "add": "Dodaj opłatę",
+    "remove": "Usuń opłatę",
+    "edit": "Edytuj opłaty",
+    "editTitle": "Opłaty kredytu hipotecznego",
+    "save": "Zapisz opłaty",
+    "cancel": "Anuluj",
+    "saved": "Opłaty kredytu hipotecznego zostały zapisane.",
+    "saveFailed": "Nie udało się zapisać opłat kredytu hipotecznego.",
+    "loading": "Wczytywanie opłat...",
+    "loadFailed": "Nie udało się wczytać opłat kredytu hipotecznego.",
+    "retry": "Spróbuj ponownie",
+    "unknownCategory": "Nieznana kategoria",
+    "unknownValue": "nieznane",
+    "summaryPerPayment": "{value} za płatność, {calculation}",
+    "summaryAnnual": "{value} rocznie, {calculation}",
+    "paymentMatchingConflict": "Dopasowywanie płatności nie może jeszcze rozliczyć płatności zawierającej opłaty. Wyłącz dopasowywanie płatności lub usuń opłaty.",
+    "paymentMatchingNote": "Ten kredyt hipoteczny ma regułę dopasowywania płatności. Dopasowywanie nie może jeszcze rozliczyć płatności zawierającej opłaty, więc nie można dodać opłat, dopóki reguła istnieje.",
+    "calculations": {
+      "fixed": "Stała kwota",
+      "percentCurrentBalance": "Procent bieżącego salda",
+      "percentOriginalBalance": "Procent pierwotnego salda"
+    },
+    "bases": {
+      "perPayment": "Za płatność",
+      "annual": "Rocznie"
+    },
+    "errors": {
+      "required": "Wymagane",
+      "duplicate": "Każda opłata wymaga własnej kategorii, innej niż kategoria odsetek",
+      "range": "Wpisz stawkę nie większą niż 100%"
+    }
   }
 }

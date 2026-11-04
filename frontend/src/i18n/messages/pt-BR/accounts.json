@@ -818,5 +818,48 @@
       "paymentBelowInterest": "A parcela ({payment}) é menor que os juros mensais (cerca de {interest}) a {rate}%, então o saldo nunca cai. Registre a parcela real (a entrada no histórico de taxas ou o valor de pagamento da conta) para que ela cubra os juros.",
       "beyondHorizon": "A parcela cobre os juros, mas o prazo vai além do horizonte de projeção, então a data de quitação e os juros restantes não são mostrados."
     }
+  },
+  "loanFees": {
+    "title": "Encargos da hipoteca",
+    "help": "Seguros, impostos ou outros encargos cobrados com cada pagamento da hipoteca. Cada encargo vira uma linha própria do pagamento agendado, lançada na categoria que você escolher. Um encargo pode ser um valor fixo, uma porcentagem do saldo atual (recalculada a cada pagamento) ou uma porcentagem do saldo original, cobrado por pagamento ou por ano.",
+    "panelDescription": "Encargos cobrados com cada pagamento agendado da hipoteca. Salvar atualiza as linhas do próximo pagamento.",
+    "none": "Nenhum encargo é cobrado com o pagamento desta hipoteca.",
+    "name": "Nome do encargo",
+    "category": "Categoria",
+    "calculation": "Calculado como",
+    "basis": "O valor se aplica",
+    "amount": "Valor",
+    "rate": "Taxa",
+    "add": "Adicionar um encargo",
+    "remove": "Remover encargo",
+    "edit": "Editar encargos",
+    "editTitle": "Encargos da hipoteca",
+    "save": "Salvar encargos",
+    "cancel": "Cancelar",
+    "saved": "Os encargos da hipoteca foram salvos.",
+    "saveFailed": "Não foi possível salvar os encargos da hipoteca.",
+    "loading": "Carregando encargos...",
+    "loadFailed": "Não foi possível carregar os encargos da hipoteca.",
+    "retry": "Tentar novamente",
+    "unknownCategory": "Categoria desconhecida",
+    "unknownValue": "desconhecido",
+    "summaryPerPayment": "{value} por pagamento, {calculation}",
+    "summaryAnnual": "{value} por ano, {calculation}",
+    "paymentMatchingConflict": "A correspondência de pagamentos ainda não consegue liquidar um pagamento que inclui encargos. Desative a correspondência de pagamentos ou remova os encargos.",
+    "paymentMatchingNote": "Este financiamento tem uma regra de associação de pagamentos. A associação ainda não consegue liquidar um pagamento que inclui encargos, então não é possível adicionar encargos enquanto a regra existir.",
+    "calculations": {
+      "fixed": "Valor fixo",
+      "percentCurrentBalance": "Porcentagem do saldo atual",
+      "percentOriginalBalance": "Porcentagem do saldo original"
+    },
+    "bases": {
+      "perPayment": "Por pagamento",
+      "annual": "Por ano"
+    },
+    "errors": {
+      "required": "Obrigatório",
+      "duplicate": "Cada encargo precisa de sua própria categoria, diferente da categoria de juros",
+      "range": "Informe uma taxa de no máximo 100%"
+    }
   }
 }

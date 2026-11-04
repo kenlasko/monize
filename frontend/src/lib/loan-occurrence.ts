@@ -20,22 +20,26 @@ export function isLoanBillCandidate(st: ScheduledTransaction): boolean {
 /** A line of a loan template, as the override editor holds it. */
 interface LoanTemplateLine {
   transferAccountId?: string | null;
+  categoryId?: string | null;
   memo?: string | null;
   amount: number;
 }
 
-type LoanLineRole = 'principal' | 'interest' | 'extraPrincipal';
+type LoanLineRole = 'principal' | 'interest' | 'extraPrincipal' | `fee:${string}`;
 
 /**
  * The role of each template line, identified as the server's
  * `identifyLoanTemplate` does: a transfer into the loan whose memo names
  * "extra" is the extra principal, the other transfer into the loan the
- * principal, and the one remaining line the interest. Null when the lines
- * are not that shape, which a `priced` projection rules out.
+ * principal, a category line on one of the occurrence's fee categories that
+ * fee's line (docs/specs/mortgage-fees.md section 6), and the one remaining
+ * line the interest. Null when the lines are not that shape, which a
+ * `priced` projection rules out.
  */
 function loanLineRoles(
   lines: readonly LoanTemplateLine[],
   loanAccountId: string,
+  feeCategoryIds: ReadonlySet<string>,
 ): LoanLineRole[] | null {
   const roles: LoanLineRole[] = [];
   const isExtra = (line: LoanTemplateLine) =>
@@ -47,7 +51,9 @@ function loanLineRoles(
         ? 'extraPrincipal'
         : line.transferAccountId === loanAccountId
           ? 'principal'
-          : 'interest';
+          : !line.transferAccountId && line.categoryId && feeCategoryIds.has(line.categoryId)
+            ? `fee:${line.categoryId}`
+            : 'interest';
     if (roles.includes(role)) return null;
     roles.push(role);
   }
@@ -72,14 +78,25 @@ export function loanOccurrenceLines<T extends LoanTemplateLine>(
   sign: 1 | -1,
 ): T[] | null {
   const { principal, interest, extraPrincipal } = occurrence;
-  if (!loanAccountId || principal === null || interest === null || extraPrincipal === null) {
+  // An older server answers no `fees`: no line is a fee's. A null is an
+  // unknown, so the occurrence's lines are not presented.
+  const fees = occurrence.fees === undefined ? [] : occurrence.fees;
+  if (
+    !loanAccountId ||
+    principal === null ||
+    interest === null ||
+    extraPrincipal === null ||
+    fees === null
+  ) {
     return null;
   }
-  const roles = loanLineRoles(lines, loanAccountId);
+  const roles = loanLineRoles(lines, loanAccountId, new Set(fees.map((f) => f.categoryId)));
   if (!roles) return null;
   if (extraPrincipal !== 0 && !roles.includes('extraPrincipal')) return null;
   if (principal !== 0 && !roles.includes('principal')) return null;
+  if (fees.some((f) => !roles.includes(`fee:${f.categoryId}`))) return null;
   const figure: Record<LoanLineRole, number> = { principal, interest, extraPrincipal };
+  for (const fee of fees) figure[`fee:${fee.categoryId}`] = fee.amount;
   return lines.map((line, index) => ({
     ...line,
     amount: roundMoney(sign * figure[roles[index]]),

@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "Đối chiếu thanh toán chỉ áp dụng cho khoản thế chấp và khoản vay",
     "paymentMatchingRequiresSchedule": "Đối chiếu thanh toán cần khoản thanh toán theo lịch của khoản vay. Hãy thiết lập thanh toán trước.",
     "paymentMatchingRuleExists": "Khoản vay này đã có quy tắc đối chiếu thanh toán",
-    "paymentMatchingFailed": "Khoản vay đã được lưu, nhưng không thể tạo quy tắc đối chiếu thanh toán. Hãy tạo nó từ chi tiết khoản vay."
+    "paymentMatchingFailed": "Khoản vay đã được lưu, nhưng không thể tạo quy tắc đối chiếu thanh toán. Hãy tạo nó từ chi tiết khoản vay.",
+    "interestCategoryIsLoanFee": "Danh mục này đã được một trong các khoản phí của khoản vay thế chấp sử dụng. Hãy chọn danh mục khác cho tiền lãi, hoặc thay đổi khoản phí trước."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Chỉnh sửa này đã thay đổi các dòng chia nhỏ chuyển tiền sang tài khoản khác, nên không thể tự động hoàn tác. Hãy chỉnh sửa giao dịch để đổi lại.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL phải là địa chỉ http hoặc https",
       "invalidField": "{{ field }} không hợp lệ"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Mỗi khoản phí của khoản vay thế chấp cần một danh mục riêng.",
+    "valueMismatch": "Phí cố định dùng số tiền, còn phí theo phần trăm dùng tỷ lệ.",
+    "interestCategory": "Khoản phí của khoản vay thế chấp không thể dùng danh mục lãi suất của khoản vay đó.",
+    "invalidCategory": "Hãy chọn một danh mục của chính bạn cho mỗi khoản phí của khoản vay thế chấp.",
+    "unpriceable": "Không thể tính khoản phí \"{{ name }}\": khoản vay thế chấp không có số tiền gốc ban đầu. Hãy nhập số tiền đã vay ban đầu trước.",
+    "ambiguousLine": "Khoản thanh toán định kỳ đã có nhiều dòng thuộc danh mục của khoản phí \"{{ name }}\". Hãy xóa các dòng thừa khỏi khoản thanh toán định kỳ trước.",
+    "mortgageOnly": "Chỉ tài khoản thế chấp mới có thể có phí.",
+    "mortgageScheduleOnly": "Chỉ có thể thêm phí vào khoản vay thế chấp có khoản thanh toán định kỳ.",
+    "paymentMatchingUnsupported": "Đối chiếu thanh toán chưa thể tất toán khoản thanh toán thế chấp có bao gồm phí. Hãy tắt đối chiếu thanh toán hoặc xóa các khoản phí."
   }
 }

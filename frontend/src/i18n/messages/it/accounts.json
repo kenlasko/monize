@@ -818,5 +818,48 @@
       "paymentBelowInterest": "La rata ({payment}) è inferiore agli interessi mensili (circa {interest}) al {rate}%, quindi il saldo non scende mai. Registra la rata reale (la voce nella cronologia dei tassi o l'importo di pagamento del conto) in modo che copra gli interessi.",
       "beyondHorizon": "La rata copre gli interessi, ma la durata supera l'orizzonte di proiezione, quindi la data di estinzione e gli interessi residui non vengono mostrati."
     }
+  },
+  "loanFees": {
+    "title": "Spese del mutuo",
+    "help": "Assicurazioni, imposte o altre spese riscosse con ogni pagamento del mutuo. Ogni spesa diventa una riga a sé del pagamento programmato, registrata nella categoria che scegli. Una spesa può essere un importo fisso, una percentuale del saldo attuale (ricalcolata a ogni pagamento) o una percentuale del saldo originario, addebitata per pagamento o all'anno.",
+    "panelDescription": "Spese riscosse con ogni pagamento programmato del mutuo. Il salvataggio aggiorna le righe del prossimo pagamento.",
+    "none": "Con il pagamento di questo mutuo non vengono riscosse spese.",
+    "name": "Nome della spesa",
+    "category": "Categoria",
+    "calculation": "Calcolata come",
+    "basis": "Il valore si applica",
+    "amount": "Importo",
+    "rate": "Tasso",
+    "add": "Aggiungi una spesa",
+    "remove": "Rimuovi spesa",
+    "edit": "Modifica spese",
+    "editTitle": "Spese del mutuo",
+    "save": "Salva spese",
+    "cancel": "Annulla",
+    "saved": "Le spese del mutuo sono state salvate.",
+    "saveFailed": "Impossibile salvare le spese del mutuo.",
+    "loading": "Caricamento spese...",
+    "loadFailed": "Impossibile caricare le spese del mutuo.",
+    "retry": "Riprova",
+    "unknownCategory": "Categoria sconosciuta",
+    "unknownValue": "sconosciuto",
+    "summaryPerPayment": "{value} per pagamento, {calculation}",
+    "summaryAnnual": "{value} all'anno, {calculation}",
+    "paymentMatchingConflict": "L'abbinamento dei pagamenti non può ancora saldare un pagamento che include spese. Disattiva l'abbinamento dei pagamenti o rimuovi le spese.",
+    "paymentMatchingNote": "Questo mutuo ha una regola di abbinamento dei pagamenti. L'abbinamento non può ancora saldare un pagamento che include spese, quindi non si possono aggiungere spese finché la regola esiste.",
+    "calculations": {
+      "fixed": "Importo fisso",
+      "percentCurrentBalance": "Percentuale del saldo attuale",
+      "percentOriginalBalance": "Percentuale del saldo originario"
+    },
+    "bases": {
+      "perPayment": "Per pagamento",
+      "annual": "All'anno"
+    },
+    "errors": {
+      "required": "Obbligatorio",
+      "duplicate": "Ogni spesa richiede una propria categoria, diversa dalla categoria degli interessi",
+      "range": "Inserisci un tasso non superiore al 100%"
+    }
   }
 }

@@ -818,5 +818,48 @@
       "paymentBelowInterest": "分期（{payment}）低于 {rate}% 的每月利息（约 {interest}），因此余额永远不会减少。请记录真实的分期（利率历史条目或账户的还款金额），使其能覆盖利息。",
       "beyondHorizon": "分期可覆盖利息，但期限超出预测范围，因此不显示还清日期和剩余利息。"
     }
+  },
+  "loanFees": {
+    "title": "抵押贷款费用",
+    "help": "随每期抵押贷款还款一并收取的保险、税费或其他费用。每项费用都会成为计划还款中单独的一行，记入您选择的分类。费用可以是固定金额、当前余额的百分比（每次还款时重新计算）或原始余额的百分比，按每期还款或按年收取。",
+    "panelDescription": "随每期计划抵押贷款还款一并收取的费用。保存后会更新下一期还款的各行。",
+    "none": "此抵押贷款的还款不收取任何费用。",
+    "name": "费用名称",
+    "category": "分类",
+    "calculation": "计算方式",
+    "basis": "数值适用于",
+    "amount": "金额",
+    "rate": "费率",
+    "add": "添加费用",
+    "remove": "移除费用",
+    "edit": "编辑费用",
+    "editTitle": "抵押贷款费用",
+    "save": "保存费用",
+    "cancel": "取消",
+    "saved": "抵押贷款费用已保存。",
+    "saveFailed": "无法保存抵押贷款费用。",
+    "loading": "正在加载费用...",
+    "loadFailed": "无法加载抵押贷款费用。",
+    "retry": "重试",
+    "unknownCategory": "未知分类",
+    "unknownValue": "未知",
+    "summaryPerPayment": "每期还款 {value}，{calculation}",
+    "summaryAnnual": "每年 {value}，{calculation}",
+    "paymentMatchingConflict": "付款匹配目前还无法结算包含费用的还款。请关闭付款匹配或移除这些费用。",
+    "paymentMatchingNote": "此按揭有一条付款匹配规则。付款匹配尚不能结算包含费用的付款，因此在该规则存在期间无法添加费用。",
+    "calculations": {
+      "fixed": "固定金额",
+      "percentCurrentBalance": "当前余额的百分比",
+      "percentOriginalBalance": "原始余额的百分比"
+    },
+    "bases": {
+      "perPayment": "每期还款",
+      "annual": "每年"
+    },
+    "errors": {
+      "required": "必填",
+      "duplicate": "每项费用都需要单独的分类，且不能是利息类别",
+      "range": "请输入不超过 100% 的费率"
+    }
   }
 }

@@ -197,13 +197,17 @@ export async function applyLoanTemplateRewrite(
     extraPrincipalAmount,
     templateAmount,
     templateExtraAmount,
+    fees,
+    feeTotal,
+    billTotal,
   } = installment;
   const { principalSplit, interestSplit, extraPrincipalSplit } = template;
 
   const newInterest = allocation.interest;
   const newPrincipal = allocation.principal;
   const finalExtraPrincipal = allocation.extraPrincipal;
-  const requiredParentAmount = allocation.total;
+  // The bill is the loan's installment plus its fee lines (INV-LOAN-011).
+  const requiredParentAmount = billTotal;
 
   // The stored cadence is deliberately not in this line: the account's
   // payment fields are what the Bearer logger rule (CWE-532) refuses to see
@@ -217,7 +221,7 @@ export async function applyLoanTemplateRewrite(
       `basePayment=${basePaymentAmount}, ` +
       `extra=${extraPrincipalAmount} (final ${finalExtraPrincipal}), ` +
       `newPrincipal=${newPrincipal}, newInterest=${newInterest}, ` +
-      `mortgageType=${mortgageType}`,
+      `fees=${feeTotal}, mortgageType=${mortgageType}`,
   );
 
   // `newPrincipal` is negative for a bill below the accrued interest (the
@@ -246,6 +250,19 @@ export async function applyLoanTemplateRewrite(
     await m.getRepository(ScheduledTransactionSplit).save(extraPrincipalSplit);
   }
 
+  // A fee line repriced from its terms (a percentage of the balance falls as
+  // the debt does) is written whenever it differs from what the template
+  // holds; the parent below carries it. Skipped with the parent when the
+  // loan's installment is not positive, so lines and parent stay together.
+  if (allocation.total > 0) {
+    for (const line of fees) {
+      if (roundMoney(Math.abs(Number(line.split.amount))) !== line.amount) {
+        line.split.amount = -line.amount;
+        await m.getRepository(ScheduledTransactionSplit).save(line.split);
+      }
+    }
+  }
+
   // Parent and children are written in the same transaction, so a posting
   // can never see one without the other. The parent is written whenever the
   // next installment differs from what the template holds: shrunk when the
@@ -258,7 +275,7 @@ export async function applyLoanTemplateRewrite(
   // LINEAR or INTEREST_ONLY mortgage, past the method's installment for
   // this due date, which is what the user set by choosing the method.
   if (
-    requiredParentAmount > 0 &&
+    allocation.total > 0 &&
     requiredParentAmount !== roundMoney(templateAmount)
   ) {
     await m

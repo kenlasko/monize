@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "Payment matching applies to mortgages and loans only",
     "paymentMatchingRequiresSchedule": "Payment matching needs the loan's scheduled payment. Set up its payments first.",
     "paymentMatchingRuleExists": "This loan already has a payment matching rule",
-    "paymentMatchingFailed": "The loan was saved, but its payment matching rule could not be created. Create it from the loan's details."
+    "paymentMatchingFailed": "The loan was saved, but its payment matching rule could not be created. Create it from the loan's details.",
+    "interestCategoryIsLoanFee": "This category is already used by one of the mortgage's fees. Choose another category for the interest, or change the fee first."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "This edit changed split lines that move money to other accounts, so it cannot be undone automatically. Edit the transaction to change it back.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL must be an http or https address",
       "invalidField": "{{ field }} is not valid"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Each mortgage fee needs its own category.",
+    "valueMismatch": "A fixed fee takes an amount and a percentage fee takes a rate.",
+    "interestCategory": "A mortgage fee cannot use the mortgage's interest category.",
+    "invalidCategory": "Choose one of your own categories for each mortgage fee.",
+    "unpriceable": "The fee \"{{ name }}\" cannot be worked out: the mortgage has no original principal. Enter the amount originally borrowed first.",
+    "ambiguousLine": "The scheduled payment already has several lines in the category of the fee \"{{ name }}\". Remove the extra lines from the scheduled payment first.",
+    "mortgageOnly": "Only mortgage accounts can have fees.",
+    "mortgageScheduleOnly": "Fees can only be added to a mortgage with its scheduled payment.",
+    "paymentMatchingUnsupported": "Payment matching cannot settle a mortgage payment that includes fees yet. Turn off payment matching or remove the fees."
   }
 }

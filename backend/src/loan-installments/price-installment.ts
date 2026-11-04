@@ -28,6 +28,16 @@ import {
   periodsPerYearForStoredFrequency,
 } from "../accounts/payment-frequency.util";
 import { precedingSlotDate, SlotCalendarSchedule } from "./occurrence-slots";
+import { LoanFeeTerms } from "./loan-fees";
+import {
+  LoanFeeLine,
+  PricedFeeLine,
+  priceFeeLines,
+  readLoanFees,
+} from "./loan-fee-lines";
+
+export type { LoanFeeLine, PricedFeeLine } from "./loan-fee-lines";
+export { readLoanFees } from "./loan-fee-lines";
 
 /**
  * The one pricing path for a scheduled loan installment (INV-LOAN-006,
@@ -68,12 +78,14 @@ export function isDebtRetired(debt: number): boolean {
   return debt < LOAN_MINOR_UNIT - DEBT_BOUNDARY_NOISE;
 }
 
-/** The template's managed lines: a principal transfer, one interest line, and
- *  optionally an extra-principal transfer. */
+/** The template's managed lines: a principal transfer, one interest line,
+ *  optionally an extra-principal transfer, and a line per configured fee. */
 export interface LoanTemplateSplits {
   principalSplit?: ScheduledTransactionSplit;
   interestSplit: ScheduledTransactionSplit;
   extraPrincipalSplit?: ScheduledTransactionSplit;
+  /** The fee lines, in template order; absent or empty without fees. */
+  feeLines?: readonly LoanFeeLine[];
 }
 
 /**
@@ -180,6 +192,15 @@ export type ResolvedInstallment =
       annualRate: number;
       /** Configured installment total, extra included -- what drove the parent. */
       paymentAmount: number;
+      /**
+       * Every fee line priced for this installment (INV-LOAN-011): repriced
+       * from its terms for a template rewrite, as stored for a posting.
+       */
+      fees: readonly PricedFeeLine[];
+      /** The sum of `fees`. */
+      feeTotal: number;
+      /** The bill: the loan allocation's total plus `feeTotal`. */
+      billTotal: number;
       basePaymentAmount: number;
       /** The configured extra, before the waterfall clamped it. */
       extraPrincipalAmount: number;
@@ -199,12 +220,14 @@ export type LoanTemplateIdentification =
   | ({
       managed: true;
       unmanagedLines: ScheduledTransactionSplit[];
+      feeLines: readonly LoanFeeLine[];
     } & LoanTemplateSplits)
   | {
       managed: false;
       principalSplit?: ScheduledTransactionSplit;
       interestSplit?: ScheduledTransactionSplit;
       extraPrincipalSplit?: ScheduledTransactionSplit;
+      feeLines: readonly LoanFeeLine[];
       unmanagedLines: ScheduledTransactionSplit[];
       /** Every categorized, non-transfer line; counted in the decline reason. */
       categoryLines: ScheduledTransactionSplit[];
@@ -259,6 +282,7 @@ export async function findLoanAccount(
 export function identifyLoanTemplate(
   splits: ScheduledTransactionSplit[],
   loanAccount: Pick<Account, "id" | "interestCategoryId">,
+  fees: readonly LoanFeeTerms[] = [],
 ): LoanTemplateIdentification {
   const loanAccountId = loanAccount.id;
   const extraPrincipalSplit = splits.find(
@@ -272,14 +296,40 @@ export function identifyLoanTemplate(
   const categoryLines = splits.filter(
     (s) => s.categoryId && !s.transferAccountId,
   );
+  // A configured fee's category marks its line (mortgage-fees spec section
+  // 4), never the interest category: the interest line is decided by the
+  // account's own statement first, and a fee on that category is ignored.
+  const feeByCategory = new Map(
+    fees
+      .filter((fee) => fee.categoryId !== loanAccount.interestCategoryId)
+      .map((fee) => [fee.categoryId, fee] as const),
+  );
+  const nonFeeCategoryLines = categoryLines.filter(
+    (s) => !feeByCategory.has(s.categoryId as string),
+  );
   const interestSplit = loanAccount.interestCategoryId
     ? categoryLines.find((s) => s.categoryId === loanAccount.interestCategoryId)
-    : categoryLines.length === 1
-      ? categoryLines[0]
+    : nonFeeCategoryLines.length === 1
+      ? nonFeeCategoryLines[0]
       : undefined;
+  // One line per fee: a second line on the same category is not accounted
+  // for, so the template reads unmanaged rather than priced from a guess.
+  const claimed = new Set<string>();
+  const feeLines: LoanFeeLine[] = [];
+  for (const split of categoryLines) {
+    if (split === interestSplit) continue;
+    const fee = feeByCategory.get(split.categoryId as string);
+    if (!fee || claimed.has(fee.categoryId)) continue;
+    claimed.add(fee.categoryId);
+    feeLines.push({ split, fee });
+  }
+  const feeSplits = new Set(feeLines.map((line) => line.split));
   const unmanagedLines = splits.filter(
     (s) =>
-      s !== interestSplit && s !== principalSplit && s !== extraPrincipalSplit,
+      s !== interestSplit &&
+      s !== principalSplit &&
+      s !== extraPrincipalSplit &&
+      !feeSplits.has(s),
   );
   if (interestSplit && unmanagedLines.length === 0) {
     return {
@@ -287,6 +337,7 @@ export function identifyLoanTemplate(
       principalSplit,
       interestSplit,
       extraPrincipalSplit,
+      feeLines,
       unmanagedLines,
     };
   }
@@ -295,6 +346,7 @@ export function identifyLoanTemplate(
     principalSplit,
     interestSplit,
     extraPrincipalSplit,
+    feeLines,
     unmanagedLines,
     categoryLines,
   };
@@ -610,6 +662,29 @@ export function priceInstallment(
   } = input;
   const { extraPrincipalSplit } = template;
 
+  // The fee lines (INV-LOAN-011, mortgage-fees spec section 5): a template
+  // rewrite reprices each from its terms at this date; a posting keeps the
+  // lines it was shown, because the bill shown is never resized, and a
+  // settlement prices no fee (its template carries none it manages). The
+  // loan pricing below divides only what is left: the loan portion.
+  const fees = priceFeeLines(template.feeLines ?? [], {
+    debt,
+    loanAccount,
+    frequency,
+    reprice: purpose !== "posting" && purpose !== "settlement",
+  });
+  if (fees.kind === "unknown") {
+    return { kind: "declined", reason: fees.reason };
+  }
+  const feeTotal = fees.total;
+  const loanTemplateAmount = roundMoney(templateAmount - fees.templateTotal);
+  if (loanTemplateAmount < 0) {
+    return {
+      kind: "declined",
+      reason: `the bill (${templateAmount}) is smaller than its fee lines (${fees.templateTotal})`,
+    };
+  }
+
   // The amortization method decides the principal (INV-LOAN-007). Only a
   // mortgage has one; every other loan-like account is an annuity.
   const mortgageType =
@@ -697,16 +772,16 @@ export function priceInstallment(
           extraPrincipalAmount,
       )
     : purpose === "posting"
-      ? templateAmount
+      ? loanTemplateAmount
       : purpose === "reconfigure"
         ? configuredPayment > 0
           ? configuredPayment
-          : templateAmount
+          : loanTemplateAmount
         : datedTotal === null
-          ? templateAmount
+          ? loanTemplateAmount
           : purpose === "settlement" || purpose === "sync" || newlyApplies
             ? datedTotal
-            : Math.max(templateAmount, datedTotal);
+            : Math.max(loanTemplateAmount, datedTotal);
   const basePaymentAmount = paymentAmount - extraPrincipalAmount;
   const newPrincipal = methodInstallment
     ? methodInstallment.principal
@@ -734,6 +809,9 @@ export function priceInstallment(
     debt,
     annualRate,
     paymentAmount,
+    fees: fees.lines,
+    feeTotal,
+    billTotal: roundMoney(allocation.total + feeTotal),
     basePaymentAmount,
     extraPrincipalAmount,
     templateAmount,
@@ -806,7 +884,11 @@ export async function resolveInstallmentCore(
   const frequency =
     loanAccount.paymentFrequency || scheduledTransaction.frequency;
 
-  const identified = identifyLoanTemplate(splits, loanAccount);
+  const identified = identifyLoanTemplate(
+    splits,
+    loanAccount,
+    await readLoanFees(m, loanAccount),
+  );
 
   if (isDebtRetired(debt)) {
     return { kind: "paid-off", debt, managed: identified.managed };
@@ -868,6 +950,7 @@ export async function resolveInstallmentCore(
       principalSplit: identified.principalSplit,
       interestSplit: identified.interestSplit,
       extraPrincipalSplit: identified.extraPrincipalSplit,
+      feeLines: identified.feeLines,
     },
     templateAmount,
     datedPayment,

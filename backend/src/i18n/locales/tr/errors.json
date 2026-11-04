@@ -84,7 +84,8 @@
     "paymentMatchingLoanOnly": "Ödeme eşleştirme yalnızca ipotek ve krediler için geçerlidir",
     "paymentMatchingRequiresSchedule": "Ödeme eşleştirme, kredinin planlanmış ödemesini gerektirir. Önce ödemelerini ayarlayın.",
     "paymentMatchingRuleExists": "Bu kredinin zaten bir ödeme eşleştirme kuralı var",
-    "paymentMatchingFailed": "Kredi kaydedildi, ancak ödeme eşleştirme kuralı oluşturulamadı. Kredi ayrıntılarından oluşturun."
+    "paymentMatchingFailed": "Kredi kaydedildi, ancak ödeme eşleştirme kuralı oluşturulamadı. Kredi ayrıntılarından oluşturun.",
+    "interestCategoryIsLoanFee": "Bu kategori zaten ipoteğin ücretlerinden biri tarafından kullanılıyor. Faiz için başka bir kategori seçin veya önce ücreti değiştirin."
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Bu düzenleme, parayı başka hesaplara taşıyan bölme satırlarını değiştirdi, bu yüzden otomatik olarak geri alınamaz. Geri almak için işlemi düzenleyin.",
@@ -977,5 +978,16 @@
       "invalidUrl": "ProductURL bir http veya https adresi olmalıdır",
       "invalidField": "{{ field }} geçerli değil"
     }
+  },
+  "loanFees": {
+    "duplicateCategory": "Her ipotek ücretinin kendine ait bir kategorisi olmalıdır.",
+    "valueMismatch": "Sabit bir ücret tutar, yüzdelik bir ücret ise oran alır.",
+    "interestCategory": "Bir ipotek ücreti, ipoteğin faiz kategorisini kullanamaz.",
+    "invalidCategory": "Her ipotek ücreti için kendi kategorilerinizden birini seçin.",
+    "unpriceable": "\"{{ name }}\" ücreti hesaplanamıyor: ipoteğin orijinal anaparası yok. Önce başlangıçta borç alınan tutarı girin.",
+    "ambiguousLine": "Planlı ödemede \"{{ name }}\" ücretinin kategorisinde zaten birden fazla satır var. Önce fazla satırları planlı ödemeden kaldırın.",
+    "mortgageOnly": "Yalnızca ipotek hesaplarının ücretleri olabilir.",
+    "mortgageScheduleOnly": "Ücretler yalnızca planlı ödemesi olan bir ipoteğe eklenebilir.",
+    "paymentMatchingUnsupported": "Ödeme eşleştirme, ücret içeren bir ipotek ödemesini henüz kapatamaz. Ödeme eşleştirmeyi kapatın veya ücretleri kaldırın."
   }
 }

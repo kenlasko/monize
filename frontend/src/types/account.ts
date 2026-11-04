@@ -1,3 +1,4 @@
+import type { LoanFeeInput } from './loan-fee';
 import type { BalanceForecastGap } from './banking-detail';
 import type { PrepaymentMode } from '@/lib/mortgage-type';
 import type {
@@ -314,6 +315,9 @@ export interface CreateAccountData {
   // Loans and mortgages created with their scheduled payment: create the
   // "Payment matching" rule and turn the bill's auto-post off.
   paymentMatching?: PaymentMatching;
+  // Mortgages created with their scheduled payment: fees collected with each
+  // payment (docs/specs/mortgage-fees.md). Create only.
+  loanFees?: LoanFeeInput[];
 }
 
 export interface InvestmentAccountPair {
