@@ -17,11 +17,11 @@ Plan: `docs/future-plans/us-treasury-bonds.md`.
 
 ## Phase 3: the US adapter, bills, notes, bonds
 
-- [ ] Calendar `US`, CUSIP check digit, series code grammar, `programOf`
-- [ ] Programs and templates BILL, NOTE, BOND; provider id `treasurydirect`
-- [ ] TA_WS fetch with the cross-checks and bounds; fixtures
-- [ ] Goldens `bill-cases.json`, `note-cases.json`
-- [ ] Installed in `INSTALLED_BOND_ADAPTERS`; `FORBIDDEN` literals; i18n labels; quantity unit hint
+- [x] Calendar `US`, CUSIP check digit, series code grammar, `programOf`
+- [x] Programs and templates BILL, NOTE, BOND; provider id `treasurydirect`
+- [x] TA_WS fetch with the cross-checks and bounds; fixtures
+- [x] Goldens `bill-cases.json`, `note-cases.json`
+- [x] Installed in `INSTALLED_BOND_ADAPTERS`; `FORBIDDEN` literals; i18n labels; quantity unit hint
 
 ## Phase 4: TIPS and FRN
 

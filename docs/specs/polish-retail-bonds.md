@@ -796,7 +796,7 @@ data.
 
 | Route | Answers | Spec |
 | --- | --- | --- |
-| `GET /bonds/programs` | the catalog's programs: `id`, `issuerCountryCode`, `issuerCode`, `programCode`, `currency`, `seriesCount`, `newestSeriesCode`, `infoUrl` (the issuer's page for the product, from the adapter; null when none) | `bond-program-securities.md` 4 |
+| `GET /bonds/programs` | the catalog's programs: `id`, `issuerCountryCode`, `issuerCode`, `programCode`, `currency`, `seriesCount`, `newestSeriesCode`, `infoUrl` (the issuer's page for the product, from the adapter; null when none), `faceValue` (the nominal of one bond from the adapter's template, an exact decimal string; null when no adapter declares the program) | `bond-program-securities.md` 4 |
 | `GET /bonds/programs/:programId/refresh-progress` | `{ startedAt, phase: offer\|series\|done\|null, done, total, seriesCode, finishedAt }` of the program's Refresh; 404 for an unknown program | `bond-program-securities.md` 2.5 |
 | `GET /bonds/instruments` | the catalog's series (`id`, issuer country, issuer, program, series, `currencyCode`, `termsProvider`) | here |
 | `GET /bonds/offer?countryCode=&assume=` | the series on sale, with projections | `bond-offer-and-history.md` 2 |

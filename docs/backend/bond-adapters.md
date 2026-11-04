@@ -51,6 +51,10 @@ The templates are not a member: they are adapter data, `backend/src/bonds/adapte
 | `*-cases.json`, `golden.spec.ts`, `redemption-split.golden.spec.ts`, `pl-test-input.ts`, `fixtures/` | Golden cases from the issuer's published examples and letters, and the terms fixtures they read. |
 | `series/fixtures/` | The saved pages, letters and PDF the fetch specs read; the network is never used by a test. |
 
+### The US adapter, file by file
+
+`backend/src/bonds/adapters/us/` (country spec `docs/specs/us-treasury-securities.md`): `index.ts` (`UNITED_STATES_BOND_ADAPTER`: zone `America/New_York`, programs `BILL`, `NOTE`, `BOND` from the templates, `seriesProviderId` `treasurydirect`, no benchmark yet, no `currentSeries`, `backfillCodes`, `seriesCodeFor` or `manualSeries`), `us-calendar.ts` (`US`: Federal Reserve Bank holidays), `cusip.ts` (check digit, the 9 and 15 character series codes, `programOf`), `templates/*.template.json` and `series/templates.ts` (`fillBill`, `fillCoupon`), `series/fetch-series.ts` (the TA_WS auction record and its results XML, cross-checked), `series/auction.ts` (the field readers and bounds), `series/results-check.ts` and `results-xml.ts` (the XML side), `series/series-source.ts` (the one host, `getFromTreasury`), `series/fixtures/` (`README.md` says which are recorded and which constructed), `bill-cases.json`, `note-cases.json`, `golden.spec.ts`.
+
 ## 3. The engine primitive catalogue
 
 A terms document (`schemaVersion` 1, `backend/src/bonds/domain/bond-terms.ts`) is built only from the primitives below. `parseBondTerms` refuses an unknown field, a JSON number where a decimal string is required (INV-BOND-003) and an unknown `type` (`UNSUPPORTED_PRIMITIVE`, with the field's path); an unknown calendar or benchmark id is not a parse error, the valuation reports it as missing data.
@@ -180,5 +184,7 @@ The adapter itself is the usual set: `adapters/us/` with its calendar, the bench
 Check each when a country is added; they are not guarded.
 
 - `frontend/src/lib/bond-offer.ts` `BOND_OFFER_COUNTRY` (`PL`) is requested only by the Breakdown card and the Documents tab until the valuation names the program's own country; the On sale card, the Terms history tab and the program card read `issuerCountryCode`, and the purchase form's fetch action reads `GET /bonds/securities/:securityId/expected-series`, so no Polish series-code grammar is left in the client.
-- The program, issuer and benchmark names are labels in the frontend catalog; a code with no label is shown as the code.
+- The program, issuer and benchmark names are labels in the frontend catalog; a code with no label is shown as the code. The US programs and issuer are labelled (`BILL`, `NOTE`, `BOND`, `US_TREASURY`); the quantity of a linked security says what one unit is from the program's `faceValue` (`BondUnitHint`).
+- `BOND_OFFER_COUNTRY` is still `PL`: the Breakdown card and the Documents tab of a US security first ask `GET /bonds/offer` for `PL` and ask again for `US` once the valuation arrives (the answer for `US` is empty: a marketable series has no sale window). One wasted request; the fix is a conditional request in those two components.
+- The purchase form offers "Fetch <code>" only from `GET /bonds/securities/:securityId/expected-series`, which needs the adapter's `seriesCodeFor`; the US has none (a CUSIP does not follow from a date), so a US series is fetched with `POST /bonds/instruments/fetch` until the form gets an input for a CUSIP.
 - The three crons run at fixed Europe/Warsaw times (`docs/cron-jobs.md`); each adapter's `timezone` decides its freshness, not the trigger time.

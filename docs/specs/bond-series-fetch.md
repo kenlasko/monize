@@ -182,7 +182,9 @@ same template, bounds and parser apply; the sale window must match the code.
 transient), `SOURCE_DOCUMENT_MISSING` (422: a document of this one series, its
 page or its letter, answers a permanent 4xx other than the page's 404, which is
 `SERIES_NOT_PUBLISHED`; params `document` and `status`), `SOURCE_FORMAT_CHANGED`,
-`SOURCE_INCONSISTENT`, `TEMPLATE_NOT_VALIDATED`, `MANUAL_ENTRY_INVALID` (422: a
+`SOURCE_INCONSISTENT`, `TEMPLATE_NOT_VALIDATED`, `PRODUCT_NOT_SUPPORTED` (422: the official source
+describes a product this version has no template for, param `product`; the US
+TIPS and FRN until phase 4), `MANUAL_ENTRY_INVALID` (422: a
 value of an administrator's manual entry is malformed; names the `field` the
 administrator entered, never "the source changed its format"),
 `SERIES_TERMS_CONFLICT` (a stored version 1 differs). Each has `params` and an

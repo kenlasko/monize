@@ -591,7 +591,12 @@ A series read from its issuer (`BondSeriesService`, through `SeriesHttp.gated`:
 the `obligacjeskarbowe` breaker, no redirect followed, a 30 s timeout, a 5 MB
 cap) is fetched, cross-checked and parsed before the one write transaction that
 stores it, so a refused or failed read leaves no row, and there is nothing at the
-issuer to undo.
+issuer to undo. A US Treasury security is read the same way (provider id
+`treasurydirect`, host `www.treasurydirect.gov` only): the auction record
+(`TA_WS/securities/search`) and, when it names one, the auction's results XML
+(`/xml/<file>.xml`), two GETs through one breaker, cross-checked against each
+other before the one write; a redirect, a non-200, an oversized body or a
+disagreement leaves no row.
 
 ### Bank sync
 

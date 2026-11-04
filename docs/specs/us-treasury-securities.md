@@ -82,7 +82,7 @@ host `www.treasurydirect.gov` only:
 
 1. `GET /TA_WS/securities/search?cusip=<CUSIP>&format=json`: a JSON array, one
    object per auction of the CUSIP. A body that is not an array, an empty array
-   (`SERIES_NOT_FOUND`) or an object without the fields below
+   (`SERIES_NOT_PUBLISHED`) or an object without the fields below
    (`SOURCE_FORMAT_CHANGED`) is refused.
 2. The auction is the one whose `issueDate` is the code's date (a bill) or the
    original issue, `reopening` not `"Yes"` (a coupon security).
@@ -214,6 +214,51 @@ auction price and says so (`principalBasis`).
 | Benchmarks | unit, fixtures | BLS response parsed, refusals; 13-week yields from a saved auction list |
 | Guards | guard | `adapter-docs.guard.spec.ts`, `no-automatic-bonds.guard.spec.ts`, `country-agnostic.guard.spec.ts` (US literals added to `FORBIDDEN`) |
 
+## 9a. Decisions of phase 3
+
+Points the sections above left open, as built (`backend/src/bonds/adapters/us/`):
+
+- **Error codes.** An empty answer is `SERIES_NOT_PUBLISHED` (the existing code;
+  there is no `SERIES_NOT_FOUND`). A TIPS or FRN is refused with the new
+  `PRODUCT_NOT_SUPPORTED` (param `product`, `TIPS` or `FRN`), before the results
+  file is requested; phase 4 removes the refusal. A permanent 4xx on the JSON or
+  the XML is `SOURCE_DOCUMENT_MISSING` (param `document` `auction data` or
+  `results`); 5xx, 429, a redirect, a timeout and a network error are
+  `SOURCE_UNAVAILABLE`; a body over 2 MB (JSON) or 1 MB (XML) is
+  `SOURCE_FORMAT_CHANGED` `field=size`.
+- **Which code names what.** A bare CUSIP whose answer holds a bill, or a
+  15-character code whose auction is not a bill, is `SERIES_CODE_INVALID`.
+  `programOf` answers `BILL` only for a valid 15-character code with CUSIP
+  prefix `912797`; the adapter has no `seriesCodeFor`, `currentSeries`,
+  `backfillCodes` or `manualSeries`, so the purchase form's "Fetch" offer does
+  not exist for the US yet (to build: an input for a CUSIP, see section 10).
+- **Fields read.** `securityTerm` is not read: it names the original term, which
+  is not the days of a reopened bill; the bill's term is its issue to maturity
+  days (28 to 364). `xmlFilenameCompetitiveResults` is the field that names the
+  results file; only a plain `*.xml` file name is requested, under `/xml/`. A
+  JSON number is refused where a string is expected. `interestPaymentFrequency`
+  must read semiannual (case-insensitive, `Semi-Annual`) for a note or a bond.
+- **Cross-checks as built.** A bill: the price formula (six decimals, half up,
+  `ExactDecimal`), the term, an auction not after its issue, a price below 100
+  and a nonzero rate. A coupon security: the rate 0 to 20 %, the dated date not
+  after the issue, the maturity after the issue and at most 31 years out, the
+  first coupon a regular date (`buildCouponSchedule`, maturity at a month end
+  gives `endOfMonth`). The results file: `CUSIP`, `SecurityType` (case folded),
+  `IssueDate`, `MaturityDate`, a note's `DatedDate` and `InterestRate` (the
+  results element, else the announcement's), and `HighPrice` (required for a
+  bill, compared for a note when both state it).
+- **Terms.** The bill's `issuePrice` is `highPrice` as stated; a note's
+  `annualRate` is the percent over 100 as an exact fraction ("0.04285");
+  `source` is `{ provider "treasurydirect", url the search URL, document "auction
+  <auctionDate>" }`; `publishedAt` the auction date. A bill's `unitDecimals` is
+  null (the price is exact to six decimals and the holding is rounded once).
+- **API.** `GET /bonds/programs` gives each program its `faceValue` (the
+  template's nominal, "100" for the US) so the form can say "One unit = 100 USD
+  face value" without naming a country.
+- **Guard.** `country-agnostic.guard.spec.ts` forbids `USD`, `US`, `BILL`,
+  `NOTE`, `TIPS`, `FRN` and `treasurydirect` in the domain, the engine and the
+  shared services; `BOND` is not listed, it is the domain's own word.
+
 ## 10. To verify before merge
 
 The shell of the session that wrote this could not reach `treasurydirect.gov`,
@@ -232,5 +277,13 @@ recorded ones:
 - The BLS API version and limits without a key, and the TA_WS `days` limit for
   the 13-week history an FRN issued two years ago needs.
 - The FRN rule for an auction on the day of a lockout boundary (App. B I.C.3).
+- The phase 3 fetch reads only fixtures: the live `search` answer for a bill, a
+  note and a reopening, the exact `interestPaymentFrequency` text, whether a
+  bill's price is rounded or truncated at the sixth decimal, whether the results
+  file names a note's coupon in `AuctionResults` or only in the announcement, and
+  whether a CMB shorter than 28 days (refused here) exists as a security people
+  hold.
+- The purchase form has no way to name a CUSIP (no `seriesCodeFor`): a person
+  fetches through `POST /bonds/instruments/fetch` until a CUSIP input is built.
 - Savings bonds: whether the value of a 100 USD bond is computed from a 25 USD
   bond (31 CFR 359 Appendix A) before the book-entry scaling.
