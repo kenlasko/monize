@@ -1168,6 +1168,7 @@
     "transferTo": "В",
     "overallTotal": "Общий итог",
     "includeCurrentMonth": "Включить текущий месяц",
+    "summaryOnly": "Только сводка",
     "csvParentColumn": "Родительская категория"
   },
   "monthlyComparison": {

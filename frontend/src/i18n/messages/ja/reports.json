@@ -1168,6 +1168,7 @@
     "transferTo": "へ",
     "overallTotal": "全体合計",
     "includeCurrentMonth": "今月を含める",
+    "summaryOnly": "概要のみ",
     "csvParentColumn": "親カテゴリ"
   },
   "monthlyComparison": {

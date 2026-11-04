@@ -1168,6 +1168,7 @@
     "transferTo": "Vers",
     "overallTotal": "Total général",
     "includeCurrentMonth": "Inclure le mois en cours",
+    "summaryOnly": "Résumé seulement",
     "csvParentColumn": "Catégorie parente"
   },
   "monthlyComparison": {

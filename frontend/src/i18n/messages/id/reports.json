@@ -1168,6 +1168,7 @@
     "transferTo": "Ke",
     "overallTotal": "Total keseluruhan",
     "includeCurrentMonth": "Sertakan bulan saat ini",
+    "summaryOnly": "Ringkasan saja",
     "csvParentColumn": "Kategori induk"
   },
   "monthlyComparison": {

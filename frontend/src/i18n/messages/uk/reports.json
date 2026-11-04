@@ -1168,6 +1168,7 @@
     "transferTo": "До",
     "overallTotal": "Загальний підсумок",
     "includeCurrentMonth": "Включати поточний місяць",
+    "summaryOnly": "Лише підсумок",
     "csvParentColumn": "Батьківська категорія"
   },
   "monthlyComparison": {

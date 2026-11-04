@@ -207,9 +207,11 @@ describe('MonthlyCategoryBreakdownReport', () => {
 
     // Parent section header for the expense group.
     expect(screen.getAllByText('Food & Dining').length).toBeGreaterThan(0);
-    // Parentless income category collects into the "Other income" section.
-    expect(screen.getByText('Salary')).toBeInTheDocument();
-    expect(screen.getAllByText('Other income').length).toBeGreaterThan(0);
+    // A top-level income category with no subcategories is a line of its
+    // own (in the detail and in the Summary recap), not an "Other income"
+    // section.
+    expect(screen.getAllByText('Salary')).toHaveLength(2);
+    expect(screen.queryByText('Other income')).not.toBeInTheDocument();
 
     // Top-level group headers separate income from expenses.
     expect(screen.getByText('Income')).toBeInTheDocument();
@@ -653,7 +655,7 @@ describe('MonthlyCategoryBreakdownReport', () => {
     render(<MonthlyCategoryBreakdownReport />);
 
     await waitFor(() => {
-      expect(screen.getByText('Salary')).toBeInTheDocument();
+      expect(screen.getAllByText('Salary').length).toBeGreaterThan(0);
     });
 
     // By default the current (in-progress) month column is hidden, so its
@@ -745,8 +747,8 @@ describe('MonthlyCategoryBreakdownReport', () => {
         expect(screen.getByText('From Chequing')).toBeInTheDocument();
       });
 
-      // Subcategory name cell.
-      const salaryCell = screen.getByText('Salary').closest('td');
+      // Category name cell (the detail row, ahead of the Summary recap).
+      const salaryCell = screen.getAllByText('Salary')[0].closest('td');
       expect(salaryCell?.className).toContain('group-hover:bg-gray-50');
       const salaryRow = salaryCell?.closest('tr');
       expect(salaryRow?.className).toContain('group');
