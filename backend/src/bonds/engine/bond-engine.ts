@@ -22,6 +22,7 @@ import {
   BondValuation,
   BondValuationRefusal,
   CashFlow,
+  MissingObservation,
   RateRuleDescription,
 } from "./bond-engine-types";
 import {
@@ -32,6 +33,15 @@ import {
   splitOf,
 } from "./redemption-split";
 import { startedPeriods } from "./rate-resolution";
+import {
+  couponLotOf,
+  IndexedLot,
+  indexOn,
+  LotAmount,
+  maturityCashOf,
+  principalLotOn,
+  unitPrincipalOn,
+} from "./indexed-lot";
 import { referencedCalendarIds } from "./redemption";
 
 import {
@@ -169,9 +179,32 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
   const { terms, calendars } = p.input;
   const figures = figuresOn(p, asOf);
   const { matured, current, started } = figures;
-  const resolved = resolvedFor(p, started);
-  const { rates, maturityCash, maturityProjected } = resolved;
+  const resolved = resolvedFor(p, started, asOf);
+  const { rates } = resolved;
   const { compounding, lastPeriod } = p;
+  const indexed: IndexedLot | null =
+    p.index === null ? null : { terms, series: p.index, quantity: p.quantity };
+  // What an indexed principal needed and could not read: the months of a ratio
+  // that is due (`missing`), and whether a later figure is unknown for want of a
+  // projection, or rests on one.
+  const indexMonths = new Set<string>();
+  let indexProjected = false;
+  let indexUnknownLater = false;
+  const track = (amount: LotAmount, on: string) => {
+    if (amount.projected) indexProjected = true;
+    if (amount.value !== null || amount.absent.length === 0) return;
+    if (compareYMD(on, asOf) <= 0) {
+      amount.absent.forEach((key) => indexMonths.add(key));
+    } else {
+      indexUnknownLater = true;
+    }
+  };
+  const unknownAmount: LotAmount = {
+    value: null,
+    projected: false,
+    absent: [],
+  };
+  let { maturityCash, maturityProjected } = resolved;
   const lot = (figure: ExactDecimal) => figure.toFixed(p.places);
   const currentRate =
     current && !isDiscount(terms) ? rates[current.index - 1] : null;
@@ -199,6 +232,17 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
       if (compareYMD(paymentDateOf(terms, calendars, period), asOf) <= 0)
         continue;
       const rate = rates[period.index - 1];
+      if (indexed !== null) {
+        const coupon =
+          rate.rate === null
+            ? unknownAmount
+            : couponLotOf(indexed, { period, rate: rate.rate }, asOf);
+        track(coupon, period.end);
+        cashflows.push(
+          flow(period, "INTEREST", coupon.value, coupon.projected),
+        );
+        continue;
+      }
       const coupon =
         rate.rate === null
           ? null
@@ -207,27 +251,89 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
         flow(period, "INTEREST", coupon, rate.source === "PROJECTED"),
       );
     }
-    if (compareYMD(paymentDateOf(terms, calendars, lastPeriod), asOf) > 0)
-      cashflows.push(
-        flow(
-          lastPeriod,
-          "PRINCIPAL",
-          principalLot(
-            terms,
-            { date: lastPeriod.end, unitBase: p.unitBase },
-            p.quantity,
-            p.cost,
+    if (compareYMD(paymentDateOf(terms, calendars, lastPeriod), asOf) > 0) {
+      if (indexed !== null) {
+        const paid = principalLotOn(indexed, lastPeriod.end, asOf, true);
+        track(paid, lastPeriod.end);
+        cashflows.push(
+          flow(lastPeriod, "PRINCIPAL", paid.value, paid.projected),
+        );
+      } else {
+        cashflows.push(
+          flow(
+            lastPeriod,
+            "PRINCIPAL",
+            principalLot(
+              terms,
+              { date: lastPeriod.end, unitBase: p.unitBase },
+              p.quantity,
+              p.cost,
+            ),
+            false,
           ),
-          false,
-        ),
-      );
+        );
+      }
+    }
   } else if (!matured) {
     cashflows.push(
       flow(lastPeriod, "PRINCIPAL", maturityCash, maturityProjected),
     );
   }
 
-  const missing = resolved.missingFor;
+  if (indexed !== null) {
+    // The cash at maturity: the floored principal and the last coupon, each on
+    // the ratio of the maturity date.
+    const finalRate = rates[lastPeriod.index - 1];
+    const cash = maturityCashOf(
+      indexed,
+      finalRate.rate === null
+        ? null
+        : { period: lastPeriod, rate: finalRate.rate },
+      p.maturity,
+      asOf,
+    );
+    maturityCash = cash.value;
+    maturityProjected = cash.projected;
+    // The ratio the valuation day itself is worked out on is due now.
+    track(
+      {
+        ...unknownAmount,
+        absent: indexOn(indexed, matured ? p.maturity : asOf, asOf).absent,
+      },
+      asOf,
+    );
+  }
+  const publisher = indexed === null ? null : indexed.series.publisher;
+  const indexMissing: MissingObservation[] =
+    indexed === null
+      ? []
+      : [...indexMonths].sort().map((observation) => ({
+          benchmarkId: indexed.series.rule.benchmarkId,
+          observation,
+          publisher,
+        }));
+  const missing = [...resolved.missingFor, ...indexMissing];
+  const assumptions =
+    indexed !== null &&
+    indexProjected &&
+    indexed.series.annualInflation !== null
+      ? [
+          ...resolved.assumptions,
+          {
+            benchmarkId: indexed.series.rule.benchmarkId,
+            value: indexed.series.annualInflation.toTrimmedString(10, 4),
+            basis: "SUPPLIED" as const,
+            observation: null,
+          },
+        ]
+      : resolved.assumptions;
+  const projectionMissing =
+    indexed !== null && indexUnknownLater
+      ? [
+          ...resolved.projectionMissing,
+          { benchmarkId: indexed.series.rule.benchmarkId, publisher },
+        ]
+      : resolved.projectionMissing;
   const calendarsKnown = [...referencedCalendarIds(terms)].every((id) =>
     calendars.has(id),
   );
@@ -279,8 +385,8 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
       maturityCash && !maturityProjected ? lot(maturityCash) : null,
     maturityValueProjected:
       maturityCash && maturityProjected ? lot(maturityCash) : null,
-    projectionAssumptions: resolved.assumptions,
-    projectionMissing: resolved.projectionMissing,
+    projectionAssumptions: assumptions,
+    projectionMissing,
     dataCompleteness,
     missing,
     valuationComplete: Object.values(dataCompleteness).every(Boolean),
@@ -349,45 +455,60 @@ export function redemptionSplit(
   const { quantity } = input.lot;
   const matured = compareYMD(date, p.maturity) >= 0;
   const day = matured ? p.maturity : date;
-  const principal = principalAt(terms, { date: day, unitBase: p.unitBase });
+  const indexed: IndexedLot | null =
+    p.index === null ? null : { terms, series: p.index, quantity: p.quantity };
+  // One unit's principal on the day; null when an indexed principal's ratio is
+  // not stored. The payment at maturity takes the floor.
+  const unitPrincipal = (): ExactDecimal | null =>
+    indexed === null
+      ? principalAt(terms, { date: day, unitBase: p.unitBase })
+      : unitPrincipalOn(indexed, day, date, matured).value;
   // The principal of the lot and of one unit, rounded as the basis says; a lot
   // of known cost has the cost (pro rata for one unit) as its principal.
-  const principalOf = (units: ExactDecimal) => {
+  const principalOf = (units: ExactDecimal): ExactDecimal | null => {
     const cost = costOf(p, units);
-    return cost === null
-      ? roundLot(terms, principal, units)
-      : toMoney(terms, cost);
+    if (cost !== null) return toMoney(terms, cost);
+    const unit = unitPrincipal();
+    return unit === null ? null : roundLot(terms, unit, units);
   };
-  const refused = (refusal: RedemptionSplitRefusal, principalKnown = false) =>
-    refusedSplit(
+  const refused = (refusal: RedemptionSplitRefusal, principalKnown = false) => {
+    const lot = principalKnown ? principalOf(p.quantity) : null;
+    const unit = principalKnown ? principalOf(ExactDecimal.ONE) : null;
+    return refusedSplit(
       date,
       quantity,
       p.places,
       refusal,
-      principalKnown
-        ? {
-            lot: principalOf(p.quantity),
-            unit: principalOf(ExactDecimal.ONE),
-          }
-        : null,
+      lot === null || unit === null ? null : { lot, unit },
     );
+  };
   if (p.saleRefusal) return refused(p.saleRefusal.code);
 
   if (matured) {
-    const { rates } = resolvedFor(p, startedPeriods(p.schedule, day));
+    const { rates } = resolvedFor(p, startedPeriods(p.schedule, day), date);
     const inputs = inputsFor(p.compounding, rates, p.lastPeriod.index);
     if (!inputs) return refused("RATE_UNKNOWN", true);
-    const basisOf = (units: ExactDecimal): SplitBasis => {
-      const paid = maturityLot(terms, inputs.prior, inputs.current, units);
-      return { principal: principalOf(units), gross: paid, payout: paid };
+    const basisOf = (units: ExactDecimal): SplitBasis | null => {
+      const principal = principalOf(units);
+      const paid =
+        indexed === null
+          ? maturityLot(terms, inputs.prior, inputs.current, units)
+          : maturityCashOf(
+              { ...indexed, quantity: units },
+              inputs.current,
+              p.maturity,
+              date,
+            ).value;
+      return principal === null || paid === null
+        ? null
+        : { principal, gross: paid, payout: paid };
     };
-    return splitOf(
-      date,
-      quantity,
-      p.places,
-      basisOf(p.quantity),
-      basisOf(ExactDecimal.ONE),
-    );
+    const lotBasis = basisOf(p.quantity);
+    const unitBasis = basisOf(ExactDecimal.ONE);
+    // An unknown index ratio leaves no principal either: nothing is known.
+    return lotBasis === null || unitBasis === null
+      ? refused("RATE_UNKNOWN", true)
+      : splitOf(date, quantity, p.places, lotBasis, unitBasis);
   }
 
   const figures = figuresOn(p, day);
@@ -399,11 +520,15 @@ export function redemptionSplit(
     );
   }
   const unit = figuresOn(p, day, ExactDecimal.ONE);
+  const lotPrincipal = principalOf(p.quantity);
+  const unitBasePrincipal = principalOf(ExactDecimal.ONE);
   if (
     figures.grossLot === null ||
     figures.earlyLot === null ||
     unit.grossLot === null ||
-    unit.earlyLot === null
+    unit.earlyLot === null ||
+    lotPrincipal === null ||
+    unitBasePrincipal === null
   ) {
     return refused("RATE_UNKNOWN", true);
   }
@@ -412,12 +537,12 @@ export function redemptionSplit(
     quantity,
     p.places,
     {
-      principal: principalOf(p.quantity),
+      principal: lotPrincipal,
       gross: figures.grossLot,
       payout: figures.earlyLot,
     },
     {
-      principal: principalOf(ExactDecimal.ONE),
+      principal: unitBasePrincipal,
       gross: unit.grossLot,
       payout: unit.earlyLot,
     },

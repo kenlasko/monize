@@ -205,7 +205,8 @@ export class BenchmarkRefreshService implements OnApplicationBootstrap {
                 ORDER BY t.version DESC
                 LIMIT 1
              ) v ON TRUE
-            WHERE v.terms -> 'rateRule' ->> 'benchmarkId' = ANY($1::text[])`,
+            WHERE v.terms -> 'rateRule' ->> 'benchmarkId' = ANY($1::text[])
+               OR v.terms -> 'principalRule' ->> 'benchmarkId' = ANY($1::text[])`,
           [[...codes]],
         ),
     );
@@ -226,7 +227,7 @@ export class BenchmarkRefreshService implements OnApplicationBootstrap {
       this.dataSource,
       (m) =>
         m.query(
-          `SELECT DISTINCT v.terms -> 'rateRule' ->> 'benchmarkId' AS code
+          `SELECT DISTINCT rd.code
              FROM bond_instruments i
              JOIN LATERAL (
                SELECT t.terms
@@ -235,11 +236,15 @@ export class BenchmarkRefreshService implements OnApplicationBootstrap {
                 ORDER BY t.version DESC
                 LIMIT 1
              ) v ON TRUE
-            WHERE v.terms -> 'rateRule' ->> 'benchmarkId' IS NOT NULL
+             CROSS JOIN LATERAL (VALUES
+               (v.terms -> 'rateRule' ->> 'benchmarkId'),
+               (v.terms -> 'principalRule' ->> 'benchmarkId')
+             ) AS rd(code)
+            WHERE rd.code IS NOT NULL
               AND ($1::uuid[] IS NULL OR i.id = ANY($1::uuid[]))
               AND (NOT $2::boolean OR NOT EXISTS (
                     SELECT 1 FROM benchmark_series b
-                     WHERE b.code = v.terms -> 'rateRule' ->> 'benchmarkId'
+                     WHERE b.code = rd.code
                        AND b.covered_through IS NOT NULL))`,
           [instrumentIds ? [...instrumentIds] : null, unfetchedOnly],
         ),

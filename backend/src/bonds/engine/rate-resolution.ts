@@ -47,7 +47,7 @@ export interface PeriodRate {
 }
 
 /** `field` names the stored or supplied value by a technical key, e.g. `announcedRate:2`. */
-function parseDecimal(value: string, field: string): ExactDecimal {
+export function parseDecimal(value: string, field: string): ExactDecimal {
   try {
     return ExactDecimal.parse(value);
   } catch {

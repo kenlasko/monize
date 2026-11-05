@@ -1,6 +1,7 @@
 import { assertNever } from "./assert-never";
 import { BondRounding, parseRounding } from "./bond-rounding";
 import { ExactDecimal } from "./exact-decimal";
+import { parsePrincipalRule, PrincipalRule } from "./principal-rule";
 import {
   assertScheduleConsistent,
   BondSchedule,
@@ -26,6 +27,7 @@ export type { BondTermsErrorCode } from "./terms-readers";
 export type { BondRounding, RoundingBasis } from "./bond-rounding";
 export { roundingBasisOf } from "./bond-rounding";
 export { scheduleDaysOf, scheduleMonthsOf } from "./bond-schedule";
+export type { IndexRatioRule, PrincipalRule } from "./principal-rule";
 export type {
   BondSchedule,
   CouponDatesSchedule,
@@ -166,7 +168,8 @@ export interface BondTerms {
   readonly saleWindow: { readonly from: string; readonly to: string } | null;
   readonly schedule: BondSchedule;
   readonly accrual: { readonly type: AccrualType };
-  readonly principalRule: { readonly type: "FIXED_NOMINAL" };
+  /** The nominal, or a nominal that tracks an index (`INDEX_RATIO`). */
+  readonly principalRule: PrincipalRule;
   readonly rateRule: RateRule;
   readonly capitalization: Capitalization;
   readonly redemption: Redemption;
@@ -395,11 +398,7 @@ export function parseBondTerms(json: unknown): BondTerms {
         "ACTUAL_ACTUAL_ICMA",
       ] as const),
     },
-    principalRule: {
-      type: primitive(t.principalRule, "terms.principalRule", [
-        "FIXED_NOMINAL",
-      ] as const),
-    },
+    principalRule: parsePrincipalRule(t.principalRule, "terms.principalRule"),
     rateRule: parseRateRule(t.rateRule, "terms.rateRule"),
     capitalization: parseCapitalization(
       t.capitalization,
@@ -414,7 +413,6 @@ export function parseBondTerms(json: unknown): BondTerms {
     },
   };
   object(t.accrual, "terms.accrual", ["type"]);
-  object(t.principalRule, "terms.principalRule", ["type"]);
   assertConsistent(terms);
   return terms;
 }
@@ -424,6 +422,7 @@ function assertConsistent(terms: BondTerms): void {
   const { redemption, capitalization } = terms;
   assertMarketableConsistent(terms);
   assertScheduleConsistent(terms);
+  assertPrincipalConsistent(terms);
   assertDiscountConsistent(terms);
   if (
     redemption.type === "ON_DEMAND" &&
@@ -433,6 +432,43 @@ function assertConsistent(terms: BondTerms): void {
     throw new BondTermsError(
       "terms.redemption.blackouts",
       "a record day exists only for a bond that pays a coupon (capitalization NONE)",
+    );
+  }
+}
+
+/**
+ * An indexed principal is paid with coupons computed on it: a `COUPON_DATES`
+ * schedule, capitalization `NONE`, redemption at maturity only. Its index is not
+ * the benchmark the rate rule reads: one series cannot be a rate and an index
+ * level (`benchmarkReadsOf`).
+ */
+function assertPrincipalConsistent(terms: BondTerms): void {
+  const { principalRule, schedule, capitalization, redemption, rateRule } =
+    terms;
+  if (principalRule.type !== "INDEX_RATIO") return;
+  if (schedule.anchor !== "COUPON_DATES") {
+    throw new BondTermsError(
+      "terms.schedule.anchor",
+      "an INDEX_RATIO principal needs a COUPON_DATES schedule",
+    );
+  }
+  if (capitalization.type !== "NONE") {
+    throw new BondTermsError(
+      "terms.capitalization",
+      "an INDEX_RATIO principal pays each coupon at its date (capitalization NONE)",
+    );
+  }
+  if (redemption.type !== "MATURITY_ONLY") {
+    throw new BondTermsError(
+      "terms.redemption",
+      "an INDEX_RATIO principal is paid at maturity only (MATURITY_ONLY)",
+    );
+  }
+  const rateBenchmark = benchmarkRuleOf(rateRule)?.benchmarkId;
+  if (rateBenchmark === principalRule.benchmarkId) {
+    throw new BondTermsError(
+      "terms.principalRule.benchmarkId",
+      "must not be the benchmark the rate rule reads: a rate and an index level are different units",
     );
   }
 }

@@ -30,10 +30,13 @@ import {
   RateScheduleEntry,
 } from "./bond-engine-types";
 import { attributeInterest } from "./attribution";
+import { indexedDayFigures, indexOn } from "./indexed-lot";
+import { IndexSeries, indexSeriesOf } from "./index-ratio";
 import {
   PeriodRate,
   RatePlan,
   RateResolution,
+  parseDecimal,
   planPeriodRates,
   ratesWithStarted,
   startedPeriods,
@@ -146,9 +149,11 @@ function neededMissing(
 }
 
 function describeSchedule(
-  terms: BondEngineInput["terms"],
+  p: PreparedLot,
   rates: readonly PeriodRate[],
+  asOf: string,
 ): RateScheduleEntry[] {
+  const { terms } = p.input;
   // A discount instrument states no rate: its placeholder is never shown.
   const stated = !isDiscount(terms);
   return rates.map((r) => ({
@@ -159,7 +164,19 @@ function describeSchedule(
     rateSource: stated ? r.source : null,
     benchmark: r.benchmark,
     addend: r.addend,
-    ...attributeInterest(terms, rates, r.period.index),
+    ...attributeInterest(
+      terms,
+      rates,
+      r.period.index,
+      // An indexed coupon is on the ratio of the period's end.
+      p.index === null
+        ? undefined
+        : indexOn(
+            { terms, series: p.index, quantity: p.quantity },
+            r.period.end,
+            asOf,
+          ).ratio,
+    ),
   }));
 }
 
@@ -190,8 +207,11 @@ export interface PreparedLot {
   /** One unit's cost; null with `cost`. */
   readonly unitBase: ExactDecimal | null;
   readonly plan: RatePlan;
+  /** What an `INDEX_RATIO` principal reads; null for every other principal. */
+  readonly index: IndexSeries | null;
   readonly saleRefusal: BondValuationRefusal | null;
-  readonly byStarted: Map<number, Resolved>;
+  /** By the count of started periods and, for an indexed lot, the day (its projection depends on it). */
+  readonly byStarted: Map<string, Resolved>;
 }
 
 /**
@@ -277,6 +297,20 @@ function scheduleOf(input: LotInput): readonly SchedulePeriod[] {
   }
 }
 
+/** The indexed principal's benchmark, with the assumed annual inflation the caller supplied (a fraction), if any. */
+function indexSeriesFor(input: LotInput): IndexSeries | null {
+  const rule = input.terms.principalRule;
+  if (rule.type !== "INDEX_RATIO") return null;
+  const assumed = input.projection?.get(rule.benchmarkId);
+  return indexSeriesOf(
+    rule,
+    input.benchmarks.get(rule.benchmarkId),
+    assumed === undefined
+      ? null
+      : parseDecimal(assumed, `projectionAssumption:${rule.benchmarkId}`),
+  );
+}
+
 export function prepare(input: LotInput): PreparedLot {
   const { terms } = input;
   const schedule = scheduleOf(input);
@@ -294,13 +328,19 @@ export function prepare(input: LotInput): PreparedLot {
     places: terms.rounding.moneyDecimals,
     quantity,
     plan: planPeriodRates(input, schedule),
+    index: indexSeriesFor(input),
     saleRefusal: purchaseRefusal(input, lastPeriod.end),
     byStarted: new Map(),
   };
 }
 
-export function resolvedFor(p: PreparedLot, started: number): Resolved {
-  const cached = p.byStarted.get(started);
+export function resolvedFor(
+  p: PreparedLot,
+  started: number,
+  asOf: string,
+): Resolved {
+  const key = p.index === null ? String(started) : `${started}|${asOf}`;
+  const cached = p.byStarted.get(key);
   if (cached) return cached;
   const resolution = ratesWithStarted(p.plan, started);
   const { rates } = resolution;
@@ -308,21 +348,23 @@ export function resolvedFor(p: PreparedLot, started: number): Resolved {
   const maturityInputs = inputsFor(p.compounding, rates, p.lastPeriod.index);
   const resolved: Resolved = {
     ...resolution,
-    rateSchedule: describeSchedule(terms, rates),
-    maturityCash: maturityInputs
-      ? maturityLot(
-          terms,
-          maturityInputs.prior,
-          maturityInputs.current,
-          p.quantity,
-        )
-      : null,
+    rateSchedule: describeSchedule(p, rates, asOf),
+    // An indexed lot's cash at maturity is worked out for the day (`maturityCashOn`).
+    maturityCash:
+      maturityInputs && p.index === null
+        ? maturityLot(
+            terms,
+            maturityInputs.prior,
+            maturityInputs.current,
+            p.quantity,
+          )
+        : null,
     maturityProjected: p.compounding
       ? rates.some((r) => r.source === "PROJECTED")
       : rates[p.lastPeriod.index - 1].source === "PROJECTED",
     missingFor: neededMissing(rates, started),
   };
-  p.byStarted.set(started, resolved);
+  p.byStarted.set(key, resolved);
   return resolved;
 }
 
@@ -353,7 +395,7 @@ export function figuresOn(
 ): DayFigures {
   const { terms, calendars } = p.input;
   const started = startedPeriods(p.schedule, asOf);
-  const { rates } = resolvedFor(p, started);
+  const { rates } = resolvedFor(p, started, asOf);
   const { compounding, places, lastPeriod } = p;
   const text = (figure: ExactDecimal) => figure.toFixed(places);
 
@@ -380,7 +422,29 @@ export function figuresOn(
     p.maturity,
   );
 
-  if (matured) {
+  if (p.index !== null) {
+    // An indexed principal: its own figures (`indexed-lot.ts`), null while the
+    // ratio is unknown; MATURITY_ONLY, so no early redemption value.
+    const open =
+      matured || current === null
+        ? null
+        : inputsFor(compounding, rates, current.index);
+    if (matured || open !== null) {
+      const figures = indexedDayFigures(
+        { terms, series: p.index, quantity },
+        {
+          asOf,
+          maturity: p.maturity,
+          current: open === null ? null : open.current,
+          places,
+        },
+      );
+      principal = figures.principal;
+      accrued = figures.accrued;
+      gross = figures.gross;
+      grossLot = figures.grossLot;
+    }
+  } else if (matured) {
     if (!compounding && !isDiscount(terms)) {
       // A coupon bond redeems at its nominal whatever the rates were; its last
       // coupon is a past cash flow, so no rate is needed for the value.

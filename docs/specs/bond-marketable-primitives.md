@@ -411,6 +411,73 @@ Decisions taken in the implementation (benchmark unit):
   `benchmarkId`, `unit`, `expected`), and nothing is valued. A terms document
   cannot know a unit, so the terms parser does not check it.
 
+Decisions taken in the implementation (`INDEX_RATIO`):
+
+- The parser (`domain/principal-rule.ts`) reads the fields of the block above and
+  nothing else. Bounds: `baseReference` a positive decimal string, `lagMonths` 1
+  to 12, `truncateDecimals` 0 to 12, `roundDecimals` 0 to `truncateDecimals`.
+  Beside the other primitives (`assertPrincipalConsistent`): a `COUPON_DATES`
+  schedule, capitalization `NONE`, and, beyond the text above, redemption
+  `MATURITY_ONLY` (an early redemption value of an indexed principal is not
+  defined here; a `MARKETABLE` series has it anyway); the rate rule must not read
+  the principal's benchmark (one series cannot be a rate and an index level).
+  A document with `FIXED_NOMINAL` parses to the same object as before.
+- `refIndex(d)`: the first of a month reads the index of `M - lag` alone (no
+  interpolation, so a coupon on the first needs one month, any other day two);
+  the interpolated value is truncated to `truncateDecimals` and then rounded half
+  up to `roundDecimals`; so is `refIndex / baseReference`. The interpolation is
+  `engine/index-ratio.ts` (`indexFigureOn`).
+- Where the ratio is read: the coupon of a period on the ratio of its
+  **unadjusted** end (to verify against the Treasury's own payment statement, the
+  country spec section 10); the principal and the accrued interest of a valuation
+  on the ratio of the valuation day; the payment at maturity on the ratio of the
+  maturity date, floored at par for `maturityFloor: PAR`, the final coupon on the
+  adjusted principal. The principal printed before maturity is the adjusted one
+  (below par after a deflation), never the floor.
+- Rounding: no indexed figure is rounded per unit (5.3). The principal, the
+  accrued interest and a coupon are each rounded once on the holding
+  (`roundLot`, figure kind `AMOUNT`); the value is the sum of the rounded
+  principal and rounded accrued interest. A short or long first period does not
+  take `unitDecimals` when the principal is indexed. The rate schedule's unit
+  interest is the unrounded coupon times the ratio at 10 places; a scenario's
+  parts sum those, so a scenario's total may differ by cents from the sum of
+  the rounded coupons.
+- Missing data: a ratio whose months are not stored is unknown, never carried
+  on. The figures that read the valuation day's ratio (principal, accrued
+  interest, gross value, and for a matured lot the principal at maturity) are
+  null and `missing` names each month (`YYYY-MM`, the stored series' publisher,
+  or null when the series is not stored), sorted, once. A coupon or principal
+  payment after the valuation day whose ratio is unknown is `UNKNOWN` with a null
+  amount and `projectionMissing` names the benchmark; a payment whose period end
+  has passed but whose payment day has not reads a ratio that is due, so its
+  months are `missing`. A payment is dated by its unadjusted end for the ratio.
+- Projection: only a supplied assumed annual inflation `p` (a fraction, the
+  `assume=` of the valuation, keyed by the index benchmark) projects, and only
+  for a ratio dated after the valuation day: a month not stored and later than
+  the newest stored month is the newest stored level times
+  `1 + p x months / 12` (months after the newest stored month; a simple
+  annualised rate, an assumption and not an issuer rule); a month before the
+  newest stored one is never projected, and with no stored month there is nothing
+  to project from. A figure that read a projected month is `PROJECTED` and the
+  valuation lists the assumption (`basis` `SUPPLIED`). There is no
+  latest-observation fallback (carrying the newest level on would assume zero
+  inflation).
+- `principalAt` (`engine/accrual.ts`) takes the benchmark data and projection
+  through `PrincipalContext.index` and throws a `RangeError` for an unknown
+  ratio: the engine asks `indexFigureOn` first. The indexed figures are in
+  `engine/indexed-lot.ts` and are used only for a lot whose principal is
+  `INDEX_RATIO`, so every other lot runs the code it always did.
+- The valuation of an indexed lot depends on its day through the projection, so
+  its resolved rates are cached by started periods and day (`resolvedFor`); a
+  plain lot is still cached by started periods only.
+- The redemption split of an indexed lot at maturity: principal returned is the
+  floored principal on the holding and interest the final coupon, so
+  `payout = principalReturned + interest` (INV-BOND-009); an unknown ratio is
+  `RATE_UNKNOWN`.
+- Not done: a notification when a new index level is stored (the benchmark
+  notification reads the rate rule's benchmark only), the market price of the
+  security, a CPI series discontinued (31 CFR 356 App. B I.B.4).
+
 ### 7.2 Rate rule `DAILY_INDEX_PLUS_SPREAD`, accrual `ACTUAL_360_DAILY_SUM`
 
 ```text

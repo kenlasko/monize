@@ -2,7 +2,7 @@ import { BenchmarkUnit } from "./benchmark";
 import { BondTerms, benchmarkRuleOf } from "./bond-terms";
 
 /** Which part of the terms reads a benchmark series. */
-export type BenchmarkRole = "RATE";
+export type BenchmarkRole = "RATE" | "PRINCIPAL";
 
 /** One benchmark series a terms document reads, and the unit its values must be stored in. */
 export interface BenchmarkRead {
@@ -13,15 +13,29 @@ export interface BenchmarkRead {
 
 /**
  * Every benchmark the terms read, each with the unit it needs: a rate rule reads
- * a `RATE_FRACTION` series. The valuation refuses a stored series whose unit is
+ * a `RATE_FRACTION` series, an `INDEX_RATIO` principal an `INDEX_LEVEL` one. The valuation refuses a stored series whose unit is
  * another (`docs/specs/bond-marketable-primitives.md` 7.1), so a rule never
  * reads a series of the wrong kind of value.
  */
 export function benchmarkReadsOf(terms: BondTerms): readonly BenchmarkRead[] {
+  const reads: BenchmarkRead[] = [];
   const rule = benchmarkRuleOf(terms.rateRule);
-  return rule === null
-    ? []
-    : [{ benchmarkId: rule.benchmarkId, role: "RATE", unit: "RATE_FRACTION" }];
+  if (rule !== null) {
+    reads.push({
+      benchmarkId: rule.benchmarkId,
+      role: "RATE",
+      unit: "RATE_FRACTION",
+    });
+  }
+  const principal = terms.principalRule;
+  if (principal.type === "INDEX_RATIO") {
+    reads.push({
+      benchmarkId: principal.benchmarkId,
+      role: "PRINCIPAL",
+      unit: "INDEX_LEVEL",
+    });
+  }
+  return reads;
 }
 
 /** True when the terms read the benchmark `benchmarkId`, in any role. */

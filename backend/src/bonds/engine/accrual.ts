@@ -5,6 +5,7 @@ import { ExactDecimal } from "../domain/exact-decimal";
 import { roundingBasisOf } from "../domain/bond-rounding";
 import { CouponPeriodInfo } from "../domain/period-schedule";
 import { couponFigure, quasiFractions } from "./coupon-accrual";
+import { IndexLookup, indexFigureOn } from "./index-ratio";
 import { roundLot, toMoney, unitRound } from "./rounding";
 
 /**
@@ -14,14 +15,16 @@ import { roundLot, toMoney, unitRound } from "./rounding";
  */
 
 /**
- * What the principal may depend on. Today only the day; this is where an index
- * ratio or an amortisation schedule will be passed when a principal rule needs
- * one.
+ * What the principal may depend on: the day, a discount lot's own cost, and, for
+ * an `INDEX_RATIO` principal, the benchmark data and projection it reads and the
+ * day the figures are valued on (`IndexLookup`).
  */
 export interface PrincipalContext {
   readonly date: string;
   /** One unit's cost, for a discount lot of known cost: it replaces the issue price. */
   readonly unitBase?: ExactDecimal | null;
+  /** Required by an `INDEX_RATIO` principal; ignored by every other rule. */
+  readonly index?: IndexLookup;
 }
 
 /** The days a rate accrues over: a period's start and end. */
@@ -53,19 +56,36 @@ function issuePriceOf(terms: BondTerms): ExactDecimal {
 
 /**
  * One bond's principal on `ctx.date`: the nominal, or for a discount instrument
- * the issue price it was bought at.
+ * the issue price it was bought at, or for an `INDEX_RATIO` principal the nominal
+ * times the index ratio of the day (before the maturity floor, which only the
+ * payment at maturity takes: `indexed-lot.ts`). An indexed principal whose ratio
+ * is not known is a caller's error: the engine asks `indexFigureOn` first, because
+ * an unknown ratio makes every figure that reads it null (INV-BOND-002).
  */
 export function principalAt(
   terms: BondTerms,
   ctx: PrincipalContext,
 ): ExactDecimal {
-  switch (terms.principalRule.type) {
+  const rule = terms.principalRule;
+  switch (rule.type) {
     case "FIXED_NOMINAL":
       return isDiscount(terms)
         ? (ctx.unitBase ?? issuePriceOf(terms))
         : ExactDecimal.parse(terms.instrument.faceValue);
+    case "INDEX_RATIO": {
+      const ratio =
+        ctx.index === undefined
+          ? null
+          : indexFigureOn(ctx.index, ctx.date).ratio;
+      if (ratio === null) {
+        throw new RangeError(
+          `The index ratio of ${ctx.date} is not known: check indexFigureOn before principalAt`,
+        );
+      }
+      return ExactDecimal.parse(terms.instrument.faceValue).mul(ratio);
+    }
     default:
-      return assertNever(terms.principalRule.type);
+      return assertNever(rule);
   }
 }
 
