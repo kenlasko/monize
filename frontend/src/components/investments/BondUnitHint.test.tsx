@@ -59,4 +59,37 @@ describe('BondUnitHint', () => {
     await mount('p-note');
     expect(screen.queryByTestId('bond-unit-hint')).toBeNull();
   });
+
+  it('says what a price is for a program whose securities trade: the cash price of one unit, without accrued interest', async () => {
+    list.mockResolvedValue([{ ...note, cashPriced: true, indexedPrincipal: false }]);
+    await mount('p-note');
+    expect(screen.getByTestId('bond-unit-hint')).toHaveTextContent(
+      'One unit = 100 USD face value The price is the cash price of one unit (100 USD face value), without accrued interest.',
+    );
+  });
+
+  it('names the inflation adjustment for an indexed principal: quoted price x index ratio', async () => {
+    list.mockResolvedValue([{ ...note, cashPriced: true, indexedPrincipal: true }]);
+    await mount('p-note');
+    expect(screen.getByTestId('bond-unit-hint')).toHaveTextContent(
+      'including the inflation adjustment (quoted price x index ratio)',
+    );
+  });
+
+  it('leaves the unit sentence out where only the price is entered', async () => {
+    list.mockResolvedValue([{ ...note, cashPriced: true, indexedPrincipal: true }]);
+    await act(async () => {
+      render(<BondUnitHint programId="p-note" showUnit={false} />);
+    });
+    const text = screen.getByTestId('bond-unit-hint').textContent ?? '';
+    expect(text.startsWith('The price is the cash price of one unit (100 USD face value)')).toBe(true);
+    expect(text).not.toContain('One unit =');
+  });
+
+  it('says nothing about a price for a program that is not cash-priced, and nothing at all without the unit', async () => {
+    await act(async () => {
+      render(<BondUnitHint programId="p-note" showUnit={false} />);
+    });
+    expect(screen.queryByTestId('bond-unit-hint')).toBeNull();
+  });
 });

@@ -37,6 +37,10 @@ export interface BondProgramSummary {
   infoUrl?: string | null;
   /** The nominal of one bond of the program, an exact decimal string; null when no adapter states it. */
   faceValue?: string | null;
+  /** True when a unit's price is the cash price of one unit of face value (a marketable coupon program). */
+  cashPriced?: boolean;
+  /** True when the principal is indexed: the price then includes the inflation adjustment. */
+  indexedPrincipal?: boolean;
 }
 
 /** `POST /bonds/instruments/fetch` body. */

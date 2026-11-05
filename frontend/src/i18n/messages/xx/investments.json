@@ -339,6 +339,8 @@
     "toastExchangeRateRequired": "[XX-Enter an exchange rate before saving a cross-currency trade.-XX]",
     "notAvailable": "[XX-Not available-XX]",
     "bondUnit": "[XX-One unit = {faceValue} {currency} face value-XX]",
+    "bondPriceCash": "[XX-The price is the cash price of one unit ({faceValue} {currency} face value), without accrued interest.-XX]",
+    "bondPriceIndexed": "[XX-The price is the cash price of one unit ({faceValue} {currency} face value) including the inflation adjustment (quoted price x index ratio), without accrued interest.-XX]",
     "bondSeries": {
       "label": "[XX-Bond series-XX]",
       "fromDate": "[XX-Determined from the date-XX]",

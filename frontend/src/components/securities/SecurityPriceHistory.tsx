@@ -394,6 +394,7 @@ export function SecurityPriceHistory({
           <SecurityPriceForm
             onSubmit={handleAdd}
             onCancel={() => setShowAddForm(false)}
+            bondProgramId={security.bondProgramId}
           />
         </div>
       )}
@@ -405,6 +406,7 @@ export function SecurityPriceHistory({
             price={editingPrice}
             onSubmit={handleEdit}
             onCancel={() => setEditingPrice(undefined)}
+            bondProgramId={security.bondProgramId}
           />
         </div>
       )}
