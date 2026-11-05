@@ -68,6 +68,9 @@ implied.
 | INV-HOLDING-001 | A holding equals a deterministic replay of the investment ledger | enforced |
 | INV-HOLDING-002 | Every view replays the ledger the same way | enforced |
 | INV-TRANSFER-001 | A transfer's two legs share the VOID boundary and one balance decision | enforced |
+| INV-SPLITFX-001 | A cross-currency split transfer line credits its stated received amount at the implied rate, or the market conversion | enforced |
+| INV-SPLITFX-002 | A split line's recorded received amount survives every rewrite that does not change the line | enforced |
+| INV-SPLITFX-003 | Only the owner's read carries a split line's counterpart | enforced |
 | INV-REGISTER-001 | A row's running balance is the same figure whichever way the date register runs, and no balance is shown under any other order | enforced |
 | INV-REDEEM-001 | A redemption's accrued interest moves cash once and is income once | enforced |
 | INV-RECONCILE-001 | While the strict lock is on, a reconciled transaction is not altered | enforced |
@@ -987,6 +990,92 @@ a reconcile state is genuinely per-ledger (a cross-owner transfer's two ledgers
 reconcile independently), and only the VOID boundary -- where money either moved
 or did not -- is shared. See `docs/financial-semantics.md` section 11, "Editing one row must not leave
 the pair describing two different events".
+
+### INV-SPLITFX-001 -- a split transfer line credits what arrived
+
+```text
+Statement           A split's transfer line moves `amount` (parent currency).
+                    Its counterpart is the line's stated `transferTargetAmount`,
+                    signed opposite to the line, at the implied rate
+                    roundFxRate(received / |amount|); without one it is the
+                    market conversion for the parent's date, and no rate refuses
+                    the write. A same-currency line moves the same amount on both
+                    sides; zero on one side only is refused; a received amount on
+                    a line that is not a transfer is refused.
+Source of truth     The counterpart transactions row (amount, exchange_rate),
+                    linked through transaction_splits.linked_transaction_id.
+Enforcement         TransactionSplitService.resolveSplitTransferAmount, called
+                    by createSplits and addSplit; assertTargetAmountOnTransfer in
+                    validateSplits and addSplit. The rules follow the plain
+                    transfer's toAmount (TransactionTransferService.resolveTransferFx).
+Concurrency scope   The parent row (lockTransactionRow) on every replacement.
+Retry semantics     A replacement is one transaction; a retry rewrites the same
+                    lines.
+Crash semantics     Nothing commits before the counterparts are written.
+Failure response    400 (transferRateUnavailable, transferSameCurrencyMustConserve,
+                    transferAmountsMustAgreeOnZero, transferImpliedRateInvalid,
+                    splitTransferTargetAmountRequiresTransfer), before any write.
+Required tests      transaction-split.service.spec.ts "transferTargetAmount";
+                    split-transfer-received-amount.integration.spec.ts.
+Status              enforced
+```
+
+Spec: `docs/specs/split-cross-currency-transfer.md`.
+
+### INV-SPLITFX-002 -- a recorded received amount survives a rewrite
+
+```text
+Statement           A split write replaces every line. A line that continues a
+                    recorded one keeps the received amount its counterpart holds
+                    unless the caller states another: the server fills it for a
+                    line with the same target and amount whose parent account is
+                    unchanged, a line stating its own figure claims its recorded
+                    match first, and the client sends back what it loaded. A
+                    received amount belongs to one currency pair: the client tags
+                    it with the parent currency it was stated against, neither
+                    shows nor sends it for another, and restores it when the
+                    parent returns to that currency with the line unchanged. A
+                    duplicate or quick fill copies none. Undo compares it, so an
+                    edit of that figure alone is refused like any leg change.
+Source of truth     The counterpart's amount before the replacement deletes it.
+Enforcement         carryRecordedReceivedAmounts through
+                    TransactionSplitService.withRecordedReceivedAmounts, in
+                    updateSplits and TransactionsService.update, inside the
+                    replacement's transaction after the parent lock;
+                    useSplitTransferFxAutofill (transferTargetFromCurrency,
+                    the stated-figure restore); toSplitRows receivedAmountsIn;
+                    splitsEqualByValue over snapshotTransaction's receivedAmount.
+Concurrency scope   The parent row.
+Retry semantics     Idempotent: a retry carries the same figure.
+Crash semantics     --
+Failure response    --
+Required tests      split-received-amount.util.spec.ts; the integration cases
+                    "re-save omits it", "amount changed", "parent moves to
+                    another account"; SplitEditor.crossCurrency.test.tsx; the hook
+                    tests; action-history.service.spec.ts "changed only what a
+                    line received"; TransactionForm.test.tsx received amounts.
+Status              enforced
+```
+
+### INV-SPLITFX-003 -- only the owner reads a split line's counterpart
+
+```text
+Statement           A read returns a split transfer line's counterpart (`id`,
+                    `amount`, `currencyCode` and nothing else) only on the
+                    reader's own split. A joint reader sees the owner's split
+                    but cannot edit its lines, and the counterpart may sit in an
+                    account of the owner's that was never shared.
+Source of truth     transactions.user_id of the split parent.
+Enforcement         TransactionsService.attachSplitCounterpartAmounts (findOne)
+                    and ownSplitCounterpartsOnly (findAll).
+Concurrency scope   --
+Retry semantics     --
+Crash semantics     --
+Failure response    The counterpart is null.
+Required tests      split-received-amount.util.spec.ts "ownSplitCounterpartsOnly";
+                    the integration "joint reader" cases (findOne and findAll).
+Status              enforced
+```
 
 ### INV-REDEEM-001 -- a redemption's accrued interest moves cash once
 

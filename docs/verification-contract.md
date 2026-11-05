@@ -85,6 +85,9 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-HOLDING-001 holding replay | supporting | -- | required | **required** | optional | required | -- | optional |
 | INV-HOLDING-002 one reducer | required | **required** | supporting | -- | -- | -- | -- | required |
 | INV-TRANSFER-001 both legs | required | -- | required | optional | -- | -- | -- | required |
+| INV-SPLITFX-001 a split line credits what arrived | **required** | -- | required | -- | -- | -- | -- | optional |
+| INV-SPLITFX-002 a recorded received amount survives a rewrite | required | -- | **required** | -- | -- | -- | -- | optional |
+| INV-SPLITFX-003 only the owner reads a line's counterpart | required | -- | **required** | -- | -- | -- | -- | -- |
 | INV-REGISTER-001 one balance per row | required | required | **required** | -- | -- | -- | -- | supporting |
 | INV-REDEEM-001 accrued interest | required | **required** | required | -- | -- | -- | -- | optional |
 | INV-RECONCILE-001 reconciled lock | supporting | **required** | required | required | -- | -- | -- | optional |

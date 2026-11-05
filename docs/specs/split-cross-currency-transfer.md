@@ -17,30 +17,36 @@ what the bank actually credited after its rate and fees.
 
 ## 2. Invariants
 
-- **SPLITFX-1.** The counterpart's amount is the stated received amount when
+Catalogued in `docs/system-invariants.md` as INV-SPLITFX-001 to -003; the
+letters below name their parts.
+
+- **INV-SPLITFX-001 (a).** The counterpart's amount is the stated received amount when
   there is one, signed opposite to the line; its `exchangeRate` is the implied
   `roundFxRate(received / |amount|)`. Without one it is the market conversion
   for the parent's date (`resolveFxRateOrNull`), and no rate refuses the write.
-- **SPLITFX-2.** A same-currency line moves the same amount on both sides; a
+- **INV-SPLITFX-001 (b).** A same-currency line moves the same amount on both sides; a
   stated received amount that differs is refused
   (`transferSameCurrencyMustConserve`). Zero on one side only is refused
   (`transferAmountsMustAgreeOnZero`). A received amount on a line that is not a
   transfer is refused (`splitTransferTargetAmountRequiresTransfer`).
-- **SPLITFX-3.** A received amount is a fact about the transfer. A split write
+- **INV-SPLITFX-002 (a).** A received amount is a fact about the transfer. A split write
   replaces every line, so a line that continues a recorded one (same target,
   same amount, parent account unchanged) keeps its recorded received amount
-  when the caller states none (`carryRecordedReceivedAmounts`). A changed line
-  is re-converted.
-- **SPLITFX-4.** A received amount belongs to one pair. On the client it is
+  when the caller states none (`carryRecordedReceivedAmounts`); a line stating
+  its own figure claims its recorded match first, so a new identical line does
+  not inherit one. A changed line is re-converted.
+- **INV-SPLITFX-002 (b).** A received amount belongs to one pair. On the client it is
   tagged with the parent currency it was stated against
   (`transferTargetFromCurrency`); once the parent moves to another currency it
-  is neither shown nor sent, and is re-derived for the new pair.
-- **SPLITFX-5.** A duplicate or quick fill does not copy a received amount: the
+  is neither shown nor sent, and is re-derived for the new pair; a stated
+  figure comes back when the parent returns to its currency with the line
+  unchanged.
+- **INV-SPLITFX-002 (c).** A duplicate or quick fill does not copy a received amount: the
   new row's comes from the rate for its own date.
-- **SPLITFX-6.** Undo or redo of an edit that changed what a line received is
+- **INV-SPLITFX-002 (d).** Undo or redo of an edit that changed what a line received is
   refused like any other change to a leg-carrying line
   (`UNDO_SPLIT_LEGS_CHANGED`); history snapshots carry `receivedAmount`.
-- **SPLITFX-7.** Only the reader's own split carries its lines' counterparts in
+- **INV-SPLITFX-003.** Only the reader's own split carries its lines' counterparts in
   a read; a joint reader gets none.
 
 ## 3. The prefill
@@ -75,12 +81,12 @@ received amount needs no rate.
 
 | Claim | Test |
 |---|---|
-| SPLITFX-1, -2 | `transaction-split.service.spec.ts` "transferTargetAmount"; `split-transfer-received-amount.integration.spec.ts` |
-| SPLITFX-3 | `split-received-amount.util.spec.ts`; the integration "re-save omits it" and "amount changed" cases |
-| SPLITFX-4 | `useSplitTransferFxAutofill.test.ts`; `SplitEditor.crossCurrency.test.tsx` "parent currency changes"; `split-transfer-currency.test.ts` |
-| SPLITFX-5 | `SplitEditor.crossCurrency.test.tsx` "loads none for a duplicate or quick fill" |
-| SPLITFX-6 | `action-history.service.spec.ts` "changed only what a line received" |
-| SPLITFX-7 | `split-received-amount.util.spec.ts` "ownSplitCounterpartsOnly"; the integration "joint reader" case |
+| INV-SPLITFX-001 | `transaction-split.service.spec.ts` "transferTargetAmount"; `split-transfer-received-amount.integration.spec.ts` |
+| INV-SPLITFX-002 (a) | `split-received-amount.util.spec.ts`; the integration "re-save omits it" and "amount changed" cases |
+| INV-SPLITFX-002 (b) | `useSplitTransferFxAutofill.test.ts`; `SplitEditor.crossCurrency.test.tsx` "parent currency changes"; `split-transfer-currency.test.ts` |
+| INV-SPLITFX-002 (c) | `SplitEditor.crossCurrency.test.tsx` "loads none for a duplicate or quick fill" |
+| INV-SPLITFX-002 (d) | `action-history.service.spec.ts` "changed only what a line received" |
+| INV-SPLITFX-003 | `split-received-amount.util.spec.ts` "ownSplitCounterpartsOnly"; the integration "joint reader" case |
 | Prefill fee and precision | `split-transfer-currency.test.ts`; `useTransferFxAutofill.test.ts` "precision" |
 
 ## 7. Out of scope
