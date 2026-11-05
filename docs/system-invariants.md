@@ -4488,7 +4488,12 @@ Required tests      bond-prices.integration.spec.ts (real PostgreSQL: a manual
                     bond-price.service.spec.ts (including the 10-year EDO lot
                     series bound and the blend over two series),
                     bond-lots.spec.ts (per-account and per-series FIFO and the
-                    paired transfer), securities.service.spec.ts (link
+                    paired transfer), bond-manual-price-band.integration.spec.ts
+                    (a manual price of a marketable coupon security above five
+                    times the face value is refused on create and update, an
+                    engine-priced bill and a Polish bond are not read),
+                    bond-write-guard.spec.ts (assertManualPriceIsCashPrice),
+                    securities.service.spec.ts (link
                     refusals: type, quantity, currency, uppercase UUID, undo),
                     action-history undo spec, provider-priced.guard.spec.ts,
                     backup specs (support backup drops the link; restore
@@ -4885,6 +4890,9 @@ Required tests      backend/src/securities/portfolio-calculation.service.spec.ts
                     (two accounts holding different series of one program, an
                     unknown lot, a valuation that throws);
                     backend/test/integration/bond-holding-value.integration.spec.ts
+                    (including a series valued by the person's price),
+                    backend/test/integration/us-treasury-flow.integration.spec.ts
+                    (a bill, a note and a TIPS through the write path)
 Status              partial. The holdings surfaces (portfolio holdings and totals,
                     account market values, the account balances report, sector
                     and asset-class weightings, GEM positions) all value a

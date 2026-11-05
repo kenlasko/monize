@@ -7,6 +7,13 @@ import { I18nService } from "nestjs-i18n";
 import { DataSource } from "typeorm";
 import { POLISH_BOND_ADAPTER } from "@/bonds/adapters/pl/index";
 import { FIXTURE_CATALOG } from "@/bonds/adapters/pl/pl-test-input";
+import { fetchSeries } from "@/bonds/adapters/us/series/fetch-series";
+import {
+  fakeFetch,
+  fixtureJson,
+  fixtureText,
+  treasuryAnswers,
+} from "@/bonds/adapters/us/series/fixture-helpers";
 import type { BondCatalogService } from "@/bonds/bond-catalog.service";
 import { bondProgramId } from "@/bonds/bond-instrument-id";
 import { withScopedDb } from "@/common/db/scoped-db";
@@ -270,6 +277,69 @@ export async function storeFixtureSeries(
         }
       }
       await catalog.seedBenchmarkSeries([POLISH_BOND_ADAPTER]);
+    }),
+  );
+}
+
+/** The constructed Treasury fixtures of `adapters/us/series/fixtures/`, by product. */
+export const US_FIXTURE_SERIES = {
+  BILL: {
+    seriesCode: "912797WM5261001",
+    cusip: "912797WM5",
+    records: "ta-ws-912797WM5.json",
+    results: { "R_20260929_1.xml": "R_20260929_1.xml" },
+  },
+  NOTE: {
+    seriesCode: "91282CZK0",
+    cusip: "91282CZK0",
+    records: "ta-ws-91282CZK0.json",
+    results: {
+      "R_20260928_1.xml": "R_20260928_1.xml",
+      "R_20261027_1.xml": "R_20260928_1.xml",
+    },
+  },
+  TIPS: {
+    seriesCode: "912810FQ6",
+    cusip: "912810FQ6",
+    records: "ta-ws-912810FQ6.json",
+    results: { "R_20011025_1.xml": "R_20011025_1.xml" },
+  },
+} as const;
+
+/**
+ * Stores one US Treasury fixture series (a bill, a note or a TIPS) as a fetch
+ * would: the adapter's own `fetchSeries` over the saved answers, then the
+ * catalog's `storeEntry`. No network. The currency USD must exist.
+ */
+export async function storeUsFixtureSeries(
+  dataSource: DataSource,
+  catalog: BondCatalogService,
+  product: keyof typeof US_FIXTURE_SERIES,
+): Promise<void> {
+  const fixture = US_FIXTURE_SERIES[product];
+  const answers = treasuryAnswers(
+    fixture.cusip,
+    fixtureJson(fixture.records),
+    Object.fromEntries(
+      Object.entries(fixture.results).map(([served, file]) => [
+        served,
+        fixtureText(file),
+      ]),
+    ),
+  );
+  const { entry } = await fetchSeries(
+    fixture.seriesCode,
+    fakeFetch(answers),
+    () => new Date("2026-11-04T10:00:00.000Z"),
+  );
+  await withSystemContext(() =>
+    withScopedDb(dataSource, async (m) => {
+      const outcome = await catalog.storeEntry(m, entry);
+      if (outcome.kind !== "inserted" && outcome.kind !== "unchanged") {
+        throw new Error(
+          `Fixture series ${fixture.seriesCode} was not stored: ${outcome.kind}`,
+        );
+      }
     }),
   );
 }

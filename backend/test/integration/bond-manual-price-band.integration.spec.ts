@@ -2,15 +2,7 @@ import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { BondCatalogService } from "@/bonds/bond-catalog.service";
 import { bondProgramId } from "@/bonds/bond-instrument-id";
-import { withScopedDb } from "@/common/db/scoped-db";
-import { withSystemContext, withUserContext } from "@/common/db/with-context";
-import { fetchSeries } from "@/bonds/adapters/us/series/fetch-series";
-import {
-  fakeFetch,
-  fixtureJson,
-  fixtureText,
-  treasuryAnswers,
-} from "@/bonds/adapters/us/series/fixture-helpers";
+import { withUserContext } from "@/common/db/with-context";
 import { SecuritiesModule } from "@/securities/securities.module";
 import { SecurityPriceService } from "@/securities/security-price.service";
 import {
@@ -18,6 +10,7 @@ import {
   createIntegrationModule,
   createTestUserDirect,
   insertBondProgram,
+  storeUsFixtureSeries,
 } from "../helpers/integration-setup";
 
 /**
@@ -35,8 +28,6 @@ describe("a linked security's manual price is a cash price (integration, INV-BON
   let prices: SecurityPriceService;
   let catalog: BondCatalogService;
   let userId: string;
-
-  const NOW = () => new Date("2026-11-04T10:00:00.000Z");
 
   beforeAll(async () => {
     module = await createIntegrationModule([SecuritiesModule]);
@@ -66,18 +57,7 @@ describe("a linked security's manual price is a cash price (integration, INV-BON
        ON CONFLICT (code) DO NOTHING`,
     );
     userId = (await createTestUserDirect(dataSource)).id;
-    const get = fakeFetch(
-      treasuryAnswers("91282CZK0", fixtureJson("ta-ws-91282CZK0.json"), {
-        "R_20260928_1.xml": fixtureText("R_20260928_1.xml"),
-        "R_20261027_1.xml": fixtureText("R_20260928_1.xml"),
-      }),
-    );
-    const { entry } = await fetchSeries("91282CZK0", get, NOW);
-    await withSystemContext(() =>
-      withScopedDb(dataSource, async (m) => {
-        await catalog.storeEntry(m, entry);
-      }),
-    );
+    await storeUsFixtureSeries(dataSource, catalog, "NOTE");
     await insertBondProgram(dataSource, "EDO", "PLN", "PL", "PL_MF");
     await insertBondProgram(dataSource, "BILL", "USD", "US", "US_TREASURY");
   });
