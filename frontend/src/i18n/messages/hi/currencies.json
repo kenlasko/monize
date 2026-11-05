@@ -19,7 +19,8 @@
       "separator": ", फिर ",
       "names": {
         "frankfurter": "Frankfurter (ECB संदर्भ दरें)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "क्रिप्टो जोड़े (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "क्रियाएं"
     },
     "defaultBadge": "डिफ़ॉल्ट",
+    "cryptoBadge": "क्रिप्टो",
+    "noPriceSymbol": "कोई मूल्य प्रतीक नहीं",
     "statusBadge": {
       "active": "सक्रिय",
       "activeShort": "सक्रि",
@@ -98,6 +101,20 @@
     "symbolLabel": "प्रतीक",
     "symbolPlaceholder": "उदा., $, €, £, ¥",
     "decimalPlacesLabel": "दशमलव स्थान",
+    "kindLabel": "प्रकार",
+    "kindOptions": {
+      "fiat": "फ़िएट मुद्रा",
+      "crypto": "क्रिप्टोकरेंसी"
+    },
+    "kindLocked": "{code} उपयोग में है, इसलिए इसका प्रकार नहीं बदला जा सकता।",
+    "quoteSymbolLabel": "मूल्य प्रतीक (वैकल्पिक)",
+    "quoteSymbolPlaceholder": "उदा. BTC-EUR",
+    "quoteSymbolHelp": "वह Yahoo Finance प्रतीक जिससे कॉइन का मूल्य लिया जाता है: उसका टिकर, एक हाइफ़न और वह मुद्रा जिसमें उसका भाव दिया जाता है, जैसे BTC-EUR। कॉइन की विनिमय दरें इसी के माध्यम से प्राप्त की जाती हैं।",
+    "verifyButton": "सत्यापित करें",
+    "quoteSymbolPricedIn": "{currency} में मूल्य",
+    "quoteSymbolMissing": "मूल्य प्रतीक के बिना मुद्रा की कोई विनिमय दर नहीं होती।",
+    "quoteSymbolNotCrypto": "{symbol} क्रिप्टोकरेंसी नहीं है। किसी कॉइन का जोड़ा दर्ज करें, जैसे BTC-EUR।",
+    "quoteSymbolNotFound": "{symbol} के लिए कोई क्रिप्टोकरेंसी नहीं मिली",
     "lookupButton": "लुकअप",
     "lookingUp": "लुकअप हो रहा है...",
     "clearButton": "साफ़ करें",
@@ -109,9 +126,14 @@
       "found": "मिला: {details}",
       "notFound": "\"{query}\" के लिए कोई मुद्रा नहीं मिली",
       "lookupFailed": "लुकअप विफल - कृपया पुनः प्रयास करें",
-      "reactivateFailed": "मुद्रा को पुनः सक्रिय करने में विफल"
+      "reactivateFailed": "मुद्रा को पुनः सक्रिय करने में विफल",
+      "verifyEmpty": "सत्यापित करने के लिए BTC-EUR जैसा मूल्य प्रतीक दर्ज करें",
+      "verifyFailed": "मूल्य प्रतीक सत्यापित करने में विफल"
     },
     "inactiveNotice": "{code} पहले से आपकी सूची में है, लेकिन निष्क्रिय है।",
+    "nonIsoNotice": "{code} कोई मानक मुद्रा कोड नहीं है। यदि यह क्रिप्टोकरेंसी है, तो इसका प्रकार क्रिप्टोकरेंसी पर सेट करें। <guide>उपयोगकर्ता गाइड में क्रिप्टोकरेंसी के बारे में पढ़ें</guide>।",
+    "switchToCrypto": "क्रिप्टोकरेंसी का उपयोग करें",
+    "cryptoPrecisionNotice": "क्रिप्टोकरेंसी में राशियाँ अधिकतम चार दशमलव स्थानों तक रखी जाती हैं, इसलिए नेटवर्क शुल्क जैसी बहुत छोटी राशि शून्य पर पूर्णांकित हो सकती है। <guide>वॉलेट शुल्क दर्ज करने का तरीका देखें</guide>।",
     "reactivateButton": "{code} पुनः सक्रिय करें",
     "reactivating": "पुनः सक्रिय किया जा रहा है..."
   },
@@ -120,7 +142,10 @@
     "nameRequired": "नाम आवश्यक है",
     "nameMax": "नाम 100 अक्षरों से कम होना चाहिए",
     "symbolRequired": "प्रतीक आवश्यक है",
-    "symbolMax": "प्रतीक 10 अक्षरों से कम होना चाहिए"
+    "symbolMax": "प्रतीक 10 अक्षरों से कम होना चाहिए",
+    "quoteSymbolMax": "मूल्य प्रतीक 20 अक्षरों या उससे कम का होना चाहिए",
+    "quoteSymbolRequiresCrypto": "केवल क्रिप्टोकरेंसी का मूल्य प्रतीक होता है",
+    "quoteSymbolNotAPair": "BTC-EUR जैसा जोड़ा दर्ज करें: कॉइन, एक हाइफ़न और तीन अक्षरों का मुद्रा कोड"
   },
   "rateHistory": {
     "title": "दर इतिहास",
@@ -150,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (ECB)",
         "mnyImport": "Money आयात",
+        "yahooCrypto": "क्रिप्टो जोड़े (Yahoo)",
         "unknown": "अज्ञात"
       }
     },

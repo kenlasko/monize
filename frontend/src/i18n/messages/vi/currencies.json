@@ -19,7 +19,8 @@
       "separator": ", sau đó ",
       "names": {
         "frankfurter": "Frankfurter (tỷ giá tham chiếu ECB)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Cặp tiền mã hóa (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "Hành động"
     },
     "defaultBadge": "Mặc định",
+    "cryptoBadge": "Tiền mã hóa",
+    "noPriceSymbol": "Không có ký hiệu giá",
     "statusBadge": {
       "active": "Đang hoạt động",
       "activeShort": "HĐ",
@@ -98,6 +101,20 @@
     "symbolLabel": "Ký hiệu",
     "symbolPlaceholder": "Ví dụ: $, €, £, ¥",
     "decimalPlacesLabel": "Số thập phân",
+    "kindLabel": "Loại",
+    "kindOptions": {
+      "fiat": "Tiền pháp định",
+      "crypto": "Tiền mã hóa"
+    },
+    "kindLocked": "{code} đang được sử dụng nên không thể đổi loại.",
+    "quoteSymbolLabel": "Ký hiệu giá (tùy chọn)",
+    "quoteSymbolPlaceholder": "vd. BTC-EUR",
+    "quoteSymbolHelp": "Ký hiệu Yahoo Finance dùng để lấy giá của đồng coin: mã giao dịch, dấu gạch ngang và loại tiền tệ niêm yết, chẳng hạn BTC-EUR. Tỷ giá của đồng coin được lấy thông qua ký hiệu này.",
+    "verifyButton": "Xác minh",
+    "quoteSymbolPricedIn": "Niêm yết bằng {currency}",
+    "quoteSymbolMissing": "Không có ký hiệu giá thì loại tiền tệ này không có tỷ giá.",
+    "quoteSymbolNotCrypto": "{symbol} không phải là tiền mã hóa. Hãy nhập cặp của một đồng coin, chẳng hạn BTC-EUR.",
+    "quoteSymbolNotFound": "Không tìm thấy tiền mã hóa cho {symbol}",
     "lookupButton": "Tra cứu",
     "lookingUp": "Đang tra cứu...",
     "clearButton": "Xóa",
@@ -109,9 +126,14 @@
       "found": "Đã tìm thấy: {details}",
       "notFound": "Không tìm thấy tiền tệ cho \"{query}\"",
       "lookupFailed": "Tra cứu thất bại - vui lòng thử lại",
-      "reactivateFailed": "Không thể kích hoạt lại tiền tệ"
+      "reactivateFailed": "Không thể kích hoạt lại tiền tệ",
+      "verifyEmpty": "Nhập ký hiệu giá như BTC-EUR để xác minh",
+      "verifyFailed": "Không thể xác minh ký hiệu giá"
     },
     "inactiveNotice": "{code} đã có trong danh sách của bạn nhưng đang không hoạt động.",
+    "nonIsoNotice": "{code} không phải là mã tiền tệ tiêu chuẩn. Nếu đây là tiền mã hóa, hãy đặt loại của nó thành Tiền mã hóa. <guide>Đọc về tiền mã hóa trong hướng dẫn sử dụng</guide>.",
+    "switchToCrypto": "Dùng Tiền mã hóa",
+    "cryptoPrecisionNotice": "Số tiền bằng tiền mã hóa chỉ được giữ tối đa bốn chữ số thập phân, nên một khoản rất nhỏ như phí mạng có thể bị làm tròn về không. <guide>Xem cách ghi nhận phí ví</guide>.",
     "reactivateButton": "Kích hoạt lại {code}",
     "reactivating": "Đang kích hoạt lại..."
   },
@@ -120,7 +142,10 @@
     "nameRequired": "Tên là bắt buộc",
     "nameMax": "Tên phải từ 100 ký tự trở xuống",
     "symbolRequired": "Ký hiệu là bắt buộc",
-    "symbolMax": "Ký hiệu phải từ 10 ký tự trở xuống"
+    "symbolMax": "Ký hiệu phải từ 10 ký tự trở xuống",
+    "quoteSymbolMax": "Ký hiệu giá phải từ 20 ký tự trở xuống",
+    "quoteSymbolRequiresCrypto": "Chỉ tiền mã hóa mới có ký hiệu giá",
+    "quoteSymbolNotAPair": "Nhập một cặp như BTC-EUR: đồng coin, dấu gạch ngang và mã tiền tệ gồm ba chữ cái"
   },
   "rateHistory": {
     "title": "Lịch sử tỷ giá",
@@ -150,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (ECB)",
         "mnyImport": "Nhập từ Money",
+        "yahooCrypto": "Cặp tiền mã hóa (Yahoo)",
         "unknown": "Không rõ"
       }
     },

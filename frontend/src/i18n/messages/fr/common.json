@@ -176,6 +176,7 @@
     "CASH": "Espèces",
     "LINE_OF_CREDIT": "Ligne de crédit",
     "ASSET": "Actif",
+    "CRYPTO": "Portefeuille crypto",
     "OTHER": "Autre"
   },
   "accountFilter": {

@@ -176,6 +176,7 @@
     "CASH": "Наличные",
     "LINE_OF_CREDIT": "Кредитная линия",
     "ASSET": "Актив",
+    "CRYPTO": "Криптокошелёк",
     "OTHER": "Прочее"
   },
   "accountFilter": {

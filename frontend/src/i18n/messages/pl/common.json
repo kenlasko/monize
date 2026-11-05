@@ -176,6 +176,7 @@
     "CASH": "Gotówka",
     "LINE_OF_CREDIT": "Linia kredytowa",
     "ASSET": "Aktywo",
+    "CRYPTO": "Portfel kryptowalutowy",
     "OTHER": "Inne"
   },
   "accountFilter": {

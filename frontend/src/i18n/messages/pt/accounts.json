@@ -136,6 +136,9 @@
     "accountType": "Tipo de Conta",
     "currency": "Moeda",
     "currencyLocked": "A moeda está bloqueada porque esta conta já tem transações. Alterá-la recalcularia silenciosamente os saldos existentes.",
+    "accountTypeKindLocked": "A moeda está bloqueada pelas transações desta conta, por isso não pode alternar entre Carteira cripto e um tipo de conta em moeda fiduciária.",
+    "currencyPlaceholder": "Selecione uma moeda...",
+    "noCryptoCurrencies": "Uma carteira cripto contém uma criptomoeda, e ainda não há nenhuma configurada. Adicione uma na <currencies>página Moedas</currencies> e escolha-a aqui. <guide>Como adicionar uma criptomoeda</guide>",
     "openingBalance": "Saldo Inicial",
     "loanAmount": "Montante do Empréstimo",
     "mortgageAmount": "Montante do Crédito Habitação",
@@ -179,6 +182,7 @@
       "mortgage": "Crédito Habitação",
       "asset": "Ativo",
       "cash": "Numerário",
+      "crypto": "Carteira cripto",
       "other": "Outro"
     },
     "statementDueDayPlaceholder": "ex.: 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "O nome da conta é obrigatório",
     "currencyCodeLength": "O código de moeda deve ter 3 caracteres",
+    "currencyRequired": "Selecione uma moeda",
     "institutionRequired": "Selecione ou crie uma instituição",
     "interestRateRequired": "A taxa de juro é obrigatória",
     "paymentAmountRequired": "O montante do pagamento é obrigatório",

@@ -19,7 +19,8 @@
       "separator": ", następnie ",
       "names": {
         "frankfurter": "Frankfurter (kursy referencyjne EBC)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Pary kryptowalutowe (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "Akcje"
     },
     "defaultBadge": "Domyślna",
+    "cryptoBadge": "Krypto",
+    "noPriceSymbol": "Brak symbolu ceny",
     "statusBadge": {
       "active": "Aktywny",
       "activeShort": "Akt",
@@ -98,6 +101,20 @@
     "symbolLabel": "Symbol",
     "symbolPlaceholder": "np. $, €, £, ¥",
     "decimalPlacesLabel": "Miejsca dziesiętne",
+    "kindLabel": "Rodzaj",
+    "kindOptions": {
+      "fiat": "Waluta fiducjarna",
+      "crypto": "Kryptowaluta"
+    },
+    "kindLocked": "{code} jest używana, więc jej rodzaju nie można zmienić.",
+    "quoteSymbolLabel": "Symbol ceny (opcjonalnie)",
+    "quoteSymbolPlaceholder": "np. BTC-EUR",
+    "quoteSymbolHelp": "Symbol Yahoo Finance, na podstawie którego pobierana jest cena monety: jej ticker, łącznik i waluta, w której jest notowana, na przykład BTC-EUR. Kursy wymiany monety są pobierane za jego pomocą.",
+    "verifyButton": "Zweryfikuj",
+    "quoteSymbolPricedIn": "Wycena w {currency}",
+    "quoteSymbolMissing": "Bez symbolu ceny waluta nie ma kursu wymiany.",
+    "quoteSymbolNotCrypto": "{symbol} nie jest kryptowalutą. Wpisz parę monety, na przykład BTC-EUR.",
+    "quoteSymbolNotFound": "Nie znaleziono kryptowaluty dla {symbol}",
     "lookupButton": "Wyszukaj",
     "lookingUp": "Wyszukiwanie...",
     "clearButton": "Wyczyść",
@@ -109,9 +126,14 @@
       "found": "Znaleziono: {details}",
       "notFound": "Nie znaleziono waluty dla \"{query}\"",
       "lookupFailed": "Wyszukiwanie nie powiodło się - spróbuj ponownie",
-      "reactivateFailed": "Nie udało się ponownie aktywować waluty"
+      "reactivateFailed": "Nie udało się ponownie aktywować waluty",
+      "verifyEmpty": "Wpisz symbol ceny, na przykład BTC-EUR, aby go zweryfikować",
+      "verifyFailed": "Nie udało się zweryfikować symbolu ceny"
     },
     "inactiveNotice": "{code} jest już na Twojej liście, ale jest nieaktywna.",
+    "nonIsoNotice": "{code} nie jest standardowym kodem waluty. Jeśli jest to kryptowaluta, ustaw jej rodzaj na Kryptowaluta. <guide>Przeczytaj o kryptowalutach w przewodniku użytkownika</guide>.",
+    "switchToCrypto": "Użyj kryptowaluty",
+    "cryptoPrecisionNotice": "Kwoty w kryptowalucie są przechowywane z dokładnością do czterech miejsc dziesiętnych, więc bardzo mała kwota, na przykład opłata sieciowa, może zostać zaokrąglona do zera. <guide>Zobacz, jak rejestrować opłaty portfela</guide>.",
     "reactivateButton": "Aktywuj ponownie {code}",
     "reactivating": "Ponowne aktywowanie..."
   },
@@ -120,7 +142,10 @@
     "nameRequired": "Nazwa jest wymagana",
     "nameMax": "Nazwa może mieć maksymalnie 100 znaków",
     "symbolRequired": "Symbol jest wymagany",
-    "symbolMax": "Symbol może mieć maksymalnie 10 znaków"
+    "symbolMax": "Symbol może mieć maksymalnie 10 znaków",
+    "quoteSymbolMax": "Symbol ceny może mieć maksymalnie 20 znaków",
+    "quoteSymbolRequiresCrypto": "Tylko kryptowaluta ma symbol ceny",
+    "quoteSymbolNotAPair": "Wpisz parę, na przykład BTC-EUR: moneta, łącznik i trzyliterowy kod waluty"
   },
   "rateHistory": {
     "title": "Historia kursu",
@@ -150,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (EBC)",
         "mnyImport": "Import z Money",
+        "yahooCrypto": "Pary kryptowalutowe (Yahoo)",
         "unknown": "Nieznane"
       }
     },

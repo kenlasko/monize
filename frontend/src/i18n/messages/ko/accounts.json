@@ -136,6 +136,9 @@
     "accountType": "계정 유형",
     "currency": "통화",
     "currencyLocked": "이 계정에 이미 거래가 있으므로 통화가 잠겨 있습니다. 변경하면 기존 잔액의 단위가 자동으로 변경됩니다.",
+    "accountTypeKindLocked": "이 계정의 거래로 인해 통화가 잠겨 있으므로 암호화폐 지갑과 법정화폐 계정 유형 간에 전환할 수 없습니다.",
+    "currencyPlaceholder": "통화를 선택하세요...",
+    "noCryptoCurrencies": "암호화폐 지갑에는 암호화폐 하나가 들어 있으며, 아직 설정된 암호화폐가 없습니다. <currencies>통화 페이지</currencies>에서 추가한 다음 여기에서 선택하세요. <guide>암호화폐를 추가하는 방법</guide>",
     "openingBalance": "초기 잔액",
     "loanAmount": "대출 금액",
     "mortgageAmount": "담보대출 금액",
@@ -179,6 +182,7 @@
       "mortgage": "담보대출",
       "asset": "자산",
       "cash": "현금",
+      "crypto": "암호화폐 지갑",
       "other": "기타"
     },
     "statementDueDayPlaceholder": "예: 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "계정명은 필수입니다",
     "currencyCodeLength": "통화 코드는 3자여야 합니다",
+    "currencyRequired": "통화를 선택하세요",
     "institutionRequired": "기관을 선택하거나 생성하세요",
     "interestRateRequired": "이자율은 필수입니다",
     "paymentAmountRequired": "납부 금액은 필수입니다",

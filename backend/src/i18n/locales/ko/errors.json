@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "ID가 {{ id }}인 계정을 찾을 수 없습니다",
     "notInvestmentPair": "이 계정은 투자 계정 쌍의 일부가 아닙니다",
+    "accountCurrencyKindMismatch": "{{ code }}은(는) {{ kind }} 통화이므로 {{ accountType }} 계정에서 보유할 수 없습니다. CRYPTO 계정은 암호화폐를 보유하고, 그 외 모든 계정 유형은 법정 통화를 보유합니다.",
     "noLinkedInvestmentAccount": "이 투자 계정에는 연결된 계정이 없습니다",
     "notFound": "계정을 찾을 수 없습니다",
     "institutionNotFound": "기관을 찾을 수 없습니다",
@@ -358,7 +359,11 @@
     "inUse": "통화 \"{{ code }}\"이(가) 계정, 증권 또는 기타 레코드에서 사용 중입니다. 대신 비활성화하세요.",
     "invalidRateDate": "date는 YYYY-MM-DD 형식이어야 합니다",
     "sameCurrencyHistory": "{{ code }}은(는) 기본 통화이므로 환율 이력이 없습니다",
-    "rateProviderUnavailable": "환율 제공처가 응답하지 않았습니다. 나중에 다시 시도해 주세요."
+    "rateProviderUnavailable": "환율 제공처가 응답하지 않았습니다. 나중에 다시 시도해 주세요.",
+    "quoteSymbolRequiresCrypto": "가격 기호({{ quoteSymbol }})는 암호화폐에만 설정할 수 있습니다. \"{{ code }}\"은(는) 법정 통화입니다",
+    "quoteSymbolNotAPair": "\"{{ code }}\"의 가격 기호 \"{{ quoteSymbol }}\"은(는) BTC-EUR 같은 코인과 법정 통화의 쌍이 아닙니다",
+    "kindInUse": "계정, 거래, 증권 또는 기타 레코드에서 사용 중인 동안에는 \"{{ code }}\"의 유형을 변경할 수 없습니다",
+    "kindConflict": "통화 \"{{ code }}\"은(는) 이미 {{ kind }} 통화로 존재하므로 {{ requestedKind }}(으)로 추가할 수 없습니다"
   },
   "delegation": {
     "delegatedAccessInvalid": "위임된 접근 권한이 더 이상 유효하지 않습니다",
@@ -642,6 +647,7 @@
     "bondCurrencyMismatch": "이 증권은 {{ currency }}로 기록되어 있지만 채권 종목은 {{ instrumentCurrency }}로 평가됩니다. 종목의 통화를 사용하세요.",
     "bondCurrencyLocked": "채권 종목에 연결된 증권은 종목의 통화({{ instrumentCurrency }})를 유지합니다. 통화를 변경하기 전에 채권과의 연결을 해제하세요.",
     "accountMustBeInvestment": "계정은 INVESTMENT 유형이어야 합니다",
+    "currencyMustBeFiat": "{{ code }}은(는) 암호화폐이며, 증권은 법정 통화로 가격이 매겨집니다. 증권이 거래되는 법정 통화를 선택하세요.",
     "transferPairSameRow": "한 이체의 두 항목이 동일한 거래일 수는 없습니다",
     "transferPairNotFound": "두 거래 중 하나가 더 이상 존재하지 않습니다",
     "transferPairAlreadyLinked": "이 항목 중 하나는 이미 다른 거래와 연결되어 있습니다",
@@ -909,6 +915,7 @@
     "accountNotFound": "해당 계정을 찾을 수 없습니다.",
     "accountClosed": "연결된 계정이 폐쇄되었습니다. 다시 열거나 다른 계정을 연결하세요.",
     "accountBrokerage": "투자 증권 계정은 은행 거래를 받을 수 없습니다. 대신 해당 현금 계정을 연결하세요.",
+    "accountCrypto": "암호화폐 지갑은 은행 거래를 받을 수 없습니다. 대신 은행 계정을 연결하세요.",
     "accountCurrencyMismatch": "은행 계정은 {{ bankCurrency }}이지만 계정은 {{ accountCurrency }}입니다. 같은 통화의 계정을 연결하세요.",
     "accountCurrencyChanged": "읽는 동안 연결된 계정의 통화가 변경되었습니다. 아무것도 가져오지 않았습니다. 다시 동기화하세요.",
     "accountAlreadyLinked": "해당 계정은 이미 다른 은행 계정에 연결되어 있습니다.",

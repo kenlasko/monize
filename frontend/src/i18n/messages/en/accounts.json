@@ -136,6 +136,7 @@
     "accountType": "Account Type",
     "currency": "Currency",
     "currencyLocked": "Currency is locked because this account already has transactions. Changing it would silently re-denominate existing balances.",
+    "accountTypeKindLocked": "This account's transactions lock its currency, so it cannot switch between a Crypto Wallet and a fiat account type.",
     "currencyPlaceholder": "Select a currency...",
     "noCryptoCurrencies": "A crypto wallet holds one cryptocurrency, and none is set up yet. Add one on the <currencies>Currencies page</currencies>, then choose it here. <guide>How to add a cryptocurrency</guide>",
     "openingBalance": "Opening Balance",

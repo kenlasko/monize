@@ -19,7 +19,8 @@
       "separator": ", ardından ",
       "names": {
         "frankfurter": "Frankfurter (ECB referans kurları)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Kripto çiftleri (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "İşlemler"
     },
     "defaultBadge": "Varsayılan",
+    "cryptoBadge": "Kripto",
+    "noPriceSymbol": "Fiyat sembolü yok",
     "statusBadge": {
       "active": "Aktif",
       "activeShort": "Akt",
@@ -98,6 +101,20 @@
     "symbolLabel": "Sembol",
     "symbolPlaceholder": "örn. $, €, £, ¥",
     "decimalPlacesLabel": "Ondalık Basamaklar",
+    "kindLabel": "Tür",
+    "kindOptions": {
+      "fiat": "Fiat Para Birimi",
+      "crypto": "Kripto Para"
+    },
+    "kindLocked": "{code} kullanımda olduğundan türü değiştirilemez.",
+    "quoteSymbolLabel": "Fiyat Sembolü (isteğe bağlı)",
+    "quoteSymbolPlaceholder": "ör. BTC-EUR",
+    "quoteSymbolHelp": "Coin'in fiyatının alındığı Yahoo Finance sembolü: coin'in kodu, bir tire ve fiyatının belirtildiği para birimi, örneğin BTC-EUR. Coin'in döviz kurları bu sembol üzerinden alınır.",
+    "verifyButton": "Doğrula",
+    "quoteSymbolPricedIn": "{currency} cinsinden fiyat",
+    "quoteSymbolMissing": "Fiyat sembolü olmadan para biriminin döviz kuru olmaz.",
+    "quoteSymbolNotCrypto": "{symbol} bir kripto para değil. BTC-EUR gibi bir coin çifti girin.",
+    "quoteSymbolNotFound": "{symbol} için kripto para bulunamadı",
     "lookupButton": "Ara",
     "lookingUp": "Aranıyor...",
     "clearButton": "Temizle",
@@ -109,9 +126,14 @@
       "found": "Bulundu: {details}",
       "notFound": "\"{query}\" için para birimi bulunamadı",
       "lookupFailed": "Arama başarısız - lütfen tekrar deneyin",
-      "reactivateFailed": "Para birimi yeniden etkinleştirilemedi"
+      "reactivateFailed": "Para birimi yeniden etkinleştirilemedi",
+      "verifyEmpty": "Doğrulamak için BTC-EUR gibi bir fiyat sembolü girin",
+      "verifyFailed": "Fiyat sembolü doğrulanamadı"
     },
     "inactiveNotice": "{code} zaten listenizde ama etkin değil.",
+    "nonIsoNotice": "{code} standart bir para birimi kodu değildir. Bir kripto paraysa türünü Kripto Para olarak ayarlayın. <guide>Kripto paralar hakkında kullanım kılavuzunda bilgi edinin</guide>.",
+    "switchToCrypto": "Kripto Para Kullan",
+    "cryptoPrecisionNotice": "Kripto paradaki tutarlar en fazla dört ondalık basamakla tutulur; bu nedenle ağ ücreti gibi çok küçük bir tutar sıfıra yuvarlanabilir. <guide>Cüzdan ücretlerinin nasıl kaydedileceğine bakın</guide>.",
     "reactivateButton": "{code} birimini yeniden etkinleştir",
     "reactivating": "Yeniden etkinleştiriliyor..."
   },
@@ -120,7 +142,10 @@
     "nameRequired": "Ad zorunludur",
     "nameMax": "Ad en fazla 100 karakter olabilir",
     "symbolRequired": "Sembol zorunludur",
-    "symbolMax": "Sembol en fazla 10 karakter olabilir"
+    "symbolMax": "Sembol en fazla 10 karakter olabilir",
+    "quoteSymbolMax": "Fiyat sembolü en fazla 20 karakter olabilir",
+    "quoteSymbolRequiresCrypto": "Yalnızca bir kripto paranın fiyat sembolü olur",
+    "quoteSymbolNotAPair": "BTC-EUR gibi bir çift girin: coin, bir tire ve üç harfli bir para birimi kodu"
   },
   "rateHistory": {
     "title": "Kur geçmişi",
@@ -150,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (ECB)",
         "mnyImport": "Money içe aktarımı",
+        "yahooCrypto": "Kripto çiftleri (Yahoo)",
         "unknown": "Bilinmiyor"
       }
     },

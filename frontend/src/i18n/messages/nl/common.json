@@ -176,6 +176,7 @@
     "CASH": "Contanten",
     "LINE_OF_CREDIT": "Kredietlijn",
     "ASSET": "Activa",
+    "CRYPTO": "Cryptowallet",
     "OTHER": "Overig"
   },
   "accountFilter": {

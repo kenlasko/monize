@@ -176,6 +176,7 @@
     "CASH": "Efectivo",
     "LINE_OF_CREDIT": "Línea de crédito",
     "ASSET": "Activo",
+    "CRYPTO": "Monedero cripto",
     "OTHER": "Otro"
   },
   "accountFilter": {

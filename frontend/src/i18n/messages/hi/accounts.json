@@ -136,6 +136,9 @@
     "accountType": "खाते का प्रकार",
     "currency": "मुद्रा",
     "currencyLocked": "मुद्रा लॉक है क्योंकि इस खाते में पहले से लेनदेन हैं। इसे बदलने से मौजूदा शेष राशि की मुद्रा चुपचाप बदल जाएगी।",
+    "accountTypeKindLocked": "इस खाते के लेनदेन के कारण मुद्रा लॉक है, इसलिए यह क्रिप्टो वॉलेट और फ़िएट खाता प्रकार के बीच नहीं बदल सकता।",
+    "currencyPlaceholder": "मुद्रा चुनें...",
+    "noCryptoCurrencies": "क्रिप्टो वॉलेट में एक क्रिप्टोकरेंसी होती है, और अभी तक कोई सेट अप नहीं की गई है। <currencies>मुद्राएं पृष्ठ</currencies> पर एक जोड़ें, फिर उसे यहाँ चुनें। <guide>क्रिप्टोकरेंसी कैसे जोड़ें</guide>",
     "openingBalance": "प्रारंभिक शेष",
     "loanAmount": "ऋण राशि",
     "mortgageAmount": "बंधक राशि",
@@ -179,6 +182,7 @@
       "mortgage": "बंधक",
       "asset": "संपत्ति",
       "cash": "नकद",
+      "crypto": "क्रिप्टो वॉलेट",
       "other": "अन्य"
     },
     "statementDueDayPlaceholder": "उदा. 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "खाते का नाम आवश्यक है",
     "currencyCodeLength": "मुद्रा कोड 3 अक्षरों का होना चाहिए",
+    "currencyRequired": "मुद्रा चुनें",
     "institutionRequired": "कृपया कोई संस्था चुनें या बनाएं",
     "interestRateRequired": "ब्याज दर आवश्यक है",
     "paymentAmountRequired": "भुगतान राशि आवश्यक है",

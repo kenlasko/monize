@@ -19,7 +19,8 @@
       "separator": "、次に ",
       "names": {
         "frankfurter": "Frankfurter（ECB 参照レート）",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "暗号資産ペア (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "操作"
     },
     "defaultBadge": "デフォルト",
+    "cryptoBadge": "暗号資産",
+    "noPriceSymbol": "価格記号なし",
     "statusBadge": {
       "active": "有効",
       "activeShort": "有効",
@@ -98,6 +101,20 @@
     "symbolLabel": "記号",
     "symbolPlaceholder": "例：$、€、£、¥",
     "decimalPlacesLabel": "小数桁数",
+    "kindLabel": "種類",
+    "kindOptions": {
+      "fiat": "法定通貨",
+      "crypto": "暗号資産"
+    },
+    "kindLocked": "{code} は使用中のため、種類を変更できません。",
+    "quoteSymbolLabel": "価格記号（任意）",
+    "quoteSymbolPlaceholder": "例：BTC-EUR",
+    "quoteSymbolHelp": "コインの価格取得元となる Yahoo Finance の記号です。ティッカー、ハイフン、建値通貨の順に入力します（例：BTC-EUR）。コインの為替レートはこの記号を通じて取得されます。",
+    "verifyButton": "確認",
+    "quoteSymbolPricedIn": "{currency} 建て",
+    "quoteSymbolMissing": "価格記号がないと、この通貨には為替レートがありません。",
+    "quoteSymbolNotCrypto": "{symbol} は暗号資産ではありません。BTC-EUR のように、コインのペアを入力してください。",
+    "quoteSymbolNotFound": "{symbol} に該当する暗号資産が見つかりません",
     "lookupButton": "検索",
     "lookingUp": "検索中...",
     "clearButton": "クリア",
@@ -109,9 +126,14 @@
       "found": "見つかりました：{details}",
       "notFound": "「{query}」に一致する通貨が見つかりません",
       "lookupFailed": "検索に失敗しました - もう一度試してください",
-      "reactivateFailed": "通貨を再有効化できませんでした"
+      "reactivateFailed": "通貨を再有効化できませんでした",
+      "verifyEmpty": "確認するには BTC-EUR のような価格記号を入力してください",
+      "verifyFailed": "価格記号の確認に失敗しました"
     },
     "inactiveNotice": "{code} はすでにリストにありますが、無効になっています。",
+    "nonIsoNotice": "{code} は標準的な通貨コードではありません。暗号資産の場合は、種類を「暗号資産」に設定してください。<guide>暗号資産についてはユーザーガイドをご覧ください</guide>。",
+    "switchToCrypto": "暗号資産を使用",
+    "cryptoPrecisionNotice": "暗号資産の金額は小数点以下4桁までで保持されるため、ネットワーク手数料のようにごく小さな金額は0に丸められることがあります。<guide>ウォレット手数料の記録方法をご覧ください</guide>。",
     "reactivateButton": "{code} を再有効化",
     "reactivating": "再有効化しています..."
   },
@@ -120,7 +142,10 @@
     "nameRequired": "名前は必須です",
     "nameMax": "名前は100文字以内でなければなりません",
     "symbolRequired": "記号は必須です",
-    "symbolMax": "記号は10文字以内でなければなりません"
+    "symbolMax": "記号は10文字以内でなければなりません",
+    "quoteSymbolMax": "価格記号は20文字以内でなければなりません",
+    "quoteSymbolRequiresCrypto": "価格記号を持てるのは暗号資産のみです",
+    "quoteSymbolNotAPair": "BTC-EUR のようにペアを入力してください：コイン、ハイフン、3文字の通貨コード"
   },
   "rateHistory": {
     "title": "レート履歴",
@@ -150,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter（ECB）",
         "mnyImport": "Money インポート",
+        "yahooCrypto": "暗号資産ペア (Yahoo)",
         "unknown": "不明"
       }
     },

@@ -176,6 +176,7 @@
     "CASH": "Contanti",
     "LINE_OF_CREDIT": "Linea di credito",
     "ASSET": "Attività",
+    "CRYPTO": "Portafoglio cripto",
     "OTHER": "Altro"
   },
   "accountFilter": {

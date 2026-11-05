@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "未找到 ID 为 {{ id }} 的账户",
     "notInvestmentPair": "此账户不是投资账户对的一部分",
+    "accountCurrencyKindMismatch": "{{ code }} 是 {{ kind }} 类型的货币，{{ accountType }} 账户无法持有。CRYPTO 账户持有加密货币；其他所有账户类型持有法定货币。",
     "noLinkedInvestmentAccount": "此投资账户没有关联账户",
     "notFound": "未找到账户",
     "institutionNotFound": "未找到机构",
@@ -358,7 +359,11 @@
     "inUse": "货币\"{{ code }}\"正在您的账户、证券或其他记录中使用。请改为停用它。",
     "invalidRateDate": "date 必须为 YYYY-MM-DD 格式",
     "sameCurrencyHistory": "{{ code }} 是您的默认货币，因此没有汇率历史",
-    "rateProviderUnavailable": "汇率提供方未响应，请稍后重试。"
+    "rateProviderUnavailable": "汇率提供方未响应，请稍后重试。",
+    "quoteSymbolRequiresCrypto": "价格符号（{{ quoteSymbol }}）只能设置在加密货币上；\"{{ code }}\"是法定货币",
+    "quoteSymbolNotAPair": "\"{{ code }}\"的价格符号\"{{ quoteSymbol }}\"不是 BTC-EUR 这样的币种与法定货币的交易对",
+    "kindInUse": "只要仍有账户、交易、证券或其他记录在使用，就无法更改\"{{ code }}\"的类型",
+    "kindConflict": "货币\"{{ code }}\"已作为 {{ kind }} 货币存在，无法添加为 {{ requestedKind }}"
   },
   "delegation": {
     "delegatedAccessInvalid": "委托访问权限已不再有效",
@@ -642,6 +647,7 @@
     "bondCurrencyMismatch": "该证券以 {{ currency }} 记录，但债券工具以 {{ instrumentCurrency }} 定价。请使用该工具的币种。",
     "bondCurrencyLocked": "关联到债券工具的证券必须保持工具的币种（{{ instrumentCurrency }}）。更改币种之前，请先取消其与债券的关联。",
     "accountMustBeInvestment": "账户类型必须为 INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} 是加密货币，而证券以法定货币计价。请选择证券报价所用的法定货币。",
     "transferPairSameRow": "一笔转移的两条记录不能是同一笔交易",
     "transferPairNotFound": "两笔交易中的一笔已不存在",
     "transferPairAlreadyLinked": "其中一条记录已与另一笔交易关联",
@@ -909,6 +915,7 @@
     "accountNotFound": "未找到该账户。",
     "accountClosed": "已关联的账户已关闭。请重新开启它，或关联其他账户。",
     "accountBrokerage": "投资证券账户无法接收银行交易。请改为关联其现金账户。",
+    "accountCrypto": "加密钱包无法接收银行交易。请改为关联银行账户。",
     "accountCurrencyMismatch": "银行账户的货币为 {{ bankCurrency }}，而账户的货币为 {{ accountCurrency }}。请关联货币相同的账户。",
     "accountCurrencyChanged": "读取期间，已关联账户的货币发生了变化。未导入任何内容；请重新同步。",
     "accountAlreadyLinked": "该账户已关联到另一个银行账户。",

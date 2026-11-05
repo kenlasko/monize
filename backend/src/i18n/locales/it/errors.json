@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "Conto con ID {{ id }} non trovato",
     "notInvestmentPair": "Questo conto non fa parte di una coppia di conti di investimento",
+    "accountCurrencyKindMismatch": "{{ code }} è una valuta di tipo {{ kind }}, che un conto di tipo {{ accountType }} non può contenere. Un conto CRYPTO contiene una criptovaluta; ogni altro tipo di conto contiene una valuta fiat.",
     "noLinkedInvestmentAccount": "Questo conto di investimento non ha un conto collegato",
     "notFound": "Conto non trovato",
     "institutionNotFound": "Istituto non trovato",
@@ -358,7 +359,11 @@
     "inUse": "La valuta \"{{ code }}\" è in uso dai tuoi conti, titoli o altri record. Disattivala invece.",
     "invalidRateDate": "date deve essere nel formato AAAA-MM-GG",
     "sameCurrencyHistory": "{{ code }} è la tua valuta predefinita; non ha uno storico del tasso di cambio",
-    "rateProviderUnavailable": "Il fornitore di tassi di cambio non ha risposto. Riprova più tardi."
+    "rateProviderUnavailable": "Il fornitore di tassi di cambio non ha risposto. Riprova più tardi.",
+    "quoteSymbolRequiresCrypto": "Un simbolo di prezzo ({{ quoteSymbol }}) può essere impostato solo su una criptovaluta; \"{{ code }}\" è una valuta fiat",
+    "quoteSymbolNotAPair": "Il simbolo di prezzo \"{{ quoteSymbol }}\" di \"{{ code }}\" non è una coppia di moneta e valuta fiat come BTC-EUR",
+    "kindInUse": "Il tipo di \"{{ code }}\" non può essere modificato finché conti, transazioni, titoli o altri record lo usano",
+    "kindConflict": "La valuta \"{{ code }}\" esiste già come valuta {{ kind }} e non può essere aggiunta come {{ requestedKind }}"
   },
   "delegation": {
     "delegatedAccessInvalid": "L'accesso delegato non è più valido",
@@ -642,6 +647,7 @@
     "bondCurrencyMismatch": "Il titolo è registrato in {{ currency }}, ma lo strumento obbligazionario è valutato in {{ instrumentCurrency }}. Usa la valuta dello strumento.",
     "bondCurrencyLocked": "Un titolo collegato a uno strumento obbligazionario resta nella valuta dello strumento ({{ instrumentCurrency }}). Scollegalo dall'obbligazione prima di cambiarne la valuta.",
     "accountMustBeInvestment": "Il conto deve essere di tipo INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} è una criptovaluta, mentre un titolo è prezzato in una valuta fiat. Scegli la valuta fiat in cui è quotato il titolo.",
     "transferPairSameRow": "Le due gambe di un trasferimento non possono essere la stessa transazione",
     "transferPairNotFound": "Una delle due transazioni non esiste più",
     "transferPairAlreadyLinked": "Una di queste gambe è già collegata a un'altra transazione",
@@ -909,6 +915,7 @@
     "accountNotFound": "Quel conto non è stato trovato.",
     "accountClosed": "Il conto collegato è chiuso. Riaprilo oppure collega un altro conto.",
     "accountBrokerage": "Un conto di intermediazione di investimento non può ricevere transazioni bancarie. Collega invece il suo conto contanti.",
+    "accountCrypto": "Un portafoglio di criptovalute non può ricevere transazioni bancarie. Collega invece un conto bancario.",
     "accountCurrencyMismatch": "Il conto bancario è in {{ bankCurrency }} ma il conto è in {{ accountCurrency }}. Collega un conto nella stessa valuta.",
     "accountCurrencyChanged": "La valuta del conto collegato è cambiata durante la lettura. Non è stato importato nulla; sincronizza di nuovo.",
     "accountAlreadyLinked": "Quel conto è già collegato a un altro conto bancario.",

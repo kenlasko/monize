@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "Conta com ID {{ id }} não encontrada",
     "notInvestmentPair": "Esta conta não faz parte de um par de conta de investimento",
+    "accountCurrencyKindMismatch": "{{ code }} é uma moeda do tipo {{ kind }}, que uma conta do tipo {{ accountType }} não pode conter. Uma conta CRYPTO contém uma criptomoeda; todos os outros tipos de conta contêm uma moeda fiduciária.",
     "noLinkedInvestmentAccount": "Esta conta de investimento não tem conta associada",
     "notFound": "Conta não encontrada",
     "institutionNotFound": "Instituição não encontrada",
@@ -358,7 +359,11 @@
     "inUse": "A moeda \"{{ code }}\" está em uso pelas suas contas, títulos ou outros registros. Desative-a em vez disso.",
     "invalidRateDate": "date deve estar no formato AAAA-MM-DD",
     "sameCurrencyHistory": "{{ code }} é sua moeda padrão; não tem histórico de taxa de câmbio",
-    "rateProviderUnavailable": "O provedor de taxas de câmbio não respondeu. Tente novamente mais tarde."
+    "rateProviderUnavailable": "O provedor de taxas de câmbio não respondeu. Tente novamente mais tarde.",
+    "quoteSymbolRequiresCrypto": "Um símbolo de preço ({{ quoteSymbol }}) só pode ser definido em uma criptomoeda; \"{{ code }}\" é uma moeda fiduciária",
+    "quoteSymbolNotAPair": "O símbolo de preço \"{{ quoteSymbol }}\" de \"{{ code }}\" não é um par de moeda e moeda fiduciária, como BTC-EUR",
+    "kindInUse": "O tipo de \"{{ code }}\" não pode ser alterado enquanto contas, transações, títulos ou outros registros o usarem",
+    "kindConflict": "A moeda \"{{ code }}\" já existe como moeda {{ kind }} e não pode ser adicionada como {{ requestedKind }}"
   },
   "delegation": {
     "delegatedAccessInvalid": "O acesso delegado não é mais válido",
@@ -642,6 +647,7 @@
     "bondCurrencyMismatch": "O ativo está registrado em {{ currency }}, mas o instrumento de título é precificado em {{ instrumentCurrency }}. Use a moeda do instrumento.",
     "bondCurrencyLocked": "Um ativo vinculado a um instrumento de título permanece na moeda do instrumento ({{ instrumentCurrency }}). Desvincule-o do título antes de alterar a moeda.",
     "accountMustBeInvestment": "A conta deve ser do tipo INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} é uma criptomoeda, e um ativo é cotado em uma moeda fiduciária. Escolha a moeda fiduciária em que o ativo é cotado.",
     "transferPairSameRow": "As duas pernas de uma transferência não podem ser a mesma transação",
     "transferPairNotFound": "Uma das duas transações não existe mais",
     "transferPairAlreadyLinked": "Uma destas pernas já está vinculada a outra transação",
@@ -909,6 +915,7 @@
     "accountNotFound": "Essa conta não foi encontrada.",
     "accountClosed": "A conta vinculada está encerrada. Reabra-a ou vincule outra conta.",
     "accountBrokerage": "Uma conta de corretora de investimentos não pode receber transações bancárias. Vincule a conta de caixa dela.",
+    "accountCrypto": "Uma carteira de criptomoedas não pode receber transações bancárias. Vincule uma conta bancária.",
     "accountCurrencyMismatch": "A conta bancária está em {{ bankCurrency }}, mas a conta está em {{ accountCurrency }}. Vincule uma conta na mesma moeda.",
     "accountCurrencyChanged": "A moeda da conta vinculada mudou enquanto era lida. Nada foi importado; sincronize de novo.",
     "accountAlreadyLinked": "Essa conta já está vinculada a outra conta bancária.",

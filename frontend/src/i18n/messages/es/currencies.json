@@ -19,7 +19,8 @@
       "separator": ", luego ",
       "names": {
         "frankfurter": "Frankfurter (tipos de referencia del BCE)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Pares cripto (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "Acciones"
     },
     "defaultBadge": "Predeterminada",
+    "cryptoBadge": "Cripto",
+    "noPriceSymbol": "Sin símbolo de precio",
     "statusBadge": {
       "active": "Activa",
       "activeShort": "Act",
@@ -98,6 +101,20 @@
     "symbolLabel": "Símbolo",
     "symbolPlaceholder": "p. ej., $, €, £, ¥",
     "decimalPlacesLabel": "Decimales",
+    "kindLabel": "Tipo",
+    "kindOptions": {
+      "fiat": "Moneda fiduciaria",
+      "crypto": "Criptomoneda"
+    },
+    "kindLocked": "{code} está en uso, por lo que no se puede cambiar su tipo.",
+    "quoteSymbolLabel": "Símbolo de precio (opcional)",
+    "quoteSymbolPlaceholder": "p. ej. BTC-EUR",
+    "quoteSymbolHelp": "El símbolo de Yahoo Finance con el que se obtiene el precio de la moneda: su ticker, un guion y la moneda en la que cotiza, como BTC-EUR. Los tipos de cambio de la moneda se obtienen a través de él.",
+    "verifyButton": "Verificar",
+    "quoteSymbolPricedIn": "Cotiza en {currency}",
+    "quoteSymbolMissing": "Sin un símbolo de precio, la moneda no tiene tipo de cambio.",
+    "quoteSymbolNotCrypto": "{symbol} no es una criptomoneda. Introduce el par de una moneda, como BTC-EUR.",
+    "quoteSymbolNotFound": "No se encontró ninguna criptomoneda para {symbol}",
     "lookupButton": "Buscar",
     "lookingUp": "Buscando...",
     "clearButton": "Limpiar",
@@ -109,9 +126,14 @@
       "found": "Encontrado: {details}",
       "notFound": "No se encontró ninguna divisa para \"{query}\"",
       "lookupFailed": "Error en la búsqueda - inténtalo de nuevo",
-      "reactivateFailed": "No se pudo reactivar la divisa"
+      "reactivateFailed": "No se pudo reactivar la divisa",
+      "verifyEmpty": "Introduce un símbolo de precio, como BTC-EUR, para verificarlo",
+      "verifyFailed": "No se pudo verificar el símbolo de precio"
     },
     "inactiveNotice": "{code} ya está en tu lista, pero está inactiva.",
+    "nonIsoNotice": "{code} no es un código de moneda estándar. Si es una criptomoneda, establece su tipo en Criptomoneda. <guide>Lee sobre las criptomonedas en la guía de usuario</guide>.",
+    "switchToCrypto": "Usar criptomoneda",
+    "cryptoPrecisionNotice": "Los importes en una criptomoneda se conservan con un máximo de cuatro decimales, por lo que un importe muy pequeño, como una comisión de red, puede redondearse a cero. <guide>Consulta cómo registrar las comisiones del monedero</guide>.",
     "reactivateButton": "Reactivar {code}",
     "reactivating": "Reactivando..."
   },
@@ -120,7 +142,10 @@
     "nameRequired": "El nombre es obligatorio",
     "nameMax": "El nombre no puede superar los 100 caracteres",
     "symbolRequired": "El símbolo es obligatorio",
-    "symbolMax": "El símbolo no puede superar los 10 caracteres"
+    "symbolMax": "El símbolo no puede superar los 10 caracteres",
+    "quoteSymbolMax": "El símbolo de precio no puede superar los 20 caracteres",
+    "quoteSymbolRequiresCrypto": "Solo una criptomoneda tiene símbolo de precio",
+    "quoteSymbolNotAPair": "Introduce un par como BTC-EUR: la moneda, un guion y un código de moneda de tres letras"
   },
   "rateHistory": {
     "title": "Historial de tasas",
@@ -150,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (BCE)",
         "mnyImport": "Importación de Money",
+        "yahooCrypto": "Pares cripto (Yahoo)",
         "unknown": "Desconocido"
       }
     },

@@ -19,7 +19,8 @@
       "separator": "，其次 ",
       "names": {
         "frankfurter": "Frankfurter（歐洲央行參考匯率）",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "加密貨幣對 (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "操作"
     },
     "defaultBadge": "預設",
+    "cryptoBadge": "加密",
+    "noPriceSymbol": "無價格符號",
     "statusBadge": {
       "active": "有效",
       "activeShort": "有效",
@@ -98,6 +101,20 @@
     "symbolLabel": "符號",
     "symbolPlaceholder": "例如 $、€、£、¥",
     "decimalPlacesLabel": "小數位數",
+    "kindLabel": "類型",
+    "kindOptions": {
+      "fiat": "法定貨幣",
+      "crypto": "加密貨幣"
+    },
+    "kindLocked": "{code} 正在使用中，因此無法變更其類型。",
+    "quoteSymbolLabel": "價格符號（選填）",
+    "quoteSymbolPlaceholder": "例如 BTC-EUR",
+    "quoteSymbolHelp": "用於取得該幣種價格的 Yahoo Finance 符號：其代碼、連字號和計價貨幣，例如 BTC-EUR。該幣種的匯率透過它取得。",
+    "verifyButton": "驗證",
+    "quoteSymbolPricedIn": "以 {currency} 計價",
+    "quoteSymbolMissing": "沒有價格符號，該貨幣就沒有匯率。",
+    "quoteSymbolNotCrypto": "{symbol} 不是加密貨幣。請輸入幣種的交易對，例如 BTC-EUR。",
+    "quoteSymbolNotFound": "找不到 {symbol} 對應的加密貨幣",
     "lookupButton": "查詢",
     "lookingUp": "查詢中...",
     "clearButton": "清除",
@@ -109,9 +126,14 @@
       "found": "已找到：{details}",
       "notFound": "找不到「{query}」的貨幣",
       "lookupFailed": "查詢失敗 - 請再試一次",
-      "reactivateFailed": "重新啟用貨幣失敗"
+      "reactivateFailed": "重新啟用貨幣失敗",
+      "verifyEmpty": "請輸入 BTC-EUR 之類的價格符號進行驗證",
+      "verifyFailed": "驗證價格符號失敗"
     },
     "inactiveNotice": "{code} 已在您的清單中，但處於未啟用狀態。",
+    "nonIsoNotice": "{code} 不是標準的貨幣代碼。如果它是加密貨幣，請將其類型設定為加密貨幣。<guide>請在使用者指南中瞭解加密貨幣</guide>。",
+    "switchToCrypto": "使用加密貨幣",
+    "cryptoPrecisionNotice": "加密貨幣的金額最多保留四位小數，因此像網路手續費這樣的極小金額可能會四捨五入為零。<guide>查看如何記錄錢包手續費</guide>。",
     "reactivateButton": "重新啟用 {code}",
     "reactivating": "正在重新啟用..."
   },
@@ -120,7 +142,10 @@
     "nameRequired": "名稱為必填",
     "nameMax": "名稱不得超過 100 個字元",
     "symbolRequired": "符號為必填",
-    "symbolMax": "符號不得超過 10 個字元"
+    "symbolMax": "符號不得超過 10 個字元",
+    "quoteSymbolMax": "價格符號不得超過 20 個字元",
+    "quoteSymbolRequiresCrypto": "只有加密貨幣才有價格符號",
+    "quoteSymbolNotAPair": "請輸入 BTC-EUR 這樣的交易對：幣種、連字號和三位字母的貨幣代碼"
   },
   "rateHistory": {
     "title": "匯率歷史",
@@ -150,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter（歐洲央行）",
         "mnyImport": "Money 匯入",
+        "yahooCrypto": "加密貨幣對 (Yahoo)",
         "unknown": "未知"
       }
     },

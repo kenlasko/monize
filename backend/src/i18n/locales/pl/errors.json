@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "Nie znaleziono konta o ID {{ id }}",
     "notInvestmentPair": "To konto nie jest częścią pary kont inwestycyjnych",
+    "accountCurrencyKindMismatch": "{{ code }} to waluta rodzaju {{ kind }}, której konto typu {{ accountType }} nie może przechowywać. Konto CRYPTO przechowuje kryptowalutę; każdy inny typ konta przechowuje walutę fiducjarną.",
     "noLinkedInvestmentAccount": "To konto inwestycyjne nie ma powiązanego konta",
     "notFound": "Nie znaleziono konta",
     "institutionNotFound": "Nie znaleziono instytucji",
@@ -358,7 +359,11 @@
     "inUse": "Waluta \"{{ code }}\" jest używana przez Twoje konta, papiery wartościowe lub inne rekordy. Zamiast tego ją dezaktywuj.",
     "invalidRateDate": "date musi mieć format RRRR-MM-DD",
     "sameCurrencyHistory": "{{ code }} jest Twoją walutą domyślną; nie ma dla niej historii kursu wymiany",
-    "rateProviderUnavailable": "Dostawca kursów wymiany nie odpowiedział. Spróbuj ponownie później."
+    "rateProviderUnavailable": "Dostawca kursów wymiany nie odpowiedział. Spróbuj ponownie później.",
+    "quoteSymbolRequiresCrypto": "Symbol ceny ({{ quoteSymbol }}) można ustawić tylko dla kryptowaluty; \"{{ code }}\" jest walutą fiducjarną",
+    "quoteSymbolNotAPair": "Symbol ceny \"{{ quoteSymbol }}\" dla \"{{ code }}\" nie jest parą monety i waluty fiducjarnej, takiej jak BTC-EUR",
+    "kindInUse": "Rodzaju \"{{ code }}\" nie można zmienić, dopóki używają go konta, transakcje, papiery wartościowe lub inne rekordy",
+    "kindConflict": "Waluta \"{{ code }}\" już istnieje jako waluta {{ kind }} i nie można jej dodać jako {{ requestedKind }}"
   },
   "delegation": {
     "delegatedAccessInvalid": "Dostęp delegowany nie jest już ważny",
@@ -642,6 +647,7 @@
     "bondCurrencyMismatch": "Papier wartościowy jest zapisany w walucie {{ currency }}, a instrument obligacyjny jest wyceniany w walucie {{ instrumentCurrency }}. Użyj waluty instrumentu.",
     "bondCurrencyLocked": "Papier wartościowy powiązany z instrumentem obligacyjnym pozostaje w walucie instrumentu ({{ instrumentCurrency }}). Przed zmianą waluty odłącz go od obligacji.",
     "accountMustBeInvestment": "Konto musi być typu INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} jest kryptowalutą, a papier wartościowy jest wyceniany w walucie fiducjarnej. Wybierz walutę fiducjarną, w której notowany jest papier wartościowy.",
     "transferPairSameRow": "Dwie strony jednego transferu nie mogą być tą samą transakcją",
     "transferPairNotFound": "Jedna z dwóch transakcji już nie istnieje",
     "transferPairAlreadyLinked": "Jedna z tych stron jest już powiązana z inną transakcją",
@@ -909,6 +915,7 @@
     "accountNotFound": "Nie znaleziono tego konta.",
     "accountClosed": "Powiązane konto jest zamknięte. Otwórz je ponownie lub powiąż inne konto.",
     "accountBrokerage": "Maklerskie konto inwestycyjne nie może przyjmować transakcji bankowych. Powiąż zamiast tego jego konto gotówkowe.",
+    "accountCrypto": "Portfel kryptowalutowy nie może przyjmować transakcji bankowych. Powiąż zamiast tego konto bankowe.",
     "accountCurrencyMismatch": "Konto bankowe jest w {{ bankCurrency }}, a konto jest w {{ accountCurrency }}. Powiąż konto w tej samej walucie.",
     "accountCurrencyChanged": "Podczas odczytu zmieniła się waluta powiązanego konta. Nic nie zaimportowano. Zsynchronizuj ponownie.",
     "accountAlreadyLinked": "To konto jest już powiązane z innym kontem bankowym.",

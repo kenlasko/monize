@@ -209,6 +209,7 @@
       "CREDIT_CARD": "クレジットカード",
       "LINE_OF_CREDIT": "当座貸越",
       "CASH": "現金",
+      "CRYPTO": "暗号資産ウォレット",
       "INVESTMENT": "投資",
       "LOAN": "ローン",
       "MORTGAGE": "住宅ローン",

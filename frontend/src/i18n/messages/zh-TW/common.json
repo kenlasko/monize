@@ -176,6 +176,7 @@
     "CASH": "現金",
     "LINE_OF_CREDIT": "信用額度",
     "ASSET": "資產",
+    "CRYPTO": "加密錢包",
     "OTHER": "其他"
   },
   "accountFilter": {

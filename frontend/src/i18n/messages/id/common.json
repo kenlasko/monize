@@ -176,6 +176,7 @@
     "CASH": "Tunai",
     "LINE_OF_CREDIT": "Kredit Talangan",
     "ASSET": "Aset",
+    "CRYPTO": "Dompet Kripto",
     "OTHER": "Lainnya"
   },
   "accountFilter": {

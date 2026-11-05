@@ -209,6 +209,7 @@
       "CREDIT_CARD": "Creditcard",
       "LINE_OF_CREDIT": "Kredietlijn",
       "CASH": "Contanten",
+      "CRYPTO": "Cryptowallet",
       "INVESTMENT": "Beleggingen",
       "LOAN": "Lening",
       "MORTGAGE": "Hypotheek",

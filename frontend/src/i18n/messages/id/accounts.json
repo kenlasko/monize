@@ -136,6 +136,9 @@
     "accountType": "Jenis Akun",
     "currency": "Mata Uang",
     "currencyLocked": "Mata uang dikunci karena akun ini sudah memiliki transaksi. Mengubahnya akan mengubah denominasi saldo yang ada tanpa pemberitahuan.",
+    "accountTypeKindLocked": "Mata uang dikunci oleh transaksi akun ini, sehingga akun tidak dapat beralih antara Dompet Kripto dan jenis akun fiat.",
+    "currencyPlaceholder": "Pilih mata uang...",
+    "noCryptoCurrencies": "Dompet kripto menyimpan satu mata uang kripto, dan belum ada yang disiapkan. Tambahkan satu di <currencies>halaman Mata Uang</currencies>, lalu pilih di sini. <guide>Cara menambahkan mata uang kripto</guide>",
     "openingBalance": "Saldo Awal",
     "loanAmount": "Jumlah Pinjaman",
     "mortgageAmount": "Jumlah Hipotek",
@@ -179,6 +182,7 @@
       "mortgage": "Hipotek",
       "asset": "Aset",
       "cash": "Tunai",
+      "crypto": "Dompet Kripto",
       "other": "Lainnya"
     },
     "statementDueDayPlaceholder": "mis. 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "Nama akun wajib diisi",
     "currencyCodeLength": "Kode mata uang harus 3 karakter",
+    "currencyRequired": "Pilih mata uang",
     "institutionRequired": "Silakan pilih atau buat lembaga",
     "interestRateRequired": "Tingkat bunga wajib diisi",
     "paymentAmountRequired": "Jumlah pembayaran wajib diisi",

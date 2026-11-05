@@ -362,7 +362,8 @@
     "rateProviderUnavailable": "[XX-The exchange rate provider did not answer. Please try again later.-XX]",
     "quoteSymbolRequiresCrypto": "[XX-A price symbol ({{ quoteSymbol }}) can only be set on a cryptocurrency; \"{{ code }}\" is a fiat currency-XX]",
     "quoteSymbolNotAPair": "[XX-The price symbol \"{{ quoteSymbol }}\" for \"{{ code }}\" is not a coin and fiat pair such as BTC-EUR-XX]",
-    "kindInUse": "[XX-The kind of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it-XX]"
+    "kindInUse": "[XX-The kind of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it-XX]",
+    "kindConflict": "[XX-Currency \"{{ code }}\" already exists as a {{ kind }} currency and cannot be added as {{ requestedKind }}-XX]"
   },
   "delegation": {
     "delegatedAccessInvalid": "[XX-Delegated access is no longer valid-XX]",

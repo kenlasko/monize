@@ -136,6 +136,9 @@
     "accountType": "Rekeningtype",
     "currency": "Valuta",
     "currencyLocked": "Valuta is vergrendeld omdat deze rekening al transacties heeft. Wijzigen zou bestaande saldi stilzwijgend herdenomineren.",
+    "accountTypeKindLocked": "De valuta is vergrendeld door de transacties van deze rekening, dus kan deze niet wisselen tussen Cryptowallet en een fiat-rekeningtype.",
+    "currencyPlaceholder": "Selecteer een valuta...",
+    "noCryptoCurrencies": "Een cryptowallet bevat één cryptovaluta en er is er nog geen ingesteld. Voeg er een toe op de <currencies>pagina Valuta's</currencies> en kies die hier. <guide>Zo voeg je een cryptovaluta toe</guide>",
     "openingBalance": "Beginsaldo",
     "loanAmount": "Leningbedrag",
     "mortgageAmount": "Hypotheekbedrag",
@@ -179,6 +182,7 @@
       "mortgage": "Hypotheek",
       "asset": "Actief",
       "cash": "Contanten",
+      "crypto": "Cryptowallet",
       "other": "Overig"
     },
     "statementDueDayPlaceholder": "bijv. 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "Rekeningnaam is vereist",
     "currencyCodeLength": "Valutacode moet 3 tekens zijn",
+    "currencyRequired": "Selecteer een valuta",
     "institutionRequired": "Selecteer of maak een instelling aan",
     "interestRateRequired": "Rentepercentage is vereist",
     "paymentAmountRequired": "Betalingsbedrag is vereist",

@@ -175,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (ECB)",
         "mnyImport": "Money import",
+        "yahooCrypto": "Crypto pairs (Yahoo)",
         "unknown": "Unknown"
       }
     },

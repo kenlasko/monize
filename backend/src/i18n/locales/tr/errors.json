@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "{{ id }} kimliğine sahip hesap bulunamadı",
     "notInvestmentPair": "Bu hesap bir yatırım hesabı çiftinin parçası değil",
+    "accountCurrencyKindMismatch": "{{ code }}, {{ kind }} türünde bir para birimidir ve {{ accountType }} türündeki bir hesap bunu tutamaz. CRYPTO hesabı bir kripto para tutar; diğer tüm hesap türleri bir fiat para birimi tutar.",
     "noLinkedInvestmentAccount": "Bu yatırım hesabına bağlı bir hesap yok",
     "notFound": "Hesap bulunamadı",
     "institutionNotFound": "Kurum bulunamadı",
@@ -358,7 +359,11 @@
     "inUse": "\"{{ code }}\" para birimi hesaplarınız, menkul kıymetleriniz veya diğer kayıtlarınız tarafından kullanılıyor. Bunun yerine devre dışı bırakın.",
     "invalidRateDate": "date, YYYY-AA-GG biçiminde olmalıdır",
     "sameCurrencyHistory": "{{ code }} varsayılan para biriminizdir; döviz kuru geçmişi yoktur",
-    "rateProviderUnavailable": "Döviz kuru sağlayıcısı yanıt vermedi. Lütfen daha sonra tekrar deneyin."
+    "rateProviderUnavailable": "Döviz kuru sağlayıcısı yanıt vermedi. Lütfen daha sonra tekrar deneyin.",
+    "quoteSymbolRequiresCrypto": "Fiyat sembolü ({{ quoteSymbol }}) yalnızca bir kripto paraya ayarlanabilir; \"{{ code }}\" bir fiat para birimidir",
+    "quoteSymbolNotAPair": "\"{{ code }}\" için \"{{ quoteSymbol }}\" fiyat sembolü, BTC-EUR gibi bir coin ve fiat çifti değildir",
+    "kindInUse": "Hesaplar, işlemler, menkul kıymetler veya diğer kayıtlar kullandığı sürece \"{{ code }}\" para biriminin türü değiştirilemez",
+    "kindConflict": "\"{{ code }}\" para birimi zaten {{ kind }} para birimi olarak mevcut ve {{ requestedKind }} olarak eklenemez"
   },
   "delegation": {
     "delegatedAccessInvalid": "Delege erişimi artık geçerli değil",
@@ -642,6 +647,7 @@
     "bondCurrencyMismatch": "Menkul kıymet {{ currency }} cinsinden kayıtlı, ancak tahvil enstrümanı {{ instrumentCurrency }} cinsinden fiyatlanıyor. Enstrümanın para birimini kullanın.",
     "bondCurrencyLocked": "Bir tahvil enstrümanına bağlı menkul kıymet, enstrümanın para biriminde ({{ instrumentCurrency }}) kalır. Para birimini değiştirmeden önce tahvil bağlantısını kaldırın.",
     "accountMustBeInvestment": "Hesap YATIRİM türünde olmalıdır",
+    "currencyMustBeFiat": "{{ code }} bir kripto paradır ve menkul kıymet fiat para biriminde fiyatlanır. Menkul kıymetin fiyatlandığı fiat para birimini seçin.",
     "transferPairSameRow": "Bir transferin iki bacağı aynı işlem olamaz",
     "transferPairNotFound": "İki işlemden biri artık mevcut değil",
     "transferPairAlreadyLinked": "Bu bacaklardan biri zaten başka bir işleme bağlı",
@@ -909,6 +915,7 @@
     "accountNotFound": "Bu hesap bulunamadı.",
     "accountClosed": "Bağlı hesap kapalı. Yeniden açın veya başka bir hesap bağlayın.",
     "accountBrokerage": "Yatırım aracı kurum hesabı banka işlemlerini alamaz. Bunun yerine nakit hesabını bağlayın.",
+    "accountCrypto": "Kripto para cüzdanı banka işlemlerini alamaz. Bunun yerine bir banka hesabı bağlayın.",
     "accountCurrencyMismatch": "Banka hesabı {{ bankCurrency }} cinsinden, ancak hesap {{ accountCurrency }} cinsinden. Aynı para biriminde bir hesap bağlayın.",
     "accountCurrencyChanged": "Bağlı hesabın para birimi okunurken değişti. Hiçbir şey içe aktarılmadı; yeniden senkronize edin.",
     "accountAlreadyLinked": "Bu hesap zaten başka bir banka hesabına bağlı.",
