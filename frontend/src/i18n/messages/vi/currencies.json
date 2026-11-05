@@ -112,7 +112,6 @@
       "reactivateFailed": "Không thể kích hoạt lại tiền tệ"
     },
     "inactiveNotice": "{code} đã có trong danh sách của bạn nhưng đang không hoạt động.",
-    "cryptoNotice": "{code} không phải là mã tiền tệ tiêu chuẩn. Tiền mã hóa như Bitcoin được theo dõi dưới dạng chứng khoán trong tài khoản đầu tư, không phải dưới dạng tiền tệ. <guide>Xem cách thực hiện trong hướng dẫn sử dụng</guide>.",
     "reactivateButton": "Kích hoạt lại {code}",
     "reactivating": "Đang kích hoạt lại..."
   },

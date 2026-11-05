@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from './currency-decimals';
 import {
   getCurrencySymbol,
   resolveCurrencySymbol,
@@ -111,6 +112,21 @@ describe('formatCurrency', () => {
 });
 
 describe('getDecimalPlacesForCurrency', () => {
+  afterEach(() => {
+    clearCurrencyDecimals();
+  });
+
+  it('answers a registered currency from its row before Intl', () => {
+    expect(getDecimalPlacesForCurrency('BTC')).toBe(2);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    expect(getDecimalPlacesForCurrency('BTC')).toBe(4);
+  });
+
+  it('keeps an ISO currency at Intl\'s places even when its row is registered', () => {
+    registerCurrencyDecimals([{ code: 'JPY', decimalPlaces: 2 }]);
+    expect(getDecimalPlacesForCurrency('JPY')).toBe(0);
+  });
+
   it('returns 2 for USD', () => {
     expect(getDecimalPlacesForCurrency('USD')).toBe(2);
   });

@@ -18,6 +18,7 @@ import {
 } from "@/lib/account-utils";
 import { bankSyncApi } from "@/lib/bank-sync";
 import {
+  isBankSyncEligibleAccountType,
   normalizeBankAccountType,
   suggestedAccountType,
 } from "@/lib/bank-sync-account-type";
@@ -115,6 +116,7 @@ export function BankSyncAccountRow({
       !account.isJoint &&
       !account.isClosed &&
       !isInvestmentBrokerageAccount(account) &&
+      isBankSyncEligibleAccountType(account.accountType) &&
       !linkedElsewhere.has(account.id) &&
       (!bankAccount.currencyCode ||
         account.currencyCode === bankAccount.currencyCode)

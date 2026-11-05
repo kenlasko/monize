@@ -275,11 +275,17 @@ describe('TransferTransactionFields', () => {
       name: 'Brokerage',
       accountSubType: 'INVESTMENT_BROKERAGE',
     });
+    const walletAccount = createAccount({
+      id: 'acc-btc',
+      name: 'Bitcoin Wallet',
+      accountType: 'CRYPTO',
+      currencyCode: 'BTC',
+    });
 
     render(
       <TransferTransactionFields
         {...defaultProps}
-        accounts={[savingsAccount, investmentAccount]}
+        accounts={[savingsAccount, investmentAccount, walletAccount]}
       />
     );
 
@@ -289,6 +295,8 @@ describe('TransferTransactionFields', () => {
 
     expect(labels).toContain('Savings (CAD)');
     expect(labels).not.toContain('Brokerage (CAD)');
+    // A crypto wallet is a transfer destination like any bank account.
+    expect(labels).toContain('Bitcoin Wallet (BTC)');
   });
 
   it('excludes the currently selected "From" account from To Account dropdown', () => {

@@ -112,7 +112,6 @@
       "reactivateFailed": "Kan valuta niet opnieuw activeren"
     },
     "inactiveNotice": "{code} staat al in je lijst, maar is inactief.",
-    "cryptoNotice": "{code} is geen standaard valutacode. Cryptovaluta zoals Bitcoin volg je als waardepapieren in een beleggingsrekening, niet als valuta. <guide>Bekijk in de gebruikershandleiding hoe dat werkt</guide>.",
     "reactivateButton": "{code} opnieuw activeren",
     "reactivating": "Bezig met opnieuw activeren..."
   },

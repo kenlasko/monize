@@ -112,7 +112,6 @@
       "reactivateFailed": "Nie udało się ponownie aktywować waluty"
     },
     "inactiveNotice": "{code} jest już na Twojej liście, ale jest nieaktywna.",
-    "cryptoNotice": "{code} nie jest standardowym kodem waluty. Kryptowaluty, takie jak Bitcoin, są śledzone jako papiery wartościowe na koncie inwestycyjnym, a nie jako waluty. <guide>Zobacz, jak to zrobić, w przewodniku użytkownika</guide>.",
     "reactivateButton": "Aktywuj ponownie {code}",
     "reactivating": "Ponowne aktywowanie..."
   },

@@ -112,7 +112,6 @@
       "reactivateFailed": "Falha ao reativar a moeda"
     },
     "inactiveNotice": "{code} já está na sua lista, mas está inativa.",
-    "cryptoNotice": "{code} não é um código de moeda padrão. Criptomoedas, como o Bitcoin, são acompanhadas como títulos em uma conta de investimento, e não como moedas. <guide>Veja como no guia do usuário</guide>.",
     "reactivateButton": "Reativar {code}",
     "reactivating": "Reativando..."
   },

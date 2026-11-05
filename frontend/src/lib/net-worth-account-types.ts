@@ -18,6 +18,7 @@ export const NET_WORTH_ACCOUNT_TYPE_ORDER: readonly AccountType[] = [
   'CHEQUING',
   'SAVINGS',
   'CASH',
+  'CRYPTO',
   'INVESTMENT',
   'ASSET',
   'CREDIT_CARD',
@@ -32,8 +33,9 @@ export const NET_WORTH_ACCOUNT_TYPE_ORDER: readonly AccountType[] = [
  * card behind the chart: the first type in its group at full strength, each
  * later one paler. Mixing toward the card rather than toward white keeps the
  * ramp legible in dark mode too, where paler means closer to the dark card.
+ * One step per held type (six), the palest kept at 30% so it stays legible.
  */
-const RAMP_STRENGTHS = ['100%', '78%', '58%', '42%', '30%'] as const;
+const RAMP_STRENGTHS = ['100%', '80%', '64%', '50%', '39%', '30%'] as const;
 
 /** `base` at `strength` (a CSS percentage), the rest the chart's card colour. */
 function rampStep(base: string, strength: (typeof RAMP_STRENGTHS)[number]): string {

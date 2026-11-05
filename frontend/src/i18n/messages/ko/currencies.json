@@ -112,7 +112,6 @@
       "reactivateFailed": "통화를 다시 활성화하지 못했습니다"
     },
     "inactiveNotice": "{code}은(는) 이미 목록에 있지만 비활성 상태입니다.",
-    "cryptoNotice": "{code}은(는) 표준 통화 코드가 아닙니다. 비트코인 같은 암호화폐는 통화가 아니라 투자 계정의 유가증권으로 추적합니다. <guide>방법은 사용자 가이드에서 확인하세요</guide>.",
     "reactivateButton": "{code} 다시 활성화",
     "reactivating": "다시 활성화하는 중..."
   },

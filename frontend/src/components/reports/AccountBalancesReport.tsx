@@ -51,6 +51,7 @@ const ACCOUNT_TYPE_KEYS = [
   'MORTGAGE',
   'INVESTMENT',
   'CASH',
+  'CRYPTO',
   'ASSET',
   'OTHER',
 ] as const;

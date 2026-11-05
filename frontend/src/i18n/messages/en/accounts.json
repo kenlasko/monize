@@ -136,6 +136,8 @@
     "accountType": "Account Type",
     "currency": "Currency",
     "currencyLocked": "Currency is locked because this account already has transactions. Changing it would silently re-denominate existing balances.",
+    "currencyPlaceholder": "Select a currency...",
+    "noCryptoCurrencies": "A crypto wallet holds one cryptocurrency, and none is set up yet. Add one on the <currencies>Currencies page</currencies>, then choose it here. <guide>How to add a cryptocurrency</guide>",
     "openingBalance": "Opening Balance",
     "loanAmount": "Loan Amount",
     "mortgageAmount": "Mortgage Amount",
@@ -186,6 +188,7 @@
       "mortgage": "Mortgage",
       "asset": "Asset",
       "cash": "Cash",
+      "crypto": "Crypto Wallet",
       "other": "Other"
     },
     "statementDueDayPlaceholder": "e.g. 15",
@@ -457,6 +460,7 @@
   "validation": {
     "nameRequired": "Account name is required",
     "currencyCodeLength": "Currency code must be 3 characters",
+    "currencyRequired": "Select a currency",
     "institutionRequired": "Please select or create an institution",
     "interestRateRequired": "Interest rate is required",
     "paymentAmountRequired": "Payment amount is required",

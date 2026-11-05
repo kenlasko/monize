@@ -3,6 +3,7 @@ import { render, screen, act, waitFor } from '@/test/render';
 import toast from 'react-hot-toast';
 import { AccountFormModal } from './AccountFormModal';
 import { Account } from '@/types/account';
+import { showErrorToast } from '@/lib/errors';
 
 let capturedOnSubmit: ((data: any) => Promise<void>) | null = null;
 let capturedInitialValues: unknown;
@@ -122,6 +123,35 @@ describe('AccountFormModal', () => {
     // second, separate warning rather than a replacement for it.
     expect(toast.success).toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledWith('Too many rules already exist.');
+  });
+
+  it('surfaces the server refusing a wallet in a fiat currency like any other save error', async () => {
+    const refusal = Object.assign(new Error('A crypto wallet must hold a cryptocurrency'), {
+      response: { status: 400, data: { message: 'A crypto wallet must hold a cryptocurrency' } },
+    });
+    mockCreate.mockRejectedValue(refusal);
+    const close = vi.fn();
+    const onSaved = vi.fn();
+    render(<AccountFormModal formModal={buildFormModal({ close })} onSaved={onSaved} />);
+
+    await waitFor(() => expect(capturedOnSubmit).not.toBeNull());
+    let thrown: unknown;
+    await act(async () => {
+      await capturedOnSubmit!({ name: 'Wallet', accountType: 'CRYPTO', currencyCode: 'CAD' }).catch(
+        (error: unknown) => {
+          thrown = error;
+        },
+      );
+    });
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ accountType: 'CRYPTO', currencyCode: 'CAD' }),
+    );
+    expect(showErrorToast).toHaveBeenCalledWith(refusal, 'Failed to create account');
+    // The form stays open with what was entered, as for any refused save.
+    expect(thrown).toBe(refusal);
+    expect(close).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
   });
 
   it('does not warn about Payment matching when the create had none to report', async () => {

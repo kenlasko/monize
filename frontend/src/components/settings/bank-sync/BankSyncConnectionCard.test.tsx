@@ -905,6 +905,17 @@ describe('BankSyncConnectionCard', () => {
       ]);
     });
 
+    it('never offers a crypto wallet, which no bank feed reports', () => {
+      renderCard(connection({ accounts: [bankAccount({ currencyCode: null })] }), {
+        accounts: [
+          account({ id: 'eur', name: 'Euros' }),
+          account({ id: 'btc', name: 'Bitcoin Wallet', accountType: 'CRYPTO', currencyCode: 'BTC' }),
+        ],
+      });
+
+      expect(optionLabels()).toEqual(['Not linked', 'Create a new account', 'Euros (EUR)']);
+    });
+
     it('keeps the current link selected even though it is linked', () => {
       renderCard(connection({ accounts: [bankAccount({ accountId: 'a1', syncFromDate: '2026-01-01' })] }), {
         linked: ['a1'],

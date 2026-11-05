@@ -112,7 +112,6 @@
       "reactivateFailed": "Gagal mengaktifkan kembali mata uang"
     },
     "inactiveNotice": "{code} sudah ada di daftar Anda, tetapi tidak aktif.",
-    "cryptoNotice": "{code} bukan kode mata uang standar. Mata uang kripto seperti Bitcoin dicatat sebagai sekuritas di akun investasi, bukan sebagai mata uang. <guide>Lihat caranya di panduan pengguna</guide>.",
     "reactivateButton": "Aktifkan kembali {code}",
     "reactivating": "Mengaktifkan kembali..."
   },

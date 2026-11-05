@@ -2830,6 +2830,28 @@ describe('AccountList', () => {
       expect(screen.getAllByText('Line of Credit').length).toBeGreaterThanOrEqual(2);
     });
 
+    it('renders a CRYPTO account under its own group, between cash and investments', () => {
+      const accounts = [
+        createAccount({ id: 'i1', name: 'Brokerage', accountType: 'INVESTMENT' }),
+        createAccount({ id: 'w1', name: 'Bitcoin Wallet', accountType: 'CRYPTO', currencyCode: 'BTC' }),
+        createAccount({ id: 'k1', name: 'Petty Cash', accountType: 'CASH' }),
+      ];
+
+      render(
+        <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+      );
+
+      expect(screen.getByText('Bitcoin Wallet')).toBeInTheDocument();
+      // "Crypto Wallet" appears in both group header and type badge
+      expect(screen.getAllByText('Crypto Wallet').length).toBeGreaterThanOrEqual(2);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Filter by account type' }));
+      const optionLabels = screen
+        .getAllByRole('checkbox')
+        .map((box) => box.closest('label')?.textContent?.trim());
+      expect(optionLabels).toEqual(['Cash', 'Crypto Wallet', 'Investment']);
+    });
+
     it('renders OTHER account type group', () => {
       const account = createAccount({ id: 'o1', name: 'Other Account', accountType: 'OTHER' });
 

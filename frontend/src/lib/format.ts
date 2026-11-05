@@ -1,3 +1,5 @@
+import { decimalPlacesForCurrency } from './currency-decimals';
+
 /**
  * Get the narrow currency symbol for a given currency code (e.g., '$', '€', '£').
  * Uses Intl.NumberFormat so it works for any valid ISO 4217 currency code.
@@ -48,10 +50,14 @@ export function formatCurrency(amount: number, currencyCode: string = 'USD'): st
 }
 
 /**
- * Get the number of decimal places for a currency code using Intl.NumberFormat.
- * E.g., USD=2, JPY=0, BHD=3.
+ * The number of decimal places for a currency code: for a code Intl does not
+ * know, the reader's own currency row (`lib/currency-decimals.ts`, so a coin
+ * stored with four places gets four); otherwise Intl.NumberFormat (USD=2,
+ * JPY=0, BHD=3); then 2.
  */
 export function getDecimalPlacesForCurrency(currencyCode: string): number {
+  const registered = decimalPlacesForCurrency(currencyCode);
+  if (registered !== undefined) return registered;
   try {
     return new Intl.NumberFormat('en', {
       style: 'currency',

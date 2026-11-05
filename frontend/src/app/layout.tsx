@@ -9,6 +9,7 @@ import { BootSplash } from '@/components/layout/BootSplash';
 import { BootSplashHider } from '@/components/providers/BootSplashHider';
 import { OfflineFallbackSync } from '@/components/providers/OfflineFallbackSync';
 import { PreferencesLoader } from '@/components/providers/PreferencesLoader';
+import { CurrencyRegistryLoader } from '@/components/providers/CurrencyRegistryLoader';
 import { ServiceWorkerRegistrar } from '@/components/providers/ServiceWorkerRegistrar';
 import { PwaLifecycleHandler } from '@/components/providers/PwaLifecycleHandler';
 import { MessageScopeGuard } from '@/components/providers/MessageScopeGuard';
@@ -167,6 +168,7 @@ export default async function RootLayout({
             <MessageScopeGuard scope={messageScope}>
               <BootSplashHider />
               <OfflineFallbackSync />
+              <CurrencyRegistryLoader />
               <PreferencesLoader>
                 <SwipeShell httpsHeadersActive={httpsHeadersActive}>
                   {children}

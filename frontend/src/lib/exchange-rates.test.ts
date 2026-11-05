@@ -2,7 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiClient from './api';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { exchangeRatesApi, FX_PROVIDER_NAMES, isFxProviderName } from './exchange-rates';
+import {
+  exchangeRatesApi,
+  FX_PROVIDER_NAMES,
+  PAIR_PROVIDER_NAMES,
+  isFxProviderName,
+  isRateProviderName,
+} from './exchange-rates';
+import en from '@/i18n/messages/en/currencies.json';
 import { scheduledTransactionsApi } from './scheduled-transactions';
 import { invalidateCache, setCache, getCached, clearAllCache } from './apiCache';
 
@@ -478,29 +485,50 @@ describe('FX_PROVIDER_NAMES', () => {
     '../../../backend/src/currencies/providers/fx-provider.interface.ts',
   );
 
-  function parseBackendNames(): string[] {
+  function parseBackendNames(constant = 'FX_PROVIDER_NAMES'): string[] {
     const source = readFileSync(BACKEND_PROVIDERS, 'utf8');
-    const list = source.match(/export const FX_PROVIDER_NAMES = \[([^\]]*)\] as const/);
+    const list = source.match(new RegExp(`export const ${constant} = \\[([^\\]]*)\\] as const`));
     if (!list) {
       throw new Error(
-        'FX_PROVIDER_NAMES not found in the backend source -- this guard has lost its subject',
+        `${constant} not found in the backend source -- this guard has lost its subject`,
       );
     }
     return [...list[1].matchAll(/["']([a-z0-9_-]+)["']/g)].map((m) => m[1]);
   }
 
-  it('parses the backend list it is checked against', () => {
+  it('parses the backend lists it is checked against', () => {
     expect(parseBackendNames().length).toBeGreaterThan(0);
+    expect(parseBackendNames('PAIR_PROVIDER_NAMES').length).toBeGreaterThan(0);
   });
 
   it('names exactly the providers the backend declares', () => {
     expect([...FX_PROVIDER_NAMES].sort()).toEqual(parseBackendNames().sort());
   });
 
+  it('names exactly the always-present providers the backend declares, apart from the configurable ones', () => {
+    expect([...PAIR_PROVIDER_NAMES].sort()).toEqual(parseBackendNames('PAIR_PROVIDER_NAMES').sort());
+    for (const name of PAIR_PROVIDER_NAMES) {
+      expect(isFxProviderName(name)).toBe(false);
+    }
+  });
+
+  it('carries a label for every provider the status endpoint may report', () => {
+    const labels = en.page.providers.names as Record<string, string>;
+    const names = [...parseBackendNames(), ...parseBackendNames('PAIR_PROVIDER_NAMES')];
+    expect(names.filter((name) => !labels[name])).toEqual([]);
+    expect(Object.keys(labels).sort()).toEqual([...names].sort());
+  });
+
   it('isFxProviderName admits the mirrored names only', () => {
     expect(isFxProviderName('frankfurter')).toBe(true);
     expect(isFxProviderName('yahoo')).toBe(true);
     expect(isFxProviderName('yahoo_finance')).toBe(false);
+  });
+
+  it('isRateProviderName admits the configurable and the always-present names', () => {
+    expect(isRateProviderName('yahoo')).toBe(true);
+    expect(isRateProviderName('crypto')).toBe(true);
+    expect(isRateProviderName('yahoo_crypto')).toBe(false);
   });
 });
 

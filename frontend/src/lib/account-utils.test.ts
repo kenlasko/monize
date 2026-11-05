@@ -287,6 +287,7 @@ describe('formatAccountType', () => {
     expect(formatAccountType('CREDIT_CARD')).toBe('Credit Card');
     expect(formatAccountType('LINE_OF_CREDIT')).toBe('Line of Credit');
     expect(formatAccountType('CHEQUING')).toBe('Chequing');
+    expect(formatAccountType('CRYPTO')).toBe('Crypto Wallet');
   });
 
   it('returns the raw type string for unknown types', () => {

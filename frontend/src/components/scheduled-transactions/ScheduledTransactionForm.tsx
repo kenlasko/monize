@@ -507,8 +507,9 @@ export function ScheduledTransactionForm({
   );
 
   // Funding account options: anything that can carry cash, except the
-  // brokerage's paired cash side and asset/brokerage accounts. Mirrors the
-  // filtering in InvestmentTransactionForm.
+  // brokerage's paired cash side, asset/brokerage accounts and crypto wallets
+  // (a coin is not the fiat a trade settles in). Mirrors the filtering in
+  // InvestmentTransactionForm.
   const fundingAccountOptions = useMemo(() =>
     buildAccountDropdownOptions(
       accounts,
@@ -516,6 +517,7 @@ export function ScheduledTransactionForm({
         !a.isClosed &&
         a.id !== watchedAccountId &&
         a.accountType !== 'ASSET' &&
+        a.accountType !== 'CRYPTO' &&
         a.accountSubType !== 'INVESTMENT_BROKERAGE' &&
         a.accountSubType !== 'INVESTMENT_CASH',
       accountOptionLabel,

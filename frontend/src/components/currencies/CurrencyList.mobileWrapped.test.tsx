@@ -53,6 +53,8 @@ function makeCurrency(overrides: Partial<CurrencyInfo> & { code: string }): Curr
     isActive: true,
     isSystem: false,
     createdAt: '2025-01-01T00:00:00Z',
+    kind: 'FIAT',
+    quoteSymbol: null,
     ...overrides,
   };
 }
@@ -234,6 +236,23 @@ describe('the currencies list on a phone', () => {
     expect(within(base).getByText('Active')).toBeInTheDocument();
     expect(within(foreign).queryByText('Default')).not.toBeInTheDocument();
     expect(within(foreign).getByText('Inactive')).toBeInTheDocument();
+  });
+
+  it('marks a cryptocurrency and shows its price symbol on the card', () => {
+    setPhoneViewport(true);
+    useDensityStore.setState({ densities: { currencies: 'normal' } });
+
+    const { container } = renderList([
+      makeCurrency({ code: 'BTC', name: 'Bitcoin', kind: 'CRYPTO', quoteSymbol: 'BTC-CAD' }),
+      makeCurrency({ code: 'XYZ', name: 'Unpriced', kind: 'CRYPTO', quoteSymbol: null }),
+      makeCurrency({ code: 'USD' }),
+    ]);
+
+    const [btc, xyz, usd] = bodyRows(container);
+    expect(within(btc).getByText('Crypto')).toBeInTheDocument();
+    expect(within(btc).getByText('BTC-CAD')).toBeInTheDocument();
+    expect(within(xyz).getByText('No price symbol')).toBeInTheDocument();
+    expect(within(usd).queryByText('Crypto')).not.toBeInTheDocument();
   });
 
   it('replaces the column header with a slim sort header', () => {

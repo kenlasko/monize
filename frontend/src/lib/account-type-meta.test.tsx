@@ -18,6 +18,17 @@ describe('account-type-meta', () => {
     }
   });
 
+  it('gives a crypto wallet its own amber pill and icon', () => {
+    expect(ACCOUNT_TYPE_META.CRYPTO.pillClass).toBe(
+      'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+    );
+    const others = ALL_TYPES.filter((type) => type !== 'CRYPTO');
+    for (const type of others) {
+      expect(ACCOUNT_TYPE_META[type].pillClass).not.toBe(ACCOUNT_TYPE_META.CRYPTO.pillClass);
+      expect(ACCOUNT_TYPE_META[type].Icon).not.toBe(ACCOUNT_TYPE_META.CRYPTO.Icon);
+    }
+  });
+
   it('falls back to the OTHER treatment for an unknown type', () => {
     expect(accountTypePillClass('SOMETHING_NEW' as AccountType)).toBe(
       ACCOUNT_TYPE_META.OTHER.pillClass,

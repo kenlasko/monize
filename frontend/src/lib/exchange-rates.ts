@@ -5,6 +5,9 @@ import {
   invalidateCache,
   invalidateScheduledFxReadModel,
 } from './apiCache';
+import type { CurrencyKind } from './currency-kind';
+
+export { CURRENCY_KINDS, type CurrencyKind } from './currency-kind';
 
 export interface ExchangeRate {
   id: number;
@@ -29,6 +32,25 @@ export function isFxProviderName(name: string): name is FxProviderName {
   return (FX_PROVIDER_NAMES as readonly string[]).includes(name);
 }
 
+/**
+ * The providers the server's chain always carries after the configured ones and
+ * which are never an `FX_PROVIDERS` token, mirrored from the backend's
+ * `PAIR_PROVIDER_NAMES` (same file as above) and held to it by the same
+ * contract test. Kept apart so `FX_PROVIDER_NAMES` stays the list an operator
+ * can configure.
+ */
+export const PAIR_PROVIDER_NAMES = ['crypto'] as const;
+
+export type PairProviderName = (typeof PAIR_PROVIDER_NAMES)[number];
+
+/** Any provider the status endpoint may report, configured or always present. */
+export type RateProviderName = FxProviderName | PairProviderName;
+
+/** Whether this client has a label for `name` (`page.providers.names.<name>`). */
+export function isRateProviderName(name: string): name is RateProviderName {
+  return isFxProviderName(name) || (PAIR_PROVIDER_NAMES as readonly string[]).includes(name);
+}
+
 /** One configured provider: `name` identifies it, `source` is the slug its rows carry. */
 export interface FxProviderDescription {
   name: string;
@@ -41,6 +63,7 @@ export interface ExchangeRateStatus {
   providers: FxProviderDescription[];
 }
 
+
 export interface CurrencyInfo {
   code: string;
   name: string;
@@ -49,6 +72,13 @@ export interface CurrencyInfo {
   isActive: boolean;
   isSystem: boolean;
   createdAt: string;
+  kind: CurrencyKind;
+  /**
+   * The Yahoo `<COIN>-<FIAT>` pair a `CRYPTO` currency is priced from (`BTC-EUR`);
+   * always null on a `FIAT` row, and null on a coin no provider quotes, which
+   * leaves it without an exchange rate.
+   */
+  quoteSymbol: string | null;
 }
 
 export interface CreateCurrencyData {
@@ -57,6 +87,8 @@ export interface CreateCurrencyData {
   symbol: string;
   decimalPlaces?: number;
   isActive?: boolean;
+  kind?: CurrencyKind;
+  quoteSymbol?: string | null;
 }
 
 export interface UpdateCurrencyData {
@@ -64,6 +96,9 @@ export interface UpdateCurrencyData {
   symbol?: string;
   decimalPlaces?: number;
   isActive?: boolean;
+  /** Refused by the server (`currencies.kindInUse`) once anything references the code. */
+  kind?: CurrencyKind;
+  quoteSymbol?: string | null;
 }
 
 export interface CurrencyLookupResult {

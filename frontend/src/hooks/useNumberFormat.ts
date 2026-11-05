@@ -1,9 +1,14 @@
-import { useCallback } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { roundToDecimals, adaptiveFractionDigits } from '@/lib/format';
 import { scaleBytes } from '@/lib/bytes';
 import { preferredCurrency } from '@/lib/default-currency';
 import { getNumberSeparators } from '@/lib/number-parse';
+import {
+  currencyDecimalsVersion,
+  decimalPlacesForCurrency,
+  subscribeCurrencyDecimals,
+} from '@/lib/currency-decimals';
 
 /**
  * Get the effective locale for number formatting.
@@ -130,6 +135,15 @@ export function useNumberFormat() {
   const numberLocale = getEffectiveLocale(numberFormat, language);
   const numberSeparators = getNumberSeparators(numberLocale);
 
+  // The currency decimals registry (`lib/currency-decimals.ts`) fills after the
+  // first render; subscribing gives the formatters below a new identity when it
+  // does, so a figure drawn before the list arrived is redrawn at its places.
+  const currencyDecimals = useSyncExternalStore(
+    subscribeCurrencyDecimals,
+    currencyDecimalsVersion,
+    currencyDecimalsVersion,
+  );
+
   const formatCurrency = useCallback(
     (amount: number, currencyCode?: string, fractionDigits?: number): string => {
       const currency = currencyCode || defaultCurrency;
@@ -139,18 +153,23 @@ export function useNumberFormat() {
         currency,
         currencyDisplay: 'narrowSymbol',
       };
-      if (fractionDigits !== undefined) {
-        options.minimumFractionDigits = fractionDigits;
-        options.maximumFractionDigits = fractionDigits;
+      // An explicit count wins; then a non-ISO code's own row; then Intl.
+      const digits = fractionDigits ?? decimalPlacesForCurrency(currency);
+      if (digits !== undefined) {
+        options.minimumFractionDigits = digits;
+        options.maximumFractionDigits = digits;
       }
       const formatter = getNumberFormat(locale, options);
       // Pre-round to the target decimal places to avoid IEEE 754
       // midpoint errors (e.g., 159.735 stored as 159.73499... rounding to
       // 159.73 instead of 159.74).
-      const decimals = fractionDigits ?? formatter.resolvedOptions().minimumFractionDigits ?? 2;
+      const decimals = digits ?? formatter.resolvedOptions().minimumFractionDigits ?? 2;
       return formatter.format(roundToDecimals(amount, decimals));
     },
-    [numberFormat, defaultCurrency, language]
+    // `currencyDecimals` is read through `decimalPlacesForCurrency`; it is a
+    // dependency so the callback changes identity when the registry does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [numberFormat, defaultCurrency, language, currencyDecimals]
   );
 
   /**
@@ -169,11 +188,13 @@ export function useNumberFormat() {
       const currency = currencyCode || defaultCurrency;
       const locale = getEffectiveLocale(numberFormat, language);
       const currencyDigits =
+        decimalPlacesForCurrency(currency) ??
         getNumberFormat(locale, {
           style: 'currency',
           currency,
           currencyDisplay: 'narrowSymbol',
-        }).resolvedOptions().minimumFractionDigits ?? 2;
+        }).resolvedOptions().minimumFractionDigits ??
+        2;
       const baseDigits = Math.max(currencyDigits, minFractionDigits ?? 0);
       return formatCurrency(amount, currency, adaptiveFractionDigits(amount, baseDigits));
     },

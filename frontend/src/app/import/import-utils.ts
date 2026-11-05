@@ -78,6 +78,7 @@ export const ACCOUNT_TYPE_OPTIONS = [
   { value: 'MORTGAGE', label: 'Mortgage' },
   { value: 'CASH', label: 'Cash' },
   { value: 'ASSET', label: 'Asset' },
+  { value: 'CRYPTO', label: 'Crypto Wallet' },
   { value: 'OTHER', label: 'Other' },
 ];
 

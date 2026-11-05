@@ -176,6 +176,7 @@
     "CASH": "Cash",
     "LINE_OF_CREDIT": "Line of Credit",
     "ASSET": "Asset",
+    "CRYPTO": "Crypto Wallet",
     "OTHER": "Other"
   },
   "accountFilter": {

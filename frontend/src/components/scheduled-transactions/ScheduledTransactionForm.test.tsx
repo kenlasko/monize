@@ -1046,6 +1046,38 @@ describe('ScheduledTransactionForm', () => {
     expect(optionTexts.some(t => t?.includes('House'))).toBe(false);
   });
 
+  it('offers a crypto wallet as the account and as a transfer destination', async () => {
+    mockAccountsGetAll.mockResolvedValue([
+      ...mockAccounts,
+      {
+        id: 'acc-btc',
+        name: 'Bitcoin Wallet',
+        currencyCode: 'BTC',
+        isClosed: false,
+        accountType: 'CRYPTO',
+        accountSubType: null,
+      },
+    ]);
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      const accountSelect = screen.getByLabelText('Account') as HTMLSelectElement;
+      const texts = Array.from(accountSelect.querySelectorAll('option')).map(o => o.textContent);
+      expect(texts.some(t => t?.includes('Bitcoin Wallet'))).toBe(true);
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Transfer'));
+    });
+
+    const toAccountSelect = await screen.findByLabelText('To Account') as HTMLSelectElement;
+    const toTexts = Array.from(toAccountSelect.querySelectorAll('option')).map(o => o.textContent);
+    expect(toTexts.some(t => t?.includes('Bitcoin Wallet'))).toBe(true);
+  });
+
   it('shows transfer destination accounts filtered correctly in transfer mode', async () => {
     render(<ScheduledTransactionForm />);
 
@@ -2564,6 +2596,25 @@ describe('ScheduledTransactionForm', () => {
         expect(mockGetSecurities).toHaveBeenCalled();
       });
     }
+
+    it('does not offer a crypto wallet as the funding account', async () => {
+      mockAccountsGetAll.mockResolvedValue([
+        ...mockAccounts,
+        {
+          id: 'acc-btc',
+          name: 'Bitcoin Wallet',
+          currencyCode: 'BTC',
+          isClosed: false,
+          accountType: 'CRYPTO',
+          accountSubType: null,
+        },
+      ]);
+      await openInvestmentTab();
+      const funding = screen.getByLabelText('Funding Account (optional)') as HTMLSelectElement;
+      const texts = Array.from(funding.querySelectorAll('option')).map(o => o.textContent);
+      expect(texts.some(t => t?.includes('Chequing'))).toBe(true);
+      expect(texts.some(t => t?.includes('Bitcoin Wallet'))).toBe(false);
+    });
 
     it('renders the Investment tab and an Action selector', async () => {
       await openInvestmentTab();

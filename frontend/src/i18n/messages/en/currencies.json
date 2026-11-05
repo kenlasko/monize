@@ -19,7 +19,8 @@
       "separator": ", then ",
       "names": {
         "frankfurter": "Frankfurter (ECB reference rates)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Crypto pairs (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "Actions"
     },
     "defaultBadge": "Default",
+    "cryptoBadge": "Crypto",
+    "noPriceSymbol": "No price symbol",
     "statusBadge": {
       "active": "Active",
       "activeShort": "Act",
@@ -98,6 +101,20 @@
     "symbolLabel": "Symbol",
     "symbolPlaceholder": "e.g., $, €, £, ¥",
     "decimalPlacesLabel": "Decimal Places",
+    "kindLabel": "Kind",
+    "kindOptions": {
+      "fiat": "Fiat Currency",
+      "crypto": "Cryptocurrency"
+    },
+    "kindLocked": "{code} is in use, so its kind cannot change.",
+    "quoteSymbolLabel": "Price Symbol (optional)",
+    "quoteSymbolPlaceholder": "e.g. BTC-EUR",
+    "quoteSymbolHelp": "The Yahoo Finance symbol the coin is priced from: its ticker, a hyphen and the currency it is quoted in, such as BTC-EUR. Exchange rates for the coin are fetched through it.",
+    "verifyButton": "Verify",
+    "quoteSymbolPricedIn": "Priced in {currency}",
+    "quoteSymbolMissing": "Without a price symbol the currency has no exchange rate.",
+    "quoteSymbolNotCrypto": "{symbol} is not a cryptocurrency. Enter a coin's pair, such as BTC-EUR.",
+    "quoteSymbolNotFound": "No cryptocurrency found for {symbol}",
     "lookupButton": "Lookup",
     "lookingUp": "Looking up...",
     "clearButton": "Clear",
@@ -105,7 +122,9 @@
     "submitCreate": "Create Currency",
     "submitUpdate": "Update Currency",
     "inactiveNotice": "{code} is already in your list but inactive.",
-    "cryptoNotice": "{code} is not a standard currency code. Cryptocurrencies such as Bitcoin are tracked as securities in an investment account, not as currencies. <guide>See how in the user guide</guide>.",
+    "nonIsoNotice": "{code} is not a standard currency code. If it is a cryptocurrency, set its kind to Cryptocurrency. <guide>Read about cryptocurrencies in the user guide</guide>.",
+    "switchToCrypto": "Use Cryptocurrency",
+    "cryptoPrecisionNotice": "Amounts in a cryptocurrency are kept to at most four decimal places, so a very small amount such as a network fee can round to zero. <guide>See how to record wallet fees</guide>.",
     "reactivateButton": "Reactivate {code}",
     "reactivating": "Reactivating...",
     "toasts": {
@@ -113,7 +132,9 @@
       "found": "Found: {details}",
       "notFound": "No currency found for \"{query}\"",
       "lookupFailed": "Lookup failed - please try again",
-      "reactivateFailed": "Failed to reactivate currency"
+      "reactivateFailed": "Failed to reactivate currency",
+      "verifyEmpty": "Enter a price symbol such as BTC-EUR to verify",
+      "verifyFailed": "Failed to verify the price symbol"
     }
   },
   "validation": {
@@ -121,7 +142,10 @@
     "nameRequired": "Name is required",
     "nameMax": "Name must be 100 characters or less",
     "symbolRequired": "Symbol is required",
-    "symbolMax": "Symbol must be 10 characters or less"
+    "symbolMax": "Symbol must be 10 characters or less",
+    "quoteSymbolMax": "Price symbol must be 20 characters or less",
+    "quoteSymbolRequiresCrypto": "Only a cryptocurrency has a price symbol",
+    "quoteSymbolNotAPair": "Enter a pair such as BTC-EUR: the coin, a hyphen and a three-letter currency code"
   },
   "rateHistory": {
     "title": "Rate history",

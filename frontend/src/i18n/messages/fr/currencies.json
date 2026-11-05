@@ -112,7 +112,6 @@
       "reactivateFailed": "Échec de la réactivation de la devise"
     },
     "inactiveNotice": "{code} figure déjà dans votre liste, mais est inactive.",
-    "cryptoNotice": "{code} n'est pas un code de devise standard. Les cryptomonnaies comme le Bitcoin sont suivies comme des titres dans un compte d'investissement, et non comme des devises. <guide>Voir comment faire dans le guide d'utilisation</guide>.",
     "reactivateButton": "Réactiver {code}",
     "reactivating": "Réactivation..."
   },

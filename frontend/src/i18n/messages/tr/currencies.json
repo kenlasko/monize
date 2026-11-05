@@ -112,7 +112,6 @@
       "reactivateFailed": "Para birimi yeniden etkinleştirilemedi"
     },
     "inactiveNotice": "{code} zaten listenizde ama etkin değil.",
-    "cryptoNotice": "{code} standart bir para birimi kodu değildir. Bitcoin gibi kripto paralar para birimi olarak değil, bir yatırım hesabında menkul kıymet olarak izlenir. <guide>Nasıl yapıldığını kullanım kılavuzunda görün</guide>.",
     "reactivateButton": "{code} birimini yeniden etkinleştir",
     "reactivating": "Yeniden etkinleştiriliyor..."
   },

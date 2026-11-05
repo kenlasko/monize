@@ -112,7 +112,6 @@
       "reactivateFailed": "通貨を再有効化できませんでした"
     },
     "inactiveNotice": "{code} はすでにリストにありますが、無効になっています。",
-    "cryptoNotice": "{code} は標準的な通貨コードではありません。ビットコインなどの暗号資産は、通貨ではなく、投資口座の有価証券として管理します。<guide>方法はユーザーガイドをご覧ください</guide>。",
     "reactivateButton": "{code} を再有効化",
     "reactivating": "再有効化しています..."
   },

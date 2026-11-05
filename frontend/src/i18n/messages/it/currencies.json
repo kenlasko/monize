@@ -112,7 +112,6 @@
       "reactivateFailed": "Impossibile riattivare la valuta"
     },
     "inactiveNotice": "{code} è già nella tua lista, ma non è attiva.",
-    "cryptoNotice": "{code} non è un codice valuta standard. Le criptovalute come Bitcoin vengono monitorate come titoli in un conto investimento, non come valute. <guide>Scopri come fare nella guida utente</guide>.",
     "reactivateButton": "Riattiva {code}",
     "reactivating": "Riattivazione..."
   },

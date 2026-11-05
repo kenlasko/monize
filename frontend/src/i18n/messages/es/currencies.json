@@ -112,7 +112,6 @@
       "reactivateFailed": "No se pudo reactivar la divisa"
     },
     "inactiveNotice": "{code} ya está en tu lista, pero está inactiva.",
-    "cryptoNotice": "{code} no es un código de divisa estándar. Las criptomonedas como Bitcoin se registran como valores en una cuenta de inversión, no como divisas. <guide>Consulta cómo hacerlo en la guía de usuario</guide>.",
     "reactivateButton": "Reactivar {code}",
     "reactivating": "Reactivando..."
   },

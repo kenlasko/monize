@@ -82,6 +82,7 @@ function createDefaultProps(overrides: Partial<AccountRowProps> = {}): AccountRo
         CASH: 'Cash',
         LINE_OF_CREDIT: 'Line of Credit',
         ASSET: 'Asset',
+        CRYPTO: 'Crypto Wallet',
         OTHER: 'Other',
       };
       return labels[type] || type;

@@ -112,7 +112,6 @@
       "reactivateFailed": "重新啟用貨幣失敗"
     },
     "inactiveNotice": "{code} 已在您的清單中，但處於未啟用狀態。",
-    "cryptoNotice": "{code} 不是標準的貨幣代碼。比特幣等加密貨幣應作為證券記錄在投資科目中，而不是作為貨幣。<guide>請在使用者指南中查看具體做法</guide>。",
     "reactivateButton": "重新啟用 {code}",
     "reactivating": "正在重新啟用..."
   },

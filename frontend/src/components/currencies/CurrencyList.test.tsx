@@ -68,6 +68,27 @@ describe('CurrencyList', () => {
     expect(screen.getByText('Inactive')).toBeInTheDocument();
   });
 
+  it('marks a cryptocurrency with a pill and its price symbol beside the code', () => {
+    const currencies = [
+      makeCurrency({ code: 'BTC', name: 'Bitcoin', kind: 'CRYPTO', quoteSymbol: 'BTC-EUR' }),
+      makeCurrency({ code: 'EUR', name: 'Euro', kind: 'FIAT', quoteSymbol: null }),
+    ];
+
+    const { container } = render(<CurrencyList currencies={currencies} {...defaultProps} />);
+    const [btcCode, eurCode] = Array.from(container.querySelectorAll('tbody tr')).map(
+      (row) => row.querySelector('td'),
+    );
+    expect(btcCode?.textContent).toContain('Crypto');
+    expect(btcCode?.textContent).toContain('BTC-EUR');
+    expect(eurCode?.textContent).not.toContain('Crypto');
+  });
+
+  it('says a coin without a price symbol has none', () => {
+    const currencies = [makeCurrency({ code: 'XYZ', name: 'Unpriced', kind: 'CRYPTO', quoteSymbol: null })];
+    render(<CurrencyList currencies={currencies} {...defaultProps} />);
+    expect(screen.getByText('No price symbol')).toBeInTheDocument();
+  });
+
   it('shows the stored currency symbol in the Symbol column', () => {
     const currencies = [
       makeCurrency({ code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$' }),

@@ -329,6 +329,10 @@ Because a line of credit revolves rather than amortizing to a fixed payoff, its 
 
 ---
 
+## Cryptocurrency Wallets
+
+This section is being written.
+
 ## Editing and Closing Accounts
 
 ### Editing

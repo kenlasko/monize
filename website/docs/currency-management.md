@@ -45,6 +45,10 @@ Cryptocurrencies such as Bitcoin are not currencies in Monize: track them as sec
 
 ---
 
+## Cryptocurrencies
+
+This section is being written.
+
 ## Home Currency
 
 Your home currency (the **Default Currency**) is the primary currency used for:
