@@ -2,23 +2,18 @@
 
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/Badge';
 import { TABLE_BODY_CLASS, TABLE_CLASS, Td, Th } from '@/components/ui/Table';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import type { BondLotValuation, BondRateSource } from '@/types/bond';
+import type { BondLotValuation } from '@/types/bond';
+import { valuationRefusalText } from './bond-labels';
+import { SecurityBondPeriodRate } from './SecurityBondPeriodRate';
 
 interface SecurityBondLotsTableProps {
   lots: BondLotValuation[];
   currency: string;
 }
-
-const RATE_SOURCE_VARIANT: Record<BondRateSource, BadgeVariant> = {
-  TERMS: 'blue',
-  ANNOUNCED: 'green',
-  DERIVED: 'gray',
-  PROJECTED: 'amber',
-};
 
 /**
  * One row per open lot, per spec section 13. A figure the server could not work
@@ -31,8 +26,7 @@ export function SecurityBondLotsTable({
 }: SecurityBondLotsTableProps) {
   const t = useTranslations('securityDetail');
   const { formatDate } = useDateFormat();
-  const { formatCurrency, formatPercentTrimmed, formatShareQuantity } =
-    useNumberFormat();
+  const { formatCurrency, formatShareQuantity } = useNumberFormat();
 
   const unknown = (
     <span className="text-gray-500 dark:text-gray-400">
@@ -67,16 +61,7 @@ export function SecurityBondLotsTable({
             const period = v.currentPeriod;
             const refusalText =
               v.status === 'REFUSED' && v.refusal !== null
-                ? v.refusal.code === 'PURCHASE_AFTER_MATURITY'
-                  ? t('bond.valuationRefusal.PURCHASE_AFTER_MATURITY', {
-                      maturityDate: formatDate(v.refusal.params.maturityDate),
-                      purchaseDate: formatDate(v.refusal.params.purchaseDate),
-                    })
-                  : t('bond.valuationRefusal.PURCHASE_OUTSIDE_SALE_WINDOW', {
-                      from: formatDate(v.refusal.params.from),
-                      to: formatDate(v.refusal.params.to),
-                      purchaseDate: formatDate(v.refusal.params.purchaseDate),
-                    })
+                ? valuationRefusalText(t, v.refusal, formatDate)
                 : null;
             // A matured or refused lot has no current period; an open lot with a
             // period whose rate is not known still shows the period.
@@ -131,24 +116,17 @@ export function SecurityBondLotsTable({
                 <Td className="whitespace-nowrap">
                   {period === null ? (
                     v.status === 'OPEN' ? unknown : noPeriod
-                  ) : period.annualRate === null ? (
-                    unknown
                   ) : (
-                    <span className="inline-flex flex-wrap items-center gap-2">
-                      {/* Rates are fractions; the formatter takes percent units. */}
-                      <span>
-                        {formatPercentTrimmed(Number(period.annualRate) * 100)}
-                      </span>
-                      {period.rateSource !== null && (
-                        <Badge variant={RATE_SOURCE_VARIANT[period.rateSource]}>
-                          {t(`bond.rateSource.${period.rateSource}`)}
-                        </Badge>
-                      )}
-                    </span>
+                    <SecurityBondPeriodRate valuation={v} period={period} />
                   )}
                 </Td>
                 <Td align="right" className="whitespace-nowrap">
                   {money(v.principal)}
+                  {v.principalBasis === 'ISSUE_PRICE' && (
+                    <span className="block whitespace-normal text-xs text-gray-500 dark:text-gray-400">
+                      {t('bond.lots.principalIssuePrice')}
+                    </span>
+                  )}
                 </Td>
                 <Td align="right" className="whitespace-nowrap">
                   {money(v.accruedInterest)}

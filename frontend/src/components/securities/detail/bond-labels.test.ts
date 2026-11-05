@@ -73,7 +73,8 @@ describe('rateRuleLines', () => {
       ),
     ).toEqual([
       'bond.rate.rule.daily{"benchmark":"bond.benchmarks.CPI","addend":"pct(0.00103)"}',
-      'bond.rate.rule.floorZero{"benchmark":"bond.benchmarks.CPI"}',
+      // The engine floors the day's rate (index plus spread), not the index.
+      'bond.rate.rule.dailyFloor{"floor":"pct(0)"}',
       'bond.rate.rule.lockout{"days":2}',
     ]);
   });

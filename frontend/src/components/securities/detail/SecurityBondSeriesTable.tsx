@@ -3,14 +3,15 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/Badge';
 import { TABLE_BODY_CLASS, TABLE_CLASS, Td, Th } from '@/components/ui/Table';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { toSafeExternalUrl } from '@/lib/external-url';
 import type { HeldSeries } from '@/lib/bond-series';
-import type { BondRateSource, BondValuationTotals } from '@/types/bond';
+import type { BondValuationTotals } from '@/types/bond';
 import { SecurityBondLotsTable } from './SecurityBondLotsTable';
+import { SecurityBondPeriodRate } from './SecurityBondPeriodRate';
 import { SecurityBondRateSection } from './SecurityBondRateSection';
 
 interface SecurityBondSeriesTableProps {
@@ -21,13 +22,6 @@ interface SecurityBondSeriesTableProps {
   /** Why a null total is null, said beside it. */
   unknownReason: string;
 }
-
-const RATE_SOURCE_VARIANT: Record<BondRateSource, BadgeVariant> = {
-  TERMS: 'blue',
-  ANNOUNCED: 'green',
-  DERIVED: 'gray',
-  PROJECTED: 'amber',
-};
 
 /**
  * "Your series" (spec `bond-program-securities.md` 3.4): one row per series the
@@ -44,7 +38,7 @@ export function SecurityBondSeriesTable({
 }: SecurityBondSeriesTableProps) {
   const t = useTranslations('securityDetail');
   const { formatDate } = useDateFormat();
-  const { formatCurrency, formatPercentTrimmed, formatShareQuantity } = useNumberFormat();
+  const { formatCurrency, formatShareQuantity } = useNumberFormat();
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
 
   const toggle = (id: string) =>
@@ -94,18 +88,7 @@ export function SecurityBondSeriesTable({
         unknown
       );
     }
-    if (period.annualRate === null) return unknown;
-    return (
-      <span className="inline-flex flex-wrap items-center gap-2">
-        {/* Rates are fractions; the formatter takes percent units. */}
-        <span>{formatPercentTrimmed(Number(period.annualRate) * 100)}</span>
-        {period.rateSource !== null && (
-          <Badge variant={RATE_SOURCE_VARIANT[period.rateSource]}>
-            {t(`bond.rateSource.${period.rateSource}`)}
-          </Badge>
-        )}
-      </span>
-    );
+    return <SecurityBondPeriodRate valuation={v} period={period} />;
   };
 
   const renderTermsSource = (s: HeldSeries): ReactNode => {

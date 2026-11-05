@@ -1,4 +1,4 @@
-import type { BondRateRule } from '@/types/bond';
+import type { BondRateRule, BondValuationRefusal } from '@/types/bond';
 
 /** The subset of next-intl's translator the label helpers need. */
 interface Translator {
@@ -68,8 +68,11 @@ export function rateRuleLines(
   const addend = pct(rule.addend);
   if (rule.type === 'DAILY_INDEX_PLUS_SPREAD') {
     const daily = [t('bond.rate.rule.daily', { benchmark, addend })];
-    if (rule.benchmarkFloor !== null && Number(rule.benchmarkFloor) === 0) {
-      daily.push(t('bond.rate.rule.floorZero', { benchmark }));
+    // The engine floors the day's rate (index plus spread), not the index.
+    if (rule.benchmarkFloor !== null) {
+      daily.push(
+        t('bond.rate.rule.dailyFloor', { floor: pct(rule.benchmarkFloor) }),
+      );
     }
     if (rule.lockoutBusinessDays) {
       daily.push(t('bond.rate.rule.lockout', { days: rule.lockoutBusinessDays }));
@@ -90,4 +93,35 @@ export function rateRuleLines(
     lines.push(t('bond.rate.rule.floorZero', { benchmark }));
   }
   return lines;
+}
+
+/**
+ * Why a lot is not valued, in words: one case per refusal code, so a code the
+ * server adds fails to compile here instead of reading as another code's
+ * message. A code this client does not know says nothing (the row already
+ * reads "Not valued").
+ */
+export function valuationRefusalText(
+  t: ArgTranslator,
+  refusal: BondValuationRefusal,
+  formatDate: (date: string) => string,
+): string | null {
+  switch (refusal.code) {
+    case 'PURCHASE_AFTER_MATURITY':
+      return t('bond.valuationRefusal.PURCHASE_AFTER_MATURITY', {
+        maturityDate: formatDate(refusal.params.maturityDate),
+        purchaseDate: formatDate(refusal.params.purchaseDate),
+      });
+    case 'PURCHASE_OUTSIDE_SALE_WINDOW':
+      return t('bond.valuationRefusal.PURCHASE_OUTSIDE_SALE_WINDOW', {
+        from: formatDate(refusal.params.from),
+        to: formatDate(refusal.params.to),
+        purchaseDate: formatDate(refusal.params.purchaseDate),
+      });
+    default: {
+      const unreachable: never = refusal;
+      void unreachable;
+      return null;
+    }
+  }
 }
