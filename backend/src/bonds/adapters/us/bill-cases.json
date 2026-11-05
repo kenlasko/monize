@@ -33,6 +33,20 @@
       }
     },
     {
+      "id": "E2w",
+      "description": "E2 through the write path: the purchase row's total 9,783.3694 (four decimals) is rounded to cents once before the discount accretes",
+      "source": "docs/specs/bond-marketable-primitives.md sections 6.1 and 9 E2: cost 9,783.37 (9,783.3694 HALF_UP at 2 decimals); 9,783.37 + 216.63 x 91 / 182 = 9,891.685, HALF_UP at 2 decimals = 9,891.69; accrued 9,891.69 - 9,783.37 = 108.32",
+      "lot": { "purchaseDate": "2026-10-01", "quantity": 100 },
+      "purchaseTotalAmount": "9783.3694",
+      "asOf": "2026-12-31",
+      "expect": {
+        "status": "OPEN",
+        "principalBasis": "LOT_COST",
+        "grossValue": "9891.69",
+        "accruedInterest": "108.32"
+      }
+    },
+    {
       "id": "E3",
       "description": "the same bill bought on day 91 for 9,895.00: the discount accrues from the purchase, interest at maturity is 105.00",
       "source": "docs/specs/bond-marketable-primitives.md section 9 E3: 10,000.00 - 9,895.00 = 105.00 (not 216.63)",

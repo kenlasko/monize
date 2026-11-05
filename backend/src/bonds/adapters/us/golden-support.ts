@@ -19,6 +19,8 @@ export interface GoldenCase {
   asOf: string;
   expect?: Record<string, unknown>;
   expectTerms?: { issuePrice: string };
+  /** A BUY row's total amount; the lot's cost is what the write path reads from it. */
+  purchaseTotalAmount?: string;
   split?: { date: string; expect: Record<string, unknown> };
   knownCashflows?: Record<string, unknown>[];
 }

@@ -239,7 +239,8 @@ function discountValueAt(
 }
 
 /**
- * A discount lot of known cost on the day `asOf` of its period: the cost plus
+ * A discount lot of known cost on the day `asOf` of its period: the cost
+ * (rounded to money first) plus
  * the share of the lot's discount (its face value less the cost) that the days
  * gone make of the period's days, rounded once on the holding. The period
  * starts on the later of the purchase and issue dates.
@@ -249,9 +250,12 @@ export function discountLotValueAt(
   period: AccrualPeriod,
   asOf: string,
   quantity: ExactDecimal,
-  cost: ExactDecimal,
+  rawCost: ExactDecimal,
 ): ExactDecimal {
   const face = ExactDecimal.parse(terms.instrument.faceValue).mul(quantity);
+  // The cost is a money figure on the holding: rounded once, as the principal
+  // and the coupon read it (spec 6.1), before the discount accretes from it.
+  const cost = toMoney(terms, rawCost);
   return toMoney(
     terms,
     cost.add(

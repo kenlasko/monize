@@ -1,4 +1,5 @@
 import { BondTerms, parseBondTerms } from "../../domain/bond-terms";
+import { acquisitionCostText } from "../../bond-ledger";
 import { check, GoldenCase } from "./golden-support";
 import billCases from "./bill-cases.json";
 import noteCases from "./note-cases.json";
@@ -39,7 +40,14 @@ describe("golden cases for the bill of 912797WM5", () => {
     if (c.expectTerms) {
       expect(terms.instrument.issuePrice).toBe(c.expectTerms.issuePrice);
     }
-    check(terms, c);
+    const cost =
+      c.purchaseTotalAmount === undefined
+        ? null
+        : acquisitionCostText({
+            action: "BUY",
+            total_amount: c.purchaseTotalAmount,
+          });
+    check(terms, cost === null ? c : { ...c, lot: { ...c.lot, cost } });
   });
 });
 
@@ -96,6 +104,7 @@ describe("golden case files", () => {
     expect(all.map((c) => c.id)).toEqual([
       "E1",
       "E2",
+      "E2w",
       "E3",
       "E4",
       "E5",
