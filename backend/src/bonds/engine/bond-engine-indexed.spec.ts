@@ -77,7 +77,9 @@ describe("the value of an open lot", () => {
     // 2026-10-15: 165.22581 / 164 = 1.00747.
     const v = valueIndexed(E8, LOT, "2026-10-15", LEVELS);
     expect(v.accruedInterest).toBe("1124.51");
-    expect(v.grossValue).toBe((100747 + 1124.51).toFixed(2));
+    // 1000 units x 100 x ratio 1.00747 = 100747.00, plus the accrued interest
+    // 1124.51 (by hand).
+    expect(v.grossValue).toBe("101871.51");
   });
 
   it("is the principal alone, with no accrued interest, before the dated date", () => {

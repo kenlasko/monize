@@ -83,12 +83,14 @@ describe("the interest of a period: the sum of its days", () => {
       fixedPart: "0.0000000000",
       announcedPart: "0.0000000000",
     });
-    // The index and the spread parts add up to the interest.
-    const { benchmarkPart, addendPart, interest } = v.rateSchedule[0];
-    expect(Number(benchmarkPart) + Number(addendPart)).toBeCloseTo(
-      Number(interest),
-      9,
-    );
+    // The index part is the sum of the 92 daily index accruals (each the index
+    // x 100 / 360, rounded to nine places) and the spread part the rest, worked
+    // out apart from the engine with exact fractions (Python): 0.952500004 and
+    // 0.026322219, which add up to the interest 0.978822223.
+    expect(v.rateSchedule[0]).toMatchObject({
+      benchmarkPart: "0.9525000040",
+      addendPart: "0.0263222190",
+    });
   });
 
   it("accrues the days before the valuation day only (92 days of 2026-04-30..07-30, 71 elapsed on 07-10)", () => {
