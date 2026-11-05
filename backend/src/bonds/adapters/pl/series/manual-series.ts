@@ -6,7 +6,8 @@ import {
 import { ExactDecimal } from "../../../domain/exact-decimal";
 import { parseSeriesCode } from "./series-code";
 import { assertTemplateCovers, buildSeriesEntry } from "./series-entry";
-import { echo, isIsoDate, SeriesValues } from "./series-values";
+import { echo } from "../../../series-echo";
+import { isIsoDate, SeriesValues } from "./series-values";
 import { seriesPageUrl } from "./series-source";
 import { SERIES_TEMPLATES } from "./templates";
 

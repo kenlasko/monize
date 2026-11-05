@@ -1,4 +1,5 @@
 import { SeriesFetchError } from "../../../bond-adapter";
+import { echo, TEXT_ECHO } from "../../../series-echo";
 import {
   addMonthsClamped,
   compareYMD,
@@ -89,10 +90,12 @@ export function inconsistent(
   value: string,
   expected: string,
 ): SeriesFetchError {
+  // Both sides may be the source's own text: only a short machine value is
+  // echoed (INV-BOND-006).
   return new SeriesFetchError("SOURCE_INCONSISTENT", {
     field,
-    value,
-    expected,
+    value: echo(value, TEXT_ECHO),
+    expected: echo(expected, TEXT_ECHO),
   });
 }
 

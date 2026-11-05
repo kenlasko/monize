@@ -665,3 +665,65 @@ describe("the results file", () => {
     expect(entry.publishedAt).toBe("2026-09-28");
   });
 });
+
+describe("a refusal carries machine values, never the source's text (INV-BOND-006)", () => {
+  const HOSTILE = `${"X".repeat(5000)} <script>alert(1)</script>`;
+  // An element's text cannot hold markup.
+  const LONG = "X".repeat(5000);
+  const MACHINE = /^[A-Za-z0-9.,%/:<>?-]{0,16}$/;
+  const expectMachineParams = (error: SeriesFetchError) => {
+    for (const value of Object.values(error.params)) {
+      expect(String(value)).toMatch(MACHINE);
+    }
+  };
+
+  it("echoes no 5,000-character CUSIP of the JSON", async () => {
+    const records = withRecord(noteJson(), 0, { cusip: HOSTILE });
+    const error = await refusal(fetchSeries(NOTE, noteFetch(records), NOW));
+    expect(error.code).toBe("SOURCE_INCONSISTENT");
+    expect(error.params).toEqual({
+      field: "cusip",
+      value: "?",
+      expected: NOTE,
+    });
+  });
+
+  it("echoes no CUSIP of the results file", async () => {
+    const xml = noteXml().replace(
+      "<CUSIP>91282CZK0</CUSIP>",
+      `<CUSIP>${LONG}</CUSIP>`,
+    );
+    const error = await refusal(
+      fetchSeries(NOTE, noteFetch(undefined, xml), NOW),
+    );
+    expect(error.code).toBe("SOURCE_INCONSISTENT");
+    expect(error.params).toEqual({
+      field: "cusip",
+      value: NOTE,
+      expected: "?",
+    });
+  });
+
+  it("echoes no security type of either document", async () => {
+    const records = withRecord(noteJson(), 0, { securityType: HOSTILE });
+    const error = await refusal(fetchSeries(NOTE, noteFetch(records), NOW));
+    expectMachineParams(error);
+    const xml = noteXml().replace(
+      "<SecurityType>NOTE</SecurityType>",
+      `<SecurityType>${LONG}</SecurityType>`,
+    );
+    const second = await refusal(
+      fetchSeries(NOTE, noteFetch(undefined, xml), NOW),
+    );
+    expect(second.code).toBe("SOURCE_INCONSISTENT");
+    expectMachineParams(second);
+  });
+
+  it("echoes no price decimals of 5,000 digits", async () => {
+    const records = withRecord(billJson(), 0, {
+      highPrice: `97.${"8".repeat(5000)}`,
+    });
+    const error = await refusal(fetchSeries(BILL, billFetch(records), NOW));
+    expectMachineParams(error);
+  });
+});
