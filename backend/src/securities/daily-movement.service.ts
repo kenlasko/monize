@@ -18,6 +18,7 @@ import { foldExternalFlow } from "../notification-center/portfolio-flow.util";
 import { PORTFOLIO_MOVE_PERCENT_DECIMALS } from "../notification-center/portfolio-movement.util";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { Security } from "./entities/security.entity";
+import { programTemplate } from "./bond-link.util";
 import { loadExternalFlowSubtotals } from "./external-flow.util";
 import {
   applyActionToQuantity,
@@ -388,7 +389,22 @@ export class DailyMovementService {
       ),
     ]);
 
-    const securityMap = new Map(securities.map((s) => [s.id, s]));
+    const securityMap = new Map<string, MovementSecurity>();
+    const cashPriced = new Map<string, boolean>();
+    for (const s of securities) {
+      const programId = s.bondProgramId ?? null;
+      if (programId !== null && !cashPriced.has(programId)) {
+        cashPriced.set(programId, await this.isCashPricedProgram(programId));
+      }
+      securityMap.set(s.id, {
+        symbol: s.symbol,
+        name: s.name,
+        currencyCode: s.currencyCode,
+        bondProgramId: programId,
+        marketPriceRequired:
+          programId !== null && cashPriced.get(programId) === true,
+      });
+    }
     const currencies = new Set<string>();
     for (const security of securities) {
       if (security.currencyCode && security.currencyCode !== currencyCode) {
@@ -440,6 +456,19 @@ export class DailyMovementService {
     });
   }
 
+  /**
+   * True for a program whose securities trade
+   * (`BondProgramDefinition.cashPriced`): the engine writes no price for a
+   * security linked to it, so its closes are the person's own prices
+   * (INV-BOND-005).
+   */
+  private async isCashPricedProgram(programId: string): Promise<boolean> {
+    const template = await withScopedDb(this.dataSource, (m) =>
+      programTemplate(m, programId),
+    );
+    return template?.cashPriced === true;
+  }
+
   /** The accounts in scope, widened to linked pairs exactly as valuation does. */
   private async resolveScope(
     userId: string,
@@ -484,6 +513,16 @@ export class DailyMovementService {
   }
 }
 
+/** What the model keeps of a security: its labels and how it is priced. */
+interface MovementSecurity {
+  symbol?: string;
+  name?: string;
+  currencyCode?: string;
+  bondProgramId?: string | null;
+  /** True for a bond-linked security whose price is the person's own (no engine rows). */
+  marketPriceRequired?: boolean;
+}
+
 /** The two price sources `valuationClosePointOn` reads, as loaded for a window. */
 interface PriceSeries {
   stored: Map<string, PricePoint[]>;
@@ -503,30 +542,14 @@ class MovementModel {
   >;
   private readonly holdings: Map<string, Map<string, number>>;
   private readonly priceSeries: PriceSeries;
-  private readonly securities: Map<
-    string,
-    {
-      symbol?: string;
-      name?: string;
-      currencyCode?: string;
-      bondProgramId?: string | null;
-    }
-  >;
+  private readonly securities: Map<string, MovementSecurity>;
 
   constructor(input: {
     values: Map<string, DailyMovementValue>;
     flows: Map<string, Array<{ currency: string; amount: number }>>;
     holdings: Map<string, Map<string, number>>;
     priceSeries: PriceSeries;
-    securities: Map<
-      string,
-      {
-        symbol?: string;
-        name?: string;
-        currencyCode?: string;
-        bondProgramId?: string | null;
-      }
-    >;
+    securities: Map<string, MovementSecurity>;
     rateIndex: RateIndex;
   }) {
     this.values = input.values;

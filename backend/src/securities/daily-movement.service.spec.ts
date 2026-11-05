@@ -37,6 +37,7 @@ describe("DailyMovementService", () => {
   let flowRows: FakeRow[];
   let rateRows: FakeRow[];
   let securities: Array<Partial<Security>>;
+  let programRows: FakeRow[];
   let queries: Array<{ sql: string; params: unknown[] }>;
 
   beforeEach(async () => {
@@ -46,6 +47,13 @@ describe("DailyMovementService", () => {
     flowRows = [];
     rateRows = [];
     securities = [];
+    programRows = [
+      {
+        issuer_country_code: "PL",
+        issuer_code: "PL_MF",
+        program_code: "EDO",
+      },
+    ];
 
     const preferenceRepo = {
       findOne: jest.fn(async () => ({ defaultCurrency: "CAD" })),
@@ -64,6 +72,7 @@ describe("DailyMovementService", () => {
         if (sql.includes("SUM(t.amount)")) return flowRows;
         if (sql.includes("SELECT account_id, security_id")) return replayRows;
         if (sql.includes("FROM exchange_rates")) return rateRows;
+        if (sql.includes("FROM bond_programs")) return programRows;
         if (sql.includes("FROM accounts")) return scopeRows;
         throw new Error(`unexpected query: ${sql}`);
       },
@@ -554,6 +563,46 @@ describe("DailyMovementService", () => {
 
       expect(res.gains).toEqual([]);
       expect(res.losses).toEqual([]);
+    });
+
+    it("gives a marketable coupon bond a row from the person's own prices, the previous close carried to the previous day", async () => {
+      // A US Treasury note: the engine writes no price for it, so the manual
+      // prices are its closes. 40 on 09-09, none on 09-10, 52 on 09-11: the
+      // move of 100 units is 100 x (52 - 40) = 1200.
+      programRows = [
+        {
+          issuer_country_code: "US",
+          issuer_code: "US_TREASURY",
+          program_code: "NOTE",
+        },
+      ];
+      replayRows = [buy("ust", 100, "2026-09-01")];
+      securities = [
+        {
+          id: "ust",
+          symbol: "UST",
+          currencyCode: "CAD",
+          bondProgramId: "prog-note",
+        },
+      ];
+      netWorth.loadValuationSeries.mockResolvedValue({
+        stored: new Map([
+          [
+            "ust",
+            [
+              { date: "2026-09-09", close: 40 },
+              { date: "2026-09-11", close: 52 },
+            ],
+          ],
+        ]),
+        txFallback: new Map(),
+      });
+
+      const res = await service.getDailyMovementDetail("user-1", "2026-09-11");
+
+      expect(res.gains.map((g) => [g.securityId, g.change])).toEqual([
+        ["ust", 1200],
+      ]);
     });
 
     it("gives no row to a position sold to zero", async () => {

@@ -30,21 +30,29 @@ export function bondEngineClosePointOn(
  * rule for every daily or monthly series that multiplies a quantity by a
  * stored close (A26-M26, INV-BOND-010).
  *
- * A bond-linked security (`bondProgramId` set) is valued only from the
- * engine's row of that day: `bondEngineClosePointOn`. Null then means the
- * engine refused the day, and the reader reports the security unknown for it
- * (its `pricesComplete` / unpriced channel), never a carried close or a trade
- * price. Every other security keeps `positionClosePointAsOf`: the newest
- * accepted close at or before the day, merged with the legacy transaction
- * fallback.
+ * A bond-linked security (`bondProgramId` set) the engine prices is valued only
+ * from the engine's row of that day: `bondEngineClosePointOn`. Null then means
+ * the engine refused the day, and the reader reports the security unknown for
+ * it (its `pricesComplete` / unpriced channel), never a carried close or a
+ * trade price. A linked security that trades (`marketPriceRequired`) gets no
+ * engine row at all: its price is the person's own, the one `bondHoldingValue`
+ * values the holding at, so it is read like every other security. Every other
+ * security keeps `positionClosePointAsOf`: the newest accepted close at or
+ * before the day, merged with the legacy transaction fallback.
  */
 export function valuationClosePointOn(
-  security: { readonly bondProgramId?: string | null } | null | undefined,
+  security:
+    | {
+        readonly bondProgramId?: string | null;
+        readonly marketPriceRequired?: boolean;
+      }
+    | null
+    | undefined,
   stored: PricePoint[] | undefined,
   txFallback: PricePoint[] | undefined,
   date: string,
 ): PricePoint | null {
-  return security?.bondProgramId
+  return security?.bondProgramId && security.marketPriceRequired !== true
     ? bondEngineClosePointOn(stored, date)
     : positionClosePointAsOf(stored, txFallback, date);
 }
