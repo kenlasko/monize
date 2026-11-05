@@ -433,7 +433,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "[XX-CPI, 12 months (GUS)-XX]",
-      "PL_NBP_REFERENCE": "[XX-NBP reference rate-XX]"
+      "PL_NBP_REFERENCE": "[XX-NBP reference rate-XX]",
+      "US_CPI_U_NSA": "[XX-CPI-U, all items, not seasonally adjusted (BLS)-XX]",
+      "US_TBILL_13W_MMY": "[XX-13-week Treasury bill yield-XX]"
     },
     "valuationRefusal": {
       "PURCHASE_OUTSIDE_SALE_WINDOW": "[XX-This series can only be bought from {from} to {to}. This lot was bought on {purchaseDate}, so it is not valued.-XX]",
@@ -478,7 +480,9 @@
       "ROD": "[XX-ROD: 12-year inflation-indexed family savings bonds-XX]",
       "BILL": "[XX-BILL: Treasury bills, 4 to 52 weeks, sold at a discount-XX]",
       "NOTE": "[XX-NOTE: Treasury notes, 2 to 10 years, fixed semiannual coupon-XX]",
-      "BOND": "[XX-BOND: Treasury bonds, 20 and 30 years, fixed semiannual coupon-XX]"
+      "BOND": "[XX-BOND: Treasury bonds, 20 and 30 years, fixed semiannual coupon-XX]",
+      "TIPS": "[XX-TIPS: Treasury inflation-protected securities, principal indexed to CPI-U-XX]",
+      "FRN": "[XX-FRN: Treasury floating rate notes, 2 years, quarterly interest-XX]"
     },
     "series": {
       "title": "[XX-Your series-XX]",

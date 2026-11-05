@@ -119,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "[XX-CPI, 12 months (GUS)-XX]",
-      "PL_NBP_REFERENCE": "[XX-NBP reference rate-XX]"
+      "PL_NBP_REFERENCE": "[XX-NBP reference rate-XX]",
+      "US_CPI_U_NSA": "[XX-CPI-U, all items, not seasonally adjusted (BLS)-XX]",
+      "US_TBILL_13W_MMY": "[XX-13-week Treasury bill yield-XX]"
     }
   },
   "emailReceiptsAttention": {
