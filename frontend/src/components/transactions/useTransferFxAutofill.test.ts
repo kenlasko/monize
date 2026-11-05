@@ -55,6 +55,16 @@ async function flushRate() {
   });
 }
 
+describe('receivedForSent / sentForReceived precision', () => {
+  it('rounds to the currencies given, not always to cents', () => {
+    // 40 CAD at 108.37 is 4334.80 JPY at cents; a yen amount has no fraction.
+    expect(receivedForSent(40, 108.37, null, 0)).toBe(4335);
+    expect(receivedForSent(40, 108.37, null)).toBe(4334.8);
+    // And back: 4335 JPY at 108.37 needs 40.0018... CAD, rounded to cents.
+    expect(sentForReceived(4335, 108.37, null, 2)).toBe(40);
+  });
+});
+
 describe('useTransferFxAutofill', () => {
   beforeEach(() => {
     vi.useFakeTimers();

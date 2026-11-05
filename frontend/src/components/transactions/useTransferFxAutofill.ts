@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
-import { roundToCents } from '@/lib/format';
+import { getDecimalPlacesForCurrency, roundToDecimals } from '@/lib/format';
 
 interface UseTransferFxAutofillArgs {
   /** Source account currency; null when the transfer is not cross-currency. */
@@ -28,36 +28,44 @@ interface UseTransferFxAutofillArgs {
 const isFilled = (value: number | undefined): value is number =>
   value !== undefined && value > 0;
 
+/** A currency's decimal places; 2 while the transfer is not cross-currency. */
+const decimalsOf = (currency: string | null): number =>
+  currency ? getDecimalPlacesForCurrency(currency) : 2;
+
 const feeFraction = (fxFeePercent: number | null | undefined): number =>
   fxFeePercent && fxFeePercent > 0 ? fxFeePercent / 100 : 0;
 
 /**
  * What arrives for `sent`: the converted amount less the FX fee, rounded the
  * way the foreign-entry panel rounds its base and fee (`docs/financial-semantics.md`,
- * "Conversion").
+ * "Conversion"), at the receiving currency's own precision (`receivedDecimals`,
+ * 0 for JPY), so a figure is never finer than the currency can hold.
  */
 export function receivedForSent(
   sent: number,
   rate: number,
   fxFeePercent: number | null | undefined,
+  receivedDecimals = 2,
 ): number {
-  const base = roundToCents(sent * rate);
-  const fee = roundToCents(base * feeFraction(fxFeePercent));
-  return roundToCents(base - fee);
+  const base = roundToDecimals(sent * rate, receivedDecimals);
+  const fee = roundToDecimals(base * feeFraction(fxFeePercent), receivedDecimals);
+  return roundToDecimals(base - fee, receivedDecimals);
 }
 
 /**
  * What must be sent for `received` to arrive, the inverse of
- * `receivedForSent`; null when a 100% fee leaves nothing to arrive.
+ * `receivedForSent`, at the sending currency's precision; null when a 100% fee
+ * leaves nothing to arrive.
  */
 export function sentForReceived(
   received: number,
   rate: number,
   fxFeePercent: number | null | undefined,
+  sentDecimals = 2,
 ): number | null {
   const kept = 1 - feeFraction(fxFeePercent);
   if (kept <= 0) return null;
-  return roundToCents(received / kept / rate);
+  return roundToDecimals(received / kept / rate, sentDecimals);
 }
 
 /**
@@ -108,12 +116,12 @@ export function useTransferFxAutofill({
     const current = latestRef.current;
     if (isFilled(current.amount) && (targetAutoRef.current || !isFilled(current.targetAmount))) {
       targetAutoRef.current = true;
-      current.setTargetAmount(receivedForSent(current.amount, value, current.fxFeePercent));
+      current.setTargetAmount(receivedForSent(current.amount, value, current.fxFeePercent, decimalsOf(toCurrency)));
     } else if (
       isFilled(current.targetAmount) &&
       (amountAutoRef.current || !isFilled(current.amount))
     ) {
-      const sent = sentForReceived(current.targetAmount, value, current.fxFeePercent);
+      const sent = sentForReceived(current.targetAmount, value, current.fxFeePercent, decimalsOf(fromCurrency));
       if (sent === null) return;
       amountAutoRef.current = true;
       current.setAmount(sent);
@@ -152,7 +160,7 @@ export function useTransferFxAutofill({
     if (!targetAutoRef.current && isFilled(targetAmount)) return;
     if (isFilled(value)) {
       targetAutoRef.current = true;
-      setTargetAmount(receivedForSent(value, rate, fxFeePercent));
+      setTargetAmount(receivedForSent(value, rate, fxFeePercent, decimalsOf(toCurrency)));
     } else if (targetAutoRef.current) {
       targetAutoRef.current = false;
       setTargetAmount(undefined);
@@ -164,7 +172,7 @@ export function useTransferFxAutofill({
     setTargetAmount(value);
     if (rate === null) return;
     if (!amountAutoRef.current && isFilled(amount)) return;
-    const sent = isFilled(value) ? sentForReceived(value, rate, fxFeePercent) : null;
+    const sent = isFilled(value) ? sentForReceived(value, rate, fxFeePercent, decimalsOf(fromCurrency)) : null;
     if (sent !== null) {
       amountAutoRef.current = true;
       setAmount(sent);

@@ -383,9 +383,7 @@ vi.mock('@hookform/resolvers/zod', () => ({
 }));
 
 const mockToCreateSplitDataOptions = vi.fn();
-vi.mock('./SplitEditor', async (importOriginal) => ({
-  crossCurrencyTransferTarget: (await importOriginal<typeof import('./SplitEditor')>())
-    .crossCurrencyTransferTarget,
+vi.mock('./SplitEditor', () => ({
   SplitEditor: ({ categories, onCreateCategory, crossCurrencyTransfers }: any) => (
     <div data-testid="split-editor" data-cross-currency-transfers={String(!!crossCurrencyTransfers)}>
       Split Editor
@@ -1682,15 +1680,17 @@ describe('TransactionForm', () => {
         expect(mockUpdate).toHaveBeenCalled();
       });
 
-      const { sendsTransferTargetAmount } = mockToCreateSplitDataOptions.mock.calls.at(-1)?.[0];
+      const { transferTargetAmountOf } = mockToCreateSplitDataOptions.mock.calls.at(-1)?.[0];
       const transferTo = (transferAccountId: string) => ({
         id: 'x',
         splitType: 'transfer',
         transferAccountId,
         amount: -10,
+        transferTargetAmount: 7.3,
+        transferTargetFromCurrency: 'CAD',
       });
-      expect(sendsTransferTargetAmount(transferTo('acc-usd'))).toBe(true);
-      expect(sendsTransferTargetAmount(transferTo('acc-2'))).toBe(false);
+      expect(transferTargetAmountOf(transferTo('acc-usd'))).toBe(7.3);
+      expect(transferTargetAmountOf(transferTo('acc-2'))).toBeUndefined();
     });
 
     it('sends splits: [] when converting an existing split transaction back to regular', async () => {

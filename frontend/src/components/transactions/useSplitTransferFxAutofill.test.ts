@@ -153,7 +153,10 @@ describe('useSplitTransferFxAutofill', () => {
   });
 
   it('leaves both values alone when both are already filled (an edited split)', async () => {
-    const { result } = setup([{ id: 'a', amount: -100, transferTargetAmount: 72 }], { a: USD });
+    const { result } = setup(
+      [{ id: 'a', amount: -100, transferTargetAmount: 72, transferTargetFromCurrency: 'CAD' }],
+      { a: USD },
+    );
     await flushRate();
 
     expect(result.current.line('a').transferTargetAmount).toBe(72);
@@ -172,6 +175,28 @@ describe('useSplitTransferFxAutofill', () => {
 
     expect(mockGetRateForDate).toHaveBeenLastCalledWith('CAD', 'USD', '2026-10-28');
     expect(result.current.line('a').transferTargetAmount).toBe(75);
+  });
+
+  it('treats a received amount stated against another parent currency as empty', async () => {
+    const { result } = setup(
+      [{ id: 'a', amount: -100, transferTargetAmount: 72, transferTargetFromCurrency: 'EUR' }],
+      { a: USD },
+    );
+    await flushRate();
+
+    expect(result.current.line('a').transferTargetAmount).toBe(73);
+    expect(result.current.line('a').transferTargetFromCurrency).toBe('CAD');
+  });
+
+  it('rounds a received amount to the target currency precision', async () => {
+    mockGetRateForDate.mockResolvedValue(108.37);
+    const { result } = setup([{ id: 'a', amount: -40 }], {
+      a: { toCurrency: 'JPY', fxFeePercent: null },
+    });
+    await flushRate();
+
+    // 4334.80 at cents; a yen amount has no fraction.
+    expect(result.current.line('a').transferTargetAmount).toBe(4335);
   });
 
   it('fills nothing when no rate is known', async () => {

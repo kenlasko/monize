@@ -1,13 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useState } from 'react';
 import { render, screen, fireEvent, act } from '@/test/render';
-import {
-  SplitEditor,
-  SplitRow,
-  crossCurrencyTransferTarget,
-  toCreateSplitData,
-  toSplitRows,
-} from './SplitEditor';
+import { SplitEditor, SplitRow, toCreateSplitData, toSplitRows } from './SplitEditor';
+import { receivedAmountToSend } from './split-transfer-currency';
 import type { Account } from '@/types/account';
 
 const mockGetRateForDate = vi.fn();
@@ -167,6 +162,61 @@ describe('SplitEditor -- cross-currency transfer lines', () => {
     expect(screen.getAllByText('Amount Received (EUR)')).toHaveLength(2);
   });
 
+  it('re-derives a typed received amount once the parent currency changes', async () => {
+    const initial = [
+      line({ id: 'a', categoryId: 'cat-1', amount: -60 }),
+      line({
+        id: 'b',
+        splitType: 'transfer',
+        transferAccountId: 'usd-sav',
+        amount: -40,
+        transferTargetAmount: 28.75,
+        transferTargetFromCurrency: 'CAD',
+      }),
+    ];
+    function MovingParent() {
+      const [splits, setSplits] = useState(initial);
+      const [currency, setCurrency] = useState('CAD');
+      return (
+        <>
+          <button type="button" onClick={() => setCurrency('EUR')}>
+            move
+          </button>
+          <SplitEditor
+            splits={splits}
+            onChange={(next) => {
+              onChangeSpy(next);
+              setSplits(next);
+            }}
+            categories={categories}
+            accounts={accounts}
+            sourceAccountId="cad-chq"
+            transactionAmount={-100}
+            currencyCode={currency}
+            transactionDate="2026-10-29"
+            crossCurrencyTransfers
+          />
+        </>
+      );
+    }
+    await act(async () => {
+      render(<MovingParent />);
+    });
+    await flushRate();
+    // The edited figure is kept for its own pair.
+    expect(screen.getAllByDisplayValue('28.75').length).toBeGreaterThan(0);
+
+    mockGetRateForDate.mockResolvedValue(1.08);
+    fireEvent.click(screen.getByRole('button', { name: 'move' }));
+    // Stale for the new pair: no longer shown.
+    expect(screen.queryAllByDisplayValue('28.75')).toHaveLength(0);
+
+    await flushRate();
+    expect(mockGetRateForDate).toHaveBeenLastCalledWith('EUR', 'USD', '2026-10-29');
+    expect(lastSplits()[1].transferTargetAmount).toBe(43.2);
+    expect(lastSplits()[1].transferTargetFromCurrency).toBe('EUR');
+  });
+
   it('drops the received amount when the line stops being a transfer', async () => {
     await act(async () => {
       render(<Harness initial={usdTransfer()} />);
@@ -194,41 +244,52 @@ describe('SplitEditor -- cross-currency transfer lines', () => {
 });
 
 describe('toSplitRows -- received amount', () => {
-  it('loads a transfer line received amount from its counterpart, unsigned', () => {
-    const [row] = toSplitRows([
-      {
-        id: 'b',
-        transferAccountId: 'usd-sav',
-        amount: -40,
-        linkedTransaction: { amount: 29.1234 },
-      },
-    ]);
+  const counterpartLine = {
+    id: 'b',
+    transferAccountId: 'usd-sav',
+    amount: -40,
+    linkedTransaction: { amount: 29.1234 },
+  };
+
+  it('loads an edited row received amount from its counterpart, unsigned and tagged', () => {
+    const [row] = toSplitRows([counterpartLine], { receivedAmountsIn: 'CAD' });
     expect(row.transferTargetAmount).toBe(29.1234);
+    expect(row.transferTargetFromCurrency).toBe('CAD');
+  });
+
+  it('loads none for a duplicate or quick fill, which name no currency', () => {
+    const [row] = toSplitRows([counterpartLine]);
+    expect(row.transferTargetAmount).toBeUndefined();
   });
 
   it('leaves it unset without a counterpart or on a category line', () => {
-    const rows = toSplitRows([
-      { id: 'a', transferAccountId: 'usd-sav', amount: -40 },
-      { id: 'b', categoryId: 'cat-1', amount: -40, linkedTransaction: { amount: 40 } },
-    ]);
+    const rows = toSplitRows(
+      [
+        { id: 'a', transferAccountId: 'usd-sav', amount: -40 },
+        { id: 'b', categoryId: 'cat-1', amount: -40, linkedTransaction: { amount: 40 } },
+      ],
+      { receivedAmountsIn: 'CAD' },
+    );
     expect(rows[0].transferTargetAmount).toBeUndefined();
     expect(rows[1].transferTargetAmount).toBeUndefined();
   });
 });
 
 describe('toCreateSplitData -- received amount', () => {
+  const tagged = { transferTargetFromCurrency: 'CAD' };
   const rows: SplitRow[] = [
-    line({ id: 'a', categoryId: 'cat-1', amount: -60, transferTargetAmount: 5 }),
-    line({ id: 'b', splitType: 'transfer', transferAccountId: 'usd-sav', amount: -40, transferTargetAmount: 29.2 }),
-    line({ id: 'c', splitType: 'transfer', transferAccountId: 'cad-sav', amount: -40, transferTargetAmount: 40 }),
+    line({ id: 'a', categoryId: 'cat-1', amount: -60, transferTargetAmount: 5, ...tagged }),
+    line({ id: 'b', splitType: 'transfer', transferAccountId: 'usd-sav', amount: -40, transferTargetAmount: 29.2, ...tagged }),
+    line({ id: 'c', splitType: 'transfer', transferAccountId: 'cad-sav', amount: -40, transferTargetAmount: 40, ...tagged }),
+    // Stated against another parent currency: stale, so not sent.
+    line({ id: 'd', splitType: 'transfer', transferAccountId: 'eur-sav', amount: -40, transferTargetAmount: 26, transferTargetFromCurrency: 'GBP' }),
   ];
 
-  it('sends it only for the lines the caller names, and only on transfer lines', () => {
+  it('sends it only for cross-currency transfer lines stated against the current currency', () => {
     const data = toCreateSplitData(rows, {
-      sendsTransferTargetAmount: (split) =>
-        crossCurrencyTransferTarget(split, accounts, 'CAD') !== null,
+      transferTargetAmountOf: (split) => receivedAmountToSend(split, accounts, 'CAD'),
     });
-    expect(data.map((d) => d.transferTargetAmount)).toEqual([undefined, 29.2, undefined]);
+    expect(data.map((d) => d.transferTargetAmount)).toEqual([undefined, 29.2, undefined, undefined]);
   });
 
   it('sends none when the caller names no lines', () => {

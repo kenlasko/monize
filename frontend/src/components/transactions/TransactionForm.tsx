@@ -12,14 +12,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Select } from '@/components/ui/Select';
-import {
-  SplitEditor,
-  SplitRow,
-  createEmptySplits,
-  crossCurrencyTransferTarget,
-  toSplitRows,
-  toCreateSplitData,
-} from './SplitEditor';
+import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from './SplitEditor';
+import { receivedAmountToSend } from './split-transfer-currency';
 import { NormalTransactionFields } from './NormalTransactionFields';
 import { SplitTransactionFields } from './SplitTransactionFields';
 import { CurrencyPickerButton } from './CurrencyPickerButton';
@@ -347,7 +341,12 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   const [isSplitMode, setIsSplitMode] = useState<boolean>(initSource?.isSplit || false);
   const [splits, setSplits] = useState<SplitRow[]>(
     initSource?.splits && initSource.splits.length > 0
-      ? toSplitRows(initSource.splits)
+      ? toSplitRows(
+          initSource.splits,
+          // Only the row being edited keeps what its transfer lines received; a
+          // duplicate takes the rate for its own date.
+          transaction ? { receivedAmountsIn: transaction.currencyCode } : {},
+        )
       : []
   );
 
@@ -1508,10 +1507,10 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       const splitCurrencyCode = watchedCurrencyCode || defaultCurrency;
       const splitsData = isSplitMode
         ? toCreateSplitData(splits, {
-            // A cross-currency transfer line carries what arrived; a
-            // same-currency one has nothing to say beyond its amount.
-            sendsTransferTargetAmount: (split) =>
-              crossCurrencyTransferTarget(split, accounts, splitCurrencyCode) !== null,
+            // A cross-currency transfer line carries what arrived, when it
+            // was stated against the account's current currency.
+            transferTargetAmountOf: (split) =>
+              receivedAmountToSend(split, accounts, splitCurrencyCode),
           })
         : wasSplit
           ? []

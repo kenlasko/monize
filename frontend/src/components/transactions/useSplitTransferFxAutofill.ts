@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
 import { receivedForSent, sentForReceived } from './useTransferFxAutofill';
 
 /** The parts of a split line this hook reads and writes. */
@@ -11,6 +12,12 @@ export interface SplitFxLine {
   amount: number;
   /** Unsigned, in the target account's currency. */
   transferTargetAmount?: number;
+  /**
+   * The parent currency `transferTargetAmount` was stated against. A received
+   * amount belongs to one pair: once the parent moves to an account in another
+   * currency it describes nothing, and is neither shown, kept nor sent.
+   */
+  transferTargetFromCurrency?: string;
 }
 
 /** A cross-currency transfer line's target currency and conversion fee. */
@@ -20,7 +27,9 @@ export interface SplitFxPair {
   fxFeePercent: number | null;
 }
 
-export type SplitFxPatch = Partial<Pick<SplitFxLine, 'amount' | 'transferTargetAmount'>>;
+export type SplitFxPatch = Partial<
+  Pick<SplitFxLine, 'amount' | 'transferTargetAmount' | 'transferTargetFromCurrency'>
+>;
 
 interface UseSplitTransferFxAutofillArgs<T extends SplitFxLine> {
   /** The parent account's currency, which every split amount is in. */
@@ -45,6 +54,19 @@ const feeFraction = (fxFeePercent: number | null): number =>
 const magnitude = (amount: number): number => Math.abs(Number(amount) || 0);
 
 /**
+ * A line's received amount when it was stated against `fromCurrency`, else
+ * undefined: a figure for another parent currency is stale, not a value.
+ */
+export function currentTransferTargetAmount(
+  line: Pick<SplitFxLine, 'transferTargetAmount' | 'transferTargetFromCurrency'>,
+  fromCurrency: string,
+): number | undefined {
+  return line.transferTargetFromCurrency === fromCurrency
+    ? line.transferTargetAmount
+    : undefined;
+}
+
+/**
  * `useTransferFxAutofill` for the transfer lines of a split: each
  * cross-currency transfer line has a "Transfer Amount" (the split amount, in
  * the parent's currency) and an "Amount Received" (in the target's currency),
@@ -56,6 +78,10 @@ const magnitude = (amount: number): number => Math.abs(Number(amount) || 0);
  * remainder), so the editor routes every change of its lines through
  * `reconcile`, which re-derives the received amount of any line whose amount
  * moved. Typing the received amount goes through `editTarget` instead.
+ *
+ * A received amount is tagged with the parent currency it was stated against
+ * (`transferTargetFromCurrency`). One stated against another currency is
+ * treated as empty, so it is re-derived for the new pair.
  *
  * A failed lookup or a missing rate fills nothing, rather than guessing; the
  * server then converts the line at the market rate or refuses it.
@@ -97,6 +123,12 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
     return fallback;
   };
 
+  // The two conversions at each currency's own precision.
+  const received = (sent: number, rate: number, pair: SplitFxPair) =>
+    receivedForSent(sent, rate, pair.fxFeePercent, getDecimalPlacesForCurrency(pair.toCurrency));
+  const sentFor = (target: number, rate: number, pair: SplitFxPair, from: string) =>
+    sentForReceived(target, rate, pair.fxFeePercent, getDecimalPlacesForCurrency(from));
+
   // Every line that needs a rate, with the key it needs; the effect re-runs
   // only when that set changes, not on every amount typed.
   const signature = lines
@@ -121,12 +153,15 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
         appliedKeyRef.current.set(line.id, key);
         const pair = ctx.pairOf(line) as SplitFxPair;
         const sent = magnitude(line.amount);
-        const target = line.transferTargetAmount;
+        const target = currentTransferTargetAmount(line, ctx.fromCurrency);
         if (sent > 0 && (targetAutoRef.current.has(line.id) || !isFilled(target))) {
           targetAutoRef.current.add(line.id);
-          patches[line.id] = { transferTargetAmount: receivedForSent(sent, rate, pair.fxFeePercent) };
+          patches[line.id] = {
+            transferTargetAmount: received(sent, rate, pair),
+            transferTargetFromCurrency: ctx.fromCurrency,
+          };
         } else if (isFilled(target) && (amountAutoRef.current.has(line.id) || sent === 0)) {
-          const derived = sentForReceived(target, rate, pair.fxFeePercent);
+          const derived = sentFor(target, rate, pair, ctx.fromCurrency);
           if (derived === null) continue;
           amountAutoRef.current.add(line.id);
           patches[line.id] = { amount: signOf(line, ctx.defaultSign) * derived };
@@ -188,11 +223,15 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
       const rate = knownRate(line);
       if (!pair || rate === null) return line;
       const autoTarget = targetAutoRef.current.has(line.id);
-      if (!autoTarget && isFilled(line.transferTargetAmount)) return line;
+      if (!autoTarget && isFilled(currentTransferTargetAmount(line, fromCurrency))) return line;
       const sent = magnitude(line.amount);
       if (sent > 0) {
         targetAutoRef.current.add(line.id);
-        return { ...line, transferTargetAmount: receivedForSent(sent, rate, pair.fxFeePercent) };
+        return {
+          ...line,
+          transferTargetAmount: received(sent, rate, pair),
+          transferTargetFromCurrency: fromCurrency,
+        };
       }
       if (autoTarget) {
         targetAutoRef.current.delete(line.id);
@@ -204,13 +243,16 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
   /** The change typing `value` into a line's received amount makes. */
   const editTarget = (line: T, value: number | undefined): SplitFxPatch => {
     targetAutoRef.current.delete(line.id);
-    const patch: SplitFxPatch = { transferTargetAmount: value };
+    const patch: SplitFxPatch = {
+      transferTargetAmount: value,
+      transferTargetFromCurrency: fromCurrency,
+    };
     const pair = pairOf(line);
     const rate = knownRate(line);
     if (!pair || rate === null) return patch;
     const amountAuto = amountAutoRef.current.has(line.id);
     if (!amountAuto && magnitude(line.amount) > 0) return patch;
-    const derived = isFilled(value) ? sentForReceived(value, rate, pair.fxFeePercent) : null;
+    const derived = isFilled(value) ? sentFor(value, rate, pair, fromCurrency) : null;
     if (derived !== null) {
       amountAutoRef.current.add(line.id);
       patch.amount = signOf(line, defaultSign) * derived;
