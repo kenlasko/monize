@@ -559,13 +559,14 @@ describe("the discount instrument in the engine (spec 3)", () => {
     expect(early.maturityDate).toBe("2026-01-27");
   });
 
-  it("has no value before the series is issued, not a made-up one", () => {
+  it("is worth the issue price before the series is issued, with nothing accrued (a lot booked on its auction date)", () => {
     const v = valueBondLot({
       ...lot(bill(), "2025-12-01"),
       asOf: "2025-12-15",
     });
     expect(v.status).toBe("OPEN");
-    expect(v.grossValue).toBeNull();
+    expect(v.grossValue).toBe("23530.00");
+    expect(v.accruedInterest).toBe("0.00");
   });
 
   it("has no periods per year, so no coupon rate can be applied to it", () => {
