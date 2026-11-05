@@ -1704,11 +1704,7 @@ export class PortfolioCalculationService {
     // A bond-linked security spans a whole program, so its price is a blend over
     // the lots of every account; a holding is worth its own account's lots
     // (bond-program-securities.md 2.4). One valuation per linked security.
-    const bondValues = await this.valueBondHoldings(
-      userId,
-      holdings,
-      priceMap,
-    );
+    const bondValues = await this.valueBondHoldings(userId, holdings, priceMap);
 
     // Historical cost basis, but only where the replay both knows it and
     // states it in the currency the holding's account keeps its books in.

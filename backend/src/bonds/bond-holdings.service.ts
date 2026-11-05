@@ -6,7 +6,6 @@ import { BondAdapter } from "./bond-adapter";
 import { INSTALLED_BOND_ADAPTERS } from "./bond-adapters";
 import { loadBondLedger, loadLinkedSecurity } from "./bond-ledger";
 import {
-  BondLot,
   BondLotTransaction,
   bondLotsAsOf,
   bondLotsFromTransactions,
