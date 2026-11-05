@@ -134,7 +134,10 @@ series reading it, `{ instrumentId, seriesCode, periodStart, annualRate,
 rateSource }` of its first period starting after T (or starting on T), at most
 20 entries plus `affectedMore` (the count left out). `securityId` and
 `accountId` are null; `target` is `/securities/<first affected securityId>`.
-Dedupe: `bond:bench:<benchmarkId>:<observation>`.
+Dedupe: `bond:bench:<benchmarkId>:<observation>`. A lot whose rate rule is
+`DAILY_INDEX_PLUS_SPREAD` does not name its benchmark here
+(`readsBenchmarkForLaterPeriod`): a weekly observation changes the current
+period's daily accrual, and there is no later period whose rate is not known yet.
 
 ### 3.6 Item 6, missing data
 

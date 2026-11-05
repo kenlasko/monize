@@ -710,6 +710,18 @@ export interface AffectedHolding {
   readonly entry: AffectedSeries;
 }
 
+/**
+ * True when a new observation of the benchmark decides a LATER period's rate
+ * (item 5 says that period's rate is not known yet). A floating rate that reads
+ * the benchmark every day (`DAILY_INDEX_PLUS_SPREAD`) changes the accrual of the
+ * current period instead, with every weekly auction, so it has no such period.
+ */
+export function readsBenchmarkForLaterPeriod(
+  rule: SecurityValuation["lots"][number]["valuation"]["rateRule"],
+): boolean {
+  return rule.benchmarkId !== null && rule.type !== "DAILY_INDEX_PLUS_SPREAD";
+}
+
 /** The held series reading `benchmarkId`, each with its first period starting on or after `today`. */
 export function affectedSeriesOf(
   valuations: readonly SecurityValuation[],
@@ -723,6 +735,7 @@ export function affectedSeriesOf(
       if (
         v.status !== "OPEN" ||
         lot.instrumentId === null ||
+        !readsBenchmarkForLaterPeriod(v.rateRule) ||
         v.rateRule.benchmarkId !== benchmarkId
       )
         continue;

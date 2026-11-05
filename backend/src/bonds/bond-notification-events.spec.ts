@@ -570,6 +570,32 @@ describe("item 5, benchmark published", () => {
     });
   });
 
+  it("raises nothing for a floating note that reads the benchmark every day: a weekly auction changes the current period, not the next", () => {
+    const daily = reading("SER0001", SERIES_1);
+    const floating = {
+      ...daily,
+      valuation: {
+        ...daily.valuation,
+        rateRule: {
+          ...daily.valuation.rateRule,
+          type: "DAILY_INDEX_PLUS_SPREAD" as const,
+          lockoutBusinessDays: 2,
+        },
+      },
+    };
+    const affected = affectedSeriesOf([security([floating])], "BENCH_A", TODAY);
+    expect(affected).toEqual([]);
+    expect(benchmarkPublishedNotification(observation, affected)).toBeNull();
+    // A series that sets its rate once a period still raises it.
+    expect(
+      affectedSeriesOf(
+        [security([floating, reading("SER0002", SERIES_2)])],
+        "BENCH_A",
+        TODAY,
+      ).map((a) => a.entry.seriesCode),
+    ).toEqual(["SER0002"]);
+  });
+
   it("raises nothing when no held open series reads it", () => {
     const affected = affectedSeriesOf([security([lot()])], "BENCH_A", TODAY);
     expect(affected).toEqual([]);
