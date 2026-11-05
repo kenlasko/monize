@@ -13,6 +13,7 @@ import { InvestmentTransaction } from "./entities/investment-transaction.entity"
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { withUserContext } from "../common/db/with-context";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { Currency } from "../currencies/entities/currency.entity";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -31,6 +32,7 @@ const queryWith =
 describe("SecuritiesService", () => {
   let service: SecuritiesService;
   let securitiesRepository: Record<string, any>;
+  let currencyRepository: Record<string, jest.Mock>;
   let securityTagsRepository: Record<string, jest.Mock>;
   let holdingsRepository: Record<string, jest.Mock>;
   let investmentTransactionsRepository: Record<string, jest.Mock>;
@@ -175,7 +177,15 @@ describe("SecuritiesService", () => {
     // Security repository mock now that every path shares one EntityManager.
     scopedRepository = securitiesRepository;
 
+    // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin.
+    currencyRepository = {
+      findOne: jest.fn(async (opts: { where: { code: string } }) => ({
+        code: opts.where.code,
+        kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
+      })),
+    };
     const { manager, dataSource } = createScopedDbMocks([
+      [Currency, currencyRepository],
       [Security, securitiesRepository],
       [SecurityTag, securityTagsRepository],
       [Holding, holdingsRepository],
@@ -212,6 +222,63 @@ describe("SecuritiesService", () => {
       mockBondPriceService as never,
       mockBondSeriesService as never,
     );
+  });
+
+  describe("INV-CRYPTO-001: a security is priced in a fiat currency", () => {
+    it("create refuses a CRYPTO currency, writing nothing", async () => {
+      queryRunnerManager.findOne.mockResolvedValue(null);
+      await expect(
+        service.create("user-1", {
+          symbol: "XBT",
+          name: "Bitcoin",
+          currencyCode: "BTC",
+        }),
+      ).rejects.toThrow(/BTC is a cryptocurrency/);
+      expect(queryRunnerManager.save).not.toHaveBeenCalled();
+    });
+
+    it("update refuses a move to a CRYPTO currency, writing nothing", async () => {
+      securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      lockedRowOf = async () => [
+        {
+          bond_program_id: null,
+          bond_auto_fetch: false,
+          security_type: "STOCK",
+          currency_code: "USD",
+        },
+      ];
+      await expect(
+        service.update("user-1", "sec-1", { currencyCode: "BTC" }),
+      ).rejects.toThrow(/BTC is a cryptocurrency/);
+      expect(queryRunnerManager.save).not.toHaveBeenCalled();
+    });
+
+    it("update does not read the currency when it does not move", async () => {
+      securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      await service.update("user-1", "sec-1", {
+        currencyCode: mockSecurity.currencyCode,
+        name: "Apple",
+      });
+      expect(currencyRepository.findOne).not.toHaveBeenCalled();
+    });
+
+    it("previewCreateSecurity refuses a lookup that resolves to a CRYPTO currency", async () => {
+      mockSecurityPriceService.lookupSecurityCandidates.mockResolvedValue([
+        {
+          symbol: "XBT",
+          name: "Bitcoin",
+          exchange: null,
+          securityType: "CRYPTO",
+          currencyCode: "BTC",
+          provider: "yahoo" as const,
+          msnInstrumentId: null,
+        },
+      ]);
+      securitiesRepository.findOne.mockResolvedValue(null);
+      await expect(
+        service.previewCreateSecurity("user-1", { query: "XBT" }),
+      ).rejects.toThrow(/BTC is a cryptocurrency/);
+    });
   });
 
   describe("previewCreateSecurity", () => {
@@ -2860,6 +2927,18 @@ describe("SecuritiesService", () => {
           currencyCode: "EUR",
         });
         expect(preview.currencyCode).toBe("EUR");
+      });
+
+      it("refuses a move to a CRYPTO currency, as the commit does (INV-CRYPTO-001)", async () => {
+        securitiesRepository.createQueryBuilder.mockReturnValueOnce(
+          qb({ getOne: sec }),
+        );
+        await expect(
+          service.previewUpdateSecurity("user-1", {
+            query: "AAPL",
+            currencyCode: "BTC",
+          }),
+        ).rejects.toThrow(/BTC is a cryptocurrency/);
       });
     });
 

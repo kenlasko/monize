@@ -1,3 +1,4 @@
+import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import { UpdateCurrencyDto } from "./update-currency.dto";
 
@@ -79,5 +80,23 @@ describe("UpdateCurrencyDto", () => {
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe("isActive");
+  });
+
+  it("inherits the kind and price symbol rules", async () => {
+    const ok = plainToInstance(UpdateCurrencyDto, {
+      kind: "CRYPTO",
+      quoteSymbol: " eth-usd",
+    });
+    expect(await validate(ok)).toHaveLength(0);
+    expect(ok.quoteSymbol).toBe("ETH-USD");
+
+    const bad = plainToInstance(UpdateCurrencyDto, {
+      kind: "COIN",
+      quoteSymbol: "ETH/USD",
+    });
+    expect((await validate(bad)).map((e) => e.property).sort()).toEqual([
+      "kind",
+      "quoteSymbol",
+    ]);
   });
 });

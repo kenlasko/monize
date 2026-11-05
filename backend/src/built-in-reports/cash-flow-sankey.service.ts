@@ -41,7 +41,8 @@ const INVESTMENT_EXCLUSION_NO_SPLITS = investmentExclusionSql({
 /**
  * The account types the default scope is made of (decision 1, K1: SAVINGS is
  * in). An INVESTMENT account is never in the default, so neither sleeve of a
- * pair is.
+ * pair is. A CRYPTO wallet is a banking account the reader spends from, in
+ * scope as CASH is (docs/specs/crypto-accounts.md decision 7).
  */
 export const DEFAULT_SANKEY_SCOPE_TYPES = [
   "CHEQUING",
@@ -49,6 +50,7 @@ export const DEFAULT_SANKEY_SCOPE_TYPES = [
   "CASH",
   "CREDIT_CARD",
   "LINE_OF_CREDIT",
+  "CRYPTO",
 ] as const;
 
 /**

@@ -14,6 +14,7 @@ import {
   FxRateProvider,
 } from "./providers/fx-provider.interface";
 import { YahooFxProvider } from "./providers/yahoo-fx.provider";
+import { CryptoFxProvider } from "./providers/crypto-fx.provider";
 import {
   FrankfurterFxProvider,
   resolveFrankfurterBaseUrl,
@@ -33,6 +34,12 @@ import {
  * The Frankfurter adapter is built here too, from `FX_FRANKFURTER_BASE_URL`
  * and the breaker (`ProviderHealthModule`); nothing calls it until an operator
  * lists `frankfurter` in `FX_PROVIDERS`.
+ *
+ * The crypto adapter (`CryptoFxProvider`) is appended last, always, whatever
+ * `FX_PROVIDERS` says: it is the only provider that prices a coin, it is
+ * asked about nothing else (it claims the coins, `FxRateProvider.claims`), and
+ * its name is not an `FX_PROVIDERS` token (`docs/specs/crypto-accounts.md`,
+ * decision 5).
  */
 @Module({
   imports: [
@@ -45,6 +52,7 @@ import {
     ExchangeRateHistoryService,
     CurrenciesService,
     YahooFxProvider,
+    CryptoFxProvider,
     {
       provide: FrankfurterFxProvider,
       useFactory: (
@@ -65,6 +73,7 @@ import {
         configService: ConfigService,
         yahoo: YahooFxProvider,
         frankfurter: FrankfurterFxProvider,
+        crypto: CryptoFxProvider,
       ) => {
         const byName: Record<FxProviderName, FxRateProvider> = {
           frankfurter,
@@ -73,9 +82,17 @@ import {
         const names = resolveFxProviders(
           configService.get<string>("FX_PROVIDERS"),
         );
-        return new FxProviderChain(names.map((name) => byName[name]));
+        return new FxProviderChain([
+          ...names.map((name) => byName[name]),
+          crypto,
+        ]);
       },
-      inject: [ConfigService, YahooFxProvider, FrankfurterFxProvider],
+      inject: [
+        ConfigService,
+        YahooFxProvider,
+        FrankfurterFxProvider,
+        CryptoFxProvider,
+      ],
     },
   ],
   controllers: [CurrenciesController],

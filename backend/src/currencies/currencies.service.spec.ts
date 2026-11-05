@@ -37,6 +37,9 @@ describe("CurrenciesService", () => {
     isActive: true,
     createdByUserId: null,
     createdAt: new Date(),
+
+    kind: "FIAT",
+    quoteSymbol: null,
   };
 
   beforeEach(async () => {
@@ -336,7 +339,15 @@ describe("CurrenciesService", () => {
       // The INSERT (3rd query) sets the proper symbol, not the bare code.
       const insertCall = mockDataSource.query.mock.calls[2];
       expect(insertCall[0]).toContain("INSERT INTO currencies");
-      expect(insertCall[1]).toEqual(["EUR", "Euro", "€", 2, false, null]);
+      expect(insertCall[1]).toEqual([
+        "EUR",
+        "Euro",
+        "€",
+        2,
+        false,
+        null,
+        "FIAT",
+      ]);
       // ...and is activated for this user only (4th query).
       expect(mockDataSource.query.mock.calls[3][1]).toEqual([userId, "EUR"]);
     });
@@ -351,7 +362,10 @@ describe("CurrenciesService", () => {
         name: "US Dollar",
         symbol: "$",
         decimalPlaces: 2,
+        kind: "FIAT",
       });
+      // Nothing in the catalog is a coin: the kind is never inferred.
+      expect(catalog.every((c) => c.kind === "FIAT")).toBe(true);
       // Sorted by code.
       expect(catalog[0].code.localeCompare(catalog[1].code)).toBeLessThan(0);
     });
@@ -365,7 +379,7 @@ describe("CurrenciesService", () => {
 
       expect(mockDataSource.query).toHaveBeenCalledWith(
         expect.stringContaining("INSERT INTO currencies"),
-        ["USD", "US Dollar", "$", 2],
+        ["USD", "US Dollar", "$", 2, "FIAT"],
       );
     });
 
@@ -399,6 +413,7 @@ describe("CurrenciesService", () => {
         2,
         false,
         null,
+        "FIAT",
       ]);
       expect(preferenceCall()![0]).toContain(
         "ON CONFLICT (user_id, currency_code) DO UPDATE SET is_active = true",
@@ -416,6 +431,19 @@ describe("CurrenciesService", () => {
       expect(params[4]).toBe(true);
       expect(params[5]).toBe(userId);
       expect(preferenceCall()![1]).toEqual([userId, "ZZZ"]);
+    });
+
+    it("never infers a coin: a code outside ISO 4217 is created FIAT", async () => {
+      // `BTC` is not ISO 4217 and is the code a reader would pick for a coin;
+      // the kind is still the reader's statement on the Currencies page.
+      mockCurrencyRepo.findOne!.mockResolvedValue(null);
+
+      await service.ensureCurrencyForUser(userId, "btc");
+
+      const [sql, params] = insertCall()!;
+      expect(sql).toMatch(/created_by_user_id, kind\)/);
+      expect(params[0]).toBe("BTC");
+      expect(params[6]).toBe("FIAT");
     });
 
     it("leaves an existing row alone and still activates it for the user", async () => {
@@ -498,7 +526,8 @@ describe("CurrenciesService", () => {
       await service.ensureCatalogCurrency("pln");
 
       const [sql, params] = mockDataSource.query.mock.calls[0];
-      expect(sql).toMatch(/VALUES \(\$1, \$2, \$3, \$4, false, NULL\)/);
+      expect(sql).toMatch(/VALUES \(\$1, \$2, \$3, \$4, false, NULL, \$5\)/);
+      expect(params[4]).toBe("FIAT");
       expect(params[0]).toBe("PLN");
     });
 
@@ -1226,6 +1255,323 @@ describe("CurrenciesService", () => {
         symbol: "CA$",
         decimalPlaces: 2,
       });
+    });
+  });
+
+  /**
+   * The currency-write rows of section 5 of `docs/specs/crypto-accounts.md`:
+   * every refusal happens before anything is written.
+   */
+  describe("kind and price symbol", () => {
+    const coin = (overrides: Partial<Currency> = {}): Currency => ({
+      ...mockCurrency,
+      code: "BTC",
+      name: "Bitcoin",
+      symbol: "B",
+      decimalPlaces: 4,
+      createdByUserId: userId,
+      kind: "CRYPTO",
+      quoteSymbol: "BTC-CAD",
+      ...overrides,
+    });
+
+    /** `create` echoes what it was given, as the repository does. */
+    function echoCreate(): void {
+      mockCurrencyRepo.findOne!.mockResolvedValue(null);
+      mockCurrencyRepo.create!.mockImplementation((row) => row);
+      mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+    }
+
+    /**
+     * The database's two answers for the code: `data` from
+     * `currency_code_referenced_by_data` (every reference but activations),
+     * folded into `currency_code_in_use_globally` with the activation as the
+     * real functions do.
+     */
+    function references(data: boolean, activation = true): void {
+      mockDataSource.query.mockImplementation(async (sql: string) =>
+        sql.includes("currency_code_referenced_by_data")
+          ? [{ inUse: data }]
+          : sql.includes("currency_code_in_use_globally")
+            ? [{ inUse: data || activation }]
+            : [],
+      );
+    }
+    const referencedGlobally = (inUse: boolean) => references(inUse);
+
+    const globalCheck = () =>
+      mockDataSource.query.mock.calls.filter(([sql]) =>
+        /currency_code_(referenced_by_data|in_use_globally)/.test(String(sql)),
+      );
+
+    it("creates a coin with its price symbol, and four places by default", async () => {
+      echoCreate();
+
+      const view = await service.create(userId, {
+        code: "BTC",
+        name: "Bitcoin",
+        symbol: "B",
+        kind: "CRYPTO",
+        quoteSymbol: "BTC-EUR",
+      });
+
+      expect(mockCurrencyRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: "CRYPTO",
+          quoteSymbol: "BTC-EUR",
+          decimalPlaces: 4,
+        }),
+      );
+      expect(view).toMatchObject({
+        code: "BTC",
+        kind: "CRYPTO",
+        quoteSymbol: "BTC-EUR",
+        decimalPlaces: 4,
+      });
+    });
+
+    it("creates a coin without a price symbol: allowed, unpriced", async () => {
+      echoCreate();
+
+      const view = await service.create(userId, {
+        code: "XYZ",
+        name: "Some Coin",
+        symbol: "X",
+        kind: "CRYPTO",
+      });
+
+      expect(view).toMatchObject({ kind: "CRYPTO", quoteSymbol: null });
+    });
+
+    it("creates FIAT when no kind is given, even for a code like BTC, at two places", async () => {
+      echoCreate();
+
+      const view = await service.create(userId, {
+        code: "BTC",
+        name: "Not a coin",
+        symbol: "B",
+      });
+
+      expect(view).toMatchObject({
+        kind: "FIAT",
+        quoteSymbol: null,
+        decimalPlaces: 2,
+      });
+    });
+
+    it.each([[{ kind: "FIAT" as const }], [{}]])(
+      "refuses a price symbol on a fiat currency (%p) before any write",
+      async (kindField) => {
+        echoCreate();
+
+        await expect(
+          service.create(userId, {
+            code: "XYZ",
+            name: "X",
+            symbol: "X",
+            quoteSymbol: "BTC-EUR",
+            ...kindField,
+          }),
+        ).rejects.toThrow(BadRequestException);
+        await expect(
+          service.create(userId, {
+            code: "XYZ",
+            name: "X",
+            symbol: "X",
+            quoteSymbol: "BTC-EUR",
+            ...kindField,
+          }),
+        ).rejects.toThrow(/can only be set on a cryptocurrency/);
+        expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+        expect(mockDataSource.query).not.toHaveBeenCalled();
+      },
+    );
+
+    it("refuses a price symbol with no fiat leg before any write", async () => {
+      echoCreate();
+
+      await expect(
+        service.create(userId, {
+          code: "BTC",
+          name: "Bitcoin",
+          symbol: "B",
+          kind: "CRYPTO",
+          quoteSymbol: "BTC",
+        }),
+      ).rejects.toThrow(/is not a coin and fiat pair/);
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("lists each currency's kind and price symbol", async () => {
+      mockDataSource.query.mockResolvedValue([
+        { code: "BTC", kind: "CRYPTO", quoteSymbol: "BTC-CAD" },
+      ]);
+
+      const rows = await service.findAll(userId);
+
+      const [sql] = mockDataSource.query.mock.calls[0];
+      expect(sql).toContain("c.kind");
+      expect(sql).toContain('c.quote_symbol AS "quoteSymbol"');
+      expect(rows[0]).toMatchObject({ kind: "CRYPTO", quoteSymbol: "BTC-CAD" });
+    });
+
+    it("kind changes on a currency only the creator's preference references", async () => {
+      // The creator's activation row is always there; it is a list entry, not
+      // a use, so it must not freeze the kind.
+      mockCurrencyRepo.findOne!.mockResolvedValue(
+        coin({ code: "XYZ", kind: "FIAT", quoteSymbol: null }),
+      );
+      mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+      references(false, true);
+
+      const view = await service.update(userId, "XYZ", {
+        kind: "CRYPTO",
+        quoteSymbol: "XYZ-USD",
+      });
+
+      expect(view).toMatchObject({ kind: "CRYPTO", quoteSymbol: "XYZ-USD" });
+      const asked = globalCheck().map(([sql]) => String(sql));
+      expect(asked).toHaveLength(1);
+      expect(asked[0]).toContain("currency_code_referenced_by_data");
+    });
+
+    it("kind change refused once an account references it", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(
+        coin({ code: "XYZ", kind: "FIAT", quoteSymbol: null }),
+      );
+      // An account in XYZ is data: `currency_code_referenced_by_data` is true.
+      references(true, true);
+
+      await expect(
+        service.update(userId, "XYZ", { kind: "CRYPTO" }),
+      ).rejects.toThrow(/cannot change while/);
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses a kind change on a code any row anywhere references, before any write", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      referencedGlobally(true);
+
+      await expect(
+        service.update(userId, "BTC", { kind: "FIAT" }),
+      ).rejects.toThrow(ConflictException);
+      await expect(
+        service.update(userId, "BTC", { kind: "FIAT" }),
+      ).rejects.toThrow(/cannot change while/);
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+      // The row is locked before the global question is asked.
+      const sqls = mockDataSource.query.mock.calls.map(([sql]) => String(sql));
+      const lock = sqls.findIndex((sql) => sql.includes("FOR UPDATE"));
+      const check = sqls.findIndex((sql) =>
+        sql.includes("currency_code_referenced_by_data"),
+      );
+      expect(lock).toBeGreaterThanOrEqual(0);
+      expect(lock).toBeLessThan(check);
+    });
+
+    it("changes the kind of an unreferenced code, dropping a price symbol a fiat row cannot hold", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+      referencedGlobally(false);
+
+      const view = await service.update(userId, "BTC", { kind: "FIAT" });
+
+      expect(mockCurrencyRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: "FIAT", quoteSymbol: null }),
+      );
+      expect(view).toMatchObject({ kind: "FIAT", quoteSymbol: null });
+    });
+
+    it("refuses a price symbol named on a currency turning fiat", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      referencedGlobally(false);
+
+      await expect(
+        service.update(userId, "BTC", { kind: "FIAT", quoteSymbol: "BTC-EUR" }),
+      ).rejects.toThrow(/can only be set on a cryptocurrency/);
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses a price symbol on a fiat row when the update leaves the kind alone", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(
+        coin({ code: "XYZ", kind: "FIAT", quoteSymbol: null }),
+      );
+
+      await expect(
+        service.update(userId, "XYZ", { quoteSymbol: "BTC-EUR" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("reprices a referenced coin: a new symbol on an unchanged kind is not a kind change", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+      referencedGlobally(true);
+
+      const view = await service.update(userId, "BTC", {
+        kind: "CRYPTO",
+        quoteSymbol: "BTC-EUR",
+      });
+
+      expect(view.quoteSymbol).toBe("BTC-EUR");
+      expect(globalCheck()).toHaveLength(0);
+    });
+
+    it("refuses a repricing symbol with no fiat leg", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+
+      await expect(
+        service.update(userId, "BTC", { quoteSymbol: "BTC-USDT" }),
+      ).rejects.toThrow(/is not a coin and fiat pair/);
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("clears a coin's price symbol with null", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+
+      const view = await service.update(userId, "BTC", { quoteSymbol: null });
+
+      expect(view).toMatchObject({ kind: "CRYPTO", quoteSymbol: null });
+    });
+
+    it("writes nothing when the form resends the same kind and symbol", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      referencedGlobally(true);
+
+      await service.update(userId, "BTC", {
+        kind: "CRYPTO",
+        quoteSymbol: "BTC-CAD",
+      });
+
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+      expect(globalCheck()).toHaveLength(0);
+    });
+
+    it("tells the crypto exchange rate provider to re-read currencies after a write", async () => {
+      const cryptoFx = { forgetCurrencies: jest.fn() };
+      const withProvider = new CurrenciesService(
+        mockDataSource as never,
+        chain as never,
+        cryptoFx as never,
+      );
+      echoCreate();
+
+      await withProvider.create(userId, {
+        code: "BTC",
+        name: "Bitcoin",
+        symbol: "B",
+        kind: "CRYPTO",
+      });
+      expect(cryptoFx.forgetCurrencies).toHaveBeenCalledTimes(1);
+
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      await withProvider.update(userId, "BTC", { name: "Bitcoin (cold)" });
+      expect(cryptoFx.forgetCurrencies).toHaveBeenCalledTimes(2);
+
+      mockCurrencyRepo.findOne!.mockResolvedValue(null);
+      await withProvider.ensureCurrencyForUser(userId, "PLN");
+      expect(cryptoFx.forgetCurrencies).toHaveBeenCalledTimes(3);
     });
   });
 });

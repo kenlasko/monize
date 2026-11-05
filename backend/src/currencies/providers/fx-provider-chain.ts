@@ -1,7 +1,7 @@
 import {
   FxObservation,
-  FxProviderName,
   FxRateProvider,
+  RateProviderName,
 } from "./fx-provider.interface";
 
 /** An observation with the `exchange_rates.source` slug of the provider that made it. */
@@ -37,7 +37,7 @@ export interface FxDailySeriesResult {
 }
 
 export interface FxProviderDescription {
-  name: FxProviderName;
+  name: RateProviderName;
   source: string;
 }
 
@@ -52,6 +52,14 @@ export interface FxProviderDescription {
  * an empty window the second might have filled. The truth table is section 5
  * of `docs/specs/exchange-rate-providers.md`; `fx-provider-chain.spec.ts`
  * holds every row of it.
+ *
+ * A provider that `claims` a code (the crypto adapter claims every coin) is
+ * the only one asked about a pair with that code on either side, and is asked
+ * about nothing else (INV-CRYPTO-002, `docs/specs/crypto-accounts.md`
+ * decision 5): Yahoo's `carries` is always true, so without the claim a coin
+ * pair would reach its `=X` grammar first, and the coin adapter, which carries
+ * every fiat code as a coin's counterpart, would answer a fiat pair it cannot
+ * price as "nothing there" and hide the fiat providers' outage.
  *
  * Built once by the factory in `currencies.module.ts`, which is why the class
  * is its own DI token rather than decorated `@Injectable()`.
@@ -75,12 +83,19 @@ export class FxProviderChain {
     const carried = new Set<string>();
     const answered = new Set<string>();
     let remaining = [...new Set(quotes)];
+    const claimed = new Set<string>();
+    for (const quote of remaining) {
+      if (await this.pairClaimed(base, quote)) claimed.add(quote);
+    }
 
     for (const provider of this.providers) {
       if (remaining.length === 0) break;
       if (!(await provider.carries(base))) continue;
       const asked: string[] = [];
       for (const quote of remaining) {
+        if (!(await this.mayAsk(provider, base, quote, claimed.has(quote)))) {
+          continue;
+        }
         if (await provider.carries(quote)) asked.push(quote);
       }
       if (asked.length === 0) continue;
@@ -120,8 +135,9 @@ export class FxProviderChain {
     end: string,
   ): Promise<FxDailySeriesResult> {
     let everyCarrierAnswered = true;
+    const claimed = await this.pairClaimed(from, to);
     for (const provider of this.providers) {
-      if (!(await this.carriesPair(provider, from, to))) continue;
+      if (!(await this.asks(provider, from, to, claimed))) continue;
       const series = await provider.fetchDailySeries(from, to, start, end);
       if (series === null) {
         everyCarrierAnswered = false;
@@ -140,9 +156,10 @@ export class FxProviderChain {
    * observation, else `null`.
    */
   async live(from: string, to: string): Promise<FxChainObservation | null> {
+    const claimed = await this.pairClaimed(from, to);
     for (const provider of this.providers) {
       if (!provider.fetchLive) continue;
-      if (!(await this.carriesPair(provider, from, to))) continue;
+      if (!(await this.asks(provider, from, to, claimed))) continue;
       const observation = await provider.fetchLive(from, to);
       if (observation) return { ...observation, source: provider.source };
     }
@@ -195,11 +212,44 @@ export class FxProviderChain {
     }));
   }
 
-  private async carriesPair(
+  /** Whether a provider is to be asked about the pair: it may, and it carries both codes. */
+  private async asks(
     provider: FxRateProvider,
     from: string,
     to: string,
+    claimed: boolean,
   ): Promise<boolean> {
-    return (await provider.carries(from)) && (await provider.carries(to));
+    return (
+      (await this.mayAsk(provider, from, to, claimed)) &&
+      (await provider.carries(from)) &&
+      (await provider.carries(to))
+    );
+  }
+
+  /** Whether some configured provider claims either code of the pair. */
+  private async pairClaimed(from: string, to: string): Promise<boolean> {
+    for (const provider of this.providers) {
+      if (!provider.claims) continue;
+      if ((await provider.claims(from)) || (await provider.claims(to))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * The claim rule, before `carries`: a claimed pair is asked only of a
+   * provider that claims one of its codes, and an unclaimed pair only of a
+   * provider that claims nothing.
+   */
+  private async mayAsk(
+    provider: FxRateProvider,
+    from: string,
+    to: string,
+    claimed: boolean,
+  ): Promise<boolean> {
+    if (!provider.claims) return !claimed;
+    if (!claimed) return false;
+    return (await provider.claims(from)) || (await provider.claims(to));
   }
 }

@@ -86,6 +86,7 @@ const accountTypeSchema = z.preprocess(
     "LINE_OF_CREDIT",
     "ASSET",
     "OTHER",
+    "CRYPTO",
   ]),
 );
 
@@ -94,7 +95,7 @@ export const listAccountsSchema = z.object({
   accountIds: z.array(z.string().uuid()).optional(),
   nameQuery: z.string().max(100).optional(),
   status: z.enum(["open", "closed", "all"]).optional(),
-  accountTypes: z.array(accountTypeSchema).max(10).optional(),
+  accountTypes: z.array(accountTypeSchema).max(11).optional(),
 });
 
 export const getCategoriesSchema = z.object({

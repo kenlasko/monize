@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
+import { Currency } from "../currencies/entities/currency.entity";
 import {
   createScopedDbMocks,
   ManagerMock,
@@ -100,6 +101,16 @@ describe("LoanMortgageAccountService: LINEAR and INTEREST_ONLY", () => {
 
     const mocks = createScopedDbMocks([
       [Account, accountsRepository],
+      // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin.
+      [
+        Currency,
+        {
+          findOne: jest.fn(async (opts: { where: { code: string } }) => ({
+            code: opts.where.code,
+            kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
+          })),
+        },
+      ],
       [Institution, { findOne: jest.fn().mockResolvedValue(null) }],
       [
         Category,

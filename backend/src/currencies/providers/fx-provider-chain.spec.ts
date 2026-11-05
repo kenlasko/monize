@@ -4,6 +4,7 @@ import {
   FxProviderName,
   FxRateProvider,
 } from "./fx-provider.interface";
+import { resolveFxProviders } from "./fx-provider.config";
 
 /**
  * A provider double. `carried` is the set of codes it quotes ("all" for one
@@ -509,5 +510,186 @@ describe("FxProviderChain.verifyCurrency and searchCurrency", () => {
     ]);
 
     expect(await chain.searchCurrency("xyz")).toBeNull();
+  });
+});
+
+/**
+ * INV-CRYPTO-002: a pair with a coin on either side is asked of the provider
+ * that claims the coin, and only of it; that provider is asked about no other
+ * pair, so a fiat provider that cannot enumerate (Yahoo's `carries` is always
+ * true) never answers for a coin, and the coin provider never answers, or
+ * masks the outage of, a fiat pair. `docs/specs/crypto-accounts.md` decision 5.
+ */
+describe("FxProviderChain and a provider that claims coins", () => {
+  const COINS = ["BTC", "XYZ"];
+
+  /** The crypto adapter's shape: carries the fiat codes and the priced coin BTC, claims every coin. */
+  function coinProvider(): ProviderDouble & {
+    claims: jest.Mock<Promise<boolean>, [string]>;
+  } {
+    const double = provider("crypto", ["USD", "CAD", "EUR", "BTC"]);
+    return Object.assign(double, {
+      claims: jest.fn(async (code: string) => COINS.includes(code)),
+    });
+  }
+
+  it("asks the coin provider only for the quotes with a coin side, and the fiat provider only for the rest", async () => {
+    const fiat = provider("yahoo", "all");
+    fiat.fetchLatest.mockResolvedValue(
+      new Map([["EUR", obs("CAD", "EUR", "2026-11-05", 0.66)]]),
+    );
+    const crypto = coinProvider();
+    crypto.fetchLatest.mockResolvedValue(
+      new Map([["BTC", obs("BTC", "CAD", "2026-11-05", 137000)]]),
+    );
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    const result = await chain.latest("CAD", ["BTC", "EUR"]);
+
+    expect(fiat.fetchLatest).toHaveBeenCalledWith("CAD", ["EUR"]);
+    expect(crypto.fetchLatest).toHaveBeenCalledWith("CAD", ["BTC"]);
+    expect(result.found.get("BTC")?.source).toBe("crypto_source");
+    expect(result.found.get("EUR")?.source).toBe("yahoo_source");
+  });
+
+  it("asks only the coin provider when the base is the coin", async () => {
+    const fiat = provider("yahoo", "all");
+    const crypto = coinProvider();
+    crypto.fetchLatest.mockResolvedValue(new Map());
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    await chain.latest("BTC", ["CAD", "EUR"]);
+
+    expect(fiat.fetchLatest).not.toHaveBeenCalled();
+    expect(crypto.fetchLatest).toHaveBeenCalledWith("BTC", ["CAD", "EUR"]);
+  });
+
+  it("does not let the coin provider answer, or hide the outage of, a fiat pair", async () => {
+    const fiat = provider("frankfurter", ["CAD", "EUR"]);
+    fiat.fetchLatest.mockResolvedValue(null);
+    const crypto = coinProvider();
+    crypto.fetchLatest.mockResolvedValue(new Map());
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    const result = await chain.latest("CAD", ["EUR"]);
+
+    expect(crypto.fetchLatest).not.toHaveBeenCalled();
+    expect(result.unanswered).toEqual(["EUR"]);
+  });
+
+  it("reports a coin the coin provider does not carry (no price symbol) as uncarried, asking nobody", async () => {
+    const fiat = provider("yahoo", "all");
+    const crypto = coinProvider();
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    const result = await chain.latest("CAD", ["XYZ"]);
+
+    expect(fiat.fetchLatest).not.toHaveBeenCalled();
+    expect(crypto.fetchLatest).not.toHaveBeenCalled();
+    expect(result.uncarried).toEqual(["XYZ"]);
+  });
+
+  it("a coin pair the coin provider did not answer is unanswered, not handed to a fiat provider", async () => {
+    const fiat = provider("yahoo", "all");
+    const crypto = coinProvider();
+    crypto.fetchLatest.mockResolvedValue(null);
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    const result = await chain.latest("BTC", ["CAD"]);
+
+    expect(fiat.fetchLatest).not.toHaveBeenCalled();
+    expect(result.unanswered).toEqual(["CAD"]);
+  });
+
+  it("routes a daily series the same way", async () => {
+    const fiat = provider("yahoo", "all");
+    fiat.fetchDailySeries.mockResolvedValue([
+      obs("CAD", "EUR", "2026-11-04", 0.66),
+    ]);
+    const crypto = coinProvider();
+    crypto.fetchDailySeries.mockResolvedValue([
+      obs("BTC", "CAD", "2026-11-04", 137000),
+    ]);
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    const coin = await chain.dailySeries(
+      "CAD",
+      "BTC",
+      "2026-11-01",
+      "2026-11-04",
+    );
+    const fiatPair = await chain.dailySeries(
+      "CAD",
+      "EUR",
+      "2026-11-01",
+      "2026-11-04",
+    );
+
+    expect(coin.source).toBe("crypto_source");
+    expect(fiatPair.source).toBe("yahoo_source");
+    expect(fiat.fetchDailySeries).toHaveBeenCalledTimes(1);
+    expect(fiat.fetchDailySeries).toHaveBeenCalledWith(
+      "CAD",
+      "EUR",
+      "2026-11-01",
+      "2026-11-04",
+    );
+    expect(crypto.fetchDailySeries).toHaveBeenCalledTimes(1);
+  });
+
+  it("an unanswered coin window is not answered, and no fiat provider is asked", async () => {
+    const fiat = provider("yahoo", "all");
+    const crypto = coinProvider();
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    const result = await chain.dailySeries(
+      "BTC",
+      "CAD",
+      "2026-11-01",
+      "2026-11-04",
+    );
+
+    expect(result).toEqual({ points: [], answered: false, source: null });
+    expect(fiat.fetchDailySeries).not.toHaveBeenCalled();
+  });
+
+  it("never asks a fiat live feed for a coin, falling back to the coin provider's latest", async () => {
+    const fiat = provider("yahoo", "all", true);
+    const crypto = coinProvider();
+    crypto.fetchLatest.mockResolvedValue(
+      new Map([["CAD", obs("BTC", "CAD", "2026-11-05", 137000)]]),
+    );
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    const live = await chain.live("BTC", "CAD");
+
+    expect(fiat.fetchLive).not.toHaveBeenCalled();
+    expect(live?.source).toBe("crypto_source");
+  });
+
+  it("changes nothing for a chain with no claiming provider", async () => {
+    const fiat = provider("yahoo", "all");
+    fiat.fetchLatest.mockResolvedValue(new Map());
+    const chain = new FxProviderChain([fiat]);
+
+    await chain.latest("CAD", ["BTC"]);
+
+    // Without the coin provider a coin is just a code Yahoo is asked about.
+    expect(fiat.fetchLatest).toHaveBeenCalledWith("CAD", ["BTC"]);
+  });
+
+  it("describe lists the coin provider beside the configured ones, though it is no FX_PROVIDERS token", () => {
+    const chain = new FxProviderChain([
+      provider("yahoo", "all"),
+      coinProvider(),
+    ]);
+
+    expect(chain.describe()).toEqual([
+      { name: "yahoo", source: "yahoo_source" },
+      { name: "crypto", source: "crypto_source" },
+    ]);
+    expect(() => resolveFxProviders("yahoo,crypto")).toThrow(
+      /unknown exchange rate provider "crypto"/,
+    );
   });
 });

@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { mapWithConcurrency } from "../common/concurrency.util";
+import { todayYMD } from "../common/date-utils";
 
 import { withSystemContext } from "../common/db/with-context";
 import { SeedService } from "./seed.service";
@@ -11,6 +12,13 @@ import { demoAccounts } from "./demo-seed-data/accounts";
 import { demoInstitutions } from "./demo-seed-data/institutions";
 import { demoPayees } from "./demo-seed-data/payees";
 import { generateTransactions } from "./demo-seed-data/transactions";
+import { roundFxRate } from "../common/fx-entry.util";
+import {
+  DEMO_CRYPTO_RATE_SOURCE,
+  generateDemoCryptoRates,
+  upsertDemoCryptoCurrency,
+} from "./demo-seed-data/crypto-rates";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { demoScheduledTransactions } from "./demo-seed-data/scheduled";
 import {
   demoSecurities,
@@ -26,6 +34,39 @@ import { demoPreferences } from "./demo-seed-data/preferences";
  */
 const PAYEE_LOGO_CONCURRENCY = 6;
 
+/** A demo account's currency, by its key; CAD for a key the demo lacks. */
+function demoAccountCurrency(key: string): string {
+  return demoAccounts.find((a) => a.key === key)?.currency ?? "CAD";
+}
+
+/**
+ * The counterpart of a transfer (or a split's transfer line) moving `amount`
+ * out of, or into, an account in `fromCurrency`: the opposite amount at rate 1
+ * when the two accounts share a currency, otherwise the stated received amount
+ * signed opposite to `amount`, at `roundFxRate(received / |amount|)`
+ * (INV-SPLITFX-001 (a); `transferLegColumns`).
+ */
+export function counterpartLeg(
+  amount: number,
+  fromCurrency: string,
+  toCurrency: string,
+  received: number | undefined,
+): { amount: number; currencyCode: string; exchangeRate: number } {
+  if (fromCurrency === toCurrency || received === undefined) {
+    if (fromCurrency !== toCurrency) {
+      throw new Error(
+        `Demo transfer ${fromCurrency} -> ${toCurrency} states no received amount`,
+      );
+    }
+    return { amount: -amount, currencyCode: toCurrency, exchangeRate: 1 };
+  }
+  return {
+    amount: amount < 0 ? Math.abs(received) : -Math.abs(received),
+    currencyCode: toCurrency,
+    exchangeRate: roundFxRate(Math.abs(received) / Math.abs(amount)),
+  };
+}
+
 @Injectable()
 export class DemoSeedService {
   private readonly logger = new Logger(DemoSeedService.name);
@@ -34,6 +75,7 @@ export class DemoSeedService {
     private dataSource: DataSource,
     private seedService: SeedService,
     private logoService: FaviconService,
+    private readonly exchangeRates: ExchangeRateService,
   ) {}
 
   /**
@@ -150,6 +192,9 @@ export class DemoSeedService {
   }
 
   private async seedDemoDataWithinContext(userId: string): Promise<void> {
+    // The coin first: the Bitcoin Wallet's `currency_code` references it, and
+    // the daily reset reaches here without the base seed's currencies.
+    await this.seedCryptoRates();
     const categoryMap = await this.seedCategories(userId);
     const institutionMap = await this.seedInstitutions(userId);
     const accountMap = await this.seedAccounts(
@@ -168,6 +213,25 @@ export class DemoSeedService {
     await this.seedSecurities(userId, accountMap);
     await this.seedReports(userId);
     await this.seedPreferences(userId);
+  }
+
+  /**
+   * The demo coin and its `BTC -> CAD` rates for the demo window, so the
+   * wallet converts from the first day of its history. Global rows
+   * (`currencies` and `exchange_rates` have no owner); the coin first, since
+   * the rates reference it, then the series through the rate writer, which
+   * orients each row (INV-FX-003) and replaces the window's days on every
+   * reset.
+   */
+  private async seedCryptoRates(): Promise<void> {
+    this.logger.log("Seeding demo cryptocurrency and its exchange rates");
+    await withScopedDb(this.dataSource, (manager) =>
+      upsertDemoCryptoCurrency(manager),
+    );
+    await this.exchangeRates.storeRateSeries(
+      generateDemoCryptoRates(todayYMD()),
+      DEMO_CRYPTO_RATE_SOURCE,
+    );
   }
 
   private async seedCategories(userId: string): Promise<Map<string, string>> {
@@ -259,6 +323,8 @@ export class DemoSeedService {
       { name: "Gifts & Donations", icon: "🎁", color: "#E91E63", subs: [] },
       { name: "Travel", icon: "✈️", color: "#00BCD4", subs: [] },
       { name: "Miscellaneous", icon: "📌", color: "#95A5A6", subs: [] },
+      // The Bitcoin Wallet's network fee (crypto-accounts spec decision 9).
+      { name: "Fees", icon: null, color: "#7F8C8D", subs: ["Network fee"] },
     ];
 
     for (const cat of expenseCategories) {
@@ -573,12 +639,23 @@ export class DemoSeedService {
 
       const categoryId = categoryMap.get(tx.categoryPath) || null;
       const payeeId = payeeMap.get(tx.payeeName) || null;
-      const currencyCode = tx.currencyCode || "CAD";
+      // A row is in its account's currency (assertTransactionCurrencyMatchesAccount).
+      const currencyCode =
+        tx.currencyCode || demoAccountCurrency(tx.accountKey);
 
       if (tx.isTransfer && tx.transferAccountKey) {
         // Create transfer: two linked transactions
         const transferAccountId = accountMap.get(tx.transferAccountKey);
         if (!transferAccountId) continue;
+        // The counterpart is in its own account's currency, at the amount that
+        // arrived when the two differ, and carries the implied rate, as
+        // `transferLegColumns` writes a transfer with a stated `toAmount`.
+        const counterpart = counterpartLeg(
+          tx.amount,
+          currencyCode,
+          demoAccountCurrency(tx.transferAccountKey),
+          tx.transferToAmount,
+        );
 
         const [fromTx] = await withScopedDb(this.dataSource, (manager) =>
           manager.query(
@@ -605,9 +682,9 @@ export class DemoSeedService {
           manager.query(
             `INSERT INTO transactions (
             user_id, account_id, transaction_date, payee_id, payee_name,
-            amount, currency_code, description, status,
+            amount, currency_code, exchange_rate, description, status,
             is_transfer, linked_transaction_id
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11)
           RETURNING id`,
             [
               userId,
@@ -615,8 +692,9 @@ export class DemoSeedService {
               tx.date,
               payeeId,
               tx.payeeName,
-              -tx.amount,
-              currencyCode,
+              counterpart.amount,
+              counterpart.currencyCode,
+              counterpart.exchangeRate,
               tx.description,
               tx.status,
               fromTx.id,
@@ -671,6 +749,8 @@ export class DemoSeedService {
               payeeId,
               payeeName: tx.payeeName,
               currencyCode,
+              targetCurrencyCode: demoAccountCurrency(split.transferAccountKey),
+              transferTargetAmount: split.transferTargetAmount,
               status: tx.status,
             });
             transferCount++;
@@ -760,9 +840,21 @@ export class DemoSeedService {
       payeeId: string | null;
       payeeName: string;
       currencyCode: string;
+      /** The target account's currency, which the counterpart is in. */
+      targetCurrencyCode: string;
+      /** What arrived, unsigned, when the two currencies differ. */
+      transferTargetAmount?: number;
       status: string;
     },
   ): Promise<void> {
+    // INV-SPLITFX-001 (a): the counterpart is the stated received amount,
+    // signed opposite to the line, at the implied rate.
+    const counterpartColumns = counterpartLeg(
+      leg.amount,
+      leg.currencyCode,
+      leg.targetCurrencyCode,
+      leg.transferTargetAmount,
+    );
     const [split] = await withScopedDb(this.dataSource, (manager) =>
       manager.query(
         `INSERT INTO transaction_splits (transaction_id, kind, transfer_account_id, amount, memo)
@@ -775,9 +867,9 @@ export class DemoSeedService {
       manager.query(
         `INSERT INTO transactions (
         user_id, account_id, transaction_date, payee_id, payee_name,
-        amount, currency_code, description, status,
+        amount, currency_code, exchange_rate, description, status,
         is_transfer, linked_transaction_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11)
       RETURNING id`,
         [
           userId,
@@ -785,8 +877,9 @@ export class DemoSeedService {
           leg.date,
           leg.payeeId,
           leg.payeeName,
-          -leg.amount,
-          leg.currencyCode,
+          counterpartColumns.amount,
+          counterpartColumns.currencyCode,
+          counterpartColumns.exchangeRate,
           leg.memo,
           leg.status,
           parentId,

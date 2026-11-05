@@ -414,7 +414,9 @@ export class AccountExportService {
         return "CCard";
       case AccountType.INVESTMENT:
         return "Invst";
+      // QIF has no wallet type; a coin wallet is an asset account.
       case AccountType.ASSET:
+      case AccountType.CRYPTO:
         return "Oth A";
       case AccountType.LINE_OF_CREDIT:
       case AccountType.LOAN:

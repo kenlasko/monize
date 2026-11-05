@@ -1,0 +1,400 @@
+import { createScopedDbMocks } from "../../test-helpers/scoped-db-testing";
+import { HistoricalPrice } from "../../securities/providers/quote-provider.interface";
+import { YahooQuoteResult } from "../../securities/yahoo-finance.service";
+import { Currency } from "../entities/currency.entity";
+import {
+  CRYPTO_CURRENCY_CACHE_MS,
+  CryptoFxProvider,
+} from "./crypto-fx.provider";
+import { FxProviderChain } from "./fx-provider-chain";
+import { YahooFxProvider } from "./yahoo-fx.provider";
+
+jest.mock("../../common/db/scoped-db", () =>
+  jest
+    .requireActual("../../test-helpers/scoped-db-testing")
+    .scopedDbMockModule(),
+);
+
+type YahooDouble = jest.Mocked<
+  Pick<YahooFxProvider, "fetchPairSymbolQuote" | "fetchPairSymbolWindow">
+>;
+
+/** The rows `currencies` holds for the suite: two fiat, two priced coins, one unpriced. */
+const CURRENCY_ROWS: Array<Pick<Currency, "code" | "kind" | "quoteSymbol">> = [
+  { code: "CAD", kind: "FIAT", quoteSymbol: null },
+  { code: "EUR", kind: "FIAT", quoteSymbol: null },
+  { code: "BTC", kind: "CRYPTO", quoteSymbol: "BTC-CAD" },
+  // A coin whose Yahoo ticker is longer than its three-letter Monize code.
+  { code: "DOG", kind: "CRYPTO", quoteSymbol: "DOGE-USD" },
+  { code: "XYZ", kind: "CRYPTO", quoteSymbol: null },
+];
+
+/** 2026-11-05T14:30:00Z */
+const QUOTE_TIME = Date.UTC(2026, 10, 5, 14, 30) / 1000;
+
+const quote = (
+  price: number | undefined,
+  time: number | undefined = QUOTE_TIME,
+): { quote: YahooQuoteResult } => ({
+  quote: {
+    symbol: "X",
+    regularMarketPrice: price,
+    regularMarketTime: time,
+    provider: "yahoo",
+  } as YahooQuoteResult,
+});
+
+const bar = (date: string, close: number): HistoricalPrice => ({
+  date: new Date(`${date}T00:00:00.000Z`),
+  open: null,
+  high: null,
+  low: null,
+  close,
+  adjClose: null,
+  volume: null,
+});
+
+describe("CryptoFxProvider", () => {
+  let currencyRepo: Record<string, jest.Mock>;
+  let yahoo: YahooDouble;
+  let provider: CryptoFxProvider;
+
+  beforeEach(() => {
+    currencyRepo = { find: jest.fn().mockResolvedValue(CURRENCY_ROWS) };
+    const { dataSource } = createScopedDbMocks([[Currency, currencyRepo]]);
+    yahoo = {
+      fetchPairSymbolQuote: jest.fn().mockResolvedValue(null),
+      fetchPairSymbolWindow: jest.fn().mockResolvedValue(null),
+    };
+    provider = new CryptoFxProvider(
+      dataSource as never,
+      yahoo as unknown as YahooFxProvider,
+    );
+  });
+
+  afterEach(() => jest.useRealTimers());
+
+  it("names itself crypto and writes the yahoo_crypto slug", () => {
+    expect(provider.name).toBe("crypto");
+    expect(provider.source).toBe("yahoo_crypto");
+  });
+
+  describe("carries and claims", () => {
+    it("carries a priced coin and every fiat code, not an unpriced coin or an unknown code", async () => {
+      expect(await provider.carries("BTC")).toBe(true);
+      expect(await provider.carries("DOG")).toBe(true);
+      expect(await provider.carries("CAD")).toBe(true);
+      expect(await provider.carries("eur")).toBe(true);
+      expect(await provider.carries("XYZ")).toBe(false);
+      expect(await provider.carries("QQQ")).toBe(false);
+    });
+
+    it("claims every coin, priced or not, and no fiat code", async () => {
+      expect(await provider.claims("BTC")).toBe(true);
+      expect(await provider.claims("XYZ")).toBe(true);
+      expect(await provider.claims("CAD")).toBe(false);
+      expect(await provider.claims("QQQ")).toBe(false);
+    });
+
+    it("reads currencies once while the cache is fresh, again after it expires or is forgotten", async () => {
+      jest.useFakeTimers({ now: new Date("2026-11-05T12:00:00Z") });
+      await provider.carries("BTC");
+      await provider.claims("CAD");
+      expect(currencyRepo.find).toHaveBeenCalledTimes(1);
+      expect(currencyRepo.find).toHaveBeenCalledWith({
+        select: { code: true, kind: true, quoteSymbol: true },
+      });
+
+      jest.setSystemTime(Date.now() + CRYPTO_CURRENCY_CACHE_MS + 1);
+      await provider.carries("BTC");
+      expect(currencyRepo.find).toHaveBeenCalledTimes(2);
+
+      provider.forgetCurrencies();
+      await provider.carries("BTC");
+      expect(currencyRepo.find).toHaveBeenCalledTimes(3);
+    });
+
+    it("shares one read between concurrent questions", async () => {
+      await Promise.all([
+        provider.carries("BTC"),
+        provider.carries("CAD"),
+        provider.claims("XYZ"),
+      ]);
+      expect(currencyRepo.find).toHaveBeenCalledTimes(1);
+    });
+
+    it("carries nothing after a failed read, and does not remember the failure", async () => {
+      currencyRepo.find.mockRejectedValueOnce(new Error("connection reset"));
+
+      expect(await provider.carries("BTC")).toBe(false);
+      expect(await provider.carries("BTC")).toBe(true);
+      expect(currencyRepo.find).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("fetchLatest", () => {
+    it("prices a coin base against a fiat quote through <coin>-<fiat>, from the coin to the fiat", async () => {
+      yahoo.fetchPairSymbolQuote.mockResolvedValue(quote(137250.12));
+
+      const answer = await provider.fetchLatest("BTC", ["CAD"]);
+
+      expect(yahoo.fetchPairSymbolQuote).toHaveBeenCalledWith("BTC-CAD");
+      expect(answer).toEqual(
+        new Map([
+          [
+            "CAD",
+            { from: "BTC", to: "CAD", date: "2026-11-05", rate: 137250.12 },
+          ],
+        ]),
+      );
+    });
+
+    it("prices a fiat base against a coin quote with the coin as `from`", async () => {
+      yahoo.fetchPairSymbolQuote.mockResolvedValue(quote(91000));
+
+      const answer = await provider.fetchLatest("EUR", ["BTC"]);
+
+      // BTC is mapped to BTC-CAD, but the pair names EUR, so EUR is asked.
+      expect(yahoo.fetchPairSymbolQuote).toHaveBeenCalledWith("BTC-EUR");
+      expect(answer?.get("BTC")).toEqual({
+        from: "BTC",
+        to: "EUR",
+        date: "2026-11-05",
+        rate: 91000,
+      });
+    });
+
+    it("uses the coin ticker of the price symbol, not the Monize code", async () => {
+      yahoo.fetchPairSymbolQuote.mockResolvedValue(quote(0.25));
+
+      const answer = await provider.fetchLatest("CAD", ["DOG"]);
+
+      expect(yahoo.fetchPairSymbolQuote).toHaveBeenCalledWith("DOGE-CAD");
+      expect(answer?.get("DOG")).toMatchObject({ from: "DOG", to: "CAD" });
+    });
+
+    it("asks a pair of two coins once, as <coinA>-<coinB>", async () => {
+      yahoo.fetchPairSymbolQuote.mockResolvedValue(quote(400000));
+
+      const answer = await provider.fetchLatest("BTC", ["DOG"]);
+
+      expect(yahoo.fetchPairSymbolQuote).toHaveBeenCalledTimes(1);
+      expect(yahoo.fetchPairSymbolQuote).toHaveBeenCalledWith("BTC-DOGE");
+      expect(answer?.get("DOG")).toMatchObject({
+        from: "BTC",
+        to: "DOG",
+        rate: 400000,
+      });
+    });
+
+    it("dates the quote by the UTC day of its market time", async () => {
+      // 22:30 in Toronto on the 4th is already the 5th in UTC.
+      yahoo.fetchPairSymbolQuote.mockResolvedValue(
+        quote(137000, Date.UTC(2026, 10, 5, 3, 30) / 1000),
+      );
+
+      const answer = await provider.fetchLatest("BTC", ["CAD"]);
+
+      expect(answer?.get("CAD")?.date).toBe("2026-11-05");
+    });
+
+    it("dates a quote without a market time by today's UTC day", async () => {
+      jest.useFakeTimers({ now: new Date("2026-11-07T01:00:00Z") });
+      yahoo.fetchPairSymbolQuote.mockResolvedValue(
+        quote(137000, null as unknown as number),
+      );
+
+      const answer = await provider.fetchLatest("BTC", ["CAD"]);
+
+      expect(answer?.get("CAD")?.date).toBe("2026-11-07");
+    });
+
+    it("is null when Yahoo did not answer any symbol", async () => {
+      yahoo.fetchPairSymbolQuote.mockResolvedValue(null);
+
+      expect(await provider.fetchLatest("BTC", ["CAD", "EUR"])).toBeNull();
+    });
+
+    it("is an empty answer when Yahoo reports the symbol not found (INV-FX-005)", async () => {
+      yahoo.fetchPairSymbolQuote.mockResolvedValue({ quote: null });
+
+      const answer = await provider.fetchLatest("BTC", ["CAD"]);
+
+      expect(answer).not.toBeNull();
+      expect(answer?.size).toBe(0);
+    });
+
+    it.each([undefined, 0, -1, Number.NaN])(
+      "answers without a rate for a quote priced %p",
+      async (price) => {
+        yahoo.fetchPairSymbolQuote.mockResolvedValue(quote(price));
+
+        const answer = await provider.fetchLatest("BTC", ["CAD"]);
+
+        expect(answer).toEqual(new Map());
+      },
+    );
+
+    it("keeps the quotes that answered when another symbol did not", async () => {
+      yahoo.fetchPairSymbolQuote.mockImplementation(async (symbol) =>
+        symbol === "BTC-CAD" ? quote(137000) : null,
+      );
+
+      const answer = await provider.fetchLatest("BTC", ["CAD", "EUR"]);
+
+      expect([...(answer?.keys() ?? [])]).toEqual(["CAD"]);
+    });
+
+    it("asks nothing for a pair it does not price: two fiat codes, or an unpriced coin", async () => {
+      const answer = await provider.fetchLatest("CAD", ["EUR", "XYZ"]);
+
+      expect(yahoo.fetchPairSymbolQuote).not.toHaveBeenCalled();
+      expect(answer).toEqual(new Map());
+    });
+  });
+
+  describe("fetchDailySeries", () => {
+    it("asks the same symbol over the window and orients each bar from the coin", async () => {
+      yahoo.fetchPairSymbolWindow.mockResolvedValue([
+        bar("2026-10-31", 136000),
+        bar("2026-11-01", 136500),
+      ]);
+
+      const series = await provider.fetchDailySeries(
+        "CAD",
+        "BTC",
+        "2026-10-31",
+        "2026-11-01",
+      );
+
+      expect(yahoo.fetchPairSymbolWindow).toHaveBeenCalledWith(
+        "BTC-CAD",
+        "2026-10-31",
+        "2026-11-01",
+      );
+      expect(series).toEqual([
+        { from: "BTC", to: "CAD", date: "2026-10-31", rate: 136000 },
+        { from: "BTC", to: "CAD", date: "2026-11-01", rate: 136500 },
+      ]);
+    });
+
+    it("drops a bar outside the window or without a usable close", async () => {
+      yahoo.fetchPairSymbolWindow.mockResolvedValue([
+        bar("2026-10-30", 135000),
+        bar("2026-10-31", 0),
+        bar("2026-11-01", 136500),
+      ]);
+
+      const series = await provider.fetchDailySeries(
+        "BTC",
+        "EUR",
+        "2026-10-31",
+        "2026-11-01",
+      );
+
+      expect(yahoo.fetchPairSymbolWindow).toHaveBeenCalledWith(
+        "BTC-EUR",
+        "2026-10-31",
+        "2026-11-01",
+      );
+      expect(series).toEqual([
+        { from: "BTC", to: "EUR", date: "2026-11-01", rate: 136500 },
+      ]);
+    });
+
+    it("keeps null (no answer) apart from [] (answered, nothing there)", async () => {
+      yahoo.fetchPairSymbolWindow.mockResolvedValueOnce(null);
+      expect(
+        await provider.fetchDailySeries(
+          "BTC",
+          "CAD",
+          "2026-11-01",
+          "2026-11-02",
+        ),
+      ).toBeNull();
+
+      yahoo.fetchPairSymbolWindow.mockResolvedValueOnce([]);
+      expect(
+        await provider.fetchDailySeries(
+          "BTC",
+          "CAD",
+          "2026-11-01",
+          "2026-11-02",
+        ),
+      ).toEqual([]);
+    });
+
+    it("answers nothing, asking nobody, for a pair it does not price", async () => {
+      expect(
+        await provider.fetchDailySeries(
+          "CAD",
+          "EUR",
+          "2026-11-01",
+          "2026-11-02",
+        ),
+      ).toEqual([]);
+      expect(
+        await provider.fetchDailySeries(
+          "XYZ",
+          "CAD",
+          "2026-11-01",
+          "2026-11-02",
+        ),
+      ).toEqual([]);
+      expect(yahoo.fetchPairSymbolWindow).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * INV-CRYPTO-002 through the real chain: a fiat provider whose `carries` is
+   * always true (Yahoo's) is never asked for a coin, and this adapter is never
+   * asked for a fiat pair.
+   */
+  describe("in the chain", () => {
+    it("takes the coin pair and leaves the fiat pair to the fiat provider", async () => {
+      const fiat = {
+        name: "yahoo" as const,
+        source: "yahoo_finance",
+        carries: jest.fn().mockResolvedValue(true),
+        fetchLatest: jest.fn(
+          async (base: string, quotes: readonly string[]) =>
+            new Map(
+              quotes.map((q) => [
+                q,
+                { from: base, to: q, date: "2026-11-05", rate: 0.68 },
+              ]),
+            ),
+        ),
+        fetchDailySeries: jest.fn().mockResolvedValue(null),
+      };
+      yahoo.fetchPairSymbolQuote.mockResolvedValue(quote(93000));
+      const chain = new FxProviderChain([fiat, provider]);
+
+      const answer = await chain.latest("BTC", ["CAD", "EUR"]);
+      const fiatAnswer = await chain.latest("CAD", ["EUR"]);
+
+      expect(fiat.fetchLatest).toHaveBeenCalledTimes(1);
+      expect(fiat.fetchLatest).toHaveBeenCalledWith("CAD", ["EUR"]);
+      expect(answer.found.get("CAD")?.source).toBe("yahoo_crypto");
+      expect(answer.found.get("EUR")?.source).toBe("yahoo_crypto");
+      expect(fiatAnswer.found.get("EUR")?.source).toBe("yahoo_finance");
+    });
+
+    it("reports a coin without a price symbol as uncarried, asking nobody", async () => {
+      const fiat = {
+        name: "yahoo" as const,
+        source: "yahoo_finance",
+        carries: jest.fn().mockResolvedValue(true),
+        fetchLatest: jest.fn().mockResolvedValue(new Map()),
+        fetchDailySeries: jest.fn().mockResolvedValue(null),
+      };
+      const chain = new FxProviderChain([fiat, provider]);
+
+      const answer = await chain.latest("CAD", ["XYZ"]);
+
+      expect(answer.uncarried).toEqual(["XYZ"]);
+      expect(fiat.fetchLatest).not.toHaveBeenCalled();
+      expect(yahoo.fetchPairSymbolQuote).not.toHaveBeenCalled();
+    });
+  });
+});

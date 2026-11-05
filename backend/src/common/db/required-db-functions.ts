@@ -92,6 +92,13 @@ export const REQUIRED_DB_FUNCTIONS: readonly RequiredDbFunction[] = [
       "the backup restore's currency cleanup and the currency delete gate",
   },
   {
+    name: "currency_code_referenced_by_data",
+    identity: "public.currency_code_referenced_by_data(varchar)",
+    migration: "20261105195749_currency_code_referenced_by_data.sql",
+    usedBy:
+      "the currency kind-change gate, which ignores activation rows (INV-CRYPTO-001)",
+  },
+  {
     name: "currency_codes_referenced_by_user_data",
     identity: "public.currency_codes_referenced_by_user_data(uuid)",
     migration: "137_currency_codes_referenced_by_user.sql",

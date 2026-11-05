@@ -41,6 +41,7 @@ import {
 } from "./exchange-rate-history.service";
 import {
   CurrenciesService,
+  CurrencyCatalogEntry,
   CurrencyLookupResult,
   CurrencyUsageMap,
   UserCurrencyView,
@@ -105,7 +106,7 @@ export class CurrenciesController {
       "Curated currency metadata (code, name, symbol, decimal places) used to pick a currency before any are installed, e.g. at onboarding.",
   })
   @ApiResponse({ status: 200, description: "Known currency catalog" })
-  getCatalog(): CurrencyLookupResult[] {
+  getCatalog(): CurrencyCatalogEntry[] {
     return this.currenciesService.getCatalog();
   }
 

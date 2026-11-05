@@ -142,6 +142,7 @@ export class AccountMappingDto {
     "LINE_OF_CREDIT",
     "ASSET",
     "OTHER",
+    "CRYPTO",
   ])
   accountType?: string;
 

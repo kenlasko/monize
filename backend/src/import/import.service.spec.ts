@@ -1,3 +1,4 @@
+import { Currency } from "../currencies/entities/currency.entity";
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { DataSource, QueryFailedError } from "typeorm";
@@ -281,6 +282,16 @@ describe("ImportService", () => {
     // exposes, so every assertion below still watches the same calls.
     const scoped = createScopedDbMocks([
       [Account, accountsRepository],
+      // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin.
+      [
+        Currency,
+        {
+          findOne: jest.fn(async (opts: { where: { code: string } }) => ({
+            code: opts.where.code,
+            kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
+          })),
+        },
+      ],
       [Category, categoriesRepository],
       [Payee, payeesRepository],
       [Transaction, transactionsRepository],

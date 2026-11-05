@@ -1,6 +1,11 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { resolveCurrencyMetadata } from "../currencies/currency-metadata";
+import {
+  CurrencyKind,
+  DEFAULT_CURRENCY_KIND,
+} from "../currencies/entities/currency.entity";
+import { quoteSymbolRefusal } from "../currencies/currency-kind.util";
 import { sanitizeHtmlString } from "../common/decorators/sanitize-html.decorator";
 import { tr } from "../i18n/translate";
 import { boundRestoredNotification } from "./notification-restore-bounds";
@@ -161,6 +166,23 @@ export class BackupRestoreDatabaseService {
           Number.isFinite(row.decimal_places)
             ? Math.min(4, Math.max(0, Math.trunc(row.decimal_places)))
             : 2;
+        // A backup written before currencies had a kind is all fiat; a kind
+        // outside the two is not trusted either. A price symbol travels only
+        // on a coin and only when it is a `<COIN>-<FIAT>` pair, the rule
+        // `CurrenciesService` holds (and the CHECK beneath it), so one bad
+        // row cannot fail the whole restore.
+        const kind: CurrencyKind =
+          row.kind === "CRYPTO" ? "CRYPTO" : DEFAULT_CURRENCY_KIND;
+        const quoteSymbol =
+          typeof row.quote_symbol === "string" &&
+          row.quote_symbol.trim().length <= 20
+            ? row.quote_symbol.trim().toUpperCase()
+            : null;
+        filteredRow.kind = kind;
+        filteredRow.quote_symbol =
+          quoteSymbol && quoteSymbolRefusal(kind, quoteSymbol) === null
+            ? quoteSymbol
+            : null;
 
         // Strip column names not in the actual table schema
         for (const key of Object.keys(filteredRow)) {

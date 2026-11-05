@@ -7,7 +7,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { I18nService } from "nestjs-i18n";
 import { DataSource } from "typeorm";
 import { AccountsService } from "../accounts/accounts.service";
-import { Account, AccountSubType } from "../accounts/entities/account.entity";
+import {
+  Account,
+  AccountSubType,
+  AccountType,
+} from "../accounts/entities/account.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { PayeesService } from "../payees/payees.service";
 import { TagsService } from "../tags/tags.service";
@@ -692,6 +696,16 @@ describe("BankSyncWriterService", () => {
       );
       await expect(service.write(input([row()]))).rejects.toBeInstanceOf(
         BadRequestException,
+      );
+      wroteNothing();
+    });
+
+    it("refuses a CRYPTO wallet", async () => {
+      accountRepo.findOne.mockResolvedValue(
+        account({ accountType: AccountType.CRYPTO }),
+      );
+      await expect(service.write(input([row()]))).rejects.toThrow(
+        /cryptocurrency wallet cannot receive bank transactions/,
       );
       wroteNothing();
     });

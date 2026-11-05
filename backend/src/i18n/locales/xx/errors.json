@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "[XX-Account with ID {{ id }} not found-XX]",
     "notInvestmentPair": "[XX-This account is not part of an investment account pair-XX]",
+    "accountCurrencyKindMismatch": "[XX-{{ code }} is a {{ kind }} currency, which a {{ accountType }} account cannot hold. A CRYPTO account holds a cryptocurrency; every other account type holds a fiat currency.-XX]",
     "noLinkedInvestmentAccount": "[XX-This investment account does not have a linked account-XX]",
     "notFound": "[XX-Account not found-XX]",
     "institutionNotFound": "[XX-Institution not found-XX]",
@@ -358,7 +359,10 @@
     "inUse": "[XX-Currency \"{{ code }}\" is in use by your accounts, securities, or other records. Deactivate it instead.-XX]",
     "invalidRateDate": "[XX-date must be in YYYY-MM-DD format-XX]",
     "sameCurrencyHistory": "[XX-{{ code }} is your default currency; it has no exchange rate history-XX]",
-    "rateProviderUnavailable": "[XX-The exchange rate provider did not answer. Please try again later.-XX]"
+    "rateProviderUnavailable": "[XX-The exchange rate provider did not answer. Please try again later.-XX]",
+    "quoteSymbolRequiresCrypto": "[XX-A price symbol ({{ quoteSymbol }}) can only be set on a cryptocurrency; \"{{ code }}\" is a fiat currency-XX]",
+    "quoteSymbolNotAPair": "[XX-The price symbol \"{{ quoteSymbol }}\" for \"{{ code }}\" is not a coin and fiat pair such as BTC-EUR-XX]",
+    "kindInUse": "[XX-The kind of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it-XX]"
   },
   "delegation": {
     "delegatedAccessInvalid": "[XX-Delegated access is no longer valid-XX]",
@@ -642,6 +646,7 @@
     "bondCurrencyMismatch": "[XX-The security is recorded in {{ currency }} but the bond instrument is priced in {{ instrumentCurrency }}. Use the instrument's currency.-XX]",
     "bondCurrencyLocked": "[XX-A security linked to a bond instrument stays in the instrument's currency ({{ instrumentCurrency }}). Unlink it from the bond before changing its currency.-XX]",
     "accountMustBeInvestment": "[XX-Account must be of type INVESTMENT-XX]",
+    "currencyMustBeFiat": "[XX-{{ code }} is a cryptocurrency, and a security is priced in a fiat currency. Choose the fiat currency the security is quoted in.-XX]",
     "transferPairSameRow": "[XX-A transfer's two legs cannot be the same transaction-XX]",
     "transferPairNotFound": "[XX-One of the two transactions no longer exists-XX]",
     "transferPairAlreadyLinked": "[XX-One of these legs is already linked to another transaction-XX]",
@@ -909,6 +914,7 @@
     "accountNotFound": "[XX-That account was not found.-XX]",
     "accountClosed": "[XX-The linked account is closed. Reopen it or link another account.-XX]",
     "accountBrokerage": "[XX-An investment brokerage account cannot receive bank transactions. Link its cash account instead.-XX]",
+    "accountCrypto": "[XX-A cryptocurrency wallet cannot receive bank transactions. Link a bank account instead.-XX]",
     "accountCurrencyMismatch": "[XX-The bank account is in {{ bankCurrency }} but the account is in {{ accountCurrency }}. Link an account in the same currency.-XX]",
     "accountCurrencyChanged": "[XX-The currency of the linked account changed while it was being read. Nothing was imported; sync again.-XX]",
     "accountAlreadyLinked": "[XX-That account is already linked to another bank account.-XX]",

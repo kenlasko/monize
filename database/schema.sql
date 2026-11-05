@@ -68,7 +68,15 @@ CREATE TABLE currencies (
     decimal_places SMALLINT DEFAULT 2,
     is_active BOOLEAN DEFAULT true,
     created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL, -- NULL = system currency
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- FIAT or CRYPTO; a CRYPTO currency is the currency of CRYPTO accounts only
+    -- (INV-CRYPTO-001) and is priced by the crypto exchange rate provider.
+    kind VARCHAR(10) NOT NULL DEFAULT 'FIAT'
+        CONSTRAINT currencies_kind_check CHECK (kind IN ('FIAT', 'CRYPTO')),
+    -- The Yahoo <COIN>-<FIAT> symbol a coin is priced from (BTC-EUR); NULL on a
+    -- FIAT row, and NULL on a CRYPTO row no provider quotes (an unpriced coin).
+    quote_symbol VARCHAR(20),
+    CONSTRAINT currencies_quote_symbol_crypto_only CHECK (kind = 'CRYPTO' OR quote_symbol IS NULL)
 );
 
 -- A user's deletion clears created_by_user_id (ON DELETE SET NULL); a currency
@@ -154,7 +162,8 @@ CREATE TYPE account_type AS ENUM (
     'CASH',
     'LINE_OF_CREDIT',
     'ASSET',
-    'OTHER'
+    'OTHER',
+    'CRYPTO'
 );
 
 -- Accounts
@@ -5328,6 +5337,51 @@ COMMENT ON FUNCTION currency_code_in_use_globally(VARCHAR) IS
   'currencies(code) -- enforced by currency-references.spec.ts.';
 
 REVOKE ALL ON FUNCTION currency_code_in_use_globally(VARCHAR) FROM PUBLIC;
+
+-- -------------------------------------------------------------------------
+-- Does anything other than an activation reference a currency code?
+--
+-- The kind-change gate's question (INV-CRYPTO-001): every creator holds their
+-- currency through a user_currency_preferences row, so the sibling above is
+-- true from birth; this one counts every other reference column and ignores
+-- activations. Same SECURITY DEFINER shape; held by currency-references.spec.ts.
+-- -------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION currency_code_referenced_by_data(p_code VARCHAR)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM shared_groups WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM shared_entries WHERE original_currency_code = p_code
+    UNION ALL SELECT 1 FROM exchange_rates
+      WHERE from_currency = p_code OR to_currency = p_code
+    UNION ALL SELECT 1 FROM exchange_rate_coverage
+      WHERE from_currency = p_code OR to_currency = p_code
+    UNION ALL SELECT 1 FROM accounts WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM transactions
+      WHERE currency_code = p_code OR original_currency_code = p_code
+    UNION ALL SELECT 1 FROM securities WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM bond_programs WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM bond_instruments WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM scheduled_transactions
+      WHERE currency_code = p_code OR original_currency_code = p_code
+    UNION ALL SELECT 1 FROM budgets WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM warranties WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM user_preferences WHERE default_currency = p_code
+  )
+$$;
+
+COMMENT ON FUNCTION currency_code_referenced_by_data(VARCHAR) IS
+  'True when any row anywhere other than a user_currency_preferences activation '
+  'references currencies(code) = p_code. The kind-change gate: an activation is '
+  'a list entry, not a use. SECURITY DEFINER so the answer is global; must '
+  'consult every other FK to currencies(code) -- enforced by '
+  'currency-references.spec.ts.';
+
+REVOKE ALL ON FUNCTION currency_code_referenced_by_data(VARCHAR) FROM PUBLIC;
 
 -- -------------------------------------------------------------------------
 -- Which currency codes does one user reference?

@@ -124,9 +124,17 @@ function doubles(
     return [[], 0];
   });
 
+  const currencies = {
+    findOne: jest.fn(async (opts: { where: { code: string } }) => ({
+      code: opts.where.code,
+      kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
+    })),
+  };
   const manager = {
     getRepository: jest.fn((entity: { name?: string }) => {
       if (entity?.name === "Security") return securities;
+      // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin.
+      if (entity?.name === "Currency") return currencies;
       if (entity?.name === "InvestmentTransaction") return investments;
       return transactions;
     }),
@@ -150,6 +158,18 @@ const baseInput = {
 };
 
 describe("writeSecurities", () => {
+  it("refuses a security in a CRYPTO currency before inserting any (INV-CRYPTO-001)", async () => {
+    const { manager, securities } = doubles();
+
+    await expect(
+      writeSecurities(manager, "user-1", [
+        security({ handle: 1, symbol: "VOO" }),
+        security({ handle: 2, symbol: "XBT", currencyCode: "BTC" }),
+      ]),
+    ).rejects.toThrow(/BTC is a cryptocurrency/);
+    expect(securities.insert).not.toHaveBeenCalled();
+  });
+
   it("creates the securities the user does not have", async () => {
     const { manager, securities } = doubles();
 

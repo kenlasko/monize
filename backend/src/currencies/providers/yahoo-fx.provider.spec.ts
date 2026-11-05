@@ -44,7 +44,10 @@ describe("YahooFxProvider", () => {
   let yahoo: jest.Mocked<
     Pick<
       YahooFinanceService,
-      "fetchQuote" | "fetchHistoricalWindow" | "searchQuotes"
+      | "fetchQuote"
+      | "fetchQuoteAnswer"
+      | "fetchHistoricalWindow"
+      | "searchQuotes"
     >
   >;
   let provider: YahooFxProvider;
@@ -69,6 +72,7 @@ describe("YahooFxProvider", () => {
   beforeEach(() => {
     yahoo = {
       fetchQuote: jest.fn().mockResolvedValue(null),
+      fetchQuoteAnswer: jest.fn().mockResolvedValue(null),
       fetchHistoricalWindow: jest.fn().mockResolvedValue(null),
       searchQuotes: jest.fn().mockResolvedValue(null),
     };
@@ -657,6 +661,50 @@ describe("YahooFxProvider", () => {
       search(result);
 
       expect(await provider.searchCurrency("something weird")).toBeNull();
+    });
+  });
+
+  /**
+   * The crypto adapter's doors: a coin pair symbol is passed through as the
+   * crypto adapter built it, with none of this adapter's `=X` grammar.
+   */
+  describe("pair symbol doors", () => {
+    it("asks Yahoo for the coin pair's quote as given, keeping absent apart from no answer", async () => {
+      const quote = quoteOf("BTC-CAD", 137000);
+      yahoo.fetchQuoteAnswer.mockResolvedValueOnce({ quote });
+      yahoo.fetchQuoteAnswer.mockResolvedValueOnce({ quote: null });
+      yahoo.fetchQuoteAnswer.mockResolvedValueOnce(null);
+
+      expect(await provider.fetchPairSymbolQuote("BTC-CAD")).toEqual({ quote });
+      expect(await provider.fetchPairSymbolQuote("NOPE-CAD")).toEqual({
+        quote: null,
+      });
+      expect(await provider.fetchPairSymbolQuote("BTC-EUR")).toBeNull();
+      expect(yahoo.fetchQuoteAnswer.mock.calls.map((c) => c[0])).toEqual([
+        "BTC-CAD",
+        "NOPE-CAD",
+        "BTC-EUR",
+      ]);
+      expect(yahoo.fetchQuote).not.toHaveBeenCalled();
+    });
+
+    it("asks the coin pair's daily bars as a coin's listing over the UTC days of the window", async () => {
+      const bars = [bar("2026-10-06", 136000)];
+      yahoo.fetchHistoricalWindow.mockResolvedValue(bars);
+
+      const answer = await provider.fetchPairSymbolWindow(
+        "BTC-CAD",
+        "2026-10-01",
+        "2026-10-06",
+      );
+
+      expect(answer).toBe(bars);
+      expect(yahoo.fetchHistoricalWindow).toHaveBeenCalledWith(
+        "BTC-CAD",
+        "CRYPTO",
+        new Date("2026-10-01T00:00:00.000Z"),
+        new Date("2026-10-06T23:59:59.999Z"),
+      );
     });
   });
 });

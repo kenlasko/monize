@@ -6,7 +6,11 @@ import {
 } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
-import { Account, AccountSubType } from "../accounts/entities/account.entity";
+import {
+  Account,
+  AccountSubType,
+  AccountType,
+} from "../accounts/entities/account.entity";
 import { JobClaimService } from "../common/jobs/job-claim.service";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
 import { NetWorthService } from "../net-worth/net-worth.service";
@@ -389,6 +393,16 @@ describe("BankSyncService", () => {
       );
       await expect(link({ accountId: ACCOUNT_ID })).rejects.toBeInstanceOf(
         BadRequestException,
+      );
+      expect(linkRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses a CRYPTO wallet (crypto-accounts spec decision 7)", async () => {
+      accountRepo.findOne.mockResolvedValue(
+        account({ accountType: AccountType.CRYPTO }),
+      );
+      await expect(link({ accountId: ACCOUNT_ID })).rejects.toThrow(
+        /cryptocurrency wallet cannot receive bank transactions/,
       );
       expect(linkRepo.save).not.toHaveBeenCalled();
     });
@@ -838,6 +852,16 @@ describe("BankSyncService", () => {
           account({ accountSubType: AccountSubType.INVESTMENT_BROKERAGE }),
         );
         await expect(sync()).rejects.toBeInstanceOf(BadRequestException);
+        nothingAsked();
+      });
+
+      it("refuses a CRYPTO wallet linked before it was re-typed", async () => {
+        accountRepo.findOne.mockResolvedValue(
+          account({ accountType: AccountType.CRYPTO }),
+        );
+        await expect(sync()).rejects.toThrow(
+          /cryptocurrency wallet cannot receive bank transactions/,
+        );
         nothingAsked();
       });
 

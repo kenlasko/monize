@@ -200,6 +200,11 @@ BEGIN
     IF to_regprocedure('public.currency_code_in_use_globally(varchar)') IS NOT NULL THEN
       EXECUTE format('GRANT EXECUTE ON FUNCTION public.currency_code_in_use_globally(varchar) TO %I', role_name);
     END IF;
+    -- Its sibling currency_code_referenced_by_data (the kind-change gate) has
+    -- the same shape and needs the same grant.
+    IF to_regprocedure('public.currency_code_referenced_by_data(varchar)') IS NOT NULL THEN
+      EXECUTE format('GRANT EXECUTE ON FUNCTION public.currency_code_referenced_by_data(varchar) TO %I', role_name);
+    END IF;
   END IF;
 EXCEPTION WHEN insufficient_privilege THEN
   RAISE WARNING 'Insufficient privilege to grant DML to role %; grant it manually or via the DB owner.', role_name;

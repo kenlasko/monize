@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "Account with ID {{ id }} not found",
     "notInvestmentPair": "This account is not part of an investment account pair",
+    "accountCurrencyKindMismatch": "{{ code }} is a {{ kind }} currency, which a {{ accountType }} account cannot hold. A CRYPTO account holds a cryptocurrency; every other account type holds a fiat currency.",
     "noLinkedInvestmentAccount": "This investment account does not have a linked account",
     "notFound": "Account not found",
     "institutionNotFound": "Institution not found",
@@ -358,7 +359,10 @@
     "inUse": "Currency \"{{ code }}\" is in use by your accounts, securities, or other records. Deactivate it instead.",
     "invalidRateDate": "date must be in YYYY-MM-DD format",
     "sameCurrencyHistory": "{{ code }} is your default currency; it has no exchange rate history",
-    "rateProviderUnavailable": "The exchange rate provider did not answer. Please try again later."
+    "rateProviderUnavailable": "The exchange rate provider did not answer. Please try again later.",
+    "quoteSymbolRequiresCrypto": "A price symbol ({{ quoteSymbol }}) can only be set on a cryptocurrency; \"{{ code }}\" is a fiat currency",
+    "quoteSymbolNotAPair": "The price symbol \"{{ quoteSymbol }}\" for \"{{ code }}\" is not a coin and fiat pair such as BTC-EUR",
+    "kindInUse": "The kind of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it"
   },
   "delegation": {
     "delegatedAccessInvalid": "Delegated access is no longer valid",
@@ -642,6 +646,7 @@
     "bondCurrencyMismatch": "The security is recorded in {{ currency }} but the bond instrument is priced in {{ instrumentCurrency }}. Use the instrument's currency.",
     "bondCurrencyLocked": "A security linked to a bond instrument stays in the instrument's currency ({{ instrumentCurrency }}). Unlink it from the bond before changing its currency.",
     "accountMustBeInvestment": "Account must be of type INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} is a cryptocurrency, and a security is priced in a fiat currency. Choose the fiat currency the security is quoted in.",
     "transferPairSameRow": "A transfer's two legs cannot be the same transaction",
     "transferPairNotFound": "One of the two transactions no longer exists",
     "transferPairAlreadyLinked": "One of these legs is already linked to another transaction",
@@ -909,6 +914,7 @@
     "accountNotFound": "That account was not found.",
     "accountClosed": "The linked account is closed. Reopen it or link another account.",
     "accountBrokerage": "An investment brokerage account cannot receive bank transactions. Link its cash account instead.",
+    "accountCrypto": "A cryptocurrency wallet cannot receive bank transactions. Link a bank account instead.",
     "accountCurrencyMismatch": "The bank account is in {{ bankCurrency }} but the account is in {{ accountCurrency }}. Link an account in the same currency.",
     "accountCurrencyChanged": "The currency of the linked account changed while it was being read. Nothing was imported; sync again.",
     "accountAlreadyLinked": "That account is already linked to another bank account.",

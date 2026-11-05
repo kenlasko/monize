@@ -618,6 +618,7 @@ describe("AccountExportService", () => {
         { accountType: "CREDIT_CARD", expected: "CCard" },
         { accountType: "INVESTMENT", expected: "Invst" },
         { accountType: "ASSET", expected: "Oth A" },
+        { accountType: "CRYPTO", expected: "Oth A" },
         { accountType: "LOAN", expected: "Oth L" },
         { accountType: "MORTGAGE", expected: "Oth L" },
         { accountType: "LINE_OF_CREDIT", expected: "Oth L" },

@@ -1,3 +1,4 @@
+import { AccountType } from "../../accounts/entities/account.entity";
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { McpAccountsTools } from "./accounts.tool";
@@ -60,6 +61,17 @@ describe("McpAccountsTools", () => {
       expect.objectContaining({ title: "List accounts" }),
       expect.any(Function),
     );
+  });
+
+  it("accepts every AccountType, CRYPTO included, in the accountTypes filter", () => {
+    const opts = server.registerTool.mock.calls[0][1] as {
+      inputSchema: { safeParse: (v: unknown) => { success: boolean } };
+    };
+    expect(Object.values(AccountType)).toContain(AccountType.CRYPTO);
+    expect(
+      opts.inputSchema.safeParse({ accountTypes: Object.values(AccountType) })
+        .success,
+    ).toBe(true);
   });
 
   describe("list_accounts", () => {

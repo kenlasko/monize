@@ -32,7 +32,11 @@ const YAHOO_ADAPTER = "providers/yahoo-fx.provider.ts";
  * joins this list; `every adapter's slug is on the list` below holds the two
  * in step, so the scan cannot miss a slug an adapter introduced.
  */
-const PROVIDER_SOURCE_SLUGS = ["yahoo_finance", "frankfurter"] as const;
+const PROVIDER_SOURCE_SLUGS = [
+  "yahoo_finance",
+  "frankfurter",
+  "yahoo_crypto",
+] as const;
 
 const SOURCE_LITERAL = new RegExp(
   `["'\`](${PROVIDER_SOURCE_SLUGS.join("|")})["'\`]`,

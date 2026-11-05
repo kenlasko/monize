@@ -1926,6 +1926,47 @@ describe("NetWorthService", () => {
       expect(result[0].assets).toBe(750);
     });
 
+    it("counts a CRYPTO wallet as an asset, converted at the coin's rate, under its own type", async () => {
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+
+      reportQuery
+        .mockResolvedValueOnce([
+          {
+            month: "2024-01-01",
+            balance: 0.0125,
+            market_value: null,
+            account_id: "wallet",
+            account_type: AccountType.CRYPTO,
+            account_sub_type: null,
+            currency_code: "BTC",
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            from_currency: "BTC",
+            to_currency: "CAD",
+            rate: 137250.123456789,
+            rate_date: "2024-01-15",
+          },
+        ]);
+
+      const result = await service.getMonthlyNetWorth("user-1");
+
+      // 0.0125 BTC * 137250.1234567890 = 1715.6265 CAD (spec section 6); the
+      // monthly series is in whole units. A coin that read as unconverted
+      // would be 0, and one read as a liability would be negative.
+      expect(result[0].assets).toBe(1716);
+      expect(result[0].liabilities).toBe(0);
+      expect(result[0].netWorth).toBe(1716);
+      expect(result[0].fxComplete).toBe(true);
+      expect(result[0].byAccountType).toEqual({
+        [AccountType.CRYPTO]: 1716,
+      });
+    });
+
     it("uses reverse exchange rate when direct rate not available", async () => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({

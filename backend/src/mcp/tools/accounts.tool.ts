@@ -55,7 +55,7 @@ export class McpAccountsTools {
             .describe("Defaults to 'open'."),
           accountTypes: z
             .array(z.nativeEnum(AccountType))
-            .max(10)
+            .max(11)
             .optional()
             .describe("Omit to include every type."),
         }),

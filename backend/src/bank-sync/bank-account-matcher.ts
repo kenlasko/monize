@@ -6,7 +6,9 @@ import { accountNumberMatchesIdentifier } from "./bank-account-identifier";
  * what this returns.
  *
  * A Monize account is a candidate for a bank account when it is open, not an
- * investment brokerage account, not linked to another bank account, and in the
+ * investment brokerage account, not a CRYPTO wallet (no bank holds a coin;
+ * `docs/specs/crypto-accounts.md` decision 7), not linked to another bank
+ * account, and in the
  * bank account's currency (or the bank account's currency is unknown). It
  * matches when its account number names the bank's identifier
  * (`accountNumberMatchesIdentifier`). Exactly one match links; two or more
@@ -29,6 +31,8 @@ export interface MatchableAccount {
   currencyCode: string;
   isClosed: boolean;
   isInvestmentBrokerage: boolean;
+  /** A CRYPTO account, which bank sync never links. */
+  isCrypto: boolean;
 }
 
 export interface BankAccountMatches {
@@ -43,7 +47,8 @@ function isCandidate(
   bank: MatchableBankAccount,
   linkedAccountIds: ReadonlySet<string>,
 ): boolean {
-  if (account.isClosed || account.isInvestmentBrokerage) return false;
+  if (account.isClosed || account.isInvestmentBrokerage || account.isCrypto)
+    return false;
   if (linkedAccountIds.has(account.id)) return false;
   if (bank.currencyCode === null) return true;
   return (

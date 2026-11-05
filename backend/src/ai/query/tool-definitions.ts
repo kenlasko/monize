@@ -166,6 +166,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
               "LINE_OF_CREDIT",
               "ASSET",
               "OTHER",
+              "CRYPTO",
             ],
           },
           description:

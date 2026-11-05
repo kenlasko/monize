@@ -16,6 +16,8 @@ import {
   SecurityMappingDto,
 } from "./dto/import.dto";
 import { splitCategoryPath } from "./category-path.util";
+import { assertAccountCurrencyKindIn } from "../accounts/account-currency-kind.util";
+import { assertSecurityCurrencyIsFiatIn } from "../securities/security-currency-kind.util";
 
 /**
  * Map stock exchanges to their primary currency.
@@ -282,6 +284,10 @@ export class ImportEntityCreatorService {
         continue;
       }
 
+      // INV-CRYPTO-001, before this account's write; a refusal rolls the
+      // whole import back.
+      await assertAccountCurrencyKindIn(manager, accountType, currencyCode);
+
       if (accountType === AccountType.INVESTMENT) {
         const cashAccount = manager.create(Account, {
           userId,
@@ -347,6 +353,11 @@ export class ImportEntityCreatorService {
         loanMapping.newLoanType === "MORTGAGE"
           ? AccountType.MORTGAGE
           : AccountType.LOAN;
+      await assertAccountCurrencyKindIn(
+        manager,
+        loanType,
+        account.currencyCode,
+      );
       const newLoanAccount = manager.create(Account, {
         userId,
         name: loanMapping.createNewLoan,
@@ -389,6 +400,8 @@ export class ImportEntityCreatorService {
           getCurrencyFromExchange(secMapping.exchange) ||
           secMapping.currencyCode ||
           account.currencyCode;
+        // A security is priced in fiat (INV-CRYPTO-001).
+        await assertSecurityCurrencyIsFiatIn(manager, currencyCode);
 
         const newSecurity = new Security();
         newSecurity.userId = userId;

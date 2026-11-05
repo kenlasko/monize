@@ -3,7 +3,10 @@ import {
   FxProviderConfigError,
   resolveFxProviders,
 } from "./fx-provider.config";
-import { FX_PROVIDER_NAMES } from "./fx-provider.interface";
+import {
+  FX_PROVIDER_NAMES,
+  PAIR_PROVIDER_NAMES,
+} from "./fx-provider.interface";
 
 describe("resolveFxProviders", () => {
   it("answers the default list when FX_PROVIDERS is unset", () => {
@@ -76,5 +79,17 @@ describe("resolveFxProviders", () => {
     expect(() => resolveFxProviders("nope,yahoo")).toThrow(
       FxProviderConfigError,
     );
+  });
+
+  it("refuses the always-present crypto provider as a token: it is not configurable", () => {
+    // Appended by the module factory whatever FX_PROVIDERS says
+    // (docs/specs/crypto-accounts.md, decision 5), so naming it is a typo of
+    // some other intent, not a request.
+    for (const name of PAIR_PROVIDER_NAMES) {
+      expect(FX_PROVIDER_NAMES as readonly string[]).not.toContain(name);
+      expect(() => resolveFxProviders(`frankfurter,${name}`)).toThrow(
+        FxProviderConfigError,
+      );
+    }
   });
 });

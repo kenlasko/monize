@@ -478,6 +478,8 @@ describe("CashFlowSankeyService", () => {
       ["LINE_OF_CREDIT", "debt"],
       ["CHEQUING", "other_accounts"],
       ["CASH", "other_accounts"],
+      // A wallet is classified with CASH (crypto-accounts spec decision 7).
+      ["CRYPTO", "other_accounts"],
       // Decision 5 / K2: a card payment is never a debt flow.
       ["CREDIT_CARD", "other_accounts"],
       [null, "other_accounts"],
@@ -780,7 +782,14 @@ describe("CashFlowSankeyService", () => {
       expect(sql).toContain("account_sub_type IS NULL");
       expect(params).toEqual([
         USER,
-        ["CHEQUING", "SAVINGS", "CASH", "CREDIT_CARD", "LINE_OF_CREDIT"],
+        [
+          "CHEQUING",
+          "SAVINGS",
+          "CASH",
+          "CREDIT_CARD",
+          "LINE_OF_CREDIT",
+          "CRYPTO",
+        ],
       ]);
       expect(result.scopeAccountIds).toEqual([CHEQUING, SAVINGS]);
     });

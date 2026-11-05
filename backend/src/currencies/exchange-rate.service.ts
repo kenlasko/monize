@@ -9,7 +9,7 @@ import {
 } from "typeorm";
 import { Cron } from "@nestjs/schedule";
 import { ExchangeRate } from "./entities/exchange-rate.entity";
-import { Currency } from "./entities/currency.entity";
+import { Currency, CurrencyKind } from "./entities/currency.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { resolveFxRateOrNull, roundFxRate } from "../common/fx-entry.util";
@@ -97,6 +97,36 @@ export interface DatedConversion {
   date: string;
   rate: number;
   convertedAmount: number;
+}
+
+/** A currency in use, as the refresh reads it. */
+interface CurrencyInUse {
+  code: string;
+  kind: CurrencyKind;
+  quoteSymbol: string | null;
+}
+
+/**
+ * The canonical pairs of `codes` (sorted) grouped by their first code, keeping
+ * only the pairs `keep` admits and the bases left with a quote: one chain
+ * question per base carrying every quote stored against it, because a provider
+ * that publishes a whole base at once answers all of them in one call, and one
+ * that quotes pair by pair fans out inside its adapter. With the codes in
+ * order, `codes[i] -> codes[j]` for i < j is the pair's canonical orientation
+ * (`isCanonicalOrientation`), so each base's quotes are exactly the pairs
+ * stored under it.
+ */
+export function canonicalPairsByBase(
+  codes: readonly string[],
+  keep: (base: string, quote: string) => boolean,
+): Array<{ base: string; quotes: string[] }> {
+  return codes
+    .slice(0, -1)
+    .map((base, i) => ({
+      base,
+      quotes: codes.slice(i + 1).filter((quote) => keep(base, quote)),
+    }))
+    .filter(({ quotes }) => quotes.length > 0);
 }
 
 export interface RateUpdateResult {
@@ -426,6 +456,22 @@ export class ExchangeRateService implements OnModuleInit {
   }
 
   /**
+   * Store a daily series that did not come through the chain -- the demo
+   * seed's coin rates -- under the `source` the caller names, through the same
+   * writer as a fetched window: each point in its pair's one orientation
+   * (`canonicalRateRow`, INV-FX-003), one row per day, the last point for a
+   * day winning and replacing what the day held. Answers how many rows it
+   * wrote. Not for a provider's observations, which reach the table through
+   * the refresh and the window fills.
+   */
+  async storeRateSeries(
+    points: readonly FxObservation[],
+    source: string,
+  ): Promise<number> {
+    return this.persistRateSeries(points, source);
+  }
+
+  /**
    * Refresh exchange rates for all currencies in use
    */
   /**
@@ -440,23 +486,39 @@ export class ExchangeRateService implements OnModuleInit {
    * from the cron is the same identity and joins.
    */
   async refreshAllRates(): Promise<RateRefreshSummary> {
-    return withSystemContext(() => this.refreshAllRatesGlobally());
+    return withSystemContext(() => this.refreshRatesGlobally("all"));
   }
 
-  private async refreshAllRatesGlobally(): Promise<RateRefreshSummary> {
-    const startTime = Date.now();
-    this.logger.log("Starting exchange rate refresh");
+  /**
+   * Refresh only the pairs in use with a CRYPTO currency on at least one side
+   * (`docs/specs/crypto-accounts.md`, decision 6): the weekend tick's body. A
+   * coin trades every day, while Frankfurter publishes no weekend rate and a
+   * fiat pair cannot have moved, so the fiat pairs are not asked. The weekday
+   * refresh (`refreshAllRates`) already covers the crypto pairs. Global for the
+   * same reason as `refreshAllRates`.
+   */
+  async refreshCryptoRates(): Promise<RateRefreshSummary> {
+    return withSystemContext(() => this.refreshRatesGlobally("crypto"));
+  }
 
-    // Fetch all currencies in use: account currencies, security currencies for
-    // active holdings, and every user's preferred default currency. Including
-    // defaults ensures we fetch (CAD, GBP) even when the user has no GBP-
-    // denominated accounts -- otherwise their GBP totals would silently fall
-    // back to unconverted CAD values.
-    const usedCurrencies: { code: string }[] = await withScopedDb(
-      this.dataSource,
-      (manager) =>
-        manager.query(
-          `SELECT DISTINCT code FROM (
+  /**
+   * Every currency in use across the deployment, with the kind and price
+   * symbol the refresh reports a coin's missing symbol by: account currencies,
+   * security currencies for active holdings, and every user's preferred
+   * default currency. Including defaults ensures we fetch (CAD, GBP) even when
+   * the user has no GBP-denominated accounts -- otherwise their GBP totals
+   * would silently fall back to unconverted CAD values. Sorted, so the pair set
+   * and the order the chain is asked in are the same on every replica and
+   * every run rather than whatever order the query returned.
+   */
+  private async currenciesInUse(): Promise<CurrencyInUse[]> {
+    const rows: Array<{
+      code: string;
+      kind?: string | null;
+      quoteSymbol?: string | null;
+    }> = await withScopedDb(this.dataSource, (manager) =>
+      manager.query(
+        `SELECT DISTINCT code, c.kind, c.quote_symbol AS "quoteSymbol" FROM (
          SELECT currency_code AS code FROM accounts WHERE is_closed = false
          UNION
          SELECT s.currency_code AS code
@@ -467,19 +529,44 @@ export class ExchangeRateService implements OnModuleInit {
          UNION
          SELECT default_currency AS code FROM user_preferences
          WHERE default_currency IS NOT NULL
-       ) sub`,
-        ),
+       ) sub
+       LEFT JOIN currencies c USING (code)`,
+      ),
+    );
+    const byCode = new Map<string, CurrencyInUse>();
+    for (const row of rows) {
+      if (byCode.has(row.code)) continue;
+      byCode.set(row.code, {
+        code: row.code,
+        kind: row.kind === "CRYPTO" ? "CRYPTO" : "FIAT",
+        quoteSymbol: row.quoteSymbol ?? null,
+      });
+    }
+    return [...byCode.values()].sort((a, b) =>
+      a.code < b.code ? -1 : a.code > b.code ? 1 : 0,
+    );
+  }
+
+  private async refreshRatesGlobally(
+    scope: "all" | "crypto",
+  ): Promise<RateRefreshSummary> {
+    const startTime = Date.now();
+    this.logger.log(
+      scope === "crypto"
+        ? "Starting cryptocurrency exchange rate refresh"
+        : "Starting exchange rate refresh",
     );
 
-    // Sorted, so the pair set and the order the chain is asked in are the same
-    // on every replica and every run rather than whatever order the query
-    // returned. With the codes in order, `codes[i] -> codes[j]` for i < j is the
-    // pair's canonical orientation (`isCanonicalOrientation`), so each base's
-    // quotes are exactly the pairs stored under it.
-    const codes = [...new Set(usedCurrencies.map((c) => c.code))].sort();
+    const inUse = await this.currenciesInUse();
+    const codes = inUse.map((currency) => currency.code);
+    const byCode = new Map(inUse.map((currency) => [currency.code, currency]));
     this.logger.log(`Currencies in use: ${codes.join(", ")}`);
 
-    if (codes.length < 2) {
+    const isCoin = (code: string) => byCode.get(code)?.kind === "CRYPTO";
+    const byBase = canonicalPairsByBase(codes, (base, quote) =>
+      scope === "all" ? true : isCoin(base) || isCoin(quote),
+    );
+    if (byBase.length === 0) {
       return {
         totalPairs: 0,
         updated: 0,
@@ -488,16 +575,17 @@ export class ExchangeRateService implements OnModuleInit {
         lastUpdated: new Date(),
       };
     }
-
-    // The canonical pairs grouped by their first code: one chain question per
-    // base carrying every quote stored against it, because a provider that
-    // publishes a whole base at once answers all of them in one call, and one
-    // that quotes pair by pair fans out inside its adapter.
-    const byBase = codes
-      .slice(0, -1)
-      .map((base, i) => ({ base, quotes: codes.slice(i + 1) }));
     const totalPairs = byBase.reduce((n, { quotes }) => n + quotes.length, 0);
 
+    /**
+     * The coin side of a pair no provider carries because the coin has no
+     * price symbol: the repair is on the Currencies page, not in
+     * `FX_PROVIDERS` (spec section 7). `null` for any other uncarried pair.
+     */
+    const unmappedCoin = (base: string, quote: string): string | null =>
+      [base, quote].find(
+        (code) => isCoin(code) && byCode.get(code)?.quoteSymbol == null,
+      ) ?? null;
     const results: RateUpdateResult[] = [];
     let updated = 0;
     let failed = 0;
@@ -516,10 +604,13 @@ export class ExchangeRateService implements OnModuleInit {
           // without a rate resolves from the last admissible day or stays
           // unknown, never at a guessed figure; a pair no configured provider
           // carries is a fact about `FX_PROVIDERS` for the operator to act on.
+          const coin = unmappedCoin(base, quote);
           const error = answer.unanswered.includes(quote)
             ? "No provider answered"
             : answer.uncarried.includes(quote)
-              ? `No configured provider carries ${pairLabel}`
+              ? coin !== null
+                ? `${coin} has no price symbol; map one on the Currencies page`
+                : `No configured provider carries ${pairLabel}`
               : "No rate data available";
           results.push({ pair: pairLabel, success: false, error });
           failed++;
@@ -550,7 +641,7 @@ export class ExchangeRateService implements OnModuleInit {
 
     const duration = Date.now() - startTime;
     this.logger.log(
-      `Exchange rate refresh completed in ${duration}ms: ${updated} updated, ${failed} failed`,
+      `${scope === "crypto" ? "Cryptocurrency exchange rate" : "Exchange rate"} refresh completed in ${duration}ms: ${updated} updated, ${failed} failed`,
     );
 
     return {
@@ -1460,6 +1551,36 @@ export class ExchangeRateService implements OnModuleInit {
     } catch (error) {
       this.logger.error(
         `Scheduled exchange rate refresh failed: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Saturday and Sunday at 5:10 PM New York time: the pairs with a CRYPTO side
+   * only (`refreshCryptoRates`, `docs/specs/crypto-accounts.md` decision 6). A
+   * coin's Yahoo session is the UTC day, still open at 17:10 New York, so each
+   * run stores the current UTC day's quote; the weekday refresh covers the
+   * rest of the week. Held under the same `FetchSyncJob.ExchangeRates` lease
+   * as the weekday refresh, wrapped whole in the system context, for the same
+   * reason: one replica per tick asks the provider, and the upserts beneath
+   * are idempotent, so a lost lease costs quota, never data.
+   */
+  @Cron("10 17 * * 0,6", { timeZone: "America/New_York" })
+  async scheduledCryptoRateRefresh(): Promise<void> {
+    this.logger.log("Running scheduled cryptocurrency exchange rate refresh");
+    try {
+      await withSystemContext(() =>
+        this.fetchSync.withLease(
+          FetchSyncJob.ExchangeRates,
+          this.FETCH_LEASE_MS,
+          async () => {
+            await this.refreshCryptoRates();
+          },
+        ),
+      );
+    } catch (error) {
+      this.logger.error(
+        `Scheduled cryptocurrency exchange rate refresh failed: ${error.message}`,
       );
     }
   }

@@ -84,6 +84,7 @@ import { tr } from "../i18n/translate";
 import { TransactionRulesApplierService } from "../transaction-rules/transaction-rules-applier.service";
 import { insertCategoryIfAbsent } from "./insert-category-if-absent";
 import { splitCategoryPath } from "./category-path.util";
+import { assertAccountCurrencyKindIn } from "../accounts/account-currency-kind.util";
 
 @Injectable()
 export class ImportService {
@@ -793,6 +794,9 @@ export class ImportService {
       // Create new account. Every named block has a type by now: the
       // import refused before its transaction began otherwise.
       const accountType = block.accountType as AccountType;
+      // INV-CRYPTO-001, before this account's write; a refusal rolls the
+      // whole import back.
+      await assertAccountCurrencyKindIn(manager, accountType, currencyCode);
 
       if (accountType === AccountType.INVESTMENT) {
         // Create investment account pair

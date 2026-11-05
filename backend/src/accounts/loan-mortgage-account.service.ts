@@ -11,6 +11,7 @@ import { Account, AccountType } from "./entities/account.entity";
 import { Institution } from "../institutions/entities/institution.entity";
 import { CreateAccountDto } from "./dto/create-account.dto";
 import { assertLoanInterestCategory } from "./loan-interest-category";
+import { assertAccountCurrencyKindIn } from "./account-currency-kind.util";
 import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
 import { FrequencyType as FrequencyTypeDto } from "../scheduled-transactions/dto/create-scheduled-transaction.dto";
 import {
@@ -296,6 +297,12 @@ export class LoanMortgageAccountService {
     // a schedule the splits check refuses rolls the account back too, so a
     // retry cannot duplicate it. The schedule service's own withScopedDb joins.
     const createdLoan = await withScopedDb(this.dataSource, async (m) => {
+      // INV-CRYPTO-001: a loan or mortgage is in a fiat currency.
+      await assertAccountCurrencyKindIn(
+        m,
+        accountData.accountType,
+        accountData.currencyCode,
+      );
       const repo = m.getRepository(Account);
       const account = repo.create({
         ...accountData,
@@ -569,6 +576,12 @@ export class LoanMortgageAccountService {
     // a schedule the splits check refuses rolls the account back too, so a
     // retry cannot duplicate it. The schedule service's own withScopedDb joins.
     const created = await withScopedDb(this.dataSource, async (m) => {
+      // INV-CRYPTO-001: a loan or mortgage is in a fiat currency.
+      await assertAccountCurrencyKindIn(
+        m,
+        accountData.accountType,
+        accountData.currencyCode,
+      );
       const repo = m.getRepository(Account);
       const account = repo.create({
         ...accountData,

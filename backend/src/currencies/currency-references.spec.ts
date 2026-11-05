@@ -96,6 +96,12 @@ const perUserDataBody = functionBody(
   uncommented,
   "currency_codes_referenced_by_user_data",
 );
+const dataBody = functionBody(uncommented, "currency_code_referenced_by_data");
+
+/** Whether a function body reads `table` and compares `column` with `p_code`. */
+const consults = (fnBody: string, table: string, column: string): boolean =>
+  new RegExp(`FROM\\s+${table}\\b`, "i").test(fnBody) &&
+  new RegExp(`\\b${column}\\s*=\\s*p_code`, "i").test(fnBody);
 
 describe("currency global liveness", () => {
   // Every assertion below depends on the parser. A regex that stops matching
@@ -135,6 +141,64 @@ describe("currency global liveness", () => {
     expect(
       notConsulted.map(({ table, column }) => `${table}.${column}`),
     ).toEqual([]);
+  });
+
+  /**
+   * The kind-change gate's question (INV-CRYPTO-001,
+   * `docs/specs/crypto-accounts.md` decision 8): every reference except an
+   * activation. Every creator holds their currency through a
+   * `user_currency_preferences` row, so counting activations made a kind
+   * immutable from birth; leaving out anything else lets a CRYPTO account's
+   * currency turn FIAT under it.
+   */
+  describe("currency_code_referenced_by_data", () => {
+    it("consults every column that references currencies(code) except activations", () => {
+      const notConsulted = references
+        .filter(({ table }) => table !== "user_currency_preferences")
+        .filter(({ table, column }) => !consults(dataBody, table, column));
+
+      expect(
+        notConsulted.map(({ table, column }) => `${table}.${column}`),
+      ).toEqual([]);
+    });
+
+    it("does not count an activation", () => {
+      expect(dataBody).not.toMatch(/user_currency_preferences/i);
+    });
+
+    it("is its sibling's list less activations, so the two cannot drift apart", () => {
+      const columnsOf = (fnBody: string) =>
+        references
+          .filter(({ table, column }) => consults(fnBody, table, column))
+          .map(({ table, column }) => `${table}.${column}`)
+          .sort();
+
+      expect(columnsOf(dataBody)).toEqual(
+        columnsOf(body).filter(
+          (c) => c !== "user_currency_preferences.currency_code",
+        ),
+      );
+    });
+
+    it("is SECURITY DEFINER with a pinned search_path, not executable by PUBLIC", () => {
+      const definition =
+        /CREATE OR REPLACE FUNCTION currency_code_referenced_by_data\([\s\S]*?\nAS \$\$/.exec(
+          uncommented,
+        )![0];
+      expect(definition).toMatch(/SECURITY DEFINER/);
+      expect(definition).toMatch(/SET search_path = public, pg_temp/);
+      expect(uncommented).toMatch(
+        /REVOKE ALL ON FUNCTION currency_code_referenced_by_data\(VARCHAR\) FROM PUBLIC;/,
+      );
+    });
+
+    it("is what the kind-change gate asks, not the sibling", () => {
+      const currenciesService = readFileSync(
+        join(__dirname, "currencies.service.ts"),
+        "utf8",
+      );
+      expect(currenciesService).toContain("currency_code_referenced_by_data");
+    });
   });
 
   /**
@@ -316,6 +380,9 @@ describe("currency global liveness", () => {
       "check_attachment_pair_parent",
       // The global currency-liveness answer, evaluated across every tenant.
       "currency_code_in_use_globally",
+      // Its sibling without activations, for the currency kind-change gate
+      // (INV-CRYPTO-001); same shape, one VARCHAR in, one boolean out.
+      "currency_code_referenced_by_data",
       // Whether a grant's account belongs to the delegation's owner, for the
       // account_delegate_grants WITH CHECK: the policy cannot read accounts
       // under RLS (the accounts policy reads the grants -- a policy cycle). One

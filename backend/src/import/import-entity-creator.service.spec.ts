@@ -6,6 +6,7 @@ import {
 } from "../accounts/entities/account.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Security } from "../securities/entities/security.entity";
+import { Currency } from "../currencies/entities/currency.entity";
 import { ImportResultDto, CategoryMappingDto } from "./dto/import.dto";
 
 describe("ImportEntityCreatorService", () => {
@@ -52,7 +53,18 @@ describe("ImportEntityCreatorService", () => {
   }
 
   beforeEach(() => {
+    // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin.
+    const currencyRepository = {
+      findOne: jest.fn(async (opts: { where: { code: string } }) => ({
+        code: opts.where.code,
+        kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
+      })),
+    };
     manager = {
+      getRepository: jest.fn((entity: unknown) => {
+        if (entity === Currency) return currencyRepository;
+        throw new Error("unexpected repository");
+      }),
       findOne: jest.fn(),
       create: jest.fn().mockImplementation((_entity, data) => ({
         ...data,
@@ -483,6 +495,57 @@ describe("ImportEntityCreatorService", () => {
   describe("createAccounts", () => {
     const account = makeAccount();
 
+    it.each([
+      ["a CRYPTO account in CAD", "CRYPTO", "CAD"],
+      ["a CHEQUING account in BTC", "CHEQUING", "BTC"],
+      ["an INVESTMENT pair in BTC", "INVESTMENT", "BTC"],
+    ])(
+      "refuses %s before writing it (INV-CRYPTO-001)",
+      async (_label, accountType, currencyCode) => {
+        manager.findOne.mockResolvedValue(null);
+        await expect(
+          service.createAccounts(
+            manager as any,
+            userId,
+            [
+              {
+                originalName: "Wallet",
+                createNew: "Wallet",
+                accountType,
+                currencyCode,
+              },
+            ],
+            new Map(),
+            account,
+            importResult,
+          ),
+        ).rejects.toThrow(/currency, which a .* account cannot hold/);
+        expect(manager.save).not.toHaveBeenCalled();
+      },
+    );
+
+    it("creates a CRYPTO account in BTC", async () => {
+      manager.findOne.mockResolvedValue(null);
+      manager.save.mockResolvedValue({ id: "wallet-1" });
+      const accountMap = new Map<string, string | null>();
+      await service.createAccounts(
+        manager as any,
+        userId,
+        [
+          {
+            originalName: "Wallet",
+            createNew: "Wallet",
+            accountType: "CRYPTO",
+            currencyCode: "BTC",
+          },
+        ],
+        accountMap,
+        account,
+        importResult,
+      );
+      expect(accountMap.get("Wallet")).toBe("wallet-1");
+    });
+
     it("should create a regular (non-investment) account", async () => {
       manager.findOne.mockResolvedValue(null);
       const savedAcc = { id: "acc-new-1", name: "Savings", userId };
@@ -774,6 +837,20 @@ describe("ImportEntityCreatorService", () => {
   describe("createLoanAccounts", () => {
     const account = makeAccount();
 
+    it("refuses a loan created from a BTC account's import before writing it (INV-CRYPTO-001)", async () => {
+      await expect(
+        service.createLoanAccounts(
+          manager as any,
+          userId,
+          [{ originalName: "Car loan", createNewLoan: "Car loan" } as any],
+          new Map(),
+          makeAccount({ accountType: AccountType.CRYPTO, currencyCode: "BTC" }),
+          importResult,
+        ),
+      ).rejects.toThrow(/BTC is a CRYPTO currency, which a LOAN account/);
+      expect(manager.save).not.toHaveBeenCalled();
+    });
+
     it("should create a new loan account", async () => {
       const savedLoan = { id: "loan-1" };
       manager.save.mockResolvedValue(savedLoan);
@@ -920,6 +997,29 @@ describe("ImportEntityCreatorService", () => {
 
   describe("createSecurities", () => {
     const account = makeAccount();
+
+    it("refuses a security in a CRYPTO currency before writing it (INV-CRYPTO-001)", async () => {
+      manager.findOne.mockResolvedValue(null);
+      await expect(
+        service.createSecurities(
+          manager as any,
+          userId,
+          [
+            {
+              originalName: "Bitcoin",
+              createNew: "BTC-CAD",
+              securityName: "Bitcoin",
+              securityType: "CRYPTO",
+              currencyCode: "BTC",
+            },
+          ],
+          new Map(),
+          account,
+          importResult,
+        ),
+      ).rejects.toThrow(/BTC is a cryptocurrency/);
+      expect(manager.save).not.toHaveBeenCalled();
+    });
 
     it("should create a new security", async () => {
       manager.findOne.mockResolvedValue(null);

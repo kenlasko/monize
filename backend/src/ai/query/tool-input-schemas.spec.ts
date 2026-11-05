@@ -2,6 +2,7 @@
 // AiQueryDto module, whose class-transformer decorators need reflect-metadata
 // at load time (Nest loads it for us everywhere else).
 import "reflect-metadata";
+import { AccountType } from "../../accounts/entities/account.entity";
 import {
   validateToolInput,
   listTransactionsSchema,
@@ -290,6 +291,14 @@ describe("tool-input-schemas", () => {
         accountTypes: ["NOT_REAL"],
       });
       expect(result.success).toBe(false);
+    });
+
+    it("accepts every AccountType at once, CRYPTO included", () => {
+      const result = listAccountsSchema.safeParse({
+        accountTypes: Object.values(AccountType),
+      });
+      expect(Object.values(AccountType)).toContain("CRYPTO");
+      expect(result.success).toBe(true);
     });
   });
 

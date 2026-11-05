@@ -80,6 +80,7 @@ import {
   storesConstantPayment,
 } from "./mortgage-type.util";
 import { assertMortgageMethodTerms } from "./mortgage-installment.util";
+import { assertAccountCurrencyKindIn } from "./account-currency-kind.util";
 import { applyMortgageMethodColumns } from "./mortgage-method-columns.util";
 import { countSchedulesReferencingAccounts } from "./account-schedule-references";
 import {
@@ -446,7 +447,13 @@ export class AccountsService {
     delete accountData.mortgageType;
     delete accountData.prepaymentMode;
 
-    const saved = await withScopedDb(this.dataSource, (m) => {
+    const saved = await withScopedDb(this.dataSource, async (m) => {
+      // INV-CRYPTO-001, in the transaction that writes the row.
+      await assertAccountCurrencyKindIn(
+        m,
+        accountData.accountType,
+        accountData.currencyCode,
+      );
       const repo = m.getRepository(Account);
       const account = repo.create({
         ...accountData,
@@ -489,6 +496,12 @@ export class AccountsService {
     } = createAccountDto;
 
     return withScopedDb(this.dataSource, async (m) => {
+      // Both halves are INVESTMENT, so the currency is FIAT (INV-CRYPTO-001).
+      await assertAccountCurrencyKindIn(
+        m,
+        AccountType.INVESTMENT,
+        accountData.currencyCode,
+      );
       const repo = m.getRepository(Account);
 
       // Suffixes are localized to the requester's language so the generated
@@ -1095,6 +1108,38 @@ export class AccountsService {
               ),
             );
           }
+        }
+
+        // INV-CRYPTO-001: the type and the currency's kind agree after the
+        // update. Checked only when either moves, before any write.
+        const nextAccountType =
+          updateAccountDto.accountType ?? account.accountType;
+        const nextCurrencyCode =
+          updateAccountDto.currencyCode ?? account.currencyCode;
+        if (
+          nextAccountType !== account.accountType ||
+          nextCurrencyCode !== account.currencyCode
+        ) {
+          await assertAccountCurrencyKindIn(
+            m,
+            nextAccountType,
+            nextCurrencyCode,
+          );
+        }
+        // The linked-half mirror below copies a new currency to the partner,
+        // and a pair's halves are both INVESTMENT: the partner must agree too,
+        // so a pair half is never re-typed into a CRYPTO account beside a
+        // coin-denominated INVESTMENT partner (a CRYPTO account is never
+        // paired).
+        if (
+          account.linkedAccountId &&
+          nextCurrencyCode !== account.currencyCode
+        ) {
+          await assertAccountCurrencyKindIn(
+            m,
+            AccountType.INVESTMENT,
+            nextCurrencyCode,
+          );
         }
 
         const before = { ...account };

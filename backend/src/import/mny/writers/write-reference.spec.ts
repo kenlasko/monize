@@ -1,4 +1,5 @@
 import { EntityManager } from "typeorm";
+import { Currency } from "../../../currencies/entities/currency.entity";
 import {
   AccountSubType,
   AccountType,
@@ -32,8 +33,20 @@ function repoDouble(existing: unknown[] = []) {
   } as unknown as Record<string, jest.Mock>;
 }
 
+/** The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin. */
+const currencies = {
+  findOne: jest.fn(async (opts: { where: { code: string } }) => ({
+    code: opts.where.code,
+    kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
+  })),
+};
+
 function managerFor(repo: Record<string, jest.Mock>): EntityManager {
-  return { getRepository: jest.fn(() => repo) } as unknown as EntityManager;
+  return {
+    getRepository: jest.fn((entity: unknown) =>
+      entity === Currency ? currencies : repo,
+    ),
+  } as unknown as EntityManager;
 }
 
 function account(overrides: Partial<MappedAccount> = {}): MappedAccount {
@@ -69,6 +82,17 @@ function category(overrides: Partial<MappedCategory> = {}): MappedCategory {
 }
 
 describe("writeAccounts", () => {
+  it("refuses a Money account in a CRYPTO currency before inserting it (INV-CRYPTO-001)", async () => {
+    const repo = repoDouble();
+
+    await expect(
+      writeAccounts(managerFor(repo), "user-1", [
+        account({ currencyCode: "BTC" }),
+      ]),
+    ).rejects.toThrow(/BTC is a CRYPTO currency/);
+    expect(repo.insert).not.toHaveBeenCalled();
+  });
+
   it("inserts new accounts and reports how many were created", async () => {
     const repo = repoDouble();
 

@@ -10,7 +10,11 @@ import {
   Optional,
 } from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
-import { Account, AccountSubType } from "../accounts/entities/account.entity";
+import {
+  Account,
+  AccountSubType,
+  AccountType,
+} from "../accounts/entities/account.entity";
 import { todayYMD } from "../common/date-utils";
 import { returnedRows } from "../common/db/query-result";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -219,6 +223,14 @@ export class BankSyncService {
           tr(
             "errors.bankSync.accountBrokerage",
             "An investment brokerage account cannot receive bank transactions. Link its cash account instead.",
+          ),
+        );
+      }
+      if (account.accountType === AccountType.CRYPTO) {
+        throw new BadRequestException(
+          tr(
+            "errors.bankSync.accountCrypto",
+            "A cryptocurrency wallet cannot receive bank transactions. Link a bank account instead.",
           ),
         );
       }
@@ -857,6 +869,14 @@ export class BankSyncService {
         tr(
           "errors.bankSync.accountBrokerage",
           "An investment brokerage account cannot receive bank transactions. Link its cash account instead.",
+        ),
+      );
+    }
+    if (ctx.account.accountType === AccountType.CRYPTO) {
+      throw new BadRequestException(
+        tr(
+          "errors.bankSync.accountCrypto",
+          "A cryptocurrency wallet cannot receive bank transactions. Link a bank account instead.",
         ),
       );
     }

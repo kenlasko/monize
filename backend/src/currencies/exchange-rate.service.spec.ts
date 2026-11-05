@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { ExchangeRateService } from "./exchange-rate.service";
@@ -168,6 +170,9 @@ describe("ExchangeRateService", () => {
     isActive: true,
     createdByUserId: null,
     createdAt: new Date("2025-01-01"),
+
+    kind: "FIAT",
+    quoteSymbol: null,
   };
 
   const createMockQueryBuilder = (
@@ -2271,6 +2276,173 @@ describe("ExchangeRateService", () => {
       const [, leaseMs] = fetchSync.withLease.mock.calls[0];
       expect(leaseMs).toBeLessThan(24 * 60 * 60 * 1000);
       expect(leaseMs).toBeGreaterThan(0);
+    });
+  });
+
+  /**
+   * The weekend tick (`docs/specs/crypto-accounts.md`, decision 6): only the
+   * pairs with a CRYPTO side, under the weekday refresh's lease.
+   */
+  describe("refreshCryptoRates and scheduledCryptoRateRefresh", () => {
+    /** The used-currency query answering each code's kind and price symbol. */
+    function routeKindedQueries(
+      rows: Array<{
+        code: string;
+        kind: "FIAT" | "CRYPTO";
+        quoteSymbol?: string | null;
+      }>,
+    ): void {
+      routeRateQueries([]);
+      const base = dataSource.query.getMockImplementation()!;
+      dataSource.query.mockImplementation(
+        async (sql: string, params?: unknown[]) =>
+          typeof sql === "string" && sql.includes("SELECT DISTINCT code")
+            ? rows.map((row) => ({ quoteSymbol: null, ...row }))
+            : base(sql, params),
+      );
+    }
+
+    const IN_USE = [
+      { code: "BTC", kind: "CRYPTO" as const, quoteSymbol: "BTC-CAD" },
+      { code: "CAD", kind: "FIAT" as const },
+      { code: "EUR", kind: "FIAT" as const },
+      { code: "USD", kind: "FIAT" as const },
+    ];
+
+    it("reads each currency's kind with the currencies in use", async () => {
+      routeKindedQueries(IN_USE);
+      chain.latest.mockImplementation(async (base) => latestAnswer(base, []));
+
+      await service.refreshCryptoRates();
+
+      const [sql] = dataSource.query.mock.calls.find(([q]) =>
+        String(q).includes("SELECT DISTINCT code"),
+      )!;
+      expect(sql).toContain("LEFT JOIN currencies c USING (code)");
+      expect(sql).toContain('c.quote_symbol AS "quoteSymbol"');
+    });
+
+    it("asks the chain only for the canonical pairs with a coin side", async () => {
+      routeKindedQueries(IN_USE);
+      chain.latest.mockImplementation(async (base, quotes) =>
+        latestAnswer(
+          base,
+          quotes.map((quote) =>
+            observation(base, quote, "2026-11-07", 137000, "yahoo_crypto"),
+          ),
+        ),
+      );
+
+      const result = await service.refreshCryptoRates();
+
+      // BTC sorts first, so every pair with it is under the BTC base; the
+      // fiat bases CAD and EUR have no coin quote and are not asked.
+      expect(chain.latest.mock.calls).toEqual([["BTC", ["CAD", "EUR", "USD"]]]);
+      expect(result.totalPairs).toBe(3);
+      expect(result.updated).toBe(3);
+      expect(upsertedRates.map((r) => r.source)).toEqual([
+        "yahoo_crypto",
+        "yahoo_crypto",
+        "yahoo_crypto",
+      ]);
+    });
+
+    it("keeps a coin quote under a fiat base", async () => {
+      // `ZZZ` sorts after the fiat codes, so its pairs sit under each of them.
+      routeKindedQueries([
+        { code: "CAD", kind: "FIAT" },
+        { code: "EUR", kind: "FIAT" },
+        { code: "ZZZ", kind: "CRYPTO", quoteSymbol: "ZZZ-USD" },
+      ]);
+      chain.latest.mockImplementation(async (base) => latestAnswer(base, []));
+
+      await service.refreshCryptoRates();
+
+      expect(chain.latest.mock.calls).toEqual([
+        ["CAD", ["ZZZ"]],
+        ["EUR", ["ZZZ"]],
+      ]);
+    });
+
+    it("asks nothing when no coin is in use", async () => {
+      routeKindedQueries(IN_USE.filter((row) => row.kind === "FIAT"));
+
+      const result = await service.refreshCryptoRates();
+
+      expect(chain.latest).not.toHaveBeenCalled();
+      expect(result.totalPairs).toBe(0);
+    });
+
+    it("names the Currencies page for a coin with no price symbol, on the weekday refresh too", async () => {
+      routeKindedQueries([
+        { code: "CAD", kind: "FIAT" },
+        { code: "TWD", kind: "FIAT" },
+        { code: "XYZ", kind: "CRYPTO", quoteSymbol: null },
+      ]);
+      chain.latest.mockImplementation(async (base, quotes) =>
+        latestAnswer(base, [], { uncarried: [...quotes] }),
+      );
+
+      const result = await service.refreshAllRates();
+
+      expect(result.results).toEqual([
+        {
+          pair: "CAD/TWD",
+          success: false,
+          error: "No configured provider carries CAD/TWD",
+        },
+        {
+          pair: "CAD/XYZ",
+          success: false,
+          error: "XYZ has no price symbol; map one on the Currencies page",
+        },
+        {
+          pair: "TWD/XYZ",
+          success: false,
+          error: "XYZ has no price symbol; map one on the Currencies page",
+        },
+      ]);
+    });
+
+    it("the weekend tick runs the crypto refresh under the exchange-rate lease", async () => {
+      routeKindedQueries(IN_USE);
+      chain.latest.mockImplementation(async (base) => latestAnswer(base, []));
+
+      await service.scheduledCryptoRateRefresh();
+
+      expect(fetchSync.withLease).toHaveBeenCalledWith(
+        FetchSyncJob.ExchangeRates,
+        expect.any(Number),
+        expect.any(Function),
+      );
+      expect(chain.latest.mock.calls).toEqual([["BTC", ["CAD", "EUR", "USD"]]]);
+    });
+
+    it("the weekend tick asks no provider when another replica holds the lease", async () => {
+      fetchSync.withLease.mockImplementation(async () => false);
+      routeKindedQueries(IN_USE);
+
+      await service.scheduledCryptoRateRefresh();
+
+      expect(chain.latest).not.toHaveBeenCalled();
+    });
+
+    it("the weekend tick swallows a failure", async () => {
+      dataSource.query.mockRejectedValue(new Error("DB error"));
+
+      await expect(
+        service.scheduledCryptoRateRefresh(),
+      ).resolves.toBeUndefined();
+    });
+
+    it("the weekend tick is scheduled Saturday and Sunday at 17:10 New York", () => {
+      const source = readFileSync(
+        join(__dirname, "exchange-rate.service.ts"),
+        "utf8",
+      );
+      expect(source).toMatch(
+        /@Cron\("10 17 \* \* 0,6", \{ timeZone: "America\/New_York" \}\)\s*async scheduledCryptoRateRefresh/,
+      );
     });
   });
 

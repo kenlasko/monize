@@ -28,6 +28,7 @@ export enum AccountType {
   LINE_OF_CREDIT = "LINE_OF_CREDIT",
   ASSET = "ASSET",
   OTHER = "OTHER",
+  CRYPTO = "CRYPTO",
 }
 
 export enum AccountSubType {

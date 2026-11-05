@@ -5,7 +5,11 @@ import {
 } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
-import { Account, AccountSubType } from "../accounts/entities/account.entity";
+import {
+  Account,
+  AccountSubType,
+  AccountType,
+} from "../accounts/entities/account.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { BankSyncCredentialsService } from "./bank-sync-credentials.service";
 import { BankSyncMatchService } from "./bank-sync-match.service";
@@ -171,6 +175,13 @@ describe("BankSyncMatchService", () => {
           accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
         }),
         monize({ id: THIRD_ACCOUNT_ID, currencyCode: "EUR" }),
+      ]);
+      await expect(run()).resolves.toEqual({ linked: [], suggestions: [] });
+    });
+
+    it("never offers a CRYPTO wallet, even one whose number matches", async () => {
+      accountRepo.find.mockResolvedValue([
+        monize({ accountType: AccountType.CRYPTO }),
       ]);
       await expect(run()).resolves.toEqual({ linked: [], suggestions: [] });
     });

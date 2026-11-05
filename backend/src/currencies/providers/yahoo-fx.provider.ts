@@ -1,5 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { YahooFinanceService } from "../../securities/yahoo-finance.service";
+import { isPositiveFinite } from "../../common/helpers/is-positive-finite";
+import {
+  YahooFinanceService,
+  YahooQuoteResult,
+} from "../../securities/yahoo-finance.service";
+import { CRYPTO_EXCHANGE } from "../../securities/providers/crypto-pair.util";
 import { HistoricalPrice } from "../../securities/providers/quote-provider.interface";
 import { mapWithConcurrency } from "../../common/concurrency.util";
 import { todayYMD } from "../../common/date-utils";
@@ -91,10 +96,6 @@ function currencyCodeFromSymbol(symbol: string, query: string): string {
   if (base === upperQuery) return base;
   if (quote === upperQuery) return quote;
   return base;
-}
-
-function usable(rate: number | null | undefined): rate is number {
-  return rate != null && Number.isFinite(rate) && rate > 0;
 }
 
 /**
@@ -243,6 +244,41 @@ export class YahooFxProvider implements FxRateProvider {
   }
 
   /**
+   * The crypto adapter's door to Yahoo: one coin pair symbol's latest quote,
+   * asked as given (`BTC-CAD`), through the client's throttle and breaker.
+   * `{ quote: null }` is Yahoo saying the symbol does not exist; `null` is no
+   * answer. The `<COIN>-<FIAT>` grammar, the dating and the choice of rate are
+   * `CryptoFxProvider`'s: this adapter keeps its own `=X` grammar, its
+   * always-true `carries` and its placeholder check, and is only the one file
+   * under `currencies/` that holds the Yahoo client
+   * (`fx-provider-source.guard.spec.ts`).
+   */
+  async fetchPairSymbolQuote(
+    symbol: string,
+  ): Promise<{ quote: YahooQuoteResult | null } | null> {
+    return this.yahoo.fetchQuoteAnswer(symbol);
+  }
+
+  /**
+   * The crypto adapter's door to Yahoo's daily bars for one coin pair symbol
+   * over [start, end] (`YYYY-MM-DD`, UTC days), asked as a coin's listing so
+   * no exchange suffix or alternate listing is tried. `[]` is Yahoo answering
+   * with no bars (or no such symbol); `null` is no answer.
+   */
+  async fetchPairSymbolWindow(
+    symbol: string,
+    start: string,
+    end: string,
+  ): Promise<HistoricalPrice[] | null> {
+    return this.yahoo.fetchHistoricalWindow(
+      symbol,
+      CRYPTO_EXCHANGE,
+      new Date(`${start}T00:00:00.000Z`),
+      new Date(`${end}T23:59:59.999Z`),
+    );
+  }
+
+  /**
    * One pair's latest quote: the direct symbol, then the reverse when the
    * direct quote is absent or below 1, and `chooseFxQuote` between them; a
    * pair remembered as reverse-first asks the two the other way round.
@@ -295,7 +331,7 @@ export class YahooFxProvider implements FxRateProvider {
     if (direct?.rate !== YAHOO_FX_PLACEHOLDER_RATE) {
       return chooseFxQuote(first, second);
     }
-    if (reverse === null || !usable(reverse.rate)) {
+    if (reverse === null || !isPositiveFinite(reverse.rate)) {
       this.logger.warn(
         `Yahoo quoted ${fxSymbol(from, to)} at the placeholder ${YAHOO_FX_PLACEHOLDER_RATE} and ${fxSymbol(to, from)} did not answer with a usable rate to check it; no rate for ${from}/${to}`,
       );
