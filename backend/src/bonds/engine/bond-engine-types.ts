@@ -106,7 +106,8 @@ export interface RateRuleDescription {
     | "FIXED"
     | "BENCHMARK_PLUS_SPREAD"
     | "INFLATION_PLUS_MARGIN_AS_RATE"
-    | "ZERO_COUPON_DISCOUNT";
+    | "ZERO_COUPON_DISCOUNT"
+    | "DAILY_INDEX_PLUS_SPREAD";
   readonly benchmarkId: string | null;
   /** FIXED only. */
   readonly annualRate: string | null;
@@ -114,6 +115,8 @@ export interface RateRuleDescription {
   /** The margin or spread. */
   readonly addend: string | null;
   readonly benchmarkFloor: string | null;
+  /** `DAILY_INDEX_PLUS_SPREAD` only: the business days before a period's end whose auctions it does not use. */
+  readonly lockoutBusinessDays?: number;
 }
 
 export interface RateScheduleBenchmark {
@@ -124,6 +127,24 @@ export interface RateScheduleBenchmark {
   readonly value: string | null;
   /** After the benchmark floor; null when `value` is null. */
   readonly flooredValue: string | null;
+}
+
+/**
+ * A run of consecutive days of a floating period with the same index: `from`
+ * inclusive, `to` exclusive (the first day after the run), so a 91-day quarter is
+ * a few runs, not 91.
+ */
+export interface DailyRateRun {
+  readonly from: string;
+  readonly to: string;
+  /** The index in force, a fraction. */
+  readonly index: string;
+  /** The annual rate of those days, `max(index + spread, floor)`, a fraction. */
+  readonly rate: string;
+  /** What one day accrues per 100 of par, rounded to the terms' `dailyDecimals`. */
+  readonly dailyAccrual: string;
+  /** True when the index is the assumed one, not a stored observation. */
+  readonly projected: boolean;
 }
 
 export interface RateScheduleEntry {
@@ -145,6 +166,11 @@ export interface RateScheduleEntry {
   readonly benchmarkPart: string | null;
   readonly addendPart: string | null;
   readonly announcedPart: string | null;
+  /**
+   * Only for a floating rate (`DAILY_INDEX_PLUS_SPREAD`), whose `annualRate` is
+   * null: the days with an index, in runs. A day with no index is absent.
+   */
+  readonly dailyRates?: readonly DailyRateRun[];
 }
 
 export interface BondValuation {

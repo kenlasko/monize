@@ -1,5 +1,5 @@
 import { BenchmarkUnit } from "./benchmark";
-import { BondTerms, benchmarkRuleOf } from "./bond-terms";
+import { BondTerms, rateBenchmarkIdOf } from "./bond-terms";
 
 /** Which part of the terms reads a benchmark series. */
 export type BenchmarkRole = "RATE" | "PRINCIPAL";
@@ -19,10 +19,10 @@ export interface BenchmarkRead {
  */
 export function benchmarkReadsOf(terms: BondTerms): readonly BenchmarkRead[] {
   const reads: BenchmarkRead[] = [];
-  const rule = benchmarkRuleOf(terms.rateRule);
-  if (rule !== null) {
+  const rateBenchmark = rateBenchmarkIdOf(terms.rateRule);
+  if (rateBenchmark !== null) {
     reads.push({
-      benchmarkId: rule.benchmarkId,
+      benchmarkId: rateBenchmark,
       role: "RATE",
       unit: "RATE_FRACTION",
     });

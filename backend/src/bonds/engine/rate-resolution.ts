@@ -373,6 +373,17 @@ export function planPeriodRates(
       case "BENCHMARK_PLUS_SPREAD":
       case "INFLATION_PLUS_MARGIN_AS_RATE":
         return benchmarkPeriod(rule);
+      case "DAILY_INDEX_PLUS_SPREAD":
+        // The days' rates are the lot's own (`floating-lot.ts`); a period has no
+        // single rate, and no observation of its own to be missing.
+        return final({
+          period,
+          rate: null,
+          source: null,
+          missing: null,
+          benchmark: null,
+          addend: fraction(parseDecimal(rule.spread, "spread")),
+        });
       default:
         return assertNever(rule);
     }

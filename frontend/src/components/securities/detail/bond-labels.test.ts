@@ -59,6 +59,25 @@ describe('rateRuleLines', () => {
     expect(rateRuleLines(t, rule({ type: 'FIXED', benchmarkId: null, annualRate: null, addend: null }), pct)).toEqual([]);
   });
 
+  it('says a floating rule as a daily sentence with the floor and the lockout', () => {
+    expect(
+      rateRuleLines(
+        t,
+        rule({
+          type: 'DAILY_INDEX_PLUS_SPREAD',
+          addend: '0.00103',
+          benchmarkFloor: '0',
+          lockoutBusinessDays: 2,
+        }),
+        pct,
+      ),
+    ).toEqual([
+      'bond.rate.rule.daily{"benchmark":"bond.benchmarks.CPI","addend":"pct(0.00103)"}',
+      'bond.rate.rule.floorZero{"benchmark":"bond.benchmarks.CPI"}',
+      'bond.rate.rule.lockout{"days":2}',
+    ]);
+  });
+
   it('names the first period and then the benchmark plus the margin', () => {
     expect(rateRuleLines(t, rule({ firstPeriodRate: '0.0560' }), pct)).toEqual([
       'bond.rate.rule.firstThen{"firstRate":"pct(0.0560)","benchmark":"bond.benchmarks.CPI","addend":"pct(0.0200)"}',

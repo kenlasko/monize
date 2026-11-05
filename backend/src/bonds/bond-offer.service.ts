@@ -380,7 +380,9 @@ function historySeriesOf(version: number, terms: BondTerms): BondHistorySeries {
         ? rule.spread
         : rule.type === "INFLATION_PLUS_MARGIN_AS_RATE"
           ? rule.margin
-          : null,
+          : rule.type === "DAILY_INDEX_PLUS_SPREAD"
+            ? rule.spread
+            : null,
     fee: fee?.type === "FIXED_FEE_PER_UNIT" ? fee.amount : null,
     proceedsFloor: floor === null ? null : floor.appliesTo,
     termsVersion: version,

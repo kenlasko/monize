@@ -30,6 +30,12 @@ import {
   RateScheduleEntry,
 } from "./bond-engine-types";
 import { attributeInterest } from "./attribution";
+import {
+  floatingDayFigures,
+  floatingEntries,
+  floatingSeriesOf,
+  FloatingSeries,
+} from "./floating-lot";
 import { indexedDayFigures, indexOn } from "./indexed-lot";
 import { IndexSeries, indexSeriesOf } from "./index-ratio";
 import {
@@ -209,8 +215,10 @@ export interface PreparedLot {
   readonly plan: RatePlan;
   /** What an `INDEX_RATIO` principal reads; null for every other principal. */
   readonly index: IndexSeries | null;
+  /** What a `DAILY_INDEX_PLUS_SPREAD` rate reads; null for every other rate. */
+  readonly floating: FloatingSeries | null;
   readonly saleRefusal: BondValuationRefusal | null;
-  /** By the count of started periods and, for an indexed lot, the day (its projection depends on it). */
+  /** By the count of started periods and, for an indexed or floating lot, the day (its projection depends on it). */
   readonly byStarted: Map<string, Resolved>;
 }
 
@@ -311,6 +319,23 @@ function indexSeriesFor(input: LotInput): IndexSeries | null {
   );
 }
 
+/** The floating rate's benchmark and calendar, with the assumed index (a fraction) the caller supplied, if any. */
+function floatingSeriesFor(input: LotInput): FloatingSeries | null {
+  const { terms } = input;
+  const rule = terms.rateRule;
+  if (rule.type !== "DAILY_INDEX_PLUS_SPREAD") return null;
+  const assumed = input.projection?.get(rule.benchmarkId);
+  return floatingSeriesOf(
+    terms,
+    rule,
+    input.benchmarks.get(rule.benchmarkId),
+    input.calendars.get(rule.calendarId),
+    assumed === undefined
+      ? null
+      : parseDecimal(assumed, `projectionAssumption:${rule.benchmarkId}`),
+  );
+}
+
 export function prepare(input: LotInput): PreparedLot {
   const { terms } = input;
   const schedule = scheduleOf(input);
@@ -329,6 +354,7 @@ export function prepare(input: LotInput): PreparedLot {
     quantity,
     plan: planPeriodRates(input, schedule),
     index: indexSeriesFor(input),
+    floating: floatingSeriesFor(input),
     saleRefusal: purchaseRefusal(input, lastPeriod.end),
     byStarted: new Map(),
   };
@@ -339,7 +365,10 @@ export function resolvedFor(
   started: number,
   asOf: string,
 ): Resolved {
-  const key = p.index === null ? String(started) : `${started}|${asOf}`;
+  const key =
+    p.index === null && p.floating === null
+      ? String(started)
+      : `${started}|${asOf}`;
   const cached = p.byStarted.get(key);
   if (cached) return cached;
   const resolution = ratesWithStarted(p.plan, started);
@@ -348,10 +377,18 @@ export function resolvedFor(
   const maturityInputs = inputsFor(p.compounding, rates, p.lastPeriod.index);
   const resolved: Resolved = {
     ...resolution,
-    rateSchedule: describeSchedule(p, rates, asOf),
-    // An indexed lot's cash at maturity is worked out for the day (`maturityCashOn`).
+    rateSchedule:
+      p.floating === null
+        ? describeSchedule(p, rates, asOf)
+        : floatingEntries(
+            { terms, series: p.floating, quantity: p.quantity },
+            p.schedule,
+            asOf,
+          ),
+    // The cash at maturity of an indexed or floating lot is worked out for the
+    // day (`derived-flows.ts`).
     maturityCash:
-      maturityInputs && p.index === null
+      maturityInputs && p.index === null && p.floating === null
         ? maturityLot(
             terms,
             maturityInputs.prior,
@@ -481,6 +518,18 @@ export function figuresOn(
         );
       }
     }
+  } else if (current && p.floating !== null) {
+    // A floating rate: the face value plus the days accrued so far (`floating-lot.ts`).
+    const open = floatingDayFigures(
+      { terms, series: p.floating, quantity },
+      current,
+      asOf,
+      places,
+    );
+    principal = open.principal;
+    accrued = open.accrued;
+    gross = open.gross;
+    grossLot = open.grossLot;
   } else if (current) {
     const inputs = inputsFor(compounding, rates, current.index);
     if (inputs) {

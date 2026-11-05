@@ -119,6 +119,23 @@ export function decimal(value: unknown, path: string): string {
   return value;
 }
 
+/**
+ * A decimal string that may be negative (a spread below the index): the one
+ * field of the terms that can be (`docs/specs/bond-marketable-primitives.md`
+ * 7.2). A JSON number is refused (INV-BOND-003).
+ */
+export function signedDecimal(value: unknown, path: string): string {
+  if (typeof value !== "string") {
+    throw new BondTermsError(path, "must be a decimal string, not a number");
+  }
+  try {
+    ExactDecimal.parse(value);
+  } catch {
+    throw new BondTermsError(path, `not a decimal string: ${value}`);
+  }
+  return value;
+}
+
 export function nullable<T>(value: unknown, read: (v: unknown) => T): T | null {
   return value === null ? null : read(value);
 }

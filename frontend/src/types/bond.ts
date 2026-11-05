@@ -113,7 +113,8 @@ export interface BondRateRule {
     | 'FIXED'
     | 'BENCHMARK_PLUS_SPREAD'
     | 'INFLATION_PLUS_MARGIN_AS_RATE'
-    | 'ZERO_COUPON_DISCOUNT';
+    | 'ZERO_COUPON_DISCOUNT'
+    | 'DAILY_INDEX_PLUS_SPREAD';
   benchmarkId: string | null;
   /** FIXED only. */
   annualRate: string | null;
@@ -121,6 +122,8 @@ export interface BondRateRule {
   /** The margin or spread. */
   addend: string | null;
   benchmarkFloor: string | null;
+  /** DAILY_INDEX_PLUS_SPREAD only: business days before a period end whose auctions are not used. */
+  lockoutBusinessDays?: number;
 }
 
 export interface BondRateScheduleBenchmark {
@@ -131,6 +134,16 @@ export interface BondRateScheduleBenchmark {
   value: string | null;
   /** After the benchmark floor; null when `value` is null. */
   flooredValue: string | null;
+}
+
+/** A run of days of a floating period that share an index; `to` is exclusive. */
+export interface BondDailyRateRun {
+  from: string;
+  to: string;
+  index: string;
+  rate: string;
+  dailyAccrual: string;
+  projected: boolean;
 }
 
 /** One period of a lot; `benchmark` is null for a TERMS or ANNOUNCED period. */
@@ -153,6 +166,8 @@ export interface BondRateScheduleEntry {
   benchmarkPart: string | null;
   addendPart: string | null;
   announcedPart: string | null;
+  /** A floating period (annualRate null): the days with an index, in runs. */
+  dailyRates?: BondDailyRateRun[];
 }
 
 export type BondLotStatus = 'OPEN' | 'MATURED' | 'REFUSED';

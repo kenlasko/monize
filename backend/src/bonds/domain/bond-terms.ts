@@ -19,6 +19,7 @@ import {
   object,
   oneOf,
   primitive,
+  signedDecimal,
   text,
 } from "./terms-readers";
 
@@ -56,6 +57,25 @@ export interface BenchmarkRuleFields {
   readonly observation: ObservationRule;
 }
 
+/**
+ * A floating rate that accrues daily (`docs/specs/bond-marketable-primitives.md`
+ * 7.2): on each day `max(index + spread, floor) / 360` of the par, where the
+ * index is the latest observation of a `STEP` benchmark strictly before the day.
+ * An observation dated within `lockoutBusinessDays` business days (of
+ * `calendarId`) before the end of the period is not used for that period. The
+ * daily accrual per 100 of par is rounded to `dailyDecimals` (percent units).
+ * The spread is the only signed decimal of the terms.
+ */
+export interface DailyIndexRule {
+  readonly type: "DAILY_INDEX_PLUS_SPREAD";
+  readonly benchmarkId: string;
+  readonly spread: string;
+  readonly floor: string;
+  readonly lockoutBusinessDays: number;
+  readonly calendarId: string;
+  readonly dailyDecimals: number;
+}
+
 export type RateRule =
   | { readonly type: "FIXED"; readonly annualRate: string }
   /**
@@ -70,22 +90,42 @@ export type RateRule =
   | ({
       readonly type: "INFLATION_PLUS_MARGIN_AS_RATE";
       readonly margin: string;
-    } & BenchmarkRuleFields);
+    } & BenchmarkRuleFields)
+  | DailyIndexRule;
 
-export type BenchmarkRule = Exclude<
+/** A rule that reads one observation per period (`observation`), as opposed to a daily one. */
+export type BenchmarkRule = Extract<
   RateRule,
-  { readonly type: "FIXED" } | { readonly type: "ZERO_COUPON_DISCOUNT" }
+  {
+    readonly type: "BENCHMARK_PLUS_SPREAD" | "INFLATION_PLUS_MARGIN_AS_RATE";
+  }
 >;
 
-/** The rule when it reads a benchmark, null for a rule that reads none; exhaustive over the rule types. */
+/** The rule when it reads one observation per period, null for a rule that reads none or reads daily; exhaustive over the rule types. */
 export function benchmarkRuleOf(rule: RateRule): BenchmarkRule | null {
+  switch (rule.type) {
+    case "FIXED":
+    case "ZERO_COUPON_DISCOUNT":
+    case "DAILY_INDEX_PLUS_SPREAD":
+      return null;
+    case "BENCHMARK_PLUS_SPREAD":
+    case "INFLATION_PLUS_MARGIN_AS_RATE":
+      return rule;
+    default:
+      return assertNever(rule);
+  }
+}
+
+/** The id of the benchmark a rate rule reads, whichever way it reads it; null for a rule that reads none. */
+export function rateBenchmarkIdOf(rule: RateRule): string | null {
   switch (rule.type) {
     case "FIXED":
     case "ZERO_COUPON_DISCOUNT":
       return null;
     case "BENCHMARK_PLUS_SPREAD":
     case "INFLATION_PLUS_MARGIN_AS_RATE":
-      return rule;
+    case "DAILY_INDEX_PLUS_SPREAD":
+      return rule.benchmarkId;
     default:
       return assertNever(rule);
   }
@@ -140,7 +180,9 @@ export type Redemption =
       readonly proceedsFloor: ProceedsFloor | null;
     };
 
-export type AccrualType = "ACTUAL_DAYS_IN_PERIOD" | "ACTUAL_ACTUAL_ICMA";
+/** `ACTUAL_360_DAILY_SUM`: a period's interest is the sum of its days' accruals (`DAILY_INDEX_PLUS_SPREAD` only). */
+export type AccrualType =
+  "ACTUAL_DAYS_IN_PERIOD" | "ACTUAL_ACTUAL_ICMA" | "ACTUAL_360_DAILY_SUM";
 
 export type Marketability = "RETAIL_REDEEMABLE" | "MARKETABLE";
 
@@ -181,6 +223,9 @@ export interface BondTerms {
   };
 }
 
+/** The most decimals a daily accrual is rounded to (a bound against a hostile document). */
+const MAX_DAILY_DECIMALS = 12;
+
 function parseObservation(value: unknown, path: string): ObservationRule {
   const type = primitive(value, path, [
     "STEP_VALUE_ON_NTH_BUSINESS_DAY_BEFORE_START_MONTH",
@@ -204,7 +249,39 @@ function parseRateRule(value: unknown, path: string): RateRule {
     "BENCHMARK_PLUS_SPREAD",
     "INFLATION_PLUS_MARGIN_AS_RATE",
     "ZERO_COUPON_DISCOUNT",
+    "DAILY_INDEX_PLUS_SPREAD",
   ] as const);
+  if (type === "DAILY_INDEX_PLUS_SPREAD") {
+    const r = object(value, path, [
+      "type",
+      "benchmarkId",
+      "spread",
+      "floor",
+      "lockoutBusinessDays",
+      "calendarId",
+      "dailyDecimals",
+    ]);
+    const dailyDecimals = integer(r.dailyDecimals, `${path}.dailyDecimals`, 0);
+    if (dailyDecimals > MAX_DAILY_DECIMALS) {
+      throw new BondTermsError(
+        `${path}.dailyDecimals`,
+        `must be at most ${MAX_DAILY_DECIMALS}`,
+      );
+    }
+    return {
+      type,
+      benchmarkId: text(r.benchmarkId, `${path}.benchmarkId`),
+      spread: signedDecimal(r.spread, `${path}.spread`),
+      floor: decimal(r.floor, `${path}.floor`),
+      lockoutBusinessDays: integer(
+        r.lockoutBusinessDays,
+        `${path}.lockoutBusinessDays`,
+        0,
+      ),
+      calendarId: text(r.calendarId, `${path}.calendarId`),
+      dailyDecimals,
+    };
+  }
   if (type === "ZERO_COUPON_DISCOUNT") {
     object(value, path, ["type"]);
     return { type };
@@ -396,6 +473,7 @@ export function parseBondTerms(json: unknown): BondTerms {
       type: primitive(t.accrual, "terms.accrual", [
         "ACTUAL_DAYS_IN_PERIOD",
         "ACTUAL_ACTUAL_ICMA",
+        "ACTUAL_360_DAILY_SUM",
       ] as const),
     },
     principalRule: parsePrincipalRule(t.principalRule, "terms.principalRule"),
@@ -423,6 +501,7 @@ function assertConsistent(terms: BondTerms): void {
   assertMarketableConsistent(terms);
   assertScheduleConsistent(terms);
   assertPrincipalConsistent(terms);
+  assertDailyConsistent(terms);
   assertDiscountConsistent(terms);
   if (
     redemption.type === "ON_DEMAND" &&
@@ -464,11 +543,46 @@ function assertPrincipalConsistent(terms: BondTerms): void {
       "an INDEX_RATIO principal is paid at maturity only (MATURITY_ONLY)",
     );
   }
-  const rateBenchmark = benchmarkRuleOf(rateRule)?.benchmarkId;
-  if (rateBenchmark === principalRule.benchmarkId) {
+  if (rateRule.type === "DAILY_INDEX_PLUS_SPREAD") {
+    throw new BondTermsError(
+      "terms.rateRule",
+      "an INDEX_RATIO principal does not combine with a DAILY_INDEX_PLUS_SPREAD rate",
+    );
+  }
+  if (rateBenchmarkIdOf(rateRule) === principalRule.benchmarkId) {
     throw new BondTermsError(
       "terms.principalRule.benchmarkId",
       "must not be the benchmark the rate rule reads: a rate and an index level are different units",
+    );
+  }
+}
+
+/**
+ * `DAILY_INDEX_PLUS_SPREAD` and `ACTUAL_360_DAILY_SUM` need each other: the rate
+ * is a daily one and the accrual sums days (`yearFraction` has no meaning for
+ * it). Interest is paid at each period's end: a `COUPON_DATES` schedule,
+ * capitalization `NONE`.
+ */
+function assertDailyConsistent(terms: BondTerms): void {
+  const { rateRule, accrual, schedule, capitalization } = terms;
+  const daily = rateRule.type === "DAILY_INDEX_PLUS_SPREAD";
+  if (daily !== (accrual.type === "ACTUAL_360_DAILY_SUM")) {
+    throw new BondTermsError(
+      "terms.accrual",
+      "ACTUAL_360_DAILY_SUM and a DAILY_INDEX_PLUS_SPREAD rate are used together",
+    );
+  }
+  if (!daily) return;
+  if (schedule.anchor !== "COUPON_DATES") {
+    throw new BondTermsError(
+      "terms.schedule.anchor",
+      "a DAILY_INDEX_PLUS_SPREAD rate needs a COUPON_DATES schedule",
+    );
+  }
+  if (capitalization.type !== "NONE") {
+    throw new BondTermsError(
+      "terms.capitalization",
+      "a DAILY_INDEX_PLUS_SPREAD rate pays each coupon at its date (capitalization NONE)",
     );
   }
 }

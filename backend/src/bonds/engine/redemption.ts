@@ -121,6 +121,9 @@ export function referencedCalendarIds(terms: BondTerms): ReadonlySet<string> {
   ) {
     ids.add(observation.calendarId);
   }
+  if (terms.rateRule.type === "DAILY_INDEX_PLUS_SPREAD") {
+    ids.add(terms.rateRule.calendarId);
+  }
   if (terms.redemption.type === "ON_DEMAND") {
     terms.redemption.blackouts.forEach((b) => ids.add(b.calendarId));
   }

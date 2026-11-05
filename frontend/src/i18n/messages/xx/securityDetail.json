@@ -371,7 +371,9 @@
         "firstThen": "[XX-Period 1: {firstRate}. Then {benchmark} + {addend}-XX]",
         "every": "[XX-Every period: {benchmark} + {addend}-XX]",
         "floorZero": "[XX-A negative {benchmark} counts as 0-XX]",
-        "discount": "[XX-Discount to face value-XX]"
+        "discount": "[XX-Discount to face value-XX]",
+        "daily": "[XX-Every day: {benchmark} + {addend}, added up per day-XX]",
+        "lockout": "[XX-An auction within {days, plural, one {# business day} other {# business days}} before a period end is not used for that period-XX]"
       },
       "lotHeading": "[XX-Lot purchased {date}-XX]",
       "range": "[XX-{start} to {end}-XX]",

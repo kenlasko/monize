@@ -22,7 +22,6 @@ import {
   BondValuation,
   BondValuationRefusal,
   CashFlow,
-  MissingObservation,
   RateRuleDescription,
 } from "./bond-engine-types";
 import {
@@ -33,15 +32,9 @@ import {
   splitOf,
 } from "./redemption-split";
 import { startedPeriods } from "./rate-resolution";
-import {
-  couponLotOf,
-  IndexedLot,
-  indexOn,
-  LotAmount,
-  maturityCashOf,
-  principalLotOn,
-  unitPrincipalOn,
-} from "./indexed-lot";
+import { derivedFlowsOf } from "./derived-flows";
+import { maturityCashOf as floatingMaturityCash } from "./floating-lot";
+import { IndexedLot, maturityCashOf, unitPrincipalOn } from "./indexed-lot";
 import { referencedCalendarIds } from "./redemption";
 
 import {
@@ -49,6 +42,7 @@ import {
   figuresOn,
   inputsFor,
   PreparedLot,
+  RateInputs,
   prepare,
   resolvedFor,
   validateDay,
@@ -98,6 +92,16 @@ function describeRule(
       return benchmarkDescription(rule, rule.spread);
     case "INFLATION_PLUS_MARGIN_AS_RATE":
       return benchmarkDescription(rule, rule.margin);
+    case "DAILY_INDEX_PLUS_SPREAD":
+      return {
+        type: rule.type,
+        benchmarkId: rule.benchmarkId,
+        annualRate: null,
+        firstPeriodRate: null,
+        addend: rule.spread,
+        benchmarkFloor: rule.floor,
+        lockoutBusinessDays: rule.lockoutBusinessDays,
+      };
     default:
       return assertNever(rule);
   }
@@ -182,28 +186,9 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
   const resolved = resolvedFor(p, started, asOf);
   const { rates } = resolved;
   const { compounding, lastPeriod } = p;
-  const indexed: IndexedLot | null =
-    p.index === null ? null : { terms, series: p.index, quantity: p.quantity };
-  // What an indexed principal needed and could not read: the months of a ratio
-  // that is due (`missing`), and whether a later figure is unknown for want of a
-  // projection, or rests on one.
-  const indexMonths = new Set<string>();
-  let indexProjected = false;
-  let indexUnknownLater = false;
-  const track = (amount: LotAmount, on: string) => {
-    if (amount.projected) indexProjected = true;
-    if (amount.value !== null || amount.absent.length === 0) return;
-    if (compareYMD(on, asOf) <= 0) {
-      amount.absent.forEach((key) => indexMonths.add(key));
-    } else {
-      indexUnknownLater = true;
-    }
-  };
-  const unknownAmount: LotAmount = {
-    value: null,
-    projected: false,
-    absent: [],
-  };
+  // A lot whose principal tracks an index or whose rate is floating has flows of
+  // its own (`derived-flows.ts`); every other lot runs the plain arithmetic.
+  const derived = derivedFlowsOf(p, asOf, matured, current);
   let { maturityCash, maturityProjected } = resolved;
   const lot = (figure: ExactDecimal) => figure.toFixed(p.places);
   const currentRate =
@@ -232,12 +217,8 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
       if (compareYMD(paymentDateOf(terms, calendars, period), asOf) <= 0)
         continue;
       const rate = rates[period.index - 1];
-      if (indexed !== null) {
-        const coupon =
-          rate.rate === null
-            ? unknownAmount
-            : couponLotOf(indexed, { period, rate: rate.rate }, asOf);
-        track(coupon, period.end);
+      if (derived !== null) {
+        const coupon = derived.coupon(period, rate.rate);
         cashflows.push(
           flow(period, "INTEREST", coupon.value, coupon.projected),
         );
@@ -252,9 +233,8 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
       );
     }
     if (compareYMD(paymentDateOf(terms, calendars, lastPeriod), asOf) > 0) {
-      if (indexed !== null) {
-        const paid = principalLotOn(indexed, lastPeriod.end, asOf, true);
-        track(paid, lastPeriod.end);
+      if (derived !== null) {
+        const paid = derived.principal(lastPeriod);
         cashflows.push(
           flow(lastPeriod, "PRINCIPAL", paid.value, paid.projected),
         );
@@ -280,60 +260,24 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
     );
   }
 
-  if (indexed !== null) {
-    // The cash at maturity: the floored principal and the last coupon, each on
-    // the ratio of the maturity date.
-    const finalRate = rates[lastPeriod.index - 1];
-    const cash = maturityCashOf(
-      indexed,
-      finalRate.rate === null
-        ? null
-        : { period: lastPeriod, rate: finalRate.rate },
-      p.maturity,
-      asOf,
-    );
+  if (derived !== null) {
+    const cash = derived.maturity(lastPeriod, rates[lastPeriod.index - 1].rate);
     maturityCash = cash.value;
     maturityProjected = cash.projected;
-    // The ratio the valuation day itself is worked out on is due now.
-    track(
-      {
-        ...unknownAmount,
-        absent: indexOn(indexed, matured ? p.maturity : asOf, asOf).absent,
-      },
-      asOf,
-    );
   }
-  const publisher = indexed === null ? null : indexed.series.publisher;
-  const indexMissing: MissingObservation[] =
-    indexed === null
-      ? []
-      : [...indexMonths].sort().map((observation) => ({
-          benchmarkId: indexed.series.rule.benchmarkId,
-          observation,
-          publisher,
-        }));
-  const missing = [...resolved.missingFor, ...indexMissing];
+  const trail = derived === null ? null : derived.trail();
+  const missing =
+    trail === null
+      ? resolved.missingFor
+      : [...resolved.missingFor, ...trail.missing];
   const assumptions =
-    indexed !== null &&
-    indexProjected &&
-    indexed.series.annualInflation !== null
-      ? [
-          ...resolved.assumptions,
-          {
-            benchmarkId: indexed.series.rule.benchmarkId,
-            value: indexed.series.annualInflation.toTrimmedString(10, 4),
-            basis: "SUPPLIED" as const,
-            observation: null,
-          },
-        ]
-      : resolved.assumptions;
+    trail === null
+      ? resolved.assumptions
+      : [...resolved.assumptions, ...trail.assumptions];
   const projectionMissing =
-    indexed !== null && indexUnknownLater
-      ? [
-          ...resolved.projectionMissing,
-          { benchmarkId: indexed.series.rule.benchmarkId, publisher },
-        ]
-      : resolved.projectionMissing;
+    trail === null
+      ? resolved.projectionMissing
+      : [...resolved.projectionMissing, ...trail.projectionMissing];
   const calendarsKnown = [...referencedCalendarIds(terms)].every((id) =>
     calendars.has(id),
   );
@@ -432,6 +376,38 @@ export function accruedInterestOn(
 }
 
 /**
+ * The cash of `units` at maturity (principal and last coupon), the lot's figure
+ * rounded as the terms' basis says; null while an index ratio or a floating
+ * index it needs is not known. `inputs` is the last period's rate, null for a
+ * floating rate.
+ */
+function maturityCashFor(
+  p: PreparedLot,
+  inputs: RateInputs | null,
+  units: ExactDecimal,
+  asOf: string,
+): ExactDecimal | null {
+  const { terms } = p.input;
+  if (p.floating !== null) {
+    return floatingMaturityCash(
+      { terms, series: p.floating, quantity: units },
+      p.lastPeriod,
+      asOf,
+    ).value;
+  }
+  if (inputs === null) return null;
+  if (p.index !== null) {
+    return maturityCashOf(
+      { terms, series: p.index, quantity: units },
+      inputs.current,
+      p.maturity,
+      asOf,
+    ).value;
+  }
+  return maturityLot(terms, inputs.prior, inputs.current, units);
+}
+
+/**
  * What a redemption on `date` pays, as returned principal and interest (spec
  * `bond-redemption-interest.md` section 2), through the same schedule, rates,
  * penalties, floor and rounding as `valueBondLot`: the lot's figures are rounded
@@ -487,18 +463,11 @@ export function redemptionSplit(
   if (matured) {
     const { rates } = resolvedFor(p, startedPeriods(p.schedule, day), date);
     const inputs = inputsFor(p.compounding, rates, p.lastPeriod.index);
-    if (!inputs) return refused("RATE_UNKNOWN", true);
+    // A floating rate has no single rate: its last coupon is the sum of its days.
+    if (!inputs && p.floating === null) return refused("RATE_UNKNOWN", true);
     const basisOf = (units: ExactDecimal): SplitBasis | null => {
       const principal = principalOf(units);
-      const paid =
-        indexed === null
-          ? maturityLot(terms, inputs.prior, inputs.current, units)
-          : maturityCashOf(
-              { ...indexed, quantity: units },
-              inputs.current,
-              p.maturity,
-              date,
-            ).value;
+      const paid = maturityCashFor(p, inputs, units, date);
       return principal === null || paid === null
         ? null
         : { principal, gross: paid, payout: paid };

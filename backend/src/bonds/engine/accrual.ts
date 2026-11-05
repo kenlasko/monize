@@ -147,6 +147,10 @@ export function yearFraction(
       return ExactDecimal.ONE.div(periodsPerYear(terms)).mul(
         quasiFractions(period, from, to),
       );
+    case "ACTUAL_360_DAILY_SUM":
+      // The rate changes inside a period: its interest is the sum of its days
+      // (`floating-lot.ts`), not a share of a year.
+      throw new RangeError("ACTUAL_360_DAILY_SUM has no year fraction");
     default:
       return assertNever(terms.accrual.type);
   }

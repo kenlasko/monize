@@ -66,6 +66,16 @@ export function rateRuleLines(
   if (rule.benchmarkId === null || rule.addend === null) return [];
   const benchmark = benchmarkLabel(t, rule.benchmarkId);
   const addend = pct(rule.addend);
+  if (rule.type === 'DAILY_INDEX_PLUS_SPREAD') {
+    const daily = [t('bond.rate.rule.daily', { benchmark, addend })];
+    if (rule.benchmarkFloor !== null && Number(rule.benchmarkFloor) === 0) {
+      daily.push(t('bond.rate.rule.floorZero', { benchmark }));
+    }
+    if (rule.lockoutBusinessDays) {
+      daily.push(t('bond.rate.rule.lockout', { days: rule.lockoutBusinessDays }));
+    }
+    return daily;
+  }
   const lines =
     rule.firstPeriodRate === null
       ? [t('bond.rate.rule.every', { benchmark, addend })]

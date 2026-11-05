@@ -516,6 +516,31 @@ accrual: { type: "ACTUAL_360_DAILY_SUM" }
 - `decimal()` refuses a negative value; the spread uses a new
   `signedDecimal()`; nothing else accepts a negative.
 
+Decisions made in Phase 4 (implementation):
+
+- Stale rule. Let `n` be the date of the newest stored observation of the
+  benchmark. A day `x` has an index when the latest observation strictly before
+  `x` exists and `x <= n + 7` calendar days. A later day is unknown unless the
+  projection supplies an index for it; `coveredThrough` is not read. Example:
+  the newest observation is Monday 2026-07-06, so 2026-07-13 is known and
+  2026-07-14 is unknown. Observations after the lockout cut are not newer for
+  this test: the test reads the stored series, not the lockout view.
+- The lockout counts `lockoutBusinessDays` business days of `calendarId` back
+  from the unadjusted period end. An observation dated on or after that day is
+  not used for the days of that period; it is used from the next period. A
+  settlement-date lockout is not implemented.
+- A projection (a supplied index, a fraction, keyed by the benchmark) fills only
+  the days after the valuation day. A day on or before the valuation day with no
+  stored index is `missing`, never projected. There is no latest-observation
+  fallback: only a supplied index projects.
+- The daily rounding uses `terms.rounding.mode`. The period interest is the sum
+  of the rounded daily accruals, rounded once on the holding.
+- A period with an unknown day has `interest` null, `rateSource` null and a
+  `dailyRates` list of the known days up to the first unknown one. `missing`
+  names the first unknown day of each such period. `nextRateReset` is null.
+- The terms with a `calendarId` the caller does not supply are incomplete
+  (`termsComplete` false) and every day is unknown.
+
 ## 8. P8 savings-bond primitives (later phase)
 
 Designed here so that the US adapter can declare the programs; implemented in a
