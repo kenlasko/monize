@@ -729,6 +729,18 @@ describe("item 6, missing data", () => {
     expect(missingDataNotification(afterMaturity)?.message).toContain(
       "is on or after its maturity 2025-04-01; correct the purchase date",
     );
+    // A refusal code the producer does not know is never reported as another
+    // code's cause (a two-way ternary read it as PURCHASE_AFTER_MATURITY).
+    const unknownRefusal = security([
+      lot({
+        valuation: {
+          status: "REFUSED",
+          currentPeriod: null,
+          refusal: { code: "NOT_A_CODE", params: {} } as never,
+        },
+      }),
+    ]);
+    expect(() => missingCausesOf(unknownRefusal)).toThrow();
     const underivable = security([], {
       refusal: {
         code: "OVER_REMOVAL",

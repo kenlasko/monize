@@ -9,7 +9,8 @@ import { addDaysYMD } from "../common/date-utils";
 import { canonicalJson } from "./canonical-json";
 import { BondRedemptionSplit } from "./bond-holdings.service";
 import { ExactDecimal } from "./domain/exact-decimal";
-import { CashFlow } from "./engine/bond-engine-types";
+import { assertNever } from "./domain/assert-never";
+import { BondValuationRefusal, CashFlow } from "./engine/bond-engine-types";
 import {
   SecurityLotValuation,
   SecurityValuation,
@@ -518,6 +519,37 @@ function causeIdentity(cause: BondMissingCause): unknown {
 }
 
 /** The causes of a security's valuation, sorted and without duplicates. */
+
+/** The missing-cause a refused lot reports: one case per refusal code, so a new code cannot fall into another's. */
+function refusedCause(
+  lot: SecurityLotValuation,
+  seriesCode: string,
+  refusal: BondValuationRefusal,
+): BondMissingCause {
+  const instrumentId = lot.instrumentId ?? "";
+  switch (refusal.code) {
+    case "PURCHASE_OUTSIDE_SALE_WINDOW":
+      return {
+        code: "PURCHASE_OUTSIDE_SALE_WINDOW",
+        instrumentId,
+        seriesCode,
+        purchaseDate: refusal.params.purchaseDate,
+        from: refusal.params.from,
+        to: refusal.params.to,
+      };
+    case "PURCHASE_AFTER_MATURITY":
+      return {
+        code: "PURCHASE_AFTER_MATURITY",
+        instrumentId,
+        seriesCode,
+        purchaseDate: refusal.params.purchaseDate,
+        maturityDate: refusal.params.maturityDate,
+      };
+    default:
+      return assertNever(refusal);
+  }
+}
+
 export function missingCausesOf(valuation: SecurityValuation): {
   causes: BondMissingCause[];
   lots: SecurityLotValuation[];
@@ -548,26 +580,7 @@ export function missingCausesOf(valuation: SecurityValuation): {
   for (const lot of valuation.lots) {
     const v = lot.valuation;
     if (v.status === "REFUSED" && v.refusal !== null) {
-      const refusal = v.refusal;
-      add(
-        refusal.code === "PURCHASE_OUTSIDE_SALE_WINDOW"
-          ? {
-              code: "PURCHASE_OUTSIDE_SALE_WINDOW",
-              instrumentId: lot.instrumentId ?? "",
-              seriesCode: v.seriesCode,
-              purchaseDate: refusal.params.purchaseDate,
-              from: refusal.params.from,
-              to: refusal.params.to,
-            }
-          : {
-              code: "PURCHASE_AFTER_MATURITY",
-              instrumentId: lot.instrumentId ?? "",
-              seriesCode: v.seriesCode,
-              purchaseDate: refusal.params.purchaseDate,
-              maturityDate: refusal.params.maturityDate,
-            },
-        lot,
-      );
+      add(refusedCause(lot, v.seriesCode, v.refusal), lot);
       continue;
     }
     if (v.status !== "OPEN") continue;
