@@ -247,6 +247,44 @@ describe('SplitEditor -- cross-currency transfer lines', () => {
     expect(lastSplits()[1].transferTargetFromCurrency).toBe('CAD');
   });
 
+  it('does not restore a stated figure onto another destination account', async () => {
+    // The bank credited 28.75 USD; the line is then pointed at the EUR account.
+    await act(async () => {
+      render(
+        <Harness
+          initial={[
+            line({ id: 'a', categoryId: 'cat-1', amount: -60 }),
+            line({
+              id: 'b',
+              splitType: 'transfer',
+              transferAccountId: 'usd-sav',
+              amount: -40,
+              transferTargetAmount: 28.75,
+              transferTargetFromCurrency: 'CAD',
+            }),
+          ]}
+        />,
+      );
+    });
+    await flushRate();
+
+    mockGetRateForDate.mockResolvedValue(0.65);
+    fireEvent.change(screen.getAllByDisplayValue('US Savings')[0], {
+      target: { value: 'eur-sav' },
+    });
+    await flushRate();
+    // 40 CAD at 0.65, not the USD figure relabelled as euros.
+    expect(lastSplits()[1].transferTargetAmount).toBe(26);
+
+    // Back to the USD account it was stated for: the bank's figure returns.
+    mockGetRateForDate.mockResolvedValue(0.73);
+    fireEvent.change(screen.getAllByDisplayValue('Euro Savings')[0], {
+      target: { value: 'usd-sav' },
+    });
+    await flushRate();
+    expect(lastSplits()[1].transferTargetAmount).toBe(28.75);
+  });
+
   it('drops the received amount when the line stops being a transfer', async () => {
     await act(async () => {
       render(<Harness initial={usdTransfer()} />);

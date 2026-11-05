@@ -8,6 +8,11 @@ import { receivedForSent, sentForReceived } from './useTransferFxAutofill';
 /** The parts of a split line this hook reads and writes. */
 export interface SplitFxLine {
   id: string;
+  /**
+   * The counterpart account. A remembered received amount belongs to it
+   * alone: a line pointed at another account starts empty, as on a transfer.
+   */
+  transferAccountId?: string;
   /** Signed, in the parent account's currency. */
   amount: number;
   /** Unsigned, in the target account's currency. */
@@ -107,9 +112,12 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
   // The key whose rate was last applied to each line.
   const appliedKeyRef = useRef(new Map<string, string>());
   // Each line's stated (typed or loaded) received amount, with the parent
-  // currency and line amount it was stated for.
+  // currency, counterpart account and line amount it was stated for.
   const statedRef = useRef(
-    new Map<string, { from: string; amount: number; target: number }>(),
+    new Map<
+      string,
+      { from: string; account: string | undefined; amount: number; target: number }
+    >(),
   );
   // Lines a restore was issued for that do not hold it yet: until the patch
   // lands, the line still shows the derived figure it replaces, which must not
@@ -152,6 +160,7 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
     ) {
       statedRef.current.set(line.id, {
         from: line.transferTargetFromCurrency,
+        account: line.transferAccountId,
         amount: Number(line.amount),
         target: line.transferTargetAmount,
       });
@@ -159,11 +168,18 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
   };
 
   // The patch that brings a line's stated figure back, when the parent is in
-  // that figure's currency again with the line unchanged and the line does not
-  // already hold it; null otherwise.
+  // that figure's currency again with the line unchanged (same counterpart
+  // account, same amount) and the line does not already hold it; null otherwise.
   const restorePatch = (line: T, from: string): SplitFxPatch | null => {
     const stated = statedRef.current.get(line.id);
-    if (!stated || stated.from !== from || stated.amount !== Number(line.amount)) return null;
+    if (
+      !stated ||
+      stated.from !== from ||
+      stated.account !== line.transferAccountId ||
+      stated.amount !== Number(line.amount)
+    ) {
+      return null;
+    }
     if (
       line.transferTargetFromCurrency === from &&
       line.transferTargetAmount === stated.target
@@ -305,7 +321,12 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
     targetAutoRef.current.delete(line.id);
     restoringRef.current.delete(line.id);
     if (isFilled(value)) {
-      statedRef.current.set(line.id, { from: fromCurrency, amount: Number(line.amount), target: value });
+      statedRef.current.set(line.id, {
+        from: fromCurrency,
+        account: line.transferAccountId,
+        amount: Number(line.amount),
+        target: value,
+      });
     } else {
       statedRef.current.delete(line.id);
     }

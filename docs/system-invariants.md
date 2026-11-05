@@ -1034,7 +1034,9 @@ Statement           A split write replaces every line. A line that continues a
                     received amount belongs to one currency pair: the client tags
                     it with the parent currency it was stated against, neither
                     shows nor sends it for another, and restores it when the
-                    parent returns to that currency with the line unchanged. A
+                    parent returns to that currency with the line unchanged
+                    (same counterpart account, same amount); a line pointed at
+                    another account starts empty. A
                     duplicate or quick fill copies none. Undo compares it, so an
                     edit of that figure alone is refused like any leg change.
 Source of truth     The counterpart's amount before the replacement deletes it.

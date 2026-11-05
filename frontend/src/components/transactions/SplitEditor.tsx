@@ -327,6 +327,7 @@ export function SplitEditor({
         ...newSplits[index],
         transferAccountId: value,
         transferTargetAmount: undefined,
+        transferTargetFromCurrency: undefined,
       };
       commitSplits(newSplits);
       return;

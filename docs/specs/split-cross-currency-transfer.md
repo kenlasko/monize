@@ -40,7 +40,8 @@ letters below name their parts.
   (`transferTargetFromCurrency`); once the parent moves to another currency it
   is neither shown nor sent, and is re-derived for the new pair; a stated
   figure comes back when the parent returns to its currency with the line
-  unchanged.
+  unchanged: the same counterpart account and the same amount. A line pointed
+  at another account starts empty and is filled from that pair's rate.
 - **INV-SPLITFX-002 (c).** A duplicate or quick fill does not copy a received amount: the
   new row's comes from the rate for its own date.
 - **INV-SPLITFX-002 (d).** Undo or redo of an edit that changed what a line received is
@@ -83,7 +84,7 @@ received amount needs no rate.
 |---|---|
 | INV-SPLITFX-001 | `transaction-split.service.spec.ts` "transferTargetAmount"; `split-transfer-received-amount.integration.spec.ts` |
 | INV-SPLITFX-002 (a) | `split-received-amount.util.spec.ts`; the integration "re-save omits it" and "amount changed" cases |
-| INV-SPLITFX-002 (b) | `useSplitTransferFxAutofill.test.ts`; `SplitEditor.crossCurrency.test.tsx` "parent currency changes"; `split-transfer-currency.test.ts` |
+| INV-SPLITFX-002 (b) | `useSplitTransferFxAutofill.test.ts`; `SplitEditor.crossCurrency.test.tsx` "parent currency changes", "another destination account"; `split-transfer-currency.test.ts` |
 | INV-SPLITFX-002 (c) | `SplitEditor.crossCurrency.test.tsx` "loads none for a duplicate or quick fill" |
 | INV-SPLITFX-002 (d) | `action-history.service.spec.ts` "changed only what a line received" |
 | INV-SPLITFX-003 | `split-received-amount.util.spec.ts` "ownSplitCounterpartsOnly"; the integration "joint reader" case |
