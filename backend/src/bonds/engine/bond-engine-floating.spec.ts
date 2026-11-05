@@ -165,7 +165,19 @@ describe("a day with no index is unknown (INV-BOND-002)", () => {
   it("is known up to 7 calendar days after the newest observation and unknown after", () => {
     const v = valueFloating(FRN, LOT, "2026-07-10", stale);
     const runs = v.rateSchedule[0].dailyRates ?? [];
-    expect(runs[runs.length - 1].to).toBe("2026-07-14");
+    // The last known run ends 07-14; the days after it are one run with no index.
+    expect(runs.slice(-2).map((r) => [r.from, r.to, r.index])).toEqual([
+      ["2026-07-07", "2026-07-14", "0.0380"],
+      ["2026-07-14", "2026-07-31", null],
+    ]);
+    expect(runs[runs.length - 1]).toEqual({
+      from: "2026-07-14",
+      to: "2026-07-31",
+      index: null,
+      rate: null,
+      dailyAccrual: null,
+      projected: false,
+    });
     expect(v.rateSchedule[0]).toMatchObject({
       rateSource: null,
       interest: null,
@@ -230,7 +242,9 @@ describe("a day with no index is unknown (INV-BOND-002)", () => {
     expect(runs.map((r) => [r.from, r.to, r.index])).toEqual([
       ["2026-04-30", "2026-05-05", "0.0360"],
       ["2026-05-05", "2026-05-12", "0.0362"],
+      ["2026-05-12", "2026-05-27", null],
       ["2026-05-27", "2026-06-03", "0.0368"],
+      ["2026-06-03", "2026-07-31", null],
     ]);
   });
 
@@ -264,6 +278,7 @@ describe("a day with no index is unknown (INV-BOND-002)", () => {
       ["2026-05-27", "2026-06-02", "0.0368"],
       ["2026-06-02", "2026-06-09", "0.0370"],
       ["2026-06-09", "2026-06-16", "0.0372"],
+      ["2026-06-16", "2026-07-31", null],
     ]);
   });
 
@@ -285,11 +300,10 @@ describe("a day with no index is unknown (INV-BOND-002)", () => {
       },
     ]);
     const runs = v.rateSchedule[0].dailyRates ?? [];
-    expect(runs[runs.length - 1]).toMatchObject({
-      from: "2026-05-19",
-      to: "2026-05-27",
-      index: "0.0366",
-    });
+    expect(runs.slice(-2)).toMatchObject([
+      { from: "2026-05-19", to: "2026-05-27", index: "0.0366" },
+      { from: "2026-05-27", to: "2026-07-31", index: null },
+    ]);
   });
 
   it("names no day for a series that is not stored, and no publisher", () => {

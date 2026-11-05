@@ -124,6 +124,28 @@ describe('SecurityBondPeriodRate', () => {
     expect(screen.getByText('Projected')).toBeInTheDocument();
   });
 
+  it('shows a run of days with no index as a gap between the known runs, not as nothing', () => {
+    const gap = [
+      ...RUNS,
+      { from: '2026-05-12', to: '2026-05-26', index: null, rate: null, dailyAccrual: null, projected: false },
+      { from: '2026-05-26', to: '2026-06-02', index: '0.0368', rate: '0.03783', dailyAccrual: '0.0105', projected: false },
+    ];
+    const v = valuation(FRN_RULE, [entry({ dailyRates: gap })]);
+    render(<SecurityBondPeriodRate valuation={v} period={v.rateSchedule[0]} detail withSource={false} />);
+    expect(screen.getByText('From d(2026-05-12): no index stored')).toBeInTheDocument();
+    expect(screen.getByText('From d(2026-05-26): 3.783%')).toBeInTheDocument();
+    expect(screen.queryByText('Unknown')).toBeNull();
+  });
+
+  it('says no index stored yet when every run of the period has none', () => {
+    const none = [
+      { from: '2026-04-30', to: '2026-07-31', index: null, rate: null, dailyAccrual: null, projected: false },
+    ];
+    const v = valuation(FRN_RULE, [entry({ dailyRates: none })]);
+    render(<SecurityBondPeriodRate valuation={v} period={v.currentPeriod!} detail />);
+    expect(screen.getByText(/no index stored yet/)).toBeInTheDocument();
+  });
+
   it('says "Daily" with the benchmark in a compact cell, with the source badge', () => {
     const v = valuation(FRN_RULE, [entry({ rateSource: 'DERIVED', dailyRates: RUNS })]);
     render(<SecurityBondPeriodRate valuation={v} period={v.currentPeriod!} />);

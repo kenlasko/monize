@@ -582,7 +582,9 @@ Decisions made in Phase 4 (implementation):
 - The daily rounding uses `terms.rounding.mode`. The period interest is the sum
   of the rounded daily accruals, rounded once on the holding.
 - A period with an unknown day has `interest` null, `rateSource` null and a
-  `dailyRates` list of the known days up to the first unknown one. `missing`
+  `dailyRates` list of every day of the period: the known runs, those after an
+  unknown day included, and each run of unknown days as a run whose `index`,
+  `rate` and `dailyAccrual` are null, so a reader sees the gap. `missing`
   names the first unknown day of each such period. `nextRateReset` is null.
 - The terms with a `calendarId` the caller does not supply are incomplete
   (`termsComplete` false) and every day is unknown.

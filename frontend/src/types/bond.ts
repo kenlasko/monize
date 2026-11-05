@@ -142,13 +142,14 @@ export interface BondRateScheduleBenchmark {
   flooredValue: string | null;
 }
 
-/** A run of days of a floating period that share an index; `to` is exclusive. */
+/** A run of days of a floating period that share an index, or share having none; `to` is exclusive. */
 export interface BondDailyRateRun {
   from: string;
   to: string;
-  index: string;
-  rate: string;
-  dailyAccrual: string;
+  /** A fraction; null for a run of days with no index (not stored, none assumed), with `rate` and `dailyAccrual`. */
+  index: string | null;
+  rate: string | null;
+  dailyAccrual: string | null;
   projected: boolean;
 }
 

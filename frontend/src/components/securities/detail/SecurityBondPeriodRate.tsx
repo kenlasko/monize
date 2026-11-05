@@ -76,11 +76,12 @@ export function SecurityBondPeriodRate({
   const runs =
     valuation.rateSchedule.find((entry) => entry.index === period.index)
       ?.dailyRates ?? [];
-  if (!detail || runs.length === 0) {
+  const anyIndex = runs.some((run) => run.index !== null);
+  if (!detail || !anyIndex) {
     return (
       <span className="inline-flex flex-wrap items-center gap-2">
         <span>
-          {runs.length === 0
+          {!anyIndex
             ? t('bond.rate.dailyNoIndex', { benchmark })
             : t('bond.rate.daily', { benchmark })}
         </span>
@@ -93,10 +94,12 @@ export function SecurityBondPeriodRate({
       {runs.map((run) => (
         <li key={run.from} className="inline-flex flex-wrap items-center gap-2">
           <span>
-            {t('bond.rate.dailyRun', {
-              from: formatDate(run.from),
-              rate: pct(run.rate),
-            })}
+            {run.rate === null
+              ? t('bond.rate.dailyRunUnknown', { from: formatDate(run.from) })
+              : t('bond.rate.dailyRun', {
+                  from: formatDate(run.from),
+                  rate: pct(run.rate),
+                })}
           </span>
           {run.projected && (
             <Badge variant="amber">{t('bond.lots.projected')}</Badge>

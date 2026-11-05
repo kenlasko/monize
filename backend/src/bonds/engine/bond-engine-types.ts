@@ -137,12 +137,12 @@ export interface RateScheduleBenchmark {
 export interface DailyRateRun {
   readonly from: string;
   readonly to: string;
-  /** The index in force, a fraction. */
-  readonly index: string;
-  /** The annual rate of those days, `max(index + spread, floor)`, a fraction. */
-  readonly rate: string;
-  /** What one day accrues per 100 of par, rounded to the terms' `dailyDecimals`. */
-  readonly dailyAccrual: string;
+  /** The index in force, a fraction; null for a run of days with no index (not stored, none assumed). */
+  readonly index: string | null;
+  /** The annual rate of those days, `max(index + spread, floor)`, a fraction; null when `index` is. */
+  readonly rate: string | null;
+  /** What one day accrues per 100 of par, rounded to the terms' `dailyDecimals`; null when `index` is. */
+  readonly dailyAccrual: string | null;
   /** True when the index is the assumed one, not a stored observation. */
   readonly projected: boolean;
 }
@@ -168,7 +168,8 @@ export interface RateScheduleEntry {
   readonly announcedPart: string | null;
   /**
    * Only for a floating rate (`DAILY_INDEX_PLUS_SPREAD`), whose `annualRate` is
-   * null: the days with an index, in runs. A day with no index is absent.
+   * null: every day of the period, in runs. A run of days with no index has a
+   * null `index`, `rate` and `dailyAccrual`.
    */
   readonly dailyRates?: readonly DailyRateRun[];
 }

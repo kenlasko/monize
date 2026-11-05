@@ -381,6 +381,7 @@
       "daily": "Daily, {benchmark}",
       "dailyNoIndex": "Daily, {benchmark}: no index stored yet",
       "dailyRun": "From {from}: {rate}",
+      "dailyRunUnknown": "From {from}: no index stored",
       "lotHeading": "Lot purchased {date}",
       "range": "{start} to {end}",
       "current": "Current",

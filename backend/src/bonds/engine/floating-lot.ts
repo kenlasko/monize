@@ -334,7 +334,7 @@ const fraction = (value: ExactDecimal) => value.toTrimmedString(TEXT_PLACES, 4);
 
 /**
  * The rate schedule of the lot's periods: no annual rate, the days' rates in runs
- * of equal index (`dailyRates`), and the period's interest per bond split into
+ * of equal index (`dailyRates`, a run of days with no index has a null index), and the period's interest per bond split into
  * the index part and the spread part (the rounding residual and a negative
  * spread go to the spread part, so the two add up to the interest). The
  * interest is null while a day has no index and none is assumed.
@@ -360,17 +360,36 @@ export function floatingEntries(
         (compareYMD(row.day, asOf) >= 0 && series.assumed !== null
           ? series.assumed
           : null);
-      if (index === null) continue;
       const accrual = row.accrual ?? assumed;
-      if (accrual === null) continue;
+      const next = addDays(row.day, 1);
+      const previous = runs[runs.length - 1];
+      if (index === null || accrual === null) {
+        // A day with no index is a run of its own with a null index, so a
+        // reader sees the gap instead of a list that skips it.
+        if (
+          previous !== undefined &&
+          previous.to === row.day &&
+          previous.index === null
+        ) {
+          runs[runs.length - 1] = { ...previous, to: next };
+        } else {
+          runs.push({
+            from: row.day,
+            to: next,
+            index: null,
+            rate: null,
+            dailyAccrual: null,
+            projected: false,
+          });
+        }
+        continue;
+      }
       benchmark = benchmark.add(
         ExactDecimal.max(index, series.floor)
           .mul(PAR)
           .div(DAY_COUNT)
           .round(series.rule.dailyDecimals, series.mode),
       );
-      const previous = runs[runs.length - 1];
-      const next = addDays(row.day, 1);
       if (
         previous !== undefined &&
         previous.to === row.day &&
