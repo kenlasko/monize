@@ -187,6 +187,7 @@ export function SplitTransactionFields({
                 prefix={getCurrencySymbol(amountCurrencyCode || watchedCurrencyCode)}
                 value={amountValue !== undefined ? amountValue : watchedAmount}
                 onChange={handleAmountChange}
+                allowSignToggle
                 error={errors.amount?.message as string | undefined}
               />
             );

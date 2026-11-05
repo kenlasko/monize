@@ -280,7 +280,7 @@ A split transaction distributes a single payment across multiple categories. For
 ### Creating a Split
 
 1. In the transaction form, click **Split**
-2. Enter the **Total Amount**
+2. Enter the **Total Amount**; its **+/-** button flips the sign, as on a regular transaction
 3. In **Split Details**, give each row a type (**Category**, **Transfer** to another account, or **Investment**), its category or account, an amount, an optional memo, and optional [tags](tags.md)
 4. Click **Add Split** for more rows; a split needs at least two
 5. The split amounts must total the transaction amount. The footer shows what remains; **Distribute Evenly** and **Distribute Proportionally** spread the remainder for you, and a row's button adds the remainder to that row
