@@ -12,7 +12,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Select } from '@/components/ui/Select';
-import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from './SplitEditor';
+import {
+  SplitEditor,
+  SplitRow,
+  createEmptySplits,
+  crossCurrencyTransferTarget,
+  toSplitRows,
+  toCreateSplitData,
+} from './SplitEditor';
 import { NormalTransactionFields } from './NormalTransactionFields';
 import { SplitTransactionFields } from './SplitTransactionFields';
 import { CurrencyPickerButton } from './CurrencyPickerButton';
@@ -1498,8 +1505,14 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       // so the backend clears the splits and converts it to a regular one.
       // (`undefined` means "leave splits untouched", which is wrong here.)
       const wasSplit = Boolean(transaction?.isSplit);
+      const splitCurrencyCode = watchedCurrencyCode || defaultCurrency;
       const splitsData = isSplitMode
-        ? toCreateSplitData(splits)
+        ? toCreateSplitData(splits, {
+            // A cross-currency transfer line carries what arrived; a
+            // same-currency one has nothing to say beyond its amount.
+            sendsTransferTargetAmount: (split) =>
+              crossCurrencyTransferTarget(split, accounts, splitCurrencyCode) !== null,
+          })
         : wasSplit
           ? []
           : undefined;
@@ -1969,6 +1982,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
             displayRate={isForeign ? (fxRate ?? undefined) : undefined}
             onCreateCategory={jointSafeCategoryCreator}
             transactionDate={watchedDate}
+            crossCurrencyTransfers
           />
         </div>
       )}

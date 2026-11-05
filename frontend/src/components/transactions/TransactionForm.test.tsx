@@ -382,9 +382,12 @@ vi.mock('@hookform/resolvers/zod', () => ({
   },
 }));
 
-vi.mock('./SplitEditor', () => ({
-  SplitEditor: ({ categories, onCreateCategory }: any) => (
-    <div data-testid="split-editor">
+const mockToCreateSplitDataOptions = vi.fn();
+vi.mock('./SplitEditor', async (importOriginal) => ({
+  crossCurrencyTransferTarget: (await importOriginal<typeof import('./SplitEditor')>())
+    .crossCurrencyTransferTarget,
+  SplitEditor: ({ categories, onCreateCategory, crossCurrencyTransfers }: any) => (
+    <div data-testid="split-editor" data-cross-currency-transfers={String(!!crossCurrencyTransfers)}>
       Split Editor
       <span data-testid="split-editor-categories">
         {(categories || []).map((c: any) => c.name).join(',')}
@@ -413,11 +416,14 @@ vi.mock('./SplitEditor', () => ({
     categoryId: s.categoryId,
     memo: s.memo || '',
   })),
-  toCreateSplitData: (rows: any[]) => rows.map((r: any) => ({
+  toCreateSplitData: (rows: any[], options?: unknown) => {
+    mockToCreateSplitDataOptions(options);
+    return rows.map((r: any) => ({
     categoryId: r.categoryId,
     amount: r.amount,
     memo: r.memo,
-  })),
+    }));
+  },
 }));
 
 vi.mock('@/components/ui/Combobox', () => ({
@@ -1648,6 +1654,43 @@ describe('TransactionForm', () => {
       });
       expect(screen.queryByText('Edit reconciled transaction?')).not.toBeInTheDocument();
       expect(mockOnSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    it('offers cross-currency transfer lines and sends the received amount only for them', async () => {
+      mockAccountsGetAll.mockResolvedValue([
+        ...mockAccounts,
+        { ...mockAccounts[1], id: 'acc-usd', name: 'US Savings', currencyCode: 'USD' },
+      ]);
+      const splitTransaction = createSplitTransaction();
+
+      render(
+        <TransactionForm
+          transaction={splitTransaction}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('split-editor')).toHaveAttribute(
+          'data-cross-currency-transfers',
+          'true',
+        );
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalled();
+      });
+
+      const { sendsTransferTargetAmount } = mockToCreateSplitDataOptions.mock.calls.at(-1)?.[0];
+      const transferTo = (transferAccountId: string) => ({
+        id: 'x',
+        splitType: 'transfer',
+        transferAccountId,
+        amount: -10,
+      });
+      expect(sendsTransferTargetAmount(transferTo('acc-usd'))).toBe(true);
+      expect(sendsTransferTargetAmount(transferTo('acc-2'))).toBe(false);
     });
 
     it('sends splits: [] when converting an existing split transaction back to regular', async () => {

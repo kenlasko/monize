@@ -290,6 +290,8 @@ A split transaction distributes a single payment across multiple categories. For
 
 Removing the second-to-last row turns the transaction back into a regular one. Split transactions show their categories in the category column of the transaction list. Click on the transaction to see the full breakdown.
 
+A **Transfer** row whose account is in another currency shows two amounts, one above the other: the **Transfer Amount** in the transaction's currency and the **Amount Received** in the other account's currency. As on a [cross-currency transfer](#cross-currency-transfers), the amount received is filled in from the exchange rate for the transaction's date, less the account's foreign-transaction fee, and you can change it to what your bank actually credited. Once you type it yourself it is left alone when the row's amount changes.
+
 ---
 
 ## Transfers Between Accounts
