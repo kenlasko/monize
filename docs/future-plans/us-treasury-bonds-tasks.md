@@ -25,8 +25,8 @@ Plan: `docs/future-plans/us-treasury-bonds.md`.
 
 ## Phase 4: TIPS and FRN
 
-- [ ] Principal rule `INDEX_RATIO`, unit `INDEX_LEVEL`, `US_CPI_U_NSA` fetcher, TIPS template, `tips-cases.json`
-- [ ] Rate rule `DAILY_INDEX_PLUS_SPREAD`, accrual `ACTUAL_360_DAILY_SUM`, `US_TBILL_13W_MMY` fetcher, FRN template, `frn-cases.json`
+- [x] Principal rule `INDEX_RATIO`, unit `INDEX_LEVEL`, `US_CPI_U_NSA` fetcher, TIPS template, `tips-cases.json`
+- [x] Rate rule `DAILY_INDEX_PLUS_SPREAD`, accrual `ACTUAL_360_DAILY_SUM`, `US_TBILL_13W_MMY` fetcher, FRN template, `frn-cases.json`
 
 ## Phase 5: savings bonds (not started)
 

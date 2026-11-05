@@ -262,7 +262,7 @@ Points the sections above left open, as built (`backend/src/bonds/adapters/us/`)
 - **Error codes.** An empty answer is `SERIES_NOT_PUBLISHED` (the existing code;
   there is no `SERIES_NOT_FOUND`). A TIPS or FRN is refused with the new
   `PRODUCT_NOT_SUPPORTED` (param `product`, `TIPS` or `FRN`), before the results
-  file is requested; phase 4 removes the refusal. A permanent 4xx on the JSON or
+  file is requested; phase 4 removed the refusal (section 9b). A permanent 4xx on the JSON or
   the XML is `SOURCE_DOCUMENT_MISSING` (param `document` `auction data` or
   `results`); 5xx, 429, a redirect, a timeout and a network error are
   `SOURCE_UNAVAILABLE`; a body over 2 MB (JSON) or 1 MB (XML) is
@@ -342,8 +342,18 @@ recorded ones:
   (`fixtures/README.md`).
 - That a TIPS coupon uses the index ratio of the unadjusted coupon date when that
   date is not a business day.
-- The BLS API version and limits without a key, and the TA_WS `days` limit for
-  the 13-week history an FRN issued two years ago needs.
+- The BLS API version and limits without a key (the fetch sends one GET of ten
+  years, no key; section 6.1), and the TA_WS `days` limit and size for the
+  13-week history an FRN issued two years ago needs (`days=900`, 5 MB cap).
+- That `benchmark_values.value` (`NUMERIC(20,10)`) may lose the eleventh decimal
+  of the 13-week yield fraction (section 6.1): a column of scale 11 would keep
+  it.
+- The `TA_WS` `securityType` text of a TIPS and an FRN, `interestRate` and
+  `refCpiOnDatedDate` of a TIPS, and `spread` of an FRN (the constructed
+  `ta-ws-912810FQ6.json` and `ta-ws-91282CQM6.json`).
+- Not built: a notification when a new CPI-U level is stored (the benchmark
+  notification reads the rate rule's benchmark only); a settlement-date lockout
+  of an FRN.
 - The FRN rule for an auction on the day of a lockout boundary (App. B I.C.3).
 - The phase 3 fetch reads only fixtures: the live `search` answer for a bill, a
   note and a reopening, the exact `interestPaymentFrequency` text, whether a
