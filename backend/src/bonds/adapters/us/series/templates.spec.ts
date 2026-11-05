@@ -24,7 +24,7 @@ const COUPON = {
 };
 
 describe("US templates", () => {
-  it("covers the three programs with their product pages", () => {
+  it("covers the five programs with their product pages", () => {
     expect(
       Object.values(SERIES_TEMPLATES).map((t) => [t.product, t.infoUrl]),
     ).toEqual([
@@ -39,6 +39,11 @@ describe("US templates", () => {
       [
         "BOND",
         "https://www.treasurydirect.gov/marketable-securities/treasury-bonds/",
+      ],
+      ["TIPS", "https://www.treasurydirect.gov/marketable-securities/tips/"],
+      [
+        "FRN",
+        "https://www.treasurydirect.gov/marketable-securities/floating-rate-notes/",
       ],
     ]);
   });
@@ -85,6 +90,38 @@ describe("US templates", () => {
       expect(terms.principalRule).toEqual({ type: "FIXED_NOMINAL" });
     },
   );
+
+  it("parses once filled, a TIPS, with the base CPI the fetch adds", () => {
+    const terms = parseBondTerms(
+      fillCoupon(SERIES_TEMPLATES.TIPS, { ...COUPON, baseReference: "177.5" }),
+    );
+    expect(terms.principalRule).toMatchObject({
+      type: "INDEX_RATIO",
+      benchmarkId: "US_CPI_U_NSA",
+      baseReference: "177.5",
+    });
+    expect(
+      SERIES_TEMPLATES.TIPS.structure.rest.principalRule,
+    ).not.toHaveProperty("baseReference");
+  });
+
+  it("parses once filled, a floating rate note, with the spread the fetch adds", () => {
+    const terms = parseBondTerms(
+      fillCoupon(SERIES_TEMPLATES.FRN, {
+        ...COUPON,
+        annualRate: undefined,
+        spread: "0.00103",
+        datedDate: "2026-04-30",
+        firstCouponDate: "2026-07-31",
+        maturityDate: "2028-04-30",
+      }),
+    );
+    expect(terms.rateRule).toMatchObject({
+      type: "DAILY_INDEX_PLUS_SPREAD",
+      spread: "0.00103",
+    });
+    expect(terms.accrual).toEqual({ type: "ACTUAL_360_DAILY_SUM" });
+  });
 
   it("is not changed by a fill", () => {
     const before = JSON.stringify(SERIES_TEMPLATES);

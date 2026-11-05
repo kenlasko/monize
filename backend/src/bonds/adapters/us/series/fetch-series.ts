@@ -4,6 +4,7 @@ import {
   SeriesFetchError,
   SourceRef,
 } from "../../../bond-adapter";
+import { assertNever } from "../../../domain/assert-never";
 import { parseSeriesCode, ParsedSeriesCode } from "../cusip";
 import {
   Auction,
@@ -11,6 +12,8 @@ import {
   programOfRecord,
   readBill,
   readCoupon,
+  readFrn,
+  readTips,
 } from "./auction";
 import { crossCheckResults } from "./results-check";
 import { parseResultsXml } from "./results-xml";
@@ -72,19 +75,23 @@ function selectAuction(
 
 function readAuction(code: ParsedSeriesCode, record: AuctionRecord): Auction {
   const program = programOfRecord(record);
-  if (program === "TIPS" || program === "FRN") {
-    throw new SeriesFetchError("PRODUCT_NOT_SUPPORTED", {
-      seriesCode: code.code,
-      product: program,
-    });
-  }
   // A bill is named with its issue date, a coupon security by its CUSIP alone.
   if ((program === "BILL") !== (code.issueDate !== null)) {
     throw invalidCode(code);
   }
-  return program === "BILL"
-    ? readBill(record, code.cusip)
-    : readCoupon(record, code.cusip, program);
+  switch (program) {
+    case "BILL":
+      return readBill(record, code.cusip);
+    case "TIPS":
+      return readTips(record, code.cusip);
+    case "FRN":
+      return readFrn(record, code.cusip);
+    case "NOTE":
+    case "BOND":
+      return readCoupon(record, code.cusip, program);
+    default:
+      return assertNever(program);
+  }
 }
 
 /**

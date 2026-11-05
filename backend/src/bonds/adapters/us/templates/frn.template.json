@@ -1,0 +1,49 @@
+{
+  "product": "FRN",
+  "infoUrl": "https://www.treasurydirect.gov/marketable-securities/floating-rate-notes/",
+  "structure": {
+    "instrument": {
+      "issuerCountryCode": "US",
+      "issuerCode": "US_TREASURY",
+      "programCode": "FRN",
+      "currency": "USD",
+      "marketability": "MARKETABLE",
+      "faceValue": "100"
+    },
+    "schedule": {
+      "anchor": "COUPON_DATES",
+      "couponMonths": 3,
+      "paymentAdjustment": "NEXT_BUSINESS_DAY",
+      "calendarId": "US"
+    },
+    "rateRule": {
+      "type": "DAILY_INDEX_PLUS_SPREAD",
+      "benchmarkId": "US_TBILL_13W_MMY",
+      "floor": "0",
+      "lockoutBusinessDays": 2,
+      "calendarId": "US",
+      "dailyDecimals": 9
+    },
+    "rest": {
+      "schemaVersion": 1,
+      "accrual": {
+        "type": "ACTUAL_360_DAILY_SUM"
+      },
+      "principalRule": {
+        "type": "FIXED_NOMINAL"
+      },
+      "capitalization": {
+        "type": "NONE"
+      },
+      "redemption": {
+        "type": "MATURITY_ONLY"
+      },
+      "rounding": {
+        "moneyDecimals": 2,
+        "mode": "HALF_UP",
+        "basis": "PER_HOLDING",
+        "unitDecimals": 6
+      }
+    }
+  }
+}

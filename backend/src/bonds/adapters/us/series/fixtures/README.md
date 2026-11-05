@@ -11,7 +11,9 @@ No test touches the network. Country spec: `docs/specs/us-treasury-securities.md
 | `R_20260929_1.xml` | CONSTRUCTED | The results file of that bill, the element structure of `R_20260428_1.xml` with the bill's values. |
 | `ta-ws-91282CZK0.json` | CONSTRUCTED | A 2-year note with a semiannual coupon (3.75 %, dated and issued 2026-09-30, maturing 2028-09-30, first coupon 2027-03-31) and a reopening of it in the same array. The CUSIP is built to have a valid check digit; it names no real security. |
 | `R_20260928_1.xml` | CONSTRUCTED | The results file of that note's original auction, the element structure of `R_20260428_1.xml` with the note's values. |
-| `ta-ws-91282CQM6.json` | CONSTRUCTED | The `TA_WS` record of the recorded FRN, built from `R_20260428_1.xml` (no recorded JSON exists); the fetch refuses it in this phase (`PRODUCT_NOT_SUPPORTED`). |
+| `ta-ws-91282CQM6.json` | CONSTRUCTED | The `TA_WS` record of the recorded FRN, built from `R_20260428_1.xml` (no recorded JSON exists): issue 2026-04-30, maturity 2028-04-30, spread 0.103, first payment 2026-07-31, quarterly. Its first index is the 13-week auction of 2026-04-27 in `../../benchmark-fixtures/ta-ws-auctioned-bills.json`. |
+| `ta-ws-912810FQ6.json` | CONSTRUCTED | A 30-year TIPS, 3-3/8 %, dated 2001-10-15, auctioned 2001-10-25, issued 2001-10-31, maturing 2032-04-15, Ref CPI of the dated date 177.50000, semiannual, first coupon 2002-04-15. The values follow the example of the primitives spec; the record is not a copy of a real auction and the field formats are inferred. |
+| `R_20011025_1.xml` | CONSTRUCTED | The results file of that TIPS, the element structure of `R_20260428_1.xml` with the TIPS' values (`InflationIndexSecurity` Y, `RefCPIDatedDate`, `InterestRate`). |
 
 A constructed file proves the code path, not the live format. When a live
 response is recorded, replace the constructed file and delete its line above.

@@ -26,7 +26,7 @@ describe("US adapter", () => {
     expect(() => registerUsCalendars(registry)).toThrow();
   });
 
-  it("offers BILL, NOTE and BOND, each of 100 USD face, with the issuer's page", () => {
+  it("offers BILL, NOTE, BOND, TIPS and FRN, each of 100 USD face, with the issuer's page", () => {
     expect(adapter.programs).toEqual([
       {
         issuerCountryCode: "US",
@@ -54,6 +54,23 @@ describe("US adapter", () => {
         faceValue: "100",
         infoUrl:
           "https://www.treasurydirect.gov/marketable-securities/treasury-bonds/",
+      },
+      {
+        issuerCountryCode: "US",
+        issuerCode: "US_TREASURY",
+        programCode: "TIPS",
+        currency: "USD",
+        faceValue: "100",
+        infoUrl: "https://www.treasurydirect.gov/marketable-securities/tips/",
+      },
+      {
+        issuerCountryCode: "US",
+        issuerCode: "US_TREASURY",
+        programCode: "FRN",
+        currency: "USD",
+        faceValue: "100",
+        infoUrl:
+          "https://www.treasurydirect.gov/marketable-securities/floating-rate-notes/",
       },
     ]);
     expect(

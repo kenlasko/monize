@@ -16,7 +16,9 @@ import {
   formatChanged,
   optionalText,
   parseDate,
+  parseIndexLevel,
   parsePercent,
+  parseSignedPercent,
   requiredDate,
   requiredFlag,
   requiredText,
@@ -31,9 +33,10 @@ const MAX_YEARS_TO_MATURITY = 31;
 const BILL_PRICE_PLACES = 6;
 const BILL_DAYS_IN_YEAR = 360;
 const SEMIANNUAL = /^semi-?\s?annual$/i;
-
-/** Why a product is not read in this phase (`PRODUCT_NOT_SUPPORTED`). */
-export type UnsupportedProduct = "TIPS" | "FRN";
+const QUARTERLY = /^quarterly$/i;
+const MAX_SPREAD_PERCENT = "1";
+const MIN_REF_CPI = "100";
+const MAX_REF_CPI = "1000";
 
 export interface BillAuction {
   readonly program: "BILL";
@@ -47,21 +50,39 @@ export interface BillAuction {
   readonly xmlFileName: string;
 }
 
-export interface CouponAuction {
-  readonly program: "NOTE" | "BOND";
+/** What a note, a bond, a TIPS and a floating rate note share. */
+interface CouponBase {
   readonly cusip: string;
   readonly auctionDate: string;
   readonly issueDate: string;
   readonly datedDate: string;
   readonly firstCouponDate: string;
   readonly maturityDate: string;
-  /** The coupon in percent, exact. */
-  readonly interestRate: ExactDecimal;
   readonly highPrice: string;
   readonly xmlFileName: string;
 }
 
-export type Auction = BillAuction | CouponAuction;
+export interface CouponAuction extends CouponBase {
+  readonly program: "NOTE" | "BOND";
+  /** The coupon in percent, exact. */
+  readonly interestRate: ExactDecimal;
+}
+
+export interface TipsAuction extends CouponBase {
+  readonly program: "TIPS";
+  readonly interestRate: ExactDecimal;
+  /** The reference CPI of the dated date, exact. */
+  readonly refCpi: ExactDecimal;
+}
+
+export interface FrnAuction extends CouponBase {
+  readonly program: "FRN";
+  /** The spread over the 13-week bill yield, in percent, exact; may be negative. */
+  readonly spread: ExactDecimal;
+}
+
+export type AnyCouponAuction = CouponAuction | TipsAuction | FrnAuction;
+export type Auction = BillAuction | AnyCouponAuction;
 
 export function inconsistent(
   field: string,
@@ -76,13 +97,11 @@ export function inconsistent(
 }
 
 /**
- * The program of an auction from its security type and its two flags, or the
- * product this phase does not read. `securityType` is compared as upper case:
- * the JSON says "Note", the results file "NOTE".
+ * The program of an auction from its security type and its two flags.
+ * `securityType` is compared as upper case: the JSON says "Note", the results
+ * file "NOTE".
  */
-export function programOfRecord(
-  record: AuctionRecord,
-): UsProgram | UnsupportedProduct {
+export function programOfRecord(record: AuctionRecord): UsProgram {
   const type = requiredText(record, "securityType").toUpperCase();
   const inflation = requiredFlag(record, "inflationIndexSecurity");
   const floating = requiredFlag(record, "floatingRate");
@@ -166,11 +185,32 @@ export function readBill(record: AuctionRecord, cusip: string): BillAuction {
   };
 }
 
-export function readCoupon(
+/** The coupon rate in percent, 0 to 20. */
+export function readCouponRate(record: AuctionRecord): ExactDecimal {
+  const interestRate = parsePercent(
+    requiredText(record, "interestRate"),
+    "interestRate",
+  );
+  if (interestRate.cmp(ExactDecimal.parse(MAX_COUPON_PERCENT)) > 0) {
+    throw inconsistent(
+      "interestRate",
+      interestRate.toTrimmedString(9, 0),
+      `<=${MAX_COUPON_PERCENT}`,
+    );
+  }
+  return interestRate;
+}
+
+/**
+ * The dates, the frequency and the price every coupon security has, checked
+ * against the bounds of country spec section 3.5. `couponMonths` is 6 for a
+ * note, a bond and a TIPS, 3 for a floating rate note.
+ */
+export function readCouponBase(
   record: AuctionRecord,
   cusip: string,
-  program: "NOTE" | "BOND",
-): CouponAuction {
+  couponMonths: 3 | 6,
+): CouponBase {
   const auctionDate = requiredDate(record, "auctionDate");
   const issueDate = requiredDate(record, "issueDate");
   const maturityDate = requiredDate(record, "maturityDate");
@@ -179,19 +219,12 @@ export function readCoupon(
     requiredText(record, "firstInterestPaymentDate"),
     "firstInterestPaymentDate",
   );
-  const interestRate = parsePercent(
-    requiredText(record, "interestRate"),
-    "interestRate",
-  );
   const frequency = requiredText(record, "interestPaymentFrequency");
-  if (!SEMIANNUAL.test(frequency)) {
-    throw inconsistent("interestPaymentFrequency", "other", "semiannual");
-  }
-  if (interestRate.cmp(ExactDecimal.parse(MAX_COUPON_PERCENT)) > 0) {
+  if (!(couponMonths === 6 ? SEMIANNUAL : QUARTERLY).test(frequency)) {
     throw inconsistent(
-      "interestRate",
-      interestRate.toTrimmedString(9, 0),
-      `<=${MAX_COUPON_PERCENT}`,
+      "interestPaymentFrequency",
+      "other",
+      couponMonths === 6 ? "semiannual" : "quarterly",
     );
   }
   if (compareYMD(auctionDate, issueDate) > 0) {
@@ -214,7 +247,7 @@ export function readCoupon(
       datedDate,
       firstCouponDate,
       maturityDate,
-      couponMonths: 6,
+      couponMonths,
       endOfMonth: isMonthEnd(maturityDate),
     });
   } catch (error) {
@@ -228,15 +261,59 @@ export function readCoupon(
     throw error;
   }
   return {
-    program,
     cusip,
     auctionDate,
     issueDate,
     datedDate,
     firstCouponDate,
     maturityDate,
-    interestRate,
     highPrice: optionalPrice(record),
     xmlFileName: optionalText(record, "xmlFilenameCompetitiveResults"),
   };
+}
+
+export function readCoupon(
+  record: AuctionRecord,
+  cusip: string,
+  program: "NOTE" | "BOND",
+): CouponAuction {
+  const interestRate = readCouponRate(record);
+  return { ...readCouponBase(record, cusip, 6), program, interestRate };
+}
+
+/** A TIPS: a coupon security with a reference CPI of its dated date, 100 to 1,000. */
+export function readTips(record: AuctionRecord, cusip: string): TipsAuction {
+  const interestRate = readCouponRate(record);
+  const base = readCouponBase(record, cusip, 6);
+  const text = optionalText(record, "refCpiOnDatedDate");
+  if (text === "") throw inconsistent("refCpiOnDatedDate", "", "present");
+  const refCpi = parseIndexLevel(text, "refCpiOnDatedDate");
+  if (
+    refCpi.cmp(ExactDecimal.parse(MIN_REF_CPI)) < 0 ||
+    refCpi.cmp(ExactDecimal.parse(MAX_REF_CPI)) > 0
+  ) {
+    throw inconsistent(
+      "refCpiOnDatedDate",
+      refCpi.toTrimmedString(9, 0),
+      `${MIN_REF_CPI}-${MAX_REF_CPI}`,
+    );
+  }
+  return { ...base, program: "TIPS", interestRate, refCpi };
+}
+
+/** A floating rate note: quarterly, with a spread of -1 to 1 percent. */
+export function readFrn(record: AuctionRecord, cusip: string): FrnAuction {
+  const base = readCouponBase(record, cusip, 3);
+  const text = optionalText(record, "spread");
+  if (text === "") throw inconsistent("spread", "", "present");
+  const spread = parseSignedPercent(text, "spread");
+  const limit = ExactDecimal.parse(MAX_SPREAD_PERCENT);
+  if (spread.cmp(limit) > 0 || spread.cmp(limit.negate()) < 0) {
+    throw inconsistent(
+      "spread",
+      spread.toTrimmedString(9, 0),
+      `-${MAX_SPREAD_PERCENT}-${MAX_SPREAD_PERCENT}`,
+    );
+  }
+  return { ...base, program: "FRN", spread };
 }

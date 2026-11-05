@@ -1,0 +1,50 @@
+{
+  "product": "TIPS",
+  "infoUrl": "https://www.treasurydirect.gov/marketable-securities/tips/",
+  "structure": {
+    "instrument": {
+      "issuerCountryCode": "US",
+      "issuerCode": "US_TREASURY",
+      "programCode": "TIPS",
+      "currency": "USD",
+      "marketability": "MARKETABLE",
+      "faceValue": "100"
+    },
+    "schedule": {
+      "anchor": "COUPON_DATES",
+      "couponMonths": 6,
+      "paymentAdjustment": "NEXT_BUSINESS_DAY",
+      "calendarId": "US"
+    },
+    "rateRule": {
+      "type": "FIXED"
+    },
+    "rest": {
+      "schemaVersion": 1,
+      "accrual": {
+        "type": "ACTUAL_ACTUAL_ICMA"
+      },
+      "principalRule": {
+        "type": "INDEX_RATIO",
+        "benchmarkId": "US_CPI_U_NSA",
+        "lagMonths": 3,
+        "interpolation": "DAILY_LINEAR",
+        "truncateDecimals": 6,
+        "roundDecimals": 5,
+        "maturityFloor": "PAR"
+      },
+      "capitalization": {
+        "type": "NONE"
+      },
+      "redemption": {
+        "type": "MATURITY_ONLY"
+      },
+      "rounding": {
+        "moneyDecimals": 2,
+        "mode": "HALF_UP",
+        "basis": "PER_HOLDING",
+        "unitDecimals": 6
+      }
+    }
+  }
+}

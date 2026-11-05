@@ -1,10 +1,12 @@
 import { CatalogEntry, SeriesFetchError } from "../../../bond-adapter";
 import { BondTermsError, parseBondTerms } from "../../../domain/bond-terms";
 import { ExactDecimal } from "../../../domain/exact-decimal";
-import { Auction, isMonthEnd } from "./auction";
+import { assertNever } from "../../../domain/assert-never";
+import { Auction, AnyCouponAuction, isMonthEnd } from "./auction";
 import { SERIES_PROVIDER } from "./series-source";
 import {
   fillBill,
+  CouponValues,
   fillCoupon,
   SERIES_TEMPLATES,
   SourceDocument,
@@ -16,6 +18,26 @@ const PRICE_PLACES = 9;
 /** A percent as the fraction the terms store: "4.285000" -> "0.04285". */
 function fractionOf(percent: ExactDecimal): string {
   return percent.div(ExactDecimal.fromInt(100)).toTrimmedString(RATE_PLACES, 1);
+}
+
+/** The per-series rate fields of a coupon security: its coupon, its spread, its base CPI. */
+function rateValues(
+  auction: AnyCouponAuction,
+): Pick<CouponValues, "annualRate" | "spread" | "baseReference"> {
+  switch (auction.program) {
+    case "FRN":
+      return { spread: fractionOf(auction.spread) };
+    case "TIPS":
+      return {
+        annualRate: fractionOf(auction.interestRate),
+        baseReference: auction.refCpi.toTrimmedString(9, 1),
+      };
+    case "NOTE":
+    case "BOND":
+      return { annualRate: fractionOf(auction.interestRate) };
+    default:
+      return assertNever(auction);
+  }
 }
 
 /**
@@ -53,7 +75,7 @@ export function buildSeriesEntry(
           firstCouponDate: auction.firstCouponDate,
           maturityDate: auction.maturityDate,
           endOfMonth: isMonthEnd(auction.maturityDate),
-          annualRate: fractionOf(auction.interestRate),
+          ...rateValues(auction),
           source,
         });
   try {

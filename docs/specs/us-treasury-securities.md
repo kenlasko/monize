@@ -289,6 +289,33 @@ Points the sections above left open, as built (`backend/src/bonds/adapters/us/`)
   `NOTE`, `TIPS`, `FRN` and `treasurydirect` in the domain, the engine and the
   shared services; `BOND` is not listed, it is the domain's own word.
 
+## 9b. Decisions of phase 4 (TIPS and FRN series)
+
+The refusal `PRODUCT_NOT_SUPPORTED` of section 9a is removed for these two
+products (the code stays in the shared error list, unused by the US adapter).
+
+- **Program.** From `securityType` and the two flags as before: TIPS is
+  `inflationIndexSecurity` "Yes", FRN `floatingRate` "Yes". A TIPS or an FRN
+  is named by its CUSIP alone, like a note.
+- **TIPS.** The coupon rule of a note (0 to 20 %, semiannual) plus
+  `refCpiOnDatedDate`, required and 100 to 1,000 (`SOURCE_INCONSISTENT`, field
+  `refCpiOnDatedDate`, also when blank). The template fills
+  `principalRule.baseReference` with it (trailing zeros dropped: "177.5").
+- **FRN.** Quarterly (`interestPaymentFrequency` reads "Quarterly"), the first
+  payment a regular date of the maturity at 3 months, `spread` required and -1 to
+  1 percent (`SOURCE_INCONSISTENT`, field `spread`), a negative spread kept as
+  such ("-0.0015"). `interestRate` is not read. The template holds the rule
+  without the spread; the fetch adds it (the spread is a per-series value).
+- **Results file.** `Spread` and `RefCPIDatedDate` are compared with the JSON
+  (numerically, a negative spread allowed). The JSON says `FRN` or `TIPS` where
+  the recorded file says `NOTE` (`R_20260428_1.xml`) and marks the product with
+  `FloatingRate` and `InflationIndexSecurity` ("Y"/"N"): for these two products
+  `SecurityType` must be present and the flags must match the program (the other
+  flag must be "N"); the type itself is not compared.
+- **Price.** `HighPrice` is compared when both state it, as for a note.
+- **Fixtures.** `ta-ws-91282CQM6.json`, `ta-ws-912810FQ6.json` and
+  `R_20011025_1.xml` are constructed (`series/fixtures/README.md`).
+
 ## 10. To verify before merge
 
 The shell of the session that wrote this could not reach `treasurydirect.gov`,

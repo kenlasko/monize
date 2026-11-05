@@ -7,6 +7,8 @@ export type AuctionRecord = Readonly<Record<string, unknown>>;
 
 const DATE_PATTERN = /^(\d{4}-\d{2}-\d{2})(?:T00:00:00)?$/;
 const PERCENT_PATTERN = /^\d{1,3}(?:\.\d{1,9})?$/;
+const LEVEL_PATTERN = /^\d{1,4}(?:\.\d{1,9})?$/;
+const SIGNED_PERCENT_PATTERN = /^-?\d{1,3}(?:\.\d{1,9})?$/;
 
 export function formatChanged(field: string): SeriesFetchError {
   return new SeriesFetchError("SOURCE_FORMAT_CHANGED", { field });
@@ -56,6 +58,18 @@ export function parseDate(text: string, field: string): string {
 /** A percent string ("4.285000") as an exact decimal; not negative. */
 export function parsePercent(text: string, field: string): ExactDecimal {
   if (!PERCENT_PATTERN.test(text)) throw formatChanged(field);
+  return ExactDecimal.parse(text);
+}
+
+/** An index level ("177.50000"), not negative. */
+export function parseIndexLevel(text: string, field: string): ExactDecimal {
+  if (!LEVEL_PATTERN.test(text)) throw formatChanged(field);
+  return ExactDecimal.parse(text);
+}
+
+/** A percent string that may be negative (a floating rate note's spread). */
+export function parseSignedPercent(text: string, field: string): ExactDecimal {
+  if (!SIGNED_PERCENT_PATTERN.test(text)) throw formatChanged(field);
   return ExactDecimal.parse(text);
 }
 

@@ -345,32 +345,6 @@ describe("fetching a note", () => {
   });
 });
 
-describe("products not supported in this phase", () => {
-  it("refuses the recorded FRN as PRODUCT_NOT_SUPPORTED before reading its results file", async () => {
-    const get = fakeFetch(
-      treasuryAnswers("91282CQM6", fixtureJson("ta-ws-91282CQM6.json"), {
-        "R_20260428_1.xml": fixtureText("R_20260428_1.xml"),
-      }),
-    );
-    const error = await refusal(fetchSeries("91282CQM6", get, NOW));
-    expect(error.code).toBe("PRODUCT_NOT_SUPPORTED");
-    expect(error.params).toEqual({ seriesCode: "91282CQM6", product: "FRN" });
-    expect(get.calls).toHaveLength(1);
-  });
-
-  it.each([
-    ["a TIPS by its flag", { inflationIndexSecurity: "Yes" }, "TIPS"],
-    ["a TIPS by its type", { securityType: "TIPS" }, "TIPS"],
-    ["an FRN by its flag", { floatingRate: "Yes" }, "FRN"],
-    ["an FRN by its type", { securityType: "FRN" }, "FRN"],
-  ])("refuses %s", async (_name, change, product) => {
-    const records = withRecord(noteJson(), 0, change);
-    const error = await refusal(fetchSeries(NOTE, noteFetch(records), NOW));
-    expect(error.code).toBe("PRODUCT_NOT_SUPPORTED");
-    expect(error.params.product).toBe(product);
-  });
-});
-
 describe("what the source answers", () => {
   const url = auctionSearchUrl(NOTE);
   const run = (answer: Answer) =>

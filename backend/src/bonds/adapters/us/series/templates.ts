@@ -1,10 +1,12 @@
 import bill from "../templates/bill.template.json";
 import bond from "../templates/bond.template.json";
+import frn from "../templates/frn.template.json";
 import note from "../templates/note.template.json";
+import tips from "../templates/tips.template.json";
 
 type Json = Record<string, unknown>;
 
-export type UsProgram = "BILL" | "NOTE" | "BOND";
+export type UsProgram = "BILL" | "NOTE" | "BOND" | "TIPS" | "FRN";
 
 /**
  * One product's structure with everything per-series left out: the dates, the
@@ -27,6 +29,8 @@ export const SERIES_TEMPLATES: Readonly<Record<UsProgram, SeriesTemplate>> = {
   BILL: bill as SeriesTemplate,
   NOTE: note as SeriesTemplate,
   BOND: bond as SeriesTemplate,
+  TIPS: tips as SeriesTemplate,
+  FRN: frn as SeriesTemplate,
 };
 
 export interface SourceDocument {
@@ -45,7 +49,7 @@ export interface BillValues {
   readonly source: SourceDocument;
 }
 
-/** What a note or a bond adds to its template. */
+/** What a note, a bond, a TIPS or a floating rate note adds to its template. */
 export interface CouponValues {
   readonly seriesCode: string;
   readonly datedDate: string;
@@ -53,8 +57,12 @@ export interface CouponValues {
   readonly maturityDate: string;
   /** True when the maturity is the last day of its month: coupons fall on month ends. */
   readonly endOfMonth: boolean;
-  /** The coupon rate as a fraction, an exact decimal string ("0.04125"). */
-  readonly annualRate: string;
+  /** The coupon rate as a fraction, an exact decimal string ("0.04125"); not for an FRN. */
+  readonly annualRate?: string;
+  /** An FRN's spread as a fraction ("0.00103"); may be negative. */
+  readonly spread?: string;
+  /** A TIPS' reference CPI of the dated date, an exact decimal string. */
+  readonly baseReference?: string;
   readonly source: SourceDocument;
 }
 
@@ -79,11 +87,21 @@ export function fillBill(t: SeriesTemplate, v: BillValues): unknown {
   };
 }
 
-/** The note or bond template filled: the terms document, before `parseBondTerms`. */
+/** The coupon template filled: the terms document, before `parseBondTerms`. */
 export function fillCoupon(t: SeriesTemplate, v: CouponValues): unknown {
   const s = t.structure;
+  const indexed =
+    v.baseReference === undefined
+      ? {}
+      : {
+          principalRule: {
+            ...(s.rest.principalRule as Json),
+            baseReference: v.baseReference,
+          },
+        };
   return {
     ...s.rest,
+    ...indexed,
     instrument: { ...s.instrument, seriesCode: v.seriesCode },
     saleWindow: null,
     schedule: {
@@ -93,7 +111,11 @@ export function fillCoupon(t: SeriesTemplate, v: CouponValues): unknown {
       maturityDate: v.maturityDate,
       endOfMonth: v.endOfMonth,
     },
-    rateRule: { ...s.rateRule, annualRate: v.annualRate },
+    rateRule: {
+      ...s.rateRule,
+      ...(v.annualRate === undefined ? {} : { annualRate: v.annualRate }),
+      ...(v.spread === undefined ? {} : { spread: v.spread }),
+    },
     source: { ...v.source },
   };
 }
