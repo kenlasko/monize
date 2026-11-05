@@ -383,6 +383,11 @@ recorded ones:
   356 App. B I.B.4 prescribes a substitute index for a month that is not
   published, and Treasury's published Ref CPI for January 2026 is to verify
   against it. A substitute-entry feature is not built.
+- Known gap: a BUY or SELL cannot carry accrued interest (the shared model
+  allows it on a REDEEM only), so the accrued interest paid on a coupon note or
+  TIPS bought between coupon dates stays inside the lot's cost and the first
+  coupon is counted in full as income; `accruedInterestOn` exists for the
+  feature that will book it (bond primitives spec section 6.2).
 - Not built: a notification when a new CPI-U level is stored (the benchmark
   notification reads the rate rule's benchmark only); a settlement-date lockout
   of an FRN.

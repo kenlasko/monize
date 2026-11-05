@@ -330,7 +330,7 @@ It is read only for a `ZERO_COUPON_DISCOUNT` instrument:
   loss in the existing cost-basis machinery (the market-discount and
   bond-premium tax elections are out of scope, section 10).
 - The lot fold (`bondLotsFromTransactions`) carries the cost of each acquisition
-  (the row's `totalAmount` less its accrued interest, exactly as text, never a
+  (the row's `totalAmount`, exactly as text, never a
   JavaScript number) and splits it pro rata, first in first out, when part of a
   lot leaves; the remainder keeps `cost - taken` so the parts always add up to
   the whole (the last part takes the remainder, never a rounded share).
@@ -343,7 +343,7 @@ Decisions taken in the implementation, where this section left a choice open:
   is not a non-negative decimal is refused with `DECIMAL_INVALID` (field
   `lot.cost`), as every other supplied decimal is.
 - The lot's cost is a lot figure, so it is rounded once to `moneyDecimals` on
-  the holding under every basis (`holdingRound`): no per-unit figure is behind
+  the holding under every basis (`toMoney`): no per-unit figure is behind
   it. The value on day `k` is that sum rounded once, and the early-redemption
   value of a lot of known cost is its gross value (a discount instrument is
   redeemable at maturity only; an `ON_DEMAND` discount instrument still takes the
@@ -355,8 +355,9 @@ Decisions taken in the implementation, where this section left a choice open:
   `total_amount` scale), half up; the part that stays is the whole less that, so
   nothing is lost. The cost of an acquisition is read only from a `BUY` or
   `REINVEST` row (an `ADD_SHARES` and a transfer record no price of their own, so
-  their cost is unknown) as `total_amount` less the linked INTEREST row, if any;
-  a result that is not above zero is unknown. An unpaired transfer in has no
+  their cost is unknown) as its `total_amount` (no write path links an INTEREST
+  row to a BUY or REINVEST, section 6.2); a total that is not above zero is
+  unknown. An unpaired transfer in has no
   cost. The commission of a purchase is part of `total_amount` and so of the
   cost.
 - A lot's cost is in the valuation of a linked security (`lots[].cost`) and in
@@ -367,10 +368,15 @@ Decisions taken in the implementation, where this section left a choice open:
 A lot of a coupon security bought between coupon dates paid the seller the
 interest accrued from the period start to the purchase date. The engine exposes
 `accruedInterestOn(terms, date, quantity)` (section 5.2, with the indexed form of
-section 7) so the purchase form can suggest the figure through the same code as
-the valuation (a preview is the commit's code). Booking it is unchanged: the
-existing `accruedInterest` field of a BUY row (`docs/specs/redemption-accrued-interest.md`).
-Netting it against the first coupon is a tax question and out of scope.
+section 7) so a later purchase and sale accrued-interest feature can suggest the figure
+through the same code as the valuation (a preview is the commit's code). That
+feature is not built: `ACCRUED_INTEREST_ACTIONS` (`securities/accrued-interest.util.ts`)
+holds only `REDEEM`, so a BUY or a SELL cannot carry accrued interest (a BUY
+that sends it is refused with 400), and the shared accrued-interest model is not
+extended here. Until it is, the cash a person pays for a lot bought between
+coupon dates includes the interest accrued to the purchase date: the lot's cost
+is overstated by that interest and the first coupon is counted in full as
+income. Netting it against the first coupon is a tax question and out of scope.
 
 Decisions taken in the implementation: `accruedInterestOn(terms, date, quantity)`
 (`engine/bond-engine.ts`) is the `accruedInterest` of the valuation of a lot of

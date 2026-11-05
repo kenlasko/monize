@@ -32,7 +32,6 @@ type Row = {
   bond_instrument_id: string | null;
   counterpart_account_id?: string | null;
   total_amount?: string | null;
-  accrued_interest?: string | null;
 };
 
 const row = (over: Partial<Row> & { id: string }): Row => ({
@@ -43,7 +42,6 @@ const row = (over: Partial<Row> & { id: string }): Row => ({
   bond_instrument_id: EDO,
   counterpart_account_id: null,
   total_amount: null,
-  accrued_interest: null,
   ...over,
 });
 

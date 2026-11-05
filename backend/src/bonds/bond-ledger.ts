@@ -37,8 +37,6 @@ interface LedgerRow {
   quantity: string | null;
   /** The row's total amount as exact text (NUMERIC(20,4)). */
   total_amount: string | null;
-  /** The amount of the INTEREST row linked to this one (accrued interest), as text; null when none. */
-  accrued_interest: string | null;
   account_id: string;
   /** The account of the other leg when this row is a paired transfer leg. */
   counterpart_account_id: string | null;
@@ -125,14 +123,6 @@ export async function loadBondLedger(
             TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
             t.quantity::text AS quantity,
             t.total_amount::text AS total_amount,
-            (SELECT c.total_amount::text FROM investment_transactions c
-              WHERE c.user_id = t.user_id
-                AND c.security_id = t.security_id
-                AND c.status != 'VOID'
-                AND c.action = 'INTEREST'
-                AND (c.id = t.linked_transaction_id OR c.linked_transaction_id = t.id)
-              ORDER BY c.id
-              LIMIT 1) AS accrued_interest,
             t.account_id,
             t.bond_instrument_id,
             (SELECT p.account_id FROM investment_transactions p
@@ -197,14 +187,17 @@ export async function loadBondLedger(
 }
 
 /**
- * What an acquisition cost, as exact text: the row's total amount less its
- * accrued interest. Only a purchase has a cost of its own (an ADD_SHARES or a
- * transfer records no price); a total that is missing, not a decimal or not
- * above zero once the interest is out is unknown (`null`), never a guess.
- * Exact decimals, not `acquisitionCost` (which is a JavaScript number).
+ * What an acquisition cost, as exact text: the row's total amount. Only a
+ * purchase has a cost of its own (an ADD_SHARES or a transfer records no
+ * price); a total that is missing, not a decimal or not above zero is unknown
+ * (`null`), never a guess. No accrued interest is taken out: a BUY or REINVEST
+ * cannot carry any (`ACCRUED_INTEREST_ACTIONS` holds only REDEEM), so the cash
+ * paid, interest bought included, is the cost until the purchase accrued-interest
+ * feature exists (bond primitives spec section 6.2). Exact decimals, not
+ * `acquisitionCost` (which is a JavaScript number).
  */
 export function acquisitionCostText(
-  row: Pick<LedgerRow, "action" | "total_amount" | "accrued_interest">,
+  row: Pick<LedgerRow, "action" | "total_amount">,
 ): string | null {
   const base = baseInvestmentAction(row.action);
   if (base !== InvestmentAction.BUY && base !== InvestmentAction.REINVEST) {
@@ -212,11 +205,7 @@ export function acquisitionCostText(
   }
   if (row.total_amount === null) return null;
   try {
-    const cost = ExactDecimal.parse(row.total_amount).sub(
-      row.accrued_interest === null
-        ? ExactDecimal.ZERO
-        : ExactDecimal.parse(row.accrued_interest),
-    );
+    const cost = ExactDecimal.parse(row.total_amount);
     return cost.cmp(ExactDecimal.ZERO) > 0 ? cost.toFixed(4) : null;
   } catch {
     return null;
