@@ -21,9 +21,13 @@ import {
  * (`transferTargetAmount`) at its implied rate, and both reads the transaction
  * form opens a split from -- `findOne` and the register's row query -- carry
  * that counterpart amount back, so an unedited re-save sends it again rather
- * than re-converting the line. No USD->EUR rate is stored here at all: a line
- * without a received amount would be refused, which is what proves the stated
- * figure, not a market rate, is what posted.
+ * than re-converting the line.
+ *
+ * The target account is in ZZZ, a currency no rate provider quotes, so no
+ * USD->ZZZ rate exists or can be fetched: a line converted at the market rate
+ * is refused, which is what proves a stated or carried figure, not a market
+ * rate, is what posted. (A real currency made this depend on the network: with
+ * a provider reachable, the in-transaction lookup fetched and stored rates.)
  */
 describe("Split transfer received amount (integration)", () => {
   let module: TestingModule;
@@ -31,7 +35,7 @@ describe("Split transfer received amount (integration)", () => {
   let dataSource: DataSource;
   let userId: string;
   let usdId: string;
-  let eurId: string;
+  let foreignId: string;
   let categoryId: string;
 
   beforeAll(async () => {
@@ -59,6 +63,12 @@ describe("Split transfer received amount (integration)", () => {
       "monthly_account_balances",
       "users",
     ]);
+    await dataSource.query(
+      `INSERT INTO currencies (code, name, symbol, decimal_places) VALUES
+         ('USD', 'US Dollar', '$', 2),
+         ('ZZZ', 'Unrated Test Currency', 'Z', 2)
+       ON CONFLICT DO NOTHING`,
+    );
     userId = (await createTestUserDirect(dataSource)).id;
     usdId = (
       await createTestAccount(dataSource, userId, {
@@ -67,10 +77,10 @@ describe("Split transfer received amount (integration)", () => {
         currentBalance: 1000,
       })
     ).id;
-    eurId = (
+    foreignId = (
       await createTestAccount(dataSource, userId, {
-        name: "Euro Savings",
-        currencyCode: "EUR",
+        name: "Foreign Savings",
+        currencyCode: "ZZZ",
         openingBalance: 0,
         currentBalance: 0,
       })
@@ -83,7 +93,7 @@ describe("Split transfer received amount (integration)", () => {
   const splitsWith = (memo: string) => [
     { categoryId, amount: -60 },
     {
-      transferAccountId: eurId,
+      transferAccountId: foreignId,
       amount: -40,
       transferTargetAmount: 35.5,
       memo,
@@ -104,7 +114,7 @@ describe("Split transfer received amount (integration)", () => {
 
   async function counterpart(): Promise<Transaction> {
     return dataSource.manager.findOneOrFail(Transaction, {
-      where: { accountId: eurId },
+      where: { accountId: foreignId },
     });
   }
 
@@ -113,10 +123,10 @@ describe("Split transfer received amount (integration)", () => {
 
     const leg = await counterpart();
     expect(Number(leg.amount)).toBe(35.5);
-    expect(leg.currencyCode).toBe("EUR");
+    expect(leg.currencyCode).toBe("ZZZ");
     expect(Number(leg.exchangeRate)).toBe(0.8875);
     const eur = await dataSource.manager.findOneByOrFail(Account, {
-      id: eurId,
+      id: foreignId,
     });
     expect(Number(eur.currentBalance)).toBe(35.5);
   });
@@ -127,7 +137,9 @@ describe("Split transfer received amount (integration)", () => {
     const one = await withUserContext(userId, () =>
       service.findOne(userId, created.id),
     );
-    const transferLine = one.splits.find((s) => s.transferAccountId === eurId);
+    const transferLine = one.splits.find(
+      (s) => s.transferAccountId === foreignId,
+    );
     expect(Number(transferLine?.linkedTransaction?.amount)).toBe(35.5);
 
     const page = await withUserContext(userId, () =>
@@ -135,15 +147,15 @@ describe("Split transfer received amount (integration)", () => {
     );
     const row = page.data.find((tx) => tx.id === created.id);
     const registerLine = row?.splits?.find(
-      (s) => s.transferAccountId === eurId,
+      (s) => s.transferAccountId === foreignId,
     );
     expect(Number(registerLine?.linkedTransaction?.amount)).toBe(35.5);
-    expect(registerLine?.linkedTransaction?.currencyCode).toBe("EUR");
+    expect(registerLine?.linkedTransaction?.currencyCode).toBe("ZZZ");
   });
 
   it("keeps the recorded received amount when a re-save omits it", async () => {
     // What an AI or MCP split edit sends: the lines, no received amounts. No
-    // USD->EUR rate is stored, so a re-conversion would be refused outright.
+    // USD->ZZZ rate is stored, so a re-conversion would be refused outright.
     const created = await createSplit();
     const withoutReceived = splitsWith("Renamed").map(
       ({ transferTargetAmount: _omitted, ...line }) => line,
@@ -172,7 +184,7 @@ describe("Split transfer received amount (integration)", () => {
         service.update(userId, created.id, {
           splits: [
             { categoryId, amount: -50 },
-            { transferAccountId: eurId, amount: -50 },
+            { transferAccountId: foreignId, amount: -50 },
           ],
         }),
       ),
@@ -183,7 +195,7 @@ describe("Split transfer received amount (integration)", () => {
   it("carries nothing once the parent moves to another account", async () => {
     // Another USD account: same currency, but the recorded figure belonged to
     // the old account's transfer, so the line is re-converted -- and with no
-    // USD->EUR rate stored, refused rather than posted at the old figure.
+    // USD->ZZZ rate stored, refused rather than posted at the old figure.
     const created = await createSplit();
     const otherUsdId = (
       await createTestAccount(dataSource, userId, { name: "Second chequing" })
@@ -234,7 +246,7 @@ describe("Split transfer received amount (integration)", () => {
     );
     const line = page.data
       .flatMap((tx) => tx.splits ?? [])
-      .find((s) => s.transferAccountId === eurId);
+      .find((s) => s.transferAccountId === foreignId);
     expect(line).toBeDefined();
     expect(line?.linkedTransaction ?? null).toBeNull();
   });
@@ -246,7 +258,9 @@ describe("Split transfer received amount (integration)", () => {
     const seen = await withUserContext(reader, () =>
       service.findOne(reader, created.id, [usdId]),
     );
-    const transferLine = seen.splits.find((s) => s.transferAccountId === eurId);
+    const transferLine = seen.splits.find(
+      (s) => s.transferAccountId === foreignId,
+    );
     expect(transferLine).toBeDefined();
     expect(transferLine?.linkedTransaction ?? null).toBeNull();
   });
@@ -264,7 +278,7 @@ describe("Split transfer received amount (integration)", () => {
     expect(Number(leg.amount)).toBe(35.5);
     expect(Number(leg.exchangeRate)).toBe(0.8875);
     const eur = await dataSource.manager.findOneByOrFail(Account, {
-      id: eurId,
+      id: foreignId,
     });
     expect(Number(eur.currentBalance)).toBe(35.5);
   });
