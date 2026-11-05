@@ -203,7 +203,7 @@ Polish benchmarks. The 13-week fetcher reads
   `13-Week` and records with no `highDiscountRate` are skipped; a term other than
   84 to 98 days, an auction after its issue, two different rates for one
   auction date are refused. `coveredThrough` is the newest auction date: the
-  engine treats a day more than 7 days after it as unknown (primitives spec 7.2).
+  engine treats a day after the first business day on or after 7 days past an observation as unknown (primitives spec 7.2).
 - **Precision.** `benchmark_values.value` is `NUMERIC(20,10)` and a migration is
   out of scope, so the stored fraction is the percent rounded to nine decimals,
   divided by 100 and rounded to ten decimals (0.095 over 91 days: 0.095022819 %
