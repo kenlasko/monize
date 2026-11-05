@@ -818,7 +818,8 @@
     "alreadyATransfer": "Bu işlem zaten bir transfer. Bunun yerine transferin kendisini düzenleyin.",
     "convertTransferCrossOwner": "Başka bir sahibin hesabını içeren bir transfer dönüştürülemez. Silin ve bunun yerine istediğiniz kaydı oluşturun.",
     "splitTransferLegConvertLocked": "Bu transfer bölünmüş bir işlemin parçasıdır. Kaynak işlemdeki bölmeyi düzenleyerek kaldırın.",
-    "transferCounterpartChanged": "Düzenleme sırasında bu transferin diğer tarafı değişti. Yeniden yükleyip tekrar deneyin."
+    "transferCounterpartChanged": "Düzenleme sırasında bu transferin diğer tarafı değişti. Yeniden yükleyip tekrar deneyin.",
+    "splitTransferTargetAmountRequiresTransfer": "Yalnızca bölmedeki bir transfer alınan tutar taşıyabilir"
   },
   "users": {
     "userNotFound": "Kullanıcı bulunamadı",

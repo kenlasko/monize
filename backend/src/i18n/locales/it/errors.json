@@ -818,7 +818,8 @@
     "alreadyATransfer": "Questa transazione è già un trasferimento. Modifica invece il trasferimento stesso.",
     "convertTransferCrossOwner": "Un trasferimento con il conto di un altro proprietario non può essere convertito. Eliminalo e crea invece la voce desiderata.",
     "splitTransferLegConvertLocked": "Questo trasferimento fa parte di una transazione suddivisa. Rimuovilo modificando la suddivisione nella transazione di origine.",
-    "transferCounterpartChanged": "L'altro lato di questo trasferimento è cambiato durante la modifica. Ricarica e riprova."
+    "transferCounterpartChanged": "L'altro lato di questo trasferimento è cambiato durante la modifica. Ricarica e riprova.",
+    "splitTransferTargetAmountRequiresTransfer": "Solo un trasferimento in una suddivisione può avere un importo ricevuto"
   },
   "users": {
     "userNotFound": "Utente non trovato",

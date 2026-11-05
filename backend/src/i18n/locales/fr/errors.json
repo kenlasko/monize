@@ -818,7 +818,8 @@
     "alreadyATransfer": "Cette transaction est déjà un virement. Modifiez plutôt le virement lui-même.",
     "convertTransferCrossOwner": "Un virement impliquant le compte d'un autre propriétaire ne peut pas être converti. Supprimez-le et créez plutôt l'entrée souhaitée.",
     "splitTransferLegConvertLocked": "Ce virement fait partie d'une transaction fractionnée. Retirez-le en modifiant la répartition sur la transaction source.",
-    "transferCounterpartChanged": "L'autre côté de ce virement a changé pendant votre modification. Rechargez et réessayez."
+    "transferCounterpartChanged": "L'autre côté de ce virement a changé pendant votre modification. Rechargez et réessayez.",
+    "splitTransferTargetAmountRequiresTransfer": "Seul un virement d'une répartition peut porter un montant reçu"
   },
   "users": {
     "userNotFound": "Utilisateur introuvable",

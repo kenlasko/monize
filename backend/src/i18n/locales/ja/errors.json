@@ -818,7 +818,8 @@
     "alreadyATransfer": "この取引はすでに振替です。代わりに振替自体を編集してください。",
     "convertTransferCrossOwner": "他の所有者の口座を含む振替は変換できません。削除してから、必要な項目を作成してください。",
     "splitTransferLegConvertLocked": "この振替は分割取引の一部です。元の取引の分割を編集して削除してください。",
-    "transferCounterpartChanged": "編集中にこの振替の相手側が変更されました。再読み込みしてもう一度お試しください。"
+    "transferCounterpartChanged": "編集中にこの振替の相手側が変更されました。再読み込みしてもう一度お試しください。",
+    "splitTransferTargetAmountRequiresTransfer": "受取金額を指定できるのは分割内の振替のみです"
   },
   "users": {
     "userNotFound": "ユーザーが見つかりません",

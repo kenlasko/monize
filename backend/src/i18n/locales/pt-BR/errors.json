@@ -818,7 +818,8 @@
     "alreadyATransfer": "Esta transação já é uma transferência. Edite a própria transferência.",
     "convertTransferCrossOwner": "Uma transferência com a conta de outro proprietário não pode ser convertida. Exclua-a e crie o lançamento desejado.",
     "splitTransferLegConvertLocked": "Esta transferência faz parte de uma transação dividida. Remova-a editando a divisão na transação de origem.",
-    "transferCounterpartChanged": "O outro lado desta transferência mudou enquanto você editava. Recarregue e tente novamente."
+    "transferCounterpartChanged": "O outro lado desta transferência mudou enquanto você editava. Recarregue e tente novamente.",
+    "splitTransferTargetAmountRequiresTransfer": "Somente uma transferência dentro de uma divisão pode ter um valor recebido"
   },
   "users": {
     "userNotFound": "Usuário não encontrado",
