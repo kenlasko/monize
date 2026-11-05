@@ -184,8 +184,10 @@ The CPI fetcher reads the BLS public API (v2 without a key, to verify the
 limits) and refuses a value that is not a positive decimal, a duplicated month,
 or a month later than the request date. A revision of a published month is not
 expected (CPI-U NSA is not revised; 31 CFR 356 App. B I.B.4 covers a
-discontinued index); a changed stored value is logged and refused, as for the
-Polish benchmarks. The 13-week fetcher reads
+discontinued index); a changed stored value is replaced by the new one and a
+warning log line keeps the old and the new value (`BenchmarkRefreshService`,
+the upsert of `benchmark_values`), as for the Polish benchmarks; it is not
+refused. The 13-week fetcher reads
 `TA_WS/securities/auctioned?format=json&type=Bill&days=<n>`, keeps the regular
 bills of 85 to 97 days from issue to maturity (section 6.1), and computes the
 yield in `ExactDecimal`.
