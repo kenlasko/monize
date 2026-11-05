@@ -1596,7 +1596,11 @@ export class TransactionsService {
     });
   }
 
-  /** The register's row query: every relation a listed row is drawn with. */
+  /**
+   * The register's row query: every relation a listed row is drawn with. Of a
+   * transfer line's counterpart it selects only what the split editor needs:
+   * the amount that arrived, in the target's currency.
+   */
   private registerRowsQuery(m: EntityManager): SelectQueryBuilder<Transaction> {
     return m
       .getRepository(Transaction)
@@ -1609,6 +1613,12 @@ export class TransactionsService {
       .leftJoinAndSelect("splits.category", "splitCategory")
       .leftJoinAndSelect("splits.transferAccount", "splitTransferAccount")
       .leftJoinAndSelect("splits.tags", "splitTags")
+      .leftJoin("splits.linkedTransaction", "splitLinkedTx")
+      .addSelect([
+        "splitLinkedTx.id",
+        "splitLinkedTx.amount",
+        "splitLinkedTx.currencyCode",
+      ])
       .leftJoinAndSelect("splits.investmentTransaction", "splitInvestmentTx")
       .leftJoinAndSelect(
         "splitInvestmentTx.security",
@@ -2567,6 +2577,10 @@ export class TransactionsService {
           "splits.tags",
           "splits.investmentTransaction",
           "splits.investmentTransaction.security",
+          // A transfer line's counterpart carries what arrived in the target
+          // currency, which the split editor loads as the line's received
+          // amount and sends back unedited.
+          "splits.linkedTransaction",
           "linkedTransaction",
           "linkedTransaction.account",
         ],

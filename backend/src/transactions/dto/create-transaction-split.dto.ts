@@ -145,6 +145,21 @@ export class CreateTransactionSplitDto {
   @Max(999999999999)
   amount: number;
 
+  @ApiPropertyOptional({
+    description:
+      "Transfer splits only: the amount that arrives in the target account, " +
+      "in the target account's currency, unsigned (the counterpart takes the " +
+      "opposite sign of `amount`). Honoured for a cross-currency pair, where " +
+      "it records the bank's actual settlement and its implied rate; must " +
+      "equal the split amount for a same-currency pair. When omitted, the " +
+      "counterpart is converted at the market rate for the transaction date.",
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  @Max(999999999999)
+  transferTargetAmount?: number;
+
   @ApiPropertyOptional({ description: "Memo/note for this split" })
   @IsOptional()
   @IsString()

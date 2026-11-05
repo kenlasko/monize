@@ -283,6 +283,25 @@ Note what makes this work: the comparison happens at 4dp, the storage
 precision. Rounding to cents before comparing -- which a currency input is
 tempted to do -- makes three amounts that do not sum appear to.
 
+### A transfer line's received amount
+
+A transfer line's `amount` is in the parent's currency; its counterpart is in
+the target account's. The line may carry `transferTargetAmount`, the unsigned
+amount that arrived, and it follows the plain transfer's `toAmount` rules
+(`resolveSplitTransferAmount` in `transaction-split.service.ts`): across
+currencies it wins over the market rate and the counterpart stores its implied
+rate, `roundFxRate(received / |amount|)`; between two accounts in one currency it
+must equal `|amount|`; zero on one side only is refused; any line that is not a
+transfer refuses it. The counterpart takes the opposite sign of the line.
+Absent, the counterpart is converted at the market rate for the parent's date,
+as before.
+
+The transaction form loads it from `splits.linkedTransaction` and sends it back
+unedited for every cross-currency transfer line, because a split save replaces
+every line: without it, re-saving a split for a memo re-priced each
+cross-currency counterpart at that day's market rate. The scheduled surfaces do
+not store a received amount and still convert when the occurrence posts.
+
 ## 6. Investments
 
 ### Cost basis includes acquisition commission

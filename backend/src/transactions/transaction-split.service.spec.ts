@@ -296,6 +296,16 @@ describe("TransactionSplitService", () => {
       expect(() => service.validateSplits(splits, -100)).not.toThrow();
     });
 
+    it("refuses a received amount on a line that is not a transfer", () => {
+      const splits = [
+        { amount: -60, categoryId: "cat-1", transferTargetAmount: 44 },
+        { amount: -40, categoryId: "cat-2" },
+      ];
+      expect(() => service.validateSplits(splits, -100)).toThrow(
+        BadRequestException,
+      );
+    });
+
     it("passes validation for a single transfer split", () => {
       const splits = [{ amount: -100, transferAccountId: "account-2" }];
       expect(() => service.validateSplits(splits, -100)).not.toThrow();
@@ -585,6 +595,100 @@ describe("TransactionSplitService", () => {
         "account-2",
         45,
       );
+    });
+
+    describe("transferTargetAmount", () => {
+      const mockAccounts = (targetCurrency: string) =>
+        accountsService.findOne
+          .mockResolvedValueOnce({
+            id: "account-2",
+            name: "Target",
+            currencyCode: targetCurrency,
+          })
+          .mockResolvedValueOnce({
+            id: "account-1",
+            name: "Checking",
+            currencyCode: "USD",
+          });
+
+      const createOne = (amount: number, transferTargetAmount: number) => {
+        splitsRepository.save.mockResolvedValueOnce({
+          id: "split-new",
+          transactionId: "tx-1",
+          transferAccountId: "account-2",
+          amount,
+        });
+        transactionsRepository.save.mockResolvedValueOnce({
+          id: "linked-tx-1",
+          accountId: "account-2",
+        });
+        return service.createSplits(
+          "tx-1",
+          [{ amount, transferAccountId: "account-2", transferTargetAmount }],
+          "user-1",
+          "account-1",
+          new Date("2026-01-15"),
+          "Store",
+          "payee-uuid-1",
+        );
+      };
+
+      it("credits the stated received amount at its implied rate, not the market rate", async () => {
+        // The bank settled 50 USD as 44.50 EUR after its FX fee; the market
+        // rate (0.9) would have credited 45.00.
+        mockAccounts("EUR");
+        exchangeRateService.getRateForDate.mockResolvedValue(0.9);
+
+        await createOne(-50, 44.5);
+
+        expect(exchangeRateService.getRateForDate).not.toHaveBeenCalled();
+        expect(transactionsRepository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            accountId: "account-2",
+            currencyCode: "EUR",
+            amount: 44.5,
+            exchangeRate: 0.89,
+          }),
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "account-2",
+          44.5,
+        );
+      });
+
+      it("debits the target when the line brings money into the parent", async () => {
+        mockAccounts("EUR");
+
+        await createOne(50, 44.5);
+
+        expect(transactionsRepository.create).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: -44.5, exchangeRate: 0.89 }),
+        );
+      });
+
+      it("refuses a same-currency received amount that differs from the line", async () => {
+        mockAccounts("USD");
+
+        await expect(createOne(-50, 49)).rejects.toThrow(BadRequestException);
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
+      it("accepts a same-currency received amount equal to the line", async () => {
+        mockAccounts("USD");
+
+        await createOne(-50, 50);
+
+        expect(transactionsRepository.create).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: 50, exchangeRate: 1 }),
+        );
+      });
+
+      it("refuses a received amount of zero against a non-zero line", async () => {
+        mockAccounts("EUR");
+
+        await expect(createOne(-50, 0)).rejects.toThrow(BadRequestException);
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
     });
 
     it("refuses a cross-currency transfer child with no determinable rate", async () => {
