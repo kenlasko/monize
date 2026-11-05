@@ -81,7 +81,11 @@ export function currentTransferTargetAmount(
  *
  * A received amount is tagged with the parent currency it was stated against
  * (`transferTargetFromCurrency`). One stated against another currency is
- * treated as empty, so it is re-derived for the new pair.
+ * treated as empty, so it is re-derived for the new pair. A figure the user
+ * stated (typed, or loaded with the row) is remembered with its pair and line
+ * amount, and comes back when the parent returns to that currency with the
+ * line unchanged: picking another account by mistake and then the right one
+ * again must not trade the bank's figure for a re-derived one.
  *
  * A failed lookup or a missing rate fills nothing, rather than guessing; the
  * server then converts the line at the market rate or refuses it.
@@ -102,6 +106,15 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
   const targetAutoRef = useRef(new Set<string>());
   // The key whose rate was last applied to each line.
   const appliedKeyRef = useRef(new Map<string, string>());
+  // Each line's stated (typed or loaded) received amount, with the parent
+  // currency and line amount it was stated for.
+  const statedRef = useRef(
+    new Map<string, { from: string; amount: number; target: number }>(),
+  );
+  // Lines a restore was issued for that do not hold it yet: until the patch
+  // lands, the line still shows the derived figure it replaces, which must not
+  // be remembered as the user's.
+  const restoringRef = useRef(new Set<string>());
   const latestRef = useRef({ fromCurrency, date, lines, pairOf, defaultSign, onPatch });
   useEffect(() => {
     latestRef.current = { fromCurrency, date, lines, pairOf, defaultSign, onPatch };
@@ -129,6 +142,40 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
   const sentFor = (target: number, rate: number, pair: SplitFxPair, from: string) =>
     sentForReceived(target, rate, pair.fxFeePercent, getDecimalPlacesForCurrency(from));
 
+  // Remember a line's figure while it is the user's own (not derived here).
+  const noteStated = (line: T) => {
+    if (restoringRef.current.has(line.id)) return;
+    if (
+      isFilled(line.transferTargetAmount) &&
+      line.transferTargetFromCurrency !== undefined &&
+      !targetAutoRef.current.has(line.id)
+    ) {
+      statedRef.current.set(line.id, {
+        from: line.transferTargetFromCurrency,
+        amount: Number(line.amount),
+        target: line.transferTargetAmount,
+      });
+    }
+  };
+
+  // The patch that brings a line's stated figure back, when the parent is in
+  // that figure's currency again with the line unchanged and the line does not
+  // already hold it; null otherwise.
+  const restorePatch = (line: T, from: string): SplitFxPatch | null => {
+    const stated = statedRef.current.get(line.id);
+    if (!stated || stated.from !== from || stated.amount !== Number(line.amount)) return null;
+    if (
+      line.transferTargetFromCurrency === from &&
+      line.transferTargetAmount === stated.target
+    ) {
+      restoringRef.current.delete(line.id);
+      return null;
+    }
+    targetAutoRef.current.delete(line.id);
+    restoringRef.current.add(line.id);
+    return { transferTargetAmount: stated.target, transferTargetFromCurrency: from };
+  };
+
   // Every line that needs a rate, with the key it needs; the effect re-runs
   // only when that set changes, not on every amount typed.
   const signature = lines
@@ -151,6 +198,12 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
       for (const line of ctx.lines) {
         if (keyOf(line, ctx) !== key || appliedKeyRef.current.get(line.id) === key) continue;
         appliedKeyRef.current.set(line.id, key);
+        noteStated(line);
+        const restored = restorePatch(line, ctx.fromCurrency);
+        if (restored) {
+          patches[line.id] = restored;
+          continue;
+        }
         const pair = ctx.pairOf(line) as SplitFxPair;
         const sent = magnitude(line.amount);
         const target = currentTransferTargetAmount(line, ctx.fromCurrency);
@@ -173,11 +226,18 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
     const handle = setTimeout(() => {
       const ctx = latestRef.current;
       const wanted = new Map<string, string>();
+      // A stated figure comes back without waiting on a rate, which may never
+      // arrive.
+      const restores: Record<string, SplitFxPatch> = {};
       for (const line of ctx.lines) {
         const key = keyOf(line, ctx);
         if (key === null || appliedKeyRef.current.get(line.id) === key) continue;
+        noteStated(line);
+        const restored = restorePatch(line, ctx.fromCurrency);
+        if (restored) restores[line.id] = restored;
         wanted.set(key, (ctx.pairOf(line) as SplitFxPair).toCurrency);
       }
+      if (Object.keys(restores).length > 0) ctx.onPatch(restores);
       wanted.forEach((toCurrency, key) => {
         exchangeRatesApi
           .getRateForDate(ctx.fromCurrency, toCurrency, ctx.date as string)
@@ -243,6 +303,12 @@ export function useSplitTransferFxAutofill<T extends SplitFxLine>({
   /** The change typing `value` into a line's received amount makes. */
   const editTarget = (line: T, value: number | undefined): SplitFxPatch => {
     targetAutoRef.current.delete(line.id);
+    restoringRef.current.delete(line.id);
+    if (isFilled(value)) {
+      statedRef.current.set(line.id, { from: fromCurrency, amount: Number(line.amount), target: value });
+    } else {
+      statedRef.current.delete(line.id);
+    }
     const patch: SplitFxPatch = {
       transferTargetAmount: value,
       transferTargetFromCurrency: fromCurrency,

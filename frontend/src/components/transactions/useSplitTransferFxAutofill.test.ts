@@ -199,6 +199,15 @@ describe('useSplitTransferFxAutofill', () => {
     expect(result.current.line('a').transferTargetAmount).toBe(4335);
   });
 
+  it('fills an empty amount from a received amount typed before the rate arrived', async () => {
+    const { result } = setup([{ id: 'a', amount: 0 }], { a: USD });
+    act(() => result.current.typeTarget('a', 73));
+    await flushRate();
+
+    expect(result.current.line('a').amount).toBe(-100);
+    expect(result.current.line('a').transferTargetAmount).toBe(73);
+  });
+
   it('fills nothing when no rate is known', async () => {
     mockGetRateForDate.mockResolvedValue(null);
     const { result } = setup([{ id: 'a', amount: -100 }], { a: USD });

@@ -75,6 +75,47 @@ async function flushRate() {
   });
 }
 
+/** A parent whose account currency the test can move away and back. */
+  const initial = [
+    line({ id: 'a', categoryId: 'cat-1', amount: -60 }),
+    line({
+      id: 'b',
+      splitType: 'transfer',
+      transferAccountId: 'usd-sav',
+      amount: -40,
+      transferTargetAmount: 28.75,
+      transferTargetFromCurrency: 'CAD',
+    }),
+  ];
+  function MovingParent() {
+    const [splits, setSplits] = useState(initial);
+    const [currency, setCurrency] = useState('CAD');
+    return (
+      <>
+        <button type="button" onClick={() => setCurrency('EUR')}>
+          move
+        </button>
+        <button type="button" onClick={() => setCurrency('CAD')}>
+          back
+        </button>
+        <SplitEditor
+          splits={splits}
+          onChange={(next) => {
+            onChangeSpy(next);
+            setSplits(next);
+          }}
+          categories={categories}
+          accounts={accounts}
+          sourceAccountId="cad-chq"
+          transactionAmount={-100}
+          currencyCode={currency}
+          transactionDate="2026-10-29"
+          crossCurrencyTransfers
+        />
+      </>
+    );
+  }
+
 describe('SplitEditor -- cross-currency transfer lines', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -163,42 +204,6 @@ describe('SplitEditor -- cross-currency transfer lines', () => {
   });
 
   it('re-derives a typed received amount once the parent currency changes', async () => {
-    const initial = [
-      line({ id: 'a', categoryId: 'cat-1', amount: -60 }),
-      line({
-        id: 'b',
-        splitType: 'transfer',
-        transferAccountId: 'usd-sav',
-        amount: -40,
-        transferTargetAmount: 28.75,
-        transferTargetFromCurrency: 'CAD',
-      }),
-    ];
-    function MovingParent() {
-      const [splits, setSplits] = useState(initial);
-      const [currency, setCurrency] = useState('CAD');
-      return (
-        <>
-          <button type="button" onClick={() => setCurrency('EUR')}>
-            move
-          </button>
-          <SplitEditor
-            splits={splits}
-            onChange={(next) => {
-              onChangeSpy(next);
-              setSplits(next);
-            }}
-            categories={categories}
-            accounts={accounts}
-            sourceAccountId="cad-chq"
-            transactionAmount={-100}
-            currencyCode={currency}
-            transactionDate="2026-10-29"
-            crossCurrencyTransfers
-          />
-        </>
-      );
-    }
     await act(async () => {
       render(<MovingParent />);
     });
@@ -215,6 +220,31 @@ describe('SplitEditor -- cross-currency transfer lines', () => {
     expect(mockGetRateForDate).toHaveBeenLastCalledWith('EUR', 'USD', '2026-10-29');
     expect(lastSplits()[1].transferTargetAmount).toBe(43.2);
     expect(lastSplits()[1].transferTargetFromCurrency).toBe('EUR');
+
+    // Back to the CAD account: the bank's figure returns, not a re-derived one.
+    mockGetRateForDate.mockResolvedValue(0.73);
+    fireEvent.click(screen.getByRole('button', { name: 'back' }));
+    await flushRate();
+    expect(lastSplits()[1].transferTargetAmount).toBe(28.75);
+    expect(lastSplits()[1].transferTargetFromCurrency).toBe('CAD');
+  });
+
+  it('brings a stated figure back even when no rate arrives on the way back', async () => {
+    await act(async () => {
+      render(<MovingParent />);
+    });
+    await flushRate();
+    mockGetRateForDate.mockResolvedValue(1.08);
+    fireEvent.click(screen.getByRole('button', { name: 'move' }));
+    await flushRate();
+    expect(lastSplits()[1].transferTargetAmount).toBe(43.2);
+
+    // The CAD rate is unavailable now; the bank's figure needs none.
+    mockGetRateForDate.mockResolvedValue(null);
+    fireEvent.click(screen.getByRole('button', { name: 'back' }));
+    await flushRate();
+    expect(lastSplits()[1].transferTargetAmount).toBe(28.75);
+    expect(lastSplits()[1].transferTargetFromCurrency).toBe('CAD');
   });
 
   it('drops the received amount when the line stops being a transfer', async () => {
