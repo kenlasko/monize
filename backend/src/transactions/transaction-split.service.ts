@@ -1186,7 +1186,7 @@ export class TransactionSplitService {
       splits,
       {
         sourceCurrencyCode: source.currencyCode,
-        parentAccountUnchanged: true,
+        parentAccountUnchanged: nextAccountId === parent.accountId,
       },
     );
   }

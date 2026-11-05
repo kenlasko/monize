@@ -180,6 +180,65 @@ describe("Split transfer received amount (integration)", () => {
     expect(Number((await counterpart()).amount)).toBe(35.5);
   });
 
+  it("carries nothing once the parent moves to another account", async () => {
+    // Another USD account: same currency, but the recorded figure belonged to
+    // the old account's transfer, so the line is re-converted -- and with no
+    // USD->EUR rate stored, refused rather than posted at the old figure.
+    const created = await createSplit();
+    const otherUsdId = (
+      await createTestAccount(dataSource, userId, { name: "Second chequing" })
+    ).id;
+    const withoutReceived = splitsWith("Moved").map(
+      ({ transferTargetAmount: _omitted, ...line }) => line,
+    );
+
+    await expect(
+      withUserContext(userId, () =>
+        service.update(userId, created.id, {
+          accountId: otherUsdId,
+          splits: withoutReceived,
+        }),
+      ),
+    ).rejects.toThrow(/exchange rate/i);
+    expect(Number((await counterpart()).amount)).toBe(35.5);
+  });
+
+  it("gives a joint reader's register rows no counterpart either", async () => {
+    await createSplit();
+    const reader = (await createTestUserDirect(dataSource)).id;
+
+    const page = await withUserContext(reader, () =>
+      service.findAll(
+        reader,
+        [usdId],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        50,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "date",
+        "DESC",
+        undefined,
+        undefined,
+        undefined,
+        [usdId],
+      ),
+    );
+    const line = page.data
+      .flatMap((tx) => tx.splits ?? [])
+      .find((s) => s.transferAccountId === eurId);
+    expect(line).toBeDefined();
+    expect(line?.linkedTransaction ?? null).toBeNull();
+  });
+
   it("gives a joint reader no counterpart of the owner's split lines", async () => {
     const created = await createSplit();
     const reader = (await createTestUserDirect(dataSource)).id;

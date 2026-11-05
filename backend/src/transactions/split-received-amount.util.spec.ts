@@ -76,6 +76,19 @@ describe("carryRecordedReceivedAmounts", () => {
     ]);
   });
 
+  it("lets a line stating its own figure claim its recorded match first", () => {
+    // The existing line resends its figure; a new identical line is added.
+    const lines = carryRecordedReceivedAmounts(
+      recorded,
+      [
+        { transferAccountId: "usd", amount: -40 },
+        { transferAccountId: "usd", amount: -40, transferTargetAmount: 29 },
+      ],
+      context,
+    );
+    expect(lines.map((l) => l.transferTargetAmount)).toEqual([undefined, 29]);
+  });
+
   it("carries nothing from a same-currency line or once the parent account moves", () => {
     expect(
       carryRecordedReceivedAmounts(

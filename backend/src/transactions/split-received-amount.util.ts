@@ -23,7 +23,8 @@ export interface RecordedTransferLine {
  * the counterpart -- used to re-convert every cross-currency counterpart at
  * that day's market rate, overwriting the figure the bank actually credited. A
  * line continues a recorded one when it names the same target account and the
- * same amount (each recorded line is claimed at most once); its received amount
+ * same amount (each recorded line is claimed at most once, by a line stating
+ * its own figure before any line that states none); its received amount
  * is then a fact about the transfer, not something to re-price, just as a date
  * correction does not re-price a plain transfer.
  *
@@ -44,6 +45,25 @@ export function carryRecordedReceivedAmounts(
       line.counterpartCurrencyCode !== null &&
       line.counterpartCurrencyCode !== context.sourceCurrencyCode,
   );
+  const sameLine = (
+    line: RecordedTransferLine,
+    split: CreateTransactionSplitDto,
+  ): boolean =>
+    line.transferAccountId === split.transferAccountId &&
+    roundMoney(Number(line.amount)) === roundMoney(Number(split.amount));
+  // A line stating its own figure continues a recorded line too: it claims its
+  // match first, so a new line identical to it cannot inherit that figure.
+  for (const split of incoming) {
+    if (
+      !split.transferAccountId ||
+      split.transferTargetAmount === undefined ||
+      split.transferTargetAmount === null
+    ) {
+      continue;
+    }
+    const claimed = pool.findIndex((line) => sameLine(line, split));
+    if (claimed !== -1) pool.splice(claimed, 1);
+  }
   return incoming.map((split) => {
     if (
       !split.transferAccountId ||
@@ -52,12 +72,7 @@ export function carryRecordedReceivedAmounts(
     ) {
       return split;
     }
-    const amount = roundMoney(Number(split.amount));
-    const index = pool.findIndex(
-      (line) =>
-        line.transferAccountId === split.transferAccountId &&
-        roundMoney(Number(line.amount)) === amount,
-    );
+    const index = pool.findIndex((line) => sameLine(line, split));
     if (index === -1) return split;
     const [line] = pool.splice(index, 1);
     return {
