@@ -1,4 +1,5 @@
 import { EntityManager } from "typeorm";
+import { returnedRows } from "../common/db/query-result";
 import {
   templateCashPricedOf,
   templateFaceValueOf,
@@ -263,4 +264,56 @@ export async function hasQuantitiesThatAreNotBonds(
     { limit: 1 },
   );
   return found.length > 0;
+}
+
+/** A manual price outside the cash-price band of its program's face value. */
+export interface ManualPriceOutsideBand {
+  /** The offending price, as a decimal string. */
+  readonly price: string;
+  /** The face value of one bond of the program's template, as a decimal string. */
+  readonly faceValue: string;
+}
+
+/**
+ * The first of `prices` (the close, open, high and low a person typed) that is
+ * not a cash price of one bond: above `BOND_CASH_PRICE_BAND.max` x the face
+ * value, for a security linked to a program whose unit price is a cash price (a
+ * marketable coupon program), or null. The manual price is the only source of
+ * such a holding's value, so a price typed 100 times too large (9950 for 99.50)
+ * would value the holding 100 times too large. Any other security, linked or
+ * not, and a program with no installed adapter are not read: the engine prices
+ * them, or the person's price is a price of something other than a unit of face
+ * value. Runs on the write's own transaction (`m`), before the price is
+ * written, so a refusal leaves nothing behind.
+ */
+export async function findManualPriceOutsideBand(
+  m: EntityManager,
+  userId: string,
+  securityId: string,
+  prices: readonly number[],
+): Promise<ManualPriceOutsideBand | null> {
+  if (prices.length === 0) return null;
+  const linked = returnedRows<{ bond_program_id: string | null }>(
+    await m.query(
+      `SELECT bond_program_id FROM securities WHERE id = $1 AND user_id = $2`,
+      [securityId, userId],
+    ),
+  );
+  const programId = linked[0]?.bond_program_id ?? null;
+  if (programId === null) return null;
+  const template = await programTemplate(m, programId);
+  if (template === null || !template.cashPriced) return null;
+  const rows = returnedRows<{ price: string }>(
+    await m.query(
+      `SELECT p::text AS price
+         FROM unnest($1::numeric[]) WITH ORDINALITY AS u(p, n)
+        WHERE p > $2::numeric * ${BOND_CASH_PRICE_BAND.max}::numeric
+        ORDER BY n
+        LIMIT 1`,
+      [prices.map(String), template.faceValue],
+    ),
+  );
+  return rows.length === 0
+    ? null
+    : { price: rows[0].price, faceValue: template.faceValue };
 }

@@ -4372,6 +4372,19 @@ Enforcement         Three mechanisms.
                        bond-adapters.ts): an empty catalog is never a way past
                        the band. A row already outside the band when the guard
                        began does not block an unrelated write or a delete.
+                       The manual price of a linked security is read against
+                       the same cash band: for a security linked to a
+                       marketable coupon program (the only source of such a
+                       holding's value) a close, open, high or low above
+                       5 x the face value is refused with errorCode
+                       MANUAL_PRICE_NOT_CASH_PRICE
+                       (assertManualPriceIsCashPrice, backend/src/bonds/
+                       bond-write-guard.ts) inside the transaction of
+                       SecurityPriceService.createManualPrice and updatePrice,
+                       the only routes that write a manual price (the AI
+                       assistant and MCP have no price-writing tool; the .mny
+                       import writes its own source, not manual); a series the
+                       engine prices and a Polish bond are not read.
                        After the commit of a split parent's create, edit, void
                        or delete, the embedded rows' securities are repriced
                        (recomputeBondPricesAfterWrite via

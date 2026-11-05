@@ -5,6 +5,7 @@ import {
 import { EntityManager } from "typeorm";
 import { tr } from "../i18n/translate";
 import {
+  findManualPriceOutsideBand,
   findQuantitiesNotBonds,
   QuantityNotBonds,
 } from "../securities/bond-link.util";
@@ -99,6 +100,38 @@ export function quantityNotBondsException(
   return new BadRequestException({
     message,
     errorCode: "QUANTITY_NOT_BONDS",
+  });
+}
+
+/**
+ * Refuses, inside the write's own transaction and so before the price is
+ * written, a manual price of a security linked to a marketable coupon program
+ * that is not a cash price of one bond (above five times the face value): the
+ * manual price is the only source of such a holding's value (INV-BOND-005).
+ * One helper for every manual-price write (create and update); `errorCode`
+ * `MANUAL_PRICE_NOT_CASH_PRICE`. Any other security is not read.
+ */
+export async function assertManualPriceIsCashPrice(
+  m: EntityManager,
+  userId: string,
+  securityId: string,
+  prices: ReadonlyArray<number | null | undefined>,
+): Promise<void> {
+  const found = await findManualPriceOutsideBand(
+    m,
+    userId,
+    securityId,
+    prices.filter((p): p is number => typeof p === "number"),
+  );
+  if (found === null) return;
+  const params = { price: found.price, faceValue: found.faceValue };
+  throw new BadRequestException({
+    message: tr(
+      "errors.bonds.MANUAL_PRICE_NOT_CASH_PRICE",
+      `The price must be the cash price of one bond of face value ${params.faceValue}; the price ${params.price} is more than five times the face value of one bond.`,
+      params,
+    ),
+    errorCode: "MANUAL_PRICE_NOT_CASH_PRICE",
   });
 }
 
