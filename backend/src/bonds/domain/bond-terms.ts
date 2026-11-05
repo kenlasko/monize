@@ -203,7 +203,7 @@ export interface BondTerms {
     readonly faceValue: string;
     /**
      * The price of one face value at issue, exact decimal, above zero and below
-     * `faceValue`. Present exactly when the rate rule is ZERO_COUPON_DISCOUNT.
+     * `faceValue` (at most `faceValue` for a MARKETABLE bill issued at par). Present exactly when the rate rule is ZERO_COUPON_DISCOUNT.
      */
     readonly issuePrice?: string;
   };
@@ -630,13 +630,17 @@ function assertDiscountConsistent(terms: BondTerms): void {
     );
   }
   const price = ExactDecimal.parse(instrument.issuePrice);
-  if (
-    price.isZero() ||
-    price.cmp(ExactDecimal.parse(instrument.faceValue)) >= 0
-  ) {
+  const against = price.cmp(ExactDecimal.parse(instrument.faceValue));
+  // A marketable bill may be issued at par (a discount rate of nothing): the
+  // value stays at the face value and the interest is nothing. A retail
+  // discount bond is always issued below its face value.
+  const parAllowed = instrument.marketability === "MARKETABLE";
+  if (price.isZero() || against > 0 || (against === 0 && !parAllowed)) {
     throw new BondTermsError(
       "terms.instrument.issuePrice",
-      "must be above zero and below the face value",
+      parAllowed
+        ? "must be above zero and at most the face value"
+        : "must be above zero and below the face value",
     );
   }
   if (schedule.anchor !== "ISSUE_DATE") {

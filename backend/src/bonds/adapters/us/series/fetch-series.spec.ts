@@ -165,10 +165,24 @@ describe("fetching a bill", () => {
     expect(error.params.field).toBe("term");
   });
 
-  it("refuses a discount rate of nothing (a price of 100)", async () => {
-    const records = withRecord(billJson(), 0, {
-      highDiscountRate: "0.000000",
-      highPrice: "100.000000",
+  it("accepts a bill auctioned at a discount rate of nothing (a price of par)", async () => {
+    const { entry } = await fetchSeries(
+      BILL,
+      billFetch(fixtureJson("ta-ws-912797WM5-par.json")),
+      NOW,
+    );
+    const terms = parseBondTerms(entry.terms);
+    expect(terms.instrument.issuePrice).toBe("100.00");
+    expect(terms.instrument.faceValue).toBe("100");
+  });
+
+  it.each([
+    ["a price of par with a discount rate", { highDiscountRate: "0.100000" }],
+    ["a price under par with no discount rate", { highPrice: "99.999999" }],
+    ["a price above par", { highPrice: "100.000001" }],
+  ])("refuses %s", async (_name, change) => {
+    const records = withRecord(fixtureJson("ta-ws-912797WM5-par.json"), 0, {
+      ...change,
     });
     const error = await refusal(fetchSeries(BILL, billFetch(records), NOW));
     expect(error.code).toBe("SOURCE_INCONSISTENT");

@@ -14,6 +14,7 @@ No test touches the network. Country spec: `docs/specs/us-treasury-securities.md
 | `ta-ws-91282CQM6.json` | CONSTRUCTED | The `TA_WS` record of the recorded FRN, built from `R_20260428_1.xml` (no recorded JSON exists): issue 2026-04-30, maturity 2028-04-30, spread 0.103, first payment 2026-07-31, quarterly. Its first index is the 13-week auction of 2026-04-27 in `../../benchmark-fixtures/ta-ws-auctioned-bills.json`. |
 | `ta-ws-912810FQ6.json` | CONSTRUCTED | A 30-year TIPS, 3-3/8 %, dated 2001-10-15, auctioned 2001-10-25, issued 2001-10-31, maturing 2032-04-15, Ref CPI of the dated date 177.50000, semiannual, first coupon 2002-04-15. The values follow the example of the primitives spec; the record is not a copy of a real auction and the field formats are inferred. |
 | `R_20011025_1.xml` | CONSTRUCTED | The results file of that TIPS, the element structure of `R_20260428_1.xml` with the TIPS' values (`InflationIndexSecurity` Y, `RefCPIDatedDate`, `InterestRate`). |
+| `ta-ws-912797WM5-par.json` | CONSTRUCTED | The record of the bill above with a high discount rate of 0.000000 and a high price of 100.000000, no results file: a bill auctioned at par, as Treasury did in 2020. Built from the 26-week bill's record; it is not a copy of a real auction. |
 
 A constructed file proves the code path, not the live format. When a live
 response is recorded, replace the constructed file and delete its line above.

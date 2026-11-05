@@ -165,8 +165,10 @@ export function readBill(record: AuctionRecord, cusip: string): BillAuction {
   if (days < BILL_MIN_DAYS || days > BILL_MAX_DAYS) {
     throw inconsistent("term", String(days), "28-364");
   }
-  if (discountRate.isZero() || price.cmp(ExactDecimal.fromInt(100)) >= 0) {
-    throw inconsistent("highPrice", highPrice, "<100");
+  // A price of exactly 100 is a bill auctioned at a rate of nothing (Treasury
+  // did so in 2020): no discount, and the price check below ties it to the rate.
+  if (price.cmp(ExactDecimal.fromInt(100)) > 0) {
+    throw inconsistent("highPrice", highPrice, "<=100");
   }
   const expected = billPrice(discountRate, days);
   if (expected.cmp(price) !== 0) {

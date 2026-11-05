@@ -34,6 +34,23 @@ function refusalOf(doc: Doc): BondTermsError {
   throw new Error("expected parseBondTerms to throw");
 }
 
+describe("parseBondTerms: a marketable bill priced at par", () => {
+  it("accepts an issue price equal to the face value (no discount)", () => {
+    const doc = marketableDoc((d) => (d.instrument.issuePrice = "100.00"));
+    expect(parseBondTerms(doc)).toEqual(doc);
+  });
+
+  it.each([
+    ["above the face value", "100.000001"],
+    ["zero", "0"],
+  ])("refuses an issue price %s", (_name, price) => {
+    const error = refusalOf(
+      marketableDoc((d) => (d.instrument.issuePrice = price)),
+    );
+    expect(error.field).toBe("terms.instrument.issuePrice");
+  });
+});
+
 describe("parseBondTerms: MARKETABLE marketability", () => {
   it("accepts a marketable instrument unchanged", () => {
     expect(parseBondTerms(marketableDoc())).toEqual(marketableDoc());

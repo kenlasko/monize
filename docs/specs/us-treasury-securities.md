@@ -115,8 +115,9 @@ host `www.treasurydirect.gov` only:
      `MaturityDate`, `DatedDate`, `InterestRate`, `Spread`, `HighPrice`,
      `RefCPIDatedDate` agree with the JSON (the XML element names are verified,
      fixture `R_20260428_1.xml`).
-5. Bounds (`SOURCE_INCONSISTENT`): a bill's term 4 to 52 weeks and price below
-   100; a coupon rate 0 to 20 %; a spread -1 % to 1 %; a maturity at most 31
+5. Bounds (`SOURCE_INCONSISTENT`): a bill's term 4 to 52 weeks and price at most
+   100 (a bill auctioned at a rate of 0.000 % is priced at exactly 100.000000,
+   has no discount and is held at its face value); a coupon rate 0 to 20 %; a spread -1 % to 1 %; a maturity at most 31
    years after issue; a base Ref CPI 100 to 1,000.
 6. The program comes from the source (`securityType` and the two flags); a code
    whose program the person did not link is refused by the existing link check.

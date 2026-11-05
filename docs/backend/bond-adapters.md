@@ -67,7 +67,7 @@ A terms document (`schemaVersion` 1, `backend/src/bonds/domain/bond-terms.ts`) i
 | `FIXED` | The same `annualRate` in every period. | `parseRateRule` |
 | `BENCHMARK_PLUS_SPREAD` | Period 1 is `firstPeriodRate` (derived like the rest when null); later periods are `max(benchmarkFloor, observation) + spread` (no floor: the observation). | `parseRateRule` |
 | `INFLATION_PLUS_MARGIN_AS_RATE` | The same shape with a `margin`, for an inflation benchmark. Both read the benchmark through an observation rule. | `parseRateRule` |
-| `ZERO_COUPON_DISCOUNT` | No rate: bought at `instrument.issuePrice`, below `faceValue`, the value rises ratably (by days) to the face value at maturity. Needs an `ISSUE_DATE` schedule, capitalization `NONE` and redemption `MATURITY_ONLY`. | `parseRateRule`, `assertDiscountConsistent` |
+| `ZERO_COUPON_DISCOUNT` | No rate: bought at `instrument.issuePrice`, below `faceValue` (equal to it for a `MARKETABLE` bill issued at par, which has no discount: the value stays at the face value), the value rises ratably (by days) to the face value at maturity. Needs an `ISSUE_DATE` schedule, capitalization `NONE` and redemption `MATURITY_ONLY`. | `parseRateRule`, `assertDiscountConsistent` |
 | Observation `STEP_VALUE_ON_NTH_BUSINESS_DAY_BEFORE_START_MONTH` | Reads a `STEP` benchmark on the n-th business day (named calendar) before the first day of the month a period starts in. | `parseObservation` |
 | Observation `MONTHLY_VALUE_MONTHS_BEFORE_START` | Reads a `MONTHLY` benchmark at the reference month `start month - months`. | `parseObservation` |
 | An announced rate | A stored period rate (`bond_period_rates`) wins over a derived one; a period with neither is unknown, never substituted (INV-BOND-002). | the engine (`resolvePeriodRates`) |
