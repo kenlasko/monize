@@ -24,7 +24,7 @@ const SHARED_SCANNED_FOR_LITERALS = true;
  * one of the program codes the adapter's spec names.
  */
 const FORBIDDEN =
-  /(?<![A-Za-z])(?:(?:PLN|PL|TOS|ROR|COI|EDO|OTS|DOR|ROS|ROD|NBP|GUS|USD|US|BILL|NOTE|TIPS|FRN)(?![A-Za-z])|(?:pln|pl|tos|ror|coi|edo|ots|dor|ros|rod|nbp|gus|usd|us|bill|note|tips|frn)(?=[0-9_])|treasurydirect)/;
+  /(?<![A-Za-z])(?:(?:PLN|PL|TOS|ROR|COI|EDO|OTS|DOR|ROS|ROD|NBP|GUS|BLS|USD|US|BILL|NOTE|TIPS|FRN)(?![A-Za-z])|(?:pln|pl|tos|ror|coi|edo|ots|dor|ros|rod|nbp|gus|bls|usd|us|bill|note|tips|frn)(?=[0-9_])|treasurydirect|api\.bls\.gov|CUUR0000SA0)/;
 const ADAPTER_IMPORT =
   /from\s+["'][^"']*adapters[^"']*["']|require\(\s*["'][^"']*adapters/;
 
@@ -159,6 +159,9 @@ describe("bonds domain and engine are country-agnostic", () => {
       expect(FORBIDDEN.test(prose)).toBe(false);
       expect(prose.split("\n")).toHaveLength(5);
       expect(FORBIDDEN.test(stripComments('const c = "PLN";'))).toBe(true);
+      expect(FORBIDDEN.test('const h = "api.bls.gov";')).toBe(true);
+      expect(FORBIDDEN.test('const s = "CUUR0000SA0";')).toBe(true);
+      expect(FORBIDDEN.test('const p = "BLS";')).toBe(true);
       expect(
         FORBIDDEN.test(
           stripComments('const c = "x"; // fine\nconst d = "TOS";'),

@@ -1,4 +1,3 @@
-import { BenchmarkFetchError } from "../../bond-adapter";
 import {
   INSTALLED_BOND_ADAPTERS,
   templateFaceValueOf,
@@ -64,15 +63,6 @@ describe("US adapter", () => {
         programCode: "NOTE",
       }),
     ).toBe("100");
-  });
-
-  it("declares no benchmark yet and refuses to fetch one", async () => {
-    expect(adapter.benchmarks).toEqual([]);
-    await expect(
-      adapter.fetchBenchmark("US_CPI_U_NSA", async () => {
-        throw new Error("no request expected");
-      }),
-    ).rejects.toThrow(BenchmarkFetchError);
   });
 
   it("fetches series under the TreasuryDirect provider and offers nothing else of the series members", () => {

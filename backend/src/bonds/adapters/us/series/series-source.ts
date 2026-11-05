@@ -55,7 +55,7 @@ export async function getFromTreasury(
   get: BondFetch,
   url: string,
   maxBytes: number,
-  document: "auction data" | "results",
+  document: "auction data" | "auction list" | "results",
 ): Promise<Uint8Array> {
   if (!isOwnHttps(new URL(url))) throw unavailable("host");
   let timer: NodeJS.Timeout | undefined;

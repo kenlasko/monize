@@ -181,6 +181,36 @@ Polish benchmarks. The 13-week fetcher reads
 `TA_WS/securities/auctioned?format=json&type=Bill&days=<n>`, keeps `securityTerm`
 `13-Week`, and computes the yield in `ExactDecimal`.
 
+### 6.1 Decisions of phase 4 (benchmarks)
+
+- **BLS request.** One GET of
+  `https://api.bls.gov/publicAPI/v2/timeseries/data/CUUR0000SA0?startyear=<y-9>&endyear=<y>`
+  through the `BondFetch` door (provider `bls`, host `api.bls.gov`); `BondFetch`
+  is GET only, so the registered-key POST form is not used. Ten years are the
+  window the keyless service serves per request: a TIPS bought earlier than
+  that has unknown ratios (`missing`), never a wrong one. To verify live
+  (section 10).
+- **Rows.** `status` must be `REQUEST_SUCCEEDED`, `Results.series` one series
+  `CUUR0000SA0`. Periods `M01` to `M12` are months, `M13` (the annual average)
+  is skipped, any other period is refused. A level of `-` (the BLS marks a month
+  it did not publish) is skipped, never read as zero; a level that is not a
+  positive decimal (or is a JSON number), a duplicated month and a month after
+  the request date are refused. The observation is dated the first of the month,
+  the level as published; `coveredThrough` is the last day of the newest month.
+- **13-week yield.** The list is `TA_WS/securities/auctioned?format=json&type=Bill&days=900`
+  (a floating rate note of two years needs the auctions since its issue); a body
+  over 5 MB (the door's cap) is a failure. Records whose `securityTerm` is not
+  `13-Week` and records with no `highDiscountRate` are skipped; a term other than
+  84 to 98 days, an auction after its issue, two different rates for one
+  auction date are refused. `coveredThrough` is the newest auction date: the
+  engine treats a day more than 7 days after it as unknown (primitives spec 7.2).
+- **Precision.** `benchmark_values.value` is `NUMERIC(20,10)` and a migration is
+  out of scope, so the stored fraction is the percent rounded to nine decimals,
+  divided by 100 and rounded to ten decimals (0.095 over 91 days: 0.095022819 %
+  is stored as 0.0009502282, not 0.00095022819). The daily accrual of E12
+  (0.000597286) is the same for both. A column of scale 11 would keep the
+  eleventh decimal; open decision.
+
 ## 7. Golden cases
 
 Read by `adapters/us/golden.spec.ts` from `*-cases.json`, each with its source;

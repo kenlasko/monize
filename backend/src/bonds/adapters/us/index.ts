@@ -7,6 +7,10 @@ import {
 import { registerCalendar } from "../../domain/calendar-registry";
 import type { CalendarRegistry } from "../../domain/calendar-registry";
 import { programOf } from "./cusip";
+import { fetchBlsCpi } from "./us-bls-cpi";
+import { US_CPI_U_NSA, US_TBILL_13W_MMY, usBenchmarks } from "./us-benchmarks";
+import { fetchTbill13w } from "./us-tbill-13w";
+import { todayInTimezone } from "../../../common/date-utils";
 import { fetchSeries } from "./series/fetch-series";
 import { SERIES_PROVIDER } from "./series/series-source";
 import { SERIES_TEMPLATES } from "./series/templates";
@@ -40,14 +44,22 @@ export const UNITED_STATES_BOND_ADAPTER: BondAdapter = {
   specDoc: "docs/specs/us-treasury-securities.md",
   timezone: US_TIMEZONE,
   registerCalendars: registerUsCalendars,
-  // The CPI-U and 13-week bill benchmarks arrive with TIPS and FRN (phase 4).
-  benchmarks: [],
+  benchmarks: usBenchmarks,
   programs,
   fetchSeries: (seriesCode: string, fetch: BondFetch) =>
     fetchSeries(seriesCode, fetch),
   seriesProviderId: SERIES_PROVIDER,
   programOf,
-  async fetchBenchmark(code: string) {
-    throw new BenchmarkFetchError(`The US adapter has no benchmark ${code}`);
+  async fetchBenchmark(code: string, fetch: BondFetch) {
+    switch (code) {
+      case US_CPI_U_NSA:
+        return fetchBlsCpi(fetch, todayInTimezone(US_TIMEZONE) as string);
+      case US_TBILL_13W_MMY:
+        return fetchTbill13w(fetch);
+      default:
+        throw new BenchmarkFetchError(
+          `The US adapter has no benchmark ${code}`,
+        );
+    }
   },
 };

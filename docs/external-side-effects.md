@@ -565,11 +565,14 @@ least correct on failure: the provider is called and the response parsed before
 anything is saved, so a failed call leaves no partial rows, and a total provider
 failure throws rather than fabricating a result.
 
-### Bond reference data (NBP, GUS)
+### Bond reference data (NBP, GUS, BLS, TreasuryDirect)
 
-`BenchmarkRefreshService` reads the NBP reference rate and the GUS year-on-year
-CPI and writes them to `benchmark_values`; it has no effect at the publisher to
-undo. Each outbound call is gated by the `nbp` or `gus` circuit breaker
+`BenchmarkRefreshService` reads the NBP reference rate, the GUS year-on-year
+CPI, the BLS CPI-U levels (`api.bls.gov`, provider `bls`, one GET of
+`publicAPI/v2/timeseries/data/CUUR0000SA0` for ten years, no key) and the
+13-week Treasury bill auctions (`www.treasurydirect.gov`, provider
+`treasurydirect`, `TA_WS/securities/auctioned`) and writes them to `benchmark_values`; it has no effect at the publisher to
+undo. Each outbound call is gated by the `nbp`, `gus`, `bls` or `treasurydirect` circuit breaker
 (`ProviderHealthService`) through `SeriesHttp.gated`, limited to the https hosts
 the adapter declares (no other host, no redirect off them), with a 30 s timeout
 and a 5 MB streaming cap, and the whole body is read before the breaker records

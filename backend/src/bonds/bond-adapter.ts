@@ -92,8 +92,8 @@ export type BondFetch = (url: string) => Promise<{
 }>;
 
 export class BenchmarkFetchError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: { readonly cause?: unknown }) {
+    super(message, options);
     this.name = "BenchmarkFetchError";
   }
 }
