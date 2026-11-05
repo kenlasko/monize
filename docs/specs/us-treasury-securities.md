@@ -374,6 +374,13 @@ recorded ones:
 - The `TA_WS` `securityType` text of a TIPS and an FRN, `interestRate` and
   `refCpiOnDatedDate` of a TIPS, and `spread` of an FRN (the constructed
   `ta-ws-912810FQ6.json` and `ta-ws-91282CQM6.json`).
+- Known gap: BLS did not publish the CPI-U of October 2025, so the Ref CPI of
+  every day of January 2026 (which reads October 2025) is unknown for every TIPS
+  and its figures stay unknown (`missing` names the month `2025-10` and the
+  publisher `BLS`, so the surface says why); no substitute can be entered. 31 CFR
+  356 App. B I.B.4 prescribes a substitute index for a month that is not
+  published, and Treasury's published Ref CPI for January 2026 is to verify
+  against it. A substitute-entry feature is not built.
 - Not built: a notification when a new CPI-U level is stored (the benchmark
   notification reads the rate rule's benchmark only); a settlement-date lockout
   of an FRN.

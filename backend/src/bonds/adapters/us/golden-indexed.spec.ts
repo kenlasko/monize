@@ -118,6 +118,37 @@ describe("golden cases for TIPS (31 CFR 356 Appendix B)", () => {
   });
 });
 
+describe("a month BLS did not publish (October 2025)", () => {
+  it("makes every TIPS figure that reads it unknown in January 2026, naming the month and BLS", () => {
+    // The Ref CPI of 2026-01-01 is the CPI-U of October 2025 (three months
+    // back), which BLS did not publish; no older level is carried on, and the
+    // surface can say why (31 CFR 356 Appendix B I.B.4 names a substitute
+    // index for a month that is not published: country spec section 10).
+    const c = (tipsCases.cases as unknown as TipsCase[]).find(
+      (x) => x.id === "E9",
+    ) as TipsCase;
+    const valuation = valueBondLot({
+      terms: tipsTerms(c, "177.50000"),
+      termsVersion: 1,
+      announcedRates: new Map(),
+      benchmarks: monthly({
+        "2025-09": "324.800",
+        "2025-11": "325.600",
+        "2025-12": "326.100",
+      }),
+      calendars,
+      lot: { purchaseDate: "2025-07-15", quantity: 100 },
+      asOf: "2026-01-15",
+    });
+    expect(valuation.principal).toBeNull();
+    expect(valuation.grossValue).toBeNull();
+    expect(valuation.valuationComplete).toBe(false);
+    expect(valuation.missing).toEqual([
+      { benchmarkId: US_CPI_U_NSA, observation: "2025-10", publisher: "BLS" },
+    ]);
+  });
+});
+
 describe("golden cases for floating rate notes (31 CFR 356 Appendix B IV)", () => {
   it.each(frnCases.yields)("$id: $description", (c) => {
     expect(
