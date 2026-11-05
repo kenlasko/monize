@@ -177,7 +177,7 @@ Only everyday banking accounts accept grantee writes. The rest are shared read-o
 | Account type | Shareable as joint | Grantee writes |
 |--------------|--------------------|----------------|
 | Chequing, Savings, Cash, Credit Card, Line of Credit | Yes | Create / Edit / Delete, as granted |
-| Investment, Loan, Mortgage, Asset, Other | Yes | **None** -- read-only regardless of the grant flags |
+| Investment, Loan, Mortgage, Asset, Crypto Wallet, Other | Yes | **None** -- read-only regardless of the grant flags |
 
 The effective permission the grantee's screen shows is the grant flags combined with this policy, so the interface and the server can never disagree.
 

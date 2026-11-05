@@ -124,6 +124,7 @@ export type AccountType =
   | 'CREDIT_CARD'
   | 'CASH'
   | 'LINE_OF_CREDIT'
+  | 'CRYPTO'
   | 'OTHER';
 
 export interface CreatedAccount {

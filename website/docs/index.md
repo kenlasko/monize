@@ -12,7 +12,7 @@ Monize is a self-hosted, web-based personal finance management application. It p
 
 **Accounts and transactions**
 
-- **Multi-Account Support** -- Track chequing, savings, credit cards, loans, mortgages, lines of credit, investments, cash, and assets. See [Accounts](accounts.md)
+- **Multi-Account Support** -- Track chequing, savings, credit cards, loans, mortgages, lines of credit, investments, cash, crypto wallets, and assets. See [Accounts](accounts.md)
 - **Transactions** -- Splits, transfers, tags, attachments, reconciliation, an advanced search (`payee:costco -cat:gas`, `amount:50..100`), columns you can sort and hide, and a month calendar view with daily balances and day notes. See [Transactions](transactions.md)
 - **Attachments and Document Scanning** -- Attach receipts and statements to transactions, scan a paper receipt with your phone's camera, and preview files without downloading them
 - **Transaction Rules** -- Fill in the category, payee, description and tags automatically as transactions arrive, split a row or turn it into a transfer, or send it to the AI review inbox

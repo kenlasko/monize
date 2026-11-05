@@ -6,7 +6,7 @@ Monize supports multiple currencies for international users or anyone with accou
 
 ## Supported Currencies
 
-Monize knows every ISO 4217 currency. You choose which ones you use: your home currency when you first sign in, and any others you add from the Currencies page, from the transaction form, or through an import. A currency you have not added stays out of your lists.
+Monize knows every ISO 4217 currency, and you can add a currency of your own, including a cryptocurrency (see [Cryptocurrencies](#cryptocurrencies)). You choose which ones you use: your home currency when you first sign in, and any others you add from the Currencies page, from the transaction form, or through an import. A currency you have not added stays out of your lists.
 
 ### Managing Currencies
 
@@ -18,10 +18,10 @@ The page shows the number of **Total Currencies**, **Active**, and **Inactive**,
 
 | Column | Description |
 |--------|-------------|
-| **Code** | The three-letter currency code. Your home currency is marked **Default** |
+| **Code** | The three-letter currency code. Your home currency is marked **Default**, and a cryptocurrency **Crypto**, with its price symbol beneath |
 | **Name** | The currency's name |
 | **Symbol** | The symbol shown with amounts, such as $, €, or £ |
-| **Decimals** | How many decimal places amounts in this currency have (2 for most, 0 for the yen) |
+| **Decimals** | How many decimal places amounts in this currency have (2 for most, 0 for the yen, 4 for a cryptocurrency) |
 | **Usage** | How many of your accounts and securities use the currency, abbreviated: "15 accts, 5 secs" |
 | **Rate** | What one unit of the currency is worth in your home currency, from the latest stored rate (N/A when none is stored yet) |
 | **Status** | Active or Inactive |
@@ -32,7 +32,7 @@ A currency that is in use, and your home currency, cannot be deactivated or dele
 ### Adding a Currency
 
 1. Click **+ New Currency**
-2. Type the **Currency Code** (for example `SEK`) or its name, and click **Lookup** to fill in the **Name**, **Symbol**, and **Decimal Places**
+2. Type the **Currency Code** (for example `SEK`) or its name, and click **Lookup** to fill in the **Name**, **Symbol**, and **Decimal Places**. If **Lookup** finds nothing, fill them in yourself
 3. Check the details and click **Create Currency**
 
 If the code is already in your list but inactive, the form offers **Reactivate** instead.
@@ -41,13 +41,49 @@ If the code is already in your list but inactive, the form offers **Reactivate**
 
 You can also add a currency without leaving a transaction: the transaction form's currency picker has **Add currency...**.
 
-Cryptocurrencies such as Bitcoin are not currencies in Monize: track them as securities in an investment account instead (see [Cryptocurrency](investments.md#cryptocurrency)).
+A code that is not an ISO 4217 code is accepted too, and the form notes that it is not a standard currency code. If it is a cryptocurrency, click **Use Cryptocurrency** and see [Cryptocurrencies](#cryptocurrencies) below.
 
 ---
 
 ## Cryptocurrencies
 
-This section is being written.
+A cryptocurrency such as bitcoin can be a currency in Monize, so that a [crypto wallet account](accounts.md#cryptocurrency-wallets) can hold it. Add the coin on the Currencies page like any other currency, with **Cryptocurrency** as its kind.
+
+![The New Currency form for a cryptocurrency, with its price symbol verified](images/currency-form-crypto.png)
+
+### Adding a Cryptocurrency
+
+1. On **Tools > Currencies**, click **+ New Currency**
+2. Type the **Currency Code**, for example `BTC`
+3. Under **Kind**, choose **Cryptocurrency** (the other choice, **Fiat Currency**, is an ordinary currency). For a code that is not a standard currency code the form offers **Use Cryptocurrency**, which does the same
+4. Type the coin's **Price Symbol** (see below) and click **Verify**. Monize checks the symbol with Yahoo Finance, shows **Priced in** and the currency the symbol is quoted in (for example "Priced in EUR"), and fills in the **Name** if it is empty
+5. Fill in the **Symbol** shown with amounts, such as ₿, check the **Decimal Places**, and click **Create Currency**
+
+The coin is then offered in the **Currency** list of a new crypto wallet account. On the Currencies page it is marked **Crypto** beside its code, with its price symbol beneath.
+
+### Codes and Price Symbols
+
+A currency code is always three letters. Most coins' tickers already are (`BTC`, `ETH`, `SOL`); a coin whose ticker is longer takes a three-letter code of your choosing, and its price symbol carries the real ticker. Dogecoin, for example, can be `DOG` with the price symbol `DOGE-USD`.
+
+The **Price Symbol** is Yahoo Finance's symbol for the coin against an ordinary currency: the coin's ticker, a hyphen, and the currency's three-letter code, such as `BTC-EUR`, `ETH-USD` or `DOGE-USD`. It tells Monize which coin to fetch exchange rates for. **Verify** accepts only a symbol Yahoo Finance reports as a cryptocurrency.
+
+The price symbol is optional, but without one the coin has no exchange rate: a wallet in that coin still keeps its balance in the coin, but its value in your home currency is shown as unknown everywhere (never as zero), and the page names the missing rate. On the Currencies page such a coin shows **No price symbol**. Edit the currency to add one; the next rate refresh fetches its rates.
+
+### Exchange Rates for a Cryptocurrency
+
+A coin's exchange rates are fetched every day, **weekends included**, because crypto markets never close: with the other currencies on weekdays, and on their own on Saturday and Sunday. The line under the Currencies page's buttons lists **Crypto pairs (Yahoo)** among the rate sources.
+
+The price symbol names the coin; the currency it is priced against is each currency you use. If your home currency is CAD, Monize asks for `BTC-CAD` even when the price symbol is `BTC-EUR`, so the rate is the market's own rather than one converted through a third currency.
+
+### What You Can Change
+
+- **Kind** -- once anything uses the code (an account, a transaction, a security, a stored exchange rate, and so on), its kind cannot change, and Monize refuses the edit. A coin stays a coin, and an ordinary currency stays ordinary
+- **Price Symbol** -- can be changed at any time; the next refresh fetches rates for the new symbol
+- **Decimal Places** -- four by default for a cryptocurrency, and never more than four, because Monize stores money to four decimal places. A very small amount, such as a network fee below `0.0001` of the coin, rounds to zero; [Precision](accounts.md#precision) explains how to record one
+
+A cryptocurrency is only for crypto wallet accounts: no other account type, and no security, can use it. To hold a coin as an investment, track it as a [crypto security](investments.md#cryptocurrency) priced in an ordinary currency instead.
+
+---
 
 ## Home Currency
 
@@ -68,7 +104,7 @@ You choose it when you first sign in, and can change it at any time in **Setting
 
 Monize fetches the latest exchange rates for the currencies you use every weekday at 5:05 PM New York time, after the markets close, and stores them so that every past date keeps its own rate. Click **Refresh Rates** on the Currencies page to fetch them immediately; the line under its label shows how long ago the rates were last updated.
 
-Rates come from **Frankfurter** (the European Central Bank's reference rates) first, then **Yahoo Finance** for any currency Frankfurter does not cover. An administrator can change the providers and their order for the whole instance.
+Rates come from **Frankfurter** (the European Central Bank's reference rates) first, then **Yahoo Finance** for any currency Frankfurter does not cover. An administrator can change the providers and their order for the whole instance. A cryptocurrency's rates always come from Yahoo Finance through its price symbol, every day of the week (see [Exchange Rates for a Cryptocurrency](#exchange-rates-for-a-cryptocurrency)).
 
 ### Rate History
 

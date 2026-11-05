@@ -6,7 +6,7 @@ Monize supports a wide variety of account types to represent your complete finan
 
 ## Account Types
 
-Monize supports 10 account types:
+Monize supports 11 account types:
 
 | Account Type | Description | Typical Use |
 |-------------|-------------|-------------|
@@ -19,6 +19,7 @@ Monize supports 10 account types:
 | **Mortgage** | Mortgage account | Home mortgage tracking |
 | **Asset** | Asset tracking | Property, vehicles, collectibles |
 | **Cash** | Cash wallet or petty cash | Physical cash tracking |
+| **Crypto Wallet** | A wallet holding one cryptocurrency | Bitcoin, Ethereum and other coins you spend and transfer |
 | **Other** | Miscellaneous | Any account that does not fit other types |
 
 ### Account Type Details
@@ -32,6 +33,8 @@ Monize supports 10 account types:
 **Investment** accounts are normally created as a linked pair -- a brokerage ledger for your securities and a cash ledger for the money -- shown as one account. See [Investment Account Pairs](#investment-account-pairs) for details.
 
 **Asset** accounts track the value of physical assets like property or vehicles. Transactions on asset accounts represent changes in value, booked to a value-change category you choose.
+
+**Crypto Wallet** accounts hold one cryptocurrency, such as bitcoin, as the account's currency. They work like a chequing account kept in the coin, and their balance is converted to your home currency at the coin's exchange rate. See [Cryptocurrency Wallets](#cryptocurrency-wallets).
 
 ---
 
@@ -49,7 +52,7 @@ Monize supports 10 account types:
 |-------|-------------|
 | **Account Name** | A descriptive name for the account |
 | **Account Type** | Select from the available types |
-| **Currency** | The currency this account operates in. It is locked once the account has transactions |
+| **Currency** | The currency this account operates in. It is locked once the account has transactions. A crypto wallet lists only cryptocurrencies, and every other type only ordinary currencies |
 
 ### Optional Fields
 
@@ -58,8 +61,8 @@ Monize supports 10 account types:
 | **Opening Balance** | The starting balance (defaults to 0). For loans and mortgages this is the **Loan Amount** or **Mortgage Amount** |
 | **Account Number** | The institution's account number for your reference |
 | **Institution** | The financial institution that holds the account (see [Financial Institutions](#financial-institutions)). **Required** for loans and mortgages, where it is labelled **Lender/Institution** |
-| **Credit Limit** | For every type except assets, loans, and mortgages |
-| **Interest Rate %** | For every type except assets; **required** for loans and mortgages |
+| **Credit Limit** | For every type except assets, loans, mortgages, and crypto wallets |
+| **Interest Rate %** | For every type except assets and crypto wallets; **required** for loans and mortgages |
 | **Foreign Currency Conversion Fee** | The percentage your bank adds to purchases in another currency, so Monize can show what foreign transactions really cost you |
 | **Statement Dates** | Credit cards only: the **Due Date** and **Settlement Date** (day of the month) |
 | **Description** | Any additional notes about the account |
@@ -251,6 +254,8 @@ An account's **detail page** is tailored to its type, rather than a plain transa
 
 ### Banking (Chequing / Savings / Cash)
 
+Crypto wallets open this page too, with every figure in the coin (see [Cryptocurrency Wallets](#cryptocurrency-wallets)).
+
 - Summary cards: **Current Balance**, **Projected Balance** in 90 days, **Money In** and **Money Out** this month, and the **Average Balance** over the trailing 12 months; with an interest rate set, also the **Interest Rate** and the **Interest Earned** this year
 - **Balance History** chart, with a **90-day balance forecast** projected from your scheduled bills and deposits
 - A **Cash Flow** chart of the net flow over the last 12 months
@@ -331,7 +336,78 @@ Because a line of credit revolves rather than amortizing to a fixed payoff, its 
 
 ## Cryptocurrency Wallets
 
-This section is being written.
+A **Crypto Wallet** account records a cryptocurrency wallet the way a chequing account records a bank account: a register of transactions in the coin, transfers to and from your other accounts, scheduled transactions, reconciliation, and a balance that counts toward your net worth.
+
+Each wallet account holds **one coin**, the account's currency, just as a bank account holds one currency. That is what lets the balance be converted, totalled, and reported like any other account's. A hardware or exchange wallet that holds several coins is several accounts in Monize, one per coin, for example *Ledger BTC* and *Ledger ETH*.
+
+### Before You Start
+
+A wallet's currency is a currency of the kind **Cryptocurrency**, such as `BTC`. Add the coin on the Currencies page first, with the price symbol its exchange rate is fetched from; see [Cryptocurrencies](currency-management.md#cryptocurrencies).
+
+### Creating a Wallet Account
+
+1. On the **Accounts** page, click **+ New Account**
+2. Enter the **Account Name** and choose **Crypto Wallet** as the **Account Type**
+3. Choose the coin under **Currency**. For a crypto wallet the list shows only your cryptocurrencies (and for every other account type, only ordinary currencies)
+4. Enter the **Opening Balance** in the coin, if the wallet already holds some, and click **Create Account**
+
+![The New Account form for a crypto wallet holding bitcoin](images/create-account-form-crypto.png)
+
+If you have no cryptocurrency yet, the form says so and links to the Currencies page; once you have added the coin there, come back to the form and it is in the list. A wallet has no **Credit Limit** and no **Interest Rate**. Its currency, like any account's, is locked once the account has transactions.
+
+### What a Wallet Account Does
+
+A wallet opens the same [detail page](#account-detail-pages) as a chequing account, with its balance, balance history, money in and out, and top categories and payees, all in the coin.
+
+![The detail page of a bitcoin wallet](images/account-crypto-detail.png)
+
+It works like a bank account everywhere else too:
+
+- **Register, transfers and scheduled transactions** -- record what you spend from it, move coin to and from your other accounts, and schedule regular purchases in [Bills & Deposits](bills-and-deposits.md)
+- **Reconciliation** -- reconcile the wallet against the balance your wallet software or exchange shows (see [Account Reconciliation](#account-reconciliation))
+- **Net worth and reports** -- the balance is converted to your home currency at the coin's exchange rate for each date, in the Dashboard, net worth, and every report. If the coin has no exchange rate, its value is shown as unknown and the page names the missing rate; it is never counted as zero
+
+A wallet is not a bank account in three ways: it cannot be linked to [bank sync](settings-and-security.md#bank-sync), it is not offered as the funding account of an investment transaction (a trade settles in an ordinary currency), and when it is shared as a [joint account](shared-access.md#which-account-types-can-be-written-to) the other person can read it but not write to it. A QIF export writes it as an asset account (`!Type:Oth A`), because QIF has no wallet type.
+
+### Buying Coin
+
+Buying coin with money from your bank is a [transfer](transactions.md#transfers-between-accounts) from the bank account to the wallet:
+
+1. In the transaction form, click **Transfer**, choose your bank account as the **From Account** and the wallet as the **To Account**
+2. Enter the **Transfer Amount** you paid, in the bank account's currency (for example `1,700.00` CAD)
+3. Enter the coin that arrived in **Amount Received** (for example `0.0125` BTC). Monize fills it in from the exchange rate; change it to what actually reached the wallet
+4. Click **Create Transfer**
+
+Both amounts are recorded, so the rate you really paid is kept with the transaction (see [Cross-Currency Transfers](transactions.md#cross-currency-transfers)). Selling coin is the same transfer the other way, from the wallet to the bank account, with the money that arrived as the **Amount Received**.
+
+### Spending Coin
+
+Paying for something with coin is an ordinary transaction on the wallet: choose the payee and category and enter the amount in the coin (for example `0.0004` BTC for a coffee). It reaches your spending reports converted at that day's rate.
+
+### Sending Coin with a Network Fee
+
+When you send coin, the network fee leaves the wallet too, but it does not arrive at the other end. Record the send as a [split transaction](transactions.md#split-transactions) on the wallet with two lines:
+
+| Line | Type | Amount (in the coin) |
+|------|------|----------------------|
+| What the other account receives | **Transfer** to the other account | `-0.0050` |
+| The network fee | **Category**, for example *Fees: Network fee* | `-0.0001` |
+
+The **Total Amount** is everything that left the wallet, `-0.0051` here. When the other account is in another currency, such as selling coin into your chequing account, the transfer line also asks for the **Amount Received** in that account's currency (`650.00` CAD); between two wallets of the same coin, the other wallet simply receives the transfer line's amount.
+
+![A split on a bitcoin wallet: a transfer to chequing and a network fee](images/crypto-transfer-fee-split.png)
+
+> [!TIP]
+> In the category picker, typing `Fees: Network fee` and choosing **Create** makes a *Network fee* category under *Fees*, so every wallet's fees add up in one place in your reports.
+
+### Precision
+
+Amounts in a cryptocurrency are kept to at most **four decimal places**, because Monize stores every amount of money to four places; a coin's **Decimal Places** is four by default and cannot be more. The smallest amount is therefore `0.0001` of the coin; for bitcoin that is worth around ten dollars or euros at recent prices. Anything smaller rounds to zero, so a network fee of `0.00001` BTC cannot be entered as its own line. Book such a fee in your own currency on the account that paid for it, or fold it into the transfer line's amount.
+
+> [!NOTE]
+> **Wallet account or crypto security?** A wallet account is for coin you spend and move: it keeps a register in the coin and treats the coin as money. If you hold coin as an investment and want its price history, gains and losses, cost basis and place in your asset allocation, track it as a [crypto security](investments.md#cryptocurrency) in an investment account instead; security quantities also take eight decimal places rather than four.
+
+---
 
 ## Editing and Closing Accounts
 
