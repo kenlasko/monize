@@ -4703,7 +4703,10 @@ Enforcement         One resolver, resolveTransactionSeries
                     not block an unrelated edit. GET
                     /bonds/securities/:id/series-on-sale and /series-holdings
                     answer the form with the same code (seriesOnSaleSql, the
-                    lot derivation). The link follows the rows:
+                    lot derivation); the redemption split reads the portions a
+                    removal takes, with the exact cost each carried, from the
+                    fold itself (takenByLastRow), never from a difference of
+                    two folds grouped by day. The link follows the rows:
                     clearForeignSeries (securities update and the undo of a link
                     change) clears the series outside the new program in the
                     link's transaction, hasQuantitiesThatAreNotBonds reads a

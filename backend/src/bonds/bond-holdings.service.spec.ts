@@ -31,6 +31,8 @@ type Row = {
   account_id?: string;
   bond_instrument_id: string | null;
   counterpart_account_id?: string | null;
+  total_amount?: string | null;
+  accrued_interest?: string | null;
 };
 
 const row = (over: Partial<Row> & { id: string }): Row => ({
@@ -40,6 +42,8 @@ const row = (over: Partial<Row> & { id: string }): Row => ({
   account_id: ACC,
   bond_instrument_id: EDO,
   counterpart_account_id: null,
+  total_amount: null,
+  accrued_interest: null,
   ...over,
 });
 
@@ -409,6 +413,36 @@ describe("BondHoldingsService.redemptionSplit", () => {
       payout: "411.00",
       refusal: null,
     });
+  });
+
+  it("takes the exact cost of the lot it removes from when two lots of one day cost differently", async () => {
+    // 5 bonds for 500.0000 and 5 bonds for 600.0000 on the same day. First in
+    // first out takes 3 of the first: 3 / 5 of 500.0000 = 300.0000. A removal
+    // rebuilt from the difference of two folds charged the pooled cost of the
+    // day, 1100 / 10 x 3 = 330 and then a share of the remainder: 371.4286.
+    const { service, valuation } = setup({
+      ledger: [
+        row({
+          id: "c1",
+          quantity: "5",
+          tx_date: "2026-01-10",
+          total_amount: "500.0000",
+        }),
+        row({
+          id: "c2",
+          quantity: "5",
+          tx_date: "2026-01-10",
+          total_amount: "600.0000",
+        }),
+      ],
+    });
+    await service.redemptionSplit(USER, SEC, ACC, EDO, "2026-02-09", 3);
+    expect(
+      valuation.redemptionSplitFrom.mock.calls.map(([, lot]) => [
+        lot.quantity,
+        (lot as { cost?: string | null }).cost,
+      ]),
+    ).toEqual([[3, "300.0000"]]);
   });
 
   it("leaves a lot the edited row already took available when it is excluded", async () => {

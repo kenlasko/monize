@@ -73,77 +73,6 @@ const FIGURES = [
   "payout",
 ] as const;
 
-const lotKey = (lot: BondLot): string =>
-  `${lot.accountId ?? ""}|${lot.instrumentId ?? ""}|${lot.purchaseDate}|${lot.purchaseDateAssumed}`;
-
-/**
- * What a removal takes: the lots before it less the lots after it, per account,
- * series and purchase date, oldest first. Both folds are the lot derivation the
- * write guard runs, so the first-in first-out choice is made in one place.
- */
-export function removedLots(
-  before: readonly BondLot[],
-  after: readonly BondLot[],
-): BondLot[] {
-  // What stays, per lot key: its bonds and the cost they carry (null when any
-  // of them has none).
-  const left = new Map<
-    string,
-    { quantity: number; cost: ExactDecimal | null }
-  >();
-  for (const lot of after) {
-    const held = left.get(lotKey(lot));
-    const cost = lot.cost === null ? null : ExactDecimal.parse(lot.cost);
-    left.set(lotKey(lot), {
-      quantity: (held?.quantity ?? 0) + lot.quantity,
-      cost:
-        held === undefined
-          ? cost
-          : held.cost === null || cost === null
-            ? null
-            : held.cost.add(cost),
-    });
-  }
-  const removed: BondLot[] = [];
-  for (const lot of before) {
-    const held = left.get(lotKey(lot)) ?? {
-      quantity: 0,
-      cost: ExactDecimal.ZERO,
-    };
-    const kept = Math.min(held.quantity, lot.quantity);
-    // The cost the kept bonds take with them: all of it when they are all that
-    // stays under the key, else their share.
-    const keptCost =
-      kept === 0
-        ? ExactDecimal.ZERO
-        : held.cost === null
-          ? null
-          : kept === held.quantity
-            ? held.cost
-            : held.cost.mul(ExactDecimal.ratio(kept, held.quantity));
-    left.set(lotKey(lot), {
-      quantity: held.quantity - kept,
-      cost:
-        held.cost === null || keptCost === null
-          ? null
-          : held.cost.sub(keptCost),
-    });
-    if (lot.quantity > kept) {
-      removed.push({
-        ...lot,
-        quantity: lot.quantity - kept,
-        cost:
-          lot.cost === null || keptCost === null
-            ? null
-            : kept === 0
-              ? lot.cost
-              : ExactDecimal.parse(lot.cost).sub(keptCost).toFixed(4),
-      });
-    }
-  }
-  return removed;
-}
-
 /**
  * What the transaction form asks the server before it writes
  * (`docs/specs/bond-program-securities.md` section 3.3): the series a BUY on a
@@ -277,7 +206,8 @@ export class BondHoldingsService {
    * `accountId` on `date`. The lots taken are the ones the write's own lot
    * derivation takes: a REDEEM of that series, appended to the account's rows up
    * to the day (without `excludeTransactionId`, the row being edited), is folded
-   * by `bondLotsFromTransactions` and the lots it removes are the difference.
+   * by `bondLotsFromTransactions`, whose `takenByLastRow` are the portions it
+   * removes with the exact cost each carried.
    * A quantity above the series held in the account is refused with the removal
    * refusal (400, `errorCode`), a ledger already underivable with 422. Reads
    * stored terms and observations only (INV-BOND-008); nothing is written.
@@ -318,7 +248,7 @@ export class BondHoldingsService {
 
       const reference = await this.valuation.loadReference(m, instrumentId);
       const places = reference.terms.rounding.moneyDecimals;
-      const splits = removedLots(before.lots, after.lots).map((lot) =>
+      const splits = after.takenByLastRow.map((lot) =>
         this.valuation.redemptionSplitFrom(reference, lot, date),
       );
 

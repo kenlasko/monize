@@ -112,7 +112,17 @@ export interface BondLotsRefusal {
 
 /** Lots known, or the reason they are not: never a guess. */
 export type BondLotsResult =
-  | { readonly lots: readonly BondLot[]; readonly refusal: null }
+  | {
+      readonly lots: readonly BondLot[];
+      readonly refusal: null;
+      /**
+       * The portions the last row took out of its account's lots, oldest
+       * first, each with the exact cost it carried (`takeFifo`): empty when the
+       * last row took nothing. What a removal takes is read from here, never
+       * rebuilt from a difference of two folds (INV-BOND-007).
+       */
+      readonly takenByLastRow: readonly BondLot[];
+    }
   | { readonly lots: null; readonly refusal: BondLotsRefusal };
 
 type Step =
@@ -205,7 +215,9 @@ export function bondLotsFromTransactions(
   const heldIn = (account: string): readonly BondLot[] =>
     byAccount.get(account) ?? [];
 
+  let takenByLastRow: BondLot[] = [];
   for (const row of rows) {
+    takenByLastRow = [];
     if (row.status === "VOID") continue;
     const step = stepOf(row);
     if (step.kind === "none") continue;
@@ -283,6 +295,7 @@ export function bondLotsFromTransactions(
       ...held.filter((lot) => !inSeries(lot)),
       ...taken.rest,
     ]);
+    takenByLastRow = taken.removed;
 
     if (step.kind === "move") {
       const destination = accountKey(step.toAccount);
@@ -298,7 +311,7 @@ export function bondLotsFromTransactions(
   const open = [...byAccount.values()]
     .flat()
     .sort((a, b) => compareDates(a.purchaseDate, b.purchaseDate));
-  return { lots: open, refusal: null };
+  return { lots: open, refusal: null, takenByLastRow };
 }
 
 /**
