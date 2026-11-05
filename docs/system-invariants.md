@@ -4230,7 +4230,10 @@ Status              enforced (engine, read by bond-valuation.service.ts and by
 ```text
 Statement           Bond amounts and rates are computed in exact rational
                     arithmetic and rounded only where the issue document
-                    rounds, per bond, then multiplied by the quantity.
+                    rounds: per bond and then multiplied by the quantity under
+                    rounding.basis PER_UNIT (the default), once on the lot under
+                    PER_HOLDING, per reference amount and then scaled under
+                    REFERENCE_AMOUNT (roundLot, engine/rounding.ts).
 Source of truth     the terms document (rounding, capitalization.baseRounding)
 Enforcement         ExactDecimal (backend/src/bonds/domain/exact-decimal.ts)
                     parses only decimal strings; the engine's formulas take
@@ -4341,7 +4344,9 @@ Enforcement         Three mechanisms.
                        and the security has priced acquisitions (BUY,
                        REINVEST and its variants, not void) whose price is
                        not within [0.5, 2] x the face value of the row's own
-                       series
+                       series (BOND_UNIT_PRICE_BAND; for a marketable coupon
+                       series, whose unit price is a cash price, within
+                       (0, 5] x it: BOND_CASH_PRICE_BAND)
                        (its stored series, or the one on sale on its date)
                        per bond, because the quantity is then not a number of
                        bonds. The same band is the rule of every WRITE of a
@@ -4786,9 +4791,12 @@ Source of truth     the lot's terms, rates and redemption date, through the same
                     valuation (spec docs/specs/bond-redemption-interest.md
                     sections 2 and 3)
 Enforcement         redemptionSplit (backend/src/bonds/engine/bond-engine.ts,
-                    redemption-split.ts): every figure is rounded per bond by
-                    the terms and then multiplied by the quantity, so the three
-                    sums hold to the last digit; interest is
+                    redemption-split.ts): every figure is rounded as the
+                    terms' rounding.basis says (per bond and then multiplied by
+                    the quantity under PER_UNIT; once on the lot under
+                    PER_HOLDING; per reference amount under REFERENCE_AMOUNT;
+                    roundLot, engine/rounding.ts), so the three sums hold to
+                    the last digit; interest is
                     max(0, grossInterest - deduction) and principalReturned is
                     payout - interest. A refused day or an unknown rate gives a
                     refusal and null figures, never 0.
@@ -4796,7 +4804,8 @@ Concurrency scope   --
 Retry semantics     --
 Crash semantics     --
 Failure response    a refusal (NOT_REDEEMABLE, TOO_EARLY, TOO_LATE, RECORD_DAY,
-                    TERMS_INCOMPLETE, RATE_UNKNOWN, PURCHASE_OUTSIDE_SALE_WINDOW)
+                    TERMS_INCOMPLETE, RATE_UNKNOWN, PURCHASE_OUTSIDE_SALE_WINDOW,
+                    PURCHASE_AFTER_MATURITY)
                     and null figures
 Required tests      backend/src/bonds/engine/redemption-split.spec.ts (the
                     table of the spec, a day-by-day sweep of the identity for a
