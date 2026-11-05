@@ -1,6 +1,7 @@
 import { BenchmarkData } from "../domain/benchmark";
 import {
   BusinessDayCalendar,
+  nextBusinessDayOnOrAfter,
   nthBusinessDayBefore,
 } from "../domain/business-day-calendar";
 import { BondTerms, DailyIndexRule } from "../domain/bond-terms";
@@ -19,7 +20,11 @@ import { roundLot, unitText } from "./rounding";
  * of `accrual.ts`, which has no meaning for a rate that changes inside a period.
  */
 
-/** An index observation reaches this many calendar days past its date before it is stale (an auction is weekly). */
+/**
+ * An index observation is fresh through the first business day on or after this
+ * many calendar days past its date (an auction is weekly, and a holiday moves
+ * it to the next business day).
+ */
 export const INDEX_FRESH_DAYS = 7;
 
 const PAR = ExactDecimal.fromInt(100);
@@ -45,7 +50,7 @@ export interface FloatingSeries {
     readonly value: ExactDecimal;
   }[];
   readonly publisher: string | null;
-  /** Null when the terms' calendar is unknown (the terms are incomplete) and a lockout needs it. */
+  /** Null when the terms' calendar is unknown (the terms are incomplete): every day is then unknown. */
   readonly calendar: BusinessDayCalendar | undefined;
   /** The assumed index (a fraction), supplied by the caller, for the days after the valuation day; null when none. */
   readonly assumed: ExactDecimal | null;
@@ -92,10 +97,11 @@ function dailyAccrual(series: FloatingSeries, index: ExactDecimal) {
 /**
  * The day rows of a period. The index of a day is the latest observation strictly
  * before it, except an observation dated within `lockoutBusinessDays` business
- * days before the period's end, which the period does not use. A day more than
- * `INDEX_FRESH_DAYS` after the observation in force for it is unknown, whether
- * that is the newest stored observation or one before a gap: no value is carried
- * across an auction that is not stored (INV-BOND-002).
+ * days before the period's end, which the period does not use. A day after the
+ * first business day on or after `INDEX_FRESH_DAYS` past the observation in force
+ * for it is unknown, whether that is the newest stored observation or one before
+ * a gap: no value is carried across an auction that is not stored
+ * (INV-BOND-002). Without the calendar every day is unknown.
  */
 function tableOf(
   series: FloatingSeries,
@@ -104,12 +110,12 @@ function tableOf(
   const cached = series.tables.get(period.index);
   if (cached !== undefined) return cached;
   const { observations, rule } = series;
-  const lockoutNeedsCalendar =
-    rule.lockoutBusinessDays > 0 && series.calendar === undefined;
+  const { calendar } = series;
+  const noCalendar = calendar === undefined;
   const lockFrom =
-    rule.lockoutBusinessDays > 0 && series.calendar !== undefined
+    rule.lockoutBusinessDays > 0 && calendar !== undefined
       ? nthBusinessDayBefore(
-          series.calendar,
+          calendar,
           period.end,
           rule.lockoutBusinessDays,
         )
@@ -135,14 +141,20 @@ function tableOf(
       stored += 1;
     }
     // Freshness is the stored series' (the lockout view only decides which
-    // value is used): a day is stale when the latest stored observation before
-    // it is more than INDEX_FRESH_DAYS older, a gap in the middle of the series
-    // as much as the end of it (INV-BOND-002).
+    // value is used): a day is stale when it is after the first business day on
+    // or after INDEX_FRESH_DAYS past the latest stored observation before it, a
+    // gap in the middle of the series as much as the end of it (INV-BOND-002).
     const stale =
+      calendar !== undefined &&
       stored >= 0 &&
-      compareYMD(day, addDays(observations[stored].date, INDEX_FRESH_DAYS)) > 0;
-    const index =
-      lockoutNeedsCalendar || stale || at < 0 ? null : usable[at].value;
+      compareYMD(
+        day,
+        nextBusinessDayOnOrAfter(
+          calendar,
+          addDays(observations[stored].date, INDEX_FRESH_DAYS),
+        ),
+      ) > 0;
+    const index = noCalendar || stale || at < 0 ? null : usable[at].value;
     rows.push({
       day,
       index,

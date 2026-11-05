@@ -538,16 +538,22 @@ accrual: { type: "ACTUAL_360_DAILY_SUM" }
 Decisions made in Phase 4 (implementation):
 
 - Stale rule. A day `x` has an index when the latest stored observation
-  strictly before `x` (dated `n`) exists and `x <= n + 7` calendar days;
+  strictly before `x` (dated `n`) exists and `x` is not after the first
+  business day of the rule's `calendarId` on or after `n + 7` calendar days
+  (an auction is weekly, and a holiday moves it to the next business day);
   otherwise `x` is unknown unless the projection supplies an index for it.
   `n` is the observation in force for `x`, so a gap in the middle of the
   stored series makes its days unknown exactly as the end of it does: no old
   index is carried across a missing auction (INV-BOND-002). `coveredThrough` is
-  not read. Example: observations on Monday 2026-04-27, 2026-05-04 and
-  2026-05-25: 2026-05-11 is known, 2026-05-12 to 2026-05-25 are unknown, and
-  2026-05-26 is known again (from the 05-25 observation). Observations after
-  the lockout cut are not newer for this test: the test reads the stored
-  series, not the lockout view.
+  not read. Example: observations on Monday 2026-05-18, then Tuesday 2026-05-26
+  (Monday 2026-05-25 was Memorial Day) and Monday 2026-06-01: `n + 7` is the
+  holiday 2026-05-25, so 2026-05-19 to 2026-05-26 are known on the 05-18
+  observation and 2026-05-27 is known from the 05-26 one. With observations
+  on 2026-04-27, 2026-05-04 and 2026-05-26 only: 2026-05-11 is known,
+  2026-05-12 to 2026-05-26 are unknown, and 2026-05-27 is known again.
+  Observations after the lockout cut are not newer for this test: the test
+  reads the stored series, not the lockout view. A calendar the caller does not
+  supply makes every day unknown.
 - The lockout counts `lockoutBusinessDays` business days of `calendarId` back
   from the unadjusted period end. An observation dated on or after that day is
   not used for the days of that period; it is used from the next period. A

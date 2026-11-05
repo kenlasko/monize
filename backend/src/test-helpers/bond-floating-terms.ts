@@ -2,7 +2,13 @@ import { BenchmarkData } from "@/bonds/domain/benchmark";
 import { BondTerms, parseBondTerms } from "@/bonds/domain/bond-terms";
 import { addDays } from "@/bonds/domain/calendar-date";
 import { BondEngineInput, valueBondLot } from "@/bonds/engine/bond-engine";
-import { couponDoc, Doc, lotOf } from "@/test-helpers/bond-coupon-terms";
+import { BusinessDayCalendar } from "@/bonds/domain/business-day-calendar";
+import {
+  couponDoc,
+  Doc,
+  lotOf,
+  weekdays,
+} from "@/test-helpers/bond-coupon-terms";
 
 /** The id of the weekly index benchmark the floating fixtures read. */
 export const FLOAT_ID = "FLOAT_INDEX_SERIES";
@@ -57,12 +63,37 @@ export function floatingTerms(
   return parseBondTerms(floatingDoc(o, change));
 }
 
-/** Weekly Monday auctions from 2026-04-27, `count` of them, the index 3.60 percent rising 0.02 percent a week. */
+/** The Mondays of 2026 the fixtures' calendar closes (Memorial Day, Labor Day, Columbus Day): the auction of that week is held on the Tuesday. */
+const MONDAY_HOLIDAYS: readonly string[] = [
+  "2026-05-25",
+  "2026-09-07",
+  "2026-10-12",
+];
+
+/** Monday to Friday except the Mondays of `MONDAY_HOLIDAYS`; the calendar `TEST` of the floating fixtures. */
+export const weekdaysWithMondayHolidays: BusinessDayCalendar = {
+  id: "TEST",
+  isBusinessDay: (ymd) =>
+    weekdays.isBusinessDay(ymd) && !MONDAY_HOLIDAYS.includes(ymd),
+};
+
+/** The calendars a floating lot is valued with: `TEST` closes the Mondays of `MONDAY_HOLIDAYS`. */
+export const FLOAT_CALENDARS: ReadonlyMap<string, BusinessDayCalendar> =
+  new Map([["TEST", weekdaysWithMondayHolidays]]);
+
+/**
+ * Weekly Monday auctions from 2026-04-27, `count` of them, the index 3.60
+ * percent rising 0.02 percent a week; the auction of a holiday Monday is held on
+ * the Tuesday, as Treasury does (Memorial Day 2026: Tuesday 2026-05-26).
+ */
 export function weeklyIndex(count: number): [string, string][] {
-  return Array.from({ length: count }, (_, k) => [
-    addDays("2026-04-27", 7 * k),
-    (0.036 + 0.0002 * k).toFixed(4),
-  ]);
+  return Array.from({ length: count }, (_, k) => {
+    const monday = addDays("2026-04-27", 7 * k);
+    return [
+      MONDAY_HOLIDAYS.includes(monday) ? addDays(monday, 1) : monday,
+      (0.036 + 0.0002 * k).toFixed(4),
+    ];
+  });
 }
 
 /** A STEP series from (date, fraction) observations. */
@@ -95,9 +126,10 @@ export function valueFloating(
   asOf: string,
   observations: readonly (readonly [string, string])[],
   assumedIndex?: string,
+  calendars: ReadonlyMap<string, BusinessDayCalendar> = FLOAT_CALENDARS,
 ) {
   const input: BondEngineInput = {
-    ...lotOf(terms, lot.purchaseDate, lot.quantity),
+    ...lotOf(terms, lot.purchaseDate, lot.quantity, calendars),
     benchmarks: stepIndex(observations),
     projection:
       assumedIndex === undefined

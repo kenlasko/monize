@@ -1,6 +1,7 @@
 import { redemptionSplit, valueBondLotSeries } from "./bond-engine";
 import { lotOf } from "@/test-helpers/bond-coupon-terms";
 import {
+  FLOAT_CALENDARS,
   FLOAT_ID,
   floatingTerms,
   stepIndex,
@@ -67,7 +68,7 @@ describe("the index in force on a day", () => {
 });
 
 describe("the interest of a period: the sum of its days", () => {
-  it("rounds the coupon once on the holding: 0.978822223 per 100 par x 100 units = 97.88", () => {
+  it("rounds the coupon once on the holding: 0.978766668 per 100 par x 100 units = 97.88", () => {
     const v = valueFloating(FRN, LOT, "2026-05-10", WEEKLY);
     expect(v.knownCashflows[0]).toEqual({
       date: "2026-07-31",
@@ -79,16 +80,17 @@ describe("the interest of a period: the sum of its days", () => {
     expect(v.rateSchedule[0]).toMatchObject({
       annualRate: null,
       rateSource: "DERIVED",
-      interest: "0.9788222230",
+      interest: "0.9787666680",
       fixedPart: "0.0000000000",
       announcedPart: "0.0000000000",
     });
     // The index part is the sum of the 92 daily index accruals (each the index
     // x 100 / 360, rounded to nine places) and the spread part the rest, worked
-    // out apart from the engine with exact fractions (Python): 0.952500004 and
-    // 0.026322219, which add up to the interest 0.978822223.
+    // out apart from the engine with exact decimals (Python; the Memorial Day
+    // auction held on Tuesday 05-26): 0.952444449 and 0.026322219, which add up
+    // to the interest 0.978766668.
     expect(v.rateSchedule[0]).toMatchObject({
-      benchmarkPart: "0.9525000040",
+      benchmarkPart: "0.9524444490",
       addendPart: "0.0263222190",
     });
   });
@@ -96,8 +98,8 @@ describe("the interest of a period: the sum of its days", () => {
   it("accrues the days before the valuation day only (92 days of 2026-04-30..07-30, 71 elapsed on 07-10)", () => {
     const v = valueFloating(FRN, LOT, "2026-07-10", WEEKLY);
     expect(v.principal).toBe("100.000000");
-    expect(v.accruedInterest).toBe("74.95");
-    expect(v.grossValue).toBe("10074.95");
+    expect(v.accruedInterest).toBe("74.94");
+    expect(v.grossValue).toBe("10074.94");
     expect(v.status).toBe("OPEN");
     expect(v.currentPeriod).toMatchObject({
       index: 1,
@@ -126,9 +128,9 @@ describe("the lockout", () => {
   const extra: [string, string][] = [...WEEKLY, ["2026-07-29", "0.05"]];
 
   it("does not use an observation within two business days before the period end, for that period", () => {
-    // 07-30 stays on the 07-27 observation (3.86 %): 0.978822223 per 100.
+    // 07-30 stays on the 07-27 observation (3.86 %): 0.978766668 per 100.
     const v = valueFloating(FRN, LOT, "2026-07-30", extra);
-    expect(v.rateSchedule[0].interest).toBe("0.9788222230");
+    expect(v.rateSchedule[0].interest).toBe("0.9787666680");
     expect(v.rateSchedule[0].dailyRates?.slice(-1)[0]).toMatchObject({
       from: "2026-07-28",
       to: "2026-07-31",
@@ -150,8 +152,9 @@ describe("the lockout", () => {
       lockoutBusinessDays: 0,
     });
     const v = valueFloating(none, LOT, "2026-07-30", extra);
-    // 0.978822223 + (0.0500 - 0.0386 index in 100ths) = 0.981988890.
-    expect(v.rateSchedule[0].interest).toBe("0.9819888900");
+    // 0.978766668 + 1 day (07-30) of (0.0500 - 0.0386) x 100 / 360, each day
+    // rounded to nine places = 0.981933335.
+    expect(v.rateSchedule[0].interest).toBe("0.9819333350");
   });
 });
 
@@ -183,7 +186,7 @@ describe("a day with no index is unknown (INV-BOND-002)", () => {
       { benchmarkId: FLOAT_ID, publisher: "PUBLISHER" },
     ]);
     // Everything up to the valuation day is stored: the accrued interest is known.
-    expect(v.accruedInterest).toBe("74.95");
+    expect(v.accruedInterest).toBe("74.94");
     expect(v.valuationComplete).toBe(true);
   });
 
@@ -203,15 +206,16 @@ describe("a day with no index is unknown (INV-BOND-002)", () => {
   });
 
   it("is unknown across a gap in the middle of the stored series, not carried from the old observation", () => {
-    // Stored: 04-27, 05-04, then nothing until 05-25. 05-04 is in force to
-    // 05-11 (a week on); 05-12 .. 05-25 has no index until the 05-25 auction
-    // applies from 05-26. The old index must not carry across the gap.
+    // Stored: 04-27, 05-04, then nothing until the Tuesday 05-26 auction (Monday
+    // 05-25 was Memorial Day). 05-04 is in force to 05-11 (a business-day week
+    // on); 05-12 .. 05-26 has no index until the 05-26 auction applies from
+    // 05-27. The old index must not carry across the gap.
     const gap: [string, string][] = [
       ["2026-04-27", "0.0360"],
       ["2026-05-04", "0.0362"],
-      ["2026-05-25", "0.0368"],
+      ["2026-05-26", "0.0368"],
     ];
-    const v = valueFloating(FRN, LOT, "2026-05-26", gap);
+    const v = valueFloating(FRN, LOT, "2026-05-27", gap);
     expect(v.accruedInterest).toBeNull();
     expect(v.grossValue).toBeNull();
     expect(v.valuationComplete).toBe(false);
@@ -226,13 +230,71 @@ describe("a day with no index is unknown (INV-BOND-002)", () => {
     expect(runs.map((r) => [r.from, r.to, r.index])).toEqual([
       ["2026-04-30", "2026-05-05", "0.0360"],
       ["2026-05-05", "2026-05-12", "0.0362"],
-      ["2026-05-26", "2026-06-02", "0.0368"],
+      ["2026-05-27", "2026-06-03", "0.0368"],
     ]);
+  });
+
+  it("keeps the previous rate over a holiday week: the Tuesday auction after Memorial Day is not a gap", () => {
+    // Mondays 04-27 .. 05-18, then Tuesday 05-26 (Monday 05-25 closed), then
+    // Mondays 06-01 and 06-08. 05-18 is in force through Tuesday 05-26: the
+    // next business day on or after 05-25 is 05-26. Days 04-30 .. 06-09 (41
+    // days) at 0.010286111, 0.010341667, 0.010397222, 0.010452778,
+    // 0.010508333, 0.010563889, 0.010619444 per 100 par for 5, 7, 7, 8, 6, 7
+    // and 1 days: 0.427841667, times 100 units = 42.78.
+    const moved: [string, string][] = [
+      ["2026-04-27", "0.0360"],
+      ["2026-05-04", "0.0362"],
+      ["2026-05-11", "0.0364"],
+      ["2026-05-18", "0.0366"],
+      ["2026-05-26", "0.0368"],
+      ["2026-06-01", "0.0370"],
+      ["2026-06-08", "0.0372"],
+    ];
+    const v = valueFloating(FRN, LOT, "2026-06-10", moved);
+    expect(v.accruedInterest).toBe("42.78");
+    expect(v.grossValue).toBe("10042.78");
+    expect(v.missing).toEqual([]);
+    expect(v.valuationComplete).toBe(true);
+    const runs = v.rateSchedule[0].dailyRates ?? [];
+    expect(runs.map((r) => [r.from, r.to, r.index])).toEqual([
+      ["2026-04-30", "2026-05-05", "0.0360"],
+      ["2026-05-05", "2026-05-12", "0.0362"],
+      ["2026-05-12", "2026-05-19", "0.0364"],
+      ["2026-05-19", "2026-05-27", "0.0366"],
+      ["2026-05-27", "2026-06-02", "0.0368"],
+      ["2026-06-02", "2026-06-09", "0.0370"],
+      ["2026-06-09", "2026-06-16", "0.0372"],
+    ]);
+  });
+
+  it("is unknown the day after the first business day on or after the seventh day", () => {
+    // 05-18 + 7 = 05-25, a holiday: 05-26 is the last known day; 05-27 is
+    // unknown when no auction was stored since.
+    const stored: [string, string][] = [
+      ["2026-04-27", "0.0360"],
+      ["2026-05-04", "0.0362"],
+      ["2026-05-11", "0.0364"],
+      ["2026-05-18", "0.0366"],
+    ];
+    const v = valueFloating(FRN, LOT, "2026-05-28", stored);
+    expect(v.missing).toEqual([
+      {
+        benchmarkId: FLOAT_ID,
+        observation: "2026-05-27",
+        publisher: "PUBLISHER",
+      },
+    ]);
+    const runs = v.rateSchedule[0].dailyRates ?? [];
+    expect(runs[runs.length - 1]).toMatchObject({
+      from: "2026-05-19",
+      to: "2026-05-27",
+      index: "0.0366",
+    });
   });
 
   it("names no day for a series that is not stored, and no publisher", () => {
     const v = valueBondLotSeries({
-      ...lotOf(FRN, LOT.purchaseDate, LOT.quantity),
+      ...lotOf(FRN, LOT.purchaseDate, LOT.quantity, FLOAT_CALENDARS),
       days: ["2026-05-10"],
     })[0];
     expect(v.missing).toEqual([
@@ -246,12 +308,12 @@ describe("a supplied index projects the days after the valuation day", () => {
   const stale = weeklyIndex(11);
 
   it("fills the unknown days with the assumed index (4 %) and says PROJECTED", () => {
-    // Days 07-14..07-30 take 4 % + 0.103 %: 0.986999998 per 100 par -> 98.66.
+    // Days 07-14..07-30 take 4 % + 0.103 %: 0.986544443 per 100 par -> 98.65.
     const v = valueFloating(FRN, LOT, "2026-07-10", stale, "0.04");
     expect(v.projectedCashflows[0]).toMatchObject({
       period: 1,
       type: "INTEREST",
-      amount: "98.66",
+      amount: "98.65",
       status: "PROJECTED",
     });
     expect(v.rateSchedule[0].rateSource).toBe("PROJECTED");
@@ -299,7 +361,7 @@ describe("maturity", () => {
   it("splits a redemption at maturity into the face value and the last coupon only when the coupon is known", () => {
     const known = redemptionSplit(
       {
-        ...lotOf(FRN, LOT.purchaseDate, LOT.quantity),
+        ...lotOf(FRN, LOT.purchaseDate, LOT.quantity, FLOAT_CALENDARS),
         benchmarks: stepIndex(WEEKLY),
       },
       "2026-07-31",
@@ -308,7 +370,7 @@ describe("maturity", () => {
     expect(known.refusal).toBe("NOT_REDEEMABLE");
     const unknown = redemptionSplit(
       {
-        ...lotOf(FRN, LOT.purchaseDate, LOT.quantity),
+        ...lotOf(FRN, LOT.purchaseDate, LOT.quantity, FLOAT_CALENDARS),
         benchmarks: stepIndex(WEEKLY),
       },
       "2028-04-30",
@@ -336,7 +398,7 @@ describe("a series of days", () => {
     const stale = weeklyIndex(11);
     const days = ["2026-05-10", "2026-07-10", "2026-07-20", "2026-08-10"];
     const series = valueBondLotSeries({
-      ...lotOf(FRN, LOT.purchaseDate, LOT.quantity),
+      ...lotOf(FRN, LOT.purchaseDate, LOT.quantity, FLOAT_CALENDARS),
       benchmarks: stepIndex(stale),
       projection: new Map([[FLOAT_ID, "0.04"]]),
       days,
