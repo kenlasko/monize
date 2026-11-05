@@ -55,14 +55,32 @@ describe("demo cryptocurrency seed", () => {
     expect(generateDemoCryptoRates("2026-11-05")).toEqual(rows);
   });
 
-  it("upserts the coin with its kind and price symbol", async () => {
-    const query = jest.fn().mockResolvedValue([]);
+  it("inserts the coin with its kind and price symbol, refreshing an existing row only while it is CRYPTO", async () => {
+    const query = jest.fn().mockResolvedValue([{ kind: "CRYPTO" }]);
 
-    await upsertDemoCryptoCurrency({ query } as unknown as EntityManager);
+    const isCoin = await upsertDemoCryptoCurrency({
+      query,
+    } as unknown as EntityManager);
 
     const [sql, params] = query.mock.calls[0];
-    expect(sql).toContain("kind = EXCLUDED.kind");
-    expect(sql).toContain("quote_symbol = EXCLUDED.quote_symbol");
     expect(params).toEqual(["BTC", "Bitcoin", "₿", 4, "CRYPTO", "BTC-CAD"]);
+    expect(sql).toContain("quote_symbol = EXCLUDED.quote_symbol");
+    expect(sql).toMatch(/WHERE currencies\.kind = 'CRYPTO'\s+RETURNING kind/);
+    // The kind is written only by the INSERT, never by the conflict update.
+    const setClause = sql.slice(
+      sql.indexOf("DO UPDATE SET"),
+      sql.indexOf("WHERE currencies.kind"),
+    );
+    expect(setClause).not.toMatch(/\bkind\s*=/);
+    expect(isCoin).toBe(true);
+  });
+
+  it("reports an existing FIAT BTC, which the conflict clause left alone, as not the demo's coin", async () => {
+    // `DO UPDATE ... WHERE` skipped the row: RETURNING answers nothing.
+    const query = jest.fn().mockResolvedValue([]);
+
+    await expect(
+      upsertDemoCryptoCurrency({ query } as unknown as EntityManager),
+    ).resolves.toBe(false);
   });
 });

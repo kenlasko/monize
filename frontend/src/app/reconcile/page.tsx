@@ -38,7 +38,13 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useFormModal } from '@/hooks/useFormModal';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { nextCycleStatus } from '@/lib/transaction-status-cycle';
-import { getCurrencySymbol, roundToCents, withCurrencyCode } from '@/lib/format';
+import {
+  entryDecimalPlaces,
+  getCurrencySymbol,
+  roundToDecimals,
+  roundToEntryPlaces,
+  withCurrencyCode,
+} from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import { notifyReconciliationChanged } from '@/lib/reconciliationSignal';
 
@@ -77,9 +83,11 @@ function reconciliationKey(
 /**
  * The account's ledger balance at the end of `date`, as a statement would show
  * it: the figure the statement ending balance is pre-filled with. Rounded to
- * cents, because the field compares what is typed against the cents-rounded
- * value it holds, and plain 0 rather than -0. Null when the lookup failed or
- * answered nothing: unknown, not zero, so the field is left for the user.
+ * the places the field holds (`entryDecimalPlaces`: a coin's own, two for
+ * fiat as before), because the field
+ * compares what is typed against the rounded value it holds, and plain 0
+ * rather than -0. Null when the lookup failed or answered nothing: unknown,
+ * not zero, so the field is left for the user.
  */
 async function fetchLedgerBalance(accountId: string, date: string): Promise<number | null> {
   try {
@@ -90,7 +98,7 @@ async function fetchLedgerBalance(accountId: string, date: string): Promise<numb
     });
     const point = points.find((p) => p.accountId === accountId && p.date === date);
     if (!point) return null;
-    const balance = roundToCents(Number(point.balance));
+    const balance = roundToEntryPlaces(Number(point.balance), point.currencyCode);
     return balance === 0 ? 0 : balance;
   } catch {
     return null;
@@ -378,15 +386,21 @@ function ReconcileContent() {
   // Both sums accumulate in integer units of the storage precision, so a long
   // statement cannot drift a cent away from the figure the user is trying to
   // match.
+  // The account currency's places, and the smallest difference they can show:
+  // at cents a 0.0051 BTC difference read 0.01 and let the reconciliation finish.
+  const reconcileDecimals = entryDecimalPlaces(
+    selectedAccount?.currencyCode || defaultCurrency,
+  );
+  const differenceTolerance = 10 ** -reconcileDecimals;
   const calculatedDifference = useMemo(() => {
     if (!reconciliationData) return 0;
     const selectedSum = sumAmounts(selectedTransactions);
     const newBalance = Number(reconciliationData.reconciledBalance) + selectedSum;
-    return Math.round(((statementBalance ?? 0) - newBalance) * 100) / 100;
-  }, [reconciliationData, selectedTransactions, statementBalance]);
+    return roundToDecimals((statementBalance ?? 0) - newBalance, reconcileDecimals);
+  }, [reconciliationData, selectedTransactions, statementBalance, reconcileDecimals]);
 
   const handleFinishReconciliation = async () => {
-    if (Math.abs(calculatedDifference) > 0.01) {
+    if (Math.abs(calculatedDifference) > differenceTolerance) {
       toast.error(t('toasts.differenceRequired', { amount: formatAccountAmount(0) }));
       return;
     }
@@ -514,6 +528,7 @@ function ReconcileContent() {
           <CurrencyInput
             label={t('setup.statementBalanceLabel')}
             prefix={getCurrencySymbol(selectedAccount?.currencyCode || defaultCurrency)}
+            decimalPlaces={reconcileDecimals}
             value={statementBalance}
             onChange={handleStatementBalanceChange}
           />
@@ -576,7 +591,7 @@ function ReconcileContent() {
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('summary.difference')}</p>
               <p
                 className={`text-lg font-semibold ${
-                  Math.abs(calculatedDifference) < 0.01
+                  Math.abs(calculatedDifference) < differenceTolerance
                     ? 'text-green-600 dark:text-green-400'
                     : 'text-red-600 dark:text-red-400'
                 }`}
@@ -659,7 +674,7 @@ function ReconcileContent() {
             <Button
               onClick={handleFinishReconciliation}
               isLoading={isReconciling}
-              disabled={Math.abs(calculatedDifference) > 0.01 || selectedTransactionIds.size === 0}
+              disabled={Math.abs(calculatedDifference) > differenceTolerance || selectedTransactionIds.size === 0}
             >
               {t('list.finish')}
             </Button>

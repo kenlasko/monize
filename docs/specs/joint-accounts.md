@@ -55,7 +55,7 @@ One new column and one new table; everything else derives from current grant sta
 | Account type | Shareable as joint | Grantee writes (per grant flags) |
 |---|---|---|
 | CHEQUING, SAVINGS, CASH, CREDIT_CARD, LINE_OF_CREDIT | yes | create / edit / delete as granted |
-| INVESTMENT, LOAN, MORTGAGE, ASSET, OTHER | yes | **none** -- read-only in v1 regardless of grant flags |
+| INVESTMENT, LOAN, MORTGAGE, ASSET, CRYPTO, OTHER | yes | **none** -- read-only in v1 regardless of grant flags |
 
 The writable set is defined once as `JOINT_WRITABLE_ACCOUNT_TYPES` in
 `backend/src/delegation/joint-accounts.service.ts`; effective permissions returned to the client

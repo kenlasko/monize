@@ -7,6 +7,10 @@ import {
   getDecimalPlacesForCurrency,
   roundToDecimals,
   roundToCents,
+  roundToEntryPlaces,
+  entryDecimalPlaces,
+  loadedEntryAmount,
+  awaitsRegisteredPlaces,
   roundMoney,
   withCurrencyCode,
   adaptiveFractionDigits,
@@ -24,7 +28,19 @@ import {
 } from './format';
 
 describe('getCurrencySymbol', () => {
+  afterEach(() => {
+    clearCurrencyDecimals();
+  });
+
   it('returns $ for USD', () => {
+    expect(getCurrencySymbol('USD')).toBe('$');
+  });
+
+  it('returns a registered non-ISO currency\'s stored symbol, else the code', () => {
+    expect(getCurrencySymbol('BTC')).toBe('BTC');
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20bf' }]);
+    expect(getCurrencySymbol('BTC')).toBe('\u20bf');
+    registerCurrencyDecimals([{ code: 'USD', decimalPlaces: 2, symbol: 'US$' }]);
     expect(getCurrencySymbol('USD')).toBe('$');
   });
 
@@ -227,6 +243,27 @@ describe('withCurrencyCode', () => {
   it('leaves an amount with no currency code alone', () => {
     expect(withCurrencyCode('$1,300.00', '', 'CAD')).toBe('$1,300.00');
   });
+
+  it('does not name a non-ISO code twice when Intl already wrote it', () => {
+    // An unregistered coin: Intl uses the code as the symbol.
+    expect(withCurrencyCode('BTC\u00a00.01', 'BTC', 'CAD')).toBe('BTC\u00a00.01');
+    // de-DE puts it after the figure.
+    expect(withCurrencyCode('0,0070\u00a0BTC', 'BTC', 'EUR')).toBe('0,0070\u00a0BTC');
+    expect(withCurrencyCode('-BTC\u00a00.0051', 'BTC', 'CAD')).toBe('-BTC\u00a00.0051');
+  });
+
+  it('appends a non-ISO code that the figure carries only as a symbol', () => {
+    expect(withCurrencyCode('\u20bf0.0070', 'BTC', 'CAD')).toBe('\u20bf0.0070 BTC');
+    expect(withCurrencyCode('0,0070\u00a0\u20bf', 'BTC', 'EUR')).toBe('0,0070\u00a0\u20bf BTC');
+  });
+
+  it('matches the code only as a whole token', () => {
+    expect(withCurrencyCode('WBTC\u00a01.00', 'BTC', 'CAD')).toBe('WBTC\u00a01.00 BTC');
+  });
+
+  it('still appends an ISO code the figure already shows, so no fiat figure changes', () => {
+    expect(withCurrencyCode('CHF\u00a01,300.00', 'CHF', 'CAD')).toBe('CHF\u00a01,300.00 CHF');
+  });
 });
 
 describe('roundToCents', () => {
@@ -256,6 +293,55 @@ describe('roundToCents', () => {
     // lands on a tiny float residual, which must read as $0.00 not $NaN.
     expect(roundToCents(2000 + -2000.000000625)).toBe(0);
     expect(roundToCents(5000 - 5000.0000088)).toBe(0);
+  });
+});
+
+describe('roundToEntryPlaces', () => {
+  afterEach(() => {
+    clearCurrencyDecimals();
+  });
+
+  it('keeps a registered coin at its stored places', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+    expect(roundToEntryPlaces(0.0051, 'BTC')).toBe(0.0051);
+    expect(roundToEntryPlaces(-0.00515, 'btc')).toBe(-0.0052);
+  });
+
+  it('rounds a fiat amount exactly as roundToCents does', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    for (const value of [10.125, -10.125, 0.1 + 0.2, 0.0051, 1170.6458]) {
+      expect(roundToEntryPlaces(value, 'CAD')).toBe(roundToCents(value));
+      expect(roundToEntryPlaces(value, 'JPY')).toBe(roundToCents(value));
+    }
+  });
+
+  it('falls back to cents for an unregistered or missing code', () => {
+    expect(roundToEntryPlaces(0.0051, 'BTC')).toBe(0.01);
+    expect(roundToEntryPlaces(0.0051, undefined)).toBe(0.01);
+  });
+
+  it('loads a coin the registry does not hold yet at the stored four places', () => {
+    expect(awaitsRegisteredPlaces('BTC')).toBe(true);
+    expect(loadedEntryAmount(-0.0051, 'BTC')).toBe(-0.0051);
+    expect(loadedEntryAmount(-0.00515, 'BTC')).toBe(-0.0052);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 3 }]);
+    expect(awaitsRegisteredPlaces('BTC')).toBe(false);
+    expect(loadedEntryAmount(-0.0051, 'BTC')).toBe(-0.005);
+  });
+
+  it('loads an ISO or missing code at two places, as cents always did', () => {
+    for (const code of ['CAD', 'JPY', null, undefined]) {
+      expect(awaitsRegisteredPlaces(code)).toBe(false);
+      expect(loadedEntryAmount(10.125, code)).toBe(10.13);
+    }
+  });
+
+  it('answers the places it rounds at: a coin\'s own, otherwise two, never Intl\'s', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    expect(entryDecimalPlaces('BTC')).toBe(4);
+    expect(entryDecimalPlaces('CAD')).toBe(2);
+    expect(entryDecimalPlaces('JPY')).toBe(2);
+    expect(entryDecimalPlaces(null)).toBe(2);
   });
 });
 

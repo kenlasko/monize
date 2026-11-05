@@ -4,7 +4,9 @@ import {
   currencyDecimalsVersion,
   decimalPlacesForCurrency,
   registerCurrencyDecimals,
+  currencySymbolFor,
   subscribeCurrencyDecimals,
+  symbolForCurrency,
 } from './currency-decimals';
 
 describe('currency decimals registry', () => {
@@ -94,5 +96,77 @@ describe('currency decimals registry', () => {
     unsubscribe();
     registerCurrencyDecimals([{ code: 'ETH', decimalPlaces: 4 }]);
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  describe('symbol', () => {
+    it('holds the stored symbol of a registered non-ISO currency', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: ' \u20bf ' }]);
+      expect(symbolForCurrency('BTC')).toBe('\u20bf');
+      expect(symbolForCurrency('btc')).toBe('\u20bf');
+    });
+
+    it('holds no symbol for a blank one, or one that is the code itself', () => {
+      registerCurrencyDecimals([
+        { code: 'AAA', decimalPlaces: 4, symbol: '' },
+        { code: 'BBB', decimalPlaces: 4, symbol: '   ' },
+        { code: 'CCC', decimalPlaces: 4, symbol: 'ccc' },
+        { code: 'DDD', decimalPlaces: 4, symbol: null },
+        { code: 'EEE', decimalPlaces: 4 },
+      ]);
+      for (const code of ['AAA', 'BBB', 'CCC', 'DDD', 'EEE']) {
+        expect(symbolForCurrency(code)).toBeUndefined();
+        expect(decimalPlacesForCurrency(code)).toBe(4);
+      }
+    });
+
+    it('answers undefined for an unregistered code and for an ISO row', () => {
+      registerCurrencyDecimals([{ code: 'USD', decimalPlaces: 2, symbol: 'US$' }]);
+      expect(symbolForCurrency('USD')).toBeUndefined();
+      expect(symbolForCurrency('BTC')).toBeUndefined();
+      expect(symbolForCurrency(undefined)).toBeUndefined();
+    });
+
+    it('notifies when only the symbol changes', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+      const listener = vi.fn();
+      const unsubscribe = subscribeCurrencyDecimals(listener);
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20bf' }]);
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(symbolForCurrency('BTC')).toBe('\u20bf');
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20bf' }]);
+      expect(listener).toHaveBeenCalledTimes(1);
+      unsubscribe();
+    });
+
+    it('empties with the places on clear', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20bf' }]);
+      clearCurrencyDecimals();
+      expect(symbolForCurrency('BTC')).toBeUndefined();
+    });
+  });
+
+  describe('currencySymbolFor', () => {
+    it('answers a registered non-ISO currency\'s stored symbol', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20bf' }]);
+      expect(currencySymbolFor('BTC')).toBe('\u20bf');
+    });
+
+    it('answers the code Intl writes for a non-ISO currency without a registered symbol', () => {
+      expect(currencySymbolFor('BTC')).toBe('BTC');
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+      expect(currencySymbolFor('BTC')).toBe('BTC');
+    });
+
+    it('answers Intl\'s narrow symbol for an ISO currency, whatever its row says', () => {
+      registerCurrencyDecimals([{ code: 'USD', decimalPlaces: 2, symbol: 'US$' }]);
+      expect(currencySymbolFor('USD')).toBe('$');
+      expect(currencySymbolFor('EUR')).toBe('\u20ac');
+      expect(currencySymbolFor('CHF')).toBe('CHF');
+    });
+
+    it('answers the fallback, by default the code, for a code Intl rejects', () => {
+      expect(currencySymbolFor('INVALID')).toBe('INVALID');
+      expect(currencySymbolFor('INVALID', '$')).toBe('$');
+    });
   });
 });

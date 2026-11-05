@@ -123,12 +123,15 @@ describe("CryptoFxProvider", () => {
       expect(currencyRepo.find).toHaveBeenCalledTimes(1);
     });
 
-    it("carries nothing after a failed read, and does not remember the failure", async () => {
-      currencyRepo.find.mockRejectedValueOnce(new Error("connection reset"));
+    it("rejects claims and carries after a failed read, never answering false, and does not remember the failure", async () => {
+      currencyRepo.find
+        .mockRejectedValueOnce(new Error("connection reset"))
+        .mockRejectedValueOnce(new Error("connection reset"));
 
-      expect(await provider.carries("BTC")).toBe(false);
-      expect(await provider.carries("BTC")).toBe(true);
-      expect(currencyRepo.find).toHaveBeenCalledTimes(2);
+      await expect(provider.claims("BTC")).rejects.toThrow("connection reset");
+      await expect(provider.carries("BTC")).rejects.toThrow("connection reset");
+      expect(await provider.claims("BTC")).toBe(true);
+      expect(currencyRepo.find).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -394,6 +397,42 @@ describe("CryptoFxProvider", () => {
 
       expect(answer.uncarried).toEqual(["XYZ"]);
       expect(fiat.fetchLatest).not.toHaveBeenCalled();
+      expect(yahoo.fetchPairSymbolQuote).not.toHaveBeenCalled();
+    });
+
+    it("hands no coin pair to the fiat provider when currencies cannot be read: the pairs are unanswered", async () => {
+      currencyRepo.find.mockRejectedValue(new Error("connection reset"));
+      const fiat = {
+        name: "yahoo" as const,
+        source: "yahoo_finance",
+        carries: jest.fn().mockResolvedValue(true),
+        fetchLatest: jest
+          .fn()
+          .mockResolvedValue(
+            new Map([
+              ["BTC", { from: "CAD", to: "BTC", date: "2026-11-05", rate: 1 }],
+            ]),
+          ),
+        fetchDailySeries: jest.fn().mockResolvedValue([]),
+      };
+      const chain = new FxProviderChain([fiat, provider]);
+
+      const answer = await chain.latest("CAD", ["BTC", "EUR"]);
+      const series = await chain.dailySeries(
+        "BTC",
+        "CAD",
+        "2026-11-01",
+        "2026-11-04",
+      );
+
+      // Whether EUR is a coin cannot be told either, so it waits for the next
+      // tick with BTC rather than being guessed at.
+      expect(answer.found.size).toBe(0);
+      expect(answer.unanswered).toEqual(["BTC", "EUR"]);
+      expect(answer.uncarried).toEqual([]);
+      expect(series).toEqual({ points: [], answered: false, source: null });
+      expect(fiat.fetchLatest).not.toHaveBeenCalled();
+      expect(fiat.fetchDailySeries).not.toHaveBeenCalled();
       expect(yahoo.fetchPairSymbolQuote).not.toHaveBeenCalled();
     });
   });

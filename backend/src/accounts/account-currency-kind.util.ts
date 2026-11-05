@@ -43,6 +43,24 @@ export function assertAccountCurrencyKind(
  * (the column's default): the foreign key refuses the write that follows for a
  * fiat type, and a CRYPTO type is refused here, since an unknown code cannot
  * be a coin.
+ *
+ * The row is read `FOR KEY SHARE`, the lock the account row's foreign key
+ * takes anyway, so the kind checked is the kind the write commits against.
+ * The kind gate (`CurrenciesService.kindUpdates`) and the delete
+ * (`removeWithin`) lock the same row `FOR UPDATE`, which conflicts with it:
+ * a read arriving while a kind change holds the row waits for that commit and,
+ * under READ COMMITTED, returns the new version, so it checks the new kind; a
+ * kind change arriving after this read waits for the account write to commit,
+ * and its reference check (a later statement, a fresh snapshot) then sees the
+ * account and refuses `kindInUse`. A plain read would let both commit, a
+ * mismatch.
+ *
+ * Lock order: the currencies row is the only lock the two paths share. The
+ * kind change takes it as its first lock, and what it writes after it (the
+ * currency row itself, the creator's `user_currency_preferences` row) no
+ * account writer locks, so neither can hold something the other waits for
+ * while waiting on the currency row: no cycle. Several account writers share
+ * `FOR KEY SHARE` without conflict.
  */
 export async function assertAccountCurrencyKindIn(
   m: EntityManager,
@@ -50,12 +68,12 @@ export async function assertAccountCurrencyKindIn(
   currencyCode: string,
 ): Promise<void> {
   const code = String(currencyCode).toUpperCase();
-  const row = await m.getRepository(Currency).findOne({
-    where: { code },
-    select: { code: true, kind: true },
-  });
+  const rows: Array<{ kind: Currency["kind"] }> = await m.query(
+    "SELECT kind FROM currencies WHERE code = $1 FOR KEY SHARE",
+    [code],
+  );
   assertAccountCurrencyKind(accountType, {
     code,
-    kind: row?.kind ?? "FIAT",
+    kind: rows[0]?.kind ?? "FIAT",
   });
 }

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@/test/render';
+import { render, screen, act, fireEvent, waitFor } from '@/test/render';
 import { ScheduledTransactionForm } from './ScheduledTransactionForm';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
+import { exchangeRatesApi } from '@/lib/exchange-rates';
 
 // Issue #1581, the template form: editing a LINEAR mortgage installment
 // (864.5833 + 306.0625 = 1,170.6458) loaded the amount in cents and the lines
@@ -136,5 +138,70 @@ describe('ScheduledTransactionForm: a template priced below the cent (issue #158
     });
     expect(screen.getByTestId('parent')).toHaveTextContent('-1170.65');
     expect(screen.getAllByTestId('line').map((el) => el.textContent)).toEqual(['-306.06', '-864.59']);
+  });
+});
+
+describe('ScheduledTransactionForm: a coin schedule', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('loads and enters a four-place coin amount at its four places, not cents', async () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    try {
+      await act(async () => {
+        render(
+          <ScheduledTransactionForm
+            scheduledTransaction={{
+              ...linearInstallment,
+              accountId: 'wallet-1',
+              account: null,
+              amount: -0.0051,
+              currencyCode: 'BTC',
+              isSplit: false,
+              splits: [],
+            }}
+          />,
+        );
+      });
+      // Loaded at cents this read -0.01, and an unedited save sent -0.01 back.
+      expect(screen.getByLabelText('Amount')).toHaveValue('-0.0051');
+    } finally {
+      await act(async () => clearCurrencyDecimals());
+    }
+  });
+
+  it('keeps a foreign amount in a coin at the coin\'s places, not cents', async () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(50000);
+    try {
+      await act(async () => {
+        render(
+          <ScheduledTransactionForm
+            scheduledTransaction={{
+              ...linearInstallment,
+              amount: -255,
+              originalAmount: -0.0051,
+              originalCurrencyCode: 'BTC',
+              exchangeRate: 50000,
+              isSplit: false,
+              splits: [],
+            }}
+          />,
+        );
+      });
+      const foreign = screen.getByLabelText('Amount in BTC');
+      expect(foreign).toHaveValue('-0.0051');
+      await act(async () => {
+        fireEvent.change(foreign, { target: { value: '-0.0073' } });
+        fireEvent.blur(foreign);
+      });
+      // `handleForeignAmountChange` rounded the typed amount to cents, -0.01,
+      // and converted that: -500 EUR rather than -0.0073 x 50000 = -365.
+      await waitFor(() => expect(screen.getByText(/-365(\.00)?\b/)).toBeInTheDocument());
+      expect(screen.queryByText(/-500(\.00)?\b/)).not.toBeInTheDocument();
+    } finally {
+      await act(async () => clearCurrencyDecimals());
+    }
   });
 });

@@ -1,4 +1,4 @@
-import { roundToCents } from './format';
+import { roundToEntryPlaces } from './format';
 import type { Transaction } from '@/types/transaction';
 
 // Integer ten-thousandths, matching the backend roundMoney / decimal(20,4).
@@ -14,6 +14,11 @@ const SCALE = 10000;
  * that fee-inclusive total -- so it is recovered as
  * round(originalAmount x exchangeRate) - amount. Mirrors the backend
  * `getFxFeeSummary` derivation so the per-row column and the chart agree.
+ *
+ * The converted base is rounded at the account currency's places
+ * (`roundToEntryPlaces` on the row's own `currencyCode`): cents for fiat, a
+ * coin's own for a coin account, where cents read a 0.0051 BTC base as 0.01
+ * and the fee as -0.0048 BTC.
  */
 export function foreignTransactionFee(transaction: Transaction): number {
   if (
@@ -23,8 +28,9 @@ export function foreignTransactionFee(transaction: Transaction): number {
     return 0;
   }
   const baseCents = Math.round(
-    roundToCents(
+    roundToEntryPlaces(
       Number(transaction.originalAmount) * Number(transaction.exchangeRate),
+      transaction.currencyCode,
     ) * SCALE,
   );
   const amountCents = Math.round(Number(transaction.amount) * SCALE);

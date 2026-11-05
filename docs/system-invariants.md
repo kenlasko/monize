@@ -81,6 +81,8 @@ implied.
 | INV-FX-003 | A currency pair is stored in one orientation | partial |
 | INV-FX-004 | A user-supplied rate never replaces a global exchange-rate observation | enforced |
 | INV-FX-005 | A provider-written rate names its provider, every provider question goes through the chain, and an outage is never remembered as an empty answer | enforced |
+| INV-CRYPTO-001 | An account's type and its currency's kind agree: a crypto wallet holds a coin, every other account and every security a fiat currency | partial |
+| INV-CRYPTO-002 | A pair with a coin on either side is priced only by the crypto provider, through the coin's Yahoo pair, and that provider prices nothing else | enforced |
 | INV-TRADE-001 | The executed total is the fact; the per-share price is derived from it | enforced |
 | INV-PRICE-001 | A stored price is in the currency the security is recorded in | partial |
 | INV-PORTRESULT-001 | A period change is not a return: value change, external flows and investment result are three figures | enforced |
@@ -1716,6 +1718,136 @@ Status              enforced -- the chain, the service on it, the source
                     section 5 truth table cases are named in
                     fx-provider-chain.spec.ts.
 ```
+
+### INV-CRYPTO-001 -- an account's type and its currency's kind agree
+
+```text
+Statement           accounts.account_type = 'CRYPTO' if and only if the
+                    currencies.kind of accounts.currency_code is 'CRYPTO'. A
+                    crypto wallet holds a coin; every other type, both halves
+                    of an investment pair included, holds a fiat currency. A
+                    security's currency_code is never a CRYPTO currency (a
+                    security is priced in fiat). A currency's kind does not
+                    change once any row other than an activation references
+                    the code.
+Source of truth     accounts.account_type, accounts.currency_code and
+                    currencies.kind (CHECK currencies_kind_check: FIAT or
+                    CRYPTO).
+Enforcement         Service-level, no trigger. assertAccountCurrencyKind /
+                    assertAccountCurrencyKindIn
+                    (backend/src/accounts/account-currency-kind.util.ts), read
+                    and checked inside the transaction that writes the row,
+                    before the write: AccountsService create,
+                    createInvestmentAccountPair and update (when the type or
+                    the currency moves, and for a linked half's new currency
+                    against INVESTMENT); LoanMortgageAccountService create
+                    paths; the QIF import (ImportService) and
+                    ImportEntityCreatorService; the MNY writer
+                    (import/mny/writers/write-reference.ts). Securities:
+                    assertSecurityCurrencyIsFiatIn
+                    (backend/src/securities/security-currency-kind.util.ts) in
+                    SecuritiesService create and update, ImportEntityCreatorService
+                    and the MNY investments writer. The kind gate:
+                    CurrenciesService.update locks the currency row FOR UPDATE
+                    and refuses a kind change while
+                    currency_code_referenced_by_data (migration
+                    20261105195749) reports a reference; that function covers
+                    every foreign key to currencies(code) except
+                    user_currency_preferences, held by
+                    currency-references.spec.ts.
+Concurrency scope   The account or security row and the currency row. The
+                    account and security writers read the kind FOR KEY SHARE
+                    (assertAccountCurrencyKindIn,
+                    assertSecurityCurrencyIsFiatIn), which conflicts with the
+                    kind gate's FOR UPDATE: a write arriving during a kind
+                    change waits and checks the new kind, and a kind change
+                    arriving after the read waits for the write to commit and
+                    then refuses kindInUse. The currencies row is the only lock
+                    the two share, so they cannot deadlock.
+Retry semantics     A refusal writes nothing; a retry is refused the same way.
+Crash semantics     Nothing commits before the check.
+Failure response    400 accountCurrencyKindMismatch (accounts),
+                    400 currencyMustBeFiat (securities), 409 kindInUse
+                    (currencies), before any write.
+Required tests      account-currency-kind.util.spec.ts;
+                    security-currency-kind.util.spec.ts; accounts.service.spec.ts,
+                    loan-mortgage-account.service.spec.ts,
+                    import-entity-creator.service.spec.ts,
+                    write-reference.spec.ts, write-investments.spec.ts and
+                    securities.service.spec.ts per writer;
+                    currencies.service.spec.ts (kindInUse);
+                    currency-references.spec.ts;
+                    crypto-accounts.integration.spec.ts (the section 5 truth
+                    table of docs/specs/crypto-accounts.md on create and
+                    update, and "a kind change racing an account write" on two
+                    connections, in both orders).
+Status              partial -- no database trigger, and two writers of
+                    accounts rows bypass the check: the undo and redo of an
+                    account action (ActionHistoryService.undoAccount through
+                    undoSimpleEntity, which re-inserts a deleted account or
+                    writes an edit's snapshot back) and the backup restore
+                    (BackupRestoreDatabaseService). Either can write a
+                    mismatch when the code's kind changed after the snapshot
+                    was taken, which the kind gate allows once nothing else
+                    references the code.
+```
+
+Spec: `docs/specs/crypto-accounts.md`, decision 8.
+
+### INV-CRYPTO-002 -- a coin is priced only through its pair
+
+```text
+Statement           A pair with a CRYPTO currency on either side is asked of
+                    the crypto provider and of no other, and the crypto
+                    provider is asked about no fiat pair. Every exchange_rates
+                    row a provider writes for such a pair carries the source
+                    yahoo_crypto: a fiat provider never answers for a coin, and
+                    the coin provider never answers, or masks an outage of, a
+                    fiat pair.
+Source of truth     currencies.kind and currencies.quote_symbol (the Yahoo
+                    <COIN>-<FIAT> symbol; CHECK
+                    currencies_quote_symbol_crypto_only keeps it NULL on a FIAT
+                    row); CryptoFxProvider.source.
+Enforcement         FxProviderChain (backend/src/currencies/providers/
+                    fx-provider-chain.ts): a provider's optional claims(code)
+                    decides who may be asked before carries does -- a claimed
+                    pair only of a provider that claims one of its codes, an
+                    unclaimed pair only of a provider that claims nothing -- on
+                    latest, dailySeries and live alike. CryptoFxProvider
+                    (providers/crypto-fx.provider.ts) claims every CRYPTO code
+                    and carries a CRYPTO code with a quote_symbol and every FIAT
+                    code; the factory in currencies.module.ts appends it after
+                    whatever FX_PROVIDERS names, and resolveFxProviders refuses
+                    it as a token (PAIR_PROVIDER_NAMES). Its calls reach Yahoo
+                    through YahooFxProvider's pair-symbol methods and so through
+                    YahooFinanceService's throttle and breaker. INV-FX-005's
+                    source guard holds the slug inside the providers directory.
+Concurrency scope   global -- exchange_rates is shared reference data.
+Retry semantics     As INV-FX-005: null is "did not answer" and is retried
+                    next tick; a symbol Yahoo reports as not found is an
+                    answer with nothing in it.
+Crash semantics     --
+Failure response    A coin without a quote_symbol is claimed but not carried:
+                    the refresh reports the pair uncarried with "<code> has no
+                    price symbol; map one on the Currencies page", and every
+                    converted figure in that coin is unknown (INV-FX-001). A
+                    failed read of currencies rejects claims and carries; the
+                    chain reads that as "could not say", asks nobody about a
+                    pair whose claim it cannot settle, and the refresh reports
+                    it "No provider answered".
+Required tests      fx-provider-chain.spec.ts ("FxProviderChain and a provider
+                    that claims coins"); crypto-fx.provider.spec.ts ("carries
+                    and claims", "in the chain"); exchange-rate.service.spec.ts
+                    (refreshCryptoRates, the weekend tick, the unmapped-coin
+                    message).
+Status              enforced -- for the rows the chain writes. Rows written
+                    outside it are not provider answers and are not covered:
+                    the demo seed stores its BTC->CAD series under yahoo_crypto
+                    through ExchangeRateService.storeRateSeries, and a Money
+                    import's rate history is written under mny_import.
+```
+
+Spec: `docs/specs/crypto-accounts.md`, decision 5.
 
 ### INV-TRADE-001 -- the executed total is the fact, the price is derived
 

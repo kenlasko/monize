@@ -61,6 +61,15 @@ export interface FxProviderDescription {
  * every fiat code as a coin's counterpart, would answer a fiat pair it cannot
  * price as "nothing there" and hide the fiat providers' outage.
  *
+ * A routing question that throws (`claims` or `carries`, which the crypto
+ * adapter answers from a read of `currencies`) is "the provider could not
+ * say", never "no": a pair whose claim is unknown is asked of nobody and is
+ * `unanswered` (a series not `answered`, a live quote `null`), and a pair a
+ * provider was to be asked about but could not say whether it carries is
+ * `unanswered` by that provider. Read as `false`, an unknown claim would hand a
+ * coin pair to Yahoo's `=X` grammar, whose `carries` is always true, and store
+ * a coin rate under a fiat source.
+ *
  * Built once by the factory in `currencies.module.ts`, which is why the class
  * is its own DI token rather than decorated `@Injectable()`.
  */
@@ -84,19 +93,41 @@ export class FxProviderChain {
     const answered = new Set<string>();
     let remaining = [...new Set(quotes)];
     const claimed = new Set<string>();
+    // A quote whose claim no provider could answer is asked of nobody: it is
+    // counted carried and never answered, so it reports as unanswered.
+    const unroutable = new Set<string>();
     for (const quote of remaining) {
-      if (await this.pairClaimed(base, quote)) claimed.add(quote);
+      const claim = await this.pairClaimed(base, quote);
+      if (claim === null) {
+        unroutable.add(quote);
+        carried.add(quote);
+      } else if (claim) {
+        claimed.add(quote);
+      }
     }
 
     for (const provider of this.providers) {
-      if (remaining.length === 0) break;
-      if (!(await provider.carries(base))) continue;
+      const askable = remaining.filter((quote) => !unroutable.has(quote));
+      if (askable.length === 0) break;
+      const carriesBase = await answerOf(() => provider.carries(base));
+      if (carriesBase === false) continue;
       const asked: string[] = [];
-      for (const quote of remaining) {
-        if (!(await this.mayAsk(provider, base, quote, claimed.has(quote)))) {
-          continue;
-        }
-        if (await provider.carries(quote)) asked.push(quote);
+      for (const quote of askable) {
+        const may = await this.mayAsk(
+          provider,
+          base,
+          quote,
+          claimed.has(quote),
+        );
+        if (may === false) continue;
+        // Due to be asked, but it could not say whether it may be or whether
+        // it carries the pair: not an answer.
+        const carriesQuote =
+          may === null || carriesBase === null
+            ? null
+            : await answerOf(() => provider.carries(quote));
+        if (carriesQuote === null) carried.add(quote);
+        else if (carriesQuote) asked.push(quote);
       }
       if (asked.length === 0) continue;
       for (const quote of asked) carried.add(quote);
@@ -136,8 +167,14 @@ export class FxProviderChain {
   ): Promise<FxDailySeriesResult> {
     let everyCarrierAnswered = true;
     const claimed = await this.pairClaimed(from, to);
+    if (claimed === null) return { points: [], answered: false, source: null };
     for (const provider of this.providers) {
-      if (!(await this.asks(provider, from, to, claimed))) continue;
+      const asks = await this.asks(provider, from, to, claimed);
+      if (asks === null) {
+        everyCarrierAnswered = false;
+        continue;
+      }
+      if (!asks) continue;
       const series = await provider.fetchDailySeries(from, to, start, end);
       if (series === null) {
         everyCarrierAnswered = false;
@@ -157,9 +194,10 @@ export class FxProviderChain {
    */
   async live(from: string, to: string): Promise<FxChainObservation | null> {
     const claimed = await this.pairClaimed(from, to);
+    if (claimed === null) return null;
     for (const provider of this.providers) {
       if (!provider.fetchLive) continue;
-      if (!(await this.asks(provider, from, to, claimed))) continue;
+      if ((await this.asks(provider, from, to, claimed)) !== true) continue;
       const observation = await provider.fetchLive(from, to);
       if (observation) return { ...observation, source: provider.source };
     }
@@ -212,44 +250,81 @@ export class FxProviderChain {
     }));
   }
 
-  /** Whether a provider is to be asked about the pair: it may, and it carries both codes. */
+  /**
+   * Whether a provider is to be asked about the pair: it may, and it carries
+   * both codes. `null` when it was due to be asked but could not say.
+   */
   private async asks(
     provider: FxRateProvider,
     from: string,
     to: string,
     claimed: boolean,
-  ): Promise<boolean> {
-    return (
-      (await this.mayAsk(provider, from, to, claimed)) &&
-      (await provider.carries(from)) &&
-      (await provider.carries(to))
-    );
+  ): Promise<boolean | null> {
+    const may = await this.mayAsk(provider, from, to, claimed);
+    if (may !== true) return may;
+    const carriesFrom = await answerOf(() => provider.carries(from));
+    if (carriesFrom !== true) return carriesFrom;
+    return answerOf(() => provider.carries(to));
   }
 
-  /** Whether some configured provider claims either code of the pair. */
-  private async pairClaimed(from: string, to: string): Promise<boolean> {
+  /**
+   * Whether some configured provider claims either code of the pair; `null`
+   * when none does and one could not say.
+   */
+  private async pairClaimed(from: string, to: string): Promise<boolean | null> {
+    let unknown = false;
     for (const provider of this.providers) {
-      if (!provider.claims) continue;
-      if ((await provider.claims(from)) || (await provider.claims(to))) {
-        return true;
-      }
+      const claim = await this.claimOf(provider, from, to);
+      if (claim === true) return true;
+      if (claim === null) unknown = true;
     }
-    return false;
+    return unknown ? null : false;
+  }
+
+  /** Whether the provider claims either code; `null` when it could not say and claimed neither. */
+  private async claimOf(
+    provider: FxRateProvider,
+    from: string,
+    to: string,
+  ): Promise<boolean | null> {
+    const claims = provider.claims?.bind(provider);
+    if (!claims) return false;
+    const first = await answerOf(() => claims(from));
+    if (first === true) return true;
+    const second = await answerOf(() => claims(to));
+    if (second === true) return true;
+    return first === null || second === null ? null : false;
   }
 
   /**
    * The claim rule, before `carries`: a claimed pair is asked only of a
    * provider that claims one of its codes, and an unclaimed pair only of a
-   * provider that claims nothing.
+   * provider that claims nothing. `null` when the provider could not say
+   * whether it claims a claimed pair.
    */
   private async mayAsk(
     provider: FxRateProvider,
     from: string,
     to: string,
     claimed: boolean,
-  ): Promise<boolean> {
+  ): Promise<boolean | null> {
     if (!provider.claims) return !claimed;
     if (!claimed) return false;
-    return (await provider.claims(from)) || (await provider.claims(to));
+    return this.claimOf(provider, from, to);
+  }
+}
+
+/**
+ * A provider's answer to a routing question (`claims`, `carries`), or `null`
+ * when the question threw: the provider could not say, which is neither yes
+ * nor no.
+ */
+async function answerOf(
+  question: () => Promise<boolean>,
+): Promise<boolean | null> {
+  try {
+    return await question();
+  } catch {
+    return null;
   }
 }

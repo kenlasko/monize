@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { computeBalanceSummary } from './balance-history';
+import { averageDailyBalance, computeBalanceSummary } from './balance-history';
 
 describe('computeBalanceSummary', () => {
   beforeEach(() => {
@@ -73,12 +73,97 @@ describe('computeBalanceSummary', () => {
     expect(summary?.goesNegative).toBe(true);
   });
 
-  it('rounds balances to 2 decimals to match the plotted chart points', () => {
-    const summary = computeBalanceSummary([
-      { date: '2026-01-01', balance: 1000.005 },
-      { date: '2026-01-02', balance: 899.996 },
-    ]);
+  it('rounds balances to a two-place currency\'s cents to match the plotted chart points', () => {
+    const summary = computeBalanceSummary(
+      [
+        { date: '2026-01-01', balance: 1000.005 },
+        { date: '2026-01-02', balance: 899.996 },
+      ],
+      2,
+    );
     expect(summary?.startBalance).toBe(1000.01);
     expect(summary?.currentBalance).toBe(900);
+  });
+
+  it('keeps a four-place currency\'s balance at its four places', () => {
+    // A 0.0070 BTC wallet read "0.01" when every series rounded to cents.
+    const summary = computeBalanceSummary(
+      [
+        { date: '2026-01-01', balance: 0.0125 },
+        { date: '2026-01-02', balance: 0.007 },
+      ],
+      4,
+    );
+    expect(summary?.startBalance).toBe(0.0125);
+    expect(summary?.currentBalance).toBe(0.007);
+    expect(summary?.minBalance).toBe(0.007);
+  });
+
+  it('rounds to the stored money precision when no currency places are given', () => {
+    const summary = computeBalanceSummary([
+      { date: '2026-01-01', balance: 0.00704 },
+      { date: '2026-01-02', balance: 0.0070 },
+    ]);
+    expect(summary?.startBalance).toBe(0.007);
+    expect(summary?.currentBalance).toBe(0.007);
+    expect(summary?.hasFutureData).toBe(false);
+  });
+
+  it('keeps each value as given for a null precision', () => {
+    const summary = computeBalanceSummary(
+      [
+        { date: '2026-01-01', balance: 0.000342 },
+        { date: '2026-01-02', balance: 0.000411 },
+      ],
+      null,
+    );
+    expect(summary?.startBalance).toBe(0.000342);
+    expect(summary?.currentBalance).toBe(0.000411);
+  });
+});
+
+describe('averageDailyBalance', () => {
+  it('averages a four-place currency at its four places', () => {
+    // (0.0125 + 0.0070) / 2 = 0.00975, half away from zero to 0.0098. The
+    // cents-rounded mean was 0.01, and a smaller one read "BTC 0.0000".
+    expect(
+      averageDailyBalance(
+        [
+          { date: '2026-01-01', balance: 0.0125 },
+          { date: '2026-01-02', balance: 0.007 },
+        ],
+        4,
+      ),
+    ).toBe(0.0098);
+    expect(averageDailyBalance([{ date: '2026-01-01', balance: 0.007 }], 4)).toBe(0.007);
+  });
+
+  it('averages a two-place currency at its cents', () => {
+    expect(
+      averageDailyBalance(
+        [
+          { date: '2026-01-01', balance: 100.1 },
+          { date: '2026-01-02', balance: 100.2 },
+          { date: '2026-01-03', balance: 100.2 },
+        ],
+        2,
+      ),
+    ).toBe(100.17);
+  });
+
+  it('sums without float drift', () => {
+    // 0.1 + 0.2 accumulated as floats is 0.30000000000000004.
+    const points = [0.1, 0.2, 0.3].map((balance, i) => ({ date: `2026-01-0${i + 1}`, balance }));
+    expect(averageDailyBalance(points)).toBe(0.2);
+  });
+
+  it('is null for an empty series or one with an unknown day', () => {
+    expect(averageDailyBalance([])).toBeNull();
+    expect(
+      averageDailyBalance([
+        { date: '2026-01-01', balance: 10 },
+        { date: '2026-01-02', balance: null },
+      ]),
+    ).toBeNull();
   });
 });

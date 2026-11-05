@@ -109,6 +109,16 @@ document carries its own contracts, truth tables and recorded fixtures
     `FX_MAX_RATE_AGE_DAYS` is what a failed refresh falls back to; a tracked
     provider's outage raises the existing system alert) and the rest is a
     separate feature.
+13. **Addendum, 2026-11-05: a pair provider claims the coins**
+    (`docs/specs/crypto-accounts.md` decision 5, INV-CRYPTO-002). The crypto
+    adapter (`CryptoFxProvider`, a `PairProviderName`, appended by the module
+    factory after whatever `FX_PROVIDERS` names and never accepted as a token)
+    answers an optional `claims(code)`: a pair with a claimed code on either
+    side is asked only of a provider that claims one of its codes, and an
+    unclaimed pair only of a provider that claims nothing; a `claims` or
+    `carries` that throws is "could not say", so the pair is asked of nobody
+    and reported unanswered (the last rows of section 5), never handed to a
+    provider that claims nothing.
 
 ## 4. Provider contract
 
@@ -191,6 +201,10 @@ For one window and two configured providers P1 then P2. "carries" is
 | yes | `null` | yes | `[]` | `[]` | **false** | null |
 | yes | `null` | yes | `null` | `[]` | false | null |
 | no | not asked | no | not asked | `[]` | true | null |
+| not asked (claim unknown), `dailySeries` | not asked | `claims` threw | not asked | `[]` | **false** | null |
+| not asked (claim unknown), `latest` | not asked | `claims` threw | not asked | none, the quote is `unanswered` | false | null |
+| not asked (claim unknown), `live` | not asked | `claims` threw | not asked | `null` | false | null |
+| not asked (claimed pair), `dailySeries` | not asked | `carries` threw | not asked | `[]` | false | null |
 
 The sixth row is the one that matters: P1 may hold history for the window
 that P2 does not (Frankfurter reaches 1999, Yahoo's `USDCAD=X` 2003), so a
@@ -203,6 +217,18 @@ failed with "no configured provider carries X/Y".
 For `latest`, the same per quote: a quote moves to the next provider on
 `null` or on absence from the map; it is `unanswered` only when every
 carrying provider returned `null`.
+
+The four rows after the line are a chain whose P2 claims codes (the crypto
+adapter, decision 13) and whose P1 claims nothing (Yahoo, whose `carries` is
+always true). When P2's `claims` throws (its read of `currencies` failed),
+the chain cannot tell whether the pair has a coin side, so it asks nobody:
+`dailySeries` is not `answered`, the `latest` quote is `unanswered` (the
+refresh's "No provider answered", retried next tick) and `live` is `null`.
+When the pair is claimed and P2's `carries` throws, P2 is the only provider
+that may be asked, so the pair is likewise unanswered. Reading either throw
+as `false` would hand a coin pair to Yahoo's `=X` grammar and store a coin
+rate under `yahoo_finance`. `fx-provider-chain.spec.ts` holds these rows in
+"FxProviderChain and a provider that claims coins".
 
 ## 6. Frankfurter, as observed on 2026-10-07
 

@@ -5,6 +5,7 @@ import {
   clearCurrencyDecimals,
   decimalPlacesForCurrency,
   registerCurrencyDecimals,
+  symbolForCurrency,
 } from '@/lib/currency-decimals';
 
 const mockGetCurrencies = vi.fn();
@@ -59,6 +60,12 @@ describe('CurrencyRegistryLoader', () => {
     expect(mockGetCurrencies).toHaveBeenCalledTimes(1);
     expect(mockGetCurrencies).toHaveBeenCalledWith(true);
     expect(decimalPlacesForCurrency('BTC')).toBe(4);
+  });
+
+  it('registers each currency\'s stored symbol with its places', async () => {
+    mockGetCurrencies.mockResolvedValue([{ ...BTC, symbol: '\u20bf' }]);
+    await renderLoader();
+    expect(symbolForCurrency('BTC')).toBe('\u20bf');
   });
 
   it('loads once per session, not on every render', async () => {

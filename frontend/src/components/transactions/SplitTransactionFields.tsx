@@ -12,6 +12,7 @@ import { Transaction } from '@/types/transaction';
 import { Account } from '@/types/account';
 import { Payee } from '@/types/payee';
 import { getCurrencySymbol } from '@/lib/format';
+import { decimalPlacesForCurrency } from '@/lib/currency-decimals';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { RecentTransactionsPopover } from './RecentTransactionsPopover';
@@ -185,6 +186,9 @@ export function SplitTransactionFields({
               <CurrencyInput
                 label={amountLabel ?? t('form.fields.totalAmount')}
                 prefix={getCurrencySymbol(amountCurrencyCode || watchedCurrencyCode)}
+                // A coin's total at its own places, as its lines are; undefined
+                // (any ISO currency) keeps the input's two.
+                decimalPlaces={decimalPlacesForCurrency(amountCurrencyCode || watchedCurrencyCode)}
                 value={amountValue !== undefined ? amountValue : watchedAmount}
                 onChange={handleAmountChange}
                 allowSignToggle

@@ -1,19 +1,14 @@
-import { decimalPlacesForCurrency } from './currency-decimals';
+import { currencySymbolFor, decimalPlacesForCurrency } from './currency-decimals';
+import { isKnownIsoCurrency } from './iso-currency';
 
 /**
  * Get the narrow currency symbol for a given currency code (e.g., '$', '€', '£').
- * Uses Intl.NumberFormat so it works for any valid ISO 4217 currency code.
+ * `currencySymbolFor` (`lib/currency-decimals.ts`): a registered non-ISO
+ * currency's stored symbol (`₿`), else Intl's narrow symbol, which works for any
+ * valid ISO 4217 code; '$' for a code Intl rejects.
  */
 export function getCurrencySymbol(currencyCode: string): string {
-  try {
-    return new Intl.NumberFormat('en', {
-      style: 'currency',
-      currency: currencyCode,
-      currencyDisplay: 'narrowSymbol',
-    }).formatToParts(0).find(p => p.type === 'currency')?.value || '$';
-  } catch {
-    return '$';
-  }
+  return currencySymbolFor(currencyCode, '$');
 }
 
 /**
@@ -126,9 +121,31 @@ export function withCurrencyCode(
   currencyCode: string,
   defaultCurrency: string,
 ): string {
-  return currencyCode && currencyCode !== defaultCurrency
-    ? `${formatted} ${currencyCode}`
-    : formatted;
+  if (!currencyCode || currencyCode === defaultCurrency) return formatted;
+  // `Intl` writes a code it does not know (a coin with no registered symbol)
+  // as the code itself, "BTC 0.01"; appending it again read "BTC 0.01 BTC".
+  // Limited to non-ISO codes so no fiat figure changes.
+  if (!isKnownIsoCurrency(currencyCode) && containsCodeToken(formatted, currencyCode)) {
+    return formatted;
+  }
+  return `${formatted} ${currencyCode}`;
+}
+
+/**
+ * Whether `text` holds `code` as a whole token: not inside a longer run of
+ * letters, so "BTC 0.01" and "0,01 BTC" hold BTC and "WBTC 1" does not.
+ */
+function containsCodeToken(text: string, code: string): boolean {
+  const upper = code.trim().toUpperCase();
+  let from = 0;
+  for (;;) {
+    const at = text.indexOf(upper, from);
+    if (at === -1) return false;
+    const before = at === 0 ? '' : text[at - 1];
+    const after = text[at + upper.length] ?? '';
+    if (!/\p{L}/u.test(before) && !/\p{L}/u.test(after)) return true;
+    from = at + 1;
+  }
 }
 
 /**
@@ -139,13 +156,76 @@ export function roundToCents(value: number): number {
 }
 
 /**
+ * The places an amount in `currencyCode` is entered and rounded in: a
+ * registered non-ISO currency's stored places (`lib/currency-decimals.ts`, four
+ * for a BTC row), otherwise two, so every fiat surface keeps the cents it has
+ * always used. Unlike `getDecimalPlacesForCurrency` it does not ask `Intl`, so
+ * a JPY or BHD amount is not re-rounded by this.
+ */
+export function entryDecimalPlaces(currencyCode: string | null | undefined): number {
+  return decimalPlacesForCurrency(currencyCode) ?? 2;
+}
+
+/**
+ * Round an amount in `currencyCode` to the places it is entered in
+ * (`entryDecimalPlaces`): a BTC amount of 0.0051 stays 0.0051 where cents
+ * posted 0.01, and a fiat amount rounds exactly as `roundToCents` did.
+ * `roundToCents` is for a figure that can only be fiat; an amount in an
+ * account's currency goes through this with that account's code.
+ */
+export function roundToEntryPlaces(
+  value: number,
+  currencyCode: string | null | undefined,
+): number {
+  return roundToDecimals(value, entryDecimalPlaces(currencyCode));
+}
+
+/**
+ * Whether `currencyCode` is a non-ISO code (a coin) whose places the currency
+ * decimals registry does not hold yet: `GET /currencies` has not answered, so
+ * neither the registry nor `Intl` knows them and two would be a guess.
+ */
+export function awaitsRegisteredPlaces(currencyCode: string | null | undefined): boolean {
+  return (
+    !!currencyCode &&
+    decimalPlacesForCurrency(currencyCode) === undefined &&
+    !isKnownIsoCurrency(currencyCode)
+  );
+}
+
+/**
+ * A stored amount as a form or dialog loads it into its field: at its
+ * currency's entry places (`roundToEntryPlaces`), cents for a fiat code and a
+ * coin's registered places. A coin the registry does not hold yet
+ * (`awaitsRegisteredPlaces`) is kept at the stored four decimals
+ * (`roundMoney`) rather than rounded at an assumed two, so an unedited save
+ * sends back the stored 0.0051, not 0.01; the input redraws it at the coin's
+ * places once the registry fills, and `CurrencyInput` does not report its
+ * two-place display back as an edit.
+ */
+export function loadedEntryAmount(
+  value: number,
+  currencyCode: string | null | undefined,
+): number {
+  return awaitsRegisteredPlaces(currencyCode)
+    ? roundMoney(value)
+    : roundToEntryPlaces(value, currencyCode);
+}
+
+/**
+ * Decimal places money is stored at: `decimal(20,4)`. The precision to round a
+ * figure to when its currency, and so its own minor unit, is not known.
+ */
+export const MONEY_DECIMALS = 4;
+
+/**
  * Round a monetary value to its storage precision (4dp, `decimal(20,4)`), the
  * scale a total and a balance are stored at. Mirrors the backend `roundMoney`
  * (`backend/src/common/round.util.ts`), strategy included, so a figure the
  * client previews rounds on the boundary the way the server will commit it.
  */
 export function roundMoney(value: number): number {
-  return roundToDecimals(value, 4);
+  return roundToDecimals(value, MONEY_DECIMALS);
 }
 
 /**

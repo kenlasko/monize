@@ -1,5 +1,9 @@
 import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
-import { Currency } from "../currencies/entities/currency.entity";
+import {
+  CURRENCY_KIND_READ,
+  currencyKindRows,
+  isCurrencyKindRead,
+} from "../test-helpers/currency-kind-testing";
 import { Test, TestingModule } from "@nestjs/testing";
 import { I18nContext } from "nestjs-i18n";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -95,7 +99,6 @@ describe("AccountsService", () => {
 
   let service: AccountsService;
   let accountsRepository: Record<string, jest.Mock>;
-  let currencyRepository: Record<string, jest.Mock>;
   let transactionRepository: Record<string, jest.Mock>;
   let investmentTxRepository: Record<string, jest.Mock>;
   let institutionsRepository: Record<string, jest.Mock>;
@@ -244,17 +247,8 @@ describe("AccountsService", () => {
       save: jest.fn().mockImplementation((split) => Promise.resolve(split)),
     };
     rateChangeRepository = { find: jest.fn().mockResolvedValue([]) };
-    // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin, every
-    // other code a fiat currency.
-    currencyRepository = {
-      findOne: jest.fn(async (opts: { where: { code: string } }) => ({
-        code: opts.where.code,
-        kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
-      })),
-    };
     const { manager: txManager, dataSource } = createScopedDbMocks([
       [LoanFee, { find: jest.fn().mockResolvedValue([]) }],
-      [Currency, currencyRepository],
       [Account, accountsRepository],
       [Transaction, transactionRepository],
       [InvestmentTransaction, investmentTxRepository],
@@ -270,11 +264,14 @@ describe("AccountsService", () => {
     txManager.remove.mockImplementation((data) => data);
     txManager.count.mockResolvedValue(0);
     // A COUNT always answers one row; the close path's pending-row count
-    // (A26-M12) reads it. Every other raw query answers no rows by default.
-    txManager.query.mockImplementation(async (sql: string) =>
-      typeof sql === "string" && sql.includes("count(*)::int AS n")
-        ? [{ n: 0 }]
-        : [],
+    // (A26-M12) reads it. The `currencies` kind read (INV-CRYPTO-001) answers
+    // BTC as a coin. Every other raw query answers no rows by default.
+    txManager.query.mockImplementation(
+      async (sql: string, params?: unknown[]) =>
+        currencyKindRows(sql, params) ??
+        (typeof sql === "string" && sql.includes("count(*)::int AS n")
+          ? [{ n: 0 }]
+          : []),
     );
     // Transaction-block tests address the manager through this legacy alias.
     mockQueryRunner = { manager: txManager, query: txManager.query };
@@ -397,10 +394,10 @@ describe("AccountsService", () => {
           currencyCode: "BTC",
           openingBalance: 0.0125,
         } as any);
-        expect(currencyRepository.findOne).toHaveBeenCalledWith({
-          where: { code: "BTC" },
-          select: { code: true, kind: true },
-        });
+        expect(mockQueryRunner.query).toHaveBeenCalledWith(
+          expect.stringMatching(CURRENCY_KIND_READ),
+          ["BTC"],
+        );
         expect(accountsRepository.save).toHaveBeenCalled();
       });
 
@@ -927,10 +924,10 @@ describe("AccountsService", () => {
             accountType: AccountType.CRYPTO,
           }),
         ).rejects.toThrow(BadRequestException);
-        expect(currencyRepository.findOne).toHaveBeenCalledWith({
-          where: { code: fresh.currencyCode },
-          select: { code: true, kind: true },
-        });
+        expect(mockQueryRunner.query).toHaveBeenCalledWith(
+          expect.stringMatching(CURRENCY_KIND_READ),
+          [fresh.currencyCode],
+        );
         expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
       });
 
@@ -963,7 +960,11 @@ describe("AccountsService", () => {
           accountType: AccountType.CHEQUING,
           currencyCode: fresh.currencyCode,
         });
-        expect(currencyRepository.findOne).not.toHaveBeenCalled();
+        expect(
+          mockQueryRunner.query.mock.calls.some(([sql]: unknown[]) =>
+            isCurrencyKindRead(sql),
+          ),
+        ).toBe(false);
       });
 
       it("refuses a pair half re-typed to CRYPTO in BTC: its INVESTMENT partner would be mirrored into a coin", async () => {

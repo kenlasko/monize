@@ -8,6 +8,7 @@ import {
   TRANSACTION_SUBMIT_MODE_KEY,
 } from '@/hooks/useTransactionSubmitMode';
 import toast from 'react-hot-toast';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useAuthStore } from '@/store/authStore';
 
@@ -341,11 +342,18 @@ vi.mock('@/hooks/useNumberFormat', async () => {
     }),
   };
 });
-vi.mock('@/lib/format', () => ({
+vi.mock('@/lib/format', async () => {
+  // The real registry, so a case that registers a coin rounds at its places.
+  const { decimalPlacesForCurrency } = await import('@/lib/currency-decimals');
+  return {
   FX_RATE_DISPLAY_DECIMALS: 6,
   getCurrencySymbol: () => '$',
   getDecimalPlacesForCurrency: () => 2,
   roundToCents: (v: number) => Math.round(v * 100) / 100,
+  roundToEntryPlaces: (v: number, code?: string) => {
+    const f = Math.pow(10, decimalPlacesForCurrency(code) ?? 2);
+    return Math.round(v * f) / f;
+  },
   roundMoney: (v: number) => Math.round(v * 10000) / 10000,
   roundToDecimals: (v: number, d: number) => { const f = Math.pow(10, d); return Math.round(v * f) / f; },
   formatAmount: (v: number | undefined | null) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 100) / 100).toFixed(2),
@@ -356,7 +364,8 @@ vi.mock('@/lib/format', () => ({
   hasCalculatorOperators: (input: string) => /[+*/()]/.test(input.replace(/^-/, '')) || /(?!^)-/.test(input),
   evaluateExpression: vi.fn().mockImplementation(() => undefined),
   formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
-}));
+  };
+});
 
 vi.mock('@/lib/categoryUtils', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/categoryUtils')>()),
@@ -5646,6 +5655,48 @@ describe('TransactionForm', () => {
         expect(screen.getByText(/foreign transaction fee/i)).toBeInTheDocument(),
       );
       expect(screen.queryByTestId('split-editor')).not.toBeInTheDocument();
+    });
+
+    it('backs the fee out of a typed total at a coin account\'s places, not cents', async () => {
+      // A BTC wallet with a 2.5% fee. Typing a total of 0.0052 BTC backs the
+      // fee out to a 0.0053 BTC base (0.0052 / 0.975 = 0.005333). At cents the
+      // base read 0.01, and the derived rate nearly doubled.
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+      try {
+        const wallet = {
+          ...mockAccounts[0],
+          id: 'acc-btc',
+          name: 'Wallet',
+          accountType: 'CRYPTO',
+          currencyCode: 'BTC',
+          fxFeePercent: 2.5,
+        };
+        mockAccountsGetAll.mockResolvedValue([wallet, ...mockAccounts]);
+        mockGetRateForDate.mockResolvedValue(0.0001);
+        render(
+          <TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} defaultAccountId="acc-btc" />,
+        );
+        await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
+        await pickEuro();
+        await waitFor(() => expect(mockGetRateForDate).toHaveBeenCalledWith('EUR', 'BTC', expect.any(String)));
+
+        const amountInput = screen.getAllByPlaceholderText('0.00')[0];
+        await act(async () => {
+          fireEvent.change(amountInput, { target: { value: '50' } });
+          fireEvent.blur(amountInput);
+        });
+        await waitFor(() => expect(screen.getByText(/1 EUR = 0\.000100 BTC/)).toBeInTheDocument());
+
+        const convertedTotal = screen.getByLabelText('Total in BTC');
+        await act(async () => {
+          fireEvent.change(convertedTotal, { target: { value: '0.0052' } });
+          fireEvent.blur(convertedTotal);
+        });
+        // 0.0053 / 50 = 0.000106; a cents base gave 0.01 / 50 = 0.0002.
+        await waitFor(() => expect(screen.getByText(/1 EUR = 0\.000106 BTC/)).toBeInTheDocument());
+      } finally {
+        await act(async () => clearCurrencyDecimals());
+      }
     });
 
     it('signs the foreign amount by the selected expense category, like account-currency entry', async () => {

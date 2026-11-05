@@ -13,6 +13,7 @@ import {
   FutureTransaction,
   projectPayrollOccurrence,
 } from './forecast';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from './currency-decimals';
 
 vi.mock('@/lib/utils', () => ({
   parseLocalDate: (dateStr: string) => {
@@ -2450,6 +2451,60 @@ describe('forecast money arithmetic (integer 1/10000 units, one rounding for dis
       const summary = getForecastSummary([{ date: '2025-01-15', balance: 1.01, transactions: [] }]);
       expect(summary.startingBalance).toBe(1.01);
     });
+  });
+});
+
+describe('forecast of a coin wallet (balances at the coin\'s places, not cents)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 0, 15));
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    clearCurrencyDecimals();
+  });
+
+  const wallet = (overrides: Partial<Account> = {}) =>
+    makeAccount({ id: 'w-1', name: 'Wallet', currencyCode: 'BTC', currentBalance: 0.0051, ...overrides });
+  const spend = (accountId: string): FutureTransaction[] => [
+    { id: `ft-${accountId}`, accountId, name: 'Fee', amount: -0.0002, date: '2025-01-16' },
+  ];
+
+  it('projects the balance a posting is checked against at four places', () => {
+    expect(getProjectedBalanceAtDate(wallet(), '2025-01-20', [], spend('w-1'))).toBe(0.0049);
+    // A fiat account is unchanged: cents.
+    expect(
+      getProjectedBalanceAtDate(makeAccount({ currencyCode: 'CAD', currentBalance: 1.005 }), '2025-01-20', [], []),
+    ).toBe(1.01);
+  });
+
+  it('draws a single wallet\'s line and summary at four places', () => {
+    const points = buildForecast([wallet()], [], 'week', 'w-1', spend('w-1')).points;
+    expect(points[0].balance).toBe(0.0051);
+    expect(points.find(p => p.date === '2025-01-16')?.balance).toBe(0.0049);
+    expect(getForecastSummary(points, 'BTC').startingBalance).toBe(0.0051);
+  });
+
+  it('draws two wallets and their total at four places', () => {
+    const result = buildMultiAccountForecast(
+      [wallet(), wallet({ id: 'w-2', name: 'Cold', currentBalance: 0.0123 })],
+      [], 'week', ['w-1', 'w-2'],
+    );
+    expect(result.points[0].balances).toEqual({ 'w-1': 0.0051, 'w-2': 0.0123 });
+    expect(result.points[0].balance).toBe(0.0174);
+  });
+
+  it('rounds a converted line at cents: it is in the reader\'s fiat currency', () => {
+    const result = buildMultiAccountForecast(
+      [wallet(), makeAccount({ id: 'acc-1', currencyCode: 'CAD', currentBalance: 10 })],
+      [], 'week', ['w-1', 'acc-1'], [],
+      (amount, code) => (code === 'BTC' ? amount * 123456.789 : amount),
+    );
+    // 0.0051 x 123456.789 = 629.6296 at storage precision, 629.63 on the line.
+    expect(result.points[0].balances).toEqual({ 'w-1': 629.63, 'acc-1': 10 });
+    expect(result.points[0].balance).toBe(639.63);
   });
 });
 

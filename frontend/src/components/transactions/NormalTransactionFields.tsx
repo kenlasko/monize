@@ -12,6 +12,7 @@ import { Transaction } from '@/types/transaction';
 import { Account } from '@/types/account';
 import { Payee } from '@/types/payee';
 import { getCurrencySymbol } from '@/lib/format';
+import { decimalPlacesForCurrency } from '@/lib/currency-decimals';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { RecentTransactionsPopover } from './RecentTransactionsPopover';
@@ -260,6 +261,7 @@ export function NormalTransactionFields({
           <CurrencyInput
             label={amountLabel ?? t('form.fields.amount')}
             prefix={getCurrencySymbol(amountCurrencyCode || watchedCurrencyCode)}
+            decimalPlaces={decimalPlacesForCurrency(amountCurrencyCode || watchedCurrencyCode)}
             value={amountValue !== undefined ? amountValue : watchedAmount}
             onChange={handleAmountChange}
             allowSignToggle

@@ -160,6 +160,21 @@ export class CurrenciesService implements OnApplicationBootstrap {
     });
 
     if (existing) {
+      // A request that states a kind is a statement about the currency, not a
+      // preference: a code that already exists in the other kind is refused
+      // rather than handed back silently (a CRYPTO request answered with a
+      // FIAT row, INV-CRYPTO-001). A request without a kind adopts the row.
+      const existingKind = existing.kind ?? DEFAULT_CURRENCY_KIND;
+      if (dto.kind !== undefined && dto.kind !== existingKind) {
+        throw new ConflictException(
+          tr(
+            "errors.currencies.kindConflict",
+            `Currency "${code}" already exists as a ${existingKind} currency and cannot be added as ${dto.kind}`,
+            { code, kind: existingKind, requestedKind: dto.kind },
+          ),
+        );
+      }
+
       // Check if this user already has this currency in their list
       const existingPref = await manager
         .getRepository(UserCurrencyPreference)

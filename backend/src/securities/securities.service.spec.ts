@@ -13,7 +13,10 @@ import { InvestmentTransaction } from "./entities/investment-transaction.entity"
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { withUserContext } from "../common/db/with-context";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
-import { Currency } from "../currencies/entities/currency.entity";
+import {
+  currencyKindRows,
+  isCurrencyKindRead,
+} from "../test-helpers/currency-kind-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -24,15 +27,19 @@ jest.mock("../common/db/scoped-db", () =>
  * test had `findOne` return, as the database would return the same row.
  */
 let lockedRowOf: () => Promise<unknown[]> = async () => [];
+/**
+ * The `currencies` kind read (INV-CRYPTO-001) answers BTC as a coin; the row
+ * `update()` locks answers `lockedRowOf`; everything else, `other`.
+ */
 const queryWith =
   (other: (sql: string, params: unknown[]) => unknown) =>
   async (sql: string, params: unknown[]) =>
-    /FOR UPDATE/.test(sql) ? lockedRowOf() : other(sql, params);
+    currencyKindRows(sql, params) ??
+    (/FOR UPDATE/.test(sql) ? lockedRowOf() : other(sql, params));
 
 describe("SecuritiesService", () => {
   let service: SecuritiesService;
   let securitiesRepository: Record<string, any>;
-  let currencyRepository: Record<string, jest.Mock>;
   let securityTagsRepository: Record<string, jest.Mock>;
   let holdingsRepository: Record<string, jest.Mock>;
   let investmentTransactionsRepository: Record<string, jest.Mock>;
@@ -177,15 +184,7 @@ describe("SecuritiesService", () => {
     // Security repository mock now that every path shares one EntityManager.
     scopedRepository = securitiesRepository;
 
-    // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin.
-    currencyRepository = {
-      findOne: jest.fn(async (opts: { where: { code: string } }) => ({
-        code: opts.where.code,
-        kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
-      })),
-    };
     const { manager, dataSource } = createScopedDbMocks([
-      [Currency, currencyRepository],
       [Security, securitiesRepository],
       [SecurityTag, securityTagsRepository],
       [Holding, holdingsRepository],
@@ -259,7 +258,11 @@ describe("SecuritiesService", () => {
         currencyCode: mockSecurity.currencyCode,
         name: "Apple",
       });
-      expect(currencyRepository.findOne).not.toHaveBeenCalled();
+      expect(
+        queryRunnerManager.query.mock.calls.some(([sql]: unknown[]) =>
+          isCurrencyKindRead(sql),
+        ),
+      ).toBe(false);
     });
 
     it("previewCreateSecurity refuses a lookup that resolves to a CRYPTO currency", async () => {
@@ -571,10 +574,14 @@ describe("SecuritiesService", () => {
         queryRunnerManager.findOne.mockResolvedValue(null);
         queryRunnerManager.query.mockResolvedValue([{ currency_code: "PLN" }]);
         const order: string[] = [];
-        queryRunnerManager.query.mockImplementation(async () => {
-          order.push("check");
-          return [{ currency_code: "PLN" }];
-        });
+        queryRunnerManager.query.mockImplementation(
+          async (sql: string, params: unknown[]) => {
+            const kindRows = currencyKindRows(sql, params);
+            if (kindRows) return kindRows;
+            order.push("check");
+            return [{ currency_code: "PLN" }];
+          },
+        );
         queryRunnerManager.save.mockImplementation(async (a, b) => {
           order.push("save");
           return b ?? a;
@@ -2869,12 +2876,14 @@ describe("SecuritiesService", () => {
         bondProgramId: PROGRAM,
       };
       const catalog = (currency: string | null) =>
-        queryRunnerManager.query.mockImplementation(async (sql: string) =>
-          /FROM bond_programs/.test(sql)
-            ? currency === null
-              ? []
-              : [{ currency_code: currency }]
-            : [],
+        queryRunnerManager.query.mockImplementation(
+          async (sql: string, params: unknown[]) =>
+            currencyKindRows(sql, params) ??
+            (/FROM bond_programs/.test(sql)
+              ? currency === null
+                ? []
+                : [{ currency_code: currency }]
+              : []),
         );
 
       it("refuses a currency change the commit would refuse, with the same message, before any confirmation", async () => {

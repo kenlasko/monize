@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, renderHook, screen, fireEvent, act } from '@/test/render';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 import {
   AccountRow,
   AccountRowProps,
@@ -439,6 +441,59 @@ describe('AccountRow', () => {
 
       const cells = screen.queryAllByText(/\u2248/);
       expect(cells).toHaveLength(0);
+    });
+  });
+
+  describe('a coin wallet in a currency other than the reader\'s', () => {
+    afterEach(() => {
+      act(() => clearCurrencyDecimals());
+    });
+
+    /** The row through the real formatter, so the code Intl writes is in play. */
+    function renderWallet() {
+      const { result } = renderHook(() => useNumberFormat());
+      renderAccountRow(
+        createDefaultProps({
+          density: 'dense',
+          defaultCurrency: 'CAD',
+          account: createAccount({
+            name: 'Bitcoin Wallet',
+            accountType: 'CRYPTO',
+            currencyCode: 'BTC',
+            currentBalance: 0.007,
+          }),
+          formatCurrencyBase: result.current.formatCurrency,
+          convertToDefault: () => null,
+        }),
+      );
+    }
+
+    /** Every text node naming the balance, NBSP folded to a plain space. */
+    const balanceTexts = () =>
+      screen
+        .getAllByText(/0\.0/)
+        .map((el) => (el.textContent ?? '').replace(/\u00a0/g, ' '));
+
+    it('names an unregistered coin once, where Intl already wrote its code', () => {
+      renderWallet();
+      const texts = balanceTexts();
+      expect(texts).toContain('BTC 0.01');
+      expect(texts.some((text) => /BTC.*BTC/.test(text))).toBe(false);
+    });
+
+    it('names a registered coin without a symbol once', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+      renderWallet();
+      const texts = balanceTexts();
+      // It read "BTC 0.0070 BTC".
+      expect(texts).toContain('BTC 0.0070');
+      expect(texts.some((text) => /BTC.*BTC/.test(text))).toBe(false);
+    });
+
+    it('shows a registered coin\'s symbol and names its code once', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20bf' }]);
+      renderWallet();
+      expect(balanceTexts()).toContain('\u20bf0.0070 BTC');
     });
   });
 

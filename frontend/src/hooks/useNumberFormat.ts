@@ -1,14 +1,11 @@
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback } from 'react';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { roundToDecimals, adaptiveFractionDigits } from '@/lib/format';
 import { scaleBytes } from '@/lib/bytes';
 import { preferredCurrency } from '@/lib/default-currency';
 import { getNumberSeparators } from '@/lib/number-parse';
-import {
-  currencyDecimalsVersion,
-  decimalPlacesForCurrency,
-  subscribeCurrencyDecimals,
-} from '@/lib/currency-decimals';
+import { decimalPlacesForCurrency, symbolForCurrency } from '@/lib/currency-decimals';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 
 /**
  * Get the effective locale for number formatting.
@@ -117,6 +114,54 @@ function getNumberFormat(
 }
 
 /**
+ * The ISO currency a registered symbol is written through. Any currency with a
+ * one-character narrow symbol would do; what matters is that `Intl` lays it out
+ * the way the locale lays out a symbol ("$1.00" in `en`, "1,00 $" in `de-DE`),
+ * not the way it lays out a code it does not know ("BTC 1.00").
+ */
+const SYMBOL_LAYOUT_CURRENCY = 'USD';
+
+const LETTER = /\p{L}/u;
+const NUMBER_PARTS = new Set(['integer', 'group', 'decimal', 'fraction', 'compact']);
+
+/**
+ * A money figure in `options.currency`, with a registered non-ISO currency's
+ * own symbol where `Intl` would write its code.
+ *
+ * `Intl` formats a code it has never heard of (a coin) with the code as its
+ * symbol, "BTC 0.0070", which beside an appended code read "BTC 0.0070 BTC".
+ * When the currency registry (`lib/currency-decimals.ts`) holds a symbol for
+ * the code, the figure is laid out as a symbol currency and that symbol is put
+ * in the symbol's place: "₿0.0070" in `en`, "0,0070 ₿" in `de-DE`. A code the
+ * registry does not hold, or holds without a symbol, and every ISO code, format
+ * exactly as before. A symbol that starts or ends with a letter gets the
+ * no-break space CLDR puts between a letter symbol and a digit.
+ */
+function formatMoneyFigure(
+  locale: string | undefined,
+  options: Intl.NumberFormatOptions,
+  amount: number,
+): string {
+  const symbol = symbolForCurrency(options.currency);
+  if (!symbol) return getNumberFormat(locale, options).format(amount);
+  const parts = getNumberFormat(locale, {
+    ...options,
+    currency: SYMBOL_LAYOUT_CURRENCY,
+  }).formatToParts(amount);
+  return parts
+    .map((part, i) => {
+      if (part.type !== 'currency') return part.value;
+      const before = parts[i - 1];
+      const after = parts[i + 1];
+      const leading = before && NUMBER_PARTS.has(before.type) && LETTER.test(symbol[0]) ? '\u00a0' : '';
+      const trailing =
+        after && NUMBER_PARTS.has(after.type) && LETTER.test(symbol[symbol.length - 1]) ? '\u00a0' : '';
+      return `${leading}${symbol}${trailing}`;
+    })
+    .join('');
+}
+
+/**
  * Hook to format numbers according to user preferences.
  * Returns formatCurrency and formatNumber functions that use the user's preferred number format.
  * All currency functions default to the user's configured defaultCurrency preference.
@@ -138,11 +183,7 @@ export function useNumberFormat() {
   // The currency decimals registry (`lib/currency-decimals.ts`) fills after the
   // first render; subscribing gives the formatters below a new identity when it
   // does, so a figure drawn before the list arrived is redrawn at its places.
-  const currencyDecimals = useSyncExternalStore(
-    subscribeCurrencyDecimals,
-    currencyDecimalsVersion,
-    currencyDecimalsVersion,
-  );
+  const currencyDecimals = useCurrencyDecimalsVersion();
 
   const formatCurrency = useCallback(
     (amount: number, currencyCode?: string, fractionDigits?: number): string => {
@@ -164,7 +205,7 @@ export function useNumberFormat() {
       // midpoint errors (e.g., 159.735 stored as 159.73499... rounding to
       // 159.73 instead of 159.74).
       const decimals = digits ?? formatter.resolvedOptions().minimumFractionDigits ?? 2;
-      return formatter.format(roundToDecimals(amount, decimals));
+      return formatMoneyFigure(locale, options, roundToDecimals(amount, decimals));
     },
     // `currencyDecimals` is read through `decimalPlacesForCurrency`; it is a
     // dependency so the callback changes identity when the registry does.
@@ -205,15 +246,20 @@ export function useNumberFormat() {
     (amount: number, currencyCode?: string): string => {
       const currency = currencyCode || defaultCurrency;
       const locale = getEffectiveLocale(numberFormat, language);
-      return getNumberFormat(locale, {
-        style: 'currency',
-        currency,
-        currencyDisplay: 'narrowSymbol',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(amount);
+      return formatMoneyFigure(
+        locale,
+        {
+          style: 'currency',
+          currency,
+          currencyDisplay: 'narrowSymbol',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        },
+        amount,
+      );
     },
-    [numberFormat, defaultCurrency, language]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [numberFormat, defaultCurrency, language, currencyDecimals]
   );
 
   /** Compact currency format for chart axis labels (e.g., "$5K", "€1.5M").
@@ -222,16 +268,27 @@ export function useNumberFormat() {
     (value: number, currencyCodeOrIndex?: string | number): string => {
       const currency = typeof currencyCodeOrIndex === 'string' ? currencyCodeOrIndex : defaultCurrency;
       const locale = getEffectiveLocale(numberFormat, language);
-      return getNumberFormat(locale, {
-        style: 'currency',
-        currency,
-        currencyDisplay: 'narrowSymbol',
-        notation: 'compact',
-        compactDisplay: 'short',
-        maximumFractionDigits: 1,
-      }).format(value);
+      // A coin's ticks sit below one: at one fraction digit every tick of a
+      // 0.0070 BTC wallet read "BTC 0". Below one, a registered currency's
+      // ticks keep its own places; every other figure is as before.
+      const registered = decimalPlacesForCurrency(currency);
+      const maximumFractionDigits =
+        registered !== undefined && Math.abs(value) < 1 ? Math.max(1, registered) : 1;
+      return formatMoneyFigure(
+        locale,
+        {
+          style: 'currency',
+          currency,
+          currencyDisplay: 'narrowSymbol',
+          notation: 'compact',
+          compactDisplay: 'short',
+          maximumFractionDigits,
+        },
+        value,
+      );
     },
-    [numberFormat, defaultCurrency, language]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [numberFormat, defaultCurrency, language, currencyDecimals]
   );
 
   /**
@@ -250,16 +307,21 @@ export function useNumberFormat() {
     (amount: number, currencyCode?: string): string => {
       const currency = currencyCode || defaultCurrency;
       const locale = getEffectiveLocale(numberFormat, language);
-      return getNumberFormat(locale, {
-        style: 'currency',
-        currency,
-        currencyDisplay: 'narrowSymbol',
-        notation: 'compact',
-        compactDisplay: 'short',
-        maximumFractionDigits: Math.abs(amount) < 1000 ? 0 : 1,
-      }).format(amount);
+      return formatMoneyFigure(
+        locale,
+        {
+          style: 'currency',
+          currency,
+          currencyDisplay: 'narrowSymbol',
+          notation: 'compact',
+          compactDisplay: 'short',
+          maximumFractionDigits: Math.abs(amount) < 1000 ? 0 : 1,
+        },
+        amount,
+      );
     },
-    [numberFormat, defaultCurrency, language]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [numberFormat, defaultCurrency, language, currencyDecimals]
   );
 
   const formatNumber = useCallback(
@@ -464,17 +526,26 @@ export function useNumberFormat() {
     (value: number, currencyCode?: string): string => {
       const currency = currencyCode || defaultCurrency;
       const locale = getEffectiveLocale(numberFormat, language);
-      return getNumberFormat(locale, {
-        style: 'currency',
-        currency,
-        currencyDisplay: 'narrowSymbol',
-        notation: 'compact',
-        compactDisplay: 'short',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(value);
+      // Below the first thousand (no compact suffix) a registered currency's
+      // bubble keeps its own places, as the footer figures do.
+      const registered = decimalPlacesForCurrency(currency);
+      const digits = registered !== undefined && Math.abs(value) < 1000 ? registered : 2;
+      return formatMoneyFigure(
+        locale,
+        {
+          style: 'currency',
+          currency,
+          currencyDisplay: 'narrowSymbol',
+          notation: 'compact',
+          compactDisplay: 'short',
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        },
+        value,
+      );
     },
-    [numberFormat, defaultCurrency, language]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [numberFormat, defaultCurrency, language, currencyDecimals]
   );
 
   return { formatCurrency, formatCurrencyPrecise, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyTight, formatCurrencyFlag, formatCurrencyLabel, formatNumber, formatBytes, formatPercent, formatPercentTrimmed, formatSignedPercent, formatQuantity, formatShareQuantity, formatPrice, defaultCurrency, numberFormat, numberLocale, numberSeparators };

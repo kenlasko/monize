@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { foreignTransactionFee } from './fx-fees';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from './currency-decimals';
 import type { Transaction, TransactionSplit } from '@/types/transaction';
 
 function tx(overrides: Partial<Transaction> = {}): Transaction {
@@ -110,5 +111,30 @@ describe('foreignTransactionFee', () => {
       }),
     );
     expect(result).toBe(0);
+  });
+
+  describe('on a coin account', () => {
+    afterEach(() => clearCurrencyDecimals());
+
+    // A BTC account paying 510 USD at 0.00001: base = -0.0051 BTC, booked
+    // -0.0052 with the fee.
+    const coin = tx({
+      currencyCode: 'BTC',
+      originalAmount: -510,
+      originalCurrencyCode: 'USD',
+      exchangeRate: 0.00001,
+      amount: -0.0052,
+    });
+
+    it('rounds the base at the coin\'s registered places, not cents', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+      // At cents the base read -0.01 and the fee came out negative; at the
+      // coin's four places it is the 0.0001 BTC charged.
+      expect(foreignTransactionFee(coin)).toBeCloseTo(0.0001, 4);
+    });
+
+    it('falls back to cents while the registry does not hold the coin', () => {
+      expect(foreignTransactionFee(coin)).toBeCloseTo(-0.0048, 4);
+    });
   });
 });

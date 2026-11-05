@@ -1,7 +1,7 @@
 import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
-import { Currency } from "../currencies/entities/currency.entity";
+import { currencyKindRows } from "../test-helpers/currency-kind-testing";
 import {
   createScopedDbMocks,
   ManagerMock,
@@ -117,16 +117,6 @@ describe("LoanMortgageAccountService", () => {
 
     const mocks = createScopedDbMocks([
       [Account, accountsRepository],
-      // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin.
-      [
-        Currency,
-        {
-          findOne: jest.fn(async (opts: { where: { code: string } }) => ({
-            code: opts.where.code,
-            kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
-          })),
-        },
-      ],
       [Institution, institutionsRepository],
       [Category, categoriesRepository],
       [LoanFee, loanFeesRepository],
@@ -135,7 +125,11 @@ describe("LoanMortgageAccountService", () => {
     manager = mocks.manager;
     // The dated ledger debt (`datedLoanDebt`): the as-of balance the rate
     // update prices from, here equal to the fixture's current balance.
-    manager.query.mockResolvedValue([{ balance: "-450000" }]);
+    // The `currencies` kind read (INV-CRYPTO-001) answers BTC as a coin.
+    manager.query.mockImplementation(
+      async (sql: string, params?: unknown[]) =>
+        currencyKindRows(sql, params) ?? [{ balance: "-450000" }],
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

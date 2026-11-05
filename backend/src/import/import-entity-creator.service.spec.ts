@@ -6,7 +6,7 @@ import {
 } from "../accounts/entities/account.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Security } from "../securities/entities/security.entity";
-import { Currency } from "../currencies/entities/currency.entity";
+import { currencyKindRows } from "../test-helpers/currency-kind-testing";
 import { ImportResultDto, CategoryMappingDto } from "./dto/import.dto";
 
 describe("ImportEntityCreatorService", () => {
@@ -53,16 +53,8 @@ describe("ImportEntityCreatorService", () => {
   }
 
   beforeEach(() => {
-    // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin.
-    const currencyRepository = {
-      findOne: jest.fn(async (opts: { where: { code: string } }) => ({
-        code: opts.where.code,
-        kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
-      })),
-    };
     manager = {
-      getRepository: jest.fn((entity: unknown) => {
-        if (entity === Currency) return currencyRepository;
+      getRepository: jest.fn(() => {
         throw new Error("unexpected repository");
       }),
       findOne: jest.fn(),
@@ -77,7 +69,10 @@ describe("ImportEntityCreatorService", () => {
       // Categories are created with `INSERT ... ON CONFLICT DO NOTHING RETURNING
       // id` so a lost race adopts the existing row instead of aborting the whole
       // import transaction. Default to winning; the loser path is asserted below.
-      query: jest.fn(async (sql: string) => {
+      // The `currencies` kind read (INV-CRYPTO-001) answers BTC as a coin.
+      query: jest.fn(async (sql: string, params?: unknown[]) => {
+        const kindRows = currencyKindRows(sql, params);
+        if (kindRows) return kindRows;
         if (
           typeof sql !== "string" ||
           !sql.includes("INSERT INTO categories")

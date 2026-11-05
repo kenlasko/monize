@@ -216,6 +216,44 @@ figure under a CAD heading, which is worse than an error because it is
 plausible. `docs/financial-calculation-contract.md` section 1 governs what to
 return instead.
 
+### A cryptocurrency is a currency priced through its Yahoo pair
+
+A currency has a `kind`, `FIAT` or `CRYPTO` (`currencies.kind`). A `CRYPTO`
+currency is the currency of `CRYPTO` accounts only, and nothing else holds one
+(INV-CRYPTO-001); a security stays priced in fiat. Its `quote_symbol` is the
+Yahoo `<COIN>-<FIAT>` symbol it is priced from (`BTC-EUR`), NULL on every fiat
+row; the coin leg is Yahoo's ticker, which need not equal the three-letter code
+(`DOG` priced from `DOGE-USD`), because `currencies.code` and every column
+referencing it stay `VARCHAR(3)`.
+
+- **The crypto provider is always present and always last.** The factory in
+  `currencies.module.ts` appends `CryptoFxProvider` (source `yahoo_crypto`)
+  after whatever `FX_PROVIDERS` names; it is not a token of it.
+- **A coin pair is claimed.** `FxRateProvider.claims` decides who may be asked
+  before `carries` does: a pair with a coin on either side goes only to a
+  provider that claims the coin, and a claiming provider is asked about no fiat
+  pair (`FxProviderChain`, INV-CRYPTO-002). Yahoo's fiat adapter carries every
+  code, so without the claim a coin pair would reach its `=X` grammar first.
+- **The fiat leg is the pair asked, not the symbol's.** The symbol names the
+  coin; the quote is whichever fiat the pair names, so `BTC` mapped to
+  `BTC-EUR` is priced against CAD through `BTC-CAD`. `resolveFxRate` consults a
+  pair's two directions and no pivot currency, so the refresh asks for the coin
+  against every fiat in use directly (`canonicalPairsByBase`), never through a
+  third currency. A pair of two coins is asked once as `<coinA>-<coinB>`.
+- **A coin is quoted every day.** Besides the weekday refresh, a Saturday and
+  Sunday tick (`scheduledCryptoRateRefresh`, `docs/cron-jobs.md`) runs
+  `refreshCryptoRates`, the pairs with a coin side only; an observation is
+  dated by the UTC day of the quote's market time.
+- **Precision stays at four places.** Money is `decimal(20,4)` and
+  `decimalPlaces` is capped at 4, the default for a coin; an amount below
+  `0.0001` of the coin rounds to zero. The rate itself is an ordinary
+  `NUMERIC(20,10)` rate (section 4).
+- **A coin without a price symbol is unpriced, not worthless.** The refresh
+  reports the pair uncarried and names the Currencies page; every converted
+  figure in that coin is unknown, never zero and never at 1 (FIN-002 above).
+
+The design and its truth tables are `docs/specs/crypto-accounts.md`.
+
 ## 4. Precision by field
 
 Money is `decimal(20,4)`. Everything below is a deliberate exception; a value
@@ -347,6 +385,12 @@ sent. A duplicate or quick fill copies none. Undo compares it, so an edit of
 that figure alone is refused like any other leg change. The scheduled surfaces
 do not store a received amount and still convert when the occurrence posts.
 The full rules and test matrix are in `docs/specs/split-cross-currency-transfer.md`.
+
+A transfer that pays a fee on the way, such as coin sent from a `CRYPTO`
+account with a network fee, is a split: one transfer line for what the
+counterpart receives (with its received amount when the currencies differ) and
+one category line for the fee, both in the parent's currency, under the rules
+above (`docs/specs/crypto-accounts.md`, decision 9).
 
 ## 6. Investments
 

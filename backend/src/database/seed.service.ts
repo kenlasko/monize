@@ -81,10 +81,16 @@ export class SeedService {
       );
     }
 
-    // The demo's coin: a CRYPTO currency priced from its Yahoo pair.
-    await withScopedDb(this.dataSource, (manager) =>
+    // The demo's coin: a CRYPTO currency priced from its Yahoo pair. An
+    // existing FIAT row of the code is left as it is (INV-CRYPTO-001).
+    const coinSeeded = await withScopedDb(this.dataSource, (manager) =>
       upsertDemoCryptoCurrency(manager),
     );
+    if (!coinSeeded) {
+      this.logger.warn(
+        "BTC exists as a FIAT currency and was not re-typed to CRYPTO for the demo",
+      );
+    }
 
     this.logger.log(`Seeded ${currencies.length + 1} currencies`);
   }

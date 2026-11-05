@@ -3,15 +3,32 @@ import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { advanceByFrequency, anchorDayOf } from '@/lib/frequency';
 import { occurrenceSettlementAccountId } from '@/lib/scheduled-effective-amount';
-import { roundMoney, roundToCents } from '@/lib/format';
+import { roundMoney, roundToEntryPlaces } from '@/lib/format';
 
 /**
  * A running balance is accumulated in integer units of 1/10000 (the storage
  * precision) so a long series of 0.1-sized amounts cannot drift, and is rounded
- * once, half away from zero, for display.
+ * once, half away from zero, for display: at the places of the currency the
+ * balance is in (a coin wallet's 0.0051 BTC read 0.01 at cents), two for fiat
+ * and for a currency the caller does not name.
  */
 const toUnits = (amount: number): number => Math.round(Number(amount) * 10000);
-const unitsToCents = (units: number): number => roundToCents(units / 10000);
+const unitsToPlaces = (units: number, currencyCode?: string): number =>
+  roundToEntryPlaces(units / 10000, currencyCode);
+
+/**
+ * The one currency a set of balances is drawn in without conversion, or
+ * `undefined` when they are converted (into the reader's fiat default) or do
+ * not share one.
+ */
+function unconvertedCurrency(
+  accounts: readonly Account[],
+  converted: boolean,
+): string | undefined {
+  if (converted) return undefined;
+  const codes = new Set(accounts.map(a => a.currencyCode));
+  return codes.size === 1 ? [...codes][0] : undefined;
+}
 
 export interface FutureTransaction {
   id: string;
@@ -857,6 +874,7 @@ export function buildForecast(
 
   // Build account currency lookup for converting transaction amounts
   const accountCurrencyMap = new Map(targetAccounts.map(a => [a.id, a.currencyCode]));
+  const lineCurrency = unconvertedCurrency(targetAccounts, !!convertAmount);
   // A forecast is a running balance: one unconvertible amount makes every
   // subsequent day wrong, so an unknown conversion is recorded once and the whole
   // series is reported as unavailable rather than silently drifting. `conv`
@@ -983,7 +1001,7 @@ export function buildForecast(
     if (shouldAddPoint || dayTransactions.length > 0 || isLastDay) {
       dataPoints.push({
         date: dateKey,
-        balance: unitsToCents(currentUnits),
+        balance: unitsToPlaces(currentUnits, lineCurrency),
         transactions: dayTransactions,
       });
       lastAddedTime = currentTime;
@@ -1145,19 +1163,22 @@ export function buildMultiAccountForecast(
     const isLastDay = dayOffset === days;
 
     if (shouldAddPoint || dayTransactions.length > 0 || isLastDay) {
-      // Integer cents: the total is summed from the same rounded per-account
+      // Integer units: the total is summed from the same rounded per-account
       // figures the lines are drawn from, so the total on screen is exactly the
       // total of the lines on screen.
       const balances: Record<string, number> = {};
-      let totalCents = 0;
+      let totalUnits = 0;
       for (const account of targetAccounts) {
-        const line = unitsToCents(running.get(account.id) ?? 0);
+        const line = unitsToPlaces(
+          running.get(account.id) ?? 0,
+          convertAmount ? undefined : account.currencyCode,
+        );
         balances[account.id] = line;
-        totalCents += Math.round(line * 100);
+        totalUnits += toUnits(line);
       }
       points.push({
         date: dateKey,
-        balance: totalCents / 100,
+        balance: totalUnits / 10000,
         balances,
         transactions: dayTransactions,
       });
@@ -1258,7 +1279,7 @@ export function getProjectedBalanceAtDate(
     }
   }
 
-  return unitsToCents(units);
+  return unitsToPlaces(units, account.currencyCode);
 }
 
 /**
@@ -1289,7 +1310,7 @@ function overdueNetUnits(transactions: ForecastTransaction[]): number {
 /**
  * Get summary statistics from forecast data
  */
-export function getForecastSummary(dataPoints: ForecastDataPoint[]) {
+export function getForecastSummary(dataPoints: ForecastDataPoint[], currencyCode?: string) {
   if (dataPoints.length === 0) {
     return {
       startingBalance: 0,
@@ -1304,8 +1325,9 @@ export function getForecastSummary(dataPoints: ForecastDataPoint[]) {
   // "Starting" is where the forecast starts from, before the overdue occurrences
   // it applies on its first day (discussion #1784): those are a projection, and
   // the figure has to match the balance the account shows.
-  const startingBalance = unitsToCents(
+  const startingBalance = unitsToPlaces(
     toUnits(balances[0]) - overdueNetUnits(dataPoints[0].transactions),
+    currencyCode,
   );
   const endingBalance = balances[balances.length - 1];
   const minBalance = Math.min(...balances);

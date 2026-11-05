@@ -4,6 +4,7 @@ import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import TransactionsPage from './page';
 import { TRANSACTION_SORT_STORAGE_KEY } from '@/lib/transaction-sort';
 import { useDensityStore } from '@/store/densityStore';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 
 // The global setup mock builds a fresh router per call, so pushes cannot be
 // observed. This one keeps a stable `push` for the navigation assertions.
@@ -576,17 +577,21 @@ vi.mock('@/hooks/useNumberFormat', async () => {
   return {
     useNumberFormat: () => ({
       ...numberFormatMockDefaults(),
-      formatCurrency: (val: number) => `$${val.toFixed(2)}`,
+      // A coin's figure is written as held, so a test can see the places it
+      // was rounded at; every other figure keeps the two-place `$` shape.
+      formatCurrency: (val: number, code?: string) =>
+        code === 'BTC' ? `BTC ${val}` : `$${val.toFixed(2)}`,
       formatNumber: (val: number) => val.toString(),
     }),
   };
 });
-vi.mock('@/hooks/useExchangeRates', () => ({
-  useExchangeRates: () => ({
-    convertToDefault: (val: number) => val,
-    defaultCurrency: 'USD',
-  }),
-}));
+// A stable `convertToDefault`, as the real hook's is between rate loads: a new
+// function per render would recompute every memo that lists it, hiding a
+// missing dependency.
+vi.mock('@/hooks/useExchangeRates', () => {
+  const rates = { convertToDefault: (val: number) => val, defaultCurrency: 'USD' };
+  return { useExchangeRates: () => rates };
+});
 
 const mockTransactions = [
   { id: 'tx-1', date: '2026-02-01', amount: -50, status: 'UNCLEARED', payee: { id: 'payee-1', name: 'Store' }, category: null, account: { id: 'acc-1', name: 'Checking' }, isTransfer: false },
@@ -1482,6 +1487,41 @@ describe('TransactionsPage', () => {
       });
       expect(screen.getByText('$1500.00')).toBeInTheDocument();
       expect(screen.queryByText('$5000.00')).not.toBeInTheDocument();
+    });
+
+    it('recomputes a coin balance when the currency registry loads after the series', async () => {
+      clearCurrencyDecimals();
+      mockGetAllAccounts.mockResolvedValue([
+        { ...mockAccounts[0], name: 'Wallet', accountType: 'CRYPTO', currencyCode: 'BTC' },
+      ]);
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 0.01, accountId: 'acc-1', currencyCode: 'BTC' },
+        { date: '2026-02-15', balance: 0.0125, accountId: 'acc-1', currencyCode: 'BTC' },
+      ]);
+
+      try {
+        render(<TransactionsPage />);
+        await waitFor(() => {
+          expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+        });
+        fireEvent.click(screen.getByTestId('set-account-filter'));
+
+        // Before `GET /currencies` answers, BTC rounds at Intl's two places.
+        await waitFor(() => {
+          expect(screen.getByText('BTC 0.01')).toBeInTheDocument();
+        });
+
+        act(() => {
+          registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+        });
+
+        await waitFor(() => {
+          expect(screen.getByText('BTC 0.0125')).toBeInTheDocument();
+        });
+        expect(screen.queryByText('BTC 0.01')).not.toBeInTheDocument();
+      } finally {
+        act(() => clearCurrencyDecimals());
+      }
     });
 
     it('keeps the widget mounted and slides it out when the filter widens to two accounts', async () => {

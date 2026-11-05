@@ -11,7 +11,8 @@ const logger = createLogger('CurrencyRegistryLoader');
 /**
  * Fills the currency decimals registry (`lib/currency-decimals.ts`) once per
  * signed-in session, so a coin stored with four places formats with four on
- * every screen rather than at `Intl`'s two. Mounted beside `PreferencesLoader`
+ * every screen rather than at `Intl`'s two, and with its stored symbol (`₿`)
+ * rather than the code `Intl` writes for a currency it does not know. Mounted beside `PreferencesLoader`
  * and, like it, waits for the auth store to hydrate.
  *
  * A failed load is logged and leaves the registry empty: every figure then

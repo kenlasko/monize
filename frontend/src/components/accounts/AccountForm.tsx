@@ -45,10 +45,10 @@ import { useMainAccountName } from '@/hooks/useMainAccountName';
 import { categoriesApi } from '@/lib/categories';
 import { createCategoryFromInput } from '@/lib/category-create';
 import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
-import { getCurrencySymbol, roundToDecimals } from '@/lib/format';
-import { decimalPlacesForCurrency } from '@/lib/currency-decimals';
+import { entryDecimalPlaces, getCurrencySymbol, loadedEntryAmount } from '@/lib/format';
 import { docsUrl } from '@/lib/docs-links';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
@@ -354,16 +354,6 @@ function currencyFitsAccountType(
   return (currency?.kind === 'CRYPTO') === isCryptoAccount;
 }
 
-/**
- * The places a crypto wallet's opening balance is loaded at on an edit: the
- * coin's own, from the currency registry. Before the registry has loaded the
- * stored four decimals are kept, so an unedited save sends back the stored
- * 0.0125 rather than a 0.01 rounded at an assumed two places.
- */
-function cryptoLoadDecimalPlaces(currencyCode: string): number {
-  return decimalPlacesForCurrency(currencyCode) ?? 4;
-}
-
 interface AccountFormProps {
   account?: Account;
   /** Prefill for a new account; ignored when `account` is given. */
@@ -458,12 +448,7 @@ export function AccountForm({
           openingBalance: account.openingBalance !== undefined
             ? (account.accountType === 'LOAN' || account.accountType === 'MORTGAGE'
               ? Math.round(Math.abs(Number(account.openingBalance)) * 100) / 100
-              : account.accountType === 'CRYPTO'
-                ? roundToDecimals(
-                    Number(account.openingBalance),
-                    cryptoLoadDecimalPlaces(account.currencyCode),
-                  )
-                : Math.round(Number(account.openingBalance) * 100) / 100)
+              : loadedEntryAmount(Number(account.openingBalance), account.currencyCode))
             : undefined,
           creditLimit: account.creditLimit
             ? Math.round(Number(account.creditLimit) * 100) / 100
@@ -856,10 +841,13 @@ export function AccountForm({
   }, [showNoCryptoCurrencyHint, loadCurrencies]);
 
   // Switching between a crypto wallet and any other type clears a currency of
-  // the other kind; a currency that still fits is kept.
+  // the other kind; a currency that still fits is kept. A currency locked by
+  // the account's transactions is never cleared: the type picker offers only
+  // the types of its kind (`accountTypeSelectOptions`).
   const accountTypeField = register('accountType');
   const handleAccountTypeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     void accountTypeField.onChange(event);
+    if (isCurrencyLocked) return;
     const current = getValues('currencyCode');
     if (!current) return;
     const info = currencies.find((c) => c.code === current);
@@ -868,10 +856,25 @@ export function AccountForm({
     }
   };
 
-  // A coin's amounts are entered at its own decimal places, from the registry.
-  const openingBalanceDecimalPlaces = isCryptoAccount
-    ? (decimalPlacesForCurrency(watchedCurrency) ?? 2)
-    : undefined;
+  // A locked currency holds the account to its kind (INV-CRYPTO-001): a wallet
+  // cannot become a fiat type, nor a fiat account a wallet, because either
+  // needs a currency of the other kind. The saved type gives the kind, since
+  // the locked currency is the saved one.
+  const lockedToCrypto = isCurrencyLocked && account ? account.accountType === 'CRYPTO' : null;
+  const accountTypeSelectOptions =
+    lockedToCrypto === null
+      ? accountTypeOptions
+      : accountTypeOptions.map((option) => ({
+          ...option,
+          disabled: (option.value === 'CRYPTO') !== lockedToCrypto,
+        }));
+
+  // Every type's opening balance is entered at its currency's entry places
+  // (`entryDecimalPlaces`): a registered coin's own, two for any other code.
+  // A late registry load redraws the input at the coin's places, so the form
+  // subscribes to it.
+  useCurrencyDecimalsVersion();
+  const openingBalanceDecimalPlaces = entryDecimalPlaces(watchedCurrency);
 
   // Load accounts and categories when LOAN, MORTGAGE, LINE_OF_CREDIT, or ASSET
   // type is selected (for the source-account and value-change/interest category
@@ -1086,13 +1089,26 @@ export function AccountForm({
         {...register('name')}
       />
 
-      <Select
-        label={t('form.accountType')}
-        options={accountTypeOptions}
-        error={errors.accountType?.message}
-        {...accountTypeField}
-        onChange={handleAccountTypeChange}
-      />
+      <div>
+        <div className="flex items-center mb-1">
+          <label
+            htmlFor="select-account-type"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            {t('form.accountType')}
+          </label>
+          {lockedToCrypto !== null && (
+            <InfoTooltip text={t('form.accountTypeKindLocked')} />
+          )}
+        </div>
+        <Select
+          id="select-account-type"
+          options={accountTypeSelectOptions}
+          error={errors.accountType?.message}
+          {...accountTypeField}
+          onChange={handleAccountTypeChange}
+        />
+      </div>
 
       {/* Investment account pair option */}
       {showInvestmentPairOption && (

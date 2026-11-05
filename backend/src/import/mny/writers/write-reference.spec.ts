@@ -1,5 +1,5 @@
 import { EntityManager } from "typeorm";
-import { Currency } from "../../../currencies/entities/currency.entity";
+import { currencyKindRows } from "../../../test-helpers/currency-kind-testing";
 import {
   AccountSubType,
   AccountType,
@@ -33,18 +33,13 @@ function repoDouble(existing: unknown[] = []) {
   } as unknown as Record<string, jest.Mock>;
 }
 
-/** The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin. */
-const currencies = {
-  findOne: jest.fn(async (opts: { where: { code: string } }) => ({
-    code: opts.where.code,
-    kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
-  })),
-};
-
+/** The `currencies` kind read (INV-CRYPTO-001) answers BTC as a coin. */
 function managerFor(repo: Record<string, jest.Mock>): EntityManager {
   return {
-    getRepository: jest.fn((entity: unknown) =>
-      entity === Currency ? currencies : repo,
+    getRepository: jest.fn(() => repo),
+    query: jest.fn(
+      async (sql: string, params?: unknown[]) =>
+        currencyKindRows(sql, params) ?? [],
     ),
   } as unknown as EntityManager;
 }

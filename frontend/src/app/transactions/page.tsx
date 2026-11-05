@@ -77,6 +77,8 @@ import { PayeeInfoWidget } from '@/components/transactions/PayeeInfoWidget';
 import { CategoryInfoWidget } from '@/components/transactions/CategoryInfoWidget';
 import { WidgetFilterParams } from '@/components/transactions/widget-shared';
 import { computeBalanceSummary } from '@/lib/balance-history';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/outline';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
@@ -1031,9 +1033,16 @@ function TransactionsContent() {
   // goes stale as transactions are added or edited. The daily-balance series is
   // refetched alongside the transactions, so the widget's balance is derived
   // from it — the exact figure the Balance History chart shows as "Current".
+  // Rounded at the currency's own places, which for a coin come from the
+  // currency decimals registry: `GET /currencies` can answer after the series,
+  // so the registry's version is a dep and a late load recomputes the figure.
+  const registryVersion = useCurrencyDecimalsVersion();
   const singleAccountCurrentBalance = useMemo(
-    () => computeBalanceSummary(chartBalances)?.currentBalance,
-    [chartBalances],
+    () =>
+      computeBalanceSummary(chartBalances, getDecimalPlacesForCurrency(chartCurrency))
+        ?.currentBalance,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
+    [chartBalances, chartCurrency, registryVersion],
   );
 
   // When the list is narrowed to exactly one payee/category, surface it so

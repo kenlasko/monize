@@ -15,7 +15,13 @@ import { InvestmentSplitDetails } from '@/types/transaction';
 import type { SplitRow } from './split-rows';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { FALLBACK_DEFAULT_CURRENCY } from '@/lib/default-currency';
-import { roundMoney, roundToCents, roundToDecimals, getCurrencySymbol, getDecimalPlacesForCurrency } from '@/lib/format';
+import {
+  roundMoney,
+  roundToDecimals,
+  roundToEntryPlaces,
+  getCurrencySymbol,
+  getDecimalPlacesForCurrency,
+} from '@/lib/format';
 import { useLocalizedAmount } from '@/hooks/useLocalizedAmount';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
@@ -143,9 +149,12 @@ export function SplitEditor({
   const toDisplayAmount = (accountAmount: number) =>
     foreignActive ? roundToDecimals(accountAmount / rate, activeDecimals) : accountAmount;
   // Convert an amount typed in the currently shown currency back to the stored
-  // account currency (always rounded to cents, matching the rest of the editor).
+  // account currency, rounded to cents as the rest of the editor does, or to a
+  // coin's own places from the currency registry (a -0.0051 BTC line was
+  // stored as -0.01).
+  const toStoredPlaces = (amount: number) => roundToEntryPlaces(amount, currencyCode);
   const fromDisplayAmount = (displayAmount: number) =>
-    foreignActive ? roundToCents(displayAmount * rate) : roundToCents(displayAmount);
+    toStoredPlaces(foreignActive ? displayAmount * rate : displayAmount);
   // Index of the split pending removal that would convert the transaction back
   // to a regular one (only set while the confirmation dialog is open).
   const [convertPendingIndex, setConvertPendingIndex] = useState<number | null>(null);

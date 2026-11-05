@@ -667,6 +667,62 @@ describe("FxProviderChain and a provider that claims coins", () => {
     expect(live?.source).toBe("crypto_source");
   });
 
+  it("asks nobody about a pair whose claim the coin provider cannot answer, and reports it unanswered", async () => {
+    const fiat = provider("yahoo", "all", true);
+    fiat.fetchLatest.mockResolvedValue(
+      new Map([["BTC", obs("CAD", "BTC", "2026-11-05", 0.0000073)]]),
+    );
+    fiat.fetchDailySeries.mockResolvedValue([
+      obs("CAD", "BTC", "2026-11-04", 0.0000073),
+    ]);
+    const crypto = coinProvider();
+    crypto.claims.mockRejectedValue(new Error("currencies unreadable"));
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    const latest = await chain.latest("CAD", ["BTC"]);
+    const series = await chain.dailySeries(
+      "CAD",
+      "BTC",
+      "2026-11-01",
+      "2026-11-04",
+    );
+    const live = await chain.live("CAD", "BTC");
+
+    expect(latest).toEqual({
+      found: new Map(),
+      unanswered: ["BTC"],
+      uncarried: [],
+    });
+    expect(series).toEqual({ points: [], answered: false, source: null });
+    expect(live).toBeNull();
+    expect(fiat.fetchLatest).not.toHaveBeenCalled();
+    expect(fiat.fetchDailySeries).not.toHaveBeenCalled();
+    expect(fiat.fetchLive).not.toHaveBeenCalled();
+    expect(crypto.fetchLatest).not.toHaveBeenCalled();
+  });
+
+  it("a claimed coin pair whose carriage the coin provider cannot answer is unanswered, not handed on", async () => {
+    const fiat = provider("yahoo", "all");
+    const crypto = coinProvider();
+    crypto.carries.mockRejectedValue(new Error("currencies unreadable"));
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    const latest = await chain.latest("CAD", ["BTC"]);
+    const series = await chain.dailySeries(
+      "CAD",
+      "BTC",
+      "2026-11-01",
+      "2026-11-04",
+    );
+
+    expect(latest.unanswered).toEqual(["BTC"]);
+    expect(latest.uncarried).toEqual([]);
+    expect(series.answered).toBe(false);
+    expect(fiat.fetchLatest).not.toHaveBeenCalled();
+    expect(fiat.fetchDailySeries).not.toHaveBeenCalled();
+    expect(crypto.fetchLatest).not.toHaveBeenCalled();
+  });
+
   it("changes nothing for a chain with no claiming provider", async () => {
     const fiat = provider("yahoo", "all");
     fiat.fetchLatest.mockResolvedValue(new Map());

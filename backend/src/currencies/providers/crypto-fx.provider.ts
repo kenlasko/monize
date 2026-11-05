@@ -68,7 +68,7 @@ function utcDay(epochSeconds: number): string {
  * the Currencies page as where to map one. Both read `currencies` through
  * `withScopedDb` (every caller of the chain runs under an identity), cached
  * for `CRYPTO_CURRENCY_CACHE_MS` and forgotten by `CurrenciesService` on a
- * currency write.
+ * currency write; a failed read rejects both, never answers `false`.
  *
  * **Symbols.** The coin ticker is the part of `quote_symbol` before its last
  * hyphen, and the fiat is whichever fiat the pair names, not the one in the
@@ -250,9 +250,12 @@ export class CryptoFxProvider implements FxRateProvider {
 
   /**
    * Read every currency's kind and price symbol. A failed read is not cached
-   * and answers an empty map: this adapter then carries nothing until the
-   * next question, and a coin pair is reported uncarried for the one refresh
-   * rather than failing every fiat pair beside it.
+   * and rejects: `claims` and `carries` reject with it, and the chain reads a
+   * rejected routing question as "could not say", asking nobody about a pair
+   * whose claim it cannot settle and reporting it unanswered for the one
+   * refresh (`FxProviderChain`). An empty map would make every coin unclaimed
+   * and hand coin pairs to Yahoo's `=X` grammar under a fiat source
+   * (INV-CRYPTO-002). The next question reads again.
    */
   private async load(): Promise<ReadonlyMap<string, CodeFacts>> {
     try {
@@ -278,7 +281,7 @@ export class CryptoFxProvider implements FxRateProvider {
       this.logger.warn(
         `Could not read the currencies a coin is priced against: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return new Map();
+      throw error;
     }
   }
 }

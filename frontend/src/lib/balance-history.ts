@@ -1,3 +1,5 @@
+import { MONEY_DECIMALS, roundToDecimals, sumMoney } from './format';
+
 /**
  * A single day's balance in a Balance History series. `date` must be an ISO
  * `yyyy-MM-dd` string so points can be ordered by plain string comparison.
@@ -27,11 +29,16 @@ export interface BalanceSummary {
 /**
  * Summarises a daily balance series the way the Balance History chart's
  * footer does, so other surfaces (e.g. the Account Info widget) show the
- * exact same "Current" figure. Balances are rounded to 2 decimals up front
- * to match the chart's plotted points.
+ * exact same "Current" figure. Balances are rounded up front to
+ * `decimalPlaces` to match the chart's plotted points: the series currency's
+ * own places (`getDecimalPlacesForCurrency`, so a 0.0070 BTC wallet stays
+ * 0.0070 rather than reading 0.01), the stored money precision when the
+ * currency is not known, or `null` to keep each value as given (a price series
+ * quoted below money precision).
  */
 export function computeBalanceSummary(
   data: ReadonlyArray<DailyBalancePoint>,
+  decimalPlaces: number | null = MONEY_DECIMALS,
 ): BalanceSummary | null {
   if (data.length === 0) return null;
 
@@ -43,7 +50,10 @@ export function computeBalanceSummary(
 
   const points = data.map((d) => ({
     date: d.date,
-    balance: Math.round((d.balance as number) * 100) / 100,
+    balance:
+      decimalPlaces === null
+        ? (d.balance as number)
+        : roundToDecimals(d.balance as number, decimalPlaces),
   }));
 
   const startBalance = points[0].balance;
@@ -92,6 +102,29 @@ export function computeBalanceSummary(
     minBalance,
     goesNegative: minBalance < 0,
   };
+}
+
+/**
+ * The mean of a daily balance series, rounded to `decimalPlaces` (the
+ * account currency's own places; the stored money precision when it is not
+ * known). Summed in integer units of the storage precision (`sumMoney`) so a
+ * long series does not drift, and divided once.
+ *
+ * `null` when the mean cannot be stated: an empty series, or one with a day
+ * whose balance is unknown. The mean of the days that happen to be known is not
+ * the mean of all of them, so the caller decides what to show instead.
+ */
+export function averageDailyBalance(
+  data: ReadonlyArray<DailyBalancePoint>,
+  decimalPlaces: number = MONEY_DECIMALS,
+): number | null {
+  if (data.length === 0) return null;
+  const balances: number[] = [];
+  for (const point of data) {
+    if (point.balance === null) return null;
+    balances.push(point.balance);
+  }
+  return roundToDecimals(sumMoney(balances) / balances.length, decimalPlaces);
 }
 
 /**

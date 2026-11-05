@@ -59,7 +59,10 @@ export interface FxRateProvider {
    * claiming provider is asked about no other pair, so a fiat provider whose
    * `carries` cannot enumerate (Yahoo's is always true) is never asked for a
    * coin, and the coin provider never answers for, or masks an outage of, a
-   * fiat pair. Answered from the same cached list as `carries`.
+   * fiat pair. Answered from the same cached list as `carries`. A provider
+   * that cannot read that list rejects rather than answering `false`, here and
+   * in `carries`: the chain then asks nobody about the pair and reports it
+   * unanswered, where a `false` would route a coin to a fiat provider.
    */
   claims?(code: string): Promise<boolean>;
   /**

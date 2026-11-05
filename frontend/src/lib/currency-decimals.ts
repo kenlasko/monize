@@ -14,6 +14,11 @@
  * `decimal_places` that disagrees with it must never change how an existing
  * fiat balance renders, so an ISO row is not registered at all.
  *
+ * The row's `symbol` is held beside its places. `Intl` writes an unknown code
+ * as the code itself ("BTC 0.0070"), so the formatters put the stored symbol
+ * in its place ("₿0.0070"); a row without a usable symbol (blank, or the code
+ * itself) keeps `Intl`'s code.
+ *
  * Filled by `CurrencyRegistryLoader` once per signed-in session and by the
  * Currencies page after it loads or saves a currency; emptied on sign-out. A
  * code the registry does not hold falls back to `Intl`, so nothing throws
@@ -31,7 +36,13 @@ import { isKnownIsoCurrency } from './iso-currency';
 /** The widest precision a currency row may carry (`CreateCurrencyDto` caps it at 4). */
 const MAX_DECIMAL_PLACES = 4;
 
-const decimalsByCode = new Map<string, number>();
+interface RegisteredCurrency {
+  decimalPlaces: number;
+  /** The stored symbol, or `undefined` when the row has none worth showing. */
+  symbol: string | undefined;
+}
+
+const currenciesByCode = new Map<string, RegisteredCurrency>();
 const listeners = createListenerSet();
 let version = 0;
 
@@ -49,21 +60,30 @@ function isUsableDecimalPlaces(value: unknown): value is number {
   );
 }
 
+/** A stored symbol worth showing in place of the code: non-blank, and not the code itself. */
+function usableSymbol(symbol: unknown, code: string): string | undefined {
+  if (typeof symbol !== 'string') return undefined;
+  const trimmed = symbol.trim();
+  return trimmed && trimmed.toUpperCase() !== code ? trimmed : undefined;
+}
+
 /**
- * Record the decimal places of each currency `Intl` does not know. A later
- * entry for a code replaces an earlier one; an ISO code, and a row whose
- * `decimalPlaces` is not a whole number from 0 to 4, are skipped, leaving that
- * code to `Intl`.
+ * Record the decimal places and symbol of each currency `Intl` does not know.
+ * A later entry for a code replaces an earlier one; an ISO code, and a row
+ * whose `decimalPlaces` is not a whole number from 0 to 4, are skipped, leaving
+ * that code to `Intl`.
  */
 export function registerCurrencyDecimals(
-  currencies: readonly { code: string; decimalPlaces: number }[],
+  currencies: readonly { code: string; decimalPlaces: number; symbol?: string | null }[],
 ): void {
   let changed = false;
   for (const currency of currencies) {
     const code = currency?.code?.trim().toUpperCase();
     if (!code || isKnownIsoCurrency(code) || !isUsableDecimalPlaces(currency.decimalPlaces)) continue;
-    if (decimalsByCode.get(code) !== currency.decimalPlaces) {
-      decimalsByCode.set(code, currency.decimalPlaces);
+    const symbol = usableSymbol(currency.symbol, code);
+    const held = currenciesByCode.get(code);
+    if (held?.decimalPlaces !== currency.decimalPlaces || held.symbol !== symbol) {
+      currenciesByCode.set(code, { decimalPlaces: currency.decimalPlaces, symbol });
       changed = true;
     }
   }
@@ -73,13 +93,52 @@ export function registerCurrencyDecimals(
 /** The registered decimal places of `code`, or `undefined` when the registry does not hold it. */
 export function decimalPlacesForCurrency(code: string | null | undefined): number | undefined {
   if (!code) return undefined;
-  return decimalsByCode.get(code.trim().toUpperCase());
+  return currenciesByCode.get(code.trim().toUpperCase())?.decimalPlaces;
+}
+
+/**
+ * The registered symbol of `code` (`₿` for a BTC row that stores one), or
+ * `undefined` when the registry does not hold the code or its row has no usable
+ * symbol: the formatters then keep the code `Intl` writes.
+ */
+export function symbolForCurrency(code: string | null | undefined): string | undefined {
+  if (!code) return undefined;
+  return currenciesByCode.get(code.trim().toUpperCase())?.symbol;
+}
+
+/**
+ * The symbol to show for `code`, wherever the app shows one (an input's prefix,
+ * a figure composed from a symbol and a number): the registered symbol of a
+ * non-ISO currency first (`₿`), else `Intl`'s narrow symbol (`$`, `€`, and the
+ * code itself for a currency `Intl` does not know), else `unknownFallback`
+ * when `Intl` rejects the code outright, which defaults to the code.
+ *
+ * The one derivation: `getCurrencySymbol` (`lib/format.ts`) is this with the
+ * `$` fallback it has always had. An ISO code is never registered, so its
+ * symbol is exactly `Intl`'s.
+ */
+export function currencySymbolFor(code: string, unknownFallback: string = code): string {
+  const registered = symbolForCurrency(code);
+  if (registered) return registered;
+  try {
+    return (
+      new Intl.NumberFormat('en', {
+        style: 'currency',
+        currency: code,
+        currencyDisplay: 'narrowSymbol',
+      })
+        .formatToParts(0)
+        .find((part) => part.type === 'currency')?.value || unknownFallback
+    );
+  } catch {
+    return unknownFallback;
+  }
 }
 
 /** Empty the registry: on sign-out, and between tests. */
 export function clearCurrencyDecimals(): void {
-  if (decimalsByCode.size === 0) return;
-  decimalsByCode.clear();
+  if (currenciesByCode.size === 0) return;
+  currenciesByCode.clear();
   notify();
 }
 

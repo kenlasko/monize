@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act, waitFor, fireEvent } from '@/test/render';
 import { BankingDetailView } from './BankingDetailView';
 import type { Account } from '@/types/account';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -14,7 +15,11 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/hooks/useNumberFormat', async () => {
   const { numberFormatMockDefaults } = await import('@/test/number-format-mock');
   return {
-    useNumberFormat: () => ({ ...numberFormatMockDefaults(), formatCurrency: (a: number) => `$${a.toFixed(2)}` }),
+    useNumberFormat: () => ({
+      ...numberFormatMockDefaults(),
+      formatCurrency: (a: number, code?: string) =>
+        code === 'BTC' ? `BTC ${a.toFixed(4)}` : `$${a.toFixed(2)}`,
+    }),
   };
 });vi.mock('@/components/transactions/BalanceHistoryChart', () => ({
   // The markers are serialised so a test can read what the view asked the
@@ -125,6 +130,24 @@ describe('BankingDetailView', () => {
     // Projected balance = last forecast point (2200); average from history = 1250.
     expect(screen.getByText('$2200.00')).toBeInTheDocument();
     expect(screen.getByText('$1250.00')).toBeInTheDocument();
+  });
+
+  it('averages a four-place coin balance at its own places, not cents', async () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    try {
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-06-01', balance: 0.0125 },
+        { date: '2026-06-15', balance: 0.007 },
+      ]);
+      await renderView(
+        makeAccount({ accountType: 'CRYPTO', currencyCode: 'BTC', currentBalance: 0.007 }),
+      );
+      // (0.0125 + 0.0070) / 2 = 0.00975 -> 0.0098. At cents it was 0.01, and a
+      // mean below half a cent read "BTC 0.0000".
+      expect(screen.getByText('BTC 0.0098')).toBeInTheDocument();
+    } finally {
+      clearCurrencyDecimals();
+    }
   });
 
   // ---- An incomplete projection (issue #1247) ----

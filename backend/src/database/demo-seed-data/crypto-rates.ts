@@ -72,20 +72,28 @@ export function generateDemoCryptoRates(
  * seed, because the daily demo reset reseeds the rates without the base seed,
  * and a database first seeded before the coin existed has no `BTC` row for
  * them to reference.
+ *
+ * An existing row is refreshed only while it is already CRYPTO, and its kind
+ * is never written: a `BTC` someone created as a FIAT currency, possibly with
+ * accounts in it, is left as it is, since re-typing it here would bypass the
+ * kind gate (`CurrenciesService.kindUpdates`, INV-CRYPTO-001). Resolves
+ * whether the code is the demo's coin after the upsert; `false` tells the
+ * seed to leave out the wallet, its transactions and the coin's rates.
  */
 export async function upsertDemoCryptoCurrency(
   manager: EntityManager,
-): Promise<void> {
+): Promise<boolean> {
   const coin = DEMO_CRYPTO_CURRENCY;
-  await manager.query(
+  const rows: Array<{ kind: string }> = await manager.query(
     `INSERT INTO currencies (code, name, symbol, decimal_places, kind, quote_symbol)
      VALUES ($1, $2, $3, $4, $5, $6)
      ON CONFLICT (code) DO UPDATE SET
        name = EXCLUDED.name,
        symbol = EXCLUDED.symbol,
        decimal_places = EXCLUDED.decimal_places,
-       kind = EXCLUDED.kind,
-       quote_symbol = EXCLUDED.quote_symbol`,
+       quote_symbol = EXCLUDED.quote_symbol
+     WHERE currencies.kind = 'CRYPTO'
+     RETURNING kind`,
     [
       coin.code,
       coin.name,
@@ -95,4 +103,5 @@ export async function upsertDemoCryptoCurrency(
       coin.quoteSymbol,
     ],
   );
+  return rows[0]?.kind === coin.kind;
 }

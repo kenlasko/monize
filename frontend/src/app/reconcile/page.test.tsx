@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 import { render, screen, waitFor, fireEvent, within, act } from '@/test/render';
 import ReconcilePage from './page';
 import { TransactionStatus } from '@/types/transaction';
@@ -600,6 +601,35 @@ describe('ReconcilePage', () => {
     it('disables Finish button when difference exceeds tolerance', async () => {
       await advanceToReconcileStep();
       expect(screen.getByText('Finish Reconciliation')).toBeDisabled();
+    });
+
+    it('compares a coin wallet at its own places, so a sub-cent difference still blocks Finish', async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+      try {
+        mockGetAll.mockResolvedValue([
+          ...mockAccounts,
+          { id: 'acc-btc', name: 'Bitcoin Wallet', accountType: 'CRYPTO', accountSubType: null, currencyCode: 'BTC', currentBalance: 0.007, isClosed: false },
+        ]);
+        mockGetReconciliationData.mockResolvedValue({
+          transactions: [
+            { id: 'tx-btc', transactionDate: '2026-02-01', payee: null, payeeName: 'Exchange', category: null, amount: 0.0019, status: TransactionStatus.CLEARED },
+          ],
+          reconciledBalance: 0,
+          clearedBalance: 0.0019,
+          difference: 0.0051,
+        });
+        render(<ReconcilePage />);
+        await waitFor(() => expect(screen.getByText(/Bitcoin Wallet/)).toBeInTheDocument(), { timeout: 3000 });
+        fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-btc' } });
+        fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '0.007' } });
+        fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
+        await waitFor(() => expect(screen.getByText('Statement Balance')).toBeInTheDocument(), { timeout: 3000 });
+        // 0.0070 - 0.0019 = 0.0051. Rounded to cents it read 0.01, within the
+        // old one-cent tolerance, and the reconciliation could finish unbalanced.
+        expect(screen.getByText('Finish Reconciliation')).toBeDisabled();
+      } finally {
+        clearCurrencyDecimals();
+      }
     });
 
     it('cancel returns to setup step', async () => {

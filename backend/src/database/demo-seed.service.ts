@@ -14,6 +14,7 @@ import { demoPayees } from "./demo-seed-data/payees";
 import { generateTransactions } from "./demo-seed-data/transactions";
 import { roundFxRate } from "../common/fx-entry.util";
 import {
+  DEMO_CRYPTO_CURRENCY,
   DEMO_CRYPTO_RATE_SOURCE,
   generateDemoCryptoRates,
   upsertDemoCryptoCurrency,
@@ -194,13 +195,14 @@ export class DemoSeedService {
   private async seedDemoDataWithinContext(userId: string): Promise<void> {
     // The coin first: the Bitcoin Wallet's `currency_code` references it, and
     // the daily reset reaches here without the base seed's currencies.
-    await this.seedCryptoRates();
+    const coinSeeded = await this.seedCryptoRates();
     const categoryMap = await this.seedCategories(userId);
     const institutionMap = await this.seedInstitutions(userId);
     const accountMap = await this.seedAccounts(
       userId,
       institutionMap,
       categoryMap,
+      coinSeeded,
     );
     const payeeMap = await this.seedPayees(userId, categoryMap);
     await this.seedTransactions(userId, accountMap, categoryMap, payeeMap);
@@ -222,16 +224,30 @@ export class DemoSeedService {
    * the rates reference it, then the series through the rate writer, which
    * orients each row (INV-FX-003) and replaces the window's days on every
    * reset.
+   *
+   * Resolves `false` when the code already exists as a FIAT currency, which
+   * the upsert leaves alone (INV-CRYPTO-001's kind gate is not bypassed by a
+   * seed): no coin rates are stored for it (a fiat code priced under the
+   * crypto slug would break INV-CRYPTO-002), and the seed leaves out the
+   * wallet and its transactions rather than writing a CRYPTO account in a fiat
+   * currency. The rest of the demo seeds as usual.
    */
-  private async seedCryptoRates(): Promise<void> {
+  private async seedCryptoRates(): Promise<boolean> {
     this.logger.log("Seeding demo cryptocurrency and its exchange rates");
-    await withScopedDb(this.dataSource, (manager) =>
+    const coinSeeded = await withScopedDb(this.dataSource, (manager) =>
       upsertDemoCryptoCurrency(manager),
     );
+    if (!coinSeeded) {
+      this.logger.warn(
+        `${DEMO_CRYPTO_CURRENCY.code} exists as a FIAT currency and was not re-typed to CRYPTO; the demo's crypto wallet, its transactions and its ${DEMO_CRYPTO_CURRENCY.code} rates are not seeded`,
+      );
+      return false;
+    }
     await this.exchangeRates.storeRateSeries(
       generateDemoCryptoRates(todayYMD()),
       DEMO_CRYPTO_RATE_SOURCE,
     );
+    return true;
   }
 
   private async seedCategories(userId: string): Promise<Map<string, string>> {
@@ -404,6 +420,7 @@ export class DemoSeedService {
     userId: string,
     institutionMap: Map<string, string>,
     categoryMap: Map<string, string>,
+    coinSeeded: boolean,
   ): Promise<Map<string, string>> {
     this.logger.log("Seeding demo accounts");
 
@@ -416,6 +433,10 @@ export class DemoSeedService {
     const createdAtStr = createdAt.toISOString();
 
     for (const acc of demoAccounts) {
+      // An account in the coin is left out when the coin is not one (see
+      // seedCryptoRates); its transactions then find no account and are
+      // skipped with it.
+      if (!coinSeeded && acc.currency === DEMO_CRYPTO_CURRENCY.code) continue;
       const institutionId = acc.institution
         ? (institutionMap.get(acc.institution) ?? null)
         : null;

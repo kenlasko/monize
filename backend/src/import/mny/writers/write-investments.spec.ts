@@ -6,6 +6,7 @@ import {
   MappedSecurity,
 } from "../model/mny-import-model";
 import { writeInvestments, writeSecurities } from "./write-investments";
+import { currencyKindRows } from "../../../test-helpers/currency-kind-testing";
 
 /**
  * The investment writer's contract: securities are find-or-create by symbol, a
@@ -96,6 +97,9 @@ function doubles(
     insert: jest.fn().mockResolvedValue(undefined),
   } as unknown as Record<string, jest.Mock>;
   const query = jest.fn(async (sql: string, params: unknown[] = []) => {
+    // The `currencies` kind read (INV-CRYPTO-001) answers BTC as a coin.
+    const kindRows = currencyKindRows(sql, params);
+    if (kindRows) return kindRows;
     if (sql.includes("bond_auto_fetch")) {
       return [
         {
@@ -124,17 +128,9 @@ function doubles(
     return [[], 0];
   });
 
-  const currencies = {
-    findOne: jest.fn(async (opts: { where: { code: string } }) => ({
-      code: opts.where.code,
-      kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
-    })),
-  };
   const manager = {
     getRepository: jest.fn((entity: { name?: string }) => {
       if (entity?.name === "Security") return securities;
-      // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin.
-      if (entity?.name === "Currency") return currencies;
       if (entity?.name === "InvestmentTransaction") return investments;
       return transactions;
     }),

@@ -179,6 +179,78 @@ describe("CurrenciesService", () => {
       );
     });
 
+    it("refuses with 409 a stated kind that differs from the existing row's, writing nothing", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue({
+        ...mockCurrency,
+        code: "BTC",
+        kind: "FIAT",
+      });
+      mockPrefRepo.findOne!.mockResolvedValue(null);
+
+      await expect(
+        service.create(userId, {
+          code: "BTC",
+          name: "Bitcoin",
+          symbol: "B",
+          kind: "CRYPTO",
+          quoteSymbol: "BTC-USD",
+        }),
+      ).rejects.toThrow(
+        new ConflictException(
+          'Currency "BTC" already exists as a FIAT currency and cannot be added as CRYPTO',
+        ),
+      );
+      expect(mockDataSource.query).not.toHaveBeenCalled();
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("adopts an existing row when the stated kind matches it", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue({
+        ...mockCurrency,
+        code: "BTC",
+        kind: "CRYPTO",
+        quoteSymbol: "BTC-USD",
+      });
+      mockPrefRepo.findOne!.mockResolvedValue(null);
+      mockDataSource.query.mockResolvedValue([]);
+
+      const result = await service.create(userId, {
+        code: "BTC",
+        name: "Bitcoin",
+        symbol: "B",
+        kind: "CRYPTO",
+      });
+
+      expect(result.code).toBe("BTC");
+      expect(mockDataSource.query).toHaveBeenCalledWith(
+        expect.stringContaining("INSERT INTO user_currency_preferences"),
+        [userId, "BTC"],
+      );
+    });
+
+    it("adopts an existing row of either kind when the request states no kind", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue({
+        ...mockCurrency,
+        code: "BTC",
+        kind: "CRYPTO",
+        quoteSymbol: "BTC-USD",
+      });
+      mockPrefRepo.findOne!.mockResolvedValue(null);
+      mockDataSource.query.mockResolvedValue([]);
+
+      const result = await service.create(userId, {
+        code: "BTC",
+        name: "Bitcoin",
+        symbol: "B",
+      });
+
+      expect(result.code).toBe("BTC");
+      expect(mockDataSource.query).toHaveBeenCalledWith(
+        expect.stringContaining("INSERT INTO user_currency_preferences"),
+        [userId, "BTC"],
+      );
+    });
+
     it("adds preference row when currency was created by another user", async () => {
       const otherUserCurrency = {
         ...mockCurrency,

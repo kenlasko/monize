@@ -25,9 +25,10 @@ import {
   FX_RATE_DISPLAY_DECIMALS,
   getCurrencySymbol,
   roundMoney,
-  roundToCents,
   roundToDecimals,
+  roundToEntryPlaces,
 } from '@/lib/format';
+import { decimalPlacesForCurrency } from '@/lib/currency-decimals';
 import {
   getRememberedTransactionCurrency,
   rememberTransactionCurrency,
@@ -805,7 +806,9 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   //    showed. The source row's own date is not copied either: it is when that
   //    transaction happened, not when this one did.
   const handleQuickFill = (source: Transaction) => {
-    const amount = Math.round(Number(source.amount) * 100) / 100;
+    // At the form currency's places: a coin's own (a -0.0051 BTC source read
+    // -0.01 at cents), otherwise two as before.
+    const amount = roundToEntryPlaces(Number(source.amount), accountCurrency);
     setValue('payeeId', source.payeeId || undefined, { shouldDirty: true });
     setValue('payeeName', source.payeeName || '', { shouldDirty: true });
     setValue('categoryId', source.categoryId || '', { shouldDirty: true });
@@ -1121,7 +1124,8 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     if (feePercent && feePercent > 0) {
       // total = base - |base| * p; solve for base by its (matching) sign.
       const p = feePercent / 100;
-      base = roundToCents(total >= 0 ? total / (1 - p) : total / (1 + p));
+      // At the account currency's places: a coin's own, cents for fiat.
+      base = roundToEntryPlaces(total >= 0 ? total / (1 - p) : total / (1 + p), accountCurrency);
     }
     const newRate = roundToDecimals(base / foreignAmount, 10);
     rateOverriddenRef.current = true;
@@ -1728,6 +1732,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       <CurrencyInput
         label={t('form.fx.totalInCurrency', { currency: accountCurrency })}
         prefix={getCurrencySymbol(accountCurrency)}
+        decimalPlaces={decimalPlacesForCurrency(accountCurrency)}
         value={fxTotal}
         onChange={handleConvertedTotalOverride}
         allowSignToggle

@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { DemoSeedService } from "./demo-seed.service";
@@ -15,6 +16,13 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
 );
+
+/**
+ * What PostgreSQL answers the demo coin's upsert (`RETURNING kind`) on a
+ * database with no BTC row, or a CRYPTO one: the coin. A FIAT BTC answers no
+ * row; the case that needs it says so.
+ */
+const coinUpsert = () => Promise.resolve([{ kind: "CRYPTO" }]);
 
 describe("DemoSeedService", () => {
   let service: DemoSeedService;
@@ -61,6 +69,7 @@ describe("DemoSeedService", () => {
   describe("seedAll()", () => {
     beforeEach(() => {
       dataSource.query.mockImplementation((sql: string) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("SELECT id FROM users")) {
           return Promise.resolve([{ id: "demo-user-id" }]);
         }
@@ -92,6 +101,7 @@ describe("DemoSeedService", () => {
 
     it("throws if demo user is not found after base seeding", async () => {
       dataSource.query.mockImplementation((sql: string) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("SELECT id FROM users")) {
           return Promise.resolve([]);
         }
@@ -120,6 +130,7 @@ describe("DemoSeedService", () => {
   describe("seedDemoData()", () => {
     beforeEach(() => {
       dataSource.query.mockImplementation((sql: string) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("RETURNING id")) {
           return Promise.resolve([{ id: `uuid-${Math.random()}` }]);
         }
@@ -165,6 +176,53 @@ describe("DemoSeedService", () => {
       expect(points[0]).toMatchObject({ from: "BTC", to: "CAD" });
     });
 
+    it("leaves out the wallet, its transactions and the coin's rates when BTC exists as FIAT, and seeds the rest", async () => {
+      const warn = jest
+        .spyOn(Logger.prototype, "warn")
+        .mockImplementation(() => undefined);
+      dataSource.query.mockImplementation((sql: string, params: unknown[]) => {
+        // The conflict update's WHERE kind = 'CRYPTO' skipped a FIAT BTC.
+        if (sql.includes("INSERT INTO currencies")) return Promise.resolve([]);
+        if (sql.includes("INSERT INTO accounts")) {
+          return Promise.resolve([{ id: `account-${params[2]}` }]);
+        }
+        if (sql.includes("RETURNING id")) {
+          return Promise.resolve([{ id: `uuid-${Math.random()}` }]);
+        }
+        if (sql.includes("COALESCE(SUM")) {
+          return Promise.resolve([{ total: "0" }]);
+        }
+        return Promise.resolve([]);
+      });
+
+      await service.seedDemoData("user-123");
+      const calls = dataSource.query.mock.calls as Array<[string, unknown[]]>;
+
+      const accountInserts = calls.filter(([sql]) =>
+        sql.includes("INSERT INTO accounts"),
+      );
+      expect(accountInserts.length).toBeGreaterThan(0);
+      expect(
+        accountInserts.filter(([, params]) => params.includes("BTC")),
+      ).toEqual([]);
+      expect(
+        calls.filter(
+          ([sql, params]) =>
+            sql.includes("INSERT INTO transactions") &&
+            (params.includes("BTC") ||
+              params.includes("Bought bitcoin") ||
+              params.includes("Sold bitcoin")),
+        ),
+      ).toEqual([]);
+      expect(
+        calls.some(([sql]) => sql.includes("INSERT INTO transactions")),
+      ).toBe(true);
+      expect(exchangeRates.storeRateSeries).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("BTC exists as a FIAT currency"),
+      );
+    });
+
     it("seeds an institution for each distinct demo institution", async () => {
       await service.seedDemoData("user-123");
 
@@ -177,6 +235,7 @@ describe("DemoSeedService", () => {
     it("links accounts to their institution via institution_id", async () => {
       // Return a stable id per institution insert so we can assert linkage.
       dataSource.query.mockImplementation((sql: string, params?: unknown[]) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("INSERT INTO institutions")) {
           return Promise.resolve([{ id: `inst-${params?.[1] as string}` }]);
         }
@@ -497,6 +556,7 @@ describe("DemoSeedService", () => {
     it("posts each mortgage installment as a split whose principal is a transfer leg into the mortgage", async () => {
       // Ids that say what they are, so a leg can be traced to its account.
       dataSource.query.mockImplementation((sql: string, params: unknown[]) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("INSERT INTO accounts")) {
           return Promise.resolve([{ id: `account-${params[2]}` }]);
         }
@@ -575,6 +635,7 @@ describe("DemoSeedService", () => {
 
     it("seeds the Bitcoin Wallet in BTC, bought, spent from and sold with a network-fee line (crypto-accounts spec decision 9)", async () => {
       dataSource.query.mockImplementation((sql: string, params: unknown[]) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("INSERT INTO accounts")) {
           return Promise.resolve([{ id: `account-${params[2]}` }]);
         }

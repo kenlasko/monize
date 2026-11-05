@@ -6,6 +6,8 @@ vi.mock('@/lib/format', () => ({
   getCurrencySymbol: () => '$',
   getDecimalPlacesForCurrency: () => 2,
   roundToCents: (v: number) => Math.round(v * 100) / 100,
+  // No currency is registered in this suite, so every code rounds at cents.
+  roundToEntryPlaces: (v: number) => Math.round(v * 100) / 100,
   roundMoney: (v: number) => Math.round(v * 10000) / 10000,
   roundToDecimals: (v: number, d: number) => { const f = Math.pow(10, d); return Math.round(v * f) / f; },
   formatAmount: (v: number | undefined | null) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 100) / 100).toFixed(2),

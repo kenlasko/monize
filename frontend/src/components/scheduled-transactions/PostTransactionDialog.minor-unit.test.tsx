@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@/test/render';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { PostTransactionDialog } from './PostTransactionDialog';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
+import { exchangeRatesApi } from '@/lib/exchange-rates';
 
 // Issue #1581: a LINEAR mortgage installment is priced at storage precision
 // (864.5833 principal + 306.0625 interest = 1,170.6458). The dialog rounded the
@@ -155,5 +157,96 @@ describe('PostTransactionDialog: a bill priced below the cent (issue #1581)', ()
     const payload = await post();
     expect(payload.amount).toBe(-1171);
     expect(payload.splits.map((s: any) => s.amount)).toEqual([-306, -865]);
+  });
+});
+
+describe('PostTransactionDialog: a coin account', () => {
+  const coinBill = (overrides: Record<string, unknown> = {}) =>
+    ({
+      id: 's-btc',
+      name: 'Node hosting',
+      amount: -0.0051,
+      currencyCode: 'BTC',
+      accountId: 'a1',
+      categoryId: null,
+      description: '',
+      nextDueDate: '2026-11-01T00:00:00Z',
+      isTransfer: false,
+      isSplit: false,
+      account: { name: 'Wallet' },
+      ...overrides,
+    }) as any;
+
+  const renderCoin = (overrides: Record<string, unknown> = {}) =>
+    render(
+      <PostTransactionDialog
+        isOpen
+        scheduledTransaction={coinBill(overrides)}
+        categories={[]}
+        accounts={[{ ...checking, name: 'Wallet', currencyCode: 'BTC', currentBalance: 0.5 }] as any[]}
+        scheduledTransactions={[]}
+        futureTransactions={[]}
+        onClose={vi.fn()}
+        onPosted={vi.fn()}
+      />,
+    );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+  });
+
+  afterEach(async () => {
+    await act(async () => clearCurrencyDecimals());
+  });
+
+  it('posts a typed 0.0051 BTC as 0.0051, not cents', async () => {
+    renderCoin({ amount: -0.02 });
+    const amount = screen.getByLabelText('Amount');
+    await act(async () => {
+      fireEvent.change(amount, { target: { value: '-0.0051' } });
+      fireEvent.blur(amount);
+    });
+    expect(amount).toHaveValue('-0.0051');
+    const payload = await post();
+    expect(payload.amount).toBe(-0.0051);
+  });
+
+  it('posts an unedited 0.0051 BTC as 0.0051 when the currency list arrives after the dialog opened', async () => {
+    // Seeded before the registry knew BTC: kept at the stored four places, not
+    // rounded at an assumed two, so the late fill has nothing to recover.
+    await act(async () => clearCurrencyDecimals());
+    renderCoin();
+    await act(async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+    });
+    expect(screen.getByLabelText('Amount')).toHaveValue('-0.0051');
+    const payload = await post();
+    expect(payload.amount).toBe(-0.0051);
+  });
+
+  it('re-converts at four places when the currency list arrives after the dialog opened', async () => {
+    // `GET /currencies` answering late: the registry is empty when the dialog
+    // converts, so the total starts at cents, and the fill must redraw it.
+    await act(async () => clearCurrencyDecimals());
+    vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(0.00001);
+    renderCoin({ originalAmount: -510, originalCurrencyCode: 'USD', exchangeRate: 0.00001 });
+    const total = screen.getByLabelText('Total in BTC');
+    await waitFor(() => expect(total).toHaveValue('-0.01'));
+    await act(async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+    });
+    await waitFor(() => expect(total).toHaveValue('-0.0051'));
+  });
+
+  it('converts a foreign bill into the coin at the coin\'s places', async () => {
+    // 510 USD at 0.00001 BTC/USD is 0.0051 BTC; at cents it read 0.01.
+    vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(0.00001);
+    renderCoin({ originalAmount: -510, originalCurrencyCode: 'USD', exchangeRate: 0.00001 });
+    const total = screen.getByLabelText('Total in BTC');
+    await waitFor(() => expect(total).toHaveValue('-0.0051'));
+    const payload = await post();
+    expect(payload.originalAmount).toBe(-510);
+    expect(payload.amount).toBeUndefined();
   });
 });

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { exportForeignTransactionsCsv } from './fx-fees-csv';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from './currency-decimals';
 import type { Transaction } from '@/types/transaction';
 
 const mockGetAllPages = vi.fn();
@@ -52,6 +53,7 @@ function tx(overrides: Partial<Transaction> = {}): Transaction {
 describe('exportForeignTransactionsCsv', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearCurrencyDecimals();
   });
 
   it('returns 0 and skips the download when there are no accounts or currencies', async () => {
@@ -97,5 +99,24 @@ describe('exportForeignTransactionsCsv', () => {
     expect(row[8]).toBe('EUR');
     expect(row[9]).toBe(-100);
     expect(row[10]).toBeCloseTo(4.01, 4);
+  });
+
+  it('derives a coin account\'s fee at the coin\'s places', async () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+    mockGetAllPages.mockResolvedValue([
+      tx({
+        currencyCode: 'BTC',
+        originalAmount: -510,
+        originalCurrencyCode: 'USD',
+        exchangeRate: 0.00001,
+        amount: -0.0052,
+      }),
+    ]);
+
+    await exportForeignTransactionsCsv({ accountIds: ['acc-1'], currencyCodes: ['USD'] });
+
+    // Base -0.0051 BTC (not -0.01 at cents), booked -0.0052: fee 0.0001 BTC.
+    const row = mockExportToCsv.mock.calls[0][2][0];
+    expect(row[10]).toBeCloseTo(0.0001, 4);
   });
 });

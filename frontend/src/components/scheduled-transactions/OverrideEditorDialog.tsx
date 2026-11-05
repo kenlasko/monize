@@ -30,11 +30,13 @@ import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { investmentsApi } from '@/lib/investments';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { totalFromQuantity, quantityFromTotal, roundPrice, usableClose } from '@/lib/investmentFold';
-import { roundToCents, getCurrencySymbol, sumMoney } from '@/lib/format';
+import { roundToEntryPlaces, loadedEntryAmount, getCurrencySymbol, sumMoney } from '@/lib/format';
+import { decimalPlacesForCurrency } from '@/lib/currency-decimals';
 import { getErrorMessage } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { useTranslations } from 'next-intl';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 
@@ -165,6 +167,20 @@ export function OverrideEditorDialog({
     investmentAction != null &&
     ['DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'RETURN_OF_CAPITAL'].includes(baseInvestmentAction(investmentAction));
 
+  // Re-render when the currency decimals registry fills, so a coin amount
+  // loaded before `GET /currencies` answered is redrawn at the coin's places.
+  useCurrencyDecimalsVersion();
+
+  // An occurrence's amount at its account currency's places: a coin's own
+  // (a 0.0051 BTC override saved 0.01 at cents), two for fiat as before.
+  const toAccountPlaces = (value: number) =>
+    roundToEntryPlaces(value, scheduledTransaction.currencyCode);
+  // The same amount as the dialog seeds it at open: a coin the registry does
+  // not hold yet keeps its stored four places (`loadedEntryAmount`), so an
+  // unedited save before `GET /currencies` answers does not write 0.01.
+  const toLoadedPlaces = (value: number) =>
+    loadedEntryAmount(value, scheduledTransaction.currencyCode);
+
   // Initialize form with base transaction or existing override values, again
   // whenever the dialog opens or what it edits changes. The "info from previous
   // render" pattern rather than a setState in an effect.
@@ -211,9 +227,9 @@ export function OverrideEditorDialog({
 
       if (existingOverride) {
         // Use override values (absolute value for transfers - sign is applied on save)
-        const rawAmt = roundToCents(existingOverride.amount ?? scheduledTransaction.amount);
+        const rawAmt = toLoadedPlaces(existingOverride.amount ?? scheduledTransaction.amount);
         const amt = scheduledTransaction.isTransfer ? Math.abs(rawAmt) : rawAmt;
-        setAmount(prefillAmount != null ? roundToCents(prefillAmount) : amt);
+        setAmount(prefillAmount != null ? toLoadedPlaces(prefillAmount) : amt);
         setCategoryId(existingOverride.categoryId ?? scheduledTransaction.categoryId ?? '');
         setDescription(existingOverride.description ?? scheduledTransaction.description ?? '');
         setIsSplit(existingOverride.isSplit ?? scheduledTransaction.isSplit);
@@ -231,9 +247,9 @@ export function OverrideEditorDialog({
         );
       } else {
         // Use base transaction values (absolute value for transfers - sign is applied on save)
-        const rawAmt = roundToCents(scheduledTransaction.amount);
+        const rawAmt = toLoadedPlaces(scheduledTransaction.amount);
         const amt = scheduledTransaction.isTransfer ? Math.abs(rawAmt) : rawAmt;
-        setAmount(prefillAmount != null ? roundToCents(prefillAmount) : amt);
+        setAmount(prefillAmount != null ? toLoadedPlaces(prefillAmount) : amt);
         setCategoryId(scheduledTransaction.categoryId ?? '');
         setDescription(scheduledTransaction.description ?? '');
         setIsSplit(scheduledTransaction.isSplit);
@@ -276,7 +292,7 @@ export function OverrideEditorDialog({
           if (templateRows && !lines) {
             setLoanSeedGap({ part: 'lines', missing: occurrence.missing });
           }
-          setAmount(roundToCents(parent));
+          setAmount(toLoadedPlaces(parent));
           if (lines ?? templateRows) initSplits(lines ?? templateRows, parent, parent);
         }
       }
@@ -299,7 +315,7 @@ export function OverrideEditorDialog({
             : row,
         );
         const parent = sumMoney(lines.map((row) => Number(row.amount)));
-        setAmount(roundToCents(parent));
+        setAmount(toLoadedPlaces(parent));
         initSplits(lines, parent, parent);
       }
 
@@ -637,7 +653,7 @@ export function OverrideEditorDialog({
 
   // Handler for SplitEditor to update amount
   const handleAmountChange = (newAmount: number) => {
-    setAmount(roundToCents(newAmount));
+    setAmount(toAccountPlaces(newAmount));
     setAmountUnknown(false);
   };
 
@@ -785,6 +801,7 @@ export function OverrideEditorDialog({
           <CurrencyInput
             label={t('overrideEditor.amountLabel')}
             prefix={getCurrencySymbol(scheduledTransaction.currencyCode)}
+            decimalPlaces={decimalPlacesForCurrency(scheduledTransaction.currencyCode)}
             value={amountUnknown ? undefined : amount}
             onChange={(value) => {
               setAmount(value ?? 0);

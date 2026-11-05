@@ -53,30 +53,30 @@ describe("assertAccountCurrencyKind", () => {
 
 describe("assertAccountCurrencyKindIn", () => {
   function managerWith(row: Partial<Currency> | null) {
-    const findOne = jest.fn().mockResolvedValue(row);
-    const getRepository = jest.fn().mockReturnValue({ findOne });
+    const query = jest.fn().mockResolvedValue(row ? [row] : []);
     return {
-      manager: { getRepository } as unknown as EntityManager,
-      findOne,
-      getRepository,
+      manager: { query } as unknown as EntityManager,
+      query,
     };
   }
 
   it("reads the currency row through the caller's manager, by upper-cased code", async () => {
-    const { manager, findOne, getRepository } = managerWith({
-      code: "BTC",
-      kind: "CRYPTO",
-    });
+    const { manager, query } = managerWith({ kind: "CRYPTO" });
     await assertAccountCurrencyKindIn(manager, AccountType.CRYPTO, "btc");
-    expect(getRepository).toHaveBeenCalledWith(Currency);
-    expect(findOne).toHaveBeenCalledWith({
-      where: { code: "BTC" },
-      select: { code: true, kind: true },
-    });
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(query.mock.calls[0][1]).toEqual(["BTC"]);
+  });
+
+  it("reads the kind FOR KEY SHARE, so a concurrent kind change (FOR UPDATE) serializes with the write", async () => {
+    const { manager, query } = managerWith({ kind: "FIAT" });
+    await assertAccountCurrencyKindIn(manager, AccountType.CHEQUING, "CAD");
+    const sql = String(query.mock.calls[0][0]);
+    expect(sql).toMatch(/SELECT kind FROM currencies WHERE code = \$1/);
+    expect(sql).toMatch(/FOR KEY SHARE\s*$/);
   });
 
   it("refuses a CHEQUING account in a CRYPTO currency", async () => {
-    const { manager } = managerWith({ code: "BTC", kind: "CRYPTO" });
+    const { manager } = managerWith({ kind: "CRYPTO" });
     await expect(
       assertAccountCurrencyKindIn(manager, AccountType.CHEQUING, "BTC"),
     ).rejects.toThrow(BadRequestException);
