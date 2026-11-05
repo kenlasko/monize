@@ -818,7 +818,8 @@
     "alreadyATransfer": "[XX-This transaction is already a transfer. Edit the transfer itself instead.-XX]",
     "convertTransferCrossOwner": "[XX-A transfer with another owner's account can't be converted. Delete it and create the entry you want instead.-XX]",
     "splitTransferLegConvertLocked": "[XX-This transfer is part of a split transaction. Remove it by editing the split on the source transaction instead.-XX]",
-    "transferCounterpartChanged": "[XX-The other side of this transfer changed while you were editing. Reload and try again.-XX]"
+    "transferCounterpartChanged": "[XX-The other side of this transfer changed while you were editing. Reload and try again.-XX]",
+    "splitTransferTargetAmountRequiresTransfer": "[XX-Only a transfer split can carry a received amount-XX]"
   },
   "users": {
     "userNotFound": "[XX-User not found-XX]",

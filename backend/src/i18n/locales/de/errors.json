@@ -818,7 +818,8 @@
     "alreadyATransfer": "Diese Transaktion ist bereits eine Überweisung. Bearbeiten Sie stattdessen die Überweisung selbst.",
     "convertTransferCrossOwner": "Eine Überweisung mit dem Konto eines anderen Eigentümers kann nicht umgewandelt werden. Löschen Sie sie und erstellen Sie stattdessen den gewünschten Eintrag.",
     "splitTransferLegConvertLocked": "Diese Überweisung ist Teil einer aufgeteilten Transaktion. Entfernen Sie sie, indem Sie die Aufteilung in der Quelltransaktion bearbeiten.",
-    "transferCounterpartChanged": "Die Gegenseite dieser Überweisung hat sich während der Bearbeitung geändert. Laden Sie neu und versuchen Sie es erneut."
+    "transferCounterpartChanged": "Die Gegenseite dieser Überweisung hat sich während der Bearbeitung geändert. Laden Sie neu und versuchen Sie es erneut.",
+    "splitTransferTargetAmountRequiresTransfer": "Nur eine Überweisung in einer Aufteilung kann einen erhaltenen Betrag haben"
   },
   "users": {
     "userNotFound": "Benutzer nicht gefunden",

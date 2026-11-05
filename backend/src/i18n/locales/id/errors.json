@@ -818,7 +818,8 @@
     "alreadyATransfer": "Transaksi ini sudah merupakan transfer. Ubah transfernya saja.",
     "convertTransferCrossOwner": "Transfer dengan akun pemilik lain tidak dapat dikonversi. Hapus dan buat entri yang Anda inginkan.",
     "splitTransferLegConvertLocked": "Transfer ini adalah bagian dari transaksi terpisah. Hapus dengan mengubah pemisahan pada transaksi sumber.",
-    "transferCounterpartChanged": "Sisi lain transfer ini berubah saat Anda mengedit. Muat ulang dan coba lagi."
+    "transferCounterpartChanged": "Sisi lain transfer ini berubah saat Anda mengedit. Muat ulang dan coba lagi.",
+    "splitTransferTargetAmountRequiresTransfer": "Hanya transfer dalam pemisahan yang dapat memiliki jumlah diterima"
   },
   "users": {
     "userNotFound": "Pengguna tidak ditemukan",

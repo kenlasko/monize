@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/Input';
-import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
@@ -12,7 +11,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { Tag, TagUsageMap } from '@/types/tag';
-import { CreateSplitData, InvestmentSplitDetails } from '@/types/transaction';
+import { InvestmentSplitDetails } from '@/types/transaction';
+import type { SplitRow } from './split-rows';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { FALLBACK_DEFAULT_CURRENCY } from '@/lib/default-currency';
 import { roundMoney, roundToCents, roundToDecimals, getCurrencySymbol, getDecimalPlacesForCurrency } from '@/lib/format';
@@ -21,23 +21,19 @@ import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { InvestmentSplitFields } from './InvestmentSplitFields';
 import { RemoveSplitLineButton } from './SplitLineButtons';
+import {
+  useSplitTransferFxAutofill,
+  currentTransferTargetAmount,
+  SplitFxPatch,
+} from './useSplitTransferFxAutofill';
+import { splitTransferPair } from './split-transfer-currency';
+import { SplitAmountFields } from './SplitAmountFields';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
-import { isUuid } from '@/lib/uuid';
 import { buildTagOptions } from '@/lib/tag-options';
 import { Th } from '@/components/ui/Table';
 
-export type SplitType = 'category' | 'transfer' | 'investment';
-
-export interface SplitRow extends CreateSplitData {
-  id: string; // Temporary ID for React keys
-  splitType: SplitType;
-  // Real user intent (issue #1167 R9-F2): true once the user edits this line's FX
-  // rate input, so a re-entered rate on a *continuing* investment line is honoured
-  // for the current pair even when its value equals the stale stored one. Reset
-  // when the security (and thus the pair) changes. UI-only -- the serializer turns
-  // it into `rateExplicit`; it never reaches an ordinary transaction DTO.
-  exchangeRateEdited?: boolean;
-}
+export type { SplitType, SplitRow } from './split-rows';
+export { createEmptySplits, toSplitRows, toCreateSplitData } from './split-rows';
 
 interface SplitEditorProps {
   splits: SplitRow[];
@@ -84,6 +80,13 @@ interface SplitEditorProps {
    * FX rate from the rate for this day (INV-FX-001), never the latest.
    */
   transactionDate?: string;
+  /**
+   * Offer an "Amount Received" on a transfer line whose target account is in
+   * another currency, prefilled from the rate for `transactionDate` and
+   * editable. Only the transaction form sets it: the field is saved as the
+   * line's `transferTargetAmount`, which the scheduled surfaces do not store.
+   */
+  crossCurrencyTransfers?: boolean;
 }
 
 // A stable default, so an absent prop does not rebuild the tag options every render.
@@ -107,6 +110,7 @@ export function SplitEditor({
   displayRate,
   onCreateCategory,
   transactionDate,
+  crossCurrencyTransfers = false,
 }: SplitEditorProps) {
   const t = useTranslations('transactions');
   // Read-only amounts, grouped in the user's number locale (en-US unchanged).
@@ -199,6 +203,52 @@ export function SplitEditor({
     [categories],
   );
 
+  // The splits as last committed, for a rate that arrives between renders.
+  const splitsRef = useRef(localSplits);
+  useEffect(() => {
+    splitsRef.current = localSplits;
+  });
+
+  const defaultSign: 1 | -1 = Number(transactionAmount) > 0 ? 1 : -1;
+  const transferPairOf = (split: SplitRow) =>
+    crossCurrencyTransfers
+      ? splitTransferPair(split, accounts, currencyCode, sourceAccountId, defaultSign)
+      : null;
+  const applyFxPatches = (patches: Record<string, SplitFxPatch>) => {
+    const next = splitsRef.current.map((split) =>
+      patches[split.id] ? { ...split, ...patches[split.id] } : split,
+    );
+    splitsRef.current = next;
+    setLocalSplits(next);
+    onChange(next);
+  };
+  const transferFx = useSplitTransferFxAutofill<SplitRow>({
+    fromCurrency: currencyCode,
+    date: transactionDate,
+    lines: localSplits,
+    pairOf: transferPairOf,
+    defaultSign,
+    onPatch: applyFxPatches,
+  });
+
+  // Every change to the lines lands here. A moved amount re-derives the
+  // received amount of a cross-currency transfer line still holding a derived
+  // one; a typed received amount skips that, since it is the user's figure.
+  const commitSplits = (next: SplitRow[], options: { reconcile?: boolean } = {}) => {
+    const committed =
+      options.reconcile === false ? next : transferFx.reconcile(localSplits, next);
+    splitsRef.current = committed;
+    setLocalSplits(committed);
+    onChange(committed);
+  };
+
+  const handleTargetAmountChange = (index: number, value: number | undefined) => {
+    const line = localSplits[index];
+    const newSplits = [...localSplits];
+    newSplits[index] = { ...line, ...transferFx.editTarget(line, value) };
+    commitSplits(newSplits, { reconcile: false });
+  };
+
   const splitsTotal = localSplits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
   const remaining = Number(transactionAmount) - splitsTotal;
   // Balance is always judged in the account currency so distribution and the
@@ -219,6 +269,7 @@ export function SplitEditor({
           ...newSplits[index],
           splitType: 'category',
           transferAccountId: undefined,
+          transferTargetAmount: undefined,
           investment: undefined,
         };
       } else if (value === 'transfer') {
@@ -226,6 +277,7 @@ export function SplitEditor({
           ...newSplits[index],
           splitType: 'transfer',
           categoryId: undefined,
+          transferTargetAmount: undefined,
           investment: undefined,
         };
       } else {
@@ -234,11 +286,11 @@ export function SplitEditor({
           splitType: 'investment',
           categoryId: undefined,
           transferAccountId: undefined,
+          transferTargetAmount: undefined,
           investment: newSplits[index].investment ?? { action: 'BUY' },
         };
       }
-      setLocalSplits(newSplits);
-      onChange(newSplits);
+      commitSplits(newSplits);
       return;
     }
 
@@ -264,8 +316,20 @@ export function SplitEditor({
         amount,
         exchangeRateEdited,
       };
-      setLocalSplits(newSplits);
-      onChange(newSplits);
+      commitSplits(newSplits);
+      return;
+    }
+
+    // A received amount belongs to the account it arrived in: another target
+    // starts empty and is filled from that pair's rate, as on a transfer.
+    if (field === 'transferAccountId') {
+      newSplits[index] = {
+        ...newSplits[index],
+        transferAccountId: value,
+        transferTargetAmount: undefined,
+        transferTargetFromCurrency: undefined,
+      };
+      commitSplits(newSplits);
       return;
     }
 
@@ -327,8 +391,7 @@ export function SplitEditor({
     }
 
     newSplits[index] = { ...newSplits[index], [field]: value };
-    setLocalSplits(newSplits);
-    onChange(newSplits);
+    commitSplits(newSplits);
   };
 
   // The apply step of an asynchronous create has to run against the splits as
@@ -366,8 +429,7 @@ export function SplitEditor({
       memo: '',
     };
     const newSplits = [...localSplits, newSplit];
-    setLocalSplits(newSplits);
-    onChange(newSplits);
+    commitSplits(newSplits);
   };
 
   // Whether removing the row at `index` is allowed. Above two splits removal is
@@ -386,8 +448,7 @@ export function SplitEditor({
   const removeSplit = (index: number) => {
     if (localSplits.length > 2) {
       const newSplits = localSplits.filter((_, i) => i !== index);
-      setLocalSplits(newSplits);
-      onChange(newSplits);
+      commitSplits(newSplits);
       return;
     }
     // At two splits, deleting one converts back to a regular transaction.
@@ -420,8 +481,7 @@ export function SplitEditor({
       return { ...split, amount: amountPerSplit };
     });
 
-    setLocalSplits(newSplits);
-    onChange(newSplits);
+    commitSplits(newSplits);
   };
 
   // Add unassigned amount to a specific split
@@ -431,8 +491,7 @@ export function SplitEditor({
     const newSplits = [...localSplits];
     const currentAmount = Number(newSplits[index].amount) || 0;
     newSplits[index] = { ...newSplits[index], amount: roundMoney(currentAmount + remaining) };
-    setLocalSplits(newSplits);
-    onChange(newSplits);
+    commitSplits(newSplits);
   };
 
   // Distribute the remaining amount proportionally across the splits based on
@@ -455,8 +514,7 @@ export function SplitEditor({
         }
         return { ...split, amount: roundMoney(currentAmount + perSplit) };
       });
-      setLocalSplits(newSplits);
-      onChange(newSplits);
+      commitSplits(newSplits);
       return;
     }
 
@@ -476,8 +534,7 @@ export function SplitEditor({
       return { ...split, amount: roundMoney(currentAmount + portion) };
     });
 
-    setLocalSplits(newSplits);
-    onChange(newSplits);
+    commitSplits(newSplits);
   };
 
   // Set the transaction total to the sum of splits
@@ -486,6 +543,20 @@ export function SplitEditor({
       onTransactionAmountChange(roundMoney(splitsTotal));
     }
   };
+
+  const renderAmountFields = (split: SplitRow, index: number) => (
+    <SplitAmountFields
+      pair={transferPairOf(split)}
+      amountCurrencyCode={foreignActive ? (displayCurrencyCode as string) : currencyCode}
+      amountSymbol={activeSymbol}
+      amountDecimals={activeDecimals}
+      amountValue={toDisplayAmount(split.amount)}
+      onAmountChange={(value) => handleSplitChange(index, 'amount', fromDisplayAmount(value ?? 0))}
+      receivedValue={currentTransferTargetAmount(split, currencyCode)}
+      onReceivedChange={(value) => handleTargetAmountChange(index, value)}
+      disabled={disabled}
+    />
+  );
 
   return (
     <div className="space-y-4">
@@ -647,14 +718,7 @@ export function SplitEditor({
                   />
                 )}
                 <div className="grid grid-cols-2 gap-2">
-                  <CurrencyInput
-                    prefix={activeSymbol}
-                    value={toDisplayAmount(split.amount)}
-                    onChange={(value) => handleSplitChange(index, 'amount', fromDisplayAmount(value ?? 0))}
-                    allowSignToggle
-                    disabled={disabled}
-                    className="w-full"
-                  />
+                  {renderAmountFields(split, index)}
                   <Input
                     type="text"
                     value={split.memo || ''}
@@ -825,14 +889,7 @@ export function SplitEditor({
                   )}
                 </td>
                 <td className="px-1 py-2">
-                  <CurrencyInput
-                    prefix={activeSymbol}
-                    value={toDisplayAmount(split.amount)}
-                    onChange={(value) => handleSplitChange(index, 'amount', fromDisplayAmount(value ?? 0))}
-                    allowSignToggle
-                    disabled={disabled}
-                    className="w-full"
-                  />
+                  {renderAmountFields(split, index)}
                 </td>
                 <td className="px-1 py-2">
                   <Input
@@ -952,201 +1009,4 @@ export function SplitEditor({
       />
     </div>
   );
-}
-
-// Helper function to generate temporary IDs for new splits
-export function createEmptySplits(transactionAmount: number): SplitRow[] {
-  const halfAmount = roundMoney(Number(transactionAmount) / 2);
-  const otherHalf = roundMoney(Number(transactionAmount) - halfAmount);
-
-  return [
-    {
-      id: `temp-${Date.now()}-1`,
-      splitType: 'category',
-      categoryId: undefined,
-      transferAccountId: undefined,
-      amount: halfAmount,
-      memo: '',
-    },
-    {
-      id: `temp-${Date.now()}-2`,
-      splitType: 'category',
-      categoryId: undefined,
-      transferAccountId: undefined,
-      amount: otherHalf,
-      memo: '',
-    },
-  ];
-}
-
-// Convert API splits to SplitRow format. Accepts both transaction splits (with
-// `investmentTransaction` relation) and scheduled-transaction splits (with the
-// investment payload denormalized as `investment*` columns on the row itself).
-// A real server-issued split id is a UUID. A synthetic React key (a
-// pre-migration override's `override-N`, or a `temp-...` row the user just
-// added) is not, and must never be treated as source identity (issue #1167
-// R8-F1) -- it would be rejected by the DTO's `@IsUUID` and could masquerade as
-// a persistent id, so it is checked with `isUuid`.
-export function toSplitRows(splits: {
-  id?: string;
-  kind?: 'category' | 'transfer' | 'investment';
-  categoryId?: string | null;
-  transferAccountId?: string | null;
-  amount: number;
-  memo?: string | null;
-  tags?: { id: string }[];
-  investmentTransaction?: {
-    action: string;
-    securityId: string | null;
-    quantity: number | null;
-    price: number | null;
-    commission: number;
-    exchangeRate: number;
-  } | null;
-  // Scheduled-transaction-split shape
-  investmentAction?: string | null;
-  investmentSecurityId?: string | null;
-  investmentQuantity?: number | null;
-  investmentPrice?: number | null;
-  investmentCommission?: number | null;
-  investmentExchangeRate?: number | null;
-  investmentExchangeRateFromCurrency?: string | null;
-  investmentExchangeRateToCurrency?: string | null;
-  // Override JSON shape
-  splitKind?: 'category' | 'transfer' | 'investment';
-  investment?: {
-    action: string;
-    securityId?: string;
-    quantity?: number;
-    price?: number;
-    commission?: number;
-    exchangeRate?: number;
-    exchangeRateFromCurrency?: string;
-    exchangeRateToCurrency?: string;
-  };
-}[]): SplitRow[] {
-  return splits.map((split, index) => {
-    const kind: SplitType =
-      split.kind === 'investment' ||
-      split.splitKind === 'investment' ||
-      split.investmentTransaction ||
-      split.investmentAction ||
-      split.investment
-        ? 'investment'
-        : split.transferAccountId
-          ? 'transfer'
-          : 'category';
-    let investment: InvestmentSplitDetails | undefined;
-    if (split.investmentTransaction) {
-      investment = {
-        action: split.investmentTransaction.action as InvestmentSplitDetails['action'],
-        securityId: split.investmentTransaction.securityId ?? undefined,
-        quantity: Number(split.investmentTransaction.quantity ?? 0),
-        price: Number(split.investmentTransaction.price ?? 0),
-        commission: Number(split.investmentTransaction.commission ?? 0),
-        // A persisted rate of null is unknown FX, not 1 (issue #1167 R10-F1):
-        // coercing it to 1 lets the server bless a synthetic 1 as the current
-        // pair. Preserve undefined so the split carries no rate.
-        exchangeRate:
-          split.investmentTransaction.exchangeRate != null
-            ? Number(split.investmentTransaction.exchangeRate)
-            : undefined,
-      };
-    } else if (split.investmentAction) {
-      investment = {
-        action: split.investmentAction as InvestmentSplitDetails['action'],
-        securityId: split.investmentSecurityId ?? undefined,
-        quantity: Number(split.investmentQuantity ?? 0),
-        price: Number(split.investmentPrice ?? 0),
-        commission: Number(split.investmentCommission ?? 0),
-        // A persisted scheduled rate of null is unknown FX, not 1 (issue #1167
-        // R10-F1): coercing it to 1 lets a cosmetic edit bless a synthetic 1 as
-        // the current cross-currency pair. Preserve undefined -- the cross-currency
-        // field then resolves the real rate, and a matched null-rate source is not
-        // stamped unless the user actually enters one.
-        exchangeRate:
-          split.investmentExchangeRate != null
-            ? Number(split.investmentExchangeRate)
-            : undefined,
-        // Carry the server-recorded currency pair (issue #1167 F5-1) so a Post
-        // that resends this line unchanged lets the server tell a still-valid
-        // rate from a since-stale one, rather than trusting the scalar blindly.
-        exchangeRateFromCurrency:
-          split.investmentExchangeRateFromCurrency ?? undefined,
-        exchangeRateToCurrency:
-          split.investmentExchangeRateToCurrency ?? undefined,
-      };
-    } else if (split.investment) {
-      investment = {
-        action: split.investment.action as InvestmentSplitDetails['action'],
-        securityId: split.investment.securityId,
-        quantity: split.investment.quantity,
-        price: split.investment.price,
-        commission: split.investment.commission,
-        exchangeRate: split.investment.exchangeRate,
-        exchangeRateFromCurrency: split.investment.exchangeRateFromCurrency,
-        exchangeRateToCurrency: split.investment.exchangeRateToCurrency,
-      };
-    }
-    return {
-      id: split.id || `temp-${Date.now()}-${index}`,
-      // The source split's real id (undefined for a row the user just added), so
-      // an edit/post can name it as `sourceSplitId` and the server decides FX
-      // provenance by identity (issue #1167 F4). Only a real server id (a UUID)
-      // may become source identity: a synthetic React key (a pre-migration
-      // override's `override-N`, or a `temp-` row) is UI-only and would be
-      // rejected by the DTO's `@IsUUID` and, worse, could masquerade as a
-      // persistent id (issue #1167 R8-F1). Anything else stays undefined, which
-      // the server reads as "new/unidentified line".
-      sourceSplitId: isUuid(split.id) ? split.id : undefined,
-      splitType: kind,
-      categoryId: split.categoryId || undefined,
-      transferAccountId: split.transferAccountId || undefined,
-      investment,
-      amount: Number(split.amount),
-      memo: split.memo || '',
-      tagIds: split.tags?.map(t => t.id) || [],
-    };
-  });
-}
-
-// Convert SplitRow to API format (removes temporary id and splitType)
-// Convert SplitRow to API format (removes temporary id and splitType).
-//
-// `includeSourceIdentity` is opt-in and OFF by default: `sourceSplitId` is a
-// scheduled-transaction correlation field (issue #1167 F4) that the ordinary
-// transaction DTO does not accept, so emitting it there fails validation under
-// `forbidNonWhitelisted` (R7-F1). Only the scheduled create/update surface passes
-// it true.
-export function toCreateSplitData(
-  splits: SplitRow[],
-  options: { includeSourceIdentity?: boolean } = {},
-): CreateSplitData[] {
-  return splits.map((split) => ({
-    splitKind: split.splitType,
-    categoryId: split.splitType === 'category' ? split.categoryId : undefined,
-    transferAccountId: split.splitType === 'transfer' ? split.transferAccountId : undefined,
-    investment: split.splitType === 'investment' ? split.investment : undefined,
-    amount: split.amount,
-    memo: split.memo || undefined,
-    tagIds: split.tagIds && split.tagIds.length > 0 ? split.tagIds : undefined,
-    // Carry the source split id only for scheduled surfaces that decide FX
-    // provenance by identity; undefined for a row the user added.
-    sourceSplitId: options.includeSourceIdentity
-      ? split.sourceSplitId
-      : undefined,
-    // The line's FX rate is a deliberate value for the current settlement pair,
-    // so the server stamps that pair rather than treating the line as an
-    // unidentified legacy row (issue #1167 R8-F2/R9-F2). True for a genuinely new
-    // investment line (no source identity), or a continuing one whose rate the
-    // user actually edited (`exchangeRateEdited`) -- the latter closes the
-    // same-value re-entry edge where the re-typed value equals the stale stored
-    // one. Scheduled surfaces only, alongside the source-identity opt-in.
-    rateExplicit:
-      options.includeSourceIdentity &&
-      split.splitType === 'investment' &&
-      (!split.sourceSplitId || split.exchangeRateEdited === true)
-        ? true
-        : undefined,
-  }));
 }

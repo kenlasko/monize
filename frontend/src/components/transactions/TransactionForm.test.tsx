@@ -382,9 +382,11 @@ vi.mock('@hookform/resolvers/zod', () => ({
   },
 }));
 
+const mockToCreateSplitDataOptions = vi.fn();
+const mockToSplitRowsOptions = vi.fn();
 vi.mock('./SplitEditor', () => ({
-  SplitEditor: ({ categories, onCreateCategory }: any) => (
-    <div data-testid="split-editor">
+  SplitEditor: ({ categories, onCreateCategory, crossCurrencyTransfers }: any) => (
+    <div data-testid="split-editor" data-cross-currency-transfers={String(!!crossCurrencyTransfers)}>
       Split Editor
       <span data-testid="split-editor-categories">
         {(categories || []).map((c: any) => c.name).join(',')}
@@ -406,18 +408,24 @@ vi.mock('./SplitEditor', () => ({
     { id: 'split-1', splitType: 'category', amount: 0, categoryId: undefined, memo: '' },
     { id: 'split-2', splitType: 'category', amount: 0, categoryId: undefined, memo: '' },
   ],
-  toSplitRows: (splits: any[]) => splits.map((s: any, i: number) => ({
-    id: `split-${i}`,
-    splitType: 'category',
-    amount: s.amount,
-    categoryId: s.categoryId,
-    memo: s.memo || '',
-  })),
-  toCreateSplitData: (rows: any[]) => rows.map((r: any) => ({
+  toSplitRows: (splits: any[], options?: unknown) => {
+    mockToSplitRowsOptions(options);
+    return splits.map((s: any, i: number) => ({
+      id: `split-${i}`,
+      splitType: 'category',
+      amount: s.amount,
+      categoryId: s.categoryId,
+      memo: s.memo || '',
+    }));
+  },
+  toCreateSplitData: (rows: any[], options?: unknown) => {
+    mockToCreateSplitDataOptions(options);
+    return rows.map((r: any) => ({
     categoryId: r.categoryId,
     amount: r.amount,
     memo: r.memo,
-  })),
+    }));
+  },
 }));
 
 vi.mock('@/components/ui/Combobox', () => ({
@@ -1648,6 +1656,71 @@ describe('TransactionForm', () => {
       });
       expect(screen.queryByText('Edit reconciled transaction?')).not.toBeInTheDocument();
       expect(mockOnSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    it('offers cross-currency transfer lines and sends the received amount only for them', async () => {
+      mockAccountsGetAll.mockResolvedValue([
+        ...mockAccounts,
+        { ...mockAccounts[1], id: 'acc-usd', name: 'US Savings', currencyCode: 'USD' },
+      ]);
+      const splitTransaction = createSplitTransaction();
+
+      render(
+        <TransactionForm
+          transaction={splitTransaction}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('split-editor')).toHaveAttribute(
+          'data-cross-currency-transfers',
+          'true',
+        );
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalled();
+      });
+
+      const { transferTargetAmountOf } = mockToCreateSplitDataOptions.mock.calls.at(-1)?.[0];
+      const transferTo = (transferAccountId: string) => ({
+        id: 'x',
+        splitType: 'transfer',
+        transferAccountId,
+        amount: -10,
+        transferTargetAmount: 7.3,
+        transferTargetFromCurrency: 'CAD',
+      });
+      expect(transferTargetAmountOf(transferTo('acc-usd'))).toBe(7.3);
+      expect(transferTargetAmountOf(transferTo('acc-2'))).toBeUndefined();
+    });
+
+    it('loads received amounts for the split being edited, not for a duplicate of it', async () => {
+      const splitTransaction = createSplitTransaction();
+      const { unmount } = render(
+        <TransactionForm transaction={splitTransaction} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
+      );
+      await waitFor(() => {
+        expect(screen.getByTestId('split-editor')).toBeInTheDocument();
+      });
+      expect(mockToSplitRowsOptions).toHaveBeenCalledWith({
+        receivedAmountsIn: splitTransaction.currencyCode,
+      });
+      unmount();
+
+      mockToSplitRowsOptions.mockClear();
+      render(
+        <TransactionForm duplicateFrom={splitTransaction} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />
+      );
+      await waitFor(() => {
+        expect(screen.getByTestId('split-editor')).toBeInTheDocument();
+      });
+      expect(mockToSplitRowsOptions).toHaveBeenCalled();
+      for (const [options] of mockToSplitRowsOptions.mock.calls) {
+        expect(options?.receivedAmountsIn).toBeUndefined();
+      }
     });
 
     it('sends splits: [] when converting an existing split transaction back to regular', async () => {

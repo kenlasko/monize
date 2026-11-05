@@ -283,6 +283,33 @@ Note what makes this work: the comparison happens at 4dp, the storage
 precision. Rounding to cents before comparing -- which a currency input is
 tempted to do -- makes three amounts that do not sum appear to.
 
+### A transfer line's received amount
+
+A transfer line's `amount` is in the parent's currency; its counterpart is in
+the target account's. The line may carry `transferTargetAmount`, the unsigned
+amount that arrived, and it follows the plain transfer's `toAmount` rules
+(`resolveSplitTransferAmount` in `transaction-split.service.ts`): across
+currencies it wins over the market rate and the counterpart stores its implied
+rate, `roundFxRate(received / |amount|)`; between two accounts in one currency it
+must equal `|amount|`; zero on one side only is refused; any line that is not a
+transfer refuses it. The counterpart takes the opposite sign of the line.
+Absent, the counterpart is converted at the market rate for the parent's date,
+as before.
+
+A split save replaces every line, so the received amount is kept on two
+sides. The server fills a line that continues a recorded one (same target, same
+amount, parent account unchanged) with its recorded figure when the caller
+states none (`carryRecordedReceivedAmounts`, on both replacement paths): an AI
+or MCP split edit, or a memo change, no longer re-prices a counterpart at that
+day's market rate. The transaction form loads the figure from each own line's
+counterpart (`findOne` and the register carry `{ id, amount, currencyCode }`,
+never to a joint reader) and sends it back, tagged with the parent currency it
+was stated against so a figure for a previous currency is neither shown nor
+sent. A duplicate or quick fill copies none. Undo compares it, so an edit of
+that figure alone is refused like any other leg change. The scheduled surfaces
+do not store a received amount and still convert when the occurrence posts.
+The full rules and test matrix are in `docs/specs/split-cross-currency-transfer.md`.
+
 ## 6. Investments
 
 ### Cost basis includes acquisition commission

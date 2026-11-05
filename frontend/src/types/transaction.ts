@@ -39,6 +39,15 @@ export interface TransactionSplit {
   transferAccountId: string | null;
   transferAccount: Account | null;
   linkedTransactionId: string | null;
+  /**
+   * A transfer line's counterpart, as far as the split editor needs it: the
+   * amount that arrived in the target account, in that account's currency.
+   */
+  linkedTransaction?: {
+    id: string;
+    amount: number;
+    currencyCode: string;
+  } | null;
   amount: number;
   memo: string | null;
   tags?: Tag[];
@@ -115,6 +124,12 @@ export interface CreateSplitData {
   transferAccountId?: string;
   investment?: InvestmentSplitDetails;
   amount: number;
+  /**
+   * Transfer lines only: what arrives in the target account, unsigned, in its
+   * currency. Sent for a cross-currency line so the counterpart records the
+   * figure the user confirmed rather than the market conversion.
+   */
+  transferTargetAmount?: number;
   memo?: string;
   tagIds?: string[];
   // Id of the source split this row continues (issue #1167 F4). Sent on a

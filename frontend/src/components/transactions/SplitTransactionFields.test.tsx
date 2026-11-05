@@ -42,7 +42,7 @@ vi.mock('@/components/ui/Combobox', () => ({
 }));
 
 vi.mock('@/components/ui/CurrencyInput', () => ({
-  CurrencyInput: ({ label, value, onChange, error, prefix }: any) => (
+  CurrencyInput: ({ label, value, onChange, error, prefix, allowSignToggle }: any) => (
     <div data-testid={`currency-input-${label}`}>
       <label>{label}</label>
       {prefix && <span data-testid={`currency-prefix-${label}`}>{prefix}</span>}
@@ -52,6 +52,11 @@ vi.mock('@/components/ui/CurrencyInput', () => ({
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
       />
+      {allowSignToggle && (
+        <button type="button" aria-label={`Change sign of ${label}`} onClick={() => onChange(-(value ?? 0))}>
+          +/-
+        </button>
+      )}
       {error && <span data-testid={`currency-error-${label}`}>{error}</span>}
     </div>
   ),
@@ -364,6 +369,14 @@ describe('SplitTransactionFields', () => {
     fireEvent.change(amountInput, { target: { value: '150.00' } });
 
     expect(defaultProps.handleAmountChange).toHaveBeenCalledWith(150);
+  });
+
+  it('offers the +/- sign toggle on Total Amount, as the Amount field does', () => {
+    render(<SplitTransactionFields {...defaultProps} watchedAmount={-100} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Change sign of Total Amount' }));
+
+    expect(defaultProps.handleAmountChange).toHaveBeenCalledWith(100);
   });
 
   it('calls handleAmountChange with undefined when Total Amount is cleared', () => {

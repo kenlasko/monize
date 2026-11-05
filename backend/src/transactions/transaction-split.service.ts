@@ -30,7 +30,7 @@ import {
 } from "../securities/cash-impact.util";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { roundMoney, sumMoney } from "../common/round.util";
-import { resolveFxRateOrNull } from "../common/fx-entry.util";
+import { resolveFxRateOrNull, roundFxRate } from "../common/fx-entry.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { tr } from "../i18n/translate";
@@ -38,12 +38,35 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { lockTransactionRow, lockTransactionRows } from "../common/db/locks";
 import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 import { removeLockedTransactionLeg } from "./remove-transaction-leg";
+import { carryRecordedReceivedAmounts } from "./split-received-amount.util";
 
 function inferSplitKind(split: CreateTransactionSplitDto): SplitKind {
   if (split.splitKind) return split.splitKind;
   if (split.investment) return SplitKind.INVESTMENT;
   if (split.transferAccountId) return SplitKind.TRANSFER;
   return SplitKind.CATEGORY;
+}
+
+/**
+ * A received amount describes a transfer's other leg; on any other line there
+ * is no leg for it to land on, so it is refused rather than dropped.
+ */
+function assertTargetAmountOnTransfer(split: CreateTransactionSplitDto): void {
+  if (
+    split.transferTargetAmount === undefined ||
+    split.transferTargetAmount === null
+  ) {
+    return;
+  }
+  if (inferSplitKind(split) === SplitKind.TRANSFER && split.transferAccountId) {
+    return;
+  }
+  throw new BadRequestException(
+    tr(
+      "errors.transactions.splitTransferTargetAmountRequiresTransfer",
+      "Only a transfer split can carry a received amount",
+    ),
+  );
 }
 
 @Injectable()
@@ -71,15 +94,70 @@ export class TransactionSplitService {
    * audit P5-002, and it is the same silent 1:1 as the rest of that finding.
    *
    * Refuses rather than posting at par when the pair has no determinable rate.
+   *
+   * `suppliedTargetAmount` is the split's `transferTargetAmount`: what the
+   * user says arrived, unsigned, in the target currency. Across currencies it
+   * wins over the market rate and its implied rate is stored, exactly as a
+   * plain transfer's `toAmount` does (`TransactionTransferService.resolveTransferFx`);
+   * between two accounts in one currency it must equal the split amount.
    */
   private async resolveSplitTransferAmount(
     amount: number,
     sourceCurrencyCode: string,
     targetCurrencyCode: string,
     transactionDate: string,
+    suppliedTargetAmount?: number,
   ): Promise<{ amount: number; exchangeRate: number }> {
+    const sent = Math.abs(roundMoney(amount));
     if (sourceCurrencyCode === targetCurrencyCode) {
+      if (
+        suppliedTargetAmount !== undefined &&
+        suppliedTargetAmount !== null &&
+        roundMoney(suppliedTargetAmount) !== sent
+      ) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.transferSameCurrencyMustConserve",
+            `A transfer between two ${targetCurrencyCode} accounts must move the same amount on both sides (received ${roundMoney(suppliedTargetAmount)} against ${sent})`,
+            { currency: targetCurrencyCode, amount: sent },
+          ),
+        );
+      }
       return { amount: roundMoney(-amount), exchangeRate: 1 };
+    }
+
+    if (suppliedTargetAmount !== undefined && suppliedTargetAmount !== null) {
+      const received = roundMoney(suppliedTargetAmount);
+      // Zero on one side only is value created or destroyed, not a rate.
+      if ((sent === 0) !== (received === 0)) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.transferAmountsMustAgreeOnZero",
+            `A transfer must move a non-zero amount on both sides, or zero on both (received ${sent} against ${received})`,
+            { amount: sent, toAmount: received },
+          ),
+        );
+      }
+      if (sent !== 0) {
+        const impliedRate = roundFxRate(received / sent);
+        if (!Number.isFinite(impliedRate) || impliedRate <= 0) {
+          throw new BadRequestException(
+            tr(
+              "errors.transactions.transferImpliedRateInvalid",
+              `The destination amount ${received} implies an unusable exchange rate against the source amount ${sent}`,
+              { amount: sent, toAmount: received },
+            ),
+          );
+        }
+        // The counterpart moves the other way from the split line: a line
+        // taking money out of the parent's account puts it into the target.
+        return {
+          amount: amount < 0 ? received : -received,
+          exchangeRate: impliedRate,
+        };
+      }
+      // Zero on both sides moves nothing; the market path below records the
+      // pair's rate for it as it always has.
     }
 
     const rate = await resolveFxRateOrNull(
@@ -119,11 +197,21 @@ export class TransactionSplitService {
    */
   async prewarmSplitTransferRates(
     userId: string,
-    splits: Pick<CreateTransactionSplitDto, "transferAccountId">[],
+    splits: Pick<
+      CreateTransactionSplitDto,
+      "transferAccountId" | "transferTargetAmount"
+    >[],
     sourceAccountId: string,
     transactionDate: string | Date | null | undefined,
   ): Promise<void> {
-    const transferSplits = splits.filter((s) => s.transferAccountId);
+    // A line that states what arrived converts at its own implied rate and
+    // needs no market rate.
+    const transferSplits = splits.filter(
+      (s) =>
+        s.transferAccountId &&
+        (s.transferTargetAmount === undefined ||
+          s.transferTargetAmount === null),
+    );
     if (transferSplits.length === 0) return;
     const dateStr = !transactionDate
       ? null
@@ -183,6 +271,7 @@ export class TransactionSplitService {
 
     for (const split of splits) {
       const kind = inferSplitKind(split);
+      assertTargetAmountOnTransfer(split);
       if (kind !== SplitKind.INVESTMENT) continue;
 
       const inv = split.investment;
@@ -491,6 +580,7 @@ export class TransactionSplitService {
         sourceAccount.currencyCode,
         targetAccount.currencyCode,
         dateStr,
+        split.transferTargetAmount,
       );
 
       // A VOID parent's counterpart is VOID: the two rows describe one movement
@@ -981,6 +1071,15 @@ export class TransactionSplitService {
         userId,
         transaction.id,
       );
+      // Likewise before the counterparts go: a line that continues a recorded
+      // one keeps what arrived rather than being re-converted.
+      const replacement = await this.withRecordedReceivedAmounts(
+        m,
+        userId,
+        parent,
+        parent.accountId,
+        splits,
+      );
 
       // One guard for the whole replacement: the old embedded rows are removed
       // and their successors written before it verifies, so a replacement that
@@ -1007,7 +1106,7 @@ export class TransactionSplitService {
       // error and nothing to reconcile against (audit FV4-002).
       const created = await this.createSplits(
         parent.id,
-        splits,
+        replacement,
         userId,
         parent.accountId,
         new Date(parent.transactionDate),
@@ -1051,6 +1150,48 @@ export class TransactionSplitService {
   }
 
   /**
+   * `splits` with each continuing cross-currency transfer line's recorded
+   * received amount filled in where the caller sent none
+   * (`carryRecordedReceivedAmounts`). Reads the parent's current lines and
+   * their counterparts, so it runs inside the replacement's transaction,
+   * before those counterparts are deleted.
+   */
+  async withRecordedReceivedAmounts(
+    m: EntityManager,
+    userId: string,
+    parent: { id: string; accountId: string },
+    nextAccountId: string,
+    splits: CreateTransactionSplitDto[],
+  ): Promise<CreateTransactionSplitDto[]> {
+    const wantsCarry = splits.some(
+      (split) =>
+        split.transferAccountId &&
+        (split.transferTargetAmount === undefined ||
+          split.transferTargetAmount === null),
+    );
+    if (!wantsCarry || nextAccountId !== parent.accountId) return splits;
+    const current = await m.getRepository(TransactionSplit).find({
+      where: { transactionId: parent.id },
+      relations: ["linkedTransaction"],
+    });
+    if (!current.some((split) => split.linkedTransaction)) return splits;
+    const source = await this.accountsService.findOne(userId, parent.accountId);
+    return carryRecordedReceivedAmounts(
+      current.map((split) => ({
+        transferAccountId: split.transferAccountId,
+        amount: split.amount,
+        counterpartAmount: split.linkedTransaction?.amount ?? null,
+        counterpartCurrencyCode: split.linkedTransaction?.currencyCode ?? null,
+      })),
+      splits,
+      {
+        sourceCurrencyCode: source.currencyCode,
+        parentAccountUnchanged: nextAccountId === parent.accountId,
+      },
+    );
+  }
+
+  /**
    * Reprice the bond-linked securities among these after a split write's
    * commit: its embedded investment rows changed their lots. Never called from
    * inside a transaction (INV-CACHE-001); a failure is logged by the bond
@@ -1091,6 +1232,7 @@ export class TransactionSplitService {
         ),
       );
     }
+    assertTargetAmountOnTransfer(splitDto);
     if (splitDto.categoryId) {
       await this.validateCategoryOwnership(userId, splitDto.categoryId);
     }
@@ -1191,6 +1333,7 @@ export class TransactionSplitService {
           sourceAccount.currencyCode,
           targetAccount.currencyCode,
           String(transaction.transactionDate),
+          splitDto.transferTargetAmount,
         );
 
         const linkedTransaction = m.create(Transaction, {

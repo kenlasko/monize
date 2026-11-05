@@ -818,7 +818,8 @@
     "alreadyATransfer": "Ta transakcja jest już przelewem. Zamiast tego edytuj sam przelew.",
     "convertTransferCrossOwner": "Przelewu z kontem innego właściciela nie można przekonwertować. Usuń go i zamiast tego utwórz żądany wpis.",
     "splitTransferLegConvertLocked": "Ten przelew jest częścią transakcji podzielonej. Usuń go, edytując podział w transakcji źródłowej.",
-    "transferCounterpartChanged": "Druga strona tego przelewu zmieniła się podczas edycji. Odśwież i spróbuj ponownie."
+    "transferCounterpartChanged": "Druga strona tego przelewu zmieniła się podczas edycji. Odśwież i spróbuj ponownie.",
+    "splitTransferTargetAmountRequiresTransfer": "Tylko przelew w podziale może mieć kwotę otrzymaną"
   },
   "users": {
     "userNotFound": "Nie znaleziono użytkownika",

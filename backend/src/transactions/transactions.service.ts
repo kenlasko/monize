@@ -54,6 +54,7 @@ import {
   type RegisterSortDirection,
   type TransactionSortField,
 } from "./register-order";
+import { ownSplitCounterpartsOnly } from "./split-received-amount.util";
 import {
   brokerageExclusionForEntity,
   investmentLinkedSplitExclusion,
@@ -1555,7 +1556,10 @@ export class TransactionsService {
           );
       }
 
-      const enrichedData = await this.enrichWithInvestmentLinks(m, data);
+      const enrichedData = ownSplitCounterpartsOnly(
+        userId,
+        await this.enrichWithInvestmentLinks(m, data),
+      );
 
       return {
         data: enrichedData,
@@ -1596,7 +1600,11 @@ export class TransactionsService {
     });
   }
 
-  /** The register's row query: every relation a listed row is drawn with. */
+  /**
+   * The register's row query: every relation a listed row is drawn with. Of a
+   * transfer line's counterpart it selects only what the split editor needs:
+   * the amount that arrived, in the target's currency.
+   */
   private registerRowsQuery(m: EntityManager): SelectQueryBuilder<Transaction> {
     return m
       .getRepository(Transaction)
@@ -1609,6 +1617,12 @@ export class TransactionsService {
       .leftJoinAndSelect("splits.category", "splitCategory")
       .leftJoinAndSelect("splits.transferAccount", "splitTransferAccount")
       .leftJoinAndSelect("splits.tags", "splitTags")
+      .leftJoin("splits.linkedTransaction", "splitLinkedTx")
+      .addSelect([
+        "splitLinkedTx.id",
+        "splitLinkedTx.amount",
+        "splitLinkedTx.currencyCode",
+      ])
       .leftJoinAndSelect("splits.investmentTransaction", "splitInvestmentTx")
       .leftJoinAndSelect(
         "splitInvestmentTx.security",
@@ -2545,8 +2559,8 @@ export class TransactionsService {
     id: string,
     jointAccountIds: string[] = [],
   ): Promise<Transaction> {
-    const transaction = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Transaction).findOne({
+    const transaction = await withScopedDb(this.dataSource, async (m) => {
+      const row = await m.getRepository(Transaction).findOne({
         // Own row, or a row in an account jointly shared to the caller --
         // `jointAccountIds` is the controller's already-authorized set,
         // never raw request input. Empty for every non-joint caller.
@@ -2570,8 +2584,10 @@ export class TransactionsService {
           "linkedTransaction",
           "linkedTransaction.account",
         ],
-      }),
-    );
+      });
+      if (row) await this.attachSplitCounterpartAmounts(m, userId, row);
+      return row;
+    });
 
     if (!transaction) {
       throw new NotFoundException(
@@ -2584,6 +2600,35 @@ export class TransactionsService {
     }
 
     return transaction;
+  }
+
+  /**
+   * Gives each transfer line of the reader's own split the one thing the split
+   * editor needs of its counterpart: the amount that arrived, in the target's
+   * currency (`id`, `amount`, `currencyCode` and nothing else). A joint reader
+   * cannot edit splits, and the counterpart may sit in an account of the
+   * owner's that was never shared, so another owner's row gets none.
+   */
+  private async attachSplitCounterpartAmounts(
+    m: EntityManager,
+    userId: string,
+    transaction: Transaction,
+  ): Promise<void> {
+    if (transaction.userId !== userId || !transaction.splits) return;
+    const ids = transaction.splits
+      .map((split) => split.linkedTransactionId)
+      .filter((id): id is string => !!id);
+    if (ids.length === 0) return;
+    const counterparts = await m.getRepository(Transaction).find({
+      select: { id: true, amount: true, currencyCode: true },
+      where: { id: In(ids), userId },
+    });
+    const byId = new Map(counterparts.map((row) => [row.id, row]));
+    for (const split of transaction.splits) {
+      split.linkedTransaction = split.linkedTransactionId
+        ? (byId.get(split.linkedTransactionId) ?? null)
+        : null;
+    }
   }
 
   /**
@@ -2884,6 +2929,16 @@ export class TransactionsService {
           // Read before the embedded rows are torn down: the recreated rows keep
           // the bond series of the rows they replace (INV-BOND-007).
           const carriedSeries = await readEmbeddedSeriesCarry(m, userId, id);
+          // Likewise before the counterparts go: a line that continues a
+          // recorded one keeps what arrived rather than being re-converted.
+          const replacement =
+            await this.splitService.withRecordedReceivedAmounts(
+              m,
+              userId,
+              locked,
+              updateData.accountId ?? locked.accountId,
+              splits,
+            );
 
           // Both the delete of the old counterparts and the create of the new
           // ones touch accounts the parent never named; route them into the
@@ -2911,7 +2966,7 @@ export class TransactionsService {
           const txDate = updateData.transactionDate ?? locked.transactionDate;
           const savedSplits = await this.splitService.createSplits(
             id,
-            splits,
+            replacement,
             userId,
             accountId,
             new Date(txDate),
@@ -4037,6 +4092,9 @@ export class TransactionsService {
         transferAccountId: s.transferAccountId,
         linkedTransactionId: s.linkedTransactionId,
         amount: s.amount,
+        // What a transfer line's counterpart received, so an edit of that
+        // figure alone is a change history can see (and refuse to replay).
+        receivedAmount: s.linkedTransaction ? s.linkedTransaction.amount : null,
         memo: s.memo,
       })),
       tagIds: tx.tags?.map((t) => t.id),

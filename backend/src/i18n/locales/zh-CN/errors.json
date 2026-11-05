@@ -818,7 +818,8 @@
     "alreadyATransfer": "此交易已经是一笔转账。请直接编辑该转账。",
     "convertTransferCrossOwner": "无法转换涉及其他所有者账户的转账。请删除它并新建所需的条目。",
     "splitTransferLegConvertLocked": "此转账属于一笔拆分交易。请在源交易中编辑拆分来移除它。",
-    "transferCounterpartChanged": "编辑期间此转账的另一方已更改。请重新加载后重试。"
+    "transferCounterpartChanged": "编辑期间此转账的另一方已更改。请重新加载后重试。",
+    "splitTransferTargetAmountRequiresTransfer": "只有拆分中的转账才能带有收到金额"
   },
   "users": {
     "userNotFound": "未找到用户",

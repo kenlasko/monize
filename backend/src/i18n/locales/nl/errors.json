@@ -818,7 +818,8 @@
     "alreadyATransfer": "Deze transactie is al een overboeking. Bewerk in plaats daarvan de overboeking zelf.",
     "convertTransferCrossOwner": "Een overboeking met de rekening van een andere eigenaar kan niet worden omgezet. Verwijder hem en maak in plaats daarvan de gewenste boeking aan.",
     "splitTransferLegConvertLocked": "Deze overboeking maakt deel uit van een gesplitste transactie. Verwijder hem door de splitsing op de brontransactie te bewerken.",
-    "transferCounterpartChanged": "De andere kant van deze overboeking is gewijzigd tijdens het bewerken. Herlaad en probeer het opnieuw."
+    "transferCounterpartChanged": "De andere kant van deze overboeking is gewijzigd tijdens het bewerken. Herlaad en probeer het opnieuw.",
+    "splitTransferTargetAmountRequiresTransfer": "Alleen een overboeking in een splitsing kan een ontvangen bedrag hebben"
   },
   "users": {
     "userNotFound": "Gebruiker niet gevonden",

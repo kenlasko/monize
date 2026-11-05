@@ -899,6 +899,51 @@ describe("ActionHistoryService", () => {
         expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
       });
 
+      const withReceived = (linked: string, receivedAmount: number) =>
+        transferSplits(linked).map((split) =>
+          split.transferAccountId ? { ...split, receivedAmount } : split,
+        );
+
+      it("refuses, before any write, when the edit changed only what a line received", async () => {
+        // A cross-currency line: same CAD amount, the USD received corrected.
+        arrange(
+          splitAction(
+            withReceived("leg-old", 29.2),
+            withReceived("leg-new", 28.75),
+          ),
+        );
+
+        await expect(service.undo(userId)).rejects.toMatchObject({
+          response: { errorCode: "UNDO_SPLIT_LEGS_CHANGED" },
+        });
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      });
+
+      it("leaves the lines alone when the received amounts are unchanged", async () => {
+        arrange(
+          splitAction(
+            withReceived("leg-old", 29.2),
+            withReceived("leg-new", 29.2),
+          ),
+        );
+
+        await service.undo(userId);
+
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      });
+
+      it("does not read a received amount only one snapshot recorded as a change", async () => {
+        // An entry written before snapshots carried the figure.
+        arrange(
+          splitAction(transferSplits("leg-old"), withReceived("leg-new", 29.2)),
+        );
+
+        await service.undo(userId);
+
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      });
+
       it("refuses the redo of an edit that added a transfer line", async () => {
         arrange(
           splitAction([transferSplits("x")[0]], transferSplits("leg-new")),
