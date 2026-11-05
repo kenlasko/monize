@@ -93,8 +93,9 @@ function dailyAccrual(series: FloatingSeries, index: ExactDecimal) {
  * The day rows of a period. The index of a day is the latest observation strictly
  * before it, except an observation dated within `lockoutBusinessDays` business
  * days before the period's end, which the period does not use. A day more than
- * `INDEX_FRESH_DAYS` after the newest stored observation is unknown: no value is
- * carried into an auction that is not stored (INV-BOND-002).
+ * `INDEX_FRESH_DAYS` after the observation in force for it is unknown, whether
+ * that is the newest stored observation or one before a gap: no value is carried
+ * across an auction that is not stored (INV-BOND-002).
  */
 function tableOf(
   series: FloatingSeries,
@@ -116,13 +117,9 @@ function tableOf(
   const usable = observations.filter(
     (o) => lockFrom === null || compareYMD(o.date, lockFrom) < 0,
   );
-  const newest =
-    observations.length === 0
-      ? null
-      : observations[observations.length - 1].date;
-  const horizon = newest === null ? null : addDays(newest, INDEX_FRESH_DAYS);
   const rows: DayRow[] = [];
   let at = -1;
+  let stored = -1;
   for (
     let day = period.start;
     compareYMD(day, period.end) < 0;
@@ -131,7 +128,19 @@ function tableOf(
     while (at + 1 < usable.length && compareYMD(usable[at + 1].date, day) < 0) {
       at += 1;
     }
-    const stale = horizon === null || compareYMD(day, horizon) > 0;
+    while (
+      stored + 1 < observations.length &&
+      compareYMD(observations[stored + 1].date, day) < 0
+    ) {
+      stored += 1;
+    }
+    // Freshness is the stored series' (the lockout view only decides which
+    // value is used): a day is stale when the latest stored observation before
+    // it is more than INDEX_FRESH_DAYS older, a gap in the middle of the series
+    // as much as the end of it (INV-BOND-002).
+    const stale =
+      stored >= 0 &&
+      compareYMD(day, addDays(observations[stored].date, INDEX_FRESH_DAYS)) > 0;
     const index =
       lockoutNeedsCalendar || stale || at < 0 ? null : usable[at].value;
     rows.push({

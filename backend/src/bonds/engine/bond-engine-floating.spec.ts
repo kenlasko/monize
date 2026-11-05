@@ -200,6 +200,34 @@ describe("a day with no index is unknown (INV-BOND-002)", () => {
     expect(v.valuationComplete).toBe(false);
   });
 
+  it("is unknown across a gap in the middle of the stored series, not carried from the old observation", () => {
+    // Stored: 04-27, 05-04, then nothing until 05-25. 05-04 is in force to
+    // 05-11 (a week on); 05-12 .. 05-25 has no index until the 05-25 auction
+    // applies from 05-26. The old index must not carry across the gap.
+    const gap: [string, string][] = [
+      ["2026-04-27", "0.0360"],
+      ["2026-05-04", "0.0362"],
+      ["2026-05-25", "0.0368"],
+    ];
+    const v = valueFloating(FRN, LOT, "2026-05-26", gap);
+    expect(v.accruedInterest).toBeNull();
+    expect(v.grossValue).toBeNull();
+    expect(v.valuationComplete).toBe(false);
+    expect(v.missing).toEqual([
+      {
+        benchmarkId: FLOAT_ID,
+        observation: "2026-05-12",
+        publisher: "PUBLISHER",
+      },
+    ]);
+    const runs = v.rateSchedule[0].dailyRates ?? [];
+    expect(runs.map((r) => [r.from, r.to, r.index])).toEqual([
+      ["2026-04-30", "2026-05-05", "0.0360"],
+      ["2026-05-05", "2026-05-12", "0.0362"],
+      ["2026-05-26", "2026-06-02", "0.0368"],
+    ]);
+  });
+
   it("names no day for a series that is not stored, and no publisher", () => {
     const v = valueBondLotSeries({
       ...lotOf(FRN, LOT.purchaseDate, LOT.quantity),

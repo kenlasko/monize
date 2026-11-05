@@ -533,13 +533,17 @@ accrual: { type: "ACTUAL_360_DAILY_SUM" }
 
 Decisions made in Phase 4 (implementation):
 
-- Stale rule. Let `n` be the date of the newest stored observation of the
-  benchmark. A day `x` has an index when the latest observation strictly before
-  `x` exists and `x <= n + 7` calendar days. A later day is unknown unless the
-  projection supplies an index for it; `coveredThrough` is not read. Example:
-  the newest observation is Monday 2026-07-06, so 2026-07-13 is known and
-  2026-07-14 is unknown. Observations after the lockout cut are not newer for
-  this test: the test reads the stored series, not the lockout view.
+- Stale rule. A day `x` has an index when the latest stored observation
+  strictly before `x` (dated `n`) exists and `x <= n + 7` calendar days;
+  otherwise `x` is unknown unless the projection supplies an index for it.
+  `n` is the observation in force for `x`, so a gap in the middle of the
+  stored series makes its days unknown exactly as the end of it does: no old
+  index is carried across a missing auction (INV-BOND-002). `coveredThrough` is
+  not read. Example: observations on Monday 2026-04-27, 2026-05-04 and
+  2026-05-25: 2026-05-11 is known, 2026-05-12 to 2026-05-25 are unknown, and
+  2026-05-26 is known again (from the 05-25 observation). Observations after
+  the lockout cut are not newer for this test: the test reads the stored
+  series, not the lockout view.
 - The lockout counts `lockoutBusinessDays` business days of `calendarId` back
   from the unadjusted period end. An observation dated on or after that day is
   not used for the days of that period; it is used from the next period. A
