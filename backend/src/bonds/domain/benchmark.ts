@@ -4,7 +4,13 @@
  * read by a principal rule. A rate rule never reads an `INDEX_LEVEL` series and a
  * principal rule never reads a `RATE_FRACTION` one (`benchmarkReadsOf`).
  */
-export type BenchmarkUnit = "RATE_FRACTION" | "INDEX_LEVEL";
+export const BENCHMARK_UNITS = ["RATE_FRACTION", "INDEX_LEVEL"] as const;
+export type BenchmarkUnit = (typeof BENCHMARK_UNITS)[number];
+
+/** True when `value` is one of the units this module defines. */
+export function isBenchmarkUnit(value: string): value is BenchmarkUnit {
+  return (BENCHMARK_UNITS as readonly string[]).includes(value);
+}
 
 /** What a benchmark series is and who publishes it; the data comes from an adapter. */
 export interface BenchmarkDefinition {

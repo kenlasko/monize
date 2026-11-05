@@ -30,6 +30,22 @@ describe("assertBenchmarkUnit", () => {
     }
   });
 
+  it("refuses a rate series read by a principal rule, the other direction", () => {
+    const principal = {
+      benchmarkId: "B_INDEX",
+      role: "PRINCIPAL",
+      unit: "INDEX_LEVEL",
+    } as const;
+    expect(() => assertBenchmarkUnit(principal, "RATE_FRACTION")).toThrow(
+      BondDataInconsistentError,
+    );
+    expect(() => assertBenchmarkUnit(principal, "INDEX_LEVEL")).not.toThrow();
+  });
+
+  it("accepts a stored unit that is not a known unit (legacy FRACTION)", () => {
+    expect(() => assertBenchmarkUnit(rate, "FRACTION")).not.toThrow();
+  });
+
   it("does not judge a row that states no unit (the column is NOT NULL; only a hand-built row lacks it)", () => {
     expect(() => assertBenchmarkUnit(rate, undefined)).not.toThrow();
   });
