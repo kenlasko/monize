@@ -40,7 +40,9 @@ function world(opts: {
   linked?: boolean;
   ledgers: Row[][];
   /** Successive answers of the price band read (rows outside it); last repeats. */
-  band?: Array<Array<{ id: string; price: string; face: string }>>;
+  band?: Array<
+    Array<{ id: string; price: string; face: string; cash_price?: boolean }>
+  >;
 }) {
   let reads = 0;
   let bandReads = 0;
@@ -284,6 +286,21 @@ describe("BondWriteGuard (INV-BOND-005: a quantity of a linked security is a cou
     expect(body?.errorCode).toBe("QUANTITY_NOT_BONDS");
     expect(body?.message).toContain("100.00");
     expect(body?.message).toContain("1.0000");
+  });
+
+  it("names the cash-price band for a trade of a marketable coupon series: more than five times the face value", async () => {
+    const { manager } = world({
+      ledgers: [[], [buy]],
+      band: [
+        [],
+        [{ id: "b1", price: "612.5000", face: "100", cash_price: true }],
+      ],
+    });
+    const guard = await beginBondWriteGuard(manager, USER, [SEC]);
+    const body = await refusalCode(guard.verify(["b1"]));
+    expect(body?.errorCode).toBe("QUANTITY_NOT_BONDS");
+    expect(body?.message).toContain("more than five times the face value");
+    expect(body?.message).toContain("612.5000");
   });
 
   it("refuses one priced above the band too", async () => {

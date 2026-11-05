@@ -30,12 +30,18 @@ export function registerUsCalendars(
 /** One program per product template: the structure is the template's, the series are a person's. */
 const programs: readonly BondProgramDefinition[] = Object.values(
   SERIES_TEMPLATES,
-).map(({ structure: { instrument }, infoUrl }) => ({
+).map(({ structure: { instrument, rateRule, rest }, infoUrl }) => ({
   issuerCountryCode: instrument.issuerCountryCode as string,
   issuerCode: instrument.issuerCode as string,
   programCode: instrument.programCode as string,
   currency: instrument.currency as string,
   faceValue: instrument.faceValue as string,
+  cashPriced:
+    instrument.marketability === "MARKETABLE" &&
+    rateRule.type !== "ZERO_COUPON_DISCOUNT",
+  indexedPrincipal:
+    (rest.principalRule as { type?: string } | undefined)?.type ===
+    "INDEX_RATIO",
   infoUrl,
 }));
 

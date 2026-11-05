@@ -77,18 +77,27 @@ export function lotsRefusalException(
 /**
  * The 400 of a priced trade of a bond-linked security whose price is not a price
  * per bond of its face value (INV-BOND-005): the quantity is not a number of
- * bonds. Nothing is written; `QUANTITY_NOT_BONDS` is its `errorCode`.
+ * bonds. Nothing is written; `QUANTITY_NOT_BONDS` is its `errorCode`. A trade of
+ * a marketable coupon series has the wide band (a cash price up to five times
+ * the face value) and its own message.
  */
 export function quantityNotBondsException(
   found: QuantityNotBonds,
 ): BadRequestException {
   const params = { price: found.price, faceValue: found.faceValue };
+  const message = found.cashPrice
+    ? tr(
+        "errors.bonds.QUANTITY_NOT_BONDS_CASH_PRICE",
+        `The quantity must be a number of bonds and the price the cash price of one bond of face value ${params.faceValue}; the price ${params.price} is more than five times the face value of one bond.`,
+        params,
+      )
+    : tr(
+        "errors.bonds.QUANTITY_NOT_BONDS",
+        `The quantity must be a number of bonds and the price a price per bond of face value ${params.faceValue}; the price ${params.price} is not within half to twice the face value of one bond.`,
+        params,
+      );
   return new BadRequestException({
-    message: tr(
-      "errors.bonds.QUANTITY_NOT_BONDS",
-      `The quantity must be a number of bonds and the price a price per bond of face value ${params.faceValue}; the price ${params.price} is not within half to twice the face value of one bond.`,
-      params,
-    ),
+    message,
     errorCode: "QUANTITY_NOT_BONDS",
   });
 }

@@ -93,6 +93,21 @@ parses to exactly the same object.
   accrued interest would value the holding at a price Monize never quoted; the
   lot view shows the accrued interest on its own line. A holding of a discount
   instrument or a retail series is unchanged: its own account's lots, exactly.
+- What a price is (decision of the second review). For a `MARKETABLE` series the
+  price everywhere (a transaction's price per unit and the security's manual
+  price) is the cash price of one unit of 100 face, excluding accrued interest,
+  and for an `INDEX_RATIO` series it is the inflation-adjusted price: the quoted
+  real price times the index ratio (about 211 for a TIPS quoted near 102.5 at
+  ratio 2.05940). `bondHoldingValue` stays `price x quantity`. The write-time
+  price band (INV-BOND-005, `BOND_UNIT_PRICE_BAND`, [0.5, 2] x face) stays for
+  every retail and discount series; for a `MARKETABLE` coupon series
+  (not `ZERO_COUPON_DISCOUNT`) it is (0, 5] x face
+  (`BOND_CASH_PRICE_BAND`), because a deep-discount coupon bond trades near
+  half its face value and an indexed one at several times it. The purchase form
+  and the manual price form say this next to the price for a program the adapter
+  declares `cashPriced` (and `indexedPrincipal`); they do not show the index
+  ratio (the valuation payload the forms read carries no per-unit principal for
+  them).
 - A `MARKETABLE` series has `saleWindow: null` (a secondary-market lot can be
   bought on any day before maturity) and `redemption.type: "MATURITY_ONLY"` (a
   sale before maturity is a `SELL`, not a redemption; a callable bond is out of

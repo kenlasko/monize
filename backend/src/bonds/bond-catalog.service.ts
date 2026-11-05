@@ -16,7 +16,12 @@ import {
   CatalogEntry,
 } from "./bond-adapter";
 import { bondInstrumentId, bondProgramId } from "./bond-instrument-id";
-import { INSTALLED_BOND_ADAPTERS, templateFaceValueOf } from "./bond-adapters";
+import {
+  INSTALLED_BOND_ADAPTERS,
+  templateCashPricedOf,
+  templateFaceValueOf,
+  templateIndexedPrincipalOf,
+} from "./bond-adapters";
 import { BondInstrumentSummary } from "./bond-valuation.service";
 import { contentHash } from "./canonical-json";
 import { BondTerms, parseBondTerms } from "./domain/bond-terms";
@@ -39,6 +44,13 @@ export interface BondProgramSummary {
    * adapter declares the program.
    */
   readonly faceValue: string | null;
+  /**
+   * True when a unit's price is the cash price of one unit of face value (a
+   * marketable coupon program), so a form says so; false otherwise.
+   */
+  readonly cashPriced: boolean;
+  /** True when the principal is indexed, so the price includes the inflation adjustment. */
+  readonly indexedPrincipal: boolean;
 }
 
 /**
@@ -188,26 +200,31 @@ export class BondCatalogService implements OnApplicationBootstrap {
           ORDER BY p.issuer_country_code, p.issuer_code, p.program_code`,
       ),
     );
-    return rows.map((r) => ({
-      id: r.id,
-      issuerCountryCode: r.issuer_country_code,
-      issuerCode: r.issuer_code,
-      programCode: r.program_code,
-      currency: r.currency_code,
-      seriesCount: Number(r.series_count),
-      newestSeriesCode: r.newest_series_code,
-      infoUrl: infoUrlOf(
-        INSTALLED_BOND_ADAPTERS,
-        r.issuer_country_code,
-        r.issuer_code,
-        r.program_code,
-      ),
-      faceValue: templateFaceValueOf({
+    return rows.map((r) => {
+      const key = {
         issuerCountryCode: r.issuer_country_code,
         issuerCode: r.issuer_code,
         programCode: r.program_code,
-      }),
-    }));
+      };
+      return {
+        id: r.id,
+        issuerCountryCode: r.issuer_country_code,
+        issuerCode: r.issuer_code,
+        programCode: r.program_code,
+        currency: r.currency_code,
+        seriesCount: Number(r.series_count),
+        newestSeriesCode: r.newest_series_code,
+        infoUrl: infoUrlOf(
+          INSTALLED_BOND_ADAPTERS,
+          r.issuer_country_code,
+          r.issuer_code,
+          r.program_code,
+        ),
+        faceValue: templateFaceValueOf(key),
+        cashPriced: templateCashPricedOf(key),
+        indexedPrincipal: templateIndexedPrincipalOf(key),
+      };
+    });
   }
 
   /** The catalog for the link picker, ordered by country, issuer and series. */

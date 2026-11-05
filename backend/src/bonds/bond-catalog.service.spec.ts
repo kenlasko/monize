@@ -383,9 +383,39 @@ describe("BondCatalogService", () => {
       {
         programCode: "NOTE",
         faceValue: "100",
+        cashPriced: true,
+        indexedPrincipal: false,
         infoUrl:
           "https://www.treasurydirect.gov/marketable-securities/treasury-notes/",
       },
+    ]);
+  });
+
+  it("says which programs price a unit as a cash price and which index the principal", async () => {
+    const { manager, dataSource } = createScopedDbMocks();
+    const row = (program_code: string) => ({
+      id: `p-${program_code}`,
+      issuer_country_code: "US",
+      issuer_code: "US_TREASURY",
+      program_code,
+      currency_code: "USD",
+      series_count: 0,
+      newest_series_code: null,
+    });
+    manager.query.mockResolvedValue(
+      ["BILL", "TIPS", "FRN"].map((code) => row(code)),
+    );
+    const service = new BondCatalogService(
+      dataSource as unknown as DataSource,
+      { ensureCatalogCurrency: jest.fn() },
+    );
+    const programs = await service.listPrograms();
+    expect(
+      programs.map((p) => [p.programCode, p.cashPriced, p.indexedPrincipal]),
+    ).toEqual([
+      ["BILL", false, false],
+      ["TIPS", true, true],
+      ["FRN", true, false],
     ]);
   });
 
@@ -430,6 +460,8 @@ describe("BondCatalogService", () => {
         infoUrl:
           "https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-10-letnie-edo/",
         faceValue: "100.00",
+        cashPriced: false,
+        indexedPrincipal: false,
       },
       {
         id: "p-new",
@@ -442,6 +474,8 @@ describe("BondCatalogService", () => {
         // No installed adapter defines ZZZ.
         infoUrl: null,
         faceValue: null,
+        cashPriced: false,
+        indexedPrincipal: false,
       },
     ]);
     // Ordered by country, issuer and program code, the newest sale window first.

@@ -34,6 +34,8 @@ describe("US adapter", () => {
         programCode: "BILL",
         currency: "USD",
         faceValue: "100",
+        cashPriced: false,
+        indexedPrincipal: false,
         infoUrl:
           "https://www.treasurydirect.gov/marketable-securities/treasury-bills/",
       },
@@ -43,6 +45,8 @@ describe("US adapter", () => {
         programCode: "NOTE",
         currency: "USD",
         faceValue: "100",
+        cashPriced: true,
+        indexedPrincipal: false,
         infoUrl:
           "https://www.treasurydirect.gov/marketable-securities/treasury-notes/",
       },
@@ -52,6 +56,8 @@ describe("US adapter", () => {
         programCode: "BOND",
         currency: "USD",
         faceValue: "100",
+        cashPriced: true,
+        indexedPrincipal: false,
         infoUrl:
           "https://www.treasurydirect.gov/marketable-securities/treasury-bonds/",
       },
@@ -61,6 +67,8 @@ describe("US adapter", () => {
         programCode: "TIPS",
         currency: "USD",
         faceValue: "100",
+        cashPriced: true,
+        indexedPrincipal: true,
         infoUrl: "https://www.treasurydirect.gov/marketable-securities/tips/",
       },
       {
@@ -69,6 +77,8 @@ describe("US adapter", () => {
         programCode: "FRN",
         currency: "USD",
         faceValue: "100",
+        cashPriced: true,
+        indexedPrincipal: false,
         infoUrl:
           "https://www.treasurydirect.gov/marketable-securities/floating-rate-notes/",
       },

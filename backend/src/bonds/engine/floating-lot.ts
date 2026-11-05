@@ -114,11 +114,7 @@ function tableOf(
   const noCalendar = calendar === undefined;
   const lockFrom =
     rule.lockoutBusinessDays > 0 && calendar !== undefined
-      ? nthBusinessDayBefore(
-          calendar,
-          period.end,
-          rule.lockoutBusinessDays,
-        )
+      ? nthBusinessDayBefore(calendar, period.end, rule.lockoutBusinessDays)
       : null;
   const usable = observations.filter(
     (o) => lockFrom === null || compareYMD(o.date, lockFrom) < 0,

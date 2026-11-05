@@ -40,6 +40,20 @@ export interface BondProgramDefinition {
    */
   readonly faceValue: string;
   /**
+   * True when the program's securities trade and carry a coupon: a unit's price
+   * is then the cash price of one unit of face value (excluding accrued
+   * interest; inflation-adjusted for an indexed principal), which may sit far
+   * from the face value, so the write-time price band is the wide one. Absent
+   * means false (a retail or discount program: the price stays near par).
+   */
+  readonly cashPriced?: boolean;
+  /**
+   * True when the program's principal is indexed (rule `INDEX_RATIO`): the cash
+   * price is then the inflation-adjusted price, the quoted real price times the
+   * index ratio. Absent means false.
+   */
+  readonly indexedPrincipal?: boolean;
+  /**
    * The issuer's own page describing the product, for a reader to follow; an
    * https address on the issuer's site, or absent when the adapter has none.
    */

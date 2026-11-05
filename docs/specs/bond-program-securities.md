@@ -39,7 +39,7 @@ being set, every priced acquisition of the security (`BUY`, `REINVEST` and its
 variants, not void; a `SELL` or `REDEEM` is not read, because a long-held bond
 may be worth more than twice its face value and a removal counted in currency
 units is refused by the lot derivation) is within [0.5, 2] x the face value of
-the series it is read as (`LINK_QUANTITY_NOT_BONDS`, `BOND_UNIT_PRICE_BAND`).
+the series it is read as (`LINK_QUANTITY_NOT_BONDS`, `BOND_UNIT_PRICE_BAND`); for a marketable coupon series, whose price is a cash price, the band is (0, 5] x the face value (`BOND_CASH_PRICE_BAND`, `docs/specs/bond-marketable-primitives.md` section 3).
 
 A quantity of a linked security is a count of bonds on every write, not only
 when the link is made (INV-BOND-005). The face value a row is read against is

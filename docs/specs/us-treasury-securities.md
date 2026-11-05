@@ -51,6 +51,14 @@ every auctioned security), so a lot's quantity is its face value / 100: a
 broker statement line "10,000.00 face" is quantity 100. The purchase form says
 this next to the quantity of a linked US security (a frontend label, phase 3).
 
+The price of a unit of a coupon security (note, bond, TIPS, FRN), in a
+transaction and as the security's manual price, is the cash price of 100 face
+excluding accrued interest; for a TIPS it is the inflation-adjusted price, the
+quoted real price times the index ratio (about 211 at ratio 2.05940), which is
+why the write-time price band of such a program is (0, 5] x face and not the
+band of a retail bond (primitives spec section 3). A bill's price stays within
+[0.5, 2] x face.
+
 Out of scope: STRIPS, callable bonds (none outstanding), market prices of notes
 and bonds, tax computation (primitives spec section 10).
 

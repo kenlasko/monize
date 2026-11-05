@@ -611,6 +611,7 @@
     "LINK_REQUIRES_BOND_TYPE": "Only a security of type Bond can be linked to a bond instrument",
     "LINK_QUANTITY_NOT_BONDS": "The quantities of this security are not numbers of bonds (a price is far from the face value per bond), so it cannot be linked to a bond instrument",
     "QUANTITY_NOT_BONDS": "The quantity must be a number of bonds and the price a price per bond of face value {{ faceValue }}; the price {{ price }} is not within half to twice the face value of one bond.",
+    "QUANTITY_NOT_BONDS_CASH_PRICE": "The quantity must be a number of bonds and the price the cash price of one bond of face value {{ faceValue }}; the price {{ price }} is more than five times the face value of one bond.",
     "UNDO_LINK_INVALID": "This change cannot be undone because the bond link it would restore is no longer valid",
     "BENCHMARK_NOT_READ": "Series {{ series }} does not read the benchmark {{ benchmarkId }}",
     "DECIMAL_INVALID": "A stored or supplied value is not a valid decimal: {{ field }} = {{ value }}",

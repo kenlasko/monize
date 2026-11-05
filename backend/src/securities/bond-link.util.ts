@@ -1,5 +1,8 @@
 import { EntityManager } from "typeorm";
-import { templateFaceValueOf } from "../bonds/bond-adapters";
+import {
+  templateCashPricedOf,
+  templateFaceValueOf,
+} from "../bonds/bond-adapters";
 import { seriesOnSaleSql } from "../bonds/bond-series-resolver";
 
 /**
@@ -55,6 +58,24 @@ export async function findBondLinkProblem(
 export const BOND_UNIT_PRICE_BAND = { min: "0.5", max: "2" } as const;
 
 /**
+ * The band of a series whose unit price is a cash price (a marketable coupon
+ * series: the quoted price, times the index ratio for an indexed principal, of
+ * one unit of face value, `docs/specs/bond-marketable-primitives.md` section 3):
+ * a deep-discount bond is worth a fraction of its face value and an indexed one
+ * several times it, so a price is a price per bond up to this multiple of the
+ * face value, and every positive price is above the lower end.
+ */
+export const BOND_CASH_PRICE_BAND = { min: "0", max: "5" } as const;
+
+/**
+ * SQL over a `bond_terms_versions.terms` column (the alias `terms`): true when
+ * the series trades and carries a coupon, the series `BOND_CASH_PRICE_BAND`
+ * applies to (the same series `marketPriceRequired` names, `engine/price-policy.ts`).
+ */
+const CASH_PRICED_TERMS_SQL = `(terms -> 'instrument' ->> 'marketability' = 'MARKETABLE'
+                         AND terms -> 'rateRule' ->> 'type' <> 'ZERO_COUPON_DISCOUNT')`;
+
+/**
  * The ACQUISITIONS whose per-unit price says what a quantity counts: BUY and the
  * REINVEST variants (a transfer or ADD_SHARES has no price). A SELL or REDEEM is
  * not read: a long-held EDO or ROD is legitimately worth more than twice its
@@ -72,17 +93,20 @@ export interface QuantityNotBonds {
   readonly price: string;
   /** The face value per bond it was read against, as a decimal string. */
   readonly faceValue: string;
+  /** True when it was read against `BOND_CASH_PRICE_BAND` (a marketable coupon series). */
+  readonly cashPrice: boolean;
 }
 
 /**
- * The face value of one bond of the program the template declares, or null when
- * the program is not found or no installed adapter declares it (then a row with
- * no series of its own has nothing to be read against and is not refused).
+ * The face value of one bond of the program the template declares, and whether
+ * the template's unit price is a cash price, or null when the program is not
+ * found or no installed adapter declares it (then a row with no series of its
+ * own has nothing to be read against and is not refused).
  */
-export async function programTemplateFaceValue(
+export async function programTemplate(
   m: EntityManager,
   bondProgramId: string,
-): Promise<string | null> {
+): Promise<{ faceValue: string; cashPriced: boolean } | null> {
   const rows: Array<{
     issuer_country_code: string;
     issuer_code: string;
@@ -93,16 +117,22 @@ export async function programTemplateFaceValue(
     [bondProgramId],
   );
   if (rows.length === 0) return null;
-  return templateFaceValueOf({
+  const key = {
     issuerCountryCode: rows[0].issuer_country_code,
     issuerCode: rows[0].issuer_code,
     programCode: rows[0].program_code,
-  });
+  };
+  const faceValue = templateFaceValueOf(key);
+  return faceValue === null
+    ? null
+    : { faceValue, cashPriced: templateCashPricedOf(key) };
 }
 
 /**
  * The priced acquisitions of the security (at most `limit`) whose per-unit price is not within
- * [0.5, 2] x the face value of the series it is read as, which means its
+ * [0.5, 2] x the face value of the series it is read as (for a marketable
+ * coupon series, whose price is a cash price, not above 5 x it:
+ * `BOND_CASH_PRICE_BAND`), which means its
  * quantities are not numbers of bonds (a legacy security recording currency
  * units, or one unit per package): the lot derivation reads a quantity as a
  * count of bonds, so the link would publish a figure off by a factor of the face
@@ -128,14 +158,19 @@ export async function findQuantitiesNotBonds(
     readonly limit?: number;
   } = {},
 ): Promise<QuantityNotBonds[]> {
-  const templateFace = await programTemplateFaceValue(m, bondProgramId);
+  const template = await programTemplate(m, bondProgramId);
   const onSale = seriesOnSaleSql(
     "$3",
     "TO_CHAR(t.transaction_date, 'YYYY-MM-DD')",
   );
-  const rows: Array<{ id: string; price: string; face: string }> =
-    await m.query(
-      `SELECT t.id, t.price::text AS price, COALESCE(f.face, $4::numeric)::text AS face
+  const rows: Array<{
+    id: string;
+    price: string;
+    face: string;
+    cash_price: boolean;
+  }> = await m.query(
+    `SELECT t.id, t.price::text AS price, COALESCE(f.face, $4::numeric)::text AS face,
+              COALESCE(f.cash, $7::boolean) AS cash_price
        FROM (
          SELECT t.*
            FROM investment_transactions t
@@ -180,29 +215,36 @@ export async function findQuantitiesNotBonds(
            )
       ) r ON true
       LEFT JOIN LATERAL (
-        SELECT (terms -> 'instrument' ->> 'faceValue')::numeric AS face
+        SELECT (terms -> 'instrument' ->> 'faceValue')::numeric AS face,
+               ${CASH_PRICED_TERMS_SQL} AS cash
           FROM bond_terms_versions
          WHERE bond_instrument_id = r.id
          ORDER BY version DESC
          LIMIT 1
       ) f ON true
       WHERE COALESCE(f.face, $4::numeric) > 0
-        AND (t.price < COALESCE(f.face, $4::numeric) * ${BOND_UNIT_PRICE_BAND.min}::numeric
-             OR t.price > COALESCE(f.face, $4::numeric) * ${BOND_UNIT_PRICE_BAND.max}::numeric)
+        AND CASE WHEN COALESCE(f.cash, $7::boolean)
+              THEN (t.price < COALESCE(f.face, $4::numeric) * ${BOND_CASH_PRICE_BAND.min}::numeric
+                    OR t.price > COALESCE(f.face, $4::numeric) * ${BOND_CASH_PRICE_BAND.max}::numeric)
+              ELSE (t.price < COALESCE(f.face, $4::numeric) * ${BOND_UNIT_PRICE_BAND.min}::numeric
+                    OR t.price > COALESCE(f.face, $4::numeric) * ${BOND_UNIT_PRICE_BAND.max}::numeric)
+            END
       LIMIT $6::int`,
-      [
-        securityId,
-        userId,
-        bondProgramId,
-        templateFace,
-        options.onlyRowIds ?? null,
-        options.limit ?? null,
-      ],
-    );
+    [
+      securityId,
+      userId,
+      bondProgramId,
+      template?.faceValue ?? null,
+      options.onlyRowIds ?? null,
+      options.limit ?? null,
+      template?.cashPriced ?? false,
+    ],
+  );
   return rows.map((r) => ({
     rowId: r.id,
     price: r.price,
     faceValue: r.face,
+    cashPrice: r.cash_price,
   }));
 }
 
