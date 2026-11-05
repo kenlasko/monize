@@ -441,6 +441,7 @@ export class SectorWeightingService {
     const bondValues = await this.portfolioCalculationService.valueBondHoldings(
       userId,
       holdings,
+      priceMap,
     );
 
     // 4. Ensure sector data is cached
@@ -731,6 +732,7 @@ export class SectorWeightingService {
     const bondValues = await this.portfolioCalculationService.valueBondHoldings(
       userId,
       holdings,
+      priceMap,
     );
 
     const rateCache: FxRateCache = new Map();

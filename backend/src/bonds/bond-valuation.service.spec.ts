@@ -1327,4 +1327,31 @@ describe("BondValuationService.valueSecurity: marketPriceRequired (INV-BOND-005)
     const result = await service.valueSecurity("user-1", "sec-1", "2027-01-15");
     expect(result.marketPriceRequired).toBe(false);
   });
+
+  it("names the account whose lots hold a traded series, in valueByAccount", async () => {
+    const traded = setup({
+      securities: owned,
+      ledger: [buy("2026-10-15")],
+      terms: [{ version: 1, terms: marketable() }],
+    });
+    const priced = setup({ securities: owned, ledger: [buy("2026-10-15")] });
+
+    const tradedByAccount = await traded.service.valueByAccount(
+      "user-1",
+      "sec-1",
+      "2027-01-15",
+    );
+    const pricedByAccount = await priced.service.valueByAccount(
+      "user-1",
+      "sec-1",
+      "2027-01-15",
+    );
+
+    expect(tradedByAccount.accounts?.get("acc-1")?.marketPriceRequired).toBe(
+      true,
+    );
+    expect(pricedByAccount.accounts?.get("acc-1")?.marketPriceRequired).toBe(
+      false,
+    );
+  });
 });

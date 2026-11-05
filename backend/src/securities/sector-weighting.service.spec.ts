@@ -769,6 +769,18 @@ describe("SectorWeightingService", () => {
       expect(result.unclassifiedValue).toBeCloseTo(2354.8, 6);
     });
 
+    it("hands the price map to the bond valuation, so a traded series is the person's price", async () => {
+      calcService.valueBondHoldings.mockResolvedValue(new Map());
+
+      await service.getSectorWeightings("user-1");
+      await service.getAssetClassWeightings("user-1");
+
+      for (const call of calcService.valueBondHoldings.mock.calls) {
+        expect(call[2]).toEqual(new Map([["sec-bond", 117.74]]));
+      }
+      expect(calcService.valueBondHoldings).toHaveBeenCalledTimes(2);
+    });
+
     it("leaves an unpriced account out and never falls back to the blend", async () => {
       calcService.valueBondHoldings.mockResolvedValue(
         new Map([

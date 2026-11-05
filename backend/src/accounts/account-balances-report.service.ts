@@ -28,9 +28,9 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { SecurityPriceService } from "../securities/security-price.service";
 import {
   BondValuationService,
-  ownLotsGrossValue,
   SecurityValueByAccount,
 } from "../bonds/bond-valuation.service";
+import { bondHoldingValue } from "../bonds/bond-holding-value";
 import { preferredCurrency } from "../common/default-currency.util";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
 
@@ -704,23 +704,33 @@ export class AccountBalancesReportService {
         if (Math.abs(quantity) <= QUANTITY_EPSILON) continue;
         // A bond-linked position is its own account's lots, or unknown.
         const isLinked = bondValues.has(securityId);
-        const own = isLinked
-          ? ownLotsGrossValue(bondValues.get(securityId), account.id, quantity)
-          : null;
         const price = prices.prices.get(securityId);
+        const own = isLinked
+          ? bondHoldingValue(
+              bondValues.get(securityId),
+              account.id,
+              quantity,
+              price,
+            )
+          : null;
         // An unpriced position is unknown, not free. Folding it in at zero is
         // what makes a partial valuation look like a settled one.
         if (isLinked ? own === null || "unpriced" in own : price == null) {
           unpriced.add(securityId);
           continue;
         }
-        if (!isLinked && prices.approximated.has(securityId))
+        // A linked holding worth the engine's lots used no stored close; one
+        // worth the person's price used it, approximated or not.
+        if (
+          (own === null || ("basis" in own && own.basis === "MARKET_PRICE")) &&
+          prices.approximated.has(securityId)
+        )
           approximatedPrices.add(securityId);
         const securityCurrency =
           securityCurrencies.get(securityId) ?? account.currencyCode;
         const converted = convertWithRateLookup(
-          own !== null && "grossValue" in own
-            ? Number(own.grossValue)
+          own !== null && "marketValue" in own
+            ? Number(own.marketValue)
             : quantity * (price as number),
           securityCurrency,
           account.currencyCode,

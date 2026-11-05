@@ -3965,6 +3965,38 @@ describe("PortfolioService", () => {
         expect(bondValuation.valueByAccount).toHaveBeenCalledTimes(1);
       });
 
+      it("values a marketable coupon security at the stored price, not the engine's par (INV-BOND-005)", async () => {
+        bondValuation.valueByAccount.mockResolvedValue({
+          asOf: "2026-02-01",
+          accounts: new Map([
+            [
+              "acct-brokerage-1",
+              {
+                quantity: 10,
+                grossValue: "1000.00",
+                marketPriceRequired: true,
+              },
+            ],
+            [
+              "acct-brokerage-2",
+              {
+                quantity: 10,
+                grossValue: "1000.00",
+                marketPriceRequired: true,
+              },
+            ],
+          ]),
+        });
+
+        const result = await service.getAccountMarketValues(userId);
+
+        expect(result.get("acct-brokerage-1")?.marketValue).toBe(1177.4);
+        securityPriceRepository.query.mockResolvedValue([]);
+        const unpriced = await service.getAccountMarketValues(userId);
+        expect(unpriced.get("acct-brokerage-1")?.marketValue).toBeNull();
+        expect(unpriced.get("acct-brokerage-1")?.pricesComplete).toBe(false);
+      });
+
       it("marks an account whose lots have an unknown value as unpriced", async () => {
         bondValuation.valueByAccount.mockResolvedValue({
           asOf: "2026-02-01",

@@ -25,10 +25,9 @@ import { mapWithConcurrency } from "../common/concurrency.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
   BondValuationService,
-  ownLotsGrossValue,
   SecurityValueByAccount,
 } from "../bonds/bond-valuation.service";
-import { ExactDecimal } from "../bonds/domain/exact-decimal";
+import { bondHoldingValue } from "../bonds/bond-holding-value";
 import {
   FX_MAX_RATE_AGE_DAYS,
   describeFxGap,
@@ -1521,15 +1520,19 @@ export class PortfolioCalculationService {
 
   /**
    * The value of each bond-linked holding from its own account's lots, keyed
-   * `accountId:securityId`; null is unpriced (see `ownLotsValue`). Only linked
-   * holdings in a non-zero quantity have an entry. One `valueByAccount` call per
-   * linked security, on the person's financial today unless `asOf` is given.
-   * Every surface that shows a per-account value of a holding reads it here, so
-   * none of them multiplies a quantity by the program-wide blend.
+   * `accountId:securityId`; null is unpriced (see `bondHoldingValue`). Only
+   * linked holdings in a non-zero quantity have an entry. One `valueByAccount`
+   * call per linked security, on the person's financial today unless `asOf` is
+   * given. Every surface that shows a per-account value of a holding reads it
+   * here, so none of them multiplies a quantity by the program-wide blend.
+   * `prices` is the caller's price per security: a holding of a series the
+   * engine does not price (a marketable coupon security) is worth that price
+   * times its quantity, and unpriced without one (INV-BOND-005, INV-BOND-010).
    */
   async valueBondHoldings(
     userId: string,
     holdings: readonly BondHoldingRef[],
+    prices: ReadonlyMap<string, number>,
     asOf?: string,
   ): Promise<Map<string, { marketValue: number; unitPrice: number } | null>> {
     const valued = await this.valueLinkedSecurities(userId, holdings, asOf);
@@ -1542,7 +1545,12 @@ export class PortfolioCalculationService {
       if (!h.security?.bondProgramId || Math.abs(quantity) < 0.0001) continue;
       values.set(
         `${h.accountId}:${h.securityId}`,
-        this.ownLotsValue(h, quantity, valued.get(h.securityId)),
+        this.ownLotsValue(
+          h,
+          quantity,
+          valued.get(h.securityId),
+          prices.get(h.securityId),
+        ),
       );
     }
     return values;
@@ -1591,17 +1599,19 @@ export class PortfolioCalculationService {
   }
 
   /**
-   * One holding's value from its own account's lots, or null (unpriced) when
-   * the valuation failed, the lots are unknowable, any lot has no gross value,
-   * or the lots' bond count is not the holding's quantity (never price a
-   * different quantity). The unit price is the account's value per bond.
+   * One holding's value (`bondHoldingValue`), or null (unpriced) when the
+   * valuation failed, the lots are unknowable, any lot has no gross value, the
+   * lots' bond count is not the holding's quantity (never price a different
+   * quantity) or a traded series has no price. The unit price is the value per
+   * bond.
    */
   private ownLotsValue(
     h: BondHoldingRef,
     quantity: number,
     valued: SecurityValueByAccount | null | undefined,
+    price: number | undefined,
   ): { marketValue: number; unitPrice: number } | null {
-    const own = ownLotsGrossValue(valued, h.accountId, quantity);
+    const own = bondHoldingValue(valued, h.accountId, quantity, price);
     if ("unpriced" in own) {
       if (own.unpriced === "QUANTITY_MISMATCH") {
         this.logger.warn(
@@ -1610,13 +1620,9 @@ export class PortfolioCalculationService {
       }
       return null;
     }
-    const lots = { grossValue: own.grossValue, quantity: own.lotQuantity };
-    const value = ExactDecimal.parse(lots.grossValue);
     return {
-      marketValue: Number(lots.grossValue),
-      unitPrice: Number(
-        value.div(ExactDecimal.fromInt(lots.quantity)).toFixed(10),
-      ),
+      marketValue: Number(own.marketValue),
+      unitPrice: Number(own.unitPrice),
     };
   }
 
@@ -1698,7 +1704,11 @@ export class PortfolioCalculationService {
     // A bond-linked security spans a whole program, so its price is a blend over
     // the lots of every account; a holding is worth its own account's lots
     // (bond-program-securities.md 2.4). One valuation per linked security.
-    const bondValues = await this.valueBondHoldings(userId, holdings);
+    const bondValues = await this.valueBondHoldings(
+      userId,
+      holdings,
+      priceMap,
+    );
 
     // Historical cost basis, but only where the replay both knows it and
     // states it in the currency the holding's account keeps its books in.

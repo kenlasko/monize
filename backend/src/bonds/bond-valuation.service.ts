@@ -148,6 +148,11 @@ export interface SecuritySeriesInfo {
   readonly termsSource: BondTermsSource;
   /** The terms' redemption policy; null when the bond is redeemable at maturity only. */
   readonly redemptionTerms: Redemption | null;
+  /**
+   * True when the series trades and the engine does not price it
+   * (`engineWritesPrice` false): a holding of it is worth the person's price.
+   */
+  readonly marketPriceRequired: boolean;
 }
 
 export interface SecurityValuation {
@@ -177,38 +182,18 @@ export interface AccountLotsValue {
   readonly quantity: number;
   /** Null unless every lot of the account has a gross value. */
   readonly grossValue: string | null;
+  /**
+   * True when a series among the account's lots is one the engine does not
+   * price (a marketable coupon security): the holding is worth the person's
+   * price, and `grossValue` is not its value (`bond-holding-value.ts`).
+   */
+  readonly marketPriceRequired: boolean;
 }
 
 export interface SecurityValueByAccount {
   readonly asOf: string;
   /** Keyed by account id; null when the lots are unknowable (a refusal). */
   readonly accounts: ReadonlyMap<string, AccountLotsValue> | null;
-}
-
-/** How far a lot count may sit from a holding's quantity and still be the same position. */
-const LOT_QUANTITY_TOLERANCE = 0.0001;
-
-/**
- * The gross value of one account's lots as the value of its holding of
- * `quantity` bonds, or why it has none: the valuation failed or its lots are
- * unknowable or one lot has no gross value (`UNKNOWN`), or the lots count a
- * different number of bonds than the holding (`QUANTITY_MISMATCH`: never price
- * a different quantity). Written once for every surface that values a
- * bond-linked holding (`bond-program-securities.md` 2.4).
- */
-export function ownLotsGrossValue(
-  valued: SecurityValueByAccount | null | undefined,
-  accountId: string,
-  quantity: number,
-):
-  | { readonly grossValue: string; readonly lotQuantity: number }
-  | { readonly unpriced: "UNKNOWN" | "QUANTITY_MISMATCH" } {
-  const lots = valued?.accounts?.get(accountId);
-  if (!lots || lots.grossValue === null) return { unpriced: "UNKNOWN" };
-  if (Math.abs(lots.quantity - quantity) >= LOT_QUANTITY_TOLERANCE) {
-    return { unpriced: "QUANTITY_MISMATCH" };
-  }
-  return { grossValue: lots.grossValue, lotQuantity: lots.quantity };
 }
 
 /**
@@ -406,6 +391,7 @@ export class BondValuationService {
           reference.terms.redemption.type === "ON_DEMAND"
             ? reference.terms.redemption
             : null,
+        marketPriceRequired: marketPriceRequired([reference.terms]),
       }));
       if (folded.lots === null) {
         return {
@@ -478,23 +464,42 @@ export class BondValuationService {
       const asOf = date ?? (await financialTodayOf(m, userId));
       const valuation = await this.valueSecurity(userId, securityId, asOf);
       if (valuation.refusal !== null) return { asOf, accounts: null };
+      const pricedByPerson = new Set(
+        valuation.series
+          .filter((series) => series.marketPriceRequired)
+          .map((series) => series.instrumentId),
+      );
       const grouped = new Map<
         string,
-        { quantity: number; figures: Array<string | null> }
+        {
+          quantity: number;
+          figures: Array<string | null>;
+          marketPriceRequired: boolean;
+        }
       >();
       for (const lot of valuation.lots) {
         const key = lot.accountId ?? "";
-        const entry = grouped.get(key) ?? { quantity: 0, figures: [] };
+        const entry = grouped.get(key) ?? {
+          quantity: 0,
+          figures: [],
+          marketPriceRequired: false,
+        };
         entry.quantity += lot.quantity;
+        entry.marketPriceRequired ||=
+          lot.instrumentId !== null && pricedByPerson.has(lot.instrumentId);
         entry.figures.push(
           lot.valuation.status === "REFUSED" ? null : lot.valuation.grossValue,
         );
         grouped.set(key, entry);
       }
       const accounts = new Map<string, AccountLotsValue>();
-      for (const [key, { quantity, figures }] of grouped) {
+      for (const [
+        key,
+        { quantity, figures, marketPriceRequired: needsPrice },
+      ] of grouped) {
         accounts.set(key, {
           quantity,
+          marketPriceRequired: needsPrice,
           grossValue: sumKnown(
             figures,
             figures.reduce((n, f) => Math.max(n, decimalPlacesOf(f)), 0),

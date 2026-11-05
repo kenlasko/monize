@@ -4295,6 +4295,11 @@ Statement           A security linked to a bond program
                     true so the surface tells the person to enter the price
                     (a manual price always wins). A quote provider is still
                     never asked about a linked security.
+                    The same policy values a holding on every surface:
+                    bondHoldingValue (backend/src/bonds/bond-holding-value.ts)
+                    gives a holding of such a series the person's price times
+                    its quantity, and none (unpriced) without a price, never
+                    the engine's par.
 Source of truth     securities.bond_program_id; security_prices.source
 Enforcement         Three mechanisms.
                     1. One predicate, isPricedByQuoteProvider
@@ -4819,10 +4824,17 @@ Statement           The current market value of a bond-linked holding (one
                     financial today, never quantity x the security's daily
                     bond_engine price, which blends the lots of every account.
                     An unknown lot makes the holding unpriced (marketValue null,
-                    pricesComplete false), never the blend.
+                    pricesComplete false), never the blend. A holding of a series
+                    the engine does not price (a marketable coupon security,
+                    marketPriceRequired) is instead the person's price times its
+                    quantity, unpriced without a price, never the engine's par
+                    (INV-BOND-005); bondHoldingValue
+                    (backend/src/bonds/bond-holding-value.ts) is the one function
+                    that decides, and every holdings surface calls it.
 Source of truth     the account's lots (bondLotsAsOf over the ledger) valued by
                     the engine (BondValuationService.valueByAccount)
-Enforcement         PortfolioCalculationService.valueBondHoldings, used by
+Enforcement         bondHoldingValue, called by
+                    PortfolioCalculationService.valueBondHoldings, used by
                     calculateHoldingsWithValues and getAccountMarketValues; the
                     account balances report (valuePositions), sector weightings
                     and GEM positions call valueByAccount once per linked
@@ -4848,7 +4860,12 @@ Required tests      backend/src/securities/portfolio-calculation.service.spec.ts
                     (two accounts holding different series of one program, an
                     unknown lot, a valuation that throws);
                     backend/test/integration/bond-holding-value.integration.spec.ts
-Status              partial. Still reading positionCloseAsOf (a carried engine
+Status              partial. The holdings surfaces (portfolio holdings and totals,
+                    account market values, the account balances report, sector
+                    and asset-class weightings, GEM positions) all value a
+                    bond-linked holding through bondHoldingValue, a source scan
+                    holds that none calls valueByAccount without it. Still
+                    reading positionCloseAsOf (a carried engine
                     close, or a trade price) over a refused day, and to be moved
                     to valuationClosePointOn with the refusal carried as an
                     unknown component: net worth daily and monthly

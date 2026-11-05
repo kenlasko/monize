@@ -78,6 +78,21 @@ parses to exactly the same object.
   reader learns why and what to do). A quote provider is still not asked about a
   linked security in this change: no provider in Monize prices a CUSIP today;
   allowing one is a separate proposal.
+- Holding value (INV-BOND-005, INV-BOND-010), one helper for every surface
+  (`backend/src/bonds/bond-holding-value.ts`, `bondHoldingValue`): a holding of
+  such a series is worth `price x quantity`, where `price` is the price the
+  surface already reads for any other security and the quantity is in bonds of
+  face value 100 (one unit is 100 of face, a price is quoted per 100 of face,
+  so the product needs no further factor; `us-treasury-securities.md` section
+  1). A missing price leaves the holding unpriced (null, named in the missing
+  price report), never the engine's par and never zero. The engine's gross
+  value of such a lot stays in the lot view, labelled as what the terms say,
+  not as the holding's value. Accrued interest is kept out of the holding's
+  value: a quoted price of a coupon security is a clean price and the holdings
+  model has no field that carries an accrued part, so adding the engine's
+  accrued interest would value the holding at a price Monize never quoted; the
+  lot view shows the accrued interest on its own line. A holding of a discount
+  instrument or a retail series is unchanged: its own account's lots, exactly.
 - A `MARKETABLE` series has `saleWindow: null` (a secondary-market lot can be
   bought on any day before maturity) and `redemption.type: "MATURITY_ONLY"` (a
   sale before maturity is a `SELL`, not a redemption; a callable bond is out of
