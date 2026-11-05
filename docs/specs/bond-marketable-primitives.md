@@ -493,7 +493,9 @@ Decisions taken in the implementation (`INDEX_RATIO`):
   annualised rate, an assumption and not an issuer rule); a month before the
   newest stored one is never projected, and with no stored month there is nothing
   to project from. A figure that read a projected month is `PROJECTED` and the
-  valuation lists the assumption (`basis` `SUPPLIED`). There is no
+  valuation lists the assumption (`basis` `SUPPLIED`, `growth` `SIMPLE_ANNUAL`:
+  growth is simple, not compounded, because compounding needs roots; every surface
+  that shows the assumption says "simple annual"). There is no
   latest-observation fallback (carrying the newest level on would assume zero
   inflation).
 - `principalAt` (`engine/accrual.ts`) takes the benchmark data and projection

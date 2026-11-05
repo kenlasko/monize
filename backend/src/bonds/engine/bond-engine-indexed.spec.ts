@@ -183,6 +183,9 @@ describe("a payment after the valuation day", () => {
         value: "0.0300",
         basis: "SUPPLIED",
         observation: null,
+        // The newest stored level times 1 + 0.03 x months / 12: simple growth,
+        // not compounding (166.2 x 1.03 = 171.186 at 12 months).
+        growth: "SIMPLE_ANNUAL",
       },
     ]);
     expect(v.projectionMissing).toEqual([]);

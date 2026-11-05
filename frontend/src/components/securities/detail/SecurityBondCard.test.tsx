@@ -388,6 +388,31 @@ describe('SecurityBondCard', () => {
     expect(screen.getAllByText('Projected').length).toBeGreaterThan(0);
   });
 
+  it('names the simple annual growth of an assumed inflation of an indexed principal', async () => {
+    get.mockResolvedValue(
+      response({
+        lots: [
+          {
+            instrumentId: 'bond-1', purchaseDate: '2026-10-05',
+            quantity: 5,
+            purchaseDateAssumed: false,
+            valuation: lotValuation({
+              projectionAssumptions: [
+                { benchmarkId: 'US_CPI_U_NSA', value: '0.0300', basis: 'SUPPLIED', observation: null, growth: 'SIMPLE_ANNUAL' },
+              ],
+            }),
+          },
+        ],
+      }),
+    );
+    await mount();
+    expect(
+      screen.getByText(
+        'CPI-U, all items, not seasonally adjusted (BLS) assumed to grow 3% a year (simple annual growth, not compounded) for every later month',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('shows translated benchmark names and localized dates in the assumptions and missing lists', async () => {
     get.mockResolvedValue(
       response({

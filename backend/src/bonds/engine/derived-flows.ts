@@ -116,6 +116,7 @@ function indexedFlows(
                   value: annualInflation.toTrimmedString(10, 4),
                   basis: "SUPPLIED",
                   observation: null,
+                  growth: "SIMPLE_ANNUAL",
                 },
               ]
             : [],

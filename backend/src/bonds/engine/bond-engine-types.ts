@@ -251,6 +251,12 @@ export interface ProjectionAssumption {
   readonly basis: "SUPPLIED" | "LATEST_OBSERVATION";
   /** The YYYY-MM-DD or YYYY-MM the value came from; null when SUPPLIED. */
   readonly observation: string | null;
+  /**
+   * Present for an assumed annual inflation of an indexed principal: later
+   * months are the newest stored level times `1 + value x months / 12` (simple
+   * annual growth, not compounding); absent for a rate assumption.
+   */
+  readonly growth?: "SIMPLE_ANNUAL";
 }
 
 export type BondEngineErrorCode =

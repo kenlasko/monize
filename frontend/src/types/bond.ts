@@ -100,6 +100,8 @@ export interface BondProjectionAssumption {
   basis: 'SUPPLIED' | 'LATEST_OBSERVATION';
   /** The YYYY-MM-DD or YYYY-MM the value came from; null when SUPPLIED. */
   observation: string | null;
+  /** Present for an assumed annual inflation of an indexed principal: later months grow by value x months / 12, not compounded. */
+  growth?: 'SIMPLE_ANNUAL';
 }
 
 export interface BondCurrentPeriod {

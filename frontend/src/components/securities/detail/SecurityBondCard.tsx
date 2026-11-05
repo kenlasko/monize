@@ -326,10 +326,15 @@ export function SecurityBondCard({
                         value: formatPercentTrimmed(Number(a.value) * 100),
                         observation: observationLabel(a.observation),
                       })
-                    : t('bond.assumptions.supplied', {
-                        benchmark: benchmarkName(a.benchmarkId),
-                        value: formatPercentTrimmed(Number(a.value) * 100),
-                      })}
+                    : t(
+                        a.growth === 'SIMPLE_ANNUAL'
+                          ? 'bond.assumptions.suppliedSimpleAnnual'
+                          : 'bond.assumptions.supplied',
+                        {
+                          benchmark: benchmarkName(a.benchmarkId),
+                          value: formatPercentTrimmed(Number(a.value) * 100),
+                        },
+                      )}
                 </li>
               ))}
             </ul>

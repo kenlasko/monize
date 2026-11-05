@@ -353,7 +353,8 @@
     "assumptions": {
       "title": "[XX-Projection assumptions-XX]",
       "latestObservation": "[XX-{benchmark} assumed at {value} for every later period, the latest published value ({observation})-XX]",
-      "supplied": "[XX-{benchmark} assumed at {value} for every later period-XX]"
+      "supplied": "[XX-{benchmark} assumed at {value} for every later period-XX]",
+      "suppliedSimpleAnnual": "[XX-{benchmark} assumed to grow {value} a year (simple annual growth, not compounded) for every later month-XX]"
     },
     "missing": {
       "title": "[XX-Data still needed-XX]",
