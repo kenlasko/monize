@@ -262,8 +262,12 @@ Decisions taken in the implementation, where this section left a choice open:
   for a marketable series).
 - Before the dated date (a security bought when issued) nothing has accrued: the
   lot's first period is the current one, its accrued interest is zero and its
-  value the principal. This applies to `COUPON_DATES` only; an `ISSUE_DATE`
-  lot bought before its issue still has no current period.
+  value the principal, whatever the accrual (a day count never goes negative: a
+  day before the period's start counts zero days). This applies to
+  `COUPON_DATES` and `ISSUE_DATE` schedules (a bill the broker books on its
+  auction date, before the issue date: the value is the lot's cost, or the issue
+  price on the holding, the status `OPEN`, the early-redemption refusal
+  `NOT_REDEEMABLE` like any open marketable lot, never `MATURED`).
 - A figure is an `ACCRUED` interest (rounded per unit to `unitDecimals` under
   `PER_HOLDING`) when it is the coupon of a short or long first period or an
   accrued interest; the coupon of a regular period is `AMOUNT` (exact). Under

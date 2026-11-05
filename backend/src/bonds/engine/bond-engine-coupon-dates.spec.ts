@@ -11,7 +11,7 @@ import {
   value,
 } from "@/test-helpers/bond-coupon-terms";
 import { couponOf, periodInterest, valueAt } from "./accrual";
-import { redemptionSplit } from "./bond-engine";
+import { accruedInterestOn, redemptionSplit } from "./bond-engine";
 import { marketPriceRequired } from "./price-policy";
 import { unitRound } from "./rounding";
 
@@ -92,6 +92,27 @@ describe("accrued interest of a coupon lot (spec 5.2)", () => {
     expect(v.status).toBe("OPEN");
     expect(v.accruedInterest).toBe("0.00");
     expect(v.grossValue).toBe("150000.00");
+  });
+
+  it("is nothing before the dated date under ACTUAL_DAYS_IN_PERIOD, never a negative interest", () => {
+    // Dated 2026-02-15, 5 percent, 100 units of 100: the principal 10000.00.
+    // 2026-02-01 is 14 days before the dated date: the unclamped day count of
+    // the 181-day first period gave a negative accrued interest.
+    const terms = couponTerms(
+      {
+        datedDate: "2026-02-15",
+        firstCouponDate: "2026-08-15",
+        maturityDate: "2028-02-15",
+        rate: "0.05",
+      },
+      (doc) => {
+        doc.accrual = { type: "ACTUAL_DAYS_IN_PERIOD" };
+      },
+    );
+    const v = value(terms, "2026-02-01", 100, "2026-02-01");
+    expect(v.accruedInterest).toBe("0.00");
+    expect(v.grossValue).toBe("10000.00");
+    expect(accruedInterestOn(terms, "2026-02-01", 100)).toBe("0.00");
   });
 
   it("is nothing at maturity", () => {

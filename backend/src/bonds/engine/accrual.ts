@@ -1,6 +1,6 @@
 import { assertNever } from "../domain/assert-never";
 import { BondTerms } from "../domain/bond-terms";
-import { daysBetween } from "../domain/calendar-date";
+import { compareYMD, daysBetween } from "../domain/calendar-date";
 import { ExactDecimal } from "../domain/exact-decimal";
 import { roundingBasisOf } from "../domain/bond-rounding";
 import { CouponPeriodInfo } from "../domain/period-schedule";
@@ -134,9 +134,13 @@ export function yearFraction(
       const perPeriod = ExactDecimal.ONE.div(periodsPerYear(terms));
       // The whole period is exactly 1 / F; skip the day count on the hot path.
       if (from === period.start && to === period.end) return perPeriod;
+      // Nothing accrues before the period starts: a day before the dated date
+      // is worth the principal, never a negative interest.
+      const lo = compareYMD(from, period.start) < 0 ? period.start : from;
+      const hi = compareYMD(to, lo) < 0 ? lo : to;
       return perPeriod.mul(
         ExactDecimal.ratio(
-          daysBetween(from, to),
+          daysBetween(lo, hi),
           daysBetween(period.start, period.end),
         ),
       );
@@ -203,6 +207,13 @@ export function baseAt(
   }
 }
 
+/** The days of `period` gone on `asOf`; 0 before it starts (a lot bought before its issue date). */
+function daysGone(period: AccrualPeriod, asOf: string): number {
+  return compareYMD(asOf, period.start) <= 0
+    ? 0
+    : daysBetween(period.start, asOf);
+}
+
 /**
  * A discount instrument's value on day k of the N days of its period: the issue
  * price plus k/N of the discount (the ratable accrual method), unrounded.
@@ -220,7 +231,7 @@ function discountValueAt(
   return issuePrice.add(
     discount.mul(
       ExactDecimal.ratio(
-        daysBetween(period.start, asOf),
+        daysGone(period, asOf),
         daysBetween(period.start, period.end),
       ),
     ),
@@ -248,7 +259,7 @@ export function discountLotValueAt(
         .sub(cost)
         .mul(
           ExactDecimal.ratio(
-            daysBetween(period.start, asOf),
+            daysGone(period, asOf),
             daysBetween(period.start, period.end),
           ),
         ),

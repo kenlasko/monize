@@ -437,9 +437,13 @@ export function figuresOn(
   const text = (figure: ExactDecimal) => figure.toFixed(places);
 
   const matured = compareYMD(asOf, p.maturity) >= 0;
-  // A coupon series is bought before its dated date (when issued): the lot
-  // is worth its principal then, no interest has accrued.
-  const beforeDated = started === 0 && terms.schedule.anchor === "COUPON_DATES";
+  // A series is bought before its dated or issue date (a broker books the
+  // auction date): the lot is worth its principal, or its cost, then and no
+  // interest has accrued. A schedule anchored on the purchase has no such day.
+  const beforeDated =
+    started === 0 &&
+    (terms.schedule.anchor === "COUPON_DATES" ||
+      terms.schedule.anchor === "ISSUE_DATE");
   const candidate = matured ? null : p.schedule[beforeDated ? 0 : started - 1];
   const current =
     candidate && compareYMD(asOf, candidate.end) < 0 ? candidate : null;

@@ -120,6 +120,49 @@ describe("E3: the same bill bought on day 91 for 9,895.00", () => {
   });
 });
 
+describe("a bill bought before its issue date (the broker books the auction date)", () => {
+  // Issue 2026-10-01, maturity 2027-04-01 (182 days), 100 units of 100 face.
+  it.each([
+    ["a known cost", "9783.37", "9783.37"],
+    // 100 x issue price 97.833694 = 9783.3694, rounded once on the holding.
+    ["no cost", undefined, "9783.37"],
+  ])(
+    "is worth its principal and has accrued nothing (%s)",
+    (_n, cost, gross) => {
+      const input = lot(bill(perHolding), "2026-09-29", cost);
+      const v = valueBondLot({ ...input, asOf: "2026-09-30" });
+      expect(v.status).toBe("OPEN");
+      expect(v.grossValue).toBe(gross);
+      expect(v.accruedInterest).toBe("0.00");
+      expect(v.valuationComplete).toBe(true);
+      expect(v.earlyRedemptionRefusal).toBe("NOT_REDEEMABLE");
+    },
+  );
+
+  it("continues into the issue period without a jump: day 1 adds 216.63 / 182 = 1.19", () => {
+    const input = lot(bill(perHolding), "2026-09-29", "9783.37");
+    const series = valueBondLotSeries({
+      ...input,
+      days: ["2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02"],
+    });
+    expect(series.map((v) => v.grossValue)).toEqual([
+      "9783.37",
+      "9783.37",
+      "9783.37",
+      "9784.56",
+    ]);
+  });
+
+  it("splits the maturity payout as a bill bought at issue does", () => {
+    const s = redemptionSplit(
+      lot(bill(perHolding), "2026-09-29", "9783.37"),
+      "2027-04-01",
+    );
+    expect(s.principalReturned).toBe("9783.37");
+    expect(s.interest).toBe("216.63");
+  });
+});
+
 describe("a bill without a known cost", () => {
   it.each([undefined, null])(
     "uses the issue price on the holding (cost %s)",
