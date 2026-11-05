@@ -1,5 +1,13 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { instanceToPlain } from "class-transformer";
-import { Currency } from "./currency.entity";
+import { getMetadataArgsStorage } from "typeorm";
+import {
+  CURRENCY_KINDS,
+  CURRENCY_KIND_CHECK,
+  CURRENCY_QUOTE_SYMBOL_CHECK,
+  Currency,
+} from "./currency.entity";
 
 describe("Currency entity", () => {
   function buildCurrency(overrides: Partial<Currency> = {}): Currency {
@@ -81,5 +89,67 @@ describe("Currency entity", () => {
   it("stores multi-character symbols", () => {
     const currency = buildCurrency({ symbol: "CA$" });
     expect(currency.symbol).toBe("CA$");
+  });
+});
+
+/**
+ * The entity declares the CHECKs `database/schema.sql` puts on `currencies`,
+ * by the same names and the same rule, so a schema built from the entities
+ * (the integration suite's) refuses a kind outside the two and a price symbol
+ * on a fiat row, as the real one does.
+ */
+const SCHEMA = readFileSync(
+  join(__dirname, "../../../../database/schema.sql"),
+  "utf8",
+);
+
+/** The expression schema.sql gives a named CHECK, whitespace and quoting folded. */
+function schemaCheck(name: string): string {
+  const match = new RegExp(
+    `CONSTRAINT\\s+${name}\\s+CHECK\\s*\\((.*)\\)\\s*,?\\s*$`,
+    "m",
+  ).exec(SCHEMA);
+  if (!match) throw new Error(`schema.sql declares no CHECK ${name}`);
+  return normalise(match[1]);
+}
+
+function normalise(expression: string): string {
+  return expression.replace(/"/g, "").replace(/\s+/g, " ").trim();
+}
+
+function entityChecks(): Map<string, string> {
+  return new Map(
+    getMetadataArgsStorage()
+      .checks.filter((check) => check.target === Currency)
+      .map((check) => [check.name ?? "", check.expression]),
+  );
+}
+
+describe("Currency entity CHECKs", () => {
+  it("declares both of schema.sql's CHECKs by name", () => {
+    expect([...entityChecks().keys()].sort()).toEqual([
+      "currencies_kind_check",
+      "currencies_quote_symbol_crypto_only",
+    ]);
+  });
+
+  it("holds each to schema.sql's expression", () => {
+    const checks = entityChecks();
+    expect(normalise(checks.get("currencies_kind_check")!)).toBe(
+      schemaCheck("currencies_kind_check"),
+    );
+    expect(normalise(checks.get("currencies_quote_symbol_crypto_only")!)).toBe(
+      schemaCheck("currencies_quote_symbol_crypto_only"),
+    );
+  });
+
+  it("lists exactly the kinds CURRENCY_KINDS names", () => {
+    for (const kind of CURRENCY_KINDS) {
+      expect(CURRENCY_KIND_CHECK).toContain(`'${kind}'`);
+    }
+    expect(CURRENCY_KIND_CHECK.match(/'[A-Z]+'/g)).toHaveLength(
+      CURRENCY_KINDS.length,
+    );
+    expect(CURRENCY_QUOTE_SYMBOL_CHECK).toContain("quote_symbol");
   });
 });

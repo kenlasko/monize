@@ -138,6 +138,7 @@
     },
     "themeLabel": "Thema",
     "defaultCurrencyLabel": "Standaardvaluta",
+    "defaultCurrencyNoCrypto": "Cryptovaluta worden hier niet aangeboden: totalen en rapporten worden altijd in een fiatvaluta weergegeven.",
     "preferredExchangesLabel": "Voorkeursbeurzen (voor effectopzoekingen)",
     "preferredExchangesHelp": "Selecteer maximaal 3 beurzen in volgorde van prioriteit. Deze worden gebruikt bij het opzoeken van effecten.",
     "exchangePriorityPlaceholder": "Prioriteit {n}",

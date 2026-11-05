@@ -138,6 +138,7 @@
     },
     "themeLabel": "Тема",
     "defaultCurrencyLabel": "Валюта по умолчанию",
+    "defaultCurrencyNoCrypto": "Криптовалюты здесь недоступны: итоги и отчёты всегда отображаются в фиатной валюте.",
     "preferredExchangesLabel": "Предпочтительные биржи (для поиска ценных бумаг)",
     "preferredExchangesHelp": "Выберите до 3 бирж в порядке приоритета. Они будут предпочтительными при поиске ценных бумаг.",
     "exchangePriorityPlaceholder": "Приоритет {n}",

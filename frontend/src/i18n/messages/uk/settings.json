@@ -138,6 +138,7 @@
     },
     "themeLabel": "Тема",
     "defaultCurrencyLabel": "Валюта за замовчуванням",
+    "defaultCurrencyNoCrypto": "Криптовалюти тут недоступні: підсумки та звіти завжди відображаються у фіатній валюті.",
     "preferredExchangesLabel": "Бажані біржі (для пошуку цінних паперів)",
     "preferredExchangesHelp": "Оберіть до 3 бірж у порядку пріоритету. Вони будуть пріоритетними при пошуку цінних паперів.",
     "exchangePriorityPlaceholder": "Пріоритет {n}",

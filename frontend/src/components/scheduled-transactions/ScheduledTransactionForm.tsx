@@ -42,11 +42,13 @@ import { useTagPickerOptions } from '@/hooks/useTagPickerOptions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import {
   roundToCents,
+  roundMoney,
+  sumMoney,
   roundToEntryPlaces,
+  entryDecimalPlaces,
   getCurrencySymbol,
   FX_RATE_DISPLAY_DECIMALS,
 } from '@/lib/format';
-import { decimalPlacesForCurrency } from '@/lib/currency-decimals';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { getErrorMessage } from '@/lib/errors';
@@ -343,9 +345,9 @@ export function ScheduledTransactionForm({
   }, [watchedAccountId, accounts, setValue]);
 
   const currencySymbol = getCurrencySymbol(watchedCurrencyCode || defaultCurrency);
-  // A coin's amounts are entered at its own places; undefined (any ISO
-  // currency) keeps the input's two.
-  const amountDecimalPlaces = decimalPlacesForCurrency(watchedCurrencyCode || defaultCurrency);
+  // A coin's amounts are entered at its own places (four while the registry
+  // has not answered); any ISO currency keeps the input's two.
+  const amountDecimalPlaces = entryDecimalPlaces(watchedCurrencyCode || defaultCurrency);
 
   // ── Foreign-currency entry ────────────────────────────────────────────────
   //
@@ -1063,9 +1065,11 @@ export function ScheduledTransactionForm({
         toast.error(t('form.toasts.splitsMinimum'));
         return;
       }
-      const splitsTotal = splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
-      const remaining = Math.abs(Number(data.amount) - splitsTotal);
-      if (remaining >= 0.01) {
+      // At the server's precision (`validateSplitAmountSum`): the lines must
+      // equal the amount exactly at four decimals. A one-cent tolerance let a
+      // 0.0049 BTC remainder through to a save the server refuses.
+      const splitsTotal = sumMoney(splits.map((s) => Number(s.amount) || 0));
+      if (splitsTotal !== roundMoney(Number(data.amount))) {
         toast.error(t('form.toasts.splitsTotal'));
         return;
       }
@@ -1553,7 +1557,7 @@ export function ScheduledTransactionForm({
                         : t('form.amountLabel')
                     }
                     prefix={getCurrencySymbol(isForeign ? entryCurrency : accountCurrency)}
-                    decimalPlaces={decimalPlacesForCurrency(isForeign ? entryCurrency : accountCurrency)}
+                    decimalPlaces={entryDecimalPlaces(isForeign ? entryCurrency : accountCurrency)}
                     value={isForeign ? foreignAmount : watchedAmount}
                     onChange={
                       isForeign

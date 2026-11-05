@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "Een koerssymbool ({{ quoteSymbol }}) kan alleen op een cryptovaluta worden ingesteld; \"{{ code }}\" is een fiatvaluta",
     "quoteSymbolNotAPair": "Het koerssymbool \"{{ quoteSymbol }}\" voor \"{{ code }}\" is geen paar van een coin en een fiatvaluta zoals BTC-EUR",
     "kindInUse": "De soort van \"{{ code }}\" kan niet worden gewijzigd zolang rekeningen, transacties, waardepapieren of andere records hem gebruiken",
+    "quoteSymbolInUse": "De coin in het koerssymbool van \"{{ code }}\" kan niet worden gewijzigd zolang rekeningen, transacties, waardepapieren of andere records hem gebruiken; alleen de fiatvaluta erin kan worden gewijzigd",
     "kindConflict": "Valuta \"{{ code }}\" bestaat al als {{ kind }}-valuta en kan niet als {{ requestedKind }} worden toegevoegd"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "Authenticeer opnieuw bij je identiteitsprovider om het verwijderen van gegevens te bevestigen",
     "passwordRequiredForDataDelete": "Wachtwoord is vereist om het verwijderen van gegevens te bevestigen",
     "reauthUnavailable": "Stel eerst het wachtwoord van je account in voordat je deze actie gebruikt."
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "Een cryptovaluta kan niet de rapportagevaluta zijn"
   },
   "loanScenarios": {
     "notFound": "Leningscenario met ID {{ id }} niet gevonden",

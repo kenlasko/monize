@@ -11,6 +11,7 @@ import {
 } from "./forecast-aggregator.service";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { createScopedDbMocks } from "../../test-helpers/scoped-db-testing";
+import { Currency } from "../../currencies/entities/currency.entity";
 
 jest.mock("../../common/db/scoped-db", () =>
   jest
@@ -23,6 +24,7 @@ describe("AiForecastService", () => {
 
   let mockUsageLogRepo: Record<string, any>;
   let mockPrefRepo: Record<string, jest.Mock>;
+  let mockCurrencyRepo: Record<string, jest.Mock>;
   let mockAiService: Partial<Record<keyof AiService, jest.Mock>>;
   let mockUsageService: Partial<Record<keyof AiUsageService, jest.Mock>>;
   let mockAggregatorService: Partial<
@@ -176,6 +178,11 @@ describe("AiForecastService", () => {
       findOne: jest.fn().mockResolvedValue({ defaultCurrency: "USD" }),
     };
 
+    // A BTC row at four places, the precision a coin is stored at.
+    mockCurrencyRepo = {
+      find: jest.fn().mockResolvedValue([{ code: "BTC", decimalPlaces: 4 }]),
+    };
+
     mockAiService = {
       complete: jest.fn().mockResolvedValue({
         content: makeValidAiResponse(),
@@ -201,6 +208,7 @@ describe("AiForecastService", () => {
           useValue: createScopedDbMocks([
             [UserPreference, mockPrefRepo],
             [AiUsageLog, mockUsageLogRepo],
+            [Currency, mockCurrencyRepo],
           ]).dataSource,
         },
         { provide: AiService, useValue: mockAiService },
@@ -455,6 +463,53 @@ describe("AiForecastService", () => {
         "Total balance: unknown (no exchange rate for EUR->USD)",
       );
       expect(prompt).toContain("EUR->USD) are left out");
+    });
+
+    it("prints a coin balance at its currency row's places, not Intl's two", async () => {
+      mockAggregatorService.computeAggregates!.mockResolvedValue(
+        makeAggregates({
+          accountBalances: {
+            totalBalance: 1715.63,
+            knownBalanceSubtotal: 1715.63,
+            missingRatePairs: [],
+            accounts: [
+              {
+                name: "Wallet",
+                accountType: "CRYPTO",
+                balance: 0.0125,
+                currencyCode: "BTC",
+              },
+              {
+                name: "Chequing",
+                accountType: "CHEQUING",
+                balance: 5000,
+                currencyCode: "USD",
+              },
+            ],
+          },
+        }),
+      );
+
+      await service.generateForecast(userId);
+
+      const prompt =
+        mockAiService.complete!.mock.calls[0][1].messages[0].content;
+      expect(prompt).toContain("Wallet (CRYPTO): 0.0125 BTC");
+      expect(prompt).toContain("Chequing (CHEQUING): 5,000.00 USD");
+      // Only the non-ISO code is read.
+      expect(mockCurrencyRepo.find).toHaveBeenCalledTimes(1);
+      expect(
+        JSON.stringify(mockCurrencyRepo.find!.mock.calls[0][0].where.code),
+      ).toContain("BTC");
+      expect(
+        JSON.stringify(mockCurrencyRepo.find!.mock.calls[0][0].where.code),
+      ).not.toContain("USD");
+    });
+
+    it("reads no currency row when every account is in an ISO currency", async () => {
+      await service.generateForecast(userId);
+
+      expect(mockCurrencyRepo.find).not.toHaveBeenCalled();
     });
 
     it("calls aiService.complete with correct feature name", async () => {

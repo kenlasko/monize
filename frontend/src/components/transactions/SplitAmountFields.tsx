@@ -2,7 +2,12 @@
 
 import { useTranslations } from 'next-intl';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
-import { getCurrencySymbol, getDecimalPlacesForCurrency } from '@/lib/format';
+import {
+  awaitsRegisteredPlaces,
+  getCurrencySymbol,
+  getDecimalPlacesForCurrency,
+  MONEY_DECIMALS,
+} from '@/lib/format';
 import type { SplitFxPair } from './useSplitTransferFxAutofill';
 
 interface SplitAmountFieldsProps {
@@ -54,13 +59,20 @@ export function SplitAmountFields({
     />
   );
   if (!pair) return amountInput;
+  // As `SplitEditor` enters the line amount: a coin the registry does not
+  // hold yet at the stored four (`awaitsRegisteredPlaces`), not `Intl`'s guess
+  // of two, so a received 0.0125 BTC typed before `GET /currencies` answers is
+  // not rounded to cents; every other code at its own places (JPY 0).
+  const receivedDecimals = awaitsRegisteredPlaces(pair.toCurrency)
+    ? MONEY_DECIMALS
+    : getDecimalPlacesForCurrency(pair.toCurrency);
   return (
     <div className="space-y-2">
       {amountInput}
       <CurrencyInput
         label={t('form.fields.amountReceivedInCurrency', { currency: pair.toCurrency })}
         prefix={getCurrencySymbol(pair.toCurrency)}
-        decimalPlaces={getDecimalPlacesForCurrency(pair.toCurrency)}
+        decimalPlaces={receivedDecimals}
         value={receivedValue}
         onChange={(value) => onReceivedChange(value !== undefined ? Math.abs(value) : undefined)}
         allowNegative={false}

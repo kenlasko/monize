@@ -146,14 +146,31 @@ account carry a currency and a balance the rest of Monize already understands.
     security-based method and gains the wallet-based one; the "do not add BTC
     as a currency" note becomes guidance on which model fits which holding.
     The Currencies form's non-ISO notice now offers the `CRYPTO` kind.
+11. **A coin is never the reporting currency.** Every converted figure is
+    `roundMoney` in the reporting currency, at four places, and 0.0001 BTC is
+    about 14 CAD at the prices of late 2026: a net worth, a budget or a report
+    in a coin would round away amounts a reader can see. The preferences
+    update refuses a `defaultCurrency` of kind CRYPTO with
+    `errors.preferences.defaultCurrencyCrypto` ("A cryptocurrency cannot be
+    the reporting currency"), reading the kind `FOR KEY SHARE` in the same
+    transaction, before the currency is ensured or the preference written
+    (`assertReportingCurrencyIsFiatIn`). A code's kind cannot change while a
+    preference names it (`user_preferences.default_currency` is one of the
+    columns `currency_code_referenced_by_data` reads). The backup restore,
+    which writes the file's preferences, reports a CRYPTO reporting currency
+    in `currencyKindMismatches` rather than refusing the restore (INV-CRYPTO-001
+    explains why a restore reports).
 
 ## 4. Invariants
 
 - **INV-CRYPTO-001 (kind and type agree).** `accounts.account_type = 'CRYPTO'`
   if and only if `currencies.kind = 'CRYPTO'` for `accounts.currency_code`.
   Mechanism: `assertAccountCurrencyKind` in the accounts service, called by
-  create, update and every other writer; `CurrenciesService.update` refuses a
-  `kind` change on a referenced code. Status: `partial` (no database trigger).
+  create, update and every other writer, undo and redo included
+  (`assertUndoCurrencyKind`); `CurrenciesService.update` refuses a `kind`
+  change on a referenced code; the backup restore reports a mismatch it wrote
+  (`currencyKindMismatches`). Status: `partial` (no database trigger, and the
+  restore reports rather than refuses).
 - **INV-CRYPTO-002 (a coin is priced through its pair).** Every
   `exchange_rates` row with a `CRYPTO` side was written by `CryptoFxProvider`
   (`source = 'yahoo_crypto'`) or by a user (`manual`); a fiat provider never
@@ -180,7 +197,9 @@ account carry a currency and a balance the rest of Monize already understands.
 | create `XYZ`, kind FIAT, quote `BTC-EUR` | refused `quoteSymbolRequiresCrypto` | CHECK and DTO |
 | create, quote `BTC` (no fiat leg) | refused `quoteSymbolNotAPair` | `cryptoPairFiat` is null |
 | update `kind` on a code any account, transaction or security references | refused `kindInUse` | INV-CRYPTO-001 |
-| update `quote_symbol` on a referenced CRYPTO code | accepted | repricing a coin is allowed; the next refresh fetches the new pair |
+| update `quote_symbol` on a referenced CRYPTO code, fiat leg only (`BTC-EUR` to `BTC-CAD`) | accepted | the provider prices against whichever fiat the pair names; the next refresh fetches the new pair |
+| update `quote_symbol` on a referenced CRYPTO code, coin ticker (`BTC-EUR` to `ETH-EUR`, or to no symbol) | refused `quoteSymbolInUse` | `currencies` is shared: a new ticker would revalue every other user's wallet at another coin's price; held like a kind change, under the same `FOR UPDATE` |
+| set `quote_symbol` on a CRYPTO code that had none | accepted | pricing an unpriced coin re-points nothing |
 
 ## 6. Numerical examples
 
@@ -190,6 +209,8 @@ Rates are 10 dp, money 4 dp, the reporting currency CAD.
 |---|---|
 | Wallet balance | `0.0125` BTC; stored `BTC->CAD` 2026-11-05 = `137250.1234567890`; value `1715.6265` CAD |
 | Canonical orientation | the observation is `BTC->EUR 91000`; `isCanonicalOrientation('BTC','EUR')` is true, stored as is; `EUR->BTC` resolves by inversion to `0.0000109890` |
+| A coin that sorts after its fiat | `XBT->IDR 1520000000`; stored coin first as `XBT->IDR` (a pair with one coin side is stored coin -> fiat, `docs/specs/exchange-rate-canonical-orientation.md` section 12), not as `IDR->XBT 0.0000000007`, which would resolve back to 1.43e9 |
+| A rate the column cannot hold | `BTC->LBP 11000000000`: at or above 1e10, `canonicalRateRow` is `null` and the refresh reports "Rate out of range" for that pair |
 | Transfer with fee, same coin | split on wallet A, total `-0.0101` BTC: transfer line `-0.0100` to wallet B (counterpart `+0.0100` BTC), expense line `-0.0001` to "Fees: Network" |
 | Buy from chequing | plain transfer from CAD chequing `-1700.00` to the wallet, received `0.0125` BTC stated; stored rate `roundFxRate(0.0125 / 1700) = 0.0000073529` |
 | Below precision | a fee of `0.00001` BTC cannot be entered: the form rounds to the currency's 4 places and refuses a zero line (`transferAmountsMustAgreeOnZero` for a transfer line; a category line of zero is a line of nothing). The documentation says to book such a fee in fiat on the paying account, or to round it into the transfer amount |

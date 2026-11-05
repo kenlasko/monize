@@ -12,7 +12,11 @@ import {
 import { FORECAST_SYSTEM_PROMPT } from "../context/prompt-templates";
 import { aiLanguageInstruction } from "../context/language-directive";
 import { sanitizePromptValue } from "../../common/sanitization.util";
-import { formatCurrencyAmount } from "../../common/format-currency.util";
+import {
+  decimalPlacesFor,
+  formatCurrencyAmount,
+} from "../../common/format-currency.util";
+import { loadCurrencyDecimalPlaces } from "../../currencies/currency-decimal-places";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import {
   ForecastResponse,
@@ -84,7 +88,14 @@ export class AiForecastService {
     }
 
     const forecastMonths = months ?? DEFAULT_FORECAST_MONTHS;
-    const prompt = this.buildForecastPrompt(aggregates, forecastMonths);
+    // A coin's balance is printed at its own row's places, not Intl's 2.
+    const places = await withScopedDb(this.dataSource, (manager) =>
+      loadCurrencyDecimalPlaces(
+        manager,
+        aggregates.accountBalances.accounts.map((acct) => acct.currencyCode),
+      ),
+    );
+    const prompt = this.buildForecastPrompt(aggregates, forecastMonths, places);
 
     try {
       const response = await this.aiService.complete(
@@ -153,6 +164,7 @@ export class AiForecastService {
   private buildForecastPrompt(
     aggregates: ForecastAggregates,
     forecastMonths: number,
+    places: ReadonlyMap<string, number>,
   ): string {
     const sections: string[] = [];
 
@@ -171,7 +183,7 @@ export class AiForecastService {
     );
     for (const acct of aggregates.accountBalances.accounts) {
       sections.push(
-        `${sanitizePromptValue(acct.name)} (${acct.accountType}): ${formatCurrencyAmount(acct.balance, acct.currencyCode)} ${acct.currencyCode}`,
+        `${sanitizePromptValue(acct.name)} (${acct.accountType}): ${formatCurrencyAmount(acct.balance, acct.currencyCode, decimalPlacesFor(acct.currencyCode, places))} ${acct.currencyCode}`,
       );
     }
 

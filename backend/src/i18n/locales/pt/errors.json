@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "Um símbolo de preço ({{ quoteSymbol }}) só pode ser definido numa criptomoeda; \"{{ code }}\" é uma moeda fiduciária",
     "quoteSymbolNotAPair": "O símbolo de preço \"{{ quoteSymbol }}\" de \"{{ code }}\" não é um par de moeda e moeda fiduciária, como BTC-EUR",
     "kindInUse": "O tipo de \"{{ code }}\" não pode ser alterado enquanto contas, transações, títulos ou outros registos o usarem",
+    "quoteSymbolInUse": "A moeda do símbolo de preço de \"{{ code }}\" não pode ser alterada enquanto contas, transações, títulos ou outros registos o usarem; só a sua moeda fiduciária pode ser alterada",
     "kindConflict": "A moeda \"{{ code }}\" já existe como moeda {{ kind }} e não pode ser adicionada como {{ requestedKind }}"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "Autentique-se novamente no seu provedor de identidade para confirmar a eliminação dos dados",
     "passwordRequiredForDataDelete": "É necessária uma palavra-passe para confirmar a eliminação de dados",
     "reauthUnavailable": "Conclua a definição da palavra-passe da sua conta antes de usar esta ação."
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "Uma criptomoeda não pode ser a moeda de referência"
   },
   "loanScenarios": {
     "notFound": "Cenário de empréstimo com o ID {{ id }} não encontrado",

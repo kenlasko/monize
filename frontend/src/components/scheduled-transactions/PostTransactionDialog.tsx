@@ -32,8 +32,10 @@ import { getLocalDateString } from '@/lib/utils';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import {
   roundMoney,
+  sumMoney,
   roundToDecimals,
   roundToEntryPlaces,
+  entryDecimalPlaces,
   loadedEntryAmount,
   awaitsRegisteredPlaces,
   getCurrencySymbol,
@@ -41,7 +43,6 @@ import {
   formatAmount,
   FX_RATE_DISPLAY_DECIMALS,
 } from '@/lib/format';
-import { decimalPlacesForCurrency } from '@/lib/currency-decimals';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { getErrorMessage } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
@@ -872,9 +873,10 @@ export function PostTransactionDialog({
         toast.error(t('postTransaction.minSplits'));
         return;
       }
-      const splitsTotal = splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
-      const remaining = Math.abs(amount - splitsTotal);
-      if (remaining >= 0.01) {
+      // At the server's precision (`validateSplitAmountSum`): the lines must
+      // equal the amount exactly at four decimals, not within a cent.
+      const splitsTotal = sumMoney(splits.map((s) => Number(s.amount) || 0));
+      if (splitsTotal !== roundMoney(amount)) {
         toast.error(t('postTransaction.splitMismatch'));
         return;
       }
@@ -1219,7 +1221,7 @@ export function PostTransactionDialog({
                     isForeignPosting ? entryCurrency : scheduledTransaction.currencyCode,
                   )}
                   value={isForeignPosting ? foreignAmount : amount}
-                  decimalPlaces={decimalPlacesForCurrency(
+                  decimalPlaces={entryDecimalPlaces(
                     isForeignPosting ? entryCurrency : accountCurrency,
                   )}
                   onChange={(value) =>
@@ -1250,7 +1252,7 @@ export function PostTransactionDialog({
                   currency: scheduledTransaction.currencyCode,
                 })}
                 prefix={getCurrencySymbol(scheduledTransaction.currencyCode)}
-                decimalPlaces={decimalPlacesForCurrency(accountCurrency)}
+                decimalPlaces={entryDecimalPlaces(accountCurrency)}
                 value={foreignConversion ? foreignConversion.total : undefined}
                 onChange={handleConvertedTotalChange}
                 allowSignToggle

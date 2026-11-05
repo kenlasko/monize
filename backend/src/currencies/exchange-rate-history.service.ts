@@ -13,7 +13,7 @@ import { EmptyWindowMemory } from "../common/time-series/history-fill";
 import { FX_MAX_RATE_AGE_DAYS } from "../common/time-series/fx-rate-resolver";
 import { investmentEffectStatusSql } from "../securities/investment-row-effects.util";
 import { tr } from "../i18n/translate";
-import { isCanonicalOrientation } from "./canonical-rate.util";
+import { codeOrderedPair } from "./canonical-rate.util";
 import {
   ExchangeRateService,
   directionlessPairKey,
@@ -464,14 +464,21 @@ export class ExchangeRateHistoryService {
   }
 
   /**
-   * The pair as `exchange_rate_coverage` keys it: the canonical orientation.
+   * The pair as `exchange_rate_coverage` keys it: plain code order, which is
+   * what the table's CHECK (`from_currency < to_currency`) refuses anything
+   * but.
    *
    * A rate window answers a pair rather than a direction, so the row is the
-   * same row whichever way round the reader's own question is put. The table's
-   * CHECK constraint refuses anything else.
+   * same row whichever way round the reader's own question is put. It is
+   * deliberately not the storage orientation of `exchange_rates`
+   * (`isCanonicalOrientation`), which puts a coin first whichever code sorts
+   * first: the coverage key is about which pair, never which direction, and a
+   * key that followed `currencies.kind` would break the CHECK for a coin whose
+   * code sorts after its fiat and orphan the row if a currency changed kind.
+   * `directionlessPairKey` keys the same way (`codeOrderedPair`).
    */
   private static coverageKey(from: string, to: string): [string, string] {
-    return isCanonicalOrientation(from, to) ? [from, to] : [to, from];
+    return codeOrderedPair(from, to);
   }
 
   /**

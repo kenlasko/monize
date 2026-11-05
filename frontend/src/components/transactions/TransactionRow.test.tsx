@@ -4,6 +4,7 @@ import { render } from '@/test/render';
 import { TransactionRow, type TransactionRowProps } from './TransactionRow';
 import { TransactionStatus, type Transaction } from '@/types/transaction';
 import { REGISTER_PAYEE_PRIORITY_SHARE } from './register-columns';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 
 function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   return {
@@ -912,6 +913,46 @@ describe('TransactionRow', () => {
     );
     expect(screen.getByText(/Wallet/)).toBeInTheDocument();
     expect(screen.getByText(/Gas/)).toBeInTheDocument();
+  });
+
+  it('renders each split line amount with the currency symbol the Amount column shows', () => {
+    renderRow(
+      { density: 'normal' },
+      {
+        isSplit: true,
+        currencyCode: 'USD',
+        splits: [
+          { id: 's1', amount: -650, category: { id: 'c1', name: 'Rent' }, transferAccount: null } as any,
+          { id: 's2', amount: -20, category: null, transferAccount: { id: 'acc3', name: 'Wallet' } } as any,
+        ],
+      },
+    );
+    expect(screen.getByText(/Rent: \$650\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/Wallet.*: \$20\.00/)).toBeInTheDocument();
+  });
+
+  it('renders a coin wallet split summary at the coin places with its registered symbol', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20BF' }]);
+    let unmount = () => {};
+    try {
+      ({ unmount } = renderRow(
+        { density: 'normal' },
+        {
+          isSplit: true,
+          currencyCode: 'BTC',
+          splits: [
+            { id: 's1', amount: -0.005, category: null, transferAccount: { id: 'acc3', name: 'Primary Chequing' } } as any,
+            { id: 's2', amount: -0.0001, category: { id: 'c2', name: 'Network fee' }, transferAccount: null } as any,
+          ],
+        },
+      ));
+      expect(screen.getByText(/Primary Chequing.*: \u20BF0\.0050/)).toBeInTheDocument();
+      expect(screen.getByText(/Network fee: \u20BF0\.0001/)).toBeInTheDocument();
+    } finally {
+      // Unmount first: clearing a registry a mounted row subscribes to redraws it outside act().
+      unmount();
+      clearCurrencyDecimals();
+    }
   });
 
   it('renders positive-amount split transfer arrows', () => {

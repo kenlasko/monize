@@ -138,6 +138,7 @@
     },
     "themeLabel": "테마",
     "defaultCurrencyLabel": "기본 통화",
+    "defaultCurrencyNoCrypto": "여기에서는 암호화폐를 선택할 수 없습니다. 합계와 보고서는 항상 법정 통화로 표시됩니다.",
     "preferredExchangesLabel": "선호 거래소 (유가증권 조회용)",
     "preferredExchangesHelp": "우선순위 순서로 최대 3개의 거래소를 선택하세요. 유가증권 조회 시 이 거래소가 우선적으로 사용됩니다.",
     "exchangePriorityPlaceholder": "우선순위 {n}",

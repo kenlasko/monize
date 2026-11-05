@@ -138,6 +138,7 @@
     },
     "themeLabel": "Theme",
     "defaultCurrencyLabel": "Default Currency",
+    "defaultCurrencyNoCrypto": "Cryptocurrencies are not offered here: totals and reports are always shown in a fiat currency.",
     "preferredExchangesLabel": "Preferred Exchanges (for security lookups)",
     "preferredExchangesHelp": "Select up to 3 exchanges in priority order. These will be preferred when looking up securities.",
     "exchangePriorityPlaceholder": "Priority {n}",

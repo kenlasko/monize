@@ -101,6 +101,9 @@ import {
     ExchangeRateHistoryService,
     CurrenciesService,
     FxProviderChain,
+    // The backup restore writes `currencies` and tells the crypto adapter to
+    // re-read it after the commit, as `CurrenciesService` does on a write.
+    CryptoFxProvider,
   ],
 })
 export class CurrenciesModule {}

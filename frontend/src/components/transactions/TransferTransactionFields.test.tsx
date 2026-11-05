@@ -11,7 +11,8 @@ vi.mock('@/store/authStore', () => ({
     selector({ actingAsUserId: mockActingAsUserId }),
 }));
 
-vi.mock('@/lib/format', () => ({
+vi.mock('@/lib/format', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/format')>()),
   getCurrencySymbol: (code: string) => {
     const map: Record<string, string> = { CAD: '$', USD: 'US$', EUR: 'E' };
     return map[code] || '$';
@@ -416,7 +417,7 @@ describe('TransferTransactionFields', () => {
       );
       expect(screen.getByTestId('currency-input-Transfer Amount (CAD)')).toHaveAttribute(
         'data-decimal-places',
-        '',
+        '2',
       );
       expect(screen.getByTestId('currency-input-Amount Received (BTC)')).toHaveAttribute(
         'data-decimal-places',
@@ -425,6 +426,29 @@ describe('TransferTransactionFields', () => {
     } finally {
       clearCurrencyDecimals();
     }
+  });
+
+  it('enters each coin leg at the stored four places before the registry has loaded', () => {
+    render(
+      <TransferTransactionFields
+        {...defaultProps}
+        watchedCurrencyCode="BTC"
+        crossCurrencyInfo={{
+          fromCurrency: 'BTC',
+          toCurrency: 'ETH',
+          fromAccountName: 'Bitcoin Wallet',
+          toAccountName: 'Ether Wallet',
+        }}
+      />
+    );
+    expect(screen.getByTestId('currency-input-Transfer Amount (BTC)')).toHaveAttribute(
+      'data-decimal-places',
+      '4',
+    );
+    expect(screen.getByTestId('currency-input-Amount Received (ETH)')).toHaveAttribute(
+      'data-decimal-places',
+      '4',
+    );
   });
 
   it('enters a coin transfer amount at its own places', () => {

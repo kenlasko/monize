@@ -158,12 +158,17 @@ export function roundToCents(value: number): number {
 /**
  * The places an amount in `currencyCode` is entered and rounded in: a
  * registered non-ISO currency's stored places (`lib/currency-decimals.ts`, four
- * for a BTC row), otherwise two, so every fiat surface keeps the cents it has
- * always used. Unlike `getDecimalPlacesForCurrency` it does not ask `Intl`, so
- * a JPY or BHD amount is not re-rounded by this.
+ * for a BTC row); a non-ISO code the registry does not hold yet
+ * (`awaitsRegisteredPlaces`: `GET /currencies` has not answered, or failed) at
+ * the stored four (`MONEY_DECIMALS`), so a coin typed before the list arrives
+ * is not rounded to cents; otherwise two, so every fiat surface keeps the cents
+ * it has always used. Unlike `getDecimalPlacesForCurrency` it does not ask
+ * `Intl`, so a JPY or BHD amount is not re-rounded by this.
  */
 export function entryDecimalPlaces(currencyCode: string | null | undefined): number {
-  return decimalPlacesForCurrency(currencyCode) ?? 2;
+  const registered = decimalPlacesForCurrency(currencyCode);
+  if (registered !== undefined) return registered;
+  return awaitsRegisteredPlaces(currencyCode) ? MONEY_DECIMALS : 2;
 }
 
 /**

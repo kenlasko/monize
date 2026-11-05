@@ -146,5 +146,25 @@ describe('useNumberFormat and the currency decimals registry', () => {
       expect(result.current.formatCurrencyFlag(1500, 'BTC')).toBe('\u20bf1.50K');
       expect(result.current.formatCurrencyTight(12, 'BTC')).toBe('\u20bf12');
     });
+
+    it('keeps a registered coin\'s places below one in the compact and tight figures', () => {
+      registerCurrencyDecimals([BTC]);
+      const { result } = renderHook(() => useNumberFormat());
+      // At zero fraction digits both read "\u20bf0".
+      expect(result.current.formatCurrencyCompact(0.0125, 'BTC')).toBe('\u20bf0.0125');
+      expect(result.current.formatCurrencyTight(0.0125, 'BTC')).toBe('\u20bf0.0125');
+      expect(result.current.formatCurrencyCompact(-0.007, 'BTC')).toBe('-\u20bf0.007');
+      expect(result.current.formatCurrencyCompact(12.3456, 'BTC')).toBe('\u20bf12');
+      expect(result.current.formatCurrencyTight(1500, 'BTC')).toBe('\u20bf1.5K');
+    });
+
+    it('leaves a fiat compact and tight figure unchanged', () => {
+      registerCurrencyDecimals([BTC]);
+      const { result } = renderHook(() => useNumberFormat());
+      expect(result.current.formatCurrencyCompact(1234.5, 'CAD')).toBe('$1,235');
+      expect(result.current.formatCurrencyCompact(0.5, 'USD')).toBe('$1');
+      expect(result.current.formatCurrencyTight(0.4, 'USD')).toBe('$0');
+      expect(result.current.formatCurrencyTight(344.33, 'USD')).toBe('$344');
+    });
   });
 });

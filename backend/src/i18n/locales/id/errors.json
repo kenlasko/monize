@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "Simbol harga ({{ quoteSymbol }}) hanya dapat disetel pada mata uang kripto; \"{{ code }}\" adalah mata uang fiat",
     "quoteSymbolNotAPair": "Simbol harga \"{{ quoteSymbol }}\" untuk \"{{ code }}\" bukan pasangan koin dan mata uang fiat seperti BTC-EUR",
     "kindInUse": "Jenis \"{{ code }}\" tidak dapat diubah selama akun, transaksi, sekuritas, atau catatan lain masih menggunakannya",
+    "quoteSymbolInUse": "Koin dalam simbol harga \"{{ code }}\" tidak dapat diubah selama akun, transaksi, sekuritas, atau catatan lain masih menggunakannya; hanya mata uang fiatnya yang dapat diubah",
     "kindConflict": "Mata uang \"{{ code }}\" sudah ada sebagai mata uang {{ kind }} dan tidak dapat ditambahkan sebagai {{ requestedKind }}"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "Autentikasi ulang dengan penyedia identitas Anda untuk mengonfirmasi penghapusan data",
     "passwordRequiredForDataDelete": "Kata sandi diperlukan untuk mengonfirmasi penghapusan data",
     "reauthUnavailable": "Selesaikan pengaturan kata sandi akun Anda sebelum menggunakan tindakan ini."
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "Mata uang kripto tidak dapat menjadi mata uang pelaporan"
   },
   "loanScenarios": {
     "notFound": "Skenario pinjaman dengan ID {{ id }} tidak ditemukan",

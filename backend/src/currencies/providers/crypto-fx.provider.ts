@@ -20,6 +20,16 @@ import { YahooFxProvider } from "./yahoo-fx.provider";
  */
 export const CRYPTO_CURRENCY_CACHE_MS = 5 * 60 * 1000;
 
+/**
+ * How soon after a read of `currencies` a code missing from it may trigger
+ * another. A code the snapshot does not hold may be a coin created on another
+ * replica or written by a restore since the read, and answering "not mine"
+ * for it would hand a coin pair to Yahoo's `=X` grammar (INV-CRYPTO-002), so a
+ * miss re-reads before answering. The throttle is what keeps a code with no
+ * `currencies` row at all from costing a query on every question.
+ */
+export const CRYPTO_MISS_RELOAD_MS = 5 * 1000;
+
 /** Cap on concurrent coin quotes per `fetchLatest`; the Yahoo client throttles beneath it too. */
 export const CRYPTO_FETCH_CONCURRENCY = 4;
 
@@ -68,7 +78,12 @@ function utcDay(epochSeconds: number): string {
  * the Currencies page as where to map one. Both read `currencies` through
  * `withScopedDb` (every caller of the chain runs under an identity), cached
  * for `CRYPTO_CURRENCY_CACHE_MS` and forgotten by `CurrenciesService` on a
- * currency write; a failed read rejects both, never answers `false`.
+ * currency write and by the backup restore after it commits; a failed read
+ * rejects both, never answers `false`. A code the snapshot does not hold is
+ * read again before the answer (a coin created on another replica, which no
+ * local `forgetCurrencies` reached), at most once per
+ * `CRYPTO_MISS_RELOAD_MS`, and the pair's symbol comes from the map that read
+ * returned.
  *
  * **Symbols.** The coin ticker is the part of `quote_symbol` before its last
  * hyphen, and the fiat is whichever fiat the pair names, not the one in the
@@ -112,13 +127,17 @@ export class CryptoFxProvider implements FxRateProvider {
   ) {}
 
   async carries(code: string): Promise<boolean> {
-    const facts = (await this.currencies()).get(code.toUpperCase());
+    const facts = (await this.currenciesHolding([code])).get(
+      code.toUpperCase(),
+    );
     if (!facts) return false;
     return facts.kind === "CRYPTO" ? facts.coinTicker !== null : true;
   }
 
   async claims(code: string): Promise<boolean> {
-    const facts = (await this.currencies()).get(code.toUpperCase());
+    const facts = (await this.currenciesHolding([code])).get(
+      code.toUpperCase(),
+    );
     return facts?.kind === "CRYPTO";
   }
 
@@ -131,7 +150,7 @@ export class CryptoFxProvider implements FxRateProvider {
     base: string,
     quotes: readonly string[],
   ): Promise<ReadonlyMap<string, FxObservation> | null> {
-    const codes = await this.currencies();
+    const codes = await this.currenciesHolding([base, ...quotes]);
     const answers = await mapWithConcurrency(
       quotes,
       CRYPTO_FETCH_CONCURRENCY,
@@ -156,7 +175,11 @@ export class CryptoFxProvider implements FxRateProvider {
     start: string,
     end: string,
   ): Promise<FxObservation[] | null> {
-    const pair = this.pairSymbol(await this.currencies(), from, to);
+    const pair = this.pairSymbol(
+      await this.currenciesHolding([from, to]),
+      from,
+      to,
+    );
     if (pair === null) return [];
     const bars = await this.yahoo.fetchPairSymbolWindow(
       pair.symbol,
@@ -230,6 +253,28 @@ export class CryptoFxProvider implements FxRateProvider {
     if (secondCoin)
       return { symbol: `${second.coinTicker}-${a}`, from: b, to: a };
     return null;
+  }
+
+  /**
+   * What `currencies` says of each code, read again first when one of `wanted`
+   * is not in the snapshot and the snapshot is older than
+   * `CRYPTO_MISS_RELOAD_MS`. A code still missing after that read has no
+   * `currencies` row, and is answered from the map as it is.
+   */
+  private async currenciesHolding(
+    wanted: readonly string[],
+  ): Promise<ReadonlyMap<string, CodeFacts>> {
+    const codes = await this.currencies();
+    const missing = wanted.some((code) => !codes.has(code.toUpperCase()));
+    if (!missing) return codes;
+    const loadedAt = this.snapshot?.loadedAt ?? 0;
+    if (Date.now() - loadedAt < CRYPTO_MISS_RELOAD_MS) return codes;
+    if (this.loading === null) {
+      this.loading = this.load().finally(() => {
+        this.loading = null;
+      });
+    }
+    return this.loading;
   }
 
   /** What `currencies` says of each code, from the cache while it is fresh. */

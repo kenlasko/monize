@@ -162,6 +162,19 @@ function formatMoneyFigure(
 }
 
 /**
+ * The places a figure below one keeps in a formatter that otherwise drops
+ * fraction digits (`formatCurrencyCompact`, `formatCurrencyTight`): a
+ * registered non-ISO currency's own (`lib/currency-decimals.ts`), so a
+ * 0.0125 BTC wallet does not read "₿0"; `undefined` for any other code or a
+ * figure of one or more, which keep the formatter's own digits. The rule
+ * `formatCurrencyAxis` applies to a tick.
+ */
+function subUnitCoinPlaces(currency: string, amount: number): number | undefined {
+  const registered = decimalPlacesForCurrency(currency);
+  return registered !== undefined && Math.abs(amount) < 1 ? registered : undefined;
+}
+
+/**
  * Hook to format numbers according to user preferences.
  * Returns formatCurrency and formatNumber functions that use the user's preferred number format.
  * All currency functions default to the user's configured defaultCurrency preference.
@@ -253,7 +266,7 @@ export function useNumberFormat() {
           currency,
           currencyDisplay: 'narrowSymbol',
           minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          maximumFractionDigits: subUnitCoinPlaces(currency, amount) ?? 0,
         },
         amount,
       );
@@ -315,7 +328,8 @@ export function useNumberFormat() {
           currencyDisplay: 'narrowSymbol',
           notation: 'compact',
           compactDisplay: 'short',
-          maximumFractionDigits: Math.abs(amount) < 1000 ? 0 : 1,
+          maximumFractionDigits:
+            subUnitCoinPlaces(currency, amount) ?? (Math.abs(amount) < 1000 ? 0 : 1),
         },
         amount,
       );

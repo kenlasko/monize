@@ -1,4 +1,5 @@
 import {
+  decimalPlacesFor,
   formatCurrency,
   formatCurrencyAmount,
   getDecimalPlacesForCurrency,
@@ -78,5 +79,40 @@ describe("getDecimalPlacesForCurrency", () => {
 
   it("returns 2 for invalid currency", () => {
     expect(getDecimalPlacesForCurrency("INVALID")).toBe(2);
+  });
+});
+
+/**
+ * A coin is not an ISO code, so `Intl` would print it at 2 places; text a
+ * model reads states it at its own row's places (a BTC row at 4).
+ */
+describe("decimalPlacesFor", () => {
+  const rows = new Map([
+    ["BTC", 4],
+    ["XYZ", 3],
+    ["USD", 4],
+  ]);
+
+  it("takes a non-ISO code's places from its currency row", () => {
+    expect(decimalPlacesFor("BTC", rows)).toBe(4);
+    expect(decimalPlacesFor("btc", rows)).toBe(4);
+    expect(decimalPlacesFor("XYZ", rows)).toBe(3);
+  });
+
+  it("keeps the ISO minor unit for an ISO code, whatever its row says", () => {
+    expect(decimalPlacesFor("USD", rows)).toBe(2);
+    expect(decimalPlacesFor("JPY", rows)).toBe(0);
+    expect(decimalPlacesFor("BHD", rows)).toBe(3);
+  });
+
+  it("falls back to 2 for a non-ISO code with no row", () => {
+    expect(decimalPlacesFor("QQQ", rows)).toBe(2);
+  });
+
+  it("feeds formatCurrencyAmount so a BTC balance keeps its four places", () => {
+    expect(formatCurrencyAmount(0.0125, "BTC")).toBe("0.01");
+    expect(
+      formatCurrencyAmount(0.0125, "BTC", decimalPlacesFor("BTC", rows)),
+    ).toBe("0.0125");
   });
 });

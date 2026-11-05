@@ -138,6 +138,7 @@
     },
     "themeLabel": "テーマ",
     "defaultCurrencyLabel": "デフォルト通貨",
+    "defaultCurrencyNoCrypto": "ここでは暗号資産は選択できません。合計とレポートは常に法定通貨で表示されます。",
     "preferredExchangesLabel": "優先取引所（証券検索用）",
     "preferredExchangesHelp": "優先順位を付けて最大3つの取引所を選択してください。証券を検索する際に優先されます。",
     "exchangePriorityPlaceholder": "優先度{n}",

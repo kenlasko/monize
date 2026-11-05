@@ -138,6 +138,7 @@
     },
     "themeLabel": "थीम",
     "defaultCurrencyLabel": "डिफ़ॉल्ट मुद्रा",
+    "defaultCurrencyNoCrypto": "यहाँ क्रिप्टोकरेंसी उपलब्ध नहीं हैं: कुल योग और रिपोर्ट हमेशा फ़िएट मुद्रा में दिखाए जाते हैं।",
     "preferredExchangesLabel": "पसंदीदा एक्सचेंज (प्रतिभूति खोज के लिए)",
     "preferredExchangesHelp": "प्राथमिकता क्रम में 3 तक एक्सचेंज चुनें। प्रतिभूतियां खोजते समय इन्हें प्राथमिकता दी जाएगी।",
     "exchangePriorityPlaceholder": "प्राथमिकता {n}",

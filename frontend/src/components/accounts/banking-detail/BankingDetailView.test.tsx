@@ -146,7 +146,27 @@ describe('BankingDetailView', () => {
       // mean below half a cent read "BTC 0.0000".
       expect(screen.getByText('BTC 0.0098')).toBeInTheDocument();
     } finally {
-      clearCurrencyDecimals();
+      // The view subscribes to the registry, so emptying it re-renders.
+      act(() => clearCurrencyDecimals());
+    }
+  });
+
+  it('redraws the average at the coin\'s places when the registry loads after the view', async () => {
+    try {
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-06-01', balance: 0.0125 },
+        { date: '2026-06-15', balance: 0.007 },
+      ]);
+      await renderView(
+        makeAccount({ accountType: 'CRYPTO', currencyCode: 'BTC', currentBalance: 0.007 }),
+      );
+      // Before the registry answers the mean rounds at Intl's two places.
+      expect(screen.getByText('BTC 0.0100')).toBeInTheDocument();
+
+      act(() => registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]));
+      expect(screen.getByText('BTC 0.0098')).toBeInTheDocument();
+    } finally {
+      act(() => clearCurrencyDecimals());
     }
   });
 

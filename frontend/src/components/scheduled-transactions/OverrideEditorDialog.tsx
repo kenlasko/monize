@@ -30,8 +30,7 @@ import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { investmentsApi } from '@/lib/investments';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { totalFromQuantity, quantityFromTotal, roundPrice, usableClose } from '@/lib/investmentFold';
-import { roundToEntryPlaces, loadedEntryAmount, getCurrencySymbol, sumMoney } from '@/lib/format';
-import { decimalPlacesForCurrency } from '@/lib/currency-decimals';
+import { roundToEntryPlaces, entryDecimalPlaces, loadedEntryAmount, getCurrencySymbol, sumMoney } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { useTranslations } from 'next-intl';
@@ -801,7 +800,7 @@ export function OverrideEditorDialog({
           <CurrencyInput
             label={t('overrideEditor.amountLabel')}
             prefix={getCurrencySymbol(scheduledTransaction.currencyCode)}
-            decimalPlaces={decimalPlacesForCurrency(scheduledTransaction.currencyCode)}
+            decimalPlaces={entryDecimalPlaces(scheduledTransaction.currencyCode)}
             value={amountUnknown ? undefined : amount}
             onChange={(value) => {
               setAmount(value ?? 0);

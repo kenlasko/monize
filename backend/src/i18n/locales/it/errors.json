@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "Un simbolo di prezzo ({{ quoteSymbol }}) può essere impostato solo su una criptovaluta; \"{{ code }}\" è una valuta fiat",
     "quoteSymbolNotAPair": "Il simbolo di prezzo \"{{ quoteSymbol }}\" di \"{{ code }}\" non è una coppia di moneta e valuta fiat come BTC-EUR",
     "kindInUse": "Il tipo di \"{{ code }}\" non può essere modificato finché conti, transazioni, titoli o altri record lo usano",
+    "quoteSymbolInUse": "La moneta nel simbolo di prezzo di \"{{ code }}\" non può essere modificata finché conti, transazioni, titoli o altri record lo usano; si può modificare solo la sua valuta fiat",
     "kindConflict": "La valuta \"{{ code }}\" esiste già come valuta {{ kind }} e non può essere aggiunta come {{ requestedKind }}"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "Autenticati di nuovo con il tuo provider di identità per confermare l'eliminazione dei dati",
     "passwordRequiredForDataDelete": "La password è obbligatoria per confermare l'eliminazione dei dati",
     "reauthUnavailable": "Completa la configurazione della password del tuo account prima di usare questa azione."
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "Una criptovaluta non può essere la valuta di riferimento"
   },
   "loanScenarios": {
     "notFound": "Scenario di prestito con ID {{ id }} non trovato",

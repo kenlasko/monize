@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "価格記号（{{ quoteSymbol }}）を設定できるのは暗号資産のみです。「{{ code }}」は法定通貨です",
     "quoteSymbolNotAPair": "「{{ code }}」の価格記号「{{ quoteSymbol }}」は、BTC-EUR のようなコインと法定通貨のペアではありません",
     "kindInUse": "口座、取引、有価証券、その他の記録で使用されている間は、「{{ code }}」の種類を変更できません",
+    "quoteSymbolInUse": "口座、取引、有価証券、その他の記録で使用されている間は、「{{ code }}」の価格記号のコインを変更できません。変更できるのは法定通貨の部分だけです",
     "kindConflict": "通貨「{{ code }}」はすでに {{ kind }} 通貨として存在するため、{{ requestedKind }} として追加できません"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "データの削除を確認するには、IDプロバイダーで再認証してください",
     "passwordRequiredForDataDelete": "データ削除を確認するにはパスワードが必要です",
     "reauthUnavailable": "この操作を使用する前に、アカウントのパスワード設定を完了してください。"
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "暗号資産を表示通貨にすることはできません"
   },
   "loanScenarios": {
     "notFound": "ID {{ id }} のローンシナリオが見つかりません",

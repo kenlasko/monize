@@ -9,6 +9,7 @@ import {
   roundToCents,
   roundToEntryPlaces,
   entryDecimalPlaces,
+  MONEY_DECIMALS,
   loadedEntryAmount,
   awaitsRegisteredPlaces,
   roundMoney,
@@ -315,8 +316,11 @@ describe('roundToEntryPlaces', () => {
     }
   });
 
-  it('falls back to cents for an unregistered or missing code', () => {
-    expect(roundToEntryPlaces(0.0051, 'BTC')).toBe(0.01);
+  it('keeps a coin the registry does not hold yet at the stored four, and a missing code at cents', () => {
+    // Two would be a guess: `GET /currencies` has not answered (or failed),
+    // and a 0.0051 BTC amount rounded at it saved 0.01.
+    expect(roundToEntryPlaces(0.0051, 'BTC')).toBe(0.0051);
+    expect(roundToEntryPlaces(0.00515, 'BTC')).toBe(0.0052);
     expect(roundToEntryPlaces(0.0051, undefined)).toBe(0.01);
   });
 
@@ -342,6 +346,16 @@ describe('roundToEntryPlaces', () => {
     expect(entryDecimalPlaces('CAD')).toBe(2);
     expect(entryDecimalPlaces('JPY')).toBe(2);
     expect(entryDecimalPlaces(null)).toBe(2);
+  });
+
+  it('answers the stored four for a coin the registry does not hold yet, and two for any ISO code', () => {
+    expect(entryDecimalPlaces('BTC')).toBe(MONEY_DECIMALS);
+    expect(entryDecimalPlaces('CAD')).toBe(2);
+    expect(entryDecimalPlaces('JPY')).toBe(2);
+    expect(entryDecimalPlaces('')).toBe(2);
+    expect(entryDecimalPlaces(undefined)).toBe(2);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 3 }]);
+    expect(entryDecimalPlaces('BTC')).toBe(3);
   });
 });
 

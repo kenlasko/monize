@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "Fiyat sembolü ({{ quoteSymbol }}) yalnızca bir kripto paraya ayarlanabilir; \"{{ code }}\" bir fiat para birimidir",
     "quoteSymbolNotAPair": "\"{{ code }}\" için \"{{ quoteSymbol }}\" fiyat sembolü, BTC-EUR gibi bir coin ve fiat çifti değildir",
     "kindInUse": "Hesaplar, işlemler, menkul kıymetler veya diğer kayıtlar kullandığı sürece \"{{ code }}\" para biriminin türü değiştirilemez",
+    "quoteSymbolInUse": "Hesaplar, işlemler, menkul kıymetler veya diğer kayıtlar kullandığı sürece \"{{ code }}\" fiyat sembolündeki coin değiştirilemez; yalnızca fiat para birimi değiştirilebilir",
     "kindConflict": "\"{{ code }}\" para birimi zaten {{ kind }} para birimi olarak mevcut ve {{ requestedKind }} olarak eklenemez"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "Veri silmeyi onaylamak için kimlik sağlayıcınızda yeniden kimlik doğrulaması yapın",
     "passwordRequiredForDataDelete": "Veri silmeyi onaylamak için şifre gereklidir",
     "reauthUnavailable": "Bu işlemi kullanmadan önce hesap şifrenizi ayarlamayı tamamlayın."
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "Bir kripto para raporlama para birimi olamaz"
   },
   "loanScenarios": {
     "notFound": "{{ id }} kimlikli kredi senaryosu bulunamadı",

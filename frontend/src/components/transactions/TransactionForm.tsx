@@ -25,10 +25,11 @@ import {
   FX_RATE_DISPLAY_DECIMALS,
   getCurrencySymbol,
   roundMoney,
+  sumMoney,
   roundToDecimals,
   roundToEntryPlaces,
+  entryDecimalPlaces,
 } from '@/lib/format';
-import { decimalPlacesForCurrency } from '@/lib/currency-decimals';
 import {
   getRememberedTransactionCurrency,
   rememberTransactionCurrency,
@@ -1525,8 +1526,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         // At the server's precision: it requires the lines to equal the parent
         // exactly at four decimals, so a one-cent tolerance here let through a
         // set the server refuses and refused a stored four-decimal set.
-        const splitsTotal = splitsData.reduce((sum, s) => sum + s.amount, 0);
-        const roundedSplitsTotal = roundMoney(splitsTotal);
+        const roundedSplitsTotal = sumMoney(splitsData.map((s) => s.amount));
         const roundedAmount = roundMoney(data.amount);
         if (roundedSplitsTotal !== roundedAmount) {
           toast.error(t('form.toasts.splitsNotEqual', { splitTotal: roundedSplitsTotal, txAmount: roundedAmount }));
@@ -1732,7 +1732,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       <CurrencyInput
         label={t('form.fx.totalInCurrency', { currency: accountCurrency })}
         prefix={getCurrencySymbol(accountCurrency)}
-        decimalPlaces={decimalPlacesForCurrency(accountCurrency)}
+        decimalPlaces={entryDecimalPlaces(accountCurrency)}
         value={fxTotal}
         onChange={handleConvertedTotalOverride}
         allowSignToggle

@@ -17,6 +17,7 @@ import {
 import { beginBondWriteGuard } from "../bonds/bond-write-guard";
 import { findBondLinkProblem } from "../securities/bond-link.util";
 import { ActionHistory } from "./entities/action-history.entity";
+import { assertUndoCurrencyKind } from "./undo-currency-kind";
 import {
   RULE_RUN_ENTITY_TYPE,
   assertRuleRunRedoable,
@@ -794,6 +795,7 @@ export class ActionHistoryService {
         );
         break;
       case "security": {
+        await assertUndoCurrencyKind(action, manager, "security");
         const bond = await this.guardSecurityLinkRestore(action, manager);
         await this.undoSimpleEntity(action, manager, Security, "securities");
         return { ...NOTHING_AFTER_COMMIT, ...bond };
@@ -1976,6 +1978,9 @@ export class ActionHistoryService {
     action: ActionHistory,
     manager: EntityManager,
   ): Promise<void> {
+    // INV-CRYPTO-001: a replayed type and currency agree, checked before the
+    // write in this transaction (a create's undo deletes and needs none).
+    await assertUndoCurrencyKind(action, manager, "account");
     if (action.action !== "update") {
       await this.undoSimpleEntity(action, manager, Account, "accounts");
       return;

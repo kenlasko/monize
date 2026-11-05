@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "Symbol ceny ({{ quoteSymbol }}) można ustawić tylko dla kryptowaluty; \"{{ code }}\" jest walutą fiducjarną",
     "quoteSymbolNotAPair": "Symbol ceny \"{{ quoteSymbol }}\" dla \"{{ code }}\" nie jest parą monety i waluty fiducjarnej, takiej jak BTC-EUR",
     "kindInUse": "Rodzaju \"{{ code }}\" nie można zmienić, dopóki używają go konta, transakcje, papiery wartościowe lub inne rekordy",
+    "quoteSymbolInUse": "Monety w symbolu ceny \"{{ code }}\" nie można zmienić, dopóki używają go konta, transakcje, papiery wartościowe lub inne rekordy; można zmienić tylko jego walutę fiducjarną",
     "kindConflict": "Waluta \"{{ code }}\" już istnieje jako waluta {{ kind }} i nie można jej dodać jako {{ requestedKind }}"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "Uwierzytelnij się ponownie u swojego dostawcy tożsamości, aby potwierdzić usunięcie danych",
     "passwordRequiredForDataDelete": "Do potwierdzenia usunięcia danych wymagane jest hasło",
     "reauthUnavailable": "Zakończ ustawianie hasła do konta, zanim użyjesz tej operacji."
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "Kryptowaluta nie może być walutą prezentacji"
   },
   "loanScenarios": {
     "notFound": "Nie znaleziono scenariusza kredytu o identyfikatorze {{ id }}",

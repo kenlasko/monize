@@ -27,6 +27,7 @@ import { AttachmentsModule } from "../attachments/attachments.module";
 import { SystemAlertsModule } from "../system-alerts/system-alerts.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { BondsModule } from "../bonds/bonds.module";
+import { CurrenciesModule } from "../currencies/currencies.module";
 
 @Module({
   imports: [
@@ -44,6 +45,9 @@ import { BondsModule } from "../bonds/bonds.module";
     // BackupRestoreService recomputes the engine prices of a restored bond link,
     // and its series recovery fetches a referenced series (BondSeriesService).
     BondsModule,
+    // The restore tells the crypto exchange rate adapter to re-read
+    // `currencies` after it commits (CryptoFxProvider).
+    CurrenciesModule,
   ],
   controllers: [
     BackupController,

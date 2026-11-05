@@ -3,6 +3,8 @@ import { render, screen, act, fireEvent, waitFor } from '@/test/render';
 import { ScheduledTransactionForm } from './ScheduledTransactionForm';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
+import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
+import toast from 'react-hot-toast';
 
 // Issue #1581, the template form: editing a LINEAR mortgage installment
 // (864.5833 + 306.0625 = 1,170.6458) loaded the amount in cents and the lines
@@ -51,8 +53,18 @@ const main = {
   accountSubType: null,
 };
 
+const wallet = {
+  // A uuid: the form's schema refuses any other account id.
+  id: '33333333-3333-4333-8333-333333333333',
+  name: 'Bitcoin Wallet',
+  currencyCode: 'BTC',
+  isClosed: false,
+  accountType: 'CRYPTO',
+  accountSubType: null,
+};
+
 vi.mock('@/lib/accounts', () => ({
-  accountsApi: { getAll: vi.fn(async () => [main, mortgage]) },
+  accountsApi: { getAll: vi.fn(async () => [main, mortgage, wallet]) },
 }));
 vi.mock('@/lib/categories', () => ({
   categoriesApi: { getAll: vi.fn().mockResolvedValue([]), create: vi.fn() },
@@ -203,5 +215,52 @@ describe('ScheduledTransactionForm: a coin schedule', () => {
     } finally {
       await act(async () => clearCurrencyDecimals());
     }
+  });
+
+  describe('a split whose lines miss the amount by less than a cent', () => {
+    const coinSplit = (second: number) => ({
+      ...linearInstallment,
+      accountId: wallet.id,
+      account: wallet,
+      amount: -0.0076,
+      currencyCode: 'BTC',
+      splits: [
+        { ...linearInstallment.splits[0], amount: -0.0025 },
+        { ...linearInstallment.splits[1], transferAccountId: null, transferAccount: null, categoryId: 'cat-fee', amount: second },
+      ],
+    });
+
+    async function save(scheduled: unknown) {
+      const { container } = render(<ScheduledTransactionForm scheduledTransaction={scheduled as any} />);
+      await act(async () => {});
+      await act(async () => {
+        fireEvent.click(container.querySelector('button[type="submit"]') as HTMLButtonElement);
+      });
+      await act(async () => {});
+    }
+
+    it('refuses a 0.0049 BTC remainder, as the server would', async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+      try {
+        await save(coinSplit(-0.0002));
+        // Under a one-cent tolerance this saved, and the server refused it.
+        expect(toast.error).toHaveBeenCalledWith('Split amounts must equal the transaction amount');
+        expect(scheduledTransactionsApi.update).not.toHaveBeenCalled();
+      } finally {
+        await act(async () => clearCurrencyDecimals());
+      }
+    });
+
+    it('saves lines that sum to the amount at four places', async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+      vi.mocked(scheduledTransactionsApi.update).mockResolvedValue({} as never);
+      try {
+        await save(coinSplit(-0.0051));
+        expect(toast.error).not.toHaveBeenCalledWith('Split amounts must equal the transaction amount');
+        await waitFor(() => expect(scheduledTransactionsApi.update).toHaveBeenCalled());
+      } finally {
+        await act(async () => clearCurrencyDecimals());
+      }
+    });
   });
 });

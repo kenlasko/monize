@@ -420,6 +420,11 @@ export function AccountForm({
   // Currency becomes locked once the account has any transactions so existing
   // balances are not silently re-denominated. Stays unlocked while loading.
   const [isCurrencyLocked, setIsCurrencyLocked] = useState(false);
+  // The account whose lock state `canDelete` has answered. Until it answers
+  // (or when it failed) an existing account's lock is unknown, and the type
+  // picker keeps the account to its saved kind rather than clearing a
+  // currency that may be locked.
+  const [lockKnownFor, setLockKnownFor] = useState<string | null>(null);
   // Financial institution selection + inline create.
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [selectedInstitutionId, setSelectedInstitutionId] = useState<string>(account?.institutionId || '');
@@ -786,6 +791,7 @@ export function AccountForm({
         setIsCurrencyLocked(
           transactionCount > 0 || investmentTransactionCount > 0,
         );
+        setLockKnownFor(account.id);
       })
       .catch((error) => {
         logger.error('Failed to load account transaction count:', error);
@@ -840,14 +846,21 @@ export function AccountForm({
     return () => window.removeEventListener('focus', loadCurrencies);
   }, [showNoCryptoCurrencyHint, loadCurrencies]);
 
+  // Whether an existing account's lock is still unknown: `canDelete` has not
+  // answered for it, or failed. Treated as locked to the saved kind, so a type
+  // switch made before the answer cannot clear a locked BTC to ''.
+  const lockUnknown = !!account?.id && lockKnownFor !== account.id;
+  const holdsSavedKind = isCurrencyLocked || lockUnknown;
+
   // Switching between a crypto wallet and any other type clears a currency of
   // the other kind; a currency that still fits is kept. A currency locked by
-  // the account's transactions is never cleared: the type picker offers only
-  // the types of its kind (`accountTypeSelectOptions`).
+  // the account's transactions (or whose lock is not known yet) is never
+  // cleared: the type picker offers only the types of its kind
+  // (`accountTypeSelectOptions`).
   const accountTypeField = register('accountType');
   const handleAccountTypeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     void accountTypeField.onChange(event);
-    if (isCurrencyLocked) return;
+    if (holdsSavedKind) return;
     const current = getValues('currencyCode');
     if (!current) return;
     const info = currencies.find((c) => c.code === current);
@@ -859,8 +872,9 @@ export function AccountForm({
   // A locked currency holds the account to its kind (INV-CRYPTO-001): a wallet
   // cannot become a fiat type, nor a fiat account a wallet, because either
   // needs a currency of the other kind. The saved type gives the kind, since
-  // the locked currency is the saved one.
-  const lockedToCrypto = isCurrencyLocked && account ? account.accountType === 'CRYPTO' : null;
+  // the locked currency is the saved one. While the lock is unknown the same
+  // options are disabled, without the tooltip that says why.
+  const lockedToCrypto = holdsSavedKind && account ? account.accountType === 'CRYPTO' : null;
   const accountTypeSelectOptions =
     lockedToCrypto === null
       ? accountTypeOptions
@@ -869,12 +883,13 @@ export function AccountForm({
           disabled: (option.value === 'CRYPTO') !== lockedToCrypto,
         }));
 
-  // Every type's opening balance is entered at its currency's entry places
-  // (`entryDecimalPlaces`): a registered coin's own, two for any other code.
+  // Every type's opening balance and balance alert thresholds are entered at
+  // the currency's entry places (`entryDecimalPlaces`): a registered coin's
+  // own, four for a coin the registry has not loaded, two for any other code.
   // A late registry load redraws the input at the coin's places, so the form
   // subscribes to it.
   useCurrencyDecimalsVersion();
-  const openingBalanceDecimalPlaces = entryDecimalPlaces(watchedCurrency);
+  const amountDecimalPlaces = entryDecimalPlaces(watchedCurrency);
 
   // Load accounts and categories when LOAN, MORTGAGE, LINE_OF_CREDIT, or ASSET
   // type is selected (for the source-account and value-change/interest category
@@ -1097,7 +1112,7 @@ export function AccountForm({
           >
             {t('form.accountType')}
           </label>
-          {lockedToCrypto !== null && (
+          {isCurrencyLocked && lockedToCrypto !== null && (
             <InfoTooltip text={t('form.accountTypeKindLocked')} />
           )}
         </div>
@@ -1160,7 +1175,7 @@ export function AccountForm({
           onChange={(value) => setValue('openingBalance', value, { shouldValidate: true })}
           error={errors.openingBalance?.message}
           allowNegative={!isLoanAccount && !isMortgageAccount}
-          decimalPlaces={openingBalanceDecimalPlaces}
+          decimalPlaces={amountDecimalPlaces}
         />
       </div>
 
@@ -1287,6 +1302,7 @@ export function AccountForm({
             <CurrencyInput
               label={t('form.lowBalanceThreshold')}
               prefix={currencySymbol}
+              decimalPlaces={amountDecimalPlaces}
               value={watchedLowThreshold ?? undefined}
               onChange={(value) =>
                 setValue('lowBalanceThreshold', value ?? null, {
@@ -1299,6 +1315,7 @@ export function AccountForm({
             <CurrencyInput
               label={t('form.highBalanceThreshold')}
               prefix={currencySymbol}
+              decimalPlaces={amountDecimalPlaces}
               value={watchedHighThreshold ?? undefined}
               onChange={(value) =>
                 setValue('highBalanceThreshold', value ?? null, {

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { gemConfigFingerprint } from "../strategies/gem-signal.service";
 import { BondPriceService } from "../bonds/bond-price.service";
+import { CryptoFxProvider } from "../currencies/providers/crypto-fx.provider";
 import { DataSource } from "typeorm";
 import {
   UnauthorizedException,
@@ -751,6 +752,11 @@ describe("BackupService", () => {
             recomputeSecurity: jest.fn().mockResolvedValue({}),
             recomputeLinkedSecurities: jest.fn().mockResolvedValue(undefined),
           },
+        },
+        // Told after the commit that `currencies` may hold restored coins.
+        {
+          provide: CryptoFxProvider,
+          useValue: { forgetCurrencies: jest.fn() },
         },
         // Two ciphers, deliberately: `EncryptionService` still owns the
         // provider API keys the export carries, while the stored backup password
@@ -1944,6 +1950,115 @@ describe("BackupService", () => {
         expect(calledUser).toBe(userId);
         expect(ids).toHaveLength(2);
         expect(ids).not.toContain("5ec00000-0000-4000-8000-000000000001");
+      });
+
+      /**
+       * A restore inserts the backup's currencies, coins among them, and no
+       * `CurrenciesService` write tells the crypto adapter. Without the
+       * forget, a restored coin is unclaimed until the adapter's five-minute
+       * cache expires and its pairs go to Yahoo's `=X` grammar.
+       */
+      it("tells the crypto adapter to re-read currencies after the commit, not before or on a failure", async () => {
+        mockUserRepo.findOne.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        const cryptoFx = (
+          service as unknown as {
+            restoreService: { cryptoFx: { forgetCurrencies: jest.Mock } };
+          }
+        ).restoreService.cryptoFx;
+        cryptoFx.forgetCurrencies.mockClear();
+        const forgottenInsideTransaction: boolean[] = [];
+        mockDataSource.transaction.mockImplementation(
+          async (fn: (m: unknown) => unknown) => {
+            const result = await fn(mockDataSource.manager);
+            forgottenInsideTransaction.push(
+              cryptoFx.forgetCurrencies.mock.calls.length > 0,
+            );
+            return result;
+          },
+        );
+
+        await service.restoreData(userId, makeInput({ password: "test" }));
+
+        expect(cryptoFx.forgetCurrencies).toHaveBeenCalledTimes(1);
+        expect(forgottenInsideTransaction.every((seen) => !seen)).toBe(true);
+
+        cryptoFx.forgetCurrencies.mockClear();
+        mockQueryRunner.query.mockImplementation(
+          (sql: string, params?: unknown[]) =>
+            typeof sql === "string" && sql.includes("DELETE FROM")
+              ? Promise.reject(new Error("restore failed"))
+              : mockQueryHandler(sql, params),
+        );
+        await expect(
+          service.restoreData(userId, makeInput({ password: "test" })),
+        ).rejects.toThrow();
+        expect(cryptoFx.forgetCurrencies).not.toHaveBeenCalled();
+      });
+
+      /**
+       * INV-CRYPTO-001 and crypto spec decision 11 on the restore path: the
+       * kind of a code is this deployment's, so a restored account, security
+       * or reporting currency may disagree with it. Reported beside
+       * `restored`, read inside the restore's transaction, never refused.
+       */
+      it("reports restored rows whose currency kind disagrees, and omits the field when none does", async () => {
+        mockUserRepo.findOne.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+        const clean = await service.restoreData(
+          userId,
+          makeInput({ password: "test" }),
+        );
+        expect(clean).not.toHaveProperty("currencyKindMismatches");
+
+        mockQueryRunner.query.mockImplementation(
+          (sql: string, params?: unknown[]) => {
+            const text = typeof sql === "string" ? sql : "";
+            if (
+              text.includes(
+                "(a.account_type = 'CRYPTO') <> (c.kind = 'CRYPTO')",
+              )
+            ) {
+              return Promise.resolve([{ name: "Ledger wallet" }]);
+            }
+            if (
+              text.includes("FROM securities s") &&
+              text.includes("c.kind = 'CRYPTO'")
+            ) {
+              return Promise.resolve([{ symbol: "BTC-USD" }]);
+            }
+            if (
+              text.includes("FROM user_preferences up") &&
+              text.includes("c.kind = 'CRYPTO'")
+            ) {
+              return Promise.resolve([{ code: "BTC" }]);
+            }
+            return mockQueryHandler(sql, params);
+          },
+        );
+
+        const result = await service.restoreData(
+          userId,
+          makeInput({ password: "test" }),
+        );
+
+        expect(result).toMatchObject({
+          message: "Backup restored successfully",
+          currencyKindMismatches: {
+            accounts: ["Ledger wallet"],
+            accountCount: 1,
+            securities: ["BTC-USD"],
+            securityCount: 1,
+            defaultCurrency: "BTC",
+          },
+        });
+        const mismatchRead = mockQueryRunner.query.mock.calls.find(([sql]) =>
+          String(sql).includes(
+            "(a.account_type = 'CRYPTO') <> (c.kind = 'CRYPTO')",
+          ),
+        );
+        expect(mismatchRead?.[1]).toEqual([userId]);
       });
 
       it("keeps only the series of the user's own program after the restore, in the restore's transaction (INV-BOND-007)", async () => {

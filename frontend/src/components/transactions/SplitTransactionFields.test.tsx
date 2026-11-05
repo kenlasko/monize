@@ -4,7 +4,8 @@ import { SplitTransactionFields } from './SplitTransactionFields';
 import { Account } from '@/types/account';
 import { Payee } from '@/types/payee';
 
-vi.mock('@/lib/format', () => ({
+vi.mock('@/lib/format', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/format')>()),
   getCurrencySymbol: (code: string) => (code === 'USD' ? 'US$' : '$'),
   getDecimalPlacesForCurrency: () => 2,
 }));

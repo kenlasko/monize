@@ -138,6 +138,7 @@
     },
     "themeLabel": "Design",
     "defaultCurrencyLabel": "Standardwährung",
+    "defaultCurrencyNoCrypto": "Kryptowährungen werden hier nicht angeboten: Summen und Berichte werden immer in einer Fiat-Währung angezeigt.",
     "preferredExchangesLabel": "Bevorzugte Börsen (für Wertpapiersuchen)",
     "preferredExchangesHelp": "Wählen Sie bis zu 3 Börsen in Prioritätsreihenfolge. Diese werden bei der Suche nach Wertpapieren bevorzugt.",
     "exchangePriorityPlaceholder": "Priorität {n}",

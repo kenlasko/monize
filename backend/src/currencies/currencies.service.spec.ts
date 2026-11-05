@@ -1589,6 +1589,81 @@ describe("CurrenciesService", () => {
       expect(globalCheck()).toHaveLength(0);
     });
 
+    /**
+     * `currencies` is shared: re-pointing a referenced coin at another coin's
+     * ticker would revalue every other user's wallet at that coin's price, so
+     * a ticker change is held like a kind change. The fiat leg alone stays
+     * free (the provider prices against whichever fiat a pair names).
+     */
+    it("refuses a new coin ticker on a referenced coin, locking first and writing nothing", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      references(true);
+
+      await expect(
+        service.update(userId, "BTC", { quoteSymbol: "ETH-CAD" }),
+      ).rejects.toThrow(ConflictException);
+      await expect(
+        service.update(userId, "BTC", { quoteSymbol: "ETH-CAD" }),
+      ).rejects.toThrow(/The coin in the price symbol of "BTC" cannot change/);
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+      const sqls = mockDataSource.query.mock.calls.map(([sql]) => String(sql));
+      const lock = sqls.findIndex((sql) => sql.includes("FOR UPDATE"));
+      const check = sqls.findIndex((sql) =>
+        sql.includes("currency_code_referenced_by_data"),
+      );
+      expect(lock).toBeGreaterThanOrEqual(0);
+      expect(lock).toBeLessThan(check);
+    });
+
+    it("refuses removing the price symbol of a referenced coin, which changes its ticker to none", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      references(true);
+
+      await expect(
+        service.update(userId, "BTC", { quoteSymbol: null }),
+      ).rejects.toThrow(/cannot change while/);
+      expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("re-points the ticker of a coin nothing references", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+      references(false);
+
+      const view = await service.update(userId, "BTC", {
+        quoteSymbol: "XBT-CAD",
+      });
+
+      expect(view.quoteSymbol).toBe("XBT-CAD");
+      expect(globalCheck()).toHaveLength(1);
+    });
+
+    it("changes only the fiat leg of a referenced coin without asking about references", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+      mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+      references(true);
+
+      const view = await service.update(userId, "BTC", {
+        quoteSymbol: "BTC-USD",
+      });
+
+      expect(view.quoteSymbol).toBe("BTC-USD");
+      expect(globalCheck()).toHaveLength(0);
+    });
+
+    it("sets a first price symbol on a referenced coin that had none", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(coin({ quoteSymbol: null }));
+      mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+      references(true);
+
+      const view = await service.update(userId, "BTC", {
+        quoteSymbol: "BTC-EUR",
+      });
+
+      expect(view.quoteSymbol).toBe("BTC-EUR");
+      expect(globalCheck()).toHaveLength(0);
+    });
+
     it("refuses a repricing symbol with no fiat leg", async () => {
       mockCurrencyRepo.findOne!.mockResolvedValue(coin());
 
@@ -1598,9 +1673,12 @@ describe("CurrenciesService", () => {
       expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
     });
 
-    it("clears a coin's price symbol with null", async () => {
+    it("clears the price symbol of a coin nothing references with null", async () => {
       mockCurrencyRepo.findOne!.mockResolvedValue(coin());
       mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+      // Removing the symbol is a ticker change (to none), held like a kind
+      // change; unreferenced, it is allowed.
+      references(false);
 
       const view = await service.update(userId, "BTC", { quoteSymbol: null });
 

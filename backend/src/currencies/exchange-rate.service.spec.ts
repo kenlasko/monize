@@ -286,8 +286,10 @@ describe("ExchangeRateService", () => {
       createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
     };
 
+    // `find` also answers the writers' coin lookup (`loadCoinLookup`): no coins
+    // unless a case says otherwise.
     currencyRepository = {
-      find: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
     };
 
     userPreferenceRepository = {
@@ -1485,6 +1487,36 @@ describe("ExchangeRateService", () => {
       ]);
     });
 
+    it("stores a coin window coin-first, read the kinds once, and skips a rate out of range", async () => {
+      // XBT is a coin; IDR sorts first but the pair is stored XBT->IDR. A
+      // 1.1e10 close does not fit NUMERIC(20,10) and is skipped, not allowed to
+      // fail the statement for the rest of the window.
+      currencyRepository.find.mockResolvedValue([{ code: "XBT" }]);
+      exchangeRateRepository.find.mockResolvedValue([]);
+      chain.dailySeries.mockResolvedValue(
+        seriesAnswer([
+          point("IDR", "XBT", "2026-06-04", 1 / 1.52e9),
+          point("XBT", "IDR", "2026-06-05", 1.53e9),
+          point("XBT", "IDR", "2026-06-06", 1.1e10),
+        ]),
+      );
+
+      await service.getRateForDate("XBT", "IDR", "2026-06-08");
+
+      const rows = bulkInsertedRows();
+      expect(rows.map((r) => [r.from, r.to, r.date])).toEqual([
+        ["XBT", "IDR", "2026-06-04"],
+        ["XBT", "IDR", "2026-06-05"],
+      ]);
+      expect(Math.abs(rows[0].rate - 1.52e9) / 1.52e9).toBeLessThan(1e-9);
+      expect(rows[1].rate).toBe(1.53e9);
+      expect(currencyRepository.find).toHaveBeenCalledTimes(1);
+      expect(currencyRepository.find).toHaveBeenCalledWith({
+        select: { code: true },
+        where: { kind: "CRYPTO" },
+      });
+    });
+
     it("still answers from the fetched window when persisting it fails", async () => {
       exchangeRateRepository.find.mockResolvedValue([]);
       chain.dailySeries.mockResolvedValue(
@@ -1775,6 +1807,17 @@ describe("ExchangeRateService", () => {
       answerWith([]);
 
       expect(await service.getLatestRates()).toEqual([]);
+    });
+
+    it("breaks a same-day tie towards the coin-first row of a coin pair", async () => {
+      // IDR sorts before XBT, but XBT is a coin, so XBT->IDR is the stored
+      // orientation now and the frozen IDR->XBT row loses the tie.
+      currencyRepository.find.mockResolvedValue([{ code: "XBT" }]);
+      const fiatFirst = listed("IDR", "XBT", "0.0000000007", todayYMD());
+      const coinFirst = listed("XBT", "IDR", 1.52e9, todayYMD());
+      answerWith([fiatFirst, coinFirst]);
+
+      expect(await service.getLatestRates()).toEqual([coinFirst]);
     });
 
     it("returns one row per pair, the fresh canonical one, when a stale mirror survives", async () => {
@@ -2347,8 +2390,10 @@ describe("ExchangeRateService", () => {
       ]);
     });
 
-    it("keeps a coin quote under a fiat base", async () => {
-      // `ZZZ` sorts after the fiat codes, so its pairs sit under each of them.
+    it("puts a coin that sorts after its fiats under its own base", async () => {
+      // `ZZZ` sorts after the fiat codes, but a coin pair is stored coin ->
+      // fiat (`isCanonicalOrientation`), so its pairs are one question under
+      // the coin, not one under each fiat.
       routeKindedQueries([
         { code: "CAD", kind: "FIAT" },
         { code: "EUR", kind: "FIAT" },
@@ -2358,10 +2403,60 @@ describe("ExchangeRateService", () => {
 
       await service.refreshCryptoRates();
 
-      expect(chain.latest.mock.calls).toEqual([
-        ["CAD", ["ZZZ"]],
-        ["EUR", ["ZZZ"]],
+      expect(chain.latest.mock.calls).toEqual([["ZZZ", ["CAD", "EUR"]]]);
+    });
+
+    it("stores XBT->IDR coin-first although IDR sorts first", async () => {
+      routeKindedQueries([
+        { code: "IDR", kind: "FIAT" },
+        { code: "XBT", kind: "CRYPTO", quoteSymbol: "BTC-IDR" },
       ]);
+      // The adapter answers coin -> fiat; stored fiat-first at ten decimals
+      // this would be 0.0000000007 and resolve back 6% off.
+      chain.latest.mockImplementation(async (base) =>
+        latestAnswer(base, [
+          observation("XBT", "IDR", "2026-11-07", 1.52e9, "yahoo_crypto"),
+        ]),
+      );
+
+      const result = await service.refreshCryptoRates();
+
+      expect(chain.latest.mock.calls).toEqual([["XBT", ["IDR"]]]);
+      expect(result.updated).toBe(1);
+      expect(upsertedRates).toEqual([
+        {
+          fromCurrency: "XBT",
+          toCurrency: "IDR",
+          rateDate: "2026-11-07",
+          rate: 1.52e9,
+          source: "yahoo_crypto",
+        },
+      ]);
+    });
+
+    it("reports a rate the column cannot hold as out of range and saves the rest", async () => {
+      routeKindedQueries([
+        { code: "BTC", kind: "CRYPTO", quoteSymbol: "BTC-USD" },
+        { code: "CAD", kind: "FIAT" },
+        { code: "LBP", kind: "FIAT" },
+      ]);
+      chain.latest.mockImplementation(async (base) =>
+        latestAnswer(base, [
+          observation("BTC", "CAD", "2026-11-07", 137000, "yahoo_crypto"),
+          observation("BTC", "LBP", "2026-11-07", 1.1e10, "yahoo_crypto"),
+        ]),
+      );
+
+      const result = await service.refreshCryptoRates();
+
+      expect(result.updated).toBe(1);
+      expect(result.failed).toBe(1);
+      expect(result.results[1]).toEqual({
+        pair: "BTC/LBP",
+        success: false,
+        error: expect.stringMatching(/^Rate out of range/),
+      });
+      expect(upsertedRates.map((r) => r.toCurrency)).toEqual(["CAD"]);
     });
 
     it("asks nothing when no coin is in use", async () => {
@@ -2392,12 +2487,12 @@ describe("ExchangeRateService", () => {
           error: "No configured provider carries CAD/TWD",
         },
         {
-          pair: "CAD/XYZ",
+          pair: "XYZ/CAD",
           success: false,
           error: "XYZ has no price symbol; map one on the Currencies page",
         },
         {
-          pair: "TWD/XYZ",
+          pair: "XYZ/TWD",
           success: false,
           error: "XYZ has no price symbol; map one on the Currencies page",
         },

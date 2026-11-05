@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "가격 기호({{ quoteSymbol }})는 암호화폐에만 설정할 수 있습니다. \"{{ code }}\"은(는) 법정 통화입니다",
     "quoteSymbolNotAPair": "\"{{ code }}\"의 가격 기호 \"{{ quoteSymbol }}\"은(는) BTC-EUR 같은 코인과 법정 통화의 쌍이 아닙니다",
     "kindInUse": "계정, 거래, 증권 또는 기타 레코드에서 사용 중인 동안에는 \"{{ code }}\"의 유형을 변경할 수 없습니다",
+    "quoteSymbolInUse": "계정, 거래, 증권 또는 기타 레코드에서 사용 중인 동안에는 \"{{ code }}\" 가격 기호의 코인을 변경할 수 없습니다. 법정 통화 부분만 변경할 수 있습니다",
     "kindConflict": "통화 \"{{ code }}\"은(는) 이미 {{ kind }} 통화로 존재하므로 {{ requestedKind }}(으)로 추가할 수 없습니다"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "데이터 삭제를 확인하려면 ID 공급자로 다시 인증하세요",
     "passwordRequiredForDataDelete": "데이터 삭제를 확인하려면 비밀번호가 필요합니다",
     "reauthUnavailable": "이 작업을 사용하기 전에 계정 비밀번호 설정을 완료하세요."
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "암호화폐는 보고 통화가 될 수 없습니다"
   },
   "loanScenarios": {
     "notFound": "ID가 {{ id }}인 대출 시나리오를 찾을 수 없습니다",

@@ -4,6 +4,7 @@ import { YahooQuoteResult } from "../../securities/yahoo-finance.service";
 import { Currency } from "../entities/currency.entity";
 import {
   CRYPTO_CURRENCY_CACHE_MS,
+  CRYPTO_MISS_RELOAD_MS,
   CryptoFxProvider,
 } from "./crypto-fx.provider";
 import { FxProviderChain } from "./fx-provider-chain";
@@ -121,6 +122,50 @@ describe("CryptoFxProvider", () => {
         provider.claims("XYZ"),
       ]);
       expect(currencyRepo.find).toHaveBeenCalledTimes(1);
+    });
+
+    /**
+     * A coin created on another replica, or written by a restore, is not in a
+     * snapshot read before it existed, and no local `forgetCurrencies` reached
+     * this process. Answering "not mine" for it would leave the coin
+     * unclaimed and route it to Yahoo's `=X` grammar (INV-CRYPTO-002).
+     */
+    it("re-reads currencies once for a code the snapshot does not hold, then answers from the fresh read", async () => {
+      jest.useFakeTimers({ now: new Date("2026-11-05T12:00:00Z") });
+      const withoutBtc = CURRENCY_ROWS.filter((row) => row.code !== "BTC");
+      currencyRepo.find
+        .mockResolvedValueOnce(withoutBtc)
+        .mockResolvedValue(CURRENCY_ROWS);
+      expect(await provider.claims("CAD")).toBe(false);
+      expect(currencyRepo.find).toHaveBeenCalledTimes(1);
+
+      jest.setSystemTime(Date.now() + CRYPTO_MISS_RELOAD_MS + 1);
+      expect(await provider.claims("BTC")).toBe(true);
+      expect(await provider.carries("BTC")).toBe(true);
+      expect(currencyRepo.find).toHaveBeenCalledTimes(2);
+    });
+
+    it("re-reads for a missing code at most once per throttle window", async () => {
+      jest.useFakeTimers({ now: new Date("2026-11-05T12:00:00Z") });
+      await provider.claims("CAD");
+      expect(currencyRepo.find).toHaveBeenCalledTimes(1);
+
+      // Inside the window: the snapshot is too new to re-read for a miss.
+      expect(await provider.claims("QQQ")).toBe(false);
+      expect(currencyRepo.find).toHaveBeenCalledTimes(1);
+
+      // Past it: one re-read; QQQ still has no row, and the next misses inside
+      // the new window cost nothing.
+      jest.setSystemTime(Date.now() + CRYPTO_MISS_RELOAD_MS + 1);
+      expect(await provider.claims("QQQ")).toBe(false);
+      expect(await provider.carries("QQQ")).toBe(false);
+      expect(await provider.claims("QQQ")).toBe(false);
+      expect(currencyRepo.find).toHaveBeenCalledTimes(2);
+
+      // A known code never re-reads, whatever the time inside the cache.
+      jest.setSystemTime(Date.now() + CRYPTO_MISS_RELOAD_MS + 1);
+      expect(await provider.claims("BTC")).toBe(true);
+      expect(currencyRepo.find).toHaveBeenCalledTimes(2);
     });
 
     it("rejects claims and carries after a failed read, never answering false, and does not remember the failure", async () => {
@@ -398,6 +443,45 @@ describe("CryptoFxProvider", () => {
       expect(answer.uncarried).toEqual(["XYZ"]);
       expect(fiat.fetchLatest).not.toHaveBeenCalled();
       expect(yahoo.fetchPairSymbolQuote).not.toHaveBeenCalled();
+    });
+
+    it("routes a coin created after the snapshot to the coin adapter, never to the fiat provider", async () => {
+      jest.useFakeTimers({ now: new Date("2026-11-05T12:00:00Z") });
+      // The snapshot is read before BTC exists; BTC is then inserted as CRYPTO
+      // (another replica's request, a restore) without this process hearing.
+      const withoutBtc = CURRENCY_ROWS.filter((row) => row.code !== "BTC");
+      currencyRepo.find
+        .mockResolvedValueOnce(withoutBtc)
+        .mockResolvedValue(CURRENCY_ROWS);
+      const fiat = {
+        name: "yahoo" as const,
+        source: "yahoo_finance",
+        carries: jest.fn().mockResolvedValue(true),
+        fetchLatest: jest
+          .fn()
+          .mockResolvedValue(
+            new Map([
+              ["CAD", { from: "BTC", to: "CAD", date: "2026-11-05", rate: 1 }],
+            ]),
+          ),
+        fetchDailySeries: jest.fn().mockResolvedValue(null),
+      };
+      const chain = new FxProviderChain([fiat, provider]);
+      expect(await provider.claims("CAD")).toBe(false);
+      jest.setSystemTime(Date.now() + CRYPTO_MISS_RELOAD_MS + 1);
+      yahoo.fetchPairSymbolQuote.mockResolvedValue(quote(137000));
+
+      const answer = await chain.latest("BTC", ["CAD"]);
+
+      expect(fiat.fetchLatest).not.toHaveBeenCalled();
+      expect(yahoo.fetchPairSymbolQuote).toHaveBeenCalledTimes(1);
+      expect(yahoo.fetchPairSymbolQuote).toHaveBeenCalledWith("BTC-CAD");
+      expect(answer.found.get("CAD")).toMatchObject({
+        from: "BTC",
+        to: "CAD",
+        rate: 137000,
+        source: "yahoo_crypto",
+      });
     });
 
     it("hands no coin pair to the fiat provider when currencies cannot be read: the pairs are unanswered", async () => {

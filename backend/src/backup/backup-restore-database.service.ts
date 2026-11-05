@@ -526,4 +526,79 @@ export class BackupRestoreDatabaseService {
 
     return count;
   }
+
+  /**
+   * The restored rows that break INV-CRYPTO-001 or decision 11 of
+   * `docs/specs/crypto-accounts.md`, read after the accounts, securities and
+   * preferences are written, inside the restore's transaction:
+   *
+   * - a `CRYPTO` account whose currency is not a CRYPTO currency, or a
+   *   non-CRYPTO account in a CRYPTO currency (the account kind check);
+   * - a security priced in a CRYPTO currency (a security is priced in fiat);
+   * - a reporting currency that is a CRYPTO currency.
+   *
+   * Reported, not refused. `currencies` is global, so the kind of a code is
+   * this deployment's, not the backup's: a file whose `BTC` was a coin,
+   * restored where `BTC` is a fiat row (`ensureCurrenciesExist` never
+   * overwrites one), mismatches through no fault in the file. The restore
+   * refuses only what would let one user's rows reach another's (the
+   * reference check); every other repairable difference -- a severed bond
+   * link, an unusable AI key -- is restored and reported, and so is this. The
+   * person repairs it on the Accounts, Securities or Preferences page.
+   */
+  async findCurrencyKindMismatches(
+    manager: EntityManager,
+    userId: string,
+  ): Promise<CurrencyKindMismatches> {
+    const accounts: Array<{ name: string }> = await manager.query(
+      `SELECT a.name FROM accounts a
+         JOIN currencies c ON c.code = a.currency_code
+        WHERE a.user_id = $1
+          AND (a.account_type = 'CRYPTO') <> (c.kind = 'CRYPTO')
+        ORDER BY a.name`,
+      [userId],
+    );
+    const securities: Array<{ symbol: string }> = await manager.query(
+      `SELECT s.symbol FROM securities s
+         JOIN currencies c ON c.code = s.currency_code
+        WHERE s.user_id = $1 AND c.kind = 'CRYPTO'
+        ORDER BY s.symbol`,
+      [userId],
+    );
+    const preferences: Array<{ code: string }> = await manager.query(
+      `SELECT up.default_currency AS code FROM user_preferences up
+         JOIN currencies c ON c.code = up.default_currency
+        WHERE up.user_id = $1 AND c.kind = 'CRYPTO'`,
+      [userId],
+    );
+    const found: CurrencyKindMismatches = {
+      accounts: accounts.map((row) => row.name),
+      securities: securities.map((row) => row.symbol),
+      defaultCurrency: preferences[0]?.code ?? null,
+    };
+    if (
+      found.accounts.length > 0 ||
+      found.securities.length > 0 ||
+      found.defaultCurrency !== null
+    ) {
+      this.logger.warn(
+        `Backup restore for user ${userId} wrote rows whose currency kind disagrees: ` +
+          `${found.accounts.length} account(s), ${found.securities.length} security(ies)` +
+          (found.defaultCurrency !== null
+            ? `, reporting currency ${found.defaultCurrency} is a cryptocurrency`
+            : ""),
+      );
+    }
+    return found;
+  }
+}
+
+/** What `findCurrencyKindMismatches` found; empty lists and `null` when nothing. */
+export interface CurrencyKindMismatches {
+  /** Names of accounts whose type and currency kind disagree (INV-CRYPTO-001). */
+  accounts: string[];
+  /** Symbols of securities priced in a CRYPTO currency. */
+  securities: string[];
+  /** The reporting currency, when it is a CRYPTO currency; else `null`. */
+  defaultCurrency: string | null;
 }

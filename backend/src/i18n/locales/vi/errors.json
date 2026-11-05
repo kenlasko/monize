@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "Ký hiệu giá ({{ quoteSymbol }}) chỉ có thể đặt cho tiền mã hóa; \"{{ code }}\" là tiền pháp định",
     "quoteSymbolNotAPair": "Ký hiệu giá \"{{ quoteSymbol }}\" của \"{{ code }}\" không phải là cặp đồng coin và tiền pháp định như BTC-EUR",
     "kindInUse": "Không thể đổi loại của \"{{ code }}\" khi còn tài khoản, giao dịch, chứng khoán hoặc hồ sơ khác đang sử dụng",
+    "quoteSymbolInUse": "Không thể đổi đồng coin trong ký hiệu giá của \"{{ code }}\" khi còn tài khoản, giao dịch, chứng khoán hoặc hồ sơ khác đang sử dụng; chỉ có thể đổi phần tiền pháp định",
     "kindConflict": "Tiền tệ \"{{ code }}\" đã tồn tại dưới dạng tiền tệ {{ kind }} và không thể thêm dưới dạng {{ requestedKind }}"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "Xác thực lại với nhà cung cấp danh tính của bạn để xác nhận việc xoá dữ liệu",
     "passwordRequiredForDataDelete": "Cần mật khẩu để xác nhận xóa dữ liệu",
     "reauthUnavailable": "Hãy hoàn tất việc thiết lập mật khẩu tài khoản trước khi dùng hành động này."
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "Tiền mã hóa không thể là đơn vị tiền tệ báo cáo"
   },
   "loanScenarios": {
     "notFound": "Không tìm thấy kịch bản khoản vay có ID {{ id }}",

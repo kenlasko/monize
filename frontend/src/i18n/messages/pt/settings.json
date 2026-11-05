@@ -138,6 +138,7 @@
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Moeda Predefinida",
+    "defaultCurrencyNoCrypto": "As criptomoedas não estão disponíveis aqui: os totais e os relatórios são sempre apresentados numa moeda fiduciária.",
     "preferredExchangesLabel": "Bolsas Preferidas (para consultas de títulos)",
     "preferredExchangesHelp": "Selecione até 3 bolsas por ordem de prioridade. Estas serão preferidas ao consultar títulos.",
     "exchangePriorityPlaceholder": "Prioridade {n}",

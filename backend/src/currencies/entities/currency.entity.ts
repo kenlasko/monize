@@ -1,4 +1,10 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn } from "typeorm";
+import {
+  Check,
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryColumn,
+} from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 import { Exclude } from "class-transformer";
 
@@ -15,7 +21,18 @@ export type CurrencyKind = (typeof CURRENCY_KINDS)[number];
 /** The kind of every row that does not say otherwise (the column default). */
 export const DEFAULT_CURRENCY_KIND: CurrencyKind = "FIAT";
 
+/**
+ * The two CHECKs `database/schema.sql` declares on `currencies`, by the same
+ * names, so a schema built from the entities (the integration suite's) refuses
+ * what the real one refuses. `currency.entity.spec.ts` holds them to
+ * `schema.sql`.
+ */
+export const CURRENCY_KIND_CHECK = `"kind" IN ('FIAT', 'CRYPTO')`;
+export const CURRENCY_QUOTE_SYMBOL_CHECK = `"kind" = 'CRYPTO' OR "quote_symbol" IS NULL`;
+
 @Entity("currencies")
+@Check("currencies_kind_check", CURRENCY_KIND_CHECK)
+@Check("currencies_quote_symbol_crypto_only", CURRENCY_QUOTE_SYMBOL_CHECK)
 export class Currency {
   @ApiProperty({ example: "CAD" })
   @PrimaryColumn({ type: "varchar", length: 3 })

@@ -131,4 +131,61 @@ describe('CurrencyRegistryLoader', () => {
     });
     expect(decimalPlacesForCurrency('BTC')).toBeUndefined();
   });
+
+  it('retries a failed load when the tab becomes visible again', async () => {
+    mockGetCurrencies.mockRejectedValueOnce(new Error('offline'));
+    await renderLoader();
+    await act(async () => {});
+    expect(decimalPlacesForCurrency('BTC')).toBeUndefined();
+
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(mockGetCurrencies).toHaveBeenCalledTimes(2);
+    expect(decimalPlacesForCurrency('BTC')).toBe(4);
+
+    // Loaded: a later visibility change does not fetch again.
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(mockGetCurrencies).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries a failed load when the browser comes back online', async () => {
+    mockGetCurrencies.mockRejectedValueOnce(new Error('offline'));
+    await renderLoader();
+    await act(async () => {});
+
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+    });
+    expect(mockGetCurrencies).toHaveBeenCalledTimes(2);
+    expect(decimalPlacesForCurrency('BTC')).toBe(4);
+  });
+
+  it('retries a failed load on the next auth change', async () => {
+    mockGetCurrencies.mockRejectedValueOnce(new Error('offline'));
+    const { rerender } = await renderLoader();
+    await act(async () => {});
+
+    authState = { isAuthenticated: true, _hasHydrated: false };
+    await act(async () => {
+      rerender(<CurrencyRegistryLoader />);
+    });
+    authState = { isAuthenticated: true, _hasHydrated: true };
+    await act(async () => {
+      rerender(<CurrencyRegistryLoader />);
+    });
+    expect(mockGetCurrencies).toHaveBeenCalledTimes(2);
+    expect(decimalPlacesForCurrency('BTC')).toBe(4);
+  });
+
+  it('does not retry while a load is still in flight', async () => {
+    mockGetCurrencies.mockReturnValueOnce(new Promise(() => {}));
+    await renderLoader();
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(mockGetCurrencies).toHaveBeenCalledTimes(1);
+  });
 });

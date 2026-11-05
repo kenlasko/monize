@@ -6,7 +6,8 @@ import { Payee } from '@/types/payee';
 import { useTourStore } from '@/store/tourStore';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 
-vi.mock('@/lib/format', () => ({
+vi.mock('@/lib/format', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/format')>()),
   getCurrencySymbol: (code: string) => (code === 'USD' ? 'US$' : '$'),
   getDecimalPlacesForCurrency: () => 2,
 }));
@@ -169,10 +170,15 @@ describe('NormalTransactionFields', () => {
       expect(screen.getByTestId('currency-input-Amount')).toHaveAttribute('data-decimal-places', '4');
       unmount();
       render(<NormalTransactionFields {...defaultProps} />);
-      expect(screen.getByTestId('currency-input-Amount')).toHaveAttribute('data-decimal-places', '');
+      expect(screen.getByTestId('currency-input-Amount')).toHaveAttribute('data-decimal-places', '2');
     } finally {
       clearCurrencyDecimals();
     }
+  });
+
+  it('enters a coin amount at the stored four places before the registry has loaded', () => {
+    render(<NormalTransactionFields {...defaultProps} watchedCurrencyCode="BTC" />);
+    expect(screen.getByTestId('currency-input-Amount')).toHaveAttribute('data-decimal-places', '4');
   });
 
   it('renders Account select', () => {

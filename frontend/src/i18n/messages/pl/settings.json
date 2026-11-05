@@ -138,6 +138,7 @@
     },
     "themeLabel": "Motyw",
     "defaultCurrencyLabel": "Domyślna waluta",
+    "defaultCurrencyNoCrypto": "Kryptowaluty nie są tu dostępne: sumy i raporty są zawsze wyświetlane w walucie fiducjarnej.",
     "preferredExchangesLabel": "Preferowane giełdy (do wyszukiwania papierów)",
     "preferredExchangesHelp": "Wybierz maksymalnie 3 giełdy w kolejności priorytetu. Będą one preferowane podczas wyszukiwania papierów wartościowych.",
     "exchangePriorityPlaceholder": "Priorytet {n}",

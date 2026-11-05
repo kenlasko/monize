@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "[XX-A price symbol ({{ quoteSymbol }}) can only be set on a cryptocurrency; \"{{ code }}\" is a fiat currency-XX]",
     "quoteSymbolNotAPair": "[XX-The price symbol \"{{ quoteSymbol }}\" for \"{{ code }}\" is not a coin and fiat pair such as BTC-EUR-XX]",
     "kindInUse": "[XX-The kind of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it-XX]",
+    "quoteSymbolInUse": "[XX-The coin in the price symbol of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it; only its fiat side can-XX]",
     "kindConflict": "[XX-Currency \"{{ code }}\" already exists as a {{ kind }} currency and cannot be added as {{ requestedKind }}-XX]"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "[XX-Re-authenticate with your identity provider to confirm data deletion-XX]",
     "passwordRequiredForDataDelete": "[XX-Password is required to confirm data deletion-XX]",
     "reauthUnavailable": "[XX-Finish setting up your account password before using this action.-XX]"
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "[XX-A cryptocurrency cannot be the reporting currency-XX]"
   },
   "loanScenarios": {
     "notFound": "[XX-Loan scenario with ID {{ id }} not found-XX]",

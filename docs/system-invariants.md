@@ -1542,7 +1542,11 @@ Status              enforced
 ```text
 Statement           For every currency pair and rate_date there is at most one
                     row in exchange_rates, and its from_currency sorts before its
-                    to_currency. A pair held in two rows is a pair that can
+                    to_currency -- except a pair with exactly one CRYPTO side,
+                    which is stored coin -> fiat whichever code sorts first,
+                    because a coin's fiat -> coin rate keeps too few figures at
+                    ten decimals (XBT->IDR 1.52e9 stored as IDR->XBT is
+                    0.0000000007, 6% off; spec section 12). A pair held in two rows is a pair that can
                     contradict itself: nothing keeps the two reciprocal, and
                     resolveFxRate answers with the more recently observed
                     direction, so a one-sided write decides which of two
@@ -1550,18 +1554,27 @@ Statement           For every currency pair and rate_date there is at most one
                     report could disagree with nothing saying so.
 Source of truth     exchange_rates. The orientation rule is
                     backend/src/currencies/canonical-rate.util.ts
-                    (canonicalRateRow, isCanonicalOrientation), and
-                    directionlessPairKey is built on the same comparison so the
-                    ordering is written once.
+                    (canonicalRateRow, isCanonicalOrientation, each taking an
+                    isCoin lookup of currencies.kind that defaults to "no coin").
+                    directionlessPairKey and exchange_rate_coverage stay in
+                    plain code order (codeOrderedPair): they name a pair, not a
+                    stored direction.
 Enforcement         Every writer routes through canonicalRateRow: saveRate and
                     persistRateSeries in currencies/exchange-rate.service.ts, and
                     resolveExchangeRates in
                     import/mny/writers/write-prices.ts, which used to store
                     whichever orientation the Money file recorded. The helper
-                    inverts at the rate column's ten decimal places and refuses a
-                    same-currency pair or a non-positive rate, so a refusal
-                    happens before the write rather than as a row nothing may
-                    use. currencies/exchange-rate-orientation.guard.spec.ts is
+                    inverts at the rate column's ten decimals and refuses a
+                    same-currency pair, a non-positive rate, and a rate that as
+                    stored would be at or above 1e10 or round to zero
+                    (canonicalRateRefusal "out_of_range", reported per pair as
+                    "Rate out of range" rather than failing a batch), so a
+                    refusal happens before the write rather than as a row
+                    nothing may use. Each writer reads currencies.kind once per
+                    operation: the refresh from currenciesInUse (saveRate,
+                    canonicalPairsByBase), persistRateSeries and the Money
+                    importer through loadCoinLookup
+                    (currencies/coin-lookup.ts) on their own manager. currencies/exchange-rate-orientation.guard.spec.ts is
                     the scan: an INSERT INTO exchange_rates in a third file, or
                     in one of those two without the helper, fails it.
                     On the read side getLatestRates lists one row per pair, the
@@ -1604,10 +1617,14 @@ Test                canonical-rate.util.spec.ts holds the truth table, including
 Status              partial -- the writers and the guard hold for every new row,
                     and rows written before this release still carry both
                     orientations. The contract release removes them and adds
-                    CHECK (from_currency < to_currency), which is the mechanism
-                    that makes this enforced; it cannot ship until the expand
-                    release is deployed everywhere, because the previous release
-                    writes the mirror row this constraint would refuse. Spec:
+                    the constraint that makes this enforced; it cannot ship
+                    until the expand release is deployed everywhere, because the
+                    previous release writes the mirror row it would refuse. It
+                    can no longer be CHECK (from_currency < to_currency): a
+                    coin-first row violates it and a CHECK cannot read
+                    currencies.kind, so the contract step needs a trigger or an
+                    equivalent that orients by the coin rule (spec section 12).
+                    Spec:
                     docs/specs/exchange-rate-canonical-orientation.md; the
                     migration is written out in
                     docs/future-plans/exchange-rate-canonical-orientation-tasks.md.
@@ -1770,7 +1787,10 @@ Failure response    400 accountCurrencyKindMismatch (accounts),
                     400 currencyMustBeFiat (securities), 409 kindInUse
                     (currencies), before any write.
 Required tests      account-currency-kind.util.spec.ts;
-                    security-currency-kind.util.spec.ts; accounts.service.spec.ts,
+                    security-currency-kind.util.spec.ts;
+                    action-history.service.spec.ts ("undo and redo hold the
+                    currency kind rules"); backup.service.spec.ts (the restore
+                    reports currencyKindMismatches); accounts.service.spec.ts,
                     loan-mortgage-account.service.spec.ts,
                     import-entity-creator.service.spec.ts,
                     write-reference.spec.ts, write-investments.spec.ts and
@@ -1781,15 +1801,25 @@ Required tests      account-currency-kind.util.spec.ts;
                     table of docs/specs/crypto-accounts.md on create and
                     update, and "a kind change racing an account write" on two
                     connections, in both orders).
-Status              partial -- no database trigger, and two writers of
-                    accounts rows bypass the check: the undo and redo of an
-                    account action (ActionHistoryService.undoAccount through
-                    undoSimpleEntity, which re-inserts a deleted account or
-                    writes an edit's snapshot back) and the backup restore
-                    (BackupRestoreDatabaseService). Either can write a
-                    mismatch when the code's kind changed after the snapshot
-                    was taken, which the kind gate allows once nothing else
-                    references the code.
+Status              partial -- no database trigger, and the backup restore
+                    detects rather than refuses. Undo and redo are covered:
+                    ActionHistoryService.undoAccount and the security undo call
+                    assertUndoCurrencyKind (action-history/undo-currency-kind.ts),
+                    which runs assertAccountCurrencyKindIn /
+                    assertSecurityCurrencyIsFiatIn in the undo's transaction
+                    before a snapshot carrying a type and a currency is written
+                    back (the undo of a create deletes and needs none). The
+                    restore (BackupRestoreService, through
+                    BackupRestoreDatabaseService.findCurrencyKindMismatches)
+                    reads, after the accounts, securities and preferences are
+                    written, every account whose type and currency kind
+                    disagree, every security in a CRYPTO currency and a CRYPTO
+                    reporting currency, logs them and returns them as
+                    currencyKindMismatches beside restored. It does not refuse:
+                    currencies is global, so a code's kind is this deployment's
+                    and a file whose BTC was a coin may land where BTC is fiat,
+                    and the restore refuses only cross-user references, reporting
+                    every other repairable difference.
 ```
 
 Spec: `docs/specs/crypto-accounts.md`, decision 8.
@@ -1816,7 +1846,12 @@ Enforcement         FxProviderChain (backend/src/currencies/providers/
                     latest, dailySeries and live alike. CryptoFxProvider
                     (providers/crypto-fx.provider.ts) claims every CRYPTO code
                     and carries a CRYPTO code with a quote_symbol and every FIAT
-                    code; the factory in currencies.module.ts appends it after
+                    code, answering from a snapshot of currencies that a code
+                    it does not hold re-reads first (at most once per
+                    CRYPTO_MISS_RELOAD_MS, so a coin created on another replica
+                    or by a restore is not routed to Yahoo's =X grammar), and
+                    the restore forgets the snapshot after it commits;
+                    the factory in currencies.module.ts appends it after
                     whatever FX_PROVIDERS names, and resolveFxProviders refuses
                     it as a token (PAIR_PROVIDER_NAMES). Its calls reach Yahoo
                     through YahooFxProvider's pair-symbol methods and so through

@@ -342,10 +342,11 @@ vi.mock('@/hooks/useNumberFormat', async () => {
     }),
   };
 });
-vi.mock('@/lib/format', async () => {
+vi.mock('@/lib/format', async (importOriginal) => {
   // The real registry, so a case that registers a coin rounds at its places.
   const { decimalPlacesForCurrency } = await import('@/lib/currency-decimals');
   return {
+  ...(await importOriginal<typeof import('@/lib/format')>()),
   FX_RATE_DISPLAY_DECIMALS: 6,
   getCurrencySymbol: () => '$',
   getDecimalPlacesForCurrency: () => 2,

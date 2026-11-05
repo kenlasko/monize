@@ -138,6 +138,7 @@
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Varsayılan Para Birimi",
+    "defaultCurrencyNoCrypto": "Kripto paralar burada sunulmaz: toplamlar ve raporlar her zaman itibari bir para biriminde gösterilir.",
     "preferredExchangesLabel": "Tercih Edilen Borsalar (menkul kıymet aramaları için)",
     "preferredExchangesHelp": "Öncelik sırasına göre en fazla 3 borsa seçin. Menkul kıymet ararken bunlar tercih edilecektir.",
     "exchangePriorityPlaceholder": "Öncelik {n}",

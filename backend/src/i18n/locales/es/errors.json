@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "Un símbolo de precio ({{ quoteSymbol }}) solo se puede establecer en una criptomoneda; \"{{ code }}\" es una moneda fiduciaria",
     "quoteSymbolNotAPair": "El símbolo de precio \"{{ quoteSymbol }}\" de \"{{ code }}\" no es un par de criptomoneda y moneda fiduciaria como BTC-EUR",
     "kindInUse": "El tipo de \"{{ code }}\" no se puede cambiar mientras lo usen cuentas, transacciones, valores u otros registros",
+    "quoteSymbolInUse": "La criptomoneda del símbolo de precio de \"{{ code }}\" no se puede cambiar mientras lo usen cuentas, transacciones, valores u otros registros; solo se puede cambiar su moneda fiduciaria",
     "kindConflict": "La divisa \"{{ code }}\" ya existe como divisa {{ kind }} y no se puede añadir como {{ requestedKind }}"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "Vuelve a autenticarte con tu proveedor de identidad para confirmar la eliminación de datos",
     "passwordRequiredForDataDelete": "Se requiere contraseña para confirmar la eliminación de datos",
     "reauthUnavailable": "Termina de configurar la contraseña de tu cuenta antes de usar esta acción."
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "Una criptomoneda no puede ser la moneda de referencia"
   },
   "loanScenarios": {
     "notFound": "No se encontró el escenario de préstamo con ID {{ id }}",

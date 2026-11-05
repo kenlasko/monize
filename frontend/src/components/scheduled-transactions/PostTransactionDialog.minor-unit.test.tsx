@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { PostTransactionDialog } from './PostTransactionDialog';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
+import toast from 'react-hot-toast';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 
 // Issue #1581: a LINEAR mortgage installment is priced at storage precision
@@ -200,6 +201,24 @@ describe('PostTransactionDialog: a coin account', () => {
     await act(async () => clearCurrencyDecimals());
   });
 
+  it('refuses to post split lines that miss the amount by 0.0049 BTC, as the server would', async () => {
+    renderCoin({
+      amount: -0.0076,
+      isSplit: true,
+      splits: [
+        { id: '11111111-1111-4111-8111-111111111111', transferAccountId: null, transferAccount: null, categoryId: 'cat-a', amount: -0.0025, memo: '' },
+        { id: '22222222-2222-4222-8222-222222222222', transferAccountId: null, transferAccount: null, categoryId: 'cat-b', amount: -0.0002, memo: '' },
+      ],
+    });
+    const buttons = screen.getAllByText('Post Transaction');
+    await act(async () => {
+      fireEvent.click(buttons[buttons.length - 1]);
+    });
+    // Under a one-cent tolerance this posted, and the server refused it.
+    expect(toast.error).toHaveBeenCalledWith('Split amounts must equal the transaction amount');
+    expect(mockPostApi).not.toHaveBeenCalled();
+  });
+
   it('posts a typed 0.0051 BTC as 0.0051, not cents', async () => {
     renderCoin({ amount: -0.02 });
     const amount = screen.getByLabelText('Amount');
@@ -225,18 +244,19 @@ describe('PostTransactionDialog: a coin account', () => {
     expect(payload.amount).toBe(-0.0051);
   });
 
-  it('re-converts at four places when the currency list arrives after the dialog opened', async () => {
+  it('re-converts at the coin\'s places when the currency list arrives after the dialog opened', async () => {
     // `GET /currencies` answering late: the registry is empty when the dialog
-    // converts, so the total starts at cents, and the fill must redraw it.
+    // converts, so the total starts at the stored four places (never cents,
+    // which read -0.01), and the fill must redraw it at the coin's own.
     await act(async () => clearCurrencyDecimals());
     vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(0.00001);
     renderCoin({ originalAmount: -510, originalCurrencyCode: 'USD', exchangeRate: 0.00001 });
     const total = screen.getByLabelText('Total in BTC');
-    await waitFor(() => expect(total).toHaveValue('-0.01'));
-    await act(async () => {
-      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
-    });
     await waitFor(() => expect(total).toHaveValue('-0.0051'));
+    await act(async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 3, symbol: '₿' }]);
+    });
+    await waitFor(() => expect(total).toHaveValue('-0.005'));
   });
 
   it('converts a foreign bill into the coin at the coin\'s places', async () => {

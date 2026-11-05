@@ -26,10 +26,18 @@ const securityIds = new Map([
   [2, "ssssssss-0000-0000-0000-000000000002"],
 ]);
 
-function doubles() {
+/**
+ * A manager whose raw SQL is `query` and whose `currencies` read answers the
+ * CRYPTO codes in `coins` (the writer orients a coin pair coin -> fiat).
+ */
+function doubles(coins: readonly string[] = []) {
   const query = jest.fn().mockResolvedValue([]);
-  const manager = { query } as unknown as EntityManager;
-  return { manager, query };
+  const find = jest.fn().mockResolvedValue(coins.map((code) => ({ code })));
+  const manager = {
+    query,
+    getRepository: jest.fn(() => ({ find })),
+  } as unknown as EntityManager;
+  return { manager, query, find };
 }
 
 describe("dedupePrices", () => {
@@ -406,6 +414,64 @@ describe("writeExchangeRates", () => {
 
     expect(query).toHaveBeenCalledTimes(1);
     expect(written).toBe(1);
+  });
+
+  // A coin pair is stored coin -> fiat whichever code sorts first: IDR sorts
+  // before XBT, but IDR->XBT at 1/1.52e9 keeps one significant figure at ten
+  // decimals and resolves back 6% off.
+  it("stores a coin pair coin-first whatever the code order", async () => {
+    const { manager, query, find } = doubles(["XBT"]);
+    query.mockResolvedValueOnce([{ id: 1 }]);
+
+    await writeExchangeRates(
+      manager,
+      [
+        mnyExchangeRate({
+          fromCurrency: 1,
+          toCurrency: 2,
+          rate: roundFxRate(1 / 1.52e9),
+          date: "2026-01-05",
+        }),
+        mnyExchangeRate({
+          fromCurrency: 2,
+          toCurrency: 1,
+          rate: 1.52e9,
+          date: "2026-01-06",
+        }),
+      ],
+      new Map([
+        [1, "IDR"],
+        [2, "XBT"],
+      ]),
+    );
+
+    expect(find).toHaveBeenCalledTimes(1);
+    const params = query.mock.calls[0][1] as unknown[];
+    expect(params.slice(5, 7)).toEqual(["XBT", "IDR"]);
+    expect(params[7] as number).toBeCloseTo(1.52e9, 3);
+    expect(params.slice(8, 10)).toEqual(["2026-01-06", MNY_PRICE_SOURCE]);
+    expect(params[0]).toBe("XBT");
+    expect(params[1]).toBe("IDR");
+  });
+
+  it("drops a rate the column cannot hold rather than failing the insert", () => {
+    const rows = resolveExchangeRates(
+      [
+        mnyExchangeRate({
+          fromCurrency: 1,
+          toCurrency: 2,
+          rate: 1.1e10,
+          date: "2026-01-05",
+        }),
+      ],
+      new Map([
+        [1, "BTC"],
+        [2, "LBP"],
+      ]),
+      (code) => code === "BTC",
+    );
+
+    expect(rows).toEqual([]);
   });
 
   it("issues no statement when the file has no usable rates", async () => {

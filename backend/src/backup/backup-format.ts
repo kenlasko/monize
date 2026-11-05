@@ -100,6 +100,23 @@ export interface RestoreResult {
     count: number;
     series: UnrecoveredBondSeries[];
   };
+  /**
+   * Restored rows whose currency's kind on this deployment disagrees with
+   * them: an account whose type and currency kind disagree (INV-CRYPTO-001), a
+   * security priced in a cryptocurrency, a cryptocurrency as the reporting
+   * currency (`docs/specs/crypto-accounts.md` decision 11). `currencies` is
+   * global, so a code's kind is this deployment's and may differ from the
+   * file's. The rows *were* written; the person repairs them. `accounts` and
+   * `securities` name at most {@link MAX_CURRENCY_KIND_MISMATCH_NAMES};
+   * the counts are the full numbers. Omitted when nothing disagrees.
+   */
+  currencyKindMismatches?: {
+    accounts: string[];
+    accountCount: number;
+    securities: string[];
+    securityCount: number;
+    defaultCurrency: string | null;
+  };
 }
 
 /** Why a series a backup references could not be fetched during the restore. */
@@ -231,6 +248,9 @@ export function parseBondCatalogIdentity(
 
 /** The most symbols a restore result names for its unlinked bond securities. */
 export const MAX_UNLINKED_BOND_SYMBOLS = 50;
+
+/** The most account names, and security symbols, a restore result names for a currency kind mismatch. */
+export const MAX_CURRENCY_KIND_MISMATCH_NAMES = 50;
 
 /** A row whose catalog reference a restore dropped. */
 export interface SeveredRow {

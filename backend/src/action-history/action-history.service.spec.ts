@@ -1,7 +1,16 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { NotFoundException, ConflictException, Logger } from "@nestjs/common";
+import {
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+  Logger,
+} from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import {
+  currencyKindRows,
+  isCurrencyKindRead,
+} from "../test-helpers/currency-kind-testing";
 import {
   ActionHistoryService,
   settlePendingHistoryWrites,
@@ -2427,6 +2436,161 @@ describe("ActionHistoryService", () => {
       const result = await service.undo(userId);
 
       expect(result.description).toContain("Undone");
+    });
+  });
+
+  /**
+   * INV-CRYPTO-001 on the undo path: a replayed account or security is a write
+   * like any other, so its currency kind is read now, inside the undo's
+   * transaction, before anything is written (BTC is a coin here).
+   */
+  describe("undo and redo hold the currency kind rules", () => {
+    const answerKinds = () =>
+      mockQueryRunner.query.mockImplementation(
+        async (sql: string, params?: unknown[]) =>
+          currencyKindRows(sql, params) ?? [],
+      );
+
+    it("refuses to re-insert a deleted CHEQUING account in a coin, writing nothing", async () => {
+      answerKinds();
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "account",
+        action: "delete",
+        entityId: "acc-1",
+        beforeData: {
+          id: "acc-1",
+          name: "Chequing",
+          accountType: "CHEQUING",
+          currencyCode: "BTC",
+        },
+        afterData: null,
+      });
+
+      await expect(service.undo(userId)).rejects.toThrow(BadRequestException);
+
+      const sqls = mockQueryRunner.query.mock.calls.map(([sql]) => String(sql));
+      expect(sqls.some((sql) => isCurrencyKindRead(sql))).toBe(true);
+      expect(sqls.some((sql) => sql.includes('INSERT INTO "accounts"'))).toBe(
+        false,
+      );
+    });
+
+    it("refuses to restore an account edit whose snapshot pairs CRYPTO with a fiat", async () => {
+      answerKinds();
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "account",
+        action: "update",
+        entityId: "acc-1",
+        beforeData: {
+          id: "acc-1",
+          name: "Wallet",
+          accountType: "CRYPTO",
+          currencyCode: "CAD",
+        },
+        afterData: { id: "acc-1", name: "Renamed" },
+      });
+
+      await expect(service.undo(userId)).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(
+        expect.anything(),
+        "acc-1",
+        expect.anything(),
+      );
+    });
+
+    it("re-inserts a deleted CRYPTO wallet in its coin", async () => {
+      answerKinds();
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "account",
+        action: "delete",
+        entityId: "acc-1",
+        beforeData: {
+          id: "acc-1",
+          name: "Wallet",
+          accountType: "CRYPTO",
+          currencyCode: "BTC",
+        },
+        afterData: null,
+      });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.undo(userId);
+
+      const sqls = mockQueryRunner.query.mock.calls.map(([sql]) => String(sql));
+      expect(sqls.some((sql) => sql.includes('INSERT INTO "accounts"'))).toBe(
+        true,
+      );
+    });
+
+    it("refuses a redo that re-creates a CHEQUING account in a coin", async () => {
+      answerKinds();
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "account",
+        action: "create",
+        entityId: "acc-1",
+        isUndone: true,
+        beforeData: null,
+        afterData: {
+          id: "acc-1",
+          name: "Chequing",
+          accountType: "CHEQUING",
+          currencyCode: "BTC",
+        },
+      });
+
+      await expect(service.redo(userId)).rejects.toThrow(BadRequestException);
+    });
+
+    it("reads no kind for the undo of a create, which deletes", async () => {
+      answerKinds();
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "account",
+        action: "create",
+        entityId: "acc-1",
+        afterData: {
+          id: "acc-1",
+          accountType: "CHEQUING",
+          currencyCode: "BTC",
+        },
+      });
+      mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.undo(userId);
+
+      expect(
+        mockQueryRunner.query.mock.calls.some(([sql]) =>
+          isCurrencyKindRead(sql),
+        ),
+      ).toBe(false);
+    });
+
+    it("refuses to re-insert a deleted security priced in a coin", async () => {
+      answerKinds();
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "security",
+        action: "delete",
+        entityId: "sec-1",
+        beforeData: {
+          id: "sec-1",
+          symbol: "XYZ",
+          name: "XYZ Corp",
+          currencyCode: "BTC",
+        },
+        afterData: null,
+      });
+
+      await expect(service.undo(userId)).rejects.toThrow(BadRequestException);
+      const sqls = mockQueryRunner.query.mock.calls.map(([sql]) => String(sql));
+      expect(sqls.some((sql) => sql.includes('INSERT INTO "securities"'))).toBe(
+        false,
+      );
     });
   });
 

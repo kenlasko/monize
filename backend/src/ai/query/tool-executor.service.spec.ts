@@ -55,7 +55,10 @@ describe("ToolExecutorService", () => {
   let transfer: Record<string, jest.Mock>;
   let splitService: Record<string, jest.Mock>;
   let builtInReports: Record<string, jest.Mock>;
-  let exchangeRates: { convertOnDate: jest.Mock };
+  let exchangeRates: {
+    convertOnDate: jest.Mock;
+    getCurrencyDecimalPlaces: jest.Mock;
+  };
   let bondSeries: { fetchSeries: jest.Mock };
   let warranties: {
     getLlmWarranties: jest.MockedFunction<
@@ -666,6 +669,10 @@ describe("ToolExecutorService", () => {
       }),
     };
     exchangeRates = {
+      // A BTC row at four places, the precision a coin is stored at.
+      getCurrencyDecimalPlaces: jest
+        .fn()
+        .mockResolvedValue(new Map([["BTC", 4]])),
       convertOnDate: jest.fn().mockResolvedValue({
         amount: 1500,
         fromCurrency: "CAD",
@@ -980,6 +987,37 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("No exchange rate for: JPY->USD");
       // The USD account is not listed as foreign.
       expect(result.summary).not.toContain("Checking:");
+    });
+
+    it("list_accounts states a coin wallet at its currency row's places, not two", async () => {
+      const complete = await accounts.getLlmAccounts();
+      accounts.getLlmAccounts.mockResolvedValueOnce({
+        ...complete,
+        accounts: [
+          {
+            ...complete.accounts[0],
+            id: "acc-5",
+            name: "Wallet",
+            type: "CRYPTO",
+            currency: "BTC",
+            balance: 0.0125,
+            currentBalance: 0.0125,
+            balanceInDefaultCurrency: 1715.63,
+          },
+          complete.accounts[1],
+        ],
+      });
+
+      const result = await service.execute(userId, "list_accounts", {});
+
+      expect(result.summary).toContain("Wallet: 0.0125 BTC = 1715.63 USD");
+      expect(result.summary).toContain(
+        "Euro Savings: 1000.00 EUR = 1085.50 USD",
+      );
+      expect(exchangeRates.getCurrencyDecimalPlaces).toHaveBeenCalledWith([
+        "BTC",
+        "EUR",
+      ]);
     });
 
     it("list_accounts withholds a net worth that is a subtotal and says why and where to fix it", async () => {

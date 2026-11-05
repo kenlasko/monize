@@ -147,11 +147,17 @@ Stored: originalAmount 100.00, originalCurrencyCode USD, exchangeRate 1.3500,
 
 **Storage orientation is not the same question.** The rule above is about a
 transaction's own `exchangeRate` column. A row in `exchange_rates` is stored in
-one orientation per pair -- `from_currency` sorting before `to_currency` --
-written by `canonicalRateRow`
-(`backend/src/currencies/canonical-rate.util.ts`), and every lookup resolves
-either direction through `resolveFxRate`, so nothing reads the storage layout as
-a statement about which way round the market quotes a pair (INV-FX-003).
+one orientation per pair -- `from_currency` sorting before `to_currency`, except
+that a pair with exactly one cryptocurrency side is stored coin -> fiat
+whichever code sorts first, because a coin's fiat -> coin rate keeps too few
+figures at ten decimals (`XBT->IDR` 1.52e9 as `IDR->XBT` is `0.0000000007`, 6%
+off) -- written by `canonicalRateRow`
+(`backend/src/currencies/canonical-rate.util.ts`, given each writer's reading of
+`currencies.kind`), and every lookup resolves either direction through
+`resolveFxRate`, so nothing reads the storage layout as a statement about which
+way round the market quotes a pair (INV-FX-003). A rate that as stored would be
+at or above 1e10 (the `NUMERIC(20,10)` ceiling) or round to zero is refused and
+reported per pair as out of range.
 
 **Precision.** A rate is not money. `roundFxRate` rounds to
 `FX_RATE_DECIMALS = 10`, matching the `NUMERIC(20,10)` columns; display uses
@@ -248,6 +254,14 @@ referencing it stay `VARCHAR(3)`.
   `decimalPlaces` is capped at 4, the default for a coin; an amount below
   `0.0001` of the coin rounds to zero. The rate itself is an ordinary
   `NUMERIC(20,10)` rate (section 4).
+- **A coin is never the reporting currency.** Every converted figure is
+  `roundMoney` in the reporting currency, and four places of a coin are too
+  coarse for a total (0.0001 BTC is about 14 CAD); the preferences update
+  refuses one (`errors.preferences.defaultCurrencyCrypto`, decision 11 of the
+  spec).
+- **A coin's re-pointed ticker is a kind-sized change.** On a code data
+  references, a new fiat leg in `quote_symbol` is allowed and a new coin
+  ticker is refused (`quoteSymbolInUse`), because `currencies` is shared.
 - **A coin without a price symbol is unpriced, not worthless.** The refresh
   reports the pair uncarried and names the Currencies page; every converted
   figure in that coin is unknown, never zero and never at 1 (FIN-002 above).

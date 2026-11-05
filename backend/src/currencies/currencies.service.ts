@@ -30,7 +30,11 @@ import {
 import { FALLBACK_DEFAULT_CURRENCY } from "../common/default-currency.util";
 import { FxProviderChain } from "./providers/fx-provider-chain";
 import { CryptoFxProvider } from "./providers/crypto-fx.provider";
-import { QuoteSymbolRefusal, quoteSymbolRefusal } from "./currency-kind.util";
+import {
+  QuoteSymbolRefusal,
+  quoteSymbolCoinTicker,
+  quoteSymbolRefusal,
+} from "./currency-kind.util";
 
 export interface CurrencyLookupResult {
   code: string;
@@ -557,8 +561,17 @@ export class CurrenciesService implements OnApplicationBootstrap {
    * changeable until something financial references the code. The row is locked first,
    * as `removeWithin` does, so a reference committed while this decides waits
    * for it. A currency turning FIAT drops a symbol the request did not restate;
-   * one the request names on a FIAT row is refused. Repricing a referenced
-   * coin, a new symbol on an unchanged CRYPTO kind, is allowed.
+   * one the request names on a FIAT row is refused.
+   *
+   * A new coin ticker on a CRYPTO row (`quoteSymbolCoinTicker` of the new
+   * symbol differs from the old one's, including removing the symbol) is held
+   * like a kind change: `currencies` is shared, so re-pointing `BTC` from
+   * `BTC-EUR` to `ETH-EUR` would revalue every other user's wallet in it at
+   * another coin's price. Refused `quoteSymbolInUse` once data references the
+   * code. A new fiat leg alone (`BTC-EUR` to `BTC-CAD`) is allowed on a
+   * referenced coin, because the provider prices against whichever fiat the
+   * pair names, not the one in the symbol; so is a first symbol on a coin that
+   * had none.
    */
   private async kindUpdates(
     manager: EntityManager,
@@ -577,18 +590,33 @@ export class CurrenciesService implements OnApplicationBootstrap {
           : null;
     this.assertQuoteSymbol(kind, quoteSymbol, currency.code);
 
-    if (kindChanged) {
+    const currentSymbol = currency.quoteSymbol ?? null;
+    const tickerOf = (symbol: string | null) =>
+      symbol === null ? null : quoteSymbolCoinTicker(symbol);
+    const tickerChanged =
+      !kindChanged &&
+      kind === "CRYPTO" &&
+      currentSymbol !== null &&
+      tickerOf(quoteSymbol) !== tickerOf(currentSymbol);
+
+    if (kindChanged || tickerChanged) {
       await manager.query(
         "SELECT 1 FROM currencies WHERE code = $1 FOR UPDATE",
         [currency.code],
       );
       if (await this.isReferencedByData(manager, currency.code)) {
         throw new ConflictException(
-          tr(
-            "errors.currencies.kindInUse",
-            `The kind of "${currency.code}" cannot change while accounts, transactions, securities or other records use it`,
-            { code: currency.code },
-          ),
+          kindChanged
+            ? tr(
+                "errors.currencies.kindInUse",
+                `The kind of "${currency.code}" cannot change while accounts, transactions, securities or other records use it`,
+                { code: currency.code },
+              )
+            : tr(
+                "errors.currencies.quoteSymbolInUse",
+                `The coin in the price symbol of "${currency.code}" cannot change while accounts, transactions, securities or other records use it; only its fiat side can`,
+                { code: currency.code },
+              ),
         );
       }
     }

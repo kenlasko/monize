@@ -60,6 +60,16 @@ describe('SplitTransactionFields Total Amount precision', () => {
     expect(input).toHaveValue('-0.0051');
   });
 
+  it('enters a coin total at the stored four places before the registry has loaded', () => {
+    const onAmount = vi.fn();
+    render(<Harness currencyCode="BTC" initial={0} onAmount={onAmount} />);
+    const input = screen.getByLabelText('Total Amount');
+    fireEvent.change(input, { target: { value: '0.0125' } });
+    fireEvent.blur(input);
+    // At the input's default two places this was 0.01.
+    expect(onAmount).toHaveBeenLastCalledWith(0.0125);
+  });
+
   it('renders a stored coin total at its four places', () => {
     registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
     render(<Harness currencyCode="BTC" initial={-0.0051} onAmount={vi.fn()} />);

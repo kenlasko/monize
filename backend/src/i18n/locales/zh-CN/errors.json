@@ -363,6 +363,7 @@
     "quoteSymbolRequiresCrypto": "价格符号（{{ quoteSymbol }}）只能设置在加密货币上；\"{{ code }}\"是法定货币",
     "quoteSymbolNotAPair": "\"{{ code }}\"的价格符号\"{{ quoteSymbol }}\"不是 BTC-EUR 这样的币种与法定货币的交易对",
     "kindInUse": "只要仍有账户、交易、证券或其他记录在使用，就无法更改\"{{ code }}\"的类型",
+    "quoteSymbolInUse": "只要仍有账户、交易、证券或其他记录在使用，就无法更改\"{{ code }}\"价格符号中的币种；只能更改其中的法定货币",
     "kindConflict": "货币\"{{ code }}\"已作为 {{ kind }} 货币存在，无法添加为 {{ requestedKind }}"
   },
   "delegation": {
@@ -843,6 +844,9 @@
     "oidcReauthRequiredForDataDelete": "请在身份提供商处重新认证以确认删除数据",
     "passwordRequiredForDataDelete": "确认数据删除需要密码",
     "reauthUnavailable": "请先完成账户密码设置，然后再使用此操作。"
+  },
+  "preferences": {
+    "defaultCurrencyCrypto": "加密货币不能作为报告货币"
   },
   "loanScenarios": {
     "notFound": "未找到 ID 为 {{ id }} 的贷款方案",

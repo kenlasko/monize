@@ -2493,6 +2493,13 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getCurrencies().mockResolvedValue([...fiat, btc]);
+    // An earlier suite leaves the lookup rejecting; an unanswered lock holds
+    // the saved kind, so these start from an account without transactions.
+    (accountsApi.canDelete as ReturnType<typeof vi.fn>).mockResolvedValue({
+      transactionCount: 0,
+      investmentTransactionCount: 0,
+      canDelete: true,
+    });
   });
 
   afterEach(() => {
@@ -2669,13 +2676,41 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
     await renderForm({ account: wallet });
     await waitFor(() => expect(currencyValues()).toEqual(['BTC']));
     const balance = screen.getByLabelText('Opening Balance') as HTMLInputElement;
-    // Before `GET /currencies` answers the input draws at two places...
-    expect(balance.value).toBe('0.01');
+    // Before `GET /currencies` answers the coin is drawn at the stored four,
+    // never rounded to cents...
+    expect(balance.value).toBe('0.0125');
 
-    act(() => registerCurrencyDecimals([btc]));
+    // ...and a late load redraws it at the coin's registered places.
+    act(() => registerCurrencyDecimals([{ ...btc, decimalPlaces: 3 }]));
+    await waitFor(() => expect(balance.value).toBe('0.013'));
+  });
 
-    // ...and the late load redraws it at the coin's four.
-    await waitFor(() => expect(balance.value).toBe('0.0125'));
+  it.each([
+    ['with the registry loaded', true],
+    ['before the registry has loaded', false],
+  ])('saves a 0.0075 BTC balance alert threshold at the coin\'s places, %s', async (_label, registered) => {
+    if (registered) registerCurrencyDecimals([btc]);
+    const wallet = createExistingAccount({
+      accountType: 'CRYPTO',
+      name: 'Bitcoin Wallet',
+      currencyCode: 'BTC',
+      openingBalance: 0.0125,
+      currentBalance: 0.0125,
+    });
+    await renderForm({ account: wallet });
+    await waitFor(() => expect(currencyValues()).toEqual(['BTC']));
+    const low = screen.getByLabelText('Notify below (optional)') as HTMLInputElement;
+    await act(async () => {
+      fireEvent.focus(low);
+      fireEvent.change(low, { target: { value: '0.0075' } });
+      fireEvent.blur(low);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Update Account/i }));
+    });
+
+    await waitFor(() => expect(mockOnSubmit).toHaveBeenCalled());
+    expect(mockOnSubmit.mock.calls[0][0].lowBalanceThreshold).toBe(0.0075);
   });
 
   describe('a currency locked by the account\'s transactions', () => {
@@ -2736,6 +2771,28 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
       await chooseType('CRYPTO');
       await chooseType('CHEQUING');
       expect(currencySelect().value).toBe('CAD');
+    });
+
+    it('keeps the saved kind, with no hint, while the lock lookup has not answered', async () => {
+      let answer: (value: unknown) => void = () => {};
+      (accountsApi.canDelete as ReturnType<typeof vi.fn>).mockReturnValueOnce(
+        new Promise((resolve) => { answer = resolve; }),
+      );
+      await renderForm({ account: createExistingAccount() });
+      await waitFor(() => expect(currencyValues()).toContain('CAD'));
+
+      expect(disabledTypes()).toEqual(['CRYPTO']);
+      expect(screen.queryByLabelText(lockHint)).not.toBeInTheDocument();
+      // A switch that reaches the handler before the answer keeps the currency.
+      await chooseType('CRYPTO');
+      await chooseType('CHEQUING');
+      expect(currencySelect().value).toBe('CAD');
+
+      // Unlocked once it answers: every type is offered again.
+      await act(async () => {
+        answer({ transactionCount: 0, investmentTransactionCount: 0, canDelete: true });
+      });
+      expect(disabledTypes()).toEqual([]);
     });
 
     it('offers every type, with no hint, while the currency is unlocked', async () => {
