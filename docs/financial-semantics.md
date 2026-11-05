@@ -296,11 +296,19 @@ transfer refuses it. The counterpart takes the opposite sign of the line.
 Absent, the counterpart is converted at the market rate for the parent's date,
 as before.
 
-The transaction form loads it from `splits.linkedTransaction` and sends it back
-unedited for every cross-currency transfer line, because a split save replaces
-every line: without it, re-saving a split for a memo re-priced each
-cross-currency counterpart at that day's market rate. The scheduled surfaces do
-not store a received amount and still convert when the occurrence posts.
+A split save replaces every line, so the received amount is kept on two
+sides. The server fills a line that continues a recorded one (same target, same
+amount, parent account unchanged) with its recorded figure when the caller
+states none (`carryRecordedReceivedAmounts`, on both replacement paths): an AI
+or MCP split edit, or a memo change, no longer re-prices a counterpart at that
+day's market rate. The transaction form loads the figure from each own line's
+counterpart (`findOne` and the register carry `{ id, amount, currencyCode }`,
+never to a joint reader) and sends it back, tagged with the parent currency it
+was stated against so a figure for a previous currency is neither shown nor
+sent. A duplicate or quick fill copies none. Undo compares it, so an edit of
+that figure alone is refused like any other leg change. The scheduled surfaces
+do not store a received amount and still convert when the occurrence posts.
+The full rules and test matrix are in `docs/specs/split-cross-currency-transfer.md`.
 
 ## 6. Investments
 
