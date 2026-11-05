@@ -141,6 +141,57 @@ describe("Split transfer received amount (integration)", () => {
     expect(registerLine?.linkedTransaction?.currencyCode).toBe("EUR");
   });
 
+  it("keeps the recorded received amount when a re-save omits it", async () => {
+    // What an AI or MCP split edit sends: the lines, no received amounts. No
+    // USD->EUR rate is stored, so a re-conversion would be refused outright.
+    const created = await createSplit();
+    const withoutReceived = splitsWith("Renamed").map(
+      ({ transferTargetAmount: _omitted, ...line }) => line,
+    );
+
+    await withUserContext(userId, () =>
+      service.update(userId, created.id, { splits: withoutReceived }),
+    );
+    expect(Number((await counterpart()).amount)).toBe(35.5);
+
+    await withUserContext(userId, () =>
+      service.updateSplits(userId, created.id, withoutReceived),
+    );
+    const leg = await counterpart();
+    expect(Number(leg.amount)).toBe(35.5);
+    expect(Number(leg.exchangeRate)).toBe(0.8875);
+  });
+
+  it("re-converts a line whose amount changed rather than carrying its old figure", async () => {
+    const created = await createSplit();
+
+    // A changed line is not the recorded one; with no rate stored, the
+    // re-conversion is refused instead of reusing 35.50 for 50.00.
+    await expect(
+      withUserContext(userId, () =>
+        service.update(userId, created.id, {
+          splits: [
+            { categoryId, amount: -50 },
+            { transferAccountId: eurId, amount: -50 },
+          ],
+        }),
+      ),
+    ).rejects.toThrow(/exchange rate/i);
+    expect(Number((await counterpart()).amount)).toBe(35.5);
+  });
+
+  it("gives a joint reader no counterpart of the owner's split lines", async () => {
+    const created = await createSplit();
+    const reader = (await createTestUserDirect(dataSource)).id;
+
+    const seen = await withUserContext(reader, () =>
+      service.findOne(reader, created.id, [usdId]),
+    );
+    const transferLine = seen.splits.find((s) => s.transferAccountId === eurId);
+    expect(transferLine).toBeDefined();
+    expect(transferLine?.linkedTransaction ?? null).toBeNull();
+  });
+
   it("keeps the received amount across a re-save that sends it back", async () => {
     const created = await createSplit();
 

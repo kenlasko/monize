@@ -38,6 +38,7 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { lockTransactionRow, lockTransactionRows } from "../common/db/locks";
 import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 import { removeLockedTransactionLeg } from "./remove-transaction-leg";
+import { carryRecordedReceivedAmounts } from "./split-received-amount.util";
 
 function inferSplitKind(split: CreateTransactionSplitDto): SplitKind {
   if (split.splitKind) return split.splitKind;
@@ -1070,6 +1071,15 @@ export class TransactionSplitService {
         userId,
         transaction.id,
       );
+      // Likewise before the counterparts go: a line that continues a recorded
+      // one keeps what arrived rather than being re-converted.
+      const replacement = await this.withRecordedReceivedAmounts(
+        m,
+        userId,
+        parent,
+        parent.accountId,
+        splits,
+      );
 
       // One guard for the whole replacement: the old embedded rows are removed
       // and their successors written before it verifies, so a replacement that
@@ -1096,7 +1106,7 @@ export class TransactionSplitService {
       // error and nothing to reconcile against (audit FV4-002).
       const created = await this.createSplits(
         parent.id,
-        splits,
+        replacement,
         userId,
         parent.accountId,
         new Date(parent.transactionDate),
@@ -1137,6 +1147,48 @@ export class TransactionSplitService {
     this.invalidateNetWorth(affectedAccountIds, userId);
     await this.recomputeBondPricesAfterWrite(userId, touchedSecurityIds);
     return newSplits;
+  }
+
+  /**
+   * `splits` with each continuing cross-currency transfer line's recorded
+   * received amount filled in where the caller sent none
+   * (`carryRecordedReceivedAmounts`). Reads the parent's current lines and
+   * their counterparts, so it runs inside the replacement's transaction,
+   * before those counterparts are deleted.
+   */
+  async withRecordedReceivedAmounts(
+    m: EntityManager,
+    userId: string,
+    parent: { id: string; accountId: string },
+    nextAccountId: string,
+    splits: CreateTransactionSplitDto[],
+  ): Promise<CreateTransactionSplitDto[]> {
+    const wantsCarry = splits.some(
+      (split) =>
+        split.transferAccountId &&
+        (split.transferTargetAmount === undefined ||
+          split.transferTargetAmount === null),
+    );
+    if (!wantsCarry || nextAccountId !== parent.accountId) return splits;
+    const current = await m.getRepository(TransactionSplit).find({
+      where: { transactionId: parent.id },
+      relations: ["linkedTransaction"],
+    });
+    if (!current.some((split) => split.linkedTransaction)) return splits;
+    const source = await this.accountsService.findOne(userId, parent.accountId);
+    return carryRecordedReceivedAmounts(
+      current.map((split) => ({
+        transferAccountId: split.transferAccountId,
+        amount: split.amount,
+        counterpartAmount: split.linkedTransaction?.amount ?? null,
+        counterpartCurrencyCode: split.linkedTransaction?.currencyCode ?? null,
+      })),
+      splits,
+      {
+        sourceCurrencyCode: source.currencyCode,
+        parentAccountUnchanged: true,
+      },
+    );
   }
 
   /**

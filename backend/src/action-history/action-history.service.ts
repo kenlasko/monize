@@ -144,6 +144,8 @@ interface SplitSnapshot {
   transferAccountId?: string | null;
   linkedTransactionId?: string | null;
   amount?: number | string | null;
+  /** What a transfer line's counterpart received; absent in older entries. */
+  receivedAmount?: number | string | null;
   memo?: string | null;
 }
 
@@ -171,6 +173,19 @@ function isLegSplit(split: SplitSnapshot): boolean {
 function splitsEqualByValue(a: unknown, b: unknown): boolean {
   if (!Array.isArray(a) || !Array.isArray(b)) return false;
   if (a.length !== b.length) return false;
+  // A transfer line's received amount is part of its value (an edit may
+  // change only that), but only when both snapshots recorded it: an entry
+  // written before snapshots carried it, or from a read that did not load the
+  // counterpart, must not read as changed for lacking it.
+  const recordsReceived = (list: SplitSnapshot[]) =>
+    list.every(
+      (s) =>
+        !s.transferAccountId ||
+        (s.receivedAmount !== undefined && s.receivedAmount !== null),
+    );
+  const compareReceived =
+    recordsReceived(a as SplitSnapshot[]) &&
+    recordsReceived(b as SplitSnapshot[]);
   const keys = (list: SplitSnapshot[]) =>
     list
       .map((s) =>
@@ -179,6 +194,9 @@ function splitsEqualByValue(a: unknown, b: unknown): boolean {
           s.categoryId ?? null,
           s.transferAccountId ?? null,
           Math.round(Number(s.amount) * 10000),
+          compareReceived && s.transferAccountId
+            ? Math.round(Number(s.receivedAmount) * 10000)
+            : null,
           s.memo || null,
         ]),
       )
