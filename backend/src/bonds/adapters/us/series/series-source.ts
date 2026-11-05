@@ -1,4 +1,8 @@
-import { BondFetch, SeriesFetchError } from "../../../bond-adapter";
+import {
+  BondFetch,
+  SeriesFetchError,
+  sourceUnavailable as unavailable,
+} from "../../../bond-adapter";
 
 /** The issuer's own site: the only host the series fetch talks to. */
 export const TREASURY_HOST = "www.treasurydirect.gov";
@@ -37,18 +41,6 @@ function isOwnHttps(url: URL): boolean {
     url.port === "" &&
     url.username === "" &&
     url.password === ""
-  );
-}
-
-function unavailable(
-  reason: string,
-  extra: Record<string, string> = {},
-  cause?: unknown,
-): SeriesFetchError {
-  return new SeriesFetchError(
-    "SOURCE_UNAVAILABLE",
-    { reason, ...extra },
-    { cause },
   );
 }
 

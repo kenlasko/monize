@@ -164,6 +164,23 @@ export class SeriesFetchError extends Error {
   }
 }
 
+/**
+ * A transient failure of an issuer's source (`SOURCE_UNAVAILABLE`): `reason` is
+ * a short machine value, never free text from the source. Shared by every
+ * adapter's single-host GET.
+ */
+export function sourceUnavailable(
+  reason: string,
+  extra: Record<string, string> = {},
+  cause?: unknown,
+): SeriesFetchError {
+  return new SeriesFetchError(
+    "SOURCE_UNAVAILABLE",
+    { reason, ...extra },
+    { cause },
+  );
+}
+
 /** Everything one country contributes: calendars, benchmarks, programs, series sources. */
 export interface BondAdapter {
   readonly countryCode: string;

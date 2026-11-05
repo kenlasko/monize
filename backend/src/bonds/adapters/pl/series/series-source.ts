@@ -1,4 +1,8 @@
-import { BondFetch, SeriesFetchError } from "../../../bond-adapter";
+import {
+  BondFetch,
+  SeriesFetchError,
+  sourceUnavailable as unavailable,
+} from "../../../bond-adapter";
 import { ParsedSeriesCode, PolishProduct, PRODUCT_SLUGS } from "./series-code";
 
 /** The issuer's own site: the only host the series fetch talks to. */
@@ -54,18 +58,6 @@ export function resolveLetterUrl(href: string, pageUrl: string): string {
     throw refuse();
   }
   return url.toString();
-}
-
-function unavailable(
-  reason: string,
-  extra: Record<string, string> = {},
-  cause?: unknown,
-): SeriesFetchError {
-  return new SeriesFetchError(
-    "SOURCE_UNAVAILABLE",
-    { reason, ...extra },
-    { cause },
-  );
 }
 
 /**
