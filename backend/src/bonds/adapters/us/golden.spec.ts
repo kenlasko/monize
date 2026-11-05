@@ -1,8 +1,5 @@
 import { BondTerms, parseBondTerms } from "../../domain/bond-terms";
-import { EMPTY_CALENDAR_REGISTRY } from "../../domain/calendar-registry";
-import { BondEngineInput } from "../../engine/bond-engine-types";
-import { redemptionSplit, valueBondLot } from "../../engine/bond-engine";
-import { registerUsCalendars } from ".";
+import { check, GoldenCase } from "./golden-support";
 import billCases from "./bill-cases.json";
 import noteCases from "./note-cases.json";
 import { fetchSeries } from "./series/fetch-series";
@@ -24,53 +21,6 @@ import {
 // kenlasko/monize#1908 read through the adapter's own fetch; the notes are
 // hand-written terms on the adapter's NOTE template with the dates and rates
 // the appendix gives.
-
-interface Lot {
-  purchaseDate: string;
-  quantity: number;
-  cost?: string;
-}
-
-interface GoldenCase {
-  id: string;
-  description: string;
-  source: string;
-  lot: Lot;
-  asOf: string;
-  expect?: Record<string, unknown>;
-  expectTerms?: { issuePrice: string };
-  split?: { date: string; expect: Record<string, unknown> };
-  knownCashflows?: Record<string, unknown>[];
-}
-
-const calendars = registerUsCalendars(EMPTY_CALENDAR_REGISTRY);
-
-function inputOf(terms: BondTerms, c: GoldenCase): BondEngineInput {
-  return {
-    terms,
-    termsVersion: 1,
-    announcedRates: new Map(),
-    benchmarks: new Map(),
-    calendars,
-    lot: c.lot,
-    asOf: c.asOf,
-  };
-}
-
-function check(terms: BondTerms, c: GoldenCase): void {
-  const input = inputOf(terms, c);
-  const valuation = valueBondLot(input);
-  if (c.expect) expect(valuation).toMatchObject(c.expect);
-  for (const flow of c.knownCashflows ?? []) {
-    expect(valuation.knownCashflows).toContainEqual(
-      expect.objectContaining(flow),
-    );
-  }
-  if (c.split) {
-    const { asOf: _unused, ...lot } = input;
-    expect(redemptionSplit(lot, c.split.date)).toMatchObject(c.split.expect);
-  }
-}
 
 describe("golden cases for the bill of 912797WM5", () => {
   let terms: BondTerms;

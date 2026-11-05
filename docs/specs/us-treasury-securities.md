@@ -223,6 +223,17 @@ computed from the official formulas, never from the engine.
 | `tips-cases.json` | E8; E9 on the three TIPS of the July 2026 table (912810FD5, 912810FH6, 912810FQ6) with the CPI-U observations of March, April and May 2026; E10 |
 | `frn-cases.json` | E11, E12, E13; the fixture `91282CQM6` (issued 2026-04-30, maturity 2028-04-30, spread 0.103 %, first payment 2026-07-31, quarterly) parses and its schedule has 8 quarterly periods ending on 31 July, 31 October, 31 January and 30 April (end of month) |
 
+As built (`golden-indexed.spec.ts`, helpers in `golden-support.ts`): E8 and E10
+value a TIPS on the adapter's TIPS template (E8 by its first coupon, E10 by the
+redemption split at maturity); E9 reads the Ref CPI and the ratio of each July
+2026 day on the three bases through `indexFigureOn`, and values one lot; E11
+runs the benchmark fetcher's `moneyMarketYield`; E12 and E13 read the first
+daily run of the fixture FRN with an index and a spread; the fixture `91282CQM6`
+is fetched through the adapter and its eight periods and payment dates (next
+business day: 2 November 2026, 1 February 2027, 2 August 2027, 1 November 2027,
+1 May 2028) are checked. E9 lists the three bases; the TIPS of the table
+(`912810FD5`, `912810FH6`, `912810FQ6`) are not fetched, only their bases.
+
 ## 8. Missing-data policy
 
 As INV-BOND-002 and the primitives spec: an unpublished CPI month or 13-week
