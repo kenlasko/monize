@@ -398,6 +398,19 @@ principalRule: {
   terms error, and a check in the valuation service that the stored series'
   unit matches).
 
+Decisions taken in the implementation (benchmark unit):
+
+- `BenchmarkUnit` (`domain/benchmark.ts`) is `RATE_FRACTION` or `INDEX_LEVEL`;
+  `benchmarkReadsOf(terms)` (`domain/benchmark-reads.ts`) lists every benchmark
+  the terms read with its role and the unit it needs, and is the one answer for
+  the valuation, the offer, the scenarios and the series store (which seeds the
+  `benchmark_series` row of each benchmark a stored series reads).
+- The unit check is the valuation's, against the stored series' own `unit`
+  column (`assertBenchmarkUnit`, `bond-benchmark-units.ts`): a mismatch is
+  the data error `BENCHMARK_UNIT_MISMATCH` (422, params
+  `benchmarkId`, `unit`, `expected`), and nothing is valued. A terms document
+  cannot know a unit, so the terms parser does not check it.
+
 ### 7.2 Rate rule `DAILY_INDEX_PLUS_SPREAD`, accrual `ACTUAL_360_DAILY_SUM`
 
 ```text

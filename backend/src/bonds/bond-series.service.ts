@@ -35,11 +35,8 @@ import { BondCatalogService } from "./bond-catalog.service";
 import { BondPriceService } from "./bond-price.service";
 import { bondInstrumentId } from "./bond-instrument-id";
 import { BondInstrumentSummary } from "./bond-valuation.service";
-import {
-  BondTermsError,
-  benchmarkFieldsOf,
-  parseBondTerms,
-} from "./domain/bond-terms";
+import { benchmarkReadsOf } from "./domain/benchmark-reads";
+import { BondTermsError, parseBondTerms } from "./domain/bond-terms";
 import { BondDataNotFoundError } from "./bond-errors";
 import { HttpFetch, SeriesHttp } from "./series-http";
 
@@ -851,11 +848,13 @@ export class BondSeriesService {
     adapter: BondAdapter,
   ): Promise<BondSeriesResult> {
     let instrumentId: string;
-    let benchmarkCode: string | null;
+    let benchmarkCodes: ReadonlySet<string>;
     try {
       const terms = parseBondTerms(entry.terms);
       const { instrument } = terms;
-      benchmarkCode = benchmarkFieldsOf(terms.rateRule)?.benchmarkId ?? null;
+      benchmarkCodes = new Set(
+        benchmarkReadsOf(terms).map((read) => read.benchmarkId),
+      );
       instrumentId = bondInstrumentId(
         instrument.issuerCountryCode,
         instrument.issuerCode,
@@ -910,14 +909,11 @@ export class BondSeriesService {
           if (outcome.kind === "inserted") {
             this.logger.log(`Stored terms version 1 of ${outcome.named}`);
           }
-          // The series row of the benchmark it reads, in the same transaction,
+          // The series rows of the benchmarks it reads, in the same transaction,
           // so a valuation names the publisher of an observation it lacks even
           // before the first fetch lands; the fetch itself follows the commit.
-          if (benchmarkCode !== null) {
-            await this.catalog.seedBenchmarkSeries(
-              [adapter],
-              new Set([benchmarkCode]),
-            );
+          if (benchmarkCodes.size > 0) {
+            await this.catalog.seedBenchmarkSeries([adapter], benchmarkCodes);
           }
           return { ...summary, created: outcome.kind === "inserted" };
         }

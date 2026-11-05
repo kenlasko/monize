@@ -584,6 +584,8 @@ export const BOND_ERROR_FALLBACKS: Readonly<
   TERMS_NOT_FOUND: (p) => `No terms version is stored for series ${p.series}`,
   TERMS_VERSION_NOT_FOUND: (p) =>
     `Terms version ${p.version} is not stored for series ${p.series}`,
+  BENCHMARK_UNIT_MISMATCH: (p) =>
+    `The benchmark ${p.benchmarkId} is stored as ${p.unit}, but the terms read it as ${p.expected}`,
   TERMS_MISMATCH: (p) =>
     `Terms version ${p.version} of series ${p.series} describe ${p.claimedSeries} in ${p.claimedCurrency}, but the instrument is ${p.storedSeries} in ${p.storedCurrency}`,
 };

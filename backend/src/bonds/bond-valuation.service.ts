@@ -5,14 +5,11 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { getEffectiveTimezoneOfUser } from "../common/users-by-timezone.util";
 import { loadBondLedger } from "./bond-ledger";
 import { BondLotsRefusal, bondLotsAsOf } from "./bond-lots";
+import { assertBenchmarkUnit } from "./bond-benchmark-units";
 import { BenchmarkData } from "./domain/benchmark";
+import { benchmarkReadsOf, readsBenchmark } from "./domain/benchmark-reads";
 import { ExactDecimal } from "./domain/exact-decimal";
-import {
-  benchmarkFieldsOf,
-  BondTerms,
-  parseBondTerms,
-  Redemption,
-} from "./domain/bond-terms";
+import { BondTerms, parseBondTerms, Redemption } from "./domain/bond-terms";
 import { BOND_CALENDARS } from "./bond-adapters";
 import {
   BondDataInconsistentError,
@@ -266,7 +263,7 @@ function assertSomeSeriesReadsBenchmark(
 ): void {
   if (references.size === 0) return;
   for (const { terms } of references.values()) {
-    if (benchmarkFieldsOf(terms.rateRule)?.benchmarkId === benchmarkId) return;
+    if (readsBenchmark(terms, benchmarkId)) return;
   }
   throw new BondEngineError(
     "BENCHMARK_NOT_READ",
@@ -557,9 +554,7 @@ export class BondValuationService {
               const reference = this.referenceOf(references, lot);
               // Only a series that reads the benchmark takes the assumption;
               // the others are what they are.
-              const reads =
-                benchmarkFieldsOf(reference.terms.rateRule)?.benchmarkId ===
-                benchmarkId;
+              const reads = readsBenchmark(reference.terms, benchmarkId);
               return this.valueLotFrom(
                 reference,
                 lot,
@@ -833,90 +828,99 @@ export class BondValuationService {
     return new Map(rows.map((r) => [Number(r.period_number), r.annual_rate]));
   }
 
-  /** The coverage of the series the rate rule reads; none for a fixed rate. */
+  /** The coverage of every series the terms read; none for a fixed rate and a fixed principal. */
   private async loadCoverage(
     m: EntityManager,
     terms: BondTerms,
   ): Promise<BenchmarkCoverage[]> {
-    const fields = benchmarkFieldsOf(terms.rateRule);
-    if (fields === null) return [];
-    const code = fields.benchmarkId;
-    const rows: Array<{
-      covered_through: string | null;
-      updated_at: Date | string | null;
-    }> = await m.query(
-      `SELECT TO_CHAR(covered_through, 'YYYY-MM-DD') AS covered_through,
-              updated_at
-         FROM benchmark_series
-        WHERE code = $1`,
-      [code],
-    );
-    if (rows.length === 0) {
-      return [{ benchmarkId: code, coveredThrough: null, lastFetchedAt: null }];
-    }
-    const updated = rows[0].updated_at;
-    return [
-      {
+    const coverage: BenchmarkCoverage[] = [];
+    for (const { benchmarkId: code } of benchmarkReadsOf(terms)) {
+      const rows: Array<{
+        covered_through: string | null;
+        updated_at: Date | string | null;
+      }> = await m.query(
+        `SELECT TO_CHAR(covered_through, 'YYYY-MM-DD') AS covered_through,
+                updated_at
+           FROM benchmark_series
+          WHERE code = $1`,
+        [code],
+      );
+      if (rows.length === 0) {
+        coverage.push({
+          benchmarkId: code,
+          coveredThrough: null,
+          lastFetchedAt: null,
+        });
+        continue;
+      }
+      const updated = rows[0].updated_at;
+      coverage.push({
         benchmarkId: code,
         coveredThrough: rows[0].covered_through,
         lastFetchedAt: !updated ? null : new Date(updated).toISOString(),
-      },
-    ];
+      });
+    }
+    return coverage;
   }
 
-  /** The series the rate rule reads; absent from the map when no row is stored. */
+  /**
+   * The series the terms read; absent from the map when no row is stored. A
+   * stored series in a unit the rule cannot read is refused
+   * (`BENCHMARK_UNIT_MISMATCH`), never valued.
+   */
   private async loadBenchmarks(
     m: EntityManager,
     terms: BondTerms,
   ): Promise<ReadonlyMap<string, BenchmarkData>> {
     const benchmarks = new Map<string, BenchmarkData>();
-    const fields = benchmarkFieldsOf(terms.rateRule);
-    if (fields === null) return benchmarks;
-    const code = fields.benchmarkId;
-
-    const series: Array<{
-      kind: "STEP" | "MONTHLY";
-      publisher: string;
-      covered_through: string | null;
-    }> = await m.query(
-      `SELECT kind, publisher, TO_CHAR(covered_through, 'YYYY-MM-DD') AS covered_through
-         FROM benchmark_series
-        WHERE code = $1`,
-      [code],
-    );
-    if (series.length === 0) return benchmarks;
-
-    const values: Array<{ observation_date: string; value: string }> =
-      await m.query(
-        `SELECT TO_CHAR(observation_date, 'YYYY-MM-DD') AS observation_date,
-                value::text AS value
-           FROM benchmark_values
-          WHERE benchmark_code = $1
-          ORDER BY observation_date`,
+    for (const read of benchmarkReadsOf(terms)) {
+      const code = read.benchmarkId;
+      const series: Array<{
+        kind: "STEP" | "MONTHLY";
+        publisher: string;
+        unit?: string;
+        covered_through: string | null;
+      }> = await m.query(
+        `SELECT kind, publisher, unit, TO_CHAR(covered_through, 'YYYY-MM-DD') AS covered_through
+           FROM benchmark_series
+          WHERE code = $1`,
         [code],
       );
-    const { kind, publisher, covered_through } = series[0];
-    benchmarks.set(
-      code,
-      kind === "STEP"
-        ? {
-            kind,
-            publisher,
-            coveredThrough: covered_through,
-            changes: values.map((v) => ({
-              effectiveFrom: v.observation_date,
-              value: v.value,
-            })),
-          }
-        : {
-            kind,
-            publisher,
-            // A monthly observation is stored on the first day of its month.
-            values: new Map(
-              values.map((v) => [v.observation_date.slice(0, 7), v.value]),
-            ),
-          },
-    );
+      if (series.length === 0) continue;
+      assertBenchmarkUnit(read, series[0].unit);
+
+      const values: Array<{ observation_date: string; value: string }> =
+        await m.query(
+          `SELECT TO_CHAR(observation_date, 'YYYY-MM-DD') AS observation_date,
+                  value::text AS value
+             FROM benchmark_values
+            WHERE benchmark_code = $1
+            ORDER BY observation_date`,
+          [code],
+        );
+      const { kind, publisher, covered_through } = series[0];
+      benchmarks.set(
+        code,
+        kind === "STEP"
+          ? {
+              kind,
+              publisher,
+              coveredThrough: covered_through,
+              changes: values.map((v) => ({
+                effectiveFrom: v.observation_date,
+                value: v.value,
+              })),
+            }
+          : {
+              kind,
+              publisher,
+              // A monthly observation is stored on the first day of its month.
+              values: new Map(
+                values.map((v) => [v.observation_date.slice(0, 7), v.value]),
+              ),
+            },
+      );
+    }
     return benchmarks;
   }
 }

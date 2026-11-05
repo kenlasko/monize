@@ -620,6 +620,7 @@
     "TERMS_NOT_FOUND": "No terms version is stored for series {{ series }}",
     "TERMS_VERSION_NOT_FOUND": "Terms version {{ version }} is not stored for series {{ series }}",
     "TERMS_MISMATCH": "Terms version {{ version }} of series {{ series }} describe {{ claimedSeries }} in {{ claimedCurrency }}, but the instrument is {{ storedSeries }} in {{ storedCurrency }}",
+    "BENCHMARK_UNIT_MISMATCH": "The benchmark {{ benchmarkId }} is stored as {{ unit }}, but the terms read it as {{ expected }}",
     "assumeInvalid": "assume must be benchmarkId:value, with a benchmark id of 1 to 40 capital letters, digits or underscores and a decimal value between -0.5 and 1.0",
     "benchmarkIdInvalid": "benchmarkId must be 1 to 40 capital letters, digits or underscores",
     "scenarioValuesInvalid": "values must be 1 to 6 comma-separated decimals between -0.5 and 1.0",

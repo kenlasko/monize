@@ -1,4 +1,5 @@
 import { TrackedProviderId } from "../provider-health/providers";
+import { BenchmarkUnit } from "./domain/benchmark";
 import { CalendarRegistry } from "./domain/calendar-registry";
 
 /** A benchmark series an adapter knows how to fetch and keep up to date. */
@@ -13,8 +14,11 @@ export interface BenchmarkSeriesDefinition {
    * (`FetchPolicy` in `series-http.ts`); name every host the fetcher requests.
    */
   readonly hosts: readonly string[];
-  /** Values are stored as fractions: 0.0575 for 5.75 percent. */
-  readonly unit: "RATE_FRACTION";
+  /**
+   * `RATE_FRACTION`: values are stored as fractions, 0.0575 for 5.75 percent.
+   * `INDEX_LEVEL`: values are index levels as published, "335.123".
+   */
+  readonly unit: BenchmarkUnit;
   /** The outbound provider the fetch is gated and reported under. */
   readonly providerId: TrackedProviderId;
 }
@@ -55,7 +59,7 @@ export interface CatalogEntry {
 
 export interface BenchmarkObservation {
   readonly observationDate: string;
-  /** A fraction as an exact decimal string. */
+  /** In the series' unit (a fraction or an index level) as an exact decimal string, never a JSON number. */
   readonly value: string;
   readonly publishedOn: string | null;
   /**

@@ -6,6 +6,7 @@ import {
   annualizedReturnOverDays,
 } from "./domain/annualized-return";
 import { INSTALLED_BOND_ADAPTERS } from "./bond-adapters";
+import { benchmarkReadsOf } from "./domain/benchmark-reads";
 import {
   benchmarkFieldsOf,
   BondTerms,
@@ -287,16 +288,17 @@ export class BondOfferService {
   }
 }
 
-/** The assumption for the benchmark the series reads, if one was supplied; none for a fixed rate. */
+/** The assumptions for the benchmarks the series reads; none for a fixed rate and principal, and none for a benchmark it does not read. */
 function assumptionsFor(
   terms: BondTerms,
   assume: ReadonlyMap<string, string> | undefined,
 ): ReadonlyMap<string, string> | undefined {
-  const fields = benchmarkFieldsOf(terms.rateRule);
-  const value = fields === null ? undefined : assume?.get(fields.benchmarkId);
-  return fields === null || value === undefined
-    ? undefined
-    : new Map([[fields.benchmarkId, value]]);
+  const read = new Map<string, string>();
+  for (const { benchmarkId } of benchmarkReadsOf(terms)) {
+    const value = assume?.get(benchmarkId);
+    if (value !== undefined) read.set(benchmarkId, value);
+  }
+  return read.size === 0 ? undefined : read;
 }
 
 /**
