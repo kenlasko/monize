@@ -11,12 +11,24 @@ export interface ResultsXml {
   results(name: string): string | undefined;
 }
 
+/**
+ * The text between a section's opening and its first closing tag, found by
+ * `indexOf`: a lazy pattern over a body of repeated opening tags is quadratic
+ * (840 KB took seconds). A section is unique in a results file, so a second
+ * opening tag is a changed format, refused before any closing tag is searched.
+ */
 function sectionOf(xml: string, tag: string): string {
-  const found = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`).exec(xml);
-  if (!found) {
+  const open = `<${tag}>`;
+  const start = xml.indexOf(open);
+  if (start < 0 || xml.indexOf(open, start + open.length) >= 0) {
     throw new SeriesFetchError("SOURCE_FORMAT_CHANGED", { field: tag });
   }
-  return found[1];
+  const from = start + open.length;
+  const end = xml.indexOf(`</${tag}>`, from);
+  if (end < 0) {
+    throw new SeriesFetchError("SOURCE_FORMAT_CHANGED", { field: tag });
+  }
+  return xml.slice(from, end);
 }
 
 function elementOf(section: string, name: string): string | undefined {

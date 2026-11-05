@@ -60,3 +60,41 @@ describe("a file that is not a results file", () => {
     expect(() => xml.announcement(".*")).toThrow(RangeError);
   });
 });
+
+describe("a hostile results file is refused in linear time", () => {
+  const timed = (text: string) => {
+    const started = Date.now();
+    let error: unknown = null;
+    try {
+      parseResultsXml(bytes(text));
+    } catch (thrown) {
+      error = thrown;
+    }
+    return { error, ms: Date.now() - started };
+  };
+
+  // A lazy `<Tag>([\s\S]*?)</Tag>` over repeated opening tags is quadratic:
+  // 840 KB took 6.3 s. The bound is generous; the fixed code takes milliseconds.
+  it.each([
+    ["AuctionAnnouncement", ""],
+    ["AuctionResults", "<AuctionAnnouncement></AuctionAnnouncement>"],
+  ])("refuses 1 MB of repeated <%s> tags in under 500 ms", (tag, lead) => {
+    const { error, ms } = timed(
+      lead + `<${tag}>`.repeat(Math.ceil(1_000_000 / (tag.length + 2))),
+    );
+    expect(error).toBeInstanceOf(SeriesFetchError);
+    expect((error as SeriesFetchError).params).toEqual({ field: tag });
+    expect(ms).toBeLessThan(500);
+  });
+
+  it("refuses an opening tag that is never closed, and a section opened twice", () => {
+    expect(timed("<AuctionAnnouncement>x".repeat(1)).error).toBeInstanceOf(
+      SeriesFetchError,
+    );
+    const twice = fixtureText("R_20260428_1.xml").replace(
+      "<AuctionResults>",
+      "<AuctionResults><AuctionResults>",
+    );
+    expect(timed(twice).error).toBeInstanceOf(SeriesFetchError);
+  });
+});
