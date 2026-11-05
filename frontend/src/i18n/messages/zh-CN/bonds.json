@@ -40,6 +40,7 @@
       "fixed": "固定年利率 {rate}",
       "benchmark": "{benchmark} + {addend}",
       "floor": "基准下限 {floor}",
+      "daily": "每日：{benchmark} + {addend}",
       "discount": "相对面值的折价"
     },
     "capitalization": {

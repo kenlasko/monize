@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Nessun tasso da {from} a {to} disponibile. Inseriscine uno, o il totale convertito, prima di salvare.",
     "toastExchangeRateRequired": "Inserisci un tasso di cambio prima di salvare un'operazione tra valute.",
     "notAvailable": "Non disponibile",
+    "bondUnit": "Un'unità = {faceValue} {currency} di valore nominale",
+    "bondPriceCash": "Il prezzo è il prezzo a pronti di un'unità ({faceValue} {currency} di valore nominale), senza interessi maturati.",
+    "bondPriceIndexed": "Il prezzo è il prezzo a pronti di un'unità ({faceValue} {currency} di valore nominale) compreso l'adeguamento all'inflazione (prezzo quotato x coefficiente di indicizzazione), senza interessi maturati.",
     "bondSeries": {
       "label": "Serie obbligazionaria",
       "fromDate": "Determinata in base alla data",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "Interessi {interest}, trattenuta per rimborso anticipato {deduction}, importo erogato {payout}",
       "outsideSaleWindow": "Un lotto di questa serie è stato acquistato fuori dal suo periodo di vendita, quindi il rimborso non può essere suddiviso.",
+      "afterMaturity": "Un lotto di questa serie è stato acquistato alla scadenza o dopo, quindi il rimborso non può essere suddiviso.",
       "failed": "Non è stato possibile calcolare la suddivisione del rimborso."
     }
   },

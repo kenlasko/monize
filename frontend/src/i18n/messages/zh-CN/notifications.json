@@ -84,6 +84,7 @@
       "RATE_UNKNOWN": "所依据的利率尚未公布",
       "TERMS_INCOMPLETE": "该系列的条款不完整",
       "PURCHASE_OUTSIDE_SALE_WINDOW": "购买日期不在该系列的发售期内",
+      "PURCHASE_AFTER_MATURITY": "买入日期在该系列到期日当天或之后",
       "other": "无法根据已存数据计算"
     },
     "benchmarkTitle": "{benchmark}：新数据 {observation}",
@@ -99,6 +100,7 @@
       "observationNoPublisher": "{benchmark} {observation} 的数据未存储：尚未公布，或此后未获取数据源。请在债券页面刷新。",
       "terms": "{series} 的条款不完整。请在债券页面刷新该系列。",
       "purchase": "{series} 于 {date} 的购买不在其发售期（{from} 至 {to}）内。请更正购买日期。",
+      "purchaseAfterMaturity": "{series} 于 {date} 的买入在其到期日（{maturity}）当天或之后。请更正买入日期。",
       "lots": "无法从账本推导出持仓批次（{code}）。请更正账本。",
       "lotsRow": "{date} 的{action}：无法推导出持仓批次（{code}）。请更正该交易。",
       "lotsRowSeries": "{date} 的{action}：未归入任何系列（{code}）。请在该交易中选择系列。",
@@ -117,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "居民消费价格指数，12 个月 (GUS)",
-      "PL_NBP_REFERENCE": "NBP 基准利率"
+      "PL_NBP_REFERENCE": "NBP 基准利率",
+      "US_CPI_U_NSA": "CPI-U，所有项目，未经季节性调整 (BLS)",
+      "US_TBILL_13W_MMY": "13 周美国国库券收益率"
     }
   },
   "portfolioMovement": {

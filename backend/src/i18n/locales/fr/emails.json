@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "un taux dont il dépend n'est pas encore publié",
         "TERMS_INCOMPLETE": "les conditions de la série sont incomplètes",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "une date d'achat est en dehors de la période de vente de la série",
+        "PURCHASE_AFTER_MATURITY": "une date d'achat est égale ou postérieure à l'échéance de la série",
         "other": "il ne peut pas être calculé à partir des données enregistrées"
       },
       "benchmarkTitle": "{{ benchmark }} : nouvelle observation {{ observation }}",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "l'observation {{ observation }} de {{ benchmark }} n'est pas enregistrée : elle n'est pas encore publiée, ou le flux n'a pas été récupéré depuis ; actualisez sur la page de l'obligation",
         "terms": "les conditions de {{ series }} sont incomplètes ; actualisez la série sur la page de l'obligation",
         "purchase": "un achat de {{ series }} le {{ date }} est en dehors de sa période de vente ({{ from }} au {{ to }}) ; corrigez la date d'achat",
+        "purchaseAfterMaturity": "un achat de {{ series }} le {{ date }} est égal ou postérieur à son échéance ({{ maturity }}) ; corrigez la date d'achat",
         "lots": "les lots ne peuvent pas être déduits du registre ({{ code }}) ; corrigez le registre",
         "lotsRow": "{{ action }} du {{ date }} : les lots ne peuvent pas être déduits ({{ code }}) ; corrigez la transaction",
         "lotsRowSeries": "{{ action }} du {{ date }} : aucune série attribuée ({{ code }}) ; choisissez la série dans cette transaction",

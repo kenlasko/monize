@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Aucun taux de {from} vers {to} n'est disponible. Saisissez-en un, ou le total converti, avant d'enregistrer.",
     "toastExchangeRateRequired": "Saisissez un taux de change avant d'enregistrer une opération entre devises.",
     "notAvailable": "Non disponible",
+    "bondUnit": "Une unité = {faceValue} {currency} de valeur nominale",
+    "bondPriceCash": "Le prix est le prix comptant d'une unité ({faceValue} {currency} de valeur nominale), hors intérêts courus.",
+    "bondPriceIndexed": "Le prix est le prix comptant d'une unité ({faceValue} {currency} de valeur nominale), ajustement d'inflation inclus (cours coté x coefficient d'indexation), hors intérêts courus.",
     "bondSeries": {
       "label": "Série d'obligations",
       "fromDate": "Déterminée d'après la date",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "Intérêts {interest}, retenue de remboursement anticipé {deduction}, versement {payout}",
       "outsideSaleWindow": "Un lot de cette série a été acheté en dehors de sa période de vente ; le remboursement ne peut pas être ventilé.",
+      "afterMaturity": "Un lot de cette série a été acheté à la date d'échéance ou après, le remboursement ne peut donc pas être ventilé.",
       "failed": "La ventilation du remboursement n'a pas pu être calculée."
     }
   },

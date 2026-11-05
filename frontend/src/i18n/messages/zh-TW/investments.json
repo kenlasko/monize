@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "沒有 {from} 兌 {to} 的匯率。請在儲存前輸入匯率或換算後的總額。",
     "toastExchangeRateRequired": "在儲存跨貨幣交易前請輸入匯率。",
     "notAvailable": "無法使用",
+    "bondUnit": "1 個單位 = 面額 {faceValue} {currency}",
+    "bondPriceCash": "價格是 1 個單位（面額 {faceValue} {currency}）的現金價格，不含應計利息。",
+    "bondPriceIndexed": "價格是 1 個單位（面額 {faceValue} {currency}）的現金價格，含通膨調整（報價 × 指數比率），不含應計利息。",
     "bondSeries": {
       "label": "債券系列",
       "fromDate": "依日期決定",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "利息 {interest}，提前贖回扣減 {deduction}，支付金額 {payout}",
       "outsideSaleWindow": "此系列的一個批次在其銷售期間之外買入，因此無法拆分贖回。",
+      "afterMaturity": "此系列的一個批次在到期日當天或之後買入，因此無法拆分兌付。",
       "failed": "無法計算贖回拆分。"
     }
   },

@@ -612,6 +612,7 @@
     "LINK_QUANTITY_NOT_BONDS": "[XX-The quantities of this security are not numbers of bonds (a price is far from the face value per bond), so it cannot be linked to a bond instrument-XX]",
     "QUANTITY_NOT_BONDS": "[XX-The quantity must be a number of bonds and the price a price per bond of face value {{ faceValue }}; the price {{ price }} is not within half to twice the face value of one bond.-XX]",
     "QUANTITY_NOT_BONDS_CASH_PRICE": "[XX-The quantity must be a number of bonds and the price the cash price of one bond of face value {{ faceValue }}; the price {{ price }} is more than five times the face value of one bond.-XX]",
+    "MANUAL_PRICE_NOT_CASH_PRICE": "[XX-The price must be the cash price of one bond of face value {{ faceValue }}; the price {{ price }} is more than five times the face value of one bond.-XX]",
     "UNDO_LINK_INVALID": "[XX-This change cannot be undone because the bond link it would restore is no longer valid-XX]",
     "BENCHMARK_NOT_READ": "[XX-Series {{ series }} does not read the benchmark {{ benchmarkId }}-XX]",
     "DECIMAL_INVALID": "[XX-A stored or supplied value is not a valid decimal: {{ field }} = {{ value }}-XX]",

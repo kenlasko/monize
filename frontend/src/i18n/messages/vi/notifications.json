@@ -84,6 +84,7 @@
       "RATE_UNKNOWN": "lãi suất mà nó phụ thuộc chưa được công bố",
       "TERMS_INCOMPLETE": "điều khoản của đợt phát hành chưa đầy đủ",
       "PURCHASE_OUTSIDE_SALE_WINDOW": "ngày mua nằm ngoài thời gian bán của đợt phát hành",
+      "PURCHASE_AFTER_MATURITY": "ngày mua trùng hoặc sau ngày đáo hạn của chuỗi",
       "other": "không thể tính từ dữ liệu đã lưu"
     },
     "benchmarkTitle": "{benchmark}: quan sát mới {observation}",
@@ -99,6 +100,7 @@
       "observationNoPublisher": "Quan sát {observation} của {benchmark} chưa được lưu: chưa được công bố, hoặc nguồn dữ liệu chưa được tải lại kể từ đó. Hãy làm mới trên trang trái phiếu.",
       "terms": "Điều khoản của {series} chưa đầy đủ. Hãy làm mới đợt phát hành trên trang trái phiếu.",
       "purchase": "Lần mua {series} vào {date} nằm ngoài thời gian bán ({from} đến {to}). Hãy sửa ngày mua.",
+      "purchaseAfterMaturity": "Việc mua {series} vào {date} trùng hoặc sau ngày đáo hạn ({maturity}). Hãy sửa ngày mua.",
       "lots": "Không thể suy ra các lô từ sổ cái ({code}). Hãy sửa sổ cái.",
       "lotsRow": "{action} ngày {date}: không thể suy ra các lô ({code}). Hãy sửa giao dịch.",
       "lotsRowSeries": "{action} ngày {date}: chưa gán series ({code}). Hãy chọn series trong giao dịch đó.",
@@ -117,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "CPI, 12 tháng (GUS)",
-      "PL_NBP_REFERENCE": "Lãi suất tham chiếu NBP"
+      "PL_NBP_REFERENCE": "Lãi suất tham chiếu NBP",
+      "US_CPI_U_NSA": "CPI-U, tất cả các mục, không điều chỉnh theo mùa (BLS)",
+      "US_TBILL_13W_MMY": "Lợi suất tín phiếu Kho bạc 13 tuần"
     }
   },
   "portfolioMovement": {

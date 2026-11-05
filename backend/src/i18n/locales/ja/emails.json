@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "参照する金利がまだ公表されていない",
         "TERMS_INCOMPLETE": "シリーズの条件が不完全",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "購入日がシリーズの販売期間外",
+        "PURCHASE_AFTER_MATURITY": "購入日が銘柄の満期日以降になっています",
         "other": "保存されているデータから算出できない"
       },
       "benchmarkTitle": "{{ benchmark }}：新しい観測値 {{ observation }}",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "{{ benchmark }} の {{ observation }} の観測値が保存されていません（未公表、またはその後フィードが取得されていません）；債券ページで更新してください",
         "terms": "{{ series }} の条件が不完全です；債券ページでシリーズを更新してください",
         "purchase": "{{ date }} の {{ series }} の購入が販売期間（{{ from }} ～ {{ to }}）の外です；購入日を修正してください",
+        "purchaseAfterMaturity": "{{ date }} の {{ series }} の購入は、満期（{{ maturity }}）以降です。購入日を修正してください",
         "lots": "元帳からロットを導出できません（{{ code }}）；元帳を修正してください",
         "lotsRow": "{{ date }} の{{ action }}：ロットを導出できません（{{ code }}）；取引を修正してください",
         "lotsRowSeries": "{{ date }} の{{ action }}：シリーズに割り当てられていません（{{ code }}）；その取引でシリーズを選択してください",

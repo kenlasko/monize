@@ -300,6 +300,7 @@
       "periodValue": "{index}: {start} sampai {end}",
       "rate": "Suku bunga",
       "principal": "Pokok per obligasi",
+      "principalIssuePrice": "Biaya belum diisi: harga lelang digunakan",
       "accruedInterest": "Bunga berjalan",
       "grossValue": "Nilai kotor",
       "earlyRedemption": "Pelunasan dini",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "Asumsi proyeksi",
       "latestObservation": "{benchmark} diasumsikan sebesar {value} untuk semua periode berikutnya, yaitu nilai terbaru yang dipublikasikan ({observation})",
-      "supplied": "{benchmark} diasumsikan sebesar {value} untuk semua periode berikutnya"
+      "supplied": "{benchmark} diasumsikan sebesar {value} untuk semua periode berikutnya",
+      "suppliedSimpleAnnual": "{benchmark} diasumsikan tumbuh {value} per tahun (pertumbuhan tahunan sederhana, tanpa pemajemukan) untuk setiap bulan berikutnya"
     },
     "missing": {
       "title": "Data yang masih diperlukan",
@@ -371,8 +373,15 @@
         "firstThen": "Periode 1: {firstRate}. Setelah itu {benchmark} + {addend}",
         "every": "Setiap periode: {benchmark} + {addend}",
         "floorZero": "Nilai {benchmark} yang negatif dihitung sebagai 0",
-        "discount": "Diskon dari nilai nominal"
+        "dailyFloor": "Suku bunga harian (indeks ditambah spread) tidak pernah di bawah {floor}",
+        "discount": "Diskon dari nilai nominal",
+        "daily": "Setiap hari: {benchmark} + {addend}, dijumlahkan per hari",
+        "lockout": "Lelang dalam {days, plural, one {# hari kerja} other {# hari kerja}} sebelum akhir periode tidak digunakan untuk periode tersebut"
       },
+      "daily": "Harian, {benchmark}",
+      "dailyNoIndex": "Harian, {benchmark}: belum ada indeks tersimpan",
+      "dailyRun": "Mulai {from}: {rate}",
+      "dailyRunUnknown": "Mulai {from}: tidak ada indeks tersimpan",
       "lotHeading": "Lot dibeli pada {date}",
       "range": "{start} sampai {end}",
       "current": "Saat ini",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "IHK, 12 bulan (GUS)",
-      "PL_NBP_REFERENCE": "Suku bunga acuan NBP"
+      "PL_NBP_REFERENCE": "Suku bunga acuan NBP",
+      "US_CPI_U_NSA": "CPI-U, semua item, tanpa penyesuaian musiman (BLS)",
+      "US_TBILL_13W_MMY": "Imbal hasil surat utang Treasury 13 minggu"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "Seri ini hanya dapat dibeli dari {from} sampai {to}. Lot ini dibeli pada {purchaseDate}, sehingga tidak dinilai."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "Seri ini hanya dapat dibeli dari {from} sampai {to}. Lot ini dibeli pada {purchaseDate}, sehingga tidak dinilai.",
+      "PURCHASE_AFTER_MATURITY": "Seri ini jatuh tempo pada {maturityDate}. Lot ini dibeli pada {purchaseDate}, pada hari itu atau sesudahnya, sehingga tidak dinilai."
     },
+    "marketPriceRequired": "Sekuritas ini memuat seri yang diperdagangkan di pasar, sehingga harganya tidak ditentukan oleh ketentuannya. Monize tidak menulis harga untuknya: masukkan harga sendiri. Nilai lot di bawah dihitung dari ketentuan dan bukan nilai pasar.",
     "partial": {
       "title": "Penilaian ini belum lengkap, jadi baca angkanya sebagai angka sebagian.",
       "terms": "Ketentuan obligasi belum lengkap (misalnya kalender belum terpasang).",
@@ -453,7 +466,8 @@
       "none": "Belum ada data {benchmark} yang tersimpan"
     },
     "issuers": {
-      "PL_MF": "Kementerian Keuangan (PL)"
+      "PL_MF": "Kementerian Keuangan (PL)",
+      "US_TREASURY": "Departemen Keuangan AS (US)"
     },
     "redemption": {
       "title": "Ketentuan penebusan lebih awal",
@@ -470,7 +484,12 @@
       "COI": "COI: obligasi tabungan 4 tahun yang terindeks inflasi",
       "EDO": "EDO: obligasi tabungan 10 tahun yang terindeks inflasi",
       "ROS": "ROS: obligasi tabungan keluarga 6 tahun yang terindeks inflasi",
-      "ROD": "ROD: obligasi tabungan keluarga 12 tahun yang terindeks inflasi"
+      "ROD": "ROD: obligasi tabungan keluarga 12 tahun yang terindeks inflasi",
+      "BILL": "BILL: surat utang Treasury, 4 hingga 52 minggu, dijual dengan diskon",
+      "NOTE": "NOTE: Treasury note, 2 hingga 10 tahun, kupon tetap semesteran",
+      "BOND": "BOND: Treasury bond, 20 dan 30 tahun, kupon tetap semesteran",
+      "TIPS": "TIPS: surat berharga Treasury yang dilindungi inflasi, pokok diindeks ke CPI-U",
+      "FRN": "FRN: Treasury note suku bunga mengambang, 2 tahun, bunga triwulanan"
     },
     "series": {
       "title": "Seri Anda",

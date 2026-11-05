@@ -300,6 +300,7 @@
       "periodValue": "{index}: {start} tot {end}",
       "rate": "Rente",
       "principal": "Hoofdsom per obligatie",
+      "principalIssuePrice": "Geen kostprijs ingevoerd: de veilingprijs wordt gebruikt",
       "accruedInterest": "Opgelopen rente",
       "grossValue": "Brutowaarde",
       "earlyRedemption": "Vervroegde aflossing",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "Aannames van de prognose",
       "latestObservation": "{benchmark} verondersteld op {value} voor alle latere perioden, de laatst gepubliceerde waarde ({observation})",
-      "supplied": "{benchmark} verondersteld op {value} voor alle latere perioden"
+      "supplied": "{benchmark} verondersteld op {value} voor alle latere perioden",
+      "suppliedSimpleAnnual": "{benchmark} wordt verondersteld {value} per jaar te groeien (enkelvoudige jaarlijkse groei, zonder rente op rente) voor elke volgende maand"
     },
     "missing": {
       "title": "Nog benodigde gegevens",
@@ -371,8 +373,15 @@
         "firstThen": "Periode 1: {firstRate}. Daarna {benchmark} + {addend}",
         "every": "Elke periode: {benchmark} + {addend}",
         "floorZero": "Een negatieve waarde van {benchmark} telt als 0",
-        "discount": "Korting op de nominale waarde"
+        "dailyFloor": "Het dagtarief (index plus opslag) ligt nooit onder {floor}",
+        "discount": "Korting op de nominale waarde",
+        "daily": "Elke dag: {benchmark} + {addend}, per dag opgeteld",
+        "lockout": "Een veiling binnen {days, plural, one {# werkdag} other {# werkdagen}} voor het einde van een periode wordt voor die periode niet gebruikt"
       },
+      "daily": "Dagelijks, {benchmark}",
+      "dailyNoIndex": "Dagelijks, {benchmark}: nog geen index opgeslagen",
+      "dailyRun": "Vanaf {from}: {rate}",
+      "dailyRunUnknown": "Vanaf {from}: geen index opgeslagen",
       "lotHeading": "Lot gekocht op {date}",
       "range": "{start} tot {end}",
       "current": "Huidig",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "CPI, 12 maanden (GUS)",
-      "PL_NBP_REFERENCE": "NBP-referentierente"
+      "PL_NBP_REFERENCE": "NBP-referentierente",
+      "US_CPI_U_NSA": "CPI-U, alle posten, niet seizoensgecorrigeerd (BLS)",
+      "US_TBILL_13W_MMY": "Rendement van 13-weeks schatkistpapier"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "Deze serie kan alleen worden gekocht van {from} tot {to}. Deze partij is gekocht op {purchaseDate} en wordt daarom niet gewaardeerd."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "Deze serie kan alleen worden gekocht van {from} tot {to}. Deze partij is gekocht op {purchaseDate} en wordt daarom niet gewaardeerd.",
+      "PURCHASE_AFTER_MATURITY": "Deze serie liep af op {maturityDate}. Deze partij is gekocht op {purchaseDate}, op of na die dag, en wordt daarom niet gewaardeerd."
     },
+    "marketPriceRequired": "Dit effect bevat een serie die op een markt wordt verhandeld, dus de prijs volgt niet uit de voorwaarden. Monize schrijft er geen prijs voor: voer de prijs zelf in. De waarden van de partijen hieronder zijn berekend uit de voorwaarden en zijn geen marktwaarden.",
     "partial": {
       "title": "Deze waardering is onvolledig; lees de bedragen als gedeeltelijk.",
       "terms": "De voorwaarden van de obligatie zijn onvolledig (bijvoorbeeld een kalender is niet geïnstalleerd).",
@@ -453,7 +466,8 @@
       "none": "Er zijn nog geen {benchmark}-gegevens opgeslagen"
     },
     "issuers": {
-      "PL_MF": "Ministerie van Financiën (PL)"
+      "PL_MF": "Ministerie van Financiën (PL)",
+      "US_TREASURY": "Amerikaanse ministerie van Financiën (US)"
     },
     "redemption": {
       "title": "Voorwaarden voor vroegtijdige aflossing",
@@ -470,7 +484,12 @@
       "COI": "COI: inflatiegekoppelde spaarobligaties van 4 jaar",
       "EDO": "EDO: inflatiegekoppelde spaarobligaties van 10 jaar",
       "ROS": "ROS: inflatiegekoppelde gezinsspaarobligaties van 6 jaar",
-      "ROD": "ROD: inflatiegekoppelde gezinsspaarobligaties van 12 jaar"
+      "ROD": "ROD: inflatiegekoppelde gezinsspaarobligaties van 12 jaar",
+      "BILL": "BILL: schatkistcertificaten, 4 tot 52 weken, met korting verkocht",
+      "NOTE": "NOTE: Treasury notes, 2 tot 10 jaar, vaste halfjaarlijkse coupon",
+      "BOND": "BOND: Treasury bonds, 20 en 30 jaar, vaste halfjaarlijkse coupon",
+      "TIPS": "TIPS: tegen inflatie beschermde staatsobligaties, hoofdsom geïndexeerd op de CPI-U",
+      "FRN": "FRN: Treasury notes met variabele rente, 2 jaar, driemaandelijkse rente"
     },
     "series": {
       "title": "Uw series",

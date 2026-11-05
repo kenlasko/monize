@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "没有 {from} 兑 {to} 的汇率。请在保存前输入汇率或换算后的总额。",
     "toastExchangeRateRequired": "在保存跨货币交易前请输入汇率。",
     "notAvailable": "不可用",
+    "bondUnit": "1 个单位 = 面值 {faceValue} {currency}",
+    "bondPriceCash": "价格是 1 个单位（面值 {faceValue} {currency}）的现金价格，不含应计利息。",
+    "bondPriceIndexed": "价格是 1 个单位（面值 {faceValue} {currency}）的现金价格，含通胀调整（报价 × 指数比率），不含应计利息。",
     "bondSeries": {
       "label": "债券系列",
       "fromDate": "按日期确定",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "利息 {interest}，提前兑付扣减 {deduction}，兑付金额 {payout}",
       "outsideSaleWindow": "该系列的一个批次在其销售期之外购入，因此无法拆分兑付。",
+      "afterMaturity": "此系列的一个批次在到期日当天或之后买入，因此无法拆分兑付。",
       "failed": "无法计算兑付拆分。"
     }
   },

@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "oprocentowanie zależy od wskaźnika, który nie został jeszcze opublikowany",
         "TERMS_INCOMPLETE": "warunki emisji serii są niekompletne",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "data zakupu wypada poza okresem sprzedaży serii",
+        "PURCHASE_AFTER_MATURITY": "data zakupu przypada w dniu wykupu serii lub po nim",
         "other": "nie da się jej wyliczyć z zapisanych danych"
       },
       "benchmarkTitle": "{{ benchmark }}: nowa wartość ({{ observation }})",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "brak zapisanej wartości {{ benchmark }} za {{ observation }}: nie została jeszcze opublikowana albo dane nie zostały od tego czasu pobrane; odśwież dane na stronie obligacji",
         "terms": "warunki serii {{ series }} są niekompletne; odśwież serię na stronie obligacji",
         "purchase": "zakup serii {{ series }} z dnia {{ date }} wypada poza okresem sprzedaży (od {{ from }} do {{ to }}); popraw datę zakupu",
+        "purchaseAfterMaturity": "zakup {{ series }} w dniu {{ date }} przypada w dniu wykupu ({{ maturity }}) lub po nim; popraw datę zakupu",
         "lots": "nie można ustalić partii na podstawie historii transakcji ({{ code }}); popraw historię transakcji",
         "lotsRow": "{{ action }} z dnia {{ date }} uniemożliwia ustalenie partii ({{ code }}); popraw transakcję",
         "lotsRowSeries": "{{ action }} z dnia {{ date }}: brak przypisania do serii ({{ code }}); wskaż serię w tej transakcji",

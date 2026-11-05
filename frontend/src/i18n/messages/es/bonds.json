@@ -40,6 +40,7 @@
       "fixed": "Fijo {rate} anual",
       "benchmark": "{benchmark} + {addend}",
       "floor": "Suelo de la referencia {floor}",
+      "daily": "Diario: {benchmark} + {addend}",
       "discount": "Descuento sobre el valor nominal"
     },
     "capitalization": {

@@ -40,6 +40,7 @@
       "fixed": "Fest {rate} pro Jahr",
       "benchmark": "{benchmark} + {addend}",
       "floor": "Untergrenze des Referenzwerts {floor}",
+      "daily": "Täglich: {benchmark} + {addend}",
       "discount": "Abschlag auf den Nennwert"
     },
     "capitalization": {

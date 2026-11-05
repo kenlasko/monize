@@ -300,6 +300,7 @@
       "periodValue": "{index}: {start} đến {end}",
       "rate": "Lãi suất",
       "principal": "Gốc mỗi trái phiếu",
+      "principalIssuePrice": "Chưa nhập chi phí: dùng giá đấu thầu",
       "accruedInterest": "Lãi tích lũy",
       "grossValue": "Giá trị gộp",
       "earlyRedemption": "Tất toán sớm",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "Giả định của dự phóng",
       "latestObservation": "{benchmark} được giả định ở mức {value} cho mọi kỳ tiếp theo, là giá trị được công bố gần nhất ({observation})",
-      "supplied": "{benchmark} được giả định ở mức {value} cho mọi kỳ tiếp theo"
+      "supplied": "{benchmark} được giả định ở mức {value} cho mọi kỳ tiếp theo",
+      "suppliedSimpleAnnual": "{benchmark} được giả định tăng {value} mỗi năm (tăng trưởng năm đơn, không lãi kép) cho mọi tháng sau đó"
     },
     "missing": {
       "title": "Dữ liệu còn thiếu",
@@ -371,8 +373,15 @@
         "firstThen": "Kỳ 1: {firstRate}. Sau đó {benchmark} + {addend}",
         "every": "Mỗi kỳ: {benchmark} + {addend}",
         "floorZero": "Giá trị âm của {benchmark} được tính là 0",
-        "discount": "Chiết khấu so với mệnh giá"
+        "dailyFloor": "Lãi suất hằng ngày (chỉ số cộng biên độ) không bao giờ thấp hơn {floor}",
+        "discount": "Chiết khấu so với mệnh giá",
+        "daily": "Mỗi ngày: {benchmark} + {addend}, cộng dồn theo ngày",
+        "lockout": "Một phiên đấu thầu trong vòng {days, plural, one {# ngày làm việc} other {# ngày làm việc}} trước khi kết thúc kỳ không được dùng cho kỳ đó"
       },
+      "daily": "Hằng ngày, {benchmark}",
+      "dailyNoIndex": "Hằng ngày, {benchmark}: chưa lưu chỉ số",
+      "dailyRun": "Từ {from}: {rate}",
+      "dailyRunUnknown": "Từ {from}: chưa lưu chỉ số",
       "lotHeading": "Lô mua ngày {date}",
       "range": "{start} đến {end}",
       "current": "Hiện tại",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "CPI, 12 tháng (GUS)",
-      "PL_NBP_REFERENCE": "Lãi suất tham chiếu NBP"
+      "PL_NBP_REFERENCE": "Lãi suất tham chiếu NBP",
+      "US_CPI_U_NSA": "CPI-U, tất cả các mục, không điều chỉnh theo mùa (BLS)",
+      "US_TBILL_13W_MMY": "Lợi suất tín phiếu Kho bạc 13 tuần"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "Chuỗi này chỉ có thể mua từ {from} đến {to}. Lô này được mua vào {purchaseDate} nên không được định giá."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "Chuỗi này chỉ có thể mua từ {from} đến {to}. Lô này được mua vào {purchaseDate} nên không được định giá.",
+      "PURCHASE_AFTER_MATURITY": "Chuỗi này đã đáo hạn vào {maturityDate}. Lô này được mua vào {purchaseDate}, đúng ngày đó hoặc sau đó, nên không được định giá."
     },
+    "marketPriceRequired": "Chứng khoán này có một chuỗi được giao dịch trên thị trường nên giá của nó không suy ra từ điều khoản. Monize không ghi giá cho chuỗi này: hãy tự nhập giá. Giá trị các lô bên dưới được tính từ điều khoản và không phải giá trị thị trường.",
     "partial": {
       "title": "Định giá này chưa đầy đủ, vì vậy hãy hiểu các con số là một phần.",
       "terms": "Điều khoản của trái phiếu chưa đầy đủ (ví dụ chưa cài lịch).",
@@ -453,7 +466,8 @@
       "none": "Chưa lưu dữ liệu {benchmark} nào"
     },
     "issuers": {
-      "PL_MF": "Bộ Tài chính (PL)"
+      "PL_MF": "Bộ Tài chính (PL)",
+      "US_TREASURY": "Bộ Tài chính Hoa Kỳ (US)"
     },
     "redemption": {
       "title": "Điều kiện mua lại trước hạn",
@@ -470,7 +484,12 @@
       "COI": "COI: trái phiếu tiết kiệm 4 năm gắn với lạm phát",
       "EDO": "EDO: trái phiếu tiết kiệm 10 năm gắn với lạm phát",
       "ROS": "ROS: trái phiếu tiết kiệm gia đình 6 năm gắn với lạm phát",
-      "ROD": "ROD: trái phiếu tiết kiệm gia đình 12 năm gắn với lạm phát"
+      "ROD": "ROD: trái phiếu tiết kiệm gia đình 12 năm gắn với lạm phát",
+      "BILL": "BILL: tín phiếu Kho bạc, 4 đến 52 tuần, bán có chiết khấu",
+      "NOTE": "NOTE: trái phiếu trung hạn Kho bạc, 2 đến 10 năm, coupon cố định theo nửa năm",
+      "BOND": "BOND: trái phiếu Kho bạc, 20 và 30 năm, coupon cố định theo nửa năm",
+      "TIPS": "TIPS: chứng khoán Kho bạc chống lạm phát, gốc được điều chỉnh theo CPI-U",
+      "FRN": "FRN: trái phiếu Kho bạc lãi suất thả nổi, 2 năm, lãi theo quý"
     },
     "series": {
       "title": "Các đợt phát hành của bạn",

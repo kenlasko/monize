@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Tidak ada kurs {from} ke {to}. Masukkan satu, atau total terkonversi, sebelum menyimpan.",
     "toastExchangeRateRequired": "Masukkan nilai tukar sebelum menyimpan perdagangan lintas mata uang.",
     "notAvailable": "Tidak tersedia",
+    "bondUnit": "Satu unit = {faceValue} {currency} nilai nominal",
+    "bondPriceCash": "Harga adalah harga tunai satu unit (nilai nominal {faceValue} {currency}), tanpa bunga berjalan.",
+    "bondPriceIndexed": "Harga adalah harga tunai satu unit (nilai nominal {faceValue} {currency}) termasuk penyesuaian inflasi (harga kuotasi x rasio indeks), tanpa bunga berjalan.",
     "bondSeries": {
       "label": "Seri obligasi",
       "fromDate": "Ditentukan dari tanggal",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "Bunga {interest}, potongan pelunasan dipercepat {deduction}, pembayaran {payout}",
       "outsideSaleWindow": "Satu lot seri ini dibeli di luar periode penjualannya, sehingga pelunasan tidak dapat dirinci.",
+      "afterMaturity": "Satu lot seri ini dibeli pada atau setelah tanggal jatuh temponya, sehingga pelunasan tidak dapat dibagi.",
       "failed": "Rincian pelunasan tidak dapat dihitung."
     }
   },

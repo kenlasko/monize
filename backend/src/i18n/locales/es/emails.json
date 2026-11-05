@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "un tipo del que depende aún no está publicado",
         "TERMS_INCOMPLETE": "las condiciones de la serie están incompletas",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "una fecha de compra queda fuera del periodo de venta de la serie",
+        "PURCHASE_AFTER_MATURITY": "una fecha de compra es igual o posterior al vencimiento de la serie",
         "other": "no se puede calcular con los datos almacenados"
       },
       "benchmarkTitle": "{{ benchmark }}: nueva observación {{ observation }}",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "la observación {{ observation }} de {{ benchmark }} no está almacenada: aún no se ha publicado o el feed no se ha vuelto a obtener; actualice en la página del bono",
         "terms": "las condiciones de {{ series }} están incompletas; actualice la serie en la página del bono",
         "purchase": "una compra de {{ series }} el {{ date }} queda fuera de su periodo de venta ({{ from }} a {{ to }}); corrija la fecha de compra",
+        "purchaseAfterMaturity": "una compra de {{ series }} el {{ date }} es igual o posterior a su vencimiento ({{ maturity }}); corrija la fecha de compra",
         "lots": "los lotes no se pueden derivar del libro de transacciones ({{ code }}); corrija el libro",
         "lotsRow": "{{ action }} del {{ date }}: no se pueden derivar los lotes ({{ code }}); corrija la transacción",
         "lotsRowSeries": "{{ action }} del {{ date }}: sin serie asignada ({{ code }}); elija la serie en esa transacción",

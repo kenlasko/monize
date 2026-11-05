@@ -40,6 +40,7 @@
       "fixed": "Cố định {rate} mỗi năm",
       "benchmark": "{benchmark} + {addend}",
       "floor": "Mức sàn của chỉ số {floor}",
+      "daily": "Hằng ngày: {benchmark} + {addend}",
       "discount": "Chiết khấu so với mệnh giá"
     },
     "capitalization": {

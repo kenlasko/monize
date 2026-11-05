@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Kein Kurs für {from} zu {to} verfügbar. Geben Sie vor dem Speichern einen Kurs oder den umgerechneten Gesamtbetrag ein.",
     "toastExchangeRateRequired": "Geben Sie einen Wechselkurs ein, bevor Sie einen währungsübergreifenden Handel speichern.",
     "notAvailable": "Nicht verfügbar",
+    "bondUnit": "Eine Einheit = {faceValue} {currency} Nennwert",
+    "bondPriceCash": "Der Preis ist der Kassapreis einer Einheit ({faceValue} {currency} Nennwert), ohne Stückzinsen.",
+    "bondPriceIndexed": "Der Preis ist der Kassapreis einer Einheit ({faceValue} {currency} Nennwert) einschließlich der Inflationsanpassung (Kurs x Indexfaktor), ohne Stückzinsen.",
     "bondSeries": {
       "label": "Anleiheserie",
       "fromDate": "Aus dem Datum ermittelt",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "Zinsen {interest}, Abzug für vorzeitige Rückzahlung {deduction}, Auszahlung {payout}",
       "outsideSaleWindow": "Ein Los dieser Serie wurde außerhalb ihres Verkaufszeitraums gekauft, daher lässt sich die Rückzahlung nicht aufteilen.",
+      "afterMaturity": "Eine Position dieser Serie wurde am oder nach ihrem Fälligkeitstag gekauft, daher kann die Rückzahlung nicht aufgeteilt werden.",
       "failed": "Die Aufteilung der Rückzahlung konnte nicht berechnet werden."
     }
   },

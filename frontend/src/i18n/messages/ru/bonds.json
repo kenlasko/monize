@@ -40,6 +40,7 @@
       "fixed": "Фиксированная {rate} годовых",
       "benchmark": "{benchmark} + {addend}",
       "floor": "Нижний предел показателя {floor}",
+      "daily": "Ежедневно: {benchmark} + {addend}",
       "discount": "Дисконт к номинальной стоимости"
     },
     "capitalization": {

@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "lãi suất mà nó phụ thuộc chưa được công bố",
         "TERMS_INCOMPLETE": "điều khoản của đợt phát hành chưa đầy đủ",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "ngày mua nằm ngoài thời gian bán của đợt phát hành",
+        "PURCHASE_AFTER_MATURITY": "ngày mua trùng hoặc sau ngày đáo hạn của chuỗi",
         "other": "không thể tính từ dữ liệu đã lưu"
       },
       "benchmarkTitle": "{{ benchmark }}: quan sát mới {{ observation }}",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "quan sát {{ observation }} của {{ benchmark }} chưa được lưu: chưa được công bố, hoặc nguồn dữ liệu chưa được tải lại kể từ đó; hãy làm mới trên trang trái phiếu",
         "terms": "điều khoản của {{ series }} chưa đầy đủ; hãy làm mới đợt phát hành trên trang trái phiếu",
         "purchase": "lần mua {{ series }} vào {{ date }} nằm ngoài thời gian bán ({{ from }} đến {{ to }}); hãy sửa ngày mua",
+        "purchaseAfterMaturity": "việc mua {{ series }} vào {{ date }} trùng hoặc sau ngày đáo hạn ({{ maturity }}); hãy sửa ngày mua",
         "lots": "không thể suy ra các lô từ sổ cái ({{ code }}); hãy sửa sổ cái",
         "lotsRow": "{{ action }} ngày {{ date }}: không thể suy ra các lô ({{ code }}); hãy sửa giao dịch",
         "lotsRowSeries": "{{ action }} ngày {{ date }}: chưa gán series ({{ code }}); hãy chọn series trong giao dịch đó",

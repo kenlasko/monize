@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "{from} から {to} へのレートがありません。保存する前にレートか換算後の合計を入力してください。",
     "toastExchangeRateRequired": "通貨をまたぐ取引を保存する前に為替レートを入力してください。",
     "notAvailable": "利用不可",
+    "bondUnit": "1単位 = 額面 {faceValue} {currency}",
+    "bondPriceCash": "価格は1単位（額面 {faceValue} {currency}）の現金価格で、経過利息を含みません。",
+    "bondPriceIndexed": "価格は1単位（額面 {faceValue} {currency}）の現金価格で、インフレ調整（気配価格 × 指数比率）を含み、経過利息を含みません。",
     "bondSeries": {
       "label": "債券シリーズ",
       "fromDate": "日付から自動判定",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "利息 {interest}、期限前償還の控除 {deduction}、支払額 {payout}",
       "outsideSaleWindow": "この銘柄のロットは販売期間外に購入されたため、償還を分割できません。",
+      "afterMaturity": "この銘柄の保有分は満期日以降に購入されているため、償還を分割できません。",
       "failed": "償還の内訳を計算できませんでした。"
     }
   },

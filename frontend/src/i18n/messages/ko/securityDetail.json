@@ -300,6 +300,7 @@
       "periodValue": "{index}: {start}부터 {end}까지",
       "rate": "금리",
       "principal": "채권당 원금",
+      "principalIssuePrice": "비용이 입력되지 않았습니다: 입찰 가격을 사용합니다",
       "accruedInterest": "경과 이자",
       "grossValue": "총액",
       "earlyRedemption": "조기 상환",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "예상 가정",
       "latestObservation": "{benchmark}은(는) 이후 모든 기간에 대해 {value}(으)로 가정합니다(최근 발표된 값: {observation})",
-      "supplied": "{benchmark}은(는) 이후 모든 기간에 대해 {value}(으)로 가정합니다"
+      "supplied": "{benchmark}은(는) 이후 모든 기간에 대해 {value}(으)로 가정합니다",
+      "suppliedSimpleAnnual": "{benchmark}이(가) 이후 모든 달에 연 {value} 상승한다고 가정합니다(단순 연간 성장, 복리 아님)"
     },
     "missing": {
       "title": "아직 필요한 데이터",
@@ -371,8 +373,15 @@
         "firstThen": "1회차: {firstRate}. 이후 {benchmark} + {addend}",
         "every": "매 회차: {benchmark} + {addend}",
         "floorZero": "{benchmark}가 음수이면 0으로 계산합니다",
-        "discount": "액면가 대비 할인"
+        "dailyFloor": "일일 금리(지수 더하기 스프레드)는 {floor} 아래로 내려가지 않습니다",
+        "discount": "액면가 대비 할인",
+        "daily": "매일: {benchmark} + {addend}, 일별로 합산",
+        "lockout": "기간 종료 전 {days, plural, one {영업일 #일} other {영업일 #일}} 이내의 입찰은 해당 기간에 사용하지 않습니다"
       },
+      "daily": "매일, {benchmark}",
+      "dailyNoIndex": "매일, {benchmark}: 저장된 지수가 아직 없습니다",
+      "dailyRun": "{from}부터: {rate}",
+      "dailyRunUnknown": "{from}부터: 저장된 지수 없음",
       "lotHeading": "{date}에 매수한 로트",
       "range": "{start}부터 {end}까지",
       "current": "현재",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "소비자물가지수, 12개월 (GUS)",
-      "PL_NBP_REFERENCE": "NBP 기준금리"
+      "PL_NBP_REFERENCE": "NBP 기준금리",
+      "US_CPI_U_NSA": "CPI-U, 전 품목, 계절 조정 없음 (BLS)",
+      "US_TBILL_13W_MMY": "13주 미국 재무부 단기 증권 수익률"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "이 시리즈는 {from}부터 {to}까지만 매수할 수 있습니다. 이 로트는 {purchaseDate}에 매수되어 평가되지 않습니다."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "이 시리즈는 {from}부터 {to}까지만 매수할 수 있습니다. 이 로트는 {purchaseDate}에 매수되어 평가되지 않습니다.",
+      "PURCHASE_AFTER_MATURITY": "이 시리즈는 {maturityDate}에 만기가 되었습니다. 이 로트는 {purchaseDate}, 즉 그날 또는 그 이후에 매수되었으므로 평가되지 않습니다."
     },
+    "marketPriceRequired": "이 증권에는 시장에서 거래되는 시리즈가 있어 가격이 조건으로 정해지지 않습니다. Monize는 이 시리즈의 가격을 기록하지 않으므로 가격을 직접 입력하세요. 아래 로트의 가치는 조건으로 계산한 값이며 시장 가치가 아닙니다.",
     "partial": {
       "title": "이 평가는 불완전하므로 수치를 일부 값으로 보세요.",
       "terms": "채권 조건이 불완전합니다(예: 달력이 설치되지 않음).",
@@ -453,7 +466,8 @@
       "none": "저장된 {benchmark} 데이터가 아직 없습니다"
     },
     "issuers": {
-      "PL_MF": "재무부(PL)"
+      "PL_MF": "재무부(PL)",
+      "US_TREASURY": "미국 재무부 (US)"
     },
     "redemption": {
       "title": "중도 환매 조건",
@@ -470,7 +484,12 @@
       "COI": "COI: 4년 물가연동 저축채권",
       "EDO": "EDO: 10년 물가연동 저축채권",
       "ROS": "ROS: 6년 물가연동 가족 저축채권",
-      "ROD": "ROD: 12년 물가연동 가족 저축채권"
+      "ROD": "ROD: 12년 물가연동 가족 저축채권",
+      "BILL": "BILL: 재무부 단기 증권, 4~52주, 할인 판매",
+      "NOTE": "NOTE: 재무부 중기 채권, 2~10년, 고정 반기 쿠폰",
+      "BOND": "BOND: 재무부 장기 채권, 20년 및 30년, 고정 반기 쿠폰",
+      "TIPS": "TIPS: 물가연동 재무부 증권, 원금이 CPI-U에 연동",
+      "FRN": "FRN: 변동금리 재무부 채권, 2년, 분기별 이자"
     },
     "series": {
       "title": "내 시리즈",

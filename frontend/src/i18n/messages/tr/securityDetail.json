@@ -300,6 +300,7 @@
       "periodValue": "{index}: {start} - {end}",
       "rate": "Oran",
       "principal": "Tahvil başına anapara",
+      "principalIssuePrice": "Maliyet girilmedi: ihale fiyatı kullanılır",
       "accruedInterest": "Birikmiş faiz",
       "grossValue": "Brüt değer",
       "earlyRedemption": "Erken itfa",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "Projeksiyon varsayımları",
       "latestObservation": "{benchmark} sonraki tüm dönemler için {value} olarak varsayılmıştır, son yayımlanan değer ({observation})",
-      "supplied": "{benchmark} sonraki tüm dönemler için {value} olarak varsayılmıştır"
+      "supplied": "{benchmark} sonraki tüm dönemler için {value} olarak varsayılmıştır",
+      "suppliedSimpleAnnual": "{benchmark} değerinin sonraki her ay için yılda {value} büyüdüğü varsayılır (basit yıllık büyüme, bileşik değil)"
     },
     "missing": {
       "title": "Hâlâ gereken veriler",
@@ -371,8 +373,15 @@
         "firstThen": "Dönem 1: {firstRate}. Sonrasında {benchmark} + {addend}",
         "every": "Her dönem: {benchmark} + {addend}",
         "floorZero": "{benchmark} değeri negatifse 0 sayılır",
-        "discount": "Nominal değerden iskonto"
+        "dailyFloor": "Günlük oran (endeks artı marj) hiçbir zaman {floor} değerinin altına inmez",
+        "discount": "Nominal değerden iskonto",
+        "daily": "Her gün: {benchmark} + {addend}, günlük toplanır",
+        "lockout": "Bir dönemin sonundan önceki {days, plural, one {# iş günü} other {# iş günü}} içindeki ihale o dönem için kullanılmaz"
       },
+      "daily": "Günlük, {benchmark}",
+      "dailyNoIndex": "Günlük, {benchmark}: henüz kayıtlı endeks yok",
+      "dailyRun": "{from} tarihinden itibaren: {rate}",
+      "dailyRunUnknown": "{from} tarihinden itibaren: kayıtlı endeks yok",
       "lotHeading": "{date} tarihinde alınan lot",
       "range": "{start} - {end}",
       "current": "Güncel",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "TÜFE, 12 ay (GUS)",
-      "PL_NBP_REFERENCE": "NBP referans faizi"
+      "PL_NBP_REFERENCE": "NBP referans faizi",
+      "US_CPI_U_NSA": "TÜFE (CPI-U), tüm kalemler, mevsimsellikten arındırılmamış (BLS)",
+      "US_TBILL_13W_MMY": "13 haftalık Hazine bonosu getirisi"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "Bu seri yalnızca {from} ile {to} arasında satın alınabilir. Bu lot {purchaseDate} tarihinde alındığı için değerlenmez."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "Bu seri yalnızca {from} ile {to} arasında satın alınabilir. Bu lot {purchaseDate} tarihinde alındığı için değerlenmez.",
+      "PURCHASE_AFTER_MATURITY": "Bu seri {maturityDate} tarihinde vadesi geldi. Bu lot {purchaseDate} tarihinde, yani o gün veya sonrasında alındığı için değerlenmez."
     },
+    "marketPriceRequired": "Bu menkul kıymet piyasada işlem gören bir seri içerir, bu yüzden fiyatı şartlarından çıkmaz. Monize bunun için fiyat yazmaz: fiyatı kendiniz girin. Aşağıdaki lotların değerleri şartlardan hesaplanır ve piyasa değeri değildir.",
     "partial": {
       "title": "Bu değerleme eksik; rakamları kısmi olarak değerlendirin.",
       "terms": "Tahvilin koşulları eksik (örneğin bir takvim yüklü değil).",
@@ -453,7 +466,8 @@
       "none": "Henüz kayıtlı {benchmark} verisi yok"
     },
     "issuers": {
-      "PL_MF": "Maliye Bakanlığı (PL)"
+      "PL_MF": "Maliye Bakanlığı (PL)",
+      "US_TREASURY": "ABD Hazine Bakanlığı (US)"
     },
     "redemption": {
       "title": "Erken itfa koşulları",
@@ -470,7 +484,12 @@
       "COI": "COI: 4 yıllık enflasyona endeksli tasarruf tahvilleri",
       "EDO": "EDO: 10 yıllık enflasyona endeksli tasarruf tahvilleri",
       "ROS": "ROS: 6 yıllık enflasyona endeksli aile tasarruf tahvilleri",
-      "ROD": "ROD: 12 yıllık enflasyona endeksli aile tasarruf tahvilleri"
+      "ROD": "ROD: 12 yıllık enflasyona endeksli aile tasarruf tahvilleri",
+      "BILL": "BILL: Hazine bonoları, 4 ila 52 hafta, iskontolu satılır",
+      "NOTE": "NOTE: Hazine tahvilleri (note), 2 ila 10 yıl, sabit altı aylık kupon",
+      "BOND": "BOND: Hazine tahvilleri (bond), 20 ve 30 yıl, sabit altı aylık kupon",
+      "TIPS": "TIPS: enflasyona endeksli Hazine tahvilleri, anapara CPI-U'ya endeksli",
+      "FRN": "FRN: değişken faizli Hazine tahvilleri, 2 yıl, üç aylık faiz"
     },
     "series": {
       "title": "Serileriniz",

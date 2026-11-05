@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Não há taxa de {from} para {to} disponível. Introduza uma, ou o total convertido, antes de guardar.",
     "toastExchangeRateRequired": "Introduza uma taxa de câmbio antes de guardar uma operação entre moedas.",
     "notAvailable": "Não disponível",
+    "bondUnit": "Uma unidade = {faceValue} {currency} de valor nominal",
+    "bondPriceCash": "O preço é o preço à vista de uma unidade ({faceValue} {currency} de valor nominal), sem juros corridos.",
+    "bondPriceIndexed": "O preço é o preço à vista de uma unidade ({faceValue} {currency} de valor nominal) com o ajuste de inflação incluído (preço cotado x coeficiente de indexação), sem juros corridos.",
     "bondSeries": {
       "label": "Série de obrigações",
       "fromDate": "Determinada a partir da data",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "Juros {interest}, dedução por resgate antecipado {deduction}, pagamento {payout}",
       "outsideSaleWindow": "Um lote desta série foi comprado fora do seu período de venda, por isso o resgate não pode ser dividido.",
+      "afterMaturity": "Um lote desta série foi comprado na data de vencimento ou depois, por isso o reembolso não pode ser dividido.",
       "failed": "Não foi possível calcular a divisão do resgate."
     }
   },

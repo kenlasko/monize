@@ -40,6 +40,7 @@
       "fixed": "स्थिर {rate} प्रति वर्ष",
       "benchmark": "{benchmark} + {addend}",
       "floor": "बेंचमार्क की न्यूनतम सीमा {floor}",
+      "daily": "दैनिक: {benchmark} + {addend}",
       "discount": "अंकित मूल्य पर छूट"
     },
     "capitalization": {

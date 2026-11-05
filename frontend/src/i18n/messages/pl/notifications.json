@@ -84,6 +84,7 @@
       "RATE_UNKNOWN": "oprocentowanie zależy od wskaźnika, który nie został jeszcze opublikowany",
       "TERMS_INCOMPLETE": "warunki emisji serii są niekompletne",
       "PURCHASE_OUTSIDE_SALE_WINDOW": "data zakupu wypada poza okresem sprzedaży serii",
+      "PURCHASE_AFTER_MATURITY": "data zakupu przypada w dniu wykupu serii lub po nim",
       "other": "nie da się jej wyliczyć z zapisanych danych"
     },
     "benchmarkTitle": "{benchmark}: nowa wartość ({observation})",
@@ -99,6 +100,7 @@
       "observationNoPublisher": "Brak zapisanej wartości {benchmark} za {observation}: nie została jeszcze opublikowana albo dane nie zostały od tego czasu pobrane. Odśwież dane na stronie obligacji.",
       "terms": "Warunki serii {series} są niekompletne. Odśwież serię na stronie obligacji.",
       "purchase": "Zakup serii {series} z dnia {date} wypada poza okresem sprzedaży (od {from} do {to}). Popraw datę zakupu.",
+      "purchaseAfterMaturity": "Zakup {series} w dniu {date} przypada w dniu wykupu ({maturity}) lub po nim. Popraw datę zakupu.",
       "lots": "Nie można ustalić partii na podstawie historii transakcji ({code}). Popraw historię transakcji.",
       "lotsRow": "{action} z dnia {date} uniemożliwia ustalenie partii ({code}). Popraw transakcję.",
       "lotsRowSeries": "{action} z dnia {date}: brak przypisania do serii ({code}). Wskaż serię w tej transakcji.",
@@ -117,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "Inflacja CPI r/r (GUS)",
-      "PL_NBP_REFERENCE": "Stopa referencyjna NBP"
+      "PL_NBP_REFERENCE": "Stopa referencyjna NBP",
+      "US_CPI_U_NSA": "CPI-U, wszystkie pozycje, bez korekty sezonowej (BLS)",
+      "US_TBILL_13W_MMY": "Rentowność 13-tygodniowych bonów skarbowych"
     }
   },
   "portfolioMovement": {

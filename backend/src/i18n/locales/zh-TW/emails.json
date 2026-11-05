@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "所依據的利率尚未公布",
         "TERMS_INCOMPLETE": "該系列的條款不完整",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "購買日期不在該系列的發售期內",
+        "PURCHASE_AFTER_MATURITY": "買入日期在該系列到期日當天或之後",
         "other": "無法根據已儲存的資料計算"
       },
       "benchmarkTitle": "{{ benchmark }}：新數據 {{ observation }}",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "{{ benchmark }} {{ observation }} 的數據未儲存：尚未公布，或此後未擷取資料來源；請在債券頁面重新整理",
         "terms": "{{ series }} 的條款不完整；請在債券頁面重新整理該系列",
         "purchase": "{{ series }} 於 {{ date }} 的購買不在其發售期（{{ from }} 至 {{ to }}）內；請更正購買日期",
+        "purchaseAfterMaturity": "{{ series }} 於 {{ date }} 的買入在其到期日（{{ maturity }}）當天或之後；請更正買入日期",
         "lots": "無法從帳本推導出持有批次（{{ code }}）；請更正帳本",
         "lotsRow": "{{ date }} 的{{ action }}：無法推導出持有批次（{{ code }}）；請更正該交易",
         "lotsRowSeries": "{{ date }} 的{{ action }}：未歸入任何系列（{{ code }}）；請在該交易中選擇系列",

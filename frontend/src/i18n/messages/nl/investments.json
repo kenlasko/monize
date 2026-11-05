@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Geen koers van {from} naar {to} beschikbaar. Voer er een in, of het omgerekende totaal, voordat u opslaat.",
     "toastExchangeRateRequired": "Voer een wisselkoers in voordat u een transactie tussen valuta's opslaat.",
     "notAvailable": "Niet beschikbaar",
+    "bondUnit": "Eén eenheid = {faceValue} {currency} nominale waarde",
+    "bondPriceCash": "De prijs is de contante prijs van één eenheid ({faceValue} {currency} nominale waarde), exclusief opgelopen rente.",
+    "bondPriceIndexed": "De prijs is de contante prijs van één eenheid ({faceValue} {currency} nominale waarde) inclusief de inflatiecorrectie (genoteerde prijs x indexfactor), exclusief opgelopen rente.",
     "bondSeries": {
       "label": "Obligatieserie",
       "fromDate": "Bepaald op basis van de datum",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "Rente {interest}, aftrek bij vervroegde aflossing {deduction}, uitbetaling {payout}",
       "outsideSaleWindow": "Een lot van deze serie is buiten de verkoopperiode gekocht, dus de aflossing kan niet worden opgesplitst.",
+      "afterMaturity": "Een partij van deze serie is gekocht op of na de einddatum, dus de aflossing kan niet worden gesplitst.",
       "failed": "De opsplitsing van de aflossing kon niet worden berekend."
     }
   },

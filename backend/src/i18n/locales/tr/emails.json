@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "bağlı olduğu oran henüz yayımlanmadı",
         "TERMS_INCOMPLETE": "serinin koşulları eksik",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "bir alış tarihi serinin satış döneminin dışında",
+        "PURCHASE_AFTER_MATURITY": "bir alım tarihi serinin vade tarihine denk geliyor veya sonrasında",
         "other": "kayıtlı verilerden hesaplanamıyor"
       },
       "benchmarkTitle": "{{ benchmark }}: yeni gözlem {{ observation }}",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "{{ benchmark }} için {{ observation }} gözlemi kayıtlı değil: henüz yayımlanmadı veya veri akışı o zamandan beri alınmadı; tahvil sayfasında yenileyin",
         "terms": "{{ series }} koşulları eksik; seriyi tahvil sayfasında yenileyin",
         "purchase": "{{ series }} için {{ date }} tarihli alış, satış döneminin ({{ from }} – {{ to }}) dışında; alış tarihini düzeltin",
+        "purchaseAfterMaturity": "{{ series }} alımı ({{ date }}) vadesine ({{ maturity }}) denk geliyor veya sonrasında; alım tarihini düzeltin",
         "lots": "lotlar defterden türetilemiyor ({{ code }}); defteri düzeltin",
         "lotsRow": "{{ action }} ({{ date }}): lotlar türetilemiyor ({{ code }}); işlemi düzeltin",
         "lotsRowSeries": "{{ action }} ({{ date }}): bir seriye atanmamış ({{ code }}); bu işlemde seriyi seçin",

@@ -84,6 +84,7 @@
       "RATE_UNKNOWN": "een rente waarvan ze afhangt is nog niet gepubliceerd",
       "TERMS_INCOMPLETE": "de voorwaarden van de serie zijn onvolledig",
       "PURCHASE_OUTSIDE_SALE_WINDOW": "een aankoopdatum valt buiten de verkoopperiode van de serie",
+      "PURCHASE_AFTER_MATURITY": "een aankoopdatum ligt op of na de einddatum van de serie",
       "other": "ze kan niet worden berekend uit de opgeslagen gegevens"
     },
     "benchmarkTitle": "{benchmark}: nieuwe waarneming {observation}",
@@ -99,6 +100,7 @@
       "observationNoPublisher": "De waarneming {observation} van {benchmark} is niet opgeslagen: ze is nog niet gepubliceerd of de feed is sindsdien niet opgehaald. Vernieuw op de obligatiepagina.",
       "terms": "De voorwaarden van {series} zijn onvolledig. Vernieuw de serie op de obligatiepagina.",
       "purchase": "Een aankoop van {series} op {date} valt buiten de verkoopperiode ({from} tot {to}). Corrigeer de aankoopdatum.",
+      "purchaseAfterMaturity": "Een aankoop van {series} op {date} ligt op of na de einddatum ({maturity}). Corrigeer de aankoopdatum.",
       "lots": "De partijen kunnen niet uit het grootboek worden afgeleid ({code}). Corrigeer het grootboek.",
       "lotsRow": "{action} van {date}: de partijen kunnen niet worden afgeleid ({code}). Corrigeer de transactie.",
       "lotsRowSeries": "{action} van {date}: geen serie toegewezen ({code}). Kies de serie bij die transactie.",
@@ -117,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "CPI, 12 maanden (GUS)",
-      "PL_NBP_REFERENCE": "NBP-referentierente"
+      "PL_NBP_REFERENCE": "NBP-referentierente",
+      "US_CPI_U_NSA": "CPI-U, alle posten, niet seizoensgecorrigeerd (BLS)",
+      "US_TBILL_13W_MMY": "Rendement van 13-weeks schatkistpapier"
     }
   },
   "portfolioMovement": {

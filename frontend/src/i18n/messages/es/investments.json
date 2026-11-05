@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "No hay tipo de {from} a {to} disponible. Introduce uno, o el total convertido, antes de guardar.",
     "toastExchangeRateRequired": "Introduce un tipo de cambio antes de guardar una operación entre monedas.",
     "notAvailable": "No disponible",
+    "bondUnit": "Una unidad = {faceValue} {currency} de valor nominal",
+    "bondPriceCash": "El precio es el precio al contado de una unidad ({faceValue} {currency} de valor nominal), sin intereses devengados.",
+    "bondPriceIndexed": "El precio es el precio al contado de una unidad ({faceValue} {currency} de valor nominal) incluido el ajuste por inflación (precio cotizado x coeficiente de índice), sin intereses devengados.",
     "bondSeries": {
       "label": "Serie de bonos",
       "fromDate": "Determinada según la fecha",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "Intereses {interest}, deducción por amortización anticipada {deduction}, pago {payout}",
       "outsideSaleWindow": "Un lote de esta serie se compró fuera de su periodo de venta, por lo que no se puede desglosar el reembolso.",
+      "afterMaturity": "Un lote de esta serie se compró en la fecha de vencimiento o después, por lo que el reembolso no se puede dividir.",
       "failed": "No se pudo calcular el desglose del reembolso."
     }
   },

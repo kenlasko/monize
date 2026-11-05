@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Không có tỷ giá {from} sang {to}. Nhập tỷ giá, hoặc tổng đã quy đổi, trước khi lưu.",
     "toastExchangeRateRequired": "Nhập tỷ giá trước khi lưu một giao dịch giữa hai loại tiền tệ.",
     "notAvailable": "Không có sẵn",
+    "bondUnit": "Một đơn vị = {faceValue} {currency} mệnh giá",
+    "bondPriceCash": "Giá là giá tiền mặt của một đơn vị (mệnh giá {faceValue} {currency}), chưa gồm lãi tích lũy.",
+    "bondPriceIndexed": "Giá là giá tiền mặt của một đơn vị (mệnh giá {faceValue} {currency}) đã gồm điều chỉnh lạm phát (giá niêm yết x hệ số chỉ số), chưa gồm lãi tích lũy.",
     "bondSeries": {
       "label": "Đợt phát hành trái phiếu",
       "fromDate": "Xác định theo ngày",
@@ -326,6 +329,7 @@
     "bondRedemption": {
       "summary": "Lãi {interest}, khoản khấu trừ khi hoàn trả sớm {deduction}, số tiền chi trả {payout}",
       "outsideSaleWindow": "Một lô của đợt phát hành này được mua ngoài thời gian bán, nên không thể tách khoản hoàn trả.",
+      "afterMaturity": "Một lô của chuỗi này được mua vào hoặc sau ngày đáo hạn nên không thể chia nhỏ khoản thanh toán.",
       "failed": "Không thể tính phần tách của khoản hoàn trả."
     }
   },
