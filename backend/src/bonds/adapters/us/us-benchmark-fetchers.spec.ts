@@ -146,7 +146,20 @@ describe("the 13-week bill fetcher (TreasuryDirect)", () => {
   const list = () => bytes(fixture("ta-ws-auctioned-bills.json"));
 
   it("keeps the 13-week auctions only, one per auction date, oldest first", () => {
+    // A 13-week auction is a regular bill of 85 to 97 days from issue to
+    // maturity, whatever securityTerm and originalSecurityTerm say: the 13-week
+    // reopening of a 26-week CUSIP (term "13-Week", original term "26-Week") and
+    // a 91-day bill labelled "26-Week" are kept; the 26-week (182 days), the
+    // 52-week and a cash management bill of 91 days are dropped. A discount of
+    // 0.000 is an auction with a rate, stored as zero. The fractions are exact
+    // decimals computed apart from the code (D / (1 - D x 91 / 360), nine
+    // decimals in percent, ten in the fraction).
     expect(parseTbill13w(list())).toEqual([
+      {
+        observationDate: "2020-12-07",
+        value: "0.0000",
+        publishedOn: null,
+      },
       {
         observationDate: "2021-01-11",
         value: "0.0009502282",
@@ -162,7 +175,39 @@ describe("the 13-week bill fetcher (TreasuryDirect)", () => {
         value: "0.0365343092",
         publishedOn: null,
       },
+      {
+        observationDate: "2026-05-11",
+        value: "0.0367380307",
+        publishedOn: null,
+      },
+      {
+        observationDate: "2026-07-27",
+        value: "0.0358214477",
+        publishedOn: null,
+      },
     ]);
+  });
+
+  it("decides the term by the days from issue to maturity: 85 and 97 are in, 84 and 98 are out", () => {
+    const base = JSON.parse(fixture("ta-ws-auctioned-bills.json"))[0];
+    const at = (maturityDate: string) =>
+      parseTbill13w(
+        bytes(
+          JSON.stringify([
+            {
+              ...base,
+              issueDate: "2026-05-07",
+              maturityDate,
+              securityTerm: "x",
+            },
+          ]),
+        ),
+      );
+    // 2026-05-07 + 85 days = 2026-07-31, + 97 days = 2026-08-12.
+    expect(at("2026-07-31")).toHaveLength(1);
+    expect(at("2026-08-12")).toHaveLength(1);
+    expect(() => at("2026-07-30")).toThrow(/no 13-week auction/);
+    expect(() => at("2026-08-13")).toThrow(/no 13-week auction/);
   });
 
   it("skips an auction with no rate and refuses two rates for one date", () => {
@@ -175,16 +220,16 @@ describe("the 13-week bill fetcher (TreasuryDirect)", () => {
         highDiscountRate: "",
       },
     ];
-    expect(parseTbill13w(bytes(JSON.stringify(blank)))).toHaveLength(3);
+    expect(parseTbill13w(bytes(JSON.stringify(blank)))).toHaveLength(6);
     const twice = [...records, { ...records[0], highDiscountRate: "3.700000" }];
     expect(() => parseTbill13w(bytes(JSON.stringify(twice)))).toThrow(
       /two different rates/,
     );
   });
 
-  it("refuses a 13-week record whose term is not about 13 weeks", () => {
+  it("refuses a 13-week auction dated after its issue", () => {
     const records = JSON.parse(fixture("ta-ws-auctioned-bills.json"));
-    records[0].maturityDate = "2026-12-31T00:00:00";
+    records[0].auctionDate = "2026-05-08T00:00:00";
     expect(() => parseTbill13w(bytes(JSON.stringify(records)))).toThrow(
       BenchmarkFetchError,
     );
@@ -201,7 +246,7 @@ describe("the 13-week bill fetcher (TreasuryDirect)", () => {
     const url = tbill13wUrl();
     const get = fakeFetch({ [url]: fixture("ta-ws-auctioned-bills.json") });
     const result = await fetchTbill13w(get);
-    expect(result.coveredThrough).toBe("2026-05-04");
+    expect(result.coveredThrough).toBe("2026-07-27");
     expect(get.calls).toEqual([url]);
     expect(url).toContain(
       "/TA_WS/securities/auctioned?format=json&type=Bill&days=",

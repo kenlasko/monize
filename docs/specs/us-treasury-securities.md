@@ -186,8 +186,9 @@ or a month later than the request date. A revision of a published month is not
 expected (CPI-U NSA is not revised; 31 CFR 356 App. B I.B.4 covers a
 discontinued index); a changed stored value is logged and refused, as for the
 Polish benchmarks. The 13-week fetcher reads
-`TA_WS/securities/auctioned?format=json&type=Bill&days=<n>`, keeps `securityTerm`
-`13-Week`, and computes the yield in `ExactDecimal`.
+`TA_WS/securities/auctioned?format=json&type=Bill&days=<n>`, keeps the regular
+bills of 85 to 97 days from issue to maturity (section 6.1), and computes the
+yield in `ExactDecimal`.
 
 ### 6.1 Decisions of phase 4 (benchmarks)
 
@@ -207,11 +208,18 @@ Polish benchmarks. The 13-week fetcher reads
   the level as published; `coveredThrough` is the last day of the newest month.
 - **13-week yield.** The list is `TA_WS/securities/auctioned?format=json&type=Bill&days=900`
   (a floating rate note of two years needs the auctions since its issue); a body
-  over 5 MB (the door's cap) is a failure. Records whose `securityTerm` is not
-  `13-Week` and records with no `highDiscountRate` are skipped; a term other than
-  84 to 98 days, an auction after its issue, two different rates for one
-  auction date are refused. `coveredThrough` is the newest auction date: the
-  engine treats a day after the first business day on or after 7 days past an observation as unknown (primitives spec 7.2).
+  over 5 MB (the door's cap) is a failure. A record is a 13-week auction when its
+  `securityType` is `Bill` (a cash management bill, `CMB`, of the same length is
+  not the 13-week bill auction of App. B) and the days from its `issueDate` to
+  its `maturityDate` are 85 to 97 inclusive (13 weeks are 91 days, the 8-week
+  bill 56 and the 17-week 119); `securityTerm` and `originalSecurityTerm` are not
+  read, because it is not known which of them names the original term of a
+  reopened bill (section 9a, section 10). Records with no `highDiscountRate` are
+  skipped (not yet auctioned); a rate of 0.000 is a rate and is stored as zero; an
+  auction after its issue and two different rates for one auction date are
+  refused. `coveredThrough` is the newest auction date: the engine treats a day
+  after the first business day on or after 7 days past an observation as unknown
+  (primitives spec 7.2).
 - **Precision.** `benchmark_values.value` is `NUMERIC(20,10)` and a migration is
   out of scope, so the stored fraction is the percent rounded to nine decimals,
   divided by 100 and rounded to ten decimals (0.095 over 91 days: 0.095022819 %
@@ -281,9 +289,12 @@ Points the sections above left open, as built (`backend/src/bonds/adapters/us/`)
   prefix `912797`; the adapter has no `seriesCodeFor`, `currentSeries`,
   `backfillCodes` or `manualSeries`, so the purchase form's "Fetch" offer does
   not exist for the US yet (to build: an input for a CUSIP, see section 10).
-- **Fields read.** `securityTerm` is not read: it names the original term, which
-  is not the days of a reopened bill; the bill's term is its issue to maturity
-  days (28 to 364). `xmlFilenameCompetitiveResults` is the field that names the
+- **Fields read.** The series fetch does not read `securityTerm`: a bill's term
+  is its issue to maturity days (28 to 364). Whether `securityTerm` names the
+  original term of a reopened bill or the term of the reopening, and the name and
+  content of `originalSecurityTerm`, are both to verify against a live answer
+  (section 10); the 13-week benchmark fetch reads neither and decides by the days
+  (85 to 97) and `securityType` `Bill`. `xmlFilenameCompetitiveResults` is the field that names the
   results file; only a plain `*.xml` file name is requested, under `/xml/`. A
   JSON number is refused where a string is expected. `interestPaymentFrequency`
   must read semiannual (case-insensitive, `Semi-Annual`) for a note or a bond.
@@ -350,6 +361,10 @@ recorded ones:
   (`fixtures/README.md`).
 - That a TIPS coupon uses the index ratio of the unadjusted coupon date when that
   date is not a business day.
+- Whether `securityTerm` of a reopened bill names its original term or the
+  reopening's, whether `originalSecurityTerm` exists, and how a cash management
+  bill is typed (`securityType` `CMB` is assumed): the 13-week benchmark fetch is
+  built to be right either way (days from issue to maturity, regular bills only).
 - The BLS API version and limits without a key (the fetch sends one GET of ten
   years, no key; section 6.1), and the TA_WS `days` limit and size for the
   13-week history an FRN issued two years ago needs (`days=900`, 5 MB cap).
