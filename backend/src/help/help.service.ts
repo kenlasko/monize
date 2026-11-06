@@ -29,15 +29,6 @@ interface IndexEntry {
   h: string;
 }
 
-interface Bundle {
-  directory: string;
-  pages: Map<string, HelpPageSummary>;
-  /** Table of contents per slug, derived from the search index. */
-  sections: Map<string, { id: string; heading: string }[]>;
-  /** Pages read so far; the bundle is immutable, so an entry never goes stale. */
-  loaded: Map<string, HelpPage>;
-}
-
 /**
  * Serves the user guide (`website/docs`) bundled into the backend image, so
  * in-app help matches the running version and works with no network. The
@@ -51,15 +42,26 @@ export class HelpService {
   private readonly logger = new Logger(HelpService.name);
   readonly currentVersion: string = backendPkg.version;
 
-  // `undefined` = not loaded yet; `null` = loaded, no usable bundle.
-  private bundle: Bundle | null | undefined = undefined;
+  // The guide text bundled in the image. It is read once, lazily, and never
+  // written after that, so replicas (each with the same bundled copy) cannot
+  // disagree; see the allowlist entries in process-local-state.guard.spec.ts.
+  private readonly pages = new Map<string, HelpPageSummary>();
+  /** Table of contents per slug, derived from the search index. */
+  private readonly sections = new Map<
+    string,
+    { id: string; heading: string }[]
+  >();
+  /** Pages read so far; the bundle is immutable, so an entry never goes stale. */
+  private readonly loaded = new Map<string, HelpPage>();
+  private directory: string | null = null;
+  private state: "unloaded" | "ready" | "unavailable" = "unloaded";
 
   getManifest(): HelpManifest {
-    const bundle = this.load();
+    const available = this.load();
     return {
       version: this.currentVersion,
-      available: bundle !== null,
-      pages: bundle ? [...bundle.pages.values()] : [],
+      available,
+      pages: available ? [...this.pages.values()] : [],
     };
   }
 
@@ -68,13 +70,15 @@ export class HelpService {
     if (typeof slug !== "string" || !HELP_SLUG_RE.test(slug)) {
       return null;
     }
-    const bundle = this.load();
-    const summary = bundle?.pages.get(slug);
-    if (!bundle || !summary) {
+    if (!this.load() || this.directory === null) {
+      return null;
+    }
+    const summary = this.pages.get(slug);
+    if (!summary) {
       return null;
     }
 
-    const cached = bundle.loaded.get(slug);
+    const cached = this.loaded.get(slug);
     if (cached) {
       return cached;
     }
@@ -83,7 +87,7 @@ export class HelpService {
     try {
       // `slug` is a key of the nav-derived map, so the file name is trusted.
       markdown = fs.readFileSync(
-        path.join(bundle.directory, `${slug}.md`),
+        path.join(this.directory, `${slug}.md`),
         "utf-8",
       );
     } catch (error) {
@@ -97,30 +101,31 @@ export class HelpService {
       title: summary.title,
       group: summary.group,
       markdown,
-      toc: this.buildToc(slug, markdown, bundle.sections.get(slug) ?? []),
+      toc: this.buildToc(slug, markdown, this.sections.get(slug) ?? []),
       onlineUrl:
         slug === HELP_INDEX_SLUG
           ? `${HELP_ONLINE_BASE_URL}/`
           : `${HELP_ONLINE_BASE_URL}/${slug}`,
     };
-    bundle.loaded.set(slug, page);
+    this.loaded.set(slug, page);
     return page;
   }
 
-  private load(): Bundle | null {
-    if (this.bundle === undefined) {
-      this.bundle = this.readBundle();
+  /** Reads the bundle on first use; true when there is a usable one. */
+  private load(): boolean {
+    if (this.state === "unloaded") {
+      this.state = this.readBundle() ? "ready" : "unavailable";
     }
-    return this.bundle;
+    return this.state === "ready";
   }
 
-  private readBundle(): Bundle | null {
+  private readBundle(): boolean {
     const directory = this.resolveDirectory();
     if (!directory) {
       this.logger.warn(
         "Help directory not found; in-app help will report itself unavailable",
       );
-      return null;
+      return false;
     }
 
     try {
@@ -131,6 +136,8 @@ export class HelpService {
         fs.readFileSync(path.join(directory, "search-index.json"), "utf-8"),
       ) as IndexEntry[];
 
+      // Built locally and copied in only once the whole bundle parsed, so a
+      // failure part-way leaves the cache empty rather than half-filled.
       const titles = new Map<string, string>();
       const sections = new Map<string, { id: string; heading: string }[]>();
       for (const entry of index) {
@@ -164,11 +171,18 @@ export class HelpService {
           });
         }
       }
-      return { directory, pages, sections, loaded: new Map() };
+      this.directory = directory;
+      for (const [slug, summary] of pages) {
+        this.pages.set(slug, summary);
+      }
+      for (const [slug, list] of sections) {
+        this.sections.set(slug, list);
+      }
+      return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Failed to load the help bundle: ${message}`);
-      return null;
+      return false;
     }
   }
 
