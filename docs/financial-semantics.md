@@ -283,6 +283,21 @@ Note what makes this work: the comparison happens at 4dp, the storage
 precision. Rounding to cents before comparing -- which a currency input is
 tempted to do -- makes three amounts that do not sum appear to.
 
+### Removing one line
+
+`DELETE /transactions/:id/splits/:splitId` (`TransactionSplitService.removeSplit`)
+takes the line's money out of the parent with it: the parent's amount drops by
+the line's, and its account moves by the line's contribution through
+`deletionBalanceEffect` (nothing for a VOID parent, a recomputation for a
+future-dated one), so removing -60.00 from a -100.00 parent leaves -40.00 and
+returns 60.00 to the account. When one line is left and it accounts for the
+whole parent, the parent becomes it: a category line gives the parent its
+category; a transfer line makes the parent that plain transfer, keeping the
+counterpart and linking the pair both ways. A last line that does not cover the
+parent (a set built line by line through `addSplit`) stays a split. Before
+issue #2025 the parent kept its full amount, and a last transfer line's
+counterpart was deleted on a request that never named it.
+
 ### A transfer line's received amount
 
 A transfer line's `amount` is in the parent's currency; its counterpart is in

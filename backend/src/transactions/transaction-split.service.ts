@@ -6,6 +6,7 @@ import {
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   Inject,
   forwardRef,
@@ -23,6 +24,7 @@ import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { AccountsService } from "../accounts/accounts.service";
 import { AccountSubType } from "../accounts/entities/account.entity";
 import { isTransactionInFuture } from "../common/date-utils";
+import { deletionBalanceEffect } from "../common/deletion-balance.util";
 import { InvestmentTransactionsService } from "../securities/investment-transactions.service";
 import {
   computeInvestmentCashImpact,
@@ -1444,8 +1446,8 @@ export class TransactionSplitService {
     splitId: string,
     userId: string,
   ): Promise<void> {
-    // Accounts this removal moved besides the parent's, invalidated after commit
-    // (recheck RR5-002).
+    // Accounts this removal moved, the parent's included once its amount
+    // changes, invalidated after commit (recheck RR5-002).
     const affectedAccountIds = new Set<string>();
     const touchedSecurityIds = new Set<string>();
     await withScopedDb(this.dataSource, async (m) => {
@@ -1510,6 +1512,43 @@ export class TransactionSplitService {
 
       await m.remove(split);
 
+      // The line's money leaves the parent with it (issue #2025). The parent's
+      // amount is what its lines account for, so removing a -60.00 line from a
+      // -100.00 parent leaves -40.00, and the parent's account gets back what
+      // the line had taken out of it -- exactly the line's contribution, so the
+      // deletion rule applies: nothing for a VOID parent, a recomputation for a
+      // future-dated one. The old path left the parent at its full amount, so
+      // the remaining lines no longer added up to it and the account still
+      // showed the removed line's money leaving. Taken off the locked parent,
+      // not the caller's copy, as the editing of a split-transfer leg re-totals
+      // it (`updateSplitTransferLeg`).
+      const newParentAmount = roundMoney(
+        Number(lockedParent.amount) - Number(split.amount),
+      );
+      if (newParentAmount !== roundMoney(Number(lockedParent.amount))) {
+        await m.update(Transaction, transaction.id, {
+          amount: newParentAmount,
+        });
+        const effect = deletionBalanceEffect({
+          amount: split.amount,
+          status: lockedParent.status,
+          transactionDate: lockedParent.transactionDate,
+        });
+        if (effect.delta !== 0) {
+          await this.accountsService.updateBalance(
+            lockedParent.accountId,
+            effect.delta,
+          );
+        }
+        if (effect.needsRecalc) {
+          await this.accountsService.recalculateCurrentBalance(
+            userId,
+            lockedParent.accountId,
+          );
+        }
+        affectedAccountIds.add(lockedParent.accountId);
+      }
+
       const remainingSplits = await m.find(TransactionSplit, {
         where: { transactionId: transaction.id },
         relations: ["category", "transferAccount", "investmentTransaction"],
@@ -1526,15 +1565,49 @@ export class TransactionSplitService {
             return;
           }
 
+          // Nor when the line does not account for the whole parent (a set
+          // built line by line through `addSplit` may hold less than it): the
+          // parent would take the line's category or transfer for money the
+          // line never held.
+          if (roundMoney(Number(lastSplit.amount)) !== newParentAmount) {
+            return;
+          }
+
           if (lastSplit.linkedTransactionId && lastSplit.transferAccountId) {
-            const movedAccountId = await this.removeLinkedLeg(
+            // The last line is a transfer, so the parent becomes that
+            // transfer and its counterpart stays where it is. The old path
+            // deleted the counterpart -- money recorded as arriving in another
+            // account, on a request that never named that line -- and left the
+            // parent a plain transaction with no category and no transfer
+            // (issue #2025). Locked under the parent, the order every
+            // split-leg writer takes (`common/db/locks.ts`).
+            const leg = await lockTransactionRow(
               m,
               lastSplit.linkedTransactionId,
               userId,
             );
-            if (movedAccountId) {
-              affectedAccountIds.add(movedAccountId);
+            if (!leg) {
+              throw new ConflictException(
+                tr(
+                  "errors.transactions.transferChangedConcurrently",
+                  "This transfer was changed by another request. Reload it and try again.",
+                ),
+              );
             }
+            await m.remove(lastSplit);
+            // The pair links both ways, as a created transfer's legs do; the
+            // parent keeps its own currency at rate 1 and the leg its own
+            // converted amount and rate, which is the plain transfer's shape.
+            await m.update(Transaction, transaction.id, {
+              isSplit: false,
+              isTransfer: true,
+              categoryId: null,
+              linkedTransactionId: leg.id,
+            });
+            await m.update(Transaction, leg.id, {
+              linkedTransactionId: transaction.id,
+            });
+            return;
           }
 
           await m.update(Transaction, transaction.id, {

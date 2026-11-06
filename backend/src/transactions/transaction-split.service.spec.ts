@@ -1,5 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { TransactionSplitService } from "./transaction-split.service";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
@@ -1622,10 +1626,26 @@ describe("TransactionSplitService", () => {
       expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(
         splitToRemove,
       );
+      // The line's money leaves the parent with it (issue #2025): -100.00 less
+      // the -60.00 line, and the account gets the 60.00 back.
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        { amount: -40 },
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        60,
+      );
+      // Two lines remain, so the parent stays a split.
       expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(
         Transaction,
-        expect.anything(),
-        expect.anything(),
+        "tx-1",
+        expect.objectContaining({ isSplit: false }),
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        "account-1",
+        "user-1",
       );
     });
 
@@ -1721,7 +1741,13 @@ describe("TransactionSplitService", () => {
       expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(lastSplit);
     });
 
-    it("collapses to non-split and removes linked transaction when last split is a transfer", async () => {
+    /**
+     * Issue #2025: a -100.00 split of -60.00 Groceries and a -40.00 transfer to
+     * Savings. Removing the Groceries line used to delete the Savings leg the
+     * request never named and leave a -100.00 parent with no category and no
+     * transfer. The parent becomes the -40.00 transfer and the leg stays.
+     */
+    it("makes the parent the remaining transfer and keeps its leg when the last split is a transfer", async () => {
       const transaction = { ...mockTransaction } as Transaction;
       lockParent(
         transaction,
@@ -1751,20 +1777,222 @@ describe("TransactionSplitService", () => {
 
       await service.removeSplit(transaction, "split-1", "user-1");
 
-      expect(accountsService.updateBalance).toHaveBeenCalledWith(
-        "account-3",
-        -40,
+      // The leg in the other account is neither deleted nor reversed.
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalledWith(
+        Transaction,
+        expect.objectContaining({ id: "linked-tx-2" }),
       );
+      expect(accountsService.updateBalance).not.toHaveBeenCalledWith(
+        "account-3",
+        expect.anything(),
+      );
+      // Only the removed line's 60.00 comes back to the parent's account.
+      expect(accountsService.updateBalance).toHaveBeenCalledTimes(1);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        60,
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        { amount: -40 },
+      );
+      // The pair links both ways, as a created transfer's legs do.
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        {
+          isSplit: false,
+          isTransfer: true,
+          categoryId: null,
+          linkedTransactionId: "linked-tx-2",
+        },
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "linked-tx-2",
+        { linkedTransactionId: "tx-1" },
+      );
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(lastSplit);
+    });
+
+    /**
+     * The other half of issue #2025: removing the transfer line deletes the
+     * Savings leg, as asked, and the parent becomes a -60.00 Groceries
+     * transaction with the 40.00 back in Chequing -- not a -100.00 Groceries
+     * transaction whose 40.00 left Chequing and arrived nowhere.
+     */
+    it("re-totals the parent and returns the line's money when the transfer line is removed", async () => {
+      const transaction = { ...mockTransaction } as Transaction;
+      const transferSplit = {
+        id: "split-2",
+        transactionId: "tx-1",
+        kind: "TRANSFER",
+        categoryId: null,
+        linkedTransactionId: "linked-tx-2",
+        transferAccountId: "account-3",
+        amount: -40,
+      };
+      lockParent(
+        transaction,
+        lockedTransactionRow({
+          id: "linked-tx-2",
+          accountId: "account-3",
+          amount: 40,
+        }),
+      );
+      splitsRepository.findOne.mockResolvedValue(transferSplit);
+      const lastSplit = {
+        ...mockSplit,
+        kind: "CATEGORY",
+        categoryId: "cat-groceries",
+      };
+      mockQueryRunner.manager.find.mockResolvedValue([lastSplit]);
+
+      await service.removeSplit(transaction, "split-2", "user-1");
+
       expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
         id: "linked-tx-2",
         userId: "user-1",
       });
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-3",
+        -40,
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        40,
+      );
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         Transaction,
         "tx-1",
-        { isSplit: false, categoryId: null },
+        { amount: -60 },
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        { isSplit: false, categoryId: "cat-groceries" },
       );
       expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(lastSplit);
+    });
+
+    it("re-totals a VOID parent without moving its account's balance", async () => {
+      const transaction = {
+        ...mockTransaction,
+        status: TransactionStatus.VOID,
+      } as Transaction;
+      lockParent(transaction);
+      splitsRepository.findOne.mockResolvedValue({ ...mockSplit });
+      mockQueryRunner.manager.find.mockResolvedValue([
+        { ...mockSplit2 },
+        { id: "split-3", transactionId: "tx-1", amount: 0 },
+      ]);
+
+      await service.removeSplit(transaction, "split-1", "user-1");
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        { amount: -40 },
+      );
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(accountsService.recalculateCurrentBalance).not.toHaveBeenCalled();
+    });
+
+    it("recomputes a future-dated parent's account rather than moving it by a delta", async () => {
+      mockedIsTransactionInFuture.mockReturnValue(true);
+      const transaction = {
+        ...mockTransaction,
+        transactionDate: "2027-06-15",
+      } as Transaction;
+      lockParent(transaction);
+      splitsRepository.findOne.mockResolvedValue({ ...mockSplit });
+      mockQueryRunner.manager.find.mockResolvedValue([
+        { ...mockSplit2 },
+        { id: "split-3", transactionId: "tx-1", amount: 0 },
+      ]);
+
+      await service.removeSplit(transaction, "split-1", "user-1");
+
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
+        "user-1",
+        "account-1",
+      );
+    });
+
+    it("leaves the amount and the balance alone when the removed line is zero", async () => {
+      const transaction = { ...mockTransaction } as Transaction;
+      lockParent(transaction);
+      splitsRepository.findOne.mockResolvedValue({ ...mockSplit, amount: 0 });
+      mockQueryRunner.manager.find.mockResolvedValue([
+        { ...mockSplit, id: "split-3" },
+        { ...mockSplit2 },
+      ]);
+
+      await service.removeSplit(transaction, "split-1", "user-1");
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    /**
+     * A set built line by line through `addSplit` may hold less than the
+     * parent. Its last line cannot become the parent: the parent would carry
+     * that line's category, or its transfer, for money the line never held.
+     */
+    it("does not collapse into a last line that does not account for the whole parent", async () => {
+      const transaction = { ...mockTransaction } as Transaction;
+      lockParent(transaction);
+      splitsRepository.findOne.mockResolvedValue({
+        ...mockSplit,
+        amount: -30,
+      });
+      const lastSplit = {
+        ...mockSplit2,
+        linkedTransactionId: "linked-tx-2",
+        transferAccountId: "account-3",
+        categoryId: null,
+      };
+      mockQueryRunner.manager.find.mockResolvedValue([lastSplit]);
+
+      await service.removeSplit(transaction, "split-1", "user-1");
+
+      // -100.00 less -30.00 is -70.00, which the -40.00 line does not cover.
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        { amount: -70 },
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalledWith(
+        lastSplit,
+      );
+      expect(lockTransactionRow).not.toHaveBeenCalledWith(
+        expect.anything(),
+        "linked-tx-2",
+        "user-1",
+      );
+    });
+
+    it("refuses to make the parent a transfer whose leg is gone", async () => {
+      const transaction = { ...mockTransaction } as Transaction;
+      // Only the parent is locked: the remaining line's leg is not there.
+      lockParent(transaction);
+      splitsRepository.findOne.mockResolvedValue({ ...mockSplit });
+      mockQueryRunner.manager.find.mockResolvedValue([
+        {
+          ...mockSplit2,
+          linkedTransactionId: "linked-tx-2",
+          transferAccountId: "account-3",
+          categoryId: null,
+        },
+      ]);
+
+      await expect(
+        service.removeSplit(transaction, "split-1", "user-1"),
+      ).rejects.toThrow(ConflictException);
+      expect(netWorthService.triggerDebouncedRecalc).not.toHaveBeenCalled();
     });
 
     it("sets isSplit false when no splits remain", async () => {
@@ -1816,7 +2044,10 @@ describe("TransactionSplitService", () => {
 
       await service.removeSplit(transaction, "split-1", "user-1");
 
-      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalledWith(
+        "account-2",
+        expect.anything(),
+      );
       expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(
         transferSplit,
       );
@@ -1869,7 +2100,10 @@ describe("TransactionSplitService", () => {
         id: "linked-tx-1",
         userId: "user-1",
       });
-      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalledWith(
+        "account-2",
+        expect.anything(),
+      );
       expect(accountsService.recalculateCurrentBalance).not.toHaveBeenCalled();
     });
 
@@ -1937,7 +2171,10 @@ describe("TransactionSplitService", () => {
         id: "linked-tx-1",
         userId: "user-1",
       });
-      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalledWith(
+        "account-2",
+        expect.anything(),
+      );
     });
 
     /**
