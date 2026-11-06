@@ -124,6 +124,13 @@ export interface BondSeriesOptions {
   fetchCountryCode: string | null;
   /** Adds a just-fetched series to the list and re-reads the catalog. */
   addInstrument: (instrument: BondInstrumentSummary) => void;
+  /** The security's program, once the catalog is read. */
+  program: BondProgramSummary | null;
+  /**
+   * The program sells by auction (no sale window holds a date), so a purchase
+   * names its auction: `BondAuctionFinder` lists them.
+   */
+  listsAuctions: boolean;
 }
 
 /**
@@ -170,7 +177,11 @@ export function useBondSeriesOptions(
   const expectedKey = `${securityId}|${date}`;
   const removalKey = `${securityId}|${accountId ?? ''}|${date}|${excludeTransactionId ?? ''}|${storedInstrumentId ?? ''}`;
   const catalogActive = active && needsCatalog;
-  const onSaleActive = active && kind === 'acquire' && validDate;
+  const cat = catalog?.key === catalogKey ? catalog : null;
+  const listsAuctions = cat?.program?.listsAuctions === true;
+  // An auction program has no sale window: the date infers nothing, so neither
+  // lookup is asked (and the catalog decides that before either is).
+  const onSaleActive = active && kind === 'acquire' && validDate && cat !== null && !listsAuctions;
   const expectedActive = onSaleActive;
   const removalActive = active && kind === 'remove' && validDate && !!accountId;
 
@@ -286,7 +297,6 @@ export function useBondSeriesOptions(
     };
   }, [removalActive, removalKey, securityId, accountId, date, excludeTransactionId, storedInstrumentId, attempt]);
 
-  const cat = catalog?.key === catalogKey ? catalog : null;
   const onSale = onSaleData?.key === onSaleKey ? onSaleData : null;
   const rem = removal?.key === removalKey ? removal : null;
   // Only to propose which code to fetch; the value sent is never derived from it.
@@ -350,8 +360,9 @@ export function useBondSeriesOptions(
     if (kind === 'select') {
       return [{ value: '', label: t('transactionForm.bondSeries.choose') }, ...stored];
     }
-    const defaultLabel =
-      onSale === null
+    const defaultLabel = listsAuctions
+      ? t('transactionForm.bondSeries.chooseAuction')
+      : onSale === null
         ? t('transactionForm.bondSeries.fromDate')
         : onSale.onSale === null
           ? t('transactionForm.bondSeries.noneOnSale')
@@ -367,7 +378,7 @@ export function useBondSeriesOptions(
       });
     }
     return list;
-  }, [kind, rem, cat, onSale, fetchCode, storedInstrumentId, formatShareQuantity, formatDate, formatMonth, t, tSec]);
+  }, [kind, rem, cat, onSale, fetchCode, storedInstrumentId, listsAuctions, formatShareQuantity, formatDate, formatMonth, t, tSec]);
 
   if (!active) return null;
   const catalogLoading = needsCatalog && cat === null && catalogFailedKey !== catalogKey;
@@ -389,6 +400,8 @@ export function useBondSeriesOptions(
     },
     fetchCode,
     fetchCountryCode: expected === null ? null : (expectedAnswer?.countryCode ?? null),
+    program: cat?.program ?? null,
+    listsAuctions,
     addInstrument: (instrument) => {
       // Shown at once, then the catalog and the date's series are re-read so
       // they are the server's.

@@ -44,6 +44,7 @@ import type {
   BondProgramSummary,
   BondRedemptionSplit,
   BondSeriesHoldings,
+  BondAuctions,
   BondExpectedSeries,
   BondSeriesOnSale,
   FetchBondSeriesResult,
@@ -1069,6 +1070,17 @@ export const investmentsApi = {
       { params: { date } },
     );
     return response.data ?? null;
+  },
+
+  // The auctions of the security's program the issuer lists around `date`. Read
+  // from the issuer's site and charged against the fetch allowance: asked only
+  // when the person asks, never on opening a form. Nothing is stored.
+  getBondAuctions: async (securityId: string, date: string): Promise<BondAuctions> => {
+    const response = await apiClient.get<BondAuctions>(
+      `/bonds/securities/${securityId}/auctions`,
+      { params: { date } },
+    );
+    return response.data;
   },
 
   // The series code a purchase on `date` would carry, by the grammar of the

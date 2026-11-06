@@ -41,6 +41,43 @@ export interface BondProgramSummary {
   cashPriced?: boolean;
   /** True when the principal is indexed: the price then includes the inflation adjustment. */
   indexedPrincipal?: boolean;
+  /**
+   * True when the country sells by auction and the server lists the auctions
+   * (`GET /bonds/securities/:id/auctions`): a purchase then names its auction,
+   * because no sale window holds the date.
+   */
+  listsAuctions?: boolean;
+}
+
+/** One auction the issuer lists, as `GET /bonds/securities/:id/auctions` answers it. */
+export interface BondAuction {
+  /** The code `POST /bonds/instruments/fetch` takes for this auction's series. */
+  seriesCode: string;
+  /** The security's identifier as its market writes it (a CUSIP). */
+  identifier: string;
+  /** The issuer's own name for the term ("13-Week"). */
+  term: string;
+  auctionDate: string;
+  issueDate: string;
+  maturityDate: string;
+  /** More of an outstanding series. */
+  reopening: boolean;
+  /** Announced and not yet held: no rate, no price, nothing to fetch yet. */
+  announced: boolean;
+  rateKind: 'DISCOUNT' | 'COUPON' | 'SPREAD';
+  /** Percent, as the issuer states it; null until the auction is held. */
+  ratePercent: string | null;
+  /** The auction price per 100 of face value; null until held. */
+  pricePer100: string | null;
+  /** The catalog's instrument of the series, when stored. */
+  instrumentId: string | null;
+}
+
+export interface BondAuctions {
+  countryCode: string;
+  /** False for a country that sells in sale windows; the list is then empty. */
+  supported: boolean;
+  auctions: BondAuction[];
 }
 
 /** `POST /bonds/instruments/fetch` body. */
