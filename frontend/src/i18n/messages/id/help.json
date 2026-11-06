@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "Bantuan",
+    "back": "Kembali",
+    "forward": "Maju",
+    "openOnline": "Buka di monize.net",
+    "pin": "Sematkan panel bantuan agar tetap terbuka saat Anda berpindah halaman",
+    "unpin": "Lepas sematan panel bantuan",
+    "expand": "Perbesar panel bantuan",
+    "collapse": "Perkecil panel bantuan",
+    "close": "Tutup bantuan",
+    "englishOnly": "Panduan ini tersedia dalam bahasa Inggris.",
+    "loading": "Memuat bantuan",
+    "toc": {
+      "toggle": "Di halaman ini",
+      "label": "Bagian di halaman ini"
+    },
+    "error": {
+      "heading": "Bantuan tidak dapat dimuat",
+      "body": "Panduan tidak termuat. Coba lagi, atau baca halaman ini di monize.net.",
+      "retry": "Coba lagi"
+    }
+  },
+  "markdown": {
+    "screenshot": "Tangkapan layar",
+    "viewScreenshot": "Lihat tangkapan layar di monize.net",
+    "callout": {
+      "note": "Catatan",
+      "tip": "Tips",
+      "important": "Penting",
+      "warning": "Peringatan",
+      "caution": "Perhatian"
+    }
+  }
+}

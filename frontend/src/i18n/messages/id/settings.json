@@ -438,7 +438,8 @@
     },
     "docs": {
       "label": "Dokumentasi",
-      "description": "Jelajahi panduan pengguna."
+      "description": "Jelajahi panduan pengguna.",
+      "openOnline": "Buka di monize.net"
     },
     "supportBackup": {
       "label": "Buat cadangan dukungan",

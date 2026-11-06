@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "Pomoc",
+    "back": "Wstecz",
+    "forward": "Dalej",
+    "openOnline": "Otwórz na monize.net",
+    "pin": "Przypnij panel pomocy, aby pozostał otwarty podczas przechodzenia między stronami",
+    "unpin": "Odepnij panel pomocy",
+    "expand": "Powiększ panel pomocy",
+    "collapse": "Zmniejsz panel pomocy",
+    "close": "Zamknij pomoc",
+    "englishOnly": "Ten przewodnik jest dostępny w języku angielskim.",
+    "loading": "Wczytywanie pomocy",
+    "toc": {
+      "toggle": "Na tej stronie",
+      "label": "Sekcje na tej stronie"
+    },
+    "error": {
+      "heading": "Nie udało się wczytać pomocy",
+      "body": "Przewodnik nie został wczytany. Spróbuj ponownie lub przeczytaj tę stronę na monize.net.",
+      "retry": "Spróbuj ponownie"
+    }
+  },
+  "markdown": {
+    "screenshot": "Zrzut ekranu",
+    "viewScreenshot": "Zobacz zrzut ekranu na monize.net",
+    "callout": {
+      "note": "Uwaga",
+      "tip": "Wskazówka",
+      "important": "Ważne",
+      "warning": "Ostrzeżenie",
+      "caution": "Ostrożnie"
+    }
+  }
+}

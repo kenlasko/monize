@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "Hilfe",
+    "back": "Zurück",
+    "forward": "Vor",
+    "openOnline": "Auf monize.net öffnen",
+    "pin": "Hilfebereich anheften, damit er beim Seitenwechsel geöffnet bleibt",
+    "unpin": "Hilfebereich lösen",
+    "expand": "Hilfebereich vergrößern",
+    "collapse": "Hilfebereich verkleinern",
+    "close": "Hilfe schließen",
+    "englishOnly": "Diese Anleitung ist auf Englisch verfügbar.",
+    "loading": "Hilfe wird geladen",
+    "toc": {
+      "toggle": "Auf dieser Seite",
+      "label": "Abschnitte auf dieser Seite"
+    },
+    "error": {
+      "heading": "Die Hilfe konnte nicht geladen werden",
+      "body": "Die Anleitung wurde nicht geladen. Versuchen Sie es erneut oder lesen Sie diese Seite auf monize.net.",
+      "retry": "Erneut versuchen"
+    }
+  },
+  "markdown": {
+    "screenshot": "Screenshot",
+    "viewScreenshot": "Screenshot auf monize.net ansehen",
+    "callout": {
+      "note": "Hinweis",
+      "tip": "Tipp",
+      "important": "Wichtig",
+      "warning": "Warnung",
+      "caution": "Vorsicht"
+    }
+  }
+}

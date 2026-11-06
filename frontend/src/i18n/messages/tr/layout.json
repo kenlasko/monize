@@ -138,8 +138,8 @@
     "redonePrefix": "Yeniden Yapıldı: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "Bu bölümde yardım için Monize belgelerini açın",
-    "helpTooltip": "Bu bölümde yardım için Monize belgelerini açın"
+    "helpAriaLabel": "Bu sayfa için yardım",
+    "helpTooltip": "Bu sayfa için yardım"
   },
   "bootSplash": {
     "loading": "Monize yükleniyor",

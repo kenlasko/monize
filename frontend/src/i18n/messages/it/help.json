@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "Guida",
+    "back": "Indietro",
+    "forward": "Avanti",
+    "openOnline": "Apri su monize.net",
+    "pin": "Fissa il pannello della guida per tenerlo aperto mentre passi da una pagina all'altra",
+    "unpin": "Sblocca il pannello della guida",
+    "expand": "Espandi il pannello della guida",
+    "collapse": "Riduci il pannello della guida",
+    "close": "Chiudi la guida",
+    "englishOnly": "Questa guida è in inglese.",
+    "loading": "Caricamento della guida",
+    "toc": {
+      "toggle": "In questa pagina",
+      "label": "Sezioni di questa pagina"
+    },
+    "error": {
+      "heading": "Impossibile caricare la guida",
+      "body": "La guida non è stata caricata. Riprova oppure leggi questa pagina su monize.net.",
+      "retry": "Riprova"
+    }
+  },
+  "markdown": {
+    "screenshot": "Schermata",
+    "viewScreenshot": "Visualizza la schermata su monize.net",
+    "callout": {
+      "note": "Nota",
+      "tip": "Suggerimento",
+      "important": "Importante",
+      "warning": "Attenzione",
+      "caution": "Cautela"
+    }
+  }
+}

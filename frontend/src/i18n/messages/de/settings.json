@@ -438,7 +438,8 @@
     },
     "docs": {
       "label": "Dokumentation",
-      "description": "Das Benutzerhandbuch durchsuchen."
+      "description": "Das Benutzerhandbuch durchsuchen.",
+      "openOnline": "Auf monize.net öffnen"
     },
     "supportBackup": {
       "label": "Support-Backup erstellen",

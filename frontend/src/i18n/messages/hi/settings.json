@@ -438,7 +438,8 @@
     },
     "docs": {
       "label": "दस्तावेज़",
-      "description": "उपयोगकर्ता गाइड ब्राउज़ करें।"
+      "description": "उपयोगकर्ता गाइड ब्राउज़ करें।",
+      "openOnline": "monize.net पर खोलें"
     },
     "supportBackup": {
       "label": "सपोर्ट बैकअप बनाएँ",

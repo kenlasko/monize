@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "Ayuda",
+    "back": "Atrás",
+    "forward": "Adelante",
+    "openOnline": "Abrir en monize.net",
+    "pin": "Fija el panel de ayuda para que siga abierto al cambiar de página",
+    "unpin": "Desfijar el panel de ayuda",
+    "expand": "Ampliar el panel de ayuda",
+    "collapse": "Reducir el panel de ayuda",
+    "close": "Cerrar la ayuda",
+    "englishOnly": "Esta guía está en inglés.",
+    "loading": "Cargando la ayuda",
+    "toc": {
+      "toggle": "En esta página",
+      "label": "Secciones de esta página"
+    },
+    "error": {
+      "heading": "No se pudo cargar la ayuda",
+      "body": "La guía no se cargó. Inténtalo de nuevo o lee esta página en monize.net.",
+      "retry": "Reintentar"
+    }
+  },
+  "markdown": {
+    "screenshot": "Captura de pantalla",
+    "viewScreenshot": "Ver la captura de pantalla en monize.net",
+    "callout": {
+      "note": "Nota",
+      "tip": "Consejo",
+      "important": "Importante",
+      "warning": "Advertencia",
+      "caution": "Precaución"
+    }
+  }
+}

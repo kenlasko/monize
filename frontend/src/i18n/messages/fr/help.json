@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "Aide",
+    "back": "Retour",
+    "forward": "Avancer",
+    "openOnline": "Ouvrir sur monize.net",
+    "pin": "Épinglez le panneau d'aide pour qu'il reste ouvert quand vous changez de page",
+    "unpin": "Désépingler le panneau d'aide",
+    "expand": "Agrandir le panneau d'aide",
+    "collapse": "Réduire le panneau d'aide",
+    "close": "Fermer l'aide",
+    "englishOnly": "Ce guide est en anglais.",
+    "loading": "Chargement de l'aide",
+    "toc": {
+      "toggle": "Sur cette page",
+      "label": "Sections de cette page"
+    },
+    "error": {
+      "heading": "Impossible de charger l'aide",
+      "body": "Le guide ne s'est pas chargé. Réessayez ou lisez cette page sur monize.net.",
+      "retry": "Réessayer"
+    }
+  },
+  "markdown": {
+    "screenshot": "Capture d'écran",
+    "viewScreenshot": "Voir la capture d'écran sur monize.net",
+    "callout": {
+      "note": "Remarque",
+      "tip": "Astuce",
+      "important": "Important",
+      "warning": "Avertissement",
+      "caution": "Attention"
+    }
+  }
+}

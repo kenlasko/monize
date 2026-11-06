@@ -438,7 +438,8 @@
     },
     "docs": {
       "label": "Documentazione",
-      "description": "Sfoglia la guida utente."
+      "description": "Sfoglia la guida utente.",
+      "openOnline": "Apri su monize.net"
     },
     "supportBackup": {
       "label": "Crea un backup di supporto",

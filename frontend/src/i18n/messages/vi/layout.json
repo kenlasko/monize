@@ -138,8 +138,8 @@
     "redonePrefix": "Đã làm lại: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "Mở tài liệu Monize để được trợ giúp về phần này",
-    "helpTooltip": "Mở tài liệu Monize để được trợ giúp về phần này"
+    "helpAriaLabel": "Trợ giúp về trang này",
+    "helpTooltip": "Trợ giúp về trang này"
   },
   "bootSplash": {
     "loading": "Đang tải Monize",

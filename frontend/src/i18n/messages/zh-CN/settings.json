@@ -438,7 +438,8 @@
     },
     "docs": {
       "label": "文档",
-      "description": "浏览用户指南。"
+      "description": "浏览用户指南。",
+      "openOnline": "在 monize.net 上打开"
     },
     "supportBackup": {
       "label": "创建支持备份",

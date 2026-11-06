@@ -438,7 +438,8 @@
     },
     "docs": {
       "label": "Documentatie",
-      "description": "Blader door de gebruikershandleiding."
+      "description": "Blader door de gebruikershandleiding.",
+      "openOnline": "Openen op monize.net"
     },
     "supportBackup": {
       "label": "Supportback-up maken",
