@@ -77,8 +77,8 @@ function checkProduct(
 
 /**
  * The JSON's auction against the results file it names (country spec section
- * 3.4): CUSIP, security type, issue, maturity and dated date, coupon, spread,
- * reference CPI and price must agree. A bill's price must be in both; a coupon
+ * 3.4): CUSIP, security type, issue, maturity, dated and first coupon date,
+ * coupon, spread, reference CPI and price must agree. A bill's price must be in both; a coupon
  * security's price is compared when both state it.
  */
 export function crossCheckResults(
@@ -108,6 +108,14 @@ export function crossCheckResults(
     "datedDate",
     auction.datedDate,
     parseDate(announced(xml, "DatedDate"), "DatedDate"),
+  );
+  same(
+    "firstInterestPaymentDate",
+    auction.firstCouponDate,
+    parseDate(
+      announced(xml, "FirstInterestPaymentDate"),
+      "FirstInterestPaymentDate",
+    ),
   );
   if (auction.program === "FRN") {
     sameDecimal(

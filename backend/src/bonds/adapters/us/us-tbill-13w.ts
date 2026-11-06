@@ -5,7 +5,7 @@ import {
   BondFetch,
   SeriesFetchError,
 } from "../../bond-adapter";
-import { daysBetween } from "../../domain/calendar-date";
+import { addDays, daysBetween } from "../../domain/calendar-date";
 import { ExactDecimal } from "../../domain/exact-decimal";
 import { getFromTreasury, TREASURY_HOST } from "./series/series-source";
 import {
@@ -37,8 +37,22 @@ const DAYS_IN_YEAR = 360;
 const FRACTION_PLACES = 10;
 const PERCENT_PLACES = 9;
 
-export function tbill13wUrl(days: number = TBILL_HISTORY_DAYS): string {
-  return `https://${TREASURY_HOST}/TA_WS/securities/auctioned?format=json&type=Bill&days=${days}`;
+/**
+ * Every 13-week bill issued in the `days` up to `today`. The `search` endpoint
+ * with a term and an issue-date range, never `auctioned?days=`: that list stops
+ * at 90 bills of every term (about 13 of them 13-week), whatever `days` says,
+ * which leaves an older floating rate note's index full of gaps.
+ */
+export function tbill13wUrl(
+  today: string,
+  days: number = TBILL_HISTORY_DAYS,
+): string {
+  const start = addDays(today, -days);
+  return (
+    `https://${TREASURY_HOST}/TA_WS/securities/search?format=json` +
+    `&securityType=Bill&securityTerm=13-Week&dateFieldName=issueDate` +
+    `&startDate=${start}&endDate=${today}`
+  );
 }
 
 function refuse(reason: string, cause?: unknown): BenchmarkFetchError {
@@ -86,8 +100,9 @@ export function parseTbill13w(body: Uint8Array): BenchmarkObservation[] {
   for (const record of parseAuctionArray(body)) {
     if (optionalText(record, "securityType").toUpperCase() !== BILL_TYPE)
       continue;
-    if (optionalText(record, "highDiscountRate") === "") continue;
-    const auctionDate = requiredDate(record, "auctionDate");
+    // A bill's `highRate` is its high discount rate; empty until it is auctioned.
+    if (optionalText(record, "highRate") === "") continue;
+    const auctionDate = requiredDate(record, "competitiveAuctionCloseDate");
     const issueDate = requiredDate(record, "issueDate");
     const maturityDate = requiredDate(record, "maturityDate");
     const days = daysBetween(issueDate, maturityDate);
@@ -95,10 +110,7 @@ export function parseTbill13w(body: Uint8Array): BenchmarkObservation[] {
     if (auctionDate > issueDate) {
       throw refuse(`the auction of ${auctionDate} is after its issue`);
     }
-    const discount = parsePercent(
-      requiredText(record, "highDiscountRate"),
-      "highDiscountRate",
-    );
+    const discount = parsePercent(requiredText(record, "highRate"), "highRate");
     const value = moneyMarketYield(discount, days).fraction;
     const known = byDate.get(auctionDate);
     if (known !== undefined) {
@@ -122,8 +134,9 @@ export function parseTbill13w(body: Uint8Array): BenchmarkObservation[] {
 /** The 13-week yields of the last auctions; `coveredThrough` the newest auction date. */
 export async function fetchTbill13w(
   get: BondFetch,
+  today: string,
 ): Promise<BenchmarkFetchResult> {
-  const url = tbill13wUrl();
+  const url = tbill13wUrl(today);
   let body: Uint8Array;
   try {
     body = await getFromTreasury(get, url, MAX_BYTES, "auction list");

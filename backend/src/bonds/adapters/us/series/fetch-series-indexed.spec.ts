@@ -74,7 +74,7 @@ describe("fetching a TIPS", () => {
 
   it("needs no results file when the record names none", async () => {
     const records = withRecord(tipsJson(), {
-      xmlFilenameCompetitiveResults: "",
+      treasuryAuctionResultsXmlFileName: "",
     });
     const get = tipsFetch(records);
     await fetchSeries(TIPS, get, NOW);
@@ -82,17 +82,17 @@ describe("fetching a TIPS", () => {
   });
 
   it.each([
-    ["no", { refCpiOnDatedDate: "" }],
-    ["a too small", { refCpiOnDatedDate: "99.99999" }],
-    ["a too large", { refCpiOnDatedDate: "1000.00001" }],
+    ["no", { referenceCpiOnOriginalDatedDate: "" }],
+    ["a too small", { referenceCpiOnOriginalDatedDate: "99.99999" }],
+    ["a too large", { referenceCpiOnOriginalDatedDate: "1000.00001" }],
   ])("refuses %s reference CPI", async (name, change) => {
     const records = withRecord(tipsJson(), {
       ...change,
-      xmlFilenameCompetitiveResults: "",
+      treasuryAuctionResultsXmlFileName: "",
     });
     const error = await refusal(fetchSeries(TIPS, tipsFetch(records), NOW));
     expect(error.code).toBe("SOURCE_INCONSISTENT");
-    expect(error.params.field).toBe("refCpiOnDatedDate");
+    expect(error.params.field).toBe("referenceCpiOnOriginalDatedDate");
     expect(name).toBeTruthy();
   });
 
@@ -130,11 +130,15 @@ describe("fetching a TIPS", () => {
     expect(error.params.field).toBe("interestRate");
   });
 
-  it("refuses a first coupon that is not a regular date", async () => {
-    const records = withRecord(tipsJson(), {
-      firstInterestPaymentDate: "2002-05-15T00:00:00",
-    });
-    const error = await refusal(fetchSeries(TIPS, tipsFetch(records), NOW));
+  it("refuses a first coupon the results file states differently", async () => {
+    const xml = tipsXml().replace(
+      "<FirstInterestPaymentDate>2002-04-15",
+      "<FirstInterestPaymentDate>2002-05-15",
+    );
+    const error = await refusal(
+      fetchSeries(TIPS, tipsFetch(tipsJson(), xml), NOW),
+    );
+    expect(error.code).toBe("SOURCE_INCONSISTENT");
     expect(error.params.field).toBe("firstInterestPaymentDate");
   });
 });
@@ -169,7 +173,7 @@ describe("fetching a floating rate note", () => {
   it("keeps a negative spread negative", async () => {
     const records = withRecord(frnJson(), {
       spread: "-0.150000",
-      xmlFilenameCompetitiveResults: "",
+      treasuryAuctionResultsXmlFileName: "",
     });
     const { entry } = await fetchSeries(FRN, frnFetch(records), NOW);
     expect(parseBondTerms(entry.terms).rateRule).toMatchObject({
@@ -199,20 +203,20 @@ describe("fetching a floating rate note", () => {
     ],
     [
       "a semiannual frequency",
-      { interestPaymentFrequency: "Semi-Annual" },
+      { frequencyOfInterestPayments: "Semi-Annual" },
       "SOURCE_INCONSISTENT",
-      "interestPaymentFrequency",
+      "frequencyOfInterestPayments",
     ],
     [
-      "a first payment that is not a quarter end",
-      { firstInterestPaymentDate: "2026-08-31T00:00:00" },
-      "SOURCE_INCONSISTENT",
-      "firstInterestPaymentDate",
+      "a first period length it does not know",
+      { firstInterestPaymentLength: "" },
+      "SOURCE_FORMAT_CHANGED",
+      "firstInterestPaymentLength",
     ],
   ])("refuses %s", async (_name, change, code, field) => {
     const records = withRecord(frnJson(), {
       ...change,
-      xmlFilenameCompetitiveResults: "",
+      treasuryAuctionResultsXmlFileName: "",
     });
     const error = await refusal(fetchSeries(FRN, frnFetch(records), NOW));
     expect(error.code).toBe(code);

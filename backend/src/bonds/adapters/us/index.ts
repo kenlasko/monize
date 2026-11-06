@@ -61,7 +61,7 @@ export const UNITED_STATES_BOND_ADAPTER: BondAdapter = {
       case US_CPI_U_NSA:
         return fetchBlsCpi(fetch, todayInTimezone(US_TIMEZONE) as string);
       case US_TBILL_13W_MMY:
-        return fetchTbill13w(fetch);
+        return fetchTbill13w(fetch, todayInTimezone(US_TIMEZONE) as string);
       default:
         throw new BenchmarkFetchError(
           `The US adapter has no benchmark ${code}`,

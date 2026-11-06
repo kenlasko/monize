@@ -3,20 +3,20 @@
     "cusip": "912797WM5",
     "securityType": "Bill",
     "securityTerm": "26-Week",
-    "auctionDate": "2026-09-29T00:00:00",
     "issueDate": "2026-10-01T00:00:00",
     "maturityDate": "2027-04-01T00:00:00",
     "datedDate": "",
-    "firstInterestPaymentDate": "",
     "interestRate": "",
-    "interestPaymentFrequency": "None",
     "spread": "",
-    "refCpiOnDatedDate": "",
-    "highDiscountRate": "0.000000",
     "highPrice": "100.000000",
     "reopening": "No",
     "floatingRate": "No",
-    "inflationIndexSecurity": "No",
-    "xmlFilenameCompetitiveResults": ""
+    "competitiveAuctionCloseDate": "2026-09-29T00:00:00",
+    "highRate": "0.000000",
+    "inflationProtected": "No",
+    "frequencyOfInterestPayments": "None",
+    "referenceCpiOnOriginalDatedDate": "",
+    "treasuryAuctionResultsXmlFileName": "",
+    "firstInterestPaymentLength": ""
   }
 ]

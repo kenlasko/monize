@@ -28,7 +28,7 @@ export function auctionSearchUrl(cusip: string): string {
 export function resultsXmlUrl(fileName: string): string {
   if (!RESULTS_FILE.test(fileName)) {
     throw new SeriesFetchError("SOURCE_FORMAT_CHANGED", {
-      field: "xmlFilenameCompetitiveResults",
+      field: "treasuryAuctionResultsXmlFileName",
     });
   }
   return `https://${TREASURY_HOST}/xml/${fileName}`;

@@ -216,12 +216,12 @@ describe("the 13-week bill fetcher (TreasuryDirect)", () => {
       ...records,
       {
         ...records[0],
-        auctionDate: "2026-05-11T00:00:00",
-        highDiscountRate: "",
+        competitiveAuctionCloseDate: "2026-05-11T00:00:00",
+        highRate: "",
       },
     ];
     expect(parseTbill13w(bytes(JSON.stringify(blank)))).toHaveLength(6);
-    const twice = [...records, { ...records[0], highDiscountRate: "3.700000" }];
+    const twice = [...records, { ...records[0], highRate: "3.700000" }];
     expect(() => parseTbill13w(bytes(JSON.stringify(twice)))).toThrow(
       /two different rates/,
     );
@@ -229,7 +229,7 @@ describe("the 13-week bill fetcher (TreasuryDirect)", () => {
 
   it("refuses a 13-week auction dated after its issue", () => {
     const records = JSON.parse(fixture("ta-ws-auctioned-bills.json"));
-    records[0].auctionDate = "2026-05-08T00:00:00";
+    records[0].competitiveAuctionCloseDate = "2026-05-08T00:00:00";
     expect(() => parseTbill13w(bytes(JSON.stringify(records)))).toThrow(
       BenchmarkFetchError,
     );
@@ -237,25 +237,30 @@ describe("the 13-week bill fetcher (TreasuryDirect)", () => {
 
   it("refuses a rate that is a JSON number, and a body that is not an array", () => {
     const records = JSON.parse(fixture("ta-ws-auctioned-bills.json"));
-    records[0].highDiscountRate = 3.62;
+    records[0].highRate = 3.62;
     expect(() => parseTbill13w(bytes(JSON.stringify(records)))).toThrow();
     expect(() => parseTbill13w(bytes("{}"))).toThrow();
   });
 
   it("covers through the newest auction date and asks the issuer's host only", async () => {
-    const url = tbill13wUrl();
+    const url = tbill13wUrl("2026-08-01");
     const get = fakeFetch({ [url]: fixture("ta-ws-auctioned-bills.json") });
-    const result = await fetchTbill13w(get);
+    const result = await fetchTbill13w(get, "2026-08-01");
     expect(result.coveredThrough).toBe("2026-07-27");
     expect(get.calls).toEqual([url]);
-    expect(url).toContain(
-      "/TA_WS/securities/auctioned?format=json&type=Bill&days=",
+  });
+
+  it("asks for the 13-week bills issued in the 900 days to today, never the capped auctioned list", () => {
+    expect(tbill13wUrl("2026-11-06")).toBe(
+      "https://www.treasurydirect.gov/TA_WS/securities/search?format=json" +
+        "&securityType=Bill&securityTerm=13-Week&dateFieldName=issueDate" +
+        "&startDate=2024-05-20&endDate=2026-11-06",
     );
   });
 
   it("refuses a redirect and a status other than 200 as a benchmark failure", async () => {
-    const url = tbill13wUrl();
-    await expect(fetchTbill13w(fakeFetch({}))).rejects.toThrow(
+    const url = tbill13wUrl("2026-08-01");
+    await expect(fetchTbill13w(fakeFetch({}), "2026-08-01")).rejects.toThrow(
       BenchmarkFetchError,
     );
     await expect(
@@ -263,6 +268,7 @@ describe("the 13-week bill fetcher (TreasuryDirect)", () => {
         fakeFetch({
           [url]: { status: 200, body: "[]", url: "https://example.org/" },
         }),
+        "2026-08-01",
       ),
     ).rejects.toThrow(BenchmarkFetchError);
   });

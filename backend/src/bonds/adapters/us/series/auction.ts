@@ -11,12 +11,12 @@ import { ExactDecimal } from "../../../domain/exact-decimal";
 import {
   buildCouponSchedule,
   CouponScheduleError,
+  firstRegularCouponDate,
 } from "../../../domain/period-schedule";
 import {
   AuctionRecord,
   formatChanged,
   optionalText,
-  parseDate,
   parseIndexLevel,
   parsePercent,
   parseSignedPercent,
@@ -34,6 +34,8 @@ const MAX_YEARS_TO_MATURITY = 31;
 const BILL_PRICE_PLACES = 6;
 const BILL_DAYS_IN_YEAR = 360;
 const SEMIANNUAL = /^semi-?\s?annual$/i;
+/** `firstInterestPaymentLength`, upper-cased: how long the first coupon period is. */
+const FIRST_PERIODS = ["NORMAL", "SHORT", "LONG"] as const;
 const QUARTERLY = /^quarterly$/i;
 const MAX_SPREAD_PERCENT = "1";
 const MIN_REF_CPI = "100";
@@ -106,7 +108,7 @@ export function inconsistent(
  */
 export function programOfRecord(record: AuctionRecord): UsProgram {
   const type = requiredText(record, "securityType").toUpperCase();
-  const inflation = requiredFlag(record, "inflationIndexSecurity");
+  const inflation = requiredFlag(record, "inflationProtected");
   const floating = requiredFlag(record, "floatingRate");
   if (type === "TIPS" || inflation) return "TIPS";
   if (type === "FRN" || floating) return "FRN";
@@ -149,12 +151,13 @@ export function billPrice(rate: ExactDecimal, days: number): ExactDecimal {
 }
 
 export function readBill(record: AuctionRecord, cusip: string): BillAuction {
-  const auctionDate = requiredDate(record, "auctionDate");
+  const auctionDate = requiredDate(record, "competitiveAuctionCloseDate");
   const issueDate = requiredDate(record, "issueDate");
   const maturityDate = requiredDate(record, "maturityDate");
+  // A bill's `highRate` is its high discount rate; `investmentRate` is its yield.
   const discountRate = parsePercent(
-    requiredText(record, "highDiscountRate"),
-    "highDiscountRate",
+    requiredText(record, "highRate"),
+    "highRate",
   );
   const highPrice = requiredText(record, "highPrice");
   const price = parsePercent(highPrice, "highPrice");
@@ -186,7 +189,7 @@ export function readBill(record: AuctionRecord, cusip: string): BillAuction {
     maturityDate,
     discountRate,
     highPrice,
-    xmlFileName: optionalText(record, "xmlFilenameCompetitiveResults"),
+    xmlFileName: optionalText(record, "treasuryAuctionResultsXmlFileName"),
   };
 }
 
@@ -216,18 +219,14 @@ export function readCouponBase(
   cusip: string,
   couponMonths: 3 | 6,
 ): CouponBase {
-  const auctionDate = requiredDate(record, "auctionDate");
+  const auctionDate = requiredDate(record, "competitiveAuctionCloseDate");
   const issueDate = requiredDate(record, "issueDate");
   const maturityDate = requiredDate(record, "maturityDate");
   const datedDate = requiredDate(record, "datedDate");
-  const firstCouponDate = parseDate(
-    requiredText(record, "firstInterestPaymentDate"),
-    "firstInterestPaymentDate",
-  );
-  const frequency = requiredText(record, "interestPaymentFrequency");
+  const frequency = requiredText(record, "frequencyOfInterestPayments");
   if (!(couponMonths === 6 ? SEMIANNUAL : QUARTERLY).test(frequency)) {
     throw inconsistent(
-      "interestPaymentFrequency",
+      "frequencyOfInterestPayments",
       "other",
       couponMonths === 6 ? "semiannual" : "quarterly",
     );
@@ -247,21 +246,32 @@ export function readCouponBase(
   ) {
     throw inconsistent("maturityDate", maturityDate, issueDate);
   }
+  const firstPeriod = requiredText(
+    record,
+    "firstInterestPaymentLength",
+  ).toUpperCase();
+  if (!(FIRST_PERIODS as readonly string[]).includes(firstPeriod)) {
+    throw formatChanged("firstInterestPaymentLength");
+  }
+  const endOfMonth = isMonthEnd(maturityDate);
+  let firstCouponDate: string;
   try {
+    // The JSON states no first coupon date, only the first period's length;
+    // the results file's FirstInterestPaymentDate is checked against this.
+    firstCouponDate = firstRegularCouponDate(
+      { datedDate, maturityDate, couponMonths, endOfMonth },
+      firstPeriod as (typeof FIRST_PERIODS)[number],
+    );
     buildCouponSchedule({
       datedDate,
       firstCouponDate,
       maturityDate,
       couponMonths,
-      endOfMonth: isMonthEnd(maturityDate),
+      endOfMonth,
     });
   } catch (error) {
     if (error instanceof CouponScheduleError) {
-      throw inconsistent(
-        "firstInterestPaymentDate",
-        firstCouponDate,
-        "regular",
-      );
+      throw inconsistent("firstInterestPaymentLength", firstPeriod, "regular");
     }
     throw error;
   }
@@ -273,7 +283,7 @@ export function readCouponBase(
     firstCouponDate,
     maturityDate,
     highPrice: optionalPrice(record),
-    xmlFileName: optionalText(record, "xmlFilenameCompetitiveResults"),
+    xmlFileName: optionalText(record, "treasuryAuctionResultsXmlFileName"),
   };
 }
 
@@ -290,15 +300,17 @@ export function readCoupon(
 export function readTips(record: AuctionRecord, cusip: string): TipsAuction {
   const interestRate = readCouponRate(record);
   const base = readCouponBase(record, cusip, 6);
-  const text = optionalText(record, "refCpiOnDatedDate");
-  if (text === "") throw inconsistent("refCpiOnDatedDate", "", "present");
-  const refCpi = parseIndexLevel(text, "refCpiOnDatedDate");
+  // The original issue's record: its dated date is the original dated date.
+  const field = "referenceCpiOnOriginalDatedDate";
+  const text = optionalText(record, field);
+  if (text === "") throw inconsistent(field, "", "present");
+  const refCpi = parseIndexLevel(text, field);
   if (
     refCpi.cmp(ExactDecimal.parse(MIN_REF_CPI)) < 0 ||
     refCpi.cmp(ExactDecimal.parse(MAX_REF_CPI)) > 0
   ) {
     throw inconsistent(
-      "refCpiOnDatedDate",
+      field,
       refCpi.toTrimmedString(9, 0),
       `${MIN_REF_CPI}-${MAX_REF_CPI}`,
     );

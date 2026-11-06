@@ -94,26 +94,30 @@ host `www.treasurydirect.gov` only:
    (`SOURCE_FORMAT_CHANGED`) is refused.
 2. The auction is the one whose `issueDate` is the code's date (a bill) or the
    original issue, `reopening` not `"Yes"` (a coupon security).
-3. Fields read (names as in the TA_WS JSON, to verify against a live response,
-   section 10): `cusip`, `securityType`, `securityTerm`, `issueDate`,
-   `maturityDate`, `datedDate`, `interestRate`, `highPrice`, `highDiscountRate`,
-   `firstInterestPaymentDate`, `interestPaymentFrequency`, `spread`,
-   `refCpiOnDatedDate`, `floatingRate`, `inflationIndexSecurity`, `auctionDate`,
-   and, when present, the results XML file name.
+3. Fields read (names as the live TA_WS JSON sends them, checked against
+   recorded answers on 2026-11-06, section 9c): `cusip`, `securityType`,
+   `issueDate`, `maturityDate`, `datedDate`, `interestRate`, `highPrice`,
+   `highRate` (a bill's high discount rate), `firstInterestPaymentLength`,
+   `frequencyOfInterestPayments`, `spread`, `referenceCpiOnOriginalDatedDate`,
+   `floatingRate`, `inflationProtected`, `competitiveAuctionCloseDate` (the
+   auction date), `reopening` and, when present,
+   `treasuryAuctionResultsXmlFileName`.
 4. Cross-checks before any write (INV-BOND-006), each a `SOURCE_INCONSISTENT`
    with a short machine `params.field`:
    - the response's `cusip` equals the requested one;
-   - a bill: `highPrice` equals `100 x (1 - highDiscountRate / 100 x days / 360)`
+   - a bill: `highPrice` equals `100 x (1 - highRate / 100 x days / 360)`
      rounded to six decimals, `days` from issue to maturity (the formula of
      #1908, checked: 97.833694 for 4.285 % over 182 days);
-   - a coupon security: `firstInterestPaymentDate` is a regular coupon date of
-     the maturity at the frequency (6 months, 3 for an FRN), and after the dated
-     date;
-   - a TIPS: `refCpiOnDatedDate` present and positive;
+   - a coupon security: the JSON states no first coupon date, only
+     `firstInterestPaymentLength`; the first coupon is the first regular date of
+     the maturity after the dated date at the frequency (6 months, 3 for an FRN),
+     the one after it for `Long` (`firstRegularCouponDate`), and an unknown
+     length is `SOURCE_FORMAT_CHANGED`;
+   - a TIPS: `referenceCpiOnOriginalDatedDate` present and positive;
    - an FRN: `spread` present;
    - when the results XML is named: `CUSIP`, `SecurityType`, `IssueDate`,
-     `MaturityDate`, `DatedDate`, `InterestRate`, `Spread`, `HighPrice`,
-     `RefCPIDatedDate` agree with the JSON (the XML element names are verified,
+     `MaturityDate`, `DatedDate`, `FirstInterestPaymentDate`, `InterestRate`,
+     `Spread`, `HighPrice`, `RefCPIDatedDate` agree with the JSON (the XML element names are verified,
      fixture `R_20260428_1.xml`).
 5. Bounds (`SOURCE_INCONSISTENT`): a bill's term 4 to 52 weeks and price at most
    100 (a bill auctioned at a rate of 0.000 % is priced at exactly 100.000000,
@@ -151,7 +155,7 @@ NOTE, BOND
       rounding { moneyDecimals 2, mode HALF_UP, basis PER_HOLDING, unitDecimals 6 }
 
 TIPS  as NOTE, with
-      principalRule { INDEX_RATIO, benchmarkId US_CPI_U_NSA, baseReference <refCpiOnDatedDate>,
+      principalRule { INDEX_RATIO, benchmarkId US_CPI_U_NSA, baseReference <referenceCpiOnOriginalDatedDate>,
                       lagMonths 3, interpolation DAILY_LINEAR, truncateDecimals 6,
                       roundDecimals 5, maturityFloor PAR }
 
@@ -189,7 +193,7 @@ discontinued index); a changed stored value is replaced by the new one and a
 warning log line keeps the old and the new value (`BenchmarkRefreshService`,
 the upsert of `benchmark_values`), as for the Polish benchmarks; it is not
 refused. The 13-week fetcher reads
-`TA_WS/securities/auctioned?format=json&type=Bill&days=<n>`, keeps the regular
+`TA_WS/securities/search?securityType=Bill&securityTerm=13-Week&dateFieldName=issueDate&startDate=<today-900>&endDate=<today>`, keeps the regular
 bills of 85 to 97 days from issue to maturity (section 6.1), and computes the
 yield in `ExactDecimal`.
 
@@ -209,15 +213,18 @@ yield in `ExactDecimal`.
   positive decimal (or is a JSON number), a duplicated month and a month after
   the request date are refused. The observation is dated the first of the month,
   the level as published; `coveredThrough` is the last day of the newest month.
-- **13-week yield.** The list is `TA_WS/securities/auctioned?format=json&type=Bill&days=900`
-  (a floating rate note of two years needs the auctions since its issue); a body
-  over 5 MB (the door's cap) is a failure. A record is a 13-week auction when its
+- **13-week yield.** The list is the 13-week bills issued in the 900 days to
+  today, from `TA_WS/securities/search` with `securityType=Bill`,
+  `securityTerm=13-Week` and an issue-date range (a floating rate note of two
+  years needs the auctions since its issue; about 860 KB live); a body over 5 MB
+  (the door's cap) is a failure. Not `auctioned?days=900`: that list stops at 90
+  bills of every term whatever `days` asks, about 13 of them 13-week. A record is a 13-week auction when its
   `securityType` is `Bill` (a cash management bill, `CMB`, of the same length is
   not the 13-week bill auction of App. B) and the days from its `issueDate` to
   its `maturityDate` are 85 to 97 inclusive (13 weeks are 91 days, the 8-week
   bill 56 and the 17-week 119); `securityTerm` and `originalSecurityTerm` are not
   read, because it is not known which of them names the original term of a
-  reopened bill (section 9a, section 10). Records with no `highDiscountRate` are
+  reopened bill (section 9a, section 10). Records with no `highRate` are
   skipped (not yet auctioned); a rate of 0.000 is a rate and is stored as zero; an
   auction after its issue and two different rates for one auction date are
   refused. `coveredThrough` is the newest auction date: the engine treats a day
@@ -297,9 +304,9 @@ Points the sections above left open, as built (`backend/src/bonds/adapters/us/`)
   original term of a reopened bill or the term of the reopening, and the name and
   content of `originalSecurityTerm`, are both to verify against a live answer
   (section 10); the 13-week benchmark fetch reads neither and decides by the days
-  (85 to 97) and `securityType` `Bill`. `xmlFilenameCompetitiveResults` is the field that names the
+  (85 to 97) and `securityType` `Bill`. `treasuryAuctionResultsXmlFileName` is the field that names the
   results file; only a plain `*.xml` file name is requested, under `/xml/`. A
-  JSON number is refused where a string is expected. `interestPaymentFrequency`
+  JSON number is refused where a string is expected. `frequencyOfInterestPayments`
   must read semiannual (case-insensitive, `Semi-Annual`) for a note or a bond.
 - **Cross-checks as built.** A bill: the price formula (six decimals, half up,
   `ExactDecimal`), the term, an auction not after its issue, a price below 100
@@ -328,13 +335,15 @@ The refusal `PRODUCT_NOT_SUPPORTED` of section 9a is removed for these two
 products (the code stays in the shared error list, unused by the US adapter).
 
 - **Program.** From `securityType` and the two flags as before: TIPS is
-  `inflationIndexSecurity` "Yes", FRN `floatingRate` "Yes". A TIPS or an FRN
+  `inflationProtected` "Yes", FRN `floatingRate` "Yes" (live, both have
+  `securityType` `Note` or `Bond`). A TIPS or an FRN
   is named by its CUSIP alone, like a note.
 - **TIPS.** The coupon rule of a note (0 to 20 %, semiannual) plus
-  `refCpiOnDatedDate`, required and 100 to 1,000 (`SOURCE_INCONSISTENT`, field
-  `refCpiOnDatedDate`, also when blank). The template fills
+  `referenceCpiOnOriginalDatedDate`, required and 100 to 1,000
+  (`SOURCE_INCONSISTENT`, field `referenceCpiOnOriginalDatedDate`, also when
+  blank). The template fills
   `principalRule.baseReference` with it (trailing zeros dropped: "177.5").
-- **FRN.** Quarterly (`interestPaymentFrequency` reads "Quarterly"), the first
+- **FRN.** Quarterly (`frequencyOfInterestPayments` reads "Quarterly"), the first
   payment a regular date of the maturity at 3 months, `spread` required and -1 to
   1 percent (`SOURCE_INCONSISTENT`, field `spread`), a negative spread kept as
   such ("-0.0015"). `interestRate` is not read. The template holds the rule
@@ -349,34 +358,48 @@ products (the code stays in the shared error list, unused by the US adapter).
 - **Fixtures.** `ta-ws-91282CQM6.json`, `ta-ws-912810FQ6.json` and
   `R_20011025_1.xml` are constructed (`series/fixtures/README.md`).
 
+## 9c. The live format (checked 2026-11-06)
+
+The fetch was run against answers recorded verbatim from `www.treasurydirect.gov`
+(`adapters/us/series/fixtures/recorded/`, `fetch-series-recorded.spec.ts`): a
+26-week bill, a 10-year note and a 30-year bond each with two reopenings, a
+10-year TIPS, the 2-year FRN of section 1 and the 2001 TIPS `912810FQ6`, whose
+record names no results file. What the constructed fixtures had inferred and the
+live source does differently:
+
+| Inferred | Live |
+| --- | --- |
+| `auctionDate` | `competitiveAuctionCloseDate` |
+| `highDiscountRate` | `highRate` (a bill; `investmentRate` is its yield) |
+| `inflationIndexSecurity` | `inflationProtected` |
+| `interestPaymentFrequency` | `frequencyOfInterestPayments` (`Semi-Annual`, `Quarterly`, `None` for a bill) |
+| `refCpiOnDatedDate` | `referenceCpiOnOriginalDatedDate` |
+| `xmlFilenameCompetitiveResults` | `treasuryAuctionResultsXmlFileName` |
+| `firstInterestPaymentDate` | absent; `firstInterestPaymentLength` (`Normal` in all 117 coupon auctions of the year) and the results file's `FirstInterestPaymentDate` |
+| `securityType` `TIPS`, `FRN` | `Note` or `Bond` with the flag |
+| `auctioned?days=900` gives 900 days | at most 90 bills of every term |
+
+The constructed fixtures keep their values and take the live names. The flags
+are `Yes`/`No` and the dates carry `T00:00:00`, as inferred.
+
 ## 10. To verify before merge
 
 The shell of the session that wrote this could not reach `treasurydirect.gov`,
 `api.bls.gov` or `api.fiscaldata.treasury.gov`; these points are inferred and
-must be checked against live responses, and the constructed fixtures replaced by
-recorded ones:
+must be checked against live responses. The TA_WS field names, value formats and
+product types were checked on 2026-11-06 (section 9c); what remains:
 
-- The TA_WS JSON field names and value formats (`"Yes"`/`"No"` flags, dates with
-  a time part, rates in percent as strings), the name of the field that gives the
-  results XML file, and the `securityType` values of a TIPS and an FRN. The
-  fixtures `ta-ws-*.json` under `adapters/us/series/fixtures/` are built from the
-  XML fixture and #1908 and are marked as constructed in their file header note
-  (`fixtures/README.md`).
 - That a TIPS coupon uses the index ratio of the unadjusted coupon date when that
   date is not a business day.
-- Whether `securityTerm` of a reopened bill names its original term or the
-  reopening's, whether `originalSecurityTerm` exists, and how a cash management
-  bill is typed (`securityType` `CMB` is assumed): the 13-week benchmark fetch is
-  built to be right either way (days from issue to maturity, regular bills only).
+- How a cash management bill is typed (live, a reopened bill's `securityTerm`
+  names the reopening's term and `originalSecurityTerm` exists; a CMB is assumed
+  to be `securityType` `Bill` with `cashManagementBill` `Yes`, so the 13-week
+  benchmark relies on `securityTerm=13-Week` and the days from issue to maturity).
 - The BLS API version and limits without a key (the fetch sends one GET of ten
-  years, no key; section 6.1), and the TA_WS `days` limit and size for the
-  13-week history an FRN issued two years ago needs (`days=900`, 5 MB cap).
+  years, no key; section 6.1).
 - That `benchmark_values.value` (`NUMERIC(20,10)`) may lose the eleventh decimal
   of the 13-week yield fraction (section 6.1): a column of scale 11 would keep
   it.
-- The `TA_WS` `securityType` text of a TIPS and an FRN, `interestRate` and
-  `refCpiOnDatedDate` of a TIPS, and `spread` of an FRN (the constructed
-  `ta-ws-912810FQ6.json` and `ta-ws-91282CQM6.json`).
 - Known gap: BLS did not publish the CPI-U of October 2025, so the Ref CPI of
   every day of January 2026 (which reads October 2025) is unknown for every TIPS
   and its figures stay unknown (`missing` names the month `2025-10` and the
@@ -393,12 +416,9 @@ recorded ones:
   notification reads the rate rule's benchmark only); a settlement-date lockout
   of an FRN.
 - The FRN rule for an auction on the day of a lockout boundary (App. B I.C.3).
-- The phase 3 fetch reads only fixtures: the live `search` answer for a bill, a
-  note and a reopening, the exact `interestPaymentFrequency` text, whether a
-  bill's price is rounded or truncated at the sixth decimal, whether the results
-  file names a note's coupon in `AuctionResults` or only in the announcement, and
-  whether a CMB shorter than 28 days (refused here) exists as a security people
-  hold.
+- Whether a bill's price is rounded or truncated at the sixth decimal (the
+  recorded bill agrees with both), and whether a CMB shorter than 28 days
+  (refused here) exists as a security people hold.
 - The purchase form has no way to name a CUSIP (no `seriesCodeFor`): a person
   fetches through `POST /bonds/instruments/fetch` until a CUSIP input is built.
 - Savings bonds: whether the value of a 100 USD bond is computed from a 25 USD

@@ -15,7 +15,7 @@ type Rec = Record<string, unknown>;
 const BILL = "912797WM5261001";
 const NOTE = "91282CZK0";
 const NOW = () => new Date("2026-11-04T10:00:00.000Z");
-const NO_XML = { xmlFilenameCompetitiveResults: "" };
+const NO_XML = { treasuryAuctionResultsXmlFileName: "" };
 
 const billJson = () => fixtureJson("ta-ws-912797WM5.json");
 const noteJson = () => fixtureJson("ta-ws-91282CZK0.json");
@@ -109,9 +109,9 @@ describe("fetching a bill", () => {
   it("takes the issue of the code's date among reopenings of the same CUSIP", async () => {
     const reopening: Rec = {
       ...billJson()[0],
-      auctionDate: "2026-10-27T00:00:00",
+      competitiveAuctionCloseDate: "2026-10-27T00:00:00",
       issueDate: "2026-10-29T00:00:00",
-      highDiscountRate: "4.100000",
+      highRate: "4.100000",
       highPrice: "98.246111",
       reopening: "Yes",
       ...NO_XML,
@@ -177,7 +177,7 @@ describe("fetching a bill", () => {
   });
 
   it.each([
-    ["a price of par with a discount rate", { highDiscountRate: "0.100000" }],
+    ["a price of par with a discount rate", { highRate: "0.100000" }],
     ["a price under par with no discount rate", { highPrice: "99.999999" }],
     ["a price above par", { highPrice: "100.000001" }],
   ])("refuses %s", async (_name, change) => {
@@ -191,7 +191,7 @@ describe("fetching a bill", () => {
 
   it("refuses an auction after its issue", async () => {
     const records = withRecord(billJson(), 0, {
-      auctionDate: "2026-10-02T00:00:00",
+      competitiveAuctionCloseDate: "2026-10-02T00:00:00",
     });
     const error = await refusal(fetchSeries(BILL, billFetch(records), NOW));
     expect(error.params.field).toBe("auctionDate");
@@ -265,11 +265,10 @@ describe("fetching a note", () => {
   it("puts coupons on the maturity's own day when it is not a month end", async () => {
     const records = noteJson().map((r) => ({
       ...r,
-      auctionDate: "2026-09-14T00:00:00",
+      competitiveAuctionCloseDate: "2026-09-14T00:00:00",
       datedDate: "2026-09-15T00:00:00",
       issueDate: "2026-09-15T00:00:00",
       maturityDate: "2028-09-15T00:00:00",
-      firstInterestPaymentDate: "2027-03-15T00:00:00",
       ...NO_XML,
     }));
     const { entry } = await fetchSeries(NOTE, noteFetch(records), NOW);
@@ -290,21 +289,47 @@ describe("fetching a note", () => {
     });
   });
 
-  it("refuses a first coupon that is not a regular date of the maturity", async () => {
-    const records = withRecord(noteJson(), 0, {
-      firstInterestPaymentDate: "2027-03-30T00:00:00",
-    });
-    const error = await refusal(fetchSeries(NOTE, noteFetch(records), NOW));
+  it("refuses a first coupon the results file states differently", async () => {
+    const xml = noteXml().replace(
+      "<FirstInterestPaymentDate>2027-03-31",
+      "<FirstInterestPaymentDate>2027-03-30",
+    );
+    const error = await refusal(
+      fetchSeries(NOTE, noteFetch(noteJson(), xml), NOW),
+    );
     expect(error.code).toBe("SOURCE_INCONSISTENT");
     expect(error.params.field).toBe("firstInterestPaymentDate");
   });
 
-  it("refuses a first coupon on or before the dated date", async () => {
+  it("puts a long first coupon on the second regular date after the dated date", async () => {
     const records = withRecord(noteJson(), 0, {
-      firstInterestPaymentDate: "2026-09-30T00:00:00",
+      firstInterestPaymentLength: "Long",
+      ...NO_XML,
+    });
+    const { entry } = await fetchSeries(NOTE, noteFetch(records), NOW);
+    expect(parseBondTerms(entry.terms).schedule).toMatchObject({
+      firstCouponDate: "2027-09-30",
+    });
+  });
+
+  it("puts a short first coupon on the first regular date after the dated date", async () => {
+    const records = withRecord(noteJson(), 0, {
+      firstInterestPaymentLength: "Short",
+      ...NO_XML,
+    });
+    const { entry } = await fetchSeries(NOTE, noteFetch(records), NOW);
+    expect(parseBondTerms(entry.terms).schedule).toMatchObject({
+      firstCouponDate: "2027-03-31",
+    });
+  });
+
+  it("refuses a first period length it does not know", async () => {
+    const records = withRecord(noteJson(), 0, {
+      firstInterestPaymentLength: "Odd",
     });
     const error = await refusal(fetchSeries(NOTE, noteFetch(records), NOW));
-    expect(error.params.field).toBe("firstInterestPaymentDate");
+    expect(error.code).toBe("SOURCE_FORMAT_CHANGED");
+    expect(error.params.field).toBe("firstInterestPaymentLength");
   });
 
   it.each([
@@ -326,8 +351,8 @@ describe("fetching a note", () => {
     ],
     [
       "a frequency that is not semiannual",
-      { interestPaymentFrequency: "Quarterly" },
-      "interestPaymentFrequency",
+      { frequencyOfInterestPayments: "Quarterly" },
+      "frequencyOfInterestPayments",
     ],
   ])("refuses %s", async (_name, change, field) => {
     const records = withRecord(noteJson(), 0, { ...change, ...NO_XML });
@@ -340,11 +365,10 @@ describe("fetching a note", () => {
     const records = noteJson().map((r) => ({
       ...r,
       securityType: "Bond",
-      auctionDate: "2026-08-13T00:00:00",
+      competitiveAuctionCloseDate: "2026-08-13T00:00:00",
       datedDate: "2026-08-15T00:00:00",
       issueDate: "2026-08-17T00:00:00",
       maturityDate: "2056-08-15T00:00:00",
-      firstInterestPaymentDate: "2027-02-15T00:00:00",
       ...NO_XML,
     }));
     const { entry } = await fetchSeries(NOTE, noteFetch(records), NOW);
@@ -477,16 +501,16 @@ describe("what the source answers", () => {
 
   it.each([
     "securityType",
-    "auctionDate",
+    "competitiveAuctionCloseDate",
     "issueDate",
     "maturityDate",
     "datedDate",
-    "firstInterestPaymentDate",
+    "firstInterestPaymentLength",
     "interestRate",
-    "interestPaymentFrequency",
+    "frequencyOfInterestPayments",
     "reopening",
     "floatingRate",
-    "inflationIndexSecurity",
+    "inflationProtected",
   ])("refuses a note record without %s as a changed format", async (field) => {
     const error = await refusal(
       fetchSeries(NOTE, noteFetch(without(noteJson(), field)), NOW),
@@ -497,10 +521,10 @@ describe("what the source answers", () => {
 
   it.each([
     "cusip",
-    "auctionDate",
+    "competitiveAuctionCloseDate",
     "issueDate",
     "maturityDate",
-    "highDiscountRate",
+    "highRate",
     "highPrice",
   ])("refuses a bill record without %s as a changed format", async (field) => {
     const error = await refusal(
@@ -531,7 +555,7 @@ describe("what the source answers", () => {
 
   it("accepts a date with or without its midnight time", async () => {
     const records = withRecord(noteJson(), 0, {
-      auctionDate: "2026-09-28",
+      competitiveAuctionCloseDate: "2026-09-28",
       issueDate: "2026-09-30",
     });
     const { entry } = await fetchSeries(NOTE, noteFetch(records), NOW);
@@ -551,7 +575,7 @@ describe("the results file", () => {
       "https://a.test/x.xml",
     ]) {
       const records = withRecord(noteJson(), 0, {
-        xmlFilenameCompetitiveResults: name,
+        treasuryAuctionResultsXmlFileName: name,
       });
       const get = noteFetch(records);
       const error = await refusal(fetchSeries(NOTE, get, NOW));

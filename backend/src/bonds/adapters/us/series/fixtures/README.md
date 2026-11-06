@@ -16,5 +16,27 @@ No test touches the network. Country spec: `docs/specs/us-treasury-securities.md
 | `R_20011025_1.xml` | CONSTRUCTED | The results file of that TIPS, the element structure of `R_20260428_1.xml` with the TIPS' values (`InflationIndexSecurity` Y, `RefCPIDatedDate`, `InterestRate`). |
 | `ta-ws-912797WM5-par.json` | CONSTRUCTED | The record of the bill above with a high discount rate of 0.000000 and a high price of 100.000000, no results file: a bill auctioned at par, as Treasury did in 2020. Built from the 26-week bill's record; it is not a copy of a real auction. |
 
-A constructed file proves the code path, not the live format. When a live
-response is recorded, replace the constructed file and delete its line above.
+The constructed files use the field names of the live source (checked against
+the recordings below on 2026-11-06); their values stay constructed because the
+golden cases are computed from them.
+
+`recorded/` holds answers saved verbatim from `www.treasurydirect.gov` on
+2026-11-06, read by `../fetch-series-recorded.spec.ts`:
+
+| File | What it is |
+| --- | --- |
+| `search-912797WM5.json`, `R_20260928_1.xml` | The 26-week bill of #1908 (issue 2026-10-01) and its results file. |
+| `search-91282CRF0.json`, `R_20260812_2.xml` | A 10-year note, 4-5/8 %, with two reopenings, and its original auction's results. |
+| `search-912810UW6.json`, `R_20260813_3.xml` | A 30-year bond, 5-1/8 %, with two reopenings, and its original auction's results. |
+| `search-91282CRE3.json`, `R_20260723_3.xml` | A 10-year TIPS, 2-3/8 %, Ref CPI 333.96974, with one reopening, and its original auction's results. |
+| `search-91282CQM6.json`, `R_20260428_1.xml` | The 2-year FRN above, with two reopenings. |
+| `search-912810FQ6.json` | The 2032 TIPS of 2001; its record names no results file. |
+| `search-13-week-bills.json` | `TA_WS/securities/search?securityType=Bill&securityTerm=13-Week&dateFieldName=issueDate&startDate=2026-09-01&endDate=2026-11-06`: ten weekly 13-week auctions, the query the benchmark fetch sends. |
+
+What the live records do not carry, and how the fetch reads it instead: no
+`firstInterestPaymentDate` (the first coupon is the regular date after the dated
+date that `firstInterestPaymentLength` names, checked against the results file's
+`FirstInterestPaymentDate`); no `auctionDate` (`competitiveAuctionCloseDate`); no
+`highDiscountRate` (a bill's `highRate`). `auctioned?days=` returns at most 90
+bills of every term whatever `days` asks, so the 13-week history comes from
+`search` with a term and an issue-date range.

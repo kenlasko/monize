@@ -81,6 +81,9 @@ export interface CouponDates {
   readonly endOfMonth: boolean;
 }
 
+/** What the regular coupon dates depend on: everything but the first coupon date. */
+export type RegularDates = Omit<CouponDates, "firstCouponDate">;
+
 /** More regular periods than any security has; a bound against a hostile document. */
 export const MAX_COUPON_PERIODS = 1200;
 
@@ -106,7 +109,7 @@ export function endOfMonthOf(value: string): string {
  * clamped to the month, or the last day of the month. Always computed from the
  * maturity, never from the previous (clamped) date, so a 31st does not drift.
  */
-function regularDateBefore(schedule: CouponDates, steps: number): string {
+function regularDateBefore(schedule: RegularDates, steps: number): string {
   const shifted = addMonthsClamped(
     schedule.maturityDate,
     -steps * schedule.couponMonths,
@@ -118,7 +121,7 @@ function regularDateBefore(schedule: CouponDates, steps: number): string {
  * Every regular coupon date from the last one on or before `datedDate` to the
  * maturity, oldest first.
  */
-function regularDates(schedule: CouponDates): readonly string[] {
+function regularDates(schedule: RegularDates): readonly string[] {
   const dates: string[] = [];
   for (let steps = 0; steps <= MAX_COUPON_PERIODS; steps += 1) {
     const date = regularDateBefore(schedule, steps);
@@ -129,6 +132,28 @@ function regularDates(schedule: CouponDates): readonly string[] {
     "datedDate",
     `more than ${MAX_COUPON_PERIODS} coupon periods`,
   );
+}
+
+/**
+ * The first coupon date of a security whose source says only how long its first
+ * period is: the first regular date after the dated date, or the one after that
+ * for a long first coupon (the dated date then falls just before a regular date,
+ * which the first payment skips). A short first coupon is the first regular date.
+ */
+export function firstRegularCouponDate(
+  schedule: RegularDates,
+  firstPeriod: "NORMAL" | "SHORT" | "LONG",
+): string {
+  const regular = regularDates(schedule);
+  // regular[0] is on or before the dated date; regular[1] is the first after it.
+  const index = firstPeriod === "LONG" ? 2 : 1;
+  if (index >= regular.length) {
+    throw new CouponScheduleError(
+      "maturityDate",
+      "no regular coupon date after the dated date",
+    );
+  }
+  return regular[index];
 }
 
 function periodOf(
