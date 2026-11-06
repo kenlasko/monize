@@ -12,63 +12,16 @@ export const DATE_FORMAT_OPTIONS: { value: string; label: string }[] = [
 ];
 
 /**
- * Auto-detect the date format from an array of sample date strings.
- * Examines the values to determine which of the built-in formats best matches.
- * Returns null if no format can be confidently detected.
+ * The CSV importer's built-in date formats: the four above plus the two that
+ * write the month as a word ("15-Jan-2026", "Jan 15, 2026"), which the server
+ * reads in every app language. The server detects which one a file uses over
+ * every row (`CsvHeadersResponse.columnDateFormats`).
  */
-/**
- * Strip trailing time components from a date string for format detection.
- * Handles "01/15/2026 14:30:00", "2026-01-15T12:00:00Z", "01/15/2026 2:30 PM", etc.
- */
-function stripTimeForDetection(dateStr: string): string {
-  const tIndex = dateStr.indexOf('T');
-  if (tIndex > 0) return dateStr.substring(0, tIndex);
-  const spaceMatch = dateStr.match(/^(\S+)\s+\d{1,2}:\d{2}/);
-  if (spaceMatch) return spaceMatch[1];
-  return dateStr;
-}
-
-export function detectCsvDateFormat(samples: string[]): string | null {
-  const dates = samples.filter((s) => s && s.trim());
-  if (dates.length === 0) return null;
-
-  const first = stripTimeForDetection(dates[0].trim());
-
-  // Check for ISO-like (YYYY prefix)
-  if (first.match(/^\d{4}[-/.]/)) {
-    // Disambiguate YYYY-MM-DD vs YYYY-DD-MM
-    for (const date of dates) {
-      const m = stripTimeForDetection(date.trim()).match(/^\d{4}[-/.](\d{1,2})[-/.](\d{1,2})$/);
-      if (m) {
-        const p2 = parseInt(m[1]);
-        const p3 = parseInt(m[2]);
-        if (p2 > 12) return 'YYYY-DD-MM';
-        if (p3 > 12) return 'YYYY-MM-DD';
-      }
-    }
-    return 'YYYY-MM-DD';
-  }
-
-  // Check for numeric date with separators (- / .)
-  const numericMatch = first.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
-  if (numericMatch) {
-    // Disambiguate MM/DD/YYYY vs DD/MM/YYYY
-    for (const date of dates) {
-      const m = stripTimeForDetection(date.trim()).match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
-      if (m) {
-        const p1 = parseInt(m[1]);
-        const p2 = parseInt(m[2]);
-        if (p1 > 12) return 'DD/MM/YYYY';
-        if (p2 > 12) return 'MM/DD/YYYY';
-      }
-    }
-    // Ambiguous (both parts <= 12) -- default to MM/DD/YYYY
-    return 'MM/DD/YYYY';
-  }
-
-  // No recognizable date pattern
-  return null;
-}
+export const CSV_DATE_FORMAT_OPTIONS: { value: string; label: string }[] = [
+  ...DATE_FORMAT_OPTIONS,
+  { value: 'DD-MMM-YYYY', label: 'DD-MMM-YYYY' },
+  { value: 'MMM DD, YYYY', label: 'MMM DD, YYYY' },
+];
 
 export type CanonicalInvestmentAction =
   | 'buy'
@@ -386,6 +339,11 @@ export interface CsvHeadersResponse {
   headers: string[];
   sampleRows: string[][];
   rowCount: number;
+  /**
+   * Per column, the date format that reads the most of its values over the
+   * whole file, or null where none reads any.
+   */
+  columnDateFormats: (string | null)[];
 }
 
 export interface SavedColumnMapping {
@@ -417,7 +375,16 @@ export interface ImportCsvRequest {
 }
 
 /** Why the import left a row of the file out (`ImportSkipReason` on the server). */
-export type ImportSkipReason = 'alreadyImported' | 'duplicateTransfer' | 'unreadableDate';
+export type ImportSkipReason =
+  | 'alreadyImported'
+  | 'duplicateTransfer'
+  | 'unreadableDate'
+  // An investment-mode CSV row whose action needs data it does not carry.
+  | 'missingSecurity'
+  | 'missingQuantity'
+  | 'missingAmount'
+  | 'missingProceeds'
+  | 'missingSplitRatio';
 
 /** One row counted in `skipped`, as the file gave it. */
 export interface ImportSkippedRow {
@@ -428,7 +395,7 @@ export interface ImportSkippedRow {
   currencyCode: string;
   payee: string;
   reason: ImportSkipReason;
-  /** The line of the file the row starts on (with the header); set for `unreadableDate`. */
+  /** The line of the file the row starts on (with the header); set for a CSV row the parse left out. */
   rowNumber?: number;
   /** The date field as the file gave it, empty when it has none; set for `unreadableDate`. */
   rawDate?: string;

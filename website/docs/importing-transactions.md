@@ -77,7 +77,7 @@ At the top of the mapping step, an options bar lets you configure:
 |--------|-------------|
 | **First row is header** | Checkbox. When checked, the first row is treated as column headers and excluded from import. |
 | **Delimiter** | Dropdown: Comma (,), Semicolon (;), or Tab. Changing the delimiter re-parses the file. |
-| **Date Format** | Dropdown with common formats plus a **Custom...** option. Auto-detected from sample data. |
+| **Date Format** | Dropdown with common formats plus a **Custom...** option. Auto-detected from every row of the file. |
 
 #### Date Format Options
 
@@ -87,9 +87,13 @@ At the top of the mapping step, an options bar lets you configure:
 | DD/MM/YYYY | 15/03/2026 | International format |
 | YYYY-MM-DD | 2026-03-15 | ISO format |
 | YYYY-DD-MM | 2026-15-03 | Alternate ISO |
-| Custom... | DD.MM.YYYY | Enter any pattern using YYYY/YY, MM, DD tokens with any separator (-, /, .) |
+| DD-MMM-YYYY | 15-Mar-2026 | Month as a word, day first; also reads 15 Mar 2026, 15.Mär.2026, 15 mars 2026 |
+| MMM DD, YYYY | Mar 15, 2026 | Month as a word, month first; also reads March 15 2026 |
+| Custom... | DD.MM.YYYY | Enter any pattern using YYYY/YY, MMM (the month as a word), MM, DD tokens with any separator (-, /, ., comma, space) |
 
-Monize auto-detects the date format from sample data. If dates appear wrong, select the correct format from the dropdown or enter a custom pattern.
+Monize auto-detects the date format by reading every row of the date column and choosing the format that reads the most of them, so a day-first statement is recognized even when its first rows fall on the 1st to the 12th. If dates appear wrong, select the correct format from the dropdown or enter a custom pattern.
+
+A month written as a word is read in any of the languages Monize is available in, in full, abbreviated or as its first three or more letters (Jan, Sept, janv., Mär). A name that could mean two different months (French "jui", for juin or juillet) is not guessed: the row is reported as an unreadable date.
 
 A row whose date cannot be read under the chosen format is never imported on a guessed date: a day above 12 under the wrong day/month order, a date that does not exist (30 February), or a row with no date at all. The review step counts these rows and names each by its row in the file, and the completed import lists them among the skipped rows.
 
@@ -216,7 +220,7 @@ After a successful import, you see:
 | Metric | Description |
 |--------|-------------|
 | **Imported** | Transactions successfully imported |
-| **Skipped** | Rows not imported: an OFX row imported before ("already imported"), the other side of a transfer that is already recorded ("transfer already recorded"), or a CSV row whose date could not be read ("date could not be read", or "no date"). The skipped rows are listed with their date (for an unreadable date, its row number and the date text), amount and payee |
+| **Skipped** | Rows not imported: an OFX row imported before ("already imported"), the other side of a transfer that is already recorded ("transfer already recorded"), a CSV row whose date could not be read ("date could not be read", or "no date"), or an investment CSV row missing what its action needs ("missing security", "missing quantity", "missing amount", "sell without price or proceeds", "split without ratio"). The skipped rows are listed with their date (for a CSV row, its row number too; for an unreadable date, the date text instead), amount and payee |
 | **Errors** | Transactions that failed (with error details) |
 | **Categories created** | New categories added |
 | **Accounts created** | New accounts added |
@@ -252,7 +256,7 @@ In investment mode the column mapping asks for:
 
 Rows are classified by an exact (case-insensitive) match of the action column against keyword lists for **Buy**, **Sell**, **Dividend**, **Interest**, **Capital gain**, **Reinvest**, **Stock split**, **Shares transferred in**, **Shares transferred out**, **Add shares**, **Remove shares**, **Cash deposit** and **Cash withdrawal**. The step lists the action values found in the file and any it does not recognize; click **Customize action keywords** to add your broker's wording to a list. A value that matches nothing is imported as a cash deposit or withdrawal on the account's linked cash account, by the sign of its amount.
 
-Choose the investment account as the destination; the wizard then continues with [Map Securities](importing-from-quicken.md#step-4-map-securities). The review step adds an **Investment Transactions** box counting each action and warning about rows that will import as cash, purchases without a price, and rows that cannot be imported at all (for example a sell with no price or proceeds), so you can go back and adjust the mapping. Transfer detection rules do not apply in investment mode.
+Choose the investment account as the destination; the wizard then continues with [Map Securities](importing-from-quicken.md#step-4-map-securities). The review step adds an **Investment Transactions** box counting each action and warning about rows that will import as cash, purchases without a price, and rows that cannot be imported at all (for example a sell with no price or proceeds), so you can go back and adjust the mapping. If you import anyway, the completed import lists each of those rows among the skipped rows, by row number, date and what it was missing. Transfer detection rules do not apply in investment mode.
 
 ---
 
@@ -482,7 +486,7 @@ After a transaction is imported, your rules set to run on import (**Tools > Rule
 
 **Cause:** The date format was auto-detected incorrectly.
 
-**Solution:** For CSV, change the **Date Format** in the options bar, or enter a custom pattern. Monize defaults to MM/DD/YYYY when dates are ambiguous (e.g., both parts are 12 or less). The format is guessed from the first five rows only, so a day-first statement whose first rows fall on the 1st to the 12th is read month-first: the review step then lists its rows dated after the 12th as unreadable, a sign the other rows would import on swapped dates. OFX dates are unambiguous. For a QIF full-file export, change the **Date Format** on the review step; a single-account QIF file's date format is detected from the file itself.
+**Solution:** For CSV, change the **Date Format** in the options bar, or enter a custom pattern. Monize defaults to MM/DD/YYYY when every date in the file is ambiguous (both parts are 12 or less). When the file mixes orders, the format that reads the most rows is chosen and the review step lists the others as unreadable, a sign that some rows would import on swapped dates. OFX dates are unambiguous. For a QIF full-file export, change the **Date Format** on the review step; a single-account QIF file's date format is detected from the file itself.
 
 ### Amounts Have Wrong Sign
 

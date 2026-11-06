@@ -29,6 +29,7 @@ function renderStep(overrides: Record<string, unknown> = {}) {
       ['2024-01-01', '100.00', 'Store', 'Food'],
       ['2024-01-02', '50.00', 'Gas Station', 'Transport'],
     ],
+    columnDateFormats: [],
     columnMapping: defaultMapping(),
     onColumnMappingChange: vi.fn(),
     onInvestmentModeChange: vi.fn(),
@@ -623,6 +624,51 @@ describe('CsvColumnMappingStep', () => {
     });
   });
 
+  describe('detected date format', () => {
+    it('preselects the format the server detected for the date column over the whole file', () => {
+      // The first sample rows read either way; the server saw a later row
+      // dated after the 12th.
+      const props = renderStep({
+        sampleRows: [['01/03/2026', '100.00', 'Store', 'Food']],
+        columnDateFormats: ['DD/MM/YYYY', null, null, null],
+        columnMapping: { ...defaultMapping(), amount: 1 },
+      });
+
+      expect(props.onColumnMappingChange).toHaveBeenCalledWith(
+        expect.objectContaining({ dateFormat: 'DD/MM/YYYY' }),
+      );
+    });
+
+    it('uses the mapped date column, not the first column', () => {
+      const props = renderStep({
+        headers: ['Posted', 'Amount', 'Payee', 'Date'],
+        columnDateFormats: ['YYYY-MM-DD', null, null, 'DD-MMM-YYYY'],
+        columnMapping: { ...defaultMapping(), date: 3, amount: 1 },
+      });
+
+      expect(props.onColumnMappingChange).toHaveBeenCalledWith(
+        expect.objectContaining({ dateFormat: 'DD-MMM-YYYY' }),
+      );
+    });
+
+    it('keeps the mapping\'s format when the server detected none or the same one', () => {
+      const props = renderStep({
+        columnDateFormats: [null, null, null, null],
+        columnMapping: { ...defaultMapping(), amount: 1 },
+      });
+      expect(props.onColumnMappingChange).not.toHaveBeenCalled();
+      expect(screen.getByDisplayValue('MM/DD/YYYY')).toBeInTheDocument();
+    });
+
+    it('offers the month-name formats in the picker', () => {
+      renderStep({ columnMapping: { ...defaultMapping(), amount: 1, dateFormat: 'MMM DD, YYYY' } });
+
+      expect(screen.getByDisplayValue('MMM DD, YYYY')).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'DD-MMM-YYYY' })).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('e.g. DD.MM.YYYY')).not.toBeInTheDocument();
+    });
+  });
+
   describe('custom date format', () => {
     it('switches to custom mode and shows a free-text input when "Custom..." is chosen', () => {
       renderStep({ columnMapping: { ...defaultMapping(), amount: 1 } });
@@ -648,7 +694,7 @@ describe('CsvColumnMappingStep', () => {
     });
 
     it('treats a non-standard dateFormat in the mapping as custom on mount', () => {
-      // No sampleRows -> autoDetectedFormat is null, so the mapping's
+      // No detected format -> autoDetectedFormat is null, so the mapping's
       // non-standard dateFormat drives the custom-mode detection.
       renderStep({
         sampleRows: [],

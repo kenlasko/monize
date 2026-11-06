@@ -30,6 +30,45 @@ describe("CSV import DTO validation", () => {
     },
   };
 
+  it.each(["DD-MMM-YYYY", "MMM DD, YYYY", "DD MMMM YYYY", "DD.MM.YYYY"])(
+    "accepts the date format %s",
+    async (dateFormat) => {
+      const instance = plainToInstance(CsvColumnMappingConfigDto, {
+        ...baseMapping,
+        dateFormat,
+      });
+      expect(await validateStrict(instance)).toHaveLength(0);
+    },
+  );
+
+  it.each(["DD/MM/YYYY;", "DD (MM) YYYY", "%d/%m/%Y"])(
+    "refuses the date format %s",
+    async (dateFormat) => {
+      const instance = plainToInstance(CsvColumnMappingConfigDto, {
+        ...baseMapping,
+        dateFormat,
+      });
+      const errors = await validateStrict(instance);
+      expect(errors.map((e) => e.property)).toEqual(["dateFormat"]);
+    },
+  );
+
+  it.each(["MMM DD, YYYY", "DD MMM YYYY"])(
+    "accepts an ImportCsvDto whose mapping and top-level date format are %s",
+    async (dateFormat) => {
+      // The wizard sends the mapping's format as the top-level one too.
+      const instance = plainToInstance(ImportCsvDto, {
+        content: "Date,Amount\nJan 15, 2026,10",
+        accountId: "0b6f9070-9e2e-4f0e-9a3e-3a4b5c6d7e8f",
+        columnMapping: { ...baseMapping, dateFormat },
+        categoryMappings: [],
+        accountMappings: [],
+        dateFormat,
+      });
+      expect(await validateStrict(instance)).toHaveLength(0);
+    },
+  );
+
   it("accepts the investment column mapping fields", async () => {
     const instance = plainToInstance(
       CsvColumnMappingConfigDto,

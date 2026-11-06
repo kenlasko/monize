@@ -2032,6 +2032,31 @@ describe("CSV Parser investment mode", () => {
       ]);
     });
 
+    it("names each rejected row by its line, date, amount and reason for the import result", () => {
+      const result = parseRows([
+        "01/15/2026,Buy,AAPL,10,100.00,1000.00,0",
+        "01/16/2026,Sell,AAPL,5,,,",
+        "01/17/2026,Buy,,10,100.00,-1000.00,0",
+      ]);
+      expect(result.transactions).toHaveLength(1);
+      expect(result.rejectedInvestmentRows).toEqual([
+        {
+          rowNumber: 3,
+          date: "2026-01-16",
+          amount: 0,
+          payee: "",
+          reason: "missingProceeds",
+        },
+        {
+          rowNumber: 4,
+          date: "2026-01-17",
+          amount: -1000,
+          payee: "",
+          reason: "missingSecurity",
+        },
+      ]);
+    });
+
     it("rejects buys and sells without a quantity", () => {
       const result = parseRows([
         "01/15/2026,Buy,AAPL,,100.00,1000.00,0",
@@ -2227,6 +2252,7 @@ describe("CSV Parser investment mode", () => {
     it("reports INVESTMENT with an empty summary for empty content", () => {
       const result = parseCsv("", invConfig());
       expect(result.accountType).toBe("INVESTMENT");
+      expect(result.rejectedInvestmentRows).toEqual([]);
       expect(result.investmentSummary).toEqual({
         actionCounts: {},
         cashFallbackValues: [],
