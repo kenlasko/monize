@@ -19,7 +19,8 @@
       "separator": ", puis ",
       "names": {
         "frankfurter": "Frankfurter (taux de référence de la BCE)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Paires crypto (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "Actions"
     },
     "defaultBadge": "Par défaut",
+    "cryptoBadge": "Crypto",
+    "noPriceSymbol": "Aucun symbole de cours",
     "statusBadge": {
       "active": "Active",
       "activeShort": "Act",
@@ -98,6 +101,20 @@
     "symbolLabel": "Symbole",
     "symbolPlaceholder": "ex. $, €, £, ¥",
     "decimalPlacesLabel": "Nombre de décimales",
+    "kindLabel": "Type",
+    "kindOptions": {
+      "fiat": "Devise fiduciaire",
+      "crypto": "Cryptomonnaie"
+    },
+    "kindLocked": "{code} est utilisée, son type ne peut donc pas être modifié.",
+    "quoteSymbolLabel": "Symbole de cours (facultatif)",
+    "quoteSymbolPlaceholder": "ex. BTC-EUR",
+    "quoteSymbolHelp": "Le symbole Yahoo Finance à partir duquel le cours de la cryptomonnaie est obtenu : son ticker, un tiret et la devise dans laquelle elle est cotée, comme BTC-EUR. Les taux de change de la cryptomonnaie sont récupérés via ce symbole.",
+    "verifyButton": "Vérifier",
+    "quoteSymbolPricedIn": "Cotée en {currency}",
+    "quoteSymbolMissing": "Sans symbole de cours, la devise n'a pas de taux de change.",
+    "quoteSymbolNotCrypto": "{symbol} n'est pas une cryptomonnaie. Saisissez la paire d'une cryptomonnaie, comme BTC-EUR.",
+    "quoteSymbolNotFound": "Aucune cryptomonnaie trouvée pour {symbol}",
     "lookupButton": "Rechercher",
     "lookingUp": "Recherche en cours...",
     "clearButton": "Effacer",
@@ -109,10 +126,14 @@
       "found": "Trouvé : {details}",
       "notFound": "Aucune devise trouvée pour « {query} »",
       "lookupFailed": "Échec de la recherche - veuillez réessayer",
-      "reactivateFailed": "Échec de la réactivation de la devise"
+      "reactivateFailed": "Échec de la réactivation de la devise",
+      "verifyEmpty": "Saisissez un symbole de cours comme BTC-EUR pour le vérifier",
+      "verifyFailed": "Échec de la vérification du symbole de cours"
     },
     "inactiveNotice": "{code} figure déjà dans votre liste, mais est inactive.",
-    "cryptoNotice": "{code} n'est pas un code de devise standard. Les cryptomonnaies comme le Bitcoin sont suivies comme des titres dans un compte d'investissement, et non comme des devises. <guide>Voir comment faire dans le guide d'utilisation</guide>.",
+    "nonIsoNotice": "{code} n'est pas un code de devise standard. S'il s'agit d'une cryptomonnaie, définissez son type sur Cryptomonnaie. <guide>En savoir plus sur les cryptomonnaies dans le guide d'utilisation</guide>.",
+    "switchToCrypto": "Utiliser Cryptomonnaie",
+    "cryptoPrecisionNotice": "Les montants en cryptomonnaie sont conservés avec jusqu'à huit décimales, la précision à laquelle ils sont enregistrés ; des frais inférieurs à {smallest} ne peuvent donc pas être saisis. <guide>Voir comment enregistrer les frais de portefeuille</guide>.",
     "reactivateButton": "Réactiver {code}",
     "reactivating": "Réactivation..."
   },
@@ -121,7 +142,10 @@
     "nameRequired": "Le nom est obligatoire",
     "nameMax": "Le nom ne doit pas dépasser 100 caractères",
     "symbolRequired": "Le symbole est obligatoire",
-    "symbolMax": "Le symbole ne doit pas dépasser 10 caractères"
+    "symbolMax": "Le symbole ne doit pas dépasser 10 caractères",
+    "quoteSymbolMax": "Le symbole de cours ne doit pas dépasser 20 caractères",
+    "quoteSymbolRequiresCrypto": "Seule une cryptomonnaie a un symbole de cours",
+    "quoteSymbolNotAPair": "Saisissez une paire comme BTC-EUR : la cryptomonnaie, un tiret et un code de devise de trois lettres"
   },
   "rateHistory": {
     "title": "Historique des taux",
@@ -151,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (BCE)",
         "mnyImport": "Import Money",
+        "yahooCrypto": "Paires crypto (Yahoo)",
         "unknown": "Inconnu"
       }
     },

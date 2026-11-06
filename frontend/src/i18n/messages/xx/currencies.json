@@ -19,7 +19,8 @@
       "separator": "[XX-, then -XX]",
       "names": {
         "frankfurter": "[XX-Frankfurter (ECB reference rates)-XX]",
-        "yahoo": "[XX-Yahoo Finance-XX]"
+        "yahoo": "[XX-Yahoo Finance-XX]",
+        "crypto": "[XX-Crypto pairs (Yahoo)-XX]"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "[XX-Actions-XX]"
     },
     "defaultBadge": "[XX-Default-XX]",
+    "cryptoBadge": "[XX-Crypto-XX]",
+    "noPriceSymbol": "[XX-No price symbol-XX]",
     "statusBadge": {
       "active": "[XX-Active-XX]",
       "activeShort": "[XX-Act-XX]",
@@ -98,6 +101,20 @@
     "symbolLabel": "[XX-Symbol-XX]",
     "symbolPlaceholder": "[XX-e.g., $, €, £, ¥-XX]",
     "decimalPlacesLabel": "[XX-Decimal Places-XX]",
+    "kindLabel": "[XX-Kind-XX]",
+    "kindOptions": {
+      "fiat": "[XX-Fiat Currency-XX]",
+      "crypto": "[XX-Cryptocurrency-XX]"
+    },
+    "kindLocked": "[XX-{code} is in use, so its kind cannot change.-XX]",
+    "quoteSymbolLabel": "[XX-Price Symbol (optional)-XX]",
+    "quoteSymbolPlaceholder": "[XX-e.g. BTC-EUR-XX]",
+    "quoteSymbolHelp": "[XX-The Yahoo Finance symbol the coin is priced from: its ticker, a hyphen and the currency it is quoted in, such as BTC-EUR. Exchange rates for the coin are fetched through it.-XX]",
+    "verifyButton": "[XX-Verify-XX]",
+    "quoteSymbolPricedIn": "[XX-Priced in {currency}-XX]",
+    "quoteSymbolMissing": "[XX-Without a price symbol the currency has no exchange rate.-XX]",
+    "quoteSymbolNotCrypto": "[XX-{symbol} is not a cryptocurrency. Enter a coin's pair, such as BTC-EUR.-XX]",
+    "quoteSymbolNotFound": "[XX-No cryptocurrency found for {symbol}-XX]",
     "lookupButton": "[XX-Lookup-XX]",
     "lookingUp": "[XX-Looking up...-XX]",
     "clearButton": "[XX-Clear-XX]",
@@ -105,7 +122,9 @@
     "submitCreate": "[XX-Create Currency-XX]",
     "submitUpdate": "[XX-Update Currency-XX]",
     "inactiveNotice": "[XX-{code} is already in your list but inactive.-XX]",
-    "cryptoNotice": "[XX-{code} is not a standard currency code. Cryptocurrencies such as Bitcoin are tracked as securities in an investment account, not as currencies. <guide>See how in the user guide</guide>.-XX]",
+    "nonIsoNotice": "[XX-{code} is not a standard currency code. If it is a cryptocurrency, set its kind to Cryptocurrency. <guide>Read about cryptocurrencies in the user guide</guide>.-XX]",
+    "switchToCrypto": "[XX-Use Cryptocurrency-XX]",
+    "cryptoPrecisionNotice": "[XX-Amounts in a cryptocurrency are kept to up to eight decimal places, the precision they are stored at, so a fee smaller than {smallest} cannot be entered. <guide>See how to record wallet fees</guide>.-XX]",
     "reactivateButton": "[XX-Reactivate {code}-XX]",
     "reactivating": "[XX-Reactivating...-XX]",
     "toasts": {
@@ -113,7 +132,9 @@
       "found": "[XX-Found: {details}-XX]",
       "notFound": "[XX-No currency found for \"{query}\"-XX]",
       "lookupFailed": "[XX-Lookup failed - please try again-XX]",
-      "reactivateFailed": "[XX-Failed to reactivate currency-XX]"
+      "reactivateFailed": "[XX-Failed to reactivate currency-XX]",
+      "verifyEmpty": "[XX-Enter a price symbol such as BTC-EUR to verify-XX]",
+      "verifyFailed": "[XX-Failed to verify the price symbol-XX]"
     }
   },
   "validation": {
@@ -121,7 +142,10 @@
     "nameRequired": "[XX-Name is required-XX]",
     "nameMax": "[XX-Name must be 100 characters or less-XX]",
     "symbolRequired": "[XX-Symbol is required-XX]",
-    "symbolMax": "[XX-Symbol must be 10 characters or less-XX]"
+    "symbolMax": "[XX-Symbol must be 10 characters or less-XX]",
+    "quoteSymbolMax": "[XX-Price symbol must be 20 characters or less-XX]",
+    "quoteSymbolRequiresCrypto": "[XX-Only a cryptocurrency has a price symbol-XX]",
+    "quoteSymbolNotAPair": "[XX-Enter a pair such as BTC-EUR: the coin, a hyphen and a three-letter currency code-XX]"
   },
   "rateHistory": {
     "title": "[XX-Rate history-XX]",
@@ -151,6 +175,7 @@
         "yahooFinance": "[XX-Yahoo Finance-XX]",
         "frankfurter": "[XX-Frankfurter (ECB)-XX]",
         "mnyImport": "[XX-Money import-XX]",
+        "yahooCrypto": "[XX-Crypto pairs (Yahoo)-XX]",
         "unknown": "[XX-Unknown-XX]"
       }
     },

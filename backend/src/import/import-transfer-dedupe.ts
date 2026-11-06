@@ -3,6 +3,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { ImportContext } from "./import-context";
 import { holdKey } from "./ofx-external-id";
+import { MONEY_SCALE, roundMoney } from "../common/round.util";
 
 /**
  * How the import tells a transfer line of the file apart from a transfer the
@@ -193,8 +194,10 @@ export async function isQuickenMergedSplitTransfer(
     .getRawMany();
 
   for (const group of mergedGroups) {
-    const total = Math.round(Number(group.totalAmount) * 10000);
-    const expected = Math.round(qifTx.amount * 10000);
+    // Compared at the storage scale: equal means the same figure at any
+    // currency's precision, a coin's included.
+    const total = roundMoney(Number(group.totalAmount), MONEY_SCALE);
+    const expected = roundMoney(qifTx.amount, MONEY_SCALE);
     if (total === expected && Number(group.splitCount) >= 2) {
       logger.debug(
         `Skipping Quicken merged split transfer: ${qifTx.amount} on ${qifTx.date} ` +

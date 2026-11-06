@@ -1,4 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 import {
   BadRequestException,
   ConflictException,
@@ -61,6 +63,7 @@ describe("TransactionSplitService", () => {
     userId: "user-1",
     accountId: "account-1",
     amount: -100,
+    currencyCode: "USD",
     transactionDate: "2026-01-15",
     payeeName: "Grocery Store",
     isSplit: true,
@@ -209,6 +212,8 @@ describe("TransactionSplitService", () => {
       [TransactionSplit, splitsRepository],
       [Category, categoriesRepository],
       [UserPreference, userPreferencesRepository],
+      // `decimal_places` per currency, for the precision refusals.
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
     ]);
     mockDataSource = tenantMocks.dataSource;
 
@@ -318,6 +323,64 @@ describe("TransactionSplitService", () => {
       expect(() => service.validateSplits(splits, -100)).toThrow(
         BadRequestException,
       );
+    });
+
+    describe("at the parent currency's money precision (INV-MONEY-001)", () => {
+      const btc = { code: "BTC", decimalPlaces: 8 };
+      const cad = { code: "CAD", decimalPlaces: 2 };
+
+      it("balances a BTC network-fee split at eight places", () => {
+        const splits = [
+          { amount: -0.005, transferAccountId: "chequing" },
+          { amount: -0.000025, categoryId: "fees" },
+        ];
+        expect(() =>
+          service.validateSplits(splits, -0.005025, btc),
+        ).not.toThrow();
+      });
+
+      it("refuses a BTC split a satoshi short of its parent", () => {
+        const splits = [
+          { amount: -0.005, transferAccountId: "chequing" },
+          { amount: -0.000025, categoryId: "fees" },
+        ];
+        expect(() => service.validateSplits(splits, -0.00502501, btc)).toThrow(
+          /must equal transaction amount/,
+        );
+      });
+
+      it("refuses a BTC line with a ninth place, naming the line", () => {
+        const splits = [
+          { amount: -0.005, transferAccountId: "chequing" },
+          { amount: -0.000025001, categoryId: "fees" },
+        ];
+        expect(() => service.validateSplits(splits, -0.005025001, btc)).toThrow(
+          /splits\[1\]\.amount/,
+        );
+      });
+
+      it("accepts CAD lines at three places and refuses five", () => {
+        expect(() =>
+          service.validateSplits(
+            [
+              { amount: -12.345, categoryId: "cat-1" },
+              { amount: -7.655, categoryId: "cat-2" },
+            ],
+            -20,
+            cad,
+          ),
+        ).not.toThrow();
+        expect(() =>
+          service.validateSplits(
+            [
+              { amount: -12.34567, categoryId: "cat-1" },
+              { amount: -7.65433, categoryId: "cat-2" },
+            ],
+            -20,
+            cad,
+          ),
+        ).toThrow(BadRequestException);
+      });
     });
 
     it("passes validation for a single transfer split", () => {
@@ -695,6 +758,111 @@ describe("TransactionSplitService", () => {
         expect(transactionsRepository.create).toHaveBeenCalledWith(
           expect.objectContaining({ amount: 50, exchangeRate: 1 }),
         );
+      });
+
+      it("asks for a currency with no row once for the whole operation, not once per line", async () => {
+        // ZZZ has no `currencies` row: absent from the map, but already asked for.
+        accountsService.findOne.mockImplementation(
+          async (_u: string, id: string) => ({
+            id,
+            name: id,
+            currencyCode: "ZZZ",
+          }),
+        );
+        const lines = [-10, -20, -30].map((amount) => ({
+          amount,
+          transferAccountId: "account-2",
+        }));
+        const query = mockQueryRunner.manager.getRepository(Currency).query;
+        query.mockClear();
+
+        await service.createSplits(
+          "tx-1",
+          lines,
+          "user-1",
+          "account-1",
+          new Date("2026-01-15"),
+          "Store",
+          null,
+        );
+
+        expect(accountsService.findOne).toHaveBeenCalledTimes(6);
+        expect(query).toHaveBeenCalledTimes(1);
+      });
+
+      it("converts a CAD line into a BTC wallet at eight places", async () => {
+        accountsService.findOne
+          .mockResolvedValueOnce({
+            id: "account-2",
+            name: "Wallet",
+            currencyCode: "BTC",
+          })
+          .mockResolvedValueOnce({
+            id: "account-1",
+            name: "Chequing",
+            currencyCode: "CAD",
+          });
+        // BTC->CAD 136000.1234567890, read the other way at rate precision.
+        exchangeRateService.getRateForDate.mockResolvedValue(0.0000073529);
+        splitsRepository.save.mockResolvedValueOnce({
+          id: "split-new",
+          transactionId: "tx-1",
+          transferAccountId: "account-2",
+          amount: -1700,
+        });
+        transactionsRepository.save.mockResolvedValueOnce({
+          id: "linked-tx-1",
+          accountId: "account-2",
+        });
+
+        await service.createSplits(
+          "tx-1",
+          [{ amount: -1700, transferAccountId: "account-2" }],
+          "user-1",
+          "account-1",
+          new Date("2026-01-15"),
+          "Exchange",
+          null,
+        );
+
+        // 0.01249993, not the 0.0125 four places would round it to.
+        expect(transactionsRepository.create).toHaveBeenCalledWith(
+          expect.objectContaining({ currencyCode: "BTC", amount: 0.01249993 }),
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "account-2",
+          0.01249993,
+        );
+      });
+
+      it("stores a stated BTC received amount as given and refuses a ninth place", async () => {
+        const intoWallet = () =>
+          accountsService.findOne
+            .mockResolvedValueOnce({
+              id: "account-2",
+              name: "Wallet",
+              currencyCode: "BTC",
+            })
+            .mockResolvedValueOnce({
+              id: "account-1",
+              name: "Checking",
+              currencyCode: "USD",
+            });
+        intoWallet();
+        await createOne(-1700, 0.01249993);
+        expect(transactionsRepository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amount: 0.01249993,
+            exchangeRate: 0.0000073529,
+          }),
+        );
+
+        accountsService.updateBalance.mockClear();
+        intoWallet();
+        await expect(createOne(-1700, 0.012499931)).rejects.toThrow(
+          /transferTargetAmount/,
+        );
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });
 
       it("refuses a received amount of zero against a non-zero line", async () => {
@@ -1380,6 +1548,7 @@ describe("TransactionSplitService", () => {
           id: "tx-1",
           accountId: "account-1",
           amount: -100,
+          currencyCode: "USD",
           transactionDate: "2026-01-15",
           status: TransactionStatus.UNRECONCILED,
           payeeName: "Store",

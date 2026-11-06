@@ -112,6 +112,32 @@ describe('walkRunningBalances', () => {
     expect(balances.get('r1')).toBe(0.1);
   });
 
+  it('walks a coin register at eight places, so a satoshi fee is not lost', () => {
+    // A wallet at 0.00747493 after a -0.00502500 sale whose fee was 2,500 sats.
+    const sale = row('sale', -0.005025);
+    const coffee = row('coffee', -0.0004321);
+    const buy = row('buy', 0.01249993);
+    const balances = walkRunningBalances([sale, coffee, buy], 0.00704283, 'desc', undefined, 8);
+    expect(balances.get('sale')).toBe(0.00704283);
+    expect(balances.get('coffee')).toBe(0.01206783);
+    expect(balances.get('buy')).toBe(0.01249993);
+    // At the fiat four the same walk rounds each satoshi amount away.
+    const fiat = walkRunningBalances([sale, coffee, buy], 0.00704283, 'desc');
+    expect(fiat.get('coffee')).not.toBe(0.01206783);
+  });
+
+  it('stays exact at eight places above 2^53 units', () => {
+    const balances = walkRunningBalances(
+      [row('a', 0.00000001), row('b', 0.00000001)],
+      20999999.99999999,
+      'desc',
+      undefined,
+      8,
+    );
+    expect(balances.get('a')).toBe(20999999.99999999);
+    expect(balances.get('b')).toBe(20999999.99999998);
+  });
+
   it('returns nothing without a seed, rather than a balance of nothing', () => {
     // No balance is not a balance of zero: the cells render as unknown.
     expect(walkRunningBalances([A, B], undefined, 'desc').size).toBe(0);

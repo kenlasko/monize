@@ -21,6 +21,8 @@
  * required.
  */
 
+import { MONEY_SCALE, roundMoney } from "../common/round.util";
+
 export interface SearchTermPreferences {
   /** User's number-format locale, e.g. "en-US", "de-DE". */
   numberFormat?: string | null;
@@ -156,7 +158,9 @@ function parseAmountWithConvention(
   const numStr = fracPart !== null ? `${digits}.${fracPart}` : digits;
   const value = sign * Number(numStr);
   if (!Number.isFinite(value)) return null;
-  return Math.round(value * 10000) / 10000;
+  // At the column scale: a search for a coin amount (0.00002500) must still
+  // match its row, and a fiat term (at most four places) reads the same.
+  return roundMoney(value, MONEY_SCALE);
 }
 
 function parseAmount(term: string, numberFormat: string): number | null {

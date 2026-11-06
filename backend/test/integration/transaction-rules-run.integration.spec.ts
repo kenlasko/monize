@@ -449,7 +449,7 @@ describe("Transaction rules manual run (integration)", () => {
     );
     expect(
       balances.find((b: { id: string }) => b.id === checkingId).current_balance,
-    ).toBe("900.0000");
+    ).toBe("900.00000000");
   });
 
   it("a cross-owner transfer is evaluated on the caller's own leg only", async () => {

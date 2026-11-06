@@ -71,7 +71,7 @@ export class ScheduledTransactionOverride {
     example: -150.0,
     description: "Overridden amount (null to use base amount)",
   })
-  @Column({ type: "decimal", precision: 20, scale: 4, nullable: true })
+  @Column({ type: "decimal", precision: 24, scale: 8, nullable: true })
   amount: number | null;
 
   @ApiPropertyOptional({
@@ -128,8 +128,8 @@ export class ScheduledTransactionOverride {
   })
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "investment_total_amount",
     nullable: true,
   })

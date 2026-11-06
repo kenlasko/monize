@@ -1,5 +1,6 @@
 import { Account } from "../accounts/entities/account.entity";
 import { AiReviewRequestsService } from "../ai-review/ai-review-requests.service";
+import { Currency } from "../currencies/entities/currency.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { PayeesService } from "../payees/payees.service";
@@ -10,6 +11,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { RuleAction } from "./rule-action.types";
 import { RuleConditionNode } from "./rule-condition.types";
 import { TransactionRule } from "./transaction-rule.entity";
+import { TransactionSplitService } from "../transactions/transaction-split.service";
 import { TransactionRulesApplierService } from "./transaction-rules-applier.service";
 
 jest.mock("../common/db/locks", () => ({
@@ -70,12 +72,28 @@ const row = (over: Partial<Transaction> = {}): Transaction =>
     ...over,
   }) as Transaction;
 
-function harness(rowOver: Partial<Transaction> = {}) {
+function harness(
+  rowOver: Partial<Transaction> = {},
+  currencyRows: Array<{ code: string; decimalPlaces: number }> = [],
+  realValidation = false,
+) {
   const repos = new Map<unknown, unknown>([
     [
       Account,
       {
         find: jest.fn().mockResolvedValue([{ id: LOAN, currencyCode: "PLN" }]),
+      },
+    ],
+    // `convertRowToTransfer` reads the currency's decimal places.
+    [
+      Currency,
+      {
+        query: jest.fn().mockResolvedValue(
+          currencyRows.map((row) => ({
+            code: row.code,
+            decimal_places: row.decimalPlaces,
+          })),
+        ),
       },
     ],
     [Category, { find: jest.fn().mockResolvedValue([]) }],
@@ -113,6 +131,17 @@ function harness(rowOver: Partial<Transaction> = {}) {
     validateSplits: jest.fn(),
     createSplits: jest.fn(),
   };
+  if (realValidation) {
+    // The real validation (it reads no instance state), so a refusal is the
+    // split service's own.
+    splits.validateSplits.mockImplementation(
+      (...args: Parameters<TransactionSplitService["validateSplits"]>) =>
+        TransactionSplitService.prototype.validateSplits.apply(
+          {} as TransactionSplitService,
+          args,
+        ),
+    );
+  }
   const service = new TransactionRulesApplierService(
     {
       addTransactionTags: jest.fn(),
@@ -220,7 +249,10 @@ describe("TransactionRulesApplierService structure writes", () => {
         { amount: -1200.5, transferAccountId: LOAN },
         { amount: -300.25, categoryId: CAT, memo: "interest" },
       ];
-      expect(h.splits.validateSplits).toHaveBeenCalledWith(parts, -1500.75);
+      expect(h.splits.validateSplits).toHaveBeenCalledWith(parts, -1500.75, {
+        code: "PLN",
+        decimalPlaces: null,
+      });
       expect(h.splits.createSplits).toHaveBeenCalledWith(
         TX,
         parts,
@@ -305,6 +337,122 @@ describe("TransactionRulesApplierService structure writes", () => {
         expect.anything(),
         expect.any(Set),
       );
+    });
+  });
+
+  describe("split on several rows of one account", () => {
+    it("reads the account's currency places once for the whole apply run", async () => {
+      const ids = [TX, uuid(22), uuid(23)];
+      const h = harness();
+      h.mock.find.mockImplementation(async (entity: unknown) =>
+        entity === Transaction ? ids.map((id) => row({ id })) : [],
+      );
+      h.mock.findOne.mockImplementation(
+        async (entity: unknown, options?: { where?: { id?: string } }) =>
+          entity === Transaction ? row({ id: options?.where?.id ?? TX }) : null,
+      );
+      h.splits.createSplits.mockResolvedValue([
+        { id: "s1", linkedTransactionId: COUNTERPART },
+        { id: "s2", linkedTransactionId: null },
+      ]);
+      const places = (
+        h.m as unknown as {
+          getRepository: (e: unknown) => { query: jest.Mock };
+        }
+      ).getRepository(Currency).query;
+      places.mockClear();
+
+      const applied = await h.service.applyToNew(h.m, USER, ids, "create", {
+        rules: [rule(SPLIT_PATTERN, [SPLIT])],
+      });
+
+      expect(applied).toHaveLength(3);
+      expect(h.splits.createSplits).toHaveBeenCalledTimes(3);
+      expect(h.splits.validateSplits).toHaveBeenCalledTimes(3);
+      expect(places).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("split on a coin account", () => {
+    const BTC = [{ code: "BTC", decimalPlaces: 8 }];
+    const split = rule(SPLIT_PATTERN, [
+      {
+        type: "split",
+        parts: [
+          { amount: "{principal}", categoryId: CAT },
+          { amount: "{interest}", categoryId: CAT, description: "interest" },
+        ],
+      },
+    ]);
+
+    it("validates an eight-place line against the parent currency's places", async () => {
+      const h = harness(
+        {
+          currencyCode: "BTC",
+          amount: "-0.00000008" as never,
+          payeeName: "PRINCIPAL: 0,00000005 INTEREST: 0,00000003PENALTY: 0,00",
+        },
+        BTC,
+        true,
+      );
+      h.splits.createSplits.mockResolvedValue([
+        { id: "s1", linkedTransactionId: null },
+        { id: "s2", linkedTransactionId: null },
+      ]);
+      await run(h, split);
+
+      expect(h.splits.validateSplits).toHaveBeenCalledWith(
+        [
+          { amount: -0.00000005, categoryId: CAT },
+          { amount: -0.00000003, categoryId: CAT, memo: "interest" },
+        ],
+        -0.00000008,
+        { code: "BTC", decimalPlaces: 8 },
+      );
+      expect(h.splits.validateSplits).toHaveReturned();
+      expect(h.splits.createSplits).toHaveBeenCalledTimes(1);
+    });
+
+    it("refuses a nine-place line before anything is written", async () => {
+      const h = harness(
+        { currencyCode: "BTC", amount: "-0.00000008" as never },
+        BTC,
+        true,
+      );
+      const plan = {
+        kind: "split" as const,
+        parts: [
+          {
+            amount: -0.000000051,
+            categoryId: CAT,
+            transferAccountId: null,
+            memo: null,
+            payeeId: null,
+          },
+          {
+            amount: -0.000000029,
+            categoryId: CAT,
+            transferAccountId: null,
+            memo: null,
+            payeeId: null,
+          },
+        ],
+      };
+
+      await expect(
+        (
+          h.service as unknown as {
+            writeSplit: (
+              m: unknown,
+              userId: string,
+              id: string,
+              plan: unknown,
+            ) => Promise<unknown>;
+          }
+        ).writeSplit(h.m, USER, TX, plan),
+      ).rejects.toThrow(/splits\[0\]\.amount.*more decimal places than BTC/);
+      expect(h.splits.createSplits).not.toHaveBeenCalled();
+      expect(h.mock.update).not.toHaveBeenCalled();
     });
   });
 

@@ -32,17 +32,25 @@ import { getLocalDateString } from '@/lib/utils';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import {
   roundMoney,
-  roundToCents,
+  sumMoney,
   roundToDecimals,
+  roundToEntryPlaces,
+  entryDecimalPlaces,
+  loadedEntryAmount,
+  awaitsRegisteredPlaces,
   getCurrencySymbol,
   getDecimalPlacesForCurrency,
   formatAmount,
   FX_RATE_DISPLAY_DECIMALS,
+  FIAT_MONEY_DECIMALS,
+  MONEY_SCALE,
+  moneyDecimalsForCurrency,
 } from '@/lib/format';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { getErrorMessage } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { getProjectedBalanceAtDate, FutureTransaction } from '@/lib/forecast';
 import { computeInvestmentCashImpact } from '@/lib/investmentCashImpact';
 import { InvestmentAction } from '@/types/investment';
@@ -248,20 +256,32 @@ export function PostTransactionDialog({
     [accounts, scheduledTransaction.accountId],
   );
   const postFxFeePercent = postingAccount?.fxFeePercent ?? undefined;
+  // An account-currency amount at the account currency's places: a coin's own
+  // (0.0051 BTC posted 0.01 at cents), two for fiat as before. The biller's
+  // amount rounds at the foreign currency's. The places come from the currency
+  // decimals registry, which `GET /currencies` can fill after the dialog
+  // opens, so its version is a dep and a late fill re-converts at four places.
+  const accountCurrency = scheduledTransaction.currencyCode;
+  const registryVersion = useCurrencyDecimalsVersion();
+  const toAccountPlaces = useCallback(
+    (value: number) => roundToEntryPlaces(value, accountCurrency),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
+    [accountCurrency, registryVersion],
+  );
 
   // Convert at the posting-date rate, folding in the account's foreign
   // transaction fee. Mirrors `applyFxConversion` on the backend, which is what
   // actually books the row.
   const convertForeign = useCallback(
     (foreign: number, rate: number) => {
-      const base = roundToCents(foreign * rate);
+      const base = toAccountPlaces(foreign * rate);
       const fee =
         postFxFeePercent && postFxFeePercent > 0
-          ? -roundToCents((Math.abs(base) * postFxFeePercent) / 100)
+          ? -toAccountPlaces((Math.abs(base) * postFxFeePercent) / 100)
           : 0;
-      return { base, fee, total: roundToCents(base + fee) };
+      return { base, fee, total: toAccountPlaces(base + fee) };
     },
-    [postFxFeePercent],
+    [postFxFeePercent, toAccountPlaces],
   );
 
   // A new occurrence starts from the looked-up rate, not one the user derived
@@ -362,7 +382,7 @@ export function PostTransactionDialog({
     if (postFxFeePercent && postFxFeePercent > 0) {
       // total = base - |base| * p; solve for base by its (matching) sign.
       const p = postFxFeePercent / 100;
-      base = roundToCents(total >= 0 ? total / (1 - p) : total / (1 + p));
+      base = toAccountPlaces(total >= 0 ? total / (1 - p) : total / (1 + p));
     }
     rateOverriddenRef.current = true;
     // A lookup can still be in flight -- its own .then/.catch now checks the
@@ -372,7 +392,7 @@ export function PostTransactionDialog({
     setPostFxRateLoading(false);
     setRateLookupFailed(false);
     setPostFxRate(roundToDecimals(base / foreignAmount, 10));
-    setAmount(roundToCents(total));
+    setAmount(toAccountPlaces(total));
   };
 
   // The cash impact that will actually post -- reflects per-occurrence edits
@@ -420,11 +440,19 @@ export function PostTransactionDialog({
       : null;
     return {
       sourceBefore,
-      sourceAfter: sourceBefore != null ? roundToCents(sourceBefore + effectivePostAmount) : null,
+      sourceAfter:
+        sourceBefore != null && sourceAccount
+          ? roundToEntryPlaces(sourceBefore + effectivePostAmount, sourceAccount.currencyCode)
+          : null,
       transferBefore,
-      transferAfter: transferBefore != null ? roundToCents(transferBefore - effectivePostAmount) : null,
+      transferAfter:
+        transferBefore != null && transferAccount
+          ? roundToEntryPlaces(transferBefore - effectivePostAmount, transferAccount.currencyCode)
+          : null,
     };
-  }, [sourceAccount, transferAccount, transactionDate, effectivePostAmount, scheduledTransactions, futureTransactions, scheduledTransaction.id, accounts]);
+    // Both balances round at their account's places, read from the registry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
+  }, [sourceAccount, transferAccount, transactionDate, effectivePostAmount, scheduledTransactions, futureTransactions, scheduledTransaction.id, accounts, registryVersion]);
 
   // Initialize form with transaction values (including override if exists)
   // Initialize the form whenever the dialog opens or the occurrence it posts
@@ -449,14 +477,22 @@ export function PostTransactionDialog({
       // which is what the bank debits (issue #1581).
       const decimals = getDecimalPlacesForCurrency(scheduledTransaction.currencyCode);
       const rawAmount = Number(nextOverride?.amount ?? scheduledTransaction.amount);
-      const amt = roundToDecimals(rawAmount, decimals);
+      // A coin the registry does not hold yet keeps its stored places at the
+      // column scale (`loadedEntryAmount`'s rule), so posting before
+      // `GET /currencies` answers does not book 0.00002500 BTC as 0.00.
+      const amt = awaitsRegisteredPlaces(scheduledTransaction.currencyCode)
+        ? roundMoney(rawAmount, MONEY_SCALE)
+        : roundToDecimals(rawAmount, decimals);
       // Foreign-currency schedule: the field the user edits is the biller's
       // amount in its own currency. An occurrence override deliberately stays
       // an account-currency figure (see resolveFxForPosting on the backend), so
       // it does not seed this.
       setForeignAmount(
         scheduledTransaction.originalAmount != null
-          ? roundToCents(Number(scheduledTransaction.originalAmount))
+          ? loadedEntryAmount(
+              Number(scheduledTransaction.originalAmount),
+              scheduledTransaction.originalCurrencyCode,
+            )
           : 0,
       );
       setPostFxRate(null);
@@ -494,11 +530,11 @@ export function PostTransactionDialog({
         if (booked) {
           setSplits(booked.rows);
         } else {
-          setSplits(rows ?? createEmptySplits(amt));
+          setSplits(rows ?? createEmptySplits(amt, scheduledTransaction.currencyCode));
         }
         setTemplateBaseline(booked ? { rows: booked.rows, amount: amt } : null);
       } else {
-        setSplits(createEmptySplits(amt));
+        setSplits(createEmptySplits(amt, scheduledTransaction.currencyCode));
         setTemplateBaseline(null);
       }
       setLoanPrefill(null);
@@ -547,7 +583,8 @@ export function PostTransactionDialog({
             ? Number(scheduledTransaction.investmentTotalAmount)
             : null;
       if (storedTotal != null && storedTotal > 0) {
-        setInvestmentTotalValue(roundMoney(storedTotal));
+        // An investment total is fiat (INV-CRYPTO-001): the fiat four places.
+        setInvestmentTotalValue(roundMoney(storedTotal, FIAT_MONEY_DECIMALS));
       } else if (
         typeof initialQty === 'number' &&
         initialQty > 0 &&
@@ -840,9 +877,12 @@ export function PostTransactionDialog({
         toast.error(t('postTransaction.minSplits'));
         return;
       }
-      const splitsTotal = splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
-      const remaining = Math.abs(amount - splitsTotal);
-      if (remaining >= 0.01) {
+      // At the server's precision (`validateSplitAmountSum`): the lines must
+      // equal the amount exactly at the currency's money precision (four for
+      // fiat, a coin's eight), not within a cent.
+      const splitsMoneyDecimals = moneyDecimalsForCurrency(scheduledTransaction.currencyCode);
+      const splitsTotal = sumMoney(splits.map((s) => Number(s.amount) || 0), splitsMoneyDecimals);
+      if (splitsTotal !== roundMoney(amount, splitsMoneyDecimals)) {
         toast.error(t('postTransaction.splitMismatch'));
         return;
       }
@@ -918,7 +958,7 @@ export function PostTransactionDialog({
   };
 
   const handleAmountChange = (newAmount: number) => {
-    setAmount(roundToCents(newAmount));
+    setAmount(toAccountPlaces(newAmount));
   };
 
   // Copy the unsigned amount (no minus sign, no currency symbol or commas) so it
@@ -1187,9 +1227,12 @@ export function PostTransactionDialog({
                     isForeignPosting ? entryCurrency : scheduledTransaction.currencyCode,
                   )}
                   value={isForeignPosting ? foreignAmount : amount}
+                  decimalPlaces={entryDecimalPlaces(
+                    isForeignPosting ? entryCurrency : accountCurrency,
+                  )}
                   onChange={(value) =>
                     isForeignPosting
-                      ? setForeignAmount(roundToCents(value ?? 0))
+                      ? setForeignAmount(roundToEntryPlaces(value ?? 0, entryCurrency))
                       : setAmount(value ?? 0)
                   }
                   allowSignToggle
@@ -1215,6 +1258,7 @@ export function PostTransactionDialog({
                   currency: scheduledTransaction.currencyCode,
                 })}
                 prefix={getCurrencySymbol(scheduledTransaction.currencyCode)}
+                decimalPlaces={entryDecimalPlaces(accountCurrency)}
                 value={foreignConversion ? foreignConversion.total : undefined}
                 onChange={handleConvertedTotalChange}
                 allowSignToggle
@@ -1298,7 +1342,7 @@ export function PostTransactionDialog({
                 onChange={(next) => {
                   setIsSplit(next);
                   if (next && splits.length < 2) {
-                    setSplits(createEmptySplits(amount));
+                    setSplits(createEmptySplits(amount, scheduledTransaction.currencyCode));
                   }
                 }}
                 label={t('postDialog.splitLabel')}

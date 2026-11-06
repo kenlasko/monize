@@ -39,8 +39,8 @@ export class MonteCarloCashFlow {
   /** Signed amount: positive for income, negative for expenses. */
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     transformer: decimalTransformer,
   })
   amount: number;

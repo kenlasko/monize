@@ -2,11 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@/test/render';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from './SplitEditor';
 
-vi.mock('@/lib/format', () => ({
+vi.mock('@/lib/format', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/format')>()),
   getCurrencySymbol: () => '$',
   getDecimalPlacesForCurrency: () => 2,
   roundToCents: (v: number) => Math.round(v * 100) / 100,
-  roundMoney: (v: number) => Math.round(v * 10000) / 10000,
+  // No currency is registered in this suite, so every code rounds at cents.
+  roundToEntryPlaces: (v: number) => Math.round(v * 100) / 100,
+  roundMoney: (v: number, d = 4) => { const f = Math.pow(10, d); return Math.round(v * f) / f; },
   roundToDecimals: (v: number, d: number) => { const f = Math.pow(10, d); return Math.round(v * f) / f; },
   formatAmount: (v: number | undefined | null) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 100) / 100).toFixed(2),
   formatAmountWithCommas: (v: number | undefined | null) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 100) / 100).toFixed(2),

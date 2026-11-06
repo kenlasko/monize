@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import {
+  BadRequestException,
   NotFoundException,
   ConflictException,
   ForbiddenException,
@@ -8,6 +9,10 @@ import {
 import { DataSource } from "typeorm";
 import * as bcrypt from "bcryptjs";
 import { UsersService } from "./users.service";
+import {
+  currencyKindRows,
+  isCurrencyKindRead,
+} from "../test-helpers/currency-kind-testing";
 import { User } from "./entities/user.entity";
 import { UserPreference } from "./entities/user-preference.entity";
 import { TrustedDevice } from "./entities/trusted-device.entity";
@@ -818,6 +823,53 @@ describe("UsersService", () => {
       ).rejects.toThrow("refused");
 
       expect(preferencesRow.patches()).toHaveLength(0);
+    });
+
+    /**
+     * Decision 11 of `docs/specs/crypto-accounts.md`: every converted figure
+     * is `roundMoney` in the reporting currency at four places, and 0.0001 BTC
+     * is about 14 CAD, so a coin is never the reporting currency. Refused in
+     * the preference write's transaction, before anything is written.
+     */
+    it("refuses a cryptocurrency as the reporting currency, writing nothing", async () => {
+      preferencesRow.seed(mockPreferences);
+      const query = mockQueryRunner.query as jest.Mock;
+      const base = query.getMockImplementation();
+      query.mockImplementation(
+        async (sql: string, params?: unknown[]) =>
+          currencyKindRows(sql, params) ?? base?.(sql, params) ?? [],
+      );
+
+      await expect(
+        service.updatePreferences("user-1", { defaultCurrency: "BTC" }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.updatePreferences("user-1", { defaultCurrency: "BTC" }),
+      ).rejects.toThrow("A cryptocurrency cannot be the reporting currency");
+
+      expect(preferencesRow.patches()).toHaveLength(0);
+      expect(currenciesService.ensureCurrencyForUser).not.toHaveBeenCalled();
+      expect(query.mock.calls.some(([sql]) => isCurrencyKindRead(sql))).toBe(
+        true,
+      );
+    });
+
+    it("accepts a fiat reporting currency after reading its kind", async () => {
+      preferencesRow.seed(mockPreferences);
+      const query = mockQueryRunner.query as jest.Mock;
+      const base = query.getMockImplementation();
+      query.mockImplementation(
+        async (sql: string, params?: unknown[]) =>
+          currencyKindRows(sql, params) ?? base?.(sql, params) ?? [],
+      );
+
+      await service.updatePreferences("user-1", { defaultCurrency: "CAD" });
+
+      expect(preferencesRow.row()!.defaultCurrency).toBe("CAD");
+      const kindRead = query.mock.calls.find(([sql]) =>
+        isCurrencyKindRead(sql),
+      );
+      expect(kindRead?.[1]).toEqual(["CAD"]);
     });
 
     it("does not ensure a currency when the default is unchanged", async () => {

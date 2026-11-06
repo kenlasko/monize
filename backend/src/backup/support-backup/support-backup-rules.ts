@@ -48,6 +48,9 @@ export const RULES: Record<string, TableRules> = {
     is_active: keep,
     created_by_user_id: keep,
     created_at: keep,
+    kind: keep,
+    // A public market ticker (`BTC-EUR`), not anything the user wrote.
+    quote_symbol: keep,
   },
   // A note is the user's own writing about their own day: whatever they put in
   // it, a support copy has no use for the text and every reason not to carry

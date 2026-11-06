@@ -5,8 +5,8 @@ arithmetic each derived figure is defined by. This is the narrow reference that
 `docs/financial-calculation-contract.md` and `docs/time-series-contract.md`
 assume. Those two own missing-data propagation, the cost-basis/tax truth table,
 materialized-result versioning, adjusted-versus-raw prices and period
-boundaries; none of that is repeated here. Root `CLAUDE.md` states the
-`decimal(20,4)` and `roundFxRate` rules at a glance -- this document gives the
+boundaries; none of that is repeated here. `AGENTS.md` states the
+`NUMERIC(24,8)` money and `roundFxRate` rules at a glance -- this document gives the
 full field table and the call sites.
 
 It exists because a semantic that lives in three places drifts in two of them.
@@ -16,7 +16,7 @@ rather than by either one failing a test.
 
 ## 1. Signs
 
-`transactions.amount` is a single signed `decimal(20,4)`. There is no debit/credit
+`transactions.amount` is a single signed `NUMERIC(24,8)`. There is no debit/credit
 column and no type flag:
 
 ```text
@@ -147,11 +147,17 @@ Stored: originalAmount 100.00, originalCurrencyCode USD, exchangeRate 1.3500,
 
 **Storage orientation is not the same question.** The rule above is about a
 transaction's own `exchangeRate` column. A row in `exchange_rates` is stored in
-one orientation per pair -- `from_currency` sorting before `to_currency` --
-written by `canonicalRateRow`
-(`backend/src/currencies/canonical-rate.util.ts`), and every lookup resolves
-either direction through `resolveFxRate`, so nothing reads the storage layout as
-a statement about which way round the market quotes a pair (INV-FX-003).
+one orientation per pair -- `from_currency` sorting before `to_currency`, except
+that a pair with exactly one cryptocurrency side is stored coin -> fiat
+whichever code sorts first, because a coin's fiat -> coin rate keeps too few
+figures at ten decimals (`XBT->IDR` 1.52e9 as `IDR->XBT` is `0.0000000007`, 6%
+off) -- written by `canonicalRateRow`
+(`backend/src/currencies/canonical-rate.util.ts`, given each writer's reading of
+`currencies.kind`), and every lookup resolves either direction through
+`resolveFxRate`, so nothing reads the storage layout as a statement about which
+way round the market quotes a pair (INV-FX-003). A rate that as stored would be
+at or above 1e10 (the `NUMERIC(20,10)` ceiling) or round to zero is refused and
+reported per pair as out of range.
 
 **Precision.** A rate is not money. `roundFxRate` rounds to
 `FX_RATE_DECIMALS = 10`, matching the `NUMERIC(20,10)` columns; display uses
@@ -216,14 +222,68 @@ figure under a CAD heading, which is worse than an error because it is
 plausible. `docs/financial-calculation-contract.md` section 1 governs what to
 return instead.
 
+### A cryptocurrency is a currency priced through its Yahoo pair
+
+A currency has a `kind`, `FIAT` or `CRYPTO` (`currencies.kind`). A `CRYPTO`
+currency is the currency of `CRYPTO` accounts only, and nothing else holds one
+(INV-CRYPTO-001); a security stays priced in fiat. Its `quote_symbol` is the
+Yahoo `<COIN>-<FIAT>` symbol it is priced from (`BTC-EUR`), NULL on every fiat
+row; the coin leg is Yahoo's ticker, which need not equal the three-letter code
+(`DOG` priced from `DOGE-USD`), because `currencies.code` and every column
+referencing it stay `VARCHAR(3)`.
+
+- **The crypto provider is always present and always last.** The factory in
+  `currencies.module.ts` appends `CryptoFxProvider` (source `yahoo_crypto`)
+  after whatever `FX_PROVIDERS` names; it is not a token of it.
+- **A coin pair is claimed.** `FxRateProvider.claims` decides who may be asked
+  before `carries` does: a pair with a coin on either side goes only to a
+  provider that claims the coin, and a claiming provider is asked about no fiat
+  pair (`FxProviderChain`, INV-CRYPTO-002). Yahoo's fiat adapter carries every
+  code, so without the claim a coin pair would reach its `=X` grammar first.
+- **The fiat leg is the pair asked, not the symbol's.** The symbol names the
+  coin; the quote is whichever fiat the pair names, so `BTC` mapped to
+  `BTC-EUR` is priced against CAD through `BTC-CAD`. `resolveFxRate` consults a
+  pair's two directions and no pivot currency, so the refresh asks for the coin
+  against every fiat in use directly (`canonicalPairsByBase`), never through a
+  third currency. A pair of two coins is asked once as `<coinA>-<coinB>`.
+- **A coin is quoted every day.** Besides the weekday refresh, a Saturday and
+  Sunday tick (`scheduledCryptoRateRefresh`, `docs/cron-jobs.md`) runs
+  `refreshCryptoRates`, the pairs with a coin side only; an observation is
+  dated by the UTC day of the quote's market time.
+- **Precision is the coin's own places, up to eight.** Money is
+  `NUMERIC(24,8)` and a coin's amounts are stored and rounded at
+  `moneyDecimalsFor(decimalPlaces)`: `decimalPlaces` is capped at 8, the default
+  for a coin, so a 2,500-satoshi fee is `0.00002500` BTC, while a fiat currency
+  keeps four. An amount with more places than the coin carries is refused
+  (`errors.transactions.amountPrecisionExceeded`), never rounded
+  (INV-MONEY-001, section 4). The rate itself is an ordinary
+  `NUMERIC(20,10)` rate (section 4).
+- **A coin is never the reporting currency.** Every converted figure is
+  `roundMoney` in the reporting currency, which stays at four places, and
+  four places of a coin are too coarse for a total (0.0001 BTC is about 14 CAD); the preferences update
+  refuses one (`errors.preferences.defaultCurrencyCrypto`, decision 11 of the
+  spec).
+- **A coin's re-pointed ticker is a kind-sized change.** On a code data
+  references, a new fiat leg in `quote_symbol` is allowed and a new coin
+  ticker is refused (`quoteSymbolInUse`), because `currencies` is shared.
+- **A coin without a price symbol is unpriced, not worthless.** The refresh
+  reports the pair uncarried and names the Currencies page; every converted
+  figure in that coin is unknown, never zero and never at 1 (FIN-002 above).
+
+The design and its truth tables are `docs/specs/crypto-accounts.md`.
+
 ## 4. Precision by field
 
-Money is `decimal(20,4)`. Everything below is a deliberate exception; a value
-whose column is wider must not be rounded to money precision on the way in.
+Money is `NUMERIC(24,8)`: the columns hold eight places, and an amount is
+rounded at `moneyDecimalsFor(currency.decimalPlaces)` (`backend/src/common/round.util.ts`),
+four for every fiat currency and the coin's own places, up to eight, for a
+cryptocurrency (INV-MONEY-001). Everything below is a deliberate exception; a
+value whose column is wider must not be rounded to money precision on the way in.
 
 | Field | Precision | Note |
 | --- | --- | --- |
-| `transactions.amount`, `transaction_splits.amount`, `accounts.opening_balance`, `accounts.current_balance`, budget amounts, `investment_transactions.total_amount`, `investment_transactions.commission` | `NUMERIC(20,4)` | money |
+| `transactions.amount`, `transaction_splits.amount`, `accounts.opening_balance`, `accounts.current_balance`, budget amounts, `investment_transactions.total_amount`, `investment_transactions.commission` | `NUMERIC(24,8)` | money; rounded at `moneyDecimalsFor(currency.decimalPlaces)` (4 for fiat, up to 8 for a coin); `applyFxConversion(amount, rate, fxFeePercent, { toDecimals })` rounds a conversion at the target currency's precision |
+| `shared_entries`, `shared_allocations` and `shared_ledger_links` money columns | `NUMERIC(20,4)` | the deliberate exception: that subsystem is fiat by construction (a group's currency must be `FIAT`), so it keeps four places (`docs/specs/money-precision.md` section 10) |
 | `exchange_rates.rate` and every `exchange_rate` column that mirrors it | `NUMERIC(20,10)` | round with `roundFxRate`, display at 6dp |
 | `investment_transactions.quantity`, `holdings.quantity`, `scheduled_transactions.investment_quantity` | `NUMERIC(20,8)` | share counts -- and the SPLIT ratio, see section 6 |
 | `investment_transactions.price`, `holdings.average_cost`, `security_prices.{open,high,low,close,adjusted_close}_price`, `scheduled_transactions.investment_price` | `NUMERIC(24,10)` | per-share prices are wider than money |
@@ -239,7 +299,7 @@ storage precision, and it is the one place the two legitimately differ.
 A trade's `total_amount` is what it came to; `price` is a quotient of it and
 carries the division's remainder, not the trade's meaning. So:
 
-- A caller that supplies a total has it stored **as given** at 4dp, and the
+- A caller that supplies a total has it stored **as given** at its currency's money precision (4dp for fiat), and the
   price derived from it at the price column's 10dp:
   `price = (total -/+ commission) / quantity`, the commission taken back out of
   an acquisition and put back into a disposal.
@@ -279,8 +339,8 @@ the canonical case sums exactly:
 -3.3333 - 3.3333 - 3.3334 = -10.0000
 ```
 
-Note what makes this work: the comparison happens at 4dp, the storage
-precision. Rounding to cents before comparing -- which a currency input is
+Note what makes this work: the comparison happens at the money precision
+(4dp for fiat, the coin's places for a coin), the storage precision. Rounding to cents before comparing -- which a currency input is
 tempted to do -- makes three amounts that do not sum appear to.
 
 ### Removing one line
@@ -347,6 +407,12 @@ sent. A duplicate or quick fill copies none. Undo compares it, so an edit of
 that figure alone is refused like any other leg change. The scheduled surfaces
 do not store a received amount and still convert when the occurrence posts.
 The full rules and test matrix are in `docs/specs/split-cross-currency-transfer.md`.
+
+A transfer that pays a fee on the way, such as coin sent from a `CRYPTO`
+account with a network fee, is a split: one transfer line for what the
+counterpart receives (with its received amount when the currencies differ) and
+one category line for the fee, both in the parent's currency, under the rules
+above (`docs/specs/crypto-accounts.md`, decision 9).
 
 ## 6. Investments
 
@@ -1029,7 +1095,7 @@ real extra or short payment, so the lines booked are the row's amount
 divided by the amount policy below, never the priced total's own split
 unless the row paid exactly that.
 
-`paid = abs(row.amount)`, `diff = paid - T` at 4dp. Within
+`paid = abs(row.amount)`, `diff = paid - T` at 4dp (a loan is fiat). Within
 `LOAN_SETTLEMENT_TOLERANCE_MINOR_UNITS = 5` minor units of the account's
 currency (0.05 EUR/USD, 5 JPY, 0.005 KWD) the difference is rounding, not
 money, and lands on the interest line: a bank's own day-count or rounding

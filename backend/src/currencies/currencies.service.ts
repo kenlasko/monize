@@ -6,12 +6,17 @@ import {
   ForbiddenException,
   BadRequestException,
   OnApplicationBootstrap,
+  Optional,
 } from "@nestjs/common";
 import { tr } from "../i18n/translate";
 import { DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { withSystemContext } from "../common/db/with-context";
-import { Currency } from "./entities/currency.entity";
+import {
+  Currency,
+  CurrencyKind,
+  DEFAULT_CURRENCY_KIND,
+} from "./entities/currency.entity";
 import { UserCurrencyPreference } from "./entities/user-currency-preference.entity";
 import { CreateCurrencyDto } from "./dto/create-currency.dto";
 import { UpdateCurrencyDto } from "./dto/update-currency.dto";
@@ -23,13 +28,29 @@ import {
   type CurrencyMetadata,
 } from "./currency-metadata";
 import { FALLBACK_DEFAULT_CURRENCY } from "../common/default-currency.util";
+import { MONEY_SCALE, moneyDecimalsFor } from "../common/round.util";
 import { FxProviderChain } from "./providers/fx-provider-chain";
+import { CryptoFxProvider } from "./providers/crypto-fx.provider";
+import { ExchangeRateHistoryService } from "./exchange-rate-history.service";
+import {
+  QuoteSymbolRefusal,
+  quoteSymbolCoinTicker,
+  quoteSymbolRefusal,
+} from "./currency-kind.util";
 
 export interface CurrencyLookupResult {
   code: string;
   name: string;
   symbol: string;
   decimalPlaces: number;
+}
+
+/**
+ * One entry of the onboarding catalog. Always FIAT: the catalog is ISO 4217
+ * metadata, and nothing infers a coin from a code (decision 1).
+ */
+export interface CurrencyCatalogEntry extends CurrencyLookupResult {
+  kind: CurrencyKind;
 }
 
 export interface CurrencyUsageMap {
@@ -44,7 +65,16 @@ export interface UserCurrencyView {
   isActive: boolean;
   isSystem: boolean;
   createdAt: Date;
+  kind: CurrencyKind;
+  quoteSymbol: string | null;
 }
+
+/**
+ * The places a coin defaults to: the most money holds, eight
+ * (`docs/specs/money-precision.md` decision 2, superseding decision 4 of
+ * `docs/specs/crypto-accounts.md`).
+ */
+const CRYPTO_DEFAULT_DECIMAL_PLACES = 8;
 
 // The currency every new user's preferences default to (see
 // buildDefaultPreferences), and the one every reporting surface falls back to
@@ -54,6 +84,25 @@ export interface UserCurrencyView {
 // row resolves no rate at all: every converted total would be withheld.
 const DEFAULT_CURRENCY_CODE = FALLBACK_DEFAULT_CURRENCY;
 
+/** The translated message for each price-symbol refusal. */
+const QUOTE_SYMBOL_REFUSAL_MESSAGES: Record<
+  QuoteSymbolRefusal,
+  (code: string, quoteSymbol: string) => string
+> = {
+  quoteSymbolRequiresCrypto: (code, quoteSymbol) =>
+    tr(
+      "errors.currencies.quoteSymbolRequiresCrypto",
+      `A price symbol (${quoteSymbol}) can only be set on a cryptocurrency; "${code}" is a fiat currency`,
+      { code, quoteSymbol },
+    ),
+  quoteSymbolNotAPair: (code, quoteSymbol) =>
+    tr(
+      "errors.currencies.quoteSymbolNotAPair",
+      `The price symbol "${quoteSymbol}" for "${code}" is not a coin and fiat pair such as BTC-EUR`,
+      { code, quoteSymbol },
+    ),
+};
+
 @Injectable()
 export class CurrenciesService implements OnApplicationBootstrap {
   private readonly logger = new Logger(CurrenciesService.name);
@@ -61,6 +110,19 @@ export class CurrenciesService implements OnApplicationBootstrap {
   constructor(
     private dataSource: DataSource,
     private readonly fxProviders: FxProviderChain,
+    /**
+     * Told when a currency row changes, so the codes it prices are re-read
+     * on its next question instead of after its cache expires. Optional: a
+     * caller that builds this service without the chain's crypto adapter
+     * loses nothing but the early refresh.
+     */
+    @Optional() private readonly cryptoFx?: CryptoFxProvider,
+    /**
+     * Told when a coin's price symbol is first set or re-pointed, so the
+     * windows this process remembers as empty for the code are asked again.
+     * Optional for the same reason as `cryptoFx`.
+     */
+    @Optional() private readonly rateHistory?: ExchangeRateHistoryService,
   ) {}
 
   /**
@@ -94,9 +156,11 @@ export class CurrenciesService implements OnApplicationBootstrap {
 
     // One transaction: every branch below is "look, then insert", so splitting
     // the read from the write would let a concurrent request slip between them.
-    return withScopedDb(this.dataSource, async (manager) =>
+    const view = await withScopedDb(this.dataSource, async (manager) =>
       this.createWithin(manager, userId, dto, code),
     );
+    this.cryptoFx?.forgetCurrencies();
+    return view;
   }
 
   private async createWithin(
@@ -112,6 +176,21 @@ export class CurrenciesService implements OnApplicationBootstrap {
     });
 
     if (existing) {
+      // A request that states a kind is a statement about the currency, not a
+      // preference: a code that already exists in the other kind is refused
+      // rather than handed back silently (a CRYPTO request answered with a
+      // FIAT row, INV-CRYPTO-001). A request without a kind adopts the row.
+      const existingKind = existing.kind ?? DEFAULT_CURRENCY_KIND;
+      if (dto.kind !== undefined && dto.kind !== existingKind) {
+        throw new ConflictException(
+          tr(
+            "errors.currencies.kindConflict",
+            `Currency "${code}" already exists as a ${existingKind} currency and cannot be added as ${dto.kind}`,
+            { code, kind: existingKind, requestedKind: dto.kind },
+          ),
+        );
+      }
+
       // Check if this user already has this currency in their list
       const existingPref = await manager
         .getRepository(UserCurrencyPreference)
@@ -154,11 +233,20 @@ export class CurrenciesService implements OnApplicationBootstrap {
       return this.buildUserCurrencyView(existing, true);
     }
 
-    // Currency doesn't exist — create it as a user-created currency
+    // Currency doesn't exist — create it as a user-created currency. Its kind
+    // is the reader's statement, FIAT unless they said CRYPTO; a price symbol
+    // is held to the kind before anything is written.
+    const kind = dto.kind ?? DEFAULT_CURRENCY_KIND;
+    const quoteSymbol = dto.quoteSymbol ?? null;
+    this.assertQuoteSymbol(kind, quoteSymbol, code);
     const currency = currencyRepo.create({
       ...dto,
       code,
-      decimalPlaces: dto.decimalPlaces ?? 2,
+      kind,
+      quoteSymbol,
+      decimalPlaces:
+        dto.decimalPlaces ??
+        (kind === "CRYPTO" ? CRYPTO_DEFAULT_DECIMAL_PLACES : 2),
       isActive: true,
       createdByUserId: userId,
     });
@@ -184,7 +272,9 @@ export class CurrenciesService implements OnApplicationBootstrap {
              c.decimal_places AS "decimalPlaces",
              COALESCE(ucp.is_active, c.is_active) AS "isActive",
              (c.created_by_user_id IS NULL) AS "isSystem",
-             c.created_at AS "createdAt"
+             c.created_at AS "createdAt",
+             c.kind,
+             c.quote_symbol AS "quoteSymbol"
       FROM currencies c
       LEFT JOIN user_currency_preferences ucp
         ON ucp.currency_code = c.code AND ucp.user_id = $1
@@ -227,8 +317,11 @@ export class CurrenciesService implements OnApplicationBootstrap {
    * The catalog of known currencies (curated metadata) used to populate the
    * onboarding picker without pre-seeding every currency into the database.
    */
-  getCatalog(): CurrencyLookupResult[] {
-    return getCurrencyCatalog();
+  getCatalog(): CurrencyCatalogEntry[] {
+    return getCurrencyCatalog().map((entry) => ({
+      ...entry,
+      kind: DEFAULT_CURRENCY_KIND,
+    }));
   }
 
   /**
@@ -275,9 +368,12 @@ export class CurrenciesService implements OnApplicationBootstrap {
       if (!existing) {
         const meta = resolveCurrencyMetadata(upper);
         const isReference = isKnownIsoCurrency(upper);
+        // FIAT, always, a non-ISO code included: a code is never evidence of a
+        // coin (decision 1), and a reader who means one says so on the
+        // Currencies page.
         await manager.query(
-          `INSERT INTO currencies (code, name, symbol, decimal_places, is_active, created_by_user_id)
-           VALUES ($1, $2, $3, $4, $5, $6)
+          `INSERT INTO currencies (code, name, symbol, decimal_places, is_active, created_by_user_id, kind)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
            ON CONFLICT (code) DO NOTHING`,
           [
             upper,
@@ -286,8 +382,10 @@ export class CurrenciesService implements OnApplicationBootstrap {
             meta.decimalPlaces,
             !isReference,
             isReference ? null : userId,
+            DEFAULT_CURRENCY_KIND,
           ],
         );
+        this.cryptoFx?.forgetCurrencies();
       }
 
       await manager.query(
@@ -325,12 +423,19 @@ export class CurrenciesService implements OnApplicationBootstrap {
 
       const meta = resolveCurrencyMetadata(upper);
       await manager.query(
-        `INSERT INTO currencies (code, name, symbol, decimal_places, is_active, created_by_user_id)
-       VALUES ($1, $2, $3, $4, ${isActive}, NULL)
+        `INSERT INTO currencies (code, name, symbol, decimal_places, is_active, created_by_user_id, kind)
+       VALUES ($1, $2, $3, $4, ${isActive}, NULL, $5)
        ON CONFLICT (code) DO NOTHING`,
-        [upper, meta.name, meta.symbol, meta.decimalPlaces],
+        [
+          upper,
+          meta.name,
+          meta.symbol,
+          meta.decimalPlaces,
+          DEFAULT_CURRENCY_KIND,
+        ],
       );
     });
+    this.cryptoFx?.forgetCurrencies();
   }
 
   /**
@@ -396,9 +501,15 @@ export class CurrenciesService implements OnApplicationBootstrap {
   ): Promise<UserCurrencyView> {
     // Read-modify-write: the ownership check, the metadata save and the
     // preference upsert are one unit. Nested calls join this transaction.
-    return withScopedDb(this.dataSource, (manager) =>
+    const { view, repriced } = await withScopedDb(this.dataSource, (manager) =>
       this.updateWithin(manager, userId, code, dto),
     );
+    this.cryptoFx?.forgetCurrencies();
+    // After the commit, beside the coverage rows the transaction deleted: a
+    // fill between the two finds no coverage and asks the provider, which is
+    // the point. Only this process's memory; see `forgetEmptyWindowsFor`.
+    if (repriced) this.rateHistory?.forgetEmptyWindowsFor(view.code);
+    return view;
   }
 
   private async updateWithin(
@@ -406,7 +517,7 @@ export class CurrenciesService implements OnApplicationBootstrap {
     userId: string,
     code: string,
     dto: UpdateCurrencyDto,
-  ): Promise<UserCurrencyView> {
+  ): Promise<{ view: UserCurrencyView; repriced: boolean }> {
     const currency = await this.findOne(code);
 
     // System currencies: cannot modify metadata
@@ -430,7 +541,22 @@ export class CurrenciesService implements OnApplicationBootstrap {
     }
 
     // Handle isActive separately via preference row
-    const { isActive, ...metadataUpdates } = dto;
+    const { isActive, kind, quoteSymbol, ...rest } = dto;
+    if (rest.decimalPlaces !== undefined) {
+      await this.assertDecimalPlacesFit(
+        manager,
+        currency.code,
+        currency.decimalPlaces,
+        rest.decimalPlaces,
+      );
+    }
+    const { updates: kindUpdates, repriced } = await this.kindUpdates(
+      manager,
+      currency,
+      kind,
+      quoteSymbol,
+    );
+    const metadataUpdates: Partial<Currency> = { ...rest, ...kindUpdates };
 
     if (Object.keys(metadataUpdates).length > 0) {
       Object.assign(currency, metadataUpdates);
@@ -445,9 +571,177 @@ export class CurrenciesService implements OnApplicationBootstrap {
       where: { userId, currencyCode: currency.code },
     });
 
-    return this.buildUserCurrencyView(
-      currency,
-      pref ? pref.isActive : currency.isActive,
+    return {
+      view: this.buildUserCurrencyView(
+        currency,
+        pref ? pref.isActive : currency.isActive,
+      ),
+      repriced,
+    };
+  }
+
+  /**
+   * Refuse lowering `decimal_places` below what stored amounts already carry
+   * (`docs/specs/money-precision.md`, INV-MONEY-001). Every amount in the
+   * currency is held at `moneyDecimalsFor(decimal_places)` places; a smaller
+   * precision would leave rows the write paths then refuse (`amountPrecisionExceeded`)
+   * on an unchanged edit. Raising is free. The row is locked first, as
+   * `kindUpdates` does, and the current value is read under that lock, so a
+   * concurrent update cannot slip a lower value past the check; the lock is
+   * taken only for a request that lowers the value as last read.
+   *
+   * The scan is `currency_min_decimal_places_in_use`, SECURITY DEFINER, so it
+   * covers every user's amounts in the currency rather than the editing user's
+   * RLS view: transactions, their splits, account balances and thresholds,
+   * scheduled transactions, their splits and overrides. It answers the smallest
+   * `decimalPlaces` every stored amount fits; the refusal names it.
+   */
+  private async assertDecimalPlacesFit(
+    manager: EntityManager,
+    code: string,
+    readPlaces: number,
+    requestedPlaces: number,
+  ): Promise<void> {
+    if (requestedPlaces >= readPlaces) return;
+    const locked: Array<{ decimal_places: number | string | null }> =
+      await manager.query(
+        "SELECT decimal_places FROM currencies WHERE code = $1 FOR UPDATE",
+        [code],
+      );
+    const lockedValue = locked[0]?.decimal_places;
+    const currentPlaces =
+      lockedValue == null ? readPlaces : Number(lockedValue);
+    if (requestedPlaces >= currentPlaces) return;
+
+    const allowed = moneyDecimalsFor(requestedPlaces);
+    if (allowed >= MONEY_SCALE) return;
+    const rows: Array<{ fitting: number | string | null }> =
+      await manager.query(
+        `SELECT currency_min_decimal_places_in_use($1) AS "fitting"`,
+        [code],
+      );
+    const fitting = Number(rows[0]?.fitting ?? 0);
+    if (fitting <= allowed) return;
+    throw new ConflictException(
+      tr(
+        "errors.currencies.decimalPlacesInUse",
+        `The decimal places of "${code}" cannot be lowered below ${fitting} while accounts, transactions or other records hold amounts with that many places`,
+        { code, places: fitting },
+      ),
+    );
+  }
+
+  /**
+   * The `kind` and `quote_symbol` an update writes, refused before anything is
+   * written (`docs/specs/crypto-accounts.md`, section 5). A field the request
+   * resent unchanged is not a change. A new kind is refused on a code any row
+   * anywhere uses (`currency_code_referenced_by_data`: every column
+   * `currency-reference-columns.ts` names except activations): a CRYPTO
+   * account's currency turning FIAT under it would break INV-CRYPTO-001. An
+   * activation is not a use -- every creator holds one -- so a kind stays
+   * changeable until something financial references the code. The row is locked first,
+   * as `removeWithin` does, so a reference committed while this decides waits
+   * for it. A currency turning FIAT drops a symbol the request did not restate;
+   * one the request names on a FIAT row is refused.
+   *
+   * A new coin ticker on a CRYPTO row (`quoteSymbolCoinTicker` of the new
+   * symbol differs from the old one's, including removing the symbol) is held
+   * like a kind change: `currencies` is shared, so re-pointing `BTC` from
+   * `BTC-EUR` to `ETH-EUR` would revalue every other user's wallet in it at
+   * another coin's price. Refused `quoteSymbolInUse` once data references the
+   * code. A new fiat leg alone (`BTC-EUR` to `BTC-CAD`) is allowed on a
+   * referenced coin, because the provider prices against whichever fiat the
+   * pair names, not the one in the symbol; so is a first symbol on a coin that
+   * had none.
+   *
+   * `repriced` is whether the coin the code is priced through changed: a
+   * CRYPTO row's coin ticker first set or changed, including a first symbol
+   * and a kind change to CRYPTO with one. Its `exchange_rate_coverage` rows
+   * (either code order) are deleted here, in the update's transaction: a fill
+   * under the old ticker, or under none, recorded where the provider's
+   * history starts for a symbol that no longer prices the code, and the
+   * provider fingerprint those rows are scoped to does not change with a
+   * symbol (INV-FX-005). The caller forgets the process's empty windows after
+   * the commit.
+   */
+  private async kindUpdates(
+    manager: EntityManager,
+    currency: Currency,
+    requestedKind: CurrencyKind | undefined,
+    requestedQuoteSymbol: string | null | undefined,
+  ): Promise<{
+    updates: Partial<Pick<Currency, "kind" | "quoteSymbol">>;
+    repriced: boolean;
+  }> {
+    const currentKind = currency.kind ?? DEFAULT_CURRENCY_KIND;
+    const kind = requestedKind ?? currentKind;
+    const kindChanged = kind !== currentKind;
+    const quoteSymbol =
+      requestedQuoteSymbol !== undefined
+        ? requestedQuoteSymbol
+        : kind === "CRYPTO"
+          ? (currency.quoteSymbol ?? null)
+          : null;
+    this.assertQuoteSymbol(kind, quoteSymbol, currency.code);
+
+    const currentSymbol = currency.quoteSymbol ?? null;
+    const tickerOf = (symbol: string | null) =>
+      symbol === null ? null : quoteSymbolCoinTicker(symbol);
+    const coinTickerChanged =
+      kind === "CRYPTO" && tickerOf(quoteSymbol) !== tickerOf(currentSymbol);
+    // Held like a kind change only when a ticker was there to change: a first
+    // symbol on a coin that had none is allowed on a referenced coin.
+    const tickerChanged =
+      !kindChanged && currentSymbol !== null && coinTickerChanged;
+
+    if (kindChanged || tickerChanged) {
+      await manager.query(
+        "SELECT 1 FROM currencies WHERE code = $1 FOR UPDATE",
+        [currency.code],
+      );
+      if (await this.isReferencedByData(manager, currency.code)) {
+        throw new ConflictException(
+          kindChanged
+            ? tr(
+                "errors.currencies.kindInUse",
+                `The kind of "${currency.code}" cannot change while accounts, transactions, securities or other records use it`,
+                { code: currency.code },
+              )
+            : tr(
+                "errors.currencies.quoteSymbolInUse",
+                `The coin in the price symbol of "${currency.code}" cannot change while accounts, transactions, securities or other records use it; only its fiat side can`,
+                { code: currency.code },
+              ),
+        );
+      }
+    }
+
+    if (coinTickerChanged) {
+      await manager.query(
+        `DELETE FROM exchange_rate_coverage
+          WHERE from_currency = $1 OR to_currency = $1`,
+        [currency.code],
+      );
+    }
+
+    const updates: Partial<Pick<Currency, "kind" | "quoteSymbol">> = {};
+    if (kindChanged) updates.kind = kind;
+    if (quoteSymbol !== (currency.quoteSymbol ?? null)) {
+      updates.quoteSymbol = quoteSymbol;
+    }
+    return { updates, repriced: coinTickerChanged };
+  }
+
+  /** Refuse a price symbol the kind does not admit, by the section 5 table. */
+  private assertQuoteSymbol(
+    kind: CurrencyKind,
+    quoteSymbol: string | null,
+    code: string,
+  ): void {
+    const refusal = quoteSymbolRefusal(kind, quoteSymbol);
+    if (refusal === null) return;
+    throw new BadRequestException(
+      QUOTE_SYMBOL_REFUSAL_MESSAGES[refusal](code, quoteSymbol ?? ""),
     );
   }
 
@@ -706,6 +1000,24 @@ export class CurrenciesService implements OnApplicationBootstrap {
     return result[0]?.inUse === true;
   }
 
+  /**
+   * Whether any row anywhere other than a `user_currency_preferences`
+   * activation references the code, including rows this tenant cannot see:
+   * `currency_code_referenced_by_data`, the sibling of
+   * `currency_code_in_use_globally` with activations left out, SECURITY
+   * DEFINER and run in this transaction after the caller's row lock.
+   */
+  private async isReferencedByData(
+    manager: EntityManager,
+    code: string,
+  ): Promise<boolean> {
+    const result = await manager.query(
+      `SELECT currency_code_referenced_by_data($1) AS "inUse"`,
+      [code.toUpperCase()],
+    );
+    return result[0]?.inUse === true;
+  }
+
   private buildUserCurrencyView(
     currency: Currency,
     isActive: boolean,
@@ -718,6 +1030,8 @@ export class CurrenciesService implements OnApplicationBootstrap {
       isActive,
       isSystem: currency.createdByUserId === null,
       createdAt: currency.createdAt,
+      kind: currency.kind ?? DEFAULT_CURRENCY_KIND,
+      quoteSymbol: currency.quoteSymbol ?? null,
     };
   }
 

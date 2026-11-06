@@ -19,7 +19,8 @@
       "separator": ", затем ",
       "names": {
         "frankfurter": "Frankfurter (справочные курсы ЕЦБ)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Криптопары (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "Действия"
     },
     "defaultBadge": "По умолчанию",
+    "cryptoBadge": "Крипто",
+    "noPriceSymbol": "Нет символа цены",
     "statusBadge": {
       "active": "Активная",
       "activeShort": "Акт",
@@ -98,6 +101,20 @@
     "symbolLabel": "Символ",
     "symbolPlaceholder": "например, $, €, £, ¥",
     "decimalPlacesLabel": "Знаки после запятой",
+    "kindLabel": "Тип",
+    "kindOptions": {
+      "fiat": "Фиатная валюта",
+      "crypto": "Криптовалюта"
+    },
+    "kindLocked": "{code} используется, поэтому её тип изменить нельзя.",
+    "quoteSymbolLabel": "Символ цены (необязательно)",
+    "quoteSymbolPlaceholder": "например, BTC-EUR",
+    "quoteSymbolHelp": "Символ Yahoo Finance, по которому берётся цена монеты: её тикер, дефис и валюта котировки, например BTC-EUR. Обменные курсы монеты загружаются через него.",
+    "verifyButton": "Проверить",
+    "quoteSymbolPricedIn": "Цена в {currency}",
+    "quoteSymbolMissing": "Без символа цены у валюты нет обменного курса.",
+    "quoteSymbolNotCrypto": "{symbol} не является криптовалютой. Введите пару монеты, например BTC-EUR.",
+    "quoteSymbolNotFound": "Криптовалюта для {symbol} не найдена",
     "lookupButton": "Найти",
     "lookingUp": "Поиск...",
     "clearButton": "Очистить",
@@ -109,10 +126,14 @@
       "found": "Найдено: {details}",
       "notFound": "Валюта не найдена для «{query}»",
       "lookupFailed": "Поиск не удался — попробуйте снова",
-      "reactivateFailed": "Не удалось повторно активировать валюту"
+      "reactivateFailed": "Не удалось повторно активировать валюту",
+      "verifyEmpty": "Введите символ цены, например BTC-EUR, для проверки",
+      "verifyFailed": "Не удалось проверить символ цены"
     },
     "inactiveNotice": "{code} уже есть в вашем списке, но неактивна.",
-    "cryptoNotice": "{code} не является стандартным кодом валюты. Криптовалюты, такие как биткоин, учитываются как ценные бумаги на инвестиционном счёте, а не как валюты. <guide>Как это сделать, смотрите в руководстве пользователя</guide>.",
+    "nonIsoNotice": "{code} не является стандартным кодом валюты. Если это криптовалюта, задайте тип «Криптовалюта». <guide>О криптовалютах читайте в руководстве пользователя</guide>.",
+    "switchToCrypto": "Использовать криптовалюту",
+    "cryptoPrecisionNotice": "Суммы в криптовалюте хранятся не более чем с восемью знаками после запятой, то есть с точностью хранения, поэтому комиссию меньше {smallest} ввести нельзя. <guide>Как записывать комиссии кошелька</guide>.",
     "reactivateButton": "Активировать {code}",
     "reactivating": "Активация..."
   },
@@ -121,7 +142,10 @@
     "nameRequired": "Название обязательно",
     "nameMax": "Название должно быть не длиннее 100 символов",
     "symbolRequired": "Символ обязателен",
-    "symbolMax": "Символ должен быть не длиннее 10 символов"
+    "symbolMax": "Символ должен быть не длиннее 10 символов",
+    "quoteSymbolMax": "Символ цены должен быть не длиннее 20 символов",
+    "quoteSymbolRequiresCrypto": "Символ цены есть только у криптовалюты",
+    "quoteSymbolNotAPair": "Введите пару, например BTC-EUR: монета, дефис и трёхбуквенный код валюты"
   },
   "rateHistory": {
     "title": "История курса",
@@ -151,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (ЕЦБ)",
         "mnyImport": "Импорт из Money",
+        "yahooCrypto": "Криптопары (Yahoo)",
         "unknown": "Неизвестно"
       }
     },

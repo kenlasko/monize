@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { DemoSeedService } from "./demo-seed.service";
@@ -10,16 +11,25 @@ import { demoScheduledTransactions } from "./demo-seed-data/scheduled";
 import { demoSecurities } from "./demo-seed-data/securities";
 import { demoReports } from "./demo-seed-data/reports";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { ExchangeRateService } from "../currencies/exchange-rate.service";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
 );
+
+/**
+ * What PostgreSQL answers the demo coin's upsert (`RETURNING kind`) on a
+ * database with no BTC row, or a CRYPTO one: the coin. A FIAT BTC answers no
+ * row; the case that needs it says so.
+ */
+const coinUpsert = () => Promise.resolve([{ kind: "CRYPTO" }]);
 
 describe("DemoSeedService", () => {
   let service: DemoSeedService;
   let dataSource: Record<string, jest.Mock>;
   let seedService: Record<string, jest.Mock>;
   let logoService: Record<string, jest.Mock>;
+  let exchangeRates: { storeRateSeries: jest.Mock };
 
   beforeEach(async () => {
     const scoped = createScopedDbMocks([]);
@@ -34,12 +44,15 @@ describe("DemoSeedService", () => {
       fetchFavicon: jest.fn().mockResolvedValue(null),
     };
 
+    exchangeRates = { storeRateSeries: jest.fn().mockResolvedValue(0) };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DemoSeedService,
         { provide: DataSource, useValue: dataSource },
         { provide: SeedService, useValue: seedService },
         { provide: FaviconService, useValue: logoService },
+        { provide: ExchangeRateService, useValue: exchangeRates },
       ],
     }).compile();
 
@@ -56,6 +69,7 @@ describe("DemoSeedService", () => {
   describe("seedAll()", () => {
     beforeEach(() => {
       dataSource.query.mockImplementation((sql: string) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("SELECT id FROM users")) {
           return Promise.resolve([{ id: "demo-user-id" }]);
         }
@@ -87,6 +101,7 @@ describe("DemoSeedService", () => {
 
     it("throws if demo user is not found after base seeding", async () => {
       dataSource.query.mockImplementation((sql: string) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("SELECT id FROM users")) {
           return Promise.resolve([]);
         }
@@ -115,6 +130,7 @@ describe("DemoSeedService", () => {
   describe("seedDemoData()", () => {
     beforeEach(() => {
       dataSource.query.mockImplementation((sql: string) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("RETURNING id")) {
           return Promise.resolve([{ id: `uuid-${Math.random()}` }]);
         }
@@ -144,6 +160,69 @@ describe("DemoSeedService", () => {
       expect(incomeInserts.length).toBe(4);
     });
 
+    it("seeds the demo coin, then its BTC->CAD rates through the rate writer under the crypto slug", async () => {
+      await service.seedDemoData("user-123");
+
+      const coinInsert = dataSource.query.mock.calls.find(
+        (call: (string | unknown[])[]) =>
+          String(call[0]).includes("INSERT INTO currencies") &&
+          (call[1] as unknown[])[0] === "BTC",
+      );
+      expect(coinInsert).toBeDefined();
+      expect(exchangeRates.storeRateSeries).toHaveBeenCalledTimes(1);
+      const [points, source] = exchangeRates.storeRateSeries.mock.calls[0];
+      expect(source).toBe("yahoo_crypto");
+      expect(points).toHaveLength(366);
+      expect(points[0]).toMatchObject({ from: "BTC", to: "CAD" });
+    });
+
+    it("leaves out the wallet, its transactions and the coin's rates when BTC exists as FIAT, and seeds the rest", async () => {
+      const warn = jest
+        .spyOn(Logger.prototype, "warn")
+        .mockImplementation(() => undefined);
+      dataSource.query.mockImplementation((sql: string, params: unknown[]) => {
+        // The conflict update's WHERE kind = 'CRYPTO' skipped a FIAT BTC.
+        if (sql.includes("INSERT INTO currencies")) return Promise.resolve([]);
+        if (sql.includes("INSERT INTO accounts")) {
+          return Promise.resolve([{ id: `account-${params[2]}` }]);
+        }
+        if (sql.includes("RETURNING id")) {
+          return Promise.resolve([{ id: `uuid-${Math.random()}` }]);
+        }
+        if (sql.includes("COALESCE(SUM")) {
+          return Promise.resolve([{ total: "0" }]);
+        }
+        return Promise.resolve([]);
+      });
+
+      await service.seedDemoData("user-123");
+      const calls = dataSource.query.mock.calls as Array<[string, unknown[]]>;
+
+      const accountInserts = calls.filter(([sql]) =>
+        sql.includes("INSERT INTO accounts"),
+      );
+      expect(accountInserts.length).toBeGreaterThan(0);
+      expect(
+        accountInserts.filter(([, params]) => params.includes("BTC")),
+      ).toEqual([]);
+      expect(
+        calls.filter(
+          ([sql, params]) =>
+            sql.includes("INSERT INTO transactions") &&
+            (params.includes("BTC") ||
+              params.includes("Bought bitcoin") ||
+              params.includes("Sold bitcoin")),
+        ),
+      ).toEqual([]);
+      expect(
+        calls.some(([sql]) => sql.includes("INSERT INTO transactions")),
+      ).toBe(true);
+      expect(exchangeRates.storeRateSeries).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("BTC exists as a FIAT currency"),
+      );
+    });
+
     it("seeds an institution for each distinct demo institution", async () => {
       await service.seedDemoData("user-123");
 
@@ -156,6 +235,7 @@ describe("DemoSeedService", () => {
     it("links accounts to their institution via institution_id", async () => {
       // Return a stable id per institution insert so we can assert linkage.
       dataSource.query.mockImplementation((sql: string, params?: unknown[]) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("INSERT INTO institutions")) {
           return Promise.resolve([{ id: `inst-${params?.[1] as string}` }]);
         }
@@ -476,6 +556,7 @@ describe("DemoSeedService", () => {
     it("posts each mortgage installment as a split whose principal is a transfer leg into the mortgage", async () => {
       // Ids that say what they are, so a leg can be traced to its account.
       dataSource.query.mockImplementation((sql: string, params: unknown[]) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
         if (sql.includes("INSERT INTO accounts")) {
           return Promise.resolve([{ id: `account-${params[2]}` }]);
         }
@@ -496,10 +577,13 @@ describe("DemoSeedService", () => {
       await service.seedDemoData("user-123");
 
       const calls = dataSource.query.mock.calls as Array<[string, unknown[]]>;
+      // The installments' principal legs; the Bitcoin Wallet's sale is the
+      // demo's other split transfer line and has its own case below.
       const transferLegs = calls.filter(
-        ([sql]) =>
+        ([sql, params]) =>
           sql.includes("INSERT INTO transaction_splits") &&
-          sql.includes("'transfer'"),
+          sql.includes("'transfer'") &&
+          params[3] === "Principal",
       );
       expect(transferLegs.length).toBeGreaterThanOrEqual(11);
       for (const [, params] of transferLegs) {
@@ -522,7 +606,14 @@ describe("DemoSeedService", () => {
       const splitLinks = calls.filter(([sql]) =>
         sql.includes("UPDATE transaction_splits SET linked_transaction_id"),
       );
-      expect(splitLinks).toHaveLength(transferLegs.length);
+      // Every transfer line is linked to its counterpart, the wallet's too.
+      const everyTransferLine = calls.filter(
+        ([sql]) =>
+          sql.includes("INSERT INTO transaction_splits") &&
+          sql.includes("'transfer'"),
+      );
+      expect(everyTransferLine).toHaveLength(transferLegs.length + 1);
+      expect(splitLinks).toHaveLength(everyTransferLine.length);
 
       // The mortgage books its interest to the category the split's other
       // leg uses.
@@ -540,6 +631,124 @@ describe("DemoSeedService", () => {
       expect(mortgageInsert[1][columns.indexOf("interest_category_id")]).toBe(
         "category-Mortgage Interest",
       );
+    });
+
+    it("seeds the Bitcoin Wallet in BTC, bought, spent from and sold with a network-fee line (crypto-accounts spec decision 9)", async () => {
+      dataSource.query.mockImplementation((sql: string, params: unknown[]) => {
+        if (sql.includes("INSERT INTO currencies")) return coinUpsert();
+        if (sql.includes("INSERT INTO accounts")) {
+          return Promise.resolve([{ id: `account-${params[2]}` }]);
+        }
+        if (sql.includes("INSERT INTO categories")) {
+          return Promise.resolve([
+            { id: `category-${params[params.length - 1]}` },
+          ]);
+        }
+        if (sql.includes("RETURNING id")) {
+          return Promise.resolve([{ id: `uuid-${Math.random()}` }]);
+        }
+        if (sql.includes("COALESCE(SUM")) {
+          // The ledger's exact NUMERIC sums: the wallet's three rows, and a
+          // chequing total carrying digits past fiat's four places.
+          return Promise.resolve([
+            {
+              total:
+                params[0] === "account-Bitcoin Wallet"
+                  ? "0.00704283"
+                  : params[0] === "account-Primary Chequing"
+                    ? "-1049.50000001"
+                    : "0",
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      await service.seedDemoData("user-123");
+      const calls = dataSource.query.mock.calls as Array<[string, unknown[]]>;
+
+      // The coin is stored before the account that references it.
+      const coinAt = calls.findIndex(([sql]) =>
+        sql.includes("INSERT INTO currencies"),
+      );
+      const walletAt = calls.findIndex(
+        ([sql, params]) =>
+          sql.includes("INSERT INTO accounts") && params[1] === "CRYPTO",
+      );
+      expect(coinAt).toBeGreaterThanOrEqual(0);
+      expect(walletAt).toBeGreaterThan(coinAt);
+      const wallet = calls[walletAt];
+      expect(wallet[1][2]).toBe("Bitcoin Wallet");
+      expect(wallet[1]).toContain("BTC");
+
+      const WALLET = "account-Bitcoin Wallet";
+      const CHEQUING = "account-Primary Chequing";
+      const rowsOn = (accountId: string) =>
+        calls.filter(
+          ([sql, params]) =>
+            sql.includes("INSERT INTO transactions") &&
+            params[1] === accountId &&
+            params.includes("BTC"),
+        );
+
+      // (a) Bought: chequing -1,700.00 CAD, the wallet +0.01249993 BTC at
+      // the implied rate roundFxRate(0.01249993 / 1700)
+      // (docs/specs/money-precision.md section 6).
+      const boughtIn = rowsOn(WALLET).find(([, p]) => p[5] === 0.01249993)!;
+      expect(boughtIn).toBeDefined();
+      expect(boughtIn[1][7]).toBe(0.0000073529);
+      expect(boughtIn[1]).toContain("Bought bitcoin");
+      const boughtOut = calls.find(
+        ([sql, p]) =>
+          sql.includes("INSERT INTO transactions") &&
+          p[1] === CHEQUING &&
+          p[5] === -1700 &&
+          p.includes("Bought bitcoin"),
+      )!;
+      expect(boughtOut[1][6]).toBe("CAD");
+
+      // (b) Spent: -0.00043210 BTC to a coffee category.
+      const spent = rowsOn(WALLET).find(([, p]) => p[6] === -0.0004321)!;
+      expect(spent[1][5]).toBe("category-Coffee Shops");
+
+      // (c) Sold: a split of -0.00502500 BTC whose -0.00500000 transfer line
+      // delivered 650.00 CAD to chequing (implied rate 130000), and whose
+      // other line is the 2,500-sat network fee.
+      const sale = rowsOn(WALLET).find(([, p]) => p[5] === -0.005025)!;
+      expect(sale[0]).toContain("is_split");
+      const saleLine = calls.find(
+        ([sql, p]) =>
+          sql.includes("INSERT INTO transaction_splits") &&
+          sql.includes("'transfer'") &&
+          p[1] === CHEQUING &&
+          p[2] === -0.005,
+      )!;
+      expect(saleLine[1][3]).toBe("Sold bitcoin");
+      const saleCounterpart = calls.find(
+        ([sql, p]) =>
+          sql.includes("INSERT INTO transactions") &&
+          p[1] === CHEQUING &&
+          p[5] === 650,
+      )!;
+      expect(saleCounterpart[1][6]).toBe("CAD");
+      expect(saleCounterpart[1][7]).toBe(130000);
+      const feeLine = calls.find(
+        ([sql, p]) =>
+          sql.includes("INSERT INTO transaction_splits") &&
+          p[1] === "category-Network fee",
+      )!;
+      expect(feeLine[1][2]).toBe(-0.000025);
+
+      // Balances are summed at each account's precision: the wallet at the
+      // coin's eight places, chequing at fiat's four.
+      const balanceOf = (accountId: string) =>
+        calls.find(
+          ([sql, p]) =>
+            sql.startsWith("UPDATE accounts SET current_balance") &&
+            p[1] === accountId,
+        )![1][0];
+      expect(balanceOf(WALLET)).toBe(0.00704283);
+      expect(balanceOf(CHEQUING)).toBe(4371);
     });
 
     it("writes the mortgage type, and the default on every other account", async () => {

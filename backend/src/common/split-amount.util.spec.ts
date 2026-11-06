@@ -126,4 +126,43 @@ describe("validateSplitAmountSum", () => {
       ).toThrow(/must equal transaction amount/);
     });
   });
+
+  describe("at the parent currency's precision", () => {
+    it("balances a BTC network-fee split at eight places", () => {
+      expect(() =>
+        validateSplitAmountSum(
+          [{ amount: -0.005 }, { amount: -0.000025 }],
+          -0.005025,
+          { decimals: 8 },
+        ),
+      ).not.toThrow();
+    });
+
+    it("refuses a BTC split a satoshi short, which four places would accept", () => {
+      const lines = [{ amount: -0.005 }, { amount: -0.000025 }];
+      expect(() =>
+        validateSplitAmountSum(lines, -0.00502501, { decimals: 8 }),
+      ).toThrow(BadRequestException);
+      expect(() => validateSplitAmountSum(lines, -0.00502501)).not.toThrow();
+    });
+
+    it("accepts coin lines that four places would round apart", () => {
+      expect(() =>
+        validateSplitAmountSum(
+          [{ amount: -0.00004 }, { amount: -0.00004 }],
+          -0.00008,
+          { decimals: 8 },
+        ),
+      ).not.toThrow();
+    });
+
+    it("keeps comparing fiat at four places by default", () => {
+      expect(() =>
+        validateSplitAmountSum(
+          [{ amount: -3.3333 }, { amount: -3.3333 }, { amount: -3.3334 }],
+          -10,
+        ),
+      ).not.toThrow();
+    });
+  });
 });

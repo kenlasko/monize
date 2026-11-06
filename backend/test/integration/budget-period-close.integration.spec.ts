@@ -226,12 +226,12 @@ describe("budget period close (integration)", () => {
 
     const [closed, next] = await periodRows();
     expect(closed.status).toBe(PeriodStatus.CLOSED);
-    expect(closed.actual_amount).toBe("200.0000");
-    expect(closed.rollover_out).toBe("300.0000");
+    expect(closed.actual_amount).toBe("200.00000000");
+    expect(closed.rollover_out).toBe("300.00000000");
     expect(next.period_start).toBe(current.periodStart);
     expect(next.status).toBe(PeriodStatus.OPEN);
-    expect(next.rollover_in).toBe("300.0000");
-    expect(next.effective_budget).toBe("800.0000");
+    expect(next.rollover_in).toBe("300.00000000");
+    expect(next.effective_budget).toBe("800.00000000");
   });
 
   it("opens the following month when a period is closed before it ends", async () => {

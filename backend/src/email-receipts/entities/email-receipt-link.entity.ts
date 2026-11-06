@@ -54,7 +54,7 @@ export class EmailReceiptLink {
   @Column({ type: "varchar", length: 100, name: "link_value", nullable: true })
   linkValue: string | null;
 
-  @Column({ type: "decimal", precision: 20, scale: 4, name: "part_amount" })
+  @Column({ type: "decimal", precision: 24, scale: 8, name: "part_amount" })
   partAmount: number;
 
   @Column({ type: "uuid", name: "component_receipt_id", nullable: true })

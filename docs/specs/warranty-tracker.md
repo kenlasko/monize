@@ -264,7 +264,7 @@ CREATE TABLE IF NOT EXISTS warranties (
   purchase_date DATE NOT NULL,
   expires_on DATE,
   is_lifetime BOOLEAN NOT NULL DEFAULT false,
-  purchase_price NUMERIC(20,4) CHECK (purchase_price IS NULL OR purchase_price >= 0),
+  purchase_price NUMERIC(24,8) CHECK (purchase_price IS NULL OR purchase_price >= 0),
   currency_code VARCHAR(3) REFERENCES currencies(code),
   product_url VARCHAR(500),
   notes VARCHAR(2000),

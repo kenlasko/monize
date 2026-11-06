@@ -5,6 +5,7 @@ import { Account } from "../../../accounts/entities/account.entity";
 import { Category } from "../../../categories/entities/category.entity";
 import { Payee } from "../../../payees/entities/payee.entity";
 import { tr } from "../../../i18n/translate";
+import { assertAccountCurrencyKindIn } from "../../../accounts/account-currency-kind.util";
 import { insertCategoryIfAbsent } from "../../insert-category-if-absent";
 import {
   MappedAccount,
@@ -109,6 +110,13 @@ export async function writeAccounts(
       reusedIds.add(idByKey.get(account.key) as string);
       continue;
     }
+    // INV-CRYPTO-001, before this account's write; a refusal rolls the
+    // import back.
+    await assertAccountCurrencyKindIn(
+      manager,
+      account.accountType,
+      account.currencyCode,
+    );
     inserted.push(account);
 
     const balance = account.openingBalance;

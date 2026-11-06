@@ -36,6 +36,8 @@ const messages = {
   currencyLocked:
     "The group currency is fixed after the first entry. Create a new group to use another currency.",
   currency: "Choose an available currency with up to four decimal places.",
+  groupCurrencyMustBeFiat:
+    "A shared group keeps its accounts in a fiat currency; {code} is a cryptocurrency. Choose a fiat currency for the group.",
   invite:
     "This invitation is unavailable, expired or already used. Ask the group owner for a new one.",
   inviteEmail:

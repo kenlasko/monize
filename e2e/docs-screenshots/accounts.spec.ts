@@ -93,9 +93,26 @@ async function openNewAccount(): Promise<Locator> {
   return dialog;
 }
 
+/** Leave a form unsaved: Cancel, and Discard if it asks. */
+async function cancel(dialog: Locator): Promise<void> {
+  const discard = page.getByRole("button", { name: "Discard", exact: true });
+  await expect(async () => {
+    if ((await discard.count()) > 0) {
+      await discard.click({ timeout: 5_000 });
+    } else if ((await dialog.count()) > 0) {
+      await dialog
+        .getByRole("button", { name: "Cancel", exact: true })
+        .last()
+        .click({ timeout: 5_000 });
+    }
+    await expect(dialog).toHaveCount(0, { timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+}
+
 test("accounts-list", async () => {
   await openPage("/accounts");
   await expect(page.getByText("Car Loan").first()).toBeVisible();
+  await expect(page.getByText("Bitcoin Wallet").first()).toBeVisible();
   await expect(page.getByText(/\d+ of \d+ accounts/)).toBeVisible();
   await docShot(page, "accounts-list");
 });
@@ -114,6 +131,26 @@ test("create-account-form", async () => {
   await docShot(page, "create-account-form", dialog);
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(dialog).toHaveCount(0);
+});
+
+test("create-account-form-crypto", async () => {
+  // Never saved: the demo data already holds a Bitcoin Wallet.
+  await openPage("/accounts");
+  const dialog = await openNewAccount();
+  await dialog.getByLabel("Account Name").fill("Bitcoin Wallet");
+  await dialog
+    .getByLabel("Account Type")
+    .selectOption({ label: "Crypto Wallet" });
+  const currency = dialog.getByLabel("Currency", { exact: true });
+  await expect(currency.locator("option", { hasText: /^BTC - / })).toHaveCount(
+    1,
+  );
+  await currency.selectOption("BTC");
+  await expect(currency).toHaveValue("BTC");
+  await dialog.getByLabel("Account Name").click();
+  await settled();
+  await docShot(page, "create-account-form-crypto", dialog);
+  await cancel(dialog);
 });
 
 test("account-form-mortgage", async () => {
@@ -137,7 +174,10 @@ test("account-form-mortgage-fees", async () => {
   const category = dialog.getByLabel("Category", { exact: true });
   await category.click();
   await category.pressSequentially("Property Tax");
-  await page.getByText("Housing: Property Tax", { exact: true }).first().click();
+  await page
+    .getByText("Housing: Property Tax", { exact: true })
+    .first()
+    .click();
   await dialog.getByLabel("Value applies").selectOption("ANNUAL");
   await dialog.getByLabel("Amount", { exact: true }).fill("3600");
   await dialog.getByLabel("Fee name").click();
@@ -208,6 +248,60 @@ test("account-banking-detail", async () => {
   await chartDrawn();
   await settled();
   await docShot(page, "account-banking-detail");
+});
+
+test("account-crypto-detail", async () => {
+  await openPage(`/accounts/${accountId("Bitcoin Wallet")}`);
+  await expect(
+    page.getByRole("heading", { name: "Balance History" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("article", { name: "Current Balance" }),
+  ).toContainText("0.00704283", { timeout: 30_000 });
+  await chartDrawn();
+  await settled();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await docShot(page, "account-crypto-detail");
+});
+
+test("crypto-transfer-fee-split", async () => {
+  // The wallet's register, the sale's edit dialog with its two split lines;
+  // left with Cancel.
+  await openPage(`/transactions?accountIds=${accountId("Bitcoin Wallet")}`);
+  const table = page.getByRole("button", { name: "Table", exact: true });
+  await expect(table).toBeVisible({ timeout: 90_000 });
+  if ((await table.getAttribute("aria-pressed")) !== "true")
+    await table.click();
+  // The sale: the split whose lines are the transfer and the network fee.
+  const row = page
+    .getByRole("row", { name: /Split \(2\) → Primary Chequing/ })
+    .first();
+  await expect(row).toBeVisible({ timeout: 90_000 });
+  await settled();
+  const dialog = page.getByRole("dialog");
+  await expect(async () => {
+    if ((await dialog.count()) === 0) {
+      await row.getByRole("button", { name: "Edit", exact: true }).click();
+    }
+    await expect(dialog.getByText("Split Details")).toBeVisible({
+      timeout: 5_000,
+    });
+  }).toPass({ timeout: 60_000 });
+  // The fee line's memo is an input's value, which no text locator reads.
+  await expect
+    .poll(
+      () =>
+        dialog
+          .locator("input")
+          .evaluateAll((inputs) =>
+            inputs.some((i) => (i as HTMLInputElement).value === "Network fee"),
+          ),
+      { timeout: 30_000 },
+    )
+    .toBe(true);
+  await settled();
+  await docShot(page, "crypto-transfer-fee-split", dialog);
+  await cancel(dialog);
 });
 
 test("account-credit-card-detail", async () => {

@@ -5,6 +5,7 @@ import {
   requireSharedGroup,
   sharedParticipants,
   currencyPlaces,
+  groupCurrencyPlaces,
   sharedActivity,
 } from "./shared-db";
 import { readSharedJournal } from "./shared-journal";
@@ -17,6 +18,7 @@ jest.mock("./shared-db", () => ({
   requireSharedGroup: jest.fn(),
   sharedParticipants: jest.fn(),
   currencyPlaces: jest.fn(),
+  groupCurrencyPlaces: jest.fn(),
   sharedActivity: jest.fn(),
   lockSharedGroup: jest.fn(),
   advanceSharedRevision: jest.fn(),
@@ -60,6 +62,7 @@ describe("Shared groups and private contact boundaries", () => {
     jest.mocked(requireSharedGroup).mockResolvedValue({ ...group });
     jest.mocked(sharedParticipants).mockResolvedValue(people);
     jest.mocked(currencyPlaces).mockResolvedValue(2);
+    jest.mocked(groupCurrencyPlaces).mockResolvedValue(2);
     jest.mocked(readSharedJournal).mockResolvedValue([sharedEntryFixture()]);
     service = new SharedGroupsService({} as DataSource);
   });
@@ -148,6 +151,37 @@ describe("Shared groups and private contact boundaries", () => {
       }),
     ).rejects.toThrow("participants");
     expect(writes(query)).toEqual([]);
+  });
+  it("refuses a cryptocurrency as a group's currency on create and update before any write", async () => {
+    // The real check, against a currencies row the database would return.
+    const actual =
+      jest.requireActual<typeof import("./shared-db")>("./shared-db");
+    jest
+      .mocked(groupCurrencyPlaces)
+      .mockImplementation(actual.groupCurrencyPlaces);
+    query.mockImplementation(async (sql: string) =>
+      /FROM currencies/.test(sql)
+        ? [{ decimal_places: 8, kind: "CRYPTO" }]
+        : [],
+    );
+    await expect(
+      service.create("owner", {
+        ...command,
+        name: "Trip",
+        myName: "Me",
+        currencyCode: "BTC",
+        participants: [{ name: "Anna" }],
+      }),
+    ).rejects.toThrow("BTC is a cryptocurrency");
+    expect(writes(query)).toEqual([]);
+    await expect(
+      service.update("owner", "group", { ...command, currencyCode: "BTC" }),
+    ).rejects.toThrow("BTC is a cryptocurrency");
+    expect(writes(query)).toEqual([]);
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("FROM currencies"),
+      ["BTC"],
+    );
   });
   it("checks and locks private contacts before inserting, trimming names and reusing identities", async () => {
     query.mockImplementation(async (sql: string) =>

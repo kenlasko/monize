@@ -9,7 +9,7 @@ import {
 } from "typeorm";
 import { Cron } from "@nestjs/schedule";
 import { ExchangeRate } from "./entities/exchange-rate.entity";
-import { Currency } from "./entities/currency.entity";
+import { Currency, CurrencyKind } from "./entities/currency.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { resolveFxRateOrNull, roundFxRate } from "../common/fx-entry.util";
@@ -36,9 +36,15 @@ import {
 } from "../common/time-series/fx-rate-resolver";
 import { preferredCurrency } from "../common/default-currency.util";
 import {
+  IsCoin,
+  NO_COINS,
+  canonicalRateRefusal,
   canonicalRateRow,
+  codeOrderedPair,
   isCanonicalOrientation,
 } from "./canonical-rate.util";
+import { loadCoinLookup } from "./coin-lookup";
+import { loadCurrencyDecimalPlaces } from "./currency-decimal-places";
 import { FxProviderChain } from "./providers/fx-provider-chain";
 import { FxObservation } from "./providers/fx-provider.interface";
 
@@ -57,12 +63,21 @@ const FX_WINDOW_FILL_CONCURRENCY = 6;
  * the pair is stored once, so the two are one unit of work and one negative-cache
  * entry.
  *
- * Built on `isCanonicalOrientation` so the ordering rule that decides which
- * orientation is stored and the one that decides which key a pair shares are the
- * same rule, written once.
+ * Plain code order (`codeOrderedPair`), the order `exchange_rate_coverage`
+ * keys a pair by, and deliberately not the storage orientation: a pair with one
+ * coin side is stored coin -> fiat whichever code sorts first
+ * (`isCanonicalOrientation`), but a key names the pair, not a direction, and
+ * one that moved with `currencies.kind` would disagree with the coverage row
+ * for the same pair.
  */
 export function directionlessPairKey(from: string, to: string): string {
-  return isCanonicalOrientation(from, to) ? `${from}|${to}` : `${to}|${from}`;
+  const [first, second] = codeOrderedPair(from, to);
+  return `${first}|${second}`;
+}
+
+/** Whether a `directionlessPairKey` names `code` on either side. */
+export function pairKeyHasCode(pairKey: string, code: string): boolean {
+  return pairKey.split("|").includes(code.toUpperCase());
 }
 
 /**
@@ -97,6 +112,43 @@ export interface DatedConversion {
   date: string;
   rate: number;
   convertedAmount: number;
+}
+
+/** A currency in use, as the refresh reads it. */
+interface CurrencyInUse {
+  code: string;
+  kind: CurrencyKind;
+  quoteSymbol: string | null;
+}
+
+/**
+ * The canonical pairs of `codes` (sorted) grouped by the code each is stored
+ * under, keeping only the pairs `keep` admits and the bases left with a quote:
+ * one chain question per base carrying every quote stored against it, because
+ * a provider that publishes a whole base at once answers all of them in one
+ * call, and one that quotes pair by pair fans out inside its adapter. Each
+ * pair is oriented by `isCanonicalOrientation`, so a coin's pairs with a fiat
+ * sit under the coin whichever code sorts first, and each base's quotes are
+ * exactly the pairs stored under it. Bases come in the order their first pair
+ * is met walking `codes` in order, quotes in `codes` order, so the question
+ * order is the same on every replica.
+ */
+export function canonicalPairsByBase(
+  codes: readonly string[],
+  keep: (base: string, quote: string) => boolean,
+  isCoin: IsCoin = NO_COINS,
+): Array<{ base: string; quotes: string[] }> {
+  const byBase = new Map<string, string[]>();
+  for (const [i, a] of codes.entries()) {
+    for (const b of codes.slice(i + 1)) {
+      const [base, quote] = isCanonicalOrientation(a, b, isCoin)
+        ? [a, b]
+        : [b, a];
+      if (!keep(base, quote)) continue;
+      byBase.set(base, [...(byBase.get(base) ?? []), quote]);
+    }
+  }
+  return [...byBase.entries()].map(([base, quotes]) => ({ base, quotes }));
 }
 
 export interface RateUpdateResult {
@@ -280,16 +332,29 @@ export class ExchangeRateService implements OnModuleInit {
    * and no row is written for a day the provider published nothing. `source`
    * arrives beside the observation from the chain; this file knows no
    * provider's name (INV-FX-005).
+   *
+   * `isCoin` is the refresh's own reading of `currencies.kind` for the codes in
+   * use, so a coin pair is stored coin -> fiat (`isCanonicalOrientation`)
+   * without a second read per pair.
    */
   private async saveRate(
     observation: FxObservation,
     source: string,
+    isCoin: IsCoin,
   ): Promise<ExchangeRate> {
     const { from, to, rate, date } = observation;
-    const row = canonicalRateRow(from, to, rate);
+    const row = canonicalRateRow(from, to, rate, isCoin);
     if (row === null) {
       // A same-currency pair or a non-positive rate: absent, not applicable.
-      // Refused before the write rather than stored as a rate nothing may use.
+      // A rate the column cannot hold (at or above 1e10, or nothing at ten
+      // decimals) is reported as out of range. Refused before the write rather
+      // than stored as a rate nothing may use; the refresh reports this one
+      // pair and carries on with the rest.
+      if (canonicalRateRefusal(from, to, rate, isCoin) === "out_of_range") {
+        throw new Error(
+          `Rate out of range: ${from}/${to} at ${rate} for ${date} does not fit the rate column`,
+        );
+      }
       throw new Error(
         `Refusing to store exchange rate ${from}/${to} at ${rate} for ${date}`,
       );
@@ -307,8 +372,9 @@ export class ExchangeRateService implements OnModuleInit {
   }
 
   /**
-   * Upsert one row whose orientation `canonicalRateRow` has already decided.
-   * The codes arrive canonical; this does not re-order them. `date` is a
+   * Upsert one row whose orientation `canonicalRateRow` has already decided,
+   * under the caller's coin lookup (`saveRate`). The codes arrive canonical;
+   * this does not re-order them. `date` is a
    * `YYYY-MM-DD` string cast by PostgreSQL: a `Date` here would be rendered by
    * `pg` in the process time zone and, west of UTC, name the previous calendar
    * day (`ymdSpan` explains the same trap on the read side).
@@ -380,49 +446,86 @@ export class ExchangeRateService implements OnModuleInit {
     points: readonly FxObservation[],
     source: string,
   ): Promise<number> {
-    // One row per canonical triple, last value wins, ignoring anything unusable.
-    const byDay = new Map<string, [string, string, string, number]>();
-    for (const point of points) {
-      const row = canonicalRateRow(point.from, point.to, point.rate);
-      // A same-currency point or a non-positive rate: absent, not a rate.
-      if (row === null) continue;
-      byDay.set(`${row.from}|${row.to}|${point.date}`, [
-        row.from,
-        row.to,
-        point.date,
-        row.rate,
-      ]);
-    }
-    const rows = [...byDay.values()];
-    if (rows.length === 0) return 0;
+    if (points.length === 0) return 0;
+    return withScopedDb(this.dataSource, async (manager) => {
+      // Which codes are coins, read once for the whole series: a pair with one
+      // coin side is stored coin -> fiat (`isCanonicalOrientation`).
+      const isCoin = await loadCoinLookup(manager);
 
-    const batchSize = 500;
-    for (let i = 0; i < rows.length; i += batchSize) {
-      const batch = rows.slice(i, i + batchSize);
-      const values = batch
-        .map((_, idx) => {
-          const offset = idx * 5;
-          return `($${offset + 1}, $${offset + 2}, $${offset + 3}::DATE, $${offset + 4}, $${offset + 5})`;
-        })
-        .join(", ");
-      const params: Array<string | number> = [];
-      for (const [f, t, date, rate] of batch) {
-        params.push(f, t, date, rate, source);
+      // One row per canonical triple, last value wins, ignoring anything unusable.
+      const byDay = new Map<string, [string, string, string, number]>();
+      let outOfRange = 0;
+      for (const point of points) {
+        const row = canonicalRateRow(point.from, point.to, point.rate, isCoin);
+        if (row === null) {
+          // A same-currency point or a non-positive rate: absent, not a rate. A
+          // rate the column cannot hold is skipped and counted, never allowed
+          // to fail the statement for the rest of the window.
+          if (
+            canonicalRateRefusal(point.from, point.to, point.rate, isCoin) ===
+            "out_of_range"
+          ) {
+            outOfRange++;
+          }
+          continue;
+        }
+        byDay.set(`${row.from}|${row.to}|${point.date}`, [
+          row.from,
+          row.to,
+          point.date,
+          row.rate,
+        ]);
       }
+      if (outOfRange > 0) {
+        this.logger.warn(
+          `Skipped ${outOfRange} exchange rate observation(s) out of range for the rate column (${source})`,
+        );
+      }
+      const rows = [...byDay.values()];
+      if (rows.length === 0) return 0;
 
-      await withScopedDb(this.dataSource, (manager) =>
-        manager.query(
+      const batchSize = 500;
+      for (let i = 0; i < rows.length; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
+        const values = batch
+          .map((_, idx) => {
+            const offset = idx * 5;
+            return `($${offset + 1}, $${offset + 2}, $${offset + 3}::DATE, $${offset + 4}, $${offset + 5})`;
+          })
+          .join(", ");
+        const params: Array<string | number> = [];
+        for (const [f, t, date, rate] of batch) {
+          params.push(f, t, date, rate, source);
+        }
+
+        await manager.query(
           `INSERT INTO exchange_rates (from_currency, to_currency, rate_date, rate, source)
            VALUES ${values}
            ON CONFLICT (from_currency, to_currency, rate_date) DO UPDATE SET
              rate = EXCLUDED.rate,
              source = EXCLUDED.source`,
           params,
-        ),
-      );
-    }
+        );
+      }
 
-    return rows.length;
+      return rows.length;
+    });
+  }
+
+  /**
+   * Store a daily series that did not come through the chain -- the demo
+   * seed's coin rates -- under the `source` the caller names, through the same
+   * writer as a fetched window: each point in its pair's one orientation
+   * (`canonicalRateRow`, INV-FX-003), one row per day, the last point for a
+   * day winning and replacing what the day held. Answers how many rows it
+   * wrote. Not for a provider's observations, which reach the table through
+   * the refresh and the window fills.
+   */
+  async storeRateSeries(
+    points: readonly FxObservation[],
+    source: string,
+  ): Promise<number> {
+    return this.persistRateSeries(points, source);
   }
 
   /**
@@ -440,23 +543,39 @@ export class ExchangeRateService implements OnModuleInit {
    * from the cron is the same identity and joins.
    */
   async refreshAllRates(): Promise<RateRefreshSummary> {
-    return withSystemContext(() => this.refreshAllRatesGlobally());
+    return withSystemContext(() => this.refreshRatesGlobally("all"));
   }
 
-  private async refreshAllRatesGlobally(): Promise<RateRefreshSummary> {
-    const startTime = Date.now();
-    this.logger.log("Starting exchange rate refresh");
+  /**
+   * Refresh only the pairs in use with a CRYPTO currency on at least one side
+   * (`docs/specs/crypto-accounts.md`, decision 6): the weekend tick's body. A
+   * coin trades every day, while Frankfurter publishes no weekend rate and a
+   * fiat pair cannot have moved, so the fiat pairs are not asked. The weekday
+   * refresh (`refreshAllRates`) already covers the crypto pairs. Global for the
+   * same reason as `refreshAllRates`.
+   */
+  async refreshCryptoRates(): Promise<RateRefreshSummary> {
+    return withSystemContext(() => this.refreshRatesGlobally("crypto"));
+  }
 
-    // Fetch all currencies in use: account currencies, security currencies for
-    // active holdings, and every user's preferred default currency. Including
-    // defaults ensures we fetch (CAD, GBP) even when the user has no GBP-
-    // denominated accounts -- otherwise their GBP totals would silently fall
-    // back to unconverted CAD values.
-    const usedCurrencies: { code: string }[] = await withScopedDb(
-      this.dataSource,
-      (manager) =>
-        manager.query(
-          `SELECT DISTINCT code FROM (
+  /**
+   * Every currency in use across the deployment, with the kind and price
+   * symbol the refresh reports a coin's missing symbol by: account currencies,
+   * security currencies for active holdings, and every user's preferred
+   * default currency. Including defaults ensures we fetch (CAD, GBP) even when
+   * the user has no GBP-denominated accounts -- otherwise their GBP totals
+   * would silently fall back to unconverted CAD values. Sorted, so the pair set
+   * and the order the chain is asked in are the same on every replica and
+   * every run rather than whatever order the query returned.
+   */
+  private async currenciesInUse(): Promise<CurrencyInUse[]> {
+    const rows: Array<{
+      code: string;
+      kind?: string | null;
+      quoteSymbol?: string | null;
+    }> = await withScopedDb(this.dataSource, (manager) =>
+      manager.query(
+        `SELECT DISTINCT code, c.kind, c.quote_symbol AS "quoteSymbol" FROM (
          SELECT currency_code AS code FROM accounts WHERE is_closed = false
          UNION
          SELECT s.currency_code AS code
@@ -467,19 +586,46 @@ export class ExchangeRateService implements OnModuleInit {
          UNION
          SELECT default_currency AS code FROM user_preferences
          WHERE default_currency IS NOT NULL
-       ) sub`,
-        ),
+       ) sub
+       LEFT JOIN currencies c USING (code)`,
+      ),
+    );
+    const byCode = new Map<string, CurrencyInUse>();
+    for (const row of rows) {
+      if (byCode.has(row.code)) continue;
+      byCode.set(row.code, {
+        code: row.code,
+        kind: row.kind === "CRYPTO" ? "CRYPTO" : "FIAT",
+        quoteSymbol: row.quoteSymbol ?? null,
+      });
+    }
+    return [...byCode.values()].sort((a, b) =>
+      a.code < b.code ? -1 : a.code > b.code ? 1 : 0,
+    );
+  }
+
+  private async refreshRatesGlobally(
+    scope: "all" | "crypto",
+  ): Promise<RateRefreshSummary> {
+    const startTime = Date.now();
+    this.logger.log(
+      scope === "crypto"
+        ? "Starting cryptocurrency exchange rate refresh"
+        : "Starting exchange rate refresh",
     );
 
-    // Sorted, so the pair set and the order the chain is asked in are the same
-    // on every replica and every run rather than whatever order the query
-    // returned. With the codes in order, `codes[i] -> codes[j]` for i < j is the
-    // pair's canonical orientation (`isCanonicalOrientation`), so each base's
-    // quotes are exactly the pairs stored under it.
-    const codes = [...new Set(usedCurrencies.map((c) => c.code))].sort();
+    const inUse = await this.currenciesInUse();
+    const codes = inUse.map((currency) => currency.code);
+    const byCode = new Map(inUse.map((currency) => [currency.code, currency]));
     this.logger.log(`Currencies in use: ${codes.join(", ")}`);
 
-    if (codes.length < 2) {
+    const isCoin = (code: string) => byCode.get(code)?.kind === "CRYPTO";
+    const byBase = canonicalPairsByBase(
+      codes,
+      (base, quote) => (scope === "all" ? true : isCoin(base) || isCoin(quote)),
+      isCoin,
+    );
+    if (byBase.length === 0) {
       return {
         totalPairs: 0,
         updated: 0,
@@ -488,16 +634,17 @@ export class ExchangeRateService implements OnModuleInit {
         lastUpdated: new Date(),
       };
     }
-
-    // The canonical pairs grouped by their first code: one chain question per
-    // base carrying every quote stored against it, because a provider that
-    // publishes a whole base at once answers all of them in one call, and one
-    // that quotes pair by pair fans out inside its adapter.
-    const byBase = codes
-      .slice(0, -1)
-      .map((base, i) => ({ base, quotes: codes.slice(i + 1) }));
     const totalPairs = byBase.reduce((n, { quotes }) => n + quotes.length, 0);
 
+    /**
+     * The coin side of a pair no provider carries because the coin has no
+     * price symbol: the repair is on the Currencies page, not in
+     * `FX_PROVIDERS` (spec section 7). `null` for any other uncarried pair.
+     */
+    const unmappedCoin = (base: string, quote: string): string | null =>
+      [base, quote].find(
+        (code) => isCoin(code) && byCode.get(code)?.quoteSymbol == null,
+      ) ?? null;
     const results: RateUpdateResult[] = [];
     let updated = 0;
     let failed = 0;
@@ -516,10 +663,13 @@ export class ExchangeRateService implements OnModuleInit {
           // without a rate resolves from the last admissible day or stays
           // unknown, never at a guessed figure; a pair no configured provider
           // carries is a fact about `FX_PROVIDERS` for the operator to act on.
+          const coin = unmappedCoin(base, quote);
           const error = answer.unanswered.includes(quote)
             ? "No provider answered"
             : answer.uncarried.includes(quote)
-              ? `No configured provider carries ${pairLabel}`
+              ? coin !== null
+                ? `${coin} has no price symbol; map one on the Currencies page`
+                : `No configured provider carries ${pairLabel}`
               : "No rate data available";
           results.push({ pair: pairLabel, success: false, error });
           failed++;
@@ -530,7 +680,7 @@ export class ExchangeRateService implements OnModuleInit {
           // Saved in the orientation the provider quoted and on the date it
           // published; `saveRate` stores it in the pair's one canonical
           // orientation under the provider's own source slug.
-          await this.saveRate(observation, observation.source);
+          await this.saveRate(observation, observation.source, isCoin);
           results.push({
             pair: pairLabel,
             success: true,
@@ -550,7 +700,7 @@ export class ExchangeRateService implements OnModuleInit {
 
     const duration = Date.now() - startTime;
     this.logger.log(
-      `Exchange rate refresh completed in ${duration}ms: ${updated} updated, ${failed} failed`,
+      `${scope === "crypto" ? "Cryptocurrency exchange rate" : "Exchange rate"} refresh completed in ${duration}ms: ${updated} updated, ${failed} failed`,
     );
 
     return {
@@ -833,13 +983,16 @@ export class ExchangeRateService implements OnModuleInit {
       FX_WINDOW_FILL_CONCURRENCY,
       async ([key, pair]) => {
         try {
-          const { stored, answered } = await this.fillRateWindow(
+          const { stored, answered, carried } = await this.fillRateWindow(
             pair.from,
             pair.to,
             start,
             end,
           );
-          if (stored === 0 && answered) {
+          // An uncarried pair (a coin with no price symbol) was asked of
+          // nobody: remembering its window would outlive the symbol the reader
+          // maps next, and forgetting it costs no provider call.
+          if (stored === 0 && answered && carried !== false) {
             // Nothing exists for this pair in this era -- a currency that
             // predates the provider's history, or one it does not carry. Note
             // it, so a report reloaded on the same date does not re-ask.
@@ -871,6 +1024,15 @@ export class ExchangeRateService implements OnModuleInit {
   }
 
   /**
+   * Forget this process's on-demand empty windows for every pair with `code`
+   * on either side, because what prices `code` changed (a coin's price symbol
+   * set or re-pointed). Through `ExchangeRateHistoryService.forgetEmptyWindowsFor`.
+   */
+  forgetEmptyRateWindowsFor(code: string): void {
+    this.emptyRateWindows.forgetSubjects((pair) => pairKeyHasCode(pair, code));
+  }
+
+  /**
    * One pair, one window, persisted in the pair's canonical orientation under
    * the answering provider's source.
    *
@@ -888,7 +1050,11 @@ export class ExchangeRateService implements OnModuleInit {
    *   found, because that provider may hold history the others do not
    *   (INV-FX-005). Only an answered window may be remembered as empty: an
    *   outage and an empty window produce the same zero, and the memory holds
-   *   for 30 minutes.
+   *   for 30 minutes. And whether the pair is *carried* (`FxDailySeriesResult`):
+   *   `false` when no provider that may be asked carries it, which is a fact
+   *   about the configuration and the coin's mapping rather than about any
+   *   provider's history, so a caller remembers no empty window and records no
+   *   coverage for it.
    *
    * Public so `ExchangeRateHistoryService` can reach it: a user-driven history
    * extension asks the chain exactly the question the on-demand fill asks, and
@@ -899,15 +1065,17 @@ export class ExchangeRateService implements OnModuleInit {
     to: string,
     start: string,
     end: string,
-  ): Promise<{ stored: number; answered: boolean }> {
-    const { points, answered, source } = await this.fxProviders.dailySeries(
-      from,
-      to,
-      start,
-      end,
-    );
-    if (points.length === 0 || source === null) return { stored: 0, answered };
-    return { stored: await this.persistRateSeries(points, source), answered };
+  ): Promise<{ stored: number; answered: boolean; carried: boolean }> {
+    const { points, answered, carried, source } =
+      await this.fxProviders.dailySeries(from, to, start, end);
+    if (points.length === 0 || source === null) {
+      return { stored: 0, answered, carried };
+    }
+    return {
+      stored: await this.persistRateSeries(points, source),
+      answered,
+      carried,
+    };
   }
 
   /**
@@ -934,15 +1102,21 @@ export class ExchangeRateService implements OnModuleInit {
     const oldest = addDaysYMD(today, -FX_MAX_RATE_AGE_DAYS);
     // `live` mode may take an observation from after today inside the same bound.
     const newest = addDaysYMD(today, FX_MAX_RATE_AGE_DAYS);
-    const rows = await withScopedDb(this.dataSource, (manager) =>
-      manager
-        .getRepository(ExchangeRate)
-        .createQueryBuilder("er")
-        .distinctOn(["er.from_currency", "er.to_currency"])
-        .orderBy("er.from_currency")
-        .addOrderBy("er.to_currency")
-        .addOrderBy("er.rate_date", "DESC")
-        .getMany(),
+    const { rows, isCoin } = await withScopedDb(
+      this.dataSource,
+      async (manager) => ({
+        rows: await manager
+          .getRepository(ExchangeRate)
+          .createQueryBuilder("er")
+          .distinctOn(["er.from_currency", "er.to_currency"])
+          .orderBy("er.from_currency")
+          .addOrderBy("er.to_currency")
+          .addOrderBy("er.rate_date", "DESC")
+          .getMany(),
+        // The tie goes to the orientation the pair is stored in now, which
+        // for a coin pair is coin -> fiat (`isCanonicalOrientation`).
+        isCoin: await loadCoinLookup(manager),
+      }),
     );
 
     const chosen = new Map<string, { row: ExchangeRate; date: string }>();
@@ -960,7 +1134,7 @@ export class ExchangeRateService implements OnModuleInit {
         held === undefined ||
         date > held.date ||
         (date === held.date &&
-          isCanonicalOrientation(row.fromCurrency, row.toCurrency))
+          isCanonicalOrientation(row.fromCurrency, row.toCurrency, isCoin))
       ) {
         chosen.set(key, { row, date });
       }
@@ -1406,6 +1580,19 @@ export class ExchangeRateService implements OnModuleInit {
   }
 
   /**
+   * `decimal_places` of each non-ISO code among `codes` (a coin's row), for
+   * text that states an amount in its own currency (`decimalPlacesFor`). One
+   * read, none when every code is ISO.
+   */
+  async getCurrencyDecimalPlaces(
+    codes: readonly string[],
+  ): Promise<ReadonlyMap<string, number>> {
+    return withScopedDb(this.dataSource, (manager) =>
+      loadCurrencyDecimalPlaces(manager, codes),
+    );
+  }
+
+  /**
    * Get all active currencies
    */
   async getCurrencies(): Promise<Currency[]> {
@@ -1460,6 +1647,36 @@ export class ExchangeRateService implements OnModuleInit {
     } catch (error) {
       this.logger.error(
         `Scheduled exchange rate refresh failed: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Saturday and Sunday at 5:10 PM New York time: the pairs with a CRYPTO side
+   * only (`refreshCryptoRates`, `docs/specs/crypto-accounts.md` decision 6). A
+   * coin's Yahoo session is the UTC day, still open at 17:10 New York, so each
+   * run stores the current UTC day's quote; the weekday refresh covers the
+   * rest of the week. Held under the same `FetchSyncJob.ExchangeRates` lease
+   * as the weekday refresh, wrapped whole in the system context, for the same
+   * reason: one replica per tick asks the provider, and the upserts beneath
+   * are idempotent, so a lost lease costs quota, never data.
+   */
+  @Cron("10 17 * * 0,6", { timeZone: "America/New_York" })
+  async scheduledCryptoRateRefresh(): Promise<void> {
+    this.logger.log("Running scheduled cryptocurrency exchange rate refresh");
+    try {
+      await withSystemContext(() =>
+        this.fetchSync.withLease(
+          FetchSyncJob.ExchangeRates,
+          this.FETCH_LEASE_MS,
+          async () => {
+            await this.refreshCryptoRates();
+          },
+        ),
+      );
+    } catch (error) {
+      this.logger.error(
+        `Scheduled cryptocurrency exchange rate refresh failed: ${error.message}`,
       );
     }
   }

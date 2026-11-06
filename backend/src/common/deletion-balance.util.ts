@@ -1,6 +1,6 @@
 import { TransactionStatus } from "../transactions/entities/transaction.entity";
 import { isTransactionInFuture, formatDateYMDLocal } from "./date-utils";
-import { roundMoney } from "./round.util";
+import { MONEY_SCALE, roundMoney } from "./round.util";
 
 /**
  * A row that a balance may or may not include.
@@ -65,5 +65,12 @@ export function deletionBalanceEffect(row: DeletableRow): {
     return { delta: 0, needsRecalc: false };
   }
   if (isFuture) return { delta: 0, needsRecalc: true };
-  return { delta: roundMoney(-Number(row.amount)), needsRecalc: false };
+  // The stored amount negated, at the column scale: a stored value already
+  // carries at most its currency's places, so rounding at `MONEY_SCALE` only
+  // normalizes the double and never drops a coin's satoshis (a fiat amount at
+  // four places reads back the same at eight).
+  return {
+    delta: roundMoney(-Number(row.amount), MONEY_SCALE),
+    needsRecalc: false,
+  };
 }

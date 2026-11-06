@@ -42,6 +42,7 @@ vi.mock('@/lib/errors', () => ({
 
 import { userSettingsApi } from '@/lib/user-settings';
 import { investmentsApi } from '@/lib/investments';
+import { exchangeRatesApi } from '@/lib/exchange-rates';
 import toast from 'react-hot-toast';
 
 const mockPreferences: UserPreferences = {
@@ -425,6 +426,49 @@ describe('PreferencesSection', () => {
       expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith(
         expect.objectContaining({ defaultCurrency: 'USD' })
       );
+    });
+  });
+
+  describe('a cryptocurrency as the default currency', () => {
+    const currencies = [
+      { code: 'CAD', name: 'Canadian Dollar', kind: 'FIAT' },
+      { code: 'USD', name: 'US Dollar' },
+      { code: 'BTC', name: 'Bitcoin', kind: 'CRYPTO' },
+    ];
+    const optionValues = () =>
+      Array.from((screen.getByLabelText('Default Currency') as HTMLSelectElement).options).map(
+        (o) => o.value,
+      );
+    const hint = /Cryptocurrencies are not offered here/;
+
+    it('offers only fiat currencies and says why a coin is missing', async () => {
+      (exchangeRatesApi.getCurrencies as ReturnType<typeof vi.fn>).mockResolvedValueOnce(currencies);
+      render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+      await waitFor(() => expect(screen.getByText('USD - US Dollar')).toBeInTheDocument());
+      expect(optionValues()).toEqual(['CAD', 'USD']);
+      expect(screen.getByText(hint)).toBeInTheDocument();
+    });
+
+    it('shows no hint when the reader holds no coin', async () => {
+      render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+      await waitFor(() => expect(screen.getByText('USD - US Dollar')).toBeInTheDocument());
+      expect(screen.queryByText(hint)).not.toBeInTheDocument();
+    });
+
+    it('keeps a coin already saved as the default listed, so the picker shows what is held', async () => {
+      (exchangeRatesApi.getCurrencies as ReturnType<typeof vi.fn>).mockResolvedValueOnce(currencies);
+      render(
+        <PreferencesSection
+          preferences={{ ...mockPreferences, defaultCurrency: 'BTC' }}
+          onPreferencesUpdated={mockOnPreferencesUpdated}
+        />,
+      );
+
+      await waitFor(() => expect(screen.getByText('BTC - Bitcoin')).toBeInTheDocument());
+      expect(optionValues()).toEqual(['CAD', 'USD', 'BTC']);
+      expect((screen.getByLabelText('Default Currency') as HTMLSelectElement).value).toBe('BTC');
     });
   });
 

@@ -19,7 +19,8 @@
       "separator": ", lalu ",
       "names": {
         "frankfurter": "Frankfurter (kurs referensi ECB)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Pasangan kripto (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "Tindakan"
     },
     "defaultBadge": "Bawaan",
+    "cryptoBadge": "Kripto",
+    "noPriceSymbol": "Tidak ada simbol harga",
     "statusBadge": {
       "active": "Aktif",
       "activeShort": "Akt",
@@ -98,6 +101,20 @@
     "symbolLabel": "Simbol",
     "symbolPlaceholder": "mis., $, €, £, ¥",
     "decimalPlacesLabel": "Tempat Desimal",
+    "kindLabel": "Jenis",
+    "kindOptions": {
+      "fiat": "Mata Uang Fiat",
+      "crypto": "Mata Uang Kripto"
+    },
+    "kindLocked": "{code} sedang digunakan, sehingga jenisnya tidak dapat diubah.",
+    "quoteSymbolLabel": "Simbol Harga (opsional)",
+    "quoteSymbolPlaceholder": "mis. BTC-EUR",
+    "quoteSymbolHelp": "Simbol Yahoo Finance yang menjadi sumber harga koin: tikernya, tanda hubung, dan mata uang tempat koin dikuotasikan, seperti BTC-EUR. Kurs koin diambil melalui simbol ini.",
+    "verifyButton": "Verifikasi",
+    "quoteSymbolPricedIn": "Dihargai dalam {currency}",
+    "quoteSymbolMissing": "Tanpa simbol harga, mata uang ini tidak memiliki kurs.",
+    "quoteSymbolNotCrypto": "{symbol} bukan mata uang kripto. Masukkan pasangan koin, seperti BTC-EUR.",
+    "quoteSymbolNotFound": "Tidak ada mata uang kripto ditemukan untuk {symbol}",
     "lookupButton": "Cari",
     "lookingUp": "Mencari...",
     "clearButton": "Hapus",
@@ -109,10 +126,14 @@
       "found": "Ditemukan: {details}",
       "notFound": "Tidak ada mata uang ditemukan untuk \"{query}\"",
       "lookupFailed": "Pencarian gagal - silakan coba lagi",
-      "reactivateFailed": "Gagal mengaktifkan kembali mata uang"
+      "reactivateFailed": "Gagal mengaktifkan kembali mata uang",
+      "verifyEmpty": "Masukkan simbol harga seperti BTC-EUR untuk diverifikasi",
+      "verifyFailed": "Gagal memverifikasi simbol harga"
     },
     "inactiveNotice": "{code} sudah ada di daftar Anda, tetapi tidak aktif.",
-    "cryptoNotice": "{code} bukan kode mata uang standar. Mata uang kripto seperti Bitcoin dicatat sebagai sekuritas di akun investasi, bukan sebagai mata uang. <guide>Lihat caranya di panduan pengguna</guide>.",
+    "nonIsoNotice": "{code} bukan kode mata uang standar. Jika ini mata uang kripto, setel jenisnya ke Mata Uang Kripto. <guide>Baca tentang mata uang kripto di panduan pengguna</guide>.",
+    "switchToCrypto": "Gunakan Mata Uang Kripto",
+    "cryptoPrecisionNotice": "Jumlah dalam mata uang kripto disimpan hingga delapan tempat desimal, sesuai presisi penyimpanannya, sehingga biaya di bawah {smallest} tidak dapat dimasukkan. <guide>Lihat cara mencatat biaya dompet</guide>.",
     "reactivateButton": "Aktifkan kembali {code}",
     "reactivating": "Mengaktifkan kembali..."
   },
@@ -121,7 +142,10 @@
     "nameRequired": "Nama diperlukan",
     "nameMax": "Nama harus 100 karakter atau kurang",
     "symbolRequired": "Simbol diperlukan",
-    "symbolMax": "Simbol harus 10 karakter atau kurang"
+    "symbolMax": "Simbol harus 10 karakter atau kurang",
+    "quoteSymbolMax": "Simbol harga harus 20 karakter atau kurang",
+    "quoteSymbolRequiresCrypto": "Hanya mata uang kripto yang memiliki simbol harga",
+    "quoteSymbolNotAPair": "Masukkan pasangan seperti BTC-EUR: koin, tanda hubung, dan kode mata uang tiga huruf"
   },
   "rateHistory": {
     "title": "Riwayat kurs",
@@ -151,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (ECB)",
         "mnyImport": "Impor Money",
+        "yahooCrypto": "Pasangan kripto (Yahoo)",
         "unknown": "Tidak diketahui"
       }
     },

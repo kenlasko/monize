@@ -2,6 +2,7 @@
 // AiQueryDto module, whose class-transformer decorators need reflect-metadata
 // at load time (Nest loads it for us everywhere else).
 import "reflect-metadata";
+import { AccountType } from "../../accounts/entities/account.entity";
 import {
   validateToolInput,
   listTransactionsSchema,
@@ -290,6 +291,14 @@ describe("tool-input-schemas", () => {
         accountTypes: ["NOT_REAL"],
       });
       expect(result.success).toBe(false);
+    });
+
+    it("accepts every AccountType at once, CRYPTO included", () => {
+      const result = listAccountsSchema.safeParse({
+        accountTypes: Object.values(AccountType),
+      });
+      expect(Object.values(AccountType)).toContain("CRYPTO");
+      expect(result.success).toBe(true);
     });
   });
 
@@ -1021,6 +1030,39 @@ describe("tool-input-schemas", () => {
           items: [{ ...createItem, attachments: [1, 2, 3, 4, 5, 6] }],
         }).success,
       ).toBe(false);
+    });
+  });
+
+  describe("manageTransactionsSchema (amount precision)", () => {
+    const item = (amount: number) => ({
+      accountName: "Wallet",
+      amount,
+      date: "2026-01-15",
+    });
+    const parse = (amount: number) =>
+      manageTransactionsSchema.safeParse({
+        operation: "create",
+        items: [item(amount)],
+      });
+
+    it("accepts a coin amount of 8 decimal places", () => {
+      expect(parse(-0.000025).success).toBe(true);
+      expect(parse(1.23456789).success).toBe(true);
+    });
+
+    it("keeps accepting a fiat amount of 2 or 4 places", () => {
+      expect(parse(-12.5).success).toBe(true);
+      expect(parse(-12.3457).success).toBe(true);
+    });
+
+    it("refuses 9 decimal places", () => {
+      const result = parse(0.123456789);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(JSON.stringify(result.error.issues)).toContain(
+          "amount supports at most 8 decimal places",
+        );
+      }
     });
   });
 

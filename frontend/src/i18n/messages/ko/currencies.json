@@ -19,7 +19,8 @@
       "separator": ", 그다음 ",
       "names": {
         "frankfurter": "Frankfurter(ECB 기준 환율)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "암호화폐 쌍 (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "작업"
     },
     "defaultBadge": "기본",
+    "cryptoBadge": "암호화폐",
+    "noPriceSymbol": "가격 기호 없음",
     "statusBadge": {
       "active": "활성",
       "activeShort": "활성",
@@ -98,6 +101,20 @@
     "symbolLabel": "기호",
     "symbolPlaceholder": "예: $, €, £, ¥",
     "decimalPlacesLabel": "소수점 자리",
+    "kindLabel": "유형",
+    "kindOptions": {
+      "fiat": "법정 통화",
+      "crypto": "암호화폐"
+    },
+    "kindLocked": "{code}은(는) 사용 중이므로 유형을 변경할 수 없습니다.",
+    "quoteSymbolLabel": "가격 기호 (선택)",
+    "quoteSymbolPlaceholder": "예: BTC-EUR",
+    "quoteSymbolHelp": "코인 가격을 가져오는 Yahoo Finance 기호입니다. 티커, 하이픈, 시세 기준 통화 순서로 입력합니다(예: BTC-EUR). 코인의 환율은 이 기호를 통해 가져옵니다.",
+    "verifyButton": "확인",
+    "quoteSymbolPricedIn": "{currency} 기준 가격",
+    "quoteSymbolMissing": "가격 기호가 없으면 이 통화에는 환율이 없습니다.",
+    "quoteSymbolNotCrypto": "{symbol}은(는) 암호화폐가 아닙니다. BTC-EUR처럼 코인의 쌍을 입력하세요.",
+    "quoteSymbolNotFound": "{symbol}에 해당하는 암호화폐를 찾을 수 없습니다",
     "lookupButton": "조회",
     "lookingUp": "조회 중...",
     "clearButton": "지우기",
@@ -109,10 +126,14 @@
       "found": "찾음: {details}",
       "notFound": "\"{query}\"에 해당하는 통화를 찾을 수 없습니다",
       "lookupFailed": "조회에 실패했습니다 - 다시 시도해 주세요",
-      "reactivateFailed": "통화를 다시 활성화하지 못했습니다"
+      "reactivateFailed": "통화를 다시 활성화하지 못했습니다",
+      "verifyEmpty": "확인할 가격 기호를 입력하세요(예: BTC-EUR)",
+      "verifyFailed": "가격 기호를 확인하지 못했습니다"
     },
     "inactiveNotice": "{code}은(는) 이미 목록에 있지만 비활성 상태입니다.",
-    "cryptoNotice": "{code}은(는) 표준 통화 코드가 아닙니다. 비트코인 같은 암호화폐는 통화가 아니라 투자 계정의 유가증권으로 추적합니다. <guide>방법은 사용자 가이드에서 확인하세요</guide>.",
+    "nonIsoNotice": "{code}은(는) 표준 통화 코드가 아닙니다. 암호화폐라면 유형을 암호화폐로 설정하세요. <guide>암호화폐에 대해서는 사용자 가이드를 참고하세요</guide>.",
+    "switchToCrypto": "암호화폐 사용",
+    "cryptoPrecisionNotice": "암호화폐 금액은 저장 정밀도인 소수점 이하 최대 여덟 자리까지 유지되므로 {smallest} 미만의 수수료는 입력할 수 없습니다. <guide>지갑 수수료를 기록하는 방법 보기</guide>.",
     "reactivateButton": "{code} 다시 활성화",
     "reactivating": "다시 활성화하는 중..."
   },
@@ -121,7 +142,10 @@
     "nameRequired": "이름은 필수입니다",
     "nameMax": "이름은 100자 이하여야 합니다",
     "symbolRequired": "기호는 필수입니다",
-    "symbolMax": "기호는 10자 이하여야 합니다"
+    "symbolMax": "기호는 10자 이하여야 합니다",
+    "quoteSymbolMax": "가격 기호는 20자 이하여야 합니다",
+    "quoteSymbolRequiresCrypto": "암호화폐에만 가격 기호가 있습니다",
+    "quoteSymbolNotAPair": "BTC-EUR처럼 쌍을 입력하세요: 코인, 하이픈, 세 글자 통화 코드"
   },
   "rateHistory": {
     "title": "환율 이력",
@@ -151,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter(ECB)",
         "mnyImport": "Money 가져오기",
+        "yahooCrypto": "암호화폐 쌍 (Yahoo)",
         "unknown": "알 수 없음"
       }
     },

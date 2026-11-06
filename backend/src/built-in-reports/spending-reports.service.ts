@@ -10,7 +10,12 @@ import {
   RawPayeeAggregate,
   RawMonthlyCategoryAggregate,
 } from "./report-currency.service";
-import { roundMoney, sumMoney, toMoneyNumber } from "../common/round.util";
+import {
+  MONEY_SCALE,
+  roundMoney,
+  sumMoney,
+  toMoneyNumber,
+} from "../common/round.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
   SpendingByCategoryResponse,
@@ -220,7 +225,11 @@ export class SpendingReportsService {
       // A missing rate is unknown, never the unconverted figure: adding foreign
       // units to a home-currency total is the defect INV-FX-001 forbids.
       const converted = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.total),
+        // An aggregate in the row's own currency, read before conversion: a coin's
+        // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
+        // the same), so a 2,500-sat total is not rounded to zero before it is
+        // converted (INV-MONEY-001).
+        toMoneyNumber(row.total, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,
@@ -357,7 +366,7 @@ export class SpendingReportsService {
     const gaps = new ConversionGaps();
     for (const row of rawResults) {
       const total = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.total),
+        toMoneyNumber(row.total, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,
@@ -473,7 +482,7 @@ export class SpendingReportsService {
     for (const row of rawResults) {
       const month = row.month;
       const total = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.total),
+        toMoneyNumber(row.total, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,

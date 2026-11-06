@@ -440,19 +440,24 @@ describe('InvestmentTransactionForm', () => {
     });
   });
 
-  it('filters out CASH, ASSET, and brokerage accounts from funding accounts', async () => {
+  it('filters out CASH, ASSET, CRYPTO, and brokerage accounts from funding accounts', async () => {
     const investmentCash = {
       id: 'a4', name: 'RRSP Cash', accountType: 'INVESTMENT',
       accountSubType: 'INVESTMENT_CASH', currencyCode: 'CAD',
     } as any;
+    const wallet = {
+      id: 'a5', name: 'Bitcoin Wallet', accountType: 'CRYPTO',
+      accountSubType: null, currencyCode: 'BTC',
+    } as any;
 
-    render(<InvestmentTransactionForm accounts={[...accounts, investmentCash]} />);
+    render(<InvestmentTransactionForm accounts={[...accounts, investmentCash, wallet]} />);
     await waitFor(() => {
       const fundingSelect = screen.getByLabelText('Funds From');
       const options = fundingSelect.querySelectorAll('option');
       const optionTexts = Array.from(options).map(o => o.textContent);
       expect(optionTexts).not.toContain('Cash Account');
       expect(optionTexts).not.toContain('RRSP Brokerage');
+      expect(optionTexts.some((text) => text?.includes('Bitcoin Wallet'))).toBe(false);
       expect(optionTexts).toContain('Main Chequing');
       expect(optionTexts).toContain('RRSP Cash');
     });

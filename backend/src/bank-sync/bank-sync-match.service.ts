@@ -5,7 +5,11 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
-import { Account, AccountSubType } from "../accounts/entities/account.entity";
+import {
+  Account,
+  AccountSubType,
+  AccountType,
+} from "../accounts/entities/account.entity";
 import { withScopedDb } from "../common/db/scoped-db";
 import { tr } from "../i18n/translate";
 import { matchBankAccounts } from "./bank-account-matcher";
@@ -88,6 +92,7 @@ export class BankSyncMatchService {
         isClosed: account.isClosed,
         isInvestmentBrokerage:
           account.accountSubType === AccountSubType.INVESTMENT_BROKERAGE,
+        isCrypto: account.accountType === AccountType.CRYPTO,
       })),
       input.linkedAccountIds,
     );

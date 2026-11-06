@@ -19,7 +19,8 @@
       "separator": ", dann ",
       "names": {
         "frankfurter": "Frankfurter (EZB-Referenzkurse)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Krypto-Paare (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "Aktionen"
     },
     "defaultBadge": "Standard",
+    "cryptoBadge": "Krypto",
+    "noPriceSymbol": "Kein Kurssymbol",
     "statusBadge": {
       "active": "Aktiv",
       "activeShort": "Akt",
@@ -98,6 +101,20 @@
     "symbolLabel": "Symbol",
     "symbolPlaceholder": "z. B. $, €, £, ¥",
     "decimalPlacesLabel": "Dezimalstellen",
+    "kindLabel": "Art",
+    "kindOptions": {
+      "fiat": "Fiat-Währung",
+      "crypto": "Kryptowährung"
+    },
+    "kindLocked": "{code} wird verwendet, daher kann die Art nicht geändert werden.",
+    "quoteSymbolLabel": "Kurssymbol (optional)",
+    "quoteSymbolPlaceholder": "z. B. BTC-EUR",
+    "quoteSymbolHelp": "Das Yahoo-Finance-Symbol, aus dem der Kurs der Coin stammt: ihr Ticker, ein Bindestrich und die Währung, in der sie notiert wird, z. B. BTC-EUR. Die Wechselkurse der Coin werden darüber abgerufen.",
+    "verifyButton": "Prüfen",
+    "quoteSymbolPricedIn": "Notiert in {currency}",
+    "quoteSymbolMissing": "Ohne Kurssymbol hat die Währung keinen Wechselkurs.",
+    "quoteSymbolNotCrypto": "{symbol} ist keine Kryptowährung. Geben Sie das Paar einer Coin ein, z. B. BTC-EUR.",
+    "quoteSymbolNotFound": "Keine Kryptowährung für {symbol} gefunden",
     "lookupButton": "Suchen",
     "lookingUp": "Wird gesucht...",
     "clearButton": "Löschen",
@@ -109,10 +126,14 @@
       "found": "Gefunden: {details}",
       "notFound": "Keine Währung für \"{query}\" gefunden",
       "lookupFailed": "Suche fehlgeschlagen – bitte versuchen Sie es erneut",
-      "reactivateFailed": "Währung konnte nicht reaktiviert werden"
+      "reactivateFailed": "Währung konnte nicht reaktiviert werden",
+      "verifyEmpty": "Geben Sie zur Prüfung ein Kurssymbol wie BTC-EUR ein",
+      "verifyFailed": "Kurssymbol konnte nicht geprüft werden"
     },
     "inactiveNotice": "{code} ist bereits in Ihrer Liste, aber inaktiv.",
-    "cryptoNotice": "{code} ist kein Standard-Währungscode. Kryptowährungen wie Bitcoin werden als Wertpapiere in einem Investitionskonto erfasst, nicht als Währungen. <guide>Im Benutzerhandbuch nachlesen, wie das geht</guide>.",
+    "nonIsoNotice": "{code} ist kein Standard-Währungscode. Handelt es sich um eine Kryptowährung, setzen Sie die Art auf Kryptowährung. <guide>Mehr zu Kryptowährungen im Benutzerhandbuch</guide>.",
+    "switchToCrypto": "Kryptowährung verwenden",
+    "cryptoPrecisionNotice": "Beträge in einer Kryptowährung werden mit bis zu acht Dezimalstellen geführt, der Genauigkeit, mit der sie gespeichert werden; eine Gebühr unter {smallest} kann daher nicht erfasst werden. <guide>So erfassen Sie Wallet-Gebühren</guide>.",
     "reactivateButton": "{code} reaktivieren",
     "reactivating": "Wird reaktiviert..."
   },
@@ -121,7 +142,10 @@
     "nameRequired": "Name ist erforderlich",
     "nameMax": "Name darf höchstens 100 Zeichen lang sein",
     "symbolRequired": "Symbol ist erforderlich",
-    "symbolMax": "Symbol darf höchstens 10 Zeichen lang sein"
+    "symbolMax": "Symbol darf höchstens 10 Zeichen lang sein",
+    "quoteSymbolMax": "Das Kurssymbol darf höchstens 20 Zeichen lang sein",
+    "quoteSymbolRequiresCrypto": "Nur eine Kryptowährung hat ein Kurssymbol",
+    "quoteSymbolNotAPair": "Geben Sie ein Paar wie BTC-EUR ein: die Coin, einen Bindestrich und einen dreistelligen Währungscode"
   },
   "rateHistory": {
     "title": "Kursverlauf",
@@ -151,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (EZB)",
         "mnyImport": "Money-Import",
+        "yahooCrypto": "Krypto-Paare (Yahoo)",
         "unknown": "Unbekannt"
       }
     },

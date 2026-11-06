@@ -50,7 +50,8 @@ which a `CHECK` makes a second orientation impossible to store.
   stored; `resolveFxRate` answers 1 for it without a lookup (INV-FX-001).
 - **Canonical orientation.** The one whose `from_currency` sorts before its
   `to_currency` in plain code-point order (`"CAD" < "USD"`), which is the order
-  `directionlessPairKey` already sorts by. It is user-independent, which a
+  `directionlessPairKey` already sorts by. A pair with exactly one coin side is
+  the exception, stored coin -> fiat (section 12). It is user-independent, which a
   "foreign to reporting currency" rule could not be on a table every user
   shares.
 - **`canonicalRateRow(from, to, rate)`**
@@ -270,3 +271,64 @@ conflict, as it does today.
 | 5 | What does the Money importer do? | **Canonicalises on import**, inverting with `roundFxRate`, one row per pair and date. |
 | 6 | GEM's own direct-then-reverse pair? | **Collapsed to one lookup**; the reciprocal allowlist shrinks. |
 | 7 | The default age bound on the latest-rate lookup? | **Unchanged, unbounded.** A separate posting-policy decision. |
+
+## 12. Addendum (2026-11-05): a coin pair is stored coin first
+
+Cryptocurrencies (`docs/specs/crypto-accounts.md`) broke the assumption behind
+section 6: that the inverse of a rate keeps its significant figures at ten
+decimals. A coin is worth many units of a fiat, so its fiat -> coin rate is
+tiny. `XBT -> IDR` at 1.52e9 sorts as `IDR -> XBT` by code, stored at ten
+decimals as `0.0000000007`, which resolves back to 1.43e9: 6% off.
+
+**The rule.** `isCanonicalOrientation(from, to, isCoin)` stores a pair with
+exactly one CRYPTO side (`currencies.kind`) coin -> fiat, whichever code sorts
+first. Two fiats, or two coins, keep plain code order (section 2). `isCoin`
+defaults to "nobody is a coin", so a caller without a kind lookup gets the
+section 2 rule unchanged; `BTC -> EUR` is canonical under both, because BTC
+sorts first and is the coin.
+
+**Who passes the lookup.** Every writer reads `currencies.kind` once per
+operation and passes it to `canonicalRateRow`: the daily and weekend refresh
+from the kinds `currenciesInUse` already reads (`saveRate`, and
+`canonicalPairsByBase`, which groups each pair under the code it is stored
+under, so a coin that sorts after its fiats is one question under the coin);
+`persistRateSeries` (and so `storeRateSeries` and every window fill) through
+`loadCoinLookup` on its own transaction's manager; the Money importer's
+`writeExchangeRates` the same way. `getLatestRates` breaks a same-day tie
+towards the coin-first row. There is no manual-rate writer of
+`exchange_rates`.
+
+**Out of range.** `canonicalRateRow` returns `null` for a rate that, as
+stored, would be at or above 1e10 (`NUMERIC(20,10)` overflows and the whole
+statement fails) or rounds to zero at ten decimals (`canonicalRateRefusal`
+names the reason `out_of_range`). The refresh reports that one pair as "Rate
+out of range" and saves the rest; a window skips the point and logs a count;
+the importer drops the row like any other unusable one. `BTC -> LBP` at 1.1e10
+is the example.
+
+**What stays code-ordered.** `exchange_rate_coverage` keys a pair in plain code
+order (its CHECK is `from_currency < to_currency`), and so does
+`directionlessPairKey` (`codeOrderedPair`). A coverage row and a pair key
+answer "which pair", not "which direction is stored": a window covers both
+directions, and a key that followed `currencies.kind` would break the coverage
+CHECK for a coin that sorts after its fiat and orphan the row if a code's kind
+changed.
+
+**The contract release.** Section 3's `CHECK (from_currency < to_currency)` on
+`exchange_rates` can no longer be the mechanism: a coin-first row such as
+`XBT -> IDR` violates it, and a CHECK cannot read `currencies.kind`. The
+contract migration needs a rule that can (a trigger, or a check through an
+immutable function over a kind snapshot), and its data step must orient by the
+same rule. Until it is redesigned INV-FX-003 stays `partial`.
+
+**Precision, restated.** Section 3's "within 1e-9" is an absolute bound for a
+fiat rate. Stored coin first, a coin pair keeps every figure the provider sent
+in the stored direction, and the inverse `resolveFxRate` computes is exact to
+floating point: `IDR -> XBT` from a stored `XBT -> IDR` 1.52e9 is within 1e-9
+relative of `1 / 1.52e9`.
+
+Tests: `canonical-rate.util.spec.ts` ("the coin rule", "a rate the column
+cannot hold", `codeOrderedPair`), `exchange-rate.service.spec.ts` (a coin window
+stored coin first with one kind read, the refresh's coin base and out-of-range
+report, the `getLatestRates` tie), `write-prices.spec.ts` (an import of
+`IDR -> XBT` stored `XBT -> IDR`).

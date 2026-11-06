@@ -2,6 +2,10 @@ import { Injectable } from "@nestjs/common";
 import { DataSource, EntityManager, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { roundMoney } from "../common/round.util";
+import {
+  loadCurrencyPlacesForRead,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
 import { Account } from "../accounts/entities/account.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { PayeeAlias } from "./entities/payee-alias.entity";
@@ -184,13 +188,21 @@ export class PayeeDetailService {
         lastTransactionDate: string | null;
       }>();
 
+    // Each total is in its account's currency, rounded at its precision.
+    const places = await loadCurrencyPlacesForRead(
+      m,
+      rows.map((row) => row.currencyCode),
+    );
     return rows.map((row) => ({
       accountId: row.accountId,
       accountName: row.accountName,
       accountType: row.accountType,
       currencyCode: row.currencyCode,
       transactionCount: parseInt(row.transactionCount, 10),
-      total: roundMoney(Number(row.total)),
+      total: roundMoney(
+        Number(row.total),
+        moneyDecimalsForCode(places, row.currencyCode),
+      ),
       lastTransactionDate: row.lastTransactionDate ?? null,
     }));
   }
@@ -236,10 +248,14 @@ export class PayeeDetailService {
       return null;
     }
 
+    const places = await loadCurrencyPlacesForRead(m, [row.currencyCode]);
     return {
       id: row.id,
       transactionDate: row.transactionDate,
-      amount: roundMoney(Number(row.amount)),
+      amount: roundMoney(
+        Number(row.amount),
+        moneyDecimalsForCode(places, row.currencyCode),
+      ),
       currencyCode: row.currencyCode,
       accountId: row.accountId,
       accountName: row.accountName,

@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, renderHook, screen, fireEvent, act } from '@/test/render';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 import {
   AccountRow,
   AccountRowProps,
@@ -82,6 +84,7 @@ function createDefaultProps(overrides: Partial<AccountRowProps> = {}): AccountRo
         CASH: 'Cash',
         LINE_OF_CREDIT: 'Line of Credit',
         ASSET: 'Asset',
+        CRYPTO: 'Crypto Wallet',
         OTHER: 'Other',
       };
       return labels[type] || type;
@@ -438,6 +441,59 @@ describe('AccountRow', () => {
 
       const cells = screen.queryAllByText(/\u2248/);
       expect(cells).toHaveLength(0);
+    });
+  });
+
+  describe('a coin wallet in a currency other than the reader\'s', () => {
+    afterEach(() => {
+      act(() => clearCurrencyDecimals());
+    });
+
+    /** The row through the real formatter, so the code Intl writes is in play. */
+    function renderWallet() {
+      const { result } = renderHook(() => useNumberFormat());
+      renderAccountRow(
+        createDefaultProps({
+          density: 'dense',
+          defaultCurrency: 'CAD',
+          account: createAccount({
+            name: 'Bitcoin Wallet',
+            accountType: 'CRYPTO',
+            currencyCode: 'BTC',
+            currentBalance: 0.007,
+          }),
+          formatCurrencyBase: result.current.formatCurrency,
+          convertToDefault: () => null,
+        }),
+      );
+    }
+
+    /** Every text node naming the balance, NBSP folded to a plain space. */
+    const balanceTexts = () =>
+      screen
+        .getAllByText(/0\.0/)
+        .map((el) => (el.textContent ?? '').replace(/\u00a0/g, ' '));
+
+    it('names an unregistered coin once, where Intl already wrote its code', () => {
+      renderWallet();
+      const texts = balanceTexts();
+      expect(texts).toContain('BTC 0.01');
+      expect(texts.some((text) => /BTC.*BTC/.test(text))).toBe(false);
+    });
+
+    it('names a registered coin without a symbol once', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+      renderWallet();
+      const texts = balanceTexts();
+      // It read "BTC 0.0070 BTC".
+      expect(texts).toContain('BTC 0.0070');
+      expect(texts.some((text) => /BTC.*BTC/.test(text))).toBe(false);
+    });
+
+    it('shows a registered coin\'s symbol and names its code once', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20bf' }]);
+      renderWallet();
+      expect(balanceTexts()).toContain('\u20bf0.0070 BTC');
     });
   });
 
@@ -1134,6 +1190,74 @@ describe('AccountRow', () => {
       expect(byKey.get('netWorthExclusion')?.hidden).toBe(true);
     });
   });
+  describe('the Close action on a small balance', () => {
+    const labels = {
+      viewTransactions: 'View Transactions',
+      details: 'Details',
+      edit: 'Edit',
+      reconcile: 'Reconcile',
+      close: 'Close',
+      closeTitleDisabled: 'Balance must be zero',
+      closeTitleEnabled: 'Close account',
+      reopen: 'Reopen',
+      delete: 'Delete',
+    };
+    const handlers = {
+      onDetails: vi.fn(),
+      onEdit: vi.fn(),
+      onReconcile: vi.fn(),
+      onCloseClick: vi.fn(),
+      onReopen: vi.fn(),
+      onDeleteClick: vi.fn(),
+    };
+    const closeActionFor = (currencyCode: string, value: number) => {
+      const account = createAccount({ currencyCode, currentBalance: value });
+      const logical: LogicalAccount = {
+        id: account.id,
+        primary: account,
+        cash: null,
+        memberIds: [account.id],
+        displayName: account.name,
+        isInvestment: false,
+        cashRegisterId: null,
+        holdingsAccountId: null,
+        combinedValue: value,
+      };
+      const actions = buildAccountActions(account, true, labels, handlers, logical);
+      return actions.find((a) => a.key === 'close');
+    };
+
+    afterEach(() => {
+      act(() => clearCurrencyDecimals());
+    });
+
+    it('does not offer Close on a coin wallet holding 0.000025 BTC', () => {
+      act(() => registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]));
+      const close = closeActionFor('BTC', 0.000025);
+      expect(close?.disabled).toBe(true);
+      expect(close?.title).toBe('Balance must be zero');
+    });
+
+    it('does not offer Close on a coin the registry has not loaded yet', () => {
+      expect(closeActionFor('BTC', 0.000025)?.disabled).toBe(true);
+    });
+
+    it('still offers Close on an empty coin wallet', () => {
+      act(() => registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]));
+      const close = closeActionFor('BTC', 0);
+      expect(close?.disabled).toBe(false);
+      expect(close?.title).toBe('Close account');
+    });
+
+    it('treats a CAD balance of 0.004 as before (non-zero at four places)', () => {
+      expect(closeActionFor('CAD', 0.004)?.disabled).toBe(true);
+    });
+
+    it('treats a CAD balance below half a basis point as empty, as before', () => {
+      expect(closeActionFor('CAD', 0.00004)?.disabled).toBe(false);
+    });
+  });
+
   describe('a folded investment pair', () => {
     const brokerage = createAccount({
       id: 'brok',

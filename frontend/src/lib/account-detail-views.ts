@@ -31,6 +31,7 @@ export const ACCOUNT_DETAIL_VIEWS: Partial<Record<AccountType, AccountDetailView
   CHEQUING: 'banking',
   SAVINGS: 'banking',
   CASH: 'banking',
+  CRYPTO: 'banking',
   INVESTMENT: 'investment',
   ASSET: 'asset',
   OTHER: 'asset',

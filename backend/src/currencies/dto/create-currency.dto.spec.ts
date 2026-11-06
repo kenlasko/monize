@@ -136,8 +136,14 @@ describe("CreateCurrencyDto", () => {
     expect(errors[0].property).toBe("decimalPlaces");
   });
 
-  it("rejects decimalPlaces above 4", async () => {
-    const dto = buildDto({ decimalPlaces: 5 });
+  it("accepts decimalPlaces of 8, the most money holds", async () => {
+    const dto = buildDto({ decimalPlaces: 8 });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects decimalPlaces above 8", async () => {
+    const dto = buildDto({ decimalPlaces: 9 });
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe("decimalPlaces");
@@ -177,5 +183,85 @@ describe("CreateCurrencyDto", () => {
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe("isActive");
+  });
+
+  // ── kind and quoteSymbol (optional) ─────────────────────────
+
+  const fromBody = (body: Record<string, unknown>) =>
+    plainToInstance(CreateCurrencyDto, {
+      code: "BTC",
+      name: "Bitcoin",
+      symbol: "B",
+      ...body,
+    });
+
+  it("accepts the two kinds and leaves the kind out when omitted", async () => {
+    for (const kind of ["FIAT", "CRYPTO"]) {
+      expect(await validate(fromBody({ kind }))).toHaveLength(0);
+    }
+    const omitted = fromBody({});
+    expect(await validate(omitted)).toHaveLength(0);
+    expect(omitted.kind).toBeUndefined();
+  });
+
+  it.each(["crypto", "STOCK", "", 1])("rejects the kind %p", async (kind) => {
+    const errors = await validate(fromBody({ kind }));
+    expect(errors.map((e) => e.property)).toEqual(["kind"]);
+    expect(errors[0].constraints).toHaveProperty("isIn");
+  });
+
+  it("upper-cases and trims a price symbol", async () => {
+    const dto = fromBody({ kind: "CRYPTO", quoteSymbol: "  btc-eur " });
+    expect(await validate(dto)).toHaveLength(0);
+    expect(dto.quoteSymbol).toBe("BTC-EUR");
+  });
+
+  it("reads a blank price symbol as none, and accepts null", async () => {
+    const blank = fromBody({ kind: "CRYPTO", quoteSymbol: "   " });
+    expect(await validate(blank)).toHaveLength(0);
+    expect(blank.quoteSymbol).toBeNull();
+    const cleared = fromBody({ kind: "CRYPTO", quoteSymbol: null });
+    expect(await validate(cleared)).toHaveLength(0);
+    expect(cleared.quoteSymbol).toBeNull();
+  });
+
+  it("rejects a price symbol longer than 20 characters", async () => {
+    const errors = await validate(
+      fromBody({ kind: "CRYPTO", quoteSymbol: `${"A".repeat(17)}-EUR` }),
+    );
+    expect(errors.map((e) => e.property)).toEqual(["quoteSymbol"]);
+    expect(errors[0].constraints).toHaveProperty("maxLength");
+  });
+
+  it.each(["BTC EUR", "BTC/EUR", "<b>BTC-EUR", "BTC_EUR"])(
+    "rejects the price symbol %p, which no Yahoo ticker is spelled with",
+    async (quoteSymbol) => {
+      const errors = await validate(fromBody({ kind: "CRYPTO", quoteSymbol }));
+      expect(errors.map((e) => e.property)).toEqual(["quoteSymbol"]);
+    },
+  );
+
+  it("rejects a non-string price symbol", async () => {
+    const errors = await validate(fromBody({ kind: "CRYPTO", quoteSymbol: 7 }));
+    expect(errors.map((e) => e.property)).toEqual(["quoteSymbol"]);
+  });
+
+  it("leaves the kind rules to the service: a well-formed symbol passes the DTO on its own", async () => {
+    // An update that omits `kind` keeps the row's, so only the service can
+    // decide whether the symbol belongs (`quoteSymbolRequiresCrypto`) or names
+    // a fiat leg (`quoteSymbolNotAPair`).
+    expect(await validate(fromBody({ quoteSymbol: "BTC" }))).toHaveLength(0);
+  });
+
+  it("accepts a coin at eight places and refuses decimal places past what money holds", async () => {
+    expect(
+      await validate(
+        fromBody({ kind: "CRYPTO", quoteSymbol: "BTC-EUR", decimalPlaces: 8 }),
+      ),
+    ).toHaveLength(0);
+    const errors = await validate(
+      fromBody({ kind: "CRYPTO", quoteSymbol: "BTC-EUR", decimalPlaces: 9 }),
+    );
+    expect(errors.map((e) => e.property)).toEqual(["decimalPlaces"]);
   });
 });

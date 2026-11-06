@@ -89,7 +89,7 @@ describe("import balance writes (integration, CONC-001)", () => {
         // One import transaction, one call per imported row, exactly as the QIF
         // and investment processors drive it.
         for (const amount of IMPORTED_AMOUNTS) {
-          await updateAccountBalance(m, accountId, amount);
+          await updateAccountBalance(m, accountId, amount, 4);
         }
       }),
     );
@@ -114,7 +114,7 @@ describe("import balance writes (integration, CONC-001)", () => {
 
     const firstDone = withUserContext(userId, () =>
       withScopedDb(dataSource, async (m) => {
-        await updateAccountBalance(m, accountId, 40.25);
+        await updateAccountBalance(m, accountId, 40.25, 4);
         signalFirstApplied();
         await firstCanCommit;
       }),
@@ -124,7 +124,7 @@ describe("import balance writes (integration, CONC-001)", () => {
 
     const secondDone = withUserContext(userId, () =>
       withScopedDb(dataSource, (m) =>
-        updateAccountBalance(m, accountId, -15.5),
+        updateAccountBalance(m, accountId, -15.5, 4),
       ),
     );
 

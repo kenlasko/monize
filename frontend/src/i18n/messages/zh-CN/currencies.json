@@ -19,7 +19,8 @@
       "separator": "，其次 ",
       "names": {
         "frankfurter": "Frankfurter（欧洲央行参考汇率）",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "加密货币对 (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "操作"
     },
     "defaultBadge": "默认",
+    "cryptoBadge": "加密",
+    "noPriceSymbol": "无价格符号",
     "statusBadge": {
       "active": "启用",
       "activeShort": "启",
@@ -98,6 +101,20 @@
     "symbolLabel": "符号",
     "symbolPlaceholder": "例如：$、€、£、¥",
     "decimalPlacesLabel": "小数位数",
+    "kindLabel": "类型",
+    "kindOptions": {
+      "fiat": "法定货币",
+      "crypto": "加密货币"
+    },
+    "kindLocked": "{code} 正在使用中，因此无法更改其类型。",
+    "quoteSymbolLabel": "价格符号（可选）",
+    "quoteSymbolPlaceholder": "例如 BTC-EUR",
+    "quoteSymbolHelp": "用于获取该币种价格的 Yahoo Finance 符号：其代码、连字符和计价货币，例如 BTC-EUR。该币种的汇率通过它获取。",
+    "verifyButton": "验证",
+    "quoteSymbolPricedIn": "以 {currency} 计价",
+    "quoteSymbolMissing": "没有价格符号，该货币就没有汇率。",
+    "quoteSymbolNotCrypto": "{symbol} 不是加密货币。请输入币种的交易对，例如 BTC-EUR。",
+    "quoteSymbolNotFound": "未找到 {symbol} 对应的加密货币",
     "lookupButton": "查询",
     "lookingUp": "查询中...",
     "clearButton": "清除",
@@ -109,10 +126,14 @@
       "found": "已找到：{details}",
       "notFound": "未找到 \"{query}\" 对应的货币",
       "lookupFailed": "查询失败，请重试",
-      "reactivateFailed": "重新启用货币失败"
+      "reactivateFailed": "重新启用货币失败",
+      "verifyEmpty": "请输入 BTC-EUR 之类的价格符号进行验证",
+      "verifyFailed": "验证价格符号失败"
     },
     "inactiveNotice": "{code} 已在您的列表中，但处于未启用状态。",
-    "cryptoNotice": "{code} 不是标准的货币代码。比特币等加密货币应作为证券在投资账户中记录，而不是作为货币。<guide>请在用户指南中查看具体方法</guide>。",
+    "nonIsoNotice": "{code} 不是标准的货币代码。如果它是加密货币，请将其类型设置为加密货币。<guide>请在用户指南中了解加密货币</guide>。",
+    "switchToCrypto": "使用加密货币",
+    "cryptoPrecisionNotice": "加密货币的金额最多保留八位小数（即其存储精度），因此无法输入低于 {smallest} 的手续费。<guide>查看如何记录钱包手续费</guide>。",
     "reactivateButton": "重新启用 {code}",
     "reactivating": "正在重新启用..."
   },
@@ -121,7 +142,10 @@
     "nameRequired": "名称为必填项",
     "nameMax": "名称不能超过 100 个字符",
     "symbolRequired": "符号为必填项",
-    "symbolMax": "符号不能超过 10 个字符"
+    "symbolMax": "符号不能超过 10 个字符",
+    "quoteSymbolMax": "价格符号不能超过 20 个字符",
+    "quoteSymbolRequiresCrypto": "只有加密货币才有价格符号",
+    "quoteSymbolNotAPair": "请输入 BTC-EUR 这样的交易对：币种、连字符和三位字母的货币代码"
   },
   "rateHistory": {
     "title": "汇率历史",
@@ -151,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter（欧洲央行）",
         "mnyImport": "Money 导入",
+        "yahooCrypto": "加密货币对 (Yahoo)",
         "unknown": "未知"
       }
     },

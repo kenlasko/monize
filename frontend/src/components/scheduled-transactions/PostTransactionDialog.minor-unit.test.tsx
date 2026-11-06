@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@/test/render';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { PostTransactionDialog } from './PostTransactionDialog';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
+import toast from 'react-hot-toast';
+import { exchangeRatesApi } from '@/lib/exchange-rates';
 
 // Issue #1581: a LINEAR mortgage installment is priced at storage precision
 // (864.5833 principal + 306.0625 interest = 1,170.6458). The dialog rounded the
@@ -155,5 +158,119 @@ describe('PostTransactionDialog: a bill priced below the cent (issue #1581)', ()
     const payload = await post();
     expect(payload.amount).toBe(-1171);
     expect(payload.splits.map((s: any) => s.amount)).toEqual([-306, -865]);
+  });
+});
+
+describe('PostTransactionDialog: a coin account', () => {
+  const coinBill = (overrides: Record<string, unknown> = {}) =>
+    ({
+      id: 's-btc',
+      name: 'Node hosting',
+      amount: -0.000025,
+      currencyCode: 'BTC',
+      accountId: 'a1',
+      categoryId: null,
+      description: '',
+      nextDueDate: '2026-11-01T00:00:00Z',
+      isTransfer: false,
+      isSplit: false,
+      account: { name: 'Wallet' },
+      ...overrides,
+    }) as any;
+
+  const renderCoin = (overrides: Record<string, unknown> = {}) =>
+    render(
+      <PostTransactionDialog
+        isOpen
+        scheduledTransaction={coinBill(overrides)}
+        categories={[]}
+        accounts={[{ ...checking, name: 'Wallet', currencyCode: 'BTC', currentBalance: 0.5 }] as any[]}
+        scheduledTransactions={[]}
+        futureTransactions={[]}
+        onClose={vi.fn()}
+        onPosted={vi.fn()}
+      />,
+    );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
+  });
+
+  afterEach(async () => {
+    await act(async () => clearCurrencyDecimals());
+  });
+
+  const saleSplits = (feeAmount: number) => [
+    { id: '11111111-1111-4111-8111-111111111111', transferAccountId: null, transferAccount: null, categoryId: 'cat-a', amount: -0.005, memo: '' },
+    { id: '22222222-2222-4222-8222-222222222222', transferAccountId: null, transferAccount: null, categoryId: 'cat-b', amount: feeAmount, memo: '' },
+  ];
+
+  it('refuses to post split lines that miss the amount by one satoshi, as the server would', async () => {
+    renderCoin({ amount: -0.005025, isSplit: true, splits: saleSplits(-0.00002499) });
+    const buttons = screen.getAllByText('Post Transaction');
+    await act(async () => {
+      fireEvent.click(buttons[buttons.length - 1]);
+    });
+    // At four places both sides read -0.0050 and this posted; the server refused it.
+    expect(toast.error).toHaveBeenCalledWith('Split amounts must equal the transaction amount');
+    expect(mockPostApi).not.toHaveBeenCalled();
+  });
+
+  it('posts -0.00502500 split into -0.00500000 and a -0.00002500 fee', async () => {
+    renderCoin({ amount: -0.005025, isSplit: true, splits: saleSplits(-0.000025) });
+    await post();
+    expect(toast.error).not.toHaveBeenCalledWith('Split amounts must equal the transaction amount');
+  });
+
+  it('posts a typed 0.00002500 BTC as 0.00002500, not cents', async () => {
+    renderCoin({ amount: -0.02 });
+    const amount = screen.getByLabelText('Amount');
+    await act(async () => {
+      fireEvent.change(amount, { target: { value: '-0.00002500' } });
+      fireEvent.blur(amount);
+    });
+    expect(amount).toHaveValue('-0.00002500');
+    const payload = await post();
+    expect(payload.amount).toBe(-0.000025);
+  });
+
+  it('posts an unedited 0.00002500 BTC as 0.00002500 when the currency list arrives after the dialog opened', async () => {
+    // Seeded before the registry knew BTC: kept at the column scale, not
+    // rounded at an assumed two, so the late fill has nothing to recover.
+    await act(async () => clearCurrencyDecimals());
+    renderCoin();
+    await act(async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
+    });
+    expect(screen.getByLabelText('Amount')).toHaveValue('-0.00002500');
+    const payload = await post();
+    expect(payload.amount).toBe(-0.000025);
+  });
+
+  it('re-converts at the coin\'s places when the currency list arrives after the dialog opened', async () => {
+    // `GET /currencies` answering late: the registry is empty when the dialog
+    // converts, so the total starts at the column scale (never cents, which
+    // read -0.00), and the fill must redraw it at the coin's own.
+    await act(async () => clearCurrencyDecimals());
+    vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(0.0000098);
+    renderCoin({ originalAmount: -510, originalCurrencyCode: 'USD', exchangeRate: 0.0000098 });
+    const total = screen.getByLabelText('Total in BTC');
+    await waitFor(() => expect(total).toHaveValue('-0.00499800'));
+    await act(async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 3, symbol: '₿' }]);
+    });
+    await waitFor(() => expect(total).toHaveValue('-0.005'));
+  });
+
+  it('converts a foreign bill into the coin at the coin\'s places', async () => {
+    // 510 USD at 0.0000098 BTC/USD is 0.00499800 BTC; at four places it read 0.0050.
+    vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(0.0000098);
+    renderCoin({ originalAmount: -510, originalCurrencyCode: 'USD', exchangeRate: 0.0000098 });
+    const total = screen.getByLabelText('Total in BTC');
+    await waitFor(() => expect(total).toHaveValue('-0.00499800'));
+    const payload = await post();
+    expect(payload.originalAmount).toBe(-510);
+    expect(payload.amount).toBeUndefined();
   });
 });

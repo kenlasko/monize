@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryColumn, UpdateDateColumn } from "typeorm";
 
-/** decimal(20,4)/(9,4) come back from pg as strings; keep them numbers. */
+/** decimal(24,8)/(9,4) come back from pg as strings; keep them numbers. */
 const numericTransformer = {
   to: (value: number | null): number | null => value,
   from: (value: string | null): number | null =>
@@ -46,8 +46,8 @@ export class NotificationPortfolioState {
   @Column({
     type: "numeric",
     name: "baseline_value",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     nullable: true,
     transformer: numericTransformer,
   })

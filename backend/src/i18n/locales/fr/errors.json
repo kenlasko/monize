@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "Compte avec l'ID {{ id }} introuvable",
     "notInvestmentPair": "Ce compte ne fait pas partie d'une paire de comptes d'investissement",
+    "accountCurrencyKindMismatch": "{{ code }} est une devise de type {{ kind }}, qu'un compte de type {{ accountType }} ne peut pas détenir. Un compte CRYPTO détient une cryptomonnaie ; tout autre type de compte détient une devise fiduciaire.",
     "noLinkedInvestmentAccount": "Ce compte d'investissement n'a pas de compte lié",
     "notFound": "Compte introuvable",
     "institutionNotFound": "Établissement introuvable",
@@ -318,6 +319,7 @@
     "categoryIdsNotOwned": "IDs de catégorie introuvables ou n'appartenant pas à l'utilisateur : {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Une règle de retenue salariale suit une facture payée dans une devise fiduciaire ; le compte de cette facture contient la cryptomonnaie {{ code }}. Choisissez une facture payée depuis un compte en devise fiduciaire.",
     "notFound": "Règle de retenue salariale {{ id }} introuvable",
     "duplicate": "Cette facture a déjà une règle pour cette catégorie",
     "expectedRequired": "La facture n'a pas de ligne pour cette catégorie ; saisissez le montant attendu par paie"
@@ -358,7 +360,15 @@
     "inUse": "La devise « {{ code }} » est utilisée par vos comptes, titres ou autres enregistrements. Désactivez-la à la place.",
     "invalidRateDate": "date doit être au format AAAA-MM-JJ",
     "sameCurrencyHistory": "{{ code }} est votre devise par défaut ; elle n'a pas d'historique de taux de change",
-    "rateProviderUnavailable": "Le fournisseur de taux de change n'a pas répondu. Veuillez réessayer plus tard."
+    "rateProviderUnavailable": "Le fournisseur de taux de change n'a pas répondu. Veuillez réessayer plus tard.",
+    "noPriceSymbol": "{{ code }} n'a pas de symbole de cotation ; associez-en un sur la page Devises",
+    "pairNotCarried": "Aucun fournisseur de taux de change configuré ne propose {{ pair }}",
+    "quoteSymbolRequiresCrypto": "Un symbole de cours ({{ quoteSymbol }}) ne peut être défini que sur une cryptomonnaie ; « {{ code }} » est une devise fiduciaire",
+    "quoteSymbolNotAPair": "Le symbole de cours « {{ quoteSymbol }} » de « {{ code }} » n'est pas une paire cryptomonnaie et devise fiduciaire comme BTC-EUR",
+    "kindInUse": "Le type de « {{ code }} » ne peut pas être modifié tant que des comptes, des transactions, des titres ou d'autres enregistrements l'utilisent",
+    "decimalPlacesInUse": "Les décimales de « {{ code }} » ne peuvent pas descendre sous {{ places }} tant que des comptes, des transactions ou d'autres enregistrements contiennent des montants avec autant de décimales",
+    "quoteSymbolInUse": "La cryptomonnaie du symbole de cours de « {{ code }} » ne peut pas être modifiée tant que des comptes, des transactions, des titres ou d'autres enregistrements l'utilisent ; seule sa devise fiduciaire peut l'être",
+    "kindConflict": "La devise « {{ code }} » existe déjà comme devise {{ kind }} et ne peut pas être ajoutée comme {{ requestedKind }}"
   },
   "delegation": {
     "delegatedAccessInvalid": "L'accès délégué n'est plus valide",
@@ -642,6 +652,7 @@
     "bondCurrencyMismatch": "Le titre est enregistré en {{ currency }}, mais l'instrument obligataire est valorisé en {{ instrumentCurrency }}. Utilisez la devise de l'instrument.",
     "bondCurrencyLocked": "Un titre lié à un instrument obligataire reste dans la devise de l'instrument ({{ instrumentCurrency }}). Dissociez-le de l'obligation avant de changer sa devise.",
     "accountMustBeInvestment": "Le compte doit être de type INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} est une cryptomonnaie, alors qu'un titre est coté dans une devise fiduciaire. Choisissez la devise fiduciaire dans laquelle le titre est coté.",
     "transferPairSameRow": "Les deux volets d'un transfert ne peuvent pas être la même transaction",
     "transferPairNotFound": "L'une des deux transactions n'existe plus",
     "transferPairAlreadyLinked": "L'un de ces volets est déjà lié à une autre transaction",
@@ -752,6 +763,7 @@
     "runUndoLaterSettlement": "Une échéance ultérieure de ce prêt a été réglée après cette exécution, l'exécution ne peut donc pas être annulée. Annulez d'abord le règlement ultérieur"
   },
   "transactions": {
+    "amountPrecisionExceeded": "Le montant de « {{ field }} » comporte plus de décimales que {{ code }} n'en admet ({{ places }}). Saisissez-le avec au plus {{ places }} décimales ; les décimales d'une devise se définissent dans la page Devises.",
     "invalidStatus": "Statut de transaction invalide : {{ status }}",
     "reconciledLocked": "Cette transaction est rapprochée et verrouillée. Désactivez « Verrouiller les transactions rapprochées » dans les Paramètres pour la modifier.",
     "convertToTransferRefused": "Cette transaction ne peut plus être convertie en virement. Vérifiez-la et exécutez la règle à nouveau",
@@ -838,6 +850,9 @@
     "passwordRequiredForDataDelete": "Un mot de passe est requis pour confirmer la suppression des données",
     "reauthUnavailable": "Terminez la configuration du mot de passe de votre compte avant d'utiliser cette action."
   },
+  "preferences": {
+    "defaultCurrencyCrypto": "Une cryptomonnaie ne peut pas être la devise de référence"
+  },
   "loanScenarios": {
     "notFound": "Scénario de prêt avec l'ID {{ id }} introuvable",
     "nameConflict": "Un scénario nommé « {{ name }} » existe déjà pour ce compte",
@@ -909,6 +924,7 @@
     "accountNotFound": "Ce compte est introuvable.",
     "accountClosed": "Le compte lié est fermé. Rouvrez-le ou liez un autre compte.",
     "accountBrokerage": "Un compte de courtage d'investissement ne peut pas recevoir de transactions bancaires. Liez plutôt son compte de caisse.",
+    "accountCrypto": "Un portefeuille de cryptomonnaies ne peut pas recevoir de transactions bancaires. Liez plutôt un compte bancaire.",
     "accountCurrencyMismatch": "Le compte bancaire est en {{ bankCurrency }} mais le compte est en {{ accountCurrency }}. Liez un compte dans la même devise.",
     "accountCurrencyChanged": "La devise du compte lié a changé pendant sa lecture. Rien n'a été importé ; synchronisez à nouveau.",
     "accountAlreadyLinked": "Ce compte est déjà lié à un autre compte bancaire.",

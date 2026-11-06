@@ -24,6 +24,11 @@ describe('account detail view registry', () => {
     }
   });
 
+  it('opens a crypto wallet in the banking view, as a cash account', () => {
+    expect(resolveAccountDetailView('CRYPTO')).toBe('banking');
+    expect(resolveAccountDetailView('CRYPTO')).toBe(resolveAccountDetailView('CASH'));
+  });
+
   it('treats an unregistered type as having no detail page', () => {
     expect(resolveAccountDetailView('NOT_A_TYPE' as AccountType)).toBeNull();
     expect(hasAccountDetailView('NOT_A_TYPE' as AccountType)).toBe(false);

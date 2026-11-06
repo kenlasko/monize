@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   accountTypeMismatch,
+  isBankSyncEligibleAccountType,
   isKnownBankAccountType,
   normalizeBankAccountType,
   suggestedAccountType,
@@ -74,5 +75,23 @@ describe('accountTypeMismatch', () => {
   it('makes no claim when the Monize account is not known', () => {
     expect(accountTypeMismatch('CARD', undefined)).toBeNull();
     expect(accountTypeMismatch('CARD', null)).toBeNull();
+  });
+});
+
+describe('isBankSyncEligibleAccountType', () => {
+  it('refuses a crypto wallet, which no bank feed reports', () => {
+    expect(isBankSyncEligibleAccountType('CRYPTO')).toBe(false);
+  });
+
+  it('admits the bank-like types', () => {
+    for (const type of ['CHEQUING', 'SAVINGS', 'CREDIT_CARD', 'CASH', 'LOAN'] as const) {
+      expect(isBankSyncEligibleAccountType(type)).toBe(true);
+    }
+  });
+
+  it('never suggests CRYPTO for a new account made from a bank account', () => {
+    for (const bankType of ['CACC', 'CARD', 'SVGS', 'LOAN', 'OTHR', null]) {
+      expect(isBankSyncEligibleAccountType(suggestedAccountType(bankType))).toBe(true);
+    }
   });
 });

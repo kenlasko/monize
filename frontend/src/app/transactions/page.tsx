@@ -77,6 +77,14 @@ import { PayeeInfoWidget } from '@/components/transactions/PayeeInfoWidget';
 import { CategoryInfoWidget } from '@/components/transactions/CategoryInfoWidget';
 import { WidgetFilterParams } from '@/components/transactions/widget-shared';
 import { computeBalanceSummary } from '@/lib/balance-history';
+import {
+  FIAT_MONEY_DECIMALS,
+  getDecimalPlacesForCurrency,
+  moneyDecimalsForCurrency,
+  roundMoney,
+  sumMoney,
+} from '@/lib/format';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/outline';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
@@ -902,6 +910,11 @@ function TransactionsContent() {
     return f;
   }, [filters.filterAccountIds, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo]);
 
+  // The currency decimals registry's version: a coin's places (and so its
+  // money precision) come from `GET /currencies`, which can answer after the
+  // series, so the figures read from it below list this as a dep.
+  const registryVersion = useCurrencyDecimalsVersion();
+
   // Derive chart currency, aggregated per-date balances, and latest per-account balances
   const { chartBalances, chartCurrency, accountBalances, accountCount } = useMemo(() => {
     if (dailyBalances.length === 0) {
@@ -916,6 +929,11 @@ function TransactionsContent() {
     const currencies = new Set(dailyBalances.map((r) => r.currencyCode));
     const isSingleCurrency = currencies.size === 1;
     const displayCurrency = isSingleCurrency ? [...currencies][0] : defaultCurrency;
+    // Unconverted, the one currency's money precision (a coin's eight);
+    // converted into the reporting currency, the fiat four.
+    const chartMoneyDecimals = isSingleCurrency
+      ? moneyDecimalsForCurrency(displayCurrency)
+      : FIAT_MONEY_DECIMALS;
 
     // A day whose total needs a rate we do not have has an unknown balance, not a
     // smaller one. `null` marks the gap so the line breaks there rather than
@@ -929,7 +947,9 @@ function TransactionsContent() {
       const running = byDate.get(row.date);
       byDate.set(
         row.date,
-        amount === null || running === null ? null : (running ?? 0) + amount,
+        amount === null || running === null
+          ? null
+          : roundMoney((running ?? 0) + amount, chartMoneyDecimals),
       );
 
       const existing = latestByAccount.get(row.accountId);
@@ -955,12 +975,14 @@ function TransactionsContent() {
       // rather than shown at an arbitrary length.
       .filter((a): a is typeof a & { balance: number } => a.balance !== null)
       // Hide zero-balance accounts -- they add no information to the chart.
-      // Compare at 4-decimal precision to match decimal(20,4) storage.
-      .filter((a) => Math.round(a.balance * 10000) !== 0)
+      // Compared at the money precision the balance is stored at, so a coin
+      // wallet holding 2,500 satoshis is not hidden as zero.
+      .filter((a) => roundMoney(a.balance, chartMoneyDecimals) !== 0)
       .sort((a, b) => b.balance - a.balance);
 
     return { chartBalances: aggregated, chartCurrency: displayCurrency, accountBalances: perAccount, accountCount: latestByAccount.size };
-  }, [dailyBalances, accounts, defaultCurrency, convertToDefault]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
+  }, [dailyBalances, accounts, defaultCurrency, convertToDefault, registryVersion]);
 
   // Label appended to the Monthly Totals download filename so it reflects
   // which category/payee/tag/search the chart is scoped to. When a full list
@@ -1031,9 +1053,15 @@ function TransactionsContent() {
   // goes stale as transactions are added or edited. The daily-balance series is
   // refetched alongside the transactions, so the widget's balance is derived
   // from it — the exact figure the Balance History chart shows as "Current".
+  // Rounded at the currency's own places, which for a coin come from the
+  // currency decimals registry: `GET /currencies` can answer after the series,
+  // so the registry's version is a dep and a late load recomputes the figure.
   const singleAccountCurrentBalance = useMemo(
-    () => computeBalanceSummary(chartBalances)?.currentBalance,
-    [chartBalances],
+    () =>
+      computeBalanceSummary(chartBalances, getDecimalPlacesForCurrency(chartCurrency))
+        ?.currentBalance,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
+    [chartBalances, chartCurrency, registryVersion],
   );
 
   // When the list is narrowed to exactly one payee/category, surface it so
@@ -1224,14 +1252,13 @@ function TransactionsContent() {
         let amount = Number(tx.amount);
         // Use the filtered split amount when only some splits match the
         // active filter, matching what the UI displays.
+        // Compared exactly at the row currency's money precision (four for
+        // fiat, a coin's eight).
         if (tx.isSplit && tx.splits && tx.splits.length > 0) {
-          const splitsSumCents = tx.splits.reduce(
-            (sum, s) => sum + Math.round(Number(s.amount) * 10000),
-            0,
-          );
-          const txAmountCents = Math.round(amount * 10000);
-          if (splitsSumCents !== txAmountCents) {
-            amount = splitsSumCents / 10000;
+          const decimals = moneyDecimalsForCurrency(tx.currencyCode);
+          const splitsSum = sumMoney(tx.splits.map((s) => Number(s.amount)), decimals);
+          if (splitsSum !== roundMoney(amount, decimals)) {
+            amount = splitsSum;
           }
         }
 

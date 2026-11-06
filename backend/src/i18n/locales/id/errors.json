@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "Akun dengan ID {{ id }} tidak ditemukan",
     "notInvestmentPair": "Akun ini bukan bagian dari pasangan akun investasi",
+    "accountCurrencyKindMismatch": "{{ code }} adalah mata uang berjenis {{ kind }}, yang tidak dapat disimpan oleh akun {{ accountType }}. Akun CRYPTO menyimpan mata uang kripto; semua jenis akun lainnya menyimpan mata uang fiat.",
     "noLinkedInvestmentAccount": "Akun investasi ini tidak memiliki akun yang tertaut",
     "notFound": "Akun tidak ditemukan",
     "institutionNotFound": "Institusi tidak ditemukan",
@@ -318,6 +319,7 @@
     "categoryIdsNotOwned": "ID kategori tidak ditemukan atau bukan milik pengguna: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Aturan potongan gaji melacak tagihan yang dibayar dalam mata uang fiat; akun tagihan ini menyimpan mata uang kripto {{ code }}. Pilih tagihan yang dibayar dari akun fiat.",
     "notFound": "Aturan potongan gaji {{ id }} tidak ditemukan",
     "duplicate": "Tagihan ini sudah memiliki aturan untuk kategori tersebut",
     "expectedRequired": "Tagihan tidak memiliki baris untuk kategori ini; masukkan jumlah yang diharapkan per gaji"
@@ -358,7 +360,15 @@
     "inUse": "Mata uang \"{{ code }}\" sedang digunakan oleh akun, sekuritas, atau catatan lain Anda. Nonaktifkan saja.",
     "invalidRateDate": "date harus dalam format YYYY-MM-DD",
     "sameCurrencyHistory": "{{ code }} adalah mata uang bawaan Anda; tidak ada riwayat kurs untuknya",
-    "rateProviderUnavailable": "Penyedia kurs tukar tidak merespons. Silakan coba lagi nanti."
+    "rateProviderUnavailable": "Penyedia kurs tukar tidak merespons. Silakan coba lagi nanti.",
+    "noPriceSymbol": "{{ code }} tidak memiliki simbol harga; petakan satu di halaman Mata Uang",
+    "pairNotCarried": "Tidak ada penyedia kurs tukar terkonfigurasi yang menyediakan {{ pair }}",
+    "quoteSymbolRequiresCrypto": "Simbol harga ({{ quoteSymbol }}) hanya dapat disetel pada mata uang kripto; \"{{ code }}\" adalah mata uang fiat",
+    "quoteSymbolNotAPair": "Simbol harga \"{{ quoteSymbol }}\" untuk \"{{ code }}\" bukan pasangan koin dan mata uang fiat seperti BTC-EUR",
+    "kindInUse": "Jenis \"{{ code }}\" tidak dapat diubah selama akun, transaksi, sekuritas, atau catatan lain masih menggunakannya",
+    "decimalPlacesInUse": "Angka desimal \"{{ code }}\" tidak dapat diturunkan di bawah {{ places }} selama akun, transaksi, atau catatan lain menyimpan jumlah dengan sebanyak itu angka desimal",
+    "quoteSymbolInUse": "Koin dalam simbol harga \"{{ code }}\" tidak dapat diubah selama akun, transaksi, sekuritas, atau catatan lain masih menggunakannya; hanya mata uang fiatnya yang dapat diubah",
+    "kindConflict": "Mata uang \"{{ code }}\" sudah ada sebagai mata uang {{ kind }} dan tidak dapat ditambahkan sebagai {{ requestedKind }}"
   },
   "delegation": {
     "delegatedAccessInvalid": "Akses yang didelegasikan tidak lagi valid",
@@ -642,6 +652,7 @@
     "bondCurrencyMismatch": "Sekuritas dicatat dalam {{ currency }}, tetapi instrumen obligasi dinilai dalam {{ instrumentCurrency }}. Gunakan mata uang instrumen.",
     "bondCurrencyLocked": "Sekuritas yang ditautkan ke instrumen obligasi tetap dalam mata uang instrumen ({{ instrumentCurrency }}). Lepaskan tautannya dari obligasi sebelum mengubah mata uangnya.",
     "accountMustBeInvestment": "Akun harus bertipe INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} adalah mata uang kripto, sedangkan sekuritas dihargai dalam mata uang fiat. Pilih mata uang fiat tempat sekuritas dikuotasikan.",
     "transferPairSameRow": "Dua sisi satu transfer tidak boleh merupakan transaksi yang sama",
     "transferPairNotFound": "Salah satu dari kedua transaksi itu sudah tidak ada",
     "transferPairAlreadyLinked": "Salah satu sisi ini sudah tertaut ke transaksi lain",
@@ -752,6 +763,7 @@
     "runUndoLaterSettlement": "Angsuran berikutnya dari pinjaman ini dilunasi setelah eksekusi ini, sehingga eksekusi tidak dapat dibatalkan. Batalkan pelunasan berikutnya terlebih dahulu"
   },
   "transactions": {
+    "amountPrecisionExceeded": "Jumlah pada \"{{ field }}\" memiliki lebih banyak angka desimal daripada yang didukung {{ code }} ({{ places }}). Masukkan dengan maksimal {{ places }} angka desimal; angka desimal suatu mata uang diatur di halaman Mata Uang.",
     "invalidStatus": "Status transaksi tidak valid: {{ status }}",
     "reconciledLocked": "Transaksi ini sudah direkonsiliasi dan terkunci. Nonaktifkan \"Kunci transaksi yang direkonsiliasi\" di Pengaturan untuk mengubahnya.",
     "convertToTransferRefused": "Transaksi ini tidak dapat lagi diubah menjadi transfer. Periksa transaksi lalu jalankan aturan lagi",
@@ -838,6 +850,9 @@
     "passwordRequiredForDataDelete": "Kata sandi diperlukan untuk mengonfirmasi penghapusan data",
     "reauthUnavailable": "Selesaikan pengaturan kata sandi akun Anda sebelum menggunakan tindakan ini."
   },
+  "preferences": {
+    "defaultCurrencyCrypto": "Mata uang kripto tidak dapat menjadi mata uang pelaporan"
+  },
   "loanScenarios": {
     "notFound": "Skenario pinjaman dengan ID {{ id }} tidak ditemukan",
     "nameConflict": "Skenario bernama \"{{ name }}\" sudah ada untuk akun ini",
@@ -909,6 +924,7 @@
     "accountNotFound": "Akun tersebut tidak ditemukan.",
     "accountClosed": "Akun yang ditautkan sudah ditutup. Buka kembali atau tautkan akun lain.",
     "accountBrokerage": "Akun pialang investasi tidak dapat menerima transaksi bank. Tautkan akun tunainya.",
+    "accountCrypto": "Dompet mata uang kripto tidak dapat menerima transaksi bank. Tautkan akun bank sebagai gantinya.",
     "accountCurrencyMismatch": "Rekening bank menggunakan {{ bankCurrency }} tetapi akun menggunakan {{ accountCurrency }}. Tautkan akun dengan mata uang yang sama.",
     "accountCurrencyChanged": "Mata uang akun yang ditautkan berubah saat sedang dibaca. Tidak ada yang diimpor; sinkronkan lagi.",
     "accountAlreadyLinked": "Akun tersebut sudah ditautkan ke rekening bank lain.",

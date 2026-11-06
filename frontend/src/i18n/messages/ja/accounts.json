@@ -136,6 +136,9 @@
     "accountType": "勘定科目の種類",
     "currency": "通貨",
     "currencyLocked": "この勘定科目にはすでに取引があるため、通貨はロックされています。変更すると既存の残高が暗黙的に再建てになります。",
+    "accountTypeKindLocked": "この勘定科目の取引により通貨がロックされているため、暗号資産ウォレットと法定通貨の勘定科目タイプの間で切り替えることはできません。",
+    "currencyPlaceholder": "通貨を選択...",
+    "noCryptoCurrencies": "暗号資産ウォレットは1つの暗号資産を保有しますが、まだ設定されていません。<currencies>通貨ページ</currencies>で追加してから、ここで選択してください。<guide>暗号資産の追加方法</guide>",
     "openingBalance": "開始残高",
     "loanAmount": "ローン金額",
     "mortgageAmount": "住宅ローン金額",
@@ -179,6 +182,7 @@
       "mortgage": "住宅ローン",
       "asset": "資産",
       "cash": "現金",
+      "crypto": "暗号資産ウォレット",
       "other": "その他"
     },
     "statementDueDayPlaceholder": "例：15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "勘定科目名は必須です",
     "currencyCodeLength": "通貨コードは3文字でなければなりません",
+    "currencyRequired": "通貨を選択してください",
     "institutionRequired": "金融機関を選択または作成してください",
     "interestRateRequired": "利率は必須です",
     "paymentAmountRequired": "支払い金額は必須です",

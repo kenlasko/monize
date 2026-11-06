@@ -16,11 +16,14 @@ import {
   scrubDanglingRefs,
 } from "./support-backup-integrity";
 import {
+  accountMoneyDecimals,
+  moneyDecimalsResolver,
   applyDateRange,
   countsTowardBalance,
   scopeToAccounts,
   TableMap,
 } from "./support-backup-scope";
+import { FIAT_MONEY_DECIMALS, sumMoney } from "../../common/round.util";
 import { maskText, scaleMoney, scaleQuantity } from "./support-backup.util";
 import { CURRENCY_METADATA } from "../../currencies/currency-metadata";
 import { CURRENCY_REFERENCE_COLUMNS } from "../../currencies/currency-reference-columns";
@@ -361,11 +364,17 @@ export class SupportBackupService {
   /** Applies the per-column rules and reconciles derived money. */
   private obfuscate(scoped: TableMap, multiplier: number): TableMap {
     const result: TableMap = {};
+    // An account's amounts scale at its currency's precision (a coin keeps its
+    // eight places); every other money column at the fiat four, so a fiat
+    // support copy is byte for byte what it was.
+    const decimalsOf = moneyDecimalsResolver(scoped);
     for (const [table, rows] of Object.entries(scoped)) {
       const rules = RULES[table];
       if (!rules) continue; // unclassified table: never emitted (allowlist)
       result[table] = rows.map((row) =>
-        this.applyRules(row, rules, multiplier),
+        this.applyRules(row, rules, multiplier, (column) =>
+          decimalsOf(table, row, column),
+        ),
       );
     }
     // Masking can collapse distinct values to the same string; restore uniqueness
@@ -377,12 +386,18 @@ export class SupportBackupService {
     row: Record<string, unknown>,
     rules: Record<string, ColumnRule>,
     multiplier: number,
+    decimalsFor: (column: string) => number,
   ): Record<string, unknown> {
     const out: Record<string, unknown> = {};
     for (const [column, value] of Object.entries(row)) {
       const rule = rules[column];
       if (!rule) continue; // unclassified column: dropped (allowlist)
-      out[column] = this.applyRule(rule, value, multiplier);
+      out[column] = this.applyRule(
+        rule,
+        value,
+        multiplier,
+        decimalsFor(column),
+      );
     }
     return out;
   }
@@ -391,6 +406,7 @@ export class SupportBackupService {
     rule: ColumnRule,
     value: unknown,
     multiplier: number,
+    decimals: number,
   ): unknown {
     switch (rule.t) {
       case "keep":
@@ -402,11 +418,11 @@ export class SupportBackupService {
       case "const":
         return rule.value;
       case "scale":
-        return scaleMoney(value, multiplier);
+        return scaleMoney(value, multiplier, decimals);
       case "scaleQty":
         return scaleQuantity(value, multiplier);
       case "jsonb":
-        return applyJsonbHandler(rule.handler, value, multiplier);
+        return applyJsonbHandler(rule.handler, value, multiplier, decimals);
     }
   }
 
@@ -417,42 +433,66 @@ export class SupportBackupService {
    * the sum of its scaled transaction amounts -- counting only the rows the
    * app itself counts (VOID transactions and legacy split-child rows are
    * excluded, mirroring the balance guards in the transactions domain).
-   * Integer arithmetic (units of 1e-4) avoids floating-point accumulation.
+   * Sums go through `sumMoney` at each account's currency precision (four for
+   * fiat, a coin's own places up to eight), which avoids floating-point
+   * accumulation.
    * Returns new row objects; the input map is not mutated.
    */
   private reconcile(tables: TableMap): TableMap {
-    const UNIT = 10000;
-    const toUnits = (value: unknown): number => {
+    // Each account's amounts are in its own currency, so they sum at that
+    // currency's money precision (a coin keeps its eight places, fiat the
+    // four it always had); a split's lines are in its parent's account.
+    const decimalsByAccount = accountMoneyDecimals(tables);
+    const decimalsOf = (accountId: unknown): number =>
+      decimalsByAccount.get(String(accountId)) ?? FIAT_MONEY_DECIMALS;
+    const toNumber = (value: unknown): number => {
       const num = typeof value === "number" ? value : Number(value);
-      return Number.isFinite(num) ? Math.round(num * UNIT) : 0;
+      return Number.isFinite(num) ? num : 0;
     };
 
-    const splitSum = new Map<string, number>();
+    const accountOfTx = new Map<string, unknown>(
+      (tables.transactions ?? []).map((tx) => [String(tx.id), tx.account_id]),
+    );
+    const splitAmounts = new Map<string, number[]>();
     for (const split of tables.transaction_splits ?? []) {
       const txId = String(split.transaction_id);
-      splitSum.set(txId, (splitSum.get(txId) ?? 0) + toUnits(split.amount));
+      const amounts = splitAmounts.get(txId) ?? [];
+      amounts.push(toNumber(split.amount));
+      splitAmounts.set(txId, amounts);
     }
 
-    const txSum = new Map<string, number>();
+    const txAmounts = new Map<string, number[]>();
     const transactions = (tables.transactions ?? []).map((tx) => {
+      const lines = splitAmounts.get(String(tx.id));
       const withSplits =
-        tx.is_split && splitSum.has(String(tx.id))
-          ? { ...tx, amount: splitSum.get(String(tx.id))! / UNIT }
+        tx.is_split && lines
+          ? {
+              ...tx,
+              amount: sumMoney(
+                lines,
+                decimalsOf(accountOfTx.get(String(tx.id))),
+              ),
+            }
           : tx;
       if (countsTowardBalance(withSplits)) {
         const account = String(withSplits.account_id);
-        txSum.set(
-          account,
-          (txSum.get(account) ?? 0) + toUnits(withSplits.amount),
-        );
+        const amounts = txAmounts.get(account) ?? [];
+        amounts.push(toNumber(withSplits.amount));
+        txAmounts.set(account, amounts);
       }
       return withSplits;
     });
 
     const accounts = (tables.accounts ?? []).map((account) => {
-      const opening = toUnits(account.opening_balance);
-      const moves = txSum.get(String(account.id)) ?? 0;
-      return { ...account, current_balance: (opening + moves) / UNIT };
+      const decimals = decimalsOf(account.id);
+      const moves = txAmounts.get(String(account.id)) ?? [];
+      return {
+        ...account,
+        current_balance: sumMoney(
+          [toNumber(account.opening_balance), ...moves],
+          decimals,
+        ),
+      };
     });
 
     return {

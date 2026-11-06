@@ -38,6 +38,8 @@ import {
   createScopedDbMocks,
   DataSourceMock,
 } from "../test-helpers/scoped-db-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -235,6 +237,7 @@ describe("ScheduledTransactionsService", () => {
     payrollRulesRepo = { find: jest.fn().mockResolvedValue([]) };
 
     const tenantMocks = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [ScheduledTransaction, scheduledRepo],
       [ScheduledTransactionSplit, splitsRepo],
       [ScheduledTransactionOverride, overridesRepo],
@@ -395,6 +398,135 @@ describe("ScheduledTransactionsService", () => {
         "Transaction currency EUR must match the account currency PLN.",
       );
       expect(scheduledRepo.create).not.toHaveBeenCalled();
+      expect(scheduledRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("stores a BTC schedule's eight-place amount unchanged (INV-MONEY-001)", async () => {
+      accountsService.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+        currencyCode: "BTC",
+      });
+      const saved = makeScheduled({ amount: -0.000025, currencyCode: "BTC" });
+      scheduledRepo.save.mockResolvedValue(saved);
+      stubFindOne(saved);
+
+      await service.create(userId, {
+        ...baseDto,
+        amount: -0.000025,
+        currencyCode: "BTC",
+      });
+
+      expect(scheduledRepo.create.mock.calls[0][0].amount).toBe(-0.000025);
+      expect(scheduledRepo.save).toHaveBeenCalled();
+    });
+
+    it("refuses a CAD amount at five places before writing", async () => {
+      accountsService.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+        currencyCode: "CAD",
+      });
+
+      await expect(
+        service.create(userId, {
+          ...baseDto,
+          amount: -1200.12345,
+          currencyCode: "CAD",
+        }),
+      ).rejects.toThrow(
+        /"amount" has more decimal places than CAD carries \(4\)/,
+      );
+      expect(scheduledRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses a CAD split line at five places before writing", async () => {
+      accountsService.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+        currencyCode: "CAD",
+      });
+
+      await expect(
+        service.create(userId, {
+          ...baseDto,
+          currencyCode: "CAD",
+          amount: -1200,
+          splits: [
+            { categoryId: "cat-a", amount: -700.00005 },
+            { categoryId: "cat-b", amount: -499.99995 },
+          ],
+        }),
+      ).rejects.toThrow(/"splits\[0\]\.amount" has more decimal places/);
+      expect(scheduledRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("sums BTC split lines against the parent at eight places, not four", async () => {
+      accountsService.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+        currencyCode: "BTC",
+      });
+      const saved = makeScheduled({ amount: -0.00008, currencyCode: "BTC" });
+      scheduledRepo.save.mockResolvedValue(saved);
+      stubFindOne(saved);
+
+      // At four places these lines read 0 + 0 against a -0.0001 parent and
+      // the schedule was refused; at the coin's eight they balance.
+      await service.create(userId, {
+        ...baseDto,
+        currencyCode: "BTC",
+        amount: -0.00008,
+        splits: [
+          { categoryId: "cat-a", amount: -0.00004 },
+          { categoryId: "cat-b", amount: -0.00004 },
+        ],
+      });
+      expect(scheduledRepo.save).toHaveBeenCalled();
+    });
+
+    it("refuses BTC split lines that do not sum to the parent at eight places", async () => {
+      accountsService.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+        currencyCode: "BTC",
+      });
+
+      // -0.005 - 0.00002 is -0.00502, not -0.005025: equal at four places.
+      await expect(
+        service.create(userId, {
+          ...baseDto,
+          currencyCode: "BTC",
+          amount: -0.005025,
+          splits: [
+            { categoryId: "cat-a", amount: -0.005 },
+            { categoryId: "cat-fee", amount: -0.00002 },
+          ],
+        }),
+      ).rejects.toThrow(/must equal transaction amount/);
+      expect(scheduledRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("judges a foreign entry's originalAmount against its own currency", async () => {
+      accountsService.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+        currencyCode: "BTC",
+      });
+
+      // An eight-place BTC amount is fine; a five-place USD original is not.
+      await expect(
+        service.create(userId, {
+          ...baseDto,
+          currencyCode: "BTC",
+          amount: -0.0004321,
+          originalAmount: -40.12345,
+          originalCurrencyCode: "USD",
+          exchangeRate: 0.0000107696,
+        }),
+      ).rejects.toThrow(
+        /"originalAmount" has more decimal places than USD carries \(4\)/,
+      );
       expect(scheduledRepo.save).not.toHaveBeenCalled();
     });
 
@@ -2094,6 +2226,66 @@ describe("ScheduledTransactionsService", () => {
       );
     });
 
+    describe("moving a schedule to an account in another currency (INV-MONEY-001)", () => {
+      const usdAccount = { id: "acc-2", userId, currencyCode: "USD" };
+      const btcSchedule = (
+        amount: number,
+        overrides: Partial<ScheduledTransaction> = {},
+      ) =>
+        makeScheduled({
+          accountId: "wallet-1",
+          amount,
+          currencyCode: "BTC",
+          ...overrides,
+        });
+
+      beforeEach(() => {
+        accountsService.findOne.mockResolvedValue(usdAccount);
+      });
+
+      it("refuses carrying a -0.12345678 BTC amount into a USD account before writing", async () => {
+        stubFindOne(btcSchedule(-0.12345678));
+
+        await expect(
+          service.update(userId, stId, { accountId: "acc-2" }),
+        ).rejects.toThrow(
+          /"amount" has more decimal places than USD carries \(4\)/,
+        );
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      });
+
+      it("refuses a moved split schedule whose unsent stored lines do not fit", async () => {
+        stubFindOne(btcSchedule(-0.12, { isSplit: true }));
+        mockQueryRunner.manager.find.mockResolvedValue([
+          { id: "split-1", scheduledTransactionId: stId, amount: -0.11999999 },
+          { id: "split-2", scheduledTransactionId: stId, amount: -0.00000001 },
+        ]);
+
+        await expect(
+          service.update(userId, stId, { accountId: "acc-2" }),
+        ).rejects.toThrow(/"splits\[0\]\.amount" has more decimal places/);
+        expect(mockQueryRunner.manager.find).toHaveBeenCalledWith(
+          ScheduledTransactionSplit,
+          expect.objectContaining({ where: { scheduledTransactionId: stId } }),
+        );
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      });
+
+      it("still moves a schedule at four places", async () => {
+        stubFindOne(btcSchedule(-0.1234));
+
+        await service.update(userId, stId, { accountId: "acc-2" });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({ accountId: "acc-2", currencyCode: "USD" }),
+        );
+      });
+    });
+
     it("re-derives a stale stored currency from the account when accountId is unchanged", async () => {
       stubFindOne(makeScheduled({ currencyCode: "CAD" }));
       accountsService.findOne.mockResolvedValue({
@@ -2936,6 +3128,67 @@ describe("ScheduledTransactionsService", () => {
         }),
         { fromScheduledPosting: true },
       );
+    });
+
+    it("posts a BTC schedule's eight-place amount unchanged (INV-MONEY-001)", async () => {
+      stubFindOne(makeScheduled({ amount: -0.000025, currencyCode: "BTC" }));
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId);
+
+      expect(transactionsService.create).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ amount: -0.000025, currencyCode: "BTC" }),
+        { fromScheduledPosting: true },
+      );
+    });
+
+    it("re-sums a BTC split parent at eight places, not four", async () => {
+      // The payroll cap re-sum is the one that reaches a plain split post; it
+      // finds no rule here, so the lines post as stored and the parent with
+      // them.
+      stubFindOne(
+        makeScheduled({
+          amount: -0.005025,
+          currencyCode: "BTC",
+          isSplit: true,
+          categoryId: null,
+          splits: [
+            { id: "s-1", categoryId: "cat-a", amount: -0.005 },
+            { id: "s-2", categoryId: "cat-fee", amount: -0.000025 },
+          ] as any,
+        }),
+      );
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId);
+
+      const payload = transactionsService.create.mock.calls[0][1];
+      expect(payload.amount).toBe(-0.005025);
+      expect(payload.splits.map((x: { amount: number }) => x.amount)).toEqual([
+        -0.005, -0.000025,
+      ]);
+    });
+
+    it("refuses an inline CAD amount at five places before writing", async () => {
+      stubFindOne(makeScheduled({ currencyCode: "CAD" }));
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.post(userId, stId, { amount: -1200.12345 } as any),
+      ).rejects.toThrow(
+        /"amount" has more decimal places than CAD carries \(4\)/,
+      );
+      expect(transactionsService.create).not.toHaveBeenCalled();
     });
 
     it("runs the caller's beforeWrite inside the posting transaction, before the money is written", async () => {
@@ -5936,6 +6189,32 @@ describe("ScheduledTransactionsService", () => {
       );
     });
 
+    it("converts a BTC account's estimate at the coin's eight places", async () => {
+      scheduledRepo.find.mockResolvedValue([
+        {
+          id: stId,
+          userId,
+          name: "VPN",
+          amount: -0.0001,
+          currencyCode: "BTC",
+          originalAmount: -12,
+          originalCurrencyCode: "USD",
+          exchangeRate: 0.0000083333,
+          account: { fxFeePercent: null },
+        },
+      ]);
+      mockExchangeRateService.getLatestRate.mockResolvedValue(0.0000107696);
+
+      await service.refreshForeignCurrencyEstimates();
+
+      // -12 x 0.0000107696 = -0.0001292352; four places would store -0.0001.
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ScheduledTransaction,
+        stId,
+        { amount: -0.00012924, exchangeRate: 0.0000107696 },
+      );
+    });
+
     it("leaves an ordinary schedule alone on the refresh sweep", async () => {
       scheduledRepo.find.mockResolvedValue([
         { id: stId, userId, amount: -1200, currencyCode: "USD" },
@@ -5969,6 +6248,59 @@ describe("ScheduledTransactionsService", () => {
       );
       expect(overridesRepo.save).toHaveBeenCalled();
       expect(result).toBeDefined();
+    });
+
+    it("stores a BTC override's eight-place amount (INV-MONEY-001)", async () => {
+      stubFindOne(makeScheduled({ amount: -0.0001, currencyCode: "BTC" }));
+      const existingQb = mockQueryBuilder(null);
+      existingQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(existingQb);
+
+      await service.createOverride(userId, stId, {
+        originalDate: "2025-02-15",
+        overrideDate: "2025-02-15",
+        amount: -0.000025,
+      });
+
+      expect(overridesRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: -0.000025 }),
+      );
+    });
+
+    it("sums a BTC override's split lines at eight places", async () => {
+      stubFindOne(makeScheduled({ amount: -0.00008, currencyCode: "BTC" }));
+      const existingQb = mockQueryBuilder(null);
+      existingQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(existingQb);
+
+      await service.createOverride(userId, stId, {
+        originalDate: "2025-02-15",
+        overrideDate: "2025-02-15",
+        amount: -0.00008,
+        isSplit: true,
+        splits: [
+          { categoryId: "cat-a", amount: -0.00004 },
+          { categoryId: "cat-b", amount: -0.00004 },
+        ],
+      });
+
+      expect(overridesRepo.save).toHaveBeenCalled();
+    });
+
+    it("refuses a CAD override amount at five places before writing", async () => {
+      stubFindOne(makeScheduled({ currencyCode: "CAD" }));
+      const existingQb = mockQueryBuilder(null);
+      existingQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(existingQb);
+
+      await expect(
+        service.createOverride(userId, stId, {
+          originalDate: "2025-02-15",
+          overrideDate: "2025-02-15",
+          amount: -999.12345,
+        }),
+      ).rejects.toThrow(/more decimal places than CAD carries \(4\)/);
+      expect(overridesRepo.save).not.toHaveBeenCalled();
     });
 
     it("should throw if override already exists for date", async () => {
@@ -6124,6 +6456,20 @@ describe("ScheduledTransactionsService", () => {
       expect(overridesRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ amount: -1500 }),
       );
+    });
+
+    it("refuses a CAD override update at five places before writing", async () => {
+      stubFindOne(makeScheduled({ currencyCode: "CAD" }));
+      overridesRepo.findOne.mockResolvedValue({
+        id: "ovr-1",
+        scheduledTransactionId: stId,
+        amount: -1000,
+      });
+
+      await expect(
+        service.updateOverride(userId, stId, "ovr-1", { amount: -1500.00001 }),
+      ).rejects.toThrow(/more decimal places than CAD carries \(4\)/);
+      expect(overridesRepo.save).not.toHaveBeenCalled();
     });
 
     it("should validate splits on update", async () => {

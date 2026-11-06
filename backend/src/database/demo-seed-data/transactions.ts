@@ -23,6 +23,12 @@ export interface DemoTransaction {
   // For transfers
   isTransfer?: boolean;
   transferAccountKey?: string;
+  /**
+   * What arrived on the other side of a cross-currency transfer, unsigned and
+   * in the target account's currency (the API's `toAmount`). Absent for a
+   * same-currency transfer, whose counterpart moves the same amount.
+   */
+  transferToAmount?: number;
 }
 
 export interface DemoSplit {
@@ -30,6 +36,11 @@ export interface DemoSplit {
   transferAccountKey?: string;
   amount: number;
   memo: string;
+  /**
+   * What a cross-currency transfer line delivered, unsigned and in the target
+   * account's currency (the API's `transferTargetAmount`, INV-SPLITFX-001).
+   */
+  transferTargetAmount?: number;
 }
 
 /** Seeded random number generator for consistent results */
@@ -699,8 +710,92 @@ export function generateTransactions(referenceDate: Date): DemoTransaction[] {
     }
   }
 
+  transactions.push(...bitcoinWalletTransactions(referenceDate));
+
   // Sort by date
   transactions.sort((a, b) => a.date.localeCompare(b.date));
 
   return transactions;
+}
+
+/** The day `days` before `referenceDate`. */
+function daysBefore(referenceDate: Date, days: number): Date {
+  const date = new Date(referenceDate);
+  date.setDate(date.getDate() - days);
+  return date;
+}
+
+/** The status the monthly loop gives a row dated `date`. */
+function statusFor(date: Date, referenceDate: Date): string {
+  const olderThan2Months =
+    new Date(date.getFullYear(), date.getMonth(), 1) <
+    new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 2, 1);
+  if (olderThan2Months) return "RECONCILED";
+  const currentMonth =
+    date.getFullYear() === referenceDate.getFullYear() &&
+    date.getMonth() === referenceDate.getMonth();
+  return currentMonth ? "UNRECONCILED" : "CLEARED";
+}
+
+/**
+ * The Bitcoin Wallet's history (`docs/specs/crypto-accounts.md` decision 9):
+ * bought from Primary Chequing with the bitcoin received stated, spent once,
+ * and sold back to chequing as a split whose second line is the network fee.
+ * Fixed figures, no draw from the seeded generator, so adding them leaves
+ * every other row's figures where they were. Satoshi-level, at the coin's
+ * eight places (`docs/specs/money-precision.md` section 6): the purchase
+ * states 0.01249993 BTC received for 1,700.00 CAD, and the sale's network fee
+ * is 2,500 sats. The wallet ends at
+ * 0.01249993 - 0.00043210 - 0.00502500 = 0.00704283 BTC.
+ */
+function bitcoinWalletTransactions(referenceDate: Date): DemoTransaction[] {
+  const bought = daysBefore(referenceDate, 60);
+  const spent = daysBefore(referenceDate, 40);
+  const sold = daysBefore(referenceDate, 10);
+  return [
+    {
+      accountKey: "chequing",
+      date: formatDate(bought),
+      payeeName: "Transfer",
+      categoryPath: "",
+      amount: -1700.0,
+      description: "Bought bitcoin",
+      status: statusFor(bought, referenceDate),
+      isTransfer: true,
+      transferAccountKey: "crypto",
+      transferToAmount: 0.01249993,
+    },
+    {
+      accountKey: "crypto",
+      date: formatDate(spent),
+      payeeName: "Starbucks",
+      categoryPath: "Food > Coffee Shops",
+      amount: -0.0004321,
+      description: "Coffee, paid in bitcoin",
+      status: statusFor(spent, referenceDate),
+    },
+    {
+      accountKey: "crypto",
+      date: formatDate(sold),
+      payeeName: "Transfer",
+      categoryPath: "",
+      amount: -0.005025,
+      description: "Sold bitcoin",
+      status: statusFor(sold, referenceDate),
+      isSplit: true,
+      splits: [
+        {
+          transferAccountKey: "chequing",
+          amount: -0.005,
+          memo: "Sold bitcoin",
+          transferTargetAmount: 650.0,
+        },
+        {
+          categoryPath: "Fees > Network fee",
+          amount: -0.000025,
+          memo: "Network fee",
+        },
+      ],
+    },
+  ];
 }

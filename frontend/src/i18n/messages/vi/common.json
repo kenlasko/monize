@@ -176,6 +176,7 @@
     "CASH": "Tiền mặt",
     "LINE_OF_CREDIT": "Hạn mức tín dụng",
     "ASSET": "Tài sản",
+    "CRYPTO": "Ví tiền mã hóa",
     "OTHER": "Khác"
   },
   "accountFilter": {

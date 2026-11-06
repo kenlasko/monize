@@ -8,6 +8,10 @@ import {
 } from "@nestjs/common";
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
+import {
+  loadCurrencyPlacesForRead,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
 import { roundMoney, sumMoney } from "../common/round.util";
 import { tr } from "../i18n/translate";
 import { AiActionBuilderService } from "../ai/actions/ai-action-builder.service";
@@ -430,17 +434,28 @@ export class AiReviewWorkService {
       );
     }
     if (input.splits !== undefined) {
-      const amount = roundMoney(Number(transaction.amount));
-      const sum = sumMoney(input.splits.map((line) => Number(line.amount)));
+      // The amounts are in the transaction's account currency, so they are
+      // summed and compared at that currency's money precision.
+      const decimals = await withScopedDb(this.dataSource, async (m) =>
+        moneyDecimalsForCode(
+          await loadCurrencyPlacesForRead(m, [transaction.currencyCode]),
+          transaction.currencyCode,
+        ),
+      );
+      const amount = roundMoney(Number(transaction.amount), decimals);
+      const sum = sumMoney(
+        input.splits.map((line) => Number(line.amount)),
+        decimals,
+      );
       if (sum !== amount) {
         throw new BadRequestException(
           tr(
             "errors.aiReview.splitDifference",
-            `The split lines add up to ${sum} but the transaction is ${amount}: ${roundMoney(amount - sum)} is not assigned. Make the lines add up to the transaction; a leftover such as a delivery cost needs its own line, or is named to the user instead of being assigned.`,
+            `The split lines add up to ${sum} but the transaction is ${amount}: ${roundMoney(amount - sum, decimals)} is not assigned. Make the lines add up to the transaction; a leftover such as a delivery cost needs its own line, or is named to the user instead of being assigned.`,
             {
               sum,
               amount,
-              difference: roundMoney(amount - sum),
+              difference: roundMoney(amount - sum, decimals),
             },
           ),
         );

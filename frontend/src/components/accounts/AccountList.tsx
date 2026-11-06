@@ -84,6 +84,7 @@ const ACCOUNT_TYPE_ORDER: AccountGroupType[] = [
   'CHEQUING',
   'SAVINGS',
   'CASH',
+  'CRYPTO',
   'INVESTMENT',
   'ASSET',
   'CREDIT_CARD',

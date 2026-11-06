@@ -38,6 +38,79 @@ describe("YahooFinanceService", () => {
     (service as any).crumbExpiresAt = Date.now() + 3600000;
   };
 
+  /**
+   * The crypto exchange rate provider may remember an absence, so it needs
+   * "Yahoo says no such symbol" kept apart from "Yahoo did not answer"
+   * (INV-FX-005); `fetchQuote` folds both into `null`.
+   */
+  describe("fetchQuoteAnswer", () => {
+    it("answers the quote, asking the symbol as given", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: {
+                symbol: "BTC-CAD",
+                regularMarketPrice: 137250.12,
+                regularMarketTime: 1762353000,
+              },
+            },
+          ],
+        },
+      });
+
+      const answer = await service.fetchQuoteAnswer("BTC-CAD");
+
+      expect(answer?.quote?.regularMarketPrice).toBe(137250.12);
+      expect(answer?.quote?.regularMarketTime).toBe(1762353000);
+      const [url] = (global.fetch as jest.Mock).mock.calls[0];
+      expect(url).toContain("/v8/finance/chart/BTC-CAD?");
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([404, 422])(
+      "answers no quote when Yahoo reports the symbol absent with %i",
+      async (status) => {
+        mockFetchResponse({}, false, status);
+
+        expect(await service.fetchQuoteAnswer("NOPE-CAD")).toEqual({
+          quote: null,
+        });
+        // No alternate listing is tried for a coin pair.
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it("answers no quote for a 200 whose chart error says Not Found", async () => {
+      mockFetchResponse({
+        chart: { result: null, error: { code: "Not Found" } },
+      });
+
+      expect(await service.fetchQuoteAnswer("NOPE-CAD")).toEqual({
+        quote: null,
+      });
+    });
+
+    it("is null for a fault, an unknown body or a network error: not an answer", async () => {
+      mockFetchResponse({}, false, 500);
+      expect(await service.fetchQuoteAnswer("BTC-CAD")).toBeNull();
+
+      mockFetchResponse({
+        chart: { result: null, error: { code: "Too Many Requests" } },
+      });
+      expect(await service.fetchQuoteAnswer("BTC-CAD")).toBeNull();
+
+      mockFetchError(new Error("ECONNRESET"));
+      expect(await service.fetchQuoteAnswer("BTC-CAD")).toBeNull();
+    });
+
+    it("leaves fetchQuote's answer for an absent symbol at null", async () => {
+      mockFetchResponse({}, false, 404);
+
+      expect(await service.fetchQuote("NOPE-CAD", "CRYPTO")).toBeNull();
+    });
+  });
+
   describe("fetchQuote", () => {
     it("should fetch and return quote data for a valid symbol", async () => {
       mockFetchResponse({

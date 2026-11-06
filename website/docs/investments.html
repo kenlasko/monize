@@ -129,7 +129,12 @@
 <h3 id="exchange-priority">Exchange Priority<a class="hlink" href="#exchange-priority" aria-label="Link to this section">#</a></h3>
 <p>When looking up securities, Monize searches its price providers and ranks results by exchange. If you primarily invest on non-US exchanges, you can set <strong>Preferred Exchanges</strong> in <strong>Settings</strong> to prioritize results from your exchanges. See <a href="/docs/settings-and-security#preferred-exchanges">Settings &gt; Preferred Exchanges</a> for details.</p>
 <h2 id="cryptocurrency">Cryptocurrency<a class="hlink" href="#cryptocurrency" aria-label="Link to this section">#</a></h2>
-<p>Monize tracks Bitcoin, Ethereum and other coins as securities, held in an investment account in your own currency, and not as currencies.</p>
+<p>Monize tracks Bitcoin, Ethereum and other coins in two ways:</p>
+<ul>
+<li><strong>A crypto security</strong> in an investment account, for coins you hold as an investment. The coin has a price history, gains and losses, a cost basis, and a place in your asset allocation, like any other holding. This section explains how</li>
+<li><strong>A crypto wallet account</strong>, for coins you spend and transfer. The account is kept in the coin, with a register, transfers, and a balance converted at the coin&#x27;s exchange rate. See <a href="/docs/accounts#cryptocurrency-wallets">Cryptocurrency Wallets</a></li>
+</ul>
+<p>To track a coin as a security:</p>
 <ol>
 <li>Use an <a href="#investment-account-structure">investment account</a> in your own currency, such as a EUR, USD or CAD brokerage account. Create one for your crypto if you do not have one</li>
 <li>Open <strong>Tools &gt; Securities</strong>, click <strong>+ New Security</strong>, type the coin and the currency you buy it in as <code>&lt;COIN&gt;-&lt;CURRENCY&gt;</code>, and click <strong>Lookup</strong>. For example <code>BTC-EUR</code>, <code>ETH-USD</code> or <code>BTC-CAD</code></li>
@@ -143,7 +148,7 @@
 </ul>
 <aside class="callout callout-note">
 <p class="callout-title">Note</p>
-<p>Do not add <code>BTC</code> as a currency on the Currencies page. Monize stores money to four decimal places and currencies allow at most four, which is too coarse for a coin, and the exchange rate providers carry no crypto rates, so a BTC currency would never get a rate and could not be valued. Track the coin as a security instead.</p>
+<p><strong>Which one fits?</strong> Choose a security for coin you buy and hold: quantities take eight decimal places, and the Investments page shows what the coin has earned. Choose a <a href="/docs/accounts#cryptocurrency-wallets">wallet account</a> for coin you pay with or move between wallets: its register reads like a bank account&#x27;s, and amounts in the coin keep up to eight decimal places. A wallet needs the coin added as a <a href="/docs/currency-management#cryptocurrencies">cryptocurrency</a> on the Currencies page; a security does not. You can use both, for example a security for long-term holdings and a wallet for the coin you spend.</p>
 </aside>
 <h2 id="security-detail-page">Security Detail Page<a class="hlink" href="#security-detail-page" aria-label="Link to this section">#</a></h2>
 <p>Click a security on the Securities page, or its symbol in the holdings list, to open its detail page. The header shows the latest price with the day&#x27;s change (&quot;today&quot;, or &quot;last move&quot; when the market has not traded today), whether the market is open, and the buttons <strong>Favourites</strong>, <strong>Edit</strong>, and <strong>Refresh</strong>. The arrow beside the name switches to another security.</p>

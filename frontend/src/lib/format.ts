@@ -1,17 +1,14 @@
+import { currencySymbolFor, decimalPlacesForCurrency } from './currency-decimals';
+import { isKnownIsoCurrency } from './iso-currency';
+
 /**
  * Get the narrow currency symbol for a given currency code (e.g., '$', '€', '£').
- * Uses Intl.NumberFormat so it works for any valid ISO 4217 currency code.
+ * `currencySymbolFor` (`lib/currency-decimals.ts`): a registered non-ISO
+ * currency's stored symbol (`₿`), else Intl's narrow symbol, which works for any
+ * valid ISO 4217 code; '$' for a code Intl rejects.
  */
 export function getCurrencySymbol(currencyCode: string): string {
-  try {
-    return new Intl.NumberFormat('en', {
-      style: 'currency',
-      currency: currencyCode,
-      currencyDisplay: 'narrowSymbol',
-    }).formatToParts(0).find(p => p.type === 'currency')?.value || '$';
-  } catch {
-    return '$';
-  }
+  return currencySymbolFor(currencyCode, '$');
 }
 
 /**
@@ -48,10 +45,14 @@ export function formatCurrency(amount: number, currencyCode: string = 'USD'): st
 }
 
 /**
- * Get the number of decimal places for a currency code using Intl.NumberFormat.
- * E.g., USD=2, JPY=0, BHD=3.
+ * The number of decimal places for a currency code: for a code Intl does not
+ * know, the reader's own currency row (`lib/currency-decimals.ts`, so a coin
+ * stored with eight places gets eight); otherwise Intl.NumberFormat (USD=2,
+ * JPY=0, BHD=3); then 2.
  */
 export function getDecimalPlacesForCurrency(currencyCode: string): number {
+  const registered = decimalPlacesForCurrency(currencyCode);
+  if (registered !== undefined) return registered;
   try {
     return new Intl.NumberFormat('en', {
       style: 'currency',
@@ -80,6 +81,14 @@ function shiftByPowerOfTen(value: number, exponent: number): number {
 }
 
 /**
+ * The largest one-ULP nudge, in units of the last place, `roundToDecimals`
+ * applies: below a hundredth of a unit it can recover a midpoint lost to IEEE
+ * 754 multiplication but never carry an exact value, or one just under a
+ * midpoint, into the next unit. Mirrors the backend's `NUDGE_LIMIT_UNITS`.
+ */
+const NUDGE_LIMIT_UNITS = 0.01;
+
+/**
  * Round a number to the specified number of decimal places using
  * "round half away from zero" (standard financial rounding).
  *
@@ -97,6 +106,19 @@ export function roundToDecimals(value: number, decimalPlaces: number): number {
   if (!isFinite(value)) return value;
   const sign = value < 0 ? -1 : 1;
   const abs = Math.abs(value);
+  // Past this magnitude one ULP is a sizeable fraction of a unit at
+  // `decimalPlaces` (at eight places, from about 450 thousand): the nudge below
+  // would push an exact value into the next unit (21000000 at eight places came
+  // back 21000000.00000001). Round the shortest decimal string exactly instead,
+  // as the backend `roundToDecimals` does; no fiat amount at four places
+  // reaches it below 4.5 billion, so those keep the path below.
+  if (
+    Number.isInteger(decimalPlaces) &&
+    decimalPlaces >= 0 &&
+    abs * 10 ** decimalPlaces * Number.EPSILON >= NUDGE_LIMIT_UNITS
+  ) {
+    return fromMoneyUnits(toMoneyUnits(value, decimalPlaces), decimalPlaces);
+  }
   const nudged = abs + Number.EPSILON * abs;
   const rounded = Math.round(shiftByPowerOfTen(nudged, decimalPlaces));
   const result = sign * shiftByPowerOfTen(rounded, -decimalPlaces);
@@ -120,9 +142,31 @@ export function withCurrencyCode(
   currencyCode: string,
   defaultCurrency: string,
 ): string {
-  return currencyCode && currencyCode !== defaultCurrency
-    ? `${formatted} ${currencyCode}`
-    : formatted;
+  if (!currencyCode || currencyCode === defaultCurrency) return formatted;
+  // `Intl` writes a code it does not know (a coin with no registered symbol)
+  // as the code itself, "BTC 0.01"; appending it again read "BTC 0.01 BTC".
+  // Limited to non-ISO codes so no fiat figure changes.
+  if (!isKnownIsoCurrency(currencyCode) && containsCodeToken(formatted, currencyCode)) {
+    return formatted;
+  }
+  return `${formatted} ${currencyCode}`;
+}
+
+/**
+ * Whether `text` holds `code` as a whole token: not inside a longer run of
+ * letters, so "BTC 0.01" and "0,01 BTC" hold BTC and "WBTC 1" does not.
+ */
+function containsCodeToken(text: string, code: string): boolean {
+  const upper = code.trim().toUpperCase();
+  let from = 0;
+  for (;;) {
+    const at = text.indexOf(upper, from);
+    if (at === -1) return false;
+    const before = at === 0 ? '' : text[at - 1];
+    const after = text[at + upper.length] ?? '';
+    if (!/\p{L}/u.test(before) && !/\p{L}/u.test(after)) return true;
+    from = at + 1;
+  }
 }
 
 /**
@@ -133,13 +177,125 @@ export function roundToCents(value: number): number {
 }
 
 /**
- * Round a monetary value to its storage precision (4dp, `decimal(20,4)`), the
- * scale a total and a balance are stored at. Mirrors the backend `roundMoney`
- * (`backend/src/common/round.util.ts`), strategy included, so a figure the
- * client previews rounds on the boundary the way the server will commit it.
+ * The places an amount in `currencyCode` is entered and rounded in: a
+ * registered non-ISO currency's stored places (`lib/currency-decimals.ts`,
+ * eight for a BTC row); a non-ISO code the registry does not hold yet
+ * (`awaitsRegisteredPlaces`: `GET /currencies` has not answered, or failed) at
+ * the column scale (`MONEY_SCALE`, eight), so a coin typed before the list
+ * arrives loses nothing; otherwise two, so every fiat surface keeps the cents
+ * it has always used. Unlike `getDecimalPlacesForCurrency` it does not ask
+ * `Intl`, so a JPY or BHD amount is not re-rounded by this.
  */
-export function roundMoney(value: number): number {
-  return roundToDecimals(value, 4);
+export function entryDecimalPlaces(currencyCode: string | null | undefined): number {
+  const registered = decimalPlacesForCurrency(currencyCode);
+  if (registered !== undefined) return registered;
+  return awaitsRegisteredPlaces(currencyCode) ? MONEY_SCALE : 2;
+}
+
+/**
+ * The money precision of an amount in `currencyCode`:
+ * `moneyDecimalsFor(entryDecimalPlaces(currencyCode))`. Four for every fiat
+ * code (the stored four it has always rounded at), a registered coin's own
+ * places from four to eight, and eight for a coin the registry does not hold
+ * yet. The precision to pass `roundMoney` and `sumMoney` on an amount in an
+ * account's currency.
+ */
+export function moneyDecimalsForCurrency(currencyCode: string | null | undefined): number {
+  return moneyDecimalsFor(entryDecimalPlaces(currencyCode));
+}
+
+/**
+ * Round an amount in `currencyCode` to the places it is entered in
+ * (`entryDecimalPlaces`): a BTC amount of 0.0051 stays 0.0051 where cents
+ * posted 0.01, and a fiat amount rounds exactly as `roundToCents` did.
+ * `roundToCents` is for a figure that can only be fiat; an amount in an
+ * account's currency goes through this with that account's code.
+ */
+export function roundToEntryPlaces(
+  value: number,
+  currencyCode: string | null | undefined,
+): number {
+  return roundToDecimals(value, entryDecimalPlaces(currencyCode));
+}
+
+/**
+ * Whether `currencyCode` is a non-ISO code (a coin) whose places the currency
+ * decimals registry does not hold yet: `GET /currencies` has not answered, so
+ * neither the registry nor `Intl` knows them and two would be a guess.
+ */
+export function awaitsRegisteredPlaces(currencyCode: string | null | undefined): boolean {
+  return (
+    !!currencyCode &&
+    decimalPlacesForCurrency(currencyCode) === undefined &&
+    !isKnownIsoCurrency(currencyCode)
+  );
+}
+
+/**
+ * A stored amount as a form or dialog loads it into its field: at its
+ * currency's entry places (`roundToEntryPlaces`), cents for a fiat code and a
+ * coin's registered places. A coin the registry does not hold yet
+ * (`awaitsRegisteredPlaces`) is kept at the column scale (`MONEY_SCALE`, eight)
+ * rather than rounded at an assumed two, so an unedited save sends back the
+ * stored 0.00002500, not 0.00; the input redraws it at the coin's places once
+ * the registry fills, and `CurrencyInput` does not report its display back as
+ * an edit.
+ */
+export function loadedEntryAmount(
+  value: number,
+  currencyCode: string | null | undefined,
+): number {
+  return awaitsRegisteredPlaces(currencyCode)
+    ? roundMoney(value, MONEY_SCALE)
+    : roundToEntryPlaces(value, currencyCode);
+}
+
+/**
+ * The scale every money column is stored at: `NUMERIC(24,8)`. The widest
+ * precision a currency's money may use (`moneyDecimalsFor` never exceeds it),
+ * and the precision a coin the registry does not hold yet is entered at.
+ */
+export const MONEY_SCALE = 8;
+
+/**
+ * The precision fiat money is rounded at: four places, as it has always been
+ * stored (sub-cent FX results included), whatever the currency's own minor
+ * unit. The default of `roundMoney` and `sumMoney`, and the precision of every
+ * figure whose currency is fiat by construction (a reporting-currency total, a
+ * loan, a budget, an investment figure).
+ */
+export const FIAT_MONEY_DECIMALS = 4;
+
+/**
+ * @deprecated The fiat precision under its old name; use `FIAT_MONEY_DECIMALS`
+ * for a fiat-only figure and `moneyDecimalsFor` / `moneyDecimalsForCurrency`
+ * for an amount in an account's currency. Kept so untouched fiat callers
+ * compile unchanged.
+ */
+export const MONEY_DECIMALS = FIAT_MONEY_DECIMALS;
+
+/**
+ * The money precision of a currency with `decimalPlaces` places:
+ * `max(FIAT_MONEY_DECIMALS, min(MONEY_SCALE, decimalPlaces ?? 2))`. Every fiat
+ * currency (0 to 3 places) keeps four; a coin with eight is rounded at eight,
+ * one with six at six. Mirrors the backend `moneyDecimalsFor`
+ * (`backend/src/common/round.util.ts`); nothing re-spells the `max`.
+ */
+export function moneyDecimalsFor(decimalPlaces: number | null | undefined): number {
+  return Math.max(FIAT_MONEY_DECIMALS, Math.min(MONEY_SCALE, decimalPlaces ?? 2));
+}
+
+/**
+ * Round a monetary value to its money precision: `decimals` places, four
+ * (`FIAT_MONEY_DECIMALS`) by default, the scale a fiat total and balance are
+ * rounded at. An amount in an account's currency passes that currency's
+ * precision (`moneyDecimalsForCurrency(code)`), so a coin keeps its eight.
+ * Mirrors the backend `roundMoney` (`backend/src/common/round.util.ts`),
+ * strategy included, so a figure the client previews rounds on the boundary
+ * the way the server will commit it.
+ */
+export function roundMoney(value: number, decimals: number = FIAT_MONEY_DECIMALS): number {
+  return roundToDecimals(value, decimals);
 }
 
 /**
@@ -170,17 +326,76 @@ export function roundFxRate(rate: number): number {
 }
 
 /**
- * Sum money values without IEEE 754 accumulation drift by accumulating in
- * integer ten-thousandths (matching the backend `roundMoney` / decimal(20,4)
- * precision) and dividing back once at the end. Mirrors the backend `sumMoney`
- * helper so client-side totals reconcile to the same cents as the server.
+ * A finite number as an integer count of `10^-decimals` units, rounded half
+ * away from zero. The shift is decimal, on the shortest string that
+ * round-trips to the double (`String(value)`, exponent form included), never a
+ * float multiply: `Math.round(v * 1e8)` is inexact for amounts above about 90
+ * million, where the product passes 2^53.
  */
-export function sumMoney(values: number[]): number {
-  const totalUnits = values.reduce(
-    (sum, value) => sum + Math.round(value * 10000),
-    0,
+export function toMoneyUnits(value: number, decimals: number): bigint {
+  const text = String(value);
+  const negative = text.startsWith('-');
+  const [mantissa, exponentText] = (negative ? text.slice(1) : text).split('e');
+  const [intDigits, fracDigits = ''] = mantissa.split('.');
+  const digits = intDigits + fracDigits;
+  // Where the decimal point falls in `digits` once shifted left by `decimals`.
+  const point = intDigits.length + Number(exponentText ?? 0) + decimals;
+  let whole: string;
+  let rest: string;
+  if (point <= 0) {
+    whole = '0';
+    rest = '0'.repeat(-point) + digits;
+  } else if (point >= digits.length) {
+    whole = digits + '0'.repeat(point - digits.length);
+    rest = '';
+  } else {
+    whole = digits.slice(0, point);
+    rest = digits.slice(point);
+  }
+  const units = BigInt(whole) + (rest !== '' && rest[0] >= '5' ? BigInt(1) : BigInt(0));
+  return negative ? -units : units;
+}
+
+/**
+ * An integer count of `10^-decimals` units back as a number, divided once.
+ * With `toMoneyUnits`, the pair a running total (a register's balance walk)
+ * accumulates in, so it is exact at a coin's eight places as `sumMoney` is.
+ */
+export function fromMoneyUnits(units: bigint, decimals: number): number {
+  const negative = units < BigInt(0);
+  const digits = (negative ? -units : units).toString().padStart(decimals + 1, '0');
+  const point = digits.length - decimals;
+  const result = Number(
+    `${negative ? '-' : ''}${digits.slice(0, point)}${decimals > 0 ? `.${digits.slice(point)}` : ''}`,
   );
-  return totalUnits / 10000;
+  return result === 0 ? 0 : result;
+}
+
+/**
+ * Sum money values exactly at `decimals` places, four (`FIAT_MONEY_DECIMALS`)
+ * by default: each value is rounded to an integer count of units from its
+ * decimal string and the counts are summed in `BigInt`, then divided back once.
+ * No IEEE 754 accumulation drift, and no overflow of 2^53 at eight places
+ * (`sumMoney([20999999.99999999, 0.00000001], 8)` is exactly 21000000). An
+ * amount in an account's currency passes that currency's precision
+ * (`moneyDecimalsForCurrency(code)`). Mirrors the backend `sumMoney` so
+ * client-side totals reconcile to the same units as the server. A non-finite
+ * value makes the sum non-finite (NaN, or the infinity), as a float sum would.
+ */
+export function sumMoney(
+  values: readonly number[],
+  decimals: number = FIAT_MONEY_DECIMALS,
+): number {
+  let total = BigInt(0);
+  let nonFinite: number | undefined;
+  for (const value of values) {
+    if (!Number.isFinite(value)) {
+      nonFinite = (nonFinite ?? 0) + value;
+      continue;
+    }
+    total += toMoneyUnits(value, decimals);
+  }
+  return nonFinite !== undefined ? nonFinite : fromMoneyUnits(total, decimals);
 }
 
 /**

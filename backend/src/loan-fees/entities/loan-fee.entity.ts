@@ -67,8 +67,8 @@ export class LoanFee {
   /** A FIXED fee's money; null for a percentage. */
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     nullable: true,
     transformer: numericTransformer,
   })

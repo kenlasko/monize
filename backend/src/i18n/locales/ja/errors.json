@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "ID {{ id }} の口座が見つかりません",
     "notInvestmentPair": "この口座は投資口座ペアの一部ではありません",
+    "accountCurrencyKindMismatch": "{{ code }} は {{ kind }} 通貨のため、{{ accountType }} 口座では保有できません。CRYPTO 口座は暗号資産を保有し、それ以外の口座タイプは法定通貨を保有します。",
     "noLinkedInvestmentAccount": "この投資口座にはリンクされた口座がありません",
     "notFound": "口座が見つかりません",
     "institutionNotFound": "金融機関が見つかりません",
@@ -318,6 +319,7 @@
     "categoryIdsNotOwned": "カテゴリIDが見つからないか、ユーザーが所有していません：{{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "給与控除ルールは法定通貨で支払う請求を対象にします。この請求の口座は暗号資産 {{ code }} を保有しています。法定通貨の口座から支払う請求を選択してください。",
     "notFound": "給与控除ルール {{ id }} が見つかりません",
     "duplicate": "この請求にはそのカテゴリのルールが既にあります",
     "expectedRequired": "この請求にはこのカテゴリの行がありません。給与ごとの予定額を入力してください"
@@ -358,7 +360,15 @@
     "inUse": "通貨「{{ code }}」はあなたの口座、有価証券、またはその他の記録で使用されています。代わりに非アクティブにしてください。",
     "invalidRateDate": "date は YYYY-MM-DD 形式で指定してください",
     "sameCurrencyHistory": "{{ code }} はあなたのデフォルト通貨のため、レート履歴はありません",
-    "rateProviderUnavailable": "為替レート提供元から応答がありませんでした。しばらくしてから再度お試しください。"
+    "rateProviderUnavailable": "為替レート提供元から応答がありませんでした。しばらくしてから再度お試しください。",
+    "noPriceSymbol": "{{ code }} には価格シンボルがありません。通貨ページで設定してください",
+    "pairNotCarried": "設定済みの為替レート提供元はいずれも {{ pair }} を扱っていません",
+    "quoteSymbolRequiresCrypto": "価格記号（{{ quoteSymbol }}）を設定できるのは暗号資産のみです。「{{ code }}」は法定通貨です",
+    "quoteSymbolNotAPair": "「{{ code }}」の価格記号「{{ quoteSymbol }}」は、BTC-EUR のようなコインと法定通貨のペアではありません",
+    "kindInUse": "口座、取引、有価証券、その他の記録で使用されている間は、「{{ code }}」の種類を変更できません",
+    "decimalPlacesInUse": "口座、取引、その他の記録にそれだけの桁数の小数を持つ金額が残っている間は、「{{ code }}」の小数桁数を{{ places }}未満に下げることはできません",
+    "quoteSymbolInUse": "口座、取引、有価証券、その他の記録で使用されている間は、「{{ code }}」の価格記号のコインを変更できません。変更できるのは法定通貨の部分だけです",
+    "kindConflict": "通貨「{{ code }}」はすでに {{ kind }} 通貨として存在するため、{{ requestedKind }} として追加できません"
   },
   "delegation": {
     "delegatedAccessInvalid": "委任アクセスが有効ではなくなりました",
@@ -642,6 +652,7 @@
     "bondCurrencyMismatch": "この証券は {{ currency }} で記録されていますが、債券銘柄は {{ instrumentCurrency }} で評価されます。銘柄の通貨を使用してください。",
     "bondCurrencyLocked": "債券銘柄にリンクされた証券は、銘柄の通貨（{{ instrumentCurrency }}）のままとなります。通貨を変更する前に、債券とのリンクを解除してください。",
     "accountMustBeInvestment": "口座は INVESTMENT タイプでなければなりません",
+    "currencyMustBeFiat": "{{ code }} は暗号資産ですが、有価証券は法定通貨で価格が付けられます。有価証券の建値となる法定通貨を選択してください。",
     "transferPairSameRow": "1件の振替の2つの明細を同じ取引にはできません",
     "transferPairNotFound": "2件のうち一方の取引がすでに存在しません",
     "transferPairAlreadyLinked": "この明細の一方はすでに別の取引と紐付いています",
@@ -752,6 +763,7 @@
     "runUndoLaterSettlement": "この実行の後にこのローンの以降の返済分が決済されたため、この実行は元に戻せません。先に以降の決済を元に戻してください"
   },
   "transactions": {
+    "amountPrecisionExceeded": "「{{ field }}」の金額は、{{ code }} が扱える小数桁数 ({{ places }}) を超えています。小数点以下 {{ places }} 桁までで入力してください。通貨の小数桁数は通貨ページで設定します。",
     "invalidStatus": "無効な取引ステータス：{{ status }}",
     "reconciledLocked": "この取引は照合済みでロックされています。変更するには設定で「照合済み取引をロックする」をオフにしてください。",
     "convertToTransferRefused": "この取引はもう振替に変換できません。内容を確認して、ルールをもう一度実行してください",
@@ -838,6 +850,9 @@
     "passwordRequiredForDataDelete": "データ削除を確認するにはパスワードが必要です",
     "reauthUnavailable": "この操作を使用する前に、アカウントのパスワード設定を完了してください。"
   },
+  "preferences": {
+    "defaultCurrencyCrypto": "暗号資産を表示通貨にすることはできません"
+  },
   "loanScenarios": {
     "notFound": "ID {{ id }} のローンシナリオが見つかりません",
     "nameConflict": "この勘定科目には「{{ name }}」という名前のシナリオが既に存在します",
@@ -909,6 +924,7 @@
     "accountNotFound": "その口座が見つかりません。",
     "accountClosed": "リンク先の口座は閉鎖されています。再開するか、別の口座をリンクしてください。",
     "accountBrokerage": "投資用の証券口座は銀行の取引を受け取れません。代わりにその現金口座をリンクしてください。",
+    "accountCrypto": "暗号資産ウォレットは銀行の取引を受け取れません。代わりに銀行口座をリンクしてください。",
     "accountCurrencyMismatch": "銀行口座は {{ bankCurrency }} ですが、口座は {{ accountCurrency }} です。同じ通貨の口座をリンクしてください。",
     "accountCurrencyChanged": "読み取り中に、リンク先の口座の通貨が変更されました。何もインポートされていません。もう一度同期してください。",
     "accountAlreadyLinked": "その口座はすでに別の銀行口座にリンクされています。",

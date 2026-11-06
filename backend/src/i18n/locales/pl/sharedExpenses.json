@@ -11,6 +11,7 @@
   "participantLimit": "Grupa może mieć maksymalnie 50 uczestników.",
   "currencyLocked": "Waluta grupy jest ustalona po pierwszym wpisie. Utwórz nową grupę, aby użyć innej waluty.",
   "currency": "Wybierz dostępną walutę obsługującą do czterech miejsc po przecinku.",
+  "groupCurrencyMustBeFiat": "Grupa współdzielona prowadzi swoje konta w walucie fiducjarnej; {{ code }} jest kryptowalutą. Wybierz dla grupy walutę fiducjarną.",
   "invite": "To zaproszenie jest niedostępne, wygasło lub zostało już użyte. Poproś właściciela grupy o nowe.",
   "inviteEmail": "Zaloguj się na zaproszony adres e-mail i zweryfikuj go przed dołączeniem.",
   "alreadyMember": "Ty lub ta osoba już należycie do tej grupy. Poproś właściciela o sprawdzenie uczestników.",

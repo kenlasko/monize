@@ -525,6 +525,15 @@ T-1,234.56
       expect(result.transactions[0].amount).toBe(-1234.56);
     });
 
+    it("keeps a coin ledger's 8-place amount whole", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-0.00002500
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions[0].amount).toBe(-0.000025);
+    });
+
     it("handles amounts with currency symbols", () => {
       const qif = `!Type:Bank
 D01/15/2026

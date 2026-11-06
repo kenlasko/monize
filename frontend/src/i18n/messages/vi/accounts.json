@@ -136,6 +136,9 @@
     "accountType": "Loại tài khoản",
     "currency": "Tiền tệ",
     "currencyLocked": "Tiền tệ bị khóa vì tài khoản này đã có giao dịch. Thay đổi tiền tệ sẽ ngầm định đổi đơn vị của số dư hiện có.",
+    "accountTypeKindLocked": "Tiền tệ bị khóa bởi các giao dịch của tài khoản này, nên tài khoản không thể chuyển giữa Ví tiền mã hóa và một loại tài khoản tiền pháp định.",
+    "currencyPlaceholder": "Chọn tiền tệ...",
+    "noCryptoCurrencies": "Ví tiền mã hóa chứa một loại tiền mã hóa, và hiện chưa có loại nào được thiết lập. Hãy thêm một loại trên <currencies>trang Tiền tệ</currencies>, rồi chọn tại đây. <guide>Cách thêm tiền mã hóa</guide>",
     "openingBalance": "Số dư đầu kỳ",
     "loanAmount": "Số tiền vay",
     "mortgageAmount": "Số tiền thế chấp",
@@ -179,6 +182,7 @@
       "mortgage": "Thế chấp",
       "asset": "Tài sản",
       "cash": "Tiền mặt",
+      "crypto": "Ví tiền mã hóa",
       "other": "Khác"
     },
     "statementDueDayPlaceholder": "vd. 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "Tên tài khoản là bắt buộc",
     "currencyCodeLength": "Mã tiền tệ phải có đúng 3 ký tự",
+    "currencyRequired": "Chọn tiền tệ",
     "institutionRequired": "Vui lòng chọn hoặc tạo một tổ chức",
     "interestRateRequired": "Lãi suất là bắt buộc",
     "paymentAmountRequired": "Số tiền thanh toán là bắt buộc",

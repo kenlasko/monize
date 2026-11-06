@@ -38,6 +38,8 @@ export const DOCS_LINKS = {
   investments: { page: 'investments' },
   securities: { page: 'investments', section: 'securities-management' },
   cryptocurrency: { page: 'investments', section: 'cryptocurrency' },
+  cryptoWallets: { page: 'accounts', section: 'cryptocurrency-wallets' },
+  cryptoCurrencies: { page: 'currency-management', section: 'cryptocurrencies' },
   reports: { page: 'reports' },
   rules: { page: 'rules' },
   settings: { page: 'settings-and-security' },

@@ -8,6 +8,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
   UnauthorizedException,
 } from "@nestjs/common";
 import { DataSource, EntityTarget, ObjectLiteral, Repository } from "typeorm";
@@ -53,6 +54,7 @@ import {
   BackupData,
   BackupPasswordRequiredError,
   backupTables,
+  MAX_CURRENCY_KIND_MISMATCH_NAMES,
   MAX_UNLINKED_BOND_SYMBOLS,
   MAX_UNRECOVERED_BOND_SERIES,
   parseArtifactCompleteness,
@@ -69,6 +71,7 @@ import { BackupBondSeriesRecoveryService } from "./backup-bond-series-recovery.s
 import { BondPriceService } from "../bonds/bond-price.service";
 import { clearForeignSeriesOfUser } from "../bonds/bond-series-resolver";
 import { invalidatePortfolioSummary } from "../securities/portfolio-summary-memo";
+import { CryptoFxProvider } from "../currencies/providers/crypto-fx.provider";
 
 const gunzipAsync = promisify(gunzip);
 
@@ -97,6 +100,14 @@ export class BackupRestoreService {
     private readonly maintenance: UserMaintenanceService,
     private readonly bondPrices: BondPriceService,
     private readonly bondSeries: BackupBondSeriesRecoveryService,
+    /**
+     * Told after the commit that `currencies` may hold rows it has not read
+     * (`ensureCurrenciesExist` inserts the backup's coins), so a restored coin
+     * is not routed to a fiat provider until the adapter's cache expires.
+     * Optional, as in `CurrenciesService`: without it the restore loses only
+     * the early re-read.
+     */
+    @Optional() private readonly cryptoFx?: CryptoFxProvider,
   ) {}
 
   /**
@@ -394,6 +405,15 @@ export class BackupRestoreService {
                 // only of its own security's program.
                 await clearForeignSeriesOfUser(manager, userId);
 
+                // INV-CRYPTO-001 and crypto spec decision 11: the kind of a
+                // currency is this deployment's, so a restored account,
+                // security or reporting currency may disagree with it. Reported
+                // beside `restored`, never refused (see the method).
+                const kindMismatches = await this.db.findCurrencyKindMismatches(
+                  manager,
+                  userId,
+                );
+
                 // The file's current_balance is as of the backup day; a row
                 // dated after it and on or before today is in no stored figure.
                 // Same derivation as the recalculation cron, so it is idempotent.
@@ -434,6 +454,25 @@ export class BackupRestoreService {
                   ...(unlinkedSeriesCount > 0
                     ? { unlinkedBondSeries: { count: unlinkedSeriesCount } }
                     : {}),
+                  ...(kindMismatches.accounts.length > 0 ||
+                  kindMismatches.securities.length > 0 ||
+                  kindMismatches.defaultCurrency !== null
+                    ? {
+                        currencyKindMismatches: {
+                          accounts: kindMismatches.accounts.slice(
+                            0,
+                            MAX_CURRENCY_KIND_MISMATCH_NAMES,
+                          ),
+                          accountCount: kindMismatches.accounts.length,
+                          securities: kindMismatches.securities.slice(
+                            0,
+                            MAX_CURRENCY_KIND_MISMATCH_NAMES,
+                          ),
+                          securityCount: kindMismatches.securities.length,
+                          defaultCurrency: kindMismatches.defaultCurrency,
+                        },
+                      }
+                    : {}),
                   ...(recovery.unrecovered.length > 0
                     ? {
                         unrecoveredBondSeries: {
@@ -450,6 +489,10 @@ export class BackupRestoreService {
             ),
           )
           .then(async (result) => {
+            // The restore may have inserted currencies (a coin among them);
+            // the crypto adapter re-reads on its next question rather than
+            // after its cache expires. After the commit, so the read sees them.
+            this.cryptoFx?.forgetCurrencies();
             // After the commit, never before: until it lands, the metadata that
             // references these objects may come back with a rollback.
             await this.attachments.deleteDisplacedAttachmentObjects(

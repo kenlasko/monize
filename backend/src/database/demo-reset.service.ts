@@ -1,7 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { DataSource } from "typeorm";
+import { applyAccountBalanceDelta } from "../accounts/accounts.service";
 import { withScopedDb } from "../common/db/scoped-db";
+import { accountMoneyDecimals } from "../import/import-context";
 import * as bcrypt from "bcryptjs";
 
 import { DemoModeService } from "../common/demo-mode.service";
@@ -346,10 +348,12 @@ export class DemoResetService {
               ],
             );
 
-            await manager.query(
-              "UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 4) WHERE id = $2",
-              [amount, account.id],
-            );
+            // The shared atomic delta, rounded at the account currency's
+            // places; no `accounts.current_balance` writer rounds in SQL.
+            await applyAccountBalanceDelta(manager, account.id, amount, {
+              openOnly: false,
+              decimals: await accountMoneyDecimals(manager, account.id),
+            });
 
             return account.id as string;
           },

@@ -135,6 +135,15 @@ export const demoAccounts: DemoAccount[] = [
     description: "Cash on hand",
   },
   {
+    key: "crypto",
+    type: "CRYPTO",
+    name: "Bitcoin Wallet",
+    currency: "BTC",
+    openingBalance: 0,
+    description: "Hardware wallet",
+    isFavourite: false,
+  },
+  {
     key: "home",
     type: "ASSET",
     name: "Home (Primary Residence)",

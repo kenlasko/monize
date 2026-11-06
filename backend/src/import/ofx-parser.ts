@@ -19,7 +19,7 @@
  */
 
 import type { QifTransaction, QifParseResult } from "./qif-parser";
-import { roundMoney } from "../common/round.util";
+import { MONEY_SCALE, roundMoney } from "../common/round.util";
 
 // Strip HTML angle brackets to prevent stored XSS.
 function stripHtml(value: string): string {
@@ -187,6 +187,11 @@ export function validateOfxContent(content: string): {
 
 /**
  * Parse an OFX file into the standard QifParseResult format.
+ *
+ * Amounts are read at the storage scale (`MONEY_SCALE`, eight places), never at
+ * the destination account's precision: the import processor refuses an amount
+ * with more places than the account's currency carries (INV-MONEY-001), exactly
+ * as it does for QIF and CSV, so a figure is never silently rounded here.
  */
 export function parseOfx(content: string): QifParseResult {
   const transactions: QifTransaction[] = [];
@@ -245,7 +250,7 @@ export function parseOfx(content: string): QifParseResult {
 
     const tx: QifTransaction = {
       date,
-      amount: roundMoney(amount),
+      amount: roundMoney(amount, MONEY_SCALE),
       payee,
       memo: memoText,
       number: truncate(checkNum, 100),

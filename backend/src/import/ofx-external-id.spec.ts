@@ -57,6 +57,22 @@ describe("isSameBankRow", () => {
     ).toBe(true);
   });
 
+  it("tells two coin amounts apart at eight places, not four", () => {
+    const coin = { transactionDate: "2026-01-15", amount: "-0.00002500" };
+    expect(
+      isSameBankRow(coin as unknown as typeof holder, {
+        date: "2026-01-15",
+        amount: -0.000025,
+      }),
+    ).toBe(true);
+    expect(
+      isSameBankRow(coin as unknown as typeof holder, {
+        date: "2026-01-15",
+        amount: -0.00002501,
+      }),
+    ).toBe(false);
+  });
+
   it.each([
     ["another date", { date: "2026-01-16", amount: -42.5 }],
     ["another amount", { date: "2026-01-15", amount: -42.51 }],

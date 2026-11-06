@@ -11,6 +11,7 @@
   "participantLimit": "Eine Gruppe kann bis zu 50 Personen enthalten.",
   "currencyLocked": "Die Gruppenwährung ist nach dem ersten Eintrag festgelegt. Erstelle für eine andere Währung eine neue Gruppe.",
   "currency": "Wähle eine verfügbare Währung mit höchstens vier Dezimalstellen.",
+  "groupCurrencyMustBeFiat": "Eine geteilte Gruppe führt ihre Konten in einer Fiat-Währung; {{ code }} ist eine Kryptowährung. Wähle eine Fiat-Währung für die Gruppe.",
   "invite": "Diese Einladung ist nicht verfügbar, abgelaufen oder bereits verwendet. Bitte den Gruppeneigentümer um eine neue.",
   "inviteEmail": "Melde dich mit der eingeladenen E-Mail-Adresse an und bestätige sie vor dem Beitritt.",
   "alreadyMember": "Du oder diese Person seid bereits Mitglied dieser Gruppe. Bitte den Eigentümer, die Beteiligten zu prüfen.",

@@ -105,6 +105,10 @@ import {
   CONVERT_OPERATION,
 } from "./calculate-tool";
 import { ExchangeRateService } from "../../currencies/exchange-rate.service";
+import {
+  decimalPlacesFor,
+  isIsoCurrencyCode,
+} from "../../common/format-currency.util";
 import { sanitizePromptValue } from "../../common/sanitization.util";
 import { formatDidYouMean } from "../../common/name-suggestions.util";
 import {
@@ -2452,15 +2456,28 @@ export class ToolExecutorService {
     const foreign = data.accounts.filter(
       (a) => a.currency !== data.defaultCurrency,
     );
+    // A coin is not ISO, so its own row says how many places it is stated
+    // at (a BTC wallet at four, never 0.01 for 0.0125); an ISO code keeps the
+    // two places this summary has always used. No query when every foreign
+    // code is ISO.
+    const places = foreign.length
+      ? await this.exchangeRateService.getCurrencyDecimalPlaces(
+          foreign.map((a) => a.currency),
+        )
+      : new Map<string, number>();
+    const inOwn = (amount: number, code: string) =>
+      amount.toFixed(
+        isIsoCurrencyCode(code) ? 2 : decimalPlacesFor(code, places),
+      );
     const foreignPart = foreign.length
       ? ` Accounts in other currencies (own currency = ${data.defaultCurrency}): ${foreign
           .map((a) => {
             // A brokerage with an unpriced or unconverted position has no
             // balance: say so and give what did value, never a zero.
             if (a.balance === null) {
-              return `${a.name}: unknown (holdings not priced); known subtotal ${a.knownBalanceSubtotal.toFixed(2)} ${a.currency}`;
+              return `${a.name}: unknown (holdings not priced); known subtotal ${inOwn(a.knownBalanceSubtotal, a.currency)} ${a.currency}`;
             }
-            return `${a.name}: ${a.balance.toFixed(2)} ${a.currency} = ${
+            return `${a.name}: ${inOwn(a.balance, a.currency)} ${a.currency} = ${
               a.balanceInDefaultCurrency === null
                 ? "unknown (no rate)"
                 : `${a.balanceInDefaultCurrency.toFixed(2)} ${data.defaultCurrency}`

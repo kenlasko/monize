@@ -136,6 +136,9 @@
     "accountType": "Type de compte",
     "currency": "Devise",
     "currencyLocked": "La devise est verrouillée car ce compte contient déjà des transactions. La modifier re-libeller silencieusement les soldes existants.",
+    "accountTypeKindLocked": "La devise est verrouillée par les transactions de ce compte : il ne peut donc pas passer de Portefeuille crypto à un type de compte en monnaie fiduciaire, ni l'inverse.",
+    "currencyPlaceholder": "Sélectionnez une devise...",
+    "noCryptoCurrencies": "Un portefeuille crypto contient une cryptomonnaie, et aucune n'est encore configurée. Ajoutez-en une sur la <currencies>page Devises</currencies>, puis choisissez-la ici. <guide>Comment ajouter une cryptomonnaie</guide>",
     "openingBalance": "Solde d'ouverture",
     "loanAmount": "Montant du prêt",
     "mortgageAmount": "Montant du prêt hypothécaire",
@@ -179,6 +182,7 @@
       "mortgage": "Prêt hypothécaire",
       "asset": "Actif",
       "cash": "Espèces",
+      "crypto": "Portefeuille crypto",
       "other": "Autre"
     },
     "statementDueDayPlaceholder": "ex. 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "Le nom du compte est obligatoire",
     "currencyCodeLength": "Le code de devise doit comporter 3 caractères",
+    "currencyRequired": "Sélectionnez une devise",
     "institutionRequired": "Veuillez sélectionner ou créer un établissement",
     "interestRateRequired": "Le taux d'intérêt est obligatoire",
     "paymentAmountRequired": "Le montant du paiement est obligatoire",

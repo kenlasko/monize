@@ -6,6 +6,7 @@ import {
   explainBankImport,
   planBankImport,
 } from "./bank-transaction-planner";
+import { BANK_SYNC_MONEY_DECIMALS } from "./bank-sync.constants";
 import { NO_BANK_OPERATION } from "./bank-operation";
 import type { BankTransaction } from "./providers/bank-sync-provider.interface";
 
@@ -248,6 +249,17 @@ describe("planBankImport", () => {
       expect(result.planned.map((p) => p.amount)).toEqual([
         -12.345, -12.3457, 0.1,
       ]);
+    });
+
+    it("reads an 8-place amount at the bank-sync precision, four: bank sync links fiat accounts only", () => {
+      // A cryptocurrency wallet is refused at the link, so every bank figure is
+      // fiat and the key spells it at four places (INV-BANKSYNC-001).
+      expect(BANK_SYNC_MONEY_DECIMALS).toBe(4);
+      const result = plan([
+        row({ direction: "credit", amount: "0.00012345", entryReference: "r" }),
+      ]);
+      expect(result.planned[0].amount).toBe(0.0001);
+      expect(result.planned[0].externalKey).toContain("|0.0001:");
     });
 
     it("trims the amount before matching it", () => {

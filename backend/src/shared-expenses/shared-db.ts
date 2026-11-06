@@ -142,6 +142,12 @@ export async function sharedActivity(
   );
 }
 
+/**
+ * The places of a shared amount's currency. Shared money is held at four
+ * places (`SHARED_MONEY_SCALE`), so a currency with more is refused here even
+ * though `currencies.decimal_places` admits up to eight
+ * (`docs/specs/money-precision.md` section 10).
+ */
 export async function currencyPlaces(
   manager: EntityManager,
   code: string,
@@ -150,9 +156,32 @@ export async function currencyPlaces(
     "SELECT decimal_places FROM currencies WHERE code = $1",
     [code],
   );
-  const places = rows[0]?.decimal_places;
+  return sharedPlaces(rows[0]?.decimal_places);
+}
+
+function sharedPlaces(places: number | undefined): number {
   if (places === undefined || places < 0 || places > 4) sharedError("currency");
   return places;
+}
+
+/**
+ * The places of a shared group's currency, which must be fiat: a group's
+ * balances, settlements and bookings are fiat by construction (shared money is
+ * four places), so a cryptocurrency is refused rather than held at the wrong
+ * precision (`docs/specs/money-precision.md` section 10). Called inside the
+ * group write's transaction, before anything is written.
+ */
+export async function groupCurrencyPlaces(
+  manager: EntityManager,
+  code: string,
+): Promise<number> {
+  const rows: { decimal_places: number; kind: string }[] = await manager.query(
+    "SELECT decimal_places, kind FROM currencies WHERE code = $1",
+    [code],
+  );
+  if (rows[0]?.kind === "CRYPTO")
+    sharedError("groupCurrencyMustBeFiat", { code });
+  return sharedPlaces(rows[0]?.decimal_places);
 }
 
 export async function advanceSharedRevision(

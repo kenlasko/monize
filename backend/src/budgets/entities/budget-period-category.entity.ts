@@ -39,16 +39,16 @@ export class BudgetPeriodCategory {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "budgeted_amount",
   })
   budgetedAmount: number;
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "rollover_in",
     default: 0,
   })
@@ -56,8 +56,8 @@ export class BudgetPeriodCategory {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "actual_amount",
     default: 0,
   })
@@ -65,16 +65,16 @@ export class BudgetPeriodCategory {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "effective_budget",
   })
   effectiveBudget: number;
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "rollover_out",
     default: 0,
   })

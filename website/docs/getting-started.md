@@ -196,7 +196,7 @@ If you are about to import from Quicken or Microsoft Money, you can skip this: t
 2. Click **+ New Account**
 3. Fill in the account details:
    - **Account Name** -- A descriptive name (e.g., "Main Chequing")
-   - **Account Type** -- Chequing, Savings, Credit Card, Investment, Loan, Line of Credit, Mortgage, Asset, Cash or Other (see [Accounts](accounts.md) for details)
+   - **Account Type** -- Chequing, Savings, Credit Card, Investment, Loan, Line of Credit, Mortgage, Asset, Cash, Crypto Wallet or Other (see [Accounts](accounts.md) for details)
    - **Currency** -- The currency this account operates in
    - **Opening Balance** -- The balance the account starts from, before any transaction you record or import
    - Optional details: the account number, the **Institution**, a credit limit, an interest rate, a foreign currency conversion fee and a description, plus **Add to favourites** and **Exclude from Net Worth**. Some types ask for more, such as a credit card's statement dates or a loan's terms

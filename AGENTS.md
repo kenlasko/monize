@@ -87,7 +87,7 @@ Any operation that touches multiple tables or does read-modify-write runs in one
 
 ## Financial math
 
-Money is `decimal(20,4)`. In JavaScript, never accumulate floats: sum `Math.round(Number(x) * 10000)` and divide once, or `roundMoney` every result, including a delta (`newAmount - oldAmount` is what a balance moves by). Balance updates are atomic SQL: `UPDATE accounts SET current_balance = current_balance + $1 WHERE id = $2`.
+Money columns are `NUMERIC(24,8)` and an amount's precision is `moneyDecimalsFor(currency.decimalPlaces)` (4 for every fiat, up to 8 for a coin). In JavaScript, never accumulate floats: `sumMoney(values, decimals)` or `roundMoney(x, decimals)` every result, including a delta (`newAmount - oldAmount` is what a balance moves by). Balance updates are atomic SQL: `UPDATE accounts SET current_balance = current_balance + $1 WHERE id = $2`.
 
 One sentence each; the reasoning and the guard that holds each one are in the contract documents.
 

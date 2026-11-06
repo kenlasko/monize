@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "Nie znaleziono konta o ID {{ id }}",
     "notInvestmentPair": "To konto nie jest częścią pary kont inwestycyjnych",
+    "accountCurrencyKindMismatch": "{{ code }} to waluta rodzaju {{ kind }}, której konto typu {{ accountType }} nie może przechowywać. Konto CRYPTO przechowuje kryptowalutę; każdy inny typ konta przechowuje walutę fiducjarną.",
     "noLinkedInvestmentAccount": "To konto inwestycyjne nie ma powiązanego konta",
     "notFound": "Nie znaleziono konta",
     "institutionNotFound": "Nie znaleziono instytucji",
@@ -318,6 +319,7 @@
     "categoryIdsNotOwned": "Identyfikatory kategorii nie zostały znalezione lub nie należą do użytkownika: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Reguła potrącenia z wynagrodzenia śledzi rachunek opłacany w walucie fiducjarnej; konto tego rachunku zawiera kryptowalutę {{ code }}. Wybierz rachunek opłacany z konta w walucie fiducjarnej.",
     "notFound": "Nie znaleziono reguły potrącenia z wynagrodzenia {{ id }}",
     "duplicate": "Ten rachunek ma już regułę dla tej kategorii",
     "expectedRequired": "Rachunek nie ma pozycji dla tej kategorii; wpisz oczekiwaną kwotę na wypłatę"
@@ -358,7 +360,15 @@
     "inUse": "Waluta \"{{ code }}\" jest używana przez Twoje konta, papiery wartościowe lub inne rekordy. Zamiast tego ją dezaktywuj.",
     "invalidRateDate": "date musi mieć format RRRR-MM-DD",
     "sameCurrencyHistory": "{{ code }} jest Twoją walutą domyślną; nie ma dla niej historii kursu wymiany",
-    "rateProviderUnavailable": "Dostawca kursów wymiany nie odpowiedział. Spróbuj ponownie później."
+    "rateProviderUnavailable": "Dostawca kursów wymiany nie odpowiedział. Spróbuj ponownie później.",
+    "noPriceSymbol": "{{ code }} nie ma symbolu notowania; przypisz go na stronie Waluty",
+    "pairNotCarried": "Żaden skonfigurowany dostawca kursów walut nie obsługuje {{ pair }}",
+    "quoteSymbolRequiresCrypto": "Symbol ceny ({{ quoteSymbol }}) można ustawić tylko dla kryptowaluty; \"{{ code }}\" jest walutą fiducjarną",
+    "quoteSymbolNotAPair": "Symbol ceny \"{{ quoteSymbol }}\" dla \"{{ code }}\" nie jest parą monety i waluty fiducjarnej, takiej jak BTC-EUR",
+    "kindInUse": "Rodzaju \"{{ code }}\" nie można zmienić, dopóki używają go konta, transakcje, papiery wartościowe lub inne rekordy",
+    "decimalPlacesInUse": "Liczby miejsc dziesiętnych \"{{ code }}\" nie można zmniejszyć poniżej {{ places }}, dopóki konta, transakcje lub inne rekordy zawierają kwoty z tyloma miejscami dziesiętnymi",
+    "quoteSymbolInUse": "Monety w symbolu ceny \"{{ code }}\" nie można zmienić, dopóki używają go konta, transakcje, papiery wartościowe lub inne rekordy; można zmienić tylko jego walutę fiducjarną",
+    "kindConflict": "Waluta \"{{ code }}\" już istnieje jako waluta {{ kind }} i nie można jej dodać jako {{ requestedKind }}"
   },
   "delegation": {
     "delegatedAccessInvalid": "Dostęp delegowany nie jest już ważny",
@@ -642,6 +652,7 @@
     "bondCurrencyMismatch": "Papier wartościowy jest zapisany w walucie {{ currency }}, a instrument obligacyjny jest wyceniany w walucie {{ instrumentCurrency }}. Użyj waluty instrumentu.",
     "bondCurrencyLocked": "Papier wartościowy powiązany z instrumentem obligacyjnym pozostaje w walucie instrumentu ({{ instrumentCurrency }}). Przed zmianą waluty odłącz go od obligacji.",
     "accountMustBeInvestment": "Konto musi być typu INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} jest kryptowalutą, a papier wartościowy jest wyceniany w walucie fiducjarnej. Wybierz walutę fiducjarną, w której notowany jest papier wartościowy.",
     "transferPairSameRow": "Dwie strony jednego transferu nie mogą być tą samą transakcją",
     "transferPairNotFound": "Jedna z dwóch transakcji już nie istnieje",
     "transferPairAlreadyLinked": "Jedna z tych stron jest już powiązana z inną transakcją",
@@ -752,6 +763,7 @@
     "runUndoLaterSettlement": "Po tym uruchomieniu rozliczono późniejszą ratę tego kredytu, więc nie można cofnąć uruchomienia. Najpierw cofnij późniejsze rozliczenie"
   },
   "transactions": {
+    "amountPrecisionExceeded": "Kwota w polu \"{{ field }}\" ma więcej miejsc po przecinku, niż obsługuje {{ code }} ({{ places }}). Wpisz ją z co najwyżej {{ places }} miejscami po przecinku; liczbę miejsc po przecinku waluty ustawia się na stronie Waluty.",
     "invalidStatus": "Nieprawidłowy status transakcji: {{ status }}",
     "reconciledLocked": "Ta transakcja jest uzgodniona i zablokowana. Wyłącz opcję „Zablokuj uzgodnione transakcje” w Ustawieniach, aby ją zmienić.",
     "convertToTransferRefused": "Tej transakcji nie można już zamienić na przelew. Sprawdź ją i uruchom regułę ponownie",
@@ -838,6 +850,9 @@
     "passwordRequiredForDataDelete": "Do potwierdzenia usunięcia danych wymagane jest hasło",
     "reauthUnavailable": "Zakończ ustawianie hasła do konta, zanim użyjesz tej operacji."
   },
+  "preferences": {
+    "defaultCurrencyCrypto": "Kryptowaluta nie może być walutą prezentacji"
+  },
   "loanScenarios": {
     "notFound": "Nie znaleziono scenariusza kredytu o identyfikatorze {{ id }}",
     "nameConflict": "Scenariusz o nazwie \"{{ name }}\" już istnieje dla tego konta",
@@ -909,6 +924,7 @@
     "accountNotFound": "Nie znaleziono tego konta.",
     "accountClosed": "Powiązane konto jest zamknięte. Otwórz je ponownie lub powiąż inne konto.",
     "accountBrokerage": "Maklerskie konto inwestycyjne nie może przyjmować transakcji bankowych. Powiąż zamiast tego jego konto gotówkowe.",
+    "accountCrypto": "Portfel kryptowalutowy nie może przyjmować transakcji bankowych. Powiąż zamiast tego konto bankowe.",
     "accountCurrencyMismatch": "Konto bankowe jest w {{ bankCurrency }}, a konto jest w {{ accountCurrency }}. Powiąż konto w tej samej walucie.",
     "accountCurrencyChanged": "Podczas odczytu zmieniła się waluta powiązanego konta. Nic nie zaimportowano. Zsynchronizuj ponownie.",
     "accountAlreadyLinked": "To konto jest już powiązane z innym kontem bankowym.",

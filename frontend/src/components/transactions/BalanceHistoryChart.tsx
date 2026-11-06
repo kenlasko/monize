@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { gainLossColor } from '@/lib/format';
+import { gainLossColor, getDecimalPlacesForCurrency, roundToDecimals } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   AreaChart,
@@ -62,10 +62,12 @@ interface BalanceHistoryChartProps {
    */
   title?: string;
   /**
-   * Keep sub-cent precision. A balance is money and rounds to 2dp, but a price
-   * series can be quoted at 4-6dp (a fund NAV, a penny stock, a crypto pair):
-   * rounding those to cents flattens the line to zero and makes every tooltip
-   * read "$0.00" while the table beside it shows 0.000342.
+   * Keep sub-cent precision. A balance is money and rounds to its currency's
+   * places (`getDecimalPlacesForCurrency`: cents for most fiat, a coin's
+   * four), but a price series can be quoted at 4-6dp (a fund NAV, a penny
+   * stock, a crypto pair): rounding those to cents flattens the line to zero
+   * and makes every tooltip read "$0.00" while the table beside it shows
+   * 0.000342. The footer figures keep the quoted values too.
    */
   precise?: boolean;
   /**
@@ -264,8 +266,14 @@ export function BalanceHistoryChart({
     formatCurrencyAxis,
     formatCurrencyFlag,
     formatSignedPercent,
+    defaultCurrency,
   } = useNumberFormat();
   const isPercent = valueFormat === 'percent';
+  // A balance rounds to its currency's own places (a coin's four, not cents);
+  // a price keeps what it was quoted at.
+  const balanceDecimals = precise
+    ? null
+    : getDecimalPlacesForCurrency(currencyCode || defaultCurrency);
   // A caller that names its own figures is not plotting a balance, so the
   // overdrawn-account alarm below does not apply to it.
   const isBalanceSeries = summaryLabels === undefined;
@@ -347,13 +355,11 @@ export function BalanceHistoryChart({
       date: d.date,
       t: parseLocalDate(d.date).getTime(),
       label: formatChartDate(parseLocalDate(d.date), 'MMM d, yyyy'),
-      // Money rounds to cents; a price keeps what it was quoted at.
+      // Money rounds to its currency's places; a price keeps what it was quoted at.
       balance:
-        d.balance === null
-          ? null
-          : precise
-            ? d.balance
-            : Math.round(d.balance * 100) / 100,
+        d.balance === null || balanceDecimals === null
+          ? d.balance
+          : roundToDecimals(d.balance, balanceDecimals),
     }));
 
     // A month tick per month reads well over ~2 years or less; beyond that the
@@ -367,7 +373,7 @@ export function BalanceHistoryChart({
       axisTicks: calendarTicks(first, last, useYearTicks ? 'year' : 'month'),
       axisPattern: (useYearTicks ? 'yyyy' : 'MMM') as ChartDatePattern,
     };
-  }, [data, formatChartDate, precise]);
+  }, [data, formatChartDate, balanceDecimals]);
 
   // The exact span the chart covers, shown under the title so the timeframe is
   // always explicit (e.g. the all-history default is no longer a silent range).
@@ -420,7 +426,10 @@ export function BalanceHistoryChart({
     return byDate;
   }, [pinnedMarkers]);
 
-  const summary = useMemo(() => computeBalanceSummary(chartData), [chartData]);
+  const summary = useMemo(
+    () => computeBalanceSummary(chartData, balanceDecimals),
+    [chartData, balanceDecimals],
+  );
   /** Footer figure colour: by sign, unless the sign means nothing here. */
   const valueColor = (value: number) =>
     neutralValues ? 'text-gray-900 dark:text-gray-100' : gainLossColor(value);

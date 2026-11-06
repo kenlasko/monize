@@ -10,6 +10,8 @@ import {
   DataSourceMock,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -111,6 +113,7 @@ describe("CategoryDetailService", () => {
     payeeRepository = { find: jest.fn().mockResolvedValue([]) };
 
     const { manager, dataSource } = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [Category, categoryRepository],
       [Payee, payeeRepository],
     ]);
@@ -233,6 +236,47 @@ describe("CategoryDetailService", () => {
         lastTransactionDate: null,
       },
     ]);
+  });
+
+  it("keeps a BTC account's total and largest row at its eight places (INV-MONEY-001)", async () => {
+    given({
+      accountRows: [
+        {
+          accountId: "acct-btc",
+          accountName: "Wallet",
+          accountType: "CRYPTO",
+          currencyCode: "BTC",
+          transactionCount: "2",
+          total: "-0.00045710",
+          lastTransactionDate: "2026-06-30",
+        },
+        {
+          accountId: "acct-1",
+          accountName: "Chequing",
+          accountType: "CHEQUING",
+          currencyCode: "CAD",
+          transactionCount: "1",
+          total: "-12.34567",
+          lastTransactionDate: "2026-06-30",
+        },
+      ],
+      largestRow: {
+        id: "tx-btc",
+        transactionDate: "2026-06-30",
+        amount: "-0.00043210",
+        currencyCode: "BTC",
+        description: undefined,
+        payeeName: undefined,
+        accountId: "acct-btc",
+        accountName: "Wallet",
+      },
+    });
+
+    const detail = await service.getDetail(USER_ID, CATEGORY_ID);
+
+    // The coin keeps its satoshis; the fiat figure still rounds at four.
+    expect(detail.accounts.map((a) => a.total)).toEqual([-0.0004571, -12.3457]);
+    expect(detail.largestTransaction?.amount).toBe(-0.0004321);
   });
 
   it("maps the largest transaction and defaults its optional fields to null", async () => {

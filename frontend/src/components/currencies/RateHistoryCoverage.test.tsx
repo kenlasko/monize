@@ -57,6 +57,12 @@ const storedRates = {
       source: 'frankfurter',
       inverted: false,
     },
+    {
+      rateDate: '2026-09-13',
+      rate: 4.27,
+      source: 'yahoo_crypto',
+      inverted: false,
+    },
   ],
   truncated: false,
   limit: 2000,
@@ -160,6 +166,8 @@ describe('RateHistoryCoverage', () => {
       expect(rows[2]).toHaveTextContent('Money import');
       expect(rows[3]).toHaveTextContent('4.280000');
       expect(rows[3]).toHaveTextContent('Frankfurter (ECB)');
+      expect(rows[4]).toHaveTextContent('4.270000');
+      expect(rows[4]).toHaveTextContent('Crypto pairs (Yahoo)');
     });
 
     it('says which direction the column is in', async () => {

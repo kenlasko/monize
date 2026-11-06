@@ -57,7 +57,10 @@ import {
   SKIPPED_ROWS_LIMIT,
 } from "./dto/import.dto";
 import {
+  accountMoneyDecimals,
+  assertImportAmountPrecision,
   ImportContext,
+  loadMoneyDecimals,
   recordSkippedRow,
   restoreRowCounters,
   snapshotRowCounters,
@@ -65,6 +68,7 @@ import {
   closedAccountError,
 } from "./import-context";
 import { loadHeldExternalIds } from "./ofx-external-id";
+import { MONEY_SCALE, roundMoney } from "../common/round.util";
 import { isExternalIdConflict } from "../transactions/transaction-external-id";
 import { ImportEntityCreatorService } from "./import-entity-creator.service";
 import { ImportPostProcessingService } from "./import-post-processing.service";
@@ -84,6 +88,7 @@ import { tr } from "../i18n/translate";
 import { TransactionRulesApplierService } from "../transaction-rules/transaction-rules-applier.service";
 import { insertCategoryIfAbsent } from "./insert-category-if-absent";
 import { splitCategoryPath } from "./category-path.util";
+import { assertAccountCurrencyKindIn } from "../accounts/account-currency-kind.util";
 
 @Injectable()
 export class ImportService {
@@ -479,6 +484,10 @@ export class ImportService {
             userId,
             accountId,
             account,
+            moneyDecimals: await loadMoneyDecimals(
+              manager,
+              account.currencyCode,
+            ),
             categoryMap,
             accountMap,
             loanCategoryMap: new Map(),
@@ -497,6 +506,11 @@ export class ImportService {
 
           // Apply opening balance
           if (block.openingBalance !== null) {
+            assertImportAmountPrecision(
+              ctx,
+              block.openingBalance,
+              "opening balance",
+            );
             await this.entityCreator.applyOpeningBalance(
               manager,
               accountId,
@@ -793,6 +807,9 @@ export class ImportService {
       // Create new account. Every named block has a type by now: the
       // import refused before its transaction began otherwise.
       const accountType = block.accountType as AccountType;
+      // INV-CRYPTO-001, before this account's write; a refusal rolls the
+      // whole import back.
+      await assertAccountCurrencyKindIn(manager, accountType, currencyCode);
 
       if (accountType === AccountType.INVESTMENT) {
         // Create investment account pair
@@ -950,11 +967,11 @@ export class ImportService {
       throw new BadRequestException(validation.error);
     }
 
-    const result = parseOfx(dto.content);
-
+    // The figures are read at the storage scale; the processor refuses any
+    // that carry more places than the destination account's currency does.
     return this.importParsedTransactions(
       userId,
-      result,
+      parseOfx(dto.content),
       dto.accountId,
       dto.categoryMappings,
       dto.accountMappings,
@@ -1245,12 +1262,23 @@ export class ImportService {
     securityMappings?: SecurityMappingDto[],
     _dateFormat?: DateFormat,
   ): Promise<ImportResultDto> {
-    const account = await withScopedDb(this.dataSource, (manager) =>
-      manager.getRepository(Account).findOne({
-        where: { id: accountId, userId },
-      }),
+    // The account currency's money precision is read with the account; the
+    // processors refuse a file amount that carries more places than it.
+    const { account, moneyDecimals } = await withScopedDb(
+      this.dataSource,
+      async (manager) => {
+        const found = await manager.getRepository(Account).findOne({
+          where: { id: accountId, userId },
+        });
+        return {
+          account: found,
+          moneyDecimals: found
+            ? await loadMoneyDecimals(manager, found.currencyCode)
+            : undefined,
+        };
+      },
     );
-    if (!account) {
+    if (!account || moneyDecimals === undefined) {
       throw new NotFoundException(
         tr("errors.import.accountNotFound", "Account not found"),
       );
@@ -1366,6 +1394,7 @@ export class ImportService {
           userId,
           accountId,
           account,
+          moneyDecimals,
           categoryMap,
           accountMap,
           loanCategoryMap,
@@ -1430,6 +1459,11 @@ export class ImportService {
 
         // Apply opening balance
         if (result.openingBalance !== null) {
+          assertImportAmountPrecision(
+            ctx,
+            result.openingBalance,
+            "opening balance",
+          );
           await this.entityCreator.applyOpeningBalance(
             manager,
             accountId,
@@ -1797,8 +1831,10 @@ export class ImportService {
 
       let matched = false;
       for (const group of splitGroups) {
-        const total = Math.round(Number(group.totalAmount) * 10000);
-        const expected = Math.round(Number(candidate.amount) * 10000);
+        // Compared at the storage scale, so the match holds at any currency's
+        // precision.
+        const total = roundMoney(Number(group.totalAmount), MONEY_SCALE);
+        const expected = roundMoney(Number(candidate.amount), MONEY_SCALE);
         if (total === expected && Number(group.splitCount) >= 2) {
           // Reliable match: delete the merged transfer and its linked counterpart
           const linkedId = candidate.linked_transaction_id;
@@ -1821,6 +1857,7 @@ export class ImportService {
               manager,
               candidate.account_id,
               candidateDelta,
+              await accountMoneyDecimals(manager, candidate.account_id),
             );
           }
           affectedAccountIds.add(candidate.account_id);
@@ -1836,6 +1873,7 @@ export class ImportService {
                   manager,
                   linkedTx.accountId,
                   linkedDelta,
+                  await accountMoneyDecimals(manager, linkedTx.accountId),
                 );
               }
               // The counterpart can live in an account this import never

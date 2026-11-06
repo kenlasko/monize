@@ -22,6 +22,8 @@ import {
   lockedTransactionRow,
   stubLockedTransactions,
 } from "../test-helpers/locks-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -141,6 +143,7 @@ describe("TransactionReconciliationService", () => {
         .mockResolvedValue({ userId, lockReconciledTransactions: false }),
     };
     const tenantMocks = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [Transaction, transactionsRepository],
       [TransactionSplit, splitsRepository],
       // The strict reconciled lock reads the caller's preference whenever a
@@ -1343,6 +1346,53 @@ describe("TransactionReconciliationService", () => {
       expect(result.clearedBalance).toBe(1350);
       // difference = statementBalance(1500) - clearedBalance(1350) = 150
       expect(result.difference).toBe(150);
+    });
+
+    it("reconciles a BTC wallet to the satoshi (INV-MONEY-001)", async () => {
+      accountsService.findOne.mockResolvedValue({
+        id: accountId,
+        currencyCode: "BTC",
+        openingBalance: 0,
+      });
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+      mockQueryBuilder.getRawOne
+        .mockResolvedValueOnce({ sum: "0.01249993" })
+        .mockResolvedValueOnce({ sum: "-0.00002500" });
+
+      const result = await service.getReconciliationData(
+        userId,
+        accountId,
+        "2026-01-31",
+        0.01247493,
+      );
+
+      // At four places the fee vanished and the wallet could never reconcile.
+      expect(result.reconciledBalance).toBe(0.01249993);
+      expect(result.clearedBalance).toBe(0.01247493);
+      expect(result.difference).toBe(0);
+    });
+
+    it("leaves no float residue in a fiat difference", async () => {
+      accountsService.findOne.mockResolvedValue({
+        id: accountId,
+        currencyCode: "CAD",
+        openingBalance: 0.1,
+      });
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+      mockQueryBuilder.getRawOne
+        .mockResolvedValueOnce({ sum: "0.2" })
+        .mockResolvedValueOnce({ sum: null });
+
+      const result = await service.getReconciliationData(
+        userId,
+        accountId,
+        "2026-01-31",
+        0.3,
+      );
+
+      // 0.1 + 0.2 is 0.30000000000000004 in floats; the reader must reach 0.
+      expect(result.clearedBalance).toBe(0.3);
+      expect(result.difference).toBe(0);
     });
 
     it("handles null sums (no reconciled or cleared transactions)", async () => {

@@ -136,6 +136,9 @@
     "accountType": "科目類型",
     "currency": "貨幣",
     "currencyLocked": "貨幣已鎖定，因為此科目已有交易記錄。變更貨幣將會靜默重新計算現有結餘的幣值。",
+    "accountTypeKindLocked": "此科目的交易已鎖定貨幣，因此無法在加密錢包與法定貨幣科目類型之間切換。",
+    "currencyPlaceholder": "選擇貨幣...",
+    "noCryptoCurrencies": "加密錢包持有一種加密貨幣，目前尚未設定任何加密貨幣。請在<currencies>貨幣頁面</currencies>新增一種，然後在此選擇。<guide>如何新增加密貨幣</guide>",
     "openingBalance": "初始餘額",
     "loanAmount": "貸款金額",
     "mortgageAmount": "抵押貸款金額",
@@ -179,6 +182,7 @@
       "mortgage": "抵押貸款",
       "asset": "資產",
       "cash": "現金",
+      "crypto": "加密錢包",
       "other": "其他"
     },
     "statementDueDayPlaceholder": "例如 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "科目名稱為必填",
     "currencyCodeLength": "貨幣代碼必須為 3 個字元",
+    "currencyRequired": "請選擇貨幣",
     "institutionRequired": "請選擇或建立機構",
     "interestRateRequired": "利率為必填",
     "paymentAmountRequired": "還款金額為必填",

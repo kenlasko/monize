@@ -156,6 +156,15 @@ describe("CSV Parser", () => {
         expect(result.transactions[1].payee).toBe("Employer");
       });
 
+      it("keeps a coin CSV's 8-place amount whole", () => {
+        const csv =
+          "Date,Amount,Payee\n01/15/2026,-0.00002500,Network fee\n01/16/2026,1.23456789,Deposit\n";
+        const result = parseCsv(csv, baseConfig());
+
+        expect(result.transactions[0].amount).toBe(-0.000025);
+        expect(result.transactions[1].amount).toBe(1.23456789);
+      });
+
       it("parses CSV with semicolon delimiter", () => {
         const csv = "Date;Amount;Payee\n01/15/2026;-50.00;Grocery Store\n";
         const result = parseCsv(csv, baseConfig({ delimiter: ";" }));

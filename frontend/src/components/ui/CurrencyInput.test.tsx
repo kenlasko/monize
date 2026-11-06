@@ -59,6 +59,70 @@ describe('CurrencyInput', () => {
     },
   );
 
+  it("round-trips a satoshi amount at eight places: typed, displayed, focused and re-blurred", () => {
+    const onChange = vi.fn();
+    render(
+      <Controlled label="Coin amount" initial={undefined} decimalPlaces={8} onChange={onChange} />,
+    );
+    const input = screen.getByLabelText("Coin amount");
+    fireEvent.change(input, { target: { value: "0.00002500" } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenLastCalledWith(0.000025);
+    expect(input).toHaveValue("0.00002500");
+    fireEvent.focus(input);
+    expect(input).toHaveValue("0.00002500");
+    fireEvent.blur(input);
+    expect(input).toHaveValue("0.00002500");
+    expect(onChange.mock.calls.every(([v]) => v === 0.000025)).toBe(true);
+  });
+
+  it("loads a stored eight-place amount and leaves it untouched on blur", () => {
+    const onChange = vi.fn();
+    render(
+      <Controlled label="Coin amount" initial={-0.005025} decimalPlaces={8} onChange={onChange} />,
+    );
+    const input = screen.getByLabelText("Coin amount");
+    expect(input).toHaveValue("-0.00502500");
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(input).toHaveValue("-0.00502500");
+  });
+
+  it("rounds a ninth place typed into an eight-place field", () => {
+    const onChange = vi.fn();
+    render(
+      <Controlled label="Coin amount" initial={undefined} decimalPlaces={8} onChange={onChange} />,
+    );
+    const input = screen.getByLabelText("Coin amount");
+    fireEvent.change(input, { target: { value: "0.000000015" } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenLastCalledWith(0.00000002);
+    expect(input).toHaveValue("0.00000002");
+  });
+
+  it("evaluates an inline expression at eight places", () => {
+    const onChange = vi.fn();
+    render(
+      <Controlled label="Coin amount" initial={undefined} decimalPlaces={8} onChange={onChange} />,
+    );
+    const input = screen.getByLabelText("Coin amount");
+    fireEvent.change(input, { target: { value: "0.005+0.000025" } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenLastCalledWith(0.005025);
+    expect(input).toHaveValue("0.00502500");
+  });
+
+  it("keeps 12.34 on a two-place field exactly as before", () => {
+    const onChange = vi.fn();
+    render(<Controlled label="Fiat amount" initial={undefined} onChange={onChange} />);
+    const input = screen.getByLabelText("Fiat amount");
+    fireEvent.change(input, { target: { value: "12.34" } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenLastCalledWith(12.34);
+    expect(input).toHaveValue("12.34");
+  });
+
   it("preserves an untouched stored four-decimal amount in a three-decimal currency", () => {
     const onChange = vi.fn();
     render(

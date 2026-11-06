@@ -176,6 +176,7 @@
     "CASH": "현금",
     "LINE_OF_CREDIT": "신용 한도",
     "ASSET": "자산",
+    "CRYPTO": "암호화폐 지갑",
     "OTHER": "기타"
   },
   "accountFilter": {

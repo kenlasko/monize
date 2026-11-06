@@ -43,6 +43,7 @@ const defaults: ComponentProps<typeof ReconcileTable> = {
   lastReconciledDate: null,
   overdueBefore: '2026-01-01',
   formatCurrency: (a: number | string | null | undefined) => `$${Number(a).toFixed(2)}`,
+  moneyDecimals: 4,
   onEdit: vi.fn(),
   onDelete: vi.fn(),
   onCycleStatus: vi.fn(),

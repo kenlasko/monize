@@ -3,6 +3,7 @@ import { getRequestContext } from "../common/request-context";
 import {
   assertSharedPrincipal,
   currencyPlaces,
+  groupCurrencyPlaces,
   requireRevision,
   requireSharedGroup,
   sharedCommand,
@@ -180,4 +181,26 @@ describe("Shared command and access boundary", () => {
       );
     },
   );
+  it("takes a fiat group currency's places and refuses a cryptocurrency", async () => {
+    query.mockResolvedValue([{ decimal_places: 2, kind: "FIAT" }]);
+    expect(await groupCurrencyPlaces(manager, "PLN")).toBe(2);
+    query.mockResolvedValue([{ decimal_places: 4, kind: "CRYPTO" }]);
+    await expect(groupCurrencyPlaces(manager, "BTC")).rejects.toThrow(
+      "BTC is a cryptocurrency",
+    );
+    query.mockResolvedValue([{ decimal_places: 8, kind: "FIAT" }]);
+    await expect(groupCurrencyPlaces(manager, "XTS")).rejects.toThrow(
+      "available currency",
+    );
+    query.mockResolvedValue([]);
+    await expect(groupCurrencyPlaces(manager, "XTS")).rejects.toThrow(
+      "available currency",
+    );
+  });
+  it("still refuses a currency past four places for a shared amount", async () => {
+    query.mockResolvedValue([{ decimal_places: 8 }]);
+    await expect(currencyPlaces(manager, "BTC")).rejects.toThrow(
+      "available currency",
+    );
+  });
 });

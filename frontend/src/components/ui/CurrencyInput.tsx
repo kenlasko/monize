@@ -4,8 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, forwardRef, InputHTM
 import { useTranslations } from 'next-intl';
 import { CalculatorIcon } from '@heroicons/react/24/outline';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
-import { hasCalculatorOperators, evaluateExpression, roundToCents,
-  roundToDecimals, } from '@/lib/format';
+import { hasCalculatorOperators, evaluateExpression, roundToDecimals } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import {
   filterNumberTyping,
@@ -26,7 +25,11 @@ const CALCULATOR_OPERATORS = [
 ] as const;
 
 interface CurrencyInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value' | 'type'> {
-  /** Currency minor-unit precision; existing forms default to two decimals. */
+  /**
+   * Currency precision, 0 to 8 (`MONEY_SCALE`): typing, focus, display, the
+   * inline calculator and the modal all work at it. Defaults to two decimals;
+   * an amount in an account's currency passes `entryDecimalPlaces(code)`.
+   */
   decimalPlaces?: number;
   label?: string;
   error?: string;
@@ -45,10 +48,10 @@ interface CurrencyInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
 
 /**
  * Currency input component that handles:
- * - Formatting to 2 decimal places on blur
+ * - Formatting to `decimalPlaces` (two by default, up to eight) on blur
  * - Free editing while focused (can delete trailing zeros)
  * - Filtering non-numeric characters
- * - Proper rounding to cents
+ * - Rounding to `decimalPlaces`, so a typed value carries no hidden units
  * - Calculator expressions (e.g., "100*1.13" for tax calculations)
  */
 export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
@@ -96,7 +99,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
     );
     const numberLocale = nf.numberLocale;
 
-    // Grouped, two-decimal display in the user's number locale -- the same
+    // Grouped, `decimalPlaces` display in the user's number locale -- the same
     // helper the read-only surfaces use, so the field and its labels agree.
     const formatDisplay = useCallback(
       (v: number | undefined | null): string =>
@@ -116,13 +119,12 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
         }),
       [allowNegative, allowCalculator, numberSeparators],
     );
-    // Typed amounts and calculator results use the same selected minor unit.
+    // Typed amounts and calculator results use the same selected precision,
+    // one path for every count of places (a coin's eight included).
     const parse = useCallback(
       (raw: string): number | undefined => {
         const n = parseLocaleNumber(raw, numberSeparators);
-        return n === undefined ? undefined : decimalPlaces === 2
-            ? roundToCents(n)
-            : roundToDecimals(n, decimalPlaces);
+        return n === undefined ? undefined : roundToDecimals(n, decimalPlaces);
       },
       [numberSeparators, decimalPlaces],
     );
@@ -183,7 +185,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
      * Report a value only when it differs from the one the parent already
      * holds. Every path here re-parses whatever text is on screen, and for a
      * field nobody edited -- one tabbed through, or typed back to the same
-     * number -- that text is the parent's own value formatted to two decimals.
+     * number -- that text is the parent's own value formatted to its places.
      * Handing it back is not an edit. It is invisible to a parent that only
      * stores the number and destructive to one that does more: the FX panels
      * derive an exchange rate from the converted total and mark it
@@ -194,9 +196,9 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
      */
     const notifyIfChanged = (next: number | undefined) => {
       if (next === value) return;
-      // The field shows two decimals, and a stored four-decimal value (-3.3333)
-      // re-parses as its display (-3.33): the same field untouched, not an
-      // edit. Reporting it re-amounted the row on every cosmetic save.
+      // The field shows `decimalPlaces`, and a stored value with more (-3.3333
+      // at two) re-parses as its display (-3.33): the same field untouched,
+      // not an edit. Reporting it re-amounted the row on every cosmetic save.
       if (next !== undefined && value !== undefined &&
         roundToDecimals(value, decimalPlaces) === next) return;
       onChange(next);

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { decimalPlacesOf } from "../../common/amount-precision.util";
+import { MONEY_SCALE } from "../../common/round.util";
 import {
   directionSchema,
   isoDateSchema,
@@ -86,6 +88,7 @@ const accountTypeSchema = z.preprocess(
     "LINE_OF_CREDIT",
     "ASSET",
     "OTHER",
+    "CRYPTO",
   ]),
 );
 
@@ -94,7 +97,7 @@ export const listAccountsSchema = z.object({
   accountIds: z.array(z.string().uuid()).optional(),
   nameQuery: z.string().max(100).optional(),
   status: z.enum(["open", "closed", "all"]).optional(),
-  accountTypes: z.array(accountTypeSchema).max(10).optional(),
+  accountTypes: z.array(accountTypeSchema).max(11).optional(),
 });
 
 export const getCategoriesSchema = z.object({
@@ -399,9 +402,12 @@ export const renderChartSchema = z.object({
 });
 
 /**
- * Money amount matching CreateTransactionDto: bounded and at most 4 decimal
- * places. The decimal-place check mirrors `@IsNumber({ maxDecimalPlaces: 4 })`
- * so the model cannot smuggle a higher-precision value past the tool schema.
+ * Money amount matching CreateTransactionDto: bounded and at most `MONEY_SCALE`
+ * (8) decimal places, the most any currency carries. The decimal-place check
+ * mirrors `@IsMoneyAmount()` so the model cannot smuggle a
+ * higher-precision value past the tool schema. The account currency's own
+ * precision (four for fiat) is refused by the service the tool writes through
+ * (`assertAmountPrecision`), naming the currency.
  */
 const amountSchema = z
   .number()
@@ -409,8 +415,8 @@ const amountSchema = z
   .min(-999999999999)
   .max(999999999999)
   .refine(
-    (n) => Math.abs(n * 10000 - Math.round(n * 10000)) < 1e-6,
-    "amount supports at most 4 decimal places",
+    (n) => decimalPlacesOf(n) <= MONEY_SCALE,
+    `amount supports at most ${MONEY_SCALE} decimal places`,
   );
 
 export const managePayeesSchema = z.object({

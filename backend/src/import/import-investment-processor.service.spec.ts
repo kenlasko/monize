@@ -61,6 +61,12 @@ describe("ImportInvestmentProcessorService", () => {
     query: jest.fn().mockResolvedValue([[], 1]),
     create: jest.fn().mockImplementation((_cls: any, data: any) => data),
     createQueryBuilder: jest.fn().mockReturnValue(makeMockQueryBuilder()),
+    // `currencyMoneyDecimals` reads a transfer target's decimal places; no
+    // row reads as the fiat default.
+    getRepository: jest.fn().mockReturnValue({
+      find: jest.fn().mockResolvedValue([]),
+      query: jest.fn().mockResolvedValue([]),
+    }),
   });
 
   const makeContext = (

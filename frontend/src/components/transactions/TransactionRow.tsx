@@ -780,14 +780,14 @@ export const TransactionRow = memo(function TransactionRow({
                       <span className="text-blue-600 dark:text-blue-400">
                         {transferDirection(split.amount) === 'to'
                           ? `\u2192 ${split.transferAccount.name}`
-                          : `${split.transferAccount.name} \u2192`}: {formatAmountLocal(Math.abs(Number(split.amount)), getDecimalPlacesForCurrency(transaction.currencyCode))}
+                          : `${split.transferAccount.name} \u2192`}: {formatCurrency(Math.abs(Number(split.amount)), transaction.currencyCode)}
                       </span>
                     ) : split.investmentTransaction ? (
                       <span className="text-green-600 dark:text-green-400">
-                        {describeInvestmentSplit(split, t('list.row.uncategorized'))}: {formatAmountLocal(Math.abs(Number(split.amount)), getDecimalPlacesForCurrency(transaction.currencyCode))}
+                        {describeInvestmentSplit(split, t('list.row.uncategorized'))}: {formatCurrency(Math.abs(Number(split.amount)), transaction.currencyCode)}
                       </span>
                     ) : (
-                      <>{split.category?.name || t('list.row.uncategorized')}: {formatAmountLocal(Math.abs(Number(split.amount)), getDecimalPlacesForCurrency(transaction.currencyCode))}</>
+                      <>{split.category?.name || t('list.row.uncategorized')}: {formatCurrency(Math.abs(Number(split.amount)), transaction.currencyCode)}</>
                     )}
                   </div>
                 ))}

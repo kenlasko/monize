@@ -12,6 +12,7 @@ import { tr } from "../i18n/translate";
 import { DataSource, EntityManager, In } from "typeorm";
 import { acquireAdvisoryLock, LockScope } from "../common/db/locks";
 import { withScopedDb } from "../common/db/scoped-db";
+import { assertSecurityCurrencyIsFiatIn } from "./security-currency-kind.util";
 import { returnedRows } from "../common/db/query-result";
 import { findTradeListings } from "./trade-listings";
 import { Security } from "./entities/security.entity";
@@ -783,6 +784,9 @@ export class SecuritiesService {
         );
       }
 
+      // A security is priced in fiat (INV-CRYPTO-001), refused before the write.
+      await assertSecurityCurrencyIsFiatIn(m, securityData.currencyCode);
+
       if (!securityData.bondProgramId) securityData.bondAutoFetch = false;
       if (securityData.bondProgramId) {
         securityData.bondProgramId = securityData.bondProgramId.toLowerCase();
@@ -1119,6 +1123,12 @@ export class SecuritiesService {
       linkChanged = security.bondProgramId !== current.bond_program_id;
       const currencyChanged = security.currencyCode !== current.currency_code;
       const typeChanged = security.securityType !== current.security_type;
+
+      // A security is priced in fiat (INV-CRYPTO-001); only a currency that
+      // moved is checked, so a resent stored code is not a new decision.
+      if (currencyChanged) {
+        await assertSecurityCurrencyIsFiatIn(m, security.currencyCode);
+      }
 
       // A link the instrument cannot honour is refused here, in the write's own
       // transaction and before it. Also on a currency or type change of a
@@ -1687,6 +1697,14 @@ export class SecuritiesService {
         : (security.securityType ?? null);
     const currencyCode = input.currencyCode ?? security.currencyCode;
 
+    // The commit refuses a CRYPTO currency (INV-CRYPTO-001); so does the
+    // preview, through the same check.
+    if (currencyCode !== security.currencyCode) {
+      await withScopedDb(this.dataSource, (m) =>
+        assertSecurityCurrencyIsFiatIn(m, currencyCode),
+      );
+    }
+
     // The commit refuses a currency or type change that breaks a bond link
     // (`update`); the preview runs the same validation so the person is not
     // asked to confirm what cannot be done.
@@ -1852,6 +1870,12 @@ export class SecuritiesService {
         ),
       );
     }
+
+    // The commit refuses a CRYPTO currency (INV-CRYPTO-001); so does the
+    // preview, through the same check.
+    await withScopedDb(this.dataSource, (m) =>
+      assertSecurityCurrencyIsFiatIn(m, currencyCode),
+    );
 
     // Enforce the per-user unique symbol up front so a duplicate is reported at
     // preview time with the same message the REST/confirm write would throw.

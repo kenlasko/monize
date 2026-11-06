@@ -6,7 +6,6 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
-  IsNumber,
   IsObject,
   IsOptional,
   IsString,
@@ -26,6 +25,7 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { IsCalendarDate } from "../../common/validators/is-calendar-date.validator";
 import { IsCurrencyCode } from "../../common/validators/is-currency-code.validator";
 import { WARRANTY_KINDS, WarrantyKind } from "../entities/warranty.entity";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 /** The most serial numbers one warranty carries (design 6.1). */
 export const WARRANTY_MAX_SERIAL_NUMBERS = 10;
@@ -165,7 +165,7 @@ export class WarrantyFieldsDto {
     description: "Informational only; set together with currencyCode",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4, allowNaN: false, allowInfinity: false })
+  @IsMoneyAmount(4)
   @Min(0)
   @Max(999999999999)
   purchasePrice?: number | null;

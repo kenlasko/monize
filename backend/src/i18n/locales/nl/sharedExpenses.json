@@ -11,6 +11,7 @@
   "participantLimit": "Een groep kan maximaal 50 deelnemers hebben.",
   "currencyLocked": "De groepsvaluta staat vast na de eerste boeking. Maak een nieuwe groep om een andere valuta te gebruiken.",
   "currency": "Kies een beschikbare valuta met maximaal vier decimalen.",
+  "groupCurrencyMustBeFiat": "Een gedeelde groep houdt haar rekeningen aan in een fiatvaluta; {{ code }} is een cryptovaluta. Kies een fiatvaluta voor de groep.",
   "invite": "Deze uitnodiging is niet beschikbaar, verlopen of al gebruikt. Vraag de groepseigenaar om een nieuwe uitnodiging.",
   "inviteEmail": "Log in met het uitgenodigde e-mailadres en verifieer het voordat je deelneemt.",
   "alreadyMember": "Jij of deze deelnemer maakt al deel uit van de groep. Vraag de eigenaar de deelnemers te controleren.",

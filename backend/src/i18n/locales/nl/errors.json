@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "Rekening met ID {{ id }} niet gevonden",
     "notInvestmentPair": "Deze rekening maakt geen deel uit van een beleggingsrekeningpaar",
+    "accountCurrencyKindMismatch": "{{ code }} is een valuta van de soort {{ kind }}, die een rekening van het type {{ accountType }} niet kan bevatten. Een CRYPTO-rekening bevat een cryptovaluta; elk ander rekeningtype bevat een fiatvaluta.",
     "noLinkedInvestmentAccount": "Deze beleggingsrekening heeft geen gekoppelde rekening",
     "notFound": "Rekening niet gevonden",
     "institutionNotFound": "Instelling niet gevonden",
@@ -318,6 +319,7 @@
     "categoryIdsNotOwned": "Categorie-ID's niet gevonden of niet eigendom van gebruiker: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Een looninhoudingsregel volgt een rekening die in een fiatvaluta wordt betaald; de rekening van deze betaling bevat de cryptovaluta {{ code }}. Kies een betaling die vanaf een fiatrekening wordt voldaan.",
     "notFound": "Looninhoudingsregel {{ id }} niet gevonden",
     "duplicate": "Deze rekening heeft al een regel voor die categorie",
     "expectedRequired": "De rekening heeft geen regel voor deze categorie; voer het verwachte bedrag per loonstrook in"
@@ -358,7 +360,15 @@
     "inUse": "Valuta \"{{ code }}\" is in gebruik door je rekeningen, waardepapieren of andere records. Deactiveer deze in plaats daarvan.",
     "invalidRateDate": "date moet de indeling JJJJ-MM-DD hebben",
     "sameCurrencyHistory": "{{ code }} is uw standaardvaluta; er is geen wisselkoersgeschiedenis voor",
-    "rateProviderUnavailable": "De wisselkoersaanbieder heeft niet gereageerd. Probeer het later opnieuw."
+    "rateProviderUnavailable": "De wisselkoersaanbieder heeft niet gereageerd. Probeer het later opnieuw.",
+    "noPriceSymbol": "{{ code }} heeft geen koerssymbool; koppel er een op de pagina Valuta",
+    "pairNotCarried": "Geen geconfigureerde wisselkoersaanbieder biedt {{ pair }}",
+    "quoteSymbolRequiresCrypto": "Een koerssymbool ({{ quoteSymbol }}) kan alleen op een cryptovaluta worden ingesteld; \"{{ code }}\" is een fiatvaluta",
+    "quoteSymbolNotAPair": "Het koerssymbool \"{{ quoteSymbol }}\" voor \"{{ code }}\" is geen paar van een coin en een fiatvaluta zoals BTC-EUR",
+    "kindInUse": "De soort van \"{{ code }}\" kan niet worden gewijzigd zolang rekeningen, transacties, waardepapieren of andere records hem gebruiken",
+    "decimalPlacesInUse": "Het aantal decimalen van \"{{ code }}\" kan niet onder {{ places }} worden gebracht zolang rekeningen, transacties of andere records bedragen met zoveel decimalen bevatten",
+    "quoteSymbolInUse": "De coin in het koerssymbool van \"{{ code }}\" kan niet worden gewijzigd zolang rekeningen, transacties, waardepapieren of andere records hem gebruiken; alleen de fiatvaluta erin kan worden gewijzigd",
+    "kindConflict": "Valuta \"{{ code }}\" bestaat al als {{ kind }}-valuta en kan niet als {{ requestedKind }} worden toegevoegd"
   },
   "delegation": {
     "delegatedAccessInvalid": "Gedelegeerde toegang is niet meer geldig",
@@ -642,6 +652,7 @@
     "bondCurrencyMismatch": "Het effect is vastgelegd in {{ currency }}, maar het obligatie-instrument wordt gewaardeerd in {{ instrumentCurrency }}. Gebruik de valuta van het instrument.",
     "bondCurrencyLocked": "Een effect dat aan een obligatie-instrument is gekoppeld, blijft in de valuta van het instrument ({{ instrumentCurrency }}). Ontkoppel het van de obligatie voordat u de valuta wijzigt.",
     "accountMustBeInvestment": "Rekening moet van het type INVESTMENT zijn",
+    "currencyMustBeFiat": "{{ code }} is een cryptovaluta en een waardepapier wordt geprijsd in een fiatvaluta. Kies de fiatvaluta waarin het waardepapier wordt genoteerd.",
     "transferPairSameRow": "De twee zijden van een overboeking kunnen niet dezelfde transactie zijn",
     "transferPairNotFound": "Een van de twee transacties bestaat niet meer",
     "transferPairAlreadyLinked": "Een van deze zijden is al gekoppeld aan een andere transactie",
@@ -752,6 +763,7 @@
     "runUndoLaterSettlement": "Na deze uitvoering is een latere termijn van deze lening afgerekend, dus de uitvoering kan niet ongedaan worden gemaakt. Maak eerst de latere afrekening ongedaan"
   },
   "transactions": {
+    "amountPrecisionExceeded": "Het bedrag in \"{{ field }}\" heeft meer decimalen dan {{ code }} ondersteunt ({{ places }}). Voer het in met maximaal {{ places }} decimalen; de decimalen van een valuta stel je in op de pagina Valuta's.",
     "invalidStatus": "Ongeldige transactiestatus: {{ status }}",
     "reconciledLocked": "Deze transactie is afgestemd en vergrendeld. Zet 'Afgestemde transacties vergrendelen' uit in Instellingen om haar te wijzigen.",
     "convertToTransferRefused": "Deze transactie kan niet meer worden omgezet in een overboeking. Controleer de transactie en voer de regel opnieuw uit",
@@ -838,6 +850,9 @@
     "passwordRequiredForDataDelete": "Wachtwoord is vereist om het verwijderen van gegevens te bevestigen",
     "reauthUnavailable": "Stel eerst het wachtwoord van je account in voordat je deze actie gebruikt."
   },
+  "preferences": {
+    "defaultCurrencyCrypto": "Een cryptovaluta kan niet de rapportagevaluta zijn"
+  },
   "loanScenarios": {
     "notFound": "Leningscenario met ID {{ id }} niet gevonden",
     "nameConflict": "Er bestaat al een scenario met de naam \"{{ name }}\" voor deze rekening",
@@ -909,6 +924,7 @@
     "accountNotFound": "Die rekening is niet gevonden.",
     "accountClosed": "De gekoppelde rekening is gesloten. Heropen haar of koppel een andere rekening.",
     "accountBrokerage": "Een beleggingsbrokerage-rekening kan geen banktransacties ontvangen. Koppel in plaats daarvan de bijbehorende contantenrekening.",
+    "accountCrypto": "Een cryptowalletrekening kan geen banktransacties ontvangen. Koppel in plaats daarvan een bankrekening.",
     "accountCurrencyMismatch": "De bankrekening staat in {{ bankCurrency }} maar de rekening staat in {{ accountCurrency }}. Koppel een rekening in dezelfde valuta.",
     "accountCurrencyChanged": "De valuta van de gekoppelde rekening is tijdens het lezen gewijzigd. Er is niets geïmporteerd; synchroniseer opnieuw.",
     "accountAlreadyLinked": "Die rekening is al aan een andere bankrekening gekoppeld.",

@@ -6,7 +6,11 @@ import {
 } from "@nestjs/common";
 import { I18nService } from "nestjs-i18n";
 import { DataSource, EntityManager } from "typeorm";
-import { Account, AccountSubType } from "../accounts/entities/account.entity";
+import {
+  Account,
+  AccountSubType,
+  AccountType,
+} from "../accounts/entities/account.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { lockAccountsForBalanceWrite } from "../common/db/locks";
 import { returnedRows } from "../common/db/query-result";
@@ -262,6 +266,14 @@ export class BankSyncWriterService {
           tr(
             "errors.bankSync.accountBrokerage",
             "An investment brokerage account cannot receive bank transactions. Link its cash account instead.",
+          ),
+        );
+      }
+      if (account.accountType === AccountType.CRYPTO) {
+        throw new BadRequestException(
+          tr(
+            "errors.bankSync.accountCrypto",
+            "A cryptocurrency wallet cannot receive bank transactions. Link a bank account instead.",
           ),
         );
       }

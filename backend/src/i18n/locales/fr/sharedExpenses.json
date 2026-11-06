@@ -11,6 +11,7 @@
   "participantLimit": "Un groupe peut contenir jusqu’à 50 participants.",
   "currencyLocked": "La devise est fixée après la première écriture. Créez un nouveau groupe pour utiliser une autre devise.",
   "currency": "Choisissez une devise disponible comportant au plus quatre décimales.",
+  "groupCurrencyMustBeFiat": "Un groupe partagé tient ses comptes dans une devise fiduciaire ; {{ code }} est une cryptomonnaie. Choisissez une devise fiduciaire pour le groupe.",
   "invite": "Cette invitation est indisponible, expirée ou déjà utilisée. Demandez-en une nouvelle au propriétaire du groupe.",
   "inviteEmail": "Connectez-vous avec l’adresse e-mail invitée et vérifiez-la avant de rejoindre le groupe.",
   "alreadyMember": "Vous ou ce participant appartenez déjà à ce groupe. Demandez au propriétaire de vérifier les participants.",

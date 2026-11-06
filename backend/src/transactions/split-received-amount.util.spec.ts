@@ -25,7 +25,11 @@ describe("carryRecordedReceivedAmounts", () => {
       counterpartCurrencyCode: null,
     },
   ];
-  const context = { sourceCurrencyCode: "CAD", parentAccountUnchanged: true };
+  const context = {
+    sourceCurrencyCode: "CAD",
+    sourceDecimals: 4,
+    parentAccountUnchanged: true,
+  };
 
   it("keeps what a continuing cross-currency line received", () => {
     const [line] = carryRecordedReceivedAmounts(
@@ -104,6 +108,47 @@ describe("carryRecordedReceivedAmounts", () => {
         { ...context, parentAccountUnchanged: false },
       )[0].transferTargetAmount,
     ).toBeUndefined();
+  });
+
+  it("tells coin lines apart at the coin's eight places and carries satoshis", () => {
+    const wallet: RecordedTransferLine[] = [
+      {
+        transferAccountId: "chq",
+        amount: "-0.00500000",
+        counterpartAmount: "650.00000000",
+        counterpartCurrencyCode: "CAD",
+      },
+      {
+        transferAccountId: "chq",
+        amount: "-0.00500001",
+        counterpartAmount: "650.01000000",
+        counterpartCurrencyCode: "CAD",
+      },
+    ];
+    const lines = carryRecordedReceivedAmounts(
+      wallet,
+      [{ transferAccountId: "chq", amount: -0.00500001 }],
+      {
+        sourceCurrencyCode: "BTC",
+        sourceDecimals: 8,
+        parentAccountUnchanged: true,
+      },
+    );
+    expect(lines[0].transferTargetAmount).toBe(650.01);
+
+    const intoCoin = carryRecordedReceivedAmounts(
+      [
+        {
+          transferAccountId: "wallet",
+          amount: "-1700.0000",
+          counterpartAmount: "0.01249993",
+          counterpartCurrencyCode: "BTC",
+        },
+      ],
+      [{ transferAccountId: "wallet", amount: -1700 }],
+      context,
+    );
+    expect(intoCoin[0].transferTargetAmount).toBe(0.01249993);
   });
 
   it("does not mutate its input", () => {

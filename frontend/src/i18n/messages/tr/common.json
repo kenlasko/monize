@@ -176,6 +176,7 @@
     "CASH": "Nakit",
     "LINE_OF_CREDIT": "Kredi Hattı",
     "ASSET": "Varlık",
+    "CRYPTO": "Kripto Cüzdan",
     "OTHER": "Diğer"
   },
   "accountFilter": {

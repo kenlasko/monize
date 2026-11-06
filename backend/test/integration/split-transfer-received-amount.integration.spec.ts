@@ -69,6 +69,13 @@ describe("Split transfer received amount (integration)", () => {
          ('ZZZ', 'Unrated Test Currency', 'Z', 2)
        ON CONFLICT DO NOTHING`,
     );
+    // A coin no provider is asked about here (no quote symbol), so only a
+    // stated received amount can post a BTC line to USD.
+    await dataSource.query(
+      `INSERT INTO currencies (code, name, symbol, decimal_places, kind) VALUES
+         ('BTC', 'Bitcoin', 'B', 4, 'CRYPTO')
+       ON CONFLICT (code) DO UPDATE SET kind = 'CRYPTO'`,
+    );
     userId = (await createTestUserDirect(dataSource)).id;
     usdId = (
       await createTestAccount(dataSource, userId, {
@@ -263,6 +270,80 @@ describe("Split transfer received amount (integration)", () => {
     );
     expect(transferLine).toBeDefined();
     expect(transferLine?.linkedTransaction ?? null).toBeNull();
+  });
+
+  it("posts a CRYPTO wallet's sale with a network-fee line: both legs and the balance deltas (crypto-accounts spec decision 9)", async () => {
+    // Spec section 6, "Transfer with fee" sold to fiat: the split on the
+    // wallet totals -0.0051 BTC, its transfer line -0.0050 BTC delivered
+    // 650.00 USD, and its category line -0.0001 BTC is the fee.
+    const walletId = (
+      await createTestAccount(dataSource, userId, {
+        name: "Bitcoin Wallet",
+        accountType: "CRYPTO",
+        currencyCode: "BTC",
+        openingBalance: 0.0125,
+        currentBalance: 0.0125,
+      })
+    ).id;
+    const feeCategoryId = (
+      await createTestCategory(dataSource, userId, { name: "Network fee" })
+    ).id;
+
+    const created = await withUserContext(userId, () =>
+      service.create(userId, {
+        accountId: walletId,
+        transactionDate: "2026-01-15",
+        amount: -0.0051,
+        currencyCode: "BTC",
+        description: "Sold bitcoin",
+        splits: [
+          {
+            transferAccountId: usdId,
+            amount: -0.005,
+            transferTargetAmount: 650,
+            memo: "Sold bitcoin",
+          },
+          { categoryId: feeCategoryId, amount: -0.0001, memo: "Network fee" },
+        ],
+      }),
+    );
+
+    // The wallet leg: one parent in BTC, two lines that sum to it.
+    const parent = await dataSource.manager.findOneByOrFail(Transaction, {
+      id: created.id,
+    });
+    expect(parent.currencyCode).toBe("BTC");
+    expect(Number(parent.amount)).toBe(-0.0051);
+    const lines: Array<{ kind: string; amount: string }> =
+      await dataSource.query(
+        `SELECT kind, amount FROM transaction_splits WHERE transaction_id = $1 ORDER BY kind`,
+        [created.id],
+      );
+    expect(lines.map((l) => [l.kind, Number(l.amount)])).toEqual([
+      ["category", -0.0001],
+      ["transfer", -0.005],
+    ]);
+
+    // The chequing leg: what arrived, in USD, at the implied rate
+    // roundFxRate(650 / 0.005) = 130000.
+    const leg = await dataSource.manager.findOneOrFail(Transaction, {
+      where: { accountId: usdId },
+    });
+    expect(leg.currencyCode).toBe("USD");
+    expect(Number(leg.amount)).toBe(650);
+    expect(Number(leg.exchangeRate)).toBe(130000);
+    expect(leg.isTransfer).toBe(true);
+
+    // Each account moved by its own leg: the wallet by the whole split, fee
+    // included; chequing by what it received.
+    const wallet = await dataSource.manager.findOneByOrFail(Account, {
+      id: walletId,
+    });
+    expect(Number(wallet.currentBalance)).toBe(0.0074);
+    const chequing = await dataSource.manager.findOneByOrFail(Account, {
+      id: usdId,
+    });
+    expect(Number(chequing.currentBalance)).toBe(1650);
   });
 
   it("keeps the received amount across a re-save that sends it back", async () => {

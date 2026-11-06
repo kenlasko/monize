@@ -14,6 +14,8 @@ import {
   createInvestmentFxMock,
   InvestmentFxMock,
 } from "../test-helpers/investment-fx-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -41,6 +43,7 @@ describe("BalanceForecastService", () => {
     scheduledRepo = { find: jest.fn() };
     overridesRepo = { find: jest.fn().mockResolvedValue([]) };
     const mocks = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [Account, accountsRepo],
       [ScheduledTransaction, scheduledRepo],
       [ScheduledTransactionOverride, overridesRepo],
@@ -174,6 +177,49 @@ describe("BalanceForecastService", () => {
     // Anchor at today, then -200 on Jul 20 (Aug 20 is past the 60-day horizon).
     expect(result.points[0]).toEqual({ date: "2024-07-08", balance: 1000 });
     expect(result.points).toContainEqual({ date: "2024-07-20", balance: 800 });
+  });
+
+  it("projects a BTC wallet at its eight places (INV-MONEY-001)", async () => {
+    accountsRepo.findOne.mockResolvedValue({
+      id: "acc-1",
+      currencyCode: "BTC",
+      openingBalance: 0,
+      currentBalance: 0.01249993,
+    });
+    stubBalances("0.01249993");
+    // The real resolver reads the settlement pair; a BTC wallet's is BTC/BTC.
+    investmentTransactionsService.resolveSettlementCurrencyPair.mockResolvedValue(
+      { from: "BTC", to: "BTC" },
+    );
+    scheduledRepo.find.mockResolvedValue([
+      {
+        id: "st-1",
+        name: "Node hosting",
+        accountId: "acc-1",
+        transferAccountId: null,
+        amount: -0.000025,
+        currencyCode: "BTC",
+        frequency: "MONTHLY",
+        nextDueDate: "2024-07-20",
+        endDate: null,
+        occurrencesRemaining: null,
+        isInvestment: false,
+        isSplit: false,
+        splits: [],
+      },
+    ]);
+
+    const result = await service.getBalanceForecast("user-1", "acc-1", 60);
+
+    // At four places the anchor read 0.0125 and the fee moved nothing.
+    expect(result.points[0]).toEqual({
+      date: "2024-07-08",
+      balance: 0.01249993,
+    });
+    expect(result.points).toContainEqual({
+      date: "2024-07-20",
+      balance: 0.01247493,
+    });
   });
 
   it("merges future-dated real transactions into the forecast", async () => {

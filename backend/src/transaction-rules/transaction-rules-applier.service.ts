@@ -12,6 +12,10 @@ import { Tag } from "../tags/entities/tag.entity";
 import { TransactionTag } from "../tags/entities/transaction-tag.entity";
 import { ensureYMD } from "../common/recurrence";
 import {
+  loadCurrencyPlaces,
+  precisionCurrencyFor,
+} from "../common/currency-places.util";
+import {
   ClaimedLoanOccurrence,
   claimLoanOccurrence,
 } from "../loan-installments/claim-loan-occurrence";
@@ -245,6 +249,14 @@ export type PlanRowContext = Pick<
 
 /** Payee lookups made while planning; share one across the rows of a call. */
 export type PayeeLookupCache = Map<string, PayeeResolution | null>;
+
+/**
+ * `currencies.decimal_places` per currency code, loaded on first use and kept
+ * for the rest of one apply run (an import file, a manual run): a bulk apply
+ * that writes split lines on N rows reads each row's currency once, not N
+ * times. A code with no row holds an empty map and reads as the column default.
+ */
+export type CurrencyPlacesCache = Map<string, ReadonlyMap<string, number>>;
 
 /**
  * Planning rounds for payee lookups. Each round looks up the names the last
@@ -630,6 +642,7 @@ export class TransactionRulesApplierService {
     const accounts = await loadRuleTargetAccounts(m, userId, rules);
     const applied: AppliedRuleRow[] = [];
     const lookups: PayeeLookupCache = new Map();
+    const placesCache: CurrencyPlacesCache = new Map();
     // This path writes: the loan's facts are read under the schedule row and
     // account locks (spec section 13), so the claims and the debt each plan is
     // made from are the ones its write acts on.
@@ -674,6 +687,7 @@ export class TransactionRulesApplierService {
         source,
         affected,
         settled,
+        placesCache,
       );
       // A payee this row created answers the lookups of the rows after it.
       if (planned.changes.createPayee !== undefined) lookups.clear();
@@ -1030,6 +1044,10 @@ export class TransactionRulesApplierService {
    * the planner refuses a taken slot before any write from the claims read
    * under the locks, so the conflict is the database's backstop against a
    * plan made on stale facts, and the caller's transaction rolls back.
+   *
+   * `placesCache` is the run's currency places (`CurrencyPlacesCache`); a
+   * caller writing many rows passes one map for the run so a split write reads
+   * each currency once. Absent, the call reads its own.
    */
   async writeEffects(
     m: EntityManager,
@@ -1039,6 +1057,7 @@ export class TransactionRulesApplierService {
     source: RuleApplicationSource,
     affectedAccountIds?: Set<string>,
     settledScheduleIds?: Set<string>,
+    placesCache: CurrencyPlacesCache = new Map(),
   ): Promise<RuleEffects> {
     const resolved = await this.resolveCreatedPayee(m, userId, planned);
     const { changes } = resolved;
@@ -1092,6 +1111,7 @@ export class TransactionRulesApplierService {
         userId,
         transactionId,
         changes.structure,
+        placesCache,
       );
       for (const id of written.affectedAccountIds) affectedAccountIds?.add(id);
       effects = withWrittenStructure(resolved, written.structure);
@@ -1145,6 +1165,7 @@ export class TransactionRulesApplierService {
     userId: string,
     transactionId: string,
     structure: RuleStructurePlan,
+    placesCache: CurrencyPlacesCache,
   ): Promise<{
     structure: RuleStructurePlan;
     affectedAccountIds: readonly string[];
@@ -1168,7 +1189,7 @@ export class TransactionRulesApplierService {
         affectedAccountIds: result.affectedAccountIds,
       };
     }
-    return this.writeSplit(m, userId, transactionId, structure);
+    return this.writeSplit(m, userId, transactionId, structure, placesCache);
   }
 
   private async writeSplit(
@@ -1176,6 +1197,7 @@ export class TransactionRulesApplierService {
     userId: string,
     transactionId: string,
     structure: SplitStructurePlan,
+    placesCache: CurrencyPlacesCache = new Map(),
   ): Promise<{
     structure: RuleStructurePlan;
     affectedAccountIds: readonly string[];
@@ -1195,7 +1217,19 @@ export class TransactionRulesApplierService {
         : {}),
       ...(part.memo !== null ? { memo: part.memo } : {}),
     }));
-    this.splitService.validateSplits(parts, Number(row.amount));
+    // Every line is in the parent row's currency: held to its places and
+    // summed at its money precision (a coin's eight, not the fiat four).
+    const placesKey = row.currencyCode.toUpperCase();
+    let places = placesCache.get(placesKey);
+    if (places === undefined) {
+      places = await loadCurrencyPlaces(m, [row.currencyCode]);
+      placesCache.set(placesKey, places);
+    }
+    this.splitService.validateSplits(
+      parts,
+      Number(row.amount),
+      precisionCurrencyFor(places, row.currencyCode),
+    );
     const affected = new Set<string>();
     const created = await this.splitService.createSplits(
       row.id,

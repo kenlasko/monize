@@ -44,7 +44,9 @@ for and section 5 amends INV-REPORT-003.
 
 1. **Scope is a set of cash-flow accounts.** The account filter defaults to
    every active account whose type is `CHEQUING`, `SAVINGS`, `CASH`,
-   `CREDIT_CARD` or `LINE_OF_CREDIT` and that is not an investment sleeve.
+   `CREDIT_CARD`, `LINE_OF_CREDIT` or `CRYPTO` and that is not an investment
+   sleeve (`DEFAULT_SANKEY_SCOPE_TYPES`; a `CRYPTO` wallet is a banking account
+   the reader spends from, `docs/specs/crypto-accounts.md` decision 7).
    Income and expenses are the rows of in-scope accounts. The user can widen
    or narrow it.
 2. **A transfer between two in-scope accounts is internal and invisible.**
@@ -55,7 +57,8 @@ for and section 5 amends INV-REPORT-003.
    a flow to a class decided by the counterpart's type:** `SAVINGS`,
    `INVESTMENT` (either sub-type or none), `ASSET`, `OTHER` -> "Savings &
    investments"; `LOAN`, `MORTGAGE`, `LINE_OF_CREDIT` -> "Debt payments";
-   `CHEQUING`, `CASH`, `CREDIT_CARD` -> "Other accounts". The destination
+   `CHEQUING`, `CASH`, `CREDIT_CARD`, `CRYPTO` -> "Other accounts"
+   (`classifyCounterpart` in `cash-flow-sankey-assembly.ts`). The destination
    node lists the counterpart accounts under it (depth 2).
 4. **A transfer leg into an in-scope account from an out-of-scope account is
    an inflow by the same classes:** "From savings & investments", "Borrowed"
@@ -172,6 +175,7 @@ link (the parent's own uncategorized-child remainder is a `child` node named
 | chequing | mortgage | MORTGAGE | - (principal split) | `class:debt` |
 | chequing | credit card (in scope) | CREDIT_CARD | - | none (internal) |
 | chequing | other chequing (out of scope) | CHEQUING | - | `class:other_accounts` |
+| chequing | crypto wallet (out of scope) | CRYPTO | - | `class:other_accounts` |
 | chequing | savings (out of scope) | SAVINGS | + | `inflow:savings` |
 | chequing | line of credit (out of scope) | LINE_OF_CREDIT | + | `inflow:borrowed` |
 | credit card | chequing (in scope) | CHEQUING | + | none (internal) |

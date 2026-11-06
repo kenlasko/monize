@@ -1,3 +1,4 @@
+import { AccountType } from "../../accounts/entities/account.entity";
 import { FINANCIAL_TOOLS } from "./tool-definitions";
 import {
   LIST_WARRANTIES_DESCRIPTION,
@@ -158,7 +159,12 @@ describe("FINANCIAL_TOOLS", () => {
         "LINE_OF_CREDIT",
         "ASSET",
         "OTHER",
+        "CRYPTO",
       ]);
+      // The hand-written list cannot drift from the entity's enum.
+      expect([...(items.enum as string[])].sort()).toEqual(
+        Object.values(AccountType).sort(),
+      );
     });
   });
 

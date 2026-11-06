@@ -279,7 +279,12 @@ When looking up securities, Monize searches its price providers and ranks result
 
 ## Cryptocurrency
 
-Monize tracks Bitcoin, Ethereum and other coins as securities, held in an investment account in your own currency, and not as currencies.
+Monize tracks Bitcoin, Ethereum and other coins in two ways:
+
+- **A crypto security** in an investment account, for coins you hold as an investment. The coin has a price history, gains and losses, a cost basis, and a place in your asset allocation, like any other holding. This section explains how
+- **A crypto wallet account**, for coins you spend and transfer. The account is kept in the coin, with a register, transfers, and a balance converted at the coin's exchange rate. See [Cryptocurrency Wallets](accounts.md#cryptocurrency-wallets)
+
+To track a coin as a security:
 
 1. Use an [investment account](#investment-account-structure) in your own currency, such as a EUR, USD or CAD brokerage account. Create one for your crypto if you do not have one
 2. Open **Tools > Securities**, click **+ New Security**, type the coin and the currency you buy it in as `<COIN>-<CURRENCY>`, and click **Lookup**. For example `BTC-EUR`, `ETH-USD` or `BTC-CAD`
@@ -292,7 +297,7 @@ Then record buys and sells in the account like any other security, with quantiti
 - **A coin per currency**: if you buy the same coin in two currencies, add a security for each (`BTC-EUR` and `BTC-USD`) and keep each in an account in that currency
 
 > [!NOTE]
-> Do not add `BTC` as a currency on the Currencies page. Monize stores money to four decimal places and currencies allow at most four, which is too coarse for a coin, and the exchange rate providers carry no crypto rates, so a BTC currency would never get a rate and could not be valued. Track the coin as a security instead.
+> **Which one fits?** Choose a security for coin you buy and hold: quantities take eight decimal places, and the Investments page shows what the coin has earned. Choose a [wallet account](accounts.md#cryptocurrency-wallets) for coin you pay with or move between wallets: its register reads like a bank account's, and amounts in the coin keep up to eight decimal places. A wallet needs the coin added as a [cryptocurrency](currency-management.md#cryptocurrencies) on the Currencies page; a security does not. You can use both, for example a security for long-term holdings and a wallet for the coin you spend.
 
 ---
 

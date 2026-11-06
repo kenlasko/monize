@@ -1,5 +1,5 @@
 import { CreateSplitData, InvestmentSplitDetails } from '@/types/transaction';
-import { roundMoney } from '@/lib/format';
+import { moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
 import { isUuid } from '@/lib/uuid';
 
 // A split editor's rows and their conversion to and from the API: the
@@ -23,10 +23,18 @@ export interface SplitRow extends CreateSplitData {
   transferTargetFromCurrency?: string;
 }
 
-// Helper function to generate temporary IDs for new splits
-export function createEmptySplits(transactionAmount: number): SplitRow[] {
-  const halfAmount = roundMoney(Number(transactionAmount) / 2);
-  const otherHalf = roundMoney(Number(transactionAmount) - halfAmount);
+/**
+ * Two new split rows halving `transactionAmount`, at the money precision of
+ * the account currency `currencyCode` (four for fiat, a coin's eight), the
+ * second taking the rounding so the pair sums to the total.
+ */
+export function createEmptySplits(
+  transactionAmount: number,
+  currencyCode?: string | null,
+): SplitRow[] {
+  const money = moneyDecimalsForCurrency(currencyCode);
+  const halfAmount = roundMoney(Number(transactionAmount) / 2, money);
+  const otherHalf = roundMoney(Number(transactionAmount) - halfAmount, money);
 
   return [
     {

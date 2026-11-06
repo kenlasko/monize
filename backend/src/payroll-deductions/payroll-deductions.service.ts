@@ -9,6 +9,7 @@ import { todayYMD } from "../common/date-utils";
 import { returnedRows } from "../common/db/query-result";
 import { withScopedDb } from "../common/db/scoped-db";
 import { roundMoney } from "../common/round.util";
+import { Account, AccountType } from "../accounts/entities/account.entity";
 import { Category } from "../categories/entities/category.entity";
 import { tr } from "../i18n/translate";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
@@ -440,6 +441,7 @@ export class PayrollDeductionsService {
         userId,
         dto.scheduledTransactionId,
       );
+      await this.assertFiatBill(m, schedule);
       const repo = m.getRepository(PayrollDeductionRule);
       const seen = new Set<string>();
       const rows: Partial<PayrollDeductionRule>[] = [];
@@ -526,6 +528,7 @@ export class PayrollDeductionsService {
         userId,
         scheduledTransactionId,
       );
+      await this.assertFiatBill(m, schedule);
       if (dto.categoryId !== undefined) {
         await this.ownedCategory(m, userId, categoryId);
       }
@@ -626,6 +629,31 @@ export class PayrollDeductionsService {
       );
     }
     return schedule;
+  }
+
+  /**
+   * A rule's maximum and expected amount are fiat figures held at four places,
+   * so a bill paid from a cryptocurrency account is refused rather than
+   * tracked at the wrong precision (`docs/specs/money-precision.md` section
+   * 10). Runs inside the rule write's transaction, before the first write.
+   */
+  private async assertFiatBill(
+    m: EntityManager,
+    schedule: ScheduledTransaction,
+  ): Promise<void> {
+    const account = await m.getRepository(Account).findOne({
+      where: { id: schedule.accountId },
+      select: { id: true, accountType: true, currencyCode: true },
+    });
+    if (account?.accountType !== AccountType.CRYPTO) return;
+    const code = account.currencyCode;
+    throw new BadRequestException(
+      tr(
+        "errors.payrollDeductions.billAccountMustBeFiat",
+        `A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency ${code}. Choose a bill paid from a fiat account.`,
+        { code },
+      ),
+    );
   }
 
   private async ownedCategory(

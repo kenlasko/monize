@@ -1,3 +1,4 @@
+import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import { UpdateCurrencyDto } from "./update-currency.dto";
 
@@ -60,8 +61,14 @@ describe("UpdateCurrencyDto", () => {
     expect(errors[0].property).toBe("symbol");
   });
 
-  it("rejects decimalPlaces above 4", async () => {
-    const dto = buildDto({ decimalPlaces: 5 });
+  it("accepts decimalPlaces of 8", async () => {
+    const dto = buildDto({ decimalPlaces: 8 });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects decimalPlaces above 8", async () => {
+    const dto = buildDto({ decimalPlaces: 9 });
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe("decimalPlaces");
@@ -79,5 +86,23 @@ describe("UpdateCurrencyDto", () => {
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe("isActive");
+  });
+
+  it("inherits the kind and price symbol rules", async () => {
+    const ok = plainToInstance(UpdateCurrencyDto, {
+      kind: "CRYPTO",
+      quoteSymbol: " eth-usd",
+    });
+    expect(await validate(ok)).toHaveLength(0);
+    expect(ok.quoteSymbol).toBe("ETH-USD");
+
+    const bad = plainToInstance(UpdateCurrencyDto, {
+      kind: "COIN",
+      quoteSymbol: "ETH/USD",
+    });
+    expect((await validate(bad)).map((e) => e.property).sort()).toEqual([
+      "kind",
+      "quoteSymbol",
+    ]);
   });
 });

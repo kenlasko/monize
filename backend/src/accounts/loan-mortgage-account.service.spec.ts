@@ -1,6 +1,7 @@
 import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
+import { currencyKindRows } from "../test-helpers/currency-kind-testing";
 import {
   createScopedDbMocks,
   ManagerMock,
@@ -124,7 +125,11 @@ describe("LoanMortgageAccountService", () => {
     manager = mocks.manager;
     // The dated ledger debt (`datedLoanDebt`): the as-of balance the rate
     // update prices from, here equal to the fixture's current balance.
-    manager.query.mockResolvedValue([{ balance: "-450000" }]);
+    // The `currencies` kind read (INV-CRYPTO-001) answers BTC as a coin.
+    manager.query.mockImplementation(
+      async (sql: string, params?: unknown[]) =>
+        currencyKindRows(sql, params) ?? [{ balance: "-450000" }],
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -543,6 +548,26 @@ describe("LoanMortgageAccountService", () => {
         termMonths: 60,
         interestCategoryId: "cat-interest",
       }) as any;
+
+    it("refuses a mortgage in a CRYPTO currency before writing it (INV-CRYPTO-001)", async () => {
+      // The payment account is in BTC too, so the source-currency check passes
+      // and the kind check is the one that refuses.
+      accountsRepository.findOne.mockResolvedValue({
+        id: "acc-chequing",
+        userId,
+        currencyCode: "BTC",
+      });
+      await expect(
+        service.createMortgageAccount(userId, {
+          ...makeValidMortgageDto(),
+          currencyCode: "BTC",
+        }),
+      ).rejects.toThrow(/BTC is a CRYPTO currency, which a MORTGAGE account/);
+      expect(accountsRepository.save).not.toHaveBeenCalled();
+      expect(
+        scheduledTransactionsService.createWithoutHistory,
+      ).not.toHaveBeenCalled();
+    });
 
     it("should create a mortgage account with correct fields", async () => {
       const dto = makeValidMortgageDto();

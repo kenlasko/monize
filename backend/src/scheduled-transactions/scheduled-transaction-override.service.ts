@@ -27,6 +27,13 @@ export type OverrideInvestmentProvenance = Map<
 >;
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { withScopedDb } from "../common/db/scoped-db";
+import { assertAmountPrecision } from "../common/amount-precision.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+  precisionCurrencyFor,
+} from "../common/currency-places.util";
+import { FIAT_MONEY_DECIMALS } from "../common/round.util";
 import { tr } from "../i18n/translate";
 
 /** PostgreSQL's unique-violation SQLSTATE. */
@@ -142,8 +149,14 @@ export class ScheduledTransactionOverrideService {
     scheduledTransactionId: string,
     createDto: CreateScheduledTransactionOverrideDto,
     investmentProvenance?: OverrideInvestmentProvenance,
+    amountCurrencyCode?: string,
   ): Promise<ScheduledTransactionOverride> {
     return withScopedDb(this.dataSource, async (m) => {
+      const decimals = await this.assertOverrideAmountsPrecision(
+        m,
+        amountCurrencyCode,
+        createDto,
+      );
       const repo = m.getRepository(ScheduledTransactionOverride);
       // The friendly refusal, for the ordinary case. It is NOT what makes one
       // override per occurrence true: a SELECT is not a lock, so two concurrent
@@ -179,7 +192,11 @@ export class ScheduledTransactionOverrideService {
             ),
           );
         }
-        this.validateOverrideSplits(createDto.splits, createDto.amount);
+        this.validateOverrideSplits(
+          createDto.splits,
+          createDto.amount,
+          decimals,
+        );
       }
 
       await lockOverrideTransferAccounts(
@@ -309,23 +326,24 @@ export class ScheduledTransactionOverrideService {
     overrideId: string,
     updateDto: UpdateScheduledTransactionOverrideDto,
     investmentProvenance?: OverrideInvestmentProvenance,
+    amountCurrencyCode?: string,
   ): Promise<ScheduledTransactionOverride> {
     const override = await this.findOverride(
       scheduledTransactionId,
       overrideId,
     );
 
-    if (updateDto.isSplit && updateDto.splits && updateDto.splits.length > 0) {
-      const amount = updateDto.amount ?? override.amount;
-      if (amount === null) {
-        throw new BadRequestException(
-          tr(
-            "errors.scheduled.updateSplitOverrideRequiresAmount",
-            "Amount is required for split override",
-          ),
-        );
-      }
-      this.validateOverrideSplits(updateDto.splits, amount);
+    const splitAmount =
+      updateDto.isSplit && updateDto.splits && updateDto.splits.length > 0
+        ? (updateDto.amount ?? override.amount)
+        : undefined;
+    if (splitAmount === null) {
+      throw new BadRequestException(
+        tr(
+          "errors.scheduled.updateSplitOverrideRequiresAmount",
+          "Amount is required for split override",
+        ),
+      );
     }
 
     // Moving the occurrence's date is an in-place update, so the row (and its
@@ -352,6 +370,16 @@ export class ScheduledTransactionOverrideService {
       override.investmentTotalAmount = updateDto.investmentTotalAmount;
 
     return withScopedDb(this.dataSource, async (m) => {
+      const decimals = await this.assertOverrideAmountsPrecision(
+        m,
+        amountCurrencyCode,
+        updateDto,
+      );
+      // The lines sum to the override amount at the schedule currency's
+      // precision, judged before the write with the currency read above.
+      if (splitAmount !== undefined && updateDto.splits) {
+        this.validateOverrideSplits(updateDto.splits, splitAmount, decimals);
+      }
       // The lines the saved override will post: an update that only switches
       // `isSplit` back on (false -> true or NULL) revives the stored ones, so
       // they are proved again, not just the ones this request sent.
@@ -362,6 +390,32 @@ export class ScheduledTransactionOverrideService {
       );
       return m.getRepository(ScheduledTransactionOverride).save(override);
     });
+  }
+
+  /**
+   * Refuse an override amount, or a split line of one, with more places than
+   * the schedule's currency carries (INV-MONEY-001), inside the write's
+   * transaction and before it, and return that currency's money precision.
+   * No currency named, nothing is judged and the precision is the fiat four.
+   */
+  private async assertOverrideAmountsPrecision(
+    m: EntityManager,
+    currencyCode: string | undefined,
+    dto: {
+      amount?: number | null;
+      splits?: { amount: number }[] | null;
+    },
+  ): Promise<number> {
+    if (!currencyCode) return FIAT_MONEY_DECIMALS;
+    const places = await loadCurrencyPlaces(m, [currencyCode]);
+    const currency = precisionCurrencyFor(places, currencyCode);
+    if (dto.amount !== undefined && dto.amount !== null) {
+      assertAmountPrecision(dto.amount, currency, "amount");
+    }
+    for (const [index, split] of (dto.splits ?? []).entries()) {
+      assertAmountPrecision(split.amount, currency, `splits[${index}].amount`);
+    }
+    return moneyDecimalsForCode(places, currencyCode);
   }
 
   async removeOverride(
@@ -405,7 +459,8 @@ export class ScheduledTransactionOverrideService {
       memo?: string | null;
     }[],
     transactionAmount: number,
+    decimals: number,
   ): void {
-    validateSplitAmountSum(splits, transactionAmount);
+    validateSplitAmountSum(splits, transactionAmount, { decimals });
   }
 }

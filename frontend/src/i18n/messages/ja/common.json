@@ -176,6 +176,7 @@
     "CASH": "現金",
     "LINE_OF_CREDIT": "信用枠",
     "ASSET": "資産",
+    "CRYPTO": "暗号資産ウォレット",
     "OTHER": "その他"
   },
   "accountFilter": {

@@ -1,4 +1,5 @@
 import { EntityManager } from "typeorm";
+import { currencyKindRows } from "../../../test-helpers/currency-kind-testing";
 import {
   AccountSubType,
   AccountType,
@@ -32,8 +33,15 @@ function repoDouble(existing: unknown[] = []) {
   } as unknown as Record<string, jest.Mock>;
 }
 
+/** The `currencies` kind read (INV-CRYPTO-001) answers BTC as a coin. */
 function managerFor(repo: Record<string, jest.Mock>): EntityManager {
-  return { getRepository: jest.fn(() => repo) } as unknown as EntityManager;
+  return {
+    getRepository: jest.fn(() => repo),
+    query: jest.fn(
+      async (sql: string, params?: unknown[]) =>
+        currencyKindRows(sql, params) ?? [],
+    ),
+  } as unknown as EntityManager;
 }
 
 function account(overrides: Partial<MappedAccount> = {}): MappedAccount {
@@ -69,6 +77,17 @@ function category(overrides: Partial<MappedCategory> = {}): MappedCategory {
 }
 
 describe("writeAccounts", () => {
+  it("refuses a Money account in a CRYPTO currency before inserting it (INV-CRYPTO-001)", async () => {
+    const repo = repoDouble();
+
+    await expect(
+      writeAccounts(managerFor(repo), "user-1", [
+        account({ currencyCode: "BTC" }),
+      ]),
+    ).rejects.toThrow(/BTC is a CRYPTO currency/);
+    expect(repo.insert).not.toHaveBeenCalled();
+  });
+
   it("inserts new accounts and reports how many were created", async () => {
     const repo = repoDouble();
 

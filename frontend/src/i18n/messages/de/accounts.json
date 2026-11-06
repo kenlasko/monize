@@ -136,6 +136,9 @@
     "accountType": "Kontotyp",
     "currency": "Währung",
     "currencyLocked": "Die Währung ist gesperrt, da dieses Konto bereits Buchungen enthält. Eine Änderung würde vorhandene Salden stillschweigend umrechnen.",
+    "accountTypeKindLocked": "Die Währung ist durch die Buchungen dieses Kontos gesperrt, daher kann es nicht zwischen Krypto-Wallet und einer Fiat-Kontoart wechseln.",
+    "currencyPlaceholder": "Währung auswählen ...",
+    "noCryptoCurrencies": "Ein Krypto-Wallet enthält eine Kryptowährung, und es ist noch keine eingerichtet. Fügen Sie eine auf der <currencies>Seite „Währungen“</currencies> hinzu und wählen Sie sie dann hier aus. <guide>So fügen Sie eine Kryptowährung hinzu</guide>",
     "openingBalance": "Anfangsbestand",
     "loanAmount": "Darlehensbetrag",
     "mortgageAmount": "Hypothekenbetrag",
@@ -179,6 +182,7 @@
       "mortgage": "Hypothek",
       "asset": "Aktiva",
       "cash": "Barmittel",
+      "crypto": "Krypto-Wallet",
       "other": "Sonstiges"
     },
     "statementDueDayPlaceholder": "z. B. 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "Kontoname ist erforderlich",
     "currencyCodeLength": "Währungscode muss 3 Zeichen lang sein",
+    "currencyRequired": "Währung auswählen",
     "institutionRequired": "Bitte wählen oder erstellen Sie ein Institut",
     "interestRateRequired": "Zinssatz ist erforderlich",
     "paymentAmountRequired": "Zahlungsbetrag ist erforderlich",

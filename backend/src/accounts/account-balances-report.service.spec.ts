@@ -30,7 +30,7 @@ jest.mock("../common/date-utils", () => ({
  */
 interface Fixture {
   accounts?: any[];
-  balances?: Array<{ id: string; balance: string }>;
+  balances?: Array<{ id: string; balance: string; decimal_places?: number }>;
   investmentTransactions?: any[];
   prices?: Array<{
     security_id: string;
@@ -426,6 +426,42 @@ describe("AccountBalancesReportService", () => {
       currencyCode: "CAD",
       balance: 175.5,
     });
+  });
+
+  it("reports a BTC wallet's ledger balance at its eight places, before any conversion (INV-MONEY-001)", async () => {
+    program({
+      accounts: [
+        {
+          id: "acc-btc",
+          currency_code: "BTC",
+          account_type: "CRYPTO",
+          account_sub_type: null,
+        },
+      ],
+      balances: [{ id: "acc-btc", balance: "0.01247493", decimal_places: 8 }],
+    });
+    const result = await service.getBalancesAsOf("user-1", "2026-06-30");
+    // At four places this wallet read 0.0125.
+    expect(result.accounts[0]).toMatchObject({
+      accountId: "acc-btc",
+      currencyCode: "BTC",
+      balance: 0.01247493,
+    });
+    const ledgerCall = query.mock.calls.find(([sql]: [string]) =>
+      sql.includes("LEFT JOIN transactions"),
+    );
+    expect(ledgerCall[0]).toContain(
+      "LEFT JOIN currencies c ON c.code = a.currency_code",
+    );
+  });
+
+  it("rounds a fiat ledger balance at four places, as before", async () => {
+    program({
+      accounts: [cheque],
+      balances: [{ id: "acc-1", balance: "175.50004", decimal_places: 2 }],
+    });
+    const result = await service.getBalancesAsOf("user-1", "2026-06-30");
+    expect(result.accounts[0].balance).toBe(175.5);
   });
 
   // A ledger sum over rows the database holds is always known, and an account

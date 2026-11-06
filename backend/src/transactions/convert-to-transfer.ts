@@ -4,6 +4,12 @@ import { AccountsService } from "../accounts/accounts.service";
 import { Account } from "../accounts/entities/account.entity";
 import { isTransactionInFuture } from "../common/date-utils";
 import { lockTransactionRow } from "../common/db/locks";
+import { assertAmountPrecision } from "../common/amount-precision.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+  precisionCurrencyFor,
+} from "../common/currency-places.util";
 import { roundMoney } from "../common/round.util";
 import { tr } from "../i18n/translate";
 import { TransactionTag } from "../tags/entities/transaction-tag.entity";
@@ -99,10 +105,22 @@ export async function convertRowToTransfer(
     throw refuse("the accounts hold different currencies");
   }
 
-  const counterpartAmount = roundMoney(-Number(row.amount));
+  // Both legs are in the row's currency (refused above otherwise), so one
+  // precision covers the counterpart and the planned figure. A stored amount
+  // with more places than the currency now carries (its decimal places were
+  // lowered since) is refused rather than copied onto a new leg.
+  const places = await loadCurrencyPlaces(m, [row.currencyCode]);
+  const decimals = moneyDecimalsForCode(places, row.currencyCode);
+  assertAmountPrecision(
+    row.amount,
+    precisionCurrencyFor(places, row.currencyCode),
+    "amount",
+  );
+  const counterpartAmount = roundMoney(-Number(row.amount), decimals);
   if (
     options.expectedCounterpartAmount !== undefined &&
-    roundMoney(options.expectedCounterpartAmount) !== counterpartAmount
+    roundMoney(options.expectedCounterpartAmount, decimals) !==
+      counterpartAmount
   ) {
     throw refuse("its amount changed since the rule was planned");
   }

@@ -1,4 +1,4 @@
-import { ConflictException } from "@nestjs/common";
+import { BadRequestException, ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { Account } from "../accounts/entities/account.entity";
 import { lockTransactionRow } from "../common/db/locks";
@@ -41,6 +41,10 @@ function harness(
   rowOver: Partial<Transaction> = {},
   tags: string[] = [],
   target: Partial<Account> | null = { id: LOAN, currencyCode: "PLN" },
+  currencies: { code: string; decimalPlaces: number }[] = [
+    { code: "PLN", decimalPlaces: 2 },
+    { code: "BTC", decimalPlaces: 8 },
+  ],
 ) {
   const insertExecute = jest.fn().mockResolvedValue({});
   const values = jest.fn().mockReturnValue({
@@ -64,6 +68,16 @@ function harness(
     createQueryBuilder: jest.fn().mockReturnValue({
       insert: () => ({ into }),
     }),
+    // The writer's `FOR KEY SHARE` read of `decimal_places`
+    // (`loadCurrencyPlaces`).
+    getRepository: jest.fn(() => ({
+      query: jest.fn(async () =>
+        currencies.map((row) => ({
+          code: row.code,
+          decimal_places: row.decimalPlaces,
+        })),
+      ),
+    })),
   };
   const accounts = {
     updateBalance: jest.fn().mockResolvedValue(undefined),
@@ -223,6 +237,41 @@ describe("convertRowToTransfer", () => {
       expectedCounterpartAmount: 640.15,
     });
     expect(h.accounts.updateBalance).toHaveBeenCalledWith(LOAN, 640.15);
+  });
+
+  it("carries a coin row's satoshis to the counterpart at the coin's places", async () => {
+    const coin = { currencyCode: "BTC", amount: -0.000025 };
+    const h = harness(coin, [], { id: LOAN, currencyCode: "BTC" });
+    await convertRowToTransfer(h.em, h.accounts as never, USER, ROW, LOAN, {
+      clearCategory: true,
+      expectedCounterpartAmount: 0.000025,
+    });
+    expect(h.m.create).toHaveBeenCalledWith(
+      Transaction,
+      expect.objectContaining({ amount: 0.000025, currencyCode: "BTC" }),
+    );
+    expect(h.accounts.updateBalance).toHaveBeenCalledWith(LOAN, 0.000025);
+  });
+
+  it("refuses a planned coin amount that differs in the eighth place", async () => {
+    const h = harness({ currencyCode: "BTC", amount: -0.000025 }, [], {
+      id: LOAN,
+      currencyCode: "BTC",
+    });
+    await expect(
+      convertRowToTransfer(h.em, h.accounts as never, USER, ROW, LOAN, {
+        clearCategory: true,
+        expectedCounterpartAmount: 0.00002501,
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(h.m.save).not.toHaveBeenCalled();
+  });
+
+  it("refuses a stored amount with more places than its currency now carries", async () => {
+    const h = harness({ amount: -640.15001 });
+    await expect(convert(h)).rejects.toBeInstanceOf(BadRequestException);
+    expect(h.m.save).not.toHaveBeenCalled();
+    expect(h.accounts.updateBalance).not.toHaveBeenCalled();
   });
 
   it("refuses when the row is gone after the lock", async () => {

@@ -81,6 +81,9 @@ implied.
 | INV-FX-003 | A currency pair is stored in one orientation | partial |
 | INV-FX-004 | A user-supplied rate never replaces a global exchange-rate observation | enforced |
 | INV-FX-005 | A provider-written rate names its provider, every provider question goes through the chain, and an outage is never remembered as an empty answer | enforced |
+| INV-CRYPTO-001 | An account's type and its currency's kind agree: a crypto wallet holds a coin, every other account and every security a fiat currency | partial |
+| INV-CRYPTO-002 | A pair with a coin on either side is priced only by the crypto provider, through the coin's Yahoo pair, and that provider prices nothing else | enforced |
+| INV-MONEY-001 | An amount in an account's currency is stored and rounded at that currency's money precision: never more places than it carries, never fewer | enforced |
 | INV-TRADE-001 | The executed total is the fact; the per-share price is derived from it | enforced |
 | INV-PRICE-001 | A stored price is in the currency the security is recorded in | partial |
 | INV-PORTRESULT-001 | A period change is not a return: value change, external flows and investment result are three figures | enforced |
@@ -650,8 +653,8 @@ Enforcement         Every absolute recompute takes the account lock before readi
                     the investment-pair rename and re-currency, and the account
                     delete's unlink, update only the changed columns of the
                     other half; an imported opening balance is
-                    applyOpeningBalanceChange (accounts.service.ts), a 4dp
-                    delta of new - old read under lockAccountsForBalanceWrite
+                    applyOpeningBalanceChange (accounts.service.ts), a delta
+                    rounded at the account currency's precision, of new - old read under lockAccountsForBalanceWrite
                     (A26-M13).
 Concurrency scope   per account
 Retry semantics     A recompute is idempotent against another recompute and, under
@@ -673,7 +676,7 @@ Required tests      Source scan: common/db/derived-state-writers.guard.spec.ts -
                     opening-balance undo:
                     backend/test/integration/account-undo.integration.spec.ts.
                     A pair rename with a posting in its window, and an imported
-                    4dp opening balance beside a concurrent movement:
+                    imported opening balance beside a concurrent movement:
                     backend/test/integration/investment-pair-stale-balance.integration.spec.ts,
                     backend/test/integration/import-balance-delta.integration.spec.ts.
 Status              partial
@@ -1540,7 +1543,11 @@ Status              enforced
 ```text
 Statement           For every currency pair and rate_date there is at most one
                     row in exchange_rates, and its from_currency sorts before its
-                    to_currency. A pair held in two rows is a pair that can
+                    to_currency -- except a pair with exactly one CRYPTO side,
+                    which is stored coin -> fiat whichever code sorts first,
+                    because a coin's fiat -> coin rate keeps too few figures at
+                    ten decimals (XBT->IDR 1.52e9 stored as IDR->XBT is
+                    0.0000000007, 6% off; spec section 12). A pair held in two rows is a pair that can
                     contradict itself: nothing keeps the two reciprocal, and
                     resolveFxRate answers with the more recently observed
                     direction, so a one-sided write decides which of two
@@ -1548,18 +1555,27 @@ Statement           For every currency pair and rate_date there is at most one
                     report could disagree with nothing saying so.
 Source of truth     exchange_rates. The orientation rule is
                     backend/src/currencies/canonical-rate.util.ts
-                    (canonicalRateRow, isCanonicalOrientation), and
-                    directionlessPairKey is built on the same comparison so the
-                    ordering is written once.
+                    (canonicalRateRow, isCanonicalOrientation, each taking an
+                    isCoin lookup of currencies.kind that defaults to "no coin").
+                    directionlessPairKey and exchange_rate_coverage stay in
+                    plain code order (codeOrderedPair): they name a pair, not a
+                    stored direction.
 Enforcement         Every writer routes through canonicalRateRow: saveRate and
                     persistRateSeries in currencies/exchange-rate.service.ts, and
                     resolveExchangeRates in
                     import/mny/writers/write-prices.ts, which used to store
                     whichever orientation the Money file recorded. The helper
-                    inverts at the rate column's ten decimal places and refuses a
-                    same-currency pair or a non-positive rate, so a refusal
-                    happens before the write rather than as a row nothing may
-                    use. currencies/exchange-rate-orientation.guard.spec.ts is
+                    inverts at the rate column's ten decimals and refuses a
+                    same-currency pair, a non-positive rate, and a rate that as
+                    stored would be at or above 1e10 or round to zero
+                    (canonicalRateRefusal "out_of_range", reported per pair as
+                    "Rate out of range" rather than failing a batch), so a
+                    refusal happens before the write rather than as a row
+                    nothing may use. Each writer reads currencies.kind once per
+                    operation: the refresh from currenciesInUse (saveRate,
+                    canonicalPairsByBase), persistRateSeries and the Money
+                    importer through loadCoinLookup
+                    (currencies/coin-lookup.ts) on their own manager. currencies/exchange-rate-orientation.guard.spec.ts is
                     the scan: an INSERT INTO exchange_rates in a third file, or
                     in one of those two without the helper, fails it.
                     On the read side getLatestRates lists one row per pair, the
@@ -1602,10 +1618,14 @@ Test                canonical-rate.util.spec.ts holds the truth table, including
 Status              partial -- the writers and the guard hold for every new row,
                     and rows written before this release still carry both
                     orientations. The contract release removes them and adds
-                    CHECK (from_currency < to_currency), which is the mechanism
-                    that makes this enforced; it cannot ship until the expand
-                    release is deployed everywhere, because the previous release
-                    writes the mirror row this constraint would refuse. Spec:
+                    the constraint that makes this enforced; it cannot ship
+                    until the expand release is deployed everywhere, because the
+                    previous release writes the mirror row it would refuse. It
+                    can no longer be CHECK (from_currency < to_currency): a
+                    coin-first row violates it and a CHECK cannot read
+                    currencies.kind, so the contract step needs a trigger or an
+                    equivalent that orients by the coin rule (spec section 12).
+                    Spec:
                     docs/specs/exchange-rate-canonical-orientation.md; the
                     migration is written out in
                     docs/future-plans/exchange-rate-canonical-orientation-tasks.md.
@@ -1663,7 +1683,13 @@ Statement           Every exchange_rates row a provider writes carries that
                     the gap fill from ever asking again. What a fill learned
                     about a pair's history (exchange_rate_coverage) is scoped to
                     the chain that learned it: a row recorded under another
-                    ordered set of providers says nothing about this one.
+                    ordered set of providers says nothing about this one. A
+                    pair no provider that may be asked carries (a coin without
+                    a quote_symbol) was asked of nobody, so it is not
+                    remembered either: no empty window and no coverage row,
+                    because a symbol mapped later changes the answer without
+                    changing the chain; a coin's ticker first set or changed
+                    deletes the code's coverage rows.
 Source of truth     FX_PROVIDERS (the configured order, parsed against
                     FX_PROVIDER_NAMES) and FxRateProvider.source (the slug each
                     adapter writes).
@@ -1693,7 +1719,20 @@ Enforcement         backend/src/currencies/providers/fx-provider-chain.ts asks
                     value (NULL included) as unestablished, and its upsert
                     replaces the three dates rather than merging them when the
                     stored value differs (IS DISTINCT FROM in the ON CONFLICT
-                    clause).
+                    clause). FxDailySeriesResult.carried is false when no
+                    provider that may be asked carries the pair;
+                    ensureRatesForDate remembers no window and the gap fill
+                    (ExchangeRateHistoryService.fetchWindows) records no
+                    coverage and no window for such a pair, refusing it with
+                    "<code> has no price symbol; map one on the Currencies
+                    page". CurrenciesService.kindUpdates deletes the code's
+                    exchange_rate_coverage rows (either code order) in the
+                    update's transaction when a CRYPTO row's coin ticker is
+                    first set or changed, and update() then calls
+                    ExchangeRateHistoryService.forgetEmptyWindowsFor, which
+                    clears this process's two empty-window memories for the
+                    code; another replica's entries expire within
+                    EMPTY_WINDOW_TTL_MS.
 Test                The section 5 truth table of
                     docs/specs/exchange-rate-providers.md as named cases
                     in fx-provider-chain.spec.ts (in particular: first provider
@@ -1701,12 +1740,15 @@ Test                The section 5 truth table of
                     exchange-rate.service.spec.ts with the chain faked (the
                     source and the date taken from the observation, the three
                     refresh reports kept apart, an unanswered window never
-                    remembered); currencies.service.spec.ts with the chain
-                    faked (no global fetch reached by the lookup);
+                    remembered, an uncarried window never remembered);
+                    currencies.service.spec.ts with the chain faked (no global
+                    fetch reached by the lookup; "what a fill learned under
+                    the old price symbol");
                     fx-provider-source.guard.spec.ts;
                     provider-call.guard.spec.ts over currencies;
                     exchange-rate-history.service.spec.ts ("a coverage row is
-                    scoped to the provider chain that wrote it") and
+                    scoped to the provider chain that wrote it"; an unmapped
+                    coin records no coverage and no empty window) and
                     fx-rate-coverage.integration.spec.ts over the real upsert.
 Status              enforced -- the chain, the service on it, the source
                     guard and the currency lookup on the chain are on main
@@ -1716,6 +1758,221 @@ Status              enforced -- the chain, the service on it, the source
                     section 5 truth table cases are named in
                     fx-provider-chain.spec.ts.
 ```
+
+### INV-CRYPTO-001 -- an account's type and its currency's kind agree
+
+```text
+Statement           accounts.account_type = 'CRYPTO' if and only if the
+                    currencies.kind of accounts.currency_code is 'CRYPTO'. A
+                    crypto wallet holds a coin; every other type, both halves
+                    of an investment pair included, holds a fiat currency. A
+                    security's currency_code is never a CRYPTO currency (a
+                    security is priced in fiat). A currency's kind does not
+                    change once any row other than an activation references
+                    the code.
+Source of truth     accounts.account_type, accounts.currency_code and
+                    currencies.kind (CHECK currencies_kind_check: FIAT or
+                    CRYPTO).
+Enforcement         Service-level, no trigger. assertAccountCurrencyKind /
+                    assertAccountCurrencyKindIn
+                    (backend/src/accounts/account-currency-kind.util.ts), read
+                    and checked inside the transaction that writes the row,
+                    before the write: AccountsService create,
+                    createInvestmentAccountPair and update (when the type or
+                    the currency moves, and for a linked half's new currency
+                    against INVESTMENT); LoanMortgageAccountService create
+                    paths; the QIF import (ImportService) and
+                    ImportEntityCreatorService; the MNY writer
+                    (import/mny/writers/write-reference.ts). Securities:
+                    assertSecurityCurrencyIsFiatIn
+                    (backend/src/securities/security-currency-kind.util.ts) in
+                    SecuritiesService create and update, ImportEntityCreatorService
+                    and the MNY investments writer. The kind gate:
+                    CurrenciesService.update locks the currency row FOR UPDATE
+                    and refuses a kind change while
+                    currency_code_referenced_by_data (migration
+                    20261105195749) reports a reference; that function covers
+                    every foreign key to currencies(code) except
+                    user_currency_preferences, held by
+                    currency-references.spec.ts.
+Concurrency scope   The account or security row and the currency row. The
+                    account and security writers read the kind FOR KEY SHARE
+                    (assertAccountCurrencyKindIn,
+                    assertSecurityCurrencyIsFiatIn), which conflicts with the
+                    kind gate's FOR UPDATE: a write arriving during a kind
+                    change waits and checks the new kind, and a kind change
+                    arriving after the read waits for the write to commit and
+                    then refuses kindInUse. The currencies row is the only lock
+                    the two share, so they cannot deadlock.
+Retry semantics     A refusal writes nothing; a retry is refused the same way.
+Crash semantics     Nothing commits before the check.
+Failure response    400 accountCurrencyKindMismatch (accounts),
+                    400 currencyMustBeFiat (securities), 409 kindInUse
+                    (currencies), before any write.
+Required tests      account-currency-kind.util.spec.ts;
+                    security-currency-kind.util.spec.ts;
+                    action-history.service.spec.ts ("undo and redo hold the
+                    currency kind rules"); backup.service.spec.ts (the restore
+                    reports currencyKindMismatches); accounts.service.spec.ts,
+                    loan-mortgage-account.service.spec.ts,
+                    import-entity-creator.service.spec.ts,
+                    write-reference.spec.ts, write-investments.spec.ts and
+                    securities.service.spec.ts per writer;
+                    currencies.service.spec.ts (kindInUse);
+                    currency-references.spec.ts;
+                    crypto-accounts.integration.spec.ts (the section 5 truth
+                    table of docs/specs/crypto-accounts.md on create and
+                    update, and "a kind change racing an account write" on two
+                    connections, in both orders).
+Status              partial -- no database trigger, and the backup restore
+                    detects rather than refuses. Undo and redo are covered:
+                    ActionHistoryService.undoAccount and the security undo call
+                    assertUndoCurrencyKind (action-history/undo-currency-kind.ts),
+                    which runs assertAccountCurrencyKindIn /
+                    assertSecurityCurrencyIsFiatIn in the undo's transaction
+                    before a snapshot carrying a type and a currency is written
+                    back (the undo of a create deletes and needs none). The
+                    restore (BackupRestoreService, through
+                    BackupRestoreDatabaseService.findCurrencyKindMismatches)
+                    reads, after the accounts, securities and preferences are
+                    written, every account whose type and currency kind
+                    disagree, every security in a CRYPTO currency and a CRYPTO
+                    reporting currency, logs them and returns them as
+                    currencyKindMismatches beside restored. It does not refuse:
+                    currencies is global, so a code's kind is this deployment's
+                    and a file whose BTC was a coin may land where BTC is fiat,
+                    and the restore refuses only cross-user references, reporting
+                    every other repairable difference.
+```
+
+Spec: `docs/specs/crypto-accounts.md`, decision 8.
+
+### INV-CRYPTO-002 -- a coin is priced only through its pair
+
+```text
+Statement           A pair with a CRYPTO currency on either side is asked of
+                    the crypto provider and of no other, and the crypto
+                    provider is asked about no fiat pair. Every exchange_rates
+                    row a provider writes for such a pair carries the source
+                    yahoo_crypto: a fiat provider never answers for a coin, and
+                    the coin provider never answers, or masks an outage of, a
+                    fiat pair.
+Source of truth     currencies.kind and currencies.quote_symbol (the Yahoo
+                    <COIN>-<FIAT> symbol; CHECK
+                    currencies_quote_symbol_crypto_only keeps it NULL on a FIAT
+                    row); CryptoFxProvider.source.
+Enforcement         FxProviderChain (backend/src/currencies/providers/
+                    fx-provider-chain.ts): a provider's optional claims(code)
+                    decides who may be asked before carries does -- a claimed
+                    pair only of a provider that claims one of its codes, an
+                    unclaimed pair only of a provider that claims nothing -- on
+                    latest, dailySeries and live alike. CryptoFxProvider
+                    (providers/crypto-fx.provider.ts) claims every CRYPTO code
+                    and carries a CRYPTO code with a quote_symbol and every FIAT
+                    code, answering from a snapshot of currencies that a code
+                    it does not hold re-reads first (at most once per
+                    CRYPTO_MISS_RELOAD_MS, so a coin created on another replica
+                    or by a restore is not routed to Yahoo's =X grammar), and
+                    the restore forgets the snapshot after it commits;
+                    the factory in currencies.module.ts appends it after
+                    whatever FX_PROVIDERS names, and resolveFxProviders refuses
+                    it as a token (PAIR_PROVIDER_NAMES). Its calls reach Yahoo
+                    through YahooFxProvider's pair-symbol methods and so through
+                    YahooFinanceService's throttle and breaker. INV-FX-005's
+                    source guard holds the slug inside the providers directory.
+Concurrency scope   global -- exchange_rates is shared reference data.
+Retry semantics     As INV-FX-005: null is "did not answer" and is retried
+                    next tick; a symbol Yahoo reports as not found is an
+                    answer with nothing in it.
+Crash semantics     --
+Failure response    A coin without a quote_symbol is claimed but not carried:
+                    the refresh reports the pair uncarried with "<code> has no
+                    price symbol; map one on the Currencies page", and every
+                    converted figure in that coin is unknown (INV-FX-001). A
+                    failed read of currencies rejects claims and carries, and
+                    so does a code the read does not hold (within the
+                    miss-reload throttle or after the re-read: every code in
+                    use has a currencies row, so absence means a stale read);
+                    the chain reads that as "could not say", asks nobody about
+                    a pair whose claim it cannot settle, and the refresh
+                    reports it "No provider answered".
+Required tests      fx-provider-chain.spec.ts ("FxProviderChain and a provider
+                    that claims coins"); crypto-fx.provider.spec.ts ("carries
+                    and claims", "in the chain"); exchange-rate.service.spec.ts
+                    (refreshCryptoRates, the weekend tick, the unmapped-coin
+                    message).
+Status              enforced -- for the rows the chain writes. Rows written
+                    outside it are not provider answers and are not covered:
+                    the demo seed stores its BTC->CAD series under yahoo_crypto
+                    through ExchangeRateService.storeRateSeries, and a Money
+                    import's rate history is written under mny_import.
+```
+
+Spec: `docs/specs/crypto-accounts.md`, decision 5.
+
+### INV-MONEY-001 -- precision is the currency's
+
+```text
+Statement           An amount in an account's currency is stored at
+                    moneyDecimalsFor(currency.decimal_places) places: four for
+                    every fiat currency, the coin's own places (up to eight)
+                    for a cryptocurrency. A write carrying more places than
+                    that is refused, never rounded, and a derived figure (a
+                    conversion, a sum, a delta) is rounded at that precision,
+                    so a 2,500-satoshi fee is 0.00002500 BTC and never zero.
+                    Fiat behaves byte for byte as it did at NUMERIC(20,4).
+Source of truth     The money columns, NUMERIC(24,8) (migration
+                    20261106012628_money_scale_8.sql), and
+                    currencies.decimal_places (CHECK BETWEEN 0 AND 8). The
+                    three fiat-only shared-expense tables (shared_entries,
+                    shared_allocations, shared_ledger_links) stay NUMERIC(20,4)
+                    by design; a shared group's currency must be FIAT
+                    (sharedExpenses.groupCurrencyMustBeFiat).
+Enforcement         Service-level, in the write's own transaction before the
+                    first write. assertAmountPrecision
+                    (backend/src/common/amount-precision.util.ts) on every
+                    writer of an account-currency amount, reading the places
+                    through loadCurrencyPlaces / moneyDecimalsForCode
+                    (common/currency-places.util.ts). roundMoney(x, decimals)
+                    and sumMoney(values, decimals) at every derivation site, with
+                    sumMoney exact in BigInt (common/round.util.ts), and
+                    applyFxConversion(amount, rate, fxFeePercent, { toDecimals })
+                    for a conversion into a currency
+                    (common/fx-entry.util.ts). DTO amount fields use
+                    @IsMoneyAmount, @IsShareQuantity and @IsFxRate
+                    (common/validators/), which count places through
+                    decimalPlacesOf and so survive a value below 1e-6 where
+                    class-validator's maxDecimalPlaces throws. The client
+                    mirrors it: frontend/src/lib/format.ts roundMoney / sumMoney
+                    with decimals, moneyDecimalsForCurrency and
+                    entryDecimalPlaces over the registry in
+                    lib/currency-decimals.ts. Two source guards with empty
+                    baselines: backend/src/common/money-precision.guard.spec.ts
+                    (no one-argument roundMoney / sumMoney / toMoneyNumber, no
+                    literal 10000 scale and no ROUND(..., 4) on the listed
+                    account-currency paths) and
+                    backend/src/common/money-amount-dto.guard.spec.ts (no
+                    maxDecimalPlaces on a money-named DTO field); the frontend's
+                    frontend/src/test/money-precision.guard.test.ts holds the
+                    same on the account-currency files.
+Concurrency scope   per write; the places are read inside the write's
+                    transaction, and a currency's decimal_places is edited on
+                    the Currencies page.
+Retry semantics     A refused amount writes nothing and a retry with a
+                    corrected amount is an ordinary write.
+Crash semantics     --
+Failure response    400 errors.transactions.amountPrecisionExceeded, naming the
+                    currency and its places.
+Required tests      Unit: assertAmountPrecision, roundMoney / sumMoney /
+                    applyFxConversion at eight places, the validators, and each
+                    writer's refusal. Source scan: the two backend guards above
+                    and the frontend guard. PG integration (the column holds
+                    eight places and a fiat value is unchanged):
+                    backend/test/integration/money-precision.integration.spec.ts.
+Status              enforced
+```
+
+Spec: `docs/specs/money-precision.md`.
 
 ### INV-TRADE-001 -- the executed total is the fact, the price is derived
 
@@ -1728,7 +1985,9 @@ Statement           What a trade came to is what it came to. A caller that
                     never re-derived from a stored price unless the price, the
                     quantity, the commission or the action is what changed --
                     compared by value, because the form resends every field.
-Source of truth     investment_transactions.total_amount NUMERIC(20,4), with
+Source of truth     investment_transactions.total_amount NUMERIC(24,8) (still a
+                    fiat amount: INV-CRYPTO-001 keeps a security in a fiat
+                    currency, the column is widened with the rest), with
                     price NUMERIC(24,10) beside it.
 Enforcement         securities/investment-amount.util.ts is the one door:
                     deriveInvestmentTotal, derivePriceFromTotal and

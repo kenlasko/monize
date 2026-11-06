@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from './currency-decimals';
 import {
   getCurrencySymbol,
   resolveCurrencySymbol,
@@ -6,6 +7,16 @@ import {
   getDecimalPlacesForCurrency,
   roundToDecimals,
   roundToCents,
+  roundToEntryPlaces,
+  entryDecimalPlaces,
+  MONEY_DECIMALS,
+  MONEY_SCALE,
+  FIAT_MONEY_DECIMALS,
+  moneyDecimalsFor,
+  moneyDecimalsForCurrency,
+  sumMoney,
+  loadedEntryAmount,
+  awaitsRegisteredPlaces,
   roundMoney,
   withCurrencyCode,
   adaptiveFractionDigits,
@@ -23,7 +34,19 @@ import {
 } from './format';
 
 describe('getCurrencySymbol', () => {
+  afterEach(() => {
+    clearCurrencyDecimals();
+  });
+
   it('returns $ for USD', () => {
+    expect(getCurrencySymbol('USD')).toBe('$');
+  });
+
+  it('returns a registered non-ISO currency\'s stored symbol, else the code', () => {
+    expect(getCurrencySymbol('BTC')).toBe('BTC');
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20bf' }]);
+    expect(getCurrencySymbol('BTC')).toBe('\u20bf');
+    registerCurrencyDecimals([{ code: 'USD', decimalPlaces: 2, symbol: 'US$' }]);
     expect(getCurrencySymbol('USD')).toBe('$');
   });
 
@@ -111,6 +134,21 @@ describe('formatCurrency', () => {
 });
 
 describe('getDecimalPlacesForCurrency', () => {
+  afterEach(() => {
+    clearCurrencyDecimals();
+  });
+
+  it('answers a registered currency from its row before Intl', () => {
+    expect(getDecimalPlacesForCurrency('BTC')).toBe(2);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    expect(getDecimalPlacesForCurrency('BTC')).toBe(4);
+  });
+
+  it('keeps an ISO currency at Intl\'s places even when its row is registered', () => {
+    registerCurrencyDecimals([{ code: 'JPY', decimalPlaces: 2 }]);
+    expect(getDecimalPlacesForCurrency('JPY')).toBe(0);
+  });
+
   it('returns 2 for USD', () => {
     expect(getDecimalPlacesForCurrency('USD')).toBe(2);
   });
@@ -211,6 +249,27 @@ describe('withCurrencyCode', () => {
   it('leaves an amount with no currency code alone', () => {
     expect(withCurrencyCode('$1,300.00', '', 'CAD')).toBe('$1,300.00');
   });
+
+  it('does not name a non-ISO code twice when Intl already wrote it', () => {
+    // An unregistered coin: Intl uses the code as the symbol.
+    expect(withCurrencyCode('BTC\u00a00.01', 'BTC', 'CAD')).toBe('BTC\u00a00.01');
+    // de-DE puts it after the figure.
+    expect(withCurrencyCode('0,0070\u00a0BTC', 'BTC', 'EUR')).toBe('0,0070\u00a0BTC');
+    expect(withCurrencyCode('-BTC\u00a00.0051', 'BTC', 'CAD')).toBe('-BTC\u00a00.0051');
+  });
+
+  it('appends a non-ISO code that the figure carries only as a symbol', () => {
+    expect(withCurrencyCode('\u20bf0.0070', 'BTC', 'CAD')).toBe('\u20bf0.0070 BTC');
+    expect(withCurrencyCode('0,0070\u00a0\u20bf', 'BTC', 'EUR')).toBe('0,0070\u00a0\u20bf BTC');
+  });
+
+  it('matches the code only as a whole token', () => {
+    expect(withCurrencyCode('WBTC\u00a01.00', 'BTC', 'CAD')).toBe('WBTC\u00a01.00 BTC');
+  });
+
+  it('still appends an ISO code the figure already shows, so no fiat figure changes', () => {
+    expect(withCurrencyCode('CHF\u00a01,300.00', 'CHF', 'CAD')).toBe('CHF\u00a01,300.00 CHF');
+  });
 });
 
 describe('roundToCents', () => {
@@ -240,6 +299,183 @@ describe('roundToCents', () => {
     // lands on a tiny float residual, which must read as $0.00 not $NaN.
     expect(roundToCents(2000 + -2000.000000625)).toBe(0);
     expect(roundToCents(5000 - 5000.0000088)).toBe(0);
+  });
+});
+
+describe('roundToEntryPlaces', () => {
+  afterEach(() => {
+    clearCurrencyDecimals();
+  });
+
+  it('keeps a registered coin at its stored places', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
+    expect(roundToEntryPlaces(0.0051, 'BTC')).toBe(0.0051);
+    expect(roundToEntryPlaces(-0.000025, 'btc')).toBe(-0.000025);
+    expect(roundToEntryPlaces(-0.000000015, 'btc')).toBe(-0.00000002);
+  });
+
+  it('rounds a fiat amount exactly as roundToCents does', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
+    for (const value of [10.125, -10.125, 0.1 + 0.2, 0.0051, 1170.6458]) {
+      expect(roundToEntryPlaces(value, 'CAD')).toBe(roundToCents(value));
+      expect(roundToEntryPlaces(value, 'JPY')).toBe(roundToCents(value));
+    }
+  });
+
+  it('keeps a coin the registry does not hold yet at the column scale, and a missing code at cents', () => {
+    // Two would be a guess: `GET /currencies` has not answered (or failed),
+    // and a 0.0051 BTC amount rounded at it saved 0.01.
+    expect(roundToEntryPlaces(0.0051, 'BTC')).toBe(0.0051);
+    expect(roundToEntryPlaces(0.000025, 'BTC')).toBe(0.000025);
+    expect(roundToEntryPlaces(0.000000015, 'BTC')).toBe(0.00000002);
+    expect(roundToEntryPlaces(0.0051, undefined)).toBe(0.01);
+  });
+
+  it('loads a coin the registry does not hold yet at the column scale', () => {
+    expect(awaitsRegisteredPlaces('BTC')).toBe(true);
+    expect(loadedEntryAmount(-0.0051, 'BTC')).toBe(-0.0051);
+    expect(loadedEntryAmount(-0.000025, 'BTC')).toBe(-0.000025);
+    expect(loadedEntryAmount(-0.000000015, 'BTC')).toBe(-0.00000002);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 3 }]);
+    expect(awaitsRegisteredPlaces('BTC')).toBe(false);
+    expect(loadedEntryAmount(-0.0051, 'BTC')).toBe(-0.005);
+  });
+
+  it('loads an ISO or missing code at two places, as cents always did', () => {
+    for (const code of ['CAD', 'JPY', null, undefined]) {
+      expect(awaitsRegisteredPlaces(code)).toBe(false);
+      expect(loadedEntryAmount(10.125, code)).toBe(10.13);
+    }
+  });
+
+  it('answers the places it rounds at: a coin\'s own, otherwise two, never Intl\'s', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
+    expect(entryDecimalPlaces('BTC')).toBe(8);
+    expect(entryDecimalPlaces('CAD')).toBe(2);
+    expect(entryDecimalPlaces('JPY')).toBe(2);
+    expect(entryDecimalPlaces(null)).toBe(2);
+  });
+
+  it('answers the column scale for a coin the registry does not hold yet, and two for any ISO code', () => {
+    expect(entryDecimalPlaces('BTC')).toBe(MONEY_SCALE);
+    expect(entryDecimalPlaces('CAD')).toBe(2);
+    expect(entryDecimalPlaces('JPY')).toBe(2);
+    expect(entryDecimalPlaces('')).toBe(2);
+    expect(entryDecimalPlaces(undefined)).toBe(2);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 3 }]);
+    expect(entryDecimalPlaces('BTC')).toBe(3);
+  });
+});
+
+describe('money precision', () => {
+  afterEach(() => {
+    clearCurrencyDecimals();
+  });
+
+  it('names the column scale and the fiat precision, and keeps the old name as the fiat one', () => {
+    expect(MONEY_SCALE).toBe(8);
+    expect(FIAT_MONEY_DECIMALS).toBe(4);
+    expect(MONEY_DECIMALS).toBe(FIAT_MONEY_DECIMALS);
+  });
+
+  it.each([
+    [null, 4],
+    [undefined, 4],
+    [0, 4],
+    [2, 4],
+    [3, 4],
+    [4, 4],
+    [5, 5],
+    [6, 6],
+    [8, 8],
+    [18, 8],
+  ] as const)('moneyDecimalsFor(%s) is %i', (places, expected) => {
+    expect(moneyDecimalsFor(places)).toBe(expected);
+  });
+
+  it('answers a currency\'s money precision from the registry', () => {
+    expect(moneyDecimalsForCurrency('CAD')).toBe(4);
+    expect(moneyDecimalsForCurrency('JPY')).toBe(4);
+    expect(moneyDecimalsForCurrency(null)).toBe(4);
+    // A coin the registry does not hold yet: the column scale, lossless.
+    expect(moneyDecimalsForCurrency('BTC')).toBe(8);
+    registerCurrencyDecimals([
+      { code: 'BTC', decimalPlaces: 8 },
+      { code: 'SIX', decimalPlaces: 6 },
+      { code: 'TWO', decimalPlaces: 2 },
+    ]);
+    expect(moneyDecimalsForCurrency('BTC')).toBe(8);
+    expect(moneyDecimalsForCurrency('SIX')).toBe(6);
+    expect(moneyDecimalsForCurrency('TWO')).toBe(4);
+  });
+
+  it('rounds a large value at eight places on its decimal string, not a nudged float', () => {
+    // The one-ULP midpoint nudge is a hundredth of a unit at eight places above
+    // ~4.5e5 (and a whole unit above ~4.5e7), so a large value is rounded on its
+    // decimal string instead.
+    expect(roundMoney(21000000, 8)).toBe(21000000);
+    expect(roundMoney(20999999.99999999, 8)).toBe(20999999.99999999);
+    expect(roundToDecimals(123456789.12345678, 8)).toBe(123456789.12345678);
+    expect(roundMoney(20999999.999999995, 8)).toBe(21000000);
+    expect(roundMoney(-20999999.999999995, 8)).toBe(-21000000);
+    // Fiat at four places keeps the nudged path below 4.5 billion.
+    expect(roundMoney(10 * 15.9735, 2)).toBe(159.74);
+  });
+
+  it('does not carry a value just under a midpoint high in the 1e6 to 4.5e6 band at eight places', () => {
+    // The shortest decimal string rounds to ...93; a nudge of 0.05 to 0.1 unit
+    // used to carry it to ...94. Mirrors the backend spec.
+    expect(roundMoney(3422512.090132934, 8)).toBe(3422512.09013293);
+    expect(roundMoney(-3422512.090132934, 8)).toBe(-3422512.09013293);
+    expect(roundMoney(3422512.090132935, 8)).toBe(3422512.09013294);
+  });
+
+  it('rounds at the precision it is given', () => {
+    expect(roundMoney(0.000025004, 8)).toBe(0.000025);
+    expect(roundMoney(0.000000015, 8)).toBe(0.00000002);
+    expect(roundMoney(-0.000000015, 8)).toBe(-0.00000002);
+    expect(roundMoney(0.000025, 4)).toBe(0);
+  });
+});
+
+describe('sumMoney', () => {
+  it('sums at the fiat four places by default, without float drift', () => {
+    expect(sumMoney([0.1, 0.2])).toBe(0.3);
+    expect(sumMoney([10.0001, 20.0002])).toBe(30.0003);
+    expect(sumMoney([])).toBe(0);
+    expect(sumMoney([-1.5, 1.5])).toBe(0);
+    expect(Object.is(sumMoney([-0.00001]), 0)).toBe(true);
+    expect(sumMoney([1170.6458, -0.0058, 29.36])).toBe(1200);
+  });
+
+  it('rounds each value to the precision before summing, half away from zero', () => {
+    expect(sumMoney([0.00005])).toBe(0.0001);
+    expect(sumMoney([-0.00005])).toBe(-0.0001);
+    expect(sumMoney([0.000049])).toBe(0);
+  });
+
+  it('is exact at eight places where a float scale is not', () => {
+    expect(sumMoney([20999999.99999999, 0.00000001], 8)).toBe(21000000);
+    expect(sumMoney([-0.005, -0.000025], 8)).toBe(-0.005025);
+    expect(sumMoney([0.1, 0.2], 8)).toBe(0.3);
+  });
+
+  it('carries a sum beyond 2^53 units at eight places exactly', () => {
+    // 1e9 units at eight places is 1e17 integer units, past 2^53.
+    const values = Array.from({ length: 10 }, () => 100000000.00000001);
+    expect(sumMoney(values, 8)).toBe(1000000000.0000001);
+    expect(sumMoney([1e9, 0.00000001, -0.00000001], 8)).toBe(1e9);
+    expect(sumMoney([123456789.12345678, 876543210.87654322], 8)).toBe(1000000000);
+  });
+
+  it('reads a value in exponent form', () => {
+    expect(sumMoney([1e-7, 2e-8], 8)).toBe(0.00000012);
+    expect(sumMoney([1e21, 1], 4)).toBe(1e21 + 1);
+  });
+
+  it('is non-finite when a value is', () => {
+    expect(sumMoney([1, Number.NaN])).toBeNaN();
+    expect(sumMoney([1, Number.POSITIVE_INFINITY])).toBe(Number.POSITIVE_INFINITY);
   });
 });
 

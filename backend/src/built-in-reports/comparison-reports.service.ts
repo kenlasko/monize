@@ -7,7 +7,12 @@ import {
   ReportCurrencyService,
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
-import { roundMoney, sumMoney, toMoneyNumber } from "../common/round.util";
+import {
+  MONEY_SCALE,
+  roundMoney,
+  sumMoney,
+  toMoneyNumber,
+} from "../common/round.util";
 import {
   YearOverYearResponse,
   YearData,
@@ -139,13 +144,17 @@ export class ComparisonReportsService {
       if (yearData && aggregate) {
         const monthData = yearData.months[row.month - 1];
         const income = this.currencyService.tryConvertAmount(
-          toMoneyNumber(row.income),
+          // An aggregate in the row's own currency, read before conversion: a coin's
+          // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
+          // the same), so a 2,500-sat total is not rounded to zero before it is
+          // converted (INV-MONEY-001).
+          toMoneyNumber(row.income, MONEY_SCALE),
           row.currency_code,
           defaultCurrency,
           rateMap,
         );
         const expenses = this.currencyService.tryConvertAmount(
-          toMoneyNumber(row.expenses),
+          toMoneyNumber(row.expenses, MONEY_SCALE),
           row.currency_code,
           defaultCurrency,
           rateMap,
@@ -266,7 +275,7 @@ export class ComparisonReportsService {
 
     rawResults.forEach((row) => {
       const total = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.total),
+        toMoneyNumber(row.total, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,

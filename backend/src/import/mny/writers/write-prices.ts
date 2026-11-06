@@ -2,7 +2,12 @@ import { EntityManager } from "typeorm";
 import { roundToDecimals } from "../../../common/round.util";
 import { MnyExchangeRate, MnySecurityPrice } from "../model/mny-rows";
 import { chunk } from "./chunk";
-import { canonicalRateRow } from "../../../currencies/canonical-rate.util";
+import {
+  IsCoin,
+  NO_COINS,
+  canonicalRateRow,
+} from "../../../currencies/canonical-rate.util";
+import { loadCoinLookup } from "../../../currencies/coin-lookup";
 import { returnedRows } from "../../../common/db/query-result";
 
 /**
@@ -150,10 +155,16 @@ export interface ExchangeRateRow {
  * rather than becoming two rows that disagree, and the same dedupe that keeps
  * the multi-row `INSERT` free of "cannot affect row a second time" now also
  * keeps the pair from contradicting itself.
+ *
+ * `isCoin` is `currencies.kind` read once for the import: a pair with one coin
+ * side is stored coin -> fiat whichever code sorts first. A rate the column
+ * cannot hold (at or above 1e10 as stored, or nothing at ten decimals) is
+ * dropped like any other unusable row rather than failing the whole insert.
  */
 export function resolveExchangeRates(
   rates: readonly MnyExchangeRate[],
   currencyByHandle: ReadonlyMap<number, string>,
+  isCoin: IsCoin = NO_COINS,
 ): ExchangeRateRow[] {
   const byKey = new Map<string, ExchangeRateRow>();
 
@@ -175,7 +186,7 @@ export function resolveExchangeRates(
 
     // Refuses a self-pair and a non-positive or non-finite rate, so the checks
     // this replaces stay in one place.
-    const row = canonicalRateRow(fromCurrency, toCurrency, value);
+    const row = canonicalRateRow(fromCurrency, toCurrency, value, isCoin);
     if (row === null) {
       continue;
     }
@@ -212,7 +223,11 @@ export async function writeExchangeRates(
   rates: readonly MnyExchangeRate[],
   currencyByHandle: ReadonlyMap<number, string>,
 ): Promise<number> {
-  const rows = resolveExchangeRates(rates, currencyByHandle);
+  const rows = resolveExchangeRates(
+    rates,
+    currencyByHandle,
+    await loadCoinLookup(manager),
+  );
   let inserted = 0;
 
   for (const batch of chunk(rows, UPSERT_CHUNK_SIZE)) {

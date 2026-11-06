@@ -13,6 +13,10 @@ import { InvestmentTransaction } from "./entities/investment-transaction.entity"
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { withUserContext } from "../common/db/with-context";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import {
+  currencyKindRows,
+  isCurrencyKindRead,
+} from "../test-helpers/currency-kind-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -23,10 +27,15 @@ jest.mock("../common/db/scoped-db", () =>
  * test had `findOne` return, as the database would return the same row.
  */
 let lockedRowOf: () => Promise<unknown[]> = async () => [];
+/**
+ * The `currencies` kind read (INV-CRYPTO-001) answers BTC as a coin; the row
+ * `update()` locks answers `lockedRowOf`; everything else, `other`.
+ */
 const queryWith =
   (other: (sql: string, params: unknown[]) => unknown) =>
   async (sql: string, params: unknown[]) =>
-    /FOR UPDATE/.test(sql) ? lockedRowOf() : other(sql, params);
+    currencyKindRows(sql, params) ??
+    (/FOR UPDATE/.test(sql) ? lockedRowOf() : other(sql, params));
 
 describe("SecuritiesService", () => {
   let service: SecuritiesService;
@@ -212,6 +221,67 @@ describe("SecuritiesService", () => {
       mockBondPriceService as never,
       mockBondSeriesService as never,
     );
+  });
+
+  describe("INV-CRYPTO-001: a security is priced in a fiat currency", () => {
+    it("create refuses a CRYPTO currency, writing nothing", async () => {
+      queryRunnerManager.findOne.mockResolvedValue(null);
+      await expect(
+        service.create("user-1", {
+          symbol: "XBT",
+          name: "Bitcoin",
+          currencyCode: "BTC",
+        }),
+      ).rejects.toThrow(/BTC is a cryptocurrency/);
+      expect(queryRunnerManager.save).not.toHaveBeenCalled();
+    });
+
+    it("update refuses a move to a CRYPTO currency, writing nothing", async () => {
+      securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      lockedRowOf = async () => [
+        {
+          bond_program_id: null,
+          bond_auto_fetch: false,
+          security_type: "STOCK",
+          currency_code: "USD",
+        },
+      ];
+      await expect(
+        service.update("user-1", "sec-1", { currencyCode: "BTC" }),
+      ).rejects.toThrow(/BTC is a cryptocurrency/);
+      expect(queryRunnerManager.save).not.toHaveBeenCalled();
+    });
+
+    it("update does not read the currency when it does not move", async () => {
+      securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      await service.update("user-1", "sec-1", {
+        currencyCode: mockSecurity.currencyCode,
+        name: "Apple",
+      });
+      expect(
+        queryRunnerManager.query.mock.calls.some(([sql]: unknown[]) =>
+          isCurrencyKindRead(sql),
+        ),
+      ).toBe(false);
+    });
+
+    it("previewCreateSecurity refuses a lookup that resolves to a CRYPTO currency", async () => {
+      mockSecurityPriceService.lookupSecurityCandidates.mockResolvedValue([
+        {
+          symbol: "XBT",
+          name: "Bitcoin",
+          exchange: null,
+          securityType: "CRYPTO",
+          currencyCode: "BTC",
+          provider: "yahoo" as const,
+          msnInstrumentId: null,
+        },
+      ]);
+      securitiesRepository.findOne.mockResolvedValue(null);
+      await expect(
+        service.previewCreateSecurity("user-1", { query: "XBT" }),
+      ).rejects.toThrow(/BTC is a cryptocurrency/);
+    });
   });
 
   describe("previewCreateSecurity", () => {
@@ -504,10 +574,14 @@ describe("SecuritiesService", () => {
         queryRunnerManager.findOne.mockResolvedValue(null);
         queryRunnerManager.query.mockResolvedValue([{ currency_code: "PLN" }]);
         const order: string[] = [];
-        queryRunnerManager.query.mockImplementation(async () => {
-          order.push("check");
-          return [{ currency_code: "PLN" }];
-        });
+        queryRunnerManager.query.mockImplementation(
+          async (sql: string, params: unknown[]) => {
+            const kindRows = currencyKindRows(sql, params);
+            if (kindRows) return kindRows;
+            order.push("check");
+            return [{ currency_code: "PLN" }];
+          },
+        );
         queryRunnerManager.save.mockImplementation(async (a, b) => {
           order.push("save");
           return b ?? a;
@@ -2802,12 +2876,14 @@ describe("SecuritiesService", () => {
         bondProgramId: PROGRAM,
       };
       const catalog = (currency: string | null) =>
-        queryRunnerManager.query.mockImplementation(async (sql: string) =>
-          /FROM bond_programs/.test(sql)
-            ? currency === null
-              ? []
-              : [{ currency_code: currency }]
-            : [],
+        queryRunnerManager.query.mockImplementation(
+          async (sql: string, params: unknown[]) =>
+            currencyKindRows(sql, params) ??
+            (/FROM bond_programs/.test(sql)
+              ? currency === null
+                ? []
+                : [{ currency_code: currency }]
+              : []),
         );
 
       it("refuses a currency change the commit would refuse, with the same message, before any confirmation", async () => {
@@ -2860,6 +2936,18 @@ describe("SecuritiesService", () => {
           currencyCode: "EUR",
         });
         expect(preview.currencyCode).toBe("EUR");
+      });
+
+      it("refuses a move to a CRYPTO currency, as the commit does (INV-CRYPTO-001)", async () => {
+        securitiesRepository.createQueryBuilder.mockReturnValueOnce(
+          qb({ getOne: sec }),
+        );
+        await expect(
+          service.previewUpdateSecurity("user-1", {
+            query: "AAPL",
+            currencyCode: "BTC",
+          }),
+        ).rejects.toThrow(/BTC is a cryptocurrency/);
       });
     });
 

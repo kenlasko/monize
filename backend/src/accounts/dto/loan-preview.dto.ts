@@ -8,13 +8,14 @@ import {
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { PAYMENT_FREQUENCIES, PaymentFrequency } from "./create-account.dto";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 export class LoanPreviewDto {
   @ApiProperty({
     example: 25000,
     description: "Loan amount (positive number)",
   })
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsMoneyAmount(2)
   @Min(0.01)
   loanAmount: number;
 
@@ -31,7 +32,7 @@ export class LoanPreviewDto {
     example: 500,
     description: "Payment amount per period",
   })
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsMoneyAmount(2)
   @Min(0.01)
   paymentAmount: number;
 

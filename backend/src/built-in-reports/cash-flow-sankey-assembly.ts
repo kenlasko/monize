@@ -100,7 +100,8 @@ const DEBT_TYPES = new Set(["LOAN", "MORTGAGE", "LINE_OF_CREDIT"]);
 /**
  * The class a counterpart's type decides. A credit card is "other accounts",
  * never debt: the spending it settles was already an expense on the purchase
- * date (decision 5). A counterpart this reader cannot see is "other accounts"
+ * date (decision 5). A CRYPTO wallet is "other accounts", as CASH is
+ * (docs/specs/crypto-accounts.md decision 7). A counterpart this reader cannot see is "other accounts"
  * so the identity still closes (section 9).
  */
 export function classifyCounterpart(

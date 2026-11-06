@@ -4,8 +4,10 @@ import { NormalTransactionFields } from './NormalTransactionFields';
 import { Account } from '@/types/account';
 import { Payee } from '@/types/payee';
 import { useTourStore } from '@/store/tourStore';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 
-vi.mock('@/lib/format', () => ({
+vi.mock('@/lib/format', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/format')>()),
   getCurrencySymbol: (code: string) => (code === 'USD' ? 'US$' : '$'),
   getDecimalPlacesForCurrency: () => 2,
 }));
@@ -43,8 +45,8 @@ vi.mock('@/components/ui/Combobox', () => ({
 }));
 
 vi.mock('@/components/ui/CurrencyInput', () => ({
-  CurrencyInput: ({ label, value, onChange, error, prefix }: any) => (
-    <div data-testid={`currency-input-${label}`}>
+  CurrencyInput: ({ label, value, onChange, error, prefix, decimalPlaces }: any) => (
+    <div data-testid={`currency-input-${label}`} data-decimal-places={decimalPlaces ?? ''}>
       <label>{label}</label>
       {prefix && <span data-testid={`currency-prefix-${label}`}>{prefix}</span>}
       <input
@@ -157,6 +159,26 @@ describe('NormalTransactionFields', () => {
     // No tour running by default, so a tour started in one test cannot leak
     // its form constraints into the next.
     useTourStore.setState({ active: null });
+  });
+
+  it('enters a registered coin amount at its own places, and an ISO one at the default', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    try {
+      const { unmount } = render(
+        <NormalTransactionFields {...defaultProps} watchedCurrencyCode="BTC" />,
+      );
+      expect(screen.getByTestId('currency-input-Amount')).toHaveAttribute('data-decimal-places', '4');
+      unmount();
+      render(<NormalTransactionFields {...defaultProps} />);
+      expect(screen.getByTestId('currency-input-Amount')).toHaveAttribute('data-decimal-places', '2');
+    } finally {
+      clearCurrencyDecimals();
+    }
+  });
+
+  it('enters a coin amount at the column scale before the registry has loaded', () => {
+    render(<NormalTransactionFields {...defaultProps} watchedCurrencyCode="BTC" />);
+    expect(screen.getByTestId('currency-input-Amount')).toHaveAttribute('data-decimal-places', '8');
   });
 
   it('renders Account select', () => {

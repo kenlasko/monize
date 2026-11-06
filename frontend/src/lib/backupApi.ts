@@ -83,6 +83,22 @@ export interface RestoreResult {
     count: number;
     series: { issuerCountryCode: string; seriesCode: string; reason: string }[];
   };
+  /**
+   * Restored rows whose currency's kind on this server disagrees with them: an
+   * account whose type and currency kind disagree, a security priced in a
+   * cryptocurrency, a cryptocurrency as the reporting currency. The rows were
+   * written; the user repairs them. `accounts` (names) and `securities`
+   * (symbols) are capped by the server (50), so they can be shorter than
+   * `accountCount` / `securityCount`. Outside `restored`. Absent when nothing
+   * disagrees.
+   */
+  currencyKindMismatches?: {
+    accounts: string[];
+    accountCount: number;
+    securities: string[];
+    securityCount: number;
+    defaultCurrency: string | null;
+  };
 }
 
 export type SupportBackupSection =

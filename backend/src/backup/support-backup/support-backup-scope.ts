@@ -1,4 +1,9 @@
 import { formatDateYMD } from "../../common/date-utils";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyDecimalsFor,
+  sumMoney,
+} from "../../common/round.util";
 
 export type TableMap = Record<string, Record<string, unknown>[]>;
 
@@ -21,6 +26,108 @@ const dateKey = (value: unknown): string | null => {
  */
 export function countsTowardBalance(tx: Record<string, unknown>): boolean {
   return tx.status !== "VOID" && !tx.parent_transaction_id;
+}
+
+/**
+ * The money precision of each account, by account id: its currency's
+ * `decimal_places` from the export's own `currencies` rows through
+ * `moneyDecimalsFor`. Every amount of an account is in its currency, so its
+ * amounts sum at this precision (a coin keeps its eight places). A currency
+ * the export does not carry reads as fiat.
+ */
+export function accountMoneyDecimals(tables: TableMap): Map<string, number> {
+  const placesByCode = new Map<string, number>();
+  for (const currency of tables.currencies ?? []) {
+    const code = str(currency.code);
+    const places = Number(currency.decimal_places);
+    if (code !== null && Number.isFinite(places)) {
+      placesByCode.set(code.toUpperCase(), places);
+    }
+  }
+  return new Map(
+    (tables.accounts ?? []).map((account) => [
+      String(account.id),
+      moneyDecimalsFor(
+        placesByCode.get((str(account.currency_code) ?? "").toUpperCase()),
+      ),
+    ]),
+  );
+}
+
+/** Tables whose money columns are all in the owning account's currency. */
+const ACCOUNT_ROW_TABLES = new Set(["transactions", "scheduled_transactions"]);
+
+/**
+ * Child tables whose money columns are in their parent's account currency, by
+ * the foreign key naming the parent and the parent table that carries the
+ * `account_id`.
+ */
+const ACCOUNT_CHILD_TABLES: Record<
+  string,
+  { parentKey: string; parentTable: string }
+> = {
+  transaction_splits: {
+    parentKey: "transaction_id",
+    parentTable: "transactions",
+  },
+  scheduled_transaction_splits: {
+    parentKey: "scheduled_transaction_id",
+    parentTable: "scheduled_transactions",
+  },
+  scheduled_transaction_overrides: {
+    parentKey: "scheduled_transaction_id",
+    parentTable: "scheduled_transactions",
+  },
+};
+
+/** The `accounts` columns that are the account's own money, in its currency. */
+const ACCOUNT_OWN_MONEY_COLUMNS = new Set([
+  "opening_balance",
+  "current_balance",
+  "credit_limit",
+  "low_balance_threshold",
+  "high_balance_threshold",
+]);
+
+/**
+ * The places `column` of `row` of `table` is scaled at: the account currency's
+ * money precision for an amount in an account's currency (a coin keeps its
+ * eight places), `FIAT_MONEY_DECIMALS` for every other money column. A
+ * transaction, a scheduled transaction and an override are read through their
+ * `account_id`; a split through its parent's; an account's balances and
+ * thresholds through its own id. A row whose account the export does not carry
+ * reads as fiat.
+ */
+export function moneyDecimalsResolver(
+  tables: TableMap,
+): (table: string, row: Record<string, unknown>, column: string) => number {
+  const decimalsByAccount = accountMoneyDecimals(tables);
+  const accountOfParent = (table: string): Map<string, unknown> =>
+    new Map(
+      (tables[table] ?? []).map((row) => [String(row.id), row.account_id]),
+    );
+  const parents: Record<string, Map<string, unknown>> = {
+    transactions: accountOfParent("transactions"),
+    scheduled_transactions: accountOfParent("scheduled_transactions"),
+  };
+  const ofAccount = (accountId: unknown): number =>
+    decimalsByAccount.get(String(accountId)) ?? FIAT_MONEY_DECIMALS;
+
+  return (table, row, column) => {
+    if (table === "accounts") {
+      return ACCOUNT_OWN_MONEY_COLUMNS.has(column)
+        ? ofAccount(row.id)
+        : FIAT_MONEY_DECIMALS;
+    }
+    if (ACCOUNT_ROW_TABLES.has(table)) return ofAccount(row.account_id);
+    const child = ACCOUNT_CHILD_TABLES[table];
+    if (child) {
+      return ofAccount(
+        parents[child.parentTable]?.get(String(row[child.parentKey])),
+      );
+    }
+    return FIAT_MONEY_DECIMALS;
+  };
 }
 
 /**
@@ -52,25 +159,29 @@ export function applyDateRange(
   const out: TableMap = { ...tables };
 
   if (from) {
-    const openingShift = new Map<string, number>();
+    const decimalsByAccount = accountMoneyDecimals(tables);
+    const removed = new Map<string, number[]>();
     for (const tx of tables.transactions ?? []) {
       const key = dateKey(tx.transaction_date);
       if (key === null || key >= from || !countsTowardBalance(tx)) continue;
       const amount = Number(tx.amount);
       if (!Number.isFinite(amount)) continue;
       const account = String(tx.account_id);
-      openingShift.set(
-        account,
-        (openingShift.get(account) ?? 0) + Math.round(amount * 10000),
-      );
+      const amounts = removed.get(account) ?? [];
+      amounts.push(amount);
+      removed.set(account, amounts);
     }
     out.accounts = (tables.accounts ?? []).map((account) => {
-      const shift = openingShift.get(String(account.id));
+      const amounts = removed.get(String(account.id));
+      if (!amounts) return account;
+      const decimals =
+        decimalsByAccount.get(String(account.id)) ?? FIAT_MONEY_DECIMALS;
+      const shift = sumMoney(amounts, decimals);
       if (!shift) return account;
       const opening = Number(account.opening_balance) || 0;
       return {
         ...account,
-        opening_balance: (Math.round(opening * 10000) + shift) / 10000,
+        opening_balance: sumMoney([opening, shift], decimals),
       };
     });
   }

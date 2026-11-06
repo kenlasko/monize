@@ -96,6 +96,16 @@ const perUserDataBody = functionBody(
   uncommented,
   "currency_codes_referenced_by_user_data",
 );
+const dataBody = functionBody(uncommented, "currency_code_referenced_by_data");
+const minPlacesBody = functionBody(
+  uncommented,
+  "currency_min_decimal_places_in_use",
+);
+
+/** Whether a function body reads `table` and compares `column` with `p_code`. */
+const consults = (fnBody: string, table: string, column: string): boolean =>
+  new RegExp(`FROM\\s+${table}\\b`, "i").test(fnBody) &&
+  new RegExp(`\\b${column}\\s*=\\s*p_code`, "i").test(fnBody);
 
 describe("currency global liveness", () => {
   // Every assertion below depends on the parser. A regex that stops matching
@@ -135,6 +145,64 @@ describe("currency global liveness", () => {
     expect(
       notConsulted.map(({ table, column }) => `${table}.${column}`),
     ).toEqual([]);
+  });
+
+  /**
+   * The kind-change gate's question (INV-CRYPTO-001,
+   * `docs/specs/crypto-accounts.md` decision 8): every reference except an
+   * activation. Every creator holds their currency through a
+   * `user_currency_preferences` row, so counting activations made a kind
+   * immutable from birth; leaving out anything else lets a CRYPTO account's
+   * currency turn FIAT under it.
+   */
+  describe("currency_code_referenced_by_data", () => {
+    it("consults every column that references currencies(code) except activations", () => {
+      const notConsulted = references
+        .filter(({ table }) => table !== "user_currency_preferences")
+        .filter(({ table, column }) => !consults(dataBody, table, column));
+
+      expect(
+        notConsulted.map(({ table, column }) => `${table}.${column}`),
+      ).toEqual([]);
+    });
+
+    it("does not count an activation", () => {
+      expect(dataBody).not.toMatch(/user_currency_preferences/i);
+    });
+
+    it("is its sibling's list less activations, so the two cannot drift apart", () => {
+      const columnsOf = (fnBody: string) =>
+        references
+          .filter(({ table, column }) => consults(fnBody, table, column))
+          .map(({ table, column }) => `${table}.${column}`)
+          .sort();
+
+      expect(columnsOf(dataBody)).toEqual(
+        columnsOf(body).filter(
+          (c) => c !== "user_currency_preferences.currency_code",
+        ),
+      );
+    });
+
+    it("is SECURITY DEFINER with a pinned search_path, not executable by PUBLIC", () => {
+      const definition =
+        /CREATE OR REPLACE FUNCTION currency_code_referenced_by_data\([\s\S]*?\nAS \$\$/.exec(
+          uncommented,
+        )![0];
+      expect(definition).toMatch(/SECURITY DEFINER/);
+      expect(definition).toMatch(/SET search_path = public, pg_temp/);
+      expect(uncommented).toMatch(
+        /REVOKE ALL ON FUNCTION currency_code_referenced_by_data\(VARCHAR\) FROM PUBLIC;/,
+      );
+    });
+
+    it("is what the kind-change gate asks, not the sibling", () => {
+      const currenciesService = readFileSync(
+        join(__dirname, "currencies.service.ts"),
+        "utf8",
+      );
+      expect(currenciesService).toContain("currency_code_referenced_by_data");
+    });
   });
 
   /**
@@ -281,6 +349,99 @@ describe("currency global liveness", () => {
     });
   });
 
+  /**
+   * The decimal-places lowering gate's question (INV-MONEY-001): the fewest
+   * places every stored amount in the currency fits, across every user. It reads
+   * amount columns rather than reference columns, so it is held to the
+   * referencing tables that carry amounts in the code -- an account, a
+   * transaction, a scheduled transaction -- and to the currency columns it
+   * compares, which must be ones `CURRENCY_REFERENCE_COLUMNS` lists.
+   */
+  describe("currency_min_decimal_places_in_use", () => {
+    /** Referencing tables with amounts in the code, and the amount columns read. */
+    const SCANNED: Readonly<Record<string, readonly string[]>> = {
+      accounts: [
+        "opening_balance",
+        "current_balance",
+        "credit_limit",
+        "low_balance_threshold",
+        "high_balance_threshold",
+      ],
+      transactions: ["amount", "original_amount"],
+      transaction_splits: ["amount"],
+      scheduled_transactions: ["amount", "original_amount"],
+      scheduled_transaction_splits: ["amount"],
+      scheduled_transaction_overrides: ["amount"],
+    };
+
+    /** A table's CREATE TABLE body in schema.sql. */
+    const tableBody = (table: string): string => {
+      const match = new RegExp(
+        `CREATE TABLE(?: IF NOT EXISTS)?\\s+${table}\\s*\\(([\\s\\S]*?)\\n\\);`,
+      ).exec(uncommented);
+      if (!match) throw new Error(`${table} not found in database/schema.sql`);
+      return match[1];
+    };
+
+    it("reads every amount column it is meant to, and each is a NUMERIC(24, 8) column", () => {
+      for (const [table, columns] of Object.entries(SCANNED)) {
+        expect(minPlacesBody).toMatch(new RegExp(`\\b${table}\\b`));
+        for (const column of columns) {
+          expect(tableBody(table)).toMatch(
+            new RegExp(`^\\s*${column}\\s+NUMERIC\\(\\s*24,\\s*8\\)`, "m"),
+          );
+          // Accounts' columns come through the VALUES list as `a.<column>`.
+          expect(minPlacesBody).toMatch(new RegExp(`\\b[a-z]+\\.${column}\\b`));
+        }
+      }
+    });
+
+    it("reads every referencing table that carries amounts, and only currency columns the list names", () => {
+      const roots = ["accounts", "transactions", "scheduled_transactions"];
+      for (const table of roots) {
+        // A referencing table the function omits would leave its rows unseen.
+        expect(Object.keys(CURRENCY_REFERENCE_COLUMNS)).toContain(table);
+        expect(minPlacesBody).toMatch(new RegExp(`FROM\\s+${table}\\b`, "i"));
+      }
+      // Every `<alias>.<currency column> = p_code` comparison names a column that
+      // CURRENCY_REFERENCE_COLUMNS lists for one of the referencing tables.
+      const listed = new Set(Object.values(CURRENCY_REFERENCE_COLUMNS).flat());
+      const compared = [
+        ...minPlacesBody.matchAll(/\b\w+\.(\w+)\s*=\s*p_code/gi),
+      ].map((m) => m[1]);
+      expect(compared.length).toBeGreaterThan(0);
+      for (const column of compared) expect(listed).toContain(column);
+      // And the original-currency columns are consulted for the original amounts.
+      for (const table of ["transactions", "scheduled_transactions"]) {
+        expect(CURRENCY_REFERENCE_COLUMNS[table]).toContain(
+          "original_currency_code",
+        );
+      }
+      expect(minPlacesBody).toMatch(/original_currency_code\s*=\s*p_code/i);
+    });
+
+    it("is SECURITY DEFINER with a pinned search_path, not executable by PUBLIC", () => {
+      const definition =
+        /CREATE OR REPLACE FUNCTION currency_min_decimal_places_in_use\([\s\S]*?\nAS \$\$/.exec(
+          uncommented,
+        )![0];
+      expect(definition).toMatch(/SECURITY DEFINER/);
+      expect(definition).toMatch(/SET search_path = public, pg_temp/);
+      expect(uncommented).toMatch(
+        /REVOKE ALL ON FUNCTION currency_min_decimal_places_in_use\(VARCHAR\) FROM PUBLIC;/,
+      );
+    });
+
+    it("is what the lowering gate asks, not a scan under the caller's RLS", () => {
+      const currenciesService = readFileSync(
+        join(__dirname, "currencies.service.ts"),
+        "utf8",
+      );
+      expect(currenciesService).toContain("currency_min_decimal_places_in_use");
+      expect(currenciesService).not.toMatch(/FROM transaction_splits/);
+    });
+  });
+
   it("is SECURITY DEFINER with a pinned search_path", () => {
     const definition =
       /CREATE OR REPLACE FUNCTION currency_code_in_use_globally\([\s\S]*?\nAS \$\$/.exec(
@@ -316,6 +477,13 @@ describe("currency global liveness", () => {
       "check_attachment_pair_parent",
       // The global currency-liveness answer, evaluated across every tenant.
       "currency_code_in_use_globally",
+      // Its sibling without activations, for the currency kind-change gate
+      // (INV-CRYPTO-001); same shape, one VARCHAR in, one boolean out.
+      "currency_code_referenced_by_data",
+      // The fewest decimal places every user's stored amounts in a currency fit,
+      // for the decimal-places lowering gate (INV-MONEY-001); one VARCHAR in,
+      // one smallint out, evaluated across every tenant.
+      "currency_min_decimal_places_in_use",
       // Whether a grant's account belongs to the delegation's owner, for the
       // account_delegate_grants WITH CHECK: the policy cannot read accounts
       // under RLS (the accounts policy reads the grants -- a policy cycle). One

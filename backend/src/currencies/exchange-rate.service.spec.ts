@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { ExchangeRateService } from "./exchange-rate.service";
@@ -91,6 +93,7 @@ const seriesAnswer = (
 ): FxDailySeriesResult => ({
   points,
   answered: options.answered ?? true,
+  carried: true,
   source: points.length > 0 ? (options.source ?? YAHOO_SOURCE) : null,
 });
 
@@ -98,6 +101,15 @@ const seriesAnswer = (
 const EMPTY_WINDOW: FxDailySeriesResult = {
   points: [],
   answered: true,
+  carried: true,
+  source: null,
+};
+
+/** No provider that may be asked carries the pair: a coin without a price symbol. */
+const UNCARRIED: FxDailySeriesResult = {
+  points: [],
+  answered: true,
+  carried: false,
   source: null,
 };
 
@@ -105,6 +117,7 @@ const EMPTY_WINDOW: FxDailySeriesResult = {
 const NO_ANSWER: FxDailySeriesResult = {
   points: [],
   answered: false,
+  carried: true,
   source: null,
 };
 
@@ -168,6 +181,9 @@ describe("ExchangeRateService", () => {
     isActive: true,
     createdByUserId: null,
     createdAt: new Date("2025-01-01"),
+
+    kind: "FIAT",
+    quoteSymbol: null,
   };
 
   const createMockQueryBuilder = (
@@ -281,8 +297,10 @@ describe("ExchangeRateService", () => {
       createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
     };
 
+    // `find` also answers the writers' coin lookup (`loadCoinLookup`): no coins
+    // unless a case says otherwise.
     currencyRepository = {
-      find: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
     };
 
     userPreferenceRepository = {
@@ -1480,6 +1498,36 @@ describe("ExchangeRateService", () => {
       ]);
     });
 
+    it("stores a coin window coin-first, read the kinds once, and skips a rate out of range", async () => {
+      // XBT is a coin; IDR sorts first but the pair is stored XBT->IDR. A
+      // 1.1e10 close does not fit NUMERIC(20,10) and is skipped, not allowed to
+      // fail the statement for the rest of the window.
+      currencyRepository.find.mockResolvedValue([{ code: "XBT" }]);
+      exchangeRateRepository.find.mockResolvedValue([]);
+      chain.dailySeries.mockResolvedValue(
+        seriesAnswer([
+          point("IDR", "XBT", "2026-06-04", 1 / 1.52e9),
+          point("XBT", "IDR", "2026-06-05", 1.53e9),
+          point("XBT", "IDR", "2026-06-06", 1.1e10),
+        ]),
+      );
+
+      await service.getRateForDate("XBT", "IDR", "2026-06-08");
+
+      const rows = bulkInsertedRows();
+      expect(rows.map((r) => [r.from, r.to, r.date])).toEqual([
+        ["XBT", "IDR", "2026-06-04"],
+        ["XBT", "IDR", "2026-06-05"],
+      ]);
+      expect(Math.abs(rows[0].rate - 1.52e9) / 1.52e9).toBeLessThan(1e-9);
+      expect(rows[1].rate).toBe(1.53e9);
+      expect(currencyRepository.find).toHaveBeenCalledTimes(1);
+      expect(currencyRepository.find).toHaveBeenCalledWith({
+        select: { code: true },
+        where: { kind: "CRYPTO" },
+      });
+    });
+
     it("still answers from the fetched window when persisting it fails", async () => {
       exchangeRateRepository.find.mockResolvedValue([]);
       chain.dailySeries.mockResolvedValue(
@@ -1770,6 +1818,17 @@ describe("ExchangeRateService", () => {
       answerWith([]);
 
       expect(await service.getLatestRates()).toEqual([]);
+    });
+
+    it("breaks a same-day tie towards the coin-first row of a coin pair", async () => {
+      // IDR sorts before XBT, but XBT is a coin, so XBT->IDR is the stored
+      // orientation now and the frozen IDR->XBT row loses the tie.
+      currencyRepository.find.mockResolvedValue([{ code: "XBT" }]);
+      const fiatFirst = listed("IDR", "XBT", "0.0000000007", todayYMD());
+      const coinFirst = listed("XBT", "IDR", 1.52e9, todayYMD());
+      answerWith([fiatFirst, coinFirst]);
+
+      expect(await service.getLatestRates()).toEqual([coinFirst]);
     });
 
     it("returns one row per pair, the fresh canonical one, when a stale mirror survives", async () => {
@@ -2275,6 +2334,225 @@ describe("ExchangeRateService", () => {
   });
 
   /**
+   * The weekend tick (`docs/specs/crypto-accounts.md`, decision 6): only the
+   * pairs with a CRYPTO side, under the weekday refresh's lease.
+   */
+  describe("refreshCryptoRates and scheduledCryptoRateRefresh", () => {
+    /** The used-currency query answering each code's kind and price symbol. */
+    function routeKindedQueries(
+      rows: Array<{
+        code: string;
+        kind: "FIAT" | "CRYPTO";
+        quoteSymbol?: string | null;
+      }>,
+    ): void {
+      routeRateQueries([]);
+      const base = dataSource.query.getMockImplementation()!;
+      dataSource.query.mockImplementation(
+        async (sql: string, params?: unknown[]) =>
+          typeof sql === "string" && sql.includes("SELECT DISTINCT code")
+            ? rows.map((row) => ({ quoteSymbol: null, ...row }))
+            : base(sql, params),
+      );
+    }
+
+    const IN_USE = [
+      { code: "BTC", kind: "CRYPTO" as const, quoteSymbol: "BTC-CAD" },
+      { code: "CAD", kind: "FIAT" as const },
+      { code: "EUR", kind: "FIAT" as const },
+      { code: "USD", kind: "FIAT" as const },
+    ];
+
+    it("reads each currency's kind with the currencies in use", async () => {
+      routeKindedQueries(IN_USE);
+      chain.latest.mockImplementation(async (base) => latestAnswer(base, []));
+
+      await service.refreshCryptoRates();
+
+      const [sql] = dataSource.query.mock.calls.find(([q]) =>
+        String(q).includes("SELECT DISTINCT code"),
+      )!;
+      expect(sql).toContain("LEFT JOIN currencies c USING (code)");
+      expect(sql).toContain('c.quote_symbol AS "quoteSymbol"');
+    });
+
+    it("asks the chain only for the canonical pairs with a coin side", async () => {
+      routeKindedQueries(IN_USE);
+      chain.latest.mockImplementation(async (base, quotes) =>
+        latestAnswer(
+          base,
+          quotes.map((quote) =>
+            observation(base, quote, "2026-11-07", 137000, "yahoo_crypto"),
+          ),
+        ),
+      );
+
+      const result = await service.refreshCryptoRates();
+
+      // BTC sorts first, so every pair with it is under the BTC base; the
+      // fiat bases CAD and EUR have no coin quote and are not asked.
+      expect(chain.latest.mock.calls).toEqual([["BTC", ["CAD", "EUR", "USD"]]]);
+      expect(result.totalPairs).toBe(3);
+      expect(result.updated).toBe(3);
+      expect(upsertedRates.map((r) => r.source)).toEqual([
+        "yahoo_crypto",
+        "yahoo_crypto",
+        "yahoo_crypto",
+      ]);
+    });
+
+    it("puts a coin that sorts after its fiats under its own base", async () => {
+      // `ZZZ` sorts after the fiat codes, but a coin pair is stored coin ->
+      // fiat (`isCanonicalOrientation`), so its pairs are one question under
+      // the coin, not one under each fiat.
+      routeKindedQueries([
+        { code: "CAD", kind: "FIAT" },
+        { code: "EUR", kind: "FIAT" },
+        { code: "ZZZ", kind: "CRYPTO", quoteSymbol: "ZZZ-USD" },
+      ]);
+      chain.latest.mockImplementation(async (base) => latestAnswer(base, []));
+
+      await service.refreshCryptoRates();
+
+      expect(chain.latest.mock.calls).toEqual([["ZZZ", ["CAD", "EUR"]]]);
+    });
+
+    it("stores XBT->IDR coin-first although IDR sorts first", async () => {
+      routeKindedQueries([
+        { code: "IDR", kind: "FIAT" },
+        { code: "XBT", kind: "CRYPTO", quoteSymbol: "BTC-IDR" },
+      ]);
+      // The adapter answers coin -> fiat; stored fiat-first at ten decimals
+      // this would be 0.0000000007 and resolve back 6% off.
+      chain.latest.mockImplementation(async (base) =>
+        latestAnswer(base, [
+          observation("XBT", "IDR", "2026-11-07", 1.52e9, "yahoo_crypto"),
+        ]),
+      );
+
+      const result = await service.refreshCryptoRates();
+
+      expect(chain.latest.mock.calls).toEqual([["XBT", ["IDR"]]]);
+      expect(result.updated).toBe(1);
+      expect(upsertedRates).toEqual([
+        {
+          fromCurrency: "XBT",
+          toCurrency: "IDR",
+          rateDate: "2026-11-07",
+          rate: 1.52e9,
+          source: "yahoo_crypto",
+        },
+      ]);
+    });
+
+    it("reports a rate the column cannot hold as out of range and saves the rest", async () => {
+      routeKindedQueries([
+        { code: "BTC", kind: "CRYPTO", quoteSymbol: "BTC-USD" },
+        { code: "CAD", kind: "FIAT" },
+        { code: "LBP", kind: "FIAT" },
+      ]);
+      chain.latest.mockImplementation(async (base) =>
+        latestAnswer(base, [
+          observation("BTC", "CAD", "2026-11-07", 137000, "yahoo_crypto"),
+          observation("BTC", "LBP", "2026-11-07", 1.1e10, "yahoo_crypto"),
+        ]),
+      );
+
+      const result = await service.refreshCryptoRates();
+
+      expect(result.updated).toBe(1);
+      expect(result.failed).toBe(1);
+      expect(result.results[1]).toEqual({
+        pair: "BTC/LBP",
+        success: false,
+        error: expect.stringMatching(/^Rate out of range/),
+      });
+      expect(upsertedRates.map((r) => r.toCurrency)).toEqual(["CAD"]);
+    });
+
+    it("asks nothing when no coin is in use", async () => {
+      routeKindedQueries(IN_USE.filter((row) => row.kind === "FIAT"));
+
+      const result = await service.refreshCryptoRates();
+
+      expect(chain.latest).not.toHaveBeenCalled();
+      expect(result.totalPairs).toBe(0);
+    });
+
+    it("names the Currencies page for a coin with no price symbol, on the weekday refresh too", async () => {
+      routeKindedQueries([
+        { code: "CAD", kind: "FIAT" },
+        { code: "TWD", kind: "FIAT" },
+        { code: "XYZ", kind: "CRYPTO", quoteSymbol: null },
+      ]);
+      chain.latest.mockImplementation(async (base, quotes) =>
+        latestAnswer(base, [], { uncarried: [...quotes] }),
+      );
+
+      const result = await service.refreshAllRates();
+
+      expect(result.results).toEqual([
+        {
+          pair: "CAD/TWD",
+          success: false,
+          error: "No configured provider carries CAD/TWD",
+        },
+        {
+          pair: "XYZ/CAD",
+          success: false,
+          error: "XYZ has no price symbol; map one on the Currencies page",
+        },
+        {
+          pair: "XYZ/TWD",
+          success: false,
+          error: "XYZ has no price symbol; map one on the Currencies page",
+        },
+      ]);
+    });
+
+    it("the weekend tick runs the crypto refresh under the exchange-rate lease", async () => {
+      routeKindedQueries(IN_USE);
+      chain.latest.mockImplementation(async (base) => latestAnswer(base, []));
+
+      await service.scheduledCryptoRateRefresh();
+
+      expect(fetchSync.withLease).toHaveBeenCalledWith(
+        FetchSyncJob.ExchangeRates,
+        expect.any(Number),
+        expect.any(Function),
+      );
+      expect(chain.latest.mock.calls).toEqual([["BTC", ["CAD", "EUR", "USD"]]]);
+    });
+
+    it("the weekend tick asks no provider when another replica holds the lease", async () => {
+      fetchSync.withLease.mockImplementation(async () => false);
+      routeKindedQueries(IN_USE);
+
+      await service.scheduledCryptoRateRefresh();
+
+      expect(chain.latest).not.toHaveBeenCalled();
+    });
+
+    it("the weekend tick swallows a failure", async () => {
+      dataSource.query.mockRejectedValue(new Error("DB error"));
+
+      await expect(
+        service.scheduledCryptoRateRefresh(),
+      ).resolves.toBeUndefined();
+    });
+
+    it("the weekend tick is scheduled Saturday and Sunday at 17:10 New York", () => {
+      const source = readFileSync(
+        join(__dirname, "exchange-rate.service.ts"),
+        "utf8",
+      );
+      expect(source).toMatch(
+        /@Cron\("10 17 \* \* 0,6", \{ timeZone: "America\/New_York" \}\)\s*async scheduledCryptoRateRefresh/,
+      );
+    });
+  });
+
+  /**
    * The one window door, public so `ExchangeRateHistoryService` asks the chain
    * exactly the question the on-demand fill asks. Its `{ stored, answered }` is
    * what reaches the user-facing gap fill (`docs/specs/fx-history-gap-fill.md`).
@@ -2303,7 +2581,11 @@ describe("ExchangeRateService", () => {
         "2024-01-01",
         "2024-01-12",
       );
-      expect(result).toEqual({ stored: points.length, answered: true });
+      expect(result).toEqual({
+        stored: points.length,
+        answered: true,
+        carried: true,
+      });
       const rows = bulkInsertedRows();
       expect(rows).toHaveLength(points.length);
       // Asked for USD->CAD, stored as the canonical CAD->USD, every row under
@@ -2356,7 +2638,7 @@ describe("ExchangeRateService", () => {
         "2017-08-19",
       );
 
-      expect(result).toEqual({ stored: 3, answered: true });
+      expect(result).toEqual({ stored: 3, answered: true, carried: true });
       expect(bulkInsertedRows()).toEqual([
         {
           from: "SGD",
@@ -2412,7 +2694,21 @@ describe("ExchangeRateService", () => {
         "2000-01-31",
       );
 
-      expect(result).toEqual({ stored: 0, answered: true });
+      expect(result).toEqual({ stored: 0, answered: true, carried: true });
+      expect(bulkInsertedRows()).toEqual([]);
+    });
+
+    it("reports a pair no provider carries (a coin without a price symbol): nothing stored, uncarried", async () => {
+      chain.dailySeries.mockResolvedValue(UNCARRIED);
+
+      const result = await service.fillRateWindow(
+        "DOG",
+        "CAD",
+        "2000-01-01",
+        "2000-01-31",
+      );
+
+      expect(result).toEqual({ stored: 0, answered: true, carried: false });
       expect(bulkInsertedRows()).toEqual([]);
     });
 
@@ -2426,7 +2722,7 @@ describe("ExchangeRateService", () => {
         "2000-01-31",
       );
 
-      expect(result).toEqual({ stored: 0, answered: false });
+      expect(result).toEqual({ stored: 0, answered: false, carried: true });
       expect(bulkInsertedRows()).toEqual([]);
     });
 
@@ -2675,6 +2971,42 @@ describe("ExchangeRateService", () => {
         "2026-03-16",
       );
       expect(chain.dailySeries).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not remember a window of a pair no provider carries, so a symbol mapped next is asked at once", async () => {
+      chain.dailySeries.mockResolvedValue(UNCARRIED);
+
+      await service.ensureRatesForDate(
+        [{ from: "DOG", to: "CAD" }],
+        "2026-03-15",
+      );
+      await service.ensureRatesForDate(
+        [{ from: "DOG", to: "CAD" }],
+        "2026-03-16",
+      );
+
+      expect(chain.dailySeries).toHaveBeenCalledTimes(2);
+    });
+
+    it("forgets the windows remembered for a code whose price symbol changed, and only those", async () => {
+      chain.dailySeries.mockResolvedValue(EMPTY_WINDOW);
+      const pairs = [
+        { from: "BTC", to: "CAD" },
+        { from: "USD", to: "CAD" },
+      ];
+      await service.ensureRatesForDate(pairs, "2026-03-15");
+      expect(chain.dailySeries).toHaveBeenCalledTimes(2);
+
+      service.forgetEmptyRateWindowsFor("btc");
+      await service.ensureRatesForDate(pairs, "2026-03-16");
+
+      expect(chain.dailySeries).toHaveBeenCalledTimes(3);
+      expect(chain.dailySeries).toHaveBeenLastCalledWith(
+        "BTC",
+        "CAD",
+        expect.any(String),
+        expect.any(String),
+      );
     });
 
     it("still remembers a window the providers answered as empty", async () => {

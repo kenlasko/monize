@@ -23,6 +23,7 @@ const account = (over: Partial<MatchableAccount> = {}): MatchableAccount => ({
   currencyCode: "PLN",
   isClosed: false,
   isInvestmentBrokerage: false,
+  isCrypto: false,
   ...over,
 });
 
@@ -92,6 +93,12 @@ describe("matchBankAccounts", () => {
           [account({ isInvestmentBrokerage: true })],
           NONE,
         ),
+      ).toEqual({ linked: [], suggestions: [] });
+    });
+
+    it("skips a CRYPTO wallet, even when its number names the bank's identifier", () => {
+      expect(
+        matchBankAccounts([bank()], [account({ isCrypto: true })], NONE),
       ).toEqual({ linked: [], suggestions: [] });
     });
 

@@ -6,7 +6,9 @@ import { useTranslations } from 'next-intl';
 import { format, startOfMonth, subMonths } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
 import { transactionsApi } from '@/lib/transactions';
-import { DailyBalancePoint } from '@/lib/balance-history';
+import { DailyBalancePoint, averageDailyBalance } from '@/lib/balance-history';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { createLogger } from '@/lib/logger';
 import { BalanceHistoryChart } from '@/components/transactions/BalanceHistoryChart';
 import { RecurringChargesPanel } from '@/components/accounts/shared/RecurringChargesPanel';
@@ -183,19 +185,14 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
 
   // An average over a series with a gap is not the average: it is the mean of
   // the days that happen to be known, presented as the mean of all of them. Fall
-  // back to the account's own balance rather than reporting that.
-  const knownHistoricalBalances = historicalBalances.filter(
-    (p): p is typeof p & { balance: number } => p.balance !== null,
-  );
+  // back to the account's own balance rather than reporting that. Rounded to
+  // the account currency's own places: at cents a 0.0049 BTC mean read 0.0000.
+  // Read from the registry during render, so the view subscribes to it: a
+  // mean drawn at `Intl`'s two before `GET /currencies` answers is redrawn.
+  useCurrencyDecimalsVersion();
   const averageBalance =
-    knownHistoricalBalances.length === historicalBalances.length &&
-    knownHistoricalBalances.length > 0
-      ? Math.round(
-          (knownHistoricalBalances.reduce((sum, p) => sum + p.balance, 0) /
-            knownHistoricalBalances.length) *
-            100,
-        ) / 100
-      : Number(account.currentBalance) || 0;
+    averageDailyBalance(historicalBalances, getDecimalPlacesForCurrency(currency)) ??
+    (Number(account.currentBalance) || 0);
 
   return (
     <div className="space-y-6">

@@ -11,6 +11,21 @@ export const FX_PROVIDER_NAMES = ["frankfurter", "yahoo"] as const;
 
 export type FxProviderName = (typeof FX_PROVIDER_NAMES)[number];
 
+/**
+ * The providers the chain always carries, after whatever `FX_PROVIDERS`
+ * names, and which are never a token of it (`docs/specs/crypto-accounts.md`,
+ * decision 5). Kept apart from `FX_PROVIDER_NAMES` so the configuration parser
+ * keeps refusing them and the frontend's list of configurable names stays the
+ * list an operator can write; the status endpoint's `describe()` reports them
+ * beside the configured ones.
+ */
+export const PAIR_PROVIDER_NAMES = ["crypto"] as const;
+
+export type PairProviderName = (typeof PAIR_PROVIDER_NAMES)[number];
+
+/** The name of any provider the chain may hold, configured or always present. */
+export type RateProviderName = FxProviderName | PairProviderName;
+
 /** One dated observation: multiply an amount in `from` by `rate` to get `to`. */
 export interface FxObservation {
   from: string;
@@ -32,11 +47,24 @@ export interface FxObservation {
  * outage gets recorded as an empty window (INV-FX-005).
  */
 export interface FxRateProvider {
-  readonly name: FxProviderName;
+  readonly name: RateProviderName;
   /** The `exchange_rates.source` slug this provider's rows carry. Stable: it is read back by the UI. */
   readonly source: string;
   /** Whether the provider quotes this code at all. Answered from a cached list, never one call per pair. */
   carries(code: string): Promise<boolean>;
+  /**
+   * Optional: whether this provider is the only one that may price a pair with
+   * `code` on either side (a coin, INV-CRYPTO-002). A pair one of whose codes
+   * some provider claims is asked of the claiming providers only, and a
+   * claiming provider is asked about no other pair, so a fiat provider whose
+   * `carries` cannot enumerate (Yahoo's is always true) is never asked for a
+   * coin, and the coin provider never answers for, or masks an outage of, a
+   * fiat pair. Answered from the same cached list as `carries`. A provider
+   * that cannot read that list rejects rather than answering `false`, here and
+   * in `carries`: the chain then asks nobody about the pair and reports it
+   * unanswered, where a `false` would route a coin to a fiat provider.
+   */
+  claims?(code: string): Promise<boolean>;
   /**
    * The latest published rate of `base` against each of `quotes`.
    * `null`: no answer. A quote absent from the map: answered, no rate for it.

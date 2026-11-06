@@ -19,7 +19,8 @@
       "separator": ", poi ",
       "names": {
         "frankfurter": "Frankfurter (tassi di riferimento BCE)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Coppie cripto (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "Azioni"
     },
     "defaultBadge": "Predefinita",
+    "cryptoBadge": "Cripto",
+    "noPriceSymbol": "Nessun simbolo di prezzo",
     "statusBadge": {
       "active": "Attiva",
       "activeShort": "Att",
@@ -98,6 +101,20 @@
     "symbolLabel": "Simbolo",
     "symbolPlaceholder": "es. $, €, £, ¥",
     "decimalPlacesLabel": "Cifre decimali",
+    "kindLabel": "Tipo",
+    "kindOptions": {
+      "fiat": "Valuta fiat",
+      "crypto": "Criptovaluta"
+    },
+    "kindLocked": "{code} è in uso, quindi il suo tipo non può essere modificato.",
+    "quoteSymbolLabel": "Simbolo di prezzo (facoltativo)",
+    "quoteSymbolPlaceholder": "es. BTC-EUR",
+    "quoteSymbolHelp": "Il simbolo di Yahoo Finance da cui si ricava il prezzo della moneta: il suo ticker, un trattino e la valuta in cui è quotata, come BTC-EUR. I tassi di cambio della moneta vengono recuperati tramite questo simbolo.",
+    "verifyButton": "Verifica",
+    "quoteSymbolPricedIn": "Quotata in {currency}",
+    "quoteSymbolMissing": "Senza un simbolo di prezzo la valuta non ha un tasso di cambio.",
+    "quoteSymbolNotCrypto": "{symbol} non è una criptovaluta. Inserisci la coppia di una moneta, come BTC-EUR.",
+    "quoteSymbolNotFound": "Nessuna criptovaluta trovata per {symbol}",
     "lookupButton": "Cerca",
     "lookingUp": "Ricerca in corso...",
     "clearButton": "Cancella",
@@ -109,10 +126,14 @@
       "found": "Trovato: {details}",
       "notFound": "Nessuna valuta trovata per \"{query}\"",
       "lookupFailed": "Ricerca non riuscita - riprova",
-      "reactivateFailed": "Impossibile riattivare la valuta"
+      "reactivateFailed": "Impossibile riattivare la valuta",
+      "verifyEmpty": "Inserisci un simbolo di prezzo come BTC-EUR da verificare",
+      "verifyFailed": "Impossibile verificare il simbolo di prezzo"
     },
     "inactiveNotice": "{code} è già nella tua lista, ma non è attiva.",
-    "cryptoNotice": "{code} non è un codice valuta standard. Le criptovalute come Bitcoin vengono monitorate come titoli in un conto investimento, non come valute. <guide>Scopri come fare nella guida utente</guide>.",
+    "nonIsoNotice": "{code} non è un codice valuta standard. Se è una criptovaluta, imposta il suo tipo su Criptovaluta. <guide>Leggi di più sulle criptovalute nella guida utente</guide>.",
+    "switchToCrypto": "Usa Criptovaluta",
+    "cryptoPrecisionNotice": "Gli importi in una criptovaluta sono mantenuti con un massimo di otto cifre decimali, la precisione con cui vengono memorizzati, quindi non è possibile inserire una commissione inferiore a {smallest}. <guide>Scopri come registrare le commissioni del portafoglio</guide>.",
     "reactivateButton": "Riattiva {code}",
     "reactivating": "Riattivazione..."
   },
@@ -121,7 +142,10 @@
     "nameRequired": "Il nome è obbligatorio",
     "nameMax": "Il nome deve contenere al massimo 100 caratteri",
     "symbolRequired": "Il simbolo è obbligatorio",
-    "symbolMax": "Il simbolo deve contenere al massimo 10 caratteri"
+    "symbolMax": "Il simbolo deve contenere al massimo 10 caratteri",
+    "quoteSymbolMax": "Il simbolo di prezzo deve contenere al massimo 20 caratteri",
+    "quoteSymbolRequiresCrypto": "Solo una criptovaluta ha un simbolo di prezzo",
+    "quoteSymbolNotAPair": "Inserisci una coppia come BTC-EUR: la moneta, un trattino e un codice valuta di tre lettere"
   },
   "rateHistory": {
     "title": "Storico dei tassi",
@@ -151,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (BCE)",
         "mnyImport": "Importazione Money",
+        "yahooCrypto": "Coppie cripto (Yahoo)",
         "unknown": "Sconosciuto"
       }
     },

@@ -12,7 +12,10 @@ import { PayeeAlias } from "../payees/entities/payee-alias.entity";
 import { TransactionTag } from "../tags/entities/transaction-tag.entity";
 import { TransactionSplitTag } from "../tags/entities/transaction-split-tag.entity";
 import {
+  assertImportAmountPrecision,
+  currencyMoneyDecimals,
   ImportContext,
+  importMoneyDecimals,
   recordSkippedRow,
   updateAccountBalance,
 } from "./import-context";
@@ -28,6 +31,7 @@ import {
   applyFxConversion,
   resolveFxRateOrNull,
 } from "../common/fx-entry.util";
+import { roundMoney } from "../common/round.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { tr } from "../i18n/translate";
 import { TransactionRulesApplierService } from "../transaction-rules/transaction-rules-applier.service";
@@ -50,6 +54,14 @@ export class ImportRegularProcessorService {
   ) {}
 
   async processTransaction(ctx: ImportContext, qifTx: any): Promise<void> {
+    // The file's figures are refused, never rounded, when they carry more
+    // places than the account's currency (INV-MONEY-001); the row's savepoint
+    // rolls back and the result names it.
+    assertImportAmountPrecision(ctx, qifTx.amount, "amount");
+    for (const split of qifTx.splits ?? []) {
+      assertImportAmountPrecision(ctx, split.amount, "split amount");
+    }
+
     // A row whose bank id the account already holds, on a row of the same date
     // and amount, was imported from an earlier file. The lookup is advisory:
     // two imports racing past it both insert, the unique index on
@@ -151,7 +163,12 @@ export class ImportRegularProcessorService {
     }
 
     // Update account balance
-    await updateAccountBalance(ctx.manager, ctx.accountId, qifTx.amount);
+    await updateAccountBalance(
+      ctx.manager,
+      ctx.accountId,
+      qifTx.amount,
+      importMoneyDecimals(ctx),
+    );
 
     // Handle non-split transfers
     if (isTransfer && transferAccountId) {
@@ -304,7 +321,12 @@ export class ImportRegularProcessorService {
     });
 
     if (balanceDiff !== 0) {
-      await updateAccountBalance(ctx.manager, ctx.accountId, balanceDiff);
+      await updateAccountBalance(
+        ctx.manager,
+        ctx.accountId,
+        balanceDiff,
+        importMoneyDecimals(ctx),
+      );
     }
     if (externalId && !pendingTransfer.externalId) {
       holdKey(ctx.heldExternalIds, externalId, qifTx);
@@ -603,6 +625,7 @@ export class ImportRegularProcessorService {
           ctx.manager,
           splitTransferAccountId,
           balanceDiff,
+          leg.decimals,
         );
       }
       return;
@@ -645,6 +668,7 @@ export class ImportRegularProcessorService {
       ctx.manager,
       splitTransferAccountId,
       linkedAmount,
+      leg.decimals,
     );
   }
 
@@ -669,6 +693,8 @@ export class ImportRegularProcessorService {
     currencyCode: string;
     exchangeRate: number;
     crossCurrency: boolean;
+    /** The money precision of the target account's currency. */
+    decimals: number;
   }> {
     const sourceCurrency = ctx.account.currencyCode;
     const target = await ctx.manager.findOne(Account, {
@@ -681,6 +707,7 @@ export class ImportRegularProcessorService {
         currencyCode: sourceCurrency,
         exchangeRate: 1,
         crossCurrency: false,
+        decimals: importMoneyDecimals(ctx),
       };
     }
 
@@ -704,11 +731,17 @@ export class ImportRegularProcessorService {
         ),
       );
     }
+    // The converted line is in the target account's currency, so it rounds at
+    // that currency's precision.
+    const decimals = await currencyMoneyDecimals(ctx, targetCurrency);
     return {
-      amount: applyFxConversion(sourceAmount, rate).amount,
+      amount: applyFxConversion(sourceAmount, rate, null, {
+        toDecimals: decimals,
+      }).amount,
       currencyCode: targetCurrency,
       exchangeRate: rate,
       crossCurrency: true,
+      decimals,
     };
   }
 
@@ -744,7 +777,12 @@ export class ImportRegularProcessorService {
         // recalculation.
         const delta = deletionBalanceEffect(placeholderTx).delta;
         if (delta !== 0) {
-          await updateAccountBalance(ctx.manager, ctx.accountId, delta);
+          await updateAccountBalance(
+            ctx.manager,
+            ctx.accountId,
+            delta,
+            importMoneyDecimals(ctx),
+          );
         }
         ctx.affectedAccountIds.add(ctx.accountId);
         await ctx.manager.delete(Transaction, placeholderTx.id);
@@ -851,7 +889,15 @@ export class ImportRegularProcessorService {
 
     // Create new linked transaction
     const linkedTime = new Date(baseTime.getTime() + 0.5);
-    const linkedAmount = -qifTx.amount;
+    const targetDecimals = await currencyMoneyDecimals(
+      ctx,
+      targetAccount?.currencyCode ?? ctx.account.currencyCode,
+    );
+    // A cross-currency leg carries the file's figure as a placeholder (flagged
+    // PENDING IMPORT), so it is held to the target currency's precision.
+    const linkedAmount = isCrossCurrency
+      ? roundMoney(-qifTx.amount, targetDecimals)
+      : -qifTx.amount;
     const linkedDescription = isCrossCurrency
       ? `${qifTx.memo || ""} ${PENDING_IMPORT_NOTE}`.trim()
       : qifTx.memo;
@@ -880,6 +926,11 @@ export class ImportRegularProcessorService {
       linkedTransactionId: savedLinkedTx.id,
     });
 
-    await updateAccountBalance(ctx.manager, transferAccountId, linkedAmount);
+    await updateAccountBalance(
+      ctx.manager,
+      transferAccountId,
+      linkedAmount,
+      targetDecimals,
+    );
   }
 }

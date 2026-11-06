@@ -136,6 +136,9 @@
     "accountType": "账户类型",
     "currency": "货币",
     "currencyLocked": "货币已锁定，因为此账户已有交易记录。更改货币将静默地重新计价现有余额。",
+    "accountTypeKindLocked": "此账户的交易已锁定货币，因此无法在加密钱包和法定货币账户类型之间切换。",
+    "currencyPlaceholder": "选择货币...",
+    "noCryptoCurrencies": "加密钱包持有一种加密货币，目前尚未设置任何加密货币。请在<currencies>货币页面</currencies>添加一种，然后在此选择。<guide>如何添加加密货币</guide>",
     "openingBalance": "期初余额",
     "loanAmount": "贷款金额",
     "mortgageAmount": "抵押贷款金额",
@@ -179,6 +182,7 @@
       "mortgage": "抵押贷款",
       "asset": "资产",
       "cash": "现金",
+      "crypto": "加密钱包",
       "other": "其他"
     },
     "statementDueDayPlaceholder": "例如 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "账户名称为必填项",
     "currencyCodeLength": "货币代码必须为 3 个字符",
+    "currencyRequired": "请选择货币",
     "institutionRequired": "请选择或创建机构",
     "interestRateRequired": "利率为必填项",
     "paymentAmountRequired": "还款金额为必填项",

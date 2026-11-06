@@ -69,8 +69,8 @@ export class PayrollDeductionRule {
   /** A magnitude in the bill's account currency. */
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "yearly_maximum",
   })
   yearlyMaximum: number;
@@ -89,8 +89,8 @@ export class PayrollDeductionRule {
   /** Read only when the bill has no split line for the category. */
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "expected_per_paycheque",
     nullable: true,
   })

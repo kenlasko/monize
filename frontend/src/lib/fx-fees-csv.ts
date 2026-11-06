@@ -1,6 +1,7 @@
 import { transactionsApi } from './transactions';
 import { exportToCsv } from './csv-export';
 import { foreignTransactionFee } from './fx-fees';
+import { moneyDecimalsForCurrency, roundMoney, sumMoney } from './format';
 import type { Transaction } from '@/types/transaction';
 
 // Matches the Transactions page export format, with the foreign-currency
@@ -23,16 +24,14 @@ const FX_CSV_HEADERS = [
 /**
  * The account-currency amount to show, matching the list: when a currency
  * filter has reduced which splits are returned, use the visible-splits total
- * rather than the full transaction amount.
+ * rather than the full transaction amount. Compared exactly at the account
+ * currency's money precision (four for fiat, a coin's eight).
  */
 function displayAmount(tx: Transaction): number {
   if (tx.isSplit && tx.splits && tx.splits.length > 0) {
-    const splitsSumCents = tx.splits.reduce(
-      (sum, s) => sum + Math.round(Number(s.amount) * 10000),
-      0,
-    );
-    const txAmountCents = Math.round(Number(tx.amount) * 10000);
-    if (splitsSumCents !== txAmountCents) return splitsSumCents / 10000;
+    const decimals = moneyDecimalsForCurrency(tx.currencyCode);
+    const splitsSum = sumMoney(tx.splits.map((s) => Number(s.amount)), decimals);
+    if (splitsSum !== roundMoney(Number(tx.amount), decimals)) return splitsSum;
   }
   return Number(tx.amount);
 }

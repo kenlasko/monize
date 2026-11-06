@@ -74,6 +74,35 @@ function DefaultCurrencyBadge({ isDefault }: { isDefault: boolean }) {
   );
 }
 
+/** The "Crypto" marker on a cryptocurrency, in both layouts. */
+function CryptoKindBadge({ currency }: { currency: CurrencyInfo }) {
+  const t = useTranslations('currencies');
+  if (currency.kind !== 'CRYPTO') return null;
+  return (
+    <Badge variant="amber" className="ml-2">
+      {t('list.cryptoBadge')}
+    </Badge>
+  );
+}
+
+/**
+ * A cryptocurrency's price symbol (`BTC-EUR`), or the note that it has none and
+ * so no exchange rate; nothing for a fiat currency.
+ */
+function CurrencyQuoteSymbol({ currency, className = '' }: { currency: CurrencyInfo; className?: string }) {
+  const t = useTranslations('currencies');
+  if (currency.kind !== 'CRYPTO') return null;
+  return currency.quoteSymbol ? (
+    <span className={`text-xs font-mono text-gray-500 dark:text-gray-400 ${className}`}>
+      {currency.quoteSymbol}
+    </span>
+  ) : (
+    <span className={`text-xs text-amber-700 dark:text-amber-400 ${className}`}>
+      {t('list.noPriceSymbol')}
+    </span>
+  );
+}
+
 /**
  * The Active/Inactive pill, in both layouts.
  *
@@ -360,7 +389,9 @@ const CurrencyRow = memo(function CurrencyRow({
                   {currency.name}
                 </span>
                 <DefaultCurrencyBadge isDefault={isDefault} />
+                <CryptoKindBadge currency={currency} />
                 <CurrencyStatusPill currency={currency} density={density} className="ml-2" />
+                <CurrencyQuoteSymbol currency={currency} className="basis-full" />
               </div>
               {/* The key figure, on the right of line 1. `whitespace-nowrap`
                   because a locale that groups with a space would otherwise wrap
@@ -418,6 +449,12 @@ const CurrencyRow = memo(function CurrencyRow({
           {currency.code}
         </span>
         <DefaultCurrencyBadge isDefault={isDefault} />
+        <CryptoKindBadge currency={currency} />
+        {currency.kind === 'CRYPTO' && (
+          <div>
+            <CurrencyQuoteSymbol currency={currency} />
+          </div>
+        )}
       </td>
       {/* Name - hidden on mobile */}
       <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 hidden sm:table-cell`}>

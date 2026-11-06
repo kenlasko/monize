@@ -11,6 +11,7 @@ import {
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 export class CreateLoanRateChangeDto {
   @ApiProperty({
@@ -35,7 +36,7 @@ export class CreateLoanRateChangeDto {
       "New regular payment from this date. Omit to keep the payment unchanged. Refused for LINEAR and INTEREST_ONLY mortgages, whose installment is priced from the debt and rate on each due date.",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsMoneyAmount(2)
   @IsPositive()
   newPaymentAmount?: number | null;
 

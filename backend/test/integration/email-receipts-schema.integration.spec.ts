@@ -483,7 +483,7 @@ describe("email receipts schema (schema.sql and migrations)", () => {
       ).rejects.toThrow(/ck_email_receipt_links_outcome/);
     });
 
-    it("refuses a negative part amount and holds four decimals", async () => {
+    it("refuses a negative part amount and holds eight decimals", async () => {
       await expect(
         link(settlementId, { part_amount: "-0.0001" }),
       ).rejects.toThrow(/ck_email_receipt_links_part_amount/);
@@ -492,7 +492,7 @@ describe("email receipts schema (schema.sql and migrations)", () => {
       const rows = await db.query(
         `SELECT part_amount FROM email_receipt_links WHERE part_index = 2`,
       );
-      expect(rows[0].part_amount).toBe("109.8900");
+      expect(rows[0].part_amount).toBe("109.89000000");
     });
 
     it("leaves a part with no link value or component as it is, and defaults to the safe outcome", async () => {

@@ -29,7 +29,7 @@ the balance analogue of the budget producer's `79% -> 81%` fires, `81% -> 82% ->
 does not.
 
 Thresholds are compared in the **account's own currency** (`current_balance` and
-the threshold are both `NUMERIC(20,4)` in that currency), so this producer needs
+the threshold are both `NUMERIC(24,8)` in that currency), so this producer needs
 **no FX and has no missing-rate case** -- unlike portfolio movement, which does.
 That is why the two are separate specs.
 
@@ -104,8 +104,8 @@ trigger, the same shape `deletion-balance.guard.spec.ts` uses.
 ### 4.1 New columns on `accounts`
 
 ```
-low_balance_threshold   NUMERIC(20,4)  NULL   -- notify when balance drops below
-high_balance_threshold  NUMERIC(20,4)  NULL   -- notify when balance rises above
+low_balance_threshold   NUMERIC(24,8)  NULL   -- notify when balance drops below
+high_balance_threshold  NUMERIC(24,8)  NULL   -- notify when balance rises above
 low_alert_armed         BOOLEAN NOT NULL DEFAULT false
 high_alert_armed        BOOLEAN NOT NULL DEFAULT false
 ```

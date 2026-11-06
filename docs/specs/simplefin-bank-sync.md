@@ -249,7 +249,7 @@ The internal credential union accepts an omitted enable_banking discriminant onl
 
 Institution identity and metadata: SimpleFIN institution external_session_id is an opaque sf2 SHA-256 of [server origin, conn_id], preventing cross-server reconnects from inheriting mappings. Existing non-null country/PSU columns use an empty country (unspecified) and the legacy personal placeholder; SimpleFIN UI must not present those as provider-reported facts. Discovery returns balance timestamps, persisted per account in bank_balance_at and returned through the account view.
 
-Money precision and read contexts: the existing number-based planner/writer cannot preserve every decimal(20,4) value. The SimpleFIN read boundary refuses values that cannot retain their four-decimal representation safely, instead of silently converting them. Operation-scoped batch results are not a cross-request cache. Legacy redirect/session registry operations remain separate from the registered SimpleFIN data-reader lookup.
+Money precision and read contexts: the existing number-based planner/writer cannot preserve every `NUMERIC(24,8)` value. The SimpleFIN read boundary refuses values that cannot retain their four-decimal representation safely, instead of silently converting them. Operation-scoped batch results are not a cross-request cache. Legacy redirect/session registry operations remain separate from the registered SimpleFIN data-reader lookup.
 
 ## Provider request-window limit
 

@@ -55,7 +55,10 @@ import {
 import { RuleDefinition } from "./rule-validation";
 import { TransactionRule } from "./transaction-rule.entity";
 import { toRuleResponses } from "./transaction-rule-view";
-import { TransactionRulesApplierService } from "./transaction-rules-applier.service";
+import {
+  CurrencyPlacesCache,
+  TransactionRulesApplierService,
+} from "./transaction-rules-applier.service";
 import { TransactionRulesService } from "./transaction-rules.service";
 import {
   DEFAULT_RULE_APPLICATIONS_LIMIT,
@@ -334,6 +337,8 @@ export class TransactionRulesRunService {
       // commit, never in here (INV-CACHE-001).
       const affectedAccountIds = new Set<string>();
       const settledScheduleIds = new Set<string>();
+      // Each currency's places are read once for the run, not once per row.
+      const placesCache: CurrencyPlacesCache = new Map();
       for (const { unit, effects } of plan.writable) {
         const resolved = await this.applier.resolveCreatedPayee(
           m,
@@ -353,6 +358,7 @@ export class TransactionRulesRunService {
             "manual",
             affectedAccountIds,
             settledScheduleIds,
+            placesCache,
           );
           if (leg === unit.primary) writtenEffects = result;
         }

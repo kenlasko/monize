@@ -209,6 +209,7 @@
       "CREDIT_CARD": "[XX-Credit Card-XX]",
       "LINE_OF_CREDIT": "[XX-Line of Credit-XX]",
       "CASH": "[XX-Cash-XX]",
+      "CRYPTO": "[XX-Crypto Wallet-XX]",
       "INVESTMENT": "[XX-Investment-XX]",
       "LOAN": "[XX-Loan-XX]",
       "MORTGAGE": "[XX-Mortgage-XX]",

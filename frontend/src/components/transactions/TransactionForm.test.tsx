@@ -8,6 +8,7 @@ import {
   TRANSACTION_SUBMIT_MODE_KEY,
 } from '@/hooks/useTransactionSubmitMode';
 import toast from 'react-hot-toast';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useAuthStore } from '@/store/authStore';
 
@@ -341,12 +342,20 @@ vi.mock('@/hooks/useNumberFormat', async () => {
     }),
   };
 });
-vi.mock('@/lib/format', () => ({
+vi.mock('@/lib/format', async (importOriginal) => {
+  // The real registry, so a case that registers a coin rounds at its places.
+  const { decimalPlacesForCurrency } = await import('@/lib/currency-decimals');
+  return {
+  ...(await importOriginal<typeof import('@/lib/format')>()),
   FX_RATE_DISPLAY_DECIMALS: 6,
   getCurrencySymbol: () => '$',
   getDecimalPlacesForCurrency: () => 2,
   roundToCents: (v: number) => Math.round(v * 100) / 100,
-  roundMoney: (v: number) => Math.round(v * 10000) / 10000,
+  roundToEntryPlaces: (v: number, code?: string) => {
+    const f = Math.pow(10, decimalPlacesForCurrency(code) ?? 2);
+    return Math.round(v * f) / f;
+  },
+  roundMoney: (v: number, d = 4) => { const f = Math.pow(10, d); return Math.round(v * f) / f; },
   roundToDecimals: (v: number, d: number) => { const f = Math.pow(10, d); return Math.round(v * f) / f; },
   formatAmount: (v: number | undefined | null) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 100) / 100).toFixed(2),
   formatAmountWithCommas: (v: number | undefined | null) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 100) / 100).toFixed(2),
@@ -356,7 +365,8 @@ vi.mock('@/lib/format', () => ({
   hasCalculatorOperators: (input: string) => /[+*/()]/.test(input.replace(/^-/, '')) || /(?!^)-/.test(input),
   evaluateExpression: vi.fn().mockImplementation(() => undefined),
   formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
-}));
+  };
+});
 
 vi.mock('@/lib/categoryUtils', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/categoryUtils')>()),
@@ -3992,6 +4002,71 @@ describe('TransactionForm', () => {
       expect(mockUpdate).not.toHaveBeenCalled();
     });
 
+    describe('in a coin wallet at eight places', () => {
+      const walletTx = (overrides: Record<string, unknown>) =>
+        createExistingTransaction({ currencyCode: 'BTC', ...overrides });
+      const splitLine = (id: string, categoryId: string, amount: number) => ({
+        id, transactionId: '123e4567-e89b-12d3-a456-426614174000', categoryId, category: null,
+        transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount, memo: '',
+        createdAt: '2024-01-15T00:00:00Z',
+      });
+
+      beforeEach(() => {
+        registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
+        mockAccountsGetAll.mockResolvedValue([
+          { ...mockAccounts[0], name: 'Wallet', accountType: 'CRYPTO', currencyCode: 'BTC' },
+          ...mockAccounts.slice(1),
+        ]);
+      });
+
+      afterEach(async () => {
+        await act(async () => clearCurrencyDecimals());
+      });
+
+      const submit = async (tx: unknown) => {
+        await act(async () => {
+          render(<TransactionForm transaction={tx as never} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+        });
+        await act(async () => {
+          fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+        });
+      };
+
+      it('re-sends a 2,500-satoshi amount unedited', async () => {
+        await submit(walletTx({ amount: -0.000025 }));
+        await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+        expect(mockUpdate.mock.calls[0][1]).toEqual(expect.objectContaining({ amount: -0.000025 }));
+      });
+
+      it('saves -0.00502500 split into -0.00500000 and a -0.00002500 fee', async () => {
+        await submit(walletTx({
+          amount: -0.005025,
+          isSplit: true,
+          categoryId: null,
+          category: null,
+          splits: [splitLine('sp-1', 'cat-1', -0.005), splitLine('sp-2', 'cat-2', -0.000025)],
+        }));
+        await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+        expect(toast.error).not.toHaveBeenCalled();
+        const payload = mockUpdate.mock.calls[0][1];
+        expect(payload.amount).toBe(-0.005025);
+        expect(payload.splits.map((s: { amount: number }) => s.amount)).toEqual([-0.005, -0.000025]);
+      });
+
+      it('refuses a split set that misses its parent by one satoshi', async () => {
+        await submit(walletTx({
+          amount: -0.005025,
+          isSplit: true,
+          categoryId: null,
+          category: null,
+          splits: [splitLine('sp-1', 'cat-1', -0.005), splitLine('sp-2', 'cat-2', -0.00002499)],
+        }));
+        // At four places both read -0.0050 and this was sent; the server refuses it.
+        await waitFor(() => expect(toast.error).toHaveBeenCalled());
+        expect(mockUpdate).not.toHaveBeenCalled();
+      });
+    });
+
     it('re-sends a four-decimal transfer amount unedited', async () => {
       const transferTx = createTransferTransaction() as any;
       const fourDp = {
@@ -5646,6 +5721,48 @@ describe('TransactionForm', () => {
         expect(screen.getByText(/foreign transaction fee/i)).toBeInTheDocument(),
       );
       expect(screen.queryByTestId('split-editor')).not.toBeInTheDocument();
+    });
+
+    it('backs the fee out of a typed total at a coin account\'s places, not cents', async () => {
+      // A BTC wallet with a 2.5% fee. Typing a total of 0.0052 BTC backs the
+      // fee out to a 0.00533333 BTC base (0.0052 / 0.975). At cents the base
+      // read 0.01, and the derived rate nearly doubled.
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
+      try {
+        const wallet = {
+          ...mockAccounts[0],
+          id: 'acc-btc',
+          name: 'Wallet',
+          accountType: 'CRYPTO',
+          currencyCode: 'BTC',
+          fxFeePercent: 2.5,
+        };
+        mockAccountsGetAll.mockResolvedValue([wallet, ...mockAccounts]);
+        mockGetRateForDate.mockResolvedValue(0.0001);
+        render(
+          <TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} defaultAccountId="acc-btc" />,
+        );
+        await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
+        await pickEuro();
+        await waitFor(() => expect(mockGetRateForDate).toHaveBeenCalledWith('EUR', 'BTC', expect.any(String)));
+
+        const amountInput = screen.getAllByPlaceholderText('0.00')[0];
+        await act(async () => {
+          fireEvent.change(amountInput, { target: { value: '50' } });
+          fireEvent.blur(amountInput);
+        });
+        await waitFor(() => expect(screen.getByText(/1 EUR = 0\.000100 BTC/)).toBeInTheDocument());
+
+        const convertedTotal = screen.getByLabelText('Total in BTC');
+        await act(async () => {
+          fireEvent.change(convertedTotal, { target: { value: '0.0052' } });
+          fireEvent.blur(convertedTotal);
+        });
+        // 0.00533333 / 50 = 0.000107; a cents base gave 0.01 / 50 = 0.0002.
+        await waitFor(() => expect(screen.getByText(/1 EUR = 0\.000107 BTC/)).toBeInTheDocument());
+      } finally {
+        await act(async () => clearCurrencyDecimals());
+      }
     });
 
     it('signs the foreign amount by the selected expense category, like account-currency entry', async () => {

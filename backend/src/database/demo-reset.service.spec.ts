@@ -381,10 +381,14 @@ describe("DemoResetService", () => {
         );
         const balanceCalls = dataSource.query.mock.calls.filter(
           (call: string[]) =>
-            call[0].includes("UPDATE accounts SET current_balance"),
+            /UPDATE accounts\s+SET current_balance/.test(call[0]),
         );
 
         expect(balanceCalls.length).toBe(insertCalls.length);
+        // The shared delta statement: no SQL-side ROUND on the balance.
+        for (const [sql] of balanceCalls) {
+          expect(sql).not.toMatch(/ROUND/i);
+        }
 
         // Balance update amount should match the inserted transaction amount
         for (let i = 0; i < insertCalls.length; i++) {
@@ -458,7 +462,7 @@ describe("DemoResetService", () => {
         for (const group of writeGroups) {
           expect(
             group.some((sql) =>
-              sql.includes("UPDATE accounts SET current_balance"),
+              /UPDATE accounts\s+SET current_balance/.test(sql),
             ),
           ).toBe(true);
         }

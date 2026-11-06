@@ -71,8 +71,8 @@ export class BudgetCategory {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     transformer: decimalTransformer,
   })
   amount: number;
@@ -90,8 +90,8 @@ export class BudgetCategory {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "rollover_cap",
     nullable: true,
     transformer: decimalTransformer,

@@ -1,4 +1,9 @@
 import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
+import {
+  CURRENCY_KIND_READ,
+  currencyKindRows,
+  isCurrencyKindRead,
+} from "../test-helpers/currency-kind-testing";
 import { Test, TestingModule } from "@nestjs/testing";
 import { I18nContext } from "nestjs-i18n";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -42,6 +47,8 @@ import {
   createScopedDbMocks,
   DataSourceMock,
 } from "../test-helpers/scoped-db-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -243,6 +250,7 @@ describe("AccountsService", () => {
     };
     rateChangeRepository = { find: jest.fn().mockResolvedValue([]) };
     const { manager: txManager, dataSource } = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [LoanFee, { find: jest.fn().mockResolvedValue([]) }],
       [Account, accountsRepository],
       [Transaction, transactionRepository],
@@ -259,11 +267,14 @@ describe("AccountsService", () => {
     txManager.remove.mockImplementation((data) => data);
     txManager.count.mockResolvedValue(0);
     // A COUNT always answers one row; the close path's pending-row count
-    // (A26-M12) reads it. Every other raw query answers no rows by default.
-    txManager.query.mockImplementation(async (sql: string) =>
-      typeof sql === "string" && sql.includes("count(*)::int AS n")
-        ? [{ n: 0 }]
-        : [],
+    // (A26-M12) reads it. The `currencies` kind read (INV-CRYPTO-001) answers
+    // BTC as a coin. Every other raw query answers no rows by default.
+    txManager.query.mockImplementation(
+      async (sql: string, params?: unknown[]) =>
+        currencyKindRows(sql, params) ??
+        (typeof sql === "string" && sql.includes("count(*)::int AS n")
+          ? [{ n: 0 }]
+          : []),
     );
     // Transaction-block tests address the manager through this legacy alias.
     mockQueryRunner = { manager: txManager, query: txManager.query };
@@ -377,6 +388,91 @@ describe("AccountsService", () => {
         expect(accountsRepository.save).not.toHaveBeenCalled();
       },
     );
+
+    describe("INV-CRYPTO-001: the account type and the currency kind agree", () => {
+      it("creates a CRYPTO account in a CRYPTO currency", async () => {
+        await service.create("user-1", {
+          name: "Bitcoin Wallet",
+          accountType: AccountType.CRYPTO,
+          currencyCode: "BTC",
+          openingBalance: 0.0125,
+        } as any);
+        expect(mockQueryRunner.query).toHaveBeenCalledWith(
+          expect.stringMatching(CURRENCY_KIND_READ),
+          ["BTC"],
+        );
+        expect(accountsRepository.save).toHaveBeenCalled();
+      });
+
+      it("stores a BTC opening balance at eight places unchanged (INV-MONEY-001)", async () => {
+        await service.create("user-1", {
+          name: "Bitcoin Wallet",
+          accountType: AccountType.CRYPTO,
+          currencyCode: "BTC",
+          openingBalance: 0.01249993,
+        } as any);
+        expect(accountsRepository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            openingBalance: 0.01249993,
+            currentBalance: 0.01249993,
+          }),
+        );
+      });
+
+      it("refuses a CAD opening balance at five places before anything is written", async () => {
+        await expect(
+          service.create("user-1", {
+            name: "Chequing",
+            accountType: AccountType.CHEQUING,
+            currencyCode: "CAD",
+            openingBalance: 12.34567,
+          } as any),
+        ).rejects.toThrow(/more decimal places than CAD carries \(4\)/);
+        expect(accountsRepository.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses a loan's opening balance at five places, before the loan path runs", async () => {
+        await expect(
+          service.create("user-1", {
+            name: "Car loan",
+            accountType: AccountType.LOAN,
+            currencyCode: "CAD",
+            openingBalance: -20000.12345,
+          } as any),
+        ).rejects.toThrow(/more decimal places than CAD carries \(4\)/);
+        expect(accountsRepository.save).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        ["a CRYPTO account in CAD", AccountType.CRYPTO, "CAD"],
+        ["a CHEQUING account in BTC", AccountType.CHEQUING, "BTC"],
+        ["an INVESTMENT account in BTC", AccountType.INVESTMENT, "BTC"],
+      ])(
+        "refuses %s before anything is written",
+        async (_label, accountType, currencyCode) => {
+          await expect(
+            service.create("user-1", {
+              name: "Wallet",
+              accountType,
+              currencyCode,
+            } as any),
+          ).rejects.toThrow(/currency, which a .* account cannot hold/);
+          expect(accountsRepository.save).not.toHaveBeenCalled();
+        },
+      );
+
+      it("refuses an investment pair in BTC before either half is written", async () => {
+        await expect(
+          service.create("user-1", {
+            name: "Coins",
+            accountType: AccountType.INVESTMENT,
+            currencyCode: "BTC",
+            createInvestmentPair: true,
+          } as any),
+        ).rejects.toThrow(BadRequestException);
+        expect(accountsRepository.save).not.toHaveBeenCalled();
+      });
+    });
 
     it("creates a basic account with opening balance", async () => {
       await service.create("user-1", {
@@ -748,17 +844,50 @@ describe("AccountsService", () => {
       expect(accountsRepository.findOneOrFail).not.toHaveBeenCalled();
     });
 
-    it("rounds to 4 decimal places to match DB schema precision", async () => {
+    it("rounds the delta at the account currency's precision, not the statement at four", async () => {
       stageBalanceUpdate(true);
       accountsRepository.findOneOrFail.mockResolvedValue({
         ...mockAccount,
         currentBalance: 20.3,
       });
 
-      const result = await service.updateBalance("account-1", 10.2);
+      // A fiat delta carrying float residue is rounded at its four places.
+      const result = await service.updateBalance("account-1", 0.1 + 0.2, 4);
 
-      expect(mockQueryRunner.query.mock.calls[0][0]).toContain("ROUND(");
+      const [sql, params] = mockQueryRunner.query.mock.calls[0];
+      expect(sql).not.toMatch(/ROUND\(/);
+      expect(params).toEqual([0.3, "account-1"]);
       expect(result.currentBalance).toBe(20.3);
+    });
+
+    it("lands a BTC delta of -0.00002500 exactly (INV-MONEY-001)", async () => {
+      stageBalanceUpdate(true);
+      accountsRepository.findOneOrFail.mockResolvedValue({
+        ...mockAccount,
+        currencyCode: "BTC",
+        currentBalance: 0.01247493,
+      });
+
+      await service.updateBalance("account-1", -0.000025, 8);
+
+      // The old ROUND(..., 4) moved this wallet by zero.
+      const [sql, params] = mockQueryRunner.query.mock.calls[0];
+      expect(sql).toContain(
+        "SET current_balance = CAST(current_balance AS numeric) + $1",
+      );
+      expect(params).toEqual([-0.000025, "account-1"]);
+    });
+
+    it("keeps a coin's places when the caller names no precision", async () => {
+      stageBalanceUpdate(true);
+      accountsRepository.findOneOrFail.mockResolvedValue({ ...mockAccount });
+
+      await service.updateBalance("account-1", -0.000025);
+
+      expect(mockQueryRunner.query.mock.calls[0][1]).toEqual([
+        -0.000025,
+        "account-1",
+      ]);
     });
 
     it("uses atomic SQL arithmetic to prevent race conditions", async () => {
@@ -848,6 +977,91 @@ describe("AccountsService", () => {
   });
 
   describe("update", () => {
+    describe("INV-CRYPTO-001: the account type and the currency kind agree", () => {
+      const fresh = {
+        ...mockAccount,
+        openingBalance: 0,
+        linkedAccountId: null,
+      };
+
+      it("refuses a CHEQUING account moved to BTC, before any write", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({ ...fresh });
+        await expect(
+          service.update("user-1", "account-1", { currencyCode: "BTC" }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses a CHEQUING account re-typed to CRYPTO in its fiat currency", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({ ...fresh });
+        await expect(
+          service.update("user-1", "account-1", {
+            accountType: AccountType.CRYPTO,
+          }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockQueryRunner.query).toHaveBeenCalledWith(
+          expect.stringMatching(CURRENCY_KIND_READ),
+          [fresh.currencyCode],
+        );
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      });
+
+      it("accepts a re-type to CRYPTO together with a move to BTC", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({ ...fresh });
+        const result = await service.update("user-1", "account-1", {
+          accountType: AccountType.CRYPTO,
+          currencyCode: "BTC",
+        });
+        expect(result.accountType).toBe(AccountType.CRYPTO);
+        expect(result.currencyCode).toBe("BTC");
+      });
+
+      it("refuses a CRYPTO account moved to a fiat currency", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          ...fresh,
+          accountType: AccountType.CRYPTO,
+          currencyCode: "BTC",
+        });
+        await expect(
+          service.update("user-1", "account-1", { currencyCode: "CAD" }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      });
+
+      it("does not read the currency when neither the type nor the currency moves", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({ ...fresh });
+        await service.update("user-1", "account-1", {
+          name: "Renamed",
+          accountType: AccountType.CHEQUING,
+          currencyCode: fresh.currencyCode,
+        });
+        expect(
+          mockQueryRunner.query.mock.calls.some(([sql]: unknown[]) =>
+            isCurrencyKindRead(sql),
+          ),
+        ).toBe(false);
+      });
+
+      it("refuses a pair half re-typed to CRYPTO in BTC: its INVESTMENT partner would be mirrored into a coin", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          ...fresh,
+          accountType: AccountType.INVESTMENT,
+          accountSubType: "INVESTMENT_CASH",
+          linkedAccountId: "brokerage-1",
+        });
+        await expect(
+          service.update("user-1", "account-1", {
+            accountType: AccountType.CRYPTO,
+            currencyCode: "BTC",
+          }),
+        ).rejects.toThrow(
+          /BTC is a CRYPTO currency, which a INVESTMENT account/,
+        );
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+    });
+
     it("updates account name", async () => {
       mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
 
@@ -1242,6 +1456,59 @@ describe("AccountsService", () => {
       const saved = mockQueryRunner.manager.save.mock.calls[0][0];
       expect(saved.currentBalance).toBe(1700);
       expect(mockDataSource.transaction).toHaveBeenCalled();
+    });
+
+    it("moves a BTC wallet's balance by an eight-place opening change exactly (INV-MONEY-001)", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        accountType: "CRYPTO",
+        currencyCode: "BTC",
+        openingBalance: 0.0125,
+        currentBalance: 0.0125,
+      });
+
+      await service.update("user-1", "account-1", {
+        openingBalance: 0.01249993,
+      });
+
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
+      // At four places the 7-sat change rounded the balance back to 0.0125.
+      expect(saved.openingBalance).toBe(0.01249993);
+      expect(saved.currentBalance).toBe(0.01249993);
+    });
+
+    it.each([
+      ["openingBalance", { openingBalance: 12.34567 }],
+      ["lowBalanceThreshold", { lowBalanceThreshold: 100.00001 }],
+      ["highBalanceThreshold", { highBalanceThreshold: 5000.12345 }],
+    ])(
+      "refuses a CAD %s at five places before anything is written",
+      async (field, dto) => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          ...mockAccount,
+          currencyCode: "CAD",
+        });
+
+        await expect(
+          service.update("user-1", "account-1", dto as any),
+        ).rejects.toThrow(new RegExp(`"${field}" has more decimal places`));
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      },
+    );
+
+    it("accepts a BTC threshold at eight places", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        accountType: "CRYPTO",
+        currencyCode: "BTC",
+      });
+
+      await service.update("user-1", "account-1", {
+        lowBalanceThreshold: 0.000025,
+      });
+
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
+      expect(saved.lowBalanceThreshold).toBe(0.000025);
     });
 
     it("recalculates termEndDate when termMonths changes to a positive value", async () => {
@@ -2506,6 +2773,23 @@ describe("AccountsService", () => {
         name: data.name || "Personal Loan",
       }));
       accountsRepository.save.mockImplementation((data) => data);
+    });
+
+    it("refuses a loan in a CRYPTO currency before the account is written (INV-CRYPTO-001)", async () => {
+      // The payment account is in BTC too, so the source-currency check passes
+      // and the kind check is the one that refuses.
+      accountsRepository.findOne.mockResolvedValue({
+        ...mockAccount,
+        id: "source-1",
+        currencyCode: "BTC",
+      });
+      await expect(
+        service.createLoanAccount("user-1", {
+          ...baseLoanDto,
+          currencyCode: "BTC",
+        } as any),
+      ).rejects.toThrow(/BTC is a CRYPTO currency, which a LOAN account/);
+      expect(accountsRepository.save).not.toHaveBeenCalled();
     });
 
     it("throws BadRequestException when paymentAmount is missing", async () => {
@@ -4475,6 +4759,19 @@ describe("AccountsService", () => {
       );
 
       expect(result.currentBalance).toBe(150.5);
+    });
+
+    it("writes a BTC wallet's recomputed balance at its eight places (INV-MONEY-001)", async () => {
+      const query = stageRecalc([{ balance: "0.01247493", decimalPlaces: 8 }]);
+      accountsRepository.findOneOrFail.mockResolvedValue({ ...mockAccount });
+
+      await service.recalculateCurrentBalance("user-1", "account-1");
+
+      const write = query.mock.calls.find((c) =>
+        String(c[0]).startsWith("UPDATE accounts SET current_balance"),
+      );
+      // At four places this wallet was written as 0.0125.
+      expect(write![1]).toEqual([0.01247493, "account-1"]);
     });
 
     it("locks the account before reading the ledger, scoped to the owner", async () => {

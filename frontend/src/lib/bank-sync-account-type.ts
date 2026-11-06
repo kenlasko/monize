@@ -60,3 +60,13 @@ export function accountTypeMismatch(
   if (bank !== 'CARD' && monizeType === 'CREDIT_CARD') return 'monizeCard';
   return null;
 }
+
+/**
+ * Whether a Monize account of this type may be linked to a bank account. A
+ * crypto wallet holds a coin, which no bank feed reports, and the server
+ * refuses the link (`docs/specs/crypto-accounts.md` decision 7); offering it
+ * in the picker would only lead to that refusal.
+ */
+export function isBankSyncEligibleAccountType(type: AccountType | null | undefined): boolean {
+  return type !== 'CRYPTO';
+}

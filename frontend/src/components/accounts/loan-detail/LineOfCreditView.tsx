@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { accountsApi } from '@/lib/accounts';
 import { DailyBalancePoint, computeBalanceSummary } from '@/lib/balance-history';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
 import { utilizationColour } from '@/lib/credit-utilization';
 import { BalanceHistoryChart } from '@/components/transactions/BalanceHistoryChart';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { createLogger } from '@/lib/logger';
 import type { Account } from '@/types/account';
 
@@ -60,7 +62,13 @@ export function LineOfCreditView({ account }: LineOfCreditViewProps) {
   const available = Math.max(0, limit - used);
   const utilizationPercent = hasLimit ? (used / limit) * 100 : 0;
 
-  const summary = useMemo(() => computeBalanceSummary(dailyBalances), [dailyBalances]);
+  // The registry's version is a dep: a coin's places can arrive after the series.
+  const registryVersion = useCurrencyDecimalsVersion();
+  const summary = useMemo(
+    () => computeBalanceSummary(dailyBalances, getDecimalPlacesForCurrency(currency)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
+    [dailyBalances, currency, registryVersion],
+  );
   const peakBalance = summary ? Math.abs(Math.min(0, summary.minBalance)) : 0;
 
   return (

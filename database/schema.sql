@@ -65,10 +65,20 @@ CREATE TABLE currencies (
     code VARCHAR(3) PRIMARY KEY, -- ISO 4217 code (USD, CAD, EUR, etc)
     name VARCHAR(100) NOT NULL,
     symbol VARCHAR(10) NOT NULL,
-    decimal_places SMALLINT DEFAULT 2,
+    -- At most 8, the scale account-currency money is stored at (NUMERIC(24, 8)).
+    decimal_places SMALLINT DEFAULT 2
+        CONSTRAINT currencies_decimal_places_check CHECK (decimal_places BETWEEN 0 AND 8),
     is_active BOOLEAN DEFAULT true,
     created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL, -- NULL = system currency
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- FIAT or CRYPTO; a CRYPTO currency is the currency of CRYPTO accounts only
+    -- (INV-CRYPTO-001) and is priced by the crypto exchange rate provider.
+    kind VARCHAR(10) NOT NULL DEFAULT 'FIAT'
+        CONSTRAINT currencies_kind_check CHECK (kind IN ('FIAT', 'CRYPTO')),
+    -- The Yahoo <COIN>-<FIAT> symbol a coin is priced from (BTC-EUR); NULL on a
+    -- FIAT row, and NULL on a CRYPTO row no provider quotes (an unpriced coin).
+    quote_symbol VARCHAR(20),
+    CONSTRAINT currencies_quote_symbol_crypto_only CHECK (kind = 'CRYPTO' OR quote_symbol IS NULL)
 );
 
 -- A user's deletion clears created_by_user_id (ON DELETE SET NULL); a currency
@@ -154,7 +164,8 @@ CREATE TYPE account_type AS ENUM (
     'CASH',
     'LINE_OF_CREDIT',
     'ASSET',
-    'OTHER'
+    'OTHER',
+    'CRYPTO'
 );
 
 -- Accounts
@@ -172,9 +183,9 @@ CREATE TABLE accounts (
     account_number VARCHAR(100), -- masked/encrypted
     institution VARCHAR(255), -- legacy free-text institution name (superseded by institution_id)
     institution_id UUID, -- structured financial institution (FK added after institutions table)
-    opening_balance NUMERIC(20, 4) DEFAULT 0,
-    current_balance NUMERIC(20, 4) DEFAULT 0,
-    credit_limit NUMERIC(20, 4), -- for credit cards
+    opening_balance NUMERIC(24, 8) DEFAULT 0,
+    current_balance NUMERIC(24, 8) DEFAULT 0,
+    credit_limit NUMERIC(24, 8), -- for credit cards
     interest_rate NUMERIC(8, 4), -- for loans, mortgages, savings
     -- Credit card statement fields (constraints named to match migrations 027/028
     -- so fresh installs and upgraded installs produce the same constraint set)
@@ -185,16 +196,16 @@ CREATE TABLE accounts (
     -- Balance-threshold alerts (migration 187; docs/specs/balance-threshold-notifications.md).
     -- Thresholds in the account's own currency (NULL = off); the *_armed latches
     -- make the crossing rule hold across evaluations (a CAS, INV-BALANCE-002).
-    low_balance_threshold NUMERIC(20, 4),
-    high_balance_threshold NUMERIC(20, 4),
+    low_balance_threshold NUMERIC(24, 8),
+    high_balance_threshold NUMERIC(24, 8),
     low_alert_armed BOOLEAN NOT NULL DEFAULT false,
     high_alert_armed BOOLEAN NOT NULL DEFAULT false,
     is_favourite BOOLEAN DEFAULT false,
     favourite_sort_order INTEGER DEFAULT 0,
     exclude_from_net_worth BOOLEAN DEFAULT false,
     -- Loan-specific fields
-    payment_amount NUMERIC(20, 4), -- payment amount per period for loans
-    extra_payment_amount NUMERIC(20, 4), -- standing extra-principal instruction inside that payment
+    payment_amount NUMERIC(24, 8), -- payment amount per period for loans
+    extra_payment_amount NUMERIC(24, 8), -- standing extra-principal instruction inside that payment
     payment_frequency VARCHAR(20), -- 'WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'
     payment_start_date DATE, -- when loan payments start
     source_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL, -- account payments come from
@@ -230,7 +241,7 @@ CREATE TABLE accounts (
     term_months INTEGER, -- Mortgage term length in months (e.g., 60 for 5-year term)
     term_end_date DATE, -- When the current term ends (for renewal reminders)
     amortization_months INTEGER, -- Total amortization period in months (e.g., 300 for 25 years)
-    original_principal NUMERIC(20, 4), -- Original mortgage amount for reference
+    original_principal NUMERIC(24, 8), -- Original mortgage amount for reference
     -- The rule a loan's "Payment matching" created; a pointer for the UI only
     -- (FK added after transaction_rules).
     payment_matching_rule_id UUID,
@@ -385,12 +396,12 @@ CREATE TABLE transactions (
     payee_id UUID REFERENCES payees(id),
     payee_name VARCHAR(255), -- can be different from payee.name
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL, -- category for non-split transactions
-    amount NUMERIC(20, 4) NOT NULL, -- positive for income/deposits, negative for expenses
+    amount NUMERIC(24, 8) NOT NULL, -- positive for income/deposits, negative for expenses
     currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
     exchange_rate NUMERIC(20, 10) DEFAULT 1, -- rate at transaction time (account-currency units per 1 unit of original currency for foreign entry)
     -- Foreign-currency entry: amount actually paid, stored alongside the
     -- account-currency amount. NULL for ordinary transactions.
-    original_amount NUMERIC(20, 4), -- amount as typed in the original currency
+    original_amount NUMERIC(24, 8), -- amount as typed in the original currency
     original_currency_code VARCHAR(3) CONSTRAINT fk_transactions_original_currency REFERENCES currencies(code), -- currency actually paid in
     description TEXT,
     reference_number VARCHAR(100), -- check number, confirmation number, etc
@@ -430,7 +441,7 @@ CREATE TABLE transaction_splits (
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     transfer_account_id UUID REFERENCES accounts(id) ON DELETE CASCADE, -- target account for transfer splits
     linked_transaction_id UUID REFERENCES transactions(id) ON DELETE SET NULL, -- linked transaction in target account
-    amount NUMERIC(20, 4) NOT NULL,
+    amount NUMERIC(24, 8) NOT NULL,
     memo TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_split_kind_exclusive CHECK (
@@ -917,7 +928,7 @@ CREATE TABLE email_receipt_links (
     settlement_receipt_id UUID NOT NULL REFERENCES email_receipts(id) ON DELETE CASCADE,
     part_index INTEGER NOT NULL DEFAULT 0,
     link_value VARCHAR(100),
-    part_amount NUMERIC(20,4) NOT NULL,
+    part_amount NUMERIC(24,8) NOT NULL,
     component_receipt_id UUID REFERENCES email_receipts(id) ON DELETE SET NULL,
     outcome VARCHAR(30) NOT NULL DEFAULT 'no_link',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1085,14 +1096,14 @@ CREATE TABLE scheduled_transactions (
     payee_id UUID REFERENCES payees(id),
     payee_name VARCHAR(255),
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
-    amount NUMERIC(20, 4) NOT NULL,
+    amount NUMERIC(24, 8) NOT NULL,
     currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
     -- Foreign-currency entry (mirrors the same trio on transactions). When set,
     -- original_amount is the fixed amount the biller charges in
     -- original_currency_code, and `amount` is the account-currency estimate
     -- derived from it at exchange_rate -- refreshed daily from the latest rate,
     -- and re-derived for the posting date when the occurrence is posted.
-    original_amount NUMERIC(20, 4),
+    original_amount NUMERIC(24, 8),
     original_currency_code VARCHAR(3) REFERENCES currencies(code),
     exchange_rate NUMERIC(20, 10) NOT NULL DEFAULT 1,
     description TEXT,
@@ -1125,8 +1136,8 @@ CREATE TABLE scheduled_transactions (
     investment_funding_account_id UUID REFERENCES accounts(id), -- alternate cash source (e.g., bank for contribution+buy)
     investment_quantity NUMERIC(20, 8),
     investment_price NUMERIC(24, 10),
-    investment_commission NUMERIC(20, 4) DEFAULT 0,
-    investment_total_amount NUMERIC(20, 4), -- for amount-only actions (DIVIDEND, INTEREST, CAPITAL_GAIN)
+    investment_commission NUMERIC(24, 8) DEFAULT 0,
+    investment_total_amount NUMERIC(24, 8), -- for amount-only actions (DIVIDEND, INTEREST, CAPITAL_GAIN)
     investment_exchange_rate NUMERIC(20, 10),
     -- Currency pair the stored FX rate was resolved for (issue #1167). NULL on
     -- rows written before the provenance change; posting reuses the rate only
@@ -1157,14 +1168,14 @@ CREATE TABLE scheduled_transaction_splits (
     kind VARCHAR(20) NOT NULL DEFAULT 'category', -- 'category', 'transfer', or 'investment'
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     transfer_account_id UUID REFERENCES accounts(id) ON DELETE CASCADE, -- target account for transfer splits
-    amount NUMERIC(20, 4) NOT NULL,
+    amount NUMERIC(24, 8) NOT NULL,
     memo TEXT,
     -- Investment-split fields (populated when kind='investment'):
     investment_action VARCHAR(50),
     investment_security_id UUID REFERENCES securities(id),
     investment_quantity NUMERIC(20, 8),
     investment_price NUMERIC(24, 10),
-    investment_commission NUMERIC(20, 4),
+    investment_commission NUMERIC(24, 8),
     investment_exchange_rate NUMERIC(20, 10),
     -- Currency pair the stored FX rate was resolved for (issue #1167); see the
     -- matching columns on scheduled_transactions.
@@ -1219,7 +1230,7 @@ CREATE TABLE scheduled_transaction_overrides (
     scheduled_transaction_id UUID NOT NULL REFERENCES scheduled_transactions(id) ON DELETE CASCADE,
     original_date DATE NOT NULL, -- The original calculated occurrence date this override replaces
     override_date DATE NOT NULL, -- The actual date for this occurrence (may differ if date was changed)
-    amount NUMERIC(20, 4),
+    amount NUMERIC(24, 8),
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     description TEXT,
     is_split BOOLEAN,
@@ -1227,7 +1238,7 @@ CREATE TABLE scheduled_transaction_overrides (
     -- Per-occurrence investment overrides (BUY/SELL/REINVEST etc.); NULL means "use base value"
     investment_quantity NUMERIC(20, 8),
     investment_price NUMERIC(24, 10),
-    investment_total_amount NUMERIC(20, 4),
+    investment_total_amount NUMERIC(24, 8),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     -- An occurrence's IDENTITY is its recurrence slot, so that is what is
@@ -1581,8 +1592,8 @@ CREATE TABLE investment_transactions (
     transaction_date DATE NOT NULL,
     quantity NUMERIC(20, 8),
     price NUMERIC(24, 10),
-    commission NUMERIC(20, 4) DEFAULT 0,
-    total_amount NUMERIC(20, 4) NOT NULL,
+    commission NUMERIC(24, 8) DEFAULT 0,
+    total_amount NUMERIC(24, 8) NOT NULL,
     exchange_rate NUMERIC(20, 10) NOT NULL DEFAULT 1,
     description TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'UNRECONCILED', -- 'UNRECONCILED', 'CLEARED', 'RECONCILED', 'VOID'
@@ -2105,8 +2116,8 @@ CREATE TABLE monthly_account_balances (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   month DATE NOT NULL,
-  balance NUMERIC(20, 4) NOT NULL DEFAULT 0,
-  market_value NUMERIC(20, 4),
+  balance NUMERIC(24, 8) NOT NULL DEFAULT 0,
+  market_value NUMERIC(24, 8),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (account_id, month)
@@ -2405,7 +2416,7 @@ CREATE TABLE budgets (
     budget_type VARCHAR(20) NOT NULL DEFAULT 'MONTHLY',
     period_start DATE NOT NULL,
     period_end DATE,
-    base_income NUMERIC(20, 4),
+    base_income NUMERIC(24, 8),
     income_linked BOOLEAN DEFAULT false,
     strategy VARCHAR(30) NOT NULL DEFAULT 'FIXED',
     is_active BOOLEAN DEFAULT true,
@@ -2426,10 +2437,10 @@ CREATE TABLE budget_categories (
     transfer_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
     is_transfer BOOLEAN DEFAULT false,
     category_group VARCHAR(20),
-    amount NUMERIC(20, 4) NOT NULL,
+    amount NUMERIC(24, 8) NOT NULL,
     is_income BOOLEAN DEFAULT false,
     rollover_type VARCHAR(20) DEFAULT 'NONE',
-    rollover_cap NUMERIC(20, 4),
+    rollover_cap NUMERIC(24, 8),
     flex_group VARCHAR(100),
     alert_warn_percent INTEGER DEFAULT 80,
     alert_critical_percent INTEGER DEFAULT 95,
@@ -2452,9 +2463,9 @@ CREATE TABLE budget_periods (
     budget_id UUID NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
     period_start DATE NOT NULL,
     period_end DATE NOT NULL,
-    actual_income NUMERIC(20, 4) DEFAULT 0,
-    actual_expenses NUMERIC(20, 4) DEFAULT 0,
-    total_budgeted NUMERIC(20, 4) DEFAULT 0,
+    actual_income NUMERIC(24, 8) DEFAULT 0,
+    actual_expenses NUMERIC(24, 8) DEFAULT 0,
+    total_budgeted NUMERIC(24, 8) DEFAULT 0,
     status VARCHAR(20) DEFAULT 'OPEN',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -2471,11 +2482,11 @@ CREATE TABLE budget_period_categories (
     budget_period_id UUID NOT NULL REFERENCES budget_periods(id) ON DELETE CASCADE,
     budget_category_id UUID NOT NULL REFERENCES budget_categories(id) ON DELETE CASCADE,
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
-    budgeted_amount NUMERIC(20, 4) NOT NULL,
-    rollover_in NUMERIC(20, 4) DEFAULT 0,
-    actual_amount NUMERIC(20, 4) DEFAULT 0,
-    effective_budget NUMERIC(20, 4) NOT NULL,
-    rollover_out NUMERIC(20, 4) DEFAULT 0,
+    budgeted_amount NUMERIC(24, 8) NOT NULL,
+    rollover_in NUMERIC(24, 8) DEFAULT 0,
+    actual_amount NUMERIC(24, 8) DEFAULT 0,
+    effective_budget NUMERIC(24, 8) NOT NULL,
+    rollover_out NUMERIC(24, 8) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(budget_period_id, budget_category_id)
@@ -2641,7 +2652,7 @@ CREATE TRIGGER update_notification_reminders_updated_at BEFORE UPDATE ON notific
 CREATE TABLE notification_portfolio_state (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     move_alert_percent NUMERIC(9,4),
-    baseline_value NUMERIC(20,4),
+    baseline_value NUMERIC(24,8),
     baseline_currency VARCHAR(3),
     baseline_captured_on DATE,
     baseline_positions JSONB,
@@ -2898,7 +2909,7 @@ CREATE TABLE bank_sync_accounts (
     last_imported_count INTEGER NOT NULL DEFAULT 0,
     last_skipped_count INTEGER NOT NULL DEFAULT 0,
     last_refused_count INTEGER NOT NULL DEFAULT 0,
-    bank_balance NUMERIC(20,4),
+    bank_balance NUMERIC(24,8),
     bank_balance_currency VARCHAR(3),
     bank_balance_date DATE,
     bank_balance_at TIMESTAMPTZ,
@@ -3162,15 +3173,15 @@ CREATE TABLE monte_carlo_scenarios (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     account_ids UUID[] NOT NULL DEFAULT '{}',
-    starting_value NUMERIC(20, 4) NOT NULL DEFAULT 0,
+    starting_value NUMERIC(24, 8) NOT NULL DEFAULT 0,
     use_current_balance BOOLEAN NOT NULL DEFAULT TRUE,
 
     years_to_retirement INTEGER NOT NULL,
-    annual_contribution NUMERIC(20, 4) NOT NULL DEFAULT 0,
+    annual_contribution NUMERIC(24, 8) NOT NULL DEFAULT 0,
     contribution_growth_rate NUMERIC(8, 6) NOT NULL DEFAULT 0,
 
     years_in_retirement INTEGER NOT NULL DEFAULT 0,
-    annual_withdrawal NUMERIC(20, 4) NOT NULL DEFAULT 0,
+    annual_withdrawal NUMERIC(24, 8) NOT NULL DEFAULT 0,
 
     expected_return NUMERIC(8, 6) NOT NULL,
     volatility NUMERIC(8, 6) NOT NULL,
@@ -3180,7 +3191,7 @@ CREATE TABLE monte_carlo_scenarios (
     use_historical_returns BOOLEAN NOT NULL DEFAULT FALSE,
 
     simulation_count INTEGER NOT NULL DEFAULT 5000,
-    target_value NUMERIC(20, 4),
+    target_value NUMERIC(24, 8),
     random_seed BIGINT,
 
     is_favourite BOOLEAN NOT NULL DEFAULT FALSE,
@@ -3212,7 +3223,7 @@ CREATE TABLE monte_carlo_cash_flows (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     scenario_id UUID NOT NULL REFERENCES monte_carlo_scenarios(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    amount NUMERIC(20, 4) NOT NULL,
+    amount NUMERIC(24, 8) NOT NULL,
     flow_type VARCHAR(20) NOT NULL,
     start_year INTEGER NOT NULL,
     end_year INTEGER,
@@ -3240,12 +3251,12 @@ CREATE TABLE loan_scenarios (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
-    recurring_extra_amount DECIMAL(20,4),
+    recurring_extra_amount DECIMAL(24,8),
     recurring_extra_mode VARCHAR(64),
     recurring_extra_frequency VARCHAR(16),
     recurring_extra_start_date DATE,
     recurring_extra_end_date DATE,
-    target_monthly_payment DECIMAL(20,4),
+    target_monthly_payment DECIMAL(24,8),
     target_monthly_payment_mode VARCHAR(64),
     target_monthly_payment_start_date DATE,
     target_monthly_payment_end_date DATE,
@@ -3271,7 +3282,7 @@ CREATE TABLE loan_rate_changes (
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     effective_date DATE NOT NULL,
     annual_rate NUMERIC(8,4) NOT NULL,
-    new_payment_amount NUMERIC(20,4),
+    new_payment_amount NUMERIC(24,8),
     source VARCHAR(10) NOT NULL DEFAULT 'manual',
     note VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -3292,7 +3303,7 @@ CREATE TABLE gem_strategies (
     cadence VARCHAR(20) NOT NULL DEFAULT 'MONTHLY', -- 'MONTHLY' | 'QUARTERLY'
     lookback_months INTEGER NOT NULL DEFAULT 12, -- momentum window
     tax_rate_percent NUMERIC(9,4), -- applied to an estimated realized gain
-    commission_amount NUMERIC(20,4), -- per-switch broker commission estimate
+    commission_amount NUMERIC(24,8), -- per-switch broker commission estimate
     rules_source_url VARCHAR(500),
     rules_source_label VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -3573,7 +3584,7 @@ CREATE TABLE warranties (
     purchase_date DATE NOT NULL,
     expires_on DATE,
     is_lifetime BOOLEAN NOT NULL DEFAULT false,
-    purchase_price NUMERIC(20,4) CHECK (purchase_price IS NULL OR purchase_price >= 0),
+    purchase_price NUMERIC(24,8) CHECK (purchase_price IS NULL OR purchase_price >= 0),
     currency_code VARCHAR(3) REFERENCES currencies(code),
     product_url VARCHAR(500),
     notes VARCHAR(2000),
@@ -3641,14 +3652,14 @@ CREATE TABLE payroll_deduction_rules (
     category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
     -- The most the category collects in one period, as a magnitude in the
     -- bill's account currency.
-    yearly_maximum NUMERIC(20,4) NOT NULL CHECK (yearly_maximum >= 0),
+    yearly_maximum NUMERIC(24,8) NOT NULL CHECK (yearly_maximum >= 0),
     reset_period VARCHAR(20) NOT NULL DEFAULT 'YEARLY' CHECK (reset_period IN ('YEARLY')),
     -- The anchor: a period runs from one anniversary of this day to the day
     -- before the next.
     reset_date DATE NOT NULL,
     -- Read only when the bill carries no split line for the category; the
     -- line's own magnitude is the expected amount otherwise.
-    expected_per_paycheque NUMERIC(20,4) CHECK (expected_per_paycheque IS NULL OR expected_per_paycheque >= 0),
+    expected_per_paycheque NUMERIC(24,8) CHECK (expected_per_paycheque IS NULL OR expected_per_paycheque >= 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_payroll_deduction_rule_line UNIQUE (scheduled_transaction_id, category_id)
@@ -3679,7 +3690,7 @@ CREATE TABLE loan_fees (
     calculation VARCHAR(30) NOT NULL,
     basis VARCHAR(20) NOT NULL DEFAULT 'PER_PAYMENT',
     -- A FIXED fee's money, in the mortgage's currency.
-    amount NUMERIC(20,4),
+    amount NUMERIC(24,8),
     -- A percentage fee's rate, in percent of its base.
     rate NUMERIC(10,6),
     sort_order INTEGER NOT NULL DEFAULT 0,
@@ -5328,6 +5339,117 @@ COMMENT ON FUNCTION currency_code_in_use_globally(VARCHAR) IS
   'currencies(code) -- enforced by currency-references.spec.ts.';
 
 REVOKE ALL ON FUNCTION currency_code_in_use_globally(VARCHAR) FROM PUBLIC;
+
+-- -------------------------------------------------------------------------
+-- Does anything other than an activation reference a currency code?
+--
+-- The kind-change gate's question (INV-CRYPTO-001): every creator holds their
+-- currency through a user_currency_preferences row, so the sibling above is
+-- true from birth; this one counts every other reference column and ignores
+-- activations. Same SECURITY DEFINER shape; held by currency-references.spec.ts.
+-- -------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION currency_code_referenced_by_data(p_code VARCHAR)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM shared_groups WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM shared_entries WHERE original_currency_code = p_code
+    UNION ALL SELECT 1 FROM exchange_rates
+      WHERE from_currency = p_code OR to_currency = p_code
+    UNION ALL SELECT 1 FROM exchange_rate_coverage
+      WHERE from_currency = p_code OR to_currency = p_code
+    UNION ALL SELECT 1 FROM accounts WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM transactions
+      WHERE currency_code = p_code OR original_currency_code = p_code
+    UNION ALL SELECT 1 FROM securities WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM bond_programs WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM bond_instruments WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM scheduled_transactions
+      WHERE currency_code = p_code OR original_currency_code = p_code
+    UNION ALL SELECT 1 FROM budgets WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM warranties WHERE currency_code = p_code
+    UNION ALL SELECT 1 FROM user_preferences WHERE default_currency = p_code
+  )
+$$;
+
+COMMENT ON FUNCTION currency_code_referenced_by_data(VARCHAR) IS
+  'True when any row anywhere other than a user_currency_preferences activation '
+  'references currencies(code) = p_code. The kind-change gate: an activation is '
+  'a list entry, not a use. SECURITY DEFINER so the answer is global; must '
+  'consult every other FK to currencies(code) -- enforced by '
+  'currency-references.spec.ts.';
+
+REVOKE ALL ON FUNCTION currency_code_referenced_by_data(VARCHAR) FROM PUBLIC;
+
+-- -------------------------------------------------------------------------
+-- The fewest decimal places every stored amount in a currency fits.
+--
+-- The decimal-places lowering gate's question (INV-MONEY-001), global rather
+-- than the editing user's RLS view: a single pass over the amount columns of
+-- every user's rows in the currency. Same SECURITY DEFINER shape; held by
+-- currency-references.spec.ts.
+-- -------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION currency_min_decimal_places_in_use(p_code VARCHAR)
+RETURNS smallint
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT COALESCE(MAX(scale(trim_scale(amounts.amount))), 0)::smallint
+  FROM (
+    SELECT t.amount AS amount
+      FROM transactions t JOIN accounts a ON a.id = t.account_id
+      WHERE a.currency_code = p_code
+    UNION ALL SELECT t.original_amount
+      FROM transactions t
+      WHERE t.original_currency_code = p_code
+    UNION ALL SELECT s.amount
+      FROM transaction_splits s
+      JOIN transactions t ON t.id = s.transaction_id
+      JOIN accounts a ON a.id = t.account_id
+      WHERE a.currency_code = p_code
+    UNION ALL SELECT v.amount
+      FROM accounts a
+      CROSS JOIN LATERAL (VALUES
+        (a.opening_balance), (a.current_balance), (a.credit_limit),
+        (a.low_balance_threshold), (a.high_balance_threshold)
+      ) AS v(amount)
+      WHERE a.currency_code = p_code
+    UNION ALL SELECT st.amount
+      FROM scheduled_transactions st JOIN accounts a ON a.id = st.account_id
+      WHERE a.currency_code = p_code
+    UNION ALL SELECT st.original_amount
+      FROM scheduled_transactions st
+      WHERE st.original_currency_code = p_code
+    UNION ALL SELECT ss.amount
+      FROM scheduled_transaction_splits ss
+      JOIN scheduled_transactions st ON st.id = ss.scheduled_transaction_id
+      JOIN accounts a ON a.id = st.account_id
+      WHERE a.currency_code = p_code
+    UNION ALL SELECT so.amount
+      FROM scheduled_transaction_overrides so
+      JOIN scheduled_transactions st ON st.id = so.scheduled_transaction_id
+      JOIN accounts a ON a.id = st.account_id
+      WHERE a.currency_code = p_code
+  ) AS amounts
+$$;
+
+COMMENT ON FUNCTION currency_min_decimal_places_in_use(VARCHAR) IS
+  'The smallest number of decimal places (0..8) that every stored amount in '
+  'currency p_code fits without losing a digit, across every user: '
+  'transactions, their splits, account balances and thresholds, scheduled '
+  'transactions, their splits and overrides. 0 when nothing is stored. '
+  'SECURITY DEFINER so the answer is global rather than the calling tenant''s '
+  'view of it; the decimal-places lowering gate (INV-MONEY-001) runs it in '
+  'its transaction after locking the currency row. Held to the referencing '
+  'columns by currency-references.spec.ts.';
+
+REVOKE ALL ON FUNCTION currency_min_decimal_places_in_use(VARCHAR) FROM PUBLIC;
 
 -- -------------------------------------------------------------------------
 -- Which currency codes does one user reference?

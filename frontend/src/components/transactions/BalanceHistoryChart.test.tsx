@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@/test/render';
 import { BalanceHistoryChart } from './BalanceHistoryChart';
 import { computeBalanceGradient } from '@/lib/balance-history';
 import { parseLocalDate } from '@/lib/utils';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 
 /**
  * A day as the x coordinate the chart uses. The axis is a time scale, so a
@@ -744,6 +745,13 @@ describe('computeBalanceGradient', () => {
       expect(rounded).not.toContain(0);
     });
 
+    it('keeps the quoted values in the footer figures', () => {
+      render(<BalanceHistoryChart data={subCent} isLoading={false} precise />);
+      const footer = mockFormatCurrencyPrecise.mock.calls.map((call) => call[0]);
+      expect(footer).toContain(0.000342);
+      expect(footer).toContain(0.000411);
+    });
+
     it('still rounds a balance series to cents', () => {
       render(
         <BalanceHistoryChart
@@ -756,6 +764,49 @@ describe('computeBalanceGradient', () => {
       );
       expect(mockFormatCurrency).toHaveBeenCalled();
     });
+  });
+});
+
+describe('BalanceHistoryChart in a four-place currency', () => {
+  afterEach(() => {
+    clearCurrencyDecimals();
+  });
+
+  it('plots and summarises a coin balance at its own places, not cents', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    mockFormatCurrency.mockClear();
+    render(
+      <BalanceHistoryChart
+        data={[
+          { date: '2026-01-01', balance: 0.0125 },
+          { date: '2026-01-02', balance: 0.007 },
+        ]}
+        isLoading={false}
+        currencyCode="BTC"
+      />,
+    );
+    const formatted = mockFormatCurrency.mock.calls.map((call) => call[0]);
+    // Rounded to cents, 0.0070 read 0.01 and the summary's Current 0.0100.
+    expect(formatted).toContain(0.007);
+    expect(formatted).toContain(0.0125);
+    expect(formatted).not.toContain(0.01);
+  });
+
+  it('rounds an unregistered code at Intl\'s two places', () => {
+    mockFormatCurrency.mockClear();
+    render(
+      <BalanceHistoryChart
+        data={[
+          { date: '2026-01-01', balance: 10.004 },
+          { date: '2026-01-02', balance: 12.346 },
+        ]}
+        isLoading={false}
+        currencyCode="USD"
+      />,
+    );
+    const formatted = mockFormatCurrency.mock.calls.map((call) => call[0]);
+    expect(formatted).toContain(10);
+    expect(formatted).toContain(12.35);
   });
 });
 

@@ -81,6 +81,12 @@ describe("ImportRegularProcessorService", () => {
       id: `gen-${Date.now()}-${Math.random()}`,
     })),
     createQueryBuilder: jest.fn().mockReturnValue(makeMockQueryBuilder()),
+    // `currencyMoneyDecimals` reads a transfer target's decimal places; no
+    // row reads as the fiat default.
+    getRepository: jest.fn().mockReturnValue({
+      find: jest.fn().mockResolvedValue([]),
+      query: jest.fn().mockResolvedValue([]),
+    }),
   });
 
   const makeContext = (
@@ -123,6 +129,101 @@ describe("ImportRegularProcessorService", () => {
       } as unknown as TransactionRulesApplierService,
       exchangeRateService as unknown as ExchangeRateService,
     );
+  });
+
+  describe("processTransaction: money precision", () => {
+    const btcContext = () =>
+      makeContext({
+        moneyDecimals: 8,
+        account: {
+          id: accountId,
+          currencyCode: "BTC",
+          accountType: AccountType.CRYPTO,
+          name: "Wallet",
+        } as any,
+      });
+    const balanceDeltas = (ctx: ImportContext) =>
+      (managerOf(ctx).query.mock.calls as unknown[][])
+        .filter(([sql]) => String(sql).includes("SET current_balance"))
+        .map(([, params]) => (params as unknown[])[0]);
+
+    it("imports an 8-place coin amount whole into a BTC account and moves the balance by it", async () => {
+      const ctx = btcContext();
+
+      await service.processTransaction(ctx, {
+        date: "2025-01-15",
+        amount: -0.000025,
+        payee: "Network fee",
+      });
+
+      expect(ctx.importResult.imported).toBe(1);
+      const created = (managerOf(ctx).create.mock.calls as unknown[][]).find(
+        ([entity]) => entity === Transaction,
+      );
+      expect((created?.[1] as { amount: number }).amount).toBe(-0.000025);
+      expect(balanceDeltas(ctx)).toEqual([-0.000025]);
+    });
+
+    it("refuses an amount with more places than a fiat account carries", async () => {
+      const ctx = makeContext();
+
+      await expect(
+        service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: -0.000025,
+        }),
+      ).rejects.toThrow(/more decimal places than CAD carries \(4\)/);
+      expect(managerOf(ctx).save).not.toHaveBeenCalled();
+      expect(ctx.importResult.imported).toBe(0);
+    });
+
+    it("refuses an over-precise OFX amount (-12.34567) on a CAD account with the places-exceeded error", async () => {
+      const ctx = makeContext();
+
+      await expect(
+        service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: -12.34567,
+          fitId: "FIT-1",
+        }),
+      ).rejects.toThrow(/more decimal places than CAD carries \(4\)/);
+      expect(ctx.importResult.imported).toBe(0);
+    });
+
+    it("refuses a coin amount with more places than the coin carries", async () => {
+      const ctx = btcContext();
+
+      await expect(
+        service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: -0.000000025,
+        }),
+      ).rejects.toThrow(/more decimal places than BTC carries \(8\)/);
+    });
+
+    it("refuses a split line with more places than the account carries", async () => {
+      const ctx = makeContext();
+
+      await expect(
+        service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: -10,
+          splits: [{ amount: -9.99999, category: "A" }],
+        }),
+      ).rejects.toThrow(/"split amount"/);
+    });
+
+    it("keeps a fiat amount at four places exactly as before", async () => {
+      const ctx = makeContext();
+
+      await service.processTransaction(ctx, {
+        date: "2025-01-15",
+        amount: -50.1235,
+      });
+
+      expect(managerOf(ctx).create.mock.calls[0][1].amount).toBe(-50.1235);
+      expect(balanceDeltas(ctx)).toEqual([-50.1235]);
+    });
   });
 
   describe("processTransaction", () => {

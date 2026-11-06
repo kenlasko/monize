@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS transaction_trash (
   account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
   account_name VARCHAR(255) NOT NULL,
   transaction_date DATE NOT NULL,
-  amount NUMERIC(20,4) NOT NULL,
+  amount NUMERIC(24,8) NOT NULL,
   currency_code VARCHAR(3) NOT NULL,
   payee_name VARCHAR(255),
   category_name VARCHAR(255),

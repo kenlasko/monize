@@ -376,6 +376,17 @@ describe("explainRuleCondition: the evaluator's answer, explained", () => {
       expect(only(leaf("absAmount", "lt", 1), small).actual).toBe("0.0005");
     });
 
+    it("reports a coin amount at its own places, and the rule 'amount equals 0.00002500' matches it", () => {
+      const coin = buildRuleFacts({ ...BASE, amount: "-0.00002500" });
+      expect(only(leaf("amount", "eq", -0.000025), coin)).toMatchObject({
+        actual: "-0.000025",
+        result: true,
+      });
+      expect(only(leaf("absAmount", "gt", 0.00001), coin).actual).toBe(
+        "0.000025",
+      );
+    });
+
     it("reports the day of the month and the weekday the row's own date gives", () => {
       expect(only(leaf("dayOfMonth", "eq", 1))).toMatchObject({
         actual: 1,

@@ -5,6 +5,7 @@ import {
   BuildingLibraryIcon,
   CreditCardIcon,
   CubeIcon,
+  CubeTransparentIcon,
   DocumentTextIcon,
   HomeIcon,
   ReceiptPercentIcon,
@@ -65,6 +66,10 @@ export const ACCOUNT_TYPE_META: Record<AccountType, AccountTypeMeta> = {
   ASSET: {
     pillClass: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
     Icon: CubeIcon,
+  },
+  CRYPTO: {
+    pillClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+    Icon: CubeTransparentIcon,
   },
   OTHER: {
     pillClass: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',

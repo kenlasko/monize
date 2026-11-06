@@ -1,5 +1,4 @@
 import {
-  IsNumber,
   IsUUID,
   IsOptional,
   IsString,
@@ -18,6 +17,7 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { InvestmentSplitDto } from "../../transactions/dto/create-transaction-split.dto";
 import { SplitKind } from "../../transactions/entities/split-kind.enum";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 export class CreateScheduledTransactionSplitDto {
   // The id of the split row this one continues from (issue #1167 F4). On an
@@ -81,7 +81,7 @@ export class CreateScheduledTransactionSplitDto {
   @Type(() => InvestmentSplitDto)
   investment?: InvestmentSplitDto;
 
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(-999999999999)
   @Max(999999999999)
   amount: number;

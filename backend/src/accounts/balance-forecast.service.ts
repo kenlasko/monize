@@ -21,6 +21,10 @@ import {
   forecastLanding,
 } from "./balance-forecast.util";
 import { roundMoney } from "../common/round.util";
+import {
+  loadCurrencyPlacesForRead,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
 import { addDaysYMD, todayYMD } from "../common/date-utils";
 import { overdueCarryFrom } from "../common/scheduled-occurrences";
 import { tr } from "../i18n/translate";
@@ -111,8 +115,15 @@ export class BalanceForecastService {
           [accountId, userId, today],
         ),
     );
+    // Every figure of the projection is in the account's currency, rounded at
+    // its precision: a coin wallet's satoshis survive the running balance.
+    const places = await withScopedDb(this.dataSource, (m) =>
+      loadCurrencyPlacesForRead(m, [account.currencyCode]),
+    );
+    const decimals = moneyDecimalsForCode(places, account.currencyCode);
     const startBalance = roundMoney(
       Number(startRows?.[0]?.balance ?? account.openingBalance),
+      decimals,
     );
 
     // Future-dated real transactions per day.
@@ -197,10 +208,11 @@ export class BalanceForecastService {
       inputs,
       accountId,
       actualByDate,
+      decimals,
     );
     const complete = gaps.length === 0;
     const points = complete
-      ? buildForecastSeries(startBalance, today, horizon, byDate)
+      ? buildForecastSeries(startBalance, today, horizon, byDate, decimals)
       : // Today's balance is a known fact and stays; everything after it is not.
         [{ date: today, balance: startBalance }];
 

@@ -2,11 +2,12 @@
 
 import { useForm, useWatch, Resolver, Controller } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useEffect, useMemo, useCallback, MutableRefObject } from 'react';
+import { useState, useEffect, useMemo, useCallback, MutableRefObject, type ChangeEvent } from 'react';
 import { ButtonLink } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Combobox } from '@/components/ui/Combobox';
@@ -44,8 +45,10 @@ import { useMainAccountName } from '@/hooks/useMainAccountName';
 import { categoriesApi } from '@/lib/categories';
 import { createCategoryFromInput } from '@/lib/category-create';
 import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
-import { getCurrencySymbol } from '@/lib/format';
+import { entryDecimalPlaces, getCurrencySymbol, loadedEntryAmount } from '@/lib/format';
+import { docsUrl } from '@/lib/docs-links';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
@@ -134,9 +137,14 @@ const buildAccountSchema = (
     'CASH',
     'LINE_OF_CREDIT',
     'ASSET',
+    'CRYPTO',
     'OTHER',
   ]),
-  currencyCode: z.string().length(3, t('validation.currencyCodeLength')),
+  // Empty only after a type switch cleared a currency of the other kind.
+  currencyCode: z
+    .string()
+    .min(1, t('validation.currencyRequired'))
+    .length(3, t('validation.currencyCodeLength')),
   openingBalance: optionalNumber,
   creditLimit: optionalNumber,
   lowBalanceThreshold: optionalNumber.nullable(),
@@ -333,6 +341,19 @@ function cashLedgerChanged(data: AccountFormData, cash: Account | null): boolean
   );
 }
 
+/**
+ * Whether a currency belongs on an account of this type: a crypto wallet holds
+ * a `CRYPTO` currency, every other type a fiat one (INV-CRYPTO-001,
+ * `docs/specs/crypto-accounts.md` decision 8). A row without a `kind` (an
+ * older API) is fiat.
+ */
+function currencyFitsAccountType(
+  currency: Pick<CurrencyInfo, 'kind'> | undefined,
+  isCryptoAccount: boolean,
+): boolean {
+  return (currency?.kind === 'CRYPTO') === isCryptoAccount;
+}
+
 interface AccountFormProps {
   account?: Account;
   /** Prefill for a new account; ignored when `account` is given. */
@@ -373,11 +394,15 @@ export function AccountForm({
     { value: 'MORTGAGE', label: t('form.accountTypeOptions.mortgage') },
     { value: 'ASSET', label: t('form.accountTypeOptions.asset') },
     { value: 'CASH', label: t('form.accountTypeOptions.cash') },
+    { value: 'CRYPTO', label: t('form.accountTypeOptions.crypto') },
     { value: 'OTHER', label: t('form.accountTypeOptions.other') },
   ];
   const { formatCurrency } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
+  // Whether the currency list has answered: a failed load is not "no
+  // cryptocurrency exists", so the hint below waits for a real answer.
+  const [currenciesLoaded, setCurrenciesLoaded] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedAssetCategoryId, setSelectedAssetCategoryId] = useState<string>(account?.assetCategoryId || '');
@@ -395,6 +420,11 @@ export function AccountForm({
   // Currency becomes locked once the account has any transactions so existing
   // balances are not silently re-denominated. Stays unlocked while loading.
   const [isCurrencyLocked, setIsCurrencyLocked] = useState(false);
+  // The account whose lock state `canDelete` has answered. Until it answers
+  // (or when it failed) an existing account's lock is unknown, and the type
+  // picker keeps the account to its saved kind rather than clearing a
+  // currency that may be locked.
+  const [lockKnownFor, setLockKnownFor] = useState<string | null>(null);
   // Financial institution selection + inline create.
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [selectedInstitutionId, setSelectedInstitutionId] = useState<string>(account?.institutionId || '');
@@ -423,7 +453,7 @@ export function AccountForm({
           openingBalance: account.openingBalance !== undefined
             ? (account.accountType === 'LOAN' || account.accountType === 'MORTGAGE'
               ? Math.round(Math.abs(Number(account.openingBalance)) * 100) / 100
-              : Math.round(Number(account.openingBalance) * 100) / 100)
+              : loadedEntryAmount(Number(account.openingBalance), account.currencyCode))
             : undefined,
           creditLimit: account.creditLimit
             ? Math.round(Number(account.creditLimit) * 100) / 100
@@ -631,6 +661,9 @@ export function AccountForm({
 
   // Show asset fields only for ASSET account type
   const isAssetAccount = watchedAccountType === 'ASSET';
+
+  // A crypto wallet: a coin's currency, no credit limit and no interest rate.
+  const isCryptoAccount = watchedAccountType === 'CRYPTO';
   const watchedDateAcquired = useWatch({ control, name: 'dateAcquired' });
 
   // Show mortgage fields only for MORTGAGE account type
@@ -675,9 +708,18 @@ export function AccountForm({
   }, [editingAccountId, isInvestmentEdit, setValue, stripAccountName]);
 
   // Load supported currencies
-  useEffect(() => {
-    exchangeRatesApi.getCurrencies().then(setCurrencies).catch(() => {});
+  const loadCurrencies = useCallback(() => {
+    exchangeRatesApi
+      .getCurrencies()
+      .then((list) => {
+        setCurrencies(list);
+        setCurrenciesLoaded(true);
+      })
+      .catch(() => {});
   }, []);
+  useEffect(() => {
+    loadCurrencies();
+  }, [loadCurrencies]);
 
   // Load financial institutions for the selector
   useEffect(() => {
@@ -749,6 +791,7 @@ export function AccountForm({
         setIsCurrencyLocked(
           transactionCount > 0 || investmentTransactionCount > 0,
         );
+        setLockKnownFor(account.id);
       })
       .catch((error) => {
         logger.error('Failed to load account transaction count:', error);
@@ -768,18 +811,85 @@ export function AccountForm({
     }
   }, [currencies, setValue, getValues]);
 
-  // Build currency options: default currency first, then alphabetical
+  // Build currency options: only the currencies of the kind this account type
+  // holds, default currency first, then alphabetical. A currency cleared by a
+  // type switch shows the placeholder rather than a first option the form does
+  // not hold.
   const currencyOptions = useMemo(() => {
-    const sorted = [...currencies].sort((a, b) => {
-      if (a.code === defaultCurrency) return -1;
-      if (b.code === defaultCurrency) return 1;
-      return a.code.localeCompare(b.code);
-    });
-    return sorted.map((c) => ({
+    const sorted = currencies
+      .filter((c) => currencyFitsAccountType(c, isCryptoAccount))
+      .sort((a, b) => {
+        if (a.code === defaultCurrency) return -1;
+        if (b.code === defaultCurrency) return 1;
+        return a.code.localeCompare(b.code);
+      });
+    const options = sorted.map((c) => ({
       value: c.code,
       label: `${c.code} - ${c.name} (${c.symbol})`,
     }));
-  }, [currencies, defaultCurrency]);
+    return watchedCurrency
+      ? options
+      : [{ value: '', label: t('form.currencyPlaceholder') }, ...options];
+  }, [currencies, defaultCurrency, isCryptoAccount, watchedCurrency, t]);
+
+  const showNoCryptoCurrencyHint =
+    isCryptoAccount &&
+    currenciesLoaded &&
+    !currencies.some((c) => currencyFitsAccountType(c, true));
+
+  // The hint sends the reader to the Currencies page in another tab; the list
+  // is read again when they come back, so the coin they added can be chosen
+  // without reopening the form.
+  useEffect(() => {
+    if (!showNoCryptoCurrencyHint) return;
+    window.addEventListener('focus', loadCurrencies);
+    return () => window.removeEventListener('focus', loadCurrencies);
+  }, [showNoCryptoCurrencyHint, loadCurrencies]);
+
+  // Whether an existing account's lock is still unknown: `canDelete` has not
+  // answered for it, or failed. Treated as locked to the saved kind, so a type
+  // switch made before the answer cannot clear a locked BTC to ''.
+  const lockUnknown = !!account?.id && lockKnownFor !== account.id;
+  const holdsSavedKind = isCurrencyLocked || lockUnknown;
+
+  // Switching between a crypto wallet and any other type clears a currency of
+  // the other kind; a currency that still fits is kept. A currency locked by
+  // the account's transactions (or whose lock is not known yet) is never
+  // cleared: the type picker offers only the types of its kind
+  // (`accountTypeSelectOptions`).
+  const accountTypeField = register('accountType');
+  const handleAccountTypeChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    void accountTypeField.onChange(event);
+    if (holdsSavedKind) return;
+    const current = getValues('currencyCode');
+    if (!current) return;
+    const info = currencies.find((c) => c.code === current);
+    if (!currencyFitsAccountType(info, event.target.value === 'CRYPTO')) {
+      setValue('currencyCode', '', { shouldDirty: true });
+    }
+  };
+
+  // A locked currency holds the account to its kind (INV-CRYPTO-001): a wallet
+  // cannot become a fiat type, nor a fiat account a wallet, because either
+  // needs a currency of the other kind. The saved type gives the kind, since
+  // the locked currency is the saved one. While the lock is unknown the same
+  // options are disabled, without the tooltip that says why.
+  const lockedToCrypto = holdsSavedKind && account ? account.accountType === 'CRYPTO' : null;
+  const accountTypeSelectOptions =
+    lockedToCrypto === null
+      ? accountTypeOptions
+      : accountTypeOptions.map((option) => ({
+          ...option,
+          disabled: (option.value === 'CRYPTO') !== lockedToCrypto,
+        }));
+
+  // Every type's opening balance and balance alert thresholds are entered at
+  // the currency's entry places (`entryDecimalPlaces`): a registered coin's
+  // own, four for a coin the registry has not loaded, two for any other code.
+  // A late registry load redraws the input at the coin's places, so the form
+  // subscribes to it.
+  useCurrencyDecimalsVersion();
+  const amountDecimalPlaces = entryDecimalPlaces(watchedCurrency);
 
   // Load accounts and categories when LOAN, MORTGAGE, LINE_OF_CREDIT, or ASSET
   // type is selected (for the source-account and value-change/interest category
@@ -994,12 +1104,26 @@ export function AccountForm({
         {...register('name')}
       />
 
-      <Select
-        label={t('form.accountType')}
-        options={accountTypeOptions}
-        error={errors.accountType?.message}
-        {...register('accountType')}
-      />
+      <div>
+        <div className="flex items-center mb-1">
+          <label
+            htmlFor="select-account-type"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            {t('form.accountType')}
+          </label>
+          {isCurrencyLocked && lockedToCrypto !== null && (
+            <InfoTooltip text={t('form.accountTypeKindLocked')} />
+          )}
+        </div>
+        <Select
+          id="select-account-type"
+          options={accountTypeSelectOptions}
+          error={errors.accountType?.message}
+          {...accountTypeField}
+          onChange={handleAccountTypeChange}
+        />
+      </div>
 
       {/* Investment account pair option */}
       {showInvestmentPairOption && (
@@ -1051,8 +1175,41 @@ export function AccountForm({
           onChange={(value) => setValue('openingBalance', value, { shouldValidate: true })}
           error={errors.openingBalance?.message}
           allowNegative={!isLoanAccount && !isMortgageAccount}
+          decimalPlaces={amountDecimalPlaces}
         />
       </div>
+
+      {showNoCryptoCurrencyHint && (
+        <div
+          role="note"
+          className="rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3"
+        >
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            {t.rich('form.noCryptoCurrencies', {
+              currencies: (chunks) => (
+                <Link
+                  href="/currencies"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline hover:text-blue-900 dark:hover:text-blue-100"
+                >
+                  {chunks}
+                </Link>
+              ),
+              guide: (chunks) => (
+                <a
+                  href={docsUrl('cryptoCurrencies')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline hover:text-blue-900 dark:hover:text-blue-100"
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <Input
@@ -1079,7 +1236,7 @@ export function AccountForm({
 
       {/* Balance-threshold alerts (edit only; docs/specs/balance-threshold-notifications.md) */}
       <div className="grid grid-cols-2 gap-4">
-        {!isAssetAccount && !isLoanAccount && !isMortgageAccount && (
+        {!isAssetAccount && !isLoanAccount && !isMortgageAccount && !isCryptoAccount && (
           <CurrencyInput
             label={t('form.creditLimit')}
             prefix={currencySymbol}
@@ -1090,7 +1247,7 @@ export function AccountForm({
           />
         )}
 
-        {!isAssetAccount && (
+        {!isAssetAccount && !isCryptoAccount && (
           <Controller
             name="interestRate"
             control={control}
@@ -1145,6 +1302,7 @@ export function AccountForm({
             <CurrencyInput
               label={t('form.lowBalanceThreshold')}
               prefix={currencySymbol}
+              decimalPlaces={amountDecimalPlaces}
               value={watchedLowThreshold ?? undefined}
               onChange={(value) =>
                 setValue('lowBalanceThreshold', value ?? null, {
@@ -1157,6 +1315,7 @@ export function AccountForm({
             <CurrencyInput
               label={t('form.highBalanceThreshold')}
               prefix={currencySymbol}
+              decimalPlaces={amountDecimalPlaces}
               value={watchedHighThreshold ?? undefined}
               onChange={(value) =>
                 setValue('highBalanceThreshold', value ?? null, {

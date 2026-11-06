@@ -2,7 +2,13 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { gainLossColor } from '@/lib/format';
+import {
+  gainLossColor,
+  moneyDecimalsForCurrency,
+  roundMoney,
+  sumMoney,
+} from '@/lib/format';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { chartColors } from '@/lib/chart-colors';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
@@ -171,16 +177,22 @@ export function AccountBalancesBarChart({
   // desktop switches to vertical once the bar count crosses the crowding threshold.
   const verticalXAxis = isMobile || chartData.length > DESKTOP_VERTICAL_AXIS_THRESHOLD;
 
+  // The registry fills after the first render, so the summary is recomputed
+  // when a coin's places arrive.
+  const registryVersion = useCurrencyDecimalsVersion();
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
-    const totalCents = chartData.reduce(
-      (sum, d) => sum + Math.round(d.balance * 10000),
-      0,
+    // The series is in the account's currency: sum and round at its places
+    // (four for fiat, a coin's own up to eight), never at a fixed 10000 scale.
+    const decimals = moneyDecimalsForCurrency(currencyCode);
+    const total = sumMoney(
+      chartData.map((d) => d.balance),
+      decimals,
     );
-    const total = totalCents / 10000;
-    const avgBalance = total / chartData.length;
+    const avgBalance = roundMoney(total / chartData.length, decimals);
     return { total, avgBalance, accountsCount: chartData.length };
-  }, [chartData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- registryVersion re-reads the registry
+  }, [chartData, currencyCode, registryVersion]);
 
   if (isLoading) {
     return (

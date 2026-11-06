@@ -176,6 +176,7 @@
     "CASH": "Bargeld",
     "LINE_OF_CREDIT": "Kreditlinie",
     "ASSET": "Aktiva",
+    "CRYPTO": "Krypto-Wallet",
     "OTHER": "Sonstiges"
   },
   "accountFilter": {

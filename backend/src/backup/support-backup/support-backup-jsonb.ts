@@ -1,5 +1,6 @@
 import { maskText, scaleMoney } from "./support-backup.util";
 import { isRecord } from "../../common/helpers/is-record";
+import { FIAT_MONEY_DECIMALS } from "../../common/round.util";
 
 /**
  * Per-key obfuscation for JSONB columns. The column-level allowlist
@@ -18,7 +19,15 @@ export type JsonbHandlerName =
   | "assetWeightings"
   | "gemMomentum";
 
-type JsonbHandler = (value: unknown, multiplier: number) => unknown;
+/**
+ * `decimals` is the money precision of the row's own currency, for a handler
+ * that scales an amount (`FIAT_MONEY_DECIMALS` when the row has none of its own).
+ */
+type JsonbHandler = (
+  value: unknown,
+  multiplier: number,
+  decimals: number,
+) => unknown;
 
 /** `import_column_mappings.transfer_rules`: [{ type, pattern, accountName }]. */
 const transferRules: JsonbHandler = (value) => {
@@ -34,13 +43,14 @@ const transferRules: JsonbHandler = (value) => {
 };
 
 /** `scheduled_transaction_overrides.splits`: [{ categoryId?, amount, memo? }]. */
-const overrideSplits: JsonbHandler = (value, multiplier) => {
+const overrideSplits: JsonbHandler = (value, multiplier, decimals) => {
   if (!Array.isArray(value)) return [];
   return value.map((split) => {
     if (!isRecord(split)) return {};
     const out: Record<string, unknown> = {};
     if ("categoryId" in split) out.categoryId = split.categoryId; // remapped later
-    if ("amount" in split) out.amount = scaleMoney(split.amount, multiplier);
+    if ("amount" in split)
+      out.amount = scaleMoney(split.amount, multiplier, decimals);
     // memo is intentionally dropped
     return out;
   });
@@ -121,6 +131,7 @@ export function applyJsonbHandler(
   name: JsonbHandlerName,
   value: unknown,
   multiplier: number,
+  decimals: number = FIAT_MONEY_DECIMALS,
 ): unknown {
-  return HANDLERS[name](value, multiplier);
+  return HANDLERS[name](value, multiplier, decimals);
 }

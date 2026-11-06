@@ -26,7 +26,9 @@ import {
 } from "../transaction-rules/transaction-rules-applier.service";
 import { TransactionStatus } from "../transactions/entities/transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { MONEY_SCALE, roundMoney, sumMoney } from "../common/round.util";
 import { operationTagLabel } from "./bank-operation";
+import { BANK_SYNC_MONEY_DECIMALS } from "./bank-sync.constants";
 import { findTagId } from "./bank-sync-operation-tags";
 import type { BankSyncProfile } from "./bank-sync-profiles";
 import {
@@ -100,10 +102,6 @@ interface RowContext {
   /** The default category of a payee a rule chose, by payee id; null when it has none. */
   payeeDefaults: Map<string, PayeeDefaultCategory | null>;
 }
-
-/** Scaled integer of a money value at the column's four decimals. */
-const toUnits = (value: number): number => Math.round(value * 10000);
-const fromUnits = (units: number): string => (units / 10000).toFixed(4);
 
 /**
  * The read-only half of step 5 of a sync (docs/specs/bank-sync.md section 7a).
@@ -235,12 +233,18 @@ export class BankSyncPreviewService {
         (sum, count) => sum + count,
         0,
       );
-      const newUnits = newRows.reduce(
-        (sum, row) => sum + toUnits(row.amount),
-        0,
+      const newTotal = sumMoney(
+        newRows.map((row) => row.amount),
+        BANK_SYNC_MONEY_DECIMALS,
       );
-      const monizeUnits = toUnits(Number(account.currentBalance));
-      const afterUnits = monizeUnits + newUnits;
+      const monizeBalance = roundMoney(
+        Number(account.currentBalance),
+        BANK_SYNC_MONEY_DECIMALS,
+      );
+      const balanceAfter = sumMoney(
+        [monizeBalance, newTotal],
+        BANK_SYNC_MONEY_DECIMALS,
+      );
       const bank = input.balance;
       const comparable =
         bank !== null && bank.currencyCode.toUpperCase() === currencyCode;
@@ -259,18 +263,21 @@ export class BankSyncPreviewService {
           pending: plan.pending,
           beforeCutoff: plan.beforeCutoff,
         },
-        monizeBalance: fromUnits(monizeUnits),
-        balanceAfter: fromUnits(afterUnits),
+        monizeBalance: monizeBalance.toFixed(BANK_SYNC_MONEY_DECIMALS),
+        balanceAfter: balanceAfter.toFixed(BANK_SYNC_MONEY_DECIMALS),
         bankBalance:
           bank === null
             ? null
             : {
-                amount: bank.amount.toFixed(4),
+                amount: bank.amount.toFixed(BANK_SYNC_MONEY_DECIMALS),
                 currencyCode: bank.currencyCode,
                 referenceDate: bank.referenceDate,
               },
         difference: comparable
-          ? fromUnits(toUnits(bank.amount) - afterUnits)
+          ? sumMoney(
+              [bank.amount, -balanceAfter],
+              BANK_SYNC_MONEY_DECIMALS,
+            ).toFixed(BANK_SYNC_MONEY_DECIMALS)
           : null,
         planFingerprint: planFingerprint(newRows, plan.review),
         history: plan.review
@@ -294,7 +301,10 @@ export class BankSyncPreviewService {
       externalKey: entry.externalKey,
       refusalReason: entry.reason,
       transactionDate: entry.transactionDate,
-      amount: entry.amount === null ? null : entry.amount.toFixed(4),
+      amount:
+        entry.amount === null
+          ? null
+          : entry.amount.toFixed(BANK_SYNC_MONEY_DECIMALS),
       currencyCode: entry.currencyCode,
       payeeText: entry.payeeText,
       description: entry.description,
@@ -358,8 +368,11 @@ export class BankSyncPreviewService {
       {
         accountId: account.id,
         currencyCode: context.currencyCode,
-        // The column's own text form, which the writer's stored row carries.
-        amount: entry.amount === null ? null : entry.amount.toFixed(4),
+        // The column's own text form, which the writer's stored row carries:
+        // `NUMERIC(24,8)` reads back at the storage scale, not at the four
+        // places a bank amount is rounded to.
+        amount:
+          entry.amount === null ? null : entry.amount.toFixed(MONEY_SCALE),
         payeeId: payee?.payeeId ?? null,
         payeeName: payee?.payeeName ?? entry.payeeText,
         categoryId: payee?.defaultCategoryId ?? null,

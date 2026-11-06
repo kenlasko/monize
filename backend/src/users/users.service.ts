@@ -56,6 +56,7 @@ import {
 import { toUserProfile } from "./user-profile";
 import { isTwoFactorActive } from "../auth/two-factor-state";
 import { UserMaintenanceService } from "../common/jobs/user-maintenance.service";
+import { assertReportingCurrencyIsFiatIn } from "../currencies/reporting-currency-kind.util";
 import {
   EmailChangeService,
   type StagedEmailChange,
@@ -386,6 +387,10 @@ export class UsersService {
           dto.defaultCurrency != null &&
           dto.defaultCurrency !== previousDefaultCurrency
         ) {
+          // Decision 11 of the crypto spec: a coin is never the reporting
+          // currency. Refused here, before the currency is ensured or the
+          // preference written, in the same transaction.
+          await assertReportingCurrencyIsFiatIn(manager, dto.defaultCurrency);
           const currenciesService = this.moduleRef.get(CurrenciesService, {
             strict: false,
           });

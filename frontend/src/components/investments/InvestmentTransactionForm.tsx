@@ -332,13 +332,15 @@ function InvestmentTransactionFormFields({
   );
 
   // All accounts that can be used as funding source/destination (sorted)
-  // Excludes brokerage accounts, cash accounts, and asset accounts
+  // Excludes brokerage accounts, cash accounts, asset accounts and crypto
+  // wallets (a coin is not the fiat a trade settles in)
   const fundingAccounts = useMemo(
     () => [...(allAccounts || accounts)]
       .filter((a) =>
         a.accountSubType !== 'INVESTMENT_BROKERAGE' &&
         a.accountType !== 'CASH' &&
-        a.accountType !== 'ASSET'
+        a.accountType !== 'ASSET' &&
+        a.accountType !== 'CRYPTO'
       )
       .sort((a, b) => a.name.localeCompare(b.name)),
     [allAccounts, accounts]

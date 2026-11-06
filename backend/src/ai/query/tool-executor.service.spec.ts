@@ -55,7 +55,10 @@ describe("ToolExecutorService", () => {
   let transfer: Record<string, jest.Mock>;
   let splitService: Record<string, jest.Mock>;
   let builtInReports: Record<string, jest.Mock>;
-  let exchangeRates: { convertOnDate: jest.Mock };
+  let exchangeRates: {
+    convertOnDate: jest.Mock;
+    getCurrencyDecimalPlaces: jest.Mock;
+  };
   let bondSeries: { fetchSeries: jest.Mock };
   let warranties: {
     getLlmWarranties: jest.MockedFunction<
@@ -617,7 +620,9 @@ describe("ToolExecutorService", () => {
     // Category-split validation is a no-op by default; tests that exercise an
     // invalid sum override it to throw.
     splitService = {
-      validateSplits: jest.fn(),
+      // The tool preparation validates in the account's currency, which reads
+      // that currency's places itself (`validateSplitsInCurrency`).
+      validateSplitsInCurrency: jest.fn().mockResolvedValue(undefined),
     };
 
     transfer = {
@@ -666,6 +671,10 @@ describe("ToolExecutorService", () => {
       }),
     };
     exchangeRates = {
+      // A BTC row at four places, the precision a coin is stored at.
+      getCurrencyDecimalPlaces: jest
+        .fn()
+        .mockResolvedValue(new Map([["BTC", 4]])),
       convertOnDate: jest.fn().mockResolvedValue({
         amount: 1500,
         fromCurrency: "CAD",
@@ -980,6 +989,37 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("No exchange rate for: JPY->USD");
       // The USD account is not listed as foreign.
       expect(result.summary).not.toContain("Checking:");
+    });
+
+    it("list_accounts states a coin wallet at its currency row's places, not two", async () => {
+      const complete = await accounts.getLlmAccounts();
+      accounts.getLlmAccounts.mockResolvedValueOnce({
+        ...complete,
+        accounts: [
+          {
+            ...complete.accounts[0],
+            id: "acc-5",
+            name: "Wallet",
+            type: "CRYPTO",
+            currency: "BTC",
+            balance: 0.0125,
+            currentBalance: 0.0125,
+            balanceInDefaultCurrency: 1715.63,
+          },
+          complete.accounts[1],
+        ],
+      });
+
+      const result = await service.execute(userId, "list_accounts", {});
+
+      expect(result.summary).toContain("Wallet: 0.0125 BTC = 1715.63 USD");
+      expect(result.summary).toContain(
+        "Euro Savings: 1000.00 EUR = 1085.50 USD",
+      );
+      expect(exchangeRates.getCurrencyDecimalPlaces).toHaveBeenCalledWith([
+        "BTC",
+        "EUR",
+      ]);
     });
 
     it("list_accounts withholds a net worth that is a subtotal and says why and where to fix it", async () => {
@@ -2041,9 +2081,10 @@ describe("ToolExecutorService", () => {
         ],
       });
 
-      expect(splitService.validateSplits).toHaveBeenCalledWith(
+      expect(splitService.validateSplitsInCurrency).toHaveBeenCalledWith(
         expect.any(Array),
         -100,
+        "USD",
       );
       expect(transactions.create).toBeUndefined();
       expect(result.pendingAction?.type).toBe("create_transaction");
@@ -2078,7 +2119,7 @@ describe("ToolExecutorService", () => {
         ],
       });
 
-      expect(splitService.validateSplits).toHaveBeenCalled();
+      expect(splitService.validateSplitsInCurrency).toHaveBeenCalled();
       // The accompanying splits are what permit this edit on an existing
       // split transaction (Truth table B) -- previewUpdate must know.
       expect(transactions.previewUpdate).toHaveBeenCalledWith(
@@ -2096,9 +2137,9 @@ describe("ToolExecutorService", () => {
     });
 
     it("rejects an invalid split sum surfaced by validateSplits", async () => {
-      splitService.validateSplits.mockImplementationOnce(() => {
-        throw new Error("Split amounts must sum to the transaction amount");
-      });
+      splitService.validateSplitsInCurrency.mockRejectedValueOnce(
+        new Error("Split amounts must sum to the transaction amount"),
+      );
       const result = await service.execute(userId, "manage_transactions", {
         operation: "create",
         items: [

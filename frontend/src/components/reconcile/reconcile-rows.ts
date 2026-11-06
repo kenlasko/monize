@@ -1,5 +1,6 @@
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { compareValues, type SortDirection } from '@/hooks/useSortableTable';
+import { FIAT_MONEY_DECIMALS, sumMoney } from '@/lib/format';
 
 /** Every column the reconcile table can be ordered by. */
 export type ReconcileSortField =
@@ -24,18 +25,18 @@ export function transactionFlow(amount: number | string): ReconcileFlow {
 }
 
 /**
- * Sum amounts in integer units of the storage precision.
+ * Sum amounts exactly at `decimals`, the account currency's money precision
+ * (`moneyDecimalsForCurrency`: four for fiat, a coin's eight).
  *
- * `decimal(20,4)` crosses the wire as a string, so every value is coerced
- * before it is scaled, and the accumulation happens in integers so summing
- * fifty rows cannot drift a cent (`AGENTS.md` financial-math rule).
+ * A money column crosses the wire as a string, so every value is coerced
+ * before it is summed, and the accumulation happens in integers (`sumMoney`)
+ * so summing fifty rows cannot drift a cent (`AGENTS.md` financial-math rule).
  */
-export function sumAmounts(rows: readonly Transaction[]): number {
-  const scaled = rows.reduce(
-    (sum, row) => sum + Math.round(Number(row.amount) * 10000),
-    0,
-  );
-  return scaled / 10000;
+export function sumAmounts(
+  rows: readonly Transaction[],
+  decimals: number = FIAT_MONEY_DECIMALS,
+): number {
+  return sumMoney(rows.map((row) => Number(row.amount)), decimals);
 }
 
 /** Rank for the status column, so the sort is by meaning rather than by spelling. */
@@ -134,15 +135,16 @@ export interface ReconcileGroup {
 export function groupReconcileRows(
   rows: readonly Transaction[],
   groupByFlow: boolean,
+  decimals: number = FIAT_MONEY_DECIMALS,
 ): ReconcileGroup[] {
   if (!groupByFlow) {
-    return [{ flow: null, rows: [...rows], subtotal: sumAmounts(rows) }];
+    return [{ flow: null, rows: [...rows], subtotal: sumAmounts(rows, decimals) }];
   }
   const groups: ReconcileGroup[] = [];
   for (const flow of ['credit', 'debit'] as const) {
     const inFlow = rows.filter((row) => transactionFlow(row.amount) === flow);
     if (inFlow.length === 0) continue;
-    groups.push({ flow, rows: inFlow, subtotal: sumAmounts(inFlow) });
+    groups.push({ flow, rows: inFlow, subtotal: sumAmounts(inFlow, decimals) });
   }
   return groups;
 }

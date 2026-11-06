@@ -57,8 +57,8 @@ export class BudgetPeriod {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "actual_income",
     default: 0,
   })
@@ -66,8 +66,8 @@ export class BudgetPeriod {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "actual_expenses",
     default: 0,
   })
@@ -75,8 +75,8 @@ export class BudgetPeriod {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "total_budgeted",
     default: 0,
   })

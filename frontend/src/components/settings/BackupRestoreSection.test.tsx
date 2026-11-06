@@ -612,6 +612,93 @@ describe('BackupRestoreSection', () => {
       expect(screen.queryByText(/lost their series/)).not.toBeInTheDocument();
     });
 
+    it('names the accounts whose currency kind disagrees with their type and how to repair them', async () => {
+      await restoreWith({
+        message: 'Backup restored successfully',
+        restored: { accounts: 4 },
+        currencyKindMismatches: {
+          accounts: ['Cold wallet', 'Chequing'],
+          accountCount: 2,
+          securities: [],
+          securityCount: 0,
+          defaultCurrency: null,
+        },
+      });
+      expect(
+        screen.getByText(/2 accounts came back with a currency whose kind does not match their type/),
+      ).toHaveTextContent("Edit the account's currency, or the currency's kind on the Currencies page.");
+      expect(screen.getByText('Affected accounts: Cold wallet, Chequing.')).toBeInTheDocument();
+      expect(screen.queryByText(/priced in a cryptocurrency/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/default currency/)).not.toBeInTheDocument();
+      // Not part of the record total.
+      expect(screen.queryByText('6')).not.toBeInTheDocument();
+    });
+
+    it('uses the singular form for one mismatched account', async () => {
+      await restoreWith({
+        message: 'Backup restored successfully',
+        restored: { accounts: 1 },
+        currencyKindMismatches: {
+          accounts: ['Cold wallet'],
+          accountCount: 1,
+          securities: [],
+          securityCount: 0,
+          defaultCurrency: null,
+        },
+      });
+      expect(
+        screen.getByText(/1 account came back with a currency whose kind does not match its type/),
+      ).toBeInTheDocument();
+    });
+
+    it('names the securities priced in a cryptocurrency and says how many the server left out', async () => {
+      await restoreWith({
+        message: 'Backup restored successfully',
+        restored: { accounts: 4 },
+        currencyKindMismatches: {
+          accounts: ['Cold wallet'],
+          accountCount: 53,
+          securities: ['GBTC', 'IBIT'],
+          securityCount: 52,
+          defaultCurrency: null,
+        },
+      });
+      expect(
+        screen.getByText(/52 securities are priced in a cryptocurrency/),
+      ).toHaveTextContent("Edit the security's currency, or the currency's kind on the Currencies page.");
+      expect(screen.getByText(/Affected securities: GBTC, IBIT\./)).toHaveTextContent('and 50 more');
+      expect(screen.getByText(/Affected accounts: Cold wallet\./)).toHaveTextContent('and 52 more');
+    });
+
+    it('says the default currency is a cryptocurrency and to choose a fiat one', async () => {
+      await restoreWith({
+        message: 'Backup restored successfully',
+        restored: { accounts: 1 },
+        currencyKindMismatches: {
+          accounts: [],
+          accountCount: 0,
+          securities: [],
+          securityCount: 0,
+          defaultCurrency: 'BTC',
+        },
+      });
+      expect(
+        screen.getByText(/Your default currency, BTC, is a cryptocurrency on this server/),
+      ).toHaveTextContent('Choose a fiat Default Currency in Settings → Preferences.');
+      expect(screen.queryByText(/came back with a currency/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Affected accounts/)).not.toBeInTheDocument();
+    });
+
+    it('says nothing about currency kinds when nothing disagrees', async () => {
+      await restoreWith({
+        message: 'Backup restored successfully',
+        restored: { accounts: 1 },
+      });
+      expect(screen.queryByText(/came back with a currency/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/priced in a cryptocurrency/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/is a cryptocurrency on this server/)).not.toBeInTheDocument();
+    });
+
     it('says nothing about bond links when none were dropped', async () => {
       await restoreWith({
         message: 'Backup restored successfully',

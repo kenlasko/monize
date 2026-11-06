@@ -2,7 +2,12 @@
 
 import { memo, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { gainLossColor, withCurrencyCode } from '@/lib/format';
+import {
+  gainLossColor,
+  moneyDecimalsForCurrency,
+  roundMoney,
+  withCurrencyCode,
+} from '@/lib/format';
 import { Account, AccountType } from '@/types/account';
 import { AccountTypePill, AccountTypeIcon } from '@/lib/account-type-meta';
 import { hasAccountDetailView } from '@/lib/account-detail-views';
@@ -257,7 +262,12 @@ export function buildAccountActions(
   // nothing about the securities it holds.
   const balanceNonZero = logical
     ? logical.combinedValue === null ||
-      Math.round(logical.combinedValue * 10000) !== 0
+      // At the account currency's own precision: a coin wallet holding
+      // 0.000025 BTC is not empty (INV-MONEY-001).
+      roundMoney(
+        logical.combinedValue,
+        moneyDecimalsForCurrency(account.currencyCode),
+      ) !== 0
     : Number(account.currentBalance) !== 0;
   // An unknown total is not a zero one: Close stays unavailable, and says why.
   const valueUnknown = !!logical && logical.combinedValue === null;

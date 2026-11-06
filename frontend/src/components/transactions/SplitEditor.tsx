@@ -15,7 +15,17 @@ import { InvestmentSplitDetails } from '@/types/transaction';
 import type { SplitRow } from './split-rows';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { FALLBACK_DEFAULT_CURRENCY } from '@/lib/default-currency';
-import { roundMoney, roundToCents, roundToDecimals, getCurrencySymbol, getDecimalPlacesForCurrency } from '@/lib/format';
+import {
+  roundMoney,
+  sumMoney,
+  roundToDecimals,
+  roundToEntryPlaces,
+  getCurrencySymbol,
+  getDecimalPlacesForCurrency,
+  awaitsRegisteredPlaces,
+  MONEY_SCALE,
+  moneyDecimalsForCurrency,
+} from '@/lib/format';
 import { useLocalizedAmount } from '@/hooks/useLocalizedAmount';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
@@ -118,7 +128,15 @@ export function SplitEditor({
   const accountOptionLabel = useAccountOptionLabel({ withCurrency: false });
   const investmentSplitsEnabled = parentAccountSubType === 'INVESTMENT_CASH';
   const currencySymbol = getCurrencySymbol(currencyCode);
-  const decimals = getDecimalPlacesForCurrency(currencyCode);
+  // A coin the registry does not hold yet is entered at the column scale
+  // (`awaitsRegisteredPlaces`), not `Intl`'s guess of two, so a line typed
+  // before `GET /currencies` answers is not rounded to cents.
+  const decimals = awaitsRegisteredPlaces(currencyCode)
+    ? MONEY_SCALE
+    : getDecimalPlacesForCurrency(currencyCode);
+  // The account currency's money precision: four for fiat, a coin's eight.
+  // Every line, total, remainder and distribution rounds and sums at it.
+  const money = moneyDecimalsForCurrency(currencyCode);
   const [localSplits, setLocalSplits] = useState<SplitRow[]>(splits);
 
   // Foreign-currency editing toggle. Available only when a display currency and
@@ -143,9 +161,12 @@ export function SplitEditor({
   const toDisplayAmount = (accountAmount: number) =>
     foreignActive ? roundToDecimals(accountAmount / rate, activeDecimals) : accountAmount;
   // Convert an amount typed in the currently shown currency back to the stored
-  // account currency (always rounded to cents, matching the rest of the editor).
+  // account currency, rounded to cents as the rest of the editor does, or to a
+  // coin's own places from the currency registry (a -0.0051 BTC line was
+  // stored as -0.01).
+  const toStoredPlaces = (amount: number) => roundToEntryPlaces(amount, currencyCode);
   const fromDisplayAmount = (displayAmount: number) =>
-    foreignActive ? roundToCents(displayAmount * rate) : roundToCents(displayAmount);
+    toStoredPlaces(foreignActive ? displayAmount * rate : displayAmount);
   // Index of the split pending removal that would convert the transaction back
   // to a regular one (only set while the confirmation dialog is open).
   const [convertPendingIndex, setConvertPendingIndex] = useState<number | null>(null);
@@ -249,11 +270,17 @@ export function SplitEditor({
     commitSplits(newSplits, { reconcile: false });
   };
 
-  const splitsTotal = localSplits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
-  const remaining = Number(transactionAmount) - splitsTotal;
+  // Summed and compared at the account currency's money precision (four for
+  // fiat, a coin's eight), the rule the server's `validateSplitAmountSum`
+  // applies (`sumMoney` of the lines against `roundMoney` of the total). A
+  // one-cent tolerance read a 0.0049 BTC remainder as balanced, disabled "Add
+  // remaining", and the save was refused. A fiat amount is entered at two
+  // places, so its lines already sum exactly.
+  const splitsTotal = sumMoney(localSplits.map((s) => Number(s.amount) || 0), money);
+  const remaining = roundMoney(roundMoney(Number(transactionAmount), money) - splitsTotal, money);
   // Balance is always judged in the account currency so distribution and the
   // balanced/remaining indicators stay exact regardless of the display currency.
-  const isBalanced = Math.abs(remaining) < 0.01;
+  const isBalanced = remaining === 0;
   // Footer figures rendered in whichever currency the amounts are shown in.
   const displaySplitsTotal = toDisplayAmount(splitsTotal);
   const displayRemaining = toDisplayAmount(remaining);
@@ -425,7 +452,7 @@ export function SplitEditor({
       splitType: 'category',
       categoryId: undefined,
       transferAccountId: undefined,
-      amount: roundMoney(remaining), // Pre-fill with remaining amount, rounded to the stored 4 decimals
+      amount: roundMoney(remaining, money), // Pre-fill with the remaining amount, at the currency's money precision
       memo: '',
     };
     const newSplits = [...localSplits, newSplit];
@@ -467,15 +494,15 @@ export function SplitEditor({
   const distributeEvenly = () => {
     if (localSplits.length === 0) return;
 
-    const totalAmount = roundMoney(Number(transactionAmount));
-    // Round each split to 2 decimal places (cents)
-    const amountPerSplit = roundMoney(totalAmount / localSplits.length);
+    const totalAmount = roundMoney(Number(transactionAmount), money);
+    // Each split at the currency's money precision.
+    const amountPerSplit = roundMoney(totalAmount / localSplits.length, money);
 
     // Distribute evenly, putting the remainder on the last row for an exact sum.
     const newSplits = localSplits.map((split, index) => {
       if (index === localSplits.length - 1) {
-        const otherSplitsTotal = roundMoney(amountPerSplit * (localSplits.length - 1));
-        const lastAmount = roundMoney(totalAmount - otherSplitsTotal);
+        const otherSplitsTotal = roundMoney(amountPerSplit * (localSplits.length - 1), money);
+        const lastAmount = roundMoney(totalAmount - otherSplitsTotal, money);
         return { ...split, amount: lastAmount };
       }
       return { ...split, amount: amountPerSplit };
@@ -486,33 +513,33 @@ export function SplitEditor({
 
   // Add unassigned amount to a specific split
   const addRemainingToSplit = (index: number) => {
-    if (Math.abs(remaining) < 0.01) return; // No remaining amount
+    if (isBalanced) return; // No remaining amount
 
     const newSplits = [...localSplits];
     const currentAmount = Number(newSplits[index].amount) || 0;
-    newSplits[index] = { ...newSplits[index], amount: roundMoney(currentAmount + remaining) };
+    newSplits[index] = { ...newSplits[index], amount: roundMoney(currentAmount + remaining, money) };
     commitSplits(newSplits);
   };
 
   // Distribute the remaining amount proportionally across the splits based on
   // their current amounts.
   const distributeProportionally = () => {
-    if (localSplits.length === 0 || Math.abs(remaining) < 0.01) return;
+    if (localSplits.length === 0 || isBalanced) return;
 
-    const absTotal = localSplits.reduce((sum, s) => sum + Math.abs(Number(s.amount) || 0), 0);
+    const absTotal = sumMoney(localSplits.map((s) => Math.abs(Number(s.amount) || 0)), money);
     const lastSplit = localSplits[localSplits.length - 1];
 
     // If all splits are zero, fall back to equal distribution.
-    if (absTotal < 0.01) {
-      const perSplit = roundMoney(remaining / localSplits.length);
+    if (absTotal === 0) {
+      const perSplit = roundMoney(remaining / localSplits.length, money);
       const newSplits = localSplits.map((split, index) => {
         const currentAmount = Number(split.amount) || 0;
         if (index === localSplits.length - 1) {
-          const distributed = roundMoney(perSplit * (localSplits.length - 1));
-          const lastPortion = roundMoney(remaining - distributed);
-          return { ...split, amount: roundMoney(currentAmount + lastPortion) };
+          const distributed = roundMoney(perSplit * (localSplits.length - 1), money);
+          const lastPortion = roundMoney(remaining - distributed, money);
+          return { ...split, amount: roundMoney(currentAmount + lastPortion, money) };
         }
-        return { ...split, amount: roundMoney(currentAmount + perSplit) };
+        return { ...split, amount: roundMoney(currentAmount + perSplit, money) };
       });
       commitSplits(newSplits);
       return;
@@ -525,13 +552,13 @@ export function SplitEditor({
 
       if (split === lastSplit) {
         // Last split absorbs the rounding remainder
-        const lastPortion = roundMoney(remaining - distributedSoFar);
-        return { ...split, amount: roundMoney(currentAmount + lastPortion) };
+        const lastPortion = roundMoney(remaining - distributedSoFar, money);
+        return { ...split, amount: roundMoney(currentAmount + lastPortion, money) };
       }
 
-      const portion = roundMoney(remaining * proportion);
+      const portion = roundMoney(remaining * proportion, money);
       distributedSoFar += portion;
-      return { ...split, amount: roundMoney(currentAmount + portion) };
+      return { ...split, amount: roundMoney(currentAmount + portion, money) };
     });
 
     commitSplits(newSplits);
@@ -540,7 +567,7 @@ export function SplitEditor({
   // Set the transaction total to the sum of splits
   const setTotalToSplitsSum = () => {
     if (onTransactionAmountChange && splitsTotal !== 0) {
-      onTransactionAmountChange(roundMoney(splitsTotal));
+      onTransactionAmountChange(roundMoney(splitsTotal, money));
     }
   };
 
@@ -604,7 +631,7 @@ export function SplitEditor({
             variant="outline"
             size="sm"
             onClick={distributeProportionally}
-            disabled={disabled || localSplits.length === 0 || Math.abs(remaining) < 0.01}
+            disabled={disabled || localSplits.length === 0 || isBalanced}
             title={t('splitEditor.distributeProportionallyTitle')}
           >
             {t('splitEditor.distributeProportionally')}
@@ -639,9 +666,9 @@ export function SplitEditor({
                     <button
                       type="button"
                       onClick={() => addRemainingToSplit(index)}
-                      disabled={disabled || Math.abs(remaining) < 0.01}
+                      disabled={disabled || isBalanced}
                       className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={Math.abs(remaining) < 0.01 ? t('splitEditor.noUnassigned') : t('splitEditor.addRemaining')}
+                      title={isBalanced ? t('splitEditor.noUnassigned') : t('splitEditor.addRemaining')}
                     >
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -918,9 +945,9 @@ export function SplitEditor({
                     <button
                       type="button"
                       onClick={() => addRemainingToSplit(index)}
-                      disabled={disabled || Math.abs(remaining) < 0.01}
+                      disabled={disabled || isBalanced}
                       className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={Math.abs(remaining) < 0.01 ? t('splitEditor.noUnassigned') : t('splitEditor.addRemaining')}
+                      title={isBalanced ? t('splitEditor.noUnassigned') : t('splitEditor.addRemaining')}
                     >
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path

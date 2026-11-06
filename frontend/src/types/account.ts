@@ -16,6 +16,7 @@ export type AccountType =
   | 'CASH'
   | 'LINE_OF_CREDIT'
   | 'ASSET'
+  | 'CRYPTO'
   | 'OTHER';
 
 export type AccountSubType = 'INVESTMENT_CASH' | 'INVESTMENT_BROKERAGE' | null;

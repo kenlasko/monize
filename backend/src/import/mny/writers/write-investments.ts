@@ -7,6 +7,7 @@ import {
 import { createBondWriteGuard } from "../../../bonds/bond-write-guard";
 import { EntityManager } from "typeorm";
 import { Security } from "../../../securities/entities/security.entity";
+import { assertSecurityCurrencyIsFiatIn } from "../../../securities/security-currency-kind.util";
 import { InvestmentTransaction } from "../../../securities/entities/investment-transaction.entity";
 import { Transaction } from "../../../transactions/entities/transaction.entity";
 import { roundMoney } from "../../../common/round.util";
@@ -80,6 +81,10 @@ export async function writeSecurities(
       reused += 1;
       continue;
     }
+
+    // A security is priced in fiat (INV-CRYPTO-001); a refusal rolls the
+    // import back.
+    await assertSecurityCurrencyIsFiatIn(manager, security.currencyCode);
 
     const id = randomUUID();
     idByHandle.set(security.handle, id);

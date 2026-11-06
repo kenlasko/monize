@@ -1,7 +1,13 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { resolveCurrencyMetadata } from "../currencies/currency-metadata";
+import {
+  CurrencyKind,
+  DEFAULT_CURRENCY_KIND,
+} from "../currencies/entities/currency.entity";
+import { quoteSymbolRefusal } from "../currencies/currency-kind.util";
 import { sanitizeHtmlString } from "../common/decorators/sanitize-html.decorator";
+import { MONEY_SCALE } from "../common/round.util";
 import { tr } from "../i18n/translate";
 import { boundRestoredNotification } from "./notification-restore-bounds";
 import { withResolvedMortgageTypeColumn } from "../accounts/legacy-mortgage-type.util";
@@ -143,7 +149,8 @@ export class BackupRestoreDatabaseService {
       for (const row of data.currencies) {
         // `currencies` is shared by every user, so a restored row is held to
         // what the create DTO accepts: a code, a clean name and symbol within
-        // the column lengths, and decimal places from 0 to 4.
+        // the column lengths, and decimal places from 0 to MONEY_SCALE (8),
+        // the range `currencies_decimal_places_check` holds.
         if (typeof row.code !== "string" || !/^[A-Z]{3}$/.test(row.code)) {
           continue;
         }
@@ -159,8 +166,25 @@ export class BackupRestoreDatabaseService {
         filteredRow.decimal_places =
           typeof row.decimal_places === "number" &&
           Number.isFinite(row.decimal_places)
-            ? Math.min(4, Math.max(0, Math.trunc(row.decimal_places)))
+            ? Math.min(MONEY_SCALE, Math.max(0, Math.trunc(row.decimal_places)))
             : 2;
+        // A backup written before currencies had a kind is all fiat; a kind
+        // outside the two is not trusted either. A price symbol travels only
+        // on a coin and only when it is a `<COIN>-<FIAT>` pair, the rule
+        // `CurrenciesService` holds (and the CHECK beneath it), so one bad
+        // row cannot fail the whole restore.
+        const kind: CurrencyKind =
+          row.kind === "CRYPTO" ? "CRYPTO" : DEFAULT_CURRENCY_KIND;
+        const quoteSymbol =
+          typeof row.quote_symbol === "string" &&
+          row.quote_symbol.trim().length <= 20
+            ? row.quote_symbol.trim().toUpperCase()
+            : null;
+        filteredRow.kind = kind;
+        filteredRow.quote_symbol =
+          quoteSymbol && quoteSymbolRefusal(kind, quoteSymbol) === null
+            ? quoteSymbol
+            : null;
 
         // Strip column names not in the actual table schema
         for (const key of Object.keys(filteredRow)) {
@@ -504,4 +528,79 @@ export class BackupRestoreDatabaseService {
 
     return count;
   }
+
+  /**
+   * The restored rows that break INV-CRYPTO-001 or decision 11 of
+   * `docs/specs/crypto-accounts.md`, read after the accounts, securities and
+   * preferences are written, inside the restore's transaction:
+   *
+   * - a `CRYPTO` account whose currency is not a CRYPTO currency, or a
+   *   non-CRYPTO account in a CRYPTO currency (the account kind check);
+   * - a security priced in a CRYPTO currency (a security is priced in fiat);
+   * - a reporting currency that is a CRYPTO currency.
+   *
+   * Reported, not refused. `currencies` is global, so the kind of a code is
+   * this deployment's, not the backup's: a file whose `BTC` was a coin,
+   * restored where `BTC` is a fiat row (`ensureCurrenciesExist` never
+   * overwrites one), mismatches through no fault in the file. The restore
+   * refuses only what would let one user's rows reach another's (the
+   * reference check); every other repairable difference -- a severed bond
+   * link, an unusable AI key -- is restored and reported, and so is this. The
+   * person repairs it on the Accounts, Securities or Preferences page.
+   */
+  async findCurrencyKindMismatches(
+    manager: EntityManager,
+    userId: string,
+  ): Promise<CurrencyKindMismatches> {
+    const accounts: Array<{ name: string }> = await manager.query(
+      `SELECT a.name FROM accounts a
+         JOIN currencies c ON c.code = a.currency_code
+        WHERE a.user_id = $1
+          AND (a.account_type = 'CRYPTO') <> (c.kind = 'CRYPTO')
+        ORDER BY a.name`,
+      [userId],
+    );
+    const securities: Array<{ symbol: string }> = await manager.query(
+      `SELECT s.symbol FROM securities s
+         JOIN currencies c ON c.code = s.currency_code
+        WHERE s.user_id = $1 AND c.kind = 'CRYPTO'
+        ORDER BY s.symbol`,
+      [userId],
+    );
+    const preferences: Array<{ code: string }> = await manager.query(
+      `SELECT up.default_currency AS code FROM user_preferences up
+         JOIN currencies c ON c.code = up.default_currency
+        WHERE up.user_id = $1 AND c.kind = 'CRYPTO'`,
+      [userId],
+    );
+    const found: CurrencyKindMismatches = {
+      accounts: accounts.map((row) => row.name),
+      securities: securities.map((row) => row.symbol),
+      defaultCurrency: preferences[0]?.code ?? null,
+    };
+    if (
+      found.accounts.length > 0 ||
+      found.securities.length > 0 ||
+      found.defaultCurrency !== null
+    ) {
+      this.logger.warn(
+        `Backup restore for user ${userId} wrote rows whose currency kind disagrees: ` +
+          `${found.accounts.length} account(s), ${found.securities.length} security(ies)` +
+          (found.defaultCurrency !== null
+            ? `, reporting currency ${found.defaultCurrency} is a cryptocurrency`
+            : ""),
+      );
+    }
+    return found;
+  }
+}
+
+/** What `findCurrencyKindMismatches` found; empty lists and `null` when nothing. */
+export interface CurrencyKindMismatches {
+  /** Names of accounts whose type and currency kind disagree (INV-CRYPTO-001). */
+  accounts: string[];
+  /** Symbols of securities priced in a CRYPTO currency. */
+  securities: string[];
+  /** The reporting currency, when it is a CRYPTO currency; else `null`. */
+  defaultCurrency: string | null;
 }

@@ -25,8 +25,13 @@ export const MAX_EXPLAIN_ROW_TAGS = 50;
 export const MAX_EXPLAIN_ROW_PAYEE_LENGTH = 255;
 /** `transactions.reference_number` is varchar(100). */
 export const MAX_EXPLAIN_ROW_REFERENCE_LENGTH = 100;
-/** `transactions.amount` is decimal(20,4): sixteen integer digits at most. */
+/** `transactions.amount` is `NUMERIC(24,8)`: sixteen integer digits at most. */
 export const MAX_EXPLAIN_ROW_AMOUNT_DIGITS = 16;
+/**
+ * The largest amount a rule literal or a captured split part may name, far
+ * beyond any real amount; a bound on the rule, not on the column.
+ */
+export const RULE_MONEY_ABS_MAX = 10 ** 12;
 /**
  * `settle_loan_installment`: the most days a row may be dated before or after
  * the installment it pays (`dueDateWindow.daysBefore` / `daysAfter`, spec

@@ -176,6 +176,7 @@
     "CASH": "नकद",
     "LINE_OF_CREDIT": "क्रेडिट लाइन",
     "ASSET": "संपत्ति",
+    "CRYPTO": "क्रिप्टो वॉलेट",
     "OTHER": "अन्य"
   },
   "accountFilter": {

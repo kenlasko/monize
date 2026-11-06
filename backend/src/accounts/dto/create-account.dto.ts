@@ -52,6 +52,7 @@ import {
   PAYMENT_FREQUENCIES,
   PaymentFrequency,
 } from "../payment-frequency.util";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 /**
  * Re-exported, because every caller has always taken these from the DTO. The
@@ -136,7 +137,7 @@ export class CreateAccountDto {
     default: 0,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(-999999999999)
   @Max(999999999999)
   openingBalance?: number;
@@ -146,7 +147,7 @@ export class CreateAccountDto {
     description: "Credit limit (for credit cards)",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @IsPositive()
   creditLimit?: number;
 
@@ -216,7 +217,7 @@ export class CreateAccountDto {
     description: "Monthly payment amount for loans",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @IsPositive()
   paymentAmount?: number;
 
@@ -374,7 +375,7 @@ export class CreateAccountDto {
       "Loans and mortgages: the amount originally borrowed, kept apart from the opening balance (the debt where this ledger starts). A LINEAR mortgage's constant principal is this over the scheduled payment count; when absent the mortgage paths store the opening balance",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @IsPositive()
   @Max(999999999999)
   originalPrincipal?: number;

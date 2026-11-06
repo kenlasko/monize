@@ -164,7 +164,10 @@ describe("ActionHistoryService: transaction rule run entries", () => {
       const [sql, params] = manager.query.mock.calls[
         manager.query.mock.calls.length - 1
       ] as [string, unknown[]];
-      expect(sql).toContain("AS numeric) + $1");
+      // No re-rounding at four places: a coin leg's satoshis reach the
+      // balance (INV-MONEY-001).
+      expect(sql).toContain("current_balance = current_balance + $1");
+      expect(sql).not.toMatch(/ROUND/);
       expect(sql).toContain("user_id = $3");
       expect(params).toEqual([-640.15, "acct-loan", userId]);
     });

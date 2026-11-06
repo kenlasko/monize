@@ -33,7 +33,7 @@ Fees are optional: a mortgage with none behaves exactly as it does today.
 | `name` | `VARCHAR(100) NOT NULL` | written as the fee line's memo |
 | `calculation` | `VARCHAR(30) NOT NULL` | `FIXED`, `PERCENT_CURRENT_BALANCE`, `PERCENT_ORIGINAL_BALANCE` |
 | `basis` | `VARCHAR(20) NOT NULL` | `PER_PAYMENT` or `ANNUAL` |
-| `amount` | `NUMERIC(20,4)` | set exactly when `calculation = 'FIXED'`; `> 0` |
+| `amount` | `NUMERIC(24,8)` | set exactly when `calculation = 'FIXED'`; `> 0` |
 | `rate` | `NUMERIC(10,6)` | set exactly when the calculation is a percentage; `> 0` and `<= 100` (percent) |
 | `sort_order` | `INTEGER NOT NULL DEFAULT 0` | display order |
 

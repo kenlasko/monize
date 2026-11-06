@@ -149,4 +149,13 @@ describe("shared expense allocation (SE-001, SE-012)", () => {
     expect(() => sharedAmount("0.1", 0)).toThrow();
     expect(() => sharedAmount("1", 5)).toThrow();
   });
+
+  it("reads a stored NUMERIC(24,8) value at four places when the extra digits are zero", () => {
+    expect(fixedUnits("12.34000000", 4)).toBe(123400n);
+    expect(fixedUnits("-5.00010000", 4, true)).toBe(-50001n);
+    expect(fixedUnits("7.00000000", 0)).toBe(7n);
+    expect(sharedAmount("12.34000000", 2)).toBe(123400n);
+    expect(() => fixedUnits("12.34000001", 4)).toThrow();
+    expect(() => fixedUnits("0.00002500", 4)).toThrow();
+  });
 });

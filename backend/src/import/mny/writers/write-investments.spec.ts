@@ -6,6 +6,7 @@ import {
   MappedSecurity,
 } from "../model/mny-import-model";
 import { writeInvestments, writeSecurities } from "./write-investments";
+import { currencyKindRows } from "../../../test-helpers/currency-kind-testing";
 
 /**
  * The investment writer's contract: securities are find-or-create by symbol, a
@@ -96,6 +97,9 @@ function doubles(
     insert: jest.fn().mockResolvedValue(undefined),
   } as unknown as Record<string, jest.Mock>;
   const query = jest.fn(async (sql: string, params: unknown[] = []) => {
+    // The `currencies` kind read (INV-CRYPTO-001) answers BTC as a coin.
+    const kindRows = currencyKindRows(sql, params);
+    if (kindRows) return kindRows;
     if (sql.includes("bond_auto_fetch")) {
       return [
         {
@@ -150,6 +154,18 @@ const baseInput = {
 };
 
 describe("writeSecurities", () => {
+  it("refuses a security in a CRYPTO currency before inserting any (INV-CRYPTO-001)", async () => {
+    const { manager, securities } = doubles();
+
+    await expect(
+      writeSecurities(manager, "user-1", [
+        security({ handle: 1, symbol: "VOO" }),
+        security({ handle: 2, symbol: "XBT", currencyCode: "BTC" }),
+      ]),
+    ).rejects.toThrow(/BTC is a cryptocurrency/);
+    expect(securities.insert).not.toHaveBeenCalled();
+  });
+
   it("creates the securities the user does not have", async () => {
     const { manager, securities } = doubles();
 

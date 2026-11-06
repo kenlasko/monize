@@ -26,12 +26,12 @@ import type {
   Transaction,
 } from '@/types/transaction';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { fromMoneyUnits, moneyDecimalsForCurrency, toMoneyUnits } from '@/lib/format';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 
 const logger = createLogger('ForeignCurrencyFeesReport');
 
 const PAGE_SIZE = 25;
-// Integer ten-thousandths, matching the backend's decimal(20,4) money scale.
-const SCALE = 10000;
 
 const hasFxFee = (account: Account): boolean => Number(account.fxFeePercent) > 0;
 
@@ -202,10 +202,14 @@ export function ForeignCurrencyFeesReport() {
   );
 
   // Roll every account's rows up to one converted fee total per month, honouring
-  // the currency filter. Accumulated in integer ten-thousandths to avoid drift.
+  // the currency filter. Accumulated in integer units of the display
+  // currency's money precision (four for fiat, a coin's eight when every
+  // account in scope is that coin) to avoid drift.
+  const registryVersion = useCurrencyDecimalsVersion();
   const monthlyFees = useMemo(() => {
     const active = selectedCurrencies.length > 0 ? new Set(selectedCurrencies) : null;
-    const byMonth = new Map<string, { cents: number; count: number }>();
+    const decimals = moneyDecimalsForCurrency(displayCurrency);
+    const byMonth = new Map<string, { units: bigint; count: number }>();
     // A fee whose currency has no rate to the display currency is left out of
     // the chart (added at its face value it would be a figure in another
     // currency), so its currency is named and it is counted -- the chart is a
@@ -221,8 +225,8 @@ export function ForeignCurrencyFeesReport() {
           excludedCount += row.count;
           continue;
         }
-        const bucket = byMonth.get(row.month) ?? { cents: 0, count: 0 };
-        bucket.cents += Math.round(converted * SCALE);
+        const bucket = byMonth.get(row.month) ?? { units: BigInt(0), count: 0 };
+        if (Number.isFinite(converted)) bucket.units += toMoneyUnits(converted, decimals);
         bucket.count += row.count;
         byMonth.set(row.month, bucket);
       }
@@ -231,11 +235,12 @@ export function ForeignCurrencyFeesReport() {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, bucket]) => ({
         month,
-        total: bucket.cents / SCALE,
+        total: fromMoneyUnits(bucket.units, decimals),
         count: bucket.count,
       }));
     return { data, missingCurrencies: [...missing], excludedCount };
-  }, [feeResults, selectedCurrencies, convertFee]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
+  }, [feeResults, selectedCurrencies, convertFee, displayCurrency, registryVersion]);
 
   const currencyKey = selectedCurrencies.join(',');
   const availableKey = availableCurrencies.join(',');

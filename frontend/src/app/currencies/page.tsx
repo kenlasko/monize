@@ -13,7 +13,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import dynamic from 'next/dynamic';
-import { exchangeRatesApi, CurrencyInfo, CreateCurrencyData, CurrencyUsage, FxProviderDescription, isFxProviderName } from '@/lib/exchange-rates';
+import { exchangeRatesApi, CurrencyInfo, CreateCurrencyData, CurrencyUsage, FxProviderDescription, isRateProviderName } from '@/lib/exchange-rates';
 const CurrencyForm = dynamic(() => import('@/components/currencies/CurrencyForm').then(m => m.CurrencyForm), { ssr: false });
 import { CurrencyList, type CurrencySortField, type SortDirection } from '@/components/currencies/CurrencyList';
 import { RateHistoryCoverage } from '@/components/currencies/RateHistoryCoverage';
@@ -31,6 +31,7 @@ import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { SEGMENTED_TOOLBAR_GROUP_CLASS, toolbarSegmentClass } from '@/components/ui/segmented-control';
 import { RefreshButtonLabel } from '@/components/ui/RefreshButtonLabel';
 import { docsUrl } from '@/lib/docs-links';
+import { registerCurrencyDecimals } from '@/lib/currency-decimals';
 
 const logger = createLogger('Currencies');
 
@@ -87,7 +88,7 @@ function CurrenciesContent() {
   const fxProviderLine = fxProviders.length
     ? t('page.providers.line', {
         providers: fxProviders
-          .map((p) => (isFxProviderName(p.name) ? t(`page.providers.names.${p.name}`) : p.name))
+          .map((p) => (isRateProviderName(p.name) ? t(`page.providers.names.${p.name}`) : p.name))
           .join(t('page.providers.separator')),
       })
     : null;
@@ -104,6 +105,8 @@ function CurrenciesContent() {
         ]);
         setAllCurrencies(currenciesData);
         setUsage(usageData);
+        // The page holds the freshest rows; every formatter reads their places.
+        registerCurrencyDecimals(currenciesData);
       } catch (error) {
         toast.error(t('page.toasts.loadFailed'));
         logger.error(error);
@@ -141,14 +144,20 @@ function CurrenciesContent() {
         // `code` is immutable: the backend's UpdateCurrencyDto omits it and
         // rejects unknown fields (forbidNonWhitelisted), so send only the
         // editable fields rather than the whole create payload.
-        await exchangeRatesApi.updateCurrency(editingCurrency.code, {
+        const updated = await exchangeRatesApi.updateCurrency(editingCurrency.code, {
           name: data.name,
           symbol: data.symbol,
           decimalPlaces: data.decimalPlaces,
+          kind: data.kind,
+          quoteSymbol: data.quoteSymbol,
         });
+        // A changed precision applies on every screen at once, before the
+        // reload below answers.
+        if (updated) registerCurrencyDecimals([updated]);
         toast.success(t('page.toasts.updated'));
       } else {
-        await exchangeRatesApi.createCurrency(data);
+        const created = await exchangeRatesApi.createCurrency(data);
+        if (created) registerCurrencyDecimals([created]);
         toast.success(t('page.toasts.created'));
       }
       close();
@@ -375,6 +384,11 @@ function CurrenciesContent() {
         >
           <CurrencyForm
             currency={editingCurrency}
+            inUse={
+              !!editingCurrency &&
+              ((usage[editingCurrency.code]?.accounts ?? 0) > 0 ||
+                (usage[editingCurrency.code]?.securities ?? 0) > 0)
+            }
             onSubmit={handleFormSubmit}
             onCancel={close}
             onDirtyChange={setFormDirty}

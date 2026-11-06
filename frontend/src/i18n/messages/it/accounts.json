@@ -136,6 +136,9 @@
     "accountType": "Tipo di conto",
     "currency": "Valuta",
     "currencyLocked": "La valuta è bloccata perché il conto ha già delle transazioni. Modificarla ridenominerebbe silenziosamente i saldi esistenti.",
+    "accountTypeKindLocked": "La valuta è bloccata dalle transazioni di questo conto, quindi non può passare tra Portafoglio cripto e un tipo di conto in valuta fiat.",
+    "currencyPlaceholder": "Seleziona una valuta...",
+    "noCryptoCurrencies": "Un portafoglio cripto contiene una criptovaluta e non ne è ancora stata configurata nessuna. Aggiungine una nella <currencies>pagina Valute</currencies>, poi sceglila qui. <guide>Come aggiungere una criptovaluta</guide>",
     "openingBalance": "Saldo d'apertura",
     "loanAmount": "Importo prestito",
     "mortgageAmount": "Importo mutuo",
@@ -179,6 +182,7 @@
       "mortgage": "Mutuo",
       "asset": "Attività",
       "cash": "Contanti",
+      "crypto": "Portafoglio cripto",
       "other": "Altro"
     },
     "statementDueDayPlaceholder": "es. 15",
@@ -457,6 +461,7 @@
   "validation": {
     "nameRequired": "Il nome del conto è obbligatorio",
     "currencyCodeLength": "Il codice valuta deve essere di 3 caratteri",
+    "currencyRequired": "Seleziona una valuta",
     "institutionRequired": "Seleziona o crea un istituto",
     "interestRateRequired": "Il tasso d'interesse è obbligatorio",
     "paymentAmountRequired": "L'importo del pagamento è obbligatorio",

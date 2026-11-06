@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "找不到 ID 為 {{ id }} 的科目",
     "notInvestmentPair": "此科目不是投資科目對的一部分",
+    "accountCurrencyKindMismatch": "{{ code }} 是 {{ kind }} 類型的貨幣，{{ accountType }} 科目無法持有。CRYPTO 科目持有加密貨幣；其他所有科目類型持有法定貨幣。",
     "noLinkedInvestmentAccount": "此投資科目沒有關聯科目",
     "notFound": "找不到科目",
     "institutionNotFound": "找不到機構",
@@ -318,6 +319,7 @@
     "categoryIdsNotOwned": "找不到類別 ID 或類別不屬於使用者：{{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "薪資扣款規則會追蹤以法定貨幣支付的帳單；此帳單的科目持有加密貨幣 {{ code }}。請選擇從法定貨幣科目支付的帳單。",
     "notFound": "找不到薪資扣款規則 {{ id }}",
     "duplicate": "此帳單已有該類別的規則",
     "expectedRequired": "帳單中沒有此類別的項目；請輸入每次發薪的預期金額"
@@ -358,7 +360,15 @@
     "inUse": "貨幣「{{ code }}」正在您的科目、證券或其他記錄中使用。請改為停用它。",
     "invalidRateDate": "date 必須為 YYYY-MM-DD 格式",
     "sameCurrencyHistory": "{{ code }} 是您的預設貨幣，因此沒有匯率歷史",
-    "rateProviderUnavailable": "匯率提供方未回應，請稍後再試。"
+    "rateProviderUnavailable": "匯率提供方未回應，請稍後再試。",
+    "noPriceSymbol": "{{ code }} 沒有價格代號；請在「貨幣」頁面上設定一個",
+    "pairNotCarried": "沒有已設定的匯率提供方提供 {{ pair }}",
+    "quoteSymbolRequiresCrypto": "價格符號（{{ quoteSymbol }}）只能設定在加密貨幣上；「{{ code }}」是法定貨幣",
+    "quoteSymbolNotAPair": "「{{ code }}」的價格符號「{{ quoteSymbol }}」不是 BTC-EUR 這樣的幣種與法定貨幣的交易對",
+    "kindInUse": "只要仍有科目、交易、證券或其他記錄在使用，就無法變更「{{ code }}」的類型",
+    "decimalPlacesInUse": "只要仍有科目、交易或其他記錄包含這麼多位小數的金額，就無法將「{{ code }}」的小數位數降到{{ places }}以下",
+    "quoteSymbolInUse": "只要仍有科目、交易、證券或其他記錄在使用，就無法變更「{{ code }}」價格符號中的幣種；只能變更其中的法定貨幣",
+    "kindConflict": "貨幣「{{ code }}」已作為 {{ kind }} 貨幣存在，無法新增為 {{ requestedKind }}"
   },
   "delegation": {
     "delegatedAccessInvalid": "委派存取已失效",
@@ -642,6 +652,7 @@
     "bondCurrencyMismatch": "此證券以 {{ currency }} 記錄，但債券工具以 {{ instrumentCurrency }} 定價。請使用該工具的幣別。",
     "bondCurrencyLocked": "連結到債券工具的證券必須維持工具的幣別（{{ instrumentCurrency }}）。變更幣別之前，請先解除其與債券的連結。",
     "accountMustBeInvestment": "科目類型必須為 INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} 是加密貨幣，而證券以法定貨幣計價。請選擇證券報價所用的法定貨幣。",
     "transferPairSameRow": "一筆轉移的兩筆記錄不能是同一筆交易",
     "transferPairNotFound": "兩筆交易其中之一已不存在",
     "transferPairAlreadyLinked": "其中一筆記錄已與另一筆交易關聯",
@@ -752,6 +763,7 @@
     "runUndoLaterSettlement": "此次執行之後，此貸款的後續分期已被結清，因此無法復原該次執行。請先復原後續的結清"
   },
   "transactions": {
+    "amountPrecisionExceeded": "「{{ field }}」中的金額小數位數超過 {{ code }} 支援的位數（{{ places }}）。請最多輸入 {{ places }} 位小數；貨幣的小數位數在貨幣頁面設定。",
     "invalidStatus": "無效的交易狀態：{{ status }}",
     "reconciledLocked": "此交易已對帳並遭鎖定。要修改請在設定中關閉「鎖定已對帳交易」。",
     "convertToTransferRefused": "此交易已無法轉換為轉帳。請檢查後重新執行規則",
@@ -838,6 +850,9 @@
     "passwordRequiredForDataDelete": "需要密碼以確認資料刪除",
     "reauthUnavailable": "請先完成帳戶密碼設定，再使用此操作。"
   },
+  "preferences": {
+    "defaultCurrencyCrypto": "加密貨幣不能作為報告幣別"
+  },
   "loanScenarios": {
     "notFound": "找不到 ID 為 {{ id }} 的貸款情境",
     "nameConflict": "此帳戶已存在名為「{{ name }}」的情境",
@@ -909,6 +924,7 @@
     "accountNotFound": "找不到該科目。",
     "accountClosed": "已關聯的科目已關閉。請重新開啟它，或關聯其他科目。",
     "accountBrokerage": "投資證券科目無法接收銀行交易。請改為關聯其現金科目。",
+    "accountCrypto": "加密錢包無法接收銀行交易。請改為關聯銀行科目。",
     "accountCurrencyMismatch": "銀行科目的貨幣為 {{ bankCurrency }}，而科目的貨幣為 {{ accountCurrency }}。請關聯貨幣相同的科目。",
     "accountCurrencyChanged": "讀取期間，已關聯科目的貨幣發生了變化。未匯入任何內容；請重新同步。",
     "accountAlreadyLinked": "該科目已關聯到另一個銀行科目。",

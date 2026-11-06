@@ -176,6 +176,7 @@
     "CASH": "Готівка",
     "LINE_OF_CREDIT": "Кредитна лінія",
     "ASSET": "Актив",
+    "CRYPTO": "Криптогаманець",
     "OTHER": "Інше"
   },
   "accountFilter": {

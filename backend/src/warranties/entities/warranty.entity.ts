@@ -134,8 +134,8 @@ export class Warranty {
   /** Set together with `currencyCode` or not at all. */
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "purchase_price",
     nullable: true,
     transformer: decimalTransformer,

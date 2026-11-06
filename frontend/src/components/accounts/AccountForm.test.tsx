@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from '@testing-library/react';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { AccountForm } from './AccountForm';
@@ -7,6 +7,7 @@ import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { institutionsApi } from '@/lib/institutions';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
@@ -66,20 +67,31 @@ vi.mock('@/hooks/useExchangeRates', () => ({
   }),
 }));
 
-vi.mock('@/lib/format', () => ({
-  getCurrencySymbol: () => '$',
-  getDecimalPlacesForCurrency: () => 2,
-  roundToCents: (v: number) => Math.round(v * 100) / 100,
-  roundToDecimals: (v: number, d: number) => { const f = Math.pow(10, d); return Math.round(v * f) / f; },
-  formatAmount: (v: number | undefined | null) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 100) / 100).toFixed(2),
-  formatAmountWithCommas: (v: number | undefined | null) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 100) / 100).toFixed(2),
-  parseAmount: (input: string) => { const n = parseFloat(input.replace(/[^0-9.-]/g, '')); return isNaN(n) ? undefined : Math.round(n * 100) / 100; },
-  filterCurrencyInput: (input: string) => input.replace(/[^0-9.-]/g, ''),
-  filterCalculatorInput: (input: string) => input.replace(/[^0-9.+\-*/() ]/g, ''),
-  hasCalculatorOperators: (input: string) => /[+*/()]/.test(input.replace(/^-/, '')) || /(?!^)-/.test(input),
-  evaluateExpression: vi.fn().mockImplementation(() => undefined),
-  formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
-}));
+vi.mock('@/lib/format', async (importOriginal) => {
+  // The opening balance loads and is entered at its currency's entry places,
+  // through the registry, exactly as the app rounds it.
+  const { entryDecimalPlaces, roundToEntryPlaces, roundMoney, loadedEntryAmount } =
+    await importOriginal<typeof import('@/lib/format')>();
+  return {
+    entryDecimalPlaces,
+    roundToEntryPlaces,
+    roundMoney,
+    loadedEntryAmount,
+    getCurrencySymbol: () => '$',
+    getDecimalPlacesForCurrency: () => 2,
+    roundToCents: (v: number) => Math.round(v * 100) / 100,
+    roundToDecimals: (v: number, d: number) => { const f = Math.pow(10, d); return Math.round(v * f) / f; },
+    formatAmount: (v: number | undefined | null) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 100) / 100).toFixed(2),
+    // At the places the input asks for, so a coin's field shows its four.
+    formatAmountWithCommas: (v: number | undefined | null, d: number = 2) => (v === undefined || v === null || isNaN(v)) ? '' : (Math.round(v * 10 ** d) / 10 ** d).toFixed(d),
+    parseAmount: (input: string) => { const n = parseFloat(input.replace(/[^0-9.-]/g, '')); return isNaN(n) ? undefined : Math.round(n * 100) / 100; },
+    filterCurrencyInput: (input: string) => input.replace(/[^0-9.-]/g, ''),
+    filterCalculatorInput: (input: string) => input.replace(/[^0-9.+\-*/() ]/g, ''),
+    hasCalculatorOperators: (input: string) => /[+*/()]/.test(input.replace(/^-/, '')) || /(?!^)-/.test(input),
+    evaluateExpression: vi.fn().mockImplementation(() => undefined),
+    formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
+  };
+});
 
 vi.mock('@/lib/categoryUtils', () => ({
   buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, children: [] })),
@@ -2449,5 +2461,347 @@ describe('AccountForm', () => {
       screen.getByRole("button", { name: "Save Changes" }),
     ).toHaveAttribute("type", "submit");
     expect(screen.queryByLabelText("Account Type")).not.toBeInTheDocument();
+  });
+});
+
+describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
+  const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
+  const mockOnCancel = vi.fn();
+  const fiat = [
+    { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', decimalPlaces: 2, isActive: true, kind: 'FIAT' },
+    // No kind: an older API, read as fiat.
+    { code: 'USD', name: 'US Dollar', symbol: '$', decimalPlaces: 2, isActive: true },
+  ];
+  const btc = { code: 'BTC', name: 'Bitcoin', symbol: 'B', decimalPlaces: 8, isActive: true, kind: 'CRYPTO', quoteSymbol: 'BTC-CAD' };
+  const getCurrencies = () => exchangeRatesApi.getCurrencies as ReturnType<typeof vi.fn>;
+
+  async function renderForm(props: Partial<Parameters<typeof AccountForm>[0]> = {}) {
+    await act(async () => {
+      render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} {...props} />);
+    });
+  }
+
+  const currencySelect = () => screen.getByLabelText('Currency') as HTMLSelectElement;
+  const currencyValues = () => Array.from(currencySelect().querySelectorAll('option')).map((o) => o.value);
+
+  async function chooseType(value: string) {
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Account Type'), { target: { value } });
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getCurrencies().mockResolvedValue([...fiat, btc]);
+    // An earlier suite leaves the lookup rejecting; an unanswered lock holds
+    // the saved kind, so these start from an account without transactions.
+    (accountsApi.canDelete as ReturnType<typeof vi.fn>).mockResolvedValue({
+      transactionCount: 0,
+      investmentTransactionCount: 0,
+      canDelete: true,
+    });
+  });
+
+  afterEach(() => {
+    // The form subscribes to the registry, so emptying it re-renders a mounted form.
+    act(() => clearCurrencyDecimals());
+    getCurrencies().mockResolvedValue(fiat);
+  });
+
+  it('offers Crypto Wallet as an account type', async () => {
+    await renderForm();
+    const option = Array.from(
+      (screen.getByLabelText('Account Type') as HTMLSelectElement).querySelectorAll('option'),
+    ).find((o) => o.value === 'CRYPTO');
+    expect(option?.textContent).toBe('Crypto Wallet');
+  });
+
+  it('lists only fiat currencies for a bank account and only crypto currencies for a wallet', async () => {
+    await renderForm();
+    await waitFor(() => expect(currencyValues()).toContain('CAD'));
+    expect(currencyValues()).toEqual(['CAD', 'USD']);
+
+    await chooseType('CRYPTO');
+    // CAD no longer fits, so it is cleared and the placeholder shows.
+    expect(currencySelect().value).toBe('');
+    expect(currencyValues()).toEqual(['', 'BTC']);
+  });
+
+  it('clears a currency of the other kind on a type switch, and keeps one that still fits', async () => {
+    await renderForm();
+    await waitFor(() => expect(currencyValues()).toContain('CAD'));
+
+    await chooseType('SAVINGS');
+    expect(currencySelect().value).toBe('CAD');
+
+    await chooseType('CRYPTO');
+    await act(async () => {
+      fireEvent.change(currencySelect(), { target: { value: 'BTC' } });
+    });
+    expect(currencySelect().value).toBe('BTC');
+
+    await chooseType('CHEQUING');
+    expect(currencySelect().value).toBe('');
+    expect(currencyValues()).toEqual(['', 'CAD', 'USD']);
+  });
+
+  it('refuses to submit a wallet without a currency, with its own message', async () => {
+    await renderForm();
+    await waitFor(() => expect(currencyValues()).toContain('CAD'));
+    await chooseType('CRYPTO');
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Account Name'), { target: { value: 'Wallet' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Create Account/i }));
+    });
+    expect(await screen.findByText('Select a currency')).toBeInTheDocument();
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+  });
+
+  it('says where to add a cryptocurrency when none exists', async () => {
+    getCurrencies().mockResolvedValue(fiat);
+    await renderForm();
+    await waitFor(() => expect(currencyValues()).toContain('CAD'));
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+
+    await chooseType('CRYPTO');
+    expect(currencyValues()).toEqual(['']);
+    const note = screen.getByRole('note');
+    expect(note).toHaveTextContent(/none is set up yet/);
+    expect(screen.getByRole('link', { name: 'Currencies page' })).toHaveAttribute('href', '/currencies');
+    expect(screen.getByRole('link', { name: 'How to add a cryptocurrency' }).getAttribute('href')).toMatch(
+      /currency-management.*#cryptocurrencies$/,
+    );
+  });
+
+  it('does not claim no cryptocurrency exists when the currency list failed to load', async () => {
+    getCurrencies().mockRejectedValue(new Error('offline'));
+    await renderForm();
+    await chooseType('CRYPTO');
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  });
+
+  it('asks for no credit limit, interest rate or institution, and takes a positive opening balance', async () => {
+    await renderForm();
+    await chooseType('CRYPTO');
+    expect(screen.queryByText('Credit Limit (optional)')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Interest Rate/)).not.toBeInTheDocument();
+    expect(screen.getByText('Institution (optional)')).toBeInTheDocument();
+    expect(screen.queryByText('Lender/Institution')).not.toBeInTheDocument();
+    expect(screen.getByText('Opening Balance')).toBeInTheDocument();
+    expect(screen.queryByText('Statement Dates (optional)')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('asset-fields')).not.toBeInTheDocument();
+  });
+
+  it('enters a new wallet\'s opening balance at the coin\'s eight places', async () => {
+    registerCurrencyDecimals([btc]);
+    await renderForm();
+    await waitFor(() => expect(currencyValues()).toContain('CAD'));
+    await chooseType('CRYPTO');
+    await act(async () => {
+      fireEvent.change(currencySelect(), { target: { value: 'BTC' } });
+      fireEvent.change(screen.getByLabelText('Account Name'), { target: { value: 'Bitcoin Wallet' } });
+    });
+    const balance = screen.getByLabelText('Opening Balance') as HTMLInputElement;
+    await act(async () => {
+      fireEvent.focus(balance);
+      fireEvent.change(balance, { target: { value: '0.01249993' } });
+      fireEvent.blur(balance);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Create Account/i }));
+    });
+
+    await waitFor(() => expect(mockOnSubmit).toHaveBeenCalled());
+    const payload = mockOnSubmit.mock.calls[0][0];
+    expect(payload).toMatchObject({ accountType: 'CRYPTO', currencyCode: 'BTC', openingBalance: 0.01249993 });
+  });
+
+  it('keeps a bank account\'s opening balance at two places', async () => {
+    registerCurrencyDecimals([btc]);
+    await renderForm();
+    await waitFor(() => expect(currencyValues()).toContain('CAD'));
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Account Name'), { target: { value: 'Chequing' } });
+    });
+    const balance = screen.getByLabelText('Opening Balance') as HTMLInputElement;
+    await act(async () => {
+      fireEvent.focus(balance);
+      fireEvent.change(balance, { target: { value: '0.0125' } });
+      fireEvent.blur(balance);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Create Account/i }));
+    });
+
+    await waitFor(() => expect(mockOnSubmit).toHaveBeenCalled());
+    expect(mockOnSubmit.mock.calls[0][0].openingBalance).toBe(0.01);
+  });
+
+  it.each([
+    ['with the registry loaded', true],
+    ['before the registry has loaded', false],
+  ])('round-trips a 0.01249993 BTC opening balance on an unedited save, %s', async (_label, registered) => {
+    if (registered) registerCurrencyDecimals([btc]);
+    const wallet = createExistingAccount({
+      accountType: 'CRYPTO',
+      name: 'Bitcoin Wallet',
+      currencyCode: 'BTC',
+      openingBalance: 0.01249993,
+      currentBalance: 0.01249993,
+    });
+    await renderForm({ account: wallet });
+    await waitFor(() => expect(currencyValues()).toEqual(['BTC']));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Update Account/i }));
+    });
+
+    await waitFor(() => expect(mockOnSubmit).toHaveBeenCalled());
+    expect(mockOnSubmit.mock.calls[0][0]).toMatchObject({
+      accountType: 'CRYPTO',
+      currencyCode: 'BTC',
+      openingBalance: 0.01249993,
+    });
+  });
+
+  it('redraws an edited wallet\'s opening balance at the coin\'s places when the registry loads late', async () => {
+    const wallet = createExistingAccount({
+      accountType: 'CRYPTO',
+      name: 'Bitcoin Wallet',
+      currencyCode: 'BTC',
+      openingBalance: 0.01249993,
+      currentBalance: 0.01249993,
+    });
+    await renderForm({ account: wallet });
+    await waitFor(() => expect(currencyValues()).toEqual(['BTC']));
+    const balance = screen.getByLabelText('Opening Balance') as HTMLInputElement;
+    // Before `GET /currencies` answers the coin is drawn at the column scale,
+    // never rounded to cents...
+    expect(balance.value).toBe('0.01249993');
+
+    // ...and a late load redraws it at the coin's registered places.
+    act(() => registerCurrencyDecimals([{ ...btc, decimalPlaces: 3 }]));
+    await waitFor(() => expect(balance.value).toBe('0.012'));
+  });
+
+  it.each([
+    ['with the registry loaded', true],
+    ['before the registry has loaded', false],
+  ])('saves a 0.00002500 BTC balance alert threshold at the coin\'s places, %s', async (_label, registered) => {
+    if (registered) registerCurrencyDecimals([btc]);
+    const wallet = createExistingAccount({
+      accountType: 'CRYPTO',
+      name: 'Bitcoin Wallet',
+      currencyCode: 'BTC',
+      openingBalance: 0.01249993,
+      currentBalance: 0.01249993,
+    });
+    await renderForm({ account: wallet });
+    await waitFor(() => expect(currencyValues()).toEqual(['BTC']));
+    const low = screen.getByLabelText('Notify below (optional)') as HTMLInputElement;
+    await act(async () => {
+      fireEvent.focus(low);
+      fireEvent.change(low, { target: { value: '0.00002500' } });
+      fireEvent.blur(low);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Update Account/i }));
+    });
+
+    await waitFor(() => expect(mockOnSubmit).toHaveBeenCalled());
+    expect(mockOnSubmit.mock.calls[0][0].lowBalanceThreshold).toBe(0.000025);
+  });
+
+  describe('a currency locked by the account\'s transactions', () => {
+    const typeSelect = () => screen.getByLabelText('Account Type') as HTMLSelectElement;
+    const disabledTypes = () =>
+      Array.from(typeSelect().querySelectorAll('option'))
+        .filter((o) => o.disabled)
+        .map((o) => o.value);
+    const lockHint = /lock its currency, so it cannot switch between a Crypto Wallet and a fiat account type/;
+
+    function lockCurrency() {
+      (accountsApi.canDelete as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        transactionCount: 4,
+        investmentTransactionCount: 0,
+        canDelete: false,
+      });
+    }
+
+    it('keeps a fiat account from becoming a Crypto Wallet, and keeps its currency', async () => {
+      lockCurrency();
+      await renderForm({ account: createExistingAccount() });
+      await waitFor(() => expect(currencySelect().disabled).toBe(true));
+
+      expect(disabledTypes()).toEqual(['CRYPTO']);
+      expect(screen.getByLabelText(lockHint)).toBeInTheDocument();
+
+      await chooseType('SAVINGS');
+      expect(currencySelect().value).toBe('CAD');
+      expect(screen.queryByText('Select a currency')).not.toBeInTheDocument();
+    });
+
+    it('keeps a wallet from becoming a fiat type, and keeps its coin', async () => {
+      lockCurrency();
+      await renderForm({
+        account: createExistingAccount({
+          accountType: 'CRYPTO',
+          name: 'Bitcoin Wallet',
+          currencyCode: 'BTC',
+          openingBalance: 0.0125,
+          currentBalance: 0.0125,
+        }),
+      });
+      await waitFor(() => expect(currencySelect().disabled).toBe(true));
+
+      const types = Array.from(typeSelect().querySelectorAll('option')).map((o) => o.value);
+      expect(disabledTypes()).toEqual(types.filter((v) => v !== 'CRYPTO'));
+      expect(screen.getByLabelText(lockHint)).toBeInTheDocument();
+      expect(currencySelect().value).toBe('BTC');
+    });
+
+    it('never clears a locked currency on a type switch', async () => {
+      lockCurrency();
+      await renderForm({ account: createExistingAccount() });
+      await waitFor(() => expect(currencySelect().disabled).toBe(true));
+
+      // The option is disabled in the picker; a change that reaches the
+      // handler anyway must still leave the currency alone.
+      await chooseType('CRYPTO');
+      await chooseType('CHEQUING');
+      expect(currencySelect().value).toBe('CAD');
+    });
+
+    it('keeps the saved kind, with no hint, while the lock lookup has not answered', async () => {
+      let answer: (value: unknown) => void = () => {};
+      (accountsApi.canDelete as ReturnType<typeof vi.fn>).mockReturnValueOnce(
+        new Promise((resolve) => { answer = resolve; }),
+      );
+      await renderForm({ account: createExistingAccount() });
+      await waitFor(() => expect(currencyValues()).toContain('CAD'));
+
+      expect(disabledTypes()).toEqual(['CRYPTO']);
+      expect(screen.queryByLabelText(lockHint)).not.toBeInTheDocument();
+      // A switch that reaches the handler before the answer keeps the currency.
+      await chooseType('CRYPTO');
+      await chooseType('CHEQUING');
+      expect(currencySelect().value).toBe('CAD');
+
+      // Unlocked once it answers: every type is offered again.
+      await act(async () => {
+        answer({ transactionCount: 0, investmentTransactionCount: 0, canDelete: true });
+      });
+      expect(disabledTypes()).toEqual([]);
+    });
+
+    it('offers every type, with no hint, while the currency is unlocked', async () => {
+      await renderForm({ account: createExistingAccount() });
+      await waitFor(() => expect(accountsApi.canDelete).toHaveBeenCalled());
+      await waitFor(() => expect(currencyValues()).toContain('CAD'));
+
+      expect(disabledTypes()).toEqual([]);
+      expect(screen.queryByLabelText(lockHint)).not.toBeInTheDocument();
+    });
   });
 });

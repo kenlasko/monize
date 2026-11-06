@@ -1006,3 +1006,216 @@ describe("SupportBackupService custom currencies", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("SupportBackupService reconcile precision", () => {
+  const BTC_ACC = "aaaaaaaa-b7c0-4111-8111-111111111111";
+  const CAD_ACC = "aaaaaaaa-cad0-4111-8111-111111111111";
+  const BTC_SPLIT_TX = "dddddddd-b7c1-4111-8111-111111111111";
+
+  type Tables = Record<string, Record<string, unknown>[]>;
+  const reconcile = (tables: Tables): Tables =>
+    (
+      makeService() as unknown as { reconcile: (t: Tables) => Tables }
+    ).reconcile(tables);
+
+  const tx = (id: string, account: string, amount: number) => ({
+    id,
+    account_id: account,
+    amount,
+    is_split: false,
+    status: "UNRECONCILED",
+    parent_transaction_id: null,
+  });
+
+  const tables = (): Tables => ({
+    currencies: [
+      { code: "BTC", decimal_places: 8 },
+      { code: "CAD", decimal_places: 2 },
+    ],
+    accounts: [
+      {
+        id: BTC_ACC,
+        currency_code: "BTC",
+        opening_balance: 0.00000001,
+        current_balance: 0,
+      },
+      {
+        id: CAD_ACC,
+        currency_code: "CAD",
+        opening_balance: 100,
+        current_balance: 0,
+      },
+    ],
+    transactions: [
+      tx("t1", BTC_ACC, 0.00000005),
+      tx("t2", BTC_ACC, 0.00000003),
+      tx("t3", CAD_ACC, 10.1),
+      tx("t4", CAD_ACC, 20.2),
+    ],
+    transaction_splits: [],
+  });
+
+  it("sums a coin account at its own eight places", () => {
+    const out = reconcile(tables());
+    expect(out.accounts[0].current_balance).toBe(0.00000009);
+  });
+
+  it("sums a fiat account at four places as before", () => {
+    const out = reconcile(tables());
+    expect(out.accounts[1].current_balance).toBe(130.3);
+  });
+
+  it("sums a coin split parent from its eight-place lines", () => {
+    const t = tables();
+    t.transactions.push({
+      ...tx(BTC_SPLIT_TX, BTC_ACC, 0),
+      is_split: true,
+    });
+    t.transaction_splits = [
+      { transaction_id: BTC_SPLIT_TX, amount: 0.00000002 },
+      { transaction_id: BTC_SPLIT_TX, amount: 0.00000004 },
+    ];
+    const out = reconcile(t);
+    expect(
+      out.transactions.find((row) => row.id === BTC_SPLIT_TX)?.amount,
+    ).toBe(0.00000006);
+    expect(out.accounts[0].current_balance).toBe(0.00000015);
+  });
+
+  it("reads an account whose currency the export lacks as fiat", () => {
+    const t = tables();
+    t.currencies = [];
+    const out = reconcile(t);
+    // 0.00000001 + 0.00000005 + 0.00000003 at four places is 0.
+    expect(out.accounts[0].current_balance).toBe(0);
+    expect(out.accounts[1].current_balance).toBe(130.3);
+  });
+});
+
+describe("SupportBackupService scaling precision", () => {
+  const BTC_ACC = "aaaaaaaa-b7c0-4111-8111-111111111111";
+  const USD_ACC = "aaaaaaaa-d0c0-4111-8111-111111111111";
+  const BTC_SCH = "12121212-b7c0-4111-8111-111111111111";
+  const USD_SCH = "12121212-d0c0-4111-8111-111111111111";
+  const BTC_TX = "dddddddd-b7c1-4111-8111-111111111111";
+  const USD_TX = "dddddddd-d0c1-4111-8111-111111111111";
+
+  type Tables = Record<string, Record<string, unknown>[]>;
+  const obfuscate = (tables: Tables, multiplier: number): Tables =>
+    (
+      makeService() as unknown as {
+        obfuscate: (t: Tables, m: number) => Tables;
+      }
+    ).obfuscate(tables, multiplier);
+
+  const input = (): Tables => ({
+    currencies: [
+      { code: "BTC", decimal_places: 8 },
+      { code: "USD", decimal_places: 2 },
+    ],
+    accounts: [
+      {
+        id: BTC_ACC,
+        currency_code: "BTC",
+        opening_balance: 0.000025,
+        current_balance: 0.000025,
+        low_balance_threshold: 0.000012,
+        payment_amount: 12.3456,
+      },
+      {
+        id: USD_ACC,
+        currency_code: "USD",
+        opening_balance: 12.3456,
+        current_balance: 12.3456,
+      },
+    ],
+    transactions: [
+      {
+        id: BTC_TX,
+        account_id: BTC_ACC,
+        amount: 0.000025,
+        is_split: false,
+        status: "UNRECONCILED",
+      },
+      {
+        id: USD_TX,
+        account_id: USD_ACC,
+        amount: 12.3456,
+        is_split: false,
+        status: "UNRECONCILED",
+      },
+    ],
+    transaction_splits: [
+      { id: "s-btc", transaction_id: BTC_TX, amount: 0.000025 },
+      { id: "s-usd", transaction_id: USD_TX, amount: 12.3456 },
+    ],
+    scheduled_transactions: [
+      { id: BTC_SCH, account_id: BTC_ACC, amount: 0.000025 },
+      { id: USD_SCH, account_id: USD_ACC, amount: 12.3456 },
+    ],
+    scheduled_transaction_splits: [
+      { id: "ss-btc", scheduled_transaction_id: BTC_SCH, amount: 0.000025 },
+      { id: "ss-usd", scheduled_transaction_id: USD_SCH, amount: 12.3456 },
+    ],
+    scheduled_transaction_overrides: [
+      {
+        id: "o-btc",
+        scheduled_transaction_id: BTC_SCH,
+        amount: 0.000025,
+        splits: [{ amount: 0.000025 }],
+      },
+      {
+        id: "o-usd",
+        scheduled_transaction_id: USD_SCH,
+        amount: 12.3456,
+        splits: [{ amount: 12.3456 }],
+      },
+    ],
+  });
+
+  const byId = (rows: Record<string, unknown>[], id: string) =>
+    rows.find((row) => row.id === id) as Record<string, unknown>;
+
+  it("scales a fiat amount at four places, byte for byte", () => {
+    const out = obfuscate(input(), 1.37);
+    expect(byId(out.transactions, USD_TX).amount).toBe(16.9135);
+    expect(byId(out.accounts, USD_ACC).opening_balance).toBe(16.9135);
+    expect(byId(out.scheduled_transactions, USD_SCH).amount).toBe(16.9135);
+    expect(byId(out.scheduled_transaction_overrides, "o-usd").amount).toBe(
+      16.9135,
+    );
+  });
+
+  it("scales a coin amount at the coin's own places", () => {
+    const out = obfuscate(input(), 1.5);
+    expect(byId(out.transactions, BTC_TX).amount).toBe(0.0000375);
+    expect(byId(out.accounts, BTC_ACC).opening_balance).toBe(0.0000375);
+    expect(byId(out.accounts, BTC_ACC).low_balance_threshold).toBe(0.000018);
+    expect(byId(out.scheduled_transactions, BTC_SCH).amount).toBe(0.0000375);
+    expect(byId(out.scheduled_transaction_overrides, "o-btc").amount).toBe(
+      0.0000375,
+    );
+    expect(
+      (byId(out.scheduled_transaction_overrides, "o-btc").splits as any)[0]
+        .amount,
+    ).toBe(0.0000375);
+  });
+
+  it("scales a split at its parent's account precision", () => {
+    const btc = obfuscate(input(), 1.5);
+    expect(byId(btc.transaction_splits, "s-btc").amount).toBe(0.0000375);
+    expect(byId(btc.scheduled_transaction_splits, "ss-btc").amount).toBe(
+      0.0000375,
+    );
+    const usd = obfuscate(input(), 1.37);
+    expect(byId(usd.transaction_splits, "s-usd").amount).toBe(16.9135);
+    expect(byId(usd.scheduled_transaction_splits, "ss-usd").amount).toBe(
+      16.9135,
+    );
+  });
+
+  it("scales every other money column at the fiat four places", () => {
+    const out = obfuscate(input(), 1.37);
+    expect(byId(out.accounts, BTC_ACC).payment_amount).toBe(16.9135);
+  });
+});

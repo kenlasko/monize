@@ -753,11 +753,11 @@ describe("A warranty survives a backup round trip", () => {
     expect(restored).toMatchObject({
       name: "Dishwasher",
       serial_numbers: ["SN-1", "SN-2"],
-      price: "1299.9900",
+      price: "1299.99000000",
       expires_on: "2028-10-01",
       txn_user: target.id,
       payee_user: target.id,
-      txn_amount: "-1299.9900",
+      txn_amount: "-1299.99000000",
     });
     expect(restored.id).not.toBe(warranty.id);
 

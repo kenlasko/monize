@@ -25,13 +25,14 @@ import {
   PaymentMatchingDto,
   PaymentMatchingFailureDto,
 } from "./payment-matching.dto";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 export class SetupLoanPaymentsDto {
   @ApiProperty({
     description: "Payment amount per period (positive number)",
     example: 1500,
   })
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0.01)
   @Max(999999999999)
   paymentAmount: number;
@@ -144,7 +145,7 @@ export class SetupLoanPaymentsDto {
     example: 200,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0)
   @Max(999999999999)
   extraPrincipal?: number;
@@ -155,7 +156,7 @@ export class SetupLoanPaymentsDto {
     example: 1000,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0)
   @Max(999999999999)
   detectedInterestAmount?: number;
@@ -166,7 +167,7 @@ export class SetupLoanPaymentsDto {
       "The amount originally borrowed, stored apart from the opening balance (the debt where this ledger starts); a LINEAR mortgage's constant principal is priced from it. When absent a mortgage without one stores its opening balance",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @IsPositive()
   @Max(999999999999)
   originalPrincipal?: number;
@@ -249,7 +250,7 @@ export class PreviewLoanPaymentSetupDto {
     example: 200,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0)
   @Max(999999999999)
   extraPrincipal?: number;
@@ -260,7 +261,7 @@ export class PreviewLoanPaymentSetupDto {
       "The amount originally borrowed the setup would store; the account's when absent",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @IsPositive()
   @Max(999999999999)
   originalPrincipal?: number;

@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "[XX-Account with ID {{ id }} not found-XX]",
     "notInvestmentPair": "[XX-This account is not part of an investment account pair-XX]",
+    "accountCurrencyKindMismatch": "[XX-{{ code }} is a {{ kind }} currency, which a {{ accountType }} account cannot hold. A CRYPTO account holds a cryptocurrency; every other account type holds a fiat currency.-XX]",
     "noLinkedInvestmentAccount": "[XX-This investment account does not have a linked account-XX]",
     "notFound": "[XX-Account not found-XX]",
     "institutionNotFound": "[XX-Institution not found-XX]",
@@ -318,6 +319,7 @@
     "categoryIdsNotOwned": "[XX-Category IDs not found or not owned by user: {{ ids }}-XX]"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "[XX-A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency {{ code }}. Choose a bill paid from a fiat account.-XX]",
     "notFound": "[XX-Payroll deduction rule {{ id }} not found-XX]",
     "duplicate": "[XX-This bill already has a rule for that category-XX]",
     "expectedRequired": "[XX-The bill has no line for this category; enter the amount expected per paycheque-XX]"
@@ -358,7 +360,15 @@
     "inUse": "[XX-Currency \"{{ code }}\" is in use by your accounts, securities, or other records. Deactivate it instead.-XX]",
     "invalidRateDate": "[XX-date must be in YYYY-MM-DD format-XX]",
     "sameCurrencyHistory": "[XX-{{ code }} is your default currency; it has no exchange rate history-XX]",
-    "rateProviderUnavailable": "[XX-The exchange rate provider did not answer. Please try again later.-XX]"
+    "rateProviderUnavailable": "[XX-The exchange rate provider did not answer. Please try again later.-XX]",
+    "noPriceSymbol": "[XX-{{ code }} has no price symbol; map one on the Currencies page-XX]",
+    "pairNotCarried": "[XX-No configured exchange rate provider carries {{ pair }}-XX]",
+    "quoteSymbolRequiresCrypto": "[XX-A price symbol ({{ quoteSymbol }}) can only be set on a cryptocurrency; \"{{ code }}\" is a fiat currency-XX]",
+    "quoteSymbolNotAPair": "[XX-The price symbol \"{{ quoteSymbol }}\" for \"{{ code }}\" is not a coin and fiat pair such as BTC-EUR-XX]",
+    "kindInUse": "[XX-The kind of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it-XX]",
+    "decimalPlacesInUse": "[XX-The decimal places of \"{{ code }}\" cannot be lowered below {{ places }} while accounts, transactions or other records hold amounts with that many places-XX]",
+    "quoteSymbolInUse": "[XX-The coin in the price symbol of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it; only its fiat side can-XX]",
+    "kindConflict": "[XX-Currency \"{{ code }}\" already exists as a {{ kind }} currency and cannot be added as {{ requestedKind }}-XX]"
   },
   "delegation": {
     "delegatedAccessInvalid": "[XX-Delegated access is no longer valid-XX]",
@@ -642,6 +652,7 @@
     "bondCurrencyMismatch": "[XX-The security is recorded in {{ currency }} but the bond instrument is priced in {{ instrumentCurrency }}. Use the instrument's currency.-XX]",
     "bondCurrencyLocked": "[XX-A security linked to a bond instrument stays in the instrument's currency ({{ instrumentCurrency }}). Unlink it from the bond before changing its currency.-XX]",
     "accountMustBeInvestment": "[XX-Account must be of type INVESTMENT-XX]",
+    "currencyMustBeFiat": "[XX-{{ code }} is a cryptocurrency, and a security is priced in a fiat currency. Choose the fiat currency the security is quoted in.-XX]",
     "transferPairSameRow": "[XX-A transfer's two legs cannot be the same transaction-XX]",
     "transferPairNotFound": "[XX-One of the two transactions no longer exists-XX]",
     "transferPairAlreadyLinked": "[XX-One of these legs is already linked to another transaction-XX]",
@@ -752,6 +763,7 @@
     "runUndoLaterSettlement": "[XX-A later installment of this loan was settled after this run, so the run cannot be undone. Undo the later settlement first-XX]"
   },
   "transactions": {
+    "amountPrecisionExceeded": "[XX-The amount in \"{{ field }}\" has more decimal places than {{ code }} carries ({{ places }}). Enter it with at most {{ places }} decimal places; a currency's decimal places are set on the Currencies page.-XX]",
     "invalidStatus": "[XX-Invalid transaction status: {{ status }}-XX]",
     "reconciledLocked": "[XX-This transaction is reconciled and locked. Turn off 'Lock reconciled transactions' in Settings to change it.-XX]",
     "convertToTransferRefused": "[XX-This transaction can no longer be converted to a transfer. Review it and run the rule again-XX]",
@@ -838,6 +850,9 @@
     "passwordRequiredForDataDelete": "[XX-Password is required to confirm data deletion-XX]",
     "reauthUnavailable": "[XX-Finish setting up your account password before using this action.-XX]"
   },
+  "preferences": {
+    "defaultCurrencyCrypto": "[XX-A cryptocurrency cannot be the reporting currency-XX]"
+  },
   "loanScenarios": {
     "notFound": "[XX-Loan scenario with ID {{ id }} not found-XX]",
     "nameConflict": "[XX-A scenario named \"{{ name }}\" already exists for this account-XX]",
@@ -909,6 +924,7 @@
     "accountNotFound": "[XX-That account was not found.-XX]",
     "accountClosed": "[XX-The linked account is closed. Reopen it or link another account.-XX]",
     "accountBrokerage": "[XX-An investment brokerage account cannot receive bank transactions. Link its cash account instead.-XX]",
+    "accountCrypto": "[XX-A cryptocurrency wallet cannot receive bank transactions. Link a bank account instead.-XX]",
     "accountCurrencyMismatch": "[XX-The bank account is in {{ bankCurrency }} but the account is in {{ accountCurrency }}. Link an account in the same currency.-XX]",
     "accountCurrencyChanged": "[XX-The currency of the linked account changed while it was being read. Nothing was imported; sync again.-XX]",
     "accountAlreadyLinked": "[XX-That account is already linked to another bank account.-XX]",

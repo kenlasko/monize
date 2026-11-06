@@ -18,12 +18,13 @@ import {
 } from "@/lib/account-utils";
 import { bankSyncApi } from "@/lib/bank-sync";
 import {
+  isBankSyncEligibleAccountType,
   normalizeBankAccountType,
   suggestedAccountType,
 } from "@/lib/bank-sync-account-type";
 import { isUnknownSyncOutcome } from "@/lib/bank-sync-outcome";
 import { getErrorMessage } from "@/lib/errors";
-import { sumMoney } from "@/lib/format";
+import { moneyDecimalsForCurrency, sumMoney } from "@/lib/format";
 import type { Account } from "@/types/account";
 import type { BankSyncAccount } from "@/types/bank-sync";
 import { BankSyncLinkDialog } from "./BankSyncLinkDialog";
@@ -115,6 +116,7 @@ export function BankSyncAccountRow({
       !account.isJoint &&
       !account.isClosed &&
       !isInvestmentBrokerageAccount(account) &&
+      isBankSyncEligibleAccountType(account.accountType) &&
       !linkedElsewhere.has(account.id) &&
       (!bankAccount.currencyCode ||
         account.currencyCode === bankAccount.currencyCode)
@@ -236,7 +238,7 @@ export function BankSyncAccountRow({
     bankCurrency !== linkedAccount.currencyCode;
   const difference =
     bankAmount !== null && monizeAmount !== null && sameCurrency
-      ? sumMoney([bankAmount, -monizeAmount])
+      ? sumMoney([bankAmount, -monizeAmount], moneyDecimalsForCurrency(bankCurrency))
       : null;
 
   const formatBank = (amount: number) =>

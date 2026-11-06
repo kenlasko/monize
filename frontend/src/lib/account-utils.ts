@@ -127,6 +127,7 @@ export const formatAccountType = (type: AccountType, t?: (key: string) => string
     CASH: 'Cash',
     LINE_OF_CREDIT: 'Line of Credit',
     ASSET: 'Asset',
+    CRYPTO: 'Crypto Wallet',
     OTHER: 'Other',
   };
   return labels[type] || type;

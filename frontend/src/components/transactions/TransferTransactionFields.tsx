@@ -11,7 +11,7 @@ import { Combobox } from '@/components/ui/Combobox';
 import { Transaction } from '@/types/transaction';
 import { Account, TransferCandidate } from '@/types/account';
 import { Payee } from '@/types/payee';
-import { getCurrencySymbol } from '@/lib/format';
+import { entryDecimalPlaces, getCurrencySymbol } from '@/lib/format';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { useAuthStore } from '@/store/authStore';
@@ -233,6 +233,9 @@ export function TransferTransactionFields({
                 : t('form.fields.transferAmount')
             }
             prefix={getCurrencySymbol(watchedCurrencyCode)}
+            // A coin's amount at its own places, as useTransferFxAutofill
+            // computes it; undefined (any ISO currency) keeps the input's two.
+            decimalPlaces={entryDecimalPlaces(watchedCurrencyCode)}
             value={watchedAmount}
             onChange={(value) => {
               const next = value !== undefined ? Math.abs(value) : undefined;
@@ -259,6 +262,7 @@ export function TransferTransactionFields({
             <CurrencyInput
               label={t('form.fields.amountReceivedInCurrency', { currency: crossCurrencyInfo.toCurrency })}
               prefix={getCurrencySymbol(crossCurrencyInfo.toCurrency)}
+              decimalPlaces={entryDecimalPlaces(crossCurrencyInfo.toCurrency)}
               value={transferTargetAmount}
               onChange={(value) =>
                 (onTransferTargetAmountChange ?? setTransferTargetAmount)(

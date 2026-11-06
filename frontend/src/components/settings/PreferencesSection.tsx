@@ -235,12 +235,18 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
       .catch(() => setMsnReady(null));
   }, []);
 
+  // The reporting currency is fiat: a coin is not offered (the server refuses
+  // one too). A coin already saved there stays listed so the picker shows the
+  // value the account holds rather than a first option it does not.
   const currencyOptions = useMemo(() => {
-    return availableCurrencies.map((c) => ({
-      value: c.code,
-      label: `${c.code} - ${c.name}`,
-    }));
-  }, [availableCurrencies]);
+    return availableCurrencies
+      .filter((c) => c.kind !== 'CRYPTO' || c.code === defaultCurrency.value)
+      .map((c) => ({
+        value: c.code,
+        label: `${c.code} - ${c.name}`,
+      }));
+  }, [availableCurrencies, defaultCurrency.value]);
+  const holdsCryptoCurrency = availableCurrencies.some((c) => c.kind === 'CRYPTO');
 
   const browserLocale = getEffectiveLocale('browser', language);
   const numberFormatSample = new Intl.NumberFormat(browserLocale).format(1234.56);
@@ -258,12 +264,19 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           <div className="space-y-4">
             <LanguageSelector value={language} onChange={setLanguage} />
 
-            <Select
-              label={t('defaultCurrencyLabel')}
-              options={currencyOptions}
-              value={defaultCurrency.value}
-              onChange={(e) => defaultCurrency.set(e.target.value)}
-            />
+            <div>
+              <Select
+                label={t('defaultCurrencyLabel')}
+                options={currencyOptions}
+                value={defaultCurrency.value}
+                onChange={(e) => defaultCurrency.set(e.target.value)}
+              />
+              {holdsCryptoCurrency && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {t('defaultCurrencyNoCrypto')}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

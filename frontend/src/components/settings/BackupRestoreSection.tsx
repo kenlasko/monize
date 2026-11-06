@@ -63,6 +63,69 @@ const UNRECOVERED_SERIES_REASONS: ReadonlySet<string> = new Set([
   'not-attempted',
 ]);
 
+/**
+ * The restore wrote rows whose currency's kind on this server disagrees with
+ * them; name each kind of row, list what the server named, and say how to
+ * repair it. Shaped like the unlinked-bond notices: a capped list plus "and N
+ * more".
+ */
+function CurrencyKindMismatchNotice({
+  mismatches,
+}: {
+  mismatches: NonNullable<RestoreResult['currencyKindMismatches']>;
+}) {
+  const t = useTranslations('settings.backupRestore');
+  const { accounts, accountCount, securities, securityCount, defaultCurrency } =
+    mismatches;
+  return (
+    <div className="mt-4 space-y-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-800 dark:text-amber-200">
+      {accountCount > 0 && (
+        <p>{t('restoreResult.currencyKindMismatchAccounts', { count: accountCount })}</p>
+      )}
+      {accountCount > 0 && accounts.length > 0 && (
+        <p>
+          {t('restoreResult.currencyKindMismatchAccountsList', {
+            names: accounts.join(', '),
+          })}
+          {accountCount > accounts.length && (
+            <>
+              {' '}
+              {t('restoreResult.currencyKindMismatchMore', {
+                count: accountCount - accounts.length,
+              })}
+            </>
+          )}
+        </p>
+      )}
+      {securityCount > 0 && (
+        <p>{t('restoreResult.currencyKindMismatchSecurities', { count: securityCount })}</p>
+      )}
+      {securityCount > 0 && securities.length > 0 && (
+        <p>
+          {t('restoreResult.currencyKindMismatchSecuritiesList', {
+            symbols: securities.join(', '),
+          })}
+          {securityCount > securities.length && (
+            <>
+              {' '}
+              {t('restoreResult.currencyKindMismatchMore', {
+                count: securityCount - securities.length,
+              })}
+            </>
+          )}
+        </p>
+      )}
+      {defaultCurrency !== null && (
+        <p>
+          {t('restoreResult.currencyKindMismatchDefaultCurrency', {
+            code: defaultCurrency,
+          })}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
   const t = useTranslations('settings.backupRestore');
   const tc = useTranslations('common');
@@ -834,6 +897,17 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
                 )}
                 <p className="mt-2">{t('restoreResult.unrecoveredBondSeriesAction')}</p>
               </div>
+            )}
+
+            {/* Rows whose currency's kind on this server disagrees with them
+                (currencies are global, so a code's kind here can differ from
+                the file's): an account whose type and currency kind disagree, a
+                security priced in a cryptocurrency, a cryptocurrency reporting
+                currency. The rows were written; say which and how to repair. */}
+            {restoreResult.currencyKindMismatches && (
+              <CurrencyKindMismatchNotice
+                mismatches={restoreResult.currencyKindMismatches}
+              />
             )}
 
             <div className="mt-6 flex justify-end">

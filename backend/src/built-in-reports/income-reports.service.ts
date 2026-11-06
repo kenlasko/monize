@@ -9,7 +9,12 @@ import {
   RawPeriodAggregate,
   RateMap,
 } from "./report-currency.service";
-import { roundMoney, sumMoney, toMoneyNumber } from "../common/round.util";
+import {
+  MONEY_SCALE,
+  roundMoney,
+  sumMoney,
+  toMoneyNumber,
+} from "../common/round.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
   IncomeBySourceResponse,
@@ -154,7 +159,11 @@ export class IncomeReportsService {
 
     for (const row of rawResults) {
       const total = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.total),
+        // An aggregate in the row's own currency, read before conversion: a coin's
+        // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
+        // the same), so a 2,500-sat total is not rounded to zero before it is
+        // converted (INV-MONEY-001).
+        toMoneyNumber(row.total, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,
@@ -423,13 +432,13 @@ export class IncomeReportsService {
 
     for (const row of rows) {
       const income = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.income),
+        toMoneyNumber(row.income, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,
       );
       const expenses = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.expenses),
+        toMoneyNumber(row.expenses, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,
@@ -850,13 +859,13 @@ export class IncomeReportsService {
 
     for (const row of flowRows) {
       const inflow = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.inflow),
+        toMoneyNumber(row.inflow, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,
       );
       const outflow = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.outflow),
+        toMoneyNumber(row.outflow, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,

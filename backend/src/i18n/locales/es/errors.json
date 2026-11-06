@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "Cuenta con ID {{ id }} no encontrada",
     "notInvestmentPair": "Esta cuenta no forma parte de un par de cuentas de inversión",
+    "accountCurrencyKindMismatch": "{{ code }} es una moneda de tipo {{ kind }}, que una cuenta de tipo {{ accountType }} no puede contener. Una cuenta CRYPTO contiene una criptomoneda; cualquier otro tipo de cuenta contiene una moneda fiduciaria.",
     "noLinkedInvestmentAccount": "Esta cuenta de inversión no tiene una cuenta vinculada",
     "notFound": "Cuenta no encontrada",
     "institutionNotFound": "Institución no encontrada",
@@ -318,6 +319,7 @@
     "categoryIdsNotOwned": "IDs de categoría no encontrados o no pertenecen al usuario: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Una regla de deducción de nómina hace seguimiento de una factura pagada en una moneda fiduciaria; la cuenta de esta factura contiene la criptomoneda {{ code }}. Elige una factura pagada desde una cuenta en moneda fiduciaria.",
     "notFound": "Regla de deducción de nómina {{ id }} no encontrada",
     "duplicate": "Esta factura ya tiene una regla para esa categoría",
     "expectedRequired": "La factura no tiene una línea para esta categoría; introduzca el importe previsto por nómina"
@@ -358,7 +360,15 @@
     "inUse": "La divisa \"{{ code }}\" está en uso por tus cuentas, valores u otros registros. Desactívala en su lugar.",
     "invalidRateDate": "date debe tener el formato AAAA-MM-DD",
     "sameCurrencyHistory": "{{ code }} es su moneda predeterminada; no tiene historial de tipo de cambio",
-    "rateProviderUnavailable": "El proveedor de tipos de cambio no respondió. Inténtelo de nuevo más tarde."
+    "rateProviderUnavailable": "El proveedor de tipos de cambio no respondió. Inténtelo de nuevo más tarde.",
+    "noPriceSymbol": "{{ code }} no tiene símbolo de precio; asigna uno en la página Monedas",
+    "pairNotCarried": "Ningún proveedor de tipos de cambio configurado ofrece {{ pair }}",
+    "quoteSymbolRequiresCrypto": "Un símbolo de precio ({{ quoteSymbol }}) solo se puede establecer en una criptomoneda; \"{{ code }}\" es una moneda fiduciaria",
+    "quoteSymbolNotAPair": "El símbolo de precio \"{{ quoteSymbol }}\" de \"{{ code }}\" no es un par de criptomoneda y moneda fiduciaria como BTC-EUR",
+    "kindInUse": "El tipo de \"{{ code }}\" no se puede cambiar mientras lo usen cuentas, transacciones, valores u otros registros",
+    "decimalPlacesInUse": "Los decimales de \"{{ code }}\" no se pueden reducir por debajo de {{ places }} mientras cuentas, transacciones u otros registros contengan importes con tantos decimales",
+    "quoteSymbolInUse": "La criptomoneda del símbolo de precio de \"{{ code }}\" no se puede cambiar mientras lo usen cuentas, transacciones, valores u otros registros; solo se puede cambiar su moneda fiduciaria",
+    "kindConflict": "La divisa \"{{ code }}\" ya existe como divisa {{ kind }} y no se puede añadir como {{ requestedKind }}"
   },
   "delegation": {
     "delegatedAccessInvalid": "El acceso delegado ya no es válido",
@@ -642,6 +652,7 @@
     "bondCurrencyMismatch": "El valor está registrado en {{ currency }}, pero el instrumento de bono se valora en {{ instrumentCurrency }}. Utilice la moneda del instrumento.",
     "bondCurrencyLocked": "Un valor vinculado a un instrumento de bono permanece en la moneda del instrumento ({{ instrumentCurrency }}). Desvincúlelo del bono antes de cambiar su moneda.",
     "accountMustBeInvestment": "La cuenta debe ser de tipo INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} es una criptomoneda, y un valor se cotiza en una moneda fiduciaria. Elige la moneda fiduciaria en la que cotiza el valor.",
     "transferPairSameRow": "Las dos partes de una transferencia no pueden ser la misma transacción",
     "transferPairNotFound": "Una de las dos transacciones ya no existe",
     "transferPairAlreadyLinked": "Una de estas partes ya está vinculada a otra transacción",
@@ -752,6 +763,7 @@
     "runUndoLaterSettlement": "Después de esta ejecución se liquidó una cuota posterior de este préstamo, por lo que la ejecución no se puede deshacer. Deshaga primero la liquidación posterior"
   },
   "transactions": {
+    "amountPrecisionExceeded": "El importe de «{{ field }}» tiene más decimales de los que admite {{ code }} ({{ places }}). Introdúcelo con un máximo de {{ places }} decimales; los decimales de una divisa se definen en la página Divisas.",
     "invalidStatus": "Estado de transacción no válido: {{ status }}",
     "reconciledLocked": "Esta transacción está conciliada y bloqueada. Desactiva «Bloquear transacciones conciliadas» en Ajustes para cambiarla.",
     "convertToTransferRefused": "Esta transacción ya no se puede convertir en una transferencia. Revísela y ejecute la regla de nuevo",
@@ -838,6 +850,9 @@
     "passwordRequiredForDataDelete": "Se requiere contraseña para confirmar la eliminación de datos",
     "reauthUnavailable": "Termina de configurar la contraseña de tu cuenta antes de usar esta acción."
   },
+  "preferences": {
+    "defaultCurrencyCrypto": "Una criptomoneda no puede ser la moneda de referencia"
+  },
   "loanScenarios": {
     "notFound": "No se encontró el escenario de préstamo con ID {{ id }}",
     "nameConflict": "Ya existe un escenario llamado \"{{ name }}\" para esta cuenta",
@@ -909,6 +924,7 @@
     "accountNotFound": "No se encontró esa cuenta.",
     "accountClosed": "La cuenta vinculada está cerrada. Reábrela o vincula otra cuenta.",
     "accountBrokerage": "Una cuenta de corretaje de inversiones no puede recibir transacciones bancarias. Vincula en su lugar su cuenta de efectivo.",
+    "accountCrypto": "Un monedero de criptomonedas no puede recibir transacciones bancarias. Vincula en su lugar una cuenta bancaria.",
     "accountCurrencyMismatch": "La cuenta bancaria está en {{ bankCurrency }} pero la cuenta está en {{ accountCurrency }}. Vincula una cuenta en la misma moneda.",
     "accountCurrencyChanged": "La moneda de la cuenta vinculada cambió mientras se leía. No se importó nada; sincroniza de nuevo.",
     "accountAlreadyLinked": "Esa cuenta ya está vinculada a otra cuenta bancaria.",

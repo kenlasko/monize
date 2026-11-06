@@ -74,7 +74,8 @@ describe("SeedService", () => {
       const currencyInserts = calls.filter((sql: string) =>
         sql.includes("INSERT INTO currencies"),
       );
-      expect(currencyInserts.length).toBe(30);
+      // Thirty fiat currencies and the demo coin.
+      expect(currencyInserts.length).toBe(31);
 
       // Verify demo user check
       const userSelect = calls.filter((sql: string) =>
@@ -132,14 +133,14 @@ describe("SeedService", () => {
       expect(userInsert.length).toBe(0);
     });
 
-    it("seeds 30 currencies with ON CONFLICT DO NOTHING", async () => {
+    it("seeds 30 fiat currencies and the demo coin, each ON CONFLICT DO UPDATE", async () => {
       await service.seedAll();
 
       const currencyCalls = dataSource.query.mock.calls.filter(
         (call: string[]) => call[0].includes("INSERT INTO currencies"),
       );
 
-      expect(currencyCalls.length).toBe(30);
+      expect(currencyCalls.length).toBe(31);
 
       // Verify ON CONFLICT clause
       for (const call of currencyCalls) {
@@ -155,6 +156,27 @@ describe("SeedService", () => {
       expect(currencyCodes).toContain("EUR");
       expect(currencyCodes).toContain("GBP");
       expect(currencyCodes).toContain("JPY");
+    });
+
+    it("seeds BTC as a CRYPTO currency priced from BTC-CAD at eight places", async () => {
+      await service.seedAll();
+
+      const btc = dataSource.query.mock.calls.find(
+        (call: (string | unknown[])[]) =>
+          String(call[0]).includes("INSERT INTO currencies") &&
+          (call[1] as unknown[])[0] === "BTC",
+      );
+
+      expect(btc).toBeDefined();
+      expect(btc[0]).toContain("kind, quote_symbol");
+      expect(btc[1]).toEqual([
+        "BTC",
+        "Bitcoin",
+        "\u20bf",
+        8,
+        "CRYPTO",
+        "BTC-CAD",
+      ]);
     });
 
     it("creates demo user with correct email and hashed password", async () => {

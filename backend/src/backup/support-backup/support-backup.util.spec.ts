@@ -1,3 +1,4 @@
+import { FIAT_MONEY_DECIMALS } from "../../common/round.util";
 import { maskText, scaleMoney, scaleQuantity } from "./support-backup.util";
 
 describe("maskText", () => {
@@ -26,10 +27,25 @@ describe("maskText", () => {
 });
 
 describe("scaleMoney", () => {
-  it("multiplies and rounds to 4 dp via integer arithmetic", () => {
+  it("multiplies and rounds a fiat value at 4 dp by default via integer arithmetic", () => {
     expect(scaleMoney(100, 2.5)).toBe(250);
     expect(scaleMoney("388.14", 2.5)).toBe(970.35);
     expect(scaleMoney(0.01, 3.333)).toBe(0.0333);
+    expect(scaleMoney(1, 3.123456789)).toBe(3.1235);
+  });
+
+  it("scales a fiat value byte for byte as it always did", () => {
+    // 16.913472 would be a six-place value a four-place fiat row refuses.
+    expect(scaleMoney(12.3456, 1.37)).toBe(16.9135);
+    expect(scaleMoney("12.3456", 1.37, FIAT_MONEY_DECIMALS)).toBe(16.9135);
+  });
+
+  it("keeps a coin amount's sub-4-place digits when given the coin's places", () => {
+    expect(scaleMoney("0.00002500", 1.5, 8)).toBe(0.0000375);
+    expect(scaleMoney(0.00000005, 2, 8)).toBe(0.0000001);
+    expect(scaleMoney("0.12345678", 1, 8)).toBe(0.12345678);
+    expect(scaleMoney(150000000, 2.5, 8)).toBe(375000000);
+    expect(scaleMoney(1, 3.123456789, 8)).toBe(3.12345679);
   });
 
   it("passes through null/undefined and unparseable input", () => {

@@ -37,6 +37,7 @@ const ACCOUNT_TYPES = [
   "INVESTMENT",
   "ASSET",
   "OTHER",
+  "CRYPTO",
 ];
 
 /** mulberry32: small, seeded, and the same sequence on every machine. */

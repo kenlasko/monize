@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@/test/render';
 import { TransferTransactionFields } from './TransferTransactionFields';
 import { Account, TransferCandidate } from '@/types/account';
 import { Payee } from '@/types/payee';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 
 let mockActingAsUserId: string | null = null;
 vi.mock('@/store/authStore', () => ({
@@ -10,7 +11,8 @@ vi.mock('@/store/authStore', () => ({
     selector({ actingAsUserId: mockActingAsUserId }),
 }));
 
-vi.mock('@/lib/format', () => ({
+vi.mock('@/lib/format', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/format')>()),
   getCurrencySymbol: (code: string) => {
     const map: Record<string, string> = { CAD: '$', USD: 'US$', EUR: 'E' };
     return map[code] || '$';
@@ -42,8 +44,8 @@ vi.mock('@/components/ui/Combobox', () => ({
 }));
 
 vi.mock('@/components/ui/CurrencyInput', () => ({
-  CurrencyInput: ({ label, value, onChange, error, prefix, allowNegative: _allowNegative }: any) => (
-    <div data-testid={`currency-input-${label}`}>
+  CurrencyInput: ({ label, value, onChange, error, prefix, decimalPlaces, allowNegative: _allowNegative }: any) => (
+    <div data-testid={`currency-input-${label}`} data-decimal-places={decimalPlaces ?? ''}>
       <label>{label}</label>
       {prefix && <span data-testid={`currency-prefix-${label}`}>{prefix}</span>}
       <input
@@ -275,11 +277,17 @@ describe('TransferTransactionFields', () => {
       name: 'Brokerage',
       accountSubType: 'INVESTMENT_BROKERAGE',
     });
+    const walletAccount = createAccount({
+      id: 'acc-btc',
+      name: 'Bitcoin Wallet',
+      accountType: 'CRYPTO',
+      currencyCode: 'BTC',
+    });
 
     render(
       <TransferTransactionFields
         {...defaultProps}
-        accounts={[savingsAccount, investmentAccount]}
+        accounts={[savingsAccount, investmentAccount, walletAccount]}
       />
     );
 
@@ -289,6 +297,8 @@ describe('TransferTransactionFields', () => {
 
     expect(labels).toContain('Savings (CAD)');
     expect(labels).not.toContain('Brokerage (CAD)');
+    // A crypto wallet is a transfer destination like any bank account.
+    expect(labels).toContain('Bitcoin Wallet (BTC)');
   });
 
   it('excludes the currently selected "From" account from To Account dropdown', () => {
@@ -388,6 +398,70 @@ describe('TransferTransactionFields', () => {
 
     expect(screen.getByText('Transfer Amount (CAD)')).toBeInTheDocument();
     expect(screen.getByText('Amount Received (USD)')).toBeInTheDocument();
+  });
+
+  it('enters each leg of a coin transfer at its own places, and an ISO leg at the default', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    try {
+      render(
+        <TransferTransactionFields
+          {...defaultProps}
+          watchedCurrencyCode="CAD"
+          crossCurrencyInfo={{
+            fromCurrency: 'CAD',
+            toCurrency: 'BTC',
+            fromAccountName: 'CAD Account',
+            toAccountName: 'Bitcoin Wallet',
+          }}
+        />
+      );
+      expect(screen.getByTestId('currency-input-Transfer Amount (CAD)')).toHaveAttribute(
+        'data-decimal-places',
+        '2',
+      );
+      expect(screen.getByTestId('currency-input-Amount Received (BTC)')).toHaveAttribute(
+        'data-decimal-places',
+        '4',
+      );
+    } finally {
+      clearCurrencyDecimals();
+    }
+  });
+
+  it('enters each coin leg at the column scale before the registry has loaded', () => {
+    render(
+      <TransferTransactionFields
+        {...defaultProps}
+        watchedCurrencyCode="BTC"
+        crossCurrencyInfo={{
+          fromCurrency: 'BTC',
+          toCurrency: 'ETH',
+          fromAccountName: 'Bitcoin Wallet',
+          toAccountName: 'Ether Wallet',
+        }}
+      />
+    );
+    expect(screen.getByTestId('currency-input-Transfer Amount (BTC)')).toHaveAttribute(
+      'data-decimal-places',
+      '8',
+    );
+    expect(screen.getByTestId('currency-input-Amount Received (ETH)')).toHaveAttribute(
+      'data-decimal-places',
+      '8',
+    );
+  });
+
+  it('enters a coin transfer amount at its own places', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    try {
+      render(<TransferTransactionFields {...defaultProps} watchedCurrencyCode="BTC" />);
+      expect(screen.getByTestId('currency-input-Transfer Amount')).toHaveAttribute(
+        'data-decimal-places',
+        '4',
+      );
+    } finally {
+      clearCurrencyDecimals();
+    }
   });
 
   it('routes cross-currency amount edits through the supplied handlers', () => {

@@ -13,6 +13,7 @@ import { ExchangeRateService } from "./exchange-rate.service";
 import { FxProviderChain } from "./providers/fx-provider-chain";
 import { roundFxRate } from "../common/fx-entry.util";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { Currency } from "./entities/currency.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 
 jest.mock("../common/db/scoped-db", () =>
@@ -48,6 +49,7 @@ describe("ExchangeRateHistoryService", () => {
   let manager: Record<string, jest.Mock>;
   let dataSource: ReturnType<typeof createScopedDbMocks>["dataSource"];
   let userPreferenceRepository: Record<string, jest.Mock>;
+  let currencyRepository: Record<string, jest.Mock>;
   let exchangeRateService: Record<string, jest.Mock>;
   let fxProviders: Record<string, jest.Mock>;
 
@@ -129,7 +131,7 @@ describe("ExchangeRateHistoryService", () => {
 
   /** One window's worth of provider outcome, in the order they are asked for. */
   const providerAnswers = (
-    ...outcomes: Array<{ stored: number; answered: boolean }>
+    ...outcomes: Array<{ stored: number; answered: boolean; carried?: boolean }>
   ) => {
     let call = 0;
     exchangeRateService.fillRateWindow.mockImplementation(() => {
@@ -170,13 +172,16 @@ describe("ExchangeRateHistoryService", () => {
     userPreferenceRepository = {
       findOne: jest.fn().mockResolvedValue({ defaultCurrency: "PLN" }),
     };
+    currencyRepository = { find: jest.fn().mockResolvedValue([]) };
     ({ manager, dataSource } = createScopedDbMocks([
       [UserPreference, userPreferenceRepository],
+      [Currency, currencyRepository],
     ]));
     exchangeRateService = {
       fillRateWindow: jest
         .fn()
         .mockResolvedValue({ stored: 240, answered: true }),
+      forgetEmptyRateWindowsFor: jest.fn(),
     };
 
     fxProviders = {
@@ -479,6 +484,69 @@ describe("ExchangeRateHistoryService", () => {
       // being empty names its end rather than a date the market has not
       // reached.
       expect(result.providerHasNothingBefore).toBe("2026-09-17");
+    });
+
+    /**
+     * A coin without a price symbol is claimed by the crypto adapter and
+     * carried by nobody, so the chain asked nobody. Remembering the window, or
+     * recording where the provider's history starts, would outlive the symbol
+     * the reader maps next: the provider fingerprint does not change with it,
+     * and every past window would be skipped with "history starts today".
+     */
+    it("records no coverage and no empty window for a coin without a price symbol, and names the repair", async () => {
+      providerAnswers({ stored: 0, answered: true, carried: false });
+      currencyRepository.find.mockResolvedValue([{ code: "DOG" }]);
+      rowsFor({ firstUse: "2020-01-01" });
+
+      await expect(service.fillRateGaps("user-1", "DOG")).rejects.toThrow(
+        new BadRequestException(
+          "DOG has no price symbol; map one on the Currencies page",
+        ),
+      );
+      expect(coverageWrites()).toHaveLength(0);
+      // One question settles the pair: the rest of the windows are not asked.
+      expect(exchangeRateService.fillRateWindow).toHaveBeenCalledTimes(1);
+      const [oldestWindow] = windowsAsked();
+
+      // The symbol is mapped: the next press asks for the oldest window again,
+      // and every window after it, rather than skipping them as empty.
+      providerAnswers({ stored: 120, answered: true, carried: true });
+      exchangeRateService.fillRateWindow.mockClear();
+      const after = await service.fillRateGaps("user-1", "DOG");
+
+      expect(after.windowsSkipped).toBe(0);
+      expect(windowsAsked()[0]).toEqual(oldestWindow);
+      expect(windowsAsked().length).toBeGreaterThan(1);
+      expect(after.providerHasNothingBefore).toBeNull();
+    });
+
+    it("names the pair when no configured provider carries it and neither side is an unmapped coin", async () => {
+      providerAnswers({ stored: 0, answered: true, carried: false });
+      rowsFor({ firstUse: "2026-01-01" });
+
+      await expect(service.fillRateGaps("user-1", "EUR")).rejects.toThrow(
+        "No configured exchange rate provider carries EUR/PLN",
+      );
+      expect(coverageWrites()).toHaveLength(0);
+    });
+
+    it("forgets the empty windows it remembers for a code, on both sides of a pair, and only for it", async () => {
+      providerAnswers({ stored: 0, answered: true });
+      rowsFor({ firstUse: "2026-01-01" });
+      await service.fillRateGaps("user-1", "EUR");
+      await service.fillRateGaps("user-1", "CHF");
+      exchangeRateService.fillRateWindow.mockClear();
+
+      service.forgetEmptyWindowsFor("eur");
+      const eur = await service.fillRateGaps("user-1", "EUR");
+      const chf = await service.fillRateGaps("user-1", "CHF");
+
+      expect(eur.windowsSkipped).toBe(0);
+      expect(chf.windowsSkipped).toBe(1);
+      expect(exchangeRateService.fillRateWindow).toHaveBeenCalledTimes(1);
+      expect(
+        exchangeRateService.forgetEmptyRateWindowsFor,
+      ).toHaveBeenCalledWith("eur");
     });
 
     it("does not re-ask for a window the provider already answered with nothing", async () => {

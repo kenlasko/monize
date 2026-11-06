@@ -30,7 +30,7 @@ import {
   nextOccurrenceEffectiveAmount,
   occurrenceSettlementAccountId,
 } from '@/lib/scheduled-effective-amount';
-import { roundMoney } from '@/lib/format';
+import { moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
 import { buildScheduledCalendarDays } from '@/lib/scheduled-calendar';
 import { ScheduledCalendarGrid } from '@/components/bills/ScheduledCalendarGrid';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
@@ -122,12 +122,15 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
 
       // Skip liability accounts - they normally carry negative balances
       if (LIABILITY_TYPES.has(account.accountType)) continue;
+      // The account currency's money precision: four for fiat, a coin's eight.
+      const decimals = moneyDecimalsForCurrency(account.currencyCode);
 
       if (!runningBalances.has(settlementAccountId)) {
         runningBalances.set(
           settlementAccountId,
           roundMoney(
             (Number(account.currentBalance) || 0) + (Number(account.futureTransactionsSum) || 0),
+            decimals,
           ),
         );
       }
@@ -150,10 +153,10 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
       }
       if (unknown.has(settlementAccountId)) continue;
       // Money precision, not float precision: a balance and the amount that
-      // empties it are both decimal(20,4), and only the rounded difference is
-      // one. An unrounded sum lands a fraction of a ten-thousandth below zero
-      // and warns about an account that ends at exactly zero.
-      const newBalance = roundMoney(runningBalances.get(settlementAccountId)! + effectiveAmount);
+      // empties it are both stored at the currency's money precision, and only
+      // the rounded difference is one. An unrounded sum lands a fraction of a
+      // unit below zero and warns about an account that ends at exactly zero.
+      const newBalance = roundMoney(runningBalances.get(settlementAccountId)! + effectiveAmount, decimals);
       runningBalances.set(settlementAccountId, newBalance);
 
       if (newBalance < 0) {

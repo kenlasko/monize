@@ -6,6 +6,7 @@ import {
 } from "../accounts/entities/account.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Security } from "../securities/entities/security.entity";
+import { currencyKindRows } from "../test-helpers/currency-kind-testing";
 import { ImportResultDto, CategoryMappingDto } from "./dto/import.dto";
 
 describe("ImportEntityCreatorService", () => {
@@ -53,6 +54,9 @@ describe("ImportEntityCreatorService", () => {
 
   beforeEach(() => {
     manager = {
+      getRepository: jest.fn(() => {
+        throw new Error("unexpected repository");
+      }),
       findOne: jest.fn(),
       create: jest.fn().mockImplementation((_entity, data) => ({
         ...data,
@@ -65,7 +69,10 @@ describe("ImportEntityCreatorService", () => {
       // Categories are created with `INSERT ... ON CONFLICT DO NOTHING RETURNING
       // id` so a lost race adopts the existing row instead of aborting the whole
       // import transaction. Default to winning; the loser path is asserted below.
-      query: jest.fn(async (sql: string) => {
+      // The `currencies` kind read (INV-CRYPTO-001) answers BTC as a coin.
+      query: jest.fn(async (sql: string, params?: unknown[]) => {
+        const kindRows = currencyKindRows(sql, params);
+        if (kindRows) return kindRows;
         if (
           typeof sql !== "string" ||
           !sql.includes("INSERT INTO categories")
@@ -483,6 +490,57 @@ describe("ImportEntityCreatorService", () => {
   describe("createAccounts", () => {
     const account = makeAccount();
 
+    it.each([
+      ["a CRYPTO account in CAD", "CRYPTO", "CAD"],
+      ["a CHEQUING account in BTC", "CHEQUING", "BTC"],
+      ["an INVESTMENT pair in BTC", "INVESTMENT", "BTC"],
+    ])(
+      "refuses %s before writing it (INV-CRYPTO-001)",
+      async (_label, accountType, currencyCode) => {
+        manager.findOne.mockResolvedValue(null);
+        await expect(
+          service.createAccounts(
+            manager as any,
+            userId,
+            [
+              {
+                originalName: "Wallet",
+                createNew: "Wallet",
+                accountType,
+                currencyCode,
+              },
+            ],
+            new Map(),
+            account,
+            importResult,
+          ),
+        ).rejects.toThrow(/currency, which a .* account cannot hold/);
+        expect(manager.save).not.toHaveBeenCalled();
+      },
+    );
+
+    it("creates a CRYPTO account in BTC", async () => {
+      manager.findOne.mockResolvedValue(null);
+      manager.save.mockResolvedValue({ id: "wallet-1" });
+      const accountMap = new Map<string, string | null>();
+      await service.createAccounts(
+        manager as any,
+        userId,
+        [
+          {
+            originalName: "Wallet",
+            createNew: "Wallet",
+            accountType: "CRYPTO",
+            currencyCode: "BTC",
+          },
+        ],
+        accountMap,
+        account,
+        importResult,
+      );
+      expect(accountMap.get("Wallet")).toBe("wallet-1");
+    });
+
     it("should create a regular (non-investment) account", async () => {
       manager.findOne.mockResolvedValue(null);
       const savedAcc = { id: "acc-new-1", name: "Savings", userId };
@@ -774,6 +832,20 @@ describe("ImportEntityCreatorService", () => {
   describe("createLoanAccounts", () => {
     const account = makeAccount();
 
+    it("refuses a loan created from a BTC account's import before writing it (INV-CRYPTO-001)", async () => {
+      await expect(
+        service.createLoanAccounts(
+          manager as any,
+          userId,
+          [{ originalName: "Car loan", createNewLoan: "Car loan" } as any],
+          new Map(),
+          makeAccount({ accountType: AccountType.CRYPTO, currencyCode: "BTC" }),
+          importResult,
+        ),
+      ).rejects.toThrow(/BTC is a CRYPTO currency, which a LOAN account/);
+      expect(manager.save).not.toHaveBeenCalled();
+    });
+
     it("should create a new loan account", async () => {
       const savedLoan = { id: "loan-1" };
       manager.save.mockResolvedValue(savedLoan);
@@ -920,6 +992,29 @@ describe("ImportEntityCreatorService", () => {
 
   describe("createSecurities", () => {
     const account = makeAccount();
+
+    it("refuses a security in a CRYPTO currency before writing it (INV-CRYPTO-001)", async () => {
+      manager.findOne.mockResolvedValue(null);
+      await expect(
+        service.createSecurities(
+          manager as any,
+          userId,
+          [
+            {
+              originalName: "Bitcoin",
+              createNew: "BTC-CAD",
+              securityName: "Bitcoin",
+              securityType: "CRYPTO",
+              currencyCode: "BTC",
+            },
+          ],
+          new Map(),
+          account,
+          importResult,
+        ),
+      ).rejects.toThrow(/BTC is a cryptocurrency/);
+      expect(manager.save).not.toHaveBeenCalled();
+    });
 
     it("should create a new security", async () => {
       manager.findOne.mockResolvedValue(null);
@@ -1141,10 +1236,10 @@ describe("ImportEntityCreatorService", () => {
     // The opening balance moves current_balance by new - old, both read under
     // the balance-write lock, as one atomic delta at 4dp; the caller's
     // `account` snapshot supplies only the owner (A26-M13).
-    function lockedOpening(opening: string | null) {
+    function lockedOpening(opening: string | null, decimalPlaces = 2) {
       manager.query.mockImplementation(async (sql: string) =>
-        sql.includes("SELECT opening_balance")
-          ? [{ opening_balance: opening }]
+        sql.includes("SELECT a.opening_balance")
+          ? [{ opening_balance: opening, decimal_places: decimalPlaces }]
           : [],
       );
     }
@@ -1165,7 +1260,7 @@ describe("ImportEntityCreatorService", () => {
 
       const [sql, params] = deltaUpdate();
       expect(sql).toContain(
-        "current_balance = ROUND(CAST(current_balance AS numeric) + $4, 4)",
+        "current_balance = CAST(current_balance AS numeric) + $4",
       );
       expect(params).toEqual(["acc-1", "user-1", 250, 150]);
       expect(manager.update).not.toHaveBeenCalled();
@@ -1192,6 +1287,25 @@ describe("ImportEntityCreatorService", () => {
       );
 
       expect(deltaUpdate()[1]).toEqual(["acc-1", "user-1", 100.1234, 100.1234]);
+    });
+
+    it("keeps a coin's eight places when the account's currency carries them", async () => {
+      lockedOpening("0.00000001", 8);
+      const account = makeAccount({ userId: "user-1" } as any);
+
+      await service.applyOpeningBalance(
+        manager as any,
+        "acc-1",
+        account,
+        0.00002501,
+      );
+
+      expect(deltaUpdate()[1]).toEqual([
+        "acc-1",
+        "user-1",
+        0.00002501,
+        0.000025,
+      ]);
     });
   });
 });

@@ -16,6 +16,7 @@ import {
   registerDecorator,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { MONEY_SCALE, roundMoney } from "../../common/round.util";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
 import { IsCalendarDate } from "../../common/validators/is-calendar-date.validator";
 import { IsCurrencyCode } from "../../common/validators/is-currency-code.validator";
@@ -29,20 +30,20 @@ import {
 } from "../transaction-rules.limits";
 
 const DECIMAL_STRING = new RegExp(
-  `^-?\\d{1,${MAX_EXPLAIN_ROW_AMOUNT_DIGITS}}(\\.\\d{1,4})?$`,
+  `^-?\\d{1,${MAX_EXPLAIN_ROW_AMOUNT_DIGITS}}(\\.\\d{1,8})?$`,
 );
 const MAX_ABS_AMOUNT = 10 ** MAX_EXPLAIN_ROW_AMOUNT_DIGITS;
 
 /**
- * Money as the row input takes it: a decimal string of at most four decimals
- * (what the column stores) or a finite number of at most four decimals, within
+ * Money as the row input takes it: a decimal string of at most eight decimals
+ * (what the column stores) or a finite number of at most eight decimals, within
  * the column's range.
  */
 function isRowAmount(value: unknown): boolean {
   if (typeof value === "string") return DECIMAL_STRING.test(value);
   if (typeof value !== "number" || !Number.isFinite(value)) return false;
   if (Math.abs(value) >= MAX_ABS_AMOUNT) return false;
-  return Math.round(value * 10000) / 10000 === value;
+  return roundMoney(value, MONEY_SCALE) === value;
 }
 
 function IsRowAmount(options?: ValidationOptions): PropertyDecorator {
@@ -52,7 +53,7 @@ function IsRowAmount(options?: ValidationOptions): PropertyDecorator {
       target: object.constructor,
       propertyName: propertyName as string,
       options: {
-        message: `${String(propertyName)} must be a decimal string or a number with at most four decimals`,
+        message: `${String(propertyName)} must be a decimal string or a number with at most eight decimals`,
         ...options,
       },
       validator: { validate: isRowAmount },

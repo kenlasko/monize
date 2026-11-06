@@ -4,7 +4,7 @@ import {
   Logger,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { DataSource } from "typeorm";
+import { DataSource, IsNull } from "typeorm";
 import { addDaysYMD, todayYMD } from "../common/date-utils";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -13,10 +13,12 @@ import { EmptyWindowMemory } from "../common/time-series/history-fill";
 import { FX_MAX_RATE_AGE_DAYS } from "../common/time-series/fx-rate-resolver";
 import { investmentEffectStatusSql } from "../securities/investment-row-effects.util";
 import { tr } from "../i18n/translate";
-import { isCanonicalOrientation } from "./canonical-rate.util";
+import { codeOrderedPair } from "./canonical-rate.util";
+import { Currency } from "./entities/currency.entity";
 import {
   ExchangeRateService,
   directionlessPairKey,
+  pairKeyHasCode,
 } from "./exchange-rate.service";
 import { FxProviderChain } from "./providers/fx-provider-chain";
 import {
@@ -212,6 +214,9 @@ export class ExchangeRateHistoryService {
    * entry costs a round trip and changes no row. It needs no provider-chain
    * scoping of its own: the chain is fixed for the life of the process, and
    * changing `FX_PROVIDERS` takes a restart, which starts this memory empty.
+   * What the chain cannot see change is a coin's price symbol, so a pair the
+   * chain reports uncarried is never remembered here, and a new symbol drops
+   * the code's entries (`forgetEmptyWindowsFor`).
    */
   private readonly emptyWindows = new EmptyWindowMemory();
 
@@ -220,6 +225,24 @@ export class ExchangeRateHistoryService {
     private readonly exchangeRateService: ExchangeRateService,
     private readonly fxProviders: FxProviderChain,
   ) {}
+
+  /**
+   * Forget the windows this process remembers as empty for every pair with
+   * `code` on either side, here and in `ExchangeRateService`'s on-demand
+   * memory. `CurrenciesService` calls it after a coin's price symbol is first
+   * set or re-pointed, with the code's `exchange_rate_coverage` rows deleted
+   * in the same transaction as the symbol: what was found empty under the old
+   * symbol says nothing about the new one.
+   *
+   * Process-local, like the memories themselves: another replica keeps its
+   * entries until they expire, at most `EMPTY_WINDOW_TTL_MS` (half an hour),
+   * which costs a reader there a skipped window for that long and writes
+   * nothing.
+   */
+  forgetEmptyWindowsFor(code: string): void {
+    this.emptyWindows.forgetSubjects((pair) => pairKeyHasCode(pair, code));
+    this.exchangeRateService.forgetEmptyRateWindowsFor(code);
+  }
 
   /**
    * The running provider chain as `exchange_rate_coverage.providers` records
@@ -464,14 +487,21 @@ export class ExchangeRateHistoryService {
   }
 
   /**
-   * The pair as `exchange_rate_coverage` keys it: the canonical orientation.
+   * The pair as `exchange_rate_coverage` keys it: plain code order, which is
+   * what the table's CHECK (`from_currency < to_currency`) refuses anything
+   * but.
    *
    * A rate window answers a pair rather than a direction, so the row is the
-   * same row whichever way round the reader's own question is put. The table's
-   * CHECK constraint refuses anything else.
+   * same row whichever way round the reader's own question is put. It is
+   * deliberately not the storage orientation of `exchange_rates`
+   * (`isCanonicalOrientation`), which puts a coin first whichever code sorts
+   * first: the coverage key is about which pair, never which direction, and a
+   * key that followed `currencies.kind` would break the CHECK for a coin whose
+   * code sorts after its fiat and orphan the row if a currency changed kind.
+   * `directionlessPairKey` keys the same way (`codeOrderedPair`).
    */
   private static coverageKey(from: string, to: string): [string, string] {
-    return isCanonicalOrientation(from, to) ? [from, to] : [to, from];
+    return codeOrderedPair(from, to);
   }
 
   /**
@@ -734,6 +764,14 @@ export class ExchangeRateHistoryService {
 
     const outcome = await this.fetchWindows(from, to, due);
 
+    if (outcome.uncarried) {
+      // No provider that may be asked carries the pair, so nobody was asked
+      // and nothing is known about the provider's history: no coverage row
+      // and no empty window, or the symbol the reader maps next would find
+      // every past window already written off.
+      throw await this.uncarriedPair(from, to);
+    }
+
     if (
       outcome.fetched > 0 &&
       outcome.unanswered === outcome.fetched &&
@@ -794,6 +832,47 @@ export class ExchangeRateHistoryService {
       providerHasNothingBefore:
         earliestAvailableDate ?? coverage.earliestAvailableDate,
     };
+  }
+
+  /**
+   * The refusal for a pair no configured provider carries: a coin side
+   * without a price symbol names the Currencies page, which is the repair, as
+   * the refresh does; any other pair names the pair.
+   */
+  private async uncarriedPair(
+    from: string,
+    to: string,
+  ): Promise<BadRequestException> {
+    const unmapped: Array<Pick<Currency, "code">> = await withScopedDb(
+      this.dataSource,
+      (manager) =>
+        manager.getRepository(Currency).find({
+          select: { code: true },
+          where: [
+            { code: from, kind: "CRYPTO", quoteSymbol: IsNull() },
+            { code: to, kind: "CRYPTO", quoteSymbol: IsNull() },
+          ],
+        }),
+    );
+    const coin = [from, to].find((code) =>
+      unmapped.some((row) => row.code === code),
+    );
+    this.logger.warn(
+      `Rate gap fill ${from}->${to}: no configured provider carries the pair`,
+    );
+    return new BadRequestException(
+      coin !== undefined
+        ? tr(
+            "errors.currencies.noPriceSymbol",
+            `${coin} has no price symbol; map one on the Currencies page`,
+            { code: coin },
+          )
+        : tr(
+            "errors.currencies.pairNotCarried",
+            `No configured exchange rate provider carries ${from}/${to}`,
+            { pair: `${from}/${to}` },
+          ),
+    );
   }
 
   /**
@@ -880,6 +959,12 @@ export class ExchangeRateHistoryService {
      * to stay in front of it.
      */
     answered: Set<string>;
+    /**
+     * The chain reported the pair uncarried: no provider that may be asked
+     * carries it. A fact about the pair, not the window, so the loop stops at
+     * the first, and the caller records nothing.
+     */
+    uncarried: boolean;
   }> {
     const key = directionlessPairKey(from, to);
     const deadline = Date.now() + GAP_FILL_BUDGET_MS;
@@ -900,6 +985,16 @@ export class ExchangeRateHistoryService {
         window.start,
         window.end,
       );
+      if (result.carried === false) {
+        return {
+          attempted,
+          fetched,
+          unanswered,
+          stored,
+          answered,
+          uncarried: true,
+        };
+      }
       fetched++;
       stored += result.stored;
 
@@ -920,6 +1015,13 @@ export class ExchangeRateHistoryService {
       }
     }
 
-    return { attempted, fetched, unanswered, stored, answered };
+    return {
+      attempted,
+      fetched,
+      unanswered,
+      stored,
+      answered,
+      uncarried: false,
+    };
   }
 }

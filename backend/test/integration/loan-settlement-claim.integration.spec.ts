@@ -649,7 +649,7 @@ describe("Loan settlement claim (integration)", () => {
       expect(await overrides()).toEqual([
         {
           original_date: "2024-01-01",
-          amount: "-1480.0000",
+          amount: "-1480.00000000",
           description: "moved and trimmed",
         },
       ]);

@@ -19,7 +19,8 @@
       "separator": ", daarna ",
       "names": {
         "frankfurter": "Frankfurter (ECB-referentiekoersen)",
-        "yahoo": "Yahoo Finance"
+        "yahoo": "Yahoo Finance",
+        "crypto": "Cryptoparen (Yahoo)"
       }
     },
     "toasts": {
@@ -54,6 +55,8 @@
       "actions": "Acties"
     },
     "defaultBadge": "Standaard",
+    "cryptoBadge": "Crypto",
+    "noPriceSymbol": "Geen koerssymbool",
     "statusBadge": {
       "active": "Actief",
       "activeShort": "Act",
@@ -98,6 +101,20 @@
     "symbolLabel": "Symbool",
     "symbolPlaceholder": "bijv. $, €, £, ¥",
     "decimalPlacesLabel": "Decimalen",
+    "kindLabel": "Soort",
+    "kindOptions": {
+      "fiat": "Fiatvaluta",
+      "crypto": "Cryptovaluta"
+    },
+    "kindLocked": "{code} is in gebruik, dus de soort kan niet worden gewijzigd.",
+    "quoteSymbolLabel": "Koerssymbool (optioneel)",
+    "quoteSymbolPlaceholder": "bijv. BTC-EUR",
+    "quoteSymbolHelp": "Het Yahoo Finance-symbool waarmee de koers van de coin wordt opgehaald: de ticker, een koppelteken en de valuta waarin de coin wordt genoteerd, zoals BTC-EUR. De wisselkoersen van de coin worden ermee opgehaald.",
+    "verifyButton": "Controleren",
+    "quoteSymbolPricedIn": "Genoteerd in {currency}",
+    "quoteSymbolMissing": "Zonder koerssymbool heeft de valuta geen wisselkoers.",
+    "quoteSymbolNotCrypto": "{symbol} is geen cryptovaluta. Voer het paar van een coin in, zoals BTC-EUR.",
+    "quoteSymbolNotFound": "Geen cryptovaluta gevonden voor {symbol}",
     "lookupButton": "Opzoeken",
     "lookingUp": "Opzoeken...",
     "clearButton": "Wissen",
@@ -109,10 +126,14 @@
       "found": "Gevonden: {details}",
       "notFound": "Geen valuta gevonden voor \"{query}\"",
       "lookupFailed": "Opzoeken mislukt - probeer het opnieuw",
-      "reactivateFailed": "Kan valuta niet opnieuw activeren"
+      "reactivateFailed": "Kan valuta niet opnieuw activeren",
+      "verifyEmpty": "Voer een koerssymbool in zoals BTC-EUR om te controleren",
+      "verifyFailed": "Het koerssymbool kon niet worden gecontroleerd"
     },
     "inactiveNotice": "{code} staat al in je lijst, maar is inactief.",
-    "cryptoNotice": "{code} is geen standaard valutacode. Cryptovaluta zoals Bitcoin volg je als waardepapieren in een beleggingsrekening, niet als valuta. <guide>Bekijk in de gebruikershandleiding hoe dat werkt</guide>.",
+    "nonIsoNotice": "{code} is geen standaard valutacode. Als het een cryptovaluta is, stel de soort dan in op Cryptovaluta. <guide>Lees meer over cryptovaluta's in de gebruikershandleiding</guide>.",
+    "switchToCrypto": "Cryptovaluta gebruiken",
+    "cryptoPrecisionNotice": "Bedragen in een cryptovaluta worden bewaard met ten hoogste acht decimalen, de precisie waarmee ze worden opgeslagen, dus kosten onder {smallest} kunnen niet worden ingevoerd. <guide>Bekijk hoe je walletkosten vastlegt</guide>.",
     "reactivateButton": "{code} opnieuw activeren",
     "reactivating": "Bezig met opnieuw activeren..."
   },
@@ -121,7 +142,10 @@
     "nameRequired": "Naam is verplicht",
     "nameMax": "Naam mag maximaal 100 tekens lang zijn",
     "symbolRequired": "Symbool is verplicht",
-    "symbolMax": "Symbool mag maximaal 10 tekens lang zijn"
+    "symbolMax": "Symbool mag maximaal 10 tekens lang zijn",
+    "quoteSymbolMax": "Koerssymbool mag maximaal 20 tekens lang zijn",
+    "quoteSymbolRequiresCrypto": "Alleen een cryptovaluta heeft een koerssymbool",
+    "quoteSymbolNotAPair": "Voer een paar in zoals BTC-EUR: de coin, een koppelteken en een valutacode van drie letters"
   },
   "rateHistory": {
     "title": "Koersgeschiedenis",
@@ -151,6 +175,7 @@
         "yahooFinance": "Yahoo Finance",
         "frankfurter": "Frankfurter (ECB)",
         "mnyImport": "Money-import",
+        "yahooCrypto": "Cryptoparen (Yahoo)",
         "unknown": "Onbekend"
       }
     },

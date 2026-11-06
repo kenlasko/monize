@@ -7,15 +7,13 @@ import {
 } from "../attachments/attachment-parent";
 import { Warranty } from "../warranties/entities/warranty.entity";
 import { Category } from "../categories/entities/category.entity";
+import { MONEY_SCALE, roundMoney } from "../common/round.util";
 import {
   RULE_WEEKDAYS,
   RuleFacts,
   RuleTransactionType,
   RuleWeekday,
 } from "./rule-condition.types";
-
-/** Money scale: facts carry the amount as a scaled integer (1/10000 units). */
-const MONEY_SCALE = 10000;
 
 /**
  * What the caller already knows about one row. `create()` has all of it in
@@ -90,11 +88,11 @@ export function calendarDayParts(
  */
 export function deriveRuleType(
   isTransfer: boolean,
-  scaledAmount: number | null,
+  amount: number | null,
 ): RuleTransactionType | null {
   if (isTransfer) return "TRANSFER";
-  if (scaledAmount === null || scaledAmount === 0) return null;
-  return scaledAmount > 0 ? "INCOME" : "EXPENSE";
+  if (amount === null || amount === 0) return null;
+  return amount > 0 ? "INCOME" : "EXPENSE";
 }
 
 const blankToNull = (value: string | null | undefined): string | null =>
@@ -106,11 +104,13 @@ const blankToNull = (value: string | null | undefined): string | null =>
  * no `memo` field: a stored rule that names one is invalid (`UNKNOWN_FIELD`).
  */
 export function buildRuleFacts(input: RuleFactsInput): RuleFacts {
-  const scaled =
+  // A decimal rounded at the storage scale, never a float-scaled integer: the
+  // rule compares it with a literal rounded the same way.
+  const rounded =
     input.amount === null
       ? null
-      : Math.round(Number(input.amount) * MONEY_SCALE);
-  const amount = scaled !== null && Number.isFinite(scaled) ? scaled : null;
+      : roundMoney(Number(input.amount), MONEY_SCALE);
+  const amount = rounded !== null && Number.isFinite(rounded) ? rounded : null;
   const parts = calendarDayParts(input.transactionDate);
   return Object.freeze({
     accountId: input.accountId,

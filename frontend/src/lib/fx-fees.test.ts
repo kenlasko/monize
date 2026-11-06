@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { foreignTransactionFee } from './fx-fees';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from './currency-decimals';
 import type { Transaction, TransactionSplit } from '@/types/transaction';
 
 function tx(overrides: Partial<Transaction> = {}): Transaction {
@@ -110,5 +111,38 @@ describe('foreignTransactionFee', () => {
       }),
     );
     expect(result).toBe(0);
+  });
+
+  describe('on a coin account', () => {
+    afterEach(() => clearCurrencyDecimals());
+
+    // A BTC account paying 510 USD at 0.0000098: base = -0.00499800 BTC,
+    // booked -0.00502500 with a 2,700-satoshi fee.
+    const coin = tx({
+      currencyCode: 'BTC',
+      originalAmount: -510,
+      originalCurrencyCode: 'USD',
+      exchangeRate: 0.0000098,
+      amount: -0.005025,
+    });
+
+    it('takes the fee at the coin\'s registered eight places, not cents or four', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
+      // At cents the base read -0.01 and the fee came out negative; at four
+      // the base read -0.0050 and the fee 0.0000.
+      expect(foreignTransactionFee(coin)).toBe(0.000027);
+    });
+
+    it('takes the fee at the column scale while the registry does not hold the coin', () => {
+      // `entryDecimalPlaces` enters an unregistered non-ISO code at
+      // MONEY_SCALE, not cents, so the fee is still the 0.000027 BTC charged.
+      expect(foreignTransactionFee(coin)).toBe(0.000027);
+    });
+
+    it('rounds at the registered places when the registry holds the coin at two', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 2, symbol: '₿' }]);
+      // Base -0.00 at cents, booked -0.005025: the four-place difference.
+      expect(foreignTransactionFee(coin)).toBe(0.005);
+    });
   });
 });

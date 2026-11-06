@@ -37,6 +37,7 @@
   "accounts": {
     "accountWithIdNotFound": "Conta com ID {{ id }} não encontrada",
     "notInvestmentPair": "Esta conta não faz parte de um par de conta de investimento",
+    "accountCurrencyKindMismatch": "{{ code }} é uma moeda do tipo {{ kind }}, que uma conta do tipo {{ accountType }} não pode conter. Uma conta CRYPTO contém uma criptomoeda; todos os outros tipos de conta contêm uma moeda fiduciária.",
     "noLinkedInvestmentAccount": "Esta conta de investimento não tem conta associada",
     "notFound": "Conta não encontrada",
     "institutionNotFound": "Instituição não encontrada",
@@ -318,6 +319,7 @@
     "categoryIdsNotOwned": "IDs de categoria não encontrados ou não pertencentes ao utilizador: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Uma regra de dedução salarial acompanha uma conta a pagar paga numa moeda fiduciária; a conta desta fatura contém a criptomoeda {{ code }}. Escolha uma conta a pagar paga a partir de uma conta em moeda fiduciária.",
     "notFound": "Regra de dedução salarial {{ id }} não encontrada",
     "duplicate": "Esta fatura já tem uma regra para essa categoria",
     "expectedRequired": "A fatura não tem uma linha para esta categoria; introduza o montante previsto por salário"
@@ -358,7 +360,15 @@
     "inUse": "A moeda \"{{ code }}\" está em uso pelas suas contas, títulos ou outros registos. Desative-a em vez disso.",
     "invalidRateDate": "date deve estar no formato AAAA-MM-DD",
     "sameCurrencyHistory": "{{ code }} é a sua moeda predefinida; não tem histórico de taxa de câmbio",
-    "rateProviderUnavailable": "O fornecedor de taxas de câmbio não respondeu. Tente novamente mais tarde."
+    "rateProviderUnavailable": "O fornecedor de taxas de câmbio não respondeu. Tente novamente mais tarde.",
+    "noPriceSymbol": "{{ code }} não tem símbolo de preço; associe um na página Moedas",
+    "pairNotCarried": "Nenhum fornecedor de taxas de câmbio configurado disponibiliza {{ pair }}",
+    "quoteSymbolRequiresCrypto": "Um símbolo de preço ({{ quoteSymbol }}) só pode ser definido numa criptomoeda; \"{{ code }}\" é uma moeda fiduciária",
+    "quoteSymbolNotAPair": "O símbolo de preço \"{{ quoteSymbol }}\" de \"{{ code }}\" não é um par de moeda e moeda fiduciária, como BTC-EUR",
+    "kindInUse": "O tipo de \"{{ code }}\" não pode ser alterado enquanto contas, transações, títulos ou outros registos o usarem",
+    "decimalPlacesInUse": "As casas decimais de \"{{ code }}\" não podem ser reduzidas abaixo de {{ places }} enquanto contas, transações ou outros registos contiverem montantes com tantas casas decimais",
+    "quoteSymbolInUse": "A moeda do símbolo de preço de \"{{ code }}\" não pode ser alterada enquanto contas, transações, títulos ou outros registos o usarem; só a sua moeda fiduciária pode ser alterada",
+    "kindConflict": "A moeda \"{{ code }}\" já existe como moeda {{ kind }} e não pode ser adicionada como {{ requestedKind }}"
   },
   "delegation": {
     "delegatedAccessInvalid": "O acesso delegado já não é válido",
@@ -642,6 +652,7 @@
     "bondCurrencyMismatch": "O valor mobiliário está registado em {{ currency }}, mas o instrumento de obrigação é avaliado em {{ instrumentCurrency }}. Utilize a moeda do instrumento.",
     "bondCurrencyLocked": "Um valor mobiliário ligado a um instrumento de obrigação mantém-se na moeda do instrumento ({{ instrumentCurrency }}). Desligue-o da obrigação antes de alterar a moeda.",
     "accountMustBeInvestment": "A conta deve ser do tipo INVESTMENT",
+    "currencyMustBeFiat": "{{ code }} é uma criptomoeda, e um título é cotado numa moeda fiduciária. Escolha a moeda fiduciária em que o título é cotado.",
     "transferPairSameRow": "As duas pernas de uma transferência não podem ser a mesma transação",
     "transferPairNotFound": "Uma das duas transações já não existe",
     "transferPairAlreadyLinked": "Uma destas pernas já está ligada a outra transação",
@@ -752,6 +763,7 @@
     "runUndoLaterSettlement": "Uma prestação posterior deste empréstimo foi liquidada depois desta execução, pelo que a execução não pode ser desfeita. Desfaça primeiro a liquidação posterior"
   },
   "transactions": {
+    "amountPrecisionExceeded": "O montante em \"{{ field }}\" tem mais casas decimais do que {{ code }} suporta ({{ places }}). Introduza-o com no máximo {{ places }} casas decimais; as casas decimais de uma moeda são definidas na página Moedas.",
     "invalidStatus": "Estado de transação inválido: {{ status }}",
     "reconciledLocked": "Esta transação está reconciliada e bloqueada. Desative «Bloquear transações reconciliadas» nas Definições para a alterar.",
     "convertToTransferRefused": "Esta transação já não pode ser convertida numa transferência. Reveja-a e execute a regra novamente",
@@ -838,6 +850,9 @@
     "passwordRequiredForDataDelete": "É necessária uma palavra-passe para confirmar a eliminação de dados",
     "reauthUnavailable": "Conclua a definição da palavra-passe da sua conta antes de usar esta ação."
   },
+  "preferences": {
+    "defaultCurrencyCrypto": "Uma criptomoeda não pode ser a moeda de referência"
+  },
   "loanScenarios": {
     "notFound": "Cenário de empréstimo com o ID {{ id }} não encontrado",
     "nameConflict": "Já existe um cenário chamado \"{{ name }}\" para esta conta",
@@ -909,6 +924,7 @@
     "accountNotFound": "Essa conta não foi encontrada.",
     "accountClosed": "A conta associada está encerrada. Reabra-a ou associe outra conta.",
     "accountBrokerage": "Uma conta de corretagem de investimento não pode receber transações bancárias. Associe antes a respetiva conta de numerário.",
+    "accountCrypto": "Uma carteira de criptomoedas não pode receber transações bancárias. Associe antes uma conta bancária.",
     "accountCurrencyMismatch": "A conta bancária está em {{ bankCurrency }}, mas a conta está em {{ accountCurrency }}. Associe uma conta na mesma moeda.",
     "accountCurrencyChanged": "A moeda da conta associada mudou enquanto era lida. Nada foi importado; sincronize novamente.",
     "accountAlreadyLinked": "Essa conta já está associada a outra conta bancária.",

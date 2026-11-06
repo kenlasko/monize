@@ -130,6 +130,9 @@ const SYMBOL_ABSENT_ERROR_CODES: ReadonlySet<string> = new Set([
  */
 const ABSENT_WINDOW_DESCRIPTION = /^data doesn['\u2019]?t exist/i;
 
+/** A quote outcome meaning the chart endpoint answered that the symbol does not exist. */
+const SYMBOL_ABSENT = Symbol("symbol-absent");
+
 const YAHOO_SECTOR_NAMES: Record<string, string> = {
   realestate: "Real Estate",
   consumer_cyclical: "Consumer Cyclical",
@@ -555,9 +558,36 @@ export class YahooFinanceService implements QuoteProvider {
     return null;
   }
 
+  /**
+   * One symbol's latest quote, keeping "Yahoo says there is no such symbol"
+   * apart from "Yahoo did not answer": `{ quote }` with the quote, `{ quote:
+   * null }` when the chart endpoint answered that the symbol does not exist (a
+   * 404 or 422, or a 200 whose `chart.error` is `SYMBOL_ABSENT_ERROR_CODES`),
+   * `null` for anything else -- a throttle, a fault, an open breaker, a body
+   * this client cannot read. The symbol is asked as given, with no exchange
+   * suffix and no alternate listing, through the same throttle and breaker as
+   * every other Yahoo call. For a caller that may remember an absence (the
+   * crypto exchange rate provider, INV-FX-005); `fetchQuote` folds both into
+   * `null` as before.
+   */
+  async fetchQuoteAnswer(
+    yahooSymbol: string,
+  ): Promise<{ quote: QuoteResult | null } | null> {
+    const outcome = await this.fetchQuoteOutcome(yahooSymbol);
+    if (outcome === SYMBOL_ABSENT) return { quote: null };
+    return outcome === null ? null : { quote: outcome };
+  }
+
   private async fetchQuoteRaw(
     yahooSymbol: string,
   ): Promise<QuoteResult | null> {
+    const outcome = await this.fetchQuoteOutcome(yahooSymbol);
+    return outcome === SYMBOL_ABSENT ? null : outcome;
+  }
+
+  private async fetchQuoteOutcome(
+    yahooSymbol: string,
+  ): Promise<QuoteResult | typeof SYMBOL_ABSENT | null> {
     try {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=1d`;
 
@@ -572,7 +602,9 @@ export class YahooFinanceService implements QuoteProvider {
         this.logger.warn(
           `Yahoo Finance API returned ${response.status} for ${yahooSymbol}`,
         );
-        return null;
+        return SYMBOL_ABSENT_STATUSES.has(response.status)
+          ? SYMBOL_ABSENT
+          : null;
       }
 
       const data = await this.readBody<any>(response);
@@ -622,7 +654,11 @@ export class YahooFinanceService implements QuoteProvider {
         };
       }
 
-      return null;
+      return SYMBOL_ABSENT_ERROR_CODES.has(
+        String(data.chart?.error?.code ?? ""),
+      )
+        ? SYMBOL_ABSENT
+        : null;
     } catch (error) {
       this.health.logFailure(
         this.logger,

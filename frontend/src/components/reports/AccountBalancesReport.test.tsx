@@ -1024,6 +1024,18 @@ describe("AccountBalancesReport", () => {
     expect(screen.queryByRole("heading", { name: "Asset" })).not.toBeInTheDocument();
   });
 
+  it("names a CRYPTO account by its own label", async () => {
+    mockGetAll.mockResolvedValue([
+      acc({ name: "Bitcoin Wallet", accountType: "CRYPTO", currencyCode: "BTC" }),
+    ]);
+    mockGetBalancesAsOf.mockResolvedValue(balancesFor([balance("acc-1", 0.0125)]));
+    render(<AccountBalancesReport />);
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Crypto Wallet" })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("heading", { name: "CRYPTO" })).not.toBeInTheDocument();
+  });
+
   it("falls back to the raw type for a type it has no label for", async () => {
     mockGetAll.mockResolvedValue([
       acc({ name: "Exotic Account", accountType: "EXOTIC_TYPE" }),

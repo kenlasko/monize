@@ -1,6 +1,5 @@
 import {
   IsString,
-  IsNumber,
   IsOptional,
   IsDateString,
   IsUUID,
@@ -9,7 +8,6 @@ import {
   MaxLength,
   Min,
   Max,
-  IsPositive,
   IsNotEmpty,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -18,6 +16,8 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { IsCurrencyCode } from "../../common/validators/is-currency-code.validator";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
 import { EXTERNAL_ID_MAX_LENGTH } from "../transaction-external-id";
+import { IsFxRate } from "../../common/validators/is-fx-rate.validator";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 export class CreateTransferDto {
   @ApiProperty({
@@ -37,7 +37,7 @@ export class CreateTransferDto {
   transactionDate: string;
 
   @ApiProperty({ description: "Transfer amount (must be zero or positive)" })
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(0)
   @Max(999999999999)
   amount: number;
@@ -66,8 +66,7 @@ export class CreateTransferDto {
       "at 1:1. Must be 1 (or omitted) for a same-currency pair.",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 10 })
-  @IsPositive()
+  @IsFxRate()
   @Max(1_000_000)
   exchangeRate?: number;
 
@@ -76,7 +75,7 @@ export class CreateTransferDto {
       "Destination amount (for cross-currency transfers). If provided, overrides exchangeRate calculation.",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(0)
   @Max(999999999999)
   toAmount?: number;

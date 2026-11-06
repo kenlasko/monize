@@ -98,7 +98,9 @@ A deleted Monize transaction keeps its ledger row (with `transaction_id`
 NULL). A deleted row therefore stays deleted: the next sync does not bring it
 back. This is the intended behaviour, and the UI says so.
 
-`bank_balance` is `NUMERIC(20,4)`, the money precision. It is what the bank
+`bank_balance` is `NUMERIC(24,8)`, the money columns' storage shape; bank sync links
+fiat accounts only, so every figure is written at four places
+(`BANK_SYNC_MONEY_DECIMALS`, `backend/src/bank-sync/bank-sync.constants.ts`). It is what the bank
 reported, shown beside the Monize balance for reconciliation. It never writes
 `current_balance`.
 

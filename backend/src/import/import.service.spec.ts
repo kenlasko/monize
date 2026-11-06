@@ -1,3 +1,4 @@
+import { Currency } from "../currencies/entities/currency.entity";
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { DataSource, QueryFailedError } from "typeorm";
@@ -281,6 +282,23 @@ describe("ImportService", () => {
     // exposes, so every assertion below still watches the same calls.
     const scoped = createScopedDbMocks([
       [Account, accountsRepository],
+      // The `currencies` table as INV-CRYPTO-001 reads it: BTC is a coin.
+      [
+        Currency,
+        {
+          findOne: jest.fn(async (opts: { where: { code: string } }) => ({
+            code: opts.where.code,
+            kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
+          })),
+          // `loadCurrencyPlaces`: the places the import's money precision
+          // reads (`FOR KEY SHARE`).
+          query: jest.fn(async () => [
+            { code: "CAD", decimal_places: 2 },
+            { code: "USD", decimal_places: 2 },
+            { code: "BTC", decimal_places: 8 },
+          ]),
+        },
+      ],
       [Category, categoriesRepository],
       [Payee, payeesRepository],
       [Transaction, transactionsRepository],
@@ -889,7 +907,7 @@ describe("ImportService", () => {
         // by -50; no absolute balance is ever computed in JavaScript.
         const balanceWrites = (
           mockQueryRunner.query.mock.calls as unknown[][]
-        ).filter(([sql]) => String(sql).includes("current_balance = ROUND"));
+        ).filter(([sql]) => String(sql).includes("SET current_balance = CAST"));
         expect(balanceWrites.length).toBeGreaterThan(0);
         expect(balanceWrites[0][1]).toEqual([-50, "acct-1"]);
         expect(
@@ -1921,8 +1939,8 @@ describe("ImportService", () => {
           mockQueryRunner.manager.query.getMockImplementation();
         mockQueryRunner.manager.query.mockImplementation(
           async (sql: string, params?: unknown[]) =>
-            typeof sql === "string" && sql.includes("SELECT opening_balance")
-              ? [{ opening_balance: "0" }]
+            typeof sql === "string" && sql.includes("SELECT a.opening_balance")
+              ? [{ opening_balance: "0", decimal_places: 2 }]
               : defaultQuery
                 ? defaultQuery(sql, params)
                 : [],
@@ -2017,7 +2035,7 @@ describe("ImportService", () => {
       // the advisory lock: it row-locks `accounts` where the old
       // read-modify-write did.
       const balanceWrite = calls.findIndex(([sql]) =>
-        String(sql).includes("current_balance = ROUND"),
+        String(sql).includes("SET current_balance = CAST"),
       );
       expect(balanceWrite).toBeGreaterThanOrEqual(0);
       expect(
@@ -3153,6 +3171,8 @@ describe("ImportService", () => {
 
       const result = await service.importOfxFile(userId, dto);
 
+      // The statement is read at the storage scale; the processor refuses any
+      // amount past the destination account's places.
       expect(mockedParseOfx).toHaveBeenCalledWith(dto.content);
       expect(result).toBeDefined();
       expect(result.imported).toBeDefined();

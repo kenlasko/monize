@@ -42,7 +42,7 @@ describe('netWorthAccountTypeColor', () => {
   it('draws what is held from the theme accent and what is owed from its expense colour', () => {
     expect(netWorthAccountTypeColor('CHEQUING')).toBe(chartColors.primary);
     expect(netWorthAccountTypeColor('CREDIT_CARD')).toBe(chartColors.expense);
-    for (const type of ['SAVINGS', 'CASH', 'INVESTMENT', 'ASSET'] as const) {
+    for (const type of ['SAVINGS', 'CASH', 'CRYPTO', 'INVESTMENT', 'ASSET'] as const) {
       expect(netWorthAccountTypeColor(type)).toMatch(/^color-mix\(in srgb, var\(--chart-primary\) \d+%, var\(--chart-surface\)\)$/);
     }
     for (const type of ['LINE_OF_CREDIT', 'LOAN', 'MORTGAGE'] as const) {
@@ -52,6 +52,12 @@ describe('netWorthAccountTypeColor', () => {
     for (const type of NET_WORTH_ACCOUNT_TYPE_ORDER) {
       expect(netWorthAccountTypeColor(type)).not.toMatch(/#[0-9a-f]{3,8}/i);
     }
+  });
+
+  it('stacks a crypto wallet with what is held, after cash', () => {
+    const order = [...NET_WORTH_ACCOUNT_TYPE_ORDER];
+    expect(order.indexOf('CRYPTO')).toBe(order.indexOf('CASH') + 1);
+    expect(order.indexOf('CRYPTO')).toBeLessThan(order.indexOf('CREDIT_CARD'));
   });
 
   it('keeps the net worth line off the accent the asset bars are drawn from', () => {

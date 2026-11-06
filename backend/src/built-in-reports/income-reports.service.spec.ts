@@ -486,6 +486,39 @@ describe("IncomeReportsService", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // getIncomeBySource: a coin's sum is read at its stored scale (INV-MONEY-001)
+  // ---------------------------------------------------------------------------
+  describe("getIncomeBySource with a coin's total", () => {
+    it("converts a 2,500-sat total instead of rounding it to zero", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+      exchangeRateService.getLatestRates.mockResolvedValue([
+        { fromCurrency: "BTC", toCurrency: "CAD", rate: 136000 },
+      ]);
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: "cat-income",
+          currency_code: "BTC",
+          total: "0.00002500",
+        },
+      ]);
+      categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
+
+      const result = await service.getIncomeBySource(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.currency).toBe("CAD");
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].total).toBe(3.4);
+      expect(result.totalIncome).toBe(3.4);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // getIncomeVsExpenses
   // ---------------------------------------------------------------------------
   describe("getIncomeVsExpenses", () => {

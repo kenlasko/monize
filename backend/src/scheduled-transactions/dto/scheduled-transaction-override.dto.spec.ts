@@ -82,3 +82,42 @@ describe("UpdateScheduledTransactionOverrideDto — split identity contract (R8)
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
+
+// INV-MONEY-001: the DTO admits an amount up to the column scale (eight
+// places); whether its currency carries that many is the service's question
+// (`assertAmountPrecision`), so a BTC override at eight places passes here and
+// a CAD one at five is refused by the service, not the pipe.
+describe("UpdateScheduledTransactionOverrideDto — amount places", () => {
+  const pipe = new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  });
+  const metadata = {
+    type: "body" as const,
+    metatype: UpdateScheduledTransactionOverrideDto,
+    data: "",
+  };
+
+  it("accepts an eight-place amount and split line", async () => {
+    await expect(
+      pipe.transform(
+        {
+          isSplit: true,
+          amount: -0.005025,
+          splits: [
+            { splitKind: "category", amount: -0.005 },
+            { splitKind: "category", amount: -0.000025 },
+          ],
+        },
+        metadata,
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  it("refuses an amount with more places than any currency carries", async () => {
+    await expect(
+      pipe.transform({ amount: -0.123456789 }, metadata),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});

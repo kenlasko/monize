@@ -51,12 +51,52 @@ export function formatCurrency(
 export function formatCurrencyAmount(
   amount: number,
   currencyCode: string,
+  /**
+   * The places to print; defaults to the ISO minor unit. Pass
+   * `decimalPlacesFor(code, currencies)` for a code that may not be ISO (a
+   * coin), which `Intl` would print at 2.
+   */
+  decimals: number = getDecimalPlacesForCurrency(currencyCode),
 ): string {
-  const decimals = getDecimalPlacesForCurrency(currencyCode);
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(amount);
+}
+
+// `supportedValuesOf` is in the runtime (Node 18+) but not in this project's
+// TypeScript `lib`, so its one signature is declared here.
+const ISO_CURRENCY_CODES: ReadonlySet<string> = new Set(
+  (
+    Intl as unknown as { supportedValuesOf(key: "currency"): string[] }
+  ).supportedValuesOf("currency"),
+);
+
+/**
+ * The decimal places a figure in `code` is printed at: the ISO minor unit for
+ * an ISO 4217 code, else the currency row's `decimal_places` (`currencies`
+ * maps a code to it), else 2.
+ *
+ * `Intl` answers 2 for any three letters it does not know, so a coin `BTC`
+ * stored at four places would print `0.0125` as `0.01`, which is about 1,700
+ * CAD of the balance gone from the text a model reads. A non-ISO code is the
+ * reader's own currency, and its row says how precise it is.
+ */
+/** Whether `code` is an ISO 4217 code the runtime's `Intl` data lists. */
+export function isIsoCurrencyCode(code: string): boolean {
+  return ISO_CURRENCY_CODES.has(code.toUpperCase());
+}
+
+export function decimalPlacesFor(
+  code: string,
+  currencies: ReadonlyMap<string, number>,
+): number {
+  const upper = code.toUpperCase();
+  if (isIsoCurrencyCode(upper)) return getDecimalPlacesForCurrency(upper);
+  const places = currencies.get(upper);
+  return typeof places === "number" && Number.isInteger(places) && places >= 0
+    ? places
+    : 2;
 }
 
 /**

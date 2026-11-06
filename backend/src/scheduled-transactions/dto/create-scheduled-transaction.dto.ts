@@ -13,7 +13,6 @@ import {
   Min,
   Max,
   MaxLength,
-  IsPositive,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { CreateScheduledTransactionSplitDto } from "./create-scheduled-transaction-split.dto";
@@ -22,6 +21,9 @@ import { IsCurrencyCode } from "../../common/validators/is-currency-code.validat
 import { InvestmentAction } from "../../securities/entities/investment-transaction.entity";
 import { MAX_REMINDER_DAYS_BEFORE } from "../reminder-window";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
+import { IsFxRate } from "../../common/validators/is-fx-rate.validator";
+import { IsShareQuantity } from "../../common/validators/is-share-quantity.validator";
 
 export enum FrequencyType {
   ONCE = "ONCE",
@@ -62,7 +64,7 @@ export class CreateScheduledTransactionDto {
   @IsUUID()
   categoryId?: string;
 
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(-999999999999)
   @Max(999999999999)
   amount: number;
@@ -77,12 +79,11 @@ export class CreateScheduledTransactionDto {
    * CreateTransactionDto -- the two are validated by one shared helper.
    */
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 10 })
-  @Min(0.000001)
+  @IsFxRate()
   exchangeRate?: number;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(-999999999999)
   @Max(999999999999)
   originalAmount?: number | null;
@@ -172,27 +173,26 @@ export class CreateScheduledTransactionDto {
   investmentFundingAccountId?: string;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 8 })
+  @IsShareQuantity()
   @Min(0)
   investmentQuantity?: number;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 10 })
+  @IsMoneyAmount(10)
   @Min(0)
   investmentPrice?: number;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0)
   investmentCommission?: number;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   investmentTotalAmount?: number;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 10 })
-  @IsPositive()
+  @IsFxRate()
   investmentExchangeRate?: number;
 
   @IsOptional()

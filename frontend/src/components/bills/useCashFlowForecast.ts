@@ -151,7 +151,10 @@ export function useCashFlowForecast({
     [forecast.series],
   );
 
-  const summary = useMemo(() => getForecastSummary(forecast.points), [forecast.points]);
+  const summary = useMemo(
+    () => getForecastSummary(forecast.points, chartCurrency),
+    [forecast.points, chartCurrency],
+  );
 
   const totalForecastedTransactions = useMemo(
     () => forecast.points.reduce((sum, dp) => sum + dp.transactions.length, 0),

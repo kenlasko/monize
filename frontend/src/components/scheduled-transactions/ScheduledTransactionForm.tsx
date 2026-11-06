@@ -40,7 +40,16 @@ import { Account } from '@/types/account';
 import { Tag } from '@/types/tag';
 import { useTagPickerOptions } from '@/hooks/useTagPickerOptions';
 import { buildCategoryTree } from '@/lib/categoryUtils';
-import { roundToCents, getCurrencySymbol, FX_RATE_DISPLAY_DECIMALS } from '@/lib/format';
+import {
+  roundToCents,
+  roundMoney,
+  sumMoney,
+  roundToEntryPlaces,
+  entryDecimalPlaces,
+  moneyDecimalsForCurrency,
+  getCurrencySymbol,
+  FX_RATE_DISPLAY_DECIMALS,
+} from '@/lib/format';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { getErrorMessage } from '@/lib/errors';
@@ -272,8 +281,9 @@ export function ScheduledTransactionForm({
           payeeName: scheduledTransaction.payeeName || '',
           categoryId: scheduledTransaction.categoryId || '',
           amount: isScheduledTransfer(scheduledTransaction)
-            ? Math.abs(Math.round(Number(scheduledTransaction.amount) * 100) / 100)
-            : (bookedTemplate?.parentAmount ?? Math.round(Number(scheduledTransaction.amount) * 100) / 100),
+            ? Math.abs(roundToEntryPlaces(Number(scheduledTransaction.amount), scheduledTransaction.currencyCode))
+            : (bookedTemplate?.parentAmount ??
+              roundToEntryPlaces(Number(scheduledTransaction.amount), scheduledTransaction.currencyCode)),
           currencyCode: scheduledTransaction.currencyCode,
           description: scheduledTransaction.description || '',
           referenceNumber: scheduledTransaction.referenceNumber || '',
@@ -293,8 +303,8 @@ export function ScheduledTransactionForm({
             payeeName: templateTransaction.payeeName || '',
             categoryId: templateTransaction.categoryId || '',
             amount: templateTransaction.isTransfer
-              ? Math.abs(Math.round(Number(templateTransaction.amount) * 100) / 100)
-              : Math.round(Number(templateTransaction.amount) * 100) / 100,
+              ? Math.abs(roundToEntryPlaces(Number(templateTransaction.amount), templateTransaction.currencyCode))
+              : roundToEntryPlaces(Number(templateTransaction.amount), templateTransaction.currencyCode),
             currencyCode: templateTransaction.currencyCode,
             description: templateTransaction.description || '',
             referenceNumber: '',
@@ -336,6 +346,9 @@ export function ScheduledTransactionForm({
   }, [watchedAccountId, accounts, setValue]);
 
   const currencySymbol = getCurrencySymbol(watchedCurrencyCode || defaultCurrency);
+  // A coin's amounts are entered at its own places (four while the registry
+  // has not answered); any ISO currency keeps the input's two.
+  const amountDecimalPlaces = entryDecimalPlaces(watchedCurrencyCode || defaultCurrency);
 
   // ── Foreign-currency entry ────────────────────────────────────────────────
   //
@@ -382,36 +395,39 @@ export function ScheduledTransactionForm({
     entryCurrency.toUpperCase() !== accountCurrency.toUpperCase();
 
   const fxFeePercent = selectedAccount?.fxFeePercent ?? undefined;
+  // An account-currency figure at the places the form enters it in: cents, or
+  // a coin's own (`roundToEntryPlaces`).
+  const toAccountPlaces = (amount: number) => roundToEntryPlaces(amount, accountCurrency);
   const convertedBase =
     isForeign && foreignAmount !== undefined && fxRate != null
-      ? roundToCents(foreignAmount * fxRate)
+      ? toAccountPlaces(foreignAmount * fxRate)
       : undefined;
   const fxFeeApplies =
     isForeign && convertedBase !== undefined && !!fxFeePercent && fxFeePercent > 0;
   const fxFeeAmount = fxFeeApplies
-    ? -roundToCents((Math.abs(convertedBase as number) * (fxFeePercent as number)) / 100)
+    ? -toAccountPlaces((Math.abs(convertedBase as number) * (fxFeePercent as number)) / 100)
     : 0;
   const fxTotal =
-    convertedBase !== undefined ? roundToCents(convertedBase + fxFeeAmount) : undefined;
+    convertedBase !== undefined ? toAccountPlaces(convertedBase + fxFeeAmount) : undefined;
 
   // Derive the account-currency `amount` from the foreign amount and rate,
   // folding in the account's foreign-transaction fee. Matches `recomputeFx` in
   // TransactionForm and `applyFxConversion` on the backend.
   const recomputeFx = (fAmount: number | undefined, rate: number | null) => {
     if (fAmount === undefined || rate == null) return;
-    const base = roundToCents(fAmount * rate);
+    const base = toAccountPlaces(fAmount * rate);
     const fee =
       fxFeePercent && fxFeePercent > 0
-        ? -roundToCents((Math.abs(base) * fxFeePercent) / 100)
+        ? -toAccountPlaces((Math.abs(base) * fxFeePercent) / 100)
         : 0;
-    setValue('amount', roundToCents(base + fee), {
+    setValue('amount', toAccountPlaces(base + fee), {
       shouldDirty: true,
       shouldValidate: true,
     });
   };
 
   const handleForeignAmountChange = (value: number | undefined) => {
-    const rounded = value === undefined ? undefined : roundToCents(value);
+    const rounded = value === undefined ? undefined : roundToEntryPlaces(value, entryCurrency);
     setForeignAmount(rounded);
     recomputeFx(rounded, fxRate);
   };
@@ -507,8 +523,9 @@ export function ScheduledTransactionForm({
   );
 
   // Funding account options: anything that can carry cash, except the
-  // brokerage's paired cash side and asset/brokerage accounts. Mirrors the
-  // filtering in InvestmentTransactionForm.
+  // brokerage's paired cash side, asset/brokerage accounts and crypto wallets
+  // (a coin is not the fiat a trade settles in). Mirrors the filtering in
+  // InvestmentTransactionForm.
   const fundingAccountOptions = useMemo(() =>
     buildAccountDropdownOptions(
       accounts,
@@ -516,6 +533,7 @@ export function ScheduledTransactionForm({
         !a.isClosed &&
         a.id !== watchedAccountId &&
         a.accountType !== 'ASSET' &&
+        a.accountType !== 'CRYPTO' &&
         a.accountSubType !== 'INVESTMENT_BROKERAGE' &&
         a.accountSubType !== 'INVESTMENT_CASH',
       accountOptionLabel,
@@ -831,7 +849,7 @@ export function ScheduledTransactionForm({
     if (newMode === 'split') {
       if (splits.length === 0) {
         const amount = watchedAmount || 0;
-        setSplits(createEmptySplits(amount));
+        setSplits(createEmptySplits(amount, watchedCurrencyCode || defaultCurrency));
       }
       setSelectedCategoryId('');
       setValue('categoryId', '', { shouldDirty: true });
@@ -921,7 +939,7 @@ export function ScheduledTransactionForm({
               ? (category.isIncome ? absAmount : -absAmount)
               : watchedAmount;
             if (newAmount !== watchedAmount) {
-              const rounded = roundToCents(newAmount);
+              const rounded = toAccountPlaces(newAmount);
               setValue('amount', rounded, { shouldDirty: true });
             }
           }
@@ -969,7 +987,7 @@ export function ScheduledTransactionForm({
           ? (category.isIncome ? absAmount : -absAmount)
           : watchedAmount;
         if (newAmount !== watchedAmount) {
-          const rounded = roundToCents(newAmount);
+          const rounded = toAccountPlaces(newAmount);
           setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
         }
       }
@@ -1005,7 +1023,7 @@ export function ScheduledTransactionForm({
   };
 
   const handleTransactionAmountChange = (amount: number) => {
-    const rounded = roundToCents(amount);
+    const rounded = toAccountPlaces(amount);
     setValue('amount', rounded, { shouldDirty: true, shouldValidate: true });
   };
 
@@ -1048,9 +1066,14 @@ export function ScheduledTransactionForm({
         toast.error(t('form.toasts.splitsMinimum'));
         return;
       }
-      const splitsTotal = splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
-      const remaining = Math.abs(Number(data.amount) - splitsTotal);
-      if (remaining >= 0.01) {
+      // At the server's precision (`validateSplitAmountSum`): the lines must
+      // equal the amount exactly at the split currency's money precision (four
+      // for fiat, a coin's eight), the currency the split editor enters them
+      // in. A one-cent tolerance let a 0.0049 BTC remainder through to a save
+      // the server refuses.
+      const splitsMoneyDecimals = moneyDecimalsForCurrency(watchedCurrencyCode || defaultCurrency);
+      const splitsTotal = sumMoney(splits.map((s) => Number(s.amount) || 0), splitsMoneyDecimals);
+      if (splitsTotal !== roundMoney(Number(data.amount), splitsMoneyDecimals)) {
         toast.error(t('form.toasts.splitsTotal'));
         return;
       }
@@ -1538,6 +1561,7 @@ export function ScheduledTransactionForm({
                         : t('form.amountLabel')
                     }
                     prefix={getCurrencySymbol(isForeign ? entryCurrency : accountCurrency)}
+                    decimalPlaces={entryDecimalPlaces(isForeign ? entryCurrency : accountCurrency)}
                     value={isForeign ? foreignAmount : watchedAmount}
                     onChange={
                       isForeign
@@ -1653,6 +1677,7 @@ export function ScheduledTransactionForm({
             <CurrencyInput
               label={t('form.totalAmountLabel')}
               prefix={currencySymbol}
+              decimalPlaces={amountDecimalPlaces}
               value={watchedAmount}
               onChange={(value) => setValue('amount', value ?? 0, { shouldValidate: true })}
               error={errors.amount?.message}
@@ -1802,6 +1827,7 @@ export function ScheduledTransactionForm({
             <CurrencyInput
               label={t('form.transferAmountLabel')}
               prefix={currencySymbol}
+              decimalPlaces={amountDecimalPlaces}
               value={watchedAmount}
               onChange={(value) => setValue('amount', value !== undefined ? Math.abs(value) : 0, { shouldValidate: true })}
               allowNegative={false}

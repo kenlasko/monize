@@ -25,7 +25,17 @@ import {
   UNCATEGORIZED_LABEL,
   UNKNOWN_CATEGORY_LABEL,
 } from "../categories/category-name.util";
-import { roundMoney, sumMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  MONEY_SCALE,
+  roundMoney,
+  sumMoney,
+} from "../common/round.util";
+import {
+  loadCurrencyPlacesForRead,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
+import { Account } from "../accounts/entities/account.entity";
 import { FxAggregate } from "../common/fx-aggregate";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import {
@@ -42,6 +52,14 @@ import { isNetSpending } from "../built-in-reports/spending-reports.service";
  * not what recurred.
  */
 const RECURRING_REPORTABLE_AMOUNT = reportableTransactionAmountSql("t");
+
+/** A percentage to two places is a whole number of basis points. */
+const BASIS_POINTS_PER_UNIT = 10000;
+
+/** `ratio` as a percentage rounded to two places (`0.12345` -> `12.35`). */
+function percentToTwoPlaces(ratio: number): number {
+  return Math.round(ratio * BASIS_POINTS_PER_UNIT) / 100;
+}
 
 export interface FxFeeMonthlySummaryRow {
   /** Calendar month in 'YYYY-MM'. */
@@ -287,24 +305,39 @@ export class TransactionAnalyticsService {
 
       const rows = await qb.getRawMany();
 
+      // Each row is in its account's currency, rounded at its precision.
+      const places = await loadCurrencyPlacesForRead(
+        m,
+        rows.map((r) => r.currencyCode),
+      );
       const accounts: TransferAccountSummary[] = rows.map((r) => {
-        const inbound = roundMoney(Number(r.inbound) || 0);
-        const outbound = roundMoney(Number(r.outbound) || 0);
+        const decimals = moneyDecimalsForCode(places, r.currencyCode);
+        const inbound = roundMoney(Number(r.inbound) || 0, decimals);
+        const outbound = roundMoney(Number(r.outbound) || 0, decimals);
         return {
           accountId: r.accountId ?? null,
           accountName: r.accountName,
           currency: r.currencyCode,
           inbound,
           outbound,
-          net: roundMoney(inbound - outbound),
+          net: roundMoney(inbound - outbound, decimals),
           transferCount: Number(r.count) || 0,
         };
       });
 
+      // The totals cross currencies unconverted, so they sum at the column
+      // scale: each figure is already at its own precision, a fiat-only sum is
+      // the four-place one it always was, and a coin's places survive.
       return {
         accounts,
-        totalInbound: sumMoney(accounts.map((a) => a.inbound)),
-        totalOutbound: sumMoney(accounts.map((a) => a.outbound)),
+        totalInbound: sumMoney(
+          accounts.map((a) => a.inbound),
+          MONEY_SCALE,
+        ),
+        totalOutbound: sumMoney(
+          accounts.map((a) => a.outbound),
+          MONEY_SCALE,
+        ),
         transferCount: accounts.reduce((s, a) => s + a.transferCount, 0),
       };
     });
@@ -900,11 +933,19 @@ export class TransactionAnalyticsService {
 
       const rows = await queryBuilder.getRawMany();
 
+      // Per-currency rows, each rounded at its currency's precision.
+      const places = await loadCurrencyPlacesForRead(
+        m,
+        rows.map((row) => row.currencyCode),
+      );
       return rows.map((row) => ({
         id: row.id ?? null,
         name: row.name ?? null,
         currencyCode: row.currencyCode,
-        total: roundMoney(Number(row.total) || 0),
+        total: roundMoney(
+          Number(row.total) || 0,
+          moneyDecimalsForCode(places, row.currencyCode),
+        ),
         count: Number(row.count) || 0,
       }));
     });
@@ -979,11 +1020,19 @@ export class TransactionAnalyticsService {
 
       const rows = await queryBuilder.getRawMany();
 
+      // Per-currency rows, each rounded at its currency's precision.
+      const places = await loadCurrencyPlacesForRead(
+        m,
+        rows.map((row) => row.currencyCode),
+      );
       return rows.map((row) => ({
         id: row.value,
         name: row.value,
         currencyCode: row.currencyCode,
-        total: roundMoney(Number(row.total) || 0),
+        total: roundMoney(
+          Number(row.total) || 0,
+          moneyDecimalsForCode(places, row.currencyCode),
+        ),
         count: Number(row.count) || 0,
       }));
     });
@@ -1102,9 +1151,23 @@ export class TransactionAnalyticsService {
     accountId: string,
   ): Promise<FxFeeMonthlySummaryRow[]> {
     return withScopedDb(this.dataSource, async (m) => {
+      // The fee is in the account's currency: the converted base is re-derived
+      // at that currency's precision, the one `applyFxConversion` rounded it
+      // at when the row was written, so a coin account's fee is not the
+      // four-place remainder of an eight-place amount.
+      const account = await m.getRepository(Account).findOne({
+        where: { id: accountId, userId },
+        select: { id: true, currencyCode: true },
+      });
+      const places = account
+        ? await loadCurrencyPlacesForRead(m, [account.currencyCode])
+        : new Map<string, number>();
+      const decimals = account
+        ? moneyDecimalsForCode(places, account.currencyCode)
+        : FIAT_MONEY_DECIMALS;
       const feeExpr =
         "CASE WHEN transaction.originalAmount IS NULL THEN 0 " +
-        "ELSE ROUND(transaction.originalAmount * transaction.exchangeRate, 4) - transaction.amount " +
+        "ELSE ROUND(transaction.originalAmount * transaction.exchangeRate, CAST(:feeDecimals AS int)) - transaction.amount " +
         "END";
 
       const rows = await m
@@ -1120,6 +1183,7 @@ export class TransactionAnalyticsService {
         .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
         .addSelect("transaction.originalCurrencyCode", "currencyCode")
         .addSelect(`COALESCE(SUM(${feeExpr}), 0)`, "feeTotal")
+        .setParameter("feeDecimals", decimals)
         .addSelect("COUNT(DISTINCT transaction.id)", "count")
         .groupBy("month")
         .addGroupBy("transaction.originalCurrencyCode")
@@ -1130,7 +1194,7 @@ export class TransactionAnalyticsService {
       return rows.map((row) => ({
         month: row.month,
         currencyCode: row.currencyCode,
-        feeTotal: roundMoney(Number(row.feeTotal) || 0),
+        feeTotal: roundMoney(Number(row.feeTotal) || 0, decimals),
         count: Number(row.count) || 0,
       }));
     });
@@ -1490,7 +1554,9 @@ export class TransactionAnalyticsService {
     return {
       totalIncome: fxComplete ? income : null,
       totalExpenses: fxComplete ? expenses : null,
-      netCashFlow: fxComplete ? roundMoney(income - expenses) : null,
+      netCashFlow: fxComplete
+        ? roundMoney(income - expenses, FIAT_MONEY_DECIMALS)
+        : null,
       knownIncomeSubtotal: income,
       knownExpensesSubtotal: expenses,
       totalsCurrency: converted.totalsCurrency,
@@ -1863,12 +1929,13 @@ export class TransactionAnalyticsService {
     );
 
     const comparison = Array.from(allLabels).map((label) => {
-      const p1Amount = roundMoney(p1Map.get(label) || 0);
-      const p2Amount = roundMoney(p2Map.get(label) || 0);
-      const change = roundMoney(p2Amount - p1Amount);
+      // Converted into the reporting currency: fiat precision.
+      const p1Amount = roundMoney(p1Map.get(label) || 0, FIAT_MONEY_DECIMALS);
+      const p2Amount = roundMoney(p2Map.get(label) || 0, FIAT_MONEY_DECIMALS);
+      const change = roundMoney(p2Amount - p1Amount, FIAT_MONEY_DECIMALS);
       const changePercent =
         p1Amount !== 0
-          ? Math.round((change / p1Amount) * 10000) / 100
+          ? percentToTwoPlaces(change / p1Amount)
           : p2Amount !== 0
             ? 100
             : 0;
@@ -1890,12 +1957,14 @@ export class TransactionAnalyticsService {
     const p1Total = period1.total.knownSubtotal;
     const p2Total = period2.total.knownSubtotal;
     const fxComplete = both.isComplete;
-    const totalChange = fxComplete ? roundMoney(p2Total - p1Total) : null;
+    const totalChange = fxComplete
+      ? roundMoney(p2Total - p1Total, FIAT_MONEY_DECIMALS)
+      : null;
     const totalChangePercent =
       totalChange === null
         ? null
         : p1Total !== 0
-          ? Math.round((totalChange / p1Total) * 10000) / 100
+          ? percentToTwoPlaces(totalChange / p1Total)
           : 0;
 
     return {
@@ -2244,9 +2313,13 @@ function totalFields(agg: FxAggregate): {
   total: number | null;
   knownSubtotal?: number;
 } {
+  // A converted, reporting-currency figure: fiat precision.
   return agg.isComplete
-    ? { total: roundMoney(agg.knownSubtotal) }
-    : { total: null, knownSubtotal: roundMoney(agg.knownSubtotal) };
+    ? { total: roundMoney(agg.knownSubtotal, FIAT_MONEY_DECIMALS) }
+    : {
+        total: null,
+        knownSubtotal: roundMoney(agg.knownSubtotal, FIAT_MONEY_DECIMALS),
+      };
 }
 
 /** Largest first, by what converted (a withheld total still ranks). */
