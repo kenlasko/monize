@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "無法修改已關閉科目的結餘",
     "deleteWithTransactions": "無法刪除有 {{ transactionCount }} 筆交易的科目。請改為關閉科目。",
     "deleteWithInvestmentTransactions": "無法刪除有 {{ investmentTransactionCount }} 筆投資交易的科目。請改為關閉科目。",
+    "deleteWithScheduledTransactions": "無法刪除被 {{ scheduledTransactionCount }} 筆排程交易使用的科目。請先從這些帳單與存款中移除該科目，或改為關閉科目。",
     "invalidDateFormat": "無效的 dateFormat",
     "useFavouriteUpdateEndpoint": "請使用科目更新端點來變更我的最愛",
     "invalidExportFormat": "格式必須為 csv 或 qif",

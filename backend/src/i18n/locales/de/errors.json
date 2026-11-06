@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "Saldo eines geschlossenen Kontos kann nicht geändert werden",
     "deleteWithTransactions": "Konto mit {{ transactionCount }} Buchung(en) kann nicht gelöscht werden. Schließen Sie das Konto stattdessen.",
     "deleteWithInvestmentTransactions": "Konto mit {{ investmentTransactionCount }} Investmentbuchung(en) kann nicht gelöscht werden. Schließen Sie das Konto stattdessen.",
+    "deleteWithScheduledTransactions": "Konto, das von {{ scheduledTransactionCount }} geplanten Buchung(en) verwendet wird, kann nicht gelöscht werden. Entfernen Sie das Konto zuerst aus diesen Rechnungen & Einzahlungen oder schließen Sie das Konto stattdessen.",
     "invalidDateFormat": "Ungültiges dateFormat",
     "useFavouriteUpdateEndpoint": "Verwenden Sie den Konto-Aktualisierungsendpunkt, um Favoriten zu ändern",
     "invalidExportFormat": "Format muss csv oder qif sein",

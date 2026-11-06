@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "閉鎖された口座の残高は変更できません",
     "deleteWithTransactions": "{{ transactionCount }} 件の取引がある口座は削除できません。代わりに口座を閉鎖してください。",
     "deleteWithInvestmentTransactions": "{{ investmentTransactionCount }} 件の投資取引がある口座は削除できません。代わりに口座を閉鎖してください。",
+    "deleteWithScheduledTransactions": "{{ scheduledTransactionCount }} 件の予定取引で使われている口座は削除できません。先にそれらの請求書・入金から口座を外すか、代わりに口座を閉鎖してください。",
     "invalidDateFormat": "無効な dateFormat です",
     "useFavouriteUpdateEndpoint": "お気に入りを変更するには口座更新エンドポイントを使用してください",
     "invalidExportFormat": "形式は csv または qif でなければなりません",

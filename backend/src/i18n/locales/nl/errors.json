@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "Kan het saldo van een gesloten rekening niet wijzigen",
     "deleteWithTransactions": "Kan rekening met {{ transactionCount }} transactie(s) niet verwijderen. Sluit de rekening in plaats daarvan.",
     "deleteWithInvestmentTransactions": "Kan rekening met {{ investmentTransactionCount }} beleggingstransactie(s) niet verwijderen. Sluit de rekening in plaats daarvan.",
+    "deleteWithScheduledTransactions": "Kan rekening die door {{ scheduledTransactionCount }} geplande transactie(s) wordt gebruikt niet verwijderen. Haal de rekening eerst uit die facturen en stortingen, of sluit de rekening in plaats daarvan.",
     "invalidDateFormat": "Ongeldig dateFormat",
     "useFavouriteUpdateEndpoint": "Gebruik het rekeningbijwerkeindpunt om favorieten te wijzigen",
     "invalidExportFormat": "Formaat moet csv of qif zijn",

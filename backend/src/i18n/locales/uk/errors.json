@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "Неможливо змінити баланс закритого рахунку",
     "deleteWithTransactions": "Неможливо видалити рахунок із {{ transactionCount }} операцією(-ями). Натомість закрийте рахунок.",
     "deleteWithInvestmentTransactions": "Неможливо видалити рахунок із {{ investmentTransactionCount }} інвестиційною(-ими) операцією(-ями). Натомість закрийте рахунок.",
+    "deleteWithScheduledTransactions": "Неможливо видалити рахунок, який використовують {{ scheduledTransactionCount }} запланована(-і) операція(-ї). Спершу приберіть рахунок із цих рахунків та депозитів або натомість закрийте рахунок.",
     "invalidDateFormat": "Недійсний dateFormat",
     "useFavouriteUpdateEndpoint": "Використовуйте кінцеву точку оновлення рахунку для зміни вибраного",
     "invalidExportFormat": "Формат має бути csv або qif",

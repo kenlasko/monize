@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "Không thể sửa đổi số dư của tài khoản đã đóng",
     "deleteWithTransactions": "Không thể xóa tài khoản có {{ transactionCount }} giao tác. Hãy đóng tài khoản thay thế.",
     "deleteWithInvestmentTransactions": "Không thể xóa tài khoản có {{ investmentTransactionCount }} giao tác đầu tư. Hãy đóng tài khoản thay thế.",
+    "deleteWithScheduledTransactions": "Không thể xóa tài khoản đang được {{ scheduledTransactionCount }} giao dịch định kỳ sử dụng. Hãy gỡ tài khoản khỏi các hóa đơn và tiền gửi đó trước, hoặc đóng tài khoản thay thế.",
     "invalidDateFormat": "dateFormat không hợp lệ",
     "useFavouriteUpdateEndpoint": "Sử dụng điểm cuối cập nhật tài khoản để thay đổi mục yêu thích",
     "invalidExportFormat": "Định dạng phải là csv hoặc qif",

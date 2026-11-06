@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "बंद खाते का शेष संशोधित नहीं किया जा सकता",
     "deleteWithTransactions": "{{ transactionCount }} लेनदेन वाला खाता हटाया नहीं जा सकता। इसके बजाय खाता बंद करें।",
     "deleteWithInvestmentTransactions": "{{ investmentTransactionCount }} निवेश लेनदेन वाला खाता हटाया नहीं जा सकता। इसके बजाय खाता बंद करें।",
+    "deleteWithScheduledTransactions": "{{ scheduledTransactionCount }} निर्धारित लेनदेन द्वारा उपयोग किया जाने वाला खाता हटाया नहीं जा सकता। पहले उन बिलों और जमाओं से खाता हटाएँ, या इसके बजाय खाता बंद करें।",
     "invalidDateFormat": "अमान्य dateFormat",
     "useFavouriteUpdateEndpoint": "पसंदीदा बदलने के लिए खाता अपडेट एंडपॉइंट का उपयोग करें",
     "invalidExportFormat": "प्रारूप csv या qif होना चाहिए",
