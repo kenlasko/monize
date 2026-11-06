@@ -7,6 +7,9 @@ import { Payee } from "./entities/payee.entity";
 import { PayeeAlias } from "./entities/payee-alias.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
+import { Warranty } from "../warranties/entities/warranty.entity";
+import { EmailReceiptParser } from "../email-receipts/entities/email-receipt-parser.entity";
+import { Account } from "../accounts/entities/account.entity";
 import {
   createScopedDbMocks,
   DataSourceMock,
@@ -581,6 +584,55 @@ describe("PayeeAutoMergeService", () => {
       });
       expect(mockDataSource.transaction).toHaveBeenCalled();
       expect(mockQueryRunner.manager.save).toHaveBeenCalled();
+    });
+
+    it("moves every reference to a source payee before deleting it", async () => {
+      const m = mockQueryRunner.manager;
+
+      await service.applyAutoMerge(userId, [
+        { canonicalPayeeId: "p1", sourcePayeeIds: ["p2"] },
+      ]);
+
+      // Warranties, receipt parsers, loan overpayment links and shared-expense
+      // people are ON DELETE SET NULL: not moved first, the remove clears them
+      // (#2026).
+      const removeOrder = m.remove.mock.invocationCallOrder[0];
+      for (const [entity, where, set] of [
+        [Warranty, { payeeId: "p2", userId }, { payeeId: "p1" }],
+        [
+          EmailReceiptParser,
+          { payeeId: "p2", userId },
+          { payeeId: "p1", revision: expect.any(Function) },
+        ],
+        [
+          Account,
+          { overpaymentPayeeId: "p2", userId },
+          { overpaymentPayeeId: "p1" },
+        ],
+      ] as const) {
+        const index = m.update.mock.calls.findIndex(
+          (call: unknown[]) => call[0] === entity,
+        );
+        expect(m.update.mock.calls[index]).toEqual([entity, where, set]);
+        expect(m.update.mock.invocationCallOrder[index]).toBeLessThan(
+          removeOrder,
+        );
+      }
+      for (const table of ["shared_people", "shared_postings"]) {
+        const index = m.query.mock.calls.findIndex(
+          (call: unknown[]) =>
+            typeof call[0] === "string" &&
+            call[0].startsWith(`UPDATE ${table} SET payee_id`),
+        );
+        expect(m.query.mock.calls[index][1]).toEqual(["p1", userId, "p2"]);
+        expect(m.query.mock.invocationCallOrder[index]).toBeLessThan(
+          removeOrder,
+        );
+      }
+      expect(m.remove).toHaveBeenCalledWith(
+        Payee,
+        expect.objectContaining({ id: "p2" }),
+      );
     });
 
     it("backfills the canonical's uncategorized transactions when requested", async () => {

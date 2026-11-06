@@ -26,6 +26,7 @@ import { ActionHistoryService } from "../action-history/action-history.service";
 import { toCountMap } from "../common/count-map.util";
 import { matchesAliasPattern } from "./alias-match.util";
 import { insertPayeeAliasIgnoringDuplicate } from "./insert-payee-alias.util";
+import { reassignPayeeReferences } from "./payee-references";
 import {
   applyPayeeCategoryToAll,
   backfillPayeeCategory,
@@ -1944,7 +1945,8 @@ export class PayeesService {
 
   /**
    * Merge one payee into another:
-   * 1. Reassign all transactions from source to target payee
+   * 1. Reassign every reference to the source payee to the target
+   *    (`PAYEE_REFERENCE_MOVES`)
    * 2. Optionally add the source payee name as an alias on the target
    * 3. Delete the source payee
    *
@@ -1971,20 +1973,15 @@ export class PayeesService {
     const sourcePayee = await this.findOne(userId, sourcePayeeId);
 
     return withScopedDb(this.dataSource, async (m) => {
-      // 1. Reassign transactions from source to target
-      const txResult = await m.update(
-        Transaction,
-        { payeeId: sourcePayeeId, userId },
-        { payeeId: targetPayeeId, payeeName: targetPayee.name },
-      );
-      const transactionsMigrated = txResult.affected || 0;
-
-      // Also reassign scheduled transactions
-      await m.update(
-        ScheduledTransaction,
-        { payeeId: sourcePayeeId, userId },
-        { payeeId: targetPayeeId, payeeName: targetPayee.name },
-      );
+      // 1. Point everything that references the source (transactions,
+      // scheduled transactions, aliases, warranties, ...) at the target, so the
+      // delete below has nothing left to clear.
+      const moved = await reassignPayeeReferences(m, {
+        userId,
+        sourcePayeeId,
+        target: { id: targetPayeeId, name: targetPayee.name },
+      });
+      const transactionsMigrated = moved["transactions.payee_id"];
 
       // 2. Optionally add source payee name as alias on target
       let aliasAdded = false;
@@ -2017,14 +2014,7 @@ export class PayeesService {
         }
       }
 
-      // 3. Move any aliases from source payee to target payee
-      await m.update(
-        PayeeAlias,
-        { payeeId: sourcePayeeId, userId },
-        { payeeId: targetPayeeId },
-      );
-
-      // 4. Delete the source payee
+      // 3. Delete the source payee
       await m.remove(Payee, sourcePayee);
 
       return {

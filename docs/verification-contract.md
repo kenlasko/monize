@@ -200,6 +200,7 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-DAYNOTE-001 one note covering a day | supporting | -- | required | **required** (not yet met) | -- | -- | -- | optional |
 | INV-PAYEE-001 lookup never overwrites | **required** | supporting | optional | optional | -- | -- | -- | -- |
 | INV-PAYEE-002 Google Places monthly cap | optional | supporting | **required** | -- | -- | -- | -- | -- |
+| INV-PAYEE-003 merge moves every payee reference | required | **required** | **required** | -- | -- | -- | -- | -- |
 | INV-RELEASE-001 one revision | required | -- | -- | -- | -- | -- | -- | workflow self-test |
 | INV-MIGRATION-001 numeric prefix order, collision-free prefix | required | **required** | supporting | -- | -- | -- | -- | -- |
 | INV-HA-001 a replica serves only while what it shares is reachable | **required** | -- | -- | -- | optional | -- | -- | required (not yet met) |

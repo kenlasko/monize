@@ -199,6 +199,7 @@ implied.
 | INV-DAYNOTE-001 | A calendar date is covered by at most one of a user's notes, and a save never reads first | enforced |
 | INV-PAYEE-001 | A contact lookup never overwrites a value the user entered, and the automatic one runs at most once per payee | enforced |
 | INV-PAYEE-002 | Google Places requests in one Pacific calendar month never exceed the cap for the key's owner | enforced |
+| INV-PAYEE-003 | A payee merge moves every reference to the payee it deletes; nothing is cleared by the delete | enforced |
 | INV-RELEASE-001 | The tested, imaged and tagged revisions are one revision | partial |
 | INV-MIGRATION-001 | Migrations apply in numeric prefix order, and a new migration's prefix cannot collide | enforced |
 | INV-HA-001 | A replica serves traffic only while what it shares with the others is reachable | partial |
@@ -6200,6 +6201,39 @@ Required tests      Two-connection: concurrent claims over the last slot, one
                     transaction -- is
                     payee-lookup-quota.transaction.spec.ts, because the sibling
                     unit spec mocks that plumbing away.
+Status              enforced
+```
+### INV-PAYEE-003 -- a payee merge moves every reference to the payee it deletes
+
+```text
+Statement           Merging a payee into another (the Merge dialog, POST
+                    /payees/merge, and Auto-Merge's apply) leaves no row that
+                    pointed at the source payee without a payee: every one
+                    points at the surviving payee before the source is deleted.
+                    Every reference but payee_aliases is ON DELETE SET NULL, so
+                    a column the merge does not move is silently cleared by the
+                    delete (#2026: warranties, email receipt parsers, a loan's
+                    overpayment payee and shared-expense people lost theirs).
+Source of truth     The foreign keys to payees(id) in database/schema.sql.
+Enforcement         PAYEE_REFERENCE_MOVES (backend/src/payees/payee-references.ts)
+                    holds one statement per referencing column, each scoped to
+                    the merging user; reassignPayeeReferences runs them all in
+                    the merge's withScopedDb transaction before the remove, and
+                    both merges call it. payee-references.spec.ts parses
+                    schema.sql and fails when the map and the foreign keys
+                    disagree in either direction. A moved receipt parser's
+                    revision is bumped, so an editor holding the old revision is
+                    refused rather than writing the deleted payee back.
+Concurrency scope   per user
+Crash semantics     One transaction: the moves and the delete commit together or
+                    not at all.
+Required tests      Present: payee-references.spec.ts (schema parity and the
+                    statements); payees.service.spec.ts and
+                    payee-auto-merge.service.spec.ts (each move runs before the
+                    remove); backend/test/integration/payee-merge-references.integration.spec.ts
+                    (both merges under enforced RLS leave warranties, parsers,
+                    loan overpayment links and shared people on the target, and
+                    another payee's references untouched).
 Status              enforced
 ```
 ### INV-BACKUP-001 -- a backup is complete, verified, owner-namespaced
