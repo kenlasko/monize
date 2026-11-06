@@ -270,6 +270,51 @@ describe('HelpPanel: pin, route changes, Escape', () => {
   });
 });
 
+describe('HelpPanel: focus on open', () => {
+  const opener = () => {
+    const el = document.createElement('button');
+    el.textContent = 'opener';
+    document.body.appendChild(el);
+    el.focus();
+    return el;
+  };
+
+  it('moves focus to the title at once, before the page has loaded', async () => {
+    getPage.mockImplementation(() => new Promise<HelpPage>(() => {}));
+    const el = opener();
+    await renderPanel();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Help' })).toHaveFocus();
+    el.remove();
+  });
+
+  it('moves focus to the title when the page cannot be loaded', async () => {
+    getPage.mockRejectedValue(new Error('network'));
+    const el = opener();
+    await renderPanel();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Help' })).toHaveFocus();
+    el.remove();
+  });
+
+  it('on a phone, puts focus inside the dialog while loading and on error', async () => {
+    mockMobile = true;
+    getPage.mockImplementation(() => new Promise<HelpPage>(() => {}));
+    const el = opener();
+    const loading = await renderPanel();
+    expect(screen.getByRole('dialog', { name: 'Help' })).toContainElement(document.activeElement as HTMLElement);
+    loading.unmount();
+
+    getPage.mockReset();
+    getPage.mockRejectedValue(new Error('network'));
+    el.focus();
+    await renderPanel();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Help' })).toContainElement(document.activeElement as HTMLElement);
+    el.remove();
+  });
+});
+
 describe('HelpPanel: phone', () => {
   beforeEach(() => {
     mockMobile = true;

@@ -81,9 +81,15 @@ export function HelpPanel() {
     if (!pinned) close();
   }, [pathname, pinned, close]);
 
-  // Hand focus back to whatever opened the panel when it closes.
+  // Focus enters the panel as soon as it opens, whether or not the page has
+  // loaded: as a dialog over a scrim (a phone, or expanded) focus left behind
+  // the scrim would be unreachable, and the loading and error states are the
+  // ones where a reader most needs to find the way out. Once the page arrives
+  // the effect below moves focus on to the section. When the panel closes,
+  // focus goes back to whatever opened it.
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
+    titleRef.current?.focus({ preventScroll: true });
     return () => {
       if (opener?.isConnected) opener.focus();
     };
