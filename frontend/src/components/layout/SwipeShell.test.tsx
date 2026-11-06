@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { act, render, screen } from '@/test/render';
 import { SwipeShell } from './SwipeShell';
 import { sharedExpensesApi } from '@/lib/shared-expenses';
+import { useHelpStore } from '@/store/helpStore';
+import { HELP_PANEL_WIDTH } from '@/components/help/help-layout';
 
 vi.mock('@/lib/shared-expenses', () => ({ sharedExpensesApi: { review: vi.fn() } }));
 
@@ -108,6 +110,32 @@ describe('SwipeShell', () => {
     mockPathname = '/forgot-password';
     render(<SwipeShell><p>Forgot password</p></SwipeShell>);
     expect(screen.queryByTestId('app-header')).not.toBeInTheDocument();
+  });
+
+  it('makes room beside the page for the docked help panel on a wide screen', () => {
+    mockPathname = '/budgets';
+    useHelpStore.setState(useHelpStore.getInitialState(), true);
+    const { container, unmount } = render(<SwipeShell><p>Content</p></SwipeShell>);
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.className).not.toContain('xl:pr-');
+
+    act(() => useHelpStore.getState().openAt({ page: 'budgets' }));
+    // The class is a literal so Tailwind can see it; it must match the panel.
+    expect(wrapper.className).toContain(`xl:pr-[${HELP_PANEL_WIDTH}px]`);
+
+    act(() => useHelpStore.getState().setExpanded(true));
+    expect(wrapper.className).not.toContain('xl:pr-');
+    unmount();
+    act(() => useHelpStore.getState().close());
+  });
+
+  it('drops an open help panel on the sign-in screens', () => {
+    mockPathname = '/login';
+    useHelpStore.setState(useHelpStore.getInitialState(), true);
+    useHelpStore.getState().openAt({ page: 'budgets' });
+    useHelpStore.getState().setPinned(true);
+    render(<SwipeShell><p>Login form</p></SwipeShell>);
+    expect(useHelpStore.getState().open).toBe(false);
   });
 
   it('wraps content in overflow-x-clip container on app pages', () => {

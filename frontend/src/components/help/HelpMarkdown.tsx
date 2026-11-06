@@ -40,6 +40,30 @@ const LINK_CLASS =
 const HEADING_CLASS =
   'scroll-mt-2 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
 
+/** A heading that can take focus, so following a link to a section can land on it. */
+function Heading({
+  as: Tag,
+  className,
+  id,
+  children,
+}: {
+  as: 'h2' | 'h3' | 'h4';
+  className: string;
+  id?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <Tag id={id} tabIndex={-1} className={`${HEADING_CLASS} ${className}`}>
+      {children}
+    </Tag>
+  );
+}
+
+const H2_CLASS =
+  'mt-6 mb-2 border-t border-gray-200 pt-4 text-lg font-semibold text-gray-900 first:mt-0 first:border-t-0 first:pt-0 dark:border-gray-700 dark:text-gray-100';
+const H3_CLASS = 'mt-4 mb-1 text-base font-semibold text-gray-900 dark:text-gray-100';
+const H4_CLASS = 'mt-3 mb-1 text-sm font-semibold text-gray-900 dark:text-gray-100';
+
 /** A click the browser should handle itself: a new tab, a window, a download. */
 function isModifiedClick(e: MouseEvent): boolean {
   return e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
@@ -68,30 +92,25 @@ export function HelpMarkdown({
 }: HelpMarkdownProps) {
   const t = useTranslations('help.markdown');
 
-  const heading =
-    (Tag: 'h2' | 'h3' | 'h4', className: string) =>
-    ({ id, children }: { id?: string; children?: ReactNode }) => (
-      <Tag id={id} tabIndex={-1} className={`${HEADING_CLASS} ${className}`}>
-        {children}
-      </Tag>
-    );
-
   return (
     <div className="text-sm text-gray-700 dark:text-gray-300">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkHelp({ toc })]}
         components={{
-          h2: heading(
-            'h2',
-            'mt-6 mb-2 border-t border-gray-200 pt-4 text-lg font-semibold text-gray-900 first:mt-0 first:border-t-0 first:pt-0 dark:border-gray-700 dark:text-gray-100',
+          h2: ({ id, children }) => (
+            <Heading as="h2" id={id} className={H2_CLASS}>
+              {children}
+            </Heading>
           ),
-          h3: heading(
-            'h3',
-            'mt-4 mb-1 text-base font-semibold text-gray-900 dark:text-gray-100',
+          h3: ({ id, children }) => (
+            <Heading as="h3" id={id} className={H3_CLASS}>
+              {children}
+            </Heading>
           ),
-          h4: heading(
-            'h4',
-            'mt-3 mb-1 text-sm font-semibold text-gray-900 dark:text-gray-100',
+          h4: ({ id, children }) => (
+            <Heading as="h4" id={id} className={H4_CLASS}>
+              {children}
+            </Heading>
           ),
           p: ({ children }) => (
             <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>

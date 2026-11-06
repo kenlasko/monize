@@ -32,6 +32,8 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { useAiConfigured } from '@/hooks/useAiConfigured';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { AI_ENTITY_LINK_EVENT } from '@/lib/ai-entity-links';
+import { useHelpStore } from '@/store/helpStore';
+import { HELP_PANEL_WIDTH } from '@/components/help/help-layout';
 
 function setMobile(mobile: boolean) {
   (useIsMobile as unknown as Mock).mockReturnValue(mobile);
@@ -74,6 +76,7 @@ beforeEach(() => {
   setEnabled(true);
   setMobile(false);
   setAiConfigured(true);
+  useHelpStore.setState(useHelpStore.getInitialState(), true);
 });
 
 // Viewport is jsdom's default 1024x768; panel is 420x600 with a 16px margin.
@@ -294,5 +297,56 @@ describe('AiChatBubble', () => {
     expect(
       screen.queryByLabelText(/Move the panel/),
     ).not.toBeInTheDocument();
+  });
+
+  describe('sharing the right edge with the help panel', () => {
+    it('collapses an open assistant when help opens', async () => {
+      await renderBubble();
+      fireEvent.click(launcher()!);
+      expect(screen.getByRole('dialog', { name: 'AI Assistant' })).toBeInTheDocument();
+
+      act(() => useHelpStore.getState().openAt({ page: 'budgets' }));
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(launcher()).toBeInTheDocument();
+    });
+
+    it('closes help when the assistant is opened from its launcher', async () => {
+      act(() => useHelpStore.getState().openAt({ page: 'budgets' }));
+      await renderBubble();
+
+      fireEvent.click(launcher()!);
+
+      expect(useHelpStore.getState().open).toBe(false);
+      expect(screen.getByRole('dialog', { name: 'AI Assistant' })).toBeInTheDocument();
+    });
+
+    it('lets help open again after the assistant took the edge', async () => {
+      await renderBubble();
+      fireEvent.click(launcher()!);
+      act(() => useHelpStore.getState().openAt({ page: 'budgets' }));
+      fireEvent.click(launcher()!);
+      expect(useHelpStore.getState().open).toBe(false);
+      act(() => useHelpStore.getState().openAt({ page: 'tags' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('moves its launcher clear of the docked panel, and back', async () => {
+      await renderBubble();
+      expect(launcher()!.style.right).toBe('');
+
+      act(() => useHelpStore.getState().openAt({ page: 'budgets' }));
+      expect(launcher()!.style.right).toBe(`${HELP_PANEL_WIDTH + 16}px`);
+
+      act(() => useHelpStore.getState().close());
+      expect(launcher()!.style.right).toBe('');
+    });
+
+    it('does not move its launcher on a phone, where help is a bottom sheet', async () => {
+      setMobile(true);
+      await renderBubble();
+      act(() => useHelpStore.getState().openAt({ page: 'budgets' }));
+      expect(launcher()!.style.right).toBe('');
+    });
   });
 });
