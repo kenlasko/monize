@@ -61,6 +61,15 @@ function primeQueries(options: {
   });
 }
 
+// The real implementations, captured before any spy replaces them.
+const realExistsSync = fs.existsSync;
+const realReadFileSync = fs.readFileSync;
+
+/** A path to the schema file `initDatabase` looks for, in any search directory. */
+function isSchemaPath(p: unknown): boolean {
+  return typeof p === "string" && p.endsWith("schema.sql");
+}
+
 describe("db-init initDatabase()", () => {
   const SCHEMA_SQL = "CREATE TABLE users ();";
   let existsSyncSpy: jest.SpyInstance;
@@ -96,10 +105,22 @@ describe("db-init initDatabase()", () => {
     warnSpy = jest.spyOn(Logger.prototype, "warn").mockImplementation();
     errorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation();
 
-    existsSyncSpy = jest.spyOn(fs, "existsSync").mockReturnValue(true);
+    // Only the schema file is faked. Jest itself reads through `fs` (a source
+    // map, when it formats an error's stack), and a blanket stub handed it
+    // SCHEMA_SQL to parse: "SyntaxError: Unexpected identifier 'TABLE'" from
+    // convert-source-map, in whichever test first formatted a stack.
+    existsSyncSpy = jest
+      .spyOn(fs, "existsSync")
+      .mockImplementation((p) => isSchemaPath(p) || realExistsSync(p));
     readFileSyncSpy = jest
       .spyOn(fs, "readFileSync")
-      .mockReturnValue(SCHEMA_SQL);
+      .mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) =>
+        isSchemaPath(p)
+          ? SCHEMA_SQL
+          : (realReadFileSync as (...a: unknown[]) => unknown)(
+              p,
+              ...rest,
+            )) as typeof fs.readFileSync);
   });
 
   afterEach(() => {
@@ -174,7 +195,9 @@ describe("db-init initDatabase()", () => {
 
   it("exits when schema.sql cannot be found", async () => {
     primeQueries({ usersExist: false });
-    existsSyncSpy.mockReturnValue(false);
+    existsSyncSpy.mockImplementation(
+      (p) => !isSchemaPath(p) && realExistsSync(p),
+    );
 
     await initDatabase();
 

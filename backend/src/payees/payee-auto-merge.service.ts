@@ -14,6 +14,7 @@ import { ScheduledTransaction } from "../scheduled-transactions/entities/schedul
 import { PayeesService } from "./payees.service";
 import { matchesAliasPattern } from "./alias-match.util";
 import { insertPayeeAliasIgnoringDuplicate } from "./insert-payee-alias.util";
+import { reassignPayeeReferences } from "./payee-references";
 import { COMMON_WORD_SEED } from "./payee-common-words";
 import {
   normalizePayeeName,
@@ -789,24 +790,12 @@ export class PayeeAutoMergeService {
       // Reassign each source's data to the canonical, then delete the source.
       let transactionsMigrated = 0;
       for (const source of sources) {
-        const txResult = await m.update(
-          Transaction,
-          { payeeId: source.id, userId },
-          { payeeId: canonical.id, payeeName: canonicalName },
-        );
-        transactionsMigrated += txResult.affected || 0;
-
-        await m.update(
-          ScheduledTransaction,
-          { payeeId: source.id, userId },
-          { payeeId: canonical.id, payeeName: canonicalName },
-        );
-
-        await m.update(
-          PayeeAlias,
-          { payeeId: source.id, userId },
-          { payeeId: canonical.id },
-        );
+        const moved = await reassignPayeeReferences(m, {
+          userId,
+          sourcePayeeId: source.id,
+          target: { id: canonical.id, name: canonicalName },
+        });
+        transactionsMigrated += moved["transactions.payee_id"];
 
         await m.remove(Payee, source);
       }

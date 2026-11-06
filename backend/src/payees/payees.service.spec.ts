@@ -22,6 +22,9 @@ import { ContactLookupSuggestions } from "./lookup/payee-contact-lookup.types";
 import { PayeeContactEnrichmentService } from "./lookup/payee-contact-enrichment.service";
 import { getActiveScopedManager, withScopedDb } from "../common/db/scoped-db";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { Warranty } from "../warranties/entities/warranty.entity";
+import { EmailReceiptParser } from "../email-receipts/entities/email-receipt-parser.entity";
+import { Account } from "../accounts/entities/account.entity";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -2831,6 +2834,69 @@ describe("PayeesService", () => {
         "ROLLBACK TO SAVEPOINT merge_payee_alias",
       );
       expect(mockDataSource.transaction).toHaveBeenCalled();
+    });
+
+    it("moves warranties, receipt parsers, loan and shared-expense links before deleting the source", async () => {
+      const sourcePayee = {
+        ...mockPayeeNoCategory,
+        id: "payee-2",
+        name: "Costco Wholesale",
+      };
+      const targetPayee = { ...mockPayee, id: "payee-1", name: "Costco" };
+      payeesRepository.findOne
+        .mockResolvedValueOnce(targetPayee)
+        .mockResolvedValueOnce(sourcePayee);
+
+      await service.mergePayees(userId, {
+        targetPayeeId: "payee-1",
+        sourcePayeeId: "payee-2",
+        addAsAlias: false,
+      });
+
+      // Every one of these is ON DELETE SET NULL: a reference not moved before
+      // the remove below is cleared by it (#2026).
+      const removeOrder = txManager.remove.mock.invocationCallOrder[0];
+      for (const [entity, where, set] of [
+        [Warranty, { payeeId: "payee-2", userId }, { payeeId: "payee-1" }],
+        [
+          EmailReceiptParser,
+          { payeeId: "payee-2", userId },
+          { payeeId: "payee-1", revision: expect.any(Function) },
+        ],
+        [
+          Account,
+          { overpaymentPayeeId: "payee-2", userId },
+          { overpaymentPayeeId: "payee-1" },
+        ],
+      ] as const) {
+        const index = txManager.update.mock.calls.findIndex(
+          (call: unknown[]) => call[0] === entity,
+        );
+        expect(txManager.update.mock.calls[index]).toEqual([
+          entity,
+          where,
+          set,
+        ]);
+        expect(txManager.update.mock.invocationCallOrder[index]).toBeLessThan(
+          removeOrder,
+        );
+      }
+      for (const table of ["shared_people", "shared_postings"]) {
+        const index = txManager.query.mock.calls.findIndex(
+          (call: unknown[]) =>
+            typeof call[0] === "string" &&
+            call[0].startsWith(`UPDATE ${table} SET payee_id`),
+        );
+        expect(txManager.query.mock.calls[index][1]).toEqual([
+          "payee-1",
+          userId,
+          "payee-2",
+        ]);
+        expect(txManager.query.mock.invocationCallOrder[index]).toBeLessThan(
+          removeOrder,
+        );
+      }
+      expect(txManager.remove).toHaveBeenCalledWith(Payee, sourcePayee);
     });
   });
 

@@ -316,8 +316,10 @@ If you have duplicate payees (e.g., "Amazon" and "Amazon.com"), you can merge th
 |--------|--------|
 | **Transactions reassigned** | All transactions from the source payee are moved to the target payee |
 | **Scheduled transactions reassigned** | All scheduled transactions from the source are moved to the target |
+| **Aliases moved** | The source payee's aliases now belong to the target payee |
+| **Everything else linked moved** | Warranties, email receipt parsers, a loan's overpayment payee and shared-expense people linked to the source now point at the target |
 | **Alias created** (optional) | The source payee's name is added as an alias on the target payee |
-| **Source deleted** | The source payee and all its aliases are permanently deleted |
+| **Source deleted** | The source payee itself is permanently deleted; nothing that pointed at it is left without a payee |
 
 > **Example:** You have "Tim Hortons" (50 transactions) and "TIM HORTONS #1234" (3 transactions). Merge "TIM HORTONS #1234" into "Tim Hortons" with the alias option ticked. Result: "Tim Hortons" now has 53 transactions and an alias `TIM HORTONS #1234` that will catch future imports with that name.
 
@@ -359,7 +361,7 @@ Groups start de-selected, so you opt in to each merge deliberately. For every gr
 - Pick a **Default category (optional)** for the resulting payee
 - Optionally tick **Also categorize N existing uncategorized transactions** to back-fill that category
 
-Click **Merge N Groups**. Each selected group is merged into its chosen payee, the alias is created, and the default category (and optional back-fill) is applied. Groups are merged independently, so if one group fails (for example an alias is already in use) the rest still succeed, and you are told exactly what conflicted.
+Click **Merge N Groups**. Each selected group is merged into its chosen payee exactly as a single [merge](#what-happens-during-a-merge) is (transactions, scheduled transactions, aliases, warranties, receipt parsers, loan overpayment payees and shared-expense people all move to it), the alias is created, and the default category (and optional back-fill) is applied. Groups are merged independently, so if one group fails (for example an alias is already in use) the rest still succeed, and you are told exactly what conflicted.
 
 ### Deactivating Unused Payees
 

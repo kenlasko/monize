@@ -7,7 +7,11 @@ import { BondPriceService } from "@/bonds/bond-price.service";
 import { BondValuationService } from "@/bonds/bond-valuation.service";
 import { acquireAdvisoryLock, LockScope } from "@/common/db/locks";
 import { withScopedDb } from "@/common/db/scoped-db";
-import { withSystemContext, withUserContext } from "@/common/db/with-context";
+import {
+  withPreserveTimestamps,
+  withSystemContext,
+  withUserContext,
+} from "@/common/db/with-context";
 import { todayYMD } from "@/common/date-utils";
 import {
   ActionHistoryService,
@@ -346,9 +350,19 @@ describe("bond engine prices (integration, INV-BOND-005)", () => {
 
     it("moves the holding account's updated_at marker in the same transaction", async () => {
       await ledger("BUY", "2026-10-15", 10);
-      await dataSource.query(
-        `UPDATE accounts SET updated_at = NOW() - INTERVAL '1 day' WHERE id = $1`,
-        [accountId],
+      // Under app.preserve_timestamps the updated_at trigger keeps the supplied
+      // value. Without it the trigger re-stamped this to its transaction's
+      // start, and the recompute's transaction could start within the same
+      // millisecond, so the two read back equal.
+      await withUserContext(userId, () =>
+        withPreserveTimestamps(() =>
+          withScopedDb(dataSource, (m) =>
+            m.query(
+              `UPDATE accounts SET updated_at = NOW() - INTERVAL '1 day' WHERE id = $1`,
+              [accountId],
+            ),
+          ),
+        ),
       );
       // A recompute dispatched in the background by an earlier write may already
       // have priced these days, leaving the one below nothing to write and so
