@@ -822,6 +822,23 @@ describe("AccountsService", () => {
 
       expect(result.canDelete).toBe(false);
     });
+
+    it("returns canDelete=false when a scheduled transaction names the account (#2028)", async () => {
+      accountsRepository.findOne.mockResolvedValue(mockAccount);
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        typeof sql === "string" &&
+        sql.includes("JOIN scheduled_transactions st")
+          ? [{ accountId: "account-1", cnt: "2" }]
+          : [],
+      );
+
+      const result = await service.getTransactionCount("user-1", "account-1");
+
+      expect(result.transactionCount).toBe(0);
+      expect(result.investmentTransactionCount).toBe(0);
+      expect(result.scheduledTransactionCount).toBe(2);
+      expect(result.canDelete).toBe(false);
+    });
   });
 
   describe("update", () => {
@@ -1923,6 +1940,51 @@ describe("AccountsService", () => {
       expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
 
+    it("refuses an account a scheduled transaction names, before anything is removed (#2028)", async () => {
+      accountsRepository.findOne.mockResolvedValue({
+        ...mockAccount,
+        accountType: AccountType.LOAN,
+        scheduledTransactionId: "sched-tx-loan",
+      });
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        typeof sql === "string" &&
+        sql.includes("JOIN scheduled_transactions st")
+          ? [{ accountId: "account-1", cnt: "2" }]
+          : [],
+      );
+
+      await expect(service.delete("user-1", "account-1")).rejects.toThrow(
+        "Cannot delete account used by 2 scheduled transaction(s)",
+      );
+
+      // The loan's own schedule is removed only after the refusal could fire.
+      expect(scheduledTransactionsService.remove).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+      expect(mockActionHistoryService.record).not.toHaveBeenCalled();
+    });
+
+    it("re-counts the schedules under the account lock (#2028)", async () => {
+      accountsRepository.findOne.mockResolvedValue({ ...mockAccount });
+      let scheduleCounts = 0;
+      mockQueryRunner.query.mockImplementation(async (sql: string) => {
+        if (
+          typeof sql !== "string" ||
+          !sql.includes("JOIN scheduled_transactions st")
+        )
+          return [];
+        scheduleCounts += 1;
+        // None when first asked; a schedule naming it committed before the lock.
+        return scheduleCounts === 1 ? [] : [{ accountId: "account-1", cnt: 1 }];
+      });
+
+      await expect(service.delete("user-1", "account-1")).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(scheduleCounts).toBe(2);
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+    });
+
     it("re-counts under the account lock inside the deleting transaction (A26-M19)", async () => {
       accountsRepository.findOne.mockResolvedValue({ ...mockAccount });
       // Empty when first asked; a sync committed a row before the lock.
@@ -2004,6 +2066,29 @@ describe("AccountsService", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]).toHaveProperty("canDelete");
+    });
+
+    it("marks an account a scheduled transaction names as not deletable (#2028)", async () => {
+      const getMany = jest
+        .fn()
+        .mockResolvedValue([mockAccount, { ...mockAccount, id: "account-2" }]);
+      accountsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany,
+      });
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        typeof sql === "string" &&
+        sql.includes("JOIN scheduled_transactions st")
+          ? [{ accountId: "account-1", cnt: "2" }]
+          : [],
+      );
+
+      const result = await service.findAll("user-1");
+
+      expect(result.find((a) => a.id === "account-1")?.canDelete).toBe(false);
+      expect(result.find((a) => a.id === "account-2")?.canDelete).toBe(true);
     });
 
     it("returns the date each account was last reconciled to, null when never", async () => {

@@ -81,6 +81,7 @@ import {
 } from "./mortgage-type.util";
 import { assertMortgageMethodTerms } from "./mortgage-installment.util";
 import { applyMortgageMethodColumns } from "./mortgage-method-columns.util";
+import { countSchedulesReferencingAccounts } from "./account-schedule-references";
 import {
   assertLoanSourceAccount,
   reassignLoanSourceAccount,
@@ -560,7 +561,8 @@ export class AccountsService {
 
       if (accounts.length === 0) return [];
 
-      // Batch check deletability: count transactions + investment transactions per account in 2 queries
+      // Batch check deletability: count transactions, investment transactions
+      // and the schedules naming each account, one query each
       const accountIds = accounts.map((a) => a.id);
 
       const today = todayYMD();
@@ -582,6 +584,10 @@ export class AccountsService {
         .where("it.accountId IN (:...accountIds)", { accountIds })
         .groupBy("it.accountId")
         .getRawMany();
+      const scheduleCountMap = await countSchedulesReferencingAccounts(
+        m,
+        accountIds,
+      );
       const futureSums: Array<{ accountId: string; futureSum: string }> =
         await m.query(
           `SELECT t.account_id as "accountId",
@@ -682,7 +688,8 @@ export class AccountsService {
           currentBalanceMap.get(account.id) ?? account.currentBalance,
         canDelete:
           !(txCountMap.get(account.id) || 0) &&
-          !(invTxCountMap.get(account.id) || 0),
+          !(invTxCountMap.get(account.id) || 0) &&
+          !(scheduleCountMap.get(account.id) || 0),
         futureTransactionsSum: futureSumMap.get(account.id) ?? 0,
         lastReconciledDate: lastReconciledMap.get(account.id) ?? null,
         unreconciledCount: unreconciledCountMap.get(account.id) ?? 0,
@@ -1427,7 +1434,10 @@ export class AccountsService {
     return savedAccount;
   }
 
-  /** Refuses the delete of an account that holds any ledger row. */
+  /**
+   * Refuses the delete of an account that holds any ledger row or that a
+   * scheduled transaction names.
+   */
   private async assertAccountEmpty(
     m: EntityManager,
     accountId: string,
@@ -1456,6 +1466,22 @@ export class AccountsService {
           "errors.accounts.deleteWithInvestmentTransactions",
           `Cannot delete account with ${investmentTransactionCount} investment transaction(s). Close the account instead.`,
           { investmentTransactionCount },
+        ),
+      );
+    }
+
+    // The schema takes these with the account (issue #2028): refused here
+    // like the ledger rows above, never destroyed without a word.
+    const scheduledTransactionCount =
+      (await countSchedulesReferencingAccounts(m, [accountId])).get(
+        accountId,
+      ) ?? 0;
+    if (scheduledTransactionCount > 0) {
+      throw new BadRequestException(
+        tr(
+          "errors.accounts.deleteWithScheduledTransactions",
+          `Cannot delete account used by ${scheduledTransactionCount} scheduled transaction(s). Remove the account from those bills and deposits first, or close the account instead.`,
+          { scheduledTransactionCount },
         ),
       );
     }
@@ -2193,6 +2219,7 @@ export class AccountsService {
   ): Promise<{
     transactionCount: number;
     investmentTransactionCount: number;
+    scheduledTransactionCount: number;
     canDelete: boolean;
   }> {
     // Verify account belongs to user
@@ -2211,16 +2238,26 @@ export class AccountsService {
           where: { accountId },
         });
 
+      const scheduledTransactionCount =
+        (await countSchedulesReferencingAccounts(m, [accountId])).get(
+          accountId,
+        ) ?? 0;
+
       return {
         transactionCount,
         investmentTransactionCount,
-        canDelete: transactionCount === 0 && investmentTransactionCount === 0,
+        scheduledTransactionCount,
+        canDelete:
+          transactionCount === 0 &&
+          investmentTransactionCount === 0 &&
+          scheduledTransactionCount === 0,
       };
     });
   }
 
   /**
-   * Permanently delete an account (only if it has no transactions)
+   * Permanently delete an account (only if it has no transactions and no
+   * scheduled transaction names it)
    */
   async delete(userId: string, id: string): Promise<void> {
     const account = await this.findOne(userId, id);

@@ -85,6 +85,7 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-HOLDING-001 holding replay | supporting | -- | required | **required** | optional | required | -- | optional |
 | INV-HOLDING-002 one reducer | required | **required** | supporting | -- | -- | -- | -- | required |
 | INV-TRANSFER-001 both legs | required | -- | required | optional | -- | -- | -- | required |
+| INV-ACCOUNTDELETE-001 a delete takes nothing it was not asked to | supporting | -- | **required** | supporting | -- | -- | -- | -- |
 | INV-SPLITFX-001 a split line credits what arrived | **required** | -- | required | -- | -- | -- | -- | optional |
 | INV-SPLITFX-002 a recorded received amount survives a rewrite | required | -- | **required** | -- | -- | -- | -- | optional |
 | INV-SPLITFX-003 only the owner reads a line's counterpart | required | -- | **required** | -- | -- | -- | -- | -- |

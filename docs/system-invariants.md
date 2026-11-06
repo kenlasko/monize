@@ -68,6 +68,7 @@ implied.
 | INV-HOLDING-001 | A holding equals a deterministic replay of the investment ledger | enforced |
 | INV-HOLDING-002 | Every view replays the ledger the same way | enforced |
 | INV-TRANSFER-001 | A transfer's two legs share the VOID boundary and one balance decision | enforced |
+| INV-ACCOUNTDELETE-001 | An account delete refuses rather than takes a ledger row or a schedule naming the account with it | enforced |
 | INV-SPLITFX-001 | A cross-currency split transfer line credits its stated received amount at the implied rate, or the market conversion | enforced |
 | INV-SPLITFX-002 | A split line's recorded received amount survives every rewrite that does not change the line | enforced |
 | INV-SPLITFX-003 | Only the owner's read carries a split line's counterpart | enforced |
@@ -990,6 +991,39 @@ a reconcile state is genuinely per-ledger (a cross-owner transfer's two ledgers
 reconcile independently), and only the VOID boundary -- where money either moved
 or did not -- is shared. See `docs/financial-semantics.md` section 11, "Editing one row must not leave
 the pair describing two different events".
+
+### INV-ACCOUNTDELETE-001 -- a delete takes nothing it was not asked to
+
+```text
+Statement           Permanently deleting an account removes only the account
+                    (and a loan or mortgage's own payment schedule). An account
+                    any ledger row or any scheduled transaction names is refused,
+                    with the count, and the reader is told to close it instead.
+Source of truth     transactions, investment_transactions, scheduled_transactions
+                    and scheduled_transaction_splits rows naming the account
+Enforcement         AccountsService.assertAccountEmpty, asked before the loan's
+                    schedule is removed and again under lockAccountsForBalanceWrite
+                    in the deleting transaction (a row insert's FK lock conflicts
+                    with it, see INV-TRANSFER-001). The schedule count is
+                    countSchedulesReferencingAccounts
+                    (backend/src/accounts/account-schedule-references.ts): a
+                    schedule paid from the account (ON DELETE CASCADE), a scheduled
+                    transfer into it (ON DELETE SET NULL, which turned the transfer
+                    into an uncategorized plain transaction), an investment funded
+                    from it (no action: the delete failed on the FK), or a split
+                    line transferring into it (ON DELETE CASCADE, which left the
+                    other schedule's lines short of its amount) (#2028). The list's
+                    canDelete and GET /accounts/:id/can-delete read the same counts,
+                    so the delete action is not offered for a refused account.
+Concurrency scope   account
+Failure response    400, nothing written
+Required tests      PG integration per referencing column, and that a loan's own
+                    schedule is left out:
+                    backend/test/integration/account-delete-schedules.integration.spec.ts;
+                    the ledger re-count under the lock:
+                    backend/test/integration/account-delete-race.integration.spec.ts.
+Status              enforced
+```
 
 ### INV-SPLITFX-001 -- a split transfer line credits what arrived
 
