@@ -526,7 +526,7 @@ describe("BankSyncPreviewService", () => {
         expect(facts).toMatchObject({
           accountId: ACCOUNT_ID,
           currencyCode: "PLN",
-          amount: "-50.0000",
+          amount: "-50.00000000",
           isTransfer: false,
           payeeText: "Biedronka",
           description: "Groceries",
@@ -1405,7 +1405,7 @@ describe("BankSyncPreviewService", () => {
       expect(first.ruleInput).toEqual({
         accountId: ACCOUNT_ID,
         currencyCode: "PLN",
-        amount: "-50.0000",
+        amount: "-50.00000000",
         isTransfer: false,
         fromAccountId: null,
         toAccountId: null,
@@ -1430,7 +1430,7 @@ describe("BankSyncPreviewService", () => {
         payeeName: "Employer",
         payeeText: "Employer",
         categoryId: null,
-        amount: "1200.1234",
+        amount: "1200.12340000",
         tagIds: [],
       });
     });
@@ -1442,7 +1442,7 @@ describe("BankSyncPreviewService", () => {
           {
             accountId: ACCOUNT_ID,
             currencyCode: "PLN",
-            amount: "-50.0000",
+            amount: "-50.00000000",
             payeeId: null,
             payeeName: "Biedronka",
             categoryId: null,

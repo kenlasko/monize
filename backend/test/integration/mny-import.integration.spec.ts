@@ -627,7 +627,7 @@ describe("mny writers (integration)", () => {
         relations: { payee: true, category: true },
       });
       expect(row).toMatchObject({
-        amount: "-42.5000",
+        amount: "-42.50000000",
         transactionDate: "2024-03-04",
         description: "Weekly shop",
         referenceNumber: "1042",
@@ -687,7 +687,7 @@ describe("mny writers (integration)", () => {
         .getRepository(TransactionTag)
         .find({ where: { tagId: tag.id }, relations: { transaction: true } });
       expect(rowLinks.map((link) => link.transaction.amount)).toEqual([
-        "-100.0000",
+        "-100.00000000",
       ]);
       const legLinks = await dataSource
         .getRepository(TransactionSplitTag)
@@ -696,7 +696,7 @@ describe("mny writers (integration)", () => {
           relations: { transactionSplit: true },
         });
       expect(legLinks.map((link) => link.transactionSplit.amount)).toEqual([
-        "-70.0000",
+        "-70.00000000",
       ]);
       // The item itself is never a category.
       expect(
@@ -1091,7 +1091,7 @@ describe("mny writers (integration)", () => {
       const chequing = await rowsIn(accountIdByKey.get("acct-1")!);
       expect(chequing).toHaveLength(1);
       expect(chequing[0]).toMatchObject({
-        amount: "-2400.0000",
+        amount: "-2400.00000000",
         isTransfer: false,
         linkedTransactionId: null,
       });
@@ -1148,7 +1148,7 @@ describe("mny writers (integration)", () => {
         categoryId: null,
         transferAccountId: null,
         linkedTransactionId: null,
-        amount: "-2400.0000",
+        amount: "-2400.00000000",
       });
 
       const trade = await dataSource
@@ -1223,12 +1223,12 @@ describe("mny writers (integration)", () => {
         const sleeve = await rowsIn(accountIdByKey.get("acct-6")!);
         expect(bank).toHaveLength(1);
         expect(bank[0]).toMatchObject({
-          amount: "-2400.0000",
+          amount: "-2400.00000000",
           currencyCode: "EUR",
         });
         expect(sleeve).toHaveLength(1);
         expect(sleeve[0]).toMatchObject({
-          amount: "2640.0000",
+          amount: "2640.00000000",
           currencyCode: "USD",
           linkedTransactionId: bank[0].id,
         });
@@ -1288,7 +1288,7 @@ describe("mny writers (integration)", () => {
         const cash = await rowsIn(accountIdByKey.get("acct-6")!);
         expect(cash).toHaveLength(1);
         expect(cash[0]).toMatchObject({
-          amount: "-1250.0000",
+          amount: "-1250.00000000",
           currencyCode: "CAD",
         });
         expect(trade.transactionId).toBe(cash[0].id);

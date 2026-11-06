@@ -588,7 +588,7 @@ describe("Shared documents, delivery and detached restore under enforced RLS (SE
         "SELECT current_balance FROM accounts WHERE id = $1",
         [integration.accountId],
       ),
-    ).toEqual([{ current_balance: "0.0000" }]);
+    ).toEqual([{ current_balance: "0.00000000" }]);
     expect(
       (await as(owner, () => groups.detail(owner, groupId))).balances
         .totalExpenses,

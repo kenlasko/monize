@@ -538,8 +538,8 @@ describe("Shared expense journal under enforced RLS (SE-001/002/005/008/012)", (
     } finally {
       failpoint.mockRestore();
     }
-    expect(await balance(f.account.id)).toBe("700.0000");
-    expect(await balance(f.integration.accountId)).toBe("0.0000");
+    expect(await balance(f.account.id)).toBe("700.00000000");
+    expect(await balance(f.integration.accountId)).toBe("0.00000000");
     expect(
       await harness.owner.query("SELECT * FROM transactions WHERE id=$1", [
         f.bankId,
@@ -576,30 +576,30 @@ describe("Shared expense journal under enforced RLS (SE-001/002/005/008/012)", (
       bankTransactionId: f.bankId,
       categoryId: f.category.id,
     });
-    expect(await balance(f.account.id)).toBe("700.0000");
-    expect(await balance(f.integration.accountId)).toBe("200.0000");
+    expect(await balance(f.account.id)).toBe("700.00000000");
+    expect(await balance(f.integration.accountId)).toBe("200.00000000");
     const [bank] = await harness.owner.query(
       "SELECT external_id, amount, is_transfer FROM transactions WHERE id = $1",
       [f.bankId],
     );
     expect(bank).toEqual({
       external_id: "bank:immutable-import-id",
-      amount: "-300.0000",
+      amount: "-300.00000000",
       is_transfer: true,
     });
     const [cost] = await harness.owner.query(
       "SELECT sum(amount) AS amount FROM transactions WHERE account_id = $1 AND NOT is_transfer",
       [f.integration.accountId],
     );
-    expect(cost.amount).toBe("-100.0000");
+    expect(cost.amount).toBe("-100.00000000");
     await as(owner, () =>
       finance.unlink(owner, groupId, saved.id, {
         operationId: randomUUID(),
         expectedRevision: 1,
       }),
     );
-    expect(await balance(f.account.id)).toBe("700.0000");
-    expect(await balance(f.integration.accountId)).toBe("0.0000");
+    expect(await balance(f.account.id)).toBe("700.00000000");
+    expect(await balance(f.integration.accountId)).toBe("0.00000000");
     const [restored] = await harness.owner.query(
       "SELECT category_id, is_transfer, shared_expense_posting_id FROM transactions WHERE id = $1",
       [f.bankId],
@@ -623,15 +623,15 @@ describe("Shared expense journal under enforced RLS (SE-001/002/005/008/012)", (
       sharedBankAmount: "300",
       categoryId: f.category.id,
     });
-    expect(await balance(f.account.id)).toBe("650.0000");
-    expect(await balance(f.integration.accountId)).toBe("200.0000");
+    expect(await balance(f.account.id)).toBe("650.00000000");
+    expect(await balance(f.integration.accountId)).toBe("200.00000000");
     const splits = await harness.owner.query(
       "SELECT kind, amount FROM transaction_splits WHERE transaction_id = $1 ORDER BY kind",
       [f.bankId],
     );
     expect(splits).toEqual([
-      { kind: "category", amount: "-50.0000" },
-      { kind: "transfer", amount: "-300.0000" },
+      { kind: "category", amount: "-50.00000000" },
+      { kind: "transfer", amount: "-300.00000000" },
     ]);
   });
 
@@ -682,7 +682,7 @@ describe("Shared expense journal under enforced RLS (SE-001/002/005/008/012)", (
         saved.id,
       ),
     );
-    expect(await balance(f.integration.accountId)).toBe("200.0000");
+    expect(await balance(f.integration.accountId)).toBe("200.00000000");
     const overview = await as(owner, () => finance.overview(owner, groupId));
     expect(overview.pendingCount).toBe(1);
     expect(overview.entries[0].effect?.position).toBe("220.0000");
@@ -695,8 +695,8 @@ describe("Shared expense journal under enforced RLS (SE-001/002/005/008/012)", (
       bankTransactionId: f.bankId,
       categoryId: f.category.id,
     });
-    expect(await balance(f.integration.accountId)).toBe("220.0000");
-    expect(await balance(f.account.id)).toBe("700.0000");
+    expect(await balance(f.integration.accountId)).toBe("220.00000000");
+    expect(await balance(f.account.id)).toBe("700.00000000");
   });
 
   it("refuses a changed bank preview before booking any ledger row", async () => {
@@ -725,7 +725,7 @@ describe("Shared expense journal under enforced RLS (SE-001/002/005/008/012)", (
         }),
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(await balance(f.integration.accountId)).toBe("0.0000");
+    expect(await balance(f.integration.accountId)).toBe("0.00000000");
     expect(
       await harness.owner.query(
         "SELECT count(*)::int AS n FROM shared_postings WHERE user_id = $1",

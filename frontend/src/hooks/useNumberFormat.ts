@@ -124,9 +124,11 @@ function getNumberFormat(
  * The ISO currency a registered symbol is written through. Any currency with a
  * one-character narrow symbol would do; what matters is that `Intl` lays it out
  * the way the locale lays out a symbol ("$1.00" in `en`, "1,00 $" in `de-DE`),
- * not the way it lays out a code it does not know ("BTC 1.00").
+ * not the way it lays out a code it does not know ("BTC 1.00"). It only shapes
+ * the layout and is never a reporting currency, which comes from
+ * `lib/default-currency.ts`.
  */
-const SYMBOL_LAYOUT_CURRENCY = 'USD';
+const SYMBOL_LAYOUT_ISO_CODE = 'USD';
 
 const LETTER = /\p{L}/u;
 const NUMBER_PARTS = new Set(['integer', 'group', 'decimal', 'fraction', 'compact']);
@@ -153,7 +155,7 @@ function formatMoneyFigure(
   if (!symbol) return getNumberFormat(locale, options).format(amount);
   const parts = getNumberFormat(locale, {
     ...options,
-    currency: SYMBOL_LAYOUT_CURRENCY,
+    currency: SYMBOL_LAYOUT_ISO_CODE,
   }).formatToParts(amount);
   return parts
     .map((part, i) => {

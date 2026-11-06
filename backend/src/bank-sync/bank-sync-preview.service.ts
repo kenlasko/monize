@@ -26,7 +26,7 @@ import {
 } from "../transaction-rules/transaction-rules-applier.service";
 import { TransactionStatus } from "../transactions/entities/transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
-import { roundMoney, sumMoney } from "../common/round.util";
+import { MONEY_SCALE, roundMoney, sumMoney } from "../common/round.util";
 import { operationTagLabel } from "./bank-operation";
 import { BANK_SYNC_MONEY_DECIMALS } from "./bank-sync.constants";
 import { findTagId } from "./bank-sync-operation-tags";
@@ -368,11 +368,11 @@ export class BankSyncPreviewService {
       {
         accountId: account.id,
         currencyCode: context.currencyCode,
-        // The column's own text form, which the writer's stored row carries.
+        // The column's own text form, which the writer's stored row carries:
+        // `NUMERIC(24,8)` reads back at the storage scale, not at the four
+        // places a bank amount is rounded to.
         amount:
-          entry.amount === null
-            ? null
-            : entry.amount.toFixed(BANK_SYNC_MONEY_DECIMALS),
+          entry.amount === null ? null : entry.amount.toFixed(MONEY_SCALE),
         payeeId: payee?.payeeId ?? null,
         payeeName: payee?.payeeName ?? entry.payeeText,
         categoryId: payee?.defaultCategoryId ?? null,

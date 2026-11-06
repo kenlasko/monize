@@ -179,15 +179,15 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
     });
     expect(await balances()).toEqual(
       expect.arrayContaining([
-        { id: accountId, current_balance: "700.0000" },
-        { id: settlementId, current_balance: "200.0000" },
+        { id: accountId, current_balance: "700.00000000" },
+        { id: settlementId, current_balance: "200.00000000" },
       ]),
     );
     const costs = await h.owner.query(
       "SELECT amount FROM transactions WHERE account_id=$1 AND NOT is_transfer",
       [settlementId],
     );
-    expect(costs).toEqual([{ amount: "-100.0000" }]);
+    expect(costs).toEqual([{ amount: "-100.00000000" }]);
     await asOwner(() =>
       finance.unlink(user, groupId, result.entry.id, command(1)),
     );
@@ -369,19 +369,19 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
       expect.arrayContaining([
         {
           account_id: accountId,
-          amount: "-300.0000",
+          amount: "-300.00000000",
           category_id: null,
           is_transfer: true,
         },
         {
           account_id: settlementId,
-          amount: "300.0000",
+          amount: "300.00000000",
           category_id: null,
           is_transfer: true,
         },
         {
           account_id: settlementId,
-          amount: "-100.0000",
+          amount: "-100.00000000",
           category_id: categoryId,
           is_transfer: false,
         },
@@ -389,8 +389,8 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
     );
     expect(await balances()).toEqual(
       expect.arrayContaining([
-        { id: accountId, current_balance: "399.0000" },
-        { id: settlementId, current_balance: "200.0000" },
+        { id: accountId, current_balance: "399.00000000" },
+        { id: settlementId, current_balance: "200.00000000" },
       ]),
     );
   });
@@ -547,8 +547,8 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
     });
     expect(await balances()).toEqual(
       expect.arrayContaining([
-        { id: accountId, current_balance: "800.0000" },
-        { id: settlementId, current_balance: "100.0000" },
+        { id: accountId, current_balance: "800.00000000" },
+        { id: settlementId, current_balance: "100.00000000" },
       ]),
     );
     const actuals = await asOwner(() =>
@@ -665,14 +665,14 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: splitIds[0],
-          amount: "-20.0000",
+          amount: "-20.00000000",
           category_id: categoryId,
           memo: "Private note 0",
           tags: [tagId],
         }),
         expect.objectContaining({
           id: splitIds[1],
-          amount: "-40.0000",
+          amount: "-40.00000000",
           category_id: privateCategory,
           memo: "Private note 1",
           tags: [tagId],
@@ -682,8 +682,8 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
     expect(after).toHaveLength(3);
     expect(await balances()).toEqual(
       expect.arrayContaining([
-        { id: accountId, current_balance: "700.0000" },
-        { id: settlementId, current_balance: "160.0000" },
+        { id: accountId, current_balance: "700.00000000" },
+        { id: settlementId, current_balance: "160.00000000" },
       ]),
     );
     const reopened = await asOwner(() => finance.overview(user, groupId));
@@ -695,7 +695,7 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: splitIds[0],
-          amount: "-160.0000",
+          amount: "-160.00000000",
           tagIds: [tagId],
         }),
       ]),
@@ -714,7 +714,7 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: splitIds[0],
-          amount: "-20.0000",
+          amount: "-20.00000000",
           tags: [tagId],
         }),
       ]),
@@ -730,11 +730,15 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
           [bankIds[0]],
         )
       )[0],
-    ).toEqual({ is_split: true, external_id: "import:0", amount: "-200.0000" });
+    ).toEqual({
+      is_split: true,
+      external_id: "import:0",
+      amount: "-200.00000000",
+    });
     expect(await balances()).toEqual(
       expect.arrayContaining([
-        { id: accountId, current_balance: "700.0000" },
-        { id: settlementId, current_balance: "0.0000" },
+        { id: accountId, current_balance: "700.00000000" },
+        { id: settlementId, current_balance: "0.00000000" },
       ]),
     );
   });
@@ -762,8 +766,8 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
     });
     expect(await balances()).toEqual(
       expect.arrayContaining([
-        { id: accountId, current_balance: "700.0000" },
-        { id: settlementId, current_balance: "0.0000" },
+        { id: accountId, current_balance: "700.00000000" },
+        { id: settlementId, current_balance: "0.00000000" },
       ]),
     );
   });
@@ -817,8 +821,8 @@ describe("Shared entry and personal booking commit under enforced RLS", () => {
     ).toHaveLength(0);
     expect(await balances()).toEqual(
       expect.arrayContaining([
-        { id: accountId, current_balance: "700.0000" },
-        { id: settlementId, current_balance: "200.0000" },
+        { id: accountId, current_balance: "700.00000000" },
+        { id: settlementId, current_balance: "200.00000000" },
       ]),
     );
     expect(
