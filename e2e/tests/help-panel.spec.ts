@@ -1,4 +1,19 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../fixtures';
+
+// A page prefetches the guide's manifest when its header mounts, and a click
+// before the answer arrives is left to the link (monize.net), by design: the
+// choice is made synchronously at click time. Go to the page and wait for the
+// manifest, so the click that follows is the one a reader makes a moment later.
+async function gotoWithGuideKnown(page: Page, path: string) {
+  const manifest = page.waitForResponse(
+    (r) => new URL(r.url()).pathname.endsWith('/help') && r.ok(),
+  );
+  await page.goto(path);
+  await (await manifest).finished();
+  // The app stores the answer a tick after the body is read; one frame covers it.
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+}
 
 // The page header's "?" opens the user guide in a panel beside the page instead
 // of in a new browser tab. The guide ships in the backend (the e2e stack builds
@@ -8,7 +23,7 @@ test.describe('Help panel', () => {
     authedPage: page,
     context,
   }) => {
-    await page.goto('/budgets');
+    await gotoWithGuideKnown(page, '/budgets');
     await expect(page.getByRole('heading', { level: 1, name: 'Budgets' })).toBeVisible();
 
     // Any page the click opens, whatever it is, is a regression.
@@ -31,7 +46,7 @@ test.describe('Help panel', () => {
   test('an internal link navigates inside the panel, and Back returns', async ({
     authedPage: page,
   }) => {
-    await page.goto('/budgets');
+    await gotoWithGuideKnown(page, '/budgets');
     await page.getByRole('link', { name: 'Help for this page' }).click();
 
     const panel = page.getByRole('complementary', { name: 'Help' });
@@ -49,7 +64,7 @@ test.describe('Help panel', () => {
   test('Escape closes the panel, and the icon is still a link to monize.net', async ({
     authedPage: page,
   }) => {
-    await page.goto('/budgets');
+    await gotoWithGuideKnown(page, '/budgets');
     const help = page.getByRole('link', { name: 'Help for this page' });
 
     // The icon is still a link to the same page on monize.net.
@@ -60,5 +75,47 @@ test.describe('Help panel', () => {
     await expect(panel).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(panel).toBeHidden();
+  });
+
+  test('a key that names a section opens the panel at that section', async ({
+    authedPage: page,
+  }) => {
+    // `institutions` is { page: 'accounts', section: 'financial-institutions' }.
+    await gotoWithGuideKnown(page, '/institutions');
+    await expect(page.getByRole('heading', { level: 1, name: 'Institutions' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Help for this page' }).click();
+
+    const panel = page.getByRole('complementary', { name: 'Help' });
+    await expect(panel.getByRole('heading', { level: 2, name: 'Accounts', exact: true })).toBeVisible();
+    const section = panel.getByRole('heading', { name: 'Financial Institutions', exact: true });
+    await expect(section).toBeVisible();
+    // Focus lands on the section, not the top of the page.
+    await expect(section).toBeFocused();
+    expect(page.url()).toMatch(/\/institutions$/);
+  });
+
+  test('a Ctrl-click goes to monize.net in a new tab and leaves the panel closed', async ({
+    authedPage: page,
+    context,
+  }) => {
+    // Nothing may reach the network: record the request the new tab makes and
+    // refuse it.
+    const requested: string[] = [];
+    await context.route('https://www.monize.net/**', (route) => {
+      requested.push(route.request().url());
+      return route.abort();
+    });
+
+    await gotoWithGuideKnown(page, '/budgets');
+    await expect(page.getByRole('heading', { level: 1, name: 'Budgets' })).toBeVisible();
+
+    const popup = context.waitForEvent('page');
+    await page.getByRole('link', { name: 'Help for this page' }).click({ modifiers: ['Control'] });
+    await popup;
+
+    await expect.poll(() => requested).toContain('https://www.monize.net/docs/budgets');
+    await expect(page.getByRole('complementary', { name: 'Help' })).toBeHidden();
+    expect(page.url()).toMatch(/\/budgets$/);
   });
 });
