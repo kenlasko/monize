@@ -385,6 +385,7 @@ describe("BondCatalogService", () => {
         faceValue: "100",
         cashPriced: true,
         indexedPrincipal: false,
+        listsAuctions: true,
         infoUrl:
           "https://www.treasurydirect.gov/marketable-securities/treasury-notes/",
       },
@@ -462,6 +463,8 @@ describe("BondCatalogService", () => {
         faceValue: "100.00",
         cashPriced: false,
         indexedPrincipal: false,
+        // Poland sells in monthly sale windows, not by auction.
+        listsAuctions: false,
       },
       {
         id: "p-new",
@@ -476,6 +479,7 @@ describe("BondCatalogService", () => {
         faceValue: null,
         cashPriced: false,
         indexedPrincipal: false,
+        listsAuctions: false,
       },
     ]);
     // Ordered by country, issuer and program code, the newest sale window first.

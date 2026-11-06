@@ -29,6 +29,7 @@ import { todayYMD } from "../common/date-utils";
 import { ParseCalendarDatePipe } from "../common/pipes/parse-calendar-date.pipe";
 import { tr } from "../i18n/translate";
 import { SeriesFetchError } from "./bond-adapter";
+import { BondAuctions, BondAuctionsService } from "./bond-auctions.service";
 import { BondCatalogService, BondProgramSummary } from "./bond-catalog.service";
 import {
   BondDataInconsistentCode,
@@ -87,6 +88,7 @@ export class BondsController {
     private readonly series: BondSeriesService,
     private readonly offers: BondOfferService,
     private readonly holdings: BondHoldingsService,
+    private readonly auctions: BondAuctionsService,
   ) {}
 
   @Get("programs")
@@ -398,6 +400,42 @@ export class BondsController {
   ): Promise<ExpectedSeries> {
     return this.mapBondErrors(() =>
       this.holdings.expectedSeries(req.user.id, securityId, date),
+    );
+  }
+
+  @Get("securities/:securityId/auctions")
+  @Throttle({ default: { ttl: 60_000, limit: 10 } }) // each call reads the issuer's site, like a fetch
+  @ApiOperation({
+    summary: "The auctions a purchase of this security around a date could be",
+    description:
+      "For a country that sells by auction: the auctions of the security's " +
+      "program the official source lists with an issue date within a month of " +
+      "`date`, nearest first, each with the series code a fetch takes and the " +
+      "catalog's `instrumentId` when stored. Read from the issuer when asked, " +
+      "charged against the series fetch allowance, nothing stored. " +
+      "`supported` is false (and nothing is requested) for a country that " +
+      "sells in sale windows.",
+  })
+  @ApiQuery({ name: "date", example: "2026-11-06" })
+  @ApiResponse({ status: 200, description: "The auctions" })
+  @ApiResponse({ status: 400, description: "date is not a calendar date" })
+  @ApiResponse({
+    status: 404,
+    description: "Not the caller's security, or not linked to a bond program",
+  })
+  @ApiResponse({ status: 429, description: "Over the fetch allowance" })
+  @ApiResponse({
+    status: 503,
+    description: "The official source is unavailable",
+  })
+  auctionsFor(
+    @Request() req,
+    @Param("securityId", ParseUUIDPipe) securityId: string,
+    @Query("date", new ParseCalendarDatePipe()) date: string,
+  ): Promise<BondAuctions> {
+    return this.mapSeriesErrors(
+      () => this.auctions.auctionsFor(req.user.id, securityId, date),
+      false,
     );
   }
 

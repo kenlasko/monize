@@ -199,6 +199,33 @@ export function sourceUnavailable(
   );
 }
 
+/**
+ * One auction the official source lists for a program, for a person choosing
+ * which series a purchase was: nothing here is stored, and the series is read
+ * through `fetchSeries(seriesCode)` once chosen. Dates are YYYY-MM-DD; a rate
+ * or a price is the source's own decimal text, null until the auction is held.
+ */
+export interface AuctionListing {
+  /** The code `fetchSeries` takes for the series this auction sold. */
+  readonly seriesCode: string;
+  /** The security's identifier as its market writes it (a CUSIP, an ISIN). */
+  readonly identifier: string;
+  /** The source's own name for the term ("13-Week", "10-Year"). */
+  readonly term: string;
+  readonly auctionDate: string;
+  readonly issueDate: string;
+  readonly maturityDate: string;
+  /** More of an outstanding series: the terms are the original issue's. */
+  readonly reopening: boolean;
+  /** Announced and not yet held: no rate and no price. */
+  readonly announced: boolean;
+  /** What `ratePercent` is: a discount rate, a coupon, or a spread over an index. */
+  readonly rateKind: "DISCOUNT" | "COUPON" | "SPREAD";
+  readonly ratePercent: string | null;
+  /** The auction price per 100 of face value. */
+  readonly pricePer100: string | null;
+}
+
 /** Everything one country contributes: calendars, benchmarks, programs, series sources. */
 export interface BondAdapter {
   readonly countryCode: string;
@@ -256,6 +283,19 @@ export interface BondAdapter {
    * form offer "Fetch <code>" without a client knowing the country's grammar.
    */
   seriesCodeFor?(programCode: string, saleDate: string): string | null;
+  /**
+   * The auctions of `programCode` the official source lists with an issue date
+   * within a month of `date` (YYYY-MM-DD), nearest first: for a market that
+   * sells by auction rather than in monthly sale windows, so a purchase form can
+   * show which series were (or will be) issued around the trade date. Read
+   * only when a person asks (INV-BOND-008); nothing is stored. Gated under
+   * `seriesProviderId`.
+   */
+  auctionsNear?(
+    programCode: string,
+    date: string,
+    fetch: BondFetch,
+  ): Promise<AuctionListing[]>;
   /**
    * The earliest sale month (`YYYY-MM`) the adapter's templates are validated
    * for, the lower bound of its series history.

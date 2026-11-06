@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { DataSource } from "typeorm";
 import { acquireAdvisoryLock, LockScope } from "../common/db/locks";
@@ -20,7 +20,6 @@ import {
   FetchSyncService,
 } from "../common/jobs/fetch-sync.service";
 import { AuthAttemptCounterService } from "../auth/auth-attempt-counter.service";
-import { tr } from "../i18n/translate";
 import { ProviderHealthService } from "../provider-health/provider-health.service";
 import { isProviderUnavailable } from "../provider-health/provider-unavailable.error";
 import {
@@ -39,16 +38,13 @@ import { benchmarkReadsOf } from "./domain/benchmark-reads";
 import { BondTermsError, parseBondTerms } from "./domain/bond-terms";
 import { BondDataNotFoundError } from "./bond-errors";
 import { HttpFetch, SeriesHttp } from "./series-http";
+import { chargeSeriesFetchAttempt } from "./series-fetch-allowance";
 
-/**
- * Explicit fetches a user may make per window, on every entry point (REST, the
- * assistant, MCP): each may read the issuer's site. The counter is the shared
- * `auth_attempt_counters` row, so replicas agree, and an attempt counts whether
- * it succeeds, finds the series stored or fails.
- */
-export const SERIES_FETCH_LIMIT = 10;
-export const SERIES_FETCH_WINDOW_MS = 60_000;
-export const SERIES_FETCH_SCOPE = "bond-series-fetch";
+export {
+  SERIES_FETCH_LIMIT,
+  SERIES_FETCH_SCOPE,
+  SERIES_FETCH_WINDOW_MS,
+} from "./series-fetch-allowance";
 
 /** The catalog's answer to a series request: the instrument, and whether this call stored it. */
 export interface BondSeriesResult extends BondInstrumentSummary {
@@ -243,41 +239,15 @@ export class BondSeriesService {
     seriesCode: string,
     options: FetchSeriesOptions = {},
   ): Promise<BondSeriesResult> {
-    if (options.limiter !== "none") await this.chargeFetchAttempt(userId);
+    if (options.limiter !== "none") {
+      await chargeSeriesFetchAttempt(this.attempts, userId);
+    }
     const result = await this.fetchAndStore(countryCode, seriesCode, options);
     // Detached: the network benchmark refresh and the every-user price recompute
     // must not hold the person's REST/AI/MCP answer. The row is committed, and
     // a recompute that fails is logged and repaired by the daily job.
     this.dispatchAfterStored([result]);
     return result;
-  }
-
-  /**
-   * One explicit fetch attempt against the user's per-minute allowance, before
-   * anything is read or requested: the attempt is counted first, so a failed
-   * fetch is charged like a successful one and the refused one sends no request.
-   * The same allowance for the REST route, the assistant and MCP.
-   */
-  private async chargeFetchAttempt(userId: string): Promise<void> {
-    const { count } = await this.attempts.increment(
-      SERIES_FETCH_SCOPE,
-      userId,
-      SERIES_FETCH_WINDOW_MS,
-      "fixed",
-    );
-    if (count > SERIES_FETCH_LIMIT) {
-      throw new HttpException(
-        {
-          message: tr(
-            "errors.bonds.SERIES_FETCH_RATE_LIMITED",
-            `At most ${SERIES_FETCH_LIMIT} bond series can be fetched per minute; wait a minute and try again.`,
-            { limit: String(SERIES_FETCH_LIMIT) },
-          ),
-          errorCode: "SERIES_FETCH_RATE_LIMITED",
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
   }
 
   /**

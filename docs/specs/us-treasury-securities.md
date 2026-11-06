@@ -382,6 +382,50 @@ live source does differently:
 The constructed fixtures keep their values and take the live names. The flags
 are `Yes`/`No` and the dates carry `T00:00:00`, as inferred.
 
+## 11. Choosing the auction in the purchase form
+
+A Treasury series is sold at one auction (a coupon security also at its
+reopenings), never in a sale window, so the form's inference from the trade
+date (`series-on-sale`) never finds one and a person does not know a CUSIP or an
+issue date by heart. The form lists the auctions instead.
+
+- **Adapter.** `auctionsNear(programCode, date, fetch)`
+  (`adapters/us/series/auctions-near.ts`): one `TA_WS/securities/search` per
+  security type of the program (`securityType` Bill, Note or Bond,
+  `dateFieldName=issueDate`, issue dates 31 days either side of `date`), the
+  program's records kept by their flags (section 9c: a TIPS is a Note or Bond
+  with `inflationProtected`, an FRN a Note with `floatingRate`). Each is an
+  `AuctionListing`: the series code a fetch takes (a bill's CUSIP and issue date,
+  a coupon security's CUSIP), the CUSIP, `securityTerm`, the auction, issue and
+  maturity dates, `reopening`, `announced` (no `highPrice` yet), the rate (a
+  bill's `highRate` as a discount rate, a coupon, an FRN's spread) and
+  `highPrice`. Nearest issue first, then the earlier, then the shorter. A record
+  it cannot read, an invalid CUSIP and a bill shorter than 28 days are left out,
+  never a reason to fail the list; the fetch of the chosen code applies every
+  check of section 3.
+- **API.** `GET /bonds/securities/:securityId/auctions?date=` (`BondAuctionsService`):
+  `{ countryCode, supported, auctions }`, each auction with the catalog's
+  `instrumentId` when its series is stored. Read when a person asks, never on
+  opening the form (INV-BOND-008), charged against the per-minute series fetch
+  allowance and gated under `treasurydirect`; nothing is stored. A country whose
+  adapter has no `auctionsNear` answers `supported: false` with no request.
+  `GET /bonds/programs` says `listsAuctions` per program, so the form knows
+  without a request.
+- **Form.** For a program with `listsAuctions`, a BUY or REINVEST names its
+  series: the default option reads "Choose the auction below" (not "No series
+  on sale on this date", which is never true of a window that does not exist),
+  and submitting without one is refused in the form. "Find the auction" lists
+  the auctions around the form's date, filterable by term; an announced auction
+  is shown with its auction date and cannot be chosen until its results are
+  published. Choosing one selects its stored series, or fetches it first (the
+  same `POST /bonds/instruments/fetch`), then sets the date to the issue date
+  (an auction purchase settles on it) and, when the price is empty, the price
+  to the auction price per 100 (one unit is 100 USD of face value); the form
+  says what it changed.
+- **Not built.** A purchase on the secondary market of a security outside the
+  month around the trade date: it is fetched by code
+  (`POST /bonds/instruments/fetch`) until the form takes a CUSIP.
+
 ## 10. To verify before merge
 
 The shell of the session that wrote this could not reach `treasurydirect.gov`,
@@ -419,7 +463,8 @@ product types were checked on 2026-11-06 (section 9c); what remains:
 - Whether a bill's price is rounded or truncated at the sixth decimal (the
   recorded bill agrees with both), and whether a CMB shorter than 28 days
   (refused here) exists as a security people hold.
-- The purchase form has no way to name a CUSIP (no `seriesCodeFor`): a person
-  fetches through `POST /bonds/instruments/fetch` until a CUSIP input is built.
+- The purchase form lists the auctions around the trade date (section 11) but
+  takes no CUSIP: a series bought on the secondary market outside that month is
+  fetched with `POST /bonds/instruments/fetch`.
 - Savings bonds: whether the value of a 100 USD bond is computed from a 25 USD
   bond (31 CFR 359 Appendix A) before the book-entry scaling.

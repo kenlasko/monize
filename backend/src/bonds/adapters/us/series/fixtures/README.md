@@ -31,6 +31,7 @@ golden cases are computed from them.
 | `search-91282CRE3.json`, `R_20260723_3.xml` | A 10-year TIPS, 2-3/8 %, Ref CPI 333.96974, with one reopening, and its original auction's results. |
 | `search-91282CQM6.json`, `R_20260428_1.xml` | The 2-year FRN above, with two reopenings. |
 | `search-912810FQ6.json` | The 2032 TIPS of 2001; its record names no results file. |
+| `issued-Bill-2026-10-06-2026-12-07.json`, `issued-Note-...`, `issued-Bond-...` | `TA_WS/securities/search?securityType=<type>&dateFieldName=issueDate&startDate=2026-10-06&endDate=2026-12-07`: what `auctionsNear` asks for a trade date of 2026-11-06, read by `../auctions-near.spec.ts`. Holds announced auctions, reopenings, a TIPS and an FRN typed Note. |
 | `search-13-week-bills.json` | `TA_WS/securities/search?securityType=Bill&securityTerm=13-Week&dateFieldName=issueDate&startDate=2026-09-01&endDate=2026-11-06`: ten weekly 13-week auctions, the query the benchmark fetch sends. |
 
 What the live records do not carry, and how the fetch reads it instead: no

@@ -51,6 +51,24 @@ export interface BondProgramSummary {
   readonly cashPriced: boolean;
   /** True when the principal is indexed, so the price includes the inflation adjustment. */
   readonly indexedPrincipal: boolean;
+  /**
+   * True when the program's country sells by auction and its adapter lists the
+   * auctions (`auctionsNear`), so a purchase form asks
+   * `GET /bonds/securities/:id/auctions` instead of a sale window.
+   */
+  readonly listsAuctions: boolean;
+}
+
+/** Whether the country's installed adapter lists its auctions. */
+function listsAuctionsOf(
+  countryCode: string,
+  adapters: readonly BondAdapter[] = INSTALLED_BOND_ADAPTERS,
+): boolean {
+  const adapter = adapters.find((a) => a.countryCode === countryCode);
+  return (
+    adapter?.auctionsNear !== undefined &&
+    adapter.seriesProviderId !== undefined
+  );
 }
 
 /**
@@ -223,6 +241,7 @@ export class BondCatalogService implements OnApplicationBootstrap {
         faceValue: templateFaceValueOf(key),
         cashPriced: templateCashPricedOf(key),
         indexedPrincipal: templateIndexedPrincipalOf(key),
+        listsAuctions: listsAuctionsOf(r.issuer_country_code),
       };
     });
   }

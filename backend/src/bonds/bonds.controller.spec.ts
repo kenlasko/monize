@@ -24,6 +24,7 @@ import {
   BondDataNotFoundError,
 } from "./bond-errors";
 import { BondHoldingsService } from "./bond-holdings.service";
+import { BondAuctionsService } from "./bond-auctions.service";
 import { BondPriceService } from "./bond-price.service";
 import { todayYMD } from "../common/date-utils";
 import { BondOfferService } from "./bond-offer.service";
@@ -60,6 +61,7 @@ describe("BondsController", () => {
     seriesHoldings: jest.Mock;
     redemptionSplit: jest.Mock;
   };
+  let auctions: { auctionsFor: jest.Mock };
 
   beforeEach(async () => {
     catalog = {
@@ -90,6 +92,13 @@ describe("BondsController", () => {
       seriesHoldings: jest.fn().mockResolvedValue({ holdings: [] }),
       redemptionSplit: jest.fn(),
     };
+    auctions = {
+      auctionsFor: jest.fn().mockResolvedValue({
+        countryCode: "US",
+        supported: true,
+        auctions: [],
+      }),
+    };
     const moduleRef = await Test.createTestingModule({
       controllers: [BondsController],
       providers: [
@@ -99,6 +108,7 @@ describe("BondsController", () => {
         { provide: BondPriceService, useValue: prices },
         { provide: BondOfferService, useValue: offers },
         { provide: BondHoldingsService, useValue: holdings },
+        { provide: BondAuctionsService, useValue: auctions },
       ],
     }).compile();
     controller = moduleRef.get(BondsController);
@@ -876,5 +886,25 @@ describe("BondsController", () => {
       );
       expect(errors.length).toBeGreaterThan(0);
     });
+  });
+  it("lists the auctions for the caller's own security, with the user from the JWT", async () => {
+    const req = { user: { id: "user-1" } };
+    await expect(
+      controller.auctionsFor(req, "sec-1", "2026-11-06"),
+    ).resolves.toEqual({ countryCode: "US", supported: true, auctions: [] });
+    expect(auctions.auctionsFor).toHaveBeenCalledWith(
+      "user-1",
+      "sec-1",
+      "2026-11-06",
+    );
+  });
+
+  it("answers an unavailable source on the auctions route as a series error", async () => {
+    auctions.auctionsFor.mockRejectedValue(
+      new SeriesFetchError("SOURCE_UNAVAILABLE", { reason: "timeout" }),
+    );
+    await expect(
+      controller.auctionsFor({ user: { id: "user-1" } }, "sec-1", "2026-11-06"),
+    ).rejects.toMatchObject({ status: 503 });
   });
 });

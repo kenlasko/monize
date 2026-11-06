@@ -11,6 +11,7 @@ import { fetchBlsCpi } from "./us-bls-cpi";
 import { US_CPI_U_NSA, US_TBILL_13W_MMY, usBenchmarks } from "./us-benchmarks";
 import { fetchTbill13w } from "./us-tbill-13w";
 import { todayInTimezone } from "../../../common/date-utils";
+import { auctionsNear } from "./series/auctions-near";
 import { fetchSeries } from "./series/fetch-series";
 import { SERIES_PROVIDER } from "./series/series-source";
 import { SERIES_TEMPLATES } from "./series/templates";
@@ -56,6 +57,8 @@ export const UNITED_STATES_BOND_ADAPTER: BondAdapter = {
     fetchSeries(seriesCode, fetch),
   seriesProviderId: SERIES_PROVIDER,
   programOf,
+  auctionsNear: (programCode: string, date: string, fetch: BondFetch) =>
+    auctionsNear(programCode, date, fetch),
   async fetchBenchmark(code: string, fetch: BondFetch) {
     switch (code) {
       case US_CPI_U_NSA:
