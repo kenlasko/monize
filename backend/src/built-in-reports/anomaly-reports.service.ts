@@ -14,7 +14,12 @@ import {
   AnomalySeverity,
 } from "./dto";
 import { formatDateYMD } from "../common/date-utils";
-import { roundMoney, sumMoney, toMoneyNumber } from "../common/round.util";
+import {
+  MONEY_SCALE,
+  roundMoney,
+  sumMoney,
+  toMoneyNumber,
+} from "../common/round.util";
 import { investmentExclusionSql } from "../common/investment-filter.util";
 
 /**
@@ -122,7 +127,11 @@ export class AnomalyReportsService {
     const converted: ConvertedExpense[] = [];
     for (const row of rawResults) {
       const amount = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.amount),
+        // An aggregate in the row's own currency, read before conversion: a coin's
+        // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
+        // the same), so a 2,500-sat total is not rounded to zero before it is
+        // converted (INV-MONEY-001).
+        toMoneyNumber(row.amount, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,

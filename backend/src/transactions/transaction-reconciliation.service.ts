@@ -34,7 +34,7 @@ import {
 } from "./reconciled-lock.util";
 import { roundMoney } from "../common/round.util";
 import {
-  loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
 } from "../common/currency-places.util";
 
@@ -534,7 +534,9 @@ export class TransactionReconciliationService {
         [userId, accountId, TransactionStatus.RECONCILED],
       );
       // The ledger figures are in the account's currency.
-      const currencyPlaces = await loadCurrencyPlaces(m, [owned.currencyCode]);
+      const currencyPlaces = await loadCurrencyPlacesForRead(m, [
+        owned.currencyCode,
+      ]);
       return [
         owned,
         listed,

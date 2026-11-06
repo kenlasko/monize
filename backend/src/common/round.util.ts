@@ -1,9 +1,14 @@
 /**
  * The largest one-ULP nudge, in units of the last place, that `roundToDecimals`
- * applies: below a tenth of a unit it can recover a midpoint lost to IEEE 754
- * multiplication but never carry an exact value into the next unit.
+ * applies. A nudge recovers a midpoint lost to IEEE 754 multiplication, but a
+ * value whose true digits sit just under a midpoint rounds high once the nudge
+ * is a sizeable fraction of a unit (at 8 places, between about 1e6 and 4.5e6 a
+ * 0.05 to 0.1 unit nudge carried `3422512.090132934` to `...94`). A hundredth
+ * of a unit is far below any digit a stored amount carries past its last
+ * place, so the nudge is only ever a tiebreak; past it the exact string path
+ * takes over.
  */
-const NUDGE_LIMIT_UNITS = 0.1;
+const NUDGE_LIMIT_UNITS = 0.01;
 
 /**
  * Round a number to the specified decimal places using "round half away
@@ -43,11 +48,12 @@ export function roundToDecimals(value: number, decimalPlaces: number): number {
   const sign = value < 0 ? -1 : 1;
   const abs = Math.abs(value);
   // Past this magnitude one ULP is a sizeable fraction of a unit at
-  // `decimalPlaces` (at 8 places, from about 4.5 million): the nudge below
+  // `decimalPlaces` (at 8 places, from about 450 thousand): the nudge below
   // would push an exact value to the next unit (21000000 at 8 places came back
-  // 21000000.00000001) and the float shift no longer lands on an integer.
-  // Round the shortest decimal string exactly instead; no fiat amount at 4
-  // places reaches it below 45 billion, so those keep the path below.
+  // 21000000.00000001), round a value just under a midpoint high, and the
+  // float shift no longer lands on an integer. Round the shortest decimal
+  // string exactly instead; no fiat amount at 4 places reaches it below 4.5
+  // billion, so those keep the path below.
   if (abs * 10 ** decimalPlaces * Number.EPSILON >= NUDGE_LIMIT_UNITS) {
     return Number(`${toScaledUnits(value, decimalPlaces)}e-${decimalPlaces}`);
   }

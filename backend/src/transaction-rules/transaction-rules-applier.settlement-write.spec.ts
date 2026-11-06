@@ -130,7 +130,7 @@ function harness(rows: Transaction[]) {
       },
     ],
     // The split write reads the row currency's decimal places.
-    [Currency, { find: jest.fn().mockResolvedValue([]) }],
+    [Currency, { query: jest.fn().mockResolvedValue([]) }],
     [Category, { find: jest.fn().mockResolvedValue([]) }],
     [Payee, { find: jest.fn().mockResolvedValue([]) }],
     [Tag, { find: jest.fn().mockResolvedValue([]) }],

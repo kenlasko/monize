@@ -1375,4 +1375,67 @@ describe("SpendingReportsService", () => {
       expect(result.excludedCount).toBe(0);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // A coin's per-currency sum is read at its stored scale before it converts
+  // (INV-MONEY-001): rounding 0.000025 BTC at the fiat four places gave zero,
+  // and 136,000 CAD per BTC turned that into a 3.40 CAD expense that vanished.
+  // ---------------------------------------------------------------------------
+  describe("getSpendingByCategory with a coin's total", () => {
+    beforeEach(() => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+      exchangeRateService.getLatestRates.mockResolvedValue([
+        { fromCurrency: "BTC", toCurrency: "CAD", rate: 136000 },
+        { fromCurrency: "USD", toCurrency: "CAD", rate: 1.36 },
+      ]);
+      categoriesRepository.find.mockResolvedValue([mockParentCategory]);
+    });
+
+    it("converts a 2,500-sat total instead of rounding it to zero", async () => {
+      // The query negates a debit (NET_SPEND_AMOUNT), so a spend is positive.
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: "cat-parent",
+          currency_code: "BTC",
+          total: "0.00002500",
+        },
+      ]);
+
+      const result = await service.getSpendingByCategory(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.currency).toBe("CAD");
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].total).toBe(3.4);
+      expect(result.totalSpending).toBe(3.4);
+      expect(result.excludedCount).toBe(0);
+    });
+
+    it("keeps a fiat total exactly as it was at four places", async () => {
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: "cat-parent",
+          currency_code: "USD",
+          total: "12.34567800",
+        },
+      ]);
+
+      const result = await service.getSpendingByCategory(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      // 12.345678 USD x 1.36 = 16.79012208, rounded once at four places. The
+      // fiat row now reads at eight places before converting; the result is the
+      // same figure the four-place read gave because the stored column holds at
+      // most four fiat places.
+      expect(result.data[0].total).toBe(16.7901);
+    });
+  });
 });

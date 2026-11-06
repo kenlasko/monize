@@ -127,6 +127,7 @@ import { moneyDecimalsFor, roundMoney } from "../common/round.util";
 import { assertAmountPrecision } from "../common/amount-precision.util";
 import {
   loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
   precisionCurrencyFor,
 } from "../common/currency-places.util";
@@ -836,7 +837,7 @@ export class TransactionsService {
     // The commit refuses an amount with more places than the account's
     // currency carries; the preview says so first.
     await withScopedDb(this.dataSource, async (m) => {
-      const places = await loadCurrencyPlaces(m, [account.currencyCode]);
+      const places = await loadCurrencyPlacesForRead(m, [account.currencyCode]);
       assertAmountPrecision(
         input.amount,
         precisionCurrencyFor(places, account.currencyCode),
@@ -1081,7 +1082,9 @@ export class TransactionsService {
     if (input.amount !== undefined) {
       const newAmount = input.amount;
       await withScopedDb(this.dataSource, async (m) => {
-        const places = await loadCurrencyPlaces(m, [existing.currencyCode]);
+        const places = await loadCurrencyPlacesForRead(m, [
+          existing.currencyCode,
+        ]);
         assertAmountPrecision(
           newAmount,
           precisionCurrencyFor(places, existing.currencyCode),
@@ -1907,7 +1910,7 @@ export class TransactionsService {
     rows: readonly { currencyCode: string }[],
   ): Promise<number> {
     const codes = [...new Set(rows.map((row) => row.currencyCode))];
-    const places = await loadCurrencyPlaces(m, codes);
+    const places = await loadCurrencyPlacesForRead(m, codes);
     return Math.max(
       moneyDecimalsFor(undefined),
       ...codes.map((code) => moneyDecimalsForCode(places, code)),
@@ -2971,19 +2974,48 @@ export class TransactionsService {
         effectiveAccountCurrency,
       );
       const decimals = moneyDecimalsFor(accountCurrency.decimalPlaces);
-      if (updateData.amount !== undefined && updateData.amount !== null) {
-        assertAmountPrecision(updateData.amount, accountCurrency, "amount");
-      }
+      // The amounts the row will hold, not the fields the request sent: a row
+      // moved to an account in another currency carries its stored amount
+      // (and its stored split lines, when none are resent) into that currency,
+      // so a -0.12345678 BTC row moved into a USD account is refused like a
+      // typed one.
+      assertAmountPrecision(
+        updateData.amount ?? locked.amount,
+        accountCurrency,
+        "amount",
+      );
+      const originalAmount =
+        "originalAmount" in updateData
+          ? updateData.originalAmount
+          : transaction.originalAmount;
       if (
-        updateData.originalAmount !== undefined &&
-        updateData.originalAmount !== null &&
+        originalAmount !== undefined &&
+        originalAmount !== null &&
         originalCurrencyCode
       ) {
         assertAmountPrecision(
-          updateData.originalAmount,
+          originalAmount,
           precisionCurrencyFor(places, originalCurrencyCode),
           "originalAmount",
         );
+      }
+      if (
+        locked.isSplit &&
+        splits == null &&
+        updateData.accountId !== undefined &&
+        updateData.accountId !== locked.accountId
+      ) {
+        const storedLines = await m.find(TransactionSplit, {
+          where: { transactionId: id },
+          order: { id: "ASC" },
+        });
+        for (const [index, line] of storedLines.entries()) {
+          assertAmountPrecision(
+            line.amount,
+            accountCurrency,
+            `splits[${index}].amount`,
+          );
+        }
       }
       await this.assertNoStructuralTransferLegEdit(
         m,

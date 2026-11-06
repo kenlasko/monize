@@ -171,6 +171,14 @@ describe("roundToDecimals", () => {
       expect(roundToDecimals(1e21, 4)).toBe(1e21);
     });
 
+    it("does not carry a value just under a midpoint high in the 1e6 to 4.5e6 band at eight places", () => {
+      // The shortest decimal string rounds to ...93; a nudge of 0.05 to 0.1
+      // unit used to carry it to ...94. Mirrored in the frontend format test.
+      expect(roundToDecimals(3422512.090132934, 8)).toBe(3422512.09013293);
+      expect(roundToDecimals(-3422512.090132934, 8)).toBe(-3422512.09013293);
+      expect(roundToDecimals(3422512.090132935, 8)).toBe(3422512.09013294);
+    });
+
     it("handles zero without producing -0 or NaN", () => {
       expect(roundToDecimals(0, 4)).toBe(0);
       expect(Object.is(roundToDecimals(0, 4), 0)).toBe(true);

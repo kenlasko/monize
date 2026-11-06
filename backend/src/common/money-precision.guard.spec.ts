@@ -1,5 +1,5 @@
-import { readFileSync } from "fs";
-import { join } from "path";
+import { readdirSync, readFileSync } from "fs";
+import { join, relative } from "path";
 import * as ts from "typescript";
 
 /**
@@ -151,6 +151,21 @@ function read(rel: string): string {
   return readFileSync(join(SRC_ROOT, rel), "utf8");
 }
 
+/** Every `.ts` file under `dir`, as a path relative to `SRC_ROOT`. */
+function sourceFiles(dir: string = SRC_ROOT): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) return sourceFiles(full);
+    return entry.name.endsWith(".ts") ? [relative(SRC_ROOT, full)] : [];
+  });
+}
+
+/**
+ * The one place a one-argument `toMoneyNumber(` is the subject: the helper's
+ * own spec, which pins what its default does.
+ */
+const TO_MONEY_NUMBER_DEFAULT_SPEC = "common/round.util.spec.ts";
+
 describe("account-currency amounts are rounded at their currency's precision", () => {
   const findingsByFile = new Map(
     ACCOUNT_CURRENCY_FILES.map((rel) => [
@@ -234,5 +249,44 @@ describe("account-currency amounts are rounded at their currency's precision", (
       ].join("\n"),
     );
     expect(clean).toEqual([]);
+  });
+});
+
+describe("toMoneyNumber always names the precision it reads at", () => {
+  // `toMoneyNumber(row.total)` reads at four places, which rounds a coin's
+  // 0.00002500 to zero before it is converted (INV-MONEY-001). Wherever it is
+  // called it says which precision it means: `MONEY_SCALE` for an aggregate in
+  // a row's own currency (lossless; the same for fiat), `moneyDecimalsFor(...)`
+  // for an account's currency, `FIAT_MONEY_DECIMALS` for a reporting-currency
+  // figure. Baseline is empty and stays so.
+  const oneArgument = (rel: string): string[] => {
+    const source = read(rel);
+    if (!source.includes("toMoneyNumber(")) return [];
+    return moneyPrecisionFindings(rel, source)
+      .filter((finding) => finding.includes("toMoneyNumber(...)"))
+      .map((finding) => `${rel}:${finding}`);
+  };
+
+  it("has no one-argument toMoneyNumber( anywhere under backend/src", () => {
+    const offenders = sourceFiles()
+      .filter((rel) => rel !== TO_MONEY_NUMBER_DEFAULT_SPEC)
+      .flatMap(oneArgument);
+    if (offenders.length > 0) {
+      throw new Error(
+        "toMoneyNumber(x) reads at the fiat four places and rounds a coin's " +
+          "sum to zero before it converts: pass MONEY_SCALE for an aggregate " +
+          "in the row's own currency, moneyDecimalsFor(...) for an account's " +
+          "currency, or FIAT_MONEY_DECIMALS for a reporting-currency figure " +
+          "(docs/specs/money-precision.md, INV-MONEY-001):\n  " +
+          offenders.join("\n  "),
+      );
+    }
+  });
+
+  it("scans the source tree, and sees a bare call", () => {
+    const files = sourceFiles();
+    expect(files).toContain("built-in-reports/spending-reports.service.ts");
+    expect(files).toContain(TO_MONEY_NUMBER_DEFAULT_SPEC);
+    expect(oneArgument(TO_MONEY_NUMBER_DEFAULT_SPEC)).not.toEqual([]);
   });
 });

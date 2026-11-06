@@ -1,8 +1,8 @@
-import { MONEY_SCALE, roundMoney } from "../../common/round.util";
+import { FIAT_MONEY_DECIMALS, roundMoney } from "../../common/round.util";
 
 /**
  * Primitive obfuscation operations shared by the rules engine and the JSONB
- * handlers. Kept dependency-free (bar the money-scale constant) so they are
+ * handlers. Kept dependency-free (bar the money-precision constant) so they are
  * trivially unit-testable.
  */
 
@@ -32,15 +32,21 @@ export function maskText(value: unknown): unknown {
 
 /**
  * Multiplies a monetary value by the obfuscation multiplier, rounding to
- * `MONEY_SCALE` (eight) decimal places, the scale of the money columns, via
- * integer arithmetic to avoid floating-point drift, per the project's
- * financial-math convention. Rounding at four would truncate a coin amount in
- * the support copy (0.00002500 BTC scaled by 1.5 is 0.000037500, not 0.0000);
- * a fiat value carries at most four places on the way in, so it is unchanged.
- * Null/undefined pass through; unparseable values are returned unchanged.
+ * `decimals` places via integer arithmetic to avoid floating-point drift, per
+ * the project's financial-math convention. `decimals` is the money precision of
+ * the currency the value is in: `FIAT_MONEY_DECIMALS` by default, so a fiat
+ * value scales byte for byte as it always did (12.3456 x 1.37 is 16.9135, not
+ * 16.913472, which the restored copy's four-place rows would refuse), and the
+ * caller passes `moneyDecimalsFor(...)` of a coin's currency so
+ * 0.00002500 BTC scaled by 1.5 is 0.0000375, not 0.0000. Null/undefined pass
+ * through; unparseable values are returned unchanged.
  */
-export function scaleMoney(value: unknown, multiplier: number): unknown {
-  return scaleTo(value, multiplier, MONEY_SCALE);
+export function scaleMoney(
+  value: unknown,
+  multiplier: number,
+  decimals: number = FIAT_MONEY_DECIMALS,
+): unknown {
+  return scaleTo(value, multiplier, decimals);
 }
 
 /**

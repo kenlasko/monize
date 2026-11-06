@@ -22,7 +22,12 @@ import {
 } from "./dto/recurring-expenses.dto";
 import { isNetSpending } from "./spending-reports.service";
 import { formatDateYMD } from "../common/date-utils";
-import { roundMoney, sumMoney, toMoneyNumber } from "../common/round.util";
+import {
+  MONEY_SCALE,
+  roundMoney,
+  sumMoney,
+  toMoneyNumber,
+} from "../common/round.util";
 import {
   investmentExclusionSql,
   reportableTransactionAmountSql,
@@ -217,7 +222,11 @@ export class TaxRecurringReportsService {
 
     rawResults.forEach((row) => {
       const amount = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.amount),
+        // An aggregate in the row's own currency, read before conversion: a coin's
+        // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
+        // the same), so a 2,500-sat total is not rounded to zero before it is
+        // converted (INV-MONEY-001).
+        toMoneyNumber(row.amount, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,
@@ -400,7 +409,7 @@ export class TaxRecurringReportsService {
 
     for (const row of rawResults) {
       const totalAmount = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.total_amount),
+        toMoneyNumber(row.total_amount, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,
@@ -553,7 +562,7 @@ export class TaxRecurringReportsService {
           id: st.id,
           name: st.name,
           payeeName: st.payee_name,
-          amount: Math.abs(toMoneyNumber(st.amount)),
+          amount: Math.abs(toMoneyNumber(st.amount, MONEY_SCALE)),
         });
       }
     });
@@ -618,7 +627,7 @@ export class TaxRecurringReportsService {
       if (!scheduled) return;
 
       const txAmount = this.currencyService.tryConvertAmount(
-        toMoneyNumber(tx.amount),
+        toMoneyNumber(tx.amount, MONEY_SCALE),
         tx.currency_code,
         defaultCurrency,
         rateMap,

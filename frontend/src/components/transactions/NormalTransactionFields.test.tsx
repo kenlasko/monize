@@ -176,9 +176,9 @@ describe('NormalTransactionFields', () => {
     }
   });
 
-  it('enters a coin amount at the stored four places before the registry has loaded', () => {
+  it('enters a coin amount at the column scale before the registry has loaded', () => {
     render(<NormalTransactionFields {...defaultProps} watchedCurrencyCode="BTC" />);
-    expect(screen.getByTestId('currency-input-Amount')).toHaveAttribute('data-decimal-places', '4');
+    expect(screen.getByTestId('currency-input-Amount')).toHaveAttribute('data-decimal-places', '8');
   });
 
   it('renders Account select', () => {

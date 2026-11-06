@@ -32,7 +32,7 @@ import {
   sumMoney,
 } from "../common/round.util";
 import {
-  loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
 } from "../common/currency-places.util";
 import { Account } from "../accounts/entities/account.entity";
@@ -306,7 +306,7 @@ export class TransactionAnalyticsService {
       const rows = await qb.getRawMany();
 
       // Each row is in its account's currency, rounded at its precision.
-      const places = await loadCurrencyPlaces(
+      const places = await loadCurrencyPlacesForRead(
         m,
         rows.map((r) => r.currencyCode),
       );
@@ -934,7 +934,7 @@ export class TransactionAnalyticsService {
       const rows = await queryBuilder.getRawMany();
 
       // Per-currency rows, each rounded at its currency's precision.
-      const places = await loadCurrencyPlaces(
+      const places = await loadCurrencyPlacesForRead(
         m,
         rows.map((row) => row.currencyCode),
       );
@@ -1021,7 +1021,7 @@ export class TransactionAnalyticsService {
       const rows = await queryBuilder.getRawMany();
 
       // Per-currency rows, each rounded at its currency's precision.
-      const places = await loadCurrencyPlaces(
+      const places = await loadCurrencyPlacesForRead(
         m,
         rows.map((row) => row.currencyCode),
       );
@@ -1160,7 +1160,7 @@ export class TransactionAnalyticsService {
         select: { id: true, currencyCode: true },
       });
       const places = account
-        ? await loadCurrencyPlaces(m, [account.currencyCode])
+        ? await loadCurrencyPlacesForRead(m, [account.currencyCode])
         : new Map<string, number>();
       const decimals = account
         ? moneyDecimalsForCode(places, account.currencyCode)

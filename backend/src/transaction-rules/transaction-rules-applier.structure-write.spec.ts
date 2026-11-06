@@ -85,7 +85,17 @@ function harness(
       },
     ],
     // `convertRowToTransfer` reads the currency's decimal places.
-    [Currency, { find: jest.fn().mockResolvedValue(currencyRows) }],
+    [
+      Currency,
+      {
+        query: jest.fn().mockResolvedValue(
+          currencyRows.map((row) => ({
+            code: row.code,
+            decimal_places: row.decimalPlaces,
+          })),
+        ),
+      },
+    ],
     [Category, { find: jest.fn().mockResolvedValue([]) }],
     [Payee, { find: jest.fn().mockResolvedValue([]) }],
     [Tag, { find: jest.fn().mockResolvedValue([]) }],
@@ -347,9 +357,9 @@ describe("TransactionRulesApplierService structure writes", () => {
       ]);
       const places = (
         h.m as unknown as {
-          getRepository: (e: unknown) => { find: jest.Mock };
+          getRepository: (e: unknown) => { query: jest.Mock };
         }
-      ).getRepository(Currency).find;
+      ).getRepository(Currency).query;
       places.mockClear();
 
       const applied = await h.service.applyToNew(h.m, USER, ids, "create", {

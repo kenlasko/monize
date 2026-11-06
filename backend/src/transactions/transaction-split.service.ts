@@ -42,6 +42,7 @@ import {
 } from "../common/amount-precision.util";
 import {
   loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
   precisionCurrencyFor,
 } from "../common/currency-places.util";
@@ -461,7 +462,7 @@ export class TransactionSplitService {
     currencyCode: string,
   ): Promise<void> {
     const places = await withScopedDb(this.dataSource, (m) =>
-      loadCurrencyPlaces(m, [currencyCode]),
+      loadCurrencyPlacesForRead(m, [currencyCode]),
     );
     this.validateSplits(
       splits,

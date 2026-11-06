@@ -2453,6 +2453,117 @@ describe("TransactionsService", () => {
       );
     });
 
+    describe("moving a row to an account in another currency (INV-MONEY-001)", () => {
+      const btcWallet = {
+        ...mockAccount,
+        id: "wallet-1",
+        accountType: "CRYPTO",
+        currencyCode: "BTC",
+      };
+      const usdAccount = { ...mockAccount, id: "account-2" };
+      const btcRow = (amount: number, extra: Record<string, unknown> = {}) => ({
+        ...mockTx,
+        accountId: "wallet-1",
+        amount,
+        currencyCode: "BTC",
+        transactionDate: "2026-01-15",
+        ...extra,
+      });
+
+      beforeEach(() => {
+        accountsService.findOne.mockImplementation(
+          async (_userId: string, accountId: string) =>
+            accountId === "account-2" ? usdAccount : btcWallet,
+        );
+      });
+
+      it("refuses carrying a -0.12345678 BTC amount into a USD account, moving no balance", async () => {
+        transactionsRepository.findOne.mockResolvedValue(btcRow(-0.12345678));
+
+        await expect(
+          service.update("user-1", "tx-1", { accountId: "account-2" } as any),
+        ).rejects.toThrow(
+          /"amount" has more decimal places than USD carries \(4\)/,
+        );
+        expect(transactionsRepository.update).not.toHaveBeenCalled();
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
+      it("refuses a moved split parent whose unsent stored lines do not fit, moving no balance", async () => {
+        // The parent fits four places; its stored lines do not.
+        transactionsRepository.findOne.mockResolvedValue(
+          btcRow(-0.12, { isSplit: true }),
+        );
+        splitsRepository.find.mockResolvedValue([
+          { id: "split-1", transactionId: "tx-1", amount: -0.11999999 },
+          { id: "split-2", transactionId: "tx-1", amount: -0.00000001 },
+        ]);
+
+        await expect(
+          service.update("user-1", "tx-1", { accountId: "account-2" } as any),
+        ).rejects.toThrow(/"splits\[0\]\.amount" has more decimal places/);
+        expect(splitsRepository.find).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { transactionId: "tx-1" } }),
+        );
+        expect(transactionsRepository.update).not.toHaveBeenCalled();
+        expect(splitsRepository.delete).not.toHaveBeenCalled();
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
+      it("still moves a row at four places", async () => {
+        transactionsRepository.findOne.mockResolvedValue(btcRow(-0.1234));
+        mockQueryRunner.manager.findOne.mockResolvedValueOnce(
+          btcRow(-0.1234, { accountId: "account-2", currencyCode: "USD" }),
+        );
+
+        await service.update("user-1", "tx-1", {
+          accountId: "account-2",
+        } as any);
+
+        expect(transactionsRepository.update).toHaveBeenCalledWith(
+          "tx-1",
+          expect.objectContaining({
+            accountId: "account-2",
+            currencyCode: "USD",
+          }),
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "wallet-1",
+          0.1234,
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "account-2",
+          -0.1234,
+        );
+      });
+
+      it("still moves a split parent whose stored lines fit four places", async () => {
+        transactionsRepository.findOne.mockResolvedValue(
+          btcRow(-0.12, { isSplit: true }),
+        );
+        splitsRepository.find.mockResolvedValue([
+          { id: "split-1", transactionId: "tx-1", amount: -0.1 },
+          { id: "split-2", transactionId: "tx-1", amount: -0.02 },
+        ]);
+        mockQueryRunner.manager.findOne.mockResolvedValueOnce(
+          btcRow(-0.12, {
+            isSplit: true,
+            accountId: "account-2",
+            currencyCode: "USD",
+          }),
+        );
+
+        await service.update("user-1", "tx-1", {
+          accountId: "account-2",
+        } as any);
+
+        expect(transactionsRepository.update).toHaveBeenCalledWith(
+          "tx-1",
+          expect.objectContaining({ accountId: "account-2" }),
+        );
+      });
+    });
+
     it("verifies new account when account changes", async () => {
       transactionsRepository.findOne.mockResolvedValue({ ...mockTx });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce({

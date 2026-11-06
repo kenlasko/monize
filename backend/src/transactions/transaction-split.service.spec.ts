@@ -773,8 +773,8 @@ describe("TransactionSplitService", () => {
           amount,
           transferAccountId: "account-2",
         }));
-        const find = mockQueryRunner.manager.getRepository(Currency).find;
-        find.mockClear();
+        const query = mockQueryRunner.manager.getRepository(Currency).query;
+        query.mockClear();
 
         await service.createSplits(
           "tx-1",
@@ -787,7 +787,7 @@ describe("TransactionSplitService", () => {
         );
 
         expect(accountsService.findOne).toHaveBeenCalledTimes(6);
-        expect(find).toHaveBeenCalledTimes(1);
+        expect(query).toHaveBeenCalledTimes(1);
       });
 
       it("converts a CAD line into a BTC wallet at eight places", async () => {

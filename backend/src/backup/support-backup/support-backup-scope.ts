@@ -54,6 +54,82 @@ export function accountMoneyDecimals(tables: TableMap): Map<string, number> {
   );
 }
 
+/** Tables whose money columns are all in the owning account's currency. */
+const ACCOUNT_ROW_TABLES = new Set(["transactions", "scheduled_transactions"]);
+
+/**
+ * Child tables whose money columns are in their parent's account currency, by
+ * the foreign key naming the parent and the parent table that carries the
+ * `account_id`.
+ */
+const ACCOUNT_CHILD_TABLES: Record<
+  string,
+  { parentKey: string; parentTable: string }
+> = {
+  transaction_splits: {
+    parentKey: "transaction_id",
+    parentTable: "transactions",
+  },
+  scheduled_transaction_splits: {
+    parentKey: "scheduled_transaction_id",
+    parentTable: "scheduled_transactions",
+  },
+  scheduled_transaction_overrides: {
+    parentKey: "scheduled_transaction_id",
+    parentTable: "scheduled_transactions",
+  },
+};
+
+/** The `accounts` columns that are the account's own money, in its currency. */
+const ACCOUNT_OWN_MONEY_COLUMNS = new Set([
+  "opening_balance",
+  "current_balance",
+  "credit_limit",
+  "low_balance_threshold",
+  "high_balance_threshold",
+]);
+
+/**
+ * The places `column` of `row` of `table` is scaled at: the account currency's
+ * money precision for an amount in an account's currency (a coin keeps its
+ * eight places), `FIAT_MONEY_DECIMALS` for every other money column. A
+ * transaction, a scheduled transaction and an override are read through their
+ * `account_id`; a split through its parent's; an account's balances and
+ * thresholds through its own id. A row whose account the export does not carry
+ * reads as fiat.
+ */
+export function moneyDecimalsResolver(
+  tables: TableMap,
+): (table: string, row: Record<string, unknown>, column: string) => number {
+  const decimalsByAccount = accountMoneyDecimals(tables);
+  const accountOfParent = (table: string): Map<string, unknown> =>
+    new Map(
+      (tables[table] ?? []).map((row) => [String(row.id), row.account_id]),
+    );
+  const parents: Record<string, Map<string, unknown>> = {
+    transactions: accountOfParent("transactions"),
+    scheduled_transactions: accountOfParent("scheduled_transactions"),
+  };
+  const ofAccount = (accountId: unknown): number =>
+    decimalsByAccount.get(String(accountId)) ?? FIAT_MONEY_DECIMALS;
+
+  return (table, row, column) => {
+    if (table === "accounts") {
+      return ACCOUNT_OWN_MONEY_COLUMNS.has(column)
+        ? ofAccount(row.id)
+        : FIAT_MONEY_DECIMALS;
+    }
+    if (ACCOUNT_ROW_TABLES.has(table)) return ofAccount(row.account_id);
+    const child = ACCOUNT_CHILD_TABLES[table];
+    if (child) {
+      return ofAccount(
+        parents[child.parentTable]?.get(String(row[child.parentKey])),
+      );
+    }
+    return FIAT_MONEY_DECIMALS;
+  };
+}
+
 /**
  * Trims the export to transactions dated within [from, to]. Cutting history
  * would silently break the balance reconciliation (opening + kept transactions

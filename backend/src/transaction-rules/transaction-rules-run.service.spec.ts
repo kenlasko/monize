@@ -697,6 +697,7 @@ describe("TransactionRulesRunService", () => {
         "manual",
         expect.any(Set),
         expect.any(Set),
+        expect.any(Map),
       );
       expect(s.record).toHaveBeenCalledTimes(1);
       const entry = s.record.mock.calls[0][1];
@@ -1206,6 +1207,7 @@ describe("TransactionRulesRunService", () => {
         "manual",
         expect.any(Set),
         expect.any(Set),
+        expect.any(Map),
       );
       const entry = s.record.mock.calls[0][1];
       expect(entry.beforeData.transactions).toEqual([

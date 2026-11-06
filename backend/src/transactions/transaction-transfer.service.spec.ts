@@ -83,15 +83,24 @@ describe("TransactionTransferService", () => {
   let exchangeRateService: Record<string, jest.Mock>;
   let rulesApplier: Record<string, jest.Mock>;
   let mockDataSource: DataSourceMock;
+  const currencyRows = [
+    { code: "USD", decimalPlaces: 2 },
+    { code: "CAD", decimalPlaces: 2 },
+    { code: "EUR", decimalPlaces: 2 },
+    { code: "GBP", decimalPlaces: 2 },
+    { code: "PLN", decimalPlaces: 2 },
+    { code: "BTC", decimalPlaces: 8 },
+  ];
   const currenciesRepository = {
-    find: jest.fn(async () => [
-      { code: "USD", decimalPlaces: 2 },
-      { code: "CAD", decimalPlaces: 2 },
-      { code: "EUR", decimalPlaces: 2 },
-      { code: "GBP", decimalPlaces: 2 },
-      { code: "PLN", decimalPlaces: 2 },
-      { code: "BTC", decimalPlaces: 8 },
-    ]),
+    // The unlocked read (`loadCurrencyPlacesForRead`, previews)...
+    find: jest.fn(async () => currencyRows),
+    // ...and the writer's `FOR KEY SHARE` read (`loadCurrencyPlaces`).
+    query: jest.fn(async () =>
+      currencyRows.map((row) => ({
+        code: row.code,
+        decimal_places: row.decimalPlaces,
+      })),
+    ),
   };
 
   const mockFindOne = jest.fn();
@@ -1862,6 +1871,145 @@ describe("TransactionTransferService", () => {
           mockFindOne,
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    describe("moving the source leg to an account in another currency (INV-MONEY-001)", () => {
+      const btcWallet = {
+        id: "btc-wallet",
+        name: "Bitcoin Wallet",
+        currencyCode: "BTC",
+        userId: "user-1",
+      };
+      const coldStorage = {
+        id: "cold-storage",
+        name: "Cold Storage",
+        currencyCode: "BTC",
+        userId: "user-1",
+      };
+      const usdAccount = {
+        id: "usd-account",
+        name: "Checking",
+        currencyCode: "USD",
+        userId: "user-1",
+      };
+      const legs = (amount: number) => {
+        const from = {
+          id: "from-tx",
+          accountId: "btc-wallet",
+          amount: -amount,
+          currencyCode: "BTC",
+          isTransfer: true,
+          linkedTransactionId: "to-tx",
+          exchangeRate: 1,
+          transactionDate: "2026-01-15",
+          status: TransactionStatus.UNRECONCILED,
+          account: btcWallet,
+        } as unknown as Transaction;
+        const to = {
+          id: "to-tx",
+          accountId: "cold-storage",
+          amount,
+          currencyCode: "BTC",
+          isTransfer: true,
+          linkedTransactionId: "from-tx",
+          exchangeRate: 1,
+          transactionDate: "2026-01-15",
+          status: TransactionStatus.UNRECONCILED,
+          account: coldStorage,
+        } as unknown as Transaction;
+        return { from, to };
+      };
+
+      beforeEach(() => {
+        accountsService.findOne.mockImplementation(
+          (_userId: string, accountId: string) =>
+            Promise.resolve(
+              accountId === "usd-account"
+                ? usdAccount
+                : accountId === "cold-storage"
+                  ? coldStorage
+                  : btcWallet,
+            ),
+        );
+      });
+
+      it("refuses carrying a -0.12345678 BTC source leg into a USD account, moving no balance", async () => {
+        const { from, to } = legs(0.12345678);
+        mockFindOne.mockResolvedValueOnce(from).mockResolvedValueOnce(to);
+
+        await expect(
+          service.updateTransfer(
+            "user-1",
+            "from-tx",
+            { fromAccountId: "usd-account", exchangeRate: 0.00001 },
+            mockFindOne,
+          ),
+        ).rejects.toThrow(
+          /"amount" has more decimal places than USD carries \(4\)/,
+        );
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+        expect(transactionsRepository.update).not.toHaveBeenCalled();
+      });
+
+      it("refuses it inside the write too, under the currency lock, before any write", async () => {
+        const { from, to } = legs(0.12345678);
+        mockFindOne.mockResolvedValueOnce(from).mockResolvedValueOnce(to);
+        // USD read as two places before the write's transaction (so the early
+        // check passes on a 4-place reading of a coin), then the write's own
+        // FOR KEY SHARE read sees what the row commits under.
+        currenciesRepository.query
+          .mockImplementationOnce(async () => [
+            { code: "BTC", decimal_places: 8 },
+            { code: "USD", decimal_places: 8 },
+          ])
+          .mockImplementationOnce(async () => [
+            { code: "BTC", decimal_places: 8 },
+            { code: "USD", decimal_places: 2 },
+          ]);
+
+        await expect(
+          service.updateTransfer(
+            "user-1",
+            "from-tx",
+            { fromAccountId: "usd-account", exchangeRate: 0.00001 },
+            mockFindOne,
+          ),
+        ).rejects.toThrow(/USD carries \(4\)/);
+        expect(currenciesRepository.query).toHaveBeenLastCalledWith(
+          expect.stringContaining("FOR KEY SHARE"),
+          [["USD", "BTC"]],
+        );
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+        expect(transactionsRepository.update).not.toHaveBeenCalled();
+      });
+
+      it("still moves a source leg at four places", async () => {
+        const { from, to } = legs(0.1234);
+        mockFindOne
+          .mockResolvedValueOnce(from)
+          .mockResolvedValueOnce(to)
+          .mockResolvedValueOnce({ ...from, accountId: "usd-account" })
+          .mockResolvedValueOnce(to);
+
+        await service.updateTransfer(
+          "user-1",
+          "from-tx",
+          { fromAccountId: "usd-account", exchangeRate: 0.00001 },
+          mockFindOne,
+        );
+
+        expect(transactionsRepository.update).toHaveBeenCalledWith(
+          "from-tx",
+          expect.objectContaining({
+            accountId: "usd-account",
+            currencyCode: "USD",
+          }),
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "btc-wallet",
+          0.1234,
+        );
+      });
     });
 
     describe("VOID transitions (P5-001)", () => {

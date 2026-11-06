@@ -290,11 +290,12 @@ describe("ImportService", () => {
             code: opts.where.code,
             kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
           })),
-          // `loadCurrencyPlaces`: the places the import's money precision reads.
-          find: jest.fn(async () => [
-            { code: "CAD", decimalPlaces: 2 },
-            { code: "USD", decimalPlaces: 2 },
-            { code: "BTC", decimalPlaces: 8 },
+          // `loadCurrencyPlaces`: the places the import's money precision
+          // reads (`FOR KEY SHARE`).
+          query: jest.fn(async () => [
+            { code: "CAD", decimal_places: 2 },
+            { code: "USD", decimal_places: 2 },
+            { code: "BTC", decimal_places: 8 },
           ]),
         },
       ],

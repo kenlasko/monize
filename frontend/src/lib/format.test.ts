@@ -410,15 +410,24 @@ describe('money precision', () => {
   });
 
   it('rounds a large value at eight places on its decimal string, not a nudged float', () => {
-    // The one-ULP midpoint nudge is a whole unit at eight places above ~4.5e6,
-    // so a large value is rounded on its decimal string instead.
+    // The one-ULP midpoint nudge is a hundredth of a unit at eight places above
+    // ~4.5e5 (and a whole unit above ~4.5e7), so a large value is rounded on its
+    // decimal string instead.
     expect(roundMoney(21000000, 8)).toBe(21000000);
     expect(roundMoney(20999999.99999999, 8)).toBe(20999999.99999999);
     expect(roundToDecimals(123456789.12345678, 8)).toBe(123456789.12345678);
     expect(roundMoney(20999999.999999995, 8)).toBe(21000000);
     expect(roundMoney(-20999999.999999995, 8)).toBe(-21000000);
-    // Fiat at four places keeps the nudged path below 45 billion.
+    // Fiat at four places keeps the nudged path below 4.5 billion.
     expect(roundMoney(10 * 15.9735, 2)).toBe(159.74);
+  });
+
+  it('does not carry a value just under a midpoint high in the 1e6 to 4.5e6 band at eight places', () => {
+    // The shortest decimal string rounds to ...93; a nudge of 0.05 to 0.1 unit
+    // used to carry it to ...94. Mirrors the backend spec.
+    expect(roundMoney(3422512.090132934, 8)).toBe(3422512.09013293);
+    expect(roundMoney(-3422512.090132934, 8)).toBe(-3422512.09013293);
+    expect(roundMoney(3422512.090132935, 8)).toBe(3422512.09013294);
   });
 
   it('rounds at the precision it is given', () => {

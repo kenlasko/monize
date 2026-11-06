@@ -1,5 +1,6 @@
+import { BadRequestException, ConflictException } from "@nestjs/common";
 import { TestingModule } from "@nestjs/testing";
-import { DataSource } from "typeorm";
+import { DataSource, EntityManager } from "typeorm";
 import { TransactionsService } from "@/transactions/transactions.service";
 import { TransactionsModule } from "@/transactions/transactions.module";
 import { Transaction } from "@/transactions/entities/transaction.entity";
@@ -8,6 +9,8 @@ import { convertRowToTransfer } from "@/transactions/convert-to-transfer";
 import { withScopedDb } from "@/common/db/scoped-db";
 import { withUserContext } from "@/common/db/with-context";
 import { settlePendingHistoryWrites } from "@/action-history/action-history.service";
+import { CurrenciesService } from "@/currencies/currencies.service";
+import { FxProviderChain } from "@/currencies/providers/fx-provider-chain";
 import {
   cleanTables,
   createIntegrationModule,
@@ -17,6 +20,7 @@ import {
   createTestAccount,
   createTestCategory,
 } from "../helpers/test-factories";
+import { waitForLockWaiters } from "../helpers/race";
 
 /**
  * Money at eight places, rounded per currency (`docs/specs/money-precision.md`
@@ -390,6 +394,208 @@ describe("Money precision per currency (integration)", () => {
       });
       expect(reread.isTransfer).toBe(false);
       expect(reread.linkedTransactionId).toBeNull();
+    });
+  });
+
+  describe("a decimal-places lowering racing a write", () => {
+    // The lowering gate (`CurrenciesService.assertDecimalPlacesFit`) locks the
+    // currency row FOR UPDATE and then scans stored amounts; a writer reads
+    // `decimal_places` FOR KEY SHARE inside its transaction
+    // (`loadCurrencyPlaces`). Whichever takes the row first, the other waits,
+    // and exactly one of them is refused: never an eight-place BTC row under a
+    // four-place BTC.
+    let currencies: CurrenciesService;
+
+    const gate = () => {
+      let open!: () => void;
+      const opened = new Promise<void>((resolve) => {
+        open = resolve;
+      });
+      return { open, opened };
+    };
+    const btcPlaces = async (): Promise<number> =>
+      Number(
+        (
+          await db.query(
+            `SELECT decimal_places FROM currencies WHERE code = 'BTC'`,
+          )
+        )[0].decimal_places,
+      );
+    /** No stored BTC amount carries more places than BTC's money precision. */
+    const expectConsistent = async () => {
+      const [{ fitting }] = await db.query(
+        `SELECT currency_min_decimal_places_in_use('BTC') AS fitting`,
+      );
+      expect(Number(fitting ?? 0)).toBeLessThanOrEqual(
+        Math.max(4, await btcPlaces()),
+      );
+    };
+    /**
+     * Pause the first statement on any scoped manager whose SQL matches,
+     * until `go` opens; `held` opens once it has run (`after`) or is about to
+     * (`before`). The production code offers no hook between its lock and
+     * what follows, so the statement itself is the seam.
+     */
+    const pauseOn = (
+      matches: (sql: string) => boolean,
+      when: "before" | "after",
+    ) => {
+      const held = gate();
+      const go = gate();
+      const original = EntityManager.prototype.query;
+      let paused = false;
+      jest
+        .spyOn(EntityManager.prototype, "query")
+        .mockImplementation(async function (
+          this: EntityManager,
+          sql: string,
+          params?: unknown[],
+        ) {
+          if (paused || !matches(String(sql))) {
+            return original.call(this, sql, params);
+          }
+          paused = true;
+          if (when === "before") {
+            held.open();
+            await go.opened;
+            return original.call(this, sql, params);
+          }
+          const result = await original.call(this, sql, params);
+          held.open();
+          await go.opened;
+          return result;
+        });
+      return { held, go };
+    };
+    const lowerToFour = () =>
+      asUser(() => currencies.update(userId, "BTC", { decimalPlaces: 4 }));
+
+    beforeEach(async () => {
+      currencies = new CurrenciesService(db, {} as FxProviderChain);
+      // A system currency's places are not editable; the user's own coin is.
+      await db.query(
+        `UPDATE currencies SET created_by_user_id = $1 WHERE code = 'BTC'`,
+        [userId],
+      );
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it("refuses the write that waited on a lowering, at the new places", async () => {
+      // The gate holds BTC FOR UPDATE here, between its lock and its scan.
+      const { held, go } = pauseOn(
+        (sql) => sql.includes("currency_min_decimal_places_in_use"),
+        "before",
+      );
+      const lowering = lowerToFour();
+      lowering.catch(() => undefined);
+      await held.opened;
+
+      let writeSettled = false;
+      const write = createIn(walletId, "BTC", -0.12345678).finally(() => {
+        writeSettled = true;
+      });
+      write.catch(() => undefined);
+      await waitForLockWaiters(db, 1, { stop: () => writeSettled });
+      go.open();
+
+      const [loweringResult, writeResult] = await Promise.allSettled([
+        lowering,
+        write,
+      ]);
+      expect(loweringResult.status).toBe("fulfilled");
+      expect(writeResult.status).toBe("rejected");
+      const reason = (writeResult as PromiseRejectedResult).reason;
+      expect(reason).toBeInstanceOf(BadRequestException);
+      expect(String(reason.message)).toMatch(/BTC carries \(4\)/);
+      expect(await btcPlaces()).toBe(4);
+      expect(await rowCount(walletId)).toBe(0);
+      expect(await balance(walletId)).toBe("0.00000000");
+      await expectConsistent();
+    });
+
+    it("refuses the lowering that waited on a write at the old places", async () => {
+      // The writer holds BTC FOR KEY SHARE here, after its places read and
+      // before its INSERT.
+      const { held, go } = pauseOn(
+        (sql) =>
+          sql.includes("decimal_places FROM currencies") &&
+          sql.includes("FOR KEY SHARE"),
+        "after",
+      );
+      const write = createIn(walletId, "BTC", -0.12345678);
+      write.catch(() => undefined);
+      await held.opened;
+
+      let loweringSettled = false;
+      const lowering = lowerToFour().finally(() => {
+        loweringSettled = true;
+      });
+      lowering.catch(() => undefined);
+      await waitForLockWaiters(db, 1, { stop: () => loweringSettled });
+      go.open();
+
+      const [writeResult, loweringResult] = await Promise.allSettled([
+        write,
+        lowering,
+      ]);
+      expect(writeResult.status).toBe("fulfilled");
+      expect(loweringResult.status).toBe("rejected");
+      expect((loweringResult as PromiseRejectedResult).reason).toBeInstanceOf(
+        ConflictException,
+      );
+      expect(await btcPlaces()).toBe(8);
+      const tx = (writeResult as PromiseFulfilledResult<Transaction>).value;
+      expect(await storedAmount(tx.id)).toBe("-0.12345678");
+      expect(await balance(walletId)).toBe("-0.12345678");
+      await expectConsistent();
+    });
+  });
+
+  describe("moving a row to an account in another currency", () => {
+    let usdId: string;
+
+    beforeEach(async () => {
+      await db.query(
+        `INSERT INTO currencies (code, name, symbol, decimal_places) VALUES
+           ('USD', 'US Dollar', '$', 2)
+         ON CONFLICT (code) DO UPDATE SET decimal_places = 2`,
+      );
+      usdId = (
+        await createTestAccount(db, userId, {
+          name: "US Chequing",
+          currencyCode: "USD",
+          openingBalance: 0,
+          currentBalance: 0,
+        })
+      ).id;
+    });
+
+    it("refuses carrying a -0.12345678 BTC row into a USD account, moving no balance", async () => {
+      const tx = await createIn(walletId, "BTC", -0.12345678);
+
+      await expect(
+        asUser(() =>
+          service.update(userId, tx.id, { accountId: usdId } as never),
+        ),
+      ).rejects.toThrow(/USD carries \(4\)/);
+      expect(await storedAmount(tx.id)).toBe("-0.12345678");
+      expect(await rowCount(usdId)).toBe(0);
+      expect(await balance(walletId)).toBe("-0.12345678");
+      expect(await balance(usdId)).toBe("0.00000000");
+    });
+
+    it("still moves a row at four places", async () => {
+      const tx = await createIn(walletId, "BTC", -0.1234);
+
+      await asUser(() =>
+        service.update(userId, tx.id, { accountId: usdId } as never),
+      );
+      expect(await rowCount(usdId)).toBe(1);
+      expect(await balance(walletId)).toBe("0.00000000");
+      expect(await balance(usdId)).toBe("-0.12340000");
     });
   });
 });

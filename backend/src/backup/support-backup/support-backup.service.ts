@@ -17,6 +17,7 @@ import {
 } from "./support-backup-integrity";
 import {
   accountMoneyDecimals,
+  moneyDecimalsResolver,
   applyDateRange,
   countsTowardBalance,
   scopeToAccounts,
@@ -363,11 +364,17 @@ export class SupportBackupService {
   /** Applies the per-column rules and reconciles derived money. */
   private obfuscate(scoped: TableMap, multiplier: number): TableMap {
     const result: TableMap = {};
+    // An account's amounts scale at its currency's precision (a coin keeps its
+    // eight places); every other money column at the fiat four, so a fiat
+    // support copy is byte for byte what it was.
+    const decimalsOf = moneyDecimalsResolver(scoped);
     for (const [table, rows] of Object.entries(scoped)) {
       const rules = RULES[table];
       if (!rules) continue; // unclassified table: never emitted (allowlist)
       result[table] = rows.map((row) =>
-        this.applyRules(row, rules, multiplier),
+        this.applyRules(row, rules, multiplier, (column) =>
+          decimalsOf(table, row, column),
+        ),
       );
     }
     // Masking can collapse distinct values to the same string; restore uniqueness
@@ -379,12 +386,18 @@ export class SupportBackupService {
     row: Record<string, unknown>,
     rules: Record<string, ColumnRule>,
     multiplier: number,
+    decimalsFor: (column: string) => number,
   ): Record<string, unknown> {
     const out: Record<string, unknown> = {};
     for (const [column, value] of Object.entries(row)) {
       const rule = rules[column];
       if (!rule) continue; // unclassified column: dropped (allowlist)
-      out[column] = this.applyRule(rule, value, multiplier);
+      out[column] = this.applyRule(
+        rule,
+        value,
+        multiplier,
+        decimalsFor(column),
+      );
     }
     return out;
   }
@@ -393,6 +406,7 @@ export class SupportBackupService {
     rule: ColumnRule,
     value: unknown,
     multiplier: number,
+    decimals: number,
   ): unknown {
     switch (rule.t) {
       case "keep":
@@ -404,11 +418,11 @@ export class SupportBackupService {
       case "const":
         return rule.value;
       case "scale":
-        return scaleMoney(value, multiplier);
+        return scaleMoney(value, multiplier, decimals);
       case "scaleQty":
         return scaleQuantity(value, multiplier);
       case "jsonb":
-        return applyJsonbHandler(rule.handler, value, multiplier);
+        return applyJsonbHandler(rule.handler, value, multiplier, decimals);
     }
   }
 

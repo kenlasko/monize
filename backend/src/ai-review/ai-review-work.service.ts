@@ -9,7 +9,7 @@ import {
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import {
-  loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
 } from "../common/currency-places.util";
 import { roundMoney, sumMoney } from "../common/round.util";
@@ -438,7 +438,7 @@ export class AiReviewWorkService {
       // summed and compared at that currency's money precision.
       const decimals = await withScopedDb(this.dataSource, async (m) =>
         moneyDecimalsForCode(
-          await loadCurrencyPlaces(m, [transaction.currencyCode]),
+          await loadCurrencyPlacesForRead(m, [transaction.currencyCode]),
           transaction.currencyCode,
         ),
       );

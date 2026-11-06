@@ -93,6 +93,7 @@ import { validateSplitAmountSum } from "../common/split-amount.util";
 import { roundMoney, sumMoney } from "../common/round.util";
 import {
   loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
   precisionCurrencyFor,
 } from "../common/currency-places.util";
@@ -818,7 +819,7 @@ export class ScheduledTransactionsService {
       // read once for the sweep: a coin-denominated schedule is converted at
       // its coin's places, a fiat one at four.
       const places = await withScopedDb(this.dataSource, (m) =>
-        loadCurrencyPlaces(
+        loadCurrencyPlacesForRead(
           m,
           foreign.map((r) => r.currencyCode),
         ),
@@ -2686,21 +2687,43 @@ export class ScheduledTransactionsService {
         );
       }
 
+      // The amounts the schedule will hold, not the fields the request sent:
+      // a schedule moved to an account in another currency carries its stored
+      // amount, its stored split lines (when none are resent and none are
+      // cleared) and its stored original amount there, so a -0.12345678 BTC
+      // schedule moved into a USD account is refused like a typed amount.
+      const movesAccount =
+        updateData.accountId !== undefined &&
+        updateData.accountId !== current.accountId;
+      const storedLines =
+        movesAccount &&
+        current.isSplit &&
+        splits === undefined &&
+        !clearSplitsForModeSwitch
+          ? await m.find(ScheduledTransactionSplit, {
+              where: { scheduledTransactionId: id },
+              order: { id: "ASC" },
+            })
+          : undefined;
       const moneyDecimals = await this.assertScheduleAmountsPrecision(
         m,
         accountCurrencyCode,
         {
-          amount: updateData.amount,
+          amount: updateData.amount ?? Number(current.amount),
           originalAmount:
             fieldsToUpdate.originalAmount !== undefined
               ? fieldsToUpdate.originalAmount
-              : updateData.originalAmount,
+              : updateData.originalAmount !== undefined
+                ? updateData.originalAmount
+                : current.originalAmount,
           originalCurrencyCode:
             fieldsToUpdate.originalCurrencyCode !== undefined
               ? fieldsToUpdate.originalCurrencyCode
               : (updateData.originalCurrencyCode ??
                 current.originalCurrencyCode),
-          splits: Array.isArray(splits) ? splits : undefined,
+          splits: Array.isArray(splits)
+            ? splits
+            : storedLines?.map((line) => ({ amount: Number(line.amount) })),
         },
       );
       // The lines sum to the parent at the account currency's precision. A

@@ -428,7 +428,7 @@ describe('TransferTransactionFields', () => {
     }
   });
 
-  it('enters each coin leg at the stored four places before the registry has loaded', () => {
+  it('enters each coin leg at the column scale before the registry has loaded', () => {
     render(
       <TransferTransactionFields
         {...defaultProps}
@@ -443,11 +443,11 @@ describe('TransferTransactionFields', () => {
     );
     expect(screen.getByTestId('currency-input-Transfer Amount (BTC)')).toHaveAttribute(
       'data-decimal-places',
-      '4',
+      '8',
     );
     expect(screen.getByTestId('currency-input-Amount Received (ETH)')).toHaveAttribute(
       'data-decimal-places',
-      '4',
+      '8',
     );
   });
 

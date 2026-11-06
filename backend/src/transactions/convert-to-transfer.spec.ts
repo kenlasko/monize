@@ -68,8 +68,15 @@ function harness(
     createQueryBuilder: jest.fn().mockReturnValue({
       insert: () => ({ into }),
     }),
+    // The writer's `FOR KEY SHARE` read of `decimal_places`
+    // (`loadCurrencyPlaces`).
     getRepository: jest.fn(() => ({
-      find: jest.fn(async () => currencies),
+      query: jest.fn(async () =>
+        currencies.map((row) => ({
+          code: row.code,
+          decimal_places: row.decimalPlaces,
+        })),
+      ),
     })),
   };
   const accounts = {

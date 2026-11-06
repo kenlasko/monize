@@ -9,7 +9,7 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { withSystemContext } from "../common/db/with-context";
 import { roundMoney } from "../common/round.util";
 import {
-  loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
 } from "../common/currency-places.util";
 import { todayYMD } from "../common/date-utils";
@@ -231,7 +231,7 @@ export class JointAccountsService {
           );
         // Each account's sums are in its own currency, rounded at its
         // precision; the currencies are read once for the whole list.
-        const currencyPlaces = await loadCurrencyPlaces(
+        const currencyPlaces = await loadCurrencyPlacesForRead(
           manager,
           accounts.map((a) => a.currencyCode),
         );

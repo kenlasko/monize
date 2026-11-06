@@ -32,6 +32,7 @@ import {
 import { assertAmountPrecision } from "../common/amount-precision.util";
 import {
   loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
   precisionCurrencyFor,
 } from "../common/currency-places.util";
@@ -481,14 +482,16 @@ export class TransactionTransferService {
     const toCode = input.toAccount.currencyCode;
     // Refused before anything is compared: an amount with more places than
     // its currency carries would otherwise compare equal to the stored one at
-    // that precision and be silently dropped (INV-MONEY-001).
-    if (updateDto.amount !== undefined) {
-      assertAmountPrecision(
-        updateDto.amount,
-        precisionCurrencyFor(places, fromCode),
-        "amount",
-      );
-    }
+    // that precision and be silently dropped (INV-MONEY-001). The amount the
+    // source leg will hold, not the field: a leg moved to an account in
+    // another currency without a new amount carries its stored one there, and
+    // a 0.12345678 BTC leg in a USD account is that same refusal. The write
+    // asserts it again under its lock (`assertLegAmountsFit`).
+    assertAmountPrecision(
+      input.amount,
+      precisionCurrencyFor(places, fromCode),
+      "amount",
+    );
     if (updateDto.toAmount !== undefined) {
       assertAmountPrecision(
         updateDto.toAmount,
@@ -609,14 +612,56 @@ export class TransactionTransferService {
   }
 
   /**
-   * `decimal_places` of `codes`, read once per operation (`loadCurrencyPlaces`)
-   * and threaded to every helper that rounds or refuses an amount in them.
-   * Joins the caller's transaction when there is one.
+   * `decimal_places` of `codes`, read once per operation (`loadCurrencyPlaces`,
+   * `FOR KEY SHARE`) and threaded to every helper that rounds or refuses an
+   * amount in them. Joins the caller's transaction when there is one; read
+   * outside the write's transaction it still waits out a lowering in flight,
+   * and the write re-reads it under the lock where it refuses
+   * (`assertLegAmountsFit`).
    */
   private readCurrencyPlaces(
     codes: readonly (string | null | undefined)[],
   ): Promise<ReadonlyMap<string, number>> {
     return withScopedDb(this.dataSource, (m) => loadCurrencyPlaces(m, codes));
+  }
+
+  /**
+   * Refuse, inside the write's transaction and before its first write, a leg
+   * amount with more places than the currency of the account it will sit in
+   * carries (INV-MONEY-001). The places are read on the write's manager
+   * (`loadCurrencyPlaces`, `FOR KEY SHARE`), so a lowering of `decimal_places`
+   * in flight is waited out and one arriving later sees this write in its
+   * scan; the pre-transaction check in `resolveTransferFxForUpdate` read them
+   * in a transaction of its own.
+   */
+  private async assertLegAmountsFit(
+    m: EntityManager,
+    legs: readonly { amount: number; currencyCode: string; field: string }[],
+  ): Promise<void> {
+    const places = await loadCurrencyPlaces(
+      m,
+      legs.map((leg) => leg.currencyCode),
+    );
+    for (const leg of legs) {
+      assertAmountPrecision(
+        leg.amount,
+        precisionCurrencyFor(places, leg.currencyCode),
+        leg.field,
+      );
+    }
+  }
+
+  /**
+   * {@link readCurrencyPlaces} for a preview, which writes nothing: an
+   * unlocked read (`loadCurrencyPlacesForRead`), the same places the commit
+   * then re-reads under its lock.
+   */
+  private readCurrencyPlacesForPreview(
+    codes: readonly (string | null | undefined)[],
+  ): Promise<ReadonlyMap<string, number>> {
+    return withScopedDb(this.dataSource, (m) =>
+      loadCurrencyPlacesForRead(m, codes),
+    );
   }
 
   private triggerNetWorthRecalc(accountId: string, userId: string): void {
@@ -1365,7 +1410,7 @@ export class TransactionTransferService {
     // the commit then posts at a real rate -- the user approving one number and
     // receiving another, which is the divergence audit P5-005 describes for
     // investment previews.
-    const previewPlaces = await this.readCurrencyPlaces([
+    const previewPlaces = await this.readCurrencyPlacesForPreview([
       fromAccount.currencyCode,
       toAccount.currencyCode,
     ]);
@@ -1523,7 +1568,7 @@ export class TransactionTransferService {
     const oldToAmount = Number(toTransaction.amount);
     let exchangeRate = Number(toTransaction.exchangeRate) || 1;
 
-    const places = await this.readCurrencyPlaces([
+    const places = await this.readCurrencyPlacesForPreview([
       fromTransaction.currencyCode,
       toTransaction.currencyCode,
     ]);
@@ -2132,6 +2177,21 @@ export class TransactionTransferService {
           ),
         );
       }
+      // Each leg's amount, the one it will hold, against the currency of the
+      // account it will sit in, read under the currency row lock inside this
+      // write and before its first write (INV-MONEY-001).
+      await this.assertLegAmountsFit(m, [
+        {
+          amount: newAmount,
+          currencyCode: updateFx.fromCurrencyCode,
+          field: "amount",
+        },
+        {
+          amount: newToAmount,
+          currencyCode: updateFx.toCurrencyCode,
+          field: "toAmount",
+        },
+      ]);
 
       // Whether each leg is included in its account's current balance, read from
       // the LOCKED row. A status change alone flips inclusion, and it used not to

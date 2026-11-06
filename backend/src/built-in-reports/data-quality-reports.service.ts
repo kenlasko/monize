@@ -6,7 +6,12 @@ import {
   ReportCurrencyService,
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
-import { roundMoney, sumMoney, toMoneyNumber } from "../common/round.util";
+import {
+  MONEY_SCALE,
+  roundMoney,
+  sumMoney,
+  toMoneyNumber,
+} from "../common/round.util";
 import {
   UncategorizedTransactionsResponse,
   UncategorizedTransactionItem,
@@ -118,7 +123,11 @@ export class DataQualityReportsService {
     // currency code: an unconverted amount under the reporting currency's name
     // is the defect INV-FX-001 forbids. The summary totals below leave it out.
     const transactions: UncategorizedTransactionItem[] = rows.map((row) => {
-      const amount = toMoneyNumber(row.amount);
+      // An amount in the row's own currency, read before conversion: a coin's
+      // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
+      // the same), so a 2,500-sat total is not rounded to zero before it is
+      // converted (INV-MONEY-001).
+      const amount = toMoneyNumber(row.amount, MONEY_SCALE);
       const converted = this.currencyService.tryConvertAmount(
         amount,
         row.currency_code,
@@ -216,13 +225,13 @@ export class DataQualityReportsService {
       expenseCount += parseInt(row.expense_count, 10);
       incomeCount += parseInt(row.income_count, 10);
       const expense = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.expense_total),
+        toMoneyNumber(row.expense_total, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,
       );
       const income = this.currencyService.tryConvertAmount(
-        toMoneyNumber(row.income_total),
+        toMoneyNumber(row.income_total, MONEY_SCALE),
         row.currency_code,
         defaultCurrency,
         rateMap,
@@ -324,7 +333,8 @@ export class DataQualityReportsService {
       transactionDate: new Date(row.transaction_date)
         .toISOString()
         .split("T")[0],
-      amount: toMoneyNumber(row.amount),
+      // The row's own account currency, shown as stored: all of its places.
+      amount: toMoneyNumber(row.amount, MONEY_SCALE),
       payeeName: row.payee_name,
       description: row.description,
       accountName: row.account_name,

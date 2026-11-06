@@ -60,6 +60,7 @@ import {
 import { assertAmountPrecision } from "../common/amount-precision.util";
 import {
   loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
   precisionCurrencyFor,
 } from "../common/currency-places.util";
@@ -750,7 +751,7 @@ export class AccountsService {
       );
 
       // Each account's sums are in its own currency, rounded at its precision.
-      const places = await loadCurrencyPlaces(
+      const places = await loadCurrencyPlacesForRead(
         m,
         accounts.map((a) => a.currencyCode),
       );
@@ -2312,7 +2313,7 @@ export class AccountsService {
 
     // Each account's own figures round at its currency's precision, read once.
     const places = await withScopedDb(this.dataSource, (m) =>
-      loadCurrencyPlaces(
+      loadCurrencyPlacesForRead(
         m,
         accounts.map((a) => a.currencyCode),
       ),

@@ -22,7 +22,7 @@ import {
 } from "./balance-forecast.util";
 import { roundMoney } from "../common/round.util";
 import {
-  loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
 } from "../common/currency-places.util";
 import { addDaysYMD, todayYMD } from "../common/date-utils";
@@ -118,7 +118,7 @@ export class BalanceForecastService {
     // Every figure of the projection is in the account's currency, rounded at
     // its precision: a coin wallet's satoshis survive the running balance.
     const places = await withScopedDb(this.dataSource, (m) =>
-      loadCurrencyPlaces(m, [account.currencyCode]),
+      loadCurrencyPlacesForRead(m, [account.currencyCode]),
     );
     const decimals = moneyDecimalsForCode(places, account.currencyCode);
     const startBalance = roundMoney(

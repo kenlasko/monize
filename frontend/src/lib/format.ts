@@ -82,11 +82,11 @@ function shiftByPowerOfTen(value: number, exponent: number): number {
 
 /**
  * The largest one-ULP nudge, in units of the last place, `roundToDecimals`
- * applies: below a tenth of a unit it can recover a midpoint lost to IEEE 754
- * multiplication but never carry an exact value into the next unit. Mirrors
- * the backend's `NUDGE_LIMIT_UNITS`.
+ * applies: below a hundredth of a unit it can recover a midpoint lost to IEEE
+ * 754 multiplication but never carry an exact value, or one just under a
+ * midpoint, into the next unit. Mirrors the backend's `NUDGE_LIMIT_UNITS`.
  */
-const NUDGE_LIMIT_UNITS = 0.1;
+const NUDGE_LIMIT_UNITS = 0.01;
 
 /**
  * Round a number to the specified number of decimal places using
@@ -107,11 +107,11 @@ export function roundToDecimals(value: number, decimalPlaces: number): number {
   const sign = value < 0 ? -1 : 1;
   const abs = Math.abs(value);
   // Past this magnitude one ULP is a sizeable fraction of a unit at
-  // `decimalPlaces` (at eight places, from about 4.5 million): the nudge below
+  // `decimalPlaces` (at eight places, from about 450 thousand): the nudge below
   // would push an exact value into the next unit (21000000 at eight places came
   // back 21000000.00000001). Round the shortest decimal string exactly instead,
   // as the backend `roundToDecimals` does; no fiat amount at four places
-  // reaches it below 45 billion, so those keep the path below.
+  // reaches it below 4.5 billion, so those keep the path below.
   if (
     Number.isInteger(decimalPlaces) &&
     decimalPlaces >= 0 &&

@@ -2226,6 +2226,66 @@ describe("ScheduledTransactionsService", () => {
       );
     });
 
+    describe("moving a schedule to an account in another currency (INV-MONEY-001)", () => {
+      const usdAccount = { id: "acc-2", userId, currencyCode: "USD" };
+      const btcSchedule = (
+        amount: number,
+        overrides: Partial<ScheduledTransaction> = {},
+      ) =>
+        makeScheduled({
+          accountId: "wallet-1",
+          amount,
+          currencyCode: "BTC",
+          ...overrides,
+        });
+
+      beforeEach(() => {
+        accountsService.findOne.mockResolvedValue(usdAccount);
+      });
+
+      it("refuses carrying a -0.12345678 BTC amount into a USD account before writing", async () => {
+        stubFindOne(btcSchedule(-0.12345678));
+
+        await expect(
+          service.update(userId, stId, { accountId: "acc-2" }),
+        ).rejects.toThrow(
+          /"amount" has more decimal places than USD carries \(4\)/,
+        );
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      });
+
+      it("refuses a moved split schedule whose unsent stored lines do not fit", async () => {
+        stubFindOne(btcSchedule(-0.12, { isSplit: true }));
+        mockQueryRunner.manager.find.mockResolvedValue([
+          { id: "split-1", scheduledTransactionId: stId, amount: -0.11999999 },
+          { id: "split-2", scheduledTransactionId: stId, amount: -0.00000001 },
+        ]);
+
+        await expect(
+          service.update(userId, stId, { accountId: "acc-2" }),
+        ).rejects.toThrow(/"splits\[0\]\.amount" has more decimal places/);
+        expect(mockQueryRunner.manager.find).toHaveBeenCalledWith(
+          ScheduledTransactionSplit,
+          expect.objectContaining({ where: { scheduledTransactionId: stId } }),
+        );
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      });
+
+      it("still moves a schedule at four places", async () => {
+        stubFindOne(btcSchedule(-0.1234));
+
+        await service.update(userId, stId, { accountId: "acc-2" });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({ accountId: "acc-2", currencyCode: "USD" }),
+        );
+      });
+    });
+
     it("re-derives a stale stored currency from the account when accountId is unchanged", async () => {
       stubFindOne(makeScheduled({ currencyCode: "CAD" }));
       accountsService.findOne.mockResolvedValue({

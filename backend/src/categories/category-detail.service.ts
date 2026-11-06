@@ -3,7 +3,7 @@ import { Brackets, DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { roundMoney } from "../common/round.util";
 import {
-  loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
 } from "../common/currency-places.util";
 import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
@@ -241,7 +241,7 @@ export class CategoryDetailService {
       }>();
 
     // Each total is in its account's currency, rounded at its precision.
-    const places = await loadCurrencyPlaces(
+    const places = await loadCurrencyPlacesForRead(
       m,
       rows.map((row) => row.currencyCode),
     );
@@ -299,7 +299,7 @@ export class CategoryDetailService {
       return null;
     }
 
-    const places = await loadCurrencyPlaces(m, [row.currencyCode]);
+    const places = await loadCurrencyPlacesForRead(m, [row.currencyCode]);
     return {
       id: row.id,
       transactionDate: row.transactionDate,

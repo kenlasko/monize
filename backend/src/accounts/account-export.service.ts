@@ -12,7 +12,7 @@ import {
 } from "../delegation/transfer-mask.util";
 import { roundMoney } from "../common/round.util";
 import {
-  loadCurrencyPlaces,
+  loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
 } from "../common/currency-places.util";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -435,7 +435,7 @@ export class AccountExportService {
    */
   private async accountMoneyDecimals(currencyCode: string): Promise<number> {
     const places = await withScopedDb(this.dataSource, (m) =>
-      loadCurrencyPlaces(m, [currencyCode]),
+      loadCurrencyPlacesForRead(m, [currencyCode]),
     );
     return moneyDecimalsForCode(places, currencyCode);
   }
