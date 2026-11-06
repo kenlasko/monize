@@ -743,9 +743,9 @@ Tours are also offered from the dashboard, from the Getting Started flow, and fr
 | **GitHub** | The source code |
 | **Open an Issue** | Report a bug or request a feature |
 | **Discussions** | Ask questions and share ideas with the community |
-| **Documentation** | These guides |
+| **Documentation** | These guides, opened in the help panel (see [Getting Help in the App](getting-started.md#getting-help-in-the-app)). **Open on monize.net** beside it opens the same guides in a new browser tab |
 
-Most pages also carry a help icon beside their title that opens the matching part of this documentation.
+Most pages also carry a help icon beside their title that opens the matching part of this documentation in the help panel.
 
 ### Support Backup
 
