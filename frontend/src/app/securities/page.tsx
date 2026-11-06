@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { Modal } from '@/components/ui/Modal';
+import { securityFormModalProps } from '@/components/securities/security-form-modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -451,8 +452,7 @@ function SecuritiesContent() {
           isOpen={showForm}
           onClose={close}
           {...modalProps}
-          maxWidth="3xl"
-          className="p-6"
+          {...securityFormModalProps}
           title={isEditing ? t('page.modalTitleEdit') : t('page.modalTitleNew')}
         >
           <SecurityForm

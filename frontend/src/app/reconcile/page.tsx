@@ -13,6 +13,7 @@ import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
+import { transactionModalProps } from '@/components/transactions/transaction-modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
@@ -781,12 +782,9 @@ function ReconcileContent() {
           isOpen={transactionModal.showForm}
           onClose={transactionModal.close}
           {...transactionModal.modalProps}
-          maxWidth="6xl"
-          className="p-6 !max-w-[69rem]"
+          {...transactionModalProps}
+          title={transactionModal.isEditing ? t('form.editTitle') : t('form.newTitle')}
         >
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            {transactionModal.isEditing ? t('form.editTitle') : t('form.newTitle')}
-          </h2>
           <TransactionForm
             key={transactionModal.editingItem?.id || 'new'}
             transaction={transactionModal.editingItem}

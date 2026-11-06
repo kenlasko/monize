@@ -12,6 +12,7 @@ import { useFormModal } from '@/hooks/useFormModal';
 import { usePersistedAccountFilter } from '@/hooks/usePersistedAccountFilter';
 import { createLogger } from '@/lib/logger';
 import { Modal } from '@/components/ui/Modal';
+import { transactionModalProps } from '@/components/transactions/transaction-modal';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
@@ -413,10 +414,7 @@ export function ForeignCurrencyFeesReport() {
         />
       </div>
 
-      <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="6xl" className="p-6 !max-w-[69rem]">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-          {t('list.editTitle')}
-        </h2>
+      <Modal isOpen={showForm} onClose={close} {...modalProps} {...transactionModalProps} title={t('list.editTitle')}>
         <TransactionForm
           key={editingTransaction?.id || 'none'}
           transaction={editingTransaction}

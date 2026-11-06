@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Modal } from '@/components/ui/Modal';
+import { transactionModalProps } from '@/components/transactions/transaction-modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { MultiSelect } from '@/components/ui/MultiSelect';
@@ -19,7 +20,7 @@ import { ListBottomPager } from '@/components/ui/ListBottomPager';
 import { NewTransactionButton } from '@/components/investments/NewTransactionButton';
 import { RefreshPricesButton } from '@/components/investments/RefreshPricesButton';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
-import { investmentTransactionModalClass } from '@/components/investments/investment-transaction-modal';
+import { investmentTransactionModalProps } from '@/components/investments/investment-transaction-modal';
 import {
   CashFilterBar,
   CashFilterToggleButton,
@@ -501,8 +502,7 @@ function InvestmentsContent() {
       <Modal
         isOpen={data.showTransactionForm}
         onClose={closeInvestmentTransactionModal}
-        maxWidth={investmentFormNeedsConversion ? '3xl' : 'xl'}
-        className={investmentTransactionModalClass(investmentFormNeedsConversion)}
+        {...investmentTransactionModalProps(investmentFormNeedsConversion)}
         {...data.modalProps} title={data.editingTransaction ? t('page.editTransaction') : t('page.newInvestmentTransaction')}>
         <InvestmentTransactionForm
           key={`${data.editingTransaction?.id ?? 'new'}-${createOnDate ?? ''}`}
@@ -522,7 +522,7 @@ function InvestmentsContent() {
       <UnsavedChangesDialog {...data.unsavedChangesDialog} />
 
       {/* Cash Transaction Form Modal */}
-      <Modal isOpen={data.showCashForm} onClose={data.closeCash} maxWidth="6xl" className="p-6 !max-w-[69rem]" {...data.cashModalProps} title={data.editingCashTransaction ? t('page.editTransaction') : t('page.newTransaction')}>
+      <Modal isOpen={data.showCashForm} onClose={data.closeCash} {...transactionModalProps} {...data.cashModalProps} title={data.editingCashTransaction ? t('page.editTransaction') : t('page.newTransaction')}>
         <TransactionForm
           key={`${data.editingCashTransaction?.id || 'new-cash'}-${createOnDate ?? ''}`}
           transaction={data.editingCashTransaction}

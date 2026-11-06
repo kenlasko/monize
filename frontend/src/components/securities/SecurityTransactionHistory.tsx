@@ -9,7 +9,7 @@ import { CAPTION_CLASS, CellLabel } from '@/components/ui/Table';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SecurityShareAdjustmentForm } from './SecurityShareAdjustmentForm';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
-import { investmentTransactionModalClass } from '@/components/investments/investment-transaction-modal';
+import { investmentTransactionModalProps } from '@/components/investments/investment-transaction-modal';
 import { investmentsApi } from '@/lib/investments';
 import { accountsApi } from '@/lib/accounts';
 import { getErrorMessage } from '@/lib/errors';
@@ -55,6 +55,13 @@ export function SecurityTransactionHistory({
   // Full account objects (including closed) for the edit form's pickers.
   const [allAccounts, setAllAccounts] = useState<Account[]>([]);
   const [editTransaction, setEditTransaction] = useState<InvestmentTransaction | null>(null);
+  // Widens the edit modal while the form asks for a currency conversion, as
+  // the Investments page's copy of this modal does.
+  const [needsConversion, setNeedsConversion] = useState(false);
+  const closeEdit = useCallback(() => {
+    setNeedsConversion(false);
+    setEditTransaction(null);
+  }, []);
 
   const fetchHistory = useCallback(() => {
     // The writes live in the inner function so they run after the request,
@@ -123,7 +130,7 @@ export function SecurityTransactionHistory({
   }, [t]);
 
   const handleEditSuccess = () => {
-    setEditTransaction(null);
+    closeEdit();
     onChanged?.();
     load().catch(() => {});
   };
@@ -287,22 +294,20 @@ export function SecurityTransactionHistory({
           Transactions tab. */}
       <Modal
         isOpen={!!editTransaction}
-        onClose={() => setEditTransaction(null)}
-        maxWidth="xl"
-        className={investmentTransactionModalClass(false)}
+        onClose={closeEdit}
+        {...investmentTransactionModalProps(needsConversion)}
+        title={t('transactionHistory.editTransactionTitle')}
         pushHistory
       >
         {editTransaction && (
           <>
-            <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {t('transactionHistory.editTransactionTitle')}
-            </h2>
             <InvestmentTransactionForm
               transaction={editTransaction}
               accounts={allAccounts}
               allAccounts={allAccounts}
               onSuccess={handleEditSuccess}
-              onCancel={() => setEditTransaction(null)}
+              onCancel={closeEdit}
+              onConversionStateChange={setNeedsConversion}
             />
           </>
         )}

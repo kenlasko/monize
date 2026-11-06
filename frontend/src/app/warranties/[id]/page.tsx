@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Modal } from '@/components/ui/Modal';
+import { transactionModalProps } from '@/components/transactions/transaction-modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { WarrantyClaimList } from '@/components/warranties/WarrantyClaimList';
 import { WarrantyDetailCard } from '@/components/warranties/WarrantyDetailCard';
@@ -367,8 +368,7 @@ function WarrantyDetailContent({ warrantyId }: { warrantyId: string }) {
           isOpen={purchaseModal.showForm}
           onClose={handleClosePurchase}
           {...purchaseModal.modalProps}
-          maxWidth="6xl"
-          className="p-6 !max-w-[69rem]"
+          {...transactionModalProps}
           title={tt('page.editModal.editTitle')}
         >
           {purchaseModal.showForm && purchaseModal.editingItem && (
