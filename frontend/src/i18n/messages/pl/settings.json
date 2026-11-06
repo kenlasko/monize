@@ -838,6 +838,12 @@
       "doneButton": "Gotowe",
       "unlinkedBondSecuritiesList": "Dotyczy papierów wartościowych: {symbols}.",
       "unlinkedBondSecuritiesMore": "i jeszcze {count}",
+      "currencyKindMismatchAccounts": "{count, plural, one {# konto zostało przywrócone z walutą, której rodzaj nie pasuje do jego typu} few {# konta zostały przywrócone z walutą, której rodzaj nie pasuje do ich typu} many {# kont zostało przywróconych z walutą, której rodzaj nie pasuje do ich typu} other {# konta zostało przywróconego z walutą, której rodzaj nie pasuje do ich typu}}: konto kryptowalutowe wymaga kryptowaluty, a każde inne konto waluty fiducjarnej. Na tym serwerze waluta jest drugiego rodzaju. Zmień walutę konta albo rodzaj waluty na stronie Waluty.",
+      "currencyKindMismatchAccountsList": "Dotyczy kont: {names}.",
+      "currencyKindMismatchSecurities": "{count, plural, one {# papier wartościowy jest wyceniany} few {# papiery wartościowe są wyceniane} many {# papierów wartościowych jest wycenianych} other {# papieru wartościowego jest wycenianego}} na tym serwerze w kryptowalucie, a papier wartościowy wymaga waluty fiducjarnej. Zmień walutę papieru wartościowego albo rodzaj waluty na stronie Waluty.",
+      "currencyKindMismatchSecuritiesList": "Dotyczy papierów wartościowych: {symbols}.",
+      "currencyKindMismatchMore": "i jeszcze {count}",
+      "currencyKindMismatchDefaultCurrency": "Twoja domyślna waluta, {code}, jest na tym serwerze kryptowalutą, a sumy i raporty są zawsze wyświetlane w walucie fiducjarnej. Wybierz fiducjarną domyślną walutę w Ustawienia → Preferencje.",
       "counts": {
         "sharedGroups": "Wspólne grupy",
         "sharedParticipants": "Uczestnicy grup",

@@ -221,7 +221,20 @@ Rates are 10 dp, money 4 dp, the reporting currency CAD.
 - No `quote_symbol`: the pair is `uncarried` in the refresh summary ("No
   configured provider carries BTC/CAD" is wrong here; the message is "BTC has
   no price symbol; map one on the Currencies page"). The account's converted
-  figures are unknown.
+  figures are unknown. The history gap fill refuses the pair with the same
+  message and records nothing: no `exchange_rate_coverage` row and no empty
+  window, because nobody was asked (`carried: false`,
+  `docs/specs/exchange-rate-providers.md` section 5). Setting a first symbol,
+  or re-pointing the coin ticker, deletes the code's coverage rows in the same
+  transaction and forgets the process's empty windows for it (another
+  replica's expire within their half-hour TTL), so the next fill asks for
+  every window again.
+- A code the crypto adapter's read of `currencies` does not hold, within the
+  miss-reload throttle or after the re-read: `claims` and `carries` reject
+  ("could not say"), the chain asks nobody and the pair is `unanswered` for
+  the tick. Every code in use has a `currencies` row, so absence means the
+  read is stale; answering "not a coin" would route a coin created on another
+  replica to Yahoo's `=X` grammar.
 - Yahoo did not answer: `unanswered`, retried next tick; the last stored rate
   within `FX_MAX_RATE_AGE_DAYS` resolves (INV-FX-001).
 - Yahoo has no `<coin>-<fiat>` symbol for the reporting fiat (an exotic fiat):

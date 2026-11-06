@@ -87,6 +87,16 @@ passes; both columns are nullable and no writer produces a null code, so this is
 noted rather than tightened. Adding `NOT NULL` is a separate expand-contract
 step.
 
+**Note (2026-11-05): the `CHECK` above no longer holds as written.** The crypto
+work stores a pair with exactly one coin side coin first, whatever the code
+order (`docs/specs/exchange-rate-canonical-orientation.md` section 12
+addendum): `XBT -> IDR` is canonical although `IDR` sorts first. Statement 3 as
+written would reject those rows, and statements 1 and 2 would invert and delete
+them. Before T2 is authored the rule must either exclude every pair with a
+`CRYPTO` side (`currencies.kind`) from the `CHECK` and from statements 1 and 2,
+or be replaced by a trigger that reads `currencies.kind`; a `CHECK` cannot read
+another table.
+
 **`schema.sql`.** Add the same constraint to the `exchange_rates` table
 definition in the same commit, so a fresh install matches a migrated database
 and `scripts/verify-schema.sh` replays clean.

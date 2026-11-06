@@ -360,6 +360,8 @@
     "invalidRateDate": "date deve essere nel formato AAAA-MM-GG",
     "sameCurrencyHistory": "{{ code }} è la tua valuta predefinita; non ha uno storico del tasso di cambio",
     "rateProviderUnavailable": "Il fornitore di tassi di cambio non ha risposto. Riprova più tardi.",
+    "noPriceSymbol": "{{ code }} non ha un simbolo di prezzo; associane uno nella pagina Valute",
+    "pairNotCarried": "Nessun fornitore di tassi di cambio configurato offre {{ pair }}",
     "quoteSymbolRequiresCrypto": "Un simbolo di prezzo ({{ quoteSymbol }}) può essere impostato solo su una criptovaluta; \"{{ code }}\" è una valuta fiat",
     "quoteSymbolNotAPair": "Il simbolo di prezzo \"{{ quoteSymbol }}\" di \"{{ code }}\" non è una coppia di moneta e valuta fiat come BTC-EUR",
     "kindInUse": "Il tipo di \"{{ code }}\" non può essere modificato finché conti, transazioni, titoli o altri record lo usano",

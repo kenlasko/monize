@@ -360,6 +360,8 @@
     "invalidRateDate": "date는 YYYY-MM-DD 형식이어야 합니다",
     "sameCurrencyHistory": "{{ code }}은(는) 기본 통화이므로 환율 이력이 없습니다",
     "rateProviderUnavailable": "환율 제공처가 응답하지 않았습니다. 나중에 다시 시도해 주세요.",
+    "noPriceSymbol": "{{ code }}에 가격 기호가 없습니다. 통화 페이지에서 지정하세요",
+    "pairNotCarried": "구성된 환율 제공업체 중 {{ pair }}를 제공하는 곳이 없습니다",
     "quoteSymbolRequiresCrypto": "가격 기호({{ quoteSymbol }})는 암호화폐에만 설정할 수 있습니다. \"{{ code }}\"은(는) 법정 통화입니다",
     "quoteSymbolNotAPair": "\"{{ code }}\"의 가격 기호 \"{{ quoteSymbol }}\"은(는) BTC-EUR 같은 코인과 법정 통화의 쌍이 아닙니다",
     "kindInUse": "계정, 거래, 증권 또는 기타 레코드에서 사용 중인 동안에는 \"{{ code }}\"의 유형을 변경할 수 없습니다",

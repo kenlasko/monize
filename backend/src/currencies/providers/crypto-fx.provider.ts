@@ -25,8 +25,10 @@ export const CRYPTO_CURRENCY_CACHE_MS = 5 * 60 * 1000;
  * another. A code the snapshot does not hold may be a coin created on another
  * replica or written by a restore since the read, and answering "not mine"
  * for it would hand a coin pair to Yahoo's `=X` grammar (INV-CRYPTO-002), so a
- * miss re-reads before answering. The throttle is what keeps a code with no
- * `currencies` row at all from costing a query on every question.
+ * miss re-reads before answering. The throttle is what keeps a stale snapshot
+ * from costing a query on every question; within it, and after a re-read that
+ * still lacks the code, `claims` and `carries` reject ("could not say") rather
+ * than answer "not mine", and the chain retries the pair next tick.
  */
 export const CRYPTO_MISS_RELOAD_MS = 5 * 1000;
 
@@ -83,7 +85,9 @@ function utcDay(epochSeconds: number): string {
  * read again before the answer (a coin created on another replica, which no
  * local `forgetCurrencies` reached), at most once per
  * `CRYPTO_MISS_RELOAD_MS`, and the pair's symbol comes from the map that read
- * returned.
+ * returned; a code still absent (within the throttle, or after that read)
+ * rejects both too, because every code in use has a `currencies` row and its
+ * absence means the read is stale, not that the code is fiat.
  *
  * **Symbols.** The coin ticker is the part of `quote_symbol` before its last
  * hyphen, and the fiat is whichever fiat the pair names, not the one in the
@@ -127,18 +131,36 @@ export class CryptoFxProvider implements FxRateProvider {
   ) {}
 
   async carries(code: string): Promise<boolean> {
-    const facts = (await this.currenciesHolding([code])).get(
-      code.toUpperCase(),
-    );
-    if (!facts) return false;
+    const facts = await this.factsOf(code);
     return facts.kind === "CRYPTO" ? facts.coinTicker !== null : true;
   }
 
   async claims(code: string): Promise<boolean> {
+    return (await this.factsOf(code)).kind === "CRYPTO";
+  }
+
+  /**
+   * What `currencies` says of one code, for `claims` and `carries`. A code
+   * still absent after `currenciesHolding` re-read (or while its throttle
+   * forbids a re-read) is not "not a coin": every code the chain is asked
+   * about is a `currencies` row (the foreign keys on every column that holds
+   * one), so absence means the snapshot is older than the row. That is "could
+   * not say", and it rejects as a failed read does, so the chain asks nobody
+   * about the pair this tick rather than handing it to Yahoo's `=X` grammar
+   * (INV-CRYPTO-002). A code the snapshot holds is answered from it: a kind
+   * changes only while nothing references the code, so a kind another replica
+   * changed since the read prices nothing.
+   */
+  private async factsOf(code: string): Promise<CodeFacts> {
     const facts = (await this.currenciesHolding([code])).get(
       code.toUpperCase(),
     );
-    return facts?.kind === "CRYPTO";
+    if (facts === undefined) {
+      throw new Error(
+        `Could not say whether ${code} is a coin: the currencies read does not hold it yet`,
+      );
+    }
+    return facts;
   }
 
   /** Drop what was read of `currencies`; the next question reads it again. */
@@ -258,8 +280,9 @@ export class CryptoFxProvider implements FxRateProvider {
   /**
    * What `currencies` says of each code, read again first when one of `wanted`
    * is not in the snapshot and the snapshot is older than
-   * `CRYPTO_MISS_RELOAD_MS`. A code still missing after that read has no
-   * `currencies` row, and is answered from the map as it is.
+   * `CRYPTO_MISS_RELOAD_MS`. A code still missing after that read, or while
+   * the throttle forbids one, is not in the map, and `claims` / `carries`
+   * reject for it (`factsOf`).
    */
   private async currenciesHolding(
     wanted: readonly string[],

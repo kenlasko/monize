@@ -30,6 +30,7 @@ import {
 import { FALLBACK_DEFAULT_CURRENCY } from "../common/default-currency.util";
 import { FxProviderChain } from "./providers/fx-provider-chain";
 import { CryptoFxProvider } from "./providers/crypto-fx.provider";
+import { ExchangeRateHistoryService } from "./exchange-rate-history.service";
 import {
   QuoteSymbolRefusal,
   quoteSymbolCoinTicker,
@@ -111,6 +112,12 @@ export class CurrenciesService implements OnApplicationBootstrap {
      * loses nothing but the early refresh.
      */
     @Optional() private readonly cryptoFx?: CryptoFxProvider,
+    /**
+     * Told when a coin's price symbol is first set or re-pointed, so the
+     * windows this process remembers as empty for the code are asked again.
+     * Optional for the same reason as `cryptoFx`.
+     */
+    @Optional() private readonly rateHistory?: ExchangeRateHistoryService,
   ) {}
 
   /**
@@ -489,10 +496,14 @@ export class CurrenciesService implements OnApplicationBootstrap {
   ): Promise<UserCurrencyView> {
     // Read-modify-write: the ownership check, the metadata save and the
     // preference upsert are one unit. Nested calls join this transaction.
-    const view = await withScopedDb(this.dataSource, (manager) =>
+    const { view, repriced } = await withScopedDb(this.dataSource, (manager) =>
       this.updateWithin(manager, userId, code, dto),
     );
     this.cryptoFx?.forgetCurrencies();
+    // After the commit, beside the coverage rows the transaction deleted: a
+    // fill between the two finds no coverage and asks the provider, which is
+    // the point. Only this process's memory; see `forgetEmptyWindowsFor`.
+    if (repriced) this.rateHistory?.forgetEmptyWindowsFor(view.code);
     return view;
   }
 
@@ -501,7 +512,7 @@ export class CurrenciesService implements OnApplicationBootstrap {
     userId: string,
     code: string,
     dto: UpdateCurrencyDto,
-  ): Promise<UserCurrencyView> {
+  ): Promise<{ view: UserCurrencyView; repriced: boolean }> {
     const currency = await this.findOne(code);
 
     // System currencies: cannot modify metadata
@@ -526,10 +537,13 @@ export class CurrenciesService implements OnApplicationBootstrap {
 
     // Handle isActive separately via preference row
     const { isActive, kind, quoteSymbol, ...rest } = dto;
-    const metadataUpdates: Partial<Currency> = {
-      ...rest,
-      ...(await this.kindUpdates(manager, currency, kind, quoteSymbol)),
-    };
+    const { updates: kindUpdates, repriced } = await this.kindUpdates(
+      manager,
+      currency,
+      kind,
+      quoteSymbol,
+    );
+    const metadataUpdates: Partial<Currency> = { ...rest, ...kindUpdates };
 
     if (Object.keys(metadataUpdates).length > 0) {
       Object.assign(currency, metadataUpdates);
@@ -544,10 +558,13 @@ export class CurrenciesService implements OnApplicationBootstrap {
       where: { userId, currencyCode: currency.code },
     });
 
-    return this.buildUserCurrencyView(
-      currency,
-      pref ? pref.isActive : currency.isActive,
-    );
+    return {
+      view: this.buildUserCurrencyView(
+        currency,
+        pref ? pref.isActive : currency.isActive,
+      ),
+      repriced,
+    };
   }
 
   /**
@@ -572,13 +589,26 @@ export class CurrenciesService implements OnApplicationBootstrap {
    * referenced coin, because the provider prices against whichever fiat the
    * pair names, not the one in the symbol; so is a first symbol on a coin that
    * had none.
+   *
+   * `repriced` is whether the coin the code is priced through changed: a
+   * CRYPTO row's coin ticker first set or changed, including a first symbol
+   * and a kind change to CRYPTO with one. Its `exchange_rate_coverage` rows
+   * (either code order) are deleted here, in the update's transaction: a fill
+   * under the old ticker, or under none, recorded where the provider's
+   * history starts for a symbol that no longer prices the code, and the
+   * provider fingerprint those rows are scoped to does not change with a
+   * symbol (INV-FX-005). The caller forgets the process's empty windows after
+   * the commit.
    */
   private async kindUpdates(
     manager: EntityManager,
     currency: Currency,
     requestedKind: CurrencyKind | undefined,
     requestedQuoteSymbol: string | null | undefined,
-  ): Promise<Partial<Pick<Currency, "kind" | "quoteSymbol">>> {
+  ): Promise<{
+    updates: Partial<Pick<Currency, "kind" | "quoteSymbol">>;
+    repriced: boolean;
+  }> {
     const currentKind = currency.kind ?? DEFAULT_CURRENCY_KIND;
     const kind = requestedKind ?? currentKind;
     const kindChanged = kind !== currentKind;
@@ -593,11 +623,12 @@ export class CurrenciesService implements OnApplicationBootstrap {
     const currentSymbol = currency.quoteSymbol ?? null;
     const tickerOf = (symbol: string | null) =>
       symbol === null ? null : quoteSymbolCoinTicker(symbol);
+    const coinTickerChanged =
+      kind === "CRYPTO" && tickerOf(quoteSymbol) !== tickerOf(currentSymbol);
+    // Held like a kind change only when a ticker was there to change: a first
+    // symbol on a coin that had none is allowed on a referenced coin.
     const tickerChanged =
-      !kindChanged &&
-      kind === "CRYPTO" &&
-      currentSymbol !== null &&
-      tickerOf(quoteSymbol) !== tickerOf(currentSymbol);
+      !kindChanged && currentSymbol !== null && coinTickerChanged;
 
     if (kindChanged || tickerChanged) {
       await manager.query(
@@ -621,12 +652,20 @@ export class CurrenciesService implements OnApplicationBootstrap {
       }
     }
 
+    if (coinTickerChanged) {
+      await manager.query(
+        `DELETE FROM exchange_rate_coverage
+          WHERE from_currency = $1 OR to_currency = $1`,
+        [currency.code],
+      );
+    }
+
     const updates: Partial<Pick<Currency, "kind" | "quoteSymbol">> = {};
     if (kindChanged) updates.kind = kind;
     if (quoteSymbol !== (currency.quoteSymbol ?? null)) {
       updates.quoteSymbol = quoteSymbol;
     }
-    return updates;
+    return { updates, repriced: coinTickerChanged };
   }
 
   /** Refuse a price symbol the kind does not admit, by the section 5 table. */

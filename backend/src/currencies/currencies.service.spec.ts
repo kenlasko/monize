@@ -11,6 +11,7 @@ import { CurrenciesService } from "./currencies.service";
 import { Currency } from "./entities/currency.entity";
 import { UserCurrencyPreference } from "./entities/user-currency-preference.entity";
 import { FxProviderChain } from "./providers/fx-provider-chain";
+import { ExchangeRateHistoryService } from "./exchange-rate-history.service";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -25,6 +26,10 @@ describe("CurrenciesService", () => {
   let mockDataSource: { query: jest.Mock };
   let chain: jest.Mocked<
     Pick<FxProviderChain, "carriesAny" | "verifyCurrency" | "searchCurrency">
+  >;
+
+  let rateHistory: jest.Mocked<
+    Pick<ExchangeRateHistoryService, "forgetEmptyWindowsFor">
   >;
 
   const userId = "user-1";
@@ -67,6 +72,8 @@ describe("CurrenciesService", () => {
     scoped.dataSource.query = scoped.manager.query;
     mockDataSource = scoped.dataSource as unknown as { query: jest.Mock };
 
+    rateHistory = { forgetEmptyWindowsFor: jest.fn() };
+
     chain = {
       carriesAny: jest.fn().mockResolvedValue(true),
       verifyCurrency: jest.fn().mockResolvedValue(null),
@@ -81,6 +88,7 @@ describe("CurrenciesService", () => {
           useValue: mockDataSource,
         },
         { provide: FxProviderChain, useValue: chain },
+        { provide: ExchangeRateHistoryService, useValue: rateHistory },
       ],
     }).compile();
 
@@ -1662,6 +1670,81 @@ describe("CurrenciesService", () => {
 
       expect(view.quoteSymbol).toBe("BTC-EUR");
       expect(globalCheck()).toHaveLength(0);
+    });
+
+    /**
+     * A fill for a coin without a symbol (or under its old ticker) recorded
+     * where the provider's history starts, and the provider fingerprint those
+     * rows are scoped to does not change with a symbol: left in place, every
+     * past window of the newly mapped coin would be skipped.
+     */
+    describe("what a fill learned under the old price symbol", () => {
+      const coverageDeletes = () =>
+        mockDataSource.query.mock.calls.filter(([sql]) =>
+          String(sql).includes("DELETE FROM exchange_rate_coverage"),
+        );
+
+      it("deletes the code's coverage in both code orders and forgets its empty windows when a first symbol is set", async () => {
+        mockCurrencyRepo.findOne!.mockResolvedValue(
+          coin({ code: "DOG", quoteSymbol: null }),
+        );
+        mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+        references(true);
+
+        await service.update(userId, "DOG", { quoteSymbol: "DOGE-USD" });
+
+        const deletes = coverageDeletes();
+        expect(deletes).toHaveLength(1);
+        expect(String(deletes[0][0])).toMatch(
+          /WHERE from_currency = \$1 OR to_currency = \$1/,
+        );
+        expect(deletes[0][1]).toEqual(["DOG"]);
+        // Inside the update's transaction, before the row is saved.
+        const deleteOrder =
+          mockDataSource.query.mock.invocationCallOrder[
+            mockDataSource.query.mock.calls.indexOf(deletes[0])
+          ];
+        expect(deleteOrder).toBeLessThan(
+          mockCurrencyRepo.save!.mock.invocationCallOrder[0],
+        );
+        expect(rateHistory.forgetEmptyWindowsFor).toHaveBeenCalledWith("DOG");
+      });
+
+      it("does the same when the coin ticker is re-pointed", async () => {
+        mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+        mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+        references(false);
+
+        await service.update(userId, "BTC", { quoteSymbol: "XBT-CAD" });
+
+        expect(coverageDeletes()).toHaveLength(1);
+        expect(rateHistory.forgetEmptyWindowsFor).toHaveBeenCalledWith("BTC");
+      });
+
+      it("keeps both when only the fiat leg changes or nothing does", async () => {
+        mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+        mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+        references(true);
+
+        await service.update(userId, "BTC", { quoteSymbol: "BTC-USD" });
+        await service.update(userId, "BTC", { quoteSymbol: "BTC-CAD" });
+        await service.update(userId, "BTC", { name: "Bitcoin!" });
+
+        expect(coverageDeletes()).toHaveLength(0);
+        expect(rateHistory.forgetEmptyWindowsFor).not.toHaveBeenCalled();
+      });
+
+      it("forgets nothing when the change is refused", async () => {
+        mockCurrencyRepo.findOne!.mockResolvedValue(coin());
+        references(true);
+
+        await expect(
+          service.update(userId, "BTC", { quoteSymbol: "ETH-CAD" }),
+        ).rejects.toThrow(ConflictException);
+
+        expect(coverageDeletes()).toHaveLength(0);
+        expect(rateHistory.forgetEmptyWindowsFor).not.toHaveBeenCalled();
+      });
     });
 
     it("refuses a repricing symbol with no fiat leg", async () => {

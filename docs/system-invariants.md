@@ -1682,7 +1682,13 @@ Statement           Every exchange_rates row a provider writes carries that
                     the gap fill from ever asking again. What a fill learned
                     about a pair's history (exchange_rate_coverage) is scoped to
                     the chain that learned it: a row recorded under another
-                    ordered set of providers says nothing about this one.
+                    ordered set of providers says nothing about this one. A
+                    pair no provider that may be asked carries (a coin without
+                    a quote_symbol) was asked of nobody, so it is not
+                    remembered either: no empty window and no coverage row,
+                    because a symbol mapped later changes the answer without
+                    changing the chain; a coin's ticker first set or changed
+                    deletes the code's coverage rows.
 Source of truth     FX_PROVIDERS (the configured order, parsed against
                     FX_PROVIDER_NAMES) and FxRateProvider.source (the slug each
                     adapter writes).
@@ -1712,7 +1718,20 @@ Enforcement         backend/src/currencies/providers/fx-provider-chain.ts asks
                     value (NULL included) as unestablished, and its upsert
                     replaces the three dates rather than merging them when the
                     stored value differs (IS DISTINCT FROM in the ON CONFLICT
-                    clause).
+                    clause). FxDailySeriesResult.carried is false when no
+                    provider that may be asked carries the pair;
+                    ensureRatesForDate remembers no window and the gap fill
+                    (ExchangeRateHistoryService.fetchWindows) records no
+                    coverage and no window for such a pair, refusing it with
+                    "<code> has no price symbol; map one on the Currencies
+                    page". CurrenciesService.kindUpdates deletes the code's
+                    exchange_rate_coverage rows (either code order) in the
+                    update's transaction when a CRYPTO row's coin ticker is
+                    first set or changed, and update() then calls
+                    ExchangeRateHistoryService.forgetEmptyWindowsFor, which
+                    clears this process's two empty-window memories for the
+                    code; another replica's entries expire within
+                    EMPTY_WINDOW_TTL_MS.
 Test                The section 5 truth table of
                     docs/specs/exchange-rate-providers.md as named cases
                     in fx-provider-chain.spec.ts (in particular: first provider
@@ -1720,12 +1739,15 @@ Test                The section 5 truth table of
                     exchange-rate.service.spec.ts with the chain faked (the
                     source and the date taken from the observation, the three
                     refresh reports kept apart, an unanswered window never
-                    remembered); currencies.service.spec.ts with the chain
-                    faked (no global fetch reached by the lookup);
+                    remembered, an uncarried window never remembered);
+                    currencies.service.spec.ts with the chain faked (no global
+                    fetch reached by the lookup; "what a fill learned under
+                    the old price symbol");
                     fx-provider-source.guard.spec.ts;
                     provider-call.guard.spec.ts over currencies;
                     exchange-rate-history.service.spec.ts ("a coverage row is
-                    scoped to the provider chain that wrote it") and
+                    scoped to the provider chain that wrote it"; an unmapped
+                    coin records no coverage and no empty window) and
                     fx-rate-coverage.integration.spec.ts over the real upsert.
 Status              enforced -- the chain, the service on it, the source
                     guard and the currency lookup on the chain are on main
@@ -1866,10 +1888,13 @@ Failure response    A coin without a quote_symbol is claimed but not carried:
                     the refresh reports the pair uncarried with "<code> has no
                     price symbol; map one on the Currencies page", and every
                     converted figure in that coin is unknown (INV-FX-001). A
-                    failed read of currencies rejects claims and carries; the
-                    chain reads that as "could not say", asks nobody about a
-                    pair whose claim it cannot settle, and the refresh reports
-                    it "No provider answered".
+                    failed read of currencies rejects claims and carries, and
+                    so does a code the read does not hold (within the
+                    miss-reload throttle or after the re-read: every code in
+                    use has a currencies row, so absence means a stale read);
+                    the chain reads that as "could not say", asks nobody about
+                    a pair whose claim it cannot settle, and the refresh
+                    reports it "No provider answered".
 Required tests      fx-provider-chain.spec.ts ("FxProviderChain and a provider
                     that claims coins"); crypto-fx.provider.spec.ts ("carries
                     and claims", "in the chain"); exchange-rate.service.spec.ts

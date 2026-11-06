@@ -360,6 +360,8 @@
     "invalidRateDate": "date 必須為 YYYY-MM-DD 格式",
     "sameCurrencyHistory": "{{ code }} 是您的預設貨幣，因此沒有匯率歷史",
     "rateProviderUnavailable": "匯率提供方未回應，請稍後再試。",
+    "noPriceSymbol": "{{ code }} 沒有價格代號；請在「貨幣」頁面上設定一個",
+    "pairNotCarried": "沒有已設定的匯率提供方提供 {{ pair }}",
     "quoteSymbolRequiresCrypto": "價格符號（{{ quoteSymbol }}）只能設定在加密貨幣上；「{{ code }}」是法定貨幣",
     "quoteSymbolNotAPair": "「{{ code }}」的價格符號「{{ quoteSymbol }}」不是 BTC-EUR 這樣的幣種與法定貨幣的交易對",
     "kindInUse": "只要仍有科目、交易、證券或其他記錄在使用，就無法變更「{{ code }}」的類型",

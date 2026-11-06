@@ -360,6 +360,8 @@
     "invalidRateDate": "date は YYYY-MM-DD 形式で指定してください",
     "sameCurrencyHistory": "{{ code }} はあなたのデフォルト通貨のため、レート履歴はありません",
     "rateProviderUnavailable": "為替レート提供元から応答がありませんでした。しばらくしてから再度お試しください。",
+    "noPriceSymbol": "{{ code }} には価格シンボルがありません。通貨ページで設定してください",
+    "pairNotCarried": "設定済みの為替レート提供元はいずれも {{ pair }} を扱っていません",
     "quoteSymbolRequiresCrypto": "価格記号（{{ quoteSymbol }}）を設定できるのは暗号資産のみです。「{{ code }}」は法定通貨です",
     "quoteSymbolNotAPair": "「{{ code }}」の価格記号「{{ quoteSymbol }}」は、BTC-EUR のようなコインと法定通貨のペアではありません",
     "kindInUse": "口座、取引、有価証券、その他の記録で使用されている間は、「{{ code }}」の種類を変更できません",

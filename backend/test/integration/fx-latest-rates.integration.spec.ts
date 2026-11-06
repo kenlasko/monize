@@ -89,7 +89,12 @@ describe("latest exchange rates and the readers that take them (integration)", (
     // found nothing.
     providerSeries = jest
       .spyOn(module.get(FxProviderChain, { strict: false }), "dailySeries")
-      .mockResolvedValue({ points: [], answered: true, source: null });
+      .mockResolvedValue({
+        points: [],
+        answered: true,
+        carried: true,
+        source: null,
+      });
   });
 
   afterAll(async () => {

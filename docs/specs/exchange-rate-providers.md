@@ -189,36 +189,42 @@ the bars kept are the same.
 ## 5. Chain semantics, as a truth table
 
 For one window and two configured providers P1 then P2. "carries" is
-`carries(from) && carries(to)`.
+`carries(from) && carries(to)`. `carried` is whether any provider that may be
+asked carries the pair; a provider that could not say counts as carrying.
 
-| P1 carries | P1 answer | P2 carries | P2 answer | points | answered | source |
-| --- | --- | --- | --- | --- | --- | --- |
-| no | not asked | yes | series | P2's | true | P2 |
-| yes | series | not asked | not asked | P1's | true | P1 |
-| yes | `[]` | yes | series | P2's | true | P2 |
-| yes | `[]` | yes | `[]` | `[]` | true | null |
-| yes | `null` | yes | series | P2's | true | P2 |
-| yes | `null` | yes | `[]` | `[]` | **false** | null |
-| yes | `null` | yes | `null` | `[]` | false | null |
-| no | not asked | no | not asked | `[]` | true | null |
-| not asked (claim unknown), `dailySeries` | not asked | `claims` threw | not asked | `[]` | **false** | null |
-| not asked (claim unknown), `latest` | not asked | `claims` threw | not asked | none, the quote is `unanswered` | false | null |
-| not asked (claim unknown), `live` | not asked | `claims` threw | not asked | `null` | false | null |
-| not asked (claimed pair), `dailySeries` | not asked | `carries` threw | not asked | `[]` | false | null |
+| P1 carries | P1 answer | P2 carries | P2 answer | points | answered | carried | source |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| no | not asked | yes | series | P2's | true | true | P2 |
+| yes | series | not asked | not asked | P1's | true | true | P1 |
+| yes | `[]` | yes | series | P2's | true | true | P2 |
+| yes | `[]` | yes | `[]` | `[]` | true | true | null |
+| yes | `null` | yes | series | P2's | true | true | P2 |
+| yes | `null` | yes | `[]` | `[]` | **false** | true | null |
+| yes | `null` | yes | `null` | `[]` | false | true | null |
+| no | not asked | no | not asked | `[]` | true | **false** | null |
+| not asked (claim unknown), `dailySeries` | not asked | `claims` threw | not asked | `[]` | **false** | true | null |
+| not asked (claim unknown), `latest` | not asked | `claims` threw | not asked | none, the quote is `unanswered` | false | -- | null |
+| not asked (claim unknown), `live` | not asked | `claims` threw | not asked | `null` | false | -- | null |
+| not asked (claimed pair), `dailySeries` | not asked | `carries` threw | not asked | `[]` | false | true | null |
+| not asked (claimed pair), `dailySeries` | not asked | claims, does not carry (no `quote_symbol`) | not asked | `[]` | true | **false** | null |
+| not asked (claimed pair), `latest` | not asked | claims, does not carry (no `quote_symbol`) | not asked | none, the quote is `uncarried` | -- | false | null |
 
 The sixth row is the one that matters: P1 may hold history for the window
 that P2 does not (Frankfurter reaches 1999, Yahoo's `USDCAD=X` 2003), so a
 window P1 never answered may not be remembered as empty. This is the rule
 `fillRateWindow` already applies to its direct and reverse symbols, now per
-provider. The last row is a pair no configured provider quotes: a fact, not
-an outage, so the window is remembered and the refresh reports the pair as
-failed with "no configured provider carries X/Y".
+provider. The eighth row is a pair no configured provider quotes: a fact, not
+an outage, so it is `answered`, and the refresh reports the pair as failed
+with "no configured provider carries X/Y". It is also `carried: false`, and
+an uncarried window is never remembered as empty nor written to
+`exchange_rate_coverage`: nobody was asked, so it says nothing about any
+provider's history, and forgetting it costs no provider call.
 
 For `latest`, the same per quote: a quote moves to the next provider on
 `null` or on absence from the map; it is `unanswered` only when every
 carrying provider returned `null`.
 
-The four rows after the line are a chain whose P2 claims codes (the crypto
+The six rows after the eighth are a chain whose P2 claims codes (the crypto
 adapter, decision 13) and whose P1 claims nothing (Yahoo, whose `carries` is
 always true). When P2's `claims` throws (its read of `currencies` failed),
 the chain cannot tell whether the pair has a coin side, so it asks nobody:
@@ -227,8 +233,24 @@ refresh's "No provider answered", retried next tick) and `live` is `null`.
 When the pair is claimed and P2's `carries` throws, P2 is the only provider
 that may be asked, so the pair is likewise unanswered. Reading either throw
 as `false` would hand a coin pair to Yahoo's `=X` grammar and store a coin
-rate under `yahoo_finance`. `fx-provider-chain.spec.ts` holds these rows in
-"FxProviderChain and a provider that claims coins".
+rate under `yahoo_finance`. The crypto adapter rejects both for a code its
+read of `currencies` does not hold, too, whether a re-read is throttled or
+already happened: every code in use has a `currencies` row, so absence means
+the read is stale, not that the code is fiat.
+
+The last two rows are a coin without a `quote_symbol`: claimed by P2, carried
+by nobody, so nobody is asked. The quote is `uncarried` (the refresh's "<code>
+has no price symbol; map one on the Currencies page") and the window is
+`carried: false`. Recording that window, as `ensureRatesForDate` and the
+gap fill otherwise record an answered empty one, would outlive the symbol the
+reader maps next: `exchange_rate_coverage` is scoped to the provider
+fingerprint, which a symbol does not change, so every past window would be
+skipped and the gap fill would claim the provider's history starts today.
+The gap fill refuses the pair with that message and records nothing, and
+setting or re-pointing a coin's ticker deletes the code's coverage rows in
+the same transaction and forgets the process's empty windows for it
+(`CurrenciesService.kindUpdates`). `fx-provider-chain.spec.ts` holds these
+rows in "FxProviderChain and a provider that claims coins".
 
 ## 6. Frankfurter, as observed on 2026-10-07
 

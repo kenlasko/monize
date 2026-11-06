@@ -81,20 +81,33 @@ describe("CryptoFxProvider", () => {
   });
 
   describe("carries and claims", () => {
-    it("carries a priced coin and every fiat code, not an unpriced coin or an unknown code", async () => {
+    it("carries a priced coin and every fiat code, not an unpriced coin", async () => {
       expect(await provider.carries("BTC")).toBe(true);
       expect(await provider.carries("DOG")).toBe(true);
       expect(await provider.carries("CAD")).toBe(true);
       expect(await provider.carries("eur")).toBe(true);
       expect(await provider.carries("XYZ")).toBe(false);
-      expect(await provider.carries("QQQ")).toBe(false);
     });
 
     it("claims every coin, priced or not, and no fiat code", async () => {
       expect(await provider.claims("BTC")).toBe(true);
       expect(await provider.claims("XYZ")).toBe(true);
       expect(await provider.claims("CAD")).toBe(false);
-      expect(await provider.claims("QQQ")).toBe(false);
+    });
+
+    /**
+     * Every code the chain is asked about has a `currencies` row (the foreign
+     * keys), so a code the read does not hold means the read is stale, not
+     * that the code is fiat: "not mine" would route a coin created on another
+     * replica to Yahoo's `=X` grammar until the throttle allows a re-read.
+     */
+    it("rejects claims and carries for a code the read does not hold, never answering false", async () => {
+      await expect(provider.claims("QQQ")).rejects.toThrow(
+        "Could not say whether QQQ is a coin",
+      );
+      await expect(provider.carries("QQQ")).rejects.toThrow(
+        "Could not say whether QQQ is a coin",
+      );
     });
 
     it("reads currencies once while the cache is fresh, again after it expires or is forgotten", async () => {
@@ -150,16 +163,17 @@ describe("CryptoFxProvider", () => {
       await provider.claims("CAD");
       expect(currencyRepo.find).toHaveBeenCalledTimes(1);
 
-      // Inside the window: the snapshot is too new to re-read for a miss.
-      expect(await provider.claims("QQQ")).toBe(false);
+      // Inside the window: the snapshot is too new to re-read for a miss, and
+      // the code is not one it can speak for.
+      await expect(provider.claims("QQQ")).rejects.toThrow("Could not say");
       expect(currencyRepo.find).toHaveBeenCalledTimes(1);
 
       // Past it: one re-read; QQQ still has no row, and the next misses inside
       // the new window cost nothing.
       jest.setSystemTime(Date.now() + CRYPTO_MISS_RELOAD_MS + 1);
-      expect(await provider.claims("QQQ")).toBe(false);
-      expect(await provider.carries("QQQ")).toBe(false);
-      expect(await provider.claims("QQQ")).toBe(false);
+      await expect(provider.claims("QQQ")).rejects.toThrow("Could not say");
+      await expect(provider.carries("QQQ")).rejects.toThrow("Could not say");
+      await expect(provider.claims("QQQ")).rejects.toThrow("Could not say");
       expect(currencyRepo.find).toHaveBeenCalledTimes(2);
 
       // A known code never re-reads, whatever the time inside the cache.
@@ -439,10 +453,24 @@ describe("CryptoFxProvider", () => {
       const chain = new FxProviderChain([fiat, provider]);
 
       const answer = await chain.latest("CAD", ["XYZ"]);
+      const series = await chain.dailySeries(
+        "XYZ",
+        "CAD",
+        "2026-11-01",
+        "2026-11-04",
+      );
 
       expect(answer.uncarried).toEqual(["XYZ"]);
+      expect(series).toEqual({
+        points: [],
+        answered: true,
+        carried: false,
+        source: null,
+      });
       expect(fiat.fetchLatest).not.toHaveBeenCalled();
+      expect(fiat.fetchDailySeries).not.toHaveBeenCalled();
       expect(yahoo.fetchPairSymbolQuote).not.toHaveBeenCalled();
+      expect(yahoo.fetchPairSymbolWindow).not.toHaveBeenCalled();
     });
 
     it("routes a coin created after the snapshot to the coin adapter, never to the fiat provider", async () => {
@@ -484,6 +512,58 @@ describe("CryptoFxProvider", () => {
       });
     });
 
+    it("asks nobody about a code the snapshot does not hold within the miss throttle, and reports the pair unanswered", async () => {
+      jest.useFakeTimers({ now: new Date("2026-11-05T12:00:00Z") });
+      // Read before BTC existed; BTC was then created on another replica.
+      const withoutBtc = CURRENCY_ROWS.filter((row) => row.code !== "BTC");
+      currencyRepo.find.mockResolvedValue(withoutBtc);
+      const fiat = {
+        name: "yahoo" as const,
+        source: "yahoo_finance",
+        carries: jest.fn().mockResolvedValue(true),
+        fetchLatest: jest
+          .fn()
+          .mockResolvedValue(
+            new Map([
+              ["BTC", { from: "CAD", to: "BTC", date: "2026-11-05", rate: 1 }],
+            ]),
+          ),
+        fetchDailySeries: jest
+          .fn()
+          .mockResolvedValue([
+            { from: "CAD", to: "BTC", date: "2026-11-04", rate: 1 },
+          ]),
+      };
+      const chain = new FxProviderChain([fiat, provider]);
+      expect(await provider.claims("CAD")).toBe(false);
+
+      // Still inside CRYPTO_MISS_RELOAD_MS: no re-read is allowed.
+      const answer = await chain.latest("CAD", ["BTC"]);
+      const series = await chain.dailySeries(
+        "CAD",
+        "BTC",
+        "2026-11-01",
+        "2026-11-04",
+      );
+
+      expect(currencyRepo.find).toHaveBeenCalledTimes(1);
+      expect(answer).toEqual({
+        found: new Map(),
+        unanswered: ["BTC"],
+        uncarried: [],
+      });
+      expect(series).toEqual({
+        points: [],
+        answered: false,
+        carried: true,
+        source: null,
+      });
+      expect(fiat.fetchLatest).not.toHaveBeenCalled();
+      expect(fiat.fetchDailySeries).not.toHaveBeenCalled();
+      expect(yahoo.fetchPairSymbolQuote).not.toHaveBeenCalled();
+      expect(yahoo.fetchPairSymbolWindow).not.toHaveBeenCalled();
+    });
+
     it("hands no coin pair to the fiat provider when currencies cannot be read: the pairs are unanswered", async () => {
       currencyRepo.find.mockRejectedValue(new Error("connection reset"));
       const fiat = {
@@ -514,7 +594,12 @@ describe("CryptoFxProvider", () => {
       expect(answer.found.size).toBe(0);
       expect(answer.unanswered).toEqual(["BTC", "EUR"]);
       expect(answer.uncarried).toEqual([]);
-      expect(series).toEqual({ points: [], answered: false, source: null });
+      expect(series).toEqual({
+        points: [],
+        answered: false,
+        carried: true,
+        source: null,
+      });
       expect(fiat.fetchLatest).not.toHaveBeenCalled();
       expect(fiat.fetchDailySeries).not.toHaveBeenCalled();
       expect(yahoo.fetchPairSymbolQuote).not.toHaveBeenCalled();

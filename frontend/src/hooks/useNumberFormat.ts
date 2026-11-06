@@ -162,16 +162,17 @@ function formatMoneyFigure(
 }
 
 /**
- * The places a figure below one keeps in a formatter that otherwise drops
- * fraction digits (`formatCurrencyCompact`, `formatCurrencyTight`): a
+ * The places a figure below a thousand keeps in a formatter that otherwise
+ * drops fraction digits (`formatCurrencyCompact`, `formatCurrencyTight`): a
  * registered non-ISO currency's own (`lib/currency-decimals.ts`), so a
- * 0.0125 BTC wallet does not read "₿0"; `undefined` for any other code or a
- * figure of one or more, which keep the formatter's own digits. The rule
- * `formatCurrencyAxis` applies to a tick.
+ * 0.0125 BTC wallet does not read "₿0" and a 2.49 BTC one does not read "₿2";
+ * `undefined` for any other code or a figure of a thousand or more, which keep
+ * the formatter's own digits (the compact K/M notation, as for fiat). The rule
+ * `formatCurrencyAxis` applies to a tick is narrower: below one.
  */
-function subUnitCoinPlaces(currency: string, amount: number): number | undefined {
+function coinPlacesBelowThousand(currency: string, amount: number): number | undefined {
   const registered = decimalPlacesForCurrency(currency);
-  return registered !== undefined && Math.abs(amount) < 1 ? registered : undefined;
+  return registered !== undefined && Math.abs(amount) < 1000 ? registered : undefined;
 }
 
 /**
@@ -259,14 +260,15 @@ export function useNumberFormat() {
     (amount: number, currencyCode?: string): string => {
       const currency = currencyCode || defaultCurrency;
       const locale = getEffectiveLocale(numberFormat, language);
+      const coinPlaces = coinPlacesBelowThousand(currency, amount);
       return formatMoneyFigure(
         locale,
         {
           style: 'currency',
           currency,
           currencyDisplay: 'narrowSymbol',
-          minimumFractionDigits: 0,
-          maximumFractionDigits: subUnitCoinPlaces(currency, amount) ?? 0,
+          minimumFractionDigits: coinPlaces ?? 0,
+          maximumFractionDigits: coinPlaces ?? 0,
         },
         amount,
       );
@@ -306,7 +308,8 @@ export function useNumberFormat() {
 
   /**
    * As much of a money figure as a narrow cell can hold: compact notation, and
-   * no fraction digits at all below the first thousand.
+   * no fraction digits at all below the first thousand (a registered coin keeps
+   * its own places there, see `coinPlacesBelowThousand`).
    *
    * A calendar day on a phone is a column about fifty pixels wide, and a
    * balance rendered in full simply does not fit in one -- a figure that
@@ -320,6 +323,7 @@ export function useNumberFormat() {
     (amount: number, currencyCode?: string): string => {
       const currency = currencyCode || defaultCurrency;
       const locale = getEffectiveLocale(numberFormat, language);
+      const coinPlaces = coinPlacesBelowThousand(currency, amount);
       return formatMoneyFigure(
         locale,
         {
@@ -328,8 +332,9 @@ export function useNumberFormat() {
           currencyDisplay: 'narrowSymbol',
           notation: 'compact',
           compactDisplay: 'short',
-          maximumFractionDigits:
-            subUnitCoinPlaces(currency, amount) ?? (Math.abs(amount) < 1000 ? 0 : 1),
+          ...(coinPlaces !== undefined
+            ? { minimumFractionDigits: coinPlaces, maximumFractionDigits: coinPlaces }
+            : { maximumFractionDigits: Math.abs(amount) < 1000 ? 0 : 1 }),
         },
         amount,
       );

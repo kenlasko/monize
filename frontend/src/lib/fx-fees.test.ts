@@ -133,7 +133,14 @@ describe('foreignTransactionFee', () => {
       expect(foreignTransactionFee(coin)).toBeCloseTo(0.0001, 4);
     });
 
-    it('falls back to cents while the registry does not hold the coin', () => {
+    it('rounds at the stored four places while the registry does not hold the coin', () => {
+      // `entryDecimalPlaces` enters an unregistered non-ISO code at
+      // MONEY_DECIMALS, not cents, so the fee is still the 0.0001 BTC charged.
+      expect(foreignTransactionFee(coin)).toBeCloseTo(0.0001, 4);
+    });
+
+    it('rounds at the registered places when the registry holds the coin at two', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 2, symbol: '₿' }]);
       expect(foreignTransactionFee(coin)).toBeCloseTo(-0.0048, 4);
     });
   });

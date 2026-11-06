@@ -360,6 +360,8 @@
     "invalidRateDate": "date doit être au format AAAA-MM-JJ",
     "sameCurrencyHistory": "{{ code }} est votre devise par défaut ; elle n'a pas d'historique de taux de change",
     "rateProviderUnavailable": "Le fournisseur de taux de change n'a pas répondu. Veuillez réessayer plus tard.",
+    "noPriceSymbol": "{{ code }} n'a pas de symbole de cotation ; associez-en un sur la page Devises",
+    "pairNotCarried": "Aucun fournisseur de taux de change configuré ne propose {{ pair }}",
     "quoteSymbolRequiresCrypto": "Un symbole de cours ({{ quoteSymbol }}) ne peut être défini que sur une cryptomonnaie ; « {{ code }} » est une devise fiduciaire",
     "quoteSymbolNotAPair": "Le symbole de cours « {{ quoteSymbol }} » de « {{ code }} » n'est pas une paire cryptomonnaie et devise fiduciaire comme BTC-EUR",
     "kindInUse": "Le type de « {{ code }} » ne peut pas être modifié tant que des comptes, des transactions, des titres ou d'autres enregistrements l'utilisent",

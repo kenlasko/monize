@@ -93,6 +93,7 @@ const seriesAnswer = (
 ): FxDailySeriesResult => ({
   points,
   answered: options.answered ?? true,
+  carried: true,
   source: points.length > 0 ? (options.source ?? YAHOO_SOURCE) : null,
 });
 
@@ -100,6 +101,15 @@ const seriesAnswer = (
 const EMPTY_WINDOW: FxDailySeriesResult = {
   points: [],
   answered: true,
+  carried: true,
+  source: null,
+};
+
+/** No provider that may be asked carries the pair: a coin without a price symbol. */
+const UNCARRIED: FxDailySeriesResult = {
+  points: [],
+  answered: true,
+  carried: false,
   source: null,
 };
 
@@ -107,6 +117,7 @@ const EMPTY_WINDOW: FxDailySeriesResult = {
 const NO_ANSWER: FxDailySeriesResult = {
   points: [],
   answered: false,
+  carried: true,
   source: null,
 };
 
@@ -2570,7 +2581,11 @@ describe("ExchangeRateService", () => {
         "2024-01-01",
         "2024-01-12",
       );
-      expect(result).toEqual({ stored: points.length, answered: true });
+      expect(result).toEqual({
+        stored: points.length,
+        answered: true,
+        carried: true,
+      });
       const rows = bulkInsertedRows();
       expect(rows).toHaveLength(points.length);
       // Asked for USD->CAD, stored as the canonical CAD->USD, every row under
@@ -2623,7 +2638,7 @@ describe("ExchangeRateService", () => {
         "2017-08-19",
       );
 
-      expect(result).toEqual({ stored: 3, answered: true });
+      expect(result).toEqual({ stored: 3, answered: true, carried: true });
       expect(bulkInsertedRows()).toEqual([
         {
           from: "SGD",
@@ -2679,7 +2694,21 @@ describe("ExchangeRateService", () => {
         "2000-01-31",
       );
 
-      expect(result).toEqual({ stored: 0, answered: true });
+      expect(result).toEqual({ stored: 0, answered: true, carried: true });
+      expect(bulkInsertedRows()).toEqual([]);
+    });
+
+    it("reports a pair no provider carries (a coin without a price symbol): nothing stored, uncarried", async () => {
+      chain.dailySeries.mockResolvedValue(UNCARRIED);
+
+      const result = await service.fillRateWindow(
+        "DOG",
+        "CAD",
+        "2000-01-01",
+        "2000-01-31",
+      );
+
+      expect(result).toEqual({ stored: 0, answered: true, carried: false });
       expect(bulkInsertedRows()).toEqual([]);
     });
 
@@ -2693,7 +2722,7 @@ describe("ExchangeRateService", () => {
         "2000-01-31",
       );
 
-      expect(result).toEqual({ stored: 0, answered: false });
+      expect(result).toEqual({ stored: 0, answered: false, carried: true });
       expect(bulkInsertedRows()).toEqual([]);
     });
 
@@ -2942,6 +2971,42 @@ describe("ExchangeRateService", () => {
         "2026-03-16",
       );
       expect(chain.dailySeries).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not remember a window of a pair no provider carries, so a symbol mapped next is asked at once", async () => {
+      chain.dailySeries.mockResolvedValue(UNCARRIED);
+
+      await service.ensureRatesForDate(
+        [{ from: "DOG", to: "CAD" }],
+        "2026-03-15",
+      );
+      await service.ensureRatesForDate(
+        [{ from: "DOG", to: "CAD" }],
+        "2026-03-16",
+      );
+
+      expect(chain.dailySeries).toHaveBeenCalledTimes(2);
+    });
+
+    it("forgets the windows remembered for a code whose price symbol changed, and only those", async () => {
+      chain.dailySeries.mockResolvedValue(EMPTY_WINDOW);
+      const pairs = [
+        { from: "BTC", to: "CAD" },
+        { from: "USD", to: "CAD" },
+      ];
+      await service.ensureRatesForDate(pairs, "2026-03-15");
+      expect(chain.dailySeries).toHaveBeenCalledTimes(2);
+
+      service.forgetEmptyRateWindowsFor("btc");
+      await service.ensureRatesForDate(pairs, "2026-03-16");
+
+      expect(chain.dailySeries).toHaveBeenCalledTimes(3);
+      expect(chain.dailySeries).toHaveBeenLastCalledWith(
+        "BTC",
+        "CAD",
+        expect.any(String),
+        expect.any(String),
+      );
     });
 
     it("still remembers a window the providers answered as empty", async () => {

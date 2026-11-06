@@ -838,6 +838,12 @@
       "doneButton": "完成",
       "unlinkedBondSecuritiesList": "受影响的证券:{symbols}。",
       "unlinkedBondSecuritiesMore": "以及另外 {count} 个",
+      "currencyKindMismatchAccounts": "{count, plural, other {# 个账户恢复时使用的货币类别与其账户类型不符}}：加密货币账户需要加密货币，其他账户需要法定货币，而在本服务器上该货币属于另一类别。请修改账户的货币，或在“货币”页面修改该货币的类别。",
+      "currencyKindMismatchAccountsList": "受影响的账户:{names}。",
+      "currencyKindMismatchSecurities": "{count, plural, other {# 个证券}}在本服务器上以加密货币计价，而证券需要法定货币。请修改证券的货币，或在“货币”页面修改该货币的类别。",
+      "currencyKindMismatchSecuritiesList": "受影响的证券:{symbols}。",
+      "currencyKindMismatchMore": "以及另外 {count} 个",
+      "currencyKindMismatchDefaultCurrency": "您的默认货币 {code} 在本服务器上是加密货币，但合计和报表始终以法定货币显示。请在“设置 → 偏好设置”中选择一种法定货币作为默认货币。",
       "counts": {
         "sharedGroups": "共同支出群组",
         "sharedParticipants": "群组参与者",

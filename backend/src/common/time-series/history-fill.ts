@@ -90,6 +90,19 @@ export class EmptyWindowMemory {
     this.expiries.set(`${subject}@${month}`, Date.now() + this.ttlMs);
   }
 
+  /**
+   * Forget every remembered window of each subject `matches` accepts, so the
+   * next question about it asks the provider again. For a change that makes
+   * an earlier "nothing there" untrue (a coin given a new price symbol).
+   */
+  forgetSubjects(matches: (subject: string) => boolean): void {
+    for (const key of [...this.expiries.keys()]) {
+      if (matches(key.slice(0, key.lastIndexOf("@")))) {
+        this.expiries.delete(key);
+      }
+    }
+  }
+
   private evict(): void {
     const now = Date.now();
     for (const [key, expiry] of this.expiries) {

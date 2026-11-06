@@ -360,6 +360,8 @@
     "invalidRateDate": "date must be in YYYY-MM-DD format",
     "sameCurrencyHistory": "{{ code }} is your default currency; it has no exchange rate history",
     "rateProviderUnavailable": "The exchange rate provider did not answer. Please try again later.",
+    "noPriceSymbol": "{{ code }} has no price symbol; map one on the Currencies page",
+    "pairNotCarried": "No configured exchange rate provider carries {{ pair }}",
     "quoteSymbolRequiresCrypto": "A price symbol ({{ quoteSymbol }}) can only be set on a cryptocurrency; \"{{ code }}\" is a fiat currency",
     "quoteSymbolNotAPair": "The price symbol \"{{ quoteSymbol }}\" for \"{{ code }}\" is not a coin and fiat pair such as BTC-EUR",
     "kindInUse": "The kind of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it",

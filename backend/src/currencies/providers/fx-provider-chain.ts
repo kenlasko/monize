@@ -32,6 +32,18 @@ export interface FxDailySeriesResult {
    * that provider may hold history the others do not (INV-FX-005).
    */
   answered: boolean;
+  /**
+   * Whether some configured provider that may be asked about the pair carries
+   * it. `false` only when every such provider said it does not: a coin without
+   * a `quote_symbol` (claimed by the crypto adapter, carried by nobody), or a
+   * pair no configured provider quotes. A provider that could not say counts
+   * as carrying, so an unknown is never reported as uncarried. An uncarried
+   * pair was asked of nobody, so its empty answer is a fact about the
+   * configuration and the coin's mapping, not about the provider's history: a
+   * caller never records coverage or an empty window for it, because mapping
+   * a symbol changes the answer without changing the chain.
+   */
+  carried: boolean;
   /** The source slug of the provider whose points these are; `null` when there are none. */
   source: string | null;
 }
@@ -157,7 +169,9 @@ export class FxProviderChain {
    * Daily observations for one pair over [start, end], from the first carrying
    * provider that has any. A provider that answers with nothing hands the
    * window to the next; one that does not answer does too, but then the window
-   * is `answered: false` unless a later provider found something.
+   * is `answered: false` unless a later provider found something. A pair no
+   * provider that may be asked carries is `carried: false` (and `answered`,
+   * since nobody failed to answer).
    */
   async dailySeries(
     from: string,
@@ -166,25 +180,41 @@ export class FxProviderChain {
     end: string,
   ): Promise<FxDailySeriesResult> {
     let everyCarrierAnswered = true;
+    let carried = false;
     const claimed = await this.pairClaimed(from, to);
-    if (claimed === null) return { points: [], answered: false, source: null };
+    if (claimed === null) {
+      return { points: [], answered: false, carried: true, source: null };
+    }
     for (const provider of this.providers) {
       const asks = await this.asks(provider, from, to, claimed);
       if (asks === null) {
+        // Could not say whether it carries the pair: not uncarried.
+        carried = true;
         everyCarrierAnswered = false;
         continue;
       }
       if (!asks) continue;
+      carried = true;
       const series = await provider.fetchDailySeries(from, to, start, end);
       if (series === null) {
         everyCarrierAnswered = false;
         continue;
       }
       if (series.length > 0) {
-        return { points: series, answered: true, source: provider.source };
+        return {
+          points: series,
+          answered: true,
+          carried: true,
+          source: provider.source,
+        };
       }
     }
-    return { points: [], answered: everyCarrierAnswered, source: null };
+    return {
+      points: [],
+      answered: everyCarrierAnswered,
+      carried,
+      source: null,
+    };
   }
 
   /**

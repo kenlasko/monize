@@ -838,6 +838,12 @@
       "doneButton": "Fertig",
       "unlinkedBondSecuritiesList": "Betroffene Wertpapiere: {symbols}.",
       "unlinkedBondSecuritiesMore": "und {count} weitere",
+      "currencyKindMismatchAccounts": "{count, plural, one {# Konto wurde mit einer Währung wiederhergestellt, deren Art nicht zu seinem Typ passt} other {# Konten wurden mit einer Währung wiederhergestellt, deren Art nicht zu ihrem Typ passt}}: Ein Kryptowährungskonto braucht eine Kryptowährung, jedes andere Konto eine Fiat-Währung. Auf diesem Server ist die Währung von der anderen Art. Ändern Sie die Währung des Kontos oder die Art der Währung auf der Seite Währungen.",
+      "currencyKindMismatchAccountsList": "Betroffene Konten: {names}.",
+      "currencyKindMismatchSecurities": "{count, plural, one {# Wertpapier ist auf diesem Server in einer Kryptowährung notiert} other {# Wertpapiere sind auf diesem Server in einer Kryptowährung notiert}}, ein Wertpapier braucht aber eine Fiat-Währung. Ändern Sie die Währung des Wertpapiers oder die Art der Währung auf der Seite Währungen.",
+      "currencyKindMismatchSecuritiesList": "Betroffene Wertpapiere: {symbols}.",
+      "currencyKindMismatchMore": "und {count} weitere",
+      "currencyKindMismatchDefaultCurrency": "Ihre Standardwährung {code} ist auf diesem Server eine Kryptowährung, Summen und Berichte werden aber immer in einer Fiat-Währung angezeigt. Wählen Sie unter Einstellungen eine Fiat-Währung als Standardwährung.",
       "counts": {
         "sharedGroups": "Ausgabengruppen",
         "sharedParticipants": "Gruppenteilnehmer",

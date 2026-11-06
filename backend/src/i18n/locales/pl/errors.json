@@ -360,6 +360,8 @@
     "invalidRateDate": "date musi mieć format RRRR-MM-DD",
     "sameCurrencyHistory": "{{ code }} jest Twoją walutą domyślną; nie ma dla niej historii kursu wymiany",
     "rateProviderUnavailable": "Dostawca kursów wymiany nie odpowiedział. Spróbuj ponownie później.",
+    "noPriceSymbol": "{{ code }} nie ma symbolu notowania; przypisz go na stronie Waluty",
+    "pairNotCarried": "Żaden skonfigurowany dostawca kursów walut nie obsługuje {{ pair }}",
     "quoteSymbolRequiresCrypto": "Symbol ceny ({{ quoteSymbol }}) można ustawić tylko dla kryptowaluty; \"{{ code }}\" jest walutą fiducjarną",
     "quoteSymbolNotAPair": "Symbol ceny \"{{ quoteSymbol }}\" dla \"{{ code }}\" nie jest parą monety i waluty fiducjarnej, takiej jak BTC-EUR",
     "kindInUse": "Rodzaju \"{{ code }}\" nie można zmienić, dopóki używają go konta, transakcje, papiery wartościowe lub inne rekordy",

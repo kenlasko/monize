@@ -360,6 +360,8 @@
     "invalidRateDate": "date 必须为 YYYY-MM-DD 格式",
     "sameCurrencyHistory": "{{ code }} 是您的默认货币，因此没有汇率历史",
     "rateProviderUnavailable": "汇率提供方未响应，请稍后重试。",
+    "noPriceSymbol": "{{ code }} 没有价格代码；请在“货币”页面上设置一个",
+    "pairNotCarried": "没有已配置的汇率提供方提供 {{ pair }}",
     "quoteSymbolRequiresCrypto": "价格符号（{{ quoteSymbol }}）只能设置在加密货币上；\"{{ code }}\"是法定货币",
     "quoteSymbolNotAPair": "\"{{ code }}\"的价格符号\"{{ quoteSymbol }}\"不是 BTC-EUR 这样的币种与法定货币的交易对",
     "kindInUse": "只要仍有账户、交易、证券或其他记录在使用，就无法更改\"{{ code }}\"的类型",

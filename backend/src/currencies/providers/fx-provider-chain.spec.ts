@@ -59,6 +59,7 @@ describe("FxProviderChain.dailySeries", () => {
     p2: { carries: boolean; answer: FxObservation[] | null | "not asked" };
     points: FxObservation[];
     answered: boolean;
+    carried: boolean;
     source: string | null;
   }> = [
     {
@@ -67,6 +68,7 @@ describe("FxProviderChain.dailySeries", () => {
       p2: { carries: true, answer: P2_SERIES },
       points: P2_SERIES,
       answered: true,
+      carried: true,
       source: "p2_source",
     },
     {
@@ -75,6 +77,7 @@ describe("FxProviderChain.dailySeries", () => {
       p2: { carries: true, answer: "not asked" },
       points: P1_SERIES,
       answered: true,
+      carried: true,
       source: "p1_source",
     },
     {
@@ -83,6 +86,7 @@ describe("FxProviderChain.dailySeries", () => {
       p2: { carries: true, answer: P2_SERIES },
       points: P2_SERIES,
       answered: true,
+      carried: true,
       source: "p2_source",
     },
     {
@@ -91,6 +95,7 @@ describe("FxProviderChain.dailySeries", () => {
       p2: { carries: true, answer: [] },
       points: [],
       answered: true,
+      carried: true,
       source: null,
     },
     {
@@ -99,6 +104,7 @@ describe("FxProviderChain.dailySeries", () => {
       p2: { carries: true, answer: P2_SERIES },
       points: P2_SERIES,
       answered: true,
+      carried: true,
       source: "p2_source",
     },
     {
@@ -107,6 +113,7 @@ describe("FxProviderChain.dailySeries", () => {
       p2: { carries: true, answer: [] },
       points: [],
       answered: false,
+      carried: true,
       source: null,
     },
     {
@@ -115,40 +122,45 @@ describe("FxProviderChain.dailySeries", () => {
       p2: { carries: true, answer: null },
       points: [],
       answered: false,
+      carried: true,
       source: null,
     },
     {
-      row: "8: no provider carries the pair: a fact, answered",
+      row: "8: no provider carries the pair: answered, and uncarried",
       p1: { carries: false, answer: null },
       p2: { carries: false, answer: null },
       points: [],
       answered: true,
+      carried: false,
       source: null,
     },
   ];
 
-  it.each(rows)("row $row", async ({ p1, p2, points, answered, source }) => {
-    const first = provider("p1", p1.carries ? ["USD", "CAD"] : []);
-    first.fetchDailySeries.mockResolvedValue(p1.answer);
-    const second = provider("p2", p2.carries ? ["USD", "CAD"] : []);
-    if (p2.answer !== "not asked") {
-      second.fetchDailySeries.mockResolvedValue(p2.answer);
-    }
-    const chain = new FxProviderChain([first, second]);
+  it.each(rows)(
+    "row $row",
+    async ({ p1, p2, points, answered, carried, source }) => {
+      const first = provider("p1", p1.carries ? ["USD", "CAD"] : []);
+      first.fetchDailySeries.mockResolvedValue(p1.answer);
+      const second = provider("p2", p2.carries ? ["USD", "CAD"] : []);
+      if (p2.answer !== "not asked") {
+        second.fetchDailySeries.mockResolvedValue(p2.answer);
+      }
+      const chain = new FxProviderChain([first, second]);
 
-    const result = await chain.dailySeries(
-      "USD",
-      "CAD",
-      "2024-01-01",
-      "2024-01-05",
-    );
+      const result = await chain.dailySeries(
+        "USD",
+        "CAD",
+        "2024-01-01",
+        "2024-01-05",
+      );
 
-    expect(result).toEqual({ points, answered, source });
-    if (!p1.carries) expect(first.fetchDailySeries).not.toHaveBeenCalled();
-    if (!p2.carries || p2.answer === "not asked") {
-      expect(second.fetchDailySeries).not.toHaveBeenCalled();
-    }
-  });
+      expect(result).toEqual({ points, answered, carried, source });
+      if (!p1.carries) expect(first.fetchDailySeries).not.toHaveBeenCalled();
+      if (!p2.carries || p2.answer === "not asked") {
+        expect(second.fetchDailySeries).not.toHaveBeenCalled();
+      }
+    },
+  );
 
   it("asks a provider in the window it was given, in order", async () => {
     const first = provider("p1", "all");
@@ -188,7 +200,12 @@ describe("FxProviderChain.dailySeries", () => {
     );
 
     expect(only.fetchDailySeries).not.toHaveBeenCalled();
-    expect(result).toEqual({ points: [], answered: true, source: null });
+    expect(result).toEqual({
+      points: [],
+      answered: true,
+      carried: false,
+      source: null,
+    });
   });
 });
 
@@ -589,6 +606,45 @@ describe("FxProviderChain and a provider that claims coins", () => {
     expect(result.uncarried).toEqual(["XYZ"]);
   });
 
+  it("a claimed pair its claiming provider does not carry is uncarried in latest and dailySeries, asking nobody", async () => {
+    const fiat = provider("yahoo", "all");
+    fiat.fetchLatest.mockResolvedValue(
+      new Map([["XYZ", obs("CAD", "XYZ", "2026-11-05", 0.5)]]),
+    );
+    fiat.fetchDailySeries.mockResolvedValue([
+      obs("CAD", "XYZ", "2026-11-04", 0.5),
+    ]);
+    const crypto = coinProvider();
+    const chain = new FxProviderChain([fiat, crypto]);
+
+    const latest = await chain.latest("CAD", ["XYZ"]);
+    const series = await chain.dailySeries(
+      "XYZ",
+      "CAD",
+      "2026-11-01",
+      "2026-11-04",
+    );
+
+    expect(latest).toEqual({
+      found: new Map(),
+      unanswered: [],
+      uncarried: ["XYZ"],
+    });
+    // Answered (nobody failed to answer) but carried by nobody: a caller may
+    // not remember the window or record coverage, because mapping a price
+    // symbol changes the answer without changing the chain.
+    expect(series).toEqual({
+      points: [],
+      answered: true,
+      carried: false,
+      source: null,
+    });
+    expect(fiat.fetchLatest).not.toHaveBeenCalled();
+    expect(fiat.fetchDailySeries).not.toHaveBeenCalled();
+    expect(crypto.fetchLatest).not.toHaveBeenCalled();
+    expect(crypto.fetchDailySeries).not.toHaveBeenCalled();
+  });
+
   it("a coin pair the coin provider did not answer is unanswered, not handed to a fiat provider", async () => {
     const fiat = provider("yahoo", "all");
     const crypto = coinProvider();
@@ -649,7 +705,12 @@ describe("FxProviderChain and a provider that claims coins", () => {
       "2026-11-04",
     );
 
-    expect(result).toEqual({ points: [], answered: false, source: null });
+    expect(result).toEqual({
+      points: [],
+      answered: false,
+      carried: true,
+      source: null,
+    });
     expect(fiat.fetchDailySeries).not.toHaveBeenCalled();
   });
 
@@ -693,7 +754,12 @@ describe("FxProviderChain and a provider that claims coins", () => {
       unanswered: ["BTC"],
       uncarried: [],
     });
-    expect(series).toEqual({ points: [], answered: false, source: null });
+    expect(series).toEqual({
+      points: [],
+      answered: false,
+      carried: true,
+      source: null,
+    });
     expect(live).toBeNull();
     expect(fiat.fetchLatest).not.toHaveBeenCalled();
     expect(fiat.fetchDailySeries).not.toHaveBeenCalled();

@@ -838,6 +838,12 @@
       "doneButton": "Concluído",
       "unlinkedBondSecuritiesList": "Ativos afetados: {symbols}.",
       "unlinkedBondSecuritiesMore": "e mais {count}",
+      "currencyKindMismatchAccounts": "{count, plural, one {# conta foi restaurada com uma moeda cujo tipo não corresponde ao dela} other {# contas foram restauradas com uma moeda cujo tipo não corresponde ao delas}}: uma conta de criptomoeda precisa de uma criptomoeda, e qualquer outra conta, de uma moeda fiduciária. Neste servidor, a moeda é do outro tipo. Edite a moeda da conta ou o tipo da moeda na página Moedas.",
+      "currencyKindMismatchAccountsList": "Contas afetadas: {names}.",
+      "currencyKindMismatchSecurities": "{count, plural, one {# ativo está cotado em uma criptomoeda} other {# ativos estão cotados em uma criptomoeda}} neste servidor, mas um ativo precisa de uma moeda fiduciária. Edite a moeda do ativo ou o tipo da moeda na página Moedas.",
+      "currencyKindMismatchSecuritiesList": "Ativos afetados: {symbols}.",
+      "currencyKindMismatchMore": "e mais {count}",
+      "currencyKindMismatchDefaultCurrency": "Sua moeda padrão, {code}, é uma criptomoeda neste servidor, mas totais e relatórios são sempre exibidos em uma moeda fiduciária. Escolha uma Moeda Padrão fiduciária em Configurações → Preferências.",
       "counts": {
         "sharedGroups": "Grupos de despesas compartilhadas",
         "sharedParticipants": "Participantes dos grupos",

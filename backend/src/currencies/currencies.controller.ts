@@ -295,7 +295,8 @@ export class CurrenciesController {
   })
   @ApiResponse({
     status: 400,
-    description: "The code is the caller's own reporting currency",
+    description:
+      "The code is the caller's own reporting currency, or no configured provider carries the pair (a coin without a price symbol); nothing is recorded",
   })
   @ApiResponse({ status: 503, description: "The provider did not answer" })
   fillRateGaps(

@@ -90,7 +90,7 @@ describe('useNumberFormat and the currency decimals registry', () => {
       expect(result.current.formatCurrency(0.007, 'BTC')).toBe('\u20bf0.0070');
       expect(result.current.formatCurrency(-0.0051, 'BTC')).toBe('-\u20bf0.0051');
       expect(result.current.formatCurrencyPrecise(0.007, 'BTC')).toBe('\u20bf0.0070');
-      expect(result.current.formatCurrencyCompact(12.6, 'BTC')).toBe('\u20bf13');
+      expect(result.current.formatCurrencyCompact(12.6, 'BTC')).toBe('\u20bf12.6000');
     });
 
     it('replaces the code Intl writes, laid out as de-DE lays out a symbol', () => {
@@ -99,14 +99,14 @@ describe('useNumberFormat and the currency decimals registry', () => {
       const { result } = renderHook(() => useNumberFormat());
       expect(plain(result.current.formatCurrency(1234.007, 'BTC'))).toBe('1.234,0070 \u20bf');
       expect(plain(result.current.formatCurrencyPrecise(0.007, 'BTC'))).toBe('0,0070 \u20bf');
-      expect(plain(result.current.formatCurrencyCompact(12.6, 'BTC'))).toBe('13 \u20bf');
+      expect(plain(result.current.formatCurrencyCompact(12.6, 'BTC'))).toBe('12,6000 \u20bf');
     });
 
     it('keeps the code for a registered currency without a symbol', () => {
       registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '' }]);
       const { result } = renderHook(() => useNumberFormat());
       expect(plain(result.current.formatCurrency(0.007, 'BTC'))).toBe('BTC 0.0070');
-      expect(plain(result.current.formatCurrencyCompact(12.6, 'BTC'))).toBe('BTC 13');
+      expect(plain(result.current.formatCurrencyCompact(12.6, 'BTC'))).toBe('BTC 12.6000');
     });
 
     it('keeps the code for a registered currency without a symbol in de-DE', () => {
@@ -144,7 +144,7 @@ describe('useNumberFormat and the currency decimals registry', () => {
       expect(result.current.formatCurrencyAxis(1500, 'BTC')).toBe('\u20bf1.5K');
       expect(result.current.formatCurrencyFlag(0.007, 'BTC')).toBe('\u20bf0.0070');
       expect(result.current.formatCurrencyFlag(1500, 'BTC')).toBe('\u20bf1.50K');
-      expect(result.current.formatCurrencyTight(12, 'BTC')).toBe('\u20bf12');
+      expect(result.current.formatCurrencyTight(12, 'BTC')).toBe('\u20bf12.0000');
     });
 
     it('keeps a registered coin\'s places below one in the compact and tight figures', () => {
@@ -153,9 +153,28 @@ describe('useNumberFormat and the currency decimals registry', () => {
       // At zero fraction digits both read "\u20bf0".
       expect(result.current.formatCurrencyCompact(0.0125, 'BTC')).toBe('\u20bf0.0125');
       expect(result.current.formatCurrencyTight(0.0125, 'BTC')).toBe('\u20bf0.0125');
-      expect(result.current.formatCurrencyCompact(-0.007, 'BTC')).toBe('-\u20bf0.007');
-      expect(result.current.formatCurrencyCompact(12.3456, 'BTC')).toBe('\u20bf12');
+      expect(result.current.formatCurrencyCompact(-0.007, 'BTC')).toBe('-\u20bf0.0070');
+    });
+
+    it('keeps a registered coin\'s places from one to 999 in the compact and tight figures', () => {
+      registerCurrencyDecimals([BTC]);
+      const { result } = renderHook(() => useNumberFormat());
+      // At zero fraction digits both read "\u20bf2": half the wallet gone.
+      expect(result.current.formatCurrencyCompact(2.49, 'BTC')).toBe('\u20bf2.4900');
+      expect(result.current.formatCurrencyTight(2.49, 'BTC')).toBe('\u20bf2.4900');
+      expect(result.current.formatCurrencyCompact(12.3456, 'BTC')).toBe('\u20bf12.3456');
+      expect(result.current.formatCurrencyCompact(-999.5, 'BTC')).toBe('-\u20bf999.5000');
+      expect(result.current.formatCurrencyTight(999.5, 'BTC')).toBe('\u20bf999.5000');
+    });
+
+    it('writes a registered coin of a thousand or more as fiat is written', () => {
+      registerCurrencyDecimals([BTC]);
+      const { result } = renderHook(() => useNumberFormat());
       expect(result.current.formatCurrencyTight(1500, 'BTC')).toBe('\u20bf1.5K');
+      expect(result.current.formatCurrencyTight(1000, 'BTC')).toBe('\u20bf1K');
+      // The compact figure has no K/M notation for fiat either ("$1,235").
+      expect(result.current.formatCurrencyCompact(1500, 'BTC')).toBe('\u20bf1,500');
+      expect(result.current.formatCurrencyCompact(-1234.5, 'BTC')).toBe('-\u20bf1,235');
     });
 
     it('leaves a fiat compact and tight figure unchanged', () => {

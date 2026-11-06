@@ -75,6 +75,11 @@ export function directionlessPairKey(from: string, to: string): string {
   return `${first}|${second}`;
 }
 
+/** Whether a `directionlessPairKey` names `code` on either side. */
+export function pairKeyHasCode(pairKey: string, code: string): boolean {
+  return pairKey.split("|").includes(code.toUpperCase());
+}
+
 /**
  * An inclusive `rate_date` range, both bounds as `YYYY-MM-DD` strings.
  *
@@ -978,13 +983,16 @@ export class ExchangeRateService implements OnModuleInit {
       FX_WINDOW_FILL_CONCURRENCY,
       async ([key, pair]) => {
         try {
-          const { stored, answered } = await this.fillRateWindow(
+          const { stored, answered, carried } = await this.fillRateWindow(
             pair.from,
             pair.to,
             start,
             end,
           );
-          if (stored === 0 && answered) {
+          // An uncarried pair (a coin with no price symbol) was asked of
+          // nobody: remembering its window would outlive the symbol the reader
+          // maps next, and forgetting it costs no provider call.
+          if (stored === 0 && answered && carried !== false) {
             // Nothing exists for this pair in this era -- a currency that
             // predates the provider's history, or one it does not carry. Note
             // it, so a report reloaded on the same date does not re-ask.
@@ -1016,6 +1024,15 @@ export class ExchangeRateService implements OnModuleInit {
   }
 
   /**
+   * Forget this process's on-demand empty windows for every pair with `code`
+   * on either side, because what prices `code` changed (a coin's price symbol
+   * set or re-pointed). Through `ExchangeRateHistoryService.forgetEmptyWindowsFor`.
+   */
+  forgetEmptyRateWindowsFor(code: string): void {
+    this.emptyRateWindows.forgetSubjects((pair) => pairKeyHasCode(pair, code));
+  }
+
+  /**
    * One pair, one window, persisted in the pair's canonical orientation under
    * the answering provider's source.
    *
@@ -1033,7 +1050,11 @@ export class ExchangeRateService implements OnModuleInit {
    *   found, because that provider may hold history the others do not
    *   (INV-FX-005). Only an answered window may be remembered as empty: an
    *   outage and an empty window produce the same zero, and the memory holds
-   *   for 30 minutes.
+   *   for 30 minutes. And whether the pair is *carried* (`FxDailySeriesResult`):
+   *   `false` when no provider that may be asked carries it, which is a fact
+   *   about the configuration and the coin's mapping rather than about any
+   *   provider's history, so a caller remembers no empty window and records no
+   *   coverage for it.
    *
    * Public so `ExchangeRateHistoryService` can reach it: a user-driven history
    * extension asks the chain exactly the question the on-demand fill asks, and
@@ -1044,15 +1065,17 @@ export class ExchangeRateService implements OnModuleInit {
     to: string,
     start: string,
     end: string,
-  ): Promise<{ stored: number; answered: boolean }> {
-    const { points, answered, source } = await this.fxProviders.dailySeries(
-      from,
-      to,
-      start,
-      end,
-    );
-    if (points.length === 0 || source === null) return { stored: 0, answered };
-    return { stored: await this.persistRateSeries(points, source), answered };
+  ): Promise<{ stored: number; answered: boolean; carried: boolean }> {
+    const { points, answered, carried, source } =
+      await this.fxProviders.dailySeries(from, to, start, end);
+    if (points.length === 0 || source === null) {
+      return { stored: 0, answered, carried };
+    }
+    return {
+      stored: await this.persistRateSeries(points, source),
+      answered,
+      carried,
+    };
   }
 
   /**

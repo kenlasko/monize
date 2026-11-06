@@ -360,6 +360,8 @@
     "invalidRateDate": "date debe tener el formato AAAA-MM-DD",
     "sameCurrencyHistory": "{{ code }} es su moneda predeterminada; no tiene historial de tipo de cambio",
     "rateProviderUnavailable": "El proveedor de tipos de cambio no respondió. Inténtelo de nuevo más tarde.",
+    "noPriceSymbol": "{{ code }} no tiene símbolo de precio; asigna uno en la página Monedas",
+    "pairNotCarried": "Ningún proveedor de tipos de cambio configurado ofrece {{ pair }}",
     "quoteSymbolRequiresCrypto": "Un símbolo de precio ({{ quoteSymbol }}) solo se puede establecer en una criptomoneda; \"{{ code }}\" es una moneda fiduciaria",
     "quoteSymbolNotAPair": "El símbolo de precio \"{{ quoteSymbol }}\" de \"{{ code }}\" no es un par de criptomoneda y moneda fiduciaria como BTC-EUR",
     "kindInUse": "El tipo de \"{{ code }}\" no se puede cambiar mientras lo usen cuentas, transacciones, valores u otros registros",

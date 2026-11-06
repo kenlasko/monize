@@ -838,6 +838,12 @@
       "doneButton": "Selesai",
       "unlinkedBondSecuritiesList": "Sekuritas terdampak: {symbols}.",
       "unlinkedBondSecuritiesMore": "dan {count} lagi",
+      "currencyKindMismatchAccounts": "{count, plural, other {# akun dipulihkan dengan mata uang yang jenisnya tidak cocok dengan tipe akunnya}}: akun kripto memerlukan mata uang kripto, dan akun lainnya memerlukan mata uang fiat. Di server ini mata uang tersebut berjenis sebaliknya. Ubah mata uang akun, atau jenis mata uang di halaman Mata Uang.",
+      "currencyKindMismatchAccountsList": "Akun terdampak: {names}.",
+      "currencyKindMismatchSecurities": "{count, plural, other {# sekuritas dihargai dalam mata uang kripto}} di server ini, padahal sekuritas memerlukan mata uang fiat. Ubah mata uang sekuritas, atau jenis mata uang di halaman Mata Uang.",
+      "currencyKindMismatchSecuritiesList": "Sekuritas terdampak: {symbols}.",
+      "currencyKindMismatchMore": "dan {count} lagi",
+      "currencyKindMismatchDefaultCurrency": "Mata uang bawaan Anda, {code}, adalah mata uang kripto di server ini, padahal total dan laporan selalu ditampilkan dalam mata uang fiat. Pilih Mata Uang Bawaan fiat di Pengaturan → Preferensi.",
       "counts": {
         "sharedGroups": "Grup pengeluaran bersama",
         "sharedParticipants": "Peserta grup",

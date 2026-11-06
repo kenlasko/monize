@@ -360,6 +360,8 @@
     "invalidRateDate": "date phải theo định dạng YYYY-MM-DD",
     "sameCurrencyHistory": "{{ code }} là tiền tệ mặc định của bạn; không có lịch sử tỷ giá cho nó",
     "rateProviderUnavailable": "Nhà cung cấp tỷ giá hối đoái không phản hồi. Vui lòng thử lại sau.",
+    "noPriceSymbol": "{{ code }} không có ký hiệu giá; hãy gán một ký hiệu trên trang Tiền tệ",
+    "pairNotCarried": "Không có nhà cung cấp tỷ giá hối đoái nào đã cấu hình hỗ trợ {{ pair }}",
     "quoteSymbolRequiresCrypto": "Ký hiệu giá ({{ quoteSymbol }}) chỉ có thể đặt cho tiền mã hóa; \"{{ code }}\" là tiền pháp định",
     "quoteSymbolNotAPair": "Ký hiệu giá \"{{ quoteSymbol }}\" của \"{{ code }}\" không phải là cặp đồng coin và tiền pháp định như BTC-EUR",
     "kindInUse": "Không thể đổi loại của \"{{ code }}\" khi còn tài khoản, giao dịch, chứng khoán hoặc hồ sơ khác đang sử dụng",

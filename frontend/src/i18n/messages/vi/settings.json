@@ -838,6 +838,12 @@
       "doneButton": "Xong",
       "unlinkedBondSecuritiesList": "Chứng khoán bị ảnh hưởng: {symbols}.",
       "unlinkedBondSecuritiesMore": "và {count} mã nữa",
+      "currencyKindMismatchAccounts": "{count, plural, other {# tài khoản được khôi phục với loại tiền tệ không khớp với loại tài khoản}}: tài khoản tiền mã hóa cần một tiền mã hóa, còn mọi tài khoản khác cần tiền pháp định. Trên máy chủ này, tiền tệ đó thuộc loại ngược lại. Hãy sửa tiền tệ của tài khoản, hoặc loại của tiền tệ trên trang Tiền tệ.",
+      "currencyKindMismatchAccountsList": "Tài khoản bị ảnh hưởng: {names}.",
+      "currencyKindMismatchSecurities": "{count, plural, other {# chứng khoán}} đang được định giá bằng tiền mã hóa trên máy chủ này, trong khi chứng khoán cần tiền pháp định. Hãy sửa tiền tệ của chứng khoán, hoặc loại của tiền tệ trên trang Tiền tệ.",
+      "currencyKindMismatchSecuritiesList": "Chứng khoán bị ảnh hưởng: {symbols}.",
+      "currencyKindMismatchMore": "và {count} mục nữa",
+      "currencyKindMismatchDefaultCurrency": "Tiền tệ mặc định của bạn, {code}, là tiền mã hóa trên máy chủ này, nhưng tổng và báo cáo luôn được hiển thị bằng tiền pháp định. Hãy chọn một Tiền tệ mặc định là tiền pháp định trong Cài đặt → Sở thích.",
       "counts": {
         "sharedGroups": "Nhóm chi tiêu chung",
         "sharedParticipants": "Thành viên nhóm",

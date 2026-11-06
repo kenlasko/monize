@@ -838,6 +838,12 @@
       "doneButton": "完了",
       "unlinkedBondSecuritiesList": "対象の銘柄: {symbols}。",
       "unlinkedBondSecuritiesMore": "ほか{count}件",
+      "currencyKindMismatchAccounts": "{count, plural, other {# 件の口座が、口座の種類と合わない種別の通貨で復元されました}}。暗号資産口座には暗号資産が、それ以外の口座には法定通貨が必要ですが、このサーバーではその通貨が逆の種別になっています。口座の通貨を変更するか、通貨ページで通貨の種別を変更してください。",
+      "currencyKindMismatchAccountsList": "対象の口座: {names}。",
+      "currencyKindMismatchSecurities": "{count, plural, other {# 件の銘柄}}がこのサーバーで暗号資産建てになっていますが、銘柄には法定通貨が必要です。銘柄の通貨を変更するか、通貨ページで通貨の種別を変更してください。",
+      "currencyKindMismatchSecuritiesList": "対象の銘柄: {symbols}。",
+      "currencyKindMismatchMore": "ほか{count}件",
+      "currencyKindMismatchDefaultCurrency": "デフォルト通貨の {code} はこのサーバーでは暗号資産ですが、合計とレポートは常に法定通貨で表示されます。設定で法定通貨をデフォルト通貨として選んでください。",
       "counts": {
         "sharedGroups": "共有支出グループ",
         "sharedParticipants": "グループの参加者",

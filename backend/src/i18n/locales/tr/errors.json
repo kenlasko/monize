@@ -360,6 +360,8 @@
     "invalidRateDate": "date, YYYY-AA-GG biçiminde olmalıdır",
     "sameCurrencyHistory": "{{ code }} varsayılan para biriminizdir; döviz kuru geçmişi yoktur",
     "rateProviderUnavailable": "Döviz kuru sağlayıcısı yanıt vermedi. Lütfen daha sonra tekrar deneyin.",
+    "noPriceSymbol": "{{ code }} için fiyat sembolü yok; Para Birimleri sayfasında bir tane eşleyin",
+    "pairNotCarried": "Yapılandırılmış hiçbir döviz kuru sağlayıcısı {{ pair }} sunmuyor",
     "quoteSymbolRequiresCrypto": "Fiyat sembolü ({{ quoteSymbol }}) yalnızca bir kripto paraya ayarlanabilir; \"{{ code }}\" bir fiat para birimidir",
     "quoteSymbolNotAPair": "\"{{ code }}\" için \"{{ quoteSymbol }}\" fiyat sembolü, BTC-EUR gibi bir coin ve fiat çifti değildir",
     "kindInUse": "Hesaplar, işlemler, menkul kıymetler veya diğer kayıtlar kullandığı sürece \"{{ code }}\" para biriminin türü değiştirilemez",

@@ -838,6 +838,12 @@
       "doneButton": "完成",
       "unlinkedBondSecuritiesList": "受影響的證券:{symbols}。",
       "unlinkedBondSecuritiesMore": "以及另外 {count} 個",
+      "currencyKindMismatchAccounts": "{count, plural, other {# 個帳戶還原時使用的貨幣類別與其帳戶類型不符}}：加密貨幣帳戶需要加密貨幣，其他帳戶需要法定貨幣，而在本伺服器上該貨幣屬於另一類別。請修改帳戶的貨幣，或在「貨幣」頁面修改該貨幣的類別。",
+      "currencyKindMismatchAccountsList": "受影響的帳戶:{names}。",
+      "currencyKindMismatchSecurities": "{count, plural, other {# 個證券}}在本伺服器上以加密貨幣計價，而證券需要法定貨幣。請修改證券的貨幣，或在「貨幣」頁面修改該貨幣的類別。",
+      "currencyKindMismatchSecuritiesList": "受影響的證券:{symbols}。",
+      "currencyKindMismatchMore": "以及另外 {count} 個",
+      "currencyKindMismatchDefaultCurrency": "您的預設貨幣 {code} 在本伺服器上是加密貨幣，但合計與報表一律以法定貨幣顯示。請在「設定 → 偏好設定」中選擇一種法定貨幣作為預設貨幣。",
       "counts": {
         "sharedGroups": "共同支出群組",
         "sharedParticipants": "群組參與者",

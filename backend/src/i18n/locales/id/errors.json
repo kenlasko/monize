@@ -360,6 +360,8 @@
     "invalidRateDate": "date harus dalam format YYYY-MM-DD",
     "sameCurrencyHistory": "{{ code }} adalah mata uang bawaan Anda; tidak ada riwayat kurs untuknya",
     "rateProviderUnavailable": "Penyedia kurs tukar tidak merespons. Silakan coba lagi nanti.",
+    "noPriceSymbol": "{{ code }} tidak memiliki simbol harga; petakan satu di halaman Mata Uang",
+    "pairNotCarried": "Tidak ada penyedia kurs tukar terkonfigurasi yang menyediakan {{ pair }}",
     "quoteSymbolRequiresCrypto": "Simbol harga ({{ quoteSymbol }}) hanya dapat disetel pada mata uang kripto; \"{{ code }}\" adalah mata uang fiat",
     "quoteSymbolNotAPair": "Simbol harga \"{{ quoteSymbol }}\" untuk \"{{ code }}\" bukan pasangan koin dan mata uang fiat seperti BTC-EUR",
     "kindInUse": "Jenis \"{{ code }}\" tidak dapat diubah selama akun, transaksi, sekuritas, atau catatan lain masih menggunakannya",
