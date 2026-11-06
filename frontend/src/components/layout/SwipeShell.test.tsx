@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { act, render, screen } from '@/test/render';
 import { SwipeShell } from './SwipeShell';
 import { sharedExpensesApi } from '@/lib/shared-expenses';
@@ -146,6 +148,16 @@ describe('SwipeShell', () => {
     // position:sticky and IntersectionObserver viewport behavior
     expect(wrapper.className).toContain('overflow-x-clip');
     expect(wrapper.className).not.toContain('overflow-x-hidden');
+  });
+
+  it('spells overflow-x-clip as a token Tailwind can find in the source', () => {
+    // Tailwind generates a utility only for a class it finds as a whole token
+    // in the source. Glued to a template expression (`overflow-x-clip${...}`)
+    // it is never generated: the element carries the class name, the test
+    // above still passes, and the header's overflow scrolls the page sideways.
+    const source = readFileSync(join(__dirname, 'SwipeShell.tsx'), 'utf-8');
+    expect(source).toMatch(/overflow-x-clip(?=['"`\s])/);
+    expect(source).not.toMatch(/overflow-x-clip\$\{/);
   });
 
   it('renders BackendDownBanner on app pages', () => {

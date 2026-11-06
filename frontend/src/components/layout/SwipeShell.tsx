@@ -19,6 +19,7 @@ import { useHelpStore } from '@/store/helpStore';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useScrollToTopOnNavigation } from '@/hooks/useScrollToTopOnNavigation';
 import { usePushResumeOnSignIn } from '@/hooks/usePushResumeOnSignIn';
+import { cn } from '@/lib/utils';
 
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password', '/setup-2fa', '/change-password'];
 
@@ -63,9 +64,10 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
 
   return (
     <div
-      className={`min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-clip${
-        helpDocked ? ' xl:pr-[420px]' : ''
-      }`}
+      className={cn(
+        'min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-clip',
+        helpDocked && 'xl:pr-[420px]',
+      )}
     >
       <AppHeader />
       <DelegationBanner />
