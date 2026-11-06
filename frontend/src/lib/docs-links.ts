@@ -61,3 +61,23 @@ export function docsUrl(link: DocsLink): string {
   const target: DocsTarget = DOCS_LINKS[link];
   return `${DOCS_BASE_URL}/${target.page}${target.section ? `#${target.section}` : ''}`;
 }
+
+/** A destination inside the bundled guide the backend serves (`GET /help`). */
+export interface HelpTarget {
+  /** The help page's slug, the argument of `helpApi.getPage`; the landing page is `index`. */
+  page: string;
+  /** Heading anchor on that page, when the link names one. */
+  section?: string;
+}
+
+/**
+ * Where a documentation key lands in the bundled guide. Consumers navigate the
+ * in-app help by key through this, never by parsing `docsUrl`: the landing page
+ * (`''` here) is the slug `index` in the help API.
+ */
+export function helpTarget(link: DocsLink): HelpTarget {
+  const target: DocsTarget = DOCS_LINKS[link];
+  return target.section === undefined
+    ? { page: target.page || 'index' }
+    : { page: target.page || 'index', section: target.section };
+}
