@@ -13,12 +13,12 @@ import { useTranslations } from 'next-intl';
 import { SupportBackupModal } from '@/components/settings/SupportBackupModal';
 import { GITHUB_REPO_URL as REPO_URL } from '@/lib/github';
 import { docsUrl } from '@/lib/docs-links';
+import { openHelp } from '@/lib/help-open';
 
 const HELP_LINK_KEYS = [
   { key: 'github' as const, href: REPO_URL, Icon: CodeBracketIcon },
   { key: 'openIssue' as const, href: `${REPO_URL}/issues/new`, Icon: ExclamationTriangleIcon },
   { key: 'discussions' as const, href: `${REPO_URL}/discussions`, Icon: ChatBubbleLeftRightIcon },
-  { key: 'docs' as const, href: docsUrl('home'), Icon: BookOpenIcon },
 ] as const;
 
 export function HelpSection() {
@@ -51,6 +51,35 @@ export function HelpSection() {
               </span>
             </span>
           </button>
+        </li>
+        <li>
+          {/* The guide opens in the help panel; the website stays one click away. */}
+          <div className="flex items-stretch rounded-md border border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={() => void openHelp('home')}
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-l-md px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <BookOpenIcon className="h-6 w-6 shrink-0 text-gray-400 dark:text-gray-500" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {t('docs.label')}
+                </span>
+                <span className="block text-sm text-gray-500 dark:text-gray-400">
+                  {t('docs.description')}
+                </span>
+              </span>
+            </button>
+            <a
+              href={docsUrl('home')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex shrink-0 items-center gap-1 rounded-r-md border-l border-gray-200 px-3 text-sm text-blue-600 hover:bg-gray-50 dark:border-gray-700 dark:text-blue-400 dark:hover:bg-gray-700 transition-colors"
+            >
+              {t('docs.openOnline')}
+              <ArrowTopRightOnSquareIcon className="h-4 w-4 shrink-0" />
+            </a>
+          </div>
         </li>
         {HELP_LINK_KEYS.map(({ key, href, Icon }) => {
           const label = t(`${key}.label`);

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@/test/render';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fireEvent, render, screen } from '@/test/render';
 import { HelpSection } from './HelpSection';
 
 // Mock heroicons so the icons render as simple svgs in tests
@@ -18,7 +18,14 @@ vi.mock('./SupportBackupModal', () => ({
   SupportBackupModal: () => null,
 }));
 
+const openHelp = vi.fn();
+vi.mock('@/lib/help-open', () => ({ openHelp: (link: string) => openHelp(link) }));
+
 const REPO_URL = 'https://github.com/kenlasko/monize';
+
+beforeEach(() => {
+  openHelp.mockReset();
+});
 
 describe('HelpSection', () => {
   it('renders the section heading', () => {
@@ -44,13 +51,22 @@ describe('HelpSection', () => {
     expect(link).toHaveAttribute('href', `${REPO_URL}/discussions`);
   });
 
-  it('renders a link to the documentation', () => {
+  it('opens the guide in the help panel, at the landing page', () => {
     render(<HelpSection />);
-    const link = screen.getByText('Documentation').closest('a');
-    expect(link).toHaveAttribute('href', 'https://www.monize.net/docs/');
+    fireEvent.click(screen.getByRole('button', { name: /Documentation/ }));
+    expect(openHelp).toHaveBeenCalledTimes(1);
+    expect(openHelp).toHaveBeenCalledWith('home');
   });
 
-  it('opens all links in a new tab with safe rel attributes', () => {
+  it('keeps the guide on monize.net one click away, in a new tab', () => {
+    render(<HelpSection />);
+    const link = screen.getByRole('link', { name: /Open on monize.net/ });
+    expect(link).toHaveAttribute('href', 'https://www.monize.net/docs/');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('opens the external links in a new tab with safe rel attributes', () => {
     render(<HelpSection />);
     const links = screen.getAllByRole('link');
     expect(links).toHaveLength(4);
