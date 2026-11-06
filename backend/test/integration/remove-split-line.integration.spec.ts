@@ -415,4 +415,42 @@ describe("Removing one split line (integration)", () => {
     expect(await balanceOf(savingsId)).toBe(50);
     await expectBalancesMatchLedger();
   });
+
+  /**
+   * Issue #2039: adding a line to a whole set is the mirror of removing one.
+   * The -100.00 split grows by the line, so the lines still add up to it and
+   * Chequing moves by exactly the line's amount.
+   */
+  it.each([
+    ["of its own sign", -10, -110, 890],
+    ["of the opposite sign", 10, -90, 910],
+  ])(
+    "adding a line %s to a whole set re-totals the parent and moves Chequing",
+    async (_label, lineAmount, parentAmount, chequing) => {
+      const { parentId } = await createSplit();
+
+      await withUserContext(userId, () =>
+        service.addSplit(userId, parentId, {
+          amount: lineAmount,
+          categoryId: groceriesId,
+        } as never),
+      );
+
+      const parent = await dataSource.manager.findOneByOrFail(Transaction, {
+        id: parentId,
+      });
+      expect(Number(parent.amount)).toBe(parentAmount);
+      const lines = await dataSource.manager.find(TransactionSplit, {
+        where: { transactionId: parentId },
+      });
+      expect(
+        lines.reduce(
+          (sum, line) => sum + Math.round(Number(line.amount) * 10000),
+          0,
+        ) / 10000,
+      ).toBe(parentAmount);
+      expect(await balanceOf(chequingId)).toBe(chequing);
+      await expectBalancesMatchLedger();
+    },
+  );
 });

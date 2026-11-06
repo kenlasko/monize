@@ -1261,8 +1261,9 @@ export class TransactionSplitService {
 
     // The target account of a transfer child added here, so its net-worth state
     // is invalidated after commit -- the counterpart lives in an account this
-    // transaction's parent never named (recheck RR5-002).
-    let addedTransferAccountId: string | null = null;
+    // transaction's parent never named (recheck RR5-002) -- and the parent's
+    // own account once the line re-totals it.
+    const affectedAccountIds = new Set<string>();
     const savedSplitId = await withScopedDb(this.dataSource, async (m) => {
       // The aggregate check and the insert are one serialized unit.
       //
@@ -1299,7 +1300,21 @@ export class TransactionSplitService {
       const newTotal = sumMoney([existingTotal, Number(splitDto.amount)]);
       const transactionAmount = roundMoney(parent.amount);
 
-      if (Math.abs(newTotal) > Math.abs(transactionAmount)) {
+      // A whole set -- a parent flagged a split whose lines add up to it --
+      // grows by the line, the mirror of `removeSplit` (issue #2039): the
+      // parent's amount becomes the new total and its account moves by the
+      // line, so the lines still add up to the parent afterwards. Before, the
+      // line was refused as exceeding the parent when it shared the parent's
+      // sign, and accepted when it did not: a +10.00 line on a -100.00 set left
+      // lines of -90.00 under a -100.00 parent. A parent that is not a whole
+      // set keeps the incremental rule below: its lines fill it without moving
+      // its amount or its account.
+      const growsWholeSet =
+        parent.isSplit &&
+        existingSplits.length > 0 &&
+        existingTotal === transactionAmount;
+
+      if (!growsWholeSet && Math.abs(newTotal) > Math.abs(transactionAmount)) {
         throw new BadRequestException(
           tr(
             "errors.transactions.splitExceedsTransactionAmount",
@@ -1372,7 +1387,7 @@ export class TransactionSplitService {
         });
 
         const savedLinkedTransaction = await m.save(linkedTransaction);
-        addedTransferAccountId = splitDto.transferAccountId;
+        affectedAccountIds.add(splitDto.transferAccountId);
 
         await m.update(TransactionSplit, savedSplit.id, {
           linkedTransactionId: savedLinkedTransaction.id,
@@ -1393,6 +1408,19 @@ export class TransactionSplitService {
             counterpart.amount,
           );
         }
+      }
+
+      if (
+        growsWholeSet &&
+        (await retotalSplitParent(
+          m,
+          userId,
+          parent,
+          newTotal,
+          this.accountsService,
+        ))
+      ) {
+        affectedAccountIds.add(parent.accountId);
       }
 
       const totalSplits = existingSplits.length + 1;
@@ -1423,9 +1451,7 @@ export class TransactionSplitService {
       );
     }
 
-    if (addedTransferAccountId) {
-      this.invalidateNetWorth(new Set([addedTransferAccountId]), userId);
-    }
+    this.invalidateNetWorth(affectedAccountIds, userId);
     return splitWithRelations;
   }
 

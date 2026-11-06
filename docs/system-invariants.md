@@ -628,6 +628,10 @@ Enforcement         Every absolute recompute takes the account lock before readi
                     set, which moved neither, moves neither back);
                     a last transfer line becomes the parent's plain transfer
                     with its counterpart kept, never deleted (issue #2025).
+                    Adding a line (addSplit) to such a set is the mirror: the
+                    parent grows by the line and its account moves by it,
+                    through retotalSplitParent, as removal and the edit of a
+                    split-transfer leg do (issue #2039).
                     A transfer edit derives every delta from rows locked inside
                     its own transaction and refuses with 409 when they differ
                     from what the edit was built on: both legs ascending

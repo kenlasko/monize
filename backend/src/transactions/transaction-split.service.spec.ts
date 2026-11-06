@@ -1476,6 +1476,122 @@ describe("TransactionSplitService", () => {
       expect(result.id).toBe("new-split-id");
     });
 
+    /**
+     * Issue #2039: a whole set -- a parent flagged a split whose lines add up
+     * to it -- grows by the added line, the mirror of removeSplit, so the lines
+     * still add up to the parent and its account moves by the line.
+     */
+    describe("on a whole set", () => {
+      function stubAdded(amount: number): void {
+        splitsRepository.find.mockResolvedValue([
+          { ...mockSplit, amount: -60 },
+          { ...mockSplit2, amount: -40 },
+        ]);
+        splitsRepository.findOne.mockResolvedValue({
+          id: "new-split",
+          transactionId: "tx-1",
+          amount,
+          categoryId: "cat-3",
+        });
+      }
+
+      it("grows the parent by a line of its own sign and moves its account", async () => {
+        const transaction = { ...mockTransaction } as Transaction;
+        lockParent(transaction);
+        stubAdded(-10);
+
+        await service.addSplit(
+          transaction,
+          { amount: -10, categoryId: "cat-3" },
+          "user-1",
+        );
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          Transaction,
+          "tx-1",
+          { amount: -110 },
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "account-1",
+          -10,
+        );
+        expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+          "account-1",
+          "user-1",
+        );
+      });
+
+      it("shrinks the parent by an opposite-signed line rather than leaving it short", async () => {
+        const transaction = { ...mockTransaction } as Transaction;
+        lockParent(transaction);
+        stubAdded(10);
+
+        await service.addSplit(
+          transaction,
+          { amount: 10, categoryId: "cat-3" },
+          "user-1",
+        );
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          Transaction,
+          "tx-1",
+          { amount: -90 },
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "account-1",
+          10,
+        );
+      });
+
+      it("re-totals a VOID parent without moving its account", async () => {
+        const transaction = {
+          ...mockTransaction,
+          status: TransactionStatus.VOID,
+        } as Transaction;
+        lockParent(transaction);
+        stubAdded(-10);
+
+        await service.addSplit(
+          transaction,
+          { amount: -10, categoryId: "cat-3" },
+          "user-1",
+        );
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          Transaction,
+          "tx-1",
+          { amount: -110 },
+        );
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
+      it("leaves a set short of its parent at the parent's amount", async () => {
+        const transaction = { ...mockTransaction } as Transaction;
+        lockParent(transaction);
+        splitsRepository.find.mockResolvedValue([
+          { ...mockSplit, amount: -60 },
+        ]);
+        splitsRepository.findOne.mockResolvedValue({
+          id: "new-split",
+          transactionId: "tx-1",
+          amount: -10,
+        });
+
+        await service.addSplit(
+          transaction,
+          { amount: -10, categoryId: "cat-3" },
+          "user-1",
+        );
+
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(
+          Transaction,
+          "tx-1",
+          expect.objectContaining({ amount: expect.anything() }),
+        );
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+    });
+
     it("throws when adding split would exceed transaction amount", async () => {
       const transaction = { ...mockTransaction, amount: -100 } as Transaction;
       lockParent(transaction);
