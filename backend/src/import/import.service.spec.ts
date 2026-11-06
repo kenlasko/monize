@@ -3441,6 +3441,42 @@ describe("ImportService", () => {
       expect(result.accountType).toBe("INVESTMENT");
       expect(result.securities).toEqual(["AAPL"]);
     });
+
+    it("counts the rows with an unreadable date and names the first 50 by line", async () => {
+      mockedValidateCsvContent.mockReturnValue({ valid: true });
+      const unreadableDateRows = Array.from({ length: 60 }, (_, i) => ({
+        rowNumber: i + 2,
+        rawDate: `13/0${(i % 9) + 1}/2026`,
+        amount: -10,
+        payee: "Store",
+      }));
+      mockedParseCsv.mockReturnValue({
+        accountType: "CHEQUING",
+        accountName: "",
+        transactions: [],
+        categories: [],
+        transferAccounts: [],
+        securities: [],
+        detectedDateFormat: "MM/DD/YYYY",
+        sampleDates: [],
+        openingBalance: null,
+        openingBalanceDate: null,
+        unreadableDateRows,
+      });
+
+      const result = await service.parseCsvFile(
+        userId,
+        "content",
+        columnMapping,
+      );
+
+      expect(result.unreadableDates?.count).toBe(60);
+      expect(result.unreadableDates?.rows).toHaveLength(50);
+      expect(result.unreadableDates?.rows[0]).toEqual({
+        rowNumber: 2,
+        rawDate: "13/01/2026",
+      });
+    });
   });
 
   describe("importCsvFile", () => {
@@ -3525,6 +3561,65 @@ describe("ImportService", () => {
       expect(mockedParseCsv).toHaveBeenCalled();
       expect(result).toBeDefined();
       expect(result.imported).toBeDefined();
+    });
+
+    it("records each row whose date the parse could not read as skipped", async () => {
+      mockedValidateCsvContent.mockReturnValue({ valid: true });
+      mockedParseCsv.mockReturnValue({
+        accountType: "CHEQUING",
+        accountName: "",
+        transactions: [],
+        categories: [],
+        transferAccounts: [],
+        securities: [],
+        detectedDateFormat: "MM/DD/YYYY",
+        sampleDates: [],
+        openingBalance: null,
+        openingBalanceDate: null,
+        unreadableDateRows: [
+          { rowNumber: 3, rawDate: "13/03/2026", amount: -42.5, payee: "Cafe" },
+          { rowNumber: 5, rawDate: "", amount: 100, payee: "" },
+        ],
+      });
+      accountsRepository.findOne.mockResolvedValue(mockChequingAccount);
+
+      const result = await service.importCsvFile(userId, {
+        content: "Date,Amount,Payee\n",
+        accountId: "acct-1",
+        columnMapping: {
+          date: 0,
+          amount: 1,
+          payee: 2,
+          dateFormat: "MM/DD/YYYY",
+          hasHeader: true,
+          delimiter: ",",
+        },
+        categoryMappings: [],
+        accountMappings: [],
+      } as any);
+
+      expect(result.imported).toBe(0);
+      expect(result.skipped).toBe(2);
+      expect(result.skippedRows).toEqual([
+        {
+          date: "",
+          amount: -42.5,
+          currencyCode: "CAD",
+          payee: "Cafe",
+          reason: "unreadableDate",
+          rowNumber: 3,
+          rawDate: "13/03/2026",
+        },
+        {
+          date: "",
+          amount: 100,
+          currencyCode: "CAD",
+          payee: "",
+          reason: "unreadableDate",
+          rowNumber: 5,
+          rawDate: "",
+        },
+      ]);
     });
 
     const emptyParseResult = (accountType: string) => ({
