@@ -202,6 +202,15 @@ npm run docs:check     # what CI runs (via frontend/src/test/website-docs.test.t
 The generator is `frontend/scripts/build-website-docs.mjs`. It renders with the frontend's own
 `react-markdown` + `remark-gfm`, so it needs `npm ci` in `frontend/` and nothing else.
 
+### The guide also ships in the backend image
+
+The backend image copies `website/docs/*.md`, `nav.json` and `search-index.json` (no images, no
+generated HTML) into `./help`, and the public `GET /api/v1/help` endpoints serve them to the app's
+in-app help, so help matches the running version and works offline. A new top-level file the app
+needs (not a page: pages are already covered by `*.md`) has to be added to the `COPY website/docs/...`
+lines in `backend/Dockerfile` and to the `website/docs` exceptions in the root `.dockerignore`.
+`backend/src/help/help.real-docs.spec.ts` fails when the bundle and the generated pages disagree.
+
 ### Changing the documentation
 
 - **Edit the `.md` file, then run `npm run docs:build`** and commit both. A generated page that
