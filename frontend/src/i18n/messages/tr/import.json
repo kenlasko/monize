@@ -281,6 +281,11 @@
       "missingSplitRatio": "Oranı olmayan bölünme"
     },
     "rejectedGoBack": "Sütunları veya eylem anahtar kelimelerini değiştirmek için sütun eşleştirme adımına geri dönün.",
+    "unreadableDatesNotice": "{count, plural, other {# satırın}} tarihi {format} olarak okunamıyor ve içe aktarılmayacak:",
+    "unreadableDateRow": "Satır {line}: \"{rawDate}\"",
+    "missingDateRow": "Satır {line}: tarih yok",
+    "unreadableDatesMore": "...ve {count} tane daha",
+    "unreadableDatesGoBack": "Dosya tarihleri başka bir sırayla yazıyorsa sütun eşleştirme adımına geri dönün ve dosyanın kullandığı tarih biçimini seçin.",
     "importButton": "İşlemleri İçe Aktar"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "zaten içe aktarıldı",
     "skipReasonDuplicateTransfer": "transfer zaten kayıtlı",
+    "skipReasonUnreadableDate": "tarih okunamadı",
+    "skipReasonNoDate": "tarih yok",
+    "skippedRowLineDate": "Satır {line}, \"{rawDate}\"",
+    "skippedRowLine": "Satır {line}",
     "andMoreSkipped": "...ve {count} atlanan satır daha",
     "loanSetupHeading": "Yinelenen Ödemeleri Ayarla",
     "loanSetupDescription": "Aşağıdaki kredi/ipotek hesapları zamanlanmış ödemeler olmadan içe aktarıldı. Kredi ilerlemenizi takip etmeye devam etmek için yinelenen ödemeleri ayarlayın.",

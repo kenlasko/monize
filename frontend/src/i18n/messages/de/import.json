@@ -281,6 +281,11 @@
       "missingSplitRatio": "Split ohne Verhältnis"
     },
     "rejectedGoBack": "Gehen Sie zurück zum Schritt Spaltenzuordnung, um Spalten oder Aktions-Schlüsselwörter anzupassen.",
+    "unreadableDatesNotice": "{count, plural, one {# Zeile hat ein Datum, das} other {# Zeilen haben Daten, die}} nicht als {format} gelesen werden {count, plural, one {kann} other {können}} und nicht importiert {count, plural, one {wird} other {werden}}:",
+    "unreadableDateRow": "Zeile {line}: \"{rawDate}\"",
+    "missingDateRow": "Zeile {line}: kein Datum",
+    "unreadableDatesMore": "...und {count} weitere",
+    "unreadableDatesGoBack": "Wenn die Datei ihre Daten in einer anderen Reihenfolge schreibt, gehen Sie zurück zum Schritt Spaltenzuordnung und wählen Sie das Datumsformat der Datei.",
     "importButton": "Buchungen importieren"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "bereits importiert",
     "skipReasonDuplicateTransfer": "Überweisung bereits erfasst",
+    "skipReasonUnreadableDate": "Datum nicht lesbar",
+    "skipReasonNoDate": "kein Datum",
+    "skippedRowLineDate": "Zeile {line}, \"{rawDate}\"",
+    "skippedRowLine": "Zeile {line}",
     "andMoreSkipped": "...und {count} weitere übersprungene Zeilen",
     "loanSetupHeading": "Wiederkehrende Zahlungen einrichten",
     "loanSetupDescription": "Die folgenden Darlehens-/Hypothekenkonten wurden ohne terminierte Zahlungen importiert. Richten Sie wiederkehrende Zahlungen ein, um Ihre Darlehensrückzahlung weiter zu verfolgen.",

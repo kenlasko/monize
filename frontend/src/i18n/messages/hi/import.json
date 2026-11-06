@@ -281,6 +281,11 @@
       "missingSplitRatio": "अनुपात के बिना विभाजन"
     },
     "rejectedGoBack": "कॉलम या क्रिया कीवर्ड बदलने के लिए कॉलम मैपिंग चरण पर वापस जाएं।",
+    "unreadableDatesNotice": "{count, plural, one {# पंक्ति की तारीख {format} के रूप में पढ़ी नहीं जा सकती और वह आयात नहीं की जाएगी} other {# पंक्तियों की तारीखें {format} के रूप में पढ़ी नहीं जा सकतीं और वे आयात नहीं की जाएंगी}}:",
+    "unreadableDateRow": "पंक्ति {line}: \"{rawDate}\"",
+    "missingDateRow": "पंक्ति {line}: कोई तारीख नहीं",
+    "unreadableDatesMore": "...और {count} अन्य",
+    "unreadableDatesGoBack": "यदि फ़ाइल अपनी तारीखें किसी अन्य क्रम में लिखती है, तो कॉलम मैपिंग चरण पर वापस जाएं और फ़ाइल का तारीख प्रारूप चुनें।",
     "importButton": "लेनदेन आयात करें"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "पहले से आयात किया गया",
     "skipReasonDuplicateTransfer": "ट्रांसफ़र पहले से दर्ज है",
+    "skipReasonUnreadableDate": "तारीख पढ़ी नहीं जा सकी",
+    "skipReasonNoDate": "कोई तारीख नहीं",
+    "skippedRowLineDate": "पंक्ति {line}, \"{rawDate}\"",
+    "skippedRowLine": "पंक्ति {line}",
     "andMoreSkipped": "...और {count} छोड़ी गई पंक्तियाँ",
     "loanSetupHeading": "आवर्ती भुगतान सेट करें",
     "loanSetupDescription": "निम्नलिखित ऋण/बंधक खाते बिना अनुसूचित भुगतान के आयात किए गए। अपनी ऋण प्रगति ट्रैक करना जारी रखने के लिए आवर्ती भुगतान सेट करें।",

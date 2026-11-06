@@ -281,6 +281,11 @@
       "missingSplitRatio": "Дробление без коэффициента"
     },
     "rejectedGoBack": "Вернитесь к шагу сопоставления столбцов, чтобы изменить столбцы или ключевые слова операций.",
+    "unreadableDatesNotice": "{count, plural, one {# строка содержит дату, которую} few {# строки содержат даты, которые} many {# строк содержат даты, которые} other {# строки содержат даты, которые}} невозможно прочитать как {format}; {count, plural, one {она не будет импортирована} other {они не будут импортированы}}:",
+    "unreadableDateRow": "Строка {line}: \"{rawDate}\"",
+    "missingDateRow": "Строка {line}: нет даты",
+    "unreadableDatesMore": "...и ещё {count}",
+    "unreadableDatesGoBack": "Если в файле даты записаны в другом порядке, вернитесь к шагу сопоставления столбцов и выберите формат даты, который в нём используется.",
     "importButton": "Импортировать проводки"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "уже импортирована",
     "skipReasonDuplicateTransfer": "перевод уже записан",
+    "skipReasonUnreadableDate": "дату невозможно прочитать",
+    "skipReasonNoDate": "нет даты",
+    "skippedRowLineDate": "Строка {line}, \"{rawDate}\"",
+    "skippedRowLine": "Строка {line}",
     "andMoreSkipped": "...и ещё {count} пропущенных строк",
     "loanSetupHeading": "Настройка регулярных платежей",
     "loanSetupDescription": "Следующие счета кредитов/ипотеки были импортированы без запланированных платежей. Настройте регулярные платежи для продолжения отслеживания займа.",

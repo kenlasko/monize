@@ -281,6 +281,11 @@
       "missingSplitRatio": "Tách mà không có tỷ lệ"
     },
     "rejectedGoBack": "Quay lại bước ánh xạ cột để điều chỉnh cột hoặc từ khóa hành động.",
+    "unreadableDatesNotice": "{count, plural, other {# hàng}} có ngày không thể đọc theo định dạng {format} và sẽ không được nhập:",
+    "unreadableDateRow": "Hàng {line}: \"{rawDate}\"",
+    "missingDateRow": "Hàng {line}: không có ngày",
+    "unreadableDatesMore": "...và {count} hàng khác",
+    "unreadableDatesGoBack": "Nếu tệp ghi ngày theo thứ tự khác, hãy quay lại bước ánh xạ cột và chọn định dạng ngày mà tệp sử dụng.",
     "importButton": "Nhập Khẩu Giao Dịch"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "đã nhập trước đó",
     "skipReasonDuplicateTransfer": "giao dịch chuyển khoản đã được ghi",
+    "skipReasonUnreadableDate": "không đọc được ngày",
+    "skipReasonNoDate": "không có ngày",
+    "skippedRowLineDate": "Hàng {line}, \"{rawDate}\"",
+    "skippedRowLine": "Hàng {line}",
     "andMoreSkipped": "...và {count} dòng bị bỏ qua khác",
     "loanSetupHeading": "Thiết Lập Thanh Toán Định Kỳ",
     "loanSetupDescription": "Các tài khoản vay/thế chấp sau đây đã được nhập khẩu mà không có thanh toán định kỳ. Thiết lập thanh toán định kỳ để tiếp tục theo dõi tiến trình vay của bạn.",

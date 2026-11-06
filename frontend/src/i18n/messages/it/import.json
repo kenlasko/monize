@@ -281,6 +281,11 @@
       "missingSplitRatio": "Frazionamento senza rapporto"
     },
     "rejectedGoBack": "Torna al passaggio di mappatura delle colonne per modificare le colonne o le parole chiave operazione.",
+    "unreadableDatesNotice": "{count, plural, one {# riga ha una data che non può essere letta} other {# righe hanno date che non possono essere lette}} come {format} e non {count, plural, one {verrà importata} other {verranno importate}}:",
+    "unreadableDateRow": "Riga {line}: \"{rawDate}\"",
+    "missingDateRow": "Riga {line}: nessuna data",
+    "unreadableDatesMore": "...e altre {count}",
+    "unreadableDatesGoBack": "Se il file scrive le date in un altro ordine, torna al passaggio di mappatura delle colonne e scegli il formato di data che usa.",
     "importButton": "Importa transazioni"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "già importata",
     "skipReasonDuplicateTransfer": "trasferimento già registrato",
+    "skipReasonUnreadableDate": "data non leggibile",
+    "skipReasonNoDate": "nessuna data",
+    "skippedRowLineDate": "Riga {line}, \"{rawDate}\"",
+    "skippedRowLine": "Riga {line}",
     "andMoreSkipped": "...e altre {count} righe saltate",
     "loanSetupHeading": "Configura pagamenti ricorrenti",
     "loanSetupDescription": "I seguenti conti prestito/mutuo sono stati importati senza pagamenti pianificati. Configura i pagamenti ricorrenti per continuare a monitorare il tuo prestito.",
