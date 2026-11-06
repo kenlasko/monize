@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "Kapalı bir hesabın bakiyesi değiştirilemez",
     "deleteWithTransactions": "{{ transactionCount }} işlem(ler) içeren hesap silinemez. Bunun yerine hesabı kapatın.",
     "deleteWithInvestmentTransactions": "{{ investmentTransactionCount }} yatırım işlemi içeren hesap silinemez. Bunun yerine hesabı kapatın.",
+    "deleteWithScheduledTransactions": "{{ scheduledTransactionCount }} zamanlanmış işlem tarafından kullanılan hesap silinemez. Önce hesabı bu faturalar ve mevduatlardan kaldırın veya bunun yerine hesabı kapatın.",
     "invalidDateFormat": "Geçersiz dateFormat",
     "useFavouriteUpdateEndpoint": "Favorileri değiştirmek için hesap güncelleme uç noktasını kullanın",
     "invalidExportFormat": "Biçim csv veya qif olmalıdır",

@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "Nie można zmienić salda zamkniętego konta",
     "deleteWithTransactions": "Nie można usunąć konta z {{ transactionCount }} transakcjami. Zamiast tego zamknij konto.",
     "deleteWithInvestmentTransactions": "Nie można usunąć konta z {{ investmentTransactionCount }} transakcjami inwestycyjnymi. Zamiast tego zamknij konto.",
+    "deleteWithScheduledTransactions": "Nie można usunąć konta używanego przez {{ scheduledTransactionCount }} zaplanowane transakcje. Najpierw usuń konto z tych rachunków i wpłat albo zamiast tego zamknij konto.",
     "invalidDateFormat": "Nieprawidłowy dateFormat",
     "useFavouriteUpdateEndpoint": "Użyj punktu końcowego aktualizacji konta, aby zmienić ulubione",
     "invalidExportFormat": "Format musi być csv lub qif",

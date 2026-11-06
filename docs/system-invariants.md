@@ -68,6 +68,7 @@ implied.
 | INV-HOLDING-001 | A holding equals a deterministic replay of the investment ledger | enforced |
 | INV-HOLDING-002 | Every view replays the ledger the same way | enforced |
 | INV-TRANSFER-001 | A transfer's two legs share the VOID boundary and one balance decision | enforced |
+| INV-ACCOUNTDELETE-001 | An account delete refuses rather than takes a ledger row or a schedule naming the account with it | partial |
 | INV-SPLITFX-001 | A cross-currency split transfer line credits its stated received amount at the implied rate, or the market conversion | enforced |
 | INV-SPLITFX-002 | A split line's recorded received amount survives every rewrite that does not change the line | enforced |
 | INV-SPLITFX-003 | Only the owner's read carries a split line's counterpart | enforced |
@@ -1004,6 +1005,68 @@ a reconcile state is genuinely per-ledger (a cross-owner transfer's two ledgers
 reconcile independently), and only the VOID boundary -- where money either moved
 or did not -- is shared. See `docs/financial-semantics.md` section 11, "Editing one row must not leave
 the pair describing two different events".
+
+### INV-ACCOUNTDELETE-001 -- a delete takes nothing it was not asked to
+
+```text
+Statement           Permanently deleting an account removes only the account
+                    (and a loan or mortgage's own payment schedule). An account
+                    any ledger row or any scheduled transaction names is refused,
+                    with the count, and the reader is told to close it instead.
+Source of truth     transactions, investment_transactions, scheduled_transactions,
+                    scheduled_transaction_splits and scheduled_transaction_overrides
+                    rows naming the account
+Enforcement         AccountsService.delete runs one transaction: the account's
+                    lockAccountsForBalanceWrite, assertAccountEmpty, the loan's own
+                    schedule as the locked row names it (removeWithoutHistory),
+                    then the account. A refusal, or a failure to remove that
+                    schedule, writes nothing. After the commit the schedule's undo
+                    entry is written, awaited, before the account's, whose snapshot
+                    drops the pointer to it, so undo restores the loan and then
+                    the schedule. A row insert's FK lock
+                    conflicts with the account lock (see INV-TRANSFER-001). The
+                    schedule count is countSchedulesReferencingAccounts
+                    (backend/src/accounts/account-schedule-references.ts), one
+                    indexed lookup per reference, unioned: a schedule paid from
+                    the account (ON DELETE CASCADE), a scheduled transfer into it
+                    (ON DELETE SET NULL, which turned the transfer into an
+                    uncategorized plain transaction), an investment funded from it
+                    (no action: the delete failed on the FK), a split line
+                    transferring into it (ON DELETE CASCADE, which left the other
+                    schedule's lines short of its amount), or a pending split
+                    override's line transferring into it
+                    (scheduled_transaction_overrides.splits[].transferAccountId,
+                    matched case-insensitively; an override of a slot before
+                    next_due_date, or with is_split false, never posts those lines
+                    and is not counted, while a NULL is_split follows the
+                    schedule's and counts) (#2028). That JSONB has no foreign
+                    key, so an override write share-locks every account its lines
+                    transfer into, owned by the schedule's user, and refuses a
+                    missing one, over the lines the saved override will post
+                    (lockOverrideTransferAccounts in
+                    backend/src/scheduled-transactions/scheduled-transaction-override.service.ts):
+                    it either commits before the delete's count or waits and finds
+                    the account gone.
+                    The list's canDelete and GET /accounts/:id/can-delete read the
+                    same counts, so the delete action is not offered for a refused
+                    account.
+                    Unenforced: a rule-run undo that rewinds a schedule cursor
+                    re-inserts the overrides the advance pruned
+                    (backend/src/scheduled-transactions/schedule-cursor.ts) without
+                    checking their lines' accounts, so one naming an account
+                    deleted since comes back pointing at nothing.
+Concurrency scope   account
+Failure response    400 (404 for an override line naming a missing account),
+                    nothing written
+Required tests      PG integration per referencing column, that a loan's own
+                    schedule is left out and goes with the loan, and that a
+                    refused loan keeps it; two connections for an override write
+                    against the delete's lock, both ways:
+                    backend/test/integration/account-delete-schedules.integration.spec.ts;
+                    the ledger re-count under the lock:
+                    backend/test/integration/account-delete-race.integration.spec.ts.
+Status              partial
+```
 
 ### INV-SPLITFX-001 -- a split transfer line credits what arrived
 

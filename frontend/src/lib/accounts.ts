@@ -24,6 +24,7 @@ import {
   DailyBalanceTotalsResponse,
   LoanSettlementRow,
   PaymentMatching,
+  AccountDeletability,
 } from '@/types/account';
 import type { TransactionRule } from '@/types/transaction-rule';
 import { StatementCycle, InterestPaid } from '@/types/credit-card-detail';
@@ -201,8 +202,8 @@ export const accountsApi = {
   },
 
   // Check if account can be deleted
-  canDelete: async (id: string): Promise<{ transactionCount: number; investmentTransactionCount: number; canDelete: boolean }> => {
-    const response = await apiClient.get<{ transactionCount: number; investmentTransactionCount: number; canDelete: boolean }>(
+  canDelete: async (id: string): Promise<AccountDeletability> => {
+    const response = await apiClient.get<AccountDeletability>(
       `/accounts/${id}/can-delete`,
     );
     return response.data;

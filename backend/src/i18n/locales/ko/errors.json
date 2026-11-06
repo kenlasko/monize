@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "폐쇄된 계정의 잔액은 수정할 수 없습니다",
     "deleteWithTransactions": "거래가 {{ transactionCount }}건 있는 계정은 삭제할 수 없습니다. 대신 계정을 폐쇄하세요.",
     "deleteWithInvestmentTransactions": "투자 거래가 {{ investmentTransactionCount }}건 있는 계정은 삭제할 수 없습니다. 대신 계정을 폐쇄하세요.",
+    "deleteWithScheduledTransactions": "예약 거래 {{ scheduledTransactionCount }}건에서 사용 중인 계정은 삭제할 수 없습니다. 먼저 해당 청구서 및 입금에서 계정을 제거하거나 대신 계정을 폐쇄하세요.",
     "invalidDateFormat": "유효하지 않은 dateFormat입니다",
     "useFavouriteUpdateEndpoint": "즐겨찾기를 변경하려면 계정 업데이트 엔드포인트를 사용하세요",
     "invalidExportFormat": "형식은 csv 또는 qif여야 합니다",

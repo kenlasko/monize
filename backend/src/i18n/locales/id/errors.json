@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "Tidak dapat mengubah saldo akun yang sudah ditutup",
     "deleteWithTransactions": "Tidak dapat menghapus akun dengan {{ transactionCount }} transaksi. Tutup akun tersebut.",
     "deleteWithInvestmentTransactions": "Tidak dapat menghapus akun dengan {{ investmentTransactionCount }} transaksi investasi. Tutup akun tersebut.",
+    "deleteWithScheduledTransactions": "Tidak dapat menghapus akun yang digunakan oleh {{ scheduledTransactionCount }} transaksi terjadwal. Hapus akun dari tagihan dan setoran tersebut terlebih dahulu, atau tutup akun tersebut.",
     "invalidDateFormat": "dateFormat tidak valid",
     "useFavouriteUpdateEndpoint": "Gunakan endpoint pembaruan akun untuk mengubah favorit",
     "invalidExportFormat": "Format harus csv atau qif",

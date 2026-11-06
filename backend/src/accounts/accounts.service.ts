@@ -81,6 +81,7 @@ import {
 } from "./mortgage-type.util";
 import { assertMortgageMethodTerms } from "./mortgage-installment.util";
 import { applyMortgageMethodColumns } from "./mortgage-method-columns.util";
+import { countSchedulesReferencingAccounts } from "./account-schedule-references";
 import {
   assertLoanSourceAccount,
   reassignLoanSourceAccount,
@@ -560,7 +561,8 @@ export class AccountsService {
 
       if (accounts.length === 0) return [];
 
-      // Batch check deletability: count transactions + investment transactions per account in 2 queries
+      // Batch check deletability: count transactions, investment transactions
+      // and the schedules naming each account, one query each
       const accountIds = accounts.map((a) => a.id);
 
       const today = todayYMD();
@@ -582,6 +584,10 @@ export class AccountsService {
         .where("it.accountId IN (:...accountIds)", { accountIds })
         .groupBy("it.accountId")
         .getRawMany();
+      const scheduleCountMap = await countSchedulesReferencingAccounts(
+        m,
+        accountIds,
+      );
       const futureSums: Array<{ accountId: string; futureSum: string }> =
         await m.query(
           `SELECT t.account_id as "accountId",
@@ -682,7 +688,8 @@ export class AccountsService {
           currentBalanceMap.get(account.id) ?? account.currentBalance,
         canDelete:
           !(txCountMap.get(account.id) || 0) &&
-          !(invTxCountMap.get(account.id) || 0),
+          !(invTxCountMap.get(account.id) || 0) &&
+          !(scheduleCountMap.get(account.id) || 0),
         futureTransactionsSum: futureSumMap.get(account.id) ?? 0,
         lastReconciledDate: lastReconciledMap.get(account.id) ?? null,
         unreconciledCount: unreconciledCountMap.get(account.id) ?? 0,
@@ -1427,14 +1434,53 @@ export class AccountsService {
     return savedAccount;
   }
 
-  /** Refuses the delete of an account that holds any ledger row. */
+  /**
+   * What would stop the account's delete: its ledger rows and the schedules
+   * naming it. The one answer both the refusal and `getTransactionCount` read,
+   * so the can-delete answer and the delete cannot disagree.
+   */
+  private async countDeletionBlockers(
+    m: EntityManager,
+    accountId: string,
+  ): Promise<{
+    transactionCount: number;
+    investmentTransactionCount: number;
+    scheduledTransactionCount: number;
+  }> {
+    const transactionCount = await m.getRepository(Transaction).count({
+      where: { accountId },
+    });
+    // includes VOID rows: records read -- a VOID row is still a row the
+    // delete would destroy.
+    const investmentTransactionCount = await m
+      .getRepository(InvestmentTransaction)
+      .count({ where: { accountId } });
+    // The schema takes these with the account (issue #2028): refused like the
+    // ledger rows, never destroyed without a word.
+    const scheduledTransactionCount =
+      (await countSchedulesReferencingAccounts(m, [accountId])).get(
+        accountId,
+      ) ?? 0;
+    return {
+      transactionCount,
+      investmentTransactionCount,
+      scheduledTransactionCount,
+    };
+  }
+
+  /**
+   * Refuses the delete of an account that holds any ledger row or that a
+   * scheduled transaction names.
+   */
   private async assertAccountEmpty(
     m: EntityManager,
     accountId: string,
   ): Promise<void> {
-    const transactionCount = await m.getRepository(Transaction).count({
-      where: { accountId },
-    });
+    const {
+      transactionCount,
+      investmentTransactionCount,
+      scheduledTransactionCount,
+    } = await this.countDeletionBlockers(m, accountId);
     if (transactionCount > 0) {
       throw new BadRequestException(
         tr(
@@ -1444,18 +1490,21 @@ export class AccountsService {
         ),
       );
     }
-
-    // includes VOID rows: records read -- a VOID row is still a row the
-    // delete would destroy.
-    const investmentTransactionCount = await m
-      .getRepository(InvestmentTransaction)
-      .count({ where: { accountId } });
     if (investmentTransactionCount > 0) {
       throw new BadRequestException(
         tr(
           "errors.accounts.deleteWithInvestmentTransactions",
           `Cannot delete account with ${investmentTransactionCount} investment transaction(s). Close the account instead.`,
           { investmentTransactionCount },
+        ),
+      );
+    }
+    if (scheduledTransactionCount > 0) {
+      throw new BadRequestException(
+        tr(
+          "errors.accounts.deleteWithScheduledTransactions",
+          `Cannot delete account used by ${scheduledTransactionCount} scheduled transaction(s). Remove the account from those bills and deposits first, or close the account instead.`,
+          { scheduledTransactionCount },
         ),
       );
     }
@@ -2193,93 +2242,119 @@ export class AccountsService {
   ): Promise<{
     transactionCount: number;
     investmentTransactionCount: number;
+    scheduledTransactionCount: number;
     canDelete: boolean;
   }> {
     // Verify account belongs to user
     await this.findOne(userId, accountId);
 
     return withScopedDb(this.dataSource, async (m) => {
-      const transactionCount = await m.getRepository(Transaction).count({
-        where: { accountId },
-      });
-
-      // includes VOID rows: records read -- a VOID row is still a row the
-      // delete would destroy.
-      const investmentTransactionCount = await m
-        .getRepository(InvestmentTransaction)
-        .count({
-          where: { accountId },
-        });
-
+      const counts = await this.countDeletionBlockers(m, accountId);
       return {
-        transactionCount,
-        investmentTransactionCount,
-        canDelete: transactionCount === 0 && investmentTransactionCount === 0,
+        ...counts,
+        canDelete:
+          counts.transactionCount === 0 &&
+          counts.investmentTransactionCount === 0 &&
+          counts.scheduledTransactionCount === 0,
       };
     });
   }
 
   /**
-   * Permanently delete an account (only if it has no transactions)
+   * Permanently delete an account (only if it has no transactions and no
+   * scheduled transaction names it)
    */
   async delete(userId: string, id: string): Promise<void> {
     const account = await this.findOne(userId, id);
+    // Copied now: `m.remove` below clears the entity's id.
+    const snapshot = { ...account };
 
-    // Answered once up front, so a refusal comes before the loan schedule
-    // below is removed; asked again, under the account lock, in the deleting
-    // transaction itself.
-    await withScopedDb(this.dataSource, (m) => this.assertAccountEmpty(m, id));
+    // One transaction for the check and every removal, so a refused delete
+    // has written nothing. The loan's own payment schedule used to be removed
+    // first, in its own transaction: a refusal after it left the loan without
+    // its schedule, and a failure to remove it went on to delete the account
+    // anyway, which set the schedule's transfer to NULL (an uncategorized
+    // payment from then on) and dropped any split line into the loan.
+    const { removedSchedule, unlinkedSchedule } = await withScopedDb(
+      this.dataSource,
+      async (m) => {
+        // A bank sync or import that wrote into the account after an unlocked
+        // count would be cascaded away with it, leaving its transfer legs in
+        // other accounts one-sided (A26-M19). The account row lock is the one
+        // every writer of its balance takes, and a row insert's foreign-key
+        // lock conflicts with it (an override's transfer line takes it
+        // explicitly, see `lockOverrideTransferAccounts`), so after it no row
+        // can land before the removal: a writer either committed (and the count
+        // sees it) or waits for this delete.
+        await lockAccountsForBalanceWrite(m, [id], userId);
+        await this.assertAccountEmpty(m, id);
 
-    // If this is a loan or mortgage account with an associated scheduled
-    // transaction, delete it first. This runs in the scheduled-transactions
-    // service's own transaction and is best-effort, so it stays outside the
-    // account-deletion transaction below.
-    if (
-      (account.accountType === AccountType.LOAN ||
-        account.accountType === AccountType.MORTGAGE) &&
-      account.scheduledTransactionId
-    ) {
-      try {
-        await this.scheduledTransactionsService.remove(
-          userId,
-          account.scheduledTransactionId,
-        );
-      } catch (error) {
-        // Scheduled transaction may have already been deleted, continue with account deletion
-        this.logger.warn(
-          `Could not delete scheduled transaction ${account.scheduledTransactionId}: ${error.message}`,
-        );
-      }
+        // The loan's own schedule as it stands under the lock, the one the
+        // count just left out: a concurrent edit may have replaced the schedule
+        // the unlocked read above named.
+        const locked = await m
+          .getRepository(Account)
+          .findOne({ where: { id, userId } });
+        const ownSchedule =
+          locked &&
+          (locked.accountType === AccountType.LOAN ||
+            locked.accountType === AccountType.MORTGAGE)
+            ? locked.scheduledTransactionId
+            : null;
+
+        let removed: ScheduledTransaction | null = null;
+        if (ownSchedule) {
+          // Cleared first, so removing the schedule does not lean on the
+          // column's ON DELETE SET NULL.
+          await m.update(
+            Account,
+            { id, userId },
+            { scheduledTransactionId: null },
+          );
+          try {
+            removed =
+              await this.scheduledTransactionsService.removeWithoutHistory(
+                userId,
+                ownSchedule,
+              );
+          } catch (error) {
+            // Already gone: nothing of it is left for the delete to take.
+            if (!(error instanceof NotFoundException)) throw error;
+          }
+        }
+
+        if (account.linkedAccountId) {
+          // One column, by a targeted update: a `save` of the unlocked read
+          // wrote its snapshot balance back as well (A26-M13).
+          await m.update(
+            Account,
+            { id: account.linkedAccountId, userId },
+            { linkedAccountId: null },
+          );
+        }
+
+        await m.remove(account);
+        return { removedSchedule: removed, unlinkedSchedule: !!ownSchedule };
+      },
+    );
+
+    // The account as it was, less the pointer to the schedule this delete
+    // removed: undo restores the account first, and a pointer to a schedule
+    // not yet restored would fail its foreign key and the whole undo.
+    const beforeData = unlinkedSchedule
+      ? { ...snapshot, scheduledTransactionId: null }
+      : snapshot;
+
+    // After the commit, in the order an undo has to reverse them: the
+    // account's entry is the newer, so undo restores the loan before the
+    // schedule that transfers into it. Awaited, since two un-awaited writes
+    // can commit in either order.
+    if (removedSchedule) {
+      await this.scheduledTransactionsService.recordRemoved(
+        userId,
+        removedSchedule,
+      );
     }
-
-    const beforeData = { ...account };
-
-    // Unlink the paired account and remove this account atomically, so a
-    // failure cannot leave a dangling link pointing at a deleted account.
-    await withScopedDb(this.dataSource, async (m) => {
-      // The check above ran in another transaction, so a bank sync or import
-      // that wrote into the account since was cascaded away with it, leaving
-      // its transfer legs in other accounts one-sided (A26-M19). The account
-      // row lock is the one every writer of its balance takes, and a row
-      // insert's foreign-key lock conflicts with it, so after it no row can
-      // land before the removal: a writer either committed (and the count
-      // sees it) or waits for this delete.
-      await lockAccountsForBalanceWrite(m, [id], userId);
-      await this.assertAccountEmpty(m, id);
-
-      if (account.linkedAccountId) {
-        // One column, by a targeted update: a `save` of the unlocked read
-        // wrote its snapshot balance back as well (A26-M13).
-        await m.update(
-          Account,
-          { id: account.linkedAccountId, userId },
-          { linkedAccountId: null },
-        );
-      }
-
-      await m.remove(account);
-    });
-
     this.actionHistoryService.record(userId, {
       entityType: "account",
       entityId: beforeData.id,

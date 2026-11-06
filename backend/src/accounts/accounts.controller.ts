@@ -1272,7 +1272,8 @@ export class AccountsController {
   })
   @ApiResponse({
     status: 400,
-    description: "Bad request - account has transactions",
+    description:
+      "Bad request - account has transactions or scheduled transactions",
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({

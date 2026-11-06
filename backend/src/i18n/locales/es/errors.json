@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "No se puede modificar el saldo de una cuenta cerrada",
     "deleteWithTransactions": "No se puede eliminar una cuenta con {{ transactionCount }} transacción(es). Cierra la cuenta en su lugar.",
     "deleteWithInvestmentTransactions": "No se puede eliminar una cuenta con {{ investmentTransactionCount }} transacción(es) de inversión. Cierra la cuenta en su lugar.",
+    "deleteWithScheduledTransactions": "No se puede eliminar una cuenta usada por {{ scheduledTransactionCount }} transacción(es) programada(s). Quita primero la cuenta de esas facturas y depósitos, o cierra la cuenta en su lugar.",
     "invalidDateFormat": "Formato de fecha no válido",
     "useFavouriteUpdateEndpoint": "Usa el endpoint de actualización de cuenta para cambiar los favoritos",
     "invalidExportFormat": "El formato debe ser csv o qif",

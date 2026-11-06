@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "Невозможно изменить остаток закрытого счёта",
     "deleteWithTransactions": "Невозможно удалить счёт с {{ transactionCount }} проводкой(-ами). Закройте счёт вместо удаления.",
     "deleteWithInvestmentTransactions": "Невозможно удалить счёт с {{ investmentTransactionCount }} инвестиционной проводкой(-ами). Закройте счёт вместо удаления.",
+    "deleteWithScheduledTransactions": "Невозможно удалить счёт, используемый {{ scheduledTransactionCount }} запланированной проводкой(-ами). Сначала уберите счёт из этих счетов и депозитов или закройте счёт вместо удаления.",
     "invalidDateFormat": "Недопустимый формат даты",
     "useFavouriteUpdateEndpoint": "Используйте конечную точку обновления счёта для изменения избранного",
     "invalidExportFormat": "Формат должен быть csv или qif",

@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "Impossible de modifier le solde d'un compte fermé",
     "deleteWithTransactions": "Impossible de supprimer un compte avec {{ transactionCount }} transaction(s). Fermez le compte à la place.",
     "deleteWithInvestmentTransactions": "Impossible de supprimer un compte avec {{ investmentTransactionCount }} transaction(s) d'investissement. Fermez le compte à la place.",
+    "deleteWithScheduledTransactions": "Impossible de supprimer un compte utilisé par {{ scheduledTransactionCount }} transaction(s) planifiée(s). Retirez d'abord le compte de ces factures et dépôts, ou fermez le compte à la place.",
     "invalidDateFormat": "Format de date invalide",
     "useFavouriteUpdateEndpoint": "Utilisez le point de terminaison de mise à jour du compte pour modifier les favoris",
     "invalidExportFormat": "Le format doit être csv ou qif",

@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "[XX-Cannot modify balance of a closed account-XX]",
     "deleteWithTransactions": "[XX-Cannot delete account with {{ transactionCount }} transaction(s). Close the account instead.-XX]",
     "deleteWithInvestmentTransactions": "[XX-Cannot delete account with {{ investmentTransactionCount }} investment transaction(s). Close the account instead.-XX]",
+    "deleteWithScheduledTransactions": "[XX-Cannot delete account used by {{ scheduledTransactionCount }} scheduled transaction(s). Remove the account from those bills and deposits first, or close the account instead.-XX]",
     "invalidDateFormat": "[XX-Invalid dateFormat-XX]",
     "useFavouriteUpdateEndpoint": "[XX-Use the account update endpoint to change favourites-XX]",
     "invalidExportFormat": "[XX-Format must be csv or qif-XX]",

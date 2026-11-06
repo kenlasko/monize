@@ -5,7 +5,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { randomUUID } from "crypto";
-import { DataSource, QueryFailedError } from "typeorm";
+import { DataSource, EntityManager, QueryFailedError } from "typeorm";
 import {
   ScheduledTransactionOverride,
   OverrideSplit,
@@ -40,6 +40,45 @@ const UNIQUE_VIOLATION = "23505";
  * something that is not broken.
  */
 const OCCURRENCE_IDENTITY_CONSTRAINT = "uq_sched_txn_overrides_occurrence";
+
+/**
+ * Lock, and so prove, every account an override's split lines transfer into.
+ * Those ids live in the `splits` JSONB, which no foreign key guards, so nothing
+ * else stops a line naming another user's account or one being deleted. The
+ * share lock conflicts with the delete's `lockAccountsForBalanceWrite`: an
+ * account delete either sees this override in its count or this write waits
+ * and then finds the account gone (INV-ACCOUNTDELETE-001).
+ */
+async function lockOverrideTransferAccounts(
+  m: EntityManager,
+  scheduledTransactionId: string,
+  splits:
+    ReadonlyArray<{ transferAccountId?: string | null }> | null | undefined,
+): Promise<void> {
+  const wanted = [
+    ...new Set(
+      (splits ?? [])
+        .map((s) => s.transferAccountId?.toLowerCase())
+        .filter((id): id is string => !!id),
+    ),
+  ];
+  if (wanted.length === 0) return;
+  const found: Array<{ id: string }> = await m.query(
+    `SELECT a.id
+     FROM accounts a
+     JOIN scheduled_transactions st
+       ON st.id = $2 AND st.user_id = a.user_id
+     WHERE a.id = ANY($1::uuid[])
+     ORDER BY a.id
+     FOR SHARE OF a`,
+    [wanted, scheduledTransactionId],
+  );
+  if (found.length < wanted.length) {
+    throw new NotFoundException(
+      tr("errors.accounts.notFound", "Account not found"),
+    );
+  }
+}
 
 function isOccurrenceAlreadyOverridden(error: unknown): boolean {
   if (!(error instanceof QueryFailedError)) return false;
@@ -142,6 +181,12 @@ export class ScheduledTransactionOverrideService {
         }
         this.validateOverrideSplits(createDto.splits, createDto.amount);
       }
+
+      await lockOverrideTransferAccounts(
+        m,
+        scheduledTransactionId,
+        createDto.splits,
+      );
 
       const override = repo.create({
         scheduledTransactionId,
@@ -306,9 +351,17 @@ export class ScheduledTransactionOverrideService {
     if (updateDto.investmentTotalAmount !== undefined)
       override.investmentTotalAmount = updateDto.investmentTotalAmount;
 
-    return withScopedDb(this.dataSource, (m) =>
-      m.getRepository(ScheduledTransactionOverride).save(override),
-    );
+    return withScopedDb(this.dataSource, async (m) => {
+      // The lines the saved override will post: an update that only switches
+      // `isSplit` back on (false -> true or NULL) revives the stored ones, so
+      // they are proved again, not just the ones this request sent.
+      await lockOverrideTransferAccounts(
+        m,
+        scheduledTransactionId,
+        override.isSplit !== false ? override.splits : updateDto.splits,
+      );
+      return m.getRepository(ScheduledTransactionOverride).save(override);
+    });
   }
 
   async removeOverride(

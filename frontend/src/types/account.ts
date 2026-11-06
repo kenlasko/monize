@@ -231,6 +231,16 @@ export interface Account {
   updatedAt: string;
 }
 
+// GET /accounts/:id/can-delete: what stops the account's permanent delete.
+export interface AccountDeletability {
+  transactionCount: number;
+  investmentTransactionCount: number;
+  // The bills and deposits that name the account (paid from it, transferring
+  // or funding into it, or with a line that transfers into it).
+  scheduledTransactionCount: number;
+  canDelete: boolean;
+}
+
 /**
  * The "Payment matching" section of the mortgage form and the loan-payment
  * setup dialog (`docs/specs/loan-installment-settlement.md` decision 5): the

@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "Impossibile modificare il saldo di un conto chiuso",
     "deleteWithTransactions": "Impossibile eliminare un conto con {{ transactionCount }} transazione/i. Chiudi il conto invece.",
     "deleteWithInvestmentTransactions": "Impossibile eliminare un conto con {{ investmentTransactionCount }} transazione/i di investimento. Chiudi il conto invece.",
+    "deleteWithScheduledTransactions": "Impossibile eliminare un conto usato da {{ scheduledTransactionCount }} transazione/i pianificata/e. Rimuovi prima il conto da quelle fatture e versamenti, oppure chiudi il conto invece.",
     "invalidDateFormat": "dateFormat non valido",
     "useFavouriteUpdateEndpoint": "Usa l'endpoint di aggiornamento del conto per modificare i preferiti",
     "invalidExportFormat": "Il formato deve essere csv o qif",

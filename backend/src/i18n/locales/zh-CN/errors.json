@@ -51,6 +51,7 @@
     "modifyBalanceClosed": "无法修改已关闭账户的余额",
     "deleteWithTransactions": "无法删除有 {{ transactionCount }} 笔交易的账户。请改为关闭该账户。",
     "deleteWithInvestmentTransactions": "无法删除有 {{ investmentTransactionCount }} 笔投资交易的账户。请改为关闭该账户。",
+    "deleteWithScheduledTransactions": "无法删除被 {{ scheduledTransactionCount }} 笔计划交易使用的账户。请先从这些账单与存款中移除该账户，或改为关闭该账户。",
     "invalidDateFormat": "无效的 dateFormat",
     "useFavouriteUpdateEndpoint": "请使用账户更新端点更改收藏",
     "invalidExportFormat": "格式必须为 csv 或 qif",
