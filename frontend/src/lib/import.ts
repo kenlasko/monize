@@ -190,6 +190,21 @@ export interface ParsedQifResponse {
   detectedDateFormat: DateFormat;
   sampleDates: string[];
   investmentSummary?: CsvInvestmentSummary;
+  /** CSV parses only: the rows the import will leave out because their date cannot be read. */
+  unreadableDates?: CsvUnreadableDates;
+}
+
+/** A CSV row whose date the mapping's date format cannot read, by its line in the file. */
+export interface CsvUnreadableDateRow {
+  rowNumber: number;
+  /** The date field as the file gave it, empty when it has none. */
+  rawDate: string;
+}
+
+export interface CsvUnreadableDates {
+  count: number;
+  /** The first of them in file order. */
+  rows: CsvUnreadableDateRow[];
 }
 
 export interface CategoryMapping {
@@ -402,16 +417,21 @@ export interface ImportCsvRequest {
 }
 
 /** Why the import left a row of the file out (`ImportSkipReason` on the server). */
-export type ImportSkipReason = 'alreadyImported' | 'duplicateTransfer';
+export type ImportSkipReason = 'alreadyImported' | 'duplicateTransfer' | 'unreadableDate';
 
 /** One row counted in `skipped`, as the file gave it. */
 export interface ImportSkippedRow {
+  /** YYYY-MM-DD; empty for `unreadableDate`, whose `rawDate` is the file's text. */
   date: string;
   amount: number;
   /** The currency of the account the row was imported into. */
   currencyCode: string;
   payee: string;
   reason: ImportSkipReason;
+  /** The line of the file the row starts on (with the header); set for `unreadableDate`. */
+  rowNumber?: number;
+  /** The date field as the file gave it, empty when it has none; set for `unreadableDate`. */
+  rawDate?: string;
 }
 
 export interface ImportResult {
