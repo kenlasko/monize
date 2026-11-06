@@ -69,7 +69,7 @@ Seven rules, each with a test in `payee-contact-enrichment.service.spec.ts`, `co
 
 ## A payee merge moves every reference before it deletes
 
-Both merges, the Merge dialog (`PayeesService.mergePayees`) and Auto-Merge (`PayeeAutoMergeService.applyAutoMerge`), move the source payee's rows with `reassignPayeeReferences` (`src/payees/payee-references.ts`) before they delete it, never with an `update` of their own (INV-PAYEE-003). Every foreign key to `payees(id)` but the aliases' is `ON DELETE SET NULL`, so a column left out is cleared by the delete without an error. A new reference to payees gets its entry in `PAYEE_REFERENCE_MOVES` in the same migration's PR; `payee-references.spec.ts` names the column when it is missing.
+Both merges, the Merge dialog (`PayeesService.mergePayees`) and Auto-Merge (`PayeeAutoMergeService.applyAutoMerge`), move the source payee's rows with `reassignPayeeReferences` (`src/payees/payee-references.ts`) before they delete it, never with an `update` of their own (INV-PAYEE-003). Transactions and scheduled transactions have no `ON DELETE` action and the aliases cascade, but every other foreign key to `payees(id)` is `ON DELETE SET NULL`, so a column left out is cleared by the delete without an error. Both routes are owner-only; a delegate path would need the two `shared_*` statements revisited, because those policies require the real user to be the owner and the UPDATE would match nothing. A new reference to payees gets its entry in `PAYEE_REFERENCE_MOVES` in the same migration's PR; `payee-references.spec.ts` names the column when it is missing.
 
 ## A case-sensitive `LIKE` is not a search
 

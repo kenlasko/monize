@@ -6210,10 +6210,13 @@ Statement           Merging a payee into another (the Merge dialog, POST
                     /payees/merge, and Auto-Merge's apply) leaves no row that
                     pointed at the source payee without a payee: every one
                     points at the surviving payee before the source is deleted.
-                    Every reference but payee_aliases is ON DELETE SET NULL, so
-                    a column the merge does not move is silently cleared by the
-                    delete (#2026: warranties, email receipt parsers, a loan's
-                    overpayment payee and shared-expense people lost theirs).
+                    transactions and scheduled_transactions have no ON DELETE
+                    action (a row left behind fails the delete), payee_aliases
+                    cascades, and every other reference is ON DELETE SET NULL,
+                    so a column the merge does not move is silently cleared by
+                    the delete (#2026: warranties, email receipt parsers, a
+                    loan's overpayment payee and shared-expense people lost
+                    theirs).
 Source of truth     The foreign keys to payees(id) in database/schema.sql.
 Enforcement         PAYEE_REFERENCE_MOVES (backend/src/payees/payee-references.ts)
                     holds one statement per referencing column, each scoped to

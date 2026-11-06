@@ -23,15 +23,22 @@ type MoveReference = (
  * Every column with a foreign key to `payees(id)`, each with the statement that
  * points its rows at the surviving payee.
  *
- * A merge deletes the source payee, and every one of these columns but
- * `payee_aliases.payee_id` is `ON DELETE SET NULL`: a column missing here is
- * silently cleared by the delete, which is how a merged payee's warranties,
- * receipt parsers, loan overpayment links and shared-expense people all lost
- * their payee (#2026). `payee-references.spec.ts` parses
+ * A merge deletes the source payee. `transactions` and
+ * `scheduled_transactions` have no `ON DELETE` action, so a row left on the
+ * source makes the delete fail; `payee_aliases` cascades, so a left-behind alias
+ * is deleted; every other column is `ON DELETE SET NULL`, so a row missing here
+ * is silently cleared, which is how a merged payee's warranties, receipt
+ * parsers, loan overpayment links and shared-expense people all lost their payee
+ * (#2026). `payee-references.spec.ts` parses
  * `database/schema.sql` and fails when this and the schema disagree in either
  * direction, so a migration adding a reference to payees names this map.
  *
- * Keyed `table.column`; every statement is scoped to the merging user.
+ * Keyed `table.column`; every statement is scoped to the merging user. Both
+ * merge routes are owner-only (no `@AllowDelegate`). Do not open them to a
+ * delegate without revisiting the two `shared_*` statements: those tables'
+ * policies require `app_real_user_id()` to be the owner, so under a delegate
+ * context the UPDATE matches no rows, raises no error, and the delete's
+ * SET NULL then clears them.
  */
 export const PAYEE_REFERENCE_MOVES = {
   "transactions.payee_id": async (m, { userId, sourcePayeeId, target }) =>
