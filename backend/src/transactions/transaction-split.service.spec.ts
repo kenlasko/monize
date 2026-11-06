@@ -2000,6 +2000,31 @@ describe("TransactionSplitService", () => {
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
+    /**
+     * `addSplit` flags the parent a split only at the second line, so a first
+     * line equal to the whole parent "covers" it by sum alone. Nothing moved
+     * when it was added, so its removal moves nothing back either.
+     */
+    it("moves nothing when the first addSplit line, equal to the parent, is removed", async () => {
+      const transaction = { ...mockTransaction, isSplit: false } as Transaction;
+      lockParent(transaction);
+      splitsRepository.findOne.mockResolvedValue({
+        ...mockSplit,
+        amount: -100,
+      });
+      mockQueryRunner.manager.find.mockResolvedValue([]);
+
+      await service.removeSplit(transaction, "split-1", "user-1");
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        expect.objectContaining({ amount: expect.anything() }),
+      );
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(accountsService.recalculateCurrentBalance).not.toHaveBeenCalled();
+    });
+
     it("re-totals the parent to zero when its single pass-through line is removed", async () => {
       const transaction = { ...mockTransaction } as Transaction;
       lockParent(

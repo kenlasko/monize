@@ -1534,9 +1534,14 @@ export class TransactionSplitService {
       // its removal moves neither back: the parent's money was never the
       // lines', and taking a line off a plain -100.00 row that had one -30.00
       // line added would otherwise shrink it to -70.00 and credit 30.00 that
-      // never left the account.
+      // never left the account. The same holds for a first `addSplit` line
+      // equal to the whole parent: `addSplit` flags the parent a split only at
+      // its second line, so the lines are the parent's money only once the
+      // locked row says it is a split (every path that writes a whole set --
+      // create, `updateSplits`, the update with splits -- sets the flag).
       const parentAmount = roundMoney(Number(lockedParent.amount));
       const linesCoveredParent =
+        lockedParent.isSplit &&
         sumMoney([
           ...remainingSplits.map((s) => Number(s.amount)),
           Number(split.amount),
