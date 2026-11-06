@@ -6672,6 +6672,8 @@ describe("TransactionsService", () => {
       const mockTx = {
         id: "tx-1",
         userId: "user-1",
+        accountId: "account-1",
+        amount: -100,
         isSplit: true,
         splits: [],
       };
@@ -6699,6 +6701,14 @@ describe("TransactionsService", () => {
 
       await service.removeSplit("user-1", "tx-1", "split-1");
 
+      // The removed line's money leaves the parent (issue #2025).
+      expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
+        amount: -50,
+      });
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        50,
+      );
       expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
         isSplit: false,
         categoryId: "cat-1",
@@ -6734,10 +6744,12 @@ describe("TransactionsService", () => {
       });
     });
 
-    it("cleans up linked transaction of last remaining transfer split", async () => {
+    it("makes the parent the last remaining transfer split and keeps its leg", async () => {
       const mockTx = {
         id: "tx-1",
         userId: "user-1",
+        accountId: "account-1",
+        amount: -100,
         isSplit: true,
         splits: [],
       };
@@ -6777,22 +6789,30 @@ describe("TransactionsService", () => {
 
       await service.removeSplit("user-1", "tx-1", "split-1");
 
-      // Should clean up the linked transaction of the last remaining transfer split
-      expect(accountsService.updateBalance).toHaveBeenCalledWith(
-        "account-2",
-        -50,
+      // The last line's leg is the request's survivor, not its casualty
+      // (issue #2025): neither deleted nor reversed.
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalledWith(
+        Transaction,
+        expect.objectContaining({ id: lastSplitLinkedTx.id }),
       );
-      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
-        id: lastSplitLinkedTx.id,
-        userId: "user-1",
-      });
-      expect(transactionsRepository.remove).not.toHaveBeenCalledWith(
-        lastSplitLinkedTx,
+      expect(accountsService.updateBalance).not.toHaveBeenCalledWith(
+        "account-2",
+        expect.anything(),
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        50,
       );
       expect(transactionsRepository.update).toHaveBeenCalledWith("tx-1", {
         isSplit: false,
-        categoryId: null, // Will be null since it was a transfer split
+        isTransfer: true,
+        categoryId: null,
+        linkedTransactionId: lastSplitLinkedTx.id,
       });
+      expect(transactionsRepository.update).toHaveBeenCalledWith(
+        lastSplitLinkedTx.id,
+        { linkedTransactionId: "tx-1" },
+      );
     });
   });
 
