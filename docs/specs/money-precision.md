@@ -44,14 +44,18 @@ display. Nothing a fiat user does changes.
 
 ## 3. Decisions
 
-1. **Storage is `NUMERIC(24,8)` on every money column.** Scale 8 is the
-   ceiling a currency may use; precision 24 keeps the 16 integer digits the
-   columns have today, so no existing value can be rejected. One migration
-   widens all 55 columns and re-creates any function or view that names the
+1. **Storage is `NUMERIC(24,8)` on every money column an account currency
+   can reach.** Scale 8 is the ceiling a currency may use; precision 24 keeps
+   the 16 integer digits the columns have today, so no existing value can be
+   rejected. One migration widens 50 columns in 23 tables; the five columns
+   of the three shared-expense tables stay at `NUMERIC(20,4)` because that
+   subsystem is fiat by construction (section 10) and the 1.20.0 release
+   parses its rows with a strict four-place reader, which an eight-place
+   string would break for the length of a rollout. It and re-creates any function or view that names the
    old type; it carries `-- contract-after: 1.21.0` because the lint reads a
    type change as a contract, with a header stating that the 1.20.0 release
-   reads and writes the new shape unchanged (a 4-place value is an 8-place
-   value) and that the rewrite locks each table, `transactions` the longest.
+   reads and writes every widened table unchanged (a 4-place value is an
+   8-place value, and no 1.20.0 reader of those tables parses the scale) and that the rewrite locks each table, `transactions` the longest.
    Rejected: `NUMERIC(20,8)`, which drops the integer part to 12 digits and
    could reject an existing IDR or VND balance.
 2. **A currency's money precision is `max(4, decimal_places)`.** A fiat
@@ -107,7 +111,17 @@ display. Nothing a fiat user does changes.
    (`roundFxRate(received / |amount|)`) all stay as they are.
 9. **Rolling deployment.** While 1.20.0 pods serve beside 1.21.0, they write
    4-place values into 8-place columns (valid) and round an 8-place coin row to
-   4 on some read paths (cosmetic, gone when the rollout completes). No
+   4 on some read paths (cosmetic, gone when the rollout completes). The
+   shared-expense tables are not widened. One transient effect is accepted:
+   a 1.20.0 pod's shared-expense bank booking reads `transactions.amount` and
+   `transaction_splits.amount` through its strict four-place parser, so for
+   the length of a multi-replica rollout that one action can answer "Enter a
+   valid amount at the supported currency precision"; group reads, balances
+   and journals are unaffected, nothing is written wrongly, and a
+   single-replica install never sees it. Rejected: a two-release path (a
+   tolerant reader first, the widening a release later), because the whole
+   point of this change is the widening and the affected action is a retry
+   away. No
    contract step follows; the widened type is the final shape.
 
 ## 4. Invariants
@@ -133,7 +147,7 @@ display. Nothing a fiat user does changes.
 | JPY | 0 | 4 | accepted, stored 12.3450 (as today) | refused | 0.3000 |
 | BHD | 3 | 4 | accepted | refused | 0.3000 |
 | BTC | 8 | 8 | accepted, stored 12.34500000 | accepted, stored 0.00002500 | 0.30000000 |
-| coin at 6 | 6 | 6 | accepted | refused (8 > 6) | 0.300000 |
+| coin at 6 | 6 | 6 | accepted | accepted (trailing zeros are not precision; `0.00002501` is refused) | 0.300000 |
 
 ## 6. Numerical examples
 
@@ -161,7 +175,7 @@ display. Nothing a fiat user does changes.
 
 | Claim | Kind | Where |
 |---|---|---|
-| migration widens every money column idempotently; `schema.sql` matches; entity precision matches schema | `migration:lint`, `verify-schema.sh`, `entity-decimal-precision.spec.ts` | CI |
+| migration widens the 50 money columns idempotently; `schema.sql` matches; entity precision matches schema | `migration:lint`, `verify-schema.sh`, `entity-decimal-precision.spec.ts` | CI |
 | `roundMoney`/`sumMoney`/`toMoneyNumber` default to 4 and honour 8; `sumMoney` exact above 2^53/1e8 | unit | `round.util.spec.ts`, `format.test.ts` |
 | truth table of section 5 on create, update, split lines, transfer, scheduled, post | integration | `money-precision.integration.spec.ts` |
 | conversion into a coin rounds at 8 (`resolveTransferFx`, `resolveSplitTransferAmount`) | unit + the split received-amount suite | existing specs, new cases |
@@ -199,5 +213,6 @@ deduction rules (a bill's account; a `CRYPTO` bill account is refused on the
 rule), warranties' purchase price (its own fiat `currency_code`), loans,
 mortgages, credit, bonds, securities and investment cash (INV-CRYPTO-001),
 budgets and every reporting-currency figure (a coin is never the reporting
-currency). Their columns are widened with the rest for one storage shape;
-their arithmetic passes nothing and keeps 4.
+currency). Their columns are widened with the rest for one storage shape, except the
+three shared-expense tables (decision 1); their arithmetic passes nothing and
+keeps 4.
