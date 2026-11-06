@@ -257,6 +257,50 @@ describe('HelpPanel: pin, route changes, Escape', () => {
     other.remove();
   });
 
+  describe('docked: Escape belongs to the panel only while focus is in it', () => {
+    it('ignores Escape pressed while focus is elsewhere on the page', async () => {
+      const field = document.createElement('input');
+      document.body.appendChild(field);
+      await renderPanel();
+      field.focus();
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(store().open).toBe(true);
+      field.remove();
+    });
+
+    it('closes on Escape while focus is inside the panel', async () => {
+      await renderPanel();
+      screen.getByRole('button', { name: /Pin the help panel/ }).focus();
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(store().open).toBe(false);
+    });
+  });
+
+  describe('modal: Escape is global', () => {
+    it('closes on a phone even when focus is outside the panel', async () => {
+      mockMobile = true;
+      const field = document.createElement('input');
+      document.body.appendChild(field);
+      await renderPanel();
+      field.focus();
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(store().open).toBe(false);
+      field.remove();
+    });
+
+    it('steps down from expanded even when focus is outside the panel', async () => {
+      const field = document.createElement('input');
+      document.body.appendChild(field);
+      await renderPanel();
+      fireEvent.click(screen.getByRole('button', { name: 'Expand the help panel' }));
+      field.focus();
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(store().expanded).toBe(false);
+      expect(store().open).toBe(true);
+      field.remove();
+    });
+  });
+
   it('closes from its close button and hands focus back to the opener', async () => {
     const opener = document.createElement('button');
     document.body.appendChild(opener);

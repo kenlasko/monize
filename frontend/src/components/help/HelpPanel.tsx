@@ -114,10 +114,15 @@ export function HelpPanel() {
 
   // Escape steps down one level: expanded -> docked -> closed. A dialog on top
   // of the panel (a form opened from the page behind it) keeps its own Escape.
+  // Docked, the panel is a non-modal region beside a working page, so Escape
+  // is the panel's only while focus is inside it; pressed anywhere else it is
+  // meant for the page (a menu, a field). As a dialog (a phone, or expanded) it
+  // covers the page and Escape is global.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       const active = document.activeElement as HTMLElement | null;
+      if (!modal && !panelRef.current?.contains(active)) return;
       const other = active?.closest('[role="dialog"]');
       if (other && other !== panelRef.current) return;
       if (useHelpStore.getState().expanded) setExpanded(false);
@@ -128,7 +133,7 @@ export function HelpPanel() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [close, setExpanded]);
+  }, [close, setExpanded, modal]);
 
   // As a dialog the panel keeps Tab inside itself.
   useEffect(() => {
