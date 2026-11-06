@@ -1011,5 +1011,8 @@
     "mortgageOnly": "[XX-Only mortgage accounts can have fees.-XX]",
     "mortgageScheduleOnly": "[XX-Fees can only be added to a mortgage with its scheduled payment.-XX]",
     "paymentMatchingUnsupported": "[XX-Payment matching cannot settle a mortgage payment that includes fees yet. Turn off payment matching or remove the fees.-XX]"
+  },
+  "help": {
+    "pageNotFound": "[XX-Help page not found-XX]"
   }
 }
