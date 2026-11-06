@@ -2729,7 +2729,10 @@ export class ScheduledTransactionsService {
   }
 
   async remove(userId: string, id: string): Promise<void> {
-    this.recordRemoved(userId, await this.removeWithoutHistory(userId, id));
+    void this.recordRemoved(
+      userId,
+      await this.removeWithoutHistory(userId, id),
+    );
   }
 
   /**
@@ -2750,9 +2753,17 @@ export class ScheduledTransactionsService {
     return beforeData;
   }
 
-  /** Record the "delete" history entry of a schedule `removeWithoutHistory` removed. */
-  recordRemoved(userId: string, beforeData: ScheduledTransaction): void {
-    this.actionHistoryService.record(userId, {
+  /**
+   * Record the "delete" history entry of a schedule `removeWithoutHistory`
+   * removed. The returned promise settles once the entry is written (a failure
+   * is logged, never thrown), so a caller recording a later entry can await it
+   * to keep the undo order.
+   */
+  recordRemoved(
+    userId: string,
+    beforeData: ScheduledTransaction,
+  ): Promise<unknown> {
+    return this.actionHistoryService.record(userId, {
       entityType: "scheduled_transaction",
       entityId: beforeData.id,
       action: "delete",

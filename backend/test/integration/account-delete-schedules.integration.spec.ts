@@ -4,6 +4,10 @@ import { DataSource } from "typeorm";
 import { AccountsModule } from "@/accounts/accounts.module";
 import { AccountsService } from "@/accounts/accounts.service";
 import { AccountType } from "@/accounts/entities/account.entity";
+import {
+  ActionHistoryService,
+  settlePendingHistoryWrites,
+} from "@/action-history/action-history.service";
 import { withUserContext } from "@/common/db/with-context";
 import { ScheduledTransactionsService } from "@/scheduled-transactions/scheduled-transactions.service";
 import {
@@ -29,6 +33,7 @@ describe("Account delete refuses an account a schedule names (integration)", () 
   let db: DataSource;
   let accounts: AccountsService;
   let scheduled: ScheduledTransactionsService;
+  let history: ActionHistoryService;
   let userId: string;
   let a: string;
   let b: string;
@@ -38,6 +43,7 @@ describe("Account delete refuses an account a schedule names (integration)", () 
     db = module.get(DataSource);
     accounts = module.get(AccountsService);
     scheduled = module.get(ScheduledTransactionsService, { strict: false });
+    history = module.get(ActionHistoryService, { strict: false });
   });
 
   afterAll(async () => {
@@ -220,6 +226,42 @@ describe("Account delete refuses an account a schedule names (integration)", () 
     expect(s).toBe(0);
   });
 
+  it("undoes a loan's delete, restoring the loan and then its schedule", async () => {
+    const loan = (
+      await createTestAccount(db, userId, {
+        name: "Car loan",
+        accountType: AccountType.LOAN,
+      })
+    ).id;
+    const payment = await insertSchedule(a, {
+      is_transfer: true,
+      transfer_account_id: loan,
+    });
+    await db.query(
+      `UPDATE accounts SET scheduled_transaction_id = $1 WHERE id = $2`,
+      [payment, loan],
+    );
+    await withUserContext(userId, () => accounts.delete(userId, loan));
+
+    const undo = async () => {
+      await settlePendingHistoryWrites();
+      return withUserContext(userId, () => history.undo(userId));
+    };
+    await undo();
+    await undo();
+
+    const [{ n }] = await db.query(
+      `SELECT count(*)::int AS n FROM accounts WHERE id = $1`,
+      [loan],
+    );
+    expect(n).toBe(1);
+    const [row] = await db.query(
+      `SELECT transfer_account_id FROM scheduled_transactions WHERE id = $1`,
+      [payment],
+    );
+    expect(row?.transfer_account_id).toBe(loan);
+  });
+
   it("refuses a loan another schedule pays into, and keeps the loan's own schedule", async () => {
     const loan = (
       await createTestAccount(db, userId, {
@@ -277,6 +319,26 @@ describe("Account delete refuses an account a schedule names (integration)", () 
 
     await override("2027-02-01", true, b.toUpperCase());
     expect(await canDelete(b)).toBe(false);
+  });
+
+  it("counts an override that follows its split schedule's own is_split", async () => {
+    const schedule = await insertSchedule(a, { is_split: true });
+    await db.query(
+      `INSERT INTO scheduled_transaction_overrides
+         (scheduled_transaction_id, original_date, override_date, amount,
+          is_split, splits)
+       VALUES ($1, '2027-01-01', '2027-01-01', -500, NULL, $2::jsonb)`,
+      [
+        schedule,
+        JSON.stringify([
+          { categoryId: null, transferAccountId: b, amount: -200 },
+          { categoryId: null, amount: -300 },
+        ]),
+      ],
+    );
+
+    expect(await canDelete(b)).toBe(false);
+    await expectRefused(b);
   });
 
   it("refuses an override line into an account a delete removed while it waited", async () => {

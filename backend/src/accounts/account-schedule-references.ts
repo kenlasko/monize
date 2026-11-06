@@ -20,14 +20,18 @@ import { AccountType } from "./entities/account.entity";
  *   no foreign key: the override would post a leg into a missing account).
  *   Matched case-insensitively, since a UUID is valid in either case. An
  *   override of a slot before the schedule's `next_due_date` is spent, and one
- *   with `is_split` not true never posts its `splits`, so neither counts.
+ *   with `is_split` false never posts its `splits`, so neither counts. A NULL
+ *   `is_split` follows the schedule's own, which can be switched on later, so
+ *   it counts.
  *
  * A loan or mortgage's own payment schedule is left out: `AccountsService.delete`
  * removes it deliberately, in the same transaction as the account.
  *
- * Each reference is its own indexed lookup, unioned, so the account list,
- * which asks this for every account, never pairs every account with every
- * schedule.
+ * Each reference is its own lookup, unioned, so the account list, which asks
+ * this for every account, never pairs every account with every schedule. The
+ * `account_id`, `transfer_account_id` and split lookups use their indexes;
+ * `investment_funding_account_id` has no index and is scanned, and the
+ * override branch reads the JSONB of pending overrides only.
  */
 export async function countSchedulesReferencingAccounts(
   m: EntityManager,
@@ -63,7 +67,7 @@ export async function countSchedulesReferencingAccounts(
            CASE WHEN jsonb_typeof(sto.splits) = 'array'
                 THEN sto.splits ELSE '[]'::jsonb END) line
          JOIN ids ON lower(line->>'transferAccountId') = ids.id::text
-         WHERE sto.is_split IS TRUE
+         WHERE sto.is_split IS NOT FALSE
        )
        SELECT refs.account_id AS "accountId",
               COUNT(DISTINCT refs.schedule_id) AS "cnt"

@@ -713,6 +713,46 @@ describe("ScheduledTransactionOverrideService", () => {
       expect(overridesRepository.save).not.toHaveBeenCalled();
     });
 
+    it("proves the stored lines an update switches back on", async () => {
+      overridesRepository.findOne.mockResolvedValue(
+        makeOverride({
+          amount: -100,
+          isSplit: false,
+          splits: [
+            { categoryId: null, transferAccountId: "acc-b", amount: -60 },
+            { categoryId: "cat-a", amount: -40 },
+          ],
+        }),
+      );
+      manager.query.mockResolvedValue([]);
+
+      await expect(
+        service.updateOverride(scheduledTransactionId, overrideId, {
+          isSplit: true,
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(lockCalls()[0][1]).toEqual([["acc-b"], scheduledTransactionId]);
+      expect(overridesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("leaves a non-split override's stored lines alone on an unrelated update", async () => {
+      overridesRepository.findOne.mockResolvedValue(
+        makeOverride({
+          isSplit: false,
+          splits: [
+            { categoryId: null, transferAccountId: "acc-gone", amount: -100 },
+          ],
+        }),
+      );
+
+      await service.updateOverride(scheduledTransactionId, overrideId, {
+        description: "Moved",
+      });
+
+      expect(lockCalls()).toHaveLength(0);
+      expect(overridesRepository.save).toHaveBeenCalled();
+    });
+
     it("asks nothing when no line transfers", async () => {
       await service.createOverride(scheduledTransactionId, {
         originalDate: "2025-02-15",

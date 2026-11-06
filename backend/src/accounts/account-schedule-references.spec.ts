@@ -41,7 +41,7 @@ describe("countSchedulesReferencingAccounts", () => {
     expect(sql).toContain("sts.transfer_account_id = ids.id");
     expect(sql).toContain("scheduled_transaction_overrides sto");
     expect(sql).toContain("lower(line->>'transferAccountId') = ids.id::text");
-    expect(sql).toContain("sto.is_split IS TRUE");
+    expect(sql).toContain("sto.is_split IS NOT FALSE");
     expect(sql).toContain("COUNT(DISTINCT refs.schedule_id)");
     expect(sql).toContain("a.scheduled_transaction_id");
     expect(params).toEqual([["a"], ["LOAN", "MORTGAGE"]]);

@@ -52,7 +52,8 @@ const OCCURRENCE_IDENTITY_CONSTRAINT = "uq_sched_txn_overrides_occurrence";
 async function lockOverrideTransferAccounts(
   m: EntityManager,
   scheduledTransactionId: string,
-  splits: OverrideSplitDto[] | null | undefined,
+  splits:
+    ReadonlyArray<{ transferAccountId?: string | null }> | null | undefined,
 ): Promise<void> {
   const wanted = [
     ...new Set(
@@ -351,10 +352,13 @@ export class ScheduledTransactionOverrideService {
       override.investmentTotalAmount = updateDto.investmentTotalAmount;
 
     return withScopedDb(this.dataSource, async (m) => {
+      // The lines the saved override will post: an update that only switches
+      // `isSplit` back on (false -> true or NULL) revives the stored ones, so
+      // they are proved again, not just the ones this request sent.
       await lockOverrideTransferAccounts(
         m,
         scheduledTransactionId,
-        updateDto.splits,
+        override.isSplit !== false ? override.splits : updateDto.splits,
       );
       return m.getRepository(ScheduledTransactionOverride).save(override);
     });

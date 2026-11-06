@@ -1004,9 +1004,12 @@ Source of truth     transactions, investment_transactions, scheduled_transaction
                     rows naming the account
 Enforcement         AccountsService.delete runs one transaction: the account's
                     lockAccountsForBalanceWrite, assertAccountEmpty, the loan's own
-                    schedule (removeWithoutHistory, its undo entry recorded after
-                    the commit), then the account. A refusal, or a failure to
-                    remove that schedule, writes nothing. A row insert's FK lock
+                    schedule as the locked row names it (removeWithoutHistory),
+                    then the account. A refusal, or a failure to remove that
+                    schedule, writes nothing. After the commit the schedule's undo
+                    entry is written, awaited, before the account's, whose snapshot
+                    drops the pointer to it, so undo restores the loan and then
+                    the schedule. A row insert's FK lock
                     conflicts with the account lock (see INV-TRANSFER-001). The
                     schedule count is countSchedulesReferencingAccounts
                     (backend/src/accounts/account-schedule-references.ts), one
@@ -1020,11 +1023,13 @@ Enforcement         AccountsService.delete runs one transaction: the account's
                     override's line transferring into it
                     (scheduled_transaction_overrides.splits[].transferAccountId,
                     matched case-insensitively; an override of a slot before
-                    next_due_date, or with is_split not true, never posts those
-                    lines and is not counted) (#2028). That JSONB has no foreign
+                    next_due_date, or with is_split false, never posts those lines
+                    and is not counted, while a NULL is_split follows the
+                    schedule's and counts) (#2028). That JSONB has no foreign
                     key, so an override write share-locks every account its lines
                     transfer into, owned by the schedule's user, and refuses a
-                    missing one (lockOverrideTransferAccounts in
+                    missing one, over the lines the saved override will post
+                    (lockOverrideTransferAccounts in
                     backend/src/scheduled-transactions/scheduled-transaction-override.service.ts):
                     it either commits before the delete's count or waits and finds
                     the account gone.

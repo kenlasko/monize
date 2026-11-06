@@ -3822,6 +3822,43 @@ describe("AccountsService", () => {
       );
     });
 
+    it("removes the schedule the locked row names, not the one read before the lock", async () => {
+      accountsRepository.findOne
+        .mockResolvedValueOnce(loanAccount(AccountType.LOAN, "sched-old"))
+        .mockResolvedValue(loanAccount(AccountType.LOAN, "sched-new"));
+
+      await service.delete("user-1", "account-1");
+
+      expect(
+        scheduledTransactionsService.removeWithoutHistory,
+      ).toHaveBeenCalledWith("user-1", "sched-new");
+      expect(
+        scheduledTransactionsService.removeWithoutHistory,
+      ).toHaveBeenCalledTimes(1);
+    });
+
+    it("records the account for undo without its pointer to the removed schedule", async () => {
+      accountsRepository.findOne.mockResolvedValue(
+        loanAccount(AccountType.LOAN, "sched-tx-to-delete"),
+      );
+      // As TypeORM's remove does: the entity's id is cleared once it is gone.
+      mockQueryRunner.manager.remove.mockImplementation(
+        (entity: { id?: string }) => {
+          delete entity.id;
+          return entity;
+        },
+      );
+
+      await service.delete("user-1", "account-1");
+
+      const [, entry] = mockActionHistoryService.record.mock.calls.find(
+        ([, e]: [string, { entityType: string }]) => e.entityType === "account",
+      );
+      expect(entry.beforeData.scheduledTransactionId).toBeNull();
+      expect(entry.entityId).toBe("account-1");
+      expect(entry.beforeData.id).toBe("account-1");
+    });
+
     it("removes a mortgage's own schedule", async () => {
       accountsRepository.findOne.mockResolvedValue(
         loanAccount(AccountType.MORTGAGE, "sched-tx-mortgage"),
