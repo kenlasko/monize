@@ -628,6 +628,10 @@ Enforcement         Every absolute recompute takes the account lock before readi
                     set, which moved neither, moves neither back);
                     a last transfer line becomes the parent's plain transfer
                     with its counterpart kept, never deleted (issue #2025).
+                    Adding a line (addSplit) to such a set is the mirror: the
+                    parent grows by the line and its account moves by it,
+                    through retotalSplitParent, as removal and the edit of a
+                    split-transfer leg do (issue #2039).
                     A transfer edit derives every delta from rows locked inside
                     its own transaction and refuses with 409 when they differ
                     from what the edit was built on: both legs ascending
@@ -1190,7 +1194,12 @@ Enforcement         assertReconciledRowsMutable / assertReconciledIdsMutable
                     since each owner reconciles their own statement.
                     TransactionBulkUpdateService.bulkUpdate /
                     bulkDelete, TransactionSplitService.updateSplits / addSplit /
-                    removeSplit, ActionHistoryService.undoTransactionUpdate (undo
+                    removeSplit, and the transfer legs a split parent holds in
+                    other accounts: deleteSplitSideEffects (behind updateSplits,
+                    the update with splits, remove, the conversion and
+                    bulkDelete) and removeSplit lock and ask every leg they
+                    delete or relink before the first write (issue #2039),
+                    ActionHistoryService.undoTransactionUpdate (undo
                     and redo of a transaction edit), ActionHistoryService.undoBulkUpdate
                     (undo and redo of a bulk update, every row of the snapshot
                     locked first) and
@@ -1224,6 +1233,9 @@ Required tests      Unit: the guard refuses on a reconciled row, allows the same
                     entry point still asks, inside its transaction
                     (backend/src/transactions/reconciled-lock.guard.spec.ts),
                     now including the undo/redo and embedded-investment paths.
+                    A reconciled split-transfer leg refuses the removal of
+                    either line and the replacement of the set, writing
+                    nothing: backend/test/integration/remove-split-line.integration.spec.ts.
                     Still owed: a two-connection test that the refusal holds
                     against a concurrent write.
 Status              enforced

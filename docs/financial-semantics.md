@@ -298,9 +298,28 @@ its one line equals the whole amount. When one line is left and it accounts for 
 whole parent, the parent becomes it: a category line gives the parent its
 category; a transfer line makes the parent that plain transfer, keeping the
 counterpart and linking the pair both ways. A last line that does not cover the
-parent (a set built line by line through `addSplit`) stays a split. Before
-issue #2025 the parent kept its full amount, and a last transfer line's
-counterpart was deleted on a request that never named it.
+parent (a set built line by line through `addSplit`) stays a split. A
+collapse carries the line's tags onto the parent (they join the parent's own)
+and its memo into a blank parent description; a description the parent
+already has is kept. The re-total is `retotalSplitParent`
+(`backend/src/transactions/split-parent-total.ts`), the same one the edit of a
+split-transfer leg's amount uses. Before issue #2025 the parent kept its full
+amount, and a last transfer line's counterpart was deleted on a request that
+never named it; before issue #2039 a collapse dropped the line's tags and memo
+with its row.
+
+### Adding one line
+
+`POST /transactions/:id/splits` (`TransactionSplitService.addSplit`) is the
+mirror of the removal when the parent is a whole set, flagged `isSplit` with
+lines that add up to it: the parent's amount becomes the new total and its
+account moves by the line through `retotalSplitParent`, so a -10.00 line on a
+-100.00 set leaves a -110.00 parent and 10.00 more out of the account, and a
++10.00 line leaves -90.00 and 10.00 back. Any other parent keeps the
+incremental rule: its lines fill it without moving its amount or its account,
+and a line that would take their total past the parent is refused. Before issue
+#2039 a whole set refused a line of the parent's sign and accepted one of the
+other sign, leaving lines that no longer added up to the parent.
 
 ### A transfer line's received amount
 

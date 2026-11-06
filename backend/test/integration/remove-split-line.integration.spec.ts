@@ -50,6 +50,10 @@ describe("Removing one split line (integration)", () => {
   beforeEach(async () => {
     await cleanTables(dataSource, [
       "action_history",
+      "transaction_split_tags",
+      "transaction_tags",
+      "tags",
+      "user_preferences",
       "transaction_splits",
       "transactions",
       "categories",
@@ -224,6 +228,228 @@ describe("Removing one split line (integration)", () => {
       });
       expect(Number(parent.amount)).toBe(-100);
       expect(await balanceOf(chequingId)).toBe(900);
+      await expectBalancesMatchLedger();
+    },
+  );
+
+  /**
+   * Issue #2039: the counterpart in Savings is a row in another account, so a
+   * reconciled one answers the strict lock its parent answers. Removing either
+   * line touches it -- the transfer line's removal deletes it, the category
+   * line's collapse relinks it -- and replacing the set deletes it.
+   */
+  describe("a reconciled counterpart under the strict lock", () => {
+    async function lockReconciledLeg(savingsLegId: string): Promise<void> {
+      await dataSource.query(
+        `INSERT INTO user_preferences (user_id, lock_reconciled_transactions)
+         VALUES ($1, true)
+         ON CONFLICT (user_id) DO UPDATE SET lock_reconciled_transactions = true`,
+        [userId],
+      );
+      await dataSource.query(
+        `UPDATE transactions SET status = 'RECONCILED' WHERE id = $1`,
+        [savingsLegId],
+      );
+    }
+
+    async function expectUntouched(
+      parentId: string,
+      savingsLegId: string,
+    ): Promise<void> {
+      const parent = await dataSource.manager.findOneByOrFail(Transaction, {
+        id: parentId,
+      });
+      expect(Number(parent.amount)).toBe(-100);
+      expect(parent.isSplit).toBe(true);
+      expect(parent.linkedTransactionId).toBeNull();
+      const leg = await dataSource.manager.findOneByOrFail(Transaction, {
+        id: savingsLegId,
+      });
+      expect(Number(leg.amount)).toBe(40);
+      expect(leg.linkedTransactionId).toBe(parentId);
+      expect(
+        await dataSource.manager.count(TransactionSplit, {
+          where: { transactionId: parentId },
+        }),
+      ).toBe(2);
+      expect(await balanceOf(chequingId)).toBe(900);
+      expect(await balanceOf(savingsId)).toBe(40);
+    }
+
+    it("refuses to remove the transfer line, which would delete it", async () => {
+      const { parentId, transferLineId, savingsLegId } = await createSplit();
+      await lockReconciledLeg(savingsLegId);
+
+      await expect(removeSplit(parentId, transferLineId)).rejects.toThrow(
+        /reconciled/i,
+      );
+
+      await expectUntouched(parentId, savingsLegId);
+    });
+
+    it("refuses to remove the category line, whose collapse would relink it", async () => {
+      const { parentId, groceriesLineId, savingsLegId } = await createSplit();
+      await lockReconciledLeg(savingsLegId);
+
+      await expect(removeSplit(parentId, groceriesLineId)).rejects.toThrow(
+        /reconciled/i,
+      );
+
+      await expectUntouched(parentId, savingsLegId);
+    });
+
+    it("refuses to replace the split set, which would delete it", async () => {
+      const { parentId, savingsLegId } = await createSplit();
+      await lockReconciledLeg(savingsLegId);
+
+      await expect(
+        withUserContext(userId, () =>
+          service.updateSplits(userId, parentId, [
+            { amount: -50, categoryId: groceriesId },
+            { amount: -50, categoryId: groceriesId },
+          ] as never),
+        ),
+      ).rejects.toThrow(/reconciled/i);
+
+      await expectUntouched(parentId, savingsLegId);
+    });
+  });
+
+  /**
+   * Issue #2039: the parent becomes its last line, so what the line carried
+   * stays with the parent rather than going with the line's row.
+   */
+  it.each([
+    ["a category line", "transfer"],
+    ["a transfer line", "groceries"],
+  ])(
+    "collapsing into %s keeps its tags and memo on the parent",
+    async (_label, removed) => {
+      const { parentId, groceriesLineId, transferLineId } = await createSplit();
+      const keptLineId =
+        removed === "transfer" ? groceriesLineId : transferLineId;
+      const [{ id: lineTagId }] = await dataSource.query(
+        `INSERT INTO tags (user_id, name) VALUES ($1, 'Holiday') RETURNING id`,
+        [userId],
+      );
+      const [{ id: parentTagId }] = await dataSource.query(
+        `INSERT INTO tags (user_id, name) VALUES ($1, 'Family') RETURNING id`,
+        [userId],
+      );
+      await dataSource.query(
+        `INSERT INTO transaction_split_tags (transaction_split_id, tag_id)
+         VALUES ($1, $2)`,
+        [keptLineId, lineTagId],
+      );
+      await dataSource.query(
+        `INSERT INTO transaction_tags (transaction_id, tag_id) VALUES ($1, $2)`,
+        [parentId, parentTagId],
+      );
+      await dataSource.query(
+        `UPDATE transaction_splits SET memo = 'Weekend trip' WHERE id = $1`,
+        [keptLineId],
+      );
+
+      await removeSplit(
+        parentId,
+        removed === "transfer" ? transferLineId : groceriesLineId,
+      );
+
+      const tagIds = (
+        await dataSource.query(
+          `SELECT tag_id FROM transaction_tags WHERE transaction_id = $1`,
+          [parentId],
+        )
+      ).map((row: { tag_id: string }) => row.tag_id);
+      expect(tagIds.sort()).toEqual([lineTagId, parentTagId].sort());
+      const parent = await dataSource.manager.findOneByOrFail(Transaction, {
+        id: parentId,
+      });
+      expect(parent.description).toBe("Weekend trip");
+      expect(parent.isSplit).toBe(false);
+    },
+  );
+
+  it("a collapse leaves a description the parent already has", async () => {
+    const { parentId, groceriesLineId, transferLineId } = await createSplit();
+    await dataSource.query(
+      `UPDATE transactions SET description = 'Saturday shop' WHERE id = $1`,
+      [parentId],
+    );
+    await dataSource.query(
+      `UPDATE transaction_splits SET memo = 'Produce' WHERE id = $1`,
+      [groceriesLineId],
+    );
+
+    await removeSplit(parentId, transferLineId);
+
+    const parent = await dataSource.manager.findOneByOrFail(Transaction, {
+      id: parentId,
+    });
+    expect(parent.description).toBe("Saturday shop");
+  });
+
+  /**
+   * Issue #2039: the edit of a split-transfer leg's amount re-totals the parent
+   * through the helper removal uses, so both hold the balance to the ledger.
+   */
+  it("re-totals the parent through the shared helper when a line is removed after a leg edit", async () => {
+    const { parentId, groceriesLineId, savingsLegId } = await createSplit();
+
+    await withUserContext(userId, () =>
+      service.updateTransfer(userId, savingsLegId, { amount: 50 } as never),
+    );
+    const edited = await dataSource.manager.findOneByOrFail(Transaction, {
+      id: parentId,
+    });
+    expect(Number(edited.amount)).toBe(-110);
+    expect(await balanceOf(chequingId)).toBe(890);
+
+    await removeSplit(parentId, groceriesLineId);
+
+    const parent = await dataSource.manager.findOneByOrFail(Transaction, {
+      id: parentId,
+    });
+    expect(Number(parent.amount)).toBe(-50);
+    expect(await balanceOf(chequingId)).toBe(950);
+    expect(await balanceOf(savingsId)).toBe(50);
+    await expectBalancesMatchLedger();
+  });
+
+  /**
+   * Issue #2039: adding a line to a whole set is the mirror of removing one.
+   * The -100.00 split grows by the line, so the lines still add up to it and
+   * Chequing moves by exactly the line's amount.
+   */
+  it.each([
+    ["of its own sign", -10, -110, 890],
+    ["of the opposite sign", 10, -90, 910],
+  ])(
+    "adding a line %s to a whole set re-totals the parent and moves Chequing",
+    async (_label, lineAmount, parentAmount, chequing) => {
+      const { parentId } = await createSplit();
+
+      await withUserContext(userId, () =>
+        service.addSplit(userId, parentId, {
+          amount: lineAmount,
+          categoryId: groceriesId,
+        } as never),
+      );
+
+      const parent = await dataSource.manager.findOneByOrFail(Transaction, {
+        id: parentId,
+      });
+      expect(Number(parent.amount)).toBe(parentAmount);
+      const lines = await dataSource.manager.find(TransactionSplit, {
+        where: { transactionId: parentId },
+      });
+      expect(
+        lines.reduce(
+          (sum, line) => sum + Math.round(Number(line.amount) * 10000),
+          0,
+        ) / 10000,
+      ).toBe(parentAmount);
+      expect(await balanceOf(chequingId)).toBe(chequing);
       await expectBalancesMatchLedger();
     },
   );

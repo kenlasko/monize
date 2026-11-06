@@ -116,6 +116,15 @@ const ENFORCEMENT_SITES: {
     fn: "async removeSplit(",
     why: "DELETE /transactions/:id/splits/:splitId",
   },
+  // The legs in other accounts that a split parent's replacement, edit with
+  // splits, delete and conversion all remove through this cleanup; asked
+  // before its first write, the reversal of an embedded row (issue #2039).
+  {
+    file: "transaction-split.service.ts",
+    fn: "async deleteSplitSideEffects(",
+    why: "the transfer legs every whole-set writer and delete of a split parent removes",
+    beforeWrite: "reverseAndRemoveEmbedded(",
+  },
   {
     file: "../action-history/action-history.service.ts",
     fn: "private async undoTransactionUpdate(",

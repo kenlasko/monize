@@ -22,7 +22,7 @@ import { ActionHistoryService } from "../action-history/action-history.service";
 import { CrossOwnerAccessService } from "../delegation/cross-owner-access.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { formatCurrency } from "../common/format-currency.util";
-import { roundMoney } from "../common/round.util";
+import { roundMoney, sumMoney } from "../common/round.util";
 import {
   assertTransactionCurrencyMatchesAccount,
   roundFxRate,
@@ -39,6 +39,7 @@ import {
 } from "../common/db/locks";
 import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 import { removeLockedTransactionLeg } from "./remove-transaction-leg";
+import { retotalSplitParent } from "./split-parent-total";
 import { transferLegColumns } from "./transfer-leg-columns";
 import { autoTransferPayeeName } from "./transfer-payee-label.util";
 import { withSystemContext } from "../common/db/with-context";
@@ -2906,39 +2907,26 @@ export class TransactionTransferService {
         await m.update(TransactionSplit, parentSplit.id, splitData);
       }
 
-      // When the amount changed, re-total the parent and rebalance the source.
+      // When the amount changed, re-total the parent and rebalance the source,
+      // through the helper `removeSplit` shares (issue #2039): a VOID parent
+      // is excluded from its account's balance, so re-totalling it moves the
+      // record and not the money.
       if (amountChanged && newSplitAmount !== undefined) {
         const siblingSplits = await m.find(TransactionSplit, {
           where: { transactionId: parentTransaction.id },
         });
-        const sumCents = siblingSplits.reduce((acc, s) => {
-          const amt =
-            s.id === parentSplit.id ? newSplitAmount : Number(s.amount);
-          return acc + Math.round(amt * 10000);
-        }, 0);
-        const newParentAmount = sumCents / 10000;
-        const oldParentAmount = Number(parentTransaction.amount);
-
-        await m.update(Transaction, parentTransaction.id, {
-          amount: newParentAmount,
-        });
-
-        // Same rule on the source side: a VOID parent is excluded from its
-        // account's balance, so re-totalling it moves the record and not the
-        // money.
-        if (!parentIsVoid) {
-          if (isTransactionInFuture(parentTransaction.transactionDate)) {
-            await this.accountsService.recalculateCurrentBalance(
-              userId,
-              parentTransaction.accountId,
-            );
-          } else {
-            await this.accountsService.updateBalance(
-              parentTransaction.accountId,
-              roundMoney(newParentAmount - oldParentAmount),
-            );
-          }
-        }
+        const newParentAmount = sumMoney(
+          siblingSplits.map((s) =>
+            s.id === parentSplit.id ? newSplitAmount : Number(s.amount),
+          ),
+        );
+        await retotalSplitParent(
+          m,
+          userId,
+          lockedParent,
+          newParentAmount,
+          this.accountsService,
+        );
       }
     });
 
