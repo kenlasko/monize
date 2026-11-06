@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "沒有 {from} 兌 {to} 的匯率。請在儲存前輸入匯率或換算後的總額。",
     "toastExchangeRateRequired": "在儲存跨貨幣交易前請輸入匯率。",
     "notAvailable": "無法使用",
+    "bondUnit": "1 個單位 = 面額 {faceValue} {currency}",
+    "bondPriceCash": "價格是 1 個單位（面額 {faceValue} {currency}）的現金價格，不含應計利息。",
+    "bondPriceIndexed": "價格是 1 個單位（面額 {faceValue} {currency}）的現金價格，含通膨調整（報價 × 指數比率），不含應計利息。",
     "bondSeries": {
       "label": "債券系列",
       "fromDate": "依日期決定",
@@ -321,11 +324,40 @@
       "noLongerHeldUnknown": "已儲存的系列(在此日期已不再持有)",
       "storedSeries": "已儲存的系列",
       "seriesOnSaleMonth": "{code} — {month}發售",
-      "seriesOnSaleRange": "{code} — {from}至{to}發售"
+      "seriesOnSaleRange": "{code} — {from}至{to}發售",
+      "chooseAuction": "請在下方選擇標售",
+      "auctionRequired": "請選擇這筆買入所屬的標售:在下方尋找。"
+    },
+    "bondAuctions": {
+      "find": "尋找標售",
+      "findAgain": "重新尋找",
+      "hint": "列出{date}前後一個月內發行的標售，資料來自發行機構網站。",
+      "needsDate": "請先輸入日期。",
+      "loading": "正在從發行機構讀取標售...",
+      "loadFailed": "無法從發行機構讀取標售。",
+      "none": "{date}前後一個月內沒有發行標售。",
+      "termFilter": "期限",
+      "allTerms": "全部",
+      "listLabel": "{date}前後發行的標售",
+      "title": "{term} · {identifier}",
+      "reopening": "增發",
+      "dates": "標售 {auction} · 發行 {issue} · 到期 {maturity}",
+      "discountRate": "貼現率 {rate}",
+      "coupon": "票面利率 {rate}",
+      "spread": "利差 {rate}",
+      "price": "價格 {price}",
+      "rateAndPrice": "{rate} · 價格 {price}",
+      "announced": "已公布:結果尚未發布",
+      "fetching": "正在取得系列...",
+      "fetchFailed": "無法取得此標售的系列。",
+      "picked": "已選擇:{identifier}，發行於 {issue}。",
+      "dateSet": "日期已設為發行日期 {date}。",
+      "priceSet": "價格已設為標售價格 {price}。"
     },
     "bondRedemption": {
       "summary": "利息 {interest}，提前贖回扣減 {deduction}，支付金額 {payout}",
       "outsideSaleWindow": "此系列的一個批次在其銷售期間之外買入，因此無法拆分贖回。",
+      "afterMaturity": "此系列的一個批次在到期日當天或之後買入，因此無法拆分兌付。",
       "failed": "無法計算贖回拆分。"
     }
   },

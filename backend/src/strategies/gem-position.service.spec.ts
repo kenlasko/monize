@@ -1203,6 +1203,16 @@ describe("GemPositionService", () => {
       ).toBe(2354.8);
     });
 
+    it("hands the price map to the bond valuation, so a traded series is the person's price", async () => {
+      portfolioCalculation.valueBondHoldings.mockResolvedValue(new Map());
+
+      await build({ targetRole: null });
+
+      expect(portfolioCalculation.valueBondHoldings.mock.calls[0][2]).toEqual(
+        new Map([["sec-bond", 117.74]]),
+      );
+    });
+
     it("is unknown when one account's lots are unpriced, never the blend", async () => {
       portfolioCalculation.valueBondHoldings.mockResolvedValue(
         new Map([

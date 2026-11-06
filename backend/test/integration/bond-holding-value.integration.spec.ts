@@ -10,12 +10,16 @@ import {
   createIntegrationModule,
   createTestUserDirect,
   storeFixtureSeries,
+  storeUsFixtureSeries,
 } from "../helpers/integration-setup";
 
 /**
  * Audit H2 against a real PostgreSQL: two accounts hold one linked security, lots
  * bought on different days, and each holding is worth its own account's lots, not
  * quantity x the daily blend (bond-program-securities.md 2.4).
+ *
+ * A marketable coupon note (INV-BOND-010: the engine does not price it) is worth
+ * the person's price times its quantity, and is unpriced without one.
  *
  * Expected figures come from the issue letter's formula with integers (100 x
  * (1 + 0.044 a / 365), half-up to the cent, a days into the first period), never
@@ -63,7 +67,7 @@ describe("bond-linked holding value (integration, audit H2)", () => {
     ]);
     await dataSource.query(
       `INSERT INTO currencies (code, name, symbol, decimal_places, is_active)
-       VALUES ('PLN', 'Zloty', 'zl', 2, true)
+       VALUES ('PLN', 'Zloty', 'zl', 2, true), ('USD', 'Dollar', '$', 2, true)
        ON CONFLICT (code) DO NOTHING`,
     );
     await storeFixtureSeries(dataSource, module.get(BondCatalogService));
@@ -161,5 +165,77 @@ describe("bond-linked holding value (integration, audit H2)", () => {
       6,
     );
     expect(result.pricesComplete).toBe(true);
+  });
+
+  describe("a series the engine does not price (basis MARKET_PRICE)", () => {
+    const NOTE_ID = bondInstrumentId("US", "US_TREASURY", "91282CZK0");
+
+    async function noteHolding(): Promise<{ account: string; sec: string }> {
+      await storeUsFixtureSeries(
+        dataSource,
+        module.get(BondCatalogService),
+        "NOTE",
+      );
+      const account = await dataSource
+        .query(
+          `INSERT INTO accounts (user_id, account_type, account_sub_type, name,
+                                 currency_code, current_balance, opening_balance)
+           VALUES ($1, 'INVESTMENT', 'INVESTMENT_BROKERAGE', 'Notes', 'USD', 0, 0)
+           RETURNING id`,
+          [userId],
+        )
+        .then((rows) => rows[0].id as string);
+      const sec = await dataSource
+        .query(
+          `INSERT INTO securities (user_id, symbol, name, security_type, currency_code, bond_program_id)
+           VALUES ($1, 'NOTE', 'NOTE', 'BOND', 'USD', $2) RETURNING id`,
+          [userId, bondProgramId("US", "US_TREASURY", "NOTE")],
+        )
+        .then((rows) => rows[0].id as string);
+      await dataSource.query(
+        `INSERT INTO investment_transactions
+           (user_id, account_id, security_id, bond_instrument_id, action, transaction_date, quantity, price, total_amount, status)
+         VALUES ($1, $2, $3, $4, 'BUY', '2026-11-04', 10, 99.5, 995, 'UNRECONCILED')`,
+        [userId, account, sec, NOTE_ID],
+      );
+      await dataSource.query(
+        `INSERT INTO holdings (account_id, security_id, quantity, average_cost)
+         VALUES ($1, $2, 10, 99.5)`,
+        [account, sec],
+      );
+      return { account, sec };
+    }
+
+    it("is the person's price times the quantity: 10 x 99.75 = 997.50", async () => {
+      const { account, sec } = await noteHolding();
+      const result = await withUserContext(userId, () =>
+        calculation.calculateHoldingsWithValues(
+          userId,
+          [account],
+          "USD",
+          new Map(),
+          async () => new Map([[sec, 99.75]]),
+        ),
+      );
+      expect(result.holdingsWithValues).toHaveLength(1);
+      expect(result.holdingsWithValues[0].marketValue).toBe(997.5);
+      expect(result.pricesComplete).toBe(true);
+    });
+
+    it("is unpriced without a price, never the engine's value of the lot", async () => {
+      const { account, sec } = await noteHolding();
+      const result = await withUserContext(userId, () =>
+        calculation.calculateHoldingsWithValues(
+          userId,
+          [account],
+          "USD",
+          new Map(),
+          async () => new Map(),
+        ),
+      );
+      expect(result.holdingsWithValues[0].marketValue).toBeNull();
+      expect(result.pricesComplete).toBe(false);
+      expect(result.unpricedSecurityIds).toContain(sec);
+    });
   });
 });

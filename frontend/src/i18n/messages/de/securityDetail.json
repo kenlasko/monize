@@ -300,6 +300,7 @@
       "periodValue": "{index}: {start} bis {end}",
       "rate": "Zinssatz",
       "principal": "Kapitalbasis je Anleihe",
+      "principalIssuePrice": "Keine Anschaffungskosten erfasst: Der Zuteilungspreis wird verwendet",
       "accruedInterest": "Stückzinsen",
       "grossValue": "Bruttowert",
       "earlyRedemption": "Vorzeitige Rückzahlung",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "Annahmen der Prognose",
       "latestObservation": "{benchmark} wird für alle folgenden Perioden mit {value} angenommen, dem zuletzt veröffentlichten Wert ({observation})",
-      "supplied": "{benchmark} wird für alle folgenden Perioden mit {value} angenommen"
+      "supplied": "{benchmark} wird für alle folgenden Perioden mit {value} angenommen",
+      "suppliedSimpleAnnual": "{benchmark} wird mit einem Wachstum von {value} pro Jahr angenommen (einfaches jährliches Wachstum, ohne Zinseszins), für jeden weiteren Monat"
     },
     "missing": {
       "title": "Noch benötigte Daten",
@@ -371,8 +373,15 @@
         "firstThen": "Periode 1: {firstRate}. Danach {benchmark} + {addend}",
         "every": "Jede Periode: {benchmark} + {addend}",
         "floorZero": "Ein negativer Wert von {benchmark} zählt als 0",
-        "discount": "Abschlag auf den Nennwert"
+        "dailyFloor": "Der Tagessatz (Index plus Aufschlag) liegt nie unter {floor}",
+        "discount": "Abschlag auf den Nennwert",
+        "daily": "Jeden Tag: {benchmark} + {addend}, tageweise aufsummiert",
+        "lockout": "Eine Auktion innerhalb von {days, plural, one {# Geschäftstag} other {# Geschäftstagen}} vor einem Periodenende wird für diese Periode nicht verwendet"
       },
+      "daily": "Täglich, {benchmark}",
+      "dailyNoIndex": "Täglich, {benchmark}: noch kein Index gespeichert",
+      "dailyRun": "Ab {from}: {rate}",
+      "dailyRunUnknown": "Ab {from}: kein Index gespeichert",
       "lotHeading": "Am {date} gekaufte Position",
       "range": "{start} bis {end}",
       "current": "Aktuell",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "Inflationsrate (VPI), 12 Monate (GUS)",
-      "PL_NBP_REFERENCE": "NBP-Referenzzins"
+      "PL_NBP_REFERENCE": "NBP-Referenzzins",
+      "US_CPI_U_NSA": "CPI-U, alle Waren und Dienstleistungen, nicht saisonbereinigt (BLS)",
+      "US_TBILL_13W_MMY": "Rendite der 13-wöchigen Treasury Bills"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "Diese Serie kann nur vom {from} bis zum {to} gekauft werden. Dieses Los wurde am {purchaseDate} gekauft und wird deshalb nicht bewertet."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "Diese Serie kann nur vom {from} bis zum {to} gekauft werden. Dieses Los wurde am {purchaseDate} gekauft und wird deshalb nicht bewertet.",
+      "PURCHASE_AFTER_MATURITY": "Diese Serie wurde am {maturityDate} fällig. Diese Position wurde am {purchaseDate} gekauft, also am oder nach diesem Tag, und wird daher nicht bewertet."
     },
+    "marketPriceRequired": "Dieses Wertpapier enthält eine Serie, die am Markt gehandelt wird, daher ergibt sich ihr Preis nicht aus ihren Bedingungen. Monize schreibt dafür keinen Preis: Geben Sie den Preis selbst ein. Die Werte der Positionen unten werden aus den Bedingungen berechnet und sind keine Marktwerte.",
     "partial": {
       "title": "Diese Bewertung ist unvollständig; lesen Sie die Zahlen als Teilwerte.",
       "terms": "Die Bedingungen der Anleihe sind unvollständig (zum Beispiel ist ein Kalender nicht installiert).",
@@ -453,7 +466,8 @@
       "none": "Es sind noch keine {benchmark}-Daten gespeichert"
     },
     "issuers": {
-      "PL_MF": "Finanzministerium (PL)"
+      "PL_MF": "Finanzministerium (PL)",
+      "US_TREASURY": "US-Finanzministerium (US)"
     },
     "redemption": {
       "title": "Bedingungen der vorzeitigen Rückgabe",
@@ -470,7 +484,12 @@
       "COI": "COI: 4-jährige inflationsindexierte Sparanleihen",
       "EDO": "EDO: 10-jährige inflationsindexierte Sparanleihen",
       "ROS": "ROS: 6-jährige inflationsindexierte Familien-Sparanleihen",
-      "ROD": "ROD: 12-jährige inflationsindexierte Familien-Sparanleihen"
+      "ROD": "ROD: 12-jährige inflationsindexierte Familien-Sparanleihen",
+      "BILL": "BILL: Treasury Bills, 4 bis 52 Wochen, mit Abschlag verkauft",
+      "NOTE": "NOTE: Treasury Notes, 2 bis 10 Jahre, fester halbjährlicher Kupon",
+      "BOND": "BOND: Treasury Bonds, 20 und 30 Jahre, fester halbjährlicher Kupon",
+      "TIPS": "TIPS: inflationsgeschützte Staatsanleihen, Kapital an den CPI-U gebunden",
+      "FRN": "FRN: Treasury Floating Rate Notes, 2 Jahre, vierteljährliche Zinsen"
     },
     "series": {
       "title": "Ihre Serien",

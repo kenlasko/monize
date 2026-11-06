@@ -1,0 +1,42 @@
+[
+  {
+    "cusip": "91282CZK0",
+    "securityType": "Note",
+    "securityTerm": "2-Year",
+    "datedDate": "2026-09-30T00:00:00",
+    "maturityDate": "2028-09-30T00:00:00",
+    "interestRate": "3.750000",
+    "spread": "",
+    "floatingRate": "No",
+    "issueDate": "2026-09-30T00:00:00",
+    "highPrice": "99.987654",
+    "reopening": "No",
+    "competitiveAuctionCloseDate": "2026-09-28T00:00:00",
+    "highRate": "",
+    "inflationProtected": "No",
+    "frequencyOfInterestPayments": "Semi-Annual",
+    "referenceCpiOnOriginalDatedDate": "",
+    "treasuryAuctionResultsXmlFileName": "R_20260928_1.xml",
+    "firstInterestPaymentLength": "Normal"
+  },
+  {
+    "cusip": "91282CZK0",
+    "securityType": "Note",
+    "securityTerm": "2-Year",
+    "datedDate": "2026-09-30T00:00:00",
+    "maturityDate": "2028-09-30T00:00:00",
+    "interestRate": "3.750000",
+    "spread": "",
+    "floatingRate": "No",
+    "issueDate": "2026-10-30T00:00:00",
+    "highPrice": "100.254321",
+    "reopening": "Yes",
+    "competitiveAuctionCloseDate": "2026-10-27T00:00:00",
+    "highRate": "",
+    "inflationProtected": "No",
+    "frequencyOfInterestPayments": "Semi-Annual",
+    "referenceCpiOnOriginalDatedDate": "",
+    "treasuryAuctionResultsXmlFileName": "R_20261027_1.xml",
+    "firstInterestPaymentLength": "Normal"
+  }
+]

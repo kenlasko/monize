@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Não há taxa de {from} para {to} disponível. Introduza uma, ou o total convertido, antes de guardar.",
     "toastExchangeRateRequired": "Introduza uma taxa de câmbio antes de guardar uma operação entre moedas.",
     "notAvailable": "Não disponível",
+    "bondUnit": "Uma unidade = {faceValue} {currency} de valor nominal",
+    "bondPriceCash": "O preço é o preço à vista de uma unidade ({faceValue} {currency} de valor nominal), sem juros corridos.",
+    "bondPriceIndexed": "O preço é o preço à vista de uma unidade ({faceValue} {currency} de valor nominal) com o ajuste de inflação incluído (preço cotado x coeficiente de indexação), sem juros corridos.",
     "bondSeries": {
       "label": "Série de obrigações",
       "fromDate": "Determinada a partir da data",
@@ -321,11 +324,40 @@
       "noLongerHeldUnknown": "Série guardada (já não detida nesta data)",
       "storedSeries": "Série guardada",
       "seriesOnSaleMonth": "{code} — à venda em {month}",
-      "seriesOnSaleRange": "{code} — à venda de {from} a {to}"
+      "seriesOnSaleRange": "{code} — à venda de {from} a {to}",
+      "chooseAuction": "Escolha o leilão abaixo",
+      "auctionRequired": "Escolha o leilão em que esta compra foi feita: procure-o abaixo."
+    },
+    "bondAuctions": {
+      "find": "Procurar o leilão",
+      "findAgain": "Procurar de novo",
+      "hint": "Lista os leilões emitidos no prazo de um mês em torno de {date}, a partir do site do emitente.",
+      "needsDate": "Introduza primeiro a data.",
+      "loading": "A ler os leilões do emitente...",
+      "loadFailed": "Não foi possível ler os leilões do emitente.",
+      "none": "Nenhum leilão foi emitido no prazo de um mês em torno de {date}.",
+      "termFilter": "Prazo",
+      "allTerms": "Todos",
+      "listLabel": "Leilões emitidos em torno de {date}",
+      "title": "{term} · {identifier}",
+      "reopening": "Reabertura",
+      "dates": "Leiloado {auction} · emitido {issue} · vence {maturity}",
+      "discountRate": "Taxa de desconto {rate}",
+      "coupon": "Cupão {rate}",
+      "spread": "Spread {rate}",
+      "price": "Preço {price}",
+      "rateAndPrice": "{rate} · preço {price}",
+      "announced": "Anunciado: resultados ainda não publicados",
+      "fetching": "A obter a série...",
+      "fetchFailed": "Não foi possível obter a série deste leilão.",
+      "picked": "Escolhido: {identifier}, emitido {issue}.",
+      "dateSet": "Data definida para a data de emissão, {date}.",
+      "priceSet": "Preço definido para o preço do leilão, {price}."
     },
     "bondRedemption": {
       "summary": "Juros {interest}, dedução por resgate antecipado {deduction}, pagamento {payout}",
       "outsideSaleWindow": "Um lote desta série foi comprado fora do seu período de venda, por isso o resgate não pode ser dividido.",
+      "afterMaturity": "Um lote desta série foi comprado na data de vencimento ou depois, por isso o reembolso não pode ser dividido.",
       "failed": "Não foi possível calcular a divisão do resgate."
     }
   },

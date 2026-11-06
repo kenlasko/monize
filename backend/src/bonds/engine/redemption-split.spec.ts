@@ -443,7 +443,11 @@ describe("INV-BOND-009: payout = principalReturned + interest", () => {
             ),
           ).not.toBe(1);
         }
-        if (day >= "2028-01-01" && terms.schedule.periodCount === 2) {
+        if (
+          day >= "2028-01-01" &&
+          terms.schedule.anchor !== "COUPON_DATES" &&
+          terms.schedule.periodCount === 2
+        ) {
           expect(ExactDecimal.parse(split.deduction!).isZero()).toBe(true);
         }
       }
@@ -455,9 +459,9 @@ describe("INV-BOND-009: payout = principalReturned + interest", () => {
     for (const [, terms, purchase, quantity] of cases) {
       const input = lot(terms, purchase, quantity);
       const maturity =
-        terms.schedule.anchor === "ISSUE_DATE"
-          ? terms.schedule.maturityDate
-          : `${2026 + terms.schedule.periodCount}-01-01`;
+        terms.schedule.anchor === "LOT_PURCHASE_DATE"
+          ? `${2026 + terms.schedule.periodCount}-01-01`
+          : terms.schedule.maturityDate;
       expect(
         ExactDecimal.parse(
           redemptionSplit(input, maturity).deduction!,
@@ -555,13 +559,14 @@ describe("the discount instrument in the engine (spec 3)", () => {
     expect(early.maturityDate).toBe("2026-01-27");
   });
 
-  it("has no value before the series is issued, not a made-up one", () => {
+  it("is worth the issue price before the series is issued, with nothing accrued (a lot booked on its auction date)", () => {
     const v = valueBondLot({
       ...lot(bill(), "2025-12-01"),
       asOf: "2025-12-15",
     });
     expect(v.status).toBe("OPEN");
-    expect(v.grossValue).toBeNull();
+    expect(v.grossValue).toBe("23530.00");
+    expect(v.accruedInterest).toBe("0.00");
   });
 
   it("has no periods per year, so no coupon rate can be applied to it", () => {

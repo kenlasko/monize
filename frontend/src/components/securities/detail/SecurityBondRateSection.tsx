@@ -1,17 +1,20 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Badge, type BadgeVariant } from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/Badge";
 import { TABLE_BODY_CLASS, TABLE_CLASS, Td, Th } from "@/components/ui/Table";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useNumberFormat } from "@/hooks/useNumberFormat";
 import { benchmarkLabel, rateRuleLines } from "./bond-labels";
 import { SecurityBondInterestChart } from "./SecurityBondInterestChart";
+import {
+  RATE_SOURCE_VARIANT,
+  SecurityBondPeriodRate,
+} from "./SecurityBondPeriodRate";
 import type {
   BondLotValuation,
   BondRedemptionTerms,
   BondRateScheduleEntry,
-  BondRateSource,
 } from "@/types/bond";
 
 interface SecurityBondRateSectionProps {
@@ -21,13 +24,6 @@ interface SecurityBondRateSectionProps {
   /** The terms' redemption policy; null for a bond redeemable at maturity only. */
   redemptionTerms: BondRedemptionTerms | null;
 }
-
-const RATE_SOURCE_VARIANT: Record<BondRateSource, BadgeVariant> = {
-  TERMS: "blue",
-  ANNOUNCED: "green",
-  DERIVED: "gray",
-  PROJECTED: "amber",
-};
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -254,10 +250,13 @@ export function SecurityBondRateSection({
                             end: formatDate(entry.end),
                           })}
                         </Td>
-                        <Td className="whitespace-nowrap">
-                          {entry.annualRate === null
-                            ? unknown
-                            : pct(entry.annualRate)}
+                        <Td className={entry.dailyRates?.length ? "" : "whitespace-nowrap"}>
+                          <SecurityBondPeriodRate
+                            valuation={v}
+                            period={entry}
+                            detail
+                            withSource={false}
+                          />
                         </Td>
                         <Td className="whitespace-nowrap">
                           {entry.rateSource === null ? (

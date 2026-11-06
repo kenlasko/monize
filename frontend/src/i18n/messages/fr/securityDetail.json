@@ -300,6 +300,7 @@
       "periodValue": "{index} : du {start} au {end}",
       "rate": "Taux",
       "principal": "Capital par obligation",
+      "principalIssuePrice": "Aucun coût saisi : le prix d'adjudication est utilisé",
       "accruedInterest": "Intérêts courus",
       "grossValue": "Valeur brute",
       "earlyRedemption": "Remboursement anticipé",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "Hypothèses de la projection",
       "latestObservation": "{benchmark} supposé à {value} pour toutes les périodes suivantes, dernière valeur publiée ({observation})",
-      "supplied": "{benchmark} supposé à {value} pour toutes les périodes suivantes"
+      "supplied": "{benchmark} supposé à {value} pour toutes les périodes suivantes",
+      "suppliedSimpleAnnual": "{benchmark} supposé croître de {value} par an (croissance annuelle simple, sans capitalisation) pour chaque mois suivant"
     },
     "missing": {
       "title": "Données encore nécessaires",
@@ -371,8 +373,15 @@
         "firstThen": "Période 1 : {firstRate}. Ensuite {benchmark} + {addend}",
         "every": "Chaque période : {benchmark} + {addend}",
         "floorZero": "Une valeur négative de {benchmark} compte pour 0",
-        "discount": "Décote par rapport à la valeur nominale"
+        "dailyFloor": "Le taux quotidien (indice plus marge) n'est jamais inférieur à {floor}",
+        "discount": "Décote par rapport à la valeur nominale",
+        "daily": "Chaque jour : {benchmark} + {addend}, cumulé jour par jour",
+        "lockout": "Une adjudication à moins de {days, plural, one {# jour ouvré} other {# jours ouvrés}} de la fin d'une période n'est pas utilisée pour cette période"
       },
+      "daily": "Quotidien, {benchmark}",
+      "dailyNoIndex": "Quotidien, {benchmark} : aucun indice enregistré pour l'instant",
+      "dailyRun": "À partir du {from} : {rate}",
+      "dailyRunUnknown": "À partir du {from} : aucun indice enregistré",
       "lotHeading": "Lot acheté le {date}",
       "range": "{start} au {end}",
       "current": "En cours",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "Inflation IPC, 12 mois (GUS)",
-      "PL_NBP_REFERENCE": "Taux de référence de la NBP"
+      "PL_NBP_REFERENCE": "Taux de référence de la NBP",
+      "US_CPI_U_NSA": "CPI-U, tous postes, non désaisonnalisé (BLS)",
+      "US_TBILL_13W_MMY": "Rendement des bons du Trésor à 13 semaines"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "Cette série ne peut être achetée que du {from} au {to}. Ce lot a été acheté le {purchaseDate} ; il n'est donc pas valorisé."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "Cette série ne peut être achetée que du {from} au {to}. Ce lot a été acheté le {purchaseDate} ; il n'est donc pas valorisé.",
+      "PURCHASE_AFTER_MATURITY": "Cette série est arrivée à échéance le {maturityDate}. Ce lot a été acheté le {purchaseDate}, à cette date ou après, il n'est donc pas valorisé."
     },
+    "marketPriceRequired": "Ce titre contient une série négociée sur un marché, son prix ne découle donc pas de ses conditions. Monize n'enregistre aucun prix pour elle : saisissez le prix vous-même. Les valeurs des lots ci-dessous sont calculées à partir des conditions et ne sont pas des valeurs de marché.",
     "partial": {
       "title": "Cette valorisation est incomplète : lisez les chiffres comme partiels.",
       "terms": "Les conditions de l'obligation sont incomplètes (par exemple, un calendrier n'est pas installé).",
@@ -453,7 +466,8 @@
       "none": "Aucune donnée {benchmark} n'est encore enregistrée"
     },
     "issuers": {
-      "PL_MF": "Ministère des Finances (PL)"
+      "PL_MF": "Ministère des Finances (PL)",
+      "US_TREASURY": "Département du Trésor des États-Unis (US)"
     },
     "redemption": {
       "title": "Conditions du remboursement anticipé",
@@ -470,7 +484,12 @@
       "COI": "COI : obligations d'épargne à 4 ans indexées sur l'inflation",
       "EDO": "EDO : obligations d'épargne à 10 ans indexées sur l'inflation",
       "ROS": "ROS : obligations d'épargne familiales à 6 ans indexées sur l'inflation",
-      "ROD": "ROD : obligations d'épargne familiales à 12 ans indexées sur l'inflation"
+      "ROD": "ROD : obligations d'épargne familiales à 12 ans indexées sur l'inflation",
+      "BILL": "BILL : bons du Trésor, de 4 à 52 semaines, vendus avec une décote",
+      "NOTE": "NOTE : obligations du Trésor à moyen terme, de 2 à 10 ans, coupon fixe semestriel",
+      "BOND": "BOND : obligations du Trésor, 20 et 30 ans, coupon fixe semestriel",
+      "TIPS": "TIPS : titres du Trésor protégés contre l'inflation, capital indexé sur le CPI-U",
+      "FRN": "FRN : obligations du Trésor à taux variable, 2 ans, intérêts trimestriels"
     },
     "series": {
       "title": "Vos séries",

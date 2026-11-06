@@ -40,6 +40,7 @@
       "fixed": "年{rate}の固定",
       "benchmark": "{benchmark} + {addend}",
       "floor": "指標の下限 {floor}",
+      "daily": "毎日: {benchmark} + {addend}",
       "discount": "額面からの割引"
     },
     "capitalization": {

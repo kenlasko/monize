@@ -21,6 +21,7 @@ const REASONS: Readonly<Record<string, Key>> = {
   RATE_UNKNOWN: "bond.reason.RATE_UNKNOWN",
   TERMS_INCOMPLETE: "bond.reason.TERMS_INCOMPLETE",
   PURCHASE_OUTSIDE_SALE_WINDOW: "bond.reason.PURCHASE_OUTSIDE_SALE_WINDOW",
+  PURCHASE_AFTER_MATURITY: "bond.reason.PURCHASE_AFTER_MATURITY",
 };
 
 /** The base action of a refused ledger row to its label. */
@@ -109,6 +110,16 @@ function causeText(cause: unknown, ctx: BondCopyContext): string | null {
         date: purchase,
         from,
         to,
+      });
+    }
+    case "PURCHASE_AFTER_MATURITY": {
+      const purchase = ctx.date(c.purchaseDate);
+      const maturity = ctx.date(c.maturityDate);
+      if (!isText(c.seriesCode) || !purchase || !maturity) return null;
+      return ctx.text("bond.cause.purchaseAfterMaturity", {
+        series: c.seriesCode,
+        date: purchase,
+        maturity,
       });
     }
     case "LOTS_UNDERIVABLE": {

@@ -1,0 +1,22 @@
+[
+  {
+    "cusip": "91282CQM6",
+    "securityType": "FRN",
+    "securityTerm": "2-Year",
+    "issueDate": "2026-04-30T00:00:00",
+    "maturityDate": "2028-04-30T00:00:00",
+    "datedDate": "2026-04-30T00:00:00",
+    "interestRate": "",
+    "spread": "0.103000",
+    "highPrice": "100.000000",
+    "reopening": "No",
+    "floatingRate": "Yes",
+    "competitiveAuctionCloseDate": "2026-04-28T00:00:00",
+    "highRate": "",
+    "inflationProtected": "No",
+    "frequencyOfInterestPayments": "Quarterly",
+    "referenceCpiOnOriginalDatedDate": "",
+    "treasuryAuctionResultsXmlFileName": "R_20260428_1.xml",
+    "firstInterestPaymentLength": "Normal"
+  }
+]

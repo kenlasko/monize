@@ -611,6 +611,17 @@ describe("CurrenciesService", () => {
       expect(params[0]).toBe("PLN");
     });
 
+    it("creates the default-preference currency active, as bootstrap would", async () => {
+      mockCurrencyRepo.findOne!.mockResolvedValue(null);
+
+      // A bond program in USD seeded before the bootstrap currency.
+      await service.ensureCatalogCurrency("usd");
+
+      const [sql, params] = mockDataSource.query.mock.calls[0];
+      expect(sql).toMatch(/VALUES \(\$1, \$2, \$3, \$4, true, NULL, \$5\)/);
+      expect(params[0]).toBe("USD");
+    });
+
     it("leaves an existing currency alone, active or not", async () => {
       mockCurrencyRepo.findOne!.mockResolvedValue(mockCurrency);
 

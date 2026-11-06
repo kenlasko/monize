@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "ein Zinssatz, von dem sie abhängt, ist noch nicht veröffentlicht",
         "TERMS_INCOMPLETE": "die Konditionen der Serie sind unvollständig",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "ein Kaufdatum liegt außerhalb des Verkaufszeitraums der Serie",
+        "PURCHASE_AFTER_MATURITY": "ein Kaufdatum liegt am oder nach dem Fälligkeitstag der Serie",
         "other": "sie lässt sich aus den gespeicherten Daten nicht berechnen"
       },
       "benchmarkTitle": "{{ benchmark }}: neuer Wert für {{ observation }}",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "der Wert {{ observation }} von {{ benchmark }} ist nicht gespeichert: Er ist noch nicht veröffentlicht, oder der Feed wurde seitdem nicht abgerufen; aktualisieren Sie auf der Anleiheseite",
         "terms": "die Konditionen von {{ series }} sind unvollständig; aktualisieren Sie die Serie auf der Anleiheseite",
         "purchase": "ein Kauf von {{ series }} am {{ date }} liegt außerhalb des Verkaufszeitraums ({{ from }} bis {{ to }}); korrigieren Sie das Kaufdatum",
+        "purchaseAfterMaturity": "ein Kauf von {{ series }} am {{ date }} liegt am oder nach der Fälligkeit ({{ maturity }}); korrigieren Sie das Kaufdatum",
         "lots": "die Lots lassen sich nicht aus dem Buchungsverlauf ableiten ({{ code }}); korrigieren Sie den Buchungsverlauf",
         "lotsRow": "{{ action }} vom {{ date }}: Die Lots lassen sich nicht ableiten ({{ code }}); korrigieren Sie die Buchung",
         "lotsRowSeries": "{{ action }} vom {{ date }} ist keiner Serie zugeordnet ({{ code }}); wählen Sie die Serie in dieser Buchung",

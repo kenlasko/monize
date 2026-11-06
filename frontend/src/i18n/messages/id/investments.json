@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Tidak ada kurs {from} ke {to}. Masukkan satu, atau total terkonversi, sebelum menyimpan.",
     "toastExchangeRateRequired": "Masukkan nilai tukar sebelum menyimpan perdagangan lintas mata uang.",
     "notAvailable": "Tidak tersedia",
+    "bondUnit": "Satu unit = {faceValue} {currency} nilai nominal",
+    "bondPriceCash": "Harga adalah harga tunai satu unit (nilai nominal {faceValue} {currency}), tanpa bunga berjalan.",
+    "bondPriceIndexed": "Harga adalah harga tunai satu unit (nilai nominal {faceValue} {currency}) termasuk penyesuaian inflasi (harga kuotasi x rasio indeks), tanpa bunga berjalan.",
     "bondSeries": {
       "label": "Seri obligasi",
       "fromDate": "Ditentukan dari tanggal",
@@ -321,11 +324,40 @@
       "noLongerHeldUnknown": "Seri tersimpan (tidak lagi dimiliki pada tanggal ini)",
       "storedSeries": "Seri tersimpan",
       "seriesOnSaleMonth": "{code} — dijual {month}",
-      "seriesOnSaleRange": "{code} — dijual {from} sampai {to}"
+      "seriesOnSaleRange": "{code} — dijual {from} sampai {to}",
+      "chooseAuction": "Pilih lelang di bawah",
+      "auctionRequired": "Pilih lelang tempat pembelian ini dilakukan: cari di bawah."
+    },
+    "bondAuctions": {
+      "find": "Cari lelang",
+      "findAgain": "Cari lagi",
+      "hint": "Menampilkan lelang yang diterbitkan dalam kurun satu bulan dari {date}, dari situs penerbit.",
+      "needsDate": "Isi tanggal terlebih dahulu.",
+      "loading": "Membaca lelang dari penerbit...",
+      "loadFailed": "Lelang tidak dapat dibaca dari penerbit.",
+      "none": "Tidak ada lelang yang diterbitkan dalam kurun satu bulan dari {date}.",
+      "termFilter": "Tenor",
+      "allTerms": "Semua",
+      "listLabel": "Lelang yang diterbitkan sekitar {date}",
+      "title": "{term} · {identifier}",
+      "reopening": "Pembukaan kembali",
+      "dates": "Dilelang {auction} · terbit {issue} · jatuh tempo {maturity}",
+      "discountRate": "Tingkat diskonto {rate}",
+      "coupon": "Kupon {rate}",
+      "spread": "Spread {rate}",
+      "price": "Harga {price}",
+      "rateAndPrice": "{rate} · harga {price}",
+      "announced": "Diumumkan: hasil belum dipublikasikan",
+      "fetching": "Mengambil seri...",
+      "fetchFailed": "Seri lelang ini tidak dapat diambil.",
+      "picked": "Dipilih: {identifier}, terbit {issue}.",
+      "dateSet": "Tanggal diatur ke tanggal terbit, {date}.",
+      "priceSet": "Harga diatur ke harga lelang, {price}."
     },
     "bondRedemption": {
       "summary": "Bunga {interest}, potongan pelunasan dipercepat {deduction}, pembayaran {payout}",
       "outsideSaleWindow": "Satu lot seri ini dibeli di luar periode penjualannya, sehingga pelunasan tidak dapat dirinci.",
+      "afterMaturity": "Satu lot seri ini dibeli pada atau setelah tanggal jatuh temponya, sehingga pelunasan tidak dapat dibagi.",
       "failed": "Rincian pelunasan tidak dapat dihitung."
     }
   },

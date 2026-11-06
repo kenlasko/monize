@@ -11,7 +11,10 @@ export type BondDataNotFoundCode =
   | "TERMS_NOT_FOUND"
   | "TERMS_VERSION_NOT_FOUND";
 
-export type BondDataInconsistentCode = "TERMS_MISMATCH";
+export type BondDataInconsistentCode =
+  | "TERMS_MISMATCH"
+  /** The stored series is in a unit the rule reading it cannot use (a rate rule on an index level, or the reverse). */
+  | "BENCHMARK_UNIT_MISMATCH";
 
 /**
  * The stored data needed to value a lot is not there. `code` and `params` are

@@ -1,0 +1,43 @@
+{
+  "product": "BILL",
+  "infoUrl": "https://www.treasurydirect.gov/marketable-securities/treasury-bills/",
+  "structure": {
+    "instrument": {
+      "issuerCountryCode": "US",
+      "issuerCode": "US_TREASURY",
+      "programCode": "BILL",
+      "currency": "USD",
+      "marketability": "MARKETABLE",
+      "faceValue": "100"
+    },
+    "schedule": {
+      "anchor": "ISSUE_DATE",
+      "periodCount": 1,
+      "calendarId": "US"
+    },
+    "rateRule": {
+      "type": "ZERO_COUPON_DISCOUNT"
+    },
+    "rest": {
+      "schemaVersion": 1,
+      "accrual": {
+        "type": "ACTUAL_DAYS_IN_PERIOD"
+      },
+      "principalRule": {
+        "type": "FIXED_NOMINAL"
+      },
+      "capitalization": {
+        "type": "NONE"
+      },
+      "redemption": {
+        "type": "MATURITY_ONLY"
+      },
+      "rounding": {
+        "moneyDecimals": 2,
+        "mode": "HALF_UP",
+        "basis": "PER_HOLDING",
+        "unitDecimals": null
+      }
+    }
+  }
+}

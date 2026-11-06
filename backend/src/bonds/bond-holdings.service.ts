@@ -6,7 +6,6 @@ import { BondAdapter } from "./bond-adapter";
 import { INSTALLED_BOND_ADAPTERS } from "./bond-adapters";
 import { loadBondLedger, loadLinkedSecurity } from "./bond-ledger";
 import {
-  BondLot,
   BondLotTransaction,
   bondLotsAsOf,
   bondLotsFromTransactions,
@@ -72,32 +71,6 @@ const FIGURES = [
   "principalReturned",
   "payout",
 ] as const;
-
-const lotKey = (lot: BondLot): string =>
-  `${lot.accountId ?? ""}|${lot.instrumentId ?? ""}|${lot.purchaseDate}|${lot.purchaseDateAssumed}`;
-
-/**
- * What a removal takes: the lots before it less the lots after it, per account,
- * series and purchase date, oldest first. Both folds are the lot derivation the
- * write guard runs, so the first-in first-out choice is made in one place.
- */
-function removedLots(
-  before: readonly BondLot[],
-  after: readonly BondLot[],
-): BondLot[] {
-  const left = new Map<string, number>();
-  for (const lot of after) {
-    left.set(lotKey(lot), (left.get(lotKey(lot)) ?? 0) + lot.quantity);
-  }
-  const removed: BondLot[] = [];
-  for (const lot of before) {
-    const kept = Math.min(left.get(lotKey(lot)) ?? 0, lot.quantity);
-    left.set(lotKey(lot), (left.get(lotKey(lot)) ?? 0) - kept);
-    if (lot.quantity > kept)
-      removed.push({ ...lot, quantity: lot.quantity - kept });
-  }
-  return removed;
-}
 
 /**
  * What the transaction form asks the server before it writes
@@ -232,7 +205,8 @@ export class BondHoldingsService {
    * `accountId` on `date`. The lots taken are the ones the write's own lot
    * derivation takes: a REDEEM of that series, appended to the account's rows up
    * to the day (without `excludeTransactionId`, the row being edited), is folded
-   * by `bondLotsFromTransactions` and the lots it removes are the difference.
+   * by `bondLotsFromTransactions`, whose `takenByLastRow` are the portions it
+   * removes with the exact cost each carried.
    * A quantity above the series held in the account is refused with the removal
    * refusal (400, `errorCode`), a ledger already underivable with 422. Reads
    * stored terms and observations only (INV-BOND-008); nothing is written.
@@ -273,7 +247,7 @@ export class BondHoldingsService {
 
       const reference = await this.valuation.loadReference(m, instrumentId);
       const places = reference.terms.rounding.moneyDecimals;
-      const splits = removedLots(before.lots, after.lots).map((lot) =>
+      const splits = after.takenByLastRow.map((lot) =>
         this.valuation.redemptionSplitFrom(reference, lot, date),
       );
 

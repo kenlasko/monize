@@ -40,6 +40,7 @@
       "fixed": "Vast {rate} per jaar",
       "benchmark": "{benchmark} + {addend}",
       "floor": "Ondergrens van de referentie {floor}",
+      "daily": "Dagelijks: {benchmark} + {addend}",
       "discount": "Korting op de nominale waarde"
     },
     "capitalization": {

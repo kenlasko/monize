@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "没有 {from} 兑 {to} 的汇率。请在保存前输入汇率或换算后的总额。",
     "toastExchangeRateRequired": "在保存跨货币交易前请输入汇率。",
     "notAvailable": "不可用",
+    "bondUnit": "1 个单位 = 面值 {faceValue} {currency}",
+    "bondPriceCash": "价格是 1 个单位（面值 {faceValue} {currency}）的现金价格，不含应计利息。",
+    "bondPriceIndexed": "价格是 1 个单位（面值 {faceValue} {currency}）的现金价格，含通胀调整（报价 × 指数比率），不含应计利息。",
     "bondSeries": {
       "label": "债券系列",
       "fromDate": "按日期确定",
@@ -321,11 +324,40 @@
       "noLongerHeldUnknown": "已保存的系列(在此日期已不再持有)",
       "storedSeries": "已保存的系列",
       "seriesOnSaleMonth": "{code} — {month}发售",
-      "seriesOnSaleRange": "{code} — {from}至{to}发售"
+      "seriesOnSaleRange": "{code} — {from}至{to}发售",
+      "chooseAuction": "请在下方选择拍卖",
+      "auctionRequired": "请选择这笔买入所在的拍卖:在下方查找。"
+    },
+    "bondAuctions": {
+      "find": "查找拍卖",
+      "findAgain": "重新查找",
+      "hint": "列出{date}前后一个月内发行的拍卖，数据来自发行方网站。",
+      "needsDate": "请先输入日期。",
+      "loading": "正在从发行方读取拍卖...",
+      "loadFailed": "无法从发行方读取拍卖。",
+      "none": "{date}前后一个月内没有发行拍卖。",
+      "termFilter": "期限",
+      "allTerms": "全部",
+      "listLabel": "{date}前后发行的拍卖",
+      "title": "{term} · {identifier}",
+      "reopening": "增发",
+      "dates": "拍卖 {auction} · 发行 {issue} · 到期 {maturity}",
+      "discountRate": "贴现率 {rate}",
+      "coupon": "票面利率 {rate}",
+      "spread": "利差 {rate}",
+      "price": "价格 {price}",
+      "rateAndPrice": "{rate} · 价格 {price}",
+      "announced": "已公布:结果尚未发布",
+      "fetching": "正在获取系列...",
+      "fetchFailed": "无法获取此拍卖的系列。",
+      "picked": "已选择:{identifier}，发行于 {issue}。",
+      "dateSet": "日期已设为发行日期 {date}。",
+      "priceSet": "价格已设为拍卖价格 {price}。"
     },
     "bondRedemption": {
       "summary": "利息 {interest}，提前兑付扣减 {deduction}，兑付金额 {payout}",
       "outsideSaleWindow": "该系列的一个批次在其销售期之外购入，因此无法拆分兑付。",
+      "afterMaturity": "此系列的一个批次在到期日当天或之后买入，因此无法拆分兑付。",
       "failed": "无法计算兑付拆分。"
     }
   },

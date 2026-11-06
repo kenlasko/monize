@@ -1,0 +1,67 @@
+{
+  "cases": [
+    {
+      "id": "E8",
+      "description": "3 7/8 % TIPS, base Ref CPI 164, Ref CPI 166.2 on the first payment date, 100,000 par (quantity 1,000): index ratio 1.01341, the coupon on 100,000",
+      "source": "31 CFR 356 Appendix B, I.B example: ratio 166.2 / 164 = 1.01341463 truncated to six decimals 1.013414, rounded to five 1.01341; coupon 100,000 x 0.03875 / 2 x 1.01341 = 1,963.48 (https://www.law.cornell.edu/cfr/text/31/appendix-B_to_part_356)",
+      "terms": {
+        "datedDate": "2026-07-01",
+        "firstCouponDate": "2027-01-01",
+        "maturityDate": "2028-01-01",
+        "annualRate": "0.03875",
+        "endOfMonth": false,
+        "baseReference": "164"
+      },
+      "levels": { "2026-10": "166.2" },
+      "lot": { "purchaseDate": "2026-07-01", "quantity": 1000 },
+      "asOf": "2026-07-01",
+      "knownCashflows": [
+        {
+          "date": "2027-01-04",
+          "type": "INTEREST",
+          "amount": "1963.48",
+          "status": "KNOWN",
+          "period": 1
+        }
+      ]
+    },
+    {
+      "id": "E9",
+      "description": "Daily Ref CPI and index ratios of July 2026 on the three bases, from CPI-U NSA March 330.213, April 333.020 and May 335.123",
+      "source": "Treasury, Ref CPI and Index Ratios for July 2026 (https://www.treasurydirect.gov/instit/annceresult/tipscpi/2026/CPI_20260610.pdf): 2026-07-02 333.08784; 2026-07-15 333.96974; 2026-07-31 335.05516; Ref CPI of the 1st of a month is the CPI-U of the month three months back, a later day interpolates linearly to the next month's, truncated to six decimals then rounded to five",
+      "terms": {
+        "datedDate": "2025-07-15",
+        "firstCouponDate": "2026-01-15",
+        "maturityDate": "2035-07-15",
+        "annualRate": "0.00125",
+        "endOfMonth": false
+      },
+      "levels": { "2026-03": "330.213", "2026-04": "333.020", "2026-05": "335.123" },
+      "ratios": [
+        { "date": "2026-07-02", "refCpi": "333.08784", "byBase": { "161.74000": "2.05940", "164.39333": "2.02616", "177.50000": "1.87655" } },
+        { "date": "2026-07-15", "refCpi": "333.96974", "byBase": { "161.74000": "2.06486", "164.39333": "2.03153", "177.50000": "1.88152" } },
+        { "date": "2026-07-31", "refCpi": "335.05516", "byBase": { "161.74000": "2.07157", "164.39333": "2.03813", "177.50000": "1.88763" } }
+      ]
+    },
+    {
+      "id": "E10",
+      "description": "Deflation at maturity: 1,000 par (quantity 10), index ratio 0.98000: the principal is paid at par, the final coupon is on 980.00",
+      "source": "31 CFR 356 Appendix B, I.B.3 (the principal paid at maturity is not below the par amount): ratio 160.72 / 164 = 0.98; coupon 1,000 x 0.04 / 2 x 0.98 = 19.60 (the 2 % half-year on 980.00)",
+      "terms": {
+        "datedDate": "2026-07-01",
+        "firstCouponDate": "2027-01-01",
+        "maturityDate": "2028-01-01",
+        "annualRate": "0.04",
+        "endOfMonth": false,
+        "baseReference": "164"
+      },
+      "levels": { "2027-10": "160.72" },
+      "lot": { "purchaseDate": "2026-07-01", "quantity": 10 },
+      "asOf": "2028-01-03",
+      "split": {
+        "date": "2028-01-03",
+        "expect": { "principal": "1000.00", "interest": "19.60", "payout": "1019.60" }
+      }
+    }
+  ]
+}

@@ -169,7 +169,7 @@ export function BondOfferTab({ countryCode, programCode, refreshVersion = 0 }: B
     }
     return (
       <>
-        {t('offer.rule.benchmark', {
+        {t(rateRule.type === 'DAILY_INDEX_PLUS_SPREAD' ? 'offer.rule.daily' : 'offer.rule.benchmark', {
           benchmark:
             rateRule.benchmarkId === null ? '' : benchmarkLabel(tSec, rateRule.benchmarkId),
           addend:

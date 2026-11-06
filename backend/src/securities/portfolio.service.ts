@@ -1592,6 +1592,7 @@ export class PortfolioService {
     const bondValues = await this.calculationService.valueBondHoldings(
       userId,
       holdings,
+      priceMap,
     );
 
     const accountCurrency = new Map<string, string>();

@@ -1,6 +1,40 @@
-import { daysBetween, isValidYMD, parseYMD } from "./calendar-date";
 import { assertNever } from "./assert-never";
-import { ExactDecimal, RoundingMode } from "./exact-decimal";
+import { BondRounding, parseRounding } from "./bond-rounding";
+import { ExactDecimal } from "./exact-decimal";
+import { parsePrincipalRule, PrincipalRule } from "./principal-rule";
+import {
+  assertScheduleConsistent,
+  BondSchedule,
+  parseSchedule,
+} from "./bond-schedule";
+import {
+  BondTermsError,
+  code,
+  date,
+  decimal,
+  exact,
+  integer,
+  list,
+  nullable,
+  object,
+  oneOf,
+  primitive,
+  signedDecimal,
+  text,
+} from "./terms-readers";
+
+export { BondTermsError } from "./terms-readers";
+export type { BondTermsErrorCode } from "./terms-readers";
+export type { BondRounding, RoundingBasis } from "./bond-rounding";
+export { roundingBasisOf } from "./bond-rounding";
+export { scheduleDaysOf, scheduleMonthsOf } from "./bond-schedule";
+export type { IndexRatioRule, PrincipalRule } from "./principal-rule";
+export type {
+  BondSchedule,
+  CouponDatesSchedule,
+  IssueDateSchedule,
+  LotAnchoredSchedule,
+} from "./bond-schedule";
 
 export type StepObservation = {
   readonly type: "STEP_VALUE_ON_NTH_BUSINESS_DAY_BEFORE_START_MONTH";
@@ -23,6 +57,25 @@ export interface BenchmarkRuleFields {
   readonly observation: ObservationRule;
 }
 
+/**
+ * A floating rate that accrues daily (`docs/specs/bond-marketable-primitives.md`
+ * 7.2): on each day `max(index + spread, floor) / 360` of the par, where the
+ * index is the latest observation of a `STEP` benchmark strictly before the day.
+ * An observation dated within `lockoutBusinessDays` business days (of
+ * `calendarId`) before the end of the period is not used for that period. The
+ * daily accrual per 100 of par is rounded to `dailyDecimals` (percent units).
+ * The spread is the only signed decimal of the terms.
+ */
+export interface DailyIndexRule {
+  readonly type: "DAILY_INDEX_PLUS_SPREAD";
+  readonly benchmarkId: string;
+  readonly spread: string;
+  readonly floor: string;
+  readonly lockoutBusinessDays: number;
+  readonly calendarId: string;
+  readonly dailyDecimals: number;
+}
+
 export type RateRule =
   | { readonly type: "FIXED"; readonly annualRate: string }
   /**
@@ -37,22 +90,42 @@ export type RateRule =
   | ({
       readonly type: "INFLATION_PLUS_MARGIN_AS_RATE";
       readonly margin: string;
-    } & BenchmarkRuleFields);
+    } & BenchmarkRuleFields)
+  | DailyIndexRule;
 
-export type BenchmarkRule = Exclude<
+/** A rule that reads one observation per period (`observation`), as opposed to a daily one. */
+export type BenchmarkRule = Extract<
   RateRule,
-  { readonly type: "FIXED" } | { readonly type: "ZERO_COUPON_DISCOUNT" }
+  {
+    readonly type: "BENCHMARK_PLUS_SPREAD" | "INFLATION_PLUS_MARGIN_AS_RATE";
+  }
 >;
 
-/** The rule when it reads a benchmark, null for a rule that reads none; exhaustive over the rule types. */
+/** The rule when it reads one observation per period, null for a rule that reads none or reads daily; exhaustive over the rule types. */
 export function benchmarkRuleOf(rule: RateRule): BenchmarkRule | null {
+  switch (rule.type) {
+    case "FIXED":
+    case "ZERO_COUPON_DISCOUNT":
+    case "DAILY_INDEX_PLUS_SPREAD":
+      return null;
+    case "BENCHMARK_PLUS_SPREAD":
+    case "INFLATION_PLUS_MARGIN_AS_RATE":
+      return rule;
+    default:
+      return assertNever(rule);
+  }
+}
+
+/** The id of the benchmark a rate rule reads, whichever way it reads it; null for a rule that reads none. */
+export function rateBenchmarkIdOf(rule: RateRule): string | null {
   switch (rule.type) {
     case "FIXED":
     case "ZERO_COUPON_DISCOUNT":
       return null;
     case "BENCHMARK_PLUS_SPREAD":
     case "INFLATION_PLUS_MARGIN_AS_RATE":
-      return rule;
+    case "DAILY_INDEX_PLUS_SPREAD":
+      return rule.benchmarkId;
     default:
       return assertNever(rule);
   }
@@ -107,69 +180,11 @@ export type Redemption =
       readonly proceedsFloor: ProceedsFloor | null;
     };
 
-/** Periods counted from each lot's purchase date. */
-export interface LotAnchoredSchedule {
-  readonly anchor: "LOT_PURCHASE_DATE";
-  readonly periodMonths: number;
-  readonly periodCount: number;
-  readonly rollDay: "ANCHOR_DAY_CLAMPED";
-  readonly calendarId: string;
-}
+/** `ACTUAL_360_DAILY_SUM`: a period's interest is the sum of its days' accruals (`DAILY_INDEX_PLUS_SPREAD` only). */
+export type AccrualType =
+  "ACTUAL_DAYS_IN_PERIOD" | "ACTUAL_ACTUAL_ICMA" | "ACTUAL_360_DAILY_SUM";
 
-/** One period from the series' issue date to its maturity date, whatever the lot's purchase date. */
-export interface IssueDateSchedule {
-  readonly anchor: "ISSUE_DATE";
-  readonly issueDate: string;
-  readonly maturityDate: string;
-  readonly periodCount: 1;
-  readonly calendarId: string;
-}
-
-export type BondSchedule = LotAnchoredSchedule | IssueDateSchedule;
-
-/**
- * The length of the schedule in whole months of `periodMonths` and a period
- * count; a single issue-to-maturity period is its whole months, at least one.
- */
-export function scheduleMonthsOf(schedule: BondSchedule): {
-  readonly periodMonths: number;
-  readonly periodCount: number;
-} {
-  switch (schedule.anchor) {
-    case "LOT_PURCHASE_DATE":
-      return {
-        periodMonths: schedule.periodMonths,
-        periodCount: schedule.periodCount,
-      };
-    case "ISSUE_DATE": {
-      const from = parseYMD(schedule.issueDate);
-      const to = parseYMD(schedule.maturityDate);
-      const whole =
-        (to.year - from.year) * 12 +
-        (to.month - from.month) -
-        (to.day < from.day ? 1 : 0);
-      return { periodMonths: whole < 1 ? 1 : whole, periodCount: 1 };
-    }
-    default:
-      return assertNever(schedule);
-  }
-}
-
-/**
- * The exact length in days of a single issue-to-maturity period (`ISSUE_DATE`),
- * or null for a schedule counted in months (`LOT_PURCHASE_DATE`): a discount
- * bill of 4 weeks is 28 days, not "1 month".
- */
-export function scheduleDaysOf(schedule: BondSchedule): number | null {
-  switch (schedule.anchor) {
-    case "LOT_PURCHASE_DATE":
-      return null;
-    case "ISSUE_DATE":
-      return daysBetween(schedule.issueDate, schedule.maturityDate);
-    default:
-      return assertNever(schedule);
-  }
-}
+export type Marketability = "RETAIL_REDEEMABLE" | "MARKETABLE";
 
 export interface BondTerms {
   readonly schemaVersion: 1;
@@ -179,25 +194,28 @@ export interface BondTerms {
     readonly programCode: string;
     readonly seriesCode: string;
     readonly currency: string;
-    readonly marketability: "RETAIL_REDEEMABLE";
+    /**
+     * `RETAIL_REDEEMABLE`: the issuer redeems it. `MARKETABLE`: it trades, so its
+     * market price is not a function of its terms; it has no sale window and is
+     * paid at maturity only.
+     */
+    readonly marketability: Marketability;
     readonly faceValue: string;
     /**
      * The price of one face value at issue, exact decimal, above zero and below
-     * `faceValue`. Present exactly when the rate rule is ZERO_COUPON_DISCOUNT.
+     * `faceValue` (at most `faceValue` for a MARKETABLE bill issued at par). Present exactly when the rate rule is ZERO_COUPON_DISCOUNT.
      */
     readonly issuePrice?: string;
   };
   readonly saleWindow: { readonly from: string; readonly to: string } | null;
   readonly schedule: BondSchedule;
-  readonly accrual: { readonly type: "ACTUAL_DAYS_IN_PERIOD" };
-  readonly principalRule: { readonly type: "FIXED_NOMINAL" };
+  readonly accrual: { readonly type: AccrualType };
+  /** The nominal, or a nominal that tracks an index (`INDEX_RATIO`). */
+  readonly principalRule: PrincipalRule;
   readonly rateRule: RateRule;
   readonly capitalization: Capitalization;
   readonly redemption: Redemption;
-  readonly rounding: {
-    readonly moneyDecimals: 0 | 1 | 2 | 3 | 4;
-    readonly mode: RoundingMode;
-  };
+  readonly rounding: BondRounding;
   readonly source: {
     readonly provider: string;
     readonly url: string;
@@ -205,149 +223,8 @@ export interface BondTerms {
   };
 }
 
-export type BondTermsErrorCode = "INVALID" | "UNSUPPORTED_PRIMITIVE";
-
-export class BondTermsError extends Error {
-  constructor(
-    readonly field: string,
-    detail: string,
-    readonly code: BondTermsErrorCode = "INVALID",
-  ) {
-    super(`Invalid bond terms: ${field}: ${detail}`);
-    this.name = "BondTermsError";
-  }
-}
-
-type Json = Record<string, unknown>;
-
-function object(
-  value: unknown,
-  path: string,
-  allowed: readonly string[],
-  optional: readonly string[] = [],
-): Json {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new BondTermsError(path, "must be an object");
-  }
-  const record = value as Json;
-  for (const key of Object.keys(record)) {
-    if (!allowed.includes(key) && !optional.includes(key))
-      throw new BondTermsError(`${path}.${key}`, "unknown field");
-  }
-  for (const key of allowed) {
-    if (!(key in record)) throw new BondTermsError(`${path}.${key}`, "missing");
-  }
-  return record;
-}
-
-/** Reads the `type` discriminant; an unknown one is an unsupported primitive. */
-function primitive<T extends string>(
-  value: unknown,
-  path: string,
-  known: readonly T[],
-): T {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new BondTermsError(path, "must be an object");
-  }
-  const type = (value as Json).type;
-  if (typeof type !== "string")
-    throw new BondTermsError(`${path}.type`, "must be a string");
-  if (!known.includes(type as T)) {
-    throw new BondTermsError(
-      `${path}.type`,
-      `unsupported primitive ${JSON.stringify(type)}; supported: ${known.join(", ")}`,
-      "UNSUPPORTED_PRIMITIVE",
-    );
-  }
-  return type as T;
-}
-
-function oneOf<T extends string>(
-  value: unknown,
-  path: string,
-  options: readonly T[],
-): T {
-  if (typeof value !== "string" || !options.includes(value as T)) {
-    throw new BondTermsError(path, `must be one of ${options.join(", ")}`);
-  }
-  return value as T;
-}
-
-function exact<T>(value: unknown, path: string, expected: T): T {
-  if (value !== expected)
-    throw new BondTermsError(path, `must be ${JSON.stringify(expected)}`);
-  return expected;
-}
-
-function text(value: unknown, path: string): string {
-  if (typeof value !== "string" || value.trim() === "") {
-    throw new BondTermsError(path, "must be a non-empty string");
-  }
-  return value;
-}
-
-function code(value: unknown, path: string, pattern: RegExp): string {
-  if (typeof value !== "string" || !pattern.test(value)) {
-    throw new BondTermsError(path, `must match ${pattern}`);
-  }
-  return value;
-}
-
-function integer(value: unknown, path: string, min: number): number {
-  if (!Number.isSafeInteger(value) || (value as number) < min) {
-    throw new BondTermsError(path, `must be an integer >= ${min}`);
-  }
-  return value as number;
-}
-
-function moneyDecimals(value: unknown, path: string): 0 | 1 | 2 | 3 | 4 {
-  if (value !== 0 && value !== 1 && value !== 2 && value !== 3 && value !== 4) {
-    throw new BondTermsError(path, "must be an integer from 0 to 4");
-  }
-  return value;
-}
-
-/** An unknown mode is an unsupported primitive, like an unknown `type`. */
-function roundingMode(value: unknown, path: string): RoundingMode {
-  if (typeof value !== "string") {
-    throw new BondTermsError(path, "must be a string");
-  }
-  const known: readonly RoundingMode[] = ["HALF_UP", "HALF_EVEN", "DOWN"];
-  if (!known.includes(value as RoundingMode)) {
-    throw new BondTermsError(
-      path,
-      `unsupported rounding mode ${JSON.stringify(value)}; supported: ${known.join(", ")}`,
-      "UNSUPPORTED_PRIMITIVE",
-    );
-  }
-  return value as RoundingMode;
-}
-
-/** A non-negative decimal string; a JSON number is refused (INV-BOND-003). */
-function decimal(value: unknown, path: string): string {
-  if (typeof value !== "string") {
-    throw new BondTermsError(path, "must be a decimal string, not a number");
-  }
-  let parsed: ExactDecimal;
-  try {
-    parsed = ExactDecimal.parse(value);
-  } catch {
-    throw new BondTermsError(path, `not a decimal string: ${value}`);
-  }
-  if (parsed.isNegative())
-    throw new BondTermsError(path, "must not be negative");
-  return value;
-}
-
-function nullable<T>(value: unknown, read: (v: unknown) => T): T | null {
-  return value === null ? null : read(value);
-}
-
-function date(value: unknown, path: string): string {
-  if (!isValidYMD(value))
-    throw new BondTermsError(path, "must be a YYYY-MM-DD date");
-  return value;
-}
+/** The most decimals a daily accrual is rounded to (a bound against a hostile document). */
+const MAX_DAILY_DECIMALS = 12;
 
 function parseObservation(value: unknown, path: string): ObservationRule {
   const type = primitive(value, path, [
@@ -372,7 +249,39 @@ function parseRateRule(value: unknown, path: string): RateRule {
     "BENCHMARK_PLUS_SPREAD",
     "INFLATION_PLUS_MARGIN_AS_RATE",
     "ZERO_COUPON_DISCOUNT",
+    "DAILY_INDEX_PLUS_SPREAD",
   ] as const);
+  if (type === "DAILY_INDEX_PLUS_SPREAD") {
+    const r = object(value, path, [
+      "type",
+      "benchmarkId",
+      "spread",
+      "floor",
+      "lockoutBusinessDays",
+      "calendarId",
+      "dailyDecimals",
+    ]);
+    const dailyDecimals = integer(r.dailyDecimals, `${path}.dailyDecimals`, 0);
+    if (dailyDecimals > MAX_DAILY_DECIMALS) {
+      throw new BondTermsError(
+        `${path}.dailyDecimals`,
+        `must be at most ${MAX_DAILY_DECIMALS}`,
+      );
+    }
+    return {
+      type,
+      benchmarkId: text(r.benchmarkId, `${path}.benchmarkId`),
+      spread: signedDecimal(r.spread, `${path}.spread`),
+      floor: decimal(r.floor, `${path}.floor`),
+      lockoutBusinessDays: integer(
+        r.lockoutBusinessDays,
+        `${path}.lockoutBusinessDays`,
+        0,
+      ),
+      calendarId: text(r.calendarId, `${path}.calendarId`),
+      dailyDecimals,
+    };
+  }
   if (type === "ZERO_COUPON_DISCOUNT") {
     object(value, path, ["type"]);
     return { type };
@@ -422,15 +331,6 @@ function parseCapitalization(value: unknown, path: string): Capitalization {
       "NONE",
     ] as const),
   };
-}
-
-function list<T>(
-  value: unknown,
-  path: string,
-  read: (item: unknown, at: string) => T,
-): T[] {
-  if (!Array.isArray(value)) throw new BondTermsError(path, "must be an array");
-  return value.map((item, i) => read(item, `${path}[${i}]`));
 }
 
 function parseRedemption(value: unknown, path: string): Redemption {
@@ -495,60 +395,6 @@ function parseRedemption(value: unknown, path: string): Redemption {
   };
 }
 
-function parseSchedule(value: unknown, path: string): BondSchedule {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new BondTermsError(path, "must be an object");
-  }
-  const anchor = oneOf((value as Json).anchor, `${path}.anchor`, [
-    "LOT_PURCHASE_DATE",
-    "ISSUE_DATE",
-  ] as const);
-  if (anchor === "ISSUE_DATE") {
-    const s = object(value, path, [
-      "anchor",
-      "issueDate",
-      "maturityDate",
-      "periodCount",
-      "calendarId",
-    ]);
-    const issueDate = date(s.issueDate, `${path}.issueDate`);
-    const maturityDate = date(s.maturityDate, `${path}.maturityDate`);
-    if (issueDate >= maturityDate) {
-      throw new BondTermsError(
-        `${path}.maturityDate`,
-        "must be after the issue date",
-      );
-    }
-    return {
-      anchor,
-      issueDate,
-      maturityDate,
-      periodCount: exact(s.periodCount, `${path}.periodCount`, 1),
-      calendarId: text(s.calendarId, `${path}.calendarId`),
-    };
-  }
-  const s = object(value, path, [
-    "anchor",
-    "periodMonths",
-    "periodCount",
-    "rollDay",
-    "calendarId",
-  ]);
-  const periodMonths = integer(s.periodMonths, `${path}.periodMonths`, 1);
-  if (periodMonths > 12 || 12 % periodMonths !== 0) {
-    throw new BondTermsError(`${path}.periodMonths`, "must divide 12");
-  }
-  return {
-    anchor,
-    periodMonths,
-    periodCount: integer(s.periodCount, `${path}.periodCount`, 1),
-    rollDay: oneOf(s.rollDay, `${path}.rollDay`, [
-      "ANCHOR_DAY_CLAMPED",
-    ] as const),
-    calendarId: text(s.calendarId, `${path}.calendarId`),
-  };
-}
-
 const FIELDS = [
   "schemaVersion",
   "instrument",
@@ -587,10 +433,6 @@ export function parseBondTerms(json: unknown): BondTerms {
     throw new BondTermsError("terms.instrument.faceValue", "must be positive");
   }
 
-  const rounding = object(t.rounding, "terms.rounding", [
-    "moneyDecimals",
-    "mode",
-  ]);
   const source = object(t.source, "terms.source", [
     "provider",
     "url",
@@ -611,6 +453,7 @@ export function parseBondTerms(json: unknown): BondTerms {
       currency: code(i.currency, "terms.instrument.currency", /^[A-Z]{3}$/),
       marketability: oneOf(i.marketability, "terms.instrument.marketability", [
         "RETAIL_REDEEMABLE",
+        "MARKETABLE",
       ] as const),
       faceValue,
       ...(i.issuePrice === undefined
@@ -629,26 +472,18 @@ export function parseBondTerms(json: unknown): BondTerms {
     accrual: {
       type: primitive(t.accrual, "terms.accrual", [
         "ACTUAL_DAYS_IN_PERIOD",
+        "ACTUAL_ACTUAL_ICMA",
+        "ACTUAL_360_DAILY_SUM",
       ] as const),
     },
-    principalRule: {
-      type: primitive(t.principalRule, "terms.principalRule", [
-        "FIXED_NOMINAL",
-      ] as const),
-    },
+    principalRule: parsePrincipalRule(t.principalRule, "terms.principalRule"),
     rateRule: parseRateRule(t.rateRule, "terms.rateRule"),
     capitalization: parseCapitalization(
       t.capitalization,
       "terms.capitalization",
     ),
     redemption: parseRedemption(t.redemption, "terms.redemption"),
-    rounding: {
-      moneyDecimals: moneyDecimals(
-        rounding.moneyDecimals,
-        "terms.rounding.moneyDecimals",
-      ),
-      mode: roundingMode(rounding.mode, "terms.rounding.mode"),
-    },
+    rounding: parseRounding(t.rounding, "terms.rounding", faceValue),
     source: {
       provider: text(source.provider, "terms.source.provider"),
       url: text(source.url, "terms.source.url"),
@@ -656,7 +491,6 @@ export function parseBondTerms(json: unknown): BondTerms {
     },
   };
   object(t.accrual, "terms.accrual", ["type"]);
-  object(t.principalRule, "terms.principalRule", ["type"]);
   assertConsistent(terms);
   return terms;
 }
@@ -664,6 +498,10 @@ export function parseBondTerms(json: unknown): BondTerms {
 /** Generic consistency between primitives, never a per-product rule. */
 function assertConsistent(terms: BondTerms): void {
   const { redemption, capitalization } = terms;
+  assertMarketableConsistent(terms);
+  assertScheduleConsistent(terms);
+  assertPrincipalConsistent(terms);
+  assertDailyConsistent(terms);
   assertDiscountConsistent(terms);
   if (
     redemption.type === "ON_DEMAND" &&
@@ -673,6 +511,95 @@ function assertConsistent(terms: BondTerms): void {
     throw new BondTermsError(
       "terms.redemption.blackouts",
       "a record day exists only for a bond that pays a coupon (capitalization NONE)",
+    );
+  }
+}
+
+/**
+ * An indexed principal is paid with coupons computed on it: a `COUPON_DATES`
+ * schedule, capitalization `NONE`, redemption at maturity only. Its index is not
+ * the benchmark the rate rule reads: one series cannot be a rate and an index
+ * level (`benchmarkReadsOf`).
+ */
+function assertPrincipalConsistent(terms: BondTerms): void {
+  const { principalRule, schedule, capitalization, redemption, rateRule } =
+    terms;
+  if (principalRule.type !== "INDEX_RATIO") return;
+  if (schedule.anchor !== "COUPON_DATES") {
+    throw new BondTermsError(
+      "terms.schedule.anchor",
+      "an INDEX_RATIO principal needs a COUPON_DATES schedule",
+    );
+  }
+  if (capitalization.type !== "NONE") {
+    throw new BondTermsError(
+      "terms.capitalization",
+      "an INDEX_RATIO principal pays each coupon at its date (capitalization NONE)",
+    );
+  }
+  if (redemption.type !== "MATURITY_ONLY") {
+    throw new BondTermsError(
+      "terms.redemption",
+      "an INDEX_RATIO principal is paid at maturity only (MATURITY_ONLY)",
+    );
+  }
+  if (rateRule.type === "DAILY_INDEX_PLUS_SPREAD") {
+    throw new BondTermsError(
+      "terms.rateRule",
+      "an INDEX_RATIO principal does not combine with a DAILY_INDEX_PLUS_SPREAD rate",
+    );
+  }
+  if (rateBenchmarkIdOf(rateRule) === principalRule.benchmarkId) {
+    throw new BondTermsError(
+      "terms.principalRule.benchmarkId",
+      "must not be the benchmark the rate rule reads: a rate and an index level are different units",
+    );
+  }
+}
+
+/**
+ * `DAILY_INDEX_PLUS_SPREAD` and `ACTUAL_360_DAILY_SUM` need each other: the rate
+ * is a daily one and the accrual sums days (`yearFraction` has no meaning for
+ * it). Interest is paid at each period's end: a `COUPON_DATES` schedule,
+ * capitalization `NONE`.
+ */
+function assertDailyConsistent(terms: BondTerms): void {
+  const { rateRule, accrual, schedule, capitalization } = terms;
+  const daily = rateRule.type === "DAILY_INDEX_PLUS_SPREAD";
+  if (daily !== (accrual.type === "ACTUAL_360_DAILY_SUM")) {
+    throw new BondTermsError(
+      "terms.accrual",
+      "ACTUAL_360_DAILY_SUM and a DAILY_INDEX_PLUS_SPREAD rate are used together",
+    );
+  }
+  if (!daily) return;
+  if (schedule.anchor !== "COUPON_DATES") {
+    throw new BondTermsError(
+      "terms.schedule.anchor",
+      "a DAILY_INDEX_PLUS_SPREAD rate needs a COUPON_DATES schedule",
+    );
+  }
+  if (capitalization.type !== "NONE") {
+    throw new BondTermsError(
+      "terms.capitalization",
+      "a DAILY_INDEX_PLUS_SPREAD rate pays each coupon at its date (capitalization NONE)",
+    );
+  }
+}
+
+/** A marketable series is bought on any day before maturity and sold, not redeemed early. */
+function assertMarketableConsistent(terms: BondTerms): void {
+  if (terms.instrument.marketability !== "MARKETABLE") return;
+  if (terms.saleWindow !== null) {
+    throw new BondTermsError(
+      "terms.saleWindow",
+      "a MARKETABLE instrument has no sale window (null)",
+    );
+  }
+  if (terms.redemption.type !== "MATURITY_ONLY") {
+    throw new BondTermsError(
+      "terms.redemption",
+      "a MARKETABLE instrument is paid at maturity only (MATURITY_ONLY)",
     );
   }
 }
@@ -703,13 +630,17 @@ function assertDiscountConsistent(terms: BondTerms): void {
     );
   }
   const price = ExactDecimal.parse(instrument.issuePrice);
-  if (
-    price.isZero() ||
-    price.cmp(ExactDecimal.parse(instrument.faceValue)) >= 0
-  ) {
+  const against = price.cmp(ExactDecimal.parse(instrument.faceValue));
+  // A marketable bill may be issued at par (a discount rate of nothing): the
+  // value stays at the face value and the interest is nothing. A retail
+  // discount bond is always issued below its face value.
+  const parAllowed = instrument.marketability === "MARKETABLE";
+  if (price.isZero() || against > 0 || (against === 0 && !parAllowed)) {
     throw new BondTermsError(
       "terms.instrument.issuePrice",
-      "must be above zero and below the face value",
+      parAllowed
+        ? "must be above zero and at most the face value"
+        : "must be above zero and below the face value",
     );
   }
   if (schedule.anchor !== "ISSUE_DATE") {

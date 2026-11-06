@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "suku bunga yang menjadi acuannya belum dipublikasikan",
         "TERMS_INCOMPLETE": "ketentuan seri belum lengkap",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "tanggal pembelian berada di luar masa penjualan seri",
+        "PURCHASE_AFTER_MATURITY": "tanggal pembelian jatuh pada atau setelah jatuh tempo seri",
         "other": "tidak dapat dihitung dari data yang tersimpan"
       },
       "benchmarkTitle": "{{ benchmark }}: observasi baru {{ observation }}",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "observasi {{ observation }} untuk {{ benchmark }} belum tersimpan: belum dipublikasikan, atau feed belum diambil sejak itu; segarkan di halaman obligasi",
         "terms": "ketentuan {{ series }} belum lengkap; segarkan seri di halaman obligasi",
         "purchase": "pembelian {{ series }} pada {{ date }} berada di luar masa penjualannya ({{ from }} sampai {{ to }}); perbaiki tanggal pembelian",
+        "purchaseAfterMaturity": "pembelian {{ series }} pada {{ date }} jatuh pada atau setelah jatuh temponya ({{ maturity }}); perbaiki tanggal pembelian",
         "lots": "lot tidak dapat diturunkan dari buku besar ({{ code }}); perbaiki buku besar",
         "lotsRow": "{{ action }} tanggal {{ date }}: lot tidak dapat diturunkan ({{ code }}); perbaiki transaksi",
         "lotsRowSeries": "{{ action }} tanggal {{ date }}: tidak ditempatkan pada seri ({{ code }}); pilih seri pada transaksi tersebut",

@@ -57,4 +57,32 @@ describe("bond-valuation-close.util", () => {
       close: 111.62,
     });
   });
+
+  it("reads a marketable coupon security (marketPriceRequired) from the price the holding is valued at: the person's own price, carried to the day", () => {
+    // The engine writes no row for such a security; the person entered 100.25
+    // on 2026-10-12 and 101.5 on 2026-10-14 and nothing on 2026-10-13. The
+    // newest close at or before the day stands, as for bondHoldingValue's price.
+    const manual = [
+      { date: "2026-10-12", close: 100.25 },
+      { date: "2026-10-14", close: 101.5 },
+    ];
+    const tips = { bondProgramId: "prog-tips", marketPriceRequired: true };
+    expect(valuationClosePointOn(tips, manual, [], "2026-10-13")).toEqual({
+      date: "2026-10-12",
+      close: 100.25,
+    });
+    expect(valuationClosePointOn(tips, manual, [], "2026-10-14")).toEqual({
+      date: "2026-10-14",
+      close: 101.5,
+    });
+    // A linked security the engine prices keeps the engine rule.
+    expect(
+      valuationClosePointOn(
+        { bondProgramId: "prog-edo", marketPriceRequired: false },
+        manual,
+        [],
+        "2026-10-13",
+      ),
+    ).toBeNull();
+  });
 });

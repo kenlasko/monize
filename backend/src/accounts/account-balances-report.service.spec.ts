@@ -513,8 +513,8 @@ describe("AccountBalancesReportService", () => {
     ): SecurityValueByAccount => ({
       asOf: "2026-03-01",
       accounts: new Map([
-        ["acc-b", { quantity: 10, grossValue: a }],
-        ["acc-b2", { quantity: 10, grossValue: b }],
+        ["acc-b", { quantity: 10, grossValue: a, marketPriceRequired: false }],
+        ["acc-b2", { quantity: 10, grossValue: b, marketPriceRequired: false }],
       ]),
     });
 
@@ -556,6 +556,47 @@ describe("AccountBalancesReportService", () => {
         valuationComplete: false,
       });
       expect(result.accounts[1].marketValue).toBe(1000.8);
+    });
+
+    describe("a marketable coupon security is the person's price (INV-BOND-005)", () => {
+      const marketable = (): SecurityValueByAccount => ({
+        asOf: "2026-03-01",
+        accounts: new Map([
+          [
+            "acc-b",
+            { quantity: 10, grossValue: "1000.00", marketPriceRequired: true },
+          ],
+          [
+            "acc-b2",
+            { quantity: 10, grossValue: "1000.00", marketPriceRequired: true },
+          ],
+        ]),
+      });
+
+      it("values 10 bonds at the stored price 117.74 as 1177.4, not the par 1000.00", async () => {
+        program(fixture());
+        bondValuation.valueByAccount.mockResolvedValue(marketable());
+
+        const result = await service.getBalancesAsOf("user-1", "2026-03-01");
+
+        expect(result.accounts[0]).toMatchObject({
+          marketValue: 1177.4,
+          valuationComplete: true,
+        });
+      });
+
+      it("leaves it unpriced when the security has no price at all", async () => {
+        program({ ...fixture(), prices: [] });
+        bondValuation.valueByAccount.mockResolvedValue(marketable());
+
+        const result = await service.getBalancesAsOf("user-1", "2026-03-01");
+
+        expect(result.accounts[0]).toMatchObject({
+          marketValue: null,
+          unpricedHoldingsCount: 1,
+          valuationComplete: false,
+        });
+      });
     });
 
     it("leaves the positions unpriced when the valuation throws", async () => {

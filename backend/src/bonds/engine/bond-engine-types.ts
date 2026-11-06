@@ -18,14 +18,23 @@ export type EarlyRedemptionRefusal =
 export type BondLotStatus = "OPEN" | "MATURED" | "REFUSED";
 
 /** A lot the terms do not allow to value at all; every figure of the valuation is then null. */
-export interface BondValuationRefusal {
-  readonly code: "PURCHASE_OUTSIDE_SALE_WINDOW";
-  readonly params: {
-    readonly from: string;
-    readonly to: string;
-    readonly purchaseDate: string;
-  };
-}
+export type BondValuationRefusal =
+  | {
+      readonly code: "PURCHASE_OUTSIDE_SALE_WINDOW";
+      readonly params: {
+        readonly from: string;
+        readonly to: string;
+        readonly purchaseDate: string;
+      };
+    }
+  /** A lot of a MARKETABLE series whose purchase date is on or after its maturity. */
+  | {
+      readonly code: "PURCHASE_AFTER_MATURITY";
+      readonly params: {
+        readonly maturityDate: string;
+        readonly purchaseDate: string;
+      };
+    };
 
 export interface BondEngineInput {
   readonly terms: BondTerms;
@@ -44,6 +53,13 @@ export interface BondEngineInput {
      * real purchase was inside the sale window, so the window is not checked.
      */
     readonly purchaseDateAssumed?: boolean;
+    /**
+     * What the lot cost, net of accrued interest, as exact text; null or absent
+     * when unknown. A discount instrument's principal is then this cost and its
+     * discount accrues from the later of the purchase date and the issue date;
+     * every other instrument ignores it.
+     */
+    readonly cost?: string | null;
   };
   readonly asOf: string;
   /** Benchmark value assumed for periods that have not started and have no data. */
@@ -59,7 +75,15 @@ export interface MissingObservation {
 }
 
 export interface CashFlow {
+  /** The day the money is paid: the period end, or the next business day when the schedule adjusts payments. */
   readonly date: string;
+  /**
+   * The end of the period the flow pays for, unadjusted: interest accrues to it
+   * whatever the payment day. Set only when the payment is adjusted (`date` is
+   * then after it); absent means the accrual ended on `date`: read it through
+   * `accrualEndOf`.
+   */
+  readonly accrualEndDate?: string;
   readonly type: "INTEREST" | "PRINCIPAL";
   /** The whole lot, in the terms' money decimals; null only when `status` is UNKNOWN. */
   readonly amount: string | null;
@@ -71,13 +95,19 @@ export interface CashFlow {
   readonly period: number;
 }
 
+/** The day the interest of a flow accrued to: `accrualEndDate`, else its payment `date`. */
+export function accrualEndOf(flow: CashFlow): string {
+  return flow.accrualEndDate ?? flow.date;
+}
+
 /** The terms' rate rule as stated, in plain fields; fractions are strings. */
 export interface RateRuleDescription {
   readonly type:
     | "FIXED"
     | "BENCHMARK_PLUS_SPREAD"
     | "INFLATION_PLUS_MARGIN_AS_RATE"
-    | "ZERO_COUPON_DISCOUNT";
+    | "ZERO_COUPON_DISCOUNT"
+    | "DAILY_INDEX_PLUS_SPREAD";
   readonly benchmarkId: string | null;
   /** FIXED only. */
   readonly annualRate: string | null;
@@ -85,6 +115,8 @@ export interface RateRuleDescription {
   /** The margin or spread. */
   readonly addend: string | null;
   readonly benchmarkFloor: string | null;
+  /** `DAILY_INDEX_PLUS_SPREAD` only: the business days before a period's end whose auctions it does not use. */
+  readonly lockoutBusinessDays?: number;
 }
 
 export interface RateScheduleBenchmark {
@@ -95,6 +127,24 @@ export interface RateScheduleBenchmark {
   readonly value: string | null;
   /** After the benchmark floor; null when `value` is null. */
   readonly flooredValue: string | null;
+}
+
+/**
+ * A run of consecutive days of a floating period with the same index: `from`
+ * inclusive, `to` exclusive (the first day after the run), so a 91-day quarter is
+ * a few runs, not 91.
+ */
+export interface DailyRateRun {
+  readonly from: string;
+  readonly to: string;
+  /** The index in force, a fraction; null for a run of days with no index (not stored, none assumed). */
+  readonly index: string | null;
+  /** The annual rate of those days, `max(index + spread, floor)`, a fraction; null when `index` is. */
+  readonly rate: string | null;
+  /** What one day accrues per 100 of par, rounded to the terms' `dailyDecimals`; null when `index` is. */
+  readonly dailyAccrual: string | null;
+  /** True when the index is the assumed one, not a stored observation. */
+  readonly projected: boolean;
 }
 
 export interface RateScheduleEntry {
@@ -116,6 +166,12 @@ export interface RateScheduleEntry {
   readonly benchmarkPart: string | null;
   readonly addendPart: string | null;
   readonly announcedPart: string | null;
+  /**
+   * Only for a floating rate (`DAILY_INDEX_PLUS_SPREAD`), whose `annualRate` is
+   * null: every day of the period, in runs. A run of days with no index has a
+   * null `index`, `rate` and `dailyAccrual`.
+   */
+  readonly dailyRates?: readonly DailyRateRun[];
 }
 
 export interface BondValuation {
@@ -143,6 +199,11 @@ export interface BondValuation {
   readonly rateSchedule: readonly RateScheduleEntry[];
   /** Per bond: the base of the current period (the nominal for a coupon bond). */
   readonly principal: string | null;
+  /**
+   * Where a discount instrument's principal comes from: LOT_COST when the lot's
+   * cost is known, ISSUE_PRICE otherwise. Null for any other instrument.
+   */
+  readonly principalBasis: "LOT_COST" | "ISSUE_PRICE" | null;
   /** Lot: gross value less nominal (capitalised plus current accrual when compounding). */
   readonly accruedInterest: string | null;
   /** Lot, before any early redemption penalty. */
@@ -191,6 +252,12 @@ export interface ProjectionAssumption {
   readonly basis: "SUPPLIED" | "LATEST_OBSERVATION";
   /** The YYYY-MM-DD or YYYY-MM the value came from; null when SUPPLIED. */
   readonly observation: string | null;
+  /**
+   * Present for an assumed annual inflation of an indexed principal: later
+   * months are the newest stored level times `1 + value x months / 12` (simple
+   * annual growth, not compounding); absent for a rate assumption.
+   */
+  readonly growth?: "SIMPLE_ANNUAL";
 }
 
 export type BondEngineErrorCode =

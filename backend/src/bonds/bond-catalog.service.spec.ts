@@ -362,6 +362,64 @@ describe("BondCatalogService", () => {
     ).resolves.toBeNull();
   });
 
+  it("gives a US program its face value of 100 for the unit hint", async () => {
+    const { manager, dataSource } = createScopedDbMocks();
+    manager.query.mockResolvedValue([
+      {
+        id: "p-note",
+        issuer_country_code: "US",
+        issuer_code: "US_TREASURY",
+        program_code: "NOTE",
+        currency_code: "USD",
+        series_count: 0,
+        newest_series_code: null,
+      },
+    ]);
+    const service = new BondCatalogService(
+      dataSource as unknown as DataSource,
+      { ensureCatalogCurrency: jest.fn() },
+    );
+    await expect(service.listPrograms()).resolves.toMatchObject([
+      {
+        programCode: "NOTE",
+        faceValue: "100",
+        cashPriced: true,
+        indexedPrincipal: false,
+        listsAuctions: true,
+        infoUrl:
+          "https://www.treasurydirect.gov/marketable-securities/treasury-notes/",
+      },
+    ]);
+  });
+
+  it("says which programs price a unit as a cash price and which index the principal", async () => {
+    const { manager, dataSource } = createScopedDbMocks();
+    const row = (program_code: string) => ({
+      id: `p-${program_code}`,
+      issuer_country_code: "US",
+      issuer_code: "US_TREASURY",
+      program_code,
+      currency_code: "USD",
+      series_count: 0,
+      newest_series_code: null,
+    });
+    manager.query.mockResolvedValue(
+      ["BILL", "TIPS", "FRN"].map((code) => row(code)),
+    );
+    const service = new BondCatalogService(
+      dataSource as unknown as DataSource,
+      { ensureCatalogCurrency: jest.fn() },
+    );
+    const programs = await service.listPrograms();
+    expect(
+      programs.map((p) => [p.programCode, p.cashPriced, p.indexedPrincipal]),
+    ).toEqual([
+      ["BILL", false, false],
+      ["TIPS", true, true],
+      ["FRN", true, false],
+    ]);
+  });
+
   it("lists the programs with their series count and newest series", async () => {
     const { manager, dataSource } = createScopedDbMocks();
     manager.query.mockResolvedValue([
@@ -402,6 +460,11 @@ describe("BondCatalogService", () => {
         // The installed adapter's product page, which redirects to the series on sale.
         infoUrl:
           "https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-10-letnie-edo/",
+        faceValue: "100.00",
+        cashPriced: false,
+        indexedPrincipal: false,
+        // Poland sells in monthly sale windows, not by auction.
+        listsAuctions: false,
       },
       {
         id: "p-new",
@@ -413,6 +476,10 @@ describe("BondCatalogService", () => {
         newestSeriesCode: null,
         // No installed adapter defines ZZZ.
         infoUrl: null,
+        faceValue: null,
+        cashPriced: false,
+        indexedPrincipal: false,
+        listsAuctions: false,
       },
     ]);
     // Ordered by country, issuer and program code, the newest sale window first.

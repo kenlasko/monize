@@ -1,0 +1,40 @@
+{
+  "series": "91282CQM6",
+  "fixture": "ta-ws-91282CQM6.json",
+  "benchmark": "US_TBILL_13W_MMY",
+  "yields": [
+    {
+      "id": "E11",
+      "description": "Money market yield of a 13-week bill: discount 0.095 %, 91 days",
+      "source": "31 CFR 356 Appendix B IV.A: r = D / (1 - D x t / 360) = 0.095022819 % (nine decimals); stored as a fraction of ten decimals, 0.0009502282",
+      "discountPercent": "0.095",
+      "days": 91,
+      "expect": { "percent": "0.095022819", "fraction": "0.0009502282" }
+    }
+  ],
+  "accruals": [
+    {
+      "id": "E12",
+      "description": "Daily accrual per 100 par: index 0.095022819 %, spread 0.120 %",
+      "source": "31 CFR 356 Appendix B IV.A: (0.095022819 + 0.120) / 360 = 0.000597286 per 100 par per day",
+      "spread": "0.0012",
+      "index": "0.0009502282",
+      "expect": { "rate": "0.0021502282", "dailyAccrual": "0.000597286" }
+    },
+    {
+      "id": "E13",
+      "description": "Negative spread: index 0.095022819 %, spread -0.150 %: the daily rate is at its floor of zero",
+      "source": "31 CFR 356 Appendix B IV.A: the daily accrual rate is not below zero",
+      "spread": "-0.0015",
+      "index": "0.0009502282",
+      "expect": { "rate": "0.0000", "dailyAccrual": "0.000000000" }
+    }
+  ],
+  "schedule": {
+    "id": "FRN-91282CQM6",
+    "description": "The 2-year FRN of the results file R_20260428_1.xml: 8 quarterly periods ending on month ends, paid on the next business day",
+    "source": "TreasuryDirect results file R_20260428_1.xml (recorded 2026-11-04): issue 2026-04-30, maturity 2028-04-30, first payment 2026-07-31, quarterly; business days of the Federal Reserve Banks",
+    "ends": ["2026-07-31", "2026-10-31", "2027-01-31", "2027-04-30", "2027-07-31", "2027-10-31", "2028-01-31", "2028-04-30"],
+    "paid": ["2026-07-31", "2026-11-02", "2027-02-01", "2027-04-30", "2027-08-02", "2027-11-01", "2028-01-31", "2028-05-01"]
+  }
+}

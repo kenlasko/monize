@@ -6,6 +6,7 @@ import { EntityManager } from "typeorm";
 import {
   beginBondWriteGuard,
   createBondWriteGuard,
+  assertManualPriceIsCashPrice,
   currentLotsRefusal,
   lotsRefusalException,
 } from "./bond-write-guard";
@@ -40,7 +41,9 @@ function world(opts: {
   linked?: boolean;
   ledgers: Row[][];
   /** Successive answers of the price band read (rows outside it); last repeats. */
-  band?: Array<Array<{ id: string; price: string; face: string }>>;
+  band?: Array<
+    Array<{ id: string; price: string; face: string; cash_price?: boolean }>
+  >;
 }) {
   let reads = 0;
   let bandReads = 0;
@@ -286,6 +289,21 @@ describe("BondWriteGuard (INV-BOND-005: a quantity of a linked security is a cou
     expect(body?.message).toContain("1.0000");
   });
 
+  it("names the cash-price band for a trade of a marketable coupon series: more than five times the face value", async () => {
+    const { manager } = world({
+      ledgers: [[], [buy]],
+      band: [
+        [],
+        [{ id: "b1", price: "612.5000", face: "100", cash_price: true }],
+      ],
+    });
+    const guard = await beginBondWriteGuard(manager, USER, [SEC]);
+    const body = await refusalCode(guard.verify(["b1"]));
+    expect(body?.errorCode).toBe("QUANTITY_NOT_BONDS");
+    expect(body?.message).toContain("more than five times the face value");
+    expect(body?.message).toContain("612.5000");
+  });
+
   it("refuses one priced above the band too", async () => {
     const { manager } = world({
       ledgers: [[], [buy]],
@@ -413,5 +431,69 @@ describe("lotsRefusalException", () => {
     ).getResponse() as { message: string };
     expect(body.message).toContain("2026-02-01");
     expect(body.message).not.toContain("English for the logs");
+  });
+});
+
+describe("assertManualPriceIsCashPrice (INV-BOND-005: the manual price of a marketable coupon series)", () => {
+  /** A manager answering the three reads in order: the link, the program, the band. */
+  function managerFor(program: string | null, outside: string[] = []) {
+    const query = jest.fn(async (sql: string) => {
+      if (sql.includes("FROM securities")) {
+        return [{ bond_program_id: program === null ? null : "p-1" }];
+      }
+      if (sql.includes("FROM bond_programs")) {
+        return [
+          {
+            issuer_country_code: "US",
+            issuer_code: "US_TREASURY",
+            program_code: program,
+          },
+        ];
+      }
+      return outside.map((price) => ({ price }));
+    });
+    return { manager: { query } as unknown as EntityManager, query };
+  }
+
+  it("refuses a price above five times the face value with its code, the price and the face value", async () => {
+    const { manager } = managerFor("NOTE", ["9950"]);
+    const body = await refusalCode(
+      assertManualPriceIsCashPrice(manager, USER, SEC, [9950, null, undefined]),
+    );
+    expect(body?.errorCode).toBe("MANUAL_PRICE_NOT_CASH_PRICE");
+    expect(body?.message).toContain("9950");
+    expect(body?.message).toContain("face value 100");
+  });
+
+  it("reads the supplied prices only, against five times the face value of 100", async () => {
+    const { manager, query } = managerFor("NOTE");
+    await assertManualPriceIsCashPrice(manager, USER, SEC, [99.5, undefined]);
+    const band = query.mock.calls.find(([sql]) => sql.includes("unnest"));
+    expect(band?.[0]).toContain("* 5::numeric");
+    expect((band as unknown[])[1]).toEqual([["99.5"], "100"]);
+  });
+
+  it("reads nothing for a security that is not linked", async () => {
+    const { manager, query } = managerFor(null);
+    await assertManualPriceIsCashPrice(manager, USER, SEC, [9950]);
+    expect(query.mock.calls.some(([sql]) => sql.includes("unnest"))).toBe(
+      false,
+    );
+  });
+
+  it("is silent for a program the engine prices (a bill)", async () => {
+    const { manager, query } = managerFor("BILL", ["9950"]);
+    await expect(
+      assertManualPriceIsCashPrice(manager, USER, SEC, [9950]),
+    ).resolves.toBeUndefined();
+    expect(query.mock.calls.some(([sql]) => sql.includes("unnest"))).toBe(
+      false,
+    );
+  });
+
+  it("reads no prices when none is supplied", async () => {
+    const { manager, query } = managerFor("NOTE");
+    await assertManualPriceIsCashPrice(manager, USER, SEC, [undefined]);
+    expect(query).not.toHaveBeenCalled();
   });
 });

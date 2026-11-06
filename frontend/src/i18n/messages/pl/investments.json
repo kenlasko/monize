@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Brak kursu z {from} na {to}. Przed zapisaniem wprowadź kurs lub przeliczoną kwotę łączną.",
     "toastExchangeRateRequired": "Wprowadź kurs wymiany przed zapisaniem transakcji między walutami.",
     "notAvailable": "Niedostępne",
+    "bondUnit": "Jedna jednostka = {faceValue} {currency} wartości nominalnej",
+    "bondPriceCash": "Cena to cena gotówkowa jednej jednostki (wartość nominalna {faceValue} {currency}), bez odsetek narosłych.",
+    "bondPriceIndexed": "Cena to cena gotówkowa jednej jednostki (wartość nominalna {faceValue} {currency}) z korektą inflacyjną (cena kwotowana x współczynnik indeksacji), bez odsetek narosłych.",
     "bondSeries": {
       "label": "Seria obligacji",
       "fromDate": "Ustalana na podstawie daty",
@@ -321,11 +324,40 @@
       "noLongerHeldUnknown": "Zapisana seria (nie jest już posiadana w tym dniu)",
       "storedSeries": "Zapisana seria",
       "seriesOnSaleMonth": "{code} — w sprzedaży {month}",
-      "seriesOnSaleRange": "{code} — w sprzedaży od {from} do {to}"
+      "seriesOnSaleRange": "{code} — w sprzedaży od {from} do {to}",
+      "chooseAuction": "Wybierz przetarg poniżej",
+      "auctionRequired": "Wybierz przetarg, w którym dokonano tego zakupu: znajdź go poniżej."
+    },
+    "bondAuctions": {
+      "find": "Znajdź przetarg",
+      "findAgain": "Szukaj ponownie",
+      "hint": "Wyświetla przetargi z emisją w ciągu miesiąca od {date}, ze strony emitenta.",
+      "needsDate": "Najpierw wpisz datę.",
+      "loading": "Wczytywanie przetargów od emitenta...",
+      "loadFailed": "Nie udało się wczytać przetargów od emitenta.",
+      "none": "Nie przeprowadzono żadnego przetargu z emisją w ciągu miesiąca od {date}.",
+      "termFilter": "Okres",
+      "allTerms": "Wszystkie",
+      "listLabel": "Przetargi z emisją około {date}",
+      "title": "{term} · {identifier}",
+      "reopening": "Ponowne otwarcie",
+      "dates": "Przetarg {auction} · emisja {issue} · zapadalność {maturity}",
+      "discountRate": "Stopa dyskontowa {rate}",
+      "coupon": "Kupon {rate}",
+      "spread": "Marża {rate}",
+      "price": "Cena {price}",
+      "rateAndPrice": "{rate} · cena {price}",
+      "announced": "Ogłoszono: wyniki jeszcze nieopublikowane",
+      "fetching": "Pobieranie serii...",
+      "fetchFailed": "Nie udało się pobrać serii tego przetargu.",
+      "picked": "Wybrano: {identifier}, emisja {issue}.",
+      "dateSet": "Ustawiono datę emisji: {date}.",
+      "priceSet": "Ustawiono cenę z przetargu: {price}."
     },
     "bondRedemption": {
       "summary": "Odsetki {interest}, potrącenie za wykup przedterminowy {deduction}, wypłata {payout}",
       "outsideSaleWindow": "Partia tej serii została kupiona poza okresem sprzedaży, więc wykupu nie można rozbić.",
+      "afterMaturity": "Partię tej serii kupiono w dniu wykupu lub po nim, więc nie można podzielić wykupu.",
       "failed": "Nie udało się obliczyć podziału wykupu."
     }
   },

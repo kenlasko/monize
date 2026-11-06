@@ -23,6 +23,7 @@ import {
 } from "./bond-valuation.service";
 import { ExactDecimal } from "./domain/exact-decimal";
 import { grossValueSeries } from "./engine/bond-engine";
+import { marketPriceRequired } from "./engine/price-policy";
 
 import { BOND_ENGINE_PRICE_SOURCE } from "./bond-price-source";
 
@@ -73,7 +74,10 @@ export interface RecomputeOptions {
  * never replaced, and a transaction-derived price never replaces an engine row.
  * An unchanged day is not rewritten. An engine row stores `adjusted_close` NULL:
  * a coupon is recorded as INTEREST income, so the close is the value. Rows of
- * days that no longer get a price are deleted. Reads and writes share one transaction; the derived state
+ * days that no longer get a price are deleted. A security that holds a
+ * MARKETABLE series the engine does not price (anything but a discount
+ * instrument) gets no engine price at all: the price is the person's
+ * (`marketPriceRequired`, `docs/specs/bond-marketable-primitives.md` 3). Reads and writes share one transaction; the derived state
  * (portfolio memo, net-worth snapshots) is invalidated after it commits, never
  * inside it (INV-CACHE-001).
  */
@@ -205,7 +209,14 @@ export class BondPriceService {
           ),
         );
         const today = options.today ?? (await financialTodayOf(m, userId));
-        const prices = this.dailyPrices(ledger.transactions, references, today);
+        // A security holding a series that trades has no engine price: its
+        // price is the person's (INV-BOND-005), and any engine row it had is
+        // deleted below as a day that no longer gets a price.
+        const prices = marketPriceRequired(
+          [...references.values()].map((r) => r.terms),
+        )
+          ? []
+          : this.dailyPrices(ledger.transactions, references, today);
 
         const written = await this.upsertPrices(m, securityId, prices);
         const deleted = await this.deleteStalePrices(m, securityId, prices);
@@ -381,7 +392,7 @@ export class BondPriceService {
 
     // Each distinct lot and the days it is open on.
     const lotKey = (lot: BondLot) =>
-      `${lot.instrumentId ?? ""}|${lot.purchaseDate}|${lot.quantity}`;
+      `${lot.instrumentId ?? ""}|${lot.purchaseDate}|${lot.quantity}|${lot.cost ?? ""}`;
     const daysOf = new Map<string, { lot: BondLot; days: string[] }>();
     for (const { day, lots: open } of openOn) {
       for (const lot of new Set(open.map(lotKey))) {
@@ -418,6 +429,7 @@ export class BondPriceService {
           purchaseDate: lot.purchaseDate,
           quantity: lot.quantity,
           purchaseDateAssumed: lot.purchaseDateAssumed,
+          cost: lot.cost,
         },
         days,
       });

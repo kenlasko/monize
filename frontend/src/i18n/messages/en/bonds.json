@@ -40,6 +40,7 @@
       "fixed": "Fixed {rate} a year",
       "benchmark": "{benchmark} + {addend}",
       "floor": "Benchmark floor {floor}",
+      "daily": "Daily: {benchmark} + {addend}",
       "discount": "Discount to face value"
     },
     "capitalization": {

@@ -1,0 +1,44 @@
+{
+  "product": "BOND",
+  "infoUrl": "https://www.treasurydirect.gov/marketable-securities/treasury-bonds/",
+  "structure": {
+    "instrument": {
+      "issuerCountryCode": "US",
+      "issuerCode": "US_TREASURY",
+      "programCode": "BOND",
+      "currency": "USD",
+      "marketability": "MARKETABLE",
+      "faceValue": "100"
+    },
+    "schedule": {
+      "anchor": "COUPON_DATES",
+      "couponMonths": 6,
+      "paymentAdjustment": "NEXT_BUSINESS_DAY",
+      "calendarId": "US"
+    },
+    "rateRule": {
+      "type": "FIXED"
+    },
+    "rest": {
+      "schemaVersion": 1,
+      "accrual": {
+        "type": "ACTUAL_ACTUAL_ICMA"
+      },
+      "principalRule": {
+        "type": "FIXED_NOMINAL"
+      },
+      "capitalization": {
+        "type": "NONE"
+      },
+      "redemption": {
+        "type": "MATURITY_ONLY"
+      },
+      "rounding": {
+        "moneyDecimals": 2,
+        "mode": "HALF_UP",
+        "basis": "PER_HOLDING",
+        "unitDecimals": 6
+      }
+    }
+  }
+}

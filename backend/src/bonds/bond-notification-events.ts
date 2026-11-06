@@ -9,7 +9,8 @@ import { addDaysYMD } from "../common/date-utils";
 import { canonicalJson } from "./canonical-json";
 import { BondRedemptionSplit } from "./bond-holdings.service";
 import { ExactDecimal } from "./domain/exact-decimal";
-import { CashFlow } from "./engine/bond-engine-types";
+import { assertNever } from "./domain/assert-never";
+import { BondValuationRefusal, CashFlow } from "./engine/bond-engine-types";
 import {
   SecurityLotValuation,
   SecurityValuation,
@@ -488,6 +489,13 @@ export type BondMissingCause =
       readonly to: string;
     }
   | {
+      readonly code: "PURCHASE_AFTER_MATURITY";
+      readonly instrumentId: string;
+      readonly seriesCode: string;
+      readonly purchaseDate: string;
+      readonly maturityDate: string;
+    }
+  | {
       readonly code: "LOTS_UNDERIVABLE";
       readonly refusalCode: string;
       /** The base action of the row that refused (`SELL`). */
@@ -511,6 +519,37 @@ function causeIdentity(cause: BondMissingCause): unknown {
 }
 
 /** The causes of a security's valuation, sorted and without duplicates. */
+
+/** The missing-cause a refused lot reports: one case per refusal code, so a new code cannot fall into another's. */
+function refusedCause(
+  lot: SecurityLotValuation,
+  seriesCode: string,
+  refusal: BondValuationRefusal,
+): BondMissingCause {
+  const instrumentId = lot.instrumentId ?? "";
+  switch (refusal.code) {
+    case "PURCHASE_OUTSIDE_SALE_WINDOW":
+      return {
+        code: "PURCHASE_OUTSIDE_SALE_WINDOW",
+        instrumentId,
+        seriesCode,
+        purchaseDate: refusal.params.purchaseDate,
+        from: refusal.params.from,
+        to: refusal.params.to,
+      };
+    case "PURCHASE_AFTER_MATURITY":
+      return {
+        code: "PURCHASE_AFTER_MATURITY",
+        instrumentId,
+        seriesCode,
+        purchaseDate: refusal.params.purchaseDate,
+        maturityDate: refusal.params.maturityDate,
+      };
+    default:
+      return assertNever(refusal);
+  }
+}
+
 export function missingCausesOf(valuation: SecurityValuation): {
   causes: BondMissingCause[];
   lots: SecurityLotValuation[];
@@ -541,17 +580,7 @@ export function missingCausesOf(valuation: SecurityValuation): {
   for (const lot of valuation.lots) {
     const v = lot.valuation;
     if (v.status === "REFUSED" && v.refusal !== null) {
-      add(
-        {
-          code: "PURCHASE_OUTSIDE_SALE_WINDOW",
-          instrumentId: lot.instrumentId ?? "",
-          seriesCode: v.seriesCode,
-          purchaseDate: v.refusal.params.purchaseDate,
-          from: v.refusal.params.from,
-          to: v.refusal.params.to,
-        },
-        lot,
-      );
+      add(refusedCause(lot, v.seriesCode, v.refusal), lot);
       continue;
     }
     if (v.status !== "OPEN") continue;
@@ -625,6 +654,8 @@ export function missingDataNotification(
           return `the terms of ${cause.seriesCode} are incomplete; refresh the series on the bond page`;
         case "PURCHASE_OUTSIDE_SALE_WINDOW":
           return `a purchase of ${cause.seriesCode} on ${cause.purchaseDate} is outside its sale window ${cause.from} to ${cause.to}; correct the purchase date`;
+        case "PURCHASE_AFTER_MATURITY":
+          return `a purchase of ${cause.seriesCode} on ${cause.purchaseDate} is on or after its maturity ${cause.maturityDate}; correct the purchase date`;
         case "LOTS_UNDERIVABLE":
           return `the ${cause.action} of ${cause.date} makes the lots impossible to derive (${cause.refusalCode}); ${lotsRemedy(cause.refusalCode)}`;
       }
@@ -679,6 +710,18 @@ export interface AffectedHolding {
   readonly entry: AffectedSeries;
 }
 
+/**
+ * True when a new observation of the benchmark decides a LATER period's rate
+ * (item 5 says that period's rate is not known yet). A floating rate that reads
+ * the benchmark every day (`DAILY_INDEX_PLUS_SPREAD`) changes the accrual of the
+ * current period instead, with every weekly auction, so it has no such period.
+ */
+export function readsBenchmarkForLaterPeriod(
+  rule: SecurityValuation["lots"][number]["valuation"]["rateRule"],
+): boolean {
+  return rule.benchmarkId !== null && rule.type !== "DAILY_INDEX_PLUS_SPREAD";
+}
+
 /** The held series reading `benchmarkId`, each with its first period starting on or after `today`. */
 export function affectedSeriesOf(
   valuations: readonly SecurityValuation[],
@@ -692,6 +735,7 @@ export function affectedSeriesOf(
       if (
         v.status !== "OPEN" ||
         lot.instrumentId === null ||
+        !readsBenchmarkForLaterPeriod(v.rateRule) ||
         v.rateRule.benchmarkId !== benchmarkId
       )
         continue;

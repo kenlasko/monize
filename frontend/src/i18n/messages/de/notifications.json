@@ -84,6 +84,7 @@
       "RATE_UNKNOWN": "ein Zinssatz, von dem sie abhängt, ist noch nicht veröffentlicht",
       "TERMS_INCOMPLETE": "die Konditionen der Serie sind unvollständig",
       "PURCHASE_OUTSIDE_SALE_WINDOW": "ein Kaufdatum liegt außerhalb des Verkaufszeitraums der Serie",
+      "PURCHASE_AFTER_MATURITY": "ein Kaufdatum liegt am oder nach dem Fälligkeitstag der Serie",
       "other": "sie lässt sich aus den gespeicherten Daten nicht berechnen"
     },
     "benchmarkTitle": "{benchmark}: neuer Wert für {observation}",
@@ -99,6 +100,7 @@
       "observationNoPublisher": "Der Wert {observation} von {benchmark} ist nicht gespeichert: Er ist noch nicht veröffentlicht, oder der Feed wurde seitdem nicht abgerufen. Aktualisieren Sie auf der Anleiheseite.",
       "terms": "Die Konditionen von {series} sind unvollständig. Aktualisieren Sie die Serie auf der Anleiheseite.",
       "purchase": "Ein Kauf von {series} am {date} liegt außerhalb des Verkaufszeitraums ({from} bis {to}). Korrigieren Sie das Kaufdatum.",
+      "purchaseAfterMaturity": "Ein Kauf von {series} am {date} liegt am oder nach der Fälligkeit ({maturity}). Korrigieren Sie das Kaufdatum.",
       "lots": "Die Lots lassen sich nicht aus dem Buchungsverlauf ableiten ({code}). Korrigieren Sie den Buchungsverlauf.",
       "lotsRow": "{action} vom {date}: Die Lots lassen sich nicht ableiten ({code}). Korrigiere die Buchung.",
       "lotsRowSeries": "{action} vom {date} ist keiner Serie zugeordnet ({code}). Wähle die Serie in dieser Buchung.",
@@ -117,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "Inflationsrate (VPI), 12 Monate (GUS)",
-      "PL_NBP_REFERENCE": "NBP-Referenzzins"
+      "PL_NBP_REFERENCE": "NBP-Referenzzins",
+      "US_CPI_U_NSA": "CPI-U, alle Waren und Dienstleistungen, nicht saisonbereinigt (BLS)",
+      "US_TBILL_13W_MMY": "Rendite der 13-wöchigen Treasury Bills"
     }
   },
   "portfolioMovement": {

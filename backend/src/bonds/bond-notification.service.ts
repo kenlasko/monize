@@ -23,6 +23,7 @@ import {
   maturitySoonCandidates,
   missingDataNotification,
   payoutOf,
+  readsBenchmarkForLaterPeriod,
   rateResetNotifications,
   unbookedCandidates,
   unknownPayout,
@@ -274,8 +275,14 @@ export class BondNotificationService {
     const ids = new Set<string>();
     for (const valuation of valuations) {
       for (const lot of valuation.lots) {
-        const id = lot.valuation.rateRule.benchmarkId;
-        if (lot.valuation.status === "OPEN" && id !== null) ids.add(id);
+        const { rateRule } = lot.valuation;
+        if (
+          lot.valuation.status === "OPEN" &&
+          rateRule.benchmarkId !== null &&
+          readsBenchmarkForLaterPeriod(rateRule)
+        ) {
+          ids.add(rateRule.benchmarkId);
+        }
       }
     }
     const events: CreateNotificationInput[] = [];

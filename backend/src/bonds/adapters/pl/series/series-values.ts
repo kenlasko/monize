@@ -1,5 +1,6 @@
 import { SeriesFetchError } from "../../../bond-adapter";
 import { ExactDecimal } from "../../../domain/exact-decimal";
+import { echo } from "../../../series-echo";
 import { ParsedSeriesCode } from "./series-code";
 import { SeriesTemplate } from "./templates";
 
@@ -37,13 +38,6 @@ const MONTHS_GENITIVE = [
   "listopada",
   "grudnia",
 ];
-
-/** A value echoed in an error: digits and number punctuation only, else "?". */
-export function echo(value: unknown): string {
-  return typeof value === "string" && /^[0-9.,%/:-]{1,16}$/.test(value)
-    ? value
-    : "?";
-}
 
 export function formatError(
   code: "SOURCE_FORMAT_CHANGED" | "SOURCE_INCONSISTENT",

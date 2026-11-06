@@ -220,6 +220,13 @@ describe("BenchmarkRefreshService", () => {
     expect(reads[0].params).toEqual([null, false]);
   });
 
+  it("reads the benchmark of an indexed principal as well as that of a rate rule", async () => {
+    const { service, adapter, reads } = build({ read: ["CPI_X"] });
+    await service.refreshAll({ adapters: [adapter] });
+    expect(reads[0].sql).toMatch(/'rateRule' ->> 'benchmarkId'/);
+    expect(reads[0].sql).toMatch(/'principalRule' ->> 'benchmarkId'/);
+  });
+
   describe("refreshNeverFetched, after a series is stored", () => {
     it("refreshes the never-fetched benchmark of the stored series under the lease, and no other", async () => {
       const { service, fetchSync, reads } = build({ read: ["CPI_X"] });

@@ -5,6 +5,7 @@ import {
 import { EntityManager } from "typeorm";
 import { tr } from "../i18n/translate";
 import {
+  findManualPriceOutsideBand,
   findQuantitiesNotBonds,
   QuantityNotBonds,
 } from "../securities/bond-link.util";
@@ -77,19 +78,60 @@ export function lotsRefusalException(
 /**
  * The 400 of a priced trade of a bond-linked security whose price is not a price
  * per bond of its face value (INV-BOND-005): the quantity is not a number of
- * bonds. Nothing is written; `QUANTITY_NOT_BONDS` is its `errorCode`.
+ * bonds. Nothing is written; `QUANTITY_NOT_BONDS` is its `errorCode`. A trade of
+ * a marketable coupon series has the wide band (a cash price up to five times
+ * the face value) and its own message.
  */
 export function quantityNotBondsException(
   found: QuantityNotBonds,
 ): BadRequestException {
   const params = { price: found.price, faceValue: found.faceValue };
+  const message = found.cashPrice
+    ? tr(
+        "errors.bonds.QUANTITY_NOT_BONDS_CASH_PRICE",
+        `The quantity must be a number of bonds and the price the cash price of one bond of face value ${params.faceValue}; the price ${params.price} is more than five times the face value of one bond.`,
+        params,
+      )
+    : tr(
+        "errors.bonds.QUANTITY_NOT_BONDS",
+        `The quantity must be a number of bonds and the price a price per bond of face value ${params.faceValue}; the price ${params.price} is not within half to twice the face value of one bond.`,
+        params,
+      );
   return new BadRequestException({
+    message,
+    errorCode: "QUANTITY_NOT_BONDS",
+  });
+}
+
+/**
+ * Refuses, inside the write's own transaction and so before the price is
+ * written, a manual price of a security linked to a marketable coupon program
+ * that is not a cash price of one bond (above five times the face value): the
+ * manual price is the only source of such a holding's value (INV-BOND-005).
+ * One helper for every manual-price write (create and update); `errorCode`
+ * `MANUAL_PRICE_NOT_CASH_PRICE`. Any other security is not read.
+ */
+export async function assertManualPriceIsCashPrice(
+  m: EntityManager,
+  userId: string,
+  securityId: string,
+  prices: ReadonlyArray<number | null | undefined>,
+): Promise<void> {
+  const found = await findManualPriceOutsideBand(
+    m,
+    userId,
+    securityId,
+    prices.filter((p): p is number => typeof p === "number"),
+  );
+  if (found === null) return;
+  const params = { price: found.price, faceValue: found.faceValue };
+  throw new BadRequestException({
     message: tr(
-      "errors.bonds.QUANTITY_NOT_BONDS",
-      `The quantity must be a number of bonds and the price a price per bond of face value ${params.faceValue}; the price ${params.price} is not within half to twice the face value of one bond.`,
+      "errors.bonds.MANUAL_PRICE_NOT_CASH_PRICE",
+      `The price must be the cash price of one bond of face value ${params.faceValue}; the price ${params.price} is more than five times the face value of one bond.`,
       params,
     ),
-    errorCode: "QUANTITY_NOT_BONDS",
+    errorCode: "MANUAL_PRICE_NOT_CASH_PRICE",
   });
 }
 

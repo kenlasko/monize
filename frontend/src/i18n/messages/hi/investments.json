@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "{from} से {to} की कोई दर उपलब्ध नहीं है। सहेजने से पहले एक दर, या परिवर्तित कुल, दर्ज करें।",
     "toastExchangeRateRequired": "मुद्राओं के बीच का सौदा सहेजने से पहले विनिमय दर दर्ज करें।",
     "notAvailable": "उपलब्ध नहीं",
+    "bondUnit": "एक इकाई = {faceValue} {currency} अंकित मूल्य",
+    "bondPriceCash": "कीमत एक इकाई ({faceValue} {currency} अंकित मूल्य) का नकद मूल्य है, उपार्जित ब्याज के बिना।",
+    "bondPriceIndexed": "कीमत एक इकाई ({faceValue} {currency} अंकित मूल्य) का नकद मूल्य है, जिसमें मुद्रास्फीति समायोजन शामिल है (उद्धृत कीमत x इंडेक्स अनुपात), उपार्जित ब्याज के बिना।",
     "bondSeries": {
       "label": "बॉन्ड सीरीज़",
       "fromDate": "तारीख़ से निर्धारित",
@@ -321,11 +324,40 @@
       "noLongerHeldUnknown": "सहेजी गई सीरीज़ (इस तारीख पर अब धारित नहीं)",
       "storedSeries": "सहेजी गई सीरीज़",
       "seriesOnSaleMonth": "{code} — {month} में बिक्री पर",
-      "seriesOnSaleRange": "{code} — {from} से {to} तक बिक्री पर"
+      "seriesOnSaleRange": "{code} — {from} से {to} तक बिक्री पर",
+      "chooseAuction": "नीचे से नीलामी चुनें",
+      "auctionRequired": "वह नीलामी चुनें जिसमें यह खरीद हुई थी: उसे नीचे खोजें।"
+    },
+    "bondAuctions": {
+      "find": "नीलामी खोजें",
+      "findAgain": "फिर से खोजें",
+      "hint": "{date} के एक महीने के भीतर जारी की गई नीलामियाँ जारीकर्ता की साइट से सूचीबद्ध करता है।",
+      "needsDate": "पहले तारीख दर्ज करें।",
+      "loading": "जारीकर्ता से नीलामियाँ पढ़ी जा रही हैं...",
+      "loadFailed": "जारीकर्ता से नीलामियाँ नहीं पढ़ी जा सकीं।",
+      "none": "{date} के एक महीने के भीतर कोई नीलामी जारी नहीं हुई।",
+      "termFilter": "अवधि",
+      "allTerms": "सभी",
+      "listLabel": "{date} के आसपास जारी नीलामियाँ",
+      "title": "{term} · {identifier}",
+      "reopening": "री-ओपनिंग",
+      "dates": "नीलामी {auction} · जारी {issue} · परिपक्वता {maturity}",
+      "discountRate": "डिस्काउंट दर {rate}",
+      "coupon": "कूपन {rate}",
+      "spread": "स्प्रेड {rate}",
+      "price": "कीमत {price}",
+      "rateAndPrice": "{rate} · कीमत {price}",
+      "announced": "घोषित: नतीजे अभी प्रकाशित नहीं हुए",
+      "fetching": "सीरीज़ प्राप्त की जा रही है...",
+      "fetchFailed": "इस नीलामी की सीरीज़ प्राप्त नहीं की जा सकी।",
+      "picked": "चुनी गई: {identifier}, जारी {issue}।",
+      "dateSet": "तारीख जारी होने की तारीख, {date}, पर सेट की गई।",
+      "priceSet": "कीमत नीलामी की कीमत, {price}, पर सेट की गई।"
     },
     "bondRedemption": {
       "summary": "ब्याज {interest}, समय-पूर्व मोचन कटौती {deduction}, भुगतान {payout}",
       "outsideSaleWindow": "इस सीरीज़ का एक लॉट उसकी बिक्री अवधि के बाहर खरीदा गया था, इसलिए मोचन को विभाजित नहीं किया जा सकता।",
+      "afterMaturity": "इस सीरीज़ का एक लॉट परिपक्वता तिथि पर या उसके बाद खरीदा गया था, इसलिए मोचन को विभाजित नहीं किया जा सकता।",
       "failed": "मोचन का विभाजन परिकलित नहीं किया जा सका।"
     }
   },

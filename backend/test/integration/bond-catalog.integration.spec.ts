@@ -15,6 +15,7 @@ import { ProviderHealthService } from "@/provider-health/provider-health.service
 import { BenchmarkRefreshService } from "@/bonds/benchmark-refresh.service";
 import { BondCatalogService } from "@/bonds/bond-catalog.service";
 import { SeriesHttp } from "@/bonds/series-http";
+import { INSTALLED_BOND_ADAPTERS } from "@/bonds/bond-adapters";
 import { POLISH_BOND_ADAPTER } from "@/bonds/adapters/pl/index";
 import { FIXTURE_CATALOG } from "@/bonds/adapters/pl/pl-test-input";
 import {
@@ -38,6 +39,12 @@ import { FxProviderChain } from "@/currencies/providers/fx-provider-chain";
 
 // The bond catalog only ensures a currency row; it never asks the FX chain.
 const NO_FX_CHAIN = {} as unknown as FxProviderChain;
+
+// Every installed country seeds its own programs, so the count follows the adapters.
+const SEEDED_PROGRAMS = INSTALLED_BOND_ADAPTERS.reduce(
+  (sum, adapter) => sum + adapter.programs.length,
+  0,
+);
 
 // The GUS fixture's newest month is 2026-08, and a feed more than three months
 // behind today is refused as stale. A fixed Warsaw date keeps the fixture
@@ -119,20 +126,34 @@ describe("bond catalog and benchmark refresh (integration)", () => {
       (await dataSource.query(`SELECT COUNT(*)::int AS n FROM ${table}`))[0].n,
     );
 
-  it("seeds the eight programs and nothing else, idempotently: no series, no terms, no benchmark row", async () => {
+  it("seeds every installed adapter's programs and nothing else, idempotently: no series, no terms, no benchmark row", async () => {
     await withSystemContext(() => catalog.seed());
     await withSystemContext(() => catalog.seed());
-    expect(await count("bond_programs")).toBe(8);
+    expect(await count("bond_programs")).toBe(SEEDED_PROGRAMS);
     expect(await count("bond_instruments")).toBe(0);
     expect(await count("bond_terms_versions")).toBe(0);
     expect(await count("benchmark_series")).toBe(0);
-    expect(
-      await dataSource.query(
-        `SELECT DISTINCT issuer_country_code, issuer_code, currency_code FROM bond_programs`,
+    const expectedIssuers = new Set(
+      INSTALLED_BOND_ADAPTERS.flatMap((adapter) =>
+        adapter.programs.map(
+          (p) => `${p.issuerCountryCode}|${p.issuerCode}|${p.currency}`,
+        ),
       ),
-    ).toEqual([
-      { issuer_country_code: "PL", issuer_code: "PL_MF", currency_code: "PLN" },
-    ]);
+    );
+    const stored: Array<{
+      issuer_country_code: string;
+      issuer_code: string;
+      currency_code: string;
+    }> = await dataSource.query(
+      `SELECT DISTINCT issuer_country_code, issuer_code, currency_code FROM bond_programs`,
+    );
+    expect(
+      new Set(
+        stored.map(
+          (r) => `${r.issuer_country_code}|${r.issuer_code}|${r.currency_code}`,
+        ),
+      ),
+    ).toEqual(expectedIssuers);
   });
 
   it("a stored series points at the program the seed created, and stores terms with a content hash", async () => {
@@ -142,7 +163,7 @@ describe("bond catalog and benchmark refresh (integration)", () => {
     expect(await count("bond_terms_versions")).toBe(8);
     expect(await count("benchmark_series")).toBe(2);
     // The programs are the seed's: storing the series added none.
-    expect(await count("bond_programs")).toBe(8);
+    expect(await count("bond_programs")).toBe(SEEDED_PROGRAMS);
     expect(
       await dataSource.query(
         `SELECT COUNT(*)::int AS n FROM bond_instruments i
@@ -499,7 +520,7 @@ describe("bond catalog and benchmark refresh (integration)", () => {
       // pre-inserts PLN, so remove it and seed on a fresh deployment.
       await dataSource.query(`DELETE FROM currencies WHERE code = 'PLN'`);
       await withSystemContext(() => catalog.seed());
-      expect(await count("bond_programs")).toBe(8);
+      expect(await count("bond_programs")).toBe(SEEDED_PROGRAMS);
       expect(
         await dataSource.query(
           `SELECT code, created_by_user_id FROM currencies WHERE code = 'PLN'`,

@@ -11,6 +11,7 @@ import { BondNotificationService } from "./bond-notification.service";
 import { BondOfferService } from "./bond-offer.service";
 import { BondPriceService } from "./bond-price.service";
 import { BondSeriesService } from "./bond-series.service";
+import { BondAuctionsService } from "./bond-auctions.service";
 import { BondValuationService } from "./bond-valuation.service";
 import { BondsController } from "./bonds.controller";
 import { SeriesHttp } from "./series-http";
@@ -38,6 +39,7 @@ import { SeriesHttp } from "./series-http";
     BondPriceService,
     SeriesHttp,
     BondSeriesService,
+    BondAuctionsService,
     BondOfferService,
     BondHoldingsService,
     BondNotificationService,

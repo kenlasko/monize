@@ -388,6 +388,31 @@ describe('SecurityBondCard', () => {
     expect(screen.getAllByText('Projected').length).toBeGreaterThan(0);
   });
 
+  it('names the simple annual growth of an assumed inflation of an indexed principal', async () => {
+    get.mockResolvedValue(
+      response({
+        lots: [
+          {
+            instrumentId: 'bond-1', purchaseDate: '2026-10-05',
+            quantity: 5,
+            purchaseDateAssumed: false,
+            valuation: lotValuation({
+              projectionAssumptions: [
+                { benchmarkId: 'US_CPI_U_NSA', value: '0.0300', basis: 'SUPPLIED', observation: null, growth: 'SIMPLE_ANNUAL' },
+              ],
+            }),
+          },
+        ],
+      }),
+    );
+    await mount();
+    expect(
+      screen.getByText(
+        'CPI-U, all items, not seasonally adjusted (BLS) assumed to grow 3% a year (simple annual growth, not compounded) for every later month',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('shows translated benchmark names and localized dates in the assumptions and missing lists', async () => {
     get.mockResolvedValue(
       response({
@@ -1299,6 +1324,47 @@ describe('SecurityBondCard: indexation, scenarios and the interest chart (spec 1
       expect(cell).toHaveTextContent('Not valued');
       expect(cell).toHaveTextContent('can only be bought from 10/01/2026 to 10/31/2026');
       expect(cell).toHaveTextContent('bought on 12/05/2026');
+    });
+
+    it('shows the refusal reason of a marketable lot bought on or after its maturity', async () => {
+      get.mockResolvedValue(
+        response({
+          lots: [
+            {
+              instrumentId: 'bond-1', purchaseDate: '2027-04-02',
+              quantity: 10,
+              purchaseDateAssumed: false,
+              valuation: lotValuation({
+                status: 'REFUSED',
+                currentPeriod: null,
+                refusal: {
+                  code: 'PURCHASE_AFTER_MATURITY',
+                  params: { maturityDate: '2027-04-01', purchaseDate: '2027-04-02' },
+                },
+                grossValue: null,
+                valuationComplete: false,
+              }),
+            },
+          ],
+        }),
+      );
+      await mount();
+      const cell = within(lotRows()[1]).getAllByRole('cell')[3];
+      expect(cell).toHaveTextContent('Not valued');
+      expect(cell).toHaveTextContent('matured on 04/01/2027');
+      expect(cell).toHaveTextContent('bought on 04/02/2027');
+    });
+
+    it('says the price is the person\'s own when a held series trades, and says nothing otherwise', async () => {
+      get.mockResolvedValue(response({ marketPriceRequired: true }));
+      await mount();
+      expect(screen.getByText('Monize writes no price for it', { exact: false })).toBeInTheDocument();
+    });
+
+    it('does not ask for a price when the flag is false or absent', async () => {
+      get.mockResolvedValue(response({ marketPriceRequired: false }));
+      await mount();
+      expect(screen.queryByText('Monize writes no price for it', { exact: false })).not.toBeInTheDocument();
     });
 
     it('shows a partial-data notice naming the cause when valuationComplete is false', async () => {

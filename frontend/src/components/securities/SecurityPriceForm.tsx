@@ -12,6 +12,7 @@ import { SecurityPrice, CreateSecurityPriceData } from '@/types/investment';
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
 import { FormActions } from '@/components/ui/FormActions';
+import { BondUnitHint } from '@/components/investments/BondUnitHint';
 
 const buildPriceSchema = (t: (key: string) => string) => z.object({
   priceDate: z.string().min(1, t('priceValidation.dateRequired')),
@@ -32,9 +33,11 @@ interface SecurityPriceFormProps {
   onCancel: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
   submitRef?: MutableRefObject<(() => void) | null>;
+  /** The security's linked bond program: the form then says what a price of it is. */
+  bondProgramId?: string | null;
 }
 
-export function SecurityPriceForm({ price, onSubmit, onCancel, onDirtyChange, submitRef }: SecurityPriceFormProps) {
+export function SecurityPriceForm({ price, onSubmit, onCancel, onDirtyChange, submitRef, bondProgramId }: SecurityPriceFormProps) {
   const t = useTranslations('securities');
   const {
     register,
@@ -104,6 +107,8 @@ export function SecurityPriceForm({ price, onSubmit, onCancel, onDirtyChange, su
           />
         )}
       />
+
+      <BondUnitHint programId={bondProgramId} showUnit={false} />
 
       <div className="grid grid-cols-2 gap-3">
         <Controller

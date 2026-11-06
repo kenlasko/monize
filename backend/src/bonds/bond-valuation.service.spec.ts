@@ -1271,3 +1271,87 @@ describe("BondValuationService", () => {
     });
   });
 });
+
+describe("BondValuationService.valueSecurity: marketPriceRequired (INV-BOND-005)", () => {
+  const owned = [
+    {
+      id: "sec-1",
+      user_id: "user-1",
+      symbol: "TOS1029",
+      currency_code: "PLN",
+      bond_program_id: "p1",
+      bond_auto_fetch: false,
+    },
+  ];
+  const buy = (date: string) => ({
+    action: "BUY",
+    status: "UNRECONCILED",
+    tx_date: date,
+    quantity: "10",
+    account_id: "acc-1",
+    counterpart_account_id: null,
+    bond_instrument_id: "i1",
+  });
+  /** The same terms as a marketable coupon series: no sale window, paid at maturity only. */
+  const marketable = () => {
+    const doc = manifestDocument("tos1029");
+    doc.instrument.marketability = "MARKETABLE";
+    doc.saleWindow = null;
+    doc.redemption = { type: "MATURITY_ONLY" };
+    return doc;
+  };
+
+  it("is true when a held series trades, so the price is the person's", async () => {
+    const { service } = setup({
+      securities: owned,
+      ledger: [buy("2026-10-15")],
+      terms: [{ version: 1, terms: marketable() }],
+    });
+    const result = await service.valueSecurity("user-1", "sec-1", "2027-01-15");
+    expect(result.marketPriceRequired).toBe(true);
+    // The engine still values the lot from its terms.
+    expect(result.lots[0].valuation.grossValue).not.toBeNull();
+  });
+
+  it("is false when every held series is priced by its terms", async () => {
+    const { service } = setup({
+      securities: owned,
+      ledger: [buy("2026-10-15")],
+    });
+    const result = await service.valueSecurity("user-1", "sec-1", "2027-01-15");
+    expect(result.marketPriceRequired).toBe(false);
+  });
+
+  it("is false when no series is held", async () => {
+    const { service } = setup({ securities: owned, ledger: [] });
+    const result = await service.valueSecurity("user-1", "sec-1", "2027-01-15");
+    expect(result.marketPriceRequired).toBe(false);
+  });
+
+  it("names the account whose lots hold a traded series, in valueByAccount", async () => {
+    const traded = setup({
+      securities: owned,
+      ledger: [buy("2026-10-15")],
+      terms: [{ version: 1, terms: marketable() }],
+    });
+    const priced = setup({ securities: owned, ledger: [buy("2026-10-15")] });
+
+    const tradedByAccount = await traded.service.valueByAccount(
+      "user-1",
+      "sec-1",
+      "2027-01-15",
+    );
+    const pricedByAccount = await priced.service.valueByAccount(
+      "user-1",
+      "sec-1",
+      "2027-01-15",
+    );
+
+    expect(tradedByAccount.accounts?.get("acc-1")?.marketPriceRequired).toBe(
+      true,
+    );
+    expect(pricedByAccount.accounts?.get("acc-1")?.marketPriceRequired).toBe(
+      false,
+    );
+  });
+});

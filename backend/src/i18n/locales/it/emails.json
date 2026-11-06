@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "un tasso da cui dipende non è ancora pubblicato",
         "TERMS_INCOMPLETE": "le condizioni della serie sono incomplete",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "una data di acquisto è fuori dal periodo di vendita della serie",
+        "PURCHASE_AFTER_MATURITY": "una data di acquisto coincide con la scadenza della serie o la segue",
         "other": "non può essere calcolato dai dati memorizzati"
       },
       "benchmarkTitle": "{{ benchmark }}: nuova rilevazione {{ observation }}",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "la rilevazione {{ observation }} di {{ benchmark }} non è memorizzata: non è ancora pubblicata o il feed non è stato scaricato da allora; aggiorna nella pagina dell'obbligazione",
         "terms": "le condizioni di {{ series }} sono incomplete; aggiorna la serie nella pagina dell'obbligazione",
         "purchase": "un acquisto di {{ series }} del {{ date }} è fuori dal suo periodo di vendita (dal {{ from }} al {{ to }}); correggi la data di acquisto",
+        "purchaseAfterMaturity": "un acquisto di {{ series }} il {{ date }} coincide con la scadenza ({{ maturity }}) o la segue; correggi la data di acquisto",
         "lots": "i lotti non possono essere ricavati dal registro ({{ code }}); correggi il registro",
         "lotsRow": "{{ action }} del {{ date }}: i lotti non possono essere ricavati ({{ code }}); correggi la transazione",
         "lotsRowSeries": "{{ action }} del {{ date }}: nessuna serie assegnata ({{ code }}); scegli la serie in quella transazione",

@@ -84,6 +84,7 @@
       "RATE_UNKNOWN": "a rate it depends on is not published yet",
       "TERMS_INCOMPLETE": "the terms of the series are incomplete",
       "PURCHASE_OUTSIDE_SALE_WINDOW": "a purchase date is outside the sale window of the series",
+      "PURCHASE_AFTER_MATURITY": "a purchase date is on or after the maturity of the series",
       "other": "it cannot be worked out from the data stored"
     },
     "benchmarkTitle": "{benchmark}: new observation {observation}",
@@ -99,6 +100,7 @@
       "observationNoPublisher": "The {observation} observation of {benchmark} is not stored: it is not published yet, or the feed has not been fetched since. Refresh on the bond page.",
       "terms": "The terms of {series} are incomplete. Refresh the series on the bond page.",
       "purchase": "A purchase of {series} on {date} is outside its sale window ({from} to {to}). Correct the purchase date.",
+      "purchaseAfterMaturity": "A purchase of {series} on {date} is on or after its maturity ({maturity}). Correct the purchase date.",
       "lots": "The lots cannot be derived from the ledger ({code}). Correct the ledger.",
       "lotsRow": "{action} on {date} makes the lots impossible to derive ({code}). Correct the transaction.",
       "lotsRowSeries": "{action} on {date} is not placed in a series ({code}). Choose the series on that transaction.",
@@ -117,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "CPI, 12 months (GUS)",
-      "PL_NBP_REFERENCE": "NBP reference rate"
+      "PL_NBP_REFERENCE": "NBP reference rate",
+      "US_CPI_U_NSA": "CPI-U, all items, not seasonally adjusted (BLS)",
+      "US_TBILL_13W_MMY": "13-week Treasury bill yield"
     }
   },
   "emailReceiptsAttention": {

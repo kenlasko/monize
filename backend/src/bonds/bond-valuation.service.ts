@@ -5,14 +5,11 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { getEffectiveTimezoneOfUser } from "../common/users-by-timezone.util";
 import { loadBondLedger } from "./bond-ledger";
 import { BondLotsRefusal, bondLotsAsOf } from "./bond-lots";
+import { assertBenchmarkUnit } from "./bond-benchmark-units";
 import { BenchmarkData } from "./domain/benchmark";
+import { benchmarkReadsOf, readsBenchmark } from "./domain/benchmark-reads";
 import { ExactDecimal } from "./domain/exact-decimal";
-import {
-  benchmarkFieldsOf,
-  BondTerms,
-  parseBondTerms,
-  Redemption,
-} from "./domain/bond-terms";
+import { BondTerms, parseBondTerms, Redemption } from "./domain/bond-terms";
 import { BOND_CALENDARS } from "./bond-adapters";
 import {
   BondDataInconsistentError,
@@ -24,6 +21,7 @@ import {
   redemptionSplit,
   valueBondLot,
 } from "./engine/bond-engine";
+import { marketPriceRequired } from "./engine/price-policy";
 import { RedemptionSplit } from "./engine/redemption-split";
 import { BondScenarios, scenarioOf, unknownScenario } from "./bond-scenarios";
 
@@ -92,6 +90,8 @@ export interface SecurityLotValuation {
   readonly purchaseDate: string;
   readonly quantity: number;
   readonly purchaseDateAssumed: boolean;
+  /** What the lot cost, net of accrued interest, as exact text; null when unknown. */
+  readonly cost: string | null;
   readonly valuation: BondValuation;
 }
 
@@ -148,6 +148,11 @@ export interface SecuritySeriesInfo {
   readonly termsSource: BondTermsSource;
   /** The terms' redemption policy; null when the bond is redeemable at maturity only. */
   readonly redemptionTerms: Redemption | null;
+  /**
+   * True when the series trades and the engine does not price it
+   * (`engineWritesPrice` false): a holding of it is worth the person's price.
+   */
+  readonly marketPriceRequired: boolean;
 }
 
 export interface SecurityValuation {
@@ -162,6 +167,14 @@ export interface SecurityValuation {
   readonly benchmarkCoverage: readonly BenchmarkCoverage[];
   readonly totals: SecurityValuationTotals;
   readonly refusal: BondLotsRefusal | null;
+  /**
+   * True when a series the security holds trades (a MARKETABLE series other than
+   * a discount instrument): the engine writes no price for the security, so its
+   * price is the person's own, and the surface says so (INV-BOND-005,
+   * `docs/financial-calculation-contract.md` 1.3). False when every series is
+   * priced by its terms, or none is held.
+   */
+  readonly marketPriceRequired: boolean;
 }
 
 /** One account's lots of a linked security: their bond count and exact gross value. */
@@ -169,38 +182,18 @@ export interface AccountLotsValue {
   readonly quantity: number;
   /** Null unless every lot of the account has a gross value. */
   readonly grossValue: string | null;
+  /**
+   * True when a series among the account's lots is one the engine does not
+   * price (a marketable coupon security): the holding is worth the person's
+   * price, and `grossValue` is not its value (`bond-holding-value.ts`).
+   */
+  readonly marketPriceRequired: boolean;
 }
 
 export interface SecurityValueByAccount {
   readonly asOf: string;
   /** Keyed by account id; null when the lots are unknowable (a refusal). */
   readonly accounts: ReadonlyMap<string, AccountLotsValue> | null;
-}
-
-/** How far a lot count may sit from a holding's quantity and still be the same position. */
-const LOT_QUANTITY_TOLERANCE = 0.0001;
-
-/**
- * The gross value of one account's lots as the value of its holding of
- * `quantity` bonds, or why it has none: the valuation failed or its lots are
- * unknowable or one lot has no gross value (`UNKNOWN`), or the lots count a
- * different number of bonds than the holding (`QUANTITY_MISMATCH`: never price
- * a different quantity). Written once for every surface that values a
- * bond-linked holding (`bond-program-securities.md` 2.4).
- */
-export function ownLotsGrossValue(
-  valued: SecurityValueByAccount | null | undefined,
-  accountId: string,
-  quantity: number,
-):
-  | { readonly grossValue: string; readonly lotQuantity: number }
-  | { readonly unpriced: "UNKNOWN" | "QUANTITY_MISMATCH" } {
-  const lots = valued?.accounts?.get(accountId);
-  if (!lots || lots.grossValue === null) return { unpriced: "UNKNOWN" };
-  if (Math.abs(lots.quantity - quantity) >= LOT_QUANTITY_TOLERANCE) {
-    return { unpriced: "QUANTITY_MISMATCH" };
-  }
-  return { grossValue: lots.grossValue, lotQuantity: lots.quantity };
 }
 
 /**
@@ -255,7 +248,7 @@ function assertSomeSeriesReadsBenchmark(
 ): void {
   if (references.size === 0) return;
   for (const { terms } of references.values()) {
-    if (benchmarkFieldsOf(terms.rateRule)?.benchmarkId === benchmarkId) return;
+    if (readsBenchmark(terms, benchmarkId)) return;
   }
   throw new BondEngineError(
     "BENCHMARK_NOT_READ",
@@ -388,6 +381,7 @@ export class BondValuationService {
       }
       // Per series, a refusal included: where a series' terms came from and
       // what it redeems at belong to the series, not to the derived lots.
+      const needsMarketPrice = marketPriceRequired(held.map((r) => r.terms));
       const series = held.map((reference) => ({
         instrumentId: reference.instrument.id,
         seriesCode: reference.instrument.seriesCode,
@@ -397,6 +391,7 @@ export class BondValuationService {
           reference.terms.redemption.type === "ON_DEMAND"
             ? reference.terms.redemption
             : null,
+        marketPriceRequired: marketPriceRequired([reference.terms]),
       }));
       if (folded.lots === null) {
         return {
@@ -411,6 +406,7 @@ export class BondValuationService {
             accruedInterest: null,
           },
           refusal: folded.refusal,
+          marketPriceRequired: needsMarketPrice,
         };
       }
 
@@ -441,6 +437,7 @@ export class BondValuationService {
           accruedInterest: sum((v) => v.accruedInterest),
         },
         refusal: null,
+        marketPriceRequired: needsMarketPrice,
       };
     });
   }
@@ -467,23 +464,42 @@ export class BondValuationService {
       const asOf = date ?? (await financialTodayOf(m, userId));
       const valuation = await this.valueSecurity(userId, securityId, asOf);
       if (valuation.refusal !== null) return { asOf, accounts: null };
+      const pricedByPerson = new Set(
+        valuation.series
+          .filter((series) => series.marketPriceRequired)
+          .map((series) => series.instrumentId),
+      );
       const grouped = new Map<
         string,
-        { quantity: number; figures: Array<string | null> }
+        {
+          quantity: number;
+          figures: Array<string | null>;
+          marketPriceRequired: boolean;
+        }
       >();
       for (const lot of valuation.lots) {
         const key = lot.accountId ?? "";
-        const entry = grouped.get(key) ?? { quantity: 0, figures: [] };
+        const entry = grouped.get(key) ?? {
+          quantity: 0,
+          figures: [],
+          marketPriceRequired: false,
+        };
         entry.quantity += lot.quantity;
+        entry.marketPriceRequired ||=
+          lot.instrumentId !== null && pricedByPerson.has(lot.instrumentId);
         entry.figures.push(
           lot.valuation.status === "REFUSED" ? null : lot.valuation.grossValue,
         );
         grouped.set(key, entry);
       }
       const accounts = new Map<string, AccountLotsValue>();
-      for (const [key, { quantity, figures }] of grouped) {
+      for (const [
+        key,
+        { quantity, figures, marketPriceRequired: needsPrice },
+      ] of grouped) {
         accounts.set(key, {
           quantity,
+          marketPriceRequired: needsPrice,
           grossValue: sumKnown(
             figures,
             figures.reduce((n, f) => Math.max(n, decimalPlacesOf(f)), 0),
@@ -543,9 +559,7 @@ export class BondValuationService {
               const reference = this.referenceOf(references, lot);
               // Only a series that reads the benchmark takes the assumption;
               // the others are what they are.
-              const reads =
-                benchmarkFieldsOf(reference.terms.rateRule)?.benchmarkId ===
-                benchmarkId;
+              const reads = readsBenchmark(reference.terms, benchmarkId);
               return this.valueLotFrom(
                 reference,
                 lot,
@@ -630,6 +644,7 @@ export class BondValuationService {
       readonly purchaseDate: string;
       readonly quantity: number;
       readonly purchaseDateAssumed?: boolean;
+      readonly cost?: string | null;
     },
     asOf: string,
     projection?: ReadonlyMap<string, string>,
@@ -644,6 +659,7 @@ export class BondValuationService {
         purchaseDate: lot.purchaseDate,
         quantity: lot.quantity,
         purchaseDateAssumed: lot.purchaseDateAssumed,
+        cost: lot.cost,
       },
       asOf,
       projection,
@@ -661,6 +677,7 @@ export class BondValuationService {
       readonly purchaseDate: string;
       readonly quantity: number;
       readonly purchaseDateAssumed?: boolean;
+      readonly cost?: string | null;
     },
     date: string,
   ): RedemptionSplit {
@@ -675,6 +692,7 @@ export class BondValuationService {
           purchaseDate: lot.purchaseDate,
           quantity: lot.quantity,
           purchaseDateAssumed: lot.purchaseDateAssumed,
+          cost: lot.cost,
         },
       },
       date,
@@ -815,90 +833,99 @@ export class BondValuationService {
     return new Map(rows.map((r) => [Number(r.period_number), r.annual_rate]));
   }
 
-  /** The coverage of the series the rate rule reads; none for a fixed rate. */
+  /** The coverage of every series the terms read; none for a fixed rate and a fixed principal. */
   private async loadCoverage(
     m: EntityManager,
     terms: BondTerms,
   ): Promise<BenchmarkCoverage[]> {
-    const fields = benchmarkFieldsOf(terms.rateRule);
-    if (fields === null) return [];
-    const code = fields.benchmarkId;
-    const rows: Array<{
-      covered_through: string | null;
-      updated_at: Date | string | null;
-    }> = await m.query(
-      `SELECT TO_CHAR(covered_through, 'YYYY-MM-DD') AS covered_through,
-              updated_at
-         FROM benchmark_series
-        WHERE code = $1`,
-      [code],
-    );
-    if (rows.length === 0) {
-      return [{ benchmarkId: code, coveredThrough: null, lastFetchedAt: null }];
-    }
-    const updated = rows[0].updated_at;
-    return [
-      {
+    const coverage: BenchmarkCoverage[] = [];
+    for (const { benchmarkId: code } of benchmarkReadsOf(terms)) {
+      const rows: Array<{
+        covered_through: string | null;
+        updated_at: Date | string | null;
+      }> = await m.query(
+        `SELECT TO_CHAR(covered_through, 'YYYY-MM-DD') AS covered_through,
+                updated_at
+           FROM benchmark_series
+          WHERE code = $1`,
+        [code],
+      );
+      if (rows.length === 0) {
+        coverage.push({
+          benchmarkId: code,
+          coveredThrough: null,
+          lastFetchedAt: null,
+        });
+        continue;
+      }
+      const updated = rows[0].updated_at;
+      coverage.push({
         benchmarkId: code,
         coveredThrough: rows[0].covered_through,
         lastFetchedAt: !updated ? null : new Date(updated).toISOString(),
-      },
-    ];
+      });
+    }
+    return coverage;
   }
 
-  /** The series the rate rule reads; absent from the map when no row is stored. */
+  /**
+   * The series the terms read; absent from the map when no row is stored. A
+   * stored series in a unit the rule cannot read is refused
+   * (`BENCHMARK_UNIT_MISMATCH`), never valued.
+   */
   private async loadBenchmarks(
     m: EntityManager,
     terms: BondTerms,
   ): Promise<ReadonlyMap<string, BenchmarkData>> {
     const benchmarks = new Map<string, BenchmarkData>();
-    const fields = benchmarkFieldsOf(terms.rateRule);
-    if (fields === null) return benchmarks;
-    const code = fields.benchmarkId;
-
-    const series: Array<{
-      kind: "STEP" | "MONTHLY";
-      publisher: string;
-      covered_through: string | null;
-    }> = await m.query(
-      `SELECT kind, publisher, TO_CHAR(covered_through, 'YYYY-MM-DD') AS covered_through
-         FROM benchmark_series
-        WHERE code = $1`,
-      [code],
-    );
-    if (series.length === 0) return benchmarks;
-
-    const values: Array<{ observation_date: string; value: string }> =
-      await m.query(
-        `SELECT TO_CHAR(observation_date, 'YYYY-MM-DD') AS observation_date,
-                value::text AS value
-           FROM benchmark_values
-          WHERE benchmark_code = $1
-          ORDER BY observation_date`,
+    for (const read of benchmarkReadsOf(terms)) {
+      const code = read.benchmarkId;
+      const series: Array<{
+        kind: "STEP" | "MONTHLY";
+        publisher: string;
+        unit?: string;
+        covered_through: string | null;
+      }> = await m.query(
+        `SELECT kind, publisher, unit, TO_CHAR(covered_through, 'YYYY-MM-DD') AS covered_through
+           FROM benchmark_series
+          WHERE code = $1`,
         [code],
       );
-    const { kind, publisher, covered_through } = series[0];
-    benchmarks.set(
-      code,
-      kind === "STEP"
-        ? {
-            kind,
-            publisher,
-            coveredThrough: covered_through,
-            changes: values.map((v) => ({
-              effectiveFrom: v.observation_date,
-              value: v.value,
-            })),
-          }
-        : {
-            kind,
-            publisher,
-            // A monthly observation is stored on the first day of its month.
-            values: new Map(
-              values.map((v) => [v.observation_date.slice(0, 7), v.value]),
-            ),
-          },
-    );
+      if (series.length === 0) continue;
+      assertBenchmarkUnit(read, series[0].unit);
+
+      const values: Array<{ observation_date: string; value: string }> =
+        await m.query(
+          `SELECT TO_CHAR(observation_date, 'YYYY-MM-DD') AS observation_date,
+                  value::text AS value
+             FROM benchmark_values
+            WHERE benchmark_code = $1
+            ORDER BY observation_date`,
+          [code],
+        );
+      const { kind, publisher, covered_through } = series[0];
+      benchmarks.set(
+        code,
+        kind === "STEP"
+          ? {
+              kind,
+              publisher,
+              coveredThrough: covered_through,
+              changes: values.map((v) => ({
+                effectiveFrom: v.observation_date,
+                value: v.value,
+              })),
+            }
+          : {
+              kind,
+              publisher,
+              // A monthly observation is stored on the first day of its month.
+              values: new Map(
+                values.map((v) => [v.observation_date.slice(0, 7), v.value]),
+              ),
+            },
+      );
+    }
     return benchmarks;
   }
 }

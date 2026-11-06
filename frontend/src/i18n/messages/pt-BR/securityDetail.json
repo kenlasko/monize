@@ -300,6 +300,7 @@
       "periodValue": "{index}: de {start} a {end}",
       "rate": "Taxa",
       "principal": "Principal por título",
+      "principalIssuePrice": "Nenhum custo informado: o preço do leilão é usado",
       "accruedInterest": "Juros acumulados",
       "grossValue": "Valor bruto",
       "earlyRedemption": "Resgate antecipado",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "Premissas da projeção",
       "latestObservation": "{benchmark} assumido em {value} para todos os períodos seguintes, o último valor publicado ({observation})",
-      "supplied": "{benchmark} assumido em {value} para todos os períodos seguintes"
+      "supplied": "{benchmark} assumido em {value} para todos os períodos seguintes",
+      "suppliedSimpleAnnual": "Presume-se que {benchmark} cresça {value} ao ano (crescimento anual simples, sem capitalização) em cada mês seguinte"
     },
     "missing": {
       "title": "Dados ainda necessários",
@@ -371,8 +373,15 @@
         "firstThen": "Período 1: {firstRate}. Depois {benchmark} + {addend}",
         "every": "Cada período: {benchmark} + {addend}",
         "floorZero": "Um valor negativo de {benchmark} conta como 0",
-        "discount": "Desconto sobre o valor de face"
+        "dailyFloor": "A taxa diária (índice mais spread) nunca fica abaixo de {floor}",
+        "discount": "Desconto sobre o valor de face",
+        "daily": "Todos os dias: {benchmark} + {addend}, somado dia a dia",
+        "lockout": "Um leilão a menos de {days, plural, one {# dia útil} other {# dias úteis}} do fim de um período não é usado nesse período"
       },
+      "daily": "Diário, {benchmark}",
+      "dailyNoIndex": "Diário, {benchmark}: ainda não há índice salvo",
+      "dailyRun": "A partir de {from}: {rate}",
+      "dailyRunUnknown": "A partir de {from}: sem índice salvo",
       "lotHeading": "Lote comprado em {date}",
       "range": "{start} a {end}",
       "current": "Atual",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "IPCA, 12 meses (GUS)",
-      "PL_NBP_REFERENCE": "Taxa de referência do NBP"
+      "PL_NBP_REFERENCE": "Taxa de referência do NBP",
+      "US_CPI_U_NSA": "CPI-U, todos os itens, sem ajuste sazonal (BLS)",
+      "US_TBILL_13W_MMY": "Rendimento dos títulos do Tesouro de 13 semanas"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "Esta série só pode ser comprada de {from} a {to}. Este lote foi comprado em {purchaseDate}, portanto não é avaliado."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "Esta série só pode ser comprada de {from} a {to}. Este lote foi comprado em {purchaseDate}, portanto não é avaliado.",
+      "PURCHASE_AFTER_MATURITY": "Esta série venceu em {maturityDate}. Este lote foi comprado em {purchaseDate}, nesse dia ou depois, por isso não é avaliado."
     },
+    "marketPriceRequired": "Este ativo contém uma série negociada em mercado, então o preço dele não decorre das condições. O Monize não grava nenhum preço para ela: informe o preço você mesmo. Os valores dos lotes abaixo são calculados a partir das condições e não são valores de mercado.",
     "partial": {
       "title": "Esta avaliação está incompleta; leia os valores como parciais.",
       "terms": "As condições do título estão incompletas (por exemplo, um calendário não está instalado).",
@@ -453,7 +466,8 @@
       "none": "Ainda não há dados de {benchmark} salvos"
     },
     "issuers": {
-      "PL_MF": "Ministério das Finanças (PL)"
+      "PL_MF": "Ministério das Finanças (PL)",
+      "US_TREASURY": "Departamento do Tesouro dos EUA (US)"
     },
     "redemption": {
       "title": "Condições do resgate antecipado",
@@ -470,7 +484,12 @@
       "COI": "COI: títulos de poupança de 4 anos indexados à inflação",
       "EDO": "EDO: títulos de poupança de 10 anos indexados à inflação",
       "ROS": "ROS: títulos de poupança familiares de 6 anos indexados à inflação",
-      "ROD": "ROD: títulos de poupança familiares de 12 anos indexados à inflação"
+      "ROD": "ROD: títulos de poupança familiares de 12 anos indexados à inflação",
+      "BILL": "BILL: letras do Tesouro, de 4 a 52 semanas, vendidas com desconto",
+      "NOTE": "NOTE: notas do Tesouro, de 2 a 10 anos, cupom fixo semestral",
+      "BOND": "BOND: títulos do Tesouro, 20 e 30 anos, cupom fixo semestral",
+      "TIPS": "TIPS: títulos do Tesouro protegidos contra a inflação, principal indexado ao CPI-U",
+      "FRN": "FRN: notas do Tesouro de taxa flutuante, 2 anos, juros trimestrais"
     },
     "series": {
       "title": "Suas séries",

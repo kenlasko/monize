@@ -341,6 +341,7 @@
         "RATE_UNKNOWN": "een rente waarvan ze afhangt is nog niet gepubliceerd",
         "TERMS_INCOMPLETE": "de voorwaarden van de serie zijn onvolledig",
         "PURCHASE_OUTSIDE_SALE_WINDOW": "een aankoopdatum valt buiten de verkoopperiode van de serie",
+        "PURCHASE_AFTER_MATURITY": "een aankoopdatum ligt op of na de einddatum van de serie",
         "other": "ze kan niet worden berekend uit de opgeslagen gegevens"
       },
       "benchmarkTitle": "{{ benchmark }}: nieuwe waarneming {{ observation }}",
@@ -357,6 +358,7 @@
         "observationNoPublisher": "de waarneming {{ observation }} van {{ benchmark }} is niet opgeslagen: ze is nog niet gepubliceerd of de feed is sindsdien niet opgehaald; vernieuw op de obligatiepagina",
         "terms": "de voorwaarden van {{ series }} zijn onvolledig; vernieuw de serie op de obligatiepagina",
         "purchase": "een aankoop van {{ series }} op {{ date }} valt buiten de verkoopperiode ({{ from }} tot {{ to }}); corrigeer de aankoopdatum",
+        "purchaseAfterMaturity": "een aankoop van {{ series }} op {{ date }} ligt op of na de einddatum ({{ maturity }}); corrigeer de aankoopdatum",
         "lots": "de partijen kunnen niet uit het grootboek worden afgeleid ({{ code }}); corrigeer het grootboek",
         "lotsRow": "{{ action }} van {{ date }}: de partijen kunnen niet worden afgeleid ({{ code }}); corrigeer de transactie",
         "lotsRowSeries": "{{ action }} van {{ date }}: geen serie toegewezen ({{ code }}); kies de serie bij die transactie",

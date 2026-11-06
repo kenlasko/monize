@@ -1,0 +1,68 @@
+{
+  "cases": [
+    {
+      "id": "E4",
+      "description": "6 3/4 % note, 92 of 184 days of one half-year, 150,000 par (quantity 1,500)",
+      "source": "31 CFR 356 Appendix B, I.D example 1: 16.87500 per 1,000, 2,531.25 on 150,000 (https://www.law.cornell.edu/cfr/text/31/appendix-B_to_part_356)",
+      "terms": {
+        "datedDate": "1990-08-15",
+        "firstCouponDate": "1991-02-15",
+        "maturityDate": "1992-02-15",
+        "annualRate": "0.0675",
+        "endOfMonth": false
+      },
+      "lot": { "purchaseDate": "1990-11-15", "quantity": 1500 },
+      "asOf": "1990-11-15",
+      "expect": { "status": "OPEN", "accruedInterest": "2531.25" }
+    },
+    {
+      "id": "E5",
+      "description": "10 3/4 % bond bought in its second half-year: 44 of 181 days plus 81 of 184 days, 11,000 par (quantity 110)",
+      "source": "31 CFR 356 Appendix B, I.D example 2: 36.72798 per 1,000, 404.01 on 11,000",
+      "terms": {
+        "datedDate": "1990-07-02",
+        "firstCouponDate": "1991-02-15",
+        "maturityDate": "2000-02-15",
+        "annualRate": "0.1075",
+        "endOfMonth": false
+      },
+      "lot": { "purchaseDate": "1990-11-04", "quantity": 110 },
+      "asOf": "1990-11-04",
+      "expect": { "status": "OPEN", "accruedInterest": "404.01" }
+    },
+    {
+      "id": "E6",
+      "description": "8 3/8 % note with a short first coupon, 20,000 par (quantity 200): the first coupon",
+      "source": "31 CFR 356 Appendix B, I.A example 3: 41.419837 per 1,000 (41.419836957 exact), 828.40 on 20,000",
+      "terms": {
+        "datedDate": "1990-07-02",
+        "firstCouponDate": "1990-12-31",
+        "maturityDate": "1992-06-30",
+        "annualRate": "0.08375",
+        "endOfMonth": true
+      },
+      "lot": { "purchaseDate": "1990-07-02", "quantity": 200 },
+      "asOf": "1990-07-02",
+      "knownCashflows": [
+        { "date": "1990-12-31", "type": "INTEREST", "amount": "828.40", "period": 1 }
+      ]
+    },
+    {
+      "id": "E7",
+      "description": "7 7/8 % note with a long first coupon, 7,000 par (quantity 70): the first coupon",
+      "source": "31 CFR 356 Appendix B, I.A example 4: 55.210598 per 1,000, 386.47 on 7,000",
+      "terms": {
+        "datedDate": "1990-12-03",
+        "firstCouponDate": "1991-08-15",
+        "maturityDate": "1993-08-15",
+        "annualRate": "0.07875",
+        "endOfMonth": false
+      },
+      "lot": { "purchaseDate": "1990-12-03", "quantity": 70 },
+      "asOf": "1990-12-03",
+      "knownCashflows": [
+        { "date": "1991-08-15", "type": "INTEREST", "amount": "386.47", "period": 1 }
+      ]
+    }
+  ]
+}

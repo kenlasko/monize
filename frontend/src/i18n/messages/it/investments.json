@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Nessun tasso da {from} a {to} disponibile. Inseriscine uno, o il totale convertito, prima di salvare.",
     "toastExchangeRateRequired": "Inserisci un tasso di cambio prima di salvare un'operazione tra valute.",
     "notAvailable": "Non disponibile",
+    "bondUnit": "Un'unità = {faceValue} {currency} di valore nominale",
+    "bondPriceCash": "Il prezzo è il prezzo a pronti di un'unità ({faceValue} {currency} di valore nominale), senza interessi maturati.",
+    "bondPriceIndexed": "Il prezzo è il prezzo a pronti di un'unità ({faceValue} {currency} di valore nominale) compreso l'adeguamento all'inflazione (prezzo quotato x coefficiente di indicizzazione), senza interessi maturati.",
     "bondSeries": {
       "label": "Serie obbligazionaria",
       "fromDate": "Determinata in base alla data",
@@ -321,11 +324,40 @@
       "noLongerHeldUnknown": "Serie memorizzata (non più detenuta a questa data)",
       "storedSeries": "Serie memorizzata",
       "seriesOnSaleMonth": "{code} — in vendita {month}",
-      "seriesOnSaleRange": "{code} — in vendita dal {from} al {to}"
+      "seriesOnSaleRange": "{code} — in vendita dal {from} al {to}",
+      "chooseAuction": "Scegli l'asta qui sotto",
+      "auctionRequired": "Scegli l'asta in cui è stato fatto questo acquisto: cercala qui sotto."
+    },
+    "bondAuctions": {
+      "find": "Trova l'asta",
+      "findAgain": "Cerca di nuovo",
+      "hint": "Elenca le aste emesse entro un mese da {date}, dal sito dell'emittente.",
+      "needsDate": "Inserisci prima la data.",
+      "loading": "Lettura delle aste dall'emittente...",
+      "loadFailed": "Non è stato possibile leggere le aste dall'emittente.",
+      "none": "Nessuna asta è stata emessa entro un mese da {date}.",
+      "termFilter": "Durata",
+      "allTerms": "Tutte",
+      "listLabel": "Aste emesse intorno a {date}",
+      "title": "{term} · {identifier}",
+      "reopening": "Riapertura",
+      "dates": "Asta del {auction} · emissione {issue} · scadenza {maturity}",
+      "discountRate": "Tasso di sconto {rate}",
+      "coupon": "Cedola {rate}",
+      "spread": "Spread {rate}",
+      "price": "Prezzo {price}",
+      "rateAndPrice": "{rate} · prezzo {price}",
+      "announced": "Annunciata: risultati non ancora pubblicati",
+      "fetching": "Recupero della serie...",
+      "fetchFailed": "Non è stato possibile recuperare la serie di questa asta.",
+      "picked": "Scelta: {identifier}, emessa il {issue}.",
+      "dateSet": "Data impostata sulla data di emissione, {date}.",
+      "priceSet": "Prezzo impostato sul prezzo dell'asta, {price}."
     },
     "bondRedemption": {
       "summary": "Interessi {interest}, trattenuta per rimborso anticipato {deduction}, importo erogato {payout}",
       "outsideSaleWindow": "Un lotto di questa serie è stato acquistato fuori dal suo periodo di vendita, quindi il rimborso non può essere suddiviso.",
+      "afterMaturity": "Un lotto di questa serie è stato acquistato alla scadenza o dopo, quindi il rimborso non può essere suddiviso.",
       "failed": "Non è stato possibile calcolare la suddivisione del rimborso."
     }
   },

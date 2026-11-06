@@ -565,6 +565,7 @@ export class GemPositionService {
             }))
           : [],
       ),
+      prices,
     );
     const valued: GemHolding[] = [];
     for (const holding of aggregated) {

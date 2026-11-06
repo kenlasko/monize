@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Không có tỷ giá {from} sang {to}. Nhập tỷ giá, hoặc tổng đã quy đổi, trước khi lưu.",
     "toastExchangeRateRequired": "Nhập tỷ giá trước khi lưu một giao dịch giữa hai loại tiền tệ.",
     "notAvailable": "Không có sẵn",
+    "bondUnit": "Một đơn vị = {faceValue} {currency} mệnh giá",
+    "bondPriceCash": "Giá là giá tiền mặt của một đơn vị (mệnh giá {faceValue} {currency}), chưa gồm lãi tích lũy.",
+    "bondPriceIndexed": "Giá là giá tiền mặt của một đơn vị (mệnh giá {faceValue} {currency}) đã gồm điều chỉnh lạm phát (giá niêm yết x hệ số chỉ số), chưa gồm lãi tích lũy.",
     "bondSeries": {
       "label": "Đợt phát hành trái phiếu",
       "fromDate": "Xác định theo ngày",
@@ -321,11 +324,40 @@
       "noLongerHeldUnknown": "Series đã lưu (không còn nắm giữ vào ngày này)",
       "storedSeries": "Series đã lưu",
       "seriesOnSaleMonth": "{code} — mở bán {month}",
-      "seriesOnSaleRange": "{code} — mở bán từ {from} đến {to}"
+      "seriesOnSaleRange": "{code} — mở bán từ {from} đến {to}",
+      "chooseAuction": "Chọn phiên đấu giá bên dưới",
+      "auctionRequired": "Chọn phiên đấu giá của giao dịch mua này: tìm bên dưới."
+    },
+    "bondAuctions": {
+      "find": "Tìm phiên đấu giá",
+      "findAgain": "Tìm lại",
+      "hint": "Liệt kê các phiên đấu giá phát hành trong vòng một tháng quanh {date}, từ trang của tổ chức phát hành.",
+      "needsDate": "Hãy nhập ngày trước.",
+      "loading": "Đang đọc các phiên đấu giá từ tổ chức phát hành...",
+      "loadFailed": "Không thể đọc các phiên đấu giá từ tổ chức phát hành.",
+      "none": "Không có phiên đấu giá nào phát hành trong vòng một tháng quanh {date}.",
+      "termFilter": "Kỳ hạn",
+      "allTerms": "Tất cả",
+      "listLabel": "Các phiên đấu giá phát hành quanh {date}",
+      "title": "{term} · {identifier}",
+      "reopening": "Phát hành bổ sung",
+      "dates": "Đấu giá {auction} · phát hành {issue} · đáo hạn {maturity}",
+      "discountRate": "Lãi suất chiết khấu {rate}",
+      "coupon": "Coupon {rate}",
+      "spread": "Biên độ {rate}",
+      "price": "Giá {price}",
+      "rateAndPrice": "{rate} · giá {price}",
+      "announced": "Đã công bố: chưa có kết quả",
+      "fetching": "Đang lấy series...",
+      "fetchFailed": "Không thể lấy series của phiên đấu giá này.",
+      "picked": "Đã chọn: {identifier}, phát hành {issue}.",
+      "dateSet": "Đã đặt ngày thành ngày phát hành, {date}.",
+      "priceSet": "Đã đặt giá thành giá đấu giá, {price}."
     },
     "bondRedemption": {
       "summary": "Lãi {interest}, khoản khấu trừ khi hoàn trả sớm {deduction}, số tiền chi trả {payout}",
       "outsideSaleWindow": "Một lô của đợt phát hành này được mua ngoài thời gian bán, nên không thể tách khoản hoàn trả.",
+      "afterMaturity": "Một lô của chuỗi này được mua vào hoặc sau ngày đáo hạn nên không thể chia nhỏ khoản thanh toán.",
       "failed": "Không thể tính phần tách của khoản hoàn trả."
     }
   },

@@ -40,6 +40,7 @@
       "fixed": "연 {rate} 고정",
       "benchmark": "{benchmark} + {addend}",
       "floor": "지표 하한 {floor}",
+      "daily": "매일: {benchmark} + {addend}",
       "discount": "액면가 대비 할인"
     },
     "capitalization": {

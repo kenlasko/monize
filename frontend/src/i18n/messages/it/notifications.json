@@ -84,6 +84,7 @@
       "RATE_UNKNOWN": "un tasso da cui dipende non è ancora pubblicato",
       "TERMS_INCOMPLETE": "le condizioni della serie sono incomplete",
       "PURCHASE_OUTSIDE_SALE_WINDOW": "una data di acquisto è fuori dal periodo di vendita della serie",
+      "PURCHASE_AFTER_MATURITY": "una data di acquisto coincide con la scadenza della serie o la segue",
       "other": "non può essere calcolato dai dati memorizzati"
     },
     "benchmarkTitle": "{benchmark}: nuova rilevazione {observation}",
@@ -99,6 +100,7 @@
       "observationNoPublisher": "La rilevazione {observation} di {benchmark} non è memorizzata: non è ancora pubblicata o il feed non è stato scaricato da allora. Aggiorna nella pagina dell'obbligazione.",
       "terms": "Le condizioni di {series} sono incomplete. Aggiorna la serie nella pagina dell'obbligazione.",
       "purchase": "Un acquisto di {series} del {date} è fuori dal suo periodo di vendita (dal {from} al {to}). Correggi la data di acquisto.",
+      "purchaseAfterMaturity": "Un acquisto di {series} il {date} coincide con la scadenza ({maturity}) o la segue. Correggi la data di acquisto.",
       "lots": "I lotti non possono essere ricavati dal registro ({code}). Correggi il registro.",
       "lotsRow": "{action} del {date}: i lotti non possono essere ricavati ({code}). Correggi la transazione.",
       "lotsRowSeries": "{action} del {date}: nessuna serie assegnata ({code}). Scegli la serie in quella transazione.",
@@ -117,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "Inflazione IPC, 12 mesi (GUS)",
-      "PL_NBP_REFERENCE": "Tasso di riferimento NBP"
+      "PL_NBP_REFERENCE": "Tasso di riferimento NBP",
+      "US_CPI_U_NSA": "CPI-U, tutte le voci, non destagionalizzato (BLS)",
+      "US_TBILL_13W_MMY": "Rendimento dei Treasury bill a 13 settimane"
     }
   },
   "portfolioMovement": {

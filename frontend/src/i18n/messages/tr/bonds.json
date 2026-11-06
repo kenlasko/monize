@@ -40,6 +40,7 @@
       "fixed": "Yıllık sabit {rate}",
       "benchmark": "{benchmark} + {addend}",
       "floor": "Gösterge tabanı {floor}",
+      "daily": "Günlük: {benchmark} + {addend}",
       "discount": "Nominal değerden iskonto"
     },
     "capitalization": {

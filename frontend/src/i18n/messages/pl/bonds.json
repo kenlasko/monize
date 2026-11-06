@@ -40,6 +40,7 @@
       "fixed": "Stałe {rate} rocznie",
       "benchmark": "{benchmark} + {addend}",
       "floor": "Dolna granica wskaźnika {floor}",
+      "daily": "Codziennie: {benchmark} + {addend}",
       "discount": "Dyskonto względem wartości nominalnej"
     },
     "capitalization": {

@@ -7,7 +7,8 @@ import { BondTerms, benchmarkFieldsOf } from "../domain/bond-terms";
 import { addDays, compareYMD } from "../domain/calendar-date";
 import { ExactDecimal } from "../domain/exact-decimal";
 import { SchedulePeriod } from "../domain/period-schedule";
-import { roundMoney, principalAt } from "./accrual";
+import { principalAt } from "./accrual";
+import { roundLot } from "./rounding";
 import { EarlyRedemptionRefusal } from "./bond-engine-types";
 
 /** Why a request on `asOf` is refused by the window rules, or null when it is allowed. */
@@ -69,20 +70,22 @@ export function windowRefusal(
 }
 
 /**
- * Per-bond proceeds of an early redemption: value less penalties, then the floor.
- * `periodBase` is what the bond is worth at the start of the period, so the
- * interest accrued since then is `valueBeforePenalty - periodBase`.
+ * The lot's proceeds of an early redemption: value less penalties, rounded as
+ * the terms' basis says, then the floor. `periodBase` is what a unit is worth at
+ * the start of the period, so the interest accrued since then is
+ * `valueBeforePenalty - periodBase`; the penalties are per unit.
  */
-export function proceedsPerBond(
+export function proceedsLot(
   terms: BondTerms,
   valueBeforePenalty: ExactDecimal,
   periodBase: ExactDecimal,
   periodIndex: number,
   asOf: string,
+  quantity: ExactDecimal,
 ): ExactDecimal {
   const redemption = terms.redemption;
   if (redemption.type !== "ON_DEMAND")
-    return roundMoney(terms, valueBeforePenalty);
+    return roundLot(terms, valueBeforePenalty, quantity);
   const penalty = redemption.penalties.reduce((sum, p) => {
     switch (p.type) {
       case "FIXED_FEE_PER_UNIT":
@@ -93,13 +96,16 @@ export function proceedsPerBond(
         return assertNever(p);
     }
   }, ExactDecimal.ZERO);
-  const net = roundMoney(terms, valueBeforePenalty.sub(penalty));
+  const net = roundLot(terms, valueBeforePenalty.sub(penalty), quantity);
   const floor = redemption.proceedsFloor;
   if (floor === null) return net;
   switch (floor.type) {
     case "FACE_VALUE":
       return floor.appliesTo === "ALL_PERIODS" || periodIndex === 1
-        ? ExactDecimal.max(net, principalAt(terms, { date: asOf }))
+        ? ExactDecimal.max(
+            net,
+            principalAt(terms, { date: asOf }).mul(quantity),
+          )
         : net;
     default:
       return assertNever(floor.type);
@@ -114,6 +120,9 @@ export function referencedCalendarIds(terms: BondTerms): ReadonlySet<string> {
     observation?.type === "STEP_VALUE_ON_NTH_BUSINESS_DAY_BEFORE_START_MONTH"
   ) {
     ids.add(observation.calendarId);
+  }
+  if (terms.rateRule.type === "DAILY_INDEX_PLUS_SPREAD") {
+    ids.add(terms.rateRule.calendarId);
   }
   if (terms.redemption.type === "ON_DEMAND") {
     terms.redemption.blackouts.forEach((b) => ids.add(b.calendarId));

@@ -42,9 +42,17 @@ export function attributeInterest(
   terms: BondTerms,
   rates: readonly PeriodRate[],
   k: number,
+  /**
+   * The index ratio of the period's end for an indexed principal: the interest
+   * is then the unrounded coupon on the face value times the ratio (a unit's
+   * indexed figure is not rounded, spec 5.3); null when the ratio is unknown.
+   * Absent for every other principal.
+   */
+  ratio?: ExactDecimal | null,
 ): Attribution {
   const current = rates[k - 1];
   if (current.rate === null || current.source === null) return UNKNOWN;
+  if (ratio === null) return UNKNOWN;
   const prior: PricedPeriod[] = [];
   if (compounds(terms)) {
     for (const earlier of rates.slice(0, k - 1)) {
@@ -53,10 +61,17 @@ export function attributeInterest(
     }
   }
   const { period } = current;
-  const base = baseAt(terms, prior, { date: period.start });
+  // An indexed principal pays its coupons on the face value (capitalization
+  // NONE), scaled by the ratio of the period's end.
+  const base =
+    ratio === undefined
+      ? baseAt(terms, prior, { date: period.start })
+      : ExactDecimal.parse(terms.instrument.faceValue);
   const interest =
-    couponOf(terms, { period, rate: current.rate }) ??
-    periodInterest(terms, base, period, current.rate);
+    ratio === undefined
+      ? (couponOf(terms, { period, rate: current.rate }) ??
+        periodInterest(terms, base, period, current.rate))
+      : periodInterest(terms, base, period, current.rate).mul(ratio);
   const zero = text(ExactDecimal.ZERO);
   const none = {
     fixedPart: zero,

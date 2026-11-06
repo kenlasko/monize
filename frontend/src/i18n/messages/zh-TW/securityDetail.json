@@ -300,6 +300,7 @@
       "periodValue": "{index}：{start} 至 {end}",
       "rate": "利率",
       "principal": "每張債券本金",
+      "principalIssuePrice": "未輸入成本：使用標售價格",
       "accruedInterest": "應計利息",
       "grossValue": "總價值",
       "earlyRedemption": "提前贖回",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "預測假設",
       "latestObservation": "所有後續期間均假設 {benchmark} 為 {value}(最新公布值:{observation})",
-      "supplied": "所有後續期間均假設 {benchmark} 為 {value}"
+      "supplied": "所有後續期間均假設 {benchmark} 為 {value}",
+      "suppliedSimpleAnnual": "假設 {benchmark} 此後每個月按每年 {value} 成長（簡單年成長，不複利）"
     },
     "missing": {
       "title": "仍需的資料",
@@ -371,8 +373,15 @@
         "firstThen": "第 1 期：{firstRate}。之後為 {benchmark} + {addend}",
         "every": "每期：{benchmark} + {addend}",
         "floorZero": "{benchmark} 為負數時以 0 計算",
-        "discount": "相對面值的折價"
+        "dailyFloor": "每日利率（指數加利差）不會低於 {floor}",
+        "discount": "相對面值的折價",
+        "daily": "每天：{benchmark} + {addend}，按日累加",
+        "lockout": "計息期結束前 {days, plural, one {# 個營業日} other {# 個營業日}} 內的標售不用於該計息期"
       },
+      "daily": "每日，{benchmark}",
+      "dailyNoIndex": "每日，{benchmark}：尚未儲存指數",
+      "dailyRun": "自 {from} 起：{rate}",
+      "dailyRunUnknown": "自 {from} 起：未儲存指數",
       "lotHeading": "{date} 購入的部位",
       "range": "{start} 至 {end}",
       "current": "目前",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "消費者物價指數，12 個月 (GUS)",
-      "PL_NBP_REFERENCE": "NBP 基準利率"
+      "PL_NBP_REFERENCE": "NBP 基準利率",
+      "US_CPI_U_NSA": "CPI-U，所有項目，未經季節性調整 (BLS)",
+      "US_TBILL_13W_MMY": "13 週美國國庫券殖利率"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "此系列只能在 {from} 至 {to} 之間購買。此批次購於 {purchaseDate},因此不予估值。"
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "此系列只能在 {from} 至 {to} 之間購買。此批次購於 {purchaseDate},因此不予估值。",
+      "PURCHASE_AFTER_MATURITY": "此系列已於 {maturityDate} 到期。此批次於 {purchaseDate} 買入，即在到期日當天或之後，因此不予估值。"
     },
+    "marketPriceRequired": "此證券包含一個在市場上交易的系列，因此其價格不由條款決定。Monize 不會為其寫入價格：請自行輸入價格。下方各批次的價值根據條款計算，不是市場價值。",
     "partial": {
       "title": "此估值不完整,請將這些數字視為部分資料。",
       "terms": "債券條款不完整(例如未安裝日曆)。",
@@ -453,7 +466,8 @@
       "none": "尚未儲存 {benchmark} 資料"
     },
     "issuers": {
-      "PL_MF": "財政部(PL)"
+      "PL_MF": "財政部(PL)",
+      "US_TREASURY": "美國財政部(US)"
     },
     "redemption": {
       "title": "提前贖回條款",
@@ -470,7 +484,12 @@
       "COI": "COI: 4 年期通膨指數儲蓄債券",
       "EDO": "EDO: 10 年期通膨指數儲蓄債券",
       "ROS": "ROS: 6 年期通膨指數家庭儲蓄債券",
-      "ROD": "ROD: 12 年期通膨指數家庭儲蓄債券"
+      "ROD": "ROD: 12 年期通膨指數家庭儲蓄債券",
+      "BILL": "BILL：國庫券，4 至 52 週，折價發行",
+      "NOTE": "NOTE：中期公債，2 至 10 年，固定半年付息",
+      "BOND": "BOND：長期公債，20 年和 30 年，固定半年付息",
+      "TIPS": "TIPS：通膨連動公債，本金與 CPI-U 連動",
+      "FRN": "FRN：浮動利率公債，2 年，按季付息"
     },
     "series": {
       "title": "您的系列",

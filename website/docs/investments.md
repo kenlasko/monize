@@ -209,6 +209,8 @@ For the biggest daily moves across your holdings at a glance, add the [Top Mover
 
 Some types ask for different fields: a dividend, interest or distribution asks for an **Amount**; a stock split asks for **New shares** and **Old shares**; a transfer asks for the **Cost per Share**; a bond redemption asks for **Accrued Interest**. When the security trades in a different currency from the account, the form adds an **Exchange rate** and a **Converted Total**.
 
+A bond linked to a government bond programme also asks for its **Bond series**. A Polish savings bond's series follows from the date. A US Treasury security is sold at auction, so a buy names its auction: **Find the auction** lists the auctions issued within a month of the transaction's date, read from TreasuryDirect, each with its term, CUSIP, auction, issue and maturity dates, rate and price, and the buttons above the list narrow it to one term. Choosing one fetches the series if Monize does not hold it yet, sets the date to the issue date (when an auction purchase settles) and, when the price is empty, sets it to the auction price; a TIPS price is left to you, because it includes the inflation adjustment the auction price does not. An auction that has been announced but not held is listed and can be chosen once its results are published.
+
 Use the arrow beside **Create Transaction** to choose **Create Transaction & New**, which saves and clears the form for the next entry, keeping the account, the date and the transaction type. To change a transaction, click **Edit** on its row (the form then has **Update Transaction**).
 
 ---

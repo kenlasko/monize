@@ -35,6 +35,49 @@ export interface BondProgramSummary {
   newestSeriesCode: string | null;
   /** The issuer's page describing the bond kind; null when the adapter has none. */
   infoUrl?: string | null;
+  /** The nominal of one bond of the program, an exact decimal string; null when no adapter states it. */
+  faceValue?: string | null;
+  /** True when a unit's price is the cash price of one unit of face value (a marketable coupon program). */
+  cashPriced?: boolean;
+  /** True when the principal is indexed: the price then includes the inflation adjustment. */
+  indexedPrincipal?: boolean;
+  /**
+   * True when the country sells by auction and the server lists the auctions
+   * (`GET /bonds/securities/:id/auctions`): a purchase then names its auction,
+   * because no sale window holds the date.
+   */
+  listsAuctions?: boolean;
+}
+
+/** One auction the issuer lists, as `GET /bonds/securities/:id/auctions` answers it. */
+export interface BondAuction {
+  /** The code `POST /bonds/instruments/fetch` takes for this auction's series. */
+  seriesCode: string;
+  /** The security's identifier as its market writes it (a CUSIP). */
+  identifier: string;
+  /** The issuer's own name for the term ("13-Week"). */
+  term: string;
+  auctionDate: string;
+  issueDate: string;
+  maturityDate: string;
+  /** More of an outstanding series. */
+  reopening: boolean;
+  /** Announced and not yet held: no rate, no price, nothing to fetch yet. */
+  announced: boolean;
+  rateKind: 'DISCOUNT' | 'COUPON' | 'SPREAD';
+  /** Percent, as the issuer states it; null until the auction is held. */
+  ratePercent: string | null;
+  /** The auction price per 100 of face value; null until held. */
+  pricePer100: string | null;
+  /** The catalog's instrument of the series, when stored. */
+  instrumentId: string | null;
+}
+
+export interface BondAuctions {
+  countryCode: string;
+  /** False for a country that sells in sale windows; the list is then empty. */
+  supported: boolean;
+  auctions: BondAuction[];
 }
 
 /** `POST /bonds/instruments/fetch` body. */
@@ -67,7 +110,10 @@ export type BondEarlyRedemptionRefusal =
   | 'TERMS_INCOMPLETE';
 
 export interface BondCashFlow {
+  /** The day the money is paid: the period end, or the next business day when the schedule adjusts payments. */
   date: string;
+  /** The unadjusted period end interest accrued to; absent when the payment is not adjusted (it is then `date`). */
+  accrualEndDate?: string;
   type: 'INTEREST' | 'PRINCIPAL';
   /** The whole lot; null only when `status` is UNKNOWN (the rate is not known yet). */
   amount: string | null;
@@ -91,6 +137,8 @@ export interface BondProjectionAssumption {
   basis: 'SUPPLIED' | 'LATEST_OBSERVATION';
   /** The YYYY-MM-DD or YYYY-MM the value came from; null when SUPPLIED. */
   observation: string | null;
+  /** Present for an assumed annual inflation of an indexed principal: later months grow by value x months / 12, not compounded. */
+  growth?: 'SIMPLE_ANNUAL';
 }
 
 export interface BondCurrentPeriod {
@@ -108,7 +156,8 @@ export interface BondRateRule {
     | 'FIXED'
     | 'BENCHMARK_PLUS_SPREAD'
     | 'INFLATION_PLUS_MARGIN_AS_RATE'
-    | 'ZERO_COUPON_DISCOUNT';
+    | 'ZERO_COUPON_DISCOUNT'
+    | 'DAILY_INDEX_PLUS_SPREAD';
   benchmarkId: string | null;
   /** FIXED only. */
   annualRate: string | null;
@@ -116,6 +165,8 @@ export interface BondRateRule {
   /** The margin or spread. */
   addend: string | null;
   benchmarkFloor: string | null;
+  /** DAILY_INDEX_PLUS_SPREAD only: business days before a period end whose auctions are not used. */
+  lockoutBusinessDays?: number;
 }
 
 export interface BondRateScheduleBenchmark {
@@ -126,6 +177,17 @@ export interface BondRateScheduleBenchmark {
   value: string | null;
   /** After the benchmark floor; null when `value` is null. */
   flooredValue: string | null;
+}
+
+/** A run of days of a floating period that share an index, or share having none; `to` is exclusive. */
+export interface BondDailyRateRun {
+  from: string;
+  to: string;
+  /** A fraction; null for a run of days with no index (not stored, none assumed), with `rate` and `dailyAccrual`. */
+  index: string | null;
+  rate: string | null;
+  dailyAccrual: string | null;
+  projected: boolean;
 }
 
 /** One period of a lot; `benchmark` is null for a TERMS or ANNOUNCED period. */
@@ -148,15 +210,23 @@ export interface BondRateScheduleEntry {
   benchmarkPart: string | null;
   addendPart: string | null;
   announcedPart: string | null;
+  /** A floating period (annualRate null): the days with an index, in runs. */
+  dailyRates?: BondDailyRateRun[];
 }
 
 export type BondLotStatus = 'OPEN' | 'MATURED' | 'REFUSED';
 
 /** Why a lot has no valuation; rendered from `code` and `params`. */
-export interface BondValuationRefusal {
-  code: 'PURCHASE_OUTSIDE_SALE_WINDOW';
-  params: { from: string; to: string; purchaseDate: string };
-}
+export type BondValuationRefusal =
+  | {
+      code: 'PURCHASE_OUTSIDE_SALE_WINDOW';
+      params: { from: string; to: string; purchaseDate: string };
+    }
+  /** A lot of a marketable series bought on or after its maturity. */
+  | {
+      code: 'PURCHASE_AFTER_MATURITY';
+      params: { maturityDate: string; purchaseDate: string };
+    };
 
 /** A benchmark with neither an observation nor an assumption to project from. */
 export interface BondProjectionMissing {
@@ -178,6 +248,8 @@ export interface BondValuation {
   rateSchedule: BondRateScheduleEntry[];
   /** Per bond: the base of the current period. */
   principal: string | null;
+  /** Where a discount instrument's principal comes from; null for any other instrument. */
+  principalBasis?: "LOT_COST" | "ISSUE_PRICE" | null;
   /** Lot. */
   accruedInterest: string | null;
   /** Lot, before any early redemption penalty. */
@@ -216,6 +288,8 @@ export interface BondLotValuation {
   quantity: number;
   /** A transfer in with no linked leg: the real purchase date is unknown. */
   purchaseDateAssumed: boolean;
+  /** What the lot cost, net of accrued interest, as exact text; null when unknown. */
+  cost?: string | null;
   valuation: BondValuation;
 }
 
@@ -318,6 +392,12 @@ export interface SecurityBondValuation {
   totals: BondValuationTotals;
   refusal: BondLotsRefusal | null;
   benchmarkCoverage?: BondBenchmarkCoverage[];
+  /**
+   * True when a series the security holds trades on a market: Monize writes no
+   * price for the security, so its price is the person's own. Absent means no
+   * information; read it as `=== true`.
+   */
+  marketPriceRequired?: boolean;
 }
 
 /** `GET /bonds/securities/:securityId/expected-series`: the code a purchase on the date would carry, by the program's country's grammar. */
@@ -346,10 +426,10 @@ export interface BondSeriesHoldings {
   holdings: BondSeriesHolding[];
 }
 
-/** Why no redemption split is given (the engine's early-redemption refusals, and a lot bought outside its series' sale window). */
+/** Why no redemption split is given (the engine's early-redemption refusals, and a lot bought outside its series' sale window or, for a marketable series, on or after its maturity). */
 export type BondRedemptionSplitRefusal =
   | Exclude<BondEarlyRedemptionRefusal, 'MATURED'>
-  | 'PURCHASE_OUTSIDE_SALE_WINDOW';
+  | BondValuationRefusal['code'];
 
 /**
  * `GET /bonds/securities/:securityId/redemption-split`: what redeeming

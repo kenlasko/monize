@@ -20,6 +20,12 @@ export interface BondLotTransaction {
   readonly transactionDate: string;
   readonly quantity: string | null;
   /**
+   * What an acquisition cost, as exact text: the row's total amount less its
+   * accrued interest. `null` or absent is unknown (a transfer in with no cost,
+   * a row the caller has no amount for); it is never guessed.
+   */
+  readonly cost?: string | null;
+  /**
    * For a TRANSFER_IN or TRANSFER_OUT: the other leg of the same security is
    * linked and not VOID. The pair moves the quantity first-in first-out from the
    * source account's lots to the destination account, keeping each lot's
@@ -58,6 +64,12 @@ export interface BondLot {
   readonly quantity: number;
   /** A TRANSFER_IN with no linked leg: the real purchase date is unknown. */
   readonly purchaseDateAssumed: boolean;
+  /**
+   * What the lot cost, net of accrued interest, as exact text; null when unknown.
+   * When part of a lot leaves, the cost is split first-in first-out pro rata to
+   * the bonds (`splitCost`): the parts always add up to the whole.
+   */
+  readonly cost: string | null;
 }
 
 export type BondLotsRefusalCode =
@@ -100,7 +112,17 @@ export interface BondLotsRefusal {
 
 /** Lots known, or the reason they are not: never a guess. */
 export type BondLotsResult =
-  | { readonly lots: readonly BondLot[]; readonly refusal: null }
+  | {
+      readonly lots: readonly BondLot[];
+      readonly refusal: null;
+      /**
+       * The portions the last row took out of its account's lots, oldest
+       * first, each with the exact cost it carried (`takeFifo`): empty when the
+       * last row took nothing. What a removal takes is read from here, never
+       * rebuilt from a difference of two folds (INV-BOND-007).
+       */
+      readonly takenByLastRow: readonly BondLot[];
+    }
   | { readonly lots: null; readonly refusal: BondLotsRefusal };
 
 type Step =
@@ -193,7 +215,9 @@ export function bondLotsFromTransactions(
   const heldIn = (account: string): readonly BondLot[] =>
     byAccount.get(account) ?? [];
 
+  let takenByLastRow: BondLot[] = [];
   for (const row of rows) {
+    takenByLastRow = [];
     if (row.status === "VOID") continue;
     const step = stepOf(row);
     if (step.kind === "none") continue;
@@ -242,6 +266,7 @@ export function bondLotsFromTransactions(
           purchaseDate: row.transactionDate,
           quantity,
           purchaseDateAssumed: step.assumed,
+          cost: step.assumed ? null : costText(row.cost),
         },
       ]);
       continue;
@@ -270,6 +295,7 @@ export function bondLotsFromTransactions(
       ...held.filter((lot) => !inSeries(lot)),
       ...taken.rest,
     ]);
+    takenByLastRow = taken.removed;
 
     if (step.kind === "move") {
       const destination = accountKey(step.toAccount);
@@ -285,7 +311,7 @@ export function bondLotsFromTransactions(
   const open = [...byAccount.values()]
     .flat()
     .sort((a, b) => compareDates(a.purchaseDate, b.purchaseDate));
-  return { lots: open, refusal: null };
+  return { lots: open, refusal: null, takenByLastRow };
 }
 
 /**
@@ -352,10 +378,54 @@ function takeFifo(
       remaining -= lot.quantity;
       removed.push(lot);
     } else {
-      rest.push({ ...lot, quantity: lot.quantity - remaining });
-      removed.push({ ...lot, quantity: remaining });
+      const [takenCost, keptCost] = splitCost(
+        lot.cost,
+        remaining,
+        lot.quantity,
+      );
+      rest.push({
+        ...lot,
+        quantity: lot.quantity - remaining,
+        cost: keptCost,
+      });
+      removed.push({ ...lot, quantity: remaining, cost: takenCost });
       remaining = 0;
     }
   }
   return { rest, removed };
+}
+
+/** The cost places of a row's total amount (NUMERIC(20,4)); a split rounds to them. */
+const COST_PLACES = 4;
+
+/** A cost that is a usable non-negative decimal, else null (unknown). */
+function costText(cost: string | null | undefined): string | null {
+  if (cost === null || cost === undefined) return null;
+  try {
+    const parsed = ExactDecimal.parse(cost);
+    // On the cost places, so every split of it stays on them and adds up.
+    return parsed.isNegative()
+      ? null
+      : parsed.round(COST_PLACES, "HALF_UP").toFixed(COST_PLACES);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `cost` split for `taken` of `quantity` bonds, pro rata: the taken part is
+ * rounded to the cost places (half up) and the part that stays is the rest, so
+ * the two add up to the whole exactly. An unknown cost stays unknown in both.
+ */
+function splitCost(
+  cost: string | null,
+  taken: number,
+  quantity: number,
+): readonly [string | null, string | null] {
+  if (cost === null) return [null, null];
+  const whole = ExactDecimal.parse(cost);
+  const part = whole
+    .mul(ExactDecimal.ratio(taken, quantity))
+    .round(COST_PLACES, "HALF_UP");
+  return [part.toFixed(COST_PLACES), whole.sub(part).toFixed(COST_PLACES)];
 }

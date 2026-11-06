@@ -1,5 +1,6 @@
 import { EntityManager } from "typeorm";
 import {
+  BOND_CASH_PRICE_BAND,
   BOND_UNIT_PRICE_BAND,
   findBondLinkProblem,
   findQuantitiesNotBonds,
@@ -62,7 +63,12 @@ const bandManager = (opts: {
     issuer_code: string;
     program_code: string;
   } | null;
-  offenders?: Array<{ id: string; price: string; face: string }>;
+  offenders?: Array<{
+    id: string;
+    price: string;
+    face: string;
+    cash_price?: boolean;
+  }>;
 }) => {
   const query = jest.fn(async (sql: string, _params?: unknown[]) => {
     if (/FROM bond_programs/.test(sql)) {
@@ -91,7 +97,7 @@ describe("hasQuantitiesThatAreNotBonds (the price band across the series of a pr
     ).resolves.toBe(true);
     const [sql, params] = query.mock.calls[1];
     // The template face value of the program is the fallback (EDO: 100.00).
-    expect(params).toEqual(["s1", "u1", "p1", "100.00", null, 1]);
+    expect(params).toEqual(["s1", "u1", "p1", "100.00", null, 1, false]);
     // The series the row is read as: its stored series when that is in the NEW
     // program ...
     expect(sql).toMatch(/i\.bond_program_id = \$3::uuid/);
@@ -142,11 +148,13 @@ describe("hasQuantitiesThatAreNotBonds (the price band across the series of a pr
     // The statement is an outer join: no series is no row dropped. The mock
     // stands for the database, which then answers the template-face offender.
     const { manager: m, query } = bandManager({
-      offenders: [{ id: "t1", price: "1.0000", face: "100.00" }],
+      offenders: [
+        { id: "t1", price: "1.0000", face: "100.00", cash_price: false },
+      ],
     });
     const found = await findQuantitiesNotBonds(m, "u1", "s1", "p1");
     expect(found).toEqual([
-      { rowId: "t1", price: "1.0000", faceValue: "100.00" },
+      { rowId: "t1", price: "1.0000", faceValue: "100.00", cashPrice: false },
     ]);
     expect((query.mock.calls[1][1] as unknown[])[3]).toBe("100.00");
   });
@@ -180,5 +188,60 @@ describe("hasQuantitiesThatAreNotBonds (the price band across the series of a pr
 
   it("pins the band the spec names: [0.5, 2] x face", () => {
     expect(BOND_UNIT_PRICE_BAND).toEqual({ min: "0.5", max: "2" });
+  });
+
+  it("pins the band of a cash-priced series (a marketable coupon series): (0, 5] x face", () => {
+    expect(BOND_CASH_PRICE_BAND).toEqual({ min: "0", max: "5" });
+  });
+
+  it("reads a marketable coupon series against the cash-price band, by its stored terms and by its template", async () => {
+    const { manager: m, query } = bandManager({
+      program: {
+        issuer_country_code: "US",
+        issuer_code: "US_TREASURY",
+        program_code: "TIPS",
+      },
+      offenders: [
+        { id: "t1", price: "612.5000", face: "100", cash_price: true },
+      ],
+    });
+    const found = await findQuantitiesNotBonds(m, "u1", "s1", "p1");
+    expect(found).toEqual([
+      { rowId: "t1", price: "612.5000", faceValue: "100", cashPrice: true },
+    ]);
+    const [sql, params] = query.mock.calls[1];
+    // The template of the US TIPS program says its price is a cash price (the
+    // seventh parameter) when the row has no stored series ...
+    expect((params as unknown[])[6]).toBe(true);
+    // ... and a stored series says so by its own terms.
+    expect(sql).toContain(
+      `terms -> 'instrument' ->> 'marketability' = 'MARKETABLE'`,
+    );
+    expect(sql).toContain(
+      `terms -> 'rateRule' ->> 'type' <> 'ZERO_COUPON_DISCOUNT'`,
+    );
+    expect(sql).toContain("COALESCE(f.cash, $7::boolean)");
+    expect(sql).toContain(
+      `COALESCE(f.face, $4::numeric) * ${BOND_CASH_PRICE_BAND.max}::numeric`,
+    );
+  });
+
+  it("keeps the par band for a retail program and a discount one (the template says not cash-priced)", async () => {
+    for (const program of [
+      {
+        issuer_country_code: "PL",
+        issuer_code: "PL_MF",
+        program_code: "EDO",
+      },
+      {
+        issuer_country_code: "US",
+        issuer_code: "US_TREASURY",
+        program_code: "BILL",
+      },
+    ]) {
+      const { manager: m, query } = bandManager({ program });
+      await findQuantitiesNotBonds(m, "u1", "s1", "p1");
+      expect((query.mock.calls[1][1] as unknown[])[6]).toBe(false);
+    }
   });
 });

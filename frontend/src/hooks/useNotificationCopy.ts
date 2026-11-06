@@ -568,7 +568,12 @@ export function useNotificationCopy() {
         return t('bond.payoutKnown', { payout: formatCurrency(payout, currency) });
       }
       const code = typeof data.missing === 'string' ? data.missing : '';
-      const known = ['RATE_UNKNOWN', 'TERMS_INCOMPLETE', 'PURCHASE_OUTSIDE_SALE_WINDOW'];
+      const known = [
+        'RATE_UNKNOWN',
+        'TERMS_INCOMPLETE',
+        'PURCHASE_OUTSIDE_SALE_WINDOW',
+        'PURCHASE_AFTER_MATURITY',
+      ];
       return t('bond.payoutUnknown', {
         reason: t(known.includes(code) ? `bond.reason.${code}` : 'bond.reason.other'),
       });
@@ -605,6 +610,14 @@ export function useNotificationCopy() {
           const to = day(c.to);
           return code && date && from && to
             ? t('bond.cause.purchase', { series: code, date, from, to })
+            : null;
+        }
+        case 'PURCHASE_AFTER_MATURITY': {
+          const code = text(c.seriesCode);
+          const date = day(c.purchaseDate);
+          const maturity = day(c.maturityDate);
+          return code && date && maturity
+            ? t('bond.cause.purchaseAfterMaturity', { series: code, date, maturity })
             : null;
         }
         case 'LOTS_UNDERIVABLE': {

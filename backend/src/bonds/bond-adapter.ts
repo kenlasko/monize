@@ -1,4 +1,5 @@
 import { TrackedProviderId } from "../provider-health/providers";
+import { BenchmarkUnit } from "./domain/benchmark";
 import { CalendarRegistry } from "./domain/calendar-registry";
 
 /** A benchmark series an adapter knows how to fetch and keep up to date. */
@@ -13,8 +14,11 @@ export interface BenchmarkSeriesDefinition {
    * (`FetchPolicy` in `series-http.ts`); name every host the fetcher requests.
    */
   readonly hosts: readonly string[];
-  /** Values are stored as fractions: 0.0575 for 5.75 percent. */
-  readonly unit: "RATE_FRACTION";
+  /**
+   * `RATE_FRACTION`: values are stored as fractions, 0.0575 for 5.75 percent.
+   * `INDEX_LEVEL`: values are index levels as published, "335.123".
+   */
+  readonly unit: BenchmarkUnit;
   /** The outbound provider the fetch is gated and reported under. */
   readonly providerId: TrackedProviderId;
 }
@@ -36,6 +40,20 @@ export interface BondProgramDefinition {
    */
   readonly faceValue: string;
   /**
+   * True when the program's securities trade and carry a coupon: a unit's price
+   * is then the cash price of one unit of face value (excluding accrued
+   * interest; inflation-adjusted for an indexed principal), which may sit far
+   * from the face value, so the write-time price band is the wide one. Absent
+   * means false (a retail or discount program: the price stays near par).
+   */
+  readonly cashPriced?: boolean;
+  /**
+   * True when the program's principal is indexed (rule `INDEX_RATIO`): the cash
+   * price is then the inflation-adjusted price, the quoted real price times the
+   * index ratio. Absent means false.
+   */
+  readonly indexedPrincipal?: boolean;
+  /**
    * The issuer's own page describing the product, for a reader to follow; an
    * https address on the issuer's site, or absent when the adapter has none.
    */
@@ -55,7 +73,7 @@ export interface CatalogEntry {
 
 export interface BenchmarkObservation {
   readonly observationDate: string;
-  /** A fraction as an exact decimal string. */
+  /** In the series' unit (a fraction or an index level) as an exact decimal string, never a JSON number. */
   readonly value: string;
   readonly publishedOn: string | null;
   /**
@@ -88,8 +106,8 @@ export type BondFetch = (url: string) => Promise<{
 }>;
 
 export class BenchmarkFetchError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: { readonly cause?: unknown }) {
+    super(message, options);
     this.name = "BenchmarkFetchError";
   }
 }
@@ -135,6 +153,9 @@ export type SeriesFetchErrorCode =
   | "SOURCE_FORMAT_CHANGED"
   | "SOURCE_INCONSISTENT"
   | "TEMPLATE_NOT_VALIDATED"
+  // The series is a product of the country this version cannot value yet (a
+  // security the official source describes but no template covers).
+  | "PRODUCT_NOT_SUPPORTED"
   // Raised by the service, never an adapter: the country has no fetch, or the
   // stored version 1 of the series differs from what was read.
   | "SERIES_FETCH_UNSUPPORTED"
@@ -159,6 +180,50 @@ export class SeriesFetchError extends Error {
     );
     this.name = "SeriesFetchError";
   }
+}
+
+/**
+ * A transient failure of an issuer's source (`SOURCE_UNAVAILABLE`): `reason` is
+ * a short machine value, never free text from the source. Shared by every
+ * adapter's single-host GET.
+ */
+export function sourceUnavailable(
+  reason: string,
+  extra: Record<string, string> = {},
+  cause?: unknown,
+): SeriesFetchError {
+  return new SeriesFetchError(
+    "SOURCE_UNAVAILABLE",
+    { reason, ...extra },
+    { cause },
+  );
+}
+
+/**
+ * One auction the official source lists for a program, for a person choosing
+ * which series a purchase was: nothing here is stored, and the series is read
+ * through `fetchSeries(seriesCode)` once chosen. Dates are YYYY-MM-DD; a rate
+ * or a price is the source's own decimal text, null until the auction is held.
+ */
+export interface AuctionListing {
+  /** The code `fetchSeries` takes for the series this auction sold. */
+  readonly seriesCode: string;
+  /** The security's identifier as its market writes it (a CUSIP, an ISIN). */
+  readonly identifier: string;
+  /** The source's own name for the term ("13-Week", "10-Year"). */
+  readonly term: string;
+  readonly auctionDate: string;
+  readonly issueDate: string;
+  readonly maturityDate: string;
+  /** More of an outstanding series: the terms are the original issue's. */
+  readonly reopening: boolean;
+  /** Announced and not yet held: no rate and no price. */
+  readonly announced: boolean;
+  /** What `ratePercent` is: a discount rate, a coupon, or a spread over an index. */
+  readonly rateKind: "DISCOUNT" | "COUPON" | "SPREAD";
+  readonly ratePercent: string | null;
+  /** The auction price per 100 of face value. */
+  readonly pricePer100: string | null;
 }
 
 /** Everything one country contributes: calendars, benchmarks, programs, series sources. */
@@ -218,6 +283,19 @@ export interface BondAdapter {
    * form offer "Fetch <code>" without a client knowing the country's grammar.
    */
   seriesCodeFor?(programCode: string, saleDate: string): string | null;
+  /**
+   * The auctions of `programCode` the official source lists with an issue date
+   * within a month of `date` (YYYY-MM-DD), nearest first: for a market that
+   * sells by auction rather than in monthly sale windows, so a purchase form can
+   * show which series were (or will be) issued around the trade date. Read
+   * only when a person asks (INV-BOND-008); nothing is stored. Gated under
+   * `seriesProviderId`.
+   */
+  auctionsNear?(
+    programCode: string,
+    date: string,
+    fetch: BondFetch,
+  ): Promise<AuctionListing[]>;
   /**
    * The earliest sale month (`YYYY-MM`) the adapter's templates are validated
    * for, the lower bound of its series history.

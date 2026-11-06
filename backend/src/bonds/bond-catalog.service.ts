@@ -16,7 +16,12 @@ import {
   CatalogEntry,
 } from "./bond-adapter";
 import { bondInstrumentId, bondProgramId } from "./bond-instrument-id";
-import { INSTALLED_BOND_ADAPTERS } from "./bond-adapters";
+import {
+  INSTALLED_BOND_ADAPTERS,
+  templateCashPricedOf,
+  templateFaceValueOf,
+  templateIndexedPrincipalOf,
+} from "./bond-adapters";
 import { BondInstrumentSummary } from "./bond-valuation.service";
 import { contentHash } from "./canonical-json";
 import { BondTerms, parseBondTerms } from "./domain/bond-terms";
@@ -33,6 +38,37 @@ export interface BondProgramSummary {
   readonly newestSeriesCode: string | null;
   /** The issuer's page describing the product (the adapter's `infoUrl`); null when none. */
   readonly infoUrl: string | null;
+  /**
+   * The nominal of one bond of the program (the adapter's `faceValue`, an exact
+   * decimal string), so a form can say what one unit is; null when no installed
+   * adapter declares the program.
+   */
+  readonly faceValue: string | null;
+  /**
+   * True when a unit's price is the cash price of one unit of face value (a
+   * marketable coupon program), so a form says so; false otherwise.
+   */
+  readonly cashPriced: boolean;
+  /** True when the principal is indexed, so the price includes the inflation adjustment. */
+  readonly indexedPrincipal: boolean;
+  /**
+   * True when the program's country sells by auction and its adapter lists the
+   * auctions (`auctionsNear`), so a purchase form asks
+   * `GET /bonds/securities/:id/auctions` instead of a sale window.
+   */
+  readonly listsAuctions: boolean;
+}
+
+/** Whether the country's installed adapter lists its auctions. */
+function listsAuctionsOf(
+  countryCode: string,
+  adapters: readonly BondAdapter[] = INSTALLED_BOND_ADAPTERS,
+): boolean {
+  const adapter = adapters.find((a) => a.countryCode === countryCode);
+  return (
+    adapter?.auctionsNear !== undefined &&
+    adapter.seriesProviderId !== undefined
+  );
 }
 
 /**
@@ -182,21 +218,32 @@ export class BondCatalogService implements OnApplicationBootstrap {
           ORDER BY p.issuer_country_code, p.issuer_code, p.program_code`,
       ),
     );
-    return rows.map((r) => ({
-      id: r.id,
-      issuerCountryCode: r.issuer_country_code,
-      issuerCode: r.issuer_code,
-      programCode: r.program_code,
-      currency: r.currency_code,
-      seriesCount: Number(r.series_count),
-      newestSeriesCode: r.newest_series_code,
-      infoUrl: infoUrlOf(
-        INSTALLED_BOND_ADAPTERS,
-        r.issuer_country_code,
-        r.issuer_code,
-        r.program_code,
-      ),
-    }));
+    return rows.map((r) => {
+      const key = {
+        issuerCountryCode: r.issuer_country_code,
+        issuerCode: r.issuer_code,
+        programCode: r.program_code,
+      };
+      return {
+        id: r.id,
+        issuerCountryCode: r.issuer_country_code,
+        issuerCode: r.issuer_code,
+        programCode: r.program_code,
+        currency: r.currency_code,
+        seriesCount: Number(r.series_count),
+        newestSeriesCode: r.newest_series_code,
+        infoUrl: infoUrlOf(
+          INSTALLED_BOND_ADAPTERS,
+          r.issuer_country_code,
+          r.issuer_code,
+          r.program_code,
+        ),
+        faceValue: templateFaceValueOf(key),
+        cashPriced: templateCashPricedOf(key),
+        indexedPrincipal: templateIndexedPrincipalOf(key),
+        listsAuctions: listsAuctionsOf(r.issuer_country_code),
+      };
+    });
   }
 
   /** The catalog for the link picker, ordered by country, issuer and series. */

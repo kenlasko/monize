@@ -4609,7 +4609,7 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues (bond-linked)"
     accounts: new Map(
       entries.map(([accountId, quantity, grossValue]) => [
         accountId,
-        { quantity, grossValue },
+        { quantity, grossValue, marketPriceRequired: false },
       ]),
     ),
   });
@@ -4746,6 +4746,43 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues (bond-linked)"
     expect(stock.marketValue).toBe(500);
     expect(result.unpricedSecurityIds).toEqual(["edo"]);
     expect(result.pricesComplete).toBe(false);
+  });
+
+  describe("a marketable coupon security is the person's price, never the engine's par (INV-BOND-005)", () => {
+    const marketable = (grossValue: string | null): SecurityValueByAccount => ({
+      asOf: "2026-10-13",
+      accounts: new Map([
+        ["ike", { quantity: 10, grossValue, marketPriceRequired: true }],
+      ]),
+    });
+
+    it("values 10 bonds at the person's price 98.75 as 987.5, not the par 1000.00", async () => {
+      const result = await run(
+        [holdingOf("h-1", "ike", "note")],
+        jest.fn().mockResolvedValue(marketable("1000.00")),
+        [["note", 98.75]],
+      );
+
+      const [note] = result.holdingsWithValues;
+      expect(note.marketValue).toBe(987.5);
+      expect(note.currentPrice).toBe(98.75);
+      expect(result.pricesComplete).toBe(true);
+    });
+
+    it("leaves it unpriced when the person has entered no price", async () => {
+      const result = await run(
+        [holdingOf("h-1", "ike", "note")],
+        jest.fn().mockResolvedValue(marketable("1000.00")),
+        [],
+      );
+
+      const [note] = result.holdingsWithValues;
+      expect(note.marketValue).toBeNull();
+      expect(note.currentPrice).toBeNull();
+      expect(result.pricesComplete).toBe(false);
+      expect(result.unpricedSecurityIds).toEqual(["note"]);
+      expect(result.totalHoldingsValue).toBe(0);
+    });
   });
 
   it("leaves a non-bond security on quantity x price and never values it as a bond", async () => {

@@ -40,6 +40,7 @@
       "fixed": "Fisso {rate} annuo",
       "benchmark": "{benchmark} + {addend}",
       "floor": "Minimo del parametro {floor}",
+      "daily": "Giornaliero: {benchmark} + {addend}",
       "discount": "Sconto sul valore nominale"
     },
     "capitalization": {

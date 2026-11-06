@@ -300,6 +300,7 @@
       "periodValue": "{index}: dal {start} al {end}",
       "rate": "Tasso",
       "principal": "Capitale per obbligazione",
+      "principalIssuePrice": "Nessun costo inserito: viene usato il prezzo d'asta",
       "accruedInterest": "Interessi maturati",
       "grossValue": "Valore lordo",
       "earlyRedemption": "Rimborso anticipato",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "Ipotesi della previsione",
       "latestObservation": "{benchmark} ipotizzato al {value} per tutti i periodi successivi, ultimo valore pubblicato ({observation})",
-      "supplied": "{benchmark} ipotizzato al {value} per tutti i periodi successivi"
+      "supplied": "{benchmark} ipotizzato al {value} per tutti i periodi successivi",
+      "suppliedSimpleAnnual": "Si ipotizza che {benchmark} cresca del {value} all'anno (crescita annua semplice, senza capitalizzazione) per ogni mese successivo"
     },
     "missing": {
       "title": "Dati ancora necessari",
@@ -371,8 +373,15 @@
         "firstThen": "Periodo 1: {firstRate}. Poi {benchmark} + {addend}",
         "every": "Ogni periodo: {benchmark} + {addend}",
         "floorZero": "Un valore negativo di {benchmark} conta come 0",
-        "discount": "Sconto sul valore nominale"
+        "dailyFloor": "Il tasso giornaliero (indice più spread) non scende mai sotto {floor}",
+        "discount": "Sconto sul valore nominale",
+        "daily": "Ogni giorno: {benchmark} + {addend}, sommato giorno per giorno",
+        "lockout": "Un'asta nei {days, plural, one {# giorno lavorativo} other {# giorni lavorativi}} precedenti la fine di un periodo non viene usata per quel periodo"
       },
+      "daily": "Giornaliero, {benchmark}",
+      "dailyNoIndex": "Giornaliero, {benchmark}: nessun indice ancora salvato",
+      "dailyRun": "Dal {from}: {rate}",
+      "dailyRunUnknown": "Dal {from}: nessun indice salvato",
       "lotHeading": "Lotto acquistato il {date}",
       "range": "dal {start} al {end}",
       "current": "Corrente",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "Inflazione IPC, 12 mesi (GUS)",
-      "PL_NBP_REFERENCE": "Tasso di riferimento NBP"
+      "PL_NBP_REFERENCE": "Tasso di riferimento NBP",
+      "US_CPI_U_NSA": "CPI-U, tutte le voci, non destagionalizzato (BLS)",
+      "US_TBILL_13W_MMY": "Rendimento dei Treasury bill a 13 settimane"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "Questa serie può essere acquistata solo dal {from} al {to}. Questo lotto è stato acquistato il {purchaseDate}, quindi non viene valutato."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "Questa serie può essere acquistata solo dal {from} al {to}. Questo lotto è stato acquistato il {purchaseDate}, quindi non viene valutato.",
+      "PURCHASE_AFTER_MATURITY": "Questa serie è scaduta il {maturityDate}. Questo lotto è stato acquistato il {purchaseDate}, in quel giorno o dopo, quindi non viene valutato."
     },
+    "marketPriceRequired": "Questo titolo contiene una serie negoziata su un mercato, quindi il suo prezzo non dipende dalle sue condizioni. Monize non scrive alcun prezzo per essa: inserisci il prezzo da solo. I valori dei lotti qui sotto sono calcolati dalle condizioni e non sono valori di mercato.",
     "partial": {
       "title": "Questa valutazione è incompleta: leggi le cifre come parziali.",
       "terms": "Le condizioni dell'obbligazione sono incomplete (ad esempio, un calendario non è installato).",
@@ -453,7 +466,8 @@
       "none": "Nessun dato {benchmark} è ancora memorizzato"
     },
     "issuers": {
-      "PL_MF": "Ministero delle Finanze (PL)"
+      "PL_MF": "Ministero delle Finanze (PL)",
+      "US_TREASURY": "Dipartimento del Tesoro degli Stati Uniti (US)"
     },
     "redemption": {
       "title": "Condizioni del rimborso anticipato",
@@ -470,7 +484,12 @@
       "COI": "COI: obbligazioni di risparmio a 4 anni indicizzate all'inflazione",
       "EDO": "EDO: obbligazioni di risparmio a 10 anni indicizzate all'inflazione",
       "ROS": "ROS: obbligazioni di risparmio familiari a 6 anni indicizzate all'inflazione",
-      "ROD": "ROD: obbligazioni di risparmio familiari a 12 anni indicizzate all'inflazione"
+      "ROD": "ROD: obbligazioni di risparmio familiari a 12 anni indicizzate all'inflazione",
+      "BILL": "BILL: Treasury bill, da 4 a 52 settimane, venduti con sconto",
+      "NOTE": "NOTE: Treasury note, da 2 a 10 anni, cedola fissa semestrale",
+      "BOND": "BOND: Treasury bond, 20 e 30 anni, cedola fissa semestrale",
+      "TIPS": "TIPS: titoli del Tesoro protetti dall'inflazione, capitale indicizzato al CPI-U",
+      "FRN": "FRN: Treasury note a tasso variabile, 2 anni, interessi trimestrali"
     },
     "series": {
       "title": "Le tue serie",

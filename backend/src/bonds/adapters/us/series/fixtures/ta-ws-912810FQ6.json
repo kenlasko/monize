@@ -1,0 +1,22 @@
+[
+  {
+    "cusip": "912810FQ6",
+    "securityType": "TIPS",
+    "securityTerm": "30-Year",
+    "issueDate": "2001-10-31T00:00:00",
+    "maturityDate": "2032-04-15T00:00:00",
+    "datedDate": "2001-10-15T00:00:00",
+    "interestRate": "3.375000",
+    "spread": "",
+    "highPrice": "99.456789",
+    "reopening": "No",
+    "floatingRate": "No",
+    "competitiveAuctionCloseDate": "2001-10-25T00:00:00",
+    "highRate": "",
+    "inflationProtected": "Yes",
+    "frequencyOfInterestPayments": "Semi-Annual",
+    "referenceCpiOnOriginalDatedDate": "177.50000",
+    "treasuryAuctionResultsXmlFileName": "R_20011025_1.xml",
+    "firstInterestPaymentLength": "Normal"
+  }
+]

@@ -84,6 +84,7 @@
       "RATE_UNKNOWN": "[XX-a rate it depends on is not published yet-XX]",
       "TERMS_INCOMPLETE": "[XX-the terms of the series are incomplete-XX]",
       "PURCHASE_OUTSIDE_SALE_WINDOW": "[XX-a purchase date is outside the sale window of the series-XX]",
+      "PURCHASE_AFTER_MATURITY": "[XX-a purchase date is on or after the maturity of the series-XX]",
       "other": "[XX-it cannot be worked out from the data stored-XX]"
     },
     "benchmarkTitle": "[XX-{benchmark}: new observation {observation}-XX]",
@@ -99,6 +100,7 @@
       "observationNoPublisher": "[XX-The {observation} observation of {benchmark} is not stored: it is not published yet, or the feed has not been fetched since. Refresh on the bond page.-XX]",
       "terms": "[XX-The terms of {series} are incomplete. Refresh the series on the bond page.-XX]",
       "purchase": "[XX-A purchase of {series} on {date} is outside its sale window ({from} to {to}). Correct the purchase date.-XX]",
+      "purchaseAfterMaturity": "[XX-A purchase of {series} on {date} is on or after its maturity ({maturity}). Correct the purchase date.-XX]",
       "lots": "[XX-The lots cannot be derived from the ledger ({code}). Correct the ledger.-XX]",
       "lotsRow": "[XX-{action} on {date} makes the lots impossible to derive ({code}). Correct the transaction.-XX]",
       "lotsRowSeries": "[XX-{action} on {date} is not placed in a series ({code}). Choose the series on that transaction.-XX]",
@@ -117,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "[XX-CPI, 12 months (GUS)-XX]",
-      "PL_NBP_REFERENCE": "[XX-NBP reference rate-XX]"
+      "PL_NBP_REFERENCE": "[XX-NBP reference rate-XX]",
+      "US_CPI_U_NSA": "[XX-CPI-U, all items, not seasonally adjusted (BLS)-XX]",
+      "US_TBILL_13W_MMY": "[XX-13-week Treasury bill yield-XX]"
     }
   },
   "emailReceiptsAttention": {

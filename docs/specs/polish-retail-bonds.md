@@ -120,7 +120,10 @@ schedule        { anchor: LOT_PURCHASE_DATE, periodMonths, periodCount,
                   rollDay: ANCHOR_DAY_CLAMPED, calendarId }
               | { anchor: ISSUE_DATE, issueDate, maturityDate,
                   periodCount: 1, calendarId }   -- ZERO_COUPON_DISCOUNT only
+                -- no Polish manifest uses another anchor (COUPON_DATES:
+                -- bond-marketable-primitives.md section 5.1)
 accrual         { type: ACTUAL_DAYS_IN_PERIOD }
+                -- ACTUAL_ACTUAL_ICMA: bond-marketable-primitives.md section 5.2
 principalRule   { type: FIXED_NOMINAL }
 rateRule        FIXED | BENCHMARK_PLUS_SPREAD | INFLATION_PLUS_MARGIN_AS_RATE
                 | ZERO_COUPON_DISCOUNT   (see 2.2)
@@ -136,7 +139,8 @@ redemption      { type: MATURITY_ONLY }
                   proceedsFloor: { type: FACE_VALUE,
                                    appliesTo: ALL_PERIODS | FIRST_PERIOD } | null }
 rounding        { moneyDecimals: 0..4, mode: HALF_UP | HALF_EVEN | DOWN }
-                -- every Polish manifest uses 2 and HALF_UP
+                -- every Polish manifest uses 2 and HALF_UP, and names no
+                -- basis (PER_UNIT: bond-marketable-primitives.md section 4)
 source          { provider, url, document }
 ```
 
@@ -792,7 +796,7 @@ data.
 
 | Route | Answers | Spec |
 | --- | --- | --- |
-| `GET /bonds/programs` | the catalog's programs: `id`, `issuerCountryCode`, `issuerCode`, `programCode`, `currency`, `seriesCount`, `newestSeriesCode`, `infoUrl` (the issuer's page for the product, from the adapter; null when none) | `bond-program-securities.md` 4 |
+| `GET /bonds/programs` | the catalog's programs: `id`, `issuerCountryCode`, `issuerCode`, `programCode`, `currency`, `seriesCount`, `newestSeriesCode`, `infoUrl` (the issuer's page for the product, from the adapter; null when none), `faceValue` (the nominal of one bond from the adapter's template, an exact decimal string; null when no adapter declares the program), `cashPriced` (boolean: a unit's price is the cash price of one unit of face value, a marketable coupon program), `indexedPrincipal` (boolean: the principal is indexed, so the price includes the inflation adjustment) | `bond-program-securities.md` 4 |
 | `GET /bonds/programs/:programId/refresh-progress` | `{ startedAt, phase: offer\|series\|done\|null, done, total, seriesCode, finishedAt }` of the program's Refresh; 404 for an unknown program | `bond-program-securities.md` 2.5 |
 | `GET /bonds/instruments` | the catalog's series (`id`, issuer country, issuer, program, series, `currencyCode`, `termsProvider`) | here |
 | `GET /bonds/offer?countryCode=&assume=` | the series on sale, with projections | `bond-offer-and-history.md` 2 |

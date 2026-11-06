@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "Kein Kurs für {from} zu {to} verfügbar. Geben Sie vor dem Speichern einen Kurs oder den umgerechneten Gesamtbetrag ein.",
     "toastExchangeRateRequired": "Geben Sie einen Wechselkurs ein, bevor Sie einen währungsübergreifenden Handel speichern.",
     "notAvailable": "Nicht verfügbar",
+    "bondUnit": "Eine Einheit = {faceValue} {currency} Nennwert",
+    "bondPriceCash": "Der Preis ist der Kassapreis einer Einheit ({faceValue} {currency} Nennwert), ohne Stückzinsen.",
+    "bondPriceIndexed": "Der Preis ist der Kassapreis einer Einheit ({faceValue} {currency} Nennwert) einschließlich der Inflationsanpassung (Kurs x Indexfaktor), ohne Stückzinsen.",
     "bondSeries": {
       "label": "Anleiheserie",
       "fromDate": "Aus dem Datum ermittelt",
@@ -321,11 +324,40 @@
       "noLongerHeldUnknown": "Gespeicherte Serie (an diesem Datum nicht mehr gehalten)",
       "storedSeries": "Gespeicherte Serie",
       "seriesOnSaleMonth": "{code} — im Verkauf {month}",
-      "seriesOnSaleRange": "{code} — im Verkauf von {from} bis {to}"
+      "seriesOnSaleRange": "{code} — im Verkauf von {from} bis {to}",
+      "chooseAuction": "Wähle unten die Auktion",
+      "auctionRequired": "Wähle die Auktion, in der dieser Kauf stattfand: Du findest sie unten."
+    },
+    "bondAuctions": {
+      "find": "Auktion suchen",
+      "findAgain": "Erneut suchen",
+      "hint": "Zeigt die Auktionen, die innerhalb eines Monats um den {date} ausgegeben wurden, von der Website des Emittenten.",
+      "needsDate": "Gib zuerst das Datum ein.",
+      "loading": "Auktionen werden beim Emittenten gelesen...",
+      "loadFailed": "Die Auktionen konnten nicht vom Emittenten gelesen werden.",
+      "none": "Innerhalb eines Monats um den {date} wurde keine Auktion ausgegeben.",
+      "termFilter": "Laufzeit",
+      "allTerms": "Alle",
+      "listLabel": "Um den {date} ausgegebene Auktionen",
+      "title": "{term} · {identifier}",
+      "reopening": "Wiederaufstockung",
+      "dates": "Auktion {auction} · ausgegeben {issue} · fällig {maturity}",
+      "discountRate": "Diskontsatz {rate}",
+      "coupon": "Kupon {rate}",
+      "spread": "Spread {rate}",
+      "price": "Preis {price}",
+      "rateAndPrice": "{rate} · Preis {price}",
+      "announced": "Angekündigt: Ergebnisse noch nicht veröffentlicht",
+      "fetching": "Serie wird abgerufen...",
+      "fetchFailed": "Die Serie dieser Auktion konnte nicht abgerufen werden.",
+      "picked": "Gewählt: {identifier}, ausgegeben {issue}.",
+      "dateSet": "Datum auf das Ausgabedatum {date} gesetzt.",
+      "priceSet": "Preis auf den Auktionspreis {price} gesetzt."
     },
     "bondRedemption": {
       "summary": "Zinsen {interest}, Abzug für vorzeitige Rückzahlung {deduction}, Auszahlung {payout}",
       "outsideSaleWindow": "Ein Los dieser Serie wurde außerhalb ihres Verkaufszeitraums gekauft, daher lässt sich die Rückzahlung nicht aufteilen.",
+      "afterMaturity": "Eine Position dieser Serie wurde am oder nach ihrem Fälligkeitstag gekauft, daher kann die Rückzahlung nicht aufgeteilt werden.",
       "failed": "Die Aufteilung der Rückzahlung konnte nicht berechnet werden."
     }
   },

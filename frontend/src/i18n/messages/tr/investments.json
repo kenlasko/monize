@@ -305,6 +305,9 @@
     "exchangeRateUnresolved": "{from} → {to} kuru yok. Kaydetmeden önce bir kur veya çevrilmiş toplamı girin.",
     "toastExchangeRateRequired": "Para birimleri arası bir işlemi kaydetmeden önce bir döviz kuru girin.",
     "notAvailable": "Mevcut değil",
+    "bondUnit": "Bir birim = {faceValue} {currency} nominal değer",
+    "bondPriceCash": "Fiyat, bir birimin ({faceValue} {currency} nominal değer) peşin fiyatıdır; birikmiş faiz hariçtir.",
+    "bondPriceIndexed": "Fiyat, bir birimin ({faceValue} {currency} nominal değer) enflasyon düzeltmesi dahil peşin fiyatıdır (kote fiyat x endeks oranı); birikmiş faiz hariçtir.",
     "bondSeries": {
       "label": "Tahvil serisi",
       "fromDate": "Tarihe göre belirlenir",
@@ -321,11 +324,40 @@
       "noLongerHeldUnknown": "Kayıtlı seri (bu tarihte artık elde değil)",
       "storedSeries": "Kayıtlı seri",
       "seriesOnSaleMonth": "{code} — satışta {month}",
-      "seriesOnSaleRange": "{code} — satışta {from} - {to}"
+      "seriesOnSaleRange": "{code} — satışta {from} - {to}",
+      "chooseAuction": "Aşağıdan ihaleyi seçin",
+      "auctionRequired": "Bu alımın yapıldığı ihaleyi seçin: aşağıda bulabilirsiniz."
+    },
+    "bondAuctions": {
+      "find": "İhaleyi bul",
+      "findAgain": "Yeniden ara",
+      "hint": "{date} tarihinin bir ay öncesi ve sonrası içinde ihraç edilen ihaleleri ihraççının sitesinden listeler.",
+      "needsDate": "Önce tarihi girin.",
+      "loading": "İhaleler ihraççıdan okunuyor...",
+      "loadFailed": "İhaleler ihraççıdan okunamadı.",
+      "none": "{date} tarihinin bir ay öncesi ve sonrası içinde ihraç edilen ihale yok.",
+      "termFilter": "Vade",
+      "allTerms": "Tümü",
+      "listLabel": "{date} civarında ihraç edilen ihaleler",
+      "title": "{term} · {identifier}",
+      "reopening": "Yeniden açılış",
+      "dates": "İhale {auction} · ihraç {issue} · vade {maturity}",
+      "discountRate": "İskonto oranı {rate}",
+      "coupon": "Kupon {rate}",
+      "spread": "Spread {rate}",
+      "price": "Fiyat {price}",
+      "rateAndPrice": "{rate} · fiyat {price}",
+      "announced": "Duyuruldu: sonuçlar henüz yayımlanmadı",
+      "fetching": "Seri alınıyor...",
+      "fetchFailed": "Bu ihalenin serisi alınamadı.",
+      "picked": "Seçilen: {identifier}, ihraç {issue}.",
+      "dateSet": "Tarih, ihraç tarihi olan {date} olarak ayarlandı.",
+      "priceSet": "Fiyat, ihale fiyatı olan {price} olarak ayarlandı."
     },
     "bondRedemption": {
       "summary": "Faiz {interest}, erken itfa kesintisi {deduction}, ödeme {payout}",
       "outsideSaleWindow": "Bu serinin bir lotu satış döneminin dışında alındığından itfa bölünemiyor.",
+      "afterMaturity": "Bu serinin bir lotu vade tarihinde veya sonrasında alınmış, bu yüzden itfa bölünemez.",
       "failed": "İtfa dökümü hesaplanamadı."
     }
   },

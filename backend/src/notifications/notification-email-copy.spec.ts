@@ -504,6 +504,25 @@ describe("notification email copy", () => {
       expect(copy.message).toContain("1234,50");
     });
 
+    it("names a marketable lot bought on or after its maturity and what to do", () => {
+      const message = english(NotificationType.BOND_DATA_MISSING, {
+        ...bondFacts,
+        causes: [
+          {
+            code: "PURCHASE_AFTER_MATURITY",
+            instrumentId: "series-1",
+            seriesCode: "SER0001",
+            purchaseDate: "2027-04-02",
+            maturityDate: "2027-04-01",
+          },
+        ],
+        coverage: [],
+      }).message;
+      expect(message).toContain(
+        "a purchase of SER0001 on Apr 2, 2027 is on or after its maturity (Apr 1, 2027); correct the purchase date",
+      );
+    });
+
     describe("underivable lots name the refused row and what to do", () => {
       const lots = (refusalCode: string, extra: Record<string, unknown> = {}) =>
         english(NotificationType.BOND_DATA_MISSING, {

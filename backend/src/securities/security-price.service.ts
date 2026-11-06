@@ -55,6 +55,7 @@ import {
 } from "../common/time-series/history-fill";
 import { daysBetween } from "../common/time-series/price-boundary.util";
 import { BOND_ENGINE_PRICE_SOURCE } from "../bonds/bond-price-source";
+import { assertManualPriceIsCashPrice } from "../bonds/bond-write-guard";
 import { SecurityType } from "./security-enums";
 
 export { SecurityLookupResult } from "./providers/quote-provider.interface";
@@ -2611,6 +2612,13 @@ export class SecurityPriceService {
     const { saved, accountIds } = await withScopedDb(
       this.dataSource,
       async (m) => {
+        // Refused before the write, in its transaction (INV-BOND-005).
+        await assertManualPriceIsCashPrice(m, userId, securityId, [
+          dto.closePrice,
+          dto.openPrice,
+          dto.highPrice,
+          dto.lowPrice,
+        ]);
         const rows: unknown = await m.query(
           `INSERT INTO security_prices
            (security_id, price_date, open_price, high_price, low_price,
@@ -2693,6 +2701,14 @@ export class SecurityPriceService {
     const { saved, accountIds } = await withScopedDb(
       this.dataSource,
       async (m) => {
+        // The values this request sets, refused before the write (INV-BOND-005);
+        // a stored value the request leaves alone does not block an unrelated edit.
+        await assertManualPriceIsCashPrice(m, userId, securityId, [
+          dto.closePrice,
+          dto.openPrice,
+          dto.highPrice,
+          dto.lowPrice,
+        ]);
         const saved = await m.getRepository(SecurityPrice).save(price);
         // Stale marker in the same transaction as the price write (see markHoldingAccountsDirty).
         const accountIds = await this.markHoldingAccountsDirty(

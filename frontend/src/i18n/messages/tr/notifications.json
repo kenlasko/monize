@@ -84,6 +84,7 @@
       "RATE_UNKNOWN": "bağlı olduğu oran henüz yayımlanmadı",
       "TERMS_INCOMPLETE": "serinin koşulları eksik",
       "PURCHASE_OUTSIDE_SALE_WINDOW": "bir alış tarihi serinin satış döneminin dışında",
+      "PURCHASE_AFTER_MATURITY": "bir alım tarihi serinin vade tarihine denk geliyor veya sonrasında",
       "other": "kayıtlı verilerden hesaplanamıyor"
     },
     "benchmarkTitle": "{benchmark}: yeni gözlem {observation}",
@@ -99,6 +100,7 @@
       "observationNoPublisher": "{benchmark} için {observation} gözlemi kayıtlı değil: henüz yayımlanmadı veya veri akışı o zamandan beri alınmadı. Tahvil sayfasında yenileyin.",
       "terms": "{series} koşulları eksik. Seriyi tahvil sayfasında yenileyin.",
       "purchase": "{series} için {date} tarihli alış, satış döneminin ({from} – {to}) dışında. Alış tarihini düzeltin.",
+      "purchaseAfterMaturity": "{series} alımı ({date}) vadesine ({maturity}) denk geliyor veya sonrasında. Alım tarihini düzeltin.",
       "lots": "Lotlar defterden türetilemiyor ({code}). Defteri düzeltin.",
       "lotsRow": "{action} ({date}): lotlar türetilemiyor ({code}). İşlemi düzeltin.",
       "lotsRowSeries": "{action} ({date}): bir seriye atanmamış ({code}). Bu işlemde seriyi seçin.",
@@ -117,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "TÜFE, 12 ay (GUS)",
-      "PL_NBP_REFERENCE": "NBP referans faizi"
+      "PL_NBP_REFERENCE": "NBP referans faizi",
+      "US_CPI_U_NSA": "TÜFE (CPI-U), tüm kalemler, mevsimsellikten arındırılmamış (BLS)",
+      "US_TBILL_13W_MMY": "13 haftalık Hazine bonosu getirisi"
     }
   },
   "portfolioMovement": {

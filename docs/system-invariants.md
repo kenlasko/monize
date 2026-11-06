@@ -115,7 +115,7 @@ implied.
 | INV-BOND-002 | A missing bond rate is unknown, never substituted | enforced |
 | INV-BOND-003 | Bond money is exact until the issue document rounds it | enforced |
 | INV-BOND-004 | Known and projected bond values never mix | enforced |
-| INV-BOND-005 | A linked security's automatic price comes only from the bond engine; the engine replaces every non-manual row and never a manual one | enforced |
+| INV-BOND-005 | A linked security's automatic price comes only from the bond engine, and only for series priced by their terms; the engine replaces every non-manual row and never a manual one | enforced |
 | INV-BOND-006 | Bond terms enter the catalog only from an adapter's fetch of its official source or an administrator's manual entry on the adapter's template; a person who is not an administrator supplies only a country and a series code | enforced |
 | INV-BOND-007 | A program-linked security's acquisitions with a date of their own are inferred, TRANSFER_IN and ADD_SHARES name their series, a removal the account cannot cover is refused at write time, and an import may store NULL which the lots name | enforced |
 | INV-BOND-008 | No country's bond data (series, terms version, benchmark observation) is fetched or stored without a person's action | enforced |
@@ -4230,7 +4230,10 @@ Status              enforced (engine, read by bond-valuation.service.ts and by
 ```text
 Statement           Bond amounts and rates are computed in exact rational
                     arithmetic and rounded only where the issue document
-                    rounds, per bond, then multiplied by the quantity.
+                    rounds: per bond and then multiplied by the quantity under
+                    rounding.basis PER_UNIT (the default), once on the lot under
+                    PER_HOLDING, per reference amount and then scaled under
+                    REFERENCE_AMOUNT (roundLot, engine/rounding.ts).
 Source of truth     the terms document (rounding, capitalization.baseRounding)
 Enforcement         ExactDecimal (backend/src/bonds/domain/exact-decimal.ts)
                     parses only decimal strings; the engine's formulas take
@@ -4266,7 +4269,7 @@ Required tests      bond-engine.spec.ts known/projected cases.
 Status              enforced
 ```
 
-### INV-BOND-005 -- a linked security's automatic price is the bond engine's; it replaces every non-manual row and never a manual one
+### INV-BOND-005 -- a linked security's automatic price is the bond engine's, for series priced by their terms; it replaces every non-manual row and never a manual one
 
 ```text
 Statement           A security linked to a bond program
@@ -4285,7 +4288,21 @@ Statement           A security linked to a bond program
                     (coupons are recorded as INTEREST income, the close is the
                     value), and a manual price written over an engine row does
                     not inherit the engine's adjusted_close. An unchanged day
-                    is not rewritten.
+                    is not rewritten. Per marketability
+                    (docs/specs/bond-marketable-primitives.md section 3): the
+                    engine writes the price only when every series the
+                    security's ledger names is RETAIL_REDEEMABLE or a discount
+                    instrument (ZERO_COUPON_DISCOUNT); for a MARKETABLE coupon
+                    series it writes none, deletes any bond_engine row of the
+                    security, and the valuation reports marketPriceRequired
+                    true so the surface tells the person to enter the price
+                    (a manual price always wins). A quote provider is still
+                    never asked about a linked security.
+                    The same policy values a holding on every surface:
+                    bondHoldingValue (backend/src/bonds/bond-holding-value.ts)
+                    gives a holding of such a series the person's price times
+                    its quantity, and none (unpriced) without a price, never
+                    the engine's par.
 Source of truth     securities.bond_program_id; security_prices.source
 Enforcement         Three mechanisms.
                     1. One predicate, isPricedByQuoteProvider
@@ -4327,7 +4344,9 @@ Enforcement         Three mechanisms.
                        and the security has priced acquisitions (BUY,
                        REINVEST and its variants, not void) whose price is
                        not within [0.5, 2] x the face value of the row's own
-                       series
+                       series (BOND_UNIT_PRICE_BAND; for a marketable coupon
+                       series, whose unit price is a cash price, within
+                       (0, 5] x it: BOND_CASH_PRICE_BAND)
                        (its stored series, or the one on sale on its date)
                        per bond, because the quantity is then not a number of
                        bonds. The same band is the rule of every WRITE of a
@@ -4353,6 +4372,19 @@ Enforcement         Three mechanisms.
                        bond-adapters.ts): an empty catalog is never a way past
                        the band. A row already outside the band when the guard
                        began does not block an unrelated write or a delete.
+                       The manual price of a linked security is read against
+                       the same cash band: for a security linked to a
+                       marketable coupon program (the only source of such a
+                       holding's value) a close, open, high or low above
+                       5 x the face value is refused with errorCode
+                       MANUAL_PRICE_NOT_CASH_PRICE
+                       (assertManualPriceIsCashPrice, backend/src/bonds/
+                       bond-write-guard.ts) inside the transaction of
+                       SecurityPriceService.createManualPrice and updatePrice,
+                       the only routes that write a manual price (the AI
+                       assistant and MCP have no price-writing tool; the .mny
+                       import writes its own source, not manual); a series the
+                       engine prices and a Polish bond are not read.
                        After the commit of a split parent's create, edit, void
                        or delete, the embedded rows' securities are repriced
                        (recomputeBondPricesAfterWrite via
@@ -4414,7 +4446,10 @@ Lots                Lots are derived per account and per series (spec section
                     date is outside terms.saleWindow gets no valuation:
                     status REFUSED, refusal PURCHASE_OUTSIDE_SALE_WINDOW, every
                     figure null, valuationComplete false (a null saleWindow is
-                    no restriction), and its day gets no price row.
+                    no restriction), and its day gets no price row; a lot of a
+                    MARKETABLE series bought on or after its maturity is
+                    REFUSED the same way (PURCHASE_AFTER_MATURITY), unless its
+                    purchase date is an assumed stand-in.
 Retry semantics     A retried recompute writes nothing it already wrote
                     (written = 0, deleted = 0).
 Crash semantics     Reads, the upsert, the delete and the account updated_at
@@ -4453,7 +4488,12 @@ Required tests      bond-prices.integration.spec.ts (real PostgreSQL: a manual
                     bond-price.service.spec.ts (including the 10-year EDO lot
                     series bound and the blend over two series),
                     bond-lots.spec.ts (per-account and per-series FIFO and the
-                    paired transfer), securities.service.spec.ts (link
+                    paired transfer), bond-manual-price-band.integration.spec.ts
+                    (a manual price of a marketable coupon security above five
+                    times the face value is refused on create and update, an
+                    engine-priced bill and a Polish bond are not read),
+                    bond-write-guard.spec.ts (assertManualPriceIsCashPrice),
+                    securities.service.spec.ts (link
                     refusals: type, quantity, currency, uppercase UUID, undo),
                     action-history undo spec, provider-priced.guard.spec.ts,
                     backup specs (support backup drops the link; restore
@@ -4686,7 +4726,10 @@ Enforcement         One resolver, resolveTransactionSeries
                     not block an unrelated edit. GET
                     /bonds/securities/:id/series-on-sale and /series-holdings
                     answer the form with the same code (seriesOnSaleSql, the
-                    lot derivation). The link follows the rows:
+                    lot derivation); the redemption split reads the portions a
+                    removal takes, with the exact cost each carried, from the
+                    fold itself (takenByLastRow), never from a difference of
+                    two folds grouped by day. The link follows the rows:
                     clearForeignSeries (securities update and the undo of a link
                     change) clears the series outside the new program in the
                     link's transaction, hasQuantitiesThatAreNotBonds reads a
@@ -4766,9 +4809,12 @@ Source of truth     the lot's terms, rates and redemption date, through the same
                     valuation (spec docs/specs/bond-redemption-interest.md
                     sections 2 and 3)
 Enforcement         redemptionSplit (backend/src/bonds/engine/bond-engine.ts,
-                    redemption-split.ts): every figure is rounded per bond by
-                    the terms and then multiplied by the quantity, so the three
-                    sums hold to the last digit; interest is
+                    redemption-split.ts): every figure is rounded as the
+                    terms' rounding.basis says (per bond and then multiplied by
+                    the quantity under PER_UNIT; once on the lot under
+                    PER_HOLDING; per reference amount under REFERENCE_AMOUNT;
+                    roundLot, engine/rounding.ts), so the three sums hold to
+                    the last digit; interest is
                     max(0, grossInterest - deduction) and principalReturned is
                     payout - interest. A refused day or an unknown rate gives a
                     refusal and null figures, never 0.
@@ -4776,7 +4822,8 @@ Concurrency scope   --
 Retry semantics     --
 Crash semantics     --
 Failure response    a refusal (NOT_REDEEMABLE, TOO_EARLY, TOO_LATE, RECORD_DAY,
-                    TERMS_INCOMPLETE, RATE_UNKNOWN, PURCHASE_OUTSIDE_SALE_WINDOW)
+                    TERMS_INCOMPLETE, RATE_UNKNOWN, PURCHASE_OUTSIDE_SALE_WINDOW,
+                    PURCHASE_AFTER_MATURITY)
                     and null figures
 Required tests      backend/src/bonds/engine/redemption-split.spec.ts (the
                     table of the spec, a day-by-day sweep of the identity for a
@@ -4807,10 +4854,17 @@ Statement           The current market value of a bond-linked holding (one
                     financial today, never quantity x the security's daily
                     bond_engine price, which blends the lots of every account.
                     An unknown lot makes the holding unpriced (marketValue null,
-                    pricesComplete false), never the blend.
+                    pricesComplete false), never the blend. A holding of a series
+                    the engine does not price (a marketable coupon security,
+                    marketPriceRequired) is instead the person's price times its
+                    quantity, unpriced without a price, never the engine's par
+                    (INV-BOND-005); bondHoldingValue
+                    (backend/src/bonds/bond-holding-value.ts) is the one function
+                    that decides, and every holdings surface calls it.
 Source of truth     the account's lots (bondLotsAsOf over the ledger) valued by
                     the engine (BondValuationService.valueByAccount)
-Enforcement         PortfolioCalculationService.valueBondHoldings, used by
+Enforcement         bondHoldingValue, called by
+                    PortfolioCalculationService.valueBondHoldings, used by
                     calculateHoldingsWithValues and getAccountMarketValues; the
                     account balances report (valuePositions), sector weightings
                     and GEM positions call valueByAccount once per linked
@@ -4836,7 +4890,15 @@ Required tests      backend/src/securities/portfolio-calculation.service.spec.ts
                     (two accounts holding different series of one program, an
                     unknown lot, a valuation that throws);
                     backend/test/integration/bond-holding-value.integration.spec.ts
-Status              partial. Still reading positionCloseAsOf (a carried engine
+                    (including a series valued by the person's price),
+                    backend/test/integration/us-treasury-flow.integration.spec.ts
+                    (a bill, a note and a TIPS through the write path)
+Status              partial. The holdings surfaces (portfolio holdings and totals,
+                    account market values, the account balances report, sector
+                    and asset-class weightings, GEM positions) all value a
+                    bond-linked holding through bondHoldingValue, a source scan
+                    holds that none calls valueByAccount without it. Still
+                    reading positionCloseAsOf (a carried engine
                     close, or a trade price) over a refused day, and to be moved
                     to valuationClosePointOn with the refusal carried as an
                     unknown component: net worth daily and monthly

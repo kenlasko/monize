@@ -1,5 +1,6 @@
 import { POLISH_BOND_ADAPTER } from "./adapters/pl";
-import { BondAdapter } from "./bond-adapter";
+import { UNITED_STATES_BOND_ADAPTER } from "./adapters/us";
+import { BondAdapter, BondProgramDefinition } from "./bond-adapter";
 import {
   CalendarRegistry,
   EMPTY_CALENDAR_REGISTRY,
@@ -11,12 +12,31 @@ import {
  */
 export const INSTALLED_BOND_ADAPTERS: readonly BondAdapter[] = [
   POLISH_BOND_ADAPTER,
+  UNITED_STATES_BOND_ADAPTER,
 ];
 
 export const BOND_CALENDARS: CalendarRegistry = INSTALLED_BOND_ADAPTERS.reduce(
   (registry, adapter) => adapter.registerCalendars(registry),
   EMPTY_CALENDAR_REGISTRY,
 );
+
+/** The installed adapter's declaration of a stored program, or undefined when none declares it. */
+function templateProgramOf(program: {
+  readonly issuerCountryCode: string;
+  readonly issuerCode: string;
+  readonly programCode: string;
+}): BondProgramDefinition | undefined {
+  for (const adapter of INSTALLED_BOND_ADAPTERS) {
+    const found = adapter.programs.find(
+      (p) =>
+        p.issuerCountryCode === program.issuerCountryCode &&
+        p.issuerCode === program.issuerCode &&
+        p.programCode === program.programCode,
+    );
+    if (found) return found;
+  }
+  return undefined;
+}
 
 /**
  * The nominal of one bond of a program, from the installed adapter's product
@@ -29,14 +49,31 @@ export function templateFaceValueOf(program: {
   readonly issuerCode: string;
   readonly programCode: string;
 }): string | null {
-  for (const adapter of INSTALLED_BOND_ADAPTERS) {
-    const found = adapter.programs.find(
-      (p) =>
-        p.issuerCountryCode === program.issuerCountryCode &&
-        p.issuerCode === program.issuerCode &&
-        p.programCode === program.programCode,
-    );
-    if (found) return found.faceValue;
-  }
-  return null;
+  return templateProgramOf(program)?.faceValue ?? null;
+}
+
+/**
+ * Whether the program's template says its principal is indexed
+ * (`BondProgramDefinition.indexedPrincipal`); false when no installed adapter
+ * declares the program.
+ */
+export function templateIndexedPrincipalOf(program: {
+  readonly issuerCountryCode: string;
+  readonly issuerCode: string;
+  readonly programCode: string;
+}): boolean {
+  return templateProgramOf(program)?.indexedPrincipal === true;
+}
+
+/**
+ * Whether the program's template says its unit price is a cash price that may
+ * sit far from the face value (`BondProgramDefinition.cashPriced`); false when
+ * no installed adapter declares the program.
+ */
+export function templateCashPricedOf(program: {
+  readonly issuerCountryCode: string;
+  readonly issuerCode: string;
+  readonly programCode: string;
+}): boolean {
+  return templateProgramOf(program)?.cashPriced === true;
 }

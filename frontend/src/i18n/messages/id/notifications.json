@@ -84,6 +84,7 @@
       "RATE_UNKNOWN": "suku bunga yang menjadi acuannya belum dipublikasikan",
       "TERMS_INCOMPLETE": "ketentuan seri belum lengkap",
       "PURCHASE_OUTSIDE_SALE_WINDOW": "tanggal pembelian berada di luar masa penjualan seri",
+      "PURCHASE_AFTER_MATURITY": "tanggal pembelian jatuh pada atau setelah jatuh tempo seri",
       "other": "tidak dapat dihitung dari data yang tersimpan"
     },
     "benchmarkTitle": "{benchmark}: observasi baru {observation}",
@@ -99,6 +100,7 @@
       "observationNoPublisher": "Observasi {observation} untuk {benchmark} belum tersimpan: belum dipublikasikan, atau feed belum diambil sejak itu. Segarkan di halaman obligasi.",
       "terms": "Ketentuan {series} belum lengkap. Segarkan seri di halaman obligasi.",
       "purchase": "Pembelian {series} pada {date} berada di luar masa penjualannya ({from} sampai {to}). Perbaiki tanggal pembelian.",
+      "purchaseAfterMaturity": "Pembelian {series} pada {date} jatuh pada atau setelah jatuh temponya ({maturity}). Perbaiki tanggal pembelian.",
       "lots": "Lot tidak dapat diturunkan dari buku besar ({code}). Perbaiki buku besar.",
       "lotsRow": "{action} tanggal {date}: lot tidak dapat diturunkan ({code}). Perbaiki transaksi.",
       "lotsRowSeries": "{action} tanggal {date}: tidak ditempatkan pada seri ({code}). Pilih seri pada transaksi tersebut.",
@@ -117,7 +119,9 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "IHK, 12 bulan (GUS)",
-      "PL_NBP_REFERENCE": "Suku bunga acuan NBP"
+      "PL_NBP_REFERENCE": "Suku bunga acuan NBP",
+      "US_CPI_U_NSA": "CPI-U, semua item, tanpa penyesuaian musiman (BLS)",
+      "US_TBILL_13W_MMY": "Imbal hasil surat utang Treasury 13 minggu"
     }
   },
   "portfolioMovement": {

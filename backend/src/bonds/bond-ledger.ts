@@ -1,7 +1,12 @@
 import { NotFoundException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { tr } from "../i18n/translate";
-import { INVESTMENT_REPLAY_ORDER_SQL } from "../securities/investment-replay.util";
+import { InvestmentAction } from "../securities/entities/investment-transaction.entity";
+import {
+  baseInvestmentAction,
+  INVESTMENT_REPLAY_ORDER_SQL,
+} from "../securities/investment-replay.util";
+import { ExactDecimal } from "./domain/exact-decimal";
 import { BondLotTransaction } from "./bond-lots";
 import {
   infersSeriesFromDate,
@@ -30,6 +35,8 @@ interface LedgerRow {
   status: string;
   tx_date: string;
   quantity: string | null;
+  /** The row's total amount as exact text (NUMERIC(20,4)). */
+  total_amount: string | null;
   account_id: string;
   /** The account of the other leg when this row is a paired transfer leg. */
   counterpart_account_id: string | null;
@@ -115,6 +122,7 @@ export async function loadBondLedger(
             t.status,
             TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
             t.quantity::text AS quantity,
+            t.total_amount::text AS total_amount,
             t.account_id,
             t.bond_instrument_id,
             (SELECT p.account_id FROM investment_transactions p
@@ -164,6 +172,7 @@ export async function loadBondLedger(
       status: r.status,
       transactionDate: r.tx_date,
       quantity: r.quantity,
+      cost: acquisitionCostText(r),
       pairedTransfer: r.counterpart_account_id !== null,
       accountId: r.account_id,
       counterpartAccountId: r.counterpart_account_id,
@@ -175,4 +184,30 @@ export async function loadBondLedger(
           : null),
     })),
   };
+}
+
+/**
+ * What an acquisition cost, as exact text: the row's total amount. Only a
+ * purchase has a cost of its own (an ADD_SHARES or a transfer records no
+ * price); a total that is missing, not a decimal or not above zero is unknown
+ * (`null`), never a guess. No accrued interest is taken out: a BUY or REINVEST
+ * cannot carry any (`ACCRUED_INTEREST_ACTIONS` holds only REDEEM), so the cash
+ * paid, interest bought included, is the cost until the purchase accrued-interest
+ * feature exists (bond primitives spec section 6.2). Exact decimals, not
+ * `acquisitionCost` (which is a JavaScript number).
+ */
+export function acquisitionCostText(
+  row: Pick<LedgerRow, "action" | "total_amount">,
+): string | null {
+  const base = baseInvestmentAction(row.action);
+  if (base !== InvestmentAction.BUY && base !== InvestmentAction.REINVEST) {
+    return null;
+  }
+  if (row.total_amount === null) return null;
+  try {
+    const cost = ExactDecimal.parse(row.total_amount);
+    return cost.cmp(ExactDecimal.ZERO) > 0 ? cost.toFixed(4) : null;
+  } catch {
+    return null;
+  }
 }

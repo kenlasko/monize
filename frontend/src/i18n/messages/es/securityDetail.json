@@ -300,6 +300,7 @@
       "periodValue": "{index}: {start} a {end}",
       "rate": "Tipo",
       "principal": "Principal por bono",
+      "principalIssuePrice": "No se ha indicado el coste: se usa el precio de la subasta",
       "accruedInterest": "Intereses devengados",
       "grossValue": "Valor bruto",
       "earlyRedemption": "Rescate anticipado",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "Supuestos de la proyección",
       "latestObservation": "Se supone {benchmark} en {value} para todos los periodos posteriores, el último valor publicado ({observation})",
-      "supplied": "Se supone {benchmark} en {value} para todos los periodos posteriores"
+      "supplied": "Se supone {benchmark} en {value} para todos los periodos posteriores",
+      "suppliedSimpleAnnual": "Se supone que {benchmark} crece un {value} al año (crecimiento anual simple, sin capitalización) en cada mes posterior"
     },
     "missing": {
       "title": "Datos que aún faltan",
@@ -371,8 +373,15 @@
         "firstThen": "Período 1: {firstRate}. Después {benchmark} + {addend}",
         "every": "Cada período: {benchmark} + {addend}",
         "floorZero": "Un valor negativo de {benchmark} cuenta como 0",
-        "discount": "Descuento sobre el valor nominal"
+        "dailyFloor": "El tipo diario (índice más margen) nunca es inferior a {floor}",
+        "discount": "Descuento sobre el valor nominal",
+        "daily": "Cada día: {benchmark} + {addend}, sumado día a día",
+        "lockout": "Una subasta a menos de {days, plural, one {# día hábil} other {# días hábiles}} del final de un período no se usa para ese período"
       },
+      "daily": "Diario, {benchmark}",
+      "dailyNoIndex": "Diario, {benchmark}: aún no hay índice guardado",
+      "dailyRun": "Desde {from}: {rate}",
+      "dailyRunUnknown": "Desde {from}: no hay índice guardado",
       "lotHeading": "Lote comprado el {date}",
       "range": "{start} a {end}",
       "current": "Actual",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "IPC, 12 meses (GUS)",
-      "PL_NBP_REFERENCE": "Tipo de referencia del NBP"
+      "PL_NBP_REFERENCE": "Tipo de referencia del NBP",
+      "US_CPI_U_NSA": "CPI-U, todos los componentes, sin ajuste estacional (BLS)",
+      "US_TBILL_13W_MMY": "Rendimiento de las letras del Tesoro a 13 semanas"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "Esta serie solo puede comprarse del {from} al {to}. Este lote se compró el {purchaseDate}, por lo que no se valora."
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "Esta serie solo puede comprarse del {from} al {to}. Este lote se compró el {purchaseDate}, por lo que no se valora.",
+      "PURCHASE_AFTER_MATURITY": "Esta serie venció el {maturityDate}. Este lote se compró el {purchaseDate}, en esa fecha o después, por lo que no se valora."
     },
+    "marketPriceRequired": "Este valor contiene una serie que cotiza en un mercado, por lo que su precio no depende de sus condiciones. Monize no escribe ningún precio para ella: introduzca el precio usted mismo. Los valores de los lotes de abajo se calculan a partir de las condiciones y no son valores de mercado.",
     "partial": {
       "title": "Esta valoración está incompleta; interprete las cifras como parciales.",
       "terms": "Las condiciones del bono están incompletas (por ejemplo, no hay un calendario instalado).",
@@ -453,7 +466,8 @@
       "none": "Aún no hay datos de {benchmark} guardados"
     },
     "issuers": {
-      "PL_MF": "Ministerio de Finanzas (PL)"
+      "PL_MF": "Ministerio de Finanzas (PL)",
+      "US_TREASURY": "Departamento del Tesoro de EE. UU. (US)"
     },
     "redemption": {
       "title": "Condiciones del reembolso anticipado",
@@ -470,7 +484,12 @@
       "COI": "COI: bonos de ahorro a 4 años indexados a la inflación",
       "EDO": "EDO: bonos de ahorro a 10 años indexados a la inflación",
       "ROS": "ROS: bonos de ahorro familiares a 6 años indexados a la inflación",
-      "ROD": "ROD: bonos de ahorro familiares a 12 años indexados a la inflación"
+      "ROD": "ROD: bonos de ahorro familiares a 12 años indexados a la inflación",
+      "BILL": "BILL: letras del Tesoro, de 4 a 52 semanas, vendidas con descuento",
+      "NOTE": "NOTE: notas del Tesoro, de 2 a 10 años, cupón fijo semestral",
+      "BOND": "BOND: bonos del Tesoro, 20 y 30 años, cupón fijo semestral",
+      "TIPS": "TIPS: valores del Tesoro protegidos contra la inflación, principal indexado al CPI-U",
+      "FRN": "FRN: notas del Tesoro a tipo variable, 2 años, intereses trimestrales"
     },
     "series": {
       "title": "Sus series",

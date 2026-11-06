@@ -172,6 +172,7 @@ describe("no bond data without a person's action (INV-BOND-008)", () => {
       "annualRate",
       "margin",
       "spread",
+      "baseReference",
       "saleWindow",
       "amount",
       "source",

@@ -23,6 +23,8 @@ import {
   useBondSeriesOptions,
 } from './BondSeriesSelect';
 import { BondRedemptionInfo } from './BondRedemptionInfo';
+import { BondAuctionFinder } from './BondAuctionFinder';
+import { BondUnitHint } from './BondUnitHint';
 import {
   redemptionRequestKey,
   useBondRedemptionSplit,
@@ -288,7 +290,8 @@ function InvestmentTransactionFormFields({
     REDEEM: t('transactionForm.actionRedeem'),
     RETURN_OF_CAPITAL: t('transactionForm.actionReturnOfCapital'),
   };
-  const { defaultCurrency, formatCurrency, formatShareQuantity, formatPrice } = useNumberFormat();
+  const { defaultCurrency, formatCurrency, formatShareQuantity, formatPrice, formatNumber } =
+    useNumberFormat();
   const { formatDate } = useDateFormat();
   const [isLoading, setIsLoading] = useState(false);
   // What the submit button does once a *new* transaction has been created.
@@ -306,6 +309,12 @@ function InvestmentTransactionFormFields({
     useState<Partial<CreateSecurityData> | null>(null);
   // The server's refusal about the bond series, said under the series select.
   const [bondSeriesError, setBondSeriesError] = useState<string | null>(null);
+  // What choosing an auction changed, said under the finder while that series
+  // is still the one chosen.
+  const [auctionNote, setAuctionNote] = useState<{
+    instrumentId: string;
+    lines: string[];
+  } | null>(null);
   // Holding state replayed up to the SPLIT's transaction date, used for the
   // "Before" line in the holding preview. Null means "no holding history at
   // that date" (don't render the preview).
@@ -533,6 +542,7 @@ function InvestmentTransactionFormFields({
       storedInstrumentId: storedBondInstrumentId,
     },
   );
+  const bondProgramIdNow = securities.find((s) => s.id === watchedSecurityId)?.bondProgramId;
   // The reader's pick; '' is the default of the kind: the series the server
   // infers from the date (an acquisition) or the oldest lots (a removal).
   const bondSeriesValue = watchedBondInstrumentId ?? '';
@@ -1193,9 +1203,16 @@ function InvestmentTransactionFormFields({
 
       const action = data.action as InvestmentAction;
       // A transfer in or an added holding names its series: the server has no
-      // date to infer it from, so the form does not send it without one.
+      // date to infer it from, so the form does not send it without one. Nor
+      // does a purchase of a program sold by auction: no sale window holds the
+      // date, so the server could not infer one either.
       if (bondSeries?.kind === 'select' && !bondSeriesValue) {
         setBondSeriesError(t('transactionForm.bondSeries.required'));
+        setIsLoading(false);
+        return;
+      }
+      if (bondSeries?.kind === 'acquire' && bondSeries.listsAuctions && !bondSeriesValue) {
+        setBondSeriesError(t('transactionForm.bondSeries.auctionRequired'));
         setIsLoading(false);
         return;
       }
@@ -1504,6 +1521,71 @@ function InvestmentTransactionFormFields({
         />
       )}
 
+      {/* A program sold by auction: the auctions around the date, to choose from */}
+      {bondSeries &&
+        !transferMode &&
+        bondSeries.listsAuctions &&
+        (bondSeries.kind === 'acquire' || bondSeries.kind === 'select') &&
+        watchedSecurityId && (
+          <div className="space-y-1">
+            <BondAuctionFinder
+              securityId={watchedSecurityId}
+              date={watchedTransactionDate}
+              series={bondSeries}
+              onPick={(instrumentId, auction) => {
+                setBondSeriesError(null);
+                setValue('bondInstrumentId', instrumentId, { shouldDirty: true });
+                const lines = [
+                  t('transactionForm.bondAuctions.picked', {
+                    identifier: auction.identifier,
+                    issue: formatDate(auction.issueDate),
+                  }),
+                ];
+                // An auction purchase settles on the issue date.
+                if (auction.issueDate !== watchedTransactionDate) {
+                  setValue('transactionDate', auction.issueDate, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  lines.push(
+                    t('transactionForm.bondAuctions.dateSet', {
+                      date: formatDate(auction.issueDate),
+                    }),
+                  );
+                }
+                // The auction price per 100 is the price of one unit of 100 of
+                // face value; an indexed principal's price includes the
+                // inflation adjustment the auction price does not, so it is
+                // left to the person.
+                if (
+                  needsQuantityPrice &&
+                  !watchedPrice &&
+                  auction.pricePer100 !== null &&
+                  bondSeries.program?.indexedPrincipal !== true
+                ) {
+                  const price = Number(auction.pricePer100);
+                  priceEditedByPerson.current = true;
+                  typedPriceBasis.current = { kind: 'price', value: price };
+                  setValue('price', price, { shouldDirty: true, shouldValidate: true });
+                  lines.push(
+                    t('transactionForm.bondAuctions.priceSet', {
+                      price: formatNumber(price, 6),
+                    }),
+                  );
+                }
+                setAuctionNote({ instrumentId, lines });
+              }}
+            />
+            {auctionNote !== null && auctionNote.instrumentId === bondSeriesValue && (
+              <div role="status" className="text-sm text-gray-700 dark:text-gray-300">
+                {auctionNote.lines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       {/* Quantity, Price and Commission on one line - for buy/sell/reinvest
           and every refinement of them (a redemption is a SELL) */}
       {needsQuantityPrice && (
@@ -1550,6 +1632,11 @@ function InvestmentTransactionFormFields({
           min={0}
           error={errors.quantity?.message}
         />
+      )}
+
+      {/* What one unit of a program-linked bond is, under the quantity */}
+      {bondSeries && !transferMode && (needsQuantityPrice || isQuantityOnly) && (
+        <BondUnitHint programId={bondProgramIdNow} />
       )}
 
       {/* Stock split - new shares vs old shares + optional new price */}

@@ -237,6 +237,17 @@ describe("BondValuationService (integration)", () => {
     expect(v.valuationComplete).toBe(false);
   });
 
+  it("refuses a series stored as INDEX_LEVEL that a rate rule reads, and not one stored in an unknown legacy unit", async () => {
+    await seed("edo1036", "EDO", "EDO1036");
+    await dataSource.query(
+      `INSERT INTO benchmark_series (code, kind, publisher, source_url, unit)
+       VALUES ('PL_CPI_GUS_YOY', 'MONTHLY', 'GUS', 'https://example.test/cpi', 'INDEX_LEVEL')`,
+    );
+    await expect(
+      value("EDO1036", "2026-10-01", "2027-10-16"),
+    ).rejects.toMatchObject({ code: "BENCHMARK_UNIT_MISMATCH" });
+  });
+
   it("reports a benchmark with no stored series as missing", async () => {
     await seed("edo1036", "EDO", "EDO1036");
     const v = await value("EDO1036", "2026-10-01", "2027-10-16");

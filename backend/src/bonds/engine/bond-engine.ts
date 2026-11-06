@@ -1,143 +1,56 @@
 import { assertNever } from "../domain/assert-never";
-import { BenchmarkRule, benchmarkFieldsOf } from "../domain/bond-terms";
-import { compareYMD, isValidYMD } from "../domain/calendar-date";
+import {
+  BenchmarkRule,
+  BondTerms,
+  benchmarkFieldsOf,
+} from "../domain/bond-terms";
+import { compareYMD } from "../domain/calendar-date";
 import { ExactDecimal } from "../domain/exact-decimal";
+import { SchedulePeriod } from "../domain/period-schedule";
 import {
-  buildSchedule,
-  SchedulePeriod,
-  singlePeriodSchedule,
-} from "../domain/period-schedule";
-import {
-  baseAt,
-  compounds,
-  couponOf,
+  couponLot,
   isDiscount,
-  maturityValue,
+  maturityLot,
   principalAt,
-  PricedPeriod,
-  roundMoney,
-  valueAt,
+  principalLot,
 } from "./accrual";
+import { paymentDateOf } from "./coupon-accrual";
+import { toMoney, roundLot } from "./rounding";
 import {
-  BondEngineError,
   BondEngineInput,
   BondLotStatus,
   BondValuation,
   BondValuationRefusal,
   CashFlow,
-  EarlyRedemptionRefusal,
-  MissingObservation,
   RateRuleDescription,
-  RateScheduleEntry,
 } from "./bond-engine-types";
-import { attributeInterest } from "./attribution";
 import {
   RedemptionSplit,
   RedemptionSplitRefusal,
   refusedSplit,
+  SplitBasis,
   splitOf,
 } from "./redemption-split";
+import { startedPeriods } from "./rate-resolution";
+import { derivedFlowsOf } from "./derived-flows";
+import { maturityCashOf as floatingMaturityCash } from "./floating-lot";
+import { IndexedLot, maturityCashOf, unitPrincipalOn } from "./indexed-lot";
+import { referencedCalendarIds } from "./redemption";
+
 import {
-  PeriodRate,
-  RatePlan,
-  RateResolution,
-  planPeriodRates,
-  ratesWithStarted,
-  startedPeriods,
-} from "./rate-resolution";
-import {
-  proceedsPerBond,
-  referencedCalendarIds,
-  windowRefusal,
-} from "./redemption";
+  costOf,
+  figuresOn,
+  inputsFor,
+  PreparedLot,
+  RateInputs,
+  prepare,
+  resolvedFor,
+  validateDay,
+  validateLot,
+} from "./prepared-lot";
 
 export * from "./bond-engine-types";
 export * from "./redemption-split";
-
-interface RateInputs {
-  readonly prior: readonly PricedPeriod[];
-  readonly current: PricedPeriod;
-}
-
-/**
- * The rates the formulas of period `k` need, or null when one is unknown. A
- * compounding bond needs periods 1..k; a coupon bond only period k.
- */
-function inputsFor(
-  compounding: boolean,
-  rates: readonly PeriodRate[],
-  k: number,
-): RateInputs | null {
-  const entry = rates[k - 1];
-  if (entry.rate === null) return null;
-  const current = { period: entry.period, rate: entry.rate };
-  if (!compounding) return { prior: [], current };
-  const prior: PricedPeriod[] = [];
-  for (const earlier of rates.slice(0, k - 1)) {
-    if (earlier.rate === null) return null;
-    prior.push({ period: earlier.period, rate: earlier.rate });
-  }
-  return { prior, current };
-}
-
-type LotInput = Omit<BondEngineInput, "asOf">;
-
-/** The lot itself: a positive integer quantity and a real purchase date. */
-function validateLot(input: LotInput, asOf = ""): void {
-  const { quantity, purchaseDate } = input.lot;
-  if (!Number.isSafeInteger(quantity) || quantity < 1) {
-    throw new BondEngineError(
-      "QUANTITY_INVALID",
-      { quantity: String(quantity) },
-      `Quantity must be a positive integer: ${quantity}`,
-    );
-  }
-  if (!isValidYMD(purchaseDate)) {
-    throw new BondEngineError(
-      "DATE_INVALID",
-      { purchaseDate: String(purchaseDate), asOf },
-      "purchaseDate must be a YYYY-MM-DD date",
-    );
-  }
-}
-
-/**
- * The boundary of every date: once a day passes this it is compared as text
- * (`compareYMD` does not validate).
- */
-function validateDay(purchaseDate: string, asOf: string): void {
-  if (!isValidYMD(asOf)) {
-    throw new BondEngineError(
-      "DATE_INVALID",
-      { purchaseDate, asOf: String(asOf) },
-      "purchaseDate and asOf must be YYYY-MM-DD dates",
-    );
-  }
-  if (compareYMD(asOf, purchaseDate) < 0) {
-    throw new BondEngineError(
-      "AS_OF_BEFORE_PURCHASE",
-      { asOf, purchaseDate },
-      `asOf ${asOf} is before the purchase date ${purchaseDate}`,
-    );
-  }
-}
-
-/** Observations a value needs: every started period, completed or current. */
-function neededMissing(
-  rates: readonly PeriodRate[],
-  startedCount: number,
-): readonly MissingObservation[] {
-  const seen = new Set<string>();
-  const missing: MissingObservation[] = [];
-  for (const entry of rates.slice(0, startedCount)) {
-    const m = entry.missing;
-    if (m && !seen.has(`${m.benchmarkId}|${m.observation}`)) {
-      seen.add(`${m.benchmarkId}|${m.observation}`);
-      missing.push(m);
-    }
-  }
-  return missing;
-}
 
 function benchmarkDescription(
   rule: BenchmarkRule,
@@ -179,235 +92,24 @@ function describeRule(
       return benchmarkDescription(rule, rule.spread);
     case "INFLATION_PLUS_MARGIN_AS_RATE":
       return benchmarkDescription(rule, rule.margin);
+    case "DAILY_INDEX_PLUS_SPREAD":
+      return {
+        type: rule.type,
+        benchmarkId: rule.benchmarkId,
+        annualRate: null,
+        firstPeriodRate: null,
+        addend: rule.spread,
+        benchmarkFloor: rule.floor,
+        lockoutBusinessDays: rule.lockoutBusinessDays,
+      };
     default:
       return assertNever(rule);
   }
 }
 
-function describeSchedule(
-  terms: BondEngineInput["terms"],
-  rates: readonly PeriodRate[],
-): RateScheduleEntry[] {
-  // A discount instrument states no rate: its placeholder is never shown.
-  const stated = !isDiscount(terms);
-  return rates.map((r) => ({
-    index: r.period.index,
-    start: r.period.start,
-    end: r.period.end,
-    annualRate: r.rate && stated ? r.rate.toTrimmedString(10, 4) : null,
-    rateSource: stated ? r.source : null,
-    benchmark: r.benchmark,
-    addend: r.addend,
-    ...attributeInterest(terms, rates, r.period.index),
-  }));
-}
-
-/** What a lot's rates give once `started` periods have begun; shared by every such day. */
-interface Resolved extends RateResolution {
-  readonly rateSchedule: readonly RateScheduleEntry[];
-  readonly maturityPerBond: ExactDecimal | null;
-  readonly maturityProjected: boolean;
-  readonly missingFor: readonly MissingObservation[];
-}
-
-/**
- * A lot with its schedule and rate plan resolved once. A valuation on a day is
- * then a lookup of the rates for that day's count of started periods (at most
- * periodCount + 1 distinct sets) and the arithmetic of the day.
- */
-interface PreparedLot {
-  readonly input: LotInput;
-  readonly compounding: boolean;
-  readonly schedule: readonly SchedulePeriod[];
-  readonly lastPeriod: SchedulePeriod;
-  readonly maturity: string;
-  readonly places: number;
-  readonly quantity: ExactDecimal;
-  readonly plan: RatePlan;
-  readonly saleRefusal: BondValuationRefusal | null;
-  readonly byStarted: Map<number, Resolved>;
-}
-
-function saleWindowRefusal(input: LotInput): BondValuationRefusal | null {
-  const window = input.terms.saleWindow;
-  const { purchaseDate } = input.lot;
-  if (
-    window === null ||
-    // An assumed purchase date (an unpaired transfer in) restarts the lot at
-    // the transfer by design (docs/specs/polish-retail-bonds.md 12.2); the
-    // window refuses only a stated purchase (2.6).
-    input.lot.purchaseDateAssumed === true ||
-    (compareYMD(purchaseDate, window.from) >= 0 &&
-      compareYMD(purchaseDate, window.to) <= 0)
-  ) {
-    return null;
-  }
-  return {
-    code: "PURCHASE_OUTSIDE_SALE_WINDOW",
-    params: { from: window.from, to: window.to, purchaseDate },
-  };
-}
-
-/** The periods of the lot from the terms' schedule anchor. */
-function scheduleOf(input: LotInput): readonly SchedulePeriod[] {
-  const { schedule } = input.terms;
-  switch (schedule.anchor) {
-    case "LOT_PURCHASE_DATE":
-      return buildSchedule(
-        input.lot.purchaseDate,
-        schedule.periodCount,
-        schedule.periodMonths,
-      );
-    case "ISSUE_DATE":
-      return singlePeriodSchedule(schedule.issueDate, schedule.maturityDate);
-    default:
-      return assertNever(schedule);
-  }
-}
-
-function prepare(input: LotInput): PreparedLot {
-  const { terms } = input;
-  const schedule = scheduleOf(input);
-  const lastPeriod = schedule[schedule.length - 1];
-  return {
-    input,
-    compounding: compounds(terms),
-    schedule,
-    lastPeriod,
-    maturity: lastPeriod.end,
-    places: terms.rounding.moneyDecimals,
-    quantity: ExactDecimal.fromInt(input.lot.quantity),
-    plan: planPeriodRates(input, schedule),
-    saleRefusal: saleWindowRefusal(input),
-    byStarted: new Map(),
-  };
-}
-
-function resolvedFor(p: PreparedLot, started: number): Resolved {
-  const cached = p.byStarted.get(started);
-  if (cached) return cached;
-  const resolution = ratesWithStarted(p.plan, started);
-  const { rates } = resolution;
-  const terms = p.input.terms;
-  const maturityInputs = inputsFor(p.compounding, rates, p.lastPeriod.index);
-  const resolved: Resolved = {
-    ...resolution,
-    rateSchedule: describeSchedule(terms, rates),
-    maturityPerBond: maturityInputs
-      ? maturityValue(terms, maturityInputs.prior, maturityInputs.current)
-      : null,
-    maturityProjected: p.compounding
-      ? rates.some((r) => r.source === "PROJECTED")
-      : rates[p.lastPeriod.index - 1].source === "PROJECTED",
-    missingFor: neededMissing(rates, started),
-  };
-  p.byStarted.set(started, resolved);
-  return resolved;
-}
-
-interface DayFigures {
-  readonly status: BondLotStatus;
-  readonly started: number;
-  readonly matured: boolean;
-  readonly current: SchedulePeriod | null;
-  readonly principal: string | null;
-  readonly accrued: string | null;
-  readonly gross: string | null;
-  readonly early: string | null;
-  /** Per bond, rounded: the exact figures `gross` and `early` are the lot's multiples of. */
-  readonly grossBond: ExactDecimal | null;
-  readonly earlyBond: ExactDecimal | null;
-  readonly refusal: EarlyRedemptionRefusal | null;
-}
-
-/** The value figures of one day (spec 2.4 to 2.6) from the rates of its started count. */
-function figuresOn(p: PreparedLot, asOf: string): DayFigures {
-  const { terms, calendars } = p.input;
-  const started = startedPeriods(p.schedule, asOf);
-  const { rates } = resolvedFor(p, started);
-  const { compounding, places, lastPeriod } = p;
-  const lot = (perBond: ExactDecimal) =>
-    perBond.mul(p.quantity).toFixed(places);
-
-  const matured = compareYMD(asOf, p.maturity) >= 0;
-  const candidate = matured ? null : p.schedule[started - 1];
-  const current =
-    candidate && compareYMD(asOf, candidate.end) < 0 ? candidate : null;
-
-  let principal: string | null = null;
-  let accrued: string | null = null;
-  let gross: string | null = null;
-  let early: string | null = null;
-  let grossBond: ExactDecimal | null = null;
-  let earlyBond: ExactDecimal | null = null;
-  let refusal: EarlyRedemptionRefusal | null = windowRefusal(
-    terms,
-    calendars,
-    p.input.lot.purchaseDate,
-    asOf,
-    current,
-    p.maturity,
-  );
-
-  if (matured) {
-    if (!compounding && !isDiscount(terms)) {
-      // A coupon bond redeems at its nominal whatever the rates were; its last
-      // coupon is a past cash flow, so no rate is needed for the value.
-      const nominal = principalAt(terms, { date: p.maturity });
-      principal = nominal.toFixed(places);
-      gross = lot(nominal);
-      grossBond = nominal;
-      accrued = lot(nominal.sub(nominal));
-    } else {
-      const inputs = inputsFor(compounding, rates, lastPeriod.index);
-      if (inputs) {
-        const perBond = maturityValue(terms, inputs.prior, inputs.current);
-        const nominal = principalAt(terms, { date: p.maturity });
-        // The same principal as an open day: the base the last period accrued
-        // on, interest capitalised earlier included. `accrued` stays all the
-        // interest since the nominal, as on an open day (golden-pinned), so
-        // the two overlap by design and `gross` is the figure to total.
-        principal = roundMoney(
-          terms,
-          baseAt(terms, inputs.prior, { date: lastPeriod.start }),
-        ).toFixed(places);
-        gross = lot(perBond);
-        grossBond = perBond;
-        accrued = lot(perBond.sub(nominal));
-      }
-    }
-  } else if (current) {
-    const inputs = inputsFor(compounding, rates, current.index);
-    if (inputs) {
-      const value = valueAt(terms, inputs.prior, inputs.current, asOf);
-      const base = baseAt(terms, inputs.prior, { date: current.start });
-      const nominal = principalAt(terms, { date: asOf });
-      grossBond = roundMoney(terms, value);
-      principal = roundMoney(terms, base).toFixed(places);
-      gross = lot(grossBond);
-      accrued = lot(grossBond.sub(nominal));
-      if (refusal === null) {
-        earlyBond = proceedsPerBond(terms, value, base, current.index, asOf);
-        early = lot(earlyBond);
-      }
-    } else if (refusal === null) {
-      refusal = "RATE_UNKNOWN";
-    }
-  }
-
-  return {
-    status: matured ? "MATURED" : "OPEN",
-    started,
-    matured,
-    current,
-    principal,
-    accrued,
-    gross,
-    early,
-    grossBond,
-    earlyBond,
-    refusal,
-  };
+function principalBasisOf(p: PreparedLot): BondValuation["principalBasis"] {
+  if (!isDiscount(p.input.terms)) return null;
+  return p.cost === null ? "ISSUE_PRICE" : "LOT_COST";
 }
 
 function refusedValuation(
@@ -428,6 +130,7 @@ function refusedValuation(
     rateRule: describeRule(terms.rateRule),
     rateSchedule: [],
     principal: null,
+    principalBasis: principalBasisOf(p),
     accruedInterest: null,
     grossValue: null,
     earlyRedemptionValue: null,
@@ -480,11 +183,14 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
   const { terms, calendars } = p.input;
   const figures = figuresOn(p, asOf);
   const { matured, current, started } = figures;
-  const resolved = resolvedFor(p, started);
-  const { rates, maturityPerBond, maturityProjected } = resolved;
+  const resolved = resolvedFor(p, started, asOf);
+  const { rates } = resolved;
   const { compounding, lastPeriod } = p;
-  const lot = (perBond: ExactDecimal) =>
-    perBond.mul(p.quantity).toFixed(p.places);
+  // A lot whose principal tracks an index or whose rate is floating has flows of
+  // its own (`derived-flows.ts`); every other lot runs the plain arithmetic.
+  const derived = derivedFlowsOf(p, asOf, matured, current);
+  let { maturityCash, maturityProjected } = resolved;
+  const lot = (figure: ExactDecimal) => figure.toFixed(p.places);
   const currentRate =
     current && !isDiscount(terms) ? rates[current.index - 1] : null;
 
@@ -492,43 +198,86 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
   const flow = (
     period: SchedulePeriod,
     type: CashFlow["type"],
-    perBond: ExactDecimal | null,
+    amount: ExactDecimal | null,
     projected: boolean,
-  ): CashFlow => ({
-    date: period.end,
-    type,
-    amount: perBond === null ? null : lot(perBond),
-    status: perBond === null ? "UNKNOWN" : projected ? "PROJECTED" : "KNOWN",
-    period: period.index,
-  });
+  ): CashFlow => {
+    const date = paymentDateOf(terms, calendars, period);
+    return {
+      date,
+      ...(date === period.end ? {} : { accrualEndDate: period.end }),
+      type,
+      amount: amount === null ? null : lot(amount),
+      status: amount === null ? "UNKNOWN" : projected ? "PROJECTED" : "KNOWN",
+      period: period.index,
+    };
+  };
   if (!compounding) {
     for (const period of p.schedule) {
-      if (compareYMD(period.end, asOf) <= 0) continue;
+      // Paid on its payment date, which an adjustment moves after the period end.
+      if (compareYMD(paymentDateOf(terms, calendars, period), asOf) <= 0)
+        continue;
       const rate = rates[period.index - 1];
+      if (derived !== null) {
+        const coupon = derived.coupon(period, rate.rate);
+        cashflows.push(
+          flow(period, "INTEREST", coupon.value, coupon.projected),
+        );
+        continue;
+      }
       const coupon =
         rate.rate === null
           ? null
-          : couponOf(terms, { period, rate: rate.rate });
+          : couponLot(terms, { period, rate: rate.rate }, p.quantity, p.cost);
       cashflows.push(
         flow(period, "INTEREST", coupon, rate.source === "PROJECTED"),
       );
     }
-    if (!matured)
-      cashflows.push(
-        flow(
-          lastPeriod,
-          "PRINCIPAL",
-          principalAt(terms, { date: lastPeriod.end }),
-          false,
-        ),
-      );
+    if (compareYMD(paymentDateOf(terms, calendars, lastPeriod), asOf) > 0) {
+      if (derived !== null) {
+        const paid = derived.principal(lastPeriod);
+        cashflows.push(
+          flow(lastPeriod, "PRINCIPAL", paid.value, paid.projected),
+        );
+      } else {
+        cashflows.push(
+          flow(
+            lastPeriod,
+            "PRINCIPAL",
+            principalLot(
+              terms,
+              { date: lastPeriod.end, unitBase: p.unitBase },
+              p.quantity,
+              p.cost,
+            ),
+            false,
+          ),
+        );
+      }
+    }
   } else if (!matured) {
     cashflows.push(
-      flow(lastPeriod, "PRINCIPAL", maturityPerBond, maturityProjected),
+      flow(lastPeriod, "PRINCIPAL", maturityCash, maturityProjected),
     );
   }
 
-  const missing = resolved.missingFor;
+  if (derived !== null) {
+    const cash = derived.maturity(lastPeriod, rates[lastPeriod.index - 1].rate);
+    maturityCash = cash.value;
+    maturityProjected = cash.projected;
+  }
+  const trail = derived === null ? null : derived.trail();
+  const missing =
+    trail === null
+      ? resolved.missingFor
+      : [...resolved.missingFor, ...trail.missing];
+  const assumptions =
+    trail === null
+      ? resolved.assumptions
+      : [...resolved.assumptions, ...trail.assumptions];
+  const projectionMissing =
+    trail === null
+      ? resolved.projectionMissing
+      : [...resolved.projectionMissing, ...trail.projectionMissing];
   const calendarsKnown = [...referencedCalendarIds(terms)].every((id) =>
     calendars.has(id),
   );
@@ -563,6 +312,7 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
     rateRule: describeRule(terms.rateRule),
     rateSchedule: resolved.rateSchedule,
     principal: figures.principal,
+    principalBasis: principalBasisOf(p),
     accruedInterest: figures.accrued,
     grossValue: figures.gross,
     earlyRedemptionValue: figures.early,
@@ -576,11 +326,11 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
     knownCashflows: cashflows.filter((c) => c.status === "KNOWN"),
     projectedCashflows: cashflows.filter((c) => c.status !== "KNOWN"),
     maturityValueKnown:
-      maturityPerBond && !maturityProjected ? lot(maturityPerBond) : null,
+      maturityCash && !maturityProjected ? lot(maturityCash) : null,
     maturityValueProjected:
-      maturityPerBond && maturityProjected ? lot(maturityPerBond) : null,
-    projectionAssumptions: resolved.assumptions,
-    projectionMissing: resolved.projectionMissing,
+      maturityCash && maturityProjected ? lot(maturityCash) : null,
+    projectionAssumptions: assumptions,
+    projectionMissing,
     dataCompleteness,
     missing,
     valuationComplete: Object.values(dataCompleteness).every(Boolean),
@@ -589,8 +339,8 @@ function valueOn(p: PreparedLot, asOf: string): BondValuation {
 
 /**
  * Value one holding lot (spec 2.4 to 2.6). All arithmetic is exact; rounding is
- * applied only where the terms round, per bond, and the lot is that amount times
- * the quantity. A lot bought outside the terms' sale window is REFUSED: no
+ * applied only where the terms round, as the terms' rounding basis says
+ * (`roundLot`: per bond and multiplied by the quantity by default). A lot bought outside the terms' sale window is REFUSED: no
  * figure, `valuationComplete` false.
  */
 export function valueBondLot(input: BondEngineInput): BondValuation {
@@ -600,15 +350,73 @@ export function valueBondLot(input: BondEngineInput): BondValuation {
 }
 
 /**
+ * The interest accrued on `date` that a buyer of `quantity` units on that day
+ * pays the seller (`docs/specs/bond-marketable-primitives.md` 6.2): the
+ * valuation's own `accruedInterest` of a lot bought on `date` and valued on it,
+ * so a purchase form's suggestion and the valuation are one figure. It is the
+ * lot's figure, rounded as the terms' basis says, in the terms' money decimals;
+ * null when the terms alone do not give it (a rate that reads a benchmark, a
+ * lot refused by the terms, such as a marketable one bought on or after its
+ * maturity). Before the dated date nothing has accrued: "0.00".
+ */
+export function accruedInterestOn(
+  terms: BondTerms,
+  date: string,
+  quantity: number,
+): string | null {
+  return valueBondLot({
+    terms,
+    termsVersion: 1,
+    announcedRates: new Map(),
+    benchmarks: new Map(),
+    calendars: new Map(),
+    lot: { purchaseDate: date, quantity },
+    asOf: date,
+  }).accruedInterest;
+}
+
+/**
+ * The cash of `units` at maturity (principal and last coupon), the lot's figure
+ * rounded as the terms' basis says; null while an index ratio or a floating
+ * index it needs is not known. `inputs` is the last period's rate, null for a
+ * floating rate.
+ */
+function maturityCashFor(
+  p: PreparedLot,
+  inputs: RateInputs | null,
+  units: ExactDecimal,
+  asOf: string,
+): ExactDecimal | null {
+  const { terms } = p.input;
+  if (p.floating !== null) {
+    return floatingMaturityCash(
+      { terms, series: p.floating, quantity: units },
+      p.lastPeriod,
+      asOf,
+    ).value;
+  }
+  if (inputs === null) return null;
+  if (p.index !== null) {
+    return maturityCashOf(
+      { terms, series: p.index, quantity: units },
+      inputs.current,
+      p.maturity,
+      asOf,
+    ).value;
+  }
+  return maturityLot(terms, inputs.prior, inputs.current, units);
+}
+
+/**
  * What a redemption on `date` pays, as returned principal and interest (spec
  * `bond-redemption-interest.md` section 2), through the same schedule, rates,
- * penalties, floor and rounding as `valueBondLot`: one bond's figures are
- * rounded by the terms, the lot's are those times the quantity.
+ * penalties, floor and rounding as `valueBondLot`: the lot's figures are rounded
+ * as the terms' basis says (`roundLot`), and one unit's are given beside them.
  *
  * Before maturity the day must be allowed (`windowRefusal`): the value before
  * deduction is the gross value, the payout the early-redemption proceeds. On or
  * after maturity the payout is the principal plus the last period's interest
- * (`maturityValue`) and the deduction is 0. A refused day, a purchase outside
+ * (`maturityLot`) and the deduction is 0. A refused day, a purchase outside
  * the sale window and an unknown rate give the refusal and null figures (the
  * principal stays known for an unknown rate).
  */
@@ -621,48 +429,93 @@ export function redemptionSplit(
   const p = prepare(input);
   const { terms } = input;
   const { quantity } = input.lot;
-  const refused = (refusal: RedemptionSplitRefusal, principal?: ExactDecimal) =>
-    refusedSplit(
+  const matured = compareYMD(date, p.maturity) >= 0;
+  const day = matured ? p.maturity : date;
+  const indexed: IndexedLot | null =
+    p.index === null ? null : { terms, series: p.index, quantity: p.quantity };
+  // One unit's principal on the day; null when an indexed principal's ratio is
+  // not stored. The payment at maturity takes the floor.
+  const unitPrincipal = (): ExactDecimal | null =>
+    indexed === null
+      ? principalAt(terms, { date: day, unitBase: p.unitBase })
+      : unitPrincipalOn(indexed, day, date, matured).value;
+  // The principal of the lot and of one unit, rounded as the basis says; a lot
+  // of known cost has the cost (pro rata for one unit) as its principal.
+  const principalOf = (units: ExactDecimal): ExactDecimal | null => {
+    const cost = costOf(p, units);
+    if (cost !== null) return toMoney(terms, cost);
+    const unit = unitPrincipal();
+    return unit === null ? null : roundLot(terms, unit, units);
+  };
+  const refused = (refusal: RedemptionSplitRefusal, principalKnown = false) => {
+    const lot = principalKnown ? principalOf(p.quantity) : null;
+    const unit = principalKnown ? principalOf(ExactDecimal.ONE) : null;
+    return refusedSplit(
       date,
       quantity,
       p.places,
       refusal,
-      principal === undefined ? null : roundMoney(terms, principal),
+      lot === null || unit === null ? null : { lot, unit },
     );
-  if (p.saleRefusal) return refused("PURCHASE_OUTSIDE_SALE_WINDOW");
+  };
+  if (p.saleRefusal) return refused(p.saleRefusal.code);
 
-  const matured = compareYMD(date, p.maturity) >= 0;
-  const day = matured ? p.maturity : date;
-  const principal = principalAt(terms, { date: day });
   if (matured) {
-    const { rates } = resolvedFor(p, startedPeriods(p.schedule, day));
+    const { rates } = resolvedFor(p, startedPeriods(p.schedule, day), date);
     const inputs = inputsFor(p.compounding, rates, p.lastPeriod.index);
-    if (!inputs) return refused("RATE_UNKNOWN", principal);
-    const paid = maturityValue(terms, inputs.prior, inputs.current);
-    return splitOf(date, quantity, p.places, {
-      principal: roundMoney(terms, principal),
-      gross: paid,
-      payout: paid,
-    });
+    // A floating rate has no single rate: its last coupon is the sum of its days.
+    if (!inputs && p.floating === null) return refused("RATE_UNKNOWN", true);
+    const basisOf = (units: ExactDecimal): SplitBasis | null => {
+      const principal = principalOf(units);
+      const paid = maturityCashFor(p, inputs, units, date);
+      return principal === null || paid === null
+        ? null
+        : { principal, gross: paid, payout: paid };
+    };
+    const lotBasis = basisOf(p.quantity);
+    const unitBasis = basisOf(ExactDecimal.ONE);
+    // An unknown index ratio leaves no principal either: nothing is known.
+    return lotBasis === null || unitBasis === null
+      ? refused("RATE_UNKNOWN", true)
+      : splitOf(date, quantity, p.places, lotBasis, unitBasis);
   }
 
   const figures = figuresOn(p, day);
-  if (figures.refusal === "RATE_UNKNOWN")
-    return refused("RATE_UNKNOWN", principal);
+  if (figures.refusal === "RATE_UNKNOWN") return refused("RATE_UNKNOWN", true);
   if (figures.refusal !== null) {
     // No open period (before the first one starts) is not a day to redeem on.
     return refused(
       figures.refusal === "MATURED" ? "NOT_REDEEMABLE" : figures.refusal,
     );
   }
-  if (figures.grossBond === null || figures.earlyBond === null) {
-    return refused("RATE_UNKNOWN", principal);
+  const unit = figuresOn(p, day, ExactDecimal.ONE);
+  const lotPrincipal = principalOf(p.quantity);
+  const unitBasePrincipal = principalOf(ExactDecimal.ONE);
+  if (
+    figures.grossLot === null ||
+    figures.earlyLot === null ||
+    unit.grossLot === null ||
+    unit.earlyLot === null ||
+    lotPrincipal === null ||
+    unitBasePrincipal === null
+  ) {
+    return refused("RATE_UNKNOWN", true);
   }
-  return splitOf(date, quantity, p.places, {
-    principal: roundMoney(terms, principal),
-    gross: figures.grossBond,
-    payout: figures.earlyBond,
-  });
+  return splitOf(
+    date,
+    quantity,
+    p.places,
+    {
+      principal: lotPrincipal,
+      gross: figures.grossLot,
+      payout: figures.earlyLot,
+    },
+    {
+      principal: unitBasePrincipal,
+      gross: unit.grossLot,
+      payout: unit.earlyLot,
+    },
+  );
 }
 
 export type BondLotSeriesInput = Omit<BondEngineInput, "asOf"> & {

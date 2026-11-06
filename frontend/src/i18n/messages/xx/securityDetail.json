@@ -300,6 +300,7 @@
       "periodValue": "[XX-{index}: {start} to {end}-XX]",
       "rate": "[XX-Rate-XX]",
       "principal": "[XX-Principal per bond-XX]",
+      "principalIssuePrice": "[XX-No cost entered: the auction price is used-XX]",
       "accruedInterest": "[XX-Accrued interest-XX]",
       "grossValue": "[XX-Gross value-XX]",
       "earlyRedemption": "[XX-Early redemption-XX]",
@@ -352,7 +353,8 @@
     "assumptions": {
       "title": "[XX-Projection assumptions-XX]",
       "latestObservation": "[XX-{benchmark} assumed at {value} for every later period, the latest published value ({observation})-XX]",
-      "supplied": "[XX-{benchmark} assumed at {value} for every later period-XX]"
+      "supplied": "[XX-{benchmark} assumed at {value} for every later period-XX]",
+      "suppliedSimpleAnnual": "[XX-{benchmark} assumed to grow {value} a year (simple annual growth, not compounded) for every later month-XX]"
     },
     "missing": {
       "title": "[XX-Data still needed-XX]",
@@ -371,8 +373,15 @@
         "firstThen": "[XX-Period 1: {firstRate}. Then {benchmark} + {addend}-XX]",
         "every": "[XX-Every period: {benchmark} + {addend}-XX]",
         "floorZero": "[XX-A negative {benchmark} counts as 0-XX]",
-        "discount": "[XX-Discount to face value-XX]"
+        "dailyFloor": "[XX-The daily rate (index plus spread) is never below {floor}-XX]",
+        "discount": "[XX-Discount to face value-XX]",
+        "daily": "[XX-Every day: {benchmark} + {addend}, added up per day-XX]",
+        "lockout": "[XX-An auction within {days, plural, one {# business day} other {# business days}} before a period end is not used for that period-XX]"
       },
+      "daily": "[XX-Daily, {benchmark}-XX]",
+      "dailyNoIndex": "[XX-Daily, {benchmark}: no index stored yet-XX]",
+      "dailyRun": "[XX-From {from}: {rate}-XX]",
+      "dailyRunUnknown": "[XX-From {from}: no index stored-XX]",
       "lotHeading": "[XX-Lot purchased {date}-XX]",
       "range": "[XX-{start} to {end}-XX]",
       "current": "[XX-Current-XX]",
@@ -431,11 +440,15 @@
     },
     "benchmarks": {
       "PL_CPI_GUS_YOY": "[XX-CPI, 12 months (GUS)-XX]",
-      "PL_NBP_REFERENCE": "[XX-NBP reference rate-XX]"
+      "PL_NBP_REFERENCE": "[XX-NBP reference rate-XX]",
+      "US_CPI_U_NSA": "[XX-CPI-U, all items, not seasonally adjusted (BLS)-XX]",
+      "US_TBILL_13W_MMY": "[XX-13-week Treasury bill yield-XX]"
     },
     "valuationRefusal": {
-      "PURCHASE_OUTSIDE_SALE_WINDOW": "[XX-This series can only be bought from {from} to {to}. This lot was bought on {purchaseDate}, so it is not valued.-XX]"
+      "PURCHASE_OUTSIDE_SALE_WINDOW": "[XX-This series can only be bought from {from} to {to}. This lot was bought on {purchaseDate}, so it is not valued.-XX]",
+      "PURCHASE_AFTER_MATURITY": "[XX-This series matured on {maturityDate}. This lot was bought on {purchaseDate}, on or after that day, so it is not valued.-XX]"
     },
+    "marketPriceRequired": "[XX-This security holds a series that trades on a market, so its price is not a function of its terms. Monize writes no price for it: enter the price yourself. The values of the lots below are worked out from the terms and are not market values.-XX]",
     "partial": {
       "title": "[XX-This valuation is incomplete, so read the figures as partial.-XX]",
       "terms": "[XX-The terms of the bond are incomplete (for example a calendar is not installed).-XX]",
@@ -453,7 +466,8 @@
       "none": "[XX-No {benchmark} data is stored yet-XX]"
     },
     "issuers": {
-      "PL_MF": "[XX-Ministry of Finance (PL)-XX]"
+      "PL_MF": "[XX-Ministry of Finance (PL)-XX]",
+      "US_TREASURY": "[XX-U.S. Department of the Treasury (US)-XX]"
     },
     "redemption": {
       "title": "[XX-Early redemption terms-XX]",
@@ -470,7 +484,12 @@
       "COI": "[XX-COI: 4-year inflation-indexed savings bonds-XX]",
       "EDO": "[XX-EDO: 10-year inflation-indexed savings bonds-XX]",
       "ROS": "[XX-ROS: 6-year inflation-indexed family savings bonds-XX]",
-      "ROD": "[XX-ROD: 12-year inflation-indexed family savings bonds-XX]"
+      "ROD": "[XX-ROD: 12-year inflation-indexed family savings bonds-XX]",
+      "BILL": "[XX-BILL: Treasury bills, 4 to 52 weeks, sold at a discount-XX]",
+      "NOTE": "[XX-NOTE: Treasury notes, 2 to 10 years, fixed semiannual coupon-XX]",
+      "BOND": "[XX-BOND: Treasury bonds, 20 and 30 years, fixed semiannual coupon-XX]",
+      "TIPS": "[XX-TIPS: Treasury inflation-protected securities, principal indexed to CPI-U-XX]",
+      "FRN": "[XX-FRN: Treasury floating rate notes, 2 years, quarterly interest-XX]"
     },
     "series": {
       "title": "[XX-Your series-XX]",
