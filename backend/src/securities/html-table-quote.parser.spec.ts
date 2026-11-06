@@ -316,6 +316,11 @@ describe("numbers", () => {
     ["6,996", ".", 6996],
     ["7.00k", ".", 7000],
     ["1.2M", ".", 1200000],
+    // 4.06 * 1e6 is 4059999.9999999995 in floating point; a bigint column
+    // refuses it (PR #1995, found on ariva.de).
+    ["4.06 m", ".", 4060000],
+    ["4,06 m", ",", 4060000],
+    ["1.15 bn", ".", 1150000000],
     ["-", ",", null],
     ["", ".", null],
     ["n/a", ".", null],
@@ -613,5 +618,15 @@ describe("a lone dot before three digits", () => {
     expect(headerSeparatorHint(["日期", "收盘价"])).toBe(".");
     expect(headerSeparatorHint(["तारीख", "बंद"])).toBe(".");
     expect(headerSeparatorHint(["Date"])).toBeNull();
+  });
+});
+
+describe("a volume column", () => {
+  it("stores a volume as a whole number, never a fractional count", () => {
+    const html = `<table><tr><th>Datum</th><th>Schluss</th><th>Vol. (nom.)</th></tr>
+      <tr><td>05.11.2026</td><td>113,95</td><td>4,06 m</td></tr>
+      <tr><td>04.11.2026</td><td>113,54</td><td>1,5</td></tr></table>`;
+    const quotes = parseQuoteTable(html, new Date("2026-11-06T00:00:00Z"));
+    expect(quotes?.prices.map((r) => r.volume)).toEqual([2, 4060000]);
   });
 });
