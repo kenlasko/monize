@@ -163,7 +163,11 @@ function parseTable(
       low: firstParsed(pick(row, "low"), (s) => parseNumber(s, decimal)),
       close,
       adjClose: null,
-      volume: firstParsed(pick(row, "volume"), (s) => parseNumber(s, decimal)),
+      volume: firstParsed(pick(row, "volume"), (s) => {
+        const shares = parseNumber(s, decimal);
+        // security_prices.volume is a bigint: a count is a whole number.
+        return shares === null ? null : Math.round(shares);
+      }),
     });
   }
 
@@ -290,7 +294,8 @@ export function inferDecimalSeparator(
   return ambiguousComma > 0 || ambiguousDot > 0 ? null : ".";
 }
 
-const MAGNITUDE: Record<string, number> = { k: 1e3, m: 1e6, b: 1e9, bn: 1e9 };
+/** Decimal exponent of each magnitude suffix: k = 10^3, m = 10^6, b = 10^9. */
+const MAGNITUDE: Record<string, number> = { k: 3, m: 6, b: 9, bn: 9 };
 
 /** Parse a cell as a number, or `null` for an empty, dashed or non-numeric cell. */
 export function parseNumber(raw: string, decimal: "." | ","): number | null {
@@ -302,11 +307,12 @@ export function parseNumber(raw: string, decimal: "." | ","): number | null {
     .join("")
     .replace(decimal, ".")
     .replace("\u2212", "-");
-  let value = Number(normalized);
-  if (!Number.isFinite(value)) return null;
   const suffix = /\d\s*(bn|[kmb])\b/i.exec(raw);
-  if (suffix) value *= MAGNITUDE[suffix[1].toLowerCase()];
-  return value;
+  // The magnitude goes in as an exponent: 4.06 * 1e6 is 4059999.9999999995,
+  // while Number("4.06e6") is exactly 4060000.
+  const exponent = suffix ? MAGNITUDE[suffix[1].toLowerCase()] : 0;
+  const value = Number(exponent ? `${normalized}e${exponent}` : normalized);
+  return Number.isFinite(value) ? value : null;
 }
 
 /** The currency a price cell names, when it names one unambiguously. */
