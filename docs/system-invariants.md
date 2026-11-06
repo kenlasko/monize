@@ -620,9 +620,11 @@ Enforcement         Every absolute recompute takes the account lock before readi
                     leg, locks the parents before the legs and reverses each
                     locked row through deletionBalanceEffect, as the single
                     delete does (A26-H05).
-                    Removing one split line (removeSplit) re-totals the
-                    locked parent by the line's amount and moves the parent's
-                    account by its contribution through deletionBalanceEffect;
+                    Removing one split line (removeSplit) from a set that
+                    added up to the locked parent re-totals it by the line's
+                    amount and moves the parent's account by its contribution
+                    through deletionBalanceEffect (an addSplit-built partial
+                    set, which moved neither, moves neither back);
                     a last transfer line becomes the parent's plain transfer
                     with its counterpart kept, never deleted (issue #2025).
                     A transfer edit derives every delta from rows locked inside

@@ -193,4 +193,32 @@ describe("Removing one split line (integration)", () => {
     expect(await balanceOf(savingsId)).toBe(0);
     await expectBalancesMatchLedger();
   });
+
+  it("removing a line addSplit added to a plain transaction moves nothing back", async () => {
+    const plain = await withUserContext(userId, () =>
+      service.create(userId, {
+        accountId: chequingId,
+        transactionDate: "2026-01-15",
+        amount: -100,
+        currencyCode: "USD",
+        categoryId: groceriesId,
+      } as never),
+    );
+    const line = await withUserContext(userId, () =>
+      service.addSplit(userId, plain.id, {
+        amount: -30,
+        categoryId: groceriesId,
+      } as never),
+    );
+    expect(await balanceOf(chequingId)).toBe(900);
+
+    await removeSplit(plain.id, line.id);
+
+    const parent = await dataSource.manager.findOneByOrFail(Transaction, {
+      id: plain.id,
+    });
+    expect(Number(parent.amount)).toBe(-100);
+    expect(await balanceOf(chequingId)).toBe(900);
+    await expectBalancesMatchLedger();
+  });
 });

@@ -8,6 +8,7 @@ import { DataSource } from "typeorm";
 import { TransactionSplitService } from "./transaction-split.service";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
+import { SplitKind } from "./entities/split-kind.enum";
 import { Category } from "../categories/entities/category.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { AccountsService } from "../accounts/accounts.service";
@@ -1611,12 +1612,13 @@ describe("TransactionSplitService", () => {
       };
 
       splitsRepository.findOne.mockResolvedValue(splitToRemove);
+      // -60.00 + -25.00 + -15.00: the set adds up to the -100.00 parent.
       mockQueryRunner.manager.find.mockResolvedValue([
-        { ...mockSplit2 },
+        { ...mockSplit2, amount: -25 },
         {
           id: "split-3",
           transactionId: "tx-1",
-          amount: -20,
+          amount: -15,
           categoryId: "cat-3",
         },
       ]);
@@ -1938,10 +1940,12 @@ describe("TransactionSplitService", () => {
 
     /**
      * A set built line by line through `addSplit` may hold less than the
-     * parent. Its last line cannot become the parent: the parent would carry
-     * that line's category, or its transfer, for money the line never held.
+     * parent, and `addSplit` moved neither the parent's amount nor its account,
+     * so removing a line from it moves neither back. Its last line cannot
+     * become the parent either: the parent would carry that line's category,
+     * or its transfer, for money the line never held.
      */
-    it("does not collapse into a last line that does not account for the whole parent", async () => {
+    it("leaves a parent its lines never added up to, and does not collapse into its last line", async () => {
       const transaction = { ...mockTransaction } as Transaction;
       lockParent(transaction);
       splitsRepository.findOne.mockResolvedValue({
@@ -1958,19 +1962,127 @@ describe("TransactionSplitService", () => {
 
       await service.removeSplit(transaction, "split-1", "user-1");
 
-      // -100.00 less -30.00 is -70.00, which the -40.00 line does not cover.
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        Transaction,
-        "tx-1",
-        { amount: -70 },
-      );
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledTimes(1);
+      // -30.00 and -40.00 never made the -100.00 parent.
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(accountsService.recalculateCurrentBalance).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.remove).not.toHaveBeenCalledWith(
         lastSplit,
       );
       expect(lockTransactionRow).not.toHaveBeenCalledWith(
         expect.anything(),
         "linked-tx-2",
+        "user-1",
+      );
+    });
+
+    /**
+     * The review's case: a plain -100.00 row given one -30.00 line through
+     * `addSplit` (which flips nothing until a second line), then that line
+     * removed. Nothing moved when it was added, so nothing moves back.
+     */
+    it("moves nothing when the only line of an incomplete set is removed", async () => {
+      const transaction = { ...mockTransaction, isSplit: false } as Transaction;
+      lockParent(transaction);
+      splitsRepository.findOne.mockResolvedValue({
+        ...mockSplit,
+        amount: -30,
+      });
+      mockQueryRunner.manager.find.mockResolvedValue([]);
+
+      await service.removeSplit(transaction, "split-1", "user-1");
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        expect.objectContaining({ amount: expect.anything() }),
+      );
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("re-totals the parent to zero when its single pass-through line is removed", async () => {
+      const transaction = { ...mockTransaction } as Transaction;
+      lockParent(
+        transaction,
+        lockedTransactionRow({
+          id: "linked-tx-1",
+          accountId: "account-2",
+          amount: 100,
+        }),
+      );
+      splitsRepository.findOne.mockResolvedValue({
+        ...mockSplit,
+        categoryId: null,
+        linkedTransactionId: "linked-tx-1",
+        transferAccountId: "account-2",
+        amount: -100,
+      });
+      mockQueryRunner.manager.find.mockResolvedValue([]);
+
+      await service.removeSplit(transaction, "split-1", "user-1");
+
+      // The leg goes, as asked, and the 100.00 that left with it comes back.
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-2",
+        -100,
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        100,
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        { amount: 0 },
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        { isSplit: false },
+      );
+    });
+
+    /**
+     * An embedded investment row carries no cash transaction of its own
+     * (`transactionId: null`): the parent is its cash side, so the re-total is
+     * the only movement of the cash account, once.
+     */
+    it("re-totals the parent once when an investment line is removed", async () => {
+      const transaction = { ...mockTransaction } as Transaction;
+      lockParent(transaction);
+      const investmentTransaction = {
+        id: "inv-1",
+        accountId: "brokerage-1",
+        transactionId: null,
+      };
+      splitsRepository.findOne.mockResolvedValue({
+        ...mockSplit,
+        kind: SplitKind.INVESTMENT,
+        categoryId: null,
+        investmentTransaction,
+      });
+      mockQueryRunner.manager.find.mockResolvedValue([
+        { ...mockSplit2 },
+        { id: "split-3", transactionId: "tx-1", amount: 0 },
+      ]);
+
+      await service.removeSplit(transaction, "split-1", "user-1");
+
+      expect(
+        (service as any).investmentTransactionsService.reverseAndRemoveEmbedded,
+      ).toHaveBeenCalledWith(
+        mockQueryRunner.manager,
+        "user-1",
+        investmentTransaction,
+        expect.anything(),
+      );
+      expect(accountsService.updateBalance).toHaveBeenCalledTimes(1);
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        60,
+      );
+      expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
+        "brokerage-1",
         "user-1",
       );
     });

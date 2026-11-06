@@ -286,11 +286,13 @@ tempted to do -- makes three amounts that do not sum appear to.
 ### Removing one line
 
 `DELETE /transactions/:id/splits/:splitId` (`TransactionSplitService.removeSplit`)
-takes the line's money out of the parent with it: the parent's amount drops by
-the line's, and its account moves by the line's contribution through
-`deletionBalanceEffect` (nothing for a VOID parent, a recomputation for a
-future-dated one), so removing -60.00 from a -100.00 parent leaves -40.00 and
-returns 60.00 to the account. When one line is left and it accounts for the
+takes the line's money out of the parent with it when the lines added up to the
+parent: the parent's amount drops by the line's, and its account moves by the
+line's contribution through `deletionBalanceEffect` (nothing for a VOID parent,
+a recomputation for a future-dated one), so removing -60.00 from a -100.00
+parent leaves -40.00 and returns 60.00 to the account. A set that did not add
+up was built line by line through `addSplit`, which moves neither the parent's
+amount nor its account, so its removal moves neither back. When one line is left and it accounts for the
 whole parent, the parent becomes it: a category line gives the parent its
 category; a transfer line makes the parent that plain transfer, keeping the
 counterpart and linking the pair both ways. A last line that does not cover the

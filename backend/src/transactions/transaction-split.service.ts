@@ -1426,8 +1426,9 @@ export class TransactionSplitService {
    * The leg is locked and re-read here rather than taken from the split's
    * snapshot: the amount reversed has to be the amount the delete removes, and
    * the reversal only happens when this call is the one that removed the row.
-   * Both split-removal paths below go through this, so the collapse case cannot
-   * drift from the ordinary one. Returns the counterpart's account id, or null
+   * `removeSplit` reverses the removed line's counterpart through this; the
+   * collapse into a plain transfer keeps the last line's counterpart instead
+   * (issue #2025). Returns the counterpart's account id, or null
    * when another request already removed the leg (nothing was reversed).
    */
   private async removeLinkedLeg(
@@ -1512,25 +1513,45 @@ export class TransactionSplitService {
 
       await m.remove(split);
 
-      // The line's money leaves the parent with it (issue #2025). The parent's
-      // amount is what its lines account for, so removing a -60.00 line from a
-      // -100.00 parent leaves -40.00, and the parent's account gets back what
-      // the line had taken out of it -- exactly the line's contribution, so the
-      // deletion rule applies: nothing for a VOID parent, a recomputation for a
-      // future-dated one. The old path left the parent at its full amount, so
-      // the remaining lines no longer added up to it and the account still
-      // showed the removed line's money leaving. Taken off the locked parent,
-      // not the caller's copy, as the editing of a split-transfer leg re-totals
-      // it (`updateSplitTransferLeg`).
-      const newParentAmount = roundMoney(
-        Number(lockedParent.amount) - Number(split.amount),
-      );
-      if (newParentAmount !== roundMoney(Number(lockedParent.amount))) {
+      const remainingSplits = await m.find(TransactionSplit, {
+        where: { transactionId: transaction.id },
+        relations: ["category", "transferAccount", "investmentTransaction"],
+        order: { createdAt: "ASC" },
+      });
+
+      // The line's money leaves the parent with it (issue #2025), when the
+      // lines added up to the parent before the removal: removing a -60.00 line
+      // from a -100.00 parent leaves -40.00, and the parent's account gets back
+      // exactly what the line accounted for, so the deletion rule applies --
+      // nothing for a VOID parent, a recomputation for a future-dated one. The
+      // old path left the parent at its full amount, so the remaining lines no
+      // longer added up to it and the account still showed the line's money
+      // leaving. Taken off the locked parent, not the caller's copy, as the
+      // edit of a split-transfer leg re-totals it (`updateSplitTransferLeg`).
+      //
+      // A set that did not add up to the parent was built line by line through
+      // `addSplit`, which moves neither the parent's amount nor its account, so
+      // its removal moves neither back: the parent's money was never the
+      // lines', and taking a line off a plain -100.00 row that had one -30.00
+      // line added would otherwise shrink it to -70.00 and credit 30.00 that
+      // never left the account.
+      const parentAmount = roundMoney(Number(lockedParent.amount));
+      const linesCoveredParent =
+        sumMoney([
+          ...remainingSplits.map((s) => Number(s.amount)),
+          Number(split.amount),
+        ]) === parentAmount;
+      const removedAmount = roundMoney(Number(split.amount));
+      const newParentAmount =
+        linesCoveredParent && removedAmount !== 0
+          ? roundMoney(parentAmount - removedAmount)
+          : parentAmount;
+      if (newParentAmount !== parentAmount) {
         await m.update(Transaction, transaction.id, {
           amount: newParentAmount,
         });
         const effect = deletionBalanceEffect({
-          amount: split.amount,
+          amount: removedAmount,
           status: lockedParent.status,
           transactionDate: lockedParent.transactionDate,
         });
@@ -1549,12 +1570,6 @@ export class TransactionSplitService {
         affectedAccountIds.add(lockedParent.accountId);
       }
 
-      const remainingSplits = await m.find(TransactionSplit, {
-        where: { transactionId: transaction.id },
-        relations: ["category", "transferAccount", "investmentTransaction"],
-        order: { createdAt: "ASC" },
-      });
-
       if (remainingSplits.length < 2) {
         if (remainingSplits.length === 1) {
           const lastSplit = remainingSplits[0];
@@ -1566,9 +1581,9 @@ export class TransactionSplitService {
           }
 
           // Nor when the line does not account for the whole parent (a set
-          // built line by line through `addSplit` may hold less than it): the
-          // parent would take the line's category or transfer for money the
-          // line never held.
+          // built line by line through `addSplit`, above): the parent would
+          // take the line's category or transfer for money the line never
+          // held.
           if (roundMoney(Number(lastSplit.amount)) !== newParentAmount) {
             return;
           }
