@@ -6642,9 +6642,10 @@ describe("TransactionsService", () => {
       };
       splitsRepository.findOne.mockResolvedValueOnce(splitToRemove);
 
-      transactionsRepository.findOne
-        .mockResolvedValueOnce(mockTx) // findOne for access check
-        .mockResolvedValueOnce(linkedTx); // findOne for linked tx cleanup
+      transactionsRepository.findOne.mockResolvedValueOnce(mockTx); // findOne for access check
+      // The leg is locked in the batch with any kept leg, before the first
+      // write (issue #2039), so the committed row comes from the batch read.
+      transactionsRepository.find.mockResolvedValue([linkedTx]);
 
       // After removal, still 2 remaining
       splitsRepository.find.mockResolvedValue([
@@ -6780,12 +6781,10 @@ describe("TransactionsService", () => {
       };
       splitsRepository.find.mockResolvedValue([lastSplit]);
 
-      // transactionsRepository.findOne is called:
-      // 1. findOne for access check (removeSplit -> findOne)
-      // 2. findOne for linked tx of last split
-      transactionsRepository.findOne
-        .mockResolvedValueOnce(mockTx) // removeSplit -> findOne
-        .mockResolvedValueOnce(lastSplitLinkedTx); // linked tx of last split
+      transactionsRepository.findOne.mockResolvedValueOnce(mockTx); // removeSplit -> findOne
+      // The kept leg is locked in one batch before the first write (issue
+      // #2039), so the committed row comes from the batch read.
+      transactionsRepository.find.mockResolvedValue([lastSplitLinkedTx]);
 
       await service.removeSplit("user-1", "tx-1", "split-1");
 

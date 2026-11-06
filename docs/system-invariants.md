@@ -1190,7 +1190,12 @@ Enforcement         assertReconciledRowsMutable / assertReconciledIdsMutable
                     since each owner reconciles their own statement.
                     TransactionBulkUpdateService.bulkUpdate /
                     bulkDelete, TransactionSplitService.updateSplits / addSplit /
-                    removeSplit, ActionHistoryService.undoTransactionUpdate (undo
+                    removeSplit, and the transfer legs a split parent holds in
+                    other accounts: deleteSplitSideEffects (behind updateSplits,
+                    the update with splits, remove, the conversion and
+                    bulkDelete) and removeSplit lock and ask every leg they
+                    delete or relink before the first write (issue #2039),
+                    ActionHistoryService.undoTransactionUpdate (undo
                     and redo of a transaction edit), ActionHistoryService.undoBulkUpdate
                     (undo and redo of a bulk update, every row of the snapshot
                     locked first) and
@@ -1224,6 +1229,9 @@ Required tests      Unit: the guard refuses on a reconciled row, allows the same
                     entry point still asks, inside its transaction
                     (backend/src/transactions/reconciled-lock.guard.spec.ts),
                     now including the undo/redo and embedded-investment paths.
+                    A reconciled split-transfer leg refuses the removal of
+                    either line and the replacement of the set, writing
+                    nothing: backend/test/integration/remove-split-line.integration.spec.ts.
                     Still owed: a two-connection test that the refusal holds
                     against a concurrent write.
 Status              enforced

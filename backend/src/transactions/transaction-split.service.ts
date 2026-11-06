@@ -24,7 +24,6 @@ import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { AccountsService } from "../accounts/accounts.service";
 import { AccountSubType } from "../accounts/entities/account.entity";
 import { isTransactionInFuture } from "../common/date-utils";
-import { deletionBalanceEffect } from "../common/deletion-balance.util";
 import { InvestmentTransactionsService } from "../securities/investment-transactions.service";
 import {
   computeInvestmentCashImpact,
@@ -37,9 +36,14 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { tr } from "../i18n/translate";
 import { withScopedDb } from "../common/db/scoped-db";
-import { lockTransactionRow, lockTransactionRows } from "../common/db/locks";
+import {
+  lockTransactionRow,
+  lockTransactionRows,
+  LockedTransactionRow,
+} from "../common/db/locks";
 import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 import { removeLockedTransactionLeg } from "./remove-transaction-leg";
+import { retotalSplitParent } from "./split-parent-total";
 import { carryRecordedReceivedAmounts } from "./split-received-amount.util";
 
 function inferSplitKind(split: CreateTransactionSplitDto): SplitKind {
@@ -932,6 +936,27 @@ export class TransactionSplitService {
         relations: ["linkedTransaction", "investmentTransaction"],
       });
 
+      // The transfer legs first, before anything is written: locked, re-read
+      // and conditionally deleted below, exactly like the single-leg path. An
+      // unlocked `find` followed by `remove(entity)` reversed whatever amount
+      // the snapshot happened to hold and reversed it whether or not this call
+      // was the one that removed the row -- a split replacement racing a
+      // counterpart edit, or racing another replacement, each moved the target
+      // account's balance once for one deleted row (audit FV4-002).
+      //
+      // Each leg is a row in another account that this deletes, so it answers
+      // the strict reconciled lock its parent answered (issue #2039): a
+      // replacement, an edit with splits, a delete or a conversion of the
+      // parent no longer takes a reconciled counterpart with it.
+      const linkedTxIds = splits
+        .filter((s) => s.linkedTransactionId && s.transferAccountId)
+        .map((s) => s.linkedTransactionId!);
+      const linked =
+        linkedTxIds.length > 0
+          ? await lockTransactionRows(m, linkedTxIds, userId)
+          : new Map<string, LockedTransactionRow>();
+      await assertReconciledRowsMutable(m, userId, [...linked.values()]);
+
       // One guard for every embedded row of the parent, verified after the last
       // one is gone: a parent holding both the BUY and the SELL it covers is not
       // refused because one was removed before the other (INV-BOND-007).
@@ -957,23 +982,9 @@ export class TransactionSplitService {
       }
       if (!bond?.bondGuard) await bondGuard.verify();
 
-      const linkedTxIds = splits
-        .filter((s) => s.linkedTransactionId && s.transferAccountId)
-        .map((s) => s.linkedTransactionId!);
-
-      if (linkedTxIds.length === 0) return affectedAccountIds;
-
-      // Locked, re-read and conditionally deleted, exactly like the single-leg
-      // path. An unlocked `find` followed by `remove(entity)` reversed whatever
-      // amount the snapshot happened to hold and reversed it whether or not this
-      // call was the one that removed the row -- a split replacement racing a
-      // counterpart edit, or racing another replacement, each moved the target
-      // account's balance once for one deleted row (audit FV4-002).
-      //
       // Each locked leg's account is collected so the caller can invalidate its
       // net-worth state after commit -- the counterpart lives in an account the
       // parent never named (recheck RR5-002).
-      const linked = await lockTransactionRows(m, linkedTxIds, userId);
       for (const leg of linked.values()) {
         affectedAccountIds.add(leg.accountId);
         await removeLockedTransactionLeg(m, leg, userId, this.accountsService);
@@ -1418,30 +1429,6 @@ export class TransactionSplitService {
     return splitWithRelations;
   }
 
-  /**
-   * Delete a split's transfer counterpart and reverse its balance, once, and
-   * report the account it moved so the caller can invalidate that account's
-   * net-worth state after commit (recheck RR5-002).
-   *
-   * The leg is locked and re-read here rather than taken from the split's
-   * snapshot: the amount reversed has to be the amount the delete removes, and
-   * the reversal only happens when this call is the one that removed the row.
-   * `removeSplit` reverses the removed line's counterpart through this; the
-   * collapse into a plain transfer keeps the last line's counterpart instead
-   * (issue #2025). Returns the counterpart's account id, or null
-   * when another request already removed the leg (nothing was reversed).
-   */
-  private async removeLinkedLeg(
-    m: EntityManager,
-    linkedTransactionId: string,
-    userId: string,
-  ): Promise<string | null> {
-    const linked = await lockTransactionRow(m, linkedTransactionId, userId);
-    if (!linked) return null;
-    await removeLockedTransactionLeg(m, linked, userId, this.accountsService);
-    return linked.accountId;
-  }
-
   async removeSplit(
     transaction: Transaction,
     splitId: string,
@@ -1490,44 +1477,22 @@ export class TransactionSplitService {
         );
       }
 
-      if (split.kind === SplitKind.INVESTMENT && split.investmentTransaction) {
-        if (split.investmentTransaction.accountId) {
-          affectedAccountIds.add(split.investmentTransaction.accountId);
-        }
-        await this.investmentTransactionsService.reverseAndRemoveEmbedded(
-          m,
-          userId,
-          split.investmentTransaction,
-          { touchedSecurityIds },
-        );
-      } else if (split.linkedTransactionId && split.transferAccountId) {
-        const movedAccountId = await this.removeLinkedLeg(
-          m,
-          split.linkedTransactionId,
-          userId,
-        );
-        if (movedAccountId) {
-          affectedAccountIds.add(movedAccountId);
-        }
-      }
-
-      await m.remove(split);
-
-      const remainingSplits = await m.find(TransactionSplit, {
-        where: { transactionId: transaction.id },
-        relations: ["category", "transferAccount", "investmentTransaction"],
-        order: { createdAt: "ASC" },
-      });
+      // Everything this removal decides is decided here, before its first
+      // write, so a refusal below leaves nothing to roll back (issue #2039).
+      const remainingSplits = (
+        await m.find(TransactionSplit, {
+          where: { transactionId: transaction.id },
+          relations: ["investmentTransaction"],
+          order: { createdAt: "ASC" },
+        })
+      ).filter((s) => s.id !== split.id);
 
       // The line's money leaves the parent with it (issue #2025), when the
       // lines added up to the parent before the removal: removing a -60.00 line
       // from a -100.00 parent leaves -40.00, and the parent's account gets back
-      // exactly what the line accounted for, so the deletion rule applies --
-      // nothing for a VOID parent, a recomputation for a future-dated one. The
-      // old path left the parent at its full amount, so the remaining lines no
-      // longer added up to it and the account still showed the line's money
-      // leaving. Taken off the locked parent, not the caller's copy, as the
-      // edit of a split-transfer leg re-totals it (`updateSplitTransferLeg`).
+      // exactly what the line accounted for. Taken off the locked parent, not
+      // the caller's copy, through the re-total the edit of a split-transfer
+      // leg uses (`retotalSplitParent`).
       //
       // A set that did not add up to the parent was built line by line through
       // `addSplit`, which moves neither the parent's amount nor its account, so
@@ -1547,103 +1512,172 @@ export class TransactionSplitService {
           Number(split.amount),
         ]) === parentAmount;
       const removedAmount = roundMoney(Number(split.amount));
-      const newParentAmount =
-        linesCoveredParent && removedAmount !== 0
-          ? roundMoney(parentAmount - removedAmount)
-          : parentAmount;
-      if (newParentAmount !== parentAmount) {
-        await m.update(Transaction, transaction.id, {
-          amount: newParentAmount,
-        });
-        const effect = deletionBalanceEffect({
-          amount: removedAmount,
-          status: lockedParent.status,
-          transactionDate: lockedParent.transactionDate,
-        });
-        if (effect.delta !== 0) {
-          await this.accountsService.updateBalance(
-            lockedParent.accountId,
-            effect.delta,
-          );
+      const newParentAmount = linesCoveredParent
+        ? roundMoney(parentAmount - removedAmount)
+        : parentAmount;
+
+      // The parent collapses into its last line when that line accounts for
+      // the whole re-totalled parent. Not into an investment line, whose
+      // representation only makes sense as part of a split parent; nor into a
+      // line that does not cover the parent (a set built line by line through
+      // `addSplit`, above), which would hand the parent a category or transfer
+      // for money the line never held.
+      const lastSplit =
+        remainingSplits.length === 1 ? remainingSplits[0] : undefined;
+      const collapseInto =
+        lastSplit &&
+        lastSplit.kind !== SplitKind.INVESTMENT &&
+        roundMoney(Number(lastSplit.amount)) === newParentAmount
+          ? lastSplit
+          : undefined;
+
+      const removedLegId =
+        split.kind !== SplitKind.INVESTMENT &&
+        split.linkedTransactionId &&
+        split.transferAccountId
+          ? split.linkedTransactionId
+          : null;
+      const keptLegId =
+        collapseInto?.linkedTransactionId && collapseInto.transferAccountId
+          ? collapseInto.linkedTransactionId
+          : null;
+
+      // Both legs in one ascending batch, after the parent: the by-role order
+      // of `common/db/locks.ts`. The removed line's leg is deleted and the kept
+      // one is relinked, so both are writes in another account and both answer
+      // the strict reconciled lock the parent already answered (issue #2039).
+      const legs = await lockTransactionRows(
+        m,
+        [removedLegId, keptLegId].filter((id): id is string => id !== null),
+        userId,
+      );
+      await assertReconciledRowsMutable(m, userId, [...legs.values()]);
+      const keptLeg = keptLegId ? legs.get(keptLegId) : undefined;
+      if (keptLegId && !keptLeg) {
+        throw new ConflictException(
+          tr(
+            "errors.transactions.transferChangedConcurrently",
+            "This transfer was changed by another request. Reload it and try again.",
+          ),
+        );
+      }
+
+      if (split.kind === SplitKind.INVESTMENT && split.investmentTransaction) {
+        if (split.investmentTransaction.accountId) {
+          affectedAccountIds.add(split.investmentTransaction.accountId);
         }
-        if (effect.needsRecalc) {
-          await this.accountsService.recalculateCurrentBalance(
+        await this.investmentTransactionsService.reverseAndRemoveEmbedded(
+          m,
+          userId,
+          split.investmentTransaction,
+          { touchedSecurityIds },
+        );
+      } else if (removedLegId) {
+        // Absent when another request already removed the leg: nothing is
+        // reversed for it here (audit FV4-002).
+        const removedLeg = legs.get(removedLegId);
+        if (removedLeg) {
+          affectedAccountIds.add(removedLeg.accountId);
+          await removeLockedTransactionLeg(
+            m,
+            removedLeg,
             userId,
-            lockedParent.accountId,
+            this.accountsService,
           );
         }
+      }
+
+      await m.remove(split);
+
+      if (
+        await retotalSplitParent(
+          m,
+          userId,
+          lockedParent,
+          newParentAmount,
+          this.accountsService,
+        )
+      ) {
         affectedAccountIds.add(lockedParent.accountId);
       }
 
-      if (remainingSplits.length < 2) {
-        if (remainingSplits.length === 1) {
-          const lastSplit = remainingSplits[0];
-
-          // Don't auto-collapse if the last remaining split is investment-kind
-          // — that representation only makes sense as part of a split parent.
-          if (lastSplit.kind === SplitKind.INVESTMENT) {
-            return;
-          }
-
-          // Nor when the line does not account for the whole parent (a set
-          // built line by line through `addSplit`, above): the parent would
-          // take the line's category or transfer for money the line never
-          // held.
-          if (roundMoney(Number(lastSplit.amount)) !== newParentAmount) {
-            return;
-          }
-
-          if (lastSplit.linkedTransactionId && lastSplit.transferAccountId) {
-            // The last line is a transfer, so the parent becomes that
-            // transfer and its counterpart stays where it is. The old path
-            // deleted the counterpart -- money recorded as arriving in another
-            // account, on a request that never named that line -- and left the
-            // parent a plain transaction with no category and no transfer
-            // (issue #2025). Locked under the parent, the order every
-            // split-leg writer takes (`common/db/locks.ts`).
-            const leg = await lockTransactionRow(
-              m,
-              lastSplit.linkedTransactionId,
-              userId,
-            );
-            if (!leg) {
-              throw new ConflictException(
-                tr(
-                  "errors.transactions.transferChangedConcurrently",
-                  "This transfer was changed by another request. Reload it and try again.",
-                ),
-              );
-            }
-            await m.remove(lastSplit);
-            // The pair links both ways, as a created transfer's legs do; the
-            // parent keeps its own currency at rate 1 and the leg its own
-            // converted amount and rate, which is the plain transfer's shape.
-            await m.update(Transaction, transaction.id, {
-              isSplit: false,
-              isTransfer: true,
-              categoryId: null,
-              linkedTransactionId: leg.id,
-            });
-            await m.update(Transaction, leg.id, {
-              linkedTransactionId: transaction.id,
-            });
-            return;
-          }
-
-          await m.update(Transaction, transaction.id, {
-            isSplit: false,
-            categoryId: lastSplit.categoryId,
-          });
-          await m.remove(lastSplit);
-        } else {
-          await m.update(Transaction, transaction.id, {
-            isSplit: false,
-          });
-        }
+      if (remainingSplits.length >= 2) return;
+      if (remainingSplits.length === 0) {
+        await m.update(Transaction, transaction.id, { isSplit: false });
+        return;
       }
+      if (!collapseInto) return;
+
+      // The parent becomes the line, so what the line carried moves onto it
+      // before the line's row goes (issue #2039): its tags join the parent's
+      // (a line's tags are cumulative with its parent's), and its memo fills a
+      // parent description that is blank.
+      await this.moveLineOntoParent(m, userId, lockedParent.id, collapseInto);
+
+      if (keptLeg) {
+        // The last line is a transfer, so the parent becomes that transfer and
+        // its counterpart stays where it is. The old path deleted the
+        // counterpart -- money recorded as arriving in another account, on a
+        // request that never named that line -- and left the parent a plain
+        // transaction with no category and no transfer (issue #2025).
+        await m.remove(collapseInto);
+        // The pair links both ways, as a created transfer's legs do; the
+        // parent keeps its own currency at rate 1 and the leg its own
+        // converted amount and rate, which is the plain transfer's shape.
+        await m.update(Transaction, transaction.id, {
+          isSplit: false,
+          isTransfer: true,
+          categoryId: null,
+          linkedTransactionId: keptLeg.id,
+        });
+        await m.update(Transaction, keptLeg.id, {
+          linkedTransactionId: transaction.id,
+        });
+        return;
+      }
+
+      await m.update(Transaction, transaction.id, {
+        isSplit: false,
+        categoryId: collapseInto.categoryId,
+      });
+      await m.remove(collapseInto);
     });
 
     this.invalidateNetWorth(affectedAccountIds, userId);
     await this.recomputeBondPricesAfterWrite(userId, touchedSecurityIds);
+  }
+
+  /**
+   * Carry a split line's tags and memo onto its parent, for the collapse of a
+   * parent into its one remaining line, so they do not go with the line's row.
+   *
+   * The tags join the parent's in one statement (the pair is the primary key,
+   * so a tag both already carry stays one link). The memo becomes the parent's
+   * description only where that is blank: a description the person wrote for
+   * the whole transaction is not overwritten by one line's note.
+   */
+  private async moveLineOntoParent(
+    m: EntityManager,
+    userId: string,
+    parentId: string,
+    line: TransactionSplit,
+  ): Promise<void> {
+    await m.query(
+      `INSERT INTO transaction_tags (transaction_id, tag_id)
+       SELECT $1, st.tag_id
+         FROM transaction_split_tags st
+         JOIN tags t ON t.id = st.tag_id AND t.user_id = $3
+        WHERE st.transaction_split_id = $2
+       ON CONFLICT DO NOTHING`,
+      [parentId, line.id, userId],
+    );
+    const memo = line.memo?.trim();
+    if (!memo) return;
+    await m.query(
+      `UPDATE transactions SET description = $3
+        WHERE id = $1 AND user_id = $2
+          AND COALESCE(TRIM(description), '') = ''`,
+      [parentId, userId, memo],
+    );
   }
 }

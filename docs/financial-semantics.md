@@ -298,9 +298,15 @@ its one line equals the whole amount. When one line is left and it accounts for 
 whole parent, the parent becomes it: a category line gives the parent its
 category; a transfer line makes the parent that plain transfer, keeping the
 counterpart and linking the pair both ways. A last line that does not cover the
-parent (a set built line by line through `addSplit`) stays a split. Before
-issue #2025 the parent kept its full amount, and a last transfer line's
-counterpart was deleted on a request that never named it.
+parent (a set built line by line through `addSplit`) stays a split. A
+collapse carries the line's tags onto the parent (they join the parent's own)
+and its memo into a blank parent description; a description the parent
+already has is kept. The re-total is `retotalSplitParent`
+(`backend/src/transactions/split-parent-total.ts`), the same one the edit of a
+split-transfer leg's amount uses. Before issue #2025 the parent kept its full
+amount, and a last transfer line's counterpart was deleted on a request that
+never named it; before issue #2039 a collapse dropped the line's tags and memo
+with its row.
 
 ### A transfer line's received amount
 
