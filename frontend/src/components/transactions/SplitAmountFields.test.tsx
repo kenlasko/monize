@@ -32,11 +32,18 @@ describe('SplitAmountFields received amount precision', () => {
     act(() => clearCurrencyDecimals());
   });
 
-  it('enters a coin at the stored four places before the registry has loaded', () => {
+  it('enters a coin at the column scale before the registry has loaded', () => {
     const { input, onReceivedChange } = renderReceived('BTC');
-    type(input, '0.0125');
+    type(input, '0.01249993');
     // At `Intl`'s two places for an unknown code this was 0.01.
-    expect(onReceivedChange).toHaveBeenLastCalledWith(0.0125);
+    expect(onReceivedChange).toHaveBeenLastCalledWith(0.01249993);
+  });
+
+  it('enters a registered eight-place coin at its eight places', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
+    const { input, onReceivedChange } = renderReceived('BTC');
+    type(input, '0.00002500');
+    expect(onReceivedChange).toHaveBeenLastCalledWith(0.000025);
   });
 
   it('enters a registered coin at its own places', () => {

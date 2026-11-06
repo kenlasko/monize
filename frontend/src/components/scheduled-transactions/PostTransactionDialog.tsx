@@ -42,6 +42,9 @@ import {
   getDecimalPlacesForCurrency,
   formatAmount,
   FX_RATE_DISPLAY_DECIMALS,
+  FIAT_MONEY_DECIMALS,
+  MONEY_SCALE,
+  moneyDecimalsForCurrency,
 } from '@/lib/format';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { getErrorMessage } from '@/lib/errors';
@@ -474,11 +477,11 @@ export function PostTransactionDialog({
       // which is what the bank debits (issue #1581).
       const decimals = getDecimalPlacesForCurrency(scheduledTransaction.currencyCode);
       const rawAmount = Number(nextOverride?.amount ?? scheduledTransaction.amount);
-      // A coin the registry does not hold yet keeps its stored four places
-      // (`loadedEntryAmount`'s rule), so posting before `GET /currencies`
-      // answers does not book 0.0051 BTC as 0.01.
+      // A coin the registry does not hold yet keeps its stored places at the
+      // column scale (`loadedEntryAmount`'s rule), so posting before
+      // `GET /currencies` answers does not book 0.00002500 BTC as 0.00.
       const amt = awaitsRegisteredPlaces(scheduledTransaction.currencyCode)
-        ? roundMoney(rawAmount)
+        ? roundMoney(rawAmount, MONEY_SCALE)
         : roundToDecimals(rawAmount, decimals);
       // Foreign-currency schedule: the field the user edits is the biller's
       // amount in its own currency. An occurrence override deliberately stays
@@ -527,11 +530,11 @@ export function PostTransactionDialog({
         if (booked) {
           setSplits(booked.rows);
         } else {
-          setSplits(rows ?? createEmptySplits(amt));
+          setSplits(rows ?? createEmptySplits(amt, scheduledTransaction.currencyCode));
         }
         setTemplateBaseline(booked ? { rows: booked.rows, amount: amt } : null);
       } else {
-        setSplits(createEmptySplits(amt));
+        setSplits(createEmptySplits(amt, scheduledTransaction.currencyCode));
         setTemplateBaseline(null);
       }
       setLoanPrefill(null);
@@ -580,7 +583,8 @@ export function PostTransactionDialog({
             ? Number(scheduledTransaction.investmentTotalAmount)
             : null;
       if (storedTotal != null && storedTotal > 0) {
-        setInvestmentTotalValue(roundMoney(storedTotal));
+        // An investment total is fiat (INV-CRYPTO-001): the fiat four places.
+        setInvestmentTotalValue(roundMoney(storedTotal, FIAT_MONEY_DECIMALS));
       } else if (
         typeof initialQty === 'number' &&
         initialQty > 0 &&
@@ -874,9 +878,11 @@ export function PostTransactionDialog({
         return;
       }
       // At the server's precision (`validateSplitAmountSum`): the lines must
-      // equal the amount exactly at four decimals, not within a cent.
-      const splitsTotal = sumMoney(splits.map((s) => Number(s.amount) || 0));
-      if (splitsTotal !== roundMoney(amount)) {
+      // equal the amount exactly at the currency's money precision (four for
+      // fiat, a coin's eight), not within a cent.
+      const splitsMoneyDecimals = moneyDecimalsForCurrency(scheduledTransaction.currencyCode);
+      const splitsTotal = sumMoney(splits.map((s) => Number(s.amount) || 0), splitsMoneyDecimals);
+      if (splitsTotal !== roundMoney(amount, splitsMoneyDecimals)) {
         toast.error(t('postTransaction.splitMismatch'));
         return;
       }
@@ -1336,7 +1342,7 @@ export function PostTransactionDialog({
                 onChange={(next) => {
                   setIsSplit(next);
                   if (next && splits.length < 2) {
-                    setSplits(createEmptySplits(amount));
+                    setSplits(createEmptySplits(amount, scheduledTransaction.currencyCode));
                   }
                 }}
                 label={t('postDialog.splitLabel')}

@@ -6,7 +6,7 @@ import {
   awaitsRegisteredPlaces,
   getCurrencySymbol,
   getDecimalPlacesForCurrency,
-  MONEY_DECIMALS,
+  MONEY_SCALE,
 } from '@/lib/format';
 import type { SplitFxPair } from './useSplitTransferFxAutofill';
 
@@ -60,11 +60,11 @@ export function SplitAmountFields({
   );
   if (!pair) return amountInput;
   // As `SplitEditor` enters the line amount: a coin the registry does not
-  // hold yet at the stored four (`awaitsRegisteredPlaces`), not `Intl`'s guess
-  // of two, so a received 0.0125 BTC typed before `GET /currencies` answers is
-  // not rounded to cents; every other code at its own places (JPY 0).
+  // hold yet at the column scale (`awaitsRegisteredPlaces`), not `Intl`'s
+  // guess of two, so a received 0.01249993 BTC typed before `GET /currencies`
+  // answers is not rounded to cents; every other code at its own places (JPY 0).
   const receivedDecimals = awaitsRegisteredPlaces(pair.toCurrency)
-    ? MONEY_DECIMALS
+    ? MONEY_SCALE
     : getDecimalPlacesForCurrency(pair.toCurrency);
   return (
     <div className="space-y-2">

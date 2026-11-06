@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} já está na sua lista, mas está inativa.",
     "nonIsoNotice": "{code} não é um código de moeda padrão. Se for uma criptomoeda, defina o tipo dela como Criptomoeda. <guide>Leia sobre criptomoedas no guia do usuário</guide>.",
     "switchToCrypto": "Usar criptomoeda",
-    "cryptoPrecisionNotice": "Os valores em uma criptomoeda são mantidos com no máximo quatro casas decimais, então um valor muito pequeno, como uma taxa de rede, pode ser arredondado para zero. <guide>Veja como registrar as taxas da carteira</guide>.",
+    "cryptoPrecisionNotice": "Os valores em uma criptomoeda são mantidos com até oito casas decimais, a precisão com que são armazenados, então não é possível inserir uma taxa menor que {smallest}. <guide>Veja como registrar as taxas da carteira</guide>.",
     "reactivateButton": "Reativar {code}",
     "reactivating": "Reativando..."
   },

@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} è già nella tua lista, ma non è attiva.",
     "nonIsoNotice": "{code} non è un codice valuta standard. Se è una criptovaluta, imposta il suo tipo su Criptovaluta. <guide>Leggi di più sulle criptovalute nella guida utente</guide>.",
     "switchToCrypto": "Usa Criptovaluta",
-    "cryptoPrecisionNotice": "Gli importi in una criptovaluta sono mantenuti con al massimo quattro cifre decimali, quindi un importo molto piccolo, come una commissione di rete, può essere arrotondato a zero. <guide>Scopri come registrare le commissioni del portafoglio</guide>.",
+    "cryptoPrecisionNotice": "Gli importi in una criptovaluta sono mantenuti con un massimo di otto cifre decimali, la precisione con cui vengono memorizzati, quindi non è possibile inserire una commissione inferiore a {smallest}. <guide>Scopri come registrare le commissioni del portafoglio</guide>.",
     "reactivateButton": "Riattiva {code}",
     "reactivating": "Riattivazione..."
   },

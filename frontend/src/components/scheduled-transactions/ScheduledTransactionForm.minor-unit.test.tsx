@@ -158,8 +158,8 @@ describe('ScheduledTransactionForm: a coin schedule', () => {
     vi.clearAllMocks();
   });
 
-  it('loads and enters a four-place coin amount at its four places, not cents', async () => {
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+  it('loads and enters an eight-place coin amount at its eight places, not cents', async () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
     try {
       await act(async () => {
         render(
@@ -168,7 +168,7 @@ describe('ScheduledTransactionForm: a coin schedule', () => {
               ...linearInstallment,
               accountId: 'wallet-1',
               account: null,
-              amount: -0.0051,
+              amount: -0.000025,
               currencyCode: 'BTC',
               isSplit: false,
               splits: [],
@@ -176,15 +176,15 @@ describe('ScheduledTransactionForm: a coin schedule', () => {
           />,
         );
       });
-      // Loaded at cents this read -0.01, and an unedited save sent -0.01 back.
-      expect(screen.getByLabelText('Amount')).toHaveValue('-0.0051');
+      // Loaded at cents this read -0.00, and an unedited save sent 0 back.
+      expect(screen.getByLabelText('Amount')).toHaveValue('-0.00002500');
     } finally {
       await act(async () => clearCurrencyDecimals());
     }
   });
 
   it('keeps a foreign amount in a coin at the coin\'s places, not cents', async () => {
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
     vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(50000);
     try {
       await act(async () => {
@@ -203,7 +203,7 @@ describe('ScheduledTransactionForm: a coin schedule', () => {
         );
       });
       const foreign = screen.getByLabelText('Amount in BTC');
-      expect(foreign).toHaveValue('-0.0051');
+      expect(foreign).toHaveValue('-0.00510000');
       await act(async () => {
         fireEvent.change(foreign, { target: { value: '-0.0073' } });
         fireEvent.blur(foreign);
@@ -222,10 +222,10 @@ describe('ScheduledTransactionForm: a coin schedule', () => {
       ...linearInstallment,
       accountId: wallet.id,
       account: wallet,
-      amount: -0.0076,
+      amount: -0.005025,
       currencyCode: 'BTC',
       splits: [
-        { ...linearInstallment.splits[0], amount: -0.0025 },
+        { ...linearInstallment.splits[0], amount: -0.005 },
         { ...linearInstallment.splits[1], transferAccountId: null, transferAccount: null, categoryId: 'cat-fee', amount: second },
       ],
     });
@@ -239,11 +239,12 @@ describe('ScheduledTransactionForm: a coin schedule', () => {
       await act(async () => {});
     }
 
-    it('refuses a 0.0049 BTC remainder, as the server would', async () => {
-      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    it('refuses a one-satoshi remainder, as the server would', async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
       try {
-        await save(coinSplit(-0.0002));
-        // Under a one-cent tolerance this saved, and the server refused it.
+        await save(coinSplit(-0.00002499));
+        // At four places (and under a one-cent tolerance) this saved, and the
+        // server refused it.
         expect(toast.error).toHaveBeenCalledWith('Split amounts must equal the transaction amount');
         expect(scheduledTransactionsApi.update).not.toHaveBeenCalled();
       } finally {
@@ -251,11 +252,11 @@ describe('ScheduledTransactionForm: a coin schedule', () => {
       }
     });
 
-    it('saves lines that sum to the amount at four places', async () => {
-      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    it('saves -0.00502500 as a -0.00500000 line and a -0.00002500 fee', async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
       vi.mocked(scheduledTransactionsApi.update).mockResolvedValue({} as never);
       try {
-        await save(coinSplit(-0.0051));
+        await save(coinSplit(-0.000025));
         expect(toast.error).not.toHaveBeenCalledWith('Split amounts must equal the transaction amount');
         await waitFor(() => expect(scheduledTransactionsApi.update).toHaveBeenCalled());
       } finally {

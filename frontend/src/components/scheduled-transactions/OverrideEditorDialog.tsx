@@ -30,7 +30,14 @@ import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { investmentsApi } from '@/lib/investments';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { totalFromQuantity, quantityFromTotal, roundPrice, usableClose } from '@/lib/investmentFold';
-import { roundToEntryPlaces, entryDecimalPlaces, loadedEntryAmount, getCurrencySymbol, sumMoney } from '@/lib/format';
+import {
+  roundToEntryPlaces,
+  entryDecimalPlaces,
+  loadedEntryAmount,
+  getCurrencySymbol,
+  moneyDecimalsForCurrency,
+  sumMoney,
+} from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { useTranslations } from 'next-intl';
@@ -212,7 +219,7 @@ export function OverrideEditorDialog({
         setSplits(booked.rows);
         setAmount(booked.parentAmount);
       } else {
-        setSplits(rows ?? createEmptySplits(fallbackAmount));
+        setSplits(rows ?? createEmptySplits(fallbackAmount, scheduledTransaction.currencyCode));
       }
     };
     if (isOpen) {
@@ -313,7 +320,10 @@ export function OverrideEditorDialog({
             ? { ...row, amount: -payrollDeductions[row.categoryId] }
             : row,
         );
-        const parent = sumMoney(lines.map((row) => Number(row.amount)));
+        const parent = sumMoney(
+          lines.map((row) => Number(row.amount)),
+          moneyDecimalsForCurrency(scheduledTransaction.currencyCode),
+        );
         setAmount(toLoadedPlaces(parent));
         initSplits(lines, parent, parent);
       }
@@ -843,7 +853,7 @@ export function OverrideEditorDialog({
                 onChange={(next) => {
                   setIsSplit(next);
                   if (next && splits.length < 2) {
-                    setSplits(createEmptySplits(amount));
+                    setSplits(createEmptySplits(amount, scheduledTransaction.currencyCode));
                   }
                 }}
                 label={t('overrideEditor.splitLabel')}

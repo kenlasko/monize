@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} zaten listenizde ama etkin değil.",
     "nonIsoNotice": "{code} standart bir para birimi kodu değildir. Bir kripto paraysa türünü Kripto Para olarak ayarlayın. <guide>Kripto paralar hakkında kullanım kılavuzunda bilgi edinin</guide>.",
     "switchToCrypto": "Kripto Para Kullan",
-    "cryptoPrecisionNotice": "Kripto paradaki tutarlar en fazla dört ondalık basamakla tutulur; bu nedenle ağ ücreti gibi çok küçük bir tutar sıfıra yuvarlanabilir. <guide>Cüzdan ücretlerinin nasıl kaydedileceğine bakın</guide>.",
+    "cryptoPrecisionNotice": "Kripto paradaki tutarlar, saklandıkları hassasiyet olan en fazla sekiz ondalık basamakla tutulur; bu nedenle {smallest} altındaki bir ücret girilemez. <guide>Cüzdan ücretlerinin nasıl kaydedileceğine bakın</guide>.",
     "reactivateButton": "{code} birimini yeniden etkinleştir",
     "reactivating": "Yeniden etkinleştiriliyor..."
   },

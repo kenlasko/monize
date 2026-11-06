@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} 已在您的列表中，但处于未启用状态。",
     "nonIsoNotice": "{code} 不是标准的货币代码。如果它是加密货币，请将其类型设置为加密货币。<guide>请在用户指南中了解加密货币</guide>。",
     "switchToCrypto": "使用加密货币",
-    "cryptoPrecisionNotice": "加密货币的金额最多保留四位小数，因此像网络手续费这样的极小金额可能会舍入为零。<guide>查看如何记录钱包手续费</guide>。",
+    "cryptoPrecisionNotice": "加密货币的金额最多保留八位小数（即其存储精度），因此无法输入低于 {smallest} 的手续费。<guide>查看如何记录钱包手续费</guide>。",
     "reactivateButton": "重新启用 {code}",
     "reactivating": "正在重新启用..."
   },

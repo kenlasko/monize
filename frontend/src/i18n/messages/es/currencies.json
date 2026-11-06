@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} ya está en tu lista, pero está inactiva.",
     "nonIsoNotice": "{code} no es un código de moneda estándar. Si es una criptomoneda, establece su tipo en Criptomoneda. <guide>Lee sobre las criptomonedas en la guía de usuario</guide>.",
     "switchToCrypto": "Usar criptomoneda",
-    "cryptoPrecisionNotice": "Los importes en una criptomoneda se conservan con un máximo de cuatro decimales, por lo que un importe muy pequeño, como una comisión de red, puede redondearse a cero. <guide>Consulta cómo registrar las comisiones del monedero</guide>.",
+    "cryptoPrecisionNotice": "Los importes en una criptomoneda se conservan con hasta ocho decimales, la precisión con la que se almacenan, por lo que no se puede introducir una comisión inferior a {smallest}. <guide>Consulta cómo registrar las comisiones del monedero</guide>.",
     "reactivateButton": "Reactivar {code}",
     "reactivating": "Reactivando..."
   },

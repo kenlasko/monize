@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} jest już na Twojej liście, ale jest nieaktywna.",
     "nonIsoNotice": "{code} nie jest standardowym kodem waluty. Jeśli jest to kryptowaluta, ustaw jej rodzaj na Kryptowaluta. <guide>Przeczytaj o kryptowalutach w przewodniku użytkownika</guide>.",
     "switchToCrypto": "Użyj kryptowaluty",
-    "cryptoPrecisionNotice": "Kwoty w kryptowalucie są przechowywane z dokładnością do czterech miejsc dziesiętnych, więc bardzo mała kwota, na przykład opłata sieciowa, może zostać zaokrąglona do zera. <guide>Zobacz, jak rejestrować opłaty portfela</guide>.",
+    "cryptoPrecisionNotice": "Kwoty w kryptowalucie są przechowywane z dokładnością do ośmiu miejsc dziesiętnych, czyli z precyzją zapisu, więc nie można wprowadzić opłaty mniejszej niż {smallest}. <guide>Zobacz, jak rejestrować opłaty portfela</guide>.",
     "reactivateButton": "Aktywuj ponownie {code}",
     "reactivating": "Ponowne aktywowanie..."
   },

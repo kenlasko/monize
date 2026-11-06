@@ -4,7 +4,7 @@
  *
  * `Intl` knows the minor unit of every ISO 4217 currency and nothing else: a
  * code it has never heard of (a coin such as `BTC`, which the Currencies page
- * can hold with four places) formats at two, so `0.0125` BTC read as `0.01`.
+ * can hold with eight places) formats at two, so `0.0125` BTC read as `0.01`.
  * The currency rows carry their own `decimalPlaces`; this registry holds them
  * so `useNumberFormat().formatCurrency`, `formatCurrencyPrecise` and
  * `getDecimalPlacesForCurrency` can answer from the row first.
@@ -33,8 +33,11 @@
 import { createListenerSet } from './helpers/create-listener-set';
 import { isKnownIsoCurrency } from './iso-currency';
 
-/** The widest precision a currency row may carry (`CreateCurrencyDto` caps it at 4). */
-const MAX_DECIMAL_PLACES = 4;
+/**
+ * The widest precision a currency row may carry: `CreateCurrencyDto` caps it at
+ * 8, the money column scale (`MONEY_SCALE` in `lib/format.ts`).
+ */
+const MAX_DECIMAL_PLACES = 8;
 
 interface RegisteredCurrency {
   decimalPlaces: number;
@@ -70,7 +73,7 @@ function usableSymbol(symbol: unknown, code: string): string | undefined {
 /**
  * Record the decimal places and symbol of each currency `Intl` does not know.
  * A later entry for a code replaces an earlier one; an ISO code, and a row
- * whose `decimalPlaces` is not a whole number from 0 to 4, are skipped, leaving
+ * whose `decimalPlaces` is not a whole number from 0 to 8, are skipped, leaving
  * that code to `Intl`.
  */
 export function registerCurrencyDecimals(

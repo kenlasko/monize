@@ -35,6 +35,11 @@ interface ReconcileTableProps {
   /** Server-chosen date a row must precede to count as overdue. */
   overdueBefore: string;
   formatCurrency: (amount: number) => string;
+  /**
+   * The account currency's money precision the subtotals are summed at
+   * (`moneyDecimalsForCurrency`): four for fiat, a coin's eight.
+   */
+  moneyDecimals: number;
   onEdit: (transaction: Transaction) => void;
   onDelete: (transaction: Transaction) => void;
   onCycleStatus: (transaction: Transaction) => void;
@@ -81,6 +86,7 @@ export function ReconcileTable({
   lastReconciledDate,
   overdueBefore,
   formatCurrency,
+  moneyDecimals,
   onEdit,
   onDelete,
   onCycleStatus,
@@ -110,8 +116,9 @@ export function ReconcileTable({
       groupReconcileRows(
         sortReconcileRows(transactions, sortField, sortDirection, payeeDisplay),
         groupByFlow,
+        moneyDecimals,
       ),
-    [transactions, sortField, sortDirection, groupByFlow, payeeDisplay],
+    [transactions, sortField, sortDirection, groupByFlow, payeeDisplay, moneyDecimals],
   );
 
   const staleByRow = useMemo(() => {

@@ -23,7 +23,8 @@ import {
   getCurrencySymbol,
   getDecimalPlacesForCurrency,
   awaitsRegisteredPlaces,
-  MONEY_DECIMALS,
+  MONEY_SCALE,
+  moneyDecimalsForCurrency,
 } from '@/lib/format';
 import { useLocalizedAmount } from '@/hooks/useLocalizedAmount';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
@@ -127,12 +128,15 @@ export function SplitEditor({
   const accountOptionLabel = useAccountOptionLabel({ withCurrency: false });
   const investmentSplitsEnabled = parentAccountSubType === 'INVESTMENT_CASH';
   const currencySymbol = getCurrencySymbol(currencyCode);
-  // A coin the registry does not hold yet is entered at the stored four
+  // A coin the registry does not hold yet is entered at the column scale
   // (`awaitsRegisteredPlaces`), not `Intl`'s guess of two, so a line typed
   // before `GET /currencies` answers is not rounded to cents.
   const decimals = awaitsRegisteredPlaces(currencyCode)
-    ? MONEY_DECIMALS
+    ? MONEY_SCALE
     : getDecimalPlacesForCurrency(currencyCode);
+  // The account currency's money precision: four for fiat, a coin's eight.
+  // Every line, total, remainder and distribution rounds and sums at it.
+  const money = moneyDecimalsForCurrency(currencyCode);
   const [localSplits, setLocalSplits] = useState<SplitRow[]>(splits);
 
   // Foreign-currency editing toggle. Available only when a display currency and
@@ -266,13 +270,14 @@ export function SplitEditor({
     commitSplits(newSplits, { reconcile: false });
   };
 
-  // Summed and compared at the stored four decimals, the rule the server's
-  // `validateSplitAmountSum` applies (`sumMoney` of the lines against
-  // `roundMoney` of the total). A one-cent tolerance read a 0.0049 BTC
-  // remainder as balanced, disabled "Add remaining", and the save was refused.
-  // A fiat amount is entered at two places, so its lines already sum exactly.
-  const splitsTotal = sumMoney(localSplits.map((s) => Number(s.amount) || 0));
-  const remaining = roundMoney(roundMoney(Number(transactionAmount)) - splitsTotal);
+  // Summed and compared at the account currency's money precision (four for
+  // fiat, a coin's eight), the rule the server's `validateSplitAmountSum`
+  // applies (`sumMoney` of the lines against `roundMoney` of the total). A
+  // one-cent tolerance read a 0.0049 BTC remainder as balanced, disabled "Add
+  // remaining", and the save was refused. A fiat amount is entered at two
+  // places, so its lines already sum exactly.
+  const splitsTotal = sumMoney(localSplits.map((s) => Number(s.amount) || 0), money);
+  const remaining = roundMoney(roundMoney(Number(transactionAmount), money) - splitsTotal, money);
   // Balance is always judged in the account currency so distribution and the
   // balanced/remaining indicators stay exact regardless of the display currency.
   const isBalanced = remaining === 0;
@@ -447,7 +452,7 @@ export function SplitEditor({
       splitType: 'category',
       categoryId: undefined,
       transferAccountId: undefined,
-      amount: roundMoney(remaining), // Pre-fill with remaining amount, rounded to the stored 4 decimals
+      amount: roundMoney(remaining, money), // Pre-fill with the remaining amount, at the currency's money precision
       memo: '',
     };
     const newSplits = [...localSplits, newSplit];
@@ -489,15 +494,15 @@ export function SplitEditor({
   const distributeEvenly = () => {
     if (localSplits.length === 0) return;
 
-    const totalAmount = roundMoney(Number(transactionAmount));
-    // Round each split to 2 decimal places (cents)
-    const amountPerSplit = roundMoney(totalAmount / localSplits.length);
+    const totalAmount = roundMoney(Number(transactionAmount), money);
+    // Each split at the currency's money precision.
+    const amountPerSplit = roundMoney(totalAmount / localSplits.length, money);
 
     // Distribute evenly, putting the remainder on the last row for an exact sum.
     const newSplits = localSplits.map((split, index) => {
       if (index === localSplits.length - 1) {
-        const otherSplitsTotal = roundMoney(amountPerSplit * (localSplits.length - 1));
-        const lastAmount = roundMoney(totalAmount - otherSplitsTotal);
+        const otherSplitsTotal = roundMoney(amountPerSplit * (localSplits.length - 1), money);
+        const lastAmount = roundMoney(totalAmount - otherSplitsTotal, money);
         return { ...split, amount: lastAmount };
       }
       return { ...split, amount: amountPerSplit };
@@ -512,7 +517,7 @@ export function SplitEditor({
 
     const newSplits = [...localSplits];
     const currentAmount = Number(newSplits[index].amount) || 0;
-    newSplits[index] = { ...newSplits[index], amount: roundMoney(currentAmount + remaining) };
+    newSplits[index] = { ...newSplits[index], amount: roundMoney(currentAmount + remaining, money) };
     commitSplits(newSplits);
   };
 
@@ -521,20 +526,20 @@ export function SplitEditor({
   const distributeProportionally = () => {
     if (localSplits.length === 0 || isBalanced) return;
 
-    const absTotal = sumMoney(localSplits.map((s) => Math.abs(Number(s.amount) || 0)));
+    const absTotal = sumMoney(localSplits.map((s) => Math.abs(Number(s.amount) || 0)), money);
     const lastSplit = localSplits[localSplits.length - 1];
 
     // If all splits are zero, fall back to equal distribution.
     if (absTotal === 0) {
-      const perSplit = roundMoney(remaining / localSplits.length);
+      const perSplit = roundMoney(remaining / localSplits.length, money);
       const newSplits = localSplits.map((split, index) => {
         const currentAmount = Number(split.amount) || 0;
         if (index === localSplits.length - 1) {
-          const distributed = roundMoney(perSplit * (localSplits.length - 1));
-          const lastPortion = roundMoney(remaining - distributed);
-          return { ...split, amount: roundMoney(currentAmount + lastPortion) };
+          const distributed = roundMoney(perSplit * (localSplits.length - 1), money);
+          const lastPortion = roundMoney(remaining - distributed, money);
+          return { ...split, amount: roundMoney(currentAmount + lastPortion, money) };
         }
-        return { ...split, amount: roundMoney(currentAmount + perSplit) };
+        return { ...split, amount: roundMoney(currentAmount + perSplit, money) };
       });
       commitSplits(newSplits);
       return;
@@ -547,13 +552,13 @@ export function SplitEditor({
 
       if (split === lastSplit) {
         // Last split absorbs the rounding remainder
-        const lastPortion = roundMoney(remaining - distributedSoFar);
-        return { ...split, amount: roundMoney(currentAmount + lastPortion) };
+        const lastPortion = roundMoney(remaining - distributedSoFar, money);
+        return { ...split, amount: roundMoney(currentAmount + lastPortion, money) };
       }
 
-      const portion = roundMoney(remaining * proportion);
+      const portion = roundMoney(remaining * proportion, money);
       distributedSoFar += portion;
-      return { ...split, amount: roundMoney(currentAmount + portion) };
+      return { ...split, amount: roundMoney(currentAmount + portion, money) };
     });
 
     commitSplits(newSplits);
@@ -562,7 +567,7 @@ export function SplitEditor({
   // Set the transaction total to the sum of splits
   const setTotalToSplitsSum = () => {
     if (onTransactionAmountChange && splitsTotal !== 0) {
-      onTransactionAmountChange(roundMoney(splitsTotal));
+      onTransactionAmountChange(roundMoney(splitsTotal, money));
     }
   };
 

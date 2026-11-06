@@ -8,6 +8,8 @@ import { transactionsApi } from '@/lib/transactions';
 import { exportForeignTransactionsCsv } from '@/lib/fx-fees-csv';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { createLogger } from '@/lib/logger';
+import { fromMoneyUnits, moneyDecimalsForCurrency, toMoneyUnits } from '@/lib/format';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { Modal } from '@/components/ui/Modal';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
@@ -26,9 +28,6 @@ import type {
 const logger = createLogger('ForeignCurrencyFeesSection');
 
 const PAGE_SIZE = 25;
-
-// Integer ten-thousandths, matching the backend's decimal(20,4) money scale.
-const SCALE = 10000;
 
 interface ForeignCurrencyFeesSectionProps {
   account: Account;
@@ -119,14 +118,18 @@ export function ForeignCurrencyFeesSection({ account }: ForeignCurrencyFeesSecti
 
   // Roll the per-currency rows up to one fee total per month, honouring the
   // currency filter (empty selection = all currencies). Sums are accumulated
-  // in integer ten-thousandths to avoid float drift.
+  // in integer units of the account currency's money precision (four for
+  // fiat, a coin's eight) to avoid float drift.
+  const registryVersion = useCurrencyDecimalsVersion();
   const monthlyFees = useMemo<MonthlyTotal[]>(() => {
     const active = selectedCurrencies.length > 0 ? new Set(selectedCurrencies) : null;
-    const byMonth = new Map<string, { cents: number; count: number }>();
+    const decimals = moneyDecimalsForCurrency(account.currencyCode);
+    const byMonth = new Map<string, { units: bigint; count: number }>();
     for (const row of feeSummary) {
       if (active && !active.has(row.currencyCode)) continue;
-      const bucket = byMonth.get(row.month) ?? { cents: 0, count: 0 };
-      bucket.cents += Math.round(row.feeTotal * SCALE);
+      const bucket = byMonth.get(row.month) ?? { units: BigInt(0), count: 0 };
+      const fee = Number(row.feeTotal);
+      if (Number.isFinite(fee)) bucket.units += toMoneyUnits(fee, decimals);
       bucket.count += row.count;
       byMonth.set(row.month, bucket);
     }
@@ -134,10 +137,11 @@ export function ForeignCurrencyFeesSection({ account }: ForeignCurrencyFeesSecti
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, bucket]) => ({
         month,
-        total: bucket.cents / SCALE,
+        total: fromMoneyUnits(bucket.units, decimals),
         count: bucket.count,
       }));
-  }, [feeSummary, selectedCurrencies]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
+  }, [feeSummary, selectedCurrencies, account.currencyCode, registryVersion]);
 
   // The register: foreign-entered transactions in the filtered currencies.
   // Waits for the summary so "no filter" can expand to every paid currency on

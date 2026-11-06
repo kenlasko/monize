@@ -1,4 +1,12 @@
-import { roundToDecimals, sumMoney } from './format';
+import { FIAT_MONEY_DECIMALS, roundToDecimals, sumMoney } from './format';
+
+/**
+ * Every figure here is a report's, converted to the reporting currency, and a
+ * coin is never the reporting currency (`docs/specs/money-precision.md`
+ * decision 3), so the sums are at the fiat four places, stated rather than
+ * defaulted.
+ */
+const REPORTING_MONEY_DECIMALS = FIAT_MONEY_DECIMALS;
 
 /**
  * The Balance view of the income reports
@@ -37,7 +45,7 @@ const isKnown = (value: BalanceAmount): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
 /**
- * Sums in integer cents (`sumMoney`) and divides once. The percentage is over
+ * Sums in integer units (`sumMoney`) and divides once. The percentage is over
  * what came in; when that is not positive there is no base to divide by, so it
  * is unknown rather than 0 or infinite.
  */
@@ -51,8 +59,8 @@ export function taggedBalance(input: TaggedBalanceInput): TaggedBalance {
   ) {
     return UNKNOWN;
   }
-  const received = sumMoney([income, taggedInflows]);
-  const balance = sumMoney([received, -expenses, -taggedOutflows]) || 0;
+  const received = sumMoney([income, taggedInflows], REPORTING_MONEY_DECIMALS);
+  const balance = sumMoney([received, -expenses, -taggedOutflows], REPORTING_MONEY_DECIMALS) || 0;
   const balancePercent =
     received > 0 ? roundToDecimals((balance / received) * 100, 2) : null;
   return { balance, balancePercent };
@@ -144,7 +152,7 @@ export interface TaggedFunds {
  *   netTagged      = taggedInflows - taggedOutflows
  *   availableFunds = income + netTagged
  *
- * Integer cents (`sumMoney`), no division. A figure of its own: never written
+ * Integer units (`sumMoney`), no division. A figure of its own: never written
  * into `income` or any category or budget total (INV-REPORT-003).
  */
 export function taggedFunds(input: TaggedFundsInput): TaggedFunds {
@@ -152,7 +160,7 @@ export function taggedFunds(input: TaggedFundsInput): TaggedFunds {
   if (!isKnown(taggedInflows) || !isKnown(taggedOutflows)) {
     return { netTagged: null, availableFunds: null };
   }
-  const netTagged = sumMoney([taggedInflows, -taggedOutflows]) || 0;
+  const netTagged = sumMoney([taggedInflows, -taggedOutflows], REPORTING_MONEY_DECIMALS) || 0;
   if (!isKnown(income)) return { netTagged, availableFunds: null };
-  return { netTagged, availableFunds: sumMoney([income, netTagged]) || 0 };
+  return { netTagged, availableFunds: sumMoney([income, netTagged], REPORTING_MONEY_DECIMALS) || 0 };
 }

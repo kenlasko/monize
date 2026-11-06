@@ -48,32 +48,32 @@ describe('SplitTransactionFields Total Amount precision', () => {
     act(() => clearCurrencyDecimals());
   });
 
-  it('round-trips a four-place coin total typed as -0.0051', () => {
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+  it('round-trips an eight-place coin total typed as -0.00502500', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
     const onAmount = vi.fn();
     render(<Harness currencyCode="BTC" initial={0} onAmount={onAmount} />);
     const input = screen.getByLabelText('Total Amount');
-    fireEvent.change(input, { target: { value: '-0.0051' } });
+    fireEvent.change(input, { target: { value: '-0.00502500' } });
     fireEvent.blur(input);
-    // At the input's default two places this was -0.01.
-    expect(onAmount).toHaveBeenLastCalledWith(-0.0051);
-    expect(input).toHaveValue('-0.0051');
+    // At the input's default two places this was -0.01, at four -0.0050.
+    expect(onAmount).toHaveBeenLastCalledWith(-0.005025);
+    expect(input).toHaveValue('-0.00502500');
   });
 
-  it('enters a coin total at the stored four places before the registry has loaded', () => {
+  it('enters a coin total at the column scale before the registry has loaded', () => {
     const onAmount = vi.fn();
     render(<Harness currencyCode="BTC" initial={0} onAmount={onAmount} />);
     const input = screen.getByLabelText('Total Amount');
-    fireEvent.change(input, { target: { value: '0.0125' } });
+    fireEvent.change(input, { target: { value: '0.01249993' } });
     fireEvent.blur(input);
     // At the input's default two places this was 0.01.
-    expect(onAmount).toHaveBeenLastCalledWith(0.0125);
+    expect(onAmount).toHaveBeenLastCalledWith(0.01249993);
   });
 
-  it('renders a stored coin total at its four places', () => {
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
-    render(<Harness currencyCode="BTC" initial={-0.0051} onAmount={vi.fn()} />);
-    expect(screen.getByLabelText('Total Amount')).toHaveValue('-0.0051');
+  it('renders a stored coin total at its eight places', () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
+    render(<Harness currencyCode="BTC" initial={-0.005025} onAmount={vi.fn()} />);
+    expect(screen.getByLabelText('Total Amount')).toHaveValue('-0.00502500');
   });
 
   it('keeps an ISO currency total at two places', () => {
@@ -87,8 +87,8 @@ describe('SplitTransactionFields Total Amount precision', () => {
   });
 
   it('prefixes a registered coin total with its stored symbol, not its code', () => {
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20bf' }]);
-    const { container } = render(<Harness currencyCode="BTC" initial={-0.0051} onAmount={vi.fn()} />);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '\u20bf' }]);
+    const { container } = render(<Harness currencyCode="BTC" initial={-0.005025} onAmount={vi.fn()} />);
     expect(screen.getByText('\u20bf')).toBeInTheDocument();
     expect(container).not.toHaveTextContent(/BTC/);
   });
@@ -99,7 +99,7 @@ describe('SplitTransactionFields Total Amount precision', () => {
   });
 
   it('keeps an ISO currency\'s Intl symbol as the prefix', () => {
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '\u20bf' }]);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '\u20bf' }]);
     render(<Harness currencyCode="EUR" initial={0} onAmount={vi.fn()} />);
     expect(screen.getByText('\u20ac')).toBeInTheDocument();
   });

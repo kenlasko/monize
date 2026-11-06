@@ -122,7 +122,7 @@ describe('OverrideEditorDialog: a coin account', () => {
   const coinBill = {
     id: 's-btc',
     name: 'Node hosting',
-    amount: -0.0051,
+    amount: -0.000025,
     currencyCode: 'BTC',
     accountId: 'a1',
     categoryId: null,
@@ -154,42 +154,42 @@ describe('OverrideEditorDialog: a coin account', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
   });
 
   afterEach(async () => {
     await act(async () => clearCurrencyDecimals());
   });
 
-  it('opens and saves a 0.0051 BTC occurrence as 0.0051, not cents', async () => {
+  it('opens and saves a 0.00002500 BTC occurrence as 0.00002500, not cents', async () => {
     renderCoin();
-    expect(screen.getByLabelText('Amount')).toHaveValue('-0.0051');
+    expect(screen.getByLabelText('Amount')).toHaveValue('-0.00002500');
     const payload = await save();
-    expect(payload.amount).toBe(-0.0051);
+    expect(payload.amount).toBe(-0.000025);
   });
 
-  it('saves an unedited 0.0051 BTC as 0.0051 when the currency list arrives after the dialog opened', async () => {
-    // Seeded before the registry knew BTC: kept at the stored four places, so
-    // the field redraws 0.0051 on the late fill and an untouched save sends it.
+  it('saves an unedited 0.00002500 BTC as 0.00002500 when the currency list arrives after the dialog opened', async () => {
+    // Seeded before the registry knew BTC: kept at the column scale, so the
+    // field redraws 0.00002500 on the late fill and an untouched save sends it.
     await act(async () => clearCurrencyDecimals());
     renderCoin();
     await act(async () => {
-      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
     });
-    expect(screen.getByLabelText('Amount')).toHaveValue('-0.0051');
+    expect(screen.getByLabelText('Amount')).toHaveValue('-0.00002500');
     const payload = await save();
-    expect(payload.amount).toBe(-0.0051);
+    expect(payload.amount).toBe(-0.000025);
   });
 
-  it('keeps a prefilled and a typed coin amount at four places', async () => {
-    renderCoin({ prefillAmount: -0.0073 });
+  it('keeps a prefilled and a typed coin amount at eight places', async () => {
+    renderCoin({ prefillAmount: -0.00043210 });
     const amount = screen.getByLabelText('Amount');
-    expect(amount).toHaveValue('-0.0073');
+    expect(amount).toHaveValue('-0.00043210');
     await act(async () => {
-      fireEvent.change(amount, { target: { value: '-0.0051' } });
+      fireEvent.change(amount, { target: { value: '-0.00002500' } });
       fireEvent.blur(amount);
     });
     const payload = await save();
-    expect(payload.amount).toBe(-0.0051);
+    expect(payload.amount).toBe(-0.000025);
   });
 });

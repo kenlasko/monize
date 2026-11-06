@@ -1,14 +1,18 @@
 import '@/lib/zodConfig';
 import { z } from 'zod';
 import { CURRENCY_KINDS } from '@/lib/currency-kind';
+import { MONEY_SCALE } from '@/lib/format';
 import { QUOTE_SYMBOL_MAX_LENGTH, quoteSymbolFiat } from '@/lib/crypto-quote-symbol';
 
 /**
- * Decimal places a new coin starts at. Money is `decimal(20,4)` and the server
- * caps `decimalPlaces` at 4, so four is the most a coin can carry
- * (`docs/specs/crypto-accounts.md` decision 4).
+ * Decimal places a new coin starts at: eight, Bitcoin's and the money column
+ * scale (`NUMERIC(24,8)`), the most the server accepts
+ * (`docs/specs/money-precision.md` decision 2).
  */
-export const CRYPTO_DEFAULT_DECIMAL_PLACES = 4;
+export const CRYPTO_DEFAULT_DECIMAL_PLACES = 8;
+
+/** The most decimal places a currency may carry: the money column scale. */
+export const MAX_CURRENCY_DECIMAL_PLACES = MONEY_SCALE;
 
 /** Decimal places a new fiat currency starts at before a lookup fills it. */
 export const FIAT_DEFAULT_DECIMAL_PLACES = 2;
@@ -26,7 +30,7 @@ export const buildCurrencySchema = (t: (key: string) => string) =>
       code: z.string().length(3, t('validation.codeLength')),
       name: z.string().min(1, t('validation.nameRequired')).max(100, t('validation.nameMax')),
       symbol: z.string().min(1, t('validation.symbolRequired')).max(10, t('validation.symbolMax')),
-      decimalPlaces: z.coerce.number().int().min(0).max(4).default(FIAT_DEFAULT_DECIMAL_PLACES),
+      decimalPlaces: z.coerce.number().int().min(0).max(MAX_CURRENCY_DECIMAL_PLACES).default(FIAT_DEFAULT_DECIMAL_PLACES),
       kind: z.enum(CURRENCY_KINDS).default('FIAT'),
       quoteSymbol: z
         .string()

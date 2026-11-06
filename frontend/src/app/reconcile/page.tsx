@@ -40,6 +40,7 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { nextCycleStatus } from '@/lib/transaction-status-cycle';
 import {
   entryDecimalPlaces,
+  moneyDecimalsFor,
   getCurrencySymbol,
   roundToDecimals,
   roundToEntryPlaces,
@@ -392,12 +393,14 @@ function ReconcileContent() {
     selectedAccount?.currencyCode || defaultCurrency,
   );
   const differenceTolerance = 10 ** -reconcileDecimals;
+  // The sums are exact at the currency's money precision (a coin's eight).
+  const reconcileMoneyDecimals = moneyDecimalsFor(reconcileDecimals);
   const calculatedDifference = useMemo(() => {
     if (!reconciliationData) return 0;
-    const selectedSum = sumAmounts(selectedTransactions);
+    const selectedSum = sumAmounts(selectedTransactions, reconcileMoneyDecimals);
     const newBalance = Number(reconciliationData.reconciledBalance) + selectedSum;
     return roundToDecimals((statementBalance ?? 0) - newBalance, reconcileDecimals);
-  }, [reconciliationData, selectedTransactions, statementBalance, reconcileDecimals]);
+  }, [reconciliationData, selectedTransactions, statementBalance, reconcileDecimals, reconcileMoneyDecimals]);
 
   const handleFinishReconciliation = async () => {
     if (Math.abs(calculatedDifference) > differenceTolerance) {
@@ -584,7 +587,7 @@ function ReconcileContent() {
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('summary.selected', { count: selectedCount })}</p>
               <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {formatAccountAmount(sumAmounts(selectedTransactions))}
+                {formatAccountAmount(sumAmounts(selectedTransactions, reconcileMoneyDecimals))}
               </p>
             </div>
             <div>
@@ -660,6 +663,7 @@ function ReconcileContent() {
               lastReconciledDate={reconciliationData.lastReconciledDate ?? null}
               overdueBefore={reconciliationData.overdueBefore ?? ''}
               formatCurrency={formatAccountAmount}
+              moneyDecimals={reconcileMoneyDecimals}
               onEdit={transactionModal.openEdit}
               onDelete={setDeleteTarget}
               onCycleStatus={handleCycleStatus}

@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} sudah ada di daftar Anda, tetapi tidak aktif.",
     "nonIsoNotice": "{code} bukan kode mata uang standar. Jika ini mata uang kripto, setel jenisnya ke Mata Uang Kripto. <guide>Baca tentang mata uang kripto di panduan pengguna</guide>.",
     "switchToCrypto": "Gunakan Mata Uang Kripto",
-    "cryptoPrecisionNotice": "Jumlah dalam mata uang kripto disimpan hingga maksimal empat tempat desimal, sehingga jumlah yang sangat kecil seperti biaya jaringan dapat dibulatkan menjadi nol. <guide>Lihat cara mencatat biaya dompet</guide>.",
+    "cryptoPrecisionNotice": "Jumlah dalam mata uang kripto disimpan hingga delapan tempat desimal, sesuai presisi penyimpanannya, sehingga biaya di bawah {smallest} tidak dapat dimasukkan. <guide>Lihat cara mencatat biaya dompet</guide>.",
     "reactivateButton": "Aktifkan kembali {code}",
     "reactivating": "Mengaktifkan kembali..."
   },

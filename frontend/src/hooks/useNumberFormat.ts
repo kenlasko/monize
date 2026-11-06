@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { roundToDecimals, adaptiveFractionDigits } from '@/lib/format';
+import { roundToDecimals, adaptiveFractionDigits, MONEY_SCALE } from '@/lib/format';
 import { scaleBytes } from '@/lib/bytes';
 import { preferredCurrency } from '@/lib/default-currency';
 import { getNumberSeparators } from '@/lib/number-parse';
@@ -36,6 +36,13 @@ export function getEffectiveLocale(
  * precision of the pure `formatShareQuantity` helper in `@/lib/format`.
  */
 export const SHARE_QUANTITY_MAX_FRACTION_DIGITS = 8;
+
+/**
+ * The most fraction digits `formatCurrencyPrecise` expands a fiat figure to:
+ * a sub-penny security price (0.000318 GBP) reads to six. A registered coin
+ * expands to `MONEY_SCALE` instead.
+ */
+const PRECISE_MAX_FRACTION_DIGITS = 6;
 
 /**
  * The formatters a pure (non-React) helper needs to render a figure in the
@@ -251,7 +258,16 @@ export function useNumberFormat() {
         }).resolvedOptions().minimumFractionDigits ??
         2;
       const baseDigits = Math.max(currencyDigits, minFractionDigits ?? 0);
-      return formatCurrency(amount, currency, adaptiveFractionDigits(amount, baseDigits));
+      // A registered non-ISO currency (a coin) may hold money to the column
+      // scale, so its expansion reaches eight places rather than the six a
+      // sub-penny fiat price stops at; one satoshi must not read as zero.
+      const maxDigits =
+        decimalPlacesForCurrency(currency) !== undefined ? MONEY_SCALE : PRECISE_MAX_FRACTION_DIGITS;
+      return formatCurrency(
+        amount,
+        currency,
+        adaptiveFractionDigits(amount, baseDigits, maxDigits),
+      );
     },
     [numberFormat, defaultCurrency, language, formatCurrency]
   );

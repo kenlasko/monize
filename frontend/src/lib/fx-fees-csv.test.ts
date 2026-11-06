@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { exportForeignTransactionsCsv } from './fx-fees-csv';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from './currency-decimals';
-import type { Transaction } from '@/types/transaction';
+import type { Transaction, TransactionSplit } from '@/types/transaction';
 
 const mockGetAllPages = vi.fn();
 vi.mock('./transactions', () => ({
@@ -102,21 +102,41 @@ describe('exportForeignTransactionsCsv', () => {
   });
 
   it('derives a coin account\'s fee at the coin\'s places', async () => {
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
     mockGetAllPages.mockResolvedValue([
       tx({
         currencyCode: 'BTC',
         originalAmount: -510,
         originalCurrencyCode: 'USD',
-        exchangeRate: 0.00001,
-        amount: -0.0052,
+        exchangeRate: 0.0000098,
+        amount: -0.005025,
       }),
     ]);
 
     await exportForeignTransactionsCsv({ accountIds: ['acc-1'], currencyCodes: ['USD'] });
 
-    // Base -0.0051 BTC (not -0.01 at cents), booked -0.0052: fee 0.0001 BTC.
+    // Base -0.00499800 BTC (not -0.01 at cents), booked -0.00502500: fee 0.00002700 BTC.
     const row = mockExportToCsv.mock.calls[0][2][0];
-    expect(row[10]).toBeCloseTo(0.0001, 4);
+    expect(row[10]).toBe(0.000027);
+  });
+
+  it('shows a coin split\'s visible lines summed at eight places', async () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
+    mockGetAllPages.mockResolvedValue([
+      tx({
+        currencyCode: 'BTC',
+        originalAmount: -510,
+        originalCurrencyCode: 'USD',
+        exchangeRate: 0.0000098,
+        amount: -0.005025,
+        isSplit: true,
+        splits: [{ id: 's1', amount: -0.000025 } as TransactionSplit],
+      }),
+    ]);
+
+    await exportForeignTransactionsCsv({ accountIds: ['acc-1'], currencyCodes: ['USD'] });
+
+    const row = mockExportToCsv.mock.calls[0][2][0];
+    expect(row[6]).toBe(-0.000025);
   });
 });

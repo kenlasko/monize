@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} staat al in je lijst, maar is inactief.",
     "nonIsoNotice": "{code} is geen standaard valutacode. Als het een cryptovaluta is, stel de soort dan in op Cryptovaluta. <guide>Lees meer over cryptovaluta's in de gebruikershandleiding</guide>.",
     "switchToCrypto": "Cryptovaluta gebruiken",
-    "cryptoPrecisionNotice": "Bedragen in een cryptovaluta worden bewaard met ten hoogste vier decimalen, dus een heel klein bedrag zoals netwerkkosten kan worden afgerond naar nul. <guide>Bekijk hoe je walletkosten vastlegt</guide>.",
+    "cryptoPrecisionNotice": "Bedragen in een cryptovaluta worden bewaard met ten hoogste acht decimalen, de precisie waarmee ze worden opgeslagen, dus kosten onder {smallest} kunnen niet worden ingevoerd. <guide>Bekijk hoe je walletkosten vastlegt</guide>.",
     "reactivateButton": "{code} opnieuw activeren",
     "reactivating": "Bezig met opnieuw activeren..."
   },

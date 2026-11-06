@@ -166,7 +166,7 @@ describe('PostTransactionDialog: a coin account', () => {
     ({
       id: 's-btc',
       name: 'Node hosting',
-      amount: -0.0051,
+      amount: -0.000025,
       currencyCode: 'BTC',
       accountId: 'a1',
       categoryId: null,
@@ -194,65 +194,69 @@ describe('PostTransactionDialog: a coin account', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
   });
 
   afterEach(async () => {
     await act(async () => clearCurrencyDecimals());
   });
 
-  it('refuses to post split lines that miss the amount by 0.0049 BTC, as the server would', async () => {
-    renderCoin({
-      amount: -0.0076,
-      isSplit: true,
-      splits: [
-        { id: '11111111-1111-4111-8111-111111111111', transferAccountId: null, transferAccount: null, categoryId: 'cat-a', amount: -0.0025, memo: '' },
-        { id: '22222222-2222-4222-8222-222222222222', transferAccountId: null, transferAccount: null, categoryId: 'cat-b', amount: -0.0002, memo: '' },
-      ],
-    });
+  const saleSplits = (feeAmount: number) => [
+    { id: '11111111-1111-4111-8111-111111111111', transferAccountId: null, transferAccount: null, categoryId: 'cat-a', amount: -0.005, memo: '' },
+    { id: '22222222-2222-4222-8222-222222222222', transferAccountId: null, transferAccount: null, categoryId: 'cat-b', amount: feeAmount, memo: '' },
+  ];
+
+  it('refuses to post split lines that miss the amount by one satoshi, as the server would', async () => {
+    renderCoin({ amount: -0.005025, isSplit: true, splits: saleSplits(-0.00002499) });
     const buttons = screen.getAllByText('Post Transaction');
     await act(async () => {
       fireEvent.click(buttons[buttons.length - 1]);
     });
-    // Under a one-cent tolerance this posted, and the server refused it.
+    // At four places both sides read -0.0050 and this posted; the server refused it.
     expect(toast.error).toHaveBeenCalledWith('Split amounts must equal the transaction amount');
     expect(mockPostApi).not.toHaveBeenCalled();
   });
 
-  it('posts a typed 0.0051 BTC as 0.0051, not cents', async () => {
+  it('posts -0.00502500 split into -0.00500000 and a -0.00002500 fee', async () => {
+    renderCoin({ amount: -0.005025, isSplit: true, splits: saleSplits(-0.000025) });
+    await post();
+    expect(toast.error).not.toHaveBeenCalledWith('Split amounts must equal the transaction amount');
+  });
+
+  it('posts a typed 0.00002500 BTC as 0.00002500, not cents', async () => {
     renderCoin({ amount: -0.02 });
     const amount = screen.getByLabelText('Amount');
     await act(async () => {
-      fireEvent.change(amount, { target: { value: '-0.0051' } });
+      fireEvent.change(amount, { target: { value: '-0.00002500' } });
       fireEvent.blur(amount);
     });
-    expect(amount).toHaveValue('-0.0051');
+    expect(amount).toHaveValue('-0.00002500');
     const payload = await post();
-    expect(payload.amount).toBe(-0.0051);
+    expect(payload.amount).toBe(-0.000025);
   });
 
-  it('posts an unedited 0.0051 BTC as 0.0051 when the currency list arrives after the dialog opened', async () => {
-    // Seeded before the registry knew BTC: kept at the stored four places, not
+  it('posts an unedited 0.00002500 BTC as 0.00002500 when the currency list arrives after the dialog opened', async () => {
+    // Seeded before the registry knew BTC: kept at the column scale, not
     // rounded at an assumed two, so the late fill has nothing to recover.
     await act(async () => clearCurrencyDecimals());
     renderCoin();
     await act(async () => {
-      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
     });
-    expect(screen.getByLabelText('Amount')).toHaveValue('-0.0051');
+    expect(screen.getByLabelText('Amount')).toHaveValue('-0.00002500');
     const payload = await post();
-    expect(payload.amount).toBe(-0.0051);
+    expect(payload.amount).toBe(-0.000025);
   });
 
   it('re-converts at the coin\'s places when the currency list arrives after the dialog opened', async () => {
     // `GET /currencies` answering late: the registry is empty when the dialog
-    // converts, so the total starts at the stored four places (never cents,
-    // which read -0.01), and the fill must redraw it at the coin's own.
+    // converts, so the total starts at the column scale (never cents, which
+    // read -0.00), and the fill must redraw it at the coin's own.
     await act(async () => clearCurrencyDecimals());
-    vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(0.00001);
-    renderCoin({ originalAmount: -510, originalCurrencyCode: 'USD', exchangeRate: 0.00001 });
+    vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(0.0000098);
+    renderCoin({ originalAmount: -510, originalCurrencyCode: 'USD', exchangeRate: 0.0000098 });
     const total = screen.getByLabelText('Total in BTC');
-    await waitFor(() => expect(total).toHaveValue('-0.0051'));
+    await waitFor(() => expect(total).toHaveValue('-0.00499800'));
     await act(async () => {
       registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 3, symbol: '₿' }]);
     });
@@ -260,11 +264,11 @@ describe('PostTransactionDialog: a coin account', () => {
   });
 
   it('converts a foreign bill into the coin at the coin\'s places', async () => {
-    // 510 USD at 0.00001 BTC/USD is 0.0051 BTC; at cents it read 0.01.
-    vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(0.00001);
-    renderCoin({ originalAmount: -510, originalCurrencyCode: 'USD', exchangeRate: 0.00001 });
+    // 510 USD at 0.0000098 BTC/USD is 0.00499800 BTC; at four places it read 0.0050.
+    vi.mocked(exchangeRatesApi.getRateForDate).mockResolvedValue(0.0000098);
+    renderCoin({ originalAmount: -510, originalCurrencyCode: 'USD', exchangeRate: 0.0000098 });
     const total = screen.getByLabelText('Total in BTC');
-    await waitFor(() => expect(total).toHaveValue('-0.0051'));
+    await waitFor(() => expect(total).toHaveValue('-0.00499800'));
     const payload = await post();
     expect(payload.originalAmount).toBe(-510);
     expect(payload.amount).toBeUndefined();

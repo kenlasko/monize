@@ -1,11 +1,21 @@
-import { getDecimalPlacesForCurrency, roundMoney, roundToDecimals, sumMoney } from '@/lib/format';
+import {
+  awaitsRegisteredPlaces,
+  getDecimalPlacesForCurrency,
+  MONEY_SCALE,
+  moneyDecimalsFor,
+  roundMoney,
+  roundToDecimals,
+  sumMoney,
+} from '@/lib/format';
 
 /**
  * Book a split set in a currency's smallest unit (issue #1581): the parent and
  * every line rounded to `decimals`, and the difference the line roundings
  * leave on the line at `absorbIndex`, so the lines sum to the parent exactly.
  * Only a rounding difference is moved: lines that did not already sum to the
- * parent at 4dp are only rounded, and the split editor shows the gap.
+ * parent at the currency's money precision (`moneyDecimalsFor(decimals)`: four
+ * for fiat, a coin's own places) are only rounded, and the split editor shows
+ * the gap.
  *
  * Mirrors `bookSplitsAtMinorUnit` in
  * `backend/src/common/currency-minor-unit.util.ts`, which books the same
@@ -18,16 +28,17 @@ export function bookSplitsAtMinorUnit(
   decimals: number,
   absorbIndex: number,
 ): { amounts: number[]; parentAmount: number } {
+  const money = moneyDecimalsFor(decimals);
   const parent = roundToDecimals(Number(parentAmount), decimals);
   const rounded = amounts.map((amount) => roundToDecimals(Number(amount), decimals));
-  const balanced = sumMoney(amounts.map(Number)) === roundMoney(Number(parentAmount));
+  const balanced = sumMoney(amounts.map(Number), money) === roundMoney(Number(parentAmount), money);
   if (!balanced || absorbIndex < 0 || absorbIndex >= rounded.length) {
     return { amounts: rounded, parentAmount: parent };
   }
-  const residual = roundMoney(parent - sumMoney(rounded));
+  const residual = roundMoney(parent - sumMoney(rounded, money), money);
   return {
     amounts: rounded.map((amount, index) =>
-      index === absorbIndex ? roundMoney(amount + residual) : amount,
+      index === absorbIndex ? roundMoney(amount + residual, money) : amount,
     ),
     parentAmount: parent,
   };
@@ -76,7 +87,9 @@ export function minorUnitAbsorbIndex(
  * smallest unit, with the parent they belong under. Every surface that loads
  * a template into a form (the Post dialog, the occurrence override editor,
  * the template form) goes through this: rounding the parent and leaving the
- * 4dp lines under it is what the server refused in issue #1581.
+ * 4dp lines under it is what the server refused in issue #1581. A coin the
+ * currency registry does not hold yet is booked at the column scale
+ * (`MONEY_SCALE`), never at the two `Intl` guesses for a code it does not know.
  *
  * `templateSplits` are the schedule's stored splits, which carry their
  * transfer account and so say which line pays a loan. Null when there is
@@ -102,7 +115,11 @@ export function bookSplitRowsAtMinorUnit<T extends BookableLine & { splitType: s
   const booked = bookSplitsAtMinorUnit(
     rows.map((row) => row.amount),
     parentAmount,
-    currencyCode ? getDecimalPlacesForCurrency(currencyCode) : 2,
+    !currencyCode
+      ? 2
+      : awaitsRegisteredPlaces(currencyCode)
+        ? MONEY_SCALE
+        : getDecimalPlacesForCurrency(currencyCode),
     minorUnitAbsorbIndex(rows, accountTypeById),
   );
   return {

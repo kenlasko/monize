@@ -1512,7 +1512,7 @@ describe('TransactionsPage', () => {
         });
 
         act(() => {
-          registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+          registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
         });
 
         await waitFor(() => {

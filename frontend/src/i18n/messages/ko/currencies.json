@@ -133,7 +133,7 @@
     "inactiveNotice": "{code}은(는) 이미 목록에 있지만 비활성 상태입니다.",
     "nonIsoNotice": "{code}은(는) 표준 통화 코드가 아닙니다. 암호화폐라면 유형을 암호화폐로 설정하세요. <guide>암호화폐에 대해서는 사용자 가이드를 참고하세요</guide>.",
     "switchToCrypto": "암호화폐 사용",
-    "cryptoPrecisionNotice": "암호화폐 금액은 소수점 이하 최대 네 자리까지 유지되므로 네트워크 수수료처럼 매우 작은 금액은 0으로 반올림될 수 있습니다. <guide>지갑 수수료를 기록하는 방법 보기</guide>.",
+    "cryptoPrecisionNotice": "암호화폐 금액은 저장 정밀도인 소수점 이하 최대 여덟 자리까지 유지되므로 {smallest} 미만의 수수료는 입력할 수 없습니다. <guide>지갑 수수료를 기록하는 방법 보기</guide>.",
     "reactivateButton": "{code} 다시 활성화",
     "reactivating": "다시 활성화하는 중..."
   },

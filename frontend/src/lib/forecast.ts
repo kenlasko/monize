@@ -3,18 +3,49 @@ import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { advanceByFrequency, anchorDayOf } from '@/lib/frequency';
 import { occurrenceSettlementAccountId } from '@/lib/scheduled-effective-amount';
-import { roundMoney, roundToEntryPlaces } from '@/lib/format';
+import {
+  FIAT_MONEY_DECIMALS,
+  fromMoneyUnits,
+  moneyDecimalsForCurrency,
+  roundMoney,
+  roundToEntryPlaces,
+  sumMoney,
+  toMoneyUnits,
+} from '@/lib/format';
 
 /**
- * A running balance is accumulated in integer units of 1/10000 (the storage
- * precision) so a long series of 0.1-sized amounts cannot drift, and is rounded
- * once, half away from zero, for display: at the places of the currency the
- * balance is in (a coin wallet's 0.0051 BTC read 0.01 at cents), two for fiat
- * and for a currency the caller does not name.
+ * A running balance is accumulated in integer units of `10^-decimals`, the
+ * money precision of the currency it is in (four for fiat and for a balance
+ * converted into the reporting currency, a coin's own eight), held in `BigInt`
+ * so a long series of 0.1-sized amounts cannot drift and eight places stay
+ * exact above 2^53 units. It is rounded once, half away from zero, for
+ * display: at the places of the currency the balance is in (a coin wallet's
+ * 0.00002500 BTC read 0.00 at cents), two for fiat and for a currency the
+ * caller does not name. An unreadable amount contributes nothing.
  */
-const toUnits = (amount: number): number => Math.round(Number(amount) * 10000);
-const unitsToPlaces = (units: number, currencyCode?: string): number =>
-  roundToEntryPlaces(units / 10000, currencyCode);
+const toUnits = (amount: number, decimals: number): bigint => {
+  const value = Number(amount);
+  return Number.isFinite(value) ? toMoneyUnits(value, decimals) : BigInt(0);
+};
+const unitsToPlaces = (units: bigint, decimals: number, currencyCode?: string): number =>
+  roundToEntryPlaces(fromMoneyUnits(units, decimals), currencyCode);
+
+/**
+ * The precision of a figure converted into the reporting currency: a coin is
+ * never the reporting currency (`docs/specs/money-precision.md` decision 3).
+ */
+const REPORTING_MONEY_DECIMALS = FIAT_MONEY_DECIMALS;
+
+/**
+ * The money precision a set of unconverted balances accumulates at: the widest
+ * of their currencies', so no account's amounts are rounded below their own.
+ */
+function widestMoneyDecimals(accounts: readonly Account[]): number {
+  return accounts.reduce(
+    (widest, account) => Math.max(widest, moneyDecimalsForCurrency(account.currencyCode)),
+    FIAT_MONEY_DECIMALS,
+  );
+}
 
 /**
  * The one currency a set of balances is drawn in without conversion, or
@@ -239,6 +270,9 @@ function spendableRules(transaction: ScheduledTransaction) {
     .filter(r => r.expectedPerPaycheque != null && Number(r.expectedPerPaycheque) > 0)
     .map(r => ({
       key: `${r.categoryId}|${r.currencyCode}`,
+      // The rule's money precision: its currency's (a payroll bill is fiat,
+      // so four, as it has always been).
+      decimals: moneyDecimalsForCurrency(r.currencyCode),
       categoryId: r.categoryId,
       expected: Number(r.expectedPerPaycheque),
       // What the template already deducts for the category: its own line, or
@@ -314,7 +348,11 @@ function spendPayrollDeductions(
 ): void {
   const pools = buildDeductionPools(transactions);
   if (pools.size === 0) return;
-  const walk: { occurrence: Occurrence; rules: ReturnType<typeof spendableRules> }[] = [];
+  const walk: {
+    occurrence: Occurrence;
+    rules: ReturnType<typeof spendableRules>;
+    decimals: number;
+  }[] = [];
   const seen = new Set<string>();
   for (const tx of transactions) {
     if (seen.has(tx.id)) continue;
@@ -322,12 +360,14 @@ function spendPayrollDeductions(
     const rules = spendableRules(tx);
     if (rules.length === 0) continue;
     for (const occurrence of occurrencesById.get(tx.id) ?? []) {
-      if (occurrence.spendDate !== undefined) walk.push({ occurrence, rules });
+      if (occurrence.spendDate !== undefined) {
+        walk.push({ occurrence, rules, decimals: moneyDecimalsForCurrency(tx.currencyCode) });
+      }
     }
   }
   // Stable: two bills on one day spend in the order they were given.
   walk.sort((a, b) => (a.occurrence.spendDate as string).localeCompare(b.occurrence.spendDate as string));
-  for (const { occurrence, rules } of walk) {
+  for (const { occurrence, rules, decimals } of walk) {
     const dateKey = occurrence.spendDate as string;
     let delta = 0;
     const deductions: { categoryId: string; deducted: number }[] = [];
@@ -342,12 +382,12 @@ function spendPayrollDeductions(
         pool.nextResetOn = nextAnniversary(pool.resetDate, pool.nextResetOn);
       }
       const applied = Math.min(rule.expected, Math.max(0, pool.remaining));
-      pool.remaining = roundMoney(pool.remaining - applied);
-      deductions.push({ categoryId: rule.categoryId, deducted: roundMoney(applied) });
+      pool.remaining = roundMoney(pool.remaining - applied, rule.decimals);
+      deductions.push({ categoryId: rule.categoryId, deducted: roundMoney(applied, rule.decimals) });
       if (!occurrence.stated) delta += rule.lineAmount - applied;
     }
     occurrence.deductions = deductions;
-    occurrence.amount = roundMoney(occurrence.amount + roundMoney(delta));
+    occurrence.amount = roundMoney(occurrence.amount + roundMoney(delta, decimals), decimals);
   }
 }
 
@@ -739,14 +779,21 @@ function normalizeInvestmentForForecast(
     // KNOWN, so stamp it so the projection is not withheld.
     return { ...remapped, investmentForecastExchangeRate: rate };
   }
+  // Converted into the cash account's currency, at that currency's precision.
+  const cashDecimals = moneyDecimalsForCurrency(
+    accountsById.get(cashAccountId)?.currencyCode ??
+      (transaction.investmentFundingAccountId === cashAccountId
+        ? transaction.investmentFundingAccount?.currencyCode
+        : undefined),
+  );
   const convertOverride = <T extends { amount: number | null }>(o: T): T => ({
     ...o,
-    amount: o.amount != null ? roundMoney(Number(o.amount) * rate) : o.amount,
+    amount: o.amount != null ? roundMoney(Number(o.amount) * rate, cashDecimals) : o.amount,
   });
   return {
     ...transaction,
     accountId: cashAccountId,
-    amount: roundMoney(Number(transaction.amount) * rate),
+    amount: roundMoney(Number(transaction.amount) * rate, cashDecimals),
     investmentForecastExchangeRate: rate,
     futureOverrides: transaction.futureOverrides?.map(convertOverride),
     nextOverride: transaction.nextOverride
@@ -875,6 +922,9 @@ export function buildForecast(
   // Build account currency lookup for converting transaction amounts
   const accountCurrencyMap = new Map(targetAccounts.map(a => [a.id, a.currencyCode]));
   const lineCurrency = unconvertedCurrency(targetAccounts, !!convertAmount);
+  // Converted into the reporting currency at four; unconverted, at the
+  // account currency's own precision (a coin wallet's eight).
+  const unitDecimals = convertAmount ? REPORTING_MONEY_DECIMALS : widestMoneyDecimals(targetAccounts);
   // A forecast is a running balance: one unconvertible amount makes every
   // subsequent day wrong, so an unknown conversion is recorded once and the whole
   // series is reported as unavailable rather than silently drifting. `conv`
@@ -892,18 +942,18 @@ export function buildForecast(
       missingRateCurrencies.add(currency);
       return 0;
     }
-    return roundMoney(converted);
+    return roundMoney(converted, REPORTING_MONEY_DECIMALS);
   };
 
   const startingUnits = targetAccounts.reduce((sum, acc) => {
-    if (!convertAmount) return sum + toUnits(Number(acc.currentBalance));
+    if (!convertAmount) return sum + toUnits(Number(acc.currentBalance), unitDecimals);
     const converted = convertAmount(Number(acc.currentBalance), acc.currencyCode);
     if (converted === null) {
       missingRateCurrencies.add(acc.currencyCode);
       return sum;
     }
-    return sum + toUnits(converted);
-  }, 0);
+    return sum + toUnits(converted, unitDecimals);
+  }, BigInt(0));
 
   // Filter scheduled transactions by account
   // For a specific account, include transfers where this account is the destination
@@ -986,7 +1036,7 @@ export function buildForecast(
 
     // Apply transactions for this day
     for (const tx of dayTransactions) {
-      currentUnits += toUnits(tx.amount);
+      currentUnits += toUnits(tx.amount, unitDecimals);
     }
 
     // Check if we should add a data point (based on granularity)
@@ -1001,7 +1051,7 @@ export function buildForecast(
     if (shouldAddPoint || dayTransactions.length > 0 || isLastDay) {
       dataPoints.push({
         date: dateKey,
-        balance: unitsToPlaces(currentUnits, lineCurrency),
+        balance: unitsToPlaces(currentUnits, unitDecimals, lineCurrency),
         transactions: dayTransactions,
       });
       lastAddedTime = currentTime;
@@ -1075,11 +1125,16 @@ export function buildMultiAccountForecast(
       missingRateCurrencies.add(currencyCode);
       return 0;
     }
-    return roundMoney(converted);
+    return roundMoney(converted, REPORTING_MONEY_DECIMALS);
   };
+  // Each line's precision: the reporting currency's four when converted, else
+  // its account currency's own (a coin wallet's eight).
+  const lineDecimals = (account: Account): number =>
+    convertAmount ? REPORTING_MONEY_DECIMALS : moneyDecimalsForCurrency(account.currencyCode);
+  const totalDecimals = convertAmount ? REPORTING_MONEY_DECIMALS : widestMoneyDecimals(targetAccounts);
 
-  // Integer units of 1/10000, like the running balance below.
-  const startingBalances = new Map<string, number>();
+  // Integer units of each line's precision, like the running balance below.
+  const startingBalances = new Map<string, bigint>();
   const flowsByAccount = new Map<string, Map<string, ForecastTransaction[]>>();
 
   // Across every schedule, so bills on different accounts share one room.
@@ -1088,7 +1143,7 @@ export function buildMultiAccountForecast(
   for (const account of targetAccounts) {
     startingBalances.set(
       account.id,
-      toUnits(conv(Number(account.currentBalance), account.currencyCode)),
+      toUnits(conv(Number(account.currentBalance), account.currencyCode), lineDecimals(account)),
     );
 
     const byDate = new Map<string, ForecastTransaction[]>();
@@ -1135,7 +1190,7 @@ export function buildMultiAccountForecast(
     flowsByAccount.set(account.id, byDate);
   }
 
-  const running = new Map<string, number>(startingBalances);
+  const running = new Map<string, bigint>(startingBalances);
   const points: MultiAccountForecastPoint[] = [];
   let lastAddedTime: number | null = null;
 
@@ -1149,9 +1204,13 @@ export function buildMultiAccountForecast(
     for (const account of targetAccounts) {
       const dayFlows = flowsByAccount.get(account.id)?.get(dateKey);
       if (!dayFlows) continue;
+      const decimals = lineDecimals(account);
       running.set(
         account.id,
-        dayFlows.reduce((sum, tx) => sum + toUnits(tx.amount), running.get(account.id) ?? 0),
+        dayFlows.reduce(
+          (sum, tx) => sum + toUnits(tx.amount, decimals),
+          running.get(account.id) ?? BigInt(0),
+        ),
       );
       dayTransactions.push(...dayFlows);
     }
@@ -1167,18 +1226,16 @@ export function buildMultiAccountForecast(
       // figures the lines are drawn from, so the total on screen is exactly the
       // total of the lines on screen.
       const balances: Record<string, number> = {};
-      let totalUnits = 0;
       for (const account of targetAccounts) {
-        const line = unitsToPlaces(
-          running.get(account.id) ?? 0,
+        balances[account.id] = unitsToPlaces(
+          running.get(account.id) ?? BigInt(0),
+          lineDecimals(account),
           convertAmount ? undefined : account.currencyCode,
         );
-        balances[account.id] = line;
-        totalUnits += toUnits(line);
       }
       points.push({
         date: dateKey,
-        balance: totalUnits / 10000,
+        balance: sumMoney(Object.values(balances), totalDecimals),
         balances,
         transactions: dayTransactions,
       });
@@ -1235,12 +1292,13 @@ export function getProjectedBalanceAtDate(
   const endDate = parseLocalDate(targetDate);
   endDate.setHours(0, 0, 0, 0);
 
-  let units = toUnits(Number(account.currentBalance));
+  const decimals = moneyDecimalsForCurrency(account.currencyCode);
+  let units = toUnits(Number(account.currentBalance), decimals);
 
   // Add future-dated posted transactions for this account up to targetDate
   for (const ft of futureTransactions) {
     if (ft.accountId === account.id && ft.date > todayKey && ft.date <= targetDate) {
-      units += toUnits(ft.amount);
+      units += toUnits(ft.amount, decimals);
     }
   }
 
@@ -1275,11 +1333,11 @@ export function getProjectedBalanceAtDate(
       // stale/raw security-currency amount (or 0) into a projected balance the
       // user approves a posting against.
       if (occ.unknown) return null;
-      units += toUnits(isInbound ? -occ.amount : occ.amount);
+      units += toUnits(isInbound ? -occ.amount : occ.amount, decimals);
     }
   }
 
-  return unitsToPlaces(units, account.currencyCode);
+  return unitsToPlaces(units, decimals, account.currencyCode);
 }
 
 /**
@@ -1299,11 +1357,11 @@ export function countOverdueOccurrences(transactions: ForecastTransaction[]): nu
   return keys.size;
 }
 
-/** The net of the overdue occurrences a forecast point carries, in 1/10000 units. */
-function overdueNetUnits(transactions: ForecastTransaction[]): number {
+/** The net of the overdue occurrences a forecast point carries, in `10^-decimals` units. */
+function overdueNetUnits(transactions: ForecastTransaction[], decimals: number): bigint {
   return transactions.reduce(
-    (sum, tx) => (tx.overdueOriginalDate !== undefined ? sum + toUnits(tx.amount) : sum),
-    0,
+    (sum, tx) => (tx.overdueOriginalDate !== undefined ? sum + toUnits(tx.amount, decimals) : sum),
+    BigInt(0),
   );
 }
 
@@ -1325,8 +1383,10 @@ export function getForecastSummary(dataPoints: ForecastDataPoint[], currencyCode
   // "Starting" is where the forecast starts from, before the overdue occurrences
   // it applies on its first day (discussion #1784): those are a projection, and
   // the figure has to match the balance the account shows.
+  const decimals = moneyDecimalsForCurrency(currencyCode);
   const startingBalance = unitsToPlaces(
-    toUnits(balances[0]) - overdueNetUnits(dataPoints[0].transactions),
+    toUnits(balances[0], decimals) - overdueNetUnits(dataPoints[0].transactions, decimals),
+    decimals,
     currencyCode,
   );
   const endingBalance = balances[balances.length - 1];

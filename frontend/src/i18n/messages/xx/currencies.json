@@ -124,7 +124,7 @@
     "inactiveNotice": "[XX-{code} is already in your list but inactive.-XX]",
     "nonIsoNotice": "[XX-{code} is not a standard currency code. If it is a cryptocurrency, set its kind to Cryptocurrency. <guide>Read about cryptocurrencies in the user guide</guide>.-XX]",
     "switchToCrypto": "[XX-Use Cryptocurrency-XX]",
-    "cryptoPrecisionNotice": "[XX-Amounts in a cryptocurrency are kept to at most four decimal places, so a very small amount such as a network fee can round to zero. <guide>See how to record wallet fees</guide>.-XX]",
+    "cryptoPrecisionNotice": "[XX-Amounts in a cryptocurrency are kept to up to eight decimal places, the precision they are stored at, so a fee smaller than {smallest} cannot be entered. <guide>See how to record wallet fees</guide>.-XX]",
     "reactivateButton": "[XX-Reactivate {code}-XX]",
     "reactivating": "[XX-Reactivating...-XX]",
     "toasts": {

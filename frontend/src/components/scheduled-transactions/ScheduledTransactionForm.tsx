@@ -46,6 +46,7 @@ import {
   sumMoney,
   roundToEntryPlaces,
   entryDecimalPlaces,
+  moneyDecimalsForCurrency,
   getCurrencySymbol,
   FX_RATE_DISPLAY_DECIMALS,
 } from '@/lib/format';
@@ -848,7 +849,7 @@ export function ScheduledTransactionForm({
     if (newMode === 'split') {
       if (splits.length === 0) {
         const amount = watchedAmount || 0;
-        setSplits(createEmptySplits(amount));
+        setSplits(createEmptySplits(amount, watchedCurrencyCode || defaultCurrency));
       }
       setSelectedCategoryId('');
       setValue('categoryId', '', { shouldDirty: true });
@@ -1066,10 +1067,13 @@ export function ScheduledTransactionForm({
         return;
       }
       // At the server's precision (`validateSplitAmountSum`): the lines must
-      // equal the amount exactly at four decimals. A one-cent tolerance let a
-      // 0.0049 BTC remainder through to a save the server refuses.
-      const splitsTotal = sumMoney(splits.map((s) => Number(s.amount) || 0));
-      if (splitsTotal !== roundMoney(Number(data.amount))) {
+      // equal the amount exactly at the split currency's money precision (four
+      // for fiat, a coin's eight), the currency the split editor enters them
+      // in. A one-cent tolerance let a 0.0049 BTC remainder through to a save
+      // the server refuses.
+      const splitsMoneyDecimals = moneyDecimalsForCurrency(watchedCurrencyCode || defaultCurrency);
+      const splitsTotal = sumMoney(splits.map((s) => Number(s.amount) || 0), splitsMoneyDecimals);
+      if (splitsTotal !== roundMoney(Number(data.amount), splitsMoneyDecimals)) {
         toast.error(t('form.toasts.splitsTotal'));
         return;
       }

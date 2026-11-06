@@ -2472,7 +2472,7 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
     // No kind: an older API, read as fiat.
     { code: 'USD', name: 'US Dollar', symbol: '$', decimalPlaces: 2, isActive: true },
   ];
-  const btc = { code: 'BTC', name: 'Bitcoin', symbol: 'B', decimalPlaces: 4, isActive: true, kind: 'CRYPTO', quoteSymbol: 'BTC-CAD' };
+  const btc = { code: 'BTC', name: 'Bitcoin', symbol: 'B', decimalPlaces: 8, isActive: true, kind: 'CRYPTO', quoteSymbol: 'BTC-CAD' };
   const getCurrencies = () => exchangeRatesApi.getCurrencies as ReturnType<typeof vi.fn>;
 
   async function renderForm(props: Partial<Parameters<typeof AccountForm>[0]> = {}) {
@@ -2594,7 +2594,7 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
     expect(screen.queryByTestId('asset-fields')).not.toBeInTheDocument();
   });
 
-  it('enters a new wallet\'s opening balance at the coin\'s four places', async () => {
+  it('enters a new wallet\'s opening balance at the coin\'s eight places', async () => {
     registerCurrencyDecimals([btc]);
     await renderForm();
     await waitFor(() => expect(currencyValues()).toContain('CAD'));
@@ -2606,7 +2606,7 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
     const balance = screen.getByLabelText('Opening Balance') as HTMLInputElement;
     await act(async () => {
       fireEvent.focus(balance);
-      fireEvent.change(balance, { target: { value: '0.0125' } });
+      fireEvent.change(balance, { target: { value: '0.01249993' } });
       fireEvent.blur(balance);
     });
     await act(async () => {
@@ -2615,7 +2615,7 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
 
     await waitFor(() => expect(mockOnSubmit).toHaveBeenCalled());
     const payload = mockOnSubmit.mock.calls[0][0];
-    expect(payload).toMatchObject({ accountType: 'CRYPTO', currencyCode: 'BTC', openingBalance: 0.0125 });
+    expect(payload).toMatchObject({ accountType: 'CRYPTO', currencyCode: 'BTC', openingBalance: 0.01249993 });
   });
 
   it('keeps a bank account\'s opening balance at two places', async () => {
@@ -2642,14 +2642,14 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
   it.each([
     ['with the registry loaded', true],
     ['before the registry has loaded', false],
-  ])('round-trips a 0.0125 BTC opening balance on an unedited save, %s', async (_label, registered) => {
+  ])('round-trips a 0.01249993 BTC opening balance on an unedited save, %s', async (_label, registered) => {
     if (registered) registerCurrencyDecimals([btc]);
     const wallet = createExistingAccount({
       accountType: 'CRYPTO',
       name: 'Bitcoin Wallet',
       currencyCode: 'BTC',
-      openingBalance: 0.0125,
-      currentBalance: 0.0125,
+      openingBalance: 0.01249993,
+      currentBalance: 0.01249993,
     });
     await renderForm({ account: wallet });
     await waitFor(() => expect(currencyValues()).toEqual(['BTC']));
@@ -2661,7 +2661,7 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
     expect(mockOnSubmit.mock.calls[0][0]).toMatchObject({
       accountType: 'CRYPTO',
       currencyCode: 'BTC',
-      openingBalance: 0.0125,
+      openingBalance: 0.01249993,
     });
   });
 
@@ -2670,39 +2670,39 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
       accountType: 'CRYPTO',
       name: 'Bitcoin Wallet',
       currencyCode: 'BTC',
-      openingBalance: 0.0125,
-      currentBalance: 0.0125,
+      openingBalance: 0.01249993,
+      currentBalance: 0.01249993,
     });
     await renderForm({ account: wallet });
     await waitFor(() => expect(currencyValues()).toEqual(['BTC']));
     const balance = screen.getByLabelText('Opening Balance') as HTMLInputElement;
-    // Before `GET /currencies` answers the coin is drawn at the stored four,
+    // Before `GET /currencies` answers the coin is drawn at the column scale,
     // never rounded to cents...
-    expect(balance.value).toBe('0.0125');
+    expect(balance.value).toBe('0.01249993');
 
     // ...and a late load redraws it at the coin's registered places.
     act(() => registerCurrencyDecimals([{ ...btc, decimalPlaces: 3 }]));
-    await waitFor(() => expect(balance.value).toBe('0.013'));
+    await waitFor(() => expect(balance.value).toBe('0.012'));
   });
 
   it.each([
     ['with the registry loaded', true],
     ['before the registry has loaded', false],
-  ])('saves a 0.0075 BTC balance alert threshold at the coin\'s places, %s', async (_label, registered) => {
+  ])('saves a 0.00002500 BTC balance alert threshold at the coin\'s places, %s', async (_label, registered) => {
     if (registered) registerCurrencyDecimals([btc]);
     const wallet = createExistingAccount({
       accountType: 'CRYPTO',
       name: 'Bitcoin Wallet',
       currencyCode: 'BTC',
-      openingBalance: 0.0125,
-      currentBalance: 0.0125,
+      openingBalance: 0.01249993,
+      currentBalance: 0.01249993,
     });
     await renderForm({ account: wallet });
     await waitFor(() => expect(currencyValues()).toEqual(['BTC']));
     const low = screen.getByLabelText('Notify below (optional)') as HTMLInputElement;
     await act(async () => {
       fireEvent.focus(low);
-      fireEvent.change(low, { target: { value: '0.0075' } });
+      fireEvent.change(low, { target: { value: '0.00002500' } });
       fireEvent.blur(low);
     });
     await act(async () => {
@@ -2710,7 +2710,7 @@ describe('AccountForm: a crypto wallet (docs/specs/crypto-accounts.md)', () => {
     });
 
     await waitFor(() => expect(mockOnSubmit).toHaveBeenCalled());
-    expect(mockOnSubmit.mock.calls[0][0].lowBalanceThreshold).toBe(0.0075);
+    expect(mockOnSubmit.mock.calls[0][0].lowBalanceThreshold).toBe(0.000025);
   });
 
   describe('a currency locked by the account\'s transactions', () => {

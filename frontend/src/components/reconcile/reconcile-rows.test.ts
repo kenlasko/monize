@@ -58,6 +58,17 @@ describe('sumAmounts', () => {
     expect(sumAmounts(rows)).toBe(1);
   });
 
+  it('sums a coin wallet\'s rows at its eight places', () => {
+    const rows = [
+      row({ id: 'a', amount: '-0.00500000' as unknown as number }),
+      row({ id: 'b', amount: '-0.00002500' as unknown as number }),
+      row({ id: 'c', amount: '0.01249993' as unknown as number }),
+    ];
+    expect(sumAmounts(rows, 8)).toBe(0.00747493);
+    // At the fiat four the 2,500-satoshi fee is lost.
+    expect(sumAmounts(rows)).not.toBe(0.00747493);
+  });
+
   it('is zero for no rows', () => {
     // An empty selection has moved nothing, which is a known zero rather than
     // an unknown: the difference figure beside it must stay a number.

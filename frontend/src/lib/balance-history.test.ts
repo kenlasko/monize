@@ -99,6 +99,20 @@ describe('computeBalanceSummary', () => {
     expect(summary?.minBalance).toBe(0.007);
   });
 
+  it('keeps an eight-place coin\'s balance at its eight places', () => {
+    const summary = computeBalanceSummary(
+      [
+        { date: '2026-01-01', balance: 0.01249993 },
+        { date: '2026-01-02', balance: 0.00747493 },
+        { date: '2026-01-03', balance: 0.00002500 },
+      ],
+      8,
+    );
+    expect(summary?.startBalance).toBe(0.01249993);
+    expect(summary?.currentBalance).toBe(0.000025);
+    expect(summary?.minBalance).toBe(0.000025);
+  });
+
   it('rounds to the stored money precision when no currency places are given', () => {
     const summary = computeBalanceSummary([
       { date: '2026-01-01', balance: 0.00704 },
@@ -136,6 +150,29 @@ describe('averageDailyBalance', () => {
       ),
     ).toBe(0.0098);
     expect(averageDailyBalance([{ date: '2026-01-01', balance: 0.007 }], 4)).toBe(0.007);
+  });
+
+  it('averages an eight-place coin at its eight places, summed at eight', () => {
+    // At four places 0.00002500 summed as zero and the mean read 0.00000000.
+    expect(
+      averageDailyBalance(
+        [
+          { date: '2026-01-01', balance: 0.000025 },
+          { date: '2026-01-02', balance: 0.000025 },
+          { date: '2026-01-03', balance: 0.00000001 },
+        ],
+        8,
+      ),
+    ).toBe(0.00001667);
+    expect(
+      averageDailyBalance(
+        [
+          { date: '2026-01-01', balance: 20999999.99999999 },
+          { date: '2026-01-02', balance: 20999999.99999999 },
+        ],
+        8,
+      ),
+    ).toBe(20999999.99999999);
   });
 
   it('averages a two-place currency at its cents', () => {

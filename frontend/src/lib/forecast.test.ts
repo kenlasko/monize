@@ -2458,7 +2458,7 @@ describe('forecast of a coin wallet (balances at the coin\'s places, not cents)'
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2025, 0, 15));
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4, symbol: '₿' }]);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8, symbol: '₿' }]);
   });
 
   afterEach(() => {
@@ -2467,33 +2467,45 @@ describe('forecast of a coin wallet (balances at the coin\'s places, not cents)'
   });
 
   const wallet = (overrides: Partial<Account> = {}) =>
-    makeAccount({ id: 'w-1', name: 'Wallet', currencyCode: 'BTC', currentBalance: 0.0051, ...overrides });
+    makeAccount({ id: 'w-1', name: 'Wallet', currencyCode: 'BTC', currentBalance: 0.01249993, ...overrides });
+  // A 2,500-satoshi network fee.
   const spend = (accountId: string): FutureTransaction[] => [
-    { id: `ft-${accountId}`, accountId, name: 'Fee', amount: -0.0002, date: '2025-01-16' },
+    { id: `ft-${accountId}`, accountId, name: 'Fee', amount: -0.000025, date: '2025-01-16' },
   ];
 
-  it('projects the balance a posting is checked against at four places', () => {
-    expect(getProjectedBalanceAtDate(wallet(), '2025-01-20', [], spend('w-1'))).toBe(0.0049);
+  it('projects the balance a posting is checked against at eight places', () => {
+    expect(getProjectedBalanceAtDate(wallet(), '2025-01-20', [], spend('w-1'))).toBe(0.01247493);
     // A fiat account is unchanged: cents.
     expect(
       getProjectedBalanceAtDate(makeAccount({ currencyCode: 'CAD', currentBalance: 1.005 }), '2025-01-20', [], []),
     ).toBe(1.01);
   });
 
-  it('draws a single wallet\'s line and summary at four places', () => {
-    const points = buildForecast([wallet()], [], 'week', 'w-1', spend('w-1')).points;
-    expect(points[0].balance).toBe(0.0051);
-    expect(points.find(p => p.date === '2025-01-16')?.balance).toBe(0.0049);
-    expect(getForecastSummary(points, 'BTC').startingBalance).toBe(0.0051);
+  it('keeps eight places exact above 2^53 units', () => {
+    const big = wallet({ currentBalance: 20999999.99999999 });
+    const credit: FutureTransaction[] = [
+      { id: 'ft-1', accountId: 'w-1', name: 'Dust', amount: 0.00000001, date: '2025-01-16' },
+    ];
+    expect(getProjectedBalanceAtDate(big, '2025-01-20', [], credit)).toBe(21000000);
   });
 
-  it('draws two wallets and their total at four places', () => {
+  it('draws a single wallet\'s line and summary at eight places', () => {
+    const points = buildForecast([wallet()], [], 'week', 'w-1', spend('w-1')).points;
+    expect(points[0].balance).toBe(0.01249993);
+    expect(points.find(p => p.date === '2025-01-16')?.balance).toBe(0.01247493);
+    expect(getForecastSummary(points, 'BTC').startingBalance).toBe(0.01249993);
+  });
+
+  it('draws two wallets and their total at eight places', () => {
     const result = buildMultiAccountForecast(
-      [wallet(), wallet({ id: 'w-2', name: 'Cold', currentBalance: 0.0123 })],
-      [], 'week', ['w-1', 'w-2'],
+      [wallet(), wallet({ id: 'w-2', name: 'Cold', currentBalance: 0.00747493 })],
+      [], 'week', ['w-1', 'w-2'], spend('w-2'),
     );
-    expect(result.points[0].balances).toEqual({ 'w-1': 0.0051, 'w-2': 0.0123 });
-    expect(result.points[0].balance).toBe(0.0174);
+    expect(result.points[0].balances).toEqual({ 'w-1': 0.01249993, 'w-2': 0.00747493 });
+    expect(result.points[0].balance).toBe(0.01997486);
+    const after = result.points.find(p => p.date === '2025-01-16');
+    expect(after?.balances).toEqual({ 'w-1': 0.01249993, 'w-2': 0.00744993 });
+    expect(after?.balance).toBe(0.01994986);
   });
 
   it('rounds a converted line at cents: it is in the reader\'s fiat currency', () => {
@@ -2502,9 +2514,9 @@ describe('forecast of a coin wallet (balances at the coin\'s places, not cents)'
       [], 'week', ['w-1', 'acc-1'], [],
       (amount, code) => (code === 'BTC' ? amount * 123456.789 : amount),
     );
-    // 0.0051 x 123456.789 = 629.6296 at storage precision, 629.63 on the line.
-    expect(result.points[0].balances).toEqual({ 'w-1': 629.63, 'acc-1': 10 });
-    expect(result.points[0].balance).toBe(639.63);
+    // 0.01249993 x 123456.789 = 1543.2012 at the fiat four, 1543.20 on the line.
+    expect(result.points[0].balances).toEqual({ 'w-1': 1543.2, 'acc-1': 10 });
+    expect(result.points[0].balance).toBe(1553.2);
   });
 });
 

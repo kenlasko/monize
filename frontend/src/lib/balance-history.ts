@@ -1,4 +1,4 @@
-import { MONEY_DECIMALS, roundToDecimals, sumMoney } from './format';
+import { FIAT_MONEY_DECIMALS, moneyDecimalsFor, roundToDecimals, sumMoney } from './format';
 
 /**
  * A single day's balance in a Balance History series. `date` must be an ISO
@@ -31,14 +31,14 @@ export interface BalanceSummary {
  * footer does, so other surfaces (e.g. the Account Info widget) show the
  * exact same "Current" figure. Balances are rounded up front to
  * `decimalPlaces` to match the chart's plotted points: the series currency's
- * own places (`getDecimalPlacesForCurrency`, so a 0.0070 BTC wallet stays
- * 0.0070 rather than reading 0.01), the stored money precision when the
- * currency is not known, or `null` to keep each value as given (a price series
+ * own places (`getDecimalPlacesForCurrency`, so a 0.00002500 BTC wallet stays
+ * 0.00002500 rather than reading 0.00), the fiat money precision
+ * (`FIAT_MONEY_DECIMALS`) when the currency is not known, or `null` to keep each value as given (a price series
  * quoted below money precision).
  */
 export function computeBalanceSummary(
   data: ReadonlyArray<DailyBalancePoint>,
-  decimalPlaces: number | null = MONEY_DECIMALS,
+  decimalPlaces: number | null = FIAT_MONEY_DECIMALS,
 ): BalanceSummary | null {
   if (data.length === 0) return null;
 
@@ -106,9 +106,10 @@ export function computeBalanceSummary(
 
 /**
  * The mean of a daily balance series, rounded to `decimalPlaces` (the
- * account currency's own places; the stored money precision when it is not
- * known). Summed in integer units of the storage precision (`sumMoney`) so a
- * long series does not drift, and divided once.
+ * account currency's own places; the fiat money precision when it is not
+ * known). Summed exactly at that currency's money precision
+ * (`sumMoney(..., moneyDecimalsFor(decimalPlaces))`: four for fiat, a coin's
+ * eight) so a long series does not drift, and divided once.
  *
  * `null` when the mean cannot be stated: an empty series, or one with a day
  * whose balance is unknown. The mean of the days that happen to be known is not
@@ -116,7 +117,7 @@ export function computeBalanceSummary(
  */
 export function averageDailyBalance(
   data: ReadonlyArray<DailyBalancePoint>,
-  decimalPlaces: number = MONEY_DECIMALS,
+  decimalPlaces: number = FIAT_MONEY_DECIMALS,
 ): number | null {
   if (data.length === 0) return null;
   const balances: number[] = [];
@@ -124,7 +125,10 @@ export function averageDailyBalance(
     if (point.balance === null) return null;
     balances.push(point.balance);
   }
-  return roundToDecimals(sumMoney(balances) / balances.length, decimalPlaces);
+  return roundToDecimals(
+    sumMoney(balances, moneyDecimalsFor(decimalPlaces)) / balances.length,
+    decimalPlaces,
+  );
 }
 
 /**

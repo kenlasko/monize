@@ -603,30 +603,48 @@ describe('ReconcilePage', () => {
       expect(screen.getByText('Finish Reconciliation')).toBeDisabled();
     });
 
-    it('compares a coin wallet at its own places, so a sub-cent difference still blocks Finish', async () => {
-      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    const coinReconcile = async (statementBalance: string) => {
+      mockGetAll.mockResolvedValue([
+        ...mockAccounts,
+        { id: 'acc-btc', name: 'Bitcoin Wallet', accountType: 'CRYPTO', accountSubType: null, currencyCode: 'BTC', currentBalance: 0.00747493, isClosed: false },
+      ]);
+      mockGetReconciliationData.mockResolvedValue({
+        transactions: [
+          { id: 'tx-buy', transactionDate: '2026-02-01', payee: null, payeeName: 'Exchange', category: null, amount: '0.01249993', status: TransactionStatus.CLEARED },
+          { id: 'tx-fee', transactionDate: '2026-02-03', payee: null, payeeName: 'Network fee', category: null, amount: '-0.00002500', status: TransactionStatus.CLEARED },
+          { id: 'tx-sale', transactionDate: '2026-02-03', payee: null, payeeName: 'Sale', category: null, amount: '-0.00500000', status: TransactionStatus.CLEARED },
+        ],
+        reconciledBalance: 0,
+        clearedBalance: 0.00747493,
+        difference: 0,
+      });
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Bitcoin Wallet/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-btc' } });
+      fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: statementBalance } });
+      fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
+      await waitFor(() => expect(screen.getByText('Statement Balance')).toBeInTheDocument(), { timeout: 3000 });
+    };
+
+    it('compares a coin wallet at its own eight places, so a fee-sized difference still blocks Finish', async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
       try {
-        mockGetAll.mockResolvedValue([
-          ...mockAccounts,
-          { id: 'acc-btc', name: 'Bitcoin Wallet', accountType: 'CRYPTO', accountSubType: null, currencyCode: 'BTC', currentBalance: 0.007, isClosed: false },
-        ]);
-        mockGetReconciliationData.mockResolvedValue({
-          transactions: [
-            { id: 'tx-btc', transactionDate: '2026-02-01', payee: null, payeeName: 'Exchange', category: null, amount: 0.0019, status: TransactionStatus.CLEARED },
-          ],
-          reconciledBalance: 0,
-          clearedBalance: 0.0019,
-          difference: 0.0051,
-        });
-        render(<ReconcilePage />);
-        await waitFor(() => expect(screen.getByText(/Bitcoin Wallet/)).toBeInTheDocument(), { timeout: 3000 });
-        fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-btc' } });
-        fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '0.007' } });
-        fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
-        await waitFor(() => expect(screen.getByText('Statement Balance')).toBeInTheDocument(), { timeout: 3000 });
-        // 0.0070 - 0.0019 = 0.0051. Rounded to cents it read 0.01, within the
-        // old one-cent tolerance, and the reconciliation could finish unbalanced.
+        // The statement omits the 2,500-satoshi fee: 0.00749993 against
+        // 0.00747493 cleared. At four places both read 0.0075, and at the old
+        // one-cent tolerance the reconciliation could finish unbalanced.
+        await coinReconcile('0.00749993');
         expect(screen.getByText('Finish Reconciliation')).toBeDisabled();
+      } finally {
+        clearCurrencyDecimals();
+      }
+    });
+
+    it('lets a coin wallet that balances to the satoshi finish', async () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
+      try {
+        await coinReconcile('0.00747493');
+        // The tolerance is 10 ** -8, one satoshi: a difference of zero is within it.
+        expect(screen.getByText('Finish Reconciliation')).not.toBeDisabled();
       } finally {
         clearCurrencyDecimals();
       }

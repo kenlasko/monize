@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { buildCurrencySchema } from './currency-form-schema';
+import { buildCurrencySchema, CRYPTO_DEFAULT_DECIMAL_PLACES } from './currency-form-schema';
 
 const t = (key: string) => key;
 const schema = buildCurrencySchema(t);
 
-const base = { code: 'BTC', name: 'Bitcoin', symbol: 'B', decimalPlaces: 4 };
+const base = { code: 'BTC', name: 'Bitcoin', symbol: 'B', decimalPlaces: 8 };
 
 function issues(input: Record<string, unknown>) {
   const result = schema.safeParse(input);
@@ -44,8 +44,18 @@ describe('currency form schema', () => {
     );
   });
 
-  it('refuses an unknown kind and more than four places', () => {
+  it('refuses an unknown kind and more than eight places', () => {
     expect(issues({ ...base, kind: 'TOKEN' }).some((i) => i.startsWith('kind:'))).toBe(true);
-    expect(issues({ ...base, kind: 'CRYPTO', decimalPlaces: 5 }).some((i) => i.startsWith('decimalPlaces:'))).toBe(true);
+    expect(issues({ ...base, kind: 'CRYPTO', decimalPlaces: 9 }).some((i) => i.startsWith('decimalPlaces:'))).toBe(true);
+  });
+
+  it('accepts a coin at up to eight places', () => {
+    for (const decimalPlaces of [5, 6, 8]) {
+      expect(issues({ ...base, kind: 'CRYPTO', decimalPlaces }).some((i) => i.startsWith('decimalPlaces:'))).toBe(false);
+    }
+  });
+
+  it('starts a coin at eight places', () => {
+    expect(CRYPTO_DEFAULT_DECIMAL_PLACES).toBe(8);
   });
 });

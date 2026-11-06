@@ -45,7 +45,15 @@ import {
 } from '@/lib/transaction-sort';
 import { PHONE_HEADER_CLASS } from '@/components/ui/Table';
 import { walkRunningBalances } from '@/lib/running-balance';
-import { balanceColor, gainLossColor } from '@/lib/format';
+import {
+  balanceColor,
+  FIAT_MONEY_DECIMALS,
+  gainLossColor,
+  moneyDecimalsForCurrency,
+  roundMoney,
+  sumMoney,
+} from '@/lib/format';
+import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 
 interface TransactionListProps {
@@ -617,23 +625,36 @@ export function TransactionList({
   // causes only some splits to be returned, the sum of visible splits
   // will differ from the parent transaction amount.  In that case show
   // only the filtered total so the amount column matches what the user
-  // sees in the category column.
+  // sees in the category column. Compared exactly at the row currency's money
+  // precision (four for fiat, a coin's eight); a coin's places come from the
+  // currency decimals registry, so its version is a dep.
+  const registryVersion = useCurrencyDecimalsVersion();
   const displayAmounts = useMemo(() => {
     const map = new Map<string, number>();
     for (const tx of transactions) {
       if (tx.isSplit && tx.splits && tx.splits.length > 0) {
-        const splitsSumCents = tx.splits.reduce(
-          (sum, s) => sum + Math.round(Number(s.amount) * 10000),
-          0,
-        );
-        const txAmountCents = Math.round(Number(tx.amount) * 10000);
-        if (splitsSumCents !== txAmountCents) {
-          map.set(tx.id, splitsSumCents / 10000);
+        const decimals = moneyDecimalsForCurrency(tx.currencyCode);
+        const splitsSum = sumMoney(tx.splits.map((s) => Number(s.amount)), decimals);
+        if (splitsSum !== roundMoney(Number(tx.amount), decimals)) {
+          map.set(tx.id, splitsSum);
         }
       }
     }
     return map;
-  }, [transactions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
+  }, [transactions, registryVersion]);
+
+  // The running balance walks the page at its rows' money precision: one
+  // account's register is one currency, and the widest keeps a coin's eight.
+  const runningBalanceDecimals = useMemo(
+    () =>
+      transactions.reduce(
+        (widest, tx) => Math.max(widest, moneyDecimalsForCurrency(tx.currencyCode)),
+        FIAT_MONEY_DECIMALS,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
+    [transactions, registryVersion],
+  );
 
   // The running balance beside each row: the backend's starting balance run
   // down the page, with a filtered split's visible total standing in where it
@@ -644,8 +665,15 @@ export function TransactionList({
   // both directions: the seed is the balance after the page's NEWEST row, so
   // an oldest-first page is reversed before it is walked.
   const runningBalances = useMemo(
-    () => walkRunningBalances(transactions, startingBalance, dataSort?.direction ?? 'desc', displayAmounts),
-    [transactions, startingBalance, dataSort?.direction, displayAmounts],
+    () =>
+      walkRunningBalances(
+        transactions,
+        startingBalance,
+        dataSort?.direction ?? 'desc',
+        displayAmounts,
+        runningBalanceDecimals,
+      ),
+    [transactions, startingBalance, dataSort?.direction, displayAmounts, runningBalanceDecimals],
   );
 
   const formatAmount = useCallback((amount: number, currencyCode?: string) => {

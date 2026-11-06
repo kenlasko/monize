@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from './currency-decimals';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { bookSplitRowsAtMinorUnit, bookSplitsAtMinorUnit, minorUnitAbsorbIndex } from './minor-unit-booking';
@@ -78,5 +79,42 @@ describe('bookSplitRowsAtMinorUnit', () => {
       bookSplitRowsAtMinorUnit([{ splitType: 'investment', amount: -100.0001 }], -100.0001, 'EUR', null),
     ).toBeNull();
     expect(bookSplitRowsAtMinorUnit([], -10, 'EUR', null)).toBeNull();
+  });
+
+  describe('a coin', () => {
+    afterEach(() => {
+      clearCurrencyDecimals();
+    });
+    const coinRows = [
+      { id: 'r1', splitType: 'transfer', transferAccountId: 'chq', amount: -0.005 },
+      { id: 'r2', splitType: 'category', categoryId: 'fees', amount: -0.000025 },
+    ];
+
+    it('books a registered eight-place coin at its satoshis, nothing moved', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
+      expect(bookSplitRowsAtMinorUnit(coinRows, -0.005025, 'BTC', null)).toEqual({
+        rows: coinRows,
+        parentAmount: -0.005025,
+      });
+    });
+
+    it('balances at eight places: a one-satoshi gap is not read as balanced', () => {
+      registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
+      expect(bookSplitRowsAtMinorUnit(coinRows, -0.00502501, 'BTC', null)).toEqual({
+        rows: coinRows,
+        parentAmount: -0.00502501,
+      });
+      expect(bookSplitsAtMinorUnit([-0.005, -0.000025], -0.00502501, 8, 0)).toEqual({
+        amounts: [-0.005, -0.000025],
+        parentAmount: -0.00502501,
+      });
+    });
+
+    it('books a coin the registry does not hold yet at the column scale, not Intl\'s two', () => {
+      expect(bookSplitRowsAtMinorUnit(coinRows, -0.005025, 'BTC', null)).toEqual({
+        rows: coinRows,
+        parentAmount: -0.005025,
+      });
+    });
   });
 });

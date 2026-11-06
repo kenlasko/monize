@@ -295,20 +295,33 @@ describe('CurrencyForm', () => {
       chooseCrypto();
       expect(quoteInput()).toBeInTheDocument();
       expect(screen.getByText('Without a price symbol the currency has no exchange rate.')).toBeInTheDocument();
-      expect(screen.getByText(/kept to at most four decimal places/)).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          /kept to up to eight decimal places, the precision they are stored at, so a fee smaller than 0\.00000001 cannot be entered/,
+        ),
+      ).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'See how to record wallet fees' })).toHaveAttribute(
         'href',
         'https://www.monize.net/docs/accounts#cryptocurrency-wallets',
       );
     });
 
-    it('defaults a coin to four decimal places and a fiat currency back to two', () => {
+    it('defaults a coin to eight decimal places and a fiat currency back to two', () => {
       render(<CurrencyForm onSubmit={onSubmit} onCancel={onCancel} />);
       expect(screen.getByLabelText('Decimal Places')).toHaveValue('2');
       chooseCrypto();
-      expect(screen.getByLabelText('Decimal Places')).toHaveValue('4');
+      expect(screen.getByLabelText('Decimal Places')).toHaveValue('8');
       fireEvent.click(screen.getByRole('button', { name: 'Fiat Currency' }));
       expect(screen.getByLabelText('Decimal Places')).toHaveValue('2');
+    });
+
+    it('holds decimal places at the eight a money column carries: 9 is refused', () => {
+      render(<CurrencyForm onSubmit={onSubmit} onCancel={onCancel} />);
+      chooseCrypto();
+      const decimals = screen.getByLabelText('Decimal Places');
+      fireEvent.change(decimals, { target: { value: '9' } });
+      fireEvent.blur(decimals);
+      expect(screen.getByLabelText('Decimal Places')).toHaveValue('8');
     });
 
     it('leaves decimal places the reader typed alone when the kind changes', () => {
@@ -334,7 +347,7 @@ describe('CurrencyForm', () => {
         code: 'BTC',
         name: 'Bitcoin',
         symbol: 'B',
-        decimalPlaces: 4,
+        decimalPlaces: 8,
         kind: 'CRYPTO',
         quoteSymbol: 'BTC-EUR',
       });
@@ -365,7 +378,7 @@ describe('CurrencyForm', () => {
       code: 'BTC',
       name: 'Bitcoin',
       symbol: 'B',
-      decimalPlaces: 4,
+      decimalPlaces: 8,
       isActive: true,
       isSystem: false,
       createdAt: '2026-11-05T00:00:00Z',
@@ -409,7 +422,7 @@ describe('CurrencyForm', () => {
         code: 'BTC',
         name: 'Bitcoin',
         symbol: 'B',
-        decimalPlaces: 4,
+        decimalPlaces: 8,
         kind: 'CRYPTO',
         quoteSymbol: 'BTC-CAD',
       });

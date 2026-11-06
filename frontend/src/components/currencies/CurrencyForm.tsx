@@ -17,6 +17,7 @@ import { quoteSymbolFiat } from '@/lib/crypto-quote-symbol';
 import { createLogger } from '@/lib/logger';
 import { getErrorCode, getErrorMessage } from '@/lib/errors';
 import { useTranslations } from 'next-intl';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
 import { FormActions } from '@/components/ui/FormActions';
@@ -26,6 +27,7 @@ import { RateHistoryCoverage } from './RateHistoryCoverage';
 import {
   buildCurrencySchema,
   CRYPTO_DEFAULT_DECIMAL_PLACES,
+  MAX_CURRENCY_DECIMAL_PLACES,
   FIAT_DEFAULT_DECIMAL_PLACES,
   type CurrencyFormData,
 } from './currency-form-schema';
@@ -73,6 +75,7 @@ interface CurrencyFormProps {
 
 export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, submitRef, onReactivate, inUse = false }: CurrencyFormProps) {
   const t = useTranslations('currencies');
+  const { formatNumber } = useNumberFormat();
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [hasLookupResult, setHasLookupResult] = useState(false);
   // Set to the currency code when a create is blocked because that currency is
@@ -429,7 +432,7 @@ export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, subm
             label={t('form.decimalPlacesLabel')}
             decimalPlaces={0}
             min={0}
-            max={4}
+            max={MAX_CURRENCY_DECIMAL_PLACES}
             error={errors.decimalPlaces?.message}
             value={field.value}
             onChange={(value) => {
@@ -476,6 +479,8 @@ export function CurrencyForm({ currency, onSubmit, onCancel, onDirtyChange, subm
         >
           <p className="text-sm text-blue-700 dark:text-blue-300">
             {t.rich('form.cryptoPrecisionNotice', {
+              // The smallest amount a coin at the most places can hold.
+              smallest: formatNumber(10 ** -MAX_CURRENCY_DECIMAL_PLACES, MAX_CURRENCY_DECIMAL_PLACES),
               guide: (chunks) => (
                 <a
                   href={docsUrl('cryptoWallets')}

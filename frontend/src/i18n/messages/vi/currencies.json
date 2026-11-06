@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} đã có trong danh sách của bạn nhưng đang không hoạt động.",
     "nonIsoNotice": "{code} không phải là mã tiền tệ tiêu chuẩn. Nếu đây là tiền mã hóa, hãy đặt loại của nó thành Tiền mã hóa. <guide>Đọc về tiền mã hóa trong hướng dẫn sử dụng</guide>.",
     "switchToCrypto": "Dùng Tiền mã hóa",
-    "cryptoPrecisionNotice": "Số tiền bằng tiền mã hóa chỉ được giữ tối đa bốn chữ số thập phân, nên một khoản rất nhỏ như phí mạng có thể bị làm tròn về không. <guide>Xem cách ghi nhận phí ví</guide>.",
+    "cryptoPrecisionNotice": "Số tiền bằng tiền mã hóa được giữ tối đa tám chữ số thập phân, đúng độ chính xác khi lưu trữ, nên không thể nhập khoản phí nhỏ hơn {smallest}. <guide>Xem cách ghi nhận phí ví</guide>.",
     "reactivateButton": "Kích hoạt lại {code}",
     "reactivating": "Đang kích hoạt lại..."
   },

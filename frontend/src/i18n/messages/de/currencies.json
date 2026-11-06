@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} ist bereits in Ihrer Liste, aber inaktiv.",
     "nonIsoNotice": "{code} ist kein Standard-Währungscode. Handelt es sich um eine Kryptowährung, setzen Sie die Art auf Kryptowährung. <guide>Mehr zu Kryptowährungen im Benutzerhandbuch</guide>.",
     "switchToCrypto": "Kryptowährung verwenden",
-    "cryptoPrecisionNotice": "Beträge in einer Kryptowährung werden auf höchstens vier Dezimalstellen geführt, daher kann ein sehr kleiner Betrag wie eine Netzwerkgebühr auf null gerundet werden. <guide>So erfassen Sie Wallet-Gebühren</guide>.",
+    "cryptoPrecisionNotice": "Beträge in einer Kryptowährung werden mit bis zu acht Dezimalstellen geführt, der Genauigkeit, mit der sie gespeichert werden; eine Gebühr unter {smallest} kann daher nicht erfasst werden. <guide>So erfassen Sie Wallet-Gebühren</guide>.",
     "reactivateButton": "{code} reaktivieren",
     "reactivating": "Wird reaktiviert..."
   },

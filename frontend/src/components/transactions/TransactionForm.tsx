@@ -29,6 +29,7 @@ import {
   roundToDecimals,
   roundToEntryPlaces,
   entryDecimalPlaces,
+  moneyDecimalsForCurrency,
 } from '@/lib/format';
 import {
   getRememberedTransactionCurrency,
@@ -111,9 +112,25 @@ type TransactionFormData = z.infer<ReturnType<typeof buildTransactionSchema>>;
  * so loading it here would re-price the transfer on an unedited save.
  */
 function transferSourceAmount(source: Transaction): number {
+  return Math.abs(Number(transferSourceLeg(source).amount));
+}
+
+/** The FROM (negative) leg of a transfer, whichever leg the form was opened on. */
+function transferSourceLeg(source: Transaction): Transaction {
   const linked = source.linkedTransaction;
-  const fromLeg = Number(source.amount) >= 0 && linked ? linked : source;
-  return Math.abs(Number(fromLeg.amount));
+  return Number(source.amount) >= 0 && linked ? linked : source;
+}
+
+/**
+ * The money precision of the amount a form loads from `source`: its own
+ * currency's, or for a transfer the FROM leg's, whose amount the form shows.
+ */
+function loadedAmountDecimals(source: Transaction): number {
+  return moneyDecimalsForCurrency(
+    source.isTransfer
+      ? (transferSourceLeg(source).currencyCode ?? source.currencyCode)
+      : source.currencyCode,
+  );
 }
 
 /**
@@ -122,9 +139,10 @@ function transferSourceAmount(source: Transaction): number {
  * fields (payee, category, notes, reference) leaves the reconciliation intact
  * and should save without a warning. Returns true only when the submitted date
  * or amount differs from the original, in which case the edit is gated behind a
- * confirmation. Amounts are compared at the server's four decimals, the
- * precision the form loads them with, so float drift never triggers a warning
- * and a sub-cent change is not missed.
+ * confirmation. Amounts are compared at the server's precision for the
+ * row's currency (four for fiat, a coin's eight), the precision the form
+ * loads them with, so float drift never triggers a warning and a sub-cent (or
+ * one-satoshi) change is not missed.
  */
 function reconciledEditAffectsReconciliation(
   original: Transaction,
@@ -136,7 +154,9 @@ function reconciledEditAffectsReconciliation(
   const originalAmount = original.isTransfer
     ? transferSourceAmount(original)
     : Number(original.amount);
-  const amountChanged = roundMoney(Number(data.amount)) !== roundMoney(originalAmount);
+  const decimals = loadedAmountDecimals(original);
+  const amountChanged =
+    roundMoney(Number(data.amount), decimals) !== roundMoney(originalAmount, decimals);
   return dateChanged || amountChanged;
 }
 
@@ -446,11 +466,12 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           payeeId: initSource.payeeId || '',
           payeeName: initSource.payeeName || '',
           categoryId: initSource.categoryId || '',
-          // As stored (four decimals), so an unedited save re-sends it. For
-          // transfers, the source (FROM) leg's absolute amount.
+          // As stored (its currency's money precision: four for fiat, a
+          // coin's eight), so an unedited save re-sends it. For transfers, the
+          // source (FROM) leg's absolute amount.
           amount: initSource.isTransfer
-            ? roundMoney(transferSourceAmount(initSource))
-            : roundMoney(Number(initSource.amount)),
+            ? roundMoney(transferSourceAmount(initSource), loadedAmountDecimals(initSource))
+            : roundMoney(Number(initSource.amount), loadedAmountDecimals(initSource)),
           currencyCode: initSource.currencyCode,
           description: initSource.description || '',
           referenceNumber: initSource.referenceNumber || '',
@@ -639,8 +660,15 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     // restores the pair as it was loaded.
     const leavingTransfer = !!transaction?.isTransfer && newMode !== 'transfer';
     let amountForSplits = watchedAmount || 0;
+    // The currency the split rows are in: the row's own when leaving a stored
+    // transfer (its account comes back), else the account's.
+    const splitsCurrency =
+      leavingTransfer && transaction ? transaction.currencyCode : accountCurrency;
     if (leavingTransfer && transaction) {
-      amountForSplits = roundMoney(Number(transaction.amount));
+      amountForSplits = roundMoney(
+        Number(transaction.amount),
+        moneyDecimalsForCurrency(transaction.currencyCode),
+      );
       setValue('accountId', transaction.accountId, { shouldDirty: true });
       setValue('amount', amountForSplits, { shouldDirty: true, shouldValidate: true });
     } else if (
@@ -653,14 +681,14 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     ) {
       // Leaving a Transfer tab that only previewed this row (it is not a
       // stored transfer): restore the negative sign Transfer forced away.
-      amountForSplits = roundMoney(-Math.abs(watchedAmount));
+      amountForSplits = roundMoney(-Math.abs(watchedAmount), moneyDecimalsForCurrency(accountCurrency));
       setValue('amount', amountForSplits, { shouldDirty: true, shouldValidate: true });
     }
 
     if (newMode === 'split') {
       setIsSplitMode(true);
       if (splits.length === 0) {
-        setSplits(createEmptySplits(amountForSplits));
+        setSplits(createEmptySplits(amountForSplits, splitsCurrency));
       }
       setTransferToAccountId('');
     } else if (newMode === 'transfer') {
@@ -670,7 +698,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
         setValue('accountId', initialTransferAccounts.fromAccountId || transaction.accountId, {
           shouldDirty: true,
         });
-        setValue('amount', roundMoney(transferSourceAmount(transaction)), {
+        setValue('amount', roundMoney(transferSourceAmount(transaction), loadedAmountDecimals(transaction)), {
           shouldDirty: true,
           shouldValidate: true,
         });
@@ -1027,20 +1055,25 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   //   amount = base + fee
 
   // The converted account-currency base shown in the FX panel (before fee), the
-  // fee itself, and the resulting total charged to the account.
+  // fee itself, and the resulting total charged to the account, all at the
+  // account currency's money precision (four for fiat, a coin's eight).
+  const accountMoneyDecimals = moneyDecimalsForCurrency(accountCurrency);
   const convertedBase =
     isForeign && foreignAmount !== undefined && fxRate != null
-      ? roundMoney(foreignAmount * fxRate)
+      ? roundMoney(foreignAmount * fxRate, accountMoneyDecimals)
       : undefined;
   const fxFeePercent = selectedAccount?.fxFeePercent ?? undefined;
   const fxFeeApplies =
     isForeign && convertedBase !== undefined && !!fxFeePercent && fxFeePercent > 0;
   const fxFeeAmount = fxFeeApplies
-    ? -roundMoney((Math.abs(convertedBase as number) * (fxFeePercent as number)) / 100)
+    ? -roundMoney(
+        (Math.abs(convertedBase as number) * (fxFeePercent as number)) / 100,
+        accountMoneyDecimals,
+      )
     : 0;
   const fxTotal =
     convertedBase !== undefined
-      ? roundMoney(convertedBase + fxFeeAmount)
+      ? roundMoney(convertedBase + fxFeeAmount, accountMoneyDecimals)
       : undefined;
 
   // Recompute the account-currency `amount` from the foreign amount and rate.
@@ -1054,13 +1087,13 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   ) => {
     if (fAmount === undefined || rate == null) return;
     const base =
-      overrideBase !== undefined ? overrideBase : roundMoney(fAmount * rate);
+      overrideBase !== undefined ? overrideBase : roundMoney(fAmount * rate, accountMoneyDecimals);
     const feePercent = selectedAccount?.fxFeePercent;
     const fee =
       feePercent && feePercent > 0
-        ? -roundMoney((Math.abs(base) * feePercent) / 100)
+        ? -roundMoney((Math.abs(base) * feePercent) / 100, accountMoneyDecimals)
         : 0;
-    setValue('amount', roundMoney(base + fee), {
+    setValue('amount', roundMoney(base + fee, accountMoneyDecimals), {
       shouldDirty: true,
       shouldValidate: true,
     });
@@ -1524,10 +1557,12 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       // Validate splits sum to amount if in split mode
       if (isSplitMode && splitsData) {
         // At the server's precision: it requires the lines to equal the parent
-        // exactly at four decimals, so a one-cent tolerance here let through a
-        // set the server refuses and refused a stored four-decimal set.
-        const roundedSplitsTotal = sumMoney(splitsData.map((s) => s.amount));
-        const roundedAmount = roundMoney(data.amount);
+        // exactly at the currency's money precision (four for fiat, a coin's
+        // eight), so a one-cent tolerance here let through a set the server
+        // refuses and refused a stored four-decimal set.
+        const splitsMoneyDecimals = moneyDecimalsForCurrency(splitCurrencyCode);
+        const roundedSplitsTotal = sumMoney(splitsData.map((s) => s.amount), splitsMoneyDecimals);
+        const roundedAmount = roundMoney(data.amount, splitsMoneyDecimals);
         if (roundedSplitsTotal !== roundedAmount) {
           toast.error(t('form.toasts.splitsNotEqual', { splitTotal: roundedSplitsTotal, txAmount: roundedAmount }));
           setIsLoading(false);

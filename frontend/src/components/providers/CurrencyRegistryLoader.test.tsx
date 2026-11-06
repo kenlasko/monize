@@ -31,7 +31,7 @@ const BTC = {
   code: 'BTC',
   name: 'Bitcoin',
   symbol: 'B',
-  decimalPlaces: 4,
+  decimalPlaces: 8,
   isActive: true,
   isSystem: false,
   createdAt: '2026-11-05T00:00:00Z',
@@ -59,7 +59,7 @@ describe('CurrencyRegistryLoader', () => {
     await renderLoader();
     expect(mockGetCurrencies).toHaveBeenCalledTimes(1);
     expect(mockGetCurrencies).toHaveBeenCalledWith(true);
-    expect(decimalPlacesForCurrency('BTC')).toBe(4);
+    expect(decimalPlacesForCurrency('BTC')).toBe(8);
   });
 
   it('registers each currency\'s stored symbol with its places', async () => {
@@ -83,7 +83,7 @@ describe('CurrencyRegistryLoader', () => {
   });
 
   it('loads nothing while signed out, and empties the registry', async () => {
-    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 4 }]);
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
     authState = { isAuthenticated: false, _hasHydrated: true };
     await renderLoader();
     expect(mockGetCurrencies).not.toHaveBeenCalled();
@@ -101,7 +101,7 @@ describe('CurrencyRegistryLoader', () => {
 
   it('empties on sign-out and loads again on the next sign-in', async () => {
     const { rerender } = await renderLoader();
-    expect(decimalPlacesForCurrency('BTC')).toBe(4);
+    expect(decimalPlacesForCurrency('BTC')).toBe(8);
 
     authState = { isAuthenticated: false, _hasHydrated: true };
     await act(async () => {
@@ -114,7 +114,7 @@ describe('CurrencyRegistryLoader', () => {
       rerender(<CurrencyRegistryLoader />);
     });
     expect(mockGetCurrencies).toHaveBeenCalledTimes(2);
-    expect(decimalPlacesForCurrency('BTC')).toBe(4);
+    expect(decimalPlacesForCurrency('BTC')).toBe(8);
   });
 
   it('drops an answer that arrives after the session it was for ended', async () => {
@@ -142,7 +142,7 @@ describe('CurrencyRegistryLoader', () => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
     expect(mockGetCurrencies).toHaveBeenCalledTimes(2);
-    expect(decimalPlacesForCurrency('BTC')).toBe(4);
+    expect(decimalPlacesForCurrency('BTC')).toBe(8);
 
     // Loaded: a later visibility change does not fetch again.
     await act(async () => {
@@ -160,7 +160,7 @@ describe('CurrencyRegistryLoader', () => {
       window.dispatchEvent(new Event('online'));
     });
     expect(mockGetCurrencies).toHaveBeenCalledTimes(2);
-    expect(decimalPlacesForCurrency('BTC')).toBe(4);
+    expect(decimalPlacesForCurrency('BTC')).toBe(8);
   });
 
   it('retries a failed load on the next auth change', async () => {
@@ -177,7 +177,7 @@ describe('CurrencyRegistryLoader', () => {
       rerender(<CurrencyRegistryLoader />);
     });
     expect(mockGetCurrencies).toHaveBeenCalledTimes(2);
-    expect(decimalPlacesForCurrency('BTC')).toBe(4);
+    expect(decimalPlacesForCurrency('BTC')).toBe(8);
   });
 
   it('does not retry while a load is still in flight', async () => {

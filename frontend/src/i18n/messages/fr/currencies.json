@@ -133,7 +133,7 @@
     "inactiveNotice": "{code} figure déjà dans votre liste, mais est inactive.",
     "nonIsoNotice": "{code} n'est pas un code de devise standard. S'il s'agit d'une cryptomonnaie, définissez son type sur Cryptomonnaie. <guide>En savoir plus sur les cryptomonnaies dans le guide d'utilisation</guide>.",
     "switchToCrypto": "Utiliser Cryptomonnaie",
-    "cryptoPrecisionNotice": "Les montants en cryptomonnaie sont conservés avec au plus quatre décimales ; un très petit montant, comme des frais de réseau, peut donc être arrondi à zéro. <guide>Voir comment enregistrer les frais de portefeuille</guide>.",
+    "cryptoPrecisionNotice": "Les montants en cryptomonnaie sont conservés avec jusqu'à huit décimales, la précision à laquelle ils sont enregistrés ; des frais inférieurs à {smallest} ne peuvent donc pas être saisis. <guide>Voir comment enregistrer les frais de portefeuille</guide>.",
     "reactivateButton": "Réactiver {code}",
     "reactivating": "Réactivation..."
   },
