@@ -302,15 +302,10 @@ const ALLOWED = new Map<string, string>([
       "every replica ships the same bundle, so replicas cannot disagree",
   ],
   [
-    "help/help.service.ts#sections",
-    "the guide's section index, derived from the same bundled files; see " +
-      "`#pages`",
-  ],
-  [
     "help/help.service.ts#loaded",
-    "pages of the bundled guide read so far, so each file is read once; the " +
-      "bundle is immutable, so an entry never goes stale and a cold replica " +
-      "costs one file read. See `#pages`",
+    "every page of the bundled guide, read once with the page list so a " +
+      "request never reaches the filesystem; the bundle is immutable, so an " +
+      "entry never goes stale. See `#pages`",
   ],
   [
     "budgets/budgets.service.ts#categoryActualsCache",

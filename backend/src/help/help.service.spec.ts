@@ -130,7 +130,8 @@ describe("HelpService", () => {
       service.getManifest();
       service.getManifest();
 
-      expect(read).toHaveBeenCalledTimes(2); // nav.json and search-index.json
+      // nav.json, search-index.json and the three pages, all on the first call
+      expect(read).toHaveBeenCalledTimes(5);
     });
   });
 
@@ -183,15 +184,33 @@ describe("HelpService", () => {
       ]);
     });
 
-    it("reads each page file once", () => {
+    it("serves pages from memory once the bundle has loaded", () => {
       service.getManifest();
       const read = jest.spyOn(fs, "readFileSync");
 
       const first = service.getPage("first-page");
       const second = service.getPage("first-page");
 
+      expect(first).not.toBeNull();
       expect(second).toBe(first);
-      expect(read).toHaveBeenCalledTimes(1);
+      expect(read).not.toHaveBeenCalled();
+    });
+
+    it("reads only the files nav.json names when the bundle loads", () => {
+      const read = jest.spyOn(fs, "readFileSync");
+
+      service.getManifest();
+
+      const files = read.mock.calls.map(([file]) =>
+        path.basename(String(file)),
+      );
+      expect(files.sort()).toEqual([
+        "first-page.md",
+        "index.md",
+        "nav.json",
+        "search-index.json",
+        "second-page.md",
+      ]);
     });
 
     it("returns null for a page that nav.json lists but whose file is gone", () => {

@@ -32,10 +32,11 @@ interface IndexEntry {
 /**
  * Serves the user guide (`website/docs`) bundled into the backend image, so
  * in-app help matches the running version and works with no network. The
- * bundle never changes while the process runs, so everything is loaded lazily
- * and cached. A page is only ever read by looking its slug up in the set
- * `nav.json` defines (plus the landing page); user input is never joined into
- * a path.
+ * bundle never changes while the process runs, so the whole of it (about 25
+ * small pages) is read once, on first use, and served from memory. The files
+ * read are the ones `nav.json` names (plus the landing page); a request only
+ * looks its slug up in that cache, so nothing it supplies reaches the
+ * filesystem.
  */
 @Injectable()
 export class HelpService {
@@ -46,14 +47,8 @@ export class HelpService {
   // written after that, so replicas (each with the same bundled copy) cannot
   // disagree; see the allowlist entries in process-local-state.guard.spec.ts.
   private readonly pages = new Map<string, HelpPageSummary>();
-  /** Table of contents per slug, derived from the search index. */
-  private readonly sections = new Map<
-    string,
-    { id: string; heading: string }[]
-  >();
-  /** Pages read so far; the bundle is immutable, so an entry never goes stale. */
+  /** Every page, read with the bundle; it is immutable, so none goes stale. */
   private readonly loaded = new Map<string, HelpPage>();
-  private directory: string | null = null;
   private state: "unloaded" | "ready" | "unavailable" = "unloaded";
 
   getManifest(): HelpManifest {
@@ -70,45 +65,12 @@ export class HelpService {
     if (typeof slug !== "string" || !HELP_SLUG_RE.test(slug)) {
       return null;
     }
-    if (!this.load() || this.directory === null) {
+    if (!this.load()) {
       return null;
     }
-    const summary = this.pages.get(slug);
-    if (!summary) {
-      return null;
-    }
-
-    const cached = this.loaded.get(slug);
-    if (cached) {
-      return cached;
-    }
-
-    let markdown: string;
-    try {
-      // `slug` is a key of the nav-derived map, so the file name is trusted.
-      markdown = fs.readFileSync(
-        path.join(this.directory, `${slug}.md`),
-        "utf-8",
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.warn(`Failed to read help page ${slug}: ${message}`);
-      return null;
-    }
-
-    const page: HelpPage = {
-      slug,
-      title: summary.title,
-      group: summary.group,
-      markdown,
-      toc: this.buildToc(slug, markdown, this.sections.get(slug) ?? []),
-      onlineUrl:
-        slug === HELP_INDEX_SLUG
-          ? `${HELP_ONLINE_BASE_URL}/`
-          : `${HELP_ONLINE_BASE_URL}/${slug}`,
-    };
-    this.loaded.set(slug, page);
-    return page;
+    // Every page was read when the bundle loaded, so a request is answered from
+    // memory and nothing it supplies ever reaches a filesystem call.
+    return this.loaded.get(slug) ?? null;
   }
 
   /** Reads the bundle on first use; true when there is a usable one. */
@@ -171,18 +133,49 @@ export class HelpService {
           });
         }
       }
-      this.directory = directory;
+      // Read every page now, by the slugs nav.json defines. A page whose file
+      // is missing is logged and left out, so it answers 404 like an unknown one.
+      const loaded = new Map<string, HelpPage>();
+      for (const [slug, summary] of pages) {
+        const markdown = this.readPage(directory, slug);
+        if (markdown === null) {
+          continue;
+        }
+        loaded.set(slug, {
+          slug,
+          title: summary.title,
+          group: summary.group,
+          markdown,
+          toc: this.buildToc(slug, markdown, sections.get(slug) ?? []),
+          onlineUrl:
+            slug === HELP_INDEX_SLUG
+              ? `${HELP_ONLINE_BASE_URL}/`
+              : `${HELP_ONLINE_BASE_URL}/${slug}`,
+        });
+      }
+
       for (const [slug, summary] of pages) {
         this.pages.set(slug, summary);
       }
-      for (const [slug, list] of sections) {
-        this.sections.set(slug, list);
+      for (const [slug, page] of loaded) {
+        this.loaded.set(slug, page);
       }
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Failed to load the help bundle: ${message}`);
       return false;
+    }
+  }
+
+  /** A page's Markdown; `slug` always comes from nav.json, never a request. */
+  private readPage(directory: string, slug: string): string | null {
+    try {
+      return fs.readFileSync(path.join(directory, `${slug}.md`), "utf-8");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to read help page ${slug}: ${message}`);
+      return null;
     }
   }
 
