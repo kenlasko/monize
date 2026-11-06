@@ -20,6 +20,7 @@ import { FormActions } from "@/components/ui/FormActions";
 import { Skeleton } from "@/components/ui/LoadingSkeleton";
 import { ReportError } from "@/components/reports/ReportError";
 import { SecurityForm } from "@/components/securities/SecurityForm";
+import { securityFormModalProps } from "@/components/securities/security-form-modal";
 import { PlusIcon, SparklesIcon } from "@heroicons/react/24/outline";
 import { useReportData } from "@/hooks/useReportData";
 import { useDateFormat } from "@/hooks/useDateFormat";
@@ -790,8 +791,7 @@ export function GemSettingsForm({
       <Modal
         isOpen={creatingFor !== null}
         onClose={() => setCreatingFor(null)}
-        maxWidth="lg"
-        className="p-6"
+        {...securityFormModalProps}
         title={
           creatingFor
             ? t("gem.settingsForm.addInstrumentFor", {

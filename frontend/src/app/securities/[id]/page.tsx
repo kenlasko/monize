@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { securityFormModalProps } from '@/components/securities/security-form-modal';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -626,21 +627,16 @@ function SecurityDetailContent() {
         <Modal
           isOpen={isEditing}
           onClose={() => setIsEditing(false)}
-          maxWidth="3xl"
-          className="p-6"
+          {...securityFormModalProps}
+          title={ts('page.modalTitleEdit')}
           pushHistory
         >
           {isEditing && (
-            <>
-              <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {ts('page.modalTitleEdit')}
-              </h2>
-              <SecurityForm
-                security={security}
-                onSubmit={handleEditSubmit}
-                onCancel={() => setIsEditing(false)}
-              />
-            </>
+            <SecurityForm
+              security={security}
+              onSubmit={handleEditSubmit}
+              onCancel={() => setIsEditing(false)}
+            />
           )}
         </Modal>
       </main>

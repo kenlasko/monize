@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Modal } from '@/components/ui/Modal';
+import { transactionModalProps } from '@/components/transactions/transaction-modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SharedFileList } from '@/components/share/SharedFileList';
 import { ShareDestinations } from '@/components/share/ShareDestinations';
@@ -350,8 +351,7 @@ function ShareContent() {
         isOpen={showForm}
         onClose={() => setShowForm(false)}
         title={t('newTransactionTitle')}
-        maxWidth="6xl"
-        className="p-6 !max-w-[69rem]"
+        {...transactionModalProps}
         pushHistory
       >
         <TransactionForm

@@ -87,6 +87,7 @@ import {
 import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/outline';
 import { Modal } from '@/components/ui/Modal';
+import { transactionModalProps } from '@/components/transactions/transaction-modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -1526,7 +1527,7 @@ function TransactionsContent() {
         <UnsavedChangesDialog {...categoryModal.unsavedChangesDialog} />
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={handleClose} {...modalProps} maxWidth="6xl" className="p-6 !max-w-[69rem]" title={editingTransaction ? t('page.editModal.editTitle') : duplicatingFrom ? t('page.editModal.duplicateTitle') : t('page.editModal.newTitle')}>
+        <Modal isOpen={showForm} onClose={handleClose} {...modalProps} {...transactionModalProps} title={editingTransaction ? t('page.editModal.editTitle') : duplicatingFrom ? t('page.editModal.duplicateTitle') : t('page.editModal.newTitle')}>
           <TransactionForm
             key={`${editingTransaction?.id || 'new'}-${duplicatingFrom?.id || ''}-${filters.filterAccountIds.join(',')}-${createOnDate || ''}-${formKey}`}
             transaction={editingTransaction}

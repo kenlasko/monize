@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/Modal';
+import { transactionModalProps } from '@/components/transactions/transaction-modal';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { TransactionList } from '@/components/transactions/TransactionList';
 import { useFormModal } from '@/hooks/useFormModal';
@@ -199,12 +200,9 @@ export function CategoryTransactionsTab({
         isOpen={showForm}
         onClose={close}
         {...modalProps}
-        maxWidth="2xl"
-        className="p-6"
+        {...transactionModalProps}
+        title={tt('page.editModal.editTitle')}
       >
-        <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {tt('page.editModal.editTitle')}
-        </h2>
         {showForm && editingItem && (
           <TransactionForm
             transaction={editingItem}

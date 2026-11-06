@@ -13,6 +13,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useBrokerageFilterOptions } from '@/hooks/useBrokerageFilterOptions';
 import { Modal } from '@/components/ui/Modal';
+import { transactionModalProps } from '@/components/transactions/transaction-modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import {
   InvestmentTransactionList,
@@ -28,7 +29,7 @@ import {
   type CashFilterValues,
 } from '@/components/investments/CashRegisterFilters';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
-import { investmentTransactionModalClass } from '@/components/investments/investment-transaction-modal';
+import { investmentTransactionModalProps } from '@/components/investments/investment-transaction-modal';
 import { TransactionList } from '@/components/transactions/TransactionList';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import {
@@ -419,8 +420,7 @@ export function InvestmentRegisterPanel({
         isOpen={brokerageForm.showForm}
         onClose={closeBrokerageForm}
         {...brokerageForm.modalProps}
-        maxWidth={brokerageFormNeedsConversion ? '3xl' : 'xl'}
-        className={investmentTransactionModalClass(brokerageFormNeedsConversion)}
+        {...investmentTransactionModalProps(brokerageFormNeedsConversion)}
         // The same title the Investments page's copy of this modal carries,
         // from the same keys: one register drawn on two pages should not
         // announce itself differently on each.
@@ -453,8 +453,7 @@ export function InvestmentRegisterPanel({
             isOpen={cashForm.showForm}
             onClose={cashForm.close}
             {...cashForm.modalProps}
-            maxWidth="6xl"
-            className="p-6 !max-w-[69rem]"
+            {...transactionModalProps}
             title={cashForm.editingItem ? tInv('page.editTransaction') : tInv('page.newTransaction')}
           >
             <TransactionForm

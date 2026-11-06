@@ -15,6 +15,7 @@ import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { Modal } from '@/components/ui/Modal';
 import { SecurityForm } from '@/components/securities/SecurityForm';
+import { securityFormModalProps } from '@/components/securities/security-form-modal';
 import {
   BOND_SERIES_ERROR_CODES,
   BondSeriesSelect,
@@ -1895,10 +1896,12 @@ function InvestmentTransactionFormFields({
       />
     </form>
 
-    <Modal isOpen={newSecurityDefaults !== null} onClose={() => setNewSecurityDefaults(null)} maxWidth="lg" className="p-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-        {t('transactionForm.newSecurity')}
-      </h2>
+    <Modal
+      isOpen={newSecurityDefaults !== null}
+      onClose={() => setNewSecurityDefaults(null)}
+      {...securityFormModalProps}
+      title={t('transactionForm.newSecurity')}
+    >
       <SecurityForm
         defaults={newSecurityDefaults ?? undefined}
         onSubmit={handleSecurityCreated}

@@ -29,7 +29,7 @@ Rules that describe the majority of today's code bind new and changed code. Wher
 
 **Layout of a form dialog** (the New Transaction dialog in `app/transactions/page.tsx` and `TransactionForm.tsx`):
 
-- **Panel.** `Modal` keeps `padding="none"`; the panel's `p-6` comes through `className`. The title is `mb-4` above the form, and the form body is `space-y-4`. A host of `TransactionForm` passes `maxWidth="6xl" className="p-6 !max-w-[69rem]"`, as Transactions, Reconcile, Bills and the foreign-currency fees surfaces do, so the dialog has one size wherever it opens. Not every host does yet (see [Known debt](#known-debt)).
+- **Panel.** `Modal` keeps `padding="none"`; the panel's `p-6` comes through `className`. The title is `mb-4` above the form, and the form body is `space-y-4`. A form dialog has one size wherever it opens: a host of `TransactionForm` spreads `transactionModalProps` (`components/transactions/transaction-modal.ts`), of `InvestmentTransactionForm` `investmentTransactionModalProps(needsConversion)` (`components/investments/investment-transaction-modal.ts`, fed by the form's `onConversionStateChange`), and of `SecurityForm` `securityFormModalProps` (`components/securities/security-form-modal.ts`), and passes no `maxWidth` or `className` of its own (`components/form-modal-size.guard.test.ts`).
 - **Fields.** One column on a phone, two or three from `md:` (`grid grid-cols-1 md:grid-cols-2 gap-4`). The panel grows with its content up to the viewport less the backdrop's inset (`max-h-[calc(100dvh-2rem)]`, set by `Modal`; never a smaller `vh` fraction) and only then scrolls as a whole; no inner scroll box.
 - **Button row.** `FormActions`: right-aligned, `pt-4` above it, not sticky. Cancel (`outline`, disabled while submitting) first, the primary last. A secondary save mode uses `SplitSubmitButton`, as New Transaction does, with the plain create first and "... & New" second; do not add a separate button or flow for it.
 - **Open and close.** A form dialog uses `useFormModal` (`pushHistory` + `onBeforeClose`) and renders `UnsavedChangesDialog` beside the `Modal`; the form takes `onDirtyChange` and `submitRef`.
@@ -198,7 +198,6 @@ Each line is a reference screen or shared component that does not yet follow a r
 | A report keeps its toolbar mounted | Most reports return early with a skeleton card. |
 | Title Case labels and buttons | Whole feature areas use sentence case (auth, import, email receipts, rules, GEM, warranties, Monte Carlo, loan detail), and button labels are split about evenly. |
 | `<Button isLoading>` | Several save buttons swap their label with `isSaving ? ... : ...`. |
-| One size for the `TransactionForm` dialog | `PayeeTransactionsTab` and `CategoryTransactionsTab` open it at `maxWidth="2xl"`. |
 | Wording | Save buttons read "Save", "Save changes", "Save Changes" and "Update"; retry reads "Try again", "Retry" and "Try Again"; placeholders mix "e.g." and "e.g.,"; about half the confirmation titles are questions. |
 
 ## Before you open the PR
