@@ -196,6 +196,15 @@ describe("CSV month-name dates", () => {
     ]);
   });
 
+  it("reads an upper-case Turkish month, whose I lower-cases dotted", () => {
+    expect(
+      datesOf(
+        ["15 KASIM 2026", "15 MAYIS 2026", "15 Kasım 2026", "15 EKİM 2026"],
+        "DD-MMM-YYYY",
+      ),
+    ).toEqual(["2026-11-15", "2026-05-15", "2026-11-15", "2026-10-15"]);
+  });
+
   it("reports a name that is no month, an ambiguous one and a day the month does not have as unreadable", () => {
     const csv = [
       "Date,Amount,Payee",

@@ -1140,13 +1140,16 @@ export class ImportCsvDto {
   securityMappings?: SecurityMappingDto[];
 
   @ApiPropertyOptional({
-    description: "Date format override",
+    description:
+      "Date format override; the wizard sends the column mapping's, so it takes the same patterns",
   })
   @IsOptional()
   @IsString()
-  @Matches(/^[YDMW/\-.]+$/, {
+  // Space and comma separate a month name ("MMM DD, YYYY"), as in
+  // CsvColumnMappingConfigDto.dateFormat.
+  @Matches(/^[YDMW/\-., ]+$/, {
     message:
-      "dateFormat must contain only date pattern characters (Y, M, D) and separators (/, -, .)",
+      "dateFormat must contain only date pattern characters (Y, M, D) and separators (/, -, ., comma, space)",
   })
   @MaxLength(20)
   dateFormat?: string;

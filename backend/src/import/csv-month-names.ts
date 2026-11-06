@@ -20,14 +20,17 @@ const MIN_PREFIX_LENGTH = 3;
 
 /**
  * Lower-case a month token, fold Latin diacritics (U+0300-U+036F only, so a
- * Devanagari vowel sign survives) and drop a trailing abbreviation mark.
+ * Devanagari vowel sign survives) and the Turkish dotless i (an upper-case
+ * "KASIM" lower-cases to a dotted "kasim", never to "kasım"), and drop a
+ * trailing abbreviation mark.
  */
 function foldMonthToken(token: string): string {
   return token
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[.॰]+$/, "")
+    .replace(/\u0131/g, "i")
+    .replace(/[.\u0970]+$/, "")
     .normalize("NFC");
 }
 
@@ -89,7 +92,8 @@ let monthLookup: ReadonlyMap<string, number> | null = null;
  */
 export function monthFromName(token: string): number | null {
   monthLookup ??= buildMonthLookup();
-  // Most tokens are plain ASCII ("Jan", "OCT"), whose fold is a lower-casing.
+  // Most tokens are plain ASCII ("Jan", "OCT", "KASIM"), whose fold is a
+  // lower-casing.
   const plain = token.toLowerCase().replace(/[.\u0970]+$/, "");
   return (
     monthLookup.get(plain) ?? monthLookup.get(foldMonthToken(token)) ?? null

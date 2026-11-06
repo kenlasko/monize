@@ -3768,6 +3768,46 @@ describe("ImportService", () => {
       ]);
     });
 
+    it("lists the rows the parse left out in file order, whichever list they came from", async () => {
+      mockedValidateCsvContent.mockReturnValue({ valid: true });
+      // 55 unreadable dates after the file's one rejected row: with the lists
+      // recorded one after the other, the rejected row fell past the 50 named.
+      mockedParseCsv.mockReturnValue({
+        ...emptyParseResult("INVESTMENT"),
+        unreadableDateRows: Array.from({ length: 55 }, (_, i) => ({
+          rowNumber: i + 3,
+          rawDate: "31/31/2026",
+          amount: -1,
+          payee: "",
+        })),
+        rejectedInvestmentRows: [
+          {
+            rowNumber: 2,
+            date: "2026-03-02",
+            amount: 0,
+            payee: "",
+            reason: "missingProceeds",
+          },
+        ],
+      });
+      accountsRepository.findOne.mockResolvedValue(mockBrokerageAccount);
+
+      const result = await service.importCsvFile(userId, {
+        ...investmentCsvDto(),
+        securityMappings: [],
+      });
+
+      expect(result.skipped).toBe(56);
+      expect(result.skippedRows).toHaveLength(50);
+      expect(result.skippedRows[0]).toMatchObject({
+        reason: "missingProceeds",
+        rowNumber: 2,
+      });
+      expect(result.skippedRows.map((r) => r.rowNumber)).toEqual(
+        Array.from({ length: 50 }, (_, i) => i + 2),
+      );
+    });
+
     it("still rejects a regular CSV targeting a brokerage account", async () => {
       mockedValidateCsvContent.mockReturnValue({ valid: true });
       mockedParseCsv.mockReturnValue(emptyParseResult("CHEQUING"));

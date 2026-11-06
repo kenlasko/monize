@@ -1326,33 +1326,31 @@ export class ImportService {
       },
     };
 
-    // The parse already left these rows out; the result names them.
-    for (const row of result.unreadableDateRows ?? []) {
-      recordSkippedRow(
-        importResult,
-        {
+    // The parse already left these rows out; the result names them in file
+    // order, so the first SKIPPED_ROWS_LIMIT listed are the file's first.
+    const leftOutRows = [
+      ...(result.unreadableDateRows ?? []).map((row) => ({
+        row: {
           date: "",
           amount: row.amount,
           payee: row.payee,
           rowNumber: row.rowNumber,
           rawDate: row.rawDate,
         },
-        "unreadableDate",
-        account.currencyCode,
-      );
-    }
-    for (const row of result.rejectedInvestmentRows ?? []) {
-      recordSkippedRow(
-        importResult,
-        {
+        reason: "unreadableDate" as const,
+      })),
+      ...(result.rejectedInvestmentRows ?? []).map((row) => ({
+        row: {
           date: row.date,
           amount: row.amount,
           payee: row.payee,
           rowNumber: row.rowNumber,
         },
-        row.reason,
-        account.currencyCode,
-      );
+        reason: row.reason,
+      })),
+    ].sort((a, b) => a.row.rowNumber - b.row.rowNumber);
+    for (const { row, reason } of leftOutRows) {
+      recordSkippedRow(importResult, row, reason, account.currencyCode);
     }
 
     // One transaction for the whole import, exactly as the former QueryRunner
