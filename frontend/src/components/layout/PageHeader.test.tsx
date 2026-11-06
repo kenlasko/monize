@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen } from '@/test/render';
+import { fireEvent, render, screen, waitFor } from '@/test/render';
 import { PageHeader } from './PageHeader';
+import { useHelpStore } from '@/store/helpStore';
 
-const openHelp = vi.fn();
-vi.mock('@/lib/help-open', () => ({ openHelp: (link: string) => openHelp(link) }));
+const getManifest = vi.fn();
+vi.mock('@/lib/help', () => ({ helpApi: { getManifest: () => getManifest() } }));
 
 const HELP_LINK = { name: 'Help for this page' };
 
 beforeEach(() => {
-  openHelp.mockReset();
+  getManifest.mockReset();
+  getManifest.mockResolvedValue({ version: '1', available: true, pages: [] });
+  useHelpStore.setState(useHelpStore.getInitialState(), true);
 });
 
 describe('PageHeader', () => {
@@ -75,11 +78,38 @@ describe('PageHeader', () => {
       return event.defaultPrevented;
     };
 
-    it('opens the panel at the key on a plain click, and keeps the browser from navigating', () => {
+    it('asks the server whether the guide is bundled when it mounts with help, and not without', async () => {
+      const { unmount } = render(<PageHeader title="My Page" />);
+      expect(getManifest).not.toHaveBeenCalled();
+      unmount();
       render(<PageHeader title="My Page" help="budgets" />);
+      await waitFor(() => expect(useHelpStore.getState().guideAvailable).toBe(true));
+      expect(getManifest).toHaveBeenCalledTimes(1);
+    });
+
+    it('opens the panel at the key on a plain click, and keeps the browser from navigating, once the guide is known', () => {
+      useHelpStore.getState().setGuideAvailable(true);
+      render(<PageHeader title="My Page" help="institutions" />);
       expect(clickAndReport()).toBe(true);
-      expect(openHelp).toHaveBeenCalledTimes(1);
-      expect(openHelp).toHaveBeenCalledWith('budgets');
+      expect(useHelpStore.getState().open).toBe(true);
+      expect(useHelpStore.getState().history).toEqual([
+        { page: 'accounts', section: 'financial-institutions' },
+      ]);
+    });
+
+    it('lets the anchor open monize.net when the manifest has not arrived yet', () => {
+      getManifest.mockReturnValue(new Promise(() => {}));
+      render(<PageHeader title="My Page" help="budgets" />);
+      expect(clickAndReport()).toBe(false);
+      expect(useHelpStore.getState().open).toBe(false);
+    });
+
+    it('lets the anchor open monize.net when the server has no bundled guide', async () => {
+      getManifest.mockResolvedValue({ version: '1', available: false, pages: [] });
+      render(<PageHeader title="My Page" help="budgets" />);
+      await waitFor(() => expect(useHelpStore.getState().guideAvailable).toBe(false));
+      expect(clickAndReport()).toBe(false);
+      expect(useHelpStore.getState().open).toBe(false);
     });
 
     it.each([
@@ -88,17 +118,19 @@ describe('PageHeader', () => {
       ['Shift', { shiftKey: true }],
       ['Alt', { altKey: true }],
       ['middle', { button: 1 }],
-    ])('leaves a %s-click to the browser', (_name, init) => {
+    ])('leaves a %s-click to the browser even when the guide is bundled', (_name, init) => {
+      useHelpStore.getState().setGuideAvailable(true);
       render(<PageHeader title="My Page" help="budgets" />);
       expect(clickAndReport(init)).toBe(false);
-      expect(openHelp).not.toHaveBeenCalled();
+      expect(useHelpStore.getState().open).toBe(false);
     });
 
     it('opens the panel from the keyboard', () => {
+      useHelpStore.getState().setGuideAvailable(true);
       render(<PageHeader title="My Page" help="tags" />);
       // A link's Enter key dispatches a click.
       fireEvent.click(screen.getByRole('link', HELP_LINK));
-      expect(openHelp).toHaveBeenCalledWith('tags');
+      expect(useHelpStore.getState().history).toEqual([{ page: 'tags' }]);
     });
   });
 

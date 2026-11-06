@@ -13,7 +13,7 @@ import { useTranslations } from 'next-intl';
 import { SupportBackupModal } from '@/components/settings/SupportBackupModal';
 import { GITHUB_REPO_URL as REPO_URL } from '@/lib/github';
 import { docsUrl } from '@/lib/docs-links';
-import { openHelp } from '@/lib/help-open';
+import { onHelpLinkClick, useHelpPrefetch } from '@/lib/help-open';
 
 const HELP_LINK_KEYS = [
   { key: 'github' as const, href: REPO_URL, Icon: CodeBracketIcon },
@@ -24,6 +24,7 @@ const HELP_LINK_KEYS = [
 export function HelpSection() {
   const t = useTranslations('settings.help');
   const [supportBackupOpen, setSupportBackupOpen] = useState(false);
+  useHelpPrefetch();
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
@@ -53,11 +54,15 @@ export function HelpSection() {
           </button>
         </li>
         <li>
-          {/* The guide opens in the help panel; the website stays one click away. */}
+          {/* The guide opens in the help panel when the server bundles it; the
+              anchor's own href is the fallback, so the tile is never a dead
+              button. The website also stays one click away on the right. */}
           <div className="flex items-stretch rounded-md border border-gray-200 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={() => void openHelp('home')}
+            <a
+              href={docsUrl('home')}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => onHelpLinkClick(e, 'home')}
               className="flex min-w-0 flex-1 items-center gap-3 rounded-l-md px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <BookOpenIcon className="h-6 w-6 shrink-0 text-gray-400 dark:text-gray-500" />
@@ -69,7 +74,7 @@ export function HelpSection() {
                   {t('docs.description')}
                 </span>
               </span>
-            </button>
+            </a>
             <a
               href={docsUrl('home')}
               target="_blank"

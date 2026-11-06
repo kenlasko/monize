@@ -9,6 +9,14 @@ beforeEach(() => {
 });
 
 describe('helpStore', () => {
+  it('does not know whether the guide is bundled until told, and keeps that across a close', () => {
+    expect(state().guideAvailable).toBeNull();
+    state().setGuideAvailable(true);
+    state().openAt({ page: 'budgets' });
+    state().close();
+    expect(state().guideAvailable).toBe(true);
+  });
+
   it('starts closed with no target', () => {
     expect(state().open).toBe(false);
     expect(current()).toBeNull();

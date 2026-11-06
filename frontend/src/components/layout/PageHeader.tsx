@@ -1,10 +1,10 @@
 'use client';
 
-import { MouseEvent, ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { docsUrl, type DocsLink } from '@/lib/docs-links';
-import { openHelp } from '@/lib/help-open';
+import { onHelpLinkClick, useHelpPrefetch } from '@/lib/help-open';
 
 interface PageHeaderProps {
   /** Page title */
@@ -43,14 +43,9 @@ interface PageHeaderProps {
 export function PageHeader({ title, subtitle, actions, help, compactMobileActions, icon, titleAdornment }: PageHeaderProps) {
   const t = useTranslations('layout');
 
-  // A plain click opens the panel; anything the browser would do differently
-  // (middle, Ctrl, Cmd, Shift, Alt) is left to the link, which is the website.
-  const onHelpClick = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (!help) return;
-    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    e.preventDefault();
-    void openHelp(help);
-  };
+  // Know whether the guide is bundled before the first click, so the click can
+  // decide synchronously (see `onHelpLinkClick`).
+  useHelpPrefetch(help !== undefined);
 
   const layoutClasses = actions
     ? compactMobileActions
@@ -71,7 +66,7 @@ export function PageHeader({ title, subtitle, actions, help, compactMobileAction
                 href={docsUrl(help)}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={onHelpClick}
+                onClick={(e) => onHelpLinkClick(e, help)}
                 className="text-gray-400 hover:text-blue-500 transition-colors"
                 aria-label={t('pageHeader.helpAriaLabel')}
               >

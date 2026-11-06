@@ -21,7 +21,7 @@ touches:
 ## Decided
 - The help panel and the assistant share the right edge through the help store: AiChatBubble watches `helpStore.open` (collapses to closed, render-phase setState like its route rule) and its launcher calls `helpStore.close()`. No new event or second store.
 - A docked panel pushes the page aside on `xl` (`xl:pr-[420px]` on the SwipeShell root) so "the budget still on screen" is literally true; below `xl` it overlays, as the assistant does. The width literal in SwipeShell is pinned to `HELP_PANEL_WIDTH` by a SwipeShell test, because Tailwind needs the literal class.
-- The `?` click goes through `openHelp(key)`: manifest `available` plus a `getPage` preflight, else `window.open` of the website. The preflight reads are the ones the panel makes next (deduped), so they cost nothing extra.
+- The `?` click goes through `onHelpLinkClick(event, key)`, which decides synchronously from the prefetched manifest (`helpStore.guideAvailable`): known-bundled opens the panel, anything else lets the anchor open the website natively. An earlier `openHelp` awaited the manifest and a page preflight before `window.open`, which a popup blocker swallows because the await ends the user activation.
 - HelpMarkdown ids: `##`/`###` take the page's `toc` ids in order, deeper headings are slugged with the same duplicate counter the website uses, so the parity test compares every `[id]` of the rendered page with the generated `website/docs/<page>.html`.
 - The panel's Escape and Tab handling ignore a keydown whose focus sits in another `[role="dialog"]`, so a form opened over the page keeps its own Escape.
 

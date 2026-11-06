@@ -28,6 +28,13 @@ interface HelpState {
    * the repeat as no change.
    */
   visit: number;
+  /**
+   * Whether the server has a bundled guide: `null` until the manifest has been
+   * read, then what it said. A help control decides synchronously, at click
+   * time, from this (`lib/help-open.ts`); it is a fact about the server, so it
+   * survives the panel closing.
+   */
+  guideAvailable: boolean | null;
 
   /** Open at a target, or move to it when the panel is already open. */
   openAt: (target: HelpTarget) => void;
@@ -38,6 +45,7 @@ interface HelpState {
   close: () => void;
   setPinned: (pinned: boolean) => void;
   setExpanded: (expanded: boolean) => void;
+  setGuideAvailable: (available: boolean) => void;
 }
 
 const INITIAL = {
@@ -47,6 +55,7 @@ const INITIAL = {
   history: [] as HelpTarget[],
   cursor: -1,
   visit: 0,
+  guideAvailable: null as boolean | null,
 };
 
 function sameTarget(a: HelpTarget, b: HelpTarget): boolean {
@@ -83,6 +92,8 @@ export const useHelpStore = create<HelpState>((set) => ({
   setPinned: (pinned) => set({ pinned }),
 
   setExpanded: (expanded) => set({ expanded }),
+
+  setGuideAvailable: (guideAvailable) => set({ guideAvailable }),
 }));
 
 function moveTo(
