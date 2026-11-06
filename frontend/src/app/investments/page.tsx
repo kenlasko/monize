@@ -51,7 +51,6 @@ import {
   type InvestmentTransactionView,
 } from '@/components/investments/InvestmentViewToggle';
 import { PAGE_SIZE } from '@/lib/constants';
-import { docsUrl } from '@/lib/docs-links';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
 
@@ -237,7 +236,7 @@ function InvestmentsContent() {
           <PageHeader
             title={t('page.title')}
             subtitle={t('page.subtitle')}
-            helpUrl={docsUrl('investments')}
+            help='investments'
             actions={
               <>
                 <div className="flex items-stretch gap-3 w-full sm:w-auto">

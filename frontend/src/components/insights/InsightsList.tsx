@@ -17,7 +17,6 @@ import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { summaryGridClass } from '@/components/accounts/shared/SummaryCardGrid';
 import { SEGMENTED_TOOLBAR_GROUP_CLASS, toolbarSegmentClass } from '@/components/ui/segmented-control';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('InsightsList');
 
@@ -176,7 +175,7 @@ export function InsightsList() {
     <PageHeader
       title={t('page.title')}
       subtitle={t('page.subtitle')}
-      helpUrl={docsUrl('aiInsights')}
+      help='aiInsights'
       actions={
         <Button
           variant="outline"

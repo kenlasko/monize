@@ -198,10 +198,10 @@ vi.mock('@/components/layout/PageLayout', () => ({
 }));
 
 vi.mock('@/components/layout/PageHeader', () => ({
-  PageHeader: ({ title, subtitle, actions, helpUrl }: { title: string; subtitle?: string; actions?: React.ReactNode; helpUrl?: string }) => (
+  PageHeader: ({ title, subtitle, actions, help }: { title: string; subtitle?: string; actions?: React.ReactNode; help?: string }) => (
     <div data-testid="page-header">
       <h1>{title}</h1>
-      {helpUrl && <a data-testid="help-link" href={helpUrl}>Help</a>}
+      {help && <a data-testid="help-link" data-help={help} href="#help">Help</a>}
       {subtitle && <p>{subtitle}</p>}
       {actions}
     </div>
@@ -286,9 +286,9 @@ describe('TagsPage', () => {
     expect(empty).toHaveAttribute('data-filtered', 'true');
   });
 
-  it('links the page header to the Tags wiki page', async () => {
+  it('points the page header help at the Tags guide page', async () => {
     await renderPage();
-    expect(screen.getByTestId('help-link')).toHaveAttribute('href', 'https://www.monize.net/docs/tags');
+    expect(screen.getByTestId('help-link')).toHaveAttribute('data-help', 'tags');
   });
 
   it('shows loading spinner while data is loading', async () => {

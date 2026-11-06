@@ -30,7 +30,6 @@ import { PAGE_SIZE } from '@/lib/constants';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { SEGMENTED_TOOLBAR_GROUP_CLASS, toolbarSegmentClass } from '@/components/ui/segmented-control';
 import { RefreshButtonLabel } from '@/components/ui/RefreshButtonLabel';
-import { docsUrl } from '@/lib/docs-links';
 import { registerCurrencyDecimals } from '@/lib/currency-decimals';
 
 const logger = createLogger('Currencies');
@@ -308,7 +307,7 @@ function CurrenciesContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl={docsUrl('currencies')}
+          help='currencies'
           actions={
             <div className="flex gap-2">
               <Button

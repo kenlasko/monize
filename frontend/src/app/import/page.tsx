@@ -26,7 +26,6 @@ import { isShareBundleId } from '@/lib/share-target';
 import { createLogger } from '@/lib/logger';
 import { useAuthStore } from '@/store/authStore';
 import { formatCategoryPath } from './import-utils';
-import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Import');
 
@@ -342,7 +341,7 @@ function ImportContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl={docsUrl('importTransactions')}
+          help='importTransactions'
         />
         {/* Progress indicator */}
         <div className="mb-8">

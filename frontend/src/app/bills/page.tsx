@@ -61,7 +61,6 @@ import { getErrorMessage } from '@/lib/errors';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
-import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Bills');
 
@@ -709,7 +708,7 @@ function BillsContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl={docsUrl('bills')}
+          help='bills'
           actions={
             <Button onClick={handleCreateNew} {...tourAnchor(TOUR_ANCHORS.billsNewButton)}>
               {t('page.newButton')}

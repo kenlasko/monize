@@ -49,7 +49,6 @@ import type {
   WarrantyStatusFilter,
   WarrantySummary,
 } from '@/types/warranty';
-import { docsUrl } from '@/lib/docs-links';
 
 const WarrantyForm = dynamic(
   () => import('@/components/warranties/WarrantyForm').then((m) => m.WarrantyForm),
@@ -437,7 +436,7 @@ function WarrantiesContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl={docsUrl('warranties')}
+          help='warranties'
           actions={
             readOnly ? undefined : (
               // The screen's one primary action; adding is the owner's.

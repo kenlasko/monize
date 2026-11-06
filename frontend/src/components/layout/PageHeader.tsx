@@ -1,8 +1,10 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { MouseEvent, ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { docsUrl, type DocsLink } from '@/lib/docs-links';
+import { openHelp } from '@/lib/help-open';
 
 interface PageHeaderProps {
   /** Page title */
@@ -11,8 +13,12 @@ interface PageHeaderProps {
   subtitle?: string;
   /** Action buttons to render on the right side */
   actions?: ReactNode;
-  /** Documentation for this feature: `docsUrl(...)` from `@/lib/docs-links` */
-  helpUrl?: string;
+  /**
+   * The guide's page for this feature, a key of `DOCS_LINKS`
+   * (`@/lib/docs-links`). A click opens it in the help panel; a modified click
+   * (new tab, copy link) goes to the same page on monize.net.
+   */
+  help?: DocsLink;
   /**
    * Keep the actions inline (on the same row as the title) on mobile instead
    * of stacking them full-width below it. Use for compact, icon-sized actions.
@@ -34,8 +40,17 @@ interface PageHeaderProps {
  * Inline page header with title, subtitle, and action buttons.
  * Renders directly in the content area without a separate background bar.
  */
-export function PageHeader({ title, subtitle, actions, helpUrl, compactMobileActions, icon, titleAdornment }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actions, help, compactMobileActions, icon, titleAdornment }: PageHeaderProps) {
   const t = useTranslations('layout');
+
+  // A plain click opens the panel; anything the browser would do differently
+  // (middle, Ctrl, Cmd, Shift, Alt) is left to the link, which is the website.
+  const onHelpClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!help) return;
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    void openHelp(help);
+  };
 
   const layoutClasses = actions
     ? compactMobileActions
@@ -50,12 +65,13 @@ export function PageHeader({ title, subtitle, actions, helpUrl, compactMobileAct
           {title}
         </h1>
         {titleAdornment}
-        {helpUrl && (
+        {help && (
             <span className="relative inline-flex items-center group/help">
               <a
-                href={helpUrl}
+                href={docsUrl(help)}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={onHelpClick}
                 className="text-gray-400 hover:text-blue-500 transition-colors"
                 aria-label={t('pageHeader.helpAriaLabel')}
               >

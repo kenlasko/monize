@@ -66,10 +66,10 @@ vi.mock('@/components/layout/PageLayout', () => ({
   PageLayout: ({ children }: any) => <div data-testid="page-layout">{children}</div>,
 }));
 vi.mock('@/components/layout/PageHeader', () => ({
-  PageHeader: ({ title, subtitle, actions, helpUrl }: any) => (
+  PageHeader: ({ title, subtitle, actions, help }: any) => (
     <div>
       <h1>{title}</h1>
-      {helpUrl && <a data-testid="help-link" href={helpUrl}>Help</a>}
+      {help && <a data-testid="help-link" data-help={help} href="#help">Help</a>}
       {subtitle && <p>{subtitle}</p>}
       {actions}
     </div>
@@ -156,10 +156,7 @@ describe('InstitutionsPage', () => {
   it('links the page header to the financial institutions section of the documentation', async () => {
     render(<InstitutionsPage />);
     await waitFor(() => expect(screen.getByText('TD')).toBeInTheDocument());
-    expect(screen.getByTestId('help-link')).toHaveAttribute(
-      'href',
-      'https://www.monize.net/docs/accounts#financial-institutions',
-    );
+    expect(screen.getByTestId('help-link')).toHaveAttribute('data-help', 'institutions');
   });
 
   it('filters by search query', async () => {

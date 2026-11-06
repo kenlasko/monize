@@ -26,7 +26,6 @@ import { useFormModal } from '@/hooks/useFormModal';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
-import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Categories');
 
@@ -181,7 +180,7 @@ function CategoriesContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl={docsUrl('categories')}
+          help='categories'
           actions={<Button onClick={openCreate}>{t('page.newButton')}</Button>}
         />
         {/* Summary Cards */}

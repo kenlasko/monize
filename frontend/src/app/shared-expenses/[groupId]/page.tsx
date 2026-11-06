@@ -79,7 +79,6 @@ const SharedActivity = dynamic(() =>
 );
 import { SharedGroupSummary } from "@/components/shared-expenses/SharedGroupSummary";
 import { TOUR_ANCHORS, tourAnchor } from "@/lib/tours/anchors";
-import { docsUrl } from "@/lib/docs-links";
 import { SharedEntryTable } from "@/components/shared-expenses/SharedEntryTable";
 import { SharedFilters } from "@/components/shared-expenses/SharedFilters";
 import { Tabs, TabPanel } from "@/components/ui/Tabs";
@@ -278,7 +277,7 @@ function GroupContent({ groupId }: { groupId: string }) {
           <>
             <PageHeader
               title={group.name}
-              helpUrl={docsUrl("sharedExpenses")}
+              help="sharedExpenses"
               subtitle={group.description ?? undefined}
               titleAdornment={
                 <EntitySwitcher
