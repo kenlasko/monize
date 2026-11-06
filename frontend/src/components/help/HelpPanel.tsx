@@ -12,6 +12,7 @@ import {
   ChevronDownIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { HelpMarkdown, onlineHref } from '@/components/help/HelpMarkdown';
 import { HELP_PANEL_WIDTH } from '@/components/help/help-layout';
@@ -31,8 +32,7 @@ const FOCUSABLE_SELECTOR = [
 /** Room left above a heading the panel has scrolled to. */
 const SCROLL_PADDING = 8;
 
-const ICON_BUTTON =
-  'rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 motion-reduce:transition-none';
+const ICON_BUTTON = `rounded-md p-1.5 text-gray-500 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-200 ${HOVER_ROW_ON_CARD}`;
 
 /**
  * The in-app user guide: a sheet docked at the right edge (a bottom sheet on a
