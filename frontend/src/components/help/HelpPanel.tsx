@@ -85,25 +85,46 @@ export function HelpPanel() {
   // loaded: as a dialog over a scrim (a phone, or expanded) focus left behind
   // the scrim would be unreachable, and the loading and error states are the
   // ones where a reader most needs to find the way out. Once the page arrives
-  // the effect below moves focus on to the section. When the panel closes,
-  // focus goes back to whatever opened it.
+  // the effect below moves focus on to the section.
+  //
+  // When the panel closes, focus goes back to whatever opened it, but only if
+  // the reader was still in the panel or closed it themself (its Close button,
+  // Escape or the scrim). Closed by the assistant launcher or a route change,
+  // focus belongs to what the reader just used, and stealing it back would pull
+  // them out of the assistant they opened.
+  const openerRef = useRef<HTMLElement | null>(null);
+  const ownCloseRef = useRef(false);
+  const focusInsideRef = useRef(false);
   useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
+    // Kept across a development remount, which would otherwise record the title.
+    openerRef.current ??= document.activeElement as HTMLElement | null;
     titleRef.current?.focus({ preventScroll: true });
     return () => {
-      if (opener?.isConnected) opener.focus();
+      const opener = openerRef.current;
+      if ((ownCloseRef.current || focusInsideRef.current) && opener?.isConnected) {
+        opener.focus();
+      }
     };
   }, []);
+
+  const closeByReader = () => {
+    ownCloseRef.current = true;
+    close();
+  };
 
   // Escape steps down one level: expanded -> docked -> closed. A dialog on top
   // of the panel (a form opened from the page behind it) keeps its own Escape.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
-      const other = (document.activeElement as HTMLElement | null)?.closest('[role="dialog"]');
+      const active = document.activeElement as HTMLElement | null;
+      const other = active?.closest('[role="dialog"]');
       if (other && other !== panelRef.current) return;
       if (useHelpStore.getState().expanded) setExpanded(false);
-      else close();
+      else {
+        ownCloseRef.current = true;
+        close();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -185,7 +206,7 @@ export function HelpPanel() {
         <div
           className="fixed inset-0 z-40 bg-black/30"
           aria-hidden="true"
-          onClick={() => close()}
+          onClick={closeByReader}
         />
       )}
 
@@ -196,6 +217,12 @@ export function HelpPanel() {
         aria-label={t('title')}
         className={sheetClass}
         style={!isMobile && !expanded ? { width: HELP_PANEL_WIDTH } : undefined}
+        onFocus={() => {
+          focusInsideRef.current = true;
+        }}
+        onBlur={(e) => {
+          focusInsideRef.current = e.currentTarget.contains(e.relatedTarget as Node | null);
+        }}
       >
         <div className="flex items-center gap-1 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
           <button
@@ -260,7 +287,7 @@ export function HelpPanel() {
           </button>
           <button
             type="button"
-            onClick={() => close()}
+            onClick={closeByReader}
             aria-label={t('close')}
             title={t('close')}
             className={ICON_BUTTON}

@@ -315,6 +315,80 @@ describe('HelpPanel: focus on open', () => {
   });
 });
 
+describe('HelpPanel: giving focus back', () => {
+  const button = (label: string) => {
+    const el = document.createElement('button');
+    el.textContent = label;
+    document.body.appendChild(el);
+    return el;
+  };
+
+  it('returns focus to the opener when the reader closes the panel with Escape', async () => {
+    const opener = button('opener');
+    opener.focus();
+    const { unmount } = await renderPanel();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(store().open).toBe(false);
+    unmount();
+    expect(opener).toHaveFocus();
+    opener.remove();
+  });
+
+  it('returns focus to the opener when the scrim closes the panel on a phone', async () => {
+    mockMobile = true;
+    const opener = button('opener');
+    opener.focus();
+    const { container, unmount } = await renderPanel();
+    fireEvent.click(container.querySelector('.bg-black\\/30')!);
+    unmount();
+    expect(opener).toHaveFocus();
+    opener.remove();
+  });
+
+  it('leaves focus where the reader put it when something else closes the panel', async () => {
+    // The assistant launcher closes help and is then what the reader is using.
+    const opener = button('opener');
+    const launcher = button('assistant launcher');
+    opener.focus();
+    const { unmount } = await renderPanel();
+    expect(screen.getByRole('heading', { level: 2, name: /title|Help/ })).toHaveFocus();
+
+    launcher.focus();
+    act(() => store().close());
+    unmount();
+    expect(launcher).toHaveFocus();
+    opener.remove();
+    launcher.remove();
+  });
+
+  it('leaves focus on the page when a route change closes the panel from outside it', async () => {
+    const opener = button('opener');
+    const field = button('page control');
+    opener.focus();
+    const { rerender, unmount } = await renderPanel();
+    field.focus();
+    mockPathname = '/reports';
+    rerender(<HelpPanel />);
+    expect(store().open).toBe(false);
+    unmount();
+    expect(field).toHaveFocus();
+    opener.remove();
+    field.remove();
+  });
+
+  it('returns focus to the opener when focus was still inside the panel at close', async () => {
+    const opener = button('opener');
+    opener.focus();
+    const { rerender, unmount } = await renderPanel();
+    mockPathname = '/reports';
+    rerender(<HelpPanel />);
+    expect(store().open).toBe(false);
+    unmount();
+    expect(opener).toHaveFocus();
+    opener.remove();
+  });
+});
+
 describe('HelpPanel: phone', () => {
   beforeEach(() => {
     mockMobile = true;
