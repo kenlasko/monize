@@ -621,6 +621,13 @@ Enforcement         Every absolute recompute takes the account lock before readi
                     leg, locks the parents before the legs and reverses each
                     locked row through deletionBalanceEffect, as the single
                     delete does (A26-H05).
+                    Removing one split line (removeSplit) from a set that
+                    added up to the locked parent re-totals it by the line's
+                    amount and moves the parent's account by its contribution
+                    through deletionBalanceEffect (an addSplit-built partial
+                    set, which moved neither, moves neither back);
+                    a last transfer line becomes the parent's plain transfer
+                    with its counterpart kept, never deleted (issue #2025).
                     A transfer edit derives every delta from rows locked inside
                     its own transaction and refuses with 409 when they differ
                     from what the edit was built on: both legs ascending
@@ -652,6 +659,8 @@ Required tests      Source scan: common/db/derived-state-writers.guard.spec.ts -
                     Bulk delete of a split-transfer leg, parent, both legs and a
                     cross-owner leg, on the schema's ON DELETE actions:
                     backend/test/integration/bulk-delete-split-leg.integration.spec.ts.
+                    Removing a split's category line and its transfer line:
+                    backend/test/integration/remove-split-line.integration.spec.ts.
                     Two concurrent transfer edits, same and different values, on a
                     split-transfer leg and a connected cross-owner pair:
                     backend/test/integration/transfer-edit-race.integration.spec.ts.
