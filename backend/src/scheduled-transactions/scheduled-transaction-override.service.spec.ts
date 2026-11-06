@@ -16,6 +16,7 @@ jest.mock("../common/db/scoped-db", () =>
 describe("ScheduledTransactionOverrideService", () => {
   let service: ScheduledTransactionOverrideService;
   let overridesRepository: Record<string, jest.Mock>;
+  let manager: Record<string, jest.Mock>;
 
   const scheduledTransactionId = "st-1";
   const overrideId = "override-1";
@@ -64,9 +65,11 @@ describe("ScheduledTransactionOverrideService", () => {
       createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder()),
     };
 
-    const { dataSource } = createScopedDbMocks([
+    const mocks = createScopedDbMocks([
       [ScheduledTransactionOverride, overridesRepository],
     ]);
+    const { dataSource } = mocks;
+    manager = mocks.manager as unknown as Record<string, jest.Mock>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -649,6 +652,80 @@ describe("ScheduledTransactionOverrideService", () => {
       const result = await service.hasOverrides(scheduledTransactionId);
 
       expect(result).toEqual({ hasOverrides: false, count: 0 });
+    });
+  });
+  describe("transfer lines' accounts (INV-ACCOUNTDELETE-001)", () => {
+    const transferSplits = [
+      { amount: -60, transferAccountId: "ACC-B" },
+      { amount: -40, transferAccountId: "acc-b" },
+    ];
+    const lockCalls = () =>
+      manager.query.mock.calls.filter(
+        ([sql]: [string]) =>
+          typeof sql === "string" && sql.includes("FOR SHARE OF a"),
+      );
+
+    it("share-locks each account a create's lines transfer into, once, before saving", async () => {
+      manager.query.mockResolvedValue([{ id: "acc-b" }]);
+
+      await service.createOverride(scheduledTransactionId, {
+        originalDate: "2025-02-15",
+        overrideDate: "2025-02-15",
+        amount: -100,
+        isSplit: true,
+        splits: transferSplits,
+      });
+
+      expect(lockCalls()).toHaveLength(1);
+      expect(lockCalls()[0][1]).toEqual([["acc-b"], scheduledTransactionId]);
+      expect(manager.query.mock.invocationCallOrder[0]).toBeLessThan(
+        overridesRepository.save.mock.invocationCallOrder[0],
+      );
+    });
+
+    it("refuses a create whose line names an account the schedule's owner does not have", async () => {
+      manager.query.mockResolvedValue([]);
+
+      await expect(
+        service.createOverride(scheduledTransactionId, {
+          originalDate: "2025-02-15",
+          overrideDate: "2025-02-15",
+          amount: -100,
+          isSplit: true,
+          splits: transferSplits,
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(overridesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses an update whose line names a missing account", async () => {
+      overridesRepository.findOne.mockResolvedValue(
+        makeOverride({ amount: -100 }),
+      );
+      manager.query.mockResolvedValue([]);
+
+      await expect(
+        service.updateOverride(scheduledTransactionId, overrideId, {
+          isSplit: true,
+          splits: transferSplits,
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(overridesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("asks nothing when no line transfers", async () => {
+      await service.createOverride(scheduledTransactionId, {
+        originalDate: "2025-02-15",
+        overrideDate: "2025-02-15",
+        amount: -100,
+        isSplit: true,
+        splits: [
+          { amount: -60, categoryId: "cat-a" },
+          { amount: -40, categoryId: "cat-b" },
+        ],
+      });
+
+      expect(lockCalls()).toHaveLength(0);
     });
   });
 });

@@ -215,7 +215,7 @@ The Balance always stays in view. On a narrower window the columns to its left m
 
 Click an account to open its transactions. Investment accounts open their [detail page](#account-detail-pages), and so does every account if you choose **Show its dashboard** under **Default Account View** in [Settings -> Preferences](settings-and-security.md#preferences). **Details** always opens the detail page.
 
-**Close** is only available when the account's balance is zero, and **Delete** only for accounts with no transactions (see [Deleting Accounts](#deleting-accounts)).
+**Close** is only available when the account's balance is zero, and **Delete** only for accounts with no transactions that no bill or deposit uses (see [Deleting Accounts](#deleting-accounts)).
 
 ### Summary Card
 
@@ -347,7 +347,7 @@ Closed accounts are hidden from transaction dropdowns and appear under the **Clo
 
 ### Deleting Accounts
 
-Accounts can only be deleted if they have no transactions. If an account has transactions, you must either delete the transactions first or close the account instead. Deleting an investment account deletes both of its ledgers.
+Accounts can only be deleted if they have no transactions and no scheduled transaction on **Bills & Deposits** uses them. That covers a bill or deposit paid from the account, a transfer into it, an investment funded from it, and a split line (or a changed upcoming occurrence's split line) that transfers into it. If an account has transactions, you must either delete the transactions first or close the account instead. If a bill or deposit uses it, delete that schedule or change it to another account first, or close the account instead. A loan or mortgage's own scheduled payment is the exception: it is deleted together with the account. Deleting an investment account deletes both of its ledgers.
 
 ---
 

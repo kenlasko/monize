@@ -2262,47 +2262,51 @@ export class AccountsService {
   async delete(userId: string, id: string): Promise<void> {
     const account = await this.findOne(userId, id);
 
-    // Answered once up front, so a refusal comes before the loan schedule
-    // below is removed; asked again, under the account lock, in the deleting
-    // transaction itself.
-    await withScopedDb(this.dataSource, (m) => this.assertAccountEmpty(m, id));
-
-    // If this is a loan or mortgage account with an associated scheduled
-    // transaction, delete it first. This runs in the scheduled-transactions
-    // service's own transaction and is best-effort, so it stays outside the
-    // account-deletion transaction below.
-    if (
+    const beforeData = { ...account };
+    const ownSchedule =
       (account.accountType === AccountType.LOAN ||
         account.accountType === AccountType.MORTGAGE) &&
       account.scheduledTransactionId
-    ) {
-      try {
-        await this.scheduledTransactionsService.remove(
-          userId,
-          account.scheduledTransactionId,
-        );
-      } catch (error) {
-        // Scheduled transaction may have already been deleted, continue with account deletion
-        this.logger.warn(
-          `Could not delete scheduled transaction ${account.scheduledTransactionId}: ${error.message}`,
-        );
-      }
-    }
+        ? account.scheduledTransactionId
+        : null;
 
-    const beforeData = { ...account };
-
-    // Unlink the paired account and remove this account atomically, so a
-    // failure cannot leave a dangling link pointing at a deleted account.
-    await withScopedDb(this.dataSource, async (m) => {
-      // The check above ran in another transaction, so a bank sync or import
-      // that wrote into the account since was cascaded away with it, leaving
-      // its transfer legs in other accounts one-sided (A26-M19). The account
-      // row lock is the one every writer of its balance takes, and a row
-      // insert's foreign-key lock conflicts with it, so after it no row can
-      // land before the removal: a writer either committed (and the count
+    // One transaction for the check and every removal, so a refused delete
+    // has written nothing: the loan's own payment schedule used to be removed
+    // first, in its own transaction, and a refusal after it left the loan
+    // without its schedule (and a failure to remove it went on to delete the
+    // account anyway, the schema cascading into the schedule).
+    const removedSchedule = await withScopedDb(this.dataSource, async (m) => {
+      // A bank sync or import that wrote into the account after an unlocked
+      // count would be cascaded away with it, leaving its transfer legs in
+      // other accounts one-sided (A26-M19). The account row lock is the one
+      // every writer of its balance takes, and a row insert's foreign-key
+      // lock conflicts with it (an override's transfer line takes it
+      // explicitly, see `lockOverrideTransferAccounts`), so after it no row
+      // can land before the removal: a writer either committed (and the count
       // sees it) or waits for this delete.
       await lockAccountsForBalanceWrite(m, [id], userId);
       await this.assertAccountEmpty(m, id);
+
+      let removed: ScheduledTransaction | null = null;
+      if (ownSchedule) {
+        // Cleared first, so removing the schedule does not lean on the
+        // column's ON DELETE SET NULL.
+        await m.update(
+          Account,
+          { id, userId },
+          { scheduledTransactionId: null },
+        );
+        try {
+          removed =
+            await this.scheduledTransactionsService.removeWithoutHistory(
+              userId,
+              ownSchedule,
+            );
+        } catch (error) {
+          // Already gone: nothing of it is left for the delete to take.
+          if (!(error instanceof NotFoundException)) throw error;
+        }
+      }
 
       if (account.linkedAccountId) {
         // One column, by a targeted update: a `save` of the unlocked read
@@ -2315,8 +2319,13 @@ export class AccountsService {
       }
 
       await m.remove(account);
+      return removed;
     });
 
+    // After the commit, in the order an undo has to reverse them.
+    if (removedSchedule) {
+      this.scheduledTransactionsService.recordRemoved(userId, removedSchedule);
+    }
     this.actionHistoryService.record(userId, {
       entityType: "account",
       entityId: beforeData.id,

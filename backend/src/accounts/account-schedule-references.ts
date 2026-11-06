@@ -15,14 +15,19 @@ import { AccountType } from "./entities/account.entity";
  * - with a split line transferring into it (the split's
  *   `transfer_account_id`, ON DELETE CASCADE: the line goes and the
  *   remaining lines no longer add up to the schedule's amount);
- * - with a pending occurrence override whose split line transfers into it
+ * - with a pending split override whose line transfers into it
  *   (`scheduled_transaction_overrides.splits[].transferAccountId`, JSONB with
  *   no foreign key: the override would post a leg into a missing account).
- *   An override of a slot before the schedule's `next_due_date` is spent and
- *   never posts, so it does not count.
+ *   Matched case-insensitively, since a UUID is valid in either case. An
+ *   override of a slot before the schedule's `next_due_date` is spent, and one
+ *   with `is_split` not true never posts its `splits`, so neither counts.
  *
  * A loan or mortgage's own payment schedule is left out: `AccountsService.delete`
- * removes it deliberately, together with the account.
+ * removes it deliberately, in the same transaction as the account.
+ *
+ * Each reference is its own indexed lookup, unioned, so the account list,
+ * which asks this for every account, never pairs every account with every
+ * schedule.
  */
 export async function countSchedulesReferencingAccounts(
   m: EntityManager,
@@ -33,26 +38,40 @@ export async function countSchedulesReferencingAccounts(
 
   const rows: Array<{ accountId: string; cnt: string | number }> =
     await m.query(
-      `SELECT a.id AS "accountId", COUNT(DISTINCT st.id) AS "cnt"
-       FROM accounts a
-       JOIN scheduled_transactions st
-         ON (st.account_id = a.id
-             OR st.transfer_account_id = a.id
-             OR st.investment_funding_account_id = a.id
-             OR EXISTS (
-               SELECT 1 FROM scheduled_transaction_splits sts
-               WHERE sts.scheduled_transaction_id = st.id
-                 AND sts.transfer_account_id = a.id)
-             OR EXISTS (
-               SELECT 1 FROM scheduled_transaction_overrides sto
-               WHERE sto.scheduled_transaction_id = st.id
-                 AND sto.original_date >= st.next_due_date
-                 AND sto.splits @> jsonb_build_array(
-                       jsonb_build_object('transferAccountId', a.id::text))))
-        AND NOT (a.account_type = ANY($2)
-                 AND st.id IS NOT DISTINCT FROM a.scheduled_transaction_id)
-       WHERE a.id = ANY($1)
-       GROUP BY a.id`,
+      `WITH ids AS (SELECT unnest($1::uuid[]) AS id),
+       refs AS (
+         SELECT st.id AS schedule_id, st.account_id AS account_id
+         FROM scheduled_transactions st JOIN ids ON st.account_id = ids.id
+         UNION ALL
+         SELECT st.id, st.transfer_account_id
+         FROM scheduled_transactions st JOIN ids ON st.transfer_account_id = ids.id
+         UNION ALL
+         SELECT st.id, st.investment_funding_account_id
+         FROM scheduled_transactions st
+         JOIN ids ON st.investment_funding_account_id = ids.id
+         UNION ALL
+         SELECT sts.scheduled_transaction_id, sts.transfer_account_id
+         FROM scheduled_transaction_splits sts
+         JOIN ids ON sts.transfer_account_id = ids.id
+         UNION ALL
+         SELECT st.id, ids.id
+         FROM scheduled_transaction_overrides sto
+         JOIN scheduled_transactions st
+           ON st.id = sto.scheduled_transaction_id
+          AND sto.original_date >= st.next_due_date
+         CROSS JOIN LATERAL jsonb_array_elements(
+           CASE WHEN jsonb_typeof(sto.splits) = 'array'
+                THEN sto.splits ELSE '[]'::jsonb END) line
+         JOIN ids ON lower(line->>'transferAccountId') = ids.id::text
+         WHERE sto.is_split IS TRUE
+       )
+       SELECT refs.account_id AS "accountId",
+              COUNT(DISTINCT refs.schedule_id) AS "cnt"
+       FROM refs
+       JOIN accounts a ON a.id = refs.account_id
+       WHERE NOT (a.account_type = ANY($2)
+                  AND refs.schedule_id IS NOT DISTINCT FROM a.scheduled_transaction_id)
+       GROUP BY refs.account_id`,
       [accountIds, [AccountType.LOAN, AccountType.MORTGAGE]],
     );
   for (const row of rows) counts.set(row.accountId, Number(row.cnt));

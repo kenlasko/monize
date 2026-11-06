@@ -35,13 +35,14 @@ describe("countSchedulesReferencingAccounts", () => {
     await countSchedulesReferencingAccounts(m, ["a"]);
 
     const [sql, params] = query.mock.calls[0];
-    expect(sql).toContain("st.account_id = a.id");
-    expect(sql).toContain("st.transfer_account_id = a.id");
-    expect(sql).toContain("st.investment_funding_account_id = a.id");
-    expect(sql).toContain("sts.transfer_account_id = a.id");
+    expect(sql).toContain("st.account_id = ids.id");
+    expect(sql).toContain("st.transfer_account_id = ids.id");
+    expect(sql).toContain("st.investment_funding_account_id = ids.id");
+    expect(sql).toContain("sts.transfer_account_id = ids.id");
     expect(sql).toContain("scheduled_transaction_overrides sto");
-    expect(sql).toContain("'transferAccountId', a.id::text");
-    expect(sql).toContain("COUNT(DISTINCT st.id)");
+    expect(sql).toContain("lower(line->>'transferAccountId') = ids.id::text");
+    expect(sql).toContain("sto.is_split IS TRUE");
+    expect(sql).toContain("COUNT(DISTINCT refs.schedule_id)");
     expect(sql).toContain("a.scheduled_transaction_id");
     expect(params).toEqual([["a"], ["LOAN", "MORTGAGE"]]);
   });

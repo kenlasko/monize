@@ -178,6 +178,12 @@ describe("AccountsService", () => {
       update: jest.fn().mockResolvedValue({}),
       recordCreated: jest.fn(),
       remove: jest.fn(),
+      removeWithoutHistory: jest
+        .fn()
+        .mockImplementation((_userId: string, id: string) =>
+          Promise.resolve({ id, name: "Loan payment" }),
+        ),
+      recordRemoved: jest.fn(),
       repriceLoanTemplate: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -827,7 +833,7 @@ describe("AccountsService", () => {
       accountsRepository.findOne.mockResolvedValue(mockAccount);
       mockQueryRunner.query.mockImplementation(async (sql: string) =>
         typeof sql === "string" &&
-        sql.includes("JOIN scheduled_transactions st")
+        sql.includes("COUNT(DISTINCT refs.schedule_id)")
           ? [{ accountId: "account-1", cnt: "2" }]
           : [],
       );
@@ -1948,7 +1954,7 @@ describe("AccountsService", () => {
       });
       mockQueryRunner.query.mockImplementation(async (sql: string) =>
         typeof sql === "string" &&
-        sql.includes("JOIN scheduled_transactions st")
+        sql.includes("COUNT(DISTINCT refs.schedule_id)")
           ? [{ accountId: "account-1", cnt: "2" }]
           : [],
       );
@@ -1958,39 +1964,51 @@ describe("AccountsService", () => {
       );
 
       // The loan's own schedule is removed only after the refusal could fire.
-      expect(scheduledTransactionsService.remove).not.toHaveBeenCalled();
+      expect(
+        scheduledTransactionsService.removeWithoutHistory,
+      ).not.toHaveBeenCalled();
+      expect(scheduledTransactionsService.recordRemoved).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
       expect(mockActionHistoryService.record).not.toHaveBeenCalled();
     });
 
-    it("re-counts the schedules under the account lock (#2028)", async () => {
+    it("counts the schedules under the account lock, once (#2028)", async () => {
       accountsRepository.findOne.mockResolvedValue({ ...mockAccount });
-      let scheduleCounts = 0;
-      mockQueryRunner.query.mockImplementation(async (sql: string) => {
-        if (
-          typeof sql !== "string" ||
-          !sql.includes("JOIN scheduled_transactions st")
-        )
-          return [];
-        scheduleCounts += 1;
-        // None when first asked; a schedule naming it committed before the lock.
-        return scheduleCounts === 1 ? [] : [{ accountId: "account-1", cnt: 1 }];
-      });
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        typeof sql === "string" &&
+        sql.includes("COUNT(DISTINCT refs.schedule_id)")
+          ? [{ accountId: "account-1", cnt: 1 }]
+          : [],
+      );
 
       await expect(service.delete("user-1", "account-1")).rejects.toThrow(
         BadRequestException,
       );
 
-      expect(scheduleCounts).toBe(2);
+      const calls = mockQueryRunner.query.mock.calls.map(
+        ([sql]: [string]) => sql,
+      );
+      const lockCall = calls.findIndex(
+        (sql: string) =>
+          sql.includes("FROM accounts") && sql.includes("FOR UPDATE"),
+      );
+      const countCall = calls.findIndex((sql: string) =>
+        sql.includes("COUNT(DISTINCT refs.schedule_id)"),
+      );
+      expect(lockCall).toBeGreaterThanOrEqual(0);
+      expect(countCall).toBeGreaterThan(lockCall);
+      expect(
+        calls.filter((sql: string) =>
+          sql.includes("COUNT(DISTINCT refs.schedule_id)"),
+        ),
+      ).toHaveLength(1);
       expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
     });
 
-    it("re-counts under the account lock inside the deleting transaction (A26-M19)", async () => {
+    it("counts under the account lock inside the deleting transaction (A26-M19)", async () => {
       accountsRepository.findOne.mockResolvedValue({ ...mockAccount });
-      // Empty when first asked; a sync committed a row before the lock.
-      transactionRepository.count
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(1);
+      // A sync committed a row before the lock was granted.
+      transactionRepository.count.mockResolvedValue(1);
       investmentTxRepository.count.mockResolvedValue(0);
 
       await expect(service.delete("user-1", "account-1")).rejects.toThrow(
@@ -2004,10 +2022,10 @@ describe("AccountsService", () => {
           sql.includes("FOR UPDATE"),
       );
       expect(lockCall).toBeGreaterThanOrEqual(0);
-      expect(transactionRepository.count).toHaveBeenCalledTimes(2);
+      expect(transactionRepository.count).toHaveBeenCalledTimes(1);
       expect(
         mockQueryRunner.manager.query.mock.invocationCallOrder[lockCall],
-      ).toBeLessThan(transactionRepository.count.mock.invocationCallOrder[1]);
+      ).toBeLessThan(transactionRepository.count.mock.invocationCallOrder[0]);
       expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
     });
 
@@ -2080,7 +2098,7 @@ describe("AccountsService", () => {
       });
       mockQueryRunner.query.mockImplementation(async (sql: string) =>
         typeof sql === "string" &&
-        sql.includes("JOIN scheduled_transactions st")
+        sql.includes("COUNT(DISTINCT refs.schedule_id)")
           ? [{ accountId: "account-1", cnt: "2" }]
           : [],
       );
@@ -3755,74 +3773,109 @@ describe("AccountsService", () => {
   });
 
   describe("delete - scheduled transaction cleanup", () => {
-    it("deletes scheduled transaction for loan account", async () => {
-      accountsRepository.findOne.mockResolvedValue({
-        ...mockAccount,
-        accountType: AccountType.LOAN,
-        scheduledTransactionId: "sched-tx-to-delete",
-        linkedAccountId: null,
-      });
-      transactionRepository.count.mockResolvedValue(0);
-      investmentTxRepository.count.mockResolvedValue(0);
-
-      await service.delete("user-1", "account-1");
-
-      expect(scheduledTransactionsService.remove).toHaveBeenCalledWith(
-        "user-1",
-        "sched-tx-to-delete",
-      );
-      expect(mockQueryRunner.manager.remove).toHaveBeenCalled();
+    const loanAccount = (accountType: AccountType, scheduleId: string) => ({
+      ...mockAccount,
+      accountType,
+      scheduledTransactionId: scheduleId,
+      linkedAccountId: null,
     });
 
-    it("deletes scheduled transaction for mortgage account", async () => {
-      accountsRepository.findOne.mockResolvedValue({
-        ...mockAccount,
-        accountType: AccountType.MORTGAGE,
-        scheduledTransactionId: "sched-tx-mortgage",
-        linkedAccountId: null,
-      });
-      transactionRepository.count.mockResolvedValue(0);
-      investmentTxRepository.count.mockResolvedValue(0);
+    it("removes a loan's own schedule in the deleting transaction, and records it after", async () => {
+      accountsRepository.findOne.mockResolvedValue(
+        loanAccount(AccountType.LOAN, "sched-tx-to-delete"),
+      );
 
       await service.delete("user-1", "account-1");
 
-      expect(scheduledTransactionsService.remove).toHaveBeenCalledWith(
+      expect(
+        scheduledTransactionsService.removeWithoutHistory,
+      ).toHaveBeenCalledWith("user-1", "sched-tx-to-delete");
+      expect(scheduledTransactionsService.remove).not.toHaveBeenCalled();
+      // After the account lock and the count, before the account's removal.
+      const lockOrder =
+        mockQueryRunner.manager.query.mock.invocationCallOrder[
+          mockQueryRunner.manager.query.mock.calls.findIndex(
+            ([sql]: [string]) =>
+              typeof sql === "string" && sql.includes("FOR UPDATE"),
+          )
+        ];
+      const removeScheduleOrder =
+        scheduledTransactionsService.removeWithoutHistory.mock
+          .invocationCallOrder[0];
+      expect(lockOrder).toBeLessThan(removeScheduleOrder);
+      expect(removeScheduleOrder).toBeLessThan(
+        mockQueryRunner.manager.remove.mock.invocationCallOrder[0],
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Account,
+        { id: "account-1", userId: "user-1" },
+        { scheduledTransactionId: null },
+      );
+      expect(scheduledTransactionsService.recordRemoved).toHaveBeenCalledWith(
         "user-1",
-        "sched-tx-mortgage",
+        { id: "sched-tx-to-delete", name: "Loan payment" },
+      );
+      expect(
+        scheduledTransactionsService.recordRemoved.mock.invocationCallOrder[0],
+      ).toBeLessThan(
+        mockActionHistoryService.record.mock.invocationCallOrder[0],
       );
     });
 
-    it("continues deletion even if scheduled transaction removal fails", async () => {
-      accountsRepository.findOne.mockResolvedValue({
-        ...mockAccount,
-        accountType: AccountType.LOAN,
-        scheduledTransactionId: "sched-tx-gone",
-        linkedAccountId: null,
-      });
-      transactionRepository.count.mockResolvedValue(0);
-      investmentTxRepository.count.mockResolvedValue(0);
-      scheduledTransactionsService.remove.mockRejectedValue(
-        new Error("already deleted"),
+    it("removes a mortgage's own schedule", async () => {
+      accountsRepository.findOne.mockResolvedValue(
+        loanAccount(AccountType.MORTGAGE, "sched-tx-mortgage"),
+      );
+
+      await service.delete("user-1", "account-1");
+
+      expect(
+        scheduledTransactionsService.removeWithoutHistory,
+      ).toHaveBeenCalledWith("user-1", "sched-tx-mortgage");
+    });
+
+    it("continues when the loan's schedule is already gone", async () => {
+      accountsRepository.findOne.mockResolvedValue(
+        loanAccount(AccountType.LOAN, "sched-tx-gone"),
+      );
+      scheduledTransactionsService.removeWithoutHistory.mockRejectedValue(
+        new NotFoundException("gone"),
       );
 
       await service.delete("user-1", "account-1");
 
       expect(mockQueryRunner.manager.remove).toHaveBeenCalled();
+      expect(scheduledTransactionsService.recordRemoved).not.toHaveBeenCalled();
+      expect(mockActionHistoryService.record).toHaveBeenCalled();
+    });
+
+    it("deletes nothing when the loan's schedule cannot be removed", async () => {
+      accountsRepository.findOne.mockResolvedValue(
+        loanAccount(AccountType.LOAN, "sched-tx-stuck"),
+      );
+      scheduledTransactionsService.removeWithoutHistory.mockRejectedValue(
+        new Error("could not remove"),
+      );
+
+      await expect(service.delete("user-1", "account-1")).rejects.toThrow(
+        "could not remove",
+      );
+
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+      expect(scheduledTransactionsService.recordRemoved).not.toHaveBeenCalled();
+      expect(mockActionHistoryService.record).not.toHaveBeenCalled();
     });
 
     it("does not delete scheduled transaction for non-loan/mortgage accounts", async () => {
-      accountsRepository.findOne.mockResolvedValue({
-        ...mockAccount,
-        accountType: AccountType.CHEQUING,
-        scheduledTransactionId: "sched-tx-1",
-        linkedAccountId: null,
-      });
-      transactionRepository.count.mockResolvedValue(0);
-      investmentTxRepository.count.mockResolvedValue(0);
+      accountsRepository.findOne.mockResolvedValue(
+        loanAccount(AccountType.CHEQUING, "sched-tx-1"),
+      );
 
       await service.delete("user-1", "account-1");
 
-      expect(scheduledTransactionsService.remove).not.toHaveBeenCalled();
+      expect(
+        scheduledTransactionsService.removeWithoutHistory,
+      ).not.toHaveBeenCalled();
     });
   });
 

@@ -2729,12 +2729,29 @@ export class ScheduledTransactionsService {
   }
 
   async remove(userId: string, id: string): Promise<void> {
+    this.recordRemoved(userId, await this.removeWithoutHistory(userId, id));
+  }
+
+  /**
+   * Remove a schedule and return what it was, recording nothing. A caller that
+   * removes one inside its own transaction calls this there (the nested
+   * `withScopedDb` joins it) and `recordRemoved` after that transaction
+   * commits, as `createWithoutHistory` / `recordCreated` do for a create.
+   */
+  async removeWithoutHistory(
+    userId: string,
+    id: string,
+  ): Promise<ScheduledTransaction> {
     const scheduled = await this.findOne(userId, id);
     const beforeData = { ...scheduled };
     await withScopedDb(this.dataSource, (m) =>
       m.getRepository(ScheduledTransaction).remove(scheduled),
     );
+    return beforeData;
+  }
 
+  /** Record the "delete" history entry of a schedule `removeWithoutHistory` removed. */
+  recordRemoved(userId: string, beforeData: ScheduledTransaction): void {
     this.actionHistoryService.record(userId, {
       entityType: "scheduled_transaction",
       entityId: beforeData.id,
