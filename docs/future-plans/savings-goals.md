@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS savings_goals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
-  target_amount NUMERIC(20,4) NOT NULL CHECK (target_amount > 0),
+  target_amount NUMERIC(24,8) NOT NULL CHECK (target_amount > 0),
   currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
   target_date DATE,
   start_date DATE,

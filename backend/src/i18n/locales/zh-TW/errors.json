@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "找不到類別 ID 或類別不屬於使用者：{{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "薪資扣款規則會追蹤以法定貨幣支付的帳單；此帳單的科目持有加密貨幣 {{ code }}。請選擇從法定貨幣科目支付的帳單。",
     "notFound": "找不到薪資扣款規則 {{ id }}",
     "duplicate": "此帳單已有該類別的規則",
     "expectedRequired": "帳單中沒有此類別的項目；請輸入每次發薪的預期金額"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "價格符號（{{ quoteSymbol }}）只能設定在加密貨幣上；「{{ code }}」是法定貨幣",
     "quoteSymbolNotAPair": "「{{ code }}」的價格符號「{{ quoteSymbol }}」不是 BTC-EUR 這樣的幣種與法定貨幣的交易對",
     "kindInUse": "只要仍有科目、交易、證券或其他記錄在使用，就無法變更「{{ code }}」的類型",
+    "decimalPlacesInUse": "只要仍有科目、交易或其他記錄包含這麼多位小數的金額，就無法將「{{ code }}」的小數位數降到{{ places }}以下",
     "quoteSymbolInUse": "只要仍有科目、交易、證券或其他記錄在使用，就無法變更「{{ code }}」價格符號中的幣種；只能變更其中的法定貨幣",
     "kindConflict": "貨幣「{{ code }}」已作為 {{ kind }} 貨幣存在，無法新增為 {{ requestedKind }}"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "此次執行之後，此貸款的後續分期已被結清，因此無法復原該次執行。請先復原後續的結清"
   },
   "transactions": {
+    "amountPrecisionExceeded": "「{{ field }}」中的金額小數位數超過 {{ code }} 支援的位數（{{ places }}）。請最多輸入 {{ places }} 位小數；貨幣的小數位數在貨幣頁面設定。",
     "invalidStatus": "無效的交易狀態：{{ status }}",
     "reconciledLocked": "此交易已對帳並遭鎖定。要修改請在設定中關閉「鎖定已對帳交易」。",
     "convertToTransferRefused": "此交易已無法轉換為轉帳。請檢查後重新執行規則",

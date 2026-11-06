@@ -713,6 +713,119 @@ describe("CurrenciesService", () => {
         service.update(userId, "XYZ", { name: "Test" }),
       ).rejects.toThrow(NotFoundException);
     });
+
+    describe("decimalPlaces", () => {
+      const coin = {
+        ...mockCurrency,
+        code: "XBT",
+        createdByUserId: userId,
+        decimalPlaces: 8,
+      };
+
+      /** Answers the lock with the stored places and the function with `fitting`. */
+      function stored(fitting: number): void {
+        mockDataSource.query.mockImplementation(async (sql: string) =>
+          sql.includes("FOR UPDATE")
+            ? [{ decimal_places: 8 }]
+            : sql.includes("currency_min_decimal_places_in_use")
+              ? [{ fitting }]
+              : [],
+        );
+      }
+      const scans = () =>
+        mockDataSource.query.mock.calls.filter(([sql]) =>
+          String(sql).includes("currency_min_decimal_places_in_use"),
+        );
+
+      beforeEach(() => {
+        mockCurrencyRepo.findOne!.mockResolvedValue({ ...coin });
+        mockCurrencyRepo.save!.mockImplementation(async (row) => row);
+        mockPrefRepo.findOne!.mockResolvedValue({
+          userId,
+          currencyCode: "XBT",
+          isActive: true,
+        });
+      });
+
+      it("refuses lowering 8 to 4 when a row carries 0.00002500, naming the places that fit", async () => {
+        stored(6);
+
+        const attempt = service.update(userId, "XBT", { decimalPlaces: 4 });
+
+        await expect(attempt).rejects.toThrow(ConflictException);
+        await expect(attempt).rejects.toThrow(/below 6 /);
+        expect(mockCurrencyRepo.save).not.toHaveBeenCalled();
+        expect(scans()).toHaveLength(1);
+        expect(scans()[0][1]).toEqual(["XBT"]);
+      });
+
+      it("asks the database-wide function once, not a scan under the caller's row-level security", async () => {
+        stored(0);
+        await service.update(userId, "XBT", { decimalPlaces: 4 });
+
+        const sqls = mockDataSource.query.mock.calls.map(([sql]) =>
+          String(sql),
+        );
+        // The lock, then one function call; no table of amounts is read here,
+        // so another user's rows cannot be left out of the answer.
+        expect(sqls.filter((sql) => sql.includes("FOR UPDATE"))).toHaveLength(
+          1,
+        );
+        expect(scans()).toHaveLength(1);
+        for (const table of [
+          "FROM transactions",
+          "FROM transaction_splits",
+          "FROM scheduled_transactions",
+          "FROM accounts",
+        ]) {
+          expect(sqls.some((sql) => sql.includes(table))).toBe(false);
+        }
+      });
+
+      it("accepts lowering when every stored amount fits", async () => {
+        stored(4);
+
+        const view = await service.update(userId, "XBT", { decimalPlaces: 4 });
+
+        expect(view.decimalPlaces).toBe(4);
+        expect(mockCurrencyRepo.save).toHaveBeenCalled();
+      });
+
+      it("compares against the precision the amounts are held at, not the requested places", async () => {
+        // moneyDecimalsFor(2) is 4: rows carrying 3 or 4 places fit a request for 2.
+        stored(3);
+        const view = await service.update(userId, "XBT", { decimalPlaces: 2 });
+
+        expect(view.decimalPlaces).toBe(2);
+        expect(mockCurrencyRepo.save).toHaveBeenCalled();
+      });
+
+      it("accepts raising without touching the data", async () => {
+        mockCurrencyRepo.findOne!.mockResolvedValue({
+          ...coin,
+          decimalPlaces: 2,
+        });
+        stored(8);
+
+        const view = await service.update(userId, "XBT", { decimalPlaces: 8 });
+
+        expect(view.decimalPlaces).toBe(8);
+        expect(scans()).toHaveLength(0);
+      });
+
+      it("reads the current value under the row lock, so a concurrent drop is not missed", async () => {
+        // Read as 3 before the lock; another update raised it to 8 meanwhile.
+        mockCurrencyRepo.findOne!.mockResolvedValue({
+          ...coin,
+          decimalPlaces: 3,
+        });
+        stored(8);
+
+        await expect(
+          service.update(userId, "XBT", { decimalPlaces: 2 }),
+        ).rejects.toThrow(ConflictException);
+      });
+    });
   });
 
   describe("deactivate()", () => {

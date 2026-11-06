@@ -21,7 +21,7 @@ The page shows the number of **Total Currencies**, **Active**, and **Inactive**,
 | **Code** | The three-letter currency code. Your home currency is marked **Default**, and a cryptocurrency **Crypto**, with its price symbol beneath |
 | **Name** | The currency's name |
 | **Symbol** | The symbol shown with amounts, such as $, €, or £ |
-| **Decimals** | How many decimal places amounts in this currency have (2 for most, 0 for the yen, 4 for a cryptocurrency) |
+| **Decimals** | How many decimal places amounts in this currency have (2 for most, 0 for the yen, up to 8 for a cryptocurrency, 8 by default) |
 | **Usage** | How many of your accounts and securities use the currency, abbreviated: "15 accts, 5 secs" |
 | **Rate** | What one unit of the currency is worth in your home currency, from the latest stored rate (N/A when none is stored yet) |
 | **Status** | Active or Inactive |
@@ -79,7 +79,7 @@ The price symbol names the coin; the currency it is priced against is each curre
 
 - **Kind** -- once anything uses the code (an account, a transaction, a security, a stored exchange rate, and so on), its kind cannot change, and Monize refuses the edit. A coin stays a coin, and an ordinary currency stays ordinary
 - **Price Symbol** -- can be changed at any time; the next refresh fetches rates for the new symbol
-- **Decimal Places** -- four by default for a cryptocurrency, and never more than four, because Monize stores money to four decimal places. A very small amount, such as a network fee below `0.0001` of the coin, rounds to zero; [Precision](accounts.md#precision) explains how to record one
+- **Decimal Places** -- up to eight; a cryptocurrency defaults to eight (a satoshi for bitcoin), while ordinary currencies keep two or their standard count. An amount with more decimal places than the currency carries is refused rather than rounded; [Precision](accounts.md#precision) has the detail
 
 A cryptocurrency is only for crypto wallet accounts: no other account type, and no security, can use it. To hold a coin as an investment, track it as a [crypto security](investments.md#cryptocurrency) priced in an ordinary currency instead.
 

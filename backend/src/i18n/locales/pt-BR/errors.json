@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "IDs de categoria não encontrados ou não pertencentes ao usuário: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Uma regra de dedução salarial acompanha uma conta a pagar paga em uma moeda fiduciária; a conta desta fatura contém a criptomoeda {{ code }}. Escolha uma conta a pagar paga a partir de uma conta em moeda fiduciária.",
     "notFound": "Regra de dedução salarial {{ id }} não encontrada",
     "duplicate": "Esta fatura já tem uma regra para essa categoria",
     "expectedRequired": "A fatura não tem uma linha para esta categoria; informe o montante previsto por salário"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "Um símbolo de preço ({{ quoteSymbol }}) só pode ser definido em uma criptomoeda; \"{{ code }}\" é uma moeda fiduciária",
     "quoteSymbolNotAPair": "O símbolo de preço \"{{ quoteSymbol }}\" de \"{{ code }}\" não é um par de moeda e moeda fiduciária, como BTC-EUR",
     "kindInUse": "O tipo de \"{{ code }}\" não pode ser alterado enquanto contas, transações, títulos ou outros registros o usarem",
+    "decimalPlacesInUse": "As casas decimais de \"{{ code }}\" não podem ser reduzidas abaixo de {{ places }} enquanto contas, transações ou outros registros contiverem valores com tantas casas decimais",
     "quoteSymbolInUse": "A moeda do símbolo de preço de \"{{ code }}\" não pode ser alterada enquanto contas, transações, títulos ou outros registros o usarem; só a sua moeda fiduciária pode ser alterada",
     "kindConflict": "A moeda \"{{ code }}\" já existe como moeda {{ kind }} e não pode ser adicionada como {{ requestedKind }}"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "Uma parcela posterior deste empréstimo foi quitada depois desta execução, então a execução não pode ser desfeita. Desfaça primeiro a quitação posterior"
   },
   "transactions": {
+    "amountPrecisionExceeded": "O valor em \"{{ field }}\" tem mais casas decimais do que {{ code }} suporta ({{ places }}). Informe-o com no máximo {{ places }} casas decimais; as casas decimais de uma moeda são definidas na página Moedas.",
     "invalidStatus": "Status de transação inválido: {{ status }}",
     "reconciledLocked": "Esta transação está reconciliada e bloqueada. Desative «Bloquear transações reconciliadas» nas Configurações para alterá-la.",
     "convertToTransferRefused": "Esta transação não pode mais ser convertida em transferência. Revise-a e execute a regra novamente",

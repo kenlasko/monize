@@ -54,18 +54,20 @@ time dimension).
 
 ## Numbers and money
 
-Money is `decimal(20,4)`; the values below are chosen against that precision.
+Money is `NUMERIC(24,8)`, rounded at the currency's precision (four places for a fiat currency, up to eight for a coin; INV-MONEY-001); the values below are chosen against those precisions.
 
 | Name | Canonical value | Intended failure |
 | --- | ---: | --- |
 | Zero | `0` | Known zero versus unknown |
 | Negative | `-1` | Sign handling |
-| Smallest stored positive unit | `0.0001` | Precision floor |
-| Half-rounding boundary | `0.00005` | Whether the rounding policy is stated or accidental |
+| Smallest stored positive unit, fiat | `0.0001` | Precision floor |
+| Smallest stored positive unit, 8-place coin | `0.00000001` | Precision floor of a coin; a fee of `0.00002500` BTC must not round to zero |
+| One place past the currency | `0.00001` for fiat, `0.000000001` for an 8-place coin | `errors.transactions.amountPrecisionExceeded`, never a silent round |
+| Half-rounding boundary (fiat) | `0.00005` | Whether the rounding policy is stated or accidental |
 | Binary floating-point pair | `0.1` and `0.2` | Floating-point accumulation |
 | Ordinary decimal | `1234.5678` | Normal precision |
-| Large valid decimal | `9999999999999999.9999` | The upper shape of `decimal(20,4)` |
-| Just-over-limit decimal | `10000000000000000.0000` | Overflow or validation rejection |
+| Large valid decimal | `9999999999999999.99999999` | The upper shape of `NUMERIC(24,8)` (the shared-expense tables stop at `NUMERIC(20,4)`) |
+| Just-over-limit decimal | `10000000000000000.00000000` | Overflow or validation rejection |
 | Percentage boundary | `100` | Inclusive upper bound |
 | Above the percentage boundary | `100.0001` | Validation where a percentage is capped |
 | Null | `null` | Unknown value |

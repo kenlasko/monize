@@ -11,6 +11,7 @@
   "participantLimit": "Un grupo puede tener hasta 50 participantes.",
   "currencyLocked": "La moneda queda fijada tras el primer registro. Crea otro grupo para usar otra moneda.",
   "currency": "Elige una moneda disponible con un máximo de cuatro decimales.",
+  "groupCurrencyMustBeFiat": "Un grupo compartido mantiene sus cuentas en una moneda fiduciaria; {{ code }} es una criptomoneda. Elige una moneda fiduciaria para el grupo.",
   "invite": "Esta invitación no está disponible, ha caducado o ya se usó. Pide otra al propietario.",
   "inviteEmail": "Inicia sesión con el correo invitado y verifícalo antes de unirte.",
   "alreadyMember": "Tú o este participante ya pertenecéis al grupo. Pide al propietario que revise los participantes.",

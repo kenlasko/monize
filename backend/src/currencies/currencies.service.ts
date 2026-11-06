@@ -28,6 +28,7 @@ import {
   type CurrencyMetadata,
 } from "./currency-metadata";
 import { FALLBACK_DEFAULT_CURRENCY } from "../common/default-currency.util";
+import { MONEY_SCALE, moneyDecimalsFor } from "../common/round.util";
 import { FxProviderChain } from "./providers/fx-provider-chain";
 import { CryptoFxProvider } from "./providers/crypto-fx.provider";
 import { ExchangeRateHistoryService } from "./exchange-rate-history.service";
@@ -541,6 +542,14 @@ export class CurrenciesService implements OnApplicationBootstrap {
 
     // Handle isActive separately via preference row
     const { isActive, kind, quoteSymbol, ...rest } = dto;
+    if (rest.decimalPlaces !== undefined) {
+      await this.assertDecimalPlacesFit(
+        manager,
+        currency.code,
+        currency.decimalPlaces,
+        rest.decimalPlaces,
+      );
+    }
     const { updates: kindUpdates, repriced } = await this.kindUpdates(
       manager,
       currency,
@@ -569,6 +578,57 @@ export class CurrenciesService implements OnApplicationBootstrap {
       ),
       repriced,
     };
+  }
+
+  /**
+   * Refuse lowering `decimal_places` below what stored amounts already carry
+   * (`docs/specs/money-precision.md`, INV-MONEY-001). Every amount in the
+   * currency is held at `moneyDecimalsFor(decimal_places)` places; a smaller
+   * precision would leave rows the write paths then refuse (`amountPrecisionExceeded`)
+   * on an unchanged edit. Raising is free. The row is locked first, as
+   * `kindUpdates` does, and the current value is read under that lock, so a
+   * concurrent update cannot slip a lower value past the check; the lock is
+   * taken only for a request that lowers the value as last read.
+   *
+   * The scan is `currency_min_decimal_places_in_use`, SECURITY DEFINER, so it
+   * covers every user's amounts in the currency rather than the editing user's
+   * RLS view: transactions, their splits, account balances and thresholds,
+   * scheduled transactions, their splits and overrides. It answers the smallest
+   * `decimalPlaces` every stored amount fits; the refusal names it.
+   */
+  private async assertDecimalPlacesFit(
+    manager: EntityManager,
+    code: string,
+    readPlaces: number,
+    requestedPlaces: number,
+  ): Promise<void> {
+    if (requestedPlaces >= readPlaces) return;
+    const locked: Array<{ decimal_places: number | string | null }> =
+      await manager.query(
+        "SELECT decimal_places FROM currencies WHERE code = $1 FOR UPDATE",
+        [code],
+      );
+    const lockedValue = locked[0]?.decimal_places;
+    const currentPlaces =
+      lockedValue == null ? readPlaces : Number(lockedValue);
+    if (requestedPlaces >= currentPlaces) return;
+
+    const allowed = moneyDecimalsFor(requestedPlaces);
+    if (allowed >= MONEY_SCALE) return;
+    const rows: Array<{ fitting: number | string | null }> =
+      await manager.query(
+        `SELECT currency_min_decimal_places_in_use($1) AS "fitting"`,
+        [code],
+      );
+    const fitting = Number(rows[0]?.fitting ?? 0);
+    if (fitting <= allowed) return;
+    throw new ConflictException(
+      tr(
+        "errors.currencies.decimalPlacesInUse",
+        `The decimal places of "${code}" cannot be lowered below ${fitting} while accounts, transactions or other records hold amounts with that many places`,
+        { code, places: fitting },
+      ),
+    );
   }
 
   /**

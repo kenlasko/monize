@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "IDs de categoría no encontrados o no pertenecen al usuario: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Una regla de deducción de nómina hace seguimiento de una factura pagada en una moneda fiduciaria; la cuenta de esta factura contiene la criptomoneda {{ code }}. Elige una factura pagada desde una cuenta en moneda fiduciaria.",
     "notFound": "Regla de deducción de nómina {{ id }} no encontrada",
     "duplicate": "Esta factura ya tiene una regla para esa categoría",
     "expectedRequired": "La factura no tiene una línea para esta categoría; introduzca el importe previsto por nómina"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "Un símbolo de precio ({{ quoteSymbol }}) solo se puede establecer en una criptomoneda; \"{{ code }}\" es una moneda fiduciaria",
     "quoteSymbolNotAPair": "El símbolo de precio \"{{ quoteSymbol }}\" de \"{{ code }}\" no es un par de criptomoneda y moneda fiduciaria como BTC-EUR",
     "kindInUse": "El tipo de \"{{ code }}\" no se puede cambiar mientras lo usen cuentas, transacciones, valores u otros registros",
+    "decimalPlacesInUse": "Los decimales de \"{{ code }}\" no se pueden reducir por debajo de {{ places }} mientras cuentas, transacciones u otros registros contengan importes con tantos decimales",
     "quoteSymbolInUse": "La criptomoneda del símbolo de precio de \"{{ code }}\" no se puede cambiar mientras lo usen cuentas, transacciones, valores u otros registros; solo se puede cambiar su moneda fiduciaria",
     "kindConflict": "La divisa \"{{ code }}\" ya existe como divisa {{ kind }} y no se puede añadir como {{ requestedKind }}"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "Después de esta ejecución se liquidó una cuota posterior de este préstamo, por lo que la ejecución no se puede deshacer. Deshaga primero la liquidación posterior"
   },
   "transactions": {
+    "amountPrecisionExceeded": "El importe de «{{ field }}» tiene más decimales de los que admite {{ code }} ({{ places }}). Introdúcelo con un máximo de {{ places }} decimales; los decimales de una divisa se definen en la página Divisas.",
     "invalidStatus": "Estado de transacción no válido: {{ status }}",
     "reconciledLocked": "Esta transacción está conciliada y bloqueada. Desactiva «Bloquear transacciones conciliadas» en Ajustes para cambiarla.",
     "convertToTransferRefused": "Esta transacción ya no se puede convertir en una transferencia. Revísela y ejecute la regla de nuevo",

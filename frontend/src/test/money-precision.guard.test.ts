@@ -59,6 +59,8 @@ const ACCOUNT_CURRENCY_FILES = [
   '/src/components/settings/bank-sync/BankSyncAccountRow.tsx',
   '/src/components/reports/ForeignCurrencyFeesReport.tsx',
   '/src/components/accounts/shared/ForeignCurrencyFeesSection.tsx',
+  '/src/components/accounts/AccountRow.tsx',
+  '/src/components/transactions/AccountBalancesBarChart.tsx',
 ] as const;
 
 /**

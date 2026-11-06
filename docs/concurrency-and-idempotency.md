@@ -89,9 +89,9 @@ The import's per-row balance write is the same statement, issued on the import
 transaction's `EntityManager`:
 `backend/src/import/import-context.ts` `updateAccountBalance`, the one door the
 QIF, OFX, CSV and investment processors move a balance through. The delta it
-passes is rounded with `roundMoney` (4dp, the column's precision) and the sum is
+passes is rounded with `roundMoney` (at the account currency's precision, 4dp for fiat) and the sum is
 rounded by the database. `backend/test/integration/import-balance-delta.integration.spec.ts`
-holds both halves: an import's amounts land at 4dp, and two deltas on two
+holds both halves: an import's amounts land at that precision, and two deltas on two
 connections compose rather than one overwriting the other.
 
 ### 2 -- unique index as the guarantee

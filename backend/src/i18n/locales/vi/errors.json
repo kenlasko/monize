@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "Không tìm thấy ID danh mục hoặc không thuộc sở hữu của người dùng: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Quy tắc khấu trừ lương theo dõi một hóa đơn được thanh toán bằng tiền pháp định; tài khoản của hóa đơn này giữ tiền mã hóa {{ code }}. Hãy chọn một hóa đơn được thanh toán từ tài khoản tiền pháp định.",
     "notFound": "Không tìm thấy quy tắc khấu trừ lương {{ id }}",
     "duplicate": "Hóa đơn này đã có quy tắc cho danh mục đó",
     "expectedRequired": "Hóa đơn không có dòng cho danh mục này; hãy nhập số tiền dự kiến mỗi kỳ lương"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "Ký hiệu giá ({{ quoteSymbol }}) chỉ có thể đặt cho tiền mã hóa; \"{{ code }}\" là tiền pháp định",
     "quoteSymbolNotAPair": "Ký hiệu giá \"{{ quoteSymbol }}\" của \"{{ code }}\" không phải là cặp đồng coin và tiền pháp định như BTC-EUR",
     "kindInUse": "Không thể đổi loại của \"{{ code }}\" khi còn tài khoản, giao dịch, chứng khoán hoặc hồ sơ khác đang sử dụng",
+    "decimalPlacesInUse": "Không thể giảm số chữ số thập phân của \"{{ code }}\" xuống dưới {{ places }} khi tài khoản, giao dịch hoặc hồ sơ khác còn chứa số tiền có chừng đó chữ số thập phân",
     "quoteSymbolInUse": "Không thể đổi đồng coin trong ký hiệu giá của \"{{ code }}\" khi còn tài khoản, giao dịch, chứng khoán hoặc hồ sơ khác đang sử dụng; chỉ có thể đổi phần tiền pháp định",
     "kindConflict": "Tiền tệ \"{{ code }}\" đã tồn tại dưới dạng tiền tệ {{ kind }} và không thể thêm dưới dạng {{ requestedKind }}"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "Một kỳ trả góp sau của khoản vay này đã được tất toán sau lần chạy này, nên không thể hoàn tác lần chạy. Hãy hoàn tác lần tất toán sau trước"
   },
   "transactions": {
+    "amountPrecisionExceeded": "Số tiền trong \"{{ field }}\" có nhiều chữ số thập phân hơn mức {{ code }} hỗ trợ ({{ places }}). Hãy nhập tối đa {{ places }} chữ số thập phân; số chữ số thập phân của một tiền tệ được đặt ở trang Tiền tệ.",
     "invalidStatus": "Trạng thái giao tác không hợp lệ: {{ status }}",
     "reconciledLocked": "Giao dịch này đã đối soát và bị khóa. Hãy tắt \"Khóa giao dịch đã đối soát\" trong Cài đặt để thay đổi.",
     "convertToTransferRefused": "Giao dịch này không còn có thể chuyển thành chuyển khoản. Hãy xem lại và chạy lại quy tắc",

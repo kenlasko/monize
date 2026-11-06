@@ -176,6 +176,19 @@ describe("ImportRegularProcessorService", () => {
       expect(ctx.importResult.imported).toBe(0);
     });
 
+    it("refuses an over-precise OFX amount (-12.34567) on a CAD account with the places-exceeded error", async () => {
+      const ctx = makeContext();
+
+      await expect(
+        service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: -12.34567,
+          fitId: "FIT-1",
+        }),
+      ).rejects.toThrow(/more decimal places than CAD carries \(4\)/);
+      expect(ctx.importResult.imported).toBe(0);
+    });
+
     it("refuses a coin amount with more places than the coin carries", async () => {
       const ctx = btcContext();
 

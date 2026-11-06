@@ -196,7 +196,7 @@ So the producer keeps its own minimal per-user state, a new user-owned table
 ```
 user_id                UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE
 move_alert_percent     NUMERIC(9,4)  NULL   -- threshold; NULL = off (default, opt-in)
-baseline_value         NUMERIC(20,4) NULL   -- last COMPLETE MV (INV-PORTMOVE-001)
+baseline_value         NUMERIC(24,8) NULL   -- last COMPLETE MV (INV-PORTMOVE-001)
 baseline_currency      CHAR(3)       NULL   -- reporting currency baseline_value is in
 baseline_captured_on   DATE          NULL   -- the day the baseline MV was measured
 baseline_positions     JSONB         NULL   -- per held security: quantity, close,

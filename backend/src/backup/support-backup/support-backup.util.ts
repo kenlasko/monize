@@ -1,4 +1,4 @@
-import { MONEY_SCALE } from "../../common/round.util";
+import { MONEY_SCALE, roundMoney } from "../../common/round.util";
 
 /**
  * Primitive obfuscation operations shared by the rules engine and the JSONB
@@ -65,6 +65,8 @@ function scaleTo(
   if (!Number.isFinite(num)) {
     return value;
   }
-  const factor = 10 ** decimals;
-  return Math.round(num * multiplier * factor) / factor;
+  // `roundMoney` shifts the shortest decimal string through BigInt once the
+  // scaled value is large, so 150,000,000 x 2.5 at eight places stays exact
+  // where `Math.round(x * 1e8) / 1e8` leaves the safe-integer range.
+  return roundMoney(num * multiplier, decimals);
 }

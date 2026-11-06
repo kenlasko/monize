@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "未找到分类 ID 或不属于该用户：{{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "工资扣款规则跟踪以法定货币支付的账单；此账单的账户持有加密货币 {{ code }}。请选择从法定货币账户支付的账单。",
     "notFound": "未找到工资扣款规则 {{ id }}",
     "duplicate": "此账单已有该类别的规则",
     "expectedRequired": "账单中没有此类别的行；请输入每次发薪的预期金额"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "价格符号（{{ quoteSymbol }}）只能设置在加密货币上；\"{{ code }}\"是法定货币",
     "quoteSymbolNotAPair": "\"{{ code }}\"的价格符号\"{{ quoteSymbol }}\"不是 BTC-EUR 这样的币种与法定货币的交易对",
     "kindInUse": "只要仍有账户、交易、证券或其他记录在使用，就无法更改\"{{ code }}\"的类型",
+    "decimalPlacesInUse": "只要仍有账户、交易或其他记录包含这么多位小数的金额，就无法将\"{{ code }}\"的小数位数降到{{ places }}以下",
     "quoteSymbolInUse": "只要仍有账户、交易、证券或其他记录在使用，就无法更改\"{{ code }}\"价格符号中的币种；只能更改其中的法定货币",
     "kindConflict": "货币\"{{ code }}\"已作为 {{ kind }} 货币存在，无法添加为 {{ requestedKind }}"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "此次运行之后，此贷款的后续分期已被结清，因此无法撤销该运行。请先撤销后续的结清"
   },
   "transactions": {
+    "amountPrecisionExceeded": "“{{ field }}”中的金额小数位数超过 {{ code }} 支持的位数（{{ places }}）。请最多输入 {{ places }} 位小数；货币的小数位数在货币页面设置。",
     "invalidStatus": "无效的交易状态：{{ status }}",
     "reconciledLocked": "该交易已对账并被锁定。要修改它，请在设置中关闭“锁定已对账交易”。",
     "convertToTransferRefused": "此交易已无法转换为转账。请检查后重新运行规则",

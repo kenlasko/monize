@@ -11,6 +11,7 @@
   "participantLimit": "Grup dapat memiliki hingga 50 peserta.",
   "currencyLocked": "Mata uang grup tetap setelah catatan pertama. Buat grup baru untuk menggunakan mata uang lain.",
   "currency": "Pilih mata uang yang tersedia dengan maksimal empat angka desimal.",
+  "groupCurrencyMustBeFiat": "Grup bersama menyimpan akunnya dalam mata uang fiat; {{ code }} adalah mata uang kripto. Pilih mata uang fiat untuk grup.",
   "invite": "Undangan ini tidak tersedia, kedaluwarsa, atau sudah digunakan. Minta undangan baru kepada pemilik grup.",
   "inviteEmail": "Masuk dengan alamat email yang diundang dan verifikasi sebelum bergabung.",
   "alreadyMember": "Anda atau peserta ini sudah menjadi anggota grup. Minta pemilik memeriksa pesertanya.",

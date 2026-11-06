@@ -967,11 +967,11 @@ export class ImportService {
       throw new BadRequestException(validation.error);
     }
 
-    // The file's figures are read at the destination account's precision,
-    // which is known only once the account is loaded.
+    // The figures are read at the storage scale; the processor refuses any
+    // that carry more places than the destination account's currency does.
     return this.importParsedTransactions(
       userId,
-      (amountDecimals) => parseOfx(dto.content, amountDecimals),
+      parseOfx(dto.content),
       dto.accountId,
       dto.categoryMappings,
       dto.accountMappings,
@@ -1255,16 +1255,15 @@ export class ImportService {
 
   private async importParsedTransactions(
     userId: string,
-    parsed: QifParseResult | ((amountDecimals: number) => QifParseResult),
+    result: QifParseResult,
     accountId: string,
     categoryMappings: CategoryMappingDto[],
     accountMappings: AccountMappingDto[],
     securityMappings?: SecurityMappingDto[],
     _dateFormat?: DateFormat,
   ): Promise<ImportResultDto> {
-    // The account currency's money precision is read with the account: a file
-    // that gives amounts at the account's precision (an OFX statement) is read
-    // at it, and the processors round and refuse at it.
+    // The account currency's money precision is read with the account; the
+    // processors refuse a file amount that carries more places than it.
     const { account, moneyDecimals } = await withScopedDb(
       this.dataSource,
       async (manager) => {
@@ -1285,9 +1284,6 @@ export class ImportService {
       );
     }
     if (account.isClosed) throw closedAccountError();
-
-    const result =
-      typeof parsed === "function" ? parsed(moneyDecimals) : parsed;
 
     // Validate file type matches destination account type
     const isInvestment = result.accountType === "INVESTMENT";

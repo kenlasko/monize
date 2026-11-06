@@ -83,6 +83,7 @@ implied.
 | INV-FX-005 | A provider-written rate names its provider, every provider question goes through the chain, and an outage is never remembered as an empty answer | enforced |
 | INV-CRYPTO-001 | An account's type and its currency's kind agree: a crypto wallet holds a coin, every other account and every security a fiat currency | partial |
 | INV-CRYPTO-002 | A pair with a coin on either side is priced only by the crypto provider, through the coin's Yahoo pair, and that provider prices nothing else | enforced |
+| INV-MONEY-001 | An amount in an account's currency is stored and rounded at that currency's money precision: never more places than it carries, never fewer | enforced |
 | INV-TRADE-001 | The executed total is the fact; the per-share price is derived from it | enforced |
 | INV-PRICE-001 | A stored price is in the currency the security is recorded in | partial |
 | INV-PORTRESULT-001 | A period change is not a return: value change, external flows and investment result are three figures | enforced |
@@ -652,8 +653,8 @@ Enforcement         Every absolute recompute takes the account lock before readi
                     the investment-pair rename and re-currency, and the account
                     delete's unlink, update only the changed columns of the
                     other half; an imported opening balance is
-                    applyOpeningBalanceChange (accounts.service.ts), a 4dp
-                    delta of new - old read under lockAccountsForBalanceWrite
+                    applyOpeningBalanceChange (accounts.service.ts), a delta
+                    rounded at the account currency's precision, of new - old read under lockAccountsForBalanceWrite
                     (A26-M13).
 Concurrency scope   per account
 Retry semantics     A recompute is idempotent against another recompute and, under
@@ -675,7 +676,7 @@ Required tests      Source scan: common/db/derived-state-writers.guard.spec.ts -
                     opening-balance undo:
                     backend/test/integration/account-undo.integration.spec.ts.
                     A pair rename with a posting in its window, and an imported
-                    4dp opening balance beside a concurrent movement:
+                    imported opening balance beside a concurrent movement:
                     backend/test/integration/investment-pair-stale-balance.integration.spec.ts,
                     backend/test/integration/import-balance-delta.integration.spec.ts.
 Status              partial
@@ -1909,6 +1910,70 @@ Status              enforced -- for the rows the chain writes. Rows written
 
 Spec: `docs/specs/crypto-accounts.md`, decision 5.
 
+### INV-MONEY-001 -- precision is the currency's
+
+```text
+Statement           An amount in an account's currency is stored at
+                    moneyDecimalsFor(currency.decimal_places) places: four for
+                    every fiat currency, the coin's own places (up to eight)
+                    for a cryptocurrency. A write carrying more places than
+                    that is refused, never rounded, and a derived figure (a
+                    conversion, a sum, a delta) is rounded at that precision,
+                    so a 2,500-satoshi fee is 0.00002500 BTC and never zero.
+                    Fiat behaves byte for byte as it did at NUMERIC(20,4).
+Source of truth     The money columns, NUMERIC(24,8) (migration
+                    20261106012628_money_scale_8.sql), and
+                    currencies.decimal_places (CHECK BETWEEN 0 AND 8). The
+                    three fiat-only shared-expense tables (shared_entries,
+                    shared_allocations, shared_ledger_links) stay NUMERIC(20,4)
+                    by design; a shared group's currency must be FIAT
+                    (sharedExpenses.groupCurrencyMustBeFiat).
+Enforcement         Service-level, in the write's own transaction before the
+                    first write. assertAmountPrecision
+                    (backend/src/common/amount-precision.util.ts) on every
+                    writer of an account-currency amount, reading the places
+                    through loadCurrencyPlaces / moneyDecimalsForCode
+                    (common/currency-places.util.ts). roundMoney(x, decimals)
+                    and sumMoney(values, decimals) at every derivation site, with
+                    sumMoney exact in BigInt (common/round.util.ts), and
+                    applyFxConversion(amount, rate, fxFeePercent, { toDecimals })
+                    for a conversion into a currency
+                    (common/fx-entry.util.ts). DTO amount fields use
+                    @IsMoneyAmount, @IsShareQuantity and @IsFxRate
+                    (common/validators/), which count places through
+                    decimalPlacesOf and so survive a value below 1e-6 where
+                    class-validator's maxDecimalPlaces throws. The client
+                    mirrors it: frontend/src/lib/format.ts roundMoney / sumMoney
+                    with decimals, moneyDecimalsForCurrency and
+                    entryDecimalPlaces over the registry in
+                    lib/currency-decimals.ts. Two source guards with empty
+                    baselines: backend/src/common/money-precision.guard.spec.ts
+                    (no one-argument roundMoney / sumMoney / toMoneyNumber, no
+                    literal 10000 scale and no ROUND(..., 4) on the listed
+                    account-currency paths) and
+                    backend/src/common/money-amount-dto.guard.spec.ts (no
+                    maxDecimalPlaces on a money-named DTO field); the frontend's
+                    frontend/src/test/money-precision.guard.test.ts holds the
+                    same on the account-currency files.
+Concurrency scope   per write; the places are read inside the write's
+                    transaction, and a currency's decimal_places is edited on
+                    the Currencies page.
+Retry semantics     A refused amount writes nothing and a retry with a
+                    corrected amount is an ordinary write.
+Crash semantics     --
+Failure response    400 errors.transactions.amountPrecisionExceeded, naming the
+                    currency and its places.
+Required tests      Unit: assertAmountPrecision, roundMoney / sumMoney /
+                    applyFxConversion at eight places, the validators, and each
+                    writer's refusal. Source scan: the two backend guards above
+                    and the frontend guard. PG integration (the column holds
+                    eight places and a fiat value is unchanged):
+                    backend/test/integration/money-precision.integration.spec.ts.
+Status              enforced
+```
+
+Spec: `docs/specs/money-precision.md`.
+
 ### INV-TRADE-001 -- the executed total is the fact, the price is derived
 
 ```text
@@ -1920,7 +1985,9 @@ Statement           What a trade came to is what it came to. A caller that
                     never re-derived from a stored price unless the price, the
                     quantity, the commission or the action is what changed --
                     compared by value, because the form resends every field.
-Source of truth     investment_transactions.total_amount NUMERIC(20,4), with
+Source of truth     investment_transactions.total_amount NUMERIC(24,8) (still a
+                    fiat amount: INV-CRYPTO-001 keeps a security in a fiat
+                    currency, the column is widened with the rest), with
                     price NUMERIC(24,10) beside it.
 Enforcement         securities/investment-amount.util.ts is the one door:
                     deriveInvestmentTotal, derivePriceFromTotal and

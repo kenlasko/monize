@@ -3170,8 +3170,9 @@ describe("ImportService", () => {
 
       const result = await service.importOfxFile(userId, dto);
 
-      // The destination account (CAD) reads the statement at its 4 places.
-      expect(mockedParseOfx).toHaveBeenCalledWith(dto.content, 4);
+      // The statement is read at the storage scale; the processor refuses any
+      // amount past the destination account's places.
+      expect(mockedParseOfx).toHaveBeenCalledWith(dto.content);
       expect(result).toBeDefined();
       expect(result.imported).toBeDefined();
     });

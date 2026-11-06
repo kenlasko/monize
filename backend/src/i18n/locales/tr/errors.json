@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "Kategori kimlikleri bulunamadı veya kullanıcıya ait değil: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Bordro kesinti kuralı, fiat para biriminde ödenen bir faturayı izler; bu faturanın hesabı {{ code }} kripto parasını tutuyor. Fiat bir hesaptan ödenen bir fatura seçin.",
     "notFound": "Bordro kesinti kuralı {{ id }} bulunamadı",
     "duplicate": "Bu faturada o kategori için zaten bir kural var",
     "expectedRequired": "Faturada bu kategori için satır yok; maaş başına beklenen tutarı girin"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "Fiyat sembolü ({{ quoteSymbol }}) yalnızca bir kripto paraya ayarlanabilir; \"{{ code }}\" bir fiat para birimidir",
     "quoteSymbolNotAPair": "\"{{ code }}\" için \"{{ quoteSymbol }}\" fiyat sembolü, BTC-EUR gibi bir coin ve fiat çifti değildir",
     "kindInUse": "Hesaplar, işlemler, menkul kıymetler veya diğer kayıtlar kullandığı sürece \"{{ code }}\" para biriminin türü değiştirilemez",
+    "decimalPlacesInUse": "Hesaplar, işlemler veya diğer kayıtlar bu kadar ondalık basamaklı tutarlar içerdiği sürece \"{{ code }}\" para biriminin ondalık basamakları {{ places }} değerinin altına düşürülemez",
     "quoteSymbolInUse": "Hesaplar, işlemler, menkul kıymetler veya diğer kayıtlar kullandığı sürece \"{{ code }}\" fiyat sembolündeki coin değiştirilemez; yalnızca fiat para birimi değiştirilebilir",
     "kindConflict": "\"{{ code }}\" para birimi zaten {{ kind }} para birimi olarak mevcut ve {{ requestedKind }} olarak eklenemez"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "Bu çalıştırmadan sonra bu kredinin daha sonraki bir taksiti kapatıldı, bu yüzden çalıştırma geri alınamaz. Önce sonraki kapatmayı geri alın"
   },
   "transactions": {
+    "amountPrecisionExceeded": "\"{{ field }}\" içindeki tutar, {{ code }} para biriminin desteklediğinden ({{ places }}) fazla ondalık basamağa sahip. En fazla {{ places }} ondalık basamakla girin; bir para biriminin ondalık basamakları Para Birimleri sayfasında ayarlanır.",
     "invalidStatus": "Geçersiz işlem durumu: {{ status }}",
     "reconciledLocked": "Bu işlem mutabık kılınmış ve kilitli. Değiştirmek için Ayarlar'da 'Mutabık kılınan işlemleri kilitle' seçeneğini kapatın.",
     "convertToTransferRefused": "Bu işlem artık bir transfere dönüştürülemez. İşlemi gözden geçirip kuralı yeniden çalıştırın",

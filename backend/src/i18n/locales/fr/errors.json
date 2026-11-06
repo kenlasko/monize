@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "IDs de catégorie introuvables ou n'appartenant pas à l'utilisateur : {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Une règle de retenue salariale suit une facture payée dans une devise fiduciaire ; le compte de cette facture contient la cryptomonnaie {{ code }}. Choisissez une facture payée depuis un compte en devise fiduciaire.",
     "notFound": "Règle de retenue salariale {{ id }} introuvable",
     "duplicate": "Cette facture a déjà une règle pour cette catégorie",
     "expectedRequired": "La facture n'a pas de ligne pour cette catégorie ; saisissez le montant attendu par paie"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "Un symbole de cours ({{ quoteSymbol }}) ne peut être défini que sur une cryptomonnaie ; « {{ code }} » est une devise fiduciaire",
     "quoteSymbolNotAPair": "Le symbole de cours « {{ quoteSymbol }} » de « {{ code }} » n'est pas une paire cryptomonnaie et devise fiduciaire comme BTC-EUR",
     "kindInUse": "Le type de « {{ code }} » ne peut pas être modifié tant que des comptes, des transactions, des titres ou d'autres enregistrements l'utilisent",
+    "decimalPlacesInUse": "Les décimales de « {{ code }} » ne peuvent pas descendre sous {{ places }} tant que des comptes, des transactions ou d'autres enregistrements contiennent des montants avec autant de décimales",
     "quoteSymbolInUse": "La cryptomonnaie du symbole de cours de « {{ code }} » ne peut pas être modifiée tant que des comptes, des transactions, des titres ou d'autres enregistrements l'utilisent ; seule sa devise fiduciaire peut l'être",
     "kindConflict": "La devise « {{ code }} » existe déjà comme devise {{ kind }} et ne peut pas être ajoutée comme {{ requestedKind }}"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "Une échéance ultérieure de ce prêt a été réglée après cette exécution, l'exécution ne peut donc pas être annulée. Annulez d'abord le règlement ultérieur"
   },
   "transactions": {
+    "amountPrecisionExceeded": "Le montant de « {{ field }} » comporte plus de décimales que {{ code }} n'en admet ({{ places }}). Saisissez-le avec au plus {{ places }} décimales ; les décimales d'une devise se définissent dans la page Devises.",
     "invalidStatus": "Statut de transaction invalide : {{ status }}",
     "reconciledLocked": "Cette transaction est rapprochée et verrouillée. Désactivez « Verrouiller les transactions rapprochées » dans les Paramètres pour la modifier.",
     "convertToTransferRefused": "Cette transaction ne peut plus être convertie en virement. Vérifiez-la et exécutez la règle à nouveau",

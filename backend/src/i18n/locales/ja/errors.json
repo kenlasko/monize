@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "カテゴリIDが見つからないか、ユーザーが所有していません：{{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "給与控除ルールは法定通貨で支払う請求を対象にします。この請求の口座は暗号資産 {{ code }} を保有しています。法定通貨の口座から支払う請求を選択してください。",
     "notFound": "給与控除ルール {{ id }} が見つかりません",
     "duplicate": "この請求にはそのカテゴリのルールが既にあります",
     "expectedRequired": "この請求にはこのカテゴリの行がありません。給与ごとの予定額を入力してください"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "価格記号（{{ quoteSymbol }}）を設定できるのは暗号資産のみです。「{{ code }}」は法定通貨です",
     "quoteSymbolNotAPair": "「{{ code }}」の価格記号「{{ quoteSymbol }}」は、BTC-EUR のようなコインと法定通貨のペアではありません",
     "kindInUse": "口座、取引、有価証券、その他の記録で使用されている間は、「{{ code }}」の種類を変更できません",
+    "decimalPlacesInUse": "口座、取引、その他の記録にそれだけの桁数の小数を持つ金額が残っている間は、「{{ code }}」の小数桁数を{{ places }}未満に下げることはできません",
     "quoteSymbolInUse": "口座、取引、有価証券、その他の記録で使用されている間は、「{{ code }}」の価格記号のコインを変更できません。変更できるのは法定通貨の部分だけです",
     "kindConflict": "通貨「{{ code }}」はすでに {{ kind }} 通貨として存在するため、{{ requestedKind }} として追加できません"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "この実行の後にこのローンの以降の返済分が決済されたため、この実行は元に戻せません。先に以降の決済を元に戻してください"
   },
   "transactions": {
+    "amountPrecisionExceeded": "「{{ field }}」の金額は、{{ code }} が扱える小数桁数 ({{ places }}) を超えています。小数点以下 {{ places }} 桁までで入力してください。通貨の小数桁数は通貨ページで設定します。",
     "invalidStatus": "無効な取引ステータス：{{ status }}",
     "reconciledLocked": "この取引は照合済みでロックされています。変更するには設定で「照合済み取引をロックする」をオフにしてください。",
     "convertToTransferRefused": "この取引はもう振替に変換できません。内容を確認して、ルールをもう一度実行してください",

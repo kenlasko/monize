@@ -257,7 +257,7 @@ test("account-crypto-detail", async () => {
   ).toBeVisible();
   await expect(
     page.getByRole("article", { name: "Current Balance" }),
-  ).toContainText("0.0070", { timeout: 30_000 });
+  ).toContainText("0.00704283", { timeout: 30_000 });
   await chartDrawn();
   await settled();
   await page.evaluate(() => window.scrollTo(0, 0));

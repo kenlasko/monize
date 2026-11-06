@@ -1190,6 +1190,74 @@ describe('AccountRow', () => {
       expect(byKey.get('netWorthExclusion')?.hidden).toBe(true);
     });
   });
+  describe('the Close action on a small balance', () => {
+    const labels = {
+      viewTransactions: 'View Transactions',
+      details: 'Details',
+      edit: 'Edit',
+      reconcile: 'Reconcile',
+      close: 'Close',
+      closeTitleDisabled: 'Balance must be zero',
+      closeTitleEnabled: 'Close account',
+      reopen: 'Reopen',
+      delete: 'Delete',
+    };
+    const handlers = {
+      onDetails: vi.fn(),
+      onEdit: vi.fn(),
+      onReconcile: vi.fn(),
+      onCloseClick: vi.fn(),
+      onReopen: vi.fn(),
+      onDeleteClick: vi.fn(),
+    };
+    const closeActionFor = (currencyCode: string, value: number) => {
+      const account = createAccount({ currencyCode, currentBalance: value });
+      const logical: LogicalAccount = {
+        id: account.id,
+        primary: account,
+        cash: null,
+        memberIds: [account.id],
+        displayName: account.name,
+        isInvestment: false,
+        cashRegisterId: null,
+        holdingsAccountId: null,
+        combinedValue: value,
+      };
+      const actions = buildAccountActions(account, true, labels, handlers, logical);
+      return actions.find((a) => a.key === 'close');
+    };
+
+    afterEach(() => {
+      act(() => clearCurrencyDecimals());
+    });
+
+    it('does not offer Close on a coin wallet holding 0.000025 BTC', () => {
+      act(() => registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]));
+      const close = closeActionFor('BTC', 0.000025);
+      expect(close?.disabled).toBe(true);
+      expect(close?.title).toBe('Balance must be zero');
+    });
+
+    it('does not offer Close on a coin the registry has not loaded yet', () => {
+      expect(closeActionFor('BTC', 0.000025)?.disabled).toBe(true);
+    });
+
+    it('still offers Close on an empty coin wallet', () => {
+      act(() => registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]));
+      const close = closeActionFor('BTC', 0);
+      expect(close?.disabled).toBe(false);
+      expect(close?.title).toBe('Close account');
+    });
+
+    it('treats a CAD balance of 0.004 as before (non-zero at four places)', () => {
+      expect(closeActionFor('CAD', 0.004)?.disabled).toBe(true);
+    });
+
+    it('treats a CAD balance below half a basis point as empty, as before', () => {
+      expect(closeActionFor('CAD', 0.00004)?.disabled).toBe(false);
+    });
+  });
+
   describe('a folded investment pair', () => {
     const brokerage = createAccount({
       id: 'brok',

@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "ID categoria non trovati o non di proprietà dell'utente: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Una regola di trattenuta sullo stipendio tiene traccia di una fattura pagata in una valuta fiat; il conto di questa fattura contiene la criptovaluta {{ code }}. Scegli una fattura pagata da un conto in valuta fiat.",
     "notFound": "Regola di trattenuta sullo stipendio {{ id }} non trovata",
     "duplicate": "Questa fattura ha già una regola per quella categoria",
     "expectedRequired": "La fattura non ha una riga per questa categoria; inserisci l'importo previsto per busta paga"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "Un simbolo di prezzo ({{ quoteSymbol }}) può essere impostato solo su una criptovaluta; \"{{ code }}\" è una valuta fiat",
     "quoteSymbolNotAPair": "Il simbolo di prezzo \"{{ quoteSymbol }}\" di \"{{ code }}\" non è una coppia di moneta e valuta fiat come BTC-EUR",
     "kindInUse": "Il tipo di \"{{ code }}\" non può essere modificato finché conti, transazioni, titoli o altri record lo usano",
+    "decimalPlacesInUse": "I decimali di \"{{ code }}\" non possono scendere sotto {{ places }} finché conti, transazioni o altri record contengono importi con altrettanti decimali",
     "quoteSymbolInUse": "La moneta nel simbolo di prezzo di \"{{ code }}\" non può essere modificata finché conti, transazioni, titoli o altri record lo usano; si può modificare solo la sua valuta fiat",
     "kindConflict": "La valuta \"{{ code }}\" esiste già come valuta {{ kind }} e non può essere aggiunta come {{ requestedKind }}"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "Una rata successiva di questo prestito è stata saldata dopo questa esecuzione, quindi l'esecuzione non può essere annullata. Annulla prima il saldo successivo"
   },
   "transactions": {
+    "amountPrecisionExceeded": "L'importo in \"{{ field }}\" ha più decimali di quelli supportati da {{ code }} ({{ places }}). Inseriscilo con al massimo {{ places }} decimali; i decimali di una valuta si impostano nella pagina Valute.",
     "invalidStatus": "Stato transazione non valido: {{ status }}",
     "reconciledLocked": "Questa transazione è riconciliata e bloccata. Disattiva «Blocca le transazioni riconciliate» nelle Impostazioni per modificarla.",
     "convertToTransferRefused": "Questa transazione non può più essere convertita in un trasferimento. Controllala ed esegui di nuovo la regola",

@@ -592,23 +592,23 @@ ${row("0", "-5.00")}${row("U-1", "-6.00")}${row("0", "-7.00")}
       expect(result.transactions[0].amount).toBe(0);
     });
 
-    it("rounds amounts to the account's precision, 4 decimal places for fiat", () => {
-      const result = parseOfx(buildOfxWithAmount("-50.12346"), 4);
-      expect(result.transactions[0].amount).toBe(-50.1235);
+    it("does not round an over-precise amount to a fiat account's 4 places (the import processor refuses it)", () => {
+      const result = parseOfx(buildOfxWithAmount("-12.34567"));
+      expect(result.transactions[0].amount).toBe(-12.34567);
     });
 
     it("handles amounts with many decimal places", () => {
-      const result = parseOfx(buildOfxWithAmount("100.99999"), 4);
-      expect(result.transactions[0].amount).toBe(101.0);
+      const result = parseOfx(buildOfxWithAmount("100.99999"));
+      expect(result.transactions[0].amount).toBe(100.99999);
     });
 
-    it("keeps up to 8 places when the account is not known (a preview)", () => {
+    it("keeps up to 8 places (a preview and an import read alike)", () => {
       const result = parseOfx(buildOfxWithAmount("-50.12345678"));
       expect(result.transactions[0].amount).toBe(-50.12345678);
     });
 
-    it("reads a coin statement's 8-place amount whole at the coin's precision", () => {
-      const result = parseOfx(buildOfxWithAmount("-0.00002500"), 8);
+    it("reads a coin statement's 8-place amount whole", () => {
+      const result = parseOfx(buildOfxWithAmount("-0.00002500"));
       expect(result.transactions[0].amount).toBe(-0.000025);
     });
 

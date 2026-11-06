@@ -162,10 +162,10 @@ id                       UUID PK
 user_id                  UUID NOT NULL -> users ON DELETE CASCADE
 scheduled_transaction_id UUID NOT NULL -> scheduled_transactions ON DELETE CASCADE
 category_id              UUID NOT NULL -> categories ON DELETE CASCADE
-yearly_maximum           NUMERIC(20,4) NOT NULL CHECK (>= 0)
+yearly_maximum           NUMERIC(24,8) NOT NULL CHECK (>= 0)
 reset_period             VARCHAR(20) NOT NULL DEFAULT 'YEARLY' CHECK (IN ('YEARLY'))
 reset_date               DATE NOT NULL
-expected_per_paycheque   NUMERIC(20,4) NULL CHECK (IS NULL OR >= 0)
+expected_per_paycheque   NUMERIC(24,8) NULL CHECK (IS NULL OR >= 0)
 created_at, updated_at   TIMESTAMPTZ
 UNIQUE (scheduled_transaction_id, category_id)
 ```

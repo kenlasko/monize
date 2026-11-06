@@ -37,6 +37,7 @@ describe("scaleMoney", () => {
     expect(scaleMoney("0.00002500", 1.5)).toBe(0.0000375);
     expect(scaleMoney(0.00000005, 2)).toBe(0.0000001);
     expect(scaleMoney("0.12345678", 1)).toBe(0.12345678);
+    expect(scaleMoney(150000000, 2.5)).toBe(375000000);
   });
 
   it("passes through null/undefined and unparseable input", () => {

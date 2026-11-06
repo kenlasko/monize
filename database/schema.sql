@@ -5386,6 +5386,72 @@ COMMENT ON FUNCTION currency_code_referenced_by_data(VARCHAR) IS
 REVOKE ALL ON FUNCTION currency_code_referenced_by_data(VARCHAR) FROM PUBLIC;
 
 -- -------------------------------------------------------------------------
+-- The fewest decimal places every stored amount in a currency fits.
+--
+-- The decimal-places lowering gate's question (INV-MONEY-001), global rather
+-- than the editing user's RLS view: a single pass over the amount columns of
+-- every user's rows in the currency. Same SECURITY DEFINER shape; held by
+-- currency-references.spec.ts.
+-- -------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION currency_min_decimal_places_in_use(p_code VARCHAR)
+RETURNS smallint
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT COALESCE(MAX(scale(trim_scale(amounts.amount))), 0)::smallint
+  FROM (
+    SELECT t.amount AS amount
+      FROM transactions t JOIN accounts a ON a.id = t.account_id
+      WHERE a.currency_code = p_code
+    UNION ALL SELECT t.original_amount
+      FROM transactions t
+      WHERE t.original_currency_code = p_code
+    UNION ALL SELECT s.amount
+      FROM transaction_splits s
+      JOIN transactions t ON t.id = s.transaction_id
+      JOIN accounts a ON a.id = t.account_id
+      WHERE a.currency_code = p_code
+    UNION ALL SELECT v.amount
+      FROM accounts a
+      CROSS JOIN LATERAL (VALUES
+        (a.opening_balance), (a.current_balance), (a.credit_limit),
+        (a.low_balance_threshold), (a.high_balance_threshold)
+      ) AS v(amount)
+      WHERE a.currency_code = p_code
+    UNION ALL SELECT st.amount
+      FROM scheduled_transactions st JOIN accounts a ON a.id = st.account_id
+      WHERE a.currency_code = p_code
+    UNION ALL SELECT st.original_amount
+      FROM scheduled_transactions st
+      WHERE st.original_currency_code = p_code
+    UNION ALL SELECT ss.amount
+      FROM scheduled_transaction_splits ss
+      JOIN scheduled_transactions st ON st.id = ss.scheduled_transaction_id
+      JOIN accounts a ON a.id = st.account_id
+      WHERE a.currency_code = p_code
+    UNION ALL SELECT so.amount
+      FROM scheduled_transaction_overrides so
+      JOIN scheduled_transactions st ON st.id = so.scheduled_transaction_id
+      JOIN accounts a ON a.id = st.account_id
+      WHERE a.currency_code = p_code
+  ) AS amounts
+$$;
+
+COMMENT ON FUNCTION currency_min_decimal_places_in_use(VARCHAR) IS
+  'The smallest number of decimal places (0..8) that every stored amount in '
+  'currency p_code fits without losing a digit, across every user: '
+  'transactions, their splits, account balances and thresholds, scheduled '
+  'transactions, their splits and overrides. 0 when nothing is stored. '
+  'SECURITY DEFINER so the answer is global rather than the calling tenant''s '
+  'view of it; the decimal-places lowering gate (INV-MONEY-001) runs it in '
+  'its transaction after locking the currency row. Held to the referencing '
+  'columns by currency-references.spec.ts.';
+
+REVOKE ALL ON FUNCTION currency_min_decimal_places_in_use(VARCHAR) FROM PUBLIC;
+
+-- -------------------------------------------------------------------------
 -- Which currency codes does one user reference?
 --
 -- The companion to `currency_code_in_use_globally` (migration 136), and a

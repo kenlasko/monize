@@ -297,7 +297,7 @@ Then record buys and sells in the account like any other security, with quantiti
 - **A coin per currency**: if you buy the same coin in two currencies, add a security for each (`BTC-EUR` and `BTC-USD`) and keep each in an account in that currency
 
 > [!NOTE]
-> **Which one fits?** Choose a security for coin you buy and hold: quantities take eight decimal places, and the Investments page shows what the coin has earned. Choose a [wallet account](accounts.md#cryptocurrency-wallets) for coin you pay with or move between wallets: its register reads like a bank account's, but amounts in the coin are kept to four decimal places, so a very small amount rounds to zero. A wallet needs the coin added as a [cryptocurrency](currency-management.md#cryptocurrencies) on the Currencies page; a security does not. You can use both, for example a security for long-term holdings and a wallet for the coin you spend.
+> **Which one fits?** Choose a security for coin you buy and hold: quantities take eight decimal places, and the Investments page shows what the coin has earned. Choose a [wallet account](accounts.md#cryptocurrency-wallets) for coin you pay with or move between wallets: its register reads like a bank account's, and amounts in the coin keep up to eight decimal places. A wallet needs the coin added as a [cryptocurrency](currency-management.md#cryptocurrencies) on the Currencies page; a security does not. You can use both, for example a security for long-term holdings and a wallet for the coin you spend.
 
 ---
 

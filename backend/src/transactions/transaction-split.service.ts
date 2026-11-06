@@ -89,19 +89,47 @@ function assertTargetAmountOnTransfer(split: CreateTransactionSplitDto): void {
 }
 
 /**
- * `known` with the `decimal_places` of every one of `codes` it does not hold
- * yet, read in one query on `m`: a split write meets its target currencies one
- * line at a time, and each is read once per operation, never once per line.
+ * The places an operation has loaded, plus the codes it has already asked for.
+ * A code with no `currencies` row is absent from the map yet asked for, so it
+ * is never queried a second time (it reads as the column default).
+ */
+class LoadedCurrencyPlaces extends Map<string, number> {
+  constructor(
+    entries: Iterable<readonly [string, number]>,
+    readonly queried: ReadonlySet<string>,
+  ) {
+    super(entries);
+  }
+}
+
+/**
+ * `known` with the `decimal_places` of every one of `codes` it has not asked
+ * for yet, read in one query on `m`: a split write meets its target currencies
+ * one line at a time, and each code is queried at most once per operation,
+ * whether or not it has a row, never once per line.
  */
 async function withCurrencyPlaces(
   m: EntityManager,
   known: ReadonlyMap<string, number>,
   codes: readonly string[],
 ): Promise<ReadonlyMap<string, number>> {
-  const missing = codes.filter((code) => !known.has(code.toUpperCase()));
+  const queried: ReadonlySet<string> =
+    known instanceof LoadedCurrencyPlaces
+      ? known.queried
+      : new Set(known.keys());
+  const missing = [
+    ...new Set(
+      codes
+        .map((code) => code.toUpperCase())
+        .filter((code) => !known.has(code) && !queried.has(code)),
+    ),
+  ];
   if (missing.length === 0) return known;
   const loaded = await loadCurrencyPlaces(m, missing);
-  return new Map([...known, ...loaded]);
+  return new LoadedCurrencyPlaces(
+    [...known, ...loaded],
+    new Set([...queried, ...missing]),
+  );
 }
 
 @Injectable()
@@ -1400,7 +1428,9 @@ export class TransactionSplitService {
       await assertReconciledRowsMutable(m, userId, [parent]);
 
       // The line is in the parent account's currency, held to its places.
-      let places = await loadCurrencyPlaces(m, [transaction.currencyCode]);
+      let places = await withCurrencyPlaces(m, new Map(), [
+        transaction.currencyCode,
+      ]);
       assertAmountPrecision(
         splitDto.amount,
         precisionCurrencyFor(places, transaction.currencyCode),

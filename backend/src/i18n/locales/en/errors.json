@@ -366,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "A price symbol ({{ quoteSymbol }}) can only be set on a cryptocurrency; \"{{ code }}\" is a fiat currency",
     "quoteSymbolNotAPair": "The price symbol \"{{ quoteSymbol }}\" for \"{{ code }}\" is not a coin and fiat pair such as BTC-EUR",
     "kindInUse": "The kind of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it",
+    "decimalPlacesInUse": "The decimal places of \"{{ code }}\" cannot be lowered below {{ places }} while accounts, transactions or other records hold amounts with that many places",
     "quoteSymbolInUse": "The coin in the price symbol of \"{{ code }}\" cannot change while accounts, transactions, securities or other records use it; only its fiat side can",
     "kindConflict": "Currency \"{{ code }}\" already exists as a {{ kind }} currency and cannot be added as {{ requestedKind }}"
   },

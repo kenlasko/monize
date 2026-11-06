@@ -330,6 +330,39 @@ describe("TransactionRulesApplierService structure writes", () => {
     });
   });
 
+  describe("split on several rows of one account", () => {
+    it("reads the account's currency places once for the whole apply run", async () => {
+      const ids = [TX, uuid(22), uuid(23)];
+      const h = harness();
+      h.mock.find.mockImplementation(async (entity: unknown) =>
+        entity === Transaction ? ids.map((id) => row({ id })) : [],
+      );
+      h.mock.findOne.mockImplementation(
+        async (entity: unknown, options?: { where?: { id?: string } }) =>
+          entity === Transaction ? row({ id: options?.where?.id ?? TX }) : null,
+      );
+      h.splits.createSplits.mockResolvedValue([
+        { id: "s1", linkedTransactionId: COUNTERPART },
+        { id: "s2", linkedTransactionId: null },
+      ]);
+      const places = (
+        h.m as unknown as {
+          getRepository: (e: unknown) => { find: jest.Mock };
+        }
+      ).getRepository(Currency).find;
+      places.mockClear();
+
+      const applied = await h.service.applyToNew(h.m, USER, ids, "create", {
+        rules: [rule(SPLIT_PATTERN, [SPLIT])],
+      });
+
+      expect(applied).toHaveLength(3);
+      expect(h.splits.createSplits).toHaveBeenCalledTimes(3);
+      expect(h.splits.validateSplits).toHaveBeenCalledTimes(3);
+      expect(places).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("split on a coin account", () => {
     const BTC = [{ code: "BTC", decimalPlaces: 8 }];
     const split = rule(SPLIT_PATTERN, [

@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "Categorie-ID's niet gevonden of niet eigendom van gebruiker: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Een looninhoudingsregel volgt een rekening die in een fiatvaluta wordt betaald; de rekening van deze betaling bevat de cryptovaluta {{ code }}. Kies een betaling die vanaf een fiatrekening wordt voldaan.",
     "notFound": "Looninhoudingsregel {{ id }} niet gevonden",
     "duplicate": "Deze rekening heeft al een regel voor die categorie",
     "expectedRequired": "De rekening heeft geen regel voor deze categorie; voer het verwachte bedrag per loonstrook in"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "Een koerssymbool ({{ quoteSymbol }}) kan alleen op een cryptovaluta worden ingesteld; \"{{ code }}\" is een fiatvaluta",
     "quoteSymbolNotAPair": "Het koerssymbool \"{{ quoteSymbol }}\" voor \"{{ code }}\" is geen paar van een coin en een fiatvaluta zoals BTC-EUR",
     "kindInUse": "De soort van \"{{ code }}\" kan niet worden gewijzigd zolang rekeningen, transacties, waardepapieren of andere records hem gebruiken",
+    "decimalPlacesInUse": "Het aantal decimalen van \"{{ code }}\" kan niet onder {{ places }} worden gebracht zolang rekeningen, transacties of andere records bedragen met zoveel decimalen bevatten",
     "quoteSymbolInUse": "De coin in het koerssymbool van \"{{ code }}\" kan niet worden gewijzigd zolang rekeningen, transacties, waardepapieren of andere records hem gebruiken; alleen de fiatvaluta erin kan worden gewijzigd",
     "kindConflict": "Valuta \"{{ code }}\" bestaat al als {{ kind }}-valuta en kan niet als {{ requestedKind }} worden toegevoegd"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "Na deze uitvoering is een latere termijn van deze lening afgerekend, dus de uitvoering kan niet ongedaan worden gemaakt. Maak eerst de latere afrekening ongedaan"
   },
   "transactions": {
+    "amountPrecisionExceeded": "Het bedrag in \"{{ field }}\" heeft meer decimalen dan {{ code }} ondersteunt ({{ places }}). Voer het in met maximaal {{ places }} decimalen; de decimalen van een valuta stel je in op de pagina Valuta's.",
     "invalidStatus": "Ongeldige transactiestatus: {{ status }}",
     "reconciledLocked": "Deze transactie is afgestemd en vergrendeld. Zet 'Afgestemde transacties vergrendelen' uit in Instellingen om haar te wijzigen.",
     "convertToTransferRefused": "Deze transactie kan niet meer worden omgezet in een overboeking. Controleer de transactie en voer de regel opnieuw uit",

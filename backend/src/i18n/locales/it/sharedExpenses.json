@@ -11,6 +11,7 @@
   "participantLimit": "Un gruppo può avere fino a 50 partecipanti.",
   "currencyLocked": "La valuta è fissa dopo la prima voce. Crea un altro gruppo per usare una valuta diversa.",
   "currency": "Scegli una valuta disponibile con un massimo di quattro decimali.",
+  "groupCurrencyMustBeFiat": "Un gruppo condiviso tiene i suoi conti in una valuta fiat; {{ code }} è una criptovaluta. Scegli una valuta fiat per il gruppo.",
   "invite": "Questo invito non è disponibile, è scaduto o è già stato usato. Chiedine uno nuovo al proprietario.",
   "inviteEmail": "Accedi con l’indirizzo email invitato e verificalo prima di aderire.",
   "alreadyMember": "Tu o questo partecipante appartenete già al gruppo. Chiedi al proprietario di verificare i partecipanti.",

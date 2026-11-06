@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "Identyfikatory kategorii nie zostały znalezione lub nie należą do użytkownika: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Reguła potrącenia z wynagrodzenia śledzi rachunek opłacany w walucie fiducjarnej; konto tego rachunku zawiera kryptowalutę {{ code }}. Wybierz rachunek opłacany z konta w walucie fiducjarnej.",
     "notFound": "Nie znaleziono reguły potrącenia z wynagrodzenia {{ id }}",
     "duplicate": "Ten rachunek ma już regułę dla tej kategorii",
     "expectedRequired": "Rachunek nie ma pozycji dla tej kategorii; wpisz oczekiwaną kwotę na wypłatę"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "Symbol ceny ({{ quoteSymbol }}) można ustawić tylko dla kryptowaluty; \"{{ code }}\" jest walutą fiducjarną",
     "quoteSymbolNotAPair": "Symbol ceny \"{{ quoteSymbol }}\" dla \"{{ code }}\" nie jest parą monety i waluty fiducjarnej, takiej jak BTC-EUR",
     "kindInUse": "Rodzaju \"{{ code }}\" nie można zmienić, dopóki używają go konta, transakcje, papiery wartościowe lub inne rekordy",
+    "decimalPlacesInUse": "Liczby miejsc dziesiętnych \"{{ code }}\" nie można zmniejszyć poniżej {{ places }}, dopóki konta, transakcje lub inne rekordy zawierają kwoty z tyloma miejscami dziesiętnymi",
     "quoteSymbolInUse": "Monety w symbolu ceny \"{{ code }}\" nie można zmienić, dopóki używają go konta, transakcje, papiery wartościowe lub inne rekordy; można zmienić tylko jego walutę fiducjarną",
     "kindConflict": "Waluta \"{{ code }}\" już istnieje jako waluta {{ kind }} i nie można jej dodać jako {{ requestedKind }}"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "Po tym uruchomieniu rozliczono późniejszą ratę tego kredytu, więc nie można cofnąć uruchomienia. Najpierw cofnij późniejsze rozliczenie"
   },
   "transactions": {
+    "amountPrecisionExceeded": "Kwota w polu \"{{ field }}\" ma więcej miejsc po przecinku, niż obsługuje {{ code }} ({{ places }}). Wpisz ją z co najwyżej {{ places }} miejscami po przecinku; liczbę miejsc po przecinku waluty ustawia się na stronie Waluty.",
     "invalidStatus": "Nieprawidłowy status transakcji: {{ status }}",
     "reconciledLocked": "Ta transakcja jest uzgodniona i zablokowana. Wyłącz opcję „Zablokuj uzgodnione transakcje” w Ustawieniach, aby ją zmienić.",
     "convertToTransferRefused": "Tej transakcji nie można już zamienić na przelew. Sprawdź ją i uruchom regułę ponownie",

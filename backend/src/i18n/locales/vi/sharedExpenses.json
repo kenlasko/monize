@@ -11,6 +11,7 @@
   "participantLimit": "Một nhóm có thể có tối đa 50 người tham gia.",
   "currencyLocked": "Đồng tiền của nhóm được cố định sau lần nhập đầu tiên. Tạo một nhóm mới để sử dụng loại tiền tệ khác.",
   "currency": "Chọn loại tiền khả dụng có tối đa bốn chữ số thập phân.",
+  "groupCurrencyMustBeFiat": "Một nhóm chia sẻ giữ các tài khoản của mình bằng tiền pháp định; {{ code }} là tiền mã hóa. Hãy chọn một loại tiền pháp định cho nhóm.",
   "invite": "Lời mời này không có sẵn, đã hết hạn hoặc đã được sử dụng. Hãy yêu cầu chủ sở hữu nhóm cấp một cái mới.",
   "inviteEmail": "Đăng nhập bằng địa chỉ email được mời và xác minh nó trước khi tham gia.",
   "alreadyMember": "Bạn hoặc người tham gia này đã thuộc nhóm này. Yêu cầu chủ sở hữu kiểm tra những người tham gia.",

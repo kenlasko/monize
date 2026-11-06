@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "Kategorie-IDs nicht gefunden oder nicht im Besitz des Benutzers: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Eine Lohnabzugsregel erfasst eine Rechnung, die in einer Fiat-Währung bezahlt wird; das Konto dieser Rechnung enthält die Kryptowährung {{ code }}. Wählen Sie eine Rechnung, die von einem Fiat-Konto bezahlt wird.",
     "notFound": "Lohnabzugsregel {{ id }} nicht gefunden",
     "duplicate": "Diese Buchung hat bereits eine Regel für diese Kategorie",
     "expectedRequired": "Die Buchung hat keine Zeile für diese Kategorie; geben Sie den erwarteten Betrag pro Gehaltsabrechnung ein"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "Ein Kurssymbol ({{ quoteSymbol }}) kann nur für eine Kryptowährung festgelegt werden; „{{ code }}“ ist eine Fiat-Währung",
     "quoteSymbolNotAPair": "Das Kurssymbol „{{ quoteSymbol }}“ für „{{ code }}“ ist kein Paar aus Coin und Fiat-Währung wie BTC-EUR",
     "kindInUse": "Die Art von „{{ code }}“ kann nicht geändert werden, solange Konten, Buchungen, Wertpapiere oder andere Einträge sie verwenden",
+    "decimalPlacesInUse": "Die Nachkommastellen von „{{ code }}“ können nicht unter {{ places }} gesenkt werden, solange Konten, Buchungen oder andere Einträge Beträge mit so vielen Nachkommastellen enthalten",
     "quoteSymbolInUse": "Der Coin im Kurssymbol von „{{ code }}“ kann nicht geändert werden, solange Konten, Buchungen, Wertpapiere oder andere Einträge ihn verwenden; nur die Fiat-Währung darin kann geändert werden",
     "kindConflict": "Währung \"{{ code }}\" existiert bereits als {{ kind }}-Währung und kann nicht als {{ requestedKind }} hinzugefügt werden"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "Nach diesem Lauf wurde eine spätere Rate dieses Kredits beglichen, daher kann der Lauf nicht rückgängig gemacht werden. Machen Sie zuerst die spätere Begleichung rückgängig"
   },
   "transactions": {
+    "amountPrecisionExceeded": "Der Betrag in „{{ field }}“ hat mehr Dezimalstellen, als {{ code }} unterstützt ({{ places }}). Geben Sie ihn mit höchstens {{ places }} Dezimalstellen ein; die Dezimalstellen einer Währung werden auf der Seite „Währungen“ festgelegt.",
     "invalidStatus": "Ungültiger Buchungsstatus: {{ status }}",
     "reconciledLocked": "Diese Buchung ist abgeglichen und gesperrt. Deaktivieren Sie „Abgeglichene Buchungen sperren“ in den Einstellungen, um sie zu ändern.",
     "convertToTransferRefused": "Diese Transaktion kann nicht mehr in eine Überweisung umgewandelt werden. Prüfen Sie sie und führen Sie die Regel erneut aus",

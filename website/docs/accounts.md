@@ -375,14 +375,14 @@ Buying coin with money from your bank is a [transfer](transactions.md#transfers-
 
 1. In the transaction form, click **Transfer**, choose your bank account as the **From Account** and the wallet as the **To Account**
 2. Enter the **Transfer Amount** you paid, in the bank account's currency (for example `1,700.00` CAD)
-3. Enter the coin that arrived in **Amount Received** (for example `0.0125` BTC). Monize fills it in from the exchange rate; change it to what actually reached the wallet
+3. Enter the coin that arrived in **Amount Received** (for example `0.01249993` BTC). Monize fills it in from the exchange rate; change it to what actually reached the wallet
 4. Click **Create Transfer**
 
 Both amounts are recorded, so the rate you really paid is kept with the transaction (see [Cross-Currency Transfers](transactions.md#cross-currency-transfers)). Selling coin is the same transfer the other way, from the wallet to the bank account, with the money that arrived as the **Amount Received**.
 
 ### Spending Coin
 
-Paying for something with coin is an ordinary transaction on the wallet: choose the payee and category and enter the amount in the coin (for example `0.0004` BTC for a coffee). It reaches your spending reports converted at that day's rate.
+Paying for something with coin is an ordinary transaction on the wallet: choose the payee and category and enter the amount in the coin (for example `0.00043210` BTC for a coffee). It reaches your spending reports converted at that day's rate.
 
 ### Sending Coin with a Network Fee
 
@@ -390,10 +390,10 @@ When you send coin, the network fee leaves the wallet too, but it does not arriv
 
 | Line | Type | Amount (in the coin) |
 |------|------|----------------------|
-| What the other account receives | **Transfer** to the other account | `-0.0050` |
-| The network fee | **Category**, for example *Fees: Network fee* | `-0.0001` |
+| What the other account receives | **Transfer** to the other account | `-0.00500000` |
+| The network fee | **Category**, for example *Fees: Network fee* | `-0.00002500` |
 
-The **Total Amount** is everything that left the wallet, `-0.0051` here. When the other account is in another currency, such as selling coin into your chequing account, the transfer line also asks for the **Amount Received** in that account's currency (`650.00` CAD); between two wallets of the same coin, the other wallet simply receives the transfer line's amount.
+The **Total Amount** is everything that left the wallet, `-0.00502500` here. When the other account is in another currency, such as selling coin into your chequing account, the transfer line also asks for the **Amount Received** in that account's currency (`650.00` CAD); between two wallets of the same coin, the other wallet simply receives the transfer line's amount.
 
 ![A split on a bitcoin wallet: a transfer to chequing and a network fee](images/crypto-transfer-fee-split.png)
 
@@ -402,10 +402,10 @@ The **Total Amount** is everything that left the wallet, `-0.0051` here. When th
 
 ### Precision
 
-Amounts in a cryptocurrency are kept to at most **four decimal places**, because Monize stores every amount of money to four places; a coin's **Decimal Places** is four by default and cannot be more. The smallest amount is therefore `0.0001` of the coin; for bitcoin that is worth around ten dollars or euros at recent prices. Anything smaller rounds to zero, so a network fee of `0.00001` BTC cannot be entered as its own line. Book such a fee in your own currency on the account that paid for it, or fold it into the transfer line's amount.
+Amounts in a cryptocurrency keep up to **eight decimal places**, so a network fee of 2,500 satoshi is entered as `0.00002500` BTC and stored as it is. A coin's **Decimal Places** is eight by default and can be set lower on the [Currencies page](currency-management.md#what-you-can-change); the smallest amount a wallet holds is one unit of the last place, a satoshi (`0.00000001`) for bitcoin. An amount with more places than the coin carries is refused with a message naming the currency and its places, never rounded for you. Ordinary currencies are unchanged: they keep their usual two decimal places (or their standard count).
 
 > [!NOTE]
-> **Wallet account or crypto security?** A wallet account is for coin you spend and move: it keeps a register in the coin and treats the coin as money. If you hold coin as an investment and want its price history, gains and losses, cost basis and place in your asset allocation, track it as a [crypto security](investments.md#cryptocurrency) in an investment account instead; security quantities also take eight decimal places rather than four.
+> **Wallet account or crypto security?** A wallet account is for coin you spend and move: it keeps a register in the coin and treats the coin as money. If you hold coin as an investment and want its price history, gains and losses, cost basis and place in your asset allocation, track it as a [crypto security](investments.md#cryptocurrency) in an investment account instead; a security's quantities take up to eight decimal places as well.
 
 ---
 

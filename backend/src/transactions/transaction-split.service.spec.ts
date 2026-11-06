@@ -760,6 +760,36 @@ describe("TransactionSplitService", () => {
         );
       });
 
+      it("asks for a currency with no row once for the whole operation, not once per line", async () => {
+        // ZZZ has no `currencies` row: absent from the map, but already asked for.
+        accountsService.findOne.mockImplementation(
+          async (_u: string, id: string) => ({
+            id,
+            name: id,
+            currencyCode: "ZZZ",
+          }),
+        );
+        const lines = [-10, -20, -30].map((amount) => ({
+          amount,
+          transferAccountId: "account-2",
+        }));
+        const find = mockQueryRunner.manager.getRepository(Currency).find;
+        find.mockClear();
+
+        await service.createSplits(
+          "tx-1",
+          lines,
+          "user-1",
+          "account-1",
+          new Date("2026-01-15"),
+          "Store",
+          null,
+        );
+
+        expect(accountsService.findOne).toHaveBeenCalledTimes(6);
+        expect(find).toHaveBeenCalledTimes(1);
+      });
+
       it("converts a CAD line into a BTC wallet at eight places", async () => {
         accountsService.findOne
           .mockResolvedValueOnce({

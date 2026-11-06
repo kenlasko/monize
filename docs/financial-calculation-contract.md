@@ -10,8 +10,9 @@ This contract applies to both surfaces that expose a calculation (REST API and
 AI/MCP tools) and to every layer in between. `docs/time-series-contract.md`
 covers the time-dimension rules (historical prices, backtests, period returns);
 this document covers point-in-time calculation semantics. Rounding and
-precision rules live in `AGENTS.md` (Financial Math) and are not
-repeated here.
+precision rules live in `AGENTS.md` (Financial Math), with the per-currency
+rule (`moneyDecimalsFor`, INV-MONEY-001) in `docs/financial-semantics.md`
+section 4, and are not repeated here.
 
 ## 1. Missing values propagate; they do not disappear
 

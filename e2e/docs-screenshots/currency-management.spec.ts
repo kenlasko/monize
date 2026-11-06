@@ -36,9 +36,10 @@ async function openCurrencies(): Promise<void> {
 
 test("currencies-page", async () => {
   await openCurrencies();
-  await expect(
-    page.getByRole("row", { name: /BTC-CAD/ }).first(),
-  ).toBeVisible();
+  const btc = page.getByRole("row", { name: /BTC-CAD/ }).first();
+  await expect(btc).toBeVisible();
+  // The coin's eight decimal places, in the Decimals column.
+  await expect(btc.getByRole("cell", { name: "8", exact: true })).toBeVisible();
   await docShot(page, "currencies-page");
 });
 

@@ -203,7 +203,7 @@ id UUID PK, user_id UUID NOT NULL -> users ON DELETE CASCADE
 settlement_receipt_id UUID NOT NULL -> email_receipts ON DELETE CASCADE
 part_index INTEGER NOT NULL (0..99)
 link_value VARCHAR(100) NULL        -- null: the part captured no {link}
-part_amount NUMERIC(20,4) NOT NULL  -- the part's amount, >= 0
+part_amount NUMERIC(24,8) NOT NULL  -- the part's amount, >= 0
 component_receipt_id UUID NULL -> email_receipts ON DELETE SET NULL
 outcome VARCHAR(30) NOT NULL        -- the report of section 4.2
 created_at, updated_at

@@ -12,10 +12,11 @@ Read `docs/financial-semantics.md` sections 2, 3 and 5,
 This spec supersedes the decision recorded on 2026-11-04 (trail learning
 `l-6c985800`, `website/docs/investments.md#cryptocurrency`) that a coin is
 never a currency. That decision rested on two facts: no exchange rate provider
-carried a coin, and money is `decimal(20,4)`. The first is removed here by a
+carried a coin, and money was `decimal(20,4)`. The first is removed here by a
 provider that prices a crypto currency through the same Yahoo `<COIN>-<FIAT>`
-symbol a crypto security uses. The second stands and is recorded as a
-limitation (decision 4). Tracking a coin as a security in a brokerage account
+symbol a crypto security uses. The second is removed by
+`docs/specs/money-precision.md`, which widens money to `NUMERIC(24,8)` (decision
+4 below, superseded). Tracking a coin as a security in a brokerage account
 remains supported and is the right model for coins held as an investment; a
 `CRYPTO` account is the model for a wallet the reader spends from and
 transfers between.
@@ -84,14 +85,13 @@ account carry a currency and a balance the rest of Monize already understands.
    coin whose ticker is longer takes a three-letter code of the reader's
    choosing (`DOG` for Dogecoin), and `quote_symbol` carries the real ticker
    (`DOGE-USD`). Widening every currency column is a separate proposal.
-4. **Precision stays at four decimal places.** Money is `decimal(20,4)` and
-   `decimalPlaces` is capped at 4 (`CreateCurrencyDto`). A crypto currency
-   defaults to 4. This is coarse for a coin: 0.0001 BTC is about 10 EUR at
-   the prices of late 2026, and a network fee of 0.00001 BTC rounds to zero.
-   The Currencies page and the user documentation say so. Widening money to
-   eight places is a separate proposal touching every money column, `roundMoney`
-   and every money formatter; it is out of scope here and recorded in section
-   13.
+4. **Precision stays at four decimal places.** *Superseded by
+   `docs/specs/money-precision.md`.* As first decided, money was `decimal(20,4)`,
+   `decimalPlaces` was capped at 4 (`CreateCurrencyDto`) and a crypto currency
+   defaulted to 4, which was coarse for a coin: a network fee of 0.00001 BTC
+   rounded to zero. Widening money to eight places was recorded as out of scope
+   (section 10) and is now done: money columns are `NUMERIC(24,8)`, a currency's
+   `decimalPlaces` runs to 8 and a crypto currency defaults to 8.
 5. **A crypto exchange rate provider, always present, always last.** A
    `CryptoFxProvider` (source slug `yahoo_crypto`) is appended to the chain the
    module factory builds, after whatever `FX_PROVIDERS` names. It is not a
@@ -147,9 +147,10 @@ account carry a currency and a balance the rest of Monize already understands.
     as a currency" note becomes guidance on which model fits which holding.
     The Currencies form's non-ISO notice now offers the `CRYPTO` kind.
 11. **A coin is never the reporting currency.** Every converted figure is
-    `roundMoney` in the reporting currency, at four places, and 0.0001 BTC is
-    about 14 CAD at the prices of late 2026: a net worth, a budget or a report
-    in a coin would round away amounts a reader can see. The preferences
+    `roundMoney` in the reporting currency, which stays at four places
+    (`docs/specs/money-precision.md` decision 3), and 0.0001 BTC is about 14 CAD
+    at the prices of late 2026: a net worth, a budget or a report in a coin
+    would round away amounts a reader can see. The preferences
     update refuses a `defaultCurrency` of kind CRYPTO with
     `errors.preferences.defaultCurrencyCrypto` ("A cryptocurrency cannot be
     the reporting currency"), reading the kind `FOR KEY SHARE` in the same
@@ -203,7 +204,7 @@ account carry a currency and a balance the rest of Monize already understands.
 
 ## 6. Numerical examples
 
-Rates are 10 dp, money 4 dp, the reporting currency CAD.
+Rates are 10 dp, money at the currency's places (4 for fiat and the reporting currency CAD, up to 8 for a coin; `docs/specs/money-precision.md`), the amounts below as first written at 4 dp.
 
 | Case | Figures |
 |---|---|
@@ -213,7 +214,7 @@ Rates are 10 dp, money 4 dp, the reporting currency CAD.
 | A rate the column cannot hold | `BTC->LBP 11000000000`: at or above 1e10, `canonicalRateRow` is `null` and the refresh reports "Rate out of range" for that pair |
 | Transfer with fee, same coin | split on wallet A, total `-0.0101` BTC: transfer line `-0.0100` to wallet B (counterpart `+0.0100` BTC), expense line `-0.0001` to "Fees: Network" |
 | Buy from chequing | plain transfer from CAD chequing `-1700.00` to the wallet, received `0.0125` BTC stated; stored rate `roundFxRate(0.0125 / 1700) = 0.0000073529` |
-| Below precision | a fee of `0.00001` BTC cannot be entered: the form rounds to the currency's 4 places and refuses a zero line (`transferAmountsMustAgreeOnZero` for a transfer line; a category line of zero is a line of nothing). The documentation says to book such a fee in fiat on the paying account, or to round it into the transfer amount |
+| Below precision | superseded by `docs/specs/money-precision.md`: a fee of `0.00002500` BTC is a valid 8-place amount and is stored as it is. An amount with more places than the coin carries (`0.000000001` BTC) is refused with `errors.transactions.amountPrecisionExceeded`, never rounded |
 | Unpriced coin | `XYZ` mapped to nothing: the wallet's `convertedBalance` is `null`, `fxComplete = false`, the message names `XYZ->CAD` and the Currencies page as where to map it |
 
 ## 7. Missing-data policy
@@ -271,7 +272,7 @@ form), `website/docs/investments.md#cryptocurrency` (the two models), and
 
 ## 10. Scope cuts
 
-Out of scope, each a separate proposal: money precision beyond four places;
+Out of scope, each a separate proposal: money precision beyond eight places (`docs/specs/money-precision.md` section 10);
 currency codes longer than three letters; on-chain balance sync; a per-wallet
 multi-coin model; crypto securities' prices reused as a currency's rate; a
 database trigger for INV-CRYPTO-001.

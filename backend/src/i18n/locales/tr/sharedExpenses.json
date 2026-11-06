@@ -11,6 +11,7 @@
   "participantLimit": "Bir grupta en fazla 50 katılımcı bulunabilir.",
   "currencyLocked": "Grup para birimi ilk girişten sonra sabitlenir. Başka bir para birimini kullanmak için yeni bir grup oluşturun.",
   "currency": "Dört ondalık basamağa kadar kullanılabilen bir para birimi seçin.",
+  "groupCurrencyMustBeFiat": "Paylaşılan bir grup hesaplarını fiat para biriminde tutar; {{ code }} bir kripto paradır. Grup için fiat bir para birimi seçin.",
   "invite": "Bu davetiye kullanılamıyor, süresi dolmuş veya zaten kullanılmış. Grup sahibinden yeni bir tane isteyin.",
   "inviteEmail": "Davet edilen e-posta adresiyle oturum açın ve katılmadan önce adresi doğrulayın.",
   "alreadyMember": "Siz veya bu katılımcı zaten bu gruba aitsiniz. Sahibinden katılımcıları kontrol etmesini isteyin.",

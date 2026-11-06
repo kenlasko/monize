@@ -1,7 +1,8 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@/test/render';
 import { AccountBalancesBarChart } from './AccountBalancesBarChart';
+import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 
 // Capture the Bar onClick handler so we can simulate account bar clicks
 // without relying on the real recharts rendering pipeline.
@@ -288,6 +289,55 @@ describe('AccountBalancesBarChart', () => {
     expect(screen.getByText('$0.30')).toBeInTheDocument();
     // Average = 0.15
     expect(screen.getByText('$0.15')).toBeInTheDocument();
+  });
+
+  describe('a coin series', () => {
+    const renderBtc = () => {
+      mockFormatCurrency.mockImplementation((n: number) => `BTC ${n.toFixed(8)}`);
+      render(
+        <AccountBalancesBarChart
+          data={[
+            { accountId: 'a1', accountName: 'Cold', balance: 0.000025 },
+            { accountId: 'a2', accountName: 'Hot', balance: 0.00001 },
+          ]}
+          isLoading={false}
+          currencyCode="BTC"
+        />,
+      );
+    };
+
+    afterEach(() => {
+      act(() => clearCurrencyDecimals());
+    });
+
+    it('totals and averages at the coin\'s eight places', () => {
+      act(() => registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]));
+      renderBtc();
+      expect(screen.getByText('BTC 0.00003500')).toBeInTheDocument();
+      expect(screen.getByText('BTC 0.00001750')).toBeInTheDocument();
+    });
+
+    it('keeps the satoshis before the registry has loaded', () => {
+      renderBtc();
+      expect(screen.getByText('BTC 0.00003500')).toBeInTheDocument();
+      expect(screen.getByText('BTC 0.00001750')).toBeInTheDocument();
+    });
+
+    it('leaves a CAD series at four places', () => {
+      render(
+        <AccountBalancesBarChart
+          data={[
+            { accountId: 'a1', accountName: 'A', balance: 100.1234 },
+            { accountId: 'a2', accountName: 'B', balance: 200.0001 },
+          ]}
+          isLoading={false}
+          currencyCode="CAD"
+        />,
+      );
+      const values = mockFormatCurrency.mock.calls.map(([n]) => n);
+      expect(values).toContain(300.1235);
+      expect(values).toContain(150.0618);
+    });
   });
 
   it('passes Average and Total through formatCurrency with currencyCode', () => {

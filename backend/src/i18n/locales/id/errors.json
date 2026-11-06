@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "ID kategori tidak ditemukan atau bukan milik pengguna: {{ ids }}"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "Aturan potongan gaji melacak tagihan yang dibayar dalam mata uang fiat; akun tagihan ini menyimpan mata uang kripto {{ code }}. Pilih tagihan yang dibayar dari akun fiat.",
     "notFound": "Aturan potongan gaji {{ id }} tidak ditemukan",
     "duplicate": "Tagihan ini sudah memiliki aturan untuk kategori tersebut",
     "expectedRequired": "Tagihan tidak memiliki baris untuk kategori ini; masukkan jumlah yang diharapkan per gaji"
@@ -365,6 +366,7 @@
     "quoteSymbolRequiresCrypto": "Simbol harga ({{ quoteSymbol }}) hanya dapat disetel pada mata uang kripto; \"{{ code }}\" adalah mata uang fiat",
     "quoteSymbolNotAPair": "Simbol harga \"{{ quoteSymbol }}\" untuk \"{{ code }}\" bukan pasangan koin dan mata uang fiat seperti BTC-EUR",
     "kindInUse": "Jenis \"{{ code }}\" tidak dapat diubah selama akun, transaksi, sekuritas, atau catatan lain masih menggunakannya",
+    "decimalPlacesInUse": "Angka desimal \"{{ code }}\" tidak dapat diturunkan di bawah {{ places }} selama akun, transaksi, atau catatan lain menyimpan jumlah dengan sebanyak itu angka desimal",
     "quoteSymbolInUse": "Koin dalam simbol harga \"{{ code }}\" tidak dapat diubah selama akun, transaksi, sekuritas, atau catatan lain masih menggunakannya; hanya mata uang fiatnya yang dapat diubah",
     "kindConflict": "Mata uang \"{{ code }}\" sudah ada sebagai mata uang {{ kind }} dan tidak dapat ditambahkan sebagai {{ requestedKind }}"
   },
@@ -761,6 +763,7 @@
     "runUndoLaterSettlement": "Angsuran berikutnya dari pinjaman ini dilunasi setelah eksekusi ini, sehingga eksekusi tidak dapat dibatalkan. Batalkan pelunasan berikutnya terlebih dahulu"
   },
   "transactions": {
+    "amountPrecisionExceeded": "Jumlah pada \"{{ field }}\" memiliki lebih banyak angka desimal daripada yang didukung {{ code }} ({{ places }}). Masukkan dengan maksimal {{ places }} angka desimal; angka desimal suatu mata uang diatur di halaman Mata Uang.",
     "invalidStatus": "Status transaksi tidak valid: {{ status }}",
     "reconciledLocked": "Transaksi ini sudah direkonsiliasi dan terkunci. Nonaktifkan \"Kunci transaksi yang direkonsiliasi\" di Pengaturan untuk mengubahnya.",
     "convertToTransferRefused": "Transaksi ini tidak dapat lagi diubah menjadi transfer. Periksa transaksi lalu jalankan aturan lagi",
