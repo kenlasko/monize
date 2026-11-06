@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "[XX-Help-XX]",
+    "back": "[XX-Back-XX]",
+    "forward": "[XX-Forward-XX]",
+    "openOnline": "[XX-Open on monize.net-XX]",
+    "pin": "[XX-Pin the help panel so it stays open while you move between pages-XX]",
+    "unpin": "[XX-Unpin the help panel-XX]",
+    "expand": "[XX-Expand the help panel-XX]",
+    "collapse": "[XX-Shrink the help panel-XX]",
+    "close": "[XX-Close help-XX]",
+    "englishOnly": "[XX-This guide is in English.-XX]",
+    "loading": "[XX-Loading help-XX]",
+    "toc": {
+      "toggle": "[XX-On this page-XX]",
+      "label": "[XX-Sections on this page-XX]"
+    },
+    "error": {
+      "heading": "[XX-Help could not be loaded-XX]",
+      "body": "[XX-The guide did not load. Try again, or read this page on monize.net.-XX]",
+      "retry": "[XX-Try again-XX]"
+    }
+  },
+  "markdown": {
+    "screenshot": "[XX-Screenshot-XX]",
+    "viewScreenshot": "[XX-View screenshot on monize.net-XX]",
+    "callout": {
+      "note": "[XX-Note-XX]",
+      "tip": "[XX-Tip-XX]",
+      "important": "[XX-Important-XX]",
+      "warning": "[XX-Warning-XX]",
+      "caution": "[XX-Caution-XX]"
+    }
+  }
+}
