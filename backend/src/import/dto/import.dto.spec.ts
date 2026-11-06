@@ -30,6 +30,29 @@ describe("CSV import DTO validation", () => {
     },
   };
 
+  it.each(["DD-MMM-YYYY", "MMM DD, YYYY", "DD MMMM YYYY", "DD.MM.YYYY"])(
+    "accepts the date format %s",
+    async (dateFormat) => {
+      const instance = plainToInstance(CsvColumnMappingConfigDto, {
+        ...baseMapping,
+        dateFormat,
+      });
+      expect(await validateStrict(instance)).toHaveLength(0);
+    },
+  );
+
+  it.each(["DD/MM/YYYY;", "DD (MM) YYYY", "%d/%m/%Y"])(
+    "refuses the date format %s",
+    async (dateFormat) => {
+      const instance = plainToInstance(CsvColumnMappingConfigDto, {
+        ...baseMapping,
+        dateFormat,
+      });
+      const errors = await validateStrict(instance);
+      expect(errors.map((e) => e.property)).toEqual(["dateFormat"]);
+    },
+  );
+
   it("accepts the investment column mapping fields", async () => {
     const instance = plainToInstance(
       CsvColumnMappingConfigDto,

@@ -104,6 +104,13 @@ export interface QifParseResult {
    * and the import records each as a skipped row.
    */
   unreadableDateRows?: import("./csv-parser").CsvUnreadableDateRow[];
+  /**
+   * Investment-mode CSV parses only: every row left out because its action
+   * needs data the row does not carry, in file order. The preview counts them
+   * in `investmentSummary.rejectedRows` and the import records each as a
+   * skipped row.
+   */
+  rejectedInvestmentRows?: import("./csv-parser").CsvRejectedInvestmentRow[];
 }
 
 export type DateFormat =

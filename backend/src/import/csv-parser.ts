@@ -13,11 +13,17 @@ import { escapeRegExp } from "../common/escape-regexp.util";
 import { roundToDecimals } from "../common/round.util";
 import { normalizeAmountSeparators } from "./amount-separators.util";
 import { isCalendarDate } from "../common/validators/is-calendar-date.validator";
+import { monthFromName } from "./csv-month-names";
 
 export interface CsvHeadersResult {
   headers: string[];
   sampleRows: string[][];
   rowCount: number;
+  /**
+   * Per column, the date format that reads the most of its values over the
+   * whole file (`detectCsvDateFormat`), or null where none reads any.
+   */
+  columnDateFormats: (string | null)[];
 }
 
 /**
@@ -94,6 +100,22 @@ export interface CsvUnreadableDateRow {
   rawDate: string;
   amount: number;
   payee: string;
+}
+
+/**
+ * An investment-mode row the parse left out because its action needs data the
+ * row does not carry (`buildInvestmentRow`). The preview counts them per
+ * reason in `investmentSummary.rejectedRows`; the import result lists each
+ * among its skipped rows.
+ */
+export interface CsvRejectedInvestmentRow {
+  /** The line of the file the row starts on, 1-based, the header included. */
+  rowNumber: number;
+  /** The row's date, YYYY-MM-DD. */
+  date: string;
+  amount: number;
+  payee: string;
+  reason: InvestmentRejectReason;
 }
 
 /** Longest raw date text an unreadable-date row carries back. */
@@ -670,7 +692,20 @@ const KNOWN_FORMATS = new Set([
   "DD/MM/YYYY",
   "YYYY-MM-DD",
   "YYYY-DD-MM",
+  "DD-MMM-YYYY",
+  "MMM DD, YYYY",
 ]);
+
+/** A month written as a word (`monthFromName` reads it), Unicode letters. */
+const MONTH_NAME_PATTERN = "[\\p{L}\\p{M}]+";
+
+// Built-in month-name formats accept any of - / . , and whitespace between
+// the parts, and an abbreviation mark after the month: "15-Jan-2026",
+// "15 janv. 2026", "15.Mär.2026"; "Jan 15, 2026", "January 15 2026".
+const DAY_MONTH_NAME_YEAR =
+  /^(\d{1,2})[-/.,\s]*([\p{L}\p{M}]+)[-/.,\s\u0970]*(\d{2,4})$/u;
+const MONTH_NAME_DAY_YEAR =
+  /^([\p{L}\p{M}]+)[-/.,\s\u0970]*(\d{1,2})[-/.,\s]+(\d{2,4})$/u;
 
 /**
  * Validate that year, month, day values name a day that exists, in a
@@ -687,8 +722,15 @@ function validateAndFormat(
   if (y < 1900 || y > 2100) {
     return null;
   }
+  const m = parseInt(month);
+  const d = parseInt(day);
+  if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31)) {
+    return null;
+  }
   const formatted = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-  return isCalendarDate(formatted) ? formatted : null;
+  // Every month has a 28th; only a later day needs the calendar, which keeps
+  // date detection over a whole file cheap.
+  return d <= 28 || isCalendarDate(formatted) ? formatted : null;
 }
 
 /**
@@ -703,7 +745,8 @@ function resolveYear(raw: string): string {
 
 /**
  * Parse a date using a custom format pattern.
- * Supported tokens: YYYY, YY, MM, DD (case-sensitive).
+ * Supported tokens: YYYY, YY, MMM (or MMMM: a month's name or abbreviation in
+ * any app language, `monthFromName`), MM, DD (case-sensitive).
  * Any other characters in the pattern are treated as literal separators.
  */
 function parseDateCustom(dateStr: string, format: string): string | null {
@@ -720,6 +763,11 @@ function parseDateCustom(dateStr: string, format: string): string | null {
       regex += "(\\d{2})";
       groups.push("year2");
       i += 2;
+    } else if (format.substring(i, i + 3) === "MMM") {
+      // An optional abbreviation mark ("janv.", "जन॰") belongs to the name.
+      regex += `(${MONTH_NAME_PATTERN}[.\\u0970]?)`;
+      groups.push("monthName");
+      i += format.substring(i, i + 4) === "MMMM" ? 4 : 3;
     } else if (format.substring(i, i + 2) === "MM") {
       regex += "(\\d{1,2})";
       groups.push("month");
@@ -736,7 +784,7 @@ function parseDateCustom(dateStr: string, format: string): string | null {
   }
   regex += "$";
 
-  const match = dateStr.match(new RegExp(regex));
+  const match = dateStr.match(new RegExp(regex, "u"));
   if (!match) return null;
 
   let year = "";
@@ -754,6 +802,12 @@ function parseDateCustom(dateStr: string, format: string): string | null {
       case "month":
         month = val;
         break;
+      case "monthName": {
+        const named = monthFromName(val);
+        if (named === null) return null;
+        month = String(named);
+        break;
+      }
       case "day":
         day = val;
         break;
@@ -765,36 +819,43 @@ function parseDateCustom(dateStr: string, format: string): string | null {
 }
 
 /**
- * Parse a date string using the specified format and return YYYY-MM-DD.
- * Accepts the 4 well-known formats (with any of - / . as separator)
- * or a custom pattern string using YYYY/YY, MM, DD tokens.
- * Returns null if the date cannot be parsed or is invalid.
- */
-/**
  * Strip trailing time components from a date string.
  * Handles formats like "01/15/2026 14:30:00", "2026-01-15T12:00:00Z",
  * "01/15/2026 2:30 PM", etc.
  */
 function stripTime(dateStr: string): string {
-  // Remove ISO 8601 time portion (T followed by time)
-  const tIndex = dateStr.indexOf("T");
-  if (tIndex > 0) {
-    return dateStr.substring(0, tIndex);
+  // Remove ISO 8601 time portion (T between a digit and a digit), so the T of
+  // "OCT" or "AUGUST" stays part of the month's name
+  const isoMatch = dateStr.match(/^(.*?\d)T\d/);
+  if (isoMatch) {
+    return isoMatch[1];
   }
-  // Remove time after space (e.g., "01/15/2026 14:30:00" or "01/15/2026 2:30 PM")
-  const spaceMatch = dateStr.match(/^(\S+)\s+\d{1,2}:\d{2}/);
+  // Remove time after space (e.g., "01/15/2026 14:30:00", "01/15/2026 2:30 PM"
+  // or "Jan 15, 2026 2:30 PM")
+  const spaceMatch = dateStr.match(/^(.+?)\s+\d{1,2}:\d{2}/);
   if (spaceMatch) {
     return spaceMatch[1];
   }
   return dateStr;
 }
 
+/**
+ * Parse a date string using the specified format and return YYYY-MM-DD.
+ * Accepts the well-known formats (the numeric four with any of - / . as
+ * separator, the month-name two as DAY_MONTH_NAME_YEAR / MONTH_NAME_DAY_YEAR
+ * describe) or a custom pattern string using YYYY/YY, MMM, MM, DD tokens.
+ * Returns null if the date cannot be parsed or is invalid.
+ */
 function parseCsvDate(dateStr: string, format: string): string | null {
   const trimmed = stripTime(dateStr.trim());
   if (!trimmed) {
     return null;
   }
+  return parseStrippedCsvDate(trimmed, format);
+}
 
+/** `parseCsvDate` of a value already trimmed and stripped of its time. */
+function parseStrippedCsvDate(trimmed: string, format: string): string | null {
   // For custom (non-built-in) format patterns, use the generic parser
   if (!KNOWN_FORMATS.has(format)) {
     return parseDateCustom(trimmed, format);
@@ -804,7 +865,22 @@ function parseCsvDate(dateStr: string, format: string): string | null {
   let month: string;
   let day: string;
 
-  if (format === "YYYY-MM-DD" || format === "YYYY-DD-MM") {
+  if (format === "DD-MMM-YYYY" || format === "MMM DD, YYYY") {
+    const dayFirst = format === "DD-MMM-YYYY";
+    const match = trimmed.match(
+      dayFirst ? DAY_MONTH_NAME_YEAR : MONTH_NAME_DAY_YEAR,
+    );
+    if (!match) {
+      return null;
+    }
+    const named = monthFromName(dayFirst ? match[2] : match[1]);
+    if (named === null) {
+      return null;
+    }
+    year = resolveYear(match[3]);
+    month = String(named);
+    day = dayFirst ? match[1] : match[2];
+  } else if (format === "YYYY-MM-DD" || format === "YYYY-DD-MM") {
     const match = trimmed.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
     if (!match) {
       return null;
@@ -878,7 +954,7 @@ function getField(row: string[], index: number | undefined): string {
 
 // Stable rejection-reason keys surfaced through investmentSummary.rejectedRows;
 // the frontend translates them for the Review step.
-type InvestmentRejectReason =
+export type InvestmentRejectReason =
   | "missingSecurity"
   | "missingQuantity"
   | "missingAmount"
@@ -1176,6 +1252,59 @@ function readRowAmount(
 }
 
 /**
+ * The formats date detection chooses between, in the order a tie goes:
+ * MM/DD/YYYY first, because a file whose every day is the 12th or earlier
+ * reads either way and the import has always read it month first.
+ */
+const DETECTABLE_DATE_FORMATS = [
+  "MM/DD/YYYY",
+  "DD/MM/YYYY",
+  "YYYY-MM-DD",
+  "YYYY-DD-MM",
+  "DD-MMM-YYYY",
+  "MMM DD, YYYY",
+] as const;
+
+/**
+ * A column none of whose first this-many values reads under any format is not
+ * a date column, so the rest of it is not scanned. It decides only whether a
+ * column holds dates; which order they are written in is decided by all of
+ * them.
+ */
+const NOT_A_DATE_COLUMN_AFTER = 50;
+
+/**
+ * The date format that reads the most of `values`, every one of them, through
+ * the same `parseCsvDate` the import uses; ties go to the earlier entry of
+ * DETECTABLE_DATE_FORMATS. Null when no format reads any value. A day-first
+ * statement whose first rows fall on the 1st to the 12th is still detected as
+ * DD/MM/YYYY once any later row is dated after the 12th.
+ */
+export function detectCsvDateFormat(values: readonly string[]): string | null {
+  const counts = DETECTABLE_DATE_FORMATS.map(() => 0);
+  let scanned = 0;
+  for (const value of values) {
+    if (!value || !/\d/.test(value)) continue;
+    const trimmed = stripTime(value.trim());
+    DETECTABLE_DATE_FORMATS.forEach((format, i) => {
+      if (parseStrippedCsvDate(trimmed, format) !== null) counts[i]++;
+    });
+    scanned++;
+    if (
+      scanned >= NOT_A_DATE_COLUMN_AFTER &&
+      counts.every((count) => count === 0)
+    ) {
+      return null;
+    }
+  }
+  let best = 0;
+  counts.forEach((count, i) => {
+    if (count > counts[best]) best = i;
+  });
+  return counts[best] > 0 ? DETECTABLE_DATE_FORMATS[best] : null;
+}
+
+/**
  * Parse CSV headers and return sample data for the column mapping UI.
  * Auto-detects delimiter if not provided.
  */
@@ -1187,17 +1316,23 @@ export function parseCsvHeaders(
   const rows = parseCsvRows(content, resolvedDelimiter);
 
   if (rows.length === 0) {
-    return { headers: [], sampleRows: [], rowCount: 0 };
+    return { headers: [], sampleRows: [], rowCount: 0, columnDateFormats: [] };
   }
 
   const headers = rows[0];
   const dataRows = rows.slice(1);
   const sampleRows = dataRows.slice(0, 5);
+  // The first row is scanned too: whether it is a header is the mapping's
+  // choice, and a header's text reads under no format.
+  const columnDateFormats = headers.map((_, column) =>
+    detectCsvDateFormat(rows.map((row) => getField(row, column))),
+  );
 
   return {
     headers,
     sampleRows,
     rowCount: dataRows.length,
+    columnDateFormats,
   };
 }
 
@@ -1228,6 +1363,7 @@ export function parseCsv(
       unreadableDateRows: [],
       ...(investmentMode
         ? {
+            rejectedInvestmentRows: [],
             investmentSummary: {
               actionCounts: {},
               cashFallbackValues: [],
@@ -1250,6 +1386,7 @@ export function parseCsv(
   const actionCounts: Partial<Record<CanonicalInvestmentAction, number>> = {};
   const cashFallbackValues = new Set<string>();
   const rejectedRowCounts = new Map<InvestmentRejectReason, number>();
+  const rejectedInvestmentRows: CsvRejectedInvestmentRow[] = [];
   let uncostedShareRows = 0;
   const rawDates: string[] = [];
   const unreadableDateRows: CsvUnreadableDateRow[] = [];
@@ -1342,6 +1479,13 @@ export function parseCsv(
           outcome.rejectReason,
           (rejectedRowCounts.get(outcome.rejectReason) || 0) + 1,
         );
+        rejectedInvestmentRows.push({
+          rowNumber: line,
+          date: parsedDate,
+          amount,
+          payee,
+          reason: outcome.rejectReason,
+        });
         continue;
       }
       const emitted = outcome.emittedAction!;
@@ -1485,6 +1629,7 @@ export function parseCsv(
     unreadableDateRows,
     ...(investmentMode
       ? {
+          rejectedInvestmentRows,
           investmentSummary: {
             actionCounts,
             cashFallbackValues: Array.from(cashFallbackValues).sort(),

@@ -355,12 +355,20 @@ export class ParsedQifResponseDto {
  * already holds the row's bank id (OFX `FITID`), `duplicateTransfer` when the
  * transfer is already recorded between the same two accounts,
  * `unreadableDate` when a CSV row's date cannot be read under the mapping's
- * date format (or the row has none).
+ * date format (or the row has none). The rest are an investment-mode CSV row
+ * whose action needs data it does not carry (`InvestmentRejectReason`):
+ * `missingSecurity`, `missingQuantity`, `missingAmount`, `missingProceeds`
+ * (a sell with neither price nor amount), `missingSplitRatio`.
  */
 export const IMPORT_SKIP_REASONS = [
   "alreadyImported",
   "duplicateTransfer",
   "unreadableDate",
+  "missingSecurity",
+  "missingQuantity",
+  "missingAmount",
+  "missingProceeds",
+  "missingSplitRatio",
 ] as const;
 
 export type ImportSkipReason = (typeof IMPORT_SKIP_REASONS)[number];
@@ -388,7 +396,7 @@ export class ImportSkippedRowDto {
 
   @ApiPropertyOptional({
     description:
-      "The line of the file the row starts on, 1-based with the header; set for `unreadableDate`",
+      "The line of the file the row starts on, 1-based with the header; set for a CSV row the parse left out (`unreadableDate` and the investment-mode reasons)",
   })
   rowNumber?: number;
 
@@ -858,11 +866,15 @@ export class CsvColumnMappingConfigDto {
   @Max(100)
   reconciliationStatus?: number;
 
-  @ApiProperty({ description: "Date format for parsing" })
+  @ApiProperty({
+    description:
+      "Date format for parsing: a built-in one (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD, YYYY-DD-MM, DD-MMM-YYYY, MMM DD, YYYY) or a pattern of YYYY, YY, MMM, MM, DD and separators",
+  })
   @IsString()
-  @Matches(/^[YDMW/\-.]+$/, {
+  // Space and comma separate a month name ("MMM DD, YYYY", "DD MMM YYYY").
+  @Matches(/^[YDMW/\-., ]+$/, {
     message:
-      "dateFormat must contain only date pattern characters (Y, M, D) and separators (/, -, .)",
+      "dateFormat must contain only date pattern characters (Y, M, D) and separators (/, -, ., comma, space)",
   })
   @MaxLength(20)
   dateFormat: string;
@@ -1210,6 +1222,14 @@ export class CsvHeadersResponseDto {
 
   @ApiProperty()
   rowCount: number;
+
+  @ApiProperty({
+    type: [String],
+    nullable: true,
+    description:
+      "Per column, the date format that reads the most of its values over the whole file, or null where none reads any",
+  })
+  columnDateFormats: (string | null)[];
 }
 
 export class ColumnMappingResponseDto {

@@ -1341,6 +1341,19 @@ export class ImportService {
         account.currencyCode,
       );
     }
+    for (const row of result.rejectedInvestmentRows ?? []) {
+      recordSkippedRow(
+        importResult,
+        {
+          date: row.date,
+          amount: row.amount,
+          payee: row.payee,
+          rowNumber: row.rowNumber,
+        },
+        row.reason,
+        account.currencyCode,
+      );
+    }
 
     // One transaction for the whole import, exactly as the former QueryRunner
     // block was: per-transaction SAVEPOINTs inside it let a single bad row roll

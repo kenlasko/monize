@@ -3265,6 +3265,7 @@ describe("ImportService", () => {
         headers: ["Date", "Amount", "Payee"],
         sampleRows: [["2025-01-01", "-50", "Store"]],
         rowCount: 1,
+        columnDateFormats: ["YYYY-MM-DD", null, null],
       });
 
       const result = await service.parseCsvHeaders(userId, csvContent);
@@ -3283,6 +3284,7 @@ describe("ImportService", () => {
         headers: ["Date", "Amount", "Payee"],
         sampleRows: [["2025-01-01", "-50", "Store"]],
         rowCount: 1,
+        columnDateFormats: ["YYYY-MM-DD", null, null],
       });
 
       await service.parseCsvHeaders(userId, csvContent, ";");
@@ -3713,6 +3715,57 @@ describe("ImportService", () => {
       await expect(
         service.importCsvFile(userId, investmentCsvDto()),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it("records each investment row the parse rejected as skipped, with its reason", async () => {
+      mockedValidateCsvContent.mockReturnValue({ valid: true });
+      mockedParseCsv.mockReturnValue({
+        ...emptyParseResult("INVESTMENT"),
+        unreadableDateRows: [],
+        rejectedInvestmentRows: [
+          {
+            rowNumber: 4,
+            date: "2026-03-02",
+            amount: 0,
+            payee: "",
+            reason: "missingProceeds",
+          },
+          {
+            rowNumber: 7,
+            date: "2026-03-05",
+            amount: -120,
+            payee: "Broker",
+            reason: "missingSecurity",
+          },
+        ],
+      });
+      accountsRepository.findOne.mockResolvedValue(mockBrokerageAccount);
+
+      const result = await service.importCsvFile(userId, {
+        ...investmentCsvDto(),
+        securityMappings: [],
+      });
+
+      expect(result.imported).toBe(0);
+      expect(result.skipped).toBe(2);
+      expect(result.skippedRows).toEqual([
+        {
+          date: "2026-03-02",
+          amount: 0,
+          currencyCode: "CAD",
+          payee: "",
+          reason: "missingProceeds",
+          rowNumber: 4,
+        },
+        {
+          date: "2026-03-05",
+          amount: -120,
+          currencyCode: "CAD",
+          payee: "Broker",
+          reason: "missingSecurity",
+          rowNumber: 7,
+        },
+      ]);
     });
 
     it("still rejects a regular CSV targeting a brokerage account", async () => {

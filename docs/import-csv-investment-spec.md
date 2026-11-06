@@ -43,7 +43,9 @@ changes.
    the same as a positive one.
 5. **Rejected rows are absent from `transactions[]`** so the
    imported/skipped/errors accounting stays truthful, and each rejection is
-   reported in `investmentSummary.rejectedRows` at parse (preview) time.
+   reported in `investmentSummary.rejectedRows` at parse (preview) time and
+   recorded among the import result's skipped rows (`rejectedInvestmentRows`,
+   one per row, with its reason).
 6. **Derived prices round-trip.** When price is derived from the row amount,
    re-deriving the total from the stored quantity/price/commission reproduces
    the file's amount within money rounding (±0.01). Prices are rounded to 10
@@ -181,7 +183,8 @@ investmentSummary?: {
 It flows through `ParsedQifResponseDto` to the wizard, and the Review step
 renders it -- per-action counts, which values fell back to cash, and what was
 rejected and why. This is the user's only chance to catch a keyword miss
-before committing.
+before committing; the import result then lists each rejected row by its row
+number, date and reason among its skipped rows.
 
 ## Mode detection (user decision)
 
