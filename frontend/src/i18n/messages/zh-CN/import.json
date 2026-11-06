@@ -281,6 +281,11 @@
       "missingSplitRatio": "拆股缺少比例"
     },
     "rejectedGoBack": "返回列映射步骤以调整列或操作关键词。",
+    "unreadableDatesNotice": "{count, plural, other {# 行}}的日期无法按 {format} 读取，将不会导入：",
+    "unreadableDateRow": "第 {line} 行：“{rawDate}”",
+    "missingDateRow": "第 {line} 行：无日期",
+    "unreadableDatesMore": "...以及另外 {count} 行",
+    "unreadableDatesGoBack": "如果文件中的日期采用其他顺序，请返回列映射步骤并选择文件使用的日期格式。",
     "importButton": "导入交易"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}：{amount}（{reason}）",
     "skipReasonAlreadyImported": "已导入",
     "skipReasonDuplicateTransfer": "转账已记录",
+    "skipReasonUnreadableDate": "无法读取日期",
+    "skipReasonNoDate": "无日期",
+    "skippedRowLineDate": "第 {line} 行，“{rawDate}”",
+    "skippedRowLine": "第 {line} 行",
     "andMoreSkipped": "...以及另外 {count} 行已跳过",
     "loanSetupHeading": "设置定期还款",
     "loanSetupDescription": "以下贷款/抵押贷款账户已导入但未配置定期还款。设置定期还款以继续追踪贷款进度。",

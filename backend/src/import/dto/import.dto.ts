@@ -268,6 +268,30 @@ export class ImportQifDto {
   dateFormat?: string;
 }
 
+export class CsvUnreadableDateRowDto {
+  @ApiProperty({
+    description:
+      "The line of the file the row starts on, 1-based with the header",
+  })
+  rowNumber: number;
+
+  @ApiProperty({
+    description: "The date field as the file gave it, empty when it has none",
+  })
+  rawDate: string;
+}
+
+export class CsvUnreadableDatesDto {
+  @ApiProperty({ description: "How many rows have a date that cannot be read" })
+  count: number;
+
+  @ApiProperty({
+    type: [CsvUnreadableDateRowDto],
+    description: "The first of them in file order (at most SKIPPED_ROWS_LIMIT)",
+  })
+  rows: CsvUnreadableDateRowDto[];
+}
+
 export class ParsedQifResponseDto {
   @ApiProperty()
   accountType: string;
@@ -317,22 +341,35 @@ export class ParsedQifResponseDto {
       "Investment-mode CSV parse summary: per-action counts, cash fallbacks, and rejected rows",
   })
   investmentSummary?: CsvInvestmentSummary;
+
+  @ApiPropertyOptional({
+    type: () => CsvUnreadableDatesDto,
+    description:
+      "CSV parses only: the rows the import will leave out because their date cannot be read under the mapping's date format",
+  })
+  unreadableDates?: CsvUnreadableDatesDto;
 }
 
 /**
  * Why an import left a row of the file out: `alreadyImported` when the account
  * already holds the row's bank id (OFX `FITID`), `duplicateTransfer` when the
- * transfer is already recorded between the same two accounts.
+ * transfer is already recorded between the same two accounts,
+ * `unreadableDate` when a CSV row's date cannot be read under the mapping's
+ * date format (or the row has none).
  */
 export const IMPORT_SKIP_REASONS = [
   "alreadyImported",
   "duplicateTransfer",
+  "unreadableDate",
 ] as const;
 
 export type ImportSkipReason = (typeof IMPORT_SKIP_REASONS)[number];
 
 export class ImportSkippedRowDto {
-  @ApiProperty({ description: "The row's date, YYYY-MM-DD" })
+  @ApiProperty({
+    description:
+      "The row's date, YYYY-MM-DD; empty when the reason is `unreadableDate`, whose `rawDate` carries the file's text",
+  })
   date: string;
 
   @ApiProperty({ description: "The row's amount as the file gave it" })
@@ -348,6 +385,18 @@ export class ImportSkippedRowDto {
 
   @ApiProperty({ enum: IMPORT_SKIP_REASONS })
   reason: ImportSkipReason;
+
+  @ApiPropertyOptional({
+    description:
+      "The line of the file the row starts on, 1-based with the header; set for `unreadableDate`",
+  })
+  rowNumber?: number;
+
+  @ApiPropertyOptional({
+    description:
+      "The date field as the file gave it, empty when it has none; set for `unreadableDate`",
+  })
+  rawDate?: string;
 }
 
 /**

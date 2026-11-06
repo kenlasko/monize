@@ -281,6 +281,11 @@
       "missingSplitRatio": "Pemecahan tanpa rasio"
     },
     "rejectedGoBack": "Kembali ke langkah pemetaan kolom untuk menyesuaikan kolom atau kata kunci tindakan.",
+    "unreadableDatesNotice": "{count, plural, other {# baris}} memiliki tanggal yang tidak dapat dibaca sebagai {format} dan tidak akan diimpor:",
+    "unreadableDateRow": "Baris {line}: \"{rawDate}\"",
+    "missingDateRow": "Baris {line}: tanpa tanggal",
+    "unreadableDatesMore": "...dan {count} lainnya",
+    "unreadableDatesGoBack": "Jika file menulis tanggal dalam urutan lain, kembali ke langkah pemetaan kolom dan pilih format tanggal yang digunakannya.",
     "importButton": "Impor Transaksi"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "sudah diimpor",
     "skipReasonDuplicateTransfer": "transfer sudah tercatat",
+    "skipReasonUnreadableDate": "tanggal tidak dapat dibaca",
+    "skipReasonNoDate": "tanpa tanggal",
+    "skippedRowLineDate": "Baris {line}, \"{rawDate}\"",
+    "skippedRowLine": "Baris {line}",
     "andMoreSkipped": "...dan {count} baris lain yang dilewati",
     "loanSetupHeading": "Siapkan Pembayaran Berulang",
     "loanSetupDescription": "Akun pinjaman/KPR berikut diimpor tanpa pembayaran terjadwal. Siapkan pembayaran berulang untuk terus melacak kemajuan pinjaman Anda.",

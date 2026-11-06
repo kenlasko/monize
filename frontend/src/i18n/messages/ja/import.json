@@ -281,6 +281,11 @@
       "missingSplitRatio": "分割比率のない株式分割"
     },
     "rejectedGoBack": "列マッピングの手順に戻り、列またはアクションキーワードを調整してください。",
+    "unreadableDatesNotice": "{count, plural, other {# 件の行}}は日付を {format} として読み取れないため、インポートされません:",
+    "unreadableDateRow": "{line} 行目: 「{rawDate}」",
+    "missingDateRow": "{line} 行目: 日付なし",
+    "unreadableDatesMore": "...ほか {count} 件",
+    "unreadableDatesGoBack": "ファイルの日付が別の順序で書かれている場合は、列マッピングの手順に戻り、ファイルが使用している日付形式を選択してください。",
     "importButton": "取引をインポート"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount}（{reason}）",
     "skipReasonAlreadyImported": "インポート済み",
     "skipReasonDuplicateTransfer": "振替は記録済み",
+    "skipReasonUnreadableDate": "日付を読み取れません",
+    "skipReasonNoDate": "日付なし",
+    "skippedRowLineDate": "{line} 行目、「{rawDate}」",
+    "skippedRowLine": "{line} 行目",
     "andMoreSkipped": "...さらに {count} 行をスキップ",
     "loanSetupHeading": "定期支払いの設定",
     "loanSetupDescription": "以下のローン/住宅ローン勘定科目は定期支払いなしでインポートされました。ローンの進捗状況を引き続き追跡するために定期支払いを設定してください。",

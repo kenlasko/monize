@@ -281,6 +281,11 @@
       "missingSplitRatio": "Desdobramento sem rácio"
     },
     "rejectedGoBack": "Volte ao passo de mapeamento de colunas para ajustar as colunas ou as palavras-chave de ação.",
+    "unreadableDatesNotice": "{count, plural, one {# linha tem uma data que não pode ser lida} other {# linhas têm datas que não podem ser lidas}} como {format} e não {count, plural, one {será importada} other {serão importadas}}:",
+    "unreadableDateRow": "Linha {line}: \"{rawDate}\"",
+    "missingDateRow": "Linha {line}: sem data",
+    "unreadableDatesMore": "...e mais {count}",
+    "unreadableDatesGoBack": "Se o ficheiro escreve as datas noutra ordem, volte ao passo de mapeamento de colunas e escolha o formato de data que utiliza.",
     "importButton": "Importar Transações"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "já importada",
     "skipReasonDuplicateTransfer": "transferência já registada",
+    "skipReasonUnreadableDate": "data ilegível",
+    "skipReasonNoDate": "sem data",
+    "skippedRowLineDate": "Linha {line}, \"{rawDate}\"",
+    "skippedRowLine": "Linha {line}",
     "andMoreSkipped": "...e mais {count} linhas ignoradas",
     "loanSetupHeading": "Configurar Pagamentos Recorrentes",
     "loanSetupDescription": "As seguintes contas de empréstimo/crédito habitação foram importadas sem pagamentos agendados. Configure pagamentos recorrentes para continuar a acompanhar o progresso do seu empréstimo.",

@@ -281,6 +281,11 @@
       "missingSplitRatio": "Division sans ratio"
     },
     "rejectedGoBack": "Revenez à l'étape de mappage des colonnes pour ajuster les colonnes ou les mots-clés d'action.",
+    "unreadableDatesNotice": "{count, plural, one {# ligne a une date qui ne peut pas être lue} other {# lignes ont des dates qui ne peuvent pas être lues}} au format {format} et ne {count, plural, one {sera pas importée} other {seront pas importées}} :",
+    "unreadableDateRow": "Ligne {line} : « {rawDate} »",
+    "missingDateRow": "Ligne {line} : aucune date",
+    "unreadableDatesMore": "...et {count} de plus",
+    "unreadableDatesGoBack": "Si le fichier écrit ses dates dans un autre ordre, revenez à l'étape de mappage des colonnes et choisissez le format de date qu'il utilise.",
     "importButton": "Importer les transactions"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date} : {amount} ({reason})",
     "skipReasonAlreadyImported": "déjà importée",
     "skipReasonDuplicateTransfer": "virement déjà enregistré",
+    "skipReasonUnreadableDate": "date illisible",
+    "skipReasonNoDate": "aucune date",
+    "skippedRowLineDate": "Ligne {line}, « {rawDate} »",
+    "skippedRowLine": "Ligne {line}",
     "andMoreSkipped": "…et {count} ligne(s) ignorée(s) de plus",
     "loanSetupHeading": "Configurer les paiements récurrents",
     "loanSetupDescription": "Les comptes de prêt/prêt hypothécaire suivants ont été importés sans paiements récurrents. Configurez des paiements récurrents pour continuer à suivre votre remboursement.",

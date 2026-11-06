@@ -281,6 +281,11 @@
       "missingSplitRatio": "División sin proporción"
     },
     "rejectedGoBack": "Vuelve al paso de mapeo de columnas para ajustar las columnas o las palabras clave de acción.",
+    "unreadableDatesNotice": "{count, plural, one {# fila tiene una fecha que no se puede leer} other {# filas tienen fechas que no se pueden leer}} como {format} y no {count, plural, one {se importará} other {se importarán}}:",
+    "unreadableDateRow": "Fila {line}: \"{rawDate}\"",
+    "missingDateRow": "Fila {line}: sin fecha",
+    "unreadableDatesMore": "...y {count} más",
+    "unreadableDatesGoBack": "Si el archivo escribe sus fechas en otro orden, vuelve al paso de mapeo de columnas y elige el formato de fecha que usa.",
     "importButton": "Importar Transacciones"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "ya importada",
     "skipReasonDuplicateTransfer": "transferencia ya registrada",
+    "skipReasonUnreadableDate": "no se pudo leer la fecha",
+    "skipReasonNoDate": "sin fecha",
+    "skippedRowLineDate": "Fila {line}, \"{rawDate}\"",
+    "skippedRowLine": "Fila {line}",
     "andMoreSkipped": "...y {count} filas omitidas más",
     "loanSetupHeading": "Configurar Pagos Recurrentes",
     "loanSetupDescription": "Las siguientes cuentas de préstamo/hipoteca se importaron sin pagos planificados. Configura los pagos recurrentes para continuar el seguimiento de tu préstamo.",
