@@ -18,6 +18,7 @@ export const PUBLIC_CLIENT_NAMESPACES = [
   'auth',
   'common',
   'emergencyAccess',
+  'help',
   'layout',
   'navigation',
   'notifications',
