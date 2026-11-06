@@ -11,6 +11,7 @@ const DEFAULT_LIMIT = 50;
 const REASON_KEYS = {
   alreadyImported: 'complete.skipReasonAlreadyImported',
   duplicateTransfer: 'complete.skipReasonDuplicateTransfer',
+  unreadableDate: 'complete.skipReasonUnreadableDate',
 } as const satisfies Record<ImportSkipReason, string>;
 
 interface SkippedRowsListProps {
@@ -25,8 +26,9 @@ interface SkippedRowsListProps {
 }
 
 /**
- * The rows an import left out, each with its date, amount, payee and why, so
- * a person can check them against the file.
+ * The rows an import left out, each with its date (or, for a date the import
+ * could not read, its line and raw text), amount, payee and why, so a person
+ * can check them against the file.
  */
 export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total }: SkippedRowsListProps) {
   const t = useTranslations('import');
@@ -37,11 +39,24 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total }: SkippedR
   const shown = rows.slice(0, limit);
   const more = Math.max(total ?? rows.length, rows.length) - shown.length;
 
+  // A row whose date could not be read has no date to format: it is named by
+  // its line in the file and the text the file gave.
+  const describeDate = (row: ImportSkippedRow) => {
+    if (row.reason !== 'unreadableDate') return formatDate(row.date);
+    return row.rawDate
+      ? t('complete.skippedRowLineDate', { line: row.rowNumber ?? '', rawDate: row.rawDate })
+      : t('complete.skippedRowLine', { line: row.rowNumber ?? '' });
+  };
+  const describeReason = (row: ImportSkippedRow) =>
+    row.reason === 'unreadableDate' && !row.rawDate
+      ? t('complete.skipReasonNoDate')
+      : t(REASON_KEYS[row.reason]);
+
   const describe = (row: ImportSkippedRow) => {
     const values = {
-      date: formatDate(row.date),
+      date: describeDate(row),
       amount: formatCurrency(row.amount, row.currencyCode),
-      reason: t(REASON_KEYS[row.reason]),
+      reason: describeReason(row),
     };
     return row.payee
       ? t('complete.skippedRow', { ...values, payee: row.payee })

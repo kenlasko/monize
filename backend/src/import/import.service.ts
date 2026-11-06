@@ -54,6 +54,7 @@ import {
   UpdateColumnMappingDto,
   CsvHeadersResponseDto,
   ColumnMappingResponseDto,
+  SKIPPED_ROWS_LIMIT,
 } from "./dto/import.dto";
 import {
   ImportContext,
@@ -1222,6 +1223,16 @@ export class ImportService {
       openingBalance: result.openingBalance,
       openingBalanceDate: result.openingBalanceDate,
       investmentSummary: result.investmentSummary,
+      ...(result.unreadableDateRows
+        ? {
+            unreadableDates: {
+              count: result.unreadableDateRows.length,
+              rows: result.unreadableDateRows
+                .slice(0, SKIPPED_ROWS_LIMIT)
+                .map(({ rowNumber, rawDate }) => ({ rowNumber, rawDate })),
+            },
+          }
+        : {}),
     };
   }
 
@@ -1314,6 +1325,22 @@ export class ImportService {
         securities: {},
       },
     };
+
+    // The parse already left these rows out; the result names them.
+    for (const row of result.unreadableDateRows ?? []) {
+      recordSkippedRow(
+        importResult,
+        {
+          date: "",
+          amount: row.amount,
+          payee: row.payee,
+          rowNumber: row.rowNumber,
+          rawDate: row.rawDate,
+        },
+        "unreadableDate",
+        account.currencyCode,
+      );
+    }
 
     // One transaction for the whole import, exactly as the former QueryRunner
     // block was: per-transaction SAVEPOINTs inside it let a single bad row roll

@@ -13,6 +13,7 @@ import {
 } from '@/lib/import';
 import { Account } from '@/types/account';
 import { ImportFileData, ImportStep } from '@/app/import/import-utils';
+import { UnreadableDatesNotice } from './UnreadableDatesNotice';
 
 /** Merge the per-file investment summaries of a (possibly bulk) CSV parse. */
 function combineInvestmentSummaries(files: ImportFileData[]): CsvInvestmentSummary | null {
@@ -132,6 +133,8 @@ export function ReviewStep({
               </ul>
             )}
           </div>
+
+          <UnreadableDatesNotice importFiles={importFiles} showFileNames={isBulkImport} />
 
           {categoryMappings.length > 0 && (
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">

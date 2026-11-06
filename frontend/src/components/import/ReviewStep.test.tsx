@@ -232,6 +232,76 @@ describe('ReviewStep', () => {
     expect(screen.getByText(/15 transactions/)).toBeInTheDocument();
   });
 
+  // --- Unreadable CSV dates ---
+
+  describe('unreadable dates', () => {
+    function csvFile(unreadableDates: { count: number; rows: { rowNumber: number; rawDate: string }[] } | undefined, fileName = 'march.csv') {
+      return {
+        fileName,
+        fileContent: '',
+        fileType: 'csv' as const,
+        parsedData: {
+          ...defaultProps.parsedData,
+          detectedDateFormat: 'MM/DD/YYYY' as const,
+          unreadableDates,
+        },
+        selectedAccountId: 'acc-1',
+        matchConfidence: 'exact',
+      };
+    }
+
+    it('counts the rows whose date cannot be read and names each by row and date text', () => {
+      const unreadable = {
+        count: 2,
+        rows: [
+          { rowNumber: 14, rawDate: '13/03/2026' },
+          { rowNumber: 20, rawDate: '' },
+        ],
+      };
+      render(<ReviewStep {...defaultProps} importFiles={[csvFile(unreadable)] as any[]} />);
+
+      expect(
+        screen.getByText('2 rows have dates that cannot be read as MM/DD/YYYY and will not be imported:'),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Row 14: "13/03/2026"')).toBeInTheDocument();
+      expect(screen.getByText('Row 20: no date')).toBeInTheDocument();
+      expect(screen.getByText(/go back to the column mapping step and choose the date format/)).toBeInTheDocument();
+    });
+
+    it('lists the first five and counts the rest', () => {
+      const rows = Array.from({ length: 7 }, (_, i) => ({ rowNumber: i + 2, rawDate: `13/0${i + 1}/2026` }));
+      render(<ReviewStep {...defaultProps} importFiles={[csvFile({ count: 60, rows })] as any[]} />);
+
+      expect(screen.getByText('Row 6: "13/05/2026"')).toBeInTheDocument();
+      expect(screen.queryByText('Row 7: "13/06/2026"')).not.toBeInTheDocument();
+      expect(screen.getByText('...and 55 more')).toBeInTheDocument();
+    });
+
+    it('names the file of each list in a bulk import', () => {
+      const one = { count: 1, rows: [{ rowNumber: 3, rawDate: '31/02/2026' }] };
+      render(
+        <ReviewStep
+          {...defaultProps}
+          isBulkImport={true}
+          importFiles={[csvFile(one, 'a.csv'), csvFile(undefined, 'b.csv')] as any[]}
+        />,
+      );
+
+      expect(
+        screen.getByText('1 row has a date that cannot be read as MM/DD/YYYY and will not be imported:'),
+      ).toBeInTheDocument();
+      // a.csv appears in the file summary and above its list; b.csv only in the summary.
+      expect(screen.getAllByText('a.csv')).toHaveLength(2);
+      expect(screen.getAllByText('b.csv')).toHaveLength(1);
+    });
+
+    it('shows nothing when every date reads', () => {
+      render(<ReviewStep {...defaultProps} importFiles={[csvFile({ count: 0, rows: [] })] as any[]} />);
+
+      expect(screen.queryByText(/cannot be read as/)).not.toBeInTheDocument();
+    });
+  });
+
   // --- Investment summary section ---
 
   describe('investment summary', () => {

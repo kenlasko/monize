@@ -281,6 +281,11 @@
       "missingSplitRatio": "[XX-Split without ratio-XX]"
     },
     "rejectedGoBack": "[XX-Go back to the column mapping step to adjust columns or action keywords.-XX]",
+    "unreadableDatesNotice": "[XX-{count, plural, one {# row has a date} other {# rows have dates}} that cannot be read as {format} and will not be imported:-XX]",
+    "unreadableDateRow": "[XX-Row {line}: \"{rawDate}\"-XX]",
+    "missingDateRow": "[XX-Row {line}: no date-XX]",
+    "unreadableDatesMore": "[XX-...and {count} more-XX]",
+    "unreadableDatesGoBack": "[XX-If the file writes its dates in another order, go back to the column mapping step and choose the date format it uses.-XX]",
     "importButton": "[XX-Import Transactions-XX]"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "[XX-{date}: {amount} ({reason})-XX]",
     "skipReasonAlreadyImported": "[XX-already imported-XX]",
     "skipReasonDuplicateTransfer": "[XX-transfer already recorded-XX]",
+    "skipReasonUnreadableDate": "[XX-date could not be read-XX]",
+    "skipReasonNoDate": "[XX-no date-XX]",
+    "skippedRowLineDate": "[XX-Row {line}, \"{rawDate}\"-XX]",
+    "skippedRowLine": "[XX-Row {line}-XX]",
     "andMoreSkipped": "[XX-...and {count} more skipped rows-XX]",
     "loanSetupHeading": "[XX-Set Up Recurring Payments-XX]",
     "loanSetupDescription": "[XX-The following loan/mortgage accounts were imported without scheduled payments. Set up recurring payments to continue tracking your loan progress.-XX]",

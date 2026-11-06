@@ -281,6 +281,11 @@
       "missingSplitRatio": "分割缺少比例"
     },
     "rejectedGoBack": "返回欄位對應步驟以調整欄位或操作關鍵字。",
+    "unreadableDatesNotice": "{count, plural, other {# 列}}的日期無法依 {format} 讀取，將不會匯入：",
+    "unreadableDateRow": "第 {line} 列：「{rawDate}」",
+    "missingDateRow": "第 {line} 列：無日期",
+    "unreadableDatesMore": "...以及另外 {count} 列",
+    "unreadableDatesGoBack": "如果檔案中的日期採用其他順序，請返回欄位對應步驟並選擇檔案使用的日期格式。",
     "importButton": "匯入交易"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}：{amount}（{reason}）",
     "skipReasonAlreadyImported": "已匯入",
     "skipReasonDuplicateTransfer": "轉帳已記錄",
+    "skipReasonUnreadableDate": "無法讀取日期",
+    "skipReasonNoDate": "無日期",
+    "skippedRowLineDate": "第 {line} 列，「{rawDate}」",
+    "skippedRowLine": "第 {line} 列",
     "andMoreSkipped": "...以及另外 {count} 列已略過",
     "loanSetupHeading": "設定定期還款",
     "loanSetupDescription": "以下貸款/抵押貸款科目已匯入但尚未設定排程還款。請設定定期還款以繼續追蹤您的貸款進度。",

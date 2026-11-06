@@ -281,6 +281,11 @@
       "missingSplitRatio": "비율 없는 분할"
     },
     "rejectedGoBack": "열 매핑 단계로 돌아가 열이나 작업 키워드를 조정하세요.",
+    "unreadableDatesNotice": "{count, plural, other {#개 행}}의 날짜를 {format} 형식으로 읽을 수 없어 가져오지 않습니다:",
+    "unreadableDateRow": "{line}행: \"{rawDate}\"",
+    "missingDateRow": "{line}행: 날짜 없음",
+    "unreadableDatesMore": "...외 {count}개",
+    "unreadableDatesGoBack": "파일의 날짜가 다른 순서로 적혀 있다면 열 매핑 단계로 돌아가 파일이 사용하는 날짜 형식을 선택하세요.",
     "importButton": "거래 가져오기"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "이미 가져옴",
     "skipReasonDuplicateTransfer": "이미 기록된 이체",
+    "skipReasonUnreadableDate": "날짜를 읽을 수 없음",
+    "skipReasonNoDate": "날짜 없음",
+    "skippedRowLineDate": "{line}행, \"{rawDate}\"",
+    "skippedRowLine": "{line}행",
     "andMoreSkipped": "...외 {count}개 행 건너뜀",
     "loanSetupHeading": "정기 상환 설정",
     "loanSetupDescription": "다음 대출/모기지 계정은 예약된 상환 없이 가져왔습니다. 대출 진행 상황을 계속 추적하려면 정기 상환을 설정하세요.",

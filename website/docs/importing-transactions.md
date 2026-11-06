@@ -91,6 +91,8 @@ At the top of the mapping step, an options bar lets you configure:
 
 Monize auto-detects the date format from sample data. If dates appear wrong, select the correct format from the dropdown or enter a custom pattern.
 
+A row whose date cannot be read under the chosen format is never imported on a guessed date: a day above 12 under the wrong day/month order, a date that does not exist (30 February), or a row with no date at all. The review step counts these rows and names each by its row in the file, and the completed import lists them among the skipped rows.
+
 #### Data Preview
 
 A table shows the first 5 rows of your CSV file with column headers. Use this to verify the delimiter and header settings are correct, and to identify which columns contain which data.
@@ -201,6 +203,7 @@ The review step shows a summary of the import:
 - File name, transaction count and target account (for a bulk import, each file with its count and target, and the total)
 - Categories: total, mapped, new to create, and those mapped to loan accounts or new loans
 - Transfer accounts and securities: total, mapped, and new to create
+- For a CSV file, the rows whose date cannot be read under the chosen date format, by row number and date text. When the file writes its dates day-first and you imported it as MM/DD/YYYY, these are the rows dated after the 12th; go back to the column mapping step and choose the right format before importing
 
 ![Review Import](images/import-review-step.png)
 
@@ -213,7 +216,7 @@ After a successful import, you see:
 | Metric | Description |
 |--------|-------------|
 | **Imported** | Transactions successfully imported |
-| **Skipped** | Rows not imported because they are already there: an OFX row imported before ("already imported"), or the other side of a transfer that is already recorded ("transfer already recorded"). The skipped rows are listed with their date, amount and payee |
+| **Skipped** | Rows not imported: an OFX row imported before ("already imported"), the other side of a transfer that is already recorded ("transfer already recorded"), or a CSV row whose date could not be read ("date could not be read", or "no date"). The skipped rows are listed with their date (for an unreadable date, its row number and the date text), amount and payee |
 | **Errors** | Transactions that failed (with error details) |
 | **Categories created** | New categories added |
 | **Accounts created** | New accounts added |
@@ -479,7 +482,7 @@ After a transaction is imported, your rules set to run on import (**Tools > Rule
 
 **Cause:** The date format was auto-detected incorrectly.
 
-**Solution:** For CSV, change the **Date Format** in the options bar, or enter a custom pattern. Monize defaults to MM/DD/YYYY when dates are ambiguous (e.g., both parts are 12 or less). OFX dates are unambiguous. For a QIF full-file export, change the **Date Format** on the review step; a single-account QIF file's date format is detected from the file itself.
+**Solution:** For CSV, change the **Date Format** in the options bar, or enter a custom pattern. Monize defaults to MM/DD/YYYY when dates are ambiguous (e.g., both parts are 12 or less). The format is guessed from the first five rows only, so a day-first statement whose first rows fall on the 1st to the 12th is read month-first: the review step then lists its rows dated after the 12th as unreadable, a sign the other rows would import on swapped dates. OFX dates are unambiguous. For a QIF full-file export, change the **Date Format** on the review step; a single-account QIF file's date format is detected from the file itself.
 
 ### Amounts Have Wrong Sign
 

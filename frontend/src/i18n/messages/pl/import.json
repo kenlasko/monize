@@ -281,6 +281,11 @@
       "missingSplitRatio": "Podział bez współczynnika"
     },
     "rejectedGoBack": "Wróć do kroku mapowania kolumn, aby dostosować kolumny lub słowa kluczowe akcji.",
+    "unreadableDatesNotice": "{count, plural, one {# wiersz ma datę, której nie można odczytać jako {format}, i nie zostanie zaimportowany} few {# wiersze mają daty, których nie można odczytać jako {format}, i nie zostaną zaimportowane} many {# wierszy ma daty, których nie można odczytać jako {format}, i nie zostanie zaimportowanych} other {# wiersza ma daty, których nie można odczytać jako {format}, i nie zostanie zaimportowanych}}:",
+    "unreadableDateRow": "Wiersz {line}: \"{rawDate}\"",
+    "missingDateRow": "Wiersz {line}: brak daty",
+    "unreadableDatesMore": "...i jeszcze {count}",
+    "unreadableDatesGoBack": "Jeśli plik zapisuje daty w innej kolejności, wróć do kroku mapowania kolumn i wybierz format daty, którego używa.",
     "importButton": "Import transakcji"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "już zaimportowano",
     "skipReasonDuplicateTransfer": "przelew już zapisany",
+    "skipReasonUnreadableDate": "nie można odczytać daty",
+    "skipReasonNoDate": "brak daty",
+    "skippedRowLineDate": "Wiersz {line}, \"{rawDate}\"",
+    "skippedRowLine": "Wiersz {line}",
     "andMoreSkipped": "...i jeszcze {count} pominiętych wierszy",
     "loanSetupHeading": "Skonfiguruj płatności cykliczne",
     "loanSetupDescription": "Poniższe konta pożyczek/kredytów hipotecznych zostały zaimportowane bez zaplanowanych płatności. Skonfiguruj płatności cykliczne, aby dalej śledzić postęp spłaty pożyczki.",

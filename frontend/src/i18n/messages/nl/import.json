@@ -281,6 +281,11 @@
       "missingSplitRatio": "Splitsing zonder verhouding"
     },
     "rejectedGoBack": "Ga terug naar de stap kolomkoppeling om kolommen of actiesleutelwoorden aan te passen.",
+    "unreadableDatesNotice": "{count, plural, one {# rij heeft een datum die} other {# rijen hebben datums die}} niet als {format} gelezen {count, plural, one {kan} other {kunnen}} worden en niet {count, plural, one {wordt} other {worden}} geïmporteerd:",
+    "unreadableDateRow": "Rij {line}: \"{rawDate}\"",
+    "missingDateRow": "Rij {line}: geen datum",
+    "unreadableDatesMore": "...en nog {count}",
+    "unreadableDatesGoBack": "Als het bestand de datums in een andere volgorde schrijft, ga dan terug naar de stap kolomkoppeling en kies de datumnotatie die het gebruikt.",
     "importButton": "Transacties importeren"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "al geïmporteerd",
     "skipReasonDuplicateTransfer": "overboeking al vastgelegd",
+    "skipReasonUnreadableDate": "datum onleesbaar",
+    "skipReasonNoDate": "geen datum",
+    "skippedRowLineDate": "Rij {line}, \"{rawDate}\"",
+    "skippedRowLine": "Rij {line}",
     "andMoreSkipped": "...en nog {count} overgeslagen regels",
     "loanSetupHeading": "Terugkerende betalingen instellen",
     "loanSetupDescription": "De volgende lening-/hypotheekrekeningen zijn geïmporteerd zonder geplande betalingen. Stel terugkerende betalingen in om jouw leningvoortgang bij te houden.",

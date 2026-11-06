@@ -137,7 +137,13 @@ export function bondStateOf(ctx: ImportContext): ImportBondState {
  */
 export function recordSkippedRow(
   importResult: ImportResultDto,
-  row: { date: string; amount: number; payee?: string | null },
+  row: {
+    date: string;
+    amount: number;
+    payee?: string | null;
+    rowNumber?: number;
+    rawDate?: string;
+  },
   reason: ImportSkipReason,
   currencyCode: string,
 ): void {
@@ -149,6 +155,8 @@ export function recordSkippedRow(
     currencyCode,
     payee: row.payee ?? "",
     reason,
+    ...(row.rowNumber !== undefined ? { rowNumber: row.rowNumber } : {}),
+    ...(row.rawDate !== undefined ? { rawDate: row.rawDate } : {}),
   });
 }
 

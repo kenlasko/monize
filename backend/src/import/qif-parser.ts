@@ -98,6 +98,12 @@ export interface QifParseResult {
    * QIF and OFX parses never set it.
    */
   investmentSummary?: import("./csv-parser").CsvInvestmentSummary;
+  /**
+   * CSV parses only: every row left out because its date could not be read
+   * under the mapping's date format, in file order. The preview counts them
+   * and the import records each as a skipped row.
+   */
+  unreadableDateRows?: import("./csv-parser").CsvUnreadableDateRow[];
 }
 
 export type DateFormat =

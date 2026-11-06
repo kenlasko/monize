@@ -12,6 +12,7 @@ import type { QifTransaction, QifParseResult } from "./qif-parser";
 import { escapeRegExp } from "../common/escape-regexp.util";
 import { roundToDecimals } from "../common/round.util";
 import { normalizeAmountSeparators } from "./amount-separators.util";
+import { isCalendarDate } from "../common/validators/is-calendar-date.validator";
 
 export interface CsvHeadersResult {
   headers: string[];
@@ -80,6 +81,23 @@ export interface CsvTransferRule {
   pattern: string;
   accountName: string;
 }
+
+/**
+ * A row of the file whose date the mapping's date format cannot read (or that
+ * has none), so the parse left it out. The preview counts them and the import
+ * result lists them among its skipped rows, by the line of the file.
+ */
+export interface CsvUnreadableDateRow {
+  /** The line of the file the row starts on, 1-based, the header included. */
+  rowNumber: number;
+  /** The date field as the file gave it, empty when the row has none. */
+  rawDate: string;
+  amount: number;
+  payee: string;
+}
+
+/** Longest raw date text an unreadable-date row carries back. */
+const RAW_DATE_LIMIT = 50;
 
 /** Per-canonical-action row counts and skip reporting for the preview step. */
 export interface CsvInvestmentSummary {
@@ -531,22 +549,42 @@ function detectDelimiter(content: string): string {
  * maps (the warranty CSV, `warranty-csv.ts`), so the codebase keeps one reader.
  */
 export function parseCsvRows(content: string, delimiter: string): string[][] {
+  return readCsvRecords(content, delimiter).map((record) => record.fields);
+}
+
+/** One record of the file and the line of the file it starts on (1-based). */
+interface CsvRecord {
+  fields: string[];
+  line: number;
+}
+
+/**
+ * `parseCsvRows` with each record's starting line, so a row the import leaves
+ * out can be named by the line a person finds it on in the file, which a
+ * quoted newline or a skipped blank line moves away from its index.
+ */
+function readCsvRecords(content: string, delimiter: string): CsvRecord[] {
   // Defensive: ensure we received a real string. An attacker could submit a
   // JSON body where `content` is an object like {length: 1e100}; iterating on
   // `.length` without this check is a CWE-834 loop-bound injection.
   if (typeof content !== "string") {
     return [];
   }
-  const rows: string[][] = [];
+  const rows: CsvRecord[] = [];
   let currentRow: string[] = [];
   let currentField = "";
   let inQuotes = false;
   let i = 0;
+  let line = 1;
+  let rowStartLine = 1;
 
   while (i < content.length) {
     const char = content[i];
 
     if (inQuotes) {
+      if (char === "\n") {
+        line++;
+      }
       if (char === '"') {
         // Check for escaped quote (doubled "")
         if (i + 1 < content.length && content[i + 1] === '"') {
@@ -588,10 +626,12 @@ export function parseCsvRows(content: string, delimiter: string): string[][] {
       currentRow.push(currentField.trim());
       currentField = "";
       if (currentRow.some((f) => f !== "")) {
-        rows.push(currentRow);
+        rows.push({ fields: currentRow, line: rowStartLine });
       }
       currentRow = [];
       i++;
+      line++;
+      rowStartLine = line;
       continue;
     }
 
@@ -600,10 +640,12 @@ export function parseCsvRows(content: string, delimiter: string): string[][] {
       currentRow.push(currentField.trim());
       currentField = "";
       if (currentRow.some((f) => f !== "")) {
-        rows.push(currentRow);
+        rows.push({ fields: currentRow, line: rowStartLine });
       }
       currentRow = [];
       i++;
+      line++;
+      rowStartLine = line;
       continue;
     }
 
@@ -615,7 +657,7 @@ export function parseCsvRows(content: string, delimiter: string): string[][] {
   if (currentField !== "" || currentRow.length > 0) {
     currentRow.push(currentField.trim());
     if (currentRow.some((f) => f !== "")) {
-      rows.push(currentRow);
+      rows.push({ fields: currentRow, line: rowStartLine });
     }
   }
 
@@ -631,8 +673,10 @@ const KNOWN_FORMATS = new Set([
 ]);
 
 /**
- * Validate that year, month, day values are within reasonable ranges.
- * Returns the YYYY-MM-DD string or null if invalid.
+ * Validate that year, month, day values name a day that exists, in a
+ * reasonable year range. Returns the YYYY-MM-DD string or null if invalid:
+ * 30 February is refused here, where the row can still be reported as an
+ * unreadable date, rather than at the database.
  */
 function validateAndFormat(
   year: string,
@@ -640,12 +684,11 @@ function validateAndFormat(
   day: string,
 ): string | null {
   const y = parseInt(year);
-  const m = parseInt(month);
-  const d = parseInt(day);
-  if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > 2100) {
+  if (y < 1900 || y > 2100) {
     return null;
   }
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  const formatted = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  return isCalendarDate(formatted) ? formatted : null;
 }
 
 /**
@@ -1098,6 +1141,41 @@ export function validateCsvContent(content: string): {
 }
 
 /**
+ * A row's amount before any type column or transfer rule adjusts its sign:
+ * the amount column (negated under `reverseSign`), or the credit column as an
+ * inflow and the debit column as an outflow. `rawAmount` is the amount
+ * column's value before `reverseSign`.
+ */
+function readRowAmount(
+  row: string[],
+  config: CsvColumnMappingConfig,
+): { amount: number; rawAmount: number } {
+  if (config.amount !== undefined) {
+    const rawAmount = parseCsvAmount(getField(row, config.amount)) ?? 0;
+    return {
+      amount: config.reverseSign ? -rawAmount : rawAmount,
+      rawAmount,
+    };
+  }
+  if (config.debit !== undefined || config.credit !== undefined) {
+    const creditVal =
+      config.credit !== undefined
+        ? (parseCsvAmount(getField(row, config.credit)) ?? 0)
+        : 0;
+    const debitVal =
+      config.debit !== undefined
+        ? (parseCsvAmount(getField(row, config.debit)) ?? 0)
+        : 0;
+    // Strip sign from debit and negate -- debit is always an outflow
+    return {
+      amount: creditVal !== 0 ? Math.abs(creditVal) : -Math.abs(debitVal),
+      rawAmount: 0,
+    };
+  }
+  return { amount: 0, rawAmount: 0 };
+}
+
+/**
  * Parse CSV headers and return sample data for the column mapping UI.
  * Auto-detects delimiter if not provided.
  */
@@ -1132,10 +1210,10 @@ export function parseCsv(
   config: CsvColumnMappingConfig,
   transferRules?: CsvTransferRule[],
 ): QifParseResult {
-  const rows = parseCsvRows(content, config.delimiter);
+  const records = readCsvRecords(content, config.delimiter);
   const investmentMode = config.investmentMode === true;
 
-  if (rows.length === 0) {
+  if (records.length === 0) {
     return {
       accountType: investmentMode ? "INVESTMENT" : "CHEQUING",
       accountName: "",
@@ -1147,6 +1225,7 @@ export function parseCsv(
       sampleDates: [],
       openingBalance: null,
       openingBalanceDate: null,
+      unreadableDateRows: [],
       ...(investmentMode
         ? {
             investmentSummary: {
@@ -1161,7 +1240,8 @@ export function parseCsv(
   }
 
   // Determine data rows (skip header if configured)
-  const dataRows = config.hasHeader ? rows.slice(1) : rows;
+  const dataRecords = config.hasHeader ? records.slice(1) : records;
+  const dataRows = dataRecords.map((record) => record.fields);
 
   const transactions: QifTransaction[] = [];
   const categoriesSet = new Set<string>();
@@ -1172,6 +1252,7 @@ export function parseCsv(
   const rejectedRowCounts = new Map<InvestmentRejectReason, number>();
   let uncostedShareRows = 0;
   const rawDates: string[] = [];
+  const unreadableDateRows: CsvUnreadableDateRow[] = [];
   const rules = transferRules || [];
 
   // Tag separator is detected once per import by scanning every tag value in
@@ -1183,50 +1264,33 @@ export function parseCsv(
       ? detectTagSeparator(dataRows.map((row) => getField(row, config.tags!)))
       : null;
 
-  for (const row of dataRows) {
+  for (const { fields: row, line } of dataRecords) {
     // Extract and parse the date
     const rawDate = getField(row, config.date);
-    if (!rawDate) {
-      continue;
-    }
-
-    const parsedDate = parseCsvDate(rawDate, config.dateFormat);
-    if (!parsedDate) {
-      // Skip rows with unparseable dates
-      continue;
-    }
-
-    rawDates.push(rawDate);
+    const parsedDate = rawDate
+      ? parseCsvDate(rawDate, config.dateFormat)
+      : null;
 
     // Extract and parse the amount
-    let amount = 0;
-    let rawAmount = 0; // Original parsed amount before reverseSign
-    if (config.amount !== undefined) {
-      amount = parseCsvAmount(getField(row, config.amount)) ?? 0;
-      rawAmount = amount;
-      if (config.reverseSign) {
-        amount = -amount;
-      }
-    } else if (config.debit !== undefined || config.credit !== undefined) {
-      const creditVal =
-        config.credit !== undefined
-          ? (parseCsvAmount(getField(row, config.credit)) ?? 0)
-          : 0;
-
-      let debitVal =
-        config.debit !== undefined
-          ? (parseCsvAmount(getField(row, config.debit)) ?? 0)
-          : 0;
-
-      // Strip sign from debit and negate -- debit is always an outflow
-      debitVal = -Math.abs(debitVal);
-
-      amount = creditVal !== 0 ? Math.abs(creditVal) : debitVal;
-    }
+    const { amount: rowAmount, rawAmount } = readRowAmount(row, config);
+    let amount = rowAmount;
 
     // Extract text fields with sanitization
     const rawPayee = truncate(getField(row, config.payee), FIELD_LIMITS.PAYEE);
     const payee = isAllCaps(rawPayee) ? toProperCase(rawPayee) : rawPayee;
+
+    if (!parsedDate) {
+      // Never a silent drop: the row is named in the preview and the result.
+      unreadableDateRows.push({
+        rowNumber: line,
+        rawDate: truncate(rawDate, RAW_DATE_LIMIT),
+        amount,
+        payee,
+      });
+      continue;
+    }
+
+    rawDates.push(rawDate);
     const categoryPart = truncate(
       getField(row, config.category),
       FIELD_LIMITS.CATEGORY,
@@ -1418,6 +1482,7 @@ export function parseCsv(
     sampleDates,
     openingBalance: null,
     openingBalanceDate: null,
+    unreadableDateRows,
     ...(investmentMode
       ? {
           investmentSummary: {

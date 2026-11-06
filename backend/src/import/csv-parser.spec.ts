@@ -690,6 +690,114 @@ describe("CSV Parser", () => {
       });
     });
 
+    describe("unreadable dates are reported, never dropped silently", () => {
+      it("names a day above 12 under MM/DD/YYYY by its line and raw date", () => {
+        const csv =
+          "Date,Amount,Payee\n02/03/2026,-10.00,Shop\n13/03/2026,-42.50,Cafe\n";
+        const result = parseCsv(csv, baseConfig());
+
+        expect(result.transactions).toHaveLength(1);
+        expect(result.unreadableDateRows).toEqual([
+          { rowNumber: 3, rawDate: "13/03/2026", amount: -42.5, payee: "Cafe" },
+        ]);
+      });
+
+      it("reports a row with no date", () => {
+        const csv =
+          "Date,Amount,Payee\n,-50.00,Store\n01/16/2026,-30.00,Shop\n";
+        const result = parseCsv(csv, baseConfig());
+
+        expect(result.unreadableDateRows).toEqual([
+          { rowNumber: 2, rawDate: "", amount: -50, payee: "Store" },
+        ]);
+      });
+
+      it("reports the amount from the debit and credit columns", () => {
+        const csv = "Date,Debit,Credit,Payee\nnope,25.00,,Store\n";
+        const result = parseCsv(
+          csv,
+          baseConfig({ amount: undefined, debit: 1, credit: 2, payee: 3 }),
+        );
+
+        expect(result.unreadableDateRows).toEqual([
+          { rowNumber: 2, rawDate: "nope", amount: -25, payee: "Store" },
+        ]);
+      });
+
+      it("numbers rows by the line of the file across blank lines and quoted newlines", () => {
+        const csv =
+          'Date,Amount,Payee\n01/15/2026,-1,"Two\nLines"\n\n13/13/2026,-2,Shop\r\n99/99/2026,-3,Store';
+        const result = parseCsv(csv, baseConfig());
+
+        expect(result.unreadableDateRows?.map((r) => r.rowNumber)).toEqual([
+          5, 6,
+        ]);
+      });
+
+      it("counts from the first line when the file has no header", () => {
+        const csv = "bad,-1,Shop\n01/15/2026,-2,Store\n";
+        const result = parseCsv(csv, baseConfig({ hasHeader: false }));
+
+        expect(result.unreadableDateRows?.[0].rowNumber).toBe(1);
+      });
+
+      it("reports an unreadable investment row before it is classified", () => {
+        const csv =
+          "Date,Action,Symbol,Quantity,Price,Amount\n31/31/2026,Buy,AAPL,1,10,-10\n";
+        const result = parseCsv(
+          csv,
+          baseConfig({
+            amount: 5,
+            payee: undefined,
+            investmentMode: true,
+            actionColumn: 1,
+            securityColumn: 2,
+            quantityColumn: 3,
+            priceColumn: 4,
+          }),
+        );
+
+        expect(result.transactions).toHaveLength(0);
+        expect(result.unreadableDateRows).toEqual([
+          { rowNumber: 2, rawDate: "31/31/2026", amount: -10, payee: "" },
+        ]);
+      });
+
+      it("returns an empty list when every date reads", () => {
+        const csv = "Date,Amount\n01/15/2026,-50.00\n";
+        expect(parseCsv(csv, baseConfig()).unreadableDateRows).toEqual([]);
+        expect(parseCsv("", baseConfig()).unreadableDateRows).toEqual([]);
+      });
+
+      it.each([
+        ["02/30/2026", "MM/DD/YYYY"],
+        ["04/31/2026", "MM/DD/YYYY"],
+        ["31/04/2026", "DD/MM/YYYY"],
+        ["2026-02-29", "YYYY-MM-DD"],
+        ["2026-29-02", "YYYY-DD-MM"],
+        ["30.02.2026", "DD.MM.YYYY"],
+      ])("refuses the impossible calendar date %s under %s", (date, format) => {
+        const csv = `Date,Amount\n${date},-5.00\n`;
+        const result = parseCsv(csv, baseConfig({ dateFormat: format }));
+
+        expect(result.transactions).toHaveLength(0);
+        expect(result.unreadableDateRows?.[0].rawDate).toBe(date);
+      });
+
+      it("accepts 29 February in a leap year and the last day of a month", () => {
+        const csv =
+          "Date,Amount\n02/29/2028,-1\n04/30/2026,-2\n12/31/2026,-3\n";
+        const result = parseCsv(csv, baseConfig());
+
+        expect(result.transactions.map((t) => t.date)).toEqual([
+          "2028-02-29",
+          "2026-04-30",
+          "2026-12-31",
+        ]);
+        expect(result.unreadableDateRows).toEqual([]);
+      });
+    });
+
     describe("custom date format patterns", () => {
       it("parses a dotted DD.MM.YYYY custom pattern", () => {
         const csv = "Date,Amount,Payee\n15.01.2026,-50.00,Store\n";

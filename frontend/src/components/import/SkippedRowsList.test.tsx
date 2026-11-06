@@ -58,6 +58,21 @@ describe('SkippedRowsList', () => {
     expect(item.textContent?.startsWith('2026-01-15:')).toBe(false);
   });
 
+  it('names a row whose date could not be read by its row and the date text', () => {
+    render(
+      <SkippedRowsList
+        rows={[
+          row({ date: '', reason: 'unreadableDate', rowNumber: 14, rawDate: '13/03/2026', payee: 'Cafe' }),
+          row({ date: '', reason: 'unreadableDate', rowNumber: 20, rawDate: '', payee: '' }),
+        ]}
+      />,
+    );
+
+    const [first, second] = screen.getAllByRole('listitem');
+    expect(first).toHaveTextContent('Row 14, "13/03/2026": -$50.00, Cafe (date could not be read)');
+    expect(second).toHaveTextContent('Row 20: -$50.00 (no date)');
+  });
+
   it('shows each amount in the currency of the account its row went into', () => {
     render(<SkippedRowsList rows={[row({ currencyCode: 'EUR' })]} />);
 

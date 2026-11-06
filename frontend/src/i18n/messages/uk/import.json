@@ -281,6 +281,11 @@
       "missingSplitRatio": "Дроблення без коефіцієнта"
     },
     "rejectedGoBack": "Поверніться до кроку відображення стовпців, щоб змінити стовпці або ключові слова дій.",
+    "unreadableDatesNotice": "{count, plural, one {# рядок містить дату, яку} few {# рядки містять дати, які} many {# рядків містять дати, які} other {# рядка містять дати, які}} неможливо прочитати як {format}; {count, plural, one {його не буде імпортовано} other {їх не буде імпортовано}}:",
+    "unreadableDateRow": "Рядок {line}: \"{rawDate}\"",
+    "missingDateRow": "Рядок {line}: немає дати",
+    "unreadableDatesMore": "...і ще {count}",
+    "unreadableDatesGoBack": "Якщо у файлі дати записано в іншому порядку, поверніться до кроку відображення стовпців і виберіть формат дати, який у ньому використано.",
     "importButton": "Імпортувати транзакції"
   },
   "complete": {
@@ -311,6 +316,10 @@
     "skippedRowNoPayee": "{date}: {amount} ({reason})",
     "skipReasonAlreadyImported": "уже імпортовано",
     "skipReasonDuplicateTransfer": "переказ уже записано",
+    "skipReasonUnreadableDate": "дату неможливо прочитати",
+    "skipReasonNoDate": "немає дати",
+    "skippedRowLineDate": "Рядок {line}, \"{rawDate}\"",
+    "skippedRowLine": "Рядок {line}",
     "andMoreSkipped": "...і ще {count} пропущених рядків",
     "loanSetupHeading": "Налаштувати регулярні платежі",
     "loanSetupDescription": "Наступні кредитні/іпотечні рахунки були імпортовані без запланованих платежів. Налаштуйте регулярні платежі, щоб продовжити відстеження прогресу кредиту.",
