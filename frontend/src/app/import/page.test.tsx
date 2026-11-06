@@ -103,7 +103,7 @@ vi.mock('@/lib/import', () => ({
     importQif: (...args: any[]) => mockImportQif(...args),
     parseOfx: (...args: any[]) => mockParseQif(...args),
     importOfx: (...args: any[]) => mockImportQif(...args),
-    parseCsvHeaders: vi.fn().mockResolvedValue({ headers: [], sampleRows: [], rowCount: 0 }),
+    parseCsvHeaders: vi.fn().mockResolvedValue({ headers: [], sampleRows: [], rowCount: 0, columnDateFormats: [] }),
     parseCsv: (...args: any[]) => mockParseQif(...args),
     importCsv: (...args: any[]) => mockImportQif(...args),
     getColumnMappings: vi.fn().mockResolvedValue([]),

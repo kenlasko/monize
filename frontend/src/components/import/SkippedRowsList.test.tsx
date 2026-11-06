@@ -73,6 +73,27 @@ describe('SkippedRowsList', () => {
     expect(second).toHaveTextContent('Row 20: -$50.00 (no date)');
   });
 
+  it('names an investment row the parse rejected by its row, date and what it was missing', () => {
+    render(
+      <SkippedRowsList
+        rows={[
+          row({ date: '2026-03-02', amount: 0, payee: '', reason: 'missingProceeds', rowNumber: 4 }),
+          row({ date: '2026-03-05', payee: 'Broker', reason: 'missingSecurity', rowNumber: 7 }),
+          row({ reason: 'missingQuantity', rowNumber: 8 }),
+          row({ reason: 'missingAmount', rowNumber: 9 }),
+          row({ reason: 'missingSplitRatio', rowNumber: 10 }),
+        ]}
+      />,
+    );
+
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent(/^Row 4, .*2026: \$0\.00 \(sell without price or proceeds\)$/);
+    expect(items[1]).toHaveTextContent(/^Row 7, .*2026: -\$50\.00, Broker \(missing security\)$/);
+    expect(items[2]).toHaveTextContent('(missing quantity)');
+    expect(items[3]).toHaveTextContent('(missing amount)');
+    expect(items[4]).toHaveTextContent('(split without ratio)');
+  });
+
   it('shows each amount in the currency of the account its row went into', () => {
     render(<SkippedRowsList rows={[row({ currencyCode: 'EUR' })]} />);
 

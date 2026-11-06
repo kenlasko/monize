@@ -134,54 +134,6 @@ describe('importApi column mappings', () => {
   });
 });
 
-describe('detectCsvDateFormat', () => {
-  it('detects YYYY-MM-DD', async () => {
-    const { detectCsvDateFormat } = await import('./import');
-    expect(detectCsvDateFormat(['2025-01-15'])).toBe('YYYY-MM-DD');
-  });
-
-  it('detects YYYY-DD-MM when middle part is greater than 12', async () => {
-    const { detectCsvDateFormat } = await import('./import');
-    expect(detectCsvDateFormat(['2025-15-01'])).toBe('YYYY-DD-MM');
-  });
-
-  it('defaults YYYY-prefixed to YYYY-MM-DD when ambiguous', async () => {
-    const { detectCsvDateFormat } = await import('./import');
-    expect(detectCsvDateFormat(['2025-05-06'])).toBe('YYYY-MM-DD');
-  });
-
-  it('detects MM/DD/YYYY when first part is <= 12', async () => {
-    const { detectCsvDateFormat } = await import('./import');
-    expect(detectCsvDateFormat(['12/31/2025'])).toBe('MM/DD/YYYY');
-  });
-
-  it('detects DD/MM/YYYY when first part > 12', async () => {
-    const { detectCsvDateFormat } = await import('./import');
-    expect(detectCsvDateFormat(['31/12/2025'])).toBe('DD/MM/YYYY');
-  });
-
-  it('returns null for empty input', async () => {
-    const { detectCsvDateFormat } = await import('./import');
-    expect(detectCsvDateFormat([])).toBeNull();
-    expect(detectCsvDateFormat([''])).toBeNull();
-  });
-
-  it('returns null for unrecognized date pattern', async () => {
-    const { detectCsvDateFormat } = await import('./import');
-    expect(detectCsvDateFormat(['Q1 2025'])).toBeNull();
-  });
-
-  it('strips ISO time components', async () => {
-    const { detectCsvDateFormat } = await import('./import');
-    expect(detectCsvDateFormat(['2025-01-15T12:00:00Z'])).toBe('YYYY-MM-DD');
-  });
-
-  it('strips space-separated time components', async () => {
-    const { detectCsvDateFormat } = await import('./import');
-    expect(detectCsvDateFormat(['01/15/2025 14:30'])).toBe('MM/DD/YYYY');
-  });
-});
-
 describe('autoMatchCsvColumns', () => {
   it('matches common header names to fields', () => {
     const result = autoMatchCsvColumns(['Date', 'Amount', 'Payee', 'Category', 'Memo']);

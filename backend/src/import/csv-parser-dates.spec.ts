@@ -76,6 +76,7 @@ describe("CSV date format detection", () => {
       "YYYY-DD-MM",
     );
     expect(detectCsvDateFormat(["2026-01-15T12:00:00Z"])).toBe("YYYY-MM-DD");
+    expect(detectCsvDateFormat(["01/15/2026 14:30"])).toBe("MM/DD/YYYY");
   });
 
   it("detects month-name dates", () => {
