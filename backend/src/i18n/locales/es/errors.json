@@ -1011,5 +1011,8 @@
     "mortgageOnly": "Solo las cuentas de hipoteca pueden tener gastos.",
     "mortgageScheduleOnly": "Solo se pueden añadir gastos a una hipoteca con su pago programado.",
     "paymentMatchingUnsupported": "La conciliación de pagos todavía no puede liquidar un pago de hipoteca que incluye gastos. Desactiva la conciliación de pagos o elimina los gastos."
+  },
+  "help": {
+    "pageNotFound": "Página de ayuda no encontrada"
   }
 }

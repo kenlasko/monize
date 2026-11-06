@@ -1011,5 +1011,8 @@
     "mortgageOnly": "Alleen hypotheekrekeningen kunnen kosten hebben.",
     "mortgageScheduleOnly": "Kosten kunnen alleen worden toegevoegd aan een hypotheek met een geplande betaling.",
     "paymentMatchingUnsupported": "Betalingskoppeling kan een hypotheekbetaling met kosten nog niet verrekenen. Zet betalingskoppeling uit of verwijder de kosten."
+  },
+  "help": {
+    "pageNotFound": "Helppagina niet gevonden"
   }
 }

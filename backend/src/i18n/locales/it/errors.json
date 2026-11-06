@@ -1011,5 +1011,8 @@
     "mortgageOnly": "Solo i conti mutuo possono avere spese.",
     "mortgageScheduleOnly": "Le spese possono essere aggiunte solo a un mutuo con il relativo pagamento pianificato.",
     "paymentMatchingUnsupported": "L'abbinamento dei pagamenti non può ancora saldare un pagamento del mutuo che include spese. Disattiva l'abbinamento dei pagamenti o rimuovi le spese."
+  },
+  "help": {
+    "pageNotFound": "Pagina della guida non trovata"
   }
 }

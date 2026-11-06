@@ -1011,5 +1011,8 @@
     "mortgageOnly": "Somente contas de hipoteca podem ter encargos.",
     "mortgageScheduleOnly": "Só é possível adicionar encargos a uma hipoteca com seu pagamento agendado.",
     "paymentMatchingUnsupported": "A correspondência de pagamentos ainda não consegue liquidar um pagamento de hipoteca que inclui encargos. Desative a correspondência de pagamentos ou remova os encargos."
+  },
+  "help": {
+    "pageNotFound": "Página de ajuda não encontrada"
   }
 }

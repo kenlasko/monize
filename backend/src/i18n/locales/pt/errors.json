@@ -1011,5 +1011,8 @@
     "mortgageOnly": "Só as contas de crédito habitação podem ter encargos.",
     "mortgageScheduleOnly": "Só é possível adicionar encargos a um crédito habitação com o respetivo pagamento agendado.",
     "paymentMatchingUnsupported": "A correspondência de pagamentos ainda não consegue liquidar um pagamento do crédito habitação que inclui encargos. Desative a correspondência de pagamentos ou remova os encargos."
+  },
+  "help": {
+    "pageNotFound": "Página de ajuda não encontrada"
   }
 }

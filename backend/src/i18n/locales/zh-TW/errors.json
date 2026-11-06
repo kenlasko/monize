@@ -1011,5 +1011,8 @@
     "mortgageOnly": "只有抵押貸款科目可以設定費用。",
     "mortgageScheduleOnly": "只能為已設定排程付款的抵押貸款新增費用。",
     "paymentMatchingUnsupported": "付款比對目前還無法結算包含費用的抵押貸款付款。請關閉付款比對或移除這些費用。"
+  },
+  "help": {
+    "pageNotFound": "找不到說明頁面"
   }
 }

@@ -1011,5 +1011,8 @@
     "mortgageOnly": "Yalnızca ipotek hesaplarının ücretleri olabilir.",
     "mortgageScheduleOnly": "Ücretler yalnızca planlı ödemesi olan bir ipoteğe eklenebilir.",
     "paymentMatchingUnsupported": "Ödeme eşleştirme, ücret içeren bir ipotek ödemesini henüz kapatamaz. Ödeme eşleştirmeyi kapatın veya ücretleri kaldırın."
+  },
+  "help": {
+    "pageNotFound": "Yardım sayfası bulunamadı"
   }
 }
