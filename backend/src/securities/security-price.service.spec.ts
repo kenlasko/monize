@@ -2221,7 +2221,10 @@ describe("SecurityPriceService", () => {
 
     /** `count` bars `stepDays` apart, ending a week ago so all are settled. */
     function timestamps(count: number, stepDays: number): number[] {
-      const end = Math.floor(Date.now() / 1000) - 7 * DAY;
+      // At 16:00 UTC, midday in New York under either offset, so a DST change
+      // inside the window cannot move a bar onto its neighbour's date.
+      const end =
+        Math.floor(Date.now() / 1000 / DAY) * DAY - 7 * DAY + 16 * 3600;
       return Array.from(
         { length: count },
         (_, i) => end - (count - 1 - i) * stepDays * DAY,
@@ -2316,7 +2319,11 @@ describe("SecurityPriceService", () => {
     const DAY = 24 * 60 * 60;
 
     function dailyResponse(count: number) {
-      const end = Math.floor(Date.now() / 1000) - DAY;
+      // Yesterday at 16:00 UTC, midday in New York under either offset. A bar
+      // at `now - k days` is dated in the exchange's zone, so between 04:00
+      // and 05:00 UTC a window spanning a DST change put two bars on one New
+      // York date and the dedupe dropped one.
+      const end = Math.floor(Date.now() / 1000 / DAY) * DAY - DAY + 16 * 3600;
       return makeYahooHistoricalResponse({
         timestamps: Array.from(
           { length: count },
