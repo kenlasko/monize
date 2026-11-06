@@ -76,7 +76,7 @@ export class ScheduledTransaction {
   @JoinColumn({ name: "category_id" })
   category: Category | null;
 
-  @Column({ type: "decimal", precision: 20, scale: 4 })
+  @Column({ type: "decimal", precision: 24, scale: 8 })
   amount: number;
 
   @Column({ type: "varchar", name: "currency_code", length: 3 })
@@ -90,8 +90,8 @@ export class ScheduledTransaction {
   // latest stored rate, and re-derived for the posting date when posted.
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "original_amount",
     nullable: true,
     transformer: {
@@ -249,8 +249,8 @@ export class ScheduledTransaction {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "investment_commission",
     nullable: true,
   })
@@ -258,8 +258,8 @@ export class ScheduledTransaction {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "investment_total_amount",
     nullable: true,
   })

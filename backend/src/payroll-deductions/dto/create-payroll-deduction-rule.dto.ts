@@ -5,7 +5,6 @@ import {
   ArrayMinSize,
   IsArray,
   IsIn,
-  IsNumber,
   IsOptional,
   IsUUID,
   Max,
@@ -18,6 +17,7 @@ import {
   PAYROLL_RESET_PERIODS,
   PayrollResetPeriod,
 } from "../entities/payroll-deduction-rule.entity";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 /** The largest magnitude a rule stores; `NUMERIC(20,4)` holds far more. */
 export const PAYROLL_AMOUNT_MAX = 1_000_000_000;
@@ -40,7 +40,7 @@ export class CreatePayrollDeductionRuleDto {
     example: 1077.48,
     description: "The most the category collects in one period, a magnitude",
   })
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0)
   @Max(PAYROLL_AMOUNT_MAX)
   yearlyMaximum: number;
@@ -67,7 +67,7 @@ export class CreatePayrollDeductionRuleDto {
   })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null && v !== "")
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0)
   @Max(PAYROLL_AMOUNT_MAX)
   expectedPerPaycheque?: number | null;
@@ -88,7 +88,7 @@ export class PayrollDeductionLineDto {
   categoryId: string;
 
   @ApiProperty({ example: 1077.48, description: "The period maximum" })
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0)
   @Max(PAYROLL_AMOUNT_MAX)
   yearlyMaximum: number;
@@ -96,7 +96,7 @@ export class PayrollDeductionLineDto {
   @ApiPropertyOptional({ example: 64, nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null && v !== "")
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0)
   @Max(PAYROLL_AMOUNT_MAX)
   expectedPerPaycheque?: number | null;

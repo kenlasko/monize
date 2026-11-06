@@ -1,4 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 import {
   NotFoundException,
   BadRequestException,
@@ -240,6 +242,8 @@ describe("TransactionsService", () => {
       // findAll reads attachment counts through the transaction manager.
       [TransactionAttachment, attachmentsRepository],
       [Warranty, warrantiesRepository],
+      // `decimal_places` per currency, for the precision refusals.
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
     ]);
     mockDataSource = tenantMocks.dataSource;
 
@@ -1094,6 +1098,106 @@ describe("TransactionsService", () => {
       expect(transactionsRepository.save).not.toHaveBeenCalled();
     });
 
+    describe("amount precision is the account currency's (INV-MONEY-001)", () => {
+      const wallet = {
+        ...mockAccount,
+        id: "wallet-1",
+        accountType: "CRYPTO",
+        currencyCode: "BTC",
+      };
+      const savedRow = (amount: number, currencyCode: string) =>
+        transactionsRepository.findOne.mockResolvedValue({
+          id: "tx-1",
+          userId: "user-1",
+          accountId: "account-1",
+          amount,
+          currencyCode,
+          status: TransactionStatus.UNRECONCILED,
+          splits: [],
+        });
+
+      it("accepts and stores a 2,500-sat BTC fee", async () => {
+        accountsService.findOne.mockResolvedValue(wallet);
+        savedRow(-0.000025, "BTC");
+
+        await service.create("user-1", {
+          accountId: "wallet-1",
+          transactionDate: "2026-01-15",
+          amount: -0.000025,
+          currencyCode: "BTC",
+        } as any);
+
+        expect(transactionsRepository.create).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: -0.000025, currencyCode: "BTC" }),
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "wallet-1",
+          -0.000025,
+        );
+      });
+
+      it("refuses a BTC amount with a ninth place before writing", async () => {
+        accountsService.findOne.mockResolvedValue(wallet);
+
+        await expect(
+          service.create("user-1", {
+            accountId: "wallet-1",
+            transactionDate: "2026-01-15",
+            amount: -0.000025001,
+            currencyCode: "BTC",
+          } as any),
+        ).rejects.toThrow(/BTC carries \(8\)/);
+        expect(transactionsRepository.save).not.toHaveBeenCalled();
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
+      it("accepts a CAD amount at three places and still refuses five", async () => {
+        const cad = { ...mockAccount, currencyCode: "CAD" };
+        accountsService.findOne.mockResolvedValue(cad);
+        savedRow(12.345, "CAD");
+
+        await service.create("user-1", {
+          accountId: "account-1",
+          transactionDate: "2026-01-15",
+          amount: 12.345,
+          currencyCode: "CAD",
+        } as any);
+        expect(transactionsRepository.save).toHaveBeenCalledTimes(1);
+
+        await expect(
+          service.create("user-1", {
+            accountId: "account-1",
+            transactionDate: "2026-01-15",
+            amount: 12.34567,
+            currencyCode: "CAD",
+          } as any),
+        ).rejects.toThrow(/CAD carries \(4\)/);
+        expect(transactionsRepository.save).toHaveBeenCalledTimes(1);
+      });
+
+      it("refuses a BTC split a satoshi short of its parent before writing", async () => {
+        accountsService.findOne.mockResolvedValue(wallet);
+        categoriesRepository.findOne.mockResolvedValue({ id: "cat-1" });
+        savedRow(-0.005025, "BTC");
+        const split = (feeAmount: number) =>
+          service.create("user-1", {
+            accountId: "wallet-1",
+            transactionDate: "2026-01-15",
+            amount: -0.005025,
+            currencyCode: "BTC",
+            splits: [
+              { amount: -0.005, categoryId: "cat-1" },
+              { amount: feeAmount, categoryId: "cat-1" },
+            ],
+          } as any);
+
+        await expect(split(-0.00002499)).rejects.toThrow(
+          /must equal transaction amount/,
+        );
+        expect(transactionsRepository.save).not.toHaveBeenCalled();
+      });
+    });
+
     describe("primary currency must match the account (P5-003)", () => {
       it("rejects a transaction whose currencyCode differs from the account's", async () => {
         // The account is USD. A request declaring EUR used to be stored
@@ -1880,6 +1984,46 @@ describe("TransactionsService", () => {
 
         expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });
+    });
+
+    it("refuses an amount with more places than the currency carries, leaving the row", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        ...mockTx,
+        currencyCode: "USD",
+      });
+      lockedRow = { ...mockTx };
+
+      await expect(
+        service.update("user-1", "tx-1", { amount: -50.00001 } as any),
+      ).rejects.toThrow(/USD carries \(4\)/);
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("moves a BTC balance by the satoshi delta of an amount edit", async () => {
+      accountsService.findOne.mockResolvedValue({
+        ...mockAccount,
+        currencyCode: "BTC",
+      });
+      transactionsRepository.findOne.mockResolvedValue({
+        ...mockTx,
+        amount: -0.000025,
+        currencyCode: "BTC",
+      });
+      lockedRow = { ...mockTx, amount: -0.000025 };
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({
+        ...mockTx,
+        amount: -0.00002501,
+        currencyCode: "BTC",
+      });
+
+      await service.update("user-1", "tx-1", { amount: -0.00002501 } as any);
+
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        "account-1",
+        -0.00000001,
+      );
     });
 
     it("refuses moving a transaction to a closed account", async () => {
@@ -6261,6 +6405,7 @@ describe("TransactionsService", () => {
       const mockTx = {
         id: "tx-1",
         userId: "user-1",
+        currencyCode: "USD",
         accountId: "account-1",
         amount: -100,
         transactionDate: "2026-01-15",
@@ -6291,6 +6436,7 @@ describe("TransactionsService", () => {
       const mockTx = {
         id: "tx-1",
         userId: "user-1",
+        currencyCode: "USD",
         amount: -100,
         splits: [],
       };
@@ -6308,6 +6454,7 @@ describe("TransactionsService", () => {
       const mockTx = {
         id: "tx-1",
         userId: "user-1",
+        currencyCode: "USD",
         accountId: "account-1",
         amount: -100,
         transactionDate: "2026-01-15",
@@ -6358,6 +6505,7 @@ describe("TransactionsService", () => {
       const mockTx = {
         id: "tx-1",
         userId: "user-1",
+        currencyCode: "USD",
         accountId: "account-1",
         amount: -100,
         transactionDate: "2026-01-15",
@@ -6397,6 +6545,7 @@ describe("TransactionsService", () => {
       const mockTx = {
         id: "tx-1",
         userId: "user-1",
+        currencyCode: "USD",
         amount: -100,
         splits: [],
       };
@@ -6421,6 +6570,7 @@ describe("TransactionsService", () => {
       const mockTx = {
         id: "tx-1",
         userId: "user-1",
+        currencyCode: "USD",
         accountId: "account-1",
         amount: -100,
         transactionDate: "2026-01-15",
@@ -6497,6 +6647,7 @@ describe("TransactionsService", () => {
       const mockTx = {
         id: "tx-1",
         userId: "user-1",
+        currencyCode: "USD",
         accountId: "account-1",
         amount: -100,
         isSplit: false,
@@ -6535,6 +6686,7 @@ describe("TransactionsService", () => {
       const mockTx = {
         id: "tx-1",
         userId: "user-1",
+        currencyCode: "USD",
         accountId: "account-1",
         amount: -100,
         isSplit: true,

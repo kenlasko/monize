@@ -47,6 +47,8 @@ import {
   createScopedDbMocks,
   DataSourceMock,
 } from "../test-helpers/scoped-db-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -248,6 +250,7 @@ describe("AccountsService", () => {
     };
     rateChangeRepository = { find: jest.fn().mockResolvedValue([]) };
     const { manager: txManager, dataSource } = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [LoanFee, { find: jest.fn().mockResolvedValue([]) }],
       [Account, accountsRepository],
       [Transaction, transactionRepository],
@@ -399,6 +402,45 @@ describe("AccountsService", () => {
           ["BTC"],
         );
         expect(accountsRepository.save).toHaveBeenCalled();
+      });
+
+      it("stores a BTC opening balance at eight places unchanged (INV-MONEY-001)", async () => {
+        await service.create("user-1", {
+          name: "Bitcoin Wallet",
+          accountType: AccountType.CRYPTO,
+          currencyCode: "BTC",
+          openingBalance: 0.01249993,
+        } as any);
+        expect(accountsRepository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            openingBalance: 0.01249993,
+            currentBalance: 0.01249993,
+          }),
+        );
+      });
+
+      it("refuses a CAD opening balance at five places before anything is written", async () => {
+        await expect(
+          service.create("user-1", {
+            name: "Chequing",
+            accountType: AccountType.CHEQUING,
+            currencyCode: "CAD",
+            openingBalance: 12.34567,
+          } as any),
+        ).rejects.toThrow(/more decimal places than CAD carries \(4\)/);
+        expect(accountsRepository.save).not.toHaveBeenCalled();
+      });
+
+      it("refuses a loan's opening balance at five places, before the loan path runs", async () => {
+        await expect(
+          service.create("user-1", {
+            name: "Car loan",
+            accountType: AccountType.LOAN,
+            currencyCode: "CAD",
+            openingBalance: -20000.12345,
+          } as any),
+        ).rejects.toThrow(/more decimal places than CAD carries \(4\)/);
+        expect(accountsRepository.save).not.toHaveBeenCalled();
       });
 
       it.each([
@@ -802,17 +844,50 @@ describe("AccountsService", () => {
       expect(accountsRepository.findOneOrFail).not.toHaveBeenCalled();
     });
 
-    it("rounds to 4 decimal places to match DB schema precision", async () => {
+    it("rounds the delta at the account currency's precision, not the statement at four", async () => {
       stageBalanceUpdate(true);
       accountsRepository.findOneOrFail.mockResolvedValue({
         ...mockAccount,
         currentBalance: 20.3,
       });
 
-      const result = await service.updateBalance("account-1", 10.2);
+      // A fiat delta carrying float residue is rounded at its four places.
+      const result = await service.updateBalance("account-1", 0.1 + 0.2, 4);
 
-      expect(mockQueryRunner.query.mock.calls[0][0]).toContain("ROUND(");
+      const [sql, params] = mockQueryRunner.query.mock.calls[0];
+      expect(sql).not.toMatch(/ROUND\(/);
+      expect(params).toEqual([0.3, "account-1"]);
       expect(result.currentBalance).toBe(20.3);
+    });
+
+    it("lands a BTC delta of -0.00002500 exactly (INV-MONEY-001)", async () => {
+      stageBalanceUpdate(true);
+      accountsRepository.findOneOrFail.mockResolvedValue({
+        ...mockAccount,
+        currencyCode: "BTC",
+        currentBalance: 0.01247493,
+      });
+
+      await service.updateBalance("account-1", -0.000025, 8);
+
+      // The old ROUND(..., 4) moved this wallet by zero.
+      const [sql, params] = mockQueryRunner.query.mock.calls[0];
+      expect(sql).toContain(
+        "SET current_balance = CAST(current_balance AS numeric) + $1",
+      );
+      expect(params).toEqual([-0.000025, "account-1"]);
+    });
+
+    it("keeps a coin's places when the caller names no precision", async () => {
+      stageBalanceUpdate(true);
+      accountsRepository.findOneOrFail.mockResolvedValue({ ...mockAccount });
+
+      await service.updateBalance("account-1", -0.000025);
+
+      expect(mockQueryRunner.query.mock.calls[0][1]).toEqual([
+        -0.000025,
+        "account-1",
+      ]);
     });
 
     it("uses atomic SQL arithmetic to prevent race conditions", async () => {
@@ -1381,6 +1456,59 @@ describe("AccountsService", () => {
       const saved = mockQueryRunner.manager.save.mock.calls[0][0];
       expect(saved.currentBalance).toBe(1700);
       expect(mockDataSource.transaction).toHaveBeenCalled();
+    });
+
+    it("moves a BTC wallet's balance by an eight-place opening change exactly (INV-MONEY-001)", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        accountType: "CRYPTO",
+        currencyCode: "BTC",
+        openingBalance: 0.0125,
+        currentBalance: 0.0125,
+      });
+
+      await service.update("user-1", "account-1", {
+        openingBalance: 0.01249993,
+      });
+
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
+      // At four places the 7-sat change rounded the balance back to 0.0125.
+      expect(saved.openingBalance).toBe(0.01249993);
+      expect(saved.currentBalance).toBe(0.01249993);
+    });
+
+    it.each([
+      ["openingBalance", { openingBalance: 12.34567 }],
+      ["lowBalanceThreshold", { lowBalanceThreshold: 100.00001 }],
+      ["highBalanceThreshold", { highBalanceThreshold: 5000.12345 }],
+    ])(
+      "refuses a CAD %s at five places before anything is written",
+      async (field, dto) => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          ...mockAccount,
+          currencyCode: "CAD",
+        });
+
+        await expect(
+          service.update("user-1", "account-1", dto as any),
+        ).rejects.toThrow(new RegExp(`"${field}" has more decimal places`));
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      },
+    );
+
+    it("accepts a BTC threshold at eight places", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        accountType: "CRYPTO",
+        currencyCode: "BTC",
+      });
+
+      await service.update("user-1", "account-1", {
+        lowBalanceThreshold: 0.000025,
+      });
+
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
+      expect(saved.lowBalanceThreshold).toBe(0.000025);
     });
 
     it("recalculates termEndDate when termMonths changes to a positive value", async () => {
@@ -4631,6 +4759,19 @@ describe("AccountsService", () => {
       );
 
       expect(result.currentBalance).toBe(150.5);
+    });
+
+    it("writes a BTC wallet's recomputed balance at its eight places (INV-MONEY-001)", async () => {
+      const query = stageRecalc([{ balance: "0.01247493", decimalPlaces: 8 }]);
+      accountsRepository.findOneOrFail.mockResolvedValue({ ...mockAccount });
+
+      await service.recalculateCurrentBalance("user-1", "account-1");
+
+      const write = query.mock.calls.find((c) =>
+        String(c[0]).startsWith("UPDATE accounts SET current_balance"),
+      );
+      // At four places this wallet was written as 0.0125.
+      expect(write![1]).toEqual([0.01247493, "account-1"]);
     });
 
     it("locks the account before reading the ledger, scoped to the owner", async () => {

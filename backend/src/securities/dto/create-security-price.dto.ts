@@ -1,5 +1,6 @@
 import { IsDateString, IsNumber, IsOptional, Max, Min } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 export class CreateSecurityPriceDto {
   @ApiProperty({ description: "Price date in ISO format" })
@@ -7,28 +8,28 @@ export class CreateSecurityPriceDto {
   priceDate: string;
 
   @ApiProperty({ description: "Closing price" })
-  @IsNumber({ maxDecimalPlaces: 10 })
+  @IsMoneyAmount(10)
   @Min(0)
   @Max(999999999999)
   closePrice: number;
 
   @ApiProperty({ description: "Opening price", required: false })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 10 })
+  @IsMoneyAmount(10)
   @Min(0)
   @Max(999999999999)
   openPrice?: number;
 
   @ApiProperty({ description: "High price", required: false })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 10 })
+  @IsMoneyAmount(10)
   @Min(0)
   @Max(999999999999)
   highPrice?: number;
 
   @ApiProperty({ description: "Low price", required: false })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 10 })
+  @IsMoneyAmount(10)
   @Min(0)
   @Max(999999999999)
   lowPrice?: number;

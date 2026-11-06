@@ -58,7 +58,7 @@ describe("per-unit price decimal places", () => {
       // Accepting it would silently truncate on write, which is the exact
       // failure mode this change exists to remove.
       expect(await errorsFor(dto({ closePrice: TOO_PRECISE }))).toContain(
-        "isNumber",
+        "hasMoneyAmountPlaces",
       );
     });
   });
@@ -90,7 +90,7 @@ describe("per-unit price decimal places", () => {
       });
       // Carrying the cost basis across accounts must not round it away, or the
       // transfer itself would change the gain the reports show.
-      expect(await errorsFor(dto)).not.toContain("isNumber");
+      expect(await errorsFor(dto)).not.toContain("hasMoneyAmountPlaces");
     });
   });
 });

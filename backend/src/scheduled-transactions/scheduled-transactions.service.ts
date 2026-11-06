@@ -91,6 +91,12 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { returnedRows } from "../common/db/query-result";
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { roundMoney, sumMoney } from "../common/round.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+  precisionCurrencyFor,
+} from "../common/currency-places.util";
+import { assertAmountPrecision } from "../common/amount-precision.util";
 import { PayrollDeductionRule } from "../payroll-deductions/entities/payroll-deduction-rule.entity";
 import {
   applyPayrollDeductionCaps,
@@ -808,6 +814,16 @@ export class ScheduledTransactionsService {
       );
       if (foreign.length === 0) return;
 
+      // The money precision of each account currency the estimates are in,
+      // read once for the sweep: a coin-denominated schedule is converted at
+      // its coin's places, a fiat one at four.
+      const places = await withScopedDb(this.dataSource, (m) =>
+        loadCurrencyPlaces(
+          m,
+          foreign.map((r) => r.currencyCode),
+        ),
+      );
+
       // One lookup per currency pair, not per schedule -- a user with a dozen
       // USD subscriptions on the same card needs exactly one.
       const rateCache = new Map<string, number | null>();
@@ -827,14 +843,16 @@ export class ScheduledTransactionsService {
         const rate = rateCache.get(pair);
         if (rate === null || rate === undefined || !(rate > 0)) continue;
 
+        const decimals = moneyDecimalsForCode(places, row.currencyCode);
         const converted = applyFxConversion(
           Number(row.originalAmount),
           rate,
           row.account?.fxFeePercent ?? null,
+          { toDecimals: decimals },
         );
         const nextRate = roundFxRate(rate);
         if (
-          converted.amount === roundMoney(Number(row.amount)) &&
+          converted.amount === roundMoney(Number(row.amount), decimals) &&
           nextRate === roundFxRate(Number(row.exchangeRate))
         ) {
           continue;
@@ -984,10 +1002,6 @@ export class ScheduledTransactionsService {
     } = createDto;
     const hasSplits = !isInvestment && splits && splits.length > 0;
 
-    if (hasSplits && !isTransfer) {
-      this.validateSplits(splits, createDto.amount);
-    }
-
     // The schedule's own currency is its account's; a foreign entry is the
     // `originalCurrencyCode` trio below. Refused before any write, as a
     // posting would refuse it at every due date (A26-S15-10).
@@ -1022,6 +1036,21 @@ export class ScheduledTransactionsService {
       : { from: null, to: null };
 
     const saved = await withScopedDb(this.dataSource, async (m) => {
+      const moneyDecimals = await this.assertScheduleAmountsPrecision(
+        m,
+        account.currencyCode,
+        {
+          amount: createDto.amount,
+          originalAmount: fx.originalAmount,
+          originalCurrencyCode: fx.originalCurrencyCode,
+          splits: hasSplits && !isTransfer ? splits : undefined,
+        },
+      );
+      // The lines sum to the parent at the account currency's precision,
+      // judged with the same currency read as the places above.
+      if (hasSplits && !isTransfer) {
+        this.validateSplits(splits, createDto.amount, moneyDecimals);
+      }
       const repo = m.getRepository(ScheduledTransaction);
       const scheduledTransaction = repo.create({
         ...transactionData,
@@ -1296,11 +1325,62 @@ export class ScheduledTransactionsService {
     }
   }
 
+  /**
+   * Refuse a scheduled amount with more places than its currency carries
+   * (INV-MONEY-001): `amount` and every split line against the account's
+   * currency, `originalAmount` against its own. Called inside the write's
+   * transaction, before the first write; the currency rows are read once, and
+   * the account currency's money precision comes back for the split check.
+   */
+  private async assertScheduleAmountsPrecision(
+    m: EntityManager,
+    accountCurrencyCode: string,
+    amounts: {
+      amount?: number | null;
+      originalAmount?: number | null;
+      originalCurrencyCode?: string | null;
+      splits?: readonly { amount: number }[] | null;
+    },
+  ): Promise<number> {
+    const places = await loadCurrencyPlaces(m, [
+      accountCurrencyCode,
+      amounts.originalCurrencyCode,
+    ]);
+    if (amounts.amount !== undefined && amounts.amount !== null) {
+      assertAmountPrecision(
+        amounts.amount,
+        precisionCurrencyFor(places, accountCurrencyCode),
+        "amount",
+      );
+    }
+    for (const [index, split] of (amounts.splits ?? []).entries()) {
+      assertAmountPrecision(
+        split.amount,
+        precisionCurrencyFor(places, accountCurrencyCode),
+        `splits[${index}].amount`,
+      );
+    }
+    if (
+      amounts.originalAmount !== undefined &&
+      amounts.originalAmount !== null &&
+      amounts.originalCurrencyCode
+    ) {
+      assertAmountPrecision(
+        amounts.originalAmount,
+        precisionCurrencyFor(places, amounts.originalCurrencyCode),
+        "originalAmount",
+      );
+    }
+    return moneyDecimalsForCode(places, accountCurrencyCode);
+  }
+
   private validateSplits(
     splits: CreateScheduledTransactionSplitDto[],
     transactionAmount: number,
+    decimals: number,
   ): void {
     validateSplitAmountSum(splits, transactionAmount, {
+      decimals,
       allowSinglePassthrough: true,
       isPassthrough: (s) => {
         const split = s as CreateScheduledTransactionSplitDto;
@@ -2246,13 +2326,6 @@ export class ScheduledTransactionsService {
       ...updateData
     } = updateDto;
 
-    // Validate splits before opening the transaction so user errors fail fast
-    // without holding a connection.
-    if (splits !== undefined && Array.isArray(splits) && splits.length > 0) {
-      const amount = updateData.amount ?? scheduled.amount;
-      this.validateSplits(splits, amount);
-    }
-
     const fieldsToUpdate: Record<string, any> = {};
     // Set when switching to transfer/investment mode, which clears any splits.
     let clearSplitsForModeSwitch = false;
@@ -2613,6 +2686,34 @@ export class ScheduledTransactionsService {
         );
       }
 
+      const moneyDecimals = await this.assertScheduleAmountsPrecision(
+        m,
+        accountCurrencyCode,
+        {
+          amount: updateData.amount,
+          originalAmount:
+            fieldsToUpdate.originalAmount !== undefined
+              ? fieldsToUpdate.originalAmount
+              : updateData.originalAmount,
+          originalCurrencyCode:
+            fieldsToUpdate.originalCurrencyCode !== undefined
+              ? fieldsToUpdate.originalCurrencyCode
+              : (updateData.originalCurrencyCode ??
+                current.originalCurrencyCode),
+          splits: Array.isArray(splits) ? splits : undefined,
+        },
+      );
+      // The lines sum to the parent at the account currency's precision. A
+      // pure check, refused here before the first write; it moved inside the
+      // transaction to share the currency read above.
+      if (splits !== undefined && Array.isArray(splits) && splits.length > 0) {
+        this.validateSplits(
+          splits,
+          updateData.amount ?? scheduled.amount,
+          moneyDecimals,
+        );
+      }
+
       if (splits !== undefined) {
         if (Array.isArray(splits) && splits.length > 0) {
           // Capture the existing splits' recorded pairs before deleting them, so
@@ -2874,7 +2975,12 @@ export class ScheduledTransactionsService {
   private async resolveFxForPosting(
     scheduled: ScheduledTransaction,
     postDto: PostScheduledTransactionDto | undefined,
-    context: { postDate: string; overrideAmount: number | null },
+    context: {
+      postDate: string;
+      overrideAmount: number | null;
+      /** The money precision of the schedule's (account) currency. */
+      moneyDecimals: number;
+    },
   ): Promise<{
     originalAmount: number;
     exchangeRate: number;
@@ -2905,13 +3011,14 @@ export class ScheduledTransactionsService {
         const p = fxFeePercent / 100;
         base = roundMoney(
           pinnedTotal >= 0 ? pinnedTotal / (1 - p) : pinnedTotal / (1 + p),
+          context.moneyDecimals,
         );
       }
       return {
         originalAmount,
         exchangeRate:
           originalAmount === 0 ? 1 : roundFxRate(base / originalAmount),
-        amount: roundMoney(pinnedTotal),
+        amount: roundMoney(pinnedTotal, context.moneyDecimals),
       };
     }
 
@@ -2939,12 +3046,54 @@ export class ScheduledTransactionsService {
       );
     }
 
-    const converted = applyFxConversion(originalAmount, rate, fxFeePercent);
+    const converted = applyFxConversion(originalAmount, rate, fxFeePercent, {
+      toDecimals: context.moneyDecimals,
+    });
     return {
       originalAmount,
       exchangeRate: roundFxRate(rate),
       amount: converted.amount,
     };
+  }
+
+  /**
+   * Refuse a posting's inline amounts with more places than their currency
+   * carries: `amount` and each split line in the schedule's currency,
+   * `originalAmount` in the schedule's entry currency. `places` is the posting's
+   * one read of the currencies involved.
+   */
+  private assertPostAmountsPrecision(
+    postDto: PostScheduledTransactionDto | undefined,
+    scheduled: ScheduledTransaction,
+    places: ReadonlyMap<string, number>,
+  ): void {
+    if (!postDto) return;
+    if (postDto.amount !== undefined && postDto.amount !== null) {
+      assertAmountPrecision(
+        postDto.amount,
+        precisionCurrencyFor(places, scheduled.currencyCode),
+        "amount",
+      );
+    }
+    for (const [index, split] of (postDto.splits ?? []).entries()) {
+      if (split.amount === undefined || split.amount === null) continue;
+      assertAmountPrecision(
+        split.amount,
+        precisionCurrencyFor(places, scheduled.currencyCode),
+        `splits[${index}].amount`,
+      );
+    }
+    if (
+      postDto.originalAmount !== undefined &&
+      postDto.originalAmount !== null &&
+      scheduled.originalCurrencyCode
+    ) {
+      assertAmountPrecision(
+        postDto.originalAmount,
+        precisionCurrencyFor(places, scheduled.originalCurrencyCode),
+        "originalAmount",
+      );
+    }
   }
 
   /**
@@ -3128,9 +3277,25 @@ export class ScheduledTransactionsService {
     // the rate for the posting date. That is what makes a back-dated or
     // future-dated posting use that day's rate rather than the estimate the
     // bills list was showing.
+    // The currencies' places, read once for the whole posting: every amount
+    // derived below (a conversion, a re-summed parent, a compared echo) is
+    // rounded at the schedule's currency precision, four for fiat and a coin's
+    // own places otherwise (INV-MONEY-001).
+    const currencyPlaces = await withScopedDb(this.dataSource, (m) =>
+      loadCurrencyPlaces(m, [
+        scheduled.currencyCode,
+        scheduled.originalCurrencyCode,
+      ]),
+    );
+    const moneyDecimals = moneyDecimalsForCode(
+      currencyPlaces,
+      scheduled.currencyCode,
+    );
+
     const fx = await this.resolveFxForPosting(scheduled, postDto, {
       postDate,
       overrideAmount: storedOverride?.amount ?? null,
+      moneyDecimals,
     });
 
     const finalAmount = fx
@@ -3419,6 +3584,7 @@ export class ScheduledTransactionsService {
       if (hasInvestmentSplits) {
         transactionPayload.amount = sumMoney(
           transactionPayload.splits.map((s: any) => Number(s.amount)),
+          moneyDecimals,
         );
       }
     } else {
@@ -3570,6 +3736,11 @@ export class ScheduledTransactionsService {
         );
       }
 
+      // An amount the poster typed for this occurrence is refused, before
+      // anything is written, when it carries more places than its currency
+      // does (INV-MONEY-001); stored amounts were held to it when written.
+      this.assertPostAmountsPrecision(postDto, scheduled, currencyPlaces);
+
       // The occurrence override is a mutable row of its own, read before this
       // lock. Re-read it under the lock and refuse if it changed, so a
       // concurrently-edited override is neither posted stale nor deleted
@@ -3700,6 +3871,7 @@ export class ScheduledTransactionsService {
             // validator's exact-4dp equality refuses the whole post.
             transactionPayload.amount = sumMoney(
               transactionPayload.splits.map((s: any) => Number(s.amount)),
+              moneyDecimals,
             );
           } else if (
             !transactionPayload.splits.some((s: any) => s.investment)
@@ -3745,7 +3917,7 @@ export class ScheduledTransactionsService {
         const storedById = new Map(
           lockedSplits.map((split) => [
             split.id,
-            roundMoney(Number(split.amount)),
+            roundMoney(Number(split.amount), moneyDecimals),
           ]),
         );
         const rows = transactionPayload.splits as any[];
@@ -3760,7 +3932,8 @@ export class ScheduledTransactionsService {
           lineAmounts: Map<string, number>,
         ): boolean =>
           (!hasInlineAmount ||
-            roundMoney(Number(postDto?.amount)) === roundMoney(parentAmount)) &&
+            roundMoney(Number(postDto?.amount), moneyDecimals) ===
+              roundMoney(parentAmount, moneyDecimals)) &&
           Array.isArray(rows) &&
           rows.length === lockedSplits.length &&
           rows.every((row, index) => {
@@ -3768,7 +3941,8 @@ export class ScheduledTransactionsService {
             return (
               !!sourceId &&
               lineAmounts.has(sourceId) &&
-              lineAmounts.get(sourceId) === roundMoney(Number(row.amount))
+              lineAmounts.get(sourceId) ===
+                roundMoney(Number(row.amount), moneyDecimals)
             );
           });
         // Every line must echo a stored line at its stored amount; one typed
@@ -3819,6 +3993,7 @@ export class ScheduledTransactionsService {
             });
             transactionPayload.amount = sumMoney(
               transactionPayload.splits.map((s: any) => Number(s.amount)),
+              moneyDecimals,
             );
           }
         }
@@ -3873,6 +4048,7 @@ export class ScheduledTransactionsService {
           transactionPayload.splits = capped.splits;
           transactionPayload.amount = sumMoney(
             capped.splits.map((s: any) => Number(s.amount)),
+            moneyDecimals,
           );
         }
       }
@@ -4381,6 +4557,7 @@ export class ScheduledTransactionsService {
       scheduledTransactionId,
       createDto,
       investmentProvenance,
+      scheduled.currencyCode,
     );
   }
 
@@ -4446,6 +4623,7 @@ export class ScheduledTransactionsService {
       overrideId,
       updateDto,
       investmentProvenance,
+      scheduled.currencyCode,
     );
   }
 

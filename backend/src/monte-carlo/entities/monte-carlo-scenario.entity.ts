@@ -42,8 +42,8 @@ export class MonteCarloScenario {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "starting_value",
     default: 0,
     transformer: decimalTransformer,
@@ -58,8 +58,8 @@ export class MonteCarloScenario {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "annual_contribution",
     default: 0,
     transformer: decimalTransformer,
@@ -81,8 +81,8 @@ export class MonteCarloScenario {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "annual_withdrawal",
     default: 0,
     transformer: decimalTransformer,
@@ -127,8 +127,8 @@ export class MonteCarloScenario {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "target_value",
     nullable: true,
     transformer: decimalTransformer,

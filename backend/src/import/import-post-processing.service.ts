@@ -7,7 +7,7 @@ import { NetWorthService } from "../net-worth/net-worth.service";
 import { SecurityPriceService } from "../securities/security-price.service";
 import { SecuritiesService } from "../securities/securities.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
-import { roundMoney } from "../common/round.util";
+import { moneyDecimalsFor, roundMoney } from "../common/round.util";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
 
 /**
@@ -71,18 +71,23 @@ export class ImportPostProcessingService {
           // account that is not theirs (maintainer review, PR #1095).
           await lockAccountsForBalanceWrite(manager, affectedIds, userId);
 
-          const balances: { account_id: string; balance: string }[] =
-            await manager.query(
-              `SELECT a.id as account_id,
-                    COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
+          const balances: {
+            account_id: string;
+            balance: string;
+            decimal_places?: number | string | null;
+          }[] = await manager.query(
+            `SELECT a.id as account_id,
+                    COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance,
+                    c.decimal_places
                FROM accounts a
+               LEFT JOIN currencies c ON c.code = a.currency_code
                LEFT JOIN transactions t ON t.account_id = a.id
                  AND ${LEDGER_MOVEMENT_PREDICATE}
                  AND t.transaction_date <= CURRENT_DATE
               WHERE a.id = ANY($1)
-              GROUP BY a.id, a.opening_balance`,
-              [affectedIds],
-            );
+              GROUP BY a.id, a.opening_balance, c.decimal_places`,
+            [affectedIds],
+          );
 
           if (balances.length > 0) {
             const valuesClause = balances
@@ -90,7 +95,16 @@ export class ImportPostProcessingService {
               .join(", ");
             const params = balances.flatMap((row) => [
               row.account_id,
-              roundMoney(Number(row.balance)),
+              // Each account's balance is in its own currency, so it rounds at
+              // that currency's money precision (a coin keeps its eight places).
+              roundMoney(
+                Number(row.balance),
+                moneyDecimalsFor(
+                  row.decimal_places == null
+                    ? undefined
+                    : Number(row.decimal_places),
+                ),
+              ),
             ]);
             await manager.query(
               `UPDATE accounts SET current_balance = v.balance

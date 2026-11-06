@@ -1,3 +1,5 @@
+import { FIAT_MONEY_DECIMALS } from "../common/round.util";
+
 /**
  * The closed sets of the bank-sync feature, each written once.
  *
@@ -6,6 +8,17 @@
  * disagree in either direction. Adding a provider or a status is one entry here
  * plus the paired migration, never a second hand-written list.
  */
+
+/**
+ * The money precision of every bank-sync figure: the planned amounts, the
+ * stored bank balance, the preview and the fingerprint. Bank sync links fiat
+ * accounts only (a cryptocurrency wallet is refused at the link and again at
+ * the sync, `errors.bankSync.accountCrypto`), and a fiat currency's money
+ * precision is `FIAT_MONEY_DECIMALS` (`moneyDecimalsFor`), so the figure is
+ * fiat by construction. The key and the fingerprint spell an amount at it, so
+ * it must not move for a fiat account (INV-BANKSYNC-001).
+ */
+export const BANK_SYNC_MONEY_DECIMALS = FIAT_MONEY_DECIMALS;
 
 /** The aggregators Monize can talk to; `enable_banking` is the first. */
 export const BANK_SYNC_PROVIDERS = ["enable_banking", "simplefin"] as const;

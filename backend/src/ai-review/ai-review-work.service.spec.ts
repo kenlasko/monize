@@ -1,6 +1,7 @@
 import { ConflictException, NotFoundException } from "@nestjs/common";
 import { RECEIPT_PARSED_INSTRUCTION } from "../email-receipts/pipeline/receipt-instructions";
 import { DataSource } from "typeorm";
+import { Currency } from "../currencies/entities/currency.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionRule } from "../transaction-rules/transaction-rule.entity";
@@ -60,7 +61,10 @@ function setup() {
     findOne: jest.fn().mockResolvedValue(null),
     find: jest.fn().mockResolvedValue([]),
   };
+  // `loadCurrencyPlaces`: no row reads as the fiat default (four places).
+  const currencyRepo = { find: jest.fn().mockResolvedValue([]) };
   const { dataSource, manager } = createScopedDbMocks([
+    [Currency, currencyRepo],
     [Transaction, txRepo],
     [TransactionRule, ruleRepo],
     [EmailReceipt, receiptRepo],
@@ -123,6 +127,7 @@ function setup() {
     txRepo,
     ruleRepo,
     receiptRepo,
+    currencyRepo,
     manager,
   };
 }
@@ -610,6 +615,36 @@ describe("AiReviewWorkService.submit", () => {
 
     expect(prep.prepareUpdate).not.toHaveBeenCalled();
     expect(requests.submitProposal).not.toHaveBeenCalled();
+  });
+
+  it("compares a coin transaction's lines at the coin's eight places", async () => {
+    const { service, transactions, currencyRepo, requests } = setup();
+    transactions.findOne.mockResolvedValue({
+      id: TX,
+      amount: -0.000025,
+      currencyCode: "BTC",
+      isTransfer: false,
+    });
+    currencyRepo.find.mockResolvedValue([{ code: "BTC", decimalPlaces: 8 }]);
+    requests.submitProposal.mockResolvedValue(request({ status: "proposed" }));
+
+    await service.submit(USER, "agent-1", REQ, {
+      splits: [
+        { categoryName: "Transfer fee", amount: -0.00002 },
+        { categoryName: "Network fee", amount: -0.000005 },
+      ],
+    });
+    expect(requests.submitProposal).toHaveBeenCalled();
+
+    // One satoshi short is a leftover at eight places (fiat's four would hide it).
+    await expect(
+      service.submit(USER, "agent-1", REQ, {
+        splits: [
+          { categoryName: "Transfer fee", amount: -0.00002 },
+          { categoryName: "Network fee", amount: -0.00000499 },
+        ],
+      }),
+    ).rejects.toThrow(/not assigned/);
   });
 
   it.each([

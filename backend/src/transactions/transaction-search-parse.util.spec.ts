@@ -20,6 +20,11 @@ describe("parseSearchTerm", () => {
       expect(parseSearchTerm("1234.5600", prefs).amount).toBe(1234.56);
     });
 
+    it("keeps a coin amount's eighth place", () => {
+      expect(parseSearchTerm("0.00002500", prefs).amount).toBe(0.000025);
+      expect(parseSearchTerm("0.01249993", prefs).amount).toBe(0.01249993);
+    });
+
     it("parses a negative amount", () => {
       expect(parseSearchTerm("-50", prefs).amount).toBe(-50);
     });

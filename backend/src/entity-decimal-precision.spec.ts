@@ -26,9 +26,13 @@ import * as ts from "typescript";
  *      MIN_UNIT_PRICE_SCALE decimal places.
  *
  * Money totals are deliberately not covered by (2): an amount in a currency is
- * fine at scale 4, and widening those would be churn. Only per-unit prices need
- * the extra room, so they are named explicitly below -- a new one has to be
- * added here by hand, which is the point at which someone has to think about it.
+ * stored at scale 8 (`NUMERIC(24,8)`, the most places a currency may carry, so
+ * a coin keeps satoshis) and rounded at its currency's money precision, which
+ * is a matter for `moneyDecimalsFor` rather than for the column
+ * (`docs/specs/money-precision.md`). Check (1) holds those columns to
+ * schema.sql like every other. Only per-unit prices need scale 10, so they are
+ * named explicitly below -- a new one has to be added here by hand, which is
+ * the point at which someone has to think about it.
  */
 describe("entity decimal precision", () => {
   interface DecimalColumn {

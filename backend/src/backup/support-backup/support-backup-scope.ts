@@ -1,4 +1,9 @@
 import { formatDateYMD } from "../../common/date-utils";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyDecimalsFor,
+  sumMoney,
+} from "../../common/round.util";
 
 export type TableMap = Record<string, Record<string, unknown>[]>;
 
@@ -21,6 +26,32 @@ const dateKey = (value: unknown): string | null => {
  */
 export function countsTowardBalance(tx: Record<string, unknown>): boolean {
   return tx.status !== "VOID" && !tx.parent_transaction_id;
+}
+
+/**
+ * The money precision of each account, by account id: its currency's
+ * `decimal_places` from the export's own `currencies` rows through
+ * `moneyDecimalsFor`. Every amount of an account is in its currency, so its
+ * amounts sum at this precision (a coin keeps its eight places). A currency
+ * the export does not carry reads as fiat.
+ */
+export function accountMoneyDecimals(tables: TableMap): Map<string, number> {
+  const placesByCode = new Map<string, number>();
+  for (const currency of tables.currencies ?? []) {
+    const code = str(currency.code);
+    const places = Number(currency.decimal_places);
+    if (code !== null && Number.isFinite(places)) {
+      placesByCode.set(code.toUpperCase(), places);
+    }
+  }
+  return new Map(
+    (tables.accounts ?? []).map((account) => [
+      String(account.id),
+      moneyDecimalsFor(
+        placesByCode.get((str(account.currency_code) ?? "").toUpperCase()),
+      ),
+    ]),
+  );
 }
 
 /**
@@ -52,25 +83,29 @@ export function applyDateRange(
   const out: TableMap = { ...tables };
 
   if (from) {
-    const openingShift = new Map<string, number>();
+    const decimalsByAccount = accountMoneyDecimals(tables);
+    const removed = new Map<string, number[]>();
     for (const tx of tables.transactions ?? []) {
       const key = dateKey(tx.transaction_date);
       if (key === null || key >= from || !countsTowardBalance(tx)) continue;
       const amount = Number(tx.amount);
       if (!Number.isFinite(amount)) continue;
       const account = String(tx.account_id);
-      openingShift.set(
-        account,
-        (openingShift.get(account) ?? 0) + Math.round(amount * 10000),
-      );
+      const amounts = removed.get(account) ?? [];
+      amounts.push(amount);
+      removed.set(account, amounts);
     }
     out.accounts = (tables.accounts ?? []).map((account) => {
-      const shift = openingShift.get(String(account.id));
+      const amounts = removed.get(String(account.id));
+      if (!amounts) return account;
+      const decimals =
+        decimalsByAccount.get(String(account.id)) ?? FIAT_MONEY_DECIMALS;
+      const shift = sumMoney(amounts, decimals);
       if (!shift) return account;
       const opening = Number(account.opening_balance) || 0;
       return {
         ...account,
-        opening_balance: (Math.round(opening * 10000) + shift) / 10000,
+        opening_balance: sumMoney([opening, shift], decimals),
       };
     });
   }

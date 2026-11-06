@@ -13,13 +13,14 @@ import {
   MortgagePaymentFrequency,
 } from "./create-account.dto";
 import { MORTGAGE_TYPES, MortgageType } from "../mortgage-type.util";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 export class MortgagePreviewDto {
   @ApiProperty({
     example: 400000,
     description: "Mortgage principal amount",
   })
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsMoneyAmount(2)
   @IsPositive()
   mortgageAmount: number;
 

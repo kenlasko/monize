@@ -14,6 +14,8 @@ import { ActionHistoryService } from "../action-history/action-history.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { SystemAlertService } from "../system-alerts/system-alert.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 /**
  * RLS smoke for the scheduled-transactions module's out-of-request entry point
@@ -37,6 +39,7 @@ describe("scheduled-transactions module RLS context smoke (real withScopedDb)", 
     overridesRepo: Record<string, jest.Mock>,
   ) => {
     const { manager, dataSource } = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [ScheduledTransaction, scheduledRepo],
       [ScheduledTransactionOverride, overridesRepo],
     ]);

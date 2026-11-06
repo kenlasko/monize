@@ -71,8 +71,8 @@ export class LoanScenario {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "recurring_extra_amount",
     nullable: true,
     transformer: numericTransformer,
@@ -105,8 +105,8 @@ export class LoanScenario {
   /** Fixed total to spend on the loan each period (installment + overpayment). */
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "target_monthly_payment",
     nullable: true,
     transformer: numericTransformer,

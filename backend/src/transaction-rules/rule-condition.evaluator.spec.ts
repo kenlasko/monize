@@ -1,6 +1,6 @@
 import {
   evaluateRuleCondition,
-  scaleRuleMoney,
+  ruleMoneyValue,
 } from "./rule-condition.evaluator";
 import {
   RuleConditionLeaf,
@@ -28,7 +28,7 @@ function facts(overrides: Partial<RuleFacts> = {}): RuleFacts {
     categoryId: C_LEAF,
     categoryAncestorIds: [C_LEAF, C_ROOT],
     description: "Zakupy",
-    amount: -1000000,
+    amount: -100,
     currencyCode: "PLN",
     tagIds: [T1, T2],
     hasSplits: false,
@@ -244,9 +244,12 @@ describe("evaluateRuleCondition: text fields", () => {
 });
 
 describe("evaluateRuleCondition: money fields", () => {
-  const at = (amount: number | null) => facts({ amount });
+  // The cases below name the amount in 1/10000 units, as they always did; the
+  // facts carry the decimal.
+  const at = (units: number | null) =>
+    facts({ amount: units === null ? null : units / 10000 });
 
-  it("eq compares scaled integers", () => {
+  it("eq compares the amount as a decimal", () => {
     expect(ev(leaf("amount", "eq", -100), at(-1000000))).toBe(true);
     expect(ev(leaf("amount", "eq", -100.0001), at(-1000000))).toBe(false);
     expect(ev(leaf("amount", "eq", -100.0001), at(-1000001))).toBe(true);
@@ -263,12 +266,25 @@ describe("evaluateRuleCondition: money fields", () => {
     expect(ev(leaf("amount", "gte", -100), at(-1000001))).toBe(false);
   });
 
-  it("a literal beyond four decimals rounds like the stored scale", () => {
-    // -100.00004 rounds to -100.0000; -100.00006 rounds to -100.0001
-    expect(ev(leaf("amount", "eq", -100.00004), at(-1000000))).toBe(true);
-    expect(ev(leaf("amount", "eq", -100.00006), at(-1000001))).toBe(true);
-    expect(scaleRuleMoney(-100.00005)).toBe(Math.round(-100.00005 * 10000));
-    expect(scaleRuleMoney("12.5")).toBe(125000);
+  it("a literal compares at the storage scale, eight places", () => {
+    expect(ev(leaf("amount", "eq", -100.00004), at(-1000000))).toBe(false);
+    expect(
+      ev(leaf("amount", "eq", -100.00004), facts({ amount: -100.00004 })),
+    ).toBe(true);
+    expect(ruleMoneyValue(-100.00005)).toBe(-100.00005);
+    expect(ruleMoneyValue("12.5")).toBe(12.5);
+    expect(ruleMoneyValue(1.123456789)).toBe(1.12345679);
+  });
+
+  it("a coin amount compares whole: 0.00002500 equals the row", () => {
+    const row = facts({ amount: -0.000025, currencyCode: "BTC" });
+    expect(ev(leaf("amount", "eq", -0.000025), row)).toBe(true);
+    expect(ev(leaf("amount", "eq", -0.00002501), row)).toBe(false);
+    expect(ev(leaf("absAmount", "gte", 0.000025), row)).toBe(true);
+    expect(ev(leaf("absAmount", "lte", 0.000025), row)).toBe(true);
+    expect(ev(leaf("absAmount", "gt", 0.00002499), row)).toBe(true);
+    expect(ev(leaf("absAmount", "gt", 0.000025), row)).toBe(false);
+    expect(ev(leaf("amount", "between", [-0.0001, -0.00001]), row)).toBe(true);
   });
 
   it("between is inclusive on both ends", () => {

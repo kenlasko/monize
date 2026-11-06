@@ -290,6 +290,12 @@ describe("ImportService", () => {
             code: opts.where.code,
             kind: opts.where.code === "BTC" ? "CRYPTO" : "FIAT",
           })),
+          // `loadCurrencyPlaces`: the places the import's money precision reads.
+          find: jest.fn(async () => [
+            { code: "CAD", decimalPlaces: 2 },
+            { code: "USD", decimalPlaces: 2 },
+            { code: "BTC", decimalPlaces: 8 },
+          ]),
         },
       ],
       [Category, categoriesRepository],
@@ -900,7 +906,7 @@ describe("ImportService", () => {
         // by -50; no absolute balance is ever computed in JavaScript.
         const balanceWrites = (
           mockQueryRunner.query.mock.calls as unknown[][]
-        ).filter(([sql]) => String(sql).includes("current_balance = ROUND"));
+        ).filter(([sql]) => String(sql).includes("SET current_balance = CAST"));
         expect(balanceWrites.length).toBeGreaterThan(0);
         expect(balanceWrites[0][1]).toEqual([-50, "acct-1"]);
         expect(
@@ -1932,8 +1938,8 @@ describe("ImportService", () => {
           mockQueryRunner.manager.query.getMockImplementation();
         mockQueryRunner.manager.query.mockImplementation(
           async (sql: string, params?: unknown[]) =>
-            typeof sql === "string" && sql.includes("SELECT opening_balance")
-              ? [{ opening_balance: "0" }]
+            typeof sql === "string" && sql.includes("SELECT a.opening_balance")
+              ? [{ opening_balance: "0", decimal_places: 2 }]
               : defaultQuery
                 ? defaultQuery(sql, params)
                 : [],
@@ -2028,7 +2034,7 @@ describe("ImportService", () => {
       // the advisory lock: it row-locks `accounts` where the old
       // read-modify-write did.
       const balanceWrite = calls.findIndex(([sql]) =>
-        String(sql).includes("current_balance = ROUND"),
+        String(sql).includes("SET current_balance = CAST"),
       );
       expect(balanceWrite).toBeGreaterThanOrEqual(0);
       expect(
@@ -3164,7 +3170,8 @@ describe("ImportService", () => {
 
       const result = await service.importOfxFile(userId, dto);
 
-      expect(mockedParseOfx).toHaveBeenCalledWith(dto.content);
+      // The destination account (CAD) reads the statement at its 4 places.
+      expect(mockedParseOfx).toHaveBeenCalledWith(dto.content, 4);
       expect(result).toBeDefined();
       expect(result.imported).toBeDefined();
     });

@@ -7,12 +7,12 @@ import {
 } from "./crypto-rates";
 
 describe("demo cryptocurrency seed", () => {
-  it("is the contract's coin: BTC, CRYPTO, priced from BTC-CAD, four places", () => {
+  it("is the contract's coin: BTC, CRYPTO, priced from BTC-CAD, eight places", () => {
     expect(DEMO_CRYPTO_CURRENCY).toEqual({
       code: "BTC",
       name: "Bitcoin",
       symbol: "₿",
-      decimals: 4,
+      decimals: 8,
       kind: "CRYPTO",
       quoteSymbol: "BTC-CAD",
     });
@@ -63,7 +63,7 @@ describe("demo cryptocurrency seed", () => {
     } as unknown as EntityManager);
 
     const [sql, params] = query.mock.calls[0];
-    expect(params).toEqual(["BTC", "Bitcoin", "₿", 4, "CRYPTO", "BTC-CAD"]);
+    expect(params).toEqual(["BTC", "Bitcoin", "₿", 8, "CRYPTO", "BTC-CAD"]);
     expect(sql).toContain("quote_symbol = EXCLUDED.quote_symbol");
     expect(sql).toMatch(/WHERE currencies\.kind = 'CRYPTO'\s+RETURNING kind/);
     // The kind is written only by the INSERT, never by the conflict update.

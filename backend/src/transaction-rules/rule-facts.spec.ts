@@ -42,10 +42,15 @@ describe("deriveRuleType", () => {
 });
 
 describe("buildRuleFacts", () => {
-  it("scales the amount to an integer of 1/10000 units", () => {
-    expect(buildRuleFacts(base).amount).toBe(-125000);
-    expect(buildRuleFacts({ ...base, amount: "12.34567" }).amount).toBe(123457);
-    expect(buildRuleFacts({ ...base, amount: 0.1 + 0.2 }).amount).toBe(3000);
+  it("rounds the amount to a decimal at the storage scale, eight places", () => {
+    expect(buildRuleFacts(base).amount).toBe(-12.5);
+    expect(buildRuleFacts({ ...base, amount: "12.34567" }).amount).toBe(
+      12.34567,
+    );
+    expect(buildRuleFacts({ ...base, amount: 0.1 + 0.2 }).amount).toBe(0.3);
+    expect(buildRuleFacts({ ...base, amount: "-0.00002500" }).amount).toBe(
+      -0.000025,
+    );
   });
 
   it("carries the account, its currency, the payee id and the raw payee text", () => {

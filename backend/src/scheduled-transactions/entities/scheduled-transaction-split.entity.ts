@@ -47,7 +47,7 @@ export class ScheduledTransactionSplit {
   @JoinColumn({ name: "transfer_account_id" })
   transferAccount: Account | null;
 
-  @Column({ type: "decimal", precision: 20, scale: 4 })
+  @Column({ type: "decimal", precision: 24, scale: 8 })
   amount: number;
 
   @Column({ type: "text", nullable: true })
@@ -90,8 +90,8 @@ export class ScheduledTransactionSplit {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "investment_commission",
     nullable: true,
   })

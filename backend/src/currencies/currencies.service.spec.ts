@@ -1384,7 +1384,7 @@ describe("CurrenciesService", () => {
         /currency_code_(referenced_by_data|in_use_globally)/.test(String(sql)),
       );
 
-    it("creates a coin with its price symbol, and four places by default", async () => {
+    it("creates a coin with its price symbol, and eight places by default", async () => {
       echoCreate();
 
       const view = await service.create(userId, {
@@ -1399,14 +1399,14 @@ describe("CurrenciesService", () => {
         expect.objectContaining({
           kind: "CRYPTO",
           quoteSymbol: "BTC-EUR",
-          decimalPlaces: 4,
+          decimalPlaces: 8,
         }),
       );
       expect(view).toMatchObject({
         code: "BTC",
         kind: "CRYPTO",
         quoteSymbol: "BTC-EUR",
-        decimalPlaces: 4,
+        decimalPlaces: 8,
       });
     });
 

@@ -1,4 +1,4 @@
-import { roundMoney } from "../common/round.util";
+import { MONEY_SCALE, roundMoney } from "../common/round.util";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 
 /**
@@ -35,7 +35,15 @@ export interface RecordedTransferLine {
 export function carryRecordedReceivedAmounts(
   recorded: readonly RecordedTransferLine[],
   incoming: readonly CreateTransactionSplitDto[],
-  context: { sourceCurrencyCode: string; parentAccountUnchanged: boolean },
+  context: {
+    sourceCurrencyCode: string;
+    /**
+     * The parent currency's money precision (`moneyDecimalsFor`), at which a
+     * line's amount is compared with a recorded one.
+     */
+    sourceDecimals: number;
+    parentAccountUnchanged: boolean;
+  },
 ): CreateTransactionSplitDto[] {
   if (!context.parentAccountUnchanged) return [...incoming];
   const pool = recorded.filter(
@@ -50,7 +58,8 @@ export function carryRecordedReceivedAmounts(
     split: CreateTransactionSplitDto,
   ): boolean =>
     line.transferAccountId === split.transferAccountId &&
-    roundMoney(Number(line.amount)) === roundMoney(Number(split.amount));
+    roundMoney(Number(line.amount), context.sourceDecimals) ===
+      roundMoney(Number(split.amount), context.sourceDecimals);
   // A line stating its own figure continues a recorded line too: it claims its
   // match first, so a new line identical to it cannot inherit that figure.
   for (const split of incoming) {
@@ -75,10 +84,13 @@ export function carryRecordedReceivedAmounts(
     const index = pool.findIndex((line) => sameLine(line, split));
     if (index === -1) return split;
     const [line] = pool.splice(index, 1);
+    // The counterpart's stored amount, as stored: it is in the target's
+    // currency and already at that currency's places, so it is carried at the
+    // column scale rather than re-rounded at the parent's precision.
     return {
       ...split,
       transferTargetAmount: Math.abs(
-        roundMoney(Number(line.counterpartAmount)),
+        roundMoney(Number(line.counterpartAmount), MONEY_SCALE),
       ),
     };
   });

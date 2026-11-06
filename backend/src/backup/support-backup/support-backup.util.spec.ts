@@ -26,10 +26,17 @@ describe("maskText", () => {
 });
 
 describe("scaleMoney", () => {
-  it("multiplies and rounds to 4 dp via integer arithmetic", () => {
+  it("multiplies and rounds to 8 dp (the money scale) via integer arithmetic", () => {
     expect(scaleMoney(100, 2.5)).toBe(250);
     expect(scaleMoney("388.14", 2.5)).toBe(970.35);
-    expect(scaleMoney(0.01, 3.333)).toBe(0.0333);
+    expect(scaleMoney(0.01, 3.333)).toBe(0.03333);
+    expect(scaleMoney(1, 3.123456789)).toBe(3.12345679);
+  });
+
+  it("keeps a coin amount's sub-4-place digits instead of truncating them", () => {
+    expect(scaleMoney("0.00002500", 1.5)).toBe(0.0000375);
+    expect(scaleMoney(0.00000005, 2)).toBe(0.0000001);
+    expect(scaleMoney("0.12345678", 1)).toBe(0.12345678);
   });
 
   it("passes through null/undefined and unparseable input", () => {

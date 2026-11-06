@@ -1,5 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
-import { roundMoney, roundToDecimals } from "./round.util";
+import { FIAT_MONEY_DECIMALS, roundMoney, roundToDecimals } from "./round.util";
 import { tr } from "../i18n/translate";
 
 /**
@@ -110,6 +110,19 @@ export interface FxConversion {
   amount: number;
 }
 
+/** Options for `applyFxConversion`. */
+export interface FxConversionOptions {
+  /**
+   * The money precision of the currency converted INTO (the account's):
+   * `moneyDecimalsFor(currency.decimalPlaces)`. Defaults to
+   * `FIAT_MONEY_DECIMALS`, so a fiat conversion rounds exactly as before;
+   * converting into a coin passes the coin's eight places, so 1,700 CAD at
+   * 0.0000073529 is 0.01249993 BTC rather than 0.0125
+   * (`docs/specs/money-precision.md` decision 5).
+   */
+  toDecimals?: number;
+}
+
 /**
  * Convert a foreign amount into the account currency at `rate`, folding in the
  * account's foreign-transaction fee the same way the transaction form does:
@@ -117,6 +130,9 @@ export interface FxConversion {
  *   base   = round(originalAmount x rate)
  *   fee    = -round(|base| x feePercent / 100)
  *   amount = base + fee
+ *
+ * All three are in the account currency, so all three round at
+ * `options.toDecimals`; the source amount is used as given, never rounded.
  *
  * No split is created for the fee -- it is part of what the account is charged,
  * and the Foreign Currency Fees report derives it back out of
@@ -127,13 +143,15 @@ export function applyFxConversion(
   originalAmount: number,
   rate: number,
   fxFeePercent?: number | null,
+  options: FxConversionOptions = {},
 ): FxConversion {
-  const base = roundMoney(originalAmount * rate);
+  const decimals = options.toDecimals ?? FIAT_MONEY_DECIMALS;
+  const base = roundMoney(originalAmount * rate, decimals);
   const fee =
     fxFeePercent && fxFeePercent > 0
-      ? -roundMoney((Math.abs(base) * fxFeePercent) / 100)
+      ? -roundMoney((Math.abs(base) * fxFeePercent) / 100, decimals)
       : 0;
-  return { base, fee, amount: roundMoney(base + fee) };
+  return { base, fee, amount: roundMoney(base + fee, decimals) };
 }
 
 /**

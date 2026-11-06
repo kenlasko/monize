@@ -224,7 +224,7 @@ export interface RuleFacts {
   /** The category itself plus its ancestors; empty when the row has no category. */
   readonly categoryAncestorIds: readonly string[];
   readonly description: string | null;
-  /** Signed, in 1/10000 units of the account currency (a scaled integer). */
+  /** Signed, in the account currency, rounded at the storage scale (`MONEY_SCALE`, eight places). */
   readonly amount: number | null;
   readonly currencyCode: string | null;
   readonly tagIds: readonly string[];

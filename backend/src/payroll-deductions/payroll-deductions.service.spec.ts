@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
+import { Account } from "../accounts/entities/account.entity";
 import { Category } from "../categories/entities/category.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
@@ -25,9 +26,13 @@ const EI = "33333333-3333-4333-8333-333333333333";
 const CPP = "44444444-4444-4444-8444-444444444444";
 const RULE = "55555555-5555-4555-8555-555555555555";
 
+const CHEQUING = "66666666-6666-4666-8666-666666666666";
+const WALLET = "77777777-7777-4777-8777-777777777777";
+
 const bill = (splits: { categoryId: string; amount: number }[] = []) => ({
   id: BILL,
   userId: USER,
+  accountId: CHEQUING,
   name: "Paycheque",
   currencyCode: "CAD",
   splits,
@@ -58,6 +63,7 @@ describe("PayrollDeductionsService", () => {
   let rulesRepo: Record<string, jest.Mock>;
   let scheduledRepo: Record<string, jest.Mock>;
   let categoryRepo: Record<string, jest.Mock>;
+  let accountRepo: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     rulesRepo = {
@@ -87,10 +93,18 @@ describe("PayrollDeductionsService", () => {
             : null,
       ),
     };
+    accountRepo = {
+      findOne: jest.fn(async ({ where }: { where: { id: string } }) =>
+        where.id === WALLET
+          ? { id: WALLET, accountType: "CRYPTO", currencyCode: "BTC" }
+          : { id: where.id, accountType: "CHEQUING", currencyCode: "CAD" },
+      ),
+    };
     mocks = createScopedDbMocks([
       [PayrollDeductionRule, rulesRepo],
       [ScheduledTransaction, scheduledRepo],
       [Category, categoryRepo],
+      [Account, accountRepo],
     ]);
     // The ledger: EI has collected 1,024 in the period.
     mocks.manager.query.mockImplementation(async (sql: string) =>
@@ -491,6 +505,34 @@ describe("PayrollDeductionsService", () => {
       ).rejects.toBeInstanceOf(ConflictException);
       await expect(service.update(USER, "missing", {})).rejects.toBeInstanceOf(
         NotFoundException,
+      );
+    });
+  });
+
+  describe("a bill paid from a cryptocurrency account", () => {
+    const walletBill = () => ({
+      ...bill([{ categoryId: EI, amount: -64 }]),
+      accountId: WALLET,
+    });
+
+    it("is refused on create and on update before anything is written", async () => {
+      scheduledRepo.findOne.mockResolvedValue(walletBill());
+      await expect(
+        service.create(USER, {
+          scheduledTransactionId: BILL,
+          categoryId: EI,
+          yearlyMaximum: 1077.48,
+          resetDate: "2026-01-01",
+        }),
+      ).rejects.toThrow("cryptocurrency BTC");
+      rulesRepo.findOne.mockResolvedValueOnce(rule());
+      await expect(
+        service.update(USER, RULE, { yearlyMaximum: 1100 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(rulesRepo.save).not.toHaveBeenCalled();
+      expect(rulesRepo.update).not.toHaveBeenCalled();
+      expect(accountRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: WALLET } }),
       );
     });
   });

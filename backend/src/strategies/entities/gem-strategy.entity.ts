@@ -84,8 +84,8 @@ export class GemStrategy {
   })
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "commission_amount",
     nullable: true,
     transformer: numericTransformer,

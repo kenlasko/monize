@@ -2,6 +2,7 @@ import { ConflictException } from "@nestjs/common";
 import { Account, AccountType } from "../accounts/entities/account.entity";
 import { AiReviewRequestsService } from "../ai-review/ai-review-requests.service";
 import { Category } from "../categories/entities/category.entity";
+import { Currency } from "../currencies/entities/currency.entity";
 import { claimLoanOccurrence } from "../loan-installments/claim-loan-occurrence";
 import { loadLoanSettlementFacts } from "../loan-installments/loan-settlement-facts";
 import { Payee } from "../payees/entities/payee.entity";
@@ -128,6 +129,8 @@ function harness(rows: Transaction[]) {
         ]),
       },
     ],
+    // The split write reads the row currency's decimal places.
+    [Currency, { find: jest.fn().mockResolvedValue([]) }],
     [Category, { find: jest.fn().mockResolvedValue([]) }],
     [Payee, { find: jest.fn().mockResolvedValue([]) }],
     [Tag, { find: jest.fn().mockResolvedValue([]) }],
@@ -203,6 +206,7 @@ describe("TransactionRulesApplierService: writing a settlement", () => {
         { amount: -500, categoryId: INTEREST_CATEGORY, memo: "Interest" },
       ],
       -1333.33,
+      { code: "EUR", decimalPlaces: null },
     );
     expect(claim).toHaveBeenCalledTimes(1);
     expect(claim).toHaveBeenCalledWith(h.m, USER, {

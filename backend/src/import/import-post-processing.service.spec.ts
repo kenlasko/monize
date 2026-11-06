@@ -145,6 +145,37 @@ describe("ImportPostProcessingService", () => {
       expect(params).toEqual([accountA, 100.005, accountB, -50.1]);
     });
 
+    it("keeps a coin account's eight places and rounds a fiat one at four", async () => {
+      scoped.manager.query.mockImplementation(async (sql: string) =>
+        sql.includes("SELECT")
+          ? [
+              {
+                account_id: accountA,
+                balance: "0.00002501",
+                decimal_places: 8,
+              },
+              {
+                account_id: accountB,
+                balance: "0.00002501",
+                decimal_places: 2,
+              },
+            ]
+          : [],
+      );
+
+      await service.run(userId, false, new Set([accountA, accountB]));
+
+      const [sql, params] = scoped.manager.query.mock.calls.find(
+        (call: string[]) => call[0].includes("UPDATE accounts"),
+      )!;
+      expect(params).toEqual([accountA, 0.00002501, accountB, 0]);
+      const select = scoped.manager.query.mock.calls.find((call: string[]) =>
+        call[0].includes("SELECT"),
+      )![0] as string;
+      expect(select).toContain("c.decimal_places");
+      expect(sql).toContain("FROM (VALUES");
+    });
+
     it("recomputes from the non-VOID ledger, so a voided import row moves nothing", async () => {
       // The importers add each row's amount incrementally as they write, VOID
       // rows included, and this absolute recomputation is what takes a voided

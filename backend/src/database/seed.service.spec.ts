@@ -158,7 +158,7 @@ describe("SeedService", () => {
       expect(currencyCodes).toContain("JPY");
     });
 
-    it("seeds BTC as a CRYPTO currency priced from BTC-CAD at four places", async () => {
+    it("seeds BTC as a CRYPTO currency priced from BTC-CAD at eight places", async () => {
       await service.seedAll();
 
       const btc = dataSource.query.mock.calls.find(
@@ -173,7 +173,7 @@ describe("SeedService", () => {
         "BTC",
         "Bitcoin",
         "\u20bf",
-        4,
+        8,
         "CRYPTO",
         "BTC-CAD",
       ]);

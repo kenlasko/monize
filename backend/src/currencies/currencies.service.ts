@@ -68,8 +68,12 @@ export interface UserCurrencyView {
   quoteSymbol: string | null;
 }
 
-/** The places a coin defaults to: the most money holds (decision 4). */
-const CRYPTO_DEFAULT_DECIMAL_PLACES = 4;
+/**
+ * The places a coin defaults to: the most money holds, eight
+ * (`docs/specs/money-precision.md` decision 2, superseding decision 4 of
+ * `docs/specs/crypto-accounts.md`).
+ */
+const CRYPTO_DEFAULT_DECIMAL_PLACES = 8;
 
 // The currency every new user's preferences default to (see
 // buildDefaultPreferences), and the one every reporting surface falls back to

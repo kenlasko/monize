@@ -1,4 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 import {
   BadRequestException,
   NotFoundException,
@@ -105,7 +107,11 @@ describe("ActionHistoryService", () => {
     // QueryRunner is the transaction's EntityManager: `queryRunner.query` and
     // `queryRunner.manager.*` are the same jest.fn()s the manager exposes, which
     // keeps the assertions below pointed at the same calls they always were.
-    const scoped = createScopedDbMocks([[ActionHistory, mockRepository]]);
+    const scoped = createScopedDbMocks([
+      [ActionHistory, mockRepository],
+      // `decimal_places` per currency, for the replay's precision refusal.
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
+    ]);
     mockQueryRunner = {
       query: scoped.manager.query,
       manager: scoped.manager,
@@ -912,6 +918,38 @@ describe("ActionHistoryService", () => {
         transferSplits(linked).map((split) =>
           split.transferAccountId ? { ...split, receivedAmount } : split,
         );
+
+      it("tells BTC lines a satoshi apart and restores them (INV-MONEY-001)", async () => {
+        const lines = (fee: number) => [
+          { id: "s1", categoryId: "cat-1", amount: -0.005 },
+          { id: "s2", categoryId: "fees", amount: fee },
+        ];
+        const action = splitAction(lines(-0.000025), lines(-0.00002501));
+        action.beforeData.currencyCode = "BTC";
+        action.afterData.currencyCode = "BTC";
+        arrange(action);
+
+        await service.undo(userId);
+
+        // At four places the two sets would compare equal and stay as edited.
+        expect(mockQueryRunner.manager.delete).toHaveBeenCalled();
+        expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: -0.000025 }),
+        );
+      });
+
+      it("refuses, before any write, to restore an amount its currency no longer carries", async () => {
+        const action = splitAction(undefined, undefined);
+        action.beforeData = {
+          accountId: "acc-1",
+          currencyCode: "USD",
+          amount: -50.00001,
+        };
+        arrange(action);
+
+        await expect(service.undo(userId)).rejects.toThrow(/USD carries \(4\)/);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
 
       it("refuses, before any write, when the edit changed only what a line received", async () => {
         // A cross-currency line: same CAD amount, the USD received corrected.
@@ -3285,7 +3323,8 @@ describe("ActionHistoryService", () => {
           { id: "leg-1", userId },
         );
         const balanceWrites = mockQueryRunner.query.mock.calls.filter(
-          ([sql]: [string]) => /SET current_balance = ROUND/.test(sql),
+          ([sql]: [string]) =>
+            /SET current_balance = current_balance \+ \$1/.test(sql),
         );
         expect(balanceWrites).toEqual([
           [expect.any(String), [-640.15, "loan", userId]],
@@ -3327,7 +3366,7 @@ describe("ActionHistoryService", () => {
         );
         expect(
           mockQueryRunner.query.mock.calls.filter(([sql]: [string]) =>
-            /SET current_balance = ROUND/.test(sql),
+            /SET current_balance = current_balance \+ \$1/.test(sql),
           ),
         ).toEqual([[expect.any(String), [-1200.5, "loan", userId]]]);
       });
@@ -3382,7 +3421,7 @@ describe("ActionHistoryService", () => {
         expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
         expect(
           mockQueryRunner.query.mock.calls.filter(([sql]: [string]) =>
-            /SET current_balance = ROUND/.test(sql),
+            /SET current_balance = current_balance \+ \$1/.test(sql),
           ),
         ).toEqual([]);
       });
@@ -3428,7 +3467,7 @@ describe("ActionHistoryService", () => {
         expect(deletedLegs).toEqual(["leg-2"]);
         expect(
           mockQueryRunner.query.mock.calls.filter(([sql]: [string]) =>
-            /SET current_balance = ROUND/.test(sql),
+            /SET current_balance = current_balance \+ \$1/.test(sql),
           ),
         ).toEqual([]);
       });

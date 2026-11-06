@@ -16,6 +16,8 @@ import { AccountDelegate } from "./entities/account-delegate.entity";
 import { AccountDelegateGrant } from "./entities/account-delegate-grant.entity";
 import { DelegateNetWorthExclusion } from "./entities/delegate-net-worth-exclusion.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -95,6 +97,7 @@ describe("JointAccountsService", () => {
     categoriesRepo = { find: jest.fn().mockResolvedValue([]) };
     payeesRepo = { find: jest.fn().mockResolvedValue([]) };
     const scoped = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [Account, accountsRepo as never],
       [AccountDelegate, delegatesRepo as never],
       [AccountDelegateGrant, grantsRepo as never],
@@ -194,6 +197,26 @@ describe("JointAccountsService", () => {
       expect(row.canDelete).toBe(false);
       // No exclusion row -> included in the grantee's net worth by default.
       expect(row.excludeFromNetWorth).toBe(false);
+    });
+
+    it("keeps a joint BTC wallet's balance at its eight places (INV-MONEY-001)", async () => {
+      grantsRepo.find.mockResolvedValue([grant()]);
+      accountsRepo.find.mockResolvedValue([
+        { ...chequing, accountType: "CRYPTO", currencyCode: "BTC" } as never,
+      ]);
+      manager.query.mockImplementation((sql: string) =>
+        Promise.resolve(
+          sql.includes("futureSum")
+            ? [{ accountId: ACCOUNT_ID, futureSum: "-0.00002500" }]
+            : [{ accountId: ACCOUNT_ID, currentBalance: "0.01249993" }],
+        ),
+      );
+
+      const [row] = await service.jointAccountsFor(GRANTEE);
+
+      // At four places the wallet read 0.0125 and the pending fee zero.
+      expect(row.currentBalance).toBe(0.01249993);
+      expect(row.futureTransactionsSum).toBe(-0.000025);
     });
 
     it("masks write permissions to false for a non-writable account type regardless of the grant", async () => {

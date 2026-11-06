@@ -1,4 +1,5 @@
 import { addDaysYMD } from "../common/date-utils";
+import { FIAT_MONEY_DECIMALS, roundMoney } from "../common/round.util";
 
 /**
  * Why an occurrence's amount could not be worked out, as a closed set so the
@@ -105,10 +106,6 @@ export function forecastLanding(
   return { date: addDaysYMD(today, 1), overdue: dueDate < today };
 }
 
-function roundCents(value: number): number {
-  return Math.round(value * 10000) / 10000;
-}
-
 /** Whether this occurrence moves money through `accountId` at all. */
 function touchesAccount(
   o: ForecastOccurrenceInput,
@@ -149,6 +146,11 @@ export function accumulateForecastDeltas(
   occurrences: ForecastOccurrenceInput[],
   accountId: string,
   actualByDate: Map<string, number> = new Map(),
+  /**
+   * The money precision of the account's currency
+   * (`moneyDecimalsFor(currency.decimalPlaces)`): every delta is in it.
+   */
+  decimals: number = FIAT_MONEY_DECIMALS,
 ): {
   byDate: Map<string, number>;
   gaps: BalanceForecastGap[];
@@ -177,13 +179,14 @@ export function accumulateForecastDeltas(
       continue;
     }
     const delta = deltaFor(occurrence, accountId, occurrence.amount);
-    if (occurrence.overdue) overdue.amount = roundCents(overdue.amount + delta);
+    if (occurrence.overdue)
+      overdue.amount = roundMoney(overdue.amount + delta, decimals);
     // A zero delta contributes nothing, and emitting it would add a flat point
     // to the series for a day on which nothing happens.
     if (delta !== 0) {
       byDate.set(
         occurrence.dueDate,
-        roundCents((byDate.get(occurrence.dueDate) ?? 0) + delta),
+        roundMoney((byDate.get(occurrence.dueDate) ?? 0) + delta, decimals),
       );
     }
   }
@@ -200,14 +203,16 @@ export function buildForecastSeries(
   today: string,
   horizon: string,
   deltaByDate: Map<string, number>,
+  /** The money precision of the account's currency, as for the deltas. */
+  decimals: number = FIAT_MONEY_DECIMALS,
 ): ForecastPoint[] {
   const dates = [...deltaByDate.keys()]
     .filter((d) => d > today && d <= horizon)
     .sort();
-  let balance = roundCents(startBalance);
+  let balance = roundMoney(startBalance, decimals);
   const series: ForecastPoint[] = [{ date: today, balance }];
   for (const d of dates) {
-    balance = roundCents(balance + (deltaByDate.get(d) ?? 0));
+    balance = roundMoney(balance + (deltaByDate.get(d) ?? 0), decimals);
     series.push({ date: d, balance });
   }
   return series;

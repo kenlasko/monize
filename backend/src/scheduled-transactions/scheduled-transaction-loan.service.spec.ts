@@ -9,6 +9,8 @@ import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-o
 import { Account, AccountType } from "../accounts/entities/account.entity";
 import { LoanRateChange } from "../loan-rate-changes/entities/loan-rate-change.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -110,6 +112,7 @@ describe("ScheduledTransactionLoanService", () => {
     loanFeesRepository = { find: jest.fn().mockResolvedValue([]) };
 
     const scopedDb = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [LoanFee, loanFeesRepository],
       [ScheduledTransaction, scheduledTransactionsRepository],
       [ScheduledTransactionSplit, splitsRepository],
@@ -1639,6 +1642,36 @@ describe("ScheduledTransactionLoanService", () => {
   });
 
   describe("bookTemplateAtMinorUnit", () => {
+    it("books a BTC template as stored: a satoshi is the coin's smallest unit (INV-MONEY-001)", async () => {
+      // At a fiat minor unit this wallet's -0.005025 bill posted as -0.01.
+      const booked = await service.bookTemplateAtMinorUnit(
+        makeScheduledTransaction({ amount: -0.005025, currencyCode: "BTC" }),
+        [
+          {
+            id: "split-transfer",
+            transferAccountId: null,
+            categoryId: "cat-a",
+            amount: -0.005,
+            memo: null,
+          },
+          {
+            id: "split-fee",
+            transferAccountId: null,
+            categoryId: "cat-fee",
+            amount: -0.000025,
+            memo: "Network fee",
+          },
+        ] as unknown as ScheduledTransactionSplit[],
+      );
+      expect(booked).toEqual({
+        amountsBySplitId: new Map([
+          ["split-transfer", -0.005],
+          ["split-fee", -0.000025],
+        ]),
+        parentAmount: -0.005025,
+      });
+    });
+
     it("books the stored template the way the Post dialog pre-fills it", async () => {
       accountsRepository.findOne.mockResolvedValue(makeLoanAccount());
       const booked = await service.bookTemplateAtMinorUnit(

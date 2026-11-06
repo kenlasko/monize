@@ -65,16 +65,19 @@ describe("BackupRestoreDatabaseService.ensureCurrenciesExist (restored currency 
     expect(inserts).toEqual([]);
   });
 
-  it("clamps decimal_places to an integer from 0 to 4, and defaults a non-number to 2", async () => {
+  it("clamps decimal_places to an integer from 0 to 8, and defaults a non-number to 2", async () => {
     await restore([
       { code: "AAA", name: "A", symbol: "A", decimal_places: -2 },
       { code: "BBB", name: "B", symbol: "B", decimal_places: 99 },
       { code: "CCC", name: "C", symbol: "C", decimal_places: 2.7 },
       { code: "DDD", name: "D", symbol: "D", decimal_places: "x" },
+      { code: "EEE", name: "E", symbol: "E", decimal_places: 8 },
+      { code: "FFF", name: "F", symbol: "F", decimal_places: 9 },
+      { code: "GGG", name: "G", symbol: "G", decimal_places: 6 },
     ]);
 
     expect(inserts.map((i) => paramsByColumn(i).decimal_places)).toEqual([
-      0, 4, 2, 2,
+      0, 8, 2, 2, 8, 8, 6,
     ]);
   });
 

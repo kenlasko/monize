@@ -556,7 +556,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
               amount: {
                 type: "number",
                 description:
-                  "Signed amount for standard create/update (positive=income, negative=expense); positive transfer amount for a transfer. Up to 4 decimal places.",
+                  "Signed amount for standard create/update (positive=income, negative=expense); positive transfer amount for a transfer. At most the account currency's decimal places: 4 for a fiat currency, up to 8 for a coin.",
               },
               date: {
                 type: "string",
@@ -607,7 +607,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
                     amount: {
                       type: "number",
                       description:
-                        "Signed amount for this split line (same sign as the transaction). Up to 4 decimal places.",
+                        "Signed amount for this split line (same sign as the transaction). At most the account currency's decimal places: 4 for fiat, up to 8 for a coin.",
                     },
                     memo: {
                       type: "string",

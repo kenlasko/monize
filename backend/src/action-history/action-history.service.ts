@@ -51,6 +51,18 @@ import {
   lockTransactionRows,
 } from "../common/db/locks";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
+import {
+  MONEY_SCALE,
+  moneyDecimalsFor,
+  roundMoney,
+  sumMoney,
+} from "../common/round.util";
+import { assertAmountPrecision } from "../common/amount-precision.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+  precisionCurrencyFor,
+} from "../common/currency-places.util";
 import { invalidatePortfolioSummary } from "../securities/portfolio-summary-memo";
 
 /**
@@ -170,8 +182,12 @@ function isLegSplit(split: SplitSnapshot): boolean {
  * Whether two split snapshots hold the same lines by value, order aside. Ids
  * and linked leg ids are left out: an edit that resends the splits re-creates
  * both, and that is not a change the user made.
+ *
+ * A line's amount is compared at `decimals`, the parent currency's money
+ * precision, so two BTC lines a satoshi apart differ; a received amount is in
+ * the target's currency and is compared as stored, at the column scale.
  */
-function splitsEqualByValue(a: unknown, b: unknown): boolean {
+function splitsEqualByValue(a: unknown, b: unknown, decimals: number): boolean {
   if (!Array.isArray(a) || !Array.isArray(b)) return false;
   if (a.length !== b.length) return false;
   // A transfer line's received amount is part of its value (an edit may
@@ -194,9 +210,9 @@ function splitsEqualByValue(a: unknown, b: unknown): boolean {
           splitKindOf(s),
           s.categoryId ?? null,
           s.transferAccountId ?? null,
-          Math.round(Number(s.amount) * 10000),
+          roundMoney(Number(s.amount), decimals),
           compareReceived && s.transferAccountId
-            ? Math.round(Number(s.receivedAmount) * 10000)
+            ? roundMoney(Number(s.receivedAmount), MONEY_SCALE)
             : null,
           s.memo || null,
         ]),
@@ -1031,13 +1047,23 @@ export class ActionHistoryService {
     const before = action.beforeData;
     assertConversionUndoable(before, action.afterData ?? {});
     assertVoidChangeUndoable(before, action.afterData ?? {});
+    const places = await this.assertSnapshotAmountsFit(manager, [
+      { currencyCode: transaction.currencyCode, ...before },
+    ]);
 
     // A change is a value difference: a form resends every split, so equal
     // lines leave the rows (and the legs they link) alone. Changed lines that
     // carry a leg cannot be replayed from the snapshot; refuse before a write.
     const restoreSplits =
       before.splits !== undefined &&
-      !splitsEqualByValue(before.splits, action.afterData?.splits);
+      !splitsEqualByValue(
+        before.splits,
+        action.afterData?.splits,
+        moneyDecimalsForCode(
+          places,
+          before.currencyCode ?? transaction.currencyCode,
+        ),
+      );
     if (restoreSplits) {
       assertSplitLegsUndoable(before.splits, action.afterData?.splits);
     }
@@ -1137,6 +1163,9 @@ export class ActionHistoryService {
         ),
       );
     }
+    await this.assertSnapshotAmountsFit(manager, [
+      { currencyCode: account.currencyCode, ...before },
+    ]);
 
     // Re-insert the transaction
     await manager.query(
@@ -1274,6 +1303,10 @@ export class ActionHistoryService {
 
     const { fromTransaction, toTransaction } = action.beforeData;
     if (!fromTransaction || !toTransaction) return;
+    await this.assertSnapshotAmountsFit(manager, [
+      fromTransaction,
+      toTransaction,
+    ]);
 
     // Re-insert both transactions without linked IDs first
     for (const txData of [fromTransaction, toTransaction]) {
@@ -2069,6 +2102,56 @@ export class ActionHistoryService {
   // --- Utility methods ---
 
   /**
+   * Refuse, before anything is written, a replay of transaction snapshots
+   * whose amounts carry more places than their currency does now (its decimal
+   * places were lowered since the edit was recorded): the replay would write
+   * an amount the currency cannot hold, which no writer may (INV-MONEY-001).
+   * A row's amount and its split lines are in its `currencyCode`, a foreign
+   * original amount in its `originalCurrencyCode`. Returns the places read, for
+   * the caller's comparisons.
+   */
+  private async assertSnapshotAmountsFit(
+    manager: EntityManager,
+    rows: readonly Record<string, any>[],
+  ): Promise<ReadonlyMap<string, number>> {
+    const places = await loadCurrencyPlaces(
+      manager,
+      rows.flatMap((row) => [row.currencyCode, row.originalCurrencyCode]),
+    );
+    for (const row of rows) {
+      const code = row.currencyCode;
+      if (typeof code !== "string" || code === "") continue;
+      const currency = precisionCurrencyFor(places, code);
+      if (row.amount !== undefined && row.amount !== null) {
+        assertAmountPrecision(row.amount, currency, "amount");
+      }
+      if (Array.isArray(row.splits)) {
+        for (const [index, split] of row.splits.entries()) {
+          if (split?.amount === undefined || split.amount === null) continue;
+          assertAmountPrecision(
+            split.amount,
+            currency,
+            `splits[${index}].amount`,
+          );
+        }
+      }
+      if (
+        row.originalAmount !== undefined &&
+        row.originalAmount !== null &&
+        typeof row.originalCurrencyCode === "string" &&
+        row.originalCurrencyCode !== ""
+      ) {
+        assertAmountPrecision(
+          row.originalAmount,
+          precisionCurrencyFor(places, row.originalCurrencyCode),
+          "originalAmount",
+        );
+      }
+    }
+    return places;
+  }
+
+  /**
    * A copy of a snapshot in today's column shape. An account snapshot recorded
    * before the mortgage type was required carries the legacy flags, which no
    * code reads now, and a null or missing type; it is replayed with the type
@@ -2088,6 +2171,11 @@ export class ActionHistoryService {
    * undo's own manager and scoped to the action's user: an atomic delta (the
    * statement every delta writer uses, `docs/concurrency-and-idempotency.md`
    * section 2) and the locked absolute recomputation.
+   *
+   * The delta is not re-rounded in SQL: it is `deletionBalanceEffect`'s, the
+   * leg's stored amount negated, already at the leg currency's places, and the
+   * NUMERIC sum of two such values is exact. A `ROUND(..., 4)` here dropped a
+   * coin leg's satoshis from the balance (INV-MONEY-001).
    */
   private legBalances(
     manager: EntityManager,
@@ -2097,7 +2185,7 @@ export class ActionHistoryService {
       updateBalance: (accountId, amount) =>
         manager.query(
           `UPDATE accounts
-              SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 4)
+              SET current_balance = current_balance + $1
             WHERE id = $2 AND user_id = $3`,
           [amount, accountId, action.userId],
         ),
@@ -2126,24 +2214,31 @@ export class ActionHistoryService {
     await lockAccountsForBalanceWrite(manager, [accountId], userId);
 
     // Use the same recalculation logic as AccountsService
+    // The account's currency places come back with the sum, so the balance
+    // rounds at its money precision: a coin wallet keeps its satoshis.
     const result = await manager.query(
-      `SELECT a.opening_balance, COALESCE(SUM(t.amount), 0) as tx_sum
+      `SELECT a.opening_balance, COALESCE(SUM(t.amount), 0) as tx_sum,
+              c.decimal_places
        FROM accounts a
+       LEFT JOIN currencies c ON c.code = a.currency_code
        LEFT JOIN transactions t ON t.account_id = a.id
          AND ${LEDGER_MOVEMENT_PREDICATE}
          AND t.transaction_date <= CURRENT_DATE
        WHERE a.id = $1
-       GROUP BY a.id, a.opening_balance`,
+       GROUP BY a.id, a.opening_balance, c.decimal_places`,
       [accountId],
     );
 
     if (result.length > 0) {
-      const balance =
-        Math.round(
-          (Number(result[0].opening_balance || 0) +
-            Number(result[0].tx_sum || 0)) *
-            10000,
-        ) / 10000;
+      const decimalPlaces = result[0].decimal_places;
+      const balance = sumMoney(
+        [Number(result[0].opening_balance || 0), Number(result[0].tx_sum || 0)],
+        moneyDecimalsFor(
+          decimalPlaces === null || decimalPlaces === undefined
+            ? undefined
+            : Number(decimalPlaces),
+        ),
+      );
       await manager.query(
         `UPDATE accounts SET current_balance = $1 WHERE id = $2`,
         [balance, accountId],

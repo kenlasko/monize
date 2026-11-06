@@ -1,4 +1,9 @@
-import { roundMoney, roundToDecimals, sumMoney } from "./round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  roundMoney,
+  roundToDecimals,
+  sumMoney,
+} from "./round.util";
 import { AccountType } from "../accounts/entities/account.entity";
 
 /**
@@ -46,6 +51,10 @@ export function currencyMinorUnitDecimals(
  * both suites run `minor-unit-booking-cases.json`, because the server
  * recognises an unchanged Post dialog by comparing what it sent with this
  * function's answer for the stored template.
+ *
+ * The balance test and the residual are at `FIAT_MONEY_DECIMALS`: every caller
+ * books a loan, mortgage or line-of-credit payment, and those accounts are fiat
+ * by construction (INV-CRYPTO-001), so the storage precision here is four.
  */
 export function bookSplitsAtMinorUnit(
   amounts: readonly number[],
@@ -58,14 +67,20 @@ export function bookSplitsAtMinorUnit(
     roundToDecimals(Number(amount), decimals),
   );
   const balanced =
-    sumMoney(amounts.map(Number)) === roundMoney(Number(parentAmount));
+    sumMoney(amounts.map(Number), FIAT_MONEY_DECIMALS) ===
+    roundMoney(Number(parentAmount), FIAT_MONEY_DECIMALS);
   if (!balanced || absorbIndex < 0 || absorbIndex >= rounded.length) {
     return { amounts: rounded, parentAmount: parent };
   }
-  const residual = roundMoney(parent - sumMoney(rounded));
+  const residual = roundMoney(
+    parent - sumMoney(rounded, FIAT_MONEY_DECIMALS),
+    FIAT_MONEY_DECIMALS,
+  );
   return {
     amounts: rounded.map((amount, index) =>
-      index === absorbIndex ? roundMoney(amount + residual) : amount,
+      index === absorbIndex
+        ? roundMoney(amount + residual, FIAT_MONEY_DECIMALS)
+        : amount,
     ),
     parentAmount: parent,
   };

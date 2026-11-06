@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { EntityManager } from "typeorm";
 import { returnedRows } from "../common/db/query-result";
+import { BANK_SYNC_MONEY_DECIMALS } from "./bank-sync.constants";
 import type { PlannedBankRow } from "./bank-transaction-planner";
 
 /** The ledger row that already holds a planned row. */
@@ -107,7 +108,10 @@ export function planFingerprint(
   review?: unknown,
 ): string {
   const pairs = newRows
-    .map((row): [string, string] => [row.externalKey, row.amount.toFixed(4)])
+    .map((row): [string, string] => [
+      row.externalKey,
+      row.amount.toFixed(BANK_SYNC_MONEY_DECIMALS),
+    ])
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   return createHash("sha256")
     .update(JSON.stringify(review === undefined ? pairs : { pairs, review }))

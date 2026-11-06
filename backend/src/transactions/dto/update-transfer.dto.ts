@@ -1,6 +1,5 @@
 import {
   IsString,
-  IsNumber,
   IsOptional,
   IsDateString,
   IsUUID,
@@ -15,6 +14,8 @@ import { TransactionStatus } from "../entities/transaction.entity";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { IsCurrencyCode } from "../../common/validators/is-currency-code.validator";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
+import { IsFxRate } from "../../common/validators/is-fx-rate.validator";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 export class UpdateTransferDto {
   @ApiPropertyOptional({ description: "Source account ID" })
@@ -36,7 +37,7 @@ export class UpdateTransferDto {
     description: "Transfer amount (must be zero or positive)",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(0)
   @Max(999999999999)
   amount?: number;
@@ -53,14 +54,15 @@ export class UpdateTransferDto {
 
   @ApiPropertyOptional({ description: "Exchange rate" })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 10 })
-  @Min(0.0001)
+  // Positive and representable at the rate column's ten places (1e-10): a
+  // CAD->BTC rate is 0.0000073529.
+  @IsFxRate()
   @Max(1_000_000)
   exchangeRate?: number;
 
   @ApiPropertyOptional({ description: "Destination amount" })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(0)
   @Max(999999999999)
   toAmount?: number;

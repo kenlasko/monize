@@ -191,8 +191,8 @@ export class BankSyncAccount {
   @Column({
     type: "decimal",
     name: "bank_balance",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     nullable: true,
     transformer: numericTransformer,
   })

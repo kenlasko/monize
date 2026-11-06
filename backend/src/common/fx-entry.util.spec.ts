@@ -133,6 +133,45 @@ describe("fx-entry.util", () => {
       expect(precise).toBe(1365.234);
       expect(precise).not.toBe(rounded);
     });
+
+    it("rounds a fiat conversion at four places by default, as before", () => {
+      // docs/specs/money-precision.md section 6: 100.00 USD at 1.3652.
+      expect(applyFxConversion(100, 1.3652, null)).toEqual({
+        base: 136.52,
+        fee: 0,
+        amount: 136.52,
+      });
+      expect(applyFxConversion(1700, 0.0000073529, null).amount).toBe(0.0125);
+      expect(
+        applyFxConversion(1700, 0.0000073529, null, { toDecimals: 4 }),
+      ).toEqual(applyFxConversion(1700, 0.0000073529, null));
+    });
+
+    it("rounds a conversion into a coin at the coin's precision", () => {
+      // 1,700 CAD into BTC at 0.0000073529 BTC per CAD.
+      expect(
+        applyFxConversion(1700, 0.0000073529, null, { toDecimals: 8 }),
+      ).toEqual({ base: 0.01249993, fee: 0, amount: 0.01249993 });
+      // 1700 / 136000.1234567890 at eight places, not 0.0125.
+      expect(
+        applyFxConversion(1700, 1 / 136000.123456789, null, { toDecimals: 8 })
+          .amount,
+      ).toBe(0.01249999);
+    });
+
+    it("rounds the fee and the total at the target precision too", () => {
+      const { base, fee, amount } = applyFxConversion(
+        -1700,
+        0.0000073529,
+        2.5,
+        {
+          toDecimals: 8,
+        },
+      );
+      expect(base).toBe(-0.01249993);
+      expect(fee).toBe(-0.0003125);
+      expect(amount).toBe(-0.01281243);
+    });
   });
 
   describe("resolveFxRateOrNull", () => {

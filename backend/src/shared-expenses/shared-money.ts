@@ -15,7 +15,15 @@ export function invalidSharedAmount(): never {
   );
 }
 
-/** Decimal strings stay exact until the explicit legacy-ledger boundary. */
+/**
+ * Decimal strings stay exact until the explicit legacy-ledger boundary.
+ *
+ * Digits past `places` are accepted only when every one is zero: a bank
+ * movement's `transactions.amount` is `NUMERIC(24,8)`, so PostgreSQL returns a
+ * stored fiat `12.3400` as `12.34000000` (`docs/specs/money-precision.md`
+ * decision 1), which is the same value at four places. A non-zero digit past `places` is still refused, never
+ * rounded; request bodies keep their own four-place `@Matches`.
+ */
 export function fixedUnits(
   value: string,
   places: number,
@@ -32,8 +40,9 @@ export function fixedUnits(
   )
     invalidSharedAmount();
   const negative = value.startsWith("-");
-  const [whole, fraction = ""] = (negative ? value.slice(1) : value).split(".");
-  if (fraction.length > places) invalidSharedAmount();
+  const [whole, padded = ""] = (negative ? value.slice(1) : value).split(".");
+  if (/[1-9]/.test(padded.slice(places))) invalidSharedAmount();
+  const fraction = padded.slice(0, places);
   const units =
     BigInt(whole) * 10n ** BigInt(places) +
     BigInt(fraction.padEnd(places, "0") || "0");

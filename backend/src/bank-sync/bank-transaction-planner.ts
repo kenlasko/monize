@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { addDaysYMD } from "../common/date-utils";
 import { roundMoney } from "../common/round.util";
+import { BANK_SYNC_MONEY_DECIMALS } from "./bank-sync.constants";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../common/transaction-note";
 import { isCalendarDate } from "../common/validators/is-calendar-date.validator";
 import {
@@ -274,7 +275,10 @@ function classify(row: BankTransaction, ctx: BankImportContext): Classified {
     return { kind: "refused", reason: "currency_mismatch" };
   }
 
-  const absoluteAmount = roundMoney(Number(amountText));
+  const absoluteAmount = roundMoney(
+    Number(amountText),
+    BANK_SYNC_MONEY_DECIMALS,
+  );
   const signed = row.direction === "debit" ? -absoluteAmount : absoluteAmount;
   const remittance = remittanceLinesOf(row);
   const description = descriptionOf(row, remittance);
@@ -406,7 +410,7 @@ function unplannedEntry(row: BankTransaction, c: Classified): PlanEntry {
   const remittance = remittanceLinesOf(row);
   const amountText = row.amount?.trim() ?? "";
   const magnitude = AMOUNT_PATTERN.test(amountText)
-    ? roundMoney(Number(amountText))
+    ? roundMoney(Number(amountText), BANK_SYNC_MONEY_DECIMALS)
     : null;
   const signed =
     magnitude === null ||
@@ -555,7 +559,7 @@ function nextOccurrence(
 function keyFor(draft: Draft, occurrences: Map<string, number>): string {
   if (draft.providerKey !== null) return draft.providerKey;
   if (draft.entryReference !== null) {
-    const base = `ref:${draft.entryReference}|${draft.transactionDate}|${draft.amount.toFixed(4)}`;
+    const base = `ref:${draft.entryReference}|${draft.transactionDate}|${draft.amount.toFixed(BANK_SYNC_MONEY_DECIMALS)}`;
     return fitKey("ref:", `${base}:${nextOccurrence(base, occurrences)}`);
   }
   const hash = sha256Hex(hashInput(draft));

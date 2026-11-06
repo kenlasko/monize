@@ -50,7 +50,19 @@ import {
   MortgageAmortizationResult,
 } from "./mortgage-amortization.util";
 import { Cron } from "@nestjs/schedule";
-import { roundMoney, sumMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  MONEY_SCALE,
+  moneyDecimalsFor,
+  roundMoney,
+  sumMoney,
+} from "../common/round.util";
+import { assertAmountPrecision } from "../common/amount-precision.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+  precisionCurrencyFor,
+} from "../common/currency-places.util";
 import { tr } from "../i18n/translate";
 import {
   brokerageSuffix,
@@ -194,6 +206,33 @@ export interface LlmAccountRow {
 }
 
 /**
+ * Refuse an account amount (an opening balance, a balance threshold) with more
+ * places than `currencyCode` carries (INV-MONEY-001), inside the caller's write
+ * transaction and before it writes, and return that currency's money
+ * precision for the arithmetic that follows. The currency row is read once.
+ */
+async function assertAccountAmountsPrecision(
+  m: EntityManager,
+  currencyCode: string,
+  amounts: Readonly<Record<string, number | string | null | undefined>>,
+): Promise<number> {
+  const places = await loadCurrencyPlaces(m, [currencyCode]);
+  const currency = precisionCurrencyFor(places, currencyCode);
+  for (const [field, amount] of Object.entries(amounts)) {
+    if (amount === undefined || amount === null) continue;
+    assertAmountPrecision(amount, currency, field);
+  }
+  return moneyDecimalsForCode(places, currencyCode);
+}
+
+/** A raw `decimal_places` column value as `moneyDecimalsFor` reads it. */
+function placesOrNull(
+  value: number | string | null | undefined,
+): number | null {
+  return value === null || value === undefined ? null : Number(value);
+}
+
+/**
  * The one statement that moves `accounts.current_balance` by a delta
  * (`docs/concurrency-and-idempotency.md` section 2, row 1). PostgreSQL does the
  * arithmetic after it wins the row lock, so two concurrent deltas compose
@@ -212,15 +251,30 @@ export async function applyAccountBalanceDelta(
   m: EntityManager,
   accountId: string,
   delta: number,
-  options: { openOnly: boolean },
+  options: {
+    openOnly: boolean;
+    /**
+     * The money precision of the account's currency
+     * (`moneyDecimalsFor(currency.decimalPlaces)`). Omitted, the delta is
+     * normalized at the column scale, `MONEY_SCALE`: exact for a delta its
+     * caller already rounded at the account's precision, which every balance
+     * writer does (AGENTS.md "Financial math": round every result, a delta
+     * included).
+     */
+    decimals?: number;
+  },
 ): Promise<number> {
   const closedPredicate = options.openOnly ? " AND is_closed = false" : "";
+  // The delta is rounded at the account currency's precision here and the
+  // stored balance is already at it, so the sum is exact at that precision
+  // and the statement rounds nothing: a coin's -0.00002500 lands exactly,
+  // where the old ROUND(..., 4) left it at zero.
   const updated: unknown = await m.query(
     `UPDATE accounts
-        SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 4)
+        SET current_balance = CAST(current_balance AS numeric) + $1
       WHERE id = $2${closedPredicate}
       RETURNING id`,
-    [delta, accountId],
+    [roundMoney(delta, options.decimals ?? MONEY_SCALE), accountId],
   );
   return affectedRowCount(updated);
 }
@@ -246,15 +300,18 @@ export async function recalculateUserCurrentBalances(
     accounts.map((a) => a.id),
     userId,
   );
+  // A sum of amounts each stored at the account currency's precision is
+  // exact at it, so the recompute writes it unrounded: rounding at four would
+  // drop a coin's satoshis.
   await manager.query(
     `UPDATE accounts a
-        SET current_balance = ROUND(CAST(COALESCE(a.opening_balance, 0) + COALESCE((
+        SET current_balance = CAST(COALESCE(a.opening_balance, 0) + COALESCE((
               SELECT SUM(t.amount)
                 FROM transactions t
                WHERE t.account_id = a.id
                  AND ${LEDGER_MOVEMENT_PREDICATE}
                  AND t.transaction_date <= $2
-            ), 0) AS numeric), 4)
+            ), 0) AS numeric)
       WHERE a.user_id = $1`,
     [userId, today],
   );
@@ -367,6 +424,21 @@ export class AccountsService {
       return this.createInvestmentAccountPair(userId, createAccountDto);
     }
 
+    // A loan or a mortgage is fiat (INV-CRYPTO-001, refused by kind on its
+    // own path), so its opening balance carries at most the fiat four places.
+    // A pure check of the request: it reads nothing, so it refuses before the
+    // delegated path opens its transaction.
+    if (
+      accountData.accountType === AccountType.LOAN ||
+      accountData.accountType === AccountType.MORTGAGE
+    ) {
+      assertAmountPrecision(
+        openingBalance,
+        { code: accountData.currencyCode, decimalPlaces: FIAT_MONEY_DECIMALS },
+        "openingBalance",
+      );
+    }
+
     // If creating a loan account with payment details, delegate to loan creation method
     if (
       accountData.accountType === AccountType.LOAN &&
@@ -454,6 +526,10 @@ export class AccountsService {
         accountData.accountType,
         accountData.currencyCode,
       );
+      // INV-MONEY-001: the opening balance at the currency's precision.
+      await assertAccountAmountsPrecision(m, accountData.currencyCode, {
+        openingBalance,
+      });
       const repo = m.getRepository(Account);
       const account = repo.create({
         ...accountData,
@@ -502,6 +578,9 @@ export class AccountsService {
         AccountType.INVESTMENT,
         accountData.currencyCode,
       );
+      await assertAccountAmountsPrecision(m, accountData.currencyCode, {
+        openingBalance,
+      });
       const repo = m.getRepository(Account);
 
       // Suffixes are localized to the requester's language so the generated
@@ -670,6 +749,17 @@ export class AccountsService {
         ],
       );
 
+      // Each account's sums are in its own currency, rounded at its precision.
+      const places = await loadCurrencyPlaces(
+        m,
+        accounts.map((a) => a.currencyCode),
+      );
+      const decimalsOf = new Map(
+        accounts.map((a) => [
+          a.id,
+          moneyDecimalsForCode(places, a.currencyCode),
+        ]),
+      );
       const txCountMap = new Map<string, number>();
       for (const row of txCounts)
         txCountMap.set(row.accountId, parseInt(row.cnt, 10));
@@ -678,7 +768,10 @@ export class AccountsService {
         invTxCountMap.set(row.accountId, parseInt(row.cnt, 10));
       const futureSumMap = new Map<string, number>();
       for (const row of futureSums)
-        futureSumMap.set(row.accountId, roundMoney(Number(row.futureSum)));
+        futureSumMap.set(
+          row.accountId,
+          roundMoney(Number(row.futureSum), decimalsOf.get(row.accountId)),
+        );
       const lastReconciledMap = new Map<string, string>();
       for (const row of lastReconciled)
         lastReconciledMap.set(row.accountId, row.lastReconciledDate);
@@ -692,7 +785,7 @@ export class AccountsService {
       for (const row of currentSums)
         currentBalanceMap.set(
           row.accountId,
-          roundMoney(Number(row.currentBalance)),
+          roundMoney(Number(row.currentBalance), decimalsOf.get(row.accountId)),
         );
 
       return accounts.map((account) => ({
@@ -1059,6 +1152,19 @@ export class AccountsService {
           );
         }
 
+        // An opening balance or a threshold is in the account's (next)
+        // currency: refused, before any write, when it carries more places
+        // than that currency does (INV-MONEY-001).
+        const moneyDecimals = await assertAccountAmountsPrecision(
+          m,
+          updateAccountDto.currencyCode ?? account.currencyCode,
+          {
+            openingBalance: updateAccountDto.openingBalance,
+            lowBalanceThreshold: updateAccountDto.lowBalanceThreshold,
+            highBalanceThreshold: updateAccountDto.highBalanceThreshold,
+          },
+        );
+
         // Currency is locked once the account has transactions. Allowing it to
         // change after that would silently re-denominate existing balances.
         if (
@@ -1096,8 +1202,10 @@ export class AccountsService {
           // difference is a balance chosen for the new currency.
           const replacesOpeningBalance =
             updateAccountDto.openingBalance !== undefined &&
-            roundMoney(Number(updateAccountDto.openingBalance)) !==
-              roundMoney(Number(account.openingBalance));
+            roundMoney(
+              Number(updateAccountDto.openingBalance),
+              moneyDecimals,
+            ) !== roundMoney(Number(account.openingBalance), moneyDecimals);
           const keepsOldOpeningBalance =
             !replacesOpeningBalance && Number(account.openingBalance) !== 0;
           if (keepsOldOpeningBalance || scheduleCount > 0) {
@@ -1158,6 +1266,7 @@ export class AccountsService {
           // Adjust currentBalance by the difference
           account.currentBalance = roundMoney(
             Number(account.currentBalance) + difference,
+            moneyDecimals,
           );
         }
 
@@ -1335,7 +1444,8 @@ export class AccountsService {
         // (docs/specs/loan-installment-settlement.md section 14.3). A value
         // difference, not the field being sent: the form resends it.
         const amountOrNull = (value: number | string | null | undefined) =>
-          value == null ? null : roundMoney(Number(value));
+          // A loan's or mortgage's principal: fiat (INV-CRYPTO-001).
+          value == null ? null : roundMoney(Number(value), FIAT_MONEY_DECIMALS);
         const originalPrincipalChanged =
           updateAccountDto.originalPrincipal !== undefined &&
           amountOrNull(updateAccountDto.originalPrincipal) !==
@@ -1769,11 +1879,21 @@ export class AccountsService {
    *   a throw rather than reporting success. The ledger mutation shares this
    *   transaction, so the throw rolls it back too.
    */
-  async updateBalance(accountId: string, amount: number): Promise<Account> {
+  async updateBalance(
+    accountId: string,
+    amount: number,
+    /**
+     * The money precision of the account's currency, when the caller holds it
+     * (`moneyDecimalsFor(currency.decimalPlaces)`); the delta is rounded at
+     * it (see `applyAccountBalanceDelta`).
+     */
+    decimals?: number,
+  ): Promise<Account> {
     // One statement: lock, re-check `is_closed`, apply the delta, report back.
     return withScopedDb(this.dataSource, async (m) => {
       const affected = await applyAccountBalanceDelta(m, accountId, amount, {
         openOnly: true,
+        decimals,
       });
       if (affected === 0) {
         // No row matched: either the account is gone or it is closed. Tell those
@@ -1852,13 +1972,17 @@ export class AccountsService {
     userId: string,
     accountId: string,
   ): Promise<Account> {
-    const balanceSql = `SELECT COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
+    // The currency's places ride along, so the recompute rounds at the
+    // account's own precision without a second read.
+    const balanceSql = `SELECT COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance,
+            c.decimal_places as "decimalPlaces"
        FROM accounts a
+       LEFT JOIN currencies c ON c.code = a.currency_code
        LEFT JOIN transactions t ON t.account_id = a.id
          AND ${LEDGER_MOVEMENT_PREDICATE}
          AND t.transaction_date <= $2
       WHERE a.id = $1
-      GROUP BY a.id, a.opening_balance`;
+      GROUP BY a.id, a.opening_balance, c.decimal_places`;
 
     const today = todayYMD();
 
@@ -1866,10 +1990,10 @@ export class AccountsService {
       // First statement of the transaction, before the ledger is read.
       await lockAccountsForBalanceWrite(m, [accountId], userId);
 
-      const result: { balance: string }[] = await m.query(balanceSql, [
-        accountId,
-        today,
-      ]);
+      const result: {
+        balance: string;
+        decimalPlaces?: number | string | null;
+      }[] = await m.query(balanceSql, [accountId, today]);
       if (result.length === 0) {
         throw new NotFoundException(
           tr(
@@ -1880,7 +2004,10 @@ export class AccountsService {
         );
       }
 
-      const newBalance = roundMoney(Number(result[0].balance));
+      const newBalance = roundMoney(
+        Number(result[0].balance),
+        moneyDecimalsFor(placesOrNull(result[0].decimalPlaces)),
+      );
       await m.query(`UPDATE accounts SET current_balance = $1 WHERE id = $2`, [
         newBalance,
         accountId,
@@ -1902,21 +2029,27 @@ export class AccountsService {
     userId: string,
     accountId: string,
   ): Promise<number> {
-    const result: { balance: string }[] = await withScopedDb(
-      this.dataSource,
-      (m) =>
-        m.query(
-          `SELECT COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) AS balance
+    const result: {
+      balance: string;
+      decimalPlaces?: number | string | null;
+    }[] = await withScopedDb(this.dataSource, (m) =>
+      m.query(
+        `SELECT COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) AS balance,
+                c.decimal_places AS "decimalPlaces"
          FROM accounts a
+         LEFT JOIN currencies c ON c.code = a.currency_code
          LEFT JOIN transactions t ON t.account_id = a.id
            AND t.user_id = $2
            AND ${LEDGER_MOVEMENT_PREDICATE}
         WHERE a.id = $1 AND a.user_id = $2
-        GROUP BY a.id, a.opening_balance`,
-          [accountId, userId],
-        ),
+        GROUP BY a.id, a.opening_balance, c.decimal_places`,
+        [accountId, userId],
+      ),
     );
-    return roundMoney(Number(result?.[0]?.balance ?? 0));
+    return roundMoney(
+      Number(result?.[0]?.balance ?? 0),
+      moneyDecimalsFor(placesOrNull(result?.[0]?.decimalPlaces)),
+    );
   }
 
   /**
@@ -1968,9 +2101,16 @@ export class AccountsService {
       month.assetsFxComplete && accountsFxComplete && pricesComplete;
     const liabilitiesComplete = month.liabilitiesFxComplete;
     const fxComplete = month.fxComplete && accountsFxComplete;
-    const knownAssetsSubtotal = roundMoney(month.assets);
-    const knownLiabilitiesSubtotal = roundMoney(month.liabilities);
-    const knownNetWorthSubtotal = roundMoney(month.netWorth);
+    // Reporting-currency figures: a coin is never the reporting currency.
+    const knownAssetsSubtotal = roundMoney(month.assets, FIAT_MONEY_DECIMALS);
+    const knownLiabilitiesSubtotal = roundMoney(
+      month.liabilities,
+      FIAT_MONEY_DECIMALS,
+    );
+    const knownNetWorthSubtotal = roundMoney(
+      month.netWorth,
+      FIAT_MONEY_DECIMALS,
+    );
 
     return {
       totalAssets: assetsComplete ? knownAssetsSubtotal : null,
@@ -2007,8 +2147,13 @@ export class AccountsService {
     // identical net worth. The previous naive currentBalance classification
     // here ignored brokerage market value and futureTransactionsSum, producing
     // a different number than the rest of the app.
+    //
+    // The sum crosses currencies, so it is summed at the column scale: every
+    // balance is already at its own currency's precision, so a fiat-only sum
+    // is the four-place figure it always was and a coin's places survive.
     const totalBalance = sumMoney(
       accounts.map((account) => Number(account.currentBalance)),
+      MONEY_SCALE,
     );
 
     const marketValues =
@@ -2162,8 +2307,18 @@ export class AccountsService {
         missingPairs.add(`${currency}->${defaultCurrency}`);
         return null;
       }
-      return roundMoney(amount * rate);
+      return roundMoney(amount * rate, FIAT_MONEY_DECIMALS);
     };
+
+    // Each account's own figures round at its currency's precision, read once.
+    const places = await withScopedDb(this.dataSource, (m) =>
+      loadCurrencyPlaces(
+        m,
+        accounts.map((a) => a.currencyCode),
+      ),
+    );
+    const decimalsOf = (a: (typeof accounts)[number]): number =>
+      moneyDecimalsForCode(places, a.currencyCode);
 
     // A brokerage's figure is its market value. An account absent from the map
     // holds no position, which is zero rather than an unpriced holding; one
@@ -2179,16 +2334,23 @@ export class AccountsService {
     const ledgerBalance = (a: (typeof accounts)[number]): number =>
       roundMoney(
         Number(a.currentBalance) + Number(a.futureTransactionsSum ?? 0),
+        decimalsOf(a),
       );
     const balanceOf = (a: (typeof accounts)[number]): number | null => {
       if (!isBrokerage(a)) return ledgerBalance(a);
       const value = marketValueOf(a);
       if (!value) return 0;
-      return value.marketValue === null ? null : roundMoney(value.marketValue);
+      // A brokerage's market value is investment money: fiat.
+      return value.marketValue === null
+        ? null
+        : roundMoney(value.marketValue, FIAT_MONEY_DECIMALS);
     };
     const knownBalanceOf = (a: (typeof accounts)[number]): number => {
       if (!isBrokerage(a)) return ledgerBalance(a);
-      return roundMoney(marketValueOf(a)?.knownMarketValueSubtotal ?? 0);
+      return roundMoney(
+        marketValueOf(a)?.knownMarketValueSubtotal ?? 0,
+        FIAT_MONEY_DECIMALS,
+      );
     };
     // LINEAR and INTEREST_ONLY mortgages carry a dated installment in place of
     // the payment they do not store (spec section 5.6). Only loan balances feed
@@ -2205,7 +2367,10 @@ export class AccountsService {
     for (const a of accounts) {
       const balance = balanceOf(a);
       const knownBalanceSubtotal = knownBalanceOf(a);
-      const currentBalance = roundMoney(Number(a.currentBalance));
+      const currentBalance = roundMoney(
+        Number(a.currentBalance),
+        decimalsOf(a),
+      );
       // Same currency is 1:1 by definition and asks the rate table nothing.
       const exchangeRate =
         a.currencyCode === defaultCurrency ? 1 : await rateFor(a.currencyCode);
@@ -2667,18 +2832,29 @@ export class AccountsService {
 
           if (accountRows.length === 0) return 0;
 
+          // Each account's currency places ride along, so every comparison
+          // and write rounds at that account's own precision.
           const balancesSql = `SELECT a.id as account_id,
                     a.current_balance,
-                    COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
+                    COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance,
+                    c.decimal_places
                FROM accounts a
+               LEFT JOIN currencies c ON c.code = a.currency_code
                LEFT JOIN transactions t ON t.account_id = a.id
                  AND ${LEDGER_MOVEMENT_PREDICATE}
                  AND t.transaction_date <= $2
                WHERE a.id = ANY($1)
-               GROUP BY a.id, a.opening_balance, a.current_balance`;
-          const differs = (r: { balance: string; current_balance: string }) =>
-            roundMoney(Number(r.balance)) !==
-            roundMoney(Number(r.current_balance));
+               GROUP BY a.id, a.opening_balance, a.current_balance, c.decimal_places`;
+          const decimalsOf = (r: {
+            decimal_places?: number | string | null;
+          }): number => moneyDecimalsFor(placesOrNull(r.decimal_places));
+          const differs = (r: {
+            balance: string;
+            current_balance: string;
+            decimal_places?: number | string | null;
+          }) =>
+            roundMoney(Number(r.balance), decimalsOf(r)) !==
+            roundMoney(Number(r.current_balance), decimalsOf(r));
 
           // Read-only first: the catch-up window reaches every account with a
           // ledger row in the last days, and almost all are already right.
@@ -2688,6 +2864,7 @@ export class AccountsService {
             account_id: string;
             balance: string;
             current_balance: string;
+            decimal_places?: number | string | null;
           }[] = await m.query(balancesSql, [candidateIds, today]);
           const accountIds = candidateBalances
             .filter(differs)
@@ -2698,8 +2875,11 @@ export class AccountsService {
 
           // Re-read under the lock: the first read saw no lock, so a delta that
           // committed since is in this figure, not in the one above.
-          const balances: { account_id: string; balance: string }[] =
-            await m.query(balancesSql, [accountIds, today]);
+          const balances: {
+            account_id: string;
+            balance: string;
+            decimal_places?: number | string | null;
+          }[] = await m.query(balancesSql, [accountIds, today]);
 
           if (balances.length > 0) {
             // Apply all recomputed balances in a single statement instead of
@@ -2709,7 +2889,7 @@ export class AccountsService {
               .join(", ");
             const params = balances.flatMap((row) => [
               row.account_id,
-              roundMoney(Number(row.balance)),
+              roundMoney(Number(row.balance), decimalsOf(row)),
             ]);
             await m.query(
               `UPDATE accounts SET current_balance = v.balance
@@ -2790,17 +2970,30 @@ export async function applyOpeningBalanceChange(
   openingBalance: number,
 ): Promise<void> {
   await lockAccountsForBalanceWrite(m, [accountId], userId);
-  const rows: { opening_balance: string | null }[] = await m.query(
-    `SELECT opening_balance FROM accounts WHERE id = $1 AND user_id = $2`,
+  const rows: {
+    opening_balance: string | null;
+    decimal_places?: number | string | null;
+  }[] = await m.query(
+    `SELECT a.opening_balance, c.decimal_places
+       FROM accounts a
+       LEFT JOIN currencies c ON c.code = a.currency_code
+      WHERE a.id = $1 AND a.user_id = $2`,
     [accountId, userId],
   );
   if (rows.length === 0) return;
-  const newOpening = roundMoney(openingBalance);
-  const delta = roundMoney(newOpening - Number(rows[0].opening_balance ?? 0));
+  // The opening balance and the move it makes are in the account's currency,
+  // rounded at its precision; the stored balance is already at it, so the
+  // sum needs no rounding of its own.
+  const decimals = moneyDecimalsFor(placesOrNull(rows[0].decimal_places));
+  const newOpening = roundMoney(openingBalance, decimals);
+  const delta = roundMoney(
+    newOpening - Number(rows[0].opening_balance ?? 0),
+    decimals,
+  );
   await m.query(
     `UPDATE accounts
         SET opening_balance = $3,
-            current_balance = ROUND(CAST(current_balance AS numeric) + $4, 4)
+            current_balance = CAST(current_balance AS numeric) + $4
       WHERE id = $1 AND user_id = $2`,
     [accountId, userId, newOpening, delta],
   );

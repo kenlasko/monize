@@ -210,13 +210,29 @@ describe("ScheduledEffectiveAmountService", () => {
       ).not.toHaveBeenCalled();
     });
 
-    it("rounds the stored amount to money precision", async () => {
+    it("normalizes the stored amount's float residue at the column scale", async () => {
       const resolved = await service.resolveOne(
         userId,
-        plainSchedule({ amount: -1200.00004 as unknown as number }),
+        plainSchedule({ amount: -1200.000000000004 as unknown as number }),
       );
 
       expect(resolved.base.amount).toBe(-1200);
+    });
+
+    it("keeps a BTC schedule's eight places: the amount posting will write (INV-MONEY-001)", async () => {
+      // A stored amount was held to its currency's precision when written, so
+      // the effective amount is the stored one; at four places this 2,500-sat
+      // fee read as zero.
+      const resolved = await service.resolveOne(
+        userId,
+        plainSchedule({
+          amount: -0.000025 as unknown as number,
+          currencyCode: "BTC",
+        }),
+      );
+
+      expect(resolved.base.amount).toBe(-0.000025);
+      expect(resolved.base.currencyCode).toBe("BTC");
     });
   });
 

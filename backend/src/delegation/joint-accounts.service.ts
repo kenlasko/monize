@@ -8,6 +8,10 @@ import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { withSystemContext } from "../common/db/with-context";
 import { roundMoney } from "../common/round.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
 import { todayYMD } from "../common/date-utils";
 import { tr } from "../i18n/translate";
 import { Account } from "../accounts/entities/account.entity";
@@ -199,7 +203,7 @@ export class JointAccountsService {
     const exclusions = await this.getNetWorthExclusions(realUserId);
     const today = todayYMD();
 
-    const [futureSums, currentSums] = await withScopedDb(
+    const [futureSums, currentSums, places] = await withScopedDb(
       this.dataSource,
       async (manager) => {
         const future: Array<{ accountId: string; futureSum: string }> =
@@ -225,16 +229,28 @@ export class JointAccountsService {
              GROUP BY a.id, a.opening_balance`,
             [accountIds, today],
           );
-        return [future, current] as const;
+        // Each account's sums are in its own currency, rounded at its
+        // precision; the currencies are read once for the whole list.
+        const currencyPlaces = await loadCurrencyPlaces(
+          manager,
+          accounts.map((a) => a.currencyCode),
+        );
+        return [future, current, currencyPlaces] as const;
       },
     );
+    const decimalsOf = new Map(
+      accounts.map((a) => [a.id, moneyDecimalsForCode(places, a.currencyCode)]),
+    );
     const futureSumMap = new Map(
-      futureSums.map((r) => [r.accountId, roundMoney(Number(r.futureSum))]),
+      futureSums.map((r) => [
+        r.accountId,
+        roundMoney(Number(r.futureSum), decimalsOf.get(r.accountId)),
+      ]),
     );
     const currentBalanceMap = new Map(
       currentSums.map((r) => [
         r.accountId,
-        roundMoney(Number(r.currentBalance)),
+        roundMoney(Number(r.currentBalance), decimalsOf.get(r.accountId)),
       ]),
     );
 

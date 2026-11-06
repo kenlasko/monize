@@ -1006,3 +1006,88 @@ describe("SupportBackupService custom currencies", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("SupportBackupService reconcile precision", () => {
+  const BTC_ACC = "aaaaaaaa-b7c0-4111-8111-111111111111";
+  const CAD_ACC = "aaaaaaaa-cad0-4111-8111-111111111111";
+  const BTC_SPLIT_TX = "dddddddd-b7c1-4111-8111-111111111111";
+
+  type Tables = Record<string, Record<string, unknown>[]>;
+  const reconcile = (tables: Tables): Tables =>
+    (
+      makeService() as unknown as { reconcile: (t: Tables) => Tables }
+    ).reconcile(tables);
+
+  const tx = (id: string, account: string, amount: number) => ({
+    id,
+    account_id: account,
+    amount,
+    is_split: false,
+    status: "UNRECONCILED",
+    parent_transaction_id: null,
+  });
+
+  const tables = (): Tables => ({
+    currencies: [
+      { code: "BTC", decimal_places: 8 },
+      { code: "CAD", decimal_places: 2 },
+    ],
+    accounts: [
+      {
+        id: BTC_ACC,
+        currency_code: "BTC",
+        opening_balance: 0.00000001,
+        current_balance: 0,
+      },
+      {
+        id: CAD_ACC,
+        currency_code: "CAD",
+        opening_balance: 100,
+        current_balance: 0,
+      },
+    ],
+    transactions: [
+      tx("t1", BTC_ACC, 0.00000005),
+      tx("t2", BTC_ACC, 0.00000003),
+      tx("t3", CAD_ACC, 10.1),
+      tx("t4", CAD_ACC, 20.2),
+    ],
+    transaction_splits: [],
+  });
+
+  it("sums a coin account at its own eight places", () => {
+    const out = reconcile(tables());
+    expect(out.accounts[0].current_balance).toBe(0.00000009);
+  });
+
+  it("sums a fiat account at four places as before", () => {
+    const out = reconcile(tables());
+    expect(out.accounts[1].current_balance).toBe(130.3);
+  });
+
+  it("sums a coin split parent from its eight-place lines", () => {
+    const t = tables();
+    t.transactions.push({
+      ...tx(BTC_SPLIT_TX, BTC_ACC, 0),
+      is_split: true,
+    });
+    t.transaction_splits = [
+      { transaction_id: BTC_SPLIT_TX, amount: 0.00000002 },
+      { transaction_id: BTC_SPLIT_TX, amount: 0.00000004 },
+    ];
+    const out = reconcile(t);
+    expect(
+      out.transactions.find((row) => row.id === BTC_SPLIT_TX)?.amount,
+    ).toBe(0.00000006);
+    expect(out.accounts[0].current_balance).toBe(0.00000015);
+  });
+
+  it("reads an account whose currency the export lacks as fiat", () => {
+    const t = tables();
+    t.currencies = [];
+    const out = reconcile(t);
+    // 0.00000001 + 0.00000005 + 0.00000003 at four places is 0.
+    expect(out.accounts[0].current_balance).toBe(0);
+    expect(out.accounts[1].current_balance).toBe(130.3);
+  });
+});

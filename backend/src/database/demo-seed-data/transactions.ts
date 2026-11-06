@@ -742,8 +742,11 @@ function statusFor(date: Date, referenceDate: Date): string {
  * bought from Primary Chequing with the bitcoin received stated, spent once,
  * and sold back to chequing as a split whose second line is the network fee.
  * Fixed figures, no draw from the seeded generator, so adding them leaves
- * every other row's figures where they were. The wallet ends at
- * 0.0125 - 0.0004 - 0.0051 = 0.0070 BTC.
+ * every other row's figures where they were. Satoshi-level, at the coin's
+ * eight places (`docs/specs/money-precision.md` section 6): the purchase
+ * states 0.01249993 BTC received for 1,700.00 CAD, and the sale's network fee
+ * is 2,500 sats. The wallet ends at
+ * 0.01249993 - 0.00043210 - 0.00502500 = 0.00704283 BTC.
  */
 function bitcoinWalletTransactions(referenceDate: Date): DemoTransaction[] {
   const bought = daysBefore(referenceDate, 60);
@@ -760,14 +763,14 @@ function bitcoinWalletTransactions(referenceDate: Date): DemoTransaction[] {
       status: statusFor(bought, referenceDate),
       isTransfer: true,
       transferAccountKey: "crypto",
-      transferToAmount: 0.0125,
+      transferToAmount: 0.01249993,
     },
     {
       accountKey: "crypto",
       date: formatDate(spent),
       payeeName: "Starbucks",
       categoryPath: "Food > Coffee Shops",
-      amount: -0.0004,
+      amount: -0.0004321,
       description: "Coffee, paid in bitcoin",
       status: statusFor(spent, referenceDate),
     },
@@ -776,7 +779,7 @@ function bitcoinWalletTransactions(referenceDate: Date): DemoTransaction[] {
       date: formatDate(sold),
       payeeName: "Transfer",
       categoryPath: "",
-      amount: -0.0051,
+      amount: -0.005025,
       description: "Sold bitcoin",
       status: statusFor(sold, referenceDate),
       isSplit: true,
@@ -789,7 +792,7 @@ function bitcoinWalletTransactions(referenceDate: Date): DemoTransaction[] {
         },
         {
           categoryPath: "Fees > Network fee",
-          amount: -0.0001,
+          amount: -0.000025,
           memo: "Network fee",
         },
       ],

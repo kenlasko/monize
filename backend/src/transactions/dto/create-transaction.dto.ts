@@ -1,6 +1,5 @@
 import {
   IsString,
-  IsNumber,
   IsOptional,
   IsDateString,
   IsUUID,
@@ -22,6 +21,8 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { IsCurrencyCode } from "../../common/validators/is-currency-code.validator";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
 import { EXTERNAL_ID_MAX_LENGTH } from "../transaction-external-id";
+import { IsFxRate } from "../../common/validators/is-fx-rate.validator";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 export class CreateTransactionDto {
   @ApiProperty({ description: "Account ID where the transaction occurs" })
@@ -58,7 +59,7 @@ export class CreateTransactionDto {
     description:
       "Transaction amount (positive for income, negative for expense)",
   })
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(-999999999999)
   @Max(999999999999)
   amount: number;
@@ -69,8 +70,9 @@ export class CreateTransactionDto {
 
   @ApiPropertyOptional({ description: "Exchange rate (defaults to 1.0)" })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 10 })
-  @Min(0.000001)
+  // Positive and representable at the rate column's ten places (1e-10): a
+  // CAD->BTC rate is 0.0000073529.
+  @IsFxRate()
   exchangeRate?: number;
 
   @ApiPropertyOptional({
@@ -78,7 +80,7 @@ export class CreateTransactionDto {
       "Original amount as entered in the foreign currency the user actually paid in. Provided together with originalCurrencyCode; amount stays in the account currency.",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(-999999999999)
   @Max(999999999999)
   originalAmount?: number | null;

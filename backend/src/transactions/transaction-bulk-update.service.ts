@@ -39,7 +39,7 @@ import { tr } from "../i18n/translate";
 import { withScopedDb } from "../common/db/scoped-db";
 import { lockTransactionRows } from "../common/db/locks";
 import { deletionBalanceEffect } from "../common/deletion-balance.util";
-import { roundMoney } from "../common/round.util";
+import { MONEY_SCALE, sumMoney } from "../common/round.util";
 import { investmentCashLegLockedError } from "./void-status-transition.util";
 import {
   assertReconciledIdsMutable,
@@ -762,7 +762,13 @@ export class TransactionBulkUpdateService {
         const { delta, needsRecalc } = deletionBalanceEffect(tx);
         if (delta !== 0) {
           const current = balanceAdjustments.get(tx.accountId) ?? 0;
-          balanceAdjustments.set(tx.accountId, roundMoney(current + delta));
+          // Stored amounts of one account, summed exactly at the column
+          // scale: each delta already carries its currency's places, so
+          // nothing is dropped from a coin's satoshis (INV-MONEY-001).
+          balanceAdjustments.set(
+            tx.accountId,
+            sumMoney([current, delta], MONEY_SCALE),
+          );
         }
         if (needsRecalc) recalcAccountIds.add(tx.accountId);
       }

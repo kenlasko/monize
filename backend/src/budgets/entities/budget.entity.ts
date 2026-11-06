@@ -110,8 +110,8 @@ export class Budget {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "base_income",
     nullable: true,
     transformer: decimalTransformer,

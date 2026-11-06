@@ -13,11 +13,17 @@ import {
 import {
   ImportContext,
   bondStateOf,
+  currencyMoneyDecimals,
   recordSkippedRow,
   resolveImportedSeriesMemo,
   updateAccountBalance,
 } from "./import-context";
-import { roundMoney, roundToDecimals } from "../common/round.util";
+import { assertAmountPrecision } from "../common/amount-precision.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  roundMoney,
+  roundToDecimals,
+} from "../common/round.util";
 import { resolveFxRateOrNull } from "../common/fx-entry.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { baseInvestmentAction } from "../securities/investment-replay.util";
@@ -53,16 +59,20 @@ export class ImportInvestmentProcessorService {
    * because it silently moves a real balance by the wrong number.
    */
   private async resolveCashAmountInAccountCurrency(
+    ctx: ImportContext,
     amount: number,
     securityCurrencyCode: string | null,
     cashAccountCurrencyCode: string,
     transactionDate: string | Date,
   ): Promise<{ amount: number; exchangeRate: number } | null> {
+    // The result is in the cash account's currency, so it rounds at that
+    // currency's money precision.
+    const decimals = await currencyMoneyDecimals(ctx, cashAccountCurrencyCode);
     if (
       !securityCurrencyCode ||
       securityCurrencyCode === cashAccountCurrencyCode
     ) {
-      return { amount: roundMoney(amount), exchangeRate: 1 };
+      return { amount: roundMoney(amount, decimals), exchangeRate: 1 };
     }
 
     const dateStr =
@@ -79,7 +89,10 @@ export class ImportInvestmentProcessorService {
     if (rate === null) return null;
 
     const exchangeRate = rate;
-    return { amount: roundMoney(amount * exchangeRate), exchangeRate };
+    return {
+      amount: roundMoney(amount * exchangeRate, decimals),
+      exchangeRate,
+    };
   }
 
   async processTransaction(ctx: ImportContext, qifTx: any): Promise<void> {
@@ -173,8 +186,10 @@ export class ImportInvestmentProcessorService {
     let price = qifTx.price || 0;
     const commission = qifTx.commission || 0;
     // A QIF `T`/`$` amount is what the trade actually came to.
+    // The trade total is in the security's currency, fiat by construction
+    // (INV-CRYPTO-001), so it rounds at the fiat precision.
     const sourceTotal = qifTx.amount
-      ? roundMoney(Math.abs(qifTx.amount))
+      ? roundMoney(Math.abs(qifTx.amount), FIAT_MONEY_DECIMALS)
       : null;
     let totalAmount =
       sourceTotal ?? roundToDecimals(quantity * price + commission, 2);
@@ -377,6 +392,15 @@ export class ImportInvestmentProcessorService {
     // source-flagged void, so a cancelled transfer never lands live.
     const status = statusFromQifFlags(qifTx);
 
+    // The cash leg is an amount in the cash account's currency: refused, not
+    // rounded, when the file carries more places than that currency does.
+    const cashDecimals = await currencyMoneyDecimals(ctx, cashCurrencyCode);
+    assertAmountPrecision(
+      cashAmount,
+      { code: cashCurrencyCode, decimalPlaces: cashDecimals },
+      "amount",
+    );
+
     let transferAccountId: string | null =
       qifTx.isTransfer && qifTx.transferAccount
         ? (ctx.accountMap.get(qifTx.transferAccount) ?? null)
@@ -450,7 +474,12 @@ export class ImportInvestmentProcessorService {
       isTransfer: !!transferAccountId,
     });
     const savedCashTx = await ctx.manager.save(cashTx);
-    await updateAccountBalance(ctx.manager, cashAccountId, cashAmount);
+    await updateAccountBalance(
+      ctx.manager,
+      cashAccountId,
+      cashAmount,
+      cashDecimals,
+    );
 
     if (transferAccountId) {
       ctx.affectedAccountIds.add(transferAccountId);
@@ -465,6 +494,7 @@ export class ImportInvestmentProcessorService {
       // P5-003 shape); convert it, or leave the cash leg standing alone
       // rather than moving the target's balance by a mislabelled number.
       const counterpart = await this.resolveCashAmountInAccountCurrency(
+        ctx,
         -cashAmount,
         cashCurrencyCode,
         targetCurrency,
@@ -506,6 +536,7 @@ export class ImportInvestmentProcessorService {
           ctx.manager,
           transferAccountId,
           counterpart.amount,
+          await currencyMoneyDecimals(ctx, targetCurrency),
         );
       }
     }
@@ -590,6 +621,7 @@ export class ImportInvestmentProcessorService {
 
     // The cash leg lives in the cash account, so it is denominated there.
     const converted = await this.resolveCashAmountInAccountCurrency(
+      ctx,
       cashAmountInSecurityCurrency,
       securityCurrency,
       cashAccountCurrency,
@@ -637,6 +669,7 @@ export class ImportInvestmentProcessorService {
       // avoids) -- convert it, or leave the cash leg standing alone rather
       // than posting a mislabelled amount.
       const counterpart = await this.resolveCashAmountInAccountCurrency(
+        ctx,
         -cashAmount,
         cashAccountCurrency,
         ctx.account.currencyCode,
@@ -682,6 +715,11 @@ export class ImportInvestmentProcessorService {
 
     await ctx.manager.save(investmentTx);
 
-    await updateAccountBalance(ctx.manager, cashAccountId, cashAmount);
+    await updateAccountBalance(
+      ctx.manager,
+      cashAccountId,
+      cashAmount,
+      await currencyMoneyDecimals(ctx, cashAccountCurrency),
+    );
   }
 }

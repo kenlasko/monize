@@ -14,6 +14,7 @@ import { Transform } from "class-transformer";
 import { IsCurrencyCode } from "../../common/validators/is-currency-code.validator";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { CURRENCY_KINDS, CurrencyKind } from "../entities/currency.entity";
+import { MONEY_SCALE } from "../../common/round.util";
 
 /**
  * What a price symbol may be spelled with: Yahoo's coin tickers and the hyphen
@@ -43,11 +44,22 @@ export class CreateCurrencyDto {
   @SanitizeHtml()
   symbol: string;
 
-  @ApiProperty({ example: 2, required: false })
+  /**
+   * Bounded by the money columns' scale, `NUMERIC(24,8)` (`MONEY_SCALE`): a
+   * currency cannot carry more places than an amount is stored at
+   * (`docs/specs/money-precision.md` decision 2). The table's
+   * `currencies_decimal_places_check` holds the same range.
+   */
+  @ApiProperty({
+    example: 2,
+    required: false,
+    minimum: 0,
+    maximum: MONEY_SCALE,
+  })
   @IsOptional()
   @IsInt()
   @Min(0)
-  @Max(4)
+  @Max(MONEY_SCALE)
   decimalPlaces?: number;
 
   @ApiProperty({ example: true, required: false })

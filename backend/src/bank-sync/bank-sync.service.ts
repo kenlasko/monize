@@ -27,7 +27,10 @@ import { isCalendarDate } from "../common/validators/is-calendar-date.validator"
 import { tr } from "../i18n/translate";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
 import { NetWorthService } from "../net-worth/net-worth.service";
-import { SYNC_LEASE_TTL_MS } from "./bank-sync.constants";
+import {
+  BANK_SYNC_MONEY_DECIMALS,
+  SYNC_LEASE_TTL_MS,
+} from "./bank-sync.constants";
 import type { BankSyncConnectionStatus } from "./bank-sync.constants";
 import { BankSyncCredentialsService } from "./bank-sync-credentials.service";
 import {
@@ -106,7 +109,7 @@ export function normalizeBankBalance(
   }
   const referenceDate = balance.referenceDate?.trim();
   return {
-    amount: roundMoney(Number(amountText)),
+    amount: roundMoney(Number(amountText), BANK_SYNC_MONEY_DECIMALS),
     ...(balance.reportedAt !== undefined
       ? { reportedAt: balance.reportedAt }
       : {}),
@@ -538,7 +541,7 @@ export class BankSyncService {
             balance === null
               ? null
               : {
-                  amount: balance.amount.toFixed(4),
+                  amount: balance.amount.toFixed(BANK_SYNC_MONEY_DECIMALS),
                   currencyCode: balance.currencyCode,
                   referenceDate: balance.referenceDate,
                 },

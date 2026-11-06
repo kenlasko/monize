@@ -20,6 +20,7 @@ import {
   MORTGAGE_TYPE_DETECTION_REASONS,
   MortgageTypeDetectionReason,
 } from "../mortgage-type-detection.util";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 /** The most installments a detection request may carry. */
 export const MAX_MORTGAGE_TYPE_SAMPLES = 12;
@@ -29,7 +30,7 @@ export class MortgageTypeSampleDto {
     example: 833.33,
     description: "Principal portion of the installment, as a positive amount",
   })
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0)
   @Max(999999999999)
   principal: number;
@@ -38,7 +39,7 @@ export class MortgageTypeSampleDto {
     example: 500,
     description: "Interest portion of the installment, as a positive amount",
   })
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(0)
   @Max(999999999999)
   interest: number;
@@ -49,7 +50,7 @@ export class MortgageTypeSampleDto {
       "The debt the installment was charged on, when the statement shows it. Lets the interest-to-balance ratio decide the compounding.",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @IsPositive()
   @Max(999999999999)
   balanceBefore?: number | null;

@@ -5,14 +5,14 @@ import { roundFxRate } from "../../common/fx-entry.util";
 /**
  * The demo's cryptocurrency (`docs/future-plans/crypto-accounts.md`, the
  * contract shared by every phase): Bitcoin, priced from Yahoo's `BTC-CAD`,
- * at the four places money holds (`docs/specs/crypto-accounts.md`,
- * decision 4).
+ * at its own eight places, the most money holds
+ * (`docs/specs/money-precision.md` decision 2).
  */
 export const DEMO_CRYPTO_CURRENCY = {
   code: "BTC",
   name: "Bitcoin",
   symbol: "₿",
-  decimals: 4,
+  decimals: 8,
   kind: "CRYPTO",
   quoteSymbol: "BTC-CAD",
 } as const;

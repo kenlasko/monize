@@ -28,6 +28,7 @@ import {
   PREPAYMENT_MODES,
   PrepaymentMode,
 } from "../mortgage-type.util";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 export class UpdateAccountDto {
   @ApiPropertyOptional({
@@ -63,7 +64,7 @@ export class UpdateAccountDto {
     description: "Opening balance for the account",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(-999999999999)
   @Max(999999999999)
   openingBalance?: number;
@@ -112,7 +113,7 @@ export class UpdateAccountDto {
     description: "Credit limit (for credit cards)",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @IsPositive()
   creditLimit?: number;
 
@@ -134,7 +135,7 @@ export class UpdateAccountDto {
   })
   @IsOptional()
   @ValidateIf((_o, value) => value !== null)
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(-999999999999)
   @Max(999999999999)
   lowBalanceThreshold?: number | null;
@@ -147,7 +148,7 @@ export class UpdateAccountDto {
   })
   @IsOptional()
   @ValidateIf((_o, value) => value !== null)
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount()
   @Min(-999999999999)
   @Max(999999999999)
   highBalanceThreshold?: number | null;
@@ -205,7 +206,7 @@ export class UpdateAccountDto {
     description: "Monthly payment amount for loans",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @IsPositive()
   paymentAmount?: number;
 
@@ -372,7 +373,7 @@ export class UpdateAccountDto {
       "Loans and mortgages: the amount originally borrowed, kept apart from the opening balance (the debt where this ledger starts). A LINEAR mortgage's constant principal is this over the scheduled payment count; null falls back to the opening balance. A LINEAR mortgage's scheduled payment is repriced when it changes",
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @IsPositive()
   @Max(999999999999)
   originalPrincipal?: number | null;

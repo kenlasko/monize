@@ -1,6 +1,9 @@
+import { MONEY_SCALE } from "../../common/round.util";
+
 /**
  * Primitive obfuscation operations shared by the rules engine and the JSONB
- * handlers. Kept dependency-free so they are trivially unit-testable.
+ * handlers. Kept dependency-free (bar the money-scale constant) so they are
+ * trivially unit-testable.
  */
 
 /**
@@ -28,13 +31,16 @@ export function maskText(value: unknown): unknown {
 }
 
 /**
- * Multiplies a monetary value by the obfuscation multiplier, rounding to four
- * decimal places (the `decimal(20,4)` money scale) via integer arithmetic to
- * avoid floating-point drift, per the project's financial-math convention.
+ * Multiplies a monetary value by the obfuscation multiplier, rounding to
+ * `MONEY_SCALE` (eight) decimal places, the scale of the money columns, via
+ * integer arithmetic to avoid floating-point drift, per the project's
+ * financial-math convention. Rounding at four would truncate a coin amount in
+ * the support copy (0.00002500 BTC scaled by 1.5 is 0.000037500, not 0.0000);
+ * a fiat value carries at most four places on the way in, so it is unchanged.
  * Null/undefined pass through; unparseable values are returned unchanged.
  */
 export function scaleMoney(value: unknown, multiplier: number): unknown {
-  return scaleTo(value, multiplier, 4);
+  return scaleTo(value, multiplier, MONEY_SCALE);
 }
 
 /**

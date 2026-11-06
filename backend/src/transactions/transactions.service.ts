@@ -123,7 +123,13 @@ import {
   type LockedTransactionRow,
 } from "../common/db/locks";
 import { assertReconciledRowsMutable } from "./reconciled-lock.util";
-import { roundMoney } from "../common/round.util";
+import { moneyDecimalsFor, roundMoney } from "../common/round.util";
+import { assertAmountPrecision } from "../common/amount-precision.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+  precisionCurrencyFor,
+} from "../common/currency-places.util";
 import {
   assertTransactionCurrencyMatchesAccount,
   normalizeFxEntry,
@@ -501,10 +507,6 @@ export class TransactionsService {
     const { splits, tagIds, ...transactionData } = createTransactionDto;
     const hasSplits = splits && splits.length > 0;
 
-    if (hasSplits) {
-      this.splitService.validateSplits(splits, createTransactionDto.amount);
-    }
-
     // The stored primary currency is the account's; a mismatched request is
     // rejected rather than persisted beside a balance in another currency.
     const primaryCurrencyCode = assertTransactionCurrencyMatchesAccount(
@@ -601,6 +603,38 @@ export class TransactionsService {
     let savedTransactionId: string;
     try {
       savedTransactionId = await withScopedDb(this.dataSource, async (m) => {
+        // Precision refusals first, inside the write's transaction and before
+        // anything (the caller's hook included) is written: the amount and
+        // every split line are in the account's currency and carry at most its
+        // money precision; a foreign original amount carries at most its own
+        // (INV-MONEY-001). Refused, never rounded.
+        const places = await loadCurrencyPlaces(m, [
+          primaryCurrencyCode,
+          fx.originalCurrencyCode,
+        ]);
+        const accountCurrency = precisionCurrencyFor(
+          places,
+          primaryCurrencyCode,
+        );
+        assertAmountPrecision(
+          createTransactionDto.amount,
+          accountCurrency,
+          "amount",
+        );
+        if (fx.originalAmount !== null && fx.originalCurrencyCode) {
+          assertAmountPrecision(
+            fx.originalAmount,
+            precisionCurrencyFor(places, fx.originalCurrencyCode),
+            "originalAmount",
+          );
+        }
+        if (hasSplits) {
+          this.splitService.validateSplits(
+            splits,
+            createTransactionDto.amount,
+            accountCurrency,
+          );
+        }
         if (options?.beforeWrite) await options.beforeWrite(m);
         this.assertAccountOpen(account);
         const transaction = m.create(Transaction, {
@@ -799,6 +833,16 @@ export class TransactionsService {
     },
   ): Promise<CreateTransactionPreview> {
     const account = await this.accountsService.findOne(userId, input.accountId);
+    // The commit refuses an amount with more places than the account's
+    // currency carries; the preview says so first.
+    await withScopedDb(this.dataSource, async (m) => {
+      const places = await loadCurrencyPlaces(m, [account.currencyCode]);
+      assertAmountPrecision(
+        input.amount,
+        precisionCurrencyFor(places, account.currencyCode),
+        "amount",
+      );
+    });
 
     let categoryId: string | null = input.categoryId ?? null;
     let categoryName: string | null = null;
@@ -1034,6 +1078,17 @@ export class TransactionsService {
       );
     }
 
+    if (input.amount !== undefined) {
+      const newAmount = input.amount;
+      await withScopedDb(this.dataSource, async (m) => {
+        const places = await loadCurrencyPlaces(m, [existing.currencyCode]);
+        assertAmountPrecision(
+          newAmount,
+          precisionCurrencyFor(places, existing.currencyCode),
+          "amount",
+        );
+      });
+    }
     const amount = input.amount ?? Number(existing.amount);
     const transactionDate = input.transactionDate ?? existing.transactionDate;
     const description =
@@ -1516,6 +1571,17 @@ export class TransactionsService {
         data.length > 0
       );
 
+      // A running balance is a sum of amounts in the listed accounts'
+      // currencies, rounded at their money precision: a coin wallet's
+      // register keeps its satoshis (INV-MONEY-001). Several accounts mixing
+      // currencies take the finest of them, which drops nothing.
+      const needsSeed =
+        singleAccountSeed || multiAccountSeed || allAccountsSeed;
+      const balanceDecimals =
+        sortBy === "date" && needsSeed
+          ? await this.registerBalanceDecimals(m, data)
+          : moneyDecimalsFor(undefined);
+
       if (sortBy !== "date") {
         // A running balance is a figure about the row above, so it means
         // nothing beside a register ordered by payee or amount. It is withheld
@@ -1532,6 +1598,7 @@ export class TransactionsService {
           userId,
           singleAccountId!,
           balanceWindow,
+          balanceDecimals,
           rowFilters,
         );
       } else if (multiAccountSeed) {
@@ -1541,6 +1608,7 @@ export class TransactionsService {
             userId,
             accountIds,
             balanceWindow,
+            balanceDecimals,
             rowFilters,
             jointAccountIds,
           );
@@ -1551,6 +1619,7 @@ export class TransactionsService {
             userId,
             undefined,
             balanceWindow,
+            balanceDecimals,
             rowFilters,
             jointAccountIds,
           );
@@ -1828,11 +1897,29 @@ export class TransactionsService {
     }
   }
 
+  /**
+   * The money precision a register page's running balance rounds at: the
+   * finest among the currencies of the rows it lists (one, for a single
+   * account), read in one query on the listing's manager.
+   */
+  private async registerBalanceDecimals(
+    m: EntityManager,
+    rows: readonly { currencyCode: string }[],
+  ): Promise<number> {
+    const codes = [...new Set(rows.map((row) => row.currencyCode))];
+    const places = await loadCurrencyPlaces(m, codes);
+    return Math.max(
+      moneyDecimalsFor(undefined),
+      ...codes.map((code) => moneyDecimalsForCode(places, code)),
+    );
+  }
+
   private async calculateStartingBalance(
     m: EntityManager,
     userId: string,
     singleAccountId: string,
     window: RegisterPageWindow,
+    decimals: number,
     filters?: RegisterRowFilters,
   ): Promise<number> {
     const hasContentFilters = hasRegisterContentFilters(filters);
@@ -1844,6 +1931,7 @@ export class TransactionsService {
         userId,
         singleAccountId,
         window,
+        decimals,
         filters!,
       );
     }
@@ -1854,12 +1942,19 @@ export class TransactionsService {
         userId,
         singleAccountId,
         window,
+        decimals,
         filters!,
       );
     }
 
     // No filters: original behavior
-    return this.calculateUnfilteredBalance(m, userId, singleAccountId, window);
+    return this.calculateUnfilteredBalance(
+      m,
+      userId,
+      singleAccountId,
+      window,
+      decimals,
+    );
   }
 
   /**
@@ -1871,6 +1966,7 @@ export class TransactionsService {
     userId: string,
     singleAccountId: string,
     window: RegisterPageWindow,
+    decimals: number,
   ): Promise<number> {
     const projectedBalance = await this.computeProjectedBalance(
       userId,
@@ -1910,7 +2006,7 @@ export class TransactionsService {
     // A delta is money, so it is rounded like money: the projected balance
     // comes back already rounded and subtracting a raw SUM un-rounds it, so
     // the response carries 0.08999999999999986 where the account holds 0.09.
-    return roundMoney(projectedBalance - sumNewer);
+    return roundMoney(projectedBalance - sumNewer, decimals);
   }
 
   /**
@@ -1923,6 +2019,7 @@ export class TransactionsService {
     userId: string,
     accountId: string,
     window: RegisterPageWindow,
+    decimals: number,
     filters: RegisterRowFilters,
   ): Promise<number> {
     const idsSubquery = await this.buildFilteredIdsSubquery(
@@ -1944,6 +2041,7 @@ export class TransactionsService {
     return roundMoney(
       totalSum -
         (await this.computeNewerRowsSum(m, userId, accountId, window, filters)),
+      decimals,
     );
   }
 
@@ -1956,6 +2054,7 @@ export class TransactionsService {
     userId: string,
     accountIds: string[] | undefined,
     window: RegisterPageWindow,
+    decimals: number,
     filters: RegisterRowFilters,
     jointAccountIds: string[] = [],
   ): Promise<number> {
@@ -1986,6 +2085,7 @@ export class TransactionsService {
           filters,
           jointAccountIds,
         )),
+      decimals,
     );
   }
 
@@ -2000,6 +2100,7 @@ export class TransactionsService {
     userId: string,
     accountId: string,
     window: RegisterPageWindow,
+    decimals: number,
     filters: RegisterRowFilters,
   ): Promise<number> {
     let baseBalance: number;
@@ -2026,6 +2127,7 @@ export class TransactionsService {
 
       baseBalance = roundMoney(
         projectedBalance - (Number(sumAfterResult?.sum) || 0),
+        decimals,
       );
     } else {
       // Only startDate: top of list is still projected balance
@@ -2068,7 +2170,7 @@ export class TransactionsService {
       "transaction",
     ).getRawOne();
 
-    return roundMoney(baseBalance - (Number(sumResult?.sum) || 0));
+    return roundMoney(baseBalance - (Number(sumResult?.sum) || 0), decimals);
   }
 
   /**
@@ -2646,12 +2748,14 @@ export class TransactionsService {
     locked: LockedTransactionRow,
     snapshotIsTransfer: boolean,
     updateData: Omit<UpdateTransactionDto, "splits" | "tagIds" | "createdAt">,
+    /** The row currency's money precision, which the amounts compare at. */
+    decimals: number,
   ): Promise<void> {
     if (!locked.linkedTransactionId && !snapshotIsTransfer) return;
     let structural =
       (updateData.amount !== undefined &&
-        roundMoney(Number(updateData.amount)) !==
-          roundMoney(Number(locked.amount))) ||
+        roundMoney(Number(updateData.amount), decimals) !==
+          roundMoney(Number(locked.amount), decimals)) ||
       (updateData.accountId !== undefined &&
         updateData.accountId !== locked.accountId) ||
       (updateData.transactionDate !== undefined &&
@@ -2803,12 +2907,6 @@ export class TransactionsService {
       }
     }
 
-    // Validate splits before starting the transaction
-    if (splits !== undefined && Array.isArray(splits) && splits.length > 0) {
-      const amount = updateData.amount ?? transaction.amount;
-      this.splitService.validateSplits(splits, amount);
-    }
-
     // One transaction: split rebuild, field update, tags, and balance
     // adjustments commit or roll back together. Nested service calls join it.
     await withScopedDb(this.dataSource, async (m) => {
@@ -2856,12 +2954,44 @@ export class TransactionsService {
       // Strict reconciled lock, against the LOCKED row and before any write:
       // an edit refused here must not already have happened.
       await assertReconciledRowsMutable(m, userId, [locked]);
+      // The amount, every split line and the comparisons below are in the
+      // currency of the account the row will belong to; a foreign original
+      // amount in its own. Each is held to its money precision before anything
+      // is written, refused rather than rounded (INV-MONEY-001).
+      const originalCurrencyCode =
+        "originalCurrencyCode" in updateData
+          ? updateData.originalCurrencyCode
+          : transaction.originalCurrencyCode;
+      const places = await loadCurrencyPlaces(m, [
+        effectiveAccountCurrency,
+        originalCurrencyCode,
+      ]);
+      const accountCurrency = precisionCurrencyFor(
+        places,
+        effectiveAccountCurrency,
+      );
+      const decimals = moneyDecimalsFor(accountCurrency.decimalPlaces);
+      if (updateData.amount !== undefined && updateData.amount !== null) {
+        assertAmountPrecision(updateData.amount, accountCurrency, "amount");
+      }
+      if (
+        updateData.originalAmount !== undefined &&
+        updateData.originalAmount !== null &&
+        originalCurrencyCode
+      ) {
+        assertAmountPrecision(
+          updateData.originalAmount,
+          precisionCurrencyFor(places, originalCurrencyCode),
+          "originalAmount",
+        );
+      }
       await this.assertNoStructuralTransferLegEdit(
         m,
         userId,
         locked,
         transaction.isTransfer,
         updateData,
+        decimals,
       );
       // The cash leg of an investment transaction is owned by the trade: a
       // VOID crossing, a real amount or account change is refused before any
@@ -2872,8 +3002,8 @@ export class TransactionsService {
           (locked.status === TransactionStatus.VOID);
       const changesAmount =
         updateData.amount !== undefined &&
-        roundMoney(Number(updateData.amount)) !==
-          roundMoney(Number(locked.amount));
+        roundMoney(Number(updateData.amount), decimals) !==
+          roundMoney(Number(locked.amount), decimals);
       const changesAccount =
         updateData.accountId !== undefined &&
         updateData.accountId !== locked.accountId;
@@ -2894,8 +3024,8 @@ export class TransactionsService {
         locked.isSplit &&
         splits == null &&
         updateData.amount !== undefined &&
-        roundMoney(Number(updateData.amount)) !==
-          roundMoney(Number(locked.amount))
+        roundMoney(Number(updateData.amount), decimals) !==
+          roundMoney(Number(locked.amount), decimals)
       ) {
         throw new BadRequestException(
           tr(
@@ -2914,16 +3044,17 @@ export class TransactionsService {
 
       if (splits !== undefined) {
         if (Array.isArray(splits) && splits.length > 0) {
-          // Re-validate against the amount the locked row holds. The check above
-          // ran on the pre-transaction snapshot, which is an early rejection and
-          // not an authoritative one: a request that only replaces the splits
-          // takes its parent amount from that snapshot, so a concurrent amount
-          // edit that committed while this one waited for the row lock would let
-          // a split set through that does not sum to the parent it is attached
-          // to (audit FV4-002).
+          // Validated against the amount the locked row holds, not the
+          // pre-transaction snapshot: a request that only replaces the splits
+          // takes its parent amount from the row, so a concurrent amount edit
+          // that committed while this one waited for the row lock would
+          // otherwise let a split set through that does not sum to the parent
+          // it is attached to (audit FV4-002). At the account currency's
+          // precision, every line held to it.
           this.splitService.validateSplits(
             splits,
             updateData.amount ?? locked.amount,
+            accountCurrency,
           );
 
           // Read before the embedded rows are torn down: the recreated rows keep
@@ -2938,6 +3069,7 @@ export class TransactionsService {
               locked,
               updateData.accountId ?? locked.accountId,
               splits,
+              decimals,
             );
 
           // Both the delete of the old counterparts and the create of the new
@@ -3203,10 +3335,10 @@ export class TransactionsService {
           );
           await this.accountsService.updateBalance(newAccountId, newAmount);
         } else if (newAmount !== oldAmount) {
-          // Rounded: the difference of two 4dp decimals is not itself a 4dp
-          // decimal in binary floating point, and this value is the amount a
-          // balance moves by.
-          const balanceChange = roundMoney(newAmount - oldAmount);
+          // Rounded at the account currency's precision: the difference of
+          // two stored decimals is not itself one in binary floating point,
+          // and this value is the amount a balance moves by.
+          const balanceChange = roundMoney(newAmount - oldAmount, decimals);
           await this.accountsService.updateBalance(newAccountId, balanceChange);
         } else if (oldTransactionDate !== savedTransaction.transactionDate) {
           // Same account, same amount, both dates in the past (anyFuture is

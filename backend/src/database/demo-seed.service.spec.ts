@@ -648,7 +648,18 @@ describe("DemoSeedService", () => {
           return Promise.resolve([{ id: `uuid-${Math.random()}` }]);
         }
         if (sql.includes("COALESCE(SUM")) {
-          return Promise.resolve([{ total: "0" }]);
+          // The ledger's exact NUMERIC sums: the wallet's three rows, and a
+          // chequing total carrying digits past fiat's four places.
+          return Promise.resolve([
+            {
+              total:
+                params[0] === "account-Bitcoin Wallet"
+                  ? "0.00704283"
+                  : params[0] === "account-Primary Chequing"
+                    ? "-1049.50000001"
+                    : "0",
+            },
+          ]);
         }
         return Promise.resolve([]);
       });
@@ -680,9 +691,10 @@ describe("DemoSeedService", () => {
             params.includes("BTC"),
         );
 
-      // (a) Bought: chequing -1,700.00 CAD, the wallet +0.0125 BTC at the
-      // implied rate roundFxRate(0.0125 / 1700) (spec section 6).
-      const boughtIn = rowsOn(WALLET).find(([, p]) => p[5] === 0.0125)!;
+      // (a) Bought: chequing -1,700.00 CAD, the wallet +0.01249993 BTC at
+      // the implied rate roundFxRate(0.01249993 / 1700)
+      // (docs/specs/money-precision.md section 6).
+      const boughtIn = rowsOn(WALLET).find(([, p]) => p[5] === 0.01249993)!;
       expect(boughtIn).toBeDefined();
       expect(boughtIn[1][7]).toBe(0.0000073529);
       expect(boughtIn[1]).toContain("Bought bitcoin");
@@ -695,13 +707,14 @@ describe("DemoSeedService", () => {
       )!;
       expect(boughtOut[1][6]).toBe("CAD");
 
-      // (b) Spent: -0.0004 BTC to a coffee category.
-      const spent = rowsOn(WALLET).find(([, p]) => p[6] === -0.0004)!;
+      // (b) Spent: -0.00043210 BTC to a coffee category.
+      const spent = rowsOn(WALLET).find(([, p]) => p[6] === -0.0004321)!;
       expect(spent[1][5]).toBe("category-Coffee Shops");
 
-      // (c) Sold: a split of -0.0051 BTC whose transfer line delivered
-      // 650.00 CAD to chequing, and whose other line is the network fee.
-      const sale = rowsOn(WALLET).find(([, p]) => p[5] === -0.0051)!;
+      // (c) Sold: a split of -0.00502500 BTC whose -0.00500000 transfer line
+      // delivered 650.00 CAD to chequing (implied rate 130000), and whose
+      // other line is the 2,500-sat network fee.
+      const sale = rowsOn(WALLET).find(([, p]) => p[5] === -0.005025)!;
       expect(sale[0]).toContain("is_split");
       const saleLine = calls.find(
         ([sql, p]) =>
@@ -724,7 +737,18 @@ describe("DemoSeedService", () => {
           sql.includes("INSERT INTO transaction_splits") &&
           p[1] === "category-Network fee",
       )!;
-      expect(feeLine[1][2]).toBe(-0.0001);
+      expect(feeLine[1][2]).toBe(-0.000025);
+
+      // Balances are summed at each account's precision: the wallet at the
+      // coin's eight places, chequing at fiat's four.
+      const balanceOf = (accountId: string) =>
+        calls.find(
+          ([sql, p]) =>
+            sql.startsWith("UPDATE accounts SET current_balance") &&
+            p[1] === accountId,
+        )![1][0];
+      expect(balanceOf(WALLET)).toBe(0.00704283);
+      expect(balanceOf(CHEQUING)).toBe(4371);
     });
 
     it("writes the mortgage type, and the default on every other account", async () => {

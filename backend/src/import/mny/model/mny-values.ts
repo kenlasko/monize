@@ -25,7 +25,11 @@ export const MNY_MAX_YEAR = 2199;
 /** Handle values Money uses to mean "no reference". */
 const NULL_HANDLES: ReadonlySet<number> = new Set([0, -1]);
 
-/** Scale of Monize money columns, `decimal(20,4)`. */
+/**
+ * Microsoft Money amounts are fiat and carry four places at most, so the .mny
+ * import stays at four (`docs/specs/money-precision.md` section 10), not the
+ * `NUMERIC(24,8)` the columns now hold.
+ */
 const AMOUNT_SCALE = 10000;
 
 /** Trimmed text, or an empty string when absent. */

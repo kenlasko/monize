@@ -19,6 +19,10 @@ import { LegBalanceWriter } from "./remove-transaction-leg";
  * balance and a future-dated one gets a recomputation instead of a delta
  * (`deletionBalanceEffect`).
  *
+ * Every figure is rounded at `decimals`, the parent currency's money
+ * precision (`moneyDecimalsForCode`), so a coin parent keeps its satoshis
+ * (INV-MONEY-001). It has no default: four would round a coin silently.
+ *
  * `parent` is the row locked inside the caller's transaction, so the old amount
  * the difference is taken from is the committed one. Returns true when the
  * amount changed; the caller then adds `parent.accountId` to the accounts it
@@ -32,16 +36,17 @@ export async function retotalSplitParent(
     "id" | "accountId" | "amount" | "status" | "transactionDate"
   >,
   newAmount: number,
+  decimals: number,
   balances: LegBalanceWriter,
 ): Promise<boolean> {
-  const oldAmount = roundMoney(Number(parent.amount));
-  const nextAmount = roundMoney(newAmount);
+  const oldAmount = roundMoney(Number(parent.amount), decimals);
+  const nextAmount = roundMoney(newAmount, decimals);
   if (nextAmount === oldAmount) return false;
 
   await m.update(Transaction, parent.id, { amount: nextAmount });
 
   const effect = deletionBalanceEffect({
-    amount: roundMoney(oldAmount - nextAmount),
+    amount: roundMoney(oldAmount - nextAmount, decimals),
     status: parent.status,
     transactionDate: parent.transactionDate,
   });

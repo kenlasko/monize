@@ -7,6 +7,7 @@ import {
 } from "../currencies/entities/currency.entity";
 import { quoteSymbolRefusal } from "../currencies/currency-kind.util";
 import { sanitizeHtmlString } from "../common/decorators/sanitize-html.decorator";
+import { MONEY_SCALE } from "../common/round.util";
 import { tr } from "../i18n/translate";
 import { boundRestoredNotification } from "./notification-restore-bounds";
 import { withResolvedMortgageTypeColumn } from "../accounts/legacy-mortgage-type.util";
@@ -148,7 +149,8 @@ export class BackupRestoreDatabaseService {
       for (const row of data.currencies) {
         // `currencies` is shared by every user, so a restored row is held to
         // what the create DTO accepts: a code, a clean name and symbol within
-        // the column lengths, and decimal places from 0 to 4.
+        // the column lengths, and decimal places from 0 to MONEY_SCALE (8),
+        // the range `currencies_decimal_places_check` holds.
         if (typeof row.code !== "string" || !/^[A-Z]{3}$/.test(row.code)) {
           continue;
         }
@@ -164,7 +166,7 @@ export class BackupRestoreDatabaseService {
         filteredRow.decimal_places =
           typeof row.decimal_places === "number" &&
           Number.isFinite(row.decimal_places)
-            ? Math.min(4, Math.max(0, Math.trunc(row.decimal_places)))
+            ? Math.min(MONEY_SCALE, Math.max(0, Math.trunc(row.decimal_places)))
             : 2;
         // A backup written before currencies had a kind is all fiat; a kind
         // outside the two is not trusted either. A price symbol travels only

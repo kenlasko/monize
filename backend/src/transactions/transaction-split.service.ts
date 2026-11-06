@@ -30,8 +30,21 @@ import {
   isInvestmentActionAllowedInSplit,
 } from "../securities/cash-impact.util";
 import { NetWorthService } from "../net-worth/net-worth.service";
-import { roundMoney, sumMoney } from "../common/round.util";
-import { resolveFxRateOrNull, roundFxRate } from "../common/fx-entry.util";
+import { moneyDecimalsFor, roundMoney, sumMoney } from "../common/round.util";
+import {
+  applyFxConversion,
+  resolveFxRateOrNull,
+  roundFxRate,
+} from "../common/fx-entry.util";
+import {
+  AmountPrecisionCurrency,
+  assertAmountPrecision,
+} from "../common/amount-precision.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+  precisionCurrencyFor,
+} from "../common/currency-places.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { tr } from "../i18n/translate";
@@ -75,6 +88,22 @@ function assertTargetAmountOnTransfer(split: CreateTransactionSplitDto): void {
   );
 }
 
+/**
+ * `known` with the `decimal_places` of every one of `codes` it does not hold
+ * yet, read in one query on `m`: a split write meets its target currencies one
+ * line at a time, and each is read once per operation, never once per line.
+ */
+async function withCurrencyPlaces(
+  m: EntityManager,
+  known: ReadonlyMap<string, number>,
+  codes: readonly string[],
+): Promise<ReadonlyMap<string, number>> {
+  const missing = codes.filter((code) => !known.has(code.toUpperCase()));
+  if (missing.length === 0) return known;
+  const loaded = await loadCurrencyPlaces(m, missing);
+  return new Map([...known, ...loaded]);
+}
+
 @Injectable()
 export class TransactionSplitService {
   constructor(
@@ -106,34 +135,49 @@ export class TransactionSplitService {
    * wins over the market rate and its implied rate is stored, exactly as a
    * plain transfer's `toAmount` does (`TransactionTransferService.resolveTransferFx`);
    * between two accounts in one currency it must equal the split amount.
+   *
+   * Each side is in its own currency and rounds at that currency's money
+   * precision (`places`, loaded once by the caller): a stated received amount
+   * is refused when it carries more places than the target currency does, and
+   * is otherwise stored as given (INV-SPLITFX-001); a converted one rounds at
+   * the target's precision, so a CAD line into a BTC wallet keeps its eighth
+   * place (INV-MONEY-001).
    */
   private async resolveSplitTransferAmount(
     amount: number,
     sourceCurrencyCode: string,
     targetCurrencyCode: string,
     transactionDate: string,
-    suppliedTargetAmount?: number,
+    suppliedTargetAmount: number | undefined,
+    places: ReadonlyMap<string, number>,
   ): Promise<{ amount: number; exchangeRate: number }> {
-    const sent = Math.abs(roundMoney(amount));
+    const sourceDecimals = moneyDecimalsForCode(places, sourceCurrencyCode);
+    const targetDecimals = moneyDecimalsForCode(places, targetCurrencyCode);
+    const sent = Math.abs(roundMoney(amount, sourceDecimals));
+    const stated =
+      suppliedTargetAmount !== undefined && suppliedTargetAmount !== null;
+    if (stated) {
+      assertAmountPrecision(
+        suppliedTargetAmount,
+        precisionCurrencyFor(places, targetCurrencyCode),
+        "transferTargetAmount",
+      );
+    }
     if (sourceCurrencyCode === targetCurrencyCode) {
-      if (
-        suppliedTargetAmount !== undefined &&
-        suppliedTargetAmount !== null &&
-        roundMoney(suppliedTargetAmount) !== sent
-      ) {
+      if (stated && roundMoney(suppliedTargetAmount, targetDecimals) !== sent) {
         throw new BadRequestException(
           tr(
             "errors.transactions.transferSameCurrencyMustConserve",
-            `A transfer between two ${targetCurrencyCode} accounts must move the same amount on both sides (received ${roundMoney(suppliedTargetAmount)} against ${sent})`,
+            `A transfer between two ${targetCurrencyCode} accounts must move the same amount on both sides (received ${roundMoney(suppliedTargetAmount, targetDecimals)} against ${sent})`,
             { currency: targetCurrencyCode, amount: sent },
           ),
         );
       }
-      return { amount: roundMoney(-amount), exchangeRate: 1 };
+      return { amount: roundMoney(-amount, sourceDecimals), exchangeRate: 1 };
     }
 
-    if (suppliedTargetAmount !== undefined && suppliedTargetAmount !== null) {
-      const received = roundMoney(suppliedTargetAmount);
+    if (stated) {
+      const received = roundMoney(suppliedTargetAmount, targetDecimals);
       // Zero on one side only is value created or destroyed, not a rate.
       if ((sent === 0) !== (received === 0)) {
         throw new BadRequestException(
@@ -183,7 +227,12 @@ export class TransactionSplitService {
     }
 
     const exchangeRate = rate;
-    return { amount: roundMoney(-amount * exchangeRate), exchangeRate };
+    return {
+      amount: applyFxConversion(-amount, exchangeRate, null, {
+        toDecimals: targetDecimals,
+      }).amount,
+      exchangeRate,
+    };
   }
 
   /**
@@ -263,16 +312,40 @@ export class TransactionSplitService {
     }
   }
 
+  /**
+   * Refuse a split set that cannot be written: too few lines, lines that do
+   * not sum to the parent, a line with more places than the parent's currency
+   * carries, a received amount off a transfer line, an inconsistent investment
+   * payload.
+   *
+   * `currency` is the parent account's (code and `decimal_places`, from
+   * `loadCurrencyPlaces` inside the caller's write transaction): every line is
+   * in it, so every line is held to its money precision and the sum is
+   * compared at it (INV-MONEY-001). Without it the fiat four is assumed and no
+   * line is refused for its places; every caller that writes the set passes it.
+   */
   validateSplits(
     splits: CreateTransactionSplitDto[],
     transactionAmount: number,
+    currency?: AmountPrecisionCurrency,
   ): void {
+    const decimals = moneyDecimalsFor(currency?.decimalPlaces);
+    if (currency) {
+      for (const [index, split] of splits.entries()) {
+        assertAmountPrecision(
+          split.amount,
+          currency,
+          `splits[${index}].amount`,
+        );
+      }
+    }
     validateSplitAmountSum(splits, transactionAmount, {
       allowSinglePassthrough: true,
       isPassthrough: (s) => {
         const split = s as CreateTransactionSplitDto;
         return Boolean(split.transferAccountId || split.investment);
       },
+      decimals,
     });
 
     for (const split of splits) {
@@ -326,8 +399,8 @@ export class TransactionSplitService {
       const exchangeRate = Number(inv.exchangeRate);
       const expectedAmount = cashImpactInSecurity * exchangeRate;
 
-      const expectedRounded = roundMoney(expectedAmount);
-      const actualRounded = roundMoney(Number(split.amount));
+      const expectedRounded = roundMoney(expectedAmount, decimals);
+      const actualRounded = roundMoney(Number(split.amount), decimals);
 
       if (expectedRounded !== actualRounded) {
         throw new BadRequestException(
@@ -335,18 +408,38 @@ export class TransactionSplitService {
             "errors.transactions.investmentSplitAmountMismatch",
             `Investment split amount (${split.amount}) does not match the cash impact ` +
               `of ${inv.action} ${inv.quantity ?? 0} @ ${inv.price ?? 0} ` +
-              `(expected ${expectedAmount.toFixed(4)})`,
+              `(expected ${expectedAmount.toFixed(decimals)})`,
             {
               amount: split.amount,
               action: inv.action,
               quantity: inv.quantity ?? 0,
               price: inv.price ?? 0,
-              expected: expectedAmount.toFixed(4),
+              expected: expectedAmount.toFixed(decimals),
             },
           ),
         );
       }
     }
+  }
+
+  /**
+   * `validateSplits` for a set in `currencyCode`, reading that currency's
+   * places itself: for a preview that writes nothing (the AI and MCP tool
+   * preparation), so its refusals are the commit's.
+   */
+  async validateSplitsInCurrency(
+    splits: CreateTransactionSplitDto[],
+    transactionAmount: number,
+    currencyCode: string,
+  ): Promise<void> {
+    const places = await withScopedDb(this.dataSource, (m) =>
+      loadCurrencyPlaces(m, [currencyCode]),
+    );
+    this.validateSplits(
+      splits,
+      transactionAmount,
+      precisionCurrencyFor(places, currencyCode),
+    );
   }
 
   /**
@@ -546,6 +639,9 @@ export class TransactionSplitService {
       });
     }
 
+    // Each currency's places are read once for the whole set, as the lines
+    // name them (`withCurrencyPlaces`).
+    let places: ReadonlyMap<string, number> = new Map();
     for (const { split, index } of transferSplits) {
       const splitEntity = m.create(TransactionSplit, {
         transactionId,
@@ -581,12 +677,17 @@ export class TransactionSplitService {
       // The counterpart is denominated in the TARGET account's currency, so a
       // split amount in the parent's currency has to be converted rather than
       // copied across with `exchangeRate: 1` (audit P5-002, transfer-split half).
+      places = await withCurrencyPlaces(m, places, [
+        sourceAccount.currencyCode,
+        targetAccount.currencyCode,
+      ]);
       const counterpart = await this.resolveSplitTransferAmount(
         split.amount,
         sourceAccount.currencyCode,
         targetAccount.currencyCode,
         dateStr,
         split.transferTargetAmount,
+        places,
       );
 
       // A VOID parent's counterpart is VOID: the two rows describe one movement
@@ -1075,7 +1176,10 @@ export class TransactionSplitService {
       // rewrites the row the statement was matched against.
       await assertReconciledRowsMutable(m, userId, [parent]);
 
-      this.validateSplits(splits, parent.amount);
+      // Every line is in the parent account's currency, held to its places.
+      const places = await loadCurrencyPlaces(m, [transaction.currencyCode]);
+      const currency = precisionCurrencyFor(places, transaction.currencyCode);
+      this.validateSplits(splits, parent.amount, currency);
 
       // Read before the embedded rows are torn down: the recreated rows keep
       // the bond series of the rows they replace.
@@ -1092,6 +1196,7 @@ export class TransactionSplitService {
         parent,
         parent.accountId,
         splits,
+        moneyDecimalsFor(currency.decimalPlaces),
       );
 
       // One guard for the whole replacement: the old embedded rows are removed
@@ -1175,6 +1280,8 @@ export class TransactionSplitService {
     parent: { id: string; accountId: string },
     nextAccountId: string,
     splits: CreateTransactionSplitDto[],
+    /** The parent currency's money precision, which line amounts are compared at. */
+    sourceDecimals: number,
   ): Promise<CreateTransactionSplitDto[]> {
     const wantsCarry = splits.some(
       (split) =>
@@ -1199,6 +1306,7 @@ export class TransactionSplitService {
       splits,
       {
         sourceCurrencyCode: source.currencyCode,
+        sourceDecimals,
         parentAccountUnchanged: nextAccountId === parent.accountId,
       },
     );
@@ -1291,14 +1399,27 @@ export class TransactionSplitService {
       // Strict reconciled lock, before the split set is read or written.
       await assertReconciledRowsMutable(m, userId, [parent]);
 
+      // The line is in the parent account's currency, held to its places.
+      let places = await loadCurrencyPlaces(m, [transaction.currencyCode]);
+      assertAmountPrecision(
+        splitDto.amount,
+        precisionCurrencyFor(places, transaction.currencyCode),
+        "amount",
+      );
+      const decimals = moneyDecimalsForCode(places, transaction.currencyCode);
+
       const existingSplits = await m.getRepository(TransactionSplit).find({
         where: { transactionId: transaction.id },
       });
       const existingTotal = sumMoney(
         existingSplits.map((s) => Number(s.amount)),
+        decimals,
       );
-      const newTotal = sumMoney([existingTotal, Number(splitDto.amount)]);
-      const transactionAmount = roundMoney(parent.amount);
+      const newTotal = sumMoney(
+        [existingTotal, Number(splitDto.amount)],
+        decimals,
+      );
+      const transactionAmount = roundMoney(parent.amount, decimals);
 
       // A whole set -- a parent flagged a split whose lines add up to it --
       // grows by the line, the mirror of `removeSplit` (issue #2039): the
@@ -1356,12 +1477,17 @@ export class TransactionSplitService {
           parent.accountId,
         );
 
+        places = await withCurrencyPlaces(m, places, [
+          sourceAccount.currencyCode,
+          targetAccount.currencyCode,
+        ]);
         const counterpart = await this.resolveSplitTransferAmount(
           splitDto.amount,
           sourceAccount.currencyCode,
           targetAccount.currencyCode,
           String(transaction.transactionDate),
           splitDto.transferTargetAmount,
+          places,
         );
 
         const linkedTransaction = m.create(Transaction, {
@@ -1417,6 +1543,7 @@ export class TransactionSplitService {
           userId,
           parent,
           newTotal,
+          decimals,
           this.accountsService,
         ))
       ) {
@@ -1530,16 +1657,25 @@ export class TransactionSplitService {
       // its second line, so the lines are the parent's money only once the
       // locked row says it is a split (every path that writes a whole set --
       // create, `updateSplits`, the update with splits -- sets the flag).
-      const parentAmount = roundMoney(Number(lockedParent.amount));
+      // Judged at the parent currency's precision, so a coin parent keeps the
+      // satoshis of every line (INV-MONEY-001).
+      const decimals = moneyDecimalsForCode(
+        await loadCurrencyPlaces(m, [transaction.currencyCode]),
+        transaction.currencyCode,
+      );
+      const parentAmount = roundMoney(Number(lockedParent.amount), decimals);
       const linesCoveredParent =
         lockedParent.isSplit &&
-        sumMoney([
-          ...remainingSplits.map((s) => Number(s.amount)),
-          Number(split.amount),
-        ]) === parentAmount;
-      const removedAmount = roundMoney(Number(split.amount));
+        sumMoney(
+          [
+            ...remainingSplits.map((s) => Number(s.amount)),
+            Number(split.amount),
+          ],
+          decimals,
+        ) === parentAmount;
+      const removedAmount = roundMoney(Number(split.amount), decimals);
       const newParentAmount = linesCoveredParent
-        ? roundMoney(parentAmount - removedAmount)
+        ? roundMoney(parentAmount - removedAmount, decimals)
         : parentAmount;
 
       // The parent collapses into its last line when that line accounts for
@@ -1553,7 +1689,7 @@ export class TransactionSplitService {
       const collapseInto =
         lastSplit &&
         lastSplit.kind !== SplitKind.INVESTMENT &&
-        roundMoney(Number(lastSplit.amount)) === newParentAmount
+        roundMoney(Number(lastSplit.amount), decimals) === newParentAmount
           ? lastSplit
           : undefined;
 
@@ -1621,6 +1757,7 @@ export class TransactionSplitService {
           userId,
           lockedParent,
           newParentAmount,
+          decimals,
           this.accountsService,
         )
       ) {

@@ -10,6 +10,9 @@ import {
   SearchFormats,
 } from "./transaction-search-query.util";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
+import { Account } from "../accounts/entities/account.entity";
 
 /**
  * The condition and parameters the search helper adds for `raw`, at the
@@ -37,6 +40,7 @@ describe("TransactionAnalyticsService", () => {
   let transactionsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
   let userPreferenceRepository: Record<string, jest.Mock>;
+  let accountsRepository: Record<string, jest.Mock>;
   let managerMock: Record<string, jest.Mock>;
 
   const userId = "user-1";
@@ -103,7 +107,17 @@ describe("TransactionAnalyticsService", () => {
       findOne: jest.fn().mockResolvedValue(null),
     };
 
+    // The FX fee summary reads its account's currency; CAD unless a case
+    // says otherwise.
+    accountsRepository = {
+      findOne: jest
+        .fn()
+        .mockResolvedValue({ id: "acc-1", currencyCode: "CAD" }),
+    };
+
     const { dataSource, manager } = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
+      [Account, accountsRepository],
       [Transaction, transactionsRepository],
       [Category, categoriesRepository],
       [UserPreference, userPreferenceRepository],
@@ -1296,6 +1310,35 @@ describe("TransactionAnalyticsService", () => {
       expect(result.totalInbound).toBe(1500);
       expect(result.totalOutbound).toBe(1500);
       expect(result.transferCount).toBe(6);
+    });
+
+    it("keeps a BTC wallet's transfers at its eight places (INV-MONEY-001)", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          accountId: "acc-wallet",
+          accountName: "Wallet",
+          currencyCode: "BTC",
+          inbound: "0.01249993",
+          outbound: "0.00502500",
+          count: "2",
+        },
+      ]);
+
+      const result = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      // At the fiat four places the inbound read 0.0125 and the outbound 0.005.
+      expect(result.accounts[0]).toMatchObject({
+        currency: "BTC",
+        inbound: 0.01249993,
+        outbound: 0.005025,
+        net: 0.00747493,
+      });
+      expect(result.totalInbound).toBe(0.01249993);
+      expect(result.totalOutbound).toBe(0.005025);
     });
 
     it("selects the account id for deep-links and maps a missing id to null", async () => {
@@ -3540,11 +3583,42 @@ describe("TransactionAnalyticsService", () => {
       const expr = feeSelect[0] as string;
       // The fee is folded into amount for both ordinary and split entries.
       expect(expr).toContain(
-        "ROUND(transaction.originalAmount * transaction.exchangeRate, 4) - transaction.amount",
+        "ROUND(transaction.originalAmount * transaction.exchangeRate, CAST(:feeDecimals AS int)) - transaction.amount",
+      );
+      // A fiat account re-derives the base at the four places it always did.
+      expect(mockQueryBuilder.setParameter).toHaveBeenCalledWith(
+        "feeDecimals",
+        4,
       );
       // No dependency on any fee-split join.
       expect(expr).not.toContain("fxFeeSplit");
       expect(mockQueryBuilder.leftJoin).not.toHaveBeenCalled();
+    });
+
+    it("re-derives a BTC account's fee at the coin's eight places (INV-MONEY-001)", async () => {
+      accountsRepository.findOne.mockResolvedValue({
+        id: "acc-1",
+        currencyCode: "BTC",
+      });
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          month: "2026-03",
+          currencyCode: "CAD",
+          feeTotal: "0.00002500",
+          count: "1",
+        },
+      ]);
+
+      const result = await service.getFxFeeSummary(userId, "acc-1");
+
+      expect(mockQueryBuilder.setParameter).toHaveBeenCalledWith(
+        "feeDecimals",
+        8,
+      );
+      // A 2,500-sat fee, which four places read as zero.
+      expect(result).toEqual([
+        { month: "2026-03", currencyCode: "CAD", feeTotal: 0.000025, count: 1 },
+      ]);
     });
   });
 });

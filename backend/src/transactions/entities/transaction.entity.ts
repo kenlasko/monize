@@ -92,7 +92,7 @@ export class Transaction {
   @JoinColumn({ name: "category_id" })
   category: Category | null;
 
-  @Column({ type: "decimal", precision: 20, scale: 4 })
+  @Column({ type: "decimal", precision: 24, scale: 8 })
   amount: number;
 
   @Column({ type: "varchar", name: "currency_code", length: 3 })
@@ -113,8 +113,8 @@ export class Transaction {
   // unit of originalCurrencyCode and amount ~ round(originalAmount * exchangeRate).
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "original_amount",
     nullable: true,
     transformer: {

@@ -12,6 +12,10 @@ import { Tag } from "../tags/entities/tag.entity";
 import { TransactionTag } from "../tags/entities/transaction-tag.entity";
 import { ensureYMD } from "../common/recurrence";
 import {
+  loadCurrencyPlaces,
+  precisionCurrencyFor,
+} from "../common/currency-places.util";
+import {
   ClaimedLoanOccurrence,
   claimLoanOccurrence,
 } from "../loan-installments/claim-loan-occurrence";
@@ -1195,7 +1199,14 @@ export class TransactionRulesApplierService {
         : {}),
       ...(part.memo !== null ? { memo: part.memo } : {}),
     }));
-    this.splitService.validateSplits(parts, Number(row.amount));
+    // Every line is in the parent row's currency: held to its places and
+    // summed at its money precision (a coin's eight, not the fiat four).
+    const places = await loadCurrencyPlaces(m, [row.currencyCode]);
+    this.splitService.validateSplits(
+      parts,
+      Number(row.amount),
+      precisionCurrencyFor(places, row.currencyCode),
+    );
     const affected = new Set<string>();
     const created = await this.splitService.createSplits(
       row.id,

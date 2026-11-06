@@ -11,6 +11,7 @@
   "participantLimit": "[XX-A group can have up to 50 participants.-XX]",
   "currencyLocked": "[XX-The group currency is fixed after the first entry. Create a new group to use another currency.-XX]",
   "currency": "[XX-Choose an available currency with up to four decimal places.-XX]",
+  "groupCurrencyMustBeFiat": "[XX-A shared group keeps its accounts in a fiat currency; {{ code }} is a cryptocurrency. Choose a fiat currency for the group.-XX]",
   "invite": "[XX-This invitation is unavailable, expired or already used. Ask the group owner for a new one.-XX]",
   "inviteEmail": "[XX-Sign in with the invited email address and verify it before joining.-XX]",
   "alreadyMember": "[XX-You or this participant already belong to this group. Ask the owner to check the participants.-XX]",

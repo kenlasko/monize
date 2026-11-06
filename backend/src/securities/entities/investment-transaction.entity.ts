@@ -167,8 +167,8 @@ export class InvestmentTransaction {
   @ApiProperty({ example: 9.99, description: "Commission or fee" })
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     default: 0,
     transformer: numericTransformer,
   })
@@ -180,8 +180,8 @@ export class InvestmentTransaction {
   })
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "total_amount",
     transformer: numericTransformer,
   })

@@ -117,7 +117,7 @@ describe("TransactionToolPrepService", () => {
         .mockResolvedValue({ categoryIds: ["c1"], unresolved: [] }),
     };
     splitService = {
-      validateSplits: jest.fn(),
+      validateSplitsInCurrency: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -237,9 +237,10 @@ describe("TransactionToolPrepService", () => {
         { categoryId: "c1", categoryName: "Dining", amount: -40, memo: "tip" },
       ]);
       // Sum validated against the transaction amount via the domain rule.
-      expect(splitService.validateSplits).toHaveBeenCalledWith(
+      expect(splitService.validateSplitsInCurrency).toHaveBeenCalledWith(
         expect.any(Array),
         -100,
+        "USD",
       );
       // A split parent carries no single category.
       expect(transactions.previewCreate).toHaveBeenCalledWith(
@@ -249,9 +250,9 @@ describe("TransactionToolPrepService", () => {
     });
 
     it("propagates a validateSplits failure", async () => {
-      splitService.validateSplits.mockImplementationOnce(() => {
-        throw new Error("bad sum");
-      });
+      splitService.validateSplitsInCurrency.mockRejectedValueOnce(
+        new Error("bad sum"),
+      );
       await expect(
         service.prepareCreateSingle(userId, {
           accountName: "Checking",
@@ -551,9 +552,10 @@ describe("TransactionToolPrepService", () => {
       if (result.kind !== "standard") throw new Error("expected standard");
       expect(result.splits).toHaveLength(2);
       // previewUpdate amount is -30, used as the split sum target.
-      expect(splitService.validateSplits).toHaveBeenCalledWith(
+      expect(splitService.validateSplitsInCurrency).toHaveBeenCalledWith(
         expect.any(Array),
         -30,
+        expect.any(String),
       );
       expect(transactions.previewUpdate).toHaveBeenCalledWith(
         userId,
@@ -741,7 +743,7 @@ describe("TransactionToolPrepService", () => {
         expect(row.categoryId).toBeNull();
       }
       // Each row is validated against its own amount, not the first row's.
-      expect(splitService.validateSplits).toHaveBeenCalledTimes(2);
+      expect(splitService.validateSplitsInCurrency).toHaveBeenCalledTimes(2);
       expect(result.previewRows[0].splits).toHaveLength(2);
       expect(result.previewRows[0].categoryName).toBeNull();
     });

@@ -25,12 +25,13 @@ describe("retotalSplitParent", () => {
     };
   });
 
-  function retotal(row: typeof parent, newAmount: number) {
+  function retotal(row: typeof parent, newAmount: number, decimals = 4) {
     return retotalSplitParent(
       m as unknown as EntityManager,
       "user-1",
       row,
       newAmount,
+      decimals,
       balances,
     );
   }
@@ -60,6 +61,19 @@ describe("retotalSplitParent", () => {
       amount: -0.1,
     });
     expect(balances.updateBalance).toHaveBeenCalledWith("chequing", 0.2);
+  });
+
+  it("keeps a coin parent's satoshis at the currency's eight places", async () => {
+    // A ₿0.01 parent loses a ₿0.00002500 fee line: four places would round
+    // the line away and move nothing.
+    await expect(
+      retotal({ ...parent, amount: -0.01 }, -0.009975, 8),
+    ).resolves.toBe(true);
+
+    expect(m.update).toHaveBeenCalledWith(Transaction, "parent-1", {
+      amount: -0.009975,
+    });
+    expect(balances.updateBalance).toHaveBeenCalledWith("chequing", 0.000025);
   });
 
   it("moves no balance for a VOID parent, but still writes the amount", async () => {

@@ -620,7 +620,9 @@ describe("ToolExecutorService", () => {
     // Category-split validation is a no-op by default; tests that exercise an
     // invalid sum override it to throw.
     splitService = {
-      validateSplits: jest.fn(),
+      // The tool preparation validates in the account's currency, which reads
+      // that currency's places itself (`validateSplitsInCurrency`).
+      validateSplitsInCurrency: jest.fn().mockResolvedValue(undefined),
     };
 
     transfer = {
@@ -2079,9 +2081,10 @@ describe("ToolExecutorService", () => {
         ],
       });
 
-      expect(splitService.validateSplits).toHaveBeenCalledWith(
+      expect(splitService.validateSplitsInCurrency).toHaveBeenCalledWith(
         expect.any(Array),
         -100,
+        "USD",
       );
       expect(transactions.create).toBeUndefined();
       expect(result.pendingAction?.type).toBe("create_transaction");
@@ -2116,7 +2119,7 @@ describe("ToolExecutorService", () => {
         ],
       });
 
-      expect(splitService.validateSplits).toHaveBeenCalled();
+      expect(splitService.validateSplitsInCurrency).toHaveBeenCalled();
       // The accompanying splits are what permit this edit on an existing
       // split transaction (Truth table B) -- previewUpdate must know.
       expect(transactions.previewUpdate).toHaveBeenCalledWith(
@@ -2134,9 +2137,9 @@ describe("ToolExecutorService", () => {
     });
 
     it("rejects an invalid split sum surfaced by validateSplits", async () => {
-      splitService.validateSplits.mockImplementationOnce(() => {
-        throw new Error("Split amounts must sum to the transaction amount");
-      });
+      splitService.validateSplitsInCurrency.mockRejectedValueOnce(
+        new Error("Split amounts must sum to the transaction amount"),
+      );
       const result = await service.execute(userId, "manage_transactions", {
         operation: "create",
         items: [

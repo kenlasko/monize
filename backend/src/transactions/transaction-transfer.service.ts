@@ -24,10 +24,17 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { formatCurrency } from "../common/format-currency.util";
 import { roundMoney, sumMoney } from "../common/round.util";
 import {
+  applyFxConversion,
   assertTransactionCurrencyMatchesAccount,
   roundFxRate,
   resolveFxRateOrNull,
 } from "../common/fx-entry.util";
+import { assertAmountPrecision } from "../common/amount-precision.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+  precisionCurrencyFor,
+} from "../common/currency-places.util";
 import { stripHtml } from "../common/sanitization.util";
 import { tr } from "../i18n/translate";
 import { getActiveScopedManager, withScopedDb } from "../common/db/scoped-db";
@@ -111,6 +118,12 @@ export interface PreparedTransfer {
   sourceCurrency: string;
   destinationCurrency: string;
   effectiveExchangeRate: number;
+  /**
+   * `decimal_places` of both currencies (`loadCurrencyPlaces`), read once when
+   * the transfer was prepared: the amounts were held to them there, and the
+   * write holds them to the same before its first insert (INV-MONEY-001).
+   */
+  currencyPlaces: ReadonlyMap<string, number>;
   /**
    * The caller's custom payee label, or null. A blank payee is PERSISTED blank
    * (issue #1214): the display label ("Transfer to Savings") is resolved at
@@ -230,12 +243,21 @@ export class TransactionTransferService {
    *   than posted at 1:1.
    *
    * Direction is destination-currency units per one source-currency unit.
+   *
+   * Each side is in its own account's currency and is held to that currency's
+   * money precision (`places`, `loadCurrencyPlaces`): an amount or a stated
+   * `toAmount` with more places is refused, never rounded; a stated `toAmount`
+   * is otherwise stored as given; a converted one rounds at the destination's
+   * precision (`applyFxConversion` `toDecimals`), so 1,700 CAD into a BTC
+   * wallet keeps its eighth place (INV-MONEY-001). The implied rate of a stated
+   * amount is still `roundFxRate(toAmount / amount)`.
    */
   private async resolveTransferFx(input: {
     fromAccount: Account;
     toAccount: Account;
     amount: number;
     transactionDate: string;
+    places: ReadonlyMap<string, number>;
     suppliedFromCurrencyCode?: string;
     suppliedToCurrencyCode?: string;
     suppliedExchangeRate?: number;
@@ -255,17 +277,32 @@ export class TransactionTransferService {
       input.toAccount.currencyCode,
     );
 
-    const amount = roundMoney(input.amount);
+    assertAmountPrecision(
+      input.amount,
+      precisionCurrencyFor(input.places, fromCurrencyCode),
+      "amount",
+    );
+    if (input.suppliedToAmount !== undefined) {
+      assertAmountPrecision(
+        input.suppliedToAmount,
+        precisionCurrencyFor(input.places, toCurrencyCode),
+        "toAmount",
+      );
+    }
+    const fromDecimals = moneyDecimalsForCode(input.places, fromCurrencyCode);
+    const toDecimals = moneyDecimalsForCode(input.places, toCurrencyCode);
+
+    const amount = roundMoney(input.amount, fromDecimals);
 
     if (fromCurrencyCode === toCurrencyCode) {
       if (
         input.suppliedToAmount !== undefined &&
-        roundMoney(input.suppliedToAmount) !== amount
+        roundMoney(input.suppliedToAmount, toDecimals) !== amount
       ) {
         throw new BadRequestException(
           tr(
             "errors.transactions.transferSameCurrencyMustConserve",
-            `A transfer between two ${toCurrencyCode} accounts must move the same amount on both sides (received ${roundMoney(input.suppliedToAmount)} against ${amount})`,
+            `A transfer between two ${toCurrencyCode} accounts must move the same amount on both sides (received ${roundMoney(input.suppliedToAmount, toDecimals)} against ${amount})`,
             { currency: toCurrencyCode, amount },
           ),
         );
@@ -293,7 +330,7 @@ export class TransactionTransferService {
     // Cross-currency. An explicit settlement amount wins, and its implied rate
     // is stored so the destination row still records how the two sides relate.
     if (input.suppliedToAmount !== undefined) {
-      const toAmount = roundMoney(input.suppliedToAmount);
+      const toAmount = roundMoney(input.suppliedToAmount, toDecimals);
 
       // A settlement amount still has to settle *this* transfer. Both DTO
       // fields allow zero and this branch used to return before checking
@@ -383,7 +420,8 @@ export class TransactionTransferService {
       fromCurrencyCode,
       toCurrencyCode,
       exchangeRate,
-      toAmount: roundMoney(amount * exchangeRate),
+      toAmount: applyFxConversion(amount, exchangeRate, null, { toDecimals })
+        .amount,
     };
   }
 
@@ -429,6 +467,8 @@ export class TransactionTransferService {
     existingToAmount: number;
     existingExchangeRate: number | null;
     updateDto: Partial<UpdateTransferDto>;
+    /** `decimal_places` of both accounts' currencies (`loadCurrencyPlaces`). */
+    places: ReadonlyMap<string, number>;
   }): Promise<{
     fromCurrencyCode: string;
     toCurrencyCode: string;
@@ -436,7 +476,28 @@ export class TransactionTransferService {
     toAmount: number;
     repriced: boolean;
   }> {
-    const { updateDto } = input;
+    const { updateDto, places } = input;
+    const fromCode = input.fromAccount.currencyCode;
+    const toCode = input.toAccount.currencyCode;
+    // Refused before anything is compared: an amount with more places than
+    // its currency carries would otherwise compare equal to the stored one at
+    // that precision and be silently dropped (INV-MONEY-001).
+    if (updateDto.amount !== undefined) {
+      assertAmountPrecision(
+        updateDto.amount,
+        precisionCurrencyFor(places, fromCode),
+        "amount",
+      );
+    }
+    if (updateDto.toAmount !== undefined) {
+      assertAmountPrecision(
+        updateDto.toAmount,
+        precisionCurrencyFor(places, toCode),
+        "toAmount",
+      );
+    }
+    const fromDecimals = moneyDecimalsForCode(places, fromCode);
+    const toDecimals = moneyDecimalsForCode(places, toCode);
 
     // A *value* difference, not the presence of a field. The transfer form
     // resends the current accounts, amount and rate on every save -- the frozen
@@ -446,16 +507,21 @@ export class TransactionTransferService {
     // changed a description re-resolved today's rate, restated a 90 EUR
     // destination as 80, and moved the balance with it. Presence is what the
     // client happened to send; a difference is what the user changed.
-    const differs = (supplied: number | undefined, existing: number): boolean =>
-      supplied !== undefined && roundMoney(supplied) !== roundMoney(existing);
+    const differs = (
+      supplied: number | undefined,
+      existing: number,
+      decimals: number,
+    ): boolean =>
+      supplied !== undefined &&
+      roundMoney(supplied, decimals) !== roundMoney(existing, decimals);
 
     const financialStructureChanged =
       (updateDto.fromAccountId !== undefined &&
         updateDto.fromAccountId !== input.existingFromAccountId) ||
       (updateDto.toAccountId !== undefined &&
         updateDto.toAccountId !== input.existingToAccountId) ||
-      differs(updateDto.amount, input.existingFromAmount) ||
-      differs(updateDto.toAmount, input.existingToAmount) ||
+      differs(updateDto.amount, input.existingFromAmount, fromDecimals) ||
+      differs(updateDto.toAmount, input.existingToAmount, toDecimals) ||
       (updateDto.exchangeRate !== undefined &&
         roundFxRate(Number(updateDto.exchangeRate)) !==
           roundFxRate(Number(input.existingExchangeRate ?? 1)));
@@ -482,7 +548,8 @@ export class TransactionTransferService {
       const suppliedToAmount =
         untrusted &&
         updateDto.toAmount !== undefined &&
-        roundMoney(updateDto.toAmount) === roundMoney(input.existingToAmount)
+        roundMoney(updateDto.toAmount, toDecimals) ===
+          roundMoney(input.existingToAmount, toDecimals)
           ? undefined
           : updateDto.toAmount;
       const fx = await this.resolveTransferFx({
@@ -490,6 +557,7 @@ export class TransactionTransferService {
         toAccount: input.toAccount,
         amount: input.amount,
         transactionDate: input.transactionDate,
+        places,
         suppliedFromCurrencyCode: updateDto.fromCurrencyCode,
         suppliedToCurrencyCode: updateDto.toCurrencyCode,
         suppliedExchangeRate: suppliedRate,
@@ -538,6 +606,17 @@ export class TransactionTransferService {
   ): boolean {
     const rate = Number(existingRate);
     return existingFromAmount === 0 || !Number.isFinite(rate) || rate <= 0;
+  }
+
+  /**
+   * `decimal_places` of `codes`, read once per operation (`loadCurrencyPlaces`)
+   * and threaded to every helper that rounds or refuses an amount in them.
+   * Joins the caller's transaction when there is one.
+   */
+  private readCurrencyPlaces(
+    codes: readonly (string | null | undefined)[],
+  ): Promise<ReadonlyMap<string, number>> {
+    return withScopedDb(this.dataSource, (m) => loadCurrencyPlaces(m, codes));
   }
 
   private triggerNetWorthRecalc(accountId: string, userId: string): void {
@@ -762,12 +841,18 @@ export class TransactionTransferService {
     // is fully decided above, before the bypass window opens.
     const hasForeignLeg = fromOwnerId !== userId || toOwnerId !== userId;
 
-    // Currencies, rate and destination amount all derived from the accounts.
+    // Currencies, rate and destination amount all derived from the accounts,
+    // each amount held to its own currency's money precision.
+    const currencyPlaces = await this.readCurrencyPlaces([
+      fromAccount.currencyCode,
+      toAccount.currencyCode,
+    ]);
     const fx = await this.resolveTransferFx({
       fromAccount,
       toAccount,
       amount,
       transactionDate,
+      places: currencyPlaces,
       suppliedFromCurrencyCode: fromCurrencyCode,
       suppliedToCurrencyCode: toCurrencyCode,
       suppliedExchangeRate: createTransferDto.exchangeRate,
@@ -797,6 +882,7 @@ export class TransactionTransferService {
       sourceCurrency,
       destinationCurrency,
       effectiveExchangeRate,
+      currencyPlaces,
       fromPayeeName,
       toPayeeName,
     };
@@ -851,6 +937,21 @@ export class TransactionTransferService {
       // A future-dated leg skips `updateBalance` and its `openOnly` refusal, so
       // a closed account would take the leg and move on the day it falls due.
       this.assertAccountsOpen(prepared.fromAccount, prepared.toAccount);
+      // Both legs at their currency's precision, before the first insert, in
+      // the write's own transaction (INV-MONEY-001).
+      assertAmountPrecision(
+        amount,
+        precisionCurrencyFor(prepared.currencyPlaces, prepared.sourceCurrency),
+        "amount",
+      );
+      assertAmountPrecision(
+        prepared.toAmount,
+        precisionCurrencyFor(
+          prepared.currencyPlaces,
+          prepared.destinationCurrency,
+        ),
+        "toAmount",
+      );
       // Advisory, in the write's own transaction and identity: the unique
       // index refuses a second leg holding the key (caught below).
       if (externalId) {
@@ -1264,11 +1365,16 @@ export class TransactionTransferService {
     // the commit then posts at a real rate -- the user approving one number and
     // receiving another, which is the divergence audit P5-005 describes for
     // investment previews.
+    const previewPlaces = await this.readCurrencyPlaces([
+      fromAccount.currencyCode,
+      toAccount.currencyCode,
+    ]);
     const previewFx = await this.resolveTransferFx({
       fromAccount,
       toAccount,
       amount: input.amount,
       transactionDate: input.transactionDate,
+      places: previewPlaces,
       suppliedExchangeRate: input.exchangeRate,
       suppliedToAmount: input.toAmount,
     });
@@ -1354,7 +1460,10 @@ export class TransactionTransferService {
       toAccountId: toAccount.id,
       toAccountName: toAccount.name,
       toCurrencyCode: toAccount.currencyCode,
-      amount: roundMoney(input.amount),
+      amount: roundMoney(
+        input.amount,
+        moneyDecimalsForCode(previewPlaces, fromAccount.currencyCode),
+      ),
       toAmount,
       exchangeRate: previewFx.exchangeRate,
       transactionDate: input.transactionDate,
@@ -1414,15 +1523,36 @@ export class TransactionTransferService {
     const oldToAmount = Number(toTransaction.amount);
     let exchangeRate = Number(toTransaction.exchangeRate) || 1;
 
+    const places = await this.readCurrencyPlaces([
+      fromTransaction.currencyCode,
+      toTransaction.currencyCode,
+    ]);
+    if (input.amount !== undefined) {
+      assertAmountPrecision(
+        input.amount,
+        precisionCurrencyFor(places, fromTransaction.currencyCode),
+        "amount",
+      );
+    }
+    const fromDecimals = moneyDecimalsForCode(
+      places,
+      fromTransaction.currencyCode,
+    );
+    const toDecimals = moneyDecimalsForCode(places, toTransaction.currencyCode);
+
     const newAmount =
-      input.amount !== undefined ? roundMoney(input.amount) : oldFromAmount;
+      input.amount !== undefined
+        ? roundMoney(input.amount, fromDecimals)
+        : oldFromAmount;
     const newDate = input.transactionDate ?? fromTransaction.transactionDate;
     // When only the amount changes, scale the destination leg by the stored
     // exchange rate; when nothing money-related changes, keep the stored toAmount.
     let newToAmount =
       input.amount !== undefined
-        ? roundMoney(newAmount * exchangeRate)
-        : roundMoney(oldToAmount);
+        ? applyFxConversion(newAmount, exchangeRate, null, {
+            toDecimals,
+          }).amount
+        : roundMoney(oldToAmount, toDecimals);
 
     // A zero-amount cross-currency transfer is stored at rate 1 because zero
     // needs no rate; that 1 is not a settlement rate, so scaling a new amount
@@ -1444,6 +1574,7 @@ export class TransactionTransferService {
         ),
         amount: newAmount,
         transactionDate: String(newDate),
+        places,
       });
       exchangeRate = fx.exchangeRate;
       newToAmount = fx.toAmount;
@@ -1897,6 +2028,10 @@ export class TransactionTransferService {
     // conserve, and a cross-currency pair with no supplied rate resolves one
     // rather than posting 1:1 (audit P5-002) -- but only when this edit actually
     // changes the financial structure. See `resolveTransferFxForUpdate`.
+    const places = await this.readCurrencyPlaces([
+      newFromAccount.currencyCode,
+      newToAccount.currencyCode,
+    ]);
     const updateFx = await this.resolveTransferFxForUpdate({
       fromAccount: newFromAccount as Account,
       toAccount: newToAccount as Account,
@@ -1908,6 +2043,7 @@ export class TransactionTransferService {
       existingToAmount: oldToAmount,
       existingExchangeRate: toTransaction.exchangeRate,
       updateDto,
+      places,
     });
     const newExchangeRate = updateFx.exchangeRate;
     const newToAmount = updateFx.toAmount;
@@ -1929,6 +2065,7 @@ export class TransactionTransferService {
       updateFx.fromCurrencyCode,
       fromTransaction.currencyCode,
       oldFromAmount,
+      moneyDecimalsForCode(places, updateFx.fromCurrencyCode),
     );
 
     const toUpdateData = this.buildToUpdateData(
@@ -2194,13 +2331,36 @@ export class TransactionTransferService {
     const fromLeg = isFromLeg ? ownLeg : counterpart;
     const toLeg = isFromLeg ? counterpart : ownLeg;
 
-    // The form resends current values on every edit; only a genuine change is
+    // Each amount is held to its own leg's currency, then compared at it: the
+    // form resends current values on every edit, and only a genuine change is
     // structural.
+    const places = await this.readCurrencyPlaces([
+      fromLeg.currencyCode,
+      toLeg.currencyCode,
+    ]);
+    if (updateDto.amount !== undefined) {
+      assertAmountPrecision(
+        updateDto.amount,
+        precisionCurrencyFor(places, fromLeg.currencyCode),
+        "amount",
+      );
+    }
+    if (updateDto.toAmount !== undefined) {
+      assertAmountPrecision(
+        updateDto.toAmount,
+        precisionCurrencyFor(places, toLeg.currencyCode),
+        "toAmount",
+      );
+    }
+    const fromDecimals = moneyDecimalsForCode(places, fromLeg.currencyCode);
+    const toDecimals = moneyDecimalsForCode(places, toLeg.currencyCode);
     const structuralChange =
       (updateDto.amount !== undefined &&
-        roundMoney(updateDto.amount) !== Math.abs(Number(fromLeg.amount))) ||
+        roundMoney(updateDto.amount, fromDecimals) !==
+          roundMoney(Math.abs(Number(fromLeg.amount)), fromDecimals)) ||
       (updateDto.toAmount !== undefined &&
-        roundMoney(updateDto.toAmount) !== roundMoney(Number(toLeg.amount))) ||
+        roundMoney(updateDto.toAmount, toDecimals) !==
+          roundMoney(Number(toLeg.amount), toDecimals)) ||
       (updateDto.exchangeRate !== undefined &&
         Number(updateDto.exchangeRate) !== Number(toLeg.exchangeRate)) ||
       (!!updateDto.transactionDate &&
@@ -2359,6 +2519,15 @@ export class TransactionTransferService {
     // same-currency accounts could move 100 out and 80 in, and a cross-currency
     // pair could post at a stale or absent rate. Authorization stays separate
     // from arithmetic; only the arithmetic moves here.
+    const places = await this.readCurrencyPlaces([
+      fromTransaction.currencyCode,
+      toTransaction.currencyCode,
+    ]);
+    const fromDecimals = moneyDecimalsForCode(
+      places,
+      fromTransaction.currencyCode,
+    );
+    const toDecimals = moneyDecimalsForCode(places, toTransaction.currencyCode);
     const updateFx = await this.resolveTransferFxForUpdate({
       fromAccount: fromTransaction.account as Account,
       toAccount: toTransaction.account as Account,
@@ -2370,6 +2539,7 @@ export class TransactionTransferService {
       existingToAmount: oldToAmount,
       existingExchangeRate: toTransaction.exchangeRate,
       updateDto,
+      places,
     });
     const newExchangeRate = updateFx.exchangeRate;
     const newToAmount = updateFx.toAmount;
@@ -2385,6 +2555,7 @@ export class TransactionTransferService {
       updateFx.fromCurrencyCode,
       fromTransaction.currencyCode,
       oldFromAmount,
+      fromDecimals,
     );
     const toUpdateData = this.buildToUpdateData(
       updateDto,
@@ -2495,9 +2666,10 @@ export class TransactionTransferService {
         const lockedFrom = lockedById.get(fromTransaction.id)!;
         const lockedTo = lockedById.get(toTransaction.id)!;
         const unchanged =
-          roundMoney(Math.abs(lockedFrom.amount)) ===
-            roundMoney(oldFromAmount) &&
-          roundMoney(lockedTo.amount) === roundMoney(oldToAmount) &&
+          roundMoney(Math.abs(lockedFrom.amount), fromDecimals) ===
+            roundMoney(oldFromAmount, fromDecimals) &&
+          roundMoney(lockedTo.amount, toDecimals) ===
+            roundMoney(oldToAmount, toDecimals) &&
           lockedFrom.accountId === fromTransaction.accountId &&
           lockedTo.accountId === toTransaction.accountId &&
           lockedFrom.transactionDate === oldDate &&
@@ -2662,6 +2834,8 @@ export class TransactionTransferService {
     parentTransaction: Transaction,
     newCounterpartAmount: number,
     transactionDate: string,
+    /** The money precision of the split row's (the parent's) currency. */
+    parentDecimals: number,
   ): Promise<{ amount: number; exchangeRate: number }> {
     const legCurrencyCode =
       counterpart.account?.currencyCode ?? counterpart.currencyCode;
@@ -2673,7 +2847,10 @@ export class TransactionTransferService {
       !parentCurrencyCode ||
       legCurrencyCode === parentCurrencyCode
     ) {
-      return { amount: roundMoney(-newCounterpartAmount), exchangeRate: 1 };
+      return {
+        amount: roundMoney(-newCounterpartAmount, parentDecimals),
+        exchangeRate: 1,
+      };
     }
 
     const storedRate = Number(counterpart.exchangeRate);
@@ -2702,7 +2879,7 @@ export class TransactionTransferService {
 
     const exchangeRate = rate;
     return {
-      amount: roundMoney(-newCounterpartAmount / exchangeRate),
+      amount: roundMoney(-newCounterpartAmount / exchangeRate, parentDecimals),
       exchangeRate,
     };
   }
@@ -2764,11 +2941,32 @@ export class TransactionTransferService {
 
     await this.assertCategoryOwned(userId, updateDto.categoryId);
 
+    // The leg's amount is in its own account's currency, the split row's and
+    // the parent's in the parent's: each is held to and rounded at its own
+    // currency's money precision (INV-MONEY-001).
+    const legCurrencyCode =
+      counterpart.account?.currencyCode ?? counterpart.currencyCode;
+    const parentCurrencyCode =
+      parentTransaction.account?.currencyCode ?? parentTransaction.currencyCode;
+    const places = await this.readCurrencyPlaces([
+      legCurrencyCode,
+      parentCurrencyCode,
+    ]);
+    const legDecimals = moneyDecimalsForCode(places, legCurrencyCode);
+    const parentDecimals = moneyDecimalsForCode(places, parentCurrencyCode);
+    if (updateDto.amount !== undefined) {
+      assertAmountPrecision(
+        updateDto.amount,
+        precisionCurrencyFor(places, legCurrencyCode),
+        "amount",
+      );
+    }
+
     const oldCounterpartAmount = Number(counterpart.amount);
     const sign = oldCounterpartAmount < 0 ? -1 : 1;
     const newCounterpartAmount =
       updateDto.amount !== undefined
-        ? roundMoney(sign * Math.abs(updateDto.amount))
+        ? roundMoney(sign * Math.abs(updateDto.amount), legDecimals)
         : oldCounterpartAmount;
     const amountChanged = newCounterpartAmount !== oldCounterpartAmount;
 
@@ -2806,6 +3004,7 @@ export class TransactionTransferService {
           parentTransaction,
           newCounterpartAmount,
           newDate,
+          parentDecimals,
         )
       : undefined;
     const newSplitAmount = resolvedSource?.amount;
@@ -2861,12 +3060,13 @@ export class TransactionTransferService {
         writesParent ? [lockedParent, lockedLeg] : [lockedLeg],
       );
       const unchanged =
-        roundMoney(lockedLeg.amount) === roundMoney(oldCounterpartAmount) &&
+        roundMoney(lockedLeg.amount, legDecimals) ===
+          roundMoney(oldCounterpartAmount, legDecimals) &&
         lockedLeg.accountId === counterpart.accountId &&
         lockedLeg.transactionDate === oldDate &&
         (lockedLeg.status === TransactionStatus.VOID) === counterpartIsVoid &&
-        roundMoney(lockedParent.amount) ===
-          roundMoney(Number(parentTransaction.amount)) &&
+        roundMoney(lockedParent.amount, parentDecimals) ===
+          roundMoney(Number(parentTransaction.amount), parentDecimals) &&
         lockedParent.accountId === parentTransaction.accountId &&
         (lockedParent.status === TransactionStatus.VOID) === parentIsVoid;
       if (!unchanged) {
@@ -2894,10 +3094,13 @@ export class TransactionTransferService {
         } else {
           await this.accountsService.updateBalance(
             counterpart.accountId,
-            // Rounded: the difference of two 4dp decimals is not itself a 4dp
-            // decimal in binary floating point, and this value is the amount a
-            // balance moves by.
-            roundMoney(newCounterpartAmount - oldCounterpartAmount),
+            // Rounded at the leg currency's precision: the difference of two
+            // stored decimals is not itself one in binary floating point, and
+            // this value is the amount a balance moves by.
+            roundMoney(
+              newCounterpartAmount - oldCounterpartAmount,
+              legDecimals,
+            ),
           );
         }
       }
@@ -2915,16 +3118,20 @@ export class TransactionTransferService {
         const siblingSplits = await m.find(TransactionSplit, {
           where: { transactionId: parentTransaction.id },
         });
+        // Exact, at the parent currency's precision: a coin parent keeps the
+        // satoshis of every line (INV-MONEY-001).
         const newParentAmount = sumMoney(
           siblingSplits.map((s) =>
             s.id === parentSplit.id ? newSplitAmount : Number(s.amount),
           ),
+          parentDecimals,
         );
         await retotalSplitParent(
           m,
           userId,
           lockedParent,
           newParentAmount,
+          parentDecimals,
           this.accountsService,
         );
       }
@@ -2973,6 +3180,8 @@ export class TransactionTransferService {
      * row on an edit that changed nothing financial (recheck RR3-002).
      */
     existingFromAmount?: number,
+    /** The source currency's money precision, which the amounts compare at. */
+    fromDecimals?: number,
   ): Partial<Transaction> {
     const data: Partial<Transaction> = {};
     if (updateDto.transactionDate)
@@ -2980,7 +3189,8 @@ export class TransactionTransferService {
     if (
       updateDto.amount !== undefined &&
       (existingFromAmount === undefined ||
-        roundMoney(newAmount) !== roundMoney(existingFromAmount))
+        roundMoney(newAmount, fromDecimals) !==
+          roundMoney(existingFromAmount, fromDecimals))
     )
       data.amount = -newAmount;
     if (updateDto.description !== undefined)

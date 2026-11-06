@@ -1,3 +1,5 @@
+import { decimalPlacesOf } from "../common/amount-precision.util";
+import { FIAT_MONEY_DECIMALS } from "../common/round.util";
 import {
   evaluateRuleCondition,
   evaluateRuleConditionWithCaptures,
@@ -16,9 +18,6 @@ import {
   RuleOperator,
 } from "./rule-condition.types";
 import { GlobCaptures } from "./rule-glob-capture";
-
-/** Money scale of the facts: the amount is a scaled integer (1/10000 units). */
-const MONEY_SCALE = 10000;
 
 /**
  * The fact a leaf compared, as plain data: money as a decimal string at four
@@ -70,8 +69,12 @@ export interface RuleOmittedExplanation {
 export type RuleConditionExplanation =
   RuleLeafExplanation | RuleGroupExplanation | RuleOmittedExplanation;
 
-const scaledToDecimal = (scaled: number): string =>
-  (scaled / MONEY_SCALE).toFixed(4);
+/**
+ * An amount fact as the text a person is shown: at least the four places a
+ * fiat amount is written at, and as many more (to eight) as a coin's carries.
+ */
+const amountToDecimal = (amount: number): string =>
+  amount.toFixed(Math.max(FIAT_MONEY_DECIMALS, decimalPlacesOf(amount)));
 
 /** The fact a field reads, in the form a person is shown. */
 function actualFor(field: RuleField, facts: RuleFacts): RuleLeafActual {
@@ -93,11 +96,11 @@ function actualFor(field: RuleField, facts: RuleFacts): RuleLeafActual {
     case "description":
       return facts.description;
     case "amount":
-      return facts.amount === null ? null : scaledToDecimal(facts.amount);
+      return facts.amount === null ? null : amountToDecimal(facts.amount);
     case "absAmount":
       return facts.amount === null
         ? null
-        : scaledToDecimal(Math.abs(facts.amount));
+        : amountToDecimal(Math.abs(facts.amount));
     case "currencyCode":
       return facts.currencyCode;
     case "tagIds":

@@ -89,8 +89,8 @@ export class Account {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "opening_balance",
     default: 0,
     transformer: numericTransformer,
@@ -99,8 +99,8 @@ export class Account {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "current_balance",
     default: 0,
     transformer: numericTransformer,
@@ -109,8 +109,8 @@ export class Account {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "credit_limit",
     nullable: true,
     transformer: numericTransformer,
@@ -144,8 +144,8 @@ export class Account {
   @Column({
     type: "numeric",
     name: "low_balance_threshold",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     nullable: true,
     transformer: numericTransformer,
   })
@@ -154,8 +154,8 @@ export class Account {
   @Column({
     type: "numeric",
     name: "high_balance_threshold",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     nullable: true,
     transformer: numericTransformer,
   })
@@ -205,8 +205,8 @@ export class Account {
   // Loan-specific fields
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "payment_amount",
     nullable: true,
     transformer: numericTransformer,
@@ -219,8 +219,8 @@ export class Account {
   // the configured value on the next pass (review #1131).
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "extra_payment_amount",
     nullable: true,
     transformer: numericTransformer,
@@ -374,8 +374,8 @@ export class Account {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "original_principal",
     nullable: true,
     transformer: numericTransformer,

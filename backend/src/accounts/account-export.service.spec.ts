@@ -1,6 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -8,6 +10,7 @@ jest.mock("../common/db/scoped-db", () =>
 import {
   AccountExportService,
   CSV_SPLIT_CATEGORY_LABEL,
+  exportAmount,
 } from "./account-export.service";
 import { AccountsService } from "./accounts.service";
 import { Transaction } from "../transactions/entities/transaction.entity";
@@ -168,6 +171,7 @@ describe("AccountExportService", () => {
     };
 
     const { dataSource } = createScopedDbMocks([
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [Transaction, mockTransactionRepo],
       [Category, mockCategoryRepo],
     ]);
@@ -549,6 +553,83 @@ describe("AccountExportService", () => {
       // So for VOID: balance stays at 1000 (opening)
       // For the second tx: balance = 1000 + (-75.5) = 924.5
       expect(lines[2]).toContain("924.5");
+    });
+  });
+
+  describe("a BTC wallet (INV-MONEY-001)", () => {
+    const wallet = {
+      id: accountId,
+      name: "Bitcoin Wallet",
+      accountType: "CRYPTO",
+      currencyCode: "BTC",
+      openingBalance: 0,
+      currentBalance: 0.01247468,
+    };
+    const walletRows = () => [
+      {
+        ...buildMockTransactions()[0],
+        id: "tx-buy",
+        amount: 0.01249993,
+        payeeName: "Exchange",
+      },
+      {
+        ...buildMockTransactions()[1],
+        id: "tx-fee",
+        amount: -0.000025,
+        payeeName: "Network fee",
+      },
+      {
+        ...buildMockTransactions()[1],
+        id: "tx-dust",
+        amount: -0.00000025,
+        payeeName: "Dust",
+      },
+    ];
+
+    it("runs the CSV balance at eight places and never prints an exponent", async () => {
+      mockAccountsService.findOne!.mockResolvedValue(wallet);
+      mockTransactionRepo.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(walletRows()),
+      );
+
+      const lines = (await service.exportCsv(userId, accountId)).split("\n");
+      const cells = lines.slice(1).map((line) => line.split(","));
+
+      // Amount, then Running Balance: at four places the fee moved nothing and
+      // the balance read 0.0125; a bare toString printed the dust as 2.5e-7.
+      expect(cells.map((c) => [c[5], c[7]])).toEqual([
+        ["0.01249993", "0.01249993"],
+        ["-0.000025", "0.01247493"],
+        ["-0.00000025", "0.01247468"],
+      ]);
+    });
+
+    it("prints QIF amounts at eight places, plainly", async () => {
+      mockAccountsService.findOne!.mockResolvedValue(wallet);
+      mockTransactionRepo.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(walletRows()),
+      );
+
+      const lines = (await service.exportQif(userId, accountId)).split("\n");
+
+      expect(lines).toContain("T0.01249993");
+      expect(lines).toContain("T-0.000025");
+      expect(lines).toContain("T-0.00000025");
+    });
+  });
+
+  describe("exportAmount", () => {
+    it.each([
+      [-67.99, 4, "-67.99"],
+      [12.345, 4, "12.345"],
+      [1500, 4, "1500"],
+      [0, 4, "0"],
+      [-0, 8, "0"],
+      [0.1 + 0.2, 4, "0.3"],
+      [-0.00000025, 8, "-0.00000025"],
+      [21000000, 8, "21000000"],
+    ])("writes %p at %p places as %p", (value, decimals, expected) => {
+      expect(exportAmount(value, decimals)).toBe(expected);
     });
   });
 

@@ -1236,10 +1236,10 @@ describe("ImportEntityCreatorService", () => {
     // The opening balance moves current_balance by new - old, both read under
     // the balance-write lock, as one atomic delta at 4dp; the caller's
     // `account` snapshot supplies only the owner (A26-M13).
-    function lockedOpening(opening: string | null) {
+    function lockedOpening(opening: string | null, decimalPlaces = 2) {
       manager.query.mockImplementation(async (sql: string) =>
-        sql.includes("SELECT opening_balance")
-          ? [{ opening_balance: opening }]
+        sql.includes("SELECT a.opening_balance")
+          ? [{ opening_balance: opening, decimal_places: decimalPlaces }]
           : [],
       );
     }
@@ -1260,7 +1260,7 @@ describe("ImportEntityCreatorService", () => {
 
       const [sql, params] = deltaUpdate();
       expect(sql).toContain(
-        "current_balance = ROUND(CAST(current_balance AS numeric) + $4, 4)",
+        "current_balance = CAST(current_balance AS numeric) + $4",
       );
       expect(params).toEqual(["acc-1", "user-1", 250, 150]);
       expect(manager.update).not.toHaveBeenCalled();
@@ -1287,6 +1287,25 @@ describe("ImportEntityCreatorService", () => {
       );
 
       expect(deltaUpdate()[1]).toEqual(["acc-1", "user-1", 100.1234, 100.1234]);
+    });
+
+    it("keeps a coin's eight places when the account's currency carries them", async () => {
+      lockedOpening("0.00000001", 8);
+      const account = makeAccount({ userId: "user-1" } as any);
+
+      await service.applyOpeningBalance(
+        manager as any,
+        "acc-1",
+        account,
+        0.00002501,
+      );
+
+      expect(deltaUpdate()[1]).toEqual([
+        "acc-1",
+        "user-1",
+        0.00002501,
+        0.000025,
+      ]);
     });
   });
 });

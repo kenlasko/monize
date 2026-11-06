@@ -4,6 +4,7 @@ import {
   SettleLoanInstallmentAction,
   SplitAction,
 } from "./rule-action.types";
+import { MONEY_SCALE, sumMoney } from "../common/round.util";
 import { parseRuleAmount } from "./rule-amount";
 import { RuleFacts } from "./rule-condition.types";
 import { GlobCaptures } from "./rule-glob-capture";
@@ -33,7 +34,7 @@ export interface TransferStructurePlan {
   readonly counterpartIds?: readonly string[];
 }
 
-/** One part of a planned split; `amount` is signed like the row, 4 decimals. */
+/** One part of a planned split; `amount` is signed like the row, at most `MONEY_SCALE` decimals. */
 export interface SplitStructurePart {
   readonly amount: number;
   readonly categoryId: string | null;
@@ -126,7 +127,6 @@ export type StructurePlanResult =
   | { readonly ok: true; readonly structure: RuleStructurePlan }
   | { readonly ok: false; readonly reason: StructuralRefusal };
 
-const MONEY_SCALE = 10000;
 const refused = (reason: StructuralRefusal): StructurePlanResult => ({
   ok: false,
   reason,
@@ -179,7 +179,7 @@ function planConvert(
       accountId: target,
       clearCategory: action.clearCategory,
       // The row's amount is non-zero here (`rowRefusal`).
-      amount: -(facts.amount ?? 0) / MONEY_SCALE,
+      amount: -(facts.amount ?? 0),
     },
   };
 }
@@ -221,7 +221,7 @@ function planSplit(
     const magnitude = captureMagnitude(part.amount, captures);
     if (magnitude === null) return refused("split_amount_unparseable");
     magnitudes.push(magnitude);
-    named += magnitude;
+    named = sumMoney([named, magnitude], MONEY_SCALE);
   }
   const hasRest = action.parts.some((p) => p.amount === SPLIT_REST_AMOUNT);
   if (hasRest ? named > total : named !== total) {
@@ -229,10 +229,10 @@ function planSplit(
   }
   const parts: SplitStructurePart[] = [];
   action.parts.forEach((part, i) => {
-    const magnitude = magnitudes[i] ?? total - named;
+    const magnitude = magnitudes[i] ?? sumMoney([total, -named], MONEY_SCALE);
     if (magnitude === 0) return;
     parts.push({
-      amount: (sign * magnitude) / MONEY_SCALE,
+      amount: sign * magnitude,
       categoryId: part.categoryId ?? null,
       transferAccountId: part.transferAccountId ?? null,
       payeeId: part.payeeId ?? null,

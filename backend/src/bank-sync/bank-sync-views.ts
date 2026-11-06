@@ -1,3 +1,4 @@
+import { BANK_SYNC_MONEY_DECIMALS } from "./bank-sync.constants";
 import {
   DEFAULT_PROFILE_ID,
   profileNotesView,
@@ -18,9 +19,9 @@ import type {
  * later (a session id, a state hash) must be named here to reach a response.
  */
 
-/** A `decimal(20,4)` at its column's precision, as the string the API sends. */
+/** A money figure at the bank-sync precision, as the string the API sends. */
 function moneyText(value: number | null): string | null {
-  return value === null ? null : value.toFixed(4);
+  return value === null ? null : value.toFixed(BANK_SYNC_MONEY_DECIMALS);
 }
 
 const iso = (value: Date | null): string | null =>

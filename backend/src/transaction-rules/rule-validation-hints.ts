@@ -231,7 +231,7 @@ const HINTS: Record<RuleValidationCode, HintFn> = {
       ? shapeOfLeafValue(segments, definition)
       : "This value has the wrong JSON type (booleans are true/false, not strings).",
   VALUE_OUT_OF_RANGE: generic(
-    "The value is out of range (dayOfMonth 1-31; amounts are finite numbers with at most 4 decimals; date is a real calendar day as YYYY-MM-DD).",
+    "The value is out of range (dayOfMonth 1-31; amounts are finite numbers with at most 8 decimals; date is a real calendar day as YYYY-MM-DD).",
   ),
   VALUE_TOO_LONG: generic(
     "The text is too long (a condition value is at most 500 characters).",

@@ -1,3 +1,4 @@
+import { MONEY_SCALE, roundMoney } from "../common/round.util";
 import { GlobCaptures, matchGlobWithCaptures } from "./rule-glob-capture";
 import {
   RULE_CONDITION_FIELDS,
@@ -7,12 +8,14 @@ import {
   RuleOperator,
 } from "./rule-condition.types";
 
-/** Money scale: rule literals and facts compare as integers in 1/10000 units. */
-const MONEY_SCALE = 10000;
-
-/** A rule literal as the scaled integer the facts use. */
-export function scaleRuleMoney(value: unknown): number {
-  return Math.round(Number(value) * MONEY_SCALE);
+/**
+ * A rule literal as the decimal the facts use: rounded at the storage scale
+ * (`MONEY_SCALE`, eight places), where a fact and a literal compare by equality.
+ * A fiat amount (two or four places) is the same number at eight, so a fiat
+ * rule compares exactly as it did; a coin's "0.00002500" matches the row.
+ */
+export function ruleMoneyValue(value: unknown): number {
+  return roundMoney(Number(value), MONEY_SCALE);
 }
 
 const normalize = (value: string): string => value.trim().toLowerCase();
@@ -185,9 +188,9 @@ function evaluateMoney(leaf: RuleConditionLeaf, facts: RuleFacts): boolean {
     leaf.field === "absAmount" ? Math.abs(facts.amount) : facts.amount;
   if (leaf.op === "between") {
     const [min, max] = asList(leaf.value);
-    return fact >= scaleRuleMoney(min) && fact <= scaleRuleMoney(max);
+    return fact >= ruleMoneyValue(min) && fact <= ruleMoneyValue(max);
   }
-  const wanted = scaleRuleMoney(leaf.value);
+  const wanted = ruleMoneyValue(leaf.value);
   switch (leaf.op) {
     case "eq":
       return fact === wanted;

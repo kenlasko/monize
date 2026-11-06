@@ -3,7 +3,6 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   Max,
@@ -11,6 +10,7 @@ import {
   Min,
 } from "class-validator";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 /**
  * Most cash flows one scenario may carry. The simulation is synchronous and
@@ -35,7 +35,7 @@ export class CashFlowDto {
   name: string;
 
   /** Signed: positive = income, negative = expense. */
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @Min(-999999999999)
   @Max(999999999999)
   amount: number;

@@ -15,7 +15,12 @@ import {
   computeInvestmentCashImpact,
 } from "../securities/cash-impact.util";
 import { AMOUNT_ONLY_ACTIONS } from "./scheduled-investment-actions";
-import { roundMoney, sumMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  MONEY_SCALE,
+  roundMoney,
+  sumMoney,
+} from "../common/round.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { ensureYMD } from "../common/recurrence";
 import { tr } from "../i18n/translate";
@@ -398,8 +403,11 @@ export class ScheduledEffectiveAmountService {
           directionAmount: Number(row.amount),
         };
       }
+      // A top-level investment's cash is brokerage cash, fiat by
+      // INV-CRYPTO-001, so it rounds at the fiat precision.
       const amount = roundMoney(
         Number(row.amount) * investmentForecastExchangeRate,
+        FIAT_MONEY_DECIMALS,
       );
       return {
         amount,
@@ -427,7 +435,11 @@ export class ScheduledEffectiveAmountService {
         directionAmount: investmentForecastAmount,
       };
     }
-    const stored = roundMoney(Number(row.amount));
+    // A stored amount was held to its currency's precision when written
+    // (INV-MONEY-001), so normalizing it at the column scale is the identity
+    // on it: a coin keeps its satoshis, and the figure is the one posting
+    // will write, as given.
+    const stored = roundMoney(Number(row.amount), MONEY_SCALE);
     return {
       amount: stored,
       currencyCode: row.currencyCode,
@@ -478,7 +490,8 @@ export class ScheduledEffectiveAmountService {
       };
     }
     if (override.amount !== null && override.amount !== undefined) {
-      const own = roundMoney(Number(override.amount));
+      // As the stored base amount: already at its currency's precision.
+      const own = roundMoney(Number(override.amount), MONEY_SCALE);
       return {
         amount: own,
         currencyCode: base.currencyCode,
@@ -1036,7 +1049,8 @@ export class ScheduledEffectiveAmountService {
         amounts.push(Number(split.amount));
       }
     }
-    return sumMoney(amounts);
+    // Investment-carrying lines settle through brokerage cash: fiat.
+    return sumMoney(amounts, FIAT_MONEY_DECIMALS);
   }
 
   /**
@@ -1109,7 +1123,7 @@ export class ScheduledEffectiveAmountService {
       const cashSecurity = AMOUNT_ONLY_ACTIONS.has(action)
         ? Number(total ?? 0)
         : computeInvestmentCashImpact(action, quantity, price, commission);
-      return roundMoney(cashSecurity * rate);
+      return roundMoney(cashSecurity * rate, FIAT_MONEY_DECIMALS);
     }
 
     // Split-investment override: re-sum its base splits at current FX.
@@ -1147,7 +1161,8 @@ export class ScheduledEffectiveAmountService {
         amounts.push(Number(split.amount));
       }
     }
-    return sumMoney(amounts);
+    // Investment-carrying lines settle through brokerage cash: fiat.
+    return sumMoney(amounts, FIAT_MONEY_DECIMALS);
   }
 }
 

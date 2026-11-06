@@ -24,7 +24,11 @@ import {
   minorUnitAbsorbIndex,
 } from "../common/currency-minor-unit.util";
 import { withScopedDb } from "../common/db/scoped-db";
-import { roundMoney } from "../common/round.util";
+import { FIAT_MONEY_DECIMALS, roundMoney } from "../common/round.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
 import { tr } from "../i18n/translate";
 import {
   datedLoanDebt,
@@ -284,6 +288,26 @@ export class ScheduledTransactionLoanService {
     splits: ScheduledTransactionSplit[],
   ): Promise<LoanPostingAllocation> {
     return withScopedDb(this.dataSource, async (m) => {
+      // A coin's smallest unit is its own places (a satoshi), which every
+      // stored line already is at (INV-MONEY-001): booking it at a fiat
+      // minor unit would post a 0.005025 BTC template as 0.01. The stored
+      // template is its own booking.
+      const places = await loadCurrencyPlaces(m, [
+        scheduledTransaction.currencyCode,
+      ]);
+      if (
+        moneyDecimalsForCode(places, scheduledTransaction.currencyCode) >
+        FIAT_MONEY_DECIMALS
+      ) {
+        const amountsBySplitId = new Map<string, number>();
+        for (const split of splits) {
+          if (split.id) amountsBySplitId.set(split.id, Number(split.amount));
+        }
+        return {
+          amountsBySplitId,
+          parentAmount: Number(scheduledTransaction.amount),
+        };
+      }
       const accountTypeById = new Map<string, string>();
       for (const split of splits) {
         const accountId = split.transferAccountId;

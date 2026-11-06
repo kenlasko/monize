@@ -14,7 +14,7 @@ import {
 import {
   advanceSharedRevision,
   assertSharedPrincipal,
-  currencyPlaces,
+  groupCurrencyPlaces,
   lockSharedGroup,
   requireRevision,
   requireSharedGroup,
@@ -203,7 +203,7 @@ export class SharedGroupsService {
         "SELECT id FROM shared_groups WHERE id = $1 AND owner_user_id = $2",
         [groupId, userId],
       );
-      await currencyPlaces(manager, dto.currencyCode);
+      await groupCurrencyPlaces(manager, dto.currencyCode);
       if (
         !dto.name.trim() ||
         !dto.myName.trim() ||
@@ -332,7 +332,7 @@ export class SharedGroupsService {
             );
           }
           if (dto.currencyCode && dto.currencyCode !== group.currencyCode) {
-            await currencyPlaces(manager, dto.currencyCode);
+            await groupCurrencyPlaces(manager, dto.currencyCode);
             const rows: { id: string }[] = await manager.query(
               "SELECT id FROM shared_entries WHERE group_id = $1 UNION ALL SELECT id FROM shared_integrations WHERE group_id = $1 LIMIT 1",
               [groupId],

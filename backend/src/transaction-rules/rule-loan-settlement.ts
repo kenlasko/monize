@@ -100,7 +100,6 @@ export type LoanSettlementStep =
     }
   | { readonly kind: "lookup"; readonly lookup: LoanFactsLookup };
 
-const MONEY_SCALE = 10000;
 const LOAN_ACCOUNT_TYPES: readonly string[] = [
   AccountType.MORTGAGE,
   AccountType.LOAN,
@@ -151,7 +150,7 @@ export function planSettlementStep(
     return refused("row_from_scheduled_posting");
   }
   // Non-zero and same-currency here (`settlementSharedRefusal`).
-  const amount = (facts.amount ?? 0) / MONEY_SCALE;
+  const amount = facts.amount ?? 0;
   if (amount > 0) return refused("row_is_income");
   const target = context.accounts?.get(action.loanAccountId);
   if (

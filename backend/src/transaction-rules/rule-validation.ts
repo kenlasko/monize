@@ -26,6 +26,7 @@ import {
 import { TEMPLATE_BUILTINS, parseTemplate } from "./rule-template";
 import { validateSettleLoanInstallment } from "./rule-validation.loan-settlement";
 import { isRecord } from "../common/helpers/is-record";
+import { RULE_MONEY_ABS_MAX } from "./transaction-rules.limits";
 
 /** Bounds from design section 4. The DTO layer and the validator share them. */
 export const MAX_RULE_CONDITION_DEPTH = 4;
@@ -107,7 +108,6 @@ export interface RuleReferencedIds {
 }
 
 const CURRENCY_CODE = /^[A-Za-z]{3}$/;
-const MONEY_SCALE = 10000;
 
 const hasKey = (o: Record<string, unknown>, k: string): boolean =>
   Object.prototype.hasOwnProperty.call(o, k);
@@ -388,10 +388,7 @@ function validateScalar(
     case "money":
       if (typeof value !== "number") return fail("VALUE_TYPE");
       if (!Number.isFinite(value)) return fail("VALUE_OUT_OF_RANGE");
-      return (
-        Number.isSafeInteger(Math.round(value * MONEY_SCALE)) ||
-        fail("VALUE_OUT_OF_RANGE")
-      );
+      return Math.abs(value) < RULE_MONEY_ABS_MAX || fail("VALUE_OUT_OF_RANGE");
     case "dayOfMonth":
       if (typeof value !== "number") return fail("VALUE_TYPE");
       return (

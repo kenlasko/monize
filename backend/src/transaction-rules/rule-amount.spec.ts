@@ -2,21 +2,25 @@ import { parseRuleAmount } from "./rule-amount";
 
 describe("parseRuleAmount", () => {
   it.each([
-    ["1200,50", 12005000],
-    ["1200.50", 12005000],
-    ["450", 4500000],
+    ["1200,50", 1200.5],
+    ["1200.50", 1200.5],
+    ["450", 450],
     ["0,00", 0],
-    ["85,40", 854000],
-    ["1,2345", 12345],
-    ["0,5", 5000],
-    ["1 234,56", 12345600],
-    ["1 234,56", 12345600],
-    ["1 234,56", 12345600],
-    ["1 234,56", 12345600],
-    ["1.234,56", 12345600],
-    ["12.345.678,9", 123456789000],
-  ])("reads %j as %d (1/10000 units)", (text, scaled) => {
-    expect(parseRuleAmount(text)).toBe(scaled);
+    ["85,40", 85.4],
+    ["1,2345", 1.2345],
+    ["0,5", 0.5],
+    ["1 234,56", 1234.56],
+    ["1 234,56", 1234.56],
+    ["1 234,56", 1234.56],
+    ["1 234,56", 1234.56],
+    ["1.234,56", 1234.56],
+    ["12.345.678,9", 12345678.9],
+    // A coin's eight places survive whole.
+    ["0,00002500", 0.000025],
+    ["0.00002500", 0.000025],
+    ["1,23456789", 1.23456789],
+  ])("reads %j as the decimal %d", (text, magnitude) => {
+    expect(parseRuleAmount(text)).toBe(magnitude);
   });
 
   it.each([
@@ -26,7 +30,7 @@ describe("parseRuleAmount", () => {
     ["+1,00"],
     ["12,"],
     [",5"],
-    ["1,23456"],
+    ["1,234567891"],
     ["1.234.56"],
     ["12 PLN"],
     ["abc"],
@@ -43,7 +47,7 @@ describe("parseRuleAmount", () => {
     expect(parseRuleAmount(undefined as unknown as string)).toBeNull();
   });
 
-  it("refuses a magnitude that is not a safe integer", () => {
+  it("refuses a magnitude beyond what a rule may name", () => {
     expect(parseRuleAmount("99999999999999999999")).toBeNull();
   });
 });

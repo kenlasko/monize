@@ -22,6 +22,7 @@ import {
   LoanFeeCalculation,
   MAX_LOAN_FEES,
 } from "../../loan-installments/loan-fees";
+import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
 /**
  * One fee collected with a mortgage payment (docs/specs/mortgage-fees.md
@@ -67,7 +68,7 @@ export class LoanFeeDto {
     description: "A FIXED fee's amount, in the mortgage's currency",
   })
   @ValidateIf((o: LoanFeeDto) => o.calculation === "FIXED" || o.amount != null)
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsMoneyAmount(4)
   @IsPositive()
   @Max(999999999999)
   amount?: number | null;

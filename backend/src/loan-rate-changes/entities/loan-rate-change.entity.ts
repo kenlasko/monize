@@ -90,8 +90,8 @@ export class LoanRateChange {
 
   @Column({
     type: "decimal",
-    precision: 20,
-    scale: 4,
+    precision: 24,
+    scale: 8,
     name: "new_payment_amount",
     nullable: true,
     transformer: numericTransformer,

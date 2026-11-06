@@ -74,7 +74,7 @@ export class TransactionSplit {
   linkedTransaction: Transaction | null;
 
   @ApiProperty({ example: -50.0, description: "Amount for this split" })
-  @Column({ type: "decimal", precision: 20, scale: 4 })
+  @Column({ type: "decimal", precision: 24, scale: 8 })
   amount: number;
 
   @ApiProperty({ example: "Groceries portion", required: false })

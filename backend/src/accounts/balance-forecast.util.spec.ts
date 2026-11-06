@@ -316,6 +316,51 @@ describe("balance-forecast.util", () => {
       ]);
     });
 
+    it("keeps a BTC wallet's running balance at its eight places (INV-MONEY-001)", () => {
+      const { byDate, overdue } = accumulateForecastDeltas(
+        [
+          occurrence({ dueDate: "2024-07-15", amount: -0.000025 }),
+          occurrence({ dueDate: "2024-07-15", amount: -0.0000321 }),
+          occurrence({
+            dueDate: "2024-07-08",
+            amount: -0.0004321,
+            overdue: true,
+          }),
+        ],
+        "acc-1",
+        new Map(),
+        8,
+      );
+      expect(byDate.get("2024-07-15")).toBe(-0.0000571);
+      expect(overdue.amount).toBe(-0.0004321);
+
+      const series = buildForecastSeries(
+        0.01249993,
+        "2024-07-08",
+        "2024-10-08",
+        byDate,
+        8,
+      );
+      // At four places the anchor read 0.0125 and the 2,500-sat fee vanished.
+      expect(series).toEqual([
+        { date: "2024-07-08", balance: 0.01249993 },
+        { date: "2024-07-15", balance: 0.01244283 },
+      ]);
+    });
+
+    it("rounds a fiat series at four places, as before", () => {
+      const series = buildForecastSeries(
+        100.00004,
+        "2024-07-08",
+        "2024-10-08",
+        new Map([["2024-07-15", -0.00002]]),
+      );
+      expect(series).toEqual([
+        { date: "2024-07-08", balance: 100 },
+        { date: "2024-07-15", balance: 100 },
+      ]);
+    });
+
     it("returns just the anchor when there are no future deltas", () => {
       const series = buildForecastSeries(
         500,

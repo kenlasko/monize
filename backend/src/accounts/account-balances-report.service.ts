@@ -3,7 +3,11 @@ import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { FxAggregate } from "../common/fx-aggregate";
 import { convertWithRateLookup } from "../common/currency-conversion.util";
-import { roundMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyDecimalsFor,
+  roundMoney,
+} from "../common/round.util";
 import {
   applyActionToQuantity,
   INVESTMENT_REPLAY_ORDER_SQL,
@@ -462,20 +466,41 @@ export class AccountBalancesReportService {
     jointAccountIds: string[],
     restriction: string[] | null,
   ): Promise<Map<string, number>> {
-    const rows: Array<{ id: string; balance: string }> = await this.scopedQuery(
+    // Each balance is in its account's own currency, before any conversion,
+    // so it rounds at that currency's precision; the places ride along in
+    // the same statement rather than a read per account.
+    const rows: Array<{
+      id: string;
+      balance: string;
+      decimal_places?: number | string | null;
+    }> = await this.scopedQuery(
       `SELECT a.id,
-                COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) AS balance
+                COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) AS balance,
+                c.decimal_places
            FROM accounts a
+           LEFT JOIN currencies c ON c.code = a.currency_code
            LEFT JOIN transactions t ON t.account_id = a.id
             AND ${LEDGER_MOVEMENT_PREDICATE}
             AND t.transaction_date <= $2
           WHERE (a.user_id = $1 OR a.id = ANY($3::UUID[]))
             AND ($4::UUID[] IS NULL OR a.id = ANY($4::UUID[]))
-          GROUP BY a.id, a.opening_balance`,
+          GROUP BY a.id, a.opening_balance, c.decimal_places`,
       [userId, asOfDate, jointAccountIds, restriction],
     );
 
-    return new Map(rows.map((r) => [r.id, roundMoney(Number(r.balance))]));
+    return new Map(
+      rows.map((r) => [
+        r.id,
+        roundMoney(
+          Number(r.balance),
+          moneyDecimalsFor(
+            r.decimal_places === null || r.decimal_places === undefined
+              ? null
+              : Number(r.decimal_places),
+          ),
+        ),
+      ]),
+    );
   }
 
   /**
@@ -722,7 +747,11 @@ export class AccountBalancesReportService {
         );
       }
       const complete = aggregate.isComplete && unpriced.size === 0;
-      const knownSubtotal = roundMoney(aggregate.knownSubtotal);
+      // Investment positions are fiat (INV-CRYPTO-001).
+      const knownSubtotal = roundMoney(
+        aggregate.knownSubtotal,
+        FIAT_MONEY_DECIMALS,
+      );
       if (approximatedPrices.size > 0 || approximatedPairs.size > 0) {
         this.logger.log(
           `Account ${account.id} valuation at ${asOfDate} uses the closest available data: ` +

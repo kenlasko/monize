@@ -319,6 +319,7 @@
     "categoryIdsNotOwned": "[XX-Category IDs not found or not owned by user: {{ ids }}-XX]"
   },
   "payrollDeductions": {
+    "billAccountMustBeFiat": "[XX-A payroll deduction rule tracks a bill paid in a fiat currency; this bill's account holds the cryptocurrency {{ code }}. Choose a bill paid from a fiat account.-XX]",
     "notFound": "[XX-Payroll deduction rule {{ id }} not found-XX]",
     "duplicate": "[XX-This bill already has a rule for that category-XX]",
     "expectedRequired": "[XX-The bill has no line for this category; enter the amount expected per paycheque-XX]"
@@ -761,6 +762,7 @@
     "runUndoLaterSettlement": "[XX-A later installment of this loan was settled after this run, so the run cannot be undone. Undo the later settlement first-XX]"
   },
   "transactions": {
+    "amountPrecisionExceeded": "[XX-The amount in \"{{ field }}\" has more decimal places than {{ code }} carries ({{ places }}). Enter it with at most {{ places }} decimal places; a currency's decimal places are set on the Currencies page.-XX]",
     "invalidStatus": "[XX-Invalid transaction status: {{ status }}-XX]",
     "reconciledLocked": "[XX-This transaction is reconciled and locked. Turn off 'Lock reconciled transactions' in Settings to change it.-XX]",
     "convertToTransferRefused": "[XX-This transaction can no longer be converted to a transfer. Review it and run the rule again-XX]",

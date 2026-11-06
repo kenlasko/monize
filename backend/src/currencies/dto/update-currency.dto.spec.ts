@@ -61,8 +61,14 @@ describe("UpdateCurrencyDto", () => {
     expect(errors[0].property).toBe("symbol");
   });
 
-  it("rejects decimalPlaces above 4", async () => {
-    const dto = buildDto({ decimalPlaces: 5 });
+  it("accepts decimalPlaces of 8", async () => {
+    const dto = buildDto({ decimalPlaces: 8 });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects decimalPlaces above 8", async () => {
+    const dto = buildDto({ decimalPlaces: 9 });
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe("decimalPlaces");

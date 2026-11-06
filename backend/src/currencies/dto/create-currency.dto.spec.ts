@@ -136,8 +136,14 @@ describe("CreateCurrencyDto", () => {
     expect(errors[0].property).toBe("decimalPlaces");
   });
 
-  it("rejects decimalPlaces above 4", async () => {
-    const dto = buildDto({ decimalPlaces: 5 });
+  it("accepts decimalPlaces of 8, the most money holds", async () => {
+    const dto = buildDto({ decimalPlaces: 8 });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects decimalPlaces above 8", async () => {
+    const dto = buildDto({ decimalPlaces: 9 });
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe("decimalPlaces");
@@ -247,9 +253,14 @@ describe("CreateCurrencyDto", () => {
     expect(await validate(fromBody({ quoteSymbol: "BTC" }))).toHaveLength(0);
   });
 
-  it("refuses decimal places past what money holds, for a coin as for any currency", async () => {
+  it("accepts a coin at eight places and refuses decimal places past what money holds", async () => {
+    expect(
+      await validate(
+        fromBody({ kind: "CRYPTO", quoteSymbol: "BTC-EUR", decimalPlaces: 8 }),
+      ),
+    ).toHaveLength(0);
     const errors = await validate(
-      fromBody({ kind: "CRYPTO", quoteSymbol: "BTC-EUR", decimalPlaces: 8 }),
+      fromBody({ kind: "CRYPTO", quoteSymbol: "BTC-EUR", decimalPlaces: 9 }),
     );
     expect(errors.map((e) => e.property)).toEqual(["decimalPlaces"]);
   });

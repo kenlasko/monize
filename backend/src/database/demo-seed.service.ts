@@ -13,6 +13,7 @@ import { demoInstitutions } from "./demo-seed-data/institutions";
 import { demoPayees } from "./demo-seed-data/payees";
 import { generateTransactions } from "./demo-seed-data/transactions";
 import { roundFxRate } from "../common/fx-entry.util";
+import { moneyDecimalsFor, sumMoney } from "../common/round.util";
 import {
   DEMO_CRYPTO_CURRENCY,
   DEMO_CRYPTO_RATE_SOURCE,
@@ -38,6 +39,19 @@ const PAYEE_LOGO_CONCURRENCY = 6;
 /** A demo account's currency, by its key; CAD for a key the demo lacks. */
 function demoAccountCurrency(key: string): string {
   return demoAccounts.find((a) => a.key === key)?.currency ?? "CAD";
+}
+
+/**
+ * The money precision of a demo account's currency: the coin's own eight
+ * places for the wallet, four for every fiat account
+ * (`docs/specs/money-precision.md` decision 2).
+ */
+function demoAccountMoneyDecimals(key: string): number {
+  return moneyDecimalsFor(
+    demoAccountCurrency(key) === DEMO_CRYPTO_CURRENCY.code
+      ? DEMO_CRYPTO_CURRENCY.decimals
+      : null,
+  );
 }
 
 /**
@@ -832,10 +846,18 @@ export class DemoSeedService {
       );
       const openingBalance =
         demoAccounts.find((a) => a.key === key)?.openingBalance || 0;
+      // Summed at the account's precision: the column holds eight places, so
+      // a float sum written as it stands would keep its noise.
       await withScopedDb(this.dataSource, (manager) =>
         manager.query(
           "UPDATE accounts SET current_balance = $1 WHERE id = $2",
-          [openingBalance + parseFloat(result.total), accountId],
+          [
+            sumMoney(
+              [openingBalance, Number(result.total)],
+              demoAccountMoneyDecimals(key),
+            ),
+            accountId,
+          ],
         ),
       );
     }

@@ -186,6 +186,8 @@ export class TransactionToolPrepService {
     userId: string,
     splits: SplitLineInput[],
     transactionAmount: number,
+    /** The parent account's currency: the lines are held to its places. */
+    currencyCode: string,
   ): Promise<ResolvedSplitLine[]> {
     const resolved: ResolvedSplitLine[] = [];
     for (const line of splits) {
@@ -211,7 +213,11 @@ export class TransactionToolPrepService {
       amount: s.amount,
       memo: s.memo ?? undefined,
     }));
-    this.splitService.validateSplits(dtos, transactionAmount);
+    await this.splitService.validateSplitsInCurrency(
+      dtos,
+      transactionAmount,
+      currencyCode,
+    );
     return resolved;
   }
 
@@ -474,7 +480,12 @@ export class TransactionToolPrepService {
     // A split row carries its categories in the splits array; the parent has no
     // single category.
     const splits = row.splits
-      ? await this.resolveSplits(userId, row.splits, row.amount)
+      ? await this.resolveSplits(
+          userId,
+          row.splits,
+          row.amount,
+          account.currencyCode,
+        )
       : undefined;
     let categoryId: string | undefined;
     if (!splits && row.categoryName) {
@@ -575,7 +586,12 @@ export class TransactionToolPrepService {
     // Validate splits against the effective amount the edit will leave on the
     // transaction (preview.amount reflects item.amount or the existing value).
     const splits = item.splits
-      ? await this.resolveSplits(userId, item.splits, preview.amount)
+      ? await this.resolveSplits(
+          userId,
+          item.splits,
+          preview.amount,
+          preview.currencyCode,
+        )
       : undefined;
     return {
       kind: "standard",

@@ -1,5 +1,5 @@
 import { EntityManager, In } from "typeorm";
-import { roundMoney } from "../common/round.util";
+import { MONEY_SCALE, roundMoney } from "../common/round.util";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { EXTERNAL_ID_MAX_LENGTH } from "../transactions/transaction-external-id";
 
@@ -45,7 +45,8 @@ export function isSameBankRow(
 ): boolean {
   return (
     holder.transactionDate === row.date &&
-    roundMoney(Number(holder.amount)) === roundMoney(row.amount)
+    roundMoney(Number(holder.amount), MONEY_SCALE) ===
+      roundMoney(row.amount, MONEY_SCALE)
   );
 }
 

@@ -1,4 +1,8 @@
 import {
+  FIAT_MONEY_DECIMALS,
+  MONEY_DECIMALS,
+  MONEY_SCALE,
+  moneyDecimalsFor,
   roundToDecimals,
   roundMoney,
   sumMoney,
@@ -28,6 +32,36 @@ describe("toMoneyNumber", () => {
 
   it("passes through plain numbers", () => {
     expect(toMoneyNumber(42)).toBe(42);
+  });
+
+  it("reads an 8-place stored value at 8 places when asked", () => {
+    expect(toMoneyNumber("0.00002500", 8)).toBe(0.000025);
+    expect(toMoneyNumber("0.00002500")).toBe(0);
+    expect(toMoneyNumber("5420.50000000")).toBe(5420.5);
+  });
+});
+
+describe("money precision constants", () => {
+  it("stores at 8 places and rounds fiat at 4", () => {
+    expect(MONEY_SCALE).toBe(8);
+    expect(FIAT_MONEY_DECIMALS).toBe(4);
+    expect(MONEY_DECIMALS).toBe(FIAT_MONEY_DECIMALS);
+  });
+});
+
+describe("moneyDecimalsFor", () => {
+  it.each([
+    [null, 4],
+    [undefined, 4],
+    [0, 4],
+    [2, 4],
+    [3, 4],
+    [4, 4],
+    [6, 6],
+    [8, 8],
+    [9, 8],
+  ])("decimal_places %p has money precision %p", (places, expected) => {
+    expect(moneyDecimalsFor(places)).toBe(expected);
   });
 });
 
@@ -127,6 +161,16 @@ describe("roundToDecimals", () => {
       expect(roundToDecimals(8e-7, 4)).toBe(0);
     });
 
+    it("keeps an exact value exact where one ULP is a sizeable part of a unit", () => {
+      // The one-ULP nudge used to carry these into the next unit.
+      expect(roundToDecimals(21000000, 8)).toBe(21000000);
+      expect(roundToDecimals(90000000, 8)).toBe(90000000);
+      expect(roundToDecimals(20999999.99999999, 8)).toBe(20999999.99999999);
+      expect(roundToDecimals(-21000000.12345678, 8)).toBe(-21000000.12345678);
+      expect(roundToDecimals(1e12, 4)).toBe(1e12);
+      expect(roundToDecimals(1e21, 4)).toBe(1e21);
+    });
+
     it("handles zero without producing -0 or NaN", () => {
       expect(roundToDecimals(0, 4)).toBe(0);
       expect(Object.is(roundToDecimals(0, 4), 0)).toBe(true);
@@ -157,6 +201,14 @@ describe("roundMoney", () => {
     expect(roundMoney(Infinity)).toBe(Infinity);
     expect(roundMoney(NaN)).toBeNaN();
   });
+
+  it("rounds at 8 places when the currency carries 8", () => {
+    expect(roundMoney(0.000025, 8)).toBe(0.000025);
+    expect(roundMoney(0.000025)).toBe(0);
+    expect(roundMoney(1700 / 136000.123456789, 8)).toBe(0.01249999);
+    expect(roundMoney(0.000000005, 8)).toBe(0.00000001);
+    expect(roundMoney(-0.000000005, 8)).toBe(-0.00000001);
+  });
 });
 
 describe("sumMoney", () => {
@@ -180,5 +232,37 @@ describe("sumMoney", () => {
 
   it("ignores non-finite entries", () => {
     expect(sumMoney([1.5, NaN, 2.5, Infinity])).toBe(4);
+    expect(sumMoney([0.00000001, NaN, -Infinity], 8)).toBe(0.00000001);
+  });
+
+  it("rounds each value at the requested precision before summing", () => {
+    expect(sumMoney([0.000025, 0.005])).toBe(0.005);
+    expect(sumMoney([0.000025, 0.005], 8)).toBe(0.005025);
+    expect(sumMoney([-0.005, -0.000025], 8)).toBe(-0.005025);
+  });
+
+  it("sums at 8 places exactly where the float form drifts", () => {
+    expect(sumMoney([20999999.99999999, 0.00000001], 8)).toBe(21000000);
+    expect(sumMoney([0.1, 0.2], 8)).toBe(0.3);
+    const tiny = Array.from({ length: 1000 }, () => 0.00000001);
+    expect(sumMoney(tiny, 8)).toBe(0.00001);
+  });
+
+  it("carries a total whose integer units exceed 2^53", () => {
+    // 1e9 at 8 places is 1e17 units, beyond Number.MAX_SAFE_INTEGER (~9e15).
+    expect(1e9 * 1e8).toBeGreaterThan(Number.MAX_SAFE_INTEGER);
+    expect(sumMoney([1e9, 0.5, 0.5], 8)).toBe(1000000001);
+    expect(sumMoney([999999999.5, 0.5], 8)).toBe(1e9);
+    expect(sumMoney([1e9, -1e9, 0.00000001], 8)).toBe(0.00000001);
+  });
+
+  it("handles magnitudes that stringify in exponential notation", () => {
+    expect(sumMoney([1e-7, 1e-7], 8)).toBe(2e-7);
+    expect(sumMoney([1e21, 1e21])).toBe(2e21);
+  });
+
+  it("returns the same answers at the default precision as before", () => {
+    expect(sumMoney([100.12345, 0.00004])).toBe(100.1235);
+    expect(sumMoney([12.3456, -2.3456])).toBe(10);
   });
 });

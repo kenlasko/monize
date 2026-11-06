@@ -29,12 +29,12 @@ describe("updateAccountBalance", () => {
     // (docs/concurrency-and-idempotency.md section 2, row 1).
     const manager = makeMockManager();
 
-    await updateAccountBalance(asManager(manager), "acc-1", 50);
+    await updateAccountBalance(asManager(manager), "acc-1", 50, 4);
 
     expect(manager.query).toHaveBeenCalledTimes(1);
     const [sql, params] = manager.query.mock.calls[0] as [string, unknown[]];
     expect(normalize(sql)).toBe(
-      "UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 4) WHERE id = $2 AND is_closed = false RETURNING id",
+      "UPDATE accounts SET current_balance = CAST(current_balance AS numeric) + $1 WHERE id = $2 AND is_closed = false RETURNING id",
     );
     expect(params).toEqual([50, "acc-1"]);
     // No SELECT of the account, and no absolute write.
@@ -45,7 +45,7 @@ describe("updateAccountBalance", () => {
   it("passes the delta parameterized rather than interpolated", async () => {
     const manager = makeMockManager();
 
-    await updateAccountBalance(asManager(manager), "acc-1", -75);
+    await updateAccountBalance(asManager(manager), "acc-1", -75, 4);
 
     const [sql, params] = manager.query.mock.calls[0] as [string, unknown[]];
     expect(sql).not.toContain("-75");
@@ -59,8 +59,8 @@ describe("updateAccountBalance", () => {
     // statement ever read the balance.
     const manager = makeMockManager();
 
-    await updateAccountBalance(asManager(manager), "acc-1", 40.25);
-    await updateAccountBalance(asManager(manager), "acc-1", -15.5);
+    await updateAccountBalance(asManager(manager), "acc-1", 40.25, 4);
+    await updateAccountBalance(asManager(manager), "acc-1", -15.5, 4);
 
     const deltas = manager.query.mock.calls.map(
       (call) => (call[1] as unknown[])[0],
@@ -82,7 +82,7 @@ describe("updateAccountBalance", () => {
 
     // 4dp is the `decimal(20,4)` precision; the old helper rounded the sum to
     // 2dp and lost the last two digits of every imported amount.
-    await updateAccountBalance(asManager(manager), "acc-1", 10.12345);
+    await updateAccountBalance(asManager(manager), "acc-1", 10.12345, 4);
 
     expect((manager.query.mock.calls[0][1] as unknown[])[0]).toBe(10.1235);
   });
@@ -90,7 +90,7 @@ describe("updateAccountBalance", () => {
   it("keeps a fraction of a cent instead of rounding it away", async () => {
     const manager = makeMockManager();
 
-    await updateAccountBalance(asManager(manager), "acc-1", 0.0025);
+    await updateAccountBalance(asManager(manager), "acc-1", 0.0025, 4);
 
     expect((manager.query.mock.calls[0][1] as unknown[])[0]).toBe(0.0025);
   });
@@ -102,15 +102,24 @@ describe("updateAccountBalance", () => {
       asManager(manager),
       "acc-1",
       Number.NaN as number,
+      4,
     );
 
     expect((manager.query.mock.calls[0][1] as unknown[])[0]).toBe(0);
   });
 
+  it("keeps a coin's eight places when the account's currency carries them", async () => {
+    const manager = makeMockManager();
+
+    await updateAccountBalance(asManager(manager), "btc-1", -0.000025, 8);
+
+    expect((manager.query.mock.calls[0][1] as unknown[])[0]).toBe(-0.000025);
+  });
+
   it("targets the account it was given", async () => {
     const manager = makeMockManager();
 
-    await updateAccountBalance(asManager(manager), "specific-acc", 50);
+    await updateAccountBalance(asManager(manager), "specific-acc", 50, 4);
 
     expect((manager.query.mock.calls[0][1] as unknown[])[1]).toBe(
       "specific-acc",
@@ -124,7 +133,7 @@ describe("updateAccountBalance", () => {
     manager.query.mockResolvedValue([[], 0]);
 
     await expect(
-      updateAccountBalance(asManager(manager), "non-existent", 100),
+      updateAccountBalance(asManager(manager), "non-existent", 100, 4),
     ).resolves.toBeUndefined();
     // Only the closed-account probe follows, and it finds nothing.
     expect(manager.query).toHaveBeenCalledTimes(2);
@@ -137,7 +146,7 @@ describe("updateAccountBalance", () => {
       .mockResolvedValueOnce([{ "?column?": 1 }]);
 
     await expect(
-      updateAccountBalance(asManager(manager), "closed-acc", 100),
+      updateAccountBalance(asManager(manager), "closed-acc", 100, 4),
     ).rejects.toThrow("The account is closed");
   });
 });

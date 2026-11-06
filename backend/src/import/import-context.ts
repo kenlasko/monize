@@ -2,7 +2,16 @@ import { BadRequestException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { Account } from "../accounts/entities/account.entity";
 import { applyAccountBalanceDelta } from "../accounts/accounts.service";
-import { roundMoney } from "../common/round.util";
+import { assertAmountPrecision } from "../common/amount-precision.util";
+import {
+  loadCurrencyPlaces,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyDecimalsFor,
+  roundMoney,
+} from "../common/round.util";
 import { returnedRows } from "../common/db/query-result";
 import { tr } from "../i18n/translate";
 import { TransactionRule } from "../transaction-rules/transaction-rule.entity";
@@ -83,6 +92,14 @@ export interface ImportContext {
   userId: string;
   accountId: string;
   account: Account;
+  /**
+   * The money precision of `account`'s currency (`moneyDecimalsFor` of its
+   * `decimal_places`), loaded once per file by the import service. Absent
+   * reads as the fiat default; read it through `importMoneyDecimals`.
+   */
+  moneyDecimals?: number;
+  /** `currencyMoneyDecimals`' memo: money precision by currency code. */
+  decimalsByCode?: Map<string, number>;
   categoryMap: Map<string, string | null>;
   accountMap: Map<string, string | null>;
   loanCategoryMap: Map<string, string>;
@@ -115,6 +132,90 @@ export interface ImportContext {
   importRules?: readonly TransactionRule[];
   /** Created by the investment processor on its first row (see `ImportBondState`). */
   bond?: ImportBondState;
+}
+
+/** The money precision of the account the import writes to (fiat: 4). */
+export function importMoneyDecimals(
+  ctx: Pick<ImportContext, "moneyDecimals">,
+): number {
+  return ctx.moneyDecimals ?? FIAT_MONEY_DECIMALS;
+}
+
+/**
+ * The money precision of `currencyCode`, for a transfer leg landing in an
+ * account whose currency may differ from the import's. The import account's own
+ * currency answers from `ctx.moneyDecimals`; any other code is read once per
+ * run and remembered.
+ */
+export async function currencyMoneyDecimals(
+  ctx: Pick<
+    ImportContext,
+    "manager" | "account" | "moneyDecimals" | "decimalsByCode"
+  >,
+  currencyCode: string,
+): Promise<number> {
+  if (currencyCode === ctx.account.currencyCode) {
+    return importMoneyDecimals(ctx);
+  }
+  const memo = (ctx.decimalsByCode ??= new Map<string, number>());
+  const known = memo.get(currencyCode);
+  if (known !== undefined) return known;
+  const places = await loadCurrencyPlaces(ctx.manager, [currencyCode]);
+  const decimals = moneyDecimalsForCode(places, currencyCode);
+  memo.set(currencyCode, decimals);
+  return decimals;
+}
+
+/** The money precision of `currencyCode`, read once for an import's account. */
+export async function loadMoneyDecimals(
+  manager: EntityManager,
+  currencyCode: string,
+): Promise<number> {
+  const places = await loadCurrencyPlaces(manager, [currencyCode]);
+  return moneyDecimalsForCode(places, currencyCode);
+}
+
+/**
+ * The money precision of one account's currency, for a balance move on an
+ * account the import context does not describe (a merged-transfer cleanup
+ * reaches the counterpart's account). An unknown account or currency reads as
+ * the fiat default.
+ */
+export async function accountMoneyDecimals(
+  manager: EntityManager,
+  accountId: string,
+): Promise<number> {
+  const rows = returnedRows(
+    await manager.query(
+      `SELECT c.decimal_places
+         FROM accounts a
+         JOIN currencies c ON c.code = a.currency_code
+        WHERE a.id = $1`,
+      [accountId],
+    ),
+  ) as Array<{ decimal_places: number | string | null }>;
+  const places = rows[0]?.decimal_places;
+  return moneyDecimalsFor(places == null ? undefined : Number(places));
+}
+
+/**
+ * Refuse a file amount with more places than the import account's currency
+ * carries (INV-MONEY-001): the row is reported, never stored rounded. The row's
+ * savepoint rolls back and the result names it.
+ */
+export function assertImportAmountPrecision(
+  ctx: Pick<ImportContext, "account" | "moneyDecimals">,
+  amount: number,
+  field: string,
+): void {
+  assertAmountPrecision(
+    amount,
+    {
+      code: ctx.account.currencyCode,
+      decimalPlaces: importMoneyDecimals(ctx),
+    },
+    field,
+  );
 }
 
 /** The run's bond state, created on first use (a file with no bond security never pays for it). */
@@ -215,16 +316,17 @@ export function restoreRowCounters(
  * order (the `lockHoldingScope` advisory lock is the transaction's first
  * statement) is unchanged.
  *
- * The delta itself is rounded through `roundMoney` (4dp, the column's
- * precision); the sum is rounded by the database. A row that does not exist is
+ * The delta itself is rounded through `roundMoney` at `decimals`, the money
+ * precision of the moved account's currency; the sum is rounded by the database. A row that does not exist is
  * a no-op, as before.
  */
 export async function updateAccountBalance(
   manager: EntityManager,
   accountId: string,
   amount: number,
+  decimals: number,
 ): Promise<void> {
-  const delta = roundMoney(Number(amount) || 0);
+  const delta = roundMoney(Number(amount) || 0, decimals);
   const updated = await applyAccountBalanceDelta(manager, accountId, delta, {
     openOnly: true,
   });

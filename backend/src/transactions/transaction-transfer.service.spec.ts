@@ -10,6 +10,7 @@ import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { Category } from "../categories/entities/category.entity";
+import { Currency } from "../currencies/entities/currency.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { PayeesService } from "../payees/payees.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
@@ -82,6 +83,16 @@ describe("TransactionTransferService", () => {
   let exchangeRateService: Record<string, jest.Mock>;
   let rulesApplier: Record<string, jest.Mock>;
   let mockDataSource: DataSourceMock;
+  const currenciesRepository = {
+    find: jest.fn(async () => [
+      { code: "USD", decimalPlaces: 2 },
+      { code: "CAD", decimalPlaces: 2 },
+      { code: "EUR", decimalPlaces: 2 },
+      { code: "GBP", decimalPlaces: 2 },
+      { code: "PLN", decimalPlaces: 2 },
+      { code: "BTC", decimalPlaces: 8 },
+    ]),
+  };
 
   const mockFindOne = jest.fn();
   let crossOwnerAccess: Record<string, jest.Mock>;
@@ -291,6 +302,8 @@ describe("TransactionTransferService", () => {
       // locked leg is RECONCILED. Default: off, which is what every existing
       // user has and what these per-leg reconciliation tests describe.
       [UserPreference, userPreferenceRepository],
+      // `decimal_places` per currency: fiat at 2 (money precision 4), BTC at 8.
+      [Currency, currenciesRepository],
     ]);
     mockDataSource = tenantMocks.dataSource;
 
@@ -771,6 +784,126 @@ describe("TransactionTransferService", () => {
       // 500 * 1.35 = 675
       expect(toCreateCall.amount).toBe(675);
       expect(toCreateCall.currencyCode).toBe("CAD");
+    });
+
+    describe("each side at its own currency's money precision (INV-MONEY-001)", () => {
+      const cadFrom = { ...mockFromAccount, currencyCode: "CAD" };
+      const btcFrom = { ...mockFromAccount, currencyCode: "BTC" };
+      const btcTo = { ...mockToAccount, currencyCode: "BTC" };
+      const withAccounts = (from: object, to: object) => {
+        accountsService.findOne.mockImplementation((_u: string, id: string) =>
+          Promise.resolve(id === "to-account" ? to : from),
+        );
+        crossOwnerAccess.accountAccessFor.mockImplementation(
+          (_u: string, id: string) =>
+            Promise.resolve({ account: id === "to-account" ? to : from }),
+        );
+        transactionsRepository.save
+          .mockReset()
+          .mockResolvedValueOnce({ id: "from-tx-id" })
+          .mockResolvedValueOnce({ id: "to-tx-id" });
+        mockFindOne
+          .mockResolvedValueOnce({ id: "from-tx-id" })
+          .mockResolvedValueOnce({ id: "to-tx-id" });
+      };
+
+      it("converts 1,700 CAD into BTC at eight places when no amount arrived is stated", async () => {
+        withAccounts(cadFrom, btcTo);
+        // BTC->CAD 136000.1234567890, read the other way at rate precision.
+        exchangeRateService.getRateForDate.mockResolvedValue(0.0000073529);
+
+        await service.createTransfer(
+          "user-1",
+          { ...baseTransferDto, fromCurrencyCode: "CAD", amount: 1700 },
+          mockFindOne,
+        );
+
+        const toCreateCall = transactionsRepository.create.mock.calls[1][0];
+        // 1700 x 0.0000073529 = 0.01249993, not the 0.0125 four places give.
+        expect(toCreateCall.amount).toBe(0.01249993);
+        expect(toCreateCall.currencyCode).toBe("BTC");
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "to-account",
+          0.01249993,
+        );
+      });
+
+      it("stores a stated BTC amount as given, at its implied rate", async () => {
+        withAccounts(cadFrom, btcTo);
+
+        await service.createTransfer(
+          "user-1",
+          {
+            ...baseTransferDto,
+            fromCurrencyCode: "CAD",
+            amount: 1700,
+            toAmount: 0.01249993,
+          },
+          mockFindOne,
+        );
+
+        const toCreateCall = transactionsRepository.create.mock.calls[1][0];
+        expect(toCreateCall.amount).toBe(0.01249993);
+        expect(toCreateCall.exchangeRate).toBe(0.0000073529);
+      });
+
+      it("accepts a 2,500-sat BTC transfer and refuses a ninth place before writing", async () => {
+        withAccounts(btcFrom, btcTo);
+        await service.createTransfer(
+          "user-1",
+          { ...baseTransferDto, fromCurrencyCode: "BTC", amount: 0.000025 },
+          mockFindOne,
+        );
+        expect(transactionsRepository.create.mock.calls[0][0].amount).toBe(
+          -0.000025,
+        );
+        expect(transactionsRepository.create.mock.calls[1][0].amount).toBe(
+          0.000025,
+        );
+
+        transactionsRepository.create.mockClear();
+        await expect(
+          service.createTransfer(
+            "user-1",
+            {
+              ...baseTransferDto,
+              fromCurrencyCode: "BTC",
+              amount: 0.000025001,
+            },
+            mockFindOne,
+          ),
+        ).rejects.toThrow(BadRequestException);
+        expect(transactionsRepository.create).not.toHaveBeenCalled();
+      });
+
+      it("refuses a stated BTC amount with a ninth place", async () => {
+        withAccounts(cadFrom, btcTo);
+        await expect(
+          service.createTransfer(
+            "user-1",
+            {
+              ...baseTransferDto,
+              fromCurrencyCode: "CAD",
+              amount: 1700,
+              toAmount: 0.012499931,
+            },
+            mockFindOne,
+          ),
+        ).rejects.toThrow(/toAmount/);
+        expect(transactionsRepository.save).not.toHaveBeenCalled();
+      });
+
+      it("still refuses a CAD amount at five places", async () => {
+        withAccounts(cadFrom, { ...mockToAccount, currencyCode: "CAD" });
+        await expect(
+          service.createTransfer(
+            "user-1",
+            { ...baseTransferDto, fromCurrencyCode: "CAD", amount: 12.34567 },
+            mockFindOne,
+          ),
+        ).rejects.toThrow(BadRequestException);
+        expect(transactionsRepository.save).not.toHaveBeenCalled();
+      });
     });
 
     describe("currency and FX are server-authoritative (P5-002)", () => {
@@ -3587,8 +3720,9 @@ describe("TransactionTransferService", () => {
 
       await service.createTransfer("user-1", baseTransferDto, mockFindOne);
 
-      // All the writes are grouped into a single tenant transaction.
-      expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
+      // All the writes are grouped into a single tenant transaction, after one
+      // short read of the currencies' decimal places (INV-MONEY-001).
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(2);
     });
 
     it("createTransfer propagates write errors so the tenant transaction rolls back", async () => {
@@ -3600,9 +3734,10 @@ describe("TransactionTransferService", () => {
         service.createTransfer("user-1", baseTransferDto, mockFindOne),
       ).rejects.toThrow("DB error");
 
-      // One withScopedDb groups every write; the rejection above is what makes
-      // the surrounding transaction roll back.
-      expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
+      // One withScopedDb groups every write (after the read of the
+      // currencies' places); the rejection above is what makes the
+      // surrounding transaction roll back.
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(2);
     });
 
     it("removeTransfer runs its writes in a single tenant transaction", async () => {
@@ -3686,7 +3821,7 @@ describe("TransactionTransferService", () => {
 
       // The split-parent lookup is its own short read transaction (as the
       // pre-RLS autocommit read was); every write lands in one withScopedDb.
-      expect(mockDataSource.transaction).toHaveBeenCalledTimes(2);
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(3); // + the currencies' places read
     });
 
     it("updateTransfer propagates write errors so the tenant transaction rolls back", async () => {
@@ -3729,7 +3864,7 @@ describe("TransactionTransferService", () => {
 
       // Lookup + write block; the rejection above is what makes the
       // surrounding write transaction roll back.
-      expect(mockDataSource.transaction).toHaveBeenCalledTimes(2);
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(3); // + the currencies' places read
     });
   });
 
