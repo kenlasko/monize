@@ -37,5 +37,5 @@ Plan: [`money-precision.md`](./money-precision.md). Spec:
 
 - [x] Instruction files, contracts, specs, website pages; `docs:build`.
 - [x] Locales; pseudo.
-- [ ] Screenshots retaken.
-- [ ] Code review, adversarial review, fixes, gates (changed specs only), `trail check`, learning.
+- [x] Screenshots retaken.
+- [x] Code review, adversarial review, fixes, gates (changed specs only), `trail check`, learning.
