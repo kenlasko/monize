@@ -14,7 +14,12 @@ import { AccountType } from "./entities/account.entity";
  *   action: the delete fails on the foreign key);
  * - with a split line transferring into it (the split's
  *   `transfer_account_id`, ON DELETE CASCADE: the line goes and the
- *   remaining lines no longer add up to the schedule's amount).
+ *   remaining lines no longer add up to the schedule's amount);
+ * - with a pending occurrence override whose split line transfers into it
+ *   (`scheduled_transaction_overrides.splits[].transferAccountId`, JSONB with
+ *   no foreign key: the override would post a leg into a missing account).
+ *   An override of a slot before the schedule's `next_due_date` is spent and
+ *   never posts, so it does not count.
  *
  * A loan or mortgage's own payment schedule is left out: `AccountsService.delete`
  * removes it deliberately, together with the account.
@@ -37,7 +42,13 @@ export async function countSchedulesReferencingAccounts(
              OR EXISTS (
                SELECT 1 FROM scheduled_transaction_splits sts
                WHERE sts.scheduled_transaction_id = st.id
-                 AND sts.transfer_account_id = a.id))
+                 AND sts.transfer_account_id = a.id)
+             OR EXISTS (
+               SELECT 1 FROM scheduled_transaction_overrides sto
+               WHERE sto.scheduled_transaction_id = st.id
+                 AND sto.original_date >= st.next_due_date
+                 AND sto.splits @> jsonb_build_array(
+                       jsonb_build_object('transferAccountId', a.id::text))))
         AND NOT (a.account_type = ANY($2)
                  AND st.id IS NOT DISTINCT FROM a.scheduled_transaction_id)
        WHERE a.id = ANY($1)

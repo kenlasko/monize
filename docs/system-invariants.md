@@ -1010,9 +1010,13 @@ Enforcement         AccountsService.assertAccountEmpty, asked before the loan's
                     schedule paid from the account (ON DELETE CASCADE), a scheduled
                     transfer into it (ON DELETE SET NULL, which turned the transfer
                     into an uncategorized plain transaction), an investment funded
-                    from it (no action: the delete failed on the FK), or a split
+                    from it (no action: the delete failed on the FK), a split
                     line transferring into it (ON DELETE CASCADE, which left the
-                    other schedule's lines short of its amount) (#2028). The list's
+                    other schedule's lines short of its amount), or a pending
+                    occurrence override's split line transferring into it
+                    (scheduled_transaction_overrides.splits[].transferAccountId,
+                    JSONB that no foreign key guards; an override of a slot before
+                    next_due_date is spent and not counted) (#2028). The list's
                     canDelete and GET /accounts/:id/can-delete read the same counts,
                     so the delete action is not offered for a refused account.
 Concurrency scope   account

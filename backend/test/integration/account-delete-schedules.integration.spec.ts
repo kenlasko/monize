@@ -43,6 +43,7 @@ describe("Account delete refuses an account a schedule names (integration)", () 
   beforeEach(async () => {
     await cleanTables(db, [
       "action_history",
+      "scheduled_transaction_overrides",
       "scheduled_transaction_splits",
       "scheduled_transactions",
       "transactions",
@@ -141,6 +142,38 @@ describe("Account delete refuses an account a schedule names (integration)", () 
       [transfer],
     );
     expect(row.transfer_account_id).toBe(b);
+  });
+
+  it("refuses an account a pending override's split line transfers into, and ignores a spent one", async () => {
+    // insertSchedule's next_due_date is 2026-12-01.
+    const schedule = await insertSchedule(a);
+    const overrideInto = (originalDate: string) =>
+      db.query(
+        `INSERT INTO scheduled_transaction_overrides
+           (scheduled_transaction_id, original_date, override_date, amount,
+            is_split, splits)
+         VALUES ($1, $2, $2, -500, true, $3::jsonb)`,
+        [
+          schedule,
+          originalDate,
+          JSON.stringify([
+            {
+              splitKind: "transfer",
+              categoryId: null,
+              transferAccountId: b,
+              amount: -200,
+            },
+            { splitKind: "category", categoryId: null, amount: -300 },
+          ]),
+        ],
+      );
+
+    await overrideInto("2026-11-01");
+    expect(await canDelete(b)).toBe(true);
+
+    await overrideInto("2027-01-01");
+    expect(await canDelete(b)).toBe(false);
+    await expectRefused(b);
   });
 
   it("refuses an account a scheduled investment is funded from", async () => {
