@@ -405,7 +405,13 @@ export class CurrenciesService implements OnApplicationBootstrap {
    * by the bond catalog (its seed and a series fetch); an existing row, active or not, is left as is.
    */
   async ensureCatalogCurrency(code: string): Promise<void> {
-    await this.insertSystemCurrencyIfMissing(code, false);
+    // The default-preference currency is created as bootstrap would create it:
+    // whichever of the two startup hooks runs first must not leave it inactive
+    // (a USD bond program seeded before the bootstrap currency did).
+    await this.insertSystemCurrencyIfMissing(
+      code,
+      code.toUpperCase() === DEFAULT_CURRENCY_CODE,
+    );
   }
 
   private async insertSystemCurrencyIfMissing(
