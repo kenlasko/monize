@@ -124,6 +124,7 @@
       "balance": "Saldo",
       "attachments": "Anexos",
       "status": "Estado",
+      "statusHelp": "Não reconciliada, Confirmada ou Reconciliada são etapas até corresponder a um extrato bancário. Anulada cancela uma transação mas mantém o seu registo; deixa de alterar o saldo da conta.",
       "actions": "Ações"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "Detalhes das Parcelas",
+    "headerTooltip": "Cada linha pode ser uma categoria, uma transferência para outra conta ou um investimento. As linhas têm de somar o total da transação; Distribuir de Forma Igual e Distribuir Proporcionalmente repartem o restante por si.",
     "distributeProportionally": "Distribuir Proporcionalmente",
     "distributeProportionallyTitle": "Distribuir o montante restante proporcionalmente com base no montante de cada parcela",
     "distributeEvenly": "Distribuir de Forma Igual",

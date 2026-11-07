@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, one {# akun} other {# akun}}",
     "usageSecurities": "{count, plural, one {# sekuritas} other {# sekuritas}}",
     "rateHelp": "Nilai satu unit setiap mata uang dalam {currency}.",
+    "rateMissing": "Tidak ada kurs tukar tersimpan untuk {from} ke {to}.",
     "empty": {
       "title": "Tidak ada mata uang",
       "subtitle": "Mulailah dengan menambahkan mata uang."
@@ -159,6 +160,7 @@
     "hint": "Laporan dengan tanggal sebelum kurs tersimpan pertama tidak dapat mengonversi {pair}.",
     "list": {
       "heading": "Kurs tersimpan",
+      "invertedHelp": "Kurs yang ditandai (dibalik) adalah kebalikan dari apa yang sebenarnya disimpan Monize untuk pasangan ini, bukan pengamatan yang berbeda.",
       "direction": "Ditampilkan sebagai {to} per 1 {from}.",
       "loading": "Memuat kurs tersimpan...",
       "loadFailed": "Tidak dapat membaca kurs tersimpan",

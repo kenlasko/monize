@@ -124,6 +124,7 @@
       "balance": "Saldo",
       "attachments": "Lampiran",
       "status": "Status",
+      "statusHelp": "Belum Direkonsiliasi, Kliring, atau Rekonsiliasi adalah langkah menuju pencocokan dengan laporan bank. Batal membatalkan transaksi tetapi menyimpan catatannya; transaksi tidak lagi memengaruhi saldo akun.",
       "actions": "Aksi"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "Detail Pembagian",
+    "headerTooltip": "Setiap baris dapat berupa kategori, transfer ke akun lain, atau investasi. Baris-baris harus berjumlah sama dengan total transaksi; Distribusikan Secara Merata dan Distribusikan Secara Proporsional membagikan sisanya untuk Anda.",
     "distributeProportionally": "Distribusikan Secara Proporsional",
     "distributeProportionallyTitle": "Distribusikan jumlah yang tersisa secara proporsional berdasarkan jumlah setiap pembagian",
     "distributeEvenly": "Distribusikan Secara Merata",

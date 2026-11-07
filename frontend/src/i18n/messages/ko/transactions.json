@@ -124,6 +124,7 @@
       "balance": "잔액",
       "attachments": "첨부 파일",
       "status": "상태",
+      "statusHelp": "미조정, 정리됨, 조정됨은 은행 명세서와 일치시키는 단계입니다. 무효는 거래를 취소하지만 기록은 유지되며, 더 이상 계정 잔액에 영향을 주지 않습니다.",
       "actions": "작업"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "분할 세부 정보",
+    "headerTooltip": "각 행은 분류, 다른 계정으로의 이체, 또는 투자가 될 수 있습니다. 행의 합계는 거래 총액과 일치해야 합니다. 균등 배분과 비례 배분은 나머지 금액을 대신 배분해 줍니다.",
     "distributeProportionally": "비례 배분",
     "distributeProportionallyTitle": "각 분할의 금액에 비례하여 남은 금액을 배분합니다",
     "distributeEvenly": "균등 배분",

@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, one {# acct} other {# accts}}",
     "usageSecurities": "{count, plural, one {# sec} other {# secs}}",
     "rateHelp": "What one unit of each currency is worth in {currency}.",
+    "rateMissing": "No stored exchange rate for {from} to {to}.",
     "empty": {
       "title": "No currencies",
       "subtitle": "Get started by adding a currency."
@@ -159,6 +160,7 @@
     "hint": "Reports dated before the first stored rate cannot convert {pair}.",
     "list": {
       "heading": "Stored rates",
+      "invertedHelp": "A rate marked (inverted) is the reciprocal of what Monize actually stored for this pair, not a different observation.",
       "direction": "Shown as {to} per 1 {from}.",
       "loading": "Loading stored rates...",
       "loadFailed": "Could not read the stored rates",

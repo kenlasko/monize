@@ -124,6 +124,7 @@
       "balance": "Bakiye",
       "attachments": "Ekler",
       "status": "Durum",
+      "statusHelp": "Mutabakatsız, Temizlendi veya Mutabakat Sağlandı, banka hesap özetiyle eşleştirme yolundaki adımlardır. Geçersiz bir işlemi iptal eder ama kaydını saklar; artık hesap bakiyesini hareket ettirmez.",
       "actions": "İşlemler"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "Bölüm Ayrıntıları",
+    "headerTooltip": "Her satır bir kategori, başka bir hesaba yapılan transfer veya bir yatırım olabilir. Satırların toplamı işlem tutarına eşit olmalıdır; Eşit Dağıt ve Orantılı Dağıt kalan tutarı sizin için paylaştırır.",
     "distributeProportionally": "Orantılı Dağıt",
     "distributeProportionallyTitle": "Kalan tutarı her bölümün miktarına göre orantılı olarak dağıt",
     "distributeEvenly": "Eşit Dağıt",

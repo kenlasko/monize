@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { Tag, TagUsageMap } from '@/types/tag';
@@ -589,7 +590,10 @@ export function SplitEditor({
     <div className="space-y-4">
       <div className="flex justify-between items-center gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('splitEditor.header')}</h4>
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+            {t('splitEditor.header')}
+            <InfoTooltip text={t('splitEditor.headerTooltip')} learnMore="transactionSplits" />
+          </h4>
           {canToggleCurrency && (
             <div
               className="inline-flex overflow-hidden rounded-md border border-gray-300 dark:border-gray-600 text-xs"

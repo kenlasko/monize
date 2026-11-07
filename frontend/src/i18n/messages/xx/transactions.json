@@ -124,6 +124,7 @@
       "balance": "[XX-Balance-XX]",
       "attachments": "[XX-Attachments-XX]",
       "status": "[XX-Status-XX]",
+      "statusHelp": "[XX-Unreconciled, Cleared or Reconciled are steps toward matching a bank statement. Void cancels a transaction but keeps its record; it no longer moves the account balance.-XX]",
       "actions": "[XX-Actions-XX]"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "[XX-Split Details-XX]",
+    "headerTooltip": "[XX-Each row can be a category, a transfer to another account, or an investment. The rows must add up to the transaction's total; Distribute Evenly and Distribute Proportionally spread what remains for you.-XX]",
     "distributeProportionally": "[XX-Distribute Proportionally-XX]",
     "distributeProportionallyTitle": "[XX-Distribute the remaining amount proportionally based on each split's amount-XX]",
     "distributeEvenly": "[XX-Distribute Evenly-XX]",

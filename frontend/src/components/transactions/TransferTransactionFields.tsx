@@ -8,6 +8,7 @@ import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
+import { HelpLink } from '@/components/help/HelpLink';
 import { Transaction } from '@/types/transaction';
 import { Account, TransferCandidate } from '@/types/account';
 import { Payee } from '@/types/payee';
@@ -88,6 +89,7 @@ export function TransferTransactionFields({
   createdAtSlot,
 }: TransferTransactionFieldsProps) {
   const t = useTranslations('transactions');
+  const th = useTranslations('help');
   const accountOptionLabel = useAccountOptionLabel();
   const isActing = useAuthStore((state) => !!state.actingAsUserId);
   const isEdit = !!transaction;
@@ -322,7 +324,13 @@ export function TransferTransactionFields({
             error={errors.categoryId?.message as string | undefined}
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {t('form.transferCategoryNote')}
+            {t('form.transferCategoryNote')}{' '}
+            <HelpLink
+              link="transactionTransferCategory"
+              className="underline hover:text-gray-700 dark:hover:text-gray-200"
+            >
+              {th('learnMore')}
+            </HelpLink>
           </p>
         </div>
       </div>
