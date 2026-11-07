@@ -2,15 +2,15 @@
 
 The Dashboard is your financial command center -- a single-page overview of your accounts, spending, income, net worth, investments, and upcoming bills.
 
-Use **Customize** beside the greeting to change the dashboard. Open features such as [Shared Expenses](shared-expenses.md) from **Tools**, or from the navigation menu on a phone.
+Use the **Customize** gear beside the greeting to change the dashboard. Open features such as [Shared Expenses](shared-expenses.md) from **Tools**, or from the navigation menu on a phone.
 
-![The dashboard greeting and Customize button](images/dashboard-header.png)
+![The dashboard greeting and its Customize gear](images/dashboard-header.png)
 
 ---
 
 ## Overview
 
-When you log in, the Dashboard is the first page you see. It greets you by name and arranges its widgets in a two-column grid (one column on a phone). Every widget's title is a link to the page or report it summarizes, so you can go from the summary to the detail in one click.
+When you log in, the Dashboard is the first page you see. It greets you by name for the time of day (Good morning, Good afternoon or Good evening, in your timezone setting), shows today's date, opens with the [dashboard hero](#dashboard-hero) and arranges its widgets in a two-column grid (one column on a phone). Every widget's title is a link to the page or report it summarizes, so you can go from the summary to the detail in one click.
 
 ![The dashboard with its default widgets](images/dashboard-overview.png)
 
@@ -31,18 +31,46 @@ The default layout shows these widgets, in this order:
 
 Many more widgets are available but hidden by default; see [Optional Widgets](#optional-widgets).
 
+### Dashboard Hero
+
+Above the widgets, beside the greeting, the dashboard hero sums up where you stand. It shows one of two sets, chosen in [Customize](#customizing-your-dashboard).
+
+**Net worth** (the default):
+
+- **Net worth** -- your net worth as of the current month, in your default currency
+- **Change this month** -- how far net worth has moved since the end of last month, as an amount and a percentage
+- **Assets, liabilities and invested** -- what you own, what you owe, and the value of the securities you hold (the cash in your investment accounts is not counted as invested)
+- **Net worth chart** -- net worth month by month over **1Y**, **2Y**, **5Y** or **10Y**
+
+![The dashboard hero showing net worth](images/dashboard-header.png)
+
+**Portfolio value**:
+
+- **Portfolio value** -- the total value of the investment accounts you choose, with those accounts named in brackets the way the [Investments](investments.md) page's Portfolio Summary names them
+- **Change over the timeframe** -- how far that value has moved over the timeframe you choose, deposits and withdrawals included. It is a change, not a return
+- **Holdings and cash** -- the value of the securities held and the cash beside them
+- **One return** -- your choice of **Simple return**, **TWR**, **MWR** or **CAGR**, the same figures, since inception, as the Portfolio Summary on the Investments page
+- **Portfolio chart** -- the value of the securities over the timeframe, which can be any of the Investments page chart's: **1D**, **1W**, **MTD**, **1M**, **3M**, **YTD**, **1Y**, **2Y**, **5Y** or **All**. If a holding's quote provider has no intraday prices, **1D** says so instead of drawing a chart
+
+![The dashboard hero showing portfolio value](images/dashboard-hero-portfolio.png)
+
+In either set the highest and lowest points on the chart carry a green and a red value bubble; click a bubble's **x** to hide it until the chart changes. A figure that includes an account whose currency could not be converted, or a holding with no current price, is marked with an amber **\***; hover over it for what is missing. A point that could not be fully worked out is left as a gap in the chart, and a change or return the figures cannot support is shown as unknown, with the reason on hover.
+
+The hero is on by default. With it off, the dashboard opens with just the greeting and today's date.
+
 ---
 
 ## Customizing Your Dashboard
 
-Click **Customize** in the top-right of the dashboard header to tailor which widgets appear and in what order. The **Customize dashboard** dialog mirrors your dashboard: widgets flow left to right, two per row on large screens.
+Click the **Customize** gear beside the greeting to tailor which widgets appear and in what order. The **Customize dashboard** dialog mirrors your dashboard: widgets flow left to right, two per row on large screens.
 
 ![The Customize dashboard dialog, with the hidden widgets below the layout](images/dashboard-customize.png)
 
 - **Show or hide widgets** -- click a widget's **X** to hide it, or add one back later
 - **Reorder widgets** -- drag a widget tile to a new position, or use the arrow buttons (the arrow buttons also work on a phone, where widgets stack in a single column)
 - **Add opt-in widgets** -- hidden widgets appear in a **Hidden widgets** tray beneath the layout; click one to add it to your dashboard
-- **Reset to default** -- restore the standard layout at any time
+- **Dashboard hero** -- the section at the top of the dialog switches the [hero](#dashboard-hero) on or off and picks its set. **Net worth** sets how far back its chart goes; **Portfolio value** sets the accounts it covers (all of them if you choose none), the timeframe, and the return shown beside the holdings and cash
+- **Reset to default** -- restore the standard layout at any time, with the hero on, showing net worth over one year
 
 Click **Save** to apply your changes. At least one widget must stay on the dashboard. Your layout is saved to your account, so it **syncs across all your devices**.
 
@@ -85,7 +113,7 @@ The widgets below are hidden by default and can be added from the **Customize** 
 > The investment widgets (Top Movers, Portfolio Value, Sector Allocation, Security Type Allocation, and Geographic Allocation) only appear when you have investment holdings, and Favourite Securities only when you have securities.
 
 > [!NOTE]
-> **Delegates:** If you're viewing an account you've been granted access to, the dashboard is limited to the Favourite Accounts widget, plus Upcoming Bills and the expiring-warranties widget if those sections were granted. The **Customize** button is hidden for delegates. See [Shared Access](shared-access.md).
+> **Delegates:** If you're viewing an account you've been granted access to, the dashboard has no hero and is limited to the Favourite Accounts widget, plus Upcoming Bills and the expiring-warranties widget if those sections were granted. The **Customize** gear is hidden for delegates. See [Shared Access](shared-access.md).
 
 ---
 

@@ -54,6 +54,7 @@ import {
   type IncomeVsExpensesSortField,
 } from "@/components/reports/IncomeVsExpensesTable";
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-income-vs-expenses-accounts';
 const INCLUDE_TRANSFERS_STORAGE_KEY = 'monize-reports-income-vs-expenses-stack-tagged';
@@ -515,7 +516,7 @@ export function IncomeVsExpensesReport() {
                   onClick={handleChartClick}
                   style={{ cursor: "pointer" }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid {...CHART_GRID_PROPS} />
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 12 }}

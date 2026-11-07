@@ -50,7 +50,7 @@ export function InsightsWidget({ isLoading: parentLoading }: InsightsWidgetProps
         <WidgetHeading id="insights" href="/insights" className="mb-4">
           {sectionTitle}
         </WidgetHeading>
-        <div className="animate-pulse space-y-3">
+        <div className="animate-pulse skeleton-shimmer space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded" />
           ))}

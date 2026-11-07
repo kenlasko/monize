@@ -3,10 +3,14 @@ import { act, screen, fireEvent, createEvent, within } from '@testing-library/re
 import { render } from '@/test/render';
 import { CustomizeDashboardModal } from './CustomizeDashboardModal';
 import { DASHBOARD_WIDGETS, DEFAULT_DASHBOARD_WIDGET_IDS } from './widget-registry';
+import { DASHBOARD_HERO_DEFAULT } from './widget-config';
 
 const { prefsState, updateStorePreferencesMock } = vi.hoisted(() => ({
   prefsState: {
-    current: { dashboardWidgets: [] as string[] },
+    current: { dashboardWidgets: [] as string[] } as {
+      dashboardWidgets: string[];
+      dashboardWidgetConfig?: Record<string, Record<string, unknown>>;
+    },
   },
   updateStorePreferencesMock: vi.fn(),
 }));
@@ -55,6 +59,7 @@ describe('CustomizeDashboardModal', () => {
     prefsState.current = { dashboardWidgets: [] };
     updatePreferencesMock.mockImplementation(async (data) => ({
       dashboardWidgets: data.dashboardWidgets,
+      dashboardWidgetConfig: data.dashboardWidgetConfig,
     }));
   });
 
@@ -80,8 +85,8 @@ describe('CustomizeDashboardModal', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
-    expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: [] });
-    expect(updateStorePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: [] });
+    expect(updatePreferencesMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardWidgets: [] }));
+    expect(updateStorePreferencesMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardWidgets: [] }));
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -94,9 +99,9 @@ describe('CustomizeDashboardModal', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
-    expect(updatePreferencesMock).toHaveBeenCalledWith({
+    expect(updatePreferencesMock).toHaveBeenCalledWith(expect.objectContaining({
       dashboardWidgets: DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'upcoming-bills'),
-    });
+    }));
   });
 
   it('lists the hidden Cash Flow Forecast beside a hidden Upcoming Bills', async () => {
@@ -124,7 +129,7 @@ describe('CustomizeDashboardModal', () => {
     });
     const expected = [...DEFAULT_DASHBOARD_WIDGET_IDS];
     [expected[0], expected[1]] = [expected[1], expected[0]];
-    expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: expected });
+    expect(updatePreferencesMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardWidgets: expected }));
   });
 
   it('showing Favourite Reports appends it to the layout', async () => {
@@ -136,9 +141,9 @@ describe('CustomizeDashboardModal', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
-    expect(updatePreferencesMock).toHaveBeenCalledWith({
+    expect(updatePreferencesMock).toHaveBeenCalledWith(expect.objectContaining({
       dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS, 'favourite-reports'],
-    });
+    }));
   });
 
   it('seeds from a stored custom layout: order kept, others hidden', async () => {
@@ -171,7 +176,7 @@ describe('CustomizeDashboardModal', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
-    expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: [] });
+    expect(updatePreferencesMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardWidgets: [] }));
   });
 
   it('shows an error toast and stays open when saving fails', async () => {
@@ -204,7 +209,7 @@ describe('CustomizeDashboardModal', () => {
       'insights',
       ...DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'insights'),
     ];
-    expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: expected });
+    expect(updatePreferencesMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardWidgets: expected }));
   });
 
   it('dropping in the trailing half of a tile inserts after it', async () => {
@@ -224,9 +229,9 @@ describe('CustomizeDashboardModal', () => {
     const rest = DEFAULT_DASHBOARD_WIDGET_IDS.filter(
       (id) => id !== 'insights' && id !== 'favourite-accounts',
     );
-    expect(updatePreferencesMock).toHaveBeenCalledWith({
+    expect(updatePreferencesMock).toHaveBeenCalledWith(expect.objectContaining({
       dashboardWidgets: ['favourite-accounts', 'insights', ...rest],
-    });
+    }));
   });
 
   it('renders one insertion line per gap, shared by adjacent tile halves', async () => {
@@ -295,7 +300,7 @@ describe('CustomizeDashboardModal', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
-    expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: [] });
+    expect(updatePreferencesMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardWidgets: [] }));
   });
 
   it('a drop with no drag in progress changes nothing', async () => {
@@ -306,7 +311,7 @@ describe('CustomizeDashboardModal', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
-    expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: [] });
+    expect(updatePreferencesMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardWidgets: [] }));
   });
 
   it('shows a widget-type icon in each visible tile and hidden chip', async () => {
@@ -326,5 +331,133 @@ describe('CustomizeDashboardModal', () => {
       const asChip = screen.queryByTestId(`widget-hidden-${w.id}`);
       expect(!!asTile !== !!asChip).toBe(true);
     }
+  });
+
+  describe('dashboard hero', () => {
+    it('is on, over a one-year chart, for a reader who never set it', async () => {
+      await renderModal();
+      const section = screen.getByTestId('customize-hero');
+      expect(within(section).getByRole('switch', { name: 'Show the dashboard hero' })).toBeChecked();
+      expect(within(section).getByRole('button', { name: 'Net worth' })).toHaveAttribute('aria-pressed', 'true');
+      const windows = within(section).getByRole('group', { name: 'Chart' });
+      expect(within(windows).getAllByRole('button').map((b) => b.textContent)).toEqual(['1Y', '2Y', '5Y', '10Y']);
+      expect(within(windows).getByRole('button', { name: '1Y' })).toHaveAttribute('aria-pressed', 'true');
+      expect(within(section).queryByRole('checkbox')).not.toBeInTheDocument();
+    });
+
+    it('saves the chart window with the layout, keeping other widgets\' settings', async () => {
+      prefsState.current = {
+        dashboardWidgets: [],
+        dashboardWidgetConfig: { 'net-worth': { range: '5y' } },
+      };
+      await renderModal();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: '10Y' }));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Save'));
+      });
+      const sent = updatePreferencesMock.mock.calls[0][0];
+      expect(sent.dashboardWidgetConfig['net-worth']).toEqual({ range: '5y' });
+      expect(sent.dashboardWidgetConfig['dashboard-hero']).toEqual({
+        ...DASHBOARD_HERO_DEFAULT,
+        range: '10y',
+      });
+      expect(updateStorePreferencesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ dashboardWidgetConfig: sent.dashboardWidgetConfig }),
+      );
+    });
+
+    it('hides the window choice when the hero is switched off, and saves it off', async () => {
+      await renderModal();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('switch', { name: 'Show the dashboard hero' }));
+      });
+      expect(screen.queryByRole('group', { name: 'Chart' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: 'Show' })).not.toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(screen.getByText('Save'));
+      });
+      expect(updatePreferencesMock.mock.calls[0][0].dashboardWidgetConfig['dashboard-hero'].enabled).toBe(false);
+    });
+
+    it('starts from the stored choice, drops stale keys, and resets to on over one year', async () => {
+      prefsState.current = {
+        dashboardWidgets: [],
+        dashboardWidgetConfig: { 'dashboard-hero': { enabled: false, range: '10y', greeting: false } },
+      };
+      await renderModal();
+      expect(screen.getByRole('switch', { name: 'Show the dashboard hero' })).not.toBeChecked();
+      await act(async () => {
+        fireEvent.click(screen.getByText('Reset to default'));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Save'));
+      });
+      expect(updatePreferencesMock.mock.calls[0][0].dashboardWidgetConfig['dashboard-hero']).toEqual(
+        DASHBOARD_HERO_DEFAULT,
+      );
+    });
+
+    it('offers the portfolio set with its accounts, the value chart\'s timeframes and a figure', async () => {
+      await renderModal();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Portfolio value' }));
+      });
+      const section = screen.getByTestId('customize-hero');
+      expect(within(section).queryByRole('group', { name: 'Chart' })).not.toBeInTheDocument();
+      expect(within(section).getByText('Accounts')).toBeInTheDocument();
+      const timeframe = within(section).getByRole('group', { name: 'Timeframe' });
+      expect(within(timeframe).getAllByRole('button').map((b) => b.textContent)).toEqual([
+        '1D', '1W', 'MTD', '1M', '3M', 'YTD', '1Y', '2Y', '5Y', 'All',
+      ]);
+      const figure = within(section).getByRole('group', { name: 'Figure' });
+      expect(within(figure).getAllByRole('button').map((b) => b.textContent)).toEqual([
+        'Simple return', 'TWR', 'MWR', 'CAGR',
+      ]);
+      expect(within(figure).getByRole('button', { name: 'TWR' })).toHaveAttribute('aria-pressed', 'true');
+      await act(async () => {
+        fireEvent.click(within(timeframe).getByRole('button', { name: 'YTD' }));
+        fireEvent.click(within(figure).getByRole('button', { name: 'CAGR' }));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Save'));
+      });
+      expect(updatePreferencesMock.mock.calls[0][0].dashboardWidgetConfig['dashboard-hero']).toEqual({
+        ...DASHBOARD_HERO_DEFAULT,
+        set: 'portfolio',
+        portfolioRange: 'ytd',
+        portfolioMetric: 'cagr',
+      });
+    });
+
+    it('starts from a stored portfolio choice', async () => {
+      prefsState.current = {
+        dashboardWidgets: [],
+        dashboardWidgetConfig: {
+          'dashboard-hero': { set: 'portfolio', portfolioRange: '5y', portfolioMetric: 'mwr' },
+        },
+      };
+      await renderModal();
+      expect(screen.getByRole('button', { name: 'Portfolio value' })).toHaveAttribute('aria-pressed', 'true');
+      expect(within(screen.getByRole('group', { name: 'Figure' })).getByRole('button', { name: 'MWR' })).toHaveAttribute('aria-pressed', 'true');
+      await act(async () => {
+        fireEvent.click(screen.getByText('Save'));
+      });
+      expect(updatePreferencesMock.mock.calls[0][0].dashboardWidgetConfig['dashboard-hero']).toMatchObject({
+        set: 'portfolio',
+        portfolioRange: '5y',
+        portfolioMetric: 'mwr',
+      });
+    });
+
+    it('ignores a stored window it does not offer', async () => {
+      prefsState.current = {
+        dashboardWidgets: [],
+        dashboardWidgetConfig: { 'dashboard-hero': { range: '3m' } },
+      };
+      await renderModal();
+      expect(screen.getByRole('button', { name: '1Y' })).toHaveAttribute('aria-pressed', 'true');
+    });
   });
 });

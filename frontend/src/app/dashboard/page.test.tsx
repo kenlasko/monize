@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@/test/render';
 import DashboardPage from './page';
 
@@ -57,6 +57,8 @@ const { prefsState } = vi.hoisted(() => ({
       twoFactorEnabled: true,
       theme: 'system',
       dashboardWidgets: [] as string[],
+      timezone: 'UTC' as string | undefined,
+      dashboardWidgetConfig: undefined as Record<string, Record<string, unknown>> | undefined,
     },
   },
 }));
@@ -141,6 +143,15 @@ vi.mock('@/lib/net-worth', () => ({
 }));
 
 // Mock all dashboard child components
+vi.mock('@/components/dashboard/DashboardHero', () => ({
+  DashboardHero: ({ header }: any) => (
+    <div>
+      {header}
+      <div data-testid="dashboard-hero" />
+    </div>
+  ),
+}));
+
 vi.mock('@/components/dashboard/FavouriteAccounts', () => ({
   FavouriteAccounts: ({ isLoading }: any) => <div data-testid="favourite-accounts">{isLoading ? 'loading' : 'loaded'}</div>,
 }));
@@ -233,21 +244,42 @@ describe('DashboardPage', () => {
       twoFactorEnabled: true,
       theme: 'system',
       dashboardWidgets: [],
+      timezone: 'UTC',
+      dashboardWidgetConfig: undefined,
     };
   });
 
-  it('renders the welcome message with user name', async () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('greets the reader for the part of the day, by name, with today\'s date as the subtitle', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-06T15:00:00Z'));
     render(<DashboardPage />);
     await waitFor(() => {
-      expect(screen.getByText(/Welcome, Test!/)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Good afternoon, Test' })).toBeInTheDocument();
+    });
+    expect(screen.getByText(/November 6/)).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-hero')).toBeInTheDocument();
+  });
+
+  it('reads the part of the day in the timezone preference', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 09:00 in UTC is the morning there and 18:00 in Tokyo.
+    vi.setSystemTime(new Date('2026-11-06T09:00:00Z'));
+    prefsState.current.timezone = 'Asia/Tokyo';
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Good evening, Test' })).toBeInTheDocument();
     });
   });
 
-  it('renders the financial overview subtitle', async () => {
+  it('opens Customize from the gear beside the greeting', async () => {
     render(<DashboardPage />);
-    await waitFor(() => {
-      expect(screen.getByText(/financial overview/i)).toBeInTheDocument();
-    });
+    const heading = await screen.findByRole('heading', { level: 1 });
+    const gear = within(heading.parentElement as HTMLElement).getByRole('button', { name: 'Customize' });
+    expect(gear).toHaveTextContent('');
   });
 
   it('renders dashboard child components', async () => {
@@ -357,6 +389,18 @@ describe('DashboardPage', () => {
     });
   });
 
+  it('shows a delegate no net worth hero', async () => {
+    authState.current.actingAsUserId = 'owner-1';
+    authState.current.delegateSections = { bills: true };
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('dashboard-hero')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
+  });
+
   it('delegate without the Bills grant sees only Favourite Accounts', async () => {
     authState.current.actingAsUserId = 'owner-1';
     authState.current.delegateSections = { bills: false };
@@ -445,7 +489,7 @@ describe('DashboardPage', () => {
   it('shows the Customize button for the account owner', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
-      expect(screen.getByText('Customize')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Customize' })).toBeInTheDocument();
     });
   });
 
@@ -470,7 +514,7 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('favourite-accounts')).toBeInTheDocument();
     });
-    expect(screen.queryByText('Customize')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
   });
 
   it('renders only the configured widgets when the layout is customized', async () => {

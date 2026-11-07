@@ -8,6 +8,11 @@ describe('Skeleton', () => {
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
+  it('sweeps with the shimmer, keeping the pulse as the reduced-motion fallback', () => {
+    const { container } = render(<Skeleton />);
+    expect(container.querySelector('.animate-pulse.skeleton-shimmer')).toBeInTheDocument();
+  });
+
   it('accepts custom className', () => {
     const { container } = render(<Skeleton className="h-4 w-20" />);
     expect(container.querySelector('.h-4.w-20')).toBeInTheDocument();

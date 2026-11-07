@@ -55,6 +55,8 @@ import { createLogger } from '@/lib/logger';
 import { chartColors } from '@/lib/chart-colors';
 import { useMonteCarloScenarios, MAX_COMPARE_SCENARIOS } from './useMonteCarloScenarios';
 import { useTranslations } from 'next-intl';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 const logger = createLogger('MonteCarloReport');
 
@@ -1206,7 +1208,7 @@ export function MonteCarloReport() {
               >
                 <ResponsiveContainer>
                   <ComposedChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid {...CHART_GRID_PROPS} />
                     <XAxis dataKey="year" />
                     <YAxis
                       tickFormatter={(v) => formatCurrencyLabel(Number(v))}
@@ -1266,6 +1268,7 @@ export function MonteCarloReport() {
                       name={t('monteCarlo.chartBand75to90')}
                     />
                     <Line
+                      activeDot={ChartActiveDot}
                       type="monotone"
                       dataKey="p50"
                       stroke={chartColors.primary}

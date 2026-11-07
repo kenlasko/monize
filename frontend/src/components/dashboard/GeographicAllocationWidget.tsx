@@ -21,7 +21,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useReportData } from '@/hooks/useReportData';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
-import { chartColors, chartSeriesColor } from '@/lib/chart-colors';
+import { chartSeriesColor } from '@/lib/chart-colors';
 import { computeGeographicAllocation } from '@/lib/geographic-allocation';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
@@ -29,6 +29,7 @@ import { WeightingPartialNote } from '@/components/reports/WeightingPartialNote'
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
 import { WidgetSegmentedControl } from './WidgetSegmentedControl';
 import { GEOGRAPHIC_ALLOCATION_DEFAULT, GeographicConfig } from './widget-config';
+import { CHART_GRID_PROPS_HORIZONTAL_BARS } from '@/lib/chart-style';
 
 const WIDGET_ID = 'geographic-allocation';
 const MAX_EXCHANGE_BARS = 8;
@@ -198,7 +199,7 @@ export function GeographicAllocationWidget({
       configTitle={t('geographicAllocation.title')}
     >
       {loading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : isEmpty ? (
         // Nothing to draw: either there are no holdings, or every one was
         // dropped for want of a price or rate. Say which so an all-excluded
@@ -208,7 +209,7 @@ export function GeographicAllocationWidget({
         <div className="flex-1 min-h-[260px]">
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart data={exchangeBars} layout="vertical" margin={{ left: 8, right: 16 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} horizontal={false} />
+              <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
               <XAxis type="number" tickFormatter={formatCurrencyAxis} tick={{ fontSize: 11 }} />
               <YAxis type="category" dataKey="exchange" width={80} tick={{ fontSize: 11 }} />
               <Tooltip

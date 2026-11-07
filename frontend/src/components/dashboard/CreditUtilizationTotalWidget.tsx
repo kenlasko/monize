@@ -105,7 +105,7 @@ export function CreditUtilizationTotalWidget({
       configTitle={t('creditUtilizationTotal.title')}
     >
       {isLoading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : totals.limit === 0 && totals.missingCurrencies.length > 0 ? (
         // Cards exist but none could be converted -- say the utilisation could
         // not be worked out and name the currencies, rather than showing the

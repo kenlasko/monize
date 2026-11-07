@@ -20,6 +20,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { BondLotValuation } from '@/types/bond';
 import { benchmarkLabel } from './bond-labels';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
 
 interface SecurityBondInterestChartProps {
   lot: BondLotValuation;
@@ -141,7 +142,7 @@ export function SecurityBondInterestChart({
         >
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+              <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
               {/* The bond's own currency, not the reader's default. */}
               <YAxis

@@ -40,6 +40,8 @@ import { GemCard, GemEmptyState, GemSwatch, GemUnknown } from "./GemPrimitives";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useGemLabels } from "./useGemLabels";
 import { cn } from "@/lib/utils";
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 /**
  * The subset of Recharts' label-render props the end-of-line label needs. Typed
@@ -233,10 +235,7 @@ export function GemPerformanceChart({
                 data={rows}
                 margin={{ top: 8, right: 60, left: 0, bottom: 0 }}
               >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={chartColors.grid}
-                />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="ts"
                   type="number"
@@ -315,6 +314,7 @@ export function GemPerformanceChart({
                   const colour = GEM_ROLE_COLOURS[role];
                   return (
                     <Line
+                      activeDot={ChartActiveDot}
                       key={role}
                       type="monotone"
                       dataKey={role}
@@ -364,6 +364,7 @@ export function GemPerformanceChart({
                     strategy's assets, and it must not read as one. */}
                 {simulated && (
                   <Line
+                    activeDot={ChartActiveDot}
                     type="monotone"
                     dataKey={GEM_PORTFOLIO_SERIES}
                     name={t("gem.chart.currentPortfolio")}

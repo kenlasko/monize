@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "歡迎",
-    "welcomeWithName": "歡迎，{name}！",
-    "subtitle": "以下是您的財務概覽"
+    "greeting": {
+      "morning": "早安",
+      "morningWithName": "早安，{name}",
+      "afternoon": "午安",
+      "afternoonWithName": "午安，{name}",
+      "evening": "晚安",
+      "eveningWithName": "晚安，{name}"
+    }
+  },
+  "hero": {
+    "label": "淨資產概覽",
+    "netWorth": "淨資產",
+    "changeThisMonth": "本月<dir>{direction, select, up {增加} other {減少}}</dir> {amount}",
+    "changeThisMonthWithPercent": "本月<dir>{direction, select, up {增加} other {減少}}</dir> {amount} · {percent}",
+    "assets": "資產 <strong><value></value></strong>",
+    "liabilities": "負債 <strong><value></value></strong>",
+    "invested": "投資 <strong><value></value></strong>",
+    "investedUnpriced": "{symbols} 沒有目前價格，因此這些持股未計入。請在「投資」頁面重新整理價格，或在該證券的價格歷史中新增一個價格。",
+    "portfolioLabel": "投資組合概覽",
+    "portfolioValueFor": "投資組合價值<names>（{accounts}）</names>",
+    "portfolioEmpty": "尚無投資帳戶。新增一個即可在此查看您的投資組合。",
+    "portfolioLoadFailed": "無法載入您的投資組合。請重新載入儀表板後再試。",
+    "portfolioChangeFailed": "無法載入此期間的變化。請重新載入儀表板後再試。",
+    "changeOverWindow": "{amount} · {window} <dir>{direction, select, up {增加} other {減少}}</dir>",
+    "holdings": "持股 <strong><value></value></strong>",
+    "cash": "現金 <strong><value></value></strong>",
+    "metricLine": "{metric} <strong><value></value></strong>",
+    "metricNames": {
+      "simpleReturn": "簡單報酬率",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "CAGR 需要這些帳戶至少一年的投資歷史，且投入多於取出。",
+    "intradayUnavailable": "部分持股沒有盤中價格，因此無法繪製一天的圖表。請在「自訂」中選擇較長的時間範圍。"
   },
   "favouriteAccounts": {
     "title": "我的最愛科目",
@@ -181,6 +213,24 @@
     "reset": "重設為預設值",
     "toasts": {
       "saveFailed": "無法儲存儀表板版面配置"
+    },
+    "hero": {
+      "title": "儀表板概覽區",
+      "description": "問候語下方的數字和圖表：您的淨資產或投資組合。",
+      "show": "顯示儀表板概覽區",
+      "range": "圖表",
+      "set": "顯示",
+      "sets": {
+        "netWorth": "淨資產",
+        "portfolio": "投資組合價值"
+      },
+      "metric": "指標",
+      "metrics": {
+        "simpleReturn": "簡單報酬率",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "描述",
     "descriptionPlaceholder": "新增選填的描述",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

@@ -27,6 +27,7 @@ import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
 import { CREDIT_UTILIZATION_ACCOUNTS_DEFAULT, AccountsConfig } from './widget-config';
+import { CHART_GRID_PROPS_HORIZONTAL_BARS } from '@/lib/chart-style';
 
 const WIDGET_ID = 'credit-utilization-accounts';
 
@@ -92,14 +93,14 @@ export function CreditUtilizationAccountsWidget({
       configTitle={t('creditUtilizationAccounts.title')}
     >
       {isLoading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : rows.length === 0 ? (
         <WidgetMessage>{t('creditUtilizationAccounts.empty')}</WidgetMessage>
       ) : (
         <div className="flex-1" style={{ minHeight: Math.min(chartMinHeight, 420) }}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart data={rows} layout="vertical" margin={{ left: 8, right: 24 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} horizontal={false} />
+              <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
               <XAxis
                 type="number"
                 domain={[0, 100]}

@@ -104,7 +104,7 @@ export function PayeeRecurringPanel({
         )}
 
         {isLoading ? (
-          <div className="h-24 rounded bg-gray-100 dark:bg-gray-700 animate-pulse" />
+          <div className="h-24 rounded bg-gray-100 dark:bg-gray-700 animate-pulse skeleton-shimmer" />
         ) : rows.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
             {t('recurringPanel.empty')}

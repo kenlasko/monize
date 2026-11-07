@@ -241,7 +241,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
             <span className="text-sm text-gray-500 dark:text-gray-400">{t('topMovers.dailyChange')}</span>
           </div>
         </div>
-        <div className="animate-pulse space-y-3">
+        <div className="animate-pulse skeleton-shimmer space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-12 bg-gray-200 dark:bg-gray-700 rounded" />
           ))}

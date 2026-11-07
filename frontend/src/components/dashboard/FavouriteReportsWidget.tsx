@@ -106,7 +106,7 @@ export function FavouriteReportsWidget({ isLoading: parentLoading }: FavouriteRe
     return (
       <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         {sectionTitle}
-        <div className="animate-pulse space-y-3">
+        <div className="animate-pulse skeleton-shimmer space-y-3">
           <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded" />
           <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded" />
           <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded" />

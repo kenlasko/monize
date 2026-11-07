@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
@@ -9,6 +9,21 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { userSettingsApi } from '@/lib/user-settings';
 import { getErrorMessage } from '@/lib/errors';
 import { useDragReorder, DropIndicatorLine } from '@/hooks/useDragReorder';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
+import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
+import { PORTFOLIO_CHART_RANGES } from '@/components/investments/portfolio-range-window';
+import type { Account } from '@/types/account';
+import {
+  DASHBOARD_HERO_DEFAULT,
+  DASHBOARD_HERO_PORTFOLIO_METRICS,
+  DASHBOARD_HERO_SETS,
+  DASHBOARD_HERO_WIDGET_ID,
+  DashboardHeroConfig,
+  NET_WORTH_RANGES,
+  resolveDashboardHeroConfig,
+} from './widget-config';
 import { ChevronDownIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, PlusIcon } from '@heroicons/react/24/outline';
 import {
   DASHBOARD_WIDGETS,
@@ -21,6 +36,8 @@ import {
 interface CustomizeDashboardModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** The accounts the hero's portfolio set can cover. */
+  investmentAccounts?: Account[];
 }
 
 /**
@@ -88,11 +105,30 @@ function WidgetTypeIcon({ type }: { type: WidgetIconType }) {
   }
 }
 
-export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardModalProps) {
+/** One labelled setting in the hero section: the label above on a phone, beside it wider. */
+function HeroRow({ label, id, children }: { label: string; id: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+      <span id={id} className="text-sm text-gray-700 dark:text-gray-300 sm:w-28 sm:flex-shrink-0">
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+export function CustomizeDashboardModal({
+  isOpen,
+  onClose,
+  investmentAccounts = [],
+}: CustomizeDashboardModalProps) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const dashboardWidgets = usePreferencesStore((s) => s.preferences?.dashboardWidgets);
   const updateStorePreferences = usePreferencesStore((s) => s.updatePreferences);
+  const widgetConfig = usePreferencesStore((s) => s.preferences?.dashboardWidgetConfig);
+  // The hero's working settings, saved with the layout.
+  const [hero, setHero] = useState<DashboardHeroConfig>(DASHBOARD_HERO_DEFAULT);
   // Ordered ids of the widgets currently shown; everything else is hidden.
   const [visible, setVisible] = useState<DashboardWidgetId[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -104,6 +140,8 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
     setPrevOpen(isOpen);
     if (isOpen) {
       setVisible(resolveDashboardWidgets(dashboardWidgets).map((w) => w.id));
+      // Only the settings the hero has, so a stale key never rides along.
+      setHero(resolveDashboardHeroConfig(widgetConfig?.[DASHBOARD_HERO_WIDGET_ID]));
     }
   }
 
@@ -139,6 +177,7 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
 
   const reset = () => {
     setVisible(DEFAULT_DASHBOARD_WIDGET_IDS);
+    setHero(DASHBOARD_HERO_DEFAULT);
   };
 
   const handleSave = async () => {
@@ -149,10 +188,17 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
       visible.every((id, i) => id === DEFAULT_DASHBOARD_WIDGET_IDS[i]);
     setIsSaving(true);
     try {
+      // Merge into the stored settings map so every widget keeps its own
+      // settings; the modal covers the widgets, so none changes while it is open.
+      const allBefore = widgetConfig ?? {};
       const saved = await userSettingsApi.updatePreferences({
         dashboardWidgets: isDefault ? [] : visible,
+        dashboardWidgetConfig: { ...allBefore, [DASHBOARD_HERO_WIDGET_ID]: { ...hero } },
       });
-      updateStorePreferences({ dashboardWidgets: saved.dashboardWidgets });
+      updateStorePreferences({
+        dashboardWidgets: saved.dashboardWidgets,
+        dashboardWidgetConfig: saved.dashboardWidgetConfig,
+      });
       onClose();
     } catch (error) {
       toast.error(getErrorMessage(error, t('customize.toasts.saveFailed')));
@@ -171,6 +217,106 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
       title={t('customize.title')}
       description={t('customize.description')}
     >
+
+      {/* The hero sits above the grid and spans it, so it is set here rather
+          than dragged among the widgets. */}
+      <section
+        aria-labelledby="customize-hero-heading"
+        data-testid="customize-hero"
+        className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 mb-3"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h4 id="customize-hero-heading" className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              {t('customize.hero.title')}
+            </h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('customize.hero.description')}</p>
+          </div>
+          <ToggleSwitch
+            checked={hero.enabled}
+            onChange={(enabled) => setHero((prev) => ({ ...prev, enabled }))}
+            label={t('customize.hero.show')}
+          />
+        </div>
+        {hero.enabled && (
+          <div className="mt-3 flex flex-col gap-3">
+            <HeroRow label={t('customize.hero.set')} id="customize-hero-set">
+              <div className={SEGMENTED_GROUP_CLASS} role="group" aria-labelledby="customize-hero-set">
+                {DASHBOARD_HERO_SETS.map((set) => (
+                  <button
+                    key={set}
+                    type="button"
+                    aria-pressed={hero.set === set}
+                    onClick={() => setHero((prev) => ({ ...prev, set }))}
+                    className={segmentClass(hero.set === set)}
+                  >
+                    {t(`customize.hero.sets.${set}`)}
+                  </button>
+                ))}
+              </div>
+            </HeroRow>
+            {hero.set === 'netWorth' ? (
+              <HeroRow label={t('customize.hero.range')} id="customize-hero-range">
+                <div className={SEGMENTED_GROUP_CLASS} role="group" aria-labelledby="customize-hero-range">
+                  {NET_WORTH_RANGES.map((range) => (
+                    <button
+                      key={range}
+                      type="button"
+                      aria-pressed={hero.range === range}
+                      onClick={() => setHero((prev) => ({ ...prev, range }))}
+                      className={segmentClass(hero.range === range)}
+                    >
+                      {t(`widgets.rangeLabels.${range}` as Parameters<typeof t>[0])}
+                    </button>
+                  ))}
+                </div>
+              </HeroRow>
+            ) : (
+              <>
+                <HeroRow label={t('widgets.accounts')} id="customize-hero-accounts">
+                  <ReportAccountMultiSelect
+                    accounts={investmentAccounts}
+                    value={hero.portfolioAccountIds}
+                    onChange={(portfolioAccountIds) => setHero((prev) => ({ ...prev, portfolioAccountIds }))}
+                    mode="portfolio"
+                    className="w-full sm:w-72"
+                  />
+                </HeroRow>
+                <HeroRow label={t('widgets.timeframe')} id="customize-hero-portfolio-range">
+                  <div role="group" aria-labelledby="customize-hero-portfolio-range">
+                    <DateRangeSelector
+                      ranges={PORTFOLIO_CHART_RANGES}
+                      labels={Object.fromEntries(
+                        PORTFOLIO_CHART_RANGES.map((r) => [r, t(`widgets.rangeLabels.${r}` as Parameters<typeof t>[0])]),
+                      )}
+                      value={hero.portfolioRange}
+                      onChange={(r) =>
+                        setHero((prev) => ({ ...prev, portfolioRange: r as DashboardHeroConfig['portfolioRange'] }))
+                      }
+                      size="sm"
+                    />
+                  </div>
+                </HeroRow>
+                <HeroRow label={t('customize.hero.metric')} id="customize-hero-metric">
+                  <div className={`${SEGMENTED_GROUP_CLASS} flex-wrap`} role="group" aria-labelledby="customize-hero-metric">
+                    {DASHBOARD_HERO_PORTFOLIO_METRICS.map((metric) => (
+                      <button
+                        key={metric}
+                        type="button"
+                        aria-pressed={hero.portfolioMetric === metric}
+                        onClick={() => setHero((prev) => ({ ...prev, portfolioMetric: metric }))}
+                        className={segmentClass(hero.portfolioMetric === metric)}
+                      >
+                        {t(`customize.hero.metrics.${metric}`)}
+                      </button>
+                    ))}
+                  </div>
+                </HeroRow>
+              </>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* Mockup of the dashboard grid: single column on mobile, two columns on
           larger screens -- exactly like the real page. */}

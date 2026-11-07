@@ -61,6 +61,8 @@ npm run docs:build         # Regenerate the user docs (website/docs/) from their
 | Link to the user documentation (`PageHeader` `help`; `InfoTooltip` `learnMore`; `EmptyState` `help`; an inline guide link) | a `DOCS_LINKS` key (`lib/docs-links.ts`): `help="key"`/`learnMore="key"`, or `HelpLink` (`components/help/HelpLink.tsx`) for an inline link | a `helpUrl` prop, a docs or wiki URL literal, a hand-rolled `<a href={docsUrl(...)}>` |
 | Random id | `crypto.randomUUID()` | `Math.random()` |
 | Chart colour | `chartColors` tokens (`lib/chart-colors.ts`) | a hex literal in a `fill`, `stroke` or `stopColor` |
+| Chart grid, tooltip shell, hover dot | `CHART_GRID_PROPS`, `CHART_TOOLTIP_CLASS` (`lib/chart-style.ts`), `ChartActiveDot` | a written dash or stroke, the inline shell, `activeDot={{...}}` |
+| Loading placeholder | `Skeleton`, or `animate-pulse skeleton-shimmer` | a bare `animate-pulse` |
 | Widget title that opens the fuller view | `titleHref` on `WidgetCard`, `href` on `WidgetHeading` | a button or link hand-rolled around the heading |
 | Month grid | `MonthGrid` + `monthGridDays` (`lib/calendar-month.ts`); occurrence placement stays `buildScheduledCalendarDays` + `ScheduledCalendarGrid` until the bills grid migrates | a third month grid, or a `Date` built from a calendar date |
 | Table / Calendar choice for a screen | `useViewMode(surface)` (`store/viewModeStore.ts`) and `ViewModeToggle` | a local `useState`, a second store or a URL parameter |
