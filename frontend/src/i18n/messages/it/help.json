@@ -23,6 +23,20 @@
       "heading": "Impossibile caricare la guida",
       "body": "La guida non è stata caricata. Riprova oppure leggi questa pagina su monize.net.",
       "retry": "Riprova"
+    },
+    "search": "Cerca nella guida"
+  },
+  "search": {
+    "title": "Cerca nella guida",
+    "placeholder": "Cerca nella guida",
+    "ariaLabel": "Cerca nella guida",
+    "contextHeading": "Aiuto per questa schermata",
+    "noResults": "Nessun risultato per \"{query}\"",
+    "error": "Ricerca non riuscita. Riprova.",
+    "hint": {
+      "navigate": "per navigare",
+      "select": "per selezionare",
+      "close": "per chiudere"
     }
   },
   "markdown": {

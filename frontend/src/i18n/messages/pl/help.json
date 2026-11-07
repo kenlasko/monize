@@ -23,6 +23,20 @@
       "heading": "Nie udało się wczytać pomocy",
       "body": "Przewodnik nie został wczytany. Spróbuj ponownie lub przeczytaj tę stronę na monize.net.",
       "retry": "Spróbuj ponownie"
+    },
+    "search": "Przeszukaj przewodnik"
+  },
+  "search": {
+    "title": "Przeszukaj przewodnik",
+    "placeholder": "Przeszukaj przewodnik",
+    "ariaLabel": "Przeszukaj przewodnik",
+    "contextHeading": "Pomoc dla tego ekranu",
+    "noResults": "Brak wyników dla „{query}”",
+    "error": "Wyszukiwanie nie powiodło się. Spróbuj ponownie.",
+    "hint": {
+      "navigate": "aby nawigować",
+      "select": "aby wybrać",
+      "close": "aby zamknąć"
     }
   },
   "markdown": {

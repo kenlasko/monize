@@ -23,6 +23,20 @@
       "heading": "[XX-Help could not be loaded-XX]",
       "body": "[XX-The guide did not load. Try again, or read this page on monize.net.-XX]",
       "retry": "[XX-Try again-XX]"
+    },
+    "search": "[XX-Search the guide-XX]"
+  },
+  "search": {
+    "title": "[XX-Search the guide-XX]",
+    "placeholder": "[XX-Search the guide-XX]",
+    "ariaLabel": "[XX-Search the guide-XX]",
+    "contextHeading": "[XX-Help for this screen-XX]",
+    "noResults": "[XX-No results for “{query}”-XX]",
+    "error": "[XX-Search failed. Try again.-XX]",
+    "hint": {
+      "navigate": "[XX-to navigate-XX]",
+      "select": "[XX-to select-XX]",
+      "close": "[XX-to close-XX]"
     }
   },
   "markdown": {

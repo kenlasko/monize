@@ -23,6 +23,20 @@
       "heading": "도움말을 불러올 수 없습니다",
       "body": "가이드를 불러오지 못했습니다. 다시 시도하거나 monize.net에서 이 페이지를 읽어 보세요.",
       "retry": "다시 시도"
+    },
+    "search": "가이드 검색"
+  },
+  "search": {
+    "title": "가이드 검색",
+    "placeholder": "가이드 검색",
+    "ariaLabel": "가이드 검색",
+    "contextHeading": "이 화면에 대한 도움말",
+    "noResults": "\"{query}\"에 대한 결과가 없습니다",
+    "error": "검색에 실패했습니다. 다시 시도하세요.",
+    "hint": {
+      "navigate": "탐색",
+      "select": "선택",
+      "close": "닫기"
     }
   },
   "markdown": {

@@ -23,6 +23,20 @@
       "heading": "Impossible de charger l'aide",
       "body": "Le guide ne s'est pas chargé. Réessayez ou lisez cette page sur monize.net.",
       "retry": "Réessayer"
+    },
+    "search": "Rechercher dans le guide"
+  },
+  "search": {
+    "title": "Rechercher dans le guide",
+    "placeholder": "Rechercher dans le guide",
+    "ariaLabel": "Rechercher dans le guide",
+    "contextHeading": "Aide pour cet écran",
+    "noResults": "Aucun résultat pour « {query} »",
+    "error": "La recherche a échoué. Réessayez.",
+    "hint": {
+      "navigate": "pour naviguer",
+      "select": "pour sélectionner",
+      "close": "pour fermer"
     }
   },
   "markdown": {
