@@ -370,7 +370,11 @@ export function PortfolioSummaryCard({
             <div>
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 {t('portfolioSummary.totalGain')}
-                <InfoTooltip placement="top" text={t('portfolioSummary.totalGainTooltip')} />
+                <InfoTooltip
+                  placement="top"
+                  text={t('portfolioSummary.totalGainTooltip')}
+                  learnMore="investmentCashVsReturns"
+                />
               </div>
               <div className={`text-base sm:text-lg font-semibold ${returnColorClass((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}`}>
                 {fmtVal((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}

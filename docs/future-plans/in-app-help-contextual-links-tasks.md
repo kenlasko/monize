@@ -17,9 +17,16 @@ merged. Check a box only when its gate passes and is quoted in the commit or PR.
 
 - [ ] 1. Transactions
 - [ ] 2. Currencies
-- [ ] 3. Investments
-- [ ] 4. Bills and deposits
-- [ ] 5. Budgets
+- [x] 3. Investments (issue #2054): `learnMore` on Cost Basis/TWR/MWR and the
+  Value Change/Investment Result chart tooltips, a new tooltip on Total
+  Amount, and two new guide sections ("Total Amount or Price: Which One
+  Wins", "Cash vs. Investment Performance").
+- [x] 4. Bills and deposits (issue #2054): `learnMore` in the occurrence
+  picker and the override editor, a new tooltip on Funding Account, and an
+  extended "Investment Scheduling" guide paragraph.
+- [x] 5. Budgets (issue #2054): `learnMore` on Rollover Rules (wizard and
+  per-category), Excluded Accounts, and the Spending Velocity heading, plus
+  a new "Excluded Accounts" guide section.
 - [ ] 6. Rules
 - [ ] 7. Import wizard errors
 - [ ] 8. Backups and security
@@ -27,4 +34,10 @@ merged. Check a box only when its gate passes and is quoted in the commit or PR.
 
 ## Verification (each PR)
 
-- [ ] Frontend gates green, quoted; `docs:check` green when the guide changed.
+- [x] Frontend gates green, quoted (batches 3-5, issue #2054): `npm run
+  lint` -- `eslint .` clean; `tsc --noEmit` clean; `npm run i18n:check` --
+  pseudo-locale up to date; `npm run docs:build` -- `0 written, 0 removed,
+  27 total` after the guide edits; `npx vitest run src/lib/docs-links.test.ts
+  src/components/help/HelpMarkdown.test.tsx` -- `135 passed`;
+  `src/i18n/messages.parity.test.ts` -- `1867 passed`; `npm run test:changed`
+  -- `Test Files 877 passed (877)`, `Tests 16382 passed (16382)`.
