@@ -1,3 +1,15 @@
+# User guide screenshots for in-app help, converted from the committed PNGs to
+# WebP once per build (docs/future-plans/in-app-help-screenshots.md). A picture
+# is the same bytes on every architecture, so this stage runs on the build
+# machine's own platform: once for both published platforms, and never under
+# QEMU emulation, where cwebp is several times slower. Only /images leaves it.
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS help-images
+
+RUN apk add --no-cache libwebp-tools
+COPY backend/scripts/convert-help-images.sh /usr/local/bin/convert-help-images
+COPY website/docs/images/*.png /src/
+RUN convert-help-images /src /images
+
 # Development stage
 FROM mirror.gcr.io/library/node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS development
 
@@ -17,8 +29,11 @@ COPY database/migrations ./migrations
 # Copy release notes so the What's New digest can be served without network access
 COPY docs/release-notes ./release-notes
 
-# Copy the user guide so in-app help works without network access (no images)
+# Copy the user guide so in-app help works without network access, with its
+# screenshots as WebP (the e2e stack serves these; the dev stack mounts the
+# PNGs over ./help and the help API falls back to them)
 COPY website/docs/*.md website/docs/nav.json website/docs/search-index.json ./help/
+COPY --from=help-images /images ./help/images/
 
 EXPOSE 3000
 
@@ -41,7 +56,8 @@ COPY database/migrations ./migrations
 # Copy release notes (needed by production stage for the What's New digest)
 COPY docs/release-notes ./release-notes
 
-# Copy the user guide (needed by production stage for in-app help; no images)
+# Copy the user guide (needed by production stage for in-app help; its
+# screenshots come straight from the help-images stage)
 COPY website/docs/*.md website/docs/nav.json website/docs/search-index.json ./help/
 
 # `nest build` type-checks the whole backend in one tsc process, which now
@@ -125,6 +141,11 @@ RUN addgroup -g 1001 -S nodejs && \
     chmod +x ./docker-entrypoint.sh && \
     chown nestjs:nodejs ./docker-entrypoint.sh ./schema.sql && \
     chown -R nestjs:nodejs ./migrations ./release-notes ./help
+
+# The user guide's screenshots, copied after the chown above so they are one
+# layer: a chown -R over files already in the image would copy every one of
+# them into a second layer.
+COPY --from=help-images --chown=nestjs:nodejs /images ./help/images/
 
 USER nestjs
 

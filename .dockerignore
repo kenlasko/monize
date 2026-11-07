@@ -19,14 +19,18 @@
 
 # The marketing site is static files deployed to Cloudflare Pages, not part of
 # either image. The backend context is the repo root, so without this its
-# assets ride along into the image for nothing. The user guide's text is the
-# one exception: the backend image bundles it for in-app help (backend/Dockerfile).
+# assets ride along into the image for nothing. The user guide is the one
+# exception: the backend image bundles its text and, converted to WebP at build
+# time, its screenshots for in-app help (backend/Dockerfile).
 website
 !website/docs
 website/docs/*
 !website/docs/*.md
 !website/docs/nav.json
 !website/docs/search-index.json
+!website/docs/images
+website/docs/images/*
+!website/docs/images/*.png
 
 # Secrets and local env (the image gets config via runtime env vars)
 **/.env
