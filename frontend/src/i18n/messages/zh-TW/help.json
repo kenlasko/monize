@@ -23,6 +23,20 @@
       "heading": "無法載入說明",
       "body": "指南未能載入。請重試，或在 monize.net 上閱讀本頁。",
       "retry": "重試"
+    },
+    "search": "搜尋指南"
+  },
+  "search": {
+    "title": "搜尋指南",
+    "placeholder": "搜尋指南",
+    "ariaLabel": "搜尋指南",
+    "contextHeading": "此畫面的說明",
+    "noResults": "找不到「{query}」的結果",
+    "error": "搜尋失敗,請再試一次。",
+    "hint": {
+      "navigate": "導覽",
+      "select": "選取",
+      "close": "關閉"
     }
   },
   "markdown": {

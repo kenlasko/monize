@@ -1,10 +1,11 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
-import { docsUrl, type DocsLink } from '@/lib/docs-links';
+import { docsUrl, helpTarget, type DocsLink } from '@/lib/docs-links';
 import { onHelpLinkClick, useHelpPrefetch } from '@/lib/help-open';
+import { useHelpStore } from '@/store/helpStore';
 
 interface PageHeaderProps {
   /** Page title */
@@ -46,6 +47,19 @@ export function PageHeader({ title, subtitle, actions, help, compactMobileAction
   // Know whether the guide is bundled before the first click, so the click can
   // decide synchronously (see `onHelpLinkClick`).
   useHelpPrefetch(help !== undefined);
+
+  // The search dialog's context: this screen's help page, while this header
+  // is on screen. Cleared on unmount so leaving the page leaves no stale
+  // context behind for the next screen to inherit.
+  const contextSlug = help ? helpTarget(help).page : null;
+  useEffect(() => {
+    useHelpStore.getState().setContextPage(contextSlug);
+    return () => {
+      if (useHelpStore.getState().contextPage === contextSlug) {
+        useHelpStore.getState().setContextPage(null);
+      }
+    };
+  }, [contextSlug]);
 
   const layoutClasses = actions
     ? compactMobileActions

@@ -23,6 +23,20 @@
       "heading": "Yardım yüklenemedi",
       "body": "Kılavuz yüklenmedi. Yeniden deneyin veya bu sayfayı monize.net adresinde okuyun.",
       "retry": "Yeniden dene"
+    },
+    "search": "Kılavuzda ara"
+  },
+  "search": {
+    "title": "Kılavuzda ara",
+    "placeholder": "Kılavuzda ara",
+    "ariaLabel": "Kılavuzda ara",
+    "contextHeading": "Bu ekran için yardım",
+    "noResults": "\"{query}\" için sonuç bulunamadı",
+    "error": "Arama başarısız oldu. Yeniden deneyin.",
+    "hint": {
+      "navigate": "gezinmek için",
+      "select": "seçmek için",
+      "close": "kapatmak için"
     }
   },
   "markdown": {

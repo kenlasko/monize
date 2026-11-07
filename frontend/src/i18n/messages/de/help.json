@@ -23,6 +23,20 @@
       "heading": "Die Hilfe konnte nicht geladen werden",
       "body": "Die Anleitung wurde nicht geladen. Versuchen Sie es erneut oder lesen Sie diese Seite auf monize.net.",
       "retry": "Erneut versuchen"
+    },
+    "search": "Anleitung durchsuchen"
+  },
+  "search": {
+    "title": "Anleitung durchsuchen",
+    "placeholder": "Anleitung durchsuchen",
+    "ariaLabel": "Anleitung durchsuchen",
+    "contextHeading": "Hilfe für diesen Bildschirm",
+    "noResults": "Keine Ergebnisse für „{query}“",
+    "error": "Suche fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "hint": {
+      "navigate": "zum Navigieren",
+      "select": "zum Auswählen",
+      "close": "zum Schließen"
     }
   },
   "markdown": {

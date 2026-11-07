@@ -23,6 +23,20 @@
       "heading": "No se pudo cargar la ayuda",
       "body": "La guía no se cargó. Inténtalo de nuevo o lee esta página en monize.net.",
       "retry": "Reintentar"
+    },
+    "search": "Buscar en la guía"
+  },
+  "search": {
+    "title": "Buscar en la guía",
+    "placeholder": "Buscar en la guía",
+    "ariaLabel": "Buscar en la guía",
+    "contextHeading": "Ayuda para esta pantalla",
+    "noResults": "Sin resultados para \"{query}\"",
+    "error": "Error al buscar. Inténtalo de nuevo.",
+    "hint": {
+      "navigate": "para navegar",
+      "select": "para seleccionar",
+      "close": "para cerrar"
     }
   },
   "markdown": {

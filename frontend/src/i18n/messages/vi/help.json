@@ -23,6 +23,20 @@
       "heading": "Không thể tải trợ giúp",
       "body": "Hướng dẫn chưa được tải. Hãy thử lại hoặc đọc trang này trên monize.net.",
       "retry": "Thử lại"
+    },
+    "search": "Tìm kiếm trong hướng dẫn"
+  },
+  "search": {
+    "title": "Tìm kiếm trong hướng dẫn",
+    "placeholder": "Tìm kiếm trong hướng dẫn",
+    "ariaLabel": "Tìm kiếm trong hướng dẫn",
+    "contextHeading": "Trợ giúp cho màn hình này",
+    "noResults": "Không có kết quả cho \"{query}\"",
+    "error": "Tìm kiếm không thành công. Vui lòng thử lại.",
+    "hint": {
+      "navigate": "để di chuyển",
+      "select": "để chọn",
+      "close": "để đóng"
     }
   },
   "markdown": {

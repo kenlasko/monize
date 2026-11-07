@@ -13,7 +13,12 @@ import { tr } from "../i18n/translate";
 import { rateLimit } from "../common/throttle.util";
 import { HELP_IMAGE_NAME_RE, HELP_SLUG_RE } from "./help.constants";
 import { HelpService } from "./help.service";
-import { HelpManifest, HelpPage } from "./dto/help-response.dto";
+import {
+  HelpManifest,
+  HelpPage,
+  HelpSearchResponse,
+} from "./dto/help-response.dto";
+import { HelpSearchQueryDto } from "./dto/help-search-query.dto";
 
 /**
  * A picture requested with its current cache key (`?v=`, the running version
@@ -62,6 +67,17 @@ export class HelpController {
       );
     }
     return page;
+  }
+
+  @Get("search")
+  @ApiOperation({
+    summary: "Search the bundled user guide (public; works offline).",
+  })
+  search(@Query() query: HelpSearchQueryDto): HelpSearchResponse {
+    return this.helpService.search(query.q, {
+      contextPage: query.context,
+      limit: query.limit,
+    });
   }
 
   // A page of pictures is one request each (the dashboard page has 28), so the

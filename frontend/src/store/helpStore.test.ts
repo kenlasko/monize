@@ -118,6 +118,14 @@ describe('helpStore', () => {
     expect(state().visit).toBe(before + 1);
   });
 
+  it('starts with no context page, and remembers what PageHeader registers', () => {
+    expect(state().contextPage).toBeNull();
+    state().setContextPage('budgets');
+    expect(state().contextPage).toBe('budgets');
+    state().setContextPage(null);
+    expect(state().contextPage).toBeNull();
+  });
+
   it('clears pin and expanded state on close', () => {
     state().openAt({ page: 'a' });
     state().setPinned(true);

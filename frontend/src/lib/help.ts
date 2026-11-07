@@ -61,6 +61,25 @@ export interface HelpPage {
   images: Record<string, HelpImage>;
 }
 
+/** One ranked section of `GET /help/search`. */
+export interface HelpSearchResult {
+  page: string;
+  /** The section's heading anchor, or `null` for a page's lead paragraph. */
+  section: string | null;
+  pageTitle: string;
+  /** `''` for a page's lead paragraph. */
+  heading: string;
+  /** Plain text, about 160 characters, around the first matched word. */
+  excerpt: string;
+  score: number;
+}
+
+/** Response of `GET /help/search`. `total` may exceed `results.length`. */
+export interface HelpSearchAnswer {
+  results: HelpSearchResult[];
+  total: number;
+}
+
 /**
  * Same-origin URL of one of the guide's pictures, rendered directly in an
  * `<img>` (the CSP allows images only from the app's own origin). The revision
@@ -102,4 +121,23 @@ export const helpApi = {
       },
       HELP_TTL_MS,
     ),
+
+  /**
+   * Every query is its own request, never cached or deduplicated: each
+   * keystroke's answer is distinct, and the caller (`HelpSearchDialog`) is
+   * the one that decides which in-flight answer still matters.
+   */
+  search: async (
+    q: string,
+    options: { context?: string | null; limit?: number } = {},
+  ): Promise<HelpSearchAnswer> => {
+    const response = await apiClient.get<HelpSearchAnswer>('/help/search', {
+      params: {
+        q,
+        ...(options.context ? { context: options.context } : {}),
+        ...(options.limit ? { limit: options.limit } : {}),
+      },
+    });
+    return response.data;
+  },
 };
