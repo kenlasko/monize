@@ -14,6 +14,7 @@ import { AttachmentPreviewDialog } from "@/components/transactions/AttachmentPre
 import { SharedWarrantyPicker } from "./SharedWarrantyPicker";
 import { SharedTransactionPicker } from "./SharedTransactionPicker";
 import { SharedError, SharedNotice, SharedTabs } from "./SharedPrimitives";
+import { newClientId } from "@/lib/client-id";
 
 export function SharedDocumentCopy({
   groupId,
@@ -37,7 +38,7 @@ export function SharedDocumentCopy({
     parentKind === "bankTransaction" ? transactionId : warrantyId;
   const [source, setSource] = useState("");
   const [original, setOriginal] = useState(false);
-  const [operationId] = useState(() => crypto.randomUUID());
+  const [operationId] = useState(() => newClientId());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const files = useReportData(

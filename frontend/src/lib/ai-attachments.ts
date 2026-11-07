@@ -1,4 +1,5 @@
 import type { AttachmentKind, ChatAttachment } from '@/types/ai';
+import { newClientId } from '@/lib/client-id';
 
 // Keep these in sync with the backend caps in
 // backend/src/ai/query/dto/ai-query.dto.ts.
@@ -122,9 +123,9 @@ export function validateAddition(
 }
 
 function newId(): string {
-  // crypto.randomUUID() (not Math.random) so the security scanner doesn't flag
+  // newClientId() (not Math.random) so the security scanner doesn't flag
   // a weak RNG; this id is only a client-side list key / removal handle.
-  return `att-${crypto.randomUUID()}`;
+  return `att-${newClientId()}`;
 }
 
 function readAsDataUrl(file: File): Promise<string> {

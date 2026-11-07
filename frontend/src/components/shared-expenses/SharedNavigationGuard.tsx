@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { newClientId } from "@/lib/client-id";
 
 /** Drafts/files stay in memory; warn before leaving instead of persisting private data. */
 export function SharedNavigationGuard({
@@ -63,7 +64,7 @@ export function SharedNavigationGuard({
   useEffect(() => {
     if (!when || !guardBack) return;
     // A local history entry identifier, not an authentication credential.
-    const historyEntryId = crypto.randomUUID();
+    const historyEntryId = newClientId();
     const url = window.location.href;
     const push = () =>
       window.history.pushState(

@@ -1,4 +1,5 @@
 import { isUuid } from '@/lib/uuid';
+import { newClientId } from '@/lib/client-id';
 
 /**
  * A one-shot hand-off of staged content to the assistant's chat page, from a
@@ -27,7 +28,7 @@ const pending = new Map<string, ChatHandoff>();
 
 /** Park a hand-off and return the id the chat page is opened with (`/ai?handoff=<id>`). */
 export function stageChatHandoff(handoff: ChatHandoff): string {
-  const id = crypto.randomUUID();
+  const id = newClientId();
   while (pending.size >= MAX_PENDING_HANDOFFS) {
     const oldest = pending.keys().next().value;
     if (oldest === undefined) break;

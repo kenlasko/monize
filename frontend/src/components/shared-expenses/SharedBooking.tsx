@@ -23,6 +23,7 @@ import type {
 } from "@/types/shared-expense";
 import { SharedAmount, SharedError, SharedNotice } from "./SharedPrimitives";
 import { SharedBankPaymentEditor } from "./SharedBankPaymentEditor";
+import { newClientId } from "@/lib/client-id";
 
 export function SharedBooking({
   group,
@@ -74,7 +75,7 @@ export function SharedBooking({
     previewFingerprint: undefined,
   }));
   const [paymentIds, setPaymentIds] = useState(() =>
-    (input.payments ?? [input]).map(() => crypto.randomUUID()),
+    (input.payments ?? [input]).map(() => newClientId()),
   );
   const [preview, setPreview] = useState<{
     key: string;
@@ -325,7 +326,7 @@ export function SharedBooking({
                         privateCategoryId: undefined,
                         fxCategoryId: undefined,
                       });
-                      setPaymentIds([...paymentIds, crypto.randomUUID()]);
+                      setPaymentIds([...paymentIds, newClientId()]);
                     }}
                   >
                     {t("addPayment")}

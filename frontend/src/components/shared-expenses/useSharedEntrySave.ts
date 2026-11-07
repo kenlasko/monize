@@ -8,6 +8,7 @@ import {
 } from "@/lib/shared-documents";
 import type { StagedAttachment } from "@/types/attachment";
 import type { SharedEntry, SharedEntryInput } from "@/types/shared-expense";
+import { newClientId } from "@/lib/client-id";
 
 type PendingFile = StagedAttachment & { operationId: string };
 
@@ -39,7 +40,7 @@ export function useSharedEntrySave({
         operationId:
           files.find(
             (old) => old.file === file.file && old.original === file.original,
-          )?.operationId ?? crypto.randomUUID(),
+          )?.operationId ?? newClientId(),
       })),
     );
 

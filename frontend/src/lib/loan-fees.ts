@@ -1,6 +1,7 @@
 import apiClient from './api';
 import { dedupe, invalidateCache } from './apiCache';
 import type { LoanFee, LoanFeeBasis, LoanFeeCalculation, LoanFeeInput } from '@/types/loan-fee';
+import { newClientId } from '@/lib/client-id';
 
 /**
  * A mortgage's fees (docs/specs/mortgage-fees.md section 7). A write changes
@@ -48,7 +49,7 @@ export interface LoanFeeDraft {
 
 export function newLoanFeeDraft(): LoanFeeDraft {
   return {
-    key: crypto.randomUUID(),
+    key: newClientId(),
     categoryId: '',
     name: '',
     calculation: 'FIXED',

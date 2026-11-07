@@ -21,6 +21,7 @@ import {
   type ReceiptTradeDefinition,
 } from '@/types/email-receipts';
 import { isRecord } from '@/lib/helpers/is-record';
+import { newClientId } from '@/lib/client-id';
 
 /**
  * The parser editor's form state and its conversion to and from the stored
@@ -192,14 +193,14 @@ export const emptyParserForm = (overrides: Partial<ParserFormState> = {}): Parse
 
 /** A new, empty account rule row (any currency, no account yet). */
 export const newTradeAccountRule = (): TradeAccountRuleRow => ({
-  id: crypto.randomUUID(),
+  id: newClientId(),
   match: '',
   currency: '',
   accountId: '',
 });
 
 /** A new, empty currency marker row. */
-export const newTradeCurrencyMarker = (): TradeCurrencyMarkerRow => ({ id: crypto.randomUUID(), match: '', currency: '' });
+export const newTradeCurrencyMarker = (): TradeCurrencyMarkerRow => ({ id: newClientId(), match: '', currency: '' });
 
 /**
  * The currencies a trade profile's pickers offer, in order: the user's base
@@ -529,14 +530,14 @@ export function definitionToFormFields(value: unknown): DefinitionFields {
     waitIfLine: stringList(definition.waitIfLine).join('\n'),
     ...tradePatternFields(trade),
     tradeAccountRules: records(trade.accountRules).map((rule) => ({
-      id: crypto.randomUUID(),
+      id: newClientId(),
       match: text(rule.match),
       currency: text(rule.currency),
       accountId: text(rule.accountId),
     })),
     tradeDefaultAccountId: text(trade.defaultAccountId),
     tradeCurrencyMarkers: records(trade.currencyMarkers).map((marker) => ({
-      id: crypto.randomUUID(),
+      id: newClientId(),
       match: text(marker.match),
       currency: text(marker.currency),
     })),
