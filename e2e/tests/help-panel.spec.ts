@@ -67,8 +67,8 @@ test.describe('Help panel', () => {
     await expect
       .poll(() => img.evaluate((el: HTMLImageElement) => (el.complete ? el.naturalWidth : 0)))
       .toBeGreaterThan(0);
-    // The way to the same picture on monize.net stays with it.
-    await expect(panel.getByRole('link', { name: 'View screenshot on monize.net' }).first()).toBeVisible();
+    // A picture that shows in the panel needs no link to the same picture online.
+    await expect(panel.getByRole('link', { name: 'View screenshot on monize.net' })).toHaveCount(0);
   });
 
   test('an internal link navigates inside the panel, and Back returns', async ({

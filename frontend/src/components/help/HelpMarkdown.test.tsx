@@ -174,7 +174,7 @@ describe('HelpMarkdown: images', () => {
   beforeEach(() => localStorage.setItem('monize-theme', 'dark'));
   afterEach(() => localStorage.removeItem('monize-theme'));
 
-  it('shows the bundled picture with its size, lazily, then its caption and the online link', () => {
+  it('shows the bundled picture with its size, lazily, then its caption and no online link', () => {
     const { container } = renderMarkdown(md, { toc, images: BOTH });
     const img = screen.getByRole('img', { name: 'The budget dashboard' });
     expect(img).toHaveAttribute('src', DARK_SRC);
@@ -187,10 +187,7 @@ describe('HelpMarkdown: images', () => {
     // reader, which has just read it as the picture's name.
     expect(img.nextElementSibling).toHaveTextContent('The budget dashboard');
     expect(img.nextElementSibling).toHaveAttribute('aria-hidden', 'true');
-    const link = screen.getByRole('link', { name: /View screenshot on monize.net/ });
-    expect(link).toHaveAttribute('href', `${ONLINE}#dashboard`);
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.queryByRole('link', { name: /View screenshot on monize.net/ })).toBeNull();
   });
 
   it('shows the light twin in the light theme, with its own size', () => {
@@ -244,10 +241,10 @@ describe('HelpMarkdown: images', () => {
     const { container } = renderMarkdown(md, { toc, images: {} });
     expect(container.querySelector('img')).toBeNull();
     expect(container).toHaveTextContent('The budget dashboard');
-    expect(screen.getByRole('link', { name: /View screenshot on monize.net/ })).toHaveAttribute(
-      'href',
-      `${ONLINE}#dashboard`,
-    );
+    const link = screen.getByRole('link', { name: /View screenshot on monize.net/ });
+    expect(link).toHaveAttribute('href', `${ONLINE}#dashboard`);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   it('turns a picture whose request fails into its caption and the online link', () => {
@@ -297,7 +294,7 @@ describe('HelpMarkdown: images', () => {
   it('names a picture without alt text generically and shows no caption under it', () => {
     renderMarkdown('![](images/budget-dashboard.png)\n', { images: BOTH });
     const img = screen.getByRole('img', { name: 'Screenshot' });
-    expect(img.nextElementSibling?.tagName).toBe('A');
+    expect(img.nextElementSibling).toBeNull();
   });
 
   it('shows every picture as its caption when the backend sends no pictures at all', () => {
@@ -308,7 +305,7 @@ describe('HelpMarkdown: images', () => {
     expect(container).toHaveTextContent('The budget dashboard');
   });
 
-  it('shows a picture inline in a sentence, and the online link keeps its own section', () => {
+  it('shows a picture inline in a sentence', () => {
     const { container } = renderMarkdown(
       '## Dashboard\n\nSee ![The budget dashboard](images/budget-dashboard.png) here.\n',
       { toc, images: BOTH },

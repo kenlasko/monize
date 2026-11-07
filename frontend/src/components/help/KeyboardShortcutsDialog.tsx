@@ -33,6 +33,7 @@ export function KeyboardShortcutsDialog() {
       onClose={() => useHelpShortcutsStore.getState().closeShortcuts()}
       title={t('title')}
       maxWidth="sm"
+      padding="md"
     >
       <dl className={TABLE_BODY_CLASS}>
         {ROWS.map((row) => (
