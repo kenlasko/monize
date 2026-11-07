@@ -37,4 +37,7 @@ merged. Check a box only when its gate passes and is quoted in the commit or PR.
 
 ## Verification
 
-- [ ] Backend and frontend gates green, quoted.
+- [x] Backend and frontend gates green, quoted: backend lint+tsc+typecheck,
+      `test:changed` (76/76 specs); frontend lint+type-check+i18n:check,
+      `test:changed` (883 files, 16388 tests) and `build`; e2e
+      `help-search.spec.ts` on chromium and firefox.
