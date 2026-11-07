@@ -35,6 +35,7 @@ import { useCompactMobileDates } from '@/store/dateDisplayStore';
 import { useRegisterPhoneCard } from '@/hooks/useRegisterPhoneCard';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import {
   isSortedByDate,
@@ -985,6 +986,13 @@ export function TransactionList({
                   align="center"
                   className={`${headerPadding} text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${registerColumnClass('status')}`}
                   pressHandlers={headerHandlers('status')}
+                  controls={
+                    <InfoTooltip
+                      text={t('list.header.statusHelp')}
+                      usePortal
+                      learnMore="transactionStatus"
+                    />
+                  }
                 >
                   {t('list.header.status')}
                 </RegisterHeader>

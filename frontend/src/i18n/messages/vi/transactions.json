@@ -124,6 +124,7 @@
       "balance": "Số tiền còn lại",
       "attachments": "Tệp đính kèm",
       "status": "Trạng thái",
+      "statusHelp": "Chưa điều hoà, Đã xong hoặc Đã điều hoà là các bước để khớp với sao kê ngân hàng. Hủy bỏ huỷ một giao dịch nhưng vẫn giữ lại bản ghi của nó; giao dịch không còn làm thay đổi số dư tài khoản.",
       "actions": "Hành động"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "Chi tiết phần chia",
+    "headerTooltip": "Mỗi dòng có thể là một hạng mục, một khoản chuyển tiền sang tài khoản khác, hoặc một khoản đầu tư. Các dòng phải cộng lại bằng tổng số tiền giao dịch; Phân bổ đều và Phân bổ theo tỷ lệ sẽ chia phần còn lại cho bạn.",
     "distributeProportionally": "Phân bổ theo tỷ lệ",
     "distributeProportionallyTitle": "Phân bổ số tiền còn lại theo tỷ lệ dựa trên số tiền của mỗi phần",
     "distributeEvenly": "Phân bổ đều",

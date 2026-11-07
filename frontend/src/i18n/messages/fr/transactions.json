@@ -124,6 +124,7 @@
       "balance": "Solde",
       "attachments": "Pièces jointes",
       "status": "Statut",
+      "statusHelp": "Non rapproché, Encaissé ou Rapproché sont des étapes vers la correspondance avec un relevé bancaire. Annulé annule une transaction mais conserve son enregistrement ; elle ne modifie plus le solde du compte.",
       "actions": "Actions"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "Détails de la répartition",
+    "headerTooltip": "Chaque ligne peut être une catégorie, un virement vers un autre compte ou un investissement. Les lignes doivent totaliser le montant de la transaction ; Répartir équitablement et Répartir proportionnellement répartissent le reste pour vous.",
     "distributeProportionally": "Répartir proportionnellement",
     "distributeProportionallyTitle": "Répartir le montant restant proportionnellement selon le montant de chaque répartition",
     "distributeEvenly": "Répartir équitablement",
