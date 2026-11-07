@@ -292,6 +292,7 @@ export function ScheduledEmptyState() {
       }
       title={t('list.empty.title')}
       description={t('list.empty.subtitle')}
+      help="bills"
     />
   );
 }

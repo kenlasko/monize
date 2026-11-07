@@ -46,6 +46,7 @@ export function BudgetList({ budgets, onOpen, onCreate }: BudgetListProps) {
         title={t('pages.list.empty.title')}
         description={t('pages.list.empty.description')}
         action={<Button onClick={onCreate}>{t('pages.list.empty.cta')}</Button>}
+        help="budgets"
       />
     );
   }

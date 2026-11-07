@@ -56,6 +56,7 @@ export const DOCS_LINKS = {
   rulesTesting: { page: 'rules', section: 'testing-a-rule' },
   rulesRunOnExisting: { page: 'rules', section: 'running-a-rule-on-existing-transactions' },
   settings: { page: 'settings-and-security' },
+  bankSync: { page: 'settings-and-security', section: 'bank-sync' },
   backupEncryption: { page: 'backup-and-restore', section: 'encrypted-backups' },
   backupRestore: { page: 'backup-and-restore', section: 'restoring-from-a-backup' },
   twoFactorBackupCodes: { page: 'settings-and-security', section: 'backup-codes' },

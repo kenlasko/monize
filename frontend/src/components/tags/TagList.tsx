@@ -227,6 +227,7 @@ export function TagList({
             <Button onClick={onCreate}>{t('page.emptyState.createButton')}</Button>
           )
         }
+        help="tags"
       />
     );
   }

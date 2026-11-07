@@ -366,7 +366,7 @@ export function InstitutionList({
 
   if (institutions.length === 0) {
     return (
-      <EmptyState title={t('list.empty')} />
+      <EmptyState title={t('list.empty')} help="institutions" />
     );
   }
 

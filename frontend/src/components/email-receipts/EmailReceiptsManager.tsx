@@ -850,6 +850,7 @@ export function EmailReceiptsManager() {
             </Link>
           ) : undefined
         }
+        help={unfiltered ? 'emailReceipts' : undefined}
       />
     );
   } else {

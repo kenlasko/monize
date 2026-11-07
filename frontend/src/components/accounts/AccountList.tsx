@@ -821,7 +821,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
 
   if (accounts.length === 0) {
     return (
-      <EmptyState title={t('list.empty')} />
+      <EmptyState title={t('list.empty')} help="accounts" />
     );
   }
 

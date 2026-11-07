@@ -363,6 +363,7 @@ export function NotificationList({
                 </svg>
               }
               title={filtered ? t('emptyFiltered') : t('empty')}
+              help={filtered ? undefined : 'notifications'}
             />
           </div>
         ) : (

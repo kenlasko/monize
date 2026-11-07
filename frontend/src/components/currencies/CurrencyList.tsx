@@ -581,6 +581,7 @@ export function CurrencyList({
         }
         title={t('list.empty.title')}
         description={t('list.empty.subtitle')}
+        help="currencies"
       />
     );
   }

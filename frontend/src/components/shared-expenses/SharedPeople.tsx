@@ -70,7 +70,7 @@ export function SharedPeople({
       <SharedNotice>{t("personHelp")}</SharedNotice>
       <SharedError error={people.error} retry={people.reload} />
       {visible?.length === 0 && (
-        <EmptyState title={t("noPeople")} description={t("noPeopleHelp")} />
+        <EmptyState title={t("noPeople")} description={t("noPeopleHelp")} help="sharedExpenses" />
       )}
       <div className="grid gap-4 md:grid-cols-2">
         {visible?.map((person) => (

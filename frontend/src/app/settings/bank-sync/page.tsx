@@ -237,6 +237,7 @@ function BankSyncSettingsContent() {
               <EmptyState
                 title={t("connections.empty.title")}
                 description={t("connections.empty.description")}
+                help="bankSync"
               />
             </Card>
           ) : (

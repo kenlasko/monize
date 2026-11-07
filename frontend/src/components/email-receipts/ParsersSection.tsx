@@ -231,7 +231,14 @@ export function ParsersSection({ wizardDomain = null, onWizardDomainChange, onOp
   } else if (parsers === null) {
     body = <LoadingSpinner text={t('loading')} />;
   } else if (parsers.length === 0) {
-    body = <EmptyState icon={<DocumentTextIcon />} title={t('empty.title')} description={t('empty.body')} />;
+    body = (
+      <EmptyState
+        icon={<DocumentTextIcon />}
+        title={t('empty.title')}
+        description={t('empty.body')}
+        help="emailReceipts"
+      />
+    );
   } else {
     body = (
       <div className="overflow-x-auto">

@@ -599,6 +599,7 @@ export function PayeeList({
         }
         title={t('list.empty.title')}
         description={t('list.empty.subtitle')}
+        help="payees"
       />
     );
   }
