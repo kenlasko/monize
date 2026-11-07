@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, one {# Kto.} other {# Kten.}}",
     "usageSecurities": "{count, plural, one {# WP} other {# WP}}",
     "rateHelp": "Was eine Einheit jeder Währung in {currency} wert ist.",
+    "rateMissing": "Kein gespeicherter Wechselkurs für {from} zu {to}.",
     "empty": {
       "title": "Keine Währungen",
       "subtitle": "Fügen Sie eine Währung hinzu, um zu beginnen."
@@ -159,6 +160,7 @@
     "hint": "Berichte mit einem Datum vor dem ersten gespeicherten Kurs können {pair} nicht umrechnen.",
     "list": {
       "heading": "Gespeicherte Kurse",
+      "invertedHelp": "Ein mit (invertiert) markierter Kurs ist der Kehrwert dessen, was Monize für dieses Paar tatsächlich gespeichert hat, keine andere Beobachtung.",
       "direction": "Angezeigt als {to} pro 1 {from}.",
       "loading": "Gespeicherte Kurse werden geladen...",
       "loadFailed": "Die gespeicherten Kurse konnten nicht gelesen werden",

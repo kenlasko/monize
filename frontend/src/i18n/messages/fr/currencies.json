@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, one {# cpt} other {# cpts}}",
     "usageSecurities": "{count, plural, one {# titre} other {# titres}}",
     "rateHelp": "Ce que vaut une unité de chaque devise en {currency}.",
+    "rateMissing": "Aucun taux de change enregistré pour {from} vers {to}.",
     "empty": {
       "title": "Aucune devise",
       "subtitle": "Commencez par ajouter une devise."
@@ -159,6 +160,7 @@
     "hint": "Les rapports datés d'avant le premier taux enregistré ne peuvent pas convertir {pair}.",
     "list": {
       "heading": "Taux enregistrés",
+      "invertedHelp": "Un taux marqué (inversé) est l'inverse de ce que Monize a réellement enregistré pour cette paire, et non une observation différente.",
       "direction": "Affiché en {to} pour 1 {from}.",
       "loading": "Chargement des taux enregistrés...",
       "loadFailed": "Impossible de lire les taux enregistrés",

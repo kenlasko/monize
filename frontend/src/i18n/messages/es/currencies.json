@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, one {# cta} other {# ctas}}",
     "usageSecurities": "{count, plural, one {# val} other {# vals}}",
     "rateHelp": "Lo que vale una unidad de cada moneda en {currency}.",
+    "rateMissing": "No hay tipo de cambio guardado para {from} a {to}.",
     "empty": {
       "title": "Sin divisas",
       "subtitle": "Comienza añadiendo una divisa."
@@ -159,6 +160,7 @@
     "hint": "Los informes anteriores a la primera tasa guardada no pueden convertir {pair}.",
     "list": {
       "heading": "Tipos guardados",
+      "invertedHelp": "Un tipo marcado como (invertido) es el recíproco de lo que Monize realmente almacenó para este par, no una observación diferente.",
       "direction": "Mostrado como {to} por 1 {from}.",
       "loading": "Cargando los tipos guardados...",
       "loadFailed": "No se pudieron leer los tipos guardados",

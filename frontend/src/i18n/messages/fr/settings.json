@@ -138,6 +138,7 @@
     },
     "themeLabel": "Thème",
     "defaultCurrencyLabel": "Devise par défaut",
+    "defaultCurrencyHelp": "Utilisé pour totaliser vos comptes, votre patrimoine net et vos rapports, et c'est la devise vers laquelle la colonne Taux de la page Devises convertit.",
     "defaultCurrencyNoCrypto": "Les cryptomonnaies ne sont pas proposées ici : les totaux et les rapports sont toujours affichés dans une devise fiduciaire.",
     "preferredExchangesLabel": "Bourses préférées (pour la recherche de titres)",
     "preferredExchangesHelp": "Sélectionnez jusqu'à 3 bourses par ordre de priorité. Elles seront privilégiées lors de la recherche de titres.",

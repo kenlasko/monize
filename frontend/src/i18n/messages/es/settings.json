@@ -138,6 +138,7 @@
     },
     "themeLabel": "Tema",
     "defaultCurrencyLabel": "Moneda predeterminada",
+    "defaultCurrencyHelp": "Se usa para totalizar sus cuentas, patrimonio neto e informes, y es la moneda a la que convierte la columna Tipo de la página de Monedas.",
     "defaultCurrencyNoCrypto": "Aquí no se ofrecen criptomonedas: los totales y los informes se muestran siempre en una moneda fiduciaria.",
     "preferredExchangesLabel": "Bolsas preferidas (para búsqueda de valores)",
     "preferredExchangesHelp": "Selecciona hasta 3 bolsas en orden de prioridad. Se preferirán al buscar valores.",

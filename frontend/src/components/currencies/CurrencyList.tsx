@@ -23,6 +23,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { CellLabel, SortableTh, Th } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { HelpLink } from '@/components/help/HelpLink';
 
 export type CurrencySortField = 'code' | 'name' | 'symbol' | 'decimals' | 'rate';
 export type SortDirection = 'asc' | 'desc';
@@ -91,6 +92,7 @@ function CryptoKindBadge({ currency }: { currency: CurrencyInfo }) {
  */
 function CurrencyQuoteSymbol({ currency, className = '' }: { currency: CurrencyInfo; className?: string }) {
   const t = useTranslations('currencies');
+  const th = useTranslations('help');
   if (currency.kind !== 'CRYPTO') return null;
   return currency.quoteSymbol ? (
     <span className={`text-xs font-mono text-gray-500 dark:text-gray-400 ${className}`}>
@@ -98,7 +100,10 @@ function CurrencyQuoteSymbol({ currency, className = '' }: { currency: CurrencyI
     </span>
   ) : (
     <span className={`text-xs text-amber-700 dark:text-amber-400 ${className}`}>
-      {t('list.noPriceSymbol')}
+      {t('list.noPriceSymbol')}{' '}
+      <HelpLink link="currencyPriceSymbol" className="underline hover:text-amber-900 dark:hover:text-amber-200">
+        {th('learnMore')}
+      </HelpLink>
     </span>
   );
 }
@@ -168,15 +173,30 @@ function CurrencyUsageText({
 function CurrencyRateValue({
   exchangeRate,
   isDefault,
+  currencyCode,
+  defaultCurrency,
 }: {
   exchangeRate: number | null;
   isDefault: boolean;
+  currencyCode: string;
+  defaultCurrency: string;
 }) {
+  const t = useTranslations('currencies');
   if (isDefault) {
     return <span className="text-gray-400 dark:text-gray-500">-</span>;
   }
   if (!exchangeRate) {
-    return <span className="text-gray-400 dark:text-gray-500">N/A</span>;
+    return (
+      <span className="inline-flex items-center gap-1 text-gray-400 dark:text-gray-500">
+        N/A
+        <InfoTooltip
+          text={t('list.rateMissing', { from: currencyCode, to: defaultCurrency })}
+          align="right"
+          usePortal
+          learnMore="currencyRateHistory"
+        />
+      </span>
+    );
   }
   return <span>{exchangeRate.toFixed(FX_RATE_DISPLAY_DECIMALS)}</span>;
 }
@@ -404,6 +424,8 @@ const CurrencyRow = memo(function CurrencyRow({
                   <CurrencyRateValue
                     exchangeRate={exchangeRate}
                     isDefault={isDefault}
+                    currencyCode={currency.code}
+                    defaultCurrency={defaultCurrency}
                   />
                 </div>
               </div>
@@ -479,6 +501,8 @@ const CurrencyRow = memo(function CurrencyRow({
         <CurrencyRateValue
           exchangeRate={exchangeRate}
           isDefault={isDefault}
+          currencyCode={currency.code}
+          defaultCurrency={defaultCurrency}
         />
       </td>
       {/* Status */}

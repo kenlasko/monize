@@ -138,6 +138,7 @@
     },
     "themeLabel": "主题",
     "defaultCurrencyLabel": "默认货币",
+    "defaultCurrencyHelp": "用于汇总您的账户、净资产和报表，是货币页面中「汇率」列换算的目标货币。",
     "defaultCurrencyNoCrypto": "此处不提供加密货币：合计和报表始终以法定货币显示。",
     "preferredExchangesLabel": "首选交易所（用于证券查询）",
     "preferredExchangesHelp": "按优先顺序选择最多 3 个交易所。查询证券时将优先使用这些交易所。",

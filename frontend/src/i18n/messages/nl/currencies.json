@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, one {# rek.} other {# rek.}}",
     "usageSecurities": "{count, plural, one {# wp.} other {# wp.'s}}",
     "rateHelp": "Wat één eenheid van elke valuta waard is in {currency}.",
+    "rateMissing": "Geen opgeslagen wisselkoers voor {from} naar {to}.",
     "empty": {
       "title": "Geen valuta's",
       "subtitle": "Begin door een valuta toe te voegen."
@@ -159,6 +160,7 @@
     "hint": "Rapporten van vóór de eerste opgeslagen koers kunnen {pair} niet omrekenen.",
     "list": {
       "heading": "Opgeslagen koersen",
+      "invertedHelp": "Een koers gemarkeerd als (omgekeerd) is het omgekeerde van wat Monize daadwerkelijk voor dit paar heeft opgeslagen, geen andere waarneming.",
       "direction": "Weergegeven als {to} per 1 {from}.",
       "loading": "Opgeslagen koersen laden...",
       "loadFailed": "Kon de opgeslagen koersen niet lezen",

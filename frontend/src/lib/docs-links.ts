@@ -36,7 +36,9 @@ export const DOCS_LINKS = {
   googlePlacesSetup: { page: 'categories-and-payees', section: 'setting-up-google-places' },
   currencies: { page: 'currency-management' },
   currencyHomeRate: { page: 'currency-management', section: 'home-currency' },
+  currencyRateDirection: { page: 'currency-management', section: 'rate-direction' },
   currencyRateHistory: { page: 'currency-management', section: 'rate-history' },
+  currencyPriceSymbol: { page: 'currency-management', section: 'codes-and-price-symbols' },
   currencyRatesOnTransactions: {
     page: 'currency-management',
     section: 'rates-on-individual-transactions',
