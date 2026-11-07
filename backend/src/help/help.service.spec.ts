@@ -298,9 +298,8 @@ describe("HelpService", () => {
     it("lists each picture a page names in both themes, in page order", () => {
       const images = service.getPage("first-page")?.images;
 
-      const revision = expect.stringMatching(
-        new RegExp(`^${service.currentVersion.replace(/\./g, "\\.")}-`),
-      );
+      // The prefix itself is asserted by "keys each picture's cache..." below.
+      const revision = expect.stringContaining(`${service.currentVersion}-`);
       expect(images).toEqual({
         alpha: {
           dark: { name: "alpha", width: 1600, height: 1000, revision },
@@ -382,8 +381,8 @@ describe("HelpService", () => {
 
       const image = await service.getImage("beta");
 
-      expect(image?.revision).toMatch(
-        new RegExp(`^${service.currentVersion.replace(/\./g, "\\.")}-`),
+      expect(image?.revision?.startsWith(`${service.currentVersion}-`)).toBe(
+        true,
       );
       expect(image?.revision).not.toBe(advertised);
     });
