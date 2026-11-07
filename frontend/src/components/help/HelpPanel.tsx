@@ -10,6 +10,7 @@ import {
   ArrowsPointingInIcon,
   ArrowsPointingOutIcon,
   ChevronDownIcon,
+  MagnifyingGlassIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
@@ -28,6 +29,7 @@ import {
 } from '@/components/help/useHelpPanelWidth';
 import { useHelpPage } from '@/hooks/useHelpPage';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useHelpSearchStore } from '@/store/helpSearchStore';
 import { useHelpStore } from '@/store/helpStore';
 import { useHelpWidthStore } from '@/store/helpWidthStore';
 
@@ -293,6 +295,15 @@ export function HelpPanel() {
           >
             {page?.title ?? t('title')}
           </h2>
+          <button
+            type="button"
+            onClick={() => useHelpSearchStore.getState().openSearch()}
+            aria-label={t('search')}
+            title={t('search')}
+            className={ICON_BUTTON}
+          >
+            <MagnifyingGlassIcon className="h-5 w-5" aria-hidden="true" />
+          </button>
           <a
             href={online}
             target="_blank"

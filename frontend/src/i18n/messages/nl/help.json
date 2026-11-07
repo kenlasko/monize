@@ -23,6 +23,20 @@
       "heading": "De help kon niet worden geladen",
       "body": "De handleiding is niet geladen. Probeer het opnieuw of lees deze pagina op monize.net.",
       "retry": "Opnieuw proberen"
+    },
+    "search": "Doorzoek de handleiding"
+  },
+  "search": {
+    "title": "Doorzoek de handleiding",
+    "placeholder": "Doorzoek de handleiding",
+    "ariaLabel": "Doorzoek de handleiding",
+    "contextHeading": "Hulp voor dit scherm",
+    "noResults": "Geen resultaten voor \"{query}\"",
+    "error": "Zoeken mislukt. Probeer het opnieuw.",
+    "hint": {
+      "navigate": "om te navigeren",
+      "select": "om te selecteren",
+      "close": "om te sluiten"
     }
   },
   "markdown": {

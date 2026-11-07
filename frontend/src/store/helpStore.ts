@@ -38,6 +38,13 @@ interface HelpState {
    * survives the panel closing.
    */
   guideAvailable: boolean | null;
+  /**
+   * The current screen's help page, as `PageHeader` registers it while
+   * mounted (its `help` key resolved to a slug), or `null` on a screen with
+   * no help control. The search dialog boosts this page's sections and, with
+   * an empty query, shows its table of contents.
+   */
+  contextPage: string | null;
 
   /** Open at a target, or move to it when the panel is already open. */
   openAt: (target: HelpTarget) => void;
@@ -49,6 +56,7 @@ interface HelpState {
   setPinned: (pinned: boolean) => void;
   setExpanded: (expanded: boolean) => void;
   setGuideAvailable: (available: boolean) => void;
+  setContextPage: (page: string | null) => void;
 }
 
 const INITIAL = {
@@ -59,6 +67,7 @@ const INITIAL = {
   cursor: -1,
   visit: 0,
   guideAvailable: null as boolean | null,
+  contextPage: null as string | null,
 };
 
 function sameTarget(a: HelpTarget, b: HelpTarget): boolean {
@@ -97,6 +106,8 @@ export const useHelpStore = create<HelpState>((set) => ({
   setExpanded: (expanded) => set({ expanded }),
 
   setGuideAvailable: (guideAvailable) => set({ guideAvailable }),
+
+  setContextPage: (contextPage) => set({ contextPage }),
 }));
 
 function moveTo(

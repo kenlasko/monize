@@ -107,6 +107,56 @@ describe('helpApi', () => {
 
     await expect(helpApi.getManifest()).rejects.toThrow('500');
   });
+
+  describe('search', () => {
+    const ANSWER = {
+      results: [
+        {
+          page: 'budgets',
+          section: 'overview',
+          pageTitle: 'Budgets',
+          heading: 'Overview',
+          excerpt: 'Plan spending.',
+          score: 9,
+        },
+      ],
+      total: 1,
+    };
+
+    it('reads GET /help/search with the query alone', async () => {
+      vi.mocked(apiClient.get).mockResolvedValue({ data: ANSWER });
+
+      await expect(helpApi.search('budgets')).resolves.toEqual(ANSWER);
+      expect(apiClient.get).toHaveBeenCalledWith('/help/search', {
+        params: { q: 'budgets' },
+      });
+    });
+
+    it('passes context and limit when given', async () => {
+      vi.mocked(apiClient.get).mockResolvedValue({ data: ANSWER });
+
+      await helpApi.search('budgets', { context: 'dashboard', limit: 5 });
+
+      expect(apiClient.get).toHaveBeenCalledWith('/help/search', {
+        params: { q: 'budgets', context: 'dashboard', limit: 5 },
+      });
+    });
+
+    it('never caches or deduplicates: each query is its own request', async () => {
+      vi.mocked(apiClient.get).mockResolvedValue({ data: ANSWER });
+
+      await helpApi.search('budgets');
+      await helpApi.search('budgets');
+
+      expect(apiClient.get).toHaveBeenCalledTimes(2);
+    });
+
+    it('propagates a search failure', async () => {
+      vi.mocked(apiClient.get).mockRejectedValue(new Error('500'));
+
+      await expect(helpApi.search('budgets')).rejects.toThrow('500');
+    });
+  });
 });
 
 describe('helpImageUrl', () => {

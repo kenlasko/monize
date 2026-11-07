@@ -275,10 +275,15 @@ The panel's header has these controls:
 | **Back** and **Forward** | Step through the guide pages you have opened in the panel, like a browser |
 | **Open on monize.net** | Opens the same page and section on the website, in a new tab |
 | **Pin** | Keeps the panel open while you move to other pages of Monize, so you can follow a guide while you work. An unpinned panel closes when you go to another page |
+| **Search** | Opens the search dialog described below |
 | **Expand** | Fills the window for easier reading; the same button shrinks it back |
 | **Close** | Closes the panel. **Esc** does the same, or shrinks an expanded panel first |
 
 Under the header, **On this page** lists the sections of the guide page you are reading, and links to other pages in the guide open inside the panel. The panel shares its edge of the window with the AI assistant, so opening one closes the other. On a desktop, drag the panel's left edge to make it wider or narrower (or focus the edge and use the **Left** and **Right** arrow keys, **Home** and **End**); Monize remembers the width in this browser.
+
+### Searching the Guide
+
+Press **Ctrl+K** (**Cmd+K** on a Mac), or type a bare **?** anywhere you are not already typing into a field, to search the whole guide without leaving the screen you are on. Sections from the page you are viewing are ranked first, so the ? shortcut on, say, the Budgets page lists Budgets sections before anything else; type to search everywhere else too. Use the **Up** and **Down** arrow keys to move through the results and **Enter** to open one in the help panel, or **Esc** to close the search without opening anything. The same dialog opens from the help panel's own **Search** button.
 
 A few things to know:
 

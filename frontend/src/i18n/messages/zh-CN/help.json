@@ -23,6 +23,20 @@
       "heading": "无法加载帮助",
       "body": "指南未能加载。请重试，或在 monize.net 上阅读本页。",
       "retry": "重试"
+    },
+    "search": "搜索指南"
+  },
+  "search": {
+    "title": "搜索指南",
+    "placeholder": "搜索指南",
+    "ariaLabel": "搜索指南",
+    "contextHeading": "此屏幕的帮助",
+    "noResults": "未找到\"{query}\"的结果",
+    "error": "搜索失败,请重试。",
+    "hint": {
+      "navigate": "导航",
+      "select": "选择",
+      "close": "关闭"
     }
   },
   "markdown": {

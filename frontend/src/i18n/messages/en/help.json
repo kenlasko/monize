@@ -23,6 +23,20 @@
       "heading": "Help could not be loaded",
       "body": "The guide did not load. Try again, or read this page on monize.net.",
       "retry": "Try again"
+    },
+    "search": "Search the guide"
+  },
+  "search": {
+    "title": "Search the guide",
+    "placeholder": "Search the guide",
+    "ariaLabel": "Search the guide",
+    "contextHeading": "Help for this screen",
+    "noResults": "No results for “{query}”",
+    "error": "Search failed. Try again.",
+    "hint": {
+      "navigate": "to navigate",
+      "select": "to select",
+      "close": "to close"
     }
   },
   "markdown": {
