@@ -1,6 +1,8 @@
 import type { Locator, Page } from '@playwright/test';
 import { test, expect } from '../fixtures';
 
+test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } });
+
 // A page prefetches the guide's manifest when its header mounts, and a click
 // before the answer arrives is left to the link (monize.net), by design: the
 // choice is made synchronously at click time. Go to the page and wait for the
@@ -180,9 +182,15 @@ test.describe('Help panel', () => {
   });
 });
 
+// Classic scrollbars, which take layout width and are what a Windows desktop
+// draws: headless Chromium hides them unless told not to (a launch option, so
+// it applies to the whole file). Firefox in the Playwright image draws overlay
+// scrollbars, the other case the panel has to work in, so the scrollbar test
+// measures which kind it got and asserts the layout that kind needs.
 test.describe('Help panel on a desktop', () => {
   test.use({ viewport: { width: 1440, height: 800 } });
 
+  // Settings is a long page, so the page has a scrollbar of its own.
   async function openSettingsHelp(page: Page) {
     await gotoWithGuideKnown(page, '/settings');
     await page.getByRole('link', { name: 'Help for this page' }).click();
@@ -193,6 +201,60 @@ test.describe('Help panel on a desktop', () => {
 
   const panelWidth = (panel: Locator) =>
     panel.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+
+  test('the panel scrollbar sits clear of the page scrollbar, and both scroll', async ({
+    authedPage: page,
+    browserName,
+  }) => {
+    const panel = await openSettingsHelp(page);
+    const scroller = panel.getByLabel('Settings and Security', { exact: true }).last();
+
+    const m = await page.evaluate(() => {
+      const de = document.documentElement;
+      const sc = document.querySelector<HTMLElement>('[role="complementary"] [tabindex="0"][aria-label="Settings and Security"]')!;
+      const r = sc.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.right - 2, r.top + 200);
+      return {
+        pageScrollbar: window.innerWidth - de.clientWidth,
+        clientWidth: de.clientWidth,
+        scrollerRight: r.right,
+        scrollerBarWidth: sc.offsetWidth - sc.clientWidth,
+        hitIsScroller: hit === sc,
+        pageScrolls: de.scrollHeight > de.clientHeight,
+        panelScrolls: sc.scrollHeight > sc.clientHeight,
+      };
+    });
+    // The measurement means something only if there is a page scrollbar to
+    // collide with and a panel to scroll.
+    expect(m.pageScrolls).toBe(true);
+    expect(m.panelScrolls).toBe(true);
+    if (browserName === 'chromium') expect(m.pageScrollbar).toBeGreaterThan(0);
+
+    if (m.pageScrollbar > 0) {
+      // Classic: the panel ends where the page's scrollbar begins, and its own
+      // scrollbar is inside that.
+      expect(m.scrollerRight).toBeLessThanOrEqual(m.clientWidth);
+      expect(m.scrollerBarWidth).toBeGreaterThan(0);
+    } else {
+      // Overlay: the page's scrollbar floats over the window's right edge, so
+      // the panel's scroller must stop short of it.
+      expect(m.scrollerRight).toBeLessThanOrEqual(m.clientWidth - 16);
+    }
+    // The pointer at the scroller's scrollbar reaches the scroller, not the page.
+    expect(m.hitIsScroller).toBe(true);
+
+    // Each scrolls on its own: the wheel over the panel moves the panel, over
+    // the page moves the page.
+    const box = (await scroller.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + 200);
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => scroller.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+    await page.mouse.move(300, 400);
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  });
 
   test('the panel is resized by dragging its left edge, and the page makes room', async ({
     authedPage: page,

@@ -17,6 +17,10 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { HelpMarkdown, onlineHref } from '@/components/help/HelpMarkdown';
 import { HelpResizeHandle } from '@/components/help/HelpResizeHandle';
 import { clampHelpPanelWidth, helpPanelMaxWidth } from '@/components/help/help-layout';
+import {
+  HELP_PANEL_OVERLAY_GUTTER,
+  scrollbarsOverlay,
+} from '@/components/help/scrollbar-gutter';
 import { useHelpPanelWidth, useViewportWidth } from '@/components/help/useHelpPanelWidth';
 import { useHelpPage } from '@/hooks/useHelpPage';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -81,6 +85,12 @@ export function HelpPanel() {
   const viewportWidth = useViewportWidth();
   const resizeTo = (next: number) =>
     useHelpWidthStore.getState().setWidth(clampHelpPanelWidth(next, viewportWidth));
+  // A page scrollbar that floats over the window's right edge sits on the
+  // panel's own scrollbar, which is at the same edge, and takes the pointer
+  // first. Where scrollbars overlay, the panel's scroller stops short of the
+  // edge so its scrollbar has a strip of its own; classic scrollbars take
+  // layout width, so the panel already ends where the page's begins.
+  const [overlayScrollbars] = useState(scrollbarsOverlay);
 
   // Close on a route change unless pinned. The route the panel opened on is the
   // baseline, so opening it never counts as a change.
@@ -357,6 +367,11 @@ export function HelpPanel() {
           tabIndex={0}
           aria-label={page?.title ?? t('title')}
           className="min-h-0 flex-1 scroll-auto overflow-y-auto px-4 py-3 focus-visible:outline-none"
+          style={
+            docked && overlayScrollbars
+              ? { marginRight: HELP_PANEL_OVERLAY_GUTTER }
+              : undefined
+          }
         >
           <div className={expanded ? 'mx-auto max-w-3xl' : undefined}>
             {!locale.startsWith('en') && (

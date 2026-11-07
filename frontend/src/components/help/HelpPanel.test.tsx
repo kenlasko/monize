@@ -30,6 +30,7 @@ import {
   HELP_PANEL_MIN_WIDTH,
   helpPanelMaxWidth,
 } from './help-layout';
+import { HELP_PANEL_OVERLAY_GUTTER, resetScrollbarProbe } from './scrollbar-gutter';
 
 function pageOf(slug: string, extra: Partial<HelpPage> = {}): HelpPage {
   return {
@@ -516,9 +517,11 @@ describe('HelpPanel: phone', () => {
 
 describe('HelpPanel: width', () => {
   const widthOf = () => (screen.getByRole('complementary', { name: 'Help' }) as HTMLElement).style.width;
+  const scroller = () => screen.getByLabelText('budgets title') as HTMLElement;
 
   beforeEach(() => {
     useHelpWidthStore.setState({ width: HELP_PANEL_DEFAULT_WIDTH });
+    resetScrollbarProbe();
   });
 
   it('opens at the default width and follows the stored width', async () => {
@@ -629,5 +632,26 @@ describe('HelpPanel: width', () => {
       fireEvent.pointerMove(handle, { pointerId: 1, clientX: 100 });
       expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
     });
+  });
+
+  it('keeps the scroller short of the edge where scrollbars overlay, so its scrollbar is not under the page one', async () => {
+    // jsdom reports no scrollbar width: the overlay case.
+    await renderPanel();
+    expect(scroller().style.marginRight).toBe(`${HELP_PANEL_OVERLAY_GUTTER}px`);
+  });
+
+  it('gives the scroller no gutter where scrollbars are classic, which already end where the page one begins', async () => {
+    const offset = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(115);
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(100);
+    await renderPanel();
+    expect(scroller().style.marginRight).toBe('');
+    offset.mockRestore();
+    client.mockRestore();
+  });
+
+  it('gives the scroller no gutter when expanded, which hides the page scrollbar', async () => {
+    act(() => store().setExpanded(true));
+    await renderPanel();
+    expect(scroller().style.marginRight).toBe('');
   });
 });
