@@ -259,6 +259,7 @@ The right-hand side of the bar holds:
 - **Search** -- Search your transactions from anywhere
 - **Action History** -- Your recent changes, with **Undo** and **Redo**
 - **Notifications** -- The bell, with a count of unread notifications
+- **Help** -- The **?** icon: help for the page you're on, search the guide, keyboard shortcuts, take the tour, What's new, and links to report an issue or start a discussion on GitHub
 - **Settings** -- The gear icon with your first name: preferences, security, two-factor authentication, trusted devices, sharing, backups and more
 - **Logout** -- Sign out of the application
 
@@ -279,7 +280,22 @@ The panel's header has these controls:
 | **Expand** | Fills the window for easier reading; the same button shrinks it back |
 | **Close** | Closes the panel. **Esc** does the same, or shrinks an expanded panel first |
 
-Under the header, **On this page** lists the sections of the guide page you are reading, and links to other pages in the guide open inside the panel. The panel shares its edge of the window with the AI assistant, so opening one closes the other. On a desktop, drag the panel's left edge to make it wider or narrower (or focus the edge and use the **Left** and **Right** arrow keys, **Home** and **End**); Monize remembers the width in this browser.
+Under the header, **On this page** lists the sections of the guide page you are reading, and links to other pages in the guide open inside the panel. The panel shares its edge of the window with the AI assistant, so opening one closes the other. On a desktop, drag the panel's left edge to make it wider or narrower (or focus the edge and use the **Left** and **Right** arrow keys, **Home** and **End**); Monize remembers the width in this browser. The footer names the version of the guide bundled with this instance, and points you to monize.net for the latest.
+
+A page with a matching guided tour shows **Show me** under the panel's header, which closes the panel and starts it; a tour that walks through a page ends with **Read the full guide**, opening that page here.
+
+### The Header Help Menu
+
+Click the **?** icon in the header to open the Help menu:
+
+- **Help for this page** -- the same page the **?** beside the title opens, when the page has one
+- **Search help** -- opens the search dialog described below
+- **Keyboard shortcuts** -- a quick reference for search, undo/redo and closing a dialog or panel
+- **Take the tour** -- starts the guided tour for the page you're on, or the introduction tour on a page with none
+- **What's new** -- the release notes for this version
+- **Report an issue** and **Discussions** -- the GitHub links also on **Settings > Help & Support**
+
+On a phone, these same entries are in the navigation drawer instead of the header.
 
 ### Searching the Guide
 
