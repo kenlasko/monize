@@ -445,6 +445,7 @@ export function CategoryList({
             </div>
           )
         }
+        help="categories"
       />
     );
   }

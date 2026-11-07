@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Não foi possível abrir este arquivo do Microsoft Money",
     "docsNotice": {
       "title": "Antes de importar",
-      "body": "Leia a seção <money>Importing from Microsoft Money</money> ou <quicken>Importing from Quicken</quicken> da documentação antes de importar qualquer coisa."
+      "body": "Leia a seção <money>Importing from Microsoft Money</money> ou <quicken>Importing from Quicken</quicken> da documentação antes de importar qualquer coisa. Os arquivos OFX/QFX e QIF têm cada um suas particularidades — veja <ofx>Importing OFX/QFX Files</ofx> e <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "ex.: DD.MM.YYYY",
     "dataPreview": "Pré-visualização dos Dados",
     "columnMappingTitle": "Mapeamento de Colunas",
+    "columnMappingHelp": "Associe cada coluna do CSV a um campo da transação. Data, Tipo de valor e, ou Valor, ou Débito/Crédito, são obrigatórios; o resto é opcional.",
     "dateField": "Data",
     "amountTypeField": "Tipo de valor",
     "singleAmountOption": "Coluna de valor único",
     "splitAmountOption": "Débito/crédito separados",
     "amountField": "Valor",
     "signField": "Sinal",
+    "signFieldHelp": "Como o sinal do valor é interpretado: \"Como está\" trata um número positivo como um depósito, \"Inverter\" trata-o como uma retirada (útil para faturas de cartão de crédito em que as cobranças aparecem como positivas), e uma coluna de tipo de transação decide o sentido a partir de seus próprios valores em vez do sinal.",
     "signNormal": "Como está (positivo = depósito)",
     "signReverse": "Inverso (positivo = saque)",
     "signTypeColumn": "Usar coluna de tipo de transação",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "A importação não foi concluída",
     "retry": "Tentar novamente",
-    "startOver": "Começar de novo"
+    "startOver": "Começar de novo",
+    "learnMore": "Saiba mais"
   },
   "mnyComplete": {
     "heading": "Importação concluída",

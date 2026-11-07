@@ -508,6 +508,7 @@ export function SecuritySection({ user, preferences, force2fa, oidcPasswordLogin
             <div>
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
                 {t('backupCodes.heading')}
+                <InfoTooltip text={t('backupCodes.description')} learnMore="twoFactorBackupCodes" />
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {t('backupCodes.description')}

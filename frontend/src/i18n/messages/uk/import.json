@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Не вдалося відкрити цей файл Microsoft Money",
     "docsNotice": {
       "title": "Перед імпортом",
-      "body": "Перш ніж щось імпортувати, прочитайте розділ документації <money>Importing from Microsoft Money</money> або <quicken>Importing from Quicken</quicken>."
+      "body": "Перш ніж щось імпортувати, прочитайте розділ документації <money>Importing from Microsoft Money</money> або <quicken>Importing from Quicken</quicken>. Файли OFX/QFX і QIF мають свої особливості — див. <ofx>Importing OFX/QFX Files</ofx> і <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "наприклад DD.MM.YYYY",
     "dataPreview": "Попередній перегляд даних",
     "columnMappingTitle": "Відображення стовпців",
+    "columnMappingHelp": "Зіставте кожен стовпець CSV із полем транзакції. Дата, тип суми та або Сума, або Дебет/Кредит є обов'язковими; решта — необов'язкові.",
     "dateField": "Дата",
     "amountTypeField": "Тип суми",
     "singleAmountOption": "Один стовпець суми",
     "splitAmountOption": "Окремі дебет/кредит",
     "amountField": "Сума",
     "signField": "Знак",
+    "signFieldHelp": "Як читається знак суми: «Як є» вважає позитивне число депозитом, «Обернути» вважає його списанням (використовуйте для виписок кредитної картки, де списання вказані як позитивні), а стовпець типу транзакції визначає напрямок за власними значеннями, а не за знаком.",
     "signNormal": "Як є (позитивне = внесок)",
     "signReverse": "Інвертувати (позитивне = виведення)",
     "signTypeColumn": "Використовувати стовпець типу транзакції",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "Імпорт не завершився",
     "retry": "Спробувати ще раз",
-    "startOver": "Почати спочатку"
+    "startOver": "Почати спочатку",
+    "learnMore": "Дізнатися більше"
   },
   "mnyComplete": {
     "heading": "Імпорт завершено",

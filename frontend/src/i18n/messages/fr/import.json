@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Ce fichier Microsoft Money n'a pas pu être ouvert",
     "docsNotice": {
       "title": "Avant d'importer",
-      "body": "Lisez la section <money>Importing from Microsoft Money</money> ou <quicken>Importing from Quicken</quicken> de la documentation avant d'importer quoi que ce soit."
+      "body": "Lisez la section <money>Importing from Microsoft Money</money> ou <quicken>Importing from Quicken</quicken> de la documentation avant d'importer quoi que ce soit. Les fichiers OFX/QFX et QIF ont chacun leurs particularités — voir <ofx>Importing OFX/QFX Files</ofx> et <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "ex. DD.MM.YYYY",
     "dataPreview": "Aperçu des données",
     "columnMappingTitle": "Mappage des colonnes",
+    "columnMappingHelp": "Associez chaque colonne du CSV à un champ de transaction. Date, Type de montant et, soit Montant, soit Débit/Crédit, sont obligatoires ; le reste est facultatif.",
     "dateField": "Date",
     "amountTypeField": "Type de montant",
     "singleAmountOption": "Colonne montant unique",
     "splitAmountOption": "Débit/crédit séparés",
     "amountField": "Montant",
     "signField": "Signe",
+    "signFieldHelp": "Comment le signe du montant est interprété : « Tel quel » traite un nombre positif comme un dépôt, « Inverser » le traite comme un retrait (utile pour les relevés de carte de crédit où les débits apparaissent en positif), et une colonne de type de transaction détermine le sens à partir de ses propres valeurs plutôt que du signe.",
     "signNormal": "Tel quel (positif = dépôt)",
     "signReverse": "Inversé (positif = retrait)",
     "signTypeColumn": "Utiliser la colonne type de transaction",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "L'import ne s'est pas terminé",
     "retry": "Réessayer",
-    "startOver": "Recommencer"
+    "startOver": "Recommencer",
+    "learnMore": "En savoir plus"
   },
   "mnyComplete": {
     "heading": "Import terminé",

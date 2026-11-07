@@ -96,7 +96,7 @@ export function RuleConditionGroup({ group, path, env, actions }: RuleConditionG
           onChange={(not) => handlers.replace(path, { ...group, not })}
         />
         <span className="text-sm text-gray-700 dark:text-gray-300">{t('group.not')}</span>
-        <InfoTooltip text={t('group.notHelp')} placement="top" usePortal />
+        <InfoTooltip text={t('group.notHelp')} placement="top" usePortal learnMore="rulesConditions" />
       </div>
     </div>
   );

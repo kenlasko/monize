@@ -214,6 +214,7 @@ export function RulesManager() {
         title={t('empty.title')}
         description={t('empty.body')}
         action={<CreateRuleLink label={t('empty.createButton')} />}
+        help="rules"
       />
     );
   } else {

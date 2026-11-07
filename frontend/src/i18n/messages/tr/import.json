@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Bu Microsoft Money dosyası açılamadı",
     "docsNotice": {
       "title": "İçe aktarmadan önce",
-      "body": "Herhangi bir şeyi içe aktarmadan önce belgelerdeki <money>Importing from Microsoft Money</money> veya <quicken>Importing from Quicken</quicken> bölümünü okuyun."
+      "body": "Herhangi bir şeyi içe aktarmadan önce belgelerdeki <money>Importing from Microsoft Money</money> veya <quicken>Importing from Quicken</quicken> bölümünü okuyun. OFX/QFX ve QIF dosyalarının her birinin kendine özgü tuhaflıkları vardır — bakınız <ofx>Importing OFX/QFX Files</ofx> ve <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "ör. GG.AA.YYYY",
     "dataPreview": "Veri Önizlemesi",
     "columnMappingTitle": "Sütun Eşleştirmesi",
+    "columnMappingHelp": "Her CSV sütununu bir işlem alanına eşleyin. Tarih, Tutar türü ve Tutar ya da Borç/Alacak alanlarından biri zorunludur; diğerleri isteğe bağlıdır.",
     "dateField": "Tarih",
     "amountTypeField": "Miktar türü",
     "singleAmountOption": "Tek miktar sütunu",
     "splitAmountOption": "Ayrı borç/alacak",
     "amountField": "Miktar",
     "signField": "İşaret",
+    "signFieldHelp": "Tutarın işareti şu şekilde okunur: \"Olduğu gibi\" pozitif bir sayıyı yatırma olarak değerlendirir, \"Tersine çevir\" onu çekim olarak değerlendirir (ücretlerin pozitif göründüğü kredi kartı ekstrelerinde kullanın) ve bir işlem türü sütunu, işareti değil kendi değerlerini kullanarak yönü belirler.",
     "signNormal": "Olduğu gibi (pozitif = mevduat)",
     "signReverse": "Ters (pozitif = çekim)",
     "signTypeColumn": "İşlem türü sütununu kullan",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "İçe aktarma tamamlanmadı",
     "retry": "Yeniden dene",
-    "startOver": "Baştan başla"
+    "startOver": "Baştan başla",
+    "learnMore": "Daha fazla bilgi"
   },
   "mnyComplete": {
     "heading": "İçe aktarma tamamlandı",

@@ -303,7 +303,7 @@ export function UserManagementTable({
       </div>
 
       {sortedUsers.length === 0 && (
-        <EmptyState title={t('userTable.noUsers')} />
+        <EmptyState title={t('userTable.noUsers')} help="adminUsers" />
       )}
     </div>
   );

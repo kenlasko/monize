@@ -360,6 +360,7 @@ export function WarrantyList({
           title={empty.title}
           description={empty.description}
           action={empty.action}
+          help="warranties"
         />
       </div>
     );

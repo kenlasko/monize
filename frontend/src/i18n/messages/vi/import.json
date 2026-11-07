@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Không thể mở tệp Microsoft Money đó",
     "docsNotice": {
       "title": "Trước khi nhập khẩu",
-      "body": "Hãy đọc mục <money>Importing from Microsoft Money</money> hoặc <quicken>Importing from Quicken</quicken> trong tài liệu trước khi nhập khẩu bất cứ dữ liệu nào."
+      "body": "Hãy đọc mục <money>Importing from Microsoft Money</money> hoặc <quicken>Importing from Quicken</quicken> trong tài liệu trước khi nhập khẩu bất cứ dữ liệu nào. Tệp OFX/QFX và QIF mỗi loại có những điểm riêng cần lưu ý — xem <ofx>Importing OFX/QFX Files</ofx> và <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "vd: DD.MM.YYYY",
     "dataPreview": "Xem trước dữ liệu",
     "columnMappingTitle": "Ánh xạ cột",
+    "columnMappingHelp": "Ánh xạ từng cột CSV vào một trường của giao dịch. Ngày, Loại số tiền và một trong hai trường Số tiền hoặc Nợ/Có là bắt buộc; các trường còn lại là tùy chọn.",
     "dateField": "Ngày",
     "amountTypeField": "Loại số tiền",
     "singleAmountOption": "Cột số tiền duy nhất",
     "splitAmountOption": "Tách riêng nợ/có",
     "amountField": "Số tiền",
     "signField": "Dấu",
+    "signFieldHelp": "Cách đọc dấu của số tiền: 'Giữ nguyên' coi số dương là một khoản gửi vào, 'Đảo ngược' coi đó là một khoản rút ra (dùng cho sao kê thẻ tín dụng khi các khoản phí hiển thị dương), và cột loại giao dịch sẽ quyết định hướng dựa trên giá trị của chính nó thay vì dựa vào dấu.",
     "signNormal": "Nguyên bản (dương = tiền gửi)",
     "signReverse": "Đảo ngược (dương = rút tiền)",
     "signTypeColumn": "Sử dụng cột loại giao dịch",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "Quá trình nhập chưa hoàn tất",
     "retry": "Thử lại",
-    "startOver": "Bắt đầu lại"
+    "startOver": "Bắt đầu lại",
+    "learnMore": "Tìm hiểu thêm"
   },
   "mnyComplete": {
     "heading": "Đã nhập xong",

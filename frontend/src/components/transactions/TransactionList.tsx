@@ -717,6 +717,7 @@ export function TransactionList({
           }
           title={t('list.empty.title')}
           description={t('list.empty.body')}
+          help="transactions"
         />
       </div>
     );

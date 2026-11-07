@@ -7,6 +7,7 @@ import { Account } from '@/types/account';
 import { formatAccountType } from '@/lib/account-utils';
 import { HelpLink } from '@/components/help/HelpLink';
 import type { DocsLink } from '@/lib/docs-links';
+import { mnyErrorDocsLink } from '@/lib/import-mny-error-docs';
 
 interface UploadStepProps {
   preselectedAccount: Account | undefined;
@@ -134,6 +135,8 @@ export function UploadStep({
               {t.rich('upload.docsNotice.body', {
                 money: docsLink('importMicrosoftMoney'),
                 quicken: docsLink('importQuicken'),
+                ofx: docsLink('importOfx'),
+                qif: docsLink('importQif'),
               })}
             </p>
           </div>
@@ -163,6 +166,14 @@ export function UploadStep({
             </p>
             <p className="mt-1 text-sm text-red-700 dark:text-red-300">
               {mnyError.message || t('mnyErrors.mnyUnreadableDatabase')}
+            </p>
+            <p className="mt-2 text-sm">
+              <HelpLink
+                link={mnyErrorDocsLink(mnyError.code)}
+                className="font-medium text-red-800 underline hover:text-red-900 dark:text-red-300 dark:hover:text-red-100"
+              >
+                {t('mnyImporting.learnMore')}
+              </HelpLink>
             </p>
           </div>
         )}

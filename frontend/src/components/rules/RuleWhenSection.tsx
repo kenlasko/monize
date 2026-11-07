@@ -71,7 +71,12 @@ export function RuleWhenSection({
       <div className="mt-4 flex items-center gap-2 border-t border-gray-200 pt-4 dark:border-gray-700">
         <ToggleSwitch checked={stopProcessing} onChange={onStopProcessingChange} label={t('when.stopProcessing')} />
         <span className="text-sm text-gray-800 dark:text-gray-200">{t('when.stopProcessing')}</span>
-        <InfoTooltip text={t('when.stopProcessingHelp')} placement="top" usePortal />
+        <InfoTooltip
+          text={t('when.stopProcessingHelp')}
+          placement="top"
+          usePortal
+          learnMore="rulesOrderAndStop"
+        />
       </div>
       <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
         <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{t('when.window.title')}</p>

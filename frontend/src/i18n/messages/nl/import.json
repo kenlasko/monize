@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Dit Microsoft Money-bestand kon niet worden geopend",
     "docsNotice": {
       "title": "Voordat u importeert",
-      "body": "Lees het gedeelte <money>Importing from Microsoft Money</money> of <quicken>Importing from Quicken</quicken> in de documentatie voordat u iets importeert."
+      "body": "Lees het gedeelte <money>Importing from Microsoft Money</money> of <quicken>Importing from Quicken</quicken> in de documentatie voordat u iets importeert. OFX/QFX- en QIF-bestanden hebben elk hun eigen eigenaardigheden — zie <ofx>Importing OFX/QFX Files</ofx> en <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "bijv. DD.MM.JJJJ",
     "dataPreview": "Gegevensvoorbeeld",
     "columnMappingTitle": "Kolomkoppeling",
+    "columnMappingHelp": "Koppel elke CSV-kolom aan een transactieveld. Datum, Bedragtype en ofwel Bedrag ofwel Debet/Credit zijn verplicht; de rest is optioneel.",
     "dateField": "Datum",
     "amountTypeField": "Bedragtype",
     "singleAmountOption": "Enkele bedragkolom",
     "splitAmountOption": "Aparte debet/credit",
     "amountField": "Bedrag",
     "signField": "Teken",
+    "signFieldHelp": "Hoe het teken van het bedrag wordt gelezen: 'Zoals het is' behandelt een positief getal als een storting, 'Omkeren' behandelt het als een opname (handig voor creditcardafschriften waarbij kosten positief worden weergegeven), en een transactietype-kolom bepaalt de richting op basis van zijn eigen waarden in plaats van het teken.",
     "signNormal": "Zoals opgegeven (positief = storting)",
     "signReverse": "Omgekeerd (positief = opname)",
     "signTypeColumn": "Gebruik transactietypekolom",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "De import is niet voltooid",
     "retry": "Opnieuw proberen",
-    "startOver": "Opnieuw beginnen"
+    "startOver": "Opnieuw beginnen",
+    "learnMore": "Meer informatie"
   },
   "mnyComplete": {
     "heading": "Import voltooid",

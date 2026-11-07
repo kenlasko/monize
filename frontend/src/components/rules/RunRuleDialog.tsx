@@ -181,6 +181,7 @@ function RunRuleBody({ rule, accountOptions, onClose }: RunRuleDialogProps & { r
       onClose={running ? undefined : onClose}
       title={t('title', { name: rule.name })}
       description={finished ? undefined : t('description')}
+      descriptionLearnMore={finished ? undefined : 'rulesRunOnExisting'}
       footer={footer}
       padding="md"
       maxWidth="3xl"

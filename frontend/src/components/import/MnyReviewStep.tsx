@@ -3,9 +3,11 @@
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { HelpLink } from '@/components/help/HelpLink';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { formatAccountType } from '@/lib/account-utils';
 import { MnyImportOptionsInput, MnyPreview } from '@/lib/import-mny';
+import { mnyErrorDocsLink } from '@/lib/import-mny-error-docs';
 import { MnyBillsPanel } from './MnyBillsPanel';
 import { MnyWarningsPanel } from './MnyWarningsPanel';
 import { Th } from '@/components/ui/Table';
@@ -431,6 +433,14 @@ export function MnyReviewStep({
           </h3>
           <p className="mt-1 text-sm text-red-700 dark:text-red-300">
             {startError.message || t('mnyErrors.mnyImportFailed')}
+          </p>
+          <p className="mt-2 text-sm">
+            <HelpLink
+              link={mnyErrorDocsLink(startError.code)}
+              className="font-medium text-red-800 underline hover:text-red-900 dark:text-red-300 dark:hover:text-red-100"
+            >
+              {t('mnyImporting.learnMore')}
+            </HelpLink>
           </p>
           {startError.code === 'mnyStagedFileMissing' && (
             <Button

@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { HelpLink } from '@/components/help/HelpLink';
 import {
   backupApi,
   BackupEncryptionStatus,
@@ -129,6 +130,7 @@ function CurrencyKindMismatchNotice({
 export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
   const t = useTranslations('settings.backupRestore');
   const tc = useTranslations('common');
+  const th = useTranslations('help');
   const { formatNumber } = useNumberFormat();
   const isOidc = user.authProvider === 'oidc';
   const timezonePref = usePreferencesStore((s) => s.preferences?.timezone);
@@ -411,8 +413,13 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
             {t('encryption.heading')}
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {t('encryption.descriptionLocal')}
+          </p>
+          <p className="mb-4 mt-1 text-sm">
+            <HelpLink link="backupEncryption" className="text-blue-600 hover:underline dark:text-blue-400">
+              {th('learnMore')}
+            </HelpLink>
           </p>
 
           {!encryption.available ? (
@@ -453,8 +460,13 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
             {t('encryption.heading')}
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {t('encryption.descriptionOidc')}
+          </p>
+          <p className="mb-4 mt-1 text-sm">
+            <HelpLink link="backupEncryption" className="text-blue-600 hover:underline dark:text-blue-400">
+              {th('learnMore')}
+            </HelpLink>
           </p>
 
           {encryption.enabled ? (
@@ -512,8 +524,13 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
           {t('restore.heading')}
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           {t('restore.description')}
+        </p>
+        <p className="mb-4 mt-1 text-sm">
+          <HelpLink link="backupRestore" className="text-blue-600 hover:underline dark:text-blue-400">
+            {th('learnMore')}
+          </HelpLink>
         </p>
 
         {!showRestore ? (

@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Diese Microsoft-Money-Datei konnte nicht geöffnet werden",
     "docsNotice": {
       "title": "Bevor Sie importieren",
-      "body": "Lesen Sie den Abschnitt <money>Importing from Microsoft Money</money> oder <quicken>Importing from Quicken</quicken> in der Dokumentation, bevor Sie irgendetwas importieren."
+      "body": "Lesen Sie den Abschnitt <money>Importing from Microsoft Money</money> oder <quicken>Importing from Quicken</quicken> in der Dokumentation, bevor Sie irgendetwas importieren. OFX/QFX- und QIF-Dateien haben jeweils ihre eigenen Besonderheiten — siehe <ofx>Importing OFX/QFX Files</ofx> und <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "z. B. DD.MM.YYYY",
     "dataPreview": "Datenvorschau",
     "columnMappingTitle": "Spaltenzuordnung",
+    "columnMappingHelp": "Ordnen Sie jede CSV-Spalte einem Transaktionsfeld zu. Datum, Betragstyp und entweder Betrag oder Soll/Haben sind erforderlich; der Rest ist optional.",
     "dateField": "Datum",
     "amountTypeField": "Betragstyp",
     "singleAmountOption": "Einzelne Betragsspalte",
     "splitAmountOption": "Getrennte Soll-/Habenspalten",
     "amountField": "Betrag",
     "signField": "Vorzeichen",
+    "signFieldHelp": "So wird das Vorzeichen des Betrags gelesen: „Wie angegeben“ behandelt eine positive Zahl als Einzahlung, „Umkehren“ behandelt sie als Abhebung (nützlich bei Kreditkartenabrechnungen, auf denen Belastungen positiv sind), und eine Transaktionstyp-Spalte bestimmt die Richtung anhand ihrer eigenen Werte statt des Vorzeichens.",
     "signNormal": "Wie angegeben (positiv = Einzahlung)",
     "signReverse": "Umgekehrt (positiv = Abhebung)",
     "signTypeColumn": "Buchungstypsp spalte verwenden",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "Der Import wurde nicht abgeschlossen",
     "retry": "Erneut versuchen",
-    "startOver": "Neu beginnen"
+    "startOver": "Neu beginnen",
+    "learnMore": "Mehr erfahren"
   },
   "mnyComplete": {
     "heading": "Import abgeschlossen",

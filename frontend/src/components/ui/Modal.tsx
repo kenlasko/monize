@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useId, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { InfoTooltip } from './InfoTooltip';
+import type { DocsLink } from '@/lib/docs-links';
 
 // Tracks programmatic history.back() calls from modal cleanup.
 // When a nested modal closes programmatically, it pops its history entry which fires popstate.
@@ -80,6 +81,8 @@ interface ModalProps {
    *  than a paragraph every reader must read again on each open, and wired to
    *  `aria-describedby`. */
   description?: string;
+  /** Where the guide explains `description` further; adds a "Learn more" link to its tooltip. */
+  descriptionLearnMore?: DocsLink;
   /** Right-aligned action row along the bottom. */
   footer?: ReactNode;
   /** Padding for the body.
@@ -139,6 +142,7 @@ export function Modal({
   elevated = false,
   title,
   description,
+  descriptionLearnMore,
   footer,
   padding = 'none',
   fullScreenOnPhone = false,
@@ -440,7 +444,7 @@ export function Modal({
             </h2>
             {description && (
               <>
-                <InfoTooltip text={description} usePortal />
+                <InfoTooltip text={description} usePortal learnMore={descriptionLearnMore} />
                 <span id={descriptionId} className="sr-only">
                   {description}
                 </span>

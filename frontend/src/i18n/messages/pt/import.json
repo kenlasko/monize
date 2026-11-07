@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Não foi possível abrir este ficheiro do Microsoft Money",
     "docsNotice": {
       "title": "Antes de importar",
-      "body": "Leia a secção <money>Importing from Microsoft Money</money> ou <quicken>Importing from Quicken</quicken> da documentação antes de importar seja o que for."
+      "body": "Leia a secção <money>Importing from Microsoft Money</money> ou <quicken>Importing from Quicken</quicken> da documentação antes de importar seja o que for. Os ficheiros OFX/QFX e QIF têm cada um as suas particularidades — consulte <ofx>Importing OFX/QFX Files</ofx> e <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "ex.: DD.MM.YYYY",
     "dataPreview": "Pré-visualização dos Dados",
     "columnMappingTitle": "Mapeamento de Colunas",
+    "columnMappingHelp": "Associe cada coluna do CSV a um campo da transação. Data, Tipo de montante e, ou Montante, ou Débito/Crédito, são obrigatórios; o resto é opcional.",
     "dateField": "Data",
     "amountTypeField": "Tipo de montante",
     "singleAmountOption": "Coluna de montante único",
     "splitAmountOption": "Débito/crédito separados",
     "amountField": "Montante",
     "signField": "Sinal",
+    "signFieldHelp": "Como o sinal do montante é lido: \"Tal como está\" trata um número positivo como um depósito, \"Inverter\" trata-o como um levantamento (útil para extratos de cartão de crédito em que as despesas aparecem como positivas), e uma coluna de tipo de transação decide o sentido a partir dos seus próprios valores em vez do sinal.",
     "signNormal": "Como está (positivo = depósito)",
     "signReverse": "Inverso (positivo = levantamento)",
     "signTypeColumn": "Usar coluna de tipo de transação",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "A importação não foi concluída",
     "retry": "Tentar novamente",
-    "startOver": "Começar de novo"
+    "startOver": "Começar de novo",
+    "learnMore": "Saber mais"
   },
   "mnyComplete": {
     "heading": "Importação concluída",

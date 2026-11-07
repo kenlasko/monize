@@ -130,7 +130,12 @@ export function RuleTestPanel({ draft, accountOptions, blocked = false, loaded =
   }, [done, stale, onResult]);
 
   return (
-    <RuleSection title={t('title')} description={t('description')} anchor={tourAnchor(TOUR_ANCHORS.ruleEditorTest)}>
+    <RuleSection
+      title={t('title')}
+      description={t('description')}
+      anchor={tourAnchor(TOUR_ANCHORS.ruleEditorTest)}
+      learnMore="rulesTesting"
+    >
       <RuleRunFilterFields filters={filters} accountOptions={accountOptions} onChange={setFilters} />
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <Button

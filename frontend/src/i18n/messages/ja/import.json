@@ -49,7 +49,7 @@
     "mnyFailedHeading": "この Microsoft Money ファイルを開けませんでした",
     "docsNotice": {
       "title": "インポートする前に",
-      "body": "何かをインポートする前に、ドキュメントの <money>Importing from Microsoft Money</money> または <quicken>Importing from Quicken</quicken> のセクションをお読みください。"
+      "body": "何かをインポートする前に、ドキュメントの <money>Importing from Microsoft Money</money> または <quicken>Importing from Quicken</quicken> のセクションをお読みください。OFX/QFX ファイルと QIF ファイルにはそれぞれ独自の注意点があります。<ofx>Importing OFX/QFX Files</ofx> と <qif>Importing Quicken QIF Files</qif> を参照してください。"
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "例: DD.MM.YYYY",
     "dataPreview": "データプレビュー",
     "columnMappingTitle": "列マッピング",
+    "columnMappingHelp": "CSVの各列をトランザクションのフィールドに割り当てます。日付、金額の種類、そして金額または debit/credit のいずれかが必須で、残りは任意です。",
     "dateField": "日付",
     "amountTypeField": "金額の種類",
     "singleAmountOption": "単一の金額列",
     "splitAmountOption": "出金/入金を分割",
     "amountField": "金額",
     "signField": "符号",
+    "signFieldHelp": "金額の符号の読み方: 「そのまま」は正の数を入金として扱い、「反転」は正の数を支払いとして扱います（請求額が正の数で表示されるクレジットカードの明細などに使用）。トランザクションタイプの列を使う場合は、符号ではなくその列自体の値から方向が決まります。",
     "signNormal": "そのまま（正の値 = 入金）",
     "signReverse": "反転（正の値 = 出金）",
     "signTypeColumn": "取引種類列を使用",
@@ -485,7 +487,8 @@
     },
     "failedHeading": "インポートは完了しませんでした",
     "retry": "再試行",
-    "startOver": "最初からやり直す"
+    "startOver": "最初からやり直す",
+    "learnMore": "詳細はこちら"
   },
   "mnyComplete": {
     "heading": "インポート完了",

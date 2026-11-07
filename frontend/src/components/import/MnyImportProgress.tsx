@@ -3,7 +3,9 @@
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { HelpLink } from '@/components/help/HelpLink';
 import { MnyImportJob, MnyImportPhase } from '@/lib/import-mny';
+import { mnyErrorDocsLink } from '@/lib/import-mny-error-docs';
 
 interface MnyImportProgressProps {
   job: MnyImportJob | null;
@@ -69,6 +71,14 @@ export function MnyImportProgress({
           </h2>
           <p className="mt-1 text-sm text-red-700 dark:text-red-300">
             {t(`mnyErrors.${failedJobMessageKey(job)}`)}
+          </p>
+          <p className="mt-2 text-sm">
+            <HelpLink
+              link={mnyErrorDocsLink(failedJobMessageKey(job))}
+              className="font-medium text-red-800 underline hover:text-red-900 dark:text-red-300 dark:hover:text-red-100"
+            >
+              {t('mnyImporting.learnMore')}
+            </HelpLink>
           </p>
         </div>
         <div className="flex justify-between pt-4">
