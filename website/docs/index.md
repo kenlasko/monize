@@ -102,3 +102,4 @@ Monize is a self-hosted, web-based personal finance management application. It p
 | Share a chequing account with my spouse so it shows up in their own account list | [Shared Access > Joint Accounts](shared-access.md#joint-accounts) |
 | Transfer money between my account and one shared with me | [Shared Access > Transfers Between Two People's Accounts](shared-access.md#transfers-between-two-peoples-accounts) |
 | Designate a trusted contact to take over my account in an emergency | [Emergency Access](emergency-access.md) |
+| Search this guide from any screen without leaving what I am doing | [Getting Started > Getting Help in the App](getting-started.md#getting-help-in-the-app) |
