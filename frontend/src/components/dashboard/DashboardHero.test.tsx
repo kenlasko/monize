@@ -30,6 +30,7 @@ const renderHero = () =>
       investmentAccounts={[]}
       hasInvestments
       isLoading={false}
+      investmentSummaryLoading={false}
       header={<h1>Good evening, Ken</h1>}
     />,
   );

@@ -69,6 +69,7 @@ async function renderHero(props: Partial<Parameters<typeof NetWorthHero>[0]> = {
         portfolioSummary={portfolio()}
         hasInvestments
         isLoading={false}
+        investmentSummaryLoading={false}
         header={<h1>Good evening, Ken</h1>}
         {...props}
       />,
@@ -165,6 +166,17 @@ describe('NetWorthHero', () => {
   it('is busy while loading', async () => {
     await renderHero({ isLoading: true });
     expect(screen.getByRole('region', { name: 'Net worth summary' })).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('stays busy while the portfolio summary behind "invested" is still loading, so it never pops in late', async () => {
+    await renderHero({ investmentSummaryLoading: true });
+    expect(screen.getByRole('region', { name: 'Net worth summary' })).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('is not held up by investmentSummaryLoading when there are no investments', async () => {
+    await renderHero({ hasInvestments: false, portfolioSummary: null, investmentSummaryLoading: true });
+    expect(screen.getByTestId('dashboard-hero')).toBeInTheDocument();
+    expect(screen.queryByText(/invested/)).not.toBeInTheDocument();
   });
 
   it('says so when the net worth could not be loaded', async () => {

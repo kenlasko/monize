@@ -34,6 +34,9 @@ interface NetWorthHeroProps {
   portfolioSummary: PortfolioSummary | null;
   hasInvestments: boolean;
   isLoading: boolean;
+  /** Whether `portfolioSummary` is still on its way, so "invested" is held
+   *  back with the rest of the hero instead of popping in once it lands. */
+  investmentSummaryLoading: boolean;
 }
 
 /**
@@ -41,7 +44,14 @@ interface NetWorthHeroProps {
  * liabilities and invested under it, and a net worth chart over the chosen
  * window. The newest month is the current one (`dashboard-hero-figures.ts`).
  */
-export function NetWorthHero({ config, header, portfolioSummary, hasInvestments, isLoading }: NetWorthHeroProps) {
+export function NetWorthHero({
+  config,
+  header,
+  portfolioSummary,
+  hasInvestments,
+  isLoading,
+  investmentSummaryLoading,
+}: NetWorthHeroProps) {
   const t = useTranslations('dashboard');
   const { formatCurrency, formatPercent, defaultCurrency } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
@@ -71,7 +81,15 @@ export function NetWorthHero({ config, header, portfolioSummary, hasInvestments,
   );
 
   const label = t('hero.label');
-  if (isLoading || dataLoading || (data === null && !error)) {
+  // Held back with everything else: `hasInvestments` is known as soon as
+  // accounts load, but the portfolio summary behind "invested" fetches
+  // separately and lands a beat later.
+  if (
+    isLoading ||
+    dataLoading ||
+    (data === null && !error) ||
+    (hasInvestments && investmentSummaryLoading)
+  ) {
     return <HeroSkeleton header={header} label={label} />;
   }
   if (error) return <HeroMessage header={header}>{t('netWorth.loadFailed')}</HeroMessage>;
