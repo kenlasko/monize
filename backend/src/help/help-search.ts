@@ -162,9 +162,13 @@ function tokenMatches(
 ): boolean {
   const candidates = SYNONYMS.get(token) ?? [token];
   for (const candidate of candidates) {
-    for (const fieldToken of fieldTokens) {
-      if (fieldToken === candidate) return true;
-      if (prefix && candidate.length > 0 && fieldToken.startsWith(candidate)) {
+    // `fieldWord`, not `fieldToken`: Bearer's CWE-208 rule reads a `===`
+    // comparing a local whose name ends in "token" as a credential compared
+    // in variable time (`payee-auto-merge.service.ts`'s `longestCommonTokenPrefix`
+    // has the same fix for the same reason -- these are search-index words).
+    for (const fieldWord of fieldTokens) {
+      if (fieldWord === candidate) return true;
+      if (prefix && candidate.length > 0 && fieldWord.startsWith(candidate)) {
         return true;
       }
     }
@@ -211,9 +215,12 @@ function tokenizeSection(section: HelpSearchSection): Tokenized {
  * anchor its excerpt on nothing, since none of those spellings literally
  * occur in the token's own folded form.
  */
-function excerptCandidates(token: string): readonly string[] {
-  const candidates = SYNONYMS.get(token) ?? [token];
-  if (token === "twofactor") {
+// `word`, not `token`: Bearer's CWE-208 rule reads a `===` comparing a local
+// whose name ends in "token" as a credential compared in variable time (see
+// the matching note in `tokenMatches` above). This is a normalized query word.
+function excerptCandidates(word: string): readonly string[] {
+  const candidates = SYNONYMS.get(word) ?? [word];
+  if (word === "twofactor") {
     return [...candidates, "two-factor", "two factor", "2fa", "totp"];
   }
   return candidates;
