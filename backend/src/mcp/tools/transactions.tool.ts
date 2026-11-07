@@ -360,20 +360,17 @@ export class McpTransactionsTools {
         title: "Manage transactions",
         annotations: WRITE,
         description:
-          "Create, update or delete cash transactions, including transfers " +
-          "between the user's own accounts -- an item with toAccountName is a " +
-          "transfer. Names for account, category and payee resolve internally. " +
-          "A split transaction carries a `splits` array instead of a single " +
-          "categoryName, and its lines must sum to the transaction amount. " +
-          "Updating an EXISTING split transaction: parent fields (date, " +
-          "payeeName, description) work without splits, but changing its " +
-          "categories or its amount requires resending the COMPLETE splits " +
-          "array. Read tools return one row per split line (same transaction " +
-          "id, distinct splitId) and always the whole set even when you " +
-          "filtered by category, so read the current lines first and resend " +
-          "every one with your change applied. Several split transactions CAN " +
-          "be sent in one call, each carrying its own complete array. " +
-          "Deleting a row removes its linked transfer legs and split children " +
+          "Create, update or delete cash transactions; an item with " +
+          "toAccountName is a transfer between the user's own accounts. A " +
+          "split carries a `splits` array instead of categoryName, its lines " +
+          "summing to the amount. On an EXISTING split transaction, parent " +
+          "fields (date, payeeName, description) change without splits, but a " +
+          "category or amount change needs the COMPLETE splits array. Read " +
+          "tools return one row per split line (same id, distinct splitId), " +
+          "always the whole set even when filtered by category: read the lines " +
+          "first and resend every one with your change. Several split " +
+          "transactions CAN be sent in one call, each with its own complete " +
+          "array. Deleting a row removes its transfer legs and split children " +
           "too.",
         inputSchema: z.object({
           operation: manageOperation(),

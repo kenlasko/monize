@@ -106,28 +106,32 @@ import { McpServerService } from "./mcp-server.service";
 // kept); no existing cap moved.
 //
 // Added, as a reviewed decision (in-app help plan 6,
-// docs/future-plans/in-app-help-assistant-tool.md): the read-only
-// `search_help` (1,098 bytes: a question and a limit in; `available` and the
-// cited sections out), so a model answers a question about using Monize from
-// the guide rather than from its own guess. The table measured 64,428 bytes
-// before it; total 64,595 -> 65,530 (65,526 measured), less than the new
-// tool's own bytes. No existing cap moved.
+// docs/future-plans/in-app-help-assistant-tool.md; the owner chose to make
+// room rather than raise the total): the read-only `search_help` (1,082
+// bytes: a question and a limit in, `available` and the cited sections out).
+// The room came from trimming nine descriptions of restated wording and of
+// facts the server instructions already give every tool (names resolve
+// internally), keeping every rule they state: list_upcoming_bills -316,
+// manage_transactions -195, list_payees -119, manage_payees -94,
+// report_progress -68, list_accounts -49, get_portfolio_summary -47,
+// get_next_prompt -23, manage_securities -19. Their caps came down with them.
+// Total unchanged at 64,595 (64,580 measured).
 const TOOL_BYTE_BUDGET: Record<string, number> = {
-  list_accounts: 2500,
+  list_accounts: 2360,
   list_transactions: 3550,
   compare_periods: 1900,
-  manage_transactions: 5950,
+  manage_transactions: 5600,
   list_categories: 1200,
-  list_payees: 2150,
-  manage_payees: 3000,
+  list_payees: 2010,
+  manage_payees: 2860,
   generate_report: 2800,
-  get_portfolio_summary: 3100,
+  get_portfolio_summary: 2880,
   list_investment_transactions: 2450,
   list_capital_gains: 2050,
   lookup_securities: 1550,
-  manage_securities: 4200,
+  manage_securities: 4080,
   manage_investment_transactions: 4500,
-  list_upcoming_bills: 3000,
+  list_upcoming_bills: 2510,
   calculate: 2000,
   get_budget_status: 2550,
   manage_transaction_rules: 4910,
@@ -136,13 +140,13 @@ const TOOL_BYTE_BUDGET: Record<string, number> = {
   fetch_bond_series: 1000,
   enter_bond_series_manually: 1690,
   list_warranties: 1140,
-  search_help: 1100,
-  get_next_prompt: 1400,
+  search_help: 1090,
+  get_next_prompt: 1360,
   post_response: 1050,
-  report_progress: 1250,
+  report_progress: 1140,
 };
 
-const TOTAL_BYTE_BUDGET = 65_530;
+const TOTAL_BYTE_BUDGET = 64_595;
 const INSTRUCTIONS_BYTE_BUDGET = 2_600;
 
 /**

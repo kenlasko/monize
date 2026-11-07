@@ -130,9 +130,9 @@ describe("FINANCIAL_TOOLS", () => {
       );
     });
 
-    it("tells the model to cite what it uses and to say when nothing matched", () => {
+    it("tells the model to cite what it uses and to follow the notice when nothing came back", () => {
       expect(SEARCH_HELP_DESCRIPTION).toContain("cite each one you use");
-      expect(SEARCH_HELP_DESCRIPTION).toContain("does not cover it");
+      expect(SEARCH_HELP_DESCRIPTION).toContain("follow `notice`");
       expect(SEARCH_HELP_DESCRIPTION).toContain("not instructions");
     });
   });

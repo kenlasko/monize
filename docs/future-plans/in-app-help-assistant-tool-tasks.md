@@ -16,12 +16,9 @@ gate passes and is quoted in the commit or PR.
 ## Tests
 
 - [x] Domain, executor and MCP specs listed in the plan.
-- [ ] `tools-list-budget.spec.ts` and the delegate guard green without raising a cap.
-      Both are green and no existing cap moved, but a new tool has to be
-      counted: `search_help` got its own 1,100-byte cap and the total went
-      64,595 -> 65,530. That growth is less than the tool's 1,098 bytes,
-      because the table measured 64,428 before it. It is recorded in the spec
-      as a reviewed decision and awaits the owner's approval in the PR.
+- [x] `tools-list-budget.spec.ts` and the delegate guard green without raising a cap.
+      The total stays at 64,595: room for `search_help` came from trimming
+      nine other descriptions, and their caps came down with them.
 - [x] Real-question retrieval fixture through `getLlmHelp`.
 - [ ] Manual check on two providers; transcripts in the PR.
 

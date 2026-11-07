@@ -30,13 +30,13 @@ export class McpAccountsTools {
         annotations: READ_ONLY,
         description:
           "Accounts and dashboard assets/liabilities/net worth. Brokerage `balance` " +
-          "is market value; other balances include future transactions, while " +
-          "`currentBalance` ends today. `balanceInDefaultCurrency` and " +
-          "`currentBalanceInDefaultCurrency` use today's `exchangeRate` and the " +
-          "totals' `defaultCurrency`: quote foreign accounts in both currencies, " +
-          "never convert yourself. Null means withheld, not zero: name " +
-          "`missingRatePairs` or `unpricedSymbols`. Loans/mortgages include their " +
-          "schedule. `totalAccounts` counts filtered accounts.",
+          "is market value; other balances include future transactions, " +
+          "`currentBalance` ends today. `*InDefaultCurrency` use today's " +
+          "`exchangeRate` into the totals' `defaultCurrency`: quote foreign " +
+          "accounts in both currencies, never convert yourself. Null means " +
+          "withheld, not zero: name `missingRatePairs` or `unpricedSymbols`. " +
+          "Loans/mortgages include their schedule. `totalAccounts` counts " +
+          "filtered accounts.",
         inputSchema: z.object({
           accountNames: z
             .array(z.string().max(100))

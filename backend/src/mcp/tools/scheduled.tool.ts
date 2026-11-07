@@ -36,20 +36,15 @@ export class McpScheduledTools {
         annotations: READ_ONLY,
         description:
           "Scheduled bills, deposits, transfers and investments due in a window. " +
-          "Each item is ONE occurrence -- the next one due -- so `nextDueDate` " +
-          "is the day that occurrence falls on and `amount` is what it would " +
-          "post today, in its own `currency`. " +
-          "An item whose `kind` is 'unknown', or whose `amount` is null with " +
-          "`amountComplete` false, is reported as unknown: never as a bill or a " +
-          "deposit, and never guessed. " +
-          "The bucket totals describe the WHOLE window and are not narrowed by " +
-          "the `kind` filter, so filtering to deposits still reports the bills " +
-          "total. Both are in `totalsCurrency`, which you must name whenever you " +
-          "quote one; items keep their own currencies, so never sum them " +
-          "yourself. A bucket total is null when anything in it is unknown or " +
-          "unconvertible, and the partial sum then travels beside it as a " +
-          "`known*Subtotal` -- quote that only as a subtotal, and use " +
-          "`unknownAmountItems` and `missingRatePairs` to say why it is partial.",
+          "Each item is ONE occurrence, the next one due: `nextDueDate` is its " +
+          "day and `amount` what it would post today, in its own `currency`. " +
+          "An item with `kind` 'unknown', or a null `amount` with " +
+          "`amountComplete` false, is unknown: never a bill or a deposit, never " +
+          "guessed. Bucket totals cover the WHOLE window whatever the `kind` " +
+          "filter, in `totalsCurrency` (name it); never sum items yourself. A " +
+          "null total holds something unknown or unconvertible: quote " +
+          "`known*Subtotal` as a subtotal and say why from " +
+          "`unknownAmountItems` and `missingRatePairs`.",
         inputSchema: z.object({
           days: numberArg(z.number().min(1).max(365))
             .optional()
