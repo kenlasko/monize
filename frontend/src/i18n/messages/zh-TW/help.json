@@ -9,6 +9,7 @@
     "expand": "展開說明面板",
     "collapse": "收合說明面板",
     "resize": "調整說明面板大小",
+    "resizeValue": "{width} 像素",
     "close": "關閉說明",
     "englishOnly": "本指南為英文版。",
     "loading": "正在載入說明",

@@ -9,6 +9,7 @@
     "expand": "Agrandir le panneau d'aide",
     "collapse": "Réduire le panneau d'aide",
     "resize": "Redimensionner le panneau d'aide",
+    "resizeValue": "{width} pixels",
     "close": "Fermer l'aide",
     "englishOnly": "Ce guide est en anglais.",
     "loading": "Chargement de l'aide",

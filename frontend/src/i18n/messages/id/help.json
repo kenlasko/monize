@@ -9,6 +9,7 @@
     "expand": "Perbesar panel bantuan",
     "collapse": "Perkecil panel bantuan",
     "resize": "Ubah ukuran panel bantuan",
+    "resizeValue": "{width} piksel",
     "close": "Tutup bantuan",
     "englishOnly": "Panduan ini tersedia dalam bahasa Inggris.",
     "loading": "Memuat bantuan",

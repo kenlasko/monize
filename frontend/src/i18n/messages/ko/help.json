@@ -9,6 +9,7 @@
     "expand": "도움말 패널 확대",
     "collapse": "도움말 패널 축소",
     "resize": "도움말 패널 크기 조절",
+    "resizeValue": "{width}픽셀",
     "close": "도움말 닫기",
     "englishOnly": "이 가이드는 영어로 제공됩니다.",
     "loading": "도움말 로딩 중",

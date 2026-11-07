@@ -9,6 +9,7 @@
     "expand": "Powiększ panel pomocy",
     "collapse": "Zmniejsz panel pomocy",
     "resize": "Zmień szerokość panelu pomocy",
+    "resizeValue": "{width} pikseli",
     "close": "Zamknij pomoc",
     "englishOnly": "Ten przewodnik jest dostępny w języku angielskim.",
     "loading": "Wczytywanie pomocy",

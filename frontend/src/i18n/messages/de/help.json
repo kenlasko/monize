@@ -9,6 +9,7 @@
     "expand": "Hilfebereich vergrößern",
     "collapse": "Hilfebereich verkleinern",
     "resize": "Breite des Hilfebereichs ändern",
+    "resizeValue": "{width} Pixel",
     "close": "Hilfe schließen",
     "englishOnly": "Diese Anleitung ist auf Englisch verfügbar.",
     "loading": "Hilfe wird geladen",
