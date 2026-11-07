@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { DOCS_LINKS, docsUrl, type DocsLink } from './docs-links';
+import { DOCS_LINKS, docsUrl, helpTarget, type DocsLink } from './docs-links';
 
 /**
  * A help link is only as good as the section it lands on. The documentation is
@@ -48,6 +48,29 @@ describe('every documentation link lands on a page and section that exist', () =
         `website/docs/${target.page}.md has no heading whose anchor is #${target.section}`,
       ).toBe(true);
     }
+  });
+});
+
+describe('every documentation link resolves to a page the help manifest lists', () => {
+  // The backend serves the landing page plus every page nav.json defines, so the
+  // committed nav.json is the manifest's page set.
+  const nav = JSON.parse(readFileSync(join(DOCS, 'nav.json'), 'utf8')) as {
+    pages: { slug: string }[];
+  }[];
+  const served = new Set(['index', ...nav.flatMap((group) => group.pages.map((p) => p.slug))]);
+
+  it.each(Object.keys(DOCS_LINKS) as DocsLink[])('%s', (link) => {
+    const target = helpTarget(link);
+    expect(served.has(target.page), `help serves no page "${target.page}"`).toBe(true);
+    expect(target.section).toBe((DOCS_LINKS[link] as { section?: string }).section);
+  });
+
+  it('names the landing page by its help slug', () => {
+    expect(helpTarget('home')).toEqual({ page: 'index' });
+  });
+
+  it('carries a section when the link names one', () => {
+    expect(helpTarget('institutions')).toEqual({ page: 'accounts', section: 'financial-institutions' });
   });
 });
 

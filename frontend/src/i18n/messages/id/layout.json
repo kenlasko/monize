@@ -138,8 +138,8 @@
     "redonePrefix": "Diulangi: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "Buka dokumentasi Monize untuk bantuan dengan bagian ini",
-    "helpTooltip": "Buka dokumentasi Monize untuk bantuan dengan bagian ini"
+    "helpAriaLabel": "Bantuan untuk halaman ini",
+    "helpTooltip": "Bantuan untuk halaman ini"
   },
   "bootSplash": {
     "loading": "Memuat Monize",

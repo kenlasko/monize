@@ -17,6 +17,9 @@ COPY database/migrations ./migrations
 # Copy release notes so the What's New digest can be served without network access
 COPY docs/release-notes ./release-notes
 
+# Copy the user guide so in-app help works without network access (no images)
+COPY website/docs/*.md website/docs/nav.json website/docs/search-index.json ./help/
+
 EXPOSE 3000
 
 CMD ["npm", "run", "start:dev"]
@@ -37,6 +40,9 @@ COPY database/migrations ./migrations
 
 # Copy release notes (needed by production stage for the What's New digest)
 COPY docs/release-notes ./release-notes
+
+# Copy the user guide (needed by production stage for in-app help; no images)
+COPY website/docs/*.md website/docs/nav.json website/docs/search-index.json ./help/
 
 # `nest build` type-checks the whole backend in one tsc process, which now
 # needs more than the ~2 GB heap Node defaults to on an 8 GB host (WSL,
@@ -107,6 +113,9 @@ COPY --from=builder /app/migrations ./migrations
 # Copy release notes for the What's New digest
 COPY --from=builder /app/release-notes ./release-notes
 
+# Copy the user guide for in-app help
+COPY --from=builder /app/help ./help
+
 # Copy and prepare entrypoint script
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 
@@ -115,7 +124,7 @@ RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001 && \
     chmod +x ./docker-entrypoint.sh && \
     chown nestjs:nodejs ./docker-entrypoint.sh ./schema.sql && \
-    chown -R nestjs:nodejs ./migrations ./release-notes
+    chown -R nestjs:nodejs ./migrations ./release-notes ./help
 
 USER nestjs
 

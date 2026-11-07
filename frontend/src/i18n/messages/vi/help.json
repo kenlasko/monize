@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "Trợ giúp",
+    "back": "Quay lại",
+    "forward": "Tiến tới",
+    "openOnline": "Mở trên monize.net",
+    "pin": "Ghim bảng trợ giúp để bảng luôn mở khi bạn chuyển giữa các trang",
+    "unpin": "Bỏ ghim bảng trợ giúp",
+    "expand": "Mở rộng bảng trợ giúp",
+    "collapse": "Thu nhỏ bảng trợ giúp",
+    "close": "Đóng trợ giúp",
+    "englishOnly": "Hướng dẫn này bằng tiếng Anh.",
+    "loading": "Đang tải trợ giúp",
+    "toc": {
+      "toggle": "Trên trang này",
+      "label": "Các phần trên trang này"
+    },
+    "error": {
+      "heading": "Không thể tải trợ giúp",
+      "body": "Hướng dẫn chưa được tải. Hãy thử lại hoặc đọc trang này trên monize.net.",
+      "retry": "Thử lại"
+    }
+  },
+  "markdown": {
+    "screenshot": "Ảnh chụp màn hình",
+    "viewScreenshot": "Xem ảnh chụp màn hình trên monize.net",
+    "callout": {
+      "note": "Ghi chú",
+      "tip": "Mẹo",
+      "important": "Quan trọng",
+      "warning": "Cảnh báo",
+      "caution": "Thận trọng"
+    }
+  }
+}

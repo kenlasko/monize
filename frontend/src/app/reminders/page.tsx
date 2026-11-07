@@ -17,7 +17,6 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNotificationCopy } from '@/hooks/useNotificationCopy';
 import { safeNotificationTarget } from '@/lib/notification-target';
 import { notificationRemindersApi, type NotificationReminder } from '@/lib/notification-reminders';
-import { docsUrl } from '@/lib/docs-links';
 
 export default function RemindersPage() {
   return (
@@ -37,7 +36,7 @@ function RemindersContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('reminder.pageTitle')}
-          helpUrl={docsUrl('notifications')}
+          help='notifications'
         />
         {actingAsUserId ? (
           <p role="status">{t('reminder.delegateUnavailable')}</p>

@@ -438,7 +438,8 @@
     },
     "docs": {
       "label": "문서",
-      "description": "사용자 가이드를 탐색하세요."
+      "description": "사용자 가이드를 탐색하세요.",
+      "openOnline": "monize.net에서 열기"
     },
     "supportBackup": {
       "label": "지원용 백업 만들기",

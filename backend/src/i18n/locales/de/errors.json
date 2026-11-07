@@ -1011,5 +1011,8 @@
     "mortgageOnly": "Nur Hypothekenkonten können Gebühren haben.",
     "mortgageScheduleOnly": "Gebühren können nur einer Hypothek mit ihrer geplanten Zahlung hinzugefügt werden.",
     "paymentMatchingUnsupported": "Der Zahlungsabgleich kann eine Hypothekenzahlung mit Gebühren noch nicht verrechnen. Schalten Sie den Zahlungsabgleich aus oder entfernen Sie die Gebühren."
+  },
+  "help": {
+    "pageNotFound": "Hilfeseite nicht gefunden"
   }
 }

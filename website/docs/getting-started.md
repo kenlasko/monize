@@ -264,6 +264,29 @@ The right-hand side of the bar holds:
 
 On a phone, the menus move into a drawer opened with the menu button at the top left.
 
+### Getting Help in the App
+
+Most pages carry a **?** icon beside their title. Click it and the matching part of this guide opens in a **help panel** at the right edge of the window, with the page you were on still beside it. On a phone the panel is a sheet that slides up from the bottom.
+
+The panel's header has these controls:
+
+| Control | What it does |
+|---------|--------------|
+| **Back** and **Forward** | Step through the guide pages you have opened in the panel, like a browser |
+| **Open on monize.net** | Opens the same page and section on the website, in a new tab |
+| **Pin** | Keeps the panel open while you move to other pages of Monize, so you can follow a guide while you work. An unpinned panel closes when you go to another page |
+| **Expand** | Fills the window for easier reading; the same button shrinks it back |
+| **Close** | Closes the panel. **Esc** does the same, or shrinks an expanded panel first |
+
+Under the header, **On this page** lists the sections of the guide page you are reading, and links to other pages in the guide open inside the panel. The panel shares its edge of the window with the AI assistant, so opening one closes the other.
+
+A few things to know:
+
+- **The guide comes with your Monize.** The panel shows the guide for the version you are running, so it works without an internet connection. It is text only: where this website shows a screenshot, the panel shows its caption and a **View screenshot on monize.net** link.
+- **Ctrl-click, Cmd-click or middle-click the ? icon** to open the page on monize.net in a new tab instead of in the panel. If the guide cannot be loaded, the icon does that for a plain click too.
+- **The guide is in English**, whatever language Monize is set to. In another language the panel says so at the top; the buttons and labels around it are translated.
+- **Settings > Help & Support** has a **Documentation** entry that opens the panel at the start of the guide.
+
 ---
 
 ## Installing as a Progressive Web App

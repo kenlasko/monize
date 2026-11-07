@@ -34,7 +34,6 @@ import { createLogger } from '@/lib/logger';
 import { incompleteHoldingAccountIds as incompleteHoldingAccountIdsOf } from '@/lib/logical-accounts';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { TourBanner } from '@/components/dashboard/TourBanner';
-import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Dashboard');
 
@@ -269,7 +268,7 @@ function DashboardContent() {
           <PageHeader
             title={user?.firstName ? t('page.welcomeWithName', { name: user.firstName }) : `${t('page.welcomePrefix')}!`}
             subtitle={t('page.subtitle')}
-            helpUrl={docsUrl('dashboard')}
+            help='dashboard'
             compactMobileActions
             actions={
               !isDelegateView ? (

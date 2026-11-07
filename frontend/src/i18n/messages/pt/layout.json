@@ -138,8 +138,8 @@
     "redonePrefix": "Refeito: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "Abrir a documentação do Monize para obter ajuda com esta secção",
-    "helpTooltip": "Abrir a documentação do Monize para obter ajuda com esta secção"
+    "helpAriaLabel": "Ajuda para esta página",
+    "helpTooltip": "Ajuda para esta página"
   },
   "bootSplash": {
     "loading": "A carregar o Monize",

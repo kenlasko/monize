@@ -438,7 +438,8 @@
     },
     "docs": {
       "label": "Belgeler",
-      "description": "Kullanım kılavuzuna göz atın."
+      "description": "Kullanım kılavuzuna göz atın.",
+      "openOnline": "monize.net adresinde aç"
     },
     "supportBackup": {
       "label": "Destek yedeği oluştur",

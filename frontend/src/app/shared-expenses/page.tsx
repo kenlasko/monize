@@ -4,7 +4,6 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { TOUR_ANCHORS, tourAnchor } from "@/lib/tours/anchors";
-import { docsUrl } from "@/lib/docs-links";
 import {
   ArrowPathIcon,
   UsersIcon,
@@ -79,7 +78,7 @@ function GroupsContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8 space-y-5">
         <PageHeader
           title={t("title")}
-          helpUrl={docsUrl("sharedExpenses")}
+          help="sharedExpenses"
           subtitle={t("subtitle")}
           actions={
             <div className="flex flex-wrap items-stretch gap-2">

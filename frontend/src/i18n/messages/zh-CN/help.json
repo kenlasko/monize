@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "帮助",
+    "back": "返回",
+    "forward": "前进",
+    "openOnline": "在 monize.net 上打开",
+    "pin": "固定帮助面板，在页面之间切换时保持打开",
+    "unpin": "取消固定帮助面板",
+    "expand": "展开帮助面板",
+    "collapse": "收起帮助面板",
+    "close": "关闭帮助",
+    "englishOnly": "本指南为英文版。",
+    "loading": "正在加载帮助",
+    "toc": {
+      "toggle": "本页内容",
+      "label": "本页的各个部分"
+    },
+    "error": {
+      "heading": "无法加载帮助",
+      "body": "指南未能加载。请重试，或在 monize.net 上阅读本页。",
+      "retry": "重试"
+    }
+  },
+  "markdown": {
+    "screenshot": "截图",
+    "viewScreenshot": "在 monize.net 上查看截图",
+    "callout": {
+      "note": "备注",
+      "tip": "提示",
+      "important": "重要",
+      "warning": "警告",
+      "caution": "注意"
+    }
+  }
+}

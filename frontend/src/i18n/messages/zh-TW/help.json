@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "說明",
+    "back": "返回",
+    "forward": "前進",
+    "openOnline": "在 monize.net 上開啟",
+    "pin": "固定說明面板，在頁面之間切換時保持開啟",
+    "unpin": "取消固定說明面板",
+    "expand": "展開說明面板",
+    "collapse": "收合說明面板",
+    "close": "關閉說明",
+    "englishOnly": "本指南為英文版。",
+    "loading": "正在載入說明",
+    "toc": {
+      "toggle": "本頁內容",
+      "label": "本頁的各個區段"
+    },
+    "error": {
+      "heading": "無法載入說明",
+      "body": "指南未能載入。請重試，或在 monize.net 上閱讀本頁。",
+      "retry": "重試"
+    }
+  },
+  "markdown": {
+    "screenshot": "螢幕截圖",
+    "viewScreenshot": "在 monize.net 上檢視螢幕截圖",
+    "callout": {
+      "note": "備註",
+      "tip": "提示",
+      "important": "重要",
+      "warning": "警告",
+      "caution": "注意"
+    }
+  }
+}

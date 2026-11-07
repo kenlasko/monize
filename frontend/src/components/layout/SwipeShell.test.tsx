@@ -1,7 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { act, render, screen } from '@/test/render';
 import { SwipeShell } from './SwipeShell';
 import { sharedExpensesApi } from '@/lib/shared-expenses';
+import { useHelpStore } from '@/store/helpStore';
+import { HELP_PANEL_WIDTH } from '@/components/help/help-layout';
 
 vi.mock('@/lib/shared-expenses', () => ({ sharedExpensesApi: { review: vi.fn() } }));
 
@@ -110,6 +114,32 @@ describe('SwipeShell', () => {
     expect(screen.queryByTestId('app-header')).not.toBeInTheDocument();
   });
 
+  it('makes room beside the page for the docked help panel on a wide screen', () => {
+    mockPathname = '/budgets';
+    useHelpStore.setState(useHelpStore.getInitialState(), true);
+    const { container, unmount } = render(<SwipeShell><p>Content</p></SwipeShell>);
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.className).not.toContain('xl:pr-');
+
+    act(() => useHelpStore.getState().openAt({ page: 'budgets' }));
+    // The class is a literal so Tailwind can see it; it must match the panel.
+    expect(wrapper.className).toContain(`xl:pr-[${HELP_PANEL_WIDTH}px]`);
+
+    act(() => useHelpStore.getState().setExpanded(true));
+    expect(wrapper.className).not.toContain('xl:pr-');
+    unmount();
+    act(() => useHelpStore.getState().close());
+  });
+
+  it('drops an open help panel on the sign-in screens', () => {
+    mockPathname = '/login';
+    useHelpStore.setState(useHelpStore.getInitialState(), true);
+    useHelpStore.getState().openAt({ page: 'budgets' });
+    useHelpStore.getState().setPinned(true);
+    render(<SwipeShell><p>Login form</p></SwipeShell>);
+    expect(useHelpStore.getState().open).toBe(false);
+  });
+
   it('wraps content in overflow-x-clip container on app pages', () => {
     mockPathname = '/accounts';
     const { container } = render(<SwipeShell><p>Content</p></SwipeShell>);
@@ -118,6 +148,16 @@ describe('SwipeShell', () => {
     // position:sticky and IntersectionObserver viewport behavior
     expect(wrapper.className).toContain('overflow-x-clip');
     expect(wrapper.className).not.toContain('overflow-x-hidden');
+  });
+
+  it('spells overflow-x-clip as a token Tailwind can find in the source', () => {
+    // Tailwind generates a utility only for a class it finds as a whole token
+    // in the source. Glued to a template expression (`overflow-x-clip${...}`)
+    // it is never generated: the element carries the class name, the test
+    // above still passes, and the header's overflow scrolls the page sideways.
+    const source = readFileSync(join(__dirname, 'SwipeShell.tsx'), 'utf-8');
+    expect(source).toMatch(/overflow-x-clip(?=['"`\s])/);
+    expect(source).not.toMatch(/overflow-x-clip\$\{/);
   });
 
   it('renders BackendDownBanner on app pages', () => {

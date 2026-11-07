@@ -438,7 +438,8 @@
     },
     "docs": {
       "label": "Tài liệu",
-      "description": "Duyệt hướng dẫn sử dụng."
+      "description": "Duyệt hướng dẫn sử dụng.",
+      "openOnline": "Mở trên monize.net"
     },
     "supportBackup": {
       "label": "Tạo bản sao lưu hỗ trợ",

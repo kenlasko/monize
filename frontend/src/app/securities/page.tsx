@@ -35,7 +35,6 @@ import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { PAGE_SIZE } from '@/lib/constants';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
 import { useSearchParams } from 'next/navigation';
-import { docsUrl } from '@/lib/docs-links';
 
 const logger = createLogger('Securities');
 
@@ -396,7 +395,7 @@ function SecuritiesContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
-          helpUrl={docsUrl('securities')}
+          help='securities'
           actions={
             <>
               <RefreshPricesButton

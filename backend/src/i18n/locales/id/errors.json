@@ -1011,5 +1011,8 @@
     "mortgageOnly": "Hanya akun hipotek yang dapat memiliki biaya.",
     "mortgageScheduleOnly": "Biaya hanya dapat ditambahkan ke hipotek yang memiliki pembayaran terjadwal.",
     "paymentMatchingUnsupported": "Pencocokan pembayaran belum dapat melunasi pembayaran hipotek yang mencakup biaya. Matikan pencocokan pembayaran atau hapus biayanya."
+  },
+  "help": {
+    "pageNotFound": "Halaman bantuan tidak ditemukan"
   }
 }

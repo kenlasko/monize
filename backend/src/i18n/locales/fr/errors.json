@@ -1011,5 +1011,8 @@
     "mortgageOnly": "Seuls les comptes hypothécaires peuvent avoir des frais.",
     "mortgageScheduleOnly": "Des frais ne peuvent être ajoutés qu'à un prêt hypothécaire doté de son paiement planifié.",
     "paymentMatchingUnsupported": "Le rapprochement des paiements ne peut pas encore solder un paiement hypothécaire qui comprend des frais. Désactivez le rapprochement des paiements ou supprimez les frais."
+  },
+  "help": {
+    "pageNotFound": "Page d'aide introuvable"
   }
 }

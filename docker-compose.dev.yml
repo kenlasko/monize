@@ -107,6 +107,9 @@ services:
       # Release notes for the What's New digest (the ./backend:/app mount would
       # otherwise shadow the copy baked into the image).
       - ./docs/release-notes:/app/release-notes:ro
+      # The user guide served by the in-app help API (the same shadowing applies
+      # to the copy baked into the image at /app/help).
+      - ./website/docs:/app/help:ro
       # Automatic backups are written to BACKUP_CONTAINER_DIR in the container.
       - ${BACKUP_HOST_DIR:-./monize/backups}:${BACKUP_CONTAINER_DIR:-/data/backups}
       # Attachments are written to ATTACHMENT_CONTAINER_DIR in the container

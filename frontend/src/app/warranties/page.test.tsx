@@ -312,7 +312,7 @@ describe('WarrantiesPage', () => {
     const add = within(header).getByRole('button', { name: 'Add warranty' });
     expect(add).toHaveAttribute('data-tour-id', 'warranties-add-button');
     expect(add.className).toContain('bg-blue-600');
-    expect(within(header).getByRole('link', { name: 'Open the Monize documentation for help with this section' })).toHaveAttribute(
+    expect(within(header).getByRole('link', { name: 'Help for this page' })).toHaveAttribute(
       'href',
       'https://www.monize.net/docs/warranties',
     );

@@ -296,6 +296,18 @@ const ALLOWED = new Map<string, string>([
       "concurrent valuations of the same series, never a finished one served",
   ],
   [
+    "help/help.service.ts#pages",
+    "an immutable, per-replica copy of the user guide's page list, read from " +
+      "the text bundled in the image and never written after the first load; " +
+      "every replica ships the same bundle, so replicas cannot disagree",
+  ],
+  [
+    "help/help.service.ts#loaded",
+    "every page of the bundled guide, read once with the page list so a " +
+      "request never reaches the filesystem; the bundle is immutable, so an " +
+      "entry never goes stale. See `#pages`",
+  ],
+  [
     "budgets/budgets.service.ts#categoryActualsCache",
     "already stale within one replica for its TTL, so multi-replica does not " +
       "change the contract it offers",

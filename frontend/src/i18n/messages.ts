@@ -37,6 +37,7 @@ const NAMESPACES = [
   "dashboard",
   "emailReceipts",
   "emergencyAccess",
+  "help",
   "import",
   "insights",
   "institutions",

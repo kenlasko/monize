@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "도움말",
+    "back": "뒤로",
+    "forward": "앞으로",
+    "openOnline": "monize.net에서 열기",
+    "pin": "도움말 패널을 고정하여 페이지를 이동해도 열려 있게 합니다",
+    "unpin": "도움말 패널 고정 해제",
+    "expand": "도움말 패널 확대",
+    "collapse": "도움말 패널 축소",
+    "close": "도움말 닫기",
+    "englishOnly": "이 가이드는 영어로 제공됩니다.",
+    "loading": "도움말 로딩 중",
+    "toc": {
+      "toggle": "이 페이지의 내용",
+      "label": "이 페이지의 섹션"
+    },
+    "error": {
+      "heading": "도움말을 불러올 수 없습니다",
+      "body": "가이드를 불러오지 못했습니다. 다시 시도하거나 monize.net에서 이 페이지를 읽어 보세요.",
+      "retry": "다시 시도"
+    }
+  },
+  "markdown": {
+    "screenshot": "스크린샷",
+    "viewScreenshot": "monize.net에서 스크린샷 보기",
+    "callout": {
+      "note": "참고",
+      "tip": "팁",
+      "important": "중요",
+      "warning": "경고",
+      "caution": "주의"
+    }
+  }
+}

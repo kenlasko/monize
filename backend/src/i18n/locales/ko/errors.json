@@ -1011,5 +1011,8 @@
     "mortgageOnly": "모기지 계정만 비용을 가질 수 있습니다.",
     "mortgageScheduleOnly": "비용은 예약 납부가 설정된 모기지에만 추가할 수 있습니다.",
     "paymentMatchingUnsupported": "결제 매칭은 아직 비용이 포함된 모기지 납부를 정산할 수 없습니다. 결제 매칭을 끄거나 비용을 삭제하세요."
+  },
+  "help": {
+    "pageNotFound": "도움말 페이지를 찾을 수 없습니다"
   }
 }

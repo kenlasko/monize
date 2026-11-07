@@ -1011,5 +1011,8 @@
     "mortgageOnly": "只有抵押贷款账户可以设置费用。",
     "mortgageScheduleOnly": "只能为已设置计划付款的抵押贷款添加费用。",
     "paymentMatchingUnsupported": "付款匹配目前还无法结算包含费用的抵押贷款付款。请关闭付款匹配或移除这些费用。"
+  },
+  "help": {
+    "pageNotFound": "未找到帮助页面"
   }
 }

@@ -1011,5 +1011,8 @@
     "mortgageOnly": "Opłaty mogą mieć tylko konta kredytów hipotecznych.",
     "mortgageScheduleOnly": "Opłaty można dodać tylko do kredytu hipotecznego z zaplanowaną płatnością.",
     "paymentMatchingUnsupported": "Dopasowywanie płatności nie może jeszcze rozliczyć płatności kredytu hipotecznego zawierającej opłaty. Wyłącz dopasowywanie płatności lub usuń opłaty."
+  },
+  "help": {
+    "pageNotFound": "Nie znaleziono strony pomocy"
   }
 }

@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "Help",
+    "back": "Terug",
+    "forward": "Vooruit",
+    "openOnline": "Openen op monize.net",
+    "pin": "Zet het helppaneel vast zodat het open blijft als je naar een andere pagina gaat",
+    "unpin": "Maak het helppaneel los",
+    "expand": "Helppaneel vergroten",
+    "collapse": "Helppaneel verkleinen",
+    "close": "Help sluiten",
+    "englishOnly": "Deze handleiding is in het Engels.",
+    "loading": "Help laden",
+    "toc": {
+      "toggle": "Op deze pagina",
+      "label": "Secties op deze pagina"
+    },
+    "error": {
+      "heading": "De help kon niet worden geladen",
+      "body": "De handleiding is niet geladen. Probeer het opnieuw of lees deze pagina op monize.net.",
+      "retry": "Opnieuw proberen"
+    }
+  },
+  "markdown": {
+    "screenshot": "Schermafbeelding",
+    "viewScreenshot": "Schermafbeelding bekijken op monize.net",
+    "callout": {
+      "note": "Opmerking",
+      "tip": "Tip",
+      "important": "Belangrijk",
+      "warning": "Waarschuwing",
+      "caution": "Let op"
+    }
+  }
+}

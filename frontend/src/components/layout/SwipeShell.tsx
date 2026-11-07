@@ -1,7 +1,7 @@
 'use client';
 
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppHeader } from './AppHeader';
 import { DelegationBanner } from './DelegationBanner';
@@ -14,9 +14,12 @@ import { ShareStashSweeper } from '@/components/share/ShareStashSweeper';
 import { UpdateAvailableBanner } from './UpdateAvailableBanner';
 import { WeakJwtSecretBanner } from './WeakJwtSecretBanner';
 import { AiChatBubble } from '@/components/ai/AiChatBubble';
+import { HelpPanelLoader } from '@/components/help/HelpPanelLoader';
+import { useHelpStore } from '@/store/helpStore';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useScrollToTopOnNavigation } from '@/hooks/useScrollToTopOnNavigation';
 import { usePushResumeOnSignIn } from '@/hooks/usePushResumeOnSignIn';
+import { cn } from '@/lib/utils';
 
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password', '/setup-2fa', '/change-password'];
 
@@ -38,6 +41,17 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
 
   const isAuthRoute = AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
 
+  // The help panel is not mounted on the sign-in screens, so an open (pinned)
+  // panel must not wait there to reappear after the next sign-in.
+  useEffect(() => {
+    if (isAuthRoute) useHelpStore.getState().close();
+  }, [isAuthRoute]);
+
+  // Docked on a wide screen the help panel sits beside the page rather than
+  // over it, so the page makes room (420px: HELP_PANEL_WIDTH). Narrower
+  // screens leave it over the page, as the assistant sheet is.
+  const helpDocked = useHelpStore((s) => s.open && !s.expanded);
+
   if (isAuthRoute) {
     return (
       <>
@@ -49,7 +63,12 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-clip">
+    <div
+      className={cn(
+        'min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-clip',
+        helpDocked && 'xl:pr-[420px]',
+      )}
+    >
       <AppHeader />
       <DelegationBanner />
       <HttpWarningBanner httpsHeadersActive={httpsHeadersActive} />
@@ -66,6 +85,7 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
         {children}
       </div>
       <AiChatBubble />
+      <HelpPanelLoader />
     </div>
   );
 }

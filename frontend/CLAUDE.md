@@ -58,7 +58,7 @@ npm run docs:build         # Regenerate the user docs (website/docs/) from their
 | A portfolio chart's window and opening point | `usePortfolioRangeWindow` (`start` for the series, `periodStart` for the period) and `openingSessionDate` for the first label | `resolveRangePreset`, a lookback of your own, a first point dated by a day the market was shut |
 | An investment row's money | the row's own `amountCurrencyCode` / `priceCurrencyCode` / `commissionCurrencyCode`, converted with `convertRowAmount`; a VOID row dropped with `investmentRowHasEffect` | the account's currency, the reader's, or a client-side sum across rows |
 | CSV | `exportToCsv` / `exportCsvSections` (`lib/csv-export.ts`) | a second `text/csv` Blob |
-| Link to the user documentation (`PageHeader` `helpUrl`, an inline guide link) | `docsUrl(key)` (`lib/docs-links.ts`) | a docs or wiki URL literal |
+| Link to the user documentation (`PageHeader` `help`, which opens the help panel; an inline guide link) | a `DOCS_LINKS` key: `help="key"`, `docsUrl(key)` (`lib/docs-links.ts`) | a `helpUrl` prop, a docs or wiki URL literal |
 | Random id | `crypto.randomUUID()` | `Math.random()` |
 | Chart colour | `chartColors` tokens (`lib/chart-colors.ts`) | a hex literal in a `fill`, `stroke` or `stopColor` |
 | Widget title that opens the fuller view | `titleHref` on `WidgetCard`, `href` on `WidgetHeading` | a button or link hand-rolled around the heading |

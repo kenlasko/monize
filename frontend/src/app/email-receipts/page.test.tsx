@@ -62,7 +62,7 @@ describe('EmailReceiptsPage', () => {
     });
     await act(async () => {});
     expect(screen.getByRole('heading', { level: 1, name: 'Email Receipts' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open the Monize documentation for help with this section' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Help for this page' })).toHaveAttribute(
       'href',
       'https://www.monize.net/docs/email-receipts',
     );

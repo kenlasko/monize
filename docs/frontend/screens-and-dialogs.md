@@ -77,7 +77,7 @@ The currency of an amount is chosen with `CurrencyPickerButton` beside the amoun
 
 The page is `<main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">` at full width (a settings page is `max-w-4xl mx-auto` instead). Top to bottom:
 
-1. **`PageHeader`**: title, help icon (every list page passes `helpUrl`), one-line subtitle. The actions on the right: secondary actions (Refresh, Refresh Rates) as bordered buttons, then the one primary "New ..." button last.
+1. **`PageHeader`**: title, help icon (every list page passes `help`, a `DOCS_LINKS` key), one-line subtitle. The actions on the right: secondary actions (Refresh, Refresh Rates) as bordered buttons, then the one primary "New ..." button last.
 2. **Summary row**: `SummaryCard`s with an icon each (`SummaryIcons`), laid out by `SummaryCardGrid` / `summaryGridClass`, the grid the detail pages use, so the gap is the same everywhere. Do not use a free-form card with a `<dl>` inside, and do not write a grid gap of your own.
 3. **Toolbar row**: the search field first, then the filter segments, wrapping on a phone (`flex flex-wrap`, `w-full sm:w-auto`, `sm:ml-auto`; see `ui-conventions.md`). A `flex-col sm:flex-row` row without `flex-wrap` does not wrap between the two.
 4. **The list**, in `${CARD_CLASS} overflow-hidden`. While it loads, `<LoadingSpinner text>` renders inside that card; an empty list renders `EmptyState` from inside the list component, not from the page.
@@ -209,7 +209,7 @@ Put the new screen next to its reference screen at the same width and check:
 - [ ] labels: Title Case nouns, "(optional)", no marker on required fields, no questions, no colons
 - [ ] wording: "Save" / "Save Changes", "Try Again", "e.g.", "...", "Failed to ..." without a period
 - [ ] money: currency picker beside the amount, currency shown once
-- [ ] list page: `PageHeader` with `helpUrl` and actions, `SummaryCardGrid`, search with placeholder and live filter, segments with counts, table with `Th` and sortable `<button>` headers, `ListBottomPager`
+- [ ] list page: `PageHeader` with `help` and actions, `SummaryCardGrid`, search with placeholder and live filter, segments with counts, table with `Th` and sortable `<button>` headers, `ListBottomPager`
 - [ ] navigation with `Tabs`, filters with the segmented control
 - [ ] filters always visible (a register's folded panel shows its count and Clear); refresh and export in their standard places
 - [ ] report: toolbar stays mounted, `ReportError`, `DateRangeSelector`, `ChartViewToggle`

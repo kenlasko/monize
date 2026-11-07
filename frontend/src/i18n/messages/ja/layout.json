@@ -138,8 +138,8 @@
     "redonePrefix": "やり直しました: {description}"
   },
   "pageHeader": {
-    "helpAriaLabel": "このセクションのヘルプは Monize ドキュメントを開いてください",
-    "helpTooltip": "このセクションのヘルプは Monize ドキュメントを開いてください"
+    "helpAriaLabel": "このページのヘルプ",
+    "helpTooltip": "このページのヘルプ"
   },
   "bootSplash": {
     "loading": "Monize を読み込んでいます",

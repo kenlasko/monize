@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "title": "Yardım",
+    "back": "Geri",
+    "forward": "İleri",
+    "openOnline": "monize.net adresinde aç",
+    "pin": "Sayfalar arasında geçiş yaparken açık kalması için yardım panelini sabitleyin",
+    "unpin": "Yardım panelinin sabitlemesini kaldır",
+    "expand": "Yardım panelini genişlet",
+    "collapse": "Yardım panelini daralt",
+    "close": "Yardımı kapat",
+    "englishOnly": "Bu kılavuz İngilizcedir.",
+    "loading": "Yardım yükleniyor",
+    "toc": {
+      "toggle": "Bu sayfada",
+      "label": "Bu sayfadaki bölümler"
+    },
+    "error": {
+      "heading": "Yardım yüklenemedi",
+      "body": "Kılavuz yüklenmedi. Yeniden deneyin veya bu sayfayı monize.net adresinde okuyun.",
+      "retry": "Yeniden dene"
+    }
+  },
+  "markdown": {
+    "screenshot": "Ekran görüntüsü",
+    "viewScreenshot": "Ekran görüntüsünü monize.net adresinde görüntüle",
+    "callout": {
+      "note": "Not",
+      "tip": "İpucu",
+      "important": "Önemli",
+      "warning": "Uyarı",
+      "caution": "Dikkat"
+    }
+  }
+}

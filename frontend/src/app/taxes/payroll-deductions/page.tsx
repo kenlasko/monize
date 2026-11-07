@@ -31,7 +31,6 @@ import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import type { Category } from '@/types/category';
 import type { CreatePayrollDeductionRulesData, PayrollDeductionRule } from '@/types/payroll-deduction';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
-import { docsUrl } from '@/lib/docs-links';
 
 const PayrollDeductionRuleForm = dynamic(
   () => import('@/components/taxes/PayrollDeductionRuleForm').then((m) => m.PayrollDeductionRuleForm),
@@ -155,7 +154,7 @@ function PayrollDeductionsContent() {
         <PageHeader
           title={t('title')}
           subtitle={t('subtitle')}
-          helpUrl={docsUrl('payrollDeductions')}
+          help='payrollDeductions'
           actions={
             <Button onClick={openCreate} {...tourAnchor(TOUR_ANCHORS.payrollNewRuleButton)}>
               {t('newButton')}

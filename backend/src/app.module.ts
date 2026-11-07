@@ -72,6 +72,7 @@ import { LoanRateChangesModule } from "./loan-rate-changes/loan-rate-changes.mod
 import { BackupModule } from "./backup/backup.module";
 import { ActionHistoryModule } from "./action-history/action-history.module";
 import { UpdatesModule } from "./updates/updates.module";
+import { HelpModule } from "./help/help.module";
 import { MonteCarloModule } from "./monte-carlo/monte-carlo.module";
 import { StrategiesModule } from "./strategies/strategies.module";
 import { DelegationModule } from "./delegation/delegation.module";
@@ -225,6 +226,7 @@ import { SharedExpensesModule } from "./shared-expenses/shared-expenses.module";
     BackupModule,
     ActionHistoryModule,
     UpdatesModule,
+    HelpModule,
     MonteCarloModule,
     StrategiesModule,
     DelegationModule,
