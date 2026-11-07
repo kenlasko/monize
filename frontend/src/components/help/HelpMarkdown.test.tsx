@@ -261,6 +261,22 @@ describe('HelpMarkdown: images', () => {
     );
   });
 
+  it('keeps a failed picture as its caption when the page renders again', () => {
+    const props = {
+      markdown: md,
+      toc,
+      slug: 'budgets',
+      onlineUrl: ONLINE,
+      images: BOTH,
+      onNavigate: vi.fn(),
+    };
+    const { container, rerender } = render(<HelpMarkdown {...props} />);
+    act(() => fireEvent.error(screen.getByRole('img', { name: 'The budget dashboard' })));
+    rerender(<HelpMarkdown {...props} onNavigate={vi.fn()} />);
+    expect(container.querySelector('img')).toBeNull();
+    expect(container).toHaveTextContent('The budget dashboard');
+  });
+
   it('tries the other theme afresh after a failed picture', () => {
     function ThemeSwitch() {
       const { setTheme } = useTheme();

@@ -79,28 +79,21 @@ const H2_CLASS =
 const H3_CLASS = 'mt-4 mb-1 text-base font-semibold text-gray-900 dark:text-gray-100';
 const H4_CLASS = 'mt-3 mb-1 text-sm font-semibold text-gray-900 dark:text-gray-100';
 
-/**
- * One of the guide's pictures, its caption and its online link. A picture
- * whose request fails (a throttled or refused request, a replica without it)
- * becomes `fallback`, the caption box a picture the bundle lacks shows, never a
- * broken image. Keyed by the picture's name, so a theme change starts afresh.
- */
+/** One of the guide's pictures, its caption and its online link. */
 function HelpScreenshot({
   variant,
   alt,
   caption,
   online,
-  fallback,
+  onError,
 }: {
   variant: HelpImageVariant;
   alt: string;
   /** The Markdown's alt text, shown under the picture; none when it has none. */
   caption?: string;
   online: ReactNode;
-  fallback: ReactNode;
+  onError: () => void;
 }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <>{fallback}</>;
   return (
     <span className="my-3 block">
       {/* eslint-disable-next-line @next/next/no-img-element -- a same-origin API picture with its own size; next/image would re-encode it */}
@@ -111,7 +104,7 @@ function HelpScreenshot({
         height={variant.height}
         loading="lazy"
         decoding="async"
-        onError={() => setFailed(true)}
+        onError={onError}
         className="block h-auto max-w-full rounded-md border border-gray-200 dark:border-gray-700"
       />
       {/* The alt text already names the picture to a screen reader. */}
@@ -155,6 +148,12 @@ export function HelpMarkdown({
 }: HelpMarkdownProps) {
   const t = useTranslations('help.markdown');
   const { resolvedTheme } = useTheme();
+  // Pictures whose request failed (a throttled or refused request, a replica
+  // without it) show as their caption, never a broken image. Held here rather
+  // than in each picture: ReactMarkdown's `components` are new on every render,
+  // which remounts a picture and would forget it. A theme change asks for the
+  // other picture, which has not failed.
+  const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set());
 
   return (
     <div className="text-sm text-gray-700 dark:text-gray-300">
@@ -261,15 +260,14 @@ export function HelpMarkdown({
                 {online}
               </span>
             );
-            if (!variant) return fallback;
+            if (!variant || failed.has(variant.name)) return fallback;
             return (
               <HelpScreenshot
-                key={variant.name}
                 variant={variant}
                 alt={props.alt || t('screenshot')}
                 caption={props.alt || undefined}
                 online={online}
-                fallback={fallback}
+                onError={() => setFailed((prev) => new Set([...prev, variant.name]))}
               />
             );
           },

@@ -82,10 +82,11 @@ function sized(
 
 /**
  * Lists the bundle's `images/` directory once and returns every picture by
- * name. A WebP wins over a PNG of the same name; a PNG alone is the fallback,
- * which is what the source tree and the dev stack's mount hold. A file whose
- * header does not parse is reported through `warn` and left out, so the page
- * shows its caption instead. No directory is an empty bundle, not an error.
+ * name. A WebP wins over a PNG of the same name; a PNG is the fallback, which
+ * is what the source tree and the dev stack's mount hold. A file whose header
+ * does not parse is reported through `warn` and passed over for the next one;
+ * a picture with none readable is left out, so the page shows its caption
+ * instead. No directory is an empty bundle, not an error.
  */
 export function readImageBundle(
   directory: string,
@@ -99,31 +100,37 @@ export function readImageBundle(
     return new Map();
   }
 
-  const chosen = new Map<string, string>();
+  // Each picture's files, the WebP before the PNG.
+  const candidates = new Map<string, string[]>();
   for (const fileName of [...names].sort()) {
     const match = IMAGE_FILE_RE.exec(fileName);
     if (!match) {
       continue;
     }
     const [, name, extension] = match;
-    if (extension === "webp" || !chosen.has(name)) {
-      chosen.set(name, fileName);
-    }
+    const files = candidates.get(name) ?? [];
+    candidates.set(
+      name,
+      extension === "webp" ? [fileName, ...files] : [...files, fileName],
+    );
   }
 
   const images = new Map<string, HelpImageEntry>();
-  for (const [name, fileName] of chosen) {
-    const file = path.join(folder, fileName);
-    const header = readHeader(file);
-    if (!header) {
-      warn(`Help image ${fileName} has no readable size; it is left out`);
-      continue;
+  for (const [name, fileNames] of candidates) {
+    for (const fileName of fileNames) {
+      const file = path.join(folder, fileName);
+      const header = readHeader(file);
+      if (!header) {
+        warn(`Help image ${fileName} has no readable size; it is left out`);
+        continue;
+      }
+      images.set(name, {
+        file,
+        contentType: fileName.endsWith(".webp") ? "image/webp" : "image/png",
+        ...header,
+      });
+      break;
     }
-    images.set(name, {
-      file,
-      contentType: fileName.endsWith(".webp") ? "image/webp" : "image/png",
-      ...header,
-    });
   }
   return images;
 }

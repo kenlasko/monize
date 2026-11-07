@@ -148,6 +148,19 @@ describe("readImageBundle", () => {
     expect(readImageBundle(root, warn).get("shot")?.revision).toBe(touched);
   });
 
+  it("falls back to the PNG when the WebP of the same name is unreadable", () => {
+    fs.writeFileSync(path.join(images, "both.webp"), "not a webp");
+    fs.writeFileSync(path.join(images, "both.png"), png(10, 12));
+
+    const bundle = readImageBundle(root, warn);
+
+    expect(bundle.get("both")).toMatchObject({
+      contentType: "image/png",
+      height: 12,
+    });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("both.webp"));
+  });
+
   it("skips any file whose name is not a picture's", () => {
     for (const name of [
       "Upper.png",
