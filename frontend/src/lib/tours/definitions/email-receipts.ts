@@ -46,6 +46,7 @@ export const EMAIL_RECEIPTS_TOUR: TourDefinition = {
   version: EMAIL_RECEIPTS_MINOR,
   i18nPrefix: 'emailReceipts.basics',
   requiresData: 'ownerView',
+  docs: 'emailReceipts',
   steps: [
     {
       id: 'welcome',

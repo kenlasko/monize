@@ -24,7 +24,12 @@
       "body": "[XX-The guide did not load. Try again, or read this page on monize.net.-XX]",
       "retry": "[XX-Try again-XX]"
     },
-    "search": "[XX-Search the guide-XX]"
+    "search": "[XX-Search the guide-XX]",
+    "tour": {
+      "prompt": "[XX-This page has a guided tour.-XX]"
+    },
+    "version": "[XX-Guide for Monize {version}-XX]",
+    "latestOnline": "[XX-The latest guide is on monize.net-XX]"
   },
   "search": {
     "title": "[XX-Search the guide-XX]",

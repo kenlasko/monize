@@ -13,9 +13,9 @@ is quoted in the commit or PR.
 
 ## B. Tours and the guide
 
-- [ ] `TourDefinition.docs?: DocsLink` and the last-step "Read the full guide".
-- [ ] `help-tours.ts` mapping and "Show me" in the panel.
-- [ ] Mapping test against `ALL_TOURS` and `DOCS_LINKS`.
+- [x] `TourDefinition.docs?: DocsLink` and the last-step "Read the full guide".
+- [x] `help-tours.ts` mapping and "Show me" in the panel.
+- [x] Mapping test against `ALL_TOURS` and `DOCS_LINKS`.
 
 ## C. Guide links open in the panel
 
@@ -25,7 +25,7 @@ is quoted in the commit or PR.
 
 ## D. Version stamp
 
-- [ ] Panel footer with the manifest version and the monize.net pointer.
+- [x] Panel footer with the manifest version and the monize.net pointer.
 
 ## E. Every page offers help
 

@@ -35,6 +35,7 @@ export const INTRO_TOUR: TourDefinition = {
   id: 'intro/basics',
   area: 'intro',
   i18nPrefix: 'intro.basics',
+  docs: 'dashboard',
   steps: [
     {
       // Route-agnostic: shows wherever the user launched the tour, so the first

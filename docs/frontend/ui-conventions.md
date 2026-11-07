@@ -310,6 +310,14 @@ The panel docks at the right edge, the assistant's edge: opening one closes the 
 
 With an empty query the dialog shows the current screen's table of contents under "Help for this screen"; typing debounces (150 ms) into `GET /help/search`, boosted toward `helpStore.contextPage` -- the slug `PageHeader` registers in an effect while its `help` prop is set, cleared on unmount only if nothing newer has replaced it. A response is kept with the query that produced it (`docs/frontend/api-and-cache.md`'s rule), so a slow answer for an abandoned query never draws under a newer one, and a failed request is a distinct error state, never "no results". Arrow keys and Enter drive a `role="listbox"` the same way `RuleExpressionSuggestions` does; Enter (or a click) calls `helpStore.openAt(...)` and closes the search dialog, handing off to the panel rather than duplicating its rendering.
 
+## A tour and the guide point at each other through `lib/help-tours.ts`
+
+`TourDefinition.docs?: DocsLink` names the guide page a tour walks through. `TourHost` offers "Read the full guide" alongside Done on the tour's last step only (`TourTooltip`'s `onReadGuide`), opening the help panel at `helpTarget(tour.docs)` and finishing the tour. The reverse direction is `lib/help-tours.ts`'s `HELP_TOURS` (`Partial<Record<DocsLink, string>>`, a guide destination to a tour id) and its derived `tourIdForHelpPage(slug)`: `HelpPanel` looks up the page on screen, and when it maps to a tour -- gated through `useTourRequirements` / `isTourOfferable`, the same check `TourOfferList` uses, so a tour this user cannot complete is never offered here either -- shows a "Show me" row that closes the panel and starts it. `help-tours.test.ts` fails when a mapped tour id is not in `ALL_TOURS`, or a `docs` key is not in `DOCS_LINKS`.
+
+## The panel footer names the bundled guide's version
+
+`HelpPanel`'s footer reads "Guide for Monize {version}" from the manifest (`useHelpManifest()`, `GET /help`, dedupe-cached like every other help read) plus a constant pointer to monize.net -- the website can describe newer features than this instance's bundled guide, and the footer says so rather than letting a stale guide read as current.
+
 ## A random value is `crypto.randomUUID()`, never `Math.random()`
 
 Every client-side use so far has been an id -- a list key, a removal handle, a temporary split row -- and those want uniqueness, which `crypto.randomUUID()` gives (`lib/ai-attachments.ts` is the pattern). `Math.random()` is not a security primitive, and Bearer flags it as CWE-330; `SplitEditor` carried that as a dated exception rather than a fix until issue #1323. `ui-conventions.test.ts` fails on `Math.random` in any production source.

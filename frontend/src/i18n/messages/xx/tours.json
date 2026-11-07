@@ -7,6 +7,7 @@
     "tryIt": "[XX-Try it — the tour continues once you do-XX]",
     "skipStep": "[XX-Skip this step-XX]",
     "move": "[XX-Move this card — drag it, or nudge it with the arrow keys-XX]",
+    "readGuide": "[XX-Read the full guide-XX]",
     "stepCounter": "[XX-{current} of {total}-XX]",
     "skippedTitle": "[XX-Tour finished-XX]",
     "skippedBody": "[XX-Some steps were skipped because their screen or control wasn't available. You can retake the tour anytime from Settings.-XX]"

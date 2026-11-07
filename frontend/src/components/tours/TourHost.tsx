@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/store/authStore';
+import { useHelpStore } from '@/store/helpStore';
 import { useTourStore } from '@/store/tourStore';
 import { toursApi } from '@/lib/tours-api';
 import { createLogger } from '@/lib/logger';
+import { helpTarget } from '@/lib/docs-links';
 import { findTourAnchor } from '@/lib/tours/anchors';
 import { backTargetIndex, isStepReachable } from '@/lib/tours/navigation';
 import {
@@ -356,6 +358,7 @@ export function TourHost() {
   const unobtrusive = !showingOutro && !standingIn && !!step?.unobtrusive;
   const leaveFocusToForm = !!anchorElement?.closest('[role="dialog"]');
   const isLast = showingOutro || active.stepIndex === active.steps.length - 1;
+  const docsLink = active.tour.docs;
   // Only offer Back when there is a step behind that can actually be shown
   // again: inside a form the user has closed, the steps before this one are
   // unreachable, and offering Back there would strand the tour.
@@ -406,6 +409,14 @@ export function TourHost() {
         onBack={() => back(pathname)}
         onSkip={skip}
         onEnd={() => endTour('dismissed')}
+        onReadGuide={
+          !showingOutro && docsLink
+            ? () => {
+                useHelpStore.getState().openAt(helpTarget(docsLink));
+                finish();
+              }
+            : undefined
+        }
         labels={{
           next: t('controls.next'),
           back: t('controls.back'),
@@ -414,6 +425,7 @@ export function TourHost() {
           tryIt: t('controls.tryIt'),
           skipStep: t('controls.skipStep'),
           move: t('controls.move'),
+          readGuide: t('controls.readGuide'),
         }}
       />
     </>

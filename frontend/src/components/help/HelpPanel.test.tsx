@@ -16,14 +16,20 @@ vi.mock('@/hooks/useIsMobile', () => ({
 }));
 
 const getPage = vi.fn();
+const getManifest = vi.fn().mockResolvedValue({
+  version: '1.21.0',
+  available: true,
+  pages: [],
+});
 vi.mock('@/lib/help', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/help')>()),
-  helpApi: { getPage: (slug: string) => getPage(slug), getManifest: vi.fn() },
+  helpApi: { getPage: (slug: string) => getPage(slug), getManifest: () => getManifest() },
 }));
 
 import { HelpPanel } from './HelpPanel';
 import { useHelpStore } from '@/store/helpStore';
 import { useHelpWidthStore } from '@/store/helpWidthStore';
+import { useTourStore } from '@/store/tourStore';
 import {
   HELP_PANEL_DEFAULT_WIDTH,
   HELP_PANEL_KEY_STEP,
@@ -124,6 +130,34 @@ describe('HelpPanel: content', () => {
     renderInLocale(<HelpPanel />, { locale: 'de', messages: { help: enHelp } });
     await act(async () => {});
     expect(screen.getByText('This guide is in English.')).toBeInTheDocument();
+  });
+});
+
+describe('HelpPanel: footer and the mapped tour', () => {
+  it('shows the manifest version and the monize.net pointer', async () => {
+    await renderPanel();
+    expect(
+      await screen.findByText('Guide for Monize 1.21.0 · The latest guide is on monize.net'),
+    ).toBeInTheDocument();
+  });
+
+  it('offers "Show me" on a page with a mapped tour, and starts it, closing the panel', async () => {
+    getPage.mockImplementation((slug: string) => Promise.resolve(pageOf(slug)));
+    useHelpStore.setState(useHelpStore.getInitialState(), true);
+    useTourStore.setState({ active: null, progress: {}, progressLoaded: false });
+    store().openAt({ page: 'dashboard' });
+    await renderPanel();
+
+    const showMe = await screen.findByText('Show me');
+    fireEvent.click(showMe);
+
+    expect(useTourStore.getState().active?.tour.id).toBe('intro/basics');
+    expect(store().open).toBe(false);
+  });
+
+  it('shows no tour offer on a page with none mapped', async () => {
+    await renderPanel();
+    expect(screen.queryByText('Show me')).not.toBeInTheDocument();
   });
 });
 

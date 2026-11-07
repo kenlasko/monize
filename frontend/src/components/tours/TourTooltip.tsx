@@ -39,6 +39,7 @@ export interface TourTooltipLabels {
   tryIt: string;
   skipStep: string;
   move: string;
+  readGuide: string;
 }
 
 /** Minimum gap kept between the card and the viewport edges. */
@@ -72,6 +73,11 @@ interface TourTooltipProps {
   onBack: () => void;
   onSkip: () => void;
   onEnd: () => void;
+  /**
+   * The tour has a guide page (`TourDefinition.docs`): shown alongside Done on
+   * the last step, opens the help panel there and ends the tour.
+   */
+  onReadGuide?: () => void;
   labels: TourTooltipLabels;
 }
 
@@ -141,6 +147,7 @@ export function TourTooltip({
   onBack,
   onSkip,
   onEnd,
+  onReadGuide,
   labels,
 }: TourTooltipProps) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -207,6 +214,11 @@ export function TourTooltip({
           <Button variant="ghost" size="sm" onClick={onBack}>
             {labels.back}
           </Button>
+        )}
+        {isLast && onReadGuide && (
+          <button type="button" onClick={onReadGuide} className={linkClass}>
+            {labels.readGuide}
+          </button>
         )}
         {interactive ? (
           <button type="button" onClick={onSkip} className={linkClass}>
