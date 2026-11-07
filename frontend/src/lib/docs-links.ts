@@ -124,7 +124,11 @@ const DOCS_BASE = new URL(DOCS_BASE_URL);
  * `AssistantMarkdown` use this to open such a link in the panel on a plain
  * click. Anything else -- a different site, a lookalike host
  * (`www.monize.net.evil.com`), or a URL that fails to parse -- is `null` and
- * the link is left to the browser.
+ * the link is left to the browser. Deliberately not checked against
+ * `DOCS_LINKS` or the manifest's page set here: that would need either an
+ * ambiguous reverse lookup or a network read inside a synchronous click
+ * handler. A slug that does not exist opens the panel into the same load
+ * error `useHelpPage` already shows for one, rather than falling through.
  */
 export function isGuideUrl(href: string | undefined | null): HelpTarget | null {
   if (!href) return null;
