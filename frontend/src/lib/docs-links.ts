@@ -138,7 +138,16 @@ export function isGuideUrl(href: string | undefined | null): HelpTarget | null {
   const base = DOCS_BASE.pathname;
   if (url.pathname !== base && !url.pathname.startsWith(`${base}/`)) return null;
   const page = url.pathname === base ? '' : url.pathname.slice(base.length + 1);
-  const section = url.hash ? decodeURIComponent(url.hash.slice(1)) : undefined;
+  let section: string | undefined;
+  if (url.hash) {
+    try {
+      section = decodeURIComponent(url.hash.slice(1));
+    } catch {
+      // A malformed %-escape in the fragment: not a link this app composed,
+      // so land on the page rather than letting the click handler throw.
+      section = undefined;
+    }
+  }
   return section === undefined
     ? { page: page || 'index' }
     : { page: page || 'index', section };

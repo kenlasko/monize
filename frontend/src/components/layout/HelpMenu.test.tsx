@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { render, renderHook, screen, fireEvent } from '@/test/render';
 import { HelpMenu } from './HelpMenu';
+import { useHelpMenuEntries } from '@/hooks/useHelpMenuEntries';
 import { useHelpStore } from '@/store/helpStore';
 import { useHelpSearchStore } from '@/store/helpSearchStore';
 import { useHelpShortcutsStore } from '@/store/helpShortcutsStore';
@@ -15,8 +16,10 @@ beforeEach(() => {
   useWhatsNewStore.setState({ isOpen: false, pausedForTour: false, backendVersion: undefined });
 });
 
+/** `AppHeader` builds entries once and passes them down; mirror that here. */
 function openMenu() {
-  render(<HelpMenu />);
+  const { result } = renderHook(() => useHelpMenuEntries());
+  render(<HelpMenu entries={result.current} />);
   fireEvent.click(screen.getByRole('button', { name: 'Help' }));
 }
 

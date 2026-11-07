@@ -141,6 +141,12 @@ describe('HelpPanel: footer and the mapped tour', () => {
     ).toBeInTheDocument();
   });
 
+  it('omits the footer when the manifest cannot be read', async () => {
+    getManifest.mockRejectedValueOnce(new Error('offline'));
+    await renderPanel();
+    expect(screen.queryByText(/The latest guide is on monize\.net/)).not.toBeInTheDocument();
+  });
+
   it('offers "Show me" on a page with a mapped tour, and starts it, closing the panel', async () => {
     getPage.mockImplementation((slug: string) => Promise.resolve(pageOf(slug)));
     useHelpStore.setState(useHelpStore.getInitialState(), true);

@@ -111,6 +111,12 @@ describe('isGuideUrl', () => {
     expect(isGuideUrl('https://[::1')).toBeNull();
   });
 
+  it('lands on the page, not a section, for a malformed %-escape in the fragment', () => {
+    expect(isGuideUrl('https://www.monize.net/docs/budgets#50%')).toEqual({
+      page: 'budgets',
+    });
+  });
+
   it('falls through on no href', () => {
     expect(isGuideUrl(undefined)).toBeNull();
   });

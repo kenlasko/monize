@@ -50,9 +50,15 @@ export function useHelpMenuEntries(): HelpMenuEntries {
   const mappedTour = contextPage
     ? getTourById(tourIdForHelpPage(contextPage) ?? '')
     : undefined;
-  const requirements = useTourRequirements(!!mappedTour?.requiresData);
+  const requirements = useTourRequirements(
+    !!mappedTour?.requiresData || !!INTRO_TOUR.requiresData,
+  );
   const tour =
-    mappedTour && isTourOfferable(mappedTour, requirements) ? mappedTour : INTRO_TOUR;
+    mappedTour && isTourOfferable(mappedTour, requirements)
+      ? mappedTour
+      : isTourOfferable(INTRO_TOUR, requirements)
+        ? INTRO_TOUR
+        : undefined;
 
   const helpForPage: HelpMenuAction | null = contextPage
     ? {
@@ -73,11 +79,17 @@ export function useHelpMenuEntries(): HelpMenuEntries {
       label: t('shortcuts'),
       onClick: () => useHelpShortcutsStore.getState().openShortcuts(),
     },
-    {
-      key: 'takeTour',
-      label: t('takeTour'),
-      onClick: () => useTourStore.getState().startTour(tour),
-    },
+    // Omitted rather than offering a tour this user cannot complete, same
+    // as the panel's own "Show me" and the What's New offer list.
+    ...(tour
+      ? [
+          {
+            key: 'takeTour',
+            label: t('takeTour'),
+            onClick: () => useTourStore.getState().startTour(tour),
+          },
+        ]
+      : []),
     {
       key: 'whatsNew',
       label: t('whatsNew'),

@@ -40,6 +40,15 @@ const EXEMPTIONS: Record<string, string> = {
 };
 
 const PAGE_HEADER_TAG = '<PageHeader';
+/**
+ * How far past the opening tag to look for its closing `/>` at the same
+ * indentation. Bounded, rather than scanning to end of file, so a call whose
+ * closing tag is never found this way -- a shape this codebase does not use
+ * today -- stops short with whatever it collected instead of swallowing the
+ * rest of the file into one "call", which could pick up an unrelated `help=`
+ * far below and read as compliant.
+ */
+const MAX_TAG_LINES = 60;
 
 /**
  * Every `<PageHeader ... />` call in a file, as its full source text (the
@@ -62,7 +71,8 @@ function pageHeaderCalls(content: string): string[] {
     const indent = lines[i].slice(0, col);
     let body = lines[i].slice(col);
     if (!/\/>/.test(body)) {
-      for (let j = i + 1; j < lines.length; j++) {
+      const limit = Math.min(lines.length, i + 1 + MAX_TAG_LINES);
+      for (let j = i + 1; j < limit; j++) {
         body += `\n${lines[j]}`;
         if (lines[j] === `${indent}/>`) break;
       }

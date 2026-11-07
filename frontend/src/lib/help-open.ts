@@ -31,6 +31,17 @@ export function useHelpPrefetch(enabled = true): void {
   }, [enabled]);
 }
 
+/** An unmodified left click: a new tab, copy link or middle click is always the browser's. */
+function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>): boolean {
+  return (
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
+}
+
 /**
  * The click handler of a help control that is an anchor to the same page on
  * monize.net (`docsUrl(link)`, `target="_blank"`).
@@ -49,15 +60,7 @@ export function onHelpLinkClick(
   event: MouseEvent<HTMLAnchorElement>,
   link: DocsLink,
 ): void {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  ) {
-    return;
-  }
+  if (!isPlainLeftClick(event)) return;
   if (useHelpStore.getState().guideAvailable === true) {
     event.preventDefault();
     useHelpStore.getState().openAt(helpTarget(link));
@@ -81,15 +84,7 @@ export function onGuideLinkClick(
   event: MouseEvent<HTMLAnchorElement>,
   href: string | undefined,
 ): void {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  ) {
-    return;
-  }
+  if (!isPlainLeftClick(event)) return;
   const target = isGuideUrl(href);
   if (!target) return;
   if (useHelpStore.getState().guideAvailable === true) {

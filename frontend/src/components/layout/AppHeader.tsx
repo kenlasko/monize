@@ -629,7 +629,7 @@ export function AppHeader() {
             </div>
             <ActionHistoryPanel />
             <NotificationBell />
-            <HelpMenu />
+            <HelpMenu entries={helpEntries} />
             {/* The reconciliation reminder badge is deliberately not mounted
                 here for now: the reminder is kept off the header until
                 reconciliation is a more established habit. The component and
