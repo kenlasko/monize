@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Berkas Microsoft Money itu tidak dapat dibuka",
     "docsNotice": {
       "title": "Sebelum Anda mengimpor",
-      "body": "Baca bagian <money>Importing from Microsoft Money</money> atau <quicken>Importing from Quicken</quicken> di dokumentasi sebelum mengimpor apa pun. File OFX/QFX dan QIF masing-masing memiliki keunikan tersendiri -- lihat <ofx>Importing OFX/QFX Files</ofx> dan <qif>Importing Quicken QIF Files</qif>."
+      "body": "Baca bagian <money>Importing from Microsoft Money</money> atau <quicken>Importing from Quicken</quicken> di dokumentasi sebelum mengimpor apa pun. File OFX/QFX dan QIF masing-masing memiliki keunikan tersendiri — lihat <ofx>Importing OFX/QFX Files</ofx> dan <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {

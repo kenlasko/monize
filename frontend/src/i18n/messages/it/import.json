@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Non è stato possibile aprire questo file Microsoft Money",
     "docsNotice": {
       "title": "Prima di importare",
-      "body": "Leggi la sezione <money>Importing from Microsoft Money</money> o <quicken>Importing from Quicken</quicken> della documentazione prima di importare qualsiasi cosa. I file OFX/QFX e QIF hanno ciascuno le proprie particolarità -- vedi <ofx>Importing OFX/QFX Files</ofx> e <qif>Importing Quicken QIF Files</qif>."
+      "body": "Leggi la sezione <money>Importing from Microsoft Money</money> o <quicken>Importing from Quicken</quicken> della documentazione prima di importare qualsiasi cosa. I file OFX/QFX e QIF hanno ciascuno le proprie particolarità — vedi <ofx>Importing OFX/QFX Files</ofx> e <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {

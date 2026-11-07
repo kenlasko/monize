@@ -49,7 +49,7 @@
     "mnyFailedHeading": "Bu Microsoft Money dosyası açılamadı",
     "docsNotice": {
       "title": "İçe aktarmadan önce",
-      "body": "Herhangi bir şeyi içe aktarmadan önce belgelerdeki <money>Importing from Microsoft Money</money> veya <quicken>Importing from Quicken</quicken> bölümünü okuyun. OFX/QFX ve QIF dosyalarının her birinin kendine özgü tuhaflıkları vardır -- bakınız <ofx>Importing OFX/QFX Files</ofx> ve <qif>Importing Quicken QIF Files</qif>."
+      "body": "Herhangi bir şeyi içe aktarmadan önce belgelerdeki <money>Importing from Microsoft Money</money> veya <quicken>Importing from Quicken</quicken> bölümünü okuyun. OFX/QFX ve QIF dosyalarının her birinin kendine özgü tuhaflıkları vardır — bakınız <ofx>Importing OFX/QFX Files</ofx> ve <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {

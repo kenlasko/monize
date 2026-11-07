@@ -49,7 +49,7 @@
     "mnyFailedHeading": "이 Microsoft Money 파일을 열 수 없습니다",
     "docsNotice": {
       "title": "가져오기 전에",
-      "body": "무엇이든 가져오기 전에 문서의 <money>Importing from Microsoft Money</money> 또는 <quicken>Importing from Quicken</quicken> 섹션을 먼저 읽어 보세요. OFX/QFX 파일과 QIF 파일은 각각 고유한 특이점이 있습니다 -- <ofx>Importing OFX/QFX Files</ofx> 및 <qif>Importing Quicken QIF Files</qif>를 참고하세요."
+      "body": "무엇이든 가져오기 전에 문서의 <money>Importing from Microsoft Money</money> 또는 <quicken>Importing from Quicken</quicken> 섹션을 먼저 읽어 보세요. OFX/QFX 파일과 QIF 파일은 각각 고유한 특이점이 있습니다 — <ofx>Importing OFX/QFX Files</ofx> 및 <qif>Importing Quicken QIF Files</qif>를 참고하세요."
     }
   },
   "selectAccount": {
