@@ -31,10 +31,15 @@ export const LLM_HELP_UNAVAILABLE_NOTICE =
 /**
  * What a model reads when the guide was searched and no section matched, for
  * the same reason: the "no section covers this" a reader sees in the
- * assistant's summary never reaches the model.
+ * assistant's summary never reaches the model. The scorer reads only Latin
+ * letters and digits, so a question in another script (or only punctuation)
+ * matches nothing without having been searched at all; the notice sends that
+ * case back for an English retry rather than to "not covered".
  */
 export const LLM_HELP_NO_MATCH_NOTICE =
-  "No section of the user guide matched. Say the guide does not cover this, " +
+  "No section of the user guide matched. The guide is in English and is " +
+  "searched by the question's words: if the query was not in English words, " +
+  "search again in English. Otherwise say the guide does not cover this, " +
   "rather than answering from your own idea of Monize.";
 
 /** The `search_help` tool's input, after its schema has validated it. */

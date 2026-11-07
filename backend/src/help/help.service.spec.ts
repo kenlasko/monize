@@ -566,7 +566,11 @@ describe("HelpService", () => {
     });
 
     it("caps a long section's text at a word boundary, with an ellipsis", () => {
-      const text = "lorem ipsum ".repeat(500).trim();
+      // The leading "x " shifts the 12-character "lorem ipsum " so the cap
+      // falls mid-word: a hard cut would end on "ipsu", not on a whole word.
+      const text = `x ${"lorem ipsum ".repeat(500)}`.trim();
+      expect(text[LLM_HELP_TEXT_MAX_CHARS]).not.toBe(" ");
+      expect(text[LLM_HELP_TEXT_MAX_CHARS - 1]).not.toBe(" ");
       writeBundleWithIndex([
         { u: "/docs/first-page#alpha", p: "First Page", h: "Alpha", x: text },
       ]);
@@ -576,7 +580,44 @@ describe("HelpService", () => {
       expect(capped.length).toBeLessThanOrEqual(LLM_HELP_TEXT_MAX_CHARS + 1);
       expect(capped.endsWith("…")).toBe(true);
       expect(text.startsWith(capped.slice(0, -1))).toBe(true);
-      expect(capped.slice(0, -1)).toMatch(/(lorem|ipsum)$/);
+      expect(capped.slice(0, -1)).toMatch(/ (lorem|ipsum)$/);
+    });
+
+    it("cuts at the cap itself when no space is near it", () => {
+      const text = `alpha ${"x".repeat(2000)}`;
+      writeBundleWithIndex([
+        { u: "/docs/first-page#alpha", p: "First Page", h: "Alpha", x: text },
+      ]);
+
+      const capped = service.getLlmHelp("alpha").sections[0].text;
+
+      expect(capped).toBe(`${text.slice(0, LLM_HELP_TEXT_MAX_CHARS)}…`);
+    });
+
+    it("never spends a slot on a heading with no text of its own", () => {
+      writeBundleWithIndex([
+        { u: "/docs/first-page#ledger", p: "First Page", h: "Ledger", x: "" },
+        {
+          u: "/docs/first-page#ledger-steps",
+          p: "First Page",
+          h: "Steps",
+          x: "Open the ledger.",
+        },
+      ]);
+
+      expect(
+        service.getLlmHelp("ledger", { limit: 1 }).sections.map((s) => s.url),
+      ).toEqual(["https://www.monize.net/docs/first-page#ledger-steps"]);
+    });
+
+    it("sends a question in another script back for an English search", () => {
+      writeBundle();
+
+      const answer = service.getLlmHelp("как разделить транзакцию");
+
+      expect(answer.sections).toEqual([]);
+      expect(answer.notice).toBe(LLM_HELP_NO_MATCH_NOTICE);
+      expect(answer.notice).toContain("search again in English");
     });
 
     it.each([

@@ -7,7 +7,11 @@ import {
   searchHelpSchema,
 } from "../../ai/query/tool-input-schemas";
 import type { HelpService } from "../../help/help.service";
-import type { LlmHelpAnswer } from "../../help/help-llm-shape";
+import {
+  LLM_HELP_NO_MATCH_NOTICE,
+  LLM_HELP_UNAVAILABLE_NOTICE,
+  type LlmHelpAnswer,
+} from "../../help/help-llm-shape";
 
 /** What `HelpService.getLlmHelp` answers for one matched section. */
 const ANSWER: LlmHelpAnswer = {
@@ -90,12 +94,18 @@ describe("McpHelpTools", () => {
   it("validates an answer with no sections, and one from a server with no guide", async () => {
     ctx.setUser({ userId: "u1", scopes: "read" });
     for (const answer of [
-      { ...ANSWER, sections: [] },
-      { ...ANSWER, available: false, sections: [] },
+      { ...ANSWER, notice: LLM_HELP_NO_MATCH_NOTICE, sections: [] },
+      {
+        ...ANSWER,
+        available: false,
+        notice: LLM_HELP_UNAVAILABLE_NOTICE,
+        sections: [],
+      },
     ]) {
       helpService.getLlmHelp.mockReturnValueOnce(answer);
       const result = await handlers["search_help"]({ query: "zzz" }, ctx);
       expect(result.isError).toBeUndefined();
+      expect(result.structuredContent.notice).toBe(answer.notice);
       expect(searchHelpOutput.safeParse(result.structuredContent).success).toBe(
         true,
       );

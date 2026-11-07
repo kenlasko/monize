@@ -155,18 +155,24 @@ export class HelpService {
   }
 
   /**
-   * `search_help`, for the assistant and the MCP tool alike: `search`'s
-   * ranking (no screen to boost), each hit with its section's own text capped
-   * to `LLM_HELP_TEXT_MAX_CHARS` and the monize.net link a model cites. It
-   * reads only the bundled guide, never a user's data, so it needs no
+   * `search_help`, for the assistant and the MCP tool alike: the scorer
+   * `search` runs (no screen to boost), each hit with its section's own text
+   * capped to `LLM_HELP_TEXT_MAX_CHARS` and the monize.net link a model cites.
+   * It reads only the bundled guide, never a user's data, so it needs no
    * database scope and answers a delegate exactly as it answers the owner.
    */
   getLlmHelp(query: string, options: { limit?: number } = {}): LlmHelpAnswer {
-    // `search` answers no results when the bundle is unavailable.
-    const { results } = this.search(query, {
-      limit: clampHelpLimit(options.limit),
-    });
     const available = this.load();
+    // A heading with no text of its own (the parent of `###` subsections) has
+    // nothing to answer from, and its heading match would outrank the
+    // subsections that do, so it never takes one of the model's slots.
+    const { results } = available
+      ? searchHelp(
+          this.sections.filter((s) => s.text.trim().length > 0),
+          query,
+          { limit: clampHelpLimit(options.limit) },
+        )
+      : { results: [] };
     const notice = !available
       ? LLM_HELP_UNAVAILABLE_NOTICE
       : results.length === 0
