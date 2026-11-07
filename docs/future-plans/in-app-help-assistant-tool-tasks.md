@@ -6,25 +6,30 @@ gate passes and is quoted in the commit or PR.
 
 ## Backend
 
-- [ ] `HelpService.getLlmHelp`: plan 3's search plus capped section text, URL,
+- [x] `HelpService.getLlmHelp`: plan 3's search plus capped section text, URL,
       guide version, language.
-- [ ] Assistant adapter: `search_help` in `FINANCIAL_TOOLS`, executor
+- [x] Assistant adapter: `search_help` in `FINANCIAL_TOOLS`, executor
       `{ summary, sources }`, no-hit summary, one system-prompt sentence.
-- [ ] `DELEGATE_ALLOWED_AI_TOOLS` entry, named in the PR as a reviewed decision.
-- [ ] MCP adapter `help.tool.ts`, output schema, read-only annotations, `read` scope.
+- [x] `DELEGATE_ALLOWED_AI_TOOLS` entry, named in the PR as a reviewed decision.
+- [x] MCP adapter `help.tool.ts`, output schema, read-only annotations, `read` scope.
 
 ## Tests
 
-- [ ] Domain, executor and MCP specs listed in the plan.
+- [x] Domain, executor and MCP specs listed in the plan.
 - [ ] `tools-list-budget.spec.ts` and the delegate guard green without raising a cap.
-- [ ] Real-question retrieval fixture through `getLlmHelp`.
+      Both are green and no existing cap moved, but a new tool has to be
+      counted: `search_help` got its own 1,100-byte cap and the total went
+      64,595 -> 65,530. That growth is less than the tool's 1,098 bytes,
+      because the table measured 64,428 before it. It is recorded in the spec
+      as a reviewed decision and awaits the owner's approval in the PR.
+- [x] Real-question retrieval fixture through `getLlmHelp`.
 - [ ] Manual check on two providers; transcripts in the PR.
 
 ## Docs
 
-- [ ] `docs/backend/ai-and-payees.md` paragraph.
-- [ ] `docs/backend/mcp.md` tool list.
-- [ ] `website/docs/ai.md` describes the help answers and the MCP tool;
+- [x] `docs/backend/ai-and-payees.md` paragraph.
+- [x] `docs/backend/mcp.md` tool list.
+- [x] `website/docs/ai.md` describes the help answers and the MCP tool;
       `npm run docs:build`.
 
 ## Verification

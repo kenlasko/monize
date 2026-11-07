@@ -56,6 +56,8 @@ A 2026-07-28 request has no session at all, and even on a 2025-era connection th
 
 An MCP credential (PAT or OAuth token) is always the owner's own: no MCP request acts as a delegate, so a read tool whose domain method narrows by a delegate's account scope (`list_warranties` over `WarrantiesService.getLlmWarranties`) passes none.
 
+`search_help` (`tools/help.tool.ts`) reads no user data at all: it answers sections of the bundled user guide through `HelpService.getLlmHelp`, the assistant's own method. It is read-only (`READ_ONLY`), needs the `read` scope like every read tool and asks for no confirmation. The server instructions point a client at it for questions about using Monize.
+
 ## Directory layout
 
 ```
