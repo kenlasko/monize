@@ -24,6 +24,7 @@ vi.mock('@/lib/help', async (importOriginal) => ({
 import { HelpPanel } from './HelpPanel';
 import { useHelpStore } from '@/store/helpStore';
 
+
 function pageOf(slug: string, extra: Partial<HelpPage> = {}): HelpPage {
   return {
     slug,
@@ -147,7 +148,50 @@ describe('HelpPanel: navigation', () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(screen.getByRole('button', { name: 'Rollover' }));
-    expect(store().history).toEqual([{ page: 'budgets', section: 'rollover' }]);
+    expect(store().history).toEqual([
+      { page: 'budgets' },
+      { page: 'budgets', section: 'rollover' },
+    ]);
+  });
+
+  it('enables Back after a table-of-contents jump and returns to the section it came from', async () => {
+    await renderPanel();
+    await screen.findByText('Body of budgets.');
+    const back = screen.getByRole('button', { name: 'Back' });
+    const forward = screen.getByRole('button', { name: 'Forward' });
+    expect(back).toBeDisabled();
+    expect(forward).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'On this page' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Alerts' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rollover' }));
+    expect(back).toBeEnabled();
+    expect(forward).toBeDisabled();
+
+    fireEvent.click(back);
+    expect(store().history[store().cursor]).toEqual({ page: 'budgets', section: 'alerts' });
+    expect(back).toBeEnabled();
+    expect(forward).toBeEnabled();
+
+    fireEvent.click(back);
+    expect(store().history[store().cursor]).toEqual({ page: 'budgets' });
+    expect(back).toBeDisabled();
+
+    fireEvent.click(forward);
+    expect(store().history[store().cursor]).toEqual({ page: 'budgets', section: 'alerts' });
+  });
+
+  it('pushes history when another help icon opens a different section while the panel is open', async () => {
+    await renderPanel();
+    await screen.findByText('Body of budgets.');
+    act(() => store().openAt({ page: 'budgets', section: 'alerts' }));
+    expect(screen.getByRole('button', { name: 'Back' })).toBeEnabled();
+    act(() => store().openAt({ page: 'reports', section: 'budget-reports' }));
+    await act(async () => {});
+    expect(await screen.findByRole('heading', { level: 2, name: 'reports title' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await act(async () => {});
+    expect(store().history[store().cursor]).toEqual({ page: 'budgets', section: 'alerts' });
   });
 });
 

@@ -10,9 +10,12 @@ import type { HelpTarget } from '@/lib/docs-links';
  *
  * `history` is a list of pages the reader has been to and `cursor` the one on
  * screen, as in a browser: following a link while back in the list drops the
- * entries ahead of it. Moving to another section of the page that is already on
- * screen replaces its entry instead of adding one, so Back leaves the page
- * rather than retracing every table-of-contents click.
+ * entries ahead of it. Every move to a different page or section adds an entry,
+ * a table-of-contents click and a link to another section of the same page
+ * included, so Back returns to the section the reader came from. (Section moves
+ * used to replace the entry; on a long guide page that left Back and Forward
+ * disabled through the whole visit, which read as buttons that did nothing.)
+ * Asking for the target already on screen adds nothing and only rescrolls.
  */
 interface HelpState {
   open: boolean;
@@ -104,11 +107,6 @@ function moveTo(
   const visit = s.visit + 1;
   if (current === undefined) return { history: [target], cursor: 0, visit };
   if (sameTarget(current, target)) return { visit };
-  if (current.page === target.page) {
-    const history = [...s.history];
-    history[s.cursor] = target;
-    return { history, visit };
-  }
   const history = [...s.history.slice(0, s.cursor + 1), target];
   return { history, cursor: history.length - 1, visit };
 }

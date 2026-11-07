@@ -118,4 +118,64 @@ test.describe('Help panel', () => {
     await expect(page.getByRole('complementary', { name: 'Help' })).toBeHidden();
     expect(page.url()).toMatch(/\/budgets$/);
   });
+
+  test('Back and Forward follow every section the reader visits, and are disabled at the ends', async ({
+    authedPage: page,
+  }) => {
+    await gotoWithGuideKnown(page, '/budgets');
+    await page.getByRole('link', { name: 'Help for this page' }).click();
+    const panel = page.getByRole('complementary', { name: 'Help' });
+    await expect(panel.getByRole('heading', { level: 2, name: 'Budgets', exact: true })).toBeVisible();
+
+    const back = panel.getByRole('button', { name: 'Back' });
+    const forward = panel.getByRole('button', { name: 'Forward' });
+    await expect(back).toBeDisabled();
+    await expect(forward).toBeDisabled();
+
+    // Two table-of-contents jumps inside the one page.
+    await panel.getByRole('button', { name: 'On this page' }).click();
+    const toc = panel.getByRole('navigation', { name: 'Sections on this page' });
+    await toc.getByRole('button').nth(1).click();
+    await toc.getByRole('button').nth(2).click();
+    await expect(back).toBeEnabled();
+    await expect(forward).toBeDisabled();
+
+    await back.click();
+    await expect(back).toBeEnabled();
+    await expect(forward).toBeEnabled();
+    await back.click();
+    await expect(back).toBeDisabled();
+    await expect(forward).toBeEnabled();
+    await expect(panel.getByRole('heading', { level: 2, name: 'Budgets', exact: true })).toBeVisible();
+
+    await forward.click();
+    await forward.click();
+    await expect(forward).toBeDisabled();
+    await expect(back).toBeEnabled();
+  });
+
+  test('a pinned panel keeps its history when another page\'s "?" opens a different section', async ({
+    authedPage: page,
+  }) => {
+    // `institutions` is { page: 'accounts', section: 'financial-institutions' };
+    // `accounts` is the same page from the top.
+    await gotoWithGuideKnown(page, '/institutions');
+    await page.getByRole('link', { name: 'Help for this page' }).click();
+    const panel = page.getByRole('complementary', { name: 'Help' });
+    const section = panel.getByRole('heading', { name: 'Financial Institutions', exact: true });
+    await expect(section).toBeFocused();
+    await panel.getByRole('button', { name: /^Pin the help panel/ }).click();
+
+    // A client-side move to Accounts, so the store survives it.
+    await page.getByRole('navigation').getByRole('button', { name: 'Accounts', exact: true }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Accounts', exact: true })).toBeVisible();
+    await page.getByRole('link', { name: 'Help for this page' }).click();
+
+    await expect(panel.getByRole('button', { name: 'Back' })).toBeEnabled();
+    await expect(panel.getByRole('button', { name: 'Forward' })).toBeDisabled();
+    await panel.getByRole('button', { name: 'Back' }).click();
+    await expect(section).toBeFocused();
+    await expect(panel.getByRole('button', { name: 'Back' })).toBeDisabled();
+    await expect(panel.getByRole('button', { name: 'Forward' })).toBeEnabled();
+  });
 });
