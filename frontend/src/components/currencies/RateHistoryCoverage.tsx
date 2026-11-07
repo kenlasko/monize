@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import toast from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import {
   TABLE_CLASS,
@@ -257,8 +258,9 @@ export function RateHistoryCoverage({
 
       {showStoredRates && (
         <div className="space-y-2 pt-2">
-          <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
             {t('rateHistory.list.heading')}
+            <InfoTooltip text={t('rateHistory.list.invertedHelp')} learnMore="currencyRateDirection" />
           </h4>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {t('rateHistory.list.direction', {

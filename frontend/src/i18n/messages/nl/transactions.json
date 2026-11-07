@@ -124,6 +124,7 @@
       "balance": "Saldo",
       "attachments": "Bijlagen",
       "status": "Status",
+      "statusHelp": "Niet afgestemd, Bevestigd of Afgestemd zijn stappen op weg naar overeenstemming met een bankafschrift. Ongeldig annuleert een transactie maar behoudt de registratie; deze beïnvloedt het rekeningsaldo niet meer.",
       "actions": "Acties"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "Splitsingsdetails",
+    "headerTooltip": "Elke regel kan een categorie, een overboeking naar een andere rekening of een investering zijn. De regels moeten optellen tot het totaalbedrag van de transactie; Gelijk verdelen en Proportioneel verdelen verdelen de rest voor u.",
     "distributeProportionally": "Proportioneel verdelen",
     "distributeProportionallyTitle": "Verdeel het resterende bedrag proportioneel op basis van het bedrag van elke splitsing",
     "distributeEvenly": "Gelijk verdelen",

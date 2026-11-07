@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, other {# 個帳戶}}",
     "usageSecurities": "{count, plural, other {# 檔證券}}",
     "rateHelp": "每種貨幣一個單位折合多少 {currency}。",
+    "rateMissing": "沒有 {from} 到 {to} 的已儲存匯率。",
     "empty": {
       "title": "無貨幣",
       "subtitle": "立即新增貨幣開始使用。"
@@ -159,6 +160,7 @@
     "hint": "日期早於最早儲存匯率的報告，無法換算 {pair}。",
     "list": {
       "heading": "已儲存匯率",
+      "invertedHelp": "標記為（反向換算）的匯率是 Monize 為此貨幣對實際儲存值的倒數，而不是另一個觀測值。",
       "direction": "以每 1 {from} 兌 {to} 顯示。",
       "loading": "正在載入已儲存匯率...",
       "loadFailed": "無法讀取已儲存匯率",

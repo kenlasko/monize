@@ -124,6 +124,7 @@
       "balance": "Saldo",
       "attachments": "Załączniki",
       "status": "Status",
+      "statusHelp": "Nieuzgodniona, Rozliczona lub Uzgodniona to etapy dopasowywania do wyciągu bankowego. Anulowana odwołuje transakcję, ale zachowuje jej zapis; nie zmienia już salda konta.",
       "actions": "Akcje"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "Szczegóły podziału",
+    "headerTooltip": "Każdy wiersz może być kategorią, przelewem na inne konto lub inwestycją. Wiersze muszą sumować się do całkowitej kwoty transakcji; Rozłóż równo i Rozłóż proporcjonalnie rozdzielają resztę za Ciebie.",
     "distributeProportionally": "Rozłóż proporcjonalnie",
     "distributeProportionallyTitle": "Rozłóż pozostałą kwotę proporcjonalnie do kwoty każdego podziału",
     "distributeEvenly": "Rozłóż równo",

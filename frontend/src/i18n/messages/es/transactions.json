@@ -124,6 +124,7 @@
       "balance": "Saldo",
       "attachments": "Adjuntos",
       "status": "Estado",
+      "statusHelp": "Sin conciliar, Compensada o Conciliada son pasos hacia la coincidencia con un extracto bancario. Anulada cancela una transacción pero conserva su registro; ya no mueve el saldo de la cuenta.",
       "actions": "Acciones"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "Detalles del desglose",
+    "headerTooltip": "Cada fila puede ser una categoría, una transferencia a otra cuenta o una inversión. Las filas deben sumar el total de la transacción; Distribuir uniformemente y Distribuir proporcionalmente reparten el resto por usted.",
     "distributeProportionally": "Distribuir proporcionalmente",
     "distributeProportionallyTitle": "Distribuir la cantidad restante proporcionalmente según la cantidad de cada desglose",
     "distributeEvenly": "Distribuir uniformemente",

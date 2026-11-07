@@ -36,6 +36,13 @@ export const DOCS_LINKS = {
   googlePlacesSetup: { page: 'categories-and-payees', section: 'setting-up-google-places' },
   currencies: { page: 'currency-management' },
   currencyHomeRate: { page: 'currency-management', section: 'home-currency' },
+  currencyRateDirection: { page: 'currency-management', section: 'rate-direction' },
+  currencyRateHistory: { page: 'currency-management', section: 'rate-history' },
+  currencyPriceSymbol: { page: 'currency-management', section: 'codes-and-price-symbols' },
+  currencyRatesOnTransactions: {
+    page: 'currency-management',
+    section: 'rates-on-individual-transactions',
+  },
   dashboard: { page: 'dashboard' },
   emailReceipts: { page: 'email-receipts' },
   importTransactions: { page: 'importing-transactions' },
@@ -77,6 +84,10 @@ export const DOCS_LINKS = {
   adminNotifications: { page: 'settings-and-security', section: 'instance-notification-settings' },
   tags: { page: 'tags' },
   transactions: { page: 'transactions' },
+  transactionTransferCategory: { page: 'transactions', section: 'creating-a-transfer' },
+  transactionSplits: { page: 'transactions', section: 'creating-a-split' },
+  transactionStatus: { page: 'transactions', section: 'transaction-status' },
+  transactionReconcile: { page: 'accounts', section: 'account-reconciliation' },
   warranties: { page: 'warranties' },
 } as const satisfies Record<string, DocsTarget>;
 

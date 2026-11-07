@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, one {# konto} few {# konta} many {# kont} other {# konta}}",
     "usageSecurities": "{count, plural, one {# papier} few {# papiery} many {# papierów} other {# papieru}}",
     "rateHelp": "Ile jest warta jedna jednostka każdej waluty w {currency}.",
+    "rateMissing": "Brak zapisanego kursu wymiany dla {from} na {to}.",
     "empty": {
       "title": "Brak walut",
       "subtitle": "Zacznij od dodania waluty."
@@ -159,6 +160,7 @@
     "hint": "Raporty datowane przed pierwszym zapisanym kursem nie mogą przeliczyć {pair}.",
     "list": {
       "heading": "Zapisane kursy",
+      "invertedHelp": "Kurs oznaczony jako (odwrócony) jest odwrotnością tego, co Monize faktycznie zapisało dla tej pary, a nie inną obserwacją.",
       "direction": "Pokazane jako {to} za 1 {from}.",
       "loading": "Wczytywanie zapisanych kursów...",
       "loadFailed": "Nie udało się odczytać zapisanych kursów",

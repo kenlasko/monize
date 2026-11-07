@@ -124,6 +124,7 @@
       "balance": "残高",
       "attachments": "添付ファイル",
       "status": "状態",
+      "statusHelp": "未照合、決済済み、照合済みは銀行の取引明細書と一致させるための段階です。無効は取引を取り消しますが記録は残り、口座残高には影響しなくなります。",
       "actions": "操作"
     },
     "sort": {
@@ -487,6 +488,7 @@
   },
   "splitEditor": {
     "header": "分割の詳細",
+    "headerTooltip": "各行はカテゴリ、別口座への振替、または投資のいずれかです。各行の合計は取引の総額と一致する必要があります。均等配分と比例配分は残りの金額を自動的に振り分けます。",
     "distributeProportionally": "比例配分",
     "distributeProportionallyTitle": "各分割の金額に基づいて残額を比例配分します",
     "distributeEvenly": "均等配分",

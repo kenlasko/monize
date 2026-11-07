@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, other {# 口座}}",
     "usageSecurities": "{count, plural, other {# 銘柄}}",
     "rateHelp": "各通貨の1単位が{currency}でいくらになるか。",
+    "rateMissing": "{from} から {to} への保存済みレートがありません。",
     "empty": {
       "title": "通貨がありません",
       "subtitle": "通貨を追加して始めましょう。"
@@ -159,6 +160,7 @@
     "hint": "最初に保存されたレートより前の日付のレポートでは、{pair} を換算できません。",
     "list": {
       "heading": "保存済みレート",
+      "invertedHelp": "（逆算）と表示されたレートは、Monizeがこのペアについて実際に保存した値の逆数であり、別の観測値ではありません。",
       "direction": "1 {from} あたりの {to} で表示しています。",
       "loading": "保存済みレートを読み込んでいます...",
       "loadFailed": "保存済みレートを読み込めませんでした",

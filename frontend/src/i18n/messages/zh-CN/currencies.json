@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, other {# 个账户}}",
     "usageSecurities": "{count, plural, other {# 只证券}}",
     "rateHelp": "每种货币一个单位折合多少 {currency}。",
+    "rateMissing": "没有 {from} 到 {to} 的已存汇率。",
     "empty": {
       "title": "无货币",
       "subtitle": "从添加一种货币开始。"
@@ -159,6 +160,7 @@
     "hint": "日期早于最早存储汇率的报告无法换算 {pair}。",
     "list": {
       "heading": "已存汇率",
+      "invertedHelp": "标记为（反向换算）的汇率是 Monize 为该货币对实际存储值的倒数，而不是另一个观测值。",
       "direction": "按每 1 {from} 折合 {to} 显示。",
       "loading": "正在加载已存汇率...",
       "loadFailed": "无法读取已存汇率",

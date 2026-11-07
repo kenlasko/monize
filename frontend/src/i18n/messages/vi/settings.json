@@ -138,6 +138,7 @@
     },
     "themeLabel": "Giao diện",
     "defaultCurrencyLabel": "Tiền tệ mặc định",
+    "defaultCurrencyHelp": "Dùng để tính tổng tài khoản, giá trị tài sản thuần và báo cáo của bạn, và là loại tiền mà cột Tỷ giá trên trang Tiền tệ chuyển đổi sang.",
     "defaultCurrencyNoCrypto": "Tiền mã hóa không được cung cấp ở đây: tổng và báo cáo luôn được hiển thị bằng tiền pháp định.",
     "preferredExchangesLabel": "Sàn giao dịch ưa thích (để tra cứu giấy chứng khoán)",
     "preferredExchangesHelp": "Chọn tối đa 3 sàn giao dịch theo thứ tự ưu tiên. Chúng sẽ được ưu tiên khi tra cứu giấy chứng khoán.",

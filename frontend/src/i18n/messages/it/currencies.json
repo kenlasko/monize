@@ -77,6 +77,7 @@
     "usageAccounts": "{count, plural, one {# conto} other {# conti}}",
     "usageSecurities": "{count, plural, one {# titolo} other {# titoli}}",
     "rateHelp": "Quanto vale un'unità di ogni valuta in {currency}.",
+    "rateMissing": "Nessun tasso di cambio memorizzato per {from} a {to}.",
     "empty": {
       "title": "Nessuna valuta",
       "subtitle": "Inizia aggiungendo una valuta."
@@ -159,6 +160,7 @@
     "hint": "I report con data anteriore al primo tasso memorizzato non possono convertire {pair}.",
     "list": {
       "heading": "Tassi memorizzati",
+      "invertedHelp": "Un tasso contrassegnato come (invertito) è il reciproco di ciò che Monize ha effettivamente memorizzato per questa coppia, non un'osservazione diversa.",
       "direction": "Mostrato come {to} per 1 {from}.",
       "loading": "Caricamento dei tassi memorizzati...",
       "loadFailed": "Impossibile leggere i tassi memorizzati",
