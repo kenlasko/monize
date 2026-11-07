@@ -28,12 +28,12 @@ merged. Check a box only when its gate passes and is quoted in the commit or PR.
 ## Tests
 
 - [x] Dialog and listener unit tests listed in the plan.
-- [ ] E2E: `?` on Transactions; "backup" search opens Backup and restore.
+- [x] E2E: `?` on Transactions; "backup" search opens Backup and restore (chromium and firefox).
 
 ## Docs
 
-- [ ] User guide mentions the shortcuts.
-- [ ] `docs/frontend/ui-conventions.md`: global shortcuts and the editable-target rule.
+- [x] User guide mentions the shortcuts.
+- [x] `docs/frontend/ui-conventions.md`: global shortcuts and the editable-target rule.
 
 ## Verification
 
