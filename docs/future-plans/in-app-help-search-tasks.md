@@ -5,16 +5,16 @@ merged. Check a box only when its gate passes and is quoted in the commit or PR.
 
 ## Backend
 
-- [ ] `help-search.ts`: normalisation, prefix on the last token, weighted
+- [x] `help-search.ts`: normalisation, prefix on the last token, weighted
       scoring, context boost, synonym table, plain-text excerpt.
-- [ ] `HelpService.search` and `GET /help/search` with a bounded, whitelisted
+- [x] `HelpService.search` and `GET /help/search` with a bounded, whitelisted
       query DTO.
 
 ## Backend tests
 
-- [ ] Scorer unit tests listed in the plan.
-- [ ] Real-question fixture: each question's expected section in the top three.
-- [ ] Controller validation and public-access spec.
+- [x] Scorer unit tests listed in the plan.
+- [x] Real-question fixture: each question's expected section in the top three.
+- [x] Controller validation and public-access spec.
 
 ## Frontend
 
