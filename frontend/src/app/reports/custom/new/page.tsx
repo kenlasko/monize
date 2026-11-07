@@ -43,6 +43,7 @@ function NewCustomReportContent() {
         <PageHeader
           title={t('customPages.createTitle')}
           subtitle={t('customPages.createSubtitle')}
+          help="reports"
           actions={
             <Link href="/reports" className={buttonClassName('outline')}>
               {t('detailHeader.backToReports')}

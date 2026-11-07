@@ -17,6 +17,7 @@ export default function LinkedPeoplePage() {
         <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 space-y-5">
           <PageHeader
             title={t("linkedPeople")}
+            help="sharedExpenses"
             actions={
               <ButtonLink href="/shared-expenses" variant="outline">
                 {t("title")}

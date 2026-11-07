@@ -42,6 +42,7 @@ function NewInvestmentReportContent() {
         <PageHeader
           title={t('investmentPages.createTitle')}
           subtitle={t('investmentPages.createSubtitle')}
+          help="reports"
           actions={
             <Link href="/reports" className={buttonClassName('outline')}>
               {t('detailHeader.backToReports')}

@@ -305,6 +305,7 @@ function WarrantyDetailContent({ warrantyId }: { warrantyId: string }) {
       <>
         <PageHeader
           title={warranty.name}
+          help="warranties"
           titleAdornment={
             <span className="inline-flex flex-wrap items-center gap-2">
               {/* Jump straight to another warranty instead of going back to

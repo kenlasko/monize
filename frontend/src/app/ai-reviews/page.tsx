@@ -21,7 +21,7 @@ function AiReviewsContent() {
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-        <PageHeader title={t('page.title')} subtitle={t('page.subtitle')} />
+        <PageHeader title={t('page.title')} subtitle={t('page.subtitle')} help="aiReviewInbox" />
         {/* The inbox reads ?kind= through useSearchParams, which needs a Suspense boundary. */}
         <Suspense fallback={null}>
           <AiReviewInbox />

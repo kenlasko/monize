@@ -773,6 +773,7 @@ function ReconcileContent() {
           subtitle={selectedAccount
             ? t('subtitleActive', { name: selectedAccount.name })
             : t('subtitle')}
+          help="reconcile"
         />
         {step === 'setup' && renderSetupStep()}
         {step === 'reconcile' && renderReconcileStep()}

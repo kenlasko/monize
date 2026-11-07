@@ -16,6 +16,7 @@ export default function SharedReviewPage() {
           <PageHeader
             title={t("reviewTitle")}
             titleAdornment={<InfoTooltip text={t("reviewLedgerBasis")} />}
+            help="sharedExpenses"
           />
           <SharedReviewContent />
         </main>

@@ -89,6 +89,7 @@ function AiSettingsContent() {
         <PageHeader
           title={t('title')}
           subtitle={t('subtitle')}
+          help="aiSettings"
         />
 
         {isDemoMode && (

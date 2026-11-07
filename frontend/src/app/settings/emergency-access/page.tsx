@@ -130,7 +130,7 @@ function EmergencyAccessContent() {
       <PageLayout>
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
           <BackToSettingsLink label={t('backLink')} />
-          <PageHeader title={t('title')} />
+          <PageHeader title={t('title')} help="emergencyAccess" />
           <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-6 mb-6">
             <p className="text-sm text-amber-700 dark:text-amber-300">
               {isDelegateView
@@ -518,7 +518,7 @@ function EmergencyAccessSection() {
     return (
       <PageLayout>
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-          <PageHeader title={t('title')} />
+          <PageHeader title={t('title')} help="emergencyAccess" />
           <p className="text-sm text-gray-600 dark:text-gray-300">
             {t('loadError')}
           </p>
@@ -552,6 +552,7 @@ function EmergencyAccessSection() {
         <PageHeader
           title={t('title')}
           subtitle={t('subtitle')}
+          help="emergencyAccess"
         />
 
         {!view.emailConfigured && (

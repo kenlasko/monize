@@ -40,7 +40,7 @@ export default function SharedJoinPage() {
   ) : (
     <PageLayout>
       <main className="mx-auto max-w-lg px-4 py-8">
-        <PageHeader title={t("joinTitle")} />
+        <PageHeader title={t("joinTitle")} help="sharedExpenses" />
         <Card padding="md">
           <p>{t("signInToJoin")}</p>
           <div className="mt-4 flex flex-wrap gap-3">
@@ -86,7 +86,7 @@ function JoinContent() {
   return (
     <PageLayout>
       <main className="mx-auto max-w-lg px-4 py-8">
-        <PageHeader title={t("joinTitle")} />
+        <PageHeader title={t("joinTitle")} help="sharedExpenses" />
         <Card padding="md">
           <div className="space-y-5">
             <SharedError

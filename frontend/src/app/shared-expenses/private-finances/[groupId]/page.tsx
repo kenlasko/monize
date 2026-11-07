@@ -13,7 +13,7 @@ export default function PrivateSharedBookingsPage() {
     <ProtectedRoute>
       <PageLayout>
         <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 space-y-5">
-          <PageHeader title={t("retainedFinance")} />
+          <PageHeader title={t("retainedFinance")} help="sharedExpenses" />
           <SharedPrivateFinances initialGroupId={groupId} />
         </main>
       </PageLayout>

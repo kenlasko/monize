@@ -24,7 +24,7 @@ export function RuleEditorScreen({ ruleId }: { ruleId?: string }) {
           <ChevronLeftIcon className="h-4 w-4" aria-hidden="true" />
           {t('backToRules')}
         </Link>
-        <PageHeader title={ruleId ? t('editTitle') : t('newTitle')} subtitle={t('subtitle')} />
+        <PageHeader title={ruleId ? t('editTitle') : t('newTitle')} subtitle={t('subtitle')} help="rules" />
         <div className="mt-6">
           <RuleEditor ruleId={ruleId} />
         </div>
