@@ -43,6 +43,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { createLogger } from '@/lib/logger';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
+import { CHART_GRID_PROPS_HORIZONTAL_BARS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 const logger = createLogger('RealizedGainsReport');
 
@@ -63,7 +64,7 @@ function CustomTooltip({ active, payload, fmtValue }: {
   const data = payload[0];
   const value = data.value;
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+    <div className={CHART_TOOLTIP_CLASS}>
       <p className="font-medium text-gray-900 dark:text-gray-100">{data.payload.symbol}</p>
       <p className={`text-sm ${gainLossColor(value)}`}>
         {value >= 0 ? '+' : ''}{fmtValue(value)}
@@ -526,7 +527,7 @@ export function RealizedGainsReport() {
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
                   <XAxis type="number" tickFormatter={formatCurrencyAxis} />
                   <YAxis type="category" dataKey="symbol" width={60} tick={{ fontSize: 12 }} />
                   <Tooltip content={<CustomTooltip fmtValue={fmtValue} />} />

@@ -28,6 +28,7 @@ import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
 import { ChartCollapseButton } from '@/components/transactions/ChartCollapseControls';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 // Desktop switches the bar-top value labels to vertical (and widens the top
 // margin) once there are more than this many bars, before wide horizontal
@@ -87,7 +88,7 @@ function MonthlyTotalTooltip({
   if (active && payload?.[0]) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
           {data.label}
         </p>
@@ -343,7 +344,7 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
           >
             {/* The token carries its own dark override, so the dark-variant
                 stroke class this used to need alongside it is gone. */}
-            <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+            <CartesianGrid {...CHART_GRID_PROPS} />
             <XAxis
               dataKey="periodStart"
               tick={{ fill: chartColors.axis, fontSize: isMobile ? 10 : 12 }}

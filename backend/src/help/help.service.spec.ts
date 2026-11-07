@@ -444,4 +444,54 @@ describe("HelpService", () => {
       await expect(service.getImage("alpha")).resolves.toBeNull();
     });
   });
+
+  describe("search", () => {
+    beforeEach(writeBundle);
+
+    it("finds a section by its heading, with the page's lead paragraph scored too", () => {
+      const { results } = service.search("alpha");
+
+      expect(results).toEqual([
+        expect.objectContaining({ page: "first-page", section: "alpha" }),
+      ]);
+    });
+
+    it("boosts a section of the given context page", () => {
+      // Both pages' lead paragraphs are "Lead."; an equal match is otherwise
+      // broken by the pages' own order (first-page before second-page).
+      const withoutContext = service.search("lead", { limit: 1 });
+      const withContext = service.search("lead", {
+        contextPage: "second-page",
+        limit: 1,
+      });
+
+      expect(withoutContext.results[0].page).toBe("first-page");
+      expect(withContext.results[0].page).toBe("second-page");
+    });
+
+    it("ignores a context page the bundle does not have, rather than refusing the search", () => {
+      const { results } = service.search("alpha", {
+        contextPage: "unknown-page",
+      });
+
+      expect(results).toEqual([
+        expect.objectContaining({ page: "first-page", section: "alpha" }),
+      ]);
+    });
+
+    it("answers nothing, not an error, when the bundle is missing", () => {
+      jest.spyOn(fs, "existsSync").mockReturnValue(false);
+
+      expect(service.search("alpha")).toEqual({ results: [], total: 0 });
+    });
+
+    it("never offers a section of a page whose file is gone", () => {
+      fs.rmSync(path.join(helpDir, "second-page.md"));
+      service = new HelpService();
+
+      const { results } = service.search("lead");
+
+      expect(results.some((r) => r.page === "second-page")).toBe(false);
+    });
+  });
 });

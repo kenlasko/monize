@@ -194,6 +194,34 @@ describe('PageHeader', () => {
     expect(actionsContainer).toBeNull();
   });
 
+  describe('registering the search context', () => {
+    it('registers its help page as the search context while mounted', () => {
+      const { unmount } = render(<PageHeader title="My Page" help="institutions" />);
+      expect(useHelpStore.getState().contextPage).toBe('accounts');
+      unmount();
+      expect(useHelpStore.getState().contextPage).toBeNull();
+    });
+
+    it('leaves the context unset when no help key is given', () => {
+      render(<PageHeader title="My Page" />);
+      expect(useHelpStore.getState().contextPage).toBeNull();
+    });
+
+    it('does not clear a newer header\'s context when an older one unmounts', () => {
+      const { unmount } = render(<PageHeader title="First" help="budgets" />);
+      render(<PageHeader title="Second" help="tags" />);
+      unmount();
+      expect(useHelpStore.getState().contextPage).toBe('tags');
+    });
+
+    it('follows a change to the help key while mounted', () => {
+      const { rerender } = render(<PageHeader title="My Page" help="budgets" />);
+      expect(useHelpStore.getState().contextPage).toBe('budgets');
+      rerender(<PageHeader title="My Page" help="tags" />);
+      expect(useHelpStore.getState().contextPage).toBe('tags');
+    });
+  });
+
   it('draws an adornment on the title line, outside the heading', () => {
     render(<PageHeader title="Laptop" titleAdornment={<span>Active</span>} />);
     const heading = screen.getByRole('heading', { name: 'Laptop' });

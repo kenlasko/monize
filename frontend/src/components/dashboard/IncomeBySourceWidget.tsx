@@ -22,7 +22,6 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { reportTotal } from '@/lib/currency-total';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
-import { chartColors } from '@/lib/chart-colors';
 import { CHART_COLOURS_INCOME } from '@/lib/chart-colours';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
@@ -33,6 +32,7 @@ import {
   SPENDING_RANGES,
   IncomeBySourceConfig,
 } from './widget-config';
+import { CHART_GRID_PROPS_HORIZONTAL_BARS } from '@/lib/chart-style';
 
 const WIDGET_ID = 'income-by-source';
 
@@ -144,7 +144,7 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
       configTitle={t('incomeBySource.title')}
     >
       {loading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : chartData.length === 0 ? (
         <WidgetMessage>{t('incomeBySource.empty')}</WidgetMessage>
       ) : (
@@ -153,7 +153,7 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               {config.chartType === 'bar' ? (
                 <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} horizontal={false} />
+                  <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
                   <XAxis type="number" tickFormatter={formatCurrencyAxis} tick={{ fontSize: 11 }} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={90} />
                   <Tooltip content={({ active, payload }) => renderTooltip(active, payload)} />

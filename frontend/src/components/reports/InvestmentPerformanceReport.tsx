@@ -51,6 +51,7 @@ import {
   sortPerformanceRows,
   type HoldingsSortField,
 } from '@/components/reports/investment-performance-rows';
+import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-investment-performance-accounts';
 
@@ -71,7 +72,7 @@ function AllocationTooltip({ active, payload, formatCurrencyFull, formatPlainPer
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100">{data.name}</p>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {formatCurrencyFull(data.value)} ({formatPlainPercent(data.percentage, 1)})

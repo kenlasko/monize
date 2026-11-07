@@ -25,6 +25,8 @@ import { chartColors, CHART_SERIES } from '@/lib/chart-colors';
 import { useTranslations } from 'next-intl';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { gainLossColor } from '@/lib/format';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 /**
  * The `month` member names the COLUMN (and the key its stored sort preference
@@ -264,7 +266,7 @@ export function HealthScoreHistoryReport() {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="monthKey"
                   tick={{ fontSize: 12 }}
@@ -278,7 +280,7 @@ export function HealthScoreHistoryReport() {
                     if (!point) return null;
                     const grade = getScoreGrade(point.score);
                     return (
-                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                      <div className={CHART_TOOLTIP_CLASS}>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatChartMonth(String(label))}</p>
                         <p className="text-lg font-bold" style={{ color: getScoreColor(point.score) }}>
                           {point.score} - {grade.label}
@@ -290,6 +292,7 @@ export function HealthScoreHistoryReport() {
                 <ReferenceLine y={80} stroke={chartColors.income} strokeDasharray="3 3" label={{ value: t('healthScoreHistory.refLineGood'), position: 'right', fill: chartColors.income, fontSize: 11 }} />
                 <ReferenceLine y={60} stroke={chartColors.warning} strokeDasharray="3 3" label={{ value: t('healthScoreHistory.refLineFair'), position: 'right', fill: chartColors.warning, fontSize: 11 }} />
                 <Line
+                  activeDot={ChartActiveDot}
                   type="monotone"
                   dataKey="score"
                   stroke={chartColors.primary}

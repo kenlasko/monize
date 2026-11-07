@@ -5,36 +5,39 @@ merged. Check a box only when its gate passes and is quoted in the commit or PR.
 
 ## Backend
 
-- [ ] `help-search.ts`: normalisation, prefix on the last token, weighted
+- [x] `help-search.ts`: normalisation, prefix on the last token, weighted
       scoring, context boost, synonym table, plain-text excerpt.
-- [ ] `HelpService.search` and `GET /help/search` with a bounded, whitelisted
+- [x] `HelpService.search` and `GET /help/search` with a bounded, whitelisted
       query DTO.
 
 ## Backend tests
 
-- [ ] Scorer unit tests listed in the plan.
-- [ ] Real-question fixture: each question's expected section in the top three.
-- [ ] Controller validation and public-access spec.
+- [x] Scorer unit tests listed in the plan.
+- [x] Real-question fixture: each question's expected section in the top three.
+- [x] Controller validation and public-access spec.
 
 ## Frontend
 
-- [ ] `isEditableTarget` helper and one global listener for `Ctrl/Cmd+K` and `?`.
-- [ ] `PageHeader` registers its `help` key as the search context.
-- [ ] `HelpSearchDialog` on `Modal`: empty-query context list, debounced search,
+- [x] `isEditableTarget` helper and one global listener for `Ctrl/Cmd+K` and `?`.
+- [x] `PageHeader` registers its `help` key as the search context.
+- [x] `HelpSearchDialog` on `Modal`: empty-query context list, debounced search,
       responses tied to their query, listbox keyboard navigation, Enter opens
       the panel, error state.
-- [ ] `help` namespace additions: English, pseudo-locale, every locale.
+- [x] `help` namespace additions: English, pseudo-locale, every locale.
 
 ## Tests
 
-- [ ] Dialog and listener unit tests listed in the plan.
-- [ ] E2E: `?` on Transactions; "backup" search opens Backup and restore.
+- [x] Dialog and listener unit tests listed in the plan.
+- [x] E2E: `?` on Transactions; "backup" search opens Backup and restore (chromium and firefox).
 
 ## Docs
 
-- [ ] User guide mentions the shortcuts.
-- [ ] `docs/frontend/ui-conventions.md`: global shortcuts and the editable-target rule.
+- [x] User guide mentions the shortcuts.
+- [x] `docs/frontend/ui-conventions.md`: global shortcuts and the editable-target rule.
 
 ## Verification
 
-- [ ] Backend and frontend gates green, quoted.
+- [x] Backend and frontend gates green, quoted: backend lint+tsc+typecheck,
+      `test:changed` (76/76 specs); frontend lint+type-check+i18n:check,
+      `test:changed` (883 files, 16388 tests) and `build`; e2e
+      `help-search.spec.ts` on chromium and firefox.

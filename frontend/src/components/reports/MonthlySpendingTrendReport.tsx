@@ -34,6 +34,8 @@ import { exportToCsv } from "@/lib/csv-export";
 import { chartColors } from "@/lib/chart-colors";
 import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 type MonthlySpendingSortField = 'name' | 'income' | 'expenses' | 'net';
 
@@ -347,7 +349,7 @@ export function MonthlySpendingTrendReport() {
                   onClick={handleChartClick}
                   style={{ cursor: "pointer" }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid {...CHART_GRID_PROPS} />
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 12 }}
@@ -367,7 +369,7 @@ export function MonthlySpendingTrendReport() {
                     stroke={chartColors.expense}
                     strokeWidth={2}
                     dot={{ fill: chartColors.expense, strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6 }}
+                    activeDot={ChartActiveDot}
                   />
                   <Line
                     type="monotone"
@@ -375,7 +377,7 @@ export function MonthlySpendingTrendReport() {
                     stroke={chartColors.income}
                     strokeWidth={2}
                     dot={{ fill: chartColors.income, strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6 }}
+                    activeDot={ChartActiveDot}
                   />
                 </LineChart>
               </ResponsiveContainer>

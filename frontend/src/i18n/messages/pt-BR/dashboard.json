@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Bem-vindo",
-    "welcomeWithName": "Bem-vindo, {name}!",
-    "subtitle": "Aqui está a sua visão geral financeira"
+    "greeting": {
+      "morning": "Bom dia",
+      "morningWithName": "Bom dia, {name}",
+      "afternoon": "Boa tarde",
+      "afternoonWithName": "Boa tarde, {name}",
+      "evening": "Boa noite",
+      "eveningWithName": "Boa noite, {name}"
+    }
+  },
+  "hero": {
+    "label": "Resumo do patrimônio líquido",
+    "netWorth": "Patrimônio líquido",
+    "changeThisMonth": "<dir>{direction, select, up {Subiu} other {Caiu}}</dir> {amount} este mês",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {Subiu} other {Caiu}}</dir> {amount} · {percent} este mês",
+    "assets": "<strong><value></value></strong> em ativos",
+    "liabilities": "<strong><value></value></strong> em passivos",
+    "invested": "<strong><value></value></strong> investidos",
+    "investedUnpriced": "Sem preço atual para {symbols}, então essas posições não estão incluídas. Atualize os preços na página Investimentos, ou adicione um no histórico de preços do título.",
+    "portfolioLabel": "Resumo da carteira",
+    "portfolioValueFor": "Valor da carteira <names>({accounts})</names>",
+    "portfolioEmpty": "Ainda não há contas de investimento. Adicione uma para ver sua carteira aqui.",
+    "portfolioLoadFailed": "Não foi possível carregar sua carteira. Recarregue o painel para tentar de novo.",
+    "portfolioChangeFailed": "Não foi possível carregar a variação deste período. Recarregue o painel para tentar de novo.",
+    "changeOverWindow": "<dir>{direction, select, up {Subiu} other {Caiu}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> em posições",
+    "cash": "<strong><value></value></strong> em caixa",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Retorno Simples",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "A CAGR precisa de pelo menos um ano de histórico de investimento nestas contas, com mais aportes do que resgates.",
+    "intradayUnavailable": "Algumas destas posições não têm preços intradiários, então não é possível desenhar um gráfico de um dia. Escolha um período mais longo em Personalizar."
   },
   "favouriteAccounts": {
     "title": "Contas Favoritas",
@@ -181,6 +213,24 @@
     "reset": "Restaurar padrão",
     "toasts": {
       "saveFailed": "Falha ao salvar o layout do painel"
+    },
+    "hero": {
+      "title": "Destaque do painel",
+      "description": "Os números e o gráfico abaixo da saudação: seu patrimônio líquido ou sua carteira.",
+      "show": "Mostrar o destaque do painel",
+      "range": "Gráfico",
+      "set": "Mostrar",
+      "sets": {
+        "netWorth": "Patrimônio líquido",
+        "portfolio": "Valor da carteira"
+      },
+      "metric": "Indicador",
+      "metrics": {
+        "simpleReturn": "Retorno Simples",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Descrição",
     "descriptionPlaceholder": "Adicione uma descrição opcional",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

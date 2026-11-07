@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Benvenuto",
-    "welcomeWithName": "Benvenuto, {name}!",
-    "subtitle": "Ecco il riepilogo delle tue finanze"
+    "greeting": {
+      "morning": "Buongiorno",
+      "morningWithName": "Buongiorno, {name}",
+      "afternoon": "Buon pomeriggio",
+      "afternoonWithName": "Buon pomeriggio, {name}",
+      "evening": "Buonasera",
+      "eveningWithName": "Buonasera, {name}"
+    }
+  },
+  "hero": {
+    "label": "Riepilogo del patrimonio netto",
+    "netWorth": "Patrimonio netto",
+    "changeThisMonth": "<dir>{direction, select, up {In aumento di} other {In calo di}}</dir> {amount} questo mese",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {In aumento di} other {In calo di}}</dir> {amount} · {percent} questo mese",
+    "assets": "<strong><value></value></strong> di attività",
+    "liabilities": "<strong><value></value></strong> di passività",
+    "invested": "<strong><value></value></strong> investiti",
+    "investedUnpriced": "Nessun prezzo attuale per {symbols}, quindi quelle posizioni non sono incluse. Aggiorna i prezzi nella pagina Investimenti, o aggiungine uno nello storico prezzi del titolo.",
+    "portfolioLabel": "Riepilogo del portafoglio",
+    "portfolioValueFor": "Valore del portafoglio <names>({accounts})</names>",
+    "portfolioEmpty": "Nessun conto di investimento. Aggiungine uno per vedere qui il tuo portafoglio.",
+    "portfolioLoadFailed": "Impossibile caricare il portafoglio. Ricarica la dashboard per riprovare.",
+    "portfolioChangeFailed": "Impossibile caricare la variazione di questo periodo. Ricarica la dashboard per riprovare.",
+    "changeOverWindow": "<dir>{direction, select, up {In aumento di} other {In calo di}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> in posizioni",
+    "cash": "<strong><value></value></strong> in liquidità",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Rendimento semplice",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "Il CAGR richiede almeno un anno di storico degli investimenti in questi conti, con più versamenti che prelievi.",
+    "intradayUnavailable": "Alcune di queste posizioni non hanno prezzi intraday, quindi non si può tracciare un grafico di un giorno. Scegli un periodo più lungo in Personalizza."
   },
   "favouriteAccounts": {
     "title": "Conti preferiti",
@@ -181,6 +213,24 @@
     "reset": "Ripristina predefiniti",
     "toasts": {
       "saveFailed": "Impossibile salvare il layout del pannello"
+    },
+    "hero": {
+      "title": "Intestazione della dashboard",
+      "description": "Le cifre e il grafico sotto il saluto: il tuo patrimonio netto o il tuo portafoglio.",
+      "show": "Mostra l’intestazione della dashboard",
+      "range": "Grafico",
+      "set": "Mostra",
+      "sets": {
+        "netWorth": "Patrimonio netto",
+        "portfolio": "Valore del portafoglio"
+      },
+      "metric": "Indicatore",
+      "metrics": {
+        "simpleReturn": "Rendimento semplice",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Descrizione",
     "descriptionPlaceholder": "Aggiungi una descrizione facoltativa",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

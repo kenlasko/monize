@@ -41,6 +41,7 @@ import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { ReportError } from '@/components/reports/ReportError';
 import { useTranslations } from 'next-intl';
 import { chartColors } from '@/lib/chart-colors';
+import { CHART_GRID_PROPS_HORIZONTAL_BARS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 type CreditUtilizationSortField =
   | 'name'
@@ -432,7 +433,7 @@ export function CreditUtilizationReport() {
               <div className="absolute inset-0">
                 <ResponsiveContainer minWidth={0}>
                   <BarChart data={sortedRows} layout="vertical" margin={{ left: 8, right: 24 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} horizontal={false} />
+                    <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
                     <XAxis
                       type="number"
                       domain={[0, 100]}
@@ -450,7 +451,7 @@ export function CreditUtilizationReport() {
                         if (!active || !payload?.length) return null;
                         const row = payload[0].payload as CreditUtilizationRow;
                         return (
-                          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                          <div className={CHART_TOOLTIP_CLASS}>
                             <p className="font-medium text-gray-900 dark:text-gray-100">{row.name}</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
                               {t('creditUtilization.tooltipUtilization')}: {formatPercent(row.utilizationPercent, 1)}
@@ -503,7 +504,7 @@ export function CreditUtilizationReport() {
                       if (!active || !payload?.length) return null;
                       const slice = payload[0].payload as TotalUtilizationSlice;
                       return (
-                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                        <div className={CHART_TOOLTIP_CLASS}>
                           <p className="font-medium text-gray-900 dark:text-gray-100">{slice.name}</p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
                             {formatCurrency(slice.value, displayCurrency)} ({formatPercent(slice.percent, 1)})

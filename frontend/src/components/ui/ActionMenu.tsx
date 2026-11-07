@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { MENU_ENTER_CLASS, MENU_ORIGIN_RIGHT } from '@/components/ui/menu-motion';
 
 /** One row in the menu. A disabled item stays listed but cannot be chosen. */
 export interface ActionMenuItem {
@@ -88,7 +89,7 @@ export function ActionMenu({
         <div
           role="menu"
           aria-label={label}
-          className="absolute right-0 mt-1 w-full sm:w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50"
+          className={`absolute right-0 mt-1 w-full sm:w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 ${MENU_ENTER_CLASS} ${MENU_ORIGIN_RIGHT}`}
         >
           {items.map((item, index) => (
             <button

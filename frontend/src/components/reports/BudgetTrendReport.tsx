@@ -23,6 +23,8 @@ import { ReportError } from '@/components/reports/ReportError';
 import { chartColors } from '@/lib/chart-colors';
 import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 
 export function BudgetTrendReport() {
@@ -158,14 +160,14 @@ export function BudgetTrendReport() {
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <CartesianGrid {...CHART_GRID_PROPS} />
                   <XAxis dataKey="monthKey" tick={{ fontSize: 12 }} tickFormatter={(value: string) => formatChartMonth(value)} />
                   <YAxis tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 12 }} />
                   <Tooltip
                     content={({ active, payload, label }) => {
                       if (!active || !payload || payload.length === 0) return null;
                       return (
-                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                        <div className={CHART_TOOLTIP_CLASS}>
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{formatChartMonth(String(label))}</p>
                           {payload.map((entry) => (
                             <p key={entry.dataKey as string} className="text-sm" style={{ color: entry.color }}>
@@ -178,6 +180,7 @@ export function BudgetTrendReport() {
                   />
                   <Legend />
                   <Line
+                    activeDot={ChartActiveDot}
                     type="monotone"
                     dataKey="budgeted"
                     stroke={chartColors.primary}
@@ -187,6 +190,7 @@ export function BudgetTrendReport() {
                     name={t('budgetTrend.seriesBudgeted')}
                   />
                   <Line
+                    activeDot={ChartActiveDot}
                     type="monotone"
                     dataKey="actual"
                     stroke={chartColors.income}

@@ -24,6 +24,7 @@ import { WeightingPartialNote } from '@/components/reports/WeightingPartialNote'
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
 import { SECTOR_WEIGHTINGS_DEFAULT, AccountsConfig } from './widget-config';
+import { CHART_GRID_PROPS_HORIZONTAL_BARS } from '@/lib/chart-style';
 
 const WIDGET_ID = 'sector-weightings';
 
@@ -90,7 +91,7 @@ export function SectorWeightingsWidget({ accounts, isLoading }: SectorWeightings
       configTitle={t('sectorWeightings.title')}
     >
       {loading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : chartData.length === 0 ? (
         <WidgetMessage>{t('sectorWeightings.empty')}</WidgetMessage>
       ) : (
@@ -102,7 +103,7 @@ export function SectorWeightingsWidget({ accounts, isLoading }: SectorWeightings
         >
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 10, left: 0, bottom: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} horizontal={false} />
+              <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
               <XAxis type="number" tickFormatter={formatCurrencyAxis} tick={{ fontSize: 11 }} />
               <YAxis type="category" dataKey="sector" width={100} tick={{ fontSize: 11 }} />
               <Tooltip

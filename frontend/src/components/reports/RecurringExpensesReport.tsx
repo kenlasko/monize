@@ -39,6 +39,7 @@ import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { isComplete, reportTotal, type ConvertedTotal } from '@/lib/currency-total';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 type RecurringSortField = 'payee' | 'category' | 'frequency' | 'count' | 'average' | 'total' | 'lastPaid';
 
@@ -218,7 +219,7 @@ function RecurringExpenseTooltip({ active, payload, formatCurrency, frequencyLab
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100">{data.payeeName}</p>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {t('recurringExpenses.tooltipTransactions', {

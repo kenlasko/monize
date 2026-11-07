@@ -174,7 +174,7 @@ export function CashFlowSankeyWidget({ accounts, isLoading }: CashFlowSankeyWidg
       configTitle={t('cashFlowSankey.title')}
     >
       {loading ? (
-        <div className="flex-1 min-h-[300px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[300px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : !data ? (
         <WidgetMessage>{t('cashFlowSankey.empty')}</WidgetMessage>
       ) : (

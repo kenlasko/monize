@@ -127,6 +127,9 @@ import {
   breakdownInvestedValue,
 } from '@/lib/invested-value';
 import { preferredCurrency } from '@/lib/default-currency';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
 
 const logger = createLogger('PortfolioValueReport');
 
@@ -173,7 +176,7 @@ function CustomTooltip({ active, payload, fmtFull, portfolioLabel }: {
   if (!active || !payload?.length) return null;
   const data = payload[0]?.payload;
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+    <div className={CHART_TOOLTIP_CLASS}>
       <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{data?.name}</p>
       <p className="text-sm text-emerald-600 dark:text-emerald-400">
         {portfolioLabel} {fmtFull(payload[0].value)}
@@ -196,7 +199,7 @@ function SecuritiesTooltip({ active, payload, fmtFull, totalLabel }: {
     .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
   const total = payload.reduce((sum, e) => sum + (e.value ?? 0), 0);
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 max-h-72 overflow-y-auto">
+    <div className={`${CHART_TOOLTIP_CLASS} max-h-72 overflow-y-auto`}>
       <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{name}</p>
       {entries.map((e, i) => (
         <p key={i} className="text-sm flex items-center gap-2" style={{ color: e.color }}>
@@ -1558,7 +1561,7 @@ export function PortfolioValueReport() {
             >
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <AreaChart data={stackedChartData} margin={{ top: 20, right: 30, left: 0, bottom: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid {...CHART_GRID_PROPS} />
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 12 }}
@@ -1570,6 +1573,7 @@ export function PortfolioValueReport() {
                   <Legend />
                   {securitiesSeries.map((s) => (
                     <Area
+                      activeDot={ChartActiveDot}
                       key={s.key}
                       type="monotone"
                       dataKey={s.key}
@@ -1640,13 +1644,10 @@ export function PortfolioValueReport() {
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <AreaChart data={chartPoints} margin={{ top: 30, right: 30, left: 0, bottom: 30 }}>
                 <defs>
-                  <linearGradient id="colorPortfolioValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={chartColors.income} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={chartColors.income} stopOpacity={0} />
-                  </linearGradient>
+                  <ChartAreaGradient id="colorPortfolioValue" color={chartColors.income} />
                 </defs>
                 <ChartFlagShadowFilter />
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 12 }}
@@ -1660,6 +1661,7 @@ export function PortfolioValueReport() {
                 />
                 <Tooltip content={<CustomTooltip fmtFull={fmtFull} portfolioLabel={t('portfolioValue.tooltipPortfolio')} />} />
                 <Area
+                  activeDot={ChartActiveDot}
                   type="monotone"
                   dataKey="Value"
                   connectNulls={false}

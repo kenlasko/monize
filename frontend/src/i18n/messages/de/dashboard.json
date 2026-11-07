@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Willkommen",
-    "welcomeWithName": "Willkommen, {name}!",
-    "subtitle": "Hier ist Ihre Finanzübersicht"
+    "greeting": {
+      "morning": "Guten Morgen",
+      "morningWithName": "Guten Morgen, {name}",
+      "afternoon": "Guten Tag",
+      "afternoonWithName": "Guten Tag, {name}",
+      "evening": "Guten Abend",
+      "eveningWithName": "Guten Abend, {name}"
+    }
+  },
+  "hero": {
+    "label": "Nettovermögen im Überblick",
+    "netWorth": "Nettovermögen",
+    "changeThisMonth": "<dir>{direction, select, up {Gestiegen um} other {Gesunken um}}</dir> {amount} in diesem Monat",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {Gestiegen um} other {Gesunken um}}</dir> {amount} · {percent} in diesem Monat",
+    "assets": "<strong><value></value></strong> Vermögen",
+    "liabilities": "<strong><value></value></strong> Verbindlichkeiten",
+    "invested": "<strong><value></value></strong> investiert",
+    "investedUnpriced": "Kein aktueller Kurs für {symbols}, daher sind diese Positionen nicht enthalten. Aktualisieren Sie die Kurse auf der Seite „Investments“ oder tragen Sie einen im Kursverlauf des Wertpapiers ein.",
+    "portfolioLabel": "Portfolioübersicht",
+    "portfolioValueFor": "Portfoliowert <names>({accounts})</names>",
+    "portfolioEmpty": "Noch keine Anlagekonten. Fügen Sie eines hinzu, um Ihr Portfolio hier zu sehen.",
+    "portfolioLoadFailed": "Ihr Portfolio konnte nicht geladen werden. Laden Sie das Dashboard neu, um es erneut zu versuchen.",
+    "portfolioChangeFailed": "Die Veränderung in diesem Zeitraum konnte nicht geladen werden. Laden Sie das Dashboard neu, um es erneut zu versuchen.",
+    "changeOverWindow": "<dir>{direction, select, up {Gestiegen um} other {Gesunken um}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> Depot",
+    "cash": "<strong><value></value></strong> Barmittel",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Einfache Rendite",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "Die CAGR braucht mindestens ein Jahr Anlagehistorie in diesen Konten, mit mehr Einzahlungen als Entnahmen.",
+    "intradayUnavailable": "Für einige dieser Positionen gibt es keine Intraday-Kurse, daher kann kein Tagesdiagramm gezeichnet werden. Wählen Sie unter „Anpassen“ einen längeren Zeitraum."
   },
   "favouriteAccounts": {
     "title": "Favoritenkonten",
@@ -181,6 +213,24 @@
     "reset": "Auf Standard zurücksetzen",
     "toasts": {
       "saveFailed": "Dashboard-Layout konnte nicht gespeichert werden"
+    },
+    "hero": {
+      "title": "Dashboard-Kopfbereich",
+      "description": "Die Kennzahlen und das Diagramm unter der Begrüßung: Ihr Nettovermögen oder Ihr Portfolio.",
+      "show": "Dashboard-Kopfbereich anzeigen",
+      "range": "Diagramm",
+      "set": "Anzeigen",
+      "sets": {
+        "netWorth": "Nettovermögen",
+        "portfolio": "Portfoliowert"
+      },
+      "metric": "Kennzahl",
+      "metrics": {
+        "simpleReturn": "Einfache Rendite",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Beschreibung",
     "descriptionPlaceholder": "Optionale Beschreibung hinzufügen",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

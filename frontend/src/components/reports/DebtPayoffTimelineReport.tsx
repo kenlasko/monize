@@ -46,6 +46,8 @@ import { useTranslations } from 'next-intl';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 interface PayoffScheduleItem {
   date: string;
@@ -104,7 +106,7 @@ function DebtPayoffTooltip({ active, payload, label, payoffSchedule, formatCurre
       return true;
     });
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
           {label === undefined ? '' : axisTickLabel(label)}{' '}
           {isProjected && <span className="text-xs text-blue-500 dark:text-blue-400">{t('debtPayoff.projected')}</span>}
@@ -774,7 +776,7 @@ export function DebtPayoffTimelineReport() {
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <AreaChart data={chartSchedule}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                    <CartesianGrid {...CHART_GRID_PROPS} />
                     <XAxis
                       dataKey="axisKey"
                       tickFormatter={axisTickLabel}
@@ -795,6 +797,7 @@ export function DebtPayoffTimelineReport() {
                       }
                     />
                     <Area
+                      activeDot={ChartActiveDot}
                       type="monotone"
                       dataKey="historicalBalance"
                       stroke={chartColors.expense}
@@ -806,6 +809,7 @@ export function DebtPayoffTimelineReport() {
                     />
                     {projectionStartAxisKey && (
                       <Area
+                        activeDot={ChartActiveDot}
                         type="monotone"
                         dataKey="projectedBalance"
                         stroke={chartColors.primary}
@@ -840,7 +844,7 @@ export function DebtPayoffTimelineReport() {
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={chartSchedule}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                    <CartesianGrid {...CHART_GRID_PROPS} />
                     <XAxis
                       dataKey="axisKey"
                       tickFormatter={axisTickLabel}
@@ -896,7 +900,7 @@ export function DebtPayoffTimelineReport() {
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={distributionData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                    <CartesianGrid {...CHART_GRID_PROPS} />
                     <XAxis
                       dataKey="axisKey"
                       tickFormatter={axisTickLabel}
@@ -913,7 +917,7 @@ export function DebtPayoffTimelineReport() {
                         if (active && payload && payload.length) {
                           const data = distributionData.find((d) => d.axisKey === tooltipLabel);
                           return (
-                            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                            <div className={CHART_TOOLTIP_CLASS}>
                               <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
                                 {data?.label ?? tooltipLabel}{' '}
                                 {data?.isProjected && (

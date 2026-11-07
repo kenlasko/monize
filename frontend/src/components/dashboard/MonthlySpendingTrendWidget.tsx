@@ -30,6 +30,8 @@ import {
   TREND_RANGES,
   RangeConfig,
 } from './widget-config';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 const WIDGET_ID = 'monthly-spending-trend';
 
@@ -98,7 +100,7 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
       configTitle={t('monthlySpendingTrend.title')}
     >
       {loading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : chartData.length === 0 ? (
         <WidgetMessage>{t('monthlySpendingTrend.empty')}</WidgetMessage>
       ) : (
@@ -111,7 +113,7 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
         <div className="flex-1 min-h-[260px]">
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <LineChart data={chartData} margin={{ left: 4, right: 8, top: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+              <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis
                 dataKey="name"
                 tickFormatter={(value) => chartData.find((d) => d.name === value)?.fullName ?? String(value)}
@@ -132,6 +134,7 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
               />
               <Legend />
               <Line
+                activeDot={ChartActiveDot}
                 type="monotone"
                 dataKey="Expenses"
                 name={t('monthlySpendingTrend.expenses')}
@@ -140,6 +143,7 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
                 dot={false}
               />
               <Line
+                activeDot={ChartActiveDot}
                 type="monotone"
                 dataKey="Income"
                 name={t('monthlySpendingTrend.income')}

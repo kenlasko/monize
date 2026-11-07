@@ -42,6 +42,7 @@ import { periodResultUnknownReason } from '@/components/investments/portfolio-pe
 import { parseLocalDate } from '@/lib/utils';
 import type { InvestmentAccountPerformance } from '@/types/monthly-comparison';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
 
 type ComparisonSortField = 'category' | 'current' | 'previous' | 'change' | 'changePercent';
 type TopMoversSortField = 'symbol' | 'name' | 'price' | 'change' | 'changePercent';
@@ -211,7 +212,7 @@ export function MonthlyComparisonReport() {
     return (
       <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-          <div className="animate-pulse flex items-center justify-center gap-4">
+          <div className="animate-pulse skeleton-shimmer flex items-center justify-center gap-4">
             <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
             <div className="h-8 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
             <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -677,7 +678,7 @@ export function MonthlyComparisonReport() {
                   // A month the server could not fully convert is a gap, never a dip.
                   netWorth: p.fxComplete === false ? null : Math.round(p.netWorth),
                 }))} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid {...CHART_GRID_PROPS} />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tickFormatter={formatCurrencyAxis} tick={{ fontSize: 12 }} />
                   <Tooltip
@@ -751,7 +752,7 @@ export function MonthlyComparisonReport() {
                       margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
                       layout="vertical"
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                      <CartesianGrid {...CHART_GRID_PROPS} />
                       {/* Fractional ticks keep a decimal: forcing 0 would print a
                           narrow range (0.4%, 0.9%, 1.2%) as "0%", "1%", "1%". */}
                       <XAxis type="number" tickFormatter={(v: number) => formatPercent(v, Number.isInteger(v) ? 0 : 1)} tick={{ fontSize: 12 }} />

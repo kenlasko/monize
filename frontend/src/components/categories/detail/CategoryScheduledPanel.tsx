@@ -35,7 +35,7 @@ export function CategoryScheduledPanel({ items, isLoading }: CategoryScheduledPa
       </div>
       <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
         {isLoading ? (
-          <div className="h-24 animate-pulse rounded bg-gray-100 dark:bg-gray-700" />
+          <div className="h-24 animate-pulse skeleton-shimmer rounded bg-gray-100 dark:bg-gray-700" />
         ) : items.length === 0 ? (
           <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
             {t('scheduledPanel.empty')}

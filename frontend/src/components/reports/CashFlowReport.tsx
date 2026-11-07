@@ -49,6 +49,7 @@ import { periodBalanceFields, taggedBalanceWindow } from "@/lib/tagged-balance";
 import { useTaggedFlowBucket } from "@/hooks/useTaggedFlowBucket";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { flowBarStack } from "@/lib/tagged-flow-stack";
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-cash-flow-accounts';
 const INCLUDE_TRANSFERS_STORAGE_KEY = 'monize-reports-cash-flow-stack-tagged';
@@ -447,7 +448,7 @@ export function CashFlowReport() {
               onClick={handleChartClick}
               style={{ cursor: "pointer" }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+              <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis
                 dataKey="name"
                 tick={{ fontSize: 12 }}

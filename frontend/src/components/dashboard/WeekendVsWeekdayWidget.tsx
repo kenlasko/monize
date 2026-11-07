@@ -22,7 +22,7 @@ import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { reportTotal } from '@/lib/currency-total';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
-import { chartColors, CHART_SERIES } from '@/lib/chart-colors';
+import { CHART_SERIES } from '@/lib/chart-colors';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
@@ -32,6 +32,7 @@ import {
   WEEKEND_RANGES,
   WeekendConfig,
 } from './widget-config';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
 
 const WIDGET_ID = 'weekend-weekday';
 const WEEKEND_COLOR = CHART_SERIES[4];
@@ -129,14 +130,14 @@ export function WeekendVsWeekdayWidget({ isLoading }: WeekendVsWeekdayWidgetProp
       configTitle={t('weekendVsWeekday.title')}
     >
       {loading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : totalSpending === 0 ? (
         <WidgetMessage>{t('weekendVsWeekday.empty')}</WidgetMessage>
       ) : config.view === 'byDay' ? (
         <div className="flex-1 min-h-[260px]">
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart data={dayData} margin={{ left: 4, right: 8, top: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+              <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis dataKey="day" tick={{ fontSize: 11 }} />
               <YAxis tickFormatter={formatCurrencyAxis} tick={{ fontSize: 11 }} width={56} />
               <Tooltip

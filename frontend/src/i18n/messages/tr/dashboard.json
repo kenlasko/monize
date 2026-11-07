@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Hoş geldiniz",
-    "welcomeWithName": "Hoş geldiniz, {name}!",
-    "subtitle": "Finansal özetiniz burada"
+    "greeting": {
+      "morning": "Günaydın",
+      "morningWithName": "Günaydın, {name}",
+      "afternoon": "İyi günler",
+      "afternoonWithName": "İyi günler, {name}",
+      "evening": "İyi akşamlar",
+      "eveningWithName": "İyi akşamlar, {name}"
+    }
+  },
+  "hero": {
+    "label": "Net değer özeti",
+    "netWorth": "Net değer",
+    "changeThisMonth": "Bu ay {amount} <dir>{direction, select, up {arttı} other {azaldı}}</dir>",
+    "changeThisMonthWithPercent": "Bu ay {amount} · {percent} <dir>{direction, select, up {arttı} other {azaldı}}</dir>",
+    "assets": "<strong><value></value></strong> varlık",
+    "liabilities": "<strong><value></value></strong> borç",
+    "invested": "<strong><value></value></strong> yatırım",
+    "investedUnpriced": "{symbols} için güncel fiyat yok, bu nedenle bu varlıklar dahil edilmedi. Yatırımlar sayfasında fiyatları yenileyin veya menkul kıymetin fiyat geçmişine bir fiyat ekleyin.",
+    "portfolioLabel": "Portföy özeti",
+    "portfolioValueFor": "Portföy değeri <names>({accounts})</names>",
+    "portfolioEmpty": "Henüz yatırım hesabı yok. Portföyünüzü burada görmek için bir hesap ekleyin.",
+    "portfolioLoadFailed": "Portföyünüz yüklenemedi. Yeniden denemek için panoyu yenileyin.",
+    "portfolioChangeFailed": "Bu dönemdeki değişim yüklenemedi. Yeniden denemek için panoyu yenileyin.",
+    "changeOverWindow": "{amount} · {window} <dir>{direction, select, up {arttı} other {azaldı}}</dir>",
+    "holdings": "<strong><value></value></strong> varlık",
+    "cash": "<strong><value></value></strong> nakit",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Basit Getiri",
+      "twr": "ZAG",
+      "mwr": "MWR",
+      "cagr": "BYOB"
+    },
+    "cagrUnavailable": "CAGR için bu hesaplarda en az bir yıllık yatırım geçmişi ve çekilenden fazla yatırılan tutar gerekir.",
+    "intradayUnavailable": "Bu varlıkların bazılarının gün içi fiyatı yok, bu nedenle bir günlük grafik çizilemiyor. Özelleştir bölümünden daha uzun bir dönem seçin."
   },
   "favouriteAccounts": {
     "title": "Favori Hesaplar",
@@ -181,6 +213,24 @@
     "reset": "Varsayılana sıfırla",
     "toasts": {
       "saveFailed": "Pano düzeni kaydedilemedi"
+    },
+    "hero": {
+      "title": "Pano başlığı",
+      "description": "Selamlamanın altındaki rakamlar ve grafik: net değeriniz veya portföyünüz.",
+      "show": "Pano başlığını göster",
+      "range": "Grafik",
+      "set": "Göster",
+      "sets": {
+        "netWorth": "Net değer",
+        "portfolio": "Portföy değeri"
+      },
+      "metric": "Gösterge",
+      "metrics": {
+        "simpleReturn": "Basit Getiri",
+        "twr": "ZAG",
+        "mwr": "MWR",
+        "cagr": "BYOB"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Açıklama",
     "descriptionPlaceholder": "İsteğe bağlı bir açıklama ekleyin",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

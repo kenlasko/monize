@@ -7,6 +7,7 @@ import { INTERACTIVE_ROW_FOCUS_CLASS } from '@/components/ui/interactive-row';
 import { LIST_TOOLBAR_BUTTON_CLASS } from '@/components/ui/ListTopToolbar';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { MENU_ENTER_CLASS, MENU_ORIGIN_RIGHT } from '@/components/ui/menu-motion';
 
 /** One hideable column, with the label its header shows. */
 export interface ColumnChooserItem<C extends string> {
@@ -168,7 +169,7 @@ export function ColumnChooserMenu<C extends string>({
           role="menu"
           aria-label={t('columns.menuLabel')}
           onKeyDown={handleMenuKeyDown}
-          className="absolute right-0 mt-1 w-56 max-sm:fixed max-sm:inset-x-2 max-sm:w-auto py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50"
+          className={`absolute right-0 mt-1 w-56 max-sm:fixed max-sm:inset-x-2 max-sm:w-auto py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 ${MENU_ENTER_CLASS} ${MENU_ORIGIN_RIGHT}`}
         >
           {columns.map((column) => {
             const visible = !hidden.has(column.id);

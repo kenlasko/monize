@@ -26,6 +26,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
 import { ChartCollapseButton } from '@/components/transactions/ChartCollapseControls';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 
 // When the largest bar is at least this many times taller than the smallest,
@@ -104,7 +105,7 @@ function AccountBalanceTooltip({
   if (active && payload?.[0]) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
           {data.accountName}
         </p>
@@ -294,7 +295,7 @@ export function AccountBalancesBarChart({
           >
             {/* The token carries its own dark override, so the dark-variant
                 stroke class this used to need alongside it is gone. */}
-            <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+            <CartesianGrid {...CHART_GRID_PROPS} />
             <XAxis
               dataKey="accountName"
               tick={

@@ -23,6 +23,20 @@
       "heading": "ヘルプを読み込めませんでした",
       "body": "ガイドを読み込めませんでした。もう一度お試しいただくか、このページを monize.net でご覧ください。",
       "retry": "再試行"
+    },
+    "search": "ガイドを検索"
+  },
+  "search": {
+    "title": "ガイドを検索",
+    "placeholder": "ガイドを検索",
+    "ariaLabel": "ガイドを検索",
+    "contextHeading": "この画面のヘルプ",
+    "noResults": "「{query}」の結果はありません",
+    "error": "検索に失敗しました。もう一度お試しください。",
+    "hint": {
+      "navigate": "で移動",
+      "select": "で選択",
+      "close": "で閉じる"
     }
   },
   "markdown": {

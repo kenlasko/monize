@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "欢迎",
-    "welcomeWithName": "欢迎，{name}！",
-    "subtitle": "这是您的财务概览"
+    "greeting": {
+      "morning": "早上好",
+      "morningWithName": "早上好，{name}",
+      "afternoon": "下午好",
+      "afternoonWithName": "下午好，{name}",
+      "evening": "晚上好",
+      "eveningWithName": "晚上好，{name}"
+    }
+  },
+  "hero": {
+    "label": "净资产概览",
+    "netWorth": "净资产",
+    "changeThisMonth": "本月<dir>{direction, select, up {增加} other {减少}}</dir> {amount}",
+    "changeThisMonthWithPercent": "本月<dir>{direction, select, up {增加} other {减少}}</dir> {amount} · {percent}",
+    "assets": "资产 <strong><value></value></strong>",
+    "liabilities": "负债 <strong><value></value></strong>",
+    "invested": "投资 <strong><value></value></strong>",
+    "investedUnpriced": "{symbols} 没有当前价格，因此这些持仓未计入。请在“投资”页面刷新价格，或在该证券的价格历史中添加一个价格。",
+    "portfolioLabel": "投资组合概览",
+    "portfolioValueFor": "投资组合价值<names>（{accounts}）</names>",
+    "portfolioEmpty": "还没有投资账户。添加一个即可在此查看您的投资组合。",
+    "portfolioLoadFailed": "无法加载您的投资组合。请重新加载仪表板后重试。",
+    "portfolioChangeFailed": "无法加载此期间的变化。请重新加载仪表板后重试。",
+    "changeOverWindow": "{amount} · {window} <dir>{direction, select, up {增加} other {减少}}</dir>",
+    "holdings": "持仓 <strong><value></value></strong>",
+    "cash": "现金 <strong><value></value></strong>",
+    "metricLine": "{metric} <strong><value></value></strong>",
+    "metricNames": {
+      "simpleReturn": "简单回报率",
+      "twr": "时间加权回报率",
+      "mwr": "MWR",
+      "cagr": "年复合增长率"
+    },
+    "cagrUnavailable": "CAGR 需要这些账户至少一年的投资历史，且投入多于取出。",
+    "intradayUnavailable": "部分持仓没有日内价格，因此无法绘制一天的图表。请在“自定义”中选择更长的时间范围。"
   },
   "favouriteAccounts": {
     "title": "收藏账户",
@@ -181,6 +213,24 @@
     "reset": "恢复默认",
     "toasts": {
       "saveFailed": "保存仪表盘布局失败"
+    },
+    "hero": {
+      "title": "仪表板概览区",
+      "description": "问候语下方的数字和图表：您的净资产或投资组合。",
+      "show": "显示仪表板概览区",
+      "range": "图表",
+      "set": "显示",
+      "sets": {
+        "netWorth": "净资产",
+        "portfolio": "投资组合价值"
+      },
+      "metric": "指标",
+      "metrics": {
+        "simpleReturn": "简单回报率",
+        "twr": "时间加权回报率",
+        "mwr": "MWR",
+        "cagr": "年复合增长率"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "描述",
     "descriptionPlaceholder": "添加可选描述",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

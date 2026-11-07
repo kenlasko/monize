@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Welkom",
-    "welcomeWithName": "Welkom, {name}!",
-    "subtitle": "Hier is je financieel overzicht"
+    "greeting": {
+      "morning": "Goedemorgen",
+      "morningWithName": "Goedemorgen, {name}",
+      "afternoon": "Goedemiddag",
+      "afternoonWithName": "Goedemiddag, {name}",
+      "evening": "Goedenavond",
+      "eveningWithName": "Goedenavond, {name}"
+    }
+  },
+  "hero": {
+    "label": "Overzicht nettovermogen",
+    "netWorth": "Nettovermogen",
+    "changeThisMonth": "<dir>{direction, select, up {Gestegen met} other {Gedaald met}}</dir> {amount} deze maand",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {Gestegen met} other {Gedaald met}}</dir> {amount} · {percent} deze maand",
+    "assets": "<strong><value></value></strong> bezittingen",
+    "liabilities": "<strong><value></value></strong> schulden",
+    "invested": "<strong><value></value></strong> belegd",
+    "investedUnpriced": "Geen actuele koers voor {symbols}, dus die posities zijn niet meegeteld. Ververs de koersen op de pagina Beleggingen, of voeg er een toe in de koershistorie van het effect.",
+    "portfolioLabel": "Portefeuilleoverzicht",
+    "portfolioValueFor": "Portefeuillewaarde <names>({accounts})</names>",
+    "portfolioEmpty": "Nog geen beleggingsrekeningen. Voeg er een toe om hier uw portefeuille te zien.",
+    "portfolioLoadFailed": "Uw portefeuille kon niet worden geladen. Herlaad het dashboard om het opnieuw te proberen.",
+    "portfolioChangeFailed": "De verandering over deze periode kon niet worden geladen. Herlaad het dashboard om het opnieuw te proberen.",
+    "changeOverWindow": "<dir>{direction, select, up {Gestegen met} other {Gedaald met}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> posities",
+    "cash": "<strong><value></value></strong> contanten",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Eenvoudig rendement",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "CAGR vereist ten minste een jaar beleggingsgeschiedenis in deze rekeningen, met meer ingelegd dan opgenomen.",
+    "intradayUnavailable": "Voor sommige posities zijn geen intraday-koersen, dus er kan geen dagrafiek worden getekend. Kies een langere periode in Aanpassen."
   },
   "favouriteAccounts": {
     "title": "Favoriete rekeningen",
@@ -181,6 +213,24 @@
     "reset": "Standaardinstellingen herstellen",
     "toasts": {
       "saveFailed": "Dashboardindeling opslaan mislukt"
+    },
+    "hero": {
+      "title": "Dashboardkop",
+      "description": "De cijfers en de grafiek onder de begroeting: uw nettovermogen of uw portefeuille.",
+      "show": "Dashboardkop tonen",
+      "range": "Grafiek",
+      "set": "Tonen",
+      "sets": {
+        "netWorth": "Nettovermogen",
+        "portfolio": "Portefeuillewaarde"
+      },
+      "metric": "Cijfer",
+      "metrics": {
+        "simpleReturn": "Eenvoudig rendement",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Beschrijving",
     "descriptionPlaceholder": "Voeg een optionele beschrijving toe",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

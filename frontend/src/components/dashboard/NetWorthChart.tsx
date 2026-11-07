@@ -27,6 +27,7 @@ import { NetWorthByAccountTypeChart } from '@/components/reports/NetWorthByAccou
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
 import { WidgetSegmentedControl } from './WidgetSegmentedControl';
 import { NET_WORTH_DEFAULT, NET_WORTH_RANGES, NetWorthConfig } from './widget-config';
+import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 const WIDGET_ID = 'net-worth';
 /** Past this many months the axis names each January by its year alone. */
@@ -49,7 +50,7 @@ function NetWorthCompositionTooltip({
     // A month the server could not fully convert has no split to print.
     if (d.assets === null || d.liabilities === null) {
       return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+        <div className={CHART_TOOLTIP_CLASS}>
           <p className="font-medium text-gray-900 dark:text-gray-100">{d.name}</p>
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-56">{labels.partialMonth}</p>
         </div>
@@ -58,7 +59,7 @@ function NetWorthCompositionTooltip({
     const total = d.assets + d.liabilities;
     const pct = (v: number) => (total > 0 ? formatPercent((v / total) * 100, 1) : '0%');
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100">{d.name}</p>
         <p className="text-sm" style={{ color: chartColors.income }}>
           {labels.assets}: {formatCurrency(d.assets)} ({pct(d.assets)})
@@ -218,7 +219,7 @@ export function NetWorthChart({ isLoading }: NetWorthChartProps) {
       minHeightClass="lg:min-h-[500px]"
     >
       {loading ? (
-        <div className="animate-pulse space-y-3">
+        <div className="animate-pulse skeleton-shimmer space-y-3">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
           <div className="h-40 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>

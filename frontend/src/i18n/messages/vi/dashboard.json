@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Chào mừng",
-    "welcomeWithName": "Chào mừng, {name}!",
-    "subtitle": "Đây là tổng quan tài chính của bạn"
+    "greeting": {
+      "morning": "Chào buổi sáng",
+      "morningWithName": "Chào buổi sáng, {name}",
+      "afternoon": "Chào buổi chiều",
+      "afternoonWithName": "Chào buổi chiều, {name}",
+      "evening": "Chào buổi tối",
+      "eveningWithName": "Chào buổi tối, {name}"
+    }
+  },
+  "hero": {
+    "label": "Tóm tắt giá trị ròng",
+    "netWorth": "Giá trị ròng",
+    "changeThisMonth": "<dir>{direction, select, up {Tăng} other {Giảm}}</dir> {amount} trong tháng này",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {Tăng} other {Giảm}}</dir> {amount} · {percent} trong tháng này",
+    "assets": "<strong><value></value></strong> tài sản",
+    "liabilities": "<strong><value></value></strong> nợ phải trả",
+    "invested": "<strong><value></value></strong> đã đầu tư",
+    "investedUnpriced": "Không có giá hiện tại cho {symbols}, nên các khoản nắm giữ đó không được tính. Làm mới giá trên trang Đầu tư, hoặc thêm giá trong lịch sử giá của chứng khoán.",
+    "portfolioLabel": "Tóm tắt danh mục",
+    "portfolioValueFor": "Giá trị danh mục <names>({accounts})</names>",
+    "portfolioEmpty": "Chưa có tài khoản đầu tư. Thêm một tài khoản để xem danh mục tại đây.",
+    "portfolioLoadFailed": "Không thể tải danh mục của bạn. Tải lại bảng điều khiển để thử lại.",
+    "portfolioChangeFailed": "Không thể tải thay đổi trong giai đoạn này. Tải lại bảng điều khiển để thử lại.",
+    "changeOverWindow": "<dir>{direction, select, up {Tăng} other {Giảm}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> nắm giữ",
+    "cash": "<strong><value></value></strong> tiền mặt",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Lợi nhuận đơn giản",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "CAGR cần ít nhất một năm lịch sử đầu tư trong các tài khoản này, với số tiền nạp nhiều hơn số rút.",
+    "intradayUnavailable": "Một số khoản nắm giữ không có giá trong ngày nên không thể vẽ biểu đồ một ngày. Hãy chọn khoảng thời gian dài hơn trong Tùy chỉnh."
   },
   "favouriteAccounts": {
     "title": "Tài khoản yêu thích",
@@ -181,6 +213,24 @@
     "reset": "Đặt lại mặc định",
     "toasts": {
       "saveFailed": "Không thể lưu bố cục trang tổng quan"
+    },
+    "hero": {
+      "title": "Phần đầu bảng điều khiển",
+      "description": "Các con số và biểu đồ bên dưới lời chào: giá trị ròng hoặc danh mục của bạn.",
+      "show": "Hiển thị phần đầu bảng điều khiển",
+      "range": "Biểu đồ",
+      "set": "Hiển thị",
+      "sets": {
+        "netWorth": "Giá trị ròng",
+        "portfolio": "Giá trị danh mục"
+      },
+      "metric": "Chỉ số",
+      "metrics": {
+        "simpleReturn": "Lợi nhuận đơn giản",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Mô tả",
     "descriptionPlaceholder": "Thêm mô tả tùy chọn",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

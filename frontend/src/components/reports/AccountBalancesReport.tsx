@@ -41,6 +41,7 @@ import {
   type SortDirection,
 } from '@/components/reports/account-balances/grouping';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 const ACCOUNT_TYPE_KEYS = [
   'CHEQUING',
@@ -83,7 +84,7 @@ function AccountBalancesTooltip({
     const data = payload[0].payload;
     const pct = chartTotal > 0 ? (data.value / chartTotal) * 100 : 0;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100">{data.name}</p>
         <p className="text-gray-600 dark:text-gray-400">
           {/* The signed amount: a liability slice is money owed, and the

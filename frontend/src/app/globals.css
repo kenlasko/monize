@@ -26,6 +26,22 @@
      from the inline-card baseline keep the old one until they are converted. */
   --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 2px 6px -1px rgb(0 0 0 / 0.07);
 
+  /* The dark-mode card shadow. A drop shadow alone is invisible on a dark
+     page, which is why cards used to wear a light gray-700 glow instead; that
+     glow read as a halo round every panel. This lights the card from above
+     instead: a 1px inset highlight along the top edge (the bevel) over a
+     plain dark drop. The highlight is white at a few percent, so it lifts the
+     themed card colour by the same step on every palette. `CARD_CLASS` wears
+     it as `dark:shadow-card-dark`. */
+  --shadow-card-dark: inset 0 1px 0 0 rgb(255 255 255 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.3),
+    0 2px 6px -1px rgb(0 0 0 / 0.3);
+
+  /* A floating surface over content (chart tooltips): the same top-edge
+     highlight as the dark card over a deeper drop, since it sits above the
+     card rather than on the page. */
+  --shadow-popover-dark: inset 0 1px 0 0 rgb(255 255 255 / 0.06),
+    0 12px 24px -8px rgb(0 0 0 / 0.6);
+
   /* Table stripe color -- subtle alternating row in dark mode (between gray-900 and gray-800) */
   --color-table-stripe-dark: #161d2b;
 
@@ -94,8 +110,34 @@ html.dark {
   @apply bg-gray-900;
 }
 
+/* Ambient accent glow behind the top of every page. Two soft radial washes
+   painted into the body background, so they scroll away with the page header
+   and never sit behind a table further down. Both colours derive from tokens
+   (the accent ramp and the income token) through color-mix, so every palette
+   gets its own tint without a per-theme entry. Light mode spends less of it:
+   on pale paper the same share reads as a stain. */
+:root {
+  --ambient-glow-primary: color-mix(in oklab, var(--color-blue-500) 10%, transparent);
+  --ambient-glow-secondary: color-mix(in oklab, var(--chart-income) 6%, transparent);
+}
+.dark {
+  --ambient-glow-primary: color-mix(in oklab, var(--color-blue-500) 16%, transparent);
+  --ambient-glow-secondary: color-mix(in oklab, var(--chart-income) 9%, transparent);
+}
+/* Midnight is unlit black for OLED and highcontrast spends nothing on
+   decoration, so neither paints a glow. */
+html[data-theme='midnight'],
+html[data-theme='highcontrast'] {
+  --ambient-glow-primary: transparent;
+  --ambient-glow-secondary: transparent;
+}
+
 body {
   @apply bg-gray-50 text-gray-900;
+  background-image:
+    radial-gradient(56rem 26rem at 12% -6rem, var(--ambient-glow-primary), transparent 70%),
+    radial-gradient(40rem 22rem at 88% -8rem, var(--ambient-glow-secondary), transparent 70%);
+  background-repeat: no-repeat;
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
@@ -389,6 +431,48 @@ button {
       #000 calc(100% - var(--scroll-fade)),
       transparent
     );
+  }
+}
+
+/* Loading placeholder sweep. A highlight band travels across the element
+ * over its own `bg-*` blocks, which reads as content on its way rather than a
+ * blinking box. It is an overlay (`::after`), so it works on a single block
+ * and on a wrapper of several blocks alike, and needs no knowledge of the
+ * block colours. Placeholders keep `animate-pulse` beside it: with reduced
+ * motion the sweep is never drawn and the element keeps the pulse it always
+ * had, and the tests that find a loading state by `.animate-pulse` still
+ * find it. When the sweep runs it replaces the pulse rather than adding to it.
+ * `Skeleton` wears it; a hand-rolled placeholder adds it next to its
+ * `animate-pulse` (`src/test/skeleton-shimmer.guard.test.ts`). */
+:root {
+  --skeleton-sheen: rgb(255 255 255 / 0.55);
+}
+.dark {
+  --skeleton-sheen: rgb(255 255 255 / 0.06);
+}
+@keyframes skeleton-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    animation: none;
+  }
+  .skeleton-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(100deg, transparent 20%, var(--skeleton-sheen) 50%, transparent 80%);
+    transform: translateX(-100%);
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
   }
 }
 

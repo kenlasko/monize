@@ -52,6 +52,9 @@ import { CHART_RANGES } from '@/lib/security-detail';
 import { MarketIndex } from '@/types/investment';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
 
 const MAX_PAGES = 50;
 
@@ -859,13 +862,10 @@ export function SecurityPerformanceReport() {
                   <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <AreaChart data={chartData}>
                       <defs>
-                        <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={chartColors.primary} stopOpacity={0.3} />
-                          <stop offset="95%" stopColor={chartColors.primary} stopOpacity={0} />
-                        </linearGradient>
+                        <ChartAreaGradient id="priceGradient" color={chartColors.primary} />
                       </defs>
                       <ChartFlagShadowFilter />
-                      <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                      <CartesianGrid {...CHART_GRID_PROPS} />
                       <XAxis
                         dataKey="ts"
                         type="number"
@@ -884,7 +884,7 @@ export function SecurityPerformanceReport() {
                           if (!active || !payload?.length) return null;
                           const d = payload[0].payload as PriceChartPoint;
                           return (
-                            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                            <div className={CHART_TOOLTIP_CLASS}>
                               <p className="font-medium text-gray-900 dark:text-gray-100">{d.label}</p>
                               <p className="text-sm text-blue-600 dark:text-blue-400">
                                 {t('securityPerformance.closePrice', { price: formatCurrencyFull(d.close, displayCurrency) })}
@@ -896,6 +896,7 @@ export function SecurityPerformanceReport() {
                         }}
                       />
                       <Area
+                        activeDot={ChartActiveDot}
                         type="monotone"
                         dataKey="close"
                         stroke={chartColors.primary}

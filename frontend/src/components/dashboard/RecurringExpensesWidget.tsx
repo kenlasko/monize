@@ -121,7 +121,7 @@ export function RecurringExpensesWidget({ isLoading }: RecurringExpensesWidgetPr
       configTitle={t('recurringExpenses.title')}
     >
       {loading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : chartData.length === 0 ? (
         <WidgetMessage>{t('recurringExpenses.empty')}</WidgetMessage>
       ) : (

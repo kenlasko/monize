@@ -1074,11 +1074,16 @@ export class NetWorthService {
             ...data.liabilities.missingPairs,
           ]),
         ].sort();
+        // Money precision, never whole units: the dashboard, the account
+        // summary and the assistant print these to the cent, and a chart that
+        // wants whole units rounds at its own surface (as the investment
+        // series below already do). Net worth is the difference of the two
+        // unrounded subtotals, rounded once.
         return {
           month,
-          assets: Math.round(data.assets.knownSubtotal),
-          liabilities: Math.round(data.liabilities.knownSubtotal),
-          netWorth: Math.round(
+          assets: roundMoney(data.assets.knownSubtotal),
+          liabilities: roundMoney(data.liabilities.knownSubtotal),
+          netWorth: roundMoney(
             data.assets.knownSubtotal - data.liabilities.knownSubtotal,
           ),
           // Stage 1 of docs/specs/fx-conversion-completeness.md: the three
@@ -1094,7 +1099,7 @@ export class NetWorthService {
           byAccountType: Object.fromEntries(
             [...data.byAccountType].map(([type, total]) => [
               type,
-              Math.round(total.knownSubtotal),
+              roundMoney(total.knownSubtotal),
             ]),
           ),
         };

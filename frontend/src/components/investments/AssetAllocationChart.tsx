@@ -21,6 +21,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useAssetClassLabel, type AssetClassName } from '@/hooks/useAssetClassLabel';
 import { ChartLegend } from '@/components/ui/ChartLegend';
+import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 type GroupBy = 'security' | 'tag' | 'tagKey' | 'country' | 'assetClass';
 
@@ -111,7 +112,7 @@ function AllocationTooltip({
       ? (data.percentage / 100) * foreignTotal
       : data.value;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100">
           {data.fullName}
         </p>
@@ -525,7 +526,7 @@ export function AssetAllocationChart({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[420px]">
         {heading}
         <div className="h-64 flex items-center justify-center">
-          <div className="animate-pulse w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
+          <div className="animate-pulse skeleton-shimmer w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
         </div>
       </div>
     );

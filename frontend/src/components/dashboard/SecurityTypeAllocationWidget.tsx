@@ -204,7 +204,7 @@ export function SecurityTypeAllocationWidget({
       configTitle={t('securityTypeAllocation.title')}
     >
       {loading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : allocationData.length === 0 ? (
         <WidgetMessage>
           {config.view === 'assetClass'

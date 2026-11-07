@@ -190,7 +190,7 @@ function GroupBlock({
                   key={col.id}
                   className="px-3 py-1.5 text-gray-400 dark:text-gray-500"
                 >
-                  <span className="inline-block w-16 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  <span className="inline-block w-16 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse skeleton-shimmer" />
                 </td>
               );
             }

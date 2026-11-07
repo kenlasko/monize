@@ -15,6 +15,8 @@ import { chartSeriesColor } from '@/lib/chart-colors';
 import { CAPTION_CLASS, CellLabel, Th } from '@/components/ui/Table';
 import type { CategoryTrendSeries } from '@/types/budget';
 import { useChartMonthFormat } from '@/hooks/useChartMonthFormat';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 interface BudgetCategoryTrendProps {
   data: CategoryTrendSeries[];
@@ -76,7 +78,7 @@ function CategoryTrendTooltip({
   if (!active || !payload || payload.length === 0) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 max-w-xs">
+    <div className={`${CHART_TOOLTIP_CLASS} max-w-xs`}>
       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
         {formatChartMonth(String(label))}
       </p>
@@ -200,7 +202,7 @@ export function BudgetCategoryTrend({
       <div className="h-72" data-testid="category-trend-chart">
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+            <CartesianGrid {...CHART_GRID_PROPS} />
             <XAxis
               dataKey="monthKey"
               tick={{ fontSize: 12 }}
@@ -231,6 +233,7 @@ export function BudgetCategoryTrend({
               const color = chartSeriesColor(idx);
               return (
                 <Line
+                  activeDot={ChartActiveDot}
                   key={series.categoryId}
                   type="monotone"
                   dataKey={series.categoryId}

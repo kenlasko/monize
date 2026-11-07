@@ -33,7 +33,7 @@ export function StatementPanel({ cycle, isLoading }: StatementPanelProps) {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('statement.title')}
         </h2>
-        <div className="h-24 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse" />
+        <div className="h-24 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse skeleton-shimmer" />
       </section>
     );
   }

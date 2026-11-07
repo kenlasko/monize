@@ -49,4 +49,10 @@ describe('Card', () => {
     expect(root.classList.contains('rounded-xl')).toBe(true);
     expect(root.classList.contains('rounded-lg')).toBe(false);
   });
+
+  it('lights the dark card from above instead of wearing the old light glow', () => {
+    const classes = CARD_CLASS.split(/\s+/);
+    expect(classes).toContain('dark:shadow-card-dark');
+    expect(classes).not.toContain('dark:shadow-gray-700/50');
+  });
 });

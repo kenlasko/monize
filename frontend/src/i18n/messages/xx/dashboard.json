@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "[XX-Welcome-XX]",
-    "welcomeWithName": "[XX-Welcome, {name}!-XX]",
-    "subtitle": "[XX-Here's your financial overview-XX]"
+    "greeting": {
+      "morning": "[XX-Good morning-XX]",
+      "morningWithName": "[XX-Good morning, {name}-XX]",
+      "afternoon": "[XX-Good afternoon-XX]",
+      "afternoonWithName": "[XX-Good afternoon, {name}-XX]",
+      "evening": "[XX-Good evening-XX]",
+      "eveningWithName": "[XX-Good evening, {name}-XX]"
+    }
+  },
+  "hero": {
+    "label": "[XX-Net worth summary-XX]",
+    "netWorth": "[XX-Net worth-XX]",
+    "changeThisMonth": "[XX-<dir>{direction, select, up {Up} other {Down}}</dir> {amount} this month-XX]",
+    "changeThisMonthWithPercent": "[XX-<dir>{direction, select, up {Up} other {Down}}</dir> {amount} · {percent} this month-XX]",
+    "assets": "[XX-<strong><value></value></strong> assets-XX]",
+    "liabilities": "[XX-<strong><value></value></strong> liabilities-XX]",
+    "invested": "[XX-<strong><value></value></strong> invested-XX]",
+    "investedUnpriced": "[XX-No current price for {symbols}, so the holdings they represent are not included. Refresh prices on the Investments page, or add one on the security's price history.-XX]",
+    "portfolioLabel": "[XX-Portfolio summary-XX]",
+    "portfolioValueFor": "[XX-Portfolio value <names>({accounts})</names>-XX]",
+    "portfolioEmpty": "[XX-No investment accounts yet. Add one to see your portfolio here.-XX]",
+    "portfolioLoadFailed": "[XX-Couldn't load your portfolio. Reload the dashboard to try again.-XX]",
+    "portfolioChangeFailed": "[XX-Couldn't load the change over this period. Reload the dashboard to try again.-XX]",
+    "changeOverWindow": "[XX-<dir>{direction, select, up {Up} other {Down}}</dir> {amount} · {window}-XX]",
+    "holdings": "[XX-<strong><value></value></strong> holdings-XX]",
+    "cash": "[XX-<strong><value></value></strong> cash-XX]",
+    "metricLine": "[XX-<strong><value></value></strong> {metric}-XX]",
+    "metricNames": {
+      "simpleReturn": "[XX-simple return-XX]",
+      "twr": "[XX-TWR-XX]",
+      "mwr": "[XX-MWR-XX]",
+      "cagr": "[XX-CAGR-XX]"
+    },
+    "cagrUnavailable": "[XX-CAGR needs at least a year of investment history in these accounts, with more paid in than taken out.-XX]",
+    "intradayUnavailable": "[XX-Some of these holdings have no intraday prices, so a one-day chart can't be drawn. Choose a longer timeframe in Customize.-XX]"
   },
   "favouriteAccounts": {
     "title": "[XX-Favourite Accounts-XX]",
@@ -181,6 +213,24 @@
     "reset": "[XX-Reset to default-XX]",
     "toasts": {
       "saveFailed": "[XX-Failed to save dashboard layout-XX]"
+    },
+    "hero": {
+      "title": "[XX-Dashboard hero-XX]",
+      "description": "[XX-The opening figures and chart under the greeting: your net worth, or your portfolio.-XX]",
+      "show": "[XX-Show the dashboard hero-XX]",
+      "range": "[XX-Chart-XX]",
+      "set": "[XX-Show-XX]",
+      "sets": {
+        "netWorth": "[XX-Net worth-XX]",
+        "portfolio": "[XX-Portfolio value-XX]"
+      },
+      "metric": "[XX-Figure-XX]",
+      "metrics": {
+        "simpleReturn": "[XX-Simple return-XX]",
+        "twr": "[XX-TWR-XX]",
+        "mwr": "[XX-MWR-XX]",
+        "cagr": "[XX-CAGR-XX]"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "[XX-Description-XX]",
     "descriptionPlaceholder": "[XX-Add an optional description-XX]",
     "rangeLabels": {
+      "1d": "[XX-1D-XX]",
       "1w": "[XX-1W-XX]",
       "mtd": "[XX-MTD-XX]",
       "1m": "[XX-1M-XX]",

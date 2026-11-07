@@ -22,7 +22,7 @@ import { useReportData } from '@/hooks/useReportData';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
-import { chartColors, chartSeriesColor } from '@/lib/chart-colors';
+import { chartSeriesColor } from '@/lib/chart-colors';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
@@ -32,6 +32,7 @@ import { reportTotal } from '@/lib/currency-total';
 import { exportToCsv } from '@/lib/csv-export';
 import type { ChartDatum } from '@/types/chart';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_GRID_PROPS_HORIZONTAL_BARS } from '@/lib/chart-style';
 
 type SpendingPayeeSortField = 'name' | 'value' | 'percentage';
 
@@ -283,7 +284,7 @@ export function SpendingByPayeeReport() {
             <div className="h-[500px]">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
                   <XAxis
                     type="number"
                     tickFormatter={formatCurrencyAxis}

@@ -8,6 +8,7 @@
 import type { ForecastPeriod } from '@/lib/forecast';
 import type { NetWorthBarStyle } from '@/components/reports/NetWorthByAccountTypeChart';
 import { RECURRING_EXPENSE_RANGES, type RecurringExpenseRange } from '@/types/built-in-reports';
+import { PORTFOLIO_CHART_RANGES } from '@/components/investments/portfolio-range-window';
 
 /** Range presets offered by the transaction-based spending/income widgets. */
 export const SPENDING_RANGES = ['mtd', '1m', '3m', '6m', '1y', 'ytd'] as const;
@@ -220,6 +221,75 @@ export const RECURRING_EXPENSES_DEFAULT: RecurringConfig = {
 
 // Twelve months is the window the widget always drew; stacked by account
 // type is the bar it draws today.
+/**
+ * The dashboard hero above the widget grid, in one of two sets: net worth
+ * (its change this month, assets, liabilities, invested, a net worth chart)
+ * or the portfolio (its value, holdings and cash, one chosen return, a value
+ * chart). It is not one of the ordered widgets (it always sits first and spans
+ * the page), so its settings live here, in the per-widget settings map, rather
+ * than in `dashboardWidgets` -- which is also what lets it default on for a
+ * reader who customized the grid before it existed. The greeting and date above
+ * it are the page header and stay when the hero is off.
+ */
+export const DASHBOARD_HERO_SETS = ['netWorth', 'portfolio'] as const;
+export type DashboardHeroSet = (typeof DASHBOARD_HERO_SETS)[number];
+
+/**
+ * The portfolio set's one chosen return beside its holdings and cash: the
+ * Investments page summary card's four, since inception. The change over the
+ * chosen window is always shown, beside the value.
+ */
+export const DASHBOARD_HERO_PORTFOLIO_METRICS = ['simpleReturn', 'twr', 'mwr', 'cagr'] as const;
+export type DashboardHeroPortfolioMetric = (typeof DASHBOARD_HERO_PORTFOLIO_METRICS)[number];
+
+export interface DashboardHeroConfig {
+  enabled: boolean;
+  set: DashboardHeroSet;
+  /** The net worth chart's window. */
+  range: (typeof NET_WORTH_RANGES)[number];
+  /** The portfolio chart's window: the Investments page value chart's ranges. */
+  portfolioRange: (typeof PORTFOLIO_CHART_RANGES)[number];
+  /** The investment accounts the portfolio set covers; empty is all of them. */
+  portfolioAccountIds: string[];
+  portfolioMetric: DashboardHeroPortfolioMetric;
+}
+
+export const DASHBOARD_HERO_WIDGET_ID = 'dashboard-hero';
+
+export const DASHBOARD_HERO_DEFAULT: DashboardHeroConfig = {
+  enabled: true,
+  set: 'netWorth',
+  range: '1y',
+  portfolioRange: '1y',
+  portfolioAccountIds: [],
+  portfolioMetric: 'twr',
+};
+
+const isOneOf = <T extends string>(list: readonly T[], value: unknown): value is T =>
+  typeof value === 'string' && (list as readonly string[]).includes(value);
+
+/**
+ * The hero's settings read from whatever is stored: each key the hero has,
+ * taken only when it holds a value the hero offers, so a stale key from an
+ * older version or a value no longer offered falls back to the default.
+ */
+export function resolveDashboardHeroConfig(stored: unknown): DashboardHeroConfig {
+  const s = (stored ?? {}) as Partial<Record<keyof DashboardHeroConfig, unknown>>;
+  const d = DASHBOARD_HERO_DEFAULT;
+  return {
+    enabled: typeof s.enabled === 'boolean' ? s.enabled : d.enabled,
+    set: isOneOf(DASHBOARD_HERO_SETS, s.set) ? s.set : d.set,
+    range: isOneOf(NET_WORTH_RANGES, s.range) ? s.range : d.range,
+    portfolioRange: isOneOf(PORTFOLIO_CHART_RANGES, s.portfolioRange) ? s.portfolioRange : d.portfolioRange,
+    portfolioAccountIds: Array.isArray(s.portfolioAccountIds)
+      ? s.portfolioAccountIds.filter((id): id is string => typeof id === 'string')
+      : d.portfolioAccountIds,
+    portfolioMetric: isOneOf(DASHBOARD_HERO_PORTFOLIO_METRICS, s.portfolioMetric)
+      ? s.portfolioMetric
+      : d.portfolioMetric,
+  };
+}
+
 export const NET_WORTH_DEFAULT: NetWorthConfig = {
   range: '1y',
   barStyle: 'accountType',

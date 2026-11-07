@@ -23,6 +23,20 @@
       "heading": "Bantuan tidak dapat dimuat",
       "body": "Panduan tidak termuat. Coba lagi, atau baca halaman ini di monize.net.",
       "retry": "Coba lagi"
+    },
+    "search": "Cari panduan"
+  },
+  "search": {
+    "title": "Cari panduan",
+    "placeholder": "Cari panduan",
+    "ariaLabel": "Cari panduan",
+    "contextHeading": "Bantuan untuk layar ini",
+    "noResults": "Tidak ada hasil untuk \"{query}\"",
+    "error": "Pencarian gagal. Coba lagi.",
+    "hint": {
+      "navigate": "untuk menavigasi",
+      "select": "untuk memilih",
+      "close": "untuk menutup"
     }
   },
   "markdown": {
