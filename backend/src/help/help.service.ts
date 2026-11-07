@@ -11,6 +11,7 @@ import {
 import {
   HelpImage,
   HelpImageFile,
+  HelpImageVariant,
   HelpManifest,
   HelpPage,
   HelpPageSummary,
@@ -106,6 +107,7 @@ export class HelpService {
       return {
         data: await readBundledImage(entry),
         contentType: entry.contentType,
+        revision: cacheKey(this.currentVersion, entry),
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -196,8 +198,7 @@ export class HelpService {
             slug === HELP_INDEX_SLUG
               ? `${HELP_ONLINE_BASE_URL}/`
               : `${HELP_ONLINE_BASE_URL}/${slug}`,
-          images: pageImages(markdown, images),
-          version: this.currentVersion,
+          images: pageImages(markdown, images, this.currentVersion),
         });
       }
 
@@ -285,7 +286,14 @@ export class HelpService {
 function pageImages(
   markdown: string,
   images: ReadonlyMap<string, HelpImageEntry>,
+  version: string,
 ): Record<string, HelpImage> {
+  const variant = (name: string, entry: HelpImageEntry): HelpImageVariant => ({
+    name,
+    width: entry.width,
+    height: entry.height,
+    revision: cacheKey(version, entry),
+  });
   const found = new Map<string, HelpImage>();
   for (const [, name] of markdown.matchAll(HELP_IMAGE_REF_RE)) {
     const dark = images.get(name);
@@ -294,13 +302,19 @@ function pageImages(
     }
     const light = images.get(`${name}.light`);
     found.set(name, {
-      dark: { name, width: dark.width, height: dark.height },
-      light: light
-        ? { name: `${name}.light`, width: light.width, height: light.height }
-        : null,
+      dark: variant(name, dark),
+      light: light ? variant(`${name}.light`, light) : null,
     });
   }
   return Object.fromEntries(found);
+}
+
+/**
+ * A picture's cache key: the running version and the file's own revision, so
+ * a browser keeps a picture only until a release or a changed file replaces it.
+ */
+function cacheKey(version: string, entry: HelpImageEntry): string {
+  return `${version}-${entry.revision}`;
 }
 
 /** Levels (2 or 3) of the `##`/`###` headings outside code fences, in order. */

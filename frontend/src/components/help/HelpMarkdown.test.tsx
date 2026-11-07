@@ -26,7 +26,6 @@ function renderMarkdown(markdown: string, opts: RenderOptions = {}) {
       slug={opts.slug ?? 'budgets'}
       onlineUrl={ONLINE}
       images={opts.images ?? {}}
-      version="1.2.3"
       onNavigate={onNavigate}
     />,
   );
@@ -159,18 +158,18 @@ describe('HelpMarkdown: images', () => {
   const toc = [{ depth: 2, id: 'dashboard', heading: 'Dashboard' }];
   const BOTH: Record<string, HelpImage> = {
     'budget-dashboard': {
-      dark: { name: 'budget-dashboard', width: 1600, height: 1000 },
-      light: { name: 'budget-dashboard.light', width: 1600, height: 1001 },
+      dark: { name: 'budget-dashboard', width: 1600, height: 1000, revision: '1.2.3-a' },
+      light: { name: 'budget-dashboard.light', width: 1600, height: 1001, revision: '1.2.3-b' },
     },
   };
   const DARK_ONLY: Record<string, HelpImage> = {
     'budget-dashboard': {
-      dark: { name: 'budget-dashboard', width: 800, height: 450 },
+      dark: { name: 'budget-dashboard', width: 800, height: 450, revision: '1.2.3-c' },
       light: null,
     },
   };
-  const DARK_SRC = '/api/v1/help/images/budget-dashboard?v=1.2.3';
-  const LIGHT_SRC = '/api/v1/help/images/budget-dashboard.light?v=1.2.3';
+  const DARK_SRC = '/api/v1/help/images/budget-dashboard?v=1.2.3-a';
+  const LIGHT_SRC = '/api/v1/help/images/budget-dashboard.light?v=1.2.3-b';
 
   beforeEach(() => localStorage.setItem('monize-theme', 'dark'));
   afterEach(() => localStorage.removeItem('monize-theme'));
@@ -184,7 +183,10 @@ describe('HelpMarkdown: images', () => {
     expect(img).toHaveAttribute('loading', 'lazy');
     expect(img).toHaveAttribute('decoding', 'async');
     expect(container.querySelectorAll('img')).toHaveLength(1);
+    // The caption shows the alt text once more; it is hidden from a screen
+    // reader, which has just read it as the picture's name.
     expect(img.nextElementSibling).toHaveTextContent('The budget dashboard');
+    expect(img.nextElementSibling).toHaveAttribute('aria-hidden', 'true');
     const link = screen.getByRole('link', { name: /View screenshot on monize.net/ });
     expect(link).toHaveAttribute('href', `${ONLINE}#dashboard`);
     expect(link).toHaveAttribute('target', '_blank');
@@ -203,7 +205,7 @@ describe('HelpMarkdown: images', () => {
     localStorage.setItem('monize-theme', 'light');
     renderMarkdown(md, { toc, images: DARK_ONLY });
     const img = screen.getByRole('img', { name: 'The budget dashboard' });
-    expect(img).toHaveAttribute('src', DARK_SRC);
+    expect(img).toHaveAttribute('src', '/api/v1/help/images/budget-dashboard?v=1.2.3-c');
     expect(img).toHaveAttribute('width', '800');
   });
 
@@ -226,7 +228,6 @@ describe('HelpMarkdown: images', () => {
           slug="budgets"
           onlineUrl={ONLINE}
           images={BOTH}
-          version="1.2.3"
           onNavigate={vi.fn()}
         />
       </>,
@@ -247,6 +248,14 @@ describe('HelpMarkdown: images', () => {
       'href',
       `${ONLINE}#dashboard`,
     );
+  });
+
+  it('shows every picture as its caption when the backend sends no pictures at all', () => {
+    const { container } = render(
+      <HelpMarkdown markdown={md} toc={toc} slug="budgets" onlineUrl={ONLINE} onNavigate={vi.fn()} />,
+    );
+    expect(container.querySelector('img')).toBeNull();
+    expect(container).toHaveTextContent('The budget dashboard');
   });
 
   it('shows a picture inline in a sentence, and the online link keeps its own section', () => {

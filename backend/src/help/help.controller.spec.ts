@@ -11,7 +11,6 @@ describe("HelpController", () => {
     getManifest: jest.Mock;
     getPage: jest.Mock;
     getImage: jest.Mock;
-    currentVersion: string;
   };
 
   const manifest: HelpManifest = {
@@ -35,11 +34,11 @@ describe("HelpController", () => {
     toc: [{ depth: 2, id: "overview", heading: "Overview" }],
     onlineUrl: "https://www.monize.net/docs/budgets",
     images: {},
-    version: "1.2.3",
   };
   const picture = {
     data: Buffer.from("webp bytes"),
     contentType: "image/webp",
+    revision: "1.2.3-abc-def",
   };
 
   beforeEach(async () => {
@@ -55,7 +54,6 @@ describe("HelpController", () => {
         .mockImplementation((name: string) =>
           Promise.resolve(name === "budgets-page.light" ? picture : null),
         ),
-      currentVersion: "1.2.3",
     };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HelpController],
@@ -113,10 +111,14 @@ describe("HelpController", () => {
       };
     }
 
-    it("sends the picture with its type, cached for good at the running version", async () => {
+    it("sends the picture with its type, cached for good at its current key", async () => {
       const res = response();
 
-      await controller.getImage("budgets-page.light", "1.2.3", res as never);
+      await controller.getImage(
+        "budgets-page.light",
+        "1.2.3-abc-def",
+        res as never,
+      );
 
       expect(mockService.getImage).toHaveBeenCalledWith("budgets-page.light");
       expect(res.headers["Content-Type"]).toBe("image/webp");
@@ -126,19 +128,23 @@ describe("HelpController", () => {
       expect(res.send).toHaveBeenCalledWith(picture.data);
     });
 
-    it.each([undefined, "1.2.2", "", ["1.2.3", "x"]])(
-      "revalidates every time when the version is %j",
-      async (version) => {
-        const res = response();
+    it.each([
+      undefined,
+      "1.2.3",
+      "1.2.2-abc-def",
+      "1.2.3-abc-old",
+      "",
+      ["1.2.3-abc-def", "x"],
+    ])("revalidates every time when the key is %j", async (version) => {
+      const res = response();
 
-        await controller.getImage("budgets-page.light", version, res as never);
+      await controller.getImage("budgets-page.light", version, res as never);
 
-        expect(res.headers["Cache-Control"]).toBe(
-          "public, max-age=0, must-revalidate",
-        );
-        expect(res.send).toHaveBeenCalledWith(picture.data);
-      },
-    );
+      expect(res.headers["Cache-Control"]).toBe(
+        "public, max-age=0, must-revalidate",
+      );
+      expect(res.send).toHaveBeenCalledWith(picture.data);
+    });
 
     it("is a 404 for a picture the bundle does not have", async () => {
       const res = response();

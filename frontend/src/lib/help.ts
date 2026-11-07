@@ -33,6 +33,8 @@ export interface HelpImageVariant {
   name: string;
   width: number;
   height: number;
+  /** The picture's cache key: changes with each release and whenever its file does. */
+  revision: string;
 }
 
 /** A picture a page shows, in both themes. */
@@ -57,18 +59,16 @@ export interface HelpPage {
    * holds, keyed by `<name>`. One that is absent shows as its caption.
    */
   images: Record<string, HelpImage>;
-  /** The running version, sent with every picture so it can be cached for good. */
-  version: string;
 }
 
 /**
  * Same-origin URL of one of the guide's pictures, rendered directly in an
- * `<img>` (the CSP allows images only from the app's own origin). The version
- * makes the URL change with each release, so the backend can let the browser
- * keep it until then.
+ * `<img>` (the CSP allows images only from the app's own origin). The revision
+ * makes the URL change whenever the picture can, so the backend lets the
+ * browser keep it until then.
  */
-export function helpImageUrl(name: string, version: string): string {
-  return `/api/v1/help/images/${encodeURIComponent(name)}?v=${encodeURIComponent(version)}`;
+export function helpImageUrl({ name, revision }: HelpImageVariant): string {
+  return `/api/v1/help/images/${encodeURIComponent(name)}?v=${encodeURIComponent(revision)}`;
 }
 
 // The guide ships inside the backend image, so it cannot change under a running

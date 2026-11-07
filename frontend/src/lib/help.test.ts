@@ -24,7 +24,6 @@ const PAGE: HelpPage = {
   toc: [{ depth: 2, id: 'overview', heading: 'Overview' }],
   onlineUrl: 'https://www.monize.net/docs/budgets',
   images: {},
-  version: '1.2.3',
 };
 
 describe('helpApi', () => {
@@ -111,14 +110,14 @@ describe('helpApi', () => {
 });
 
 describe('helpImageUrl', () => {
-  it('is a same-origin API path carrying the running version', () => {
-    expect(helpImageUrl('budgets-page.light', '1.2.3')).toBe(
-      '/api/v1/help/images/budgets-page.light?v=1.2.3',
-    );
+  it("is a same-origin API path carrying the picture's revision", () => {
+    expect(
+      helpImageUrl({ name: 'budgets-page.light', width: 1, height: 1, revision: '1.2.3-ab-cd' }),
+    ).toBe('/api/v1/help/images/budgets-page.light?v=1.2.3-ab-cd');
   });
 
   it('encodes both parts', () => {
-    expect(helpImageUrl('a/b', '1.0.0+build 1')).toBe(
+    expect(helpImageUrl({ name: 'a/b', width: 1, height: 1, revision: '1.0.0+build 1' })).toBe(
       '/api/v1/help/images/a%2Fb?v=1.0.0%2Bbuild%201',
     );
   });

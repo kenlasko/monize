@@ -106,6 +106,7 @@ describe("readImageBundle", () => {
       contentType: "image/webp",
       width: 800,
       height: 600,
+      revision: expect.stringMatching(/^[0-9a-z]+-[0-9a-z]+$/),
     });
     expect(bundle.get("shot.light")?.height).toBe(601);
     expect(warn).not.toHaveBeenCalled();
@@ -127,7 +128,24 @@ describe("readImageBundle", () => {
       contentType: "image/png",
       width: 30,
       height: 40,
+      revision: expect.any(String),
     });
+  });
+
+  it("gives a picture a new revision when its file changes", () => {
+    const file = path.join(images, "shot.png");
+    fs.writeFileSync(file, png(10, 10));
+    fs.utimesSync(file, 1_000_000, 1_000_000);
+    const before = readImageBundle(root, warn).get("shot")?.revision;
+
+    fs.writeFileSync(file, Buffer.concat([png(10, 10), Buffer.alloc(8)]));
+    fs.utimesSync(file, 1_000_000, 1_000_000);
+    const resized = readImageBundle(root, warn).get("shot")?.revision;
+    fs.utimesSync(file, 2_000_000, 2_000_000);
+    const touched = readImageBundle(root, warn).get("shot")?.revision;
+
+    expect(new Set([before, resized, touched]).size).toBe(3);
+    expect(readImageBundle(root, warn).get("shot")?.revision).toBe(touched);
   });
 
   it("skips any file whose name is not a picture's", () => {

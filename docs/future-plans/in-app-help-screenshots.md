@@ -100,8 +100,9 @@ in `help.service.ts` keep their Bearer fingerprints:
   file named `^[a-z0-9-]+(\.light)?\.(webp|png)$`, keyed by its name without the
   extension (`accounts-list`, `accounts-list.light`). A WebP wins over a PNG of
   the same name; a PNG alone is the fallback (the dev stack's mount). Each
-  entry holds its path, its content type and its width and height, read from
-  the file's header (PNG `IHDR`; WebP `VP8 `, `VP8L` or `VP8X`). A file whose
+  entry holds its path, its content type, its width and height, read from the
+  file's header (PNG `IHDR`; WebP `VP8 `, `VP8L` or `VP8X`), and a revision
+  from the file's size and modification time. A file whose
   header does not parse is logged and left out. No `images` directory is an
   empty bundle, not an error: pages still load, with captions.
 - `imageSize(header)`: the header parser, a pure function with its own tests.
@@ -114,10 +115,12 @@ in `help.service.ts` keep their Bearer fingerprints:
   allowlist entry with its reason, like `#pages` and `#loaded`).
 - Each page gains `images`: for every `images/<name>.png` its Markdown names
   (the regex the website build uses), `{ dark, light }` where each variant is
-  `{ name, width, height }` and `light` is `null` when there is no twin. A
-  picture the bundle lacks is left out, and the renderer falls back to the
-  caption. Each page also gains `version`, the running version, the pictures'
-  cache key.
+  `{ name, width, height, revision }` and `light` is `null` when there is no
+  twin. A picture the bundle lacks is left out, and the renderer falls back to
+  the caption. `revision` is the cache key: the running version and the file's
+  own revision, so it changes with every release and whenever the file does (a
+  screenshot retaken under the dev stack's mount, or an image built from `main`
+  between releases, where the version does not move).
 - `getImage(name)`: `null` unless the name matches
   `HELP_IMAGE_NAME_RE` (`^[a-z0-9-]+(?:\.light)?$`) and is in the Map; else the
   entry's bytes and content type. The name is looked up, never joined into a
@@ -130,9 +133,9 @@ of the help API:
   refuses.
 - `Content-Type` from the entry (`image/webp`, or `image/png` in the dev stack).
 - `Cache-Control: public, max-age=31536000, immutable` when the request's `v`
-  is the running version (the app always sends it), else
-  `public, max-age=0, must-revalidate`. A new release changes `v`, so a
-  browser never shows an older release's picture. `res.send` adds an ETag.
+  is the picture's current `revision` (the app always sends it), else
+  `public, max-age=0, must-revalidate`. A new release or a changed file changes
+  `v`, so a browser never shows an older picture. `res.send` adds an ETag.
 - Its own throttle, 300 a minute: a page of pictures is one request each, and
   immutable caching makes a second visit free.
 
@@ -144,23 +147,25 @@ inline suppression.
 ### Frontend
 
 - `frontend/src/lib/help.ts`: `HelpImage`, `HelpImageVariant`, the page's
-  `images` and `version`, and `helpImageUrl(name, version)` returning
-  `/api/v1/help/images/<name>?v=<version>` (the shape of `institutionLogoUrl`).
-- `HelpMarkdown` takes `images` and `version`. For `images/<name>.png` in the
+  `images`, and `helpImageUrl(variant)` returning
+  `/api/v1/help/images/<name>?v=<revision>` (the shape of `institutionLogoUrl`).
+- `HelpMarkdown` takes `images` (optional: a backend older than the frontend
+  sends none, and every picture is then its caption). For `images/<name>.png` in the
   page's `images` it renders an `<img>` of the variant for `resolvedTheme` (the
   light twin when there is one and the theme is light, else the dark picture),
   with the bundle's `width` and `height`, `loading="lazy"`,
-  `decoding="async"` and the alt text, then the alt text as a caption, then the
+  `decoding="async"` and the alt text, then the alt text as a caption (hidden
+  from a screen reader, which has just read it as the alt text), then the
   "View screenshot on monize.net" link. A theme change re-renders it with the
   other picture. A name not in `images` keeps today's caption and link.
-- `HelpPanel` passes the page's `images` and `version` through.
+- `HelpPanel` passes the page's `images` through.
 
 ## Tests
 
 - `help-images.spec.ts`: PNG and each WebP header kind give the right size; a
   truncated or foreign header is `null`; the listing prefers WebP and falls
   back to PNG; a name outside the pattern is skipped; a missing directory is
-  empty.
+  empty; a changed file gets a new revision.
 - `help.service.spec.ts`: a page's `images` holds the dark and light variant,
   `light: null` without a twin, and leaves out a picture the bundle lacks;
   `getImage` returns the bytes and type; traversal and encoded names

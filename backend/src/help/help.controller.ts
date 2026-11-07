@@ -16,10 +16,10 @@ import { HelpService } from "./help.service";
 import { HelpManifest, HelpPage } from "./dto/help-response.dto";
 
 /**
- * A picture requested with the running version (`?v=`, which the app always
- * sends) cannot change until the version does, so it is cached for a year; any
- * other request is revalidated every time, so a browser never keeps an older
- * release's picture.
+ * A picture requested with its current cache key (`?v=`, the running version
+ * and the file's revision, which the app always sends) cannot change under that
+ * URL, so it is cached for a year; any other request is revalidated every
+ * time, so a browser never keeps an older release's or an older file's picture.
  */
 const IMMUTABLE = "public, max-age=31536000, immutable";
 const REVALIDATE = "public, max-age=0, must-revalidate";
@@ -74,7 +74,7 @@ export class HelpController {
   })
   async getImage(
     @Param("name") name: string,
-    @Query("v") version: unknown,
+    @Query("v") revision: unknown,
     @Res() res: Response,
   ): Promise<void> {
     const image = HELP_IMAGE_NAME_RE.test(name)
@@ -88,7 +88,7 @@ export class HelpController {
     res.setHeader("Content-Type", image.contentType);
     res.setHeader(
       "Cache-Control",
-      version === this.helpService.currentVersion ? IMMUTABLE : REVALIDATE,
+      revision === image.revision ? IMMUTABLE : REVALIDATE,
     );
     // Nothing is returned: a @Res() handler's return value still travels
     // through the global ClassSerializerInterceptor (res-handler-return.guard.spec.ts).

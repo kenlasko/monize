@@ -21,9 +21,9 @@ Task list for `docs/future-plans/in-app-help-screenshots.md`. Needs plans 1 and
 
 - [ ] `help-images.ts`: listing, WebP-over-PNG preference, header sizes, byte read.
 - [ ] `HelpService`: `images` Map field (allowlisted with its reason), page
-      `images` and `version`, `getImage(name)` by lookup only.
+      `images` with a per-picture cache key, `getImage(name)` by lookup only.
 - [ ] `HelpController`: public `GET /help/images/:name`, content type, cache
-      headers tied to the version, 404 via `tr(...)`, its own throttle.
+      headers tied to the version and the file, 404 via `tr(...)`, its own throttle.
 - [ ] `errors.help.imageNotFound` in English; the pseudo-locale regenerated.
 - [ ] Bearer fingerprints for what it reports in `help-images.ts`, with reasons
       and review-by dates; `scripts/check-bearer-exceptions.mjs` green.
@@ -38,10 +38,10 @@ Task list for `docs/future-plans/in-app-help-screenshots.md`. Needs plans 1 and
 
 ## Frontend
 
-- [ ] `lib/help.ts`: image types, page `images` and `version`, `helpImageUrl`.
+- [ ] `lib/help.ts`: image types, page `images`, `helpImageUrl`.
 - [ ] `HelpMarkdown`: `<img>` of the theme's variant with size, lazy and async
       decoding, caption and online link; caption fallback for a missing picture.
-- [ ] `HelpPanel` passes `images` and `version`.
+- [ ] `HelpPanel` passes `images`.
 - [ ] Renderer tests: picture attributes, light pick, no-twin fallback, theme
       swap, missing picture; the "no `<img>`" test replaced.
 

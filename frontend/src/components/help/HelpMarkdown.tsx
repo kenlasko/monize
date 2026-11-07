@@ -21,10 +21,12 @@ interface HelpMarkdownProps {
   slug: string;
   /** The page on monize.net, which a screenshot's "view online" link points into. */
   onlineUrl: string;
-  /** The page's pictures the bundle holds, by the `<name>` of `images/<name>.png`. */
-  images: Readonly<Record<string, HelpImage>>;
-  /** The running version, the pictures' cache key. */
-  version: string;
+  /**
+   * The page's pictures the bundle holds, by the `<name>` of `images/<name>.png`.
+   * Absent from a backend older than the frontend, when every picture shows
+   * as its caption.
+   */
+  images?: Readonly<Record<string, HelpImage>>;
   /** A link to another page of the guide, followed inside the panel. */
   onNavigate: (target: HelpTarget) => void;
 }
@@ -97,8 +99,7 @@ export function HelpMarkdown({
   toc,
   slug,
   onlineUrl,
-  images,
-  version,
+  images = {},
   onNavigate,
 }: HelpMarkdownProps) {
   const t = useTranslations('help.markdown');
@@ -215,7 +216,7 @@ export function HelpMarkdown({
               <span className="my-3 block">
                 {/* eslint-disable-next-line @next/next/no-img-element -- a same-origin API picture with its own size; next/image would re-encode it */}
                 <img
-                  src={helpImageUrl(variant.name, version)}
+                  src={helpImageUrl(variant)}
                   alt={props.alt || t('screenshot')}
                   width={variant.width}
                   height={variant.height}
@@ -223,8 +224,12 @@ export function HelpMarkdown({
                   decoding="async"
                   className="block h-auto max-w-full rounded-md border border-gray-200 dark:border-gray-700"
                 />
+                {/* The alt text already names the picture to a screen reader. */}
                 {props.alt && (
-                  <span className="mt-1 block text-xs text-gray-600 dark:text-gray-400">
+                  <span
+                    aria-hidden="true"
+                    className="mt-1 block text-xs text-gray-600 dark:text-gray-400"
+                  >
                     {props.alt}
                   </span>
                 )}

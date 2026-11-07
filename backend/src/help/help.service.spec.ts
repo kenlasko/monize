@@ -185,7 +185,6 @@ describe("HelpService", () => {
         toc: expect.any(Array),
         onlineUrl: "https://www.monize.net/docs/first-page",
         images: expect.any(Object),
-        version: service.currentVersion,
       });
     });
 
@@ -299,13 +298,16 @@ describe("HelpService", () => {
     it("lists each picture a page names in both themes, in page order", () => {
       const images = service.getPage("first-page")?.images;
 
+      const revision = expect.stringMatching(
+        new RegExp(`^${service.currentVersion.replace(/\./g, "\\.")}-`),
+      );
       expect(images).toEqual({
         alpha: {
-          dark: { name: "alpha", width: 1600, height: 1000 },
-          light: { name: "alpha.light", width: 1600, height: 1000 },
+          dark: { name: "alpha", width: 1600, height: 1000, revision },
+          light: { name: "alpha.light", width: 1600, height: 1000, revision },
         },
         beta: {
-          dark: { name: "beta", width: 800, height: 450 },
+          dark: { name: "beta", width: 800, height: 450, revision },
           light: null,
         },
       });
@@ -331,14 +333,27 @@ describe("HelpService", () => {
       await expect(service.getImage("alpha")).resolves.toEqual({
         data: webp(1600, 1000),
         contentType: "image/webp",
+        revision: service.getPage("first-page")?.images.alpha.dark.revision,
       });
       await expect(service.getImage("alpha.light")).resolves.toMatchObject({
         contentType: "image/webp",
       });
     });
 
+    it("keys each picture's cache on the running version and its own file", () => {
+      const images = service.getPage("first-page")?.images;
+      const alpha = images?.alpha.dark.revision ?? "";
+      const alphaLight = images?.alpha.light?.revision ?? "";
+
+      expect(alpha.startsWith(`${service.currentVersion}-`)).toBe(true);
+      // alpha and its twin hold the same bytes, so only their mtimes may agree;
+      // beta is a different file of a different size.
+      expect(images?.beta.dark.revision).not.toBe(alpha);
+      expect(alphaLight.startsWith(`${service.currentVersion}-`)).toBe(true);
+    });
+
     it("falls back to the PNG when there is no WebP", async () => {
-      await expect(service.getImage("beta")).resolves.toEqual({
+      await expect(service.getImage("beta")).resolves.toMatchObject({
         data: png(800, 450),
         contentType: "image/png",
       });

@@ -11,6 +11,8 @@ export interface HelpImageEntry {
   contentType: "image/webp" | "image/png";
   width: number;
   height: number;
+  /** The file's size and modification time: changes whenever its bytes do. */
+  revision: string;
 }
 
 /**
@@ -112,30 +114,39 @@ export function readImageBundle(
   const images = new Map<string, HelpImageEntry>();
   for (const [name, fileName] of chosen) {
     const file = path.join(folder, fileName);
-    const size = readHeaderSize(file);
-    if (!size) {
+    const header = readHeader(file);
+    if (!header) {
       warn(`Help image ${fileName} has no readable size; it is left out`);
       continue;
     }
     images.set(name, {
       file,
       contentType: fileName.endsWith(".webp") ? "image/webp" : "image/png",
-      ...size,
+      ...header,
     });
   }
   return images;
 }
 
-/** The size in a file's header; `file` is a directory entry just listed. */
-function readHeaderSize(
+/**
+ * The size in a file's header, and its revision; `file` is a directory entry
+ * just listed.
+ */
+function readHeader(
   file: string,
-): { width: number; height: number } | null {
+): { width: number; height: number; revision: string } | null {
   let fd: number | null = null;
   try {
     fd = fs.openSync(file, "r");
     const header = Buffer.alloc(HEADER_BYTES);
     const read = fs.readSync(fd, header, 0, HEADER_BYTES, 0);
-    return imageSize(header.subarray(0, read));
+    const size = imageSize(header.subarray(0, read));
+    if (!size) {
+      return null;
+    }
+    const stat = fs.fstatSync(fd);
+    const revision = `${stat.size.toString(36)}-${Math.trunc(stat.mtimeMs).toString(36)}`;
+    return { ...size, revision };
   } catch {
     return null;
   } finally {

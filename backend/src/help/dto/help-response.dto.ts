@@ -34,6 +34,12 @@ export interface HelpImageVariant {
   name: string;
   width: number;
   height: number;
+  /**
+   * The picture's cache key, sent back as `?v=`: the running version and the
+   * file's own revision, so it changes with every release and whenever the
+   * file does (a retaken screenshot in the dev stack's mount).
+   */
+  revision: string;
 }
 
 /** A picture a page shows, in both themes. */
@@ -59,12 +65,12 @@ export interface HelpPage {
    * page shows its caption instead.
    */
   images: Record<string, HelpImage>;
-  /** The running version: the cache key for the page's pictures. */
-  version: string;
 }
 
 /** A bundled picture's bytes, for `GET /help/images/:name`. */
 export interface HelpImageFile {
   data: Buffer;
   contentType: string;
+  /** The same cache key the page's `HelpImageVariant` carries. */
+  revision: string;
 }
