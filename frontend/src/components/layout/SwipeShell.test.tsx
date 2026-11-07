@@ -162,6 +162,15 @@ describe('SwipeShell', () => {
     expect(source).not.toMatch(/overflow-x-clip\$\{/);
   });
 
+  it('spells the help panel push as a whole token Tailwind can find in the source', () => {
+    // The className assertion above cannot tell a class Tailwind generated from
+    // one it never saw; the E2E resize step reads the computed padding. This is
+    // the cheap half: the token is whole, and no template expression touches it.
+    const source = readFileSync(join(__dirname, 'SwipeShell.tsx'), 'utf-8');
+    expect(source).toMatch(/'xl:pr-\(--help-panel-width\)'/);
+    expect(source).not.toMatch(/xl:pr-\(--help-panel-width\)\$\{/);
+  });
+
   it('renders BackendDownBanner on app pages', () => {
     mockPathname = '/dashboard';
     render(<SwipeShell><p>Content</p></SwipeShell>);
