@@ -89,6 +89,7 @@ function BudgetsContent() {
           <PageHeader
             title={t('pages.create.title')}
             subtitle={t('pages.create.subtitle')}
+            help="budgets"
           />
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
             <BudgetWizard

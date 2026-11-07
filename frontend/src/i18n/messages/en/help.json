@@ -1,6 +1,26 @@
 {
   "learnMore": "Learn more",
   "howThisWorks": "How this works",
+  "menu": {
+    "helpForPage": "Help for this page",
+    "search": "Search help",
+    "shortcuts": "Keyboard shortcuts",
+    "takeTour": "Take the tour",
+    "whatsNew": "What's new",
+    "reportIssue": "Report an issue",
+    "discussions": "Discussions"
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "search": "Search help",
+    "searchKeys": "Ctrl/Cmd+K or ?",
+    "undo": "Undo the last change",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Redo",
+    "redoKeys": "Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y",
+    "closeDialog": "Close the open dialog or panel",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Help",
     "back": "Back",
@@ -24,7 +44,12 @@
       "body": "The guide did not load. Try again, or read this page on monize.net.",
       "retry": "Try again"
     },
-    "search": "Search the guide"
+    "search": "Search the guide",
+    "tour": {
+      "prompt": "This page has a guided tour."
+    },
+    "version": "Guide for Monize {version}",
+    "latestOnline": "The latest guide is on monize.net"
   },
   "search": {
     "title": "Search the guide",

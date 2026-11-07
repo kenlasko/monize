@@ -11,7 +11,7 @@ vi.mock('@/lib/help', () => ({
   },
 }));
 
-import { onHelpLinkClick, prefetchHelp, useHelpPrefetch } from './help-open';
+import { onGuideLinkClick, onHelpLinkClick, prefetchHelp, useHelpPrefetch } from './help-open';
 import { useHelpStore } from '@/store/helpStore';
 
 const open = vi.fn();
@@ -149,6 +149,41 @@ describe('onHelpLinkClick', () => {
     useHelpStore.getState().setGuideAvailable(true);
     const { event, preventDefault } = click(init);
     onHelpLinkClick(event, 'budgets');
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(useHelpStore.getState().open).toBe(false);
+  });
+});
+
+describe('onGuideLinkClick', () => {
+  it('opens the panel for a recognised guide link when the guide is bundled', () => {
+    useHelpStore.getState().setGuideAvailable(true);
+    const { event, preventDefault } = click();
+    onGuideLinkClick(event, 'https://www.monize.net/docs/budgets#rollover-rules');
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(useHelpStore.getState().history).toEqual([
+      { page: 'budgets', section: 'rollover-rules' },
+    ]);
+  });
+
+  it('leaves a non-guide link to the browser', () => {
+    useHelpStore.getState().setGuideAvailable(true);
+    const { event, preventDefault } = click();
+    onGuideLinkClick(event, 'https://github.com/kenlasko/monize');
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(useHelpStore.getState().open).toBe(false);
+  });
+
+  it('leaves the click to the anchor while the manifest is not known yet', () => {
+    const { event, preventDefault } = click();
+    onGuideLinkClick(event, 'https://www.monize.net/docs/budgets');
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(useHelpStore.getState().open).toBe(false);
+  });
+
+  it('leaves a modified click to the browser even when the guide is bundled', () => {
+    useHelpStore.getState().setGuideAvailable(true);
+    const { event, preventDefault } = click({ ctrlKey: true });
+    onGuideLinkClick(event, 'https://www.monize.net/docs/budgets');
     expect(preventDefault).not.toHaveBeenCalled();
     expect(useHelpStore.getState().open).toBe(false);
   });

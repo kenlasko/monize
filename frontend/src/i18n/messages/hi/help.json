@@ -1,6 +1,26 @@
 {
   "learnMore": "अधिक जानें",
   "howThisWorks": "यह कैसे काम करता है",
+  "menu": {
+    "helpForPage": "इस पेज के लिए मदद",
+    "search": "मदद खोजें",
+    "shortcuts": "कीबोर्ड शॉर्टकट",
+    "takeTour": "टूर लें",
+    "whatsNew": "नया क्या है",
+    "reportIssue": "समस्या की रिपोर्ट करें",
+    "discussions": "चर्चाएं"
+  },
+  "shortcuts": {
+    "title": "कीबोर्ड शॉर्टकट",
+    "search": "मदद खोजें",
+    "searchKeys": "Ctrl/Cmd+K या ?",
+    "undo": "आखिरी बदलाव पूर्ववत करें",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "फिर से करें",
+    "redoKeys": "Ctrl/Cmd+Shift+Z या Ctrl/Cmd+Y",
+    "closeDialog": "खुला डायलॉग या पैनल बंद करें",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "सहायता",
     "back": "वापस",
@@ -24,7 +44,12 @@
       "body": "गाइड लोड नहीं हुई। फिर कोशिश करें, या इस पेज को monize.net पर पढ़ें।",
       "retry": "फिर कोशिश करें"
     },
-    "search": "गाइड खोजें"
+    "search": "गाइड खोजें",
+    "tour": {
+      "prompt": "इस पेज में एक गाइडेड टूर है।"
+    },
+    "version": "Monize {version} के लिए गाइड",
+    "latestOnline": "नवीनतम गाइड monize.net पर है"
   },
   "search": {
     "title": "गाइड खोजें",

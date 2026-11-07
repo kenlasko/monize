@@ -1,6 +1,26 @@
 {
   "learnMore": "詳細を見る",
   "howThisWorks": "仕組み",
+  "menu": {
+    "helpForPage": "このページのヘルプ",
+    "search": "ヘルプを検索",
+    "shortcuts": "キーボードショートカット",
+    "takeTour": "ツアーを開始",
+    "whatsNew": "新着情報",
+    "reportIssue": "問題を報告",
+    "discussions": "ディスカッション"
+  },
+  "shortcuts": {
+    "title": "キーボードショートカット",
+    "search": "ヘルプを検索",
+    "searchKeys": "Ctrl/Cmd+K または ?",
+    "undo": "直前の変更を元に戻す",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "やり直す",
+    "redoKeys": "Ctrl/Cmd+Shift+Z または Ctrl/Cmd+Y",
+    "closeDialog": "開いているダイアログまたはパネルを閉じる",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "ヘルプ",
     "back": "戻る",
@@ -24,7 +44,12 @@
       "body": "ガイドを読み込めませんでした。もう一度お試しいただくか、このページを monize.net でご覧ください。",
       "retry": "再試行"
     },
-    "search": "ガイドを検索"
+    "search": "ガイドを検索",
+    "tour": {
+      "prompt": "このページにはガイド付きツアーがあります。"
+    },
+    "version": "Monize {version} のガイド",
+    "latestOnline": "最新のガイドは monize.net にあります"
   },
   "search": {
     "title": "ガイドを検索",

@@ -23,6 +23,8 @@ export const DOCS_LINKS = {
   institutions: { page: 'accounts', section: 'financial-institutions' },
   aiAssistant: { page: 'ai' },
   aiInsights: { page: 'ai', section: 'financial-insights' },
+  aiSettings: { page: 'ai', section: 'setting-up-ai' },
+  aiReviewInbox: { page: 'email-receipts', section: 'reviewing-and-approving-proposals' },
   adminBackups: { page: 'backup-and-restore', section: 'automatic-backups' },
   bills: { page: 'bills-and-deposits' },
   billOccurrenceOverride: { page: 'bills-and-deposits', section: 'overriding-individual-occurrences' },
@@ -73,6 +75,9 @@ export const DOCS_LINKS = {
   rulesRunOnExisting: { page: 'rules', section: 'running-a-rule-on-existing-transactions' },
   settings: { page: 'settings-and-security' },
   bankSync: { page: 'settings-and-security', section: 'bank-sync' },
+  sharedAccess: { page: 'settings-and-security', section: 'shared-access-delegated-users' },
+  emergencyAccess: { page: 'settings-and-security', section: 'emergency-access' },
+  tourSettings: { page: 'settings-and-security', section: 'guided-tours' },
   backupEncryption: { page: 'backup-and-restore', section: 'encrypted-backups' },
   backupRestore: { page: 'backup-and-restore', section: 'restoring-from-a-backup' },
   twoFactorBackupCodes: { page: 'settings-and-security', section: 'backup-codes' },
@@ -117,4 +122,47 @@ export function helpTarget(link: DocsLink): HelpTarget {
   return target.section === undefined
     ? { page: target.page || 'index' }
     : { page: target.page || 'index', section: target.section };
+}
+
+const DOCS_BASE = new URL(DOCS_BASE_URL);
+
+/**
+ * Recognise a link into the user documentation at monize.net -- the shape
+ * release notes and the assistant's answers already write (`docsUrl(...)`,
+ * or a link the model composed in the same shape) -- and resolve it to a
+ * target the help panel can open. `ReleaseNotesMarkdown` and
+ * `AssistantMarkdown` use this to open such a link in the panel on a plain
+ * click. Anything else -- a different site, a lookalike host
+ * (`www.monize.net.evil.com`), or a URL that fails to parse -- is `null` and
+ * the link is left to the browser. Deliberately not checked against
+ * `DOCS_LINKS` or the manifest's page set here: that would need either an
+ * ambiguous reverse lookup or a network read inside a synchronous click
+ * handler. A slug that does not exist opens the panel into the same load
+ * error `useHelpPage` already shows for one, rather than falling through.
+ */
+export function isGuideUrl(href: string | undefined | null): HelpTarget | null {
+  if (!href) return null;
+  let url: URL;
+  try {
+    url = new URL(href, DOCS_BASE_URL);
+  } catch {
+    return null;
+  }
+  if (url.origin !== DOCS_BASE.origin) return null;
+  const base = DOCS_BASE.pathname;
+  if (url.pathname !== base && !url.pathname.startsWith(`${base}/`)) return null;
+  const page = url.pathname === base ? '' : url.pathname.slice(base.length + 1);
+  let section: string | undefined;
+  if (url.hash) {
+    try {
+      section = decodeURIComponent(url.hash.slice(1));
+    } catch {
+      // A malformed %-escape in the fragment: not a link this app composed,
+      // so land on the page rather than letting the click handler throw.
+      section = undefined;
+    }
+  }
+  return section === undefined
+    ? { page: page || 'index' }
+    : { page: page || 'index', section };
 }

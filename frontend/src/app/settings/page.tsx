@@ -121,7 +121,7 @@ function DelegateSecurityView() {
     return (
       <PageLayout>
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-          <PageHeader title={t('title')} />
+          <PageHeader title={t('title')} help="settings" />
           <p className="text-sm text-gray-600 dark:text-gray-300">
             {t('delegateSecurityError')}
           </p>
@@ -140,7 +140,7 @@ function DelegateSecurityView() {
   return (
     <PageLayout>
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-        <PageHeader title={t('title')} />
+        <PageHeader title={t('title')} help="settings" />
         <div id="security">
           <SecuritySection
             user={user}

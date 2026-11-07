@@ -9,7 +9,8 @@
     "stepCounter": "{current} / {total}",
     "skippedTitle": "導覽已結束",
     "skippedBody": "部分步驟因對應畫面或元件無法使用而被跳過。您隨時可以在設定中重新進行導覽。",
-    "move": "移動此卡片——拖曳它，或用方向鍵微調"
+    "move": "移動此卡片——拖曳它，或用方向鍵微調",
+    "readGuide": "閱讀完整指南"
   },
   "offer": {
     "heading": "來趟快速導覽",

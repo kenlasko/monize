@@ -18,7 +18,9 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ActionHistoryPanel } from '@/components/layout/ActionHistoryPanel';
+import { HelpMenu } from '@/components/layout/HelpMenu';
 import { MobileNavDrawer } from '@/components/layout/MobileNavDrawer';
+import { useHelpMenuEntries } from '@/hooks/useHelpMenuEntries';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { useTourOpensToolsMenu } from '@/store/tourStore';
 import {
@@ -147,6 +149,7 @@ export function AppHeader() {
         return !!r && (r.create || r.edit || r.delete);
       })
     : toolsLinks;
+  const helpEntries = useHelpMenuEntries();
   const [toolsOpen, setToolsOpen] = useState(false);
   // A tour step can ask for the menu to be open so it can describe what is
   // inside; that wins over local state (and over a click-outside close).
@@ -363,6 +366,7 @@ export function AppHeader() {
                   badge: l.badge,
                 }))}
                 showAdmin={!isDelegateView && user?.role === 'admin'}
+                helpEntries={helpEntries}
               />
             </div>
 
@@ -563,7 +567,7 @@ export function AppHeader() {
               </nav>
             )}
           </div>
-          <div className="flex items-center space-x-1 sm:space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-4 xl:space-x-1 2xl:space-x-4">
             <div className="relative" ref={searchRef}>
               <div className="flex items-center">
                 <input
@@ -625,6 +629,7 @@ export function AppHeader() {
             </div>
             <ActionHistoryPanel />
             <NotificationBell />
+            <HelpMenu entries={helpEntries} />
             {/* The reconciliation reminder badge is deliberately not mounted
                 here for now: the reminder is kept off the header until
                 reconciliation is a more established habit. The component and
@@ -658,7 +663,14 @@ export function AppHeader() {
                   d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
                 />
               </svg>
-              <span className="hidden sm:inline">
+              {/* Hidden again from xl, where the nav links (also xl:flex) start
+                  competing for the same row: at 1280px -- the default E2E
+                  viewport and a common laptop width -- the row was already as
+                  wide as the plan's own "watch out" warned, and the header's
+                  shell clips rather than scrolls (SwipeShell's
+                  overflow-x-clip), so an overflowing Logout button is
+                  unclickable, not just unreachable without a scroll. */}
+              <span className="hidden sm:inline xl:hidden 2xl:inline">
                 {user?.firstName || user?.email}
               </span>
             </button>

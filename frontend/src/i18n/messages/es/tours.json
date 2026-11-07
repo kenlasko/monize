@@ -9,7 +9,8 @@
     "stepCounter": "{current} de {total}",
     "skippedTitle": "Recorrido finalizado",
     "skippedBody": "Se omitieron algunos pasos porque su pantalla o control no estaba disponible. Puedes repetir el recorrido en cualquier momento desde Ajustes.",
-    "move": "Mover esta tarjeta — arrástrela o desplácela con las teclas de flecha"
+    "move": "Mover esta tarjeta — arrástrela o desplácela con las teclas de flecha",
+    "readGuide": "Leer la guía completa"
   },
   "offer": {
     "heading": "Haz un recorrido rápido",

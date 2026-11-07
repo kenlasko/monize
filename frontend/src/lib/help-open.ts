@@ -1,5 +1,5 @@
 import { useEffect, type MouseEvent } from 'react';
-import { helpTarget, type DocsLink } from '@/lib/docs-links';
+import { helpTarget, isGuideUrl, type DocsLink } from '@/lib/docs-links';
 import { helpApi } from '@/lib/help';
 import { useHelpStore } from '@/store/helpStore';
 
@@ -31,6 +31,17 @@ export function useHelpPrefetch(enabled = true): void {
   }, [enabled]);
 }
 
+/** An unmodified left click: a new tab, copy link or middle click is always the browser's. */
+function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>): boolean {
+  return (
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
+}
+
 /**
  * The click handler of a help control that is an anchor to the same page on
  * monize.net (`docsUrl(link)`, `target="_blank"`).
@@ -49,15 +60,7 @@ export function onHelpLinkClick(
   event: MouseEvent<HTMLAnchorElement>,
   link: DocsLink,
 ): void {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  ) {
-    return;
-  }
+  if (!isPlainLeftClick(event)) return;
   if (useHelpStore.getState().guideAvailable === true) {
     event.preventDefault();
     useHelpStore.getState().openAt(helpTarget(link));
@@ -65,5 +68,29 @@ export function onHelpLinkClick(
   }
   // Not known yet (or unreadable): let the anchor navigate, and ask again so
   // the next click can open the panel.
+  prefetchHelp();
+}
+
+/**
+ * The click handler of an ordinary rendered link that may happen to point
+ * into the guide -- a release note or an assistant answer, composed as plain
+ * Markdown rather than a `DocsLink` (`ReleaseNotesMarkdown`,
+ * `AssistantMarkdown`). `isGuideUrl` decides whether `href` is a guide link
+ * at all; everything else about the decision -- a modified click is always
+ * the browser's, the panel opens only once the guide is known to be bundled
+ * -- is the same as `onHelpLinkClick`.
+ */
+export function onGuideLinkClick(
+  event: MouseEvent<HTMLAnchorElement>,
+  href: string | undefined,
+): void {
+  if (!isPlainLeftClick(event)) return;
+  const target = isGuideUrl(href);
+  if (!target) return;
+  if (useHelpStore.getState().guideAvailable === true) {
+    event.preventDefault();
+    useHelpStore.getState().openAt(target);
+    return;
+  }
   prefetchHelp();
 }

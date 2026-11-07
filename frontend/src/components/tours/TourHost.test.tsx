@@ -23,6 +23,7 @@ import { act, render, screen, waitFor, fireEvent, cleanup } from '@/test/render'
 import { TourHost } from './TourHost';
 import { useTourStore } from '@/store/tourStore';
 import { useAuthStore } from '@/store/authStore';
+import { useHelpStore } from '@/store/helpStore';
 import { TOUR_ANCHORS } from '@/lib/tours/anchors';
 import type { TourDefinition } from '@/lib/tours/types';
 
@@ -70,6 +71,7 @@ beforeEach(() => {
   listAccounts.mockClear().mockResolvedValue([]);
   useTourStore.setState({ active: null, progress: {}, progressLoaded: false });
   useAuthStore.setState({ isAuthenticated: true });
+  useHelpStore.setState({ open: false, history: [], cursor: -1 });
 });
 
 afterEach(() => {
@@ -117,6 +119,36 @@ describe('TourHost', () => {
     });
     expect(useTourStore.getState().active).toBeNull();
     expect(saveProgress).toHaveBeenCalledWith('test/centered', 'completed');
+  });
+
+  it('opens the guide and finishes the tour from "Read the full guide" on the last step', async () => {
+    const WITH_DOCS: TourDefinition = { ...CENTERED, id: 'test/with-docs', docs: 'dashboard' };
+    await mountHost();
+    await start(WITH_DOCS);
+    await waitFor(() =>
+      expect(screen.getByText('Welcome to Monize')).toBeInTheDocument(),
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+    await waitFor(() =>
+      expect(screen.getByText('Your dashboard')).toBeInTheDocument(),
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+    await waitFor(() =>
+      expect(screen.getByText("You're all set")).toBeInTheDocument(),
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Read the full guide'));
+    });
+    const help = useHelpStore.getState();
+    expect(help.open).toBe(true);
+    expect(help.history[help.cursor]).toEqual({ page: 'dashboard' });
+    expect(useTourStore.getState().active).toBeNull();
+    expect(saveProgress).toHaveBeenCalledWith('test/with-docs', 'completed');
   });
 
   it('dismisses on Escape (capture phase) and persists a dismissal', async () => {

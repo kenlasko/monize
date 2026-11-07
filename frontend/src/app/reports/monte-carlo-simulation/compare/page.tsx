@@ -28,6 +28,7 @@ function ComparePageContent() {
         <PageHeader
           title={t('monteCarloComparePage.title')}
           subtitle={t('monteCarloComparePage.subtitle')}
+          help="reports"
           actions={
             <Link href="/reports/monte-carlo-simulation" className={buttonClassName('outline')}>
               {t('monteCarloComparePage.backToMonteCarlo')}

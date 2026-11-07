@@ -10,6 +10,7 @@ const LABELS: TourTooltipLabels = {
   tryIt: 'Try it',
   skipStep: 'Skip this step',
   move: 'Move this card',
+  readGuide: 'Read the full guide',
 };
 
 const RECT = { top: 100, left: 100, width: 120, height: 40 };
@@ -259,6 +260,23 @@ describe('TourTooltip', () => {
     fireEvent.click(screen.getByText('Done'));
     expect(h.onDone).toHaveBeenCalled();
     expect(screen.queryByText('Next')).toBeNull();
+  });
+
+  it('omits Read the full guide when the tour has no onReadGuide', () => {
+    setup({ isLast: true });
+    expect(screen.queryByText('Read the full guide')).toBeNull();
+  });
+
+  it('shows Read the full guide on the final step when onReadGuide is given, and calls it', () => {
+    const onReadGuide = vi.fn();
+    setup({ isLast: true, onReadGuide });
+    fireEvent.click(screen.getByText('Read the full guide'));
+    expect(onReadGuide).toHaveBeenCalled();
+  });
+
+  it('never shows Read the full guide on a non-final step', () => {
+    setup({ isLast: false, onReadGuide: vi.fn() });
+    expect(screen.queryByText('Read the full guide')).toBeNull();
   });
 
   it('shows the Try it hint and Skip link on interactive steps (no Next)', () => {

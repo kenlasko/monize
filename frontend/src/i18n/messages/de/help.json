@@ -1,6 +1,26 @@
 {
   "learnMore": "Mehr erfahren",
   "howThisWorks": "So funktioniert das",
+  "menu": {
+    "helpForPage": "Hilfe zu dieser Seite",
+    "search": "Hilfe durchsuchen",
+    "shortcuts": "Tastenkombinationen",
+    "takeTour": "Tour starten",
+    "whatsNew": "Neuigkeiten",
+    "reportIssue": "Problem melden",
+    "discussions": "Diskussionen"
+  },
+  "shortcuts": {
+    "title": "Tastenkombinationen",
+    "search": "Hilfe durchsuchen",
+    "searchKeys": "Strg/Cmd+K oder ?",
+    "undo": "Letzte Änderung zurücknehmen",
+    "undoKeys": "Strg/Cmd+Z",
+    "redo": "Wiederholen",
+    "redoKeys": "Strg/Cmd+Umschalt+Z oder Strg/Cmd+Y",
+    "closeDialog": "Offenen Dialog oder Panel schließen",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Hilfe",
     "back": "Zurück",
@@ -24,7 +44,12 @@
       "body": "Die Anleitung wurde nicht geladen. Versuchen Sie es erneut oder lesen Sie diese Seite auf monize.net.",
       "retry": "Erneut versuchen"
     },
-    "search": "Anleitung durchsuchen"
+    "search": "Anleitung durchsuchen",
+    "tour": {
+      "prompt": "Diese Seite hat eine geführte Tour."
+    },
+    "version": "Anleitung für Monize {version}",
+    "latestOnline": "Die neueste Anleitung ist auf monize.net"
   },
   "search": {
     "title": "Anleitung durchsuchen",

@@ -1,6 +1,26 @@
 {
   "learnMore": "Dowiedz się więcej",
   "howThisWorks": "Jak to działa",
+  "menu": {
+    "helpForPage": "Pomoc dla tej strony",
+    "search": "Szukaj w pomocy",
+    "shortcuts": "Skróty klawiaturowe",
+    "takeTour": "Rozpocznij wycieczkę",
+    "whatsNew": "Co nowego",
+    "reportIssue": "Zgłoś problem",
+    "discussions": "Dyskusje"
+  },
+  "shortcuts": {
+    "title": "Skróty klawiaturowe",
+    "search": "Szukaj w pomocy",
+    "searchKeys": "Ctrl/Cmd+K lub ?",
+    "undo": "Cofnij ostatnią zmianę",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Ponów",
+    "redoKeys": "Ctrl/Cmd+Shift+Z lub Ctrl/Cmd+Y",
+    "closeDialog": "Zamknij otwarte okno dialogowe lub panel",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Pomoc",
     "back": "Wstecz",
@@ -24,7 +44,12 @@
       "body": "Przewodnik nie został wczytany. Spróbuj ponownie lub przeczytaj tę stronę na monize.net.",
       "retry": "Spróbuj ponownie"
     },
-    "search": "Przeszukaj przewodnik"
+    "search": "Przeszukaj przewodnik",
+    "tour": {
+      "prompt": "Ta strona ma wycieczkę z przewodnikiem."
+    },
+    "version": "Przewodnik dla Monize {version}",
+    "latestOnline": "Najnowszy przewodnik jest na monize.net"
   },
   "search": {
     "title": "Przeszukaj przewodnik",

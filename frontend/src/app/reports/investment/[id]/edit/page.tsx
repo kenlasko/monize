@@ -108,6 +108,7 @@ function EditInvestmentReportContent({ reportId }: { reportId: string }) {
         <PageHeader
           title={t('editReport.titleInvestment')}
           subtitle={t('editReport.subtitleInvestment')}
+          help="reports"
           actions={
             <div className="flex items-center gap-3 w-full justify-between sm:w-auto sm:justify-end">
               <Link

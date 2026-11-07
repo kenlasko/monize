@@ -28,6 +28,7 @@ function SharedAccessContent() {
         <PageHeader
           title={t('title')}
           subtitle={t('subtitle')}
+          help="sharedAccess"
         />
 
         {isDemoMode ? (

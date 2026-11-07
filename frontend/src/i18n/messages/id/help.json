@@ -1,6 +1,26 @@
 {
   "learnMore": "Pelajari lebih lanjut",
   "howThisWorks": "Cara kerjanya",
+  "menu": {
+    "helpForPage": "Bantuan untuk halaman ini",
+    "search": "Cari bantuan",
+    "shortcuts": "Pintasan keyboard",
+    "takeTour": "Mulai tur",
+    "whatsNew": "Yang baru",
+    "reportIssue": "Laporkan masalah",
+    "discussions": "Diskusi"
+  },
+  "shortcuts": {
+    "title": "Pintasan keyboard",
+    "search": "Cari bantuan",
+    "searchKeys": "Ctrl/Cmd+K atau ?",
+    "undo": "Batalkan perubahan terakhir",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Ulangi",
+    "redoKeys": "Ctrl/Cmd+Shift+Z atau Ctrl/Cmd+Y",
+    "closeDialog": "Tutup dialog atau panel yang terbuka",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Bantuan",
     "back": "Kembali",
@@ -24,7 +44,12 @@
       "body": "Panduan tidak termuat. Coba lagi, atau baca halaman ini di monize.net.",
       "retry": "Coba lagi"
     },
-    "search": "Cari panduan"
+    "search": "Cari panduan",
+    "tour": {
+      "prompt": "Halaman ini memiliki tur berpemandu."
+    },
+    "version": "Panduan untuk Monize {version}",
+    "latestOnline": "Panduan terbaru ada di monize.net"
   },
   "search": {
     "title": "Cari panduan",

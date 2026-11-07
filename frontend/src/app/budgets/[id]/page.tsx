@@ -274,6 +274,7 @@ function BudgetDetailContent() {
             />
           }
           subtitle={`${STRATEGY_LABELS[summary.budget.strategy] ?? summary.budget.strategy} budget - ${currencyCode}`}
+          help="budgets"
           actions={
             <div className="flex items-center gap-3">
               <BudgetPeriodSelector

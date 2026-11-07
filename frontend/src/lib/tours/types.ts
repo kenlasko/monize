@@ -1,4 +1,5 @@
 import type { TourAnchorId } from './anchors';
+import type { DocsLink } from '@/lib/docs-links';
 
 /** App areas a tour belongs to, used for grouping and the offer-row label. */
 export type TourArea =
@@ -183,6 +184,13 @@ export interface TourDefinition {
    * the introduction tour teaches Split and must keep it usable.
    */
   disableTransactionSplit?: boolean;
+  /**
+   * The guide page this tour walks through, if any. The last step offers
+   * "Read the full guide", opening the help panel there (`TourHost`), and
+   * `lib/help-tours.ts` maps the guide page back to this tour so the panel
+   * can offer "Show me". Checked against `DOCS_LINKS` by `help-tours.test.ts`.
+   */
+  docs?: DocsLink;
   steps: readonly TourStep[];
 }
 

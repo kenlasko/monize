@@ -156,7 +156,7 @@ function OAuthCallbackContent() {
 
   return (
     <>
-      <PageHeader title={t('title')} />
+      <PageHeader title={t('title')} help="emailReceipts" />
       <Card padding="md">{body}</Card>
       {finished && (
         <p className="mt-4 text-sm">

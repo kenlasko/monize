@@ -26,6 +26,7 @@ function ToursSettingsContent() {
         <PageHeader
           title={t('settings.pageTitle')}
           subtitle={t('settings.pageSubtitle')}
+          help="tourSettings"
         />
 
         <TourCatalog />

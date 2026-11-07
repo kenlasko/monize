@@ -27,11 +27,17 @@ import {
   useHelpPanelWidth,
   useHelpWidthVar,
 } from '@/components/help/useHelpPanelWidth';
+import { useHelpManifest } from '@/hooks/useHelpManifest';
 import { useHelpPage } from '@/hooks/useHelpPage';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useTourRequirements } from '@/hooks/useTourRequirements';
+import { tourIdForHelpPage } from '@/lib/help-tours';
+import { getTourById } from '@/lib/tours/registry';
+import { isTourOfferable } from '@/lib/tours/requirements';
 import { useHelpSearchStore } from '@/store/helpSearchStore';
 import { useHelpStore } from '@/store/helpStore';
 import { useHelpWidthStore } from '@/store/helpWidthStore';
+import { useTourStore } from '@/store/tourStore';
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -64,6 +70,7 @@ const ICON_BUTTON = `rounded-md p-1.5 text-gray-500 hover:text-gray-700 focus-vi
  */
 export function HelpPanel() {
   const t = useTranslations('help.panel');
+  const tTours = useTranslations('tours');
   const locale = useLocale();
   const pathname = usePathname();
   const isMobile = useIsMobile();
@@ -78,6 +85,15 @@ export function HelpPanel() {
 
   const { page, error, loading, retry } = useHelpPage(target?.page ?? null);
   const [tocOpen, setTocOpen] = useState(false);
+
+  // The guided tour this page maps to, if any (`lib/help-tours.ts`), shown as
+  // a "Show me" row -- gated the same way the What's New offer list is, so a
+  // tour requiring data this user does not have is never offered here either.
+  const mappedTour = page ? getTourById(tourIdForHelpPage(page.slug) ?? '') : undefined;
+  const tourRequirements = useTourRequirements(!!mappedTour?.requiresData);
+  const tourOfferable = !!mappedTour && isTourOfferable(mappedTour, tourRequirements);
+
+  const manifest = useHelpManifest();
 
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -348,6 +364,24 @@ export function HelpPanel() {
           </button>
         </div>
 
+        {tourOfferable && mappedTour && (
+          <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-2 dark:border-gray-700">
+            <p className="text-xs text-gray-600 dark:text-gray-300">
+              {t('tour.prompt')}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                closeByReader();
+                useTourStore.getState().startTour(mappedTour);
+              }}
+              className="shrink-0 rounded-sm text-sm font-medium text-blue-600 hover:underline focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-blue-400"
+            >
+              {tTours('offer.showMe')}
+            </button>
+          </div>
+        )}
+
         {page && page.toc.length > 0 && (
           <div className="border-b border-gray-200 px-4 py-2 dark:border-gray-700">
             <button
@@ -446,6 +480,16 @@ export function HelpPanel() {
             )}
           </div>
         </div>
+
+        {manifest && (
+          <div className="border-t border-gray-200 px-4 py-1.5 dark:border-gray-700">
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {t('version', { version: manifest.version })}
+              {' · '}
+              {t('latestOnline')}
+            </p>
+          </div>
+        )}
       </div>
     </>
   );

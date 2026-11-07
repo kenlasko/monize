@@ -9,7 +9,8 @@
     "stepCounter": "{current} dari {total}",
     "skippedTitle": "Tur selesai",
     "skippedBody": "Beberapa langkah dilewati karena layar atau kontrolnya tidak tersedia. Anda dapat mengulang tur kapan saja dari Pengaturan.",
-    "move": "Pindahkan kartu ini — seret, atau geser dengan tombol panah"
+    "move": "Pindahkan kartu ini — seret, atau geser dengan tombol panah",
+    "readGuide": "Baca panduan lengkap"
   },
   "offer": {
     "heading": "Ikuti tur singkat",

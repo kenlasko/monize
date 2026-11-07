@@ -5,7 +5,8 @@ import { isNavSectionActive } from '@/lib/nav-section';
 import { ADMIN_LINKS, NAV_ICONS } from '@/lib/nav-links';
 import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/Modal';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { ArrowTopRightOnSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import type { HelpMenuEntries } from '@/hooks/useHelpMenuEntries';
 
 interface NavLink {
   href: string;
@@ -29,6 +30,9 @@ interface MobileNavDrawerProps {
   toolsLinks: NavLink[];
   /** Whether to render the Admin section. */
   showAdmin: boolean;
+  /** The header Help menu's entries (`useHelpMenuEntries`), rendered as their
+   *  own section instead of behind a hover the drawer has no room for. */
+  helpEntries: HelpMenuEntries;
 }
 
 const SECTION_HEADER_CLASS =
@@ -57,6 +61,7 @@ export function MobileNavDrawer({
   showAiMenu,
   toolsLinks,
   showAdmin,
+  helpEntries,
 }: MobileNavDrawerProps) {
   const t = useTranslations('navigation');
   const itemClass = (active: boolean) =>
@@ -160,6 +165,49 @@ export function MobileNavDrawer({
               )}
             </>
           )}
+
+          <div className="border-t border-gray-200 dark:border-gray-700 mt-2" />
+          <div className={SECTION_HEADER_CLASS}>{t('help')}</div>
+          {helpEntries.helpForPage && (
+            <button
+              key={helpEntries.helpForPage.key}
+              onClick={() => {
+                helpEntries.helpForPage?.onClick();
+                onClose();
+              }}
+              className={itemClass(false)}
+            >
+              {helpEntries.helpForPage.label}
+            </button>
+          )}
+          {helpEntries.actions.map((entry) => (
+            <button
+              key={entry.key}
+              onClick={() => {
+                entry.onClick();
+                onClose();
+              }}
+              className={itemClass(false)}
+            >
+              {entry.label}
+            </button>
+          ))}
+          {helpEntries.links.map((link) => (
+            <a
+              key={link.key}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className={`${itemClass(false)} gap-1.5`}
+            >
+              {link.label}
+              <ArrowTopRightOnSquareIcon
+                aria-hidden
+                className="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-gray-500"
+              />
+            </a>
+          ))}
 
           <div className="border-t border-gray-200 dark:border-gray-700 mt-2" />
           {renderLink({ href: '/settings', label: t('settings') }, pathname === '/settings')}
