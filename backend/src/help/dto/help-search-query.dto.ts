@@ -9,6 +9,7 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
 } from "class-validator";
 import { HELP_SLUG_RE } from "../help.constants";
 import { HELP_SEARCH_DEFAULT_LIMIT } from "../help-search";
@@ -33,6 +34,7 @@ export class HelpSearchQueryDto {
       "The current screen's help page slug; its sections are boosted. A slug the guide does not have is ignored rather than refused.",
   })
   @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== undefined && v !== "")
   @IsString()
   @Matches(HELP_SLUG_RE)
   context?: string;

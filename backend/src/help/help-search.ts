@@ -100,7 +100,11 @@ const STOP_WORDS = new Set([
 const SYNONYM_GROUPS: readonly (readonly string[])[] = [
   ["chequing", "checking"],
   ["recurring", "scheduled", "bills"],
-  ["stock", "security", "holding"],
+  // "security" is not in this group: the guide uses that word for account
+  // security (2FA, headers, "Settings and Security") far more than for a
+  // tradable instrument, so adding it here made "stock" and "holding" match
+  // those unrelated sections instead (verified against the real guide).
+  ["stock", "holding"],
   ["split", "splits"],
   ["import", "upload"],
 ];
@@ -175,6 +179,46 @@ interface Tokenized {
   body: string[];
 }
 
+/**
+ * Keyed on the section object itself, which `HelpService` builds once and
+ * reuses for every search: the real caller's sections never change, so this
+ * turns the repeated cost of tokenizing the whole bundled guide (NFKD,
+ * phrase folding, a regex split, for every section's heading, title and
+ * body) into a one-time cost, paid on the first search after the bundle
+ * loads. A test's own fixture sections cache independently of each other and
+ * of the real bundle's, since they are different objects.
+ */
+const tokenCache = new WeakMap<HelpSearchSection, Tokenized>();
+
+function tokenizeSection(section: HelpSearchSection): Tokenized {
+  const cached = tokenCache.get(section);
+  if (cached) return cached;
+  const entry: Tokenized = {
+    raw: section,
+    heading: tokenize(section.heading),
+    title: tokenize(section.pageTitle),
+    body: tokenize(section.text),
+  };
+  tokenCache.set(section, entry);
+  return entry;
+}
+
+/**
+ * Every literal spelling that could appear in raw text for a normalized query
+ * token -- the token itself, its synonym group, and (for the one token
+ * `PHRASE_NORMALIZATIONS` folds several spellings into) those spellings. A
+ * result found only through a synonym or a folded phrase would otherwise
+ * anchor its excerpt on nothing, since none of those spellings literally
+ * occur in the token's own folded form.
+ */
+function excerptCandidates(token: string): readonly string[] {
+  const candidates = SYNONYMS.get(token) ?? [token];
+  if (token === "twofactor") {
+    return [...candidates, "two-factor", "two factor", "2fa", "totp"];
+  }
+  return candidates;
+}
+
 /** Builds an excerpt of plain text around the first matched token, bounded to about `EXCERPT_LENGTH` characters. */
 function buildExcerpt(text: string, tokens: readonly string[]): string {
   if (text.length <= EXCERPT_LENGTH) return text;
@@ -188,9 +232,11 @@ function buildExcerpt(text: string, tokens: readonly string[]): string {
   let matchIndex = -1;
   for (const token of tokens) {
     if (token.length === 0) continue;
-    const index = text.search(new RegExp(escapeRegExp(token), "i"));
-    if (index !== -1 && (matchIndex === -1 || index < matchIndex)) {
-      matchIndex = index;
+    for (const candidate of excerptCandidates(token)) {
+      const index = text.search(new RegExp(escapeRegExp(candidate), "i"));
+      if (index !== -1 && (matchIndex === -1 || index < matchIndex)) {
+        matchIndex = index;
+      }
     }
   }
   const anchor = matchIndex === -1 ? 0 : matchIndex;
@@ -252,12 +298,7 @@ export function searchHelp(
 
   const scored: { entry: Tokenized; score: number; order: number }[] = [];
   sections.forEach((section, order) => {
-    const entry: Tokenized = {
-      raw: section,
-      heading: tokenize(section.heading),
-      title: tokenize(section.pageTitle),
-      body: tokenize(section.text),
-    };
+    const entry = tokenizeSection(section);
     const score = scoreSection(entry, tokens, contextPage);
     if (score > 0) scored.push({ entry, score, order });
   });

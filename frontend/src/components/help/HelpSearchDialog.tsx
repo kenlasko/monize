@@ -49,12 +49,19 @@ export function HelpSearchDialog() {
   const [draft, setDraft] = useState('');
   const typed = draft.trim();
   const rested = useDebouncedValue(typed, HELP_SEARCH_DEBOUNCE_MS);
-  // Emptying the box applies at once; any other text applies only once it
-  // has rested. `rested` already lags at the last value `typed` settled on
-  // -- exactly what should still be searched for while newer text is mid
-  // debounce -- so nothing here needs its own state (mirrors
-  // ReceiptTransactionPicker's search box, minus the state it didn't need).
-  const query = typed === '' ? '' : rested;
+  // Emptying the box applies at once; any other text applies only once the
+  // rested value matches it, so a value that rested before the box emptied
+  // is never searched for again while the next word is typed (mirrors
+  // ReceiptTransactionPicker's search box). `rested` alone is not enough:
+  // clearing the box and typing a new query within one debounce window
+  // would otherwise read `rested` as the OLD query, mid-flight to becoming
+  // "" -- showing stale results for text no longer in the box.
+  const [query, setQuery] = useState(typed);
+  if (typed === '' && query !== '') {
+    setQuery('');
+  } else if (typed !== '' && rested === typed && query !== typed) {
+    setQuery(typed);
+  }
 
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [active, setActive] = useState(0);
@@ -185,10 +192,17 @@ export function HelpSearchDialog() {
         )}
         <HelpSearchResultList id={listId} items={items} active={active} terms={terms} onChoose={choose} />
 
-        <p className="px-1 text-xs text-gray-400 dark:text-gray-500">
-          <kbd>&uarr;</kbd> <kbd>&darr;</kbd> {t('hint.navigate')} &middot; <kbd>Enter</kbd>{' '}
-          {t('hint.select')} &middot; <kbd>Esc</kbd> {t('hint.close')}
-        </p>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 px-1 text-xs text-gray-400 dark:text-gray-500">
+          <span className="flex items-center gap-1">
+            <kbd>&uarr;</kbd> <kbd>&darr;</kbd> {t('hint.navigate')}
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd>Enter</kbd> {t('hint.select')}
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd>Esc</kbd> {t('hint.close')}
+          </span>
+        </div>
       </div>
     </Modal>
   );

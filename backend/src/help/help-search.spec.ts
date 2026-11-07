@@ -121,6 +121,38 @@ describe("searchHelp", () => {
     expect(results[0].page).toBe("a");
   });
 
+  it("anchors the excerpt on the synonym's own spelling, not the typed word", () => {
+    const lead = "x".repeat(100);
+    const tail = "y".repeat(100);
+    const sections = [
+      section({
+        page: "a",
+        section: "a",
+        text: `${lead} Chequing accounts hold day-to-day money. ${tail}`,
+      }),
+    ];
+
+    const { results } = searchHelp(sections, "checking");
+
+    expect(results[0].excerpt).toContain("Chequing");
+  });
+
+  it("anchors the excerpt on the folded phrase's own spelling", () => {
+    const lead = "x".repeat(100);
+    const tail = "y".repeat(100);
+    const sections = [
+      section({
+        page: "a",
+        section: "a",
+        text: `${lead} Two-factor authentication adds a second step. ${tail}`,
+      }),
+    ];
+
+    const { results } = searchHelp(sections, "2fa");
+
+    expect(results[0].excerpt).toContain("Two-factor");
+  });
+
   it("folds 2FA, two-factor and TOTP into the same match, without matching 'two' or 'factor' alone elsewhere", () => {
     const sections = [
       section({

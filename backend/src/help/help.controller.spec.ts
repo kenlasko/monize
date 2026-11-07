@@ -171,6 +171,10 @@ describe("HelpController", () => {
       }
     });
 
+    it("ignores rather than rejects an empty context", async () => {
+      expect(await validationErrors({ q: "x", context: "" })).toEqual([]);
+    });
+
     it.each([0, 21, -1, 1.5])("rejects limit %j", async (limit) => {
       expect(await validationErrors({ q: "x", limit })).toEqual(["limit"]);
     });

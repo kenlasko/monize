@@ -138,6 +138,46 @@ describe('HelpSearchDialog', () => {
     expect(screen.getByText(/No results for/)).toBeInTheDocument();
   });
 
+  it('does not show the stale query\'s results while retyping within a clear\'s debounce window', async () => {
+    await act(async () => {
+      render(<HelpSearchDialog />);
+    });
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, { target: { value: 'first' } });
+    await act(rest);
+    expect(await screen.findByText('Overview')).toBeInTheDocument();
+
+    // Clear, then retype before the clear itself has rested.
+    fireEvent.change(input, { target: { value: '' } });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, HELP_SEARCH_DEBOUNCE_MS / 2));
+    });
+    fireEvent.change(input, { target: { value: 'second' } });
+
+    // "second" has not rested yet; "first"'s answer must not reappear just
+    // because the debounced value hasn't caught up to the box's text.
+    expect(screen.queryByText('Overview')).not.toBeInTheDocument();
+
+    search.mockResolvedValueOnce(
+      answer({
+        results: [
+          {
+            page: 'tags',
+            section: 'overview',
+            pageTitle: 'Tags',
+            heading: 'Tagging',
+            excerpt: 'x',
+            score: 5,
+          },
+        ],
+        total: 1,
+      }),
+    );
+    await act(rest);
+    expect(await screen.findByText('Tagging')).toBeInTheDocument();
+  });
+
   it('shows an error, never "no results", when the search fails', async () => {
     search.mockRejectedValue(new Error('network down'));
     await act(async () => {
