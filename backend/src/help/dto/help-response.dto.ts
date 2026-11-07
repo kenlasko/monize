@@ -28,6 +28,21 @@ export interface HelpTocEntry {
   heading: string;
 }
 
+/** One theme's picture: what `GET /help/images/:name` serves, and its size. */
+export interface HelpImageVariant {
+  /** `<name>` for the dark picture, `<name>.light` for the light one. */
+  name: string;
+  width: number;
+  height: number;
+}
+
+/** A picture a page shows, in both themes. */
+export interface HelpImage {
+  dark: HelpImageVariant;
+  /** The light twin; `null` when there is none and the dark one shows in both themes. */
+  light: HelpImageVariant | null;
+}
+
 /** Response of `GET /help/pages/:slug`. */
 export interface HelpPage {
   slug: string;
@@ -38,4 +53,18 @@ export interface HelpPage {
   toc: HelpTocEntry[];
   /** The same page (landing page for `index`) on the public documentation site. */
   onlineUrl: string;
+  /**
+   * Every picture the Markdown names (`images/<name>.png`) that the bundle
+   * holds, keyed by `<name>`. A picture the bundle lacks is absent, and the
+   * page shows its caption instead.
+   */
+  images: Record<string, HelpImage>;
+  /** The running version: the cache key for the page's pictures. */
+  version: string;
+}
+
+/** A bundled picture's bytes, for `GET /help/images/:name`. */
+export interface HelpImageFile {
+  data: Buffer;
+  contentType: string;
 }

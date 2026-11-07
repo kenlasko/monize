@@ -10,3 +10,13 @@ export const HELP_INDEX_SLUG = "index";
  * ever reaching it.
  */
 export const HELP_SLUG_RE = /^[a-z0-9-]+$/;
+
+/**
+ * The only shape a picture's name may have before it is looked up:
+ * `<name>` for the dark picture and `<name>.light` for its light twin, no
+ * extension. The lookup in the list read from the bundle is the authority.
+ */
+export const HELP_IMAGE_NAME_RE = /^[a-z0-9-]+(?:\.light)?$/;
+
+/** A picture a page shows, as the website build reads it: `images/<name>.png`. */
+export const HELP_IMAGE_REF_RE = /images\/([a-z0-9-]+)\.png/g;

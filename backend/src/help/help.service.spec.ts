@@ -4,6 +4,26 @@ import * as path from "path";
 import { Logger } from "@nestjs/common";
 import { HelpService } from "./help.service";
 
+/** The first bytes of a lossless WebP of the given size. */
+function webp(width: number, height: number): Buffer {
+  const header = Buffer.alloc(30);
+  header.write("RIFF", 0, "latin1");
+  header.write("WEBPVP8L", 8, "latin1");
+  header[20] = 0x2f;
+  header.writeUInt32LE((width - 1) | ((height - 1) << 14), 21);
+  return header;
+}
+
+/** The first bytes of a PNG of the given size. */
+function png(width: number, height: number): Buffer {
+  const header = Buffer.alloc(24);
+  header.write("\x89PNG\r\n\x1a\n", 0, "latin1");
+  header.write("IHDR", 12, "latin1");
+  header.writeUInt32BE(width, 16);
+  header.writeUInt32BE(height, 20);
+  return header;
+}
+
 const NAV = [
   {
     group: "Getting started",
@@ -32,11 +52,17 @@ const FIRST_PAGE = [
   "",
   "## Alpha",
   "",
+  "![Alpha in both themes](images/alpha.png)",
+  "",
+  "![Not taken yet](images/pending.png) and ![Alpha again](images/alpha.png)",
+  "",
   "```sh",
   "## not a heading",
   "```",
   "",
   "### Beta",
+  "",
+  "![Beta in one theme](images/beta.png)",
   "",
   "## Gamma",
   "",
@@ -59,6 +85,16 @@ describe("HelpService", () => {
     fs.writeFileSync(path.join(helpDir, "second-page.md"), "# Second Page\n");
     // A file beside the bundle that must never be reachable through a slug.
     fs.writeFileSync(path.join(tmpRoot, "secret.md"), "top secret");
+    // The pictures: alpha in both themes (the image's WebP), beta in one (a
+    // PNG, as the dev stack's mount holds), and files beside them no name
+    // may reach.
+    const images = path.join(helpDir, "images");
+    fs.mkdirSync(images);
+    fs.writeFileSync(path.join(images, "alpha.webp"), webp(1600, 1000));
+    fs.writeFileSync(path.join(images, "alpha.light.webp"), webp(1600, 1000));
+    fs.writeFileSync(path.join(images, "beta.png"), png(800, 450));
+    fs.writeFileSync(path.join(helpDir, "secret.webp"), webp(1, 1));
+    fs.writeFileSync(path.join(tmpRoot, "secret.png"), png(1, 1));
   }
 
   beforeEach(() => {
@@ -148,6 +184,8 @@ describe("HelpService", () => {
         markdown: FIRST_PAGE,
         toc: expect.any(Array),
         onlineUrl: "https://www.monize.net/docs/first-page",
+        images: expect.any(Object),
+        version: service.currentVersion,
       });
     });
 
@@ -253,6 +291,125 @@ describe("HelpService", () => {
       expect(
         service.getPage({ toString: () => "first-page" } as never),
       ).toBeNull();
+    });
+  });
+  describe("images", () => {
+    beforeEach(writeBundle);
+
+    it("lists each picture a page names in both themes, in page order", () => {
+      const images = service.getPage("first-page")?.images;
+
+      expect(images).toEqual({
+        alpha: {
+          dark: { name: "alpha", width: 1600, height: 1000 },
+          light: { name: "alpha.light", width: 1600, height: 1000 },
+        },
+        beta: {
+          dark: { name: "beta", width: 800, height: 450 },
+          light: null,
+        },
+      });
+      expect(Object.keys(images ?? {})).toEqual(["alpha", "beta"]);
+    });
+
+    it("leaves out a picture the bundle does not hold", () => {
+      expect(service.getPage("first-page")?.images).not.toHaveProperty(
+        "pending",
+      );
+      expect(service.getPage("second-page")?.images).toEqual({});
+    });
+
+    it("serves pages with no pictures when the bundle has no images directory", () => {
+      fs.rmSync(path.join(helpDir, "images"), { recursive: true });
+      service = new HelpService();
+
+      expect(service.getPage("first-page")?.images).toEqual({});
+      expect(service.getManifest().available).toBe(true);
+    });
+
+    it("serves a picture's bytes with its type, the WebP before any PNG", async () => {
+      await expect(service.getImage("alpha")).resolves.toEqual({
+        data: webp(1600, 1000),
+        contentType: "image/webp",
+      });
+      await expect(service.getImage("alpha.light")).resolves.toMatchObject({
+        contentType: "image/webp",
+      });
+    });
+
+    it("falls back to the PNG when there is no WebP", async () => {
+      await expect(service.getImage("beta")).resolves.toEqual({
+        data: png(800, 450),
+        contentType: "image/png",
+      });
+    });
+
+    it("reads the file the listing found, and only once it is asked for", async () => {
+      service.getManifest();
+      const read = jest.spyOn(fs.promises, "readFile");
+
+      await service.getImage("beta");
+
+      expect(read).toHaveBeenCalledTimes(1);
+      expect(read).toHaveBeenCalledWith(
+        path.join(helpDir, "images", "beta.png"),
+      );
+    });
+
+    it("answers null when a listed picture's file has gone", async () => {
+      service.getManifest();
+      fs.rmSync(path.join(helpDir, "images", "beta.png"));
+
+      await expect(service.getImage("beta")).resolves.toBeNull();
+    });
+
+    it.each([
+      "pending",
+      "beta.light",
+      "secret",
+      "../secret",
+      "../../secret",
+      "..%2Fsecret",
+      "%2e%2e%2fsecret",
+      "..",
+      ".",
+      "alpha.webp",
+      "alpha.png",
+      "alpha.light.webp",
+      "alpha.light.light",
+      "alpha.dark",
+      "images/alpha",
+      "Alpha",
+      "alpha\0",
+      "alpha%00",
+      "",
+      " ",
+    ])("answers null for %j without touching the filesystem", async (name) => {
+      service.getManifest();
+      const reads = [
+        jest.spyOn(fs, "readFileSync"),
+        jest.spyOn(fs, "existsSync"),
+        jest.spyOn(fs, "openSync"),
+        jest.spyOn(fs.promises, "readFile"),
+      ];
+
+      await expect(service.getImage(name)).resolves.toBeNull();
+
+      for (const read of reads) {
+        expect(read).not.toHaveBeenCalled();
+      }
+    });
+
+    it("answers null for a non-string name", async () => {
+      await expect(
+        service.getImage(["alpha"] as unknown as string),
+      ).resolves.toBeNull();
+    });
+
+    it("answers null for every picture when the bundle is missing", async () => {
+      jest.spyOn(fs, "existsSync").mockReturnValue(false);
+
+      await expect(service.getImage("alpha")).resolves.toBeNull();
     });
   });
 });

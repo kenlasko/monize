@@ -7,7 +7,12 @@ import { HelpManifest, HelpPage } from "./dto/help-response.dto";
 
 describe("HelpController", () => {
   let controller: HelpController;
-  let mockService: { getManifest: jest.Mock; getPage: jest.Mock };
+  let mockService: {
+    getManifest: jest.Mock;
+    getPage: jest.Mock;
+    getImage: jest.Mock;
+    currentVersion: string;
+  };
 
   const manifest: HelpManifest = {
     version: "1.2.3",
@@ -29,6 +34,12 @@ describe("HelpController", () => {
     markdown: "# Budgets\n\n## Overview\n",
     toc: [{ depth: 2, id: "overview", heading: "Overview" }],
     onlineUrl: "https://www.monize.net/docs/budgets",
+    images: {},
+    version: "1.2.3",
+  };
+  const picture = {
+    data: Buffer.from("webp bytes"),
+    contentType: "image/webp",
   };
 
   beforeEach(async () => {
@@ -39,6 +50,12 @@ describe("HelpController", () => {
         .mockImplementation((slug: string) =>
           slug === "budgets" ? page : null,
         ),
+      getImage: jest
+        .fn()
+        .mockImplementation((name: string) =>
+          Promise.resolve(name === "budgets-page.light" ? picture : null),
+        ),
+      currentVersion: "1.2.3",
     };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HelpController],
@@ -78,10 +95,79 @@ describe("HelpController", () => {
     expect(
       Reflect.getMetadata(GUARDS_METADATA, HelpController),
     ).toBeUndefined();
-    for (const method of ["getManifest", "getPage"] as const) {
+    for (const method of ["getManifest", "getPage", "getImage"] as const) {
       expect(
         Reflect.getMetadata(GUARDS_METADATA, HelpController.prototype[method]),
       ).toBeUndefined();
     }
+  });
+  describe("images", () => {
+    function response() {
+      const headers: Record<string, string> = {};
+      return {
+        headers,
+        setHeader: jest.fn((key: string, value: string) => {
+          headers[key] = value;
+        }),
+        send: jest.fn(),
+      };
+    }
+
+    it("sends the picture with its type, cached for good at the running version", async () => {
+      const res = response();
+
+      await controller.getImage("budgets-page.light", "1.2.3", res as never);
+
+      expect(mockService.getImage).toHaveBeenCalledWith("budgets-page.light");
+      expect(res.headers["Content-Type"]).toBe("image/webp");
+      expect(res.headers["Cache-Control"]).toBe(
+        "public, max-age=31536000, immutable",
+      );
+      expect(res.send).toHaveBeenCalledWith(picture.data);
+    });
+
+    it.each([undefined, "1.2.2", "", ["1.2.3", "x"]])(
+      "revalidates every time when the version is %j",
+      async (version) => {
+        const res = response();
+
+        await controller.getImage("budgets-page.light", version, res as never);
+
+        expect(res.headers["Cache-Control"]).toBe(
+          "public, max-age=0, must-revalidate",
+        );
+        expect(res.send).toHaveBeenCalledWith(picture.data);
+      },
+    );
+
+    it("is a 404 for a picture the bundle does not have", async () => {
+      const res = response();
+
+      await expect(
+        controller.getImage("nope", "1.2.3", res as never),
+      ).rejects.toThrow(NotFoundException);
+      expect(res.send).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      "../nav",
+      "..%2Fnav",
+      "%2e%2e",
+      "a/b",
+      "budgets-page.webp",
+      "budgets-page.png",
+      "budgets-page.light.light",
+      "Budgets-page",
+      "",
+      "a b",
+    ])("is a 404 for the malformed name %j without a lookup", async (name) => {
+      const res = response();
+
+      await expect(
+        controller.getImage(name, "1.2.3", res as never),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockService.getImage).not.toHaveBeenCalled();
+      expect(res.send).not.toHaveBeenCalled();
+    });
   });
 });
