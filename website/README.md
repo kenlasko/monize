@@ -204,12 +204,17 @@ The generator is `frontend/scripts/build-website-docs.mjs`. It renders with the 
 
 ### The guide also ships in the backend image
 
-The backend image copies `website/docs/*.md`, `nav.json` and `search-index.json` (no images, no
-generated HTML) into `./help`, and the public `GET /api/v1/help` endpoints serve them to the app's
-in-app help, so help matches the running version and works offline. A new top-level file the app
-needs (not a page: pages are already covered by `*.md`) has to be added to the `COPY website/docs/...`
-lines in `backend/Dockerfile` and to the `website/docs` exceptions in the root `.dockerignore`.
-`backend/src/help/help.real-docs.spec.ts` fails when the bundle and the generated pages disagree.
+The backend image copies `website/docs/*.md`, `nav.json` and `search-index.json` (no generated
+HTML) into `./help`, and the public `GET /api/v1/help` endpoints serve them to the app's in-app
+help, so help matches the running version and works offline. The screenshots ship too: the image
+build converts every `docs/images/*.png` to WebP (`backend/scripts/convert-help-images.sh`, in
+the Dockerfile's `help-images` stage) and the help panel shows the one matching the app's theme,
+exactly as the website does. A new, retaken or renamed picture therefore reaches the app with no
+extra step; nothing generated from it is committed. A new top-level file the app needs (not a page
+or a picture: those are already covered by `*.md` and `images/*.png`) has to be added to the
+`COPY website/docs/...` lines in `backend/Dockerfile` and to the `website/docs` exceptions in the
+root `.dockerignore`. `backend/src/help/help.real-docs.spec.ts` fails when the bundle and the
+generated pages disagree, pictures included.
 
 ### Changing the documentation
 
