@@ -104,6 +104,14 @@ import { McpServerService } from "./mcp-server.service";
 // `today`, the rows and `total` out). Total 63,460 -> 64,595 = exactly the
 // new tool's measured bytes (64,586 measured, the previous 9-byte margin
 // kept); no existing cap moved.
+//
+// Added, as a reviewed decision (in-app help plan 6,
+// docs/future-plans/in-app-help-assistant-tool.md): the read-only
+// `search_help` (1,098 bytes: a question and a limit in; `available` and the
+// cited sections out), so a model answers a question about using Monize from
+// the guide rather than from its own guess. The table measured 64,428 bytes
+// before it; total 64,595 -> 65,530 (65,526 measured), less than the new
+// tool's own bytes. No existing cap moved.
 const TOOL_BYTE_BUDGET: Record<string, number> = {
   list_accounts: 2500,
   list_transactions: 3550,
@@ -128,12 +136,13 @@ const TOOL_BYTE_BUDGET: Record<string, number> = {
   fetch_bond_series: 1000,
   enter_bond_series_manually: 1690,
   list_warranties: 1140,
+  search_help: 1100,
   get_next_prompt: 1400,
   post_response: 1050,
   report_progress: 1250,
 };
 
-const TOTAL_BYTE_BUDGET = 64_595;
+const TOTAL_BYTE_BUDGET = 65_530;
 const INSTRUCTIONS_BYTE_BUDGET = 2_600;
 
 /**
@@ -166,6 +175,7 @@ const EXPECTED_TOOL_ORDER = [
   "fetch_bond_series",
   "enter_bond_series_manually",
   "list_warranties",
+  "search_help",
   "get_next_prompt",
   "post_response",
   "report_progress",
@@ -377,6 +387,7 @@ describe("tools/list payload budget", () => {
     // provider doubles are enough to read them back off the server.
     const noopProvider = { register: () => {} } as any;
     const service = new McpServerService(
+      noopProvider,
       noopProvider,
       noopProvider,
       noopProvider,
