@@ -9,7 +9,8 @@
     "stepCounter": "{current} von {total}",
     "skippedTitle": "Tour beendet",
     "skippedBody": "Einige Schritte wurden übersprungen, weil ihr Bildschirm oder Element nicht verfügbar war. Sie können die Tour jederzeit über die Einstellungen erneut starten.",
-    "move": "Diese Karte verschieben — ziehen Sie sie oder bewegen Sie sie mit den Pfeiltasten"
+    "move": "Diese Karte verschieben — ziehen Sie sie oder bewegen Sie sie mit den Pfeiltasten",
+    "readGuide": "Die vollständige Anleitung lesen"
   },
   "offer": {
     "heading": "Machen Sie eine kurze Tour",

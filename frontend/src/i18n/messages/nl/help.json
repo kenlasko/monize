@@ -1,6 +1,26 @@
 {
   "learnMore": "Meer informatie",
   "howThisWorks": "Hoe dit werkt",
+  "menu": {
+    "helpForPage": "Hulp voor deze pagina",
+    "search": "Help doorzoeken",
+    "shortcuts": "Toetsencombinaties",
+    "takeTour": "Volg de rondleiding",
+    "whatsNew": "Nieuw",
+    "reportIssue": "Probleem melden",
+    "discussions": "Discussies"
+  },
+  "shortcuts": {
+    "title": "Toetsencombinaties",
+    "search": "Help doorzoeken",
+    "searchKeys": "Ctrl/Cmd+K of ?",
+    "undo": "Laatste wijziging ongedaan maken",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Opnieuw uitvoeren",
+    "redoKeys": "Ctrl/Cmd+Shift+Z of Ctrl/Cmd+Y",
+    "closeDialog": "Open dialoogvenster of paneel sluiten",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Help",
     "back": "Terug",
@@ -24,7 +44,12 @@
       "body": "De handleiding is niet geladen. Probeer het opnieuw of lees deze pagina op monize.net.",
       "retry": "Opnieuw proberen"
     },
-    "search": "Doorzoek de handleiding"
+    "search": "Doorzoek de handleiding",
+    "tour": {
+      "prompt": "Deze pagina heeft een rondleiding."
+    },
+    "version": "Handleiding voor Monize {version}",
+    "latestOnline": "De nieuwste handleiding staat op monize.net"
   },
   "search": {
     "title": "Doorzoek de handleiding",

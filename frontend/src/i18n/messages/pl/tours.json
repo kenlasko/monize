@@ -9,7 +9,8 @@
     "stepCounter": "{current} z {total}",
     "skippedTitle": "Przewodnik zakończony",
     "skippedBody": "Niektóre kroki zostały pominięte, ponieważ ich ekran lub element sterujący nie był dostępny. Możesz ponownie przejść przewodnik w dowolnym momencie w Ustawieniach.",
-    "move": "Przenieś tę kartę — przeciągnij ją lub przesuń klawiszami strzałek"
+    "move": "Przenieś tę kartę — przeciągnij ją lub przesuń klawiszami strzałek",
+    "readGuide": "Przeczytaj cały przewodnik"
   },
   "offer": {
     "heading": "Zobacz krótki przewodnik",

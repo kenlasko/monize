@@ -1,6 +1,26 @@
 {
   "learnMore": "了解更多",
   "howThisWorks": "工作原理",
+  "menu": {
+    "helpForPage": "此页面的帮助",
+    "search": "搜索帮助",
+    "shortcuts": "键盘快捷键",
+    "takeTour": "开始导览",
+    "whatsNew": "新功能",
+    "reportIssue": "报告问题",
+    "discussions": "讨论"
+  },
+  "shortcuts": {
+    "title": "键盘快捷键",
+    "search": "搜索帮助",
+    "searchKeys": "Ctrl/Cmd+K 或 ?",
+    "undo": "撤消上一次更改",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "重做",
+    "redoKeys": "Ctrl/Cmd+Shift+Z 或 Ctrl/Cmd+Y",
+    "closeDialog": "关闭打开的对话框或面板",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "帮助",
     "back": "返回",
@@ -24,7 +44,12 @@
       "body": "指南未能加载。请重试，或在 monize.net 上阅读本页。",
       "retry": "重试"
     },
-    "search": "搜索指南"
+    "search": "搜索指南",
+    "tour": {
+      "prompt": "此页面有导览。"
+    },
+    "version": "Monize {version} 指南",
+    "latestOnline": "最新指南在 monize.net 上"
   },
   "search": {
     "title": "搜索指南",

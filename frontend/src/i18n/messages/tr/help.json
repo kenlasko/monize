@@ -1,6 +1,26 @@
 {
   "learnMore": "Daha fazla bilgi",
   "howThisWorks": "Bu nasıl çalışır",
+  "menu": {
+    "helpForPage": "Bu sayfa için yardım",
+    "search": "Yardımda ara",
+    "shortcuts": "Klavye kısayolları",
+    "takeTour": "Turu başlat",
+    "whatsNew": "Yenilikler",
+    "reportIssue": "Sorun bildir",
+    "discussions": "Tartışmalar"
+  },
+  "shortcuts": {
+    "title": "Klavye kısayolları",
+    "search": "Yardımda ara",
+    "searchKeys": "Ctrl/Cmd+K veya ?",
+    "undo": "Son değişikliği geri al",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Yinele",
+    "redoKeys": "Ctrl/Cmd+Shift+Z veya Ctrl/Cmd+Y",
+    "closeDialog": "Açık iletişim kutusunu veya paneli kapat",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Yardım",
     "back": "Geri",
@@ -24,7 +44,12 @@
       "body": "Kılavuz yüklenmedi. Yeniden deneyin veya bu sayfayı monize.net adresinde okuyun.",
       "retry": "Yeniden dene"
     },
-    "search": "Kılavuzda ara"
+    "search": "Kılavuzda ara",
+    "tour": {
+      "prompt": "Bu sayfada rehberli bir tur var."
+    },
+    "version": "Monize {version} kılavuzu",
+    "latestOnline": "En güncel kılavuz monize.net adresinde"
   },
   "search": {
     "title": "Kılavuzda ara",

@@ -1,6 +1,26 @@
 {
   "learnMore": "En savoir plus",
   "howThisWorks": "Comment ça marche",
+  "menu": {
+    "helpForPage": "Aide pour cette page",
+    "search": "Rechercher dans l'aide",
+    "shortcuts": "Raccourcis clavier",
+    "takeTour": "Faire la visite guidée",
+    "whatsNew": "Nouveautés",
+    "reportIssue": "Signaler un problème",
+    "discussions": "Discussions"
+  },
+  "shortcuts": {
+    "title": "Raccourcis clavier",
+    "search": "Rechercher dans l'aide",
+    "searchKeys": "Ctrl/Cmd+K ou ?",
+    "undo": "Annuler la dernière modification",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Rétablir",
+    "redoKeys": "Ctrl/Cmd+Maj+Z ou Ctrl/Cmd+Y",
+    "closeDialog": "Fermer la boîte de dialogue ou le panneau ouvert",
+    "closeDialogKeys": "Échap"
+  },
   "panel": {
     "title": "Aide",
     "back": "Retour",
@@ -24,7 +44,12 @@
       "body": "Le guide ne s'est pas chargé. Réessayez ou lisez cette page sur monize.net.",
       "retry": "Réessayer"
     },
-    "search": "Rechercher dans le guide"
+    "search": "Rechercher dans le guide",
+    "tour": {
+      "prompt": "Cette page propose une visite guidée."
+    },
+    "version": "Guide de Monize {version}",
+    "latestOnline": "Le guide le plus récent se trouve sur monize.net"
   },
   "search": {
     "title": "Rechercher dans le guide",

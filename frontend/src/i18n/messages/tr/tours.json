@@ -9,7 +9,8 @@
     "stepCounter": "{current} / {total}",
     "skippedTitle": "Tur tamamlandı",
     "skippedBody": "Ekranı veya denetimi kullanılamadığı için bazı adımlar atlandı. Turu istediğiniz zaman Ayarlar'dan yeniden alabilirsiniz.",
-    "move": "Bu kartı taşı — sürükleyin veya ok tuşlarıyla kaydırın"
+    "move": "Bu kartı taşı — sürükleyin veya ok tuşlarıyla kaydırın",
+    "readGuide": "Kılavuzun tamamını oku"
   },
   "offer": {
     "heading": "Kısa bir tur yapın",

@@ -9,7 +9,8 @@
     "stepCounter": "{current} van {total}",
     "skippedTitle": "Rondleiding voltooid",
     "skippedBody": "Sommige stappen zijn overgeslagen omdat het bijbehorende scherm of element niet beschikbaar was. U kunt de rondleiding altijd opnieuw starten via Instellingen.",
-    "move": "Deze kaart verplaatsen — sleep hem of verplaats hem met de pijltoetsen"
+    "move": "Deze kaart verplaatsen — sleep hem of verplaats hem met de pijltoetsen",
+    "readGuide": "Lees de volledige handleiding"
   },
   "offer": {
     "heading": "Volg een korte rondleiding",

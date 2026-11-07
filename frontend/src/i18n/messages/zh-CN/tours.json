@@ -9,7 +9,8 @@
     "stepCounter": "{current} / {total}",
     "skippedTitle": "导览已结束",
     "skippedBody": "部分步骤因其对应的屏幕或控件不可用而被跳过。您可以随时在设置中重新开始导览。",
-    "move": "移动此卡片——拖动它，或用方向键微调"
+    "move": "移动此卡片——拖动它，或用方向键微调",
+    "readGuide": "阅读完整指南"
   },
   "offer": {
     "heading": "开始快速导览",

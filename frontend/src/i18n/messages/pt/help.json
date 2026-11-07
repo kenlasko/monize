@@ -1,6 +1,26 @@
 {
   "learnMore": "Saiba mais",
   "howThisWorks": "Como isto funciona",
+  "menu": {
+    "helpForPage": "Ajuda para esta página",
+    "search": "Pesquisar ajuda",
+    "shortcuts": "Atalhos de teclado",
+    "takeTour": "Fazer o tour",
+    "whatsNew": "Novidades",
+    "reportIssue": "Reportar um problema",
+    "discussions": "Discussões"
+  },
+  "shortcuts": {
+    "title": "Atalhos de teclado",
+    "search": "Pesquisar ajuda",
+    "searchKeys": "Ctrl/Cmd+K ou ?",
+    "undo": "Desfazer a última alteração",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Refazer",
+    "redoKeys": "Ctrl/Cmd+Shift+Z ou Ctrl/Cmd+Y",
+    "closeDialog": "Fechar a caixa de diálogo ou painel aberto",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Ajuda",
     "back": "Voltar",
@@ -24,7 +44,12 @@
       "body": "O guia não foi carregado. Tente novamente ou leia esta página em monize.net.",
       "retry": "Tentar novamente"
     },
-    "search": "Pesquisar no guia"
+    "search": "Pesquisar no guia",
+    "tour": {
+      "prompt": "Esta página tem um tour guiado."
+    },
+    "version": "Guia do Monize {version}",
+    "latestOnline": "O guia mais recente está em monize.net"
   },
   "search": {
     "title": "Pesquisar no guia",

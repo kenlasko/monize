@@ -1,6 +1,26 @@
 {
   "learnMore": "자세히 알아보기",
   "howThisWorks": "작동 방식",
+  "menu": {
+    "helpForPage": "이 페이지 도움말",
+    "search": "도움말 검색",
+    "shortcuts": "키보드 단축키",
+    "takeTour": "둘러보기 시작",
+    "whatsNew": "새로운 기능",
+    "reportIssue": "문제 신고",
+    "discussions": "토론"
+  },
+  "shortcuts": {
+    "title": "키보드 단축키",
+    "search": "도움말 검색",
+    "searchKeys": "Ctrl/Cmd+K 또는 ?",
+    "undo": "마지막 변경 취소",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "다시 실행",
+    "redoKeys": "Ctrl/Cmd+Shift+Z 또는 Ctrl/Cmd+Y",
+    "closeDialog": "열려 있는 대화상자 또는 패널 닫기",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "도움말",
     "back": "뒤로",
@@ -24,7 +44,12 @@
       "body": "가이드를 불러오지 못했습니다. 다시 시도하거나 monize.net에서 이 페이지를 읽어 보세요.",
       "retry": "다시 시도"
     },
-    "search": "가이드 검색"
+    "search": "가이드 검색",
+    "tour": {
+      "prompt": "이 페이지에는 가이드 투어가 있습니다."
+    },
+    "version": "Monize {version} 가이드",
+    "latestOnline": "최신 가이드는 monize.net에 있습니다"
   },
   "search": {
     "title": "가이드 검색",

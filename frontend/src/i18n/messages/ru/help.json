@@ -1,6 +1,26 @@
 {
   "learnMore": "Подробнее",
   "howThisWorks": "Как это работает",
+  "menu": {
+    "helpForPage": "Справка по этой странице",
+    "search": "Поиск по справке",
+    "shortcuts": "Сочетания клавиш",
+    "takeTour": "Начать обзор",
+    "whatsNew": "Что нового",
+    "reportIssue": "Сообщить о проблеме",
+    "discussions": "Обсуждения"
+  },
+  "shortcuts": {
+    "title": "Сочетания клавиш",
+    "search": "Поиск по справке",
+    "searchKeys": "Ctrl/Cmd+K или ?",
+    "undo": "Отменить последнее изменение",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Повторить",
+    "redoKeys": "Ctrl/Cmd+Shift+Z или Ctrl/Cmd+Y",
+    "closeDialog": "Закрыть открытое диалоговое окно или панель",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Помощь",
     "back": "Назад",
@@ -24,7 +44,12 @@
       "body": "Руководство не загрузилось. Повторите попытку или прочитайте эту страницу на monize.net.",
       "retry": "Повторить"
     },
-    "search": "Поиск по руководству"
+    "search": "Поиск по руководству",
+    "tour": {
+      "prompt": "На этой странице есть обзорный тур."
+    },
+    "version": "Руководство для Monize {version}",
+    "latestOnline": "Последняя версия руководства доступна на monize.net"
   },
   "search": {
     "title": "Поиск по руководству",

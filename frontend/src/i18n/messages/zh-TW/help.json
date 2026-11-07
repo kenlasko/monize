@@ -1,6 +1,26 @@
 {
   "learnMore": "瞭解更多",
   "howThisWorks": "運作方式",
+  "menu": {
+    "helpForPage": "此頁面的說明",
+    "search": "搜尋說明",
+    "shortcuts": "鍵盤快速鍵",
+    "takeTour": "開始導覽",
+    "whatsNew": "新功能",
+    "reportIssue": "回報問題",
+    "discussions": "討論"
+  },
+  "shortcuts": {
+    "title": "鍵盤快速鍵",
+    "search": "搜尋說明",
+    "searchKeys": "Ctrl/Cmd+K 或 ?",
+    "undo": "復原上一次變更",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "重做",
+    "redoKeys": "Ctrl/Cmd+Shift+Z 或 Ctrl/Cmd+Y",
+    "closeDialog": "關閉開啟的對話框或面板",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "說明",
     "back": "返回",
@@ -24,7 +44,12 @@
       "body": "指南未能載入。請重試，或在 monize.net 上閱讀本頁。",
       "retry": "重試"
     },
-    "search": "搜尋指南"
+    "search": "搜尋指南",
+    "tour": {
+      "prompt": "此頁面有導覽教學。"
+    },
+    "version": "Monize {version} 指南",
+    "latestOnline": "最新指南位於 monize.net"
   },
   "search": {
     "title": "搜尋指南",

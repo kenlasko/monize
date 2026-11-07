@@ -9,7 +9,8 @@
     "stepCounter": "{current} / {total}",
     "skippedTitle": "Đã hoàn tất hướng dẫn",
     "skippedBody": "Một số bước đã bị bỏ qua vì màn hình hoặc điều khiển tương ứng không khả dụng. Bạn có thể xem lại hướng dẫn bất cứ lúc nào từ Cài đặt.",
-    "move": "Di chuyển thẻ này — kéo thẻ, hoặc dịch bằng các phím mũi tên"
+    "move": "Di chuyển thẻ này — kéo thẻ, hoặc dịch bằng các phím mũi tên",
+    "readGuide": "Đọc hướng dẫn đầy đủ"
   },
   "offer": {
     "heading": "Xem hướng dẫn nhanh",

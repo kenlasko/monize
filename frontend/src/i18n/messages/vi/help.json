@@ -1,6 +1,26 @@
 {
   "learnMore": "Tìm hiểu thêm",
   "howThisWorks": "Cách hoạt động",
+  "menu": {
+    "helpForPage": "Trợ giúp cho trang này",
+    "search": "Tìm trong trợ giúp",
+    "shortcuts": "Phím tắt",
+    "takeTour": "Xem hướng dẫn",
+    "whatsNew": "Có gì mới",
+    "reportIssue": "Báo cáo sự cố",
+    "discussions": "Thảo luận"
+  },
+  "shortcuts": {
+    "title": "Phím tắt",
+    "search": "Tìm trong trợ giúp",
+    "searchKeys": "Ctrl/Cmd+K hoặc ?",
+    "undo": "Hoàn tác thay đổi gần nhất",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Làm lại",
+    "redoKeys": "Ctrl/Cmd+Shift+Z hoặc Ctrl/Cmd+Y",
+    "closeDialog": "Đóng hộp thoại hoặc bảng đang mở",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Trợ giúp",
     "back": "Quay lại",
@@ -24,7 +44,12 @@
       "body": "Hướng dẫn chưa được tải. Hãy thử lại hoặc đọc trang này trên monize.net.",
       "retry": "Thử lại"
     },
-    "search": "Tìm kiếm trong hướng dẫn"
+    "search": "Tìm kiếm trong hướng dẫn",
+    "tour": {
+      "prompt": "Trang này có hướng dẫn tham quan."
+    },
+    "version": "Hướng dẫn cho Monize {version}",
+    "latestOnline": "Hướng dẫn mới nhất có trên monize.net"
   },
   "search": {
     "title": "Tìm kiếm trong hướng dẫn",

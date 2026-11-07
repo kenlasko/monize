@@ -1,6 +1,26 @@
 {
   "learnMore": "Дізнатися більше",
   "howThisWorks": "Як це працює",
+  "menu": {
+    "helpForPage": "Довідка для цієї сторінки",
+    "search": "Пошук у довідці",
+    "shortcuts": "Комбінації клавіш",
+    "takeTour": "Розпочати огляд",
+    "whatsNew": "Що нового",
+    "reportIssue": "Повідомити про проблему",
+    "discussions": "Обговорення"
+  },
+  "shortcuts": {
+    "title": "Комбінації клавіш",
+    "search": "Пошук у довідці",
+    "searchKeys": "Ctrl/Cmd+K або ?",
+    "undo": "Скасувати останню зміну",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Повторити",
+    "redoKeys": "Ctrl/Cmd+Shift+Z або Ctrl/Cmd+Y",
+    "closeDialog": "Закрити відкрите діалогове вікно або панель",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Довідка",
     "back": "Назад",
@@ -24,7 +44,12 @@
       "body": "Посібник не завантажився. Спробуйте ще раз або прочитайте цю сторінку на monize.net.",
       "retry": "Спробувати ще раз"
     },
-    "search": "Пошук у довіднику"
+    "search": "Пошук у довіднику",
+    "tour": {
+      "prompt": "На цій сторінці є огляд із підказками."
+    },
+    "version": "Посібник для Monize {version}",
+    "latestOnline": "Найновіший посібник доступний на monize.net"
   },
   "search": {
     "title": "Пошук у довіднику",

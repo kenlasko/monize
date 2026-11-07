@@ -9,7 +9,8 @@
     "stepCounter": "{current} sur {total}",
     "skippedTitle": "Visite terminée",
     "skippedBody": "Certaines étapes ont été ignorées car leur écran ou leur contrôle n'était pas disponible. Vous pouvez refaire la visite à tout moment depuis les Paramètres.",
-    "move": "Déplacer cette carte — faites-la glisser ou déplacez-la avec les touches fléchées"
+    "move": "Déplacer cette carte — faites-la glisser ou déplacez-la avec les touches fléchées",
+    "readGuide": "Lire le guide complet"
   },
   "offer": {
     "heading": "Faire une visite rapide",

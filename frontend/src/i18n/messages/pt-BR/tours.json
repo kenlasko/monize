@@ -9,7 +9,8 @@
     "stepCounter": "{current} de {total}",
     "skippedTitle": "Tour encerrado",
     "skippedBody": "Algumas etapas foram puladas porque a tela ou o controle correspondente não estava disponível. Você pode refazer o tour a qualquer momento em Configurações.",
-    "move": "Mover este cartão — arraste-o ou desloque-o com as teclas de seta"
+    "move": "Mover este cartão — arraste-o ou desloque-o com as teclas de seta",
+    "readGuide": "Ler o guia completo"
   },
   "offer": {
     "heading": "Faça um tour rápido",

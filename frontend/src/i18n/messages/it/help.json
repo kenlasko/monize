@@ -1,6 +1,26 @@
 {
   "learnMore": "Scopri di più",
   "howThisWorks": "Come funziona",
+  "menu": {
+    "helpForPage": "Aiuto per questa pagina",
+    "search": "Cerca nell'aiuto",
+    "shortcuts": "Scorciatoie da tastiera",
+    "takeTour": "Fai il tour",
+    "whatsNew": "Novità",
+    "reportIssue": "Segnala un problema",
+    "discussions": "Discussioni"
+  },
+  "shortcuts": {
+    "title": "Scorciatoie da tastiera",
+    "search": "Cerca nell'aiuto",
+    "searchKeys": "Ctrl/Cmd+K o ?",
+    "undo": "Annulla l'ultima modifica",
+    "undoKeys": "Ctrl/Cmd+Z",
+    "redo": "Ripeti",
+    "redoKeys": "Ctrl/Cmd+Maiusc+Z o Ctrl/Cmd+Y",
+    "closeDialog": "Chiudi la finestra di dialogo o il pannello aperto",
+    "closeDialogKeys": "Esc"
+  },
   "panel": {
     "title": "Guida",
     "back": "Indietro",
@@ -24,7 +44,12 @@
       "body": "La guida non è stata caricata. Riprova oppure leggi questa pagina su monize.net.",
       "retry": "Riprova"
     },
-    "search": "Cerca nella guida"
+    "search": "Cerca nella guida",
+    "tour": {
+      "prompt": "Questa pagina ha un tour guidato."
+    },
+    "version": "Guida di Monize {version}",
+    "latestOnline": "La guida più recente è su monize.net"
   },
   "search": {
     "title": "Cerca nella guida",

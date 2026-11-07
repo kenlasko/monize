@@ -9,7 +9,8 @@
     "stepCounter": "{current} di {total}",
     "skippedTitle": "Tour terminato",
     "skippedBody": "Alcuni passaggi sono stati saltati perché la relativa schermata o il controllo non erano disponibili. Puoi rifare il tour in qualsiasi momento dalle Impostazioni.",
-    "move": "Sposta questa scheda — trascinala o spostala con i tasti freccia"
+    "move": "Sposta questa scheda — trascinala o spostala con i tasti freccia",
+    "readGuide": "Leggi la guida completa"
   },
   "offer": {
     "heading": "Fai un tour rapido",
