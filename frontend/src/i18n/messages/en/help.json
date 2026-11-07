@@ -8,6 +8,7 @@
     "unpin": "Unpin the help panel",
     "expand": "Expand the help panel",
     "collapse": "Shrink the help panel",
+    "resize": "Resize the help panel",
     "close": "Close help",
     "englishOnly": "This guide is in English.",
     "loading": "Loading help",

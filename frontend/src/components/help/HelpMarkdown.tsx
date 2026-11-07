@@ -1,6 +1,6 @@
 'use client';
 
-import type { MouseEvent, ReactNode } from 'react';
+import { memo, type MouseEvent, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
@@ -83,7 +83,7 @@ export function onlineHref(target: HelpTarget): string {
  * emitted (the app's CSP allows images only from its own origin, and the guide's
  * screenshots are not bundled), and no raw HTML is rendered.
  */
-export function HelpMarkdown({
+export const HelpMarkdown = memo(function HelpMarkdown({
   markdown,
   toc,
   slug,
@@ -235,4 +235,4 @@ export function HelpMarkdown({
       </ReactMarkdown>
     </div>
   );
-}
+});

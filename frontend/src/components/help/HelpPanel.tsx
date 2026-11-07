@@ -15,10 +15,13 @@ import {
 import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { HelpMarkdown, onlineHref } from '@/components/help/HelpMarkdown';
-import { HELP_PANEL_WIDTH } from '@/components/help/help-layout';
+import { HelpResizeHandle } from '@/components/help/HelpResizeHandle';
+import { clampHelpPanelWidth, helpPanelMaxWidth } from '@/components/help/help-layout';
+import { useHelpPanelWidth, useViewportWidth } from '@/components/help/useHelpPanelWidth';
 import { useHelpPage } from '@/hooks/useHelpPage';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useHelpStore } from '@/store/helpStore';
+import { useHelpWidthStore } from '@/store/helpWidthStore';
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -71,6 +74,13 @@ export function HelpPanel() {
   const titleRef = useRef<HTMLHeadingElement>(null);
 
   const modal = isMobile || expanded;
+  const docked = !isMobile && !expanded;
+
+  // The docked panel's width: what the reader dragged it to, held to the window.
+  const width = useHelpPanelWidth();
+  const viewportWidth = useViewportWidth();
+  const resizeTo = (next: number) =>
+    useHelpWidthStore.getState().setWidth(clampHelpPanelWidth(next, viewportWidth));
 
   // Close on a route change unless pinned. The route the panel opened on is the
   // baseline, so opening it never counts as a change.
@@ -221,7 +231,7 @@ export function HelpPanel() {
         aria-modal={modal || undefined}
         aria-label={t('title')}
         className={sheetClass}
-        style={!isMobile && !expanded ? { width: HELP_PANEL_WIDTH } : undefined}
+        style={docked ? { width } : undefined}
         onFocus={() => {
           focusInsideRef.current = true;
         }}
@@ -229,6 +239,13 @@ export function HelpPanel() {
           focusInsideRef.current = e.currentTarget.contains(e.relatedTarget as Node | null);
         }}
       >
+        {docked && (
+          <HelpResizeHandle
+            width={width}
+            maxWidth={helpPanelMaxWidth(viewportWidth)}
+            onResize={resizeTo}
+          />
+        )}
         <div className="flex items-center gap-1 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
           <button
             type="button"

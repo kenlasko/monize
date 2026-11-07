@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { test, expect } from '../fixtures';
 
 // A page prefetches the guide's manifest when its header mounts, and a click
@@ -177,5 +177,84 @@ test.describe('Help panel', () => {
     await expect(section).toBeFocused();
     await expect(panel.getByRole('button', { name: 'Back' })).toBeDisabled();
     await expect(panel.getByRole('button', { name: 'Forward' })).toBeEnabled();
+  });
+});
+
+test.describe('Help panel on a desktop', () => {
+  test.use({ viewport: { width: 1440, height: 800 } });
+
+  async function openSettingsHelp(page: Page) {
+    await gotoWithGuideKnown(page, '/settings');
+    await page.getByRole('link', { name: 'Help for this page' }).click();
+    const panel = page.getByRole('complementary', { name: 'Help' });
+    await expect(panel.getByRole('heading', { level: 2, name: 'Settings and Security', exact: true })).toBeVisible();
+    return panel;
+  }
+
+  const panelWidth = (panel: Locator) =>
+    panel.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+
+  test('the panel is resized by dragging its left edge, and the page makes room', async ({
+    authedPage: page,
+  }) => {
+    const panel = await openSettingsHelp(page);
+    expect(await panelWidth(panel)).toBe(420);
+
+    const handle = panel.getByRole('separator', { name: 'Resize the help panel' });
+    await expect(handle).toHaveAttribute('aria-valuenow', '420');
+    const box = (await handle.boundingBox())!;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + box.width / 2, y);
+    await page.mouse.down();
+    // Past the panel's own strip: the pointer is captured, so it keeps steering.
+    await page.mouse.move(box.x + box.width / 2 - 60, y, { steps: 4 });
+    await page.mouse.move(box.x + box.width / 2 - 100, y, { steps: 4 });
+    await page.mouse.up();
+
+    await expect.poll(() => panelWidth(panel)).toBe(520);
+    await expect(handle).toHaveAttribute('aria-valuenow', '520');
+    // The shell reserves the same room beside the page (xl).
+    const reserved = await panel.evaluate((el) =>
+      parseFloat(getComputedStyle(el.parentElement!).paddingRight),
+    );
+    expect(reserved).toBe(520);
+
+    // It is remembered in this browser: reload and open again.
+    await page.reload();
+    await page.waitForResponse((r) => new URL(r.url()).pathname.endsWith('/help') && r.ok());
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+    await page.getByRole('link', { name: 'Help for this page' }).click();
+    await expect.poll(() => panelWidth(panel)).toBe(520);
+  });
+
+  test('the edge works from the keyboard, and the width is held to the window', async ({
+    authedPage: page,
+  }) => {
+    const panel = await openSettingsHelp(page);
+    const handle = panel.getByRole('separator', { name: 'Resize the help panel' });
+    await handle.focus();
+
+    await page.keyboard.press('ArrowLeft');
+    await expect(handle).toHaveAttribute('aria-valuenow', '444');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await expect(handle).toHaveAttribute('aria-valuenow', '396');
+    await page.keyboard.press('Home');
+    await expect(handle).toHaveAttribute('aria-valuenow', '320');
+    await page.keyboard.press('End');
+    await expect(handle).toHaveAttribute('aria-valuenow', '960');
+    expect(await panelWidth(panel)).toBe(960);
+
+    // A narrower window takes the panel down with it (70%), and a wider one
+    // gives the width back, because the reader's choice was never overwritten.
+    await page.setViewportSize({ width: 1000, height: 800 });
+    // 70% of the document's width, which a classic page scrollbar narrows.
+    const max = await page.evaluate(() => Math.floor(document.documentElement.clientWidth * 0.7));
+    expect(max).toBeGreaterThanOrEqual(680);
+    expect(max).toBeLessThanOrEqual(700);
+    await expect(handle).toHaveAttribute('aria-valuemax', String(max));
+    await expect.poll(() => panelWidth(panel)).toBe(max);
+    await page.setViewportSize({ width: 1440, height: 800 });
+    await expect.poll(() => panelWidth(panel)).toBe(960);
   });
 });

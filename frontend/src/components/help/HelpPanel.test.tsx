@@ -23,7 +23,13 @@ vi.mock('@/lib/help', async (importOriginal) => ({
 
 import { HelpPanel } from './HelpPanel';
 import { useHelpStore } from '@/store/helpStore';
-
+import { useHelpWidthStore } from '@/store/helpWidthStore';
+import {
+  HELP_PANEL_DEFAULT_WIDTH,
+  HELP_PANEL_KEY_STEP,
+  HELP_PANEL_MIN_WIDTH,
+  helpPanelMaxWidth,
+} from './help-layout';
 
 function pageOf(slug: string, extra: Partial<HelpPage> = {}): HelpPage {
   return {
@@ -505,5 +511,123 @@ describe('HelpPanel: phone', () => {
     focusable[0].focus();
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
     expect(last).toHaveFocus();
+  });
+});
+
+describe('HelpPanel: width', () => {
+  const widthOf = () => (screen.getByRole('complementary', { name: 'Help' }) as HTMLElement).style.width;
+
+  beforeEach(() => {
+    useHelpWidthStore.setState({ width: HELP_PANEL_DEFAULT_WIDTH });
+  });
+
+  it('opens at the default width and follows the stored width', async () => {
+    await renderPanel();
+    expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
+    act(() => useHelpWidthStore.getState().setWidth(640));
+    expect(widthOf()).toBe('640px');
+  });
+
+  it('exposes a vertical separator carrying the width and its bounds', async () => {
+    await renderPanel();
+    const handle = screen.getByRole('separator', { name: 'Resize the help panel' });
+    expect(handle).toHaveAttribute('aria-orientation', 'vertical');
+    expect(handle).toHaveAttribute('aria-valuenow', String(HELP_PANEL_DEFAULT_WIDTH));
+    expect(handle).toHaveAttribute('aria-valuemin', String(HELP_PANEL_MIN_WIDTH));
+    expect(handle).toHaveAttribute('aria-valuemax', String(helpPanelMaxWidth(window.innerWidth)));
+    expect(handle).toHaveAttribute('tabindex', '0');
+  });
+
+  it('has no handle on a phone, where help is a bottom sheet, or when expanded', async () => {
+    mockMobile = true;
+    const { unmount } = await renderPanel();
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument();
+    expect((screen.getByRole('dialog', { name: 'Help' }) as HTMLElement).style.width).toBe('');
+    unmount();
+
+    mockMobile = false;
+    act(() => store().setExpanded(true));
+    await renderPanel();
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument();
+  });
+
+  it('steps with the arrows (Left widens) and jumps with Home and End', async () => {
+    await renderPanel();
+    const handle = screen.getByRole('separator');
+    fireEvent.keyDown(handle, { key: 'ArrowLeft' });
+    expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH + HELP_PANEL_KEY_STEP}px`);
+    fireEvent.keyDown(handle, { key: 'ArrowRight' });
+    fireEvent.keyDown(handle, { key: 'ArrowRight' });
+    expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH - HELP_PANEL_KEY_STEP}px`);
+    fireEvent.keyDown(handle, { key: 'Home' });
+    expect(widthOf()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
+    fireEvent.keyDown(handle, { key: 'ArrowRight' });
+    expect(widthOf()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
+    fireEvent.keyDown(handle, { key: 'End' });
+    expect(widthOf()).toBe(`${helpPanelMaxWidth(window.innerWidth)}px`);
+    expect(handle).toHaveAttribute('aria-valuenow', String(helpPanelMaxWidth(window.innerWidth)));
+  });
+
+  it('leaves other keys to the page', async () => {
+    await renderPanel();
+    const handle = screen.getByRole('separator');
+    const event = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true });
+    handle.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  describe('dragging', () => {
+    const setCapture = vi.fn();
+    beforeEach(() => {
+      setCapture.mockReset();
+      Element.prototype.setPointerCapture = setCapture as unknown as typeof Element.prototype.setPointerCapture;
+    });
+
+    it('captures the pointer and sets the width from where the drag began', async () => {
+      await renderPanel();
+      const handle = screen.getByRole('separator');
+      fireEvent.pointerDown(handle, { pointerId: 7, button: 0, clientX: 600 });
+      expect(setCapture).toHaveBeenCalledWith(7);
+
+      // Left by 80px: 80px wider. Measured from the start, not from the last move.
+      fireEvent.pointerMove(handle, { pointerId: 7, clientX: 540 });
+      fireEvent.pointerMove(handle, { pointerId: 7, clientX: 520 });
+      expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH + 80}px`);
+
+      // Right of where it began: narrower, down to the minimum and no further.
+      fireEvent.pointerMove(handle, { pointerId: 7, clientX: 900 });
+      expect(widthOf()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
+
+      fireEvent.pointerUp(handle, { pointerId: 7 });
+      fireEvent.pointerMove(handle, { pointerId: 7, clientX: 100 });
+      expect(widthOf()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
+    });
+
+    it('stops at the maximum for the window', async () => {
+      await renderPanel();
+      const handle = screen.getByRole('separator');
+      fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientX: 600 });
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: -5000 });
+      expect(widthOf()).toBe(`${helpPanelMaxWidth(window.innerWidth)}px`);
+    });
+
+    it('ignores a move with no press, and a press of another button', async () => {
+      await renderPanel();
+      const handle = screen.getByRole('separator');
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: 100 });
+      fireEvent.pointerDown(handle, { pointerId: 1, button: 2, clientX: 600 });
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: 100 });
+      expect(setCapture).not.toHaveBeenCalled();
+      expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
+    });
+
+    it('stops following the pointer when capture is lost', async () => {
+      await renderPanel();
+      const handle = screen.getByRole('separator');
+      fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientX: 600 });
+      fireEvent.lostPointerCapture(handle, { pointerId: 1 });
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: 100 });
+      expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
+    });
   });
 });
