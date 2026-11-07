@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { render, screen, fireEvent } from '@/test/render';
+import { act, render, screen, fireEvent } from '@/test/render';
 import { HelpMarkdown } from './HelpMarkdown';
-import type { HelpTocEntry } from '@/lib/help';
+import { useTheme } from '@/contexts/ThemeContext';
+import type { HelpImage, HelpTocEntry } from '@/lib/help';
 import { githubSlug } from '@/lib/markdown/remark-help';
 
 const DOCS_DIR = join(process.cwd(), '..', 'website', 'docs');
@@ -12,6 +13,7 @@ const ONLINE = 'https://www.monize.net/docs/budgets';
 interface RenderOptions {
   toc?: HelpTocEntry[];
   slug?: string;
+  images?: Record<string, HelpImage>;
   onNavigate?: (target: { page: string; section?: string }) => void;
 }
 
@@ -23,6 +25,8 @@ function renderMarkdown(markdown: string, opts: RenderOptions = {}) {
       toc={opts.toc ?? []}
       slug={opts.slug ?? 'budgets'}
       onlineUrl={ONLINE}
+      images={opts.images ?? {}}
+      version="1.2.3"
       onNavigate={onNavigate}
     />,
   );
@@ -153,15 +157,105 @@ describe('HelpMarkdown: links', () => {
 describe('HelpMarkdown: images', () => {
   const md = '## Dashboard\n\n![The budget dashboard](images/budget-dashboard.png)\n';
   const toc = [{ depth: 2, id: 'dashboard', heading: 'Dashboard' }];
+  const BOTH: Record<string, HelpImage> = {
+    'budget-dashboard': {
+      dark: { name: 'budget-dashboard', width: 1600, height: 1000 },
+      light: { name: 'budget-dashboard.light', width: 1600, height: 1001 },
+    },
+  };
+  const DARK_ONLY: Record<string, HelpImage> = {
+    'budget-dashboard': {
+      dark: { name: 'budget-dashboard', width: 800, height: 450 },
+      light: null,
+    },
+  };
+  const DARK_SRC = '/api/v1/help/images/budget-dashboard?v=1.2.3';
+  const LIGHT_SRC = '/api/v1/help/images/budget-dashboard.light?v=1.2.3';
 
-  it('shows the caption and a link to the section online, with no <img>', () => {
-    const { container } = renderMarkdown(md, { toc });
-    expect(container.querySelector('img')).toBeNull();
-    expect(container).toHaveTextContent('The budget dashboard');
+  beforeEach(() => localStorage.setItem('monize-theme', 'dark'));
+  afterEach(() => localStorage.removeItem('monize-theme'));
+
+  it('shows the bundled picture with its size, lazily, then its caption and the online link', () => {
+    const { container } = renderMarkdown(md, { toc, images: BOTH });
+    const img = screen.getByRole('img', { name: 'The budget dashboard' });
+    expect(img).toHaveAttribute('src', DARK_SRC);
+    expect(img).toHaveAttribute('width', '1600');
+    expect(img).toHaveAttribute('height', '1000');
+    expect(img).toHaveAttribute('loading', 'lazy');
+    expect(img).toHaveAttribute('decoding', 'async');
+    expect(container.querySelectorAll('img')).toHaveLength(1);
+    expect(img.nextElementSibling).toHaveTextContent('The budget dashboard');
     const link = screen.getByRole('link', { name: /View screenshot on monize.net/ });
     expect(link).toHaveAttribute('href', `${ONLINE}#dashboard`);
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('shows the light twin in the light theme, with its own size', () => {
+    localStorage.setItem('monize-theme', 'light');
+    renderMarkdown(md, { toc, images: BOTH });
+    const img = screen.getByRole('img', { name: 'The budget dashboard' });
+    expect(img).toHaveAttribute('src', LIGHT_SRC);
+    expect(img).toHaveAttribute('height', '1001');
+  });
+
+  it('shows the dark picture in the light theme when there is no light twin', () => {
+    localStorage.setItem('monize-theme', 'light');
+    renderMarkdown(md, { toc, images: DARK_ONLY });
+    const img = screen.getByRole('img', { name: 'The budget dashboard' });
+    expect(img).toHaveAttribute('src', DARK_SRC);
+    expect(img).toHaveAttribute('width', '800');
+  });
+
+  it('swaps the picture when the theme changes', () => {
+    function ThemeSwitch() {
+      const { setTheme } = useTheme();
+      return (
+        <>
+          <button onClick={() => setTheme('light')}>Light</button>
+          <button onClick={() => setTheme('dark')}>Dark</button>
+        </>
+      );
+    }
+    render(
+      <>
+        <ThemeSwitch />
+        <HelpMarkdown
+          markdown={md}
+          toc={toc}
+          slug="budgets"
+          onlineUrl={ONLINE}
+          images={BOTH}
+          version="1.2.3"
+          onNavigate={vi.fn()}
+        />
+      </>,
+    );
+    const img = () => screen.getByRole('img', { name: 'The budget dashboard' });
+    expect(img()).toHaveAttribute('src', DARK_SRC);
+    act(() => fireEvent.click(screen.getByRole('button', { name: 'Light' })));
+    expect(img()).toHaveAttribute('src', LIGHT_SRC);
+    act(() => fireEvent.click(screen.getByRole('button', { name: 'Dark' })));
+    expect(img()).toHaveAttribute('src', DARK_SRC);
+  });
+
+  it('shows the caption and the online link, with no <img>, for a picture the bundle lacks', () => {
+    const { container } = renderMarkdown(md, { toc, images: {} });
+    expect(container.querySelector('img')).toBeNull();
+    expect(container).toHaveTextContent('The budget dashboard');
+    expect(screen.getByRole('link', { name: /View screenshot on monize.net/ })).toHaveAttribute(
+      'href',
+      `${ONLINE}#dashboard`,
+    );
+  });
+
+  it('shows a picture inline in a sentence, and the online link keeps its own section', () => {
+    const { container } = renderMarkdown(
+      '## Dashboard\n\nSee ![The budget dashboard](images/budget-dashboard.png) here.\n',
+      { toc, images: BOTH },
+    );
+    expect(container.querySelector('p img')).toHaveAttribute('src', DARK_SRC);
+    expect(container.querySelector('p div')).toBeNull();
   });
 
   it('links to the page itself for a picture above the first section', () => {

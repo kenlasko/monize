@@ -35,6 +35,8 @@ function pageOf(slug: string, extra: Partial<HelpPage> = {}): HelpPage {
       { depth: 2, id: 'rollover', heading: 'Rollover' },
     ],
     onlineUrl: `https://www.monize.net/docs/${slug}`,
+    images: {},
+    version: '1.2.3',
     ...extra,
   };
 }

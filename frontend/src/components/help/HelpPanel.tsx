@@ -388,6 +388,8 @@ export function HelpPanel() {
                 toc={page.toc}
                 slug={page.slug}
                 onlineUrl={page.onlineUrl}
+                images={page.images}
+                version={page.version}
                 onNavigate={navigate}
               />
             )}

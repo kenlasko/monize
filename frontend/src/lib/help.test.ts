@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiClient from './api';
 import { clearAllCache } from './apiCache';
-import { helpApi, type HelpManifest, type HelpPage } from './help';
+import { helpApi, helpImageUrl, type HelpManifest, type HelpPage } from './help';
 
 vi.mock('./api', () => ({
   default: { get: vi.fn() },
@@ -23,6 +23,8 @@ const PAGE: HelpPage = {
   markdown: '# Budgets\n',
   toc: [{ depth: 2, id: 'overview', heading: 'Overview' }],
   onlineUrl: 'https://www.monize.net/docs/budgets',
+  images: {},
+  version: '1.2.3',
 };
 
 describe('helpApi', () => {
@@ -105,5 +107,19 @@ describe('helpApi', () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error('500'));
 
     await expect(helpApi.getManifest()).rejects.toThrow('500');
+  });
+});
+
+describe('helpImageUrl', () => {
+  it('is a same-origin API path carrying the running version', () => {
+    expect(helpImageUrl('budgets-page.light', '1.2.3')).toBe(
+      '/api/v1/help/images/budgets-page.light?v=1.2.3',
+    );
+  });
+
+  it('encodes both parts', () => {
+    expect(helpImageUrl('a/b', '1.0.0+build 1')).toBe(
+      '/api/v1/help/images/a%2Fb?v=1.0.0%2Bbuild%201',
+    );
   });
 });
