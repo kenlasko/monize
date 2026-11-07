@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "Seleziona data occorrenza",
-    "description": "Scegli quale occorrenza di \"{name}\" modificare:",
+    "description": "Scegli quale occorrenza di \"{name}\" modificare. Modificarne una qui sovrascrive solo quella data; ogni altra occorrenza continua a seguire la pianificazione. <guide>Scopri di più</guide>.",
     "modifiedBadge": "Modificata",
     "nextDueBadge": "Prossima scadenza",
     "dateMoved": "Data spostata da {date}",
@@ -267,6 +267,7 @@
     "commissionLabel": "Commissione",
     "totalValueLabel": "Valore totale",
     "fundingAccountLabel": "Conto di finanziamento (opzionale)",
+    "fundingAccountTooltip": "Il conto in cui la liquidità di questa pianificazione si regola davvero, non il conto di intermediazione sopra: quello che la previsione del flusso di cassa addebita o accredita. Lascia vuoto per usare il conto di liquidità proprio dell'intermediazione.",
     "fundingAccountPlaceholder": "Usa la liquidità del conto (predefinito)",
     "fundingAccountHelp": "Usa la liquidità del conto investimento come predefinito. Scegli un altro conto per modellare contributo e acquisto.",
     "endConditionTitle": "Condizione di fine (opzionale)",

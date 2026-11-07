@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "Chọn ngày xuất hiện",
-    "description": "Chọn lần xuất hiện nào của \"{name}\" để sửa đổi:",
+    "description": "Chọn lần xuất hiện nào của \"{name}\" để sửa đổi. Thay đổi một lần ở đây chỉ ghi đè ngày đó; mọi lần xuất hiện khác vẫn tiếp tục theo lịch. <guide>Tìm hiểu thêm</guide>.",
     "modifiedBadge": "Đã sửa",
     "nextDueBadge": "Đến hạn tiếp theo",
     "dateMoved": "Ngày đã được chuyển từ {date}",
@@ -267,6 +267,7 @@
     "commissionLabel": "Hoa hồng",
     "totalValueLabel": "Tổng giá trị",
     "fundingAccountLabel": "Tài khoản tài trợ (tùy chọn)",
+    "fundingAccountTooltip": "Tài khoản mà tiền mặt của lịch này thực sự được quyết toán, không phải tài khoản môi giới ở trên: tài khoản mà dự báo dòng tiền ghi nợ hoặc ghi có. Để trống để dùng tài khoản tiền mặt riêng của tài khoản môi giới.",
     "fundingAccountPlaceholder": "Sử dụng tiền mặt môi giới (mặc định)",
     "fundingAccountHelp": "Mặc định là mặt tiền mặt của tài khoản đầu tư. Chọn tài khoản khác để mô hình hóa đóng góp + mua.",
     "endConditionTitle": "Điều kiện kết thúc (tùy chọn)",

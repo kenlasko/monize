@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { HelpLink } from '@/components/help/HelpLink';
 import {
   ScheduledTransaction,
   ScheduledTransactionOverride,
@@ -208,7 +209,14 @@ export function OccurrenceDatePicker({
       title={t('occurrencePicker.title')}
     >
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        {t('occurrencePicker.description', { name: scheduledTransaction.name })}
+        {t.rich('occurrencePicker.description', {
+          name: scheduledTransaction.name,
+          guide: (chunks) => (
+            <HelpLink link="billOccurrenceOverride" className="font-medium underline hover:text-gray-700 dark:hover:text-gray-200">
+              {chunks}
+            </HelpLink>
+          ),
+        })}
       </p>
 
       {loanAmounts.kind === 'loading' && (

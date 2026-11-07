@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "Tekrar Tarihi Seçin",
-    "description": "Hangi \"{name}\" tekrarını değiştireceğinizi seçin:",
+    "description": "Hangi \"{name}\" tekrarını değiştireceğinizi seçin. Burada birini değiştirmek yalnızca o tarihi geçersiz kılar; diğer her tekrar programı takip etmeye devam eder. <guide>Daha fazla bilgi</guide>.",
     "modifiedBadge": "Değiştirildi",
     "nextDueBadge": "Sonraki Vade",
     "dateMoved": "Tarih {date} tarihinden taşındı",
@@ -267,6 +267,7 @@
     "commissionLabel": "Komisyon",
     "totalValueLabel": "Toplam Değer",
     "fundingAccountLabel": "Finansman Hesabı (isteğe bağlı)",
+    "fundingAccountTooltip": "Bu planın nakdinin gerçekten karşılandığı hesap, yukarıdaki aracı kurum hesabı değil: nakit akışı tahmininin borçlandırdığı veya alacaklandırdığı hesap. Aracı kurumun kendi nakit hesabını kullanmak için boş bırakın.",
     "fundingAccountPlaceholder": "Aracılık nakdini kullan (varsayılan)",
     "fundingAccountHelp": "Varsayılan olarak yatırım hesabının nakit tarafını kullanır. Katkı+alım modellemek için başka hesap seçin.",
     "endConditionTitle": "Bitiş Koşulu (isteğe bağlı)",

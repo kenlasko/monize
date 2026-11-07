@@ -17,6 +17,7 @@ import { Combobox } from '@/components/ui/Combobox';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { TagForm } from '@/components/tags/TagForm';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from '@/components/transactions/SplitEditor';
 import { bookSplitRowsAtMinorUnit } from '@/lib/minor-unit-booking';
@@ -2021,8 +2022,20 @@ export function ScheduledTransactionForm({
                 />
                 {FUNDING_ACCOUNT_ACTIONS.includes(baseInvestmentAction(investmentAction)) && (
                   <div>
+                    <div className="flex items-center mb-1">
+                      <label
+                        htmlFor="scheduled-funding-account"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        {t('form.fundingAccountLabel')}
+                      </label>
+                      <InfoTooltip
+                        text={t('form.fundingAccountTooltip')}
+                        learnMore="billSettlementAccount"
+                      />
+                    </div>
                     <Select
-                      label={t('form.fundingAccountLabel')}
+                      id="scheduled-funding-account"
                       value={investmentFundingAccountId}
                       onChange={(e) => setInvestmentFundingAccountId(e.target.value)}
                       options={[

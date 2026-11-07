@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "选择发生日期",
-    "description": "选择要修改的\"{name}\"发生日期：",
+    "description": "选择要修改的\"{name}\"的哪一次发生。在此处修改一次只会覆盖该日期；其他每一次发生仍会遵循排程。<guide>了解更多</guide>。",
     "modifiedBadge": "已修改",
     "nextDueBadge": "下次到期",
     "dateMoved": "日期从 {date} 移动",
@@ -267,6 +267,7 @@
     "commissionLabel": "佣金",
     "totalValueLabel": "总价值",
     "fundingAccountLabel": "资金账户（可选）",
+    "fundingAccountTooltip": "此排程的现金实际结算的账户，而不是上方的券商账户：现金流预测会记入借方或贷方的正是这个账户。留空则使用券商自身的现金账户。",
     "fundingAccountPlaceholder": "使用经纪现金（默认）",
     "fundingAccountHelp": "默认使用投资账户的现金方。选择其他账户以模拟存款+买入操作。",
     "endConditionTitle": "结束条件（可选）",

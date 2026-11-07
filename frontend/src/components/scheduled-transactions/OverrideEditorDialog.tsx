@@ -11,6 +11,7 @@ import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { NumericInput } from '@/components/ui/NumericInput';
 import { Combobox } from '@/components/ui/Combobox';
 import { Modal } from '@/components/ui/Modal';
+import { HelpLink } from '@/components/help/HelpLink';
 import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows } from '@/components/transactions/SplitEditor';
@@ -101,6 +102,7 @@ export function OverrideEditorDialog({
 }: OverrideEditorDialogProps) {
   const t = useTranslations('scheduledTransactions');
   const tc = useTranslations('common');
+  const th = useTranslations('help');
   const { formatPrice } = useNumberFormat();
   const { formatDate } = useDateFormat();
   const [isLoading, setIsLoading] = useState(false);
@@ -693,7 +695,10 @@ export function OverrideEditorDialog({
         )}
         {existingOverride && (
           <span className="ml-1 text-blue-600 dark:text-blue-400">{t('overrideEditor.overrideExists')}</span>
-        )}
+        )}{' '}
+        <HelpLink link="billOccurrenceOverride" className="text-blue-600 hover:underline dark:text-blue-400">
+          {th('learnMore')}
+        </HelpLink>
       </div>
 
       <div className="space-y-4">

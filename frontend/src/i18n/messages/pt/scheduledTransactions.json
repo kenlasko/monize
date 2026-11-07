@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "Selecionar Data de Ocorrência",
-    "description": "Escolha qual ocorrência de \"{name}\" pretende modificar:",
+    "description": "Escolha qual ocorrência de \"{name}\" pretende modificar. Alterar uma aqui substitui apenas essa data; todas as outras ocorrências continuam a seguir o agendamento. <guide>Saiba mais</guide>.",
     "modifiedBadge": "Modificada",
     "nextDueBadge": "Próximo Vencimento",
     "dateMoved": "Data alterada de {date}",
@@ -267,6 +267,7 @@
     "commissionLabel": "Comissão",
     "totalValueLabel": "Valor Total",
     "fundingAccountLabel": "Conta de Financiamento (opcional)",
+    "fundingAccountTooltip": "A conta onde o dinheiro deste agendamento é efetivamente liquidado, não a conta de corretagem acima: aquela que a previsão de fluxo de caixa debita ou credita. Deixe em branco para usar a própria conta de dinheiro da corretagem.",
     "fundingAccountPlaceholder": "Usar dinheiro da corretora (predefinição)",
     "fundingAccountHelp": "Utiliza por predefinição o lado em dinheiro da conta de investimento. Escolha outra conta para modelar contribuição + compra.",
     "endConditionTitle": "Condição de Fim (opcional)",

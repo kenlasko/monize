@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "Wybierz datę wystąpienia",
-    "description": "Wybierz, które wystąpienie \"{name}\" chcesz zmodyfikować:",
+    "description": "Wybierz, które wystąpienie \"{name}\" chcesz zmodyfikować. Zmiana jednego tutaj zastępuje tylko tę datę; każde inne wystąpienie dalej podąża za harmonogramem. <guide>Dowiedz się więcej</guide>.",
     "modifiedBadge": "Zmodyfikowane",
     "nextDueBadge": "Najbliższy termin",
     "dateMoved": "Data przeniesiona z {date}",
@@ -267,6 +267,7 @@
     "commissionLabel": "Prowizja",
     "totalValueLabel": "Wartość łączna",
     "fundingAccountLabel": "Konto finansujące (opcjonalnie)",
+    "fundingAccountTooltip": "Konto, na którym faktycznie rozlicza się gotówka z tego harmonogramu, a nie konto maklerskie powyżej: to, które obciąża lub zasila prognoza przepływów pieniężnych. Pozostaw puste, aby użyć własnego konta gotówkowego konta maklerskiego.",
     "fundingAccountPlaceholder": "Użyj gotówki maklerskiej (domyślnie)",
     "fundingAccountHelp": "Domyślnie używa gotówki konta inwestycyjnego. Wybierz inne konto, aby zamodelować wpłatę i zakup.",
     "endConditionTitle": "Warunek zakończenia (opcjonalnie)",

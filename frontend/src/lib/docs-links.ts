@@ -25,6 +25,8 @@ export const DOCS_LINKS = {
   aiInsights: { page: 'ai', section: 'financial-insights' },
   adminBackups: { page: 'backup-and-restore', section: 'automatic-backups' },
   bills: { page: 'bills-and-deposits' },
+  billOccurrenceOverride: { page: 'bills-and-deposits', section: 'overriding-individual-occurrences' },
+  billSettlementAccount: { page: 'bills-and-deposits', section: 'investment-scheduling' },
   budgets: { page: 'budgets' },
   categories: { page: 'categories-and-payees', section: 'categories' },
   payees: { page: 'categories-and-payees', section: 'payees' },
