@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
@@ -16,12 +16,16 @@ import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { HelpMarkdown, onlineHref } from '@/components/help/HelpMarkdown';
 import { HelpResizeHandle } from '@/components/help/HelpResizeHandle';
-import { clampHelpPanelWidth, helpPanelMaxWidth } from '@/components/help/help-layout';
+import { HELP_PANEL_WIDTH_VAR } from '@/components/help/help-layout';
 import {
   HELP_PANEL_OVERLAY_GUTTER,
   scrollbarsOverlay,
 } from '@/components/help/scrollbar-gutter';
-import { useHelpPanelWidth, useViewportWidth } from '@/components/help/useHelpPanelWidth';
+import {
+  setHelpWidthVar,
+  useHelpPanelWidth,
+  useHelpWidthVar,
+} from '@/components/help/useHelpPanelWidth';
 import { useHelpPage } from '@/hooks/useHelpPage';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useHelpStore } from '@/store/helpStore';
@@ -80,11 +84,13 @@ export function HelpPanel() {
   const modal = isMobile || expanded;
   const docked = !isMobile && !expanded;
 
-  // The docked panel's width: what the reader dragged it to, held to the window.
-  const width = useHelpPanelWidth();
-  const viewportWidth = useViewportWidth();
-  const resizeTo = (next: number) =>
-    useHelpWidthStore.getState().setWidth(clampHelpPanelWidth(next, viewportWidth));
+  // The docked panel's width: what the reader chose, held to the window. It is
+  // published as a CSS variable that the panel, the page's padding and the
+  // assistant's launcher read, so a drag can move all three without a render.
+  const { width, maxWidth } = useHelpPanelWidth();
+  useHelpWidthVar(width, docked);
+  const panelId = useId();
+  const commitWidth = (next: number) => useHelpWidthStore.getState().setWidth(next);
   // A page scrollbar that floats over the window's right edge sits on the
   // panel's own scrollbar, which is at the same edge, and takes the pointer
   // first. Where scrollbars overlay, the panel's scroller stops short of the
@@ -240,8 +246,9 @@ export function HelpPanel() {
         role={modal ? 'dialog' : 'complementary'}
         aria-modal={modal || undefined}
         aria-label={t('title')}
+        id={panelId}
         className={sheetClass}
-        style={docked ? { width } : undefined}
+        style={docked ? { width: `var(${HELP_PANEL_WIDTH_VAR})` } : undefined}
         onFocus={() => {
           focusInsideRef.current = true;
         }}
@@ -251,9 +258,11 @@ export function HelpPanel() {
       >
         {docked && (
           <HelpResizeHandle
+            controls={panelId}
             width={width}
-            maxWidth={helpPanelMaxWidth(viewportWidth)}
-            onResize={resizeTo}
+            maxWidth={maxWidth}
+            onPreview={setHelpWidthVar}
+            onCommit={commitWidth}
           />
         )}
         <div className="flex items-center gap-1 border-b border-gray-200 px-3 py-2 dark:border-gray-700">

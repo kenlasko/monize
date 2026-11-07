@@ -5,8 +5,6 @@ import { act, render, screen } from '@/test/render';
 import { SwipeShell } from './SwipeShell';
 import { sharedExpensesApi } from '@/lib/shared-expenses';
 import { useHelpStore } from '@/store/helpStore';
-import { HELP_PANEL_DEFAULT_WIDTH } from '@/components/help/help-layout';
-import { useHelpWidthStore } from '@/store/helpWidthStore';
 
 vi.mock('@/lib/shared-expenses', () => ({ sharedExpensesApi: { review: vi.fn() } }));
 
@@ -115,31 +113,24 @@ describe('SwipeShell', () => {
     expect(screen.queryByTestId('app-header')).not.toBeInTheDocument();
   });
 
-  it('makes room beside the page for the docked help panel on a wide screen, as wide as the panel is', () => {
+  it('makes room beside the page for the docked help panel on a wide screen, as wide as the variable says', () => {
     mockPathname = '/budgets';
     useHelpStore.setState(useHelpStore.getInitialState(), true);
-    useHelpWidthStore.setState({ width: HELP_PANEL_DEFAULT_WIDTH });
     const { container, unmount } = render(<SwipeShell><p>Content</p></SwipeShell>);
     const wrapper = container.firstChild as HTMLElement;
     expect(wrapper.className).not.toContain('xl:pr-');
-    expect(wrapper.style.getPropertyValue('--help-panel-width')).toBe('');
 
     act(() => useHelpStore.getState().openAt({ page: 'budgets' }));
-    // The class is a literal so Tailwind can see it; the width it reads is the panel's.
+    // The class is a literal so Tailwind can see it; the width it reads is the
+    // panel's own variable (HelpPanel.test.tsx covers what writes it), and the
+    // shell measures and sets nothing itself.
     expect(wrapper.className).toContain('xl:pr-(--help-panel-width)');
-    expect(wrapper.style.getPropertyValue('--help-panel-width')).toBe(
-      `${HELP_PANEL_DEFAULT_WIDTH}px`,
-    );
-
-    // A wider panel pushes the page further, with no new class.
-    act(() => useHelpWidthStore.getState().setWidth(600));
-    expect(wrapper.style.getPropertyValue('--help-panel-width')).toBe('600px');
+    expect(wrapper.getAttribute('style')).toBeNull();
 
     act(() => useHelpStore.getState().setExpanded(true));
     expect(wrapper.className).not.toContain('xl:pr-');
     unmount();
     act(() => useHelpStore.getState().close());
-    useHelpWidthStore.setState({ width: HELP_PANEL_DEFAULT_WIDTH });
   });
 
   it('drops an open help panel on the sign-in screens', () => {

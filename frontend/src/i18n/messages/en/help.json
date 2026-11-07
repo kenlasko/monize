@@ -9,6 +9,7 @@
     "expand": "Expand the help panel",
     "collapse": "Shrink the help panel",
     "resize": "Resize the help panel",
+    "resizeValue": "{width} pixels",
     "close": "Close help",
     "englishOnly": "This guide is in English.",
     "loading": "Loading help",

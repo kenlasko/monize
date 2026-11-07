@@ -10,6 +10,10 @@ import { HELP_PANEL_DEFAULT_WIDTH } from '@/components/help/help-layout';
  * laptop and a wide monitor signed into the same account should not have to
  * agree. It survives logout deliberately, being a fact about the screen.
  *
+ * Written when a drag ends or a key steps the width, never on every pointer
+ * move: the live width of a drag goes to the root's CSS variable instead
+ * (`useHelpWidthVar`).
+ *
  * Only the number persists, and it is stored as chosen: it is held to the
  * panel's bounds at the moment it is used (`clampHelpPanelWidth`), because the
  * window it was chosen in may not be the window it is read in. It is kept apart
@@ -25,9 +29,14 @@ interface HelpWidthState {
 
 export const useHelpWidthStore = create<HelpWidthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       width: HELP_PANEL_DEFAULT_WIDTH,
-      setWidth: (width) => set({ width: Math.round(width) }),
+      // A `set` is a synchronous write to localStorage, so an unchanged width
+      // is not one.
+      setWidth: (width) => {
+        const rounded = Math.round(width);
+        if (get().width !== rounded) set({ width: rounded });
+      },
     }),
     {
       name: HELP_WIDTH_STORAGE_KEY,

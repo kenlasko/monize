@@ -30,7 +30,7 @@ import {
   HELP_PANEL_MIN_WIDTH,
   helpPanelMaxWidth,
 } from './help-layout';
-import { HELP_PANEL_OVERLAY_GUTTER, resetScrollbarProbe } from './scrollbar-gutter';
+import { HELP_PANEL_OVERLAY_GUTTER } from './scrollbar-gutter';
 
 function pageOf(slug: string, extra: Partial<HelpPage> = {}): HelpPage {
   return {
@@ -516,29 +516,51 @@ describe('HelpPanel: phone', () => {
 });
 
 describe('HelpPanel: width', () => {
-  const widthOf = () => (screen.getByRole('complementary', { name: 'Help' }) as HTMLElement).style.width;
+  const VAR = '--help-panel-width';
+  const root = document.documentElement;
+  /** The width every consumer reads: the panel, the shell's padding, the launcher. */
+  const widthVar = () => root.style.getPropertyValue(VAR);
+  const panel = () => screen.getByRole('complementary', { name: 'Help' }) as HTMLElement;
   const scroller = () => screen.getByLabelText('budgets title') as HTMLElement;
+  const maxHere = helpPanelMaxWidth(window.innerWidth);
 
   beforeEach(() => {
     useHelpWidthStore.setState({ width: HELP_PANEL_DEFAULT_WIDTH });
-    resetScrollbarProbe();
+    window.localStorage.clear();
   });
 
-  it('opens at the default width and follows the stored width', async () => {
+  it('opens at the default width, publishes it, and follows the stored width', async () => {
     await renderPanel();
-    expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
+    expect(widthVar()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
+    expect(panel().getAttribute('style')).toContain(`width: var(${VAR})`);
     act(() => useHelpWidthStore.getState().setWidth(640));
-    expect(widthOf()).toBe('640px');
+    expect(widthVar()).toBe('640px');
   });
 
-  it('exposes a vertical separator carrying the width and its bounds', async () => {
+  it('takes the variable away when it closes, and when it stops being docked', async () => {
+    const { unmount } = await renderPanel();
+    expect(widthVar()).not.toBe('');
+    act(() => store().setExpanded(true));
+    expect(widthVar()).toBe('');
+    act(() => store().setExpanded(false));
+    expect(widthVar()).not.toBe('');
+    unmount();
+    expect(widthVar()).toBe('');
+  });
+
+  it('exposes a vertical separator carrying the width, its bounds and the panel it resizes', async () => {
     await renderPanel();
     const handle = screen.getByRole('separator', { name: 'Resize the help panel' });
     expect(handle).toHaveAttribute('aria-orientation', 'vertical');
     expect(handle).toHaveAttribute('aria-valuenow', String(HELP_PANEL_DEFAULT_WIDTH));
+    expect(handle).toHaveAttribute('aria-valuetext', `${HELP_PANEL_DEFAULT_WIDTH} pixels`);
     expect(handle).toHaveAttribute('aria-valuemin', String(HELP_PANEL_MIN_WIDTH));
-    expect(handle).toHaveAttribute('aria-valuemax', String(helpPanelMaxWidth(window.innerWidth)));
+    expect(handle).toHaveAttribute('aria-valuemax', String(maxHere));
+    expect(handle).toHaveAttribute('aria-controls', panel().id);
+    expect(panel().id).not.toBe('');
     expect(handle).toHaveAttribute('tabindex', '0');
+    // A visible focus ring, not only a background change on an 8px strip.
+    expect(handle.className).toContain('focus-visible:ring-2');
   });
 
   it('has no handle on a phone, where help is a bottom sheet, or when expanded', async () => {
@@ -546,6 +568,7 @@ describe('HelpPanel: width', () => {
     const { unmount } = await renderPanel();
     expect(screen.queryByRole('separator')).not.toBeInTheDocument();
     expect((screen.getByRole('dialog', { name: 'Help' }) as HTMLElement).style.width).toBe('');
+    expect(widthVar()).toBe('');
     unmount();
 
     mockMobile = false;
@@ -554,21 +577,23 @@ describe('HelpPanel: width', () => {
     expect(screen.queryByRole('separator')).not.toBeInTheDocument();
   });
 
-  it('steps with the arrows (Left widens) and jumps with Home and End', async () => {
+  it('steps with the arrows (Left widens) and jumps with Home and End, committing each', async () => {
     await renderPanel();
     const handle = screen.getByRole('separator');
     fireEvent.keyDown(handle, { key: 'ArrowLeft' });
-    expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH + HELP_PANEL_KEY_STEP}px`);
+    expect(widthVar()).toBe(`${HELP_PANEL_DEFAULT_WIDTH + HELP_PANEL_KEY_STEP}px`);
     fireEvent.keyDown(handle, { key: 'ArrowRight' });
     fireEvent.keyDown(handle, { key: 'ArrowRight' });
-    expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH - HELP_PANEL_KEY_STEP}px`);
+    expect(widthVar()).toBe(`${HELP_PANEL_DEFAULT_WIDTH - HELP_PANEL_KEY_STEP}px`);
+    expect(useHelpWidthStore.getState().width).toBe(HELP_PANEL_DEFAULT_WIDTH - HELP_PANEL_KEY_STEP);
     fireEvent.keyDown(handle, { key: 'Home' });
-    expect(widthOf()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
+    expect(widthVar()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
     fireEvent.keyDown(handle, { key: 'ArrowRight' });
-    expect(widthOf()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
+    expect(widthVar()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
     fireEvent.keyDown(handle, { key: 'End' });
-    expect(widthOf()).toBe(`${helpPanelMaxWidth(window.innerWidth)}px`);
-    expect(handle).toHaveAttribute('aria-valuenow', String(helpPanelMaxWidth(window.innerWidth)));
+    expect(widthVar()).toBe(`${maxHere}px`);
+    expect(handle).toHaveAttribute('aria-valuenow', String(maxHere));
+    expect(handle).toHaveAttribute('aria-valuetext', `${maxHere} pixels`);
   });
 
   it('leaves other keys to the page', async () => {
@@ -579,14 +604,49 @@ describe('HelpPanel: width', () => {
     expect(event.defaultPrevented).toBe(false);
   });
 
+  it('keeps the page 640px wide beside the panel on a wide screen', async () => {
+    const original = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    try {
+      await renderPanel();
+      const handle = screen.getByRole('separator');
+      expect(handle).toHaveAttribute('aria-valuemax', '640');
+      fireEvent.keyDown(handle, { key: 'End' });
+      expect(widthVar()).toBe('640px');
+
+      // Narrower than xl the panel overlays the page, so 70% applies.
+      act(() => {
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
+        window.dispatchEvent(new Event('resize'));
+      });
+      expect(handle).toHaveAttribute('aria-valuemax', String(helpPanelMaxWidth(1200)));
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: original });
+    }
+  });
+
   describe('dragging', () => {
     const setCapture = vi.fn();
+    let frames: FrameRequestCallback[];
+    const flushFrame = () => act(() => frames.splice(0).forEach((cb) => cb(0)));
+    let setItem: ReturnType<typeof vi.spyOn>;
+
     beforeEach(() => {
       setCapture.mockReset();
       Element.prototype.setPointerCapture = setCapture as unknown as typeof Element.prototype.setPointerCapture;
+      frames = [];
+      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => frames.push(cb));
+      vi.stubGlobal('cancelAnimationFrame', () => {
+        frames = [];
+      });
+      setItem = vi.spyOn(window.localStorage, 'setItem');
+    });
+    afterEach(() => {
+      setItem.mockRestore();
+      vi.unstubAllGlobals();
     });
 
-    it('captures the pointer and sets the width from where the drag began', async () => {
+    it('captures the pointer and previews the width from where the drag began, once a frame', async () => {
       await renderPanel();
       const handle = screen.getByRole('separator');
       fireEvent.pointerDown(handle, { pointerId: 7, button: 0, clientX: 600 });
@@ -595,15 +655,64 @@ describe('HelpPanel: width', () => {
       // Left by 80px: 80px wider. Measured from the start, not from the last move.
       fireEvent.pointerMove(handle, { pointerId: 7, clientX: 540 });
       fireEvent.pointerMove(handle, { pointerId: 7, clientX: 520 });
-      expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH + 80}px`);
+      expect(frames).toHaveLength(1);
+      // Nothing has moved until the frame.
+      expect(widthVar()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
+      flushFrame();
+      expect(widthVar()).toBe(`${HELP_PANEL_DEFAULT_WIDTH + 80}px`);
+      expect(handle).toHaveAttribute('aria-valuenow', String(HELP_PANEL_DEFAULT_WIDTH + 80));
 
       // Right of where it began: narrower, down to the minimum and no further.
       fireEvent.pointerMove(handle, { pointerId: 7, clientX: 900 });
-      expect(widthOf()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
+      flushFrame();
+      expect(widthVar()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
 
       fireEvent.pointerUp(handle, { pointerId: 7 });
       fireEvent.pointerMove(handle, { pointerId: 7, clientX: 100 });
-      expect(widthOf()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
+      expect(frames).toHaveLength(0);
+      expect(widthVar()).toBe(`${HELP_PANEL_MIN_WIDTH}px`);
+    });
+
+    it('writes nothing to storage and stores nothing while the pointer moves, then commits once on release', async () => {
+      await renderPanel();
+      const handle = screen.getByRole('separator');
+      setItem.mockClear();
+      fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientX: 600 });
+      for (const x of [590, 570, 550, 530, 500]) {
+        fireEvent.pointerMove(handle, { pointerId: 1, clientX: x });
+        flushFrame();
+      }
+      expect(setItem).not.toHaveBeenCalled();
+      expect(useHelpWidthStore.getState().width).toBe(HELP_PANEL_DEFAULT_WIDTH);
+      expect(widthVar()).toBe(`${HELP_PANEL_DEFAULT_WIDTH + 100}px`);
+
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+      expect(setItem).toHaveBeenCalledTimes(1);
+      expect(useHelpWidthStore.getState().width).toBe(HELP_PANEL_DEFAULT_WIDTH + 100);
+      expect(handle).toHaveAttribute('aria-valuenow', String(HELP_PANEL_DEFAULT_WIDTH + 100));
+    });
+
+    it('commits the last move even when the frame has not run before the release', async () => {
+      await renderPanel();
+      const handle = screen.getByRole('separator');
+      fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientX: 600 });
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: 560 });
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+      expect(useHelpWidthStore.getState().width).toBe(HELP_PANEL_DEFAULT_WIDTH + 40);
+      expect(widthVar()).toBe(`${HELP_PANEL_DEFAULT_WIDTH + 40}px`);
+    });
+
+    it('does not write storage for a drag that ends where it began', async () => {
+      await renderPanel();
+      const handle = screen.getByRole('separator');
+      setItem.mockClear();
+      fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientX: 600 });
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: 540 });
+      flushFrame();
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: 600 });
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+      expect(setItem).not.toHaveBeenCalled();
+      expect(widthVar()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
     });
 
     it('stops at the maximum for the window', async () => {
@@ -611,7 +720,8 @@ describe('HelpPanel: width', () => {
       const handle = screen.getByRole('separator');
       fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientX: 600 });
       fireEvent.pointerMove(handle, { pointerId: 1, clientX: -5000 });
-      expect(widthOf()).toBe(`${helpPanelMaxWidth(window.innerWidth)}px`);
+      flushFrame();
+      expect(widthVar()).toBe(`${maxHere}px`);
     });
 
     it('ignores a move with no press, and a press of another button', async () => {
@@ -621,16 +731,19 @@ describe('HelpPanel: width', () => {
       fireEvent.pointerDown(handle, { pointerId: 1, button: 2, clientX: 600 });
       fireEvent.pointerMove(handle, { pointerId: 1, clientX: 100 });
       expect(setCapture).not.toHaveBeenCalled();
-      expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
+      expect(frames).toHaveLength(0);
+      expect(widthVar()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
     });
 
-    it('stops following the pointer when capture is lost', async () => {
+    it('commits and stops following the pointer when capture is lost', async () => {
       await renderPanel();
       const handle = screen.getByRole('separator');
       fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientX: 600 });
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: 560 });
       fireEvent.lostPointerCapture(handle, { pointerId: 1 });
       fireEvent.pointerMove(handle, { pointerId: 1, clientX: 100 });
-      expect(widthOf()).toBe(`${HELP_PANEL_DEFAULT_WIDTH}px`);
+      expect(useHelpWidthStore.getState().width).toBe(HELP_PANEL_DEFAULT_WIDTH + 40);
+      expect(frames).toHaveLength(0);
     });
   });
 
@@ -645,6 +758,23 @@ describe('HelpPanel: width', () => {
     const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(100);
     await renderPanel();
     expect(scroller().style.marginRight).toBe('');
+    offset.mockRestore();
+    client.mockRestore();
+  });
+
+  it('asks the browser about its scrollbars each time the panel mounts, not once per page load', async () => {
+    const offset = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get');
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get');
+    offset.mockReturnValue(115);
+    client.mockReturnValue(100);
+    const first = await renderPanel();
+    expect(scroller().style.marginRight).toBe('');
+    first.unmount();
+
+    // The system switched to overlay scrollbars between the two openings.
+    offset.mockReturnValue(100);
+    await renderPanel();
+    expect(scroller().style.marginRight).toBe(`${HELP_PANEL_OVERLAY_GUTTER}px`);
     offset.mockRestore();
     client.mockRestore();
   });

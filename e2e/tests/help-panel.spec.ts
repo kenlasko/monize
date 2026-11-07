@@ -228,7 +228,13 @@ test.describe('Help panel on a desktop', () => {
     // collide with and a panel to scroll.
     expect(m.pageScrolls).toBe(true);
     expect(m.panelScrolls).toBe(true);
+    // Which kind of scrollbar each browser really drew is asserted, not assumed,
+    // so a project cannot pass the branch below that its scrollbars never reach:
+    // Chromium launched without --hide-scrollbars draws classic ones, and Firefox
+    // in the Playwright image draws overlay ones (the page scrollbar takes no
+    // layout width, the case the 16px inset exists for).
     if (browserName === 'chromium') expect(m.pageScrollbar).toBeGreaterThan(0);
+    if (browserName === 'firefox') expect(m.pageScrollbar).toBe(0);
 
     if (m.pageScrollbar > 0) {
       // Classic: the panel ends where the page's scrollbar begins, and its own
@@ -282,8 +288,12 @@ test.describe('Help panel on a desktop', () => {
     expect(reserved).toBe(520);
 
     // It is remembered in this browser: reload and open again.
+    // The wait is registered before the reload, so a fast answer is not missed.
+    const manifest = page.waitForResponse(
+      (r) => new URL(r.url()).pathname.endsWith('/help') && r.ok(),
+    );
     await page.reload();
-    await page.waitForResponse((r) => new URL(r.url()).pathname.endsWith('/help') && r.ok());
+    await (await manifest).finished();
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
     await page.getByRole('link', { name: 'Help for this page' }).click();
     await expect.poll(() => panelWidth(panel)).toBe(520);
@@ -304,10 +314,18 @@ test.describe('Help panel on a desktop', () => {
     await page.keyboard.press('Home');
     await expect(handle).toHaveAttribute('aria-valuenow', '320');
     await page.keyboard.press('End');
-    await expect(handle).toHaveAttribute('aria-valuenow', '960');
-    expect(await panelWidth(panel)).toBe(960);
+    // Beside the page (xl) the page keeps 640px of its own: the widest is the
+    // smaller of 960, 70% of the document and the document minus 640.
+    const wide = await page.evaluate(() => {
+      const c = document.documentElement.clientWidth;
+      return Math.min(960, Math.floor(c * 0.7), c - 640);
+    });
+    expect(wide).toBeGreaterThan(700);
+    await expect(handle).toHaveAttribute('aria-valuenow', String(wide));
+    expect(await panelWidth(panel)).toBe(wide);
 
-    // A narrower window takes the panel down with it (70%), and a wider one
+    // A narrower window (below xl, where the panel overlays the page) takes the
+    // panel down with it (70%), and a wider one
     // gives the width back, because the reader's choice was never overwritten.
     await page.setViewportSize({ width: 1000, height: 800 });
     // 70% of the document's width, which a classic page scrollbar narrows.
@@ -317,6 +335,6 @@ test.describe('Help panel on a desktop', () => {
     await expect(handle).toHaveAttribute('aria-valuemax', String(max));
     await expect.poll(() => panelWidth(panel)).toBe(max);
     await page.setViewportSize({ width: 1440, height: 800 });
-    await expect.poll(() => panelWidth(panel)).toBe(960);
+    await expect.poll(() => panelWidth(panel)).toBe(wide);
   });
 });

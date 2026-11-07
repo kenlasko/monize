@@ -1,7 +1,7 @@
 'use client';
 
 
-import { CSSProperties, ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppHeader } from './AppHeader';
 import { DelegationBanner } from './DelegationBanner';
@@ -15,7 +15,6 @@ import { UpdateAvailableBanner } from './UpdateAvailableBanner';
 import { WeakJwtSecretBanner } from './WeakJwtSecretBanner';
 import { AiChatBubble } from '@/components/ai/AiChatBubble';
 import { HelpPanelLoader } from '@/components/help/HelpPanelLoader';
-import { useHelpPanelWidth } from '@/components/help/useHelpPanelWidth';
 import { useHelpStore } from '@/store/helpStore';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useScrollToTopOnNavigation } from '@/hooks/useScrollToTopOnNavigation';
@@ -50,11 +49,12 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
 
   // Docked on a wide screen the help panel sits beside the page rather than
   // over it, so the page makes room for the panel's width, which the reader
-  // can change. A dynamic width cannot be a Tailwind class, so it travels as a
-  // CSS variable that the literal `xl:pr-(--help-panel-width)` reads. Narrower
-  // screens leave the panel over the page, as the assistant sheet is.
+  // can change. A dynamic width cannot be a Tailwind class, so the panel
+  // publishes it as `--help-panel-width` on the root (`useHelpWidthVar`) and the
+  // literal `xl:pr-(--help-panel-width)` reads it; this component measures
+  // nothing and does not re-render while the panel is dragged. Narrower screens
+  // leave the panel over the page, as the assistant sheet is.
   const helpDocked = useHelpStore((s) => s.open && !s.expanded);
-  const helpWidth = useHelpPanelWidth();
 
   if (isAuthRoute) {
     return (
@@ -72,11 +72,6 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
         'min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-clip',
         helpDocked && 'xl:pr-(--help-panel-width)',
       )}
-      style={
-        helpDocked
-          ? ({ '--help-panel-width': `${helpWidth}px` } as CSSProperties)
-          : undefined
-      }
     >
       <AppHeader />
       <DelegationBanner />

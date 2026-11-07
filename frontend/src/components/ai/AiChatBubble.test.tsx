@@ -33,8 +33,6 @@ import { useAiConfigured } from '@/hooks/useAiConfigured';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { AI_ENTITY_LINK_EVENT } from '@/lib/ai-entity-links';
 import { useHelpStore } from '@/store/helpStore';
-import { HELP_PANEL_DEFAULT_WIDTH } from '@/components/help/help-layout';
-import { useHelpWidthStore } from '@/store/helpWidthStore';
 
 function setMobile(mobile: boolean) {
   (useIsMobile as unknown as Mock).mockReturnValue(mobile);
@@ -337,12 +335,10 @@ describe('AiChatBubble', () => {
       expect(launcher()!.style.right).toBe('');
 
       act(() => useHelpStore.getState().openAt({ page: 'budgets' }));
-      expect(launcher()!.style.right).toBe(`${HELP_PANEL_DEFAULT_WIDTH + 16}px`);
-
-      // It follows the width the reader gave the panel.
-      act(() => useHelpWidthStore.getState().setWidth(600));
-      expect(launcher()!.style.right).toBe('616px');
-      act(() => useHelpWidthStore.setState({ width: HELP_PANEL_DEFAULT_WIDTH }));
+      // It reads the panel's published width, with the default until it is there.
+      expect(launcher()!.getAttribute('style')).toContain(
+        'right: calc(var(--help-panel-width, 420px) + 16px)',
+      );
 
       act(() => useHelpStore.getState().close());
       expect(launcher()!.style.right).toBe('');
