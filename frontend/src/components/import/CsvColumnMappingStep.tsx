@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { CsvTransferRules } from './CsvTransferRules';
 import { ImportStep } from '@/app/import/import-utils';
 import {
@@ -286,7 +287,10 @@ export function CsvColumnMappingStep({
 
         {/* Column Mapping */}
         <div className="mb-6 space-y-3">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('csvMapping.columnMappingTitle')}</h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {t('csvMapping.columnMappingTitle')}
+            <InfoTooltip text={t('csvMapping.columnMappingHelp')} learnMore="importCsvMapping" />
+          </h3>
 
           <div>
             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">{t('csvMapping.kindField')}</label>
@@ -348,7 +352,10 @@ export function CsvColumnMappingStep({
               </div>
               {!investmentMode && (
               <div>
-                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">{t('csvMapping.signField')}</label>
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                  {t('csvMapping.signField')}
+                  <InfoTooltip text={t('csvMapping.signFieldHelp')} learnMore="importAmountSign" />
+                </label>
                 <select
                   value={columnMapping.amountTypeColumn !== undefined ? 'type-column' : columnMapping.reverseSign ? 'reverse' : 'normal'}
                   onChange={(e) => {

@@ -49,7 +49,7 @@
     "mnyFailedHeading": "That Microsoft Money file could not be opened",
     "docsNotice": {
       "title": "Before you import",
-      "body": "Read the <money>Importing from Microsoft Money</money> or <quicken>Importing from Quicken</quicken> section of the documentation before importing anything."
+      "body": "Read the <money>Importing from Microsoft Money</money> or <quicken>Importing from Quicken</quicken> section of the documentation before importing anything. OFX/QFX and QIF files each have their own quirks -- see <ofx>Importing OFX/QFX Files</ofx> and <qif>Importing Quicken QIF Files</qif>."
     }
   },
   "selectAccount": {
@@ -87,12 +87,14 @@
     "customPlaceholder": "e.g. DD.MM.YYYY",
     "dataPreview": "Data Preview",
     "columnMappingTitle": "Column Mapping",
+    "columnMappingHelp": "Map each CSV column to a transaction field. Date, Amount type and either Amount or Debit/Credit are required; the rest are optional.",
     "dateField": "Date",
     "amountTypeField": "Amount type",
     "singleAmountOption": "Single amount column",
     "splitAmountOption": "Separate debit/credit",
     "amountField": "Amount",
     "signField": "Sign",
+    "signFieldHelp": "How the amount's sign is read: As-is treats a positive number as a deposit, Reverse treats it as a withdrawal (use this for credit card statements where charges are positive), and a transaction type column decides direction from its own values instead of the sign.",
     "signNormal": "As-is (positive = deposit)",
     "signReverse": "Reverse (positive = withdrawal)",
     "signTypeColumn": "Use transaction type column",
@@ -484,6 +486,7 @@
       "verifying": "Verifying"
     },
     "failedHeading": "The import did not finish",
+    "learnMore": "Learn more",
     "retry": "Try again",
     "startOver": "Start over"
   },
