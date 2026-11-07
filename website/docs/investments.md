@@ -105,6 +105,10 @@ Beside the chart, the **Portfolio performance** card lists how your investments 
 
 ![The Portfolio performance card](images/investments-performance.png)
 
+### Cash vs. Investment Performance
+
+The **Portfolio Summary** card's **Total Gain**, and the **Total Portfolio Value** it is built from, include your uninvested cash: money sitting in a brokerage's cash account that has not bought anything yet. **TWR**, **MWR**, and the **Investment Result** and **Return** on the **Portfolio Value Over Time** chart and the **Portfolio performance** card leave that cash out entirely -- a deposit into an investment account moves none of them, and neither does a withdrawal. That is why transferring money into a brokerage can change the Total Portfolio Value without moving TWR or MWR at all: the cash counts toward what you are worth, not toward what your investments earned.
+
 ### Holdings by Account
 
 The **Holdings by Account** card lists your positions grouped by account. Each account's row shows its total market value and gain; click it to expand the positions.
@@ -212,6 +216,15 @@ Some types ask for different fields: a dividend, interest or distribution asks f
 A bond linked to a government bond programme also asks for its **Bond series**. A Polish savings bond's series follows from the date. A US Treasury security is sold at auction, so a buy names its auction: **Find the auction** lists the auctions issued within a month of the transaction's date, read from TreasuryDirect, each with its term, CUSIP, auction, issue and maturity dates, rate and price, and the buttons above the list narrow it to one term. Choosing one fetches the series if Monize does not hold it yet, sets the date to the issue date (when an auction purchase settles) and, when the price is empty, sets it to the auction price; a TIPS price is left to you, because it includes the inflation adjustment the auction price does not. An auction that has been announced but not held is listed and can be chosen once its results are published.
 
 Use the arrow beside **Create Transaction** to choose **Create Transaction & New**, which saves and clears the form for the next entry, keeping the account, the date and the transaction type. To change a transaction, click **Edit** on its row (the form then has **Update Transaction**).
+
+### Total Amount or Price: Which One Wins
+
+**Quantity**, **Price per Share** and **Total Amount** describe the same trade, so changing one recalculates another -- but only one direction at a time, decided by whichever you last typed:
+
+- Edit **Quantity**, **Price per Share** or **Commission / Fees** and the **Total Amount** recalculates from them.
+- Edit **Total Amount** directly and Monize works out the **Price per Share** that produces it, keeping every cent of what you typed. A brokerage statement that says a sale of 141 shares came to $820.91 is stored as exactly $820.91, rather than rounded to a price of $5.82 and multiplied back out to $820.62.
+
+Whichever of the two you edited last is what gets saved; reopening the transaction later and editing only the description does not re-trigger either recalculation.
 
 ---
 

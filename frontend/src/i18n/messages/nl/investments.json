@@ -271,6 +271,7 @@
     "transferCostNote": "De kosten per aandeel zijn wat de aandelen op de overboekingsdatum in de bronrekening hebben gekost. Ze worden bij het opslaan berekend en naar de doelrekening overgedragen, zodat uw winst- en rendementsrapporten kloppen. Er worden alleen aandelen verplaatst; er wisselt geen geld van eigenaar.",
     "returnOfCapitalNote": "Een kapitaalterugbetaling is geen inkomen. Ze betaalt een deel terug van wat de aandelen hebben gekost en verlaagt dus de kostprijs van uw positie met dit bedrag. Wat de resterende kostprijs overschrijdt, wordt gerapporteerd als gerealiseerde koerswinst.",
     "totalAmount": "Totaalbedrag",
+    "totalAmountTooltip": "Waarop de transactie uitkwam. Bewerk de hoeveelheid, de prijs of de commissie en dit bedrag wordt daaruit herberekend; bewerk dit veld rechtstreeks en Monize berekent in plaats daarvan de prijs per aandeel, waarbij elke cent van wat je hebt getypt behouden blijft.",
     "sharesAtPrice": "{shares} aandelen @ {symbol}{price}",
     "commissionSuffix": "commissie",
     "accruedInterestSuffix": "opgelopen rente",

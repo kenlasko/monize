@@ -821,6 +821,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
             <InfoTooltip
               placement="top"
               text={t('investmentValueChart.valueChangeTooltip')}
+              learnMore="investmentPeriodResult"
             />
           </div>
           <div
@@ -843,6 +844,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
             <InfoTooltip
               placement="top"
               text={t('investmentValueChart.investmentResultTooltip')}
+              learnMore="investmentPeriodResult"
             />
           </div>
           <div className={`text-lg font-bold ${investmentResult === null ? '' : gainLossColor(investmentResult)}`}>

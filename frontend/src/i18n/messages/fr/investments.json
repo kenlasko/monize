@@ -271,6 +271,7 @@
     "transferCostNote": "Le coût par part est ce que les parts ont coûté dans le compte source à la date du transfert. Il est calculé à l'enregistrement et reporté sur le compte de destination, afin que vos rapports de plus-values et de bénéfices restent exacts. Seules des parts sont déplacées ; aucun argent ne change de mains.",
     "returnOfCapitalNote": "Un remboursement de capital n'est pas un revenu. Il restitue une partie de ce que les titres ont coûté, et réduit donc le prix de revient de votre position de ce montant. Tout ce qui dépasse le prix de revient restant est déclaré comme plus-value réalisée.",
     "totalAmount": "Montant total",
+    "totalAmountTooltip": "Ce que l'opération a donné. Modifiez la quantité, le prix ou la commission et ce montant est recalculé à partir d'eux ; modifiez ce champ directement et Monize calcule le prix par action à la place, en conservant chaque centime de ce que vous avez saisi.",
     "sharesAtPrice": "{shares} parts @ {symbol}{price}",
     "commissionSuffix": "commission",
     "accruedInterestSuffix": "intérêts courus",

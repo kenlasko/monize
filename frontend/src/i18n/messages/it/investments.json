@@ -271,6 +271,7 @@
     "transferCostNote": "Il costo per quota è quanto le quote sono costate nel conto di origine alla data del trasferimento. Viene calcolato al salvataggio e riportato sul conto di destinazione, così i report su plusvalenze e profitti restano corretti. Vengono spostate solo quote; nessun contante cambia di mano.",
     "returnOfCapitalNote": "Un rimborso di capitale non è un reddito. Restituisce parte di quanto sono costate le azioni, quindi riduce di questo importo il costo di acquisto della posizione. L'eventuale eccedenza rispetto al costo di acquisto residuo viene registrata come plusvalenza realizzata.",
     "totalAmount": "Importo totale",
+    "totalAmountTooltip": "A quanto è ammontata l'operazione. Modifica la quantità, il prezzo o la commissione e questo importo verrà ricalcolato di conseguenza; modifica direttamente questo campo e Monize calcolerà invece il prezzo per azione, mantenendo ogni centesimo di ciò che hai digitato.",
     "sharesAtPrice": "{shares} azioni @ {symbol}{price}",
     "commissionSuffix": "commissione",
     "accruedInterestSuffix": "interessi maturati",

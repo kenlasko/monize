@@ -304,6 +304,7 @@
     "transferCostNote": "The cost per share is what the shares cost in the source account on the transfer date. It is worked out when you save and carried to the destination, so your gain and profit reports stay correct. This moves shares only; no cash changes hands.",
     "returnOfCapitalNote": "A return of capital is not income. It pays back part of what the shares cost, so it lowers the cost basis of your holding by this amount. Anything beyond the remaining cost basis is reported as a realized capital gain.",
     "totalAmount": "Total Amount",
+    "totalAmountTooltip": "What the trade came to. Edit the quantity, the price or the commission and this recalculates from them; edit this field directly and Monize works out the per-share price instead, keeping every cent of what you typed.",
     "sharesAtPrice": "{shares} shares @ {symbol}{price}",
     "commissionSuffix": "commission",
     "accruedInterestSuffix": "accrued interest",

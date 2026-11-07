@@ -271,6 +271,7 @@
     "transferCostNote": "Koszt za udział to kwota, jaką udziały kosztowały na koncie źródłowym w dniu przeniesienia. Jest obliczany przy zapisie i przenoszony na konto docelowe, aby raporty zysków pozostały poprawne. Operacja przenosi tylko udziały; gotówka nie zmienia właściciela.",
     "returnOfCapitalNote": "Zwrot kapitału nie jest dochodem. Zwraca część tego, ile kosztowały akcje, więc obniża koszt nabycia pozycji o tę kwotę. Nadwyżka ponad pozostały koszt nabycia jest wykazywana jako zrealizowany zysk kapitałowy.",
     "totalAmount": "Suma",
+    "totalAmountTooltip": "Na co faktycznie wyszła transakcja. Edytuj ilość, cenę lub prowizję, a ta kwota zostanie na ich podstawie przeliczona; edytuj to pole bezpośrednio, a Monize obliczy zamiast tego cenę za akcję, zachowując każdy grosz tego, co wpisano.",
     "sharesAtPrice": "{shares} udziałów @ {symbol}{price}",
     "commissionSuffix": "prowizja",
     "accruedInterestSuffix": "odsetki naliczone",

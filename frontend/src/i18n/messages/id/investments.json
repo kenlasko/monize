@@ -271,6 +271,7 @@
     "transferCostNote": "Biaya per saham adalah harga saham tersebut di akun sumber pada tanggal transfer. Biaya ini dihitung saat Anda menyimpan dan dibawa ke akun tujuan, sehingga laporan keuntungan dan laba Anda tetap benar. Ini hanya memindahkan saham; tidak ada uang tunai yang berpindah tangan.",
     "returnOfCapitalNote": "Pengembalian modal bukan pendapatan. Ini mengembalikan sebagian dari biaya perolehan saham, sehingga menurunkan dasar biaya kepemilikan Anda sebesar jumlah ini. Jumlah yang melebihi sisa dasar biaya dilaporkan sebagai keuntungan modal yang direalisasi.",
     "totalAmount": "Total Jumlah",
+    "totalAmountTooltip": "Berapa nilai transaksi tersebut. Ubah kuantitas, harga, atau komisi dan jumlah ini akan dihitung ulang darinya; ubah kolom ini secara langsung dan Monize akan menghitung harga per saham sebagai gantinya, menyimpan setiap sen dari yang Anda ketik.",
     "sharesAtPrice": "{shares} lembar @ {symbol}{price}",
     "commissionSuffix": "komisi",
     "accruedInterestSuffix": "bunga akrual",

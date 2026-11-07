@@ -271,6 +271,7 @@
     "transferCostNote": "Giá vốn mỗi cổ phần là chi phí của cổ phần đó tại tài khoản nguồn vào ngày chuyển. Giá vốn được tính khi bạn lưu và chuyển sang tài khoản đích, để báo cáo lãi và lợi nhuận của bạn luôn chính xác. Thao tác này chỉ chuyển cổ phần; không có tiền mặt nào được trao tay.",
     "returnOfCapitalNote": "Hoàn vốn không phải là thu nhập. Khoản này trả lại một phần chi phí mua cổ phiếu, vì vậy nó làm giảm cơ sở chi phí của khoản nắm giữ theo số tiền này. Phần vượt quá cơ sở chi phí còn lại được ghi nhận là lãi vốn đã thực hiện.",
     "totalAmount": "Tổng số tiền",
+    "totalAmountTooltip": "Giao dịch đã lên tới bao nhiêu. Chỉnh sửa số lượng, giá hoặc phí hoa hồng và số tiền này sẽ được tính lại từ chúng; chỉnh sửa trực tiếp trường này và Monize sẽ tính ra giá mỗi cổ phần thay vào đó, giữ nguyên từng đồng bạn đã nhập.",
     "sharesAtPrice": "{shares} cổ phiếu @ {symbol}{price}",
     "commissionSuffix": "hoa hồng",
     "accruedInterestSuffix": "lãi dồn tích",

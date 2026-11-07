@@ -271,6 +271,7 @@
     "transferCostNote": "Pay başına maliyet, payların transfer tarihinde kaynak hesaptaki maliyetidir. Kaydettiğinizde hesaplanır ve hedef hesaba aktarılır; böylece kazanç ve kâr raporlarınız doğru kalır. Yalnızca paylar taşınır; nakit el değiştirmez.",
     "returnOfCapitalNote": "Sermaye iadesi gelir değildir. Hisselerin maliyetinin bir kısmını geri öder, bu nedenle pozisyonunuzun maliyet esasını bu tutar kadar düşürür. Kalan maliyet esasını aşan tutar gerçekleşmiş sermaye kazancı olarak raporlanır.",
     "totalAmount": "Toplam Tutar",
+    "totalAmountTooltip": "İşlemin tutarı ne oldu. Miktarı, fiyatı veya komisyonu düzenleyin ve bu tutar bunlardan yeniden hesaplanır; bu alanı doğrudan düzenlediğinizde Monize, yazdığınız her kuruşu koruyarak hisse başına fiyatı hesaplar.",
     "sharesAtPrice": "{shares} hisse @ {symbol}{price}",
     "commissionSuffix": "komisyon",
     "accruedInterestSuffix": "birikmiş faiz",
