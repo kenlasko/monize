@@ -105,6 +105,14 @@ describe("ToolExecutorService search_help", () => {
     });
   });
 
+  it("hands getLlmHelp the question without its surrounding whitespace", async () => {
+    await service.execute(USER, "search_help", { query: "  budgets \n" });
+
+    expect(help.getLlmHelp).toHaveBeenCalledWith("budgets", {
+      limit: undefined,
+    });
+  });
+
   it("leaves an unasked limit to the domain method's default", async () => {
     await service.execute(USER, "search_help", { query: "budgets" });
 
@@ -159,6 +167,7 @@ describe("ToolExecutorService search_help", () => {
   it.each([
     [{}],
     [{ query: "" }],
+    [{ query: "   " }],
     [{ query: "x".repeat(201) }],
     [{ query: "budgets", limit: 9 }],
     [{ query: "budgets", limit: 0 }],

@@ -160,12 +160,12 @@ export class HelpService {
    * database scope and answers a delegate exactly as it answers the owner.
    */
   getLlmHelp(query: string, options: { limit?: number } = {}): LlmHelpAnswer {
-    const available = this.load();
-    const { results } = available
-      ? this.search(query, { limit: clampHelpLimit(options.limit) })
-      : { results: [] };
+    // `search` answers no results when the bundle is unavailable.
+    const { results } = this.search(query, {
+      limit: clampHelpLimit(options.limit),
+    });
     return {
-      available,
+      available: this.load(),
       guideVersion: this.currentVersion,
       language: LLM_HELP_LANGUAGE,
       sections: results.map((result) => {

@@ -1076,6 +1076,7 @@ export const SEARCH_HELP_DESCRIPTION =
 export const searchHelpSchema = z.object({
   query: z
     .string()
+    .trim()
     .min(1)
     .max(LLM_HELP_QUERY_MAX_CHARS)
     .describe("The question, in English words."),
