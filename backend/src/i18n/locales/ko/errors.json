@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "결제 매칭은 아직 비용이 포함된 모기지 납부를 정산할 수 없습니다. 결제 매칭을 끄거나 비용을 삭제하세요."
   },
   "help": {
-    "pageNotFound": "도움말 페이지를 찾을 수 없습니다"
+    "pageNotFound": "도움말 페이지를 찾을 수 없습니다",
+    "imageNotFound": "도움말 이미지를 찾을 수 없습니다"
   }
 }

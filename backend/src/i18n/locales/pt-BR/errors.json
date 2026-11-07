@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "A correspondência de pagamentos ainda não consegue liquidar um pagamento de hipoteca que inclui encargos. Desative a correspondência de pagamentos ou remova os encargos."
   },
   "help": {
-    "pageNotFound": "Página de ajuda não encontrada"
+    "pageNotFound": "Página de ajuda não encontrada",
+    "imageNotFound": "Imagem de ajuda não encontrada"
   }
 }

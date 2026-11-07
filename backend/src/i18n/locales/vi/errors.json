@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "Đối chiếu thanh toán chưa thể tất toán khoản thanh toán thế chấp có bao gồm phí. Hãy tắt đối chiếu thanh toán hoặc xóa các khoản phí."
   },
   "help": {
-    "pageNotFound": "Không tìm thấy trang trợ giúp"
+    "pageNotFound": "Không tìm thấy trang trợ giúp",
+    "imageNotFound": "Không tìm thấy hình ảnh trợ giúp"
   }
 }

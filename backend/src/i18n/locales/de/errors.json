@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "Der Zahlungsabgleich kann eine Hypothekenzahlung mit Gebühren noch nicht verrechnen. Schalten Sie den Zahlungsabgleich aus oder entfernen Sie die Gebühren."
   },
   "help": {
-    "pageNotFound": "Hilfeseite nicht gefunden"
+    "pageNotFound": "Hilfeseite nicht gefunden",
+    "imageNotFound": "Hilfebild nicht gefunden"
   }
 }

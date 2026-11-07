@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "Le rapprochement des paiements ne peut pas encore solder un paiement hypothécaire qui comprend des frais. Désactivez le rapprochement des paiements ou supprimez les frais."
   },
   "help": {
-    "pageNotFound": "Page d'aide introuvable"
+    "pageNotFound": "Page d'aide introuvable",
+    "imageNotFound": "Image d'aide introuvable"
   }
 }

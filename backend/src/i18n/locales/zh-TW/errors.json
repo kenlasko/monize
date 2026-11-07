@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "付款比對目前還無法結算包含費用的抵押貸款付款。請關閉付款比對或移除這些費用。"
   },
   "help": {
-    "pageNotFound": "找不到說明頁面"
+    "pageNotFound": "找不到說明頁面",
+    "imageNotFound": "找不到說明圖片"
   }
 }

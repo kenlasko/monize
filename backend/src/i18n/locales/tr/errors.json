@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "Ödeme eşleştirme, ücret içeren bir ipotek ödemesini henüz kapatamaz. Ödeme eşleştirmeyi kapatın veya ücretleri kaldırın."
   },
   "help": {
-    "pageNotFound": "Yardım sayfası bulunamadı"
+    "pageNotFound": "Yardım sayfası bulunamadı",
+    "imageNotFound": "Yardım görseli bulunamadı"
   }
 }
