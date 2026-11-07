@@ -361,14 +361,31 @@ describe("HelpService", () => {
 
     it("reads the file the listing found, and only once it is asked for", async () => {
       service.getManifest();
-      const read = jest.spyOn(fs.promises, "readFile");
+      const open = jest.spyOn(fs.promises, "open");
 
       await service.getImage("beta");
 
-      expect(read).toHaveBeenCalledTimes(1);
-      expect(read).toHaveBeenCalledWith(
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(open).toHaveBeenCalledWith(
         path.join(helpDir, "images", "beta.png"),
+        "r",
       );
+    });
+
+    it("stops matching the page's key once the file has changed", async () => {
+      const advertised =
+        service.getPage("first-page")?.images.beta.dark.revision;
+      fs.writeFileSync(
+        path.join(helpDir, "images", "beta.png"),
+        Buffer.concat([png(800, 450), Buffer.alloc(16)]),
+      );
+
+      const image = await service.getImage("beta");
+
+      expect(image?.revision).toMatch(
+        new RegExp(`^${service.currentVersion.replace(/\./g, "\\.")}-`),
+      );
+      expect(image?.revision).not.toBe(advertised);
     });
 
     it("answers null when a listed picture's file has gone", async () => {
@@ -405,6 +422,7 @@ describe("HelpService", () => {
         jest.spyOn(fs, "readFileSync"),
         jest.spyOn(fs, "existsSync"),
         jest.spyOn(fs, "openSync"),
+        jest.spyOn(fs.promises, "open"),
         jest.spyOn(fs.promises, "readFile"),
       ];
 

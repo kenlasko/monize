@@ -250,6 +250,40 @@ describe('HelpMarkdown: images', () => {
     );
   });
 
+  it('turns a picture whose request fails into its caption and the online link', () => {
+    const { container } = renderMarkdown(md, { toc, images: BOTH });
+    act(() => fireEvent.error(screen.getByRole('img', { name: 'The budget dashboard' })));
+    expect(container.querySelector('img')).toBeNull();
+    expect(container).toHaveTextContent('The budget dashboard');
+    expect(screen.getByRole('link', { name: /View screenshot on monize.net/ })).toHaveAttribute(
+      'href',
+      `${ONLINE}#dashboard`,
+    );
+  });
+
+  it('tries the other theme afresh after a failed picture', () => {
+    function ThemeSwitch() {
+      const { setTheme } = useTheme();
+      return <button onClick={() => setTheme('light')}>Light</button>;
+    }
+    const { container } = render(
+      <>
+        <ThemeSwitch />
+        <HelpMarkdown markdown={md} toc={toc} slug="budgets" onlineUrl={ONLINE} images={BOTH} onNavigate={vi.fn()} />
+      </>,
+    );
+    act(() => fireEvent.error(screen.getByRole('img', { name: 'The budget dashboard' })));
+    expect(container.querySelector('img')).toBeNull();
+    act(() => fireEvent.click(screen.getByRole('button', { name: 'Light' })));
+    expect(screen.getByRole('img', { name: 'The budget dashboard' })).toHaveAttribute('src', LIGHT_SRC);
+  });
+
+  it('names a picture without alt text generically and shows no caption under it', () => {
+    renderMarkdown('![](images/budget-dashboard.png)\n', { images: BOTH });
+    const img = screen.getByRole('img', { name: 'Screenshot' });
+    expect(img.nextElementSibling?.tagName).toBe('A');
+  });
+
   it('shows every picture as its caption when the backend sends no pictures at all', () => {
     const { container } = render(
       <HelpMarkdown markdown={md} toc={toc} slug="budgets" onlineUrl={ONLINE} onNavigate={vi.fn()} />,

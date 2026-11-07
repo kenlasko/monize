@@ -106,8 +106,8 @@ in `help.service.ts` keep their Bearer fingerprints:
   header does not parse is logged and left out. No `images` directory is an
   empty bundle, not an error: pages still load, with captions.
 - `imageSize(header)`: the header parser, a pure function with its own tests.
-- `readBundledImage(entry)`: reads the bytes of an entry. Its path comes from
-  the listing, never from a request.
+- `readBundledImage(entry)`: reads the bytes of an entry and the file's
+  revision as it is now. Its path comes from the listing, never from a request.
 
 `HelpService`:
 
@@ -120,7 +120,9 @@ in `help.service.ts` keep their Bearer fingerprints:
   the caption. `revision` is the cache key: the running version and the file's
   own revision, so it changes with every release and whenever the file does (a
   screenshot retaken under the dev stack's mount, or an image built from `main`
-  between releases, where the version does not move).
+  between releases, where the version does not move). The revision a request
+  is answered with is the file's as read then, so a file changed after the
+  listing stops matching its page's stale key and is revalidated, not pinned.
 - `getImage(name)`: `null` unless the name matches
   `HELP_IMAGE_NAME_RE` (`^[a-z0-9-]+(?:\.light)?$`) and is in the Map; else the
   entry's bytes and content type. The name is looked up, never joined into a
@@ -157,7 +159,9 @@ inline suppression.
   `decoding="async"` and the alt text, then the alt text as a caption (hidden
   from a screen reader, which has just read it as the alt text), then the
   "View screenshot on monize.net" link. A theme change re-renders it with the
-  other picture. A name not in `images` keeps today's caption and link.
+  other picture. A name not in `images`, or a picture whose request fails (a
+  throttled request, a replica without it), keeps today's caption and link
+  rather than a broken image.
 - `HelpPanel` passes the page's `images` through.
 
 ## Tests

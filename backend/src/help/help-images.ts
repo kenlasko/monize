@@ -144,9 +144,7 @@ function readHeader(
     if (!size) {
       return null;
     }
-    const stat = fs.fstatSync(fd);
-    const revision = `${stat.size.toString(36)}-${Math.trunc(stat.mtimeMs).toString(36)}`;
-    return { ...size, revision };
+    return { ...size, revision: fileRevision(fs.fstatSync(fd)) };
   } catch {
     return null;
   } finally {
@@ -156,7 +154,26 @@ function readHeader(
   }
 }
 
-/** The bytes of a bundled picture; `entry` is one `readImageBundle` returned. */
-export function readBundledImage(entry: HelpImageEntry): Promise<Buffer> {
-  return fs.promises.readFile(entry.file);
+/** A file's revision: its size and modification time, which change with its bytes. */
+function fileRevision(stat: fs.Stats): string {
+  return `${stat.size.toString(36)}-${Math.trunc(stat.mtimeMs).toString(36)}`;
+}
+
+/**
+ * The bytes of a bundled picture and the revision of the file they came from,
+ * which can differ from the entry's when the file changed after the listing
+ * (a screenshot retaken under the dev stack's mount). `entry` is one
+ * `readImageBundle` returned.
+ */
+export async function readBundledImage(
+  entry: HelpImageEntry,
+): Promise<{ data: Buffer; revision: string }> {
+  const handle = await fs.promises.open(entry.file, "r");
+  try {
+    const stat = await handle.stat();
+    const data = await handle.readFile();
+    return { data, revision: fileRevision(stat) };
+  } finally {
+    await handle.close();
+  }
 }

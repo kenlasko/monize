@@ -18,5 +18,8 @@ export const HELP_SLUG_RE = /^[a-z0-9-]+$/;
  */
 export const HELP_IMAGE_NAME_RE = /^[a-z0-9-]+(?:\.light)?$/;
 
-/** A picture a page shows, as the website build reads it: `images/<name>.png`. */
+/**
+ * A picture a page shows, as the website build reads it: `images/<name>.png`.
+ * Global, so for `matchAll` only (which copies it); never `.test` or `.exec`.
+ */
 export const HELP_IMAGE_REF_RE = /images\/([a-z0-9-]+)\.png/g;

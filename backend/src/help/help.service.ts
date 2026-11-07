@@ -90,7 +90,9 @@ export class HelpService {
    * A bundled picture (`<name>` or `<name>.light`), or `null` for anything the
    * bundle does not hold. The name is looked up in the list read when the
    * bundle loaded and never joined into a path, so nothing a request supplies
-   * reaches the filesystem; the file read is the one the listing found.
+   * reaches the filesystem; the file read is the one the listing found. Its
+   * `revision` is the file's as read now, so a file changed since the listing
+   * no longer matches the key its page still advertises.
    */
   async getImage(name: string): Promise<HelpImageFile | null> {
     if (typeof name !== "string" || !HELP_IMAGE_NAME_RE.test(name)) {
@@ -104,10 +106,11 @@ export class HelpService {
       return null;
     }
     try {
+      const { data, revision } = await readBundledImage(entry);
       return {
-        data: await readBundledImage(entry),
+        data,
         contentType: entry.contentType,
-        revision: cacheKey(this.currentVersion, entry),
+        revision: cacheKey(this.currentVersion, revision),
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -292,7 +295,7 @@ function pageImages(
     name,
     width: entry.width,
     height: entry.height,
-    revision: cacheKey(version, entry),
+    revision: cacheKey(version, entry.revision),
   });
   const found = new Map<string, HelpImage>();
   for (const [, name] of markdown.matchAll(HELP_IMAGE_REF_RE)) {
@@ -313,8 +316,8 @@ function pageImages(
  * A picture's cache key: the running version and the file's own revision, so
  * a browser keeps a picture only until a release or a changed file replaces it.
  */
-function cacheKey(version: string, entry: HelpImageEntry): string {
-  return `${version}-${entry.revision}`;
+function cacheKey(version: string, revision: string): string {
+  return `${version}-${revision}`;
 }
 
 /** Levels (2 or 3) of the `##`/`###` headings outside code fences, in order. */

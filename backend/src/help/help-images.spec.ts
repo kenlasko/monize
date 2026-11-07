@@ -205,6 +205,25 @@ describe("readImageBundle", () => {
       throw new Error("shot.webp was not listed");
     }
 
-    await expect(readBundledImage(entry)).resolves.toEqual(bytes);
+    await expect(readBundledImage(entry)).resolves.toEqual({
+      data: bytes,
+      revision: entry.revision,
+    });
+  });
+
+  it("reads the revision of the file as it is now, not as it was listed", async () => {
+    const file = path.join(images, "shot.png");
+    fs.writeFileSync(file, png(3, 3));
+    const entry = readImageBundle(root, warn).get("shot");
+    if (!entry) {
+      throw new Error("shot.png was not listed");
+    }
+    const retaken = Buffer.concat([png(3, 3), Buffer.alloc(4)]);
+    fs.writeFileSync(file, retaken);
+
+    const read = await readBundledImage(entry);
+
+    expect(read.data).toEqual(retaken);
+    expect(read.revision).not.toBe(entry.revision);
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import type { MouseEvent, ReactNode } from 'react';
+import { useState, type MouseEvent, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
@@ -9,7 +9,12 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { TABLE_BODY_CLASS, TABLE_CLASS, Td, Th } from '@/components/ui/Table';
 import { useTheme } from '@/contexts/ThemeContext';
 import { DOCS_BASE_URL, type HelpTarget } from '@/lib/docs-links';
-import { helpImageUrl, type HelpImage, type HelpTocEntry } from '@/lib/help';
+import {
+  helpImageUrl,
+  type HelpImage,
+  type HelpImageVariant,
+  type HelpTocEntry,
+} from '@/lib/help';
 import { remarkHelp } from '@/lib/markdown/remark-help';
 
 interface HelpMarkdownProps {
@@ -73,6 +78,52 @@ const H2_CLASS =
   'mt-6 mb-2 border-t border-gray-200 pt-4 text-lg font-semibold text-gray-900 first:mt-0 first:border-t-0 first:pt-0 dark:border-gray-700 dark:text-gray-100';
 const H3_CLASS = 'mt-4 mb-1 text-base font-semibold text-gray-900 dark:text-gray-100';
 const H4_CLASS = 'mt-3 mb-1 text-sm font-semibold text-gray-900 dark:text-gray-100';
+
+/**
+ * One of the guide's pictures, its caption and its online link. A picture
+ * whose request fails (a throttled or refused request, a replica without it)
+ * becomes `fallback`, the caption box a picture the bundle lacks shows, never a
+ * broken image. Keyed by the picture's name, so a theme change starts afresh.
+ */
+function HelpScreenshot({
+  variant,
+  alt,
+  caption,
+  online,
+  fallback,
+}: {
+  variant: HelpImageVariant;
+  alt: string;
+  /** The Markdown's alt text, shown under the picture; none when it has none. */
+  caption?: string;
+  online: ReactNode;
+  fallback: ReactNode;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <>{fallback}</>;
+  return (
+    <span className="my-3 block">
+      {/* eslint-disable-next-line @next/next/no-img-element -- a same-origin API picture with its own size; next/image would re-encode it */}
+      <img
+        src={helpImageUrl(variant)}
+        alt={alt}
+        width={variant.width}
+        height={variant.height}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+        className="block h-auto max-w-full rounded-md border border-gray-200 dark:border-gray-700"
+      />
+      {/* The alt text already names the picture to a screen reader. */}
+      {caption && (
+        <span aria-hidden="true" className="mt-1 block text-xs text-gray-600 dark:text-gray-400">
+          {caption}
+        </span>
+      )}
+      {online}
+    </span>
+  );
+}
 
 /** A click the browser should handle itself: a new tab, a window, a download. */
 function isModifiedClick(e: MouseEvent): boolean {
@@ -202,39 +253,24 @@ export function HelpMarkdown({
                 <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" aria-hidden="true" />
               </a>
             );
-            if (!variant) {
-              return (
-                <span className="my-2 block rounded-md border border-dashed border-gray-300 p-3 dark:border-gray-600">
-                  <span className="block text-gray-600 dark:text-gray-400">
-                    {props.alt || t('screenshot')}
-                  </span>
-                  {online}
+            const fallback = (
+              <span className="my-2 block rounded-md border border-dashed border-gray-300 p-3 dark:border-gray-600">
+                <span className="block text-gray-600 dark:text-gray-400">
+                  {props.alt || t('screenshot')}
                 </span>
-              );
-            }
-            return (
-              <span className="my-3 block">
-                {/* eslint-disable-next-line @next/next/no-img-element -- a same-origin API picture with its own size; next/image would re-encode it */}
-                <img
-                  src={helpImageUrl(variant)}
-                  alt={props.alt || t('screenshot')}
-                  width={variant.width}
-                  height={variant.height}
-                  loading="lazy"
-                  decoding="async"
-                  className="block h-auto max-w-full rounded-md border border-gray-200 dark:border-gray-700"
-                />
-                {/* The alt text already names the picture to a screen reader. */}
-                {props.alt && (
-                  <span
-                    aria-hidden="true"
-                    className="mt-1 block text-xs text-gray-600 dark:text-gray-400"
-                  >
-                    {props.alt}
-                  </span>
-                )}
                 {online}
               </span>
+            );
+            if (!variant) return fallback;
+            return (
+              <HelpScreenshot
+                key={variant.name}
+                variant={variant}
+                alt={props.alt || t('screenshot')}
+                caption={props.alt || undefined}
+                online={online}
+                fallback={fallback}
+              />
             );
           },
           a: ({ href, children }) => {
