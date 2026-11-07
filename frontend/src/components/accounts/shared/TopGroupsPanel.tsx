@@ -75,7 +75,7 @@ export function TopGroupsPanel({
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         {isLoading ? (
-          <div className="h-24 rounded bg-gray-100 dark:bg-gray-700 animate-pulse" />
+          <div className="h-24 rounded bg-gray-100 dark:bg-gray-700 animate-pulse skeleton-shimmer" />
         ) : rows.ranked.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{emptyLabel}</p>
         ) : (

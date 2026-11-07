@@ -129,7 +129,7 @@ const widgetHeading = (title: string) =>
 async function openDashboard(): Promise<void> {
   if (!new URL(page.url()).pathname.startsWith("/dashboard"))
     await openPage("/dashboard");
-  await expect(page.getByRole("heading", { name: /Welcome/ })).toBeVisible({
+  await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening)|Welcome/ })).toBeVisible({
     timeout: 60_000,
   });
   await expect(page.locator(".animate-spin, .animate-pulse")).toHaveCount(0, {
@@ -140,7 +140,7 @@ async function openDashboard(): Promise<void> {
 
 test("dashboard-overview", async () => {
   await openDashboard();
-  await expect(page.getByRole("heading", { name: /Welcome/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening)|Welcome/ })).toBeVisible();
   await expect(widgetHeading("Favourite Accounts")).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
   await docShot(page, "dashboard-overview");
@@ -158,11 +158,35 @@ test("dashboard-header", async () => {
       .getByRole("main")
       .getByRole("link", { name: "Shared Expenses", exact: true }),
   ).toHaveCount(0);
-  await docShot(
-    page,
-    "dashboard-header",
-    customize.locator("xpath=ancestor::div[.//h1][1]"),
-  );
+  // The greeting, its Customize gear and the net worth hero beside it.
+  const hero = page.getByTestId("dashboard-hero");
+  await expect(hero).toBeVisible();
+  await docShot(page, "dashboard-header", hero);
+});
+
+/** Switch the dashboard hero's set through Customize, and wait for it. */
+async function chooseHeroSet(set: "Net worth" | "Portfolio value"): Promise<void> {
+  await page.getByRole("button", { name: "Customize", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "Customize dashboard" })).toBeVisible();
+  await dialog.getByRole("button", { name: set, exact: true }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator(".animate-spin, .animate-pulse")).toHaveCount(0, {
+    timeout: 90_000,
+  });
+  await settled();
+}
+
+test("dashboard-hero-portfolio", async () => {
+  await openDashboard();
+  await chooseHeroSet("Portfolio value");
+  const hero = page.getByTestId("dashboard-hero");
+  await expect(hero.getByText(/Portfolio value/)).toBeVisible();
+  await docShot(page, "dashboard-hero-portfolio", hero);
+  // The later pictures show the default set.
+  await chooseHeroSet("Net worth");
+  await expect(hero.getByText("Net worth", { exact: true })).toBeVisible();
 });
 
 test("dashboard-customize", async () => {
@@ -225,8 +249,10 @@ test("dashboard-upcoming-bills-calendar", async () => {
 
 for (const [name, title, ready] of [
   ["dashboard-favourite-account", "Favourite Accounts", "Primary Chequing"],
-  ["dashboard-upcoming-bills", "Upcoming Bills & Deposits", "Gym Membership"],
-  ["dashboard-top-movers", "Top Movers", "VOO"],
+  // Which bills and movers lead depends on the day the pictures are taken, so
+  // these two wait on labels the widget always draws once it has loaded.
+  ["dashboard-upcoming-bills", "Upcoming Bills & Deposits", "All upcoming"],
+  ["dashboard-top-movers", "Top Movers", "View portfolio"],
   ["dashboard-portfolio-value", "Portfolio Value over Time", null],
   ["dashboard-expenses-pie", "Expenses by Category", null],
   ["dashboard-income-expenses-bar", "Income vs Expenses", null],

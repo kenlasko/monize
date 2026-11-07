@@ -7,6 +7,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { cn } from '@/lib/utils';
 import { createLogger } from '@/lib/logger';
 import { ArrowDownTrayIcon, ChevronDownIcon, DocumentIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { MENU_ENTER_CLASS, MENU_ORIGIN_RIGHT } from '@/components/ui/menu-motion';
 
 const logger = createLogger('ExportDropdown');
 
@@ -140,7 +141,7 @@ export function ExportDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50">
+        <div className={`absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 ${MENU_ENTER_CLASS} ${MENU_ORIGIN_RIGHT}`}>
           <button
             onClick={handleExportCsv}
             className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-md flex items-center gap-2"

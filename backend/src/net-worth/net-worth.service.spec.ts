@@ -1955,15 +1955,16 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      // 0.0125 BTC * 137250.1234567890 = 1715.6265 CAD (spec section 6); the
-      // monthly series is in whole units. A coin that read as unconverted
-      // would be 0, and one read as a liability would be negative.
-      expect(result[0].assets).toBe(1716);
+      // 0.0125 BTC * 137250.1234567890 = 1715.6265 CAD (spec section 6), at
+      // money precision: the series is never rounded to whole units, which
+      // printed the dashboard's net worth without its cents. A coin that read
+      // as unconverted would be 0, and one read as a liability negative.
+      expect(result[0].assets).toBe(1715.6265);
       expect(result[0].liabilities).toBe(0);
-      expect(result[0].netWorth).toBe(1716);
+      expect(result[0].netWorth).toBe(1715.6265);
       expect(result[0].fxComplete).toBe(true);
       expect(result[0].byAccountType).toEqual({
-        [AccountType.CRYPTO]: 1716,
+        [AccountType.CRYPTO]: 1715.6265,
       });
     });
 
@@ -1995,12 +1996,12 @@ describe("NetWorthService", () => {
       const result = await service.getMonthlyNetWorth("user-1");
 
       // 0.01249993 x 7,200,000 = 89,999.496 JPY, converted from the wallet's
-      // own eight places and summed at the reporting currency's four, then
-      // shown in whole units. Rounding the wallet to four places first
-      // (0.0125 BTC) would report 90,000.
-      expect(result[0].assets).toBe(89999);
+      // own eight places and summed at the reporting currency's four.
+      // Rounding the wallet to four places first (0.0125 BTC) would report
+      // 90,000.
+      expect(result[0].assets).toBe(89999.496);
       expect(result[0].byAccountType).toEqual({
-        [AccountType.CRYPTO]: 89999,
+        [AccountType.CRYPTO]: 89999.496,
       });
     });
 
@@ -2034,8 +2035,47 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      // 1000 EUR / 0.92 = ~1087
-      expect(result[0].assets).toBe(Math.round(1000 / 0.92));
+      // 1000 EUR / 0.92 = 1086.9565, at money precision rather than 1087.
+      expect(result[0].assets).toBe(1086.9565);
+    });
+
+    it("keeps the cents of every figure rather than rounding to whole units", async () => {
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "CAD" });
+
+      reportQuery
+        .mockResolvedValueOnce([
+          {
+            month: "2024-01-01",
+            balance: 6209.91,
+            market_value: null,
+            account_id: "chequing",
+            account_type: AccountType.CHEQUING,
+            account_sub_type: null,
+            currency_code: "CAD",
+          },
+          {
+            month: "2024-01-01",
+            balance: -3402.82,
+            market_value: null,
+            account_id: "visa",
+            account_type: AccountType.CREDIT_CARD,
+            account_sub_type: null,
+            currency_code: "CAD",
+          },
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.getMonthlyNetWorth("user-1");
+
+      // Whole-unit rounding printed 6,210 / 3,403 / 2,807 on the dashboard.
+      expect(result[0].assets).toBe(6209.91);
+      expect(result[0].liabilities).toBe(3402.82);
+      expect(result[0].netWorth).toBe(2807.09);
+      expect(result[0].byAccountType).toEqual({
+        [AccountType.CHEQUING]: 6209.91,
+        [AccountType.CREDIT_CARD]: -3402.82,
+      });
     });
 
     it("returns amount unconverted when no rate exists", async () => {
@@ -2199,7 +2239,7 @@ describe("NetWorthService", () => {
       expect(result[2].month).toBe("2024-03-01");
     });
 
-    it("rounds values to whole numbers", async () => {
+    it("rounds values to money precision, never to whole units", async () => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({
         defaultCurrency: "USD",
@@ -2208,7 +2248,7 @@ describe("NetWorthService", () => {
       reportQuery.mockResolvedValueOnce([
         {
           month: "2024-01-01",
-          balance: 1000.567,
+          balance: 1000.56789,
           market_value: null,
           account_id: "a1",
           account_type: AccountType.CHEQUING,
@@ -2219,10 +2259,10 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      expect(result[0].assets).toBe(1001);
-      expect(Number.isInteger(result[0].assets)).toBe(true);
-      expect(Number.isInteger(result[0].liabilities)).toBe(true);
-      expect(Number.isInteger(result[0].netWorth)).toBe(true);
+      // Four places (FIAT_MONEY_DECIMALS) shed float noise; the cents stay.
+      expect(result[0].assets).toBe(1000.5679);
+      expect(result[0].liabilities).toBe(0);
+      expect(result[0].netWorth).toBe(1000.5679);
     });
 
     it("classifies all liability types correctly", async () => {

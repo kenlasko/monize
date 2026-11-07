@@ -122,7 +122,7 @@ export function AssetsVsLiabilities({ data, isLoading, error = false }: AssetsVs
     >
       {isLoading ? (
         <div className="h-64 flex items-center justify-center">
-          <div className="animate-pulse w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
+          <div className="animate-pulse skeleton-shimmer w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
         </div>
       ) : error ? (
         <WidgetMessage>{t('netWorth.loadFailed')}</WidgetMessage>

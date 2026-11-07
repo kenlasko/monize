@@ -38,7 +38,7 @@ export function InvestmentIncomePanel({
       </h2>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         {isLoading ? (
-          <div className="h-16 rounded bg-gray-100 dark:bg-gray-700 animate-pulse" />
+          <div className="h-16 rounded bg-gray-100 dark:bg-gray-700 animate-pulse skeleton-shimmer" />
         ) : !hasIncome ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('income.empty')}</p>
         ) : (

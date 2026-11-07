@@ -35,6 +35,7 @@ import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { createLogger } from '@/lib/logger';
 import { aggregateHoldingsBySecurity, AggregatedHolding } from '@/lib/aggregate-holdings';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 const logger = createLogger('SecurityTypeAllocationReport');
 
@@ -227,7 +228,7 @@ function CustomTooltip({ active, payload, formatCurrencyFull, getHoldingsLabel }
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+    <div className={CHART_TOOLTIP_CLASS}>
       <p className="font-medium text-gray-900 dark:text-gray-100">{d.label}</p>
       <p className="text-sm text-gray-600 dark:text-gray-400">{formatCurrencyFull(d.totalValue)} ({formatPercent(d.percentage, 1)})</p>
       <p className="text-sm text-gray-500 dark:text-gray-400">{getHoldingsLabel(d.count)}</p>

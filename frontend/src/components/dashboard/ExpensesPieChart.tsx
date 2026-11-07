@@ -26,6 +26,7 @@ import {
   SPENDING_RANGES,
   ExpensesPieConfig,
 } from './widget-config';
+import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 const WIDGET_ID = 'expenses-pie';
 /**
@@ -62,7 +63,7 @@ interface ExpensesPieTooltipProps {
 function ExpensesPieTooltip({ slice, totalExpenses, formatCurrency, formatPercent }: ExpensesPieTooltipProps) {
   const percentage = (slice.value / totalExpenses) * 100;
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+    <div className={CHART_TOOLTIP_CLASS}>
       <p className="font-medium text-gray-900 dark:text-gray-100">{slice.name}</p>
       <p className="text-gray-600 dark:text-gray-400">
         {formatCurrency(slice.value)} ({formatPercent(percentage, 1)})
@@ -263,7 +264,7 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
     >
       {loading ? (
         <div className="h-64 flex items-center justify-center">
-          <div className="animate-pulse w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
+          <div className="animate-pulse skeleton-shimmer w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
         </div>
       ) : chartData.length === 0 ? (
         <WidgetMessage>{t('expensesPieChart.empty')}</WidgetMessage>

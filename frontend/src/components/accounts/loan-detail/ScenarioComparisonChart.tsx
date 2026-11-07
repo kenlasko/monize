@@ -22,6 +22,8 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { OverpaymentFrequency } from '@/lib/loan-schedule';
 import { frequencyLabelKey } from '@/components/accounts/loan-detail/loan-scenario-labels';
 import { CHART_MAX_POINTS, sampleStockSeries } from '@/lib/chart-sampling';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 export interface ScenarioOutcome {
   id: string;
@@ -269,7 +271,7 @@ export function ScenarioComparisonChart({
       <div className="h-80" ref={chartRef}>
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+            <CartesianGrid {...CHART_GRID_PROPS} />
             <XAxis
               dataKey="label"
               tick={{ fontSize: 11 }}
@@ -301,7 +303,7 @@ export function ScenarioComparisonChart({
                 );
                 if (shown.length === 0) return null;
                 return (
-                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                  <div className={CHART_TOOLTIP_CLASS}>
                     <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
                       {label}
                     </p>
@@ -342,6 +344,7 @@ export function ScenarioComparisonChart({
             />
             {baselineIndex !== null && (
               <Line
+                activeDot={ChartActiveDot}
                 dataKey="baseline"
                 stroke={chartColors.axis}
                 strokeWidth={hoveredKey === 'baseline' ? 3 : 2}
@@ -358,6 +361,7 @@ export function ScenarioComparisonChart({
             )}
             {series.map((s) => (
               <Line
+                activeDot={ChartActiveDot}
                 key={s.id}
                 type="monotone"
                 dataKey={s.id}

@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "ようこそ",
-    "welcomeWithName": "ようこそ、{name}さん！",
-    "subtitle": "財務の概要をご確認ください"
+    "greeting": {
+      "morning": "おはようございます",
+      "morningWithName": "おはようございます、{name}さん",
+      "afternoon": "こんにちは",
+      "afternoonWithName": "こんにちは、{name}さん",
+      "evening": "こんばんは",
+      "eveningWithName": "こんばんは、{name}さん"
+    }
+  },
+  "hero": {
+    "label": "純資産の概要",
+    "netWorth": "純資産",
+    "changeThisMonth": "今月 {amount} <dir>{direction, select, up {増加} other {減少}}</dir>",
+    "changeThisMonthWithPercent": "今月 {amount} · {percent} <dir>{direction, select, up {増加} other {減少}}</dir>",
+    "assets": "資産 <strong><value></value></strong>",
+    "liabilities": "負債 <strong><value></value></strong>",
+    "invested": "投資 <strong><value></value></strong>",
+    "investedUnpriced": "{symbols} の現在価格がないため、これらの保有銘柄は含まれていません。投資ページで価格を更新するか、銘柄の価格履歴に追加してください。",
+    "portfolioLabel": "ポートフォリオの概要",
+    "portfolioValueFor": "ポートフォリオ評価額 <names>({accounts})</names>",
+    "portfolioEmpty": "投資口座がまだありません。追加するとここにポートフォリオが表示されます。",
+    "portfolioLoadFailed": "ポートフォリオを読み込めませんでした。ダッシュボードを再読み込みしてください。",
+    "portfolioChangeFailed": "この期間の変化を読み込めませんでした。ダッシュボードを再読み込みしてください。",
+    "changeOverWindow": "{amount} · {window} <dir>{direction, select, up {増加} other {減少}}</dir>",
+    "holdings": "保有 <strong><value></value></strong>",
+    "cash": "現金 <strong><value></value></strong>",
+    "metricLine": "{metric} <strong><value></value></strong>",
+    "metricNames": {
+      "simpleReturn": "単純リターン",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "CAGR には、これらの口座で 1 年以上の投資履歴と、引き出しを上回る入金が必要です。",
+    "intradayUnavailable": "一部の保有銘柄に日中価格がないため、1 日のグラフを描けません。カスタマイズで長い期間を選んでください。"
   },
   "favouriteAccounts": {
     "title": "お気に入りの勘定科目",
@@ -181,6 +213,24 @@
     "reset": "デフォルトに戻す",
     "toasts": {
       "saveFailed": "ダッシュボードレイアウトの保存に失敗しました"
+    },
+    "hero": {
+      "title": "ダッシュボードのヒーロー",
+      "description": "挨拶の下の数値とグラフ：純資産またはポートフォリオ。",
+      "show": "ダッシュボードのヒーローを表示",
+      "range": "グラフ",
+      "set": "表示",
+      "sets": {
+        "netWorth": "純資産",
+        "portfolio": "ポートフォリオ評価額"
+      },
+      "metric": "指標",
+      "metrics": {
+        "simpleReturn": "単純リターン",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "説明",
     "descriptionPlaceholder": "任意の説明を追加",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

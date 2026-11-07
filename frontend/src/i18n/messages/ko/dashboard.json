@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "환영합니다",
-    "welcomeWithName": "{name}님, 환영합니다!",
-    "subtitle": "재정 현황을 확인하세요"
+    "greeting": {
+      "morning": "좋은 아침입니다",
+      "morningWithName": "좋은 아침입니다, {name}님",
+      "afternoon": "좋은 오후입니다",
+      "afternoonWithName": "좋은 오후입니다, {name}님",
+      "evening": "좋은 저녁입니다",
+      "eveningWithName": "좋은 저녁입니다, {name}님"
+    }
+  },
+  "hero": {
+    "label": "순자산 요약",
+    "netWorth": "순자산",
+    "changeThisMonth": "이번 달 {amount} <dir>{direction, select, up {증가} other {감소}}</dir>",
+    "changeThisMonthWithPercent": "이번 달 {amount} · {percent} <dir>{direction, select, up {증가} other {감소}}</dir>",
+    "assets": "자산 <strong><value></value></strong>",
+    "liabilities": "부채 <strong><value></value></strong>",
+    "invested": "투자 <strong><value></value></strong>",
+    "investedUnpriced": "{symbols}의 현재 가격이 없어 해당 보유 종목은 포함되지 않았습니다. 투자 페이지에서 가격을 새로 고치거나 증권의 가격 기록에 추가하세요.",
+    "portfolioLabel": "포트폴리오 요약",
+    "portfolioValueFor": "포트폴리오 가치 <names>({accounts})</names>",
+    "portfolioEmpty": "아직 투자 계좌가 없습니다. 계좌를 추가하면 여기에 포트폴리오가 표시됩니다.",
+    "portfolioLoadFailed": "포트폴리오를 불러오지 못했습니다. 대시보드를 새로 고쳐 다시 시도하세요.",
+    "portfolioChangeFailed": "이 기간의 변동을 불러오지 못했습니다. 대시보드를 새로 고쳐 다시 시도하세요.",
+    "changeOverWindow": "{amount} · {window} <dir>{direction, select, up {증가} other {감소}}</dir>",
+    "holdings": "보유 <strong><value></value></strong>",
+    "cash": "현금 <strong><value></value></strong>",
+    "metricLine": "{metric} <strong><value></value></strong>",
+    "metricNames": {
+      "simpleReturn": "단순 수익률",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "CAGR을 계산하려면 이 계좌들에 1년 이상의 투자 기록이 있고 입금액이 출금액보다 많아야 합니다.",
+    "intradayUnavailable": "일부 보유 종목에 장중 가격이 없어 1일 차트를 그릴 수 없습니다. 사용자 지정에서 더 긴 기간을 선택하세요."
   },
   "favouriteAccounts": {
     "title": "즐겨찾기 계정",
@@ -181,6 +213,24 @@
     "reset": "기본값으로 재설정",
     "toasts": {
       "saveFailed": "대시보드 레이아웃을 저장하지 못했습니다"
+    },
+    "hero": {
+      "title": "대시보드 히어로",
+      "description": "인사말 아래의 수치와 차트: 순자산 또는 포트폴리오.",
+      "show": "대시보드 히어로 표시",
+      "range": "차트",
+      "set": "표시",
+      "sets": {
+        "netWorth": "순자산",
+        "portfolio": "포트폴리오 가치"
+      },
+      "metric": "지표",
+      "metrics": {
+        "simpleReturn": "단순 수익률",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "설명",
     "descriptionPlaceholder": "선택적인 설명을 추가하세요",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

@@ -21,7 +21,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { reportTotal } from '@/lib/currency-total';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
-import { chartColors, chartSeriesColor } from '@/lib/chart-colors';
+import { chartSeriesColor } from '@/lib/chart-colors';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
@@ -30,6 +30,7 @@ import {
   SPENDING_RANGES,
   RangeConfig,
 } from './widget-config';
+import { CHART_GRID_PROPS_HORIZONTAL_BARS } from '@/lib/chart-style';
 
 const WIDGET_ID = 'spending-by-payee';
 const MAX_BARS = 8;
@@ -112,7 +113,7 @@ export function SpendingByPayeeWidget({ isLoading }: SpendingByPayeeWidgetProps)
       configTitle={t('spendingByPayee.title')}
     >
       {loading ? (
-        <div className="flex-1 min-h-[260px] animate-pulse rounded-md bg-gray-100 dark:bg-gray-700/50" />
+        <div className="flex-1 min-h-[260px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
       ) : chartData.length === 0 ? (
         <WidgetMessage>{t('spendingByPayee.empty')}</WidgetMessage>
       ) : (
@@ -120,7 +121,7 @@ export function SpendingByPayeeWidget({ isLoading }: SpendingByPayeeWidgetProps)
           <div className="flex-1 min-h-[260px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} horizontal={false} />
+                <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
                 <XAxis type="number" tickFormatter={formatCurrencyAxis} tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={90} />
                 <Tooltip

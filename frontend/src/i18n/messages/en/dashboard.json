@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Welcome",
-    "welcomeWithName": "Welcome, {name}!",
-    "subtitle": "Here's your financial overview"
+    "greeting": {
+      "morning": "Good morning",
+      "morningWithName": "Good morning, {name}",
+      "afternoon": "Good afternoon",
+      "afternoonWithName": "Good afternoon, {name}",
+      "evening": "Good evening",
+      "eveningWithName": "Good evening, {name}"
+    }
+  },
+  "hero": {
+    "label": "Net worth summary",
+    "netWorth": "Net worth",
+    "changeThisMonth": "<dir>{direction, select, up {Up} other {Down}}</dir> {amount} this month",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {Up} other {Down}}</dir> {amount} · {percent} this month",
+    "assets": "<strong><value></value></strong> assets",
+    "liabilities": "<strong><value></value></strong> liabilities",
+    "invested": "<strong><value></value></strong> invested",
+    "investedUnpriced": "No current price for {symbols}, so the holdings they represent are not included. Refresh prices on the Investments page, or add one on the security's price history.",
+    "portfolioLabel": "Portfolio summary",
+    "portfolioValueFor": "Portfolio value <names>({accounts})</names>",
+    "portfolioEmpty": "No investment accounts yet. Add one to see your portfolio here.",
+    "portfolioLoadFailed": "Couldn't load your portfolio. Reload the dashboard to try again.",
+    "portfolioChangeFailed": "Couldn't load the change over this period. Reload the dashboard to try again.",
+    "changeOverWindow": "<dir>{direction, select, up {Up} other {Down}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> holdings",
+    "cash": "<strong><value></value></strong> cash",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "simple return",
+      "twr": "TWR",
+      "mwr": "MWR",
+      "cagr": "CAGR"
+    },
+    "cagrUnavailable": "CAGR needs at least a year of investment history in these accounts, with more paid in than taken out.",
+    "intradayUnavailable": "Some of these holdings have no intraday prices, so a one-day chart can't be drawn. Choose a longer timeframe in Customize."
   },
   "favouriteAccounts": {
     "title": "Favourite Accounts",
@@ -181,6 +213,24 @@
     "reset": "Reset to default",
     "toasts": {
       "saveFailed": "Failed to save dashboard layout"
+    },
+    "hero": {
+      "title": "Dashboard hero",
+      "description": "The opening figures and chart under the greeting: your net worth, or your portfolio.",
+      "show": "Show the dashboard hero",
+      "range": "Chart",
+      "set": "Show",
+      "sets": {
+        "netWorth": "Net worth",
+        "portfolio": "Portfolio value"
+      },
+      "metric": "Figure",
+      "metrics": {
+        "simpleReturn": "Simple return",
+        "twr": "TWR",
+        "mwr": "MWR",
+        "cagr": "CAGR"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Description",
     "descriptionPlaceholder": "Add an optional description",
     "rangeLabels": {
+      "1d": "1D",
       "1w": "1W",
       "mtd": "MTD",
       "1m": "1M",

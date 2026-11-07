@@ -34,6 +34,8 @@ import type {
   CashFlowForecastAccountLine,
   CashFlowForecastPoint,
 } from './useCashFlowForecast';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 function CashFlowTooltip({
   active,
@@ -296,7 +298,7 @@ export function CashFlowForecastPlot({
                 </linearGradient>
               </defs>
               <ChartFlagShadowFilter />
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+              <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis
                 dataKey="date"
                 tickFormatter={(value: string) => formatChartDate(value, 'MMM d')}
@@ -341,7 +343,7 @@ export function CashFlowForecastPlot({
                 fillOpacity={1}
                 fill="url(#forecastBalance)"
                 dot={renderTotalFlagDots}
-                activeDot={{ r: 6, fill: chartColors.primary }}
+                activeDot={ChartActiveDot}
               />
               {accountLines.map((line) => (
                 <Line
@@ -354,7 +356,7 @@ export function CashFlowForecastPlot({
                   fill="none"
                   dot={false}
                   connectNulls={false}
-                  activeDot={{ r: 4, fill: line.color }}
+                  activeDot={ChartActiveDot}
                 />
               ))}
             </ComposedChart>
@@ -367,12 +369,12 @@ export function CashFlowForecastPlot({
           </div>
           <ResponsiveContainer width="100%" height="90%" minWidth={0}>
             <LineChart data={forecastData} margin={{ left: 0, right: 8, top: 5, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+              <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis dataKey="date" tickFormatter={(value: string) => formatChartDate(value, 'MMM d')} tick={{ fill: chartColors.axis, fontSize: 12 }} tickLine={false} axisLine={{ stroke: chartColors.grid }} interval="preserveStartEnd" />
               <YAxis tick={{ fill: chartColors.axis, fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={formatAxis} width="auto" domain={['auto', 'auto']} />
               <Tooltip content={<CashFlowTooltip formatValue={formatValue} formatChartDate={formatChartDate} />} />
               <ReferenceLine y={0} stroke={chartColors.expense} strokeDasharray="5 5" strokeOpacity={0.5} />
-              <Line type="monotone" dataKey="balance" stroke={chartColors.axis} strokeWidth={2} dot={false} strokeDasharray="5 5" />
+              <Line activeDot={ChartActiveDot} type="monotone" dataKey="balance" stroke={chartColors.axis} strokeWidth={2} dot={false} strokeDasharray="5 5" />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -389,10 +391,7 @@ export function CashFlowForecastPlot({
                 </linearGradient>
               </defs>
               <ChartFlagShadowFilter />
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={chartColors.grid}
-              />
+              <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis
                 dataKey="date"
                 tickFormatter={(value: string) => formatChartDate(value, 'MMM d')}
@@ -434,7 +433,7 @@ export function CashFlowForecastPlot({
                 fillOpacity={1}
                 fill="url(#forecastBalance)"
                 dot={renderTotalFlagDots}
-                activeDot={{ r: 6, fill: chartColors.primary }}
+                activeDot={ChartActiveDot}
               />
             </AreaChart>
           </ResponsiveContainer>

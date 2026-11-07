@@ -31,7 +31,6 @@ import { useDateRange } from '@/hooks/useDateRange';
 import { useReportData } from '@/hooks/useReportData';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { CHART_COLOURS } from '@/lib/chart-colours';
-import { chartColors } from '@/lib/chart-colors';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 import { DonutCenterTotal } from '@/components/ui/DonutCenterTotal';
@@ -52,6 +51,7 @@ import { ReportError } from '@/components/reports/ReportError';
 import { exportToCsv } from '@/lib/csv-export';
 import type { ChartDatum } from '@/types/chart';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_BAR_RADIUS_HORIZONTAL, CHART_GRID_PROPS_HORIZONTAL_BARS } from '@/lib/chart-style';
 
 type SpendingCategorySortField = 'name' | 'value' | 'percentage';
 
@@ -568,11 +568,11 @@ export function SpendingByCategoryReport() {
               <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={chartData} layout="vertical" margin={{ left: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                    <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
                     <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
                     <Tooltip content={<SpendingCategoryTooltip totalExpenses={totalExpenses} formatCurrency={formatCurrency} formatPercent={formatPercent} />} />
-                    <Bar
+                    <Bar radius={CHART_BAR_RADIUS_HORIZONTAL}
                       dataKey="value"
                       cursor="pointer"
                       onClick={(data) => data.id && handleCategoryClick(data.id)}

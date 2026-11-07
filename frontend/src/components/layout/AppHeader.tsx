@@ -36,6 +36,7 @@ import {
 import toast from 'react-hot-toast';
 import { SearchSyntaxHelp } from '@/components/transactions/SearchSyntaxHelp';
 import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { MENU_ENTER_CLASS, MENU_ORIGIN_LEFT } from '@/components/ui/menu-motion';
 
 // Labels are translation keys in the `navigation` namespace, resolved at
 // render time. The href doubles as the route, the active-state match, and
@@ -292,7 +293,15 @@ export function AppHeader() {
       style={{ transform: `translateY(-${headerOffset}px)` }}
       // No transition while scrolling so the header tracks the scroll speed 1:1;
       // a short transition only when a menu forces it back into view.
-      className={`sticky top-0 z-40 bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 ${
+      //
+      // Glass: where the browser can blur what scrolls underneath, the bar is
+      // translucent over a backdrop blur, edged by a hairline instead of a drop
+      // shadow; elsewhere it stays the solid card colour, never a see-through
+      // bar over unblurred content. Both colours are on the ramp, so every
+      // palette tints it. The inline transform already makes the header the
+      // containing block for its fixed children, so the blur changes nothing
+      // about where the history and notification panels open.
+      className={`sticky top-0 z-40 bg-white dark:bg-gray-800 supports-[backdrop-filter]:bg-white/75 supports-[backdrop-filter]:dark:bg-gray-800/70 supports-[backdrop-filter]:backdrop-blur-md supports-[backdrop-filter]:backdrop-saturate-150 border-b border-gray-200/80 dark:border-white/5 ${
         anyMenuOpen ? 'transition-transform duration-200 ease-out' : ''
       }`}
     >
@@ -408,7 +417,7 @@ export function AppHeader() {
                       </button>
 
                       {aiOpen && (
-                        <div className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 z-50">
+                        <div className={`absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 z-50 ${MENU_ENTER_CLASS} ${MENU_ORIGIN_LEFT}`}>
                           <div className="py-1">
                             {visibleAiLinks.map((link) => {
                               const active = isNavSectionActive(
@@ -463,7 +472,7 @@ export function AppHeader() {
                       {toolsExpanded && (
                         <div
                           {...tourAnchor(TOUR_ANCHORS.navToolsMenu)}
-                          className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 z-50"
+                          className={`absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 z-50 ${MENU_ENTER_CLASS} ${MENU_ORIGIN_LEFT}`}
                         >
                           <div className="py-1">
                             {visibleToolsLinks.map((link) => {
@@ -521,7 +530,7 @@ export function AppHeader() {
                     </button>
 
                     {adminOpen && (
-                      <div className="absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 z-50">
+                      <div className={`absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 z-50 ${MENU_ENTER_CLASS} ${MENU_ORIGIN_LEFT}`}>
                         <div className="py-1">
                           {adminLinks.map((link) => {
                             const active = isNavSectionActive(

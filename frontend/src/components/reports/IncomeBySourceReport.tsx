@@ -50,6 +50,7 @@ import { exportToCsv } from '@/lib/csv-export';
 import type { ChartDatum } from '@/types/chart';
 import { useTranslations } from 'next-intl';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CHART_BAR_RADIUS_HORIZONTAL, CHART_GRID_PROPS_HORIZONTAL_BARS } from '@/lib/chart-style';
 
 type IncomeSourceSortField = 'name' | 'value' | 'percentage';
 
@@ -623,11 +624,11 @@ export function IncomeBySourceReport() {
               <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={plotData} layout="vertical" margin={{ left: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                    <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
                     <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
                     <Tooltip content={<IncomeSourceTooltip totalIncome={totalIncome} formatCurrency={formatCurrency} formatPercent={formatPercent} notIncomeLabel={t('tagBreakdown.notIncome')} />} />
-                    <Bar
+                    <Bar radius={CHART_BAR_RADIUS_HORIZONTAL}
                       dataKey="value"
                       cursor="pointer"
                       onClick={(data) => data.id && handleCategoryClick(data.id)}

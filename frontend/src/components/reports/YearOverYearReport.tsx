@@ -20,7 +20,7 @@ import { YearData } from "@/types/built-in-reports";
 import { useNumberFormat } from "@/hooks/useNumberFormat";
 import { useChartDateFormat } from "@/hooks/useChartDateFormat";
 import { useSortableTable, compareValues } from "@/hooks/useSortableTable";
-import { chartColors, chartSeriesColor } from "@/lib/chart-colors";
+import { chartSeriesColor } from "@/lib/chart-colors";
 import { resolvePdfColor } from "@/components/reports/resolve-pdf-color";
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { ChartViewToggle } from "@/components/ui/ChartViewToggle";
@@ -33,6 +33,7 @@ import { PartialDataNotice } from "@/components/reports/PartialDataNotice";
 import { PartialTotal } from "@/components/ui/PartialTotal";
 import { UnknownAmount } from "@/components/ui/UnknownAmount";
 import { reportTotal, type ConvertedTotal } from "@/lib/currency-total";
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 type YearOverYearSortField = string; // 'name' or any year as a string
 
@@ -91,7 +92,7 @@ interface YearOverYearTooltipProps {
 function YearOverYearTooltip({ active, payload, label, formatCurrency }: YearOverYearTooltipProps) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
           {label}
         </p>
@@ -477,7 +478,7 @@ export function YearOverYearReport() {
                 data={chartData}
                 margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis
                   tickFormatter={formatCurrencyAxis}

@@ -50,6 +50,20 @@ A warranty's status pill is `WarrantyStatusBadge` (`components/warranties/Warran
 
 Tailwind v4 trap: the bare `shadow` utility is a legacy alias with the stock value compiled in, so redefining `--shadow-sm` in `@theme` touches `shadow-sm` (worn by form fields) and leaves cards flat. `ui-conventions.test.ts` fails on a `--shadow-sm` redefinition. Card elevation goes through `--shadow-card`, worn by `CARD_CLASS`.
 
+**In dark mode a card is lit from above, not haloed.** `CARD_CLASS` wears `dark:shadow-card-dark`: a 1px white top-edge highlight at 5% over a plain dark drop, so the card reads as raised on every palette. It replaced `dark:shadow-gray-700/50`, a light glow that ringed every panel. A floating surface over a card (a chart tooltip) takes `dark:shadow-popover-dark`, the same highlight over a deeper drop. `Card.test.tsx` pins the card's.
+
+## A loading placeholder sweeps; a live indicator pulses
+
+A placeholder wears `animate-pulse skeleton-shimmer` (`Skeleton` does already). The shimmer, defined in `src/app/globals.css`, is a `::after` highlight that travels across the element and replaces the pulse while it runs. Under reduced motion it is never drawn and the pulse remains, which is also why the pulse class stays: tests find a loading state by `.animate-pulse`. A pulse that signals something live (a status dot, a typing cursor, an indeterminate progress bar) stays bare and is listed with its reason in `src/test/skeleton-shimmer.guard.test.ts`, which fails on any other bare pulse.
+
+## A menu eases in through `MENU_ENTER_CLASS`
+
+A dropdown or popover panel arrives through `MENU_ENTER_CLASS` (`components/ui/menu-motion.ts`): it fades in and grows from 95% over 150ms through the `starting:` (`@starting-style`) variant, the same mechanism as `Modal`'s panel, so it needs no open or closing state. Pair it with `MENU_ORIGIN_LEFT` or `MENU_ORIGIN_RIGHT` for the edge it hangs from, or it grows out of its own centre. A panel a guided tour measures on open (the notification list) keeps no entrance, so the spotlight never measures a half-scaled panel.
+
+**The app header is glass where the browser can blur.** Behind `supports-[backdrop-filter]:` it is the card colour at 70-75% over `backdrop-blur-md`, edged by a hairline rather than a shadow; without backdrop filters it stays solid. Its inline transform already makes it the containing block for its fixed children, so the blur moves no panel. An ambient glow from the accent ramp and the income token sits in the `body` background (`--ambient-glow-*` in `globals.css`) and scrolls away with the page header; `midnight` and `highcontrast` set it to transparent.
+
+**A pressed `Button` sinks by 2%** (`not-disabled:active:scale-[0.98]`, still under reduced motion). `not-disabled` rather than `enabled`, so a `ButtonLink` presses too.
+
 ## A focus ring is `focus-visible:`, and a hover animates
 
 `focus:ring-*` paints on a mouse click as well as a Tab; use `focus-visible:` on anything clickable. Text inputs are the one exception (`inputBaseClasses` and the element selectors in `globals.css`). Row hover comes from `HOVER_ROW_ON_CARD` / `HOVER_ROW_ON_PAGE` in `Card.tsx` (a text button in the bar above a table from `HOVER_TOOLBAR_BUTTON`, through `LIST_TOOLBAR_BUTTON_CLASS` on `ListTopToolbar.tsx`), not a hand-picked grey, and includes the transition (a hover that snaps reads as a redraw). Pair any new transition with `motion-reduce:transition-none`. Both rules carry shrink-only baselines in `ui-conventions.test.ts`.
@@ -105,6 +119,17 @@ An `unobtrusive` anchorless step parks its card in the bottom-**right** corner, 
 A widget's title is a link to the fuller view of the same figures, named as a route: `titleHref` on `WidgetCard`, `href` on `WidgetHeading`. Both render it through `WidgetTitle`, the one place that decides what a title looks like and how it behaves; a widget with no fuller view passes neither and gets a plain heading.
 
 A switcher in that header is `components/dashboard/WidgetSegmentedControl.tsx`, which wears the widget header's own chrome rather than the toolbar pill in `components/ui/segmented-control.ts` -- the two never appear together. An option may carry an `icon` instead of a word, which is what lets a widget keep two switches on the header's one line beside the heading (the Upcoming Bills widget's scope and List/Calendar view); the label then survives as the segment's accessible name and its tooltip, so the control is still named for a screen reader and for anyone who hovers it. A row holding two of them does not wrap: a switch that drops to its own line is the layout the icons were chosen to avoid. The row itself does take the header's own line on a phone (`w-full sm:w-auto`, the toolbar convention above) and holds its two ends apart there (`justify-between sm:justify-start`), so the scope pair stays against the card's left edge and the icon switch sits against its right rather than trailing the words. Not `sm:ml-auto` on the trailing switch: these two groups are one row, not a toolbar's leading and trailing groups, and the scope pair must stay left whichever line the row lands on.
+
+## The dashboard hero is not a widget, and holds the page header
+
+`DashboardHero` sits above the widget grid and spans it, so it is not in `dashboardWidgets`. Its settings are `DashboardHeroConfig`, stored under `dashboardWidgetConfig['dashboard-hero']`, read through `resolveDashboardHeroConfig` (which keeps only the values the hero offers, so a stale key or a value no longer offered falls back to the default) and edited in Customize Dashboard's hero section; no chart in it carries a window control. Keeping it out of the list is what keeps it on by default for a reader who customized the grid before it existed: an id missing from a stored `dashboardWidgets` list reads as "hidden". Switched off, it fetches nothing.
+
+It shows one of two sets, drawn from the same parts (`hero-parts.tsx`: the layout, the loading state, the area chart with the forecast chart's dismissable high/low bubbles, the figure pill), and neither works out a figure of its own:
+
+- **`NetWorthHero`** reads the monthly net worth series (`dashboard-hero-figures.ts`: the newest month is the current one, a change against a subtotal month is unknown), and its invested figure is the securities without their cash.
+- **`PortfolioHero`** reads the Investments page's figures for the chosen accounts: the value, holdings, cash and the four returns (simple, TWR, MWR, CAGR) are the portfolio summary's, since inception; the pill is the period result's `valueChange` over the chosen window (`PORTFOLIO_CHART_RANGES`), the whole scope's change with deposits in it, so it is captioned as a change and never as a return; the chart is the securities alone, through `loadPortfolioValueSeries` (`components/investments/portfolio-value-series.ts`), which `InvestmentValueChart` shares its daily-range list and completeness rule with. The caption names the accounts with `buildAccountFilterLabel`, as the page's Portfolio Summary header does.
+
+The page header -- the greeting for the part of the day (`greetingPeriod`, `lib/greeting.ts`, in the timezone preference), today's date, and the Customize gear beside the title -- is the page's in every case. It is passed to the hero as `header` and drawn at the top of its figures column so the chart rises beside it; whenever the hero shows nothing of its own (off, no data, a failed load) it renders the header alone, and a delegate, who is shown no net worth, gets the header without the hero.
 
 ## A dashboard widget card stretches to its row, and never sets `h-full`
 

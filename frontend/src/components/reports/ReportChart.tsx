@@ -26,6 +26,8 @@ import type { ConvertedTotal } from '@/lib/currency-total';
 import { usePartialTotalNote } from '@/hooks/usePartialTotalNote';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { LinkifiedText } from '@/components/ui/LinkifiedText';
+import { CHART_BAR_RADIUS, CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 // Default columns if none specified
 const DEFAULT_TABLE_COLUMNS = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.PERCENTAGE, TableColumn.COUNT];
@@ -95,7 +97,7 @@ function ReportChartTooltip({ active, payload, total, formatCurrency, formatPerc
     const item = payload[0].payload;
     const percentage = total > 0 ? (item.value / total) * 100 : 0;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100">{item.label}</p>
         <p className="text-gray-600 dark:text-gray-400">
           {formatCurrency(item.value)}
@@ -244,7 +246,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
           <div ref={chartContainerRef} className="h-80">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 12, fill: 'currentColor' }}
@@ -260,7 +262,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   className="text-gray-600 dark:text-gray-400"
                 />
                 <Tooltip content={<ReportChartTooltip total={total} formatCurrency={formatValue} formatPercent={formatPercent} signed={signed} />} />
-                <Bar
+                <Bar radius={CHART_BAR_RADIUS}
                   dataKey="value"
                   cursor={onDataPointClick ? 'pointer' : 'default'}
                   onClick={(entry) => entry.id && onDataPointClick?.(entry.id)}
@@ -282,7 +284,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
           <div ref={chartContainerRef} className="h-80">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 12, fill: 'currentColor' }}
@@ -304,7 +306,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   stroke={chartColors.primary}
                   strokeWidth={2}
                   dot={{ fill: chartColors.primary, strokeWidth: 2 }}
-                  activeDot={{ r: 6 }}
+                  activeDot={ChartActiveDot}
                 />
               </LineChart>
             </ResponsiveContainer>

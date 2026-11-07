@@ -27,6 +27,8 @@ import {
   computeMinMaxFlagIndices,
   renderMinMaxFlagDots,
 } from '@/components/investments/portfolio-chart-utils';
+import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 
 /**
@@ -208,7 +210,7 @@ function BalanceTooltip({
   if (active && payload?.[0]) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
           {data.label}
         </p>
@@ -569,7 +571,7 @@ export function BalanceHistoryChart({
               </linearGradient>
             </defs>
             <ChartFlagShadowFilter />
-            <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+            <CartesianGrid {...CHART_GRID_PROPS} />
             {/* A time scale, not a category axis: distance along it is elapsed
                 time, so ten years of monthly closes cannot occupy the same width
                 as ten years of daily ones. */}
@@ -699,7 +701,7 @@ export function BalanceHistoryChart({
                   dismissLabel: tc('chartFlag.dismiss'),
                 })
               }
-              activeDot={{ r: 6, fill: chartColors.primary }}
+              activeDot={ChartActiveDot}
             />
           </AreaChart>
         </ResponsiveContainer>

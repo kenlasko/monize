@@ -1,8 +1,40 @@
 {
   "page": {
-    "welcomePrefix": "Bienvenue",
-    "welcomeWithName": "Bienvenue, {name} !",
-    "subtitle": "Voici votre aperçu financier"
+    "greeting": {
+      "morning": "Bonjour",
+      "morningWithName": "Bonjour, {name}",
+      "afternoon": "Bon après-midi",
+      "afternoonWithName": "Bon après-midi, {name}",
+      "evening": "Bonsoir",
+      "eveningWithName": "Bonsoir, {name}"
+    }
+  },
+  "hero": {
+    "label": "Résumé de la valeur nette",
+    "netWorth": "Valeur nette",
+    "changeThisMonth": "<dir>{direction, select, up {En hausse de} other {En baisse de}}</dir> {amount} ce mois-ci",
+    "changeThisMonthWithPercent": "<dir>{direction, select, up {En hausse de} other {En baisse de}}</dir> {amount} · {percent} ce mois-ci",
+    "assets": "<strong><value></value></strong> d’actifs",
+    "liabilities": "<strong><value></value></strong> de passifs",
+    "invested": "<strong><value></value></strong> investis",
+    "investedUnpriced": "Aucun cours actuel pour {symbols} : ces positions ne sont donc pas incluses. Actualisez les cours sur la page Placements, ou ajoutez-en un dans l’historique des cours du titre.",
+    "portfolioLabel": "Résumé du portefeuille",
+    "portfolioValueFor": "Valeur du portefeuille <names>({accounts})</names>",
+    "portfolioEmpty": "Aucun compte de placement pour l’instant. Ajoutez-en un pour voir votre portefeuille ici.",
+    "portfolioLoadFailed": "Impossible de charger votre portefeuille. Rechargez le tableau de bord pour réessayer.",
+    "portfolioChangeFailed": "Impossible de charger la variation sur cette période. Rechargez le tableau de bord pour réessayer.",
+    "changeOverWindow": "<dir>{direction, select, up {En hausse de} other {En baisse de}}</dir> {amount} · {window}",
+    "holdings": "<strong><value></value></strong> en positions",
+    "cash": "<strong><value></value></strong> en trésorerie",
+    "metricLine": "<strong><value></value></strong> {metric}",
+    "metricNames": {
+      "simpleReturn": "Rendement simple",
+      "twr": "RTP",
+      "mwr": "MWR",
+      "cagr": "TCAC"
+    },
+    "cagrUnavailable": "Le TCAC nécessite au moins un an d’historique de placement dans ces comptes, avec plus d’apports que de retraits.",
+    "intradayUnavailable": "Certaines de ces positions n’ont pas de cours intrajournaliers : un graphique sur un jour ne peut donc pas être tracé. Choisissez une période plus longue dans Personnaliser."
   },
   "favouriteAccounts": {
     "title": "Comptes favoris",
@@ -181,6 +213,24 @@
     "reset": "Réinitialiser par défaut",
     "toasts": {
       "saveFailed": "Échec de l'enregistrement de la disposition du tableau de bord"
+    },
+    "hero": {
+      "title": "En-tête du tableau de bord",
+      "description": "Les chiffres et le graphique sous la salutation : votre valeur nette ou votre portefeuille.",
+      "show": "Afficher l’en-tête du tableau de bord",
+      "range": "Graphique",
+      "set": "Afficher",
+      "sets": {
+        "netWorth": "Valeur nette",
+        "portfolio": "Valeur du portefeuille"
+      },
+      "metric": "Indicateur",
+      "metrics": {
+        "simpleReturn": "Rendement simple",
+        "twr": "RTP",
+        "mwr": "MWR",
+        "cagr": "TCAC"
+      }
     }
   },
   "favouriteReports": {
@@ -202,6 +252,7 @@
     "description": "Description",
     "descriptionPlaceholder": "Ajoutez une description facultative",
     "rangeLabels": {
+      "1d": "1D",
       "1m": "1M",
       "3m": "3M",
       "6m": "6M",

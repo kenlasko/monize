@@ -71,14 +71,14 @@ function ReportSkeleton() {
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-        <div className="animate-pulse flex gap-2">
+        <div className="animate-pulse skeleton-shimmer flex gap-2">
           <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
           <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
           <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
-        <div className="animate-pulse space-y-4">
+        <div className="animate-pulse skeleton-shimmer space-y-4">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
           <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>

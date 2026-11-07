@@ -26,6 +26,8 @@ import { getErrorMessage } from '@/lib/errors';
 import { investmentsApi } from '@/lib/investments';
 import { buildHistoryPoints } from '@/lib/bond-offer';
 import type { BondHistory } from '@/types/bond';
+import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 
 interface BondHistoryBodyProps {
   /** The issuing country of the bond's program; the history is read for it. */
@@ -138,7 +140,7 @@ export function BondHistoryBody({
           <div role="img" aria-label={t('history.rateChartTitle')} className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={points} margin={{ left: 0, right: 8, top: 5, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="month"
                   tickFormatter={(m: string) => formatChartMonth(m)}
@@ -177,6 +179,7 @@ export function BondHistoryBody({
                     />
                   ))}
                 <Line
+                  activeDot={ChartActiveDot}
                   type="monotone"
                   dataKey="rate"
                   name={rateName}
@@ -186,6 +189,7 @@ export function BondHistoryBody({
                   connectNulls={false}
                 />
                 <Line
+                  activeDot={ChartActiveDot}
                   type="monotone"
                   dataKey="addend"
                   name={addendName}
@@ -207,7 +211,7 @@ export function BondHistoryBody({
             <div role="img" aria-label={t('history.feeChartTitle')} className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <LineChart data={points} margin={{ left: 0, right: 8, top: 5, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid {...CHART_GRID_PROPS} />
                   <XAxis
                     dataKey="month"
                     tickFormatter={(m: string) => formatChartMonth(m)}
@@ -231,6 +235,7 @@ export function BondHistoryBody({
                     )}
                   />
                   <Line
+                    activeDot={ChartActiveDot}
                     type="stepAfter"
                     dataKey="fee"
                     name={feeName}

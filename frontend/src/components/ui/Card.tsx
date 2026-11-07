@@ -13,13 +13,17 @@ import { cn } from '@/lib/utils';
  * `themes.css` re-skin it by overriding `--color-gray-*` / `--color-white`;
  * never add a literal hex or an off-ramp hue.
  *
+ * In dark mode the card is lit from above (`shadow-card-dark` in
+ * `globals.css`: a 1px top-edge highlight over a dark drop) rather than
+ * wearing a light glow, which read as a halo round every panel.
+ *
  * Use the `Card` component where a plain wrapper works; use `CARD_CLASS`
  * where the element already exists (a `<table>` shell with `overflow-hidden`,
  * a `<section>` with its own props). `ui-conventions.test.ts` keeps the old
  * inline string shrink-only.
  */
 export const CARD_CLASS =
-  'bg-white dark:bg-gray-800 rounded-lg shadow-card dark:shadow-gray-700/50 ' +
+  'bg-white dark:bg-gray-800 rounded-lg shadow-card dark:shadow-card-dark ' +
   'border border-gray-200 dark:border-gray-700';
 
 /**

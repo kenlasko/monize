@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 
 /** One series entry as Recharts hands it to a tooltip `content` renderer. */
 export interface ChartTooltipEntry {
@@ -72,7 +73,7 @@ export function ChartTooltip({
  */
 export function ChartTooltipPanel({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+    <div className={CHART_TOOLTIP_CLASS}>
       {children}
     </div>
   );

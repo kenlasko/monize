@@ -207,7 +207,7 @@ export function PortfolioSummaryCard({
         </h3>
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="animate-pulse">
+            <div key={i} className="animate-pulse skeleton-shimmer">
               <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-1" />
               <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
             </div>
