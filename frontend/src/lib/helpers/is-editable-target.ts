@@ -14,8 +14,13 @@ export function isEditableTarget(target: EventTarget | null): boolean {
     return true;
   }
   // `isContentEditable` is the right check, but jsdom never implements the
-  // editing spec it depends on, so a typed child of a rich text editor is
-  // matched this way instead: closest() reads the attribute directly and
-  // works the same in both.
-  return target.closest('[contenteditable=""], [contenteditable="true"]') !== null;
+  // editing spec it depends on, so the nearest contenteditable ancestor
+  // (self included) is found directly instead; closest() works the same in
+  // both. Its own value decides, not just whether one exists: a region
+  // nested inside an editable ancestor can turn itself off with
+  // `contenteditable="false"` (a non-editable @-mention chip inside a rich
+  // text editor, say), and a bare `contenteditable` or `="true"` or
+  // `="plaintext-only"` are all editable.
+  const editable = target.closest('[contenteditable]');
+  return editable !== null && editable.getAttribute('contenteditable') !== 'false';
 }

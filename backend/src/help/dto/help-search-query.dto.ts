@@ -11,11 +11,11 @@ import {
   Min,
 } from "class-validator";
 import { HELP_SLUG_RE } from "../help.constants";
+import { HELP_SEARCH_DEFAULT_LIMIT } from "../help-search";
 
 export const HELP_SEARCH_QUERY_MAX_LENGTH = 200;
 export const HELP_SEARCH_MIN_LIMIT = 1;
 export const HELP_SEARCH_MAX_LIMIT = 20;
-export const HELP_SEARCH_DEFAULT_LIMIT = 10;
 
 /** Query of `GET /help/search`. Public, like the rest of `HelpController`. */
 export class HelpSearchQueryDto {
@@ -40,6 +40,7 @@ export class HelpSearchQueryDto {
   @ApiPropertyOptional({
     minimum: HELP_SEARCH_MIN_LIMIT,
     maximum: HELP_SEARCH_MAX_LIMIT,
+    default: HELP_SEARCH_DEFAULT_LIMIT,
   })
   @IsOptional()
   @Type(() => Number)

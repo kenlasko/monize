@@ -40,14 +40,21 @@ export interface HelpSearchAnswer {
   total: number;
 }
 
-const DEFAULT_LIMIT = 10;
+/** The single source of this default; `HelpSearchQueryDto` reads it too. */
+export const HELP_SEARCH_DEFAULT_LIMIT = 10;
 const EXCERPT_LENGTH = 160;
 const EXCERPT_LEAD = 40;
 
-// A heading match outranks a title match, which outranks a body match; the
-// gap between heading and (title + body) is wide enough that the context
-// boost below can never make a body-only match in the current screen
-// outrank a genuine heading match anywhere else.
+// A heading match outranks a title match, which outranks a body match. A
+// section matching every query token outranks one matching only some, which
+// is by design: a context-boosted, full-coverage body match CAN outrank a
+// heading match elsewhere that only covers some of the tokens ("all tokens
+// beats some" takes precedence over the context boost's own "comparable
+// matches" guarantee). For an equal-coverage comparison, though, the gap
+// between heading and (title + body) is wide enough that the context boost
+// can never turn a body-only match in the current screen into a win over a
+// genuine heading match elsewhere; `help-search.spec.ts` pins exactly that
+// comparison.
 const HEADING_WEIGHT = 6;
 const TITLE_WEIGHT = 3;
 const BODY_WEIGHT = 1;
@@ -170,7 +177,12 @@ interface Tokenized {
 /** Builds an excerpt of plain text around the first matched token, bounded to about `EXCERPT_LENGTH` characters. */
 function buildExcerpt(text: string, tokens: readonly string[]): string {
   if (text.length <= EXCERPT_LENGTH) return text;
-  const folded = foldCase(text);
+  // Plain lower-casing, not `foldCase`: NFKD can decompose a character into
+  // more than one (a ligature, a fraction), which would shift this index out
+  // from under the untouched `text` it is about to slice. Losing an
+  // accent-insensitive match here only widens the excerpt window to the
+  // start of the text; it never misaligns it.
+  const folded = text.toLowerCase();
   let matchIndex = -1;
   for (const token of tokens) {
     const index = folded.indexOf(token);
@@ -232,7 +244,7 @@ export function searchHelp(
   const tokens = queryTokens(query);
   if (tokens.length === 0) return { results: [], total: 0 };
 
-  const limit = options.limit ?? DEFAULT_LIMIT;
+  const limit = options.limit ?? HELP_SEARCH_DEFAULT_LIMIT;
   const contextPage = options.contextPage;
 
   const scored: { entry: Tokenized; score: number; order: number }[] = [];

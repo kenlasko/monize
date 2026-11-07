@@ -14,6 +14,38 @@ describe('isEditableTarget', () => {
     div.remove();
   });
 
+  it('is true for contenteditable="plaintext-only"', () => {
+    const div = document.createElement('div');
+    div.setAttribute('contenteditable', 'plaintext-only');
+    document.body.append(div);
+    expect(isEditableTarget(div)).toBe(true);
+    div.remove();
+  });
+
+  it('is true for a plain child of a contenteditable ancestor', () => {
+    const editable = document.createElement('div');
+    editable.setAttribute('contenteditable', 'true');
+    const child = document.createElement('span');
+    editable.append(child);
+    document.body.append(editable);
+    expect(isEditableTarget(child)).toBe(true);
+    editable.remove();
+  });
+
+  it('is false inside a contenteditable="false" region nested in an editable ancestor', () => {
+    const editable = document.createElement('div');
+    editable.setAttribute('contenteditable', 'true');
+    const chip = document.createElement('span');
+    chip.setAttribute('contenteditable', 'false');
+    const chipText = document.createElement('b');
+    chip.append(chipText);
+    editable.append(chip);
+    document.body.append(editable);
+    expect(isEditableTarget(chip)).toBe(false);
+    expect(isEditableTarget(chipText)).toBe(false);
+    editable.remove();
+  });
+
   it('is false for a button or a div', () => {
     expect(isEditableTarget(document.createElement('button'))).toBe(false);
     expect(isEditableTarget(document.createElement('div'))).toBe(false);

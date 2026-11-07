@@ -218,6 +218,28 @@ describe("searchHelp", () => {
     expect(results[0].excerpt.endsWith("…")).toBe(true);
   });
 
+  it("slices the text it was given, not a length-changing normalization of it", () => {
+    // NFKD decomposes "½" into three characters ("1⁄2"), two longer than the
+    // original. A run of a hundred of them pushes a match index found in a
+    // normalized copy of the text about 200 characters further along than
+    // the real text is long -- enough that slicing the real text at that
+    // index would land past its end and miss "budgets" entirely.
+    const lead = "x".repeat(50);
+    const ligatures = "½".repeat(100);
+    const tail = "y".repeat(50);
+    const sections = [
+      section({
+        page: "a",
+        section: "a",
+        text: `${lead}${ligatures} budgets ${tail}`,
+      }),
+    ];
+
+    const { results } = searchHelp(sections, "budgets");
+
+    expect(results[0].excerpt).toContain("budgets");
+  });
+
   it("introduces no markup of its own: the excerpt is exactly a slice of the plain text given", () => {
     const sections = [
       section({

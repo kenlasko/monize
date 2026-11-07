@@ -49,16 +49,12 @@ export function HelpSearchDialog() {
   const [draft, setDraft] = useState('');
   const typed = draft.trim();
   const rested = useDebouncedValue(typed, HELP_SEARCH_DEBOUNCE_MS);
-  // Emptying the box applies at once; any other text applies only once the
-  // rested value matches it, so a value that rested before the box emptied
-  // is never searched for again while the next word is typed (mirrors
-  // ReceiptTransactionPicker's search box).
-  const [query, setQuery] = useState(typed);
-  if (typed === '' && query !== '') {
-    setQuery('');
-  } else if (typed !== '' && rested === typed && query !== typed) {
-    setQuery(typed);
-  }
+  // Emptying the box applies at once; any other text applies only once it
+  // has rested. `rested` already lags at the last value `typed` settled on
+  // -- exactly what should still be searched for while newer text is mid
+  // debounce -- so nothing here needs its own state (mirrors
+  // ReceiptTransactionPicker's search box, minus the state it didn't need).
+  const query = typed === '' ? '' : rested;
 
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [active, setActive] = useState(0);
