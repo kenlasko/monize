@@ -3020,9 +3020,9 @@ export class ToolExecutorService {
   /**
    * `search_help` over `HelpService.getLlmHelp`, the MCP tool's own method. It
    * reads only the bundled guide, so it takes no user id and answers an
-   * acting delegate as it answers the owner. The summary says when nothing
-   * matched, and why, so the model says the guide does not cover the question
-   * rather than answering from its own idea of the product.
+   * acting delegate as it answers the owner. The summary is the reader's
+   * tools-used line and never reaches the model, which reads only `data`:
+   * an unavailable guide is told to the model by the answer's own `notice`.
    */
   private searchHelp(input: Record<string, unknown>): ToolResult {
     const { query, limit } = input as unknown as LlmHelpQuery;
@@ -3031,8 +3031,7 @@ export class ToolExecutorService {
 
     let summary: string;
     if (!result.available) {
-      summary =
-        "The user guide is not available on this server; answer that you cannot look this up, without guessing.";
+      summary = "The user guide is not available on this server.";
     } else if (count === 0) {
       summary = `No section of the guide covers "${query}".`;
     } else {

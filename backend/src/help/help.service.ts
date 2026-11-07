@@ -24,6 +24,8 @@ import {
 import { HelpSearchAnswer, HelpSearchSection, searchHelp } from "./help-search";
 import {
   LLM_HELP_LANGUAGE,
+  LLM_HELP_NO_MATCH_NOTICE,
+  LLM_HELP_UNAVAILABLE_NOTICE,
   LlmHelpAnswer,
   capHelpText,
   clampHelpLimit,
@@ -164,8 +166,15 @@ export class HelpService {
     const { results } = this.search(query, {
       limit: clampHelpLimit(options.limit),
     });
+    const available = this.load();
+    const notice = !available
+      ? LLM_HELP_UNAVAILABLE_NOTICE
+      : results.length === 0
+        ? LLM_HELP_NO_MATCH_NOTICE
+        : null;
     return {
-      available: this.load(),
+      available,
+      ...(notice ? { notice } : {}),
       guideVersion: this.currentVersion,
       language: LLM_HELP_LANGUAGE,
       sections: results.map((result) => {

@@ -6,7 +6,9 @@ import { HelpService } from "./help.service";
 import {
   LLM_HELP_DEFAULT_LIMIT,
   LLM_HELP_MAX_LIMIT,
+  LLM_HELP_NO_MATCH_NOTICE,
   LLM_HELP_TEXT_MAX_CHARS,
+  LLM_HELP_UNAVAILABLE_NOTICE,
 } from "./help-llm-shape";
 
 /** The first bytes of a lossless WebP of the given size. */
@@ -598,6 +600,7 @@ describe("HelpService", () => {
 
       expect(service.getLlmHelp("zzzzqqq")).toEqual({
         available: true,
+        notice: LLM_HELP_NO_MATCH_NOTICE,
         guideVersion: service.currentVersion,
         language: "en",
         sections: [],
@@ -609,6 +612,7 @@ describe("HelpService", () => {
 
       expect(service.getLlmHelp("alpha")).toEqual({
         available: false,
+        notice: LLM_HELP_UNAVAILABLE_NOTICE,
         guideVersion: service.currentVersion,
         language: "en",
         sections: [],
