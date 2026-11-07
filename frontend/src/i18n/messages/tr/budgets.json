@@ -13,6 +13,7 @@
     "editTitle": "Düzenle: {name}",
     "budgetAmount": "Bütçe Tutarı",
     "rolloverType": "Devir Türü",
+    "rolloverTypeTooltip": "Bu kategorinin kullanılmayan bütçesi sıfırlanmak yerine bir sonraki döneme devreder. Aşırı harcama asla borç olarak devretmez, ve Devir Üst Sınırı ne kadar birikebileceğini sınırlar.",
     "rolloverCap": "Devir Üst Sınırı (isteğe bağlı)",
     "rolloverCapPlaceholder": "Sınır yok",
     "flexGroup": "Esnek Grup (isteğe bağlı)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Harcama Hızı",
+    "titleTooltip": "Günlük harcama hızınız ve güvenli harcama temponuz, dönem sonuna kadar öngörülmüştür. Gerçekten kullanılabilir, henüz gelmemiş planlanmış faturalarınızı çıkarır, böylece hâlâ alan gösteren bir bütçe zaten borçlu olunan parayla harcanmaz.",
     "dailyBurnRate": "Günlük harcama hızı",
     "safeToSpend": "Harcamak için güvenli",
     "projectedMonthEnd": "Tahmini ay sonu",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Analizden tahmin: {amount}/ay",
     "defaultRolloverType": "Varsayılan Devir Türü",
     "rolloverHint": "Bu, tüm kategoriler için varsayılanı belirler. Bütçeyi oluşturduktan sonra bireysel kategorileri özelleştirebilirsiniz.",
+    "rolloverTooltip": "Bir kategorinin kullanılmayan bütçesi sıfırlanmak yerine bir sonraki döneme devreder. Aşırı harcama asla borç olarak devretmez, ve Devir Üst Sınırı bir kategoride ne kadar birikebileceğini sınırlar.",
     "rolloverOptions": {
       "NONE": "Yok -- Her dönem sıfırlanır",
       "MONTHLY": "Aylık -- Her ay ileriye taşınır",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "örn. Eğlence Parası",
     "excludedAccountsHint": "Hariç tutulan hesaplardan yapılan işlemler bütçe toplamlarınıza sayılmaz.",
+    "excludedAccountsTooltip": "Bir hesabı hariç tutmak, işlemlerini yalnızca bu bütçenin harcama, gelir, devir ve sağlık puanından kaldırır. İşlemler, işlemlerinizde ve raporlarınızda, ayrıca hesabı hariç tutmayan diğer bütçelerde normal şekilde görünmeye devam eder.",
     "excludedCount": "{count} {count, plural, one {hesap} other {hesap}} hariç tutuldu",
     "categoriesAndTransfers": "{categories} kategori ve {transfers} transfer seçildi",
     "budgetTypeOptions": {

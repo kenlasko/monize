@@ -13,6 +13,7 @@
     "editTitle": "Modifica: {name}",
     "budgetAmount": "Importo budget",
     "rolloverType": "Tipo di riporto",
+    "rolloverTypeTooltip": "Il budget non utilizzato di questa categoria viene riportato al periodo successivo invece di essere azzerato. Le spese eccessive non vengono mai riportate come debito, e un limite di riporto limita quanto si può accumulare.",
     "rolloverCap": "Limite riporto (facoltativo)",
     "rolloverCapPlaceholder": "Nessun limite",
     "flexGroup": "Gruppo flessibile (facoltativo)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Velocità di spesa",
+    "titleTooltip": "Il tuo tasso di consumo giornaliero e il ritmo di spesa sicuro, proiettati fino alla fine del periodo. Realmente disponibile sottrae le bollette programmate ancora da arrivare, così un budget che sembra avere ancora margine non viene speso per denaro già dovuto.",
     "dailyBurnRate": "Tasso di consumo giornaliero",
     "safeToSpend": "Disponibile da spendere",
     "projectedMonthEnd": "Proiezione fine mese",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Stimato dall'analisi: {amount}/mese",
     "defaultRolloverType": "Tipo di riporto predefinito",
     "rolloverHint": "Imposta il valore predefinito per tutte le categorie. Puoi personalizzare le singole categorie dopo aver creato il budget.",
+    "rolloverTooltip": "Il budget non utilizzato di una categoria viene riportato al periodo successivo invece di essere azzerato. Le spese eccessive non vengono mai riportate come debito, e un limite di riporto limita quanto una categoria può accumulare.",
     "rolloverOptions": {
       "NONE": "Nessuno -- Si azzera ogni periodo",
       "MONTHLY": "Mensile -- Riportato ogni mese",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "es. Svago",
     "excludedAccountsHint": "Le transazioni dai conti esclusi non verranno conteggiate nei totali del budget.",
+    "excludedAccountsTooltip": "Escludere un conto rimuove le sue transazioni solo dalle spese, dalle entrate, dal riporto e dal punteggio di salute di questo budget. Continuano ad apparire normalmente nelle tue transazioni e nei report, e in qualsiasi altro budget che non esclude il conto.",
     "excludedCount": "{count} {count, plural, one {conto escluso} other {conti esclusi}}",
     "categoriesAndTransfers": "{categories} categorie e {transfers} trasferimenti selezionati",
     "budgetTypeOptions": {

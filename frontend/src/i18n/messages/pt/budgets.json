@@ -13,6 +13,7 @@
     "editTitle": "Editar: {name}",
     "budgetAmount": "Montante do Orçamento",
     "rolloverType": "Tipo de Transição",
+    "rolloverTypeTooltip": "O orçamento não utilizado desta categoria transita para o período seguinte em vez de ser reiniciado. O excesso de despesa nunca transita como dívida, e um Limite de Transição limita quanto se pode acumular.",
     "rolloverCap": "Limite de Transição (opcional)",
     "rolloverCapPlaceholder": "Sem limite",
     "flexGroup": "Grupo Flexível (opcional)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Velocidade de Despesa",
+    "titleTooltip": "A sua taxa de consumo diária e o ritmo seguro de despesa, projetados até ao final do período. Realmente disponível subtrai as contas agendadas que ainda estão para chegar, para que um orçamento que ainda parece ter margem não seja gasto em dinheiro já devido.",
     "dailyBurnRate": "Taxa de consumo diária",
     "safeToSpend": "Seguro para gastar",
     "projectedMonthEnd": "Final do mês projetado",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Estimado a partir da análise: {amount}/mês",
     "defaultRolloverType": "Tipo de Transição Predefinido",
     "rolloverHint": "Define o padrão para todas as categorias. Pode personalizar categorias individualmente após criar o orçamento.",
+    "rolloverTooltip": "O orçamento não utilizado de uma categoria transita para o período seguinte em vez de ser reiniciado. O excesso de despesa nunca transita como dívida, e um Limite de Transição limita quanto uma categoria pode acumular.",
     "rolloverOptions": {
       "NONE": "Nenhuma -- Reinicia em cada período",
       "MONTHLY": "Mensal -- Transita todos os meses",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "ex.: Dinheiro Livre",
     "excludedAccountsHint": "As transações de contas excluídas não serão contabilizadas nos totais do orçamento.",
+    "excludedAccountsTooltip": "Excluir uma conta remove as suas transações apenas das despesas, receitas, transição e pontuação de saúde deste orçamento. Continuam a aparecer normalmente nas suas transações e relatórios, e em qualquer outro orçamento que não exclua a conta.",
     "excludedCount": "{count} {count, plural, one {conta excluída} other {contas excluídas}}",
     "categoriesAndTransfers": "{categories} categorias e {transfers} transferências selecionadas",
     "budgetTypeOptions": {

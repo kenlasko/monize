@@ -13,6 +13,7 @@
     "editTitle": "編集：{name}",
     "budgetAmount": "予算額",
     "rolloverType": "繰越タイプ",
+    "rolloverTypeTooltip": "このカテゴリの未使用予算はリセットされず、次の期間に繰り越されます。超過支出は負債として繰り越されることはなく、繰越上限が積み立てられる額を制限します。",
     "rolloverCap": "繰越上限（任意）",
     "rolloverCapPlaceholder": "上限なし",
     "flexGroup": "フレックスグループ（任意）",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "支出速度",
+    "titleTooltip": "期間終了まで予測した、日次消費率と安全な支出ペースです。実際に使える額は、まだ来ていない予定済みの請求を差し引いたもので、まだ余裕があるように見える予算が、すでに発生している支出に使われてしまわないようにします。",
     "dailyBurnRate": "日次消費率",
     "safeToSpend": "安全に使える額",
     "projectedMonthEnd": "月末予測",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "分析からの推定：{amount}/月",
     "defaultRolloverType": "デフォルト繰越タイプ",
     "rolloverHint": "これはすべてのカテゴリのデフォルトを設定します。予算作成後に個々のカテゴリをカスタマイズできます。",
+    "rolloverTooltip": "カテゴリの未使用予算はリセットされず、次の期間に繰り越されます。超過支出は負債として繰り越されることはなく、繰越上限がカテゴリに積み立てられる額を制限します。",
     "rolloverOptions": {
       "NONE": "なし -- 毎期間リセット",
       "MONTHLY": "毎月 -- 毎月繰り越す",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "例：娯楽費",
     "excludedAccountsHint": "除外された口座からの取引は予算合計にカウントされません。",
+    "excludedAccountsTooltip": "口座を除外すると、その取引はこの予算の支出、収入、繰越、健全性スコアからのみ除かれます。取引自体は、取引履歴やレポート、またその口座を除外していない他の予算には通常どおり表示され続けます。",
     "excludedCount": "{count} {count, plural, one {口座} other {口座}} 除外",
     "categoriesAndTransfers": "{categories} カテゴリと {transfers} 振替が選択されています",
     "budgetTypeOptions": {

@@ -13,6 +13,7 @@
     "editTitle": "Editar: {name}",
     "budgetAmount": "Monto del presupuesto",
     "rolloverType": "Tipo de traspaso",
+    "rolloverTypeTooltip": "El presupuesto no utilizado de esta categoría se traslada al siguiente período en lugar de reiniciarse. El exceso de gasto nunca se traslada como una deuda, y un Límite de traspaso limita cuánto se puede acumular.",
     "rolloverCap": "Límite de traspaso (opcional)",
     "rolloverCapPlaceholder": "Sin límite",
     "flexGroup": "Grupo flexible (opcional)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Velocidad de gasto",
+    "titleTooltip": "Tu tasa de gasto diaria y tu ritmo seguro de gasto, proyectados hasta el final del período. Disponible realmente resta tus facturas programadas que aún faltan, para que un presupuesto que aún muestra margen no se gaste en dinero ya debido.",
     "dailyBurnRate": "Tasa de gasto diario",
     "safeToSpend": "Seguro para gastar",
     "projectedMonthEnd": "Proyección a fin de mes",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Estimado del análisis: {amount}/mes",
     "defaultRolloverType": "Tipo de traspaso predeterminado",
     "rolloverHint": "Esto establece el predeterminado para todas las categorías. Puedes personalizar categorías individuales después de crear el presupuesto.",
+    "rolloverTooltip": "El presupuesto no utilizado de una categoría se traslada al siguiente período en lugar de reiniciarse. El exceso de gasto nunca se traslada como una deuda, y un Límite de traspaso limita cuánto puede acumular una categoría.",
     "rolloverOptions": {
       "NONE": "Ninguno -- Se reinicia cada período",
       "MONTHLY": "Mensual -- Se traslada cada mes",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "p. ej., Dinero libre",
     "excludedAccountsHint": "Las transacciones de cuentas excluidas no contarán hacia los totales de tu presupuesto.",
+    "excludedAccountsTooltip": "Excluir una cuenta elimina sus transacciones solo del gasto, el ingreso, el traspaso y la puntuación de salud de este presupuesto. Siguen apareciendo normalmente en tus transacciones e informes, y en cualquier otro presupuesto que no excluya la cuenta.",
     "excludedCount": "{count} {count, plural, one {cuenta excluida} other {cuentas excluidas}}",
     "categoriesAndTransfers": "{categories} categorías y {transfers} transferencias seleccionadas",
     "budgetTypeOptions": {

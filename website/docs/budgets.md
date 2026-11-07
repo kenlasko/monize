@@ -244,6 +244,14 @@ You can also set a **Rollover Cap** to limit how much accumulates. For example, 
 
 ---
 
+## Excluded Accounts
+
+Accounts you exclude in step 3 of the wizard (or later, from the budget's edit page) are left out of this budget's own numbers: its spending totals, its income, its rollover calculations, its health score, and its alerts. An excluded account's transactions still show up everywhere else -- the Transactions page, reports, other budgets -- this setting only tells *this* budget to ignore them.
+
+Exclude an account you do not want this budget judged by: an investment or brokerage account whose trades are not everyday spending, or a business account kept separate from your personal budget. A transfer *out of* an excluded account is also left out of the budget's progress, since it is not money the excluded account itself is accountable for.
+
+---
+
 ## Income-Linked Budgets
 
 For freelancers, gig workers, or anyone with variable income, you can tick **Link budget to income** in step 3 of the wizard. Category amounts then become percentages of your base income rather than fixed dollar amounts:

@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import type { BudgetVelocity } from '@/types/budget';
 import { gainLossColor } from '@/lib/format';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface BudgetVelocityWidgetProps {
   velocity: BudgetVelocity;
@@ -52,8 +53,9 @@ export function BudgetVelocityWidget({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
           {t('velocity.title')}
+          <InfoTooltip text={t('velocity.titleTooltip')} learnMore="budgetVelocity" />
         </h2>
         <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${paceColor} ${paceBgColor}`}>
           {paceLabel}

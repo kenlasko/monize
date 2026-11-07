@@ -13,6 +13,7 @@
     "editTitle": "Modifier : {name}",
     "budgetAmount": "Montant du budget",
     "rolloverType": "Type de report",
+    "rolloverTypeTooltip": "Le budget inutilisé de cette catégorie est reporté sur la période suivante plutôt que remis à zéro. Le dépassement n'est jamais reporté comme une dette, et un plafond de report limite ce qui peut être accumulé.",
     "rolloverCap": "Plafond de report (facultatif)",
     "rolloverCapPlaceholder": "Sans plafond",
     "flexGroup": "Groupe flexible (facultatif)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Vélocité des dépenses",
+    "titleTooltip": "Votre taux de dépense quotidien et votre rythme de dépense sûr, projetés jusqu'à la fin de la période. Réellement disponible soustrait vos factures programmées encore à venir, afin qu'un budget qui semble encore avoir de la marge ne soit pas dépensé sur de l'argent déjà dû.",
     "dailyBurnRate": "Taux de dépense quotidien",
     "safeToSpend": "Montant sûr à dépenser",
     "projectedMonthEnd": "Fin de mois projetée",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Estimé depuis l'analyse : {amount}/mois",
     "defaultRolloverType": "Type de report par défaut",
     "rolloverHint": "Cela définit la valeur par défaut pour toutes les catégories. Vous pouvez personnaliser les catégories individuelles après la création du budget.",
+    "rolloverTooltip": "Le budget inutilisé d'une catégorie est reporté sur la période suivante plutôt que remis à zéro. Le dépassement n'est jamais reporté comme une dette, et un plafond de report limite ce qu'une catégorie peut accumuler.",
     "rolloverOptions": {
       "NONE": "Aucun -- Réinitialise chaque période",
       "MONTHLY": "Mensuel -- Reporté chaque mois",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "ex. : Argent loisirs",
     "excludedAccountsHint": "Les transactions des comptes exclus ne seront pas comptabilisées dans vos totaux budgétaires.",
+    "excludedAccountsTooltip": "Exclure un compte retire ses transactions uniquement des dépenses, des revenus, du report et du score de santé de ce budget. Elles continuent d'apparaître normalement dans vos transactions et rapports, ainsi que dans tout autre budget qui n'exclut pas ce compte.",
     "excludedCount": "{count} {count, plural, one {compte exclu} other {comptes exclus}}",
     "categoriesAndTransfers": "{categories} catégories et {transfers} virements sélectionnés",
     "budgetTypeOptions": {

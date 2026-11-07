@@ -13,6 +13,7 @@
     "editTitle": "[XX-Edit: {name}-XX]",
     "budgetAmount": "[XX-Budget Amount-XX]",
     "rolloverType": "[XX-Rollover Type-XX]",
+    "rolloverTypeTooltip": "[XX-Unused budget for this category carries forward into the next period rather than resetting. Overspending is never carried forward as a debt, and a Rollover Cap limits how much can accumulate.-XX]",
     "rolloverCap": "[XX-Rollover Cap (optional)-XX]",
     "rolloverCapPlaceholder": "[XX-No cap-XX]",
     "flexGroup": "[XX-Flex Group (optional)-XX]",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "[XX-Spending Velocity-XX]",
+    "titleTooltip": "[XX-Your daily burn rate and safe-to-spend pace, projected to the end of the period. Truly available subtracts your scheduled bills still to come, so a budget that still shows room does not get spent on money already owed.-XX]",
     "dailyBurnRate": "[XX-Daily burn rate-XX]",
     "safeToSpend": "[XX-Safe to spend-XX]",
     "projectedMonthEnd": "[XX-Projected month-end-XX]",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "[XX-Estimated from analysis: {amount}/mo-XX]",
     "defaultRolloverType": "[XX-Default Rollover Type-XX]",
     "rolloverHint": "[XX-This sets the default for all categories. You can customize individual categories after creating the budget.-XX]",
+    "rolloverTooltip": "[XX-Unused budget for a category carries forward into the next period rather than resetting. Overspending is never carried forward as a debt, and a Rollover Cap limits how much a category can accumulate.-XX]",
     "rolloverOptions": {
       "NONE": "[XX-None -- Resets each period-XX]",
       "MONTHLY": "[XX-Monthly -- Rolls forward every month-XX]",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "[XX-e.g. Fun Money-XX]",
     "excludedAccountsHint": "[XX-Transactions from excluded accounts will not count toward your budget totals.-XX]",
+    "excludedAccountsTooltip": "[XX-Excluding an account removes its transactions from this budget's spending, income, rollover and health score only. They still appear normally in your transactions and reports, and in any other budget that does not exclude the account.-XX]",
     "excludedCount": "[XX-{count} {count, plural, one {account} other {accounts}} excluded-XX]",
     "categoriesAndTransfers": "[XX-{categories} categories and {transfers} transfers selected-XX]",
     "budgetTypeOptions": {

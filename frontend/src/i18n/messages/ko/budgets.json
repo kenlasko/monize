@@ -13,6 +13,7 @@
     "editTitle": "편집: {name}",
     "budgetAmount": "예산 금액",
     "rolloverType": "이월 유형",
+    "rolloverTypeTooltip": "이 카테고리의 미사용 예산은 초기화되지 않고 다음 기간으로 이월됩니다. 초과 지출은 절대 빚으로 이월되지 않으며, 이월 한도가 쌓일 수 있는 금액을 제한합니다.",
     "rolloverCap": "이월 한도 (선택)",
     "rolloverCapPlaceholder": "한도 없음",
     "flexGroup": "플렉스 그룹 (선택)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "지출 속도",
+    "titleTooltip": "일일 지출률과 안전한 지출 속도를 기간 종료 시점까지 예측한 값입니다. 실제 사용 가능 금액은 아직 도래하지 않은 예정된 청구서를 뺀 금액이므로, 여유가 있어 보이는 예산이 이미 지출해야 할 돈에 쓰이지 않도록 합니다.",
     "dailyBurnRate": "일일 지출률",
     "safeToSpend": "안전 지출 가능액",
     "projectedMonthEnd": "월말 예상",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "분석 기준 예상: {amount}/월",
     "defaultRolloverType": "기본 이월 유형",
     "rolloverHint": "모든 카테고리의 기본값을 설정합니다. 예산 생성 후 개별 카테고리를 사용자 정의할 수 있습니다.",
+    "rolloverTooltip": "카테고리의 미사용 예산은 초기화되지 않고 다음 기간으로 이월됩니다. 초과 지출은 절대 빚으로 이월되지 않으며, 이월 한도가 카테고리에 쌓일 수 있는 금액을 제한합니다.",
     "rolloverOptions": {
       "NONE": "없음 -- 매 기간 초기화",
       "MONTHLY": "월별 -- 매월 이월",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "예: 여가비",
     "excludedAccountsHint": "제외된 계정의 거래는 예산 합계에 포함되지 않습니다.",
+    "excludedAccountsTooltip": "계정을 제외하면 해당 거래는 이 예산의 지출, 수입, 이월, 건강 점수에서만 제외됩니다. 거래 내역과 보고서, 그리고 해당 계정을 제외하지 않은 다른 예산에서는 평소처럼 계속 나타납니다.",
     "excludedCount": "{count}개 계정 제외됨",
     "categoriesAndTransfers": "{categories}개 카테고리 및 {transfers}개 이체 선택됨",
     "budgetTypeOptions": {

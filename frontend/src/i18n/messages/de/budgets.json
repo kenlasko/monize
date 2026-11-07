@@ -13,6 +13,7 @@
     "editTitle": "Bearbeiten: {name}",
     "budgetAmount": "Budget-Betrag",
     "rolloverType": "Übertragungsart",
+    "rolloverTypeTooltip": "Nicht genutztes Budget dieser Kategorie wird in die nächste Periode übertragen, statt zurückgesetzt zu werden. Überausgaben werden nie als Schuld übertragen, und eine Übertragungsgrenze begrenzt, wie viel sich ansammeln kann.",
     "rolloverCap": "Übertragungsgrenze (optional)",
     "rolloverCapPlaceholder": "Keine Grenze",
     "flexGroup": "Flex-Gruppe (optional)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Ausgabentempo",
+    "titleTooltip": "Ihre tägliche Ausgabenrate und das sichere Ausgabentempo, projiziert bis zum Ende der Periode. Tatsächlich verfügbar zieht Ihre noch anstehenden geplanten Rechnungen ab, damit ein Budget mit scheinbar noch Spielraum nicht für bereits geschuldetes Geld ausgegeben wird.",
     "dailyBurnRate": "Tägliche Ausgabenrate",
     "safeToSpend": "Sicher auszugeben",
     "projectedMonthEnd": "Prognose Monatsende",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Aus Analyse geschätzt: {amount}/Monat",
     "defaultRolloverType": "Standard-Übertragungsart",
     "rolloverHint": "Legt den Standard für alle Kategorien fest. Sie können einzelne Kategorien nach der Budgeterstellung anpassen.",
+    "rolloverTooltip": "Nicht genutztes Budget einer Kategorie wird in die nächste Periode übertragen, statt zurückgesetzt zu werden. Überausgaben werden nie als Schuld übertragen, und eine Übertragungsgrenze begrenzt, wie viel sich für eine Kategorie ansammeln kann.",
     "rolloverOptions": {
       "NONE": "Kein -- Wird jede Periode zurückgesetzt",
       "MONTHLY": "Monatlich -- Wird jeden Monat übertragen",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "z. B. Freizeitgeld",
     "excludedAccountsHint": "Buchungen von ausgeschlossenen Konten werden nicht in Ihre Budget-Summen eingerechnet.",
+    "excludedAccountsTooltip": "Das Ausschließen eines Kontos entfernt dessen Buchungen nur aus den Ausgaben, Einnahmen, der Übertragung und dem Gesundheitswert dieses Budgets. Sie erscheinen weiterhin normal in Ihren Transaktionen und Berichten sowie in jedem anderen Budget, das das Konto nicht ausschließt.",
     "excludedCount": "{count} {count, plural, one {Konto} other {Konten}} ausgeschlossen",
     "categoriesAndTransfers": "{categories} Kategorien und {transfers} Überweisungen ausgewählt",
     "budgetTypeOptions": {

@@ -13,6 +13,7 @@
     "editTitle": "Edit: {name}",
     "budgetAmount": "Jumlah Anggaran",
     "rolloverType": "Jenis Rollover",
+    "rolloverTypeTooltip": "Anggaran yang tidak terpakai untuk kategori ini dibawa ke periode berikutnya daripada direset. Pengeluaran berlebih tidak pernah dibawa sebagai utang, dan Batas Rollover membatasi seberapa banyak yang dapat terkumpul.",
     "rolloverCap": "Batas Rollover (opsional)",
     "rolloverCapPlaceholder": "Tidak ada batas",
     "flexGroup": "Grup Fleksibel (opsional)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Kecepatan Pengeluaran",
+    "titleTooltip": "Tingkat pengeluaran harian dan kecepatan aman untuk berbelanja, diproyeksikan hingga akhir periode. Benar-benar tersedia mengurangi tagihan terjadwal Anda yang masih akan datang, sehingga anggaran yang masih terlihat lega tidak dibelanjakan untuk uang yang sudah terutang.",
     "dailyBurnRate": "Tingkat pengeluaran harian",
     "safeToSpend": "Aman untuk dibelanjakan",
     "projectedMonthEnd": "Proyeksi akhir bulan",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Perkiraan dari analisis: {amount}/bln",
     "defaultRolloverType": "Jenis Rollover Default",
     "rolloverHint": "Ini menetapkan default untuk semua kategori. Anda dapat menyesuaikan kategori individual setelah membuat anggaran.",
+    "rolloverTooltip": "Anggaran yang tidak terpakai untuk suatu kategori dibawa ke periode berikutnya daripada direset. Pengeluaran berlebih tidak pernah dibawa sebagai utang, dan Batas Rollover membatasi seberapa banyak yang dapat terkumpul untuk suatu kategori.",
     "rolloverOptions": {
       "NONE": "Tidak ada -- Direset setiap periode",
       "MONTHLY": "Bulanan -- Dibawa ke depan setiap bulan",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "mis. Uang Hiburan",
     "excludedAccountsHint": "Transaksi dari akun yang dikecualikan tidak akan dihitung terhadap total anggaran Anda.",
+    "excludedAccountsTooltip": "Mengecualikan akun menghapus transaksinya hanya dari pengeluaran, pemasukan, rollover, dan skor kesehatan anggaran ini. Transaksi tersebut tetap muncul normal di transaksi dan laporan Anda, serta di anggaran lain yang tidak mengecualikan akun tersebut.",
     "excludedCount": "{count} {count, plural, one {akun} other {akun}} dikecualikan",
     "categoriesAndTransfers": "{categories} kategori dan {transfers} transfer dipilih",
     "budgetTypeOptions": {
