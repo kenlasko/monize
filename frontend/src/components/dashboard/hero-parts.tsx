@@ -23,7 +23,11 @@ import {
  * with its dismissable high/low bubbles, and the figure pill.
  */
 
-const LAYOUT_CLASS = 'mb-6 flex flex-col lg:flex-row gap-x-10 gap-y-4 lg:items-start';
+// On a phone the figures stack above the chart; `gap-y-2` keeps that seam
+// tight since the chart's own top margin (for the high/low flag bubbles,
+// `HeroAreaChart`) already reads as blank space once it is no longer beside
+// the figures, as it is from `lg` up.
+const LAYOUT_CLASS = 'mb-6 flex flex-col lg:flex-row gap-x-10 gap-y-2 lg:gap-y-4 lg:items-start';
 
 /** The page header, tucked close to the figures under it. */
 function HeaderBlock({ header }: { header: ReactNode }) {

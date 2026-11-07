@@ -59,6 +59,7 @@ export function HelpMenu({ entries }: HelpMenuProps) {
                 }}
                 className={ITEM_CLASS}
               >
+                <helpForPage.Icon className="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" aria-hidden="true" />
                 {helpForPage.label}
               </button>
             )}
@@ -72,6 +73,7 @@ export function HelpMenu({ entries }: HelpMenuProps) {
                 }}
                 className={ITEM_CLASS}
               >
+                <entry.Icon className="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" aria-hidden="true" />
                 {entry.label}
               </button>
             ))}
@@ -85,7 +87,8 @@ export function HelpMenu({ entries }: HelpMenuProps) {
                 onClick={() => setOpen(false)}
                 className={ITEM_CLASS}
               >
-                {link.label}
+                <link.Icon className="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+                <span className="flex-1">{link.label}</span>
                 <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" />
               </a>
             ))}

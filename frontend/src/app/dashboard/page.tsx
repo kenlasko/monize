@@ -81,6 +81,10 @@ function DashboardContent() {
   const [favouriteSecurities, setFavouriteSecurities] = useState<FavouriteSecurityQuote[]>([]);
   const [hasSecurities, setHasSecurities] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  // The portfolio summary loads after `isLoading` clears (below), so the hero
+  // waits on this too -- otherwise its "invested" figure pops in a beat after
+  // net worth, assets and liabilities, which render as soon as `isLoading` does.
+  const [investmentSummaryLoading, setInvestmentSummaryLoading] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
 
   const brokerageMarketValues = useMemo(() => {
@@ -203,13 +207,18 @@ function DashboardContent() {
         // Load investment data directly so it appears even when price refresh is
         // skipped (outside market hours, cooldown active, etc.)
         if (hasInvestmentAccounts) {
+          setInvestmentSummaryLoading(true);
           Promise.all([
             investmentsApi.getTopMovers().catch(() => [] as TopMover[]),
             investmentsApi.getPortfolioSummary().catch(() => null),
-          ]).then(([moversData, portfolio]) => {
-            setTopMovers(moversData);
-            setPortfolioSummary(portfolio);
-          });
+          ])
+            .then(([moversData, portfolio]) => {
+              setTopMovers(moversData);
+              setPortfolioSummary(portfolio);
+            })
+            .finally(() => setInvestmentSummaryLoading(false));
+        } else {
+          setInvestmentSummaryLoading(false);
         }
       } catch (error) {
         logger.error('Failed to load dashboard data:', error);
@@ -323,6 +332,7 @@ function DashboardContent() {
               portfolioSummary={portfolioSummary}
               hasInvestments={hasInvestments}
               isLoading={isLoading}
+              investmentSummaryLoading={investmentSummaryLoading}
               investmentAccounts={portfolioAccounts}
               header={header}
             />

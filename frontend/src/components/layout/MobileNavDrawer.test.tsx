@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import { MobileNavDrawer } from './MobileNavDrawer';
 
 vi.mock('next/image', () => ({
@@ -21,14 +22,24 @@ const toolsLinks = [
 const helpEntries: React.ComponentProps<typeof MobileNavDrawer>['helpEntries'] = {
   helpForPage: null,
   actions: [
-    { key: 'search', label: 'Search help', onClick: vi.fn() },
-    { key: 'shortcuts', label: 'Keyboard shortcuts', onClick: vi.fn() },
-    { key: 'takeTour', label: 'Take the tour', onClick: vi.fn() },
-    { key: 'whatsNew', label: "What's new", onClick: vi.fn() },
+    { key: 'search', label: 'Search help', onClick: vi.fn(), Icon: InformationCircleIcon },
+    { key: 'shortcuts', label: 'Keyboard shortcuts', onClick: vi.fn(), Icon: InformationCircleIcon },
+    { key: 'takeTour', label: 'Take the tour', onClick: vi.fn(), Icon: InformationCircleIcon },
+    { key: 'whatsNew', label: "What's new", onClick: vi.fn(), Icon: InformationCircleIcon },
   ],
   links: [
-    { key: 'reportIssue', label: 'Report an issue', href: 'https://github.com/kenlasko/monize/issues/new' },
-    { key: 'discussions', label: 'Discussions', href: 'https://github.com/kenlasko/monize/discussions' },
+    {
+      key: 'reportIssue',
+      label: 'Report an issue',
+      href: 'https://github.com/kenlasko/monize/issues/new',
+      Icon: InformationCircleIcon,
+    },
+    {
+      key: 'discussions',
+      label: 'Discussions',
+      href: 'https://github.com/kenlasko/monize/discussions',
+      Icon: InformationCircleIcon,
+    },
   ],
 };
 
@@ -111,7 +122,12 @@ describe('MobileNavDrawer', () => {
       renderDrawer({
         helpEntries: {
           ...helpEntries,
-          helpForPage: { key: 'helpForPage', label: 'Help for this page', onClick: vi.fn() },
+          helpForPage: {
+            key: 'helpForPage',
+            label: 'Help for this page',
+            onClick: vi.fn(),
+            Icon: InformationCircleIcon,
+          },
         },
       });
       expect(screen.getByText('Help for this page')).toBeInTheDocument();
@@ -122,7 +138,7 @@ describe('MobileNavDrawer', () => {
       const { onClose } = renderDrawer({
         helpEntries: {
           ...helpEntries,
-          actions: [{ key: 'search', label: 'Search help', onClick }],
+          actions: [{ key: 'search', label: 'Search help', onClick, Icon: InformationCircleIcon }],
         },
       });
       fireEvent.click(screen.getByText('Search help'));

@@ -14,6 +14,14 @@ interface DashboardHeroProps {
   hasInvestments: boolean;
   /** The dashboard's own first load, before which no figure is known. */
   isLoading: boolean;
+  /**
+   * Whether the portfolio summary behind the net worth set's "invested"
+   * figure is still loading, separately from `isLoading`: it fetches after
+   * the rest of the dashboard's first load so it never blocks it, but
+   * `NetWorthHero` has to hold its own skeleton for it, or "invested" pops in
+   * a beat after everything beside it.
+   */
+  investmentSummaryLoading: boolean;
   /** The investment accounts the portfolio set can cover. */
   investmentAccounts: Account[];
   /**
@@ -34,6 +42,7 @@ export function DashboardHero({
   portfolioSummary,
   hasInvestments,
   isLoading,
+  investmentSummaryLoading,
   investmentAccounts,
   header,
 }: DashboardHeroProps) {
@@ -59,6 +68,7 @@ export function DashboardHero({
       portfolioSummary={portfolioSummary}
       hasInvestments={hasInvestments}
       isLoading={isLoading}
+      investmentSummaryLoading={investmentSummaryLoading}
     />
   );
 }
