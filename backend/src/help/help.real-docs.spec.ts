@@ -197,6 +197,15 @@ describe("HelpService against the repository's website/docs", () => {
       ).toContain(`id="${section}"`);
     });
 
+    it("finds each hit's own text unambiguously: no two index entries share a url", () => {
+      const index = JSON.parse(
+        fs.readFileSync(path.join(DOCS, "search-index.json"), "utf-8"),
+      ) as { u: string }[];
+      const urls = index.map((entry) => entry.u);
+
+      expect(new Set(urls).size).toBe(urls.length);
+    });
+
     it("keeps the whole answer to a bounded size at the largest limit", () => {
       const answer = service.getLlmHelp("account transaction", { limit: 99 });
 
