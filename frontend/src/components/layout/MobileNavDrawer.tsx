@@ -177,6 +177,10 @@ export function MobileNavDrawer({
               }}
               className={itemClass(false)}
             >
+              <helpEntries.helpForPage.Icon
+                aria-hidden
+                className="mr-4 h-5 w-5 flex-shrink-0 text-gray-400 dark:text-gray-500"
+              />
               {helpEntries.helpForPage.label}
             </button>
           )}
@@ -189,6 +193,10 @@ export function MobileNavDrawer({
               }}
               className={itemClass(false)}
             >
+              <entry.Icon
+                aria-hidden
+                className="mr-4 h-5 w-5 flex-shrink-0 text-gray-400 dark:text-gray-500"
+              />
               {entry.label}
             </button>
           ))}
@@ -201,7 +209,11 @@ export function MobileNavDrawer({
               onClick={onClose}
               className={`${itemClass(false)} gap-1.5`}
             >
-              {link.label}
+              <link.Icon
+                aria-hidden
+                className="mr-4 h-5 w-5 flex-shrink-0 text-gray-400 dark:text-gray-500"
+              />
+              <span className="flex-1">{link.label}</span>
               <ArrowTopRightOnSquareIcon
                 aria-hidden
                 className="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-gray-500"

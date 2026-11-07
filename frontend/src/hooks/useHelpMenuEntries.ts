@@ -1,6 +1,16 @@
 'use client';
 
+import type { ComponentType, SVGProps } from 'react';
 import { useTranslations } from 'next-intl';
+import {
+  ChatBubbleLeftRightIcon,
+  CommandLineIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  MagnifyingGlassIcon,
+  MapIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline';
 import { GITHUB_REPO_URL as REPO_URL } from '@/lib/github';
 import { tourIdForHelpPage } from '@/lib/help-tours';
 import { getTourById, INTRO_TOUR } from '@/lib/tours/registry';
@@ -12,16 +22,20 @@ import { useTourStore } from '@/store/tourStore';
 import { useWhatsNewStore } from '@/store/whatsNewStore';
 import { useTourRequirements } from './useTourRequirements';
 
+type MenuIcon = ComponentType<SVGProps<SVGSVGElement>>;
+
 export interface HelpMenuAction {
   key: string;
   label: string;
   onClick: () => void;
+  Icon: MenuIcon;
 }
 
 export interface HelpMenuLink {
   key: string;
   label: string;
   href: string;
+  Icon: MenuIcon;
 }
 
 export interface HelpMenuEntries {
@@ -65,6 +79,7 @@ export function useHelpMenuEntries(): HelpMenuEntries {
         key: 'helpForPage',
         label: t('helpForPage'),
         onClick: () => useHelpStore.getState().openAt({ page: contextPage }),
+        Icon: InformationCircleIcon,
       }
     : null;
 
@@ -73,11 +88,13 @@ export function useHelpMenuEntries(): HelpMenuEntries {
       key: 'search',
       label: t('search'),
       onClick: () => useHelpSearchStore.getState().openSearch(),
+      Icon: MagnifyingGlassIcon,
     },
     {
       key: 'shortcuts',
       label: t('shortcuts'),
       onClick: () => useHelpShortcutsStore.getState().openShortcuts(),
+      Icon: CommandLineIcon,
     },
     // Omitted rather than offering a tour this user cannot complete, same
     // as the panel's own "Show me" and the What's New offer list.
@@ -87,6 +104,7 @@ export function useHelpMenuEntries(): HelpMenuEntries {
             key: 'takeTour',
             label: t('takeTour'),
             onClick: () => useTourStore.getState().startTour(tour),
+            Icon: MapIcon,
           },
         ]
       : []),
@@ -94,12 +112,23 @@ export function useHelpMenuEntries(): HelpMenuEntries {
       key: 'whatsNew',
       label: t('whatsNew'),
       onClick: () => useWhatsNewStore.getState().open(),
+      Icon: SparklesIcon,
     },
   ];
 
   const links: HelpMenuLink[] = [
-    { key: 'reportIssue', label: t('reportIssue'), href: `${REPO_URL}/issues/new` },
-    { key: 'discussions', label: t('discussions'), href: `${REPO_URL}/discussions` },
+    {
+      key: 'reportIssue',
+      label: t('reportIssue'),
+      href: `${REPO_URL}/issues/new`,
+      Icon: ExclamationTriangleIcon,
+    },
+    {
+      key: 'discussions',
+      label: t('discussions'),
+      href: `${REPO_URL}/discussions`,
+      Icon: ChatBubbleLeftRightIcon,
+    },
   ];
 
   return { helpForPage, actions, links };
