@@ -3475,3 +3475,50 @@ describe("a relative time is read through useRelativeTime", () => {
     expect(sources["/src/lib/format.ts"]).not.toContain("formatRelativeTime");
   });
 });
+
+describe("a documentation URL is built in one place", () => {
+  /**
+   * `docsUrl` / `DOCS_BASE_URL` (`lib/docs-links.ts`) construct the one
+   * monize.net URL for a `DOCS_LINKS` key. A call site building its own `<a
+   * href={docsUrl(...)}>` reaches the website every time, never the bundled
+   * guide, and the "Learn more" copy and the `onHelpLinkClick` interception
+   * drift with each one hand-rolled. `HelpLink` is the inline link,
+   * `PageHeader`'s `help` prop the page icon, `HelpSection` the settings
+   * tiles -- the only three places a URL built from one is allowed to land in
+   * JSX. `HelpMarkdown` resolves a relative link inside the guide's own
+   * Markdown, a different job (the guide is already open; the link is part
+   * of its content, not an invitation to open it).
+   */
+  const ALLOWED = new Set([
+    "/src/lib/docs-links.ts",
+    "/src/components/help/HelpLink.tsx",
+    "/src/components/layout/PageHeader.tsx",
+    "/src/components/settings/HelpSection.tsx",
+    "/src/components/help/HelpMarkdown.tsx",
+  ]);
+  const DOCS_URL_USE = /\bdocsUrl\s*\(|\bDOCS_BASE_URL\b/;
+
+  it("calls docsUrl or reads DOCS_BASE_URL only from the allowed call sites", () => {
+    const offenders = productionSources()
+      .filter(([path]) => !ALLOWED.has(path))
+      .filter(([, source]) => DOCS_URL_USE.test(withoutComments(source)))
+      .map((
+        [path],
+      ) => `${path}: use HelpLink (components/help/HelpLink.tsx), never docsUrl/DOCS_BASE_URL directly`);
+
+    expect(offenders).toEqual([]);
+  });
+
+  it("still finds every allowed call site, so the allowlist cannot pass by accident", () => {
+    for (const path of ALLOWED) {
+      expect(sources[path], `${path} is gone -- remove it from ALLOWED`).toBeTruthy();
+    }
+  });
+
+  it("still recognises the pattern it bans", () => {
+    expect(DOCS_URL_USE.test("const href = docsUrl('budgets');")).toBe(true);
+    expect(DOCS_URL_USE.test("return `${DOCS_BASE_URL}/${page}`;")).toBe(true);
+    expect(DOCS_URL_USE.test(withoutComments("// never call docsUrl() here"))).toBe(false);
+    expect(DOCS_URL_USE.test("<HelpLink link=\"budgets\">Learn more</HelpLink>")).toBe(false);
+  });
+});

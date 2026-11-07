@@ -5,13 +5,13 @@ merged. Check a box only when its gate passes and is quoted in the commit or PR.
 
 ## Mechanism (one PR)
 
-- [ ] `InfoTooltip` `learnMore?: DocsLink`; the popover stays reachable on hover.
-- [ ] `EmptyState` `help?: DocsLink`.
-- [ ] `HelpLink` component; the four existing inline docs links migrated to it.
-- [ ] Guard: a docs URL only in `HelpLink`, `PageHeader` and `HelpSection`.
-- [ ] `help` namespace additions: English, pseudo-locale, every locale.
-- [ ] Unit tests listed in the plan.
-- [ ] `docs/frontend/ui-conventions.md` entry; `frontend/CLAUDE.md` rows.
+- [x] `InfoTooltip` `learnMore?: DocsLink`; the popover stays reachable on hover.
+- [x] `EmptyState` `help?: DocsLink`.
+- [x] `HelpLink` component; the four existing inline docs links migrated to it.
+- [x] Guard: a docs URL only in `HelpLink`, `PageHeader` and `HelpSection`.
+- [x] `help` namespace additions: English, pseudo-locale, every locale.
+- [x] Unit tests listed in the plan.
+- [x] `docs/frontend/ui-conventions.md` entry; `frontend/CLAUDE.md` rows.
 
 ## Batches (one PR each; add keys, add missing guide sections)
 

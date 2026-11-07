@@ -1013,6 +1013,7 @@
     "paymentMatchingUnsupported": "Pencocokan pembayaran belum dapat melunasi pembayaran hipotek yang mencakup biaya. Matikan pencocokan pembayaran atau hapus biayanya."
   },
   "help": {
-    "pageNotFound": "Halaman bantuan tidak ditemukan"
+    "pageNotFound": "Halaman bantuan tidak ditemukan",
+    "imageNotFound": "Gambar bantuan tidak ditemukan"
   }
 }

@@ -308,6 +308,12 @@ const ALLOWED = new Map<string, string>([
       "entry never goes stale. See `#pages`",
   ],
   [
+    "help/help.service.ts#images",
+    "the bundled guide's screenshots by name (path, type and size), listed " +
+      "once with the pages and never written after that; the pictures ship in " +
+      "the image, so every replica lists the same ones. See `#pages`",
+  ],
+  [
     "budgets/budgets.service.ts#categoryActualsCache",
     "already stale within one replica for its TTL, so multi-replica does not " +
       "change the contract it offers",

@@ -1,4 +1,9 @@
+'use client';
+
 import { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
+import { HelpLink } from '@/components/help/HelpLink';
+import type { DocsLink } from '@/lib/docs-links';
 import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
@@ -10,6 +15,12 @@ interface EmptyStateProps {
   description?: ReactNode;
   /** Optional call to action (a Button, a link). */
   action?: ReactNode;
+  /**
+   * Where the guide explains this empty screen, a key of `DOCS_LINKS`. Renders
+   * a quiet "How this works" link under the description; `action` renders too
+   * when both are given.
+   */
+  help?: DocsLink;
   className?: string;
 }
 
@@ -20,7 +31,9 @@ interface EmptyStateProps {
  * files, each drifting on its own; `ui-conventions.test.ts` keeps the
  * inline copies shrink-only.
  */
-export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action, help, className }: EmptyStateProps) {
+  const t = useTranslations('help');
+
   return (
     <div className={cn('text-center py-12', className)}>
       {icon && (
@@ -41,6 +54,13 @@ export function EmptyState({ icon, title, description, action, className }: Empt
       </h3>
       {description && (
         <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</div>
+      )}
+      {help && (
+        <div className="mt-2">
+          <HelpLink link={help} className="text-sm text-blue-600 hover:underline dark:text-blue-400">
+            {t('howThisWorks')}
+          </HelpLink>
+        </div>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>

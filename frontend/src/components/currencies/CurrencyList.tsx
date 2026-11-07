@@ -663,6 +663,7 @@ export function CurrencyList({
                     text={t('list.rateHelp', { currency: defaultCurrency })}
                     align="right"
                     usePortal
+                    learnMore="currencyHomeRate"
                   />
                 }
               >
