@@ -271,6 +271,7 @@
     "transferCostNote": "每股成本是这些股份在转出日期于来源账户中的成本。它会在保存时计算并结转到目标账户，确保您的收益和利润报告保持正确。此操作仅转移股份，不涉及现金往来。",
     "returnOfCapitalNote": "资本返还不是收入。它退还的是股票成本的一部分，因此会按此金额降低您持仓的成本基础。超出剩余成本基础的部分将记为已实现资本收益。",
     "totalAmount": "总金额",
+    "totalAmountTooltip": "这笔交易的总额是多少。编辑数量、价格或佣金，此金额会据此重新计算；直接编辑此字段，Monize 会反过来算出每股价格，并保留您输入的每一分钱。",
     "sharesAtPrice": "{shares} 股 @ {symbol}{price}",
     "commissionSuffix": "佣金",
     "accruedInterestSuffix": "应计利息",

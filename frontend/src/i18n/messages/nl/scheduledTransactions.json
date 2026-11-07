@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "Herhalingsdatum selecteren",
-    "description": "Kies welke herhaling van \"{name}\" je wilt wijzigen:",
+    "description": "Kies welke herhaling van \"{name}\" je wilt wijzigen. Het wijzigen van één herhaling hier overschrijft alleen die datum; elke andere herhaling blijft de planning volgen. <guide>Meer informatie</guide>.",
     "modifiedBadge": "Gewijzigd",
     "nextDueBadge": "Volgende vervaldatum",
     "dateMoved": "Datum verplaatst van {date}",
@@ -267,6 +267,7 @@
     "commissionLabel": "Commissie",
     "totalValueLabel": "Totaalwaarde",
     "fundingAccountLabel": "Financieringsrekening (optioneel)",
+    "fundingAccountTooltip": "De rekening waarop het geld van deze planning daadwerkelijk wordt verrekend, niet de beleggingsrekening hierboven: degene die de kasstroomprognose belast of crediteert. Laat leeg om de eigen kasrekening van de beleggingsrekening te gebruiken.",
     "fundingAccountPlaceholder": "Gebruik brokeragekassaldo (standaard)",
     "fundingAccountHelp": "Standaard de kassijde van de beleggingsrekening. Kies een andere rekening voor bijdrage + aankoop.",
     "endConditionTitle": "Einddatum (optioneel)",

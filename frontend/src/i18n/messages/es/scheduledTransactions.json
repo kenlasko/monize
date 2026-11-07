@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "Seleccionar fecha de ocurrencia",
-    "description": "Elige qué ocurrencia de \"{name}\" deseas modificar:",
+    "description": "Elige qué ocurrencia de \"{name}\" deseas modificar. Cambiar una aquí anula solo esa fecha; las demás ocurrencias seguirán el calendario. <guide>Más información</guide>.",
     "modifiedBadge": "Modificada",
     "nextDueBadge": "Próximo vencimiento",
     "dateMoved": "Fecha cambiada desde {date}",
@@ -267,6 +267,7 @@
     "commissionLabel": "Comisión",
     "totalValueLabel": "Valor total",
     "fundingAccountLabel": "Cuenta de financiamiento (opcional)",
+    "fundingAccountTooltip": "La cuenta en la que realmente se liquida el efectivo de esta programación, no la cuenta de inversión de arriba: la que el pronóstico de flujo de caja carga o abona. Déjalo en blanco para usar la propia cuenta de efectivo de la cuenta de inversión.",
     "fundingAccountPlaceholder": "Usar efectivo de la corredora (predeterminado)",
     "fundingAccountHelp": "Usa de forma predeterminada el efectivo de la cuenta de inversión. Elige otra cuenta para modelar aportación + compra.",
     "endConditionTitle": "Condición de fin (opcional)",

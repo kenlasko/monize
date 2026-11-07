@@ -56,6 +56,8 @@ You can schedule recurring transfers between accounts (e.g., a monthly transfer 
 
 Choose **Investment** to schedule a recurring investment transaction, such as a monthly purchase of an ETF or a dividend reinvestment. Pick the **Investment Account**, the **Action** (Buy, Sell, Dividend, Reinvest Dividend, and so on), the **Security**, and the **Quantity (Shares)**, **Price per Share**, and **Commission**. The **Funding Account** defaults to the investment account's own cash; pick another account to model a contribution followed by a purchase. When the occurrence is posted, you can adjust the quantity, price, or total to what was actually traded.
 
+The **Funding Account** -- not the brokerage named in **Investment Account** -- is the account this schedule's cash actually settles in: the one the Cash Flow Forecast projects a balance change on, and the one Bills & Deposits warns about if it would go below zero. The brokerage holds the resulting shares, but its own cash balance never moves for a buy funded from elsewhere.
+
 ---
 
 ## Frequency Options

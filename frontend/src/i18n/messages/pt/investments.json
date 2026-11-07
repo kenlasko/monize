@@ -271,6 +271,7 @@
     "transferCostNote": "O custo por ação é quanto as ações custaram na conta de origem na data da transferência. É calculado ao guardar e transportado para a conta de destino, para que os seus relatórios de ganhos e lucros continuem corretos. Apenas são movidas ações; nenhum dinheiro muda de mãos.",
     "returnOfCapitalNote": "Uma devolução de capital não é rendimento. Restitui parte do que as ações custaram, pelo que reduz o custo de aquisição da sua posição neste montante. O que exceder o custo de aquisição restante é registado como mais-valia realizada.",
     "totalAmount": "Montante Total",
+    "totalAmountTooltip": "A quanto ascendeu a transação. Edite a quantidade, o preço ou a comissão e este montante é recalculado a partir deles; edite este campo diretamente e o Monize calculará o preço por ação, mantendo cada cêntimo do que escreveu.",
     "sharesAtPrice": "{shares} ações @ {symbol}{price}",
     "commissionSuffix": "comissão",
     "accruedInterestSuffix": "juros corridos",

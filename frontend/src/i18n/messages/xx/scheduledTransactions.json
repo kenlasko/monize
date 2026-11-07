@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "[XX-Select Occurrence Date-XX]",
-    "description": "[XX-Choose which occurrence of \"{name}\" to modify:-XX]",
+    "description": "[XX-Choose which occurrence of \"{name}\" to modify. Changing one here overrides just that date; every other occurrence keeps following the schedule. <guide>Learn more</guide>.-XX]",
     "modifiedBadge": "[XX-Modified-XX]",
     "nextDueBadge": "[XX-Next Due-XX]",
     "dateMoved": "[XX-Date moved from {date}-XX]",
@@ -267,6 +267,7 @@
     "commissionLabel": "[XX-Commission-XX]",
     "totalValueLabel": "[XX-Total Value-XX]",
     "fundingAccountLabel": "[XX-Funding Account (optional)-XX]",
+    "fundingAccountTooltip": "[XX-The account this schedule's cash actually settles in, not the brokerage above: the one the cash flow forecast charges or credits. Leave it blank to use the brokerage's own cash account.-XX]",
     "fundingAccountPlaceholder": "[XX-Use brokerage cash (default)-XX]",
     "fundingAccountHelp": "[XX-Defaults to the investment account's cash side. Pick another account to model contribution+buy.-XX]",
     "endConditionTitle": "[XX-End Condition (optional)-XX]",

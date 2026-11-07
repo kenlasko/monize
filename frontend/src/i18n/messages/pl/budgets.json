@@ -13,6 +13,7 @@
     "editTitle": "Edytuj: {name}",
     "budgetAmount": "Kwota budżetu",
     "rolloverType": "Typ przenoszenia",
+    "rolloverTypeTooltip": "Niewykorzystany budżet tej kategorii jest przenoszony na następny okres, a nie resetowany. Przekroczenie wydatków nigdy nie jest przenoszone jako dług, a limit przenoszenia ogranicza, ile można zgromadzić.",
     "rolloverCap": "Limit przenoszenia (opcjonalnie)",
     "rolloverCapPlaceholder": "Bez limitu",
     "flexGroup": "Grupa elastyczna (opcjonalnie)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Tempo wydatków",
+    "titleTooltip": "Twoje dzienne tempo wydatków i bezpieczne tempo wydawania, przewidziane do końca okresu. Rzeczywiście dostępne odlicza nadchodzące zaplanowane rachunki, aby budżet, który wygląda jeszcze na wolny, nie został wydany na pieniądze już należne.",
     "dailyBurnRate": "Dzienne tempo wydatków",
     "safeToSpend": "Bezpieczne wydatki",
     "projectedMonthEnd": "Prognoza na koniec miesiąca",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Szacowane na podstawie analizy: {amount}/mies.",
     "defaultRolloverType": "Domyślny typ przenoszenia",
     "rolloverHint": "To ustawia wartość domyślną dla wszystkich kategorii. Poszczególne kategorie możesz dostosować po utworzeniu budżetu.",
+    "rolloverTooltip": "Niewykorzystany budżet kategorii jest przenoszony na następny okres, a nie resetowany. Przekroczenie wydatków nigdy nie jest przenoszone jako dług, a limit przenoszenia ogranicza, ile może się zgromadzić dla kategorii.",
     "rolloverOptions": {
       "NONE": "Brak -- Zeruje się co okres",
       "MONTHLY": "Miesięcznie -- Przechodzi dalej co miesiąc",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "np. Rozrywka",
     "excludedAccountsHint": "Transakcje z wykluczonych kont nie będą wliczane do sum budżetu.",
+    "excludedAccountsTooltip": "Wykluczenie konta usuwa jego transakcje tylko z wydatków, przychodów, przenoszenia i wskaźnika kondycji tego budżetu. Nadal pojawiają się normalnie w transakcjach i raportach oraz w każdym innym budżecie, który nie wyklucza tego konta.",
     "excludedCount": "Wykluczono {count} {count, plural, one {konto} few {konta} many {kont} other {konta}}",
     "categoriesAndTransfers": "Wybrano {categories} kategorii i {transfers} przelewów",
     "budgetTypeOptions": {

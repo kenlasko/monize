@@ -13,6 +13,7 @@
     "editTitle": "Chỉnh sửa: {name}",
     "budgetAmount": "Số tiền ngân sách",
     "rolloverType": "Loại chuyển tiếp",
+    "rolloverTypeTooltip": "Ngân sách chưa dùng của danh mục này được chuyển sang kỳ tiếp theo thay vì đặt lại. Chi tiêu vượt mức không bao giờ được chuyển tiếp dưới dạng nợ, và Giới hạn chuyển tiếp hạn chế số tiền có thể tích lũy.",
     "rolloverCap": "Giới hạn chuyển tiếp (tùy chọn)",
     "rolloverCapPlaceholder": "Không giới hạn",
     "flexGroup": "Nhóm linh hoạt (tùy chọn)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Tốc độ chi tiêu",
+    "titleTooltip": "Tỷ lệ chi tiêu hàng ngày và tốc độ chi tiêu an toàn của bạn, được dự báo đến cuối kỳ. Thực sự khả dụng trừ đi các hóa đơn đã lên lịch nhưng chưa đến của bạn, để ngân sách tưởng như còn dư không bị chi vào số tiền đã nợ.",
     "dailyBurnRate": "Tỷ lệ chi tiêu hàng ngày",
     "safeToSpend": "An toàn để chi",
     "projectedMonthEnd": "Dự báo cuối tháng",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Ước tính từ phân tích: {amount}/tháng",
     "defaultRolloverType": "Loại chuyển tiếp mặc định",
     "rolloverHint": "Đây là mặc định cho tất cả danh mục. Bạn có thể tùy chỉnh từng danh mục sau khi tạo ngân sách.",
+    "rolloverTooltip": "Ngân sách chưa dùng của một danh mục được chuyển sang kỳ tiếp theo thay vì đặt lại. Chi tiêu vượt mức không bao giờ được chuyển tiếp dưới dạng nợ, và Giới hạn chuyển tiếp hạn chế số tiền một danh mục có thể tích lũy.",
     "rolloverOptions": {
       "NONE": "Không có -- Đặt lại mỗi kỳ",
       "MONTHLY": "Hàng tháng -- Chuyển tiếp mỗi tháng",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "ví dụ: Tiền vui chơi",
     "excludedAccountsHint": "Các giao dịch từ tài khoản bị loại trừ sẽ không tính vào tổng ngân sách của bạn.",
+    "excludedAccountsTooltip": "Loại trừ một tài khoản chỉ xóa các giao dịch của nó khỏi chi tiêu, thu nhập, chuyển tiếp và điểm sức khỏe của ngân sách này. Chúng vẫn xuất hiện bình thường trong giao dịch và báo cáo của bạn, cũng như trong bất kỳ ngân sách khác không loại trừ tài khoản đó.",
     "excludedCount": "{count} {count, plural, one {tài khoản} other {tài khoản}} bị loại trừ",
     "categoriesAndTransfers": "{categories} danh mục và {transfers} chuyển khoản đã chọn",
     "budgetTypeOptions": {

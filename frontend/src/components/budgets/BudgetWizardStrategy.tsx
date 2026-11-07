@@ -8,6 +8,7 @@ import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { NumericInput } from '@/components/ui/NumericInput';
 import { Select } from '@/components/ui/Select';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { STRATEGY_LABELS } from './utils/budget-labels';
 import { getCurrencySymbol } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -250,8 +251,9 @@ export function BudgetWizardStrategy({
 
       {/* Rollover Rules */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
-        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide flex items-center">
           {t('wizardStrategy.sections.rolloverRules')}
+          <InfoTooltip text={t('wizardStrategy.rolloverTooltip')} learnMore="budgetRollover" />
         </h4>
 
         <Select
@@ -385,8 +387,9 @@ export function BudgetWizardStrategy({
       {/* Excluded Accounts */}
       {activeAccounts.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide flex items-center">
             {t('wizardStrategy.sections.excludedAccounts')}
+            <InfoTooltip text={t('wizardStrategy.excludedAccountsTooltip')} learnMore="budgetExcludedAccounts" />
           </h4>
 
           <p className="text-xs text-gray-500 dark:text-gray-400">

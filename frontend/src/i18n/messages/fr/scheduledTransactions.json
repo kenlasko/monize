@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "Sélectionner la date d'occurrence",
-    "description": "Choisissez l'occurrence de « {name} » à modifier :",
+    "description": "Choisissez l'occurrence de « {name} » à modifier. Modifier une occurrence ici ne remplace que cette date ; chaque autre occurrence continue de suivre la planification. <guide>En savoir plus</guide>.",
     "modifiedBadge": "Modifiée",
     "nextDueBadge": "Prochaine échéance",
     "dateMoved": "Date déplacée depuis {date}",
@@ -267,6 +267,7 @@
     "commissionLabel": "Commission",
     "totalValueLabel": "Valeur totale",
     "fundingAccountLabel": "Compte de financement (facultatif)",
+    "fundingAccountTooltip": "Le compte où la trésorerie de cette planification se règle réellement, et non le compte de courtage ci-dessus : celui que la prévision de trésorerie débite ou crédite. Laissez vide pour utiliser la trésorerie propre du compte de courtage.",
     "fundingAccountPlaceholder": "Utiliser la trésorerie du courtage (défaut)",
     "fundingAccountHelp": "Par défaut, la trésorerie du compte d'investissement. Choisissez un autre compte pour modéliser une contribution + achat.",
     "endConditionTitle": "Condition de fin (facultatif)",

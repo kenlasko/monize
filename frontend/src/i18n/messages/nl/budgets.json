@@ -13,6 +13,7 @@
     "editTitle": "Bewerken: {name}",
     "budgetAmount": "Budgetbedrag",
     "rolloverType": "Overdrachttype",
+    "rolloverTypeTooltip": "Niet-gebruikt budget van deze categorie wordt overgedragen naar de volgende periode in plaats van gereset. Overbesteding wordt nooit als schuld overgedragen, en een overdrachtsmaximum beperkt hoeveel er kan worden opgebouwd.",
     "rolloverCap": "Overdrachtsmaximum (optioneel)",
     "rolloverCapPlaceholder": "Geen maximum",
     "flexGroup": "Flexgroep (optioneel)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Uitgavensnelheid",
+    "titleTooltip": "Je dagelijkse verbruikstarief en veilige bestedingstempo, geprojecteerd tot het einde van de periode. Werkelijk beschikbaar trekt je nog komende geplande rekeningen af, zodat een budget dat nog ruimte lijkt te hebben niet wordt uitgegeven aan geld dat al verschuldigd is.",
     "dailyBurnRate": "Dagelijks verbruiktarief",
     "safeToSpend": "Veilig te besteden",
     "projectedMonthEnd": "Verwacht maandeinde",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Geraamd uit analyse: {amount}/mnd",
     "defaultRolloverType": "Standaard overdrachttype",
     "rolloverHint": "Dit stelt de standaard in voor alle categorieën. Je kunt individuele categorieën aanpassen nadat je het budget hebt aangemaakt.",
+    "rolloverTooltip": "Niet-gebruikt budget van een categorie wordt overgedragen naar de volgende periode in plaats van gereset. Overbesteding wordt nooit als schuld overgedragen, en een overdrachtsmaximum beperkt hoeveel een categorie kan opbouwen.",
     "rolloverOptions": {
       "NONE": "Geen -- Reset elke periode",
       "MONTHLY": "Maandelijks -- Elke maand overgedragen",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "bijv. Vrij te besteden",
     "excludedAccountsHint": "Transacties van uitgesloten rekeningen tellen niet mee voor jouw budgettotalen.",
+    "excludedAccountsTooltip": "Het uitsluiten van een rekening verwijdert de bijbehorende transacties alleen uit de uitgaven, inkomsten, overdracht en gezondheidsscore van dit budget. Ze blijven normaal verschijnen in je transacties en rapporten, en in elk ander budget dat de rekening niet uitsluit.",
     "excludedCount": "{count} {count, plural, one {rekening} other {rekeningen}} uitgesloten",
     "categoriesAndTransfers": "{categories} categorieën en {transfers} overboekingen geselecteerd",
     "budgetTypeOptions": {

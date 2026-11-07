@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "Ausführungsdatum auswählen",
-    "description": "Wählen Sie, welche Ausführung von \"{name}\" geändert werden soll:",
+    "description": "Wählen Sie, welche Ausführung von \"{name}\" geändert werden soll. Eine Änderung hier überschreibt nur dieses Datum; jede andere Ausführung folgt weiterhin dem Zeitplan. <guide>Mehr erfahren</guide>.",
     "modifiedBadge": "Geändert",
     "nextDueBadge": "Nächste Fälligkeit",
     "dateMoved": "Datum verschoben von {date}",
@@ -267,6 +267,7 @@
     "commissionLabel": "Provision",
     "totalValueLabel": "Gesamtwert",
     "fundingAccountLabel": "Finanzierungskonto (optional)",
+    "fundingAccountTooltip": "Das Konto, in dem die Barmittel dieses Zeitplans tatsächlich verbucht werden, nicht das Depot oben: dasjenige, das die Cashflow-Prognose belastet oder gutschreibt. Leer lassen, um das eigene Barkonto des Depots zu verwenden.",
     "fundingAccountPlaceholder": "Brokerage-Bargeld verwenden (Standard)",
     "fundingAccountHelp": "Standardmäßig die Bargeldseite des Investmentkontos. Wählen Sie ein anderes Konto, um Einzahlung und Kauf zu modellieren.",
     "endConditionTitle": "Endbedingung (optional)",

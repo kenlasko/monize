@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "Pilih Tanggal Kemunculan",
-    "description": "Pilih kemunculan mana dari \"{name}\" yang akan dimodifikasi:",
+    "description": "Pilih kemunculan mana dari \"{name}\" yang akan dimodifikasi. Mengubah satu di sini hanya menimpa tanggal tersebut; setiap kemunculan lainnya tetap mengikuti jadwal. <guide>Pelajari lebih lanjut</guide>.",
     "modifiedBadge": "Dimodifikasi",
     "nextDueBadge": "Jatuh Tempo Berikutnya",
     "dateMoved": "Tanggal dipindahkan dari {date}",
@@ -267,6 +267,7 @@
     "commissionLabel": "Komisi",
     "totalValueLabel": "Total Nilai",
     "fundingAccountLabel": "Akun Pendanaan (opsional)",
+    "fundingAccountTooltip": "Akun tempat kas dari jadwal ini sebenarnya diselesaikan, bukan akun broker di atas: akun yang didebit atau dikredit oleh prakiraan arus kas. Biarkan kosong untuk menggunakan akun kas milik broker itu sendiri.",
     "fundingAccountPlaceholder": "Gunakan kas broker (default)",
     "fundingAccountHelp": "Default ke sisi kas akun investasi. Pilih akun lain untuk memodelkan kontribusi+beli.",
     "endConditionTitle": "Kondisi Akhir (opsional)",

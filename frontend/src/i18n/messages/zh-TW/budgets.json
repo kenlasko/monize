@@ -13,6 +13,7 @@
     "editTitle": "編輯：{name}",
     "budgetAmount": "預算金額",
     "rolloverType": "結轉類型",
+    "rolloverTypeTooltip": "此類別未用完的預算會結轉到下一期，而不是重設。超支絕不會以債務形式結轉，結轉上限則限制最多能累積多少。",
     "rolloverCap": "結轉上限（選填）",
     "rolloverCapPlaceholder": "無上限",
     "flexGroup": "彈性群組（選填）",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "消費速度",
+    "titleTooltip": "您的每日消耗率與安全支出速度，已預測到本期結束。實際可用會扣除尚未到期的已排程帳單，讓看起來仍有餘裕的預算不會被已欠的錢花掉。",
     "dailyBurnRate": "每日消耗率",
     "safeToSpend": "可安全消費",
     "projectedMonthEnd": "預計月底結餘",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "從分析估算：{amount}/月",
     "defaultRolloverType": "預設結轉類型",
     "rolloverHint": "這將為所有類別設定預設值。建立預算後，您可以自訂各個類別。",
+    "rolloverTooltip": "某類別未用完的預算會結轉到下一期，而不是重設。超支絕不會以債務形式結轉，結轉上限則限制該類別最多能累積多少。",
     "rolloverOptions": {
       "NONE": "無 -- 每期重置",
       "MONTHLY": "每月 -- 每月延續",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "例如：休閒零用金",
     "excludedAccountsHint": "排除科目的交易將不計入您的預算總計。",
+    "excludedAccountsTooltip": "排除某個科目只會將其交易從此預算的支出、收入、結轉與健康分數中剔除。它們仍會照常出現在您的交易記錄與報表中，以及未排除該科目的任何其他預算中。",
     "excludedCount": "已排除 {count} 個{count, plural, one {科目} other {科目}}",
     "categoriesAndTransfers": "已選擇 {categories} 個類別和 {transfers} 個轉帳",
     "budgetTypeOptions": {

@@ -13,6 +13,7 @@
     "editTitle": "编辑：{name}",
     "budgetAmount": "预算金额",
     "rolloverType": "滚存类型",
+    "rolloverTypeTooltip": "此分类未用完的预算会结转到下一期，而不是重置。超支绝不会作为债务结转，滚存上限限制了最多能累积多少。",
     "rolloverCap": "滚存上限（可选）",
     "rolloverCapPlaceholder": "无上限",
     "flexGroup": "弹性分组（可选）",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "支出速度",
+    "titleTooltip": "您的日均消耗和安全支出速度，已预测到本期结束。实际可用会扣除尚未到来的已安排账单，这样看起来仍有余地的预算就不会被已欠的钱花掉。",
     "dailyBurnRate": "日均消耗",
     "safeToSpend": "可安全支出",
     "projectedMonthEnd": "预测月末",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "分析估算：{amount}/月",
     "defaultRolloverType": "默认滚存类型",
     "rolloverHint": "这将设置所有分类的默认值。创建预算后可自定义各个分类。",
+    "rolloverTooltip": "某分类未用完的预算会结转到下一期，而不是重置。超支绝不会作为债务结转，滚存上限限制了某分类最多能累积多少。",
     "rolloverOptions": {
       "NONE": "无 — 每期重置",
       "MONTHLY": "按月 — 每月结转",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "例如：娱乐资金",
     "excludedAccountsHint": "排除账户的交易不计入预算总额。",
+    "excludedAccountsTooltip": "排除某个账户只会将其交易从本预算的支出、收入、滚存和健康评分中剔除。它们仍会照常出现在您的交易记录和报表中，以及未排除该账户的任何其他预算中。",
     "excludedCount": "已排除 {count} 个账户",
     "categoriesAndTransfers": "已选择 {categories} 个分类和 {transfers} 个转账",
     "budgetTypeOptions": {

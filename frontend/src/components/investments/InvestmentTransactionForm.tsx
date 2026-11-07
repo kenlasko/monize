@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { NumericInput } from '@/components/ui/NumericInput';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { Modal } from '@/components/ui/Modal';
@@ -1925,14 +1926,28 @@ function InvestmentTransactionFormFields({
             // shares for 820.91 becomes 141 x 5.82 = 820.62). Price and total
             // each follow the other, exactly as the exchange rate and the
             // converted amount above do.
-            <NumericInput
-              label={t('transactionForm.totalAmount')}
-              prefix={currencySymbol}
-              value={totalAmount || undefined}
-              onChange={handleTotalAmountChange}
-              decimalPlaces={4}
-              min={0}
-            />
+            <div>
+              <div className="flex items-center mb-1">
+                <label
+                  htmlFor="investment-total-amount"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {t('transactionForm.totalAmount')}
+                </label>
+                <InfoTooltip
+                  text={t('transactionForm.totalAmountTooltip')}
+                  learnMore="investmentTradeTotal"
+                />
+              </div>
+              <NumericInput
+                id="investment-total-amount"
+                prefix={currencySymbol}
+                value={totalAmount || undefined}
+                onChange={handleTotalAmountChange}
+                decimalPlaces={4}
+                min={0}
+              />
+            </div>
           ) : (
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">

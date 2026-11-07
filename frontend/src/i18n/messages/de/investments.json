@@ -271,6 +271,7 @@
     "transferCostNote": "Die Kosten pro Anteil sind das, was die Anteile im Quellkonto am Übertragungsdatum gekostet haben. Sie werden beim Speichern ermittelt und auf das Zielkonto übertragen, damit Ihre Gewinn- und Ertragsberichte korrekt bleiben. Dabei werden nur Anteile verschoben; kein Bargeld wechselt den Besitzer.",
     "returnOfCapitalNote": "Eine Kapitalrückzahlung ist kein Ertrag. Sie erstattet einen Teil dessen, was die Anteile gekostet haben, und senkt daher die Anschaffungskosten Ihrer Position um diesen Betrag. Was die verbleibenden Anschaffungskosten übersteigt, wird als realisierter Kursgewinn ausgewiesen.",
     "totalAmount": "Gesamtbetrag",
+    "totalAmountTooltip": "Was der Handel ausmachte. Bearbeiten Sie Menge, Preis oder Provision, und dieser Betrag wird daraus neu berechnet; bearbeiten Sie dieses Feld direkt, und Monize ermittelt stattdessen den Preis pro Anteil, wobei jeder Cent Ihrer Eingabe erhalten bleibt.",
     "sharesAtPrice": "{shares} Anteile @ {symbol}{price}",
     "commissionSuffix": "Provision",
     "accruedInterestSuffix": "aufgelaufene Zinsen",

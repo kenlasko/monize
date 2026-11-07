@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "選擇付款日期",
-    "description": "選擇要修改的「{name}」付款：",
+    "description": "選擇要修改的「{name}」哪一次付款。在此修改一次只會覆寫該日期；其他每一次付款仍會遵循排程。<guide>了解更多</guide>。",
     "modifiedBadge": "已修改",
     "nextDueBadge": "下次到期",
     "dateMoved": "日期從 {date} 移動",
@@ -267,6 +267,7 @@
     "commissionLabel": "手續費",
     "totalValueLabel": "總值",
     "fundingAccountLabel": "資金科目（選填）",
+    "fundingAccountTooltip": "此排程的現金實際結算的科目，而非上方的券商科目：現金流量預測會記入借方或貸方的正是這個科目。留空則使用券商本身的現金科目。",
     "fundingAccountPlaceholder": "使用券商現金（預設）",
     "fundingAccountHelp": "預設為投資科目的現金端。選擇其他科目以模擬投入加買入操作。",
     "endConditionTitle": "結束條件（選填）",

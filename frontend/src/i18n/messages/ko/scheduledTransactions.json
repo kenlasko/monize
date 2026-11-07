@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "발생 날짜 선택",
-    "description": "수정할 \"{name}\"의 발생을 선택하세요:",
+    "description": "수정할 \"{name}\"의 발생을 선택하세요. 여기서 하나를 변경하면 해당 날짜만 재정의되며, 다른 모든 발생은 계속 일정을 따릅니다. <guide>자세히 알아보기</guide>.",
     "modifiedBadge": "수정됨",
     "nextDueBadge": "다음 만기",
     "dateMoved": "날짜가 {date}에서 이동됨",
@@ -267,6 +267,7 @@
     "commissionLabel": "수수료",
     "totalValueLabel": "총 가치",
     "fundingAccountLabel": "자금 계정 (선택사항)",
+    "fundingAccountTooltip": "이 일정의 현금이 실제로 정산되는 계정으로, 위의 중개 계정이 아닙니다: 현금 흐름 예측이 차감하거나 적립하는 계정입니다. 비워두면 중개 계정 자체의 현금 계정을 사용합니다.",
     "fundingAccountPlaceholder": "증권사 현금 사용 (기본값)",
     "fundingAccountHelp": "기본값은 투자 계정의 현금입니다. 다른 계정을 선택하면 기여금+매수를 모델링할 수 있습니다.",
     "endConditionTitle": "종료 조건 (선택사항)",

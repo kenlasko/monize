@@ -130,7 +130,7 @@
   },
   "occurrencePicker": {
     "title": "発生日を選択",
-    "description": "変更する「{name}」の発生を選択してください:",
+    "description": "変更する「{name}」の発生を選択してください。ここで1件を変更しても、その日付だけが上書きされ、他の発生は引き続きスケジュールに従います。<guide>詳しくはこちら</guide>。",
     "modifiedBadge": "変更済み",
     "nextDueBadge": "次回期限",
     "dateMoved": "日付が{date}から移動されました",
@@ -267,6 +267,7 @@
     "commissionLabel": "手数料",
     "totalValueLabel": "合計価値",
     "fundingAccountLabel": "資金調達口座（任意）",
+    "fundingAccountTooltip": "このスケジュールの現金が実際に決済される口座で、上の証券口座ではありません。キャッシュフロー予測が引いたり加えたりするのはこの口座です。空欄のままにすると、証券口座自体の現金側が使われます。",
     "fundingAccountPlaceholder": "証券口座の現金を使用（デフォルト）",
     "fundingAccountHelp": "デフォルトは投資口座の現金サイドです。拠出＋購入をモデル化するには別の口座を選択してください。",
     "endConditionTitle": "終了条件（任意）",

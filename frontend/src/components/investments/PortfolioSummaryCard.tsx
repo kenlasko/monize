@@ -370,7 +370,11 @@ export function PortfolioSummaryCard({
             <div>
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 {t('portfolioSummary.totalGain')}
-                <InfoTooltip placement="top" text={t('portfolioSummary.totalGainTooltip')} />
+                <InfoTooltip
+                  placement="top"
+                  text={t('portfolioSummary.totalGainTooltip')}
+                  learnMore="investmentCashVsReturns"
+                />
               </div>
               <div className={`text-base sm:text-lg font-semibold ${returnColorClass((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}`}>
                 {fmtVal((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}
@@ -388,7 +392,11 @@ export function PortfolioSummaryCard({
             <div>
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 {t('portfolioSummary.costBasis')}
-                <InfoTooltip placement="top" text={t('portfolioSummary.costBasisTooltip')} />
+                <InfoTooltip
+                  placement="top"
+                  text={t('portfolioSummary.costBasisTooltip')}
+                  learnMore="investmentCostBasis"
+                />
               </div>
               <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {fmtVal(converted?.costBasis ?? summary.totalCostBasis)}
@@ -439,7 +447,11 @@ export function PortfolioSummaryCard({
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 {t('portfolioSummary.twr')}
                 <span className="hidden sm:inline">&nbsp;{t('portfolioSummary.twrFull')}</span>
-                <InfoTooltip placement="top" text={t('portfolioSummary.twrTooltip')} />
+                <InfoTooltip
+                  placement="top"
+                  text={t('portfolioSummary.twrTooltip')}
+                  learnMore="investmentCashVsReturns"
+                />
               </div>
               <div className={`text-base sm:text-lg font-semibold ${returnColorClass(twr)}`}>
                 {twr != null ? formatPercent(twr) : (
@@ -451,7 +463,11 @@ export function PortfolioSummaryCard({
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 {t('portfolioSummary.mwr')}
                 <span className="hidden sm:inline">&nbsp;{t('portfolioSummary.mwrFull')}</span>
-                <InfoTooltip placement="top" text={t('portfolioSummary.mwrTooltip')} />
+                <InfoTooltip
+                  placement="top"
+                  text={t('portfolioSummary.mwrTooltip')}
+                  learnMore="investmentCashVsReturns"
+                />
               </div>
               <div className={`text-base sm:text-lg font-semibold ${returnColorClass(mwr)}`}>
                 {mwr != null ? formatPercent(mwr) : (

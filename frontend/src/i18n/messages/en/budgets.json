@@ -13,6 +13,7 @@
     "editTitle": "Edit: {name}",
     "budgetAmount": "Budget Amount",
     "rolloverType": "Rollover Type",
+    "rolloverTypeTooltip": "Unused budget for this category carries forward into the next period rather than resetting. Overspending is never carried forward as a debt, and a Rollover Cap limits how much can accumulate.",
     "rolloverCap": "Rollover Cap (optional)",
     "rolloverCapPlaceholder": "No cap",
     "flexGroup": "Flex Group (optional)",
@@ -185,6 +186,7 @@
   },
   "velocity": {
     "title": "Spending Velocity",
+    "titleTooltip": "Your daily burn rate and safe-to-spend pace, projected to the end of the period. Truly available subtracts your scheduled bills still to come, so a budget that still shows room does not get spent on money already owed.",
     "dailyBurnRate": "Daily burn rate",
     "safeToSpend": "Safe to spend",
     "projectedMonthEnd": "Projected month-end",
@@ -311,6 +313,7 @@
     "estimatedFromAnalysis": "Estimated from analysis: {amount}/mo",
     "defaultRolloverType": "Default Rollover Type",
     "rolloverHint": "This sets the default for all categories. You can customize individual categories after creating the budget.",
+    "rolloverTooltip": "Unused budget for a category carries forward into the next period rather than resetting. Overspending is never carried forward as a debt, and a Rollover Cap limits how much a category can accumulate.",
     "rolloverOptions": {
       "NONE": "None -- Resets each period",
       "MONTHLY": "Monthly -- Rolls forward every month",
@@ -330,6 +333,7 @@
     },
     "flexGroupPlaceholder": "e.g. Fun Money",
     "excludedAccountsHint": "Transactions from excluded accounts will not count toward your budget totals.",
+    "excludedAccountsTooltip": "Excluding an account removes its transactions from this budget's spending, income, rollover and health score only. They still appear normally in your transactions and reports, and in any other budget that does not exclude the account.",
     "excludedCount": "{count} {count, plural, one {account} other {accounts}} excluded",
     "categoriesAndTransfers": "{categories} categories and {transfers} transfers selected",
     "budgetTypeOptions": {
