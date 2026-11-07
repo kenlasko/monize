@@ -40,10 +40,18 @@ is quoted in the commit or PR.
 
 ## Docs and copy
 
-- [ ] `help` namespace additions: English, pseudo-locale, every locale.
-- [ ] Guide page for the Help menu; header screenshots retaken.
-- [ ] `docs/frontend/ui-conventions.md` entries.
+- [x] `help` namespace additions: English, pseudo-locale, every locale.
+- [x] Guide page for the Help menu (getting-started.md, docs:build). Header
+      screenshots **not** retaken: the e2e Docker stack's backend `nest
+      build` step OOMs on this machine's shared memory limit even before
+      Playwright starts (tried once, torn down -- see the PR description).
+      `images/navigation-bar.png` needs a retake once that is run somewhere
+      with more headroom; it is not pixel-wrong, just stale (missing the new
+      `?` icon).
+- [x] `docs/frontend/ui-conventions.md` entries.
 
 ## Verification
 
-- [ ] Frontend gates green, quoted; header E2E specs pass.
+- [x] Frontend gates green, quoted (lint, type-check, i18n:check,
+      test:changed -- 906 files / 16839 tests, build). Header E2E specs
+      **not run**: same Docker memory ceiling as the screenshots above.
