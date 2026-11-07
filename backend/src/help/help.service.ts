@@ -5,7 +5,6 @@ import {
   HELP_IMAGE_NAME_RE,
   HELP_IMAGE_REF_RE,
   HELP_INDEX_SLUG,
-  HELP_ONLINE_BASE_URL,
   HELP_SLUG_RE,
 } from "./help.constants";
 import {
@@ -23,6 +22,13 @@ import {
   readImageBundle,
 } from "./help-images";
 import { HelpSearchAnswer, HelpSearchSection, searchHelp } from "./help-search";
+import {
+  LLM_HELP_LANGUAGE,
+  LlmHelpAnswer,
+  capHelpText,
+  clampHelpLimit,
+  helpSectionUrl,
+} from "./help-llm-shape";
 
 // The running version comes from the backend package.json at build/run time,
 // matching ReleaseNotesService.
@@ -146,6 +152,36 @@ export class HelpService {
     });
   }
 
+  /**
+   * `search_help`, for the assistant and the MCP tool alike: `search`'s
+   * ranking (no screen to boost), each hit with its section's own text capped
+   * to `LLM_HELP_TEXT_MAX_CHARS` and the monize.net link a model cites. It
+   * reads only the bundled guide, never a user's data, so it needs no
+   * database scope and answers a delegate exactly as it answers the owner.
+   */
+  getLlmHelp(query: string, options: { limit?: number } = {}): LlmHelpAnswer {
+    const available = this.load();
+    const { results } = available
+      ? this.search(query, { limit: clampHelpLimit(options.limit) })
+      : { results: [] };
+    return {
+      available,
+      guideVersion: this.currentVersion,
+      language: LLM_HELP_LANGUAGE,
+      sections: results.map((result) => {
+        const source = this.sections.find(
+          (s) => s.page === result.page && s.section === result.section,
+        );
+        return {
+          pageTitle: result.pageTitle,
+          heading: result.heading,
+          url: helpSectionUrl(result.page, result.section),
+          text: capHelpText(source?.text ?? result.excerpt),
+        };
+      }),
+    };
+  }
+
   /** Reads the bundle on first use; true when there is a usable one. */
   private load(): boolean {
     if (this.state === "unloaded") {
@@ -234,10 +270,7 @@ export class HelpService {
           group: summary.group,
           markdown,
           toc: this.buildToc(slug, markdown, sections.get(slug) ?? []),
-          onlineUrl:
-            slug === HELP_INDEX_SLUG
-              ? `${HELP_ONLINE_BASE_URL}/`
-              : `${HELP_ONLINE_BASE_URL}/${slug}`,
+          onlineUrl: helpSectionUrl(slug, null),
           images: pageImages(markdown, images, this.currentVersion),
         });
       }
