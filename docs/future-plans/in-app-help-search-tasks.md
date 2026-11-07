@@ -18,16 +18,16 @@ merged. Check a box only when its gate passes and is quoted in the commit or PR.
 
 ## Frontend
 
-- [ ] `isEditableTarget` helper and one global listener for `Ctrl/Cmd+K` and `?`.
-- [ ] `PageHeader` registers its `help` key as the search context.
-- [ ] `HelpSearchDialog` on `Modal`: empty-query context list, debounced search,
+- [x] `isEditableTarget` helper and one global listener for `Ctrl/Cmd+K` and `?`.
+- [x] `PageHeader` registers its `help` key as the search context.
+- [x] `HelpSearchDialog` on `Modal`: empty-query context list, debounced search,
       responses tied to their query, listbox keyboard navigation, Enter opens
       the panel, error state.
-- [ ] `help` namespace additions: English, pseudo-locale, every locale.
+- [x] `help` namespace additions: English, pseudo-locale, every locale.
 
 ## Tests
 
-- [ ] Dialog and listener unit tests listed in the plan.
+- [x] Dialog and listener unit tests listed in the plan.
 - [ ] E2E: `?` on Transactions; "backup" search opens Backup and restore.
 
 ## Docs
