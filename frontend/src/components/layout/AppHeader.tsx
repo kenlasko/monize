@@ -663,7 +663,14 @@ export function AppHeader() {
                   d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
                 />
               </svg>
-              <span className="hidden sm:inline">
+              {/* Hidden again from xl, where the nav links (also xl:flex) start
+                  competing for the same row: at 1280px -- the default E2E
+                  viewport and a common laptop width -- the row was already as
+                  wide as the plan's own "watch out" warned, and the header's
+                  shell clips rather than scrolls (SwipeShell's
+                  overflow-x-clip), so an overflowing Logout button is
+                  unclickable, not just unreachable without a scroll. */}
+              <span className="hidden sm:inline xl:hidden 2xl:inline">
                 {user?.firstName || user?.email}
               </span>
             </button>
